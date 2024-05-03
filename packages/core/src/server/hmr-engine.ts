@@ -1,16 +1,16 @@
 import fse from 'fs-extra';
 // queue all updates and compile them one by one
 
-import { isAbsolute, relative } from 'node:path';
 import { stat } from 'node:fs/promises';
+import { isAbsolute, relative } from 'node:path';
 
-import { Compiler } from '../compiler/index.js';
-import { Server } from './index.js';
-import { Logger, bold, clearScreen, cyan, green } from '../utils/index.js';
-import { JsUpdateResult } from '../../binding/binding.js';
 import type { Resource } from '@farmfe/runtime/src/resource-loader.js';
-import { WebSocketClient } from './ws.js';
+import { JsUpdateResult } from '../../binding/binding.js';
+import { Compiler } from '../compiler/index.js';
+import { Logger, bold, clearScreen, cyan, green } from '../utils/index.js';
 import { logError } from './error.js';
+import { Server } from './index.js';
+import { WebSocketClient } from './ws.js';
 
 export class HmrEngine {
   private _updateQueue: string[] = [];
@@ -22,7 +22,11 @@ export class HmrEngine {
 
   private _lastModifiedTimestamp: Map<string, string>;
 
-  constructor(compiler: Compiler, devServer: Server, private _logger: Logger) {
+  constructor(
+    compiler: Compiler,
+    devServer: Server,
+    private _logger: Logger
+  ) {
     this._compiler = compiler;
     this._devServer = devServer;
     // this._lastAttemptWasError = false;
@@ -61,8 +65,7 @@ export class HmrEngine {
       })
       .join(', ');
     if (updatedFilesStr.length >= 100) {
-      updatedFilesStr =
-        updatedFilesStr.slice(0, 100) + `...(${queue.length} files)`;
+      updatedFilesStr = updatedFilesStr.slice(0, 100) + `...(${queue.length} files)`;
     }
 
     try {
@@ -70,15 +73,11 @@ export class HmrEngine {
       const start = Date.now();
       const result = await this._compiler.update(queue);
       this._logger.info(
-        `${bold(cyan(updatedFilesStr))} updated in ${bold(
-          green(`${Date.now() - start}ms`)
-        )}`
+        `${bold(cyan(updatedFilesStr))} updated in ${bold(green(`${Date.now() - start}ms`))}`
       );
 
       // clear update queue after update finished
-      this._updateQueue = this._updateQueue.filter(
-        (item) => !queue.includes(item)
-      );
+      this._updateQueue = this._updateQueue.filter((item) => !queue.includes(item));
 
       let dynamicResourcesMap: Record<string, Resource[]> = null;
 
@@ -93,14 +92,7 @@ export class HmrEngine {
           }));
         }
       }
-      const {
-        added,
-        changed,
-        removed,
-        immutableModules,
-        mutableModules,
-        boundaries
-      } = result;
+      const { added, changed, removed, immutableModules, mutableModules, boundaries } = result;
       const resultStr = `{
         added: [${formatHmrResult(added)}],
         changed: [${formatHmrResult(changed)}],

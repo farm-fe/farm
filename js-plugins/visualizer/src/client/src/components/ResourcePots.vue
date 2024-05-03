@@ -27,47 +27,47 @@
 </template>
 
 <script lang="ts">
-import { Resource } from "@farmfe/core";
-import { PropType, defineComponent } from "vue";
-import { Card, Tag, Button } from "ant-design-vue";
-import { CodepenCircleFilled } from "@ant-design/icons-vue";
-import { formatSize } from "../utils/size";
-import { getResource } from "../api";
+import { Resource } from '@farmfe/core';
+import { PropType, defineComponent } from 'vue';
+import { Card, Tag, Button } from 'ant-design-vue';
+import { CodepenCircleFilled } from '@ant-design/icons-vue';
+import { formatSize } from '../utils/size';
+import { getResource } from '../api';
 
-import { useResourcePotStore } from "../stores/resourcePot";
+import { useResourcePotStore } from '../stores/resourcePot';
 
 export default defineComponent({
-  name: "ResourcePots",
+  name: 'ResourcePots',
   components: {
     Card,
     Tag,
     Button,
-    CodepenCircleFilled,
+    CodepenCircleFilled
   },
   props: {
     pots: {
-      type: Array as PropType<Resource[]>,
-    },
+      type: Array as PropType<Resource[]>
+    }
   },
   setup(_, { emit }) {
     const resourcePotStore = useResourcePotStore();
-    
+
     function viewSourceCode(resource: Resource) {
       getResource(resource.name).then((data) => {
-        emit("view", {
+        emit('view', {
           name: resource.name,
           code: data,
           language: resource.resourceType
-        })
+        });
       });
     }
 
     function selectResourcePot(resource: Resource) {
-      resourcePotStore.setResource(resource)
-      emit("select", resource)
+      resourcePotStore.setResource(resource);
+      emit('select', resource);
     }
-    
+
     return { formatSize, viewSourceCode, selectResourcePot };
-  },
+  }
 });
 </script>

@@ -1,33 +1,23 @@
 import path from 'path';
+import { EncodedSourceMap, addMapping, fromMap, toEncodedMap } from '@jridgewell/gen-mapping';
+import { TraceMap, eachMapping } from '@jridgewell/trace-mapping';
 import {
-  compileScript,
-  compileTemplate,
+  BindingMetadata,
+  CompilerOptions,
   SFCDescriptor,
   SFCScriptBlock,
-  SFCTemplateBlock,
-  BindingMetadata,
-  rewriteDefault,
-  SFCStyleBlock,
-  SFCTemplateCompileResults,
   SFCScriptCompileOptions,
-  CompilerOptions
+  SFCStyleBlock,
+  SFCTemplateBlock,
+  SFCTemplateCompileResults,
+  compileScript,
+  compileTemplate,
+  rewriteDefault
 } from '@vue/compiler-sfc';
-import { error, warn, getHash, parsePath } from './utils.js';
-import {
-  QueryObj,
-  StylesCodeCache,
-  Union,
-  ResolvedOptions
-} from './farm-vue-types.js';
-import { cacheScript, isEqualBlock } from './farm-vue-hmr.js';
-import {
-  fromMap,
-  toEncodedMap,
-  addMapping,
-  EncodedSourceMap
-} from '@jridgewell/gen-mapping';
-import { eachMapping, TraceMap } from '@jridgewell/trace-mapping';
 import { RawSourceMap } from 'source-map';
+import { cacheScript, isEqualBlock } from './farm-vue-hmr.js';
+import { QueryObj, ResolvedOptions, StylesCodeCache, Union } from './farm-vue-types.js';
+import { error, getHash, parsePath, warn } from './utils.js';
 
 type SourceMap = Omit<RawSourceMap, 'version'> & { version: 3 };
 
@@ -57,19 +47,13 @@ export function genTemplateCode(
   bindings: BindingMetadata,
   hasScoped: boolean,
   hash: string
-):
-  | Union<SFCTemplateCompileResults, { code: string }>
-  | { code: string; map: RawSourceMap } {
+): Union<SFCTemplateCompileResults, { code: string }> | { code: string; map: RawSourceMap } {
   if (template) {
     // if using TS, support TS syntax in template expressions
     const expressionPlugins: CompilerOptions['expressionPlugins'] =
       templateCompilerOptions?.compilerOptions?.expressionPlugins ?? [];
     const lang = descriptor.scriptSetup?.lang || descriptor.script?.lang;
-    if (
-      lang &&
-      /tsx?$/.test(lang) &&
-      !expressionPlugins.includes('typescript')
-    ) {
+    if (lang && /tsx?$/.test(lang) && !expressionPlugins.includes('typescript')) {
       expressionPlugins.push('typescript');
     }
 
@@ -187,9 +171,7 @@ function genStyleCode(
     stylesCodeCache[hashName] = style.content;
   }
 
-  stylesCodeArr.push(
-    'import ' + JSON.stringify(importPath + `&hash=${hashName}`)
-  );
+  stylesCodeArr.push('import ' + JSON.stringify(importPath + `&hash=${hashName}`));
 }
 
 export function genStylesCode(
@@ -248,8 +230,7 @@ export function genStylesCode(
 export function genQueryStr(queryObj: QueryObj) {
   const queryStrArr: string[] = [];
   for (const key in queryObj) {
-    if (queryObj[key] === 0 || queryObj[key])
-      queryStrArr.push(`${key}=${queryObj[key]}`);
+    if (queryObj[key] === 0 || queryObj[key]) queryStrArr.push(`${key}=${queryObj[key]}`);
   }
   return queryStrArr.join('&');
 }
@@ -341,30 +322,17 @@ export function genMainCode(
     deleteStyles,
     addStyles
   );
-  const otherCode = genOtherCode(
-    hasScoped,
-    hash,
-    isHmr,
-    rerenderOnly,
-    filePath
-  );
+  const otherCode = genOtherCode(hasScoped, hash, isHmr, rerenderOnly, filePath);
 
   output.push(scriptCode, templateCode, stylesCode, otherCode);
   return {
     source: output.join('\r\n'),
     moduleType,
-    map:
-      typeof resolvedMap === 'string'
-        ? resolvedMap
-        : JSON.stringify(resolvedMap)
+    map: typeof resolvedMap === 'string' ? resolvedMap : JSON.stringify(resolvedMap)
   };
 }
 
-function genSourceMap(
-  scriptMap: SourceMap,
-  templateMap: SourceMap,
-  scriptCode: string
-) {
+function genSourceMap(scriptMap: SourceMap, templateMap: SourceMap, scriptCode: string) {
   //gen sourceMap
   let resolvedMap: EncodedSourceMap | undefined = void 0;
   if (scriptMap && templateMap) {

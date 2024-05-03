@@ -3,16 +3,9 @@ import { Compiler } from '@farmfe/core';
 import { getFarmEnvInfo } from './utils/envinfo';
 
 export function createDateSourceMiddleware(compiler: Compiler) {
-  return async (
-    req: http.IncomingMessage,
-    res: http.ServerResponse,
-    next: () => Promise<any>
-  ) => {
+  return async (req: http.IncomingMessage, res: http.ServerResponse, next: () => Promise<any>) => {
     const url = req.url as string;
-    const { pathname, searchParams } = new URL(
-      url,
-      `http://${req.headers.host}`
-    );
+    const { pathname, searchParams } = new URL(url, `http://${req.headers.host}`);
 
     if (pathname.startsWith('/__record')) {
       const id = searchParams.get('id') as string;

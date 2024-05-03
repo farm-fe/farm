@@ -1,17 +1,15 @@
-import { JsPlugin, UserConfig } from '@farmfe/core';
-import { resolve, dirname } from 'node:path';
+import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { RecordViewerOptions } from './types';
-import { createRecordViewerServer } from './node/server';
+import { JsPlugin, UserConfig } from '@farmfe/core';
 import { createDateSourceMiddleware } from './node/dataSource';
+import { createRecordViewerServer } from './node/server';
+import { RecordViewerOptions } from './types';
 
 const PLUGIN_DIR = dirname(fileURLToPath(import.meta.url));
 
 export const PLUGIN_DIR_CLIENT = resolve(PLUGIN_DIR, '../client');
 
-export default function farmRecorderPlugin(
-  options: RecordViewerOptions = {}
-): JsPlugin {
+export default function farmRecorderPlugin(options: RecordViewerOptions = {}): JsPlugin {
   let farmConfig: UserConfig['compilation'];
   const recordViewerOptions: RecordViewerOptions = options;
 

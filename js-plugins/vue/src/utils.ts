@@ -1,12 +1,12 @@
-import path from 'path';
 import crypto from 'crypto';
 import { createRequire } from 'module';
+import path from 'path';
 import {
+  FarmVuePluginOptions,
   PreProcessors,
   PreProcessorsType,
-  outputData,
-  FarmVuePluginOptions,
-  ResolvedOptions
+  ResolvedOptions,
+  outputData
 } from './farm-vue-types.js';
 
 export function warn({ id, message }: outputData) {
@@ -79,14 +79,10 @@ export function getResolvedOptions(defaultVueOptions: FarmVuePluginOptions) {
     const val = defaultVueOptions[key as keyof FarmVuePluginOptions];
     switch (key as keyof FarmVuePluginOptions) {
       case 'include':
-        resolvedOptions.include = (
-          isArray(val) ? val : [val]
-        ) as ResolvedOptions['include'];
+        resolvedOptions.include = (isArray(val) ? val : [val]) as ResolvedOptions['include'];
         break;
       case 'exclude':
-        resolvedOptions.exclude = (
-          isArray(val) ? val : [val]
-        ) as ResolvedOptions['exclude'];
+        resolvedOptions.exclude = (isArray(val) ? val : [val]) as ResolvedOptions['exclude'];
         break;
       case 'isProduction':
         if (val === true) resolvedOptions.isProduction = true;
@@ -98,9 +94,7 @@ export function getResolvedOptions(defaultVueOptions: FarmVuePluginOptions) {
         resolvedOptions.script = (val ? val : {}) as ResolvedOptions['script'];
         break;
       case 'template':
-        resolvedOptions.template = (
-          val ? val : {}
-        ) as ResolvedOptions['template'];
+        resolvedOptions.template = (val ? val : {}) as ResolvedOptions['template'];
         break;
       case 'style':
         resolvedOptions.style = (val ? val : {}) as ResolvedOptions['style'];
@@ -121,8 +115,7 @@ export function getResolvedOptions(defaultVueOptions: FarmVuePluginOptions) {
     }
     resolvedOptions.hmr = false;
   }
-  resolvedOptions.sourceMap =
-    resolvedOptions.isProduction === true ? false : true;
+  resolvedOptions.sourceMap = resolvedOptions.isProduction === true ? false : true;
   return resolvedOptions;
 }
 
@@ -156,9 +149,7 @@ export async function loadPreProcessor<T extends PreProcessorsType>(
     return preProcessor;
   } catch (error: any) {
     if (error.code === 'MODULE_NOT_FOUND') {
-      throw new Error(
-        `Preprocessor dependency "${lang}" not found. Did you install it?`
-      );
+      throw new Error(`Preprocessor dependency "${lang}" not found. Did you install it?`);
     } else {
       const message = new Error(
         `Preprocessor dependency "${lang}" failed to load:\n${error.message}`

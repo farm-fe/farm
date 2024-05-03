@@ -1,7 +1,7 @@
 import fs from 'fs';
 import fsp from 'node:fs/promises';
-import { normalizePath } from './share.js';
 import path from 'path';
+import { normalizePath } from './share.js';
 
 interface FileNode {
   isLeaf: boolean;
@@ -46,10 +46,7 @@ export function buildFileTreeHtml(node: FileNode[]): string {
     const path = name.replace(/ /g, '%20');
     html += `<div>${indent}<a href="${path}">${name}</a></div>`;
     if (!isLeaf) {
-      html += buildFileTreeHtml(children).replace(
-        /^/gm,
-        '&nbsp;&nbsp;&nbsp;&nbsp;'
-      );
+      html += buildFileTreeHtml(children).replace(/^/gm, '&nbsp;&nbsp;&nbsp;&nbsp;');
     }
   }
 
@@ -74,8 +71,7 @@ export function generateFileTreeHtml(node: FileNode[]): string {
       `;
 }
 
-export const ERR_SYMLINK_IN_RECURSIVE_READDIR =
-  'ERR_SYMLINK_IN_RECURSIVE_READDIR';
+export const ERR_SYMLINK_IN_RECURSIVE_READDIR = 'ERR_SYMLINK_IN_RECURSIVE_READDIR';
 export async function recursiveReaddir(dir: string): Promise<string[]> {
   if (!fs.existsSync(dir)) {
     return [];
@@ -91,9 +87,7 @@ export async function recursiveReaddir(dir: string): Promise<string[]> {
     throw e;
   }
   if (directs.some((dirent) => dirent.isSymbolicLink())) {
-    const err: any = new Error(
-      'Symbolic links are not supported in recursiveReaddir'
-    );
+    const err: any = new Error('Symbolic links are not supported in recursiveReaddir');
     err.code = ERR_SYMLINK_IN_RECURSIVE_READDIR;
     throw err;
   }

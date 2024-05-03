@@ -1,18 +1,8 @@
-import {
-  Compiler,
-  JsPlugin,
-  UserConfig,
-  getAdditionContext
-} from '@farmfe/core';
-import {
-  getLessImplementation,
-  pluginName,
-  throwError,
-  tryRead
-} from './utils.js';
-import path from 'path';
 import { existsSync } from 'fs';
+import path from 'path';
+import { Compiler, JsPlugin, UserConfig, getAdditionContext } from '@farmfe/core';
 import { createLessResolvePlugin } from './plugin-resolve.js';
+import { getLessImplementation, pluginName, throwError, tryRead } from './utils.js';
 
 export type LessPluginOptions = {
   lessOptions?: Less.Options;
@@ -21,19 +11,13 @@ export type LessPluginOptions = {
     resolvedPaths?: string[];
     moduleTypes?: string[];
   };
-  additionalData?:
-    | string
-    | ((content?: string, resolvePath?: string) => string | Promise<string>);
+  additionalData?: string | ((content?: string, resolvePath?: string) => string | Promise<string>);
 };
 
-export default function farmLessPlugin(
-  options: LessPluginOptions = {}
-): JsPlugin {
+export default function farmLessPlugin(options: LessPluginOptions = {}): JsPlugin {
   let farmConfig: UserConfig['compilation'];
   let compiler: Compiler;
-  const implementation: LessStatic = getLessImplementation(
-    options?.implementation
-  );
+  const implementation: LessStatic = getLessImplementation(options?.implementation);
 
   // eslint-disable-next-line @typescript-eslint/ban-ts-comment
   // @ts-ignore TODO fix it
@@ -56,8 +40,7 @@ export default function farmLessPlugin(
     configResolved: (config) => {
       farmConfig = config.compilation;
       const preprocessorOptions =
-        config.compilation?.css?._viteCssOptions?.preprocessorOptions?.less ??
-        {};
+        config.compilation?.css?._viteCssOptions?.preprocessorOptions?.less ?? {};
       options.lessOptions = {
         ...options.lessOptions,
         ...preprocessorOptions
@@ -120,26 +103,19 @@ export default function farmLessPlugin(
           }
 
           const sourceMapEnabled = ctx.sourceMapEnabled(param.moduleId);
-          const pluginResolve = createLessResolvePlugin(
-            implementation,
-            ctx,
-            param.resolvedPath
-          );
+          const pluginResolve = createLessResolvePlugin(implementation, ctx, param.resolvedPath);
 
           const { css, map, imports } = await implementation.render(relData, {
             ...(options?.lessOptions ?? {}),
             filename: param.resolvedPath,
             plugins: [pluginResolve, ...(options.lessOptions?.plugins ?? [])],
-            sourceMap:
-              (options.lessOptions?.sourceMap ?? sourceMapEnabled) && {},
+            sourceMap: (options.lessOptions?.sourceMap ?? sourceMapEnabled) && {},
             paths: configPaths ? [fileRoot, ...configPaths] : [fileRoot]
           } as Less.Options);
 
           if (compiler && imports && !isProd) {
             for (const dep of imports) {
-              compiler.addExtraWatchFile(param.resolvedPath, [
-                path.resolve(fileRoot, dep)
-              ]);
+              compiler.addExtraWatchFile(param.resolvedPath, [path.resolve(fileRoot, dep)]);
             }
           }
           return {

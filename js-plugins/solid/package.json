@@ -43,7 +43,5 @@
   "peerDependencies": {
     "@farmfe/core": "workspace:^1.1.2"
   },
-  "files": [
-    "build"
-  ]
+  "files": ["build"]
 }

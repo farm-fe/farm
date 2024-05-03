@@ -1,15 +1,15 @@
-import { createRequire } from 'node:module';
 import { readFileSync } from 'node:fs';
+import { createRequire } from 'node:module';
 import { extname } from 'node:path';
 import { transformSync } from '@babel/core';
-import { mergeAndConcat } from 'merge-anything';
-import { createFilter } from '@rollup/pluginutils';
 import ts from '@babel/preset-typescript';
+import { createFilter } from '@rollup/pluginutils';
 import solid from 'babel-preset-solid';
+import { mergeAndConcat } from 'merge-anything';
 import solidRefresh from 'solid-refresh/babel';
 
-import type { JsPlugin } from '@farmfe/core';
 import type { TransformOptions } from '@babel/core';
+import type { JsPlugin } from '@farmfe/core';
 import type { Options } from './types.js';
 
 // TODO: HMR
@@ -27,9 +27,7 @@ function tryToReadFileSync(path: string) {
   }
 }
 
-export default function farmPluginSolid(
-  options: Partial<Options> = {}
-): JsPlugin {
+export default function farmPluginSolid(options: Partial<Options> = {}): JsPlugin {
   const filter = createFilter(options.include, options.exclude);
 
   let needHmr = false;
@@ -47,8 +45,7 @@ export default function farmPluginSolid(
     config(config) {
       return {
         compilation: {
-          lazyCompilation:
-            options.ssr === true ? false : config.compilation?.lazyCompilation
+          lazyCompilation: options.ssr === true ? false : config.compilation?.lazyCompilation
         },
         server: {
           hmr: options.ssr === true ? false : config.server?.hmr
@@ -105,10 +102,7 @@ export default function farmPluginSolid(
         const isSsr = options.ssr;
         const currentFileExtension = extname(param.resolvedPath);
 
-        if (
-          !filter(param.resolvedPath) ||
-          !allExtensions.includes(currentFileExtension)
-        ) {
+        if (!filter(param.resolvedPath) || !allExtensions.includes(currentFileExtension)) {
           return;
         }
 
@@ -136,27 +130,23 @@ export default function farmPluginSolid(
           sourceFileName: param.resolvedPath,
           presets: [[solid, { ...solidOptions, ...(options.solid ?? {}) }]],
           plugins:
-            needHmr && !isSsr && !inNodeModules
-              ? [[solidRefresh, { bundler: 'standard' }]]
-              : [],
+            needHmr && !isSsr && !inNodeModules ? [[solidRefresh, { bundler: 'standard' }]] : [],
           sourceMaps: true,
           // Vite handles sourcemap flattening
           inputSourceMap: false as any
         };
 
         // We need to know if the current file extension has a typescript options tied to it
-        const shouldBeProcessedWithTypescript = extensionsToWatch.some(
-          (extension) => {
-            if (typeof extension === 'string') {
-              return extension.includes('tsx');
-            }
-
-            const [extensionName, extensionOptions] = extension;
-            if (extensionName !== currentFileExtension) return false;
-
-            return extensionOptions.typescript;
+        const shouldBeProcessedWithTypescript = extensionsToWatch.some((extension) => {
+          if (typeof extension === 'string') {
+            return extension.includes('tsx');
           }
-        );
+
+          const [extensionName, extensionOptions] = extension;
+          if (extensionName !== currentFileExtension) return false;
+
+          return extensionOptions.typescript;
+        });
 
         if (shouldBeProcessedWithTypescript) {
           opts.presets.push([ts, options.typescript ?? {}]);
@@ -167,29 +157,16 @@ export default function farmPluginSolid(
 
         if (options.babel) {
           if (typeof options.babel === 'function') {
-            const babelOptions = options.babel(
-              param.content,
-              param.resolvedPath,
-              isSsr
-            );
-            babelUserOptions =
-              babelOptions instanceof Promise
-                ? await babelOptions
-                : babelOptions;
+            const babelOptions = options.babel(param.content, param.resolvedPath, isSsr);
+            babelUserOptions = babelOptions instanceof Promise ? await babelOptions : babelOptions;
           } else {
             babelUserOptions = options.babel;
           }
         }
 
-        const babelOptions = mergeAndConcat(
-          babelUserOptions,
-          opts
-        ) as TransformOptions;
+        const babelOptions = mergeAndConcat(babelUserOptions, opts) as TransformOptions;
 
-        const { code = '', map = {} } = transformSync(
-          param.content,
-          babelOptions
-        );
+        const { code = '', map = {} } = transformSync(param.content, babelOptions);
 
         return {
           content: code,

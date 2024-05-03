@@ -1,8 +1,8 @@
-import { Middleware, Context, Next } from 'koa';
-import { Server } from '../index.js';
-import serve from 'koa-static';
-import path from 'path';
 import fs from 'fs';
+import path from 'path';
+import { Context, Middleware, Next } from 'koa';
+import serve from 'koa-static';
+import { Server } from '../index.js';
 
 export function staticMiddleware(devServerContext: Server): Middleware {
   const { config } = devServerContext;
@@ -20,9 +20,7 @@ export function staticMiddleware(devServerContext: Server): Middleware {
     const requestPath = ctx.request?.path;
 
     if (requestPath && requestPath.startsWith(config.output.publicPath)) {
-      const modifiedPath = requestPath.substring(
-        config.output.publicPath.length
-      );
+      const modifiedPath = requestPath.substring(config.output.publicPath.length);
 
       ctx.request.path = `/${modifiedPath}`;
 

@@ -7,13 +7,7 @@
     "email": "q502489978@live.com"
   },
   "main": "src/index.ts",
-  "keywords": [
-    "farm",
-    "farm runtime plugin",
-    "rust bundler",
-    "build tool",
-    "web bundler"
-  ],
+  "keywords": ["farm", "farm runtime plugin", "rust bundler", "build tool", "web bundler"],
   "repository": {
     "type": "git",
     "url": "https://github.com/farm-fe/farm"

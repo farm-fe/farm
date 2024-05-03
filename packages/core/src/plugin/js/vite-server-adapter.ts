@@ -28,11 +28,7 @@ export class ViteDevServerAdapter {
     this.middlewares = new Proxy(
       {
         use: (...args: any[]) => {
-          if (
-            args.length === 2 &&
-            typeof args[0] === 'string' &&
-            typeof args[1] === 'function'
-          ) {
+          if (args.length === 2 && typeof args[0] === 'string' && typeof args[1] === 'function') {
             this.middlewareCallbacks.push((req: any, res: any, next: any) => {
               const [url, cb] = args;
               if (req.url.startsWith(url)) {
@@ -50,12 +46,7 @@ export class ViteDevServerAdapter {
             return target[key as keyof typeof target];
           }
 
-          throwIncompatibleError(
-            pluginName,
-            'viteDevServer.middlewares',
-            ['use'],
-            key
-          );
+          throwIncompatibleError(pluginName, 'viteDevServer.middlewares', ['use'], key);
         }
       }
     );
@@ -107,11 +98,7 @@ export class ViteModuleGraphAdapter {
   }
 }
 
-function proxyViteModuleNode(
-  node: ViteModule,
-  pluginName: string,
-  context: CompilationContext
-) {
+function proxyViteModuleNode(node: ViteModule, pluginName: string, context: CompilationContext) {
   const proxy = new Proxy(node, {
     get(target, key) {
       if (key === 'importers') {
@@ -131,32 +118,25 @@ function proxyViteModuleNode(
   return proxy;
 }
 
-export function createViteDevServerAdapter(
-  pluginName: string,
-  config: any,
-  server: Server
-) {
-  const proxy = new Proxy(
-    new ViteDevServerAdapter(pluginName, config, server),
-    {
-      get(target, key) {
-        const allowedKeys = [
-          'moduleGraph',
-          'config',
-          'watcher',
-          'middlewares',
-          'middlewareCallbacks',
-          'ws',
-          'httpServer'
-        ];
-        if (allowedKeys.includes(String(key))) {
-          return target[key as keyof typeof target];
-        }
-
-        throwIncompatibleError(pluginName, 'viteDevServer', allowedKeys, key);
+export function createViteDevServerAdapter(pluginName: string, config: any, server: Server) {
+  const proxy = new Proxy(new ViteDevServerAdapter(pluginName, config, server), {
+    get(target, key) {
+      const allowedKeys = [
+        'moduleGraph',
+        'config',
+        'watcher',
+        'middlewares',
+        'middlewareCallbacks',
+        'ws',
+        'httpServer'
+      ];
+      if (allowedKeys.includes(String(key))) {
+        return target[key as keyof typeof target];
       }
+
+      throwIncompatibleError(pluginName, 'viteDevServer', allowedKeys, key);
     }
-  );
+  });
 
   return proxy;
 }

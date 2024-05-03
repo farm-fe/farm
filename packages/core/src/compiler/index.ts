@@ -1,14 +1,13 @@
 import { existsSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
-import { Logger } from '../utils/logger.js';
 import { Compiler as BindingCompiler } from '../../binding/index.js';
+import { Logger } from '../utils/logger.js';
 
-import type { ILogger } from '../utils/logger.js';
 import type { Config, JsUpdateResult } from '../../binding/index.js';
 import { JsPlugin, Resource } from '../index.js';
+import type { ILogger } from '../utils/logger.js';
 
-export const VIRTUAL_FARM_DYNAMIC_IMPORT_SUFFIX =
-  '.farm_dynamic_import_virtual_module';
+export const VIRTUAL_FARM_DYNAMIC_IMPORT_SUFFIX = '.farm_dynamic_import_virtual_module';
 
 /**
  * Cause the update process is async, we need to keep the update queue to make sure the update process is executed in order.
@@ -101,12 +100,7 @@ export class Compiler {
           const next = this._updateQueue.shift();
 
           if (next) {
-            await this.update(
-              next.paths,
-              true,
-              true,
-              generateUpdateResource
-            ).then(next.resolve);
+            await this.update(next.paths, true, true, generateUpdateResource).then(next.resolve);
           } else {
             this.compiling = false;
             for (const cb of this._onUpdateFinishQueue) {
@@ -178,10 +172,7 @@ export class Compiler {
   callWriteResourcesHook() {
     for (const jsPlugin of this.config.jsPlugins ?? []) {
       (jsPlugin as JsPlugin).writeResources?.executor?.({
-        resourcesMap: this._bindingCompiler.resourcesMap() as Record<
-          string,
-          Resource
-        >,
+        resourcesMap: this._bindingCompiler.resourcesMap() as Record<string, Resource>,
         config: this.config.config
       });
     }

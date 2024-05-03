@@ -30,13 +30,9 @@ import { normalizeBasePath } from './share.js';
 
 const nonEscapedDoubleQuoteRe = /(?<!\\)(")/g;
 
-type CssUrlReplacer = (
-  url: string,
-  importer?: string
-) => string | Promise<string>;
+type CssUrlReplacer = (url: string, importer?: string) => string | Promise<string>;
 // https://drafts.csswg.org/css-syntax-3/#identifier-code-point
-export const cssUrlRE =
-  /(?<=^|[^\w\-\u0080-\uffff])url\((\s*('[^']+'|"[^"]+")\s*|[^'")]+)\)/;
+export const cssUrlRE = /(?<=^|[^\w\-\u0080-\uffff])url\((\s*('[^']+'|"[^"]+")\s*|[^'")]+)\)/;
 export const cssDataUriRE =
   /(?<=^|[^\w\-\u0080-\uffff])data-uri\((\s*('[^']+'|"[^"]+")\s*|[^'")]+)\)/;
 export const importCssRE = /@import ('[^']+\.css'|"[^"]+\.css"|[^'")]+\.css)/;
@@ -107,30 +103,21 @@ export async function rebaseUrls(
   };
 }
 
-function rewriteImportCss(
-  css: string,
-  replacer: CssUrlReplacer
-): Promise<string> {
+function rewriteImportCss(css: string, replacer: CssUrlReplacer): Promise<string> {
   return asyncReplace(css, importCssRE, async (match) => {
     const [matched, rawUrl] = match;
     return await doImportCSSReplace(rawUrl, matched, replacer);
   });
 }
 
-function rewriteCssUrls(
-  css: string,
-  replacer: CssUrlReplacer
-): Promise<string> {
+function rewriteCssUrls(css: string, replacer: CssUrlReplacer): Promise<string> {
   return asyncReplace(css, cssUrlRE, async (match) => {
     const [matched, rawUrl] = match;
     return await doUrlReplace(rawUrl.trim(), matched, replacer);
   });
 }
 
-function rewriteCssDataUris(
-  css: string,
-  replacer: CssUrlReplacer
-): Promise<string> {
+function rewriteCssDataUris(css: string, replacer: CssUrlReplacer): Promise<string> {
   return asyncReplace(css, cssDataUriRE, async (match) => {
     const [matched, rawUrl] = match;
     return await doUrlReplace(rawUrl.trim(), matched, replacer, 'data-uri');
@@ -139,10 +126,7 @@ function rewriteCssDataUris(
 
 function skipUrlReplacer(rawUrl: string) {
   return (
-    isExternalUrl(rawUrl) ||
-    isDataUrl(rawUrl) ||
-    rawUrl[0] === '#' ||
-    functionCallRE.test(rawUrl)
+    isExternalUrl(rawUrl) || isDataUrl(rawUrl) || rawUrl[0] === '#' || functionCallRE.test(rawUrl)
   );
 }
 async function doUrlReplace(
@@ -179,11 +163,7 @@ async function doUrlReplace(
   return `${funcName}(${wrap}${newUrl}${wrap})`;
 }
 
-async function doImportCSSReplace(
-  rawUrl: string,
-  matched: string,
-  replacer: CssUrlReplacer
-) {
+async function doImportCSSReplace(rawUrl: string, matched: string, replacer: CssUrlReplacer) {
   let wrap = '';
   const first = rawUrl[0];
   if (first === `"` || first === `'`) {

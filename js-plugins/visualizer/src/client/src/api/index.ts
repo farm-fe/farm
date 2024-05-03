@@ -1,14 +1,14 @@
+import { PluginStats, Resource } from '@farmfe/core';
 import {
   AnalyzeDepsRecord,
   Module,
   ModuleRecord,
+  ResolveRecord,
   ResourcePotRecord,
-  TransformRecord,
-  ResolveRecord
+  TransformRecord
 } from '@farmfe/core/binding';
-import { http } from '../http';
 import { FarmEnvInfo } from '../../../node/utils/envinfo';
-import { Resource, PluginStats } from '@farmfe/core';
+import { http } from '../http';
 
 export function getModules(): Promise<Module[]> {
   return http.get<Module[]>('/__record/modules');
@@ -20,9 +20,7 @@ export function getResolveRecordsById(id?: string): Promise<ResolveRecord[]> {
   });
 }
 
-export function getTransformRecordsById(
-  id?: string
-): Promise<TransformRecord[]> {
+export function getTransformRecordsById(id?: string): Promise<TransformRecord[]> {
   return http.get<TransformRecord[]>('/__record/transform', {
     id
   });
@@ -32,16 +30,12 @@ export function getProcessRecordsById(id?: string): Promise<ModuleRecord[]> {
     id
   });
 }
-export function getAnalyzeDepsRecordsById(
-  id?: string
-): Promise<AnalyzeDepsRecord[]> {
+export function getAnalyzeDepsRecordsById(id?: string): Promise<AnalyzeDepsRecord[]> {
   return http.get<AnalyzeDepsRecord[]>('/__record/analyze_deps', {
     id
   });
 }
-export function getResourcePotRecordsById(
-  id?: string
-): Promise<ResourcePotRecord[]> {
+export function getResourcePotRecordsById(id?: string): Promise<ResourcePotRecord[]> {
   return http.get<ResourcePotRecord[]>('/__record/resource_pot', {
     id
   });

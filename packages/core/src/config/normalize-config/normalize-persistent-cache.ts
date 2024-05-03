@@ -1,11 +1,11 @@
+import { existsSync, readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import path from 'node:path';
-import { existsSync, readFileSync } from 'node:fs';
 
 import { Config } from '../../../binding/index.js';
-import { ResolvedUserConfig } from '../index.js';
 import { RustPlugin } from '../../plugin/index.js';
 import { traceDependencies } from '../../utils/trace-dependencies.js';
+import { ResolvedUserConfig } from '../index.js';
 
 const defaultGlobalBuiltinCacheKeyStrategy = {
   define: true,
@@ -19,10 +19,7 @@ export async function normalizePersistentCache(
   config: Config['config'],
   resolvedUserConfig: ResolvedUserConfig
 ) {
-  if (
-    config?.persistentCache === false ||
-    resolvedUserConfig.configFilePath === undefined
-  ) {
+  if (config?.persistentCache === false || resolvedUserConfig.configFilePath === undefined) {
     return;
   }
 
@@ -56,36 +53,27 @@ export async function normalizePersistentCache(
     if (config.define && typeof config.define === 'object') {
       config.persistentCache.envs = {
         ...Object.entries(config.define)
-          .map(([k, v]) =>
-            typeof v !== 'string' ? [k, JSON.stringify(v)] : [k, v]
-          )
-          .reduce((acc, [k, v]) => {
-            acc[k] = v;
-            return acc;
-          }, {} as Record<string, string>),
+          .map(([k, v]) => (typeof v !== 'string' ? [k, JSON.stringify(v)] : [k, v]))
+          .reduce(
+            (acc, [k, v]) => {
+              acc[k] = v;
+              return acc;
+            },
+            {} as Record<string, string>
+          ),
         ...config.persistentCache.envs
       };
     }
   }
 
   // add type of package.json to envs
-  const packageJsonPath = path.join(
-    config.root ?? process.cwd(),
-    'package.json'
-  );
+  const packageJsonPath = path.join(config.root ?? process.cwd(), 'package.json');
 
   if (globalBuiltinCacheKeyStrategy.packageJson) {
     if (existsSync(packageJsonPath)) {
       const s = readFileSync(packageJsonPath).toString();
       const packageJson = JSON.parse(s);
-      const affectedKeys = [
-        'type',
-        'name',
-        'exports',
-        'browser',
-        'main',
-        'module'
-      ];
+      const affectedKeys = ['type', 'name', 'exports', 'browser', 'main', 'module'];
 
       for (const key of affectedKeys) {
         const value = packageJson[key] ?? 'unknown';
@@ -101,11 +89,7 @@ export async function normalizePersistentCache(
 
   if (globalBuiltinCacheKeyStrategy.lockfile) {
     // TODO find latest lock file starting from root
-    for (const lockfile of [
-      'package-lock.json',
-      'yarn.lock',
-      'pnpm-lock.yaml'
-    ]) {
+    for (const lockfile of ['package-lock.json', 'yarn.lock', 'pnpm-lock.yaml']) {
       if (!config.persistentCache.buildDependencies.includes(lockfile)) {
         config.persistentCache.buildDependencies.push(lockfile);
       }
@@ -121,10 +105,7 @@ export async function normalizePersistentCache(
   }
 
   // trace all build dependencies of the config file
-  if (
-    globalBuiltinCacheKeyStrategy.buildDependencies &&
-    resolvedUserConfig.configFilePath
-  ) {
+  if (globalBuiltinCacheKeyStrategy.buildDependencies && resolvedUserConfig.configFilePath) {
     const files = resolvedUserConfig?.configFileDependencies?.length
       ? resolvedUserConfig.configFileDependencies
       : await traceDependencies(resolvedUserConfig.configFilePath);

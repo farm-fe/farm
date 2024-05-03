@@ -97,8 +97,7 @@ export class DefaultLogger implements Logger {
 
   error(message: string | Error, options?: ErrorOptions): void {
     this.brandPrefix(chalk.red);
-    const errorMessage =
-      message instanceof Error ? message.stack : `${message}`;
+    const errorMessage = message instanceof Error ? message.stack : `${message}`;
     this.logMessage(LogLevel.Error, errorMessage, chalk.red);
 
     if (options?.exit) {

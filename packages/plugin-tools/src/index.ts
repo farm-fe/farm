@@ -1,5 +1,5 @@
-import { cac } from 'cac';
 import { createSpawnCmd } from '@farmfe/utils';
+import { cac } from 'cac';
 
 import { resolveNapiRsCli } from './resolve-napi-rs-cli.js';
 
@@ -51,10 +51,7 @@ cli
   });
 
 cli
-  .command(
-    'prepublish',
-    'Publish platform packages before publish your Rust Plugin'
-  )
+  .command('prepublish', 'Publish platform packages before publish your Rust Plugin')
   .allowUnknownOptions()
   .action(async () => {
     await prepublish();

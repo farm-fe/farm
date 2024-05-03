@@ -1,12 +1,9 @@
 import type { UserConfig as ViteUserConfig } from 'vite';
 import type { UserConfig } from '../../config/types.js';
-import {
-  deleteUndefinedPropertyDeeply,
-  throwIncompatibleError
-} from './utils.js';
-import merge from '../../utils/merge.js';
 import { Logger } from '../../index.js';
+import merge from '../../utils/merge.js';
 import { VITE_DEFAULT_ASSETS } from './constants.js';
+import { deleteUndefinedPropertyDeeply, throwIncompatibleError } from './utils.js';
 
 export function farmUserConfigToViteConfig(config: UserConfig): ViteUserConfig {
   const vitePlugins = config.vitePlugins.filter(Boolean).map((plugin) => {
@@ -50,10 +47,7 @@ export function farmUserConfigToViteConfig(config: UserConfig): ViteUserConfig {
       https: config.server?.https,
       proxy: config.server?.proxy as any,
       open: config.server?.open,
-      watch:
-        typeof config.server?.hmr === 'object'
-          ? config.server.hmr?.watchOptions ?? {}
-          : {}
+      watch: typeof config.server?.hmr === 'object' ? config.server.hmr?.watchOptions ?? {} : {}
       // other options are not supported in farm
     },
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
@@ -64,13 +58,9 @@ export function farmUserConfigToViteConfig(config: UserConfig): ViteUserConfig {
       outDir: config.compilation?.output?.path,
       sourcemap,
       minify:
-        config.compilation?.minify !== undefined
-          ? Boolean(config.compilation?.minify)
-          : undefined,
+        config.compilation?.minify !== undefined ? Boolean(config.compilation?.minify) : undefined,
       cssMinify:
-        config.compilation?.minify !== undefined
-          ? Boolean(config.compilation?.minify)
-          : undefined,
+        config.compilation?.minify !== undefined ? Boolean(config.compilation?.minify) : undefined,
       ssr: config.compilation?.output?.targetEnv === 'node',
       rollupOptions: {
         output: {
@@ -84,10 +74,7 @@ export function farmUserConfigToViteConfig(config: UserConfig): ViteUserConfig {
     // TODO make it configurable
     cacheDir: 'node_modules/.farm/cache',
     envDir: config.envDir,
-    assetsInclude: [
-      ...VITE_DEFAULT_ASSETS,
-      ...(config.compilation?.assets?.include ?? [])
-    ]
+    assetsInclude: [...VITE_DEFAULT_ASSETS, ...(config.compilation?.assets?.include ?? [])]
   };
 
   return viteConfig;
@@ -121,20 +108,10 @@ function getTargetField(
     }
   }
 
-  throw throwIncompatibleError(
-    contextInfo.pluginName,
-    contextInfo.keyName,
-    allowedKeys,
-    key
-  );
+  throw throwIncompatibleError(contextInfo.pluginName, contextInfo.keyName, allowedKeys, key);
 }
 
-function createProxyObj(
-  pluginName: string,
-  keyName: string,
-  allowedKeys: string[],
-  obj: any = {}
-) {
+function createProxyObj(pluginName: string, keyName: string, allowedKeys: string[], obj: any = {}) {
   return new Proxy(obj || {}, {
     get(target, key) {
       return getTargetField(target, key, allowedKeys, {
@@ -156,12 +133,7 @@ function mapResolve(pluginName: string, obj: any = {}) {
     'dedupe'
   ];
 
-  return createProxyObj(
-    pluginName,
-    'viteConfig.resolve',
-    allowedResolveKeys,
-    obj
-  );
+  return createProxyObj(pluginName, 'viteConfig.resolve', allowedResolveKeys, obj);
 }
 
 function mapServer(pluginName: string, obj: any = {}) {
@@ -177,12 +149,7 @@ function mapServer(pluginName: string, obj: any = {}) {
     'watch'
   ];
 
-  return createProxyObj(
-    pluginName,
-    'viteConfig.server',
-    allowedServerKeys,
-    obj
-  );
+  return createProxyObj(pluginName, 'viteConfig.server', allowedServerKeys, obj);
 }
 
 function mapCss(pluginName: string, obj: any = {}) {
@@ -257,10 +224,7 @@ export function proxyViteConfig(
           keyName: 'viteConfig'
         },
         (target, key) => {
-          const keyMapper: Record<
-            string,
-            (pluginName: string, obj: any) => any
-          > = {
+          const keyMapper: Record<string, (pluginName: string, obj: any) => any> = {
             resolve: mapResolve,
             server: mapServer,
             css: mapCss,
@@ -340,10 +304,7 @@ export function viteConfigToFarmConfig(
 
     if (config.resolve.alias) {
       if (!Array.isArray(config.resolve.alias)) {
-        farmConfig.compilation.resolve.alias = config.resolve.alias as Record<
-          string,
-          any
-        >;
+        farmConfig.compilation.resolve.alias = config.resolve.alias as Record<string, any>;
       } else {
         if (!farmConfig.compilation.resolve.alias) {
           farmConfig.compilation.resolve.alias = {};
@@ -365,8 +326,7 @@ export function viteConfigToFarmConfig(
     farmConfig.compilation.resolve.extensions = config.resolve.extensions;
     farmConfig.compilation.resolve.mainFields = config.resolve.mainFields;
     farmConfig.compilation.resolve.conditions = config.resolve.conditions;
-    farmConfig.compilation.resolve.symlinks =
-      config.resolve.preserveSymlinks != true;
+    farmConfig.compilation.resolve.symlinks = config.resolve.preserveSymlinks != true;
   }
 
   if (config.server) {
@@ -375,14 +335,9 @@ export function viteConfigToFarmConfig(
     farmConfig.server.port = config.server.port;
 
     if (config.server.watch) {
-      if (
-        farmConfig.server?.hmr === true ||
-        farmConfig.server?.hmr === undefined
-      ) {
+      if (farmConfig.server?.hmr === true || farmConfig.server?.hmr === undefined) {
         farmConfig.server.hmr = {
-          ...(typeof origFarmConfig?.server?.hmr === 'object'
-            ? origFarmConfig.server.hmr
-            : {}),
+          ...(typeof origFarmConfig?.server?.hmr === 'object' ? origFarmConfig.server.hmr : {}),
           watchOptions: config.server.watch
         };
       }
@@ -394,9 +349,7 @@ export function viteConfigToFarmConfig(
 
     farmConfig.server.strictPort = config.server.strictPort;
     farmConfig.server.https =
-      typeof config.server.https === 'boolean'
-        ? undefined
-        : config.server.https;
+      typeof config.server.https === 'boolean' ? undefined : config.server.https;
     farmConfig.server.proxy = config.server.proxy as any;
     farmConfig.server.open = Boolean(config.server.open);
   }

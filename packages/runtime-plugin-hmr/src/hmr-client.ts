@@ -1,8 +1,8 @@
 import type { ModuleSystem } from '@farmfe/runtime';
-import { HMRPayload, HmrUpdateResult, RawHmrUpdateResult } from './types';
 import { HotModuleState } from './hot-module-state';
 import { logger } from './logger';
 import { ErrorOverlay, overlayId } from './overlay';
+import { HMRPayload, HmrUpdateResult, RawHmrUpdateResult } from './types';
 
 // Inject during compile time
 const hmrPort = Number(FARM_HMR_PORT);
@@ -20,10 +20,7 @@ export class HmrClient {
   registeredHotModulesMap = new Map<string, HotModuleState>();
   disposeMap = new Map<string, (data: any) => void | Promise<void>>();
   pruneMap = new Map<string, (data: any) => void | Promise<void>>();
-  customListenersMap = new Map<
-    string,
-    ((data: any) => void | Promise<void>)[]
-  >();
+  customListenersMap = new Map<string, ((data: any) => void | Promise<void>)[]>();
 
   constructor(private moduleSystem: ModuleSystem) {}
 
@@ -31,10 +28,7 @@ export class HmrClient {
     logger.debug('connecting to the server...');
 
     // setup websocket connection
-    const socket = new WebSocket(
-      `${socketProtocol}://${socketHostUrl}`,
-      'farm_hmr'
-    );
+    const socket = new WebSocket(`${socketProtocol}://${socketHostUrl}`, 'farm_hmr');
     this.socket = socket;
     // listen for the message from the server
     // when the user save the file, the server will recompile the file(and its dependencies as long as its dependencies are changed)
@@ -127,8 +121,7 @@ export class HmrClient {
           // require the boundary module
           const boundary = chain[chain.length - 1];
           const hotContext = this.registeredHotModulesMap.get(boundary);
-          const acceptedDep =
-            chain.length > 1 ? chain[chain.length - 2] : undefined;
+          const acceptedDep = chain.length > 1 ? chain[chain.length - 2] : undefined;
 
           if (!hotContext) {
             console.error('hot context is empty for ', boundary);
@@ -136,11 +129,11 @@ export class HmrClient {
           }
 
           // get all the accept callbacks of the boundary module that accepts the updated module
-          const selfAcceptedCallbacks = hotContext.acceptCallbacks.filter(
-            ({ deps }) => deps.includes(boundary)
+          const selfAcceptedCallbacks = hotContext.acceptCallbacks.filter(({ deps }) =>
+            deps.includes(boundary)
           );
-          const depsAcceptedCallbacks = hotContext.acceptCallbacks.filter(
-            ({ deps }) => deps.includes(acceptedDep)
+          const depsAcceptedCallbacks = hotContext.acceptCallbacks.filter(({ deps }) =>
+            deps.includes(acceptedDep)
           );
           // when there are both self accept callbacks and deps accept callbacks in a boundary module, only the deps accept callbacks will be called
           for (const [acceptedId, acceptedCallbacks] of Object.entries({
@@ -148,8 +141,7 @@ export class HmrClient {
             [boundary]: selfAcceptedCallbacks
           })) {
             if (acceptedCallbacks.length > 0) {
-              const acceptHotContext =
-                this.registeredHotModulesMap.get(acceptedId);
+              const acceptHotContext = this.registeredHotModulesMap.get(acceptedId);
 
               const disposer = this.disposeMap.get(acceptedId);
               if (disposer) await disposer(acceptHotContext.data);
@@ -159,11 +151,7 @@ export class HmrClient {
               const acceptedExports = moduleSystem.require(acceptedId);
 
               for (const { deps, fn } of acceptedCallbacks) {
-                fn(
-                  deps.map((dep) =>
-                    dep === acceptedId ? acceptedExports : undefined
-                  )
-                );
+                fn(deps.map((dep) => (dep === acceptedId ? acceptedExports : undefined)));
               }
               // break the loop, only the first accept callback will be called
               break;
@@ -240,9 +228,7 @@ export class HmrClient {
 
   handleFarmUpdate(result: RawHmrUpdateResult) {
     hasErrorOverlay() && clearOverlay();
-    const immutableModules = new Function(
-      `return ${result.immutableModules}`
-    )();
+    const immutableModules = new Function(`return ${result.immutableModules}`)();
     const mutableModules = new Function(`return ${result.mutableModules}`)();
     const modules = { ...immutableModules, ...mutableModules };
     this.applyHotUpdates(
@@ -284,11 +270,7 @@ export function waitForWindowShow() {
   });
 }
 
-async function waitForSuccessfulPing(
-  socketProtocol: string,
-  hostAndPath: string,
-  ms = 1000
-) {
+async function waitForSuccessfulPing(socketProtocol: string, hostAndPath: string, ms = 1000) {
   const pingHostProtocol = socketProtocol === 'wss' ? 'https' : 'http';
 
   const ping = async () => {

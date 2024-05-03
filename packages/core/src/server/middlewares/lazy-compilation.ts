@@ -5,17 +5,11 @@
 import { relative } from 'node:path';
 import { Context, Middleware, Next } from 'koa';
 
+import { VIRTUAL_FARM_DYNAMIC_IMPORT_SUFFIX, bold, clearScreen, cyan, green } from '../../index.js';
 import { Server } from '../index.js';
-import {
-  VIRTUAL_FARM_DYNAMIC_IMPORT_SUFFIX,
-  bold,
-  clearScreen,
-  cyan,
-  green
-} from '../../index.js';
 
-import type { Resource } from '@farmfe/runtime/src/resource-loader.js';
 import { existsSync } from 'node:fs';
+import type { Resource } from '@farmfe/runtime/src/resource-loader.js';
 import { logError } from '../error.js';
 
 export function lazyCompilation(devSeverContext: Server): Middleware {
@@ -37,10 +31,7 @@ export function lazyCompilation(devSeverContext: Server): Middleware {
           ) {
             return p;
           }
-          const resolvedPath = compiler.transformModulePath(
-            compiler.config.config.root,
-            p
-          );
+          const resolvedPath = compiler.transformModulePath(compiler.config.config.root, p);
           return relative(compiler.config.config.root, resolvedPath);
         })
         .join(', ');
@@ -65,18 +56,16 @@ export function lazyCompilation(devSeverContext: Server): Middleware {
       }
 
       devSeverContext.logger.info(
-        `${bold(green(`✓`))} Lazy compilation done(${bold(
-          cyan(pathsStr)
-        )}) in ${bold(green(`${Date.now() - start}ms`))}.`
+        `${bold(green(`✓`))} Lazy compilation done(${bold(cyan(pathsStr))}) in ${bold(
+          green(`${Date.now() - start}ms`)
+        )}.`
       );
 
       if (result) {
         let dynamicResourcesMap: Record<string, Resource[]> = null;
 
         if (result.dynamicResourcesMap) {
-          for (const [key, value] of Object.entries(
-            result.dynamicResourcesMap
-          )) {
+          for (const [key, value] of Object.entries(result.dynamicResourcesMap)) {
             if (!dynamicResourcesMap) {
               dynamicResourcesMap = {} as Record<string, Resource[]>;
             }
@@ -91,12 +80,8 @@ export function lazyCompilation(devSeverContext: Server): Middleware {
         const returnObj = `{
           "dynamicResourcesMap": ${JSON.stringify(dynamicResourcesMap)}
         }`;
-        const code = !ctx.query.node
-          ? `export default ${returnObj}`
-          : returnObj;
-        ctx.type = !ctx.query.node
-          ? 'application/javascript'
-          : 'application/json';
+        const code = !ctx.query.node ? `export default ${returnObj}` : returnObj;
+        ctx.type = !ctx.query.node ? 'application/javascript' : 'application/json';
         ctx.body = code;
       } else {
         throw new Error(`Lazy compilation result not found for paths ${paths}`);

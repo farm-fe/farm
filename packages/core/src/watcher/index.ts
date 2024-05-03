@@ -4,12 +4,12 @@ import { FSWatcher } from 'chokidar';
 
 import { Compiler } from '../compiler/index.js';
 import { Server } from '../server/index.js';
-import { compilerHandler, Logger } from '../utils/index.js';
+import { Logger, compilerHandler } from '../utils/index.js';
 
-import type { ResolvedUserConfig } from '../config/index.js';
-import { createWatcher } from './create-watcher.js';
 import { existsSync } from 'node:fs';
 import { JsUpdateResult } from '../../binding/binding.js';
+import type { ResolvedUserConfig } from '../config/index.js';
+import { createWatcher } from './create-watcher.js';
 
 interface ImplFileWatcher {
   watch(): Promise<void>;
@@ -44,14 +44,11 @@ export class FileWatcher implements ImplFileWatcher {
   }
 
   getExtraWatchedFiles() {
-    const compiler = this.getCompilerFromServerOrCompiler(
-      this.serverOrCompiler
-    );
+    const compiler = this.getCompilerFromServerOrCompiler(this.serverOrCompiler);
 
-    return [
-      ...compiler.resolvedModulePaths(this._root),
-      ...compiler.resolvedWatchPaths()
-    ].filter((file) => this.filterWatchFile(file, this._root));
+    return [...compiler.resolvedModulePaths(this._root), ...compiler.resolvedWatchPaths()].filter(
+      (file) => this.filterWatchFile(file, this._root)
+    );
   }
 
   watchExtraFiles() {
@@ -67,9 +64,7 @@ export class FileWatcher implements ImplFileWatcher {
 
   async watch() {
     // Determine how to compile the project
-    const compiler = this.getCompilerFromServerOrCompiler(
-      this.serverOrCompiler
-    );
+    const compiler = this.getCompilerFromServerOrCompiler(this.serverOrCompiler);
 
     const handlePathChange = async (path: string): Promise<void> => {
       if (this._close) {
@@ -81,10 +76,7 @@ export class FileWatcher implements ImplFileWatcher {
           await this.serverOrCompiler.hmrEngine.hmrUpdate(path);
         }
 
-        if (
-          this.serverOrCompiler instanceof Compiler &&
-          this.serverOrCompiler.hasModule(path)
-        ) {
+        if (this.serverOrCompiler instanceof Compiler && this.serverOrCompiler.hasModule(path)) {
           compilerHandler(
             async () => {
               const result = await compiler.update([path], true);
@@ -112,19 +104,13 @@ export class FileWatcher implements ImplFileWatcher {
     });
 
     const handleUpdateFinish = (updateResult: JsUpdateResult) => {
-      const added = [
-        ...updateResult.added,
-        ...updateResult.extraWatchResult.add
-      ].map((addedModule) => {
-        const resolvedPath = compiler.transformModulePath(
-          this._root,
-          addedModule
-        );
-        return resolvedPath;
-      });
-      const filteredAdded = added.filter((file) =>
-        this.filterWatchFile(file, this._root)
+      const added = [...updateResult.added, ...updateResult.extraWatchResult.add].map(
+        (addedModule) => {
+          const resolvedPath = compiler.transformModulePath(this._root, addedModule);
+          return resolvedPath;
+        }
       );
+      const filteredAdded = added.filter((file) => this.filterWatchFile(file, this._root));
 
       if (filteredAdded.length > 0) {
         this._watcher.add(filteredAdded);
@@ -136,12 +122,8 @@ export class FileWatcher implements ImplFileWatcher {
     }
   }
 
-  private getCompilerFromServerOrCompiler(
-    serverOrCompiler: Server | Compiler
-  ): Compiler {
-    return serverOrCompiler instanceof Server
-      ? serverOrCompiler.getCompiler()
-      : serverOrCompiler;
+  private getCompilerFromServerOrCompiler(serverOrCompiler: Server | Compiler): Compiler {
+    return serverOrCompiler instanceof Server ? serverOrCompiler.getCompiler() : serverOrCompiler;
   }
 
   close() {

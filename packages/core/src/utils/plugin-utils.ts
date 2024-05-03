@@ -1,15 +1,13 @@
 import fs from 'node:fs';
 import { isAbsolute, join } from 'node:path';
-import { CompilationContext } from '../plugin/type.js';
 import { Alias } from '../config/types.js';
+import { CompilationContext } from '../plugin/type.js';
 
 export const getAdditionContext = async (
   cwd: string,
   option: {
     globals?: string[];
-    additionalData?:
-      | string
-      | ((content: string, currentFile: string) => string | Promise<string>);
+    additionalData?: string | ((content: string, currentFile: string) => string | Promise<string>);
   },
   currentFile: string,
   content: string,
@@ -50,9 +48,7 @@ export function throwError(pluginName: string, type: string, error: Error) {
   throw new Error(`[${pluginName} ${type} Error] ${error?.stack ?? error}`);
 }
 
-export function getAliasEntries(
-  entries: Record<string, string> | Array<Alias>
-): any {
+export function getAliasEntries(entries: Record<string, string> | Array<Alias>): any {
   if (!entries) {
     return [];
   }
@@ -75,9 +71,7 @@ export function getAliasEntries(
   return [];
 }
 
-export function transformAliasWithVite(
-  alias: Array<Alias>
-): Record<string, string> {
+export function transformAliasWithVite(alias: Array<Alias>): Record<string, string> {
   return alias.reduce<Record<string, string>>((acc, item) => {
     acc[item.find] = item.replacement;
     return acc;

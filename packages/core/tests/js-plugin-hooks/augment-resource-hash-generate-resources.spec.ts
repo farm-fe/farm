@@ -48,9 +48,7 @@ test('Js Plugin Execution - augmentResourceHash', async () => {
             console.log(resourcePotInfo);
             // originalLength maybe 51 or 52, it's 52 on windows and 51 on linux because of line ending \r\n or \n
             // we normalize it to 51 to make the test pass on both platforms
-            if (
-              resourcePotInfo.modules['index.ts?foo=bar'].originalLength == 52
-            ) {
+            if (resourcePotInfo.modules['index.ts?foo=bar'].originalLength == 52) {
               resourcePotInfo.modules['index.ts?foo=bar'].originalLength = 51;
             }
 

@@ -15,10 +15,7 @@ export default {
       targetEnv: 'node',
       format: 'cjs'
     },
-    external: [
-      ...builtinModules.map((m) => `^${m}$`),
-      ...builtinModules.map((m) => `^node:${m}$`)
-    ],
+    external: [...builtinModules.map((m) => `^${m}$`), ...builtinModules.map((m) => `^node:${m}$`)],
     partialBundling: {
       enforceResources: [
         {
@@ -29,7 +26,7 @@ export default {
     },
     minify: false,
     sourcemap: false,
-    presetEnv: false,
+    presetEnv: false
   },
   server: {
     hmr: false

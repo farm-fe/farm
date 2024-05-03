@@ -4,12 +4,7 @@ import axios from 'axios';
 type HttpConfig = AxiosRequestConfig & { skipInterceptors?: boolean };
 
 export interface QueryParams {
-  [key: string]:
-    | undefined
-    | number
-    | boolean
-    | string
-    | Array<number | boolean | string>;
+  [key: string]: undefined | number | boolean | string | Array<number | boolean | string>;
 }
 
 const axiosInstance = axios.create({
@@ -26,11 +21,7 @@ axiosInstance.interceptors.response.use(
 );
 
 export const http = {
-  get<T = any>(
-    url: string,
-    params: QueryParams = {},
-    config?: HttpConfig
-  ): Promise<T> {
+  get<T = any>(url: string, params: QueryParams = {}, config?: HttpConfig): Promise<T> {
     return axiosInstance.get(url, {
       params,
       ...config
@@ -42,11 +33,7 @@ export const http = {
   put<T = any>(url: string, data: any, config?: HttpConfig): Promise<T> {
     return axiosInstance.put(url, data, config);
   },
-  delete<T = any>(
-    url: string,
-    params: QueryParams = {},
-    config?: HttpConfig
-  ): Promise<T> {
+  delete<T = any>(url: string, params: QueryParams = {}, config?: HttpConfig): Promise<T> {
     return axiosInstance.delete(url, {
       params,
       ...config

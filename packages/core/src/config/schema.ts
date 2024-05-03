@@ -1,6 +1,6 @@
+import { SecureServerOptions } from 'node:http2';
 import { z } from 'zod';
 import { fromZodError } from 'zod-validation-error';
-import { SecureServerOptions } from 'node:http2';
 
 import type { UserConfig } from './types.js';
 
@@ -46,9 +46,7 @@ const compilationConfigSchema = z
       .optional(),
     define: z.record(z.any()).optional(),
     external: z.array(z.string()).optional(),
-    externalNodeBuiltins: z
-      .union([z.boolean(), z.array(z.string())])
-      .optional(),
+    externalNodeBuiltins: z.union([z.boolean(), z.array(z.string())]).optional(),
     mode: z.string().optional(),
     watch: z
       .union([
@@ -128,9 +126,7 @@ const compilationConfigSchema = z
           .object({
             legacyDecorator: z.boolean().optional(),
             decoratorMetadata: z.boolean().optional(),
-            decoratorVersion: z
-              .union([z.literal('2021-12'), z.literal('2022-03')])
-              .optional(),
+            decoratorVersion: z.union([z.literal('2021-12'), z.literal('2022-03')]).optional(),
             includes: z.array(z.string()).optional(),
             excludes: z.array(z.string()).optional()
           })
@@ -140,12 +136,7 @@ const compilationConfigSchema = z
       .strict()
       .optional(),
     sourcemap: z
-      .union([
-        z.boolean(),
-        z.literal('all'),
-        z.literal('inline'),
-        z.literal('all-inline')
-      ])
+      .union([z.boolean(), z.literal('all'), z.literal('inline'), z.literal('all-inline')])
       .optional(),
     partialBundling: z
       .object({
@@ -189,12 +180,7 @@ const compilationConfigSchema = z
           mangle: z.union([z.any(), z.boolean()]).optional(),
           exclude: z.array(z.string()).optional(),
           include: z.array(z.string()).optional(),
-          mode: z
-            .union([
-              z.literal('minify-module'),
-              z.literal('minify-resource-pot')
-            ])
-            .optional()
+          mode: z.union([z.literal('minify-module'), z.literal('minify-resource-pot')]).optional()
         })
       ])
       .optional(),
@@ -220,11 +206,7 @@ const compilationConfigSchema = z
           .optional(),
         prefixer: z
           .object({
-            targets: z
-              .string()
-              .or(z.record(z.string()))
-              .or(z.array(z.string()))
-              .optional()
+            targets: z.string().or(z.record(z.string())).or(z.array(z.string())).optional()
           })
           .optional()
       })
@@ -294,9 +276,7 @@ const FarmConfigSchema = z
               agent: z.any().optional(),
               secure: z.boolean().optional(),
               logs: z.any().optional(),
-              rewrite: z
-                .function(z.tuple([z.string(), z.object({})]))
-                .optional()
+              rewrite: z.function(z.tuple([z.string(), z.object({})])).optional()
             })
           )
           .optional(),

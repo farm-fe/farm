@@ -1,15 +1,15 @@
 import { SecureServerOptions } from 'node:http2';
 import { Server } from '../index.js';
 
-import type cors from '@koa/cors';
 import type { OutgoingHttpHeaders } from 'http';
-import type { Logger } from '../utils/index.js';
-import type { ProxiesOptions } from '../server/middlewares/proxy.js';
-import type { JsPlugin } from '../plugin/type.js';
-import type { RustPlugin } from '../plugin/rust/index.js';
-import type { Config } from '../../binding/index.js';
-import { Middleware } from 'koa';
+import type cors from '@koa/cors';
 import { WatchOptions } from 'chokidar';
+import { Middleware } from 'koa';
+import type { Config } from '../../binding/index.js';
+import type { RustPlugin } from '../plugin/rust/index.js';
+import type { JsPlugin } from '../plugin/type.js';
+import type { ProxiesOptions } from '../server/middlewares/proxy.js';
+import type { Logger } from '../utils/index.js';
 
 export interface ConfigEnv {
   mode: string;
@@ -73,9 +73,7 @@ export interface UserHmrConfig {
   watchOptions?: WatchOptions;
 }
 
-type InternalConfig = Config['config'] extends undefined
-  ? object
-  : Required<Config>['config'];
+type InternalConfig = Config['config'] extends undefined ? object : Required<Config>['config'];
 
 type AvailableUserConfigKeys = Exclude<
   keyof InternalConfig,
@@ -92,12 +90,7 @@ export interface UserConfig {
   /** js plugin(which is a javascript object) and rust plugin(which is string refer to a .farm file or a package) */
   plugins?: (RustPlugin | JsPlugin | JsPlugin[] | undefined | null | false)[];
   /** vite plugins */
-  vitePlugins?: (
-    | null
-    | undefined
-    | object
-    | (() => { vitePlugin: any; filters: string[] })
-  )[];
+  vitePlugins?: (null | undefined | object | (() => { vitePlugin: any; filters: string[] }))[];
   /** config related to compilation */
   compilation?: Pick<InternalConfig, AvailableUserConfigKeys>;
   /** config related to dev server */
@@ -149,9 +142,7 @@ export interface FarmCLIPreviewOptions {
   host?: string | boolean;
 }
 
-export interface FarmCLIOptions
-  extends FarmCLIBuildOptions,
-    FarmCLIPreviewOptions {
+export interface FarmCLIOptions extends FarmCLIBuildOptions, FarmCLIPreviewOptions {
   logger?: Logger;
   config?: string;
   configPath?: string;

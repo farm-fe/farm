@@ -33,9 +33,7 @@
     "clean": "rimraf dist build tsconfig.build.tsbuildinfo",
     "type-check": "tsc -p ./tsconfig.build.json --noEmit"
   },
-  "files": [
-    "build"
-  ],
+  "files": ["build"],
   "keywords": [],
   "license": "MIT",
   "devDependencies": {

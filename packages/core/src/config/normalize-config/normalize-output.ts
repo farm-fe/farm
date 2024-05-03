@@ -1,15 +1,9 @@
 import { browsersWithSupportForFeatures } from 'browserslist-generator';
 
 import { Config } from '../../../binding/index.js';
-import {
-  FARM_TARGET_BROWSER_ENVS,
-  mapTargetEnvValue
-} from '../../utils/share.js';
+import { FARM_TARGET_BROWSER_ENVS, mapTargetEnvValue } from '../../utils/share.js';
 
-export async function normalizeOutput(
-  config: Config['config'],
-  isProduction: boolean
-) {
+export async function normalizeOutput(config: Config['config'], isProduction: boolean) {
   if (!config.output.targetEnv) {
     config.output.targetEnv = 'browser';
   }
@@ -93,8 +87,7 @@ function normalizeTargetEnv(config: Config['config']) {
     config.output.targetEnv) as keyof TargetsMap;
 
   if (targetsMap[targetEnv]) {
-    const { scriptTargets, cssTargets, scriptGenTarget } =
-      targetsMap[targetEnv];
+    const { scriptTargets, cssTargets, scriptGenTarget } = targetsMap[targetEnv];
     // set defaults for targets
     if (config.presetEnv !== false) {
       // null means disable presetEnv

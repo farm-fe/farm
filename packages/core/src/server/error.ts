@@ -66,11 +66,7 @@ export function logError(err: Error, throwErrorFlag = true) {
         (parsedErrorMsg.message || parsedErrorMsg.reason)
       ) {
         return `${buildErrorMessage(parsedErrorMsg, [
-          colors.red(
-            `Internal server error: ${
-              parsedErrorMsg.message || parsedErrorMsg.reason
-            }`
-          )
+          colors.red(`Internal server error: ${parsedErrorMsg.message || parsedErrorMsg.reason}`)
         ])}`;
       } else {
         return colors.red(errorMsg);

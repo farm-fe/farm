@@ -1,8 +1,8 @@
 import module from 'node:module';
 
-import { Config } from '../../../binding/index.js';
 import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
+import { Config } from '../../../binding/index.js';
 
 export function normalizeExternal(config: Config['config']) {
   const defaultExternals: string[] = [];

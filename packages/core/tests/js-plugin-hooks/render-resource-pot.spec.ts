@@ -20,21 +20,13 @@ test('Js Plugin Execution - renderResourcePot', async () => {
             expect(param.content).toContain('render-resource-pot-return-value');
             expect(param.sourceMapChain).toEqual([]);
             console.log(param.resourcePotInfo);
-            if (
-              param.resourcePotInfo.modules['index.ts?foo=bar']
-                .originalLength == 52
-            ) {
-              param.resourcePotInfo.modules[
-                'index.ts?foo=bar'
-              ].originalLength = 51;
+            if (param.resourcePotInfo.modules['index.ts?foo=bar'].originalLength == 52) {
+              param.resourcePotInfo.modules['index.ts?foo=bar'].originalLength = 51;
             }
             expect(param.resourcePotInfo).matchSnapshot();
             calledHooks.push('renderResourcePot');
             return {
-              content: param.content.replace(
-                'render-resource-pot-return-value',
-                '1'
-              )
+              content: param.content.replace('render-resource-pot-return-value', '1')
             };
           }
         }

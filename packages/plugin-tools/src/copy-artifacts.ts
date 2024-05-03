@@ -1,5 +1,5 @@
-import { copyFile } from 'fs/promises';
 import path from 'path';
+import { copyFile } from 'fs/promises';
 
 export const copyArtifacts = async (abi?: string) => {
   if (!abi) {
@@ -25,15 +25,11 @@ export const copyArtifacts = async (abi?: string) => {
 
   // find .node file
   const files = await import('fs').then((m) => m.promises.readdir('.'));
-  const nodeFile = files.find(
-    (file) => file.endsWith('.node') && file.includes(abi)
-  );
+  const nodeFile = files.find((file) => file.endsWith('.node') && file.includes(abi));
 
   if (!nodeFile) {
     console.log('files:\n', files);
-    throw new Error(
-      'Missing .node file in current directory: ' + process.cwd()
-    );
+    throw new Error('Missing .node file in current directory: ' + process.cwd());
   }
 
   await copyFile(nodeFile, path.join('npm', abi, 'index.farm'));

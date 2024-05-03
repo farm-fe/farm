@@ -3,7 +3,7 @@ import type { UserConfig } from './src/index.js';
 
 const VIRTUAL_SUFFIX = '.virtual.farm';
 
-export default <UserConfig>{
+export default (<UserConfig>{
   compilation: {
     input: {
       index: 'src/index.ts'
@@ -53,10 +53,7 @@ export default <UserConfig>{
 
           if (param.importer.endsWith(VIRTUAL_SUFFIX)) {
             const relativePath = path
-              .relative(
-                process.cwd(),
-                param.importer.replace(VIRTUAL_SUFFIX, '')
-              )
+              .relative(process.cwd(), param.importer.replace(VIRTUAL_SUFFIX, ''))
               .replace(/\\/g, '/');
             console.log('relativePath', relativePath);
             if (
@@ -116,4 +113,4 @@ export default <UserConfig>{
       }
     }
   ]
-};
+});

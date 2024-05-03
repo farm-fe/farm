@@ -5,12 +5,8 @@ import glob from 'fast-glob';
 
 import { ResolvedUserConfig } from '../index.js';
 
-function resolveChokidarOptions(
-  config: ResolvedUserConfig,
-  insideChokidarOptions: WatchOptions
-) {
-  const { ignored = [], ...userChokidarOptions } =
-    config.server?.hmr?.watchOptions ?? {};
+function resolveChokidarOptions(config: ResolvedUserConfig, insideChokidarOptions: WatchOptions) {
+  const { ignored = [], ...userChokidarOptions } = config.server?.hmr?.watchOptions ?? {};
   let cacheDir = path.resolve(config.root, 'node_modules', '.farm', 'cache');
 
   if (
@@ -30,9 +26,7 @@ function resolveChokidarOptions(
       '**/node_modules/**',
       '**/test-results/**', // Playwright
       glob.escapePath(cacheDir) + '/**',
-      glob.escapePath(
-        path.resolve(config.root, config.compilation.output.path)
-      ) + '/**',
+      glob.escapePath(path.resolve(config.root, config.compilation.output.path)) + '/**',
       ...(Array.isArray(ignored) ? ignored : [ignored])
     ],
     ignoreInitial: true,

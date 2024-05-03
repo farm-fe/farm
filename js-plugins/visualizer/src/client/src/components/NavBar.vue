@@ -86,22 +86,22 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, ref } from "vue";
-import { useRoute } from "vue-router";
+import { defineComponent, ref } from 'vue';
+import { useRoute } from 'vue-router';
 
 export default defineComponent({
-  name: "NavBar",
+  name: 'NavBar',
   setup() {
     const isOpen = ref(false);
     const route = useRoute();
-    
+
     const navigation = [
-      { name: "Dashboard", href: "/dashboard" },
-      { name: "Module Analysis", href: "/analysis/module" },
-      { name: "Plugin Analysis", href: "/analysis/plugin" },
-      { name: "Bundle Analysis", href: "/analysis/bundle" },
+      { name: 'Dashboard', href: '/dashboard' },
+      { name: 'Module Analysis', href: '/analysis/module' },
+      { name: 'Plugin Analysis', href: '/analysis/plugin' },
+      { name: 'Bundle Analysis', href: '/analysis/bundle' }
     ];
     return { isOpen, navigation, route };
-  },
+  }
 });
 </script>

@@ -1,5 +1,5 @@
-import type { JsPlugin } from '@farmfe/core';
 import fs from 'fs';
+import type { JsPlugin } from '@farmfe/core';
 import type { ConfigPlugin, Config as SvgrOptions } from '@svgr/core';
 
 export interface FarmSvgrPluginOptions {
@@ -9,9 +9,7 @@ export interface FarmSvgrPluginOptions {
   };
 }
 
-export default function farmSvgrPlugin(
-  options: FarmSvgrPluginOptions = {}
-): JsPlugin {
+export default function farmSvgrPlugin(options: FarmSvgrPluginOptions = {}): JsPlugin {
   const { svgrOptions, filters } = options;
 
   return {
@@ -19,11 +17,7 @@ export default function farmSvgrPlugin(
     load: {
       filters: { resolvedPaths: filters?.resolvedPaths ?? ['\\.svg$'] },
       async executor(param) {
-        if (
-          param.query.some(
-            ([key, _]) => key === 'raw' || key === 'url' || key === 'inline'
-          )
-        ) {
+        if (param.query.some(([key, _]) => key === 'raw' || key === 'url' || key === 'inline')) {
           return null;
         }
 

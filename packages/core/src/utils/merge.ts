@@ -1,7 +1,7 @@
+import deepmerge, { Options } from 'deepmerge';
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore ignore type check
 import { isPlainObject } from 'is-plain-object';
-import deepmerge, { Options } from 'deepmerge';
 
 function isValueSameDeep(target: any, source: any): boolean {
   if (target === source) {
@@ -61,10 +61,7 @@ export default function merge<T>(target: T, ...sources: Partial<T>[]): T {
 
         if (sourceValue === undefined) {
           continue;
-        } else if (
-          isMergeableObject(destination[key]) &&
-          isMergeableObject(sourceValue)
-        ) {
+        } else if (isMergeableObject(destination[key]) && isMergeableObject(sourceValue)) {
           destination[key] = deepmerge(destination[key], sourceValue, options);
         } else {
           destination[key] = sourceValue;

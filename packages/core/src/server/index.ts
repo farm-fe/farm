@@ -3,25 +3,30 @@ import http2 from 'node:http2';
 import Koa from 'koa';
 import compression from 'koa-compress';
 
+import path from 'node:path';
+import { promisify } from 'node:util';
 import { Compiler } from '../compiler/index.js';
+import { __FARM_GLOBAL__ } from '../config/_global.js';
 import {
   DEFAULT_HMR_OPTIONS,
   DevServerMiddleware,
   NormalizedServerConfig,
-  normalizePublicDir,
-  normalizePublicPath,
   UserPreviewServerConfig,
-  UserServerConfig
+  UserServerConfig,
+  normalizePublicDir,
+  normalizePublicPath
 } from '../config/index.js';
-import { HmrEngine } from './hmr-engine.js';
-import { openBrowser } from './open.js';
+import { resolveHostname, resolveServerUrls } from '../utils/http.js';
 import {
+  Logger,
   bootstrap,
   clearScreen,
-  Logger,
   normalizeBasePath,
   printServerUrls
 } from '../utils/index.js';
+import { FileWatcher } from '../watcher/index.js';
+import { logError } from './error.js';
+import { HmrEngine } from './hmr-engine.js';
 import {
   cors,
   headers,
@@ -31,14 +36,9 @@ import {
   resources,
   staticMiddleware
 } from './middlewares/index.js';
-import { __FARM_GLOBAL__ } from '../config/_global.js';
-import { resolveHostname, resolveServerUrls } from '../utils/http.js';
-import WsServer from './ws.js';
+import { openBrowser } from './open.js';
 import { Server as httpServer } from './type.js';
-import { promisify } from 'node:util';
-import { FileWatcher } from '../watcher/index.js';
-import { logError } from './error.js';
-import path from 'node:path';
+import WsServer from './ws.js';
 
 /**
  * Farm Dev Server, responsible for:
@@ -98,11 +98,7 @@ export class Server implements ImplDevServer {
     this.publicDir = normalizePublicDir(compiler?.config.config.root);
 
     this.publicPath =
-      normalizePublicPath(
-        compiler.config.config.output?.publicPath,
-        logger,
-        false
-      ) || '/';
+      normalizePublicPath(compiler.config.config.output?.publicPath, logger, false) || '/';
   }
 
   getCompiler(): Compiler {
@@ -128,12 +124,10 @@ export class Server implements ImplDevServer {
 
     await this.startServer(this.config);
 
-    !__FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__ &&
-      (await this.displayServerUrls());
+    !__FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__ && (await this.displayServerUrls());
 
     if (open) {
-      const publicPath =
-        this.publicPath === '/' ? this.publicPath : `/${this.publicPath}`;
+      const publicPath = this.publicPath === '/' ? this.publicPath : `/${this.publicPath}`;
       const serverUrl = `${protocol}://${hostname.name}:${port}${publicPath}`;
       openBrowser(serverUrl);
     }
@@ -164,19 +158,14 @@ export class Server implements ImplDevServer {
     }
   }
 
-  handleServerError(
-    error: Error & { code?: string },
-    port: number,
-    host: string | undefined
-  ) {
+  handleServerError(error: Error & { code?: string }, port: number, host: string | undefined) {
     const errorMap: ErrorMap = {
       EACCES: `Permission denied to use port ${port} `,
       EADDRNOTAVAIL: `The IP address host: ${host} is not available on this machine.`
     };
 
     const errorMessage =
-      errorMap[error.code as keyof ErrorMap] ||
-      `An error occurred: ${error.stack} `;
+      errorMap[error.code as keyof ErrorMap] || `An error occurred: ${error.stack} `;
     this.logger.error(errorMessage);
   }
 
@@ -211,15 +200,12 @@ export class Server implements ImplDevServer {
     this._app = new Koa();
   }
 
-  public async createServer(
-    options: NormalizedServerConfig & UserPreviewServerConfig
-  ) {
+  public async createServer(options: NormalizedServerConfig & UserPreviewServerConfig) {
     const { https, host } = options;
     const protocol = https ? 'https' : 'http';
     const hostname = await resolveHostname(host);
     const publicPath =
-      this.compiler?.config.config.output?.publicPath ??
-      options?.output.publicPath;
+      this.compiler?.config.config.output?.publicPath ?? options?.output.publicPath;
     // TODO refactor previewServer If it's preview server, then you can't use create server. we need to create a new one because hmr is false when you preview.
     const hmrPath = normalizeBasePath(
       path.join(publicPath, options.hmr.path ?? DEFAULT_HMR_OPTIONS.path)
@@ -374,15 +360,8 @@ export class Server implements ImplDevServer {
     this.compiler = compiler;
   }
 
-  private applyPreviewServerMiddlewares(
-    middlewares?: DevServerMiddleware[]
-  ): void {
-    const internalMiddlewares = [
-      ...(middlewares || []),
-      compression,
-      proxy,
-      staticMiddleware
-    ];
+  private applyPreviewServerMiddlewares(middlewares?: DevServerMiddleware[]): void {
+    const internalMiddlewares = [...(middlewares || []), compression, proxy, staticMiddleware];
     this.applyMiddlewares(internalMiddlewares as DevServerMiddleware[]);
   }
 
@@ -405,11 +384,7 @@ export class Server implements ImplDevServer {
       ? this.compiler.config.config.output?.publicPath
       : this.config.output.publicPath;
 
-    this.resolvedUrls = await resolveServerUrls(
-      this.server,
-      this.config,
-      publicPath
-    );
+    this.resolvedUrls = await resolveServerUrls(this.server, this.config, publicPath);
 
     if (this.resolvedUrls) {
       printServerUrls(this.resolvedUrls, this.logger, showPreviewFlag);

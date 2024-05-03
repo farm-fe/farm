@@ -4,10 +4,7 @@ import { isArray, isObject } from '../utils/share.js';
 import { FarmCLIOptions, UserConfig } from './types.js';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function mergeConfig<T extends Record<string, any>>(
-  userConfig: T,
-  target: T
-): T {
+export function mergeConfig<T extends Record<string, any>>(userConfig: T, target: T): T {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const result: Record<string, any> = { ...userConfig };
   for (const key of Object.keys(target)) {
@@ -24,10 +21,7 @@ export function mergeConfig<T extends Record<string, any>>(
     }
 
     if (isArray(left) || isArray(right)) {
-      result[key] = [
-        ...(isArray(left) ? left : []),
-        ...(isArray(right) ? right : [])
-      ];
+      result[key] = [...(isArray(left) ? left : []), ...(isArray(right) ? right : [])];
       continue;
     }
 
