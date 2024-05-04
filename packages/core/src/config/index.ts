@@ -9,7 +9,7 @@ import {
   PluginTransformHookParam,
   bindingPath
 } from '../../binding/index.js';
-import { JsPlugin } from "../index.js";
+import { JsPlugin } from '../index.js';
 import {
   getSortedPlugins,
   handleVitePlugins,
