@@ -53,7 +53,7 @@ export function throwError(pluginName: string, type: string, error: Error) {
 export function getAliasEntries(
   entries: Record<string, string> | Array<Alias>
 ): any {
-  if (!entries) {
+  if (!entries || !Object.keys(entries).length) {
     return [];
   }
 
