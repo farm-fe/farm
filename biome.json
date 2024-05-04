@@ -42,7 +42,7 @@
     "include": ["./**/*.js", "./**/*.ts", "./**/*.mjs"]
   },
   "linter": {
-    "enabled": false,
+    "enabled": true,
     "rules": {
       "recommended": false,
       "complexity": {
