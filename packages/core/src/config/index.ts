@@ -1,15 +1,15 @@
 import crypto from 'node:crypto';
 import fs from 'node:fs';
-import module from "node:module";
-import path, { isAbsolute, join } from "node:path";
-import { pathToFileURL } from "node:url";
+import module from 'node:module';
+import path, { isAbsolute, join } from 'node:path';
+import { pathToFileURL } from 'node:url';
 
 import {
   Config,
   PluginTransformHookParam,
   bindingPath
 } from '../../binding/index.js';
-import { JsPlugin } from '../index.js';
+import { JsPlugin } from "../index.js";
 import {
   getSortedPlugins,
   handleVitePlugins,
