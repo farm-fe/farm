@@ -51,6 +51,7 @@
   },
   "simple-git-hooks": {
     "pre-commit": "npx lint-staged",
+    "pre-push": "npx lint-staged",
     "preserveUnused": true
   },
   "pnpm": {
