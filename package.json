@@ -43,10 +43,10 @@
   },
   "lint-staged": {
     "packages/**/*.ts": [
-      "biome check --no-errors-on-unmatched --files-ignore-unknown=true --apply"
+      "npx biome check --no-errors-on-unmatched --files-ignore-unknown=true --apply"
     ],
     "js-plugins/**/*.ts": [
-      "biome check --no-errors-on-unmatched --files-ignore-unknown=true --apply"
+      "npx biome check --no-errors-on-unmatched --files-ignore-unknown=true --apply"
     ]
   },
   "simple-git-hooks": {
