@@ -1,20 +1,16 @@
 use std::collections::HashSet;
 
-use farmfe_core::swc_ecma_ast::{ObjectPatProp, Pat};
-use farmfe_toolkit::swc_ecma_visit::{Visit, VisitWith};
-
-use super::used_idents_collector::UsedIdentsCollector;
+use farmfe_core::swc_ecma_ast::{Id, ObjectPatProp, Pat};
+use farmfe_toolkit::swc_ecma_visit::Visit;
 
 pub struct DefinedIdentsCollector {
-  pub defined_idents: HashSet<String>,
-  pub used_idents: HashSet<String>,
+  pub defined_idents: HashSet<Id>,
 }
 
 impl DefinedIdentsCollector {
   pub fn new() -> Self {
     Self {
       defined_idents: HashSet::new(),
-      used_idents: HashSet::new(),
     }
   }
 }
@@ -23,7 +19,7 @@ impl Visit for DefinedIdentsCollector {
   fn visit_pat(&mut self, pat: &Pat) {
     match pat {
       Pat::Ident(bi) => {
-        self.defined_idents.insert(bi.id.to_string());
+        self.defined_idents.insert(bi.id.to_id());
       }
       Pat::Array(array_pat) => {
         for elem in array_pat.elems.iter().flatten() {
@@ -40,12 +36,7 @@ impl Visit for DefinedIdentsCollector {
               self.visit_pat(&kv_prop.value);
             }
             ObjectPatProp::Assign(assign_prop) => {
-              self.defined_idents.insert(assign_prop.key.to_string());
-
-              let mut used_idents_collector = UsedIdentsCollector::new();
-              assign_prop.value.visit_with(&mut used_idents_collector);
-
-              self.used_idents.extend(used_idents_collector.used_idents);
+              self.defined_idents.insert(assign_prop.key.to_id());
             }
             ObjectPatProp::Rest(rest_prop) => {
               self.visit_pat(&rest_prop.arg);

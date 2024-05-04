@@ -45,7 +45,7 @@ swc_html_codegen = { version = "0.42.27" }
 swc_html_minifier = { version = "0.134.19" }
 swc_error_reporters = { version = "=0.17.19" }
 swc_atoms = { version = "0.6.5" }
-swc_ecma_transforms_base = "0.137.16"
+swc_ecma_transforms_base = "0.137.21"
 swc_ecma_minifier = "0.192.18"
 swc_ecma_utils = "0.127.13"
 lazy_static = "1.4.0"

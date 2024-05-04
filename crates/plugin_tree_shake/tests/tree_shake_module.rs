@@ -1,12 +1,13 @@
-use std::collections::HashMap;
+use std::collections::HashSet;
 
-use farmfe_core::module::ModuleId;
 use farmfe_core::swc_common::{Globals, GLOBALS};
-use farmfe_plugin_tree_shake::module::UsedIdent;
+use farmfe_plugin_tree_shake::module::UsedExportsIdent;
 
 use farmfe_plugin_tree_shake::module::{TreeShakeModule, UsedExports};
 
 use common::{create_module, create_module_with_globals};
+
+use crate::common::print_id;
 
 mod common;
 
@@ -27,45 +28,44 @@ export default 'default';
   let module = create_module_with_globals(code);
 
   let mut tree_shake_module = TreeShakeModule::new(&module);
-  tree_shake_module.used_exports = UsedExports::Partial(HashMap::from([(
-    ModuleId::from("index.ts"),
-    vec![
-      "a".to_string(),
-      "d".to_string(),
-      "e".to_string(),
-      "f".to_string(),
-      "any".to_string(),
-      "h".to_string(),
-      "i".to_string(),
-      "j".to_string(),
-      "default".to_string(),
-    ],
-  )]));
+  tree_shake_module.pending_used_exports = UsedExports::Partial(HashSet::from([
+    UsedExportsIdent::SwcIdent("a".to_string()),
+    UsedExportsIdent::SwcIdent("d".to_string()),
+    UsedExportsIdent::SwcIdent("e".to_string()),
+    UsedExportsIdent::SwcIdent("f".to_string()),
+    UsedExportsIdent::SwcIdent("any".to_string()),
+    UsedExportsIdent::SwcIdent("h".to_string()),
+    UsedExportsIdent::SwcIdent("i".to_string()),
+    UsedExportsIdent::SwcIdent("j".to_string()),
+    UsedExportsIdent::Default,
+  ]));
 
-  let result = tree_shake_module.used_exports_idents();
+  let result = tree_shake_module.used_exports_to_statement_idents();
+  let mut idents = result
+    .iter()
+    .map(|item| item.0.to_string())
+    .collect::<Vec<_>>();
+  idents.sort();
 
   assert_eq!(result.len(), 9);
   assert_eq!(
-    result
-      .iter()
-      .map(|item| item.0.to_string())
-      .collect::<Vec<_>>(),
+    idents,
     vec![
       "a#2".to_string(),
+      "any#0".to_string(),
       "c#2".to_string(),
-      "e#1".to_string(),
-      "default#1".to_string(),
-      "any#1".to_string(),
-      "h#2".to_string(),
-      "i#0".to_string(),
-      "j#2".to_string(),
       "default".to_string(),
+      "default#0".to_string(),
+      "e#0".to_string(),
+      "h#2".to_string(),
+      "i#2".to_string(),
+      "j#2".to_string(),
     ]
   );
-  assert_eq!(
-    result.iter().map(|item| item.1).collect::<Vec<_>>(),
-    vec![3, 3, 4, 4, 5, 6, 7, 8, 9]
-  );
+
+  let mut stmts = result.iter().map(|item| item.1).collect::<Vec<_>>();
+  stmts.sort();
+  assert_eq!(stmts, vec![3, 3, 4, 4, 5, 6, 7, 8, 9]);
 
   let stmt = tree_shake_module.stmt_graph.stmt(&3);
   assert!(stmt.export_info.is_some());
@@ -84,12 +84,19 @@ fn used_exports_idents_export_all() {
   let module = create_module_with_globals(code);
 
   let mut tree_shake_module = TreeShakeModule::new(&module);
-  tree_shake_module.used_exports =
-    UsedExports::Partial(HashMap::from([("index".into(), vec!["a".to_string()])]));
-  let result = tree_shake_module.used_exports_idents();
+  // tree_shake_module.used_exports =
+  //   UsedExports::Partial(HashMap::from([("index".into(), vec!["a".to_string()])]));
+  tree_shake_module.pending_used_exports =
+    UsedExports::Partial(HashSet::from([UsedExportsIdent::SwcIdent("a".to_string())]));
+  // let result = tree_shake_module.used_exports_idents();
+  let result = tree_shake_module.used_exports_to_statement_idents();
   assert_eq!(result.len(), 1);
-  assert!(matches!(result[0].0, UsedIdent::SwcIdent(_)));
-  assert_eq!(result[0].0.to_string(), "a#2".to_string());
+  let mut idents = result
+    .iter()
+    .map(|item| item.0.to_string())
+    .collect::<Vec<_>>();
+  idents.sort();
+  assert_eq!(idents, vec!["a#2".to_string()]);
 
   let code = r#"
 export * from './foo';
@@ -97,18 +104,23 @@ export const b = 2;"#;
   let module = create_module_with_globals(code);
 
   let mut tree_shake_module = TreeShakeModule::new(&module);
-  tree_shake_module.used_exports = UsedExports::Partial(HashMap::from([(
-    "index".into(),
-    vec!["a".to_string(), "b".to_string(), "c".to_string()],
-  )]));
-  let result = tree_shake_module.used_exports_idents();
+  tree_shake_module.pending_used_exports = UsedExports::Partial(HashSet::from([
+    UsedExportsIdent::SwcIdent("a".to_string()),
+    UsedExportsIdent::SwcIdent("b".to_string()),
+    UsedExportsIdent::SwcIdent("c".to_string()),
+  ]));
+  let result = tree_shake_module.used_exports_to_statement_idents();
   assert_eq!(result.len(), 3);
-  assert!(matches!(result[0].0, UsedIdent::InExportAll(_)));
-  assert_eq!(result[0].0.to_string(), "a".to_string());
-  assert!(matches!(result[1].0, UsedIdent::SwcIdent(_)));
-  assert_eq!(result[1].0.to_string(), "b#2".to_string());
-  assert!(matches!(result[2].0, UsedIdent::InExportAll(_)));
-  assert_eq!(result[2].0.to_string(), "c".to_string());
+
+  let mut idents = result
+    .iter()
+    .map(|item| item.0.to_string())
+    .collect::<Vec<_>>();
+  idents.sort();
+  assert_eq!(
+    idents,
+    vec!["*(a)".to_string(), "*(c)".to_string(), "b#2".to_string(),]
+  );
 }
 
 #[test]
@@ -128,27 +140,32 @@ export default 'default';
   let module = create_module_with_globals(code);
 
   let mut tree_shake_module = TreeShakeModule::new(&module);
-  tree_shake_module.used_exports = UsedExports::All(HashMap::new());
-  let result = tree_shake_module.used_exports_idents();
+  // tree_shake_module.used_exports = UsedExports::All(HashMap::new());
+  // let result = tree_shake_module.used_exports_idents();
+  tree_shake_module.pending_used_exports = UsedExports::All;
+  let result = tree_shake_module.used_exports_to_statement_idents();
 
   assert_eq!(result.len(), 11);
+
+  let mut idents = result
+    .iter()
+    .map(|item| item.0.to_string())
+    .collect::<Vec<_>>();
+  idents.sort();
   assert_eq!(
-    result
-      .iter()
-      .map(|item| item.0.to_string())
-      .collect::<Vec<_>>(),
+    idents,
     vec![
       "a#2".to_string(),
+      "any#0".to_string(),
       "b#2".to_string(),
       "c#2".to_string(),
-      "e#1".to_string(),
-      "default#1".to_string(),
-      "g#1".to_string(),
-      "any#1".to_string(),
-      "h#2".to_string(),
-      "i#0".to_string(),
-      "j#2".to_string(),
       "default".to_string(),
+      "default#0".to_string(),
+      "e#0".to_string(),
+      "g#0".to_string(),
+      "h#2".to_string(),
+      "i#2".to_string(),
+      "j#2".to_string(),
     ]
   );
 }
@@ -162,34 +179,33 @@ export const b = 2;"#;
   let module = create_module_with_globals(code);
 
   let mut tree_shake_module = TreeShakeModule::new(&module);
-  tree_shake_module.used_exports = UsedExports::Partial(HashMap::from([(
-    "index".into(),
-    vec!["a".to_string(), "b".to_string(), "c".to_string()],
-  )]));
-  let result = tree_shake_module.used_exports_idents();
-  println!("{:?}", result);
+  tree_shake_module.pending_used_exports = UsedExports::Partial(HashSet::from([
+    UsedExportsIdent::SwcIdent("a".to_string()),
+    UsedExportsIdent::SwcIdent("b".to_string()),
+    UsedExportsIdent::SwcIdent("c".to_string()),
+  ]));
+  let result = tree_shake_module.used_exports_to_statement_idents();
 
   assert_eq!(result.len(), 5);
 
-  assert!(matches!(result[0].0, UsedIdent::InExportAll(_)));
-  assert_eq!(result[0].0.to_string(), "a".to_string());
-  assert!(matches!(result[0].1, 0));
-
-  assert!(matches!(result[1].0, UsedIdent::InExportAll(_)));
-  assert_eq!(result[1].0.to_string(), "a".to_string());
-  assert!(matches!(result[1].1, 1));
-
-  assert!(matches!(result[2].0, UsedIdent::SwcIdent(_)));
-  assert_eq!(result[2].0.to_string(), "b#2".to_string());
-  assert!(matches!(result[2].1, 2));
-
-  assert!(matches!(result[3].0, UsedIdent::InExportAll(_)));
-  assert_eq!(result[3].0.to_string(), "c".to_string());
-  assert!(matches!(result[3].1, 0));
-
-  assert!(matches!(result[4].0, UsedIdent::InExportAll(_)));
-  assert_eq!(result[4].0.to_string(), "c".to_string());
-  assert!(matches!(result[4].1, 1));
+  let mut idents = result
+    .iter()
+    .map(|item| item.0.to_string())
+    .collect::<Vec<_>>();
+  idents.sort();
+  assert_eq!(
+    idents,
+    vec![
+      "*(a)".to_string(),
+      "*(a)".to_string(),
+      "*(c)".to_string(),
+      "*(c)".to_string(),
+      "b#2".to_string(),
+    ]
+  );
+  let mut stmts = result.iter().map(|item| item.1).collect::<Vec<_>>();
+  stmts.sort();
+  assert_eq!(stmts, vec![0, 0, 1, 1, 2]);
 }
 
 #[test]
@@ -217,52 +233,47 @@ export default 'default';
   GLOBALS.set(&globals, || {
     let (module, _) = create_module(code);
     let mut tree_shake_module = TreeShakeModule::new(&module);
-    tree_shake_module.used_exports = UsedExports::Partial(HashMap::from([(
-      "index".into(),
-      vec![
-        "default".to_string(),
-        "j".to_string(),
-        "d".to_string(),
-        "f".to_string(),
-      ],
-    )]));
+    tree_shake_module.pending_used_exports = UsedExports::Partial(HashSet::from([
+      UsedExportsIdent::Default,
+      UsedExportsIdent::SwcIdent("j".to_string()),
+      UsedExportsIdent::SwcIdent("d".to_string()),
+      UsedExportsIdent::SwcIdent("f".to_string()),
+    ]));
 
-    let mut result = tree_shake_module
-      .used_statements(&module, &globals)
-      .into_iter()
-      .collect::<Vec<_>>();
-    result.sort_by_key(|item| item.0);
+    let result = tree_shake_module.trace_and_mark_used_statements();
+    assert_eq!(result.len(), 1);
+    assert_eq!(result[0].stmt_id, 4);
+    assert_eq!(result[0].source, "./src/foo");
+    assert_eq!(result[0].used_stmt_idents.len(), 1);
+    assert!(result[0]
+      .used_stmt_idents
+      .contains(&UsedExportsIdent::Default));
 
-    println!("{:?}", result);
+    let used_stmts = tree_shake_module.stmt_graph.used_stmts();
+    let mut stmts = used_stmts.iter().map(|stmt| *stmt).collect::<Vec<_>>();
+    stmts.sort();
+    assert_eq!(stmts, vec![2, 3, 4, 6, 7, 8, 9]);
 
-    assert_eq!(result.len(), 7);
-    // result should be the same as [(2, ["c#1"]), (3, ["c#1"]), (4, ["default#2"]), (6, ["h#1"]), (7, ["i#0"]), (8, ["j#1"]), (9, [])]
-    assert_eq!(result[0].0, 2);
-    assert_eq!(result[0].1.len(), 1);
-    assert!(result[0].1.contains(&"c#2".to_string()));
+    macro_rules! assert_stmt {
+      ($stmt_id: expr, $expected: expr) => {
+        let stmt = tree_shake_module.stmt_graph.stmt(&$stmt_id);
+        let mut stmt_used_idents = stmt
+          .used_defined_idents
+          .iter()
+          .map(|i| print_id(i))
+          .collect::<Vec<_>>();
+        stmt_used_idents.sort();
+        assert_eq!(stmt_used_idents, $expected);
+      };
+    }
 
-    assert_eq!(result[1].0, 3);
-    assert_eq!(result[1].1.len(), 1);
-    assert!(result[1].1.contains(&"c#2".to_string()));
-
-    assert_eq!(result[2].0, 4);
-    assert_eq!(result[2].1.len(), 1);
-    assert!(result[2].1.contains(&"default#1".to_string()));
-
-    assert_eq!(result[3].0, 6);
-    assert_eq!(result[3].1.len(), 1);
-    assert!(result[3].1.contains(&"h#2".to_string()));
-
-    assert_eq!(result[4].0, 7);
-    assert_eq!(result[4].1.len(), 1);
-    assert!(result[4].1.contains(&"i#0".to_string()));
-
-    assert_eq!(result[5].0, 8);
-    assert_eq!(result[5].1.len(), 1);
-    assert!(result[5].1.contains(&"j#2".to_string()));
-
-    assert_eq!(result[6].0, 9);
-    assert_eq!(result[6].1.len(), 0);
+    assert_stmt!(2, vec!["c#2"]);
+    assert_stmt!(3, vec!["c#2"]);
+    assert_stmt!(4, vec!["default#0"]);
+    assert_stmt!(6, vec!["h#2"]);
+    assert_stmt!(7, vec!["i#2"]);
+    assert_stmt!(8, vec!["j#2"]);
+    assert_stmt!(9, Vec::<String>::new());
   });
 }
 
@@ -278,29 +289,42 @@ export { a };
   GLOBALS.set(&globals, || {
     let (module, _) = create_module(code);
     let mut tree_shake_module = TreeShakeModule::new(&module);
-    tree_shake_module.used_exports =
-      UsedExports::Partial(HashMap::from([("index.ts".into(), vec!["a".to_string()])]));
+    // tree_shake_module.used_exports =
+    //   UsedExports::Partial(HashMap::from([("index.ts".into(), vec!["a".to_string()])]));
+    tree_shake_module.pending_used_exports = UsedExports::Partial(HashSet::from([
+      UsedExportsIdent::SwcIdent("a".to_string()),
+      UsedExportsIdent::SwcIdent("foo".to_string()),
+    ]));
 
-    let mut result = tree_shake_module
-      .used_statements(&module, &globals)
-      .into_iter()
-      .collect::<Vec<_>>();
-    result.sort_by_key(|item| item.0);
-    println!("{:?}", result);
+    let result = tree_shake_module.trace_and_mark_used_statements();
+    assert_eq!(result.len(), 1);
+    assert_eq!(result[0].stmt_id, 0);
+    assert_eq!(result[0].source, "./foo");
+    assert!(result[0]
+      .used_stmt_idents
+      .contains(&UsedExportsIdent::SwcIdent("foo".to_string())));
 
-    assert_eq!(result.len(), 3);
-    // result should be the same as [(0, ["foo#1"]), (1, ["a#2"]), (2, ["a#2"])]
-    assert_eq!(result[0].0, 0);
-    assert_eq!(result[0].1.len(), 1);
-    assert!(result[0].1.contains(&"foo#1".to_string()));
+    let used_stmts = tree_shake_module.stmt_graph.used_stmts();
+    let mut stmts = used_stmts.iter().map(|stmt| *stmt).collect::<Vec<_>>();
+    stmts.sort();
+    assert_eq!(stmts, vec![0, 1, 2]);
 
-    assert_eq!(result[1].0, 1);
-    assert_eq!(result[1].1.len(), 1);
-    assert!(result[1].1.contains(&"a#2".to_string()));
+    macro_rules! assert_stmt {
+      ($stmt_id: expr, $expected: expr) => {
+        let stmt = tree_shake_module.stmt_graph.stmt(&$stmt_id);
+        let mut stmt_used_idents = stmt
+          .used_defined_idents
+          .iter()
+          .map(|i| print_id(i))
+          .collect::<Vec<_>>();
+        stmt_used_idents.sort();
+        assert_eq!(stmt_used_idents, $expected);
+      };
+    }
 
-    assert_eq!(result[2].0, 2);
-    assert_eq!(result[2].1.len(), 1);
-    assert!(result[2].1.contains(&"a#2".to_string()));
+    assert_stmt!(0, vec!["foo#2"]);
+    assert_stmt!(1, vec!["a#2"]);
+    assert_stmt!(2, vec!["a#2"]);
   });
 }
 
@@ -315,28 +339,44 @@ export const b = 2;
   GLOBALS.set(&globals, || {
     let (module, _) = create_module(code);
     let mut tree_shake_module = TreeShakeModule::new(&module);
-    tree_shake_module.used_exports = UsedExports::Partial(HashMap::from([(
-      "index".into(),
-      vec!["a".to_string(), "b".to_string(), "c".to_string()],
-    )]));
+    tree_shake_module.pending_used_exports = UsedExports::Partial(HashSet::from([
+      UsedExportsIdent::SwcIdent("a".to_string()),
+      UsedExportsIdent::SwcIdent("b".to_string()),
+      UsedExportsIdent::SwcIdent("c".to_string()),
+    ]));
 
-    let mut result = tree_shake_module
-      .used_statements(&module, &globals)
-      .into_iter()
-      .collect::<Vec<_>>();
-    result.sort_by_key(|item| item.0);
+    let result = tree_shake_module.trace_and_mark_used_statements();
+    assert_eq!(result.len(), 1);
+    assert_eq!(result[0].stmt_id, 0);
+    assert_eq!(result[0].source, "./foo");
+    assert_eq!(result[0].used_stmt_idents.len(), 2);
+    assert!(result[0]
+      .used_stmt_idents
+      .contains(&UsedExportsIdent::SwcIdent("a".to_string())));
+    assert!(result[0]
+      .used_stmt_idents
+      .contains(&UsedExportsIdent::SwcIdent("c".to_string())));
 
-    println!("{:?}", result);
+    let used_stmts = tree_shake_module.stmt_graph.used_stmts();
+    let mut stmts = used_stmts.iter().map(|stmt| *stmt).collect::<Vec<_>>();
+    stmts.sort();
+    assert_eq!(stmts, vec![0, 1]);
 
-    assert_eq!(result.len(), 2);
-    // result should be the same as [(0, ["a", "c"]), (1, ["b#1"])]
-    assert_eq!(result[0].0, 0);
-    assert_eq!(result[0].1.len(), 2);
-    assert!(result[0].1.contains("a"));
-    assert!(result[0].1.contains("c"));
-    assert_eq!(result[1].0, 1);
-    assert_eq!(result[1].1.len(), 1);
-    assert!(result[1].1.contains("b#2"));
+    macro_rules! assert_stmt {
+      ($stmt_id: expr, $expected: expr) => {
+        let stmt = tree_shake_module.stmt_graph.stmt(&$stmt_id);
+        let mut stmt_used_idents = stmt
+          .used_defined_idents
+          .iter()
+          .map(|i| print_id(i))
+          .collect::<Vec<_>>();
+        stmt_used_idents.sort();
+        assert_eq!(stmt_used_idents, $expected);
+      };
+    }
+
+    assert_stmt!(0, Vec::<&str>::new());
+    assert_stmt!(1, vec!["b#2"]);
   });
 }
 
@@ -352,31 +392,56 @@ export * from './bar';
   GLOBALS.set(&globals, || {
     let (module, _) = create_module(code);
     let mut tree_shake_module = TreeShakeModule::new(&module);
-    tree_shake_module.used_exports = UsedExports::Partial(HashMap::from([(
-      "index.ts".into(),
-      vec!["a".to_string(), "b".to_string(), "c".to_string()],
-    )]));
 
-    let mut result = tree_shake_module
-      .used_statements(&module, &globals)
-      .into_iter()
-      .collect::<Vec<_>>();
-    result.sort_by_key(|item| item.0);
-
+    tree_shake_module.pending_used_exports = UsedExports::Partial(HashSet::from([
+      UsedExportsIdent::SwcIdent("a".to_string()),
+      UsedExportsIdent::SwcIdent("b".to_string()),
+      UsedExportsIdent::SwcIdent("c".to_string()),
+    ]));
+    let result = tree_shake_module.trace_and_mark_used_statements();
+    assert_eq!(result.len(), 2);
+    assert_eq!(result[0].stmt_id, 0);
+    assert_eq!(result[0].source, "./foo");
+    assert_eq!(result[0].used_stmt_idents.len(), 2);
     println!("{:?}", result);
+    assert!(result[0]
+      .used_stmt_idents
+      .contains(&UsedExportsIdent::SwcIdent("b".to_string())));
+    assert!(result[0]
+      .used_stmt_idents
+      .contains(&UsedExportsIdent::SwcIdent("c".to_string())));
 
-    assert_eq!(result.len(), 3);
-    // result should be the same as [(0, ["b", "c"]), (1, ["b#1"]), (2, ["b", "c"])]
-    assert_eq!(result[0].0, 0);
-    assert_eq!(result[0].1.len(), 2);
-    assert!(result[0].1.contains("b"));
-    assert!(result[0].1.contains("c"));
-    assert_eq!(result[1].0, 1);
-    assert_eq!(result[1].1.len(), 1);
-    assert!(result[1].1.contains("a#2"));
-    assert_eq!(result[2].0, 2);
-    assert_eq!(result[2].1.len(), 2);
-    assert!(result[2].1.contains("b"));
-    assert!(result[2].1.contains("c"));
+    assert_eq!(result[1].stmt_id, 2);
+    assert_eq!(result[1].source, "./bar");
+    assert_eq!(result[1].used_stmt_idents.len(), 2);
+    assert!(result[1]
+      .used_stmt_idents
+      .contains(&UsedExportsIdent::SwcIdent("b".to_string())));
+    assert!(result[1]
+      .used_stmt_idents
+      .contains(&UsedExportsIdent::SwcIdent("c".to_string())));
+
+    let used_stmts = tree_shake_module.stmt_graph.used_stmts();
+    let mut stmts = used_stmts.iter().map(|stmt| *stmt).collect::<Vec<_>>();
+    stmts.sort();
+
+    assert_eq!(stmts, vec![0, 1, 2]);
+
+    macro_rules! assert_stmt {
+      ($stmt_id: expr, $expected: expr) => {
+        let stmt = tree_shake_module.stmt_graph.stmt(&$stmt_id);
+        let mut stmt_used_idents = stmt
+          .used_defined_idents
+          .iter()
+          .map(|i| print_id(i))
+          .collect::<Vec<_>>();
+        stmt_used_idents.sort();
+        assert_eq!(stmt_used_idents, $expected);
+      };
+    }
+
+    assert_stmt!(0, Vec::<&str>::new());
+    assert_stmt!(1, vec!["a#2"]);
+    assert_stmt!(2, Vec::<&str>::new());
   });
 }

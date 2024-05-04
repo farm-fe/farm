@@ -1,15 +1,15 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use common::create_module;
 use farmfe_core::{
-  module::{module_graph::ModuleGraph, ModuleId},
+  module::module_graph::{ModuleGraph, ModuleGraphEdge, ModuleGraphEdgeDataItem},
+  plugin::ResolveKind,
   swc_common::{Globals, GLOBALS},
   swc_ecma_ast::EsVersion,
 };
 use farmfe_plugin_tree_shake::{
-  module::{TreeShakeModule, UsedExports},
-  remove_useless_stmts::remove_useless_stmts,
-  statement_graph::{ExportSpecifierInfo, ImportSpecifierInfo},
+  module::{TreeShakeModule, UsedExports, UsedExportsIdent},
+  tree_shake_modules::remove_useless_stmts::remove_useless_stmts,
 };
 use farmfe_toolkit::script::codegen_module;
 
@@ -41,32 +41,37 @@ export default 'default';
   GLOBALS.set(&globals, || {
     let (module, cm) = create_module(code);
     let mut tree_shake_module = TreeShakeModule::new(&module);
-    tree_shake_module.used_exports = UsedExports::Partial(HashMap::from([(
-      ModuleId::from("index.ts"),
-      vec![
-        "default".to_string(),
-        "j".to_string(),
-        "d".to_string(),
-        "f".to_string(),
-        "a".to_string(),
-      ],
-    )]));
+    tree_shake_module.pending_used_exports = UsedExports::Partial(HashSet::from([
+      UsedExportsIdent::Default,
+      UsedExportsIdent::SwcIdent("j".to_string()),
+      UsedExportsIdent::SwcIdent("d".to_string()),
+      UsedExportsIdent::SwcIdent("f".to_string()),
+      UsedExportsIdent::SwcIdent("a".to_string()),
+    ]));
+    tree_shake_module.trace_and_mark_used_statements();
+
     let module_id = module.id.clone();
     let mut module_graph = ModuleGraph::new();
-    let tree_shake_module_map = HashMap::from([(module.id.clone(), tree_shake_module)]);
+    let mut tree_shake_module_map = HashMap::from([(module.id.clone(), tree_shake_module)]);
     module_graph.add_module(module);
+    let mut module_src_bar = create_module("").0;
+    module_src_bar.id = "src/bar".into();
+    tree_shake_module_map.insert("src/bar".into(), TreeShakeModule::new(&module_src_bar));
+    module_graph.add_module(module_src_bar);
+    module_graph
+      .add_edge(
+        &module_id,
+        &"src/bar".into(),
+        ModuleGraphEdge::new(vec![ModuleGraphEdgeDataItem {
+          source: "./src/bar".to_string(),
+          kind: ResolveKind::ExportFrom,
+          order: 0,
+        }]),
+      )
+      .unwrap();
 
-    let (import_info, export_info, removed_import_info, removed_export_info, _) = remove_useless_stmts(
-      &module_id,
-      &mut module_graph,
-      &tree_shake_module_map,
-      &globals,
-    );
+    remove_useless_stmts(&module_id, &mut module_graph, &tree_shake_module_map);
 
-    println!("import_info: {:#?}", import_info);
-    println!("export_info: {:#?}", export_info);
-    println!("removed_import_info: {:#?}", removed_import_info);
-    println!("removed_export_info: {:#?}", removed_export_info);
     let module = module_graph.module(&module_id).unwrap();
     let swc_module = &module.meta.as_script().ast;
 
@@ -96,69 +101,6 @@ export default 'default';
     for (result_line, expect_line) in result_lines.zip(expect_lines) {
       assert_eq!(result_line, expect_line);
     }
-
-    assert_eq!(import_info.len(), 1);
-    assert_eq!(import_info[0].specifiers.len(), 1);
-    assert!(matches!(
-      import_info[0].specifiers[0],
-      ImportSpecifierInfo::Named { .. }
-    ));
-    if let ImportSpecifierInfo::Named { local, imported } = &import_info[0].specifiers[0] {
-      assert_eq!(local.to_string(), "aValue#1".to_string());
-      assert!(imported.is_none());
-    }
-
-    assert_eq!(export_info.len(), 1);
-    assert_eq!(export_info[0].specifiers.len(), 1);
-    assert!(matches!(
-      export_info[0].specifiers[0],
-      ExportSpecifierInfo::Named { .. }
-    ));
-    if let ExportSpecifierInfo::Named { local, exported } = &export_info[0].specifiers[0] {
-      assert_eq!(local.to_string(), "default#1".to_string());
-      assert!(exported.is_some());
-
-      if let Some(exported) = exported {
-        assert_eq!(exported.to_string(), "f#1".to_string());
-      }
-    }
-
-    assert_eq!(removed_import_info.len(), 1);
-    assert_eq!(removed_import_info[0].specifiers.len(), 1);
-    assert!(matches!(
-      removed_import_info[0].specifiers[0],
-      ImportSpecifierInfo::Named { .. }
-    ));
-    if let ImportSpecifierInfo::Named { local, imported } = &removed_import_info[0].specifiers[0] {
-      assert_eq!(local.to_string(), "bar#1".to_string());
-      assert!(imported.is_none());
-    }
-
-    assert_eq!(removed_export_info.len(), 3);
-    assert_eq!(removed_export_info[0].specifiers.len(), 1);
-    assert!(matches!(
-      removed_export_info[0].specifiers[0],
-      ExportSpecifierInfo::Named { .. }
-    ));
-    if let ExportSpecifierInfo::Named { local, exported } = &removed_export_info[0].specifiers[0] {
-      assert_eq!(local.to_string(), "b#2".to_string());
-      assert!(exported.is_none());
-    }
-
-    assert_eq!(removed_export_info[1].specifiers.len(), 2);
-    assert!(matches!(
-      removed_export_info[1].specifiers[0],
-      ExportSpecifierInfo::Named { .. }
-    ));
-    if let ExportSpecifierInfo::Named { local, exported } = &removed_export_info[1].specifiers[0] {
-      assert_eq!(local.to_string(), "e#1".to_string());
-      assert!(exported.is_none());
-    }
-
-    if let ExportSpecifierInfo::Named { local, exported } = &removed_export_info[1].specifiers[1] {
-      assert_eq!(local.to_string(), "g#1".to_string());
-      assert!(exported.is_none());
-    }
   });
 }
 
@@ -175,23 +117,23 @@ export * from './src/foo';
   GLOBALS.set(&globals, || {
     let (module, cm) = create_module(code);
     let mut tree_shake_module = TreeShakeModule::new(&module);
-    tree_shake_module.used_exports = UsedExports::Partial(HashMap::from([(
-      "index.ts".into(),
-      vec!["a".to_string(), "c".to_string(), "d".to_string()],
-    )]));
+    // tree_shake_module.used_exports = UsedExports::Partial(HashMap::from([(
+    //   "index.ts".into(),
+    //   vec!["a".to_string(), "c".to_string(), "d".to_string()],
+    // )]));
+    tree_shake_module.pending_used_exports = UsedExports::Partial(HashSet::from([
+      UsedExportsIdent::SwcIdent("a".to_string()),
+      UsedExportsIdent::SwcIdent("c".to_string()),
+      UsedExportsIdent::SwcIdent("d".to_string()),
+    ]));
+    tree_shake_module.trace_and_mark_used_statements();
+
     let module_id = module.id.clone();
     let mut module_graph = ModuleGraph::new();
     let tree_shake_module_map = HashMap::from([(module.id.clone(), tree_shake_module)]);
     module_graph.add_module(module);
 
-    let (import_info, export_info, _, _, _) = remove_useless_stmts(
-      &module_id,
-      &mut module_graph,
-      &tree_shake_module_map,
-      &globals,
-    );
-    // println!("import_info: {:#?}", import_info);
-    // println!("export_info: {:#?}", export_info);
+    remove_useless_stmts(&module_id, &mut module_graph, &tree_shake_module_map);
     let module = module_graph.module(&module_id).unwrap();
     let swc_module = &module.meta.as_script().ast;
 
@@ -204,32 +146,6 @@ export const a = aValue;
 export * from './src/foo';
 "#
     );
-
-    assert_eq!(import_info.len(), 1);
-    assert_eq!(import_info[0].specifiers.len(), 1);
-    assert!(matches!(
-      import_info[0].specifiers[0],
-      ImportSpecifierInfo::Named { .. }
-    ));
-    if let ImportSpecifierInfo::Named { local, imported } = &import_info[0].specifiers[0] {
-      assert_eq!(local.to_string(), "aValue#1".to_string());
-      assert!(imported.is_none());
-    }
-
-    // Only contains the export * from './src/foo';
-    assert_eq!(export_info.len(), 1);
-    assert_eq!(export_info[0].specifiers.len(), 1);
-    assert!(matches!(
-      export_info[0].specifiers[0],
-      ExportSpecifierInfo::All(_)
-    ));
-    if let ExportSpecifierInfo::All(used_idents) = &export_info[0].specifiers[0] {
-      assert!(used_idents.is_some());
-      let used_idents = used_idents.as_ref().unwrap();
-      assert_eq!(used_idents.len(), 2);
-      assert!(used_idents.contains(&"c".to_string()));
-      assert!(used_idents.contains(&"d".to_string()));
-    }
   });
 }
 
@@ -246,24 +162,33 @@ export * from './src/bar';
   GLOBALS.set(&globals, || {
     let (module, cm) = create_module(code);
     let mut tree_shake_module = TreeShakeModule::new(&module);
-    tree_shake_module.used_exports = UsedExports::Partial(HashMap::from([(
-      "index.ts".into(),
-      vec!["c".to_string(), "d".to_string()],
-    )]));
+    tree_shake_module.pending_used_exports = UsedExports::Partial(HashSet::from([
+      UsedExportsIdent::SwcIdent("c".to_string()),
+      UsedExportsIdent::SwcIdent("d".to_string()),
+    ]));
+    tree_shake_module.trace_and_mark_used_statements();
 
     let module_id = module.id.clone();
     let mut module_graph = ModuleGraph::new();
-    let tree_shake_module_map = HashMap::from([(module.id.clone(), tree_shake_module)]);
+    let mut tree_shake_module_map = HashMap::from([(module.id.clone(), tree_shake_module)]);
     module_graph.add_module(module);
+    let mut module_foo = create_module("").0;
+    module_foo.id = "src/foo".into();
+    tree_shake_module_map.insert("src/foo".into(), TreeShakeModule::new(&module_foo));
+    module_graph.add_module(module_foo);
+    module_graph
+      .add_edge(
+        &module_id,
+        &"src/foo".into(),
+        ModuleGraphEdge::new(vec![ModuleGraphEdgeDataItem {
+          source: "./foo".to_string(),
+          kind: ResolveKind::Import,
+          order: 0,
+        }]),
+      )
+      .unwrap();
 
-    let (import_info, export_info, _, _, _) = remove_useless_stmts(
-      &module_id,
-      &mut module_graph,
-      &tree_shake_module_map,
-      &globals,
-    );
-    // println!("import_info: {:#?}", import_info);
-    // println!("export_info: {:#?}", export_info);
+    remove_useless_stmts(&module_id, &mut module_graph, &tree_shake_module_map);
     let module = module_graph.module(&module_id).unwrap();
     let swc_module = &module.meta.as_script().ast;
 
@@ -275,35 +200,95 @@ export * from './src/bar';
 export * from './src/bar';
 "#
     );
+  });
+}
 
-    assert_eq!(import_info.len(), 0);
+#[test]
+fn remove_useless_stmts_nested_defined_idents() {
+  let code = r#"
+  import { a, invalidate } from './dep';
 
-    // contains the export * from './src/foo'; and export * from './src/bar';
-    assert_eq!(export_info.len(), 2);
-    assert_eq!(export_info[0].specifiers.len(), 1);
-    assert!(matches!(
-      export_info[0].specifiers[0],
-      ExportSpecifierInfo::All(_)
-    ));
-    if let ExportSpecifierInfo::All(used_idents) = &export_info[0].specifiers[0] {
-      assert!(used_idents.is_some());
-      let used_idents = used_idents.as_ref().unwrap();
-      assert_eq!(used_idents.len(), 2);
-      assert!(used_idents.contains(&"c".to_string()));
-      assert!(used_idents.contains(&"d".to_string()));
+  console.log(a);
+  
+  const id = 'InvalidateParent';
+  
+  export function InvalidateParent() {
+    return {
+      render: () => {
+        const renderData = invalidate();
+  
+        const div = document.createElement('div', {});
+        div.id = id;
+        div.innerText = renderData;
+        div.className = 'box';
+        return div;
+      }
+    };
+  }
+  
+  if (import.meta.hot) {
+    // self accept without reload the page
+    import.meta.hot.accept();
+    const div = document.getElementById(id);
+  
+    if (div) {
+      const comp = InvalidateParent().render();
+      console.log(div, comp);
+      div.replaceWith(comp);
     }
+  }
+  "#;
 
-    assert_eq!(export_info[1].specifiers.len(), 1);
-    assert!(matches!(
-      export_info[1].specifiers[0],
-      ExportSpecifierInfo::All(_)
-    ));
-    if let ExportSpecifierInfo::All(used_idents) = &export_info[1].specifiers[0] {
-      assert!(used_idents.is_some());
-      let used_idents = used_idents.as_ref().unwrap();
-      assert_eq!(used_idents.len(), 2);
-      assert!(used_idents.contains(&"c".to_string()));
-      assert!(used_idents.contains(&"d".to_string()));
+  let globals = Globals::new();
+  GLOBALS.set(&globals, || {
+    let (module, cm) = create_module(code);
+    let mut tree_shake_module = TreeShakeModule::new(&module);
+    tree_shake_module.pending_used_exports = UsedExports::All;
+    tree_shake_module.trace_and_mark_used_statements();
+
+    let module_id = module.id.clone();
+    let mut module_graph = ModuleGraph::new();
+    let tree_shake_module_map = HashMap::from([(module.id.clone(), tree_shake_module)]);
+    module_graph.add_module(module);
+
+    remove_useless_stmts(&module_id, &mut module_graph, &tree_shake_module_map);
+    let module = module_graph.module(&module_id).unwrap();
+    let swc_module = &module.meta.as_script().ast;
+
+    let bytes = codegen_module(swc_module, EsVersion::EsNext, cm, None, false, None).unwrap();
+    let result = String::from_utf8(bytes).unwrap();
+
+    let expect = r#"import { a } from './dep';
+console.log(a);
+const id = 'InvalidateParent';
+export function InvalidateParent() {
+    return {
+        render: ()=>{
+            const renderData = invalidate();
+            const div = document.createElement('div', {});
+            div.id = id;
+            div.innerText = renderData;
+            div.className = 'box';
+            return div;
+        }
+    };
+}
+if (import.meta.hot) {
+    import.meta.hot.accept();
+    const div = document.getElementById(id);
+    if (div) {
+        const comp = InvalidateParent().render();
+        console.log(div, comp);
+        div.replaceWith(comp);
+    }
+}
+"#
+    .trim();
+    // asset result and expect line by line
+    let result_lines = result.trim().lines();
+    let expect_lines = expect.lines();
+    for (result_line, expect_line) in result_lines.zip(expect_lines) {
+      assert_eq!(result_line, expect_line);
     }
   });
 }

@@ -128,7 +128,21 @@ impl Compiler {
     {
       #[cfg(feature = "profile")]
       farmfe_core::puffin::profile_scope!("Build Stage");
-      self.build()?;
+      let write_module_cache = || {
+        if self.context.config.persistent_cache.enabled() {
+          self.context.cache_manager.module_cache.write_cache();
+        }
+      };
+      self
+        .build()
+        .and_then(|v| {
+          write_module_cache();
+          Ok(v)
+        })
+        .or_else(|err| {
+          write_module_cache();
+          Err(err)
+        })?;
     }
 
     {
