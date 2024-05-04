@@ -182,7 +182,7 @@ test('Js Plugin Execution - full', async () => {
         filters: {
           resolvedPaths: [path.join(root, 'index.ts').replaceAll('\\', '\\\\')]
         },
-        executor: async (param) => {
+        executor: async () => {
           return {
             content: 'import "./resolved?lang=ts&index=1"; export default 2;',
             moduleType: 'ts'

@@ -847,7 +847,7 @@ export async function loadConfigFile(
 
     try {
       errorMessage = JSON.parse(error.message).join('\n');
-    } catch (e) {
+    } catch {
       errorMessage = error.message;
     }
 

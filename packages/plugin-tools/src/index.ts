@@ -39,7 +39,7 @@ cli
     try {
       const spawn = createSpawnCmd(process.cwd(), 'inherit');
       await spawn('node', [cliPath, 'build', ...args]);
-    } catch (e) {
+    } catch {
       process.exit(1);
     }
 

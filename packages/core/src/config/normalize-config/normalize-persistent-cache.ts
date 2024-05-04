@@ -164,7 +164,7 @@ export async function normalizePersistentCache(
           const packageJson = require(packageJsonPath);
           const key = `${packageJson.name}@${packageJson.version}`;
           config.persistentCache.buildDependencies.push(key);
-        } catch (e) {
+        } catch {
           if (typeof p === 'string') {
             config.persistentCache.buildDependencies.push(p);
           } else if (Array.isArray(p) && typeof p[0] === 'string') {
