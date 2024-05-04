@@ -40,7 +40,7 @@ export default class Context {
       noEmitOnError: false,
       skipDiagnostics: true,
       copyDtsFiles: false,
-      afterDiagnostic: () => {}
+      afterDiagnostic: () => ({})
     };
 
     const userOptions = mergeObjects(defaultOption, options);
@@ -58,7 +58,7 @@ export default class Context {
       : this.config.output?.path;
     const aliasesExclude = userOptions?.aliasesExclude ?? [];
     const tsConfigPath = resolveAbsolutePath(userOptions.tsconfigPath, root);
-    libFolderPath = libFolderPath && ensureAbsolute(libFolderPath, root);
+    const folderPath = libFolderPath && ensureAbsolute(libFolderPath, root);
     const compilerOptions = userOptions.compilerOptions ?? {};
 
     const mergeCompilerOptions = {
@@ -75,7 +75,7 @@ export default class Context {
       } as CompilerOptions),
       tsConfigFilePath: tsConfigPath,
       skipAddingFilesFromTsConfig: true,
-      libFolderPath
+      libFolderPath: folderPath
     };
     this.project = new Project(mergeCompilerOptions);
     const tsConfigOptions = getTsConfig(

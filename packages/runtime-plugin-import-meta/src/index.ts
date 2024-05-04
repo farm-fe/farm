@@ -2,6 +2,8 @@ import type { ModuleSystem, Plugin } from '@farmfe/runtime';
 
 const __global_this__ = typeof globalThis !== 'undefined' ? globalThis : window;
 
+declare const FARM_PROCESS_ENV: Record<string, string>;
+
 export default (<Plugin>{
   name: 'farm-runtime-import-meta',
   _moduleSystem: {} as ModuleSystem,

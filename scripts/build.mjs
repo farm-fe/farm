@@ -203,7 +203,7 @@ export async function checkProtobuf() {
       await execa('which', ['protoc']);
     }
     return true;
-  } catch (error) {
+  } catch {
     return false;
   }
 }
