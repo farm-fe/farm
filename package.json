@@ -50,8 +50,7 @@
     ]
   },
   "simple-git-hooks": {
-    "pre-commit": "pnpm check",
-    "pre-push": "pnpm check",
+    "pre-commit": "npx lint-staged",
     "preserveUnused": true
   },
   "pnpm": {
