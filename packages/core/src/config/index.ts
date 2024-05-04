@@ -212,7 +212,7 @@ export async function resolveConfig(
   resolvedUserConfig.rustPlugins = rustPlugins;
 
   // Temporarily dealing with alias objects and arrays in js will be unified in rust in the future.]
-  if (resolvedUserConfig.compilation.resolve?.alias && vitePlugins.length) {
+  if (vitePlugins.length) {
     resolvedUserConfig.compilation.resolve.alias = getAliasEntries(
       resolvedUserConfig.compilation.resolve.alias
     );
