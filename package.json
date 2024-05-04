@@ -51,7 +51,7 @@
   },
   "simple-git-hooks": {
     "pre-commit": "pnpm check",
-    "pre-push": "",
+    "pre-push": "pnpm check",
     "preserveUnused": true
   },
   "pnpm": {

@@ -869,8 +869,8 @@ export async function loadConfigFile(
 function checkCompilationInputValue(userConfig: UserConfig, logger: Logger) {
   const { compilation } = userConfig;
   const targetEnv = compilation?.output?.targetEnv;
-  const isTargetNode = targetEnv === "node";
-  const defaultHtmlPath = "./index.html";
+  const isTargetNode = targetEnv === 'node';
+  const defaultHtmlPath = './index.html';
   let inputIndexConfig: { index?: string } = { index: '' };
   let errorMessage = '';
 
