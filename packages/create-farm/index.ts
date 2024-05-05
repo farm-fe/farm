@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 import fs from 'node:fs';
 import path from 'node:path';
-import spawn from 'cross-spawn';
 import minimist from 'minimist';
 import prompts from 'prompts';
 
@@ -11,6 +10,7 @@ import { colors } from './utils/color.js';
 import createSpawnCmd from './utils/createSpawnCmd.js';
 import { loadWithRocketGradient } from './utils/gradient.js';
 import { shouldUsePnpm, shouldUseYarn } from './utils/packageManager.js';
+import { getSubFrameworkPromptsChoices } from './utils/prompts.js';
 
 interface IResultType {
   packageName?: string;
@@ -158,14 +158,13 @@ async function createFarm() {
     return;
   }
   const { framework = argFramework, packageManager } = result;
-  let chooseFramework: IResultType['framework'] = framework;
-  if (framework === 'tauri') {
-    const tauriOption = await prompts(tauriTemplate as prompts.PromptObject[]);
-    chooseFramework = `tauri/${tauriOption['tauri-framework']}`;
-  }
+  const frameworkPrompts = getSubFrameworkPromptsChoices(framework);
+  const options = await prompts(frameworkPrompts as any);
 
   await copyTemplate(targetDir, {
-    framework: chooseFramework,
+    framework: options.subFramework
+      ? `${framework}/${options.subFramework}`
+      : framework,
     projectName: targetDir,
     packageManager
   });
