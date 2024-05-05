@@ -2,7 +2,6 @@ use std::collections::{HashMap, HashSet};
 
 use farmfe_core::{
   module::{module_graph::ModuleGraph, ModuleId},
-  plugin::ResolveKind,
   swc_ecma_ast::{
     self, Id, ImportDecl, ImportSpecifier, ModuleDecl, ModuleExportName, ModuleItem, Stmt,
   },
@@ -63,81 +62,10 @@ pub fn remove_useless_stmts(
     }
   }
 
-  // for import or export from statement, if the source module contains side effects statement, we should keep the statement
-  let mut pending_import_export_from_check = vec![];
-
-  for index in &stmts_to_remove {
-    if let ModuleItem::ModuleDecl(module_decl) = &mut swc_module.body[*index] {
-      match module_decl {
-        ModuleDecl::Import(import_decl) => {
-          pending_import_export_from_check.push((
-            *index,
-            import_decl.src.value.to_string(),
-            ResolveKind::Import,
-          ));
-        }
-        ModuleDecl::ExportNamed(export_decl) => {
-          if let Some(src) = &export_decl.src {
-            pending_import_export_from_check.push((
-              *index,
-              src.value.to_string(),
-              ResolveKind::ExportFrom,
-            ));
-          }
-        }
-        ModuleDecl::ExportAll(export_all) => {
-          pending_import_export_from_check.push((
-            *index,
-            export_all.src.value.to_string(),
-            ResolveKind::ExportFrom,
-          ));
-        }
-        _ => {}
-      }
-    }
-  }
-
-  let mut preserved_import_export_from_stmts = vec![];
-
-  for (index, src, kind) in pending_import_export_from_check {
-    let dep_module_id = module_graph.get_dep_by_source(tree_shake_module_id, &src, Some(kind));
-    let dep_module = module_graph.module(&dep_module_id).unwrap();
-    let dep_tree_shake_module = tree_shake_modules_map.get(&dep_module_id);
-    // if dep tree shake module is not found, it means the dep module is not tree shakable, so we should keep the import / export from statement
-    // and preserve import / export from statement if the source module contains side effects statement
-    if dep_module.external
-      || dep_module.side_effects
-      || dep_tree_shake_module.is_none()
-      || dep_tree_shake_module.unwrap().contains_self_executed_stmt
-    {
-      preserved_import_export_from_stmts.push(index);
-    }
-  }
-
-  let module = module_graph.module_mut(tree_shake_module_id).unwrap();
-  let swc_module = &mut module.meta.as_script_mut().ast;
   stmts_to_remove.reverse();
 
   for index in stmts_to_remove {
-    if !preserved_import_export_from_stmts.contains(&index) {
-      swc_module.body.remove(index);
-    } else {
-      // remove all the specifiers in the import / export from statement
-      let mut useless_specifier_remover = UselessSpecifierRemover {
-        used_defined_idents: &HashSet::new(),
-      };
-      if let ModuleItem::ModuleDecl(module_decl) = &mut swc_module.body[index] {
-        if module_decl.is_import() {
-          if let ModuleDecl::Import(import_decl) = module_decl {
-            useless_specifier_remover.visit_mut_import_decl(import_decl);
-          }
-        } else if module_decl.is_export_named() {
-          if let ModuleDecl::ExportNamed(export_decl) = module_decl {
-            useless_specifier_remover.visit_mut_export_specifiers(&mut export_decl.specifiers);
-          }
-        }
-      }
-    }
+    swc_module.body.remove(index);
   }
 }
 
@@ -209,6 +137,13 @@ impl<'a> VisitMut for UselessSpecifierRemover<'a> {
   }
 
   fn visit_mut_var_decl(&mut self, n: &mut swc_ecma_ast::VarDecl) {
+    // skip remove unused var decl if self.used_defined_idents is empty
+    // when self.used_defined_idents is empty, it means this statement is preserved when tracing dependents side effects statements
+    // Farm do not handle this case for now, it may be optimized in the future
+    if self.used_defined_idents.is_empty() {
+      return;
+    }
+
     let mut decls_to_remove = vec![];
 
     for (index, decl) in n.decls.iter_mut().enumerate() {

@@ -21,7 +21,9 @@ pub fn analyze_statement_side_effects(
       farmfe_core::swc_ecma_ast::ModuleDecl::ExportDecl(export_decl) => match &export_decl.decl {
         farmfe_core::swc_ecma_ast::Decl::Var(var_decl) => {
           let mut analyzer = SideEffectsAnalyzer::new(unresolved_mark, top_level_mark);
+          analyzer.set_in_top_level(true);
           var_decl.visit_children_with(&mut analyzer);
+
           analyzer.side_effects
         }
         _ => StatementSideEffects::NoSideEffects,
@@ -32,6 +34,7 @@ pub fn analyze_statement_side_effects(
       }
       farmfe_core::swc_ecma_ast::ModuleDecl::ExportDefaultExpr(default_expr) => {
         let mut analyzer = SideEffectsAnalyzer::new(unresolved_mark, top_level_mark);
+        analyzer.set_in_top_level(true);
         default_expr.expr.visit_with(&mut analyzer);
         analyzer.side_effects
       }
@@ -40,7 +43,9 @@ pub fn analyze_statement_side_effects(
     },
     ModuleItem::Stmt(stmt) => {
       let mut analyzer = SideEffectsAnalyzer::new(unresolved_mark, top_level_mark);
+      analyzer.set_in_top_level(true);
       stmt.visit_with(&mut analyzer);
+
       analyzer.side_effects
     }
   }
@@ -51,7 +56,8 @@ struct SideEffectsAnalyzer {
   top_level_mark: Mark,
   side_effects: StatementSideEffects,
 
-  in_assign_expr: bool,
+  in_assign_left: bool,
+  in_top_level: bool,
 }
 
 impl SideEffectsAnalyzer {
@@ -60,13 +66,44 @@ impl SideEffectsAnalyzer {
       unresolved_mark,
       top_level_mark,
       side_effects: StatementSideEffects::NoSideEffects,
-      in_assign_expr: false,
+      in_assign_left: false,
+      in_top_level: false,
     }
+  }
+
+  pub fn set_in_top_level(&mut self, in_top_level: bool) {
+    self.in_top_level = in_top_level;
+  }
+
+  pub fn is_in_top_level(&self) -> bool {
+    self.in_top_level
   }
 }
 
 impl Visit for SideEffectsAnalyzer {
+  fn visit_block_stmt_or_expr(&mut self, n: &farmfe_core::swc_ecma_ast::BlockStmtOrExpr) {
+    let pre = self.is_in_top_level();
+    self.set_in_top_level(false);
+
+    n.visit_children_with(self);
+
+    self.set_in_top_level(pre);
+  }
+
+  fn visit_block_stmt(&mut self, n: &farmfe_core::swc_ecma_ast::BlockStmt) {
+    let pre = self.is_in_top_level();
+    self.set_in_top_level(false);
+
+    n.visit_children_with(self);
+
+    self.set_in_top_level(pre);
+  }
+
   fn visit_var_decl(&mut self, n: &farmfe_core::swc_ecma_ast::VarDecl) {
+    if !self.is_in_top_level() {
+      return;
+    }
+
     for decl in &n.decls {
       if let Some(init) = &decl.init {
         init.visit_with(self);
@@ -75,16 +112,26 @@ impl Visit for SideEffectsAnalyzer {
   }
 
   fn visit_member_expr(&mut self, member_expr: &farmfe_core::swc_ecma_ast::MemberExpr) {
+    if !self.is_in_top_level() {
+      return;
+    }
+
     match &member_expr.prop {
       farmfe_core::swc_ecma_ast::MemberProp::Computed(computed) => {
         computed.expr.visit_with(self);
       }
       _ => {}
     }
+
     member_expr.obj.visit_with(self);
   }
 
   fn visit_stmt(&mut self, n: &farmfe_core::swc_ecma_ast::Stmt) {
+    // Do not analyze the side effects of nested statements for now
+    if !self.is_in_top_level() {
+      return;
+    }
+
     match n {
       farmfe_core::swc_ecma_ast::Stmt::Block(_) => self
         .side_effects
@@ -112,27 +159,37 @@ impl Visit for SideEffectsAnalyzer {
         .side_effects
         .merge_side_effects(StatementSideEffects::UnclassifiedSelfExecuted),
       farmfe_core::swc_ecma_ast::Stmt::Decl(decl) => match decl {
-        farmfe_core::swc_ecma_ast::Decl::Var(var_decl) => var_decl.visit_with(self),
+        farmfe_core::swc_ecma_ast::Decl::Var(var_decl) => {
+          var_decl.visit_with(self);
+        }
         _ => {}
       },
-      farmfe_core::swc_ecma_ast::Stmt::Expr(expr) => expr.visit_with(self),
+      farmfe_core::swc_ecma_ast::Stmt::Expr(expr) => {
+        expr.visit_with(self);
+      }
     };
   }
 
   fn visit_expr(&mut self, expr: &Expr) {
+    if !self.is_in_top_level() {
+      return;
+    }
+
     match expr {
       Expr::Fn(_) | Expr::Class(_) | Expr::Lit(_) | Expr::Arrow(_) => self
         .side_effects
         .merge_side_effects(StatementSideEffects::NoSideEffects),
       // TODO detect call expressions that have side effects by #pure annotation
-      Expr::Call(_) | Expr::New(_) | Expr::This(_) | Expr::SuperProp(_) => self
-        .side_effects
-        .merge_side_effects(StatementSideEffects::UnclassifiedSelfExecuted),
+      Expr::Call(_) | Expr::New(_) | Expr::This(_) | Expr::SuperProp(_) => {
+        self
+          .side_effects
+          .merge_side_effects(StatementSideEffects::UnclassifiedSelfExecuted);
+      }
       Expr::Ident(ident) => {
         self.side_effects.merge_side_effects(
           if ident.span.ctxt().outer() == self.unresolved_mark {
             StatementSideEffects::AccessGlobalVar
-          } else if self.in_assign_expr {
+          } else if self.in_assign_left {
             if ident.span.ctxt().outer() == self.top_level_mark {
               StatementSideEffects::WriteTopLevelVar(HashSet::from([ident.to_id()]))
             } else {
@@ -144,7 +201,7 @@ impl Visit for SideEffectsAnalyzer {
         );
       }
       Expr::Assign(assign_expr) => {
-        self.in_assign_expr = true;
+        self.in_assign_left = true;
 
         match &assign_expr.left {
           farmfe_core::swc_ecma_ast::AssignTarget::Simple(st) => match st {
@@ -185,7 +242,7 @@ impl Visit for SideEffectsAnalyzer {
             pat.visit_with(self);
           }
         }
-        self.in_assign_expr = false;
+        self.in_assign_left = false;
 
         assign_expr.right.visit_with(self);
       }

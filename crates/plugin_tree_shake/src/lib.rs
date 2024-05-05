@@ -43,44 +43,27 @@ impl Plugin for FarmPluginTreeShake {
     module_graph: &mut farmfe_core::module::module_graph::ModuleGraph,
     context: &std::sync::Arc<farmfe_core::context::CompilationContext>,
   ) -> farmfe_core::error::Result<Option<()>> {
-    let start = std::time::Instant::now();
     // 1. fill module mark
     fill_module_mark::fill_module_mark(module_graph, context);
-    println!("resolve_module_mark: {:?}", start.elapsed());
+
     // 2. init tree_shake_modules_map
     let mut tree_shake_modules_map =
       init_tree_shake_module_map::init_tree_shake_module_map(module_graph, context);
-    println!("TreeShakeModule::new: {:?}", start.elapsed());
 
-    // 3. topo sort the module_graph, the cyclic modules will be marked as side_effects
-    let topo_sorted_modules = {
-      farmfe_core::farm_profile_scope!("tree shake toposort".to_string());
-      // toposort::toposort(&module_graph, &mut tree_shake_modules_map)
-      let (modules, _) = module_graph.toposort();
-      modules
-    };
-    println!("topo_sorted_modules: {:?}", start.elapsed());
-
-    // 4. mark entry modules and non-script modules as side_effects
-    let tree_shake_modules_ids = mark_initial_side_effects::mark_initial_side_effects(
+    // 3. mark entry modules and non-script modules as side_effects
+    let entry_module_ids = mark_initial_side_effects::mark_initial_side_effects(
       module_graph,
-      topo_sorted_modules,
       &mut tree_shake_modules_map,
     );
-    println!(
-      "mark topo_sorted_modules side effects: {:?}",
-      start.elapsed()
-    );
 
-    // 5. traverse the tree_shake_modules, and remove the unused statements
+    // 4. traverse the tree_shake_modules, and remove the unused statements
     let modules_to_remove = tree_shake_modules::tree_shake_modules(
-      tree_shake_modules_ids,
+      entry_module_ids,
       module_graph,
       &mut tree_shake_modules_map,
     );
-    println!("traverse the tree_shake_modules: {:?}", start.elapsed());
 
-    // 6. update used_exports in module_graph
+    // 5. update used_exports in module_graph
     for module in module_graph.modules_mut() {
       if let Some(tree_shake_module) = tree_shake_modules_map.get(&module.id) {
         let mut used_exports = tree_shake_module.handled_used_exports.to_string_vec();
@@ -90,12 +73,12 @@ impl Plugin for FarmPluginTreeShake {
       }
     }
 
-    // 7. remove the unused modules
+    // 6. remove the unused modules
     for module_id in modules_to_remove {
       module_graph.remove_module(&module_id);
     }
 
-    // 8. remove useless hot update statements if production
+    // 7. remove useless hot update statements if production
     if matches!(context.config.mode, Mode::Production) {
       remove_useless_hot_update_stmts(module_graph);
     }

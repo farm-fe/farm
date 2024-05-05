@@ -15,7 +15,11 @@ pub fn add_used_exports_by_import_info(
   module_graph: &ModuleGraph,
   tree_shake_module_id: &ModuleId,
   import_info: ImportInfo,
-) {
+) -> Option<()> {
+  if import_info.specifiers.is_empty() {
+    return None;
+  }
+
   let imported_module_id = module_graph.get_dep_by_source(
     tree_shake_module_id,
     &import_info.source,
@@ -24,18 +28,10 @@ pub fn add_used_exports_by_import_info(
   let imported_module = module_graph.module(&imported_module_id).unwrap();
 
   if imported_module.external || !imported_module.module_type.is_script() {
-    return;
+    return None;
   }
 
-  let imported_tree_shake_module = tree_shake_modules_map
-    .get_mut(&imported_module_id)
-    .unwrap_or_else(|| {
-      panic!("imported module not found: {:?}", imported_module_id);
-    });
-
-  if import_info.specifiers.is_empty() {
-    return;
-  }
+  let imported_tree_shake_module = tree_shake_modules_map.get_mut(&imported_module_id)?;
 
   for sp in import_info.specifiers {
     match sp {
@@ -66,6 +62,8 @@ pub fn add_used_exports_by_import_info(
       }
     }
   }
+
+  Some(())
 }
 
 /// All all exported to used_exports
@@ -74,17 +72,17 @@ pub fn add_used_exports_by_export_info(
   module_graph: &ModuleGraph,
   tree_shake_module_id: &ModuleId,
   export_info: ExportInfo,
-) {
+) -> Option<()> {
   if let Some(source) = &export_info.source {
     let exported_module_id =
       module_graph.get_dep_by_source(tree_shake_module_id, source, Some(ResolveKind::ExportFrom));
     let exported_module = module_graph.module(&exported_module_id).unwrap();
 
     if exported_module.external {
-      return;
+      return None;
     }
 
-    let exported_tree_shake_module = tree_shake_modules_map.get_mut(&exported_module_id).unwrap();
+    let exported_tree_shake_module = tree_shake_modules_map.get_mut(&exported_module_id)?;
 
     for sp in export_info.specifiers {
       match sp {
@@ -115,6 +113,8 @@ pub fn add_used_exports_by_export_info(
       }
     }
   }
+
+  Some(())
 }
 
 pub fn strip_context(ident: &Id) -> String {

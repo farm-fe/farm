@@ -394,6 +394,10 @@ impl StatementGraph {
     self.g.node_indices().map(|i| &self.g[i]).collect()
   }
 
+  pub fn stmt_ids(&self) -> Vec<StatementId> {
+    self.g.node_indices().map(|i| self.g[i].id).collect()
+  }
+
   pub fn edges(&self) -> Vec<(&Statement, &Statement, &StatementGraphEdge)> {
     self
       .g
