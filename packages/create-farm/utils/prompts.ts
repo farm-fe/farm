@@ -2,6 +2,7 @@ import { colors } from './color.js';
 
 const allFramework = new Map([
   ['tauri', ['lit', 'tauri', 'electron']],
+  ['ssr', ['lit', 'tauri', 'electron']],
   ['electron', ['lit', 'tauri', 'electron']]
 ]);
 
