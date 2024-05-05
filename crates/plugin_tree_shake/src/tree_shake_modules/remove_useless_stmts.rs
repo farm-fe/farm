@@ -108,11 +108,7 @@ pub fn remove_useless_stmts(
     if dep_module.external
       || dep_module.side_effects
       || dep_tree_shake_module.is_none()
-      || !dep_tree_shake_module
-        .unwrap()
-        .stmt_graph
-        .used_stmts()
-        .is_empty()
+      || dep_tree_shake_module.unwrap().contains_self_executed_stmt
     {
       preserved_import_export_from_stmts.push(index);
     }
@@ -125,6 +121,22 @@ pub fn remove_useless_stmts(
   for index in stmts_to_remove {
     if !preserved_import_export_from_stmts.contains(&index) {
       swc_module.body.remove(index);
+    } else {
+      // remove all the specifiers in the import / export from statement
+      let mut useless_specifier_remover = UselessSpecifierRemover {
+        used_defined_idents: &HashSet::new(),
+      };
+      if let ModuleItem::ModuleDecl(module_decl) = &mut swc_module.body[index] {
+        if module_decl.is_import() {
+          if let ModuleDecl::Import(import_decl) = module_decl {
+            useless_specifier_remover.visit_mut_import_decl(import_decl);
+          }
+        } else if module_decl.is_export_named() {
+          if let ModuleDecl::ExportNamed(export_decl) = module_decl {
+            useless_specifier_remover.visit_mut_export_specifiers(&mut export_decl.specifiers);
+          }
+        }
+      }
     }
   }
 }

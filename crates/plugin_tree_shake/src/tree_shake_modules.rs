@@ -1,9 +1,6 @@
 use std::collections::{HashMap, HashSet, VecDeque};
 
-use farmfe_core::{
-  module::{module_graph::ModuleGraph, ModuleId},
-  plugin::ResolveKind,
-};
+use farmfe_core::module::{module_graph::ModuleGraph, ModuleId};
 
 use crate::{
   module::TreeShakeModule, statement_graph::traced_used_import::TracedUsedImportStatement,
@@ -14,7 +11,7 @@ pub mod remove_useless_stmts;
 pub(crate) mod utils;
 
 pub fn tree_shake_modules(
-  tree_shake_modules_ids: Vec<ModuleId>,
+  mut tree_shake_modules_ids: Vec<ModuleId>,
   module_graph: &mut ModuleGraph,
   tree_shake_modules_map: &mut HashMap<ModuleId, TreeShakeModule>,
 ) -> Vec<ModuleId> {
@@ -42,6 +39,10 @@ pub fn tree_shake_modules(
       tree_shake_module.module_system,
       farmfe_core::module::ModuleSystem::EsModule
     ) {
+      // mark the non-esm module as side_effects
+      // Farm won't tree shake the side effects module
+      tree_shake_module.side_effects = true;
+
       for (dep_id, _) in module_graph.dependencies(&tree_shake_module_id) {
         let dep_tree_shake_module = tree_shake_modules_map.get_mut(&dep_id);
 
@@ -68,14 +69,11 @@ pub fn tree_shake_modules(
           let TracedUsedImportStatement {
             source,
             used_stmt_idents,
+            kind,
             ..
           } = import_stmt;
 
-          let dep_id = module_graph.get_dep_by_source(
-            &tree_shake_module_id,
-            &source,
-            Some(ResolveKind::Import),
-          );
+          let dep_id = module_graph.get_dep_by_source(&tree_shake_module_id, &source, Some(kind));
           if let Some(dep_tree_shake_module) = tree_shake_modules_map.get_mut(&dep_id) {
             // add all unhandled used stmt idents to pending_used_exports
             for used_stmt_ident in used_stmt_idents {
@@ -99,6 +97,9 @@ pub fn tree_shake_modules(
     }
   }
 
+  // traverse the tree_shake_modules from bottom to top
+  // so the import statement would be preserved when the dependency module is not empty
+  tree_shake_modules_ids.reverse();
   // 2. remove statements that should is not used
   for tree_shake_module_id in tree_shake_modules_ids {
     remove_useless_stmts::remove_useless_stmts(
@@ -109,11 +110,11 @@ pub fn tree_shake_modules(
 
     let module = module_graph.module(&tree_shake_module_id).unwrap();
     let tree_shake_module = tree_shake_modules_map.get(&tree_shake_module_id).unwrap();
-    //
+    // do not remove the module if it is external or has side effects or does not have statements
     if !module.external
       && !module.side_effects
       && !tree_shake_module.side_effects
-      && tree_shake_module.stmt_graph.used_stmts().is_empty()
+      && module.meta.as_script().ast.body.is_empty()
     {
       modules_to_remove.push(tree_shake_module_id);
     }

@@ -1,5 +1,7 @@
 use std::collections::HashSet;
 
+use farmfe_core::plugin::ResolveKind;
+
 use crate::module::UsedExportsIdent;
 
 use super::{
@@ -50,6 +52,7 @@ pub struct TracedUsedImportStatement {
   /// 'import * as foo from 'foo';' => foo
   pub source: String,
   pub used_stmt_idents: HashSet<UsedExportsIdent>,
+  pub kind: ResolveKind,
 }
 
 impl TracedUsedImportStatement {
@@ -100,6 +103,7 @@ impl TracedUsedImportStatement {
       stmt_id,
       source: import_info.source.clone(),
       used_stmt_idents,
+      kind: ResolveKind::Import,
     }
   }
 
@@ -150,6 +154,7 @@ impl TracedUsedImportStatement {
         stmt_id,
         source: source.clone(),
         used_stmt_idents,
+        kind: ResolveKind::ExportFrom,
       });
     }
 

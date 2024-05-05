@@ -124,29 +124,22 @@ impl Visit for SideEffectsAnalyzer {
       Expr::Fn(_) | Expr::Class(_) | Expr::Lit(_) | Expr::Arrow(_) => self
         .side_effects
         .merge_side_effects(StatementSideEffects::NoSideEffects),
-      Expr::Array(_)
-      | Expr::Object(_)
-      | Expr::Unary(_)
-      | Expr::Update(_)
-      | Expr::Bin(_)
-      | Expr::Call(_)
-      | Expr::New(_)
-      | Expr::Seq(_)
-      | Expr::Cond(_)
-      | Expr::This(_)
-      | Expr::SuperProp(_) => self
+      // TODO detect call expressions that have side effects by #pure annotation
+      Expr::Call(_) | Expr::New(_) | Expr::This(_) | Expr::SuperProp(_) => self
         .side_effects
         .merge_side_effects(StatementSideEffects::UnclassifiedSelfExecuted),
       Expr::Ident(ident) => {
         self.side_effects.merge_side_effects(
           if ident.span.ctxt().outer() == self.unresolved_mark {
             StatementSideEffects::AccessGlobalVar
-          } else {
-            if self.in_assign_expr && ident.span.ctxt().outer() == self.top_level_mark {
+          } else if self.in_assign_expr {
+            if ident.span.ctxt().outer() == self.top_level_mark {
               StatementSideEffects::WriteTopLevelVar(HashSet::from([ident.to_id()]))
             } else {
-              StatementSideEffects::NoSideEffects
+              StatementSideEffects::UnclassifiedSelfExecuted
             }
+          } else {
+            StatementSideEffects::NoSideEffects
           },
         );
       }
@@ -162,6 +155,11 @@ impl Visit for SideEffectsAnalyzer {
                   .merge_side_effects(StatementSideEffects::WriteTopLevelVar(HashSet::from([i
                     .id
                     .to_id()])));
+              } else {
+                // when the assign target is not a top level variable, treat it as unclassified side effects for now
+                self
+                  .side_effects
+                  .merge_side_effects(StatementSideEffects::UnclassifiedSelfExecuted);
               }
             }
             farmfe_core::swc_ecma_ast::SimpleAssignTarget::Member(member_expr) => {
@@ -191,7 +189,17 @@ impl Visit for SideEffectsAnalyzer {
 
         assign_expr.right.visit_with(self);
       }
-      Expr::Await(_) | Expr::Paren(_) | Expr::Tpl(_) | Expr::Yield(_) => {
+      Expr::Array(_)
+      | Expr::Object(_)
+      | Expr::Unary(_)
+      | Expr::Update(_)
+      | Expr::Seq(_)
+      | Expr::Cond(_)
+      | Expr::Bin(_)
+      | Expr::Await(_)
+      | Expr::Paren(_)
+      | Expr::Tpl(_)
+      | Expr::Yield(_) => {
         expr.visit_children_with(self);
       }
       Expr::Member(member_expr) => {

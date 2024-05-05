@@ -352,3 +352,81 @@ export { a, b, c as d };"#;
     assert_used_defined_idents!(6, vec!["d#2"]);
   });
 }
+
+#[test]
+fn trace_and_mark_used_statements_commonjs_exports() {
+  let code = r#"
+  module.exports = {
+    program: function() {}
+  }"#;
+
+  GLOBALS.set(&Globals::new(), || {
+    let (ast, _) = parse_module(code);
+
+    let mut stmt_graph = StatementGraph::new(&ast, Mark::new(), Mark::new());
+
+    let traced_import_stmts = stmt_graph.trace_and_mark_used_statements(Default::default());
+
+    assert_eq!(traced_import_stmts.len(), 0);
+
+    let mut used_stmts = stmt_graph
+      .used_stmts()
+      .iter()
+      .map(|i| *i)
+      .collect::<Vec<_>>();
+    used_stmts.sort();
+    assert_eq!(used_stmts, [0]);
+  });
+}
+
+#[test]
+fn trace_and_mark_used_statements_default() {
+  let code = r#"
+  import commander from './command.js';
+
+// wrapper to provide named exports for ESM.
+export const {
+  program,
+  createCommand,
+  createArgument,
+  createOption,
+  CommanderError,
+  InvalidArgumentError,
+  InvalidOptionArgumentError, // deprecated old name
+  Command,
+  Argument,
+  Option,
+  Help
+} = commander;
+"#;
+
+  GLOBALS.set(&Globals::new(), || {
+    let (ast, _) = parse_module(code);
+
+    let mut stmt_graph = StatementGraph::new(&ast, Mark::new(), Mark::new());
+
+    let traced_import_stmts = stmt_graph.trace_and_mark_used_statements(HashMap::from([(
+      1,
+      HashSet::from([UsedStatementIdent::SwcIdent((
+        "program".into(),
+        SyntaxContext::from_u32(2),
+      ))]),
+    )]));
+
+    assert_eq!(traced_import_stmts.len(), 1);
+    assert_eq!(traced_import_stmts[0].stmt_id, 0);
+    assert_eq!(traced_import_stmts[0].source, "./command.js");
+    assert_eq!(traced_import_stmts[0].used_stmt_idents.len(), 1);
+    assert!(traced_import_stmts[0]
+      .used_stmt_idents
+      .contains(&UsedExportsIdent::Default));
+
+    let mut used_stmts = stmt_graph
+      .used_stmts()
+      .iter()
+      .map(|i| *i)
+      .collect::<Vec<_>>();
+    used_stmts.sort();
+    assert_eq!(used_stmts, [0, 1]);
+  });
+}

@@ -94,4 +94,13 @@ function attach() {
   };
 }
 
-export { AxiosURLSearchParams2 };
+function AxiosURLSearchParams3(params, options) {
+  this._pairs = [];
+
+  // params && toFormData(params, this, options);
+  params;
+}
+
+AxiosURLSearchParams3.prototype.attach = attach;
+
+export { AxiosURLSearchParams2, AxiosURLSearchParams3 };

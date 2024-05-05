@@ -1,6 +1,6 @@
 use std::collections::{HashMap, HashSet};
 
-use farmfe_core::swc_ecma_ast::{Id, Ident, ModuleExportName, ModuleItem};
+use farmfe_core::swc_ecma_ast::{Id, ModuleExportName, ModuleItem};
 use farmfe_toolkit::swc_ecma_visit::{Visit, VisitWith};
 
 use super::{defined_idents_collector::DefinedIdentsCollector, StatementGraphEdge, StatementId};
@@ -31,7 +31,7 @@ pub fn analyze_deps_by_used_idents(
 struct UsedIdentsVisitor<'a> {
   deps: &'a mut HashMap<StatementId, StatementGraphEdge>,
   reverse_defined_idents_map: &'a HashMap<Id, StatementId>,
-  current_defined_ident: Option<Id>,
+  current_defined_ident: Option<Vec<Id>>,
 }
 
 impl<'a> UsedIdentsVisitor<'a> {
@@ -46,13 +46,13 @@ impl<'a> UsedIdentsVisitor<'a> {
     }
   }
 
-  pub fn with_ident(&mut self, ident: Id, f: impl FnOnce(&mut Self)) {
+  pub fn with_ident(&mut self, idents: Vec<Id>, f: impl FnOnce(&mut Self)) {
     if self.current_defined_ident.is_some() {
       f(self);
       return;
     }
 
-    self.current_defined_ident = Some(ident);
+    self.current_defined_ident = Some(idents);
     f(self);
     self.current_defined_ident = None;
   }
@@ -71,7 +71,7 @@ impl Visit for UsedIdentsVisitor<'_> {
               ModuleExportName::Ident(ident) => ident,
               _ => panic!("unexpected named export orig"),
             };
-            self.current_defined_ident = Some(ident.to_id());
+            self.current_defined_ident = Some(vec![ident.to_id()]);
             self.visit_ident(ident);
             self.current_defined_ident = None;
           }
@@ -99,7 +99,7 @@ impl Visit for UsedIdentsVisitor<'_> {
     match n {
       farmfe_core::swc_ecma_ast::DefaultDecl::Class(class_expr) => {
         if let Some(ident) = &class_expr.ident {
-          self.with_ident(ident.to_id(), |v| {
+          self.with_ident(vec![ident.to_id()], |v| {
             class_expr.class.visit_children_with(v);
           });
         } else {
@@ -108,7 +108,7 @@ impl Visit for UsedIdentsVisitor<'_> {
       }
       farmfe_core::swc_ecma_ast::DefaultDecl::Fn(fn_expr) => {
         if let Some(ident) = &fn_expr.ident {
-          self.with_ident(ident.to_id(), |v| {
+          self.with_ident(vec![ident.to_id()], |v| {
             fn_expr.function.visit_children_with(v);
           });
         } else {
@@ -122,7 +122,7 @@ impl Visit for UsedIdentsVisitor<'_> {
   fn visit_decl(&mut self, n: &farmfe_core::swc_ecma_ast::Decl) {
     match n {
       farmfe_core::swc_ecma_ast::Decl::Fn(n) => {
-        self.with_ident(n.ident.to_id(), |v| {
+        self.with_ident(vec![n.ident.to_id()], |v| {
           n.function.visit_children_with(v);
         });
       }
@@ -131,22 +131,19 @@ impl Visit for UsedIdentsVisitor<'_> {
           if let Some(init) = &decl.init {
             let mut defined_idents_collector = DefinedIdentsCollector::new();
             decl.name.visit_with(&mut defined_idents_collector);
+            let defined_idents = defined_idents_collector
+              .defined_idents
+              .into_iter()
+              .collect::<Vec<_>>();
 
-            let mut used_ident_visitor = IdentCollector::new();
-            init.visit_with(&mut used_ident_visitor);
-
-            for defined_ident in defined_idents_collector.defined_idents {
-              self.with_ident(defined_ident, |v| {
-                for used_ident in &used_ident_visitor.idents {
-                  v.visit_ident(used_ident);
-                }
-              });
-            }
+            self.with_ident(defined_idents, |v| {
+              init.visit_children_with(v);
+            });
           }
         }
       }
       farmfe_core::swc_ecma_ast::Decl::Class(n) => {
-        self.with_ident(n.ident.to_id(), |v| {
+        self.with_ident(vec![n.ident.to_id()], |v| {
           n.class.visit_children_with(v);
         });
       }
@@ -163,39 +160,29 @@ impl Visit for UsedIdentsVisitor<'_> {
         used_idents: HashSet::new(),
       });
 
-      if let Some(current_defined_ident) = &self.current_defined_ident {
-        if self
-          .reverse_defined_idents_map
-          .contains_key(current_defined_ident)
-        {
-          entry
-            .used_idents_map
-            .entry(current_defined_ident.clone())
-            .or_insert(HashSet::new())
-            .insert(ident);
+      if let Some(current_defined_idents) = &self.current_defined_ident {
+        let mut found = false;
+
+        for current_defined_ident in current_defined_idents {
+          if self
+            .reverse_defined_idents_map
+            .contains_key(current_defined_ident)
+          {
+            entry
+              .used_idents_map
+              .entry(current_defined_ident.clone())
+              .or_insert(HashSet::new())
+              .insert(ident.clone());
+            found = true;
+          }
+        }
+
+        if found {
           return;
         }
       }
 
       entry.used_idents.insert(ident);
     }
-  }
-}
-
-struct IdentCollector {
-  pub idents: HashSet<Ident>,
-}
-
-impl IdentCollector {
-  pub fn new() -> Self {
-    Self {
-      idents: HashSet::new(),
-    }
-  }
-}
-
-impl Visit for IdentCollector {
-  fn visit_ident(&mut self, n: &farmfe_core::swc_ecma_ast::Ident) {
-    self.idents.insert(n.clone());
   }
 }

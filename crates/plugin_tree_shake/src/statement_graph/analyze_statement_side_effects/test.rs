@@ -139,3 +139,23 @@ fn access_global_var() {
     ));
   });
 }
+
+#[test]
+fn commonjs_module_exports() {
+  GLOBALS.set(&Globals::new(), || {
+    let code = r#"
+    module.exports = {
+      program: function() {}
+    }
+  "#;
+    let (module, unresolved_mark, top_level_mark) = parse_module(code);
+
+    let item_1 = &module.body[0];
+    let side_effects =
+      super::analyze_statement_side_effects(item_1, unresolved_mark, top_level_mark);
+    assert!(matches!(
+      side_effects,
+      super::StatementSideEffects::AccessGlobalVar
+    ));
+  });
+}

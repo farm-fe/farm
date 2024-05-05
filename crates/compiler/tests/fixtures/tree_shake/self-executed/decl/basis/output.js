@@ -13,7 +13,7 @@
             return _default;
         }
     });
-    var a1 = 11, a2 = 22, a3 = 33;
+    var a1 = 11;
     console.log(a1);
     const aValue = "a";
     var a = aValue;

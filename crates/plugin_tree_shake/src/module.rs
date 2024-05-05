@@ -111,8 +111,8 @@ pub struct TreeShakeModule {
   pub module_id: ModuleId,
   pub side_effects: bool,
   pub stmt_graph: StatementGraph,
-  // pub contains_self_executed_stmt: bool,
-  // pub is_self_executed_import: bool,
+  /// true if the module or it's dependency modules contains self executed statement
+  pub contains_self_executed_stmt: bool,
   /// used exports will be analyzed when tree shaking
   /// side effects statement will be added to used exports too.
   pub handled_used_exports: UsedExports,
@@ -149,6 +149,8 @@ impl TreeShakeModule {
 
     Self {
       module_id: module.id.clone(),
+      contains_self_executed_stmt: module_system != ModuleSystem::EsModule
+        || !stmt_graph.preserved_side_effects_stmts().is_empty(),
       stmt_graph,
       pending_used_exports: handled_used_exports.clone(),
       handled_used_exports,

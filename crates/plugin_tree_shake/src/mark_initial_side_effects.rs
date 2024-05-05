@@ -40,6 +40,7 @@ pub fn mark_initial_side_effects(
 
     if let Some(shake_module) = tree_shake_modules_map.get_mut(&module.id) {
       shake_module.side_effects = module.side_effects;
+
       if shake_module.side_effects {
         shake_module.pending_used_exports.set_export_all();
       }
@@ -56,21 +57,24 @@ pub fn mark_initial_side_effects(
       }
     }
 
-    if let Some(tree_shake_module) = tree_shake_modules_map.get_mut(&module.id) {
-      if tree_shake_module.side_effects {
-        for stmt_id in tree_shake_module
-          .stmt_graph
-          .stmts()
-          .iter()
-          .map(|i| i.id)
-          .collect::<Vec<_>>()
-        {
-          tree_shake_module.stmt_graph.mark_used_statements(stmt_id);
-        }
-      }
-    }
-
     tree_shake_modules_ids.push(module_id);
+  }
+
+  // update contains_self_executed_stmt for the tree_shake_modules
+  for tree_shake_module_id in &tree_shake_modules_ids {
+    let contains_self_executed_stmt = tree_shake_modules_map
+      .get(&tree_shake_module_id)
+      .unwrap()
+      .contains_self_executed_stmt;
+    module_graph
+      .dependents_ids(&tree_shake_module_id)
+      .into_iter()
+      .for_each(|dept_id| {
+        if let Some(dept_tree_shake_module) = tree_shake_modules_map.get_mut(&dept_id) {
+          dept_tree_shake_module.contains_self_executed_stmt =
+            dept_tree_shake_module.contains_self_executed_stmt || contains_self_executed_stmt
+        }
+      });
   }
 
   tree_shake_modules_ids

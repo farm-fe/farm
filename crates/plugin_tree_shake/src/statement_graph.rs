@@ -1,7 +1,6 @@
 use std::collections::VecDeque;
 use std::collections::{HashMap, HashSet};
 
-use farmfe_core::petgraph::visit::IntoNeighborsDirected;
 use farmfe_core::petgraph::Direction;
 use farmfe_core::swc_common::Mark;
 use farmfe_core::swc_ecma_ast::{Id, ImportSpecifier, ModuleDecl, ModuleExportName};
@@ -324,6 +323,15 @@ impl StatementGraph {
     &self.used_stmts
   }
 
+  pub fn preserved_side_effects_stmts(&self) -> Vec<StatementId> {
+    self
+      .g
+      .node_indices()
+      .filter(|i| self.g[*i].side_effects.is_preserved())
+      .map(|i| self.g[i].id)
+      .collect()
+  }
+
   pub fn add_edge(&mut self, from: StatementId, to: StatementId, edge_weight: StatementGraphEdge) {
     let from_node = self.id_index_map.get(&from).unwrap();
     let to_node = self.id_index_map.get(&to).unwrap();
@@ -411,18 +419,17 @@ impl StatementGraph {
     let mut used_statements_map = used_stmts_exports;
 
     // 1. preserve all statements that have side effects
-    for stmt in self.stmts() {
-      if stmt.side_effects.is_preserved() {
-        used_statements_map.insert(
-          stmt.id,
-          stmt
-            .defined_idents
-            .clone()
-            .into_iter()
-            .map(UsedStatementIdent::SwcIdent)
-            .collect(),
-        );
-      }
+    for stmt_id in self.preserved_side_effects_stmts() {
+      let stmt = self.stmt(&stmt_id);
+      used_statements_map.insert(
+        stmt_id,
+        stmt
+          .defined_idents
+          .clone()
+          .into_iter()
+          .map(UsedStatementIdent::SwcIdent)
+          .collect(),
+      );
     }
 
     // 2. sort by statement id
@@ -435,34 +442,45 @@ impl StatementGraph {
 
     // 3. traverse the used statements in the statement graph
     while let Some((stmt_id, used_defined_idents)) = stmts.pop_front() {
+      let get_stmt_used_defined_idents = |stmt: &Statement| {
+        used_defined_idents
+          .iter()
+          .filter_map(|i| match i {
+            UsedStatementIdent::SwcIdent(id) => Some(HashSet::from([id.clone()])),
+            UsedStatementIdent::Default => {
+              // add all defined idents to used defined idents if it's a default export
+              if let Some(export_info) = &stmt.export_info {
+                if export_info.contains_default_export() {
+                  // defined_idents should always be empty
+                  return Some(stmt.defined_idents.clone());
+                }
+              }
+
+              None
+            }
+            _ => None,
+          })
+          .flatten()
+          .collect::<HashSet<_>>()
+      };
+
       if visited.contains(&stmt_id) {
-        continue;
+        // if all used defined idents are visited, skip the statement
+        let stmt = self.stmt(&stmt_id);
+        let stmt_used_defined_idents = get_stmt_used_defined_idents(stmt);
+        if stmt_used_defined_idents.is_subset(&stmt.used_defined_idents) {
+          continue;
+        }
+      } else {
+        visited.insert(stmt_id);
       }
 
-      visited.insert(stmt_id);
       // 3.1 mark the statement as used
       self.mark_used_statements(stmt_id);
       // 3.2 update used defined idents of the statement
       let stmt = self.stmt_mut(&stmt_id);
-      let stmt_used_defined_idents = used_defined_idents
-        .iter()
-        .filter_map(|i| match i {
-          UsedStatementIdent::SwcIdent(id) => Some(HashSet::from([id.clone()])),
-          UsedStatementIdent::Default => {
-            // add all defined idents to used defined idents if it's a default export
-            if let Some(export_info) = &stmt.export_info {
-              if export_info.contains_default_export() {
-                return Some(stmt.defined_idents.clone());
-              }
-            }
-
-            None
-          }
-          _ => None,
-        })
-        .flatten();
+      let stmt_used_defined_idents = get_stmt_used_defined_idents(stmt);
       stmt.used_defined_idents.extend(stmt_used_defined_idents);
-      let stmt = self.stmt(&stmt_id);
 
       // 3.3 visit dependencies of the used statement
       for (dep_stmt, edge) in self.dependencies(&stmt_id) {
@@ -474,12 +492,19 @@ impl StatementGraph {
             if let Some(used_dep_defined_idents) = edge.used_idents_map.get(used_defined_ident) {
               all_used_dep_defined_idents.extend(used_dep_defined_idents.clone());
             }
+          } else if let UsedStatementIdent::Default = used_defined_ident {
+            // if the used defined ident is default, add all defined idents to used defined idents
+            if let Some(export_info) = &self.stmt(&stmt_id).export_info {
+              if export_info.contains_default_export() {
+                all_used_dep_defined_idents.extend(dep_stmt.defined_idents.clone());
+              }
+            }
           }
         }
 
         let unhandled_used_dep_defined_idents = all_used_dep_defined_idents
           .into_iter()
-          .filter(|i| !stmt.used_defined_idents.contains(i))
+          .filter(|i| !dep_stmt.used_defined_idents.contains(i))
           .collect::<HashSet<_>>();
 
         if !unhandled_used_dep_defined_idents.is_empty() {
@@ -494,34 +519,14 @@ impl StatementGraph {
       }
 
       // 3.4 visit dependents of the used statement, handle write side effects here
-      for (dept_stmt, edge) in self.dependents(&stmt_id) {
-        // handle dependent side effects
-        match &dept_stmt.side_effects {
-          StatementSideEffects::WriteTopLevelVar(written_top_level_vars) => {
-            // if the used defined idents are written by the dependent statement, mark the dependent statement as used
-            let mut dept_used_idents = HashSet::new();
-
-            for dept_defined_ident in &dept_stmt.defined_idents {
-              if let Some(used_cur_stmt_defined_idents) =
-                edge.used_idents_map.get(dept_defined_ident)
-              {
-                if !dept_stmt.used_defined_idents.contains(dept_defined_ident)
-                  && !written_top_level_vars.is_disjoint(used_cur_stmt_defined_idents)
-                {
-                  dept_used_idents.insert(UsedStatementIdent::SwcIdent(dept_defined_ident.clone()));
-                }
-              }
-            }
-
-            if !dept_used_idents.is_empty() || !edge.used_idents.is_disjoint(written_top_level_vars)
-            {
-              stmts.push_back((dept_stmt.id, dept_used_idents));
-            }
-          }
-          StatementSideEffects::AccessGlobalVar
-          | StatementSideEffects::UnclassifiedSelfExecuted
-          | StatementSideEffects::NoSideEffects => { /* These 3 types are already handled */ }
-        }
+      for (dept_id, used_idents) in self.trace_dependents_side_effects(stmt_id) {
+        stmts.push_back((
+          dept_id,
+          used_idents
+            .into_iter()
+            .map(UsedStatementIdent::SwcIdent)
+            .collect(),
+        ));
       }
 
       // 3.5 collect all used `import/export from` statements and push them into result
@@ -545,6 +550,76 @@ impl StatementGraph {
     }
 
     result.sort_by_key(|i| i.stmt_id);
+    result
+  }
+
+  pub fn trace_dependents_side_effects(
+    &self,
+    stmt_id: StatementId,
+  ) -> Vec<(StatementId, HashSet<Id>)> {
+    let mut result = vec![];
+    // we only trace the dependents side effects of the statement that has defined idents
+    if self.stmt(&stmt_id).defined_idents.is_empty() {
+      return result;
+    }
+
+    let mut visited = HashSet::new();
+    let mut stmts = VecDeque::from([stmt_id]);
+    let mut last_write_stmt_id = -1;
+
+    while let Some(stmt_id) = stmts.pop_front() {
+      if visited.contains(&stmt_id) {
+        continue;
+      }
+
+      visited.insert(stmt_id);
+
+      for (dept_stmt, edge) in self.dependents(&stmt_id) {
+        stmts.push_back(dept_stmt.id);
+        let mut all_dept_used_idents = HashSet::new();
+        // handle dependent side effects
+        match &dept_stmt.side_effects {
+          StatementSideEffects::WriteTopLevelVar(written_top_level_vars) => {
+            // if the used defined idents are written by the dependent statement, mark the dependent statement as used
+            let mut dept_used_idents = HashSet::new();
+
+            for dept_defined_ident in &dept_stmt.defined_idents {
+              if let Some(used_cur_stmt_defined_idents) =
+                edge.used_idents_map.get(dept_defined_ident)
+              {
+                if !dept_stmt.used_defined_idents.contains(dept_defined_ident)
+                  && !written_top_level_vars.is_disjoint(used_cur_stmt_defined_idents)
+                {
+                  dept_used_idents.insert(dept_defined_ident.clone());
+                }
+              }
+            }
+
+            if !dept_used_idents.is_empty() || !edge.used_idents.is_disjoint(written_top_level_vars)
+            {
+              last_write_stmt_id = dept_stmt.id as i32;
+              all_dept_used_idents.extend(dept_used_idents);
+            }
+          }
+          StatementSideEffects::AccessGlobalVar
+          | StatementSideEffects::UnclassifiedSelfExecuted
+          | StatementSideEffects::NoSideEffects => { /* These 3 types are handled already */ }
+        }
+
+        result.push((dept_stmt.id, all_dept_used_idents));
+      }
+    }
+
+    if last_write_stmt_id != -1 {
+      let last_write_stmt_index = result
+        .iter()
+        .position(|(i, _)| *i == last_write_stmt_id as usize)
+        .unwrap();
+      result.truncate(last_write_stmt_index + 1);
+    } else {
+      result.clear();
+    }
+
     result
   }
 }
