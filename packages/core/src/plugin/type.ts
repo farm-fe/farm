@@ -7,7 +7,7 @@ import {
   PluginTransformHookParam,
   PluginTransformHookResult
 } from '../../binding/index.js';
-import { Compiler, Server, ResolvedUserConfig, UserConfig } from '../index.js';
+import { Compiler, ResolvedUserConfig, Server, UserConfig } from '../index.js';
 
 // https://stackoverflow.com/questions/61047551/typescript-union-of-string-and-string-literals
 // eslint-disable-next-line @typescript-eslint/ban-types

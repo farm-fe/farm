@@ -25,16 +25,16 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, ref } from "vue";
-import { Card, Tag, Button, Tabs, TabPane } from "ant-design-vue";
-import { CodepenCircleFilled } from "@ant-design/icons-vue";
-import TransformRecord from "./TransformRecord.vue";
-import ResolveRecord from "./ResolveRecord.vue";
-import ProcessRecord from "./ProcessRecord.vue";
-import AnalyzeDepsRecord from "./AnalyzeDepsRecord.vue";
+import { defineComponent, ref } from 'vue';
+import { Card, Tag, Button, Tabs, TabPane } from 'ant-design-vue';
+import { CodepenCircleFilled } from '@ant-design/icons-vue';
+import TransformRecord from './TransformRecord.vue';
+import ResolveRecord from './ResolveRecord.vue';
+import ProcessRecord from './ProcessRecord.vue';
+import AnalyzeDepsRecord from './AnalyzeDepsRecord.vue';
 
 export default defineComponent({
-  name: "ModuleRecords",
+  name: 'ModuleRecords',
   components: {
     Card,
     Tag,
@@ -49,13 +49,13 @@ export default defineComponent({
   },
   props: {
     moduleId: {
-      type: String,
-    },
+      type: String
+    }
   },
   setup() {
-    const activeKey = ref("resolve");
+    const activeKey = ref('resolve');
     return { activeKey };
-  },
+  }
 });
 </script>
 

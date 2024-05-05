@@ -28,9 +28,7 @@
     "build tool",
     "bundler"
   ],
-  "files": [
-    "dist"
-  ],
+  "files": ["dist"],
   "repository": {
     "type": "git",
     "url": "https://github.com/farm-fe/farm"

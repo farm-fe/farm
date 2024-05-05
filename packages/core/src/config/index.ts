@@ -1,9 +1,15 @@
-import module from 'node:module';
-import fs from 'node:fs';
-import path, { isAbsolute, join } from 'node:path';
 import crypto from 'node:crypto';
+import fs from 'node:fs';
+import module from 'node:module';
+import path, { isAbsolute, join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
+import {
+  Config,
+  PluginTransformHookParam,
+  bindingPath
+} from '../../binding/index.js';
+import { JsPlugin } from '../index.js';
 import {
   getSortedPlugins,
   handleVitePlugins,
@@ -12,36 +18,34 @@ import {
   resolveConfigResolvedHook,
   resolveFarmPlugins
 } from '../plugin/index.js';
-import {
-  bindingPath,
-  Config,
-  PluginTransformHookParam
-} from '../../binding/index.js';
 import { Server } from '../server/index.js';
-import { parseUserConfig } from './schema.js';
-import { CompilationMode, loadEnv, setProcessEnv } from './env.js';
-import { __FARM_GLOBAL__ } from './_global.js';
+import { urlRegex } from '../utils/http.js';
 import {
+  Logger,
   bold,
   clearScreen,
-  Logger,
+  colors,
+  getAliasEntries,
   green,
   isArray,
   isEmptyObject,
   isObject,
   isWindows,
-  normalizePath,
   normalizeBasePath,
-  getAliasEntries,
-  transformAliasWithVite,
-  colors
+  normalizePath,
+  transformAliasWithVite
 } from '../utils/index.js';
-import { urlRegex } from '../utils/http.js';
-import { JsPlugin } from '../index.js';
-import { normalizePersistentCache } from './normalize-config/normalize-persistent-cache.js';
-import { normalizeOutput } from './normalize-config/normalize-output.js';
 import { traceDependencies } from '../utils/trace-dependencies.js';
+import { __FARM_GLOBAL__ } from './_global.js';
+import { CompilationMode, loadEnv, setProcessEnv } from './env.js';
+import { normalizeOutput } from './normalize-config/normalize-output.js';
+import { normalizePersistentCache } from './normalize-config/normalize-persistent-cache.js';
+import { parseUserConfig } from './schema.js';
 
+import merge from '../utils/merge.js';
+import { DEFAULT_CONFIG_NAMES, FARM_DEFAULT_NAMESPACE } from './constants.js';
+import { mergeConfig, mergeFarmCliConfig } from './mergeConfig.js';
+import { normalizeExternal } from './normalize-config/normalize-external.js';
 import type {
   Alias,
   FarmCLIOptions,
@@ -53,10 +57,6 @@ import type {
   UserHmrConfig,
   UserServerConfig
 } from './types.js';
-import { normalizeExternal } from './normalize-config/normalize-external.js';
-import { DEFAULT_CONFIG_NAMES, FARM_DEFAULT_NAMESPACE } from './constants.js';
-import merge from '../utils/merge.js';
-import { mergeConfig, mergeFarmCliConfig } from './mergeConfig.js';
 
 export * from './types.js';
 
@@ -847,7 +847,7 @@ export async function loadConfigFile(
 
     try {
       errorMessage = JSON.parse(error.message).join('\n');
-    } catch (e) {
+    } catch {
       errorMessage = error.message;
     }
 

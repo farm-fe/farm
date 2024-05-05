@@ -1,11 +1,11 @@
 import path from 'path';
 import { pathToFileURL } from 'url';
 import { expect, test } from 'vitest';
+import { JsPlugin } from '../src/index.js';
 import {
   getFixturesDir,
   getCompiler as getInternalCompiler
 } from './common.js';
-import { JsPlugin } from '../src/index.js';
 
 function getJsPluginsFixturesDir() {
   return path.resolve(getFixturesDir(), 'js-plugins');
@@ -182,7 +182,7 @@ test('Js Plugin Execution - full', async () => {
         filters: {
           resolvedPaths: [path.join(root, 'index.ts').replaceAll('\\', '\\\\')]
         },
-        executor: async (param) => {
+        executor: async () => {
           return {
             content: 'import "./resolved?lang=ts&index=1"; export default 2;',
             moduleType: 'ts'

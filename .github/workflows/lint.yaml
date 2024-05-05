@@ -22,7 +22,7 @@ jobs:
         run: cargo fmt
       - name: Run cargo clippy
         run: cargo clippy
-  eslint:
+  lint:
     name: TS Code Lint
     runs-on: ubuntu-latest
     steps:
@@ -32,5 +32,5 @@ jobs:
           node-version: 18
       - name: Install Dependencies
         run: npm install -g pnpm@8.15.1 && pnpm i --frozen-lockfile
-      - name: Run eslint
-        run: npx eslint packages
+      - name: Run lint
+        run: npx biome check --no-errors-on-unmatched --files-ignore-unknown=true

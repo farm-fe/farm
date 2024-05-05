@@ -11,19 +11,19 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, shallowRef } from "vue";
+import { defineComponent, shallowRef } from 'vue';
 
 export default defineComponent({
-  name: "CodeViewer",
+  name: 'CodeViewer',
   props: {
     code: String,
-    language: String,
+    language: String
   },
   setup() {
     const MONACO_EDITOR_OPTIONS = {
       automaticLayout: true,
       formatOnType: true,
-      formatOnPaste: true,
+      formatOnPaste: true
     };
 
     const editorRef = shallowRef();
@@ -31,12 +31,12 @@ export default defineComponent({
 
     function formatLanguage(lang?: string) {
       if (!lang) {
-        return "javascript";
+        return 'javascript';
       }
       const data = lang.toLocaleLowerCase();
-      if( data === "js" || data === "runtime") {
-        return "javascript";
-      }else {
+      if (data === 'js' || data === 'runtime') {
+        return 'javascript';
+      } else {
         return data;
       }
     }
@@ -46,6 +46,6 @@ export default defineComponent({
       handleMount,
       formatLanguage
     };
-  },
+  }
 });
 </script>

@@ -24,28 +24,27 @@
 </template>
 
 <script lang="ts">
-import { ref, defineComponent, computed } from "vue";
-import { Card, Tag, Button } from "ant-design-vue";
-import { CodepenCircleFilled } from "@ant-design/icons-vue";
-import { formatSize } from "../utils/size";
-import { getModules } from "../api";
-import { Module } from "@farmfe/core/binding";
+import { ref, defineComponent, computed } from 'vue';
+import { Card, Tag, Button } from 'ant-design-vue';
+import { CodepenCircleFilled } from '@ant-design/icons-vue';
+import { formatSize } from '../utils/size';
+import { getModules } from '../api';
+import { Module } from '@farmfe/core/binding';
 
 export default defineComponent({
-  name: "ResourcePots",
+  name: 'ResourcePots',
   components: {
     Card,
     Tag,
     Button,
-    CodepenCircleFilled,
+    CodepenCircleFilled
   },
   setup(_, { emit }) {
     const moduleList = ref<Module[]>([]);
-    const current = ref<string>("");
+    const current = ref<string>('');
     const filterList = computed(() => {
       return moduleList.value.filter((item) => !item.immutable);
     });
-
 
     getModules().then((res) => {
       moduleList.value = res;
@@ -53,10 +52,10 @@ export default defineComponent({
 
     function selectModule(module: Module) {
       current.value = module.id;
-      emit("select", module);
+      emit('select', module);
     }
 
     return { current, formatSize, selectModule, moduleList, filterList };
-  },
+  }
 });
 </script>

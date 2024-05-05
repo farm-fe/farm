@@ -7,7 +7,7 @@ export function logger(msg, { title = 'FARM INFO', color = 'green' } = {}) {
     'blue',
     'magenta',
     'cyan',
-    'white',
+    'white'
   ].indexOf(color);
   if (COLOR_CODE >= 0) {
     const TITLE_STR = title ? `\x1b[4${COLOR_CODE};30m ${title} \x1b[0m ` : '';

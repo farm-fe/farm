@@ -1,9 +1,9 @@
 import { expect, test } from 'vitest';
-import merge from './merge.js';
 import {
   DEFAULT_DEV_SERVER_OPTIONS,
   DEFAULT_HMR_OPTIONS
 } from '../config/index.js';
+import merge from './merge.js';
 
 test('merge - base', () => {
   const target = { a: 1, b: 2 };

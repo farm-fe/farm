@@ -35,8 +35,5 @@
     "@farmfe/core": "workspace:*",
     "@types/fs-extra": "^11.0.1"
   },
-  "files": [
-    "dist",
-    "build"
-  ]
+  "files": ["dist", "build"]
 }

@@ -1,13 +1,13 @@
 import { performance } from 'node:perf_hooks';
 import { Logger } from './logger.js';
 
-import { PersistentCacheBrand, bold, green } from './color.js';
 import {
   FARM_TARGET_NODE_ENVS,
   ResolvedUserConfig,
   clearScreen
 } from '../index.js';
 import { logError } from '../server/error.js';
+import { PersistentCacheBrand, bold, green } from './color.js';
 
 interface CompilerHandlerOptions {
   clear?: boolean;

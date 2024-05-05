@@ -37,13 +37,13 @@
 </template>
 
 <script lang="ts" setup>
-import { TransformRecord } from "@farmfe/core/binding";
-import { Card, Drawer } from "ant-design-vue";
-import { getTransformRecordsById } from "../api";
-import { ref, watch, computed } from "vue";
-import CodeDiff from "./CodeDiff.vue";
+import { TransformRecord } from '@farmfe/core/binding';
+import { Card, Drawer } from 'ant-design-vue';
+import { getTransformRecordsById } from '../api';
+import { ref, watch, computed } from 'vue';
+import CodeDiff from './CodeDiff.vue';
 const props = defineProps({
-  moduleId: String,
+  moduleId: String
 });
 
 const records = ref<TransformRecord[]>([]);
@@ -53,7 +53,7 @@ const isOpened = ref(false);
 const compareRecord = computed(() => {
   return {
     old: records.value[current.value - 1] || null,
-    new: records.value[current.value],
+    new: records.value[current.value]
   };
 });
 

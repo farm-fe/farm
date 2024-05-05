@@ -1,7 +1,7 @@
+import deepmerge, { Options } from 'deepmerge';
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore ignore type check
 import { isPlainObject } from 'is-plain-object';
-import deepmerge, { Options } from 'deepmerge';
 
 function isValueSameDeep(target: any, source: any): boolean {
   if (target === source) {
