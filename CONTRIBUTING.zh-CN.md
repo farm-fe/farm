@@ -53,6 +53,15 @@
 
 - 确保您的 [Pnpm](https://pnpm.io) 版本在 **8** 以上。
 
+### IDE
+
+我们推荐使用 `vscode` 进行开发, 并且我们推荐两个必要的插件
+
+- `rust-analyzer` 支持 `rust` 语言。
+- `biome` 使用 `biome` 进行格式化和检查代码。
+
+你可以在扩展中安装它们
+
 ### 其他依赖
 
 - 在构建 `sass-embedded` 需要用到 [protoc](https://grpc.io/docs/protoc-installation/) 所以您的本地开发环境还需要安装 [protoc](https://grpc.io/docs/protoc-installation/)。

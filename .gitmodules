@@ -1,0 +1,3 @@
+[submodule "packages/create-farm/playground"]
+	path = packages/create-farm/playground
+	url = https://github.com/farm-fe/create-farm-template

@@ -1,0 +1,6 @@
+{
+  "recommendations": [
+    "rust-lang.rust-analyzer",
+    "biomejs.biome"
+  ]
+}

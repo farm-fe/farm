@@ -57,6 +57,16 @@ Please feel free to open an issue using the [feature request template](https://g
 
 - [Pnpm](https://pnpm.io) **version 8+**
 
+
+### IDE
+
+We recommend that you use vscode for development and recommend two necessary plugins that you need to install
+
+- `rust-analyzer` support rust language
+- `biome` farm use biome to detect and format the code
+
+You can install them in the extension
+
 ### Setup Other Dependencies
 
 - Install [protoc](https://grpc.io/docs/protoc-installation/) for building `sass-embedded`.
