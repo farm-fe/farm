@@ -6,7 +6,7 @@ const allFramework = new Map([
   ['electron', ['lit', 'tauri', 'electron']]
 ]);
 
-export const subFrameworkPromptsChoices = [
+export const frameworkPromptsChoices = [
   {
     title: colors.cyan('React'),
     value: 'react'
@@ -28,7 +28,7 @@ export const subFrameworkPromptsChoices = [
 
 export function getSubFrameworkPromptsChoices(framework: string) {
   const filterFramework = allFramework.get(framework);
-  const choices = subFrameworkPromptsChoices.filter(
+  const choices = frameworkPromptsChoices.filter(
     (item) => !filterFramework?.includes(item.value)
   );
 

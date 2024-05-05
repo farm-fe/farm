@@ -11,8 +11,8 @@ import createSpawnCmd from './utils/createSpawnCmd.js';
 import { loadWithRocketGradient } from './utils/gradient.js';
 import { shouldUsePnpm, shouldUseYarn } from './utils/packageManager.js';
 import {
-  getSubFrameworkPromptsChoices,
-  subFrameworkPromptsChoices
+  frameworkPromptsChoices,
+  getSubFrameworkPromptsChoices
 } from './utils/prompts.js';
 
 interface IResultType {
@@ -111,7 +111,7 @@ async function createFarm() {
           name: 'framework',
           message: 'Select a framework:',
           initial: 0,
-          choices: subFrameworkPromptsChoices
+          choices: frameworkPromptsChoices
         },
         {
           type: pkgInfo || skipInstall ? null : 'select',
