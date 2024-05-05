@@ -1,4 +1,4 @@
-# Contributing to Farm
+# Contribution Guide
 
 Thank you for your interest in contributing to Farm!. Before submitting your contribution, please make sure to take a moment and read through the following guidelines.
 
@@ -75,10 +75,10 @@ You can install them in the extension
 
 ## Start running
 
-Farm development is very simple. You only need to execute pnpm bootstrap in the root directory for development.
+Farm development is very simple. You only need to execute `pnpm bootstrap` in the root directory for development.
 
 ```bash
-$ pnpm bootstrap # install the dependencies of the project
+$ pnpm bootstrap
 ```
 
 - use `pnpm bootstrap` to install dependencies and build core packages with series of initialization operations.
@@ -88,6 +88,16 @@ $ pnpm bootstrap # install the dependencies of the project
 - If `examples/react` project runs successfully, the development environment has been configured successfully
 
 - If you changed Rust code in `crates`, run `npm run build:rs` under `packages/core` again to get the latest binary.
+
+When you are developing node side code, the root directory executes pnpm start to debug the code in real time, and when you are developing rust side code, the root directory executes pnpm start:rs to debug the code in real time.
+
+```ts
+// node side
+pnpm start
+
+// rust side
+pnpm start:rs
+```
 
 ## Testing
 

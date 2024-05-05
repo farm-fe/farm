@@ -84,6 +84,16 @@ $ pnpm bootstrap # install the dependencies of the project with series of initia
 
 - 如果您更改了`crates`中的 `Rust` 代码，请再次运行 `Packages/core` 下的 `npm run build：rs` 以获取最新的二进制代码。
 
+当你在开发 node 侧代码时, 根目录执行 pnpm start 就可以实时调试代码了，当你在开发 rust 侧代码时， 根目录执行 pnpm start:rs 就可以实时调试代码了
+
+```bash
+// node side
+pnpm start
+
+// rust side
+pnpm start:rs
+```
+
 ## 测试
 
 我们还需要测试两个部分，一套 `Rust` 测试，一套 `Node` 测试，在您提交代码之前，请确保所有测试均能通过。
