@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.1.0
+
+### Minor Changes
+
+- a9b5db7b: assign `runtime` default value is `automatic`
+
+### Patch Changes
+
+- 6a9b13c2: chore(rust-plugins): fix ts warning
+
 ## 1.0.1
 
 ### Patch Changes

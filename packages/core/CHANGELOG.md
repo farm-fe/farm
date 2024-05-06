@@ -1,5 +1,13 @@
 # @farmfe/core
 
+## 1.1.3
+
+### Patch Changes
+
+- 9754d371: merge configuration policies
+- 61294219: minify module filter use absolute path
+- 28e1a373: fix(vite plugin): some vite plugins do not provide `alias` configuration errors
+
 ## 1.1.2
 
 ### Patch Changes
