@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import { isAbsolute, join } from 'node:path';
-import { CompilationContext } from '../plugin/type.js';
 import { Alias } from '../config/types.js';
+import { CompilationContext } from '../plugin/type.js';
 
 export const getAdditionContext = async (
   cwd: string,

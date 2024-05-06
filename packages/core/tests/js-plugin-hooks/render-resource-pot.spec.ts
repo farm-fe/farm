@@ -24,9 +24,8 @@ test('Js Plugin Execution - renderResourcePot', async () => {
               param.resourcePotInfo.modules['index.ts?foo=bar']
                 .originalLength == 52
             ) {
-              param.resourcePotInfo.modules[
-                'index.ts?foo=bar'
-              ].originalLength = 51;
+              param.resourcePotInfo.modules['index.ts?foo=bar'].originalLength =
+                51;
             }
             expect(param.resourcePotInfo).matchSnapshot();
             calledHooks.push('renderResourcePot');

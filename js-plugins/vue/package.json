@@ -13,10 +13,7 @@
     "prepublishOnly": "npm run build",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "files": [
-    "dist",
-    "build"
-  ],
+  "files": ["dist", "build"],
   "exports": {
     ".": {
       "require": "./build/index.cjs",

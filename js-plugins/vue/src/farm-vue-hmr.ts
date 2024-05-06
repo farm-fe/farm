@@ -1,8 +1,8 @@
 import {
   SFCDescriptor,
   SFCScriptBlock,
-  SFCTemplateBlock,
-  SFCStyleBlock
+  SFCStyleBlock,
+  SFCTemplateBlock
 } from '@vue/compiler-sfc';
 import {
   CacheDescriptor,

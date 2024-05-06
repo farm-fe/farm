@@ -1,7 +1,7 @@
+import { existsSync } from 'fs';
 import { FSWatcher } from 'chokidar';
 import { ResolvedUserConfig } from '../config/index.js';
 import { createWatcher } from './create-watcher.js';
-import { existsSync } from 'fs';
 
 export class ConfigWatcher {
   private watcher: FSWatcher;

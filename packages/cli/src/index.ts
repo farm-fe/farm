@@ -1,14 +1,14 @@
 import { readFileSync } from 'node:fs';
 
 import { cac } from 'cac';
+import { getOptionFromBuildOption } from './config.js';
 import {
-  resolveCore,
-  resolveCommandOptions,
   handleAsyncOperationErrors,
   preventExperimentalWarning,
-  resolveCliConfig
+  resolveCliConfig,
+  resolveCommandOptions,
+  resolveCore
 } from './utils.js';
-import { getOptionFromBuildOption } from './config.js';
 
 import type {
   FarmCLIBuildOptions,

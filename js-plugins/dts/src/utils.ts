@@ -7,8 +7,8 @@ import path, {
   resolve
 } from 'node:path';
 
-import typescript from 'typescript';
 import extra from 'fs-extra';
+import typescript from 'typescript';
 
 import crypto from 'crypto';
 import fs from 'node:fs';
@@ -61,7 +61,7 @@ export function normalizePath(id: string): string {
   return posix.normalize(slash(id));
 }
 
-export function getHash(text: string, start: number = 0, end: number = 8) {
+export function getHash(text: string, start = 0, end = 8) {
   return crypto
     .createHash('sha256')
     .update(text)
@@ -105,34 +105,50 @@ export function isRegExp(reg: unknown): reg is RegExp {
   return Object.prototype.toString.call(reg) === '[object RegExp]';
 }
 
-export function getResolvedOptions(defaultVueOptions: any) {
-  const resolvedOptions: any = {
+interface ResolvedOptions {
+  include: (string | RegExp)[];
+  exclude: (string | RegExp)[];
+  isProduction: boolean;
+  sourceMap: boolean;
+  script?: any;
+  template?: any;
+  style?: any;
+}
+
+export function getResolvedOptions(defaultVueOptions: ResolvedOptions) {
+  const resolvedOptions: ResolvedOptions = {
     include: [],
     exclude: [],
     isProduction: false, // default: 'development'
     sourceMap: false
   };
   for (const key in defaultVueOptions) {
-    const val = defaultVueOptions[key as keyof any];
+    const val = defaultVueOptions[key as keyof ResolvedOptions];
     switch (key) {
       case 'include':
-        resolvedOptions.include = (
-          isArray(val) ? val : [val]
-        ) as any['include'];
+        resolvedOptions.include = (isArray(val) ? val : [val]) as string[];
+        break;
       case 'exclude':
-        resolvedOptions.exclude = (
-          isArray(val) ? val : [val]
-        ) as any['exclude'];
+        resolvedOptions.exclude = (isArray(val) ? val : [val]) as (
+          | string
+          | RegExp
+        )[];
+        break;
       case 'isProduction':
         if (val === true) resolvedOptions.isProduction = true;
+        break;
       case 'sourceMap':
         if (val === true) resolvedOptions.sourceMap = true;
+        break;
       case 'script':
-        resolvedOptions.script = (val ? val : {}) as any['script'];
+        resolvedOptions.script = val ? val : {};
+        break;
       case 'template':
-        resolvedOptions.template = (val ? val : {}) as any['template'];
+        resolvedOptions.template = val ? val : {};
+        break;
       case 'style':
-        resolvedOptions.style = (val ? val : {}) as any['style'];
+        resolvedOptions.style = val ? val : {};
+        break;
     }
   }
   resolvedOptions.sourceMap =
@@ -365,17 +381,13 @@ export function normalizeGlob(path: string) {
 }
 
 export async function writeFileWithCheck(filePath: string, content: string) {
-  // 获取文件夹路径
   const folderPath = path.dirname(filePath);
   try {
-    // 检查文件夹是否存在
     await extra.access(folderPath);
-  } catch (error) {
-    // 如果文件夹不存在，则创建它
+  } catch {
     await extra.mkdir(folderPath, { recursive: true });
   }
 
-  // 写文件
   await extra.writeFile(filePath, content, 'utf-8');
 }
 
@@ -398,15 +410,15 @@ export function transformAliasImport(
 
     if (matchResult?.[1]) {
       const matchedAlias = aliases.find((alias) =>
-        isAliasMatch(alias, matchResult![1])
+        isAliasMatch(alias, matchResult?.[1])
       );
 
       if (matchedAlias) {
         if (
           exclude.some((e) =>
             isRegExp(e)
-              ? e.test(matchResult![1])
-              : String(e) === matchResult![1]
+              ? e.test(matchResult?.[1])
+              : String(e) === matchResult?.[1]
           )
         ) {
           return str;

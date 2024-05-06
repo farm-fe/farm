@@ -1,54 +1,55 @@
+import type { ResolvedUserConfig, UserConfig } from '../../config/types.js';
+import type { Server } from '../../server/index.js';
 import {
-  JsPlugin,
   CompilationContext,
-  PluginRenderResourcePotParams,
+  JsPlugin,
   PluginFinalizeResourcesHookParams,
-  ResourcePotInfo,
-  Resource
+  PluginRenderResourcePotParams,
+  Resource,
+  ResourcePotInfo
 } from '../type.js';
 import {
+  FARM_CSS_MODULES_SUFFIX,
+  VITE_PLUGIN_DEFAULT_MODULE_TYPE,
   convertEnforceToPriority,
   customParseQueryString,
+  decodeStr,
+  encodeStr,
   formatId,
   formatLoadModuleType,
   formatTransformModuleType,
   getContentValue,
   isObject,
+  isStartsWithSlash,
   isString,
-  encodeStr,
-  decodeStr,
-  FARM_CSS_MODULES_SUFFIX,
+  normalizeAdapterVirtualModule,
+  normalizePath,
+  removeQuery,
+  revertNormalizePath,
   transformFarmConfigToRollupNormalizedOutputOptions,
   transformResourceInfo2RollupRenderedChunk,
-  transformRollupResource2FarmResource,
-  VITE_PLUGIN_DEFAULT_MODULE_TYPE,
-  normalizePath,
-  revertNormalizePath,
-  normalizeAdapterVirtualModule,
-  isStartsWithSlash,
-  removeQuery
+  transformRollupResource2FarmResource
 } from './utils.js';
-import type { ResolvedUserConfig, UserConfig } from '../../config/types.js';
-import type { Server } from '../../server/index.js';
 
 // only use types from vite and we do not install vite as a dependency
 import type {
-  Plugin,
-  UserConfig as ViteUserConfig,
+  ConfigEnv,
   HmrContext,
-  ViteDevServer,
   ModuleNode,
-  ConfigEnv
+  Plugin,
+  ViteDevServer,
+  UserConfig as ViteUserConfig
 } from 'vite';
 
-import type {
-  ResolveIdResult,
-  RenderChunkHook,
-  OutputBundle,
-  FunctionPluginHooks
-} from 'rollup';
 import path from 'path';
 import fse from 'fs-extra';
+import { readFile } from 'fs/promises';
+import type {
+  FunctionPluginHooks,
+  OutputBundle,
+  RenderChunkHook,
+  ResolveIdResult
+} from 'rollup';
 import {
   Config,
   PluginLoadHookParam,
@@ -58,27 +59,26 @@ import {
   PluginTransformHookParam,
   PluginTransformHookResult
 } from '../../../binding/index.js';
-import { readFile } from 'fs/promises';
-import {
-  ViteDevServerAdapter,
-  ViteModuleGraphAdapter,
-  createViteDevServerAdapter
-} from './vite-server-adapter.js';
-import { farmContextToViteContext } from './farm-to-vite-context.js';
+import { VIRTUAL_FARM_DYNAMIC_IMPORT_SUFFIX } from '../../compiler/index.js';
+import { CompilationMode } from '../../config/env.js';
+import { Logger } from '../../index.js';
+import merge from '../../utils/merge.js';
+import { applyHtmlTransform } from './apply-html-transform.js';
 import {
   farmUserConfigToViteConfig,
   proxyViteConfig,
   viteConfigToFarmConfig
 } from './farm-to-vite-config.js';
-import { VIRTUAL_FARM_DYNAMIC_IMPORT_SUFFIX } from '../../compiler/index.js';
+import { farmContextToViteContext } from './farm-to-vite-context.js';
 import {
-  transformResourceInfo2RollupResource,
-  transformFarmConfigToRollupNormalizedInputOptions
+  transformFarmConfigToRollupNormalizedInputOptions,
+  transformResourceInfo2RollupResource
 } from './utils.js';
-import { Logger } from '../../index.js';
-import { applyHtmlTransform } from './apply-html-transform.js';
-import merge from '../../utils/merge.js';
-import { CompilationMode } from '../../config/env.js';
+import {
+  ViteDevServerAdapter,
+  ViteModuleGraphAdapter,
+  createViteDevServerAdapter
+} from './vite-server-adapter.js';
 
 type OmitThis<T extends (this: any, ...args: any[]) => any> = T extends (
   this: any,
@@ -644,7 +644,7 @@ export class VitePluginAdapter implements JsPlugin {
                     ...m,
                     id: normalizePath(m.id),
                     file: normalizePath(m.file)
-                  } as ModuleNode)
+                  }) as ModuleNode
               ),
               read: function (): string | Promise<string> {
                 return readFile(file, 'utf-8');
@@ -769,13 +769,16 @@ export class VitePluginAdapter implements JsPlugin {
             bundles
           );
 
-          const result = Object.entries(bundles).reduce((res, [key, val]) => {
-            res[key] = transformRollupResource2FarmResource(
-              val,
-              param.resourcesMap[key]
-            );
-            return res;
-          }, {} as PluginFinalizeResourcesHookParams['resourcesMap']);
+          const result = Object.entries(bundles).reduce(
+            (res, [key, val]) => {
+              res[key] = transformRollupResource2FarmResource(
+                val,
+                param.resourcesMap[key]
+              );
+              return res;
+            },
+            {} as PluginFinalizeResourcesHookParams['resourcesMap']
+          );
 
           return result;
         }

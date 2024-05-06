@@ -7,14 +7,7 @@
     "name": "bright wu",
     "email": "1521488775@qq.com"
   },
-  "keywords": [
-    "farm",
-    "cli",
-    "farmfe",
-    "bundler",
-    "compiler",
-    "build tool"
-  ],
+  "keywords": ["farm", "cli", "farmfe", "bundler", "compiler", "build tool"],
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -26,11 +19,7 @@
   "exports": {
     "./package.json": "./package.json"
   },
-  "files": [
-    "dist",
-    "bin",
-    "templates"
-  ],
+  "files": ["dist", "bin", "templates"],
   "scripts": {
     "start": "rimraf dist && tsc -b -w",
     "build": "tsc -b",

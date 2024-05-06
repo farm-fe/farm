@@ -36,27 +36,27 @@
 </template>
 
 <script lang="ts">
-import { Card, Tree, Drawer } from "ant-design-vue";
-import { computed, defineComponent, ref, reactive } from "vue";
-import { getResourcesMap } from "../../api";
-import type { Resource } from "@farmfe/core";
-import ResourcePots from "../../components/ResourcePots.vue";
-import { useResourcePotStore } from "../../stores/resourcePot";
-import { genFileTree } from "../../utils/file";
-import FileTree from "../../components/FileTree.vue";
-import CodeViewer from "../../components/CodeViewer.vue";
+import { Card, Tree, Drawer } from 'ant-design-vue';
+import { computed, defineComponent, ref, reactive } from 'vue';
+import { getResourcesMap } from '../../api';
+import type { Resource } from '@farmfe/core';
+import ResourcePots from '../../components/ResourcePots.vue';
+import { useResourcePotStore } from '../../stores/resourcePot';
+import { genFileTree } from '../../utils/file';
+import FileTree from '../../components/FileTree.vue';
+import CodeViewer from '../../components/CodeViewer.vue';
 
 export default defineComponent({
-  name: "BundleAnalyze",
+  name: 'BundleAnalyze',
   components: { Card, Tree, ResourcePots, FileTree, CodeViewer, Drawer },
   setup() {
     const resourcePotStore = useResourcePotStore();
     const resourcePots = ref<Resource[]>([]);
     const isOpened = ref(false);
     const sourceFile = reactive({
-      name: "",
-      code: "",
-      language: "javascript",
+      name: '',
+      code: '',
+      language: 'javascript'
     });
     getResourcesMap().then((rawData) => {
       resourcePots.value = Object.values(rawData);
@@ -66,10 +66,14 @@ export default defineComponent({
       return genFileTree(moduleIds);
     });
 
-    function handleViewCode(data: { name: string; code: string; language?: string }) {
+    function handleViewCode(data: {
+      name: string;
+      code: string;
+      language?: string;
+    }) {
       sourceFile.name = data.name;
       sourceFile.code = data.code;
-      sourceFile.language = data.language || "javascript";
+      sourceFile.language = data.language || 'javascript';
       isOpened.value = true;
     }
 
@@ -79,8 +83,8 @@ export default defineComponent({
       treeData,
       isOpened,
       sourceFile,
-      handleViewCode,
+      handleViewCode
     };
-  },
+  }
 });
 </script>

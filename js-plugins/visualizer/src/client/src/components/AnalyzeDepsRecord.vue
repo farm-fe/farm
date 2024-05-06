@@ -48,11 +48,11 @@
 </template>
 
 <script lang="ts" setup>
-import { AnalyzeDepsRecord } from "@farmfe/core/binding";
-import { getAnalyzeDepsRecordsById } from "../api";
-import { ref, watch, computed } from "vue";
+import { AnalyzeDepsRecord } from '@farmfe/core/binding';
+import { getAnalyzeDepsRecordsById } from '../api';
+import { ref, watch, computed } from 'vue';
 const props = defineProps({
-  moduleId: String,
+  moduleId: String
 });
 
 const records = ref<AnalyzeDepsRecord[]>([]);

@@ -1,7 +1,7 @@
-import { defineStore } from 'pinia';
-import { getResourcesMap } from '../api';
-import { ref, computed } from 'vue';
 import { RenderedModule, Resource } from '@farmfe/core';
+import { defineStore } from 'pinia';
+import { computed, ref } from 'vue';
+import { getResourcesMap } from '../api';
 
 export const useResourcePotStore = defineStore('resourcePot', () => {
   const resourcePots = ref<Resource[]>([]);
