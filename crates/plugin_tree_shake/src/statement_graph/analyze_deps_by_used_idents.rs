@@ -59,6 +59,10 @@ impl<'a> UsedIdentsVisitor<'a> {
 }
 
 impl Visit for UsedIdentsVisitor<'_> {
+  fn visit_import_decl(&mut self, _: &farmfe_core::swc_ecma_ast::ImportDecl) {
+    // do not visit children of import decl
+  }
+
   fn visit_named_export(&mut self, n: &farmfe_core::swc_ecma_ast::NamedExport) {
     if n.src.is_none() {
       // make edge of `const a = 1; export { a }` be `a -> a`
@@ -100,19 +104,19 @@ impl Visit for UsedIdentsVisitor<'_> {
       farmfe_core::swc_ecma_ast::DefaultDecl::Class(class_expr) => {
         if let Some(ident) = &class_expr.ident {
           self.with_ident(vec![ident.to_id()], |v| {
-            class_expr.class.visit_children_with(v);
+            class_expr.class.visit_with(v);
           });
         } else {
-          class_expr.class.visit_children_with(self);
+          class_expr.class.visit_with(self);
         }
       }
       farmfe_core::swc_ecma_ast::DefaultDecl::Fn(fn_expr) => {
         if let Some(ident) = &fn_expr.ident {
           self.with_ident(vec![ident.to_id()], |v| {
-            fn_expr.function.visit_children_with(v);
+            fn_expr.function.visit_with(v);
           });
         } else {
-          fn_expr.function.visit_children_with(self);
+          fn_expr.function.visit_with(self);
         }
       }
       farmfe_core::swc_ecma_ast::DefaultDecl::TsInterfaceDecl(_) => {}
@@ -123,7 +127,7 @@ impl Visit for UsedIdentsVisitor<'_> {
     match n {
       farmfe_core::swc_ecma_ast::Decl::Fn(n) => {
         self.with_ident(vec![n.ident.to_id()], |v| {
-          n.function.visit_children_with(v);
+          n.function.visit_with(v);
         });
       }
       farmfe_core::swc_ecma_ast::Decl::Var(n) => {
@@ -137,14 +141,14 @@ impl Visit for UsedIdentsVisitor<'_> {
               .collect::<Vec<_>>();
 
             self.with_ident(defined_idents, |v| {
-              init.visit_children_with(v);
+              init.visit_with(v);
             });
           }
         }
       }
       farmfe_core::swc_ecma_ast::Decl::Class(n) => {
         self.with_ident(vec![n.ident.to_id()], |v| {
-          n.class.visit_children_with(v);
+          n.class.visit_with(v);
         });
       }
       _ => {}

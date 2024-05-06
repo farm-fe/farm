@@ -148,7 +148,7 @@ impl<'a> VisitMut for UselessSpecifierRemover<'a> {
 
     for (index, decl) in n.decls.iter_mut().enumerate() {
       let mut defined_idents_collector = DefinedIdentsCollector::new();
-      decl.visit_with(&mut defined_idents_collector);
+      decl.name.visit_with(&mut defined_idents_collector);
 
       if self
         .used_defined_idents

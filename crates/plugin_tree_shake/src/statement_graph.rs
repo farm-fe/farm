@@ -302,9 +302,7 @@ impl StatementGraph {
         });
 
       for (dep_stmt_id, edge_weight) in deps {
-        if index != dep_stmt_id {
-          graph.add_edge(index, dep_stmt_id, edge_weight);
-        }
+        graph.add_edge(index, dep_stmt_id, edge_weight);
       }
     }
 
