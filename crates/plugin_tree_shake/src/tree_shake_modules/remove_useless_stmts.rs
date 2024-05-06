@@ -52,10 +52,8 @@ pub fn remove_useless_stmts(
           }
           _ => { /* ignore other module decl statement */ }
         },
-        ModuleItem::Stmt(Stmt::Decl(decl)) => {
-          if let swc_ecma_ast::Decl::Var(var_decl) = decl {
-            useless_specifier_remover.visit_mut_var_decl(var_decl);
-          }
+        ModuleItem::Stmt(Stmt::Decl(swc_ecma_ast::Decl::Var(var_decl))) => {
+          useless_specifier_remover.visit_mut_var_decl(var_decl);
         }
         _ => { /* ignore other statement */ }
       }

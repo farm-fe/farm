@@ -175,7 +175,7 @@ impl Visit for UsedIdentsVisitor<'_> {
             entry
               .used_idents_map
               .entry(current_defined_ident.clone())
-              .or_insert(HashSet::new())
+              .or_default()
               .insert(ident.clone());
             found = true;
           }

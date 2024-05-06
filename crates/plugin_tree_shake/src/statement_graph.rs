@@ -341,11 +341,7 @@ impl StatementGraph {
         .extend(edge_weight.used_idents.iter().cloned());
 
       for (k, v) in edge_weight.used_idents_map {
-        edge
-          .used_idents_map
-          .entry(k)
-          .or_insert(HashSet::new())
-          .extend(v);
+        edge.used_idents_map.entry(k).or_default().extend(v);
       }
     } else {
       self.g.add_edge(*from_node, *to_node, edge_weight);

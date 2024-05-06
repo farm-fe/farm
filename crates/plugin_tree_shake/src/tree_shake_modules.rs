@@ -137,7 +137,7 @@ pub fn tree_shake_modules(
   for tree_shake_module_id in &visited_modules {
     if tree_shake_modules_map.contains_key(tree_shake_module_id) {
       remove_useless_stmts::remove_useless_stmts(
-        &tree_shake_module_id,
+        tree_shake_module_id,
         module_graph,
         tree_shake_modules_map,
       );
@@ -174,11 +174,10 @@ fn trace_and_mark_used_statements(
       let source_kind = if let Some(import_info) = &stmt.import_info {
         Some((import_info.source.as_str(), ResolveKind::Import))
       } else if let Some(export_info) = &stmt.export_info {
-        if let Some(source) = &export_info.source {
-          Some((source.as_str(), ResolveKind::ExportFrom))
-        } else {
-          None
-        }
+        export_info
+          .source
+          .as_ref()
+          .map(|source| (source.as_str(), ResolveKind::ExportFrom))
       } else {
         None
       };
@@ -227,7 +226,7 @@ fn trace_and_mark_used_statements(
   }
 
   // for dependency kind other than import and export from, always trace the dependency
-  for (_, edge) in module_graph.dependencies(&tree_shake_module_id) {
+  for (_, edge) in module_graph.dependencies(tree_shake_module_id) {
     for edge_item in edge.items() {
       if edge_item.kind != ResolveKind::Import && edge_item.kind != ResolveKind::ExportFrom {
         traced_import_stmts.push(TracedUsedImportStatement {

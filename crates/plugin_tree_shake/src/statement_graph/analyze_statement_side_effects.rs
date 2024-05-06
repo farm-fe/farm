@@ -116,11 +116,8 @@ impl Visit for SideEffectsAnalyzer {
       return;
     }
 
-    match &member_expr.prop {
-      farmfe_core::swc_ecma_ast::MemberProp::Computed(computed) => {
-        computed.expr.visit_with(self);
-      }
-      _ => {}
+    if let farmfe_core::swc_ecma_ast::MemberProp::Computed(computed) = &member_expr.prop {
+      computed.expr.visit_with(self);
     }
 
     member_expr.obj.visit_with(self);
@@ -158,12 +155,11 @@ impl Visit for SideEffectsAnalyzer {
       | farmfe_core::swc_ecma_ast::Stmt::ForOf(_) => self
         .side_effects
         .merge_side_effects(StatementSideEffects::UnclassifiedSelfExecuted),
-      farmfe_core::swc_ecma_ast::Stmt::Decl(decl) => match decl {
-        farmfe_core::swc_ecma_ast::Decl::Var(var_decl) => {
+      farmfe_core::swc_ecma_ast::Stmt::Decl(decl) => {
+        if let farmfe_core::swc_ecma_ast::Decl::Var(var_decl) = decl {
           var_decl.visit_with(self);
         }
-        _ => {}
-      },
+      }
       farmfe_core::swc_ecma_ast::Stmt::Expr(expr) => {
         expr.visit_with(self);
       }

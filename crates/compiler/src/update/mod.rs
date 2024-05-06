@@ -9,7 +9,6 @@ use farmfe_core::{
   error::CompilationError,
   module::{
     module_graph::ModuleGraphEdgeDataItem, module_group::ModuleGroupId, Module, ModuleId,
-    ModuleType,
   },
   plugin::{PluginResolveHookParam, ResolveKind, UpdateResult, UpdateType},
   resource::ResourceType,

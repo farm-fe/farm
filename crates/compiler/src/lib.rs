@@ -135,13 +135,13 @@ impl Compiler {
       };
       self
         .build()
-        .and_then(|v| {
+        .map(|v| {
           write_module_cache();
-          Ok(v)
+          v
         })
-        .or_else(|err| {
+        .map_err(|err| {
           write_module_cache();
-          Err(err)
+          err
         })?;
     }
 
