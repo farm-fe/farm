@@ -237,7 +237,7 @@ pub struct StatementGraphEdge {
   /// const a = b, c = d;
   /// ```
   /// The map should be:
-  /// ```
+  /// ```ignore
   /// {
   ///  a: [b],
   ///  c: [d],
@@ -250,7 +250,7 @@ pub struct StatementGraphEdge {
   /// for (let i = 0; i < len; i++) {
   ///  console.log(a + i);
   /// }
-  /// ```
+  /// ```ignore
   /// The result should be:
   /// ```
   /// [a, len]

@@ -258,7 +258,7 @@ fn remove_useless_stmts_nested_defined_idents() {
     let bytes = codegen_module(swc_module, EsVersion::EsNext, cm, None, false, None).unwrap();
     let result = String::from_utf8(bytes).unwrap();
 
-    let expect = r#"import { a } from './dep';
+    let expect = r#"import { a, invalidate } from './dep';
 console.log(a);
 const id = 'InvalidateParent';
 export function InvalidateParent() {

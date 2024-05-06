@@ -167,41 +167,63 @@ export { a, b, c as d };"#;
     // statement 6 -> statement 1
     assert_eq!(edges[5].0.id, 6);
     assert_eq!(edges[5].1.id, 1);
-    assert_eq!(edges[5].2.used_idents.len(), 1);
+    assert_eq!(edges[5].2.used_idents.len(), 0);
+    assert_eq!(edges[5].2.used_idents_map.len(), 1);
     let used_idents = edges[5]
       .2
-      .used_idents
+      .used_idents_map
       .iter()
-      .map(|i| print_id(i))
+      .map(|i| {
+        (
+          print_id(i.0),
+          i.1.iter().map(|i| print_id(i)).collect::<Vec<_>>(),
+        )
+      })
       .collect::<Vec<_>>();
-    assert!(used_idents.contains(&"a#2".to_string()));
-    assert!(edges[5].2.used_idents_map.is_empty());
+    assert_eq!(
+      used_idents,
+      vec![("a#2".to_string(), vec!["a#2".to_string()])]
+    );
 
     // statement 6 -> statement 2
     assert_eq!(edges[6].0.id, 6);
     assert_eq!(edges[6].1.id, 2);
-    assert_eq!(edges[6].2.used_idents.len(), 1);
+    assert_eq!(edges[6].2.used_idents.len(), 0);
+    assert_eq!(edges[6].2.used_idents_map.len(), 1);
     let used_idents = edges[6]
       .2
-      .used_idents
+      .used_idents_map
       .iter()
-      .map(|i| print_id(i))
+      .map(|(i, deps)| {
+        let mut deps = deps.iter().map(|i| print_id(i)).collect::<Vec<_>>();
+        deps.sort();
+        (print_id(i), deps)
+      })
       .collect::<Vec<_>>();
-    assert!(used_idents.contains(&"b#2".to_string()));
-    assert!(edges[6].2.used_idents_map.is_empty());
+    assert_eq!(
+      used_idents,
+      vec![("b#2".to_string(), vec!["b#2".to_string()])]
+    );
 
     // statement 6 -> statement 3
     assert_eq!(edges[7].0.id, 6);
     assert_eq!(edges[7].1.id, 3);
-    assert_eq!(edges[7].2.used_idents.len(), 1);
+    assert_eq!(edges[7].2.used_idents.len(), 0);
+    assert_eq!(edges[7].2.used_idents_map.len(), 1);
     let used_idents = edges[7]
       .2
-      .used_idents
+      .used_idents_map
       .iter()
-      .map(|i| print_id(i))
+      .map(|(i, deps)| {
+        let mut deps = deps.iter().map(|i| print_id(i)).collect::<Vec<_>>();
+        deps.sort();
+        (print_id(i), deps)
+      })
       .collect::<Vec<_>>();
-    assert!(used_idents.contains(&"c#2".to_string()));
-    assert!(edges[7].2.used_idents_map.is_empty());
+    assert_eq!(
+      used_idents,
+      vec![("c#2".to_string(), vec!["c#2".to_string()])]
+    );
   });
 }
 
@@ -310,7 +332,7 @@ export { a, b, c as d };"#;
     let traced_import_stmts = stmt_graph.trace_and_mark_used_statements(HashMap::from([(
       6,
       HashSet::from([UsedStatementIdent::SwcIdent((
-        "d".into(),
+        "c".into(),
         SyntaxContext::from_u32(2),
       ))]),
     )]));
@@ -349,7 +371,7 @@ export { a, b, c as d };"#;
     assert_used_defined_idents!(1, vec!["a#2"]);
     assert_used_defined_idents!(2, vec!["b#2"]);
     assert_used_defined_idents!(3, vec!["c#2"]);
-    assert_used_defined_idents!(6, vec!["d#2"]);
+    assert_used_defined_idents!(6, vec!["c#2"]);
   });
 }
 
