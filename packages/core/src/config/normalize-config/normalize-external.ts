@@ -2,8 +2,37 @@ import module from 'node:module';
 
 import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
-import { ResolvedCompilation, UserConfig } from '../types.js';
+import { Config } from '../../../binding/index.js';
+import { safeJsonParse } from '../../utils/json.js';
 import { isObject } from '../../utils/share.js';
+import type { ResolvedCompilation, UserConfig } from '../types.js';
+
+type PartialExternal = [string[], Record<string, string>];
+
+export const RECORD_EXTERNAL_CUSTOM_KEY = 'RECORD_EXTERNAL';
+export function partialExternal(
+  externalConfig: (string | Record<string, string>)[] = []
+): PartialExternal {
+  const stringExternal: string[] = [];
+  const recordExternal: Record<string, string> = {};
+
+  /**
+   *
+   * `["^node:.*$", { "jquery": "$" }]`
+   * =>
+   * `["^node:.*$"]`
+   * `{ "jquery": "$" }`
+   */
+  for (const external of externalConfig) {
+    if (typeof external === 'string') {
+      stringExternal.push(external);
+    } else if (isObject(external)) {
+      Object.assign(recordExternal, external);
+    }
+  }
+
+  return [stringExternal, recordExternal];
+}
 
 export function normalizeExternal(
   config: UserConfig,
@@ -41,35 +70,51 @@ export function normalizeExternal(
     }
   }
 
-  const normalizedExternal: ResolvedCompilation['external'] = [];
-
-  /**
-   *
-   * `["^node:.*$", { "jquery": "$" }]`
-   * =>
-   * `["^node:.*$", { pattern: "jquery", globalName: "$" }]`
-   */
-  for (const external of config?.compilation?.external ?? []) {
-    if (typeof external === 'string') {
-      normalizedExternal.push(external);
-    } else if (isObject(external)) {
-      for (const key in external) {
-        if (!Object.hasOwn(external, key)) {
-          continue;
-        }
-
-        normalizedExternal.push({
-          pattern: key,
-          globalName: external[key]
-        });
-      }
-    }
+  if (!config?.compilation?.custom) {
+    config.compilation.custom = {};
   }
 
+  if (!resolvedCompilation?.custom) {
+    resolvedCompilation.custom = {};
+  }
+
+  const [stringExternal, recordExternal] = mergeCustomExternal(
+    config.compilation,
+    mergeCustomExternal(
+      resolvedCompilation,
+      partialExternal(config.compilation.external)
+    )
+  );
+
+  resolvedCompilation.custom[RECORD_EXTERNAL_CUSTOM_KEY] =
+    JSON.stringify(recordExternal);
+
   resolvedCompilation.external = [
-    ...resolvedCompilation.external,
-    ...normalizedExternal,
+    ...stringExternal,
     '^node:',
     ...defaultExternals.map((m) => `^${m}($|/promises$)`)
+  ];
+}
+
+export function mergeCustomExternal<T extends Pick<Config['config'], 'custom'>>(
+  compilation: T,
+  external: ReturnType<typeof partialExternal>
+): PartialExternal {
+  const [stringExternal, recordExternal] = external;
+  if (!compilation?.custom) {
+    compilation.custom = {};
+  }
+
+  const oldRecordExternal: Record<string, string> = compilation.custom[
+    RECORD_EXTERNAL_CUSTOM_KEY
+  ]
+    ? safeJsonParse(compilation.custom[RECORD_EXTERNAL_CUSTOM_KEY], {}) || {}
+    : {};
+
+  return [
+    [...new Set(stringExternal)],
+    isObject(oldRecordExternal)
+      ? { ...oldRecordExternal, ...recordExternal }
+      : recordExternal
   ];
 }

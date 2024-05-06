@@ -167,15 +167,13 @@ impl JsCompiler {
       .expect("rustPlugins should be an array of js strings")
     };
 
-    let serde_value: farmfe_core::serde_json::Value = env
+    let config: Config = env
       .from_js_value(
         config
           .get_named_property::<JsObject>("config")
           .expect("config should exist"),
       )
       .expect("can not transform js config object to rust config");
-
-    let config: Config = farmfe_core::serde_json::from_value(serde_value).unwrap();
 
     let mut plugins_adapters = vec![];
 

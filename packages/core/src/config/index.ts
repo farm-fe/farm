@@ -4,6 +4,7 @@ import module from 'node:module';
 import path, { isAbsolute, join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
+import { PluginTransformHookParam, bindingPath } from '../../binding/index.js';
 import { JsPlugin } from '../index.js';
 import {
   getSortedPlugins,
@@ -13,7 +14,6 @@ import {
   resolveConfigResolvedHook,
   resolveFarmPlugins
 } from '../plugin/index.js';
-import { bindingPath, PluginTransformHookParam } from '../../binding/index.js';
 import { Server } from '../server/index.js';
 import { urlRegex } from '../utils/http.js';
 import {
@@ -38,6 +38,7 @@ import { normalizeOutput } from './normalize-config/normalize-output.js';
 import { normalizePersistentCache } from './normalize-config/normalize-persistent-cache.js';
 import { parseUserConfig } from './schema.js';
 
+import { externalAdapter } from '../plugin/js/external-adapter.js';
 import merge from '../utils/merge.js';
 import { DEFAULT_CONFIG_NAMES, FARM_DEFAULT_NAMESPACE } from './constants.js';
 import { mergeConfig, mergeFarmCliConfig } from './mergeConfig.js';
@@ -176,7 +177,8 @@ export async function resolveConfig(
 
   const sortFarmJsPlugins = getSortedPlugins([
     ...rawJsPlugins,
-    ...vitePluginAdapters
+    ...vitePluginAdapters,
+    externalAdapter()
   ]);
 
   const config = await resolveConfigHook(userConfig, sortFarmJsPlugins);
@@ -666,11 +668,12 @@ async function readConfigFile(
         progress: false
       }
     };
-    const tsDefaultResolvedUserConfig: ResolvedUserConfig = await resolveMergedUserConfig(
-      tsDefaultUserConfig,
-      undefined,
-      'development'
-    );
+    const tsDefaultResolvedUserConfig: ResolvedUserConfig =
+      await resolveMergedUserConfig(
+        tsDefaultUserConfig,
+        undefined,
+        'development'
+      );
 
     const normalizedConfig = await normalizeUserCompilationConfig(
       tsDefaultResolvedUserConfig,

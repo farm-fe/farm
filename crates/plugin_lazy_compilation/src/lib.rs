@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use farmfe_core::{
-  config::{Config, FARM_MODULE_SYSTEM},
+  config::{external::ExternalConfig, Config, FARM_MODULE_SYSTEM},
   module::{ModuleId, ModuleType},
   plugin::{Plugin, PluginHookContext, PluginLoadHookResult, PluginResolveHookParam, ResolveKind},
 };
@@ -106,10 +106,14 @@ impl Plugin for FarmPluginLazyCompilation {
       }
     }
 
+    let is_external = || {
+      let external_config = ExternalConfig::from(&*context.config);
+
+      external_config.is_external(&param.source)
+    };
+
     // if the source is imported by dynamic import and it's not external source
-    if matches!(param.kind, ResolveKind::DynamicImport)
-      && !context.config.external.is_external(&param.source)
-    {
+    if matches!(param.kind, ResolveKind::DynamicImport) && !is_external() {
       let resolve_result = context.plugin_driver.resolve(
         param,
         context,

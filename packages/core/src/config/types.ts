@@ -105,41 +105,10 @@ export interface UserConfig {
   /** Files under this dir will always be treated as static assets. serve it in dev, and copy it to output.path when build */
 }
 
-type IsRequired<T, K extends keyof T> = { [P in K]: T[K] } extends {
-  [P in K]-?: T[P];
+// eslint-disable-next-line @typescript-eslint/no-empty-interface
+export interface ResolvedCompilation extends Exclude<Config['config'], undefined> {
+  external?: string[];
 }
-  ? true
-  : false;
-
-type RequiredKeys<T> = {
-  [K in keyof T]: IsRequired<T, K> extends true ? K : never;
-}[keyof T];
-
-type OptionalKeys<T> = Exclude<keyof T, RequiredKeys<T>>;
-
-type Override<
-  T extends Record<any, unknown>,
-  V extends { [K in keyof T]?: unknown }
-> = {
-  [K in RequiredKeys<T> | RequiredKeys<V>]: K extends keyof V
-    ? V[K]
-    : K extends keyof T
-    ? T[K]
-    : never;
-} & {
-  [K in OptionalKeys<T> | OptionalKeys<V>]?: K extends keyof V
-    ? V[K]
-    : K extends keyof T
-    ? T[K]
-    : never;
-};
-
-export type ResolvedCompilation = Override<
-  Config['config'],
-  {
-    external?: (string | { globalName: string; pattern: string })[];
-  }
->;
 
 export interface ResolvedUserConfig extends UserConfig {
   env?: Record<string, any>;

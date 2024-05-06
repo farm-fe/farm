@@ -55,10 +55,10 @@ pub fn create_css_compiler(
         ..Default::default()
       },
       mode: Mode::Production,
-      external: ExternalConfig(vec![
-        ExternalConfigItem::Default(ConfigRegex::new("^react-refresh$")),
-        ExternalConfigItem::Default(ConfigRegex::new("^module$")),
-      ]),
+      external: vec![
+        ConfigRegex::new("^react-refresh$"),
+        ConfigRegex::new("^module$"),
+      ],
       sourcemap: SourcemapConfig::Bool(false),
       css: css_config,
       lazy_compilation: false,
@@ -128,10 +128,10 @@ pub fn create_compiler(
         ..Default::default()
       },
       mode: Mode::Production,
-      external: ExternalConfig(vec![
-        ExternalConfigItem::Default(ConfigRegex::new("^react-refresh$")),
-        ExternalConfigItem::Default(ConfigRegex::new("^module$")),
-      ]),
+      external: vec![
+        ConfigRegex::new("^react-refresh$"),
+        ConfigRegex::new("^module$"),
+      ],
       sourcemap: SourcemapConfig::Bool(false),
       lazy_compilation: false,
       progress: false,
@@ -180,10 +180,10 @@ pub fn create_compiler_with_plugins(
         swc_helpers_path,
         ..Default::default()
       },
-      external: ExternalConfig(vec![
-        ExternalConfigItem::Default(ConfigRegex::new("^react-refresh$")),
-        ExternalConfigItem::Default(ConfigRegex::new("^module$")),
-      ]),
+      external: vec![
+        ConfigRegex::new("^react-refresh$"),
+        ConfigRegex::new("^module$"),
+      ],
       sourcemap: SourcemapConfig::Bool(false),
       lazy_compilation: false,
       progress: false,
