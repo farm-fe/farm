@@ -349,7 +349,7 @@ impl Plugin for FarmPluginRuntime {
           resource_pot_to_runtime_object(resource_pot, &module_graph, async_modules, context)?;
 
         bundle.prepend(
-          r#"(function(r,e){var t={};function n(r){return Promise.resolve(o(r))}function o(e){if(t[e])return t[e].exports;var i={id:e,exports:{}};r[e](i,i.exports,o,n);t[e]=i;return i.exports}o(e)})("#,
+          r#"(function(r,e){var t={};function n(r){return Promise.resolve(o(r))}function o(e){if(t[e])return t[e].exports;var i={id:e,exports:{}};t[e]=i;r[e](i,i.exports,o,n);return i.exports}o(e)})("#,
         );
 
         bundle.append(
