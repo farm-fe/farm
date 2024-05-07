@@ -1060,15 +1060,9 @@ importers:
 
   examples/script-entry:
     dependencies:
-      '@types/lodash-es':
-        specifier: ^4.17.12
-        version: 4.17.12
       core-js:
         specifier: ^3.35.1
         version: 3.35.1
-      lodash-es:
-        specifier: ^4.17.21
-        version: 4.17.21
     devDependencies:
       '@farmfe/cli':
         specifier: workspace:*
@@ -1598,9 +1592,6 @@ importers:
 
   examples/vue:
     dependencies:
-      antd:
-        specifier: ^5.4.2
-        version: 5.11.0(react-dom@18.2.0)(react@18.2.0)
       axios:
         specifier: ^1.4.0
         version: 1.6.0

@@ -356,6 +356,8 @@ impl Plugin for FarmPluginRuntime {
 
           let bundle = shared_bundle.codegen(&resource_pot_id)?;
 
+          resource_pot.defer_minify_resource_pot();
+
           *self.runtime_code.lock() = Arc::new(bundle.to_string());
 
           break;
@@ -378,6 +380,7 @@ impl Plugin for FarmPluginRuntime {
         rendered_modules: HashMap::new(),
         rendered_content: self.runtime_code.lock().clone(),
         rendered_map_chain: vec![],
+        custom_data: resource_pot.meta.custom_data.clone(),
         ..Default::default()
       }));
     } else if matches!(resource_pot.resource_pot_type, ResourcePotType::Js) {

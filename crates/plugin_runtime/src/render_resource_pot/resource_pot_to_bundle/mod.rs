@@ -74,6 +74,13 @@ pub struct SharedBundle<'a> {
   bundle_variables: Rc<RefCell<BundleVariable>>,
 }
 
+///
+/// TODO:
+/// 1. multiple bundle
+/// 2. commonjs
+/// 3. dynamic bundle
+/// 4. multiple environment process
+///
 impl<'a> SharedBundle<'a> {
   pub fn new(
     resource_pots: Vec<&'a ResourcePot>,
