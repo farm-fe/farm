@@ -1,4 +1,4 @@
-# Contributing to Farm
+# Contribution Guide
 
 Thank you for your interest in contributing to Farm!. Before submitting your contribution, please make sure to take a moment and read through the following guidelines.
 
@@ -28,7 +28,7 @@ Please feel free to open an issue using the [feature request template](https://g
   
 - Run `cargo test` and make sure that it passes.
   
-- If you've changed some packages And prepare for an updated version, you should output `npx changset` in the root directory.
+- If you've changed some packages And prepare for an updated version, you should output `npx changeset` in the root directory. we should try our best to keep releasing the `patch version`. If there are no major changes, please choose to update the `patch version`.
 
 - When you are done with your work, verify that it works locally with `pnpm run ready`
 
@@ -57,6 +57,16 @@ Please feel free to open an issue using the [feature request template](https://g
 
 - [Pnpm](https://pnpm.io) **version 8+**
 
+
+### IDE
+
+We recommend that you use vscode for development and recommend two necessary plugins that you need to install
+
+- `rust-analyzer` support rust language
+- `biome` farm use biome to detect and format the code
+
+You can install them in the extension
+
 ### Setup Other Dependencies
 
 - Install [protoc](https://grpc.io/docs/protoc-installation/) for building `sass-embedded`.
@@ -65,10 +75,10 @@ Please feel free to open an issue using the [feature request template](https://g
 
 ## Start running
 
-Farm development is very simple. You only need to execute pnpm bootstrap in the root directory for development.
+Farm development is very simple. You only need to execute `pnpm bootstrap` in the root directory for development.
 
 ```bash
-$ pnpm bootstrap # install the dependencies of the project
+$ pnpm bootstrap
 ```
 
 - use `pnpm bootstrap` to install dependencies and build core packages with series of initialization operations.
@@ -78,6 +88,16 @@ $ pnpm bootstrap # install the dependencies of the project
 - If `examples/react` project runs successfully, the development environment has been configured successfully
 
 - If you changed Rust code in `crates`, run `npm run build:rs` under `packages/core` again to get the latest binary.
+
+When you are developing node side code, the root directory executes pnpm start to debug the code in real time, and when you are developing rust side code, the root directory executes pnpm start:rs to debug the code in real time.
+
+```ts
+// node side
+pnpm start
+
+// rust side
+pnpm start:rs
+```
 
 ## Testing
 

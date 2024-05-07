@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 import fs from 'node:fs';
 import path from 'node:path';
-import spawn from 'cross-spawn';
 import minimist from 'minimist';
 import prompts from 'prompts';
 
@@ -11,6 +10,10 @@ import { colors } from './utils/color.js';
 import createSpawnCmd from './utils/createSpawnCmd.js';
 import { loadWithRocketGradient } from './utils/gradient.js';
 import { shouldUsePnpm, shouldUseYarn } from './utils/packageManager.js';
+import {
+  frameworkPromptsChoices,
+  getSubFrameworkPromptsChoices
+} from './utils/prompts.js';
 
 interface IResultType {
   packageName?: string;
@@ -108,25 +111,7 @@ async function createFarm() {
           name: 'framework',
           message: 'Select a framework:',
           initial: 0,
-          choices: [
-            {
-              title: colors.cyan('React'),
-              value: 'react'
-            },
-            { title: colors.green('Vue'), value: 'vue' },
-            {
-              title: colors.cyan('Preact'),
-              value: 'preact'
-            },
-            { title: colors.blue('Solid'), value: 'solid' },
-            { title: colors.orange('Svelte'), value: 'svelte' },
-            {
-              title: colors.yellow('Vanilla'),
-              value: 'vanilla'
-            },
-            { title: colors.red('Lit'), value: 'lit' },
-            { title: colors.orange('Tauri'), value: 'tauri' }
-          ]
+          choices: frameworkPromptsChoices
         },
         {
           type: pkgInfo || skipInstall ? null : 'select',
@@ -158,14 +143,13 @@ async function createFarm() {
     return;
   }
   const { framework = argFramework, packageManager } = result;
-  let chooseFramework: IResultType['framework'] = framework;
-  if (framework === 'tauri') {
-    const tauriOption = await prompts(tauriTemplate as prompts.PromptObject[]);
-    chooseFramework = `tauri/${tauriOption['tauri-framework']}`;
-  }
+  const frameworkPrompts = getSubFrameworkPromptsChoices(framework);
+  const options = await prompts(frameworkPrompts as any);
 
   await copyTemplate(targetDir, {
-    framework: chooseFramework,
+    framework: options.subFramework
+      ? `${framework}/${options.subFramework}`
+      : framework,
     projectName: targetDir,
     packageManager
   });

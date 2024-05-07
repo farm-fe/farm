@@ -24,7 +24,7 @@
   
 - 使用 `cargo test` 确保所有测试均能通过。
 
-- 如果您已经更改了一些包并准备更新版本，则您应该在根目录中输出`npx changeset` 用来发布新版本并且提交。
+- 如果您已经更改了一些包并准备更新版本，则您应该在根目录中输出`npx changeset` 用来发布新版本并且提交。 我们应该尽量保持发布 `patch` 版本, 如果没有重大更改的情况下，请选择 更新 `patch` 版本
 
 - 当你完成你的工作后，请通过 `pnpm run ready` 来验证是否可以在本地正常运行
 
@@ -53,6 +53,15 @@
 
 - 确保您的 [Pnpm](https://pnpm.io) 版本在 **8** 以上。
 
+### IDE
+
+我们推荐使用 `vscode` 进行开发, 并且我们推荐两个必要的插件
+
+- `rust-analyzer` 支持 `rust` 语言。
+- `biome` 使用 `biome` 进行格式化和检查代码。
+
+你可以在扩展中安装它们
+
 ### 其他依赖
 
 - 在构建 `sass-embedded` 需要用到 [protoc](https://grpc.io/docs/protoc-installation/) 所以您的本地开发环境还需要安装 [protoc](https://grpc.io/docs/protoc-installation/)。
@@ -74,6 +83,16 @@ $ pnpm bootstrap # install the dependencies of the project with series of initia
 - 如果`examples/react`正常运行，则表明开发环境配置成功。
 
 - 如果您更改了`crates`中的 `Rust` 代码，请再次运行 `Packages/core` 下的 `npm run build：rs` 以获取最新的二进制代码。
+
+当你在开发 node 侧代码时, 根目录执行 pnpm start 就可以实时调试代码了，当你在开发 rust 侧代码时， 根目录执行 pnpm start:rs 就可以实时调试代码了
+
+```bash
+// node side
+pnpm start
+
+// rust side
+pnpm start:rs
+```
 
 ## 测试
 
