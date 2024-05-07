@@ -92,11 +92,23 @@ impl ModuleAnalyzerManager {
   }
 
   #[inline]
-  pub fn is_in_namespace(&self, module_id: &ModuleId) -> bool {
+  pub fn is_contain_namespace(&self, module_id: &ModuleId) -> bool {
     self.namespace.contains(module_id)
   }
 
-  pub fn export_names(&self, module_id: &ModuleId) -> Vec<(ExportInfo, ModuleId)> {
+  // TODO: cache dependents export
+  /// TODO: refactor
+  /// 1. all export continue to search
+  /// 2. named export need filter
+  ///   2-1. has source continue search with filter
+  ///   2-2. no source collect
+  /// 3. namespace export collect and skip
+  /// 4. default export skip
+  pub fn export_names(
+    &self,
+    module_id: &ModuleId,
+    bundle_variable: &BundleVariable,
+  ) -> Vec<(ExportInfo, ModuleId)> {
     let mut exports: Vec<(ExportInfo, ModuleId)> = vec![];
 
     let exports_stmts = if let Some(module_analyzer) = self.module_analyzer(module_id) {
@@ -127,14 +139,14 @@ impl ModuleAnalyzerManager {
         match specify {
           ExportSpecifierInfo::All(_) => {
             if let Some(source) = &export.source {
-              let result = self.export_names(source);
+              let result = self.export_names(source, bundle_variable);
               exports.extend(result);
             }
           }
 
           _ => {
             if let Some(source) = &export.source {
-              let result = self.export_names(source);
+              let result = self.export_names(source, bundle_variable);
               exports.extend(result);
             } else {
               exports.push((
@@ -159,17 +171,10 @@ impl ModuleAnalyzerManager {
     module_id: &ModuleId,
     context: &Arc<CompilationContext>,
     bundle_variable: &mut BundleVariable,
-    external_reference: &mut BundleReference,
   ) -> Result<()> {
     let namespace = self.namespace_uniq_named.get(module_id).cloned();
 
-    self.patch_module(
-      module_id,
-      context,
-      bundle_variable,
-      external_reference,
-      namespace,
-    )?;
+    self.patch_module(module_id, context, bundle_variable, namespace)?;
 
     Ok(())
   }
@@ -179,7 +184,6 @@ impl ModuleAnalyzerManager {
     module_id: &ModuleId,
     context: &Arc<CompilationContext>,
     bundle_variable: &mut BundleVariable,
-    external_reference: &mut BundleReference,
     namespace: Option<(usize, HashMap<ModuleId, usize>)>,
   ) -> Result<()> {
     if let Some(module_analyzer) = self.module_analyzer_mut(module_id) {
@@ -296,7 +300,7 @@ impl ModuleAnalyzerManager {
           match specify {
             ExportSpecifierInfo::All(_) => {
               if let Some(source) = &export.source {
-                let export_names = self.export_names(source);
+                let export_names = self.export_names(source, &bundle_variable);
 
                 // TODO: 看下 case
                 for (export, _) in export_names {

@@ -274,7 +274,7 @@ impl<'a> BundleAnalyzer<'a> {
     module_analyzer_manager: &mut ModuleAnalyzerManager,
   ) -> Result<()> {
     for module_id in &self.ordered_modules {
-      if module_analyzer_manager.is_in_namespace(module_id) {
+      if module_analyzer_manager.is_contain_namespace(module_id) {
         if let Some((local, named_as)) =
           module_analyzer_manager.namespace_uniq_named.get(&module_id)
         {
@@ -316,7 +316,17 @@ impl<'a> BundleAnalyzer<'a> {
               NamespaceExportType::Entry(importer) => {
                 self.bundle_external_reference.sync_export(
                   &ExportSpecifierInfo::Named(
-                    (*local, Some(*named_as.get(&importer).unwrap())).into(),
+                    (
+                      *local,
+                      Some(*common::otr!(
+                        named_as.get(&importer),
+                        CompilationError::GenericError(format!(
+                          "failed found module {:?} namespace named",
+                          importer
+                        ))
+                      )?),
+                    )
+                      .into(),
                   ),
                   &None,
                 );
@@ -372,9 +382,10 @@ impl<'a> BundleAnalyzer<'a> {
                             module_analyzer_manager
                               .namespace_uniq_named
                               .get(&import.source),
-                            CompilationError::GenericError(
-                              "failed to fetch namespace uniq name".to_string()
-                            )
+                            CompilationError::GenericError(format!(
+                              "failed found module {:?} namespace named",
+                              import.source
+                            ))
                           )?
                           .0,
                         );
@@ -553,7 +564,8 @@ impl<'a> BundleAnalyzer<'a> {
                         false
                       })
                     } {
-                      let exports = module_analyzer_manager.export_names(source);
+                      let exports = module_analyzer_manager
+                        .export_names(source, &self.bundle_variable.borrow());
 
                       for (export, export_source) in exports {
                         let is_in_self_bundle = self.ordered_modules.contains(&&export_source);
@@ -571,6 +583,8 @@ impl<'a> BundleAnalyzer<'a> {
                         }
                       }
                     }
+                  } else {
+                    unreachable!("export all should have source")
                   }
                 }
 
@@ -634,7 +648,7 @@ impl<'a> BundleAnalyzer<'a> {
                 }
 
                 // export default n, Default(n)
-                // export default 1 + 1, Default(default)
+                // export default 1 + 1, Default("default")
                 ExportSpecifierInfo::Default(var) => {
                   if self.bundle_variable.borrow().name(*var) == "default" {
                     self
@@ -667,10 +681,13 @@ impl<'a> BundleAnalyzer<'a> {
                     )
                   )?;
 
-                  let (local_var, _) = module_analyzer_manager
-                    .namespace_uniq_named
-                    .get(source)
-                    .unwrap();
+                  let (local_var, _) = common::otr!(
+                    module_analyzer_manager.namespace_uniq_named.get(source),
+                    CompilationError::GenericError(format!(
+                      "failed found module {:?} namespace named",
+                      source
+                    ))
+                  )?;
 
                   let local_name = self.bundle_variable.borrow().render_name(*local_var);
 
@@ -732,7 +749,6 @@ impl<'a> BundleAnalyzer<'a> {
         &module_id,
         &self.context,
         &mut self.bundle_variable.borrow_mut(),
-        &mut self.bundle_external_reference,
       )?;
     }
 
@@ -917,9 +933,17 @@ impl<'a> BundleAnalyzer<'a> {
           config: &self.context.config.comments,
         }),
       )
-      .expect("failed generate script mode");
+      .map_err(|err| CompilationError::RenderScriptModuleError {
+        id: module_analyzer.module_id.to_string(),
+        source: Some(Box::new(err)),
+      })?;
 
-      let code = String::from_utf8(code_bytes).expect("failed to convert code bytes to string");
+      let code = String::from_utf8(code_bytes).map_err(|err| {
+        CompilationError::GenericError(format!(
+          "failed to convert code bytes to string, origin error: {}",
+          err.to_string()
+        ))
+      })?;
 
       let mut source_map_chain = vec![];
 
@@ -948,6 +972,7 @@ impl<'a> BundleAnalyzer<'a> {
       );
 
       if matches!(self.context.config.mode, Mode::Development) {
+        // debug info
         module.prepend(&format!("// module_id: {}\n", module_id.to_string()));
       }
 
