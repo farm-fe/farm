@@ -1,0 +1,82 @@
+//index.js:
+ import __farmNodeModule from 'node:module';globalThis.nodeRequire = __farmNodeModule.createRequire(import.meta.url);(globalThis || window || global)['__farm_default_namespace__'] = {__FARM_TARGET_ENV__: 'node'};function _getRequireWildcardCache(nodeInterop) {
+    if (typeof WeakMap !== "function") return null;
+    var cacheBabelInterop = new WeakMap();
+    var cacheNodeInterop = new WeakMap();
+    return (_getRequireWildcardCache = function(nodeInterop) {
+        return nodeInterop ? cacheNodeInterop : cacheBabelInterop;
+    })(nodeInterop);
+}
+function _interop_require_wildcard(obj, nodeInterop) {
+    if (!nodeInterop && obj && obj.__esModule) return obj;
+    if (obj === null || typeof obj !== "object" && typeof obj !== "function") return {
+        default: obj
+    };
+    var cache = _getRequireWildcardCache(nodeInterop);
+    if (cache && cache.has(obj)) return cache.get(obj);
+    var newObj = {
+        __proto__: null
+    };
+    var hasPropertyDescriptor = Object.defineProperty && Object.getOwnPropertyDescriptor;
+    for(var key in obj){
+        if (key !== "default" && Object.prototype.hasOwnProperty.call(obj, key)) {
+            var desc = hasPropertyDescriptor ? Object.getOwnPropertyDescriptor(obj, key) : null;
+            if (desc && (desc.get || desc.set)) Object.defineProperty(newObj, key, desc);
+            else newObj[key] = obj[key];
+        }
+    }
+    newObj.default = obj;
+    if (cache) cache.set(obj, newObj);
+    return newObj;
+}
+
+function _interop_require_default(obj) {
+    return obj && obj.__esModule ? obj : {
+        default: obj
+    };
+}
+
+const namedA = 10;
+const namedB = 20;
+const namedC = 30;
+const sameNameWithFile_ts = 1;
+const sameNameWithFile_ts_ns$2 = 2;
+var exportNamed_ts = {
+    renamedA: namedA,
+    renamedB: namedB,
+    renamedC: namedC
+};
+var exportNamed_ts_ns = {
+    "namedA": namedA,
+    "namedB": namedB,
+    "namedC": namedC,
+    "renamedA": namedA,
+    "renamedB": namedB,
+    "renamedC": namedC
+};
+
+console.log("export expr");
+var exportExpr_ts = "export expr";
+
+const sameNameWithFile_ts_ns$3 = 1;
+const sameNameWithFile_ts$1 = 2;
+const exportExpr_ts_default = 3;
+function say() {
+    console.log("hello");
+}
+var sameNameWithFile_ts_ns = {
+    "say": say
+};
+
+console.log({
+    NamedNamespace: exportNamed_ts_ns,
+    namedA: namedA,
+    namedB: namedB,
+    namedC: namedC,
+    DefaultNamed: exportNamed_ts,
+    SameNameWithFileNamespace: sameNameWithFile_ts_ns,
+    Expr: exportExpr_ts
+});
+(globalThis || window || global)["__farm_default_namespace__"].__farm_module_system__.setPlugins([]);
+(function(_){for(var r in _){_[r].__farm_resource_pot__='index_dcdc.js';(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.register(r,_[r])}})({"b5d64806":function  (module, exports, farmRequire, farmDynamicRequire) {}
+,});(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setInitialLoadedResources([]);(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setDynamicModuleResourcesMap({  });var farmModuleSystem = (globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__;farmModuleSystem.bootstrap();var entry = farmModuleSystem.require("b5d64806");export default entry;

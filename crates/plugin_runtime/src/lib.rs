@@ -13,7 +13,7 @@ use farmfe_core::{
     FARM_MODULE_SYSTEM,
   },
   context::CompilationContext,
-  enhanced_magic_string::types::SourceMapOptions,
+  enhanced_magic_string::{bundle::Bundle, types::SourceMapOptions},
   error::CompilationError,
   module::{ModuleId, ModuleMetaData, ModuleType},
   parking_lot::Mutex,
@@ -24,7 +24,7 @@ use farmfe_core::{
     PluginTransformHookResult, ResolveKind,
   },
   resource::{
-    resource_pot::{ResourcePot, ResourcePotMetaData, ResourcePotType},
+    resource_pot::{ResourcePot, ResourcePotId, ResourcePotMetaData, ResourcePotType},
     Resource, ResourceOrigin, ResourceType,
   },
   serde_json,
@@ -37,7 +37,7 @@ use farmfe_toolkit::{
 };
 
 use insert_runtime_plugins::insert_runtime_plugins;
-use render_resource_pot::*;
+use render_resource_pot::{resource_pot_to_bundle::SharedBundle, *};
 
 pub const RUNTIME_SUFFIX: &str = ".farm-runtime";
 pub const ASYNC_MODULES: &str = "async_modules";
@@ -57,6 +57,7 @@ pub mod render_resource_pot;
 /// All runtime module (including the runtime core and its plugins) will be suffixed as `.farm-runtime` to distinguish with normal script modules.
 pub struct FarmPluginRuntime {
   runtime_code: Mutex<Arc<String>>,
+  share_bundle: Mutex<Arc<HashMap<ResourcePotId, Bundle>>>,
 }
 
 impl Plugin for FarmPluginRuntime {
@@ -344,29 +345,22 @@ impl Plugin for FarmPluginRuntime {
     let async_modules = async_modules.downcast_ref::<HashSet<ModuleId>>().unwrap();
     let module_graph = context.module_graph.read();
 
-    for resource_pot in resource_pots {
-      if matches!(resource_pot.resource_pot_type, ResourcePotType::Runtime) {
-        let RenderedJsResourcePot { mut bundle, .. } =
-          resource_pot_to_runtime_object(resource_pot, &module_graph, async_modules, context)?;
+    for resource_pot in resource_pots.iter_mut() {
+      match resource_pot.resource_pot_type {
+        ResourcePotType::Runtime => {
+          let resource_pot_id = resource_pot.id.clone();
 
-        bundle.prepend(
-          r#"(function(r,e){var t={};function n(r){return Promise.resolve(o(r))}function o(e){if(t[e])return t[e].exports;var i={id:e,exports:{}};t[e]=i;r[e](i,i.exports,o,n);return i.exports}o(e)})("#,
-        );
+          let mut shared_bundle = SharedBundle::new(vec![&**resource_pot], &module_graph, context);
 
-        bundle.append(
-          &format!(
-            ",{:?});",
-            resource_pot
-              .entry_module
-              .as_ref()
-              .unwrap()
-              .id(context.config.mode.clone())
-          ),
-          None,
-        );
+          shared_bundle.render()?;
 
-        *self.runtime_code.lock() = Arc::new(bundle.to_string());
-        break;
+          let bundle = shared_bundle.codegen(&resource_pot_id)?;
+
+          *self.runtime_code.lock() = Arc::new(bundle.to_string());
+
+          break;
+        }
+        _ => {}
       }
     }
 
@@ -565,6 +559,7 @@ impl FarmPluginRuntime {
   pub fn new(_: &Config) -> Self {
     Self {
       runtime_code: Mutex::new(Arc::new(String::new())),
+      share_bundle: Mutex::new(Arc::new(HashMap::new())),
     }
   }
 

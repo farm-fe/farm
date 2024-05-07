@@ -12,6 +12,7 @@ use farmfe_core::{
   },
   plugin::Plugin,
 };
+use farmfe_testing_helpers::is_update_snapshot_from_env;
 
 pub fn generate_runtime(crate_path: PathBuf) -> RuntimeConfig {
   let swc_helpers_path = crate_path
@@ -108,10 +109,6 @@ where
 }
 
 #[allow(dead_code)]
-pub fn create_with_compiler(config: Config, plugin_adapters: Vec<Arc<dyn Plugin>>) -> Compiler {
-  Compiler::new(config, plugin_adapters).expect("faile to create compiler")
-}
-#[allow(dead_code)]
 pub fn create_compiler(
   input: HashMap<String, String>,
   cwd: PathBuf,
@@ -199,17 +196,17 @@ pub fn create_compiler_with_plugins(
 
   compiler
 }
-#[allow(dead_code)]
-pub fn get_compiler_result(compiler: &Compiler, entry_name: Option<&String>) -> String {
+
+pub fn get_compiler_result(compiler: &Compiler, config: &AssertCompilerResultConfig) -> String {
   let resources_map = compiler.context().resources_map.lock();
   let mut result = vec![];
 
   for (name, resource) in resources_map.iter() {
-    if resource.emitted {
+    if !config.ignore_emitted_field && resource.emitted {
       continue;
     }
 
-    result.push(match entry_name {
+    result.push(match config.entry_name.as_ref() {
       Some(entry_name) if name == entry_name => (
         "1".into(),
         format!("//{}.{}:\n ", entry_name, resource.resource_type.to_ext()),
@@ -239,12 +236,27 @@ pub fn load_expected_result(cwd: PathBuf) -> String {
   std::fs::read_to_string(cwd.join("output.js")).unwrap_or("".to_string())
 }
 
+#[derive(Debug)]
+pub struct AssertCompilerResultConfig {
+  pub entry_name: Option<String>,
+  pub ignore_emitted_field: bool,
+}
+
+impl Default for AssertCompilerResultConfig {
+  fn default() -> Self {
+    Self {
+      entry_name: None,
+      ignore_emitted_field: false,
+    }
+  }
+}
+
 #[allow(dead_code)]
-pub fn assert_compiler_result(compiler: &Compiler, entry_name: Option<&String>) {
+pub fn assert_compiler_result_with_config(compiler: &Compiler, config: AssertCompilerResultConfig) {
   let expected_result = load_expected_result(PathBuf::from(compiler.context().config.root.clone()));
-  let result = get_compiler_result(compiler, entry_name);
+  let result = get_compiler_result(compiler, &config);
   let output_path = PathBuf::from(compiler.context().config.root.clone()).join("output.js");
-  if std::env::var("FARM_UPDATE_SNAPSHOTS").is_ok() || !output_path.exists() {
+  if is_update_snapshot_from_env() || !output_path.exists() {
     std::fs::write(output_path, result).unwrap();
   } else {
     // assert lines are the same
@@ -257,4 +269,15 @@ pub fn assert_compiler_result(compiler: &Compiler, entry_name: Option<&String>) 
 
     assert_eq!(expected_lines.len(), result_lines.len());
   }
+}
+
+#[allow(dead_code)]
+pub fn assert_compiler_result(compiler: &Compiler, entry_name: Option<&String>) {
+  assert_compiler_result_with_config(
+    compiler,
+    AssertCompilerResultConfig {
+      entry_name: entry_name.cloned(),
+      ..Default::default()
+    },
+  );
 }
