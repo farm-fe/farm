@@ -1,5 +1,11 @@
 # create-farm
 
+## 1.6.8
+
+### Patch Changes
+
+- f5b77216: update choose framework ways
+
 ## 1.6.7
 
 ### Patch Changes
