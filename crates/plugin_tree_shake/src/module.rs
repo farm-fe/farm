@@ -150,7 +150,6 @@ impl TreeShakeModule {
     Self {
       module_id: module.id.clone(),
       contains_self_executed_stmt: module.side_effects
-        || module_system != ModuleSystem::EsModule
         || !stmt_graph.preserved_side_effects_stmts().is_empty(),
       stmt_graph,
       pending_used_exports: handled_used_exports.clone(),
@@ -230,14 +229,19 @@ impl TreeShakeModule {
       .trace_and_mark_used_statements(stmt_used_idents_map)
   }
 
-  fn all_exports_to_statement_idents(&self) -> Vec<(UsedStatementIdent, StatementId)> {
+  fn all_exports_to_statement_idents(
+    &self,
+    is_re_export: bool,
+  ) -> Vec<(UsedStatementIdent, StatementId)> {
     let mut used_idents = vec![];
 
     for export_info in self.exports() {
       for sp in &export_info.specifiers {
         match sp {
           ExportSpecifierInfo::Default => {
-            used_idents.push((UsedStatementIdent::Default, export_info.stmt_id));
+            if !is_re_export {
+              used_idents.push((UsedStatementIdent::Default, export_info.stmt_id));
+            }
           }
           ExportSpecifierInfo::Named { local, .. } => {
             used_idents.push((
@@ -270,14 +274,14 @@ impl TreeShakeModule {
     match &self.pending_used_exports {
       UsedExports::All => {
         // all exported identifiers are used
-        self.all_exports_to_statement_idents()
+        self.all_exports_to_statement_idents(false)
       }
       UsedExports::Partial(idents) => {
         let mut used_idents = vec![];
         // statement `export * from './xxx'` is marked as used, we need to mark all exported idents as used the same as UsedExports::All
         if idents.contains(&UsedExportsIdent::ExportAll) {
           // for all content introduced, all export information needs to be collected
-          return self.all_exports_to_statement_idents();
+          return self.all_exports_to_statement_idents(true);
         }
         // find exported ident for every used idents.
         for ident in idents {
@@ -347,11 +351,12 @@ impl TreeShakeModule {
           } else {
             // if export info is not found, and there are ExportSpecifierInfo::All, then the ident may be exported by `export * from 'xxx'`
             if let Some(export_all_stmt_id) = export_all_stmt_ids {
-              for export_all_stmt_id in export_all_stmt_id {
-                used_idents.push((
-                  UsedStatementIdent::InExportAll(ident.expect_ident().to_string()),
-                  export_all_stmt_id,
-                ));
+              let ident = ident.expect_ident().to_string();
+              // skip default for export * from 'xxx'
+              if ident != *"default" {
+                for export_all_stmt_id in export_all_stmt_id {
+                  used_idents.push((UsedStatementIdent::InExportAll(ident), export_all_stmt_id));
+                }
               }
             }
           }
