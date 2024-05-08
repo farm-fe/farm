@@ -24,32 +24,6 @@ interface IResultType {
   packageManager?: string;
 }
 
-export const tauriTemplate = [
-  {
-    type: 'select',
-    name: 'tauri-framework',
-    message: 'Select a tauri framework:',
-    initial: 0,
-    choices: [
-      {
-        title: colors.cyan('React'),
-        value: 'react'
-      },
-      { title: colors.green('Vue'), value: 'vue' },
-      {
-        title: colors.cyan('Preact'),
-        value: 'preact'
-      },
-      { title: colors.blue('Solid'), value: 'solid' },
-      { title: colors.orange('Svelte'), value: 'svelte' },
-      {
-        title: colors.yellow('Vanilla'),
-        value: 'vanilla'
-      }
-    ]
-  }
-];
-
 // judge node version
 judgeNodeVersion();
 
