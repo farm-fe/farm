@@ -1,7 +1,7 @@
 import { colors } from './color.js';
 
 const allFramework = new Map([
-  ['tauri', ['lit', 'tauri', 'electron']],
+  ['tauri', ['lit', 'tauri', 'electron', 'vue2']],
   ['ssr', ['lit', 'tauri', 'electron']],
   ['electron', ['lit', 'tauri', 'electron']]
 ]);
@@ -12,6 +12,7 @@ export const frameworkPromptsChoices = [
     value: 'react'
   },
   { title: colors.green('Vue'), value: 'vue' },
+  { title: colors.bgGreen('Vue2'), value: 'vue2' },
   {
     title: colors.cyan('Preact'),
     value: 'preact'
