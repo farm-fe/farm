@@ -40,8 +40,8 @@ const namedA = 10;
 const namedB = 20;
 const namedC = 30;
 const sameNameWithFile_ts = 1;
-const sameNameWithFile_ts_ns$2 = 2;
-var exportNamed_ts = {
+const sameNameWithFile_ts_ns$1 = 2;
+var exportNamed_ts_default = {
     renamedA: namedA,
     renamedB: namedB,
     renamedC: namedC
@@ -56,11 +56,11 @@ var exportNamed_ts_ns = {
 };
 
 console.log("export expr");
-var exportExpr_ts = "export expr";
+var exportExpr_ts_default = "export expr";
 
-const sameNameWithFile_ts_ns$3 = 1;
+const sameNameWithFile_ts_ns$2 = 1;
 const sameNameWithFile_ts$1 = 2;
-const exportExpr_ts_default = 3;
+const exportExpr_ts_default$1 = 3;
 function say() {
     console.log("hello");
 }
@@ -73,9 +73,9 @@ console.log({
     namedA: namedA,
     namedB: namedB,
     namedC: namedC,
-    DefaultNamed: exportNamed_ts,
+    DefaultNamed: exportNamed_ts_default,
     SameNameWithFileNamespace: sameNameWithFile_ts_ns,
-    Expr: exportExpr_ts
+    Expr: exportExpr_ts_default
 });
 (globalThis || window || global)["__farm_default_namespace__"].__farm_module_system__.setPlugins([]);
 (function(_){for(var r in _){_[r].__farm_resource_pot__='index_dcdc.js';(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.register(r,_[r])}})({"b5d64806":function  (module, exports, farmRequire, farmDynamicRequire) {}

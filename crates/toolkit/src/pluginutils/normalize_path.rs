@@ -1,9 +1,6 @@
 pub fn normalize_path(path: &str) -> String {
   let windows_separator = "\\";
-  path
-    .split(windows_separator)
-    .collect::<Vec<_>>()
-    .join("/")
+  path.split(windows_separator).collect::<Vec<_>>().join("/")
 }
 
 #[cfg(test)]

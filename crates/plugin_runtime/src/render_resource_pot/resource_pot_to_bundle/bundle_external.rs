@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use farmfe_core::{
   error::{CompilationError, Result},
-  module::ModuleId,
+  module::{ModuleId, ModuleSystem},
 };
 
 use super::{
@@ -48,7 +48,7 @@ impl ExternalReferenceImport {
         let name = bundle_variable.name(imported);
 
         if !self.named.contains_key(&name) {
-          self.named.insert(bundle_variable.name(imported), local);
+          self.named.insert(name, local);
         }
       }
       ImportSpecifierInfo::Namespace(name) => {
@@ -61,7 +61,7 @@ impl ExternalReferenceImport {
   }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct ExternalReferenceExport {
   pub named: HashMap<usize, usize>,
   pub default: Option<usize>,
@@ -106,12 +106,54 @@ impl ExternalReferenceExport {
   }
 }
 
+#[derive(Debug, PartialEq, Eq, Hash, Clone, PartialOrd, Ord)]
+pub enum ReferenceKind {
+  Bundle(String),
+  Module(ModuleId),
+}
+
+impl ReferenceKind {
+  pub fn to_module_id(&self) -> ModuleId {
+    match self {
+        ReferenceKind::Bundle(name) => ModuleId::from(name.as_str()),
+        ReferenceKind::Module(id) => id.clone(),
+    }
+  }
+}
+
+impl ToString for ReferenceKind {
+  fn to_string(&self) -> String {
+    match self {
+      ReferenceKind::Bundle(name) => name.clone(),
+      ReferenceKind::Module(id) => id.to_string(),
+    }
+  }
+}
+
+impl From<ModuleId> for ReferenceKind {
+  fn from(id: ModuleId) -> Self {
+    ReferenceKind::Module(id)
+  }
+}
+
+impl From<String> for ReferenceKind {
+  fn from(name: String) -> Self {
+    ReferenceKind::Bundle(name)
+  }
+}
+
 #[derive(Debug)]
 pub struct BundleReference {
   /// import { xxx } from './external_bundle_module' | './other_bundle_module'
-  pub import_map: HashMap<String, ExternalReferenceImport>,
+  pub import_map: HashMap<ReferenceKind, ExternalReferenceImport>,
+
+  pub commonjs_import_map: HashMap<ReferenceKind, ExternalReferenceImport>,
+
+  pub commonjs_export_map: HashMap<ReferenceKind, ExternalReferenceExport>,
+
   /// export xxx from './external_bundle_module'
-  pub external_export_map: HashMap<ModuleId, ExternalReferenceExport>,
+  pub external_export_map: HashMap<ReferenceKind, ExternalReferenceExport>,
+
   /// export local
   pub export: Option<ExternalReferenceExport>,
 }
@@ -119,21 +161,27 @@ pub struct BundleReference {
 impl BundleReference {
   pub fn new() -> Self {
     Self {
+      commonjs_import_map: HashMap::new(),
+      commonjs_export_map: HashMap::new(),
       import_map: HashMap::new(),
       external_export_map: HashMap::new(),
       export: None,
     }
   }
 
-  pub fn sync_export(&mut self, export: &ExportSpecifierInfo, source: &Option<ModuleId>) {
+  pub fn sync_export(
+    &mut self,
+    export: &ExportSpecifierInfo,
+    source: Option<ReferenceKind>,
+    to_export_map: Option<&mut HashMap<ReferenceKind, ExternalReferenceExport>>
+  ) {
     if let Some(module_id) = source {
-      if !self.external_export_map.contains_key(&module_id) {
-        self
-          .external_export_map
-          .insert(module_id.clone(), ExternalReferenceExport::new());
+      let map = to_export_map.unwrap_or(&mut self.external_export_map);
+      if !map.contains_key(&module_id) {
+        map.insert(module_id.clone(), ExternalReferenceExport::new());
       }
 
-      let module_export_map = self.external_export_map.get_mut(&module_id).unwrap();
+      let module_export_map = map.get_mut(&module_id).unwrap();
 
       if !module_export_map.contains(export) {
         module_export_map.insert(export.clone());
@@ -151,20 +199,23 @@ impl BundleReference {
     }
   }
 
-  pub fn sync_import<M: ToString>(
+  pub fn sync_import(
     &mut self,
-    module_id: &M,
+    import_kind: ReferenceKind,
     import: &ImportSpecifierInfo,
     bundle_variable: &BundleVariable,
+    is_cjs: bool,
   ) -> Result<usize> {
-    let module_id = module_id.to_string();
-    if !self.import_map.contains_key(&module_id) {
-      self
-        .import_map
-        .insert(module_id.clone(), ExternalReferenceImport::new());
+    let import_map = if is_cjs {
+      &mut self.commonjs_import_map
+    } else {
+      &mut self.import_map
+    };
+    if !import_map.contains_key(&import_kind) {
+      import_map.insert(import_kind.clone(), ExternalReferenceImport::new());
     }
 
-    let module_import_map = self.import_map.get_mut(&module_id).unwrap();
+    let module_import_map = import_map.get_mut(&import_kind).unwrap();
 
     if let Some(options) = module_import_map.fetch(import, bundle_variable) {
       Ok(options)
@@ -179,7 +230,7 @@ impl BundleReference {
     }
   }
 
-  pub fn import<M: ToString>(&self, module_id: &M) -> Option<&ExternalReferenceImport> {
-    self.import_map.get(&module_id.to_string())
+  pub fn import(&self, import_kind: &ReferenceKind) -> Option<&ExternalReferenceImport> {
+    self.import_map.get(import_kind)
   }
 }

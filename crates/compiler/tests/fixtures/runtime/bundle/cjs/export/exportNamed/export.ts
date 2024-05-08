@@ -1,0 +1,1 @@
+export { name, age as cjsAge } from './dep';

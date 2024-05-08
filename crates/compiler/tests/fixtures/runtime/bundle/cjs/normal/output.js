@@ -1,5 +1,18 @@
 //index.js:
- import __farmNodeModule from 'node:module';globalThis.nodeRequire = __farmNodeModule.createRequire(import.meta.url);(globalThis || window || global)['__farm_default_namespace__'] = {__FARM_TARGET_ENV__: 'node'};function _getRequireWildcardCache(nodeInterop) {
+ import __farmNodeModule from 'node:module';globalThis.nodeRequire = __farmNodeModule.createRequire(import.meta.url);(globalThis || window || global)['__farm_default_namespace__'] = {__FARM_TARGET_ENV__: 'node'};function __commonJs(mod) {
+    var module;
+    return ()=>{
+        if (module) {
+            return module.exports;
+        }
+        module = {
+            exports: {}
+        };
+        mod[Object.keys(mod)[0]](module, module.exports);
+        return module.exports;
+    };
+}
+function _getRequireWildcardCache(nodeInterop) {
     if (typeof WeakMap !== "function") return null;
     var cacheBabelInterop = new WeakMap();
     var cacheNodeInterop = new WeakMap();
@@ -30,22 +43,52 @@ function _interop_require_wildcard(obj, nodeInterop) {
     return newObj;
 }
 
-const a = 10;
-function b() {
-    return 20;
+function _interop_require_default(obj) {
+    return obj && obj.__esModule ? obj : {
+        default: obj
+    };
 }
-class c {
-    constructor(){
-        this.value = 30;
-    }
-}
-var dep_ts_default = 40;
-var dep_ts_ns = {
-    "a": a,
-    "b": b,
-    "c": c
+
+const name = "name";
+const age = 18;
+var esmExport_ts_default = {
+    name: name,
+    age: age
+};
+var esmExport_ts_ns = {
+    "name": name
 };
 
+var cjsExport_ts_cjs = __commonJs({
+    "cjsExport.ts.farm-runtime": (module, exports)=>{
+        module.exports.age = 18;
+        module.exports.default = function() {
+            return "default";
+        };
+    }
+});
+
+var cjsDefault = cjsExport_ts_cjs().default, cjsExport_ts_ns = cjsExport_ts_cjs(), age$1 = cjsExport_ts_cjs().age;
+console.log({
+    cjsNamed: age$1,
+    cjsDefault: cjsDefault,
+    cjsNs: cjsExport_ts_ns
+});
+console.log({
+    esmNamed: name,
+    esmNs: esmExport_ts_ns,
+    esmDefault: esmExport_ts_default
+});
+
+var cjsRequire_ts_cjs = __commonJs({
+    "cjsRequire.ts.farm-runtime": (module, exports)=>{
+        const esmExport = esmExport_ts_ns;
+        const { age } = cjsExport_ts_cjs();
+        console.log(esmExport, age);
+    }
+});
+
+cjsRequire_ts_cjs();
 (globalThis || window || global)["__farm_default_namespace__"].__farm_module_system__.setPlugins([]);
 (function(_){for(var r in _){_[r].__farm_resource_pot__='index_dcdc.js';(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.register(r,_[r])}})({"b5d64806":function  (module, exports, farmRequire, farmDynamicRequire) {}
 ,});(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setInitialLoadedResources([]);(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setDynamicModuleResourcesMap({  });var farmModuleSystem = (globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__;farmModuleSystem.bootstrap();var entry = farmModuleSystem.require("b5d64806");export default entry;

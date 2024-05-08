@@ -38,7 +38,7 @@ function BB() {
     const b = 6;
     console.log(a, b);
 }
-var dep_ts = {
+var dep_ts_default = {
     a: a,
     b: b,
     c: c

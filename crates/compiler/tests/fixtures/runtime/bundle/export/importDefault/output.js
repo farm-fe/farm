@@ -11,13 +11,13 @@ class DC {
 
 const a = 10;
 const b = 20;
-var defaultExpr_ts = a + b;
+var defaultExpr_ts_default = a + b;
 
 function DF() {}
 
-var runtime_ts = {
+var runtime_ts_default = {
     DefaultClass: DC,
-    DefaultExpr: defaultExpr_ts,
+    DefaultExpr: defaultExpr_ts_default,
     DefaultFn: DF
 };
 (globalThis || window || global)["__farm_default_namespace__"].__farm_module_system__.setPlugins([]);

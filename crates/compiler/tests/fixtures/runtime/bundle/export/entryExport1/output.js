@@ -39,7 +39,7 @@ class c {
         this.value = 30;
     }
 }
-var dep_ts = 40;
+var dep_ts_default = 40;
 var dep_ts_ns = {
     "a": a,
     "b": b,

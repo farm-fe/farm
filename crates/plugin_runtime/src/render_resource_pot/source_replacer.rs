@@ -106,13 +106,14 @@ impl SourceReplacer<'_> {
           optional: false,
         })));
 
-        if [
-          "@swc/helpers/_/_interop_require_default",
-          "@swc/helpers/_/_interop_require_wildcard",
-          "@swc/helpers/_/_export_star",
-        ]
-        .iter()
-        .any(|s| source == *s)
+        if !matches!(module_type, ModuleType::Runtime)
+          && [
+            "@swc/helpers/_/_interop_require_default",
+            "@swc/helpers/_/_interop_require_wildcard",
+            "@swc/helpers/_/_export_star",
+          ]
+          .iter()
+          .any(|s| source == *s)
         {
           return SourceReplaceResult::NotReplaced;
         }

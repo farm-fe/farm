@@ -26,6 +26,7 @@ mod bundle;
 mod common;
 mod defined_idents_collector;
 mod modules_analyzer;
+mod targets;
 
 #[derive(Debug, Default, PartialEq, Eq)]
 pub struct Var {
@@ -72,6 +73,7 @@ pub struct SharedBundle<'a> {
   module_graph: &'a ModuleGraph,
   context: &'a Arc<CompilationContext>,
   bundle_variables: Rc<RefCell<BundleVariable>>,
+  order_index_map: HashMap<ModuleId, usize>,
 }
 
 ///
@@ -91,6 +93,14 @@ impl<'a> SharedBundle<'a> {
     let mut bundle_map: HashMap<ResourcePotId, BundleAnalyzer> = HashMap::new();
 
     let bundle_variables = Rc::new(RefCell::new(BundleVariable::new()));
+
+    let (toposort_modules, _) = module_graph.toposort();
+
+    let mut order_map = HashMap::new();
+
+    for (index, module_id) in toposort_modules.into_iter().enumerate() {
+      order_map.insert(module_id, index);
+    }
 
     // 1. analyze resource pot
     for resource_pot in resource_pots.iter() {
@@ -137,7 +147,7 @@ impl<'a> SharedBundle<'a> {
           }
 
           // 1-3. order bundle module
-          bundle_analyzer.build_module_order();
+          bundle_analyzer.build_module_order(&order_map);
 
           bundle_map.insert(resource_pot.id.clone(), bundle_analyzer);
         });
@@ -152,6 +162,7 @@ impl<'a> SharedBundle<'a> {
       module_graph,
       context,
       bundle_variables,
+      order_index_map: order_map,
     }
   }
 
@@ -182,6 +193,7 @@ impl<'a> SharedBundle<'a> {
 
       self.module_analyzer_manager.extract_modules_statements(
         &bundle.ordered_modules,
+        &self.context,
         &self.module_graph,
         bundle.bundle_variable.borrow_mut(),
       )?;
@@ -192,9 +204,11 @@ impl<'a> SharedBundle<'a> {
 
   // 2-2 process common module data
   fn link_modules(&mut self) -> Result<()> {
-    self
-      .module_analyzer_manager
-      .link(&mut self.bundle_variables.borrow_mut(), &self.context);
+    self.module_analyzer_manager.link(
+      &mut self.bundle_variables.borrow_mut(),
+      &self.module_graph,
+      &self.context,
+    );
 
     Ok(())
   }
@@ -208,7 +222,7 @@ impl<'a> SharedBundle<'a> {
         .borrow_mut()
         .set_namespace(bundle_analyzer.resource_pot.id.clone());
 
-      bundle_analyzer.render(&mut self.module_analyzer_manager)?;
+      bundle_analyzer.render(&mut self.module_analyzer_manager, &self.order_index_map)?;
     }
 
     Ok(())

@@ -8,7 +8,7 @@ use std::{
 
 use farmfe_core::{
   context::CompilationContext,
-  module::{module_graph::ModuleGraph, ModuleId},
+  module::{module_graph::ModuleGraph, ModuleId, ModuleSystem},
   regex::Regex,
   resource::resource_pot::ResourcePotId,
   swc_ecma_ast::Ident,
@@ -225,39 +225,6 @@ impl BundleVariable {
     self.set_var_uniq_rename_string(index, self.name(index));
   }
 
-  pub fn fetch_module_safe_name_and_set_var_rename(
-    &mut self,
-    index: usize,
-    module_id: &ModuleId,
-    context: &Arc<CompilationContext>,
-  ) {
-    let safe_name = self.fetch_module_safe_name_and_set(module_id, context);
-    self.set_rename(index, safe_name);
-  }
-
-  pub fn fetch_module_safe_name_and_set(
-    &mut self,
-    module_id: &ModuleId,
-    context: &Arc<CompilationContext>,
-  ) -> String {
-    if !self.module_safe_ident.contains_key(module_id) {
-      let name = safe_name_form_module_id(module_id, context);
-
-      let mut uniq_module_export_ident = name;
-      if self.uniq_name().contain(&uniq_module_export_ident) {
-        uniq_module_export_ident = self.uniq_name().uniq_name(&uniq_module_export_ident);
-      }
-
-      self.uniq_name_mut().insert(&uniq_module_export_ident);
-
-      self
-        .module_safe_ident
-        .insert(module_id.clone(), uniq_module_export_ident);
-    }
-
-    self.module_safe_ident[module_id].clone()
-  }
-
   pub fn find_ident_by_index(
     &self,
     index: usize,
@@ -290,24 +257,32 @@ impl BundleVariable {
 
       if let Some(dep) = module_graph.module(&dep_id) {
         if dep.external {
-          return Some(FindModuleExportResult::External(index, dep_id));
+          return Some(FindModuleExportResult::External(index, dep_id, None));
         }
       }
 
       if let Some(module_analyzer) = module_analyzers.get(&dep_id) {
+        let module_system = module_analyzer.module_system.clone();
         if module_analyzer.external {
-          return Some(FindModuleExportResult::External(index, dep_id));
+          return Some(FindModuleExportResult::External(index, dep_id, None));
         }
 
         if module_analyzer.resource_pot_id != resource_pot_id {
           return Some(FindModuleExportResult::Bundle(
             index,
             module_analyzer.resource_pot_id.clone(),
+            // support cjs
+            Some(module_system),
           ));
         }
 
-        if find_namespace {
-          return Some(FindModuleExportResult::Local(index, dep_id.clone()));
+        if find_namespace || matches!(module_system, ModuleSystem::CommonJs | ModuleSystem::Hybrid)
+        {
+          return Some(FindModuleExportResult::Local(
+            index,
+            dep_id.clone(),
+            Some(module_system),
+          ));
         }
 
         let statements = module_analyzer.exports_stmts();
@@ -320,6 +295,7 @@ impl BundleVariable {
                 return Some(FindModuleExportResult::Local(
                   default_index.clone(),
                   dep_id.clone(),
+                  Some(module_system),
                 ));
               }
 
@@ -346,7 +322,11 @@ impl BundleVariable {
                       find_default: true,
                     });
                   } else {
-                    return Some(FindModuleExportResult::Local(named.local(), dep_id.clone()));
+                    return Some(FindModuleExportResult::Local(
+                      named.local(),
+                      dep_id.clone(),
+                      Some(module_system),
+                    ));
                   }
                   continue;
                 }
@@ -375,7 +355,11 @@ impl BundleVariable {
                     // export { foo as bar }
                     // export { foo }
                     (_, &None) => {
-                      return Some(FindModuleExportResult::Local(named.local(), dep_id.clone()));
+                      return Some(FindModuleExportResult::Local(
+                        named.local(),
+                        dep_id.clone(),
+                        Some(module_system),
+                      ));
                     }
                   }
                 }
@@ -399,6 +383,7 @@ impl BundleVariable {
                   return Some(FindModuleExportResult::Local(
                     namespace_index.clone(),
                     dep_id.clone(),
+                    Some(module_system),
                   ));
                 }
               }
@@ -413,12 +398,25 @@ impl BundleVariable {
   }
 }
 
-
 #[derive(Debug)]
 pub enum FindModuleExportResult {
-  Local(usize, ModuleId),
-  External(usize, ModuleId),
-  Bundle(usize, ResourcePotId),
+  Local(usize, ModuleId, Option<ModuleSystem>),
+  External(usize, ModuleId, Option<ModuleSystem>),
+  Bundle(usize, ResourcePotId, Option<ModuleSystem>),
+}
+
+impl FindModuleExportResult {
+  pub fn is_common_js(&self) -> bool {
+    match self {
+      FindModuleExportResult::Local(_, _, module_system)
+      | FindModuleExportResult::External(_, _, module_system)
+      | FindModuleExportResult::Bundle(_, _, module_system) => {
+        module_system.as_ref().is_some_and(|module_system| {
+          matches!(module_system, ModuleSystem::CommonJs | ModuleSystem::Hybrid)
+        })
+      }
+    }
+  }
 }
 
 #[cfg(test)]
@@ -534,7 +532,7 @@ mod tests {
 
     assert!(matches!(
       result,
-      Some(FindModuleExportResult::External(_, _))
+      Some(FindModuleExportResult::External(_, _, _))
     ));
 
     if let FindModuleExportResult::External(index, ..) = result.unwrap() {
@@ -637,7 +635,10 @@ mod tests {
       false,
     );
 
-    assert!(matches!(result, Some(FindModuleExportResult::Bundle(_, _))));
+    assert!(matches!(
+      result,
+      Some(FindModuleExportResult::Bundle(_, _, _))
+    ));
 
     if let FindModuleExportResult::Bundle(index, ..) = result.unwrap() {
       assert_eq!(

@@ -1,5 +1,18 @@
 //index.js:
- import __farmNodeModule from 'node:module';globalThis.nodeRequire = __farmNodeModule.createRequire(import.meta.url);(globalThis || window || global)['__farm_default_namespace__'] = {__FARM_TARGET_ENV__: 'node'};function _getRequireWildcardCache(nodeInterop) {
+ import __farmNodeModule from 'node:module';globalThis.nodeRequire = __farmNodeModule.createRequire(import.meta.url);(globalThis || window || global)['__farm_default_namespace__'] = {__FARM_TARGET_ENV__: 'node'};function __commonJs(mod) {
+    var module;
+    return ()=>{
+        if (module) {
+            return module.exports;
+        }
+        module = {
+            exports: {}
+        };
+        mod[Object.keys(mod)[0]](module, module.exports);
+        return module.exports;
+    };
+}
+function _getRequireWildcardCache(nodeInterop) {
     if (typeof WeakMap !== "function") return null;
     var cacheBabelInterop = new WeakMap();
     var cacheNodeInterop = new WeakMap();
@@ -30,22 +43,31 @@ function _interop_require_wildcard(obj, nodeInterop) {
     return newObj;
 }
 
-const a = 10;
-function b() {
-    return 20;
+function _export_star(from, to) {
+    Object.keys(from).forEach(function(k) {
+        if (k !== "default" && !Object.prototype.hasOwnProperty.call(to, k)) {
+            Object.defineProperty(to, k, {
+                enumerable: true,
+                get: function() {
+                    return from[k];
+                }
+            });
+        }
+    });
+    return from;
 }
-class c {
-    constructor(){
-        this.value = 30;
-    }
-}
-var dep_ts_default = 40;
-var dep_ts_ns = {
-    "a": a,
-    "b": b,
-    "c": c
-};
 
+var dep_ts_cjs = __commonJs({
+    "dep.ts.farm-runtime": (module, exports)=>{
+        module.exports.name = "shulan";
+        module.exports.age = 18;
+        module.exports.default = "default";
+    }
+});
+
+var export_ts_ns = {};
+
+console.log(export_ts_ns);
 (globalThis || window || global)["__farm_default_namespace__"].__farm_module_system__.setPlugins([]);
 (function(_){for(var r in _){_[r].__farm_resource_pot__='index_dcdc.js';(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.register(r,_[r])}})({"b5d64806":function  (module, exports, farmRequire, farmDynamicRequire) {}
 ,});(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setInitialLoadedResources([]);(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setDynamicModuleResourcesMap({  });var farmModuleSystem = (globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__;farmModuleSystem.bootstrap();var entry = farmModuleSystem.require("b5d64806");export default entry;
