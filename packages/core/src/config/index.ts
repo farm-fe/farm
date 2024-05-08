@@ -3,12 +3,9 @@ import fs from 'node:fs';
 import module from 'node:module';
 import path, { isAbsolute, join } from 'node:path';
 import { pathToFileURL } from 'node:url';
+import replaceDirnamePlugin from 'farm-js-plugin-replace-dirname';
 
-import {
-  Config,
-  PluginTransformHookParam,
-  bindingPath
-} from '../../binding/index.js';
+import { Config, bindingPath } from '../../binding/index.js';
 import { JsPlugin } from '../index.js';
 import {
   getSortedPlugins,
@@ -934,37 +931,4 @@ export async function getConfigFilePath(
   }
 
   return undefined;
-}
-
-// transform __dirname and __filename with resolve config file path
-export function replaceDirnamePlugin() {
-  const moduleTypes = ['ts', 'js', 'cjs', 'mjs', 'mts', 'cts'];
-  const resolvedPaths: string[] = [];
-  return {
-    name: 'replace-dirname',
-    transform: {
-      filters: {
-        moduleTypes,
-        resolvedPaths
-      },
-      async executor(param: PluginTransformHookParam) {
-        const { content, resolvedPath, moduleType } = param;
-        let replaceContent = content;
-        const dirPath = path.dirname(resolvedPath);
-
-        replaceContent = param.content
-          .replace(/__dirname/g, JSON.stringify(dirPath))
-          .replace(/__filename/g, JSON.stringify(resolvedPath))
-          .replace(
-            /import\.meta\.url/g,
-            JSON.stringify(pathToFileURL(resolvedPath))
-          );
-
-        return {
-          content: replaceContent,
-          moduleType
-        };
-      }
-    }
-  };
 }

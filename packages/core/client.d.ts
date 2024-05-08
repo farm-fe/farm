@@ -239,3 +239,5 @@ declare module '*?inline' {
   const src: string;
   export default src;
 }
+
+declare module 'farm-js-plugin-replace-dirname';
