@@ -9,7 +9,7 @@ use super::{
 };
 
 const CUSTOM_CONFIG_RUNTIME_ISOLATE: &str = "runtime.isolate";
-pub const CUSTOM_CONFIG_EXTERNAL_RECORD: &str = "RECORD_EXTERNAL";
+pub const CUSTOM_CONFIG_EXTERNAL_RECORD: &str = "external.record";
 
 pub fn get_config_runtime_isolate(context: &Arc<CompilationContext>) -> bool {
   if let Some(val) = context.config.custom.get(CUSTOM_CONFIG_RUNTIME_ISOLATE) {

@@ -40,7 +40,11 @@ import { parseUserConfig } from './schema.js';
 
 import { externalAdapter } from '../plugin/js/external-adapter.js';
 import merge from '../utils/merge.js';
-import { DEFAULT_CONFIG_NAMES, FARM_DEFAULT_NAMESPACE } from './constants.js';
+import {
+  CUSTOM_KEYS,
+  DEFAULT_CONFIG_NAMES,
+  FARM_DEFAULT_NAMESPACE
+} from './constants.js';
 import { mergeConfig, mergeFarmCliConfig } from './mergeConfig.js';
 import { normalizeExternal } from './normalize-config/normalize-external.js';
 import type {
@@ -510,7 +514,7 @@ export async function normalizeUserCompilationConfig(
   // setting the custom configuration
   resolvedCompilation.custom = {
     ...(resolvedCompilation.custom || {}),
-    'runtime.isolate': `${!!resolvedCompilation.runtime.isolate}`
+    [CUSTOM_KEYS.runtime_isolate]: `${!!resolvedCompilation.runtime.isolate}`
   };
 
   // normalize persistent cache at last

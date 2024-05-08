@@ -1,5 +1,5 @@
+import { CUSTOM_KEYS } from '../../config/constants.js';
 import {
-  RECORD_EXTERNAL_CUSTOM_KEY,
   mergeCustomExternal,
   partialExternal
 } from '../../config/normalize-config/normalize-external.js';
@@ -30,7 +30,7 @@ export function externalAdapter(): JsPlugin {
           compilation: {
             external: stringExternal,
             custom: {
-              [RECORD_EXTERNAL_CUSTOM_KEY]: JSON.stringify(recordExternal)
+              [CUSTOM_KEYS.external_record]: JSON.stringify(recordExternal)
             }
           }
         };

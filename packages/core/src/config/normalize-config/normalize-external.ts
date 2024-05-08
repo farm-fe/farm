@@ -5,11 +5,11 @@ import path from 'node:path';
 import { Config } from '../../../binding/index.js';
 import { safeJsonParse } from '../../utils/json.js';
 import { isObject } from '../../utils/share.js';
+import { CUSTOM_KEYS } from '../constants.js';
 import type { ResolvedCompilation, UserConfig } from '../types.js';
 
 type PartialExternal = [string[], Record<string, string>];
 
-export const RECORD_EXTERNAL_CUSTOM_KEY = 'RECORD_EXTERNAL';
 export function partialExternal(
   externalConfig: (string | Record<string, string>)[] = []
 ): PartialExternal {
@@ -86,7 +86,7 @@ export function normalizeExternal(
     )
   );
 
-  resolvedCompilation.custom[RECORD_EXTERNAL_CUSTOM_KEY] =
+  resolvedCompilation.custom[CUSTOM_KEYS.external_record] =
     JSON.stringify(recordExternal);
 
   resolvedCompilation.external = [
@@ -106,9 +106,9 @@ export function mergeCustomExternal<T extends Pick<Config['config'], 'custom'>>(
   }
 
   const oldRecordExternal: Record<string, string> = compilation.custom[
-    RECORD_EXTERNAL_CUSTOM_KEY
+    CUSTOM_KEYS.external_record
   ]
-    ? safeJsonParse(compilation.custom[RECORD_EXTERNAL_CUSTOM_KEY], {}) || {}
+    ? safeJsonParse(compilation.custom[CUSTOM_KEYS.external_record], {}) || {}
     : {};
 
   return [
