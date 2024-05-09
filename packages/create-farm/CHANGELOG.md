@@ -1,5 +1,11 @@
 # create-farm
 
+## 1.6.9
+
+### Patch Changes
+
+- a591f689: feat(create-farm): add vue2 template
+
 ## 1.6.8
 
 ### Patch Changes
