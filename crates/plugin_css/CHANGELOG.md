@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.8](https://github.com/farm-fe/farm/compare/farmfe_plugin_css-v0.0.7...farmfe_plugin_css-v0.0.8) - 2024-05-09
+
+### Fixed
+- vite migrations bugs ([#1236](https://github.com/farm-fe/farm/pull/1236))
+- css import url panic ([#1187](https://github.com/farm-fe/farm/pull/1187))
+
 ## [0.0.7](https://github.com/farm-fe/farm/compare/farmfe_plugin_css-v0.0.6...farmfe_plugin_css-v0.0.7) - 2024-04-13
 
 ### Other
