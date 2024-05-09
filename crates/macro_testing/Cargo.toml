@@ -1,8 +1,13 @@
 [package]
 name = "farmfe_testing"
-version = "0.1.0"
+version = "0.0.1"
 edition = "2021"
-
+authors = ["shulandmimi <sshuang141@163.com>"]
+license = "MIT"
+description = "Testing macro for farm."
+homepage = "https://farmfe.org"
+repository = "https://github.com/farm-fe/farm"
+documentation = "https://docs.rs/farmfe_testing"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [lib]
