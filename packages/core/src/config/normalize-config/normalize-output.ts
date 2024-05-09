@@ -5,9 +5,10 @@ import {
   FARM_TARGET_BROWSER_ENVS,
   mapTargetEnvValue
 } from '../../utils/share.js';
+import { ResolvedCompilation } from '../types.js';
 
 export async function normalizeOutput(
-  config: Config['config'],
+  config: ResolvedCompilation,
   isProduction: boolean
 ) {
   if (!config.output.targetEnv) {

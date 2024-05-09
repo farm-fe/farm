@@ -161,7 +161,8 @@
     "wasix",
     "wechat",
     "xlink",
-    "Yuxi"
+    "Yuxi",
+    "jquery"
   ],
   "ignorePaths": [
     "pnpm-lock.yaml",

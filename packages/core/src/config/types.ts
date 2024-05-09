@@ -105,6 +105,11 @@ export interface UserConfig {
   /** Files under this dir will always be treated as static assets. serve it in dev, and copy it to output.path when build */
 }
 
+// eslint-disable-next-line @typescript-eslint/no-empty-interface
+export interface ResolvedCompilation extends Exclude<Config['config'], undefined> {
+  external?: string[];
+}
+
 export interface ResolvedUserConfig extends UserConfig {
   env?: Record<string, any>;
   envDir?: string;
@@ -113,7 +118,7 @@ export interface ResolvedUserConfig extends UserConfig {
   configFilePath?: string;
   envMode?: string;
   configFileDependencies?: string[];
-  compilation?: Config['config'];
+  compilation?: ResolvedCompilation;
   server?: NormalizedServerConfig;
   jsPlugins?: JsPlugin[];
   rustPlugins?: [string, string][];

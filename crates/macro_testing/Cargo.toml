@@ -1,0 +1,19 @@
+[package]
+name = "farmfe_testing"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+proc-macro = true
+
+[dependencies]
+
+proc-macro-error = "1.0.4"
+proc-macro2 = "1.0.81"
+quote = "1.0.36"
+syn = "2.0.60"
+glob = "0.3.1"
+regex = "1.7.3"
+heck = "0.4.1"

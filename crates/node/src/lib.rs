@@ -290,7 +290,7 @@ impl JsCompiler {
             thread_safe_callback.call((), ThreadsafeFunctionCallMode::Blocking);
           },
           sync,
-          generate_update_resource
+          generate_update_resource,
         )
         .map_err(|e| napi::Error::new(Status::GenericFailure, format!("{}", e)))
       {

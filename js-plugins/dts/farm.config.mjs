@@ -1,5 +1,3 @@
-import { builtinModules } from 'module';
-
 /**
  * @type {import('@farmfe/core').UserConfig}
  */
@@ -14,6 +12,7 @@ export default {
       targetEnv: 'node',
       format: 'cjs'
     },
+    external: ['typescript', 'fast-glob', 'ts-morph', 'fs-extra'],
     partialBundling: {
       enforceResources: [
         {
