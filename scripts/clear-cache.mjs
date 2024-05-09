@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 
-import { JS_PLUGINs_DIR, EXAMPLES_DIR } from './build.mjs';
+import { EXAMPLES_DIR, JS_PLUGINs_DIR } from './build.mjs';
 
 [JS_PLUGINs_DIR, EXAMPLES_DIR].forEach((dir) => {
   if (fs.existsSync(dir)) {

@@ -1,5 +1,11 @@
 # @farmfe/cli
 
+## 1.0.2
+
+### Patch Changes
+
+- 9754d371: merge configuration policies
+
 ## 1.0.1
 
 ### Patch Changes

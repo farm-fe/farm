@@ -11,12 +11,12 @@
 </template>
 
 <script lang="ts" setup>
-import { ResolveRecord } from "@farmfe/core/binding";
-import { getResolveRecordsById } from "../api";
-import { ref, watch } from "vue";
-import { Card } from "ant-design-vue";
+import { ResolveRecord } from '@farmfe/core/binding';
+import { getResolveRecordsById } from '../api';
+import { ref, watch } from 'vue';
+import { Card } from 'ant-design-vue';
 const props = defineProps({
-  moduleId: String,
+  moduleId: String
 });
 
 const records = ref<ResolveRecord[]>([]);

@@ -1,12 +1,12 @@
 [package]
 name = "farmfe_toolkit_plugin_types"
-version = "0.0.14"
+version = "0.0.15"
 edition = "2021"
 authors = ["brightwu(吴明亮) <1521488775@qq.com>"]
 license = "MIT"
 description = "builtin tooltips for farm plugins"
 
 [dependencies]
-farmfe_core = { version = "0.5.0", path = "../core" }
+farmfe_core = { version = "0.5.1", path = "../core" }
 lazy_static = "1.4.0"
 libloading = "0.7.0"

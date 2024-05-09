@@ -12,7 +12,7 @@
   "devDependencies": {
     "@farmfe/cli": "workspace:*",
     "@farmfe/core": "workspace:*",
-    "@farmfe/plugin-react": "^1.0.1",
+    "@farmfe/plugin-react": "^1.1.0",
     "@types/react": "18",
     "@types/react-dom": "18",
     "react-refresh": "^0.14.0",

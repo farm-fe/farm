@@ -7,6 +7,6 @@ export default defineConfig({
       targetEnv: 'node'
     },
     sourcemap: false,
-    presetEnv: false,
+    presetEnv: false
   }
 });

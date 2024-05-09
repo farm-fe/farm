@@ -6,6 +6,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.8](https://github.com/farm-fe/farm/compare/farmfe_toolkit-v0.0.7...farmfe_toolkit-v0.0.8) - 2024-05-09
+
+### Added
+- support lazy compilation when targeting node ([#1035](https://github.com/farm-fe/farm/pull/1035))
+
+### Other
+- Fix/lazy compilation ([#1253](https://github.com/farm-fe/farm/pull/1253))
+- update swc to v0.90 ([#1227](https://github.com/farm-fe/farm/pull/1227))
+
 ## [0.0.7](https://github.com/farm-fe/farm/compare/farmfe_toolkit-v0.0.6...farmfe_toolkit-v0.0.7) - 2024-04-13
 
 ### Other

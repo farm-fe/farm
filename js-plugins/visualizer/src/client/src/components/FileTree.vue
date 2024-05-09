@@ -26,15 +26,15 @@
 </template>
 
 <script lang="ts">
-import { computed, defineComponent } from "vue";
-import { Tree, Tag, Button } from "ant-design-vue";
-import { CodepenCircleFilled } from "@ant-design/icons-vue";
-import { useResourcePotStore } from "../stores/resourcePot";
-import { genFileTree } from "../utils/file";
-import { formatSize } from "../utils/size";
+import { computed, defineComponent } from 'vue';
+import { Tree, Tag, Button } from 'ant-design-vue';
+import { CodepenCircleFilled } from '@ant-design/icons-vue';
+import { useResourcePotStore } from '../stores/resourcePot';
+import { genFileTree } from '../utils/file';
+import { formatSize } from '../utils/size';
 
 export default defineComponent({
-  name: "FileTree",
+  name: 'FileTree',
   components: { Tree, Tag, CodepenCircleFilled, Button },
   setup(_, { emit }) {
     const resourcePotStore = useResourcePotStore();
@@ -50,15 +50,15 @@ export default defineComponent({
       }
     }
     function viewSourceCode(name: string, code?: string) {
-      emit("view", { name, code });
+      emit('view', { name, code });
     }
     return {
       treeData,
       getModuleInfo,
       resourcePotStore,
       formatSize,
-      viewSourceCode,
+      viewSourceCode
     };
-  },
+  }
 });
 </script>

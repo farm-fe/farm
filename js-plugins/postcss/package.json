@@ -40,7 +40,7 @@
   "license": "MIT",
   "devDependencies": {
     "@farmfe/cli": "workspace:*",
-    "@farmfe/core": "workspace:^1.1.0",
+    "@farmfe/core": "workspace:^1.1.3",
     "@farmfe/js-plugin-dts": "workspace:*",
     "@types/postcss-import": "^14.0.3",
     "@types/postcss-url": "^10.0.4",
@@ -51,7 +51,7 @@
     "postcss-url": "^10.1.3"
   },
   "peerDependencies": {
-    "@farmfe/core": "workspace:^1.1.0",
+    "@farmfe/core": "workspace:^1.1.3",
     "postcss": ">=8.0.0"
   }
 }

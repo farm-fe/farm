@@ -1,7 +1,7 @@
-import { test, expect } from 'vitest';
-import { getCompiler, getFixturesDir, getOutputFilePath } from '../common.js';
-import path from 'path';
 import { pathToFileURL } from 'node:url';
+import path from 'path';
+import { expect, test } from 'vitest';
+import { getCompiler, getFixturesDir, getOutputFilePath } from '../common.js';
 
 test('Json compilation', async () => {
   const root = path.join(getFixturesDir(), 'json');

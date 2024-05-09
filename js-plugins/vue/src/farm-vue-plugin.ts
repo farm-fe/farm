@@ -1,7 +1,8 @@
 import fs from 'fs';
 import path from 'path';
-import { parse } from '@vue/compiler-sfc';
 import { JsPlugin, UserConfig } from '@farmfe/core';
+import { parse } from '@vue/compiler-sfc';
+import { compileStyle } from '@vue/compiler-sfc';
 import { handleHmr } from './farm-vue-hmr.js';
 import {
   CacheDescriptor,
@@ -25,18 +26,20 @@ import {
   isStyl,
   loadPreProcessor
 } from './utils.js';
-import { compileStyle } from '@vue/compiler-sfc';
 
 const stylesCodeCache: StylesCodeCache = {};
 const applyStyleLangs = ['less', 'sass', 'scss', 'stylus'];
 const cacheDescriptor: CacheDescriptor = {};
 
 const parseQuery = (query: [string, string][]) =>
-  query.reduce((pre, [key, value]) => {
-    pre[key] = value;
+  query.reduce(
+    (pre, [key, value]) => {
+      pre[key] = value;
 
-    return pre;
-  }, {} as Record<string, string>);
+      return pre;
+    },
+    {} as Record<string, string>
+  );
 
 export default function farmVuePlugin(
   farmVuePluginOptions: FarmVuePluginOptions = {}

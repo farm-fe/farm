@@ -36,7 +36,5 @@
     "dev-server",
     "hmr"
   ],
-  "files": [
-    "dist"
-  ]
+  "files": ["dist"]
 }

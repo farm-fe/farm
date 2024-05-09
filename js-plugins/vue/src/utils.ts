@@ -1,12 +1,12 @@
-import path from 'path';
 import crypto from 'crypto';
 import { createRequire } from 'module';
+import path from 'path';
 import {
+  FarmVuePluginOptions,
   PreProcessors,
   PreProcessorsType,
-  outputData,
-  FarmVuePluginOptions,
-  ResolvedOptions
+  ResolvedOptions,
+  outputData
 } from './farm-vue-types.js';
 
 export function warn({ id, message }: outputData) {

@@ -11,19 +11,28 @@ function PopularContent() {
   const [loading, setLoading] = useState(true)
 
   const fetchData = () => {
+    let isMounted = true;
     setLoading(true)
     axios
       .get('/api/workplace/content-percentage')
       .then((res) => {
-        setData(res.data)
+        if (isMounted) {
+          setData(res.data)
+        }
       })
       .finally(() => {
-        setLoading(false)
+        if (isMounted) {
+          setLoading(false)
+        }
       })
+      return () => {
+        isMounted = false; 
+      };
   }
 
   useEffect(() => {
-    fetchData()
+    const cleanup = fetchData(); 
+    return cleanup; 
   }, [])
 
   return (

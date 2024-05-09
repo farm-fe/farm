@@ -1,15 +1,15 @@
-import { createRequire } from 'node:module';
 import { readFileSync } from 'node:fs';
+import { createRequire } from 'node:module';
 import { extname } from 'node:path';
 import { transformSync } from '@babel/core';
-import { mergeAndConcat } from 'merge-anything';
-import { createFilter } from '@rollup/pluginutils';
 import ts from '@babel/preset-typescript';
+import { createFilter } from '@rollup/pluginutils';
 import solid from 'babel-preset-solid';
+import { mergeAndConcat } from 'merge-anything';
 import solidRefresh from 'solid-refresh/babel';
 
-import type { JsPlugin } from '@farmfe/core';
 import type { TransformOptions } from '@babel/core';
+import type { JsPlugin } from '@farmfe/core';
 import type { Options } from './types.js';
 
 // TODO: HMR

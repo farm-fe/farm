@@ -40,13 +40,13 @@
   "license": "MIT",
   "devDependencies": {
     "@farmfe/cli": "workspace:*",
-    "@farmfe/core": "workspace:^1.1.0",
+    "@farmfe/core": "workspace:^1.1.3",
     "@farmfe/js-plugin-dts": "workspace:^",
     "@types/less": "^3.0.3",
     "less": "^4.1.3"
   },
   "peerDependencies": {
-    "@farmfe/core": "workspace:^1.1.0",
+    "@farmfe/core": "workspace:^1.1.3",
     "less": "^3.5.0 || ^4.0.0"
   }
 }

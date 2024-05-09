@@ -2,12 +2,12 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { describe, expect, test } from 'vitest';
 
+import { parseUserConfig } from '../src/config/schema.js';
 import {
   DEFAULT_DEV_SERVER_OPTIONS,
   normalizeDevServerOptions,
   resolveConfig
 } from '../src/index.js';
-import { parseUserConfig } from '../src/config/schema.js';
 import { Logger } from '../src/utils/logger.js';
 
 test('resolveUserConfig', async () => {

@@ -1,18 +1,18 @@
+import { existsSync } from 'fs';
+import path, { isAbsolute } from 'path';
+import { fileURLToPath, pathToFileURL } from 'url';
 import type {
+  CompilationContext,
   JsPlugin,
-  UserConfig,
   PluginTransformHookParam,
-  CompilationContext
+  UserConfig
 } from '@farmfe/core';
 import { getAdditionContext, rebaseUrls } from '@farmfe/core';
-import type { StringOptions, CompileResult, LegacyOptions } from 'sass';
+import { readFile } from 'fs/promises';
+import type { CompileResult, LegacyOptions, StringOptions } from 'sass';
 import * as Sass from 'sass';
 import { pluginName, throwError, tryRead } from './options.js';
-import { fileURLToPath, pathToFileURL } from 'url';
 import { getSassImplementation } from './utils.js';
-import path, { isAbsolute } from 'path';
-import { existsSync } from 'fs';
-import { readFile } from 'fs/promises';
 
 export type SassPluginOptions<Legacy = boolean> = {
   sassOptions?: Partial<

@@ -10,21 +10,21 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, shallowRef } from "vue";
+import { defineComponent, shallowRef } from 'vue';
 
 export default defineComponent({
-  name: "CodeDiff",
+  name: 'CodeDiff',
   props: {
     original: String,
     modified: String,
-    language: String,
+    language: String
   },
   setup() {
     const MONACO_EDITOR_OPTIONS = {
       automaticLayout: true,
       formatOnType: true,
       formatOnPaste: true,
-      readOnly: true,
+      readOnly: true
     };
 
     const editorRef = shallowRef();
@@ -32,11 +32,11 @@ export default defineComponent({
 
     function formatLanguage(lang?: string) {
       if (!lang) {
-        return "javascript";
+        return 'javascript';
       }
       const data = lang.toLocaleLowerCase();
-      if (data === "js" || data === "runtime") {
-        return "javascript";
+      if (data === 'js' || data === 'runtime') {
+        return 'javascript';
       } else {
         return data;
       }
@@ -45,8 +45,8 @@ export default defineComponent({
     return {
       MONACO_EDITOR_OPTIONS,
       handleMount,
-      formatLanguage,
+      formatLanguage
     };
-  },
+  }
 });
 </script>
