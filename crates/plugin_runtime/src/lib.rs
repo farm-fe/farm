@@ -8,8 +8,9 @@ use std::{
 
 use farmfe_core::{
   config::{
-    config_regex::ConfigRegex, partial_bundling::PartialBundlingEnforceResourceConfig, Config,
-    ModuleFormat, TargetEnv, FARM_MODULE_SYSTEM,
+    config_regex::ConfigRegex, external::ExternalConfig,
+    partial_bundling::PartialBundlingEnforceResourceConfig, Config, ModuleFormat, TargetEnv,
+    FARM_MODULE_SYSTEM,
   },
   context::CompilationContext,
   enhanced_magic_string::types::SourceMapOptions,
@@ -389,6 +390,7 @@ impl Plugin for FarmPluginRuntime {
       let async_modules = self.get_async_modules(context);
       let async_modules = async_modules.downcast_ref::<HashSet<ModuleId>>().unwrap();
       let module_graph = context.module_graph.read();
+      let external_config = ExternalConfig::from(&*context.config);
       let RenderedJsResourcePot {
         mut bundle,
         rendered_modules,
@@ -441,21 +443,28 @@ impl Plugin for FarmPluginRuntime {
       } else if !external_modules.is_empty()
         && context.config.output.target_env == TargetEnv::Browser
       {
+        let mut external_objs = Vec::new();
+
+        for source in external_modules {
+          let replace_source = match external_config.find_match(&source) {
+            Some(v) => Ok(v.source(&source)),
+            None => Err(CompilationError::GenericError(format!(
+              "cannot find external source: {:?}",
+              source
+            ))),
+          }?;
+
+          let source_obj = format!("(globalThis||window||{{}})['{}']||{{}}", replace_source);
+          external_objs.push(if context.config.output.format == ModuleFormat::EsModule {
+            format!("{source:?}: {{...({source_obj}),__esModule:true}}")
+          } else {
+            format!("{source:?}: {source_obj}")
+          });
+        }
+
         let prepend_str = format!(
           "{farm_global_this}.{FARM_MODULE_SYSTEM}.setExternalModules({{{}}});",
-          external_modules
-            .into_iter()
-            .map(|source| {
-              // TODO: make window['{source}'] configurable.
-              let source_obj = format!("(globalThis||window||{{}})['{}']||{{}}", source);
-              if context.config.output.format == ModuleFormat::EsModule {
-                format!("{source:?}: {{...({source_obj}),__esModule:true}}")
-              } else {
-                format!("{source:?}: {source_obj}")
-              }
-            })
-            .collect::<Vec<_>>()
-            .join(",")
+          external_objs.join(",")
         );
         external_modules_str = Some(prepend_str);
       }

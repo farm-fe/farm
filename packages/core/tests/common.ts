@@ -1,9 +1,13 @@
 import { fileURLToPath } from 'node:url';
 import path from 'path';
 import { Compiler } from '../src/compiler/index.js';
-import { normalizeUserCompilationConfig } from '../src/config/index.js';
-import { Logger } from '../src/index.js';
 import { JsPlugin } from '../src/plugin/type.js';
+import {
+  normalizeUserCompilationConfig,
+  resolveMergedUserConfig,
+  UserConfig
+} from '../src/config/index.js';
+import { Logger } from '../src/index.js';
 
 export async function getCompiler(
   root: string,
@@ -18,26 +22,34 @@ export async function getCompiler(
     return originalExit(code);
   };
 
-  const compilationConfig = await normalizeUserCompilationConfig(
-    {
-      root,
-      compilation: {
-        input: input ?? {
-          index: './index.ts?foo=bar' // Farm does not recommand using query strings in input. We just use it for testing.
-        },
-        output: {
-          path: path.join('dist', p),
-          entryFilename: '[entryName].mjs',
-          targetEnv: 'node',
-          ...(output ?? {})
-        },
-        progress: false,
-        lazyCompilation: false,
-        sourcemap: false,
-        persistentCache: false
+  const userConfig: UserConfig = {
+    root,
+    compilation: {
+      input: input ?? {
+        index: './index.ts?foo=bar' // Farm does not recommand using query strings in input. We just use it for testing.
       },
-      plugins
+      output: {
+        path: path.join('dist', p),
+        entryFilename: '[entryName].mjs',
+        targetEnv: 'node',
+        ...(output ?? {})
+      },
+      progress: false,
+      lazyCompilation: false,
+      sourcemap: false,
+      persistentCache: false
     },
+    plugins
+  };
+  const resolvedUserConfig = await resolveMergedUserConfig(
+    userConfig,
+    undefined,
+    'production'
+  );
+
+  const compilationConfig = await normalizeUserCompilationConfig(
+    resolvedUserConfig,
+    userConfig,
     new Logger(),
     'production'
   );
