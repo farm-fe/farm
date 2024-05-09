@@ -1,6 +1,6 @@
 [package]
 name = "farmfe_core"
-version = "0.5.0"
+version = "0.5.1"
 edition = "2021"
 authors = ["brightwu(吴明亮) <1521488775@qq.com>"]
 license = "MIT"

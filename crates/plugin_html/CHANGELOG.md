@@ -6,6 +6,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.6](https://github.com/farm-fe/farm/compare/farmfe_plugin_html-v0.0.5...farmfe_plugin_html-v0.0.6) - 2024-05-09
+
+### Added
+- support isolate runtime resource ([#1200](https://github.com/farm-fe/farm/pull/1200))
+
+### Fixed
+- vite migrations bugs ([#1236](https://github.com/farm-fe/farm/pull/1236))
+
+### Other
+- Fix/lazy compilation ([#1253](https://github.com/farm-fe/farm/pull/1253))
+
 ## [0.0.5](https://github.com/farm-fe/farm/compare/farmfe_plugin_html-v0.0.4...farmfe_plugin_html-v0.0.5) - 2024-04-13
 
 ### Other
