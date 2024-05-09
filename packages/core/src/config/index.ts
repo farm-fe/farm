@@ -4,9 +4,7 @@ import module from 'node:module';
 import path, { isAbsolute, join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import replaceDirnamePlugin from 'farm-js-plugin-replace-dirname';
-
-import { Config, bindingPath } from '../../binding/index.js';
-import { PluginTransformHookParam, bindingPath } from '../../binding/index.js';
+import { bindingPath } from '../../binding/index.js';
 
 import { JsPlugin } from '../index.js';
 import {
