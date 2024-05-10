@@ -19,6 +19,7 @@ lazy_static! {
 
 const PLUGIN_NAME: &str = "FarmPluginDefine";
 const REGEX_PREFIX: &str = "$__farm_regex:";
+const DEFAULT_DEFINE_PROCESS_ENV: &str = "FARM_PROCESS_ENV";
 
 pub struct FarmPluginDefine {
   /// Sort define by key len desc
@@ -48,9 +49,19 @@ impl Plugin for FarmPluginDefine {
     sorted_define.sort_by_key(|b| std::cmp::Reverse(b.0.len()));
 
     let mut self_sorted_define = self.sorted_define.write();
+    // make sure internal defines are processed at last
+    let mut delayed_define = vec![];
 
     for item in sorted_define {
-      self_sorted_define.push(item);
+      if item.0 == *DEFAULT_DEFINE_PROCESS_ENV {
+        delayed_define.push(item);
+      } else {
+        self_sorted_define.push(item);
+      }
+    }
+
+    for d in delayed_define {
+      self_sorted_define.push(d);
     }
 
     Ok(Some(()))
