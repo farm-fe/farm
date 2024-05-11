@@ -47,6 +47,7 @@
     "Deoptimization",
     "Deque",
     "deserializers",
+    "dialoguer",
     "dylib",
     "eabi",
     "eframe",
@@ -70,6 +71,7 @@
     "Instantiator",
     "jfif",
     "JIDA",
+    "jquery",
     "jridgewell",
     "jsnext",
     "kolorist",
@@ -102,6 +104,7 @@
     "outro",
     "pageerror",
     "pathdiff",
+    "peekable",
     "petgraph",
     "picomatch",
     "Pinia",
@@ -161,8 +164,7 @@
     "wasix",
     "wechat",
     "xlink",
-    "Yuxi",
-    "jquery"
+    "Yuxi"
   ],
   "ignorePaths": [
     "pnpm-lock.yaml",
