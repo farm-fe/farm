@@ -290,7 +290,7 @@ impl Plugin for FarmPluginStaticAssets {
 
     for (_, resource) in resources_map.iter() {
       if let ResourceOrigin::Module(m) = &resource.origin {
-        if context.module_graph.read().has_module(m) {
+        if context.cache_manager.module_cache.has_cache(m) {
           list.push(resource.clone());
         }
       }
