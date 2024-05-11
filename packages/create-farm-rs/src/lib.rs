@@ -9,4 +9,4 @@ use crate::{
 mod args;
 mod package_manager;
 mod template;
-mod utils;
+pub mod utils;

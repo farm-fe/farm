@@ -1,7 +1,3 @@
-// Copyright 2019-2022 Tauri Programme within The Commons Conservancy
-// SPDX-License-Identifier: Apache-2.0
-// SPDX-License-Identifier: MIT
-
 #![allow(unused)]
 
 pub const BLACK: &str = "\x1b[30m";
