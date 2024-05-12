@@ -5,6 +5,7 @@ edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+
 [[bin]]
 name = "create-farm"
 path = "src/main.rs"
@@ -20,4 +21,9 @@ strip = true
 anyhow = "1"
 pico-args = "0.5"
 dialoguer = "0.10"
+napi = { version = "2.16", default-features = false, features = ["napi4"] }
+napi-derive = "2.16"
 rust-embed = { version = "8.3", features = [ "compression", "interpolate-folder-path" ] }
+
+[build-dependencies]
+napi-build = "2.1"

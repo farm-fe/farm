@@ -10,14 +10,14 @@ fn main() {
     .and_then(Path::file_stem)
     .and_then(OsStr::to_str)
   {
-    Some("cargo-create-tauri-app") => {
+    Some("cargo-create-farm") => {
       is_cargo = true;
-      if args.peek().and_then(|s| s.to_str()) == Some("create-tauri-app") {
+      if args.peek().and_then(|s| s.to_str()) == Some("create-farm") {
         // remove the extra cargo subcommand
         args.next();
-        Some("cargo create-tauri-app".into())
+        Some("cargo create-farm".into())
       } else {
-        Some("cargo-create-tauri-app".into())
+        Some("cargo-create-farm".into())
       }
     }
     Some(stem) => Some(stem.to_string()),

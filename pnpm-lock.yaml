@@ -2001,6 +2001,12 @@ importers:
         specifier: ^2.4.2
         version: 2.4.2
 
+  packages/create-farm-node:
+    devDependencies:
+      '@napi-rs/cli':
+        specifier: 2.18.3
+        version: 2.18.3
+
   packages/create-farm-plugin:
     devDependencies:
       '@farmfe/cli':
@@ -2027,6 +2033,12 @@ importers:
       prompts:
         specifier: ^2.4.2
         version: 2.4.2
+
+  packages/create-farm-rs:
+    devDependencies:
+      '@napi-rs/cli':
+        specifier: 2.18.3
+        version: 2.18.3
 
   packages/plugin-tools:
     dependencies:
@@ -4372,6 +4384,12 @@ packages:
     engines: {node: '>= 10'}
     hasBin: true
 
+  /@napi-rs/cli@2.18.3:
+    resolution: {integrity: sha512-L0f4kP0dyG8W5Qtc7MtP73VvLLrOLyRcUEBzknIfu8Jk4Jfhrsx1ItMHgyalYqMSslWdY3ojEfAaU5sx1VyeQQ==}
+    engines: {node: '>= 10'}
+    hasBin: true
+    dev: true
+
   /@nodelib/fs.scandir@2.1.5:
     resolution: {integrity: sha512-vq24Bq3ym5HEQm2NKCr3yXDwjc7vTsEThRDnkp2DK9p1uqLR+DHurm/NOTo0KG7HYHU7eppKZj3MyqYuMBf62g==}
     engines: {node: '>= 8'}
@@ -6101,10 +6119,6 @@ packages:
     resolution: {integrity: sha512-oXQQC9X9MOPRrMhPHHOsXqeQDnWeCDT3PelUIg/Oy8FAbzSZtFHRjc7IpbfFVmpLtJ+UOoywpRsuO5Jxjybyeg==}
     dependencies:
       '@types/sizzle': 2.3.8
-    dev: true
-
-  /@types/json-schema@7.0.14:
-    resolution: {integrity: sha512-U3PUjAudAdJBeC2pgN8uTIKgxrb4nlDF3SF0++EldXQvQBGkpFZMSnwQiIoDU77tv45VgNkl/L4ouD+rEomujw==}
     dev: true
 
   /@types/jsonfile@6.1.3:

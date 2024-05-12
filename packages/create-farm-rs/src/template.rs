@@ -85,17 +85,26 @@ impl FromStr for Template {
 impl Template {
   pub const fn select_text<'a>(&self) -> &'a str {
     match self {
-      Template::Vanilla => "Vanilla",
-      Template::Vue3 => "Vue3 - (https://vuejs.org/)",
-      Template::Vue2 => "Vue2 - (https://v2.vuejs.org/)",
-      Template::Svelte => "Svelte - (https://svelte.dev/)",
-      Template::React => "React - (https://react.dev/)",
-      Template::Solid => "Solid - (https://solidjs.com/)",
-      Template::Preact => "Preact - (https://preactjs.com/)",
+      Template::Vanilla => "\x1b[33mVanilla\x1b[39m",
+      Template::React => "\x1b[36mReact - (https://react.dev/)\x1b[39m",
+      Template::Vue3 => "\x1b[32mVue3 - (https://vuejs.org/)\x1b[39m",
+      Template::Vue2 => "\x1b[38;2;180;0;100mVue2 - (https://v2.vuejs.org/)\x1b[39m",
+      Template::Svelte => "\x1b[38;2;255;137;54mSvelte - (https://svelte.dev/)\x1b[39m",
+      Template::Solid => "\x1b[38;2;68;206;246mSolid - (https://solidjs.com/)\x1b[39m",
+      Template::Preact => "\x1b[36mPreact - (https://preactjs.com/)\x1b[36m",
       _ => unreachable!(),
     }
   }
 }
+
+// { title: colors.blue('Solid'), value: 'solid' },
+// { title: colors.orange('Svelte'), value: 'svelte' },
+// {
+//   title: colors.yellow('Vanilla'),
+//   value: 'vanilla'
+// },
+// { title: colors.red('Lit'), value: 'lit' },
+// { title: colors.orange('Tauri'), value: 'tauri' }
 
 impl<'a> Template {
   pub const ALL: &'a [Template] = &[
