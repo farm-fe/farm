@@ -9,7 +9,7 @@ use std::{
 use farmfe_core::{
   context::CompilationContext,
   error::Result,
-  module::{module_graph::ModuleGraph, Module, ModuleId, ModuleSystem},
+  module::{self, module_graph::ModuleGraph, Module, ModuleId, ModuleSystem},
   resource::resource_pot::ResourcePotId,
   swc_common::{Mark, SourceMap},
   swc_ecma_ast::{Id, Module as EcmaAstModule},
@@ -136,6 +136,74 @@ pub struct ExportInfo {
   pub stmt_id: StatementId,
 }
 
+#[derive(Debug, Clone, Copy, Default)]
+pub enum ExportType {
+  ///
+  ///
+  /// ```ts
+  /// // index.ts
+  /// export * from "./cjs_module"
+  /// export const name = 10;
+  ///
+  /// // cjs_module.ts
+  /// module.exports.name = "shulan"
+  /// module.exports.age = 18;
+  /// ```
+  ///
+  HybridDynamic,
+  ///
+  /// only esm
+  ///
+  #[default]
+  Static,
+}
+
+#[derive(Debug, Clone)]
+pub struct ExportAllSet {
+  pub data: Vec<(ExportInfo, ModuleId)>,
+  pub ty: ExportType,
+}
+
+impl ExportAllSet {
+  pub fn new() -> Self {
+    Self {
+      data: vec![],
+      ty: ExportType::Static,
+    }
+  }
+
+  pub fn add(&mut self, data: (ExportInfo, ModuleId)) {
+    self.data.push(data);
+  }
+
+  pub fn inner(self) -> Vec<(ExportInfo, ModuleId)> {
+    self.data
+  }
+
+  pub fn merge(&mut self, other: Self) {
+    self.data.extend(other.data);
+
+    match self.ty {
+      ExportType::HybridDynamic => {}
+      ExportType::Static => {
+        if matches!(other.ty, ExportType::HybridDynamic) {
+          self.ty = other.ty;
+        }
+      }
+    }
+  }
+
+}
+
+impl From<Vec<(ExportInfo, ModuleId)>> for ExportAllSet {
+    fn from(value: Vec<(ExportInfo, ModuleId)>) -> Self {
+        Self {
+            data: value,
+            ty: ExportType::Static,
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ImportSpecifierInfo {
   /// ```js
@@ -179,7 +247,7 @@ pub struct ModuleAnalyzer {
   pub ast: EcmaAstModule,
   pub module_id: ModuleId,
   pub resource_pot_id: ResourcePotId,
-  pub export_names: Option<Vec<(ExportInfo, ModuleId)>>,
+  pub export_names: Option<ExportAllSet>,
   pub entry: bool,
   pub external: bool,
   pub dynamic: bool,

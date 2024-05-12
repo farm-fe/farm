@@ -8,22 +8,27 @@ use swc_ecma_parser::{lexer::Lexer, EsConfig, Parser, StringInput, Syntax, TsCon
 
 use farmfe_core::{
   config::{comments::CommentsConfig, ScriptParserConfig},
+  context::CompilationContext,
   error::{CompilationError, Result},
   module::{ModuleSystem, ModuleType},
   plugin::{PluginFinalizeModuleHookParam, ResolveKind},
   swc_common::{
     comments::{Comments, SingleThreadedComments},
-    BytePos, FileName, LineCol, Mark, SourceMap,
+    BytePos, FileName, LineCol, Mark, SourceMap, GLOBALS,
   },
   swc_ecma_ast::{
-    CallExpr, Callee, EsVersion, Expr, Ident, Import, Module as SwcModule, ModuleItem, Stmt,
+    CallExpr, Callee, EsVersion, Expr, Ident, Import, MemberProp, Module as SwcModule, ModuleItem,
+    Stmt,
   },
 };
+use swc_ecma_visit::{Visit, VisitWith};
 use swc_error_reporters::handler::try_with_handler;
 
 use crate::common::{create_swc_source_map, minify_comments, Source};
 
 pub use farmfe_toolkit_plugin_types::swc_ast::ParseScriptModuleResult;
+
+use self::swc_try_with::try_with;
 
 pub mod swc_try_with;
 
@@ -241,6 +246,29 @@ pub fn module_system_from_deps(deps: Vec<ResolveKind>) -> ModuleSystem {
   module_system
 }
 
+struct ModuleSystemAnalyzer {
+  unresolved_mark: Mark,
+  contain_module_exports: bool,
+}
+
+impl Visit for ModuleSystemAnalyzer {
+  fn visit_member_expr(&mut self, n: &farmfe_core::swc_ecma_ast::MemberExpr) {
+    if let box Expr::Ident(Ident { sym, span, .. }) = &n.obj {
+      if sym == "module" && span.ctxt.outer() == self.unresolved_mark {
+        if let MemberProp::Ident(Ident { sym, .. }) = &n.prop {
+          if sym == "exports" {
+            self.contain_module_exports = true;
+          }
+        }
+      } else {
+        n.visit_children_with(self);
+      }
+    } else {
+      n.visit_children_with(self);
+    }
+  }
+}
+
 pub fn module_system_from_ast(
   ast: &SwcModule,
   module_system: ModuleSystem,
@@ -262,9 +290,12 @@ pub fn module_system_from_ast(
   module_system
 }
 
-pub fn set_module_system_for_module_meta(param: &mut PluginFinalizeModuleHookParam) {
+pub fn set_module_system_for_module_meta(
+  param: &mut PluginFinalizeModuleHookParam,
+  context: &Arc<CompilationContext>,
+) {
   // default to commonjs
-  let module_system = if !param.deps.is_empty() {
+  let mut module_system = if !param.deps.is_empty() {
     module_system_from_deps(param.deps.iter().map(|d| d.kind.clone()).collect())
   } else {
     ModuleSystem::CommonJs
@@ -272,6 +303,28 @@ pub fn set_module_system_for_module_meta(param: &mut PluginFinalizeModuleHookPar
   param.module.meta.as_script_mut().module_system = module_system.clone();
 
   let ast = &param.module.meta.as_script().ast;
+
+  {
+    // try_with(param.module.meta.as_script().comments.into(), globals, op)
+
+    let (cm, _) = create_swc_source_map(Source {
+      path: PathBuf::from(&param.module.id.to_string()),
+      content: param.module.content.clone(),
+    });
+
+    try_with(cm, &context.meta.script.globals, || {
+      let unresolved_mark = Mark::from_u32(param.module.meta.as_script().unresolved_mark);
+      let mut analyzer = ModuleSystemAnalyzer {
+        unresolved_mark,
+        contain_module_exports: false,
+      };
+
+      ast.visit_with(&mut analyzer);
+      if analyzer.contain_module_exports {
+        module_system = module_system.merge(ModuleSystem::CommonJs);
+      }
+    });
+  }
 
   param.module.meta.as_script_mut().module_system =
     module_system_from_ast(ast, module_system, !param.deps.is_empty());

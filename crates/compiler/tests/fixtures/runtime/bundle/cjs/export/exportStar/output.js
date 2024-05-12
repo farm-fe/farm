@@ -57,8 +57,8 @@ function _export_star(from, to) {
     return from;
 }
 
-var dep_ts_cjs = __commonJs({
-    "dep.ts.farm-runtime": (module, exports)=>{
+var cjsExport_ts_cjs = __commonJs({
+    "cjsExport.ts.farm-runtime": (module, exports)=>{
         module.exports.name = "shulan";
         module.exports.age = 18;
         module.exports.default = "default";

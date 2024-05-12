@@ -287,6 +287,7 @@ impl BundleVariable {
 
         let statements = module_analyzer.exports_stmts();
 
+        // TODO: order by export type, export all need to last
         for export in statements.iter() {
           for specify in &export.specifiers {
             match specify {

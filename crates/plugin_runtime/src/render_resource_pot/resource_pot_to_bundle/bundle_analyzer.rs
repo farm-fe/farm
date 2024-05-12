@@ -30,7 +30,9 @@ use farmfe_toolkit::{
   swc_ecma_visit::VisitMutWith,
 };
 
-use crate::resource_pot_to_bundle::modules_analyzer::module_analyzer::ExportSpecifierInfo;
+use crate::resource_pot_to_bundle::modules_analyzer::module_analyzer::{
+  ExportSpecifierInfo, ExportType,
+};
 
 use super::{
   bundle::ModuleAnalyzerManager,
@@ -332,6 +334,11 @@ impl<'a> BundleAnalyzer<'a> {
         HashMap::default();
 
       if let Some(module_analyzer) = module_analyzer_manager.module_analyzer(module_id) {
+        println!(
+          "module_analyzer_module_system: {} {:#?}",
+          module_id.to_string(),
+          module_analyzer.module_system
+        );
         let resource_pot_id = module_analyzer.resource_pot_id.clone();
 
         for statement in &module_analyzer.statements {
@@ -352,6 +359,7 @@ impl<'a> BundleAnalyzer<'a> {
 
                   if let Some(target) = target {
                     let is_common_js = target.is_common_js();
+
                     match target {
                       FindModuleExportResult::Local(_, target_module_id, _) => {
                         if let Some(local) = module_analyzer_manager
@@ -577,6 +585,7 @@ impl<'a> BundleAnalyzer<'a> {
             for specify in &export.specifiers {
               match specify {
                 // export * from 'module'
+                // support cjs
                 ExportSpecifierInfo::All(_) => {
                   if let Some(source) = &export.source {
                     // entry | other bundle
@@ -593,20 +602,43 @@ impl<'a> BundleAnalyzer<'a> {
                     } {
                       let exports = module_analyzer_manager
                         .export_names(source, &self.bundle_variable.borrow());
+                      let is_hybrid_dynamic = matches!(exports.ty, ExportType::HybridDynamic);
 
-                      for (export, export_source) in exports {
+                      for (export, export_source) in exports.data {
+                        let is_commonjs = module_analyzer_manager.is_commonjs(&export_source);
                         let is_in_self_bundle = self.ordered_modules.contains(&&export_source);
+
+                        if is_commonjs {
+                          let export_source_kind = export_source.clone().into();
+
+                          if !commonjs_export_map.contains_key(&export_source_kind) {
+                            commonjs_export_map
+                              .insert(export_source_kind.clone(), ExternalReferenceExport::new());
+                          }
+
+                          if let Some(reference_export) =
+                            commonjs_export_map.get_mut(&export_source_kind)
+                          {
+                            reference_export.export_type = exports.ty;
+                          }
+                        }
 
                         for specify in export.specifiers {
                           let t = Some(export.source.clone().unwrap_or(export_source.clone()));
                           self.bundle_reference.sync_export(
                             &specify,
-                            if is_in_self_bundle {
+                            if !is_in_self_bundle {
                               export.source.as_ref().map(|item| item.clone().into())
+                            } else if is_hybrid_dynamic {
+                              Some(export_source.clone().into())
                             } else {
                               t.map(|item| item.into())
                             },
-                            None,
+                            if is_hybrid_dynamic {
+                              Some(&mut commonjs_export_map)
+                            } else {
+                              None
+                            },
                           );
                         }
                       }
@@ -647,19 +679,21 @@ impl<'a> BundleAnalyzer<'a> {
                             })
                             || is_common_js
                           {
-                            self.bundle_reference.sync_export(
-                              &ExportSpecifierInfo::Named((local).into()),
-                              if is_common_js {
-                                Some(target_source.into())
-                              } else {
-                                None
-                              },
-                              if is_common_js {
-                                Some(&mut commonjs_export_map)
-                              } else {
-                                None
-                              },
-                            );
+                            if is_common_js {
+                              self.bundle_variable.borrow_mut().set_var_uniq_rename(local);
+
+                              self.bundle_reference.sync_export(
+                                &ExportSpecifierInfo::Named(local.into()),
+                                Some(target_source.into()),
+                                Some(&mut commonjs_export_map),
+                              );
+                            } else {
+                              self.bundle_reference.sync_export(
+                                &ExportSpecifierInfo::Named((local).into()),
+                                None,
+                                None,
+                              );
+                            }
                           }
                         }
                         FindModuleExportResult::External(_, target_source, _) => {
@@ -752,6 +786,14 @@ impl<'a> BundleAnalyzer<'a> {
                     .bundle_variable
                     .borrow_mut()
                     .set_rename(*ns, local_name);
+
+                  if module_analyzer_manager.is_commonjs(source) {
+                    self.bundle_reference.sync_export(
+                      &ExportSpecifierInfo::Namespace(local_var),
+                      Some(source.clone().into()),
+                      Some(&mut commonjs_export_map),
+                    );
+                  }
 
                   // bundle
                   if let Some(module_analyzer) = module_analyzer_manager.module_analyzer(source) {

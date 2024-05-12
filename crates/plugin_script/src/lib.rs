@@ -239,7 +239,7 @@ impl Plugin for FarmPluginScript {
     // cause the partial bundling is not support other module type yet
     param.module.module_type = ModuleType::Js;
     // set param.module.meta.module_system
-    set_module_system_for_module_meta(param);
+    set_module_system_for_module_meta(param, context);
 
     // find and replace `import.meta.xxx` to `module.meta.xxx` and detect hmr_accepted
     // skip transform import.meta when targetEnv is node

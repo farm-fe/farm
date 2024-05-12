@@ -14,8 +14,8 @@ use farmfe_core::{
   swc_ecma_ast::{
     self, ArrowExpr, BindingIdent, BlockStmt, CallExpr, ClassDecl, ComputedPropName, Decl,
     EmptyStmt, Expr, ExprOrSpread, ExprStmt, FnDecl, Ident, KeyValueProp, MemberExpr, ModuleDecl,
-    ModuleItem, ObjectLit, Pat, Prop, PropName, PropOrSpread, Stmt, Str, VarDecl, VarDeclKind,
-    VarDeclarator,
+    ModuleItem, ObjectLit, Pat, Prop, PropName, PropOrSpread, SpreadElement, Stmt, Str, VarDecl,
+    VarDeclKind, VarDeclarator,
   },
 };
 use farmfe_toolkit::{
@@ -34,7 +34,8 @@ use super::{
   bundle_external::BundleReference,
   defined_idents_collector::RenameIdent,
   modules_analyzer::module_analyzer::{
-    ExportInfo, ExportSpecifierInfo, ImportSpecifierInfo, ModuleAnalyzer, StmtAction, Variable,
+    ExportAllSet, ExportInfo, ExportSpecifierInfo, ExportType, ImportSpecifierInfo, ModuleAnalyzer,
+    StmtAction, Variable,
   },
   uniq_name::{safe_name_form_module_id, BundleVariable},
 };
@@ -267,8 +268,8 @@ impl ModuleAnalyzerManager {
     &self,
     module_id: &ModuleId,
     bundle_variable: &BundleVariable,
-  ) -> Vec<(ExportInfo, ModuleId)> {
-    let mut exports: Vec<(ExportInfo, ModuleId)> = vec![];
+  ) -> ExportAllSet {
+    let mut exports = ExportAllSet::new();
 
     let exports_stmts = if let Some(module_analyzer) = self.module_analyzer(module_id) {
       if let Some(export_names) = &module_analyzer.export_names {
@@ -287,14 +288,21 @@ impl ModuleAnalyzerManager {
     if let Some(module_analyzer) = self.module_analyzer(module_id) {
       if module_analyzer.is_commonjs() {
         // TODO: support commonjs module export
-        return vec![(
-          ExportInfo {
-            source: None,
-            specifiers: vec![ExportSpecifierInfo::All(None)],
-            stmt_id: 0,
-          },
-          module_id.clone(),
-        )];
+        exports.merge(ExportAllSet {
+          data: vec![(
+            ExportInfo {
+              source: None,
+              specifiers: vec![],
+              stmt_id: 0,
+            },
+            module_id.clone(),
+          )],
+          ty: ExportType::HybridDynamic,
+        });
+      }
+
+      if matches!(module_analyzer.module_system, ModuleSystem::CommonJs) {
+        return exports;
       }
     }
 
@@ -303,7 +311,7 @@ impl ModuleAnalyzerManager {
         let module_analyzer_option = self.module_analyzer(source);
 
         if module_analyzer_option.is_none() || module_analyzer_option.is_some_and(|m| m.external) {
-          exports.push((export, module_id.clone()));
+          exports.add((export, module_id.clone()));
           continue;
         }
       }
@@ -313,14 +321,14 @@ impl ModuleAnalyzerManager {
           ExportSpecifierInfo::All(_) => {
             if let Some(source) = &export.source {
               let result = self.export_names(source, bundle_variable);
-              exports.extend(result);
+              exports.merge(result);
             } else {
               unreachable!("export All source should not be None")
             }
           }
 
           ExportSpecifierInfo::Namespace(_) => {
-            exports.push((
+            exports.add((
               ExportInfo {
                 source: export.source.clone(),
                 specifiers: vec![specify.clone()],
@@ -340,14 +348,14 @@ impl ModuleAnalyzerManager {
                 }
 
                 ExportSpecifierInfo::Named(importer) => {
-                  for (source_export, source_module_id) in result {
+                  for (source_export, source_module_id) in result.data {
                     for source_specify in source_export.specifiers {
                       match source_specify {
                         ExportSpecifierInfo::Named(export) => {
                           if bundle_variable.name(importer.local())
                             == bundle_variable.name(export.export_as())
                           {
-                            exports.push((
+                            exports.add((
                               ExportInfo {
                                 source: source_export.source.clone(),
                                 specifiers: vec![ExportSpecifierInfo::Named(Variable(
@@ -370,7 +378,7 @@ impl ModuleAnalyzerManager {
                 _ => {}
               }
             } else {
-              exports.push((
+              exports.add((
                 ExportInfo {
                   source: export.source.clone(),
                   specifiers: vec![specify.clone()],
@@ -441,8 +449,27 @@ impl ModuleAnalyzerManager {
               if let Some(source) = &export.source {
                 let export_names = self.export_names(source, &bundle_variable);
 
-                for (export, _) in export_names {
-                  statements.push_back(Cow::Owned(export));
+                for (export, _) in export_names.data {
+                  if export.specifiers.is_empty()
+                    && matches!(export_names.ty, ExportType::HybridDynamic)
+                  {
+                    let commonjs_name_index =
+                      self.module_global_uniq_name.commonjs_name(&source).unwrap();
+                    // TODO: polyfill
+                    props.push(PropOrSpread::Spread(SpreadElement {
+                      dot3_token: DUMMY_SP,
+                      expr: Box::new(Expr::Call(CallExpr {
+                        span: DUMMY_SP,
+                        callee: swc_ecma_ast::Callee::Expr(Box::new(Expr::Ident(
+                          bundle_variable.name(commonjs_name_index).as_str().into(),
+                        ))),
+                        args: vec![],
+                        type_args: None,
+                      })),
+                    }));
+                  } else {
+                    statements.push_back(Cow::Owned(export));
+                  }
                 }
               }
             }
@@ -763,13 +790,11 @@ impl ModuleAnalyzerManager {
               }
 
               StmtAction::ReplaceCjsExport(source) => {
-                  // println!("module_analyzer_commonjs_export: {}", source.to_string());
                 if let Some(module_analyzer) = self.module_analyzer(module_id) {
-                  // if let Some(source_module_analyzer) = self.module_analyzer(source) {
-
+                  println!("\n\nmodule_id: {}\ncommonjs_export\n{:#?}", module_id.to_string(), module_analyzer.cjs_module_analyzer.commonjs_export);
                   let res = module_analyzer.cjs_module_analyzer.build_commonjs_export(source, bundle_variable, module_analyzer, &self.module_global_uniq_name);
 
-                  for item in res {
+                  for item in res.into_iter().rev() {
                     ast.body.insert(0, item);
                   };
                 }
@@ -799,29 +824,35 @@ impl ModuleAnalyzerManager {
       if let Some(module) = module_graph.module(module_id) {
         // transform commonjs module to esm
         if matches!(module_analyzer.module_system, ModuleSystem::Hybrid) {
-          let comments: SingleThreadedComments = module.meta.as_script().comments.clone().into();
+          try_with(
+            module_analyzer.cm.clone(),
+            &context.meta.script.globals,
+            || {
+              let comments: SingleThreadedComments =
+                module.meta.as_script().comments.clone().into();
 
-          // TODO: transform hybrid module to commonjs
-          module_analyzer
-            .ast
-            .visit_mut_with(&mut import_analyzer(ImportInterop::Swc, true));
+              module_analyzer
+                .ast
+                .visit_mut_with(&mut import_analyzer(ImportInterop::Swc, true));
 
-          module_analyzer
-            .ast
-            .visit_mut_with(&mut inject_helpers(module_analyzer.mark.0));
+              module_analyzer
+                .ast
+                .visit_mut_with(&mut inject_helpers(module_analyzer.mark.0));
 
-          module_analyzer
-            .ast
-            .visit_mut_with(&mut common_js::<&SingleThreadedComments>(
-              module_analyzer.mark.0,
-              Config {
-                ignore_dynamic: true,
-                preserve_import_meta: true,
-                ..Default::default()
-              },
-              enable_available_feature_from_es_version(context.config.script.target),
-              Some(&comments),
-            ));
+              module_analyzer
+                .ast
+                .visit_mut_with(&mut common_js::<&SingleThreadedComments>(
+                  module_analyzer.mark.0,
+                  Config {
+                    ignore_dynamic: true,
+                    preserve_import_meta: true,
+                    ..Default::default()
+                  },
+                  enable_available_feature_from_es_version(context.config.script.target),
+                  Some(&comments),
+                ));
+            },
+          )?;
         }
 
         if matches!(
@@ -1204,19 +1235,19 @@ mod tests {
     {
       let exports = module_analyzer_manager.export_names(&module_d_id, &bundle_variables);
 
-      assert_eq!(exports.len(), 1);
+      assert_eq!(exports.data.len(), 1);
       assert!(matches!(
-        exports[0].0.specifiers[0],
+        exports.data[0].0.specifiers[0],
         ExportSpecifierInfo::Named(_)
       ));
 
-      if let ExportSpecifierInfo::Named(named) = &exports[0].0.specifiers[0] {
+      if let ExportSpecifierInfo::Named(named) = &exports.data[0].0.specifiers[0] {
         assert_eq!(bundle_variables.name(named.local()), "a2");
       }
 
       if is_debug {
         println!("\n\nd");
-        print(exports);
+        print(exports.data);
       }
     }
 
@@ -1224,85 +1255,82 @@ mod tests {
       // c
       let exports = module_analyzer_manager.export_names(&module_c_id, &bundle_variables);
 
-      assert_eq!(exports.len(), 2);
+      assert_eq!(exports.data.len(), 2);
       assert!(matches!(
-        exports[0].0.specifiers[0],
+        exports.data[0].0.specifiers[0],
         ExportSpecifierInfo::Named(_)
       ));
 
-      if let ExportSpecifierInfo::Named(named) = &exports[0].0.specifiers[0] {
+      if let ExportSpecifierInfo::Named(named) = &exports.data[0].0.specifiers[0] {
         assert_eq!(bundle_variables.name(named.local()), "a2");
         assert_eq!(bundle_variables.name(named.export_as()), "a1");
       }
 
       if is_debug {
         println!("\n\nc");
-        print(exports);
+        print(exports.data);
       }
     }
 
     {
       // b
-      let exports: Vec<(ExportInfo, ModuleId)> =
-        module_analyzer_manager.export_names(&module_b_id, &bundle_variables);
+      let exports = module_analyzer_manager.export_names(&module_b_id, &bundle_variables);
 
-      assert_eq!(exports.len(), 1);
+      assert_eq!(exports.data.len(), 1);
       assert!(matches!(
-        exports[0].0.specifiers[0],
+        exports.data[0].0.specifiers[0],
         ExportSpecifierInfo::Named(_)
       ));
 
-      if let ExportSpecifierInfo::Named(named) = &exports[0].0.specifiers[0] {
+      if let ExportSpecifierInfo::Named(named) = &exports.data[0].0.specifiers[0] {
         assert_eq!(bundle_variables.name(named.local()), "a2");
         assert_eq!(bundle_variables.name(named.export_as()), "foo");
       }
 
       if is_debug {
         println!("\n\nb");
-        print(exports);
+        print(exports.data);
       }
     }
 
     {
       // a
-      let exports: Vec<(ExportInfo, ModuleId)> =
-        module_analyzer_manager.export_names(&module_a_id, &bundle_variables);
+      let exports = module_analyzer_manager.export_names(&module_a_id, &bundle_variables);
 
-      assert_eq!(exports.len(), 1);
+      assert_eq!(exports.data.len(), 1);
       assert!(matches!(
-        exports[0].0.specifiers[0],
+        exports.data[0].0.specifiers[0],
         ExportSpecifierInfo::Named(_)
       ));
 
-      if let ExportSpecifierInfo::Named(named) = &exports[0].0.specifiers[0] {
+      if let ExportSpecifierInfo::Named(named) = &exports.data[0].0.specifiers[0] {
         assert_eq!(bundle_variables.name(named.local()), "a2");
         assert_eq!(bundle_variables.name(named.export_as()), "foo");
       }
 
       if is_debug {
         println!("\n\na");
-        print(exports);
+        print(exports.data);
       }
     }
 
     {
       // index
-      let exports: Vec<(ExportInfo, ModuleId)> =
-        module_analyzer_manager.export_names(&module_index_id, &bundle_variables);
+      let exports = module_analyzer_manager.export_names(&module_index_id, &bundle_variables);
 
-      assert_eq!(exports.len(), 1);
+      assert_eq!(exports.data.len(), 1);
       assert!(matches!(
-        exports[0].0.specifiers[0],
+        exports.data[0].0.specifiers[0],
         ExportSpecifierInfo::Named(_)
       ));
 
-      if let ExportSpecifierInfo::Named(named) = &exports[0].0.specifiers[0] {
+      if let ExportSpecifierInfo::Named(named) = &exports.data[0].0.specifiers[0] {
         assert_eq!(bundle_variables.name(named.local()), "a2");
         assert_eq!(bundle_variables.name(named.export_as()), "bar");
       }
 
       println!("\n\nindex");
-      print(exports);
+      print(exports.data);
     }
   }
 }

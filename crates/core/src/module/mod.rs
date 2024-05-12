@@ -342,6 +342,32 @@ pub enum ModuleSystem {
   Custom(String),
 }
 
+impl ModuleSystem {
+  pub fn merge(&self, module_system: ModuleSystem) -> ModuleSystem {
+    match self {
+      ModuleSystem::EsModule => {
+        if matches!(module_system, ModuleSystem::CommonJs) {
+          ModuleSystem::Hybrid
+        } else {
+          module_system
+        }
+      }
+      ModuleSystem::CommonJs => {
+        if matches!(module_system, ModuleSystem::EsModule) {
+          ModuleSystem::Hybrid
+        } else {
+          module_system
+        }
+      }
+      ModuleSystem::Hybrid => {
+        ModuleSystem::Hybrid
+      }
+
+      ModuleSystem::Custom(_) => module_system,
+    }
+  }
+}
+
 #[cache_item]
 #[derive(Clone)]
 pub struct CssModuleMetaData {
@@ -614,7 +640,7 @@ mod tests {
 
   use super::{
     CustomModuleMetaData, DeserializeCustomModuleMetaData, Module, ModuleId, ModuleMetaData,
-    ModuleType, SerializeCustomModuleMetaData,
+    ModuleSystem, ModuleType, SerializeCustomModuleMetaData,
   };
 
   #[test]
@@ -747,5 +773,46 @@ mod tests {
     assert!(deserialized_module
       .module_groups
       .contains(&ModuleId::new("2", "", "")));
+  }
+
+  #[test]
+  fn module_system_merge() {
+    let module_system = ModuleSystem::EsModule;
+
+    assert_eq!(
+      module_system.merge(ModuleSystem::CommonJs),
+      ModuleSystem::Hybrid
+    );
+
+    let module_system = ModuleSystem::CommonJs;
+
+    assert_eq!(
+      module_system.merge(ModuleSystem::EsModule),
+      ModuleSystem::Hybrid
+    );
+
+    let module_system = ModuleSystem::Hybrid;
+
+    assert_eq!(
+      module_system.merge(ModuleSystem::EsModule),
+      ModuleSystem::Hybrid
+    );
+
+    assert_eq!(
+      module_system.merge(ModuleSystem::CommonJs),
+      ModuleSystem::Hybrid
+    );
+
+    let module_system = ModuleSystem::Custom("unknown".to_string());
+
+    assert_eq!(
+      module_system.merge(ModuleSystem::CommonJs),
+      ModuleSystem::CommonJs
+    );
+
+    assert_eq!(
+      module_system.merge(ModuleSystem::EsModule),
+      ModuleSystem::EsModule
+    );
   }
 }

@@ -1,1 +1,1 @@
-export * from './dep';
+export * from './cjsExport';

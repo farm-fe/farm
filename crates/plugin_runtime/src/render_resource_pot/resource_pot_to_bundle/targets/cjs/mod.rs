@@ -4,8 +4,8 @@ use farmfe_core::{
   module::{module_graph::ModuleGraph, ModuleId},
   swc_common::{Mark, DUMMY_SP},
   swc_ecma_ast::{
-    self, BindingIdent, CallExpr, Callee, Expr, ExprOrSpread, Ident, Lit, MemberExpr,
-    Module as EcmaAstModule, ModuleItem, Pat, Stmt, VarDecl, VarDeclarator,
+    self, BindingIdent, CallExpr, Callee, ComputedPropName, Expr, ExprOrSpread, Ident, Lit,
+    MemberExpr, Module as EcmaAstModule, ModuleItem, Pat, Stmt, VarDecl, VarDeclarator,
   },
 };
 use farmfe_toolkit::{
@@ -203,6 +203,7 @@ impl CjsModuleAnalyzer {
     ast.visit_mut_with(&mut replacer);
   }
 
+  /** when use esm export commonjs module */
   pub fn build_commonjs_export(
     &self,
     module_id: &ModuleId,
@@ -228,6 +229,7 @@ impl CjsModuleAnalyzer {
         type_args: None,
       };
 
+      // TODO: polyfill
       if let Some(default) = reference_export.default {
         decls.push(VarDeclarator {
           span: DUMMY_SP,
@@ -244,6 +246,7 @@ impl CjsModuleAnalyzer {
         });
       }
 
+      // TODO: polyfill
       if let Some(ns) = reference_export.namespace {
         decls.push(VarDeclarator {
           span: DUMMY_SP,
@@ -257,38 +260,40 @@ impl CjsModuleAnalyzer {
       }
 
       let ordered_keys = reference_export.named.keys().collect::<Vec<_>>();
-      for imported in ordered_keys {
-        let named = &reference_export.named[imported];
-
-        println!("named: {:#?}", bundle_variable.var_by_index(*named));
-        println!("imported: {:#?}", bundle_variable.var_by_index(*imported));
-
-        let imported = bundle_variable.name(*imported);
-
+      // TODO: default key
+      for imported_index in ordered_keys {
+        let named_index = &reference_export.named[imported_index];
 
         decls.push(VarDeclarator {
           span: DUMMY_SP,
           name: Pat::Ident(BindingIdent {
-            id: Ident::from(bundle_variable.name(*named).as_str()),
+            id: Ident::from(bundle_variable.render_name(*named_index).as_str()),
             type_ann: None,
           }),
           init: Some(Box::new(Expr::Member(MemberExpr {
             span: DUMMY_SP,
             obj: Box::new(Expr::Call(cjs_caller.clone())),
-            prop: swc_ecma_ast::MemberProp::Ident(imported.as_str().into()),
+            prop: swc_ecma_ast::MemberProp::Computed(ComputedPropName {
+              span: DUMMY_SP,
+              expr: Box::new(Expr::Lit(Lit::Str(
+                bundle_variable.name(*named_index).as_str().into(),
+              ))),
+            }),
           }))),
           definite: false,
         });
       }
 
-      result.push(ModuleItem::Stmt(Stmt::Decl(swc_ecma_ast::Decl::Var(
-        Box::new(VarDecl {
-          span: DUMMY_SP,
-          kind: swc_ecma_ast::VarDeclKind::Var,
-          declare: false,
-          decls,
-        }),
-      ))));
+      if !decls.is_empty() {
+        result.push(ModuleItem::Stmt(Stmt::Decl(swc_ecma_ast::Decl::Var(
+          Box::new(VarDecl {
+            span: DUMMY_SP,
+            kind: swc_ecma_ast::VarDeclKind::Var,
+            declare: false,
+            decls,
+          }),
+        ))));
+      }
     }
 
     result

@@ -6,7 +6,7 @@ use farmfe_core::{
 };
 
 use super::{
-  modules_analyzer::module_analyzer::{ExportSpecifierInfo, ImportSpecifierInfo},
+  modules_analyzer::module_analyzer::{ExportSpecifierInfo, ExportType, ImportSpecifierInfo},
   uniq_name::BundleVariable,
 };
 
@@ -67,15 +67,17 @@ pub struct ExternalReferenceExport {
   pub default: Option<usize>,
   pub all: bool,
   pub namespace: Option<usize>,
+  pub export_type: ExportType,
 }
 
 impl ExternalReferenceExport {
-  fn new() -> Self {
+  pub fn new() -> Self {
     Self {
       named: HashMap::new(),
       default: None,
       all: false,
       namespace: None,
+      export_type: Default::default(),
     }
   }
 
@@ -115,8 +117,8 @@ pub enum ReferenceKind {
 impl ReferenceKind {
   pub fn to_module_id(&self) -> ModuleId {
     match self {
-        ReferenceKind::Bundle(name) => ModuleId::from(name.as_str()),
-        ReferenceKind::Module(id) => id.clone(),
+      ReferenceKind::Bundle(name) => ModuleId::from(name.as_str()),
+      ReferenceKind::Module(id) => id.clone(),
     }
   }
 }
@@ -173,7 +175,7 @@ impl BundleReference {
     &mut self,
     export: &ExportSpecifierInfo,
     source: Option<ReferenceKind>,
-    to_export_map: Option<&mut HashMap<ReferenceKind, ExternalReferenceExport>>
+    to_export_map: Option<&mut HashMap<ReferenceKind, ExternalReferenceExport>>,
   ) {
     if let Some(module_id) = source {
       let map = to_export_map.unwrap_or(&mut self.external_export_map);

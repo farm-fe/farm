@@ -178,7 +178,8 @@
     "xlink",
     "Yuxi",
     "wasmer",
-    "primevue"
+    "primevue",
+    "shulan"
   ],
   "ignorePaths": [
     "pnpm-lock.yaml",

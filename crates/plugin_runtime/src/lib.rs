@@ -255,12 +255,12 @@ impl Plugin for FarmPluginRuntime {
   fn finalize_module(
     &self,
     param: &mut farmfe_core::plugin::PluginFinalizeModuleHookParam,
-    _context: &Arc<CompilationContext>,
+    context: &Arc<CompilationContext>,
   ) -> farmfe_core::error::Result<Option<()>> {
     if param.module.id.relative_path().ends_with(RUNTIME_SUFFIX) {
       param.module.module_type = ModuleType::Runtime;
 
-      set_module_system_for_module_meta(param);
+      set_module_system_for_module_meta(param, context);
 
       Ok(Some(()))
     } else {
