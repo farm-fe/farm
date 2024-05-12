@@ -48,7 +48,7 @@ where
     Some(name) => name,
     None => Input::<String>::with_theme(&ColorfulTheme::default())
       .with_prompt("Project name")
-      .default("farm-app".into())
+      .default("farm-project".into())
       .interact_text()?
       .trim()
       .into(),
@@ -187,7 +187,7 @@ fn to_valid_pkg_name(project_name: &str) -> String {
     .collect::<String>();
 
   if ret.is_empty() {
-    "farm-app".to_string()
+    "farm-project".to_string()
   } else {
     ret
   }

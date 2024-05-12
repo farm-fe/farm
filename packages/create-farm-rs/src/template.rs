@@ -97,15 +97,6 @@ impl Template {
   }
 }
 
-// { title: colors.blue('Solid'), value: 'solid' },
-// { title: colors.orange('Svelte'), value: 'svelte' },
-// {
-//   title: colors.yellow('Vanilla'),
-//   value: 'vanilla'
-// },
-// { title: colors.red('Lit'), value: 'lit' },
-// { title: colors.orange('Tauri'), value: 'tauri' }
-
 impl<'a> Template {
   pub const ALL: &'a [Template] = &[
     Template::Vanilla,

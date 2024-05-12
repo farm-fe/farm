@@ -534,17 +534,17 @@ mod tests {
     assert_eq!(rendered, "<html>Hello world</html>");
 
     let template = "<html>Hello {% if !name %}world{% else %}{% name %}{%endif %}</html>";
-    let data: HashMap<&str, &str> = [("name", "tauri")].into();
+    let data: HashMap<&str, &str> = [("name", "farm")].into();
     let rendered = render(template, &data).expect("it should render");
-    assert_eq!(rendered, "<html>Hello tauri</html>");
+    assert_eq!(rendered, "<html>Hello farm</html>");
 
     let template = "<html>Hello {% if !render %}world{% else %}{% name %}{%endif %}</html>";
-    let data: HashMap<&str, &str> = [("render", "true"), ("name", "tauri")].into();
+    let data: HashMap<&str, &str> = [("render", "true"), ("name", "farm")].into();
     let rendered = render(template, &data).expect("it should render");
-    assert_eq!(rendered, "<html>Hello tauri</html>");
+    assert_eq!(rendered, "<html>Hello farm</html>");
 
     let template = "<html>Hello {% if !render %}world{% else %}{% name %}{%endif %}</html>";
-    let data: HashMap<&str, &str> = [("render", "false"), ("name", "tauri")].into();
+    let data: HashMap<&str, &str> = [("render", "false"), ("name", "farm")].into();
     let rendered = render(template, &data).expect("it should render");
     assert_eq!(rendered, "<html>Hello world</html>");
   }
