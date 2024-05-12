@@ -237,18 +237,6 @@ impl<'a> Template {
       Ok(())
     };
 
-    // 1. write base files
-    // for file in EMBEDDED_TEMPLATES::iter().filter(|e| {
-    //   path::PathBuf::from(e.to_string())
-    //     .components()
-    //     .next()
-    //     .unwrap()
-    //     .as_os_str()
-    //     == "_base_"
-    // }) {
-    //   write_file(&file, &template_data)?;
-    // }
-    // 2. write template files which can override files from base
     for file in EMBEDDED_TEMPLATES::iter().filter(|e| {
       path::PathBuf::from(e.to_string())
         .components()
@@ -259,6 +247,8 @@ impl<'a> Template {
     }) {
       write_file(&file, template_data.clone())?;
     }
+
+    println!("✔️ Template copied Successfully!");
 
     Ok(())
   }

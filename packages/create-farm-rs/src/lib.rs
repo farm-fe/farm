@@ -33,7 +33,7 @@ where
   I: IntoIterator<Item = A>,
   A: Into<OsString> + Clone,
 {
-  handle_brand_text("⚡ Welcome To Farm ! \n");
+  handle_brand_text("\n ⚡ Welcome To Farm ! \n");
 
   let detected_manager = detected_manager.and_then(|p| p.parse::<PackageManager>().ok());
   let args = args::parse(args.into_iter().map(Into::into).collect(), bin_name)?;
