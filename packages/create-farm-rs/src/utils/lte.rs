@@ -480,12 +480,12 @@ mod tests {
         <em>{% alpha_str %}</em>{% else %}
         <em>stable</em>{% endif %}
         </html>"#;
-    let data: HashMap<&str, &str> = [("alpha", "true"), ("alpha_str", "holla alpha")].into();
+    let data: HashMap<&str, &str> = [("alpha", "true"), ("alpha_str", "hello alpha")].into();
     let rendered = render(template, &data).expect("it should render");
     let expected = r#"
         <html>
         <h1>Hello<h2>
-        <em>holla alpha</em>
+        <em>hello alpha</em>
         </html>"#;
     assert_eq!(rendered, expected)
   }
@@ -501,7 +501,7 @@ mod tests {
     let data: HashMap<&str, &str> = [
       ("alpha", "false"),
       ("beta", "true"),
-      ("alpha_str", "holla alpha"),
+      ("alpha_str", "hello alpha"),
     ]
     .into();
     let rendered = render(template, &data).expect("it should render");
