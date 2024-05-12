@@ -143,8 +143,6 @@ where
     pkg_manager,
     &project_name,
     &project_name,
-    false,
-    false,
   )?;
 
   handle_brand_text("\n > Initial Farm Project created successfully ✨ ✨ \n");
