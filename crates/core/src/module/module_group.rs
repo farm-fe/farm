@@ -315,7 +315,7 @@ impl ModuleGroup {
     let mut resource_pots_order_map = HashMap::<String, usize>::new();
     let mut sorted_resource_pots = self
       .resource_pots()
-      .into_iter()
+      .iter()
       .cloned()
       .collect::<Vec<_>>();
 

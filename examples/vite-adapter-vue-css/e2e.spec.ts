@@ -11,8 +11,17 @@ test(`e2e tests - ${name}`, async () => {
     startProjectAndTest(
       projectPath,
       async (page) => {
-        const rootHtml = await page.innerHTML('.box');
-        expect(rootHtml).matchSnapshot();
+        await page.waitForSelector('.box');
+
+        const box = await page.$('.box');
+        expect(box).toBeTruthy();
+
+        const color = await box?.evaluate((el) => {
+          console.log('color', getComputedStyle(el).getPropertyValue('background-color'));
+          return getComputedStyle(el).getPropertyValue('background-color');
+        });
+
+        expect(color).toBe('rgb(255, 0, 0)');
       },
       command
     );
