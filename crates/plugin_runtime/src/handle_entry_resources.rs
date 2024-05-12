@@ -220,6 +220,7 @@ fn get_entry_resource_and_dep_resources_name(
   module: &Module,
   module_group_graph: &ModuleGroupGraph,
   resource_map: &HashMap<String, Resource>,
+  module_graph: &ModuleGraph,
   context: &Arc<CompilationContext>,
 ) -> EntryResourceAndDepResources {
   let mut result = EntryResourceAndDepResources::default();
@@ -269,8 +270,13 @@ fn get_entry_resource_and_dep_resources_name(
     }
   }
 
-  let dynamic_resources_map =
-    get_dynamic_resources_map(module_group_graph, entry, &resource_pot_map, resource_map);
+  let dynamic_resources_map = get_dynamic_resources_map(
+    module_group_graph,
+    entry,
+    &resource_pot_map,
+    resource_map,
+    module_graph,
+  );
   let dynamic_resources_code =
     get_dynamic_resources_code(&dynamic_resources_map, context.config.mode.clone());
 
@@ -309,6 +315,7 @@ pub fn handle_entry_resources(
         module,
         &module_group_graph,
         resources_map,
+        &module_graph,
         context,
       );
       dep_resources.sort();

@@ -73,7 +73,13 @@ pub fn transform_css_to_script_modules(
           let mut module_graph = context.module_graph.write();
           let module = module_graph.module_mut(&module_id).unwrap();
           module.meta = meta;
+          // clear previous mark when using cache
+          module.meta.as_script_mut().top_level_mark = 0;
+          module.meta.as_script_mut().unresolved_mark = 0;
           module.module_type = ModuleType::Js;
+          drop(module_graph);
+          // update css dependency kind to ResolveKind:Import
+          transform_css_deps(&module_id, context);
           return Ok(());
         }
 
