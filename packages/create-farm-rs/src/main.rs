@@ -1,10 +1,31 @@
-use create_farm_rs::utils::colors::*;
+use std::{env::args_os, ffi::OsStr, path::Path};
 
 fn main() {
-  let colored_text = format!("{}Hello, {}world!{}", RED, GREEN, RESET);
-  println!("{}", colored_text);
-
-  // let text_with_colors = "\x1b[31mHello, \x1b[32mworld!\x1b[0m";
-  // let text_without_colors = utils::colors::remove_colors(text_with_colors);
-  // println!("Text without colors: {}", text_without_colors);
+  let mut args = args_os().peekable();
+  let mut is_cargo = false;
+  let bin_name = match args
+    .next()
+    .as_deref()
+    .map(Path::new)
+    .and_then(Path::file_stem)
+    .and_then(OsStr::to_str)
+  {
+    Some("cargo-create-tauri-app") => {
+      is_cargo = true;
+      if args.peek().and_then(|s| s.to_str()) == Some("create-tauri-app") {
+        // remove the extra cargo subcommand
+        args.next();
+        Some("cargo create-tauri-app".into())
+      } else {
+        Some("cargo-create-tauri-app".into())
+      }
+    }
+    Some(stem) => Some(stem.to_string()),
+    None => None,
+  };
+  create_farm::run(
+    args,
+    bin_name,
+    if is_cargo { Some("cargo".into()) } else { None },
+  );
 }

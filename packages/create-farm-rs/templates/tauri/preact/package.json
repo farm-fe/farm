@@ -1,0 +1,23 @@
+{
+  "name": "preact",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "farm",
+    "build": "tsc && farm build",
+    "preview": "farm preview",
+    "tauri": "tauri"
+  },
+  "dependencies": {
+    "preact": "^10.16.0",
+    "@tauri-apps/api": "^1"
+  },
+  "devDependencies": {
+    "@preact/preset-vite": "^2.5.0",
+    "typescript": "^5.0.2",
+    "@farmfe/cli": "^1.0.1",
+    "@farmfe/core": "^1.1.0",
+    "@tauri-apps/cli": "^1"
+  }
+}

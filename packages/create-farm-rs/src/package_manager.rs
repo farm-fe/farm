@@ -48,20 +48,76 @@ impl FromStr for PackageManager {
   }
 }
 
-
 impl<'a> PackageManager {
   pub const ALL: &'a [PackageManager] = &[
-      PackageManager::Pnpm,
-      PackageManager::Yarn,
-      PackageManager::Npm,
-      PackageManager::Bun,
+    PackageManager::Pnpm,
+    PackageManager::Yarn,
+    PackageManager::Npm,
+    PackageManager::Bun,
   ];
 
   /// Node.js managers
   pub const NODE: &'a [PackageManager] = &[
-      PackageManager::Pnpm,
-      PackageManager::Yarn,
-      PackageManager::Npm,
-      PackageManager::Bun,
+    PackageManager::Pnpm,
+    PackageManager::Yarn,
+    PackageManager::Npm,
+    PackageManager::Bun,
   ];
+}
+
+impl PackageManager {
+  /// Returns templates without flavors
+  pub const fn templates_no_flavors(&self) -> &[Template] {
+    match self {
+      PackageManager::Pnpm | PackageManager::Yarn | PackageManager::Npm | PackageManager::Bun => &[
+        Template::Vanilla,
+        Template::Vue3,
+        Template::Vue2,
+        Template::Svelte,
+        Template::React,
+        Template::Solid,
+        Template::Preact,
+      ],
+    }
+  }
+
+  pub const fn templates(&self) -> &[Template] {
+    match self {
+      PackageManager::Pnpm | PackageManager::Yarn | PackageManager::Npm | PackageManager::Bun => &[
+        Template::Vanilla,
+        Template::Vue3,
+        Template::Vue2,
+        Template::Svelte,
+        Template::React,
+        Template::Solid,
+        Template::Preact,
+      ],
+    }
+  }
+
+  pub const fn install_cmd(&self) -> Option<&str> {
+    match self {
+      PackageManager::Pnpm => Some("pnpm install"),
+      PackageManager::Yarn => Some("yarn"),
+      PackageManager::Npm => Some("npm install"),
+      PackageManager::Bun => Some("bun install"),
+      _ => None,
+    }
+  }
+
+  pub const fn run_cmd(&self) -> &str {
+    match self {
+      PackageManager::Pnpm => "pnpm dev",
+      PackageManager::Yarn => "yarn dev",
+      PackageManager::Npm => "npm run dev",
+      PackageManager::Bun => "bun run dev",
+    }
+  }
+
+  pub const fn is_node(&self) -> bool {
+    matches!(
+      self,
+      PackageManager::Pnpm | PackageManager::Yarn | PackageManager::Npm | PackageManager::Bun,
+    )
+  }
 }
