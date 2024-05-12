@@ -164,13 +164,9 @@ impl<'a> Template {
     pkg_manager: PackageManager,
     project_name: &str,
     package_name: &str,
-    beta: bool,
-    mobile: bool,
   ) -> anyhow::Result<()> {
     let lib_name = format!("{}_lib", package_name.replace('-', "_"));
     let project_name_pascal_case = Self::transform_to_pascal_case(project_name.to_string());
-
-    let beta_str = beta.to_string();
 
     let template_data: HashMap<&str, String> = [
       ("project_name", project_name.to_string()),
