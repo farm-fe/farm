@@ -1,4 +1,4 @@
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import path from 'path';
 import { Compiler } from '../src/compiler/index.js';
 import { JsPlugin } from '../src/plugin/type.js';
@@ -62,10 +62,22 @@ export async function getCompiler(
 }
 
 export function getFixturesDir() {
-  const currentDir = path.dirname(fileURLToPath(import.meta.url));
+  const currentDir = decodeURIComponent(
+    path.dirname(fileURLToPath(import.meta.url))
+  );
   return path.resolve(currentDir, 'fixtures');
 }
 
 export function getOutputFilePath(root: string, p: string) {
   return path.join(root, 'dist', p, 'index.mjs');
+}
+
+export async function getOutputResult(outputFilePath: string) {
+  if (process.platform === 'win32') {
+    return await import(
+      decodeURIComponent(pathToFileURL(outputFilePath).toString())
+    );
+  } else {
+    return await import(outputFilePath);
+  }
 }

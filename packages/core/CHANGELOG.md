@@ -1,5 +1,15 @@
 # @farmfe/core
 
+## 1.1.5
+
+### Patch Changes
+
+- 25ed2330: Bugfixes:
+  - #1300
+  - #1288
+  - #1271
+- df7ac2a0: support record external
+
 ## 1.1.4
 
 ### Patch Changes

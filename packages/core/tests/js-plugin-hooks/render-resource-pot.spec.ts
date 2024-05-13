@@ -1,5 +1,5 @@
-import { pathToFileURL } from 'url';
 import { expect, test } from 'vitest';
+import { getOutputResult } from '../common.js';
 import { getCompiler, getOutputFilePath } from './common.js';
 
 test('Js Plugin Execution - renderResourcePot', async () => {
@@ -48,12 +48,6 @@ test('Js Plugin Execution - renderResourcePot', async () => {
   expect(calledHooks).toEqual(['renderResourcePot']);
 
   const outputFilePath = getOutputFilePath('', hookName);
-
-  if (process.platform === 'win32') {
-    const result = await import(pathToFileURL(outputFilePath).toString());
-    expect(result.default).toBe('1');
-  } else {
-    const result = await import(outputFilePath);
-    expect(result.default).toBe('1');
-  }
+  const result = await getOutputResult(outputFilePath);
+  expect(result.default).toBe('1');
 });

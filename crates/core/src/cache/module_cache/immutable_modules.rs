@@ -284,6 +284,12 @@ impl ModuleMemoryStore for ImmutableModulesMemoryStore {
 
   fn invalidate_cache(&self, key: &ModuleId) {
     self.cached_modules.remove(key);
+    self.manifest.remove(key);
+    self.manifest_reversed.iter_mut().for_each(|mut item| {
+      if item.value_mut().contains(key) {
+        item.value_mut().remove(key);
+      }
+    })
   }
 
   fn is_cache_changed(&self, module: &crate::module::Module) -> bool {

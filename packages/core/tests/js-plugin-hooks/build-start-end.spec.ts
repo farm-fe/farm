@@ -65,11 +65,11 @@ test('Js Plugin Execution - buildStart/buildEnd', async () => {
 
   const outputFilePath = getOutputFilePath('', hookName);
 
-  if (process.platform === 'win32') {
-    const result = await import(pathToFileURL(outputFilePath).toString());
-    expect(result.default).toBe(1);
-  } else {
-    const result = await import(outputFilePath);
-    expect(result.default).toBe(1);
-  }
+  const filePath =
+    process.platform === 'win32'
+      ? decodeURIComponent(pathToFileURL(outputFilePath).toString())
+      : outputFilePath;
+
+  const result = await import(filePath);
+  expect(result.default).toBe(1);
 });

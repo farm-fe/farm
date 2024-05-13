@@ -3,8 +3,8 @@
   "version": "0.0.0",
   "description": "Farm is modern web building tool written in rust",
   "engines": {
-    "node": ">=16",
-    "pnpm": ">=8"
+    "node": ">=18",
+    "pnpm": ">=9"
   },
   "scripts": {
     "preinstall": "npx only-allow pnpm",
