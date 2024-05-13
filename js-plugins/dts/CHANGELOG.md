@@ -1,5 +1,11 @@
 # @farmfe/js-plugin-dts
 
+## 0.5.2
+
+### Patch Changes
+
+- df7ac2a0: support custom resolvedPaths & reduce product size
+
 ## 0.5.1
 
 ### Patch Changes
