@@ -75,6 +75,7 @@
     "binding/index.d.ts",
     "binding/index.js",
     "binding/resolve-binding.cjs",
+    "binding/swc-config.d.ts",
     "dist",
     "cjs",
     "client.d.ts",
