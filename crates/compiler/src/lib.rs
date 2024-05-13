@@ -65,6 +65,7 @@ impl Compiler {
 
     if config.minify.enabled() {
       plugins.push(Arc::new(farmfe_plugin_minify::FarmPluginMinify::new(&config)) as _);
+      plugins.push(Arc::new(farmfe_plugin_html::FarmPluginMinifyHtml::new(&config)) as _);
     }
 
     if config.preset_env.enabled() {
