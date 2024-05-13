@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
+  "private": true,
   "dependencies": {
     "vue": "^3.4.27",
     "vue-router": "^4.3.2"
