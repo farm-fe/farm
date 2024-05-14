@@ -30,7 +30,7 @@ jobs:
         with:
           node-version: 18
       - name: Install Dependencies
-        run: npm install -g pnpm@8.15.1 && pnpm i --frozen-lockfile
+        run: npm install -g pnpm@9.1.0 && pnpm i --frozen-lockfile
 
       - uses: actions/download-artifact@v3
         id: download
@@ -93,7 +93,7 @@ jobs:
         with:
           node-version: 18
       - name: Install Dependencies
-        run: npm install -g pnpm@8.15.1 && pnpm i --frozen-lockfile
+        run: npm install -g pnpm@9.1.0 && pnpm i --frozen-lockfile
       - name: Build CLI and Core
         run: pnpm --filter @farmfe/cli run build
       - name: Type Check With Tsc
@@ -125,7 +125,7 @@ jobs:
         with:
           node-version: 18
       - name: Install Dependencies
-        run: npm install -g pnpm@8.15.1 && pnpm i --frozen-lockfile
+        run: npm install -g pnpm@9.1.0 && pnpm i --frozen-lockfile
       - name: Build CLI and Core
         run: pnpm --filter @farmfe/cli run build
       - uses: actions/download-artifact@v3

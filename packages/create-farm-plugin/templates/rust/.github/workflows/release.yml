@@ -37,7 +37,7 @@ jobs:
           done
 
       - name: Install Dependencies
-        run: npm install -g pnpm@8.15.1 && pnpm i --frozen-lockfile
+        run: npm install -g pnpm@9.1.0 && pnpm i --frozen-lockfile
 
       - name: Publish to npm
         run: npm set //registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }} && npm publish

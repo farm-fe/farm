@@ -1,10 +1,10 @@
 import path from 'path';
-import { pathToFileURL } from 'url';
 import { expect, test } from 'vitest';
 import { JsPlugin } from '../src/index.js';
 import {
   getFixturesDir,
-  getCompiler as getInternalCompiler
+  getCompiler as getInternalCompiler,
+  getOutputResult
 } from './common.js';
 
 function getJsPluginsFixturesDir() {
@@ -52,14 +52,8 @@ test('Js Plugin Execution - resolve', async () => {
   await compiler.writeResourcesToDisk();
 
   const outputFilePath = getOutputFilePath('resolve');
-
-  if (process.platform === 'win32') {
-    const result = await import(pathToFileURL(outputFilePath).toString());
-    expect(result.default).toBe(2);
-  } else {
-    const result = await import(outputFilePath);
-    expect(result.default).toBe(2);
-  }
+  const result = await getOutputResult(outputFilePath);
+  expect(result.default).toBe(2);
 });
 
 test('Js Plugin Execution - load', async () => {
@@ -87,14 +81,8 @@ test('Js Plugin Execution - load', async () => {
   await compiler.writeResourcesToDisk();
 
   const outputFilePath = getOutputFilePath('load');
-
-  if (process.platform === 'win32') {
-    const result = await import(pathToFileURL(outputFilePath).toString());
-    expect(result.default).toBe(33);
-  } else {
-    const result = await import(outputFilePath);
-    expect(result.default).toBe(33);
-  }
+  const result = await getOutputResult(outputFilePath);
+  expect(result.default).toBe(33);
 });
 
 test('Js Plugin Execution - transform', async () => {
@@ -123,14 +111,8 @@ test('Js Plugin Execution - transform', async () => {
   await compiler.writeResourcesToDisk();
 
   const outputFilePath = getOutputFilePath('transform');
-
-  if (process.platform === 'win32') {
-    const result = await import(pathToFileURL(outputFilePath).toString());
-    expect(result.default).toBe(44);
-  } else {
-    const result = await import(outputFilePath);
-    expect(result.default).toBe(44);
-  }
+  const result = await getOutputResult(outputFilePath);
+  expect(result.default).toBe(44);
 });
 
 test('Js Plugin Execution - full', async () => {
@@ -204,12 +186,6 @@ test('Js Plugin Execution - full', async () => {
   expect(buildEndEexcuted).toBe(true);
 
   const outputFilePath = getOutputFilePath('full');
-
-  if (process.platform === 'win32') {
-    const result = await import(pathToFileURL(outputFilePath).toString());
-    expect(result.default).toBe(2);
-  } else {
-    const result = await import(outputFilePath);
-    expect(result.default).toBe(2);
-  }
+  const result = await getOutputResult(outputFilePath);
+  expect(result.default).toBe(2);
 });

@@ -585,6 +585,7 @@ impl Compiler {
           entry_id,
           &resource_pot_map,
           &resources_map,
+          &module_graph,
         ));
       }
 

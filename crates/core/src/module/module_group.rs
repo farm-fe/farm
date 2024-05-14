@@ -5,9 +5,9 @@ use petgraph::{
   visit::{Bfs, Dfs, DfsPostOrder, EdgeRef, IntoEdgeReferences},
 };
 
-use crate::resource::resource_pot::ResourcePotId;
+use crate::resource::{resource_pot::ResourcePotId, resource_pot_map::ResourcePotMap};
 
-use super::ModuleId;
+use super::{module_graph::ModuleGraph, ModuleId};
 
 /// A `entry_module_id -> ModuleGroup` map
 #[derive(Debug)]
@@ -305,6 +305,43 @@ impl ModuleGroup {
 
   pub fn resource_pots(&self) -> &HashSet<ResourcePotId> {
     &self.resource_pots
+  }
+
+  pub fn sorted_resource_pots(
+    &self,
+    module_graph: &ModuleGraph,
+    resource_pot_map: &ResourcePotMap,
+  ) -> Vec<ResourcePotId> {
+    let mut resource_pots_order_map = HashMap::<String, usize>::new();
+    let mut sorted_resource_pots = self
+      .resource_pots()
+      .iter()
+      .cloned()
+      .collect::<Vec<_>>();
+
+    sorted_resource_pots.iter().for_each(|rp| {
+      let rp = resource_pot_map.resource_pot(rp).unwrap();
+      let min_order = rp
+        .modules()
+        .iter()
+        .map(|m| {
+          let module = module_graph.module(m).unwrap();
+          module.execution_order
+        })
+        .min()
+        .unwrap_or(0);
+
+      resource_pots_order_map.insert(rp.id.to_string(), min_order);
+    });
+
+    sorted_resource_pots.sort_by(|a, b| {
+      let a_order = resource_pots_order_map.get(&a.to_string()).unwrap_or(&0);
+      let b_order = resource_pots_order_map.get(&b.to_string()).unwrap_or(&0);
+
+      a_order.cmp(b_order)
+    });
+
+    sorted_resource_pots
   }
 
   pub fn set_resource_pots(&mut self, resource_pots: HashSet<ResourcePotId>) {

@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use farmfe_core::{
   config::Mode,
   module::{
+    module_graph::ModuleGraph,
     module_group::{ModuleGroupGraph, ModuleGroupId},
     ModuleId,
   },
@@ -14,6 +15,7 @@ pub fn get_dynamic_resources_map(
   module_group_id: &ModuleGroupId,
   resource_pot_map: &ResourcePotMap,
   resources_map: &HashMap<String, Resource>,
+  module_graph: &ModuleGraph,
 ) -> HashMap<ModuleId, Vec<(String, ResourceType)>> {
   let mut dep_module_groups = vec![];
 
@@ -28,7 +30,7 @@ pub fn get_dynamic_resources_map(
   for mg_id in dep_module_groups {
     let mg = module_group_graph.module_group(&mg_id).unwrap();
 
-    for rp_id in mg.resource_pots() {
+    for rp_id in &mg.sorted_resource_pots(module_graph, resource_pot_map) {
       let rp = resource_pot_map.resource_pot(rp_id).unwrap_or_else(|| {
         panic!(
           "Resource pot {} not found in resource pot map",
@@ -68,11 +70,6 @@ pub fn get_dynamic_resources_map(
         dynamic_resources_map.insert(mg_id.clone(), resources);
       }
     }
-
-    // sort resources
-    if let Some(resources) = dynamic_resources_map.get_mut(&mg_id) {
-      resources.sort_by_key(|(name, _)| name.clone());
-    }
   }
 
   dynamic_resources_map
@@ -108,8 +105,6 @@ pub fn get_dynamic_resources_code(
     let id = module_id.id(mode.clone()).replace(r"\", r"\\");
     dynamic_resources_code_vec.push((id, resources_code));
   }
-
-  dynamic_resources_code_vec.sort_by_key(|(id, _)| id.clone());
 
   let mut dynamic_resources_code = dynamic_resources_code_vec
     .into_iter()

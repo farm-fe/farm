@@ -1,9 +1,10 @@
+use std::mem;
 use std::sync::Arc;
 use std::{collections::HashMap, path::PathBuf};
 
 use absolute_path_handler::AbsolutePathHandler;
 use deps_analyzer::{DepsAnalyzer, HtmlInlineModule, HTML_INLINE_ID_PREFIX};
-use farmfe_core::config::minify::MinifyOptions;
+// use farmfe_core::config::minify::MinifyOptions;
 use farmfe_core::parking_lot::Mutex;
 use farmfe_core::{cache_item, deserialize, serialize};
 use farmfe_core::{
@@ -23,7 +24,7 @@ use farmfe_core::{
     Resource, ResourceOrigin, ResourceType,
   },
 };
-use farmfe_toolkit::common::{create_swc_source_map, PathFilter, Source};
+use farmfe_toolkit::common::{create_swc_source_map, Source};
 use farmfe_toolkit::minify::minify_html_module;
 use farmfe_toolkit::{
   fs::read_file_utf8,
@@ -234,22 +235,6 @@ impl Plugin for FarmPluginHtml {
   ) -> farmfe_core::error::Result<Option<ResourcePotMetaData>> {
     if matches!(resource_pot.resource_pot_type, ResourcePotType::Html) {
       let modules = resource_pot.modules();
-      let is_enabled_minify = |module_id: &ModuleId| {
-        let minify_options = context
-          .config
-          .minify
-          .clone()
-          .map(|val| MinifyOptions::from(val))
-          .unwrap_or_default();
-
-        context.config.minify.enabled()
-          && matches!(
-            minify_options.mode,
-            farmfe_core::config::minify::MinifyMode::Module
-          )
-          && PathFilter::new(&minify_options.include, &minify_options.exclude)
-            .execute(&module_id.resolved_path(&context.config.root))
-      };
 
       if modules.len() != 1 {
         return Err(CompilationError::RenderHtmlResourcePotError {
@@ -260,22 +245,9 @@ impl Plugin for FarmPluginHtml {
 
       let module_graph = context.module_graph.read();
       let html_module = module_graph.module(modules[0]).unwrap();
-      let mut html_module_document = html_module.meta.as_html().ast.clone();
+      let html_module_document = html_module.meta.as_html().ast.clone();
 
-      let minify_enabled = is_enabled_minify(&html_module.id);
-
-      if minify_enabled {
-        let (cm, _) = create_swc_source_map(Source {
-          path: PathBuf::from(&resource_pot.name),
-          content: resource_pot.meta.rendered_content.clone(),
-        });
-
-        try_with(cm, &context.meta.html.globals, || {
-          minify_html_module(&mut html_module_document);
-        })?;
-      }
-
-      let code = Arc::new(codegen_html_document(&html_module_document, minify_enabled));
+      let code = Arc::new(codegen_html_document(&html_module_document, false));
 
       Ok(Some(ResourcePotMetaData {
         rendered_modules: std::collections::HashMap::from([(
@@ -414,31 +386,11 @@ impl Plugin for FarmPluginTransformHtml {
       // Found all resources in this entry html module group
       let mut dep_resources = vec![];
       let mut html_entry_resource = None;
-      let mut resource_pots_order_map = HashMap::<String, usize>::new();
-      // TODO make the resource pots order execution order when partial bundling
-      let mut sorted_resource_pots = module_group.resource_pots().into_iter().collect::<Vec<_>>();
-      sorted_resource_pots.iter().for_each(|rp| {
-        let rp = resource_pot_map.resource_pot(rp).unwrap();
-        let max_order = rp
-          .modules()
-          .iter()
-          .map(|m| {
-            let module = module_graph.module(m).unwrap();
-            module.execution_order
-          })
-          .min()
-          .unwrap_or(0);
 
-        resource_pots_order_map.insert(rp.id.to_string(), max_order);
-      });
-      sorted_resource_pots.sort_by(|a, b| {
-        let a_order = resource_pots_order_map.get(&a.to_string()).unwrap_or(&0);
-        let b_order = resource_pots_order_map.get(&b.to_string()).unwrap_or(&0);
+      let sorted_resource_pots =
+        module_group.sorted_resource_pots(&module_graph, &resource_pot_map);
 
-        a_order.cmp(b_order)
-      });
-
-      for rp_id in sorted_resource_pots {
+      for rp_id in &sorted_resource_pots {
         let rp = resource_pot_map.resource_pot(rp_id).unwrap_or_else(|| {
           panic!(
             "Resource pot {} not found in resource pot map",
@@ -461,6 +413,7 @@ impl Plugin for FarmPluginTransformHtml {
         &module_group_id,
         &resource_pot_map,
         &params.resources_map,
+        &module_graph,
       );
 
       resources_to_inject.insert(
@@ -549,5 +502,68 @@ impl Plugin for FarmPluginTransformHtml {
 impl FarmPluginTransformHtml {
   pub fn new(_: &Config) -> Self {
     Self {}
+  }
+}
+
+pub struct FarmPluginMinifyHtml {}
+
+impl FarmPluginMinifyHtml {
+  pub fn new(_: &Config) -> Self {
+    Self {}
+  }
+}
+
+impl Plugin for FarmPluginMinifyHtml {
+  fn name(&self) -> &str {
+    "FarmPluginMinifyHtml"
+  }
+
+  fn priority(&self) -> i32 {
+    -99
+  }
+
+  fn finalize_resources(
+    &self,
+    params: &mut PluginFinalizeResourcesHookParams,
+    context: &Arc<CompilationContext>,
+  ) -> farmfe_core::error::Result<Option<()>> {
+    for resource in params.resources_map.values_mut() {
+      if matches!(resource.resource_type, ResourceType::Html) {
+        let bytes = mem::take(&mut resource.bytes);
+        let html_code = Arc::new(String::from_utf8(bytes).unwrap());
+        let mut html_ast = match parse_html_document(&resource.name, html_code.clone()) {
+          Ok(ast) => ast,
+          Err(err) => {
+            let farm_debug_html_minify = "FARM_DEBUG_HTML_MINIFY";
+
+            if let Ok(_) = std::env::var(farm_debug_html_minify) {
+              println!(
+                "Can not minify html {} due to html syntax error: {}",
+                resource.name,
+                err.to_string()
+              );
+            } else {
+              println!("Can not minify html {} due to html syntax error. Try {farm_debug_html_minify}=1 to see error details", resource.name);
+            }
+            resource.bytes = Arc::try_unwrap(html_code).unwrap().into_bytes();
+            return Ok(Some(()));
+          }
+        };
+
+        let (cm, _) = create_swc_source_map(Source {
+          path: PathBuf::from(&resource.name),
+          content: html_code.clone(),
+        });
+
+        try_with(cm, &context.meta.html.globals, || {
+          minify_html_module(&mut html_ast);
+        })?;
+
+        let html_code = codegen_html_document(&html_ast, true);
+        resource.bytes = html_code.into_bytes();
+      }
+    }
+
+    Ok(Some(()))
   }
 }
