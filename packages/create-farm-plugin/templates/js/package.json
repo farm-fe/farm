@@ -24,9 +24,9 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "@farmfe/cli": "^1.0.1",
-    "@farmfe/core": "^1.1.1",
-    "@farmfe/js-plugin-dts": "^0.5.1",
+    "@farmfe/cli": "^1.0.2",
+    "@farmfe/core": "^1.1.5",
+    "@farmfe/js-plugin-dts": "^0.5.2",
     "@types/node": "^20.11.16",
     "cross-env": "^7.0.3"
   },
