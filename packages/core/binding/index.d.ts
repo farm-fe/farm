@@ -1,3 +1,5 @@
+import { JsPlugin } from '../dist/index.d.ts'
+
 export type ModuleType =
   | 'ts'
   | 'js'
