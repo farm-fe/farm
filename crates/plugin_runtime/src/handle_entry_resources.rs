@@ -238,7 +238,7 @@ fn get_entry_resource_and_dep_resources_name(
 
     if let Some(entry) = &resource_pot.entry_module {
       if entry != &module.id {
-        panic!("entry module is not equal to module id");
+        panic!("entry module is not equal to module id, maybe entry imports another entry");
       }
 
       for resource_id in resource_pot.resources() {

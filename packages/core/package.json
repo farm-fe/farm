@@ -1,6 +1,6 @@
 {
   "name": "@farmfe/core",
-  "version": "1.1.5",
+  "version": "1.1.6",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "type": "module",
@@ -75,6 +75,7 @@
     "binding/index.d.ts",
     "binding/index.js",
     "binding/resolve-binding.cjs",
+    "binding/swc-config.d.ts",
     "dist",
     "cjs",
     "client.d.ts",

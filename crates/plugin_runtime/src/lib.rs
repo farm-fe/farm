@@ -446,13 +446,11 @@ impl Plugin for FarmPluginRuntime {
         let mut external_objs = Vec::new();
 
         for source in external_modules {
-          let replace_source = match external_config.find_match(&source) {
-            Some(v) => Ok(v.source(&source)),
-            None => Err(CompilationError::GenericError(format!(
-              "cannot find external source: {:?}",
-              source
-            ))),
-          }?;
+          let replace_source = external_config
+            .find_match(&source)
+            .map(|v| v.source(&source))
+            // it's maybe from plugin
+            .unwrap_or(source.clone());
 
           let source_obj = format!("(globalThis||window||{{}})['{}']||{{}}", replace_source);
           external_objs.push(if context.config.output.format == ModuleFormat::EsModule {

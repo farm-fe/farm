@@ -1,5 +1,11 @@
 # @farmfe/core
 
+## 1.1.6
+
+### Patch Changes
+
+- bf98b34a: fix publish cannot find type
+
 ## 1.1.5
 
 ### Patch Changes
