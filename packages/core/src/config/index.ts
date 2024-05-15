@@ -212,6 +212,7 @@ export async function resolveConfig(
     mode
   );
 
+  resolvedUserConfig.compilation.mode = mode;
   resolvedUserConfig.root = resolvedUserConfig.compilation.root;
   resolvedUserConfig.jsPlugins = sortFarmJsPlugins;
   resolvedUserConfig.rustPlugins = rustPlugins;
