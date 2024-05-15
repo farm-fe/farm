@@ -1,0 +1,38 @@
+{
+  "name": "create-farm-rs",
+  "version": "0.0.1",
+  "description": "",
+  "main": "index.js",
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "types": "index.d.ts",
+  "napi": {
+    "name": "create-farm",
+    "triples": {
+      "additional": [
+        "aarch64-apple-darwin",
+        "aarch64-unknown-linux-gnu",
+        "aarch64-unknown-linux-musl",
+        "armv7-unknown-linux-gnueabihf",
+        "x86_64-unknown-linux-musl",
+        "i686-pc-windows-msvc",
+        "aarch64-pc-windows-msvc"
+      ]
+    }
+  },
+  "bin": {
+    "create-farm-rs": "create-farm.js"
+  },
+  "scripts": {
+    "create-farm": "node ./create-farm.js",
+    "artifacts": "napi artifacts",
+    "build": "napi build --platform --release",
+    "build:debug": "napi build --platform",
+    "prepublishOnly": "napi prepublish -t npm --gh-release-id $RELEASE_ID",
+    "version": "napi version"
+  },
+  "devDependencies": {
+    "@napi-rs/cli": "2.18.3"
+  }
+}

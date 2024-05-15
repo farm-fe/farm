@@ -73,6 +73,12 @@ importers:
         specifier: ^1.4.0
         version: 1.4.0(@types/node@18.18.8)(less@4.2.0)(sass@1.74.1)
 
+  crates/create-farm-rs:
+    devDependencies:
+      '@napi-rs/cli':
+        specifier: 2.18.3
+        version: 2.18.3
+
   examples/arco-pro:
     dependencies:
       '@antv/data-set':
@@ -2031,6 +2037,12 @@ importers:
         specifier: ^2.4.2
         version: 2.4.2
 
+  packages/create-farm-node:
+    devDependencies:
+      '@napi-rs/cli':
+        specifier: 2.18.3
+        version: 2.18.3
+
   packages/create-farm-plugin:
     devDependencies:
       '@farmfe/cli':
@@ -3380,6 +3392,11 @@ packages:
 
   '@napi-rs/cli@2.16.5':
     resolution: {integrity: sha512-mFEzwrg4IOLngGd2/P6yeqIWgwQNn59Z08n1rndu6kLDq1gg954NH9cM1O9Da0RJuybt46p43lqgSsnAY2mxqA==}
+    engines: {node: '>= 10'}
+    hasBin: true
+
+  '@napi-rs/cli@2.18.3':
+    resolution: {integrity: sha512-L0f4kP0dyG8W5Qtc7MtP73VvLLrOLyRcUEBzknIfu8Jk4Jfhrsx1ItMHgyalYqMSslWdY3ojEfAaU5sx1VyeQQ==}
     engines: {node: '>= 10'}
     hasBin: true
 
@@ -11808,6 +11825,8 @@ snapshots:
       state-local: 1.0.7
 
   '@napi-rs/cli@2.16.5': {}
+
+  '@napi-rs/cli@2.18.3': {}
 
   '@nodelib/fs.scandir@2.1.5':
     dependencies:

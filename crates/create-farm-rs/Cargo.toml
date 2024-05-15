@@ -1,0 +1,33 @@
+[package]
+name = "create-farm"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+
+[[bin]]
+name = "create-farm"
+path = "src/main.rs"
+
+[profile.release]
+panic = "abort"
+codegen-units = 1
+lto = true
+opt-level = "s"
+strip = true
+
+[dependencies]
+anyhow = "1"
+pico-args = "0.5"
+dialoguer = "0.10"
+# Default enable napi4 feature, see https://nodejs.org/api/n-api.html#node-api-version-matrix
+napi = { version = "2.15.2", default-features = false, features = [
+  "napi4",
+  "serde-json",
+] }
+napi-derive = "2.15.2"
+rust-embed = { version = "8.3", features = [ "compression", "interpolate-folder-path" ] }
+
+[build-dependencies]
+napi-build = "2.0.1"

@@ -20,7 +20,9 @@ jobs:
               npm run build:rs:publish -- --target x86_64-unknown-linux-gnu &&
               cd ../../rust-plugins/react && npm run build -- --target x86_64-unknown-linux-gnu --abi linux-x64-gnu &&
               apt install -y protobuf-compiler &&
-              cd ../sass && npm run build -- --target x86_64-unknown-linux-gnu --abi linux-x64-gnu
+              cd ../sass && npm run build -- --target x86_64-unknown-linux-gnu --abi linux-x64-gnu &&
+              cd packages/create-farm-node &&
+              npm run build -- --target x86_64-unknown-linux-gnu
           - os: ubuntu-latest
             docker: ghcr.io/napi-rs/napi-rs/nodejs-rust:lts-alpine
             abi: linux-x64-musl
@@ -32,7 +34,9 @@ jobs:
               npm run build:rs:publish -- --target x86_64-unknown-linux-musl &&
               cd ../../rust-plugins/react && npm run build -- --target x86_64-unknown-linux-musl --abi linux-x64-musl &&
               apk add protobuf &&
-              cd ../sass && npm run build -- --target x86_64-unknown-linux-musl --abi linux-x64-musl
+              cd ../sass && npm run build -- --target x86_64-unknown-linux-musl --abi linux-x64-musl &&
+              cd packages/create-farm-node &&
+              npm run build -- --target x86_64-unknown-linux-gnu
           - os: windows-latest
             abi: win32-x64-msvc
           - os: macos-13
@@ -50,7 +54,9 @@ jobs:
               cargo install cargo-xwin
               cd packages/core && npm run build:rs -- --target i686-pc-windows-msvc --cargo-flags="--no-default-features"
               cd ../../rust-plugins/react && npm run build -- --target i686-pc-windows-msvc --abi win32-ia32-msvc
-              cd ../sass && npm run build -- --target i686-pc-windows-msvc --abi win32-ia32-msvc
+              cd ../sass && npm run build -- --target i686-pc-windows-msvc --abi win32-ia32-msvc &&
+              cd packages/create-farm-node &&
+              npm run build -- --target x86_64-unknown-linux-gnu
           - os: windows-latest
             abi: win32-arm64-msvc
             target: aarch64-pc-windows-msvc
@@ -61,6 +67,8 @@ jobs:
               cd packages/core && npm run build:rs -- --target aarch64-pc-windows-msvc --cargo-flags="--no-default-features"
               cd ../../rust-plugins/react && npm run build -- --target aarch64-pc-windows-msvc --abi win32-arm64-msvc
               cd ../sass && npm run build -- --target aarch64-pc-windows-msvc --abi win32-arm64-msvc
+              cd packages/create-farm-node &&
+              npm run build -- --target x86_64-unknown-linux-gnu
           # linux
           - os: ubuntu-latest
             abi: linux-arm64-musl
@@ -119,6 +127,7 @@ jobs:
           cd packages/core && npm run build:rs:publish -- ${{ matrix.settings.target && format('--target {0}', matrix.settings.target) || '' }} ${{ matrix.settings.zig && '--zig' || '' }} &&
           cd ../../rust-plugins/react && npm run build -- ${{ matrix.settings.target && format('--target {0}', matrix.settings.target) || '' }} ${{ matrix.settings.zig && '--zig' || '' }} --abi ${{ matrix.settings.abi }} &&
           cd ../sass && npm run build -- ${{ matrix.settings.target && format('--target {0}', matrix.settings.target) || '' }} ${{ matrix.settings.zig && '--zig' || '' }} --abi ${{ matrix.settings.abi }}
+          cd packages/create-farm-node && npm run build -- ${{ matrix.settings.target && format('--target {0}', matrix.settings.target) || '' }} ${{ matrix.settings.zig && '--zig' || '' }} --abi ${{ matrix.settings.abi }}
         shell: bash
       - name: Build
         if: ${{ !matrix.settings.docker && matrix.settings.build }}
@@ -129,6 +138,11 @@ jobs:
         with:
           name: ${{ github.sha }}-${{ matrix.settings.abi }}
           path: ./packages/core/binding/farm.${{ matrix.settings.abi }}.node
+      - name: Upload Create Farm Rust
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}-create-farm
+          path: ./packages/create-farm-node/binding/create-farm.${{ matrix.settings.abi }}.node
       - name: Upload Plugin React
         uses: actions/upload-artifact@v3
         with:
