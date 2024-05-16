@@ -2,6 +2,7 @@ use std::collections::VecDeque;
 use std::collections::{HashMap, HashSet};
 
 use farmfe_core::petgraph::Direction;
+use farmfe_core::swc_common::comments::SingleThreadedComments;
 use farmfe_core::swc_common::Mark;
 use farmfe_core::swc_ecma_ast::{Id, ImportSpecifier, ModuleDecl, ModuleExportName};
 use farmfe_core::{
@@ -93,13 +94,13 @@ pub enum StatementSideEffects {
   /// ```
   WriteTopLevelVar(HashSet<Id>),
 
-  /// Access global variable, it's always preserved, for example:
+  /// Maybe modify global variable, it's always preserved, for example:
   /// ```js
   /// console.log('123');
   /// window.b = 3;
   /// document.body.addEventListener('click', () =/*  */> {});
   /// ```
-  AccessGlobalVar, // TODO investigate how top level mark works
+  WriteOrCallGlobalVar,
 
   /// Unclassified default self executed statements are always treated as side effects. For example:
   /// ```js
@@ -114,9 +115,6 @@ pub enum StatementSideEffects {
   ///  console.log('123');
   /// }
   /// foo();
-  /// for (let i = 0; i < 10; i++) {
-  ///  window['a' + i] = i;
-  /// }
   /// ```
   /// They may be classified in the future to improve the accuracy of tree shaking
   UnclassifiedSelfExecuted,
@@ -130,7 +128,10 @@ pub enum StatementSideEffects {
 
 impl StatementSideEffects {
   pub fn is_preserved(&self) -> bool {
-    matches!(self, Self::AccessGlobalVar | Self::UnclassifiedSelfExecuted)
+    matches!(
+      self,
+      Self::WriteOrCallGlobalVar | Self::UnclassifiedSelfExecuted
+    )
   }
 
   pub fn merge_side_effects(&mut self, other: Self) {
@@ -141,8 +142,8 @@ impl StatementSideEffects {
         a.extend(b.iter().cloned());
       }
       (Self::NoSideEffects, _) => original_self_value = other,
-      (Self::AccessGlobalVar | Self::UnclassifiedSelfExecuted, _) => {}
-      (Self::WriteTopLevelVar(_), Self::AccessGlobalVar | Self::UnclassifiedSelfExecuted) => {
+      (Self::WriteOrCallGlobalVar | Self::UnclassifiedSelfExecuted, _) => {}
+      (Self::WriteTopLevelVar(_), Self::WriteOrCallGlobalVar | Self::UnclassifiedSelfExecuted) => {
         original_self_value = other;
       }
       (_, Self::NoSideEffects) => {}
@@ -204,6 +205,7 @@ impl Statement {
     stmt: &ModuleItem,
     unresolved_mark: Mark,
     top_level_mark: Mark,
+    comments: &SingleThreadedComments,
   ) -> Self {
     // 1. analyze all import, export and defined idents of the ModuleItem
     let AnalyzedStatementInfo {
@@ -217,6 +219,7 @@ impl Statement {
       stmt,
       unresolved_mark,
       top_level_mark,
+      comments,
     );
 
     Self {
@@ -265,14 +268,19 @@ pub struct StatementGraph {
 }
 
 impl StatementGraph {
-  pub fn new(module: &SwcModule, unresolved_mark: Mark, top_level_mark: Mark) -> Self {
+  pub fn new(
+    module: &SwcModule,
+    unresolved_mark: Mark,
+    top_level_mark: Mark,
+    comments: &SingleThreadedComments,
+  ) -> Self {
     let mut g = petgraph::graph::Graph::new();
     let mut id_index_map = HashMap::new();
 
     let mut reverse_defined_idents_map = HashMap::new();
     // 1. analyze all defined idents of each statement
     for (index, item) in module.body.iter().enumerate() {
-      let stmt = Statement::new(index, item, unresolved_mark, top_level_mark);
+      let stmt = Statement::new(index, item, unresolved_mark, top_level_mark, comments);
 
       // export named does not define any idents
       if !matches!(item, ModuleItem::ModuleDecl(ModuleDecl::ExportNamed(_))) {
@@ -328,6 +336,24 @@ impl StatementGraph {
       .filter(|i| self.g[*i].side_effects.is_preserved())
       .map(|i| self.g[i].id)
       .collect()
+  }
+
+  pub fn contains_bare_import_stmt(&self) -> bool {
+    self
+      .stmt_ids()
+      .into_iter()
+      .any(|stmt_id| self.is_bare_import_stmt(stmt_id))
+  }
+
+  /// true if stmt is import './xxx'. (without specifiers)
+  pub fn is_bare_import_stmt(&self, stmt_id: StatementId) -> bool {
+    let stmt = self.stmt(&stmt_id);
+
+    if let Some(import_info) = &stmt.import_info {
+      return import_info.specifiers.is_empty();
+    }
+
+    false
   }
 
   pub fn add_edge(&mut self, from: StatementId, to: StatementId, edge_weight: StatementGraphEdge) {
@@ -599,7 +625,7 @@ impl StatementGraph {
               all_dept_used_idents.extend(dept_used_idents);
             }
           }
-          StatementSideEffects::AccessGlobalVar
+          StatementSideEffects::WriteOrCallGlobalVar
           | StatementSideEffects::UnclassifiedSelfExecuted
           | StatementSideEffects::NoSideEffects => { /* These 3 types are handled already */ }
         }

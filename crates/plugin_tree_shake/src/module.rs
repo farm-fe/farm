@@ -5,7 +5,7 @@ use std::{
 
 use farmfe_core::{
   module::{Module, ModuleId, ModuleSystem},
-  swc_common::Mark,
+  swc_common::{comments::SingleThreadedComments, Mark},
 };
 
 use crate::statement_graph::{
@@ -67,6 +67,13 @@ impl Default for UsedExports {
 }
 
 impl UsedExports {
+  pub fn as_partial(&self) -> &HashSet<UsedExportsIdent> {
+    match self {
+      UsedExports::All => panic!("UsedExports is not Partial"),
+      UsedExports::Partial(res) => res,
+    }
+  }
+
   pub fn add_used_export(&mut self, used_export: UsedExportsIdent) {
     // All means all exports are used, only handle Partial here
     if let UsedExports::Partial(used_exports) = self {
@@ -122,7 +129,7 @@ pub struct TreeShakeModule {
 }
 
 impl TreeShakeModule {
-  pub fn new(module: &Module) -> Self {
+  pub fn new(module: &mut Module) -> Self {
     farmfe_core::farm_profile_function!(format!(
       "TreeShakeModule::new {:?}",
       module.id.to_string()
@@ -130,15 +137,17 @@ impl TreeShakeModule {
     let module_system = module.meta.as_script().module_system.clone();
 
     // 1. generate statement graph
+    let comments_meta = module.meta.as_script_mut().take_comments();
     let ast = &module.meta.as_script().ast;
     let unresolved_mark = Mark::from_u32(module.meta.as_script().unresolved_mark);
     let top_level_mark = Mark::from_u32(module.meta.as_script().top_level_mark);
-
+    let comments = SingleThreadedComments::from(comments_meta);
     let stmt_graph = if module_system == ModuleSystem::EsModule {
-      StatementGraph::new(ast, unresolved_mark, top_level_mark)
+      StatementGraph::new(ast, unresolved_mark, top_level_mark, &comments)
     } else {
       StatementGraph::empty()
     };
+    module.meta.as_script_mut().set_comments(comments.into());
 
     // 2. set default used exports
     let handled_used_exports = if module.side_effects {
@@ -150,6 +159,8 @@ impl TreeShakeModule {
     Self {
       module_id: module.id.clone(),
       contains_self_executed_stmt: module.side_effects
+        || !matches!(module_system, ModuleSystem::EsModule)
+        || stmt_graph.contains_bare_import_stmt()
         || !stmt_graph.preserved_side_effects_stmts().is_empty(),
       stmt_graph,
       pending_used_exports: handled_used_exports.clone(),
@@ -355,7 +366,10 @@ impl TreeShakeModule {
               // skip default for export * from 'xxx'
               if ident != *"default" {
                 for export_all_stmt_id in export_all_stmt_id {
-                  used_idents.push((UsedStatementIdent::InExportAll(ident), export_all_stmt_id));
+                  used_idents.push((
+                    UsedStatementIdent::InExportAll(ident.clone()),
+                    export_all_stmt_id,
+                  ));
                 }
               }
             }

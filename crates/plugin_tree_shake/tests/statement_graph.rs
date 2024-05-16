@@ -3,7 +3,9 @@ use std::{
   collections::{HashMap, HashSet},
 };
 
-use farmfe_core::swc_common::{Globals, Mark, SyntaxContext, GLOBALS};
+use farmfe_core::swc_common::{
+  comments::SingleThreadedComments, Globals, Mark, SyntaxContext, GLOBALS,
+};
 
 mod common;
 
@@ -39,7 +41,12 @@ export { a, b, c as d };"#;
   GLOBALS.set(&Globals::new(), || {
     let (ast, _) = parse_module(code);
 
-    let stmt_graph = StatementGraph::new(&ast, Mark::new(), Mark::new());
+    let stmt_graph = StatementGraph::new(
+      &ast,
+      Mark::new(),
+      Mark::new(),
+      &SingleThreadedComments::default(),
+    );
     assert_eq!(stmt_graph.stmts().len(), 7);
     let mut edges = stmt_graph.edges();
     edges.sort_by(|a, b| {
@@ -251,7 +258,12 @@ export { a, b, c as d };"#;
   GLOBALS.set(&Globals::new(), || {
     let (ast, _) = parse_module(code);
 
-    let mut stmt_graph = StatementGraph::new(&ast, Mark::new(), Mark::new());
+    let mut stmt_graph = StatementGraph::new(
+      &ast,
+      Mark::new(),
+      Mark::new(),
+      &SingleThreadedComments::default(),
+    );
 
     let traced_import_stmts = stmt_graph.trace_and_mark_used_statements(HashMap::from([
       (5, HashSet::from([UsedStatementIdent::Default])),
@@ -267,9 +279,13 @@ export { a, b, c as d };"#;
     assert_eq!(traced_import_stmts.len(), 1);
     assert_eq!(traced_import_stmts[0].stmt_id, 0);
     assert_eq!(traced_import_stmts[0].source, "./foo");
-    assert_eq!(traced_import_stmts[0].used_stmt_idents.len(), 1);
+    assert_eq!(
+      traced_import_stmts[0].used_stmt_idents.as_partial().len(),
+      1
+    );
     assert!(traced_import_stmts[0]
       .used_stmt_idents
+      .as_partial()
       .contains(&UsedExportsIdent::SwcIdent("aValue".to_string())));
 
     let mut used_stmts = stmt_graph
@@ -327,7 +343,12 @@ export { a, b, c as d };"#;
   GLOBALS.set(&Globals::new(), || {
     let (ast, _) = parse_module(code);
 
-    let mut stmt_graph = StatementGraph::new(&ast, Mark::new(), Mark::new());
+    let mut stmt_graph = StatementGraph::new(
+      &ast,
+      Mark::new(),
+      Mark::new(),
+      &SingleThreadedComments::default(),
+    );
 
     let traced_import_stmts = stmt_graph.trace_and_mark_used_statements(HashMap::from([(
       6,
@@ -340,9 +361,13 @@ export { a, b, c as d };"#;
     assert_eq!(traced_import_stmts.len(), 1);
     assert_eq!(traced_import_stmts[0].stmt_id, 0);
     assert_eq!(traced_import_stmts[0].source, "./foo");
-    assert_eq!(traced_import_stmts[0].used_stmt_idents.len(), 1);
+    assert_eq!(
+      traced_import_stmts[0].used_stmt_idents.as_partial().len(),
+      1
+    );
     assert!(traced_import_stmts[0]
       .used_stmt_idents
+      .as_partial()
       .contains(&UsedExportsIdent::SwcIdent("aValue".to_string())));
 
     let mut used_stmts = stmt_graph
@@ -385,7 +410,12 @@ fn trace_and_mark_used_statements_commonjs_exports() {
   GLOBALS.set(&Globals::new(), || {
     let (ast, _) = parse_module(code);
 
-    let mut stmt_graph = StatementGraph::new(&ast, Mark::new(), Mark::new());
+    let mut stmt_graph = StatementGraph::new(
+      &ast,
+      Mark::new(),
+      Mark::new(),
+      &SingleThreadedComments::default(),
+    );
 
     let traced_import_stmts = stmt_graph.trace_and_mark_used_statements(Default::default());
 
@@ -425,7 +455,12 @@ export const {
   GLOBALS.set(&Globals::new(), || {
     let (ast, _) = parse_module(code);
 
-    let mut stmt_graph = StatementGraph::new(&ast, Mark::new(), Mark::new());
+    let mut stmt_graph = StatementGraph::new(
+      &ast,
+      Mark::new(),
+      Mark::new(),
+      &SingleThreadedComments::default(),
+    );
 
     let traced_import_stmts = stmt_graph.trace_and_mark_used_statements(HashMap::from([(
       1,
@@ -438,9 +473,13 @@ export const {
     assert_eq!(traced_import_stmts.len(), 1);
     assert_eq!(traced_import_stmts[0].stmt_id, 0);
     assert_eq!(traced_import_stmts[0].source, "./command.js");
-    assert_eq!(traced_import_stmts[0].used_stmt_idents.len(), 1);
+    assert_eq!(
+      traced_import_stmts[0].used_stmt_idents.as_partial().len(),
+      1
+    );
     assert!(traced_import_stmts[0]
       .used_stmt_idents
+      .as_partial()
       .contains(&UsedExportsIdent::Default));
 
     let mut used_stmts = stmt_graph

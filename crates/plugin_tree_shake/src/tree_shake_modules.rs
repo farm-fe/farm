@@ -6,7 +6,7 @@ use farmfe_core::{
 };
 
 use crate::{
-  module::{TreeShakeModule, UsedExportsIdent},
+  module::{TreeShakeModule, UsedExports},
   statement_graph::traced_used_import::TracedUsedImportStatement,
 };
 
@@ -114,15 +114,22 @@ pub fn tree_shake_modules(
           let dep_id = module_graph.get_dep_by_source(&tree_shake_module_id, &source, Some(kind));
 
           if let Some(dep_tree_shake_module) = tree_shake_modules_map.get_mut(&dep_id) {
-            // add all unhandled used stmt idents to pending_used_exports
-            for used_stmt_ident in used_stmt_idents {
-              if !dep_tree_shake_module
-                .handled_used_exports
-                .contains(&used_stmt_ident)
-              {
-                dep_tree_shake_module
-                  .pending_used_exports
-                  .add_used_export(used_stmt_ident);
+            match used_stmt_idents {
+              UsedExports::All => {
+                dep_tree_shake_module.pending_used_exports.set_export_all();
+              }
+              UsedExports::Partial(used_stmt_idents) => {
+                // add all unhandled used stmt idents to pending_used_exports
+                for used_stmt_ident in used_stmt_idents {
+                  if !dep_tree_shake_module
+                    .handled_used_exports
+                    .contains(&used_stmt_ident)
+                  {
+                    dep_tree_shake_module
+                      .pending_used_exports
+                      .add_used_export(used_stmt_ident);
+                  }
+                }
               }
             }
           }
@@ -233,7 +240,7 @@ fn trace_and_mark_used_statements(
           // stmt_id for dynamic import is not available, so we use a random number
           stmt_id: 19990112,
           source: edge_item.source.clone(),
-          used_stmt_idents: HashSet::from([UsedExportsIdent::ExportAll]),
+          used_stmt_idents: UsedExports::All,
           kind: edge_item.kind.clone(),
         });
       }

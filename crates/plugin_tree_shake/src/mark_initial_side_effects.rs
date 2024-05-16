@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use farmfe_core::module::{module_graph::ModuleGraph, ModuleId};
 
-use crate::module::TreeShakeModule;
+use crate::module::{TreeShakeModule, UsedExports};
 
 pub fn mark_initial_side_effects(
   module_graph: &ModuleGraph,
@@ -10,10 +10,10 @@ pub fn mark_initial_side_effects(
 ) -> Vec<ModuleId> {
   let mut entry_module_ids = vec![];
 
-  // mark entry modules as side_effects
   for (entry_module_id, _) in module_graph.entries.clone() {
+    // mark entry modules as UsedExports::All
     if let Some(tree_shake_module) = tree_shake_modules_map.get_mut(&entry_module_id) {
-      tree_shake_module.side_effects = true;
+      tree_shake_module.pending_used_exports = UsedExports::All;
     }
 
     entry_module_ids.push(entry_module_id);
@@ -42,21 +42,21 @@ pub fn mark_initial_side_effects(
     }
   }
 
-  // update contains_self_executed_stmt for the tree_shake_modules
-  for tree_shake_module_id in module_graph.toposort().0 {
-    if let Some(tree_shake_module) = tree_shake_modules_map.get(&tree_shake_module_id) {
-      let contains_self_executed_stmt = tree_shake_module.contains_self_executed_stmt;
-      module_graph
-        .dependents_ids(&tree_shake_module_id)
-        .into_iter()
-        .for_each(|dept_id| {
-          if let Some(dept_tree_shake_module) = tree_shake_modules_map.get_mut(&dept_id) {
-            dept_tree_shake_module.contains_self_executed_stmt =
-              dept_tree_shake_module.contains_self_executed_stmt || contains_self_executed_stmt
-          }
-        });
-    }
-  }
+  // // update contains_self_executed_stmt for the tree_shake_modules
+  // for tree_shake_module_id in module_graph.toposort().0 {
+  //   if let Some(tree_shake_module) = tree_shake_modules_map.get(&tree_shake_module_id) {
+  //     let contains_self_executed_stmt = tree_shake_module.contains_self_executed_stmt;
+  //     module_graph
+  //       .dependents_ids(&tree_shake_module_id)
+  //       .into_iter()
+  //       .for_each(|dept_id| {
+  //         if let Some(dept_tree_shake_module) = tree_shake_modules_map.get_mut(&dept_id) {
+  //           dept_tree_shake_module.contains_self_executed_stmt =
+  //             dept_tree_shake_module.contains_self_executed_stmt || contains_self_executed_stmt
+  //         }
+  //       });
+  //   }
+  // }
 
   entry_module_ids
 }

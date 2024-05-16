@@ -1,0 +1,26 @@
+import { defineConfig } from '@farmfe/core'
+
+export default defineConfig({
+  compilation: {
+    input: {
+      index: './src/button/index.ts'
+    },
+    output: {
+      path: 'build'
+    },
+    partialBundling: {
+      enforceResources: [
+        {
+          name: 'button',
+          test: ['.+']
+        }
+      ]
+    },
+    external: ['^react$', '^react-dom$'],
+    presetEnv: false,
+    sourcemap: true,
+    persistentCache: false,
+    minify: false
+  },
+  plugins: ['@farmfe/plugin-react', '@farmfe/plugin-sass']
+});

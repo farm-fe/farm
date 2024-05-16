@@ -39,8 +39,8 @@ export default 'default';
 
   let globals = Globals::new();
   GLOBALS.set(&globals, || {
-    let (module, cm) = create_module(code);
-    let mut tree_shake_module = TreeShakeModule::new(&module);
+    let (mut module, cm) = create_module(code);
+    let mut tree_shake_module = TreeShakeModule::new(&mut module);
     tree_shake_module.pending_used_exports = UsedExports::Partial(HashSet::from([
       UsedExportsIdent::Default,
       UsedExportsIdent::SwcIdent("j".to_string()),
@@ -56,7 +56,7 @@ export default 'default';
     module_graph.add_module(module);
     let mut module_src_bar = create_module("").0;
     module_src_bar.id = "src/bar".into();
-    tree_shake_module_map.insert("src/bar".into(), TreeShakeModule::new(&module_src_bar));
+    tree_shake_module_map.insert("src/bar".into(), TreeShakeModule::new(&mut module_src_bar));
     module_graph.add_module(module_src_bar);
     module_graph
       .add_edge(
@@ -115,8 +115,8 @@ export * from './src/foo';
 
   let globals = Globals::new();
   GLOBALS.set(&globals, || {
-    let (module, cm) = create_module(code);
-    let mut tree_shake_module = TreeShakeModule::new(&module);
+    let (mut module, cm) = create_module(code);
+    let mut tree_shake_module = TreeShakeModule::new(&mut module);
     // tree_shake_module.used_exports = UsedExports::Partial(HashMap::from([(
     //   "index.ts".into(),
     //   vec!["a".to_string(), "c".to_string(), "d".to_string()],
@@ -160,8 +160,8 @@ export * from './src/bar';
 
   let globals = Globals::new();
   GLOBALS.set(&globals, || {
-    let (module, cm) = create_module(code);
-    let mut tree_shake_module = TreeShakeModule::new(&module);
+    let (mut module, cm) = create_module(code);
+    let mut tree_shake_module = TreeShakeModule::new(&mut module);
     tree_shake_module.pending_used_exports = UsedExports::Partial(HashSet::from([
       UsedExportsIdent::SwcIdent("c".to_string()),
       UsedExportsIdent::SwcIdent("d".to_string()),
@@ -174,7 +174,7 @@ export * from './src/bar';
     module_graph.add_module(module);
     let mut module_foo = create_module("").0;
     module_foo.id = "src/foo".into();
-    tree_shake_module_map.insert("src/foo".into(), TreeShakeModule::new(&module_foo));
+    tree_shake_module_map.insert("src/foo".into(), TreeShakeModule::new(&mut module_foo));
     module_graph.add_module(module_foo);
     module_graph
       .add_edge(
@@ -241,8 +241,8 @@ fn remove_useless_stmts_nested_defined_idents() {
 
   let globals = Globals::new();
   GLOBALS.set(&globals, || {
-    let (module, cm) = create_module(code);
-    let mut tree_shake_module = TreeShakeModule::new(&module);
+    let (mut module, cm) = create_module(code);
+    let mut tree_shake_module = TreeShakeModule::new(&mut module);
     tree_shake_module.pending_used_exports = UsedExports::All;
     tree_shake_module.trace_and_mark_used_statements();
 

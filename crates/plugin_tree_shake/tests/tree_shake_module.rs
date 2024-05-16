@@ -25,9 +25,9 @@ export function i() {}
 export class j {}
 export default 'default';
   "#;
-  let module = create_module_with_globals(code);
+  let mut module = create_module_with_globals(code);
 
-  let mut tree_shake_module = TreeShakeModule::new(&module);
+  let mut tree_shake_module = TreeShakeModule::new(&mut module);
   tree_shake_module.pending_used_exports = UsedExports::Partial(HashSet::from([
     UsedExportsIdent::SwcIdent("a".to_string()),
     UsedExportsIdent::SwcIdent("d".to_string()),
@@ -81,9 +81,9 @@ export default 'default';
 #[test]
 fn used_exports_idents_export_all() {
   let code = "export const a = 1; export * from './foo'";
-  let module = create_module_with_globals(code);
+  let mut module = create_module_with_globals(code);
 
-  let mut tree_shake_module = TreeShakeModule::new(&module);
+  let mut tree_shake_module = TreeShakeModule::new(&mut module);
   // tree_shake_module.used_exports =
   //   UsedExports::Partial(HashMap::from([("index".into(), vec!["a".to_string()])]));
   tree_shake_module.pending_used_exports =
@@ -101,9 +101,9 @@ fn used_exports_idents_export_all() {
   let code = r#"
 export * from './foo';
 export const b = 2;"#;
-  let module = create_module_with_globals(code);
+  let mut module = create_module_with_globals(code);
 
-  let mut tree_shake_module = TreeShakeModule::new(&module);
+  let mut tree_shake_module = TreeShakeModule::new(&mut module);
   tree_shake_module.pending_used_exports = UsedExports::Partial(HashSet::from([
     UsedExportsIdent::SwcIdent("a".to_string()),
     UsedExportsIdent::SwcIdent("b".to_string()),
@@ -137,9 +137,9 @@ export function i() {}
 export class j {}
 export default 'default';
   "#;
-  let module = create_module_with_globals(code);
+  let mut module = create_module_with_globals(code);
 
-  let mut tree_shake_module = TreeShakeModule::new(&module);
+  let mut tree_shake_module = TreeShakeModule::new(&mut module);
   // tree_shake_module.used_exports = UsedExports::All(HashMap::new());
   // let result = tree_shake_module.used_exports_idents();
   tree_shake_module.pending_used_exports = UsedExports::All;
@@ -176,9 +176,9 @@ fn used_exports_idents_export_all_multiple() {
 export * from './foo';
 export * from './bar';
 export const b = 2;"#;
-  let module = create_module_with_globals(code);
+  let mut module = create_module_with_globals(code);
 
-  let mut tree_shake_module = TreeShakeModule::new(&module);
+  let mut tree_shake_module = TreeShakeModule::new(&mut module);
   tree_shake_module.pending_used_exports = UsedExports::Partial(HashSet::from([
     UsedExportsIdent::SwcIdent("a".to_string()),
     UsedExportsIdent::SwcIdent("b".to_string()),
@@ -231,8 +231,8 @@ export default 'default';
 
   let globals = Globals::new();
   GLOBALS.set(&globals, || {
-    let (module, _) = create_module(code);
-    let mut tree_shake_module = TreeShakeModule::new(&module);
+    let (mut module, _) = create_module(code);
+    let mut tree_shake_module = TreeShakeModule::new(&mut module);
     tree_shake_module.pending_used_exports = UsedExports::Partial(HashSet::from([
       UsedExportsIdent::Default,
       UsedExportsIdent::SwcIdent("j".to_string()),
@@ -244,9 +244,10 @@ export default 'default';
     assert_eq!(result.len(), 1);
     assert_eq!(result[0].stmt_id, 4);
     assert_eq!(result[0].source, "./src/foo");
-    assert_eq!(result[0].used_stmt_idents.len(), 1);
+    assert_eq!(result[0].used_stmt_idents.as_partial().len(), 1);
     assert!(result[0]
       .used_stmt_idents
+      .as_partial()
       .contains(&UsedExportsIdent::Default));
 
     let used_stmts = tree_shake_module.stmt_graph.used_stmts();
@@ -287,8 +288,8 @@ export { a };
 
   let globals = Globals::new();
   GLOBALS.set(&globals, || {
-    let (module, _) = create_module(code);
-    let mut tree_shake_module = TreeShakeModule::new(&module);
+    let (mut module, _) = create_module(code);
+    let mut tree_shake_module = TreeShakeModule::new(&mut module);
     // tree_shake_module.used_exports =
     //   UsedExports::Partial(HashMap::from([("index.ts".into(), vec!["a".to_string()])]));
     tree_shake_module.pending_used_exports = UsedExports::Partial(HashSet::from([
@@ -337,8 +338,8 @@ export const b = 2;
 
   let globals = Globals::new();
   GLOBALS.set(&globals, || {
-    let (module, _) = create_module(code);
-    let mut tree_shake_module = TreeShakeModule::new(&module);
+    let (mut module, _) = create_module(code);
+    let mut tree_shake_module = TreeShakeModule::new(&mut module);
     tree_shake_module.pending_used_exports = UsedExports::Partial(HashSet::from([
       UsedExportsIdent::SwcIdent("a".to_string()),
       UsedExportsIdent::SwcIdent("b".to_string()),
@@ -349,12 +350,14 @@ export const b = 2;
     assert_eq!(result.len(), 1);
     assert_eq!(result[0].stmt_id, 0);
     assert_eq!(result[0].source, "./foo");
-    assert_eq!(result[0].used_stmt_idents.len(), 2);
+    assert_eq!(result[0].used_stmt_idents.as_partial().len(), 2);
     assert!(result[0]
       .used_stmt_idents
+      .as_partial()
       .contains(&UsedExportsIdent::SwcIdent("a".to_string())));
     assert!(result[0]
       .used_stmt_idents
+      .as_partial()
       .contains(&UsedExportsIdent::SwcIdent("c".to_string())));
 
     let used_stmts = tree_shake_module.stmt_graph.used_stmts();
@@ -390,8 +393,8 @@ export * from './bar';
 
   let globals = Globals::new();
   GLOBALS.set(&globals, || {
-    let (module, _) = create_module(code);
-    let mut tree_shake_module = TreeShakeModule::new(&module);
+    let (mut module, _) = create_module(code);
+    let mut tree_shake_module = TreeShakeModule::new(&mut module);
 
     tree_shake_module.pending_used_exports = UsedExports::Partial(HashSet::from([
       UsedExportsIdent::SwcIdent("a".to_string()),
@@ -402,7 +405,7 @@ export * from './bar';
     assert_eq!(result.len(), 2);
     assert_eq!(result[0].stmt_id, 0);
     assert_eq!(result[0].source, "./foo");
-    assert_eq!(result[0].used_stmt_idents.len(), 2);
+    assert_eq!(result[0].used_stmt_idents.as_partial().len(), 2);
     println!("{:?}", result);
     assert!(result[0]
       .used_stmt_idents
@@ -413,7 +416,7 @@ export * from './bar';
 
     assert_eq!(result[1].stmt_id, 2);
     assert_eq!(result[1].source, "./bar");
-    assert_eq!(result[1].used_stmt_idents.len(), 2);
+    assert_eq!(result[1].used_stmt_idents.as_partial().len(), 2);
     assert!(result[1]
       .used_stmt_idents
       .contains(&UsedExportsIdent::SwcIdent("b".to_string())));
