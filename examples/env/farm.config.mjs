@@ -8,7 +8,7 @@ export default defineConfig({
     persistentCache: false,
   },
   envPrefix: ['FARM_', 'CUSTOM_PREFIX_', 'NEW_'],
-  envDir: resolve(process.cwd(), './env'),
+  envDir: resolve('./env'),
   server: {
     port: 7667
   }
