@@ -149,6 +149,8 @@ export async function resolveConfig(
       configPath = loadedUserConfig.configFilePath;
       rawConfig = mergeConfig(rawConfig, loadedUserConfig.config);
     }
+    rawConfig.compilation.mode =
+      loadedUserConfig?.config?.compilation?.mode ?? mode;
   } else {
     mergeConfig(
       rawConfig,
@@ -212,7 +214,6 @@ export async function resolveConfig(
     mode
   );
 
-  resolvedUserConfig.compilation.mode = mode;
   resolvedUserConfig.root = resolvedUserConfig.compilation.root;
   resolvedUserConfig.jsPlugins = sortFarmJsPlugins;
   resolvedUserConfig.rustPlugins = rustPlugins;
