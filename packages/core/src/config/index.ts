@@ -149,6 +149,8 @@ export async function resolveConfig(
       configPath = loadedUserConfig.configFilePath;
       rawConfig = mergeConfig(rawConfig, loadedUserConfig.config);
     }
+    rawConfig.compilation.mode =
+      loadedUserConfig?.config?.compilation?.mode ?? mode;
   } else {
     mergeConfig(
       rawConfig,
