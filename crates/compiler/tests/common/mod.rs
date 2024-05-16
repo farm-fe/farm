@@ -13,6 +13,7 @@ use farmfe_core::{
   plugin::Plugin,
 };
 use farmfe_testing_helpers::is_update_snapshot_from_env;
+use farmfe_toolkit::fs::read_file_utf8;
 
 pub fn generate_runtime(crate_path: PathBuf) -> RuntimeConfig {
   let swc_helpers_path = crate_path
@@ -93,6 +94,19 @@ pub fn create_config(cwd: PathBuf, crate_path: PathBuf) -> Config {
     persistent_cache: Box::new(PersistentCacheConfig::Bool(false)),
     ..Default::default()
   }
+}
+
+#[allow(dead_code)]
+pub fn try_read_config_from_json(path: PathBuf) -> Option<Config> {
+  if !path.exists() {
+    return None;
+  }
+
+  let Ok(content) = read_file_utf8(path.to_string_lossy().to_string().as_str()) else {
+    return None;
+  };
+
+  farmfe_core::serde_json::from_str(&content).unwrap()
 }
 
 #[allow(dead_code)]

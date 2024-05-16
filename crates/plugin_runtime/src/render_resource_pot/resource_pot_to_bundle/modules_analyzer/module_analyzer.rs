@@ -6,12 +6,7 @@ use std::{
 };
 
 use farmfe_core::{
-  context::CompilationContext,
-  error::Result,
-  module::{module_graph::ModuleGraph, Module, ModuleId, ModuleSystem},
-  resource::resource_pot::ResourcePotId,
-  swc_common::{Mark, SourceMap},
-  swc_ecma_ast::{Id, Module as EcmaAstModule},
+  context::CompilationContext, error::Result, farm_profile_function, module::{module_graph::ModuleGraph, Module, ModuleId, ModuleSystem}, resource::resource_pot::ResourcePotId, swc_common::{Mark, SourceMap}, swc_ecma_ast::{Id, Module as EcmaAstModule}
 };
 use farmfe_toolkit::{
   common::{create_swc_source_map, Source},
@@ -27,15 +22,68 @@ use super::analyze::{self, CollectUnresolvedIdent};
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq)]
 pub enum StmtAction {
+  ///
+  ///
+  /// ```ts
+  /// export var foo = 1;
+  /// // =>
+  /// var foo = 1;
+  ///
+  /// export function foo() {}
+  /// // =>
+  /// function foo() {}
+  ///
+  /// ```
+  ///
+  ///
   StripExport(usize),
+
+  ///
+  /// ```ts
+  /// export default function foo() {}
+  /// export default class Foo() {}
+  /// // =>
+  /// function foo() {}
+  /// class Foo() {}
+  /// ```
+  ///
   StripDefaultExport(usize, usize),
-  // StripImport(usize),
+  ///
+  /// ```ts
+  /// export default 1 + 1;
+  /// // =>
+  /// var module_default = 1 + 1;
+  /// ```
   DeclDefaultExpr(usize, usize),
+  ///
+  /// ```ts
+  /// import { name } from "shulan";
+  /// import person from "shulan";
+  /// import * as personNs from "shulan"
+  /// ```
+  /// remove all
+  ///
   RemoveImport(usize),
-  ReplaceCjsImport(usize, ModuleId),
-  ReplaceCjsExport(ModuleId),
-  // RemoveExport(usize),
-  // PatchNamespaceDecl(usize),
+  ///
+  /// ```ts
+  /// import { foo as bar } from './cjs_module';
+  /// import * as ns from './cjs_module';
+  /// import cjs from './cjs_module';
+  /// // =>
+  /// remove
+  /// // or
+  ///
+  /// ```
+  StripCjsImport(usize, Option<ModuleId>),
+  //
+  // ```ts
+  // export { name as cjsName } from "./cjs";
+  // export { age as cjsAge } from "./cjs";
+  // // =>
+  // const { name, age } = require_cjs();
+  // ```
+  //
+  // ReplaceCjsExport(ModuleId),
 }
 
 impl StmtAction {
@@ -43,13 +91,10 @@ impl StmtAction {
     match self {
       StmtAction::StripExport(index) => Some(*index),
       StmtAction::StripDefaultExport(index, _) => Some(*index),
-      // StmtAction::StripImport(index) => Some(*index),
       StmtAction::DeclDefaultExpr(index, _) => Some(*index),
       StmtAction::RemoveImport(index) => Some(*index),
-      StmtAction::ReplaceCjsImport(index, _) => Some(*index),
-      StmtAction::ReplaceCjsExport(_) => None,
-      // StmtAction::RemoveExport(index) => Some(*index),
-      // StmtAction::PatchNamespaceDecl(_) => None,
+      StmtAction::StripCjsImport(index, _) => Some(*index),
+      // StmtAction::ReplaceCjsExport(_) => None,
     }
   }
 }
@@ -271,6 +316,7 @@ impl ModuleAnalyzer {
     is_dynamic: bool,
     is_runtime: bool,
   ) -> Result<Self> {
+    farm_profile_function!(format!("module analyzer {}", module.id.to_string()));
     let mut ast = module.meta.as_script().ast.clone();
 
     let (cm, _) = create_swc_source_map(Source {
@@ -326,6 +372,7 @@ impl ModuleAnalyzer {
   }
 
   fn collect_unresolved_ident(&self, bundle_variable: &mut BundleVariable) {
+    farm_profile_function!("");
     let mut collection = CollectUnresolvedIdent::new(self.mark.0);
 
     self.ast.visit_with(&mut collection);
@@ -342,6 +389,7 @@ impl ModuleAnalyzer {
     context: &Arc<CompilationContext>,
     bundle_variable: &mut RefMut<BundleVariable>,
   ) -> Result<()> {
+    farm_profile_function!("");
     for (statement_id, stmt) in self.ast.body.iter().enumerate() {
       let statement = analyze::analyze_imports_and_exports(
         statement_id,

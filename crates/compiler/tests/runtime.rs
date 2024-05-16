@@ -12,6 +12,8 @@ use crate::common::{
 #[allow(dead_code)]
 #[cfg(test)]
 fn test(file: String, crate_path: String) {
+  use crate::common::try_read_config_from_json;
+
   let file_path_buf = PathBuf::from(file.clone());
   let create_path_buf = PathBuf::from(crate_path);
   let cwd = file_path_buf.parent().unwrap();
@@ -19,7 +21,10 @@ fn test(file: String, crate_path: String) {
 
   let entry_name = "index".to_string();
 
+  let config_entry = cwd.to_path_buf().join("config.json");
   let runtime_entry = cwd.to_path_buf().join("runtime.ts");
+
+  let config_from_file = try_read_config_from_json(config_entry);
 
   let compiler =
     create_compiler_with_args(cwd.to_path_buf(), create_path_buf, |mut config, plugins| {
@@ -38,11 +43,15 @@ fn test(file: String, crate_path: String) {
       config.external = vec![ConfigRegex::new("(^node:.*)"), ConfigRegex::new("^fs$")];
       config.output.target_env = TargetEnv::Node;
 
-      // multiple bundle
+      // TODO: multiple bundle
       config.partial_bundling.enforce_resources = vec![PartialBundlingEnforceResourceConfig {
         test: vec![ConfigRegex::new("^bundle2.*")],
         name: "bundle2".to_string(),
       }];
+
+      if let Some(config_from_file) = config_from_file {
+        config.mode = config_from_file.mode;
+      }
 
       (config, plugins)
     });
@@ -58,9 +67,9 @@ fn test(file: String, crate_path: String) {
   );
 }
 
-// farmfe_testing::testing! {"tests/fixtures/runtime/bundle/**/index.ts", test}
+farmfe_testing::testing! {"tests/fixtures/runtime/bundle/**/index.ts", test}
 // farmfe_testing::testing! {"tests/fixtures/runtime/bundle/cjs/hybrid/unresolved_variables/**/index.ts", test}
-farmfe_testing::testing! {"tests/fixtures/runtime/bundle/decl/unresolved_variable/**/index.ts", test}
+// farmfe_testing::testing! {"tests/fixtures/runtime/bundle/decl/unresolved_variable/**/index.ts", test}
 // farmfe_testing::testing! {"tests/fixtures/runtime/bundle/cjs/normal/**/index.ts", test}
 // farmfe_testing::testing! {"tests/fixtures/runtime/bundle/cjs/export/exportNamed/**/index.ts", test}
 // farmfe_testing::testing! {"tests/fixtures/runtime/bundle/cjs/hybrid/**/index.ts", test}

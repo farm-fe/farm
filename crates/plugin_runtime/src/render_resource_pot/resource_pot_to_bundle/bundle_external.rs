@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use farmfe_core::{
   error::{CompilationError, Result},
-  module::{ModuleId, ModuleSystem},
+  module::ModuleId,
 };
 
 use super::{
@@ -58,6 +58,10 @@ impl ExternalReferenceImport {
         self.default = Some(name);
       }
     }
+  }
+
+  pub fn is_empty(&self) -> bool {
+    self.named.is_empty() && self.namespace.is_none() && self.default.is_none()
   }
 }
 
@@ -149,28 +153,43 @@ pub struct BundleReference {
   /// import { xxx } from './external_bundle_module' | './other_bundle_module'
   pub import_map: HashMap<ReferenceKind, ExternalReferenceImport>,
 
-  pub commonjs_import_map: HashMap<ReferenceKind, ExternalReferenceImport>,
+  /// export { } from "./cjs_module";
+  /// export * as ns from "./cjs_module";
+  /// export { default } ns from "./cjs_module";
+  /// import { } from "./cjs_module";
+  /// import * as ns from "./cjs_module";
+  /// import cjs from "./cjs_module";
+  pub declare_commonjs_import: HashMap<ReferenceKind, ExternalReferenceImport>,
 
-  pub commonjs_export_map: HashMap<ReferenceKind, ExternalReferenceExport>,
-
+  // pub declare_commonjs_export: HashMap<ReferenceKind, ExternalReferenceExport>,
   /// export xxx from './external_bundle_module'
+  /// export * as ns from './external_bundle_module'
   pub external_export_map: HashMap<ReferenceKind, ExternalReferenceExport>,
 
-  /// export local
+  /// export { local }
+  /// export default local
   pub export: Option<ExternalReferenceExport>,
 }
 
 impl BundleReference {
   pub fn new() -> Self {
     Self {
-      commonjs_import_map: HashMap::new(),
-      commonjs_export_map: HashMap::new(),
+      declare_commonjs_import: HashMap::new(),
       import_map: HashMap::new(),
       external_export_map: HashMap::new(),
       export: None,
     }
   }
 
+  /// import "./cjs"
+  pub fn execute_module_for_cjs(&mut self, import_kind: ReferenceKind) {
+    self
+      .declare_commonjs_import
+      .entry(import_kind)
+      .or_insert_with(ExternalReferenceImport::new);
+  }
+
+  // TODO: split cjs | esm | external | local
   pub fn sync_export(
     &mut self,
     export: &ExportSpecifierInfo,
@@ -213,6 +232,7 @@ impl BundleReference {
     }
   }
 
+  // TODO: split cjs | esm |
   pub fn sync_import(
     &mut self,
     import_kind: ReferenceKind,
@@ -221,7 +241,7 @@ impl BundleReference {
     is_cjs: bool,
   ) -> Result<usize> {
     let import_map = if is_cjs {
-      &mut self.commonjs_import_map
+      &mut self.declare_commonjs_import
     } else {
       &mut self.import_map
     };

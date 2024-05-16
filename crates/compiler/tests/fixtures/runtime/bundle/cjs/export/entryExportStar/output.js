@@ -85,6 +85,7 @@ var cjsExport_ts_cjs = __commonJs({
         const esmName$1 = "esm-shulan";
     }
 });
+var esmName$1 = cjsExport_ts_cjs()["esmName"];
 
 const foo = "foo";
 var esmExport_ts_ns = {
@@ -92,7 +93,6 @@ var esmExport_ts_ns = {
     __esModule: true
 };
 
-var esmName$1 = cjsExport_ts_cjs()["esmName"];
 const esmName = "repeat-esm-shulan";
 (globalThis || window || global)["__farm_default_namespace__"].__farm_module_system__.setPlugins([]);
 (function(_){for(var r in _){_[r].__farm_resource_pot__='index_dcdc.js';(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.register(r,_[r])}})({"b5d64806":function  (module, exports, farmRequire, farmDynamicRequire) {

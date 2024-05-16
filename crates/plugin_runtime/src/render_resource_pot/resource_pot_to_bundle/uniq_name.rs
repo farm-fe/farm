@@ -8,6 +8,7 @@ use std::{
 
 use farmfe_core::{
   context::CompilationContext,
+  farm_profile_function, farm_profile_scope,
   module::{module_graph::ModuleGraph, ModuleId, ModuleSystem},
   regex::Regex,
   resource::resource_pot::ResourcePotId,
@@ -44,6 +45,7 @@ impl UniqName {
   }
 
   pub fn uniq_name(&self, name: &str) -> String {
+    farm_profile_scope!("uniq name");
     let mut uniq_name = name.to_string();
 
     while let Some(count) = self.name_count_map.get(&uniq_name) {
@@ -56,7 +58,8 @@ impl UniqName {
 
 #[derive(Debug, Default)]
 pub struct BundleVariable {
-  pub variables: Vec<Var>,
+  pub index: usize,
+  pub variables: HashMap<usize, Var>,
   pub module_defined_vars: HashMap<ModuleId, HashMap<String, usize>>,
   pub module_safe_ident: HashMap<ModuleId, String>,
   pub uniq_name_hash_map: HashMap<ResourcePotId, UniqName>,
@@ -64,7 +67,33 @@ pub struct BundleVariable {
   pub used_names: HashSet<String>,
 }
 
-pub fn safe_name_form_module_id(module_id: &ModuleId, context: &Arc<CompilationContext>) -> String {
+pub fn is_valid_char(ch: char) -> bool {
+  (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || ch == '_'
+}
+
+fn normalize_file_name_as_variable(str: String) -> String {
+  farm_profile_function!("");
+  let mut res = String::with_capacity(str.len());
+
+  let mut first = true;
+  for ch in str.chars() {
+    if first {
+      if is_valid_char(ch) {
+        first = false;
+        res.push(ch);
+      }
+    } else {
+      if is_valid_char(ch) || ch.is_digit(10) {
+        res.push(ch);
+      }
+    }
+  }
+
+  res
+}
+
+pub fn safe_name_from_module_id(module_id: &ModuleId, context: &Arc<CompilationContext>) -> String {
+  farm_profile_scope!("safe_name_from_module_id PathBuf");
   let filename = module_id.resolved_path(&context.config.root);
   let name = PathBuf::from_str(&filename)
     .map(|path| {
@@ -75,10 +104,7 @@ pub fn safe_name_form_module_id(module_id: &ModuleId, context: &Arc<CompilationC
     })
     .unwrap_or(Cow::Borrowed(&filename));
 
-  Regex::new(r"[^[a-zA-Z0-9_$]]|^[0-9]+")
-    .unwrap()
-    .replace_all(&name, "_")
-    .to_string()
+  normalize_file_name_as_variable(name.to_string())
 }
 
 impl BundleVariable {
@@ -86,6 +112,11 @@ impl BundleVariable {
     Self {
       ..Default::default()
     }
+  }
+
+  fn push(&mut self, var: Var) {
+    self.variables.insert(self.index, var);
+    self.index += 1;
   }
 
   pub fn is_in_used_name(&self, index: usize) -> bool {
@@ -128,18 +159,20 @@ impl BundleVariable {
   }
 
   pub fn add_used_name(&mut self, used_name: String) {
+    farm_profile_scope!("add used name");
     self.uniq_name_mut().insert(&used_name);
     self.used_names.insert(used_name);
   }
 
   pub fn register_var(&mut self, module_id: &ModuleId, ident: &Ident, strict: bool) -> usize {
+    farm_profile_scope!("register var");
     let var = Var {
       var: ident.to_id(),
       rename: None,
       ..Default::default()
     };
 
-    let index = self.variables.len();
+    let index = self.index;
 
     let var_ident = if strict {
       // a#1
@@ -163,17 +196,17 @@ impl BundleVariable {
       self.module_defined_vars.insert(module_id.clone(), map);
     }
 
-    self.variables.push(var);
+    self.push(var);
 
     return index;
   }
 
   pub fn var_by_index(&self, index: usize) -> &Var {
-    &self.variables[index]
+    &self.variables[&index]
   }
 
   pub fn var_mut_by_index(&mut self, index: usize) -> &mut Var {
-    self.variables.get_mut(index).unwrap()
+    self.variables.get_mut(&index).unwrap()
   }
 
   pub fn set_rename(&mut self, index: usize, rename: String) {

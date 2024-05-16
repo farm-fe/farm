@@ -1,12 +1,10 @@
 use std::collections::HashMap;
 
 use farmfe_core::{
-  module::{module_graph::ModuleGraph, ModuleId},
-  swc_common::{Mark, DUMMY_SP},
-  swc_ecma_ast::{
+  farm_profile_function, module::{module_graph::ModuleGraph, ModuleId}, swc_common::{Mark, DUMMY_SP}, swc_ecma_ast::{
     self, BindingIdent, CallExpr, Callee, ComputedPropName, Expr, ExprOrSpread, Ident, Lit,
     MemberExpr, Module as EcmaAstModule, ModuleItem, Pat, Stmt, VarDecl, VarDeclarator,
-  },
+  }
 };
 use farmfe_toolkit::{
   script::is_commonjs_require,
@@ -15,8 +13,7 @@ use farmfe_toolkit::{
 
 use crate::resource_pot_to_bundle::{
   bundle::ModuleGlobalUniqName,
-  bundle_external::{ExternalReferenceExport, ReferenceKind},
-  modules_analyzer::module_analyzer::ModuleAnalyzer,
+  bundle_external::{ExternalReferenceExport, ExternalReferenceImport, ReferenceKind},
   uniq_name::BundleVariable,
 };
 
@@ -174,6 +171,7 @@ impl CjsModuleAnalyzer {
     ast: &EcmaAstModule,
     module_graph: &ModuleGraph,
   ) -> Vec<ModuleId> {
+    farm_profile_function!("cjs module analyzer:analyzer modules");
     let mut collector = CjsCollector {
       unresolved_mark,
       top_level_mark,
@@ -210,95 +208,91 @@ impl CjsModuleAnalyzer {
 
   /** when use esm export commonjs module */
   pub fn build_commonjs_export(
-    &self,
     module_id: &ModuleId,
     bundle_variable: &BundleVariable,
-    module_analyzer: &ModuleAnalyzer,
+    // module_analyzer: &ModuleAnalyzer,
     module_global_uniq_name: &ModuleGlobalUniqName,
+    reference_import: &ExternalReferenceImport,
   ) -> Vec<ModuleItem> {
     let mut result = vec![];
-    if let Some(reference_export) = module_analyzer
-      .cjs_module_analyzer
-      .commonjs_export
-      .get(&module_id.clone().into())
-    {
-      let cjs_name =
-        bundle_variable.render_name(module_global_uniq_name.commonjs_name(&module_id).unwrap());
 
-      let mut decls = vec![];
+    let cjs_name =
+      bundle_variable.render_name(module_global_uniq_name.commonjs_name(&module_id).unwrap());
 
-      let cjs_caller = CallExpr {
+    let mut decls = vec![];
+
+    let cjs_caller = CallExpr {
+      span: DUMMY_SP,
+      callee: swc_ecma_ast::Callee::Expr(Box::new(Expr::Ident(cjs_name.as_str().into()))),
+      args: vec![],
+      type_args: None,
+    };
+
+    // TODO: polyfill
+    if let Some(default) = reference_import.default {
+      decls.push(VarDeclarator {
         span: DUMMY_SP,
-        callee: swc_ecma_ast::Callee::Expr(Box::new(Expr::Ident(cjs_name.as_str().into()))),
-        args: vec![],
-        type_args: None,
-      };
-
-      // TODO: polyfill
-      if let Some(default) = reference_export.default {
-        decls.push(VarDeclarator {
+        name: Pat::Ident(BindingIdent {
+          id: Ident::from(bundle_variable.render_name(default).as_str()),
+          type_ann: None,
+        }),
+        init: Some(Box::new(Expr::Member(MemberExpr {
           span: DUMMY_SP,
-          name: Pat::Ident(BindingIdent {
-            id: Ident::from(bundle_variable.render_name(default).as_str()),
-            type_ann: None,
-          }),
-          init: Some(Box::new(Expr::Member(MemberExpr {
-            span: DUMMY_SP,
-            obj: Box::new(Expr::Call(cjs_caller.clone())),
-            prop: swc_ecma_ast::MemberProp::Ident("default".into()),
-          }))),
-          definite: false,
-        });
-      }
+          obj: Box::new(Expr::Call(cjs_caller.clone())),
+          prop: swc_ecma_ast::MemberProp::Ident("default".into()),
+        }))),
+        definite: false,
+      });
+    }
 
-      // TODO: polyfill
-      if let Some(ns) = reference_export.namespace {
-        decls.push(VarDeclarator {
+    // TODO: polyfill
+    if let Some(ns) = reference_import.namespace {
+      decls.push(VarDeclarator {
+        span: DUMMY_SP,
+        name: Pat::Ident(BindingIdent {
+          id: Ident::from(bundle_variable.render_name(ns).as_str()),
+          type_ann: None,
+        }),
+        init: Some(Box::new(Expr::Call(cjs_caller.clone()))),
+        definite: false,
+      });
+    }
+
+    let mut ordered_keys = reference_import.named.keys().collect::<Vec<_>>();
+    ordered_keys.sort();
+    // TODO: default key
+    for imported_index in ordered_keys {
+      let named_index = &reference_import.named[imported_index];
+
+      decls.push(VarDeclarator {
+        span: DUMMY_SP,
+        name: Pat::Ident(BindingIdent {
+          id: Ident::from(bundle_variable.render_name(*named_index).as_str()),
+          type_ann: None,
+        }),
+        init: Some(Box::new(Expr::Member(MemberExpr {
           span: DUMMY_SP,
-          name: Pat::Ident(BindingIdent {
-            id: Ident::from(bundle_variable.render_name(ns).as_str()),
-            type_ann: None,
+          obj: Box::new(Expr::Call(cjs_caller.clone())),
+          prop: swc_ecma_ast::MemberProp::Computed(ComputedPropName {
+            span: DUMMY_SP,
+            expr: Box::new(Expr::Lit(Lit::Str(
+              bundle_variable.name(*named_index).as_str().into(),
+            ))),
           }),
-          init: Some(Box::new(Expr::Call(cjs_caller.clone()))),
-          definite: false,
-        });
-      }
+        }))),
+        definite: false,
+      });
+    }
 
-      let ordered_keys = reference_export.named.keys().collect::<Vec<_>>();
-      // TODO: default key
-      for imported_index in ordered_keys {
-        let named_index = &reference_export.named[imported_index];
-
-        decls.push(VarDeclarator {
+    if !decls.is_empty() {
+      result.push(ModuleItem::Stmt(Stmt::Decl(swc_ecma_ast::Decl::Var(
+        Box::new(VarDecl {
           span: DUMMY_SP,
-          name: Pat::Ident(BindingIdent {
-            id: Ident::from(bundle_variable.render_name(*named_index).as_str()),
-            type_ann: None,
-          }),
-          init: Some(Box::new(Expr::Member(MemberExpr {
-            span: DUMMY_SP,
-            obj: Box::new(Expr::Call(cjs_caller.clone())),
-            prop: swc_ecma_ast::MemberProp::Computed(ComputedPropName {
-              span: DUMMY_SP,
-              expr: Box::new(Expr::Lit(Lit::Str(
-                bundle_variable.name(*named_index).as_str().into(),
-              ))),
-            }),
-          }))),
-          definite: false,
-        });
-      }
-
-      if !decls.is_empty() {
-        result.push(ModuleItem::Stmt(Stmt::Decl(swc_ecma_ast::Decl::Var(
-          Box::new(VarDecl {
-            span: DUMMY_SP,
-            kind: swc_ecma_ast::VarDeclKind::Var,
-            declare: false,
-            decls,
-          }),
-        ))));
-      }
+          kind: swc_ecma_ast::VarDeclKind::Var,
+          declare: false,
+          decls,
+        }),
+      ))));
     }
 
     result

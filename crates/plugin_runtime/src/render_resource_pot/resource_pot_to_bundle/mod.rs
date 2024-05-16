@@ -10,6 +10,7 @@ use farmfe_core::{
   context::CompilationContext,
   enhanced_magic_string::bundle::Bundle,
   error::{CompilationError, Result},
+  farm_profile_function, farm_profile_scope,
   module::{module_graph::ModuleGraph, ModuleId, ModuleType},
   resource::resource_pot::{ResourcePot, ResourcePotId, ResourcePotType},
   swc_ecma_ast::Id,
@@ -89,6 +90,7 @@ impl<'a> SharedBundle<'a> {
     module_graph: &'a ModuleGraph,
     context: &'a Arc<CompilationContext>,
   ) -> Self {
+    farm_profile_function!("shared bundle initial");
     let mut module_analyzer_map: HashMap<ModuleId, ModuleAnalyzer> = HashMap::new();
     let mut bundle_map: HashMap<ResourcePotId, BundleAnalyzer> = HashMap::new();
 
@@ -96,11 +98,11 @@ impl<'a> SharedBundle<'a> {
 
     let (toposort_modules, _) = module_graph.toposort();
 
-    let mut order_map = HashMap::new();
-
-    for (index, module_id) in toposort_modules.into_iter().enumerate() {
-      order_map.insert(module_id, index);
-    }
+    let order_map: HashMap<ModuleId, usize> = toposort_modules
+      .into_iter()
+      .enumerate()
+      .map(|item| (item.1, item.0))
+      .collect();
 
     // 1. analyze resource pot
     for resource_pot in resource_pots.iter() {
@@ -168,6 +170,8 @@ impl<'a> SharedBundle<'a> {
 
   // 2-1 extract module data from ast
   fn extract_modules(&mut self) -> Result<()> {
+    farm_profile_function!("");
+
     for resource_pot_id in self
       .module_analyzer_manager
       .module_map
@@ -175,6 +179,8 @@ impl<'a> SharedBundle<'a> {
       .map(|item| item.resource_pot_id.clone())
       .collect::<HashSet<_>>()
     {
+      farm_profile_scope!(format!("extract module resource pot: {:?}", resource_pot_id));
+
       let bundle = self
         .bundle_map
         .get_mut(&resource_pot_id)
@@ -204,6 +210,7 @@ impl<'a> SharedBundle<'a> {
 
   // 2-2 process common module data
   fn link_modules(&mut self) -> Result<()> {
+    farm_profile_function!("");
     self.module_analyzer_manager.link(
       &mut self.bundle_variables.borrow_mut(),
       &self.module_graph,
@@ -215,8 +222,13 @@ impl<'a> SharedBundle<'a> {
 
   // 2-3 start process bundle
   fn render_bundle(&mut self) -> Result<()> {
+    farm_profile_function!("");
     for bundle_analyzer in self.bundle_map.values_mut() {
-      // println!("// bundle_analyzer: {:?}", bundle_analyzer.resource_pot.id);
+      farm_profile_scope!(format!(
+        "render bundle: {}",
+        bundle_analyzer.resource_pot.id
+      ));
+
       bundle_analyzer
         .bundle_variable
         .borrow_mut()
@@ -230,8 +242,11 @@ impl<'a> SharedBundle<'a> {
 
   // 2. start process bundle
   pub fn render(&mut self) -> Result<()> {
+    farm_profile_function!("");
+    // TODO: async foreach
     self.extract_modules()?;
 
+    // TODO: async foreach
     self.link_modules()?;
 
     self.render_bundle()?;
@@ -240,6 +255,7 @@ impl<'a> SharedBundle<'a> {
   }
 
   pub fn codegen(&mut self, resource_pot_id: &String) -> Result<Bundle> {
+    farm_profile_scope!(format!("bundle codegen: {}", resource_pot_id));
     let bundle = self.bundle_map.get_mut(resource_pot_id).unwrap();
 
     let bundle = bundle.codegen(&mut self.module_analyzer_manager)?;

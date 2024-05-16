@@ -11,24 +11,15 @@ use farmfe_core::{
     config_regex::ConfigRegex, external::ExternalConfig,
     partial_bundling::PartialBundlingEnforceResourceConfig, Config, ModuleFormat, TargetEnv,
     FARM_MODULE_SYSTEM,
-  },
-  context::CompilationContext,
-  enhanced_magic_string::{bundle::Bundle, types::SourceMapOptions},
-  error::CompilationError,
-  module::{ModuleId, ModuleMetaData, ModuleType},
-  parking_lot::Mutex,
-  plugin::{
+  }, context::CompilationContext, enhanced_magic_string::{bundle::Bundle, types::SourceMapOptions}, error::CompilationError, farm_profile_scope, module::{ModuleId, ModuleMetaData, ModuleType}, parking_lot::Mutex, plugin::{
     Plugin, PluginAnalyzeDepsHookParam, PluginAnalyzeDepsHookResultEntry,
     PluginFinalizeResourcesHookParams, PluginGenerateResourcesHookResult, PluginHookContext,
     PluginLoadHookParam, PluginLoadHookResult, PluginResolveHookParam, PluginResolveHookResult,
     PluginTransformHookResult, ResolveKind,
-  },
-  resource::{
+  }, resource::{
     resource_pot::{ResourcePot, ResourcePotId, ResourcePotMetaData, ResourcePotType},
     Resource, ResourceOrigin, ResourceType,
-  },
-  serde_json,
-  swc_ecma_ast::{ExportAll, ImportDecl, ImportSpecifier, ModuleDecl, ModuleItem},
+  }, serde_json, swc_ecma_ast::{ExportAll, ImportDecl, ImportSpecifier, ModuleDecl, ModuleItem}
 };
 use farmfe_toolkit::{
   fs::read_file_utf8,
@@ -348,6 +339,10 @@ impl Plugin for FarmPluginRuntime {
     for resource_pot in resource_pots.iter_mut() {
       match resource_pot.resource_pot_type {
         ResourcePotType::Runtime => {
+          farm_profile_scope!(format!(
+            "process_resource_pot to bundle {}",
+            resource_pot.id
+          ));
           let resource_pot_id = resource_pot.id.clone();
 
           let mut shared_bundle = SharedBundle::new(vec![&**resource_pot], &module_graph, context);
@@ -359,7 +354,6 @@ impl Plugin for FarmPluginRuntime {
           resource_pot.defer_minify_resource_pot();
 
           *self.runtime_code.lock() = Arc::new(bundle.to_string());
-
           break;
         }
         _ => {}

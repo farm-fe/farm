@@ -1,10 +1,7 @@
 use std::collections::HashSet;
 
 use farmfe_core::{
-  error::{CompilationError, Result},
-  module::{module_graph::ModuleGraph, ModuleId},
-  swc_common::Mark,
-  swc_ecma_ast::{self, ExportDecl, Expr, Ident, ModuleDecl, ModuleExportName, ModuleItem, Stmt},
+  error::{CompilationError, Result}, farm_profile_function, module::{module_graph::ModuleGraph, ModuleId}, swc_common::Mark, swc_ecma_ast::{self, ExportDecl, Expr, Ident, ModuleDecl, ModuleExportName, ModuleItem, Stmt}
 };
 use farmfe_toolkit::swc_ecma_visit::{Visit, VisitWith};
 
@@ -45,6 +42,7 @@ pub fn analyze_imports_and_exports(
   module_graph: &ModuleGraph,
   register_var: &mut impl FnMut(&Ident, bool) -> usize,
 ) -> Result<Statement> {
+  farm_profile_function!("");
   let mut defined_idents: HashSet<usize> = HashSet::new();
 
   let mut imports: Option<ImportInfo> = None;
@@ -181,12 +179,14 @@ pub fn analyze_imports_and_exports(
 
         match &export_default_decl.decl {
           swc_ecma_ast::DefaultDecl::Class(class_expr) => {
+            // TODO: no ident case
             if let Some(ident) = &class_expr.ident {
               specify.push(ExportSpecifierInfo::Default(register_var(&ident, false)));
             }
           }
 
           swc_ecma_ast::DefaultDecl::Fn(fn_decl) => {
+            // TODO: no ident case
             if let Some(ident) = &fn_decl.ident {
               specify.push(ExportSpecifierInfo::Default(register_var(&ident, false)));
             }

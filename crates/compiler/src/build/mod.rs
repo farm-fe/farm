@@ -414,7 +414,7 @@ impl Compiler {
           Self::add_edge(&resolve_param, module_id, order, &context);
         }
         ResolveModuleResult::Cached(module_id) => {
-          farm_profile_scope!(format!("cache module {:?}", cached_module.module.id));
+          farm_profile_scope!(format!("cache module {:?}", module_id));
           let mut cached_module = context.cache_manager.module_cache.get_cache(&module_id);
 
           if let Err(e) = handle_cached_modules(&mut cached_module, &context) {

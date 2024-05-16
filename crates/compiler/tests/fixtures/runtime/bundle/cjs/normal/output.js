@@ -1,5 +1,6 @@
 //index.js:
- import __farmNodeModule from 'node:module';globalThis.nodeRequire = __farmNodeModule.createRequire(import.meta.url);(globalThis || window || global)['__farm_default_namespace__'] = {__FARM_TARGET_ENV__: 'node'};function __commonJs(mod) {
+ import __farmNodeModule from 'node:module';globalThis.nodeRequire = __farmNodeModule.createRequire(import.meta.url);(globalThis || window || global)['__farm_default_namespace__'] = {__FARM_TARGET_ENV__: 'node'};// module_id: ../../node_modules/@swc/helpers/_/_interop_require_wildcard/index.js.farm-runtime
+function __commonJs(mod) {
     var module;
     return ()=>{
         if (module) {
@@ -85,12 +86,14 @@ function _interop_require_wildcard$1(obj, nodeInterop) {
     return newObj;
 }
 
+// module_id: ../../node_modules/@swc/helpers/_/_interop_require_default/index.js.farm-runtime
 function _interop_require_default$1(obj) {
     return obj && obj.__esModule ? obj : {
         default: obj
     };
 }
 
+// module_id: esmExport.ts.farm-runtime
 const name = "name";
 const age = 18;
 var esmExport_ts_default = {
@@ -103,6 +106,7 @@ var esmExport_ts_ns = {
     __esModule: true
 };
 
+// module_id: cjsExport.ts.farm-runtime
 var cjsExport_ts_cjs = __commonJs({
     "cjsExport.ts.farm-runtime": (module, exports)=>{
         module.exports.age = 18;
@@ -111,8 +115,9 @@ var cjsExport_ts_cjs = __commonJs({
         };
     }
 });
+var cjsDefault = cjsExport_ts_cjs().default, cjsExport_ts_ns = cjsExport_ts_cjs(), age$1 = cjsExport_ts_cjs()["cjsNamed"];
 
-var cjsDefault = cjsExport_ts_cjs().default, cjsExport_ts_ns = cjsExport_ts_cjs(), age$1 = cjsExport_ts_cjs().age;
+// module_id: esmImprot.ts.farm-runtime
 console.log({
     cjsNamed: age$1,
     cjsDefault: cjsDefault,
@@ -124,6 +129,7 @@ console.log({
     esmDefault: esmExport_ts_default
 });
 
+// module_id: cjsRequire.ts.farm-runtime
 var cjsRequire_ts_cjs = __commonJs({
     "cjsRequire.ts.farm-runtime": (module, exports)=>{
         const esmExport = esmExport_ts_ns;
@@ -132,9 +138,10 @@ var cjsRequire_ts_cjs = __commonJs({
     }
 });
 
+// module_id: runtime.ts.farm-runtime
 cjsRequire_ts_cjs();
 (globalThis || window || global)["__farm_default_namespace__"].__farm_module_system__.setPlugins([]);
-(function(_){for(var r in _){_[r].__farm_resource_pot__='index_dcdc.js';(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.register(r,_[r])}})({"b5d64806":function  (module, exports, farmRequire, farmDynamicRequire) {
+(function(_){for(var r in _){_[r].__farm_resource_pot__='index_dcdc.js';(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.register(r,_[r])}})({"index.ts":function  (module, exports, farmRequire, farmDynamicRequire) {
     "use strict";
 }
-,});(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setInitialLoadedResources([]);(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setDynamicModuleResourcesMap({  });var farmModuleSystem = (globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__;farmModuleSystem.bootstrap();var entry = farmModuleSystem.require("b5d64806");
+,});(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setInitialLoadedResources([]);(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setDynamicModuleResourcesMap({  });var farmModuleSystem = (globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__;farmModuleSystem.bootstrap();var entry = farmModuleSystem.require("index.ts");
