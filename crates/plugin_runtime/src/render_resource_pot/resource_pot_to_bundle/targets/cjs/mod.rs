@@ -10,7 +10,6 @@ use farmfe_core::{
 };
 use farmfe_toolkit::{
   script::is_commonjs_require,
-  swc_ecma_utils::ExprFactory,
   swc_ecma_visit::{Visit, VisitMut, VisitMutWith, VisitWith},
 };
 
@@ -63,7 +62,7 @@ impl<'a> VisitMut for CJSReplace<'a> {
           return;
         }
 
-        if let Callee::Expr(box Expr::Ident(Ident { sym, .. })) = &call_expr.callee {
+        if let Callee::Expr(box Expr::Ident(Ident { sym, span, .. })) = &call_expr.callee {
           if sym == "require" {
             // TODO: replace require('./moduleA') to moduleA()
 
@@ -73,27 +72,34 @@ impl<'a> VisitMut for CJSReplace<'a> {
             } = &mut call_expr.args[0]
             {
               let source = str.value.to_string();
-              let id = self
+
+              if let Some(id) = self
                 .module_graph
-                .get_dep_by_source(&self.module_id, &source, None);
+                .get_dep_by_source_optional(&self.module_id, &source, None)
+              {
+                if let Some(commonjs_name) = self.module_global_uniq_name.commonjs_name(&id) {
+                  *call_expr = CallExpr {
+                    span: DUMMY_SP,
+                    callee: farmfe_core::swc_ecma_ast::Callee::Expr(Box::new(Expr::Ident(
+                      self
+                        .bundle_variable
+                        .render_name(commonjs_name)
+                        .as_str()
+                        .into(),
+                    ))),
+                    args: vec![],
+                    type_args: None,
+                  };
+                } else if let Some(ns) = self.module_global_uniq_name.namespace_name(&id) {
+                  *expr = Expr::Ident(self.bundle_variable.render_name(ns).as_str().into())
+                }
+              } else {
+                call_expr.visit_mut_children_with(self);
+              }
 
               // TODO: other bundle | external
-              if let Some(commonjs_name) = self.module_global_uniq_name.commonjs_name(&id) {
-                *call_expr = CallExpr {
-                  span: DUMMY_SP,
-                  callee: farmfe_core::swc_ecma_ast::Callee::Expr(Box::new(Expr::Ident(
-                    self
-                      .bundle_variable
-                      .render_name(commonjs_name)
-                      .as_str()
-                      .into(),
-                  ))),
-                  args: vec![],
-                  type_args: None,
-                };
-              } else if let Some(ns) = self.module_global_uniq_name.namespace_name(&id) {
-                *expr = Expr::Ident(self.bundle_variable.render_name(ns).as_str().into())
-              }
+            } else {
+              call_expr.visit_mut_children_with(self);
             }
           } else {
             call_expr.visit_mut_children_with(self);
@@ -161,28 +167,27 @@ impl CjsModuleAnalyzer {
   }
 
   pub fn analyze_modules(
-    &mut self,
-    module_analyzer: &mut ModuleAnalyzer,
+    &self,
+    module_id: &ModuleId,
+    unresolved_mark: Mark,
+    top_level_mark: Mark,
+    ast: &EcmaAstModule,
     module_graph: &ModuleGraph,
-  ) {
+  ) -> Vec<ModuleId> {
     let mut collector = CjsCollector {
-      unresolved_mark: module_analyzer.mark.0,
-      top_level_mark: module_analyzer.mark.1,
+      unresolved_mark,
+      top_level_mark,
       module_graph,
-      module_id: module_analyzer.module_id.clone(),
+      module_id: module_id.clone(),
       deps: vec![],
     };
 
-    module_analyzer.ast.visit_with(&mut collector);
+    ast.visit_with(&mut collector);
 
-    println!(
-      "\n\nanalyze_modules: {:?}\ndeps: {:#?}",
-      module_analyzer.module_id.to_string(),
-      collector.deps
-    );
+    collector.deps
   }
 
-  pub fn replace_require_require(
+  pub fn replace_cjs_require(
     &mut self,
     mark: (Mark, Mark),
     ast: &mut EcmaAstModule,

@@ -1,7 +1,6 @@
 use std::{
   cell::RefMut,
   collections::{HashMap, HashSet},
-  mem,
   path::PathBuf,
   sync::Arc,
 };
@@ -9,7 +8,7 @@ use std::{
 use farmfe_core::{
   context::CompilationContext,
   error::Result,
-  module::{self, module_graph::ModuleGraph, Module, ModuleId, ModuleSystem},
+  module::{module_graph::ModuleGraph, Module, ModuleId, ModuleSystem},
   resource::resource_pot::ResourcePotId,
   swc_common::{Mark, SourceMap},
   swc_ecma_ast::{Id, Module as EcmaAstModule},
@@ -17,13 +16,14 @@ use farmfe_core::{
 use farmfe_toolkit::{
   common::{create_swc_source_map, Source},
   script::swc_try_with::{resolve_module_mark, try_with},
+  swc_ecma_visit::VisitWith,
 };
 
 use crate::resource_pot_to_bundle::{
-  bundle::ModuleAnalyzerManager, targets::cjs::CjsModuleAnalyzer, uniq_name::BundleVariable, Var,
+  targets::cjs::CjsModuleAnalyzer, uniq_name::BundleVariable, Var,
 };
 
-use super::analyze;
+use super::analyze::{self, CollectUnresolvedIdent};
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq)]
 pub enum StmtAction {
@@ -158,6 +158,19 @@ pub enum ExportType {
   Static,
 }
 
+impl ExportType {
+  pub fn merge(&mut self, other: Self) {
+    match self {
+      ExportType::HybridDynamic => {}
+      ExportType::Static => {
+        if matches!(other, ExportType::HybridDynamic) {
+          *self = other;
+        }
+      }
+    }
+  }
+}
+
 #[derive(Debug, Clone)]
 pub struct ExportAllSet {
   pub data: Vec<(ExportInfo, ModuleId)>,
@@ -183,25 +196,17 @@ impl ExportAllSet {
   pub fn merge(&mut self, other: Self) {
     self.data.extend(other.data);
 
-    match self.ty {
-      ExportType::HybridDynamic => {}
-      ExportType::Static => {
-        if matches!(other.ty, ExportType::HybridDynamic) {
-          self.ty = other.ty;
-        }
-      }
-    }
+    self.ty.merge(other.ty);
   }
-
 }
 
 impl From<Vec<(ExportInfo, ModuleId)>> for ExportAllSet {
-    fn from(value: Vec<(ExportInfo, ModuleId)>) -> Self {
-        Self {
-            data: value,
-            ty: ExportType::Static,
-        }
+  fn from(value: Vec<(ExportInfo, ModuleId)>) -> Self {
+    Self {
+      data: value,
+      ty: ExportType::Static,
     }
+  }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -320,6 +325,17 @@ impl ModuleAnalyzer {
     )
   }
 
+  fn collect_unresolved_ident(&self, bundle_variable: &mut BundleVariable) {
+    let mut collection = CollectUnresolvedIdent::new(self.mark.0);
+
+    self.ast.visit_with(&mut collection);
+
+    let uniq_name = bundle_variable.uniq_name_mut();
+    for item in collection.unresolved_ident {
+      uniq_name.insert(&item);
+    }
+  }
+
   pub fn extract_statement(
     &mut self,
     module_graph: &ModuleGraph,
@@ -343,19 +359,19 @@ impl ModuleAnalyzer {
     }
 
     try_with(self.cm.clone(), &context.meta.script.globals, || {
-      let mut cjs_module_analyzer =
-        mem::replace(&mut self.cjs_module_analyzer, CjsModuleAnalyzer::new());
-      cjs_module_analyzer.analyze_modules(self, module_graph);
-      self.cjs_module_analyzer = cjs_module_analyzer;
+      // unresolved is write to global, so, we need to avoid having the same declaration as unresolved ident in the bundle
+      self.collect_unresolved_ident(bundle_variable);
+
+      self.cjs_module_analyzer.require_modules = self.cjs_module_analyzer.analyze_modules(
+        &self.module_id,
+        self.mark.0,
+        self.mark.1,
+        &self.ast,
+        module_graph,
+      );
     })?;
 
     Ok(())
-  }
-
-  pub fn patch_ast(&self, module_analyzer_manager: ModuleAnalyzerManager) {
-    // module_analyzer_manager
-    //   .module_global_uniq_name
-    //   .commonjs_name(&self.module_id);
   }
 
   pub fn exports_stmts(&self) -> Vec<&ExportInfo> {

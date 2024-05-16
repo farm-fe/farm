@@ -69,7 +69,7 @@ mod uniq_name;
 
 pub struct SharedBundle<'a> {
   pub bundle_map: HashMap<ResourcePotId, BundleAnalyzer<'a>>,
-  module_analyzer_manager: ModuleAnalyzerManager,
+  module_analyzer_manager: ModuleAnalyzerManager<'a>,
   module_graph: &'a ModuleGraph,
   context: &'a Arc<CompilationContext>,
   bundle_variables: Rc<RefCell<BundleVariable>>,
@@ -154,7 +154,7 @@ impl<'a> SharedBundle<'a> {
     }
 
     // modules manager
-    let module_analyzer_manager = ModuleAnalyzerManager::new(module_analyzer_map);
+    let module_analyzer_manager = ModuleAnalyzerManager::new(module_analyzer_map, &module_graph);
 
     Self {
       module_analyzer_manager,

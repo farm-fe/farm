@@ -1,5 +1,47 @@
-//__farm_runtime.cb159c3c.mjs:
- import __farmNodeModule from 'node:module';globalThis.nodeRequire = __farmNodeModule.createRequire(import.meta.url);(globalThis || window || global)['__farm_default_namespace__'] = {__FARM_TARGET_ENV__: 'node'};function _export_star(from, to) {
+//__farm_runtime.f12b301b.mjs:
+ import __farmNodeModule from 'node:module';globalThis.nodeRequire = __farmNodeModule.createRequire(import.meta.url);(globalThis || window || global)['__farm_default_namespace__'] = {__FARM_TARGET_ENV__: 'node'};function _mergeNamespaces(n, m) {
+    m.forEach(function(e) {
+        e && typeof e !== "string" && !Array.isArray(e) && Object.keys(e).forEach(function(k) {
+            if (k !== "default" && !(k in n)) {
+                var d = Object.getOwnPropertyDescriptor(e, k);
+                Object.defineProperty(n, k, d.get ? d : {
+                    enumerable: true,
+                    get: function() {
+                        return e[k];
+                    }
+                });
+            }
+        });
+    });
+    return Object.freeze(n);
+}
+function _getRequireWildcardCache(nodeInterop) {
+    if (typeof WeakMap !== "function") return null;
+    var cacheBabelInterop = new WeakMap();
+    var cacheNodeInterop = new WeakMap();
+    return (_getRequireWildcardCache = function(nodeInterop) {
+        return nodeInterop ? cacheNodeInterop : cacheBabelInterop;
+    })(nodeInterop);
+}
+function _export_star(from, to) {
+    Object.keys(from).forEach(function(k) {
+        if (k !== "default" && !Object.prototype.hasOwnProperty.call(to, k)) {
+            Object.defineProperty(to, k, {
+                enumerable: true,
+                get: function() {
+                    return from[k];
+                }
+            });
+        }
+    });
+    return from;
+}
+function _interop_require_default(obj) {
+    return obj && obj.__esModule ? obj : {
+        default: obj
+    };
+}
+function _export_star$1(from, to) {
     Object.keys(from).forEach(function(k) {
         if (k !== "default" && !Object.prototype.hasOwnProperty.call(to, k)) {
             Object.defineProperty(to, k, {
@@ -13,20 +55,20 @@
     return from;
 }
 
-function _getRequireWildcardCache(nodeInterop) {
+function _getRequireWildcardCache$1(nodeInterop) {
     if (typeof WeakMap !== "function") return null;
     var cacheBabelInterop = new WeakMap();
     var cacheNodeInterop = new WeakMap();
-    return (_getRequireWildcardCache = function(nodeInterop) {
+    return (_getRequireWildcardCache$1 = function(nodeInterop) {
         return nodeInterop ? cacheNodeInterop : cacheBabelInterop;
     })(nodeInterop);
 }
-function _interop_require_wildcard(obj, nodeInterop) {
+function _interop_require_wildcard$1(obj, nodeInterop) {
     if (!nodeInterop && obj && obj.__esModule) return obj;
     if (obj === null || typeof obj !== "object" && typeof obj !== "function") return {
         default: obj
     };
-    var cache = _getRequireWildcardCache(nodeInterop);
+    var cache = _getRequireWildcardCache$1(nodeInterop);
     if (cache && cache.has(obj)) return cache.get(obj);
     var newObj = {
         __proto__: null
@@ -59,15 +101,32 @@ var dep_ts_default = {
 };
 var dep_ts_ns = {
     "a": a,
-    "b": b
+    "b": b,
+    "default": dep_ts_default,
+    __esModule: true
 };
 
 
 
+var exportAll_ts_ns = {
+    "a": a,
+    "b": b,
+    __esModule: true
+};
 
 const bundle2A = "bundle2A";
 const bundle2B = "bundle2B";
+var bundle2_dep_ts_ns = {
+    "bundle2A": bundle2A,
+    "bundle2B": bundle2B,
+    __esModule: true
+};
 
+var exportOtherBundle_ts_ns = {
+    "bundle2A": bundle2A,
+    "bundle2B": bundle2B,
+    __esModule: true
+};
 
 
 (globalThis || window || global)["__farm_default_namespace__"].__farm_module_system__.setPlugins([]);
@@ -108,7 +167,7 @@ const bundle2B = "bundle2B";
 ,});
 
 //index.js:
- import "./__farm_runtime.cb159c3c.mjs";import "./bundle2.js";(function(_){for(var r in _){_[r].__farm_resource_pot__='index_e001.js';(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.register(r,_[r])}})({"05ee5ec7":function  (module, exports, farmRequire, farmDynamicRequire) {
+ import "./__farm_runtime.f12b301b.mjs";import "./bundle2.js";(function(_){for(var r in _){_[r].__farm_resource_pot__='index_e001.js';(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.register(r,_[r])}})({"05ee5ec7":function  (module, exports, farmRequire, farmDynamicRequire) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
         value: true

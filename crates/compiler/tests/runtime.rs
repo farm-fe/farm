@@ -59,6 +59,9 @@ fn test(file: String, crate_path: String) {
 }
 
 // farmfe_testing::testing! {"tests/fixtures/runtime/bundle/**/index.ts", test}
+// farmfe_testing::testing! {"tests/fixtures/runtime/bundle/cjs/hybrid/unresolved_variables/**/index.ts", test}
+farmfe_testing::testing! {"tests/fixtures/runtime/bundle/decl/unresolved_variable/**/index.ts", test}
 // farmfe_testing::testing! {"tests/fixtures/runtime/bundle/cjs/normal/**/index.ts", test}
-farmfe_testing::testing! {"tests/fixtures/runtime/bundle/cjs/hybrid/exportStar/**/index.ts", test}
+// farmfe_testing::testing! {"tests/fixtures/runtime/bundle/cjs/export/exportNamed/**/index.ts", test}
+// farmfe_testing::testing! {"tests/fixtures/runtime/bundle/cjs/hybrid/**/index.ts", test}
 // farmfe_testing::testing! {"tests/fixtures/runtime/bundle/cjs/export/exportNamespace/**/index.ts", test}

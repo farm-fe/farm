@@ -3,9 +3,10 @@ use std::collections::HashSet;
 use farmfe_core::{
   error::{CompilationError, Result},
   module::{module_graph::ModuleGraph, ModuleId},
+  swc_common::Mark,
   swc_ecma_ast::{self, ExportDecl, Expr, Ident, ModuleDecl, ModuleExportName, ModuleItem, Stmt},
 };
-use farmfe_toolkit::swc_ecma_visit::VisitWith;
+use farmfe_toolkit::swc_ecma_visit::{Visit, VisitWith};
 
 use crate::resource_pot_to_bundle::defined_idents_collector::DefinedIdentsCollector;
 
@@ -13,6 +14,29 @@ use super::module_analyzer::{
   ExportInfo, ExportSpecifierInfo, ImportInfo, ImportSpecifierInfo, Statement, StatementId,
   Variable,
 };
+
+pub struct CollectUnresolvedIdent {
+  pub unresolved_ident: HashSet<String>,
+  unresolved_mark: Mark,
+}
+
+impl CollectUnresolvedIdent {
+  pub fn new(unresolved_mark: Mark) -> Self {
+    CollectUnresolvedIdent {
+      unresolved_ident: HashSet::new(),
+      unresolved_mark,
+    }
+  }
+}
+
+impl Visit for CollectUnresolvedIdent {
+  fn visit_ident(&mut self, n: &Ident) {
+    if n.span.ctxt.outer() == self.unresolved_mark || self.unresolved_ident.contains(n.sym.as_str())
+    {
+      self.unresolved_ident.insert(n.sym.to_string());
+    }
+  }
+}
 
 pub fn analyze_imports_and_exports(
   id: StatementId,

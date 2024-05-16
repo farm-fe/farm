@@ -249,10 +249,23 @@ pub fn module_system_from_deps(deps: Vec<ResolveKind>) -> ModuleSystem {
 struct ModuleSystemAnalyzer {
   unresolved_mark: Mark,
   contain_module_exports: bool,
+  contain_esm: bool,
 }
 
 impl Visit for ModuleSystemAnalyzer {
+  fn visit_stmts(&mut self, n: &[Stmt]) {
+    if self.contain_module_exports || self.contain_esm {
+      return;
+    }
+
+    n.visit_children_with(self);
+  }
+
   fn visit_member_expr(&mut self, n: &farmfe_core::swc_ecma_ast::MemberExpr) {
+    if self.contain_module_exports {
+      return;
+    }
+
     if let box Expr::Ident(Ident { sym, span, .. }) = &n.obj {
       if sym == "module" && span.ctxt.outer() == self.unresolved_mark {
         if let MemberProp::Ident(Ident { sym, .. }) = &n.prop {
@@ -267,6 +280,16 @@ impl Visit for ModuleSystemAnalyzer {
       n.visit_children_with(self);
     }
   }
+
+  fn visit_module_decl(&mut self, n: &farmfe_core::swc_ecma_ast::ModuleDecl) {
+    if self.contain_esm {
+      return;
+    }
+
+    self.contain_esm = true;
+
+    n.visit_children_with(self);
+  }
 }
 
 pub fn module_system_from_ast(
@@ -278,7 +301,7 @@ pub fn module_system_from_ast(
     // if the ast contains ModuleDecl, it's a esm module
     for item in ast.body.iter() {
       if let ModuleItem::ModuleDecl(_) = item {
-        if module_system == ModuleSystem::CommonJs && has_deps {
+        if module_system == ModuleSystem::CommonJs {
           return ModuleSystem::Hybrid;
         } else {
           return ModuleSystem::EsModule;
@@ -295,15 +318,19 @@ pub fn set_module_system_for_module_meta(
   context: &Arc<CompilationContext>,
 ) {
   // default to commonjs
-  let mut module_system = if !param.deps.is_empty() {
-    module_system_from_deps(param.deps.iter().map(|d| d.kind.clone()).collect())
+  let mut module_system_from_deps_option = if !param.deps.is_empty() {
+    Some(module_system_from_deps(
+      param.deps.iter().map(|d| d.kind.clone()).collect(),
+    ))
   } else {
-    ModuleSystem::CommonJs
+    None
   };
-  param.module.meta.as_script_mut().module_system = module_system.clone();
+
+  // param.module.meta.as_script_mut().module_system = module_system.clone();
 
   let ast = &param.module.meta.as_script().ast;
 
+  let mut module_system_from_ast = None;
   {
     // try_with(param.module.meta.as_script().comments.into(), globals, op)
 
@@ -317,15 +344,34 @@ pub fn set_module_system_for_module_meta(
       let mut analyzer = ModuleSystemAnalyzer {
         unresolved_mark,
         contain_module_exports: false,
+        contain_esm: false,
       };
 
       ast.visit_with(&mut analyzer);
+
       if analyzer.contain_module_exports {
-        module_system = module_system.merge(ModuleSystem::CommonJs);
+        module_system_from_ast = Some(ModuleSystem::CommonJs);
       }
-    });
+
+      if analyzer.contain_esm {
+        let v = module_system_from_ast
+          .take()
+          .unwrap_or(ModuleSystem::EsModule)
+          .merge(ModuleSystem::EsModule);
+
+        module_system_from_ast = Some(v);
+      }
+    })
+    .unwrap();
   }
 
   param.module.meta.as_script_mut().module_system =
-    module_system_from_ast(ast, module_system, !param.deps.is_empty());
+    [module_system_from_deps_option, module_system_from_ast]
+      .into_iter()
+      .filter_map(|x| x)
+      .reduce(|a, b| a.merge(b))
+      .unwrap_or(ModuleSystem::Hybrid);
+
+  // param.module.meta.as_script_mut().module_system =
+  //   module_system_from_ast(ast, module_system_from_deps_option, !param.deps.is_empty());
 }

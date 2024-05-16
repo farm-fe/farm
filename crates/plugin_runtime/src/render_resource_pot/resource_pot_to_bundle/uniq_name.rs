@@ -88,6 +88,10 @@ impl BundleVariable {
     }
   }
 
+  pub fn is_in_used_name(&self, index: usize) -> bool {
+    self.used_names.contains(&self.name(index))
+  }
+
   pub fn uniq_name_mut(&mut self) -> &mut UniqName {
     self.uniq_name_hash_map.get_mut(&self.namespace).unwrap()
   }

@@ -176,14 +176,26 @@ impl BundleReference {
     export: &ExportSpecifierInfo,
     source: Option<ReferenceKind>,
     to_export_map: Option<&mut HashMap<ReferenceKind, ExternalReferenceExport>>,
+    is_external: bool,
   ) {
     if let Some(module_id) = source {
-      let map = to_export_map.unwrap_or(&mut self.external_export_map);
+      let map = if is_external {
+        &mut self.external_export_map
+      } else {
+        to_export_map.unwrap_or(&mut self.external_export_map)
+      };
+
       if !map.contains_key(&module_id) {
         map.insert(module_id.clone(), ExternalReferenceExport::new());
       }
 
       let module_export_map = map.get_mut(&module_id).unwrap();
+
+      if is_external {
+        module_export_map
+          .export_type
+          .merge(ExportType::HybridDynamic);
+      }
 
       if !module_export_map.contains(export) {
         module_export_map.insert(export.clone());
