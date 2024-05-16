@@ -178,7 +178,7 @@ pub fn render_module<F: Fn(&ModuleId) -> bool>(
     } else {
       None
     },
-    minify_enabled,
+    context.config.minify.enabled(),
     Some(CodeGenCommentsConfig {
       comments: &comments,
       // preserve all comments when generate module code.
