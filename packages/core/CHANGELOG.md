@@ -1,5 +1,13 @@
 # @farmfe/core
 
+## 1.1.7
+
+### Patch Changes
+
+- 943fd627: fix: load env file error
+- 8d5bf9cd: fix minify not work for files that endsWith .min.js
+- 19b5d89b: 1. external injectlogic 2. better tip
+
 ## 1.1.6
 
 ### Patch Changes
