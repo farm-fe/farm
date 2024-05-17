@@ -53,7 +53,7 @@ jobs:
       - uses: actions/download-artifact@v3
         id: download-create-farm-rust
         with:
-          name: ${{ github.sha }}-${{ matrix.settings.abi }}-creat-farm
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}
           path: ./packages/create-farm-node/npm/${{ matrix.settings.abi }}
 
       - name: Build Examples - ${{ matrix.settings.abi }}
