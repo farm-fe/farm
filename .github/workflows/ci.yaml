@@ -156,7 +156,7 @@ jobs:
             test -f  /tmp/artifacts/${{ github.sha }}-${abi}/farm.${abi}.node
           done
 
-  Check Create Farm Rust Artifacts:
+  check-create-farm-rust-artifacts:
     name: Check Create Farm Rust Artifacts
     runs-on: ubuntu-latest
     needs: call-rust-build
