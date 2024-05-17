@@ -170,7 +170,7 @@ jobs:
           do
             ls -l /tmp/artifacts/${{ github.sha }}-${abi}/
             ls -l /tmp/artifacts/
-            test -f  /tmp/artifacts/${{ github.sha }}-${abi}/create-farm.${abi}.node
+            test -f  /tmp/artifacts/${{ github.sha }}-${abi}-create-farm.${abi}.node
           done
 
   check-plugin-artifacts:
