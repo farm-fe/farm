@@ -579,7 +579,7 @@ impl Plugin for FarmPluginCss {
           } else {
             None
           },
-          minify_enabled,
+          context.config.minify.enabled(),
         );
 
         rendered_modules.lock().push(RenderedModule {
