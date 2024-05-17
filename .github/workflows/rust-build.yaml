@@ -142,7 +142,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: ${{ github.sha }}-${{ matrix.settings.abi }}-create-farm
-          path: ./packages/create-farm-node/binding/create-farm.${{ matrix.settings.abi }}.node
+          path: ./packages/create-farm-node/create-farm.${{ matrix.settings.abi }}.node
       - name: Upload Plugin React
         uses: actions/upload-artifact@v3
         with:
