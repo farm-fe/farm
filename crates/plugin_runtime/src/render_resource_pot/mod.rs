@@ -6,7 +6,7 @@ use std::{
 use farmfe_core::{
   cache::cache_store::CacheStoreKey,
   cache_item,
-  config::minify::{MinifyMode, MinifyOptions},
+  config::minify::MinifyMode,
   context::CompilationContext,
   deserialize,
   enhanced_magic_string::{
@@ -20,7 +20,7 @@ use farmfe_core::{
   resource::resource_pot::{RenderedModule, ResourcePot},
   serialize,
 };
-use farmfe_toolkit::common::PathFilter;
+use farmfe_toolkit::common::MinifyBuilder;
 use farmfe_utils::hash::sha256;
 
 use self::render_module::{render_module, RenderModuleResult};
@@ -56,18 +56,12 @@ pub fn resource_pot_to_runtime_object(
   context: &Arc<CompilationContext>,
 ) -> Result<RenderedJsResourcePot> {
   let modules = Mutex::new(vec![]);
-  let minify_options = context
-    .config
-    .minify
-    .clone()
-    .map(|val| MinifyOptions::from(val))
-    .unwrap_or_default();
-  let path_filter = PathFilter::new(&minify_options.include, &minify_options.exclude);
 
-  let minify_enabled =
-    matches!(minify_options.mode, MinifyMode::Module) && context.config.minify.enabled();
+  let minify_builder =
+    MinifyBuilder::create_builder(&context.config.minify, Some(MinifyMode::Module));
+
   let is_enabled_minify = |module_id: &ModuleId| {
-    minify_enabled && path_filter.execute(&module_id.resolved_path(&context.config.root))
+    minify_builder.is_enabled(&module_id.resolved_path(&context.config.root))
   };
 
   resource_pot
@@ -126,7 +120,7 @@ pub fn resource_pot_to_runtime_object(
         module,
         module_graph,
         is_enabled_minify,
-        &minify_options,
+        &minify_builder,
         is_async_module,
         context,
       )?;
