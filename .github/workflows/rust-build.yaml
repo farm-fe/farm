@@ -125,9 +125,9 @@ jobs:
         if: ${{ !matrix.settings.docker && !matrix.settings.build }}
         run: >-
           cd packages/core && npm run build:rs:publish -- ${{ matrix.settings.target && format('--target {0}', matrix.settings.target) || '' }} ${{ matrix.settings.zig && '--zig' || '' }} &&
-          cd ../create-farm-node && npm run build -- ${{ matrix.settings.target && format('--target {0}', matrix.settings.target) || '' }} ${{ matrix.settings.zig && '--zig' || '' }} --abi ${{ matrix.settings.abi }}
+          cd ../create-farm-node && npm run build -- ${{ matrix.settings.target && format('--target {0}', matrix.settings.target) || '' }} ${{ matrix.settings.zig && '--zig' || '' }} --abi ${{ matrix.settings.abi }} &&
           cd ../../rust-plugins/react && npm run build -- ${{ matrix.settings.target && format('--target {0}', matrix.settings.target) || '' }} ${{ matrix.settings.zig && '--zig' || '' }} --abi ${{ matrix.settings.abi }} &&
-          cd ../sass && npm run build -- ${{ matrix.settings.target && format('--target {0}', matrix.settings.target) || '' }} ${{ matrix.settings.zig && '--zig' || '' }} --abi ${{ matrix.settings.abi }} &&
+          cd ../sass && npm run build -- ${{ matrix.settings.target && format('--target {0}', matrix.settings.target) || '' }} ${{ matrix.settings.zig && '--zig' || '' }} --abi ${{ matrix.settings.abi }}
         shell: bash
       - name: Build
         if: ${{ !matrix.settings.docker && matrix.settings.build }}
