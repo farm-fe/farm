@@ -1,4 +1,4 @@
-use std::{path::PathBuf, sync::Arc};
+use std::{path::PathBuf, rc::Rc, sync::Arc};
 
 use farmfe_core::{
   config::minify::MinifyOptions,
@@ -12,7 +12,7 @@ use farmfe_core::{
   },
 };
 use farmfe_toolkit::{
-  common::{build_source_map, create_swc_source_map, Source},
+  common::{build_source_map, create_swc_source_map, MinifyBuilder, Source},
   minify::minify_js_module,
   script::{
     codegen_module,
@@ -58,7 +58,7 @@ pub fn render_module<F: Fn(&ModuleId) -> bool>(
   module: &Module,
   module_graph: &ModuleGraph,
   is_enabled_minify: F,
-  minify_options: &MinifyOptions,
+  minify_builder: &MinifyBuilder,
   is_async_module: bool,
   context: &Arc<CompilationContext>,
 ) -> farmfe_core::error::Result<RenderModuleResult> {
@@ -152,7 +152,7 @@ pub fn render_module<F: Fn(&ModuleId) -> bool>(
         &comments,
         unresolved_mark,
         top_level_mark,
-        minify_options,
+        minify_builder.minify_options.as_ref().unwrap(),
       );
       unwrap_initialize_function(&mut cloned_module);
     }

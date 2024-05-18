@@ -24,7 +24,7 @@ use farmfe_core::{
     Resource, ResourceOrigin, ResourceType,
   },
 };
-use farmfe_toolkit::common::{create_swc_source_map, Source};
+use farmfe_toolkit::common::{create_swc_source_map, MinifyBuilder, Source};
 use farmfe_toolkit::minify::minify_html_module;
 use farmfe_toolkit::{
   fs::read_file_utf8,
@@ -505,11 +505,15 @@ impl FarmPluginTransformHtml {
   }
 }
 
-pub struct FarmPluginMinifyHtml {}
+pub struct FarmPluginMinifyHtml {
+  minify_config: MinifyBuilder,
+}
 
 impl FarmPluginMinifyHtml {
-  pub fn new(_: &Config) -> Self {
-    Self {}
+  pub fn new(config: &Config) -> Self {
+    Self {
+      minify_config: MinifyBuilder::create_builder(&config.minify, None),
+    }
   }
 }
 
@@ -529,6 +533,12 @@ impl Plugin for FarmPluginMinifyHtml {
   ) -> farmfe_core::error::Result<Option<()>> {
     for resource in params.resources_map.values_mut() {
       if matches!(resource.resource_type, ResourceType::Html) {
+        let is_enable_minify = self.minify_config.is_enabled(&resource.name);
+
+        if !is_enable_minify {
+          continue;
+        }
+
         let bytes = mem::take(&mut resource.bytes);
         let html_code = Arc::new(String::from_utf8(bytes).unwrap());
         let mut html_ast = match parse_html_document(&resource.name, html_code.clone()) {
