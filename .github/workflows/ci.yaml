@@ -168,6 +168,7 @@ jobs:
         run: |
           for abi in linux-x64-gnu linux-x64-musl darwin-x64 win32-x64-msvc linux-arm64-musl linux-arm64-gnu darwin-arm64 win32-ia32-msvc win32-arm64-msvc
           do
+            ls /tmp/artifacts/
             ls -l /tmp/artifacts/${{ github.sha }}-${abi}/
             ls -l /tmp/artifacts/
             test -f  /tmp/artifacts/${{ github.sha }}-${abi}/create-farm.${abi}.node
