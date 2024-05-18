@@ -187,9 +187,7 @@ impl Plugin for FarmPluginMinify {
     resource_pot: &mut ResourcePot,
     context: &Arc<CompilationContext>,
   ) -> farmfe_core::error::Result<Option<()>> {
-    if !matches!(self.minify_options.mode, MinifyMode::ResourcePot)
-      || !context.config.minify.enabled()
-    {
+    if !matches!(self.minify_options.mode, MinifyMode::ResourcePot) {
       return Ok(None);
     }
 
