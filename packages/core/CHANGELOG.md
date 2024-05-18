@@ -1,5 +1,11 @@
 # @farmfe/core
 
+## 1.1.8
+
+### Patch Changes
+
+- 1ae36c95: support exclude/include option for html
+
 ## 1.1.7
 
 ### Patch Changes
