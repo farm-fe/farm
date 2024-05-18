@@ -133,23 +133,23 @@ jobs:
         if: ${{ !matrix.settings.docker && matrix.settings.build }}
         run: ${{ matrix.settings.build }}
         shell: bash
-      - name: Upload Core
-        uses: actions/upload-artifact@v3
-        with:
-          name: ${{ github.sha }}-${{ matrix.settings.abi }}
-          path: ./packages/core/binding/farm.${{ matrix.settings.abi }}.node
+      # - name: Upload Core
+      #   uses: actions/upload-artifact@v3
+      #   with:
+      #     name: ${{ github.sha }}-${{ matrix.settings.abi }}
+      #     path: ./packages/core/binding/farm.${{ matrix.settings.abi }}.node
       - name: Upload Create Farm Rust
         uses: actions/upload-artifact@v3
         with:
           name: ${{ github.sha }}-${{ matrix.settings.abi }}-create-farm
           path: ./packages/create-farm-node/create-farm.${{ matrix.settings.abi }}.node
-      - name: Upload Plugin React
-        uses: actions/upload-artifact@v3
-        with:
-          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-react
-          path: rust-plugins/react/npm/${{ matrix.settings.abi }}/index.farm
-      - name: Upload Plugin Sass
-        uses: actions/upload-artifact@v3
-        with:
-          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-sass
-          path: rust-plugins/sass/npm/${{ matrix.settings.abi }}/index.farm
+      # - name: Upload Plugin React
+      #   uses: actions/upload-artifact@v3
+      #   with:
+      #     name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-react
+      #     path: rust-plugins/react/npm/${{ matrix.settings.abi }}/index.farm
+      # - name: Upload Plugin Sass
+      #   uses: actions/upload-artifact@v3
+      #   with:
+      #     name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-sass
+      #     path: rust-plugins/sass/npm/${{ matrix.settings.abi }}/index.farm
