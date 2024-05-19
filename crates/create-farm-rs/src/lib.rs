@@ -3,8 +3,7 @@ use dialoguer::{Confirm, Input, Select};
 use std::{ffi::OsString, fs, process::exit};
 
 use crate::{
-  package_manager::PackageManager,
-  utils::{colors::*, theme::ColorfulTheme},
+  package_manager::PackageManager, template::{TauriSubTemplate, Template}, utils::{colors::*, theme::ColorfulTheme}
 };
 
 mod args;
@@ -83,38 +82,59 @@ where
     None => defaults.manager.context("default manager not set")?,
   };
 
+  println!("{} {}", "Selected Package Manager:", pkg_manager.to_string());
+
   let templates_no_flavors = pkg_manager.templates_no_flavors();
 
   let template = match template {
     Some(template) => template,
     None => {
-      let index = Select::with_theme(&ColorfulTheme::default())
-        .with_prompt("Select a framework:")
-        .items(
-          &templates_no_flavors
+        let templates_text = templates_no_flavors
             .iter()
             .map(|t| t.select_text())
-            .collect::<Vec<_>>(),
-        )
-        .default(0)
-        .interact()?;
+            .collect::<Vec<_>>();
 
-      let template = templates_no_flavors[index];
-      template
-      // Prompt for flavors if the template has more than one flavor
-      //   let flavors = template.flavors(pkg_manager);
-      //   if let Some(flavors) = flavors {
-      //     let index = Select::with_theme(&ColorfulTheme::default())
-      //       .with_prompt("Choose your UI flavor")
-      //       .items(flavors)
-      //       .default(0)
-      //       .interact()?;
-      //     template.from_flavor(flavors[index])
-      //   } else {
-      //     template
-      //   }
+        let index = Select::with_theme(&ColorfulTheme::default())
+            .with_prompt("Select a framework:")
+            .items(&templates_text)
+            .default(0)
+            .interact()?;
+
+        let selected_template = templates_no_flavors[index];
+        if let Template::Tauri(None) = selected_template {
+            let sub_templates_text = vec![
+                TauriSubTemplate::React,
+                TauriSubTemplate::Vue,
+                TauriSubTemplate::Svelte,
+                TauriSubTemplate::Vanilla,
+                TauriSubTemplate::Solid,
+                TauriSubTemplate::Preact,
+            ]
+            .iter()
+            .map(|sub_template| format!("{}", sub_template))
+            .collect::<Vec<_>>();
+
+            let sub_template_index = Select::with_theme(&ColorfulTheme::default())
+                .with_prompt("Select a Tauri template:")
+                .items(&sub_templates_text)
+                .default(0)
+                .interact()?;
+
+            let sub_template = match sub_template_index {
+                0 => TauriSubTemplate::React,
+                1 => TauriSubTemplate::Vue,
+                2 => TauriSubTemplate::Svelte,
+                3 => TauriSubTemplate::Vanilla,
+                4 => TauriSubTemplate::Solid,
+                5 => TauriSubTemplate::Preact,
+                _ => unreachable!(),
+            };
+            Template::Tauri(Some(sub_template))
+        } else {
+            selected_template
+        }
     }
-  };
+};
 
   if target_dir.exists() {
     #[inline(always)]

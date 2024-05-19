@@ -71,12 +71,14 @@ impl PackageManager {
     match self {
       PackageManager::Pnpm | PackageManager::Yarn | PackageManager::Npm | PackageManager::Bun => &[
         Template::Vanilla,
+        Template::React,
         Template::Vue3,
         Template::Vue2,
         Template::Svelte,
-        Template::React,
         Template::Solid,
+        Template::Lit,
         Template::Preact,
+        Template::Tauri(None),
       ],
     }
   }
@@ -85,12 +87,14 @@ impl PackageManager {
     match self {
       PackageManager::Pnpm | PackageManager::Yarn | PackageManager::Npm | PackageManager::Bun => &[
         Template::Vanilla,
+        Template::React,
         Template::Vue3,
         Template::Vue2,
         Template::Svelte,
-        Template::React,
         Template::Solid,
+        Template::Lit,
         Template::Preact,
+        Template::Tauri(None),
       ],
     }
   }
