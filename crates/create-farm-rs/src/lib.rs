@@ -89,31 +89,37 @@ where
   let template = match template {
     Some(template) => template,
     None => {
-      let index = Select::with_theme(&ColorfulTheme::default())
-        .with_prompt("Select a framework:")
-        .items(
-          &templates_no_flavors
+        let templates_text = templates_no_flavors
             .iter()
             .map(|t| t.select_text())
-            .collect::<Vec<_>>(),
-        )
-        .default(0)
-        .interact()?;
+            .collect::<Vec<_>>();
 
-        let template = templates_no_flavors[index];
-        if let Template::Tauri(None) = template {
+        let index = Select::with_theme(&ColorfulTheme::default())
+            .with_prompt("Select a framework:")
+            .items(&templates_text)
+            .default(0)
+            .interact()?;
+
+        let selected_template = templates_no_flavors[index];
+        if let Template::Tauri(None) = selected_template {
+            let sub_templates_text = vec![
+                TauriSubTemplate::React,
+                TauriSubTemplate::Vue,
+                TauriSubTemplate::Svelte,
+                TauriSubTemplate::Vanilla,
+                TauriSubTemplate::Solid,
+                TauriSubTemplate::Preact,
+            ]
+            .iter()
+            .map(|sub_template| format!("{}", sub_template))
+            .collect::<Vec<_>>();
+
             let sub_template_index = Select::with_theme(&ColorfulTheme::default())
-                .with_prompt("Select a Tauri sub-template:")
-                .items(&[
-                    "React",
-                    "Vue",
-                    "Svelte",
-                    "Vanilla",
-                    "Solid",
-                    "Preact"
-                ])
+                .with_prompt("Select a Tauri template:")
+                .items(&sub_templates_text)
                 .default(0)
                 .interact()?;
+
             let sub_template = match sub_template_index {
                 0 => TauriSubTemplate::React,
                 1 => TauriSubTemplate::Vue,
@@ -125,10 +131,10 @@ where
             };
             Template::Tauri(Some(sub_template))
         } else {
-            template
+            selected_template
         }
     }
-  };
+};
 
   if target_dir.exists() {
     #[inline(always)]

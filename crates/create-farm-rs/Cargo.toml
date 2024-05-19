@@ -10,13 +10,6 @@ edition = "2021"
 name = "create-farm"
 path = "src/main.rs"
 
-[profile.release]
-panic = "abort"
-codegen-units = 1
-lto = true
-opt-level = "s"
-strip = true
-
 [dependencies]
 anyhow = "1"
 pico-args = "0.5"
