@@ -1,10 +1,13 @@
 use std::collections::HashMap;
 
 use farmfe_core::{
-  farm_profile_function, module::{module_graph::ModuleGraph, ModuleId}, swc_common::{Mark, DUMMY_SP}, swc_ecma_ast::{
+  farm_profile_function,
+  module::{module_graph::ModuleGraph, ModuleId},
+  swc_common::{Mark, DUMMY_SP},
+  swc_ecma_ast::{
     self, BindingIdent, CallExpr, Callee, ComputedPropName, Expr, ExprOrSpread, Ident, Lit,
     MemberExpr, Module as EcmaAstModule, ModuleItem, Pat, Stmt, VarDecl, VarDeclarator,
-  }
+  },
 };
 use farmfe_toolkit::{
   script::is_commonjs_require,
@@ -17,101 +20,9 @@ use crate::resource_pot_to_bundle::{
   uniq_name::BundleVariable,
 };
 
-///
-/// cjs
-///
-/// ```js
-/// // polyfill for module
-///
-/// // from vite polyfill
-///
-/// var __getOwnPropNames = Object.getOwnPropertyNames;
-///
-/// var __commonJS = (cb, mod) => function __require() {
-///  return mod || (0, cb[__getOwnPropNames(cb)[0]])((mod = { exports: {} }).exports, mod), mod.exports;
-/// };
-///
-/// __commonJS((exports, module, require) => {});
-///
-/// ```
-///
-/// ```js
-/// // moduleA.js
-/// const moduleA = require('./moduleA');
-/// ```
-///
-
-struct CJSReplace<'a> {
-  unresolved_mark: Mark,
-  top_level_mark: Mark,
-  module_graph: &'a ModuleGraph,
-  module_id: ModuleId,
-  module_global_uniq_name: &'a ModuleGlobalUniqName,
-  bundle_variable: &'a BundleVariable,
-}
-
-impl<'a> VisitMut for CJSReplace<'a> {
-  fn visit_mut_expr(&mut self, expr: &mut Expr) {
-    match expr {
-      Expr::Call(call_expr) => {
-        if call_expr.args.len() != 1 {
-          call_expr.visit_mut_children_with(self);
-          return;
-        }
-
-        if let Callee::Expr(box Expr::Ident(Ident { sym, span, .. })) = &call_expr.callee {
-          if sym == "require" {
-            // TODO: replace require('./moduleA') to moduleA()
-
-            if let ExprOrSpread {
-              spread: None,
-              expr: box Expr::Lit(Lit::Str(str)),
-            } = &mut call_expr.args[0]
-            {
-              let source = str.value.to_string();
-
-              if let Some(id) = self
-                .module_graph
-                .get_dep_by_source_optional(&self.module_id, &source, None)
-              {
-                if let Some(commonjs_name) = self.module_global_uniq_name.commonjs_name(&id) {
-                  *call_expr = CallExpr {
-                    span: DUMMY_SP,
-                    callee: farmfe_core::swc_ecma_ast::Callee::Expr(Box::new(Expr::Ident(
-                      self
-                        .bundle_variable
-                        .render_name(commonjs_name)
-                        .as_str()
-                        .into(),
-                    ))),
-                    args: vec![],
-                    type_args: None,
-                  };
-                } else if let Some(ns) = self.module_global_uniq_name.namespace_name(&id) {
-                  *expr = Expr::Ident(self.bundle_variable.render_name(ns).as_str().into())
-                }
-              } else {
-                call_expr.visit_mut_children_with(self);
-              }
-
-              // TODO: other bundle | external
-            } else {
-              call_expr.visit_mut_children_with(self);
-            }
-          } else {
-            call_expr.visit_mut_children_with(self);
-          }
-        } else {
-          call_expr.visit_mut_children_with(self);
-        }
-      }
-      _ => {
-        expr.visit_mut_children_with(self);
-      }
-    }
-  }
-}
-
+pub mod generate;
+pub mod patch;
+mod util;
 ///
 ///
 /// ```js
@@ -185,32 +96,10 @@ impl CjsModuleAnalyzer {
     collector.deps
   }
 
-  pub fn replace_cjs_require(
-    &mut self,
-    mark: (Mark, Mark),
-    ast: &mut EcmaAstModule,
-    module_id: &ModuleId,
-    module_graph: &ModuleGraph,
-    module_global_uniq_name: &ModuleGlobalUniqName,
-    bundle_variable: &BundleVariable,
-  ) {
-    let mut replacer: CJSReplace = CJSReplace {
-      unresolved_mark: mark.0,
-      top_level_mark: mark.1,
-      module_graph,
-      module_id: module_id.clone(),
-      module_global_uniq_name,
-      bundle_variable,
-    };
-
-    ast.visit_mut_with(&mut replacer);
-  }
-
   /** when use esm export commonjs module */
-  pub fn build_commonjs_export(
+  pub fn redeclare_commonjs_export(
     module_id: &ModuleId,
     bundle_variable: &BundleVariable,
-    // module_analyzer: &ModuleAnalyzer,
     module_global_uniq_name: &ModuleGlobalUniqName,
     reference_import: &ExternalReferenceImport,
   ) -> Vec<ModuleItem> {

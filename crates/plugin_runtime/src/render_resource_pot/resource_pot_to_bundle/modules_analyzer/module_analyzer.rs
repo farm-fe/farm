@@ -2,11 +2,18 @@ use std::{
   cell::RefMut,
   collections::{HashMap, HashSet},
   path::PathBuf,
+  rc::Rc,
   sync::Arc,
 };
 
 use farmfe_core::{
-  context::CompilationContext, error::Result, farm_profile_function, module::{module_graph::ModuleGraph, Module, ModuleId, ModuleSystem}, resource::resource_pot::ResourcePotId, swc_common::{Mark, SourceMap}, swc_ecma_ast::{Id, Module as EcmaAstModule}
+  context::CompilationContext,
+  error::Result,
+  farm_profile_function,
+  module::{module_graph::ModuleGraph, Module, ModuleId, ModuleSystem},
+  resource::resource_pot::ResourcePotId,
+  swc_common::{Mark, SourceMap},
+  swc_ecma_ast::{Id, Module as EcmaAstModule},
 };
 use farmfe_toolkit::{
   common::{create_swc_source_map, Source},
@@ -15,7 +22,7 @@ use farmfe_toolkit::{
 };
 
 use crate::resource_pot_to_bundle::{
-  targets::cjs::CjsModuleAnalyzer, uniq_name::BundleVariable, Var,
+  bundle::reference::ReferenceMap, targets::cjs::CjsModuleAnalyzer, uniq_name::BundleVariable, Var,
 };
 
 use super::analyze::{self, CollectUnresolvedIdent};
@@ -122,6 +129,9 @@ impl Variable {
   pub fn export_as(&self) -> usize {
     self.1.unwrap_or(self.0)
   }
+  pub fn export_from(&self) -> usize {
+    self.0
+  }
 
   pub fn import_origin(&self) -> usize {
     self.1.unwrap_or(self.0)
@@ -153,7 +163,7 @@ pub enum ExportSpecifierInfo {
   /// ```js
   /// export * from 'foo';
   /// ```
-  All(Option<Vec<usize>>),
+  All(Option<usize>),
   /// ```js
   /// // (default, Some(zoo))
   /// export { foo, bar, default as zoo } from 'foo';
@@ -297,7 +307,7 @@ pub struct ModuleAnalyzer {
   pub ast: EcmaAstModule,
   pub module_id: ModuleId,
   pub resource_pot_id: ResourcePotId,
-  pub export_names: Option<ExportAllSet>,
+  pub export_names: Option<Rc<ReferenceMap>>,
   pub entry: bool,
   pub external: bool,
   pub dynamic: bool,
@@ -371,6 +381,10 @@ impl ModuleAnalyzer {
     )
   }
 
+  pub fn is_hybrid_esm(&self) -> bool {
+    matches!(self.module_system, ModuleSystem::EsModule | ModuleSystem::Hybrid)
+  }
+
   fn collect_unresolved_ident(&self, bundle_variable: &mut BundleVariable) {
     farm_profile_function!("");
     let mut collection = CollectUnresolvedIdent::new(self.mark.0);
@@ -440,6 +454,10 @@ impl ModuleAnalyzer {
     }
 
     variables
+  }
+
+  pub fn export_names(&self) -> Rc<ReferenceMap> {
+    return self.export_names.clone().unwrap_or_default();
   }
 
   pub fn build_rename_map<'a>(

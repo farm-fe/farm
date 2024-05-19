@@ -10,12 +10,13 @@ use farmfe_core::{
   context::CompilationContext,
   farm_profile_function, farm_profile_scope,
   module::{module_graph::ModuleGraph, ModuleId, ModuleSystem},
-  regex::Regex,
   resource::resource_pot::ResourcePotId,
   swc_ecma_ast::Ident,
 };
 
 use super::{
+  bundle::ModuleAnalyzerManager,
+  bundle_external::ReferenceKind,
   modules_analyzer::module_analyzer::{ExportSpecifierInfo, ModuleAnalyzer},
   Var,
 };
@@ -76,15 +77,28 @@ fn normalize_file_name_as_variable(str: String) -> String {
   let mut res = String::with_capacity(str.len());
 
   let mut first = true;
+  let mut prev_is_valid = false;
   for ch in str.chars() {
     if first {
       if is_valid_char(ch) {
+        prev_is_valid = false;
         first = false;
         res.push(ch);
+      } else {
+        if !prev_is_valid {
+          res.push('_');
+        }
+        prev_is_valid = true;
       }
     } else {
       if is_valid_char(ch) || ch.is_digit(10) {
+        prev_is_valid = false;
         res.push(ch);
+      } else {
+        if !prev_is_valid {
+          res.push('_');
+        }
+        prev_is_valid = true;
       }
     }
   }
@@ -92,9 +106,9 @@ fn normalize_file_name_as_variable(str: String) -> String {
   res
 }
 
-pub fn safe_name_from_module_id(module_id: &ModuleId, context: &Arc<CompilationContext>) -> String {
+pub fn safe_name_from_module_id(module_id: &ModuleId, root: &String) -> String {
   farm_profile_scope!("safe_name_from_module_id PathBuf");
-  let filename = module_id.resolved_path(&context.config.root);
+  let filename = module_id.resolved_path(&root);
   let name = PathBuf::from_str(&filename)
     .map(|path| {
       path
@@ -201,6 +215,17 @@ impl BundleVariable {
     return index;
   }
 
+  pub fn register_used_name(&mut self, module_id: &ModuleId, suffix: &str, root: &String) -> usize {
+    farm_profile_scope!("register name");
+    let module_safe_name = format!("{}{suffix}", safe_name_from_module_id(module_id, root));
+
+    let uniq_name_safe_name = self.uniq_name().uniq_name(&module_safe_name);
+
+    self.add_used_name(uniq_name_safe_name.clone());
+
+    self.register_var(&module_id, &uniq_name_safe_name.as_str().into(), false)
+  }
+
   pub fn var_by_index(&self, index: usize) -> &Var {
     &self.variables[&index]
   }
@@ -266,172 +291,93 @@ impl BundleVariable {
     &self,
     index: usize,
     source: &ModuleId,
-    module_analyzers: &HashMap<ModuleId, ModuleAnalyzer>,
+    module_analyzers: &ModuleAnalyzerManager,
     resource_pot_id: ResourcePotId,
-    module_graph: &ModuleGraph,
     find_default: bool,
     find_namespace: bool,
   ) -> Option<FindModuleExportResult> {
-    #[derive(Debug)]
-    struct FindOption {
-      source: ModuleId,
-      index: usize,
-      find_default: bool,
+    let var_ident = self.name(index);
+
+    if module_analyzers.is_external(source) {
+      return Some(FindModuleExportResult::External(
+        index,
+        source.clone(),
+        None,
+      ));
     }
 
-    let mut queues = VecDeque::from_iter([FindOption {
-      source: source.clone(),
-      index,
-      find_default,
-    }]);
-    while let Some(FindOption {
-      find_default,
-      index,
-      source: dep_id,
-    }) = queues.pop_front()
-    {
-      let var_ident = self.name(index);
+    if let Some(module_analyzer) = module_analyzers.module_analyzer(&source) {
+      let module_system = module_analyzer.module_system.clone();
 
-      if let Some(dep) = module_graph.module(&dep_id) {
-        if dep.external {
-          return Some(FindModuleExportResult::External(index, dep_id, None));
-        }
+      if find_namespace || module_analyzers.is_commonjs(source) {
+        return Some(FindModuleExportResult::Local(
+          index,
+          source.clone(),
+          Some(module_system),
+        ));
       }
 
-      if let Some(module_analyzer) = module_analyzers.get(&dep_id) {
-        let module_system = module_analyzer.module_system.clone();
-        if module_analyzer.external {
-          return Some(FindModuleExportResult::External(index, dep_id, None));
-        }
+      let statements = module_analyzer
+        .export_names
+        .as_ref()
+        .map(|item| item.clone())
+        .unwrap();
 
-        if module_analyzer.resource_pot_id != resource_pot_id {
+      if module_analyzer.resource_pot_id != resource_pot_id {
+        if let Some(index) = statements.query_by_var_str(&var_ident, &self) {
           return Some(FindModuleExportResult::Bundle(
             index,
             module_analyzer.resource_pot_id.clone(),
             // support cjs
             Some(module_system),
           ));
+          // TODO: error?
         }
+      }
 
-        if find_namespace || matches!(module_system, ModuleSystem::CommonJs | ModuleSystem::Hybrid)
+      if find_default {
+        if let Some(d) = statements
+          .export
+          .default
+          .clone()
+          .or_else(|| statements.export.query(&"default".to_string(), &self))
         {
           return Some(FindModuleExportResult::Local(
-            index,
-            dep_id.clone(),
+            d,
+            source.clone(),
             Some(module_system),
           ));
         }
 
-        let statements = module_analyzer.exports_stmts();
+        return None;
+      }
 
-        // TODO: order by export type, export all need to last
-        for export in statements.iter() {
-          for specify in &export.specifiers {
-            match specify {
-              // export default foo
-              ExportSpecifierInfo::Default(default_index) if find_default => {
-                return Some(FindModuleExportResult::Local(
-                  default_index.clone(),
-                  dep_id.clone(),
-                  Some(module_system),
-                ));
-              }
+      if let Some(d) = statements.export.query(&var_ident, &self) {
+        return Some(FindModuleExportResult::Local(
+          d,
+          source.clone(),
+          Some(module_system),
+        ));
+      }
 
-              ExportSpecifierInfo::Named(named) => {
-                let var_index = named.export_as();
-
-                let export_var = self.name(var_index);
-
-                // ```js
-                // export {
-                //   foo as default
-                // }
-                // ```
-                // ```js
-                // export { foo as default } from './foo'
-                // ```
-                if find_default && export_var == "default" {
-                  if let Some(reference_source) = export.source.as_ref() {
-                    // export { foo as default } from './foo'
-                    queues.push_back(FindOption {
-                      source: reference_source.clone(),
-                      // foo
-                      index: named.local(),
-                      find_default: true,
-                    });
-                  } else {
-                    return Some(FindModuleExportResult::Local(
-                      named.local(),
-                      dep_id.clone(),
-                      Some(module_system),
-                    ));
-                  }
-                  continue;
-                }
-
-                if export_var == var_ident {
-                  match (&named.1, &export.source) {
-                    // export { foo as bar } from './foo'
-                    (&Some(_), &Some(ref reference_source)) => {
-                      queues.push_back(FindOption {
-                        source: reference_source.clone(),
-                        // foo
-                        index: named.local(),
-                        find_default: false,
-                      });
-                    }
-
-                    // export { foo } from './foo'
-                    (&None, &Some(ref reference_source)) => {
-                      queues.push_back(FindOption {
-                        source: reference_source.clone(),
-                        index: named.local().into(),
-                        find_default: false,
-                      });
-                    }
-
-                    // export { foo as bar }
-                    // export { foo }
-                    (_, &None) => {
-                      return Some(FindModuleExportResult::Local(
-                        named.local(),
-                        dep_id.clone(),
-                        Some(module_system),
-                      ));
-                    }
-                  }
-                }
-              }
-
-              // export * from './foo'
-              ExportSpecifierInfo::All(_) => {
-                if let Some(source) = export.source.as_ref() {
-                  queues.push_back(FindOption {
-                    source: source.clone(),
-                    index: index.clone(),
-                    find_default: false,
-                  });
-                }
-              }
-
-              // export * as Foo from './foo'
-              ExportSpecifierInfo::Namespace(namespace_index) => {
-                let namespace_var = self.name(*namespace_index);
-                if namespace_var == var_ident {
-                  return Some(FindModuleExportResult::Local(
-                    namespace_index.clone(),
-                    dep_id.clone(),
-                    Some(module_system),
-                  ));
-                }
-              }
-              _ => {}
-            }
+      for (module_id, export) in &statements.reference_map {
+        if let Some(d) = export.query(&var_ident, &self) {
+          if module_analyzers.is_external(module_id) {
+            return Some(FindModuleExportResult::External(
+              d,
+              module_id.clone(),
+              Some(module_system),
+            ));
+          } else {
+            return Some(FindModuleExportResult::Local(
+              d,
+              module_id.clone(),
+              Some(module_system),
+            ));
           }
         }
       }
     }
-
     None
   }
 }
@@ -455,6 +401,14 @@ impl FindModuleExportResult {
       }
     }
   }
+
+  pub fn target_source(&self) -> ReferenceKind {
+    match self {
+      FindModuleExportResult::Local(_, target_source, _) => target_source.clone().into(),
+      FindModuleExportResult::External(_, target_source, _) => target_source.clone().into(),
+      FindModuleExportResult::Bundle(_, target_bundle, _) => target_bundle.clone().into(),
+    }
+  }
 }
 
 #[cfg(test)]
@@ -473,6 +427,7 @@ mod tests {
   };
 
   use crate::resource_pot_to_bundle::{
+    bundle::ModuleAnalyzerManager,
     modules_analyzer::module_analyzer::{
       ExportInfo, ExportSpecifierInfo, ModuleAnalyzer, Statement, Variable,
     },
@@ -480,6 +435,32 @@ mod tests {
   };
 
   use super::BundleVariable;
+
+  use super::normalize_file_name_as_variable;
+
+  #[test]
+  fn test_normalize_name() {
+    let normalized_str = normalize_file_name_as_variable(String::from("F:\\path\\to\\file.ts"));
+    assert_eq!(normalized_str, "F_path_to_file_ts");
+
+    let normalized_str = normalize_file_name_as_variable(String::from("/path/to/file.ts"));
+    assert_eq!(normalized_str, "_path_to_file_ts");
+
+    let normalized_str = normalize_file_name_as_variable(String::from("$_#$()axq"));
+    assert_eq!(normalized_str, "___axq");
+
+    let normalized_str = normalize_file_name_as_variable(String::from("_a_b_C_D"));
+    assert_eq!(normalized_str, "_a_b_C_D");
+
+    let normalized_str = normalize_file_name_as_variable(String::from("123456789"));
+    assert_eq!(normalized_str, "_");
+
+    let normalized_str = normalize_file_name_as_variable(String::from("1_2_3_4"));
+    assert_eq!(normalized_str, "__2_3_4");
+
+    let normalized_str = normalize_file_name_as_variable(String::from("1text.ts"));
+    assert_eq!(normalized_str, "_text_ts");
+  }
 
   #[test]
   fn find_external() -> Result<()> {
@@ -558,12 +539,16 @@ mod tests {
     module_graph.add_module(b_module);
     module_graph.add_module(external_module);
 
-    let result = bundle_variable.find_ident_by_index(
+    let mut module_analyzer_manager =
+      ModuleAnalyzerManager::new(module_analyzer_map, &module_graph);
+
+    module_analyzer_manager.build_export_names(&b_module_id, &bundle_variable);
+
+    let result: Option<FindModuleExportResult> = bundle_variable.find_ident_by_index(
       local_variable,
       &b_module_id,
-      &module_analyzer_map,
+      &module_analyzer_manager,
       resource_pot_id,
-      &module_graph,
       false,
       false,
     );
@@ -589,13 +574,13 @@ mod tests {
     // index.js, bundle-b.js
 
     // bundle-b.js
-    // const bundleB = 100;
+    // export const bundleB = 100;
     //
     // index.js
     // export { bundleB as b } from './bundle-b.js';
     //
     //
-    // result: find_ident_by_index(b, bundle-b.js) -> Bundle(bundleB, external.js)
+    // result: find_ident_by_index(b, bundle-b.js) -> Bundle(bundleB, bundle-b.js)
 
     let mut bundle_variable = BundleVariable::new();
 
@@ -629,7 +614,7 @@ mod tests {
       false,
       false,
     )?;
-    let bundle_module_analyzer = ModuleAnalyzer::new(
+    let mut bundle_module_analyzer = ModuleAnalyzer::new(
       &bundle_module,
       &context,
       resource_pot_bundle.clone(),
@@ -638,7 +623,9 @@ mod tests {
       false,
     )?;
 
-    let bundle_a_export = bundle_variable.register_var(&index_module_id, &"a".into(), false);
+    let bundle_export = bundle_variable.register_var(&bundle_module_id, &"bundleB".into(), false);
+    let index_export_from =
+      bundle_variable.register_var(&index_module_id, &"bundleB".into(), false);
     let export_as = bundle_variable.register_var(&index_module_id, &"b".into(), false);
 
     index_module_analyzer.statements.push(Statement {
@@ -647,7 +634,7 @@ mod tests {
       export: Some(ExportInfo {
         source: Some(bundle_module_id.clone()),
         specifiers: vec![ExportSpecifierInfo::Named(Variable(
-          bundle_a_export,
+          index_export_from,
           Some(export_as),
         ))],
         stmt_id: 0,
@@ -655,20 +642,36 @@ mod tests {
       defined: vec![],
     });
 
+    bundle_module_analyzer.statements.push(Statement {
+      id: 0,
+      import: None,
+      export: Some(ExportInfo {
+        source: None,
+        specifiers: vec![ExportSpecifierInfo::Named(bundle_export.into())],
+        stmt_id: 0,
+      }),
+      defined: vec![],
+    });
+
     module_analyzer_map.insert(index_module_id.clone(), index_module_analyzer);
-    module_analyzer_map.insert(bundle_module_id, bundle_module_analyzer);
+    module_analyzer_map.insert(bundle_module_id.clone(), bundle_module_analyzer);
 
     let mut module_graph = ModuleGraph::new();
 
     module_graph.add_module(index_module);
     module_graph.add_module(bundle_module);
 
+    let mut module_analyzer_manager =
+      ModuleAnalyzerManager::new(module_analyzer_map, &module_graph);
+
+    module_analyzer_manager.build_export_names(&index_module_id, &bundle_variable);
+    module_analyzer_manager.build_export_names(&bundle_module_id, &bundle_variable);
+
     let result = bundle_variable.find_ident_by_index(
-      export_as,
-      &index_module_id,
-      &module_analyzer_map,
+      index_export_from,
+      &bundle_module_id,
+      &module_analyzer_manager,
       resource_pot_index,
-      &module_graph,
       false,
       false,
     );
@@ -681,11 +684,10 @@ mod tests {
     if let FindModuleExportResult::Bundle(index, ..) = result.unwrap() {
       assert_eq!(
         bundle_variable.name(index),
-        bundle_variable.name(bundle_a_export)
+        bundle_variable.name(index_export_from)
       )
     };
 
     Ok(())
-    // bundle_variable.regis
   }
 }

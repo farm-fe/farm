@@ -14,13 +14,15 @@ use farmfe_core::{
     magic_string::{MagicString, MagicStringOptions},
   },
   error::{CompilationError, Result},
-  module::{module_graph::ModuleGraph, Module, ModuleId, ModuleSystem},
+  module::{module_graph::ModuleGraph, ModuleId, ModuleSystem},
   parking_lot::Mutex,
   rayon::iter::{IntoParallelIterator, ParallelIterator},
   resource::resource_pot::{RenderedModule, ResourcePot},
   serialize,
-  swc_common::{comments::SingleThreadedComments, Mark, SourceMap},
-  swc_ecma_ast::Module as EcmaAstModule,
+  swc_common::{comments::SingleThreadedComments, util::take::Take, Mark, DUMMY_SP},
+  swc_ecma_ast::{
+    BindingIdent, BlockStmt, FnDecl, Function, Module as EcmaAstModule, ModuleItem, Param, Stmt,
+  },
 };
 use farmfe_toolkit::common::MinifyBuilder;
 use farmfe_toolkit::{

@@ -2,7 +2,6 @@ use std::{
   cell::RefCell,
   cmp::Ordering,
   collections::{HashMap, HashSet},
-  rc::Rc,
   sync::Arc,
 };
 
@@ -15,15 +14,9 @@ use farmfe_core::{
   },
   error::{CompilationError, Result},
   farm_profile_function, farm_profile_scope,
-  module::{module_graph::ModuleGraph, ModuleId, ModuleSystem},
+  module::{module_graph::ModuleGraph, ModuleId},
   resource::resource_pot::{ResourcePot, ResourcePotType},
-  swc_common::{comments::SingleThreadedComments, util::take::Take, DUMMY_SP},
-  swc_ecma_ast::{
-    BindingIdent, CallExpr, Decl, ExportAll, ExportDefaultExpr, ExportNamedSpecifier,
-    ExportNamespaceSpecifier, Expr, ImportDecl, ImportDefaultSpecifier, ImportNamedSpecifier,
-    ImportStarAsSpecifier, ModuleDecl, ModuleItem, NamedExport, ObjectLit, Pat, PropOrSpread,
-    SpreadElement, Stmt, Str, VarDecl, VarDeclKind, VarDeclarator,
-  },
+  swc_common::{comments::SingleThreadedComments, util::take::Take},
 };
 use farmfe_toolkit::{
   common::build_source_map,
@@ -32,172 +25,20 @@ use farmfe_toolkit::{
   swc_ecma_visit::VisitMutWith,
 };
 
-use crate::resource_pot_to_bundle::modules_analyzer::module_analyzer::{
-  ExportSpecifierInfo, ExportType,
+use crate::resource_pot_to_bundle::{
+  modules_analyzer::module_analyzer::{ExportSpecifierInfo, ExportType},
+  targets::generate::{
+    generate_bundle_import_by_bundle_reference, generate_export_by_reference_export,
+  },
 };
 
 use super::{
   bundle::ModuleAnalyzerManager,
-  bundle_external::{BundleReference, ExternalReferenceExport, ReferenceKind},
+  bundle_external::BundleReference,
   common,
   modules_analyzer::module_analyzer::{ImportSpecifierInfo, StmtAction},
   uniq_name::{BundleVariable, FindModuleExportResult},
 };
-
-fn generate_export(
-  resource_pot_name: &String,
-  source: Option<&ModuleId>,
-  export: &ExternalReferenceExport,
-  bundle_variable: &BundleVariable,
-  module_analyzer_manager: &ModuleAnalyzerManager,
-  context: &Arc<CompilationContext>,
-) -> Vec<ModuleItem> {
-  let mut stmts = vec![];
-
-  let mut ordered_keys = export.named.keys().collect::<Vec<_>>();
-
-  ordered_keys.sort_by(|a, b| bundle_variable.name(**a).cmp(&bundle_variable.name(**b)));
-
-  match (export.export_type, context.config.output.format) {
-    // TODO: transform to cjs, split to targets/(cjs|esm)
-    (ExportType::HybridDynamic, ModuleFormat::CommonJs) => {
-      let mut decls = vec![];
-
-      if let Some(source) = source.as_ref() {
-        if module_analyzer_manager.is_commonjs(source) {
-          decls.push(PropOrSpread::Spread(SpreadElement {
-            dot3_token: DUMMY_SP,
-            expr: Box::new(Expr::Call(CallExpr {
-              span: DUMMY_SP,
-              callee: farmfe_core::swc_ecma_ast::Callee::Expr(Box::new(Expr::Ident(
-                bundle_variable
-                  .name(
-                    module_analyzer_manager
-                      .module_global_uniq_name
-                      .commonjs_name(source)
-                      .unwrap(),
-                  )
-                  .as_str()
-                  .into(),
-              ))),
-              args: vec![],
-              type_args: None,
-            })),
-          }))
-        }
-      }
-
-      // TODO: other export
-      stmts.push(ModuleItem::Stmt(Stmt::Decl(Decl::Var(Box::new(VarDecl {
-        span: DUMMY_SP,
-        kind: VarDeclKind::Var,
-        declare: false,
-        decls: vec![VarDeclarator {
-          span: DUMMY_SP,
-          name: Pat::Ident(BindingIdent {
-            type_ann: None,
-            // resource pot name
-            id: resource_pot_name.as_str().into(),
-          }),
-          init: Some(Box::new(Expr::Object(ObjectLit {
-            span: DUMMY_SP,
-            props: decls,
-          }))),
-          definite: false,
-        }],
-      })))));
-
-      stmts.push(ModuleItem::ModuleDecl(ModuleDecl::ExportNamed(
-        NamedExport {
-          span: DUMMY_SP,
-          specifiers: vec![],
-          src: None,
-          type_only: false,
-          with: None,
-        },
-      )))
-    }
-
-    // if export hybrid dynamic, TODO: should use polyfill to merge esm export and cjs export
-    (ExportType::HybridDynamic, ModuleFormat::EsModule) | (ExportType::Static, _) => {
-      let mut specifiers = vec![];
-
-      for exported in ordered_keys {
-        let local = &export.named[exported];
-        if bundle_variable.var_by_index(*local).removed {
-          continue;
-        }
-
-        let named_render_name = bundle_variable.render_name(*local);
-        let exported_name = bundle_variable.name(*exported);
-
-        let exported_name = if named_render_name == exported_name {
-          None
-        } else {
-          Some(exported_name.as_str().into())
-        };
-
-        specifiers.push(farmfe_core::swc_ecma_ast::ExportSpecifier::Named(
-          ExportNamedSpecifier {
-            span: DUMMY_SP,
-            orig: farmfe_core::swc_ecma_ast::ModuleExportName::Ident(
-              named_render_name.as_str().into(),
-            ),
-            exported: exported_name.map(farmfe_core::swc_ecma_ast::ModuleExportName::Ident),
-            is_type_only: false,
-          },
-        ));
-      }
-
-      if let Some(namespace) = export.namespace.as_ref() {
-        specifiers.push(farmfe_core::swc_ecma_ast::ExportSpecifier::Namespace(
-          ExportNamespaceSpecifier {
-            span: DUMMY_SP,
-            name: farmfe_core::swc_ecma_ast::ModuleExportName::Ident(
-              bundle_variable.name(*namespace).as_str().into(),
-            ),
-          },
-        ));
-      }
-
-      if let Some(source) = source {
-        if export.all {
-          stmts.push(ModuleItem::ModuleDecl(ModuleDecl::ExportAll(ExportAll {
-            span: DUMMY_SP,
-            src: Box::new(source.to_string().as_str().into()),
-            type_only: false,
-            with: None,
-          })));
-        }
-      }
-
-      if !specifiers.is_empty() {
-        stmts.push(ModuleItem::ModuleDecl(ModuleDecl::ExportNamed(
-          NamedExport {
-            span: DUMMY_SP,
-            specifiers,
-            src: source.map(|source| Box::new(source.to_string().as_str().into())),
-            type_only: false,
-            with: None,
-          },
-        )));
-      }
-
-      if let Some(default) = export.default.as_ref() {
-        stmts.push(ModuleItem::ModuleDecl(ModuleDecl::ExportDefaultExpr(
-          ExportDefaultExpr {
-            span: DUMMY_SP,
-            expr: Box::new(Expr::Ident(
-              bundle_variable.render_name(*default).as_str().into(),
-            )),
-          },
-        )));
-      }
-    }
-  }
-
-  stmts
-}
 
 #[derive(Debug)]
 #[allow(dead_code)]
@@ -210,7 +51,7 @@ enum NamespaceExportType {
 pub struct BundleAnalyzer<'a> {
   pub resource_pot: &'a ResourcePot,
   pub ordered_modules: Vec<&'a ModuleId>,
-  pub bundle_variable: Rc<RefCell<BundleVariable>>,
+  pub bundle_variable: Arc<RefCell<BundleVariable>>,
 
   module_graph: &'a ModuleGraph,
   context: Arc<CompilationContext>,
@@ -223,7 +64,7 @@ impl<'a> BundleAnalyzer<'a> {
     resource_pot: &'a ResourcePot,
     module_graph: &'a ModuleGraph,
     context: &Arc<CompilationContext>,
-    bundle_variable: Rc<RefCell<BundleVariable>>,
+    bundle_variable: Arc<RefCell<BundleVariable>>,
   ) -> Self {
     Self {
       bundle_variable,
@@ -282,6 +123,8 @@ impl<'a> BundleAnalyzer<'a> {
   ) -> Result<()> {
     farm_profile_function!("");
     for module_id in &self.ordered_modules {
+      module_analyzer_manager.build_export_names(module_id, &mut self.bundle_variable.borrow_mut());
+
       farm_profile_scope!(format!("bundle strip module: {}", module_id.to_string()));
       let mut stmt_action = HashSet::new();
       if let Some(module_analyzer) = module_analyzer_manager.module_analyzer(module_id) {
@@ -350,6 +193,8 @@ impl<'a> BundleAnalyzer<'a> {
   ) -> Result<()> {
     farm_profile_function!("");
 
+    let is_format_to_commonjs = self.context.config.output.format == ModuleFormat::CommonJs;
+
     for module_id in &self.ordered_modules {
       farm_profile_scope!(format!(
         "bundle analyzer module relation: {}",
@@ -358,6 +203,17 @@ impl<'a> BundleAnalyzer<'a> {
 
       if let Some(module_analyzer) = module_analyzer_manager.module_analyzer(module_id) {
         let resource_pot_id = module_analyzer.resource_pot_id.clone();
+        let is_reference_by_another = module_analyzer.entry || {
+          let importer = self.module_graph.dependents_ids(module_id);
+
+          importer.iter().any(|importer| {
+            if let Some(m) = module_analyzer_manager.module_analyzer(importer) {
+              return m.resource_pot_id != resource_pot_id;
+            };
+
+            false
+          })
+        };
 
         for statement in &module_analyzer.statements {
           if let Some(import) = &statement.import {
@@ -368,9 +224,8 @@ impl<'a> BundleAnalyzer<'a> {
                   let target = self.bundle_variable.borrow().find_ident_by_index(
                     *ns,
                     &import.source,
-                    &module_analyzer_manager.module_map,
+                    &module_analyzer_manager,
                     resource_pot_id.clone(),
-                    &self.module_graph,
                     false,
                     true,
                   );
@@ -384,32 +239,29 @@ impl<'a> BundleAnalyzer<'a> {
                           .module_global_uniq_name
                           .namespace_name(&target_module_id)
                         {
-                          let rendered_name = self.bundle_variable.borrow().render_name(local);
-
                           self
                             .bundle_variable
                             .borrow_mut()
-                            .set_rename(*ns, rendered_name);
+                            .set_rename_from_other_render_name(*ns, local);
+
                           if is_common_js {
-                            self.bundle_reference.sync_import(
-                              target_module_id.into(),
+                            self.bundle_reference.add_declare_commonjs_import(
                               specify,
+                              target_module_id.into(),
                               &self.bundle_variable.borrow(),
-                              is_common_js,
                             )?;
                           }
                         }
                       }
 
                       FindModuleExportResult::External(_, _, _) => {
-                        self.bundle_reference.sync_import(
-                          ReferenceKind::Module(import.source.clone()),
+                        self.bundle_reference.add_import(
                           specify,
+                          import.source.clone().into(),
                           &self.bundle_variable.borrow(),
-                          false,
                         )?;
 
-                        let rename = self.bundle_variable.borrow().name(common::otr!(
+                        let rename = common::otr!(
                           module_analyzer_manager
                             .module_global_uniq_name
                             .namespace_name(&import.source),
@@ -417,28 +269,26 @@ impl<'a> BundleAnalyzer<'a> {
                             "not found module {:?} namespace named",
                             import.source
                           ))
-                        )?);
-
-                        self.bundle_variable.borrow_mut().set_rename(*ns, rename);
-                      }
-
-                      FindModuleExportResult::Bundle(_, bundle_name, _) => {
-                        let common_import_rename = self.bundle_reference.sync_import(
-                          bundle_name.into(),
-                          specify,
-                          &self.bundle_variable.borrow(),
-                          false,
                         )?;
-
-                        let rendered_name = self
-                          .bundle_variable
-                          .borrow()
-                          .render_name(common_import_rename);
 
                         self
                           .bundle_variable
                           .borrow_mut()
-                          .set_rename(*ns, rendered_name);
+                          .set_rename_from_other_name(*ns, rename);
+                      }
+
+                      // TODO: bundle
+                      FindModuleExportResult::Bundle(_, bundle_name, _) => {
+                        let import_rename = self.bundle_reference.add_import(
+                          specify,
+                          bundle_name.into(),
+                          &self.bundle_variable.borrow(),
+                        )?;
+
+                        self
+                          .bundle_variable
+                          .borrow_mut()
+                          .set_rename_from_other_render_name(*ns, import_rename);
                       }
                     }
                   }
@@ -450,9 +300,8 @@ impl<'a> BundleAnalyzer<'a> {
                   let target = self.bundle_variable.borrow().find_ident_by_index(
                     imported,
                     &import.source,
-                    &module_analyzer_manager.module_map,
+                    &module_analyzer_manager,
                     resource_pot_id.clone(),
-                    self.module_graph,
                     self.bundle_variable.borrow().name(imported) == "default",
                     false,
                   );
@@ -461,62 +310,44 @@ impl<'a> BundleAnalyzer<'a> {
                     let is_common_js = target.is_common_js();
                     match target {
                       FindModuleExportResult::Local(index, target_source, _) => {
-                        self.bundle_variable.borrow_mut().set_var_uniq_rename(index);
-
-                        let rendered_name = self.bundle_variable.borrow().render_name(index);
                         self
                           .bundle_variable
                           .borrow_mut()
-                          .set_rename(*local, rendered_name);
+                          .set_uniq_name_both(index, *local);
+
                         if is_common_js {
-                          self.bundle_reference.sync_import(
-                            target_source.into(),
+                          self.bundle_reference.add_declare_commonjs_import(
                             specify,
+                            target_source.into(),
                             &self.bundle_variable.borrow(),
-                            is_common_js,
                           )?;
                         }
                       }
 
                       FindModuleExportResult::External(_, target, _) => {
-                        let rename = self.bundle_reference.sync_import(
-                          target.into(),
+                        let rename = self.bundle_reference.add_import(
                           specify,
+                          target.into(),
                           &self.bundle_variable.borrow(),
-                          false,
                         )?;
 
                         self
                           .bundle_variable
                           .borrow_mut()
-                          .set_var_uniq_rename(rename);
-
-                        // external
-                        let rendered_name = self.bundle_variable.borrow().render_name(rename);
-                        self
-                          .bundle_variable
-                          .borrow_mut()
-                          .set_rename(*local, rendered_name);
+                          .set_uniq_name_both(rename, *local);
                       }
 
                       FindModuleExportResult::Bundle(_, target, _) => {
-                        let rename = self.bundle_reference.sync_import(
-                          target.into(),
+                        let rename = self.bundle_reference.add_import(
                           specify,
+                          target.into(),
                           &self.bundle_variable.borrow(),
-                          false,
                         )?;
 
                         self
                           .bundle_variable
                           .borrow_mut()
-                          .set_var_uniq_rename(rename);
-
-                        let rendered_name = self.bundle_variable.borrow().render_name(rename);
-                        self
-                          .bundle_variable
-                          .borrow_mut()
-                          .set_rename(*local, rendered_name);
+                          .set_uniq_name_both(rename, *local);
                       }
                     }
                   }
@@ -527,9 +358,8 @@ impl<'a> BundleAnalyzer<'a> {
                   let target = self.bundle_variable.borrow().find_ident_by_index(
                     *default,
                     &import.source,
-                    &module_analyzer_manager.module_map,
+                    &module_analyzer_manager,
                     resource_pot_id.clone(),
-                    self.module_graph,
                     true,
                     false,
                   );
@@ -538,61 +368,44 @@ impl<'a> BundleAnalyzer<'a> {
                     let is_common_js = target.is_common_js();
                     match target {
                       FindModuleExportResult::Local(index, target_source, _) => {
-                        self.bundle_variable.borrow_mut().set_var_uniq_rename(index);
-                        let rendered_name = self.bundle_variable.borrow().render_name(index);
                         self
                           .bundle_variable
                           .borrow_mut()
-                          .set_rename(*default, rendered_name);
+                          .set_uniq_name_both(index, *default);
+
                         if is_common_js {
-                          self.bundle_reference.sync_import(
-                            target_source.into(),
+                          self.bundle_reference.add_declare_commonjs_import(
                             specify,
+                            target_source.into(),
                             &self.bundle_variable.borrow(),
-                            is_common_js,
                           )?;
                         }
                       }
 
                       FindModuleExportResult::External(_, target, _) => {
-                        let rename = self.bundle_reference.sync_import(
-                          target.into(),
+                        let rename = self.bundle_reference.add_import(
                           specify,
+                          target.into(),
                           &self.bundle_variable.borrow(),
-                          false,
                         )?;
 
                         self
                           .bundle_variable
                           .borrow_mut()
-                          .set_var_uniq_rename(rename);
-
-                        // external
-                        let rendered_name = self.bundle_variable.borrow().render_name(rename);
-                        self
-                          .bundle_variable
-                          .borrow_mut()
-                          .set_rename(*default, rendered_name);
+                          .set_uniq_name_both(rename, *default);
                       }
 
                       FindModuleExportResult::Bundle(_, target, _) => {
-                        let rename = self.bundle_reference.sync_import(
-                          target.into(),
+                        let rename = self.bundle_reference.add_import(
                           specify,
+                          target.into(),
                           &self.bundle_variable.borrow(),
-                          false,
                         )?;
 
                         self
                           .bundle_variable
                           .borrow_mut()
-                          .set_var_uniq_rename(rename);
-
-                        let rendered_name = self.bundle_variable.borrow().render_name(rename);
-                        self
-                          .bundle_variable
-                          .borrow_mut()
-                          .set_rename(*default, rendered_name);
+                          .set_uniq_name_both(rename, *default);
                       }
                     }
                   };
@@ -602,74 +415,134 @@ impl<'a> BundleAnalyzer<'a> {
           }
 
           if let Some(export) = &statement.export {
+            if module_analyzer_manager.is_commonjs(&module_id) {
+              continue;
+            }
+
             for specify in &export.specifiers {
               match specify {
                 // export * from 'person'
-                // TODO: support cjs
                 ExportSpecifierInfo::All(_) => {
-                  if let Some(source) = &export.source {
-                    // entry | other bundle
-                    if module_analyzer.entry || {
-                      let importer = self.module_graph.dependents_ids(module_id);
+                  let Some(source) = &export.source else {
+                    unreachable!("export all should have source")
+                  };
 
-                      importer.iter().any(|importer| {
-                        if let Some(m) = module_analyzer_manager.module_analyzer(importer) {
-                          return m.resource_pot_id != resource_pot_id;
-                        };
+                  // entry | other bundle
+                  if is_reference_by_another {
+                    let reexport_commonjs =
+                      |module_id: &ModuleId, bundle_reference: &mut BundleReference| {
+                        bundle_reference.change_to_hybrid_dynamic(module_id.clone().into());
 
-                        false
-                      })
-                    } {
-                      let exports = module_analyzer_manager.export_names(
-                        source,
-                        &self.bundle_variable.borrow(),
-                        true,
+                        bundle_reference.add_declare_commonjs_import(
+                          &ImportSpecifierInfo::Namespace(
+                            module_analyzer_manager
+                              .module_global_uniq_name
+                              .namespace_name(module_id)
+                              .unwrap(),
+                          ),
+                          module_id.clone().into(),
+                          &self.bundle_variable.borrow(),
+                        )?;
+
+                        bundle_reference.add_reference_export(
+                          &ExportSpecifierInfo::All(None),
+                          module_id.clone().into(),
+                        );
+
+                        Result::<()>::Ok(())
+                      };
+
+                    if module_analyzer_manager.is_external(source) {
+                      // export * from "node:fs"
+                      // => commonjs
+                      // const node_fs = require("node:fs")
+                      // _export_star(node_fs, module.exports);
+
+                      if is_format_to_commonjs {
+                        self.bundle_reference.add_import(
+                          &ImportSpecifierInfo::Namespace(
+                            module_analyzer_manager
+                              .module_global_uniq_name
+                              .namespace_name(source)
+                              .unwrap(),
+                          ),
+                          source.clone().into(),
+                          &self.bundle_variable.borrow(),
+                        )?;
+                      }
+
+                      self.bundle_reference.add_reference_export(
+                        &ExportSpecifierInfo::All(None),
+                        source.clone().into(),
                       );
-                      let is_hybrid_dynamic = matches!(exports.ty, ExportType::HybridDynamic);
+                    } else if module_analyzer_manager.is_commonjs(&source) {
+                      reexport_commonjs(source, &mut self.bundle_reference)?;
+                    } else {
+                      let map = &*module_analyzer_manager.get_export_names(source);
 
-                      for (export, export_source) in exports.data {
-                        // let is_commonjs = module_analyzer_manager.is_commonjs(&export_source);
-                        let is_in_self_bundle = self.ordered_modules.contains(&&export_source);
-                        for specify in export.specifiers {
-                          let t = Some(export.source.clone().unwrap_or(export_source.clone()));
+                      let is_hybrid_dynamic = matches!(map.export_type, ExportType::HybridDynamic);
 
-                          if is_hybrid_dynamic {
-                            // self.bundle_variable.borrow_mut().set_var_uniq_rename(local);
-                            self.bundle_reference.sync_import(
-                              export_source.clone().into(),
-                              &match &specify {
-                                ExportSpecifierInfo::All(_) => unreachable!(),
-                                ExportSpecifierInfo::Named(name) => ImportSpecifierInfo::Named {
-                                  local: name.local(),
-                                  imported: name.1.clone(),
-                                },
-                                ExportSpecifierInfo::Default(de) => {
-                                  ImportSpecifierInfo::Default(*de)
-                                }
-                                ExportSpecifierInfo::Namespace(ns) => {
-                                  ImportSpecifierInfo::Namespace(*ns)
-                                }
-                              },
-                              &self.bundle_variable.borrow(),
-                              true,
-                            )?;
+                      {
+                        for (from, export_as) in &map.export.named {
+                          self
+                            .bundle_reference
+                            .add_local_export(&ExportSpecifierInfo::Named(
+                              (*from, Some(*export_as)).into(),
+                            ));
+                        }
+
+                        if let Some(item) = &map.export.default {
+                          self
+                            .bundle_reference
+                            .add_local_export(&&ExportSpecifierInfo::Default(*item));
+                        }
+                        // TODO: namespace
+                      }
+
+                      {
+                        for (module_id, reference) in &map.reference_map {
+                          if module_analyzer_manager.is_external(module_id) {
+                            for (from, export_as) in &reference.named {
+                              self.bundle_reference.add_reference_export(
+                                &ExportSpecifierInfo::Named((*from, Some(*export_as)).into()),
+                                module_id.clone().into(),
+                              );
+                            }
+
+                            if let Some(item) = &reference.default {
+                              self.bundle_reference.add_reference_export(
+                                &&ExportSpecifierInfo::Default(*item),
+                                module_id.clone().into(),
+                              );
+                            }
+
+                            if reference.all.0 {
+                              if is_hybrid_dynamic
+                                && self.context.config.output.format == ModuleFormat::CommonJs
+                              {
+                                self.bundle_reference.add_import(
+                                  &ImportSpecifierInfo::Namespace(
+                                    module_analyzer_manager
+                                      .module_global_uniq_name
+                                      .namespace_name(module_id)
+                                      .unwrap(),
+                                  ),
+                                  module_id.clone().into(),
+                                  &self.bundle_variable.borrow(),
+                                )?;
+                              }
+
+                              self.bundle_reference.add_reference_export(
+                                &&ExportSpecifierInfo::All(None),
+                                module_id.clone().into(),
+                              );
+                            }
+                          } else if module_analyzer_manager.is_commonjs(module_id) {
+                            reexport_commonjs(module_id, &mut self.bundle_reference)?
                           }
-
-                          self.bundle_reference.sync_export(
-                            &specify,
-                            if is_in_self_bundle {
-                              export.source.as_ref().map(|item| item.clone().into())
-                            } else {
-                              t.map(|item| item.into())
-                            },
-                            None,
-                            true,
-                          );
                         }
                       }
                     }
-                  } else {
-                    unreachable!("export all should have source")
                   }
                 }
 
@@ -682,59 +555,55 @@ impl<'a> BundleAnalyzer<'a> {
                     let target = self.bundle_variable.borrow_mut().find_ident_by_index(
                       variables.local(),
                       source,
-                      &module_analyzer_manager.module_map,
+                      &module_analyzer_manager,
                       resource_pot_id.clone(),
-                      self.module_graph,
                       is_find_default,
                       false,
                     );
 
                     if let Some(target) = target {
                       let is_common_js = target.is_common_js();
+                      let mut is_confirmed_import = false;
+                      let target_source = target.target_source();
 
                       match target {
                         FindModuleExportResult::Local(local, target_source, _) => {
-                          let importers = self.module_graph.dependents_ids(module_id);
-
+                          is_confirmed_import = true;
                           if is_common_js {
                             self.bundle_variable.borrow_mut().set_var_uniq_rename(local);
-
-                            self.bundle_reference.sync_import(
-                              target_source.into(),
+                            self.bundle_reference.add_declare_commonjs_import(
                               &ImportSpecifierInfo::Named {
                                 local,
                                 imported: None,
                               },
+                              target_source.into(),
                               &self.bundle_variable.borrow(),
-                              true,
                             )?;
                           }
 
-                          if module_analyzer.entry
-                            || importers.iter().any(|importer| {
-                              if let Some(m) = module_analyzer_manager.module_analyzer(importer) {
-                                return m.resource_pot_id != resource_pot_id;
-                              };
-                              false
-                            })
-                          {
-                            self.bundle_reference.sync_export(
-                              &ExportSpecifierInfo::Named((local).into()),
-                              None,
-                              None,
-                              false,
-                            );
+                          if is_reference_by_another {
+                            self
+                              .bundle_reference
+                              .add_local_export(&ExportSpecifierInfo::Named((local).into()));
                           }
                         }
                         FindModuleExportResult::External(_, target_source, _) => {
-                          self.bundle_reference.sync_export(
-                            specify,
-                            Some(target_source.into()),
-                            None,
-                            false,
-                          );
+                          if is_reference_by_another {
+                            self
+                              .bundle_reference
+                              .add_reference_export(specify, target_source.into());
+                            is_confirmed_import = true;
+                          }
                         }
-                        FindModuleExportResult::Bundle(_, _, _) => {}
+
+                        FindModuleExportResult::Bundle(_, _, _) => {
+                          is_confirmed_import = true;
+                          // TODO: bundle impl
+                        }
+                      }
+
+                      if !is_confirmed_import {
+                        self.bundle_reference.add_empty_import(target_source)
                       }
                     }
                   } else {
@@ -742,19 +611,9 @@ impl<'a> BundleAnalyzer<'a> {
                       .bundle_variable
                       .borrow_mut()
                       .set_var_uniq_rename(variables.local());
-                    let importers = self.module_graph.dependents_ids(module_id);
 
-                    if module_analyzer.entry
-                      || importers.iter().any(|importer| {
-                        if let Some(m) = module_analyzer_manager.module_analyzer(importer) {
-                          return m.resource_pot_id != resource_pot_id;
-                        };
-                        false
-                      })
-                    {
-                      self
-                        .bundle_reference
-                        .sync_export(specify, None, None, false);
+                    if is_reference_by_another {
+                      self.bundle_reference.add_local_export(specify);
                     }
                   }
                 }
@@ -781,21 +640,6 @@ impl<'a> BundleAnalyzer<'a> {
                       .set_rename(*var, rendered_name);
                   } else {
                     self.bundle_variable.borrow_mut().set_var_uniq_rename(*var);
-                  }
-
-                  if module_analyzer.entry || {
-                    let importers = module_analyzer_manager.module_analyzer(module_id);
-
-                    importers
-                      .iter()
-                      .any(|importer| importer.resource_pot_id != resource_pot_id)
-                  } {
-                    self.bundle_reference.sync_export(
-                      &ExportSpecifierInfo::Default(*var),
-                      None,
-                      None,
-                      false,
-                    );
                   }
                 }
 
@@ -825,38 +669,70 @@ impl<'a> BundleAnalyzer<'a> {
                     .borrow_mut()
                     .set_rename(*ns, local_name);
 
-                  if module_analyzer_manager.is_commonjs(source) {
-                    self.bundle_reference.sync_import(
-                      source.clone().into(),
-                      &ImportSpecifierInfo::Namespace(*ns),
-                      &self.bundle_variable.borrow(),
-                      true,
-                    )?;
-                  }
+                  let target = self.bundle_variable.borrow().find_ident_by_index(
+                    local_var,
+                    source,
+                    &module_analyzer_manager,
+                    resource_pot_id.clone(),
+                    false,
+                    true,
+                  );
 
-                  // bundle
-                  if let Some(module_analyzer) = module_analyzer_manager.module_analyzer(source) {
-                    // export * as ns from './other_bundle_module'
-                    if module_analyzer.resource_pot_id != resource_pot_id {
-                      self.bundle_reference.sync_export(
-                        &ExportSpecifierInfo::Named((*ns).into()),
-                        Some(module_analyzer.resource_pot_id.clone().into()),
-                        None,
-                        false,
-                      );
+                  if let Some(target) = target {
+                    let mut is_confirmed_import = false;
+                    let target_source = target.target_source();
+                    match target {
+                      FindModuleExportResult::Local(_, _, _) => {
+                        is_confirmed_import = true;
+                        if module_analyzer_manager.is_commonjs(source) {
+                          self.bundle_reference.add_declare_commonjs_import(
+                            &ImportSpecifierInfo::Namespace(local_var),
+                            source.clone().into(),
+                            &self.bundle_variable.borrow(),
+                          )?;
+                        }
+
+                        if is_reference_by_another {
+                          self
+                            .bundle_reference
+                            .add_local_export(&ExportSpecifierInfo::Named(
+                              (local_var, Some(*ns)).into(),
+                            ));
+                        }
+                      }
+
+                      FindModuleExportResult::External(_, _, _) => {
+                        if is_format_to_commonjs {
+                          is_confirmed_import = true;
+                          self.bundle_reference.add_import(
+                            &ImportSpecifierInfo::Namespace(*ns),
+                            source.clone().into(),
+                            &self.bundle_variable.borrow(),
+                          )?;
+                        }
+
+                        if is_reference_by_another {
+                          is_confirmed_import = true;
+                          self
+                            .bundle_reference
+                            .add_reference_export(specify, source.clone().into());
+                        }
+                      }
+
+                      FindModuleExportResult::Bundle(_, _, _) => {
+                        // bundle
+                        // export * as ns from './other_bundle_module'
+                        // self.bundle_reference.sync_export(
+                        //   &ExportSpecifierInfo::Named((*ns).into()),
+                        //   Some(module_analyzer.resource_pot_id.clone().into()),
+                        //   false,
+                        // );
+                      }
                     }
-                  }
-                  // external
-                  else {
-                    // export * as fs from "node:fs"
-                    // =>
-                    // import * as node_fs from "node:fs"
-                    self.bundle_reference.sync_import(
-                      source.clone().into(),
-                      &ImportSpecifierInfo::Namespace(*ns),
-                      &self.bundle_variable.borrow(),
-                      false,
-                    )?;
+
+                    if !is_confirmed_import {
+                      self.bundle_reference.add_empty_import(target_source);
+                    }
                   }
                 }
               }
@@ -922,125 +798,31 @@ impl<'a> BundleAnalyzer<'a> {
     let mut patch_export_to_module = vec![];
     let mut patch_import_to_module = vec![];
 
-    // runtime bundle should not have export
-    //
+    // runtime bundle cannot export
     // 1. if import by other bundle or entry export, should reexport some variable
     if !is_runtime_bundle {
-      let mut ordered_external_export = self
-        .bundle_reference
-        .external_export_map
-        .keys()
-        .collect::<Vec<_>>();
-
-      ordered_external_export.sort_by(|a, b| {
-        order_index_map[&a.to_module_id()].cmp(&order_index_map[&b.to_module_id()])
-      });
-
-      for source in ordered_external_export {
-        let export = &self.bundle_reference.external_export_map[source];
-
-        patch_export_to_module.extend(generate_export(
-          &self.resource_pot.id,
-          Some(&source.to_module_id()),
-          export,
-          &self.bundle_variable.borrow(),
-          &module_analyzer_manager,
-          &self.context,
-        ));
-      }
-
-      if let Some(export) = self.bundle_reference.export.as_ref() {
-        patch_export_to_module.extend(generate_export(
-          &self.resource_pot.id,
-          None,
-          export,
-          &self.bundle_variable.borrow(),
-          &module_analyzer_manager,
-          &self.context,
-        ));
-      }
+      patch_export_to_module.extend(generate_export_by_reference_export(
+        &self.resource_pot.id,
+        &self.bundle_variable.borrow(),
+        &mut self.bundle_reference,
+        module_analyzer_manager,
+        &self.context,
+      )?);
     }
 
-    // 1. maybe import external、other bundle, here should generate import
-    // TODO: support cjs
-    {
-      let mut ordered_import = self.bundle_reference.import_map.keys().collect::<Vec<_>>();
-      ordered_import.sort_by(|a, b| a.cmp(b));
+    // 2. maybe import external、other bundle, should generate import
+    patch_import_to_module.extend(generate_bundle_import_by_bundle_reference(
+      &self.context.config.output.format,
+      &self.bundle_variable.borrow(),
+      &self.bundle_reference,
+      &module_analyzer_manager,
+    )?);
 
-      for source in ordered_import {
-        let import = &self.bundle_reference.import_map[source];
-
-        if import.named.is_empty() && import.namespace.is_none() && import.default.is_none() {
-          continue;
-        }
-
-        let mut specifiers = vec![];
-
-        let mut ordered_named_keys = import.named.keys().collect::<Vec<_>>();
-        ordered_named_keys.sort();
-        for imported in ordered_named_keys {
-          let local = &import.named[imported];
-          let local_named = self.bundle_variable.borrow().render_name(*local);
-
-          specifiers.push(farmfe_core::swc_ecma_ast::ImportSpecifier::Named(
-            ImportNamedSpecifier {
-              span: DUMMY_SP,
-              local: local_named.as_str().into(),
-              imported: if imported == &local_named {
-                None
-              } else {
-                Some(farmfe_core::swc_ecma_ast::ModuleExportName::Ident(
-                  imported.as_str().into(),
-                ))
-              },
-              is_type_only: false,
-            },
-          ));
-        }
-
-        if let Some(namespace) = import.namespace.as_ref() {
-          specifiers.push(farmfe_core::swc_ecma_ast::ImportSpecifier::Namespace(
-            ImportStarAsSpecifier {
-              span: DUMMY_SP,
-              local: self
-                .bundle_variable
-                .borrow()
-                .render_name(*namespace)
-                .as_str()
-                .into(),
-            },
-          ));
-        }
-
-        if let Some(default) = import.default.as_ref() {
-          specifiers.push(farmfe_core::swc_ecma_ast::ImportSpecifier::Default(
-            ImportDefaultSpecifier {
-              span: DUMMY_SP,
-              local: self
-                .bundle_variable
-                .borrow()
-                .render_name(*default)
-                .as_str()
-                .into(),
-            },
-          ));
-        }
-
-        patch_import_to_module.push(ModuleItem::ModuleDecl(ModuleDecl::Import(ImportDecl {
-          span: DUMMY_SP,
-          specifiers,
-          src: Box::new(Str {
-            span: DUMMY_SP,
-            value: source.to_string().as_str().into(),
-            raw: None,
-          }),
-          type_only: false,
-          with: None,
-          phase: farmfe_core::swc_ecma_ast::ImportPhase::Evaluation,
-        })));
-      }
+    if !polyfill_asts.is_empty() {
+      patch_import_to_module.extend(polyfill_asts.into_iter());
     }
-    if !patch_import_to_module.is_empty() || !polyfill_asts.is_empty() {
+
+    if !patch_import_to_module.is_empty() {
       if let Some(module_analyzer) = self
         .ordered_modules
         .first()
@@ -1051,7 +833,6 @@ impl<'a> BundleAnalyzer<'a> {
 
         ast.body = patch_import_to_module
           .into_iter()
-          .chain(polyfill_asts)
           .chain(ast.body.take().into_iter())
           .collect();
       };

@@ -38,6 +38,28 @@ function _getRequireWildcardCache(nodeInterop) {
         return nodeInterop ? cacheNodeInterop : cacheBabelInterop;
     })(nodeInterop);
 }
+function _interop_require_wildcard(obj, nodeInterop) {
+    if (!nodeInterop && obj && obj.__esModule) return obj;
+    if (obj === null || typeof obj !== "object" && typeof obj !== "function") return {
+        default: obj
+    };
+    var cache = _getRequireWildcardCache(nodeInterop);
+    if (cache && cache.has(obj)) return cache.get(obj);
+    var newObj = {
+        __proto__: null
+    };
+    var hasPropertyDescriptor = Object.defineProperty && Object.getOwnPropertyDescriptor;
+    for(var key in obj){
+        if (key !== "default" && Object.prototype.hasOwnProperty.call(obj, key)) {
+            var desc = hasPropertyDescriptor ? Object.getOwnPropertyDescriptor(obj, key) : null;
+            if (desc && (desc.get || desc.set)) Object.defineProperty(newObj, key, desc);
+            else newObj[key] = obj[key];
+        }
+    }
+    newObj.default = obj;
+    if (cache) cache.set(obj, newObj);
+    return newObj;
+}
 function _export_star(from, to) {
     Object.keys(from).forEach(function(k) {
         if (k !== "default" && !Object.prototype.hasOwnProperty.call(to, k)) {
@@ -115,8 +137,8 @@ var cjsExport_ts_cjs = __commonJs({
 const esmName = "esmName";
 const esmAge = 18;
 var esmExport_ts_ns = {
-    "esmName": esmName,
     "esmAge": esmAge,
+    "esmName": esmName,
     __esModule: true
 };
 
@@ -125,8 +147,8 @@ const esmName2 = "esmName";
 const esmAge2 = 18;
 function foo() {}
 var esmExport2_ts_ns = {
-    "esmName2": esmName2,
     "esmAge2": esmAge2,
+    "esmName2": esmName2,
     "default": foo,
     __esModule: true
 };
@@ -160,9 +182,7 @@ var cjsExportEsm_ts_cjs = __commonJs({
 
 // module_id: export.ts.farm-runtime
 var export_ts_ns = _mergeNamespaces({
-    "esmName": esmName,
-    "esmAge": esmAge,
-    "esmName2": esmName2
+    __esModule: true
 }, [
     cjsExport_ts_cjs(),
     cjsExportEsm_ts_cjs(),

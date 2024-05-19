@@ -12,6 +12,8 @@ use crate::common::{
 #[allow(dead_code)]
 #[cfg(test)]
 fn test(file: String, crate_path: String) {
+  use farmfe_core::config::ModuleFormat;
+
   use crate::common::try_read_config_from_json;
 
   let file_path_buf = PathBuf::from(file.clone());
@@ -42,6 +44,7 @@ fn test(file: String, crate_path: String) {
 
       config.external = vec![ConfigRegex::new("(^node:.*)"), ConfigRegex::new("^fs$")];
       config.output.target_env = TargetEnv::Node;
+      // config.output.format = ModuleFormat::CommonJs;
 
       // TODO: multiple bundle
       config.partial_bundling.enforce_resources = vec![PartialBundlingEnforceResourceConfig {
@@ -51,6 +54,7 @@ fn test(file: String, crate_path: String) {
 
       if let Some(config_from_file) = config_from_file {
         config.mode = config_from_file.mode;
+        config.output.format = config_from_file.output.format;
       }
 
       (config, plugins)
@@ -68,9 +72,5 @@ fn test(file: String, crate_path: String) {
 }
 
 farmfe_testing::testing! {"tests/fixtures/runtime/bundle/**/index.ts", test}
-// farmfe_testing::testing! {"tests/fixtures/runtime/bundle/cjs/hybrid/unresolved_variables/**/index.ts", test}
-// farmfe_testing::testing! {"tests/fixtures/runtime/bundle/decl/unresolved_variable/**/index.ts", test}
-// farmfe_testing::testing! {"tests/fixtures/runtime/bundle/cjs/normal/**/index.ts", test}
-// farmfe_testing::testing! {"tests/fixtures/runtime/bundle/cjs/export/exportNamed/**/index.ts", test}
-// farmfe_testing::testing! {"tests/fixtures/runtime/bundle/cjs/hybrid/**/index.ts", test}
-// farmfe_testing::testing! {"tests/fixtures/runtime/bundle/cjs/export/exportNamespace/**/index.ts", test}
+// farmfe_testing::testing! {"tests/fixtures/runtime/bundle/cjs/export/entryExportStar/**/index.ts", test}
+// farmfe_testing::testing! {"tests/fixtures/runtime/bundle/external/import/namespace/**/index.ts", test}

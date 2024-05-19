@@ -69,7 +69,8 @@ impl ExternalReferenceImport {
 pub struct ExternalReferenceExport {
   pub named: HashMap<usize, usize>,
   pub default: Option<usize>,
-  pub all: bool,
+  // TODO: `export * from "cjs"`; in cjs need transform to _export_star(cjs, module.exports)
+  pub all: (bool, Option<usize>),
   pub namespace: Option<usize>,
   pub export_type: ExportType,
 }
@@ -79,7 +80,7 @@ impl ExternalReferenceExport {
     Self {
       named: HashMap::new(),
       default: None,
-      all: false,
+      all: (false, None),
       namespace: None,
       export_type: Default::default(),
     }
@@ -89,7 +90,7 @@ impl ExternalReferenceExport {
     match export {
       ExportSpecifierInfo::Named(named) => self.named.contains_key(&named.local()),
       ExportSpecifierInfo::Default(_) => self.default.is_some(),
-      ExportSpecifierInfo::All(_) => self.all,
+      ExportSpecifierInfo::All(_) => self.all.0,
       ExportSpecifierInfo::Namespace(_) => self.namespace.is_some(),
     }
   }
@@ -103,7 +104,7 @@ impl ExternalReferenceExport {
         self.default = Some(local);
       }
       ExportSpecifierInfo::All(_) => {
-        self.all = true;
+        self.all = (true, None);
       }
       ExportSpecifierInfo::Namespace(name) => {
         self.namespace = Some(name);
@@ -159,7 +160,7 @@ pub struct BundleReference {
   /// import { } from "./cjs_module";
   /// import * as ns from "./cjs_module";
   /// import cjs from "./cjs_module";
-  pub declare_commonjs_import: HashMap<ReferenceKind, ExternalReferenceImport>,
+  pub redeclare_commonjs_import: HashMap<ReferenceKind, ExternalReferenceImport>,
 
   // pub declare_commonjs_export: HashMap<ReferenceKind, ExternalReferenceExport>,
   /// export xxx from './external_bundle_module'
@@ -174,7 +175,7 @@ pub struct BundleReference {
 impl BundleReference {
   pub fn new() -> Self {
     Self {
-      declare_commonjs_import: HashMap::new(),
+      redeclare_commonjs_import: HashMap::new(),
       import_map: HashMap::new(),
       external_export_map: HashMap::new(),
       export: None,
@@ -184,9 +185,36 @@ impl BundleReference {
   /// import "./cjs"
   pub fn execute_module_for_cjs(&mut self, import_kind: ReferenceKind) {
     self
-      .declare_commonjs_import
+      .redeclare_commonjs_import
       .entry(import_kind)
       .or_insert_with(ExternalReferenceImport::new);
+  }
+
+  pub fn add_local_export(&mut self, specify: &ExportSpecifierInfo) {
+    if self.export.is_none() {
+      self.export = Some(ExternalReferenceExport::new());
+    }
+    if let Some(ref mut export) = self.export {
+      export.insert(specify.clone())
+    };
+  }
+
+  pub fn add_reference_export(&mut self, specify: &ExportSpecifierInfo, source: ReferenceKind) {
+    // self.external_export_map
+    if self.external_export_map.contains_key(&source) {
+      let map = self.external_export_map.get_mut(&source).unwrap();
+      map.insert(specify.clone());
+    } else {
+      let mut map = ExternalReferenceExport::new();
+      map.insert(specify.clone());
+      self.external_export_map.insert(source, map);
+    }
+  }
+
+  pub fn change_to_hybrid_dynamic(&mut self, source: ReferenceKind) {
+    if let Some(map) = self.external_export_map.get_mut(&source) {
+      map.export_type.merge(ExportType::HybridDynamic);
+    }
   }
 
   // TODO: split cjs | esm | external | local
@@ -194,15 +222,10 @@ impl BundleReference {
     &mut self,
     export: &ExportSpecifierInfo,
     source: Option<ReferenceKind>,
-    to_export_map: Option<&mut HashMap<ReferenceKind, ExternalReferenceExport>>,
-    is_external: bool,
+    is_cjs: bool,
   ) {
     if let Some(module_id) = source {
-      let map = if is_external {
-        &mut self.external_export_map
-      } else {
-        to_export_map.unwrap_or(&mut self.external_export_map)
-      };
+      let map = &mut self.external_export_map;
 
       if !map.contains_key(&module_id) {
         map.insert(module_id.clone(), ExternalReferenceExport::new());
@@ -210,7 +233,7 @@ impl BundleReference {
 
       let module_export_map = map.get_mut(&module_id).unwrap();
 
-      if is_external {
+      if is_cjs {
         module_export_map
           .export_type
           .merge(ExportType::HybridDynamic);
@@ -224,12 +247,71 @@ impl BundleReference {
         self.export = Some(ExternalReferenceExport::new());
       }
 
-      if let Some(self_export) = self.export.as_mut() {
-        if !self_export.contains(export) {
-          self_export.insert(export.clone());
+      if let Some(local_export) = self.export.as_mut() {
+        if is_cjs {
+          local_export.export_type.merge(ExportType::HybridDynamic);
+        }
+
+        if !local_export.contains(export) {
+          local_export.insert(export.clone());
         }
       }
     }
+  }
+
+  pub fn add_import_helper(
+    map: &mut HashMap<ReferenceKind, ExternalReferenceImport>,
+    import: &ImportSpecifierInfo,
+    source: ReferenceKind,
+    bundle_variable: &BundleVariable,
+  ) -> Result<usize> {
+    if !map.contains_key(&source) {
+      map.insert(source.clone(), ExternalReferenceImport::new());
+    }
+
+    let module_import_map = map.get_mut(&source).unwrap();
+
+    if let Some(options) = module_import_map.fetch(import, bundle_variable) {
+      Ok(options)
+    } else {
+      module_import_map.insert(import.clone(), bundle_variable);
+      module_import_map
+        .fetch(import, bundle_variable)
+        .map(Ok)
+        .unwrap_or(Err(CompilationError::GenericError(
+          "failed fetch import".to_string(),
+        )))
+    }
+  }
+
+  pub fn add_declare_commonjs_import(
+    &mut self,
+    import: &ImportSpecifierInfo,
+    source: ReferenceKind,
+    bundle_variable: &BundleVariable,
+  ) -> Result<usize> {
+    Self::add_import_helper(
+      &mut self.redeclare_commonjs_import,
+      import,
+      source,
+      bundle_variable,
+    )
+  }
+
+  pub fn add_empty_import(&mut self, source: ReferenceKind) {
+    self
+      .import_map
+      .entry(source)
+      .or_insert_with(ExternalReferenceImport::new);
+  }
+
+  pub fn add_import(
+    &mut self,
+    import: &ImportSpecifierInfo,
+    source: ReferenceKind,
+    bundle_variable: &BundleVariable,
+  ) -> Result<usize> {
+    Self::add_import_helper(&mut self.import_map, import, source, bundle_variable)
   }
 
   // TODO: split cjs | esm |
@@ -241,7 +323,7 @@ impl BundleReference {
     is_cjs: bool,
   ) -> Result<usize> {
     let import_map = if is_cjs {
-      &mut self.declare_commonjs_import
+      &mut self.redeclare_commonjs_import
     } else {
       &mut self.import_map
     };

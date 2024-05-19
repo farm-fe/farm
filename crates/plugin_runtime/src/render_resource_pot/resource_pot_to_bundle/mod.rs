@@ -2,7 +2,6 @@ use std::{
   cell::RefCell,
   collections::{HashMap, HashSet},
   hash::Hash,
-  rc::Rc,
   sync::Arc,
 };
 
@@ -65,6 +64,7 @@ impl Hash for Var {
 
 mod bundle_analyzer;
 mod bundle_external;
+mod polyfill;
 
 mod uniq_name;
 
@@ -73,7 +73,7 @@ pub struct SharedBundle<'a> {
   module_analyzer_manager: ModuleAnalyzerManager<'a>,
   module_graph: &'a ModuleGraph,
   context: &'a Arc<CompilationContext>,
-  bundle_variables: Rc<RefCell<BundleVariable>>,
+  bundle_variables: Arc<RefCell<BundleVariable>>,
   order_index_map: HashMap<ModuleId, usize>,
 }
 
@@ -94,7 +94,7 @@ impl<'a> SharedBundle<'a> {
     let mut module_analyzer_map: HashMap<ModuleId, ModuleAnalyzer> = HashMap::new();
     let mut bundle_map: HashMap<ResourcePotId, BundleAnalyzer> = HashMap::new();
 
-    let bundle_variables = Rc::new(RefCell::new(BundleVariable::new()));
+    let bundle_variables = Arc::new(RefCell::new(BundleVariable::new()));
 
     let (toposort_modules, _) = module_graph.toposort();
 
@@ -213,7 +213,6 @@ impl<'a> SharedBundle<'a> {
     farm_profile_function!("");
     self.module_analyzer_manager.link(
       &mut self.bundle_variables.borrow_mut(),
-      &self.module_graph,
       &self.context,
     );
 
@@ -243,10 +242,10 @@ impl<'a> SharedBundle<'a> {
   // 2. start process bundle
   pub fn render(&mut self) -> Result<()> {
     farm_profile_function!("");
-    // TODO: async foreach
+    // TODO: try async foreach
     self.extract_modules()?;
 
-    // TODO: async foreach
+    // TODO: try async foreach
     self.link_modules()?;
 
     self.render_bundle()?;
