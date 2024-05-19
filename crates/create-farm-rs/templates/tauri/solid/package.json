@@ -1,0 +1,25 @@
+{
+  "name": "solid",
+  "version": "0.0.0",
+  "description": "",
+  "type": "module",
+  "scripts": {
+    "dev": "farm",
+    "build": "farm build",
+    "serve": "farm preview",
+    "tauri": "tauri"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "solid-js": "^1.7.8",
+    "@tauri-apps/api": "^1"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.2",
+    "@farmfe/cli": "^1.0.1",
+    "@farmfe/core": "^1.1.0",
+    "solid-refresh": "^0.7.5",
+    "vite-plugin-solid": "^2.8.0",
+    "@tauri-apps/cli": "^1"
+  }
+}

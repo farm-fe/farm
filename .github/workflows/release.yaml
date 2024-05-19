@@ -36,6 +36,7 @@ jobs:
             mv /tmp/artifacts/${{ github.sha }}-${abi}/* ./packages/core/npm/${abi}
             mv /tmp/artifacts/${{ github.sha }}-${abi}-plugin-react/* ./rust-plugins/react/npm/${abi}
             mv /tmp/artifacts/${{ github.sha }}-${abi}-plugin-sass/* ./rust-plugins/sass/npm/${abi}
+            mv /tmp/artifacts/${{ github.sha }}-${abi}-create-farm/* ./packages/core/npm/${abi}
 
             test -f ./packages/core/npm/${abi}/farm.${abi}.node
             test -f ./rust-plugins/react/npm/${abi}/index.farm

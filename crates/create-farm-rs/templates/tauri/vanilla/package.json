@@ -1,0 +1,21 @@
+{
+  "name": "vanilla",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "farm",
+    "build": "tsc && farm build",
+    "preview": "farm preview",
+    "tauri": "tauri"
+  },
+  "dependencies": {
+    "@tauri-apps/api": "^1"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^1",
+    "@farmfe/cli": "^1.0.1",
+    "@farmfe/core": "^1.1.0",
+    "typescript": "^5.0.2"
+  }
+}
