@@ -6,17 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.0.0](https://github.com/farm-fe/farm/releases/tag/create-farm-rs-v0.0.0) - 2024-05-19
+## [0.1.0](https://github.com/farm-fe/farm/releases/tag/create-farm-v0.1.0) - 2024-05-19
 
 ### Other
-- remove create-farm binary ([#1323](https://github.com/farm-fe/farm/pull/1323))
 - update ci and create-farm add tauri template ([#1322](https://github.com/farm-fe/farm/pull/1322))
-- Version Packages ([#1321](https://github.com/farm-fe/farm/pull/1321))
 - Using rust to refactor create-farm ([#1315](https://github.com/farm-fe/farm/pull/1315))
-# create-farm-rs
-
-## 0.0.2
-
-### Patch Changes
-
-- a1e75fba: init create-farm-rs
