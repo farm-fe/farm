@@ -3,8 +3,7 @@ use dialoguer::{Confirm, Input, Select};
 use std::{ffi::OsString, fs, process::exit};
 
 use crate::{
-  package_manager::PackageManager,
-  utils::{colors::*, theme::ColorfulTheme},
+  package_manager::PackageManager, template::{TauriSubTemplate, Template}, utils::{colors::*, theme::ColorfulTheme}
 };
 
 mod args;
@@ -83,6 +82,8 @@ where
     None => defaults.manager.context("default manager not set")?,
   };
 
+  println!("{} {}", "Selected Package Manager:", pkg_manager.to_string());
+
   let templates_no_flavors = pkg_manager.templates_no_flavors();
 
   let template = match template {
@@ -99,20 +100,33 @@ where
         .default(0)
         .interact()?;
 
-      let template = templates_no_flavors[index];
-      template
-      // Prompt for flavors if the template has more than one flavor
-      //   let flavors = template.flavors(pkg_manager);
-      //   if let Some(flavors) = flavors {
-      //     let index = Select::with_theme(&ColorfulTheme::default())
-      //       .with_prompt("Choose your UI flavor")
-      //       .items(flavors)
-      //       .default(0)
-      //       .interact()?;
-      //     template.from_flavor(flavors[index])
-      //   } else {
-      //     template
-      //   }
+        let template = templates_no_flavors[index];
+        if let Template::Tauri(None) = template {
+            let sub_template_index = Select::with_theme(&ColorfulTheme::default())
+                .with_prompt("Select a Tauri sub-template:")
+                .items(&[
+                    "React",
+                    "Vue",
+                    "Svelte",
+                    "Vanilla",
+                    "Solid",
+                    "Preact"
+                ])
+                .default(0)
+                .interact()?;
+            let sub_template = match sub_template_index {
+                0 => TauriSubTemplate::React,
+                1 => TauriSubTemplate::Vue,
+                2 => TauriSubTemplate::Svelte,
+                3 => TauriSubTemplate::Vanilla,
+                4 => TauriSubTemplate::Solid,
+                5 => TauriSubTemplate::Preact,
+                _ => unreachable!(),
+            };
+            Template::Tauri(Some(sub_template))
+        } else {
+            template
+        }
     }
   };
 

@@ -77,6 +77,7 @@ impl PackageManager {
         Template::React,
         Template::Solid,
         Template::Preact,
+        Template::Tauri(None),
       ],
     }
   }
@@ -91,6 +92,7 @@ impl PackageManager {
         Template::React,
         Template::Solid,
         Template::Preact,
+        Template::Tauri(None),
       ],
     }
   }

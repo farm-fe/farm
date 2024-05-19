@@ -37,7 +37,6 @@ pub fn parse(argv: Vec<OsString>, bin_name: Option<String>) -> anyhow::Result<Ar
       std::process::exit(0);
   }
 
-  println!("test bin name {:?}", bin_name);
 
   let args = Args {
       manager: pargs.opt_value_from_str(["-m", "--manager"])?,

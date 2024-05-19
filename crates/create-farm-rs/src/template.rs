@@ -8,21 +8,45 @@ use rust_embed::RustEmbed;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[non_exhaustive]
-pub enum Flavor {
-  JavaScript,
-  TypeScript,
-}
-
-#[derive(RustEmbed, Debug)]
+#[derive(RustEmbed)]
 #[folder = "templates"]
 #[allow(clippy::upper_case_acronyms, non_camel_case_types)]
 struct EMBEDDED_TEMPLATES;
 
-impl Display for Flavor {
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum TauriSubTemplate {
+  React,
+  Vue,
+  Svelte,
+  Vanilla,
+  Solid,
+  Preact,
+}
+
+impl Display for TauriSubTemplate {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     match self {
-      Flavor::JavaScript => write!(f, "JavaScript"),
-      Flavor::TypeScript => write!(f, "TypeScript"),
+      TauriSubTemplate::React => write!(f, "react"),
+      TauriSubTemplate::Vue => write!(f, "vue"),
+      TauriSubTemplate::Svelte => write!(f, "svelte"),
+      TauriSubTemplate::Vanilla => write!(f, "vanilla"),
+      TauriSubTemplate::Solid => write!(f, "solid"),
+      TauriSubTemplate::Preact => write!(f, "preact"),
+    }
+  }
+}
+
+impl FromStr for TauriSubTemplate {
+  type Err = String;
+  fn from_str(s: &str) -> Result<Self, Self::Err> {
+    match s {
+      "react" => Ok(TauriSubTemplate::React),
+      "vue" => Ok(TauriSubTemplate::Vue),
+      "vanilla" => Ok(TauriSubTemplate::Vanilla),
+      "svelte" => Ok(TauriSubTemplate::Svelte),
+      "solid" => Ok(TauriSubTemplate::Solid),
+      "preact" => Ok(TauriSubTemplate::Preact),
+      _ => Err(format!("{s} is not a valid Tauri sub-template.")),
     }
   }
 }
@@ -37,6 +61,7 @@ pub enum Template {
   React,
   Solid,
   Preact,
+  Tauri(Option<TauriSubTemplate>),
 }
 
 impl Default for Template {
@@ -55,6 +80,8 @@ impl Display for Template {
       Template::React => write!(f, "react"),
       Template::Solid => write!(f, "solid"),
       Template::Preact => write!(f, "preact"),
+      Template::Tauri(None) => write!(f, "tauri"),
+      Template::Tauri(Some(sub_template)) => write!(f, "tauri-{}", sub_template),
     }
   }
 }
@@ -62,6 +89,13 @@ impl Display for Template {
 impl FromStr for Template {
   type Err = String;
   fn from_str(s: &str) -> Result<Self, Self::Err> {
+    if s == "tauri" {
+      return Ok(Template::Tauri(None));
+    } else if s.starts_with("tauri-") {
+      let sub_template = s[6..].parse()?;
+      return Ok(Template::Tauri(Some(sub_template)));
+    }
+
     match s {
       "vanilla" => Ok(Template::Vanilla),
       "vue" => Ok(Template::Vue3),
@@ -70,6 +104,7 @@ impl FromStr for Template {
       "react" => Ok(Template::React),
       "solid" => Ok(Template::Solid),
       "preact" => Ok(Template::Preact),
+      "tauri" => Ok(Template::Tauri(None)),
       _ => Err(format!(
         "{YELLOW}{s}{RESET} is not a valid template. Valid templates are [{}]",
         Template::ALL
@@ -92,6 +127,15 @@ impl Template {
       Template::Svelte => "\x1b[38;2;255;137;54mSvelte - (https://svelte.dev/)\x1b[39m",
       Template::Solid => "\x1b[38;2;68;206;246mSolid - (https://solidjs.com/)\x1b[39m",
       Template::Preact => "\x1b[36mPreact - (https://preactjs.com/)\x1b[36m",
+      Template::Tauri(None) => "\x1b[38;2;255;215;0mTauri - (https://tauri.app/)\x1b[39m",
+      Template::Tauri(Some(sub_template)) => match sub_template {
+        TauriSubTemplate::React => "\x1b[38;2;255;215;0mTauri with React\x1b[39m",
+        TauriSubTemplate::Vue => "\x1b[38;2;255;215;0mTauri with Vue\x1b[39m",
+        TauriSubTemplate::Vanilla => "\x1b[38;2;255;215;0mTauri with Vanilla\x1b[39m",
+        TauriSubTemplate::Svelte => "\x1b[38;2;255;215;0mTauri with Svelte\x1b[39m",
+        TauriSubTemplate::Solid => "\x1b[38;2;255;215;0mTauri with Solid\x1b[39m",
+        TauriSubTemplate::Preact => "\x1b[38;2;255;215;0mTauri with Preact\x1b[39m",
+      },
       _ => unreachable!(),
     }
   }
@@ -106,39 +150,14 @@ impl<'a> Template {
     Template::React,
     Template::Solid,
     Template::Preact,
+    Template::Tauri(None),
+    Template::Tauri(Some(TauriSubTemplate::React)),
+    Template::Tauri(Some(TauriSubTemplate::Vue)),
+    Template::Tauri(Some(TauriSubTemplate::Vanilla)),
+    Template::Tauri(Some(TauriSubTemplate::Svelte)),
+    Template::Tauri(Some(TauriSubTemplate::Solid)),
+    Template::Tauri(Some(TauriSubTemplate::Preact)),
   ];
-
-  pub fn flavors<'b>(&self, pkg_manager: PackageManager) -> Option<&'b [Flavor]> {
-    match self {
-      Template::Vanilla => Some(&[Flavor::TypeScript, Flavor::JavaScript]),
-      Template::Vue3 => Some(&[Flavor::TypeScript, Flavor::JavaScript]),
-      Template::Vue2 => Some(&[Flavor::TypeScript, Flavor::JavaScript]),
-      Template::Svelte => Some(&[Flavor::TypeScript, Flavor::JavaScript]),
-      Template::React => Some(&[Flavor::TypeScript, Flavor::JavaScript]),
-      Template::Solid => Some(&[Flavor::TypeScript, Flavor::JavaScript]),
-      Template::Preact => Some(&[Flavor::TypeScript, Flavor::JavaScript]),
-      _ => None,
-    }
-  }
-
-  pub fn from_flavor(&self, flavor: Flavor) -> Self {
-    match (self, flavor) {
-      (Template::Vanilla, Flavor::TypeScript) => Template::Vanilla,
-      (Template::Vue3, Flavor::TypeScript) => Template::Vue3,
-      (Template::Vue2, Flavor::TypeScript) => Template::Vue2,
-      (Template::Svelte, Flavor::TypeScript) => Template::Svelte,
-      (Template::React, Flavor::TypeScript) => Template::React,
-      (Template::Solid, Flavor::TypeScript) => Template::Solid,
-      (Template::Preact, Flavor::TypeScript) => Template::Preact,
-      _ => *self,
-    }
-  }
-
-  pub fn without_flavor(&self) -> Self {
-    match self {
-      _ => *self,
-    }
-  }
 
   fn transform_to_pascal_case(s: String) -> String {
     let mut result = String::new();
