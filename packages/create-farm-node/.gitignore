@@ -195,4 +195,3 @@ Cargo.lock
 !.yarn/versions
 
 *.node
-/cjs
