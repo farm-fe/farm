@@ -13,11 +13,12 @@
     "@farmfe/cli": "workspace:*",
     "@farmfe/core": "workspace:*",
     "@farmfe/plugin-react": "^1.0.1",
+    "@jstors/farm-plugin-html-template": "^0.0.3",
     "@types/react": "18",
     "@types/react-dom": "18",
+    "farm-plugin-remove-console": "^0.1.4",
     "react-refresh": "^0.14.0",
-    "vite-plugin-pages": "^0.32.0",
-    "farm-plugin-remove-console": "^0.1.4"
+    "vite-plugin-pages": "^0.32.0"
   },
   "scripts": {
     "dev": "farm start",

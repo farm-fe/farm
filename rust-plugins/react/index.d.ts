@@ -49,6 +49,5 @@ export interface ReactConfig {
    */
   importSource?: string;
 }
-declare const binPath: string;
-export const farmPluginReact:(options?: ReactConfig)=>[string,typeof options] ;
+declare const binPath: (options?:ReactConfig)=>[string, typeof options];
 export default binPath;

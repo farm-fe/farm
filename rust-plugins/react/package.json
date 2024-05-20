@@ -27,6 +27,7 @@
       "require": "./index.js",
       "types": "./index.d.ts"
     },
+    "./func":"./func.js",
     "./package.json": "./package.json"
   },
   "scripts": {

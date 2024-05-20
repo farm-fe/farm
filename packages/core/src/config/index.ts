@@ -1,4 +1,4 @@
-import module from 'node:module';
+import module, { createRequire } from 'node:module';
 import fs from 'node:fs';
 import path, { isAbsolute, join } from 'node:path';
 import crypto from 'node:crypto';
@@ -15,6 +15,7 @@ import {
 import {
   bindingPath,
   Config,
+  PluginResolveHookParam,
   PluginTransformHookParam
 } from '../../binding/index.js';
 import { Server } from '../server/index.js';
@@ -655,7 +656,10 @@ async function readConfigFile(
 
     const compiler = new Compiler({
       config: normalizedConfig,
-      jsPlugins: [replaceDirnamePlugin()],
+      jsPlugins: [
+        replaceDirnamePlugin(),
+        transformFarmPluginPath(configFilePath, inlineOptions.root)
+      ],
       rustPlugins: []
     });
 
@@ -968,3 +972,32 @@ export function replaceDirnamePlugin() {
     }
   };
 }
+
+// try to transform rust plugin path to xxxx/func.js if this path is exists
+const transformFarmPluginPath = (importers: string, root: string) => ({
+  name: 'transform-farm-plugin-path',
+  priority: 101,
+  resolve: {
+    filters: {
+      sources: ['^.*farm.*plugin.*$'],
+      importers: [importers]
+    },
+    executor: async (param: PluginResolveHookParam) => {
+      let pluginPath = param.source;
+      let newSource = param.source;
+      if (!path.isAbsolute(pluginPath) && !pluginPath.startsWith('.')) {
+        const require = createRequire(path.join(root, 'package.json'));
+        pluginPath = require.resolve(pluginPath);
+        const funcPluginPath = path.resolve(pluginPath, '../func.js');
+        if (fs.existsSync(funcPluginPath)) {
+          newSource = funcPluginPath;
+        }
+      }
+      return {
+        resolvedPath: newSource,
+        external: false,
+        sideEffects: false
+      };
+    }
+  }
+});
