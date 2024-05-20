@@ -1,6 +1,6 @@
 [package]
 edition = "2021"
-name = "create-farm-rs"
+name = "create-farm-node"
 version = "0.1.0"
 
 [lib]
