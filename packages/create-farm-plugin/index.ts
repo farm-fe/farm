@@ -170,10 +170,6 @@ function replaceNamePlaceholders(
       replace: () => options.pluginName
     },
     {
-      name: '<FARM-RUST-PLUGIN-EXPORT-NAME>',
-      replace: () => toCamelCase(options.pluginName)
-    },
-    {
       name: '<FARM-RUST-PLUGIN-CARGO-NAME>',
       replace: () => {
         // replace @ to empty string and all invalid characters to _
@@ -230,16 +226,6 @@ function copyDir(srcDir: string, destDir: string, options: IResultType) {
       copy(srcFile, destFile, options);
     }
   }
-}
-
-function toCamelCase(str: string) {
-  // remove scope
-  const index = str.indexOf('/');
-  const trimmedStr = index !== -1 ? str.slice(index + 1) : str;
-
-  return trimmedStr.replace(/-([a-z])/g, function (_, letter) {
-    return letter.toUpperCase();
-  });
 }
 
 function welcome() {

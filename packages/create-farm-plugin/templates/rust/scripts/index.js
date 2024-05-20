@@ -121,5 +121,4 @@ switch (platform) {
     throw new Error(`Unsupported OS: ${platform}, architecture: ${arch}`);
 }
 
-export const <FARM-RUST-PLUGIN-EXPORT-NAME> = (options) => [binPath, options];
 export default binPath;
