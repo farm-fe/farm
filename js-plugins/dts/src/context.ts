@@ -1,10 +1,10 @@
-import type { UserConfig } from '@farmfe/core';
-import { DefaultLogger } from './logger.js';
-import chalk from 'chalk';
-import glob from 'fast-glob';
 import os from 'node:os';
 import { relative, resolve } from 'node:path';
+import type { UserConfig } from '@farmfe/core';
+import chalk from 'chalk';
+import glob from 'fast-glob';
 import { CompilerOptions, Project, SourceFile } from 'ts-morph';
+import { DefaultLogger } from './logger.js';
 import {
   ensureAbsolute,
   ensureArray,
@@ -40,7 +40,7 @@ export default class Context {
       noEmitOnError: false,
       skipDiagnostics: true,
       copyDtsFiles: false,
-      afterDiagnostic: () => {}
+      afterDiagnostic: () => ({})
     };
 
     const userOptions = mergeObjects(defaultOption, options);
@@ -58,7 +58,7 @@ export default class Context {
       : this.config.output?.path;
     const aliasesExclude = userOptions?.aliasesExclude ?? [];
     const tsConfigPath = resolveAbsolutePath(userOptions.tsconfigPath, root);
-    libFolderPath = libFolderPath && ensureAbsolute(libFolderPath, root);
+    const folderPath = libFolderPath && ensureAbsolute(libFolderPath, root);
     const compilerOptions = userOptions.compilerOptions ?? {};
 
     const mergeCompilerOptions = {
@@ -75,7 +75,7 @@ export default class Context {
       } as CompilerOptions),
       tsConfigFilePath: tsConfigPath,
       skipAddingFilesFromTsConfig: true,
-      libFolderPath
+      libFolderPath: folderPath
     };
     this.project = new Project(mergeCompilerOptions);
     const tsConfigOptions = getTsConfig(
@@ -108,8 +108,8 @@ export default class Context {
               (isRegExp(find)
                 ? find.toString() === alias.toString()
                 : isRegExp(alias)
-                ? find.match(alias)?.[0]
-                : find === alias)
+                  ? find.match(alias)?.[0]
+                  : find === alias)
           )
       );
     }

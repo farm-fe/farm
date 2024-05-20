@@ -1,4 +1,4 @@
-import { spawn, StdioOptions } from 'child_process';
+import { StdioOptions, spawn } from 'child_process';
 
 export function createSpawnCmd(dest: string, stdio: StdioOptions = 'inherit') {
   return function (cmd: string, args?: string[]): Promise<unknown> {

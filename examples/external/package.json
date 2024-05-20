@@ -1,0 +1,19 @@
+{
+  "name": "@farmfe-examples/external",
+  "version": "0.0.1",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "farm",
+    "start": "farm",
+    "build": "farm build",
+    "preview": "farm preview",
+    "clean": "farm clean"
+  },
+  "devDependencies": {
+    "@farmfe/cli": "^1.0.1",
+    "@farmfe/core": "^1.1.1",
+    "@types/jquery": "^3.5.29",
+    "typescript": "^5.4.3"
+  }
+}

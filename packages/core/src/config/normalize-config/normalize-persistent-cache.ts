@@ -1,11 +1,11 @@
+import { existsSync, readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import path from 'node:path';
-import { existsSync, readFileSync } from 'node:fs';
 
 import { Config } from '../../../binding/index.js';
-import { ResolvedUserConfig } from '../index.js';
 import { RustPlugin } from '../../plugin/index.js';
 import { traceDependencies } from '../../utils/trace-dependencies.js';
+import { ResolvedUserConfig } from '../index.js';
 
 const defaultGlobalBuiltinCacheKeyStrategy = {
   define: true,
@@ -59,10 +59,13 @@ export async function normalizePersistentCache(
           .map(([k, v]) =>
             typeof v !== 'string' ? [k, JSON.stringify(v)] : [k, v]
           )
-          .reduce((acc, [k, v]) => {
-            acc[k] = v;
-            return acc;
-          }, {} as Record<string, string>),
+          .reduce(
+            (acc, [k, v]) => {
+              acc[k] = v;
+              return acc;
+            },
+            {} as Record<string, string>
+          ),
         ...config.persistentCache.envs
       };
     }
@@ -161,7 +164,7 @@ export async function normalizePersistentCache(
           const packageJson = require(packageJsonPath);
           const key = `${packageJson.name}@${packageJson.version}`;
           config.persistentCache.buildDependencies.push(key);
-        } catch (e) {
+        } catch {
           if (typeof p === 'string') {
             config.persistentCache.buildDependencies.push(p);
           } else if (Array.isArray(p) && typeof p[0] === 'string') {

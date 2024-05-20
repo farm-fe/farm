@@ -1,5 +1,49 @@
 # @farmfe/core
 
+## 1.1.8
+
+### Patch Changes
+
+- 1ae36c95: support exclude/include option for html
+
+## 1.1.7
+
+### Patch Changes
+
+- 943fd627: fix: load env file error
+- 8d5bf9cd: fix minify not work for files that endsWith .min.js
+- 19b5d89b: 1. external injectlogic 2. better tip
+
+## 1.1.6
+
+### Patch Changes
+
+- bf98b34a: fix publish cannot find type
+
+## 1.1.5
+
+### Patch Changes
+
+- 25ed2330: Bugfixes:
+  - #1300
+  - #1288
+  - #1271
+- df7ac2a0: support record external
+
+## 1.1.4
+
+### Patch Changes
+
+- be4415a7: fix circle module require
+
+## 1.1.3
+
+### Patch Changes
+
+- 9754d371: merge configuration policies
+- 61294219: minify module filter use absolute path
+- 28e1a373: fix(vite plugin): some vite plugins do not provide `alias` configuration errors
+
 ## 1.1.2
 
 ### Patch Changes

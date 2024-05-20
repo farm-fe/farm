@@ -1,15 +1,15 @@
 import { SecureServerOptions } from 'node:http2';
 import { Server } from '../index.js';
 
-import type cors from '@koa/cors';
 import type { OutgoingHttpHeaders } from 'http';
-import type { Logger } from '../utils/index.js';
-import type { ProxiesOptions } from '../server/middlewares/proxy.js';
-import type { JsPlugin } from '../plugin/type.js';
-import type { RustPlugin } from '../plugin/rust/index.js';
-import type { Config } from '../../binding/index.js';
-import { Middleware } from 'koa';
+import type cors from '@koa/cors';
 import { WatchOptions } from 'chokidar';
+import { Middleware } from 'koa';
+import type { Config } from '../../binding/index.js';
+import type { RustPlugin } from '../plugin/rust/index.js';
+import type { JsPlugin } from '../plugin/type.js';
+import type { ProxiesOptions } from '../server/middlewares/proxy.js';
+import type { Logger } from '../utils/index.js';
 
 export interface ConfigEnv {
   mode: string;
@@ -105,6 +105,11 @@ export interface UserConfig {
   /** Files under this dir will always be treated as static assets. serve it in dev, and copy it to output.path when build */
 }
 
+// eslint-disable-next-line @typescript-eslint/no-empty-interface
+export interface ResolvedCompilation extends Exclude<Config['config'], undefined> {
+  external?: string[];
+}
+
 export interface ResolvedUserConfig extends UserConfig {
   env?: Record<string, any>;
   envDir?: string;
@@ -113,7 +118,7 @@ export interface ResolvedUserConfig extends UserConfig {
   configFilePath?: string;
   envMode?: string;
   configFileDependencies?: string[];
-  compilation?: Config['config'];
+  compilation?: ResolvedCompilation;
   server?: NormalizedServerConfig;
   jsPlugins?: JsPlugin[];
   rustPlugins?: [string, string][];

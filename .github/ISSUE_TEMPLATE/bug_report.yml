@@ -1,5 +1,7 @@
-name: "\U0001F41E Bug report"
-description: Create a report to help us improve
+name: "🐞 Bug Report"
+description: Report a Bug to Farm and help us improve
+title: "[Bug Report]: "
+labels: ["🐞 bug"]
 body:
   - type: markdown
     attributes:
@@ -20,19 +22,25 @@ body:
       label: Steps to reproduce
       description: |
         What do we need to do after opening your repro in order to make the bug happen? Clear and concise reproduction instructions are important for us to be able to triage your issue in a timely manner. Note that you can use [Markdown](https://guides.github.com/features/mastering-markdown/) to format lists and code.
-      placeholder: Steps to reproduce
+      placeholder: |
+        for example:
+        1. cd example/react
+        1. execute `pnpm dev`
+        2. find the error message in the console
     validations:
       required: true
-  - type: textarea
-    id: expected
+  - type: input
+    id: repro
     attributes:
-      label: What is expected?
-    validations:
-      required: true
+      label: Reproduce link
+      description: "Please provide a simplest reproduction of the problem, provide the URL of the project:"
+      placeholder: paste link here
   - type: textarea
     id: actually-happening
     attributes:
       label: What is actually happening?
+      placeholder: |
+        Describe in detail what happened.
     validations:
       required: true
   - type: textarea
@@ -41,11 +49,11 @@ body:
       label: System Info
       description: Output of `npx envinfo --system --npmPackages @farmfe/core --binaries --browsers`
       render: Shell
-      placeholder: System, Binaries, Browsers
+      placeholder: |
+        System:
+        Binaries:
+        Browsers:
+        npmPackages:
     validations:
       required: true
-  - type: textarea
-    id: additional-comments
-    attributes:
-      label: Any additional comments?
-      description: e.g. some background/context of how you ran into this bug.
+

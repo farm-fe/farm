@@ -29,7 +29,7 @@ export default {
     },
     minify: false,
     sourcemap: false,
-    presetEnv: false,
+    presetEnv: false
   },
   server: {
     hmr: false

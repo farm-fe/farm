@@ -40,9 +40,3 @@ file_watcher = ["notify"]
 
 [build-dependencies]
 napi-build = "2.0.1"
-
-[profile.release]
-lto = true
-strip = true
-opt-level = "z"
-panic = "abort"

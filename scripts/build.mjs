@@ -1,8 +1,8 @@
+import fs, { existsSync } from 'node:fs';
+import os from 'node:os';
+import { join, resolve } from 'node:path';
 import { execa } from 'execa';
 import { createSpinner } from 'nanospinner';
-import { resolve, join } from 'node:path';
-import os from 'node:os';
-import fs, { existsSync } from 'node:fs';
 
 import { logger } from './logger.mjs';
 
@@ -203,7 +203,7 @@ export async function checkProtobuf() {
       await execa('which', ['protoc']);
     }
     return true;
-  } catch (error) {
+  } catch {
     return false;
   }
 }

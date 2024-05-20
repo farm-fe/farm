@@ -2,14 +2,14 @@
  * Serve resources that stored in memory. This middleware will be enabled when server.writeToDisk is false.
  */
 
+import { existsSync, readFileSync, statSync } from 'node:fs';
 import path, { extname } from 'node:path';
 import { Context, Middleware, Next } from 'koa';
-import { Compiler } from '../../compiler/index.js';
-import { Server } from '../index.js';
 import koaStatic from 'koa-static';
+import { Compiler } from '../../compiler/index.js';
 import { NormalizedServerConfig } from '../../config/types.js';
 import { generateFileTree, generateFileTreeHtml } from '../../utils/index.js';
-import { existsSync, readFileSync, statSync } from 'node:fs';
+import { Server } from '../index.js';
 
 export function resourcesMiddleware(
   compiler: Compiler,

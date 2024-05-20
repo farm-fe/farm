@@ -10,10 +10,10 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import open from 'open';
-import { execa } from 'execa';
 import { execSync } from 'child_process';
-import { cyan, Logger, red } from '../utils/index.js';
+import { execa } from 'execa';
+import open from 'open';
+import { Logger, cyan, red } from '../utils/index.js';
 
 // https://github.com/sindresorhus/open#app
 const OSX_CHROME = 'google chrome';
@@ -82,7 +82,7 @@ function startBrowserProcess(browser: string | undefined, url: string) {
         stdio: 'ignore'
       });
       return true;
-    } catch (err) {
+    } catch {
       // Ignore errors
     }
   }
@@ -104,7 +104,7 @@ function startBrowserProcess(browser: string | undefined, url: string) {
       logger.error(e);
     }); // Prevent `unhandledRejection` error.
     return true;
-  } catch (err) {
+  } catch {
     return false;
   }
 }

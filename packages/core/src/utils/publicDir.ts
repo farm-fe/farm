@@ -1,9 +1,9 @@
-import path from 'path';
 import fs from 'fs';
+import path from 'path';
 import { UserConfig } from '../config/types.js';
+import { ERR_SYMLINK_IN_RECURSIVE_READDIR, recursiveReaddir } from './file.js';
 import { withTrailingSlash } from './path.js';
 import { normalizePath } from './share.js';
-import { ERR_SYMLINK_IN_RECURSIVE_READDIR, recursiveReaddir } from './file.js';
 import { cleanUrl } from './url.js';
 
 const publicFilesMap = new WeakMap<UserConfig, Set<string>>();

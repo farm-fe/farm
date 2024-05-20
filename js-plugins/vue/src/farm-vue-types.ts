@@ -1,12 +1,12 @@
-import Less from 'less';
-import Sass from 'sass';
-import Stylus from 'stylus';
 import {
   SFCDescriptor,
   SFCScriptCompileOptions,
-  SFCTemplateCompileOptions,
-  SFCStyleCompileOptions
+  SFCStyleCompileOptions,
+  SFCTemplateCompileOptions
 } from '@vue/compiler-sfc';
+import Less from 'less';
+import Sass from 'sass';
+import Stylus from 'stylus';
 
 export interface outputData {
   id: string;
@@ -40,10 +40,10 @@ export enum PreProcessorsType {
 export type PreProcessorsOptions<T> = T extends typeof Less
   ? Less.Options
   : T extends typeof Sass
-  ? Sass.Options<'async'>
-  : T extends typeof Stylus
-  ? Stylus.RenderOptions
-  : never;
+    ? Sass.Options<'async'>
+    : T extends typeof Stylus
+      ? Stylus.RenderOptions
+      : never;
 
 export interface FarmVuePluginOptions {
   include?: string | RegExp | (string | RegExp)[];

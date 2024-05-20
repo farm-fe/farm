@@ -1,10 +1,10 @@
-import { execa } from 'execa';
 import os from 'node:os';
+import { execa } from 'execa';
 import {
   DEFAULT_PACKAGE_MANAGER,
+  buildCoreCjs,
   buildExamples,
-  runTaskQueue,
-  buildCoreCjs
+  runTaskQueue
 } from './build.mjs';
 
 const cwd = process.cwd();

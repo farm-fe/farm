@@ -9,6 +9,7 @@
   background-size: 400%;
   background-position: 0%;
 }
+
 .action-box {
   display: flex;
   flex-direction: column;
@@ -16,10 +17,12 @@
   gap: 40px;
   height: 100%;
 }
+
 .action {
   display: flex;
   gap: 40px;
 }
+
 .farm-container {
   display: flex;
   flex-direction: column;
@@ -29,6 +32,7 @@
   padding: 0rem 1rem;
   gap: 1.7rem;
 }
+
 .farm-desc {
   display: flex;
   justify-content: space-between;
@@ -40,10 +44,12 @@
   align-items: center;
   gap: 2rem;
 }
+
 .container-box img {
   width: 70px;
   height: 70px;
 }
+
 .farm-desc-left {
   display: flex;
   flex-direction: column;
@@ -90,6 +96,7 @@
     justify-content: space-between;
     gap: 32px;
   }
+
   .farm-container {
     width: 60vw;
   }

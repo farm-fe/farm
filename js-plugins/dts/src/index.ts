@@ -1,14 +1,17 @@
+import path from 'node:path';
 import type { JsPlugin } from '@farmfe/core';
 
 import Context from './context.js';
-import { tryToReadFileSync } from './utils.js';
 import { pluginName } from './options.js';
+import { tryToReadFileSync } from './utils.js';
 
 import type { DtsPluginOptions } from './types.js';
 
+const extension = ['.ts', '.tsx'].map((ext) => `${ext}$`);
+
 export default function farmDtsPlugin(options?: DtsPluginOptions): JsPlugin {
   const ctx = new Context();
-  // TODO support vue other framework file type
+
   return {
     name: pluginName,
     priority: 1000,
@@ -17,7 +20,11 @@ export default function farmDtsPlugin(options?: DtsPluginOptions): JsPlugin {
     },
     load: {
       filters: {
-        resolvedPaths: ['.ts$']
+        resolvedPaths: [
+          ...(Array.isArray(options?.resolvedPaths)
+            ? options.resolvedPaths
+            : extension)
+        ]
       },
       async executor(params) {
         const { resolvedPath } = params;
@@ -34,10 +41,14 @@ export default function farmDtsPlugin(options?: DtsPluginOptions): JsPlugin {
       },
       async executor(params) {
         const { resolvedPath, content } = params;
+        const [url] = resolvedPath.split('?');
         ctx.handleTransform(resolvedPath);
+
+        const ext = path.extname(url).slice(1);
+
         return {
           content,
-          moduleType: 'ts'
+          moduleType: ext || 'ts'
         };
       }
     },

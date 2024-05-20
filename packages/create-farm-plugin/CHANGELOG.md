@@ -1,5 +1,11 @@
 # create-farm-plugin
 
+## 0.1.7
+
+### Patch Changes
+
+- 01a4503e: feat: add monorepo template
+
 ## 0.1.6
 
 ### Patch Changes

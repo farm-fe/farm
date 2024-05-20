@@ -1,6 +1,6 @@
 import { createRequire } from 'node:module';
-import { pathToFileURL } from 'node:url';
 import path from 'node:path';
+import { pathToFileURL } from 'node:url';
 
 export type RustPlugin =
   | string

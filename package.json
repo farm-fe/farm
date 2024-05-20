@@ -3,61 +3,51 @@
   "version": "0.0.0",
   "description": "Farm is modern web building tool written in rust",
   "engines": {
-    "node": ">=16",
-    "pnpm": ">=8"
-  },
-  "devDependencies": {
-    "@changesets/cli": "^2.26.0",
-    "@commitlint/cli": "^17.0.3",
-    "@commitlint/config-conventional": "^17.0.3",
-    "@types/node": "^18.0.1",
-    "@typescript-eslint/eslint-plugin": "^5.30.5",
-    "@typescript-eslint/parser": "^5.30.5",
-    "@vitest/coverage-v8": "^0.33.0",
-    "cross-env": "^7.0.3",
-    "cspell": "^6.2.2",
-    "eslint": "^8.19.0",
-    "eslint-config-prettier": "^8.5.0",
-    "execa": "^7.1.1",
-    "lint-staged": "^13.0.3",
-    "nanospinner": "^1.1.0",
-    "prettier": "^2.7.1",
-    "prettier-eslint": "^15.0.1",
-    "prettier-eslint-cli": "^7.1.0",
-    "rimraf": "^3.0.2",
-    "rollup": "^3.29.4",
-    "simple-git-hooks": "^2.10.0",
-    "typescript": "^4.9.4",
-    "vite": "^5.2.6",
-    "vitest": "^1.4.0",
-    "playwright-chromium": "^1.42.1"
+    "node": ">=18",
+    "pnpm": ">=9"
   },
   "scripts": {
-    "postinstall": "simple-git-hooks",
     "preinstall": "npx only-allow pnpm",
     "bootstrap": "pnpm install && node scripts/clean.mjs && node scripts/bootstrap.mjs && pnpm start",
     "test": "cross-env NODE_OPTIONS=--trace-exit vitest run",
     "start:rs": "cargo watch -w crates -w rust-plugins -s 'scripts/watch.sh'",
     "start": "pnpm --filter @farmfe/cli start",
     "release": "node scripts/release.mjs",
+    "check": "biome check . --diagnostic-level=warn --apply",
     "clean": "node scripts/clean.mjs && rimraf node_modules **/*/node_modules",
     "bump": "node scripts/bump.mjs",
     "test:rs:update": "cross-env FARM_UPDATE_SNAPSHOTS=1 cargo test -p farmfe_compiler",
     "ready": "node scripts/ready.mjs",
-    "test-e2e": "vitest run -c vitest.config.e2e.ts"
+    "test-e2e": "vitest run -c vitest.config.e2e.ts",
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "1.7.2",
+    "@changesets/cli": "^2.26.0",
+    "@commitlint/cli": "^17.0.3",
+    "@commitlint/config-conventional": "^17.0.3",
+    "@types/node": "^18.0.1",
+    "@vitest/coverage-v8": "^0.33.0",
+    "cross-env": "^7.0.3",
+    "cspell": "^6.2.2",
+    "execa": "^7.1.1",
+    "husky": "^9.0.11",
+    "lint-staged": "^13.0.3",
+    "nanospinner": "^1.1.0",
+    "playwright-chromium": "^1.42.1",
+    "rimraf": "^3.0.2",
+    "rollup": "^3.29.4",
+    "typescript": "^4.9.4",
+    "vite": "^5.2.6",
+    "vitest": "^1.4.0"
   },
   "lint-staged": {
     "packages/**/*.ts": [
-      "prettier-eslint --write"
+      "npx biome check --no-errors-on-unmatched --files-ignore-unknown=true --apply"
     ],
     "js-plugins/**/*.ts": [
-      "prettier-eslint --write"
+      "npx biome check --no-errors-on-unmatched --files-ignore-unknown=true --apply"
     ]
-  },
-  "simple-git-hooks": {
-    "pre-commit": "pnpm lint-staged",
-    "pre-push": "",
-    "preserveUnused": true
   },
   "pnpm": {
     "overrides": {

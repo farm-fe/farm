@@ -8,7 +8,7 @@ export function shouldUsePnpm(): boolean {
     }
     execSync('pnpm --version', { stdio: 'ignore' });
     return true;
-  } catch (e) {
+  } catch {
     return false;
   }
 }
@@ -21,7 +21,7 @@ export function shouldUseYarn(): boolean {
     }
     execSync('yarnpkg --version', { stdio: 'ignore' });
     return true;
-  } catch (e) {
+  } catch {
     return false;
   }
 }

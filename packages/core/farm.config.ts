@@ -3,7 +3,7 @@ import type { UserConfig } from './src/index.js';
 
 const VIRTUAL_SUFFIX = '.virtual.farm';
 
-export default <UserConfig>{
+export default (<UserConfig>{
   compilation: {
     input: {
       index: 'src/index.ts'
@@ -116,4 +116,4 @@ export default <UserConfig>{
       }
     }
   ]
-};
+});

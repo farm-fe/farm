@@ -15,22 +15,31 @@ function PopularContent() {
   const [total, setTotal] = useState(0)
 
   const fetchData = useCallback(() => {
+  let isMounted = true;
     setLoading(true)
     axios
       .get(
         `/api/workplace/popular-contents?page=${page}&pageSize=5&category=${type}`,
       )
       .then((res) => {
-        setData(res.data.list)
-        setTotal(res.data.total)
+        if (isMounted) {
+          setData(res.data.list)
+          setTotal(res.data.total)
+        }
       })
       .finally(() => {
-        setLoading(false)
+        if (isMounted) {
+          setLoading(false)
+        }
       })
+    return () => {
+      isMounted = false;
+    };
   }, [page, type])
 
   useEffect(() => {
-    fetchData()
+    const cleanup = fetchData();
+    return cleanup;
   }, [page, fetchData])
 
   const columns = [

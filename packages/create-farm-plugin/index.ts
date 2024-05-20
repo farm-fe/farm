@@ -1,8 +1,8 @@
 #!/usr/bin/env node
-import prompts from 'prompts';
-import minimist from 'minimist';
-import path from 'node:path';
 import fs from 'node:fs';
+import path from 'node:path';
+import minimist from 'minimist';
+import prompts from 'prompts';
 
 import { fileURLToPath } from 'node:url';
 import { colors } from '@farmfe/utils/colors';

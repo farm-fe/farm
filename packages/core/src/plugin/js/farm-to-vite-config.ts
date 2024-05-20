@@ -1,12 +1,12 @@
 import type { UserConfig as ViteUserConfig } from 'vite';
 import type { UserConfig } from '../../config/types.js';
+import { Logger } from '../../index.js';
+import merge from '../../utils/merge.js';
+import { VITE_DEFAULT_ASSETS } from './constants.js';
 import {
   deleteUndefinedPropertyDeeply,
   throwIncompatibleError
 } from './utils.js';
-import merge from '../../utils/merge.js';
-import { Logger } from '../../index.js';
-import { VITE_DEFAULT_ASSETS } from './constants.js';
 
 export function farmUserConfigToViteConfig(config: UserConfig): ViteUserConfig {
   const vitePlugins = config.vitePlugins.filter(Boolean).map((plugin) => {

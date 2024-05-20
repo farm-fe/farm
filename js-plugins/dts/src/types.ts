@@ -1,6 +1,16 @@
-import type { ts, Diagnostic } from 'ts-morph';
+import type { Diagnostic, ts } from 'ts-morph';
 
 export interface DtsPluginOptions {
+  /**
+   * match files
+   *
+   * @default
+   * ```ts
+   * [".ts$", ".tsx$"]
+   * ```
+   **/
+  resolvedPaths?: string[];
+
   /**
    * Depends on the root directory
    */

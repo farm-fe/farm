@@ -1,0 +1,19 @@
+[package]
+edition = "2021"
+name = "create-farm-rs"
+version = "0.0.0"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+# Default enable napi4 feature, see https://nodejs.org/api/n-api.html#node-api-version-matrix
+napi = { version = "2.15.2", default-features = false, features = [
+  "napi4",
+  "serde-json",
+] }
+napi-derive = "2.15.2"
+create-farm = { path = "../../crates/create-farm-rs" }
+
+[build-dependencies]
+napi-build = "2.0.1"

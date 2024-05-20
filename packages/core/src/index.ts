@@ -4,37 +4,37 @@ export * from './server/index.js';
 export * from './plugin/type.js';
 export * from './utils/index.js';
 
-import path from 'node:path';
-import fs from 'node:fs/promises';
 import { statSync } from 'node:fs';
+import fs from 'node:fs/promises';
+import path from 'node:path';
 import fse from 'fs-extra';
 
 import { Compiler } from './compiler/index.js';
+import { loadEnv, setProcessEnv } from './config/env.js';
 import {
+  UserConfig,
   getConfigFilePath,
   normalizePublicDir,
-  resolveConfig,
-  UserConfig
+  resolveConfig
 } from './config/index.js';
-import { Logger } from './utils/logger.js';
 import { Server } from './server/index.js';
-import { FileWatcher } from './watcher/index.js';
 import { compilerHandler } from './utils/build.js';
-import { loadEnv, setProcessEnv } from './config/env.js';
 import { colors } from './utils/color.js';
+import { Logger } from './utils/logger.js';
+import { FileWatcher } from './watcher/index.js';
 
+import { __FARM_GLOBAL__ } from './config/_global.js';
 import type {
   FarmCLIOptions,
   ResolvedUserConfig,
   UserPreviewServerConfig
 } from './config/types.js';
 import { JsPlugin } from './plugin/type.js';
-import { __FARM_GLOBAL__ } from './config/_global.js';
-import { ConfigWatcher } from './watcher/config-watcher.js';
-import { clearScreen } from './utils/share.js';
 import { logError } from './server/error.js';
 import { lazyCompilation } from './server/middlewares/lazy-compilation.js';
 import { resolveHostname } from './utils/http.js';
+import { clearScreen } from './utils/share.js';
+import { ConfigWatcher } from './watcher/config-watcher.js';
 
 export async function start(
   inlineConfig?: FarmCLIOptions & UserConfig

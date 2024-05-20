@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.5
+
+### Patch Changes
+
+- 6a9b13c2: chore(rust-plugins): fix ts warning
+
 ## 1.0.4
 
 ### Patch Changes

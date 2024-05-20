@@ -1,3 +1,5 @@
+import { JsPlugin } from '../dist/index.d.ts'
+
 export type ModuleType =
   | 'ts'
   | 'js'
@@ -23,7 +25,12 @@ export type ResolveKind =
 export * from './binding.js';
 import { Compiler } from './binding.js';
 import type { WatchOptions } from 'chokidar';
-import { JsMinifyOptions, SwcPresetEnvOptions, ScriptDecoratorsConfig, ScriptParseConfig } from './swc-config.js';
+import {
+  JsMinifyOptions,
+  SwcPresetEnvOptions,
+  ScriptDecoratorsConfig,
+  ScriptParseConfig
+} from './swc-config.js';
 export default Compiler;
 export const bindingPath: string;
 
@@ -136,7 +143,16 @@ export interface OutputConfig {
    * You can also set target env version like `node16`, `node-legacy`, 'browser-legacy`, 'browser-es2015', 'browser-2017', 'browser-esnext'. Farm will automatically downgrade syntax and inject polyfill according to the specified target env.
    * @default 'browser'
    */
-  targetEnv?: 'browser' | 'node' | 'node16' | 'node-legacy' | 'node-next' | 'browser-legacy' | 'browser-es2015' | 'browser-es2017' | 'browser-esnext';
+  targetEnv?:
+    | 'browser'
+    | 'node'
+    | 'node16'
+    | 'node-legacy'
+    | 'node-next'
+    | 'browser-legacy'
+    | 'browser-es2015'
+    | 'browser-es2017'
+    | 'browser-esnext';
   /**
    * output modul format
    */
@@ -200,7 +216,7 @@ export interface RuntimeConfig {
    */
   namespace?: string;
   /**
-   * Whether to isolate the farm entry script, the default is false. 
+   * Whether to isolate the farm entry script, the default is false.
    * If set to true, the farm entry script will be emitted as a separate file.
    */
   isolate?: boolean;
@@ -209,17 +225,17 @@ export interface RuntimeConfig {
 export interface ScriptConfig {
   // specify target es version
   target?:
-  | 'es3'
-  | 'es5'
-  | 'es2015'
-  | 'es2016'
-  | 'es2017'
-  | 'es2018'
-  | 'es2019'
-  | 'es2020'
-  | 'es2021'
-  | 'es2022'
-  | 'esnext';
+    | 'es3'
+    | 'es5'
+    | 'es2015'
+    | 'es2016'
+    | 'es2017'
+    | 'es2018'
+    | 'es2019'
+    | 'es2020'
+    | 'es2021'
+    | 'es2022'
+    | 'esnext';
   // config swc parser
   parser?: ScriptParseConfig;
   decorators?: ScriptDecoratorsConfig;
@@ -299,7 +315,7 @@ export interface PersistentCacheConfig {
     /** @default true */
     env?: boolean;
   };
-};
+}
 
 export interface PartialBundlingConfig {
   /**
@@ -356,7 +372,7 @@ export interface PresetEnvConfig {
    * @see https://babeljs.io/docs/assumptions
    */
   assumptions?: any;
-};
+}
 
 export interface Config {
   config?: {
@@ -377,7 +393,7 @@ export interface Config {
     /**
      * Configure the imports that are external, and the imports that are external will not appear in the compiled product.
      */
-    external?: string[];
+    external?: (string | Record<string, string>)[];
     externalNodeBuiltins?: boolean | string[];
     mode?: 'development' | 'production';
     root?: string;
@@ -419,7 +435,7 @@ export interface Config {
     presetEnv?: boolean | PresetEnvConfig;
     persistentCache?: boolean | PersistentCacheConfig;
     comments?: boolean | 'license';
-    custom?:Record<string, any>;
+    custom?: Record<string, any>;
   };
   jsPlugins?: JsPlugin[];
   // [rustPluginFilePath, jsonStringifiedOptions]

@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import { isAbsolute, join } from 'node:path';
-import { CompilationContext } from '../plugin/type.js';
 import { Alias } from '../config/types.js';
+import { CompilationContext } from '../plugin/type.js';
 
 export const getAdditionContext = async (
   cwd: string,
@@ -53,7 +53,7 @@ export function throwError(pluginName: string, type: string, error: Error) {
 export function getAliasEntries(
   entries: Record<string, string> | Array<Alias>
 ): any {
-  if (!entries) {
+  if (!entries || !Object.keys(entries).length) {
     return [];
   }
 
