@@ -1038,20 +1038,19 @@ const transformFarmPluginPath = (importers: string, root: string) => ({
     },
     executor: async (param: PluginResolveHookParam) => {
       let pluginPath = param.source;
-      let newSource = param.source;
       if (!path.isAbsolute(pluginPath) && !pluginPath.startsWith('.')) {
         const require = createRequire(path.join(root, 'package.json'));
         pluginPath = require.resolve(pluginPath);
         const funcPluginPath = path.resolve(pluginPath, '../func.js');
         if (fs.existsSync(funcPluginPath)) {
-          newSource = funcPluginPath;
+          return {
+            resolvedPath: funcPluginPath,
+            external: false,
+            sideEffects: false
+          };
         }
       }
-      return {
-        resolvedPath: newSource,
-        external: false,
-        sideEffects: false
-      };
+      return null;
     }
   }
 });
