@@ -46,7 +46,8 @@ import merge from '../utils/merge.js';
 import {
   CUSTOM_KEYS,
   DEFAULT_CONFIG_NAMES,
-  FARM_DEFAULT_NAMESPACE
+  FARM_DEFAULT_NAMESPACE,
+  FARM_RUST_PLUGIN_FUNCTION_ENTRY
 } from './constants.js';
 import { mergeConfig, mergeFarmCliConfig } from './mergeConfig.js';
 import { normalizeExternal } from './normalize-config/normalize-external.js';
@@ -1041,7 +1042,11 @@ const transformFarmPluginPath = (importers: string, root: string) => ({
       if (!path.isAbsolute(pluginPath) && !pluginPath.startsWith('.')) {
         const require = createRequire(path.join(root, 'package.json'));
         pluginPath = require.resolve(pluginPath);
-        const funcPluginPath = path.resolve(pluginPath, '../func.js');
+        const funcPluginPath = path.resolve(
+          pluginPath,
+          '../',
+          FARM_RUST_PLUGIN_FUNCTION_ENTRY
+        );
         if (fs.existsSync(funcPluginPath)) {
           return {
             resolvedPath: funcPluginPath,
