@@ -1,7 +1,13 @@
 [package]
 edition = "2021"
-name = "create-farm-node"
+name = "create-farm-rs"
 version = "0.1.0"
+authors = ["Erkelost"]
+license = "MIT"
+description = "Create Farm cli tool"
+homepage = "https://farmfe.org"
+repository = "https://github.com/farm-fe/farm"
+
 
 [lib]
 crate-type = ["cdylib"]

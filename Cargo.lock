@@ -848,7 +848,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "create-farm-node"
+name = "create-farm-rs"
 version = "0.1.0"
 dependencies = [
  "create-farm",
