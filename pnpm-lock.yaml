@@ -317,6 +317,9 @@ importers:
       '@types/jquery':
         specifier: ^3.5.29
         version: 3.5.29
+      jquery:
+        specifier: ^3.7.1
+        version: 3.7.1
       typescript:
         specifier: ^5.4.3
         version: 5.4.5
@@ -7247,6 +7250,9 @@ packages:
   jiti@1.21.0:
     resolution: {integrity: sha512-gFqAIbuKyyso/3G2qhiO2OM6shY6EPP/R0+mkDbyspxKazh8BXDC5FiFsUjlczgdNz/vfra0da2y+aHrusLG/Q==}
     hasBin: true
+
+  jquery@3.7.1:
+    resolution: {integrity: sha512-m4avr8yL8kmFN8psrbFFFmB/If14iN5o9nw/NgnnM+kybDJpRsAynV2BsfpTYrTRysYUdADVD7CkUUizgkpLfg==}
 
   js-base64@2.6.4:
     resolution: {integrity: sha512-pZe//GGmwJndub7ZghVHz7vjb2LgC1m8B07Au3eYqeqv9emhESByMXxaEgkUkEqJe87oBbSniGYoQNIBklc7IQ==}
@@ -16733,6 +16739,8 @@ snapshots:
       istanbul-lib-report: 3.0.1
 
   jiti@1.21.0: {}
+
+  jquery@3.7.1: {}
 
   js-base64@2.6.4: {}
 
