@@ -4,7 +4,7 @@ import { Compiler as BindingCompiler } from '../../binding/index.js';
 import { Logger } from '../utils/logger.js';
 
 import type { Config, JsUpdateResult } from '../../binding/index.js';
-import { JsPlugin, Resource } from '../index.js';
+import { Resource } from '../index.js';
 import type { ILogger } from '../utils/logger.js';
 
 export const VIRTUAL_FARM_DYNAMIC_IMPORT_SUFFIX =
@@ -158,16 +158,17 @@ export class Compiler {
       ? configOutputPath
       : path.join(this.config.config.root, configOutputPath);
 
+    const outputBasePath = path.join(outputPath, base);
+    if (!existsSync(outputBasePath)) {
+      mkdirSync(outputBasePath, { recursive: true });
+    }
+
     for (const [name, resource] of Object.entries(resources)) {
       // remove query params and hash of name
       const nameWithoutQuery = name.split('?')[0];
       const nameWithoutHash = nameWithoutQuery.split('#')[0];
 
-      const filePath = path.join(outputPath, base, nameWithoutHash);
-
-      if (!existsSync(path.dirname(filePath))) {
-        mkdirSync(path.dirname(filePath), { recursive: true });
-      }
+      const filePath = path.join(outputBasePath, nameWithoutHash);
 
       writeFileSync(filePath, resource);
     }
@@ -176,15 +177,21 @@ export class Compiler {
   }
 
   callWriteResourcesHook() {
-    for (const jsPlugin of this.config.jsPlugins ?? []) {
-      (jsPlugin as JsPlugin).writeResources?.executor?.({
+    const { jsPlugins, config } = this.config ?? {};
+
+    if (!jsPlugins || !Array.isArray(jsPlugins)) {
+      return;
+    }
+
+    jsPlugins.forEach((jsPlugin) => {
+      jsPlugin?.writeResources?.executor?.({
         resourcesMap: this._bindingCompiler.resourcesMap() as Record<
           string,
           Resource
         >,
-        config: this.config.config
+        config: config
       });
-    }
+    });
   }
 
   removeOutputPathDir() {

@@ -122,13 +122,14 @@ async function handleServerPortConflict(
  */
 export async function resolveConfig(
   inlineOptions: FarmCLIOptions & UserConfig,
-  logger: Logger,
   mode?: CompilationMode,
+  logger: Logger = new Logger(),
   isHandleServerPortConflict = true
 ): Promise<ResolvedUserConfig> {
   // Clear the console according to the cli command
   checkClearScreen(inlineOptions);
   inlineOptions.mode = inlineOptions.mode ?? mode;
+  inlineOptions.root = inlineOptions.root ?? process.cwd();
 
   // configPath may be file or directory
   let { configPath } = inlineOptions;
