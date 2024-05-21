@@ -202,13 +202,15 @@ impl<'a> Visit for SideEffectsAnalyzer<'a> {
           .merge_side_effects(if self.in_assign_left {
             if ident.span.ctxt().outer() == self.unresolved_mark {
               StatementSideEffects::WriteOrCallGlobalVar
-            } else if ident.span.ctxt().outer() == self.top_level_mark {
+            } else if self.in_top_level || ident.span.ctxt().outer() == self.top_level_mark {
               StatementSideEffects::WriteTopLevelVar(HashSet::from([ident.to_id()]))
             } else {
               StatementSideEffects::NoSideEffects
             }
           } else if self.in_call && ident.span.ctxt().outer() == self.unresolved_mark {
             StatementSideEffects::WriteOrCallGlobalVar
+          } else if self.in_top_level || ident.span.ctxt().outer() == self.top_level_mark {
+            StatementSideEffects::ReadTopLevelVar(HashSet::from([ident.to_id()]))
           } else {
             StatementSideEffects::NoSideEffects
           });
@@ -219,7 +221,9 @@ impl<'a> Visit for SideEffectsAnalyzer<'a> {
         match &assign_expr.left {
           farmfe_core::swc_ecma_ast::AssignTarget::Simple(st) => match st {
             farmfe_core::swc_ecma_ast::SimpleAssignTarget::Ident(i) => {
-              if i.id.span.ctxt.outer() == self.top_level_mark {
+              // for idents that are added by ast transform, the mark may not be top_level_mark
+              // in this case, we treat it as top level as long as current assign expr is in top level
+              if self.in_top_level || i.id.span.ctxt.outer() == self.top_level_mark {
                 self
                   .side_effects
                   .merge_side_effects(StatementSideEffects::WriteTopLevelVar(HashSet::from([i

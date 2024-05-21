@@ -147,19 +147,15 @@ impl TreeShakeModule {
     } else {
       StatementGraph::empty()
     };
+
     module.meta.as_script_mut().set_comments(comments.into());
 
     // 2. set default used exports
-    let handled_used_exports = if module.side_effects {
-      UsedExports::All
-    } else {
-      UsedExports::Partial(Default::default())
-    };
+    let handled_used_exports = UsedExports::Partial(Default::default());
 
     Self {
       module_id: module.id.clone(),
-      contains_self_executed_stmt: module.side_effects
-        || !matches!(module_system, ModuleSystem::EsModule)
+      contains_self_executed_stmt: !matches!(module_system, ModuleSystem::EsModule)
         || stmt_graph.contains_bare_import_stmt()
         || !stmt_graph.preserved_side_effects_stmts().is_empty(),
       stmt_graph,

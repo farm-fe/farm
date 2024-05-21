@@ -18,9 +18,8 @@ export default defineConfig({
     },
     external: ['^react$', '^react-dom$'],
     presetEnv: false,
-    sourcemap: true,
+    sourcemap: false,
     persistentCache: false,
-    minify: false
   },
   plugins: ['@farmfe/plugin-react', '@farmfe/plugin-sass']
 });

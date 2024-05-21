@@ -715,8 +715,13 @@ impl Resolver {
   ) -> bool {
     farm_profile_function!("is_module_side_effects".to_string());
     match package_json_info.side_effects() {
-      farmfe_core::common::ParsedSideEffects::Bool(b) => *b,
-      farmfe_core::common::ParsedSideEffects::Array(arr) => arr.iter().any(|s| s == resolved_path),
+      Some(side_effect) => match side_effect {
+        farmfe_core::common::ParsedSideEffects::Bool(b) => *b,
+        farmfe_core::common::ParsedSideEffects::Array(arr) => {
+          arr.iter().any(|s| s == resolved_path)
+        }
+      },
+      None => true,
     }
   }
 }

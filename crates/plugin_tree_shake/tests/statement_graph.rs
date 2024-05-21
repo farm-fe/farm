@@ -235,6 +235,91 @@ export { a, b, c as d };"#;
 }
 
 #[test]
+fn construct_statement_graph_complex_1() {
+  let code = r#"
+  var LOADABLE_REQUIRED_CHUNKS_KEY = '__LOADABLE_REQUIRED_CHUNKS__';
+  function getRequiredChunkKey(namespace) {
+    return "" + namespace + LOADABLE_REQUIRED_CHUNKS_KEY;
+  }
+  
+  var sharedInternals = /*#__PURE__*/Object.freeze({
+    __proto__: null,
+    getRequiredChunkKey: getRequiredChunkKey,
+    invariant: invariant,
+    Context: Context
+  });"#;
+
+  GLOBALS.set(&Globals::new(), || {
+    let (ast, _) = parse_module(code);
+
+    let stmt_graph = StatementGraph::new(
+      &ast,
+      Mark::new(),
+      Mark::new(),
+      &SingleThreadedComments::default(),
+    );
+    assert_eq!(stmt_graph.stmts().len(), 3);
+
+    let mut edges = stmt_graph.edges();
+    edges.sort_by(|a, b| {
+      let result = a.0.id.cmp(&b.0.id);
+
+      if result == Ordering::Equal {
+        a.1.id.cmp(&b.1.id)
+      } else {
+        result
+      }
+    });
+
+    // statement 1 -> statement 0
+    assert_eq!(edges[0].0.id, 1);
+    assert_eq!(edges[0].1.id, 0);
+    assert_eq!(edges[0].2.used_idents.len(), 0);
+    assert_eq!(edges[0].2.used_idents_map.len(), 1);
+    let used_idents = edges[0]
+      .2
+      .used_idents_map
+      .iter()
+      .map(|(i, deps)| {
+        (
+          print_id(i),
+          deps.iter().map(|i| print_id(i)).collect::<Vec<_>>(),
+        )
+      })
+      .collect::<Vec<_>>();
+    assert_eq!(
+      used_idents,
+      vec![(
+        "getRequiredChunkKey#2".to_string(),
+        vec!["LOADABLE_REQUIRED_CHUNKS_KEY#2".to_string()]
+      )]
+    );
+
+    // statement 2 -> statement 1
+    assert_eq!(edges[1].0.id, 2);
+    assert_eq!(edges[1].1.id, 1);
+    assert_eq!(edges[1].2.used_idents.len(), 0);
+    let used_idents = edges[1]
+      .2
+      .used_idents_map
+      .iter()
+      .map(|(i, deps)| {
+        let mut deps = deps.iter().map(|i| print_id(i)).collect::<Vec<_>>();
+        deps.sort();
+        (print_id(i), deps)
+      })
+      .collect::<Vec<_>>();
+    assert_eq!(
+      used_idents,
+      vec![(
+        "sharedInternals#2".to_string(),
+        vec!["getRequiredChunkKey#2".to_string()]
+      )]
+    );
+  });
+}
+
+#[test]
 fn trace_and_mark_used_statements() {
   let code = r#"
 import { aValue } from './foo';

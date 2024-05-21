@@ -1,4 +1,8 @@
-use std::collections::{HashMap, HashSet};
+use std::{
+  collections::{HashMap, HashSet},
+  path::PathBuf,
+  sync::Arc,
+};
 
 use common::create_module;
 use farmfe_core::{
@@ -11,7 +15,14 @@ use farmfe_plugin_tree_shake::{
   module::{TreeShakeModule, UsedExports, UsedExportsIdent},
   tree_shake_modules::remove_useless_stmts::remove_useless_stmts,
 };
-use farmfe_toolkit::script::codegen_module;
+use farmfe_testing_helpers::fixture;
+use farmfe_toolkit::{
+  common::{create_swc_source_map, Source},
+  fs::read_file_utf8,
+  script::codegen_module,
+};
+
+use crate::common::create_module_with_comments;
 
 mod common;
 
@@ -290,5 +301,51 @@ if (import.meta.hot) {
     for (result_line, expect_line) in result_lines.zip(expect_lines) {
       assert_eq!(result_line, expect_line);
     }
+  });
+}
+
+#[test]
+fn trace_loadable_esm() {
+  let code = include_str!("./fixtures/statement_graph/loadable.esm.js");
+
+  GLOBALS.set(&Globals::new(), || {
+    let mut module = create_module_with_comments(code);
+    let mut tree_shake_module = TreeShakeModule::new(&mut module);
+    tree_shake_module.pending_used_exports =
+      UsedExports::Partial(HashSet::from([UsedExportsIdent::Default]));
+    tree_shake_module.trace_and_mark_used_statements();
+
+    let module_id = module.id.clone();
+    let mut module_graph = ModuleGraph::new();
+    let tree_shake_module_map = HashMap::from([(module.id.clone(), tree_shake_module)]);
+    module_graph.add_module(module);
+
+    remove_useless_stmts(&module_id, &mut module_graph, &tree_shake_module_map);
+
+    fixture!("tests/fixtures/statement_graph/*.js", |file, _| {
+      let (cm, _) = create_swc_source_map(Source {
+        path: PathBuf::from("any"),
+        content: Arc::new(code.to_string()),
+      });
+      let ast = &module_graph
+        .module_mut(&module_id)
+        .unwrap()
+        .meta
+        .as_script()
+        .ast;
+      let code_bytes = codegen_module(ast, EsVersion::EsNext, cm, None, false, None).unwrap();
+      let code = String::from_utf8(code_bytes).unwrap();
+
+      let output_path = PathBuf::from(file).parent().unwrap().join("output.js");
+
+      if output_path.exists() {
+        let output_code =
+          read_file_utf8(output_path.to_string_lossy().to_string().as_str()).unwrap();
+        assert_eq!(output_code, code);
+      } else {
+        println!("{output_path:?}");
+        std::fs::write(output_path, code).unwrap();
+      }
+    });
   });
 }

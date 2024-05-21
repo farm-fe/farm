@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use farmfe_core::module::{module_graph::ModuleGraph, ModuleId};
+use farmfe_core::module::{module_graph::ModuleGraph, ModuleId, ModuleSystem};
 
 use crate::module::{TreeShakeModule, UsedExports};
 
@@ -25,38 +25,13 @@ pub fn mark_initial_side_effects(
     .collect::<Vec<_>>();
 
   for module_id in module_ids {
-    let no_dependents_tree_shakeable = module_graph
-      .dependents_ids(&module_id)
-      .iter()
-      .all(|dept_id| !tree_shake_modules_map.contains_key(dept_id));
-
     if let Some(shake_module) = tree_shake_modules_map.get_mut(&module_id) {
-      // if the module do not have tree shakeable parent, mark it as side effects
-      if no_dependents_tree_shakeable {
-        shake_module.side_effects = true;
-      }
-
-      if shake_module.side_effects {
+      // if the module is not esm, set default exports all so it won't be tree shaken
+      if shake_module.module_system != ModuleSystem::EsModule {
         shake_module.pending_used_exports.set_export_all();
       }
     }
   }
-
-  // // update contains_self_executed_stmt for the tree_shake_modules
-  // for tree_shake_module_id in module_graph.toposort().0 {
-  //   if let Some(tree_shake_module) = tree_shake_modules_map.get(&tree_shake_module_id) {
-  //     let contains_self_executed_stmt = tree_shake_module.contains_self_executed_stmt;
-  //     module_graph
-  //       .dependents_ids(&tree_shake_module_id)
-  //       .into_iter()
-  //       .for_each(|dept_id| {
-  //         if let Some(dept_tree_shake_module) = tree_shake_modules_map.get_mut(&dept_id) {
-  //           dept_tree_shake_module.contains_self_executed_stmt =
-  //             dept_tree_shake_module.contains_self_executed_stmt || contains_self_executed_stmt
-  //         }
-  //       });
-  //   }
-  // }
 
   entry_module_ids
 }

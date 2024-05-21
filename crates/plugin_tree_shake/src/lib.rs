@@ -14,7 +14,6 @@ pub mod mark_initial_side_effects;
 pub mod module;
 pub mod remove_hot_update;
 pub mod statement_graph;
-// pub mod toposort;
 pub mod tree_shake_modules;
 
 pub struct FarmPluginTreeShake;
@@ -50,7 +49,7 @@ impl Plugin for FarmPluginTreeShake {
     let mut tree_shake_modules_map =
       init_tree_shake_module_map::init_tree_shake_module_map(module_graph, context);
 
-    // 3. mark entry modules and non-script modules as side_effects
+    // 3. handle default side effects
     let entry_module_ids = mark_initial_side_effects::mark_initial_side_effects(
       module_graph,
       &mut tree_shake_modules_map,

@@ -10,9 +10,7 @@ use crate::{
   statement_graph::traced_used_import::TracedUsedImportStatement,
 };
 
-pub(crate) mod handle_side_effects_module;
 pub mod remove_useless_stmts;
-pub(crate) mod utils;
 
 pub fn tree_shake_modules(
   entry_module_ids: Vec<ModuleId>,
@@ -22,6 +20,15 @@ pub fn tree_shake_modules(
   let mut tree_shake_module_ids_queue = VecDeque::from(entry_module_ids);
   let mut visited_modules: HashSet<ModuleId> = HashSet::new();
 
+  let set_dep_used_export_all =
+    |dep_id: &ModuleId, tree_shake_modules_map: &mut HashMap<ModuleId, TreeShakeModule>| {
+      let dep_tree_shake_module = tree_shake_modules_map.get_mut(dep_id);
+
+      if let Some(dep_tree_shake_module) = dep_tree_shake_module {
+        dep_tree_shake_module.pending_used_exports.set_export_all();
+      }
+    };
+
   // 1. traverse the tree_shake_modules in order, and mark all statement that should be preserved
   while let Some(tree_shake_module_id) = tree_shake_module_ids_queue.pop_front() {
     // handle non tree shakeable modules like css
@@ -29,6 +36,7 @@ pub fn tree_shake_modules(
       if !visited_modules.contains(&tree_shake_module_id) {
         // make sure all non tree shakeable modules are handled
         for (dep_id, _) in module_graph.dependencies(&tree_shake_module_id) {
+          set_dep_used_export_all(&dep_id, tree_shake_modules_map);
           tree_shake_module_ids_queue.push_back(dep_id);
         }
         visited_modules.insert(tree_shake_module_id);
@@ -53,9 +61,7 @@ pub fn tree_shake_modules(
       tree_shake_module.module_system,
       farmfe_core::module::ModuleSystem::EsModule
     ) {
-      // mark the non-esm module as side_effects
-      // Farm won't tree shake the side effects module
-      tree_shake_module.side_effects = true;
+      // all statements will be preserved when it not esm
       tree_shake_module.clear_pending_used_exports();
 
       for dep_id in module_graph.dependencies_ids(&tree_shake_module_id) {
@@ -64,78 +70,46 @@ pub fn tree_shake_modules(
           continue;
         }
 
-        let dep_tree_shake_module = tree_shake_modules_map.get_mut(&dep_id);
-
-        if let Some(dep_tree_shake_module) = dep_tree_shake_module {
-          dep_tree_shake_module.pending_used_exports.set_export_all();
-        }
-
+        set_dep_used_export_all(&dep_id, tree_shake_modules_map);
         tree_shake_module_ids_queue.push_back(dep_id);
       }
     } else {
-      // the module is esm
-      if tree_shake_module.side_effects {
-        tree_shake_module.clear_pending_used_exports();
+      // the module is esm, trace all used statement in the statement graph, should analyze side effects of the statements too.
+      let traced_import_stmts =
+        trace_and_mark_used_statements(&tree_shake_module_id, module_graph, tree_shake_modules_map);
+      // set dependencies' pending_used_exports
+      for import_stmt in traced_import_stmts {
+        let TracedUsedImportStatement {
+          source,
+          used_stmt_idents,
+          kind,
+          ..
+        } = import_stmt;
 
-        // the module has side effects, add all imported identifiers to [UsedExports::Partial] of the imported modules
-        handle_side_effects_module::handle_side_effects_module(
-          &tree_shake_module_id,
-          tree_shake_modules_map,
-          module_graph,
-        );
-        // for side effects modules, all dependencies should be handled
-        for (dep_id, edge) in module_graph.dependencies(&tree_shake_module_id) {
-          if !visited_modules.contains(&dep_id) {
-            if edge.is_dynamic() {
-              if let Some(tree_shake_module) = tree_shake_modules_map.get_mut(&dep_id) {
-                tree_shake_module.pending_used_exports.set_export_all();
-              }
+        let dep_id = module_graph.get_dep_by_source(&tree_shake_module_id, &source, Some(kind));
+
+        if let Some(dep_tree_shake_module) = tree_shake_modules_map.get_mut(&dep_id) {
+          match used_stmt_idents {
+            UsedExports::All => {
+              dep_tree_shake_module.pending_used_exports.set_export_all();
             }
-
-            tree_shake_module_ids_queue.push_back(dep_id);
-          }
-        }
-      } else {
-        // the module doesn't have side effects, trace all used statement in the statement graph, should analyze side effects of the statements too.
-        let traced_import_stmts = trace_and_mark_used_statements(
-          &tree_shake_module_id,
-          module_graph,
-          tree_shake_modules_map,
-        );
-        // set dependencies' pending_used_exports
-        for import_stmt in traced_import_stmts {
-          let TracedUsedImportStatement {
-            source,
-            used_stmt_idents,
-            kind,
-            ..
-          } = import_stmt;
-
-          let dep_id = module_graph.get_dep_by_source(&tree_shake_module_id, &source, Some(kind));
-
-          if let Some(dep_tree_shake_module) = tree_shake_modules_map.get_mut(&dep_id) {
-            match used_stmt_idents {
-              UsedExports::All => {
-                dep_tree_shake_module.pending_used_exports.set_export_all();
-              }
-              UsedExports::Partial(used_stmt_idents) => {
-                // add all unhandled used stmt idents to pending_used_exports
-                for used_stmt_ident in used_stmt_idents {
-                  if !dep_tree_shake_module
-                    .handled_used_exports
-                    .contains(&used_stmt_ident)
-                  {
-                    dep_tree_shake_module
-                      .pending_used_exports
-                      .add_used_export(used_stmt_ident);
-                  }
+            UsedExports::Partial(used_stmt_idents) => {
+              // add all unhandled used stmt idents to pending_used_exports
+              for used_stmt_ident in used_stmt_idents {
+                if !dep_tree_shake_module
+                  .handled_used_exports
+                  .contains(&used_stmt_ident)
+                {
+                  dep_tree_shake_module
+                    .pending_used_exports
+                    .add_used_export(used_stmt_ident);
                 }
               }
             }
           }
-
-          tree_shake_module_ids_queue.push_back(dep_id);
         }
+
+        tree_shake_module_ids_queue.push_back(dep_id);
       }
     }
   }
@@ -194,10 +168,15 @@ fn trace_and_mark_used_statements(
           module_graph.get_dep_by_source(tree_shake_module_id, source, Some(kind.clone()));
         let dep_module = module_graph.module(&dep_module_id).unwrap();
         let dep_tree_shake_module = tree_shake_modules_map.get(&dep_module_id);
+
+        // for dep tree shake module that marked as side effects free, Farm won't check it
+        if dep_tree_shake_module.is_some() && !dep_module.side_effects && !dep_module.external {
+          continue;
+        }
+
         // if dep tree shake module is not found, it means the dep module is not tree shakable, so we should keep the import / export from statement
         // and preserve import / export from statement if the source module contains side effects statement
         if dep_module.external
-          || dep_module.side_effects
           || dep_tree_shake_module.is_none()
           || dep_tree_shake_module.unwrap().contains_self_executed_stmt
         {

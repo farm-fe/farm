@@ -94,6 +94,13 @@ pub enum StatementSideEffects {
   /// ```
   WriteTopLevelVar(HashSet<Id>),
 
+  /// Example:
+  /// ```js
+  /// const a = {};
+  /// const p = a.prototype; // p is read top level value
+  /// ```
+  ReadTopLevelVar(HashSet<Id>),
+
   /// Maybe modify global variable, it's always preserved, for example:
   /// ```js
   /// console.log('123');
@@ -138,15 +145,41 @@ impl StatementSideEffects {
     let mut original_self_value = std::mem::replace(self, Self::NoSideEffects);
 
     match (&mut original_self_value, &other) {
-      (Self::WriteTopLevelVar(a), Self::WriteTopLevelVar(b)) => {
-        a.extend(b.iter().cloned());
+      (StatementSideEffects::WriteTopLevelVar(a), StatementSideEffects::WriteTopLevelVar(b)) => {
+        a.extend(b.iter().cloned())
       }
-      (Self::NoSideEffects, _) => original_self_value = other,
-      (Self::WriteOrCallGlobalVar | Self::UnclassifiedSelfExecuted, _) => {}
-      (Self::WriteTopLevelVar(_), Self::WriteOrCallGlobalVar | Self::UnclassifiedSelfExecuted) => {
+      (StatementSideEffects::WriteTopLevelVar(_), StatementSideEffects::ReadTopLevelVar(_)) => {}
+      (StatementSideEffects::WriteTopLevelVar(_), StatementSideEffects::WriteOrCallGlobalVar) => {
         original_self_value = other;
       }
-      (_, Self::NoSideEffects) => {}
+      (
+        StatementSideEffects::WriteTopLevelVar(_),
+        StatementSideEffects::UnclassifiedSelfExecuted,
+      ) => {
+        original_self_value = other;
+      }
+      (StatementSideEffects::WriteTopLevelVar(_), StatementSideEffects::NoSideEffects) => {}
+      (StatementSideEffects::ReadTopLevelVar(_), StatementSideEffects::WriteTopLevelVar(_)) => {
+        original_self_value = other;
+      }
+      (StatementSideEffects::ReadTopLevelVar(a), StatementSideEffects::ReadTopLevelVar(b)) => {
+        a.extend(b.iter().cloned());
+      }
+      (StatementSideEffects::ReadTopLevelVar(_), StatementSideEffects::WriteOrCallGlobalVar) => {
+        original_self_value = other;
+      }
+      (
+        StatementSideEffects::ReadTopLevelVar(_),
+        StatementSideEffects::UnclassifiedSelfExecuted,
+      ) => {
+        original_self_value = other;
+      }
+      (StatementSideEffects::ReadTopLevelVar(_), StatementSideEffects::NoSideEffects) => {}
+      (
+        StatementSideEffects::WriteOrCallGlobalVar | StatementSideEffects::UnclassifiedSelfExecuted,
+        _,
+      ) => {}
+      (StatementSideEffects::NoSideEffects, _) => original_self_value = other,
     }
 
     *self = original_self_value;
@@ -624,6 +657,9 @@ impl StatementGraph {
               last_write_stmt_id = dept_stmt.id as i32;
               all_dept_used_idents.extend(dept_used_idents);
             }
+          }
+          StatementSideEffects::ReadTopLevelVar(read_top_level_vard) => {
+            // TODO
           }
           StatementSideEffects::WriteOrCallGlobalVar
           | StatementSideEffects::UnclassifiedSelfExecuted

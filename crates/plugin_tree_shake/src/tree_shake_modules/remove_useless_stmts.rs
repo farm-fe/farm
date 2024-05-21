@@ -1,7 +1,7 @@
 use std::collections::{HashMap, HashSet};
 
 use farmfe_core::{
-  module::{module_graph::ModuleGraph, ModuleId},
+  module::{module_graph::ModuleGraph, ModuleId, ModuleSystem},
   swc_ecma_ast::{
     self, Id, ImportDecl, ImportSpecifier, ModuleDecl, ModuleExportName, ModuleItem, Stmt,
   },
@@ -23,8 +23,8 @@ pub fn remove_useless_stmts(
   ));
 
   let tree_shake_module = tree_shake_modules_map.get(tree_shake_module_id).unwrap();
-  // if the module contains side effects, we should keep all the statements
-  if tree_shake_module.side_effects {
+  // if the module is not esm, we should keep all the statements
+  if tree_shake_module.module_system != ModuleSystem::EsModule {
     return;
   }
 

@@ -84,7 +84,7 @@ impl Module {
       meta: Box::new(ModuleMetaData::Custom(Box::new(EmptyModuleMetaData) as _)),
       module_groups: HashSet::new(),
       resource_pot: None,
-      side_effects: false,
+      side_effects: true,
       source_map_chain: vec![],
       external: false,
       immutable: false,

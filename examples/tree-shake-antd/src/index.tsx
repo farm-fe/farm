@@ -6,4 +6,6 @@ import { Button } from '../build/index';
 const container = document.querySelector('#root');
 const root = createRoot(container);
 
-root.render(<Button>Antd Button</Button>);
+root.render(<Button className="test-antd-button" onClick={() => {
+  console.log('antd button clicked')
+}}>Antd Button</Button>);

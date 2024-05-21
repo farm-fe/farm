@@ -17,7 +17,7 @@
     "react-refresh": "^0.14.0"
   },
   "scripts": {
-    "start": "npm run build:button && farm start",
+    "start": "farm start",
     "build:button": "farm build -c farm.config.button.ts",
     "build": "npm run build:button && farm build",
     "preview": "farm preview"
