@@ -1,5 +1,11 @@
 # @farmfe/core
 
+## 1.1.9
+
+### Patch Changes
+
+- 3059e616: check config stage
+
 ## 1.1.8
 
 ### Patch Changes
