@@ -96,7 +96,8 @@ async function getDefaultConfig(
     resolvedUserConfig,
     config,
     logger,
-    mode
+    mode,
+    true
   );
   resolvedUserConfig.root = resolvedUserConfig.compilation.root;
   resolvedUserConfig.jsPlugins = [];
@@ -262,7 +263,8 @@ export async function normalizeUserCompilationConfig(
   resolvedUserConfig: ResolvedUserConfig,
   userConfig: UserConfig,
   logger: Logger,
-  mode: CompilationMode = 'development'
+  mode: CompilationMode = 'development',
+  isDefault = false
 ): Promise<ResolvedCompilation> {
   const { compilation, root } = resolvedUserConfig;
 
@@ -279,7 +281,14 @@ export async function normalizeUserCompilationConfig(
     );
   }
 
-  const inputIndexConfig = checkCompilationInputValue(userConfig, logger);
+  if (!userConfig.compilation) {
+    userConfig.compilation = {};
+  }
+
+  // if normalize default config, skip check input option
+  const inputIndexConfig = !isDefault
+    ? checkCompilationInputValue(userConfig, logger)
+    : {};
 
   const resolvedCompilation: ResolvedCompilation = merge(
     {},
