@@ -44,7 +44,7 @@ const warnOnceMessages = new Set();
 const infoOnceMessages = new Set();
 const errorOnceMessages = new Set();
 
-export class Logger implements Logger {
+export class Logger implements ILogger {
   constructor(
     public options?: LoggerOptions,
     private levelValues: Record<LogLevelNames, number> = {
@@ -150,6 +150,34 @@ export class Logger implements Logger {
   }
   hasWarnLogged(message: string) {
     return warnOnceMessages.has(message);
+  }
+}
+
+// use in test
+// TODO: impl ILogger
+export class NoopLogger extends Logger {
+  setPrefix(_options: LoggerOptions): void {}
+  trace(_message: string): void {}
+  debug(_message: string): void {}
+  info(_message: string, _iOptions?: LoggerOptions): void {}
+  warn(_message: string): void {}
+  error(_message: string | Error, _errorOptions?: ErrorOptions): void {
+    if (_errorOptions.exit) {
+      let e = _message instanceof Error ? _message : new Error(_message);
+      if (_errorOptions.e || _errorOptions.error) {
+        e.cause = _errorOptions.e || _errorOptions.error;
+      }
+      throw e;
+    }
+  }
+  infoOnce(_message: string): void {}
+  warnOnce(_message: string): void {}
+  errorOnce(_message: string | Error): void {}
+  hasErrorLogged(_message: string | Error): boolean {
+    return false;
+  }
+  hasWarnLogged(_message: string): boolean {
+    return false;
   }
 }
 
