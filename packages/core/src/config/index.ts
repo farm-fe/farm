@@ -1044,7 +1044,7 @@ const transformFarmPluginPath = (importers: string, root: string) => ({
         pluginPath = require.resolve(pluginPath);
         const funcPluginPath = path.resolve(
           pluginPath,
-          '../',
+          '..',
           FARM_RUST_PLUGIN_FUNCTION_ENTRY
         );
         if (fs.existsSync(funcPluginPath)) {
