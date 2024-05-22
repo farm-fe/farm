@@ -158,15 +158,15 @@ export class Compiler {
       ? configOutputPath
       : path.join(this.config.config.root, configOutputPath);
 
+    const outputBasePath = path.join(outputPath, base);
+    if (!existsSync(outputBasePath)) {
+      mkdirSync(outputBasePath, { recursive: true });
+    }
+
     for (const [name, resource] of Object.entries(resources)) {
       // remove query params and hash of name
       const nameWithoutQuery = name.split('?')[0];
       const nameWithoutHash = nameWithoutQuery.split('#')[0];
-
-      const outputBasePath = path.join(outputPath, base);
-      if (!existsSync(outputBasePath)) {
-        mkdirSync(outputBasePath, { recursive: true });
-      }
 
       const filePath = path.join(outputBasePath, nameWithoutHash);
 
@@ -189,7 +189,7 @@ export class Compiler {
           string,
           Resource
         >,
-        config
+        config: config
       });
     }
   }
