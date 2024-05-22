@@ -36,6 +36,12 @@ export interface DtsPluginOptions {
    */
   tsConfigPath?: string;
 
+  staticImport?: boolean;
+
+  clearPureImport?: boolean;
+
+  insertTypesEntry?: boolean;
+
   /**
    * set include glob
    */
