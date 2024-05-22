@@ -878,7 +878,7 @@ export async function resolveMergedUserConfig(
 export async function loadConfigFile(
   configPath: string,
   inlineOptions: FarmCLIOptions,
-  logger: Logger,
+  logger: Logger = new Logger(),
   mode: CompilationMode
 ): Promise<{ config: UserConfig; configFilePath: string } | undefined> {
   // if configPath points to a directory, try to find a config file in it using default config
@@ -910,7 +910,7 @@ export async function loadConfigFile(
 
     if (inlineOptions.mode === 'production') {
       logger.error(
-        `Failed to load config file: ${errorMessage} ${stackTrace}`,
+        `Failed to load config file: ${errorMessage} \n${stackTrace}`,
         {
           exit: true
         }
@@ -918,7 +918,7 @@ export async function loadConfigFile(
     }
 
     throw new Error(
-      `Failed to load farm config file: ${errorMessage} ${stackTrace}`
+      `Failed to load farm config file: ${errorMessage} \n${stackTrace}`
     );
   }
 }
