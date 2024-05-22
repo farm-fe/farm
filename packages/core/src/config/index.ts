@@ -878,7 +878,7 @@ export async function resolveMergedUserConfig(
 export async function loadConfigFile(
   configPath: string,
   inlineOptions: FarmCLIOptions,
-  logger: Logger = new Logger(),
+  logger: Logger,
   mode: CompilationMode
 ): Promise<{ config: UserConfig; configFilePath: string } | undefined> {
   // if configPath points to a directory, try to find a config file in it using default config

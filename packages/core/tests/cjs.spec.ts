@@ -10,8 +10,8 @@ test('resolveUserConfig', async () => {
 
   const config = await resolveConfig(
     { configPath: path.join(filePath, 'fixtures', 'config', 'farm.config.ts') },
-    new Logger(),
-    'development'
+    'development',
+    new Logger()
   );
   console.log(config.compilation.define);
 
