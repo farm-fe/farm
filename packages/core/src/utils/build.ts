@@ -16,6 +16,7 @@ interface CompilerHandlerOptions {
 export async function compilerHandler(
   callback: () => Promise<void>,
   config: ResolvedUserConfig,
+  logger: Logger,
   options?: CompilerHandlerOptions
 ) {
   const IS_TARGET_NODE = FARM_TARGET_NODE_ENVS.includes(
@@ -23,7 +24,6 @@ export async function compilerHandler(
   );
   IS_TARGET_NODE && options?.clear && clearScreen();
   const { persistentCache, output } = config.compilation;
-  const logger = new Logger();
   const startTime = performance.now();
 
   try {

@@ -5,8 +5,8 @@ import { stat } from 'node:fs/promises';
 import { isAbsolute, relative } from 'node:path';
 
 import type { Resource } from '@farmfe/runtime/src/resource-loader.js';
-import { JsUpdateResult } from '../../binding/binding.js';
 import { Compiler } from '../compiler/index.js';
+import type { JsUpdateResult } from '../types/binding.js';
 import { Logger, bold, clearScreen, cyan, green } from '../utils/index.js';
 import { logError } from './error.js';
 import { Server } from './index.js';

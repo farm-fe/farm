@@ -1,17 +1,19 @@
-import { Config } from '../../binding/index.js';
 import { Compiler } from '../compiler/index.js';
+import { Config } from '../types/binding.js';
+import { Logger } from './logger.js';
 
-function createTraceDepCompiler(entry: string) {
+function createTraceDepCompiler(entry: string, logger: Logger) {
   const config = getDefaultTraceDepCompilerConfig(entry);
   config.config.progress = false;
-  return new Compiler(config);
+  return new Compiler(config, logger);
 }
 
 export async function traceDependencies(
-  configFilePath: string
+  configFilePath: string,
+  logger: Logger
 ): Promise<string[]> {
   try {
-    const compiler = createTraceDepCompiler(configFilePath);
+    const compiler = createTraceDepCompiler(configFilePath, logger);
     const files = await compiler.traceDependencies();
     return files;
   } catch (error) {

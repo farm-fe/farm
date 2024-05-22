@@ -1,3 +1,4 @@
+
 export interface ScriptParseConfig {
   esConfig?: {
     jsx?: boolean;
@@ -80,6 +81,12 @@ export interface SwcPresetEnvOptions {
    */
   forceAllTransforms?: boolean;
 }
+
+interface TerserEcmaVersion {
+
+}
+
+interface TerserManglePropertiesOptions {}
 
 export interface TerserCompressOptions {
   arguments?: boolean;

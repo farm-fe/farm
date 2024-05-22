@@ -4,7 +4,9 @@ import module from 'node:module';
 import path, { isAbsolute, join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
-import { PluginTransformHookParam, bindingPath } from '../../binding/index.js';
+import { bindingPath } from '../../binding/index.js';
+import { type PluginTransformHookParam } from '../types/binding.js';
+
 import { JsPlugin } from '../index.js';
 import {
   getSortedPlugins,
@@ -83,7 +85,8 @@ async function getDefaultConfig(
   const resolvedUserConfig = await resolveMergedUserConfig(
     config,
     undefined,
-    inlineOptions.mode ?? mode
+    inlineOptions.mode ?? mode,
+    logger
   );
 
   resolvedUserConfig.server = normalizeDevServerOptions({}, mode);
@@ -195,7 +198,8 @@ export async function resolveConfig(
   const resolvedUserConfig = await resolveMergedUserConfig(
     mergedUserConfig,
     configFilePath,
-    inlineOptions.mode ?? mode
+    inlineOptions.mode ?? mode,
+    logger
   );
 
   // normalize server config first cause it may be used in normalizeUserCompilationConfig
@@ -529,7 +533,11 @@ export async function normalizeUserCompilationConfig(
   };
 
   // normalize persistent cache at last
-  await normalizePersistentCache(resolvedCompilation, resolvedUserConfig);
+  await normalizePersistentCache(
+    resolvedCompilation,
+    resolvedUserConfig,
+    logger
+  );
 
   return resolvedCompilation;
 }
@@ -687,7 +695,8 @@ async function readConfigFile(
       await resolveMergedUserConfig(
         tsDefaultUserConfig,
         undefined,
-        'development'
+        'development',
+        logger
       );
 
     const normalizedConfig = await normalizeUserCompilationConfig(
@@ -697,11 +706,14 @@ async function readConfigFile(
       mode as CompilationMode
     );
 
-    const compiler = new Compiler({
-      config: normalizedConfig,
-      jsPlugins: [replaceDirnamePlugin()],
-      rustPlugins: []
-    });
+    const compiler = new Compiler(
+      {
+        config: normalizedConfig,
+        jsPlugins: [replaceDirnamePlugin()],
+        rustPlugins: []
+      },
+      logger
+    );
 
     await compiler.compile();
 
@@ -810,7 +822,8 @@ function checkClearScreen(inlineConfig: FarmCLIOptions) {
 export async function resolveMergedUserConfig(
   mergedUserConfig: UserConfig,
   configFilePath: string | undefined,
-  mode: 'development' | 'production' | string
+  mode: 'development' | 'production' | string,
+  logger: Logger
 ): Promise<ResolvedUserConfig> {
   const serverConfig: NormalizedServerConfig = {
     ...DEFAULT_DEV_SERVER_OPTIONS,
@@ -835,7 +848,7 @@ export async function resolveMergedUserConfig(
   resolvedUserConfig.envMode = mode;
 
   if (configFilePath) {
-    const dependencies = await traceDependencies(configFilePath);
+    const dependencies = await traceDependencies(configFilePath, logger);
     dependencies.sort();
     resolvedUserConfig.configFileDependencies = dependencies;
     resolvedUserConfig.configFilePath = configFilePath;
