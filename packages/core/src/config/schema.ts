@@ -299,7 +299,8 @@ const FarmConfigSchema = z
               logs: z.any().optional(),
               rewrite: z
                 .function(z.tuple([z.string(), z.object({})]))
-                .optional()
+                .optional(),
+              headers: z.record(z.string()).optional()
             })
           )
           .optional(),
