@@ -15,8 +15,8 @@ test('resolveUserConfig', async () => {
 
   const config = await resolveConfig(
     { configPath: path.join(filePath, 'fixtures', 'config', 'farm.config.ts') },
-    'development',
-    new Logger()
+    new Logger(),
+    'development'
   );
 
   expect(config.compilation.define).toEqual({
@@ -79,8 +79,8 @@ test('resolveUserConfig-prod', async () => {
 
   const config = await resolveConfig(
     { configPath: path.join(filePath, 'fixtures', 'config', 'farm.config.ts') },
-    'production',
-    new Logger()
+    new Logger(),
+    'production'
   );
 
   expect(config.compilation.define).toEqual({
@@ -143,8 +143,8 @@ test('resolveUserConfig-input-html-prod', async () => {
   );
   const config = await resolveConfig(
     { configPath: configFilePath },
-    'production',
-    new Logger()
+    new Logger(),
+    'production'
   );
 
   expect(config.compilation.input).toEqual({

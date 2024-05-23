@@ -52,7 +52,7 @@ export function logError(err: Error, throwErrorFlag = true) {
 
   if (!Array.isArray(errorMessages) || errorMessages.length === 0) {
     if (throwErrorFlag) {
-      throw Error(err.message);
+      throw new Error(err.message);
     }
     return err.message;
   }
