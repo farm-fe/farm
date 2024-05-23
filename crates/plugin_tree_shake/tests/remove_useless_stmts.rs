@@ -394,11 +394,11 @@ fn trace_complex_decl_stmt() {
     let code_bytes = codegen_module(ast, EsVersion::EsNext, cm, None, false, None).unwrap();
     let code = String::from_utf8(code_bytes).unwrap();
 
-    assert_eq!(code, r#"import { h, BaseTransition, BaseTransitionPropsValidators } from '@vue/runtime-core';
+    assert_eq!(code.replace("\r\n", "\n"), r#"import { h, BaseTransition, BaseTransitionPropsValidators } from '@vue/runtime-core';
 const Transition = (props, { slots })=>h(BaseTransition, resolveTransitionProps(props), slots);
 Transition.displayName = "Transition";
 const TransitionPropsValidators = Transition.props = extend({}, BaseTransitionPropsValidators, DOMTransitionPropsValidators);
 export default Transition;
-"#)
+"#.replace("\r\n", "\n"))
   });
 }
