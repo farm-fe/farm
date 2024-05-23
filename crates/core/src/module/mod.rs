@@ -501,6 +501,12 @@ impl ModuleId {
   /// return self.relative_path and self.query_string in dev,
   /// return hash(self.relative_path) in prod
   pub fn id(&self, mode: Mode) -> String {
+    if let Ok(val) = std::env::var("FARM_DEBUG_ID") {
+      if !val.is_empty() {
+        return self.to_string();
+      }
+    }
+
     match mode {
       Mode::Development => self.to_string(),
       Mode::Production => self.hash(),

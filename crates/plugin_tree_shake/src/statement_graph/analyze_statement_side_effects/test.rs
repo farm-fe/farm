@@ -55,14 +55,22 @@ fn no_side_effects() {
   "#;
     let (module, unresolved_mark, top_level_mark) = parse_module(code);
 
-    for item in module.body.iter() {
+    for (i, item) in module.body.iter().enumerate() {
       let side_effects = super::analyze_statement_side_effects(
         item,
         unresolved_mark,
         top_level_mark,
         &SingleThreadedComments::default(),
       );
-      assert_eq!(side_effects, super::StatementSideEffects::NoSideEffects);
+
+      if i == 2 || i == 6 {
+        assert!(matches!(
+          side_effects,
+          super::StatementSideEffects::ReadTopLevelVar(_)
+        ));
+      } else {
+        assert_eq!(side_effects, super::StatementSideEffects::NoSideEffects);
+      }
     }
   });
 }
@@ -324,6 +332,39 @@ var _c;
     assert!(matches!(
       side_effects,
       super::StatementSideEffects::NoSideEffects
+    ));
+
+    let item_3 = &module.body[2];
+    let side_effects =
+      super::analyze_statement_side_effects(item_3, unresolved_mark, top_level_mark, &comments);
+    println!("{:?}", side_effects);
+    assert!(matches!(
+      side_effects,
+      super::StatementSideEffects::WriteTopLevelVar(_)
+    ));
+  })
+}
+
+#[test]
+fn object_lit_assign() {
+  GLOBALS.set(&Globals::new(), || {
+    let code = r#"
+    const a2 = {};
+    const b2 = { a2 };
+    
+    b2.a2.aaa = 2;
+    
+    export { a2 };
+"#;
+    let (module, comments, unresolved_mark, top_level_mark) = parse_module_comments(code);
+
+    let item_2 = &module.body[1];
+    let side_effects =
+      super::analyze_statement_side_effects(item_2, unresolved_mark, top_level_mark, &comments);
+    println!("{:?}", side_effects);
+    assert!(matches!(
+      side_effects,
+      super::StatementSideEffects::ReadTopLevelVar(_)
     ));
 
     let item_3 = &module.body[2];

@@ -31,12 +31,6 @@
         throw error;
     }
     var Context = React.createContext();
-    var sharedInternals = Object.freeze({
-        __proto__: null,
-        getRequiredChunkKey: getRequiredChunkKey,
-        invariant: invariant,
-        Context: Context
-    });
     var LOADABLE_SHARED = {
         initialChunks: {}
     };
@@ -325,68 +319,10 @@
             return null;
         }
     }), loadable$1 = _createLoadable$1.loadable, lazy$1 = _createLoadable$1.lazy;
-    function loadableReady(done, _temp) {
-        if (done === void 0) {
-            done = function done() {};
-        }
-        var _ref = _temp === void 0 ? {} : _temp, _ref$namespace = _ref.namespace, namespace = _ref$namespace === void 0 ? "" : _ref$namespace, _ref$chunkLoadingGlob = _ref.chunkLoadingGlobal, chunkLoadingGlobal = _ref$chunkLoadingGlob === void 0 ? "__LOADABLE_LOADED_CHUNKS__" : _ref$chunkLoadingGlob;
-        if (!BROWSER) {
-            warn("`loadableReady()` must be called in browser only");
-            done();
-            return Promise.resolve();
-        }
-        var requiredChunks = null;
-        if (BROWSER) {
-            var id = getRequiredChunkKey(namespace);
-            var dataElement = document.getElementById(id);
-            if (dataElement) {
-                requiredChunks = JSON.parse(dataElement.textContent);
-                var extElement = document.getElementById(id + "_ext");
-                if (extElement) {
-                    var _JSON$parse = JSON.parse(extElement.textContent), namedChunks = _JSON$parse.namedChunks;
-                    namedChunks.forEach(function(chunkName) {
-                        LOADABLE_SHARED.initialChunks[chunkName] = true;
-                    });
-                } else {
-                    throw new Error("loadable-component: @loadable/server does not match @loadable/component");
-                }
-            }
-        }
-        if (!requiredChunks) {
-            warn("`loadableReady()` requires state, please use `getScriptTags` or `getScriptElements` server-side");
-            done();
-            return Promise.resolve();
-        }
-        var resolved = false;
-        return new Promise(function(resolve) {
-            window[chunkLoadingGlobal] = window[chunkLoadingGlobal] || [];
-            var loadedChunks = window[chunkLoadingGlobal];
-            var originalPush = loadedChunks.push.bind(loadedChunks);
-            function checkReadyState() {
-                if (requiredChunks.every(function(chunk) {
-                    return loadedChunks.some(function(_ref2) {
-                        var chunks = _ref2[0];
-                        return chunks.indexOf(chunk) > -1;
-                    });
-                })) {
-                    if (!resolved) {
-                        resolved = true;
-                        resolve();
-                    }
-                }
-            }
-            loadedChunks.push = function() {
-                originalPush.apply(void 0, arguments);
-                checkReadyState();
-            };
-            checkReadyState();
-        }).then(done);
-    }
     var loadable$2 = loadable;
     loadable$2.lib = loadable$1;
     var lazy$2 = lazy;
     lazy$2.lib = lazy$1;
-    var __SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED = sharedInternals;
     var _default = loadable$2;
 }
 ,});(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setInitialLoadedResources([]);(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setDynamicModuleResourcesMap({  });var farmModuleSystem = (globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__;farmModuleSystem.bootstrap();var entry = farmModuleSystem.require("b5d64806");

@@ -306,7 +306,7 @@ if (import.meta.hot) {
 
 #[test]
 fn trace_loadable_esm() {
-  let code = include_str!("./fixtures/statement_graph/loadable.esm.js");
+  let code = include_str!("./fixtures/remove_useless_stmts/loadable.esm.js");
 
   GLOBALS.set(&Globals::new(), || {
     let mut module = create_module_with_comments(code);
@@ -322,7 +322,7 @@ fn trace_loadable_esm() {
 
     remove_useless_stmts(&module_id, &mut module_graph, &tree_shake_module_map);
 
-    fixture!("tests/fixtures/statement_graph/*.js", |file, _| {
+    fixture!("tests/fixtures/remove_useless_stmts/*.js", |file, _| {
       let (cm, _) = create_swc_source_map(Source {
         path: PathBuf::from("any"),
         content: Arc::new(code.to_string()),
@@ -347,5 +347,58 @@ fn trace_loadable_esm() {
         std::fs::write(output_path, code).unwrap();
       }
     });
+  });
+}
+
+#[test]
+fn trace_complex_decl_stmt() {
+  let code = r#"
+  import { h, BaseTransition, BaseTransitionPropsValidators } from '@vue/runtime-core';
+
+  const Transition = (props, { slots }) => h(BaseTransition, resolveTransitionProps(props), slots);
+  Transition.displayName = "Transition";
+
+  const TransitionPropsValidators = Transition.props = /* @__PURE__ */ extend(
+    {},
+    BaseTransitionPropsValidators,
+    DOMTransitionPropsValidators
+  );
+
+  export default Transition;
+  "#;
+
+  GLOBALS.set(&Globals::new(), || {
+    let mut module = create_module_with_comments(code);
+    let mut tree_shake_module = TreeShakeModule::new(&mut module);
+    tree_shake_module.pending_used_exports =
+      UsedExports::Partial(HashSet::from([UsedExportsIdent::Default]));
+    tree_shake_module.trace_and_mark_used_statements();
+
+    let module_id = module.id.clone();
+    let mut module_graph = ModuleGraph::new();
+    let tree_shake_module_map = HashMap::from([(module.id.clone(), tree_shake_module)]);
+    module_graph.add_module(module);
+
+    remove_useless_stmts(&module_id, &mut module_graph, &tree_shake_module_map);
+
+    let (cm, _) = create_swc_source_map(Source {
+      path: PathBuf::from("any"),
+      content: Arc::new(code.to_string()),
+    });
+    let ast = &module_graph
+      .module_mut(&module_id)
+      .unwrap()
+      .meta
+      .as_script()
+      .ast;
+    let code_bytes = codegen_module(ast, EsVersion::EsNext, cm, None, false, None).unwrap();
+    let code = String::from_utf8(code_bytes).unwrap();
+
+    assert_eq!(code, r#"import { h, BaseTransition, BaseTransitionPropsValidators } from '@vue/runtime-core';
+const Transition = (props, { slots })=>h(BaseTransition, resolveTransitionProps(props), slots);
+Transition.displayName = "Transition";
+const TransitionPropsValidators = Transition.props = extend({}, BaseTransitionPropsValidators, DOMTransitionPropsValidators);
+export default Transition;
+"#)
   });
 }

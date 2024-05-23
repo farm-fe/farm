@@ -236,9 +236,11 @@ impl TreeShakeModule {
       .trace_and_mark_used_statements(stmt_used_idents_map)
   }
 
+  /// For param include_default_export: If it's false, the default export will not be included,
+  /// for example, export * from 'xxx' should not include default export
   fn all_exports_to_statement_idents(
     &self,
-    is_re_export: bool,
+    include_default_export: bool,
   ) -> Vec<(UsedStatementIdent, StatementId)> {
     let mut used_idents = vec![];
 
@@ -246,7 +248,7 @@ impl TreeShakeModule {
       for sp in &export_info.specifiers {
         match sp {
           ExportSpecifierInfo::Default => {
-            if !is_re_export {
+            if include_default_export {
               used_idents.push((UsedStatementIdent::Default, export_info.stmt_id));
             }
           }
@@ -281,14 +283,14 @@ impl TreeShakeModule {
     match &self.pending_used_exports {
       UsedExports::All => {
         // all exported identifiers are used
-        self.all_exports_to_statement_idents(false)
+        self.all_exports_to_statement_idents(true)
       }
       UsedExports::Partial(idents) => {
         let mut used_idents = vec![];
         // statement `export * from './xxx'` is marked as used, we need to mark all exported idents as used the same as UsedExports::All
         if idents.contains(&UsedExportsIdent::ExportAll) {
           // for all content introduced, all export information needs to be collected
-          return self.all_exports_to_statement_idents(true);
+          return self.all_exports_to_statement_idents(idents.contains(&UsedExportsIdent::Default));
         }
         // find exported ident for every used idents.
         for ident in idents {

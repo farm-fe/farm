@@ -172,6 +172,38 @@ impl<'a> Visit for SideEffectsAnalyzer<'a> {
     };
   }
 
+  fn visit_prop_or_spread(&mut self, n: &farmfe_core::swc_ecma_ast::PropOrSpread) {
+    match n {
+      farmfe_core::swc_ecma_ast::PropOrSpread::Spread(s) => s.visit_with(self),
+      farmfe_core::swc_ecma_ast::PropOrSpread::Prop(prop) => match &**prop {
+        farmfe_core::swc_ecma_ast::Prop::Shorthand(ident) => {
+          if self.in_top_level || ident.span.ctxt.outer() == self.top_level_mark {
+            self
+              .side_effects
+              .merge_side_effects(StatementSideEffects::ReadTopLevelVar(HashSet::from([
+                ident.to_id(),
+              ])));
+          }
+        }
+        farmfe_core::swc_ecma_ast::Prop::KeyValue(kv) => {
+          if let farmfe_core::swc_ecma_ast::PropName::Computed(c) = &kv.key {
+            c.visit_with(self);
+          }
+          kv.value.visit_with(self);
+        }
+        farmfe_core::swc_ecma_ast::Prop::Assign(_)
+        | farmfe_core::swc_ecma_ast::Prop::Getter(_)
+        | farmfe_core::swc_ecma_ast::Prop::Setter(_)
+        | farmfe_core::swc_ecma_ast::Prop::Method(_) => {
+          // these prop do not has side effects
+          self
+            .side_effects
+            .merge_side_effects(StatementSideEffects::NoSideEffects);
+        }
+      },
+    }
+  }
+
   fn visit_expr(&mut self, expr: &Expr) {
     if !self.is_in_top_level() {
       return;

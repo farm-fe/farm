@@ -576,10 +576,10 @@ impl StatementGraph {
       }
 
       // 3.4 visit dependents of the used statement, handle write side effects here
-      for (dept_id, used_idents) in self.trace_dependents_side_effects(stmt_id) {
+      for (dept_id, dept_used_idents) in self.trace_dependents_side_effects(stmt_id) {
         stmts.push_back((
           dept_id,
-          used_idents
+          dept_used_idents
             .into_iter()
             .map(UsedStatementIdent::SwcIdent)
             .collect(),
@@ -610,76 +610,94 @@ impl StatementGraph {
     result
   }
 
+  fn traverse_dependents_bfs(
+    &self,
+    stmt_id: StatementId,
+    visited: &mut HashSet<StatementId>,
+    stack: &mut Vec<(StatementId, HashSet<Id>)>,
+    result: &mut Vec<Vec<(StatementId, HashSet<Id>)>>,
+  ) {
+    if visited.contains(&stmt_id) {
+      return;
+    }
+
+    visited.insert(stmt_id);
+
+    for (dept_stmt, edge) in self.dependents(&stmt_id) {
+      match &dept_stmt.side_effects {
+        StatementSideEffects::WriteTopLevelVar(written_top_level_vars) => {
+          // if the used defined idents are written by the dependent statement, mark the dependent statement as used
+          // example:
+          // ```
+          // const a = 1;
+          // a.prototype.b = () => {};
+          // ```
+          let write_used_defined_idents = !self
+            .stmt(&stmt_id)
+            .used_defined_idents
+            .is_disjoint(written_top_level_vars);
+
+          // if defined idents of last dependency in the statement are written by the dependent statement, mark the dependent statement as used
+          // example:
+          // ```
+          // function a() {}
+          // const prototype = a.prototype;
+          // prototype.b = () => {}
+          // ```
+          let last_dependency = stack.last();
+          let write_last_stack_defined_idents = last_dependency.map_or_else(
+            || false,
+            |(_, used_defined_idents)| !used_defined_idents.is_disjoint(written_top_level_vars),
+          );
+
+          if write_used_defined_idents || write_last_stack_defined_idents {
+            stack.push((dept_stmt.id, dept_stmt.defined_idents.clone()));
+            result.push(stack.clone());
+            stack.pop();
+          }
+        }
+        StatementSideEffects::ReadTopLevelVar(read_top_level_vars) => {
+          let mut used_dept_defined_idents = HashSet::new();
+
+          // only trace the statement that defined idents
+          for dept_defined_ident in &dept_stmt.defined_idents {
+            if let Some(dept_used_cur_idents) = edge.used_idents_map.get(&dept_defined_ident) {
+              if !dept_used_cur_idents.is_disjoint(read_top_level_vars) {
+                used_dept_defined_idents.insert(dept_defined_ident.clone());
+              }
+            }
+          }
+
+          if !used_dept_defined_idents.is_empty() {
+            stack.push((dept_stmt.id, used_dept_defined_idents));
+            self.traverse_dependents_bfs(dept_stmt.id, visited, stack, result);
+            stack.pop();
+          }
+        }
+        StatementSideEffects::WriteOrCallGlobalVar
+        | StatementSideEffects::UnclassifiedSelfExecuted
+        | StatementSideEffects::NoSideEffects => {
+          /* These 3 types are handled already, do not need to trace their dependents */
+        }
+      }
+    }
+  }
+
   pub fn trace_dependents_side_effects(
     &self,
     stmt_id: StatementId,
   ) -> Vec<(StatementId, HashSet<Id>)> {
-    let mut result = vec![];
     // we only trace the dependents side effects of the statement that has defined idents
     if self.stmt(&stmt_id).defined_idents.is_empty() {
-      return result;
+      return vec![];
     }
 
+    let mut result = vec![];
     let mut visited = HashSet::new();
-    let mut stmts = VecDeque::from([stmt_id]);
-    let mut last_write_stmt_id = -1;
+    let mut stack = vec![];
 
-    while let Some(stmt_id) = stmts.pop_front() {
-      if visited.contains(&stmt_id) {
-        continue;
-      }
+    self.traverse_dependents_bfs(stmt_id, &mut visited, &mut stack, &mut result);
 
-      visited.insert(stmt_id);
-
-      for (dept_stmt, edge) in self.dependents(&stmt_id) {
-        stmts.push_back(dept_stmt.id);
-        let mut all_dept_used_idents = HashSet::new();
-        // handle dependent side effects
-        match &dept_stmt.side_effects {
-          StatementSideEffects::WriteTopLevelVar(written_top_level_vars) => {
-            // if the used defined idents are written by the dependent statement, mark the dependent statement as used
-            let mut dept_used_idents = HashSet::new();
-
-            for dept_defined_ident in &dept_stmt.defined_idents {
-              if let Some(used_cur_stmt_defined_idents) =
-                edge.used_idents_map.get(dept_defined_ident)
-              {
-                if !dept_stmt.used_defined_idents.contains(dept_defined_ident)
-                  && !written_top_level_vars.is_disjoint(used_cur_stmt_defined_idents)
-                {
-                  dept_used_idents.insert(dept_defined_ident.clone());
-                }
-              }
-            }
-
-            if !dept_used_idents.is_empty() || !edge.used_idents.is_disjoint(written_top_level_vars)
-            {
-              last_write_stmt_id = dept_stmt.id as i32;
-              all_dept_used_idents.extend(dept_used_idents);
-            }
-          }
-          StatementSideEffects::ReadTopLevelVar(read_top_level_vard) => {
-            // TODO
-          }
-          StatementSideEffects::WriteOrCallGlobalVar
-          | StatementSideEffects::UnclassifiedSelfExecuted
-          | StatementSideEffects::NoSideEffects => { /* These 3 types are handled already */ }
-        }
-
-        result.push((dept_stmt.id, all_dept_used_idents));
-      }
-    }
-
-    if last_write_stmt_id != -1 {
-      let last_write_stmt_index = result
-        .iter()
-        .position(|(i, _)| *i == last_write_stmt_id as usize)
-        .unwrap();
-      result.truncate(last_write_stmt_index + 1);
-    } else {
-      result.clear();
-    }
-
-    result
+    result.into_iter().flatten().collect()
   }
 }
