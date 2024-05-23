@@ -15,7 +15,6 @@ import {
   resolveFarmPlugins
 } from '../plugin/index.js';
 import { Server } from '../server/index.js';
-import { convertErrorMessage } from '../utils/error.js';
 import { urlRegex } from '../utils/http.js';
 import {
   Logger,
@@ -40,6 +39,7 @@ import { normalizePersistentCache } from './normalize-config/normalize-persisten
 import { parseUserConfig } from './schema.js';
 
 import { externalAdapter } from '../plugin/js/external-adapter.js';
+import { convertErrorMessage } from '../utils/error.js';
 import merge from '../utils/merge.js';
 import {
   CUSTOM_KEYS,
@@ -123,14 +123,13 @@ async function handleServerPortConflict(
  */
 export async function resolveConfig(
   inlineOptions: FarmCLIOptions & UserConfig,
+  logger: Logger,
   mode?: CompilationMode,
-  logger: Logger = new Logger(),
   isHandleServerPortConflict = true
 ): Promise<ResolvedUserConfig> {
   // Clear the console according to the cli command
   checkClearScreen(inlineOptions);
   inlineOptions.mode = inlineOptions.mode ?? mode;
-  inlineOptions.root = inlineOptions.root ?? process.cwd();
 
   // configPath may be file or directory
   let { configPath } = inlineOptions;
@@ -900,7 +899,7 @@ export async function loadConfigFile(
     }
   } catch (error) {
     // In this place, the original use of throw caused emit to the outermost catch
-    // callback, causing the code not to execute, If the internal catch compiler's own
+    // callback, causing the code not to execute. If the internal catch compiler's own
     // throw error can solve this problem, it will not continue to affect the execution of
     // external code. We just need to return the default config.
 
@@ -918,7 +917,7 @@ export async function loadConfigFile(
     }
 
     throw new Error(
-      `Failed to load farm config file: ${errorMessage} \n${stackTrace}`
+      `Failed to load farm config file: ${errorMessage} \n ${error.stack}`
     );
   }
 }
