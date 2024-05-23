@@ -266,7 +266,7 @@ impl<'a> Visit for SideEffectsAnalyzer<'a> {
                   .side_effects
                   .merge_side_effects(StatementSideEffects::WriteOrCallGlobalVar);
               } else {
-                // it's local varial, treat it as no side effects
+                // it's local variable, treat it as no side effects
                 self
                   .side_effects
                   .merge_side_effects(StatementSideEffects::NoSideEffects);

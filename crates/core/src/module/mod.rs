@@ -324,7 +324,7 @@ impl ScriptModuleMetaData {
   }
 
   pub fn take_comments(&mut self) -> CommentsMetaData {
-    std::mem::replace(&mut self.comments, CommentsMetaData::default())
+    std::mem::take(&mut self.comments)
   }
 
   pub fn set_comments(&mut self, comments: CommentsMetaData) {

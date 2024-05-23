@@ -15,7 +15,7 @@ use farmfe_plugin_tree_shake::{
   statement_graph::{StatementGraph, UsedStatementIdent},
 };
 
-use crate::common::print_id;
+use crate::common::{parse_module_with_comments, print_id};
 
 #[test]
 fn construct_statement_graph_basic() {
@@ -493,14 +493,9 @@ fn trace_and_mark_used_statements_commonjs_exports() {
   }"#;
 
   GLOBALS.set(&Globals::new(), || {
-    let (ast, _) = parse_module(code);
+    let (ast, comments, unresolved_mark, top_level_mark) = parse_module_with_comments(code);
 
-    let mut stmt_graph = StatementGraph::new(
-      &ast,
-      Mark::new(),
-      Mark::new(),
-      &SingleThreadedComments::default(),
-    );
+    let mut stmt_graph = StatementGraph::new(&ast, unresolved_mark, top_level_mark, &comments);
 
     let traced_import_stmts = stmt_graph.trace_and_mark_used_statements(Default::default());
 

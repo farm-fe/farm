@@ -282,7 +282,7 @@ var _createLoadable = createLoadable({
         var Component = _ref.result, props = _ref.props;
         return React.createElement(Component, props);
     }
-}), loadable = _createLoadable.loadable;
+}), loadable = _createLoadable.loadable, lazy = _createLoadable.lazy;
 var _createLoadable$1 = createLoadable({
     onLoad: function onLoad(result, props) {
         if (result && props.forwardedRef) {
@@ -300,7 +300,9 @@ var _createLoadable$1 = createLoadable({
         }
         return null;
     }
-}), loadable$1 = _createLoadable$1.loadable;
+}), loadable$1 = _createLoadable$1.loadable, lazy$1 = _createLoadable$1.lazy;
 var loadable$2 = loadable;
 loadable$2.lib = loadable$1;
+var lazy$2 = lazy;
+lazy$2.lib = lazy$1;
 export default loadable$2;
