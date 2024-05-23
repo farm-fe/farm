@@ -151,31 +151,6 @@ export class Compiler {
     return this._bindingCompiler.pluginStats() as PluginStats;
   }
 
-  // writeResourcesToDisk(base = ''): void {
-  //   const resources = this.resources();
-  //   const configOutputPath = this.config.config.output.path;
-  //   const outputPath = path.isAbsolute(configOutputPath)
-  //     ? configOutputPath
-  //     : path.join(this.config.config.root, configOutputPath);
-
-  //   const outputBasePath = path.join(outputPath, base);
-  //   if (!existsSync(outputBasePath)) {
-  //     mkdirSync(outputBasePath, { recursive: true });
-  //   }
-
-  //   for (const [name, resource] of Object.entries(resources)) {
-  //     // remove query params and hash of name
-  //     const nameWithoutQuery = name.split('?')[0];
-  //     const nameWithoutHash = nameWithoutQuery.split('#')[0];
-
-  //     const filePath = path.join(outputBasePath, nameWithoutHash);
-
-  //     writeFileSync(filePath, resource);
-  //   }
-
-  //   this.callWriteResourcesHook();
-  // }
-
   writeResourcesToDisk(base = ''): void {
     const resources = this.resources();
     const configOutputPath = this.config.config.output.path;
