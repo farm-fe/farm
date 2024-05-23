@@ -2,4 +2,4 @@
 "@farmfe/core": patch
 ---
 
-fix: format error message
+fix: format error message and fix output.targetEnv schema validate
