@@ -104,7 +104,7 @@ function resolveFarmConfig(
     typeof opts.input === 'string'
       ? { [path.parse(opts.input).name]: opts.input }
       : opts.input;
-  const esmodule = resolvePackageJson()?.type === 'module';
+  const isEsm = resolvePackageJson()?.type === 'module';
   const isDev = !!server;
 
   opts.farm ??= {};
@@ -124,7 +124,7 @@ function resolveFarmConfig(
       name === 'preload'
         ? // In most cases, preload scripts use `cjs` format
           'cjs'
-        : esmodule
+        : isEsm
           ? 'esm'
           : 'cjs';
   }
@@ -133,13 +133,13 @@ function resolveFarmConfig(
     opts.farm.compilation.output.entryFilename =
       name === 'preload'
         ? // https://www.electronjs.org/docs/latest/tutorial/esm#esm-preload-scripts-must-have-the-mjs-extension
-          esmodule
+          isEsm
           ? '[entryName].mjs'
           : '[entryName].js'
         : '[entryName].js';
   }
 
-  if (name === 'preload' && esmodule) {
+  if (name === 'preload' && isEsm) {
     opts.farm.plugins.push({
       name: 'farm-plugin-electron:preload-scripts-runtime',
       renderResourcePot: {
