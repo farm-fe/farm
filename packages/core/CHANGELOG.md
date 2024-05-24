@@ -1,5 +1,11 @@
 # @farmfe/core
 
+## 1.1.10
+
+### Patch Changes
+
+- 0c3f6883: make `server.proxy.headers` work again
+
 ## 1.1.9
 
 ### Patch Changes

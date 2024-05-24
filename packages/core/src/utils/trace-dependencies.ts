@@ -1,6 +1,8 @@
 import { Compiler } from '../compiler/index.js';
-import { Config } from '../types/binding.js';
+import { convertErrorMessage } from './error.js';
 import { Logger } from './logger.js';
+
+import type { Config } from '../types/binding.js';
 
 function createTraceDepCompiler(entry: string, logger: Logger) {
   const config = getDefaultTraceDepCompilerConfig(entry);
@@ -17,8 +19,8 @@ export async function traceDependencies(
     const files = await compiler.traceDependencies();
     return files;
   } catch (error) {
-    console.error('Error tracing dependencies:', error);
-    throw error;
+    const errorMessage = convertErrorMessage(error);
+    throw Error(`Error tracing dependencies: ${errorMessage}`);
   }
 }
 
