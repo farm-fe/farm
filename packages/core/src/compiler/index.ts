@@ -1,9 +1,9 @@
 import { existsSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { Compiler as BindingCompiler } from '../../binding/index.js';
-import type { Config, JsUpdateResult } from '../types/binding.js';
 
-import { Resource } from '../index.js';
+import type { Resource } from '../index.js';
+import type { Config, JsUpdateResult } from '../types/binding.js';
 import type { ILogger } from '../utils/logger.js';
 
 export const VIRTUAL_FARM_DYNAMIC_IMPORT_SUFFIX =

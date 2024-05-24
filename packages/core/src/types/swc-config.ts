@@ -7,7 +7,6 @@ export interface ScriptParseConfig {
     decorators: boolean;
 
     // babel: `decorators.decoratorsBeforeExport`
-    //
     // Effective only if `decorator` is true.
     decoratorsBeforeExport: boolean;
     exportDefaultFrom: boolean;
