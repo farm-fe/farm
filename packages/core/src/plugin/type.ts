@@ -131,11 +131,6 @@ type JsPluginHook<F, P, R> = { filters: F; executor: Callback<P, R> };
 export interface JsPlugin {
   name: string;
   priority?: number;
-  // apply?:
-  //   | 'serve'
-  //   | 'build'
-  //   | ((this: void, config: UserConfig, env: ConfigEnv) => boolean);
-  // config?: Callback<Config['config'], Config['config']>;
 
   config?: (config: UserConfig) => UserConfig | Promise<UserConfig>;
 
