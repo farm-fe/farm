@@ -21,7 +21,7 @@ const compilationConfigSchema = z
             'node',
             'node-legacy',
             'node-next',
-            'node-16',
+            'node16',
             'browser-legacy',
             'browser-esnext',
             'browser-es2015',

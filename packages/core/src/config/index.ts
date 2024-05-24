@@ -39,6 +39,7 @@ import { normalizePersistentCache } from './normalize-config/normalize-persisten
 import { parseUserConfig } from './schema.js';
 
 import { externalAdapter } from '../plugin/js/external-adapter.js';
+import { convertErrorMessage } from '../utils/error.js';
 import merge from '../utils/merge.js';
 import {
   CUSTOM_KEYS,
@@ -897,24 +898,18 @@ export async function loadConfigFile(
       };
     }
   } catch (error) {
-    // In this place, the original use of
-    // throw caused emit to the outermost catch
-    // callback, causing the code not to execute.
-    // If the internal catch compiler's own
-    // throw error can solve this problem,
-    // it will not continue to affect the execution of
+    // In this place, the original use of throw caused emit to the outermost catch
+    // callback, causing the code not to execute. If the internal catch compiler's own
+    // throw error can solve this problem, it will not continue to affect the execution of
     // external code. We just need to return the default config.
-    let errorMessage = '';
 
-    try {
-      errorMessage = JSON.parse(error.message).join('\n');
-    } catch {
-      errorMessage = error.message;
-    }
+    const errorMessage = convertErrorMessage(error);
+    const stackTrace =
+      error.code === 'GenericFailure' ? '' : `\n${error.stack}`;
 
     if (inlineOptions.mode === 'production') {
       logger.error(
-        `Failed to load config file: ${errorMessage} \n ${error.stack}`,
+        `Failed to load config file: ${errorMessage} \n${stackTrace}`,
         {
           exit: true
         }

@@ -29,12 +29,13 @@ import type {
   ResolvedUserConfig,
   UserPreviewServerConfig
 } from './config/types.js';
-import { JsPlugin } from './plugin/type.js';
 import { logError } from './server/error.js';
 import { lazyCompilation } from './server/middlewares/lazy-compilation.js';
 import { resolveHostname } from './utils/http.js';
 import { clearScreen } from './utils/share.js';
 import { ConfigWatcher } from './watcher/config-watcher.js';
+
+import type { JsPlugin } from './plugin/type.js';
 
 export async function start(
   inlineConfig?: FarmCLIOptions & UserConfig
