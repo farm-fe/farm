@@ -11,12 +11,8 @@ export function staticMiddleware(devServerContext: Server): Middleware {
 
   // Fallback
   const fallbackMiddleware: Middleware = async (ctx: Context, next: Next) => {
-    const pathnames = ctx.request.path?.split('/');
-    const pathname = pathnames[pathnames.length - 1];
     ctx.type = 'html';
-    ctx.body = fs.createReadStream(
-      path.join(config.distDir, `${pathname}.html`)
-    );
+    ctx.body = fs.createReadStream(path.join(config.distDir, 'index.html'));
     await next();
   };
 
