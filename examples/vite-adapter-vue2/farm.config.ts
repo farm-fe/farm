@@ -8,7 +8,7 @@ export default defineConfig({
     persistentCache: false,
     resolve: {
       alias: {
-        '@': path.resolve(process.cwd(), 'src')
+        '@': path.resolve('src')
       }
     }
   },
