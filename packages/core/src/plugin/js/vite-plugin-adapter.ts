@@ -50,6 +50,9 @@ import type {
   RenderChunkHook,
   ResolveIdResult
 } from 'rollup';
+import { VIRTUAL_FARM_DYNAMIC_IMPORT_SUFFIX } from '../../compiler/index.js';
+import { CompilationMode } from '../../config/env.js';
+import { Logger } from '../../index.js';
 import {
   Config,
   PluginLoadHookParam,
@@ -58,10 +61,7 @@ import {
   PluginResolveHookResult,
   PluginTransformHookParam,
   PluginTransformHookResult
-} from '../../../binding/index.js';
-import { VIRTUAL_FARM_DYNAMIC_IMPORT_SUFFIX } from '../../compiler/index.js';
-import { CompilationMode } from '../../config/env.js';
-import { Logger } from '../../index.js';
+} from '../../types/binding.js';
 import merge from '../../utils/merge.js';
 import { applyHtmlTransform } from './apply-html-transform.js';
 import {

@@ -7,8 +7,8 @@ import { Server } from '../server/index.js';
 import { Logger, compilerHandler } from '../utils/index.js';
 
 import { existsSync } from 'node:fs';
-import { JsUpdateResult } from '../../binding/binding.js';
 import type { ResolvedUserConfig } from '../config/index.js';
+import type { JsUpdateResult } from '../types/binding.js';
 import { createWatcher } from './create-watcher.js';
 
 interface ImplFileWatcher {
@@ -18,16 +18,15 @@ interface ImplFileWatcher {
 export class FileWatcher implements ImplFileWatcher {
   private _root: string;
   private _watcher: FSWatcher;
-  private _logger: Logger;
   private _close = false;
   private _watchedFiles = new Set<string>();
 
   constructor(
     public serverOrCompiler: Server | Compiler,
-    public options: ResolvedUserConfig
+    public options: ResolvedUserConfig,
+    private _logger: Logger
   ) {
     this._root = options.root;
-    this._logger = new Logger();
   }
 
   getInternalWatcher() {
@@ -92,6 +91,7 @@ export class FileWatcher implements ImplFileWatcher {
               compiler.writeResourcesToDisk();
             },
             this.options,
+            this._logger,
             { clear: true }
           );
         }

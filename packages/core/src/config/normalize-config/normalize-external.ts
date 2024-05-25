@@ -2,7 +2,7 @@ import module from 'node:module';
 
 import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
-import { Config } from '../../../binding/index.js';
+import { Config } from '../../types/binding.js';
 import { safeJsonParse } from '../../utils/json.js';
 import { isObject } from '../../utils/share.js';
 import { CUSTOM_KEYS } from '../constants.js';
@@ -96,7 +96,9 @@ export function normalizeExternal(
   ];
 }
 
-export function mergeCustomExternal<T extends Pick<Config['config'], 'custom'>>(
+export function mergeCustomExternal<
+  T extends Partial<Pick<Config['config'], 'custom'>>
+>(
   compilation: T,
   external: ReturnType<typeof partialExternal>
 ): PartialExternal {

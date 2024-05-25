@@ -11,7 +11,7 @@ import {
   RenderedChunk,
   RenderedModule
 } from 'rollup';
-import { Config } from '../../../binding/index.js';
+import { Config } from '../../types/binding.js';
 import { JsResourcePotInfoData, Resource, ResourcePotInfo } from '../type.js';
 import { VITE_ADAPTER_VIRTUAL_MODULE } from './constants.js';
 

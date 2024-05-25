@@ -51,7 +51,7 @@ export async function start(
       'development'
     );
 
-    const compiler = await createCompiler(resolvedUserConfig);
+    const compiler = await createCompiler(resolvedUserConfig, logger);
 
     const devServer = await createDevServer(
       compiler,
@@ -92,7 +92,7 @@ export async function build(
   );
 
   try {
-    await createBundleHandler(resolvedUserConfig);
+    await createBundleHandler(resolvedUserConfig, logger);
     // copy resources under publicDir to output.path
     await copyPublicDirectory(resolvedUserConfig, logger);
   } catch (err) {
@@ -169,6 +169,7 @@ export async function watch(
 
   const compilerFileWatcher = await createBundleHandler(
     resolvedUserConfig,
+    logger,
     true
   );
 
@@ -278,39 +279,50 @@ async function findNodeModulesRecursively(rootPath: string): Promise<string[]> {
 
 export async function createBundleHandler(
   resolvedUserConfig: ResolvedUserConfig,
+  logger: Logger,
   watchMode = false
 ) {
-  const compiler = await createCompiler(resolvedUserConfig);
+  const compiler = await createCompiler(resolvedUserConfig, logger);
 
-  await compilerHandler(async () => {
-    compiler.removeOutputPathDir();
-    try {
-      await compiler.compile();
-    } catch (err) {
-      throw new Error(logError(err) as unknown as string);
-    }
-    compiler.writeResourcesToDisk();
-  }, resolvedUserConfig);
+  await compilerHandler(
+    async () => {
+      compiler.removeOutputPathDir();
+      try {
+        await compiler.compile();
+      } catch (err) {
+        throw new Error(logError(err) as unknown as string);
+      }
+      compiler.writeResourcesToDisk();
+    },
+    resolvedUserConfig,
+    logger
+  );
 
   if (resolvedUserConfig.compilation?.watch || watchMode) {
-    const watcher = new FileWatcher(compiler, resolvedUserConfig);
+    const watcher = new FileWatcher(compiler, resolvedUserConfig, logger);
     await watcher.watch();
     return watcher;
   }
 }
 
-export async function createCompiler(resolvedUserConfig: ResolvedUserConfig) {
+export async function createCompiler(
+  resolvedUserConfig: ResolvedUserConfig,
+  logger: Logger
+) {
   const {
     jsPlugins,
     rustPlugins,
     compilation: compilationConfig
   } = resolvedUserConfig;
 
-  const compiler = new Compiler({
-    config: compilationConfig,
-    jsPlugins,
-    rustPlugins
-  });
+  const compiler = new Compiler(
+    {
+      config: compilationConfig,
+      jsPlugins,
+      rustPlugins
+    },
+    logger
+  );
 
   for (const plugin of jsPlugins) {
     await plugin.configureCompiler?.(compiler);
@@ -374,7 +386,7 @@ export async function createFileWatcher(
     return;
   }
 
-  const fileWatcher = new FileWatcher(devServer, resolvedUserConfig);
+  const fileWatcher = new FileWatcher(devServer, resolvedUserConfig, logger);
   devServer.watcher = fileWatcher;
   await fileWatcher.watch();
 
