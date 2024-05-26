@@ -1,6 +1,6 @@
 [package]
 edition = "2021"
-name = "create-farm-rs"
+name = "create_farm_node"
 version = "0.1.0"
 authors = ["Erkelost"]
 license = "MIT"
