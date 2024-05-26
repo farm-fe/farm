@@ -4,7 +4,9 @@ import module from 'node:module';
 import path, { isAbsolute, join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
-import { PluginTransformHookParam, bindingPath } from '../../binding/index.js';
+import { bindingPath } from '../../binding/index.js';
+import { type PluginTransformHookParam } from '../types/binding.js';
+
 import { JsPlugin } from '../index.js';
 import {
   getSortedPlugins,
@@ -39,6 +41,7 @@ import { normalizePersistentCache } from './normalize-config/normalize-persisten
 import { parseUserConfig } from './schema.js';
 
 import { externalAdapter } from '../plugin/js/external-adapter.js';
+import { convertErrorMessage } from '../utils/error.js';
 import merge from '../utils/merge.js';
 import {
   CUSTOM_KEYS,
@@ -83,7 +86,8 @@ async function getDefaultConfig(
   const resolvedUserConfig = await resolveMergedUserConfig(
     config,
     undefined,
-    inlineOptions.mode ?? mode
+    inlineOptions.mode ?? mode,
+    logger
   );
 
   resolvedUserConfig.server = normalizeDevServerOptions({}, mode);
@@ -195,7 +199,8 @@ export async function resolveConfig(
   const resolvedUserConfig = await resolveMergedUserConfig(
     mergedUserConfig,
     configFilePath,
-    inlineOptions.mode ?? mode
+    inlineOptions.mode ?? mode,
+    logger
   );
 
   // normalize server config first cause it may be used in normalizeUserCompilationConfig
@@ -529,7 +534,11 @@ export async function normalizeUserCompilationConfig(
   };
 
   // normalize persistent cache at last
-  await normalizePersistentCache(resolvedCompilation, resolvedUserConfig);
+  await normalizePersistentCache(
+    resolvedCompilation,
+    resolvedUserConfig,
+    logger
+  );
 
   return resolvedCompilation;
 }
@@ -687,7 +696,8 @@ async function readConfigFile(
       await resolveMergedUserConfig(
         tsDefaultUserConfig,
         undefined,
-        'development'
+        'development',
+        logger
       );
 
     const normalizedConfig = await normalizeUserCompilationConfig(
@@ -697,11 +707,14 @@ async function readConfigFile(
       mode as CompilationMode
     );
 
-    const compiler = new Compiler({
-      config: normalizedConfig,
-      jsPlugins: [replaceDirnamePlugin()],
-      rustPlugins: []
-    });
+    const compiler = new Compiler(
+      {
+        config: normalizedConfig,
+        jsPlugins: [replaceDirnamePlugin()],
+        rustPlugins: []
+      },
+      logger
+    );
 
     await compiler.compile();
 
@@ -810,7 +823,8 @@ function checkClearScreen(inlineConfig: FarmCLIOptions) {
 export async function resolveMergedUserConfig(
   mergedUserConfig: UserConfig,
   configFilePath: string | undefined,
-  mode: 'development' | 'production' | string
+  mode: 'development' | 'production' | string,
+  logger: Logger
 ): Promise<ResolvedUserConfig> {
   const serverConfig: NormalizedServerConfig = {
     ...DEFAULT_DEV_SERVER_OPTIONS,
@@ -835,7 +849,7 @@ export async function resolveMergedUserConfig(
   resolvedUserConfig.envMode = mode;
 
   if (configFilePath) {
-    const dependencies = await traceDependencies(configFilePath);
+    const dependencies = await traceDependencies(configFilePath, logger);
     dependencies.sort();
     resolvedUserConfig.configFileDependencies = dependencies;
     resolvedUserConfig.configFilePath = configFilePath;
@@ -897,24 +911,18 @@ export async function loadConfigFile(
       };
     }
   } catch (error) {
-    // In this place, the original use of
-    // throw caused emit to the outermost catch
-    // callback, causing the code not to execute.
-    // If the internal catch compiler's own
-    // throw error can solve this problem,
-    // it will not continue to affect the execution of
+    // In this place, the original use of throw caused emit to the outermost catch
+    // callback, causing the code not to execute. If the internal catch compiler's own
+    // throw error can solve this problem, it will not continue to affect the execution of
     // external code. We just need to return the default config.
-    let errorMessage = '';
 
-    try {
-      errorMessage = JSON.parse(error.message).join('\n');
-    } catch {
-      errorMessage = error.message;
-    }
+    const errorMessage = convertErrorMessage(error);
+    const stackTrace =
+      error.code === 'GenericFailure' ? '' : `\n${error.stack}`;
 
     if (inlineOptions.mode === 'production') {
       logger.error(
-        `Failed to load config file: ${errorMessage} \n ${error.stack}`,
+        `Failed to load config file: ${errorMessage} \n${stackTrace}`,
         {
           exit: true
         }

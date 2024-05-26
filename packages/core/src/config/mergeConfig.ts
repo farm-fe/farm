@@ -18,7 +18,7 @@ export function mergeConfig<T extends Record<string, any>>(
       continue;
     }
 
-    if (left === null || right === undefined) {
+    if (left === null || left === undefined) {
       result[key] = right;
       continue;
     }
