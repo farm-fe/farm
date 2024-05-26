@@ -1,5 +1,5 @@
 {
-  "name": "create-farm-win32-ia32-msvc",
+  "name": "create-farm-node-win32-ia32-msvc",
   "version": "0.0.0",
   "os": [
     "win32"
@@ -7,9 +7,9 @@
   "cpu": [
     "ia32"
   ],
-  "main": "create-farm.win32-ia32-msvc.node",
+  "main": "create-farm-node.win32-ia32-msvc.node",
   "files": [
-    "create-farm.win32-ia32-msvc.node"
+    "create-farm-node.win32-ia32-msvc.node"
   ],
   "license": "MIT",
   "engines": {

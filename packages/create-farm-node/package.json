@@ -8,7 +8,7 @@
   "license": "ISC",
   "types": "index.d.ts",
   "napi": {
-    "name": "create-farm",
+    "name": "create-farm-node",
     "triples": {
       "additional": [
         "aarch64-apple-darwin",
