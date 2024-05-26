@@ -1,5 +1,11 @@
 # create-farm-rs
 
+## 0.0.5
+
+### Patch Changes
+
+- 583e4764: bump create-farm version
+
 ## 0.0.3
 
 ### Patch Changes

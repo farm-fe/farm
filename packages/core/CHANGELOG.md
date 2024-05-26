@@ -1,5 +1,13 @@
 # @farmfe/core
 
+## 1.1.11
+
+### Patch Changes
+
+- 91f897b2: fix: format error message and fix output.targetEnv schema validate
+- f0f42b27: - core types should be included in the compilation process
+  - logger used should be obtained from the parameter
+
 ## 1.1.10
 
 ### Patch Changes
