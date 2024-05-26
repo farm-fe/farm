@@ -1,3 +1,4 @@
+
 export interface ScriptParseConfig {
   esConfig?: {
     jsx?: boolean;
@@ -6,7 +7,6 @@ export interface ScriptParseConfig {
     decorators: boolean;
 
     // babel: `decorators.decoratorsBeforeExport`
-    //
     // Effective only if `decorator` is true.
     decoratorsBeforeExport: boolean;
     exportDefaultFrom: boolean;
@@ -80,6 +80,12 @@ export interface SwcPresetEnvOptions {
    */
   forceAllTransforms?: boolean;
 }
+
+interface TerserEcmaVersion {
+
+}
+
+interface TerserManglePropertiesOptions {}
 
 export interface TerserCompressOptions {
   arguments?: boolean;

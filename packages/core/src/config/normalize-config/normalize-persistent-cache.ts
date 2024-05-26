@@ -2,8 +2,9 @@ import { existsSync, readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import path from 'node:path';
 
-import { Config } from '../../../binding/index.js';
 import { RustPlugin } from '../../plugin/index.js';
+import { Config } from '../../types/binding.js';
+import { Logger } from '../../utils/logger.js';
 import { traceDependencies } from '../../utils/trace-dependencies.js';
 import { ResolvedUserConfig } from '../index.js';
 
@@ -17,7 +18,8 @@ const defaultGlobalBuiltinCacheKeyStrategy = {
 
 export async function normalizePersistentCache(
   config: Config['config'],
-  resolvedUserConfig: ResolvedUserConfig
+  resolvedUserConfig: ResolvedUserConfig,
+  logger: Logger
 ) {
   if (
     config?.persistentCache === false ||
@@ -130,7 +132,7 @@ export async function normalizePersistentCache(
   ) {
     const files = resolvedUserConfig?.configFileDependencies?.length
       ? resolvedUserConfig.configFileDependencies
-      : await traceDependencies(resolvedUserConfig.configFilePath);
+      : await traceDependencies(resolvedUserConfig.configFilePath, logger);
 
     const packages = [];
 
