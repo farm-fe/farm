@@ -1,4 +1,4 @@
-import { Config } from '../../binding/index.js';
+import { Config } from '../types/binding.js';
 import { ColorFunction, PersistentCacheBrand, colors } from './color.js';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { pad, version } from './share.js';

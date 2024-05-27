@@ -5,7 +5,7 @@ import type { OutgoingHttpHeaders } from 'http';
 import type cors from '@koa/cors';
 import { WatchOptions } from 'chokidar';
 import { Middleware } from 'koa';
-import type { Config } from '../../binding/index.js';
+import type { Config } from '../types/binding.js';
 import type { RustPlugin } from '../plugin/rust/index.js';
 import type { JsPlugin } from '../plugin/type.js';
 import type { ProxiesOptions } from '../server/middlewares/proxy.js';
