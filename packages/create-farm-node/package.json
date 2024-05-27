@@ -1,5 +1,5 @@
 {
-  "name": "create-farm-rs",
+  "name": "create-farm-node",
   "version": "0.0.5",
   "description": "",
   "main": "index.js",
@@ -8,7 +8,7 @@
   "license": "ISC",
   "types": "index.d.ts",
   "napi": {
-    "name": "create-farm",
+    "name": "create-farm-node",
     "triples": {
       "additional": [
         "aarch64-apple-darwin",
@@ -22,7 +22,7 @@
     }
   },
   "bin": {
-    "create-farm-rs": "create-farm.js"
+    "create-farm-node": "create-farm.js"
   },
   "scripts": {
     "create-farm": "node ./create-farm.js",

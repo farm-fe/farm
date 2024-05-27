@@ -141,8 +141,8 @@ jobs:
       - name: Upload Create Farm Rust
         uses: actions/upload-artifact@v3
         with:
-          name: ${{ github.sha }}-${{ matrix.settings.abi }}-create-farm
-          path: ./packages/create-farm-node/create-farm.${{ matrix.settings.abi }}.node
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}-create-farm-node
+          path: ./packages/create-farm-node/create-farm-node.${{ matrix.settings.abi }}.node
       - name: Upload Plugin React
         uses: actions/upload-artifact@v3
         with:
