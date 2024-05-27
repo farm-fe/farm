@@ -7,7 +7,8 @@ const root = createRoot(container);
 
 root.render(
   <>
-    <a href="/about">About</a>
+    <p><a href="/about?type=1&id=farm">About?</a></p>
+    <p><a href="/about#hash">About#</a></p>
     <div>Index page</div>
   </>
 );
