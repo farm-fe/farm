@@ -1,5 +1,18 @@
 //index.js:
- import __farmNodeModule from 'node:module';globalThis.nodeRequire = __farmNodeModule.createRequire(import.meta.url);(globalThis || window || global)['__farm_default_namespace__'] = {__FARM_TARGET_ENV__: 'node'};function _getRequireWildcardCache(nodeInterop) {
+ import __farmNodeModule from 'node:module';globalThis.nodeRequire = __farmNodeModule.createRequire(import.meta.url);(globalThis || window || global)['__farm_default_namespace__'] = {__FARM_TARGET_ENV__: 'node'};function __commonJs(mod) {
+    var module;
+    return ()=>{
+        if (module) {
+            return module.exports;
+        }
+        module = {
+            exports: {}
+        };
+        mod[Object.keys(mod)[0]](module, module.exports);
+        return module.exports;
+    };
+}
+function _getRequireWildcardCache(nodeInterop) {
     if (typeof WeakMap !== "function") return null;
     var cacheBabelInterop = new WeakMap();
     var cacheNodeInterop = new WeakMap();

@@ -14,35 +14,15 @@ use farmfe_core::{
     magic_string::{MagicString, MagicStringOptions},
   },
   error::{CompilationError, Result},
-  module::{module_graph::ModuleGraph, ModuleId, ModuleSystem},
+  module::{module_graph::ModuleGraph, ModuleId},
   parking_lot::Mutex,
   rayon::iter::{IntoParallelIterator, ParallelIterator},
   resource::resource_pot::{RenderedModule, ResourcePot},
   serialize,
-  swc_common::{comments::SingleThreadedComments, util::take::Take, Mark, DUMMY_SP},
-  swc_ecma_ast::{
-    BindingIdent, BlockStmt, FnDecl, Function, Module as EcmaAstModule, ModuleItem, Param, Stmt,
-  },
 };
 use farmfe_toolkit::common::MinifyBuilder;
-use farmfe_toolkit::{
-  script::swc_try_with::{resolve_module_mark, try_with},
-  swc_ecma_transforms::{
-    feature::enable_available_feature_from_es_version,
-    fixer,
-    helpers::inject_helpers,
-    hygiene::{hygiene_with_config, Config as HygieneConfig},
-    modules::{
-      common_js,
-      import_analysis::import_analyzer,
-      util::{Config, ImportInterop},
-    },
-  },
-  swc_ecma_transforms_base::fixer::paren_remover,
-  swc_ecma_visit::VisitMutWith,
-};
+
 use farmfe_utils::hash::sha256;
-use source_replacer::{ExistingCommonJsRequireVisitor, SourceReplacer};
 
 use self::render_module::{render_module, RenderModuleResult};
 

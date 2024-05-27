@@ -2,7 +2,10 @@ use std::collections::{HashMap, HashSet};
 
 use farmfe_core::{
   swc_common::DUMMY_SP,
-  swc_ecma_ast::{Id, ObjectPatProp, Pat},
+  swc_ecma_ast::{
+    AssignExpr, AssignOp, AssignTarget, BindingIdent, Expr, Id, KeyValuePatProp, KeyValueProp,
+    ObjectPatProp, ParenExpr, Pat, Prop, PropName, SimpleAssignTarget,
+  },
 };
 use farmfe_toolkit::{
   swc_atoms::Atom,
@@ -100,11 +103,15 @@ impl<'a> RenameIdent<'a> {
       ..Default::default()
     }
   }
+
+  fn rename(&self, ident: &Ident) -> Option<String> {
+    self.map.get(&ident.to_id()).map(|var| var.render_name())
+  }
 }
 
 impl<'a> VisitMut for RenameIdent<'a> {
   fn visit_mut_ident(&mut self, ident: &mut Ident) {
-    if let Some(Some(new_name)) = self.map.get(&ident.to_id()).map(|var| var.rename.as_ref()) {
+    if let Some(new_name) = self.rename(&ident) {
       ident.sym = Atom::from(new_name.as_str());
       ident.span = DUMMY_SP;
     }
@@ -112,25 +119,65 @@ impl<'a> VisitMut for RenameIdent<'a> {
 
   fn visit_mut_prop(&mut self, n: &mut farmfe_core::swc_ecma_ast::Prop) {
     match n {
-      farmfe_core::swc_ecma_ast::Prop::Shorthand(m) => {
-        if self
-          .map
-          .get(&m.to_id())
-          .is_some_and(|var| var.rename.is_some())
-        {
+      Prop::Shorthand(m) => {
+        if let Some(new_name) = self.rename(&m) {
           *n = farmfe_core::swc_ecma_ast::Prop::KeyValue(farmfe_core::swc_ecma_ast::KeyValueProp {
             key: farmfe_core::swc_ecma_ast::PropName::Ident(Ident {
               span: DUMMY_SP,
               sym: m.sym.as_str().into(),
               optional: false,
             }),
-            value: Box::new(farmfe_core::swc_ecma_ast::Expr::Ident(m.clone())),
+            value: Box::new(farmfe_core::swc_ecma_ast::Expr::Ident(
+              new_name.as_str().into(),
+            )),
           });
 
           n.visit_mut_children_with(self);
         }
       }
+
       _ => n.visit_mut_children_with(self),
+    }
+  }
+
+  fn visit_mut_object_pat(&mut self, n: &mut farmfe_core::swc_ecma_ast::ObjectPat) {
+    for prop in &mut n.props {
+      match prop {
+        ObjectPatProp::KeyValue(n) => {
+          n.visit_mut_with(self);
+        }
+        ObjectPatProp::Assign(n) => {
+          // const { field = 100 } = x;
+          // =>
+          // const { field: field = 100 } = x;
+
+          let mut new_value = if let Some(ref value) = n.value {
+            Box::new(Pat::Expr(Box::new(Expr::Assign(AssignExpr {
+              span: DUMMY_SP,
+              op: AssignOp::Assign,
+              left: AssignTarget::Simple(SimpleAssignTarget::Ident(n.key.clone())),
+              right: value.clone(),
+            }))))
+          } else {
+            Box::new(Pat::Ident(BindingIdent {
+              id: n.key.id.clone(),
+              type_ann: None,
+            }))
+          };
+
+          new_value.visit_mut_with(self);
+
+          if self.rename(&n.key).is_some() {
+            *prop = ObjectPatProp::KeyValue(KeyValuePatProp {
+              key: PropName::Ident(n.key.clone().into()),
+              value: new_value,
+            });
+          } else {
+            n.visit_mut_with(self);
+          }
+        }
+        ObjectPatProp::Rest(n) => n.visit_mut_with(self),
+      };
     }
   }
 }

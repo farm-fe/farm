@@ -2,10 +2,10 @@ use std::collections::HashMap;
 
 use farmfe_core::{
   error::{CompilationError, Result},
-  module::ModuleId,
+  module::{ModuleId, ModuleSystem, ModuleSystemResolver},
 };
 
-use super::{
+use crate::resource_pot_to_bundle::{
   modules_analyzer::module_analyzer::{ExportSpecifierInfo, ExportType, ImportSpecifierInfo},
   uniq_name::BundleVariable,
 };
@@ -65,24 +65,24 @@ impl ExternalReferenceImport {
   }
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct ExternalReferenceExport {
   pub named: HashMap<usize, usize>,
   pub default: Option<usize>,
   // TODO: `export * from "cjs"`; in cjs need transform to _export_star(cjs, module.exports)
   pub all: (bool, Option<usize>),
   pub namespace: Option<usize>,
-  pub export_type: ExportType,
+  pub module_system: ModuleSystem,
 }
 
 impl ExternalReferenceExport {
-  pub fn new() -> Self {
+  pub fn new(module_system: ModuleSystem) -> Self {
     Self {
       named: HashMap::new(),
       default: None,
       all: (false, None),
       namespace: None,
-      export_type: Default::default(),
+      module_system,
     }
   }
 
@@ -190,22 +190,22 @@ impl BundleReference {
       .or_insert_with(ExternalReferenceImport::new);
   }
 
-  pub fn add_local_export(&mut self, specify: &ExportSpecifierInfo) {
+  pub fn add_local_export(&mut self, specify: &ExportSpecifierInfo, module_system: ModuleSystem) {
     if self.export.is_none() {
-      self.export = Some(ExternalReferenceExport::new());
+      self.export = Some(ExternalReferenceExport::new(module_system));
     }
     if let Some(ref mut export) = self.export {
       export.insert(specify.clone())
     };
   }
 
-  pub fn add_reference_export(&mut self, specify: &ExportSpecifierInfo, source: ReferenceKind) {
+  pub fn add_reference_export(&mut self, specify: &ExportSpecifierInfo, source: ReferenceKind, module_system: ModuleSystem) {
     // self.external_export_map
     if self.external_export_map.contains_key(&source) {
       let map = self.external_export_map.get_mut(&source).unwrap();
       map.insert(specify.clone());
     } else {
-      let mut map = ExternalReferenceExport::new();
+      let mut map = ExternalReferenceExport::new(module_system);
       map.insert(specify.clone());
       self.external_export_map.insert(source, map);
     }
@@ -213,49 +213,7 @@ impl BundleReference {
 
   pub fn change_to_hybrid_dynamic(&mut self, source: ReferenceKind) {
     if let Some(map) = self.external_export_map.get_mut(&source) {
-      map.export_type.merge(ExportType::HybridDynamic);
-    }
-  }
-
-  // TODO: split cjs | esm | external | local
-  pub fn sync_export(
-    &mut self,
-    export: &ExportSpecifierInfo,
-    source: Option<ReferenceKind>,
-    is_cjs: bool,
-  ) {
-    if let Some(module_id) = source {
-      let map = &mut self.external_export_map;
-
-      if !map.contains_key(&module_id) {
-        map.insert(module_id.clone(), ExternalReferenceExport::new());
-      }
-
-      let module_export_map = map.get_mut(&module_id).unwrap();
-
-      if is_cjs {
-        module_export_map
-          .export_type
-          .merge(ExportType::HybridDynamic);
-      }
-
-      if !module_export_map.contains(export) {
-        module_export_map.insert(export.clone());
-      }
-    } else {
-      if self.export.is_none() {
-        self.export = Some(ExternalReferenceExport::new());
-      }
-
-      if let Some(local_export) = self.export.as_mut() {
-        if is_cjs {
-          local_export.export_type.merge(ExportType::HybridDynamic);
-        }
-
-        if !local_export.contains(export) {
-          local_export.insert(export.clone());
-        }
-      }
+      map.module_system.merge(ModuleSystem::Hybrid);
     }
   }
 
@@ -312,38 +270,6 @@ impl BundleReference {
     bundle_variable: &BundleVariable,
   ) -> Result<usize> {
     Self::add_import_helper(&mut self.import_map, import, source, bundle_variable)
-  }
-
-  // TODO: split cjs | esm |
-  pub fn sync_import(
-    &mut self,
-    import_kind: ReferenceKind,
-    import: &ImportSpecifierInfo,
-    bundle_variable: &BundleVariable,
-    is_cjs: bool,
-  ) -> Result<usize> {
-    let import_map = if is_cjs {
-      &mut self.redeclare_commonjs_import
-    } else {
-      &mut self.import_map
-    };
-    if !import_map.contains_key(&import_kind) {
-      import_map.insert(import_kind.clone(), ExternalReferenceImport::new());
-    }
-
-    let module_import_map = import_map.get_mut(&import_kind).unwrap();
-
-    if let Some(options) = module_import_map.fetch(import, bundle_variable) {
-      Ok(options)
-    } else {
-      module_import_map.insert(import.clone(), bundle_variable);
-      module_import_map
-        .fetch(import, bundle_variable)
-        .map(Ok)
-        .unwrap_or(Err(CompilationError::GenericError(
-          "failed fetch import".to_string(),
-        )))
-    }
   }
 
   pub fn import(&self, import_kind: &ReferenceKind) -> Option<&ExternalReferenceImport> {

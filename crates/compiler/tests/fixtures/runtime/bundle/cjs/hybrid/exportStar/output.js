@@ -184,8 +184,8 @@ var cjsExportEsm_ts_cjs = __commonJs({
 var export_ts_ns = _mergeNamespaces({
     __esModule: true
 }, [
-    cjsExport_ts_cjs(),
     cjsExportEsm_ts_cjs(),
+    cjsExport_ts_cjs(),
     node_fs_ns
 ]);
 

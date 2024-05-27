@@ -352,6 +352,7 @@ impl ModuleSystem {
           module_system
         }
       }
+
       ModuleSystem::CommonJs => {
         if matches!(module_system, ModuleSystem::EsModule) {
           ModuleSystem::Hybrid
@@ -359,9 +360,8 @@ impl ModuleSystem {
           module_system
         }
       }
-      ModuleSystem::Hybrid => {
-        ModuleSystem::Hybrid
-      }
+
+      ModuleSystem::Hybrid => ModuleSystem::Hybrid,
 
       ModuleSystem::Custom(_) => module_system,
     }
@@ -813,6 +813,13 @@ mod tests {
     assert_eq!(
       module_system.merge(ModuleSystem::EsModule),
       ModuleSystem::EsModule
+    );
+
+    let module_system = ModuleSystem::CommonJs;
+
+    assert_eq!(
+      module_system.merge(ModuleSystem::Custom("unknown".to_string())),
+      ModuleSystem::Custom("unknown".to_string())
     );
   }
 }

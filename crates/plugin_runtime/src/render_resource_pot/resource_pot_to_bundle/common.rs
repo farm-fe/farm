@@ -17,11 +17,9 @@ macro_rules! otr {
 use std::{path::PathBuf, sync::Arc};
 
 use farmfe_core::{
-  context::CompilationContext,
   error::{CompilationError, Result},
-  module::Module,
-  swc_common::{comments::SingleThreadedComments, Mark},
-  swc_ecma_ast::{Module as EcmaAstModule, ModuleItem},
+  swc_common::comments::SingleThreadedComments,
+  swc_ecma_ast::ModuleItem,
   swc_ecma_parser::{lexer::Lexer, EsConfig, Parser, StringInput, Syntax},
 };
 use farmfe_toolkit::{
@@ -31,19 +29,19 @@ use farmfe_toolkit::{
 };
 pub(super) use otr;
 
-pub fn get_module_mark(
-  module: &Module,
-  cloned_module: &mut EcmaAstModule,
-  context: &Arc<CompilationContext>,
-) -> (Mark, Mark) {
-  if module.meta.as_script().unresolved_mark == 0 && module.meta.as_script().top_level_mark == 0 {
-    resolve_module_mark(cloned_module, module.module_type.is_typescript(), context)
-  } else {
-    let unresolved_mark = Mark::from_u32(module.meta.as_script().unresolved_mark);
-    let top_level_mark = Mark::from_u32(module.meta.as_script().top_level_mark);
-    (unresolved_mark, top_level_mark)
-  }
-}
+// pub fn get_module_mark(
+//   module: &Module,
+//   cloned_module: &mut EcmaAstModule,
+//   context: &Arc<CompilationContext>,
+// ) -> (Mark, Mark) {
+//   if module.meta.as_script().unresolved_mark == 0 && module.meta.as_script().top_level_mark == 0 {
+//     resolve_module_mark(cloned_module, module.module_type.is_typescript(), context)
+//   } else {
+//     let unresolved_mark = Mark::from_u32(module.meta.as_script().unresolved_mark);
+//     let top_level_mark = Mark::from_u32(module.meta.as_script().top_level_mark);
+//     (unresolved_mark, top_level_mark)
+//   }
+// }
 
 pub fn parse_module_item(string: &str) -> Result<ModuleItem> {
   let (_, source_file) = create_swc_source_map(Source {

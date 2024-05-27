@@ -119,11 +119,11 @@ var dep_ts_cjs = __commonJs({
 var age$1 = dep_ts_cjs()["age"], name = dep_ts_cjs()["name"];
 
 // module_id: export.ts.farm-runtime
-var export_ts_ns = _mergeNamespaces({
+var export_ts_ns = {
     "cjsAge": age$1,
     "name": name,
     __esModule: true
-}, []);
+};
 
 // module_id: runtime.ts.farm-runtime
 console.log(export_ts_ns);

@@ -1,5 +1,18 @@
 //index.js:
- import __farmNodeModule from 'node:module';globalThis.nodeRequire = __farmNodeModule.createRequire(import.meta.url);(globalThis || window || global)['__farm_default_namespace__'] = {__FARM_TARGET_ENV__: 'node'};function _mergeNamespaces(n, m) {
+ import __farmNodeModule from 'node:module';globalThis.nodeRequire = __farmNodeModule.createRequire(import.meta.url);(globalThis || window || global)['__farm_default_namespace__'] = {__FARM_TARGET_ENV__: 'node'};function __commonJs(mod) {
+    var module;
+    return ()=>{
+        if (module) {
+            return module.exports;
+        }
+        module = {
+            exports: {}
+        };
+        mod[Object.keys(mod)[0]](module, module.exports);
+        return module.exports;
+    };
+}
+function _mergeNamespaces(n, m) {
     m.forEach(function(e) {
         e && typeof e !== "string" && !Array.isArray(e) && Object.keys(e).forEach(function(k) {
             if (k !== "default" && !(k in n)) {
@@ -63,6 +76,24 @@ function _interop_require_default(obj) {
         default: obj
     };
 }
+function _interop_require_default$1(obj) {
+    return obj && obj.__esModule ? obj : {
+        default: obj
+    };
+}
+
+var cjs_ts_cjs = __commonJs({
+    "cjs.ts.farm-runtime": (module, exports)=>{
+        module.exports.name = "foo";
+        module.exports.age = 18;
+    }
+});
+var cjs = _interop_require_default(cjs_ts_cjs()), cjs_ts_ns = _interop_require_wildcard(cjs_ts_cjs()), name = cjs_ts_cjs()["name"];
+
+console.log(cjs);
+
+console.log(name);
+
 function _getRequireWildcardCache$1(nodeInterop) {
     if (typeof WeakMap !== "function") return null;
     var cacheBabelInterop = new WeakMap();
@@ -94,53 +125,8 @@ function _interop_require_wildcard$1(obj, nodeInterop) {
     return newObj;
 }
 
-const a = 3;
-const b = 4;
-const c = 5;
-function BB() {
-    const a = 5;
-    const b = 6;
-    console.log(a, b);
-}
-var dep_ts_default = {
-    a: a,
-    b: b,
-    c: c
-};
-var dep_ts_ns = {
-    "a": a,
-    "b": b,
-    "default": dep_ts_default,
-    __esModule: true
-};
+console.log(cjs_ts_ns);
 
-
-
-function _export_star$1(from, to) {
-    Object.keys(from).forEach(function(k) {
-        if (k !== "default" && !Object.prototype.hasOwnProperty.call(to, k)) {
-            Object.defineProperty(to, k, {
-                enumerable: true,
-                get: function() {
-                    return from[k];
-                }
-            });
-        }
-    });
-    return from;
-}
-
-var exportAll_ts_ns = {
-    "a": a,
-    "b": b,
-    __esModule: true
-};
-
-console.log({
-    ExportNamespace: dep_ts_ns,
-    A: exportAll_ts_ns,
-    ImportNamespace: dep_ts_ns
-});
 (globalThis || window || global)["__farm_default_namespace__"].__farm_module_system__.setPlugins([]);
 (function(_){for(var r in _){_[r].__farm_resource_pot__='index_dcdc.js';(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.register(r,_[r])}})({"b5d64806":function  (module, exports, farmRequire, farmDynamicRequire) {
     "use strict";

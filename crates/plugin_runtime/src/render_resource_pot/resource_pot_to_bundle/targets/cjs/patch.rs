@@ -24,10 +24,8 @@ use farmfe_toolkit::{
 };
 
 use crate::resource_pot_to_bundle::{
-  bundle::{ModuleAnalyzerManager, ModuleGlobalUniqName},
-  bundle_external::BundleReference,
-  modules_analyzer::module_analyzer::ModuleAnalyzer,
-  polyfill::{Polyfill, SimplePolyfill},
+  bundle::{bundle_external::BundleReference, ModuleAnalyzerManager, ModuleGlobalUniqName},
+  polyfill::Polyfill,
   uniq_name::BundleVariable,
 };
 

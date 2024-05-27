@@ -6,17 +6,20 @@ use farmfe_core::{
   swc_common::{Mark, DUMMY_SP},
   swc_ecma_ast::{
     self, BindingIdent, CallExpr, Callee, ComputedPropName, Expr, ExprOrSpread, Ident, Lit,
-    MemberExpr, Module as EcmaAstModule, ModuleItem, Pat, Stmt, VarDecl, VarDeclarator,
+    MemberExpr, MemberProp, Module as EcmaAstModule, ModuleItem, Pat, Stmt, VarDecl, VarDeclarator,
   },
 };
 use farmfe_toolkit::{
   script::is_commonjs_require,
-  swc_ecma_visit::{Visit, VisitMut, VisitMutWith, VisitWith},
+  swc_ecma_visit::{Visit, VisitWith},
 };
 
 use crate::resource_pot_to_bundle::{
-  bundle::ModuleGlobalUniqName,
-  bundle_external::{ExternalReferenceExport, ExternalReferenceImport, ReferenceKind},
+  bundle::{
+    bundle_external::{ExternalReferenceExport, ExternalReferenceImport, ReferenceKind},
+    ModuleGlobalUniqName,
+  },
+  polyfill::cjs::{wrap_require_default, wrap_require_wildcard},
   uniq_name::BundleVariable,
 };
 
@@ -38,24 +41,31 @@ pub struct CjsCollector<'a> {
 }
 
 impl<'a> Visit for CjsCollector<'a> {
-  fn visit_call_expr(&mut self, n: &CallExpr) {
-    if n.args.len() != 1 {
-      n.visit_children_with(self);
-      return;
-    }
-
-    if is_commonjs_require(self.unresolved_mark, self.top_level_mark, n) {
-      if let ExprOrSpread {
-        spread: None,
-        expr: box Expr::Lit(Lit::Str(str)),
-      } = &n.args[0]
-      {
-        let source = str.value.to_string();
-        let id = self
-          .module_graph
-          .get_dep_by_source(&self.module_id, &source, None);
-        self.deps.push(id);
+  fn visit_expr(&mut self, n: &Expr) {
+    let mut is_collect = false;
+    if let Expr::Call(call_expr) = n {
+      if call_expr.args.len() != 1 {
+        return;
       }
+
+      if is_commonjs_require(self.unresolved_mark, self.top_level_mark, call_expr) {
+        is_collect = true;
+        if let ExprOrSpread {
+          spread: None,
+          expr: box Expr::Lit(Lit::Str(str)),
+        } = &call_expr.args[0]
+        {
+          let source = str.value.to_string();
+          let id = self
+            .module_graph
+            .get_dep_by_source(&self.module_id, &source, None);
+          self.deps.push(id);
+        }
+      }
+    };
+
+    if !is_collect {
+      n.visit_children_with(self);
     }
   }
 }
@@ -117,7 +127,6 @@ impl CjsModuleAnalyzer {
       type_args: None,
     };
 
-    // TODO: polyfill
     if let Some(default) = reference_import.default {
       decls.push(VarDeclarator {
         span: DUMMY_SP,
@@ -127,14 +136,13 @@ impl CjsModuleAnalyzer {
         }),
         init: Some(Box::new(Expr::Member(MemberExpr {
           span: DUMMY_SP,
-          obj: Box::new(Expr::Call(cjs_caller.clone())),
-          prop: swc_ecma_ast::MemberProp::Ident("default".into()),
+          obj: wrap_require_default(Box::new(Expr::Call(cjs_caller.clone()))),
+          prop: MemberProp::Ident("default".into()),
         }))),
         definite: false,
       });
     }
 
-    // TODO: polyfill
     if let Some(ns) = reference_import.namespace {
       decls.push(VarDeclarator {
         span: DUMMY_SP,
@@ -142,16 +150,22 @@ impl CjsModuleAnalyzer {
           id: Ident::from(bundle_variable.render_name(ns).as_str()),
           type_ann: None,
         }),
-        init: Some(Box::new(Expr::Call(cjs_caller.clone()))),
+        init: Some(wrap_require_wildcard(Box::new(Expr::Call(
+          cjs_caller.clone(),
+        )))),
         definite: false,
       });
     }
 
     let mut ordered_keys = reference_import.named.keys().collect::<Vec<_>>();
     ordered_keys.sort();
-    // TODO: default key
-    for imported_index in ordered_keys {
-      let named_index = &reference_import.named[imported_index];
+
+    for imported in ordered_keys {
+      let named_index = &reference_import.named[imported];
+      let require_name = bundle_variable.name(*named_index);
+
+      let is_require_default = require_name == "default";
+      let init_expr = Box::new(Expr::Call(cjs_caller.clone()));
 
       decls.push(VarDeclarator {
         span: DUMMY_SP,
@@ -161,12 +175,14 @@ impl CjsModuleAnalyzer {
         }),
         init: Some(Box::new(Expr::Member(MemberExpr {
           span: DUMMY_SP,
-          obj: Box::new(Expr::Call(cjs_caller.clone())),
+          obj: if is_require_default {
+            wrap_require_default(init_expr)
+          } else {
+            init_expr
+          },
           prop: swc_ecma_ast::MemberProp::Computed(ComputedPropName {
             span: DUMMY_SP,
-            expr: Box::new(Expr::Lit(Lit::Str(
-              bundle_variable.name(*named_index).as_str().into(),
-            ))),
+            expr: Box::new(Expr::Lit(Lit::Str(imported.as_str().into()))),
           }),
         }))),
         definite: false,

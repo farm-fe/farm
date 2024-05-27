@@ -1,5 +1,18 @@
 //index.js:
- import __farmNodeModule from 'node:module';globalThis.nodeRequire = __farmNodeModule.createRequire(import.meta.url);(globalThis || window || global)['__farm_default_namespace__'] = {__FARM_TARGET_ENV__: 'node'};function _mergeNamespaces(n, m) {
+ import __farmNodeModule from 'node:module';globalThis.nodeRequire = __farmNodeModule.createRequire(import.meta.url);(globalThis || window || global)['__farm_default_namespace__'] = {__FARM_TARGET_ENV__: 'node'};function __commonJs(mod) {
+    var module;
+    return ()=>{
+        if (module) {
+            return module.exports;
+        }
+        module = {
+            exports: {}
+        };
+        mod[Object.keys(mod)[0]](module, module.exports);
+        return module.exports;
+    };
+}
+function _mergeNamespaces(n, m) {
     m.forEach(function(e) {
         e && typeof e !== "string" && !Array.isArray(e) && Object.keys(e).forEach(function(k) {
             if (k !== "default" && !(k in n)) {

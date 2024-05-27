@@ -5,6 +5,7 @@ use std::{
   sync::Arc,
 };
 
+use bundle::bundle_analyzer;
 use farmfe_core::{
   context::CompilationContext,
   enhanced_magic_string::bundle::Bundle,
@@ -14,8 +15,9 @@ use farmfe_core::{
   resource::resource_pot::{ResourcePot, ResourcePotId, ResourcePotType},
   swc_ecma_ast::Id,
 };
+use polyfill::SimplePolyfill;
 
-pub use crate::resource_pot_to_bundle::bundle_analyzer::BundleAnalyzer;
+pub use crate::resource_pot_to_bundle::bundle::bundle_analyzer::BundleAnalyzer;
 
 use self::{
   bundle::ModuleAnalyzerManager, modules_analyzer::module_analyzer::ModuleAnalyzer,
@@ -62,10 +64,7 @@ impl Hash for Var {
   }
 }
 
-mod bundle_analyzer;
-mod bundle_external;
 mod polyfill;
-
 mod uniq_name;
 
 pub struct SharedBundle<'a> {
@@ -73,8 +72,9 @@ pub struct SharedBundle<'a> {
   module_analyzer_manager: ModuleAnalyzerManager<'a>,
   module_graph: &'a ModuleGraph,
   context: &'a Arc<CompilationContext>,
-  bundle_variables: Arc<RefCell<BundleVariable>>,
+  pub bundle_variables: Arc<RefCell<BundleVariable>>,
   order_index_map: HashMap<ModuleId, usize>,
+  order_resource_pot: Vec<ResourcePotId>,
 }
 
 ///
@@ -97,7 +97,7 @@ impl<'a> SharedBundle<'a> {
     let bundle_variables = Arc::new(RefCell::new(BundleVariable::new()));
 
     let (toposort_modules, _) = module_graph.toposort();
-
+    let mut order_resource_pot = vec![];
     let order_map: HashMap<ModuleId, usize> = toposort_modules
       .into_iter()
       .enumerate()
@@ -112,6 +112,8 @@ impl<'a> SharedBundle<'a> {
       )) {
         continue;
       }
+
+      order_resource_pot.push(resource_pot.id.clone());
 
       // 1-1. analyze bundle
       let mut bundle_analyzer = BundleAnalyzer::new(
@@ -165,25 +167,32 @@ impl<'a> SharedBundle<'a> {
       context,
       bundle_variables,
       order_index_map: order_map,
+      order_resource_pot,
     }
+  }
+
+  fn set_namespace(&self, resource_pot_id: &String) {
+    self
+      .bundle_variables
+      .borrow_mut()
+      .set_namespace(resource_pot_id.clone());
   }
 
   // 2-1 extract module data from ast
   fn extract_modules(&mut self) -> Result<()> {
     farm_profile_function!("");
 
-    for resource_pot_id in self
-      .module_analyzer_manager
-      .module_map
-      .values()
-      .map(|item| item.resource_pot_id.clone())
-      .collect::<HashSet<_>>()
-    {
-      farm_profile_scope!(format!("extract module resource pot: {:?}", resource_pot_id));
+    for resource_pot_id in &self.order_resource_pot {
+      farm_profile_scope!(format!(
+        "extract module resource pot: {:?}",
+        resource_pot_id
+      ));
+
+      self.set_namespace(&resource_pot_id);
 
       let bundle = self
         .bundle_map
-        .get_mut(&resource_pot_id)
+        .get_mut(resource_pot_id)
         .map(Ok)
         .unwrap_or_else(|| {
           Err(CompilationError::GenericError(format!(
@@ -192,10 +201,15 @@ impl<'a> SharedBundle<'a> {
           )))
         })?;
 
-      bundle
-        .bundle_variable
-        .borrow_mut()
-        .set_namespace(resource_pot_id);
+      println!(
+        "bundle {} ordered_modules: {:#?}",
+        bundle.resource_pot.id,
+        bundle
+          .ordered_modules
+          .iter()
+          .map(|item| item.to_string())
+          .collect::<Vec<_>>()
+      );
 
       self.module_analyzer_manager.extract_modules_statements(
         &bundle.ordered_modules,
@@ -211,10 +225,23 @@ impl<'a> SharedBundle<'a> {
   // 2-2 process common module data
   fn link_modules(&mut self) -> Result<()> {
     farm_profile_function!("");
-    self.module_analyzer_manager.link(
-      &mut self.bundle_variables.borrow_mut(),
-      &self.context,
-    );
+
+    let bundle_variable = &mut self.bundle_variables.borrow_mut();
+
+    // for resource_pot in self
+    for resource_pot_id in &self.order_resource_pot {
+      bundle_variable.set_namespace(resource_pot_id.clone());
+
+      // polyfill name should make sure it doesn't conflict.
+      // tip: but it cannot be rename unresolved mark
+      for name in SimplePolyfill::reserved_word() {
+        bundle_variable.add_used_name(name);
+      }
+    }
+
+    self
+      .module_analyzer_manager
+      .link(bundle_variable, &self.order_index_map, &self.context);
 
     Ok(())
   }
@@ -222,11 +249,10 @@ impl<'a> SharedBundle<'a> {
   // 2-3 start process bundle
   fn render_bundle(&mut self) -> Result<()> {
     farm_profile_function!("");
-    for bundle_analyzer in self.bundle_map.values_mut() {
-      farm_profile_scope!(format!(
-        "render bundle: {}",
-        bundle_analyzer.resource_pot.id
-      ));
+    for resource_pot_id in &self.order_resource_pot {
+      farm_profile_scope!(format!("render bundle: {}", resource_pot_id));
+
+      let bundle_analyzer = self.bundle_map.get_mut(resource_pot_id).unwrap();
 
       bundle_analyzer
         .bundle_variable

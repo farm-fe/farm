@@ -318,7 +318,7 @@ pub fn set_module_system_for_module_meta(
   context: &Arc<CompilationContext>,
 ) {
   // default to commonjs
-  let mut module_system_from_deps_option = if !param.deps.is_empty() {
+  let module_system_from_deps_option = if !param.deps.is_empty() {
     Some(module_system_from_deps(
       param.deps.iter().map(|d| d.kind.clone()).collect(),
     ))

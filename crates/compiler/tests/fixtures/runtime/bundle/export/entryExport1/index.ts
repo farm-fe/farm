@@ -1,3 +1,3 @@
-import * as EntryExport from './dep';
+// import * as EntryExport from './dep';
 
-export { EntryExport };
+// export { EntryExport };

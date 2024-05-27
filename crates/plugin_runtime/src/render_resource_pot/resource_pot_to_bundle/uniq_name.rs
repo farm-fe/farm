@@ -1,23 +1,19 @@
 use std::{
   borrow::Cow,
-  collections::{HashMap, HashSet, VecDeque},
+  collections::{HashMap, HashSet},
   path::PathBuf,
   str::FromStr,
-  sync::Arc,
 };
 
 use farmfe_core::{
-  context::CompilationContext,
   farm_profile_function, farm_profile_scope,
-  module::{module_graph::ModuleGraph, ModuleId, ModuleSystem},
+  module::{ModuleId, ModuleSystem},
   resource::resource_pot::ResourcePotId,
   swc_ecma_ast::Ident,
 };
 
 use super::{
-  bundle::ModuleAnalyzerManager,
-  bundle_external::ReferenceKind,
-  modules_analyzer::module_analyzer::{ExportSpecifierInfo, ModuleAnalyzer},
+  bundle::{bundle_external::ReferenceKind, ModuleAnalyzerManager},
   Var,
 };
 
@@ -45,12 +41,24 @@ impl UniqName {
     }
   }
 
-  pub fn uniq_name(&self, name: &str) -> String {
+  pub fn uniq_name(&mut self, name: &str) -> String {
     farm_profile_scope!("uniq name");
-    let mut uniq_name = name.to_string();
 
-    while let Some(count) = self.name_count_map.get(&uniq_name) {
-      uniq_name = format!("{}${}", uniq_name, count);
+    let base_uniq_name = name.to_string();
+    let mut uniq_name = base_uniq_name.clone();
+
+    if let Some(mut count) = self.name_count_map.get_mut(&base_uniq_name).cloned() {
+      loop {
+        uniq_name = format!("{}${}", base_uniq_name, count);
+
+        if !self.name_count_map.contains_key(&uniq_name) {
+          break;
+        }
+
+        count += 1;
+      }
+
+      self.name_count_map.insert(base_uniq_name, count);
     }
 
     return uniq_name;
@@ -62,7 +70,6 @@ pub struct BundleVariable {
   pub index: usize,
   pub variables: HashMap<usize, Var>,
   pub module_defined_vars: HashMap<ModuleId, HashMap<String, usize>>,
-  pub module_safe_ident: HashMap<ModuleId, String>,
   pub uniq_name_hash_map: HashMap<ResourcePotId, UniqName>,
   pub namespace: String,
   pub used_names: HashSet<String>,
@@ -215,11 +222,16 @@ impl BundleVariable {
     return index;
   }
 
-  pub fn register_used_name(&mut self, module_id: &ModuleId, suffix: &str, root: &String) -> usize {
+  pub fn register_used_name_by_module_id(
+    &mut self,
+    module_id: &ModuleId,
+    suffix: &str,
+    root: &String,
+  ) -> usize {
     farm_profile_scope!("register name");
     let module_safe_name = format!("{}{suffix}", safe_name_from_module_id(module_id, root));
 
-    let uniq_name_safe_name = self.uniq_name().uniq_name(&module_safe_name);
+    let uniq_name_safe_name = self.uniq_name_mut().uniq_name(&module_safe_name);
 
     self.add_used_name(uniq_name_safe_name.clone());
 
@@ -269,7 +281,7 @@ impl BundleVariable {
     }
 
     let uniq_name = if self.uniq_name().contain(&var_ident) {
-      self.uniq_name().uniq_name(&var_ident)
+      self.uniq_name_mut().uniq_name(&var_ident)
     } else {
       var_ident.clone()
     };
@@ -299,11 +311,7 @@ impl BundleVariable {
     let var_ident = self.name(index);
 
     if module_analyzers.is_external(source) {
-      return Some(FindModuleExportResult::External(
-        index,
-        source.clone(),
-        None,
-      ));
+      return Some(FindModuleExportResult::External(index, source.clone()));
     }
 
     if let Some(module_analyzer) = module_analyzers.module_analyzer(&source) {
@@ -313,99 +321,101 @@ impl BundleVariable {
         return Some(FindModuleExportResult::Local(
           index,
           source.clone(),
-          Some(module_system),
+          module_system,
         ));
       }
 
-      let statements = module_analyzer
-        .export_names
-        .as_ref()
-        .map(|item| item.clone())
-        .unwrap();
+      let reference_map = module_analyzer.export_names();
 
       if module_analyzer.resource_pot_id != resource_pot_id {
-        if let Some(index) = statements.query_by_var_str(&var_ident, &self) {
+        if let Some(index) = reference_map.query_by_var_str(&var_ident, &self) {
           return Some(FindModuleExportResult::Bundle(
             index,
             module_analyzer.resource_pot_id.clone(),
             // support cjs
-            Some(module_system),
+            module_system,
           ));
           // TODO: error?
         }
       }
 
       if find_default {
-        if let Some(d) = statements
+        if let Some(d) = reference_map
           .export
           .default
           .clone()
-          .or_else(|| statements.export.query(&"default".to_string(), &self))
+          .or_else(|| reference_map.export.query(&"default".to_string(), &self))
         {
           return Some(FindModuleExportResult::Local(
             d,
             source.clone(),
-            Some(module_system),
+            module_system,
           ));
         }
 
         return None;
       }
 
-      if let Some(d) = statements.export.query(&var_ident, &self) {
+      // find from local
+      if let Some(d) = reference_map.export.query(&var_ident, &self) {
         return Some(FindModuleExportResult::Local(
           d,
           source.clone(),
-          Some(module_system),
+          module_system,
         ));
       }
 
-      for (module_id, export) in &statements.reference_map {
+      // find from reference external or bundle
+      for (module_id, export) in &reference_map.reference_map {
         if let Some(d) = export.query(&var_ident, &self) {
           if module_analyzers.is_external(module_id) {
-            return Some(FindModuleExportResult::External(
-              d,
-              module_id.clone(),
-              Some(module_system),
-            ));
+            return Some(FindModuleExportResult::External(d, module_id.clone()));
           } else {
             return Some(FindModuleExportResult::Local(
               d,
               module_id.clone(),
-              Some(module_system),
+              module_system,
             ));
           }
         }
       }
     }
+
     None
   }
 }
 
 #[derive(Debug)]
 pub enum FindModuleExportResult {
-  Local(usize, ModuleId, Option<ModuleSystem>),
-  External(usize, ModuleId, Option<ModuleSystem>),
-  Bundle(usize, ResourcePotId, Option<ModuleSystem>),
+  Local(usize, ModuleId, ModuleSystem),
+  External(usize, ModuleId),
+  Bundle(usize, ResourcePotId, ModuleSystem),
 }
 
 impl FindModuleExportResult {
   pub fn is_common_js(&self) -> bool {
     match self {
       FindModuleExportResult::Local(_, _, module_system)
-      | FindModuleExportResult::External(_, _, module_system)
       | FindModuleExportResult::Bundle(_, _, module_system) => {
-        module_system.as_ref().is_some_and(|module_system| {
-          matches!(module_system, ModuleSystem::CommonJs | ModuleSystem::Hybrid)
-        })
+        matches!(module_system, ModuleSystem::CommonJs | ModuleSystem::Hybrid)
       }
+
+      _ => false,
+    }
+  }
+
+  pub fn module_system(&self) -> Option<ModuleSystem> {
+    match self {
+      FindModuleExportResult::Local(_, _, module_system)
+      | FindModuleExportResult::Bundle(_, _, module_system) => Some(module_system.clone()),
+      FindModuleExportResult::External(_, _) => None,
     }
   }
 
   pub fn target_source(&self) -> ReferenceKind {
     match self {
       FindModuleExportResult::Local(_, target_source, _) => target_source.clone().into(),
-      FindModuleExportResult::External(_, target_source, _) => target_source.clone().into(),
+      FindModuleExportResult::External(_, target_source) => target_source.clone().into(),
       FindModuleExportResult::Bundle(_, target_bundle, _) => target_bundle.clone().into(),
     }
   }
@@ -434,9 +444,35 @@ mod tests {
     uniq_name::FindModuleExportResult,
   };
 
-  use super::BundleVariable;
+  use super::{BundleVariable, UniqName};
 
   use super::normalize_file_name_as_variable;
+
+  #[test]
+
+  fn uniq_name() {
+    let mut uniq_name = UniqName::new();
+
+    assert_eq!(uniq_name.uniq_name("name"), "name");
+
+    uniq_name.insert("name");
+
+    assert_eq!(uniq_name.uniq_name("name"), "name$1");
+
+    uniq_name.insert("name");
+    uniq_name.insert("name");
+    uniq_name.insert("name");
+
+    assert_eq!(uniq_name.uniq_name("name"), "name$4");
+
+    uniq_name.insert("name");
+
+    assert_eq!(uniq_name.uniq_name("name"), "name$5");
+
+    uniq_name.insert("name$5");
+
+    assert_eq!(uniq_name.uniq_name("name"), "name$6");
+  }
 
   #[test]
   fn test_normalize_name() {
@@ -555,7 +591,7 @@ mod tests {
 
     assert!(matches!(
       result,
-      Some(FindModuleExportResult::External(_, _, _))
+      Some(FindModuleExportResult::External(_, _))
     ));
 
     if let FindModuleExportResult::External(index, ..) = result.unwrap() {

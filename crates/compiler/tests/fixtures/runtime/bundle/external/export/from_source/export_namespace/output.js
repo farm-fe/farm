@@ -1,6 +1,19 @@
 //index.js:
  globalThis.nodeRequire = require;(globalThis || window || global)['__farm_default_namespace__'] = {__FARM_TARGET_ENV__: 'node'};// module_id: exportNamespace.ts.farm-runtime
 var node_fs_ns = _interop_require_wildcard(require("node:fs.farm-runtime"));
+function __commonJs(mod) {
+    var module;
+    return ()=>{
+        if (module) {
+            return module.exports;
+        }
+        module = {
+            exports: {}
+        };
+        mod[Object.keys(mod)[0]](module, module.exports);
+        return module.exports;
+    };
+}
 function _mergeNamespaces(n, m) {
     m.forEach(function(e) {
         e && typeof e !== "string" && !Array.isArray(e) && Object.keys(e).forEach(function(k) {

@@ -1,10 +1,10 @@
-use std::sync::Arc;
+use std::{collections::HashMap, sync::Arc};
 
 use farmfe_core::{
   config::ModuleFormat,
   context::CompilationContext,
   error::Result,
-  module::ModuleId,
+  module::{ModuleId, ModuleSystem},
   swc_common::DUMMY_SP,
   swc_ecma_ast::{
     self, ArrayLit, BindingIdent, Bool, CallExpr, Decl, Expr, ExprOrSpread, Ident, KeyValueProp,
@@ -15,11 +15,11 @@ use farmfe_core::{
 
 use crate::resource_pot_to_bundle::{
   bundle::{
+    bundle_external::{BundleReference, ExternalReferenceExport},
     reference::{ReferenceExport, ReferenceMap},
     ModuleAnalyzerManager,
   },
-  bundle_external::{BundleReference, ExternalReferenceExport},
-  modules_analyzer::module_analyzer::{ExportType, ImportSpecifierInfo},
+  modules_analyzer::module_analyzer::ImportSpecifierInfo,
   uniq_name::BundleVariable,
 };
 
@@ -33,11 +33,10 @@ pub fn generate_namespace_by_reference_map(
   bundle_reference: &mut BundleReference,
   map: &ReferenceMap,
   module_analyzer_manager: &ModuleAnalyzerManager,
+  order_index_map: &HashMap<ModuleId, usize>,
 ) -> Result<Vec<ModuleItem>> {
   let mut patch_ast_items = vec![];
   let namespace = bundle_variable.name(local);
-
-  println!("module_id: {}\n{:#?}", module_id.to_string(), map);
 
   let mut props: Vec<PropOrSpread> = vec![];
   let mut commonjs_fns: Vec<Ident> = vec![];
@@ -47,9 +46,15 @@ pub fn generate_namespace_by_reference_map(
     generate_export_as_object_prop(&mut props, &map.export, bundle_variable);
   }
 
-  for (module_id, reference_export) in &map.reference_map {
+  let mut module_ids = map.reference_map.keys().collect::<Vec<_>>();
+
+  module_ids.sort_by_key(|a| &order_index_map[a]);
+
+  for module_id in module_ids {
+    let reference_export = &map.reference_map[module_id];
+
     if module_analyzer_manager.is_external(module_id) {
-      if reference_export.is_empty() || reference_export.all.0 {
+      if reference_export.is_empty() || reference_export.all {
         let ns_index = module_analyzer_manager
           .module_global_uniq_name
           .namespace_name(module_id)
@@ -68,7 +73,7 @@ pub fn generate_namespace_by_reference_map(
       // TODO: export import from external
       generate_export_as_object_prop(&mut props, reference_export, bundle_variable);
     } else if module_analyzer_manager.is_commonjs(module_id) {
-      if reference_export.is_empty() || reference_export.all.0 {
+      if reference_export.is_empty() || reference_export.all {
         commonjs_fns.push(
           bundle_variable
             .name(
@@ -98,7 +103,7 @@ pub fn generate_namespace_by_reference_map(
   }
 
   let declare_init =
-    if matches!(map.export_type, ExportType::Static) && reexport_namespace.is_empty() {
+    if matches!(map.export_type, ModuleSystem::EsModule) && reexport_namespace.is_empty() && commonjs_fns.is_empty() {
       Some(Box::new(Expr::Object(ObjectLit {
         span: DUMMY_SP,
         props,
@@ -226,6 +231,7 @@ pub fn generate_export_by_reference_export(
   context: &Arc<CompilationContext>,
 ) -> Result<Vec<ModuleItem>> {
   let mut patch_export_to_module = vec![];
+
   if let Some(export) = bundle_reference.export.as_ref() {
     patch_export_to_module.extend(generate_export_as_module_export(
       &resource_pot_id,
@@ -272,7 +278,7 @@ pub fn generate_export_as_module_export(
 
   ordered_keys.sort_by(|a, b| bundle_variable.name(**a).cmp(&bundle_variable.name(**b)));
 
-  match (export.export_type, context.config.output.format) {
+  match (&export.module_system, context.config.output.format) {
     // hybrid dynamic es module cannot support, if hybrid, only export static export
     (_, ModuleFormat::EsModule) => {
       return EsmGenerate::generate_export(

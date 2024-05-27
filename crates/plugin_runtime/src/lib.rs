@@ -11,15 +11,25 @@ use farmfe_core::{
     config_regex::ConfigRegex, external::ExternalConfig,
     partial_bundling::PartialBundlingEnforceResourceConfig, Config, ModuleFormat, TargetEnv,
     FARM_MODULE_SYSTEM,
-  }, context::CompilationContext, enhanced_magic_string::{bundle::Bundle, types::SourceMapOptions}, error::CompilationError, farm_profile_scope, module::{ModuleId, ModuleMetaData, ModuleType}, parking_lot::Mutex, plugin::{
+  },
+  context::CompilationContext,
+  enhanced_magic_string::{bundle::Bundle, types::SourceMapOptions},
+  error::CompilationError,
+  farm_profile_scope,
+  module::{ModuleId, ModuleMetaData, ModuleType},
+  parking_lot::Mutex,
+  plugin::{
     Plugin, PluginAnalyzeDepsHookParam, PluginAnalyzeDepsHookResultEntry,
     PluginFinalizeResourcesHookParams, PluginGenerateResourcesHookResult, PluginHookContext,
     PluginLoadHookParam, PluginLoadHookResult, PluginResolveHookParam, PluginResolveHookResult,
     PluginTransformHookResult, ResolveKind,
-  }, resource::{
+  },
+  resource::{
     resource_pot::{ResourcePot, ResourcePotId, ResourcePotMetaData, ResourcePotType},
     Resource, ResourceOrigin, ResourceType,
-  }, serde_json, swc_ecma_ast::{ExportAll, ImportDecl, ImportSpecifier, ModuleDecl, ModuleItem}
+  },
+  serde_json,
+  swc_ecma_ast::{ExportAll, ImportDecl, ImportSpecifier, ModuleDecl, ModuleItem},
 };
 use farmfe_toolkit::{
   fs::read_file_utf8,
@@ -336,29 +346,48 @@ impl Plugin for FarmPluginRuntime {
     let async_modules = async_modules.downcast_ref::<HashSet<ModuleId>>().unwrap();
     let module_graph = context.module_graph.read();
 
-    for resource_pot in resource_pots.iter_mut() {
+    resource_pots.sort_by_key(|item| item.id.clone());
+
+    let mut shared_bundle = SharedBundle::new(
+      resource_pots.iter().map(|item| &**item).collect::<Vec<_>>(),
+      &module_graph,
+      context,
+    );
+
+    shared_bundle.render()?;
+
+    let mut m = HashMap::new();
+    let mut is_have_runtime = false;
+    for resource_pot in resource_pots.iter() {
       match resource_pot.resource_pot_type {
         ResourcePotType::Runtime => {
+          if is_have_runtime {
+            continue;
+          }
+          is_have_runtime = true;
           farm_profile_scope!(format!(
             "process_resource_pot to bundle {}",
             resource_pot.id
           ));
           let resource_pot_id = resource_pot.id.clone();
 
-          let mut shared_bundle = SharedBundle::new(vec![&**resource_pot], &module_graph, context);
-
-          shared_bundle.render()?;
-
           let bundle = shared_bundle.codegen(&resource_pot_id)?;
 
-          resource_pot.defer_minify_resource_pot();
+          // resource_pot.defer_minify_resource_pot();
 
           *self.runtime_code.lock() = Arc::new(bundle.to_string());
-          break;
+        }
+        ResourcePotType::Js => {
+          let resource_pot_id = resource_pot.id.clone();
+          let bundle = shared_bundle.codegen(&resource_pot_id)?;
+
+          m.insert(resource_pot_id.clone(), bundle);
         }
         _ => {}
       }
     }
+
+    *self.share_bundle.lock() = Arc::new(m);
 
     Ok(Some(()))
   }
@@ -478,9 +507,11 @@ impl Plugin for FarmPluginRuntime {
         bundle.prepend(&external_modules_str);
       }
 
+      let share_bundle = self.share_bundle.lock();
       return Ok(Some(ResourcePotMetaData {
         rendered_modules,
-        rendered_content: Arc::new(bundle.to_string()),
+        // rendered_content: Arc::new(bundle.to_string()),
+        rendered_content: Arc::new(share_bundle[&resource_pot.id].to_string()),
         rendered_map_chain: if context.config.sourcemap.enabled(resource_pot.immutable) {
           let root = context.config.root.clone();
           let map = bundle

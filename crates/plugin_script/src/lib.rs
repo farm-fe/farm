@@ -306,9 +306,9 @@ impl Plugin for FarmPluginScript {
 }
 
 impl FarmPluginScript {
-  pub fn new(config: &Config) -> Self {
+  pub fn new(_config: &Config) -> Self {
     #[cfg(feature = "swc_plugin")]
-    init_plugin_module_cache_once(config);
+    init_plugin_module_cache_once(_config);
     Self {}
   }
 }

@@ -110,7 +110,7 @@ var cjsExport_ts_cjs = __commonJs({
         const esmName = "esm-shulan";
     }
 });
-var cjsExport_ts_ns = cjsExport_ts_cjs();
+var cjsExport_ts_ns = _interop_require_wildcard(cjsExport_ts_cjs());
 
 // module_id: esmExport.ts.farm-runtime
 const foo = "foo";

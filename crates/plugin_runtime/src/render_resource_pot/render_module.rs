@@ -1,7 +1,6 @@
-use std::{path::PathBuf, rc::Rc, sync::Arc};
+use std::{path::PathBuf, sync::Arc};
 
 use farmfe_core::{
-  config::minify::MinifyOptions,
   context::CompilationContext,
   error::CompilationError,
   module::{module_graph::ModuleGraph, Module, ModuleId, ModuleSystem},

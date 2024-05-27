@@ -137,7 +137,7 @@ var cjsExport_ts_cjs = __commonJs({
         };
     }
 });
-var cjsDefault = cjsExport_ts_cjs().default, cjsExport_ts_ns = cjsExport_ts_cjs(), age$1 = cjsExport_ts_cjs()["cjsNamed"];
+var cjsDefault = _interop_require_default(cjsExport_ts_cjs()), cjsExport_ts_ns = _interop_require_wildcard(cjsExport_ts_cjs()), age$1 = cjsExport_ts_cjs()["age"];
 
 // module_id: esmImprot.ts.farm-runtime
 console.log({

@@ -2,19 +2,20 @@ use std::collections::HashMap;
 
 use farmfe_core::{
   error::{CompilationError, Result},
-  module::ModuleId,
+  module::{ModuleId, ModuleSystem},
   swc_common::DUMMY_SP,
   swc_ecma_ast::{
-    AssignExpr, AssignOp, AssignTarget, AssignTargetPat, BindingIdent, CallExpr, Callee, Decl,
-    Expr, ExprOrSpread, ExprStmt, Lit, MemberExpr, MemberProp, ModuleItem, Pat, SimpleAssignTarget,
-    Stmt, VarDecl, VarDeclKind, VarDeclarator,
+    AssignExpr, AssignOp, AssignTarget, BindingIdent, CallExpr, Callee, Decl, Expr, ExprOrSpread, ExprStmt, KeyValueProp, Lit, MemberExpr, MemberProp, ModuleItem, ObjectLit, Pat, Prop, PropName, PropOrSpread, SimpleAssignTarget, Stmt, VarDecl, VarDeclKind, VarDeclarator
   },
 };
 
 use crate::resource_pot_to_bundle::{
-  bundle::ModuleAnalyzerManager,
-  bundle_external::{ExternalReferenceExport, ExternalReferenceImport, ReferenceKind},
+  bundle::{
+    bundle_external::{ExternalReferenceExport, ExternalReferenceImport, ReferenceKind},
+    ModuleAnalyzerManager,
+  },
   common,
+  polyfill::cjs::{wrap_require_default, wrap_require_wildcard},
   uniq_name::BundleVariable,
 };
 
@@ -112,6 +113,8 @@ impl CjsGenerate {
           })));
         }
       }
+
+      // TODO: add esModule by export type
     }
 
     if let Some(default) = export.default.as_ref() {
@@ -121,25 +124,67 @@ impl CjsGenerate {
       ));
     };
 
+    if matches!(
+      export.module_system,
+      ModuleSystem::EsModule | ModuleSystem::Hybrid
+    ) {
+      // Object.defineProperty(exports, '__esModule', {
+      //   value: true,
+      // });
+
+      stmts.push(ModuleItem::Stmt(Stmt::Expr(ExprStmt {
+        span: DUMMY_SP,
+        expr: Box::new(Expr::Call(CallExpr {
+          span: DUMMY_SP,
+          callee: Callee::Expr(Box::new(Expr::Member(MemberExpr {
+            span: DUMMY_SP,
+            obj: Box::new(Expr::Ident("Object".into())),
+            prop: MemberProp::Ident("defineProperty".into()),
+          }))),
+          args: vec![
+            ExprOrSpread {
+              spread: None,
+              expr: Box::new(Expr::Ident("exports".into())),
+            },
+            ExprOrSpread {
+              spread: None,
+              expr: Box::new(Expr::Lit("__esModule".into())),
+            },
+            ExprOrSpread {
+              spread: None,
+              expr: Box::new(Expr::Object(ObjectLit {
+                span: DUMMY_SP,
+                props: vec![PropOrSpread::Prop(Box::new(Prop::KeyValue(KeyValueProp {
+                  key: PropName::Ident("value".into()),
+                  value: Box::new(Expr::Lit(Lit::Bool(true.into()))),
+                })))],
+              })),
+            },
+          ],
+          type_args: None,
+        })),
+      })));
+    }
+
     Ok(stmts)
   }
 
   ///
   ///
   /// ```ts
-  /// import { name, age } from "shulan";
+  /// import { name, age } from "foo";
   /// // =>
-  /// const shulan_ns = require("shulan");
-  /// var name = shulan_ns.name;
-  /// var age = shulan_ns.age;
+  /// const foo_ns = require("foo");
+  /// var name = foo_ns.name;
+  /// var age = foo_ns.age;
   ///
-  /// import * as shulan from "shulan";
+  /// import * as foo from "foo";
   /// // =>
-  /// const shulan_ns = _interop_require_wildcard(require("shulan"));
+  /// const foo_ns = _interop_require_wildcard(require("foo"));
   ///
-  /// import shulan from "shulan"
+  /// import foo from "foo"
   /// // =>
-  /// const shulan_ns = _interop_require_default(require("shulan"));
+  /// const foo_default = _interop_require_default(require("foo"));
   /// ```
   ///
   pub fn generate_import(
@@ -170,19 +215,21 @@ impl CjsGenerate {
           .unwrap(),
       );
 
-      // import * as shulan_ns from "shulan";
-      // import shulan from "shulan";
+      // import * as foo_ns from "foo";
+      // import foo from "foo";
       // =>
-      // var shulan_ns = _interop_require_wildcard(require("shulan"));
-      // var shulan_default = shulan_ns.default;
+      // var foo_ns = _interop_require_wildcard(require("foo"));
+      // var foo_default = foo_ns.default;
       let try_wrap_namespace = |expr: Box<Expr>| {
-        if import.namespace.is_some() || import.default.is_some() {
-          return Box::new(Expr::Call(CallExpr {
-            span: DUMMY_SP,
-            callee: Callee::Expr(Box::new(Expr::Ident("_interop_require_wildcard".into()))),
-            args: vec![ExprOrSpread { spread: None, expr }],
-            type_args: None,
-          }));
+        if import.namespace.is_some() {
+          return wrap_require_wildcard(expr);
+        }
+
+        return expr;
+      };
+      let try_wrap_require_default = |expr: Box<Expr>| {
+        if import.default.is_some() {
+          return wrap_require_default(expr);
         }
 
         return expr;
@@ -215,6 +262,9 @@ impl CjsGenerate {
       let mut decls: Vec<VarDeclarator> = vec![];
 
       let mut add_decl = |name: &str, property: &str| {
+        let is_default = property == "default";
+        let init_expr = Box::new(Expr::Ident(namespace_name.as_str().into()));
+
         decls.push(VarDeclarator {
           span: DUMMY_SP,
           name: Pat::Ident(BindingIdent {
@@ -223,7 +273,11 @@ impl CjsGenerate {
           }),
           init: Some(Box::new(Expr::Member(MemberExpr {
             span: DUMMY_SP,
-            obj: Box::new(Expr::Ident(namespace_name.as_str().into())),
+            obj: if is_default {
+              try_wrap_require_default(init_expr)
+            } else {
+              init_expr
+            },
             prop: MemberProp::Ident(property.into()),
           }))),
           definite: false,
@@ -232,6 +286,7 @@ impl CjsGenerate {
 
       let mut ordered_named_keys = import.named.keys().collect::<Vec<_>>();
       ordered_named_keys.sort();
+
       for imported in ordered_named_keys {
         let local = &import.named[imported];
         let local_named = bundle_variable.render_name(*local);
@@ -240,7 +295,7 @@ impl CjsGenerate {
       }
 
       if let Some(default) = import.default.as_ref() {
-        add_decl(&bundle_variable.name(*default), "default");
+        add_decl(&bundle_variable.render_name(*default), "default");
       }
 
       if !decls.is_empty() {

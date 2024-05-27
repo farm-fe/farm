@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use farmfe_core::module::ModuleId;
+use farmfe_core::module::{ModuleId, ModuleSystem};
 
 use crate::resource_pot_to_bundle::{
   modules_analyzer::module_analyzer::{ExportSpecifierInfo, ExportType},
@@ -11,8 +11,7 @@ use crate::resource_pot_to_bundle::{
 pub struct ReferenceExport {
   pub named: HashMap<usize, usize>,
   pub default: Option<usize>,
-  // TODO: `export * from "cjs"`; in cjs need transform to _export_star(cjs, module.exports)
-  pub all: (bool, Option<usize>),
+  pub all: bool,
   pub namespace: Option<usize>,
 }
 
@@ -21,19 +20,19 @@ impl ReferenceExport {
     Self {
       named: HashMap::new(),
       default: None,
-      all: (false, None),
+      all: false,
       namespace: None,
     }
   }
 
-  fn contains(&self, export: &ExportSpecifierInfo) -> bool {
-    match export {
-      ExportSpecifierInfo::Named(named) => self.named.contains_key(&named.local()),
-      ExportSpecifierInfo::Default(_) => self.default.is_some(),
-      ExportSpecifierInfo::All(_) => self.all.0,
-      ExportSpecifierInfo::Namespace(_) => self.namespace.is_some(),
-    }
-  }
+  // fn contains(&self, export: &ExportSpecifierInfo) -> bool {
+  //   match export {
+  //     ExportSpecifierInfo::Named(named) => self.named.contains_key(&named.local()),
+  //     ExportSpecifierInfo::Default(_) => self.default.is_some(),
+  //     ExportSpecifierInfo::All(_) => self.all.0,
+  //     ExportSpecifierInfo::Namespace(_) => self.namespace.is_some(),
+  //   }
+  // }
 
   fn insert(&mut self, export: &ExportSpecifierInfo) {
     match export {
@@ -44,7 +43,7 @@ impl ReferenceExport {
         self.default = Some(*local);
       }
       ExportSpecifierInfo::All(_) => {
-        self.all = (true, None);
+        self.all = true;
       }
       ExportSpecifierInfo::Namespace(name) => {
         self.namespace = Some(*name);
@@ -74,20 +73,39 @@ impl ReferenceExport {
       self.default = Some(*default);
     }
 
-    if from.all.0 {
-      self.all = (true, None);
+    if from.all {
+      self.all = true;
     }
   }
 
   pub fn is_empty(&self) -> bool {
-    self.named.is_empty() && self.default.is_none() && !self.all.0 && self.namespace.is_none()
+    self.named.is_empty() && self.default.is_none() && !self.all && self.namespace.is_none()
   }
 
   pub fn query(&self, export_from: &String, bundle_variable: &BundleVariable) -> Option<usize> {
+    if let Some(index) = self.namespace {
+      if &bundle_variable.name(index) == export_from {
+        return Some(index);
+      }
+    }
+
     for export_as in self.named.keys() {
       if &bundle_variable.name(*export_as) == export_from {
         return Some(self.named[export_as]);
       }
+    }
+
+    return None;
+  }
+
+  pub fn raw_query(
+    &self,
+    export_from: &String,
+    bundle_variable: &BundleVariable,
+    find_default: bool,
+  ) -> Option<usize> {
+    if find_default {
+      return self.default;
     }
 
     if let Some(index) = self.namespace {
@@ -96,23 +114,29 @@ impl ReferenceExport {
       }
     }
 
+    for export_as in self.named.keys() {
+      if &bundle_variable.name(*export_as) == export_from {
+        return Some(self.named[export_as]);
+      }
+    }
+
     return None;
   }
 }
 
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone)]
 pub struct ReferenceMap {
   pub reference_map: HashMap<ModuleId, ReferenceExport>,
   pub export: ReferenceExport,
-  pub export_type: ExportType,
+  pub export_type: ModuleSystem,
 }
 
 impl ReferenceMap {
-  pub fn new() -> Self {
+  pub fn new(module_system: ModuleSystem) -> Self {
     Self {
       export: ReferenceExport::default(),
       reference_map: Default::default(),
-      export_type: ExportType::Static,
+      export_type: module_system,
     }
   }
 
@@ -129,7 +153,7 @@ impl ReferenceMap {
 
   pub fn add_commonjs(&mut self, module_id: &ModuleId, export: &ExportSpecifierInfo) {
     self.add_reference(module_id, export);
-    self.export_type.merge(ExportType::HybridDynamic);
+    self.export_type.merge(ModuleSystem::CommonJs);
   }
 
   pub fn add_local(&mut self, export: &ExportSpecifierInfo) {
@@ -154,7 +178,12 @@ impl ReferenceMap {
   pub fn query(&self, index: usize, bundle_variable: &BundleVariable) -> Option<usize> {
     let export_from = bundle_variable.name(index);
 
-    if let Some(r) = self.export.query(&export_from, bundle_variable) {
+    let find_default = export_from == "default";
+
+    if let Some(r) = self
+      .export
+      .raw_query(&export_from, bundle_variable, find_default)
+    {
       Some(r)
     } else {
       self
@@ -177,8 +206,46 @@ impl ReferenceMap {
       }
     }
 
-    self.export_type.merge(other.export_type);
+    self.export_type.merge(other.export_type.clone());
 
     self.export.merge_by_export_all(&other.export);
+  }
+
+  pub fn print(&self, bundle_variable: &BundleVariable) {
+    let print_export = |export: &ReferenceExport, source: Option<&ModuleId>| {
+      if !export.named.is_empty() {
+        print!("export {{");
+        for (export_as, local) in &export.named {
+          print!(
+            "{{ {:?} as {:?}, }}",
+            bundle_variable.name(*export_as),
+            bundle_variable.name(*local)
+          );
+        }
+        if let Some(source) = source {
+          println!("}} from \"{}\"", source.to_string());
+        } else {
+          println!("}}");
+        }
+      }
+
+      if let Some(default) = export.default {
+        print!("export default {:?}", bundle_variable.name(default));
+
+        println!(
+          "{}",
+          if let Some(source) = source {
+            source.to_string()
+          } else {
+            "".to_string()
+          }
+        )
+      }
+    };
+
+    print_export(&self.export, None);
+    for (module_id, reference) in &self.reference_map {
+      print_export(reference, Some(module_id));
+    }
   }
 }

@@ -114,12 +114,12 @@ var dep_ts_cjs = __commonJs({
         module.exports.default = "default";
     }
 });
-var dep_ts_ns = dep_ts_cjs();
+var dep_ts_ns = _interop_require_wildcard(dep_ts_cjs());
 
-var export_ts_ns = _mergeNamespaces({
+var export_ts_ns = {
     "cjs": dep_ts_ns,
     __esModule: true
-}, []);
+};
 
 console.log(export_ts_ns);
 const dep_ts_ns$1 = 18;

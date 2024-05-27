@@ -1,7 +1,14 @@
 use std::collections::HashSet;
 
 use farmfe_core::{
-  error::{CompilationError, Result}, farm_profile_function, module::{module_graph::ModuleGraph, ModuleId}, swc_common::Mark, swc_ecma_ast::{self, ExportDecl, Expr, Ident, ModuleDecl, ModuleExportName, ModuleItem, Stmt}
+  error::{CompilationError, Result},
+  farm_profile_function,
+  module::{module_graph::ModuleGraph, ModuleId},
+  swc_common::Mark,
+  swc_ecma_ast::{
+    self, Decl, DefaultDecl, ExportDecl, Expr, Id, Ident, ImportSpecifier, ModuleDecl,
+    ModuleExportName, ModuleItem, Pat, Stmt,
+  },
 };
 use farmfe_toolkit::swc_ecma_visit::{Visit, VisitWith};
 
@@ -35,161 +42,255 @@ impl Visit for CollectUnresolvedIdent {
   }
 }
 
-pub fn analyze_imports_and_exports(
-  id: StatementId,
-  stmt: &ModuleItem,
-  module_id: &ModuleId,
-  module_graph: &ModuleGraph,
-  register_var: &mut impl FnMut(&Ident, bool) -> usize,
-) -> Result<Statement> {
-  farm_profile_function!("");
-  let mut defined_idents: HashSet<usize> = HashSet::new();
+pub struct CollectDefineIdent {
+  defined_ident: HashSet<Id>,
+}
 
-  let mut imports: Option<ImportInfo> = None;
-  let mut exports = None;
-  let get_module_id_by_source = |source: &str| {
-    module_graph
-      .get_dep_by_source_optional(module_id, source, None)
+impl CollectDefineIdent {
+  pub fn new() -> Self {
+    Self {
+      defined_ident: HashSet::new(),
+    }
+  }
+}
+
+impl CollectDefineIdent {
+  fn collect_pat(&mut self, pat: &Pat) -> bool {
+    match pat {
+      Pat::Ident(n) => {
+        self.defined_ident.insert(n.id.to_id());
+        return true;
+      }
+
+      Pat::Array(n) => {
+        let mut is_collect = false;
+
+        for item in &n.elems {
+          if let Some(item) = item {
+            is_collect = self.collect_pat(item) || is_collect;
+          }
+        }
+
+        return is_collect;
+      }
+
+      Pat::Rest(pat) => {
+        return self.collect_pat(pat.arg.as_ref());
+      }
+
+      Pat::Object(pat) => {
+        let mut is_collect = false;
+
+        for item in &pat.props {
+          match item {
+            swc_ecma_ast::ObjectPatProp::KeyValue(kv) => {
+              is_collect = self.collect_pat(kv.value.as_ref()) || is_collect;
+            }
+
+            swc_ecma_ast::ObjectPatProp::Assign(assign) => {
+              is_collect = self.defined_ident.insert(assign.key.to_id()) || is_collect;
+            }
+
+            swc_ecma_ast::ObjectPatProp::Rest(rest) => {
+              is_collect = self.collect_pat(rest.arg.as_ref()) || is_collect;
+            }
+          }
+        }
+
+        return is_collect;
+      }
+
+      Pat::Assign(assign) => {
+        return self.collect_pat(&assign.left);
+      }
+
+      Pat::Expr(_) => {
+        return false;
+      }
+
+      Pat::Invalid(_) => {
+        return false;
+      }
+    }
+  }
+}
+
+impl Visit for CollectDefineIdent {
+  fn visit_var_decl(&mut self, n: &swc_ecma_ast::VarDecl) {
+    for decl in &n.decls {
+      if !self.collect_pat(&decl.name) {
+        decl.visit_children_with(self);
+      }
+    }
+  }
+}
+
+fn collect_define_ident<V: VisitWith<CollectDefineIdent>>(stmt: &V) -> HashSet<Id> {
+  let mut collector = CollectDefineIdent::new();
+  stmt.visit_with(&mut collector);
+  collector.defined_ident
+}
+
+struct AnalyzeModuleItem<'a> {
+  id: StatementId,
+  import: Option<ImportInfo>,
+  export: Option<ExportInfo>,
+  defined_idents: HashSet<usize>,
+  module_id: &'a ModuleId,
+  module_graph: &'a ModuleGraph,
+  _register_var: Box<&'a mut dyn FnMut(&Ident, bool) -> usize>,
+  is_in_export: bool,
+  top_level_mark: Mark,
+}
+
+impl<'a> AnalyzeModuleItem<'a> {
+  fn new<F: FnMut(&Ident, bool) -> usize>(
+    id: StatementId,
+    module_graph: &'a ModuleGraph,
+    module_id: &'a ModuleId,
+    register_var: &'a mut F,
+    top_level_mark: Mark,
+  ) -> Self {
+    Self {
+      id,
+      import: None,
+      export: None,
+      defined_idents: HashSet::new(),
+      module_id,
+      module_graph,
+      _register_var: Box::new(register_var),
+      is_in_export: false,
+      top_level_mark,
+    }
+  }
+
+  fn to_statement(self) -> Statement {
+    Statement {
+      id: self.id,
+      import: self.import,
+      export: self.export,
+      defined: self.defined_idents.into_iter().collect(),
+    }
+  }
+
+  fn get_module_id_by_source(&self, source: &str) -> Result<ModuleId> {
+    self
+      .module_graph
+      .get_dep_by_source_optional(self.module_id, source, None)
       .map(Ok)
       .unwrap_or_else(|| {
         Err(CompilationError::GenericError(
           "module_id should be found by source".to_string(),
         ))
       })
-  };
+  }
 
-  let get_module_id_by_option_source = |source: Option<&str>| {
+  fn get_module_id_by_option_source(&self, source: Option<&str>) -> Result<Option<ModuleId>> {
     if let Some(source) = source {
-      get_module_id_by_source(source).map(|r| Some(r))
+      self.get_module_id_by_source(source).map(|r| Some(r))
     } else {
       Ok(None)
     }
-  };
+  }
 
-  match stmt {
-    ModuleItem::ModuleDecl(ModuleDecl::ExportDecl(ExportDecl { decl, .. }))
-    | ModuleItem::Stmt(Stmt::Decl(decl)) => {
-      let is_export = matches!(stmt, ModuleItem::ModuleDecl(ModuleDecl::ExportDecl(_)));
-      match decl {
-        swc_ecma_ast::Decl::Class(class_decl) => {
-          if is_export {
-            exports = Some(ExportInfo {
-              source: None,
-              specifiers: vec![ExportSpecifierInfo::Named(Variable(
-                register_var(&class_decl.ident, false),
-                None,
-              ))],
-              stmt_id: id,
-            });
-          } else {
-            defined_idents.insert(register_var(&class_decl.ident, false));
-          }
-        }
-        swc_ecma_ast::Decl::Fn(fn_decl) => {
-          if is_export {
-            exports = Some(ExportInfo {
-              source: None,
-              specifiers: vec![ExportSpecifierInfo::Named(
-                register_var(&fn_decl.ident, false).into(),
-              )],
-              stmt_id: id,
-            })
-          } else {
-            defined_idents.insert(register_var(&fn_decl.ident, false));
-          }
-          // analyze_and_insert_used_idents(&fn_decl.function, Some(fn_decl.ident.to_string()));
-        }
-        swc_ecma_ast::Decl::Var(var_decl) => {
-          let mut specifiers = vec![];
+  fn with_in_export<F: Fn(&mut Self)>(&mut self, v: bool, f: F) {
+    let is_in_export = self.is_in_export;
+    self.is_in_export = v;
+    f(self);
+    self.is_in_export = is_in_export;
+  }
 
-          for v_decl in &var_decl.decls {
-            let mut defined_idents_collector = DefinedIdentsCollector::new();
-            v_decl.name.visit_with(&mut defined_idents_collector);
+  fn register_var(&mut self, ident: &Ident, strict: bool) -> usize {
+    self._register_var.as_mut()(
+      &ident,
+      strict || ident.span.ctxt.outer() != self.top_level_mark,
+    )
+  }
+}
 
-            for defined_ident in defined_idents_collector.defined_idents {
-              if is_export {
-                specifiers.push(ExportSpecifierInfo::Named(
-                  register_var(&Ident::from(defined_ident), false).into(),
-                ));
-              } else {
-                defined_idents.insert(register_var(&Ident::from(defined_ident), false));
-              }
-            }
-          }
-
-          if is_export {
-            exports = Some(ExportInfo {
-              source: None,
-              specifiers,
-              stmt_id: id,
-            });
-          }
-        }
-        _ => {
-          unreachable!("export_decl.decl should not be anything other than a class, function, or variable declaration");
-        }
-      }
-    }
-
-    ModuleItem::ModuleDecl(module_decl) => match module_decl {
-      swc_ecma_ast::ModuleDecl::Import(import_decl) => {
-        let source = get_module_id_by_source(import_decl.src.value.as_str())?;
+impl<'a> Visit for AnalyzeModuleItem<'a> {
+  fn visit_module_decl(&mut self, module_decl: &ModuleDecl) {
+    match module_decl {
+      ModuleDecl::Import(import_decl) => {
+        let source = self
+          .get_module_id_by_source(import_decl.src.value.as_str())
+          .unwrap();
         let mut specifiers = vec![];
 
         for specifier in &import_decl.specifiers {
           match specifier {
-            swc_ecma_ast::ImportSpecifier::Namespace(ns) => {
-              specifiers.push(ImportSpecifierInfo::Namespace(register_var(
-                &ns.local, false,
-              )));
+            ImportSpecifier::Namespace(ns) => {
+              specifiers.push(ImportSpecifierInfo::Namespace(
+                self.register_var(&ns.local, false),
+              ));
             }
-            swc_ecma_ast::ImportSpecifier::Named(named) => {
+            ImportSpecifier::Named(named) => {
               specifiers.push(ImportSpecifierInfo::Named {
-                local: register_var(&named.local, false),
+                local: self.register_var(&named.local, false),
                 imported: named.imported.as_ref().map(|i| match i {
-                  ModuleExportName::Ident(i) => register_var(&i, true),
+                  ModuleExportName::Ident(i) => self.register_var(&i, true),
                   _ => panic!("non-ident imported is not supported when tree shaking"),
                 }),
               });
             }
-            swc_ecma_ast::ImportSpecifier::Default(default) => {
-              specifiers.push(ImportSpecifierInfo::Default(register_var(
-                &default.local,
-                false,
-              )));
+            ImportSpecifier::Default(default) => {
+              specifiers.push(ImportSpecifierInfo::Default(
+                self.register_var(&default.local, false),
+              ));
             }
           }
         }
 
-        imports = Some(ImportInfo {
+        self.import = Some(ImportInfo {
           source,
           specifiers,
-          stmt_id: id,
+          stmt_id: self.id,
         });
       }
-      swc_ecma_ast::ModuleDecl::ExportAll(export_all) => {
-        exports = Some(ExportInfo {
-          source: Some(get_module_id_by_source(export_all.src.value.as_str())?),
+
+      ModuleDecl::ExportAll(export_all) => {
+        self.export = Some(ExportInfo {
+          source: Some(
+            self
+              .get_module_id_by_source(export_all.src.value.as_str())
+              .unwrap(),
+          ),
           specifiers: vec![ExportSpecifierInfo::All(None)],
-          stmt_id: id,
+          stmt_id: self.id,
         })
       }
-      swc_ecma_ast::ModuleDecl::ExportDefaultDecl(export_default_decl) => {
+
+      ModuleDecl::ExportDefaultDecl(export_default_decl) => {
         let mut specify = vec![];
 
         match &export_default_decl.decl {
-          swc_ecma_ast::DefaultDecl::Class(class_expr) => {
+          DefaultDecl::Class(class_expr) => {
             // TODO: no ident case
             if let Some(ident) = &class_expr.ident {
-              specify.push(ExportSpecifierInfo::Default(register_var(&ident, false)));
-            }
+              specify.push(ExportSpecifierInfo::Default(
+                self.register_var(&ident, false),
+              ));
+            } else {
+              specify.push(ExportSpecifierInfo::Default(
+                self.register_var(&"default".into(), false),
+              ))
+            };
+
+            self.with_in_export(false, |this| class_expr.class.visit_with(this));
           }
 
-          swc_ecma_ast::DefaultDecl::Fn(fn_decl) => {
+          DefaultDecl::Fn(fn_decl) => {
             // TODO: no ident case
             if let Some(ident) = &fn_decl.ident {
-              specify.push(ExportSpecifierInfo::Default(register_var(&ident, false)));
+              specify.push(ExportSpecifierInfo::Default(
+                self.register_var(&ident, false),
+              ));
+            } else {
+              specify.push(ExportSpecifierInfo::Default(
+                self.register_var(&"default".into(), false),
+              ))
             }
+            self.with_in_export(false, |this| fn_decl.function.visit_with(this));
           }
 
           _ => unreachable!(
@@ -197,34 +298,36 @@ pub fn analyze_imports_and_exports(
           ),
         }
 
-        exports = Some(ExportInfo {
+        self.export = Some(ExportInfo {
           source: None,
           specifiers: specify,
-          stmt_id: id,
+          stmt_id: self.id,
         });
       }
-      swc_ecma_ast::ModuleDecl::ExportDefaultExpr(export_default_expr) => {
-        match &export_default_expr.expr {
-          box Expr::Ident(ident) => {
-            exports = Some(ExportInfo {
-              source: None,
-              specifiers: vec![ExportSpecifierInfo::Default(register_var(&ident, false))],
-              stmt_id: id,
-            });
-          }
-          _ => {
-            exports = Some(ExportInfo {
-              source: None,
-              specifiers: vec![ExportSpecifierInfo::Default(register_var(
-                &Ident::from("default"),
-                false,
-              ))],
-              stmt_id: id,
-            });
-          }
+
+      ModuleDecl::ExportDefaultExpr(export_default_expr) => match &export_default_expr.expr {
+        box Expr::Ident(ident) => {
+          self.export = Some(ExportInfo {
+            source: None,
+            specifiers: vec![ExportSpecifierInfo::Default(
+              self.register_var(&ident, false),
+            )],
+            stmt_id: self.id,
+          });
         }
-      }
-      swc_ecma_ast::ModuleDecl::ExportNamed(export_named) => {
+
+        _ => {
+          self.export = Some(ExportInfo {
+            source: None,
+            specifiers: vec![ExportSpecifierInfo::Default(
+              self.register_var(&Ident::from("default"), false),
+            )],
+            stmt_id: self.id,
+          });
+        }
+      },
+
+      ModuleDecl::ExportNamed(export_named) => {
         let mut specifiers = vec![];
 
         for specifier in &export_named.specifiers {
@@ -237,9 +340,9 @@ pub fn analyze_imports_and_exports(
 
               specifiers.push(ExportSpecifierInfo::Named(
                 (
-                  register_var(&local, false),
+                  self.register_var(&local, false),
                   named.exported.as_ref().map(|i| match i {
-                    ModuleExportName::Ident(i) => register_var(&i, false),
+                    ModuleExportName::Ident(i) => self.register_var(&i, false),
                     _ => panic!("non-ident exported is not supported when tree shaking"),
                   }),
                 )
@@ -251,7 +354,7 @@ pub fn analyze_imports_and_exports(
             }
             swc_ecma_ast::ExportSpecifier::Namespace(ns) => {
               let ident = match &ns.name {
-                ModuleExportName::Ident(ident) => register_var(&ident, false),
+                ModuleExportName::Ident(ident) => self.register_var(&ident, false),
                 ModuleExportName::Str(_) => unreachable!("exporting a string is not supported"),
               };
 
@@ -260,23 +363,398 @@ pub fn analyze_imports_and_exports(
           }
         }
 
-        exports = Some(ExportInfo {
-          source: get_module_id_by_option_source(
-            export_named.src.as_ref().map(|s| s.value.as_str()),
-          )?,
+        self.export = Some(ExportInfo {
+          source: self
+            .get_module_id_by_option_source(export_named.src.as_ref().map(|s| s.value.as_str()))
+            .unwrap(),
           specifiers,
-          stmt_id: id,
+          stmt_id: self.id,
         });
       }
-      _ => {}
-    },
-    _ => {}
-  };
 
-  Ok(Statement {
-    id,
-    import: imports,
-    export: exports,
-    defined: defined_idents.into_iter().collect(),
-  })
+      ModuleDecl::ExportDecl(ExportDecl { decl, .. }) => {
+        self.with_in_export(true, |mut this| decl.visit_with(&mut this))
+      }
+
+      _ => {
+        module_decl.visit_children_with(self);
+      }
+    }
+  }
+
+  fn visit_decl(&mut self, n: &Decl) {
+    let is_export = self.is_in_export;
+
+    match n {
+      Decl::Class(class_decl) => {
+        if is_export {
+          self.export = Some(ExportInfo {
+            source: None,
+            specifiers: vec![ExportSpecifierInfo::Named(Variable(
+              self.register_var(&class_decl.ident, false),
+              None,
+            ))],
+            stmt_id: self.id,
+          });
+        } else {
+          let index = self.register_var(&class_decl.ident, false);
+          self.defined_idents.insert(index);
+        }
+
+        self.with_in_export(false, |this| class_decl.class.visit_with(this));
+      }
+
+      Decl::Fn(fn_decl) => {
+        if is_export {
+          self.export = Some(ExportInfo {
+            source: None,
+            specifiers: vec![ExportSpecifierInfo::Named(
+              self.register_var(&fn_decl.ident, false).into(),
+            )],
+            stmt_id: self.id,
+          })
+        } else {
+          let index = self.register_var(&fn_decl.ident, false);
+          self.defined_idents.insert(index);
+        };
+
+        self.with_in_export(false, |this| fn_decl.function.visit_with(this));
+      }
+
+      Decl::Var(var_decl) => {
+        let mut specifiers = vec![];
+
+        for v_decl in &var_decl.decls {
+          let mut defined_idents_collector = DefinedIdentsCollector::new();
+          v_decl.name.visit_with(&mut defined_idents_collector);
+
+          for defined_ident in defined_idents_collector.defined_idents {
+            if is_export {
+              specifiers.push(ExportSpecifierInfo::Named(
+                self.register_var(&Ident::from(defined_ident), false).into(),
+              ));
+            } else {
+              let index = self.register_var(&Ident::from(defined_ident), false);
+              self.defined_idents.insert(index);
+            }
+          }
+
+          self.with_in_export(false, |this| v_decl.init.visit_with(this));
+        }
+
+        if is_export {
+          self.export = Some(ExportInfo {
+            source: None,
+            specifiers,
+            stmt_id: self.id,
+          });
+        }
+      }
+
+      _ => {}
+    }
+  }
+
+  fn visit_fn_expr(&mut self, n: &swc_ecma_ast::FnExpr) {
+    if let Some(ref x) = n.ident {
+      let index = self.register_var(&x, false);
+      self.defined_idents.insert(index);
+    }
+
+    n.function.visit_with(self);
+  }
+
+  fn visit_class_expr(&mut self, n: &swc_ecma_ast::ClassExpr) {
+    if let Some(ref x) = n.ident {
+      let index = self.register_var(&x, false);
+      self.defined_idents.insert(index);
+    }
+
+    n.class.visit_with(self);
+  }
+}
+
+pub fn analyze_imports_and_exports<F: FnMut(&Ident, bool) -> usize>(
+  id: StatementId,
+  stmt: &ModuleItem,
+  module_id: &ModuleId,
+  module_graph: &ModuleGraph,
+  top_level_mark: Mark,
+  register_var: &mut F,
+) -> Result<Statement> {
+  farm_profile_function!("");
+
+  let mut m = AnalyzeModuleItem::new(id, module_graph, module_id, register_var, top_level_mark);
+
+  stmt.visit_with(&mut m);
+
+  Ok(m.to_statement())
+
+  // let mut defined_idents: HashSet<usize> = HashSet::new();
+
+  // let mut imports: Option<ImportInfo> = None;
+  // let mut exports = None;
+  // let get_module_id_by_source = |source: &str| {
+  //   module_graph
+  //     .get_dep_by_source_optional(module_id, source, None)
+  //     .map(Ok)
+  //     .unwrap_or_else(|| {
+  //       Err(CompilationError::GenericError(
+  //         "module_id should be found by source".to_string(),
+  //       ))
+  //     })
+  // };
+
+  // let get_module_id_by_option_source = |source: Option<&str>| {
+  //   if let Some(source) = source {
+  //     get_module_id_by_source(source).map(|r| Some(r))
+  //   } else {
+  //     Ok(None)
+  //   }
+  // };
+
+  // match stmt {
+  //   ModuleItem::ModuleDecl(ModuleDecl::ExportDecl(ExportDecl { decl, .. }))
+  //   | ModuleItem::Stmt(Stmt::Decl(decl)) => {
+  //     let is_export = matches!(stmt, ModuleItem::ModuleDecl(ModuleDecl::ExportDecl(_)));
+  //     match decl {
+  //       swc_ecma_ast::Decl::Class(class_decl) => {
+  //         if is_export {
+  //           exports = Some(ExportInfo {
+  //             source: None,
+  //             specifiers: vec![ExportSpecifierInfo::Named(Variable(
+  //               register_var(&class_decl.ident, false),
+  //               None,
+  //             ))],
+  //             stmt_id: id,
+  //           });
+  //         } else {
+  //           defined_idents.insert(register_var(&class_decl.ident, false));
+  //         }
+  //         let idents = collect_define_ident(&class_decl.class);
+
+  //         for item in idents {
+  //           println!("ident: {}", item.0.as_str());
+  //           defined_idents.insert(register_var(&Ident::from(item), true));
+  //         }
+  //       }
+  //       swc_ecma_ast::Decl::Fn(fn_decl) => {
+  //         if is_export {
+  //           exports = Some(ExportInfo {
+  //             source: None,
+  //             specifiers: vec![ExportSpecifierInfo::Named(
+  //               register_var(&fn_decl.ident, false).into(),
+  //             )],
+  //             stmt_id: id,
+  //           })
+  //         } else {
+  //           defined_idents.insert(register_var(&fn_decl.ident, false));
+  //         }
+
+  //         let idents = collect_define_ident(&fn_decl.function);
+
+  //         for item in idents {
+  //           println!("ident: {}", item.0.as_str());
+  //           defined_idents.insert(register_var(&Ident::from(item), true));
+  //         }
+  //       }
+  //       swc_ecma_ast::Decl::Var(var_decl) => {
+  //         let mut specifiers = vec![];
+
+  //         for v_decl in &var_decl.decls {
+  //           let mut defined_idents_collector = DefinedIdentsCollector::new();
+  //           v_decl.name.visit_with(&mut defined_idents_collector);
+
+  //           for defined_ident in defined_idents_collector.defined_idents {
+  //             if is_export {
+  //               specifiers.push(ExportSpecifierInfo::Named(
+  //                 register_var(&Ident::from(defined_ident), false).into(),
+  //               ));
+  //             } else {
+  //               defined_idents.insert(register_var(&Ident::from(defined_ident), false));
+  //             }
+  //           }
+  //         }
+
+  //         if is_export {
+  //           exports = Some(ExportInfo {
+  //             source: None,
+  //             specifiers,
+  //             stmt_id: id,
+  //           });
+  //         }
+  //       }
+
+  //       _ => {
+  //         unreachable!("export_decl.decl should not be anything other than a class, function, or variable declaration");
+  //       }
+  //     }
+  //   }
+
+  //   ModuleItem::ModuleDecl(module_decl) => match module_decl {
+  //     swc_ecma_ast::ModuleDecl::Import(import_decl) => {
+  //       let source = get_module_id_by_source(import_decl.src.value.as_str())?;
+  //       let mut specifiers = vec![];
+
+  //       for specifier in &import_decl.specifiers {
+  //         match specifier {
+  //           swc_ecma_ast::ImportSpecifier::Namespace(ns) => {
+  //             specifiers.push(ImportSpecifierInfo::Namespace(register_var(
+  //               &ns.local, false,
+  //             )));
+  //           }
+  //           swc_ecma_ast::ImportSpecifier::Named(named) => {
+  //             specifiers.push(ImportSpecifierInfo::Named {
+  //               local: register_var(&named.local, false),
+  //               imported: named.imported.as_ref().map(|i| match i {
+  //                 ModuleExportName::Ident(i) => register_var(&i, true),
+  //                 _ => panic!("non-ident imported is not supported when tree shaking"),
+  //               }),
+  //             });
+  //           }
+  //           swc_ecma_ast::ImportSpecifier::Default(default) => {
+  //             specifiers.push(ImportSpecifierInfo::Default(register_var(
+  //               &default.local,
+  //               false,
+  //             )));
+  //           }
+  //         }
+  //       }
+
+  //       imports = Some(ImportInfo {
+  //         source,
+  //         specifiers,
+  //         stmt_id: id,
+  //       });
+  //     }
+  //     swc_ecma_ast::ModuleDecl::ExportAll(export_all) => {
+  //       exports = Some(ExportInfo {
+  //         source: Some(get_module_id_by_source(export_all.src.value.as_str())?),
+  //         specifiers: vec![ExportSpecifierInfo::All(None)],
+  //         stmt_id: id,
+  //       })
+  //     }
+  //     swc_ecma_ast::ModuleDecl::ExportDefaultDecl(export_default_decl) => {
+  //       let mut specify = vec![];
+
+  //       match &export_default_decl.decl {
+  //         swc_ecma_ast::DefaultDecl::Class(class_expr) => {
+  //           // TODO: no ident case
+  //           if let Some(ident) = &class_expr.ident {
+  //             specify.push(ExportSpecifierInfo::Default(register_var(&ident, false)));
+  //           } else {
+  //             specify.push(ExportSpecifierInfo::Default(register_var(
+  //               &"default".into(),
+  //               false,
+  //             )))
+  //           }
+  //         }
+
+  //         swc_ecma_ast::DefaultDecl::Fn(fn_decl) => {
+  //           // TODO: no ident case
+  //           if let Some(ident) = &fn_decl.ident {
+  //             specify.push(ExportSpecifierInfo::Default(register_var(&ident, false)));
+  //           } else {
+  //             specify.push(ExportSpecifierInfo::Default(register_var(
+  //               &"default".into(),
+  //               false,
+  //             )))
+  //           }
+  //         }
+
+  //         _ => unreachable!(
+  //           "export_default_decl.decl should not be anything other than a class, function"
+  //         ),
+  //       }
+
+  //       exports = Some(ExportInfo {
+  //         source: None,
+  //         specifiers: specify,
+  //         stmt_id: id,
+  //       });
+  //     }
+  //     swc_ecma_ast::ModuleDecl::ExportDefaultExpr(export_default_expr) => {
+  //       match &export_default_expr.expr {
+  //         box Expr::Ident(ident) => {
+  //           exports = Some(ExportInfo {
+  //             source: None,
+  //             specifiers: vec![ExportSpecifierInfo::Default(register_var(&ident, false))],
+  //             stmt_id: id,
+  //           });
+  //         }
+  //         _ => {
+  //           exports = Some(ExportInfo {
+  //             source: None,
+  //             specifiers: vec![ExportSpecifierInfo::Default(register_var(
+  //               &Ident::from("default"),
+  //               false,
+  //             ))],
+  //             stmt_id: id,
+  //           });
+  //         }
+  //       }
+  //     }
+  //     swc_ecma_ast::ModuleDecl::ExportNamed(export_named) => {
+  //       let mut specifiers = vec![];
+
+  //       for specifier in &export_named.specifiers {
+  //         match specifier {
+  //           swc_ecma_ast::ExportSpecifier::Named(named) => {
+  //             let local = match &named.orig {
+  //               ModuleExportName::Ident(i) => i.clone(),
+  //               ModuleExportName::Str(_) => unimplemented!("exporting a string is not supported"),
+  //             };
+
+  //             specifiers.push(ExportSpecifierInfo::Named(
+  //               (
+  //                 register_var(&local, false),
+  //                 named.exported.as_ref().map(|i| match i {
+  //                   ModuleExportName::Ident(i) => register_var(&i, false),
+  //                   _ => panic!("non-ident exported is not supported when tree shaking"),
+  //                 }),
+  //               )
+  //                 .into(),
+  //             ));
+  //           }
+  //           swc_ecma_ast::ExportSpecifier::Default(_) => {
+  //             unreachable!("ExportSpecifier::Default is not valid esm syntax")
+  //           }
+  //           swc_ecma_ast::ExportSpecifier::Namespace(ns) => {
+  //             let ident = match &ns.name {
+  //               ModuleExportName::Ident(ident) => register_var(&ident, false),
+  //               ModuleExportName::Str(_) => unreachable!("exporting a string is not supported"),
+  //             };
+
+  //             specifiers.push(ExportSpecifierInfo::Namespace(ident));
+  //           }
+  //         }
+  //       }
+
+  //       exports = Some(ExportInfo {
+  //         source: get_module_id_by_option_source(
+  //           export_named.src.as_ref().map(|s| s.value.as_str()),
+  //         )?,
+  //         specifiers,
+  //         stmt_id: id,
+  //       });
+  //     }
+  //     _ => {
+  //       let idents = collect_define_ident(stmt);
+
+  //       for item in idents {
+  //         println!("ident: {}", item.0.as_str());
+  //         defined_idents.insert(register_var(&Ident::from(item), true));
+  //       }
+  //     }
+  //   },
+
+  //   _ => {}
+  // };
+
+  // Ok(Statement {
+  //   id,
+  //   import: imports,
+  //   export: exports,
+  //   defined: defined_idents.into_iter().collect(),
+  // })
 }

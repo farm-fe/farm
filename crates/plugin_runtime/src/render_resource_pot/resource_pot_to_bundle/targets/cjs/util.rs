@@ -1,7 +1,26 @@
-use farmfe_core::{module::{module_graph::ModuleGraph, ModuleId}, swc_common::{Mark, DUMMY_SP}, swc_ecma_ast::{CallExpr, Callee, Expr, ExprOrSpread, Ident, Lit}};
-use farmfe_toolkit::swc_ecma_visit::{VisitMut, VisitMutWith};
+use farmfe_core::{
+  module::{module_graph::ModuleGraph, ModuleId},
+  swc_common::{Mark, DUMMY_SP},
+  swc_ecma_ast::{CallExpr, Callee, Expr, ExprOrSpread, Ident, Lit},
+};
+use farmfe_toolkit::{
+  script::is_commonjs_require,
+  swc_ecma_visit::{VisitMut, VisitMutWith},
+};
 
 use crate::resource_pot_to_bundle::{bundle::ModuleGlobalUniqName, uniq_name::BundleVariable};
+
+enum ReplaceType {
+  None,
+  Call,
+  Ident(usize),
+}
+
+impl ReplaceType {
+  fn is_replaced(&self) -> bool {
+    !matches!(self, ReplaceType::None)
+  }
+}
 
 ///
 /// cjs
@@ -37,61 +56,57 @@ pub struct CJSReplace<'a> {
 
 impl<'a> VisitMut for CJSReplace<'a> {
   fn visit_mut_expr(&mut self, expr: &mut Expr) {
-    match expr {
-      Expr::Call(call_expr) => {
-        if call_expr.args.len() != 1 {
-          call_expr.visit_mut_children_with(self);
-          return;
-        }
+    let mut replaced: ReplaceType = ReplaceType::None;
 
-        // TODO: unresolved condition
-        if let Callee::Expr(box Expr::Ident(Ident { sym, span, .. })) = &call_expr.callee {
-          if sym == "require" {
-            if let ExprOrSpread {
-              spread: None,
-              expr: box Expr::Lit(Lit::Str(str)),
-            } = &mut call_expr.args[0]
-            {
-              let source = str.value.to_string();
-
-              if let Some(id) = self
-                .module_graph
-                .get_dep_by_source_optional(&self.module_id, &source, None)
-              {
-                if let Some(commonjs_name) = self.module_global_uniq_name.commonjs_name(&id) {
-                  *call_expr = CallExpr {
-                    span: DUMMY_SP,
-                    callee: farmfe_core::swc_ecma_ast::Callee::Expr(Box::new(Expr::Ident(
-                      self
-                        .bundle_variable
-                        .render_name(commonjs_name)
-                        .as_str()
-                        .into(),
-                    ))),
-                    args: vec![],
-                    type_args: None,
-                  };
-                } else if let Some(ns) = self.module_global_uniq_name.namespace_name(&id) {
-                  *expr = Expr::Ident(self.bundle_variable.render_name(ns).as_str().into())
-                }
-              } else {
-                call_expr.visit_mut_children_with(self);
-              }
-
-              // TODO: other bundle | external
-            } else {
-              call_expr.visit_mut_children_with(self);
-            }
-          } else {
-            call_expr.visit_mut_children_with(self);
-          }
-        } else {
-          call_expr.visit_mut_children_with(self);
-        }
-      }
-      _ => {
+    if let Expr::Call(call_expr) = expr {
+      if call_expr.args.len() != 1 {
         expr.visit_mut_children_with(self);
+        return;
       }
+
+      // TODO: unresolved condition
+      if is_commonjs_require(self.unresolved_mark, self.top_level_mark, call_expr) {
+        if let ExprOrSpread {
+          spread: None,
+          expr: box Expr::Lit(Lit::Str(str)),
+        } = &mut call_expr.args[0]
+        {
+          let source = str.value.to_string();
+
+          if let Some(id) =
+            self
+              .module_graph
+              .get_dep_by_source_optional(&self.module_id, &source, None)
+          {
+            if let Some(commonjs_name) = self.module_global_uniq_name.commonjs_name(&id) {
+              *call_expr = CallExpr {
+                span: DUMMY_SP,
+                callee: farmfe_core::swc_ecma_ast::Callee::Expr(Box::new(Expr::Ident(
+                  self
+                    .bundle_variable
+                    .render_name(commonjs_name)
+                    .as_str()
+                    .into(),
+                ))),
+                args: vec![],
+                type_args: None,
+              };
+              replaced = ReplaceType::Call;
+            } else if let Some(ns) = self.module_global_uniq_name.namespace_name(&id) {
+              replaced = ReplaceType::Ident(ns);
+            }
+          }
+          // TODO: other bundle | external
+        }
+      }
+
+      if let ReplaceType::Ident(ns) = &replaced {
+        *expr = Expr::Ident(self.bundle_variable.render_name(*ns).as_str().into())
+      }
+    };
+
+    if !replaced.is_replaced() {
+      expr.visit_mut_children_with(self);
     }
   }
 }

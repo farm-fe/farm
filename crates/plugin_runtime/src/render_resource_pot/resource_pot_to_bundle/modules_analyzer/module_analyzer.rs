@@ -60,6 +60,9 @@ pub enum StmtAction {
   /// export default 1 + 1;
   /// // =>
   /// var module_default = 1 + 1;
+  ///
+  /// export default function() {}
+  /// export default class {}
   /// ```
   DeclDefaultExpr(usize, usize),
   ///
@@ -194,7 +197,6 @@ pub struct ExportInfo {
 #[derive(Debug, Clone, Copy, Default)]
 pub enum ExportType {
   ///
-  ///
   /// ```ts
   /// // index.ts
   /// export * from "./cjs_module"
@@ -226,44 +228,6 @@ impl ExportType {
   }
 }
 
-#[derive(Debug, Clone)]
-pub struct ExportAllSet {
-  pub data: Vec<(ExportInfo, ModuleId)>,
-  pub ty: ExportType,
-}
-
-impl ExportAllSet {
-  pub fn new() -> Self {
-    Self {
-      data: vec![],
-      ty: ExportType::Static,
-    }
-  }
-
-  pub fn add(&mut self, data: (ExportInfo, ModuleId)) {
-    self.data.push(data);
-  }
-
-  pub fn inner(self) -> Vec<(ExportInfo, ModuleId)> {
-    self.data
-  }
-
-  pub fn merge(&mut self, other: Self) {
-    self.data.extend(other.data);
-
-    self.ty.merge(other.ty);
-  }
-}
-
-impl From<Vec<(ExportInfo, ModuleId)>> for ExportAllSet {
-  fn from(value: Vec<(ExportInfo, ModuleId)>) -> Self {
-    Self {
-      data: value,
-      ty: ExportType::Static,
-    }
-  }
-}
-
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ImportSpecifierInfo {
   /// ```js
@@ -281,7 +245,6 @@ pub enum ImportSpecifierInfo {
   /// ```
   Named {
     local: usize,
-    /// as foo
     imported: Option<usize>,
   },
   /// ```js
@@ -297,8 +260,6 @@ pub struct Statement {
   pub export: Option<ExportInfo>,
   pub defined: Vec<usize>,
 }
-
-struct ModuleMetadata {}
 
 pub struct ModuleAnalyzer {
   pub statements: Vec<Statement>,
@@ -334,7 +295,6 @@ impl ModuleAnalyzer {
       content: module.content.clone(),
     });
 
-    // println!("module_id: {}\n", module.id.to_string());
     // TODO: resolve_module_mark
     let mut mark = None;
     try_with(cm.clone(), &context.meta.script.globals, || {
@@ -353,8 +313,6 @@ impl ModuleAnalyzer {
         context,
       ));
     })?;
-
-    // println!("mark: {:?}\nast: {:#?}", mark, ast);
 
     Ok(Self {
       statements: vec![],
@@ -382,7 +340,10 @@ impl ModuleAnalyzer {
   }
 
   pub fn is_hybrid_esm(&self) -> bool {
-    matches!(self.module_system, ModuleSystem::EsModule | ModuleSystem::Hybrid)
+    matches!(
+      self.module_system,
+      ModuleSystem::EsModule | ModuleSystem::Hybrid
+    )
   }
 
   fn collect_unresolved_ident(&self, bundle_variable: &mut BundleVariable) {
@@ -392,7 +353,11 @@ impl ModuleAnalyzer {
     self.ast.visit_with(&mut collection);
 
     let uniq_name = bundle_variable.uniq_name_mut();
-    for item in collection.unresolved_ident {
+    let mut ordered_unresolved_ident = collection.unresolved_ident.into_iter().collect::<Vec<_>>();
+
+    ordered_unresolved_ident.sort();
+
+    for item in ordered_unresolved_ident {
       uniq_name.insert(&item);
     }
   }
@@ -404,23 +369,26 @@ impl ModuleAnalyzer {
     bundle_variable: &mut RefMut<BundleVariable>,
   ) -> Result<()> {
     farm_profile_function!("");
-    for (statement_id, stmt) in self.ast.body.iter().enumerate() {
-      let statement = analyze::analyze_imports_and_exports(
-        statement_id,
-        stmt,
-        &self.module_id,
-        module_graph,
-        &mut |ident, strict| bundle_variable.register_var(&self.module_id, ident, strict),
-      )?;
+    try_with(self.cm.clone(), &context.meta.script.globals, || {
+      for (statement_id, stmt) in self.ast.body.iter().enumerate() {
+        let statement = analyze::analyze_imports_and_exports(
+          statement_id,
+          stmt,
+          &self.module_id,
+          module_graph,
+          self.mark.1,
+          &mut |ident, strict| bundle_variable.register_var(&self.module_id, ident, strict),
+        )
+        .unwrap();
 
-      if statement.export.is_none() && statement.import.is_none() && statement.defined.is_empty() {
-        continue;
+        if statement.export.is_none() && statement.import.is_none() && statement.defined.is_empty()
+        {
+          continue;
+        }
+
+        self.statements.push(statement);
       }
 
-      self.statements.push(statement);
-    }
-
-    try_with(self.cm.clone(), &context.meta.script.globals, || {
       // unresolved is write to global, so, we need to avoid having the same declaration as unresolved ident in the bundle
       self.collect_unresolved_ident(bundle_variable);
 
@@ -457,7 +425,10 @@ impl ModuleAnalyzer {
   }
 
   pub fn export_names(&self) -> Rc<ReferenceMap> {
-    return self.export_names.clone().unwrap_or_default();
+    return self
+      .export_names
+      .clone()
+      .unwrap_or_else(|| Rc::new(ReferenceMap::new(self.module_system.clone())));
   }
 
   pub fn build_rename_map<'a>(
