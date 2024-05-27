@@ -1,5 +1,11 @@
 # @farmfe/core
 
+## 1.1.12
+
+### Patch Changes
+
+- 0f3c1a8f: fix: can't match resources with url parameters carried under devServer
+
 ## 1.1.11
 
 ### Patch Changes
