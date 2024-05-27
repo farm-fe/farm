@@ -9,3 +9,8 @@ export function withTrailingSlash(path: string): string {
   }
   return path;
 }
+
+const postfixRE = /[?#].*$/;
+export function stripQueryAndHash(path: string): string {
+  return path.replace(postfixRE, '');
+}

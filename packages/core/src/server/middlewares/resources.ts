@@ -8,7 +8,11 @@ import { Context, Middleware, Next } from 'koa';
 import koaStatic from 'koa-static';
 import { Compiler } from '../../compiler/index.js';
 import { NormalizedServerConfig } from '../../config/types.js';
-import { generateFileTree, generateFileTreeHtml } from '../../utils/index.js';
+import {
+  generateFileTree,
+  generateFileTreeHtml,
+  stripQueryAndHash
+} from '../../utils/index.js';
 import { Server } from '../index.js';
 
 export function resourcesMiddleware(
@@ -29,7 +33,8 @@ export function resourcesMiddleware(
       });
     }
     // Fallback to index.html if the resource is not found
-    let resourcePath = ctx.url?.slice(1) || 'index.html'; // remove leading slash
+    const url = ctx.url?.slice(1) || 'index.html'; // remove leading slash
+    let resourcePath = stripQueryAndHash(url);
 
     // output_files
     if (resourcePath === '_output_files') {
