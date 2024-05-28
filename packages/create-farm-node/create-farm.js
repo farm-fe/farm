@@ -42,6 +42,5 @@ function pkgManagerFromUserAgent(userAgent) {
   return userAgent.split(" ")[0]?.split("/")[0];
 }
 
-// run the CLI
 const pkgManager = pkgManagerFromUserAgent(process.env.npm_config_user_agent);
 cli.run(args, binName, pkgManager);
