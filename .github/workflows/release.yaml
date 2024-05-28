@@ -39,7 +39,7 @@ jobs:
             mv /tmp/artifacts/${{ github.sha }}-${abi}-create-farm-node/* ./packages/create-farm-node/npm/${abi}
 
             test -f ./packages/core/npm/${abi}/farm.${abi}.node
-            test -f ./packages/create-farm-node/npm/${abi}/create-farm.${abi}.node
+            test -f ./packages/create-farm-node/npm/${abi}/create-farm-node.${abi}.node
             test -f ./rust-plugins/react/npm/${abi}/index.farm
             test -f ./rust-plugins/sass/npm/${abi}/index.farm
           done
