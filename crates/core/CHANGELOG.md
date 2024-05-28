@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.0](https://github.com/farm-fe/farm/compare/farmfe_core-v0.5.1...farmfe_core-v0.6.0) - 2024-05-28
+
+### Added
+- support exclude/include option for html ([#1319](https://github.com/farm-fe/farm/pull/1319))
+- support obj external & dts support resolvedPaths ([#1282](https://github.com/farm-fe/farm/pull/1282))
+
+### Fixed
+- cache issues ([#1301](https://github.com/farm-fe/farm/pull/1301))
+
+### Other
+- optimize record manager ([#1303](https://github.com/farm-fe/farm/pull/1303))
+
 ## [0.5.1](https://github.com/farm-fe/farm/compare/farmfe_core-v0.5.0...farmfe_core-v0.5.1) - 2024-05-09
 
 ### Added
