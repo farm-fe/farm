@@ -1,5 +1,13 @@
 # create-farm-rs
 
+## 0.0.6
+
+### Patch Changes
+
+- 8ee5b6e7: update create-farm-node version
+- 0214666e: bump version
+- b84a1141: bump version
+
 ## 0.0.5
 
 ### Patch Changes
