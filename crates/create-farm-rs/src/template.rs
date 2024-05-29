@@ -23,14 +23,33 @@ pub enum TauriSubTemplate {
   Preact,
 }
 
+impl TauriSubTemplate {
+  pub fn to_simple_string(&self) -> &str {
+    match self {
+      TauriSubTemplate::React => "react",
+      TauriSubTemplate::Vue => "vue",
+      TauriSubTemplate::Svelte => "svelte",
+      TauriSubTemplate::Vanilla => "vanilla",
+      TauriSubTemplate::Solid => "solid",
+      TauriSubTemplate::Preact => "preact",
+    }
+  }
+}
+
 impl Display for TauriSubTemplate {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     match self {
       TauriSubTemplate::React => write!(f, "\x1b[36mReact - (https://react.dev/)\x1b[39m"),
       TauriSubTemplate::Vue => write!(f, "\x1b[32mVue3 - (https://vuejs.org/)\x1b[39m"),
-      TauriSubTemplate::Svelte => write!(f, "\x1b[38;2;255;137;54mSvelte - (https://svelte.dev/)\x1b[39m"),
+      TauriSubTemplate::Svelte => write!(
+        f,
+        "\x1b[38;2;255;137;54mSvelte - (https://svelte.dev/)\x1b[39m"
+      ),
       TauriSubTemplate::Vanilla => write!(f, "\x1b[33mVanilla\x1b[39m"),
-      TauriSubTemplate::Solid => write!(f, "\x1b[38;2;68;206;246mSolid - (https://solidjs.com/)\x1b[39m"),
+      TauriSubTemplate::Solid => write!(
+        f,
+        "\x1b[38;2;68;206;246mSolid - (https://solidjs.com/)\x1b[39m"
+      ),
       TauriSubTemplate::Preact => write!(f, "\x1b[36mPreact - (https://preactjs.com/)\x1b[36m"),
     }
   }
@@ -244,12 +263,11 @@ impl<'a> Template {
 
     let current_template_name = match self {
       Template::Tauri(None) => "tauri".to_string(),
-      Template::Tauri(Some(sub_template)) => format!("tauri/{}", sub_template),
+      Template::Tauri(Some(sub_template)) => format!("tauri/{}", sub_template.to_simple_string()),
       _ => self.to_string(),
     };
 
     let skip_count = current_template_name.matches('/').count() + 1;
-
     for file in EMBEDDED_TEMPLATES::iter().filter(|e| {
       let path = path::PathBuf::from(e.to_string());
       let components: Vec<_> = path.components().collect();
@@ -260,8 +278,7 @@ impl<'a> Template {
       write_file(&file, template_data.clone(), skip_count)?;
     }
 
-    println!("✔️ Template copied Successfully!");
-
+    handle_brand_text("\n ✔️ Template copied Successfully! \n");
     Ok(())
   }
 }
