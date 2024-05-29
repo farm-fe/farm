@@ -201,16 +201,6 @@ impl<'a> SharedBundle<'a> {
           )))
         })?;
 
-      println!(
-        "bundle {} ordered_modules: {:#?}",
-        bundle.resource_pot.id,
-        bundle
-          .ordered_modules
-          .iter()
-          .map(|item| item.to_string())
-          .collect::<Vec<_>>()
-      );
-
       self.module_analyzer_manager.extract_modules_statements(
         &bundle.ordered_modules,
         &self.context,

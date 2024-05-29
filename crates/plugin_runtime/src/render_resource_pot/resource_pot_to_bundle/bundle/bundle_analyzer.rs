@@ -27,9 +27,7 @@ use farmfe_toolkit::{
 
 use crate::resource_pot_to_bundle::{
   common,
-  modules_analyzer::module_analyzer::{
-    ExportSpecifierInfo, ExportType, ImportSpecifierInfo, StmtAction,
-  },
+  modules_analyzer::module_analyzer::{ExportSpecifierInfo, ImportSpecifierInfo, StmtAction},
   targets::generate::{
     generate_bundle_import_by_bundle_reference, generate_export_by_reference_export,
   },
@@ -199,7 +197,6 @@ impl<'a> BundleAnalyzer<'a> {
     let is_format_to_commonjs = self.context.config.output.format == ModuleFormat::CommonJs;
 
     for module_id in &self.ordered_modules {
-      println!("module_id: {}", module_id.to_string());
       farm_profile_scope!(format!(
         "bundle analyzer module relation: {}",
         module_id.to_string()
@@ -309,13 +306,6 @@ impl<'a> BundleAnalyzer<'a> {
                     resource_pot_id.clone(),
                     self.bundle_variable.borrow().name(imported) == "default",
                     false,
-                  );
-
-                  println!(
-                    "name:: {} from: {}\ntarget: {:#?}",
-                    self.bundle_variable.borrow().name(*local),
-                    import.source.to_string(),
-                    target,
                   );
 
                   if let Some(target) = target {

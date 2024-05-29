@@ -667,9 +667,7 @@ impl<'a> ModuleAnalyzerManager<'a> {
 
     for module_id in ordered_module_ids {
       if self.module_map.contains_key(module_id) {
-        let map = self.build_export_names(module_id, bundle_variable);
-        println!("build export names: {}", module_id.to_string());
-        map.print(bundle_variable);
+        self.build_export_names(module_id, bundle_variable);
       }
 
       let Some(module_analyzer) = self.module_map.get(module_id) else {

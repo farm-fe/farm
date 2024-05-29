@@ -3,8 +3,7 @@ use std::collections::HashMap;
 use farmfe_core::module::{ModuleId, ModuleSystem};
 
 use crate::resource_pot_to_bundle::{
-  modules_analyzer::module_analyzer::{ExportSpecifierInfo, ExportType},
-  uniq_name::BundleVariable,
+  modules_analyzer::module_analyzer::ExportSpecifierInfo, uniq_name::BundleVariable,
 };
 
 #[derive(Debug, Clone, Default)]

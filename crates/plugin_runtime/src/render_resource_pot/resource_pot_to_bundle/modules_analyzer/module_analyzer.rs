@@ -194,40 +194,6 @@ pub struct ExportInfo {
   pub stmt_id: StatementId,
 }
 
-#[derive(Debug, Clone, Copy, Default)]
-pub enum ExportType {
-  ///
-  /// ```ts
-  /// // index.ts
-  /// export * from "./cjs_module"
-  /// export const name = 10;
-  ///
-  /// // cjs_module.ts
-  /// module.exports.name = "shulan"
-  /// module.exports.age = 18;
-  /// ```
-  ///
-  HybridDynamic,
-  ///
-  /// only esm
-  ///
-  #[default]
-  Static,
-}
-
-impl ExportType {
-  pub fn merge(&mut self, other: Self) {
-    match self {
-      ExportType::HybridDynamic => {}
-      ExportType::Static => {
-        if matches!(other, ExportType::HybridDynamic) {
-          *self = other;
-        }
-      }
-    }
-  }
-}
-
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ImportSpecifierInfo {
   /// ```js

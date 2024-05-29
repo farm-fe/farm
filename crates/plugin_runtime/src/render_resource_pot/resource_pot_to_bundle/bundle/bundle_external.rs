@@ -2,11 +2,11 @@ use std::collections::HashMap;
 
 use farmfe_core::{
   error::{CompilationError, Result},
-  module::{ModuleId, ModuleSystem, ModuleSystemResolver},
+  module::{ModuleId, ModuleSystem},
 };
 
 use crate::resource_pot_to_bundle::{
-  modules_analyzer::module_analyzer::{ExportSpecifierInfo, ExportType, ImportSpecifierInfo},
+  modules_analyzer::module_analyzer::{ExportSpecifierInfo, ImportSpecifierInfo},
   uniq_name::BundleVariable,
 };
 
@@ -199,7 +199,12 @@ impl BundleReference {
     };
   }
 
-  pub fn add_reference_export(&mut self, specify: &ExportSpecifierInfo, source: ReferenceKind, module_system: ModuleSystem) {
+  pub fn add_reference_export(
+    &mut self,
+    specify: &ExportSpecifierInfo,
+    source: ReferenceKind,
+    module_system: ModuleSystem,
+  ) {
     // self.external_export_map
     if self.external_export_map.contains_key(&source) {
       let map = self.external_export_map.get_mut(&source).unwrap();
