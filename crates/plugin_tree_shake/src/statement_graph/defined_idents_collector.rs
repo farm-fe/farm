@@ -1,21 +1,44 @@
 use std::collections::HashSet;
 
 use farmfe_core::swc_ecma_ast::{Id, ObjectPatProp, Pat};
-use farmfe_toolkit::swc_ecma_visit::Visit;
+use farmfe_toolkit::{
+  swc_ecma_utils::ident::IdentLike,
+  swc_ecma_visit::{Visit, VisitWith},
+};
 
-pub struct DefinedIdentsCollector {
+pub struct DefinedIdentsCollector<'a> {
   pub defined_idents: HashSet<Id>,
+  assign_callback: Option<Box<&'a mut dyn FnMut(Id, Id)>>,
+  current_assign_left_idents: HashSet<Id>,
 }
 
-impl DefinedIdentsCollector {
+impl<'a> DefinedIdentsCollector<'a> {
   pub fn new() -> Self {
     Self {
       defined_idents: HashSet::new(),
+      assign_callback: None,
+      current_assign_left_idents: HashSet::new(),
+    }
+  }
+
+  pub fn from_callback(cb: Box<&'a mut dyn FnMut(Id, Id)>) -> Self {
+    Self {
+      defined_idents: HashSet::new(),
+      assign_callback: Some(cb),
+      current_assign_left_idents: HashSet::new(),
     }
   }
 }
 
-impl Visit for DefinedIdentsCollector {
+impl<'a> Visit for DefinedIdentsCollector<'a> {
+  fn visit_ident(&mut self, n: &farmfe_core::swc_ecma_ast::Ident) {
+    if let Some(callback) = &mut self.assign_callback {
+      for ident in &self.current_assign_left_idents {
+        callback(ident.to_id(), n.to_id());
+      }
+    }
+  }
+
   fn visit_pat(&mut self, pat: &Pat) {
     match pat {
       Pat::Ident(bi) => {
@@ -45,7 +68,15 @@ impl Visit for DefinedIdentsCollector {
         }
       }
       Pat::Assign(assign_pat) => {
-        self.visit_pat(&assign_pat.left);
+        assign_pat.left.visit_with(self);
+
+        // collect defined idents for assign right
+        let mut collector = DefinedIdentsCollector::new();
+        assign_pat.left.visit_with(&mut collector);
+        self.current_assign_left_idents = collector.defined_idents.clone();
+
+        assign_pat.right.visit_with(self);
+        self.current_assign_left_idents.clear();
       }
       Pat::Invalid(_) => {}
       Pat::Expr(_) => {}

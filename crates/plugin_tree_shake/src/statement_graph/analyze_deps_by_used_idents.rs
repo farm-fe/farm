@@ -1,4 +1,4 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 
 use farmfe_core::swc_ecma_ast::{Id, ModuleExportName, ModuleItem};
 use farmfe_toolkit::swc_ecma_visit::{Visit, VisitWith};
@@ -32,6 +32,7 @@ struct UsedIdentsVisitor<'a> {
   deps: &'a mut HashMap<StatementId, StatementGraphEdge>,
   reverse_defined_idents_map: &'a HashMap<Id, StatementId>,
   current_defined_ident: Option<Vec<Id>>,
+  in_top_level: bool,
 }
 
 impl<'a> UsedIdentsVisitor<'a> {
@@ -43,6 +44,7 @@ impl<'a> UsedIdentsVisitor<'a> {
       deps,
       reverse_defined_idents_map,
       current_defined_ident: None,
+      in_top_level: true,
     }
   }
 
@@ -51,10 +53,38 @@ impl<'a> UsedIdentsVisitor<'a> {
       f(self);
       return;
     }
-
+    let pre = self.current_defined_ident.take();
     self.current_defined_ident = Some(idents);
     f(self);
-    self.current_defined_ident = None;
+    self.current_defined_ident = pre;
+  }
+
+  pub fn handled_used_ident(&mut self, stmt_id: &StatementId, ident: Id) {
+    let edge = self.deps.entry(*stmt_id).or_default();
+
+    if let Some(current_defined_idents) = &self.current_defined_ident {
+      let mut found = false;
+
+      for current_defined_ident in current_defined_idents {
+        if self
+          .reverse_defined_idents_map
+          .contains_key(current_defined_ident)
+        {
+          edge
+            .used_idents_map
+            .entry(current_defined_ident.clone())
+            .or_default()
+            .insert(ident.clone());
+          found = true;
+        }
+      }
+
+      if found {
+        return;
+      }
+    }
+
+    edge.used_idents.insert(ident);
   }
 }
 
@@ -93,6 +123,7 @@ impl Visit for UsedIdentsVisitor<'_> {
     }
   }
   fn visit_default_decl(&mut self, n: &farmfe_core::swc_ecma_ast::DefaultDecl) {
+    self.in_top_level = false;
     // For export default decl, the defined ident can be used in the module.
     // But for the var decl, the defined ident can't be used in the module. For example:
     // ```js
@@ -121,20 +152,40 @@ impl Visit for UsedIdentsVisitor<'_> {
       }
       farmfe_core::swc_ecma_ast::DefaultDecl::TsInterfaceDecl(_) => {}
     }
+    self.in_top_level = true;
   }
 
   fn visit_decl(&mut self, n: &farmfe_core::swc_ecma_ast::Decl) {
+    if !self.in_top_level {
+      n.visit_children_with(self);
+      return;
+    }
+
     match n {
       farmfe_core::swc_ecma_ast::Decl::Fn(n) => {
         self.with_ident(vec![n.ident.to_id()], |v| {
+          v.in_top_level = false;
           n.function.visit_with(v);
+          v.in_top_level = true;
         });
       }
       farmfe_core::swc_ecma_ast::Decl::Var(n) => {
         for decl in &n.decls {
           if let Some(init) = &decl.init {
-            let mut defined_idents_collector = DefinedIdentsCollector::new();
+            let mut cb = |from, to| {
+              if let Some(to_stmt_id) = self.reverse_defined_idents_map.get(&to) {
+                if self.reverse_defined_idents_map.contains_key(&from) {
+                  let entry = self.deps.entry(*to_stmt_id).or_default();
+                  entry.used_idents_map.entry(from).or_default().insert(to);
+                } else {
+                  self.handled_used_ident(to_stmt_id, to);
+                }
+              }
+            };
+            let mut defined_idents_collector =
+              DefinedIdentsCollector::from_callback(Box::new(&mut cb));
             decl.name.visit_with(&mut defined_idents_collector);
+
             let defined_idents = defined_idents_collector
               .defined_idents
               .into_iter()
@@ -148,7 +199,9 @@ impl Visit for UsedIdentsVisitor<'_> {
       }
       farmfe_core::swc_ecma_ast::Decl::Class(n) => {
         self.with_ident(vec![n.ident.to_id()], |v| {
+          v.in_top_level = false;
           n.class.visit_with(v);
+          v.in_top_level = true;
         });
       }
       _ => {}
@@ -159,34 +212,7 @@ impl Visit for UsedIdentsVisitor<'_> {
     let ident = n.to_id();
 
     if let Some(stmt_id) = self.reverse_defined_idents_map.get(&ident) {
-      let entry = self.deps.entry(*stmt_id).or_insert(StatementGraphEdge {
-        used_idents_map: HashMap::new(),
-        used_idents: HashSet::new(),
-      });
-
-      if let Some(current_defined_idents) = &self.current_defined_ident {
-        let mut found = false;
-
-        for current_defined_ident in current_defined_idents {
-          if self
-            .reverse_defined_idents_map
-            .contains_key(current_defined_ident)
-          {
-            entry
-              .used_idents_map
-              .entry(current_defined_ident.clone())
-              .or_default()
-              .insert(ident.clone());
-            found = true;
-          }
-        }
-
-        if found {
-          return;
-        }
-      }
-
-      entry.used_idents.insert(ident);
+      self.handled_used_ident(stmt_id, ident)
     }
   }
 }

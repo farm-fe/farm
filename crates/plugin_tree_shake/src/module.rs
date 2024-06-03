@@ -23,6 +23,9 @@ pub enum UsedExportsIdent {
   /// Marked as [UsedExportsIdent::ExportAll] when all potential exports of `export * from 'xxx'` are used.
   /// Usually works for side effect module(e.g. entry module) that re-export other modules
   ExportAll,
+  /// All idents are used and may be imported from other module
+  /// Marked as [UsedExportsIdent::ImportAll] when `import * as xx from 'xxx'` are used.
+  ImportAll,
 }
 
 impl UsedExportsIdent {
@@ -50,6 +53,7 @@ impl ToString for UsedExportsIdent {
       UsedExportsIdent::SwcIdent(ident) => ident.to_string(),
       UsedExportsIdent::Default => "default".to_string(),
       UsedExportsIdent::ExportAll => "*".to_string(),
+      UsedExportsIdent::ImportAll => "import_*_as".to_string(),
     }
   }
 }
@@ -287,9 +291,14 @@ impl TreeShakeModule {
       }
       UsedExports::Partial(idents) => {
         let mut used_idents = vec![];
+        // statement `import * as xxx from './xxx'` is marked as used, we need to mark all exported idents as used the same as UsedExports::All
+        if idents.contains(&UsedExportsIdent::ImportAll) {
+          // all export information needs to be collected
+          return self.all_exports_to_statement_idents(true);
+        }
         // statement `export * from './xxx'` is marked as used, we need to mark all exported idents as used the same as UsedExports::All
+        // except the default export when idents does not contain default export
         if idents.contains(&UsedExportsIdent::ExportAll) {
-          // for all content introduced, all export information needs to be collected
           return self.all_exports_to_statement_idents(idents.contains(&UsedExportsIdent::Default));
         }
         // find exported ident for every used idents.

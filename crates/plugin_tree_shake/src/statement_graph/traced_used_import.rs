@@ -75,7 +75,7 @@ impl TracedUsedImportStatement {
       match specifier {
         ImportSpecifierInfo::Namespace(id) => {
           if used_defined_idents.contains(id) {
-            used_stmt_idents.insert(UsedExportsIdent::ExportAll);
+            used_stmt_idents.insert(UsedExportsIdent::ImportAll);
           }
         }
         ImportSpecifierInfo::Named { local, imported } => {

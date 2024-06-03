@@ -8,7 +8,7 @@ function isValueSameDeep(target: any, source: any): boolean {
     return true;
   }
 
-  if (!isPlainObject(target) || !isPlainObject(source)) {
+  if (!isMergeableObject(target) || !isMergeableObject(source)) {
     return false;
   }
 

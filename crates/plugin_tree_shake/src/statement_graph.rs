@@ -266,7 +266,7 @@ impl Statement {
   }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct StatementGraphEdge {
   /// used idents of the dependency statement, for example:
   /// ```js

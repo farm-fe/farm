@@ -32,6 +32,8 @@ pub static PLUGIN_MODULE_CACHE: Lazy<Mutex<HashMap<String, Box<CompiledPluginMod
   Lazy::new(Default::default);
 pub static CACHING_RESOLVER: Lazy<CachingResolver<NodeModulesResolver>> =
   Lazy::new(|| CachingResolver::new(40, NodeModulesResolver::default()));
+pub static PLUGIN_RUNTIME: Lazy<Option<Arc<dyn wasmer_wasix::Runtime + Send + Sync>>> =
+  Lazy::new(|| swc_plugin_runner::wasix_runtime::build_wasi_runtime(None));
 
 pub fn init_plugin_module_cache_once(config: &farmfe_core::config::Config) {
   for plugin_config in config.script.plugins.iter() {
@@ -183,7 +185,7 @@ impl RustPlugins {
               .expect("plugin module should be cached")
               .clone();
             let plugin_name = plugin_module_bytes.get_module_name().to_string();
-            let runtime = swc_plugin_runner::wasix_runtime::build_wasi_runtime(None);
+            let runtime = PLUGIN_RUNTIME.clone();
 
             let mut plugin_transform_executor = swc_plugin_runner::create_plugin_transform_executor(
               &self.source_map,

@@ -341,9 +341,11 @@ fn trace_loadable_esm() {
       if output_path.exists() {
         let output_code =
           read_file_utf8(output_path.to_string_lossy().to_string().as_str()).unwrap();
-        assert_eq!(output_code, code);
+        assert_eq!(
+          output_code.replace("\r\n", "\n"),
+          code.replace("\r\n", "\n")
+        );
       } else {
-        println!("{output_path:?}");
         std::fs::write(output_path, code).unwrap();
       }
     });

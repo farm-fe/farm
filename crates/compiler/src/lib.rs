@@ -128,21 +128,20 @@ impl Compiler {
     {
       #[cfg(feature = "profile")]
       farmfe_core::puffin::profile_scope!("Build Stage");
-      let write_module_cache = || {
-        if self.context.config.persistent_cache.enabled() {
-          self.context.cache_manager.module_cache.write_cache();
-        }
-      };
-      self
-        .build()
-        .map(|v| {
-          write_module_cache();
-          v
-        })
-        .map_err(|err| {
-          write_module_cache();
-          err
-        })?;
+      // let write_module_cache = || {
+      //   if self.context.config.persistent_cache.enabled() {
+      //     self.context.cache_manager.module_cache.write_cache();
+      //   }
+      // };
+      self.build()?;
+      // .map(|v| {
+      //   write_module_cache();
+      //   v
+      // })
+      // .map_err(|err| {
+      //   write_module_cache();
+      //   err
+      // })?;
     }
 
     {
