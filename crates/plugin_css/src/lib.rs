@@ -110,7 +110,7 @@ impl Plugin for FarmPluginCssResolve {
       };
       // fix #1230
       let css_suffix = ".css";
-      let extensions = if matches!(param.kind, ResolveKind::CssAtImport) && !source.contains(".") {
+      let extensions = if matches!(param.kind, ResolveKind::CssAtImport) && !source.contains('.') {
         vec![css_suffix, ""]
       } else {
         vec![""]
@@ -354,7 +354,7 @@ impl Plugin for FarmPluginCss {
         );
 
         // collapse sourcemap chain
-        if param.source_map_chain.len() > 0 {
+        if !param.source_map_chain.is_empty() {
           let source_map_chain = param
             .source_map_chain
             .iter()
@@ -521,7 +521,7 @@ impl Plugin for FarmPluginCss {
         .config
         .minify
         .clone()
-        .map(|val| MinifyOptions::from(val))
+        .map(MinifyOptions::from)
         .unwrap_or_default();
       let filter = PathFilter::new(&minify_options.include, &minify_options.exclude);
       let source_map_enabled = context.config.sourcemap.enabled(resource_pot.immutable);
@@ -587,7 +587,7 @@ impl Plugin for FarmPluginCss {
           rendered_length: css_code.len(),
           original_length: module.size,
           rendered_content: Arc::new(css_code),
-          rendered_map: src_map.map(|s| Arc::new(s)),
+          rendered_map: src_map.map(Arc::new),
         });
 
         Ok::<(), CompilationError>(())

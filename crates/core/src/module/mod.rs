@@ -84,7 +84,7 @@ impl Module {
       meta: Box::new(ModuleMetaData::Custom(Box::new(EmptyModuleMetaData) as _)),
       module_groups: HashSet::new(),
       resource_pot: None,
-      side_effects: false,
+      side_effects: true,
       source_map_chain: vec![],
       external: false,
       immutable: false,
@@ -323,6 +323,10 @@ impl ScriptModuleMetaData {
     self.ast = ast;
   }
 
+  pub fn take_comments(&mut self) -> CommentsMetaData {
+    std::mem::take(&mut self.comments)
+  }
+
   pub fn set_comments(&mut self, comments: CommentsMetaData) {
     self.comments = comments;
   }
@@ -497,6 +501,12 @@ impl ModuleId {
   /// return self.relative_path and self.query_string in dev,
   /// return hash(self.relative_path) in prod
   pub fn id(&self, mode: Mode) -> String {
+    if let Ok(val) = std::env::var("FARM_DEBUG_ID") {
+      if !val.is_empty() {
+        return self.to_string();
+      }
+    }
+
     match mode {
       Mode::Development => self.to_string(),
       Mode::Production => self.hash(),

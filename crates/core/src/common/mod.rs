@@ -64,14 +64,14 @@ impl PackageJsonInfo {
     self.analyze_parsed_side_effects(&package_value);
   }
 
-  pub fn side_effects(&self) -> &ParsedSideEffects {
-    self.parsed_side_effects.as_ref().unwrap()
+  pub fn side_effects(&self) -> Option<&ParsedSideEffects> {
+    self.parsed_side_effects.as_ref()
   }
 
   fn analyze_parsed_side_effects(&mut self, package_value: &serde_json::Map<String, Value>) {
-    let parsed_side_effects = if let Some(side_effects) = package_value.get("sideEffects") {
+    self.parsed_side_effects = if let Some(side_effects) = package_value.get("sideEffects") {
       if let Value::Bool(b) = side_effects {
-        ParsedSideEffects::Bool(*b)
+        Some(ParsedSideEffects::Bool(*b))
       } else if let Value::Array(arr) = side_effects {
         let mut res = vec![];
 
@@ -94,14 +94,13 @@ impl PackageJsonInfo {
           }
         }
 
-        ParsedSideEffects::Array(res)
+        Some(ParsedSideEffects::Array(res))
       } else {
-        ParsedSideEffects::Bool(false)
+        // unknown side effects config, treat it as None
+        None
       }
     } else {
-      ParsedSideEffects::Bool(false)
+      None
     };
-
-    self.parsed_side_effects = Some(parsed_side_effects);
   }
 }

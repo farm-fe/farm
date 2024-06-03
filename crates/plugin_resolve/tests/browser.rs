@@ -177,7 +177,7 @@ fn resolve_browser_ignore() {
           .to_string()
       );
       assert!(!resolved.external);
-      assert!(!resolved.side_effects);
+      assert!(resolved.side_effects);
     }
   );
 }
