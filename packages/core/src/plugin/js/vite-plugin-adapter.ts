@@ -755,11 +755,11 @@ export class VitePluginAdapter implements JsPlugin {
           // Cause Farm called resourcesMap.lock() before calling this hook, and this.emitFile would call resourcesMap.lock()
           // this leads to deadlock when calling emitFile in finalize_resources hook.
           // so we hack context.emitFile here to avoid deadlock
-          const emitedFiles: CompilationContextEmitFileParams[] = [];
+          const emittedFiles: CompilationContextEmitFileParams[] = [];
           context.emitFile = async (
             params: CompilationContextEmitFileParams
           ) => {
-            emitedFiles.push(params);
+            emittedFiles.push(params);
           };
           const hook = this.wrapRawPluginHook(
             'generateBundle',
@@ -780,7 +780,7 @@ export class VitePluginAdapter implements JsPlugin {
             bundles
           );
 
-          const emitedFilesMap = emitedFiles.reduce(
+          const emittedFilesMap = emittedFiles.reduce(
             (res, item) => {
               res[item.name] = {
                 name: item.name,
@@ -803,7 +803,7 @@ export class VitePluginAdapter implements JsPlugin {
               param.resourcesMap[key]
             );
             return res;
-          }, emitedFilesMap);
+          }, emittedFilesMap);
 
           return result;
         }
