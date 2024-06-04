@@ -78,7 +78,10 @@ export function mergeFarmCliConfig(
       } else {
         target.root = cliRoot;
       }
+    } else {
+      target.root = process.cwd();
     }
+
     if (configRootPath) {
       target.root = configRootPath;
     }
@@ -134,4 +137,10 @@ export function mergeFarmCliConfig(
   }
 
   return mergeConfig(left, target);
+}
+
+export function initialCliOptions(options: FarmCLIOptions): FarmCLIOptions {
+  return {
+    ...options
+  };
 }

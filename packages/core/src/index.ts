@@ -371,8 +371,8 @@ export async function createDevServer(
 export async function createFileWatcher(
   devServer: Server,
   resolvedUserConfig: ResolvedUserConfig,
-  inlineConfig: FarmCLIOptions & UserConfig,
-  logger: Logger
+  inlineConfig: FarmCLIOptions & UserConfig = {},
+  logger: Logger = new Logger()
 ) {
   if (
     devServer.config.hmr &&

@@ -125,15 +125,15 @@ async function handleServerPortConflict(
  * @param configPath
  */
 export async function resolveConfig(
-  inlineOptions: FarmCLIOptions & UserConfig,
-  logger: Logger,
+  inlineOptions: FarmCLIOptions & UserConfig = {},
+  logger?: Logger,
   mode?: CompilationMode,
   isHandleServerPortConflict = true
 ): Promise<ResolvedUserConfig> {
   // Clear the console according to the cli command
   checkClearScreen(inlineOptions);
+  logger = logger ?? new Logger();
   inlineOptions.mode = inlineOptions.mode ?? mode;
-
   // configPath may be file or directory
   let { configPath } = inlineOptions;
   let rawConfig: UserConfig = mergeFarmCliConfig(inlineOptions, {});
@@ -813,7 +813,7 @@ export function normalizePublicPath(
 
 function checkClearScreen(inlineConfig: FarmCLIOptions) {
   if (
-    inlineConfig.clearScreen &&
+    inlineConfig?.clearScreen &&
     !__FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__
   ) {
     clearScreen();

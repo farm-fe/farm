@@ -73,6 +73,15 @@ importers:
         specifier: ^1.4.0
         version: 1.4.0(@types/node@18.18.8)(less@4.2.0)(sass@1.74.1)
 
+  examples/api-react:
+    devDependencies:
+      '@farmfe/cli':
+        specifier: ^1.0.2
+        version: 1.0.2
+      '@farmfe/core':
+        specifier: workspace:^
+        version: link:../../packages/core
+
   examples/arco-pro:
     dependencies:
       '@antv/data-set':
@@ -11134,6 +11143,17 @@ packages:
       '@vue/composition-api':
         optional: true
 
+  vue-demi@0.14.8:
+    resolution: {integrity: sha512-Uuqnk9YE9SsWeReYqK2alDI5YzciATE0r2SkA6iMAtuXvNTMNACJLJEXNXaEy94ECuBe4Sk6RzRU80kjdbIo1Q==}
+    engines: {node: '>=12'}
+    hasBin: true
+    peerDependencies:
+      '@vue/composition-api': ^1.0.0-rc.1
+      vue: ^3.0.0-0 || ^2.6.0
+    peerDependenciesMeta:
+      '@vue/composition-api':
+        optional: true
+
   vue-router@4.2.5:
     resolution: {integrity: sha512-DIUpKcyg4+PTQKfFPX88UWhlagBEBEfJ5A8XDXRJLUnZOvcpMF8o/dnL90vpVkGaPbjvXazV/rC1qBKrZlFugw==}
     peerDependencies:
@@ -13260,7 +13280,7 @@ snapshots:
     dependencies:
       '@monaco-editor/loader': 1.4.0
       vue: 3.4.15(typescript@5.4.5)
-      vue-demi: 0.14.7(@vue/composition-api@1.7.2(vue@3.4.15(typescript@5.4.5)))(vue@3.4.15(typescript@5.4.5))
+      vue-demi: 0.14.8(@vue/composition-api@1.7.2(vue@3.4.15(typescript@5.4.5)))(vue@3.4.15(typescript@5.4.5))
     optionalDependencies:
       '@vue/composition-api': 1.7.2(vue@3.4.15(typescript@5.4.5))
 
@@ -22546,6 +22566,12 @@ snapshots:
       '@vue/composition-api': 1.7.2(vue@3.3.7(typescript@5.4.5))
 
   vue-demi@0.14.7(@vue/composition-api@1.7.2(vue@3.4.15(typescript@5.4.5)))(vue@3.4.15(typescript@5.4.5)):
+    dependencies:
+      vue: 3.4.15(typescript@5.4.5)
+    optionalDependencies:
+      '@vue/composition-api': 1.7.2(vue@3.4.15(typescript@5.4.5))
+
+  vue-demi@0.14.8(@vue/composition-api@1.7.2(vue@3.4.15(typescript@5.4.5)))(vue@3.4.15(typescript@5.4.5)):
     dependencies:
       vue: 3.4.15(typescript@5.4.5)
     optionalDependencies:
