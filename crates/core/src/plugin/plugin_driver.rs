@@ -59,6 +59,7 @@ macro_rules! hook_first {
   ) => {
       pub fn $func_name(&self, $($arg: $ty),*) -> $ret_ty {
           for plugin in &self.plugins {
+            if self.record {
               let start_time = SystemTime::now()
               .duration_since(UNIX_EPOCH)
               .expect("Time went backwards")
@@ -69,12 +70,16 @@ macro_rules! hook_first {
               .expect("hook_first get end_time failed")
               .as_micros() as i64;
               if ret.is_some() {
-                if self.record {
                   let plugin_name = plugin.name().to_string();
                   $callback(&ret, plugin_name, start_time, end_time, $($arg),*);
-                }
+                  return Ok(ret);
+              }
+            }else {
+              let ret = plugin.$func_name($($arg),*)?;
+              if ret.is_some() {
                 return Ok(ret);
               }
+            }
           }
 
           Ok(None)
@@ -96,18 +101,22 @@ macro_rules! hook_serial {
   ($func_name:ident, $param_ty:ty, $callback:expr) => {
     pub fn $func_name(&self, param: $param_ty, context: &Arc<CompilationContext>) -> Result<()> {
       for plugin in &self.plugins {
-        let start_time = SystemTime::now()
-          .duration_since(UNIX_EPOCH)
-          .expect("Time went backwards")
-          .as_micros() as i64;
-        let ret = plugin.$func_name(param, context)?;
-        let end_time = SystemTime::now()
-          .duration_since(UNIX_EPOCH)
-          .expect("hook_first get end_time failed")
-          .as_micros() as i64;
-        if ret.is_some() && self.record {
-          let plugin_name = plugin.name().to_string();
-          $callback(plugin_name, start_time, end_time, param, context);
+        if self.record {
+          let start_time = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .expect("Time went backwards")
+            .as_micros() as i64;
+          let ret = plugin.$func_name(param, context)?;
+          let end_time = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .expect("hook_first get end_time failed")
+            .as_micros() as i64;
+          if ret.is_some() {
+            let plugin_name = plugin.name().to_string();
+            $callback(plugin_name, start_time, end_time, param, context);
+          }
+        } else {
+          plugin.$func_name(param, context)?;
         }
       }
 
@@ -285,16 +294,28 @@ impl PluginDriver {
     };
 
     for plugin in &self.plugins {
-      let start_time = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .expect("Time went backwards")
-        .as_micros() as i64;
+      let start_time = if self.record {
+        Some(
+          SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .expect("Time went backwards")
+            .as_micros() as i64,
+        )
+      } else {
+        None
+      };
       // if the transform hook returns None, treat it as empty hook and ignore it
       if let Some(plugin_result) = plugin.transform(&param, context)? {
-        let end_time = SystemTime::now()
-          .duration_since(UNIX_EPOCH)
-          .expect("hook_first get end_time failed")
-          .as_micros() as i64;
+        let end_time = if self.record {
+          Some(
+            SystemTime::now()
+              .duration_since(UNIX_EPOCH)
+              .expect("hook_first get end_time failed")
+              .as_micros() as i64,
+          )
+        } else {
+          None
+        };
         param.content = plugin_result.content;
         param.module_type = plugin_result.module_type.unwrap_or(param.module_type);
 
@@ -314,9 +335,9 @@ impl PluginDriver {
               source_maps: plugin_result.source_map.clone(),
               module_type: param.module_type.clone(),
               trigger: Trigger::Compiler,
-              start_time,
-              end_time,
-              duration: end_time - start_time,
+              start_time: start_time.unwrap(),
+              end_time: end_time.unwrap(),
+              duration: end_time.unwrap() - start_time.unwrap(),
             },
           );
         }

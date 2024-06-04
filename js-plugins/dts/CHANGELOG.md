@@ -1,5 +1,17 @@
 # @farmfe/js-plugin-dts
 
+## 0.6.0
+
+### Minor Changes
+
+- 56863184: bump ts-morph version optimize logic
+
+## 0.5.2
+
+### Patch Changes
+
+- df7ac2a0: support custom resolvedPaths & reduce product size
+
 ## 0.5.1
 
 ### Patch Changes

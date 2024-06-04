@@ -36,14 +36,16 @@ jobs:
             mv /tmp/artifacts/${{ github.sha }}-${abi}/* ./packages/core/npm/${abi}
             mv /tmp/artifacts/${{ github.sha }}-${abi}-plugin-react/* ./rust-plugins/react/npm/${abi}
             mv /tmp/artifacts/${{ github.sha }}-${abi}-plugin-sass/* ./rust-plugins/sass/npm/${abi}
+            mv /tmp/artifacts/${{ github.sha }}-${abi}-create-farm-node/* ./packages/create-farm-node/npm/${abi}
 
             test -f ./packages/core/npm/${abi}/farm.${abi}.node
+            test -f ./packages/create-farm-node/npm/${abi}/create-farm-node.${abi}.node
             test -f ./rust-plugins/react/npm/${abi}/index.farm
             test -f ./rust-plugins/sass/npm/${abi}/index.farm
           done
 
       - name: Install Dependencies
-        run: npm install -g pnpm@8.15.1 && pnpm i --frozen-lockfile
+        run: npm install -g pnpm@9.1.0 && pnpm i --frozen-lockfile
       - name: Build Plugin Tools
         run: pnpm --filter @farmfe/plugin-tools run build
 

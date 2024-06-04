@@ -3,11 +3,14 @@ use std::{collections::HashMap, path::PathBuf, sync::Arc};
 use farmfe_compiler::Compiler;
 use farmfe_core::{
   config::{
-    bool_or_obj::BoolOrObj, config_regex::ConfigRegex, persistent_cache::PersistentCacheConfig,
-    preset_env::PresetEnvConfig, Config, CssConfig, Mode, RuntimeConfig, SourcemapConfig,
+    bool_or_obj::BoolOrObj,
+    config_regex::ConfigRegex,
+    external::{ExternalConfig, ExternalConfigItem},
+    persistent_cache::PersistentCacheConfig,
+    preset_env::PresetEnvConfig,
+    Config, CssConfig, Mode, RuntimeConfig, SourcemapConfig,
   },
   plugin::Plugin,
-  resource::ResourceType,
 };
 
 pub fn generate_runtime(crate_path: PathBuf) -> RuntimeConfig {
@@ -35,6 +38,7 @@ pub fn generate_runtime(crate_path: PathBuf) -> RuntimeConfig {
   }
 }
 
+#[allow(dead_code)]
 pub fn create_css_compiler(
   input: HashMap<String, String>,
   cwd: PathBuf,
@@ -79,7 +83,7 @@ pub fn create_config(cwd: PathBuf, crate_path: PathBuf) -> Config {
     runtime: generate_runtime(crate_path),
     output: farmfe_core::config::OutputConfig::default(),
     mode: Mode::Production,
-    external: vec![],
+    external: Default::default(),
     sourcemap: SourcemapConfig::Bool(false),
     lazy_compilation: false,
     progress: false,
@@ -90,10 +94,24 @@ pub fn create_config(cwd: PathBuf, crate_path: PathBuf) -> Config {
   }
 }
 
+#[allow(dead_code)]
+pub fn create_compiler_with_args<F>(cwd: PathBuf, crate_path: PathBuf, handle: F) -> Compiler
+where
+  F: FnOnce(Config, Vec<Arc<dyn Plugin>>) -> (Config, Vec<Arc<dyn Plugin>>),
+{
+  let config = create_config(cwd, crate_path);
+
+  let plguins = vec![];
+
+  let (config, plugins) = handle(config, plguins);
+  Compiler::new(config, plugins).expect("faile to create compiler")
+}
+
+#[allow(dead_code)]
 pub fn create_with_compiler(config: Config, plugin_adapters: Vec<Arc<dyn Plugin>>) -> Compiler {
   Compiler::new(config, plugin_adapters).expect("faile to create compiler")
 }
-
+#[allow(dead_code)]
 pub fn create_compiler(
   input: HashMap<String, String>,
   cwd: PathBuf,
@@ -113,6 +131,7 @@ pub fn create_compiler(
       external: vec![
         ConfigRegex::new("^react-refresh$"),
         ConfigRegex::new("^module$"),
+        ConfigRegex::new("^vue$"),
       ],
       sourcemap: SourcemapConfig::Bool(false),
       lazy_compilation: false,
@@ -128,7 +147,7 @@ pub fn create_compiler(
 
   compiler
 }
-
+#[allow(dead_code)]
 pub fn create_compiler_with_plugins(
   input: HashMap<String, String>,
   cwd: PathBuf,
@@ -180,7 +199,7 @@ pub fn create_compiler_with_plugins(
 
   compiler
 }
-
+#[allow(dead_code)]
 pub fn get_compiler_result(compiler: &Compiler, entry_name: Option<&String>) -> String {
   let resources_map = compiler.context().resources_map.lock();
   let mut result = vec![];
@@ -215,10 +234,12 @@ pub fn get_compiler_result(compiler: &Compiler, entry_name: Option<&String>) -> 
   result_file_str
 }
 
+#[allow(dead_code)]
 pub fn load_expected_result(cwd: PathBuf) -> String {
   std::fs::read_to_string(cwd.join("output.js")).unwrap_or("".to_string())
 }
 
+#[allow(dead_code)]
 pub fn assert_compiler_result(compiler: &Compiler, entry_name: Option<&String>) {
   let expected_result = load_expected_result(PathBuf::from(compiler.context().config.root.clone()));
   let result = get_compiler_result(compiler, entry_name);

@@ -52,7 +52,7 @@
     "source-map": "^0.7.4"
   },
   "peerDependencies": {
-    "@farmfe/core": "workspace:^1.1.4",
+    "@farmfe/core": "workspace:^1.1.12",
     "less": "*",
     "sass": "*",
     "stylus": "*"

@@ -1,5 +1,61 @@
 # @farmfe/core
 
+## 1.1.12
+
+### Patch Changes
+
+- 0f3c1a8f: fix: can't match resources with url parameters carried under devServer
+
+## 1.1.11
+
+### Patch Changes
+
+- 91f897b2: fix: format error message and fix output.targetEnv schema validate
+- f0f42b27: - core types should be included in the compilation process
+  - logger used should be obtained from the parameter
+
+## 1.1.10
+
+### Patch Changes
+
+- 0c3f6883: make `server.proxy.headers` work again
+
+## 1.1.9
+
+### Patch Changes
+
+- 3059e616: check config stage
+
+## 1.1.8
+
+### Patch Changes
+
+- 1ae36c95: support exclude/include option for html
+
+## 1.1.7
+
+### Patch Changes
+
+- 943fd627: fix: load env file error
+- 8d5bf9cd: fix minify not work for files that endsWith .min.js
+- 19b5d89b: 1. external injectlogic 2. better tip
+
+## 1.1.6
+
+### Patch Changes
+
+- bf98b34a: fix publish cannot find type
+
+## 1.1.5
+
+### Patch Changes
+
+- 25ed2330: Bugfixes:
+  - #1300
+  - #1288
+  - #1271
+- df7ac2a0: support record external
+
 ## 1.1.4
 
 ### Patch Changes

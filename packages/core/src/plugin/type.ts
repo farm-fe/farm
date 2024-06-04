@@ -1,3 +1,4 @@
+import { Compiler, ResolvedUserConfig, Server, UserConfig } from '../index.js';
 import {
   Config,
   PluginLoadHookParam,
@@ -6,8 +7,7 @@ import {
   PluginResolveHookResult,
   PluginTransformHookParam,
   PluginTransformHookResult
-} from '../../binding/index.js';
-import { Compiler, ResolvedUserConfig, Server, UserConfig } from '../index.js';
+} from '../types/binding.js';
 
 // https://stackoverflow.com/questions/61047551/typescript-union-of-string-and-string-literals
 // eslint-disable-next-line @typescript-eslint/ban-types
@@ -125,17 +125,12 @@ type Callback<P, R> = (
   param: P,
   context?: CompilationContext,
   hookContext?: { caller?: string; meta: Record<string, unknown> }
-) => Promise<R | null | undefined>;
+) => Promise<R | null | undefined> | R | null | undefined;
 type JsPluginHook<F, P, R> = { filters: F; executor: Callback<P, R> };
 
 export interface JsPlugin {
   name: string;
   priority?: number;
-  // apply?:
-  //   | 'serve'
-  //   | 'build'
-  //   | ((this: void, config: UserConfig, env: ConfigEnv) => boolean);
-  // config?: Callback<Config['config'], Config['config']>;
 
   config?: (config: UserConfig) => UserConfig | Promise<UserConfig>;
 
@@ -245,4 +240,4 @@ export type {
   PluginLoadHookResult,
   PluginTransformHookParam,
   PluginTransformHookResult
-} from '../../binding/index.js';
+} from '../types/binding.js';

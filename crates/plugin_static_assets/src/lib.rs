@@ -12,9 +12,7 @@ use farmfe_core::{
   config::Config,
   context::{CompilationContext, EmitFileParams},
   deserialize,
-  error::CompilationError,
   module::ModuleType,
-  // plugin::{constants::PLUGIN_BUILD_STAGE_META_RESOLVE_KIND, Plugin, ResolveKind},
   plugin::{Plugin, PluginResolveHookResult},
   relative_path::RelativePath,
   resource::{Resource, ResourceOrigin, ResourceType},
@@ -290,7 +288,7 @@ impl Plugin for FarmPluginStaticAssets {
 
     for (_, resource) in resources_map.iter() {
       if let ResourceOrigin::Module(m) = &resource.origin {
-        if context.module_graph.read().has_module(m) {
+        if context.cache_manager.module_cache.has_cache(m) {
           list.push(resource.clone());
         }
       }

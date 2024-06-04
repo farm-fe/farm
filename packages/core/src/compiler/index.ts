@@ -1,10 +1,9 @@
 import { existsSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { Compiler as BindingCompiler } from '../../binding/index.js';
-import { Logger } from '../utils/logger.js';
 
-import type { Config, JsUpdateResult } from '../../binding/index.js';
-import { JsPlugin, Resource } from '../index.js';
+import type { Resource } from '../index.js';
+import type { Config, JsUpdateResult } from '../types/binding.js';
 import type { ILogger } from '../utils/logger.js';
 
 export const VIRTUAL_FARM_DYNAMIC_IMPORT_SUFFIX =
@@ -37,10 +36,10 @@ export class Compiler {
 
   public compiling = false;
 
-  private logger: ILogger;
-
-  constructor(public config: Config) {
-    this.logger = new Logger();
+  constructor(
+    public config: Config,
+    private logger: ILogger
+  ) {
     this._bindingCompiler = new BindingCompiler(this.config);
   }
 
@@ -177,7 +176,7 @@ export class Compiler {
 
   callWriteResourcesHook() {
     for (const jsPlugin of this.config.jsPlugins ?? []) {
-      (jsPlugin as JsPlugin).writeResources?.executor?.({
+      jsPlugin.writeResources?.executor?.({
         resourcesMap: this._bindingCompiler.resourcesMap() as Record<
           string,
           Resource

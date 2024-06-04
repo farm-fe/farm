@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.9](https://github.com/farm-fe/farm/compare/farmfe_toolkit-v0.0.8...farmfe_toolkit-v0.0.9) - 2024-05-28
+
+### Added
+- support exclude/include option for html ([#1319](https://github.com/farm-fe/farm/pull/1319))
+
+### Fixed
+- cache issues ([#1301](https://github.com/farm-fe/farm/pull/1301))
+
 ## [0.0.8](https://github.com/farm-fe/farm/compare/farmfe_toolkit-v0.0.7...farmfe_toolkit-v0.0.8) - 2024-05-09
 
 ### Added

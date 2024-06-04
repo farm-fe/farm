@@ -336,14 +336,15 @@ pub struct PluginResolveHookParam {
   pub kind: ResolveKind,
 }
 
-#[derive(Debug, Default, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase", default)]
 pub struct PluginResolveHookResult {
   /// resolved path, normally a absolute file path.
   pub resolved_path: String,
   /// whether this module should be external, if true, the module won't present in the final result
   pub external: bool,
-  /// whether this module has side effects, affects tree shaking
+  /// whether this module has side effects, affects tree shaking. By default, it's true, means all modules may has side effects.
+  /// use sideEffects field in package.json to mark it as side effects free
   pub side_effects: bool,
   /// the query parsed from specifier, for example, query should be `{ inline: "" }` if specifier is `./a.png?inline`
   /// if you custom plugins, your plugin should be responsible for parsing query
@@ -351,6 +352,18 @@ pub struct PluginResolveHookResult {
   pub query: Vec<(String, String)>,
   /// the meta data passed between plugins and hooks
   pub meta: HashMap<String, String>,
+}
+
+impl Default for PluginResolveHookResult {
+  fn default() -> Self {
+    Self {
+      side_effects: true,
+      resolved_path: "unknown".to_string(),
+      external: false,
+      query: vec![],
+      meta: Default::default(),
+    }
+  }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

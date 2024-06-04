@@ -16,7 +16,6 @@ use farmfe_core::{
 use farmfe_toolkit::{
   common::{build_source_map, create_swc_source_map, Source},
   css::{codegen_css_stylesheet, parse_css_stylesheet, ParseCssModuleResult},
-  html::parse_html_document,
   minify::config::NormalizedMinifyOptions,
   script::{
     codegen_module, parse_module, swc_try_with::try_with, CodeGenCommentsConfig,
@@ -27,7 +26,6 @@ use farmfe_toolkit::{
   swc_ecma_transforms::fixer,
   swc_ecma_transforms_base::{fixer::paren_remover, resolver},
   swc_ecma_visit::VisitMutWith,
-  swc_html_minifier::minify_document,
 };
 
 pub struct FarmPluginMinify {
@@ -177,32 +175,6 @@ impl FarmPluginMinify {
       }
     })
   }
-
-  pub fn minify_html(
-    &self,
-    resource_pot: &mut ResourcePot,
-    context: &Arc<CompilationContext>,
-  ) -> Result<()> {
-    let (cm, _) = create_swc_source_map(Source {
-      path: PathBuf::from(&resource_pot.name),
-      content: resource_pot.meta.rendered_content.clone(),
-    });
-
-    try_with(cm.clone(), &context.meta.html.globals, || {
-      let mut ast = parse_html_document(
-        &resource_pot.name,
-        resource_pot.meta.rendered_content.clone(),
-      )
-      .expect("failed to parse html document");
-      // TODO support html minify options
-      minify_document(&mut ast, &Default::default());
-
-      let minified_content =
-        farmfe_toolkit::html::codegen_html_document(&ast, context.config.minify.enabled());
-
-      resource_pot.meta.rendered_content = Arc::new(minified_content);
-    })
-  }
 }
 
 impl Plugin for FarmPluginMinify {
@@ -215,9 +187,7 @@ impl Plugin for FarmPluginMinify {
     resource_pot: &mut ResourcePot,
     context: &Arc<CompilationContext>,
   ) -> farmfe_core::error::Result<Option<()>> {
-    if !matches!(self.minify_options.mode, MinifyMode::ResourcePot)
-      || !context.config.minify.enabled()
-    {
+    if !matches!(self.minify_options.mode, MinifyMode::ResourcePot) {
       return Ok(None);
     }
 
@@ -229,7 +199,7 @@ impl Plugin for FarmPluginMinify {
     } else if matches!(resource_pot.resource_pot_type, ResourcePotType::Css) {
       self.minify_css(resource_pot, context)?;
     } else if matches!(resource_pot.resource_pot_type, ResourcePotType::Html) {
-      self.minify_html(resource_pot, context)?;
+      // html minify is handled in plugin html after all resources are injected in finalize_resources hook
     }
 
     Ok(None)

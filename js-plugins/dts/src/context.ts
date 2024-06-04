@@ -18,7 +18,6 @@ import {
   resolveAbsolutePath,
   runParallel,
   transformAliasImport,
-  tryToReadFileSync,
   writeFileWithCheck
 } from './utils.js';
 export default class Context {
@@ -38,7 +37,7 @@ export default class Context {
       clearPureImport: true,
       insertTypesEntry: false,
       noEmitOnError: false,
-      skipDiagnostics: true,
+      skipDiagnostics: false,
       copyDtsFiles: false,
       afterDiagnostic: () => ({})
     };
@@ -46,7 +45,7 @@ export default class Context {
     const userOptions = mergeObjects(defaultOption, options);
     const isDev = this.config.mode === 'development';
     const root = this.config.root || process.cwd();
-    const sourceDtsFiles: any = new Set<SourceFile>();
+    const sourceDtsFiles: Set<SourceFile> = new Set<SourceFile>();
     const outputFiles = new Map<string, string>();
     const emittedFiles = new Map<string, string>();
     const outputDir = ensureAbsolute(
@@ -71,7 +70,8 @@ export default class Context {
         declaration: true,
         noEmit: false,
         emitDeclarationOnly: true,
-        composite: false
+        composite: false,
+        allowJs: true
       } as CompilerOptions),
       tsConfigFilePath: tsConfigPath,
       skipAddingFilesFromTsConfig: true,
@@ -131,66 +131,28 @@ export default class Context {
     };
   }
 
-  async handleTransform(id: string) {
-    this.project.createSourceFile(id, await tryToReadFileSync(id), {
+  async handleTransform(id: string, content: string) {
+    this.project.createSourceFile(id, content, {
       overwrite: true
     });
   }
 
   async handleCloseBundle() {
-    if (this.project && this.include && this.include.length) {
-      const files = await glob(this.include, {
-        cwd: this.options.root,
-        absolute: true,
-        ignore: this.exclude
-      });
-      const dtsRE = /\.d\.(m|c)?tsx?$/;
-      for (const file of files) {
-        if (dtsRE.test(file)) {
-          this.options.sourceDtsFiles.add(
-            this.project.addSourceFileAtPath(file)
-          );
-          if (!this.options.copyDtsFiles) {
-            continue;
-          }
+    // handle already dts files in file system
+    const dtsOutputFiles = await this.handleAlreadyExistDtsFile();
 
-          // includedFiles.add(file);
-          continue;
-        }
-
-        // includedFiles.add(
-        //   `${file.replace(tjsRE, '')}.d.${extPrefix(file)}ts`
-        // );
-      }
-
-      this.project.compilerOptions.set({ allowJs: true });
-    }
-
-    const dtsOutputFiles = Array.from(this.options.sourceDtsFiles).map(
-      (sourceFile: any) => ({
-        path: sourceFile.getFilePath(),
-        content: sourceFile.getFullText()
-      })
-    );
+    this.handleDoctor();
+    // use doctor to check if there are any diagnostics
     const startTime = performance.now();
-    if (!this.options.skipDiagnostics) {
-      const diagnostics = this.project.getPreEmitDiagnostics();
-      if (diagnostics?.length) {
-        console.warn(
-          this.project.formatDiagnosticsWithColorAndContext(diagnostics)
-        );
-      }
-      if (typeof this.options.afterDiagnostic === 'function') {
-        const result = this.options.afterDiagnostic(diagnostics);
-        isPromise(result) && (await result);
-      }
-    }
+
+    // get all source files and resolve current file dependencies
     this.project.resolveSourceFileDependencies();
 
     const service = this.project.getLanguageService();
+
     const outputFiles = this.project
       .getSourceFiles()
-      .map((sourceFile) =>
+      .flatMap((sourceFile) =>
         service
           .getEmitOutput(sourceFile, true)
           .getOutputFiles()
@@ -202,12 +164,16 @@ export default class Context {
             content: outputFile.getText()
           }))
       )
-      .flat()
       .concat(dtsOutputFiles);
+
     let entryRoot = this.options.entryRoot ?? '';
     entryRoot =
-      entryRoot || queryPublicPath(outputFiles.map((file: any) => file.path));
+      entryRoot ||
+      queryPublicPath(
+        outputFiles.map((file: { path: string; content: string }) => file.path)
+      );
     entryRoot = ensureAbsolute(entryRoot, this.options.root);
+
     await runParallel(os.cpus().length, outputFiles, async (outputFile) => {
       let filePath = outputFile.path;
 
@@ -223,8 +189,8 @@ export default class Context {
 
       writeFileWithCheck(filePath, content);
     });
-    const endTime = performance.now();
-    const elapsedTime = Math.floor(endTime - startTime);
+
+    const elapsedTime = Math.floor(performance.now() - startTime);
 
     this.logger.info(
       `⚡️ Dts Plugin Build completed in ${chalk.bold(
@@ -233,5 +199,50 @@ export default class Context {
         chalk.green(this.options.outputDir)
       )}.`
     );
+  }
+
+  async handleAlreadyExistDtsFile() {
+    if (this.project && this.include && this.include.length) {
+      const files = await glob(this.include, {
+        cwd: this.options.root,
+        absolute: true,
+        ignore: this.exclude
+      });
+
+      // check if there are dts files in the project
+      const dtsRE = /\.d\.(m|c)?tsx?$/;
+
+      for (const file of files) {
+        if (dtsRE.test(file)) {
+          this.options.sourceDtsFiles.add(
+            this.project.addSourceFileAtPath(file)
+          );
+        }
+      }
+    }
+
+    const dtsOutputFiles = Array.from(this.options.sourceDtsFiles).map(
+      (sourceFile: any) => ({
+        path: sourceFile.getFilePath(),
+        content: sourceFile.getFullText()
+      })
+    );
+
+    return dtsOutputFiles;
+  }
+
+  async handleDoctor() {
+    if (!this.options.skipDiagnostics) {
+      const diagnostics = this.project.getPreEmitDiagnostics();
+      if (diagnostics?.length) {
+        this.logger.warn(
+          this.project.formatDiagnosticsWithColorAndContext(diagnostics)
+        );
+      }
+      if (typeof this.options.afterDiagnostic === 'function') {
+        const result = this.options.afterDiagnostic(diagnostics);
+        isPromise(result) && (await result);
+      }
+    }
   }
 }

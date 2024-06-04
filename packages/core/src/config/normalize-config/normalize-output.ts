@@ -1,13 +1,14 @@
 import { browsersWithSupportForFeatures } from 'browserslist-generator';
 
-import { Config } from '../../../binding/index.js';
+import { Config } from '../../types/binding.js';
 import {
   FARM_TARGET_BROWSER_ENVS,
   mapTargetEnvValue
 } from '../../utils/share.js';
+import { ResolvedCompilation } from '../types.js';
 
 export async function normalizeOutput(
-  config: Config['config'],
+  config: ResolvedCompilation,
   isProduction: boolean
 ) {
   if (!config.output.targetEnv) {

@@ -1,6 +1,6 @@
 {
   "name": "@farmfe/js-plugin-dts",
-  "version": "0.5.1",
+  "version": "0.6.0",
   "description": "",
   "main": "./build/index.cjs",
   "types": "./dist/index.d.ts",
@@ -25,10 +25,12 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "fast-glob": "^3.2.12",
+    "@ts-morph/bootstrap": "^0.23.0",
     "chalk": "^5.2.0",
+    "fast-glob": "^3.2.12",
     "fs-extra": "^11.1.1",
-    "ts-morph": "^19.0.0"
+    "ts-morph": "^22.0.0",
+    "typescript": "^5.4.5"
   },
   "devDependencies": {
     "@farmfe/cli": "workspace:*",

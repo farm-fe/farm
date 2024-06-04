@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.7](https://github.com/farm-fe/farm/compare/farmfe_plugin_lazy_compilation-v0.0.6...farmfe_plugin_lazy_compilation-v0.0.7) - 2024-05-28
+
+### Added
+- support obj external & dts support resolvedPaths ([#1282](https://github.com/farm-fe/farm/pull/1282))
+
 ## [0.0.6](https://github.com/farm-fe/farm/compare/farmfe_plugin_lazy_compilation-v0.0.5...farmfe_plugin_lazy_compilation-v0.0.6) - 2024-05-09
 
 ### Added

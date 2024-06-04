@@ -3,14 +3,7 @@ use serde_json::Value;
 
 use super::{bool_or_obj::BoolOrObj, config_regex::ConfigRegex};
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
-#[serde(untagged)]
-pub enum MinifyConfig {
-  Bool(bool),
-  Obj(MinifyOptions),
-}
-
-#[derive(Debug, Default, Clone, Deserialize, Serialize)]
+#[derive(Debug, Default, Clone, Deserialize, Serialize, PartialEq, Eq)]
 pub enum MinifyMode {
   #[serde(rename = "minify-resource-pot")]
   ResourcePot,
@@ -48,6 +41,22 @@ impl From<Value> for MinifyOptions {
   }
 }
 
+impl From<&BoolOrObj<Value>> for Option<MinifyOptions> {
+  fn from(value: &BoolOrObj<Value>) -> Self {
+    match value {
+      BoolOrObj::Bool(v) => {
+        if *v {
+          Some(Default::default())
+        } else {
+          None
+        }
+      }
+
+      BoolOrObj::Obj(v) => Some(MinifyOptions::from(v.clone())),
+    }
+  }
+}
+
 mod tests {
 
   #[test]
@@ -66,7 +75,7 @@ mod tests {
 
   #[test]
   fn deserialize_minify_options() {
-    use super::{MinifyConfig, MinifyOptions};
+    use super::MinifyOptions;
     use crate::config::bool_or_obj::BoolOrObj;
     use serde_json::json;
 

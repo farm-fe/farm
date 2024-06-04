@@ -54,6 +54,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f26201604c87b1e01bd3d98f8d5d9a8fcbb815e8cedb41ffccbeb4bf593a35fe"
 
 [[package]]
+name = "adler32"
+version = "1.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "aae1277d39aeec15cb388266ecc24b11c80469deae6067e17a1a7aa9e5c1f234"
+
+[[package]]
 name = "ahash"
 version = "0.7.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -829,6 +835,29 @@ dependencies = [
 ]
 
 [[package]]
+name = "create-farm"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "dialoguer",
+ "napi",
+ "napi-build",
+ "napi-derive",
+ "pico-args",
+ "rust-embed",
+]
+
+[[package]]
+name = "create_farm_node"
+version = "0.1.1"
+dependencies = [
+ "create-farm",
+ "napi",
+ "napi-build",
+ "napi-derive",
+]
+
+[[package]]
 name = "critical-section"
 version = "1.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1023,6 +1052,18 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 1.0.109",
+]
+
+[[package]]
+name = "dialoguer"
+version = "0.10.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "59c6f2989294b9a498d3ad5491a79c6deb604617378e1cdc4bfc1c1361fe2f87"
+dependencies = [
+ "console",
+ "shell-words",
+ "tempfile",
+ "zeroize",
 ]
 
 [[package]]
@@ -1343,7 +1384,7 @@ checksum = "4443176a9f2c162692bd3d352d745ef9413eec5782a80d8fd6f8a1ac692a07f7"
 
 [[package]]
 name = "farmfe_compiler"
-version = "0.0.8"
+version = "0.0.9"
 dependencies = [
  "farmfe_core",
  "farmfe_plugin_css",
@@ -1360,6 +1401,7 @@ dependencies = [
  "farmfe_plugin_script",
  "farmfe_plugin_static_assets",
  "farmfe_plugin_tree_shake",
+ "farmfe_testing",
  "farmfe_testing_helpers",
  "farmfe_toolkit",
  "farmfe_utils 0.1.4",
@@ -1368,7 +1410,7 @@ dependencies = [
 
 [[package]]
 name = "farmfe_core"
-version = "0.5.1"
+version = "0.6.0"
 dependencies = [
  "blake2",
  "bytecheck 0.7.0",
@@ -1439,7 +1481,7 @@ dependencies = [
 
 [[package]]
 name = "farmfe_plugin_css"
-version = "0.0.8"
+version = "0.0.9"
 dependencies = [
  "farmfe_core",
  "farmfe_macro_cache_item",
@@ -1451,7 +1493,7 @@ dependencies = [
 
 [[package]]
 name = "farmfe_plugin_define"
-version = "0.0.6"
+version = "0.0.7"
 dependencies = [
  "farmfe_core",
  "farmfe_testing_helpers",
@@ -1461,7 +1503,7 @@ dependencies = [
 
 [[package]]
 name = "farmfe_plugin_html"
-version = "0.0.6"
+version = "0.0.7"
 dependencies = [
  "farmfe_core",
  "farmfe_testing_helpers",
@@ -1471,7 +1513,7 @@ dependencies = [
 
 [[package]]
 name = "farmfe_plugin_json"
-version = "0.0.6"
+version = "0.0.7"
 dependencies = [
  "farmfe_core",
  "farmfe_testing_helpers",
@@ -1480,7 +1522,7 @@ dependencies = [
 
 [[package]]
 name = "farmfe_plugin_lazy_compilation"
-version = "0.0.6"
+version = "0.0.7"
 dependencies = [
  "farmfe_core",
  "farmfe_testing_helpers",
@@ -1490,7 +1532,7 @@ dependencies = [
 
 [[package]]
 name = "farmfe_plugin_minify"
-version = "0.0.6"
+version = "0.0.7"
 dependencies = [
  "farmfe_core",
  "farmfe_testing_helpers",
@@ -1499,7 +1541,7 @@ dependencies = [
 
 [[package]]
 name = "farmfe_plugin_partial_bundling"
-version = "0.0.6"
+version = "0.0.7"
 dependencies = [
  "farmfe_core",
  "farmfe_testing_helpers",
@@ -1508,7 +1550,7 @@ dependencies = [
 
 [[package]]
 name = "farmfe_plugin_polyfill"
-version = "0.0.6"
+version = "0.0.7"
 dependencies = [
  "farmfe_core",
  "farmfe_testing_helpers",
@@ -1517,7 +1559,7 @@ dependencies = [
 
 [[package]]
 name = "farmfe_plugin_progress"
-version = "0.0.6"
+version = "0.0.7"
 dependencies = [
  "console",
  "farmfe_core",
@@ -1540,7 +1582,7 @@ dependencies = [
 
 [[package]]
 name = "farmfe_plugin_resolve"
-version = "0.0.6"
+version = "0.0.7"
 dependencies = [
  "farmfe_core",
  "farmfe_testing_helpers",
@@ -1550,7 +1592,7 @@ dependencies = [
 
 [[package]]
 name = "farmfe_plugin_runtime"
-version = "0.0.6"
+version = "0.0.7"
 dependencies = [
  "farmfe_core",
  "farmfe_testing_helpers",
@@ -1576,7 +1618,7 @@ dependencies = [
 
 [[package]]
 name = "farmfe_plugin_script"
-version = "0.0.6"
+version = "0.0.7"
 dependencies = [
  "farmfe_core",
  "farmfe_swc_transformer_import_glob",
@@ -1591,7 +1633,7 @@ dependencies = [
 
 [[package]]
 name = "farmfe_plugin_static_assets"
-version = "0.0.7"
+version = "0.0.8"
 dependencies = [
  "base64 0.21.0",
  "farmfe_core",
@@ -1604,7 +1646,7 @@ dependencies = [
 
 [[package]]
 name = "farmfe_plugin_tree_shake"
-version = "0.0.6"
+version = "0.0.7"
 dependencies = [
  "farmfe_core",
  "farmfe_testing_helpers",
@@ -1614,7 +1656,7 @@ dependencies = [
 
 [[package]]
 name = "farmfe_swc_transformer_import_glob"
-version = "0.0.6"
+version = "0.0.7"
 dependencies = [
  "farmfe_core",
  "farmfe_testing_helpers",
@@ -1623,15 +1665,28 @@ dependencies = [
 ]
 
 [[package]]
+name = "farmfe_testing"
+version = "0.0.1"
+dependencies = [
+ "glob",
+ "heck 0.4.1",
+ "proc-macro-error",
+ "proc-macro2",
+ "quote",
+ "regex",
+ "syn 2.0.60",
+]
+
+[[package]]
 name = "farmfe_testing_helpers"
-version = "0.0.8"
+version = "0.0.9"
 dependencies = [
  "farmfe_core",
 ]
 
 [[package]]
 name = "farmfe_toolkit"
-version = "0.0.8"
+version = "0.0.9"
 dependencies = [
  "anyhow",
  "farmfe_core",
@@ -1665,7 +1720,7 @@ dependencies = [
 
 [[package]]
 name = "farmfe_toolkit_plugin_types"
-version = "0.0.15"
+version = "0.0.16"
 dependencies = [
  "farmfe_core",
  "lazy_static",
@@ -1971,6 +2026,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "glob"
+version = "0.3.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d2fabcfbdc87f4758337ca535fb41a6d701b65693ce38287d856d1674551ec9b"
+
+[[package]]
 name = "glow"
 version = "0.12.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2222,6 +2283,40 @@ dependencies = [
  "num-rational",
  "num-traits",
  "png",
+]
+
+[[package]]
+name = "include-flate"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c2e11569346406931d20276cc460215ee2826e7cad43aa986999cb244dd7adb0"
+dependencies = [
+ "include-flate-codegen-exports",
+ "lazy_static",
+ "libflate",
+]
+
+[[package]]
+name = "include-flate-codegen"
+version = "0.1.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3a7d6e1419fa3129eb0802b4c99603c0d425c79fb5d76191d5a20d0ab0d664e8"
+dependencies = [
+ "libflate",
+ "proc-macro-hack",
+ "proc-macro2",
+ "quote",
+ "syn 1.0.109",
+]
+
+[[package]]
+name = "include-flate-codegen-exports"
+version = "0.1.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "75657043ffe3d8280f1cb8aef0f505532b392ed7758e0baeac22edadcee31a03"
+dependencies = [
+ "include-flate-codegen",
+ "proc-macro-hack",
 ]
 
 [[package]]
@@ -2540,6 +2635,26 @@ name = "libc"
 version = "0.2.142"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6a987beff54b60ffa6d51982e1aa1146bc42f19bd26be28b0586f252fccf5317"
+
+[[package]]
+name = "libflate"
+version = "1.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5ff4ae71b685bbad2f2f391fe74f6b7659a34871c08b210fdc039e43bee07d18"
+dependencies = [
+ "adler32",
+ "crc32fast",
+ "libflate_lz77",
+]
+
+[[package]]
+name = "libflate_lz77"
+version = "1.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a52d3a8bfc85f250440e4424db7d857e241a3aebbbe301f3eb606ab15c39acbf"
+dependencies = [
+ "rle-decode-fast",
+]
 
 [[package]]
 name = "libloading"
@@ -3279,6 +3394,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "pico-args"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5be167a7af36ee22fe3115051bc51f6e6c7054c9348e28deb4f49bd6f705a315"
+
+[[package]]
 name = "pin-project"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3795,6 +3916,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "rle-decode-fast"
+version = "1.0.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3582f63211428f83597b51b2ddb88e2a91a9d52d12831f9d08f5e624e8977422"
+
+[[package]]
 name = "ron"
 version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3803,6 +3930,42 @@ dependencies = [
  "base64 0.13.1",
  "bitflags 1.3.2",
  "serde",
+]
+
+[[package]]
+name = "rust-embed"
+version = "8.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "19549741604902eb99a7ed0ee177a0663ee1eda51a29f71401f166e47e77806a"
+dependencies = [
+ "include-flate",
+ "rust-embed-impl",
+ "rust-embed-utils",
+ "walkdir",
+]
+
+[[package]]
+name = "rust-embed-impl"
+version = "8.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cb9f96e283ec64401f30d3df8ee2aaeb2561f34c824381efa24a35f79bf40ee4"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "rust-embed-utils",
+ "shellexpand 3.1.0",
+ "syn 2.0.60",
+ "walkdir",
+]
+
+[[package]]
+name = "rust-embed-utils"
+version = "8.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "38c74a686185620830701348de757fd36bef4aa9680fd23c49fc539ddcc1af32"
+dependencies = [
+ "sha2",
+ "walkdir",
 ]
 
 [[package]]
@@ -4072,10 +4235,25 @@ dependencies = [
 ]
 
 [[package]]
+name = "shell-words"
+version = "1.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "24188a676b6ae68c3b2cb3a01be17fbf7240ce009799bb56d5b1409051e78fde"
+
+[[package]]
 name = "shellexpand"
 version = "2.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7ccc8076840c4da029af4f87e4e8daeb0fca6b87bbb02e10cb60b791450e11e4"
+dependencies = [
+ "dirs",
+]
+
+[[package]]
+name = "shellexpand"
+version = "3.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "da03fa3b94cc19e3ebfc88c4229c49d8f08cdbd1228870a45f0ffdf84988e14b"
 dependencies = [
  "dirs",
 ]
@@ -6395,7 +6573,7 @@ dependencies = [
  "serde_json",
  "serde_yaml 0.8.26",
  "sha2",
- "shellexpand",
+ "shellexpand 2.1.2",
  "tempfile",
  "term_size",
  "termios",
@@ -7074,3 +7252,9 @@ dependencies = [
  "quote",
  "syn 2.0.60",
 ]
+
+[[package]]
+name = "zeroize"
+version = "1.7.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "525b4ec142c6b68a2d10f01f7bbf6755599ca3f81ea53b8431b7dd348f5fdb2d"

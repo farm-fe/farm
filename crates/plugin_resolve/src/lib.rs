@@ -1,9 +1,13 @@
-use std::{collections::HashMap, path::Path, sync::Arc};
+use std::{
+  collections::HashMap,
+  path::Path,
+  sync::{Arc, RwLock},
+};
 
 use farmfe_core::{
-  config::Config,
+  config::{external::ExternalConfig, Config},
   context::CompilationContext,
-  error::Result,
+  error::{CompilationError, Result},
   farm_profile_function, farm_profile_scope,
   plugin::{
     Plugin, PluginHookContext, PluginResolveHookParam, PluginResolveHookResult, ResolveKind,
@@ -18,6 +22,7 @@ pub mod resolver;
 pub struct FarmPluginResolve {
   root: String,
   resolver: Resolver,
+  external_config: RwLock<Option<ExternalConfig>>,
 }
 
 impl FarmPluginResolve {
@@ -25,6 +30,7 @@ impl FarmPluginResolve {
     Self {
       root: config.root.clone(),
       resolver: Resolver::new(),
+      external_config: RwLock::new(None)
     }
   }
 }
@@ -41,6 +47,24 @@ impl Plugin for FarmPluginResolve {
     _hook_context: &PluginHookContext,
   ) -> Result<Option<PluginResolveHookResult>> {
     farm_profile_function!("plugin_resolve::resolve".to_string());
+
+    let mut external_config = self
+      .external_config
+      .read()
+      .map_err(|_| CompilationError::GenericError("failed get lock".to_string()))?;
+
+    if external_config.is_none() {
+      drop(external_config);
+      let mut external_config_mut = self.external_config.write().unwrap();
+
+      *external_config_mut = Some(ExternalConfig::from(&*context.config));
+
+      drop(external_config_mut);
+
+      external_config = self.external_config.read().unwrap();
+    }
+
+    let external_config = external_config.as_ref().unwrap();
 
     let source = &param.source;
 
@@ -71,7 +95,7 @@ impl Plugin for FarmPluginResolve {
     {
       farm_profile_scope!("plugin_resolve::resolve::check_external".to_string());
       // check external first, if the source is set as external, return it immediately
-      if context.config.external.iter().any(|e| e.is_match(source)) {
+      if external_config.is_external(source) {
         return Ok(Some(PluginResolveHookResult {
           resolved_path: param.source.clone(),
           external: true,

@@ -1,0 +1,25 @@
+{
+  "name": "@farmfe-examples/tree-shake-antd",
+  "version": "0.0.2",
+  "private": true,
+  "dependencies": {
+    "antd": "^5.4.2",
+    "react": "18",
+    "react-dom": "18"
+  },
+  "devDependencies": {
+    "@farmfe/cli": "workspace:*",
+    "@farmfe/core": "workspace:*",
+    "@farmfe/plugin-react": "workspace:^1.1.0",
+    "@farmfe/plugin-sass": "workspace:^1.0.5",
+    "@types/react": "18",
+    "@types/react-dom": "18",
+    "react-refresh": "^0.14.0"
+  },
+  "scripts": {
+    "start": "farm start",
+    "build:button": "farm build -c farm.config.button.ts",
+    "build": "npm run build:button && farm build",
+    "preview": "farm preview"
+  }
+}

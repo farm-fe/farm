@@ -1,22 +1,26 @@
-import { Config } from '../../binding/index.js';
 import { Compiler } from '../compiler/index.js';
+import { convertErrorMessage } from './error.js';
+import { Logger } from './logger.js';
 
-function createTraceDepCompiler(entry: string) {
+import type { Config } from '../types/binding.js';
+
+function createTraceDepCompiler(entry: string, logger: Logger) {
   const config = getDefaultTraceDepCompilerConfig(entry);
   config.config.progress = false;
-  return new Compiler(config);
+  return new Compiler(config, logger);
 }
 
 export async function traceDependencies(
-  configFilePath: string
+  configFilePath: string,
+  logger: Logger
 ): Promise<string[]> {
   try {
-    const compiler = createTraceDepCompiler(configFilePath);
+    const compiler = createTraceDepCompiler(configFilePath, logger);
     const files = await compiler.traceDependencies();
     return files;
   } catch (error) {
-    console.error('Error tracing dependencies:', error);
-    throw error;
+    const errorMessage = convertErrorMessage(error);
+    throw Error(`Error tracing dependencies: ${errorMessage}`);
   }
 }
 
