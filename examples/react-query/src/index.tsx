@@ -17,7 +17,7 @@ function App() {
 
 root.render(
   <QueryClientProvider client={queryClient}>
-    <ReactQueryDevtools initialIsOpen={false} />
+    {/* <ReactQueryDevtools initialIsOpen={true} /> */}
     <Router>
       <App />
     </Router>
