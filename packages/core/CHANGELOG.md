@@ -1,5 +1,13 @@
 # @farmfe/core
 
+## 1.1.13
+
+### Patch Changes
+
+- 34336080: chore(refactor): optimize tree shake implemetation to improve performance
+- d9cb6902: fix: encode the lazy compile path
+- c2c6717c: fix failed fetch resource
+
 ## 1.1.12
 
 ### Patch Changes
