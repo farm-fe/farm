@@ -1,0 +1,29 @@
+{
+  "name": "@farmfe-examples/react-query",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "core-js": "^3.36.1",
+    "react": "18",
+    "react-dom": "18",
+    "react-router": "^6.22.3",
+    "react-router-dom": "^6.22.3",
+    "@tanstack/react-query": "^5.32.0"
+  },
+  "devDependencies": {
+    "@farmfe/cli": "workspace:*",
+    "@farmfe/core": "workspace:*",
+    "@farmfe/plugin-react": "^1.0.1",
+    "@types/react": "18",
+    "@types/react-dom": "18",
+    "react-refresh": "^0.14.0",
+    "vite-plugin-pages": "^0.32.0",
+    "@tanstack/react-query-devtools": "^5.32.0"
+  },
+  "scripts": {
+    "dev": "farm start",
+    "start": "farm start",
+    "build": "farm build",
+    "preview": "farm preview"
+  }
+}
