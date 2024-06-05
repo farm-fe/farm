@@ -4,7 +4,7 @@ use std::{ffi::OsString, fs, process::exit};
 
 use crate::{
   package_manager::PackageManager,
-  template::{TauriSubTemplate, Template},
+  template::{ElectronSubTemplate, TauriSubTemplate, Template},
   utils::{colors::*, theme::ColorfulTheme},
 };
 
@@ -100,37 +100,68 @@ where
         .interact()?;
 
       let selected_template = templates_no_flavors[index];
-      if let Template::Tauri(None) = selected_template {
-        let sub_templates_text = vec![
-          TauriSubTemplate::React,
-          TauriSubTemplate::Vue,
-          TauriSubTemplate::Svelte,
-          TauriSubTemplate::Vanilla,
-          TauriSubTemplate::Solid,
-          TauriSubTemplate::Preact,
-        ]
-        .iter()
-        .map(|sub_template| format!("{}", sub_template))
-        .collect::<Vec<_>>();
+      match selected_template {
+        Template::Tauri(None) => {
+          let sub_templates_text = vec![
+            TauriSubTemplate::React,
+            TauriSubTemplate::Vue,
+            TauriSubTemplate::Svelte,
+            TauriSubTemplate::Vanilla,
+            TauriSubTemplate::Solid,
+            TauriSubTemplate::Preact,
+          ]
+          .iter()
+          .map(|sub_template| format!("{}", sub_template))
+          .collect::<Vec<_>>();
 
-        let sub_template_index = Select::with_theme(&ColorfulTheme::default())
-          .with_prompt("Select a Tauri template:")
-          .items(&sub_templates_text)
-          .default(0)
-          .interact()?;
+          let sub_template_index = Select::with_theme(&ColorfulTheme::default())
+            .with_prompt("Select a Tauri template:")
+            .items(&sub_templates_text)
+            .default(0)
+            .interact()?;
 
-        let sub_template = match sub_template_index {
-          0 => TauriSubTemplate::React,
-          1 => TauriSubTemplate::Vue,
-          2 => TauriSubTemplate::Svelte,
-          3 => TauriSubTemplate::Vanilla,
-          4 => TauriSubTemplate::Solid,
-          5 => TauriSubTemplate::Preact,
-          _ => unreachable!(),
-        };
-        Template::Tauri(Some(sub_template))
-      } else {
-        selected_template
+          let sub_template = match sub_template_index {
+            0 => TauriSubTemplate::React,
+            1 => TauriSubTemplate::Vue,
+            2 => TauriSubTemplate::Svelte,
+            3 => TauriSubTemplate::Vanilla,
+            4 => TauriSubTemplate::Solid,
+            5 => TauriSubTemplate::Preact,
+            _ => unreachable!(),
+          };
+          Template::Tauri(Some(sub_template))
+        }
+        Template::Electron(None) => {
+          let sub_templates_text = vec![
+            ElectronSubTemplate::React,
+            ElectronSubTemplate::Vue,
+            ElectronSubTemplate::Svelte,
+            ElectronSubTemplate::Vanilla,
+            ElectronSubTemplate::Solid,
+            ElectronSubTemplate::Preact,
+          ]
+          .iter()
+          .map(|sub_template| format!("{}", sub_template))
+          .collect::<Vec<_>>();
+
+          let sub_template_index = Select::with_theme(&ColorfulTheme::default())
+            .with_prompt("Select an Electron template:")
+            .items(&sub_templates_text)
+            .default(0)
+            .interact()?;
+
+          let sub_template = match sub_template_index {
+            0 => ElectronSubTemplate::React,
+            1 => ElectronSubTemplate::Vue,
+            2 => ElectronSubTemplate::Svelte,
+            3 => ElectronSubTemplate::Vanilla,
+            4 => ElectronSubTemplate::Solid,
+            5 => ElectronSubTemplate::Preact,
+            _ => unreachable!(),
+          };
+          Template::Electron(Some(sub_template))
+        }
+        _ => selected_template,
       }
     }
   };
@@ -163,7 +194,7 @@ where
 
   if target_dir != cwd {
     handle_brand_text(&format!(
-      "   cd {} \n",
+      "    cd {} \n",
       if project_name.contains(' ') {
         format!("\"{}\"", project_name)
       } else {
@@ -172,9 +203,9 @@ where
     ));
   }
   if let Some(cmd) = pkg_manager.install_cmd() {
-    handle_brand_text(&format!("  {} \n", cmd));
+    handle_brand_text(&format!("    {} \n", cmd));
   }
-  handle_brand_text(&format!(" {} \n", &pkg_manager.run_cmd()));
+  handle_brand_text(&format!("    {} \n", &pkg_manager.run_cmd()));
 
   Ok(())
 }

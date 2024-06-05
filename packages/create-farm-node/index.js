@@ -223,35 +223,35 @@ switch (platform) {
           }
         }
         break
-      // case 'arm':
-      //   if (isMusl()) {
-      //     localFileExisted = existsSync(
-      //       join(__dirname, 'create-farm-node.linux-arm-musleabihf.node')
-      //     )
-      //     try {
-      //       if (localFileExisted) {
-      //         nativeBinding = require('./create-farm-node.linux-arm-musleabihf.node')
-      //       } else {
-      //         nativeBinding = require('create-farm-node-linux-arm-musleabihf')
-      //       }
-      //     } catch (e) {
-      //       loadError = e
-      //     }
-      //   } else {
-      //     localFileExisted = existsSync(
-      //       join(__dirname, 'create-farm-node.linux-arm-gnueabihf.node')
-      //     )
-      //     try {
-      //       if (localFileExisted) {
-      //         nativeBinding = require('./create-farm-node.linux-arm-gnueabihf.node')
-      //       } else {
-      //         nativeBinding = require('create-farm-node-linux-arm-gnueabihf')
-      //       }
-      //     } catch (e) {
-      //       loadError = e
-      //     }
-      //   }
-      //   break
+      case 'arm':
+        if (isMusl()) {
+          localFileExisted = existsSync(
+            join(__dirname, 'create-farm-node.linux-arm-musleabihf.node')
+          )
+          try {
+            if (localFileExisted) {
+              nativeBinding = require('./create-farm-node.linux-arm-musleabihf.node')
+            } else {
+              nativeBinding = require('create-farm-node-linux-arm-musleabihf')
+            }
+          } catch (e) {
+            loadError = e
+          }
+        } else {
+          localFileExisted = existsSync(
+            join(__dirname, 'create-farm-node.linux-arm-gnueabihf.node')
+          )
+          try {
+            if (localFileExisted) {
+              nativeBinding = require('./create-farm-node.linux-arm-gnueabihf.node')
+            } else {
+              nativeBinding = require('create-farm-node-linux-arm-gnueabihf')
+            }
+          } catch (e) {
+            loadError = e
+          }
+        }
+        break
       case 'riscv64':
         if (isMusl()) {
           localFileExisted = existsSync(

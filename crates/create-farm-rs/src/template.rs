@@ -14,6 +14,64 @@ use rust_embed::RustEmbed;
 struct EMBEDDED_TEMPLATES;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+
+pub enum ElectronSubTemplate {
+  React,
+  Vue,
+  Svelte,
+  Vanilla,
+  Solid,
+  Preact,
+}
+
+impl ElectronSubTemplate {
+  pub fn to_simple_string(&self) -> &str {
+    match self {
+      ElectronSubTemplate::React => "react",
+      ElectronSubTemplate::Vue => "vue",
+      ElectronSubTemplate::Svelte => "svelte",
+      ElectronSubTemplate::Vanilla => "vanilla",
+      ElectronSubTemplate::Solid => "solid",
+      ElectronSubTemplate::Preact => "preact",
+    }
+  }
+}
+
+impl Display for ElectronSubTemplate {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    match self {
+      ElectronSubTemplate::React => write!(f, "\x1b[36mReact - (https://react.dev/)\x1b[39m"),
+      ElectronSubTemplate::Vue => write!(f, "\x1b[32mVue3 - (https://vuejs.org/)\x1b[39m"),
+      ElectronSubTemplate::Svelte => write!(
+        f,
+        "\x1b[38;2;255;137;54mSvelte - (https://svelte.dev/)\x1b[39m"
+      ),
+      ElectronSubTemplate::Vanilla => write!(f, "\x1b[33mVanilla\x1b[39m"),
+      ElectronSubTemplate::Solid => write!(
+        f,
+        "\x1b[38;2;68;206;246mSolid - (https://solidjs.com/)\x1b[39m"
+      ),
+      ElectronSubTemplate::Preact => write!(f, "\x1b[36mPreact - (https://preactjs.com/)\x1b[36m"),
+    }
+  }
+}
+
+impl FromStr for ElectronSubTemplate {
+  type Err = String;
+  fn from_str(s: &str) -> Result<Self, Self::Err> {
+    match s {
+      "react" => Ok(ElectronSubTemplate::React),
+      "vue" => Ok(ElectronSubTemplate::Vue),
+      "vanilla" => Ok(ElectronSubTemplate::Vanilla),
+      "svelte" => Ok(ElectronSubTemplate::Svelte),
+      "solid" => Ok(ElectronSubTemplate::Solid),
+      "preact" => Ok(ElectronSubTemplate::Preact),
+      _ => Err(format!("{s} is not a valid Electron template.")),
+    }
+  }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TauriSubTemplate {
   React,
   Vue,
@@ -81,7 +139,9 @@ pub enum Template {
   Svelte,
   Solid,
   Preact,
+  Nestjs,
   Tauri(Option<TauriSubTemplate>),
+  Electron(Option<ElectronSubTemplate>),
 }
 
 impl Default for Template {
@@ -101,8 +161,11 @@ impl Display for Template {
       Template::Lit => write!(f, "lit"),
       Template::Solid => write!(f, "solid"),
       Template::Preact => write!(f, "preact"),
+      Template::Nestjs => write!(f, "nestjs"),
       Template::Tauri(None) => write!(f, "tauri"),
       Template::Tauri(Some(sub_template)) => write!(f, "tauri-{}", sub_template),
+      Template::Electron(None) => write!(f, "electron"),
+      Template::Electron(Some(sub_template)) => write!(f, "electron-{}", sub_template),
     }
   }
 }
@@ -119,7 +182,9 @@ impl FromStr for Template {
       "svelte" => Ok(Template::Svelte),
       "solid" => Ok(Template::Solid),
       "preact" => Ok(Template::Preact),
+      "nestjs" => Ok(Template::Nestjs),
       "tauri" => Ok(Template::Tauri(None)),
+      "electron" => Ok(Template::Electron(None)),
       _ => Err(format!(
         "{YELLOW}{s}{RESET} is not a valid template. Valid templates are [{}]",
         Template::ALL
@@ -138,11 +203,12 @@ impl Template {
       Template::Vanilla => "\x1b[33mVanilla\x1b[39m",
       Template::React => "\x1b[36mReact - (https://react.dev/)\x1b[39m",
       Template::Vue3 => "\x1b[32mVue3 - (https://vuejs.org/)\x1b[39m",
-      Template::Vue2 => "\x1b[38;2;255;102;102mVue2 - (https://v2.vuejs.org/)\x1b[39m",
-      Template::Svelte => "\x1b[38;2;255;137;54mSvelte - (https://svelte.dev/)\x1b[39m",
+      Template::Vue2 => "\x1b[32mVue2 - (https://v2.vuejs.org/)\x1b[39m",
       Template::Solid => "\x1b[38;2;68;206;246mSolid - (https://solidjs.com/)\x1b[39m",
-      Template::Lit => "\x1b[38;2;255;102;102mLit - (https://lit.dev/)\x1b[39m",
+      Template::Svelte => "\x1b[38;2;255;137;54mSvelte - (https://svelte.dev/)\x1b[39m",
+      Template::Lit => "\x1b[33mLit - (https://lit.dev/)\x1b[39m",
       Template::Preact => "\x1b[36mPreact - (https://preactjs.com/)\x1b[36m",
+      Template::Nestjs => "\x1b[38;2;255;102;102mNestJS - (https://nestjs.com/)\x1b[39m",
       Template::Tauri(None) => "\x1b[38;2;255;137;54mTauri - (https://tauri.app/)\x1b[39m",
       Template::Tauri(Some(sub_template)) => match sub_template {
         TauriSubTemplate::React => "\x1b[38;2;255;215;0mTauri with React\x1b[39m",
@@ -151,6 +217,15 @@ impl Template {
         TauriSubTemplate::Svelte => "\x1b[38;2;255;215;0mTauri with Svelte\x1b[39m",
         TauriSubTemplate::Solid => "\x1b[38;2;255;215;0mTauri with Solid\x1b[39m",
         TauriSubTemplate::Preact => "\x1b[38;2;255;215;0mTauri with Preact\x1b[39m",
+      },
+      Template::Electron(None) => "\x1b[38;2;255;215;0mElectron - (https://www.electronjs.org/)\x1b[39m",
+      Template::Electron(Some(sub_template)) => match sub_template {
+        ElectronSubTemplate::React => "\x1b[38;2;255;215;0mElectron with React\x1b[39m",
+        ElectronSubTemplate::Vue => "\x1b[38;2;255;215;0mElectron with Vue\x1b[39m",
+        ElectronSubTemplate::Vanilla => "\x1b[38;2;255;215;0mElectron with Vanilla\x1b[39m",
+        ElectronSubTemplate::Svelte => "\x1b[38;2;255;215;0mElectron with Svelte\x1b[39m",
+        ElectronSubTemplate::Solid => "\x1b[38;2;255;215;0mElectron with Solid\x1b[39m",
+        ElectronSubTemplate::Preact => "\x1b[38;2;255;215;0mElectron with Preact\x1b[39m",
       },
       _ => unreachable!(),
     }
@@ -167,6 +242,7 @@ impl<'a> Template {
     Template::Svelte,
     Template::Solid,
     Template::Preact,
+    Template::Nestjs,
     Template::Tauri(None),
     Template::Tauri(Some(TauriSubTemplate::React)),
     Template::Tauri(Some(TauriSubTemplate::Vue)),
@@ -174,6 +250,13 @@ impl<'a> Template {
     Template::Tauri(Some(TauriSubTemplate::Svelte)),
     Template::Tauri(Some(TauriSubTemplate::Solid)),
     Template::Tauri(Some(TauriSubTemplate::Preact)),
+    Template::Electron(None),
+    Template::Electron(Some(ElectronSubTemplate::React)),
+    Template::Electron(Some(ElectronSubTemplate::Vue)),
+    Template::Electron(Some(ElectronSubTemplate::Vanilla)),
+    Template::Electron(Some(ElectronSubTemplate::Svelte)),
+    Template::Electron(Some(ElectronSubTemplate::Solid)),
+    Template::Electron(Some(ElectronSubTemplate::Preact)),
   ];
 
   fn transform_to_pascal_case(s: String) -> String {
@@ -264,6 +347,8 @@ impl<'a> Template {
     let current_template_name = match self {
       Template::Tauri(None) => "tauri".to_string(),
       Template::Tauri(Some(sub_template)) => format!("tauri/{}", sub_template.to_simple_string()),
+      Template::Electron(None) => "electron".to_string(),
+      Template::Electron(Some(sub_template)) => format!("electron/{}", sub_template.to_simple_string()),
       _ => self.to_string(),
     };
 

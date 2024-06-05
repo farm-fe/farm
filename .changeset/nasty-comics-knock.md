@@ -2,4 +2,4 @@
 "create-farm-node": patch
 ---
 
-support more frameworks
+support more frameworks electron, tauri, nestjs
