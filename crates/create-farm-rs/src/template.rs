@@ -208,7 +208,6 @@ impl Template {
       Template::Svelte => "\x1b[38;2;255;137;54mSvelte - (https://svelte.dev/)\x1b[39m",
       Template::Lit => "\x1b[33mLit - (https://lit.dev/)\x1b[39m",
       Template::Preact => "\x1b[36mPreact - (https://preactjs.com/)\x1b[36m",
-      Template::Nestjs => "\x1b[38;2;255;102;102mNestJS - (https://nestjs.com/)\x1b[39m",
       Template::Tauri(None) => "\x1b[38;2;255;137;54mTauri - (https://tauri.app/)\x1b[39m",
       Template::Tauri(Some(sub_template)) => match sub_template {
         TauriSubTemplate::React => "\x1b[38;2;255;215;0mTauri with React\x1b[39m",
@@ -227,6 +226,7 @@ impl Template {
         ElectronSubTemplate::Solid => "\x1b[38;2;255;215;0mElectron with Solid\x1b[39m",
         ElectronSubTemplate::Preact => "\x1b[38;2;255;215;0mElectron with Preact\x1b[39m",
       },
+      Template::Nestjs => "\x1b[38;2;255;102;102mNestJS - (https://nestjs.com/)\x1b[39m",
       _ => unreachable!(),
     }
   }
