@@ -111,7 +111,7 @@ pub fn resource_pot_to_runtime_object(
         }
       }
 
-      let is_async_module = async_modules.contains(&m_id);
+      let is_async_module = async_modules.contains(m_id);
       let RenderModuleResult {
         rendered_module,
         external_modules,

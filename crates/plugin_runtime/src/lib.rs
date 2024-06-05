@@ -430,7 +430,7 @@ impl Plugin for FarmPluginRuntime {
             .into_iter()
             .map(
               |(name, source)| if context.config.output.format == ModuleFormat::EsModule {
-                format!("{source:?}: {{...{name},__esModule:true}}")
+                format!("{source:?}: {name} && {name}.default && !{name}.__esModule ? {{...{name},__esModule:true}} : {name}")
               } else {
                 format!("{source:?}: {name}")
               }
@@ -454,7 +454,7 @@ impl Plugin for FarmPluginRuntime {
 
           let source_obj = format!("(globalThis||window||{{}})['{}']||{{}}", replace_source);
           external_objs.push(if context.config.output.format == ModuleFormat::EsModule {
-            format!("{source:?}: {{...({source_obj}),__esModule:true}}")
+            format!("{source:?}: ({source_obj}).default && !({source_obj}).__esModule ? {{...({source_obj}),__esModule:true}} : ({source_obj})")
           } else {
             format!("{source:?}: {source_obj}")
           });

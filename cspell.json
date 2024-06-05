@@ -176,7 +176,8 @@
     "wasix",
     "wechat",
     "xlink",
-    "Yuxi"
+    "Yuxi",
+    "wasmer"
   ],
   "ignorePaths": [
     "pnpm-lock.yaml",

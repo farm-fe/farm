@@ -2,8 +2,8 @@ use std::sync::Arc;
 
 use farmfe_core::{
   module::{Module, ModuleMetaData, ScriptModuleMetaData},
-  swc_common::{Globals, Mark, SourceMap, GLOBALS},
-  swc_ecma_ast::{EsVersion, Module as SwcModule},
+  swc_common::{comments::SingleThreadedComments, Globals, Mark, SourceMap, GLOBALS},
+  swc_ecma_ast::{EsVersion, Id, Module as SwcModule},
   swc_ecma_parser::Syntax,
 };
 use farmfe_toolkit::{
@@ -12,6 +12,25 @@ use farmfe_toolkit::{
   swc_ecma_transforms::resolver,
   swc_ecma_visit::VisitMutWith,
 };
+
+pub fn parse_module_with_comments(code: &str) -> (SwcModule, SingleThreadedComments, Mark, Mark) {
+  let ParseScriptModuleResult {
+    ast: mut swc_module,
+    comments,
+  } = farmfe_toolkit::script::parse_module(
+    "any",
+    code,
+    Syntax::Es(Default::default()),
+    EsVersion::Es2022,
+  )
+  .unwrap();
+  let top_level_mark = Mark::new();
+  let unresolved_mark = Mark::new();
+
+  swc_module.visit_mut_with(&mut resolver(unresolved_mark, top_level_mark, false));
+
+  (swc_module, comments, unresolved_mark, top_level_mark)
+}
 
 pub fn parse_module(code: &str) -> (SwcModule, Arc<SourceMap>) {
   let (cm, _) = create_swc_source_map(Source {
@@ -25,17 +44,31 @@ pub fn parse_module(code: &str) -> (SwcModule, Arc<SourceMap>) {
     "any",
     code,
     Syntax::Es(Default::default()),
-    EsVersion::EsNext,
+    EsVersion::Es2022,
   )
   .unwrap();
+  let top_level_mark = Mark::new();
+  let unresoled_mark = Mark::new();
 
-  swc_module.body.visit_mut_with(&mut resolver(
-    Mark::fresh(Mark::root()),
-    Mark::fresh(Mark::root()),
-    false,
-  ));
+  swc_module.visit_mut_with(&mut resolver(unresoled_mark, top_level_mark, false));
 
   (swc_module, cm)
+}
+
+#[allow(dead_code)]
+pub fn create_module_with_comments(code: &str) -> Module {
+  let mut module = Module::new("used_exports_idents_test".into());
+  let (ast, comments, unresolved_mark, top_level_mark) = parse_module_with_comments(code);
+  module.meta = Box::new(ModuleMetaData::Script(ScriptModuleMetaData {
+    ast,
+    top_level_mark: top_level_mark.as_u32(),
+    unresolved_mark: unresolved_mark.as_u32(),
+    module_system: farmfe_core::module::ModuleSystem::EsModule,
+    hmr_self_accepted: false,
+    hmr_accepted_deps: Default::default(),
+    comments: comments.into(),
+  }));
+  module
 }
 
 #[allow(dead_code)]
@@ -70,4 +103,8 @@ pub fn create_module_with_globals(code: &str) -> Module {
     }));
     module
   })
+}
+
+pub fn print_id(id: &Id) -> String {
+  format!("{}{:?}", id.0, id.1)
 }

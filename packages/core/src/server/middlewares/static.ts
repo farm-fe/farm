@@ -7,7 +7,10 @@ import { Server } from '../index.js';
 export function staticMiddleware(devServerContext: Server): Middleware {
   const { config } = devServerContext;
 
-  const staticMiddleware = serve(config.distDir);
+  const staticMiddleware = serve(config.distDir, {
+    // multiple page maybe receive "about", should auto try extension
+    extensions: ['html']
+  });
 
   // Fallback
   const fallbackMiddleware: Middleware = async (ctx: Context, next: Next) => {

@@ -25,7 +25,7 @@
 ,});
 
 //index.js:
- import "./__farm_runtime.acdc4364.mjs";import "./index_2faa.js";import "./index_64d2.js";(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setExternalModules({"module": {...((globalThis||window||{})['module']||{}),__esModule:true}});(function(_){for(var r in _){_[r].__farm_resource_pot__='index_dcdc.js';(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.register(r,_[r])}})({"b5d64806":function  (module, exports, farmRequire, farmDynamicRequire) {
+ import "./__farm_runtime.acdc4364.mjs";import "./index_2faa.js";import "./index_64d2.js";(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setExternalModules({"module": ((globalThis||window||{})['module']||{}).default && !((globalThis||window||{})['module']||{}).__esModule ? {...((globalThis||window||{})['module']||{}),__esModule:true} : ((globalThis||window||{})['module']||{})});(function(_){for(var r in _){_[r].__farm_resource_pot__='index_dcdc.js';(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.register(r,_[r])}})({"b5d64806":function  (module, exports, farmRequire, farmDynamicRequire) {
     "use strict";
     Object.defineProperty(exports, "__esModule", {
         value: true
