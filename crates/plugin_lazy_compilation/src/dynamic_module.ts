@@ -89,7 +89,7 @@ if (compilingModules.has(modulePath)) {
       const queue = [...FarmModuleSystem.lazyCompilingQueue];
       FarmModuleSystem.lazyCompilingQueue = [];
       const paths = queue.map((item) => item.modulePath);
-      const url = `/__lazy_compile?paths=${paths.join(',')}&t=${Date.now()}${
+      const url = `/__lazy_compile?paths=${encodeURIComponent(paths.join(','))}&t=${Date.now()}${
         isNodeLazyCompile ? '&node=true' : ''
       }`;
 
