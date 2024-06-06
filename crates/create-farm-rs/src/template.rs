@@ -139,7 +139,7 @@ impl Display for Template {
     match self {
       Template::Vanilla => write!(f, "vanilla"),
       Template::React => write!(f, "react"),
-      Template::Vue3 => write!(f, "vue"),
+      Template::Vue3 => write!(f, "vue3"),
       Template::Vue2 => write!(f, "vue2"),
       Template::Svelte => write!(f, "svelte"),
       Template::Lit => write!(f, "lit"),
@@ -160,7 +160,7 @@ impl FromStr for Template {
     match s {
       "vanilla" => Ok(Template::Vanilla),
       "react" => Ok(Template::React),
-      "vue" => Ok(Template::Vue3),
+      "vue3" => Ok(Template::Vue3),
       "vue2" => Ok(Template::Vue2),
       "lit" => Ok(Template::Lit),
       "svelte" => Ok(Template::Svelte),
