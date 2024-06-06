@@ -3,7 +3,9 @@ use dialoguer::{Confirm, Input, Select};
 use std::{ffi::OsString, fs, process::exit};
 
 use crate::{
-  package_manager::PackageManager, template::{TauriSubTemplate, Template}, utils::{colors::*, theme::ColorfulTheme}
+  package_manager::PackageManager,
+  template::{ElectronSubTemplate, TauriSubTemplate, Template},
+  utils::{colors::*, theme::ColorfulTheme},
 };
 
 mod args;
@@ -52,7 +54,6 @@ where
       .trim()
       .into(),
   };
-
   let target_dir = cwd.join(&project_name);
 
   if target_dir.exists() && target_dir.read_dir()?.next().is_some() {
@@ -77,64 +78,93 @@ where
     }
   };
 
-  let pkg_manager = match manager {
+  let pkg_manager = match detected_manager {
     Some(manager) => manager,
     None => defaults.manager.context("default manager not set")?,
   };
-
-  println!("{} {}", "Selected Package Manager:", pkg_manager.to_string());
 
   let templates_no_flavors = pkg_manager.templates_no_flavors();
 
   let template = match template {
     Some(template) => template,
     None => {
-        let templates_text = templates_no_flavors
-            .iter()
-            .map(|t| t.select_text())
-            .collect::<Vec<_>>();
+      let templates_text = templates_no_flavors
+        .iter()
+        .map(|t| t.select_text())
+        .collect::<Vec<_>>();
 
-        let index = Select::with_theme(&ColorfulTheme::default())
-            .with_prompt("Select a framework:")
-            .items(&templates_text)
+      let index = Select::with_theme(&ColorfulTheme::default())
+        .with_prompt("Select a framework:")
+        .items(&templates_text)
+        .default(0)
+        .interact()?;
+
+      let selected_template = templates_no_flavors[index];
+      match selected_template {
+        Template::Tauri(None) => {
+          let sub_templates_text = vec![
+            TauriSubTemplate::React,
+            TauriSubTemplate::Vue,
+            TauriSubTemplate::Svelte,
+            TauriSubTemplate::Vanilla,
+            TauriSubTemplate::Solid,
+            TauriSubTemplate::Preact,
+          ]
+          .iter()
+          .map(|sub_template| format!("{}", sub_template))
+          .collect::<Vec<_>>();
+
+          let sub_template_index = Select::with_theme(&ColorfulTheme::default())
+            .with_prompt("Select a Tauri template:")
+            .items(&sub_templates_text)
             .default(0)
             .interact()?;
 
-        let selected_template = templates_no_flavors[index];
-        if let Template::Tauri(None) = selected_template {
-            let sub_templates_text = vec![
-                TauriSubTemplate::React,
-                TauriSubTemplate::Vue,
-                TauriSubTemplate::Svelte,
-                TauriSubTemplate::Vanilla,
-                TauriSubTemplate::Solid,
-                TauriSubTemplate::Preact,
-            ]
-            .iter()
-            .map(|sub_template| format!("{}", sub_template))
-            .collect::<Vec<_>>();
-
-            let sub_template_index = Select::with_theme(&ColorfulTheme::default())
-                .with_prompt("Select a Tauri template:")
-                .items(&sub_templates_text)
-                .default(0)
-                .interact()?;
-
-            let sub_template = match sub_template_index {
-                0 => TauriSubTemplate::React,
-                1 => TauriSubTemplate::Vue,
-                2 => TauriSubTemplate::Svelte,
-                3 => TauriSubTemplate::Vanilla,
-                4 => TauriSubTemplate::Solid,
-                5 => TauriSubTemplate::Preact,
-                _ => unreachable!(),
-            };
-            Template::Tauri(Some(sub_template))
-        } else {
-            selected_template
+          let sub_template = match sub_template_index {
+            0 => TauriSubTemplate::React,
+            1 => TauriSubTemplate::Vue,
+            2 => TauriSubTemplate::Svelte,
+            3 => TauriSubTemplate::Vanilla,
+            4 => TauriSubTemplate::Solid,
+            5 => TauriSubTemplate::Preact,
+            _ => unreachable!(),
+          };
+          Template::Tauri(Some(sub_template))
         }
+        Template::Electron(None) => {
+          let sub_templates_text = vec![
+            ElectronSubTemplate::React,
+            ElectronSubTemplate::Vue,
+            ElectronSubTemplate::Svelte,
+            ElectronSubTemplate::Vanilla,
+            ElectronSubTemplate::Solid,
+            ElectronSubTemplate::Preact,
+          ]
+          .iter()
+          .map(|sub_template| format!("{}", sub_template))
+          .collect::<Vec<_>>();
+
+          let sub_template_index = Select::with_theme(&ColorfulTheme::default())
+            .with_prompt("Select an Electron template:")
+            .items(&sub_templates_text)
+            .default(0)
+            .interact()?;
+
+          let sub_template = match sub_template_index {
+            0 => ElectronSubTemplate::React,
+            1 => ElectronSubTemplate::Vue,
+            2 => ElectronSubTemplate::Svelte,
+            3 => ElectronSubTemplate::Vanilla,
+            4 => ElectronSubTemplate::Solid,
+            5 => ElectronSubTemplate::Preact,
+            _ => unreachable!(),
+          };
+          Template::Electron(Some(sub_template))
+        }
+        _ => selected_template,
+      }
     }
-};
+  };
 
   if target_dir.exists() {
     #[inline(always)]
@@ -158,18 +188,13 @@ where
   }
 
   //   Render the template
-  template.render(
-    &target_dir,
-    pkg_manager,
-    &project_name,
-    &project_name,
-  )?;
+  template.render(&target_dir, pkg_manager, &project_name, &project_name)?;
 
-  handle_brand_text("\n > Initial Farm Project created successfully ✨ ✨ \n");
+  handle_brand_text("\n >  Initial Farm Project created successfully ✨ ✨ \n");
 
   if target_dir != cwd {
     handle_brand_text(&format!(
-      "  cd {} \n",
+      "    cd {} \n",
       if project_name.contains(' ') {
         format!("\"{}\"", project_name)
       } else {
@@ -178,9 +203,9 @@ where
     ));
   }
   if let Some(cmd) = pkg_manager.install_cmd() {
-    handle_brand_text(&format!("  {} \n", cmd));
+    handle_brand_text(&format!("    {} \n", cmd));
   }
-  handle_brand_text(&format!("  {} \n", &pkg_manager.run_cmd()));
+  handle_brand_text(&format!("    {} \n", &pkg_manager.run_cmd()));
 
   Ok(())
 }

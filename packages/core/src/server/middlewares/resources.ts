@@ -15,6 +15,57 @@ import {
 } from '../../utils/index.js';
 import { Server } from '../index.js';
 
+interface RealResourcePath {
+  resourcePath: string;
+  rawPath: string;
+  resource: Buffer;
+}
+
+function normalizePathByPublicPath(publicPath: string, resourcePath: string) {
+  const base = publicPath.match(/^https?:\/\//) ? '' : publicPath;
+  let resourceWithoutPublicPath = resourcePath;
+
+  if (base && resourcePath.startsWith(base)) {
+    resourcePath = resourcePath.replace(new RegExp(`([^/]+)${base}`), '$1/');
+    resourceWithoutPublicPath = resourcePath.slice(base.length);
+  }
+
+  return { resourceWithoutPublicPath, fullPath: resourcePath };
+}
+
+function findResource(
+  paths: string[],
+  compiler: Compiler,
+  ctx: Context,
+  publicPath: string
+): true | undefined | RealResourcePath {
+  for (const resourcePath of new Set(paths)) {
+    // output_files
+    if (resourcePath === '_output_files') {
+      const files = Object.keys(compiler.resources()).sort();
+      const fileTree = generateFileTree(files);
+      ctx.type = '.html';
+      ctx.body = generateFileTreeHtml(fileTree);
+      return true;
+    }
+
+    const { resourceWithoutPublicPath } = normalizePathByPublicPath(
+      publicPath,
+      resourcePath
+    );
+
+    const resource = compiler.resource(resourceWithoutPublicPath);
+
+    if (resource) {
+      return {
+        resource,
+        resourcePath: resourceWithoutPublicPath,
+        rawPath: resourcePath
+      };
+    }
+  }
+}
+
 export function resourcesMiddleware(
   compiler: Compiler,
   config: NormalizedServerConfig,
@@ -34,31 +85,37 @@ export function resourcesMiddleware(
     }
     // Fallback to index.html if the resource is not found
     const url = ctx.url?.slice(1) || 'index.html'; // remove leading slash
-    let resourcePath = stripQueryAndHash(url);
 
-    // output_files
-    if (resourcePath === '_output_files') {
-      const files = Object.keys(compiler.resources()).sort();
-      const fileTree = generateFileTree(files);
-      ctx.type = '.html';
-      ctx.body = generateFileTreeHtml(fileTree);
+    let stripQueryAndHashUrl = stripQueryAndHash(url);
+    const resourceResult = findResource(
+      [url, stripQueryAndHashUrl],
+      compiler,
+      ctx,
+      publicPath
+    );
+
+    if (resourceResult === true) {
       return;
     }
 
-    const base = publicPath.match(/^https?:\/\//) ? '' : publicPath;
-    let finalResourcePath = resourcePath;
-
-    if (base && resourcePath.startsWith(base)) {
-      resourcePath = resourcePath.replace(new RegExp(`([^/]+)${base}`), '$1/');
-      finalResourcePath = resourcePath.slice(base.length);
+    if (resourceResult) {
+      ctx.type = extname(ctx?.path?.slice?.(1) || 'index.html');
+      ctx.body = resourceResult.resource;
+      return;
     }
 
-    const resource = compiler.resource(finalResourcePath);
+    const { fullPath, resourceWithoutPublicPath } = normalizePathByPublicPath(
+      publicPath,
+      stripQueryAndHashUrl
+    );
 
     // if resource is image or font, try it in local file system to be compatible with vue
-    if (!resource) {
+    {
       // try local file system
-      const absPath = path.join(compiler.config.config.root, finalResourcePath);
+      const absPath = path.join(
+        compiler.config.config.root,
+        resourceWithoutPublicPath
+      );
       // const mimeStr = mime.lookup(absPath);
 
       if (
@@ -67,7 +124,7 @@ export function resourcesMiddleware(
         // mimeStr &&
         // (mimeStr.startsWith('image') || mimeStr.startsWith('font'))
       ) {
-        ctx.type = extname(resourcePath);
+        ctx.type = extname(fullPath);
         ctx.body = readFileSync(absPath);
         return;
       }
@@ -76,23 +133,23 @@ export function resourcesMiddleware(
       const absPathPublicDir = path.resolve(
         compiler.config.config.root,
         compiler.config.config.assets.publicDir,
-        finalResourcePath
+        resourceWithoutPublicPath
       );
 
       if (existsSync(absPathPublicDir) && statSync(absPathPublicDir).isFile()) {
-        ctx.type = extname(resourcePath);
+        ctx.type = extname(fullPath);
         ctx.body = readFileSync(absPathPublicDir);
         return;
       }
     }
 
     // if resource is not found and spa is not disabled, find the closest index.html from resourcePath
-    if (!resource) {
+    {
       // if request mime is not html, return 404
       if (!ctx.accepts('html')) {
         ctx.status = 404;
       } else if (config.spa !== false) {
-        const pathComps = resourcePath.split('/');
+        const pathComps = resourceWithoutPublicPath.split('/');
 
         while (pathComps.length > 0) {
           const pathStr = pathComps.join('/') + '.html';
@@ -118,9 +175,6 @@ export function resourcesMiddleware(
         // cannot find index.html, return 404
         ctx.status = 404;
       }
-    } else {
-      ctx.type = extname(ctx?.path?.slice?.(1) || 'index.html');
-      ctx.body = resource;
     }
   };
 }

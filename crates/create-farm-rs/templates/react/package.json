@@ -9,13 +9,12 @@
     "clean": "farm clean"
   },
   "dependencies": {
-    "clsx": "^1.2.1",
     "react": "18",
     "react-dom": "18"
   },
   "devDependencies": {
-    "@farmfe/cli": "^1.0.1",
-    "@farmfe/core": "^1.1.1",
+    "@farmfe/cli": "^1.0.2",
+    "@farmfe/core": "^1.1.13",
     "@farmfe/plugin-react": "^1.0.1",
     "@types/react": "18",
     "core-js": "^3.36.1",
