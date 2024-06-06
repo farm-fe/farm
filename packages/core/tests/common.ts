@@ -1,13 +1,13 @@
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import path from 'path';
 import { Compiler } from '../src/compiler/index.js';
-import { JsPlugin } from '../src/plugin/type.js';
 import {
+  UserConfig,
   normalizeUserCompilationConfig,
-  resolveMergedUserConfig,
-  UserConfig
+  resolveMergedUserConfig
 } from '../src/config/index.js';
 import { Logger } from '../src/index.js';
+import { JsPlugin } from '../src/plugin/type.js';
 
 export async function getCompiler(
   root: string,

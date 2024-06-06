@@ -4,10 +4,10 @@ import { test } from 'vitest';
 import {
   Compiler,
   Logger,
+  UserConfig,
   normalizeDevServerOptions,
   normalizeUserCompilationConfig,
-  resolveMergedUserConfig,
-  UserConfig
+  resolveMergedUserConfig
 } from '../src/index.js';
 
 // just make sure the binding works
