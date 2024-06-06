@@ -5,6 +5,8 @@ use crate::{
   utils::{colors::*, lte},
 };
 use rust_embed::RustEmbed;
+use std::any::TypeId;
+use std::mem::transmute;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[non_exhaustive]
@@ -39,34 +41,25 @@ impl ElectronSubTemplate {
 
 impl Display for ElectronSubTemplate {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    match self {
-      ElectronSubTemplate::React => write!(f, "\x1b[36mReact - (https://react.dev/)\x1b[39m"),
-      ElectronSubTemplate::Vue => write!(f, "\x1b[32mVue3 - (https://vuejs.org/)\x1b[39m"),
-      ElectronSubTemplate::Svelte => write!(
-        f,
-        "\x1b[38;2;255;137;54mSvelte - (https://svelte.dev/)\x1b[39m"
-      ),
-      ElectronSubTemplate::Vanilla => write!(f, "\x1b[33mVanilla\x1b[39m"),
-      ElectronSubTemplate::Solid => write!(
-        f,
-        "\x1b[38;2;68;206;246mSolid - (https://solidjs.com/)\x1b[39m"
-      ),
-      ElectronSubTemplate::Preact => write!(f, "\x1b[36mPreact - (https://preactjs.com/)\x1b[36m"),
-    }
+    fmt_sub_template(self, f)
   }
 }
 
 impl FromStr for ElectronSubTemplate {
   type Err = String;
+
   fn from_str(s: &str) -> Result<Self, Self::Err> {
-    match s {
-      "react" => Ok(ElectronSubTemplate::React),
-      "vue" => Ok(ElectronSubTemplate::Vue),
-      "vanilla" => Ok(ElectronSubTemplate::Vanilla),
-      "svelte" => Ok(ElectronSubTemplate::Svelte),
-      "solid" => Ok(ElectronSubTemplate::Solid),
-      "preact" => Ok(ElectronSubTemplate::Preact),
-      _ => Err(format!("{s} is not a valid Electron template.")),
+    let map: HashMap<&str, ElectronSubTemplate> = HashMap::from([
+      ("react", ElectronSubTemplate::React),
+      ("vue", ElectronSubTemplate::Vue),
+      ("vanilla", ElectronSubTemplate::Vanilla),
+      ("svelte", ElectronSubTemplate::Svelte),
+      ("solid", ElectronSubTemplate::Solid),
+      ("preact", ElectronSubTemplate::Preact),
+    ]);
+    match map.get(s) {
+      Some(template) => Ok(*template),
+      None => Err(format!("{s} is not a valid Electron template.")),
     }
   }
 }
@@ -96,34 +89,25 @@ impl TauriSubTemplate {
 
 impl Display for TauriSubTemplate {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    match self {
-      TauriSubTemplate::React => write!(f, "\x1b[36mReact - (https://react.dev/)\x1b[39m"),
-      TauriSubTemplate::Vue => write!(f, "\x1b[32mVue3 - (https://vuejs.org/)\x1b[39m"),
-      TauriSubTemplate::Svelte => write!(
-        f,
-        "\x1b[38;2;255;137;54mSvelte - (https://svelte.dev/)\x1b[39m"
-      ),
-      TauriSubTemplate::Vanilla => write!(f, "\x1b[33mVanilla\x1b[39m"),
-      TauriSubTemplate::Solid => write!(
-        f,
-        "\x1b[38;2;68;206;246mSolid - (https://solidjs.com/)\x1b[39m"
-      ),
-      TauriSubTemplate::Preact => write!(f, "\x1b[36mPreact - (https://preactjs.com/)\x1b[36m"),
-    }
+    fmt_sub_template(self, f)
   }
 }
 
 impl FromStr for TauriSubTemplate {
   type Err = String;
+
   fn from_str(s: &str) -> Result<Self, Self::Err> {
-    match s {
-      "react" => Ok(TauriSubTemplate::React),
-      "vue" => Ok(TauriSubTemplate::Vue),
-      "vanilla" => Ok(TauriSubTemplate::Vanilla),
-      "svelte" => Ok(TauriSubTemplate::Svelte),
-      "solid" => Ok(TauriSubTemplate::Solid),
-      "preact" => Ok(TauriSubTemplate::Preact),
-      _ => Err(format!("{s} is not a valid Tauri template.")),
+    let map: HashMap<&str, TauriSubTemplate> = HashMap::from([
+      ("react", TauriSubTemplate::React),
+      ("vue", TauriSubTemplate::Vue),
+      ("vanilla", TauriSubTemplate::Vanilla),
+      ("svelte", TauriSubTemplate::Svelte),
+      ("solid", TauriSubTemplate::Solid),
+      ("preact", TauriSubTemplate::Preact),
+    ]);
+    match map.get(s) {
+      Some(template) => Ok(*template),
+      None => Err(format!("{s} is not a valid Electron template.")),
     }
   }
 }
@@ -217,7 +201,9 @@ impl Template {
         TauriSubTemplate::Solid => "\x1b[38;2;255;215;0mTauri with Solid\x1b[39m",
         TauriSubTemplate::Preact => "\x1b[38;2;255;215;0mTauri with Preact\x1b[39m",
       },
-      Template::Electron(None) => "\x1b[38;2;255;215;0mElectron - (https://www.electronjs.org/)\x1b[39m",
+      Template::Electron(None) => {
+        "\x1b[38;2;255;215;0mElectron - (https://www.electronjs.org/)\x1b[39m"
+      }
       Template::Electron(Some(sub_template)) => match sub_template {
         ElectronSubTemplate::React => "\x1b[38;2;255;215;0mElectron with React\x1b[39m",
         ElectronSubTemplate::Vue => "\x1b[38;2;255;215;0mElectron with Vue\x1b[39m",
@@ -328,12 +314,17 @@ impl<'a> Template {
         };
 
         let (file_data, file_name) = if let Some(new_name) = file_name.strip_suffix(".lte") {
-          let data = EMBEDDED_TEMPLATES::get(file).unwrap().data.to_vec();
-          let data = lte::render(data, &template_data)?.into_bytes();
+          let data = lte::render(
+            EMBEDDED_TEMPLATES::get(file).unwrap().data.to_vec(),
+            &template_data,
+          )?
+          .into_bytes();
           (data, new_name)
         } else {
-          let data = EMBEDDED_TEMPLATES::get(file).unwrap().data.to_vec();
-          (data, file_name)
+          (
+            EMBEDDED_TEMPLATES::get(file).unwrap().data.to_vec(),
+            file_name,
+          )
         };
 
         let file_name = lte::render(file_name, &template_data)?;
@@ -348,7 +339,9 @@ impl<'a> Template {
       Template::Tauri(None) => "tauri".to_string(),
       Template::Tauri(Some(sub_template)) => format!("tauri/{}", sub_template.to_simple_string()),
       Template::Electron(None) => "electron".to_string(),
-      Template::Electron(Some(sub_template)) => format!("electron/{}", sub_template.to_simple_string()),
+      Template::Electron(Some(sub_template)) => {
+        format!("electron/{}", sub_template.to_simple_string())
+      }
       _ => self.to_string(),
     };
 
@@ -365,5 +358,48 @@ impl<'a> Template {
 
     handle_brand_text("\n ✔️ Template copied Successfully! \n");
     Ok(())
+  }
+}
+
+fn fmt_sub_template<T>(template: &T, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result
+where
+  T: Copy + PartialEq + Eq + 'static,
+{
+  let type_id = TypeId::of::<T>();
+
+  if type_id == TypeId::of::<ElectronSubTemplate>() {
+    let electron_template: &ElectronSubTemplate = unsafe { transmute(template) };
+    match electron_template {
+      &ElectronSubTemplate::React => write!(f, "\x1b[36mReact - (https://react.dev/)\x1b[39m"),
+      &ElectronSubTemplate::Vue => write!(f, "\x1b[32mVue3 - (https://vuejs.org/)\x1b[39m"),
+      &ElectronSubTemplate::Svelte => write!(
+        f,
+        "\x1b[38;2;255;137;54mSvelte - (https://svelte.dev/)\x1b[39m"
+      ),
+      &ElectronSubTemplate::Vanilla => write!(f, "\x1b[33mVanilla\x1b[39m"),
+      &ElectronSubTemplate::Solid => write!(
+        f,
+        "\x1b[38;2;68;206;246mSolid - (https://solidjs.com/)\x1b[39m"
+      ),
+      &ElectronSubTemplate::Preact => write!(f, "\x1b[36mPreact - (https://preactjs.com/)\x1b[36m"),
+    }
+  } else if type_id == TypeId::of::<TauriSubTemplate>() {
+    let tauri_template: &TauriSubTemplate = unsafe { transmute(template) };
+    match tauri_template {
+      &TauriSubTemplate::React => write!(f, "\x1b[36mReact - (https://react.dev/)\x1b[39m"),
+      &TauriSubTemplate::Vue => write!(f, "\x1b[32mVue3 - (https://vuejs.org/)\x1b[39m"),
+      &TauriSubTemplate::Svelte => write!(
+        f,
+        "\x1b[38;2;255;137;54mSvelte - (https://svelte.dev/)\x1b[39m"
+      ),
+      &TauriSubTemplate::Vanilla => write!(f, "\x1b[33mVanilla\x1b[39m"),
+      &TauriSubTemplate::Solid => write!(
+        f,
+        "\x1b[38;2;68;206;246mSolid - (https://solidjs.com/)\x1b[39m"
+      ),
+      &TauriSubTemplate::Preact => write!(f, "\x1b[36mPreact - (https://preactjs.com/)\x1b[36m"),
+    }
+  } else {
+    Err(std::fmt::Error)
   }
 }
