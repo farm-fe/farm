@@ -78,7 +78,9 @@ impl PackageManager {
         Template::Solid,
         Template::Lit,
         Template::Preact,
+        Template::Nestjs,
         Template::Tauri(None),
+        Template::Electron(None)
       ],
     }
   }
@@ -95,6 +97,7 @@ impl PackageManager {
         Template::Lit,
         Template::Preact,
         Template::Tauri(None),
+        Template::Electron(None)
       ],
     }
   }

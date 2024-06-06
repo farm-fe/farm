@@ -5,7 +5,7 @@
   "main": "dist-electron/main.js",
   "type": "module",
   "scripts": {
-    "dev": "rm -rf node_modules/.farm && farm",
+    "dev": "farm",
     "build": "farm build && electron-forge package",
     "clean": "farm clean",
     "farm": "farm"

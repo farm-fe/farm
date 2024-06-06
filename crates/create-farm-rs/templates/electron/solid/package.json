@@ -1,0 +1,33 @@
+{
+  "name": "electron-farm-react",
+  "version": "1.0.0",
+  "main": "dist-electron/main.js",
+  "type": "module",
+  "scripts": {
+    "dev": "farm",
+    "build": "farm build && electron-forge package",
+    "clean": "farm clean",
+    "farm": "farm"
+  },
+  "dependencies": {
+    "solid-js": "^1.8.16"
+  },
+  "devDependencies": {
+    "@electron-forge/cli": "^7.4.0",
+    "@electron-forge/maker-deb": "^7.4.0",
+    "@electron-forge/maker-rpm": "^7.4.0",
+    "@electron-forge/maker-squirrel": "^7.4.0",
+    "@electron-forge/maker-zip": "^7.4.0",
+    "@electron-forge/shared-types": "^7.4.0",
+    "@farmfe/cli": "^1.0.2",
+    "@farmfe/core": "^1.1.13",
+    "@farmfe/js-plugin-electron": "^1.0.0",
+    "core-js": "^3.36.1",
+    "electron": "^30.0.9",
+    "fs-extra": "^11.2.0",
+    "typescript": "^5.0.2",
+    "tslib": "^2.6.2",
+    "solid-refresh": "^0.7.5",
+    "vite-plugin-solid": "^2.10.2"
+  }
+}
