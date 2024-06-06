@@ -1,6 +1,6 @@
-# Farm + Svelte
+# Farm + Preact + Electron
 
-This template should help you start developing using Svelte and TypeScript in Farm.
+This template should help you start developing Electron using Preact and TypeScript in Farm.
 
 ## Setup
 

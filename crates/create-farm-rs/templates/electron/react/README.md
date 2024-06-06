@@ -1,6 +1,6 @@
-# Farm + React
+# Farm + React + Electron
 
-This template should help you start developing using React and TypeScript in Farm.
+This template should help you start developing using React，Electron and TypeScript in Farm.
 
 ## Setup
 

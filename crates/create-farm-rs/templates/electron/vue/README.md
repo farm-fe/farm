@@ -1,6 +1,6 @@
-# Farm + React
+# Farm + Vue + Electron
 
-This template should help you start developing using React and TypeScript in Farm.
+This template should help you start developing using Vue, Electron and TypeScript in Farm.
 
 ## Setup
 

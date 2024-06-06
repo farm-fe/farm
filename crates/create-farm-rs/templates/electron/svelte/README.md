@@ -1,6 +1,6 @@
-# Farm + Svelte
+# Farm + Svelte + Electron
 
-This template should help you start developing using Svelte and TypeScript in Farm.
+This template should help you start developing using Svelte, Electron and TypeScript in Farm.
 
 ## Setup
 
