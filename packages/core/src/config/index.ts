@@ -131,6 +131,7 @@ export async function resolveConfig(
   isHandleServerPortConflict = true
 ): Promise<ResolvedUserConfig> {
   // Clear the console according to the cli command
+
   checkClearScreen(inlineOptions);
   logger = logger ?? new Logger();
   inlineOptions.mode = inlineOptions.mode ?? mode;
@@ -168,26 +169,29 @@ export async function resolveConfig(
     config: rawConfig
   };
 
-  const { jsPlugins, rustPlugins } = await resolveFarmPlugins(userConfig);
+  // const { jsPlugins, rustPlugins } = await resolveFarmPlugins(userConfig);
 
-  const rawJsPlugins = (await resolveAsyncPlugins(jsPlugins || [])).filter(
-    Boolean
-  );
+  // const rawJsPlugins = (await resolveAsyncPlugins(jsPlugins || [])).filter(
+  //   Boolean
+  // );
 
-  let vitePluginAdapters: JsPlugin[] = [];
-  const vitePlugins = (userConfig?.vitePlugins ?? []).filter(Boolean);
-  // run config and configResolved hook
-  if (vitePlugins.length) {
-    vitePluginAdapters = await handleVitePlugins(
-      vitePlugins,
-      userConfig,
-      logger,
-      mode
-    );
-  }
+  // let vitePluginAdapters: JsPlugin[] = [];
+  // const vitePlugins = (userConfig?.vitePlugins ?? []).filter(Boolean);
+  // // run config and configResolved hook
+  // if (vitePlugins.length) {
+  //   vitePluginAdapters = await handleVitePlugins(
+  //     vitePlugins,
+  //     userConfig,
+  //     logger,
+  //     mode
+  //   );
+  // }
+
+  const { jsPlugins, vitePlugins, rustPlugins, vitePluginAdapters } =
+    await resolvePlugins(userConfig, logger, mode);
 
   const sortFarmJsPlugins = getSortedPlugins([
-    ...rawJsPlugins,
+    ...jsPlugins,
     ...vitePluginAdapters,
     externalAdapter()
   ]);
@@ -1035,5 +1039,35 @@ export function replaceDirnamePlugin() {
         };
       }
     }
+  };
+}
+
+export async function resolvePlugins(
+  userConfig: UserConfig,
+  logger: Logger,
+  mode: CompilationMode
+) {
+  const { jsPlugins, rustPlugins } = await resolveFarmPlugins(userConfig);
+  const rawJsPlugins = (await resolveAsyncPlugins(jsPlugins || [])).filter(
+    Boolean
+  );
+
+  let vitePluginAdapters: JsPlugin[] = [];
+  const vitePlugins = (userConfig?.vitePlugins ?? []).filter(Boolean);
+
+  if (vitePlugins.length) {
+    vitePluginAdapters = await handleVitePlugins(
+      vitePlugins,
+      userConfig,
+      logger,
+      mode
+    );
+  }
+
+  return {
+    jsPlugins: rawJsPlugins,
+    vitePlugins,
+    rustPlugins,
+    vitePluginAdapters
   };
 }

@@ -25,9 +25,12 @@ export function mergeConfig<T extends Record<string, any>>(
 
     if (isArray(left) || isArray(right)) {
       result[key] = [
-        ...(isArray(left) ? left : []),
-        ...(isArray(right) ? right : [])
+        ...new Set([
+          ...(isArray(left) ? left : []),
+          ...(isArray(right) ? right : [])
+        ])
       ];
+
       continue;
     }
 
