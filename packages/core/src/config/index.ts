@@ -807,7 +807,7 @@ export async function resolveMergedUserConfig(
   mergedUserConfig: UserConfig,
   configFilePath: string | undefined,
   mode: 'development' | 'production' | string,
-  logger: Logger
+  logger: Logger = new Logger()
 ): Promise<ResolvedUserConfig> {
   const serverConfig: NormalizedServerConfig = {
     ...DEFAULT_DEV_SERVER_OPTIONS,
