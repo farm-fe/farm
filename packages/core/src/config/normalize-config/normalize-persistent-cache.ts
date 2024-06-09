@@ -21,13 +21,6 @@ export async function normalizePersistentCache(
   resolvedUserConfig: ResolvedUserConfig,
   logger: Logger
 ) {
-  // if (
-  //   config?.persistentCache === false ||
-  //   resolvedUserConfig.configFilePath === undefined
-  // ) {
-  //   return;
-  // }
-
   if (config?.persistentCache === false) {
     return;
   }
