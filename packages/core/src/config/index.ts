@@ -169,24 +169,6 @@ export async function resolveConfig(
     config: rawConfig
   };
 
-  // const { jsPlugins, rustPlugins } = await resolveFarmPlugins(userConfig);
-
-  // const rawJsPlugins = (await resolveAsyncPlugins(jsPlugins || [])).filter(
-  //   Boolean
-  // );
-
-  // let vitePluginAdapters: JsPlugin[] = [];
-  // const vitePlugins = (userConfig?.vitePlugins ?? []).filter(Boolean);
-  // // run config and configResolved hook
-  // if (vitePlugins.length) {
-  //   vitePluginAdapters = await handleVitePlugins(
-  //     vitePlugins,
-  //     userConfig,
-  //     logger,
-  //     mode
-  //   );
-  // }
-
   const { jsPlugins, vitePlugins, rustPlugins, vitePluginAdapters } =
     await resolvePlugins(userConfig, logger, mode);
 
@@ -246,10 +228,6 @@ export async function resolveConfig(
 
   return resolvedUserConfig;
 }
-
-// type ServerConfig = {
-//   server?: NormalizedServerConfig;
-// };
 
 /**
  * Normalize user config and transform it to rust compiler compatible config
