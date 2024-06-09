@@ -80,9 +80,10 @@ export function defineFarmConfig(config: UserConfigExport): UserConfigExport {
 async function getDefaultConfig(
   config: UserConfig,
   inlineOptions: FarmCLIOptions,
-  logger: Logger,
-  mode?: CompilationMode
+  mode?: CompilationMode,
+  logger?: Logger
 ) {
+  logger = logger ?? new Logger();
   const resolvedUserConfig = await resolveMergedUserConfig(
     config,
     undefined,
@@ -126,8 +127,8 @@ async function handleServerPortConflict(
  */
 export async function resolveConfig(
   inlineOptions: FarmCLIOptions & UserConfig = {},
-  logger?: Logger,
   mode?: CompilationMode,
+  logger?: Logger,
   isHandleServerPortConflict = true
 ): Promise<ResolvedUserConfig> {
   // Clear the console according to the cli command
@@ -160,7 +161,7 @@ export async function resolveConfig(
   } else {
     mergeConfig(
       rawConfig,
-      await getDefaultConfig(rawConfig, inlineOptions, logger, mode)
+      await getDefaultConfig(rawConfig, inlineOptions, mode, logger)
     );
   }
 
