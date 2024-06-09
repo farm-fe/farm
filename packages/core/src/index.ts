@@ -51,6 +51,8 @@ export async function start(
       'development'
     );
 
+    // console.log(resolvedUserConfig);
+
     const compiler = await createCompiler(resolvedUserConfig, logger);
 
     const devServer = await createDevServer(

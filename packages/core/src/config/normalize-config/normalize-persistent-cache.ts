@@ -21,10 +21,14 @@ export async function normalizePersistentCache(
   resolvedUserConfig: ResolvedUserConfig,
   logger: Logger
 ) {
-  if (
-    config?.persistentCache === false ||
-    resolvedUserConfig.configFilePath === undefined
-  ) {
+  // if (
+  //   config?.persistentCache === false ||
+  //   resolvedUserConfig.configFilePath === undefined
+  // ) {
+  //   return;
+  // }
+
+  if (config?.persistentCache === false) {
     return;
   }
 
@@ -151,7 +155,6 @@ export async function normalizePersistentCache(
     packages.push(...(rustPlugins ?? []));
 
     if (packages?.length) {
-      // console.log('packages', config);
       const require = createRequire(path.join(config.root, 'package.json'));
 
       for (const p of packages) {

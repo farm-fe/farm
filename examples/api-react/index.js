@@ -18,4 +18,8 @@ import {
 // watcher.watchExtraFiles();
 
 
-await start()
+await start({
+  plugins: [
+    "@farmfe/plugin-react",
+  ],
+})
