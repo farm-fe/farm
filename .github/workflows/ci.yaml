@@ -54,7 +54,7 @@ jobs:
         id: download-create-farm-rust
         with:
           name: ${{ github.sha }}-${{ matrix.settings.abi }}
-          path: ./packages/create-farm-node
+          path: ./packages/create-farm
 
       - name: Build Examples - ${{ matrix.settings.abi }}
         run: node scripts/test-examples.mjs

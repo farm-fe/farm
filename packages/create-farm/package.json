@@ -1,5 +1,5 @@
 {
-  "name": "create-farm-node",
+  "name": "create-farm",
   "version": "0.0.7",
   "description": "",
   "main": "index.js",
@@ -8,7 +8,7 @@
   "license": "ISC",
   "types": "index.d.ts",
   "napi": {
-    "name": "create-farm-node",
+    "name": "create-farm",
     "triples": {
       "additional": [
         "aarch64-apple-darwin",
