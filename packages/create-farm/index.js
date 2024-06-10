@@ -32,24 +32,24 @@ switch (platform) {
   case 'android':
     switch (arch) {
       case 'arm64':
-        localFileExisted = existsSync(join(__dirname, 'create-farm-node.android-arm64.node'))
+        localFileExisted = existsSync(join(__dirname, 'create-farm.android-arm64.node'))
         try {
           if (localFileExisted) {
-            nativeBinding = require('./create-farm-node.android-arm64.node')
+            nativeBinding = require('./create-farm.android-arm64.node')
           } else {
-            nativeBinding = require('create-farm-node-android-arm64')
+            nativeBinding = require('create-farm-android-arm64')
           }
         } catch (e) {
           loadError = e
         }
         break
       case 'arm':
-        localFileExisted = existsSync(join(__dirname, 'create-farm-node.android-arm-eabi.node'))
+        localFileExisted = existsSync(join(__dirname, 'create-farm.android-arm-eabi.node'))
         try {
           if (localFileExisted) {
-            nativeBinding = require('./create-farm-node.android-arm-eabi.node')
+            nativeBinding = require('./create-farm.android-arm-eabi.node')
           } else {
-            nativeBinding = require('create-farm-node-android-arm-eabi')
+            nativeBinding = require('create-farm-android-arm-eabi')
           }
         } catch (e) {
           loadError = e
@@ -63,13 +63,13 @@ switch (platform) {
     switch (arch) {
       case 'x64':
         localFileExisted = existsSync(
-          join(__dirname, 'create-farm-node.win32-x64-msvc.node')
+          join(__dirname, 'create-farm.win32-x64-msvc.node')
         )
         try {
           if (localFileExisted) {
-            nativeBinding = require('./create-farm-node.win32-x64-msvc.node')
+            nativeBinding = require('./create-farm.win32-x64-msvc.node')
           } else {
-            nativeBinding = require('create-farm-node-win32-x64-msvc')
+            nativeBinding = require('create-farm-win32-x64-msvc')
           }
         } catch (e) {
           loadError = e
@@ -77,13 +77,13 @@ switch (platform) {
         break
       case 'ia32':
         localFileExisted = existsSync(
-          join(__dirname, 'create-farm-node.win32-ia32-msvc.node')
+          join(__dirname, 'create-farm.win32-ia32-msvc.node')
         )
         try {
           if (localFileExisted) {
-            nativeBinding = require('./create-farm-node.win32-ia32-msvc.node')
+            nativeBinding = require('./create-farm.win32-ia32-msvc.node')
           } else {
-            nativeBinding = require('create-farm-node-win32-ia32-msvc')
+            nativeBinding = require('create-farm-win32-ia32-msvc')
           }
         } catch (e) {
           loadError = e
@@ -91,13 +91,13 @@ switch (platform) {
         break
       case 'arm64':
         localFileExisted = existsSync(
-          join(__dirname, 'create-farm-node.win32-arm64-msvc.node')
+          join(__dirname, 'create-farm.win32-arm64-msvc.node')
         )
         try {
           if (localFileExisted) {
-            nativeBinding = require('./create-farm-node.win32-arm64-msvc.node')
+            nativeBinding = require('./create-farm.win32-arm64-msvc.node')
           } else {
-            nativeBinding = require('create-farm-node-win32-arm64-msvc')
+            nativeBinding = require('create-farm-win32-arm64-msvc')
           }
         } catch (e) {
           loadError = e
@@ -108,23 +108,23 @@ switch (platform) {
     }
     break
   case 'darwin':
-    localFileExisted = existsSync(join(__dirname, 'create-farm-node.darwin-universal.node'))
+    localFileExisted = existsSync(join(__dirname, 'create-farm.darwin-universal.node'))
     try {
       if (localFileExisted) {
-        nativeBinding = require('./create-farm-node.darwin-universal.node')
+        nativeBinding = require('./create-farm.darwin-universal.node')
       } else {
-        nativeBinding = require('create-farm-node-darwin-universal')
+        nativeBinding = require('create-farm-darwin-universal')
       }
       break
     } catch {}
     switch (arch) {
       case 'x64':
-        localFileExisted = existsSync(join(__dirname, 'create-farm-node.darwin-x64.node'))
+        localFileExisted = existsSync(join(__dirname, 'create-farm.darwin-x64.node'))
         try {
           if (localFileExisted) {
-            nativeBinding = require('./create-farm-node.darwin-x64.node')
+            nativeBinding = require('./create-farm.darwin-x64.node')
           } else {
-            nativeBinding = require('create-farm-node-darwin-x64')
+            nativeBinding = require('create-farm-darwin-x64')
           }
         } catch (e) {
           loadError = e
@@ -132,13 +132,13 @@ switch (platform) {
         break
       case 'arm64':
         localFileExisted = existsSync(
-          join(__dirname, 'create-farm-node.darwin-arm64.node')
+          join(__dirname, 'create-farm.darwin-arm64.node')
         )
         try {
           if (localFileExisted) {
-            nativeBinding = require('./create-farm-node.darwin-arm64.node')
+            nativeBinding = require('./create-farm.darwin-arm64.node')
           } else {
-            nativeBinding = require('create-farm-node-darwin-arm64')
+            nativeBinding = require('create-farm-darwin-arm64')
           }
         } catch (e) {
           loadError = e
@@ -152,12 +152,12 @@ switch (platform) {
     if (arch !== 'x64') {
       throw new Error(`Unsupported architecture on FreeBSD: ${arch}`)
     }
-    localFileExisted = existsSync(join(__dirname, 'create-farm-node.freebsd-x64.node'))
+    localFileExisted = existsSync(join(__dirname, 'create-farm.freebsd-x64.node'))
     try {
       if (localFileExisted) {
-        nativeBinding = require('./create-farm-node.freebsd-x64.node')
+        nativeBinding = require('./create-farm.freebsd-x64.node')
       } else {
-        nativeBinding = require('create-farm-node-freebsd-x64')
+        nativeBinding = require('create-farm-freebsd-x64')
       }
     } catch (e) {
       loadError = e
@@ -168,26 +168,26 @@ switch (platform) {
       case 'x64':
         if (isMusl()) {
           localFileExisted = existsSync(
-            join(__dirname, 'create-farm-node.linux-x64-musl.node')
+            join(__dirname, 'create-farm.linux-x64-musl.node')
           )
           try {
             if (localFileExisted) {
-              nativeBinding = require('./create-farm-node.linux-x64-musl.node')
+              nativeBinding = require('./create-farm.linux-x64-musl.node')
             } else {
-              nativeBinding = require('create-farm-node-linux-x64-musl')
+              nativeBinding = require('create-farm-linux-x64-musl')
             }
           } catch (e) {
             loadError = e
           }
         } else {
           localFileExisted = existsSync(
-            join(__dirname, 'create-farm-node.linux-x64-gnu.node')
+            join(__dirname, 'create-farm.linux-x64-gnu.node')
           )
           try {
             if (localFileExisted) {
-              nativeBinding = require('./create-farm-node.linux-x64-gnu.node')
+              nativeBinding = require('./create-farm.linux-x64-gnu.node')
             } else {
-              nativeBinding = require('create-farm-node-linux-x64-gnu')
+              nativeBinding = require('create-farm-linux-x64-gnu')
             }
           } catch (e) {
             loadError = e
@@ -197,26 +197,26 @@ switch (platform) {
       case 'arm64':
         if (isMusl()) {
           localFileExisted = existsSync(
-            join(__dirname, 'create-farm-node.linux-arm64-musl.node')
+            join(__dirname, 'create-farm.linux-arm64-musl.node')
           )
           try {
             if (localFileExisted) {
-              nativeBinding = require('./create-farm-node.linux-arm64-musl.node')
+              nativeBinding = require('./create-farm.linux-arm64-musl.node')
             } else {
-              nativeBinding = require('create-farm-node-linux-arm64-musl')
+              nativeBinding = require('create-farm-linux-arm64-musl')
             }
           } catch (e) {
             loadError = e
           }
         } else {
           localFileExisted = existsSync(
-            join(__dirname, 'create-farm-node.linux-arm64-gnu.node')
+            join(__dirname, 'create-farm.linux-arm64-gnu.node')
           )
           try {
             if (localFileExisted) {
-              nativeBinding = require('./create-farm-node.linux-arm64-gnu.node')
+              nativeBinding = require('./create-farm.linux-arm64-gnu.node')
             } else {
-              nativeBinding = require('create-farm-node-linux-arm64-gnu')
+              nativeBinding = require('create-farm-linux-arm64-gnu')
             }
           } catch (e) {
             loadError = e
@@ -226,26 +226,26 @@ switch (platform) {
       case 'arm':
         if (isMusl()) {
           localFileExisted = existsSync(
-            join(__dirname, 'create-farm-node.linux-arm-musleabihf.node')
+            join(__dirname, 'create-farm.linux-arm-musleabihf.node')
           )
           try {
             if (localFileExisted) {
-              nativeBinding = require('./create-farm-node.linux-arm-musleabihf.node')
+              nativeBinding = require('./create-farm.linux-arm-musleabihf.node')
             } else {
-              nativeBinding = require('create-farm-node-linux-arm-musleabihf')
+              nativeBinding = require('create-farm-linux-arm-musleabihf')
             }
           } catch (e) {
             loadError = e
           }
         } else {
           localFileExisted = existsSync(
-            join(__dirname, 'create-farm-node.linux-arm-gnueabihf.node')
+            join(__dirname, 'create-farm.linux-arm-gnueabihf.node')
           )
           try {
             if (localFileExisted) {
-              nativeBinding = require('./create-farm-node.linux-arm-gnueabihf.node')
+              nativeBinding = require('./create-farm.linux-arm-gnueabihf.node')
             } else {
-              nativeBinding = require('create-farm-node-linux-arm-gnueabihf')
+              nativeBinding = require('create-farm-linux-arm-gnueabihf')
             }
           } catch (e) {
             loadError = e
@@ -255,26 +255,26 @@ switch (platform) {
       case 'riscv64':
         if (isMusl()) {
           localFileExisted = existsSync(
-            join(__dirname, 'create-farm-node.linux-riscv64-musl.node')
+            join(__dirname, 'create-farm.linux-riscv64-musl.node')
           )
           try {
             if (localFileExisted) {
-              nativeBinding = require('./create-farm-node.linux-riscv64-musl.node')
+              nativeBinding = require('./create-farm.linux-riscv64-musl.node')
             } else {
-              nativeBinding = require('create-farm-node-linux-riscv64-musl')
+              nativeBinding = require('create-farm-linux-riscv64-musl')
             }
           } catch (e) {
             loadError = e
           }
         } else {
           localFileExisted = existsSync(
-            join(__dirname, 'create-farm-node.linux-riscv64-gnu.node')
+            join(__dirname, 'create-farm.linux-riscv64-gnu.node')
           )
           try {
             if (localFileExisted) {
-              nativeBinding = require('./create-farm-node.linux-riscv64-gnu.node')
+              nativeBinding = require('./create-farm.linux-riscv64-gnu.node')
             } else {
-              nativeBinding = require('create-farm-node-linux-riscv64-gnu')
+              nativeBinding = require('create-farm-linux-riscv64-gnu')
             }
           } catch (e) {
             loadError = e
@@ -283,13 +283,13 @@ switch (platform) {
         break
       case 's390x':
         localFileExisted = existsSync(
-          join(__dirname, 'create-farm-node.linux-s390x-gnu.node')
+          join(__dirname, 'create-farm.linux-s390x-gnu.node')
         )
         try {
           if (localFileExisted) {
-            nativeBinding = require('./create-farm-node.linux-s390x-gnu.node')
+            nativeBinding = require('./create-farm.linux-s390x-gnu.node')
           } else {
-            nativeBinding = require('create-farm-node-linux-s390x-gnu')
+            nativeBinding = require('create-farm-linux-s390x-gnu')
           }
         } catch (e) {
           loadError = e

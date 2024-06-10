@@ -1,5 +1,5 @@
 {
-  "name": "create-farm-node-darwin-x64",
+  "name": "create-farm-darwin-x64",
   "version": "0.0.0",
   "os": [
     "darwin"
@@ -7,9 +7,9 @@
   "cpu": [
     "x64"
   ],
-  "main": "create-farm-node.darwin-x64.node",
+  "main": "create-farm.darwin-x64.node",
   "files": [
-    "create-farm-node.darwin-x64.node"
+    "create-farm.darwin-x64.node"
   ],
   "license": "MIT",
   "engines": {

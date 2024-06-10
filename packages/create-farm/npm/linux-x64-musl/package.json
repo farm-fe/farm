@@ -1,5 +1,5 @@
 {
-  "name": "create-farm-node-linux-x64-musl",
+  "name": "create-farm-linux-x64-musl",
   "version": "0.0.0",
   "os": [
     "linux"
@@ -7,9 +7,9 @@
   "cpu": [
     "x64"
   ],
-  "main": "create-farm-node.linux-x64-musl.node",
+  "main": "create-farm.linux-x64-musl.node",
   "files": [
-    "create-farm-node.linux-x64-musl.node"
+    "create-farm.linux-x64-musl.node"
   ],
   "license": "MIT",
   "engines": {

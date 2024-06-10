@@ -1,5 +1,5 @@
 {
-  "name": "create-farm-node-win32-x64-msvc",
+  "name": "create-farm-win32-x64-msvc",
   "version": "0.0.0",
   "os": [
     "win32"
@@ -7,9 +7,9 @@
   "cpu": [
     "x64"
   ],
-  "main": "create-farm-node.win32-x64-msvc.node",
+  "main": "create-farm.win32-x64-msvc.node",
   "files": [
-    "create-farm-node.win32-x64-msvc.node"
+    "create-farm.win32-x64-msvc.node"
   ],
   "license": "MIT",
   "engines": {

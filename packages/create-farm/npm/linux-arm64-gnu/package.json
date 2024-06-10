@@ -1,5 +1,5 @@
 {
-  "name": "create-farm-node-linux-arm64-gnu",
+  "name": "create-farm-linux-arm64-gnu",
   "version": "0.0.0",
   "os": [
     "linux"
@@ -7,9 +7,9 @@
   "cpu": [
     "arm64"
   ],
-  "main": "create-farm-node.linux-arm64-gnu.node",
+  "main": "create-farm.linux-arm64-gnu.node",
   "files": [
-    "create-farm-node.linux-arm64-gnu.node"
+    "create-farm.linux-arm64-gnu.node"
   ],
   "license": "MIT",
   "engines": {

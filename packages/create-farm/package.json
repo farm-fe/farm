@@ -21,7 +21,7 @@
     }
   },
   "bin": {
-    "create-farm-node": "create-farm.js"
+    "create-farm": "create-farm.js"
   },
   "scripts": {
     "create-farm": "node ./create-farm.js",
