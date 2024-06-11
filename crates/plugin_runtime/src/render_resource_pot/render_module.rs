@@ -19,15 +19,8 @@ use farmfe_toolkit::{
     CodeGenCommentsConfig,
   },
   swc_ecma_transforms::{
-    feature::enable_available_feature_from_es_version,
     fixer,
-    helpers::inject_helpers,
     hygiene::{hygiene_with_config, Config as HygieneConfig},
-    modules::{
-      common_js,
-      import_analysis::import_analyzer,
-      util::{Config, ImportInterop},
-    },
   },
   swc_ecma_transforms_base::fixer::paren_remover,
   swc_ecma_visit::VisitMutWith,
@@ -45,6 +38,7 @@ use farmfe_core::{
 use super::{
   source_replacer::{ExistingCommonJsRequireVisitor, SourceReplacer},
   transform_async_module,
+  transform_module_decls::transform_module_decls,
 };
 
 pub struct RenderModuleResult {
@@ -103,18 +97,7 @@ pub fn render_module<F: Fn(&ModuleId) -> bool>(
       module.meta.as_script().module_system,
       ModuleSystem::EsModule | ModuleSystem::Hybrid
     ) {
-      cloned_module.visit_mut_with(&mut import_analyzer(ImportInterop::Swc, true));
-      cloned_module.visit_mut_with(&mut inject_helpers(unresolved_mark));
-      cloned_module.visit_mut_with(&mut common_js::<&SingleThreadedComments>(
-        unresolved_mark,
-        Config {
-          ignore_dynamic: true,
-          preserve_import_meta: true,
-          ..Default::default()
-        },
-        enable_available_feature_from_es_version(context.config.script.target),
-        Some(&comments),
-      ));
+      transform_module_decls(&mut cloned_module, unresolved_mark);
     }
 
     // replace import source with module id

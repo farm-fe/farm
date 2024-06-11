@@ -14,7 +14,7 @@ use farmfe_core::{
   plugin::{PluginFinalizeModuleHookParam, ResolveKind},
   swc_common::{
     comments::{Comments, SingleThreadedComments},
-    BytePos, FileName, LineCol, Mark, SourceMap, GLOBALS,
+    BytePos, FileName, LineCol, Mark, SourceMap,
   },
   swc_ecma_ast::{
     CallExpr, Callee, EsVersion, Expr, Ident, Import, MemberProp, Module as SwcModule, ModuleItem,
@@ -30,6 +30,7 @@ pub use farmfe_toolkit_plugin_types::swc_ast::ParseScriptModuleResult;
 
 use self::swc_try_with::try_with;
 
+pub mod defined_idents_collector;
 pub mod swc_try_with;
 
 /// parse the content of a module to [SwcModule] ast.
