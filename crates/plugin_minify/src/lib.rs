@@ -193,11 +193,11 @@ impl Plugin for FarmPluginMinify {
       return Ok(None);
     }
 
-    // if bundle mode, ignore minify mode
-    if !matches!(self.minify_options.mode, MinifyMode::ResourcePot)
-      && !resource_pot.is_defer_minify_resource_pot()
-    {
-      return Ok(None);
+    // if defer minify, ignore match mode
+    if !resource_pot.is_defer_minify_as_resource_pot() {
+      if !matches!(self.minify_options.mode, MinifyMode::ResourcePot) {
+        return Ok(None);
+      }
     }
 
     if matches!(

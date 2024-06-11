@@ -6,7 +6,7 @@ use std::{
 };
 
 use farmfe_core::{
-  config::{Mode, ModuleFormat},
+  config::{Mode, ModuleFormat, TargetEnv},
   context::CompilationContext,
   enhanced_magic_string::{
     bundle::{Bundle, BundleOptions},
@@ -26,8 +26,9 @@ use farmfe_toolkit::{
 };
 
 use crate::resource_pot_to_bundle::{
-  common,
+  common::{self},
   modules_analyzer::module_analyzer::{ExportSpecifierInfo, ImportSpecifierInfo, StmtAction},
+  polyfill::SimplePolyfill,
   targets::generate::{
     generate_bundle_import_by_bundle_reference, generate_export_by_reference_export,
   },
@@ -53,6 +54,7 @@ pub struct BundleAnalyzer<'a> {
   context: Arc<CompilationContext>,
 
   pub bundle_reference: BundleReference,
+  pub polyfill: SimplePolyfill,
 }
 
 impl<'a> BundleAnalyzer<'a> {
@@ -69,12 +71,14 @@ impl<'a> BundleAnalyzer<'a> {
       module_graph,
       context: context.clone(),
       bundle_reference: BundleReference::new(),
+      // bundle level polyfill
+      polyfill: SimplePolyfill::default(),
     }
   }
 
   // step: 1 toposort fetch modules
   pub fn build_module_order(&mut self, order_index_map: &HashMap<ModuleId, usize>) {
-    farm_profile_function!("");
+    farm_profile_function!();
     let mut resource_pot_modules = self.resource_pot.modules();
 
     resource_pot_modules.sort_by(|a, b| {
@@ -179,7 +183,7 @@ impl<'a> BundleAnalyzer<'a> {
         }
       }
 
-      if let Some(module_analyzer) = module_analyzer_manager.module_analyzer_mut(module_id) {
+      if let Some(mut module_analyzer) = module_analyzer_manager.module_analyzer_mut(module_id) {
         module_analyzer.statement_actions.extend(stmt_action);
       }
     }
@@ -795,7 +799,6 @@ impl<'a> BundleAnalyzer<'a> {
     order_index_map: &HashMap<ModuleId, usize>,
   ) -> Result<()> {
     farm_profile_function!("");
-
     let mut commonjs_import_executed: HashSet<ModuleId> = HashSet::new();
     for module_id in &self.ordered_modules {
       farm_profile_scope!(format!(
@@ -810,6 +813,7 @@ impl<'a> BundleAnalyzer<'a> {
         &mut self.bundle_reference,
         &mut commonjs_import_executed,
         order_index_map,
+        &mut self.polyfill,
       )?;
     }
 
@@ -830,6 +834,7 @@ impl<'a> BundleAnalyzer<'a> {
         &mut self.bundle_reference,
         module_analyzer_manager,
         &self.context,
+        &mut self.polyfill,
       )?);
     }
 
@@ -839,16 +844,11 @@ impl<'a> BundleAnalyzer<'a> {
       &self.bundle_variable.borrow(),
       &self.bundle_reference,
       &module_analyzer_manager,
+      &mut self.polyfill,
     )?);
 
-    if is_runtime_bundle && !module_analyzer_manager.polyfill.is_empty() {
-      let polyfill_asts = module_analyzer_manager.polyfill.to_ast()?;
-
-      patch_import_to_module.extend(polyfill_asts);
-    }
-
     if !patch_import_to_module.is_empty() {
-      if let Some(module_analyzer) = self
+      if let Some(mut module_analyzer) = self
         .ordered_modules
         .first()
         .map(|item| module_analyzer_manager.module_analyzer_mut(item))
@@ -864,7 +864,7 @@ impl<'a> BundleAnalyzer<'a> {
     }
 
     if !patch_export_to_module.is_empty() {
-      if let Some(module_analyzer) = self
+      if let Some(mut module_analyzer) = self
         .ordered_modules
         .last()
         .map(|id| module_analyzer_manager.module_analyzer_mut(id))
@@ -897,7 +897,7 @@ impl<'a> BundleAnalyzer<'a> {
         .module_graph
         .module(&module_id)
         .unwrap_or_else(|| panic!("Module not found: {:?}", module_id));
-      let module_analyzer = module_analyzer_manager
+      let mut module_analyzer = module_analyzer_manager
         .module_analyzer_mut(module_id)
         .unwrap();
 
@@ -975,6 +975,23 @@ impl<'a> BundleAnalyzer<'a> {
       }
 
       bundle.add_source(module, None).unwrap();
+    }
+
+    // in browser, should avoid naming pollution
+    if matches!(self.context.config.output.target_env, TargetEnv::Browser)
+      && matches!(
+        self.resource_pot.resource_pot_type,
+        ResourcePotType::Runtime
+      )
+    {
+      bundle.prepend("((function(){");
+      bundle.append("})());", None);
+    }
+
+    if !self.polyfill.is_empty() {
+      for item in self.polyfill.to_str() {
+        bundle.prepend(&item);
+      }
     }
 
     Ok(bundle)

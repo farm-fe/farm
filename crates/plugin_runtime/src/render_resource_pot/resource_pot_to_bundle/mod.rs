@@ -1,21 +1,24 @@
 use std::{
   cell::RefCell,
-  collections::{HashMap, HashSet},
+  collections::HashMap,
   hash::Hash,
-  sync::Arc,
+  sync::{
+    atomic::{AtomicU32, Ordering},
+    Arc, Mutex,
+  },
 };
 
-use bundle::bundle_analyzer;
 use farmfe_core::{
   context::CompilationContext,
   enhanced_magic_string::bundle::Bundle,
   error::{CompilationError, Result},
   farm_profile_function, farm_profile_scope,
   module::{module_graph::ModuleGraph, ModuleId, ModuleType},
+  rayon::iter::{IntoParallelIterator, ParallelIterator},
   resource::resource_pot::{ResourcePot, ResourcePotId, ResourcePotType},
   swc_ecma_ast::Id,
 };
-use polyfill::SimplePolyfill;
+pub use polyfill::{SimplePolyfill, Polyfill};
 
 pub use crate::resource_pot_to_bundle::bundle::bundle_analyzer::BundleAnalyzer;
 
@@ -67,8 +70,10 @@ impl Hash for Var {
 mod polyfill;
 mod uniq_name;
 
+pub type BundleMap<'a> = HashMap<ResourcePotId, BundleAnalyzer<'a>>;
+
 pub struct SharedBundle<'a> {
-  pub bundle_map: HashMap<ResourcePotId, BundleAnalyzer<'a>>,
+  pub bundle_map: BundleMap<'a>,
   module_analyzer_manager: ModuleAnalyzerManager<'a>,
   module_graph: &'a ModuleGraph,
   context: &'a Arc<CompilationContext>,
@@ -80,9 +85,8 @@ pub struct SharedBundle<'a> {
 ///
 /// TODO:
 /// 1. multiple bundle
-/// 2. commonjs
-/// 3. dynamic bundle
-/// 4. multiple environment process
+/// 2. dynamic bundle
+/// 3. multiple environment process
 ///
 impl<'a> SharedBundle<'a> {
   pub fn new(
@@ -91,7 +95,7 @@ impl<'a> SharedBundle<'a> {
     context: &'a Arc<CompilationContext>,
   ) -> Self {
     farm_profile_function!("shared bundle initial");
-    let mut module_analyzer_map: HashMap<ModuleId, ModuleAnalyzer> = HashMap::new();
+    let module_analyzer_map: Mutex<HashMap<ModuleId, ModuleAnalyzer>> = Mutex::new(HashMap::new());
     let mut bundle_map: HashMap<ResourcePotId, BundleAnalyzer> = HashMap::new();
 
     let bundle_variables = Arc::new(RefCell::new(BundleVariable::new()));
@@ -112,6 +116,7 @@ impl<'a> SharedBundle<'a> {
       )) {
         continue;
       }
+      farm_profile_scope!(format!("analyze resource pot: {:?}", resource_pot.id));
 
       order_resource_pot.push(resource_pot.id.clone());
 
@@ -123,42 +128,47 @@ impl<'a> SharedBundle<'a> {
         bundle_variables.clone(),
       );
 
-      bundle_variables
-        .borrow_mut()
-        .with_namespace(resource_pot.id.clone(), |_| {
-          for module_id in resource_pot.modules() {
-            let is_dynamic = module_graph.is_dynamic(module_id);
-            let is_entry = resource_pot
-              .entry_module
-              .as_ref()
-              .is_some_and(|item| item == module_id);
-            let module = module_graph.module(module_id).unwrap();
-            let is_runtime = matches!(module.module_type, ModuleType::Runtime);
+      resource_pot
+        .modules()
+        .into_par_iter()
+        .try_for_each(|module_id| {
+          let is_dynamic = module_graph.is_dynamic(module_id);
+          let is_entry = resource_pot
+            .entry_module
+            .as_ref()
+            .is_some_and(|item| item == module_id);
+          let module = module_graph.module(module_id).unwrap();
+          let is_runtime = matches!(module.module_type, ModuleType::Runtime);
 
-            module_analyzer_map.insert(
-              module_id.clone(),
-              // 1-2. analyze bundle module
-              ModuleAnalyzer::new(
-                module,
-                &context,
-                resource_pot.id.clone(),
-                is_entry,
-                is_dynamic,
-                is_runtime,
-              )
-              .unwrap(),
-            );
-          }
+          let module_analyzer = ModuleAnalyzer::new(
+            module,
+            &context,
+            resource_pot.id.clone(),
+            is_entry,
+            is_dynamic,
+            is_runtime,
+          )
+          .unwrap();
 
-          // 1-3. order bundle module
-          bundle_analyzer.build_module_order(&order_map);
+          module_analyzer_map.lock().unwrap().insert(
+            module_id.clone(),
+            // 1-2. analyze bundle module
+            module_analyzer,
+          );
 
-          bundle_map.insert(resource_pot.id.clone(), bundle_analyzer);
-        });
+          Ok::<(), CompilationError>(())
+        })
+        .unwrap();
+
+      // 1-3. order bundle module
+      bundle_analyzer.build_module_order(&order_map);
+
+      bundle_map.insert(resource_pot.id.clone(), bundle_analyzer);
     }
 
     // modules manager
-    let module_analyzer_manager = ModuleAnalyzerManager::new(module_analyzer_map, &module_graph);
+    let module_analyzer_manager =
+      ModuleAnalyzerManager::new(module_analyzer_map.into_inner().unwrap(), &module_graph);
 
     Self {
       module_analyzer_manager,
@@ -205,7 +215,7 @@ impl<'a> SharedBundle<'a> {
         &bundle.ordered_modules,
         &self.context,
         &self.module_graph,
-        bundle.bundle_variable.borrow_mut(),
+        &mut bundle.bundle_variable.borrow_mut(),
       )?;
     }
 
@@ -218,7 +228,6 @@ impl<'a> SharedBundle<'a> {
 
     let bundle_variable = &mut self.bundle_variables.borrow_mut();
 
-    // for resource_pot in self
     for resource_pot_id in &self.order_resource_pot {
       bundle_variable.set_namespace(resource_pot_id.clone());
 
@@ -239,6 +248,8 @@ impl<'a> SharedBundle<'a> {
   // 2-3 start process bundle
   fn render_bundle(&mut self) -> Result<()> {
     farm_profile_function!("");
+
+    // TODO: multiple bundle should merge polyfill to runtime bundle, and reexport to other bundle
     for resource_pot_id in &self.order_resource_pot {
       farm_profile_scope!(format!("render bundle: {}", resource_pot_id));
 
@@ -258,7 +269,7 @@ impl<'a> SharedBundle<'a> {
   // 2. start process bundle
   pub fn render(&mut self) -> Result<()> {
     farm_profile_function!("");
-    // TODO: try async foreach
+
     self.extract_modules()?;
 
     // TODO: try async foreach
@@ -270,7 +281,8 @@ impl<'a> SharedBundle<'a> {
   }
 
   pub fn codegen(&mut self, resource_pot_id: &String) -> Result<Bundle> {
-    farm_profile_scope!(format!("bundle codegen: {}", resource_pot_id));
+    farm_profile_function!("");
+
     let bundle = self.bundle_map.get_mut(resource_pot_id).unwrap();
 
     let bundle = bundle.codegen(&mut self.module_analyzer_manager)?;

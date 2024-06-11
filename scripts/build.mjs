@@ -69,10 +69,23 @@ export const installMacProtobuf = () =>
   });
 
 // install linux protobuf
-export const installLinuxProtobuf = () =>
-  execa(DEFAULT_LINUX_PACKAGE_MANAGER, ['install', '-y', 'protobuf-compiler'], {
-    cwd: CWD
-  });
+export const installLinuxProtobuf = async () => {
+  try {
+    await execa('type', DEFAULT_LINUX_PACKAGE_MANAGER);
+  } catch (_) {
+    return Promise.reject(
+      `not found "${DEFAULT_LINUX_PACKAGE_MANAGER}", if it's not your package manager, please install "protobuf" manually.`
+    );
+  }
+
+  return execa(
+    DEFAULT_LINUX_PACKAGE_MANAGER,
+    ['install', '-y', 'protobuf-compiler'],
+    {
+      cwd: CWD
+    }
+  );
+};
 
 // build core command
 export const buildCore = () =>
@@ -215,12 +228,13 @@ export async function installProtoBuf() {
       'Due to the use of protoc in the project, we currently judge that you have not installed. we need to install protobuf locally to make the project start successfully. \n\n- For mac users, will be use your local `homebrew` tool for installation. (First, Make sure your computer has `homebrew` installed) \n- For linux users, we will use your local `apt` tool for installation. (First, Make sure your computer has `apt` installed) \n- For Windows users, because the protobuf plugin cannot be installed automatically, You need to install manually according to the prompts \n',
       { title: 'FARM WARN', color: 'yellow' }
     );
+
     if (isMac()) {
       await runTask('Protobuf', installMacProtobuf, 'Install', 'Install');
-    }
-    if (isLinux()) {
+    } else if (isLinux()) {
       await runTask('Protobuf', installLinuxProtobuf, 'Install', 'Install');
     }
+
     if (isWindows()) {
       logger(
         'If you are using a windows system, you can install it in the following ways:\n\n 1. open https://github.com/protocolbuffers/protobuf \n If you are a 32-bit operating system install https://github.com/protocolbuffers/protobuf/releases/download/v21.7/protoc-21.7-win32.zip \n If you are a 64-bit operating system install https://github.com/protocolbuffers/protobuf/releases/download/v21.7/protoc-21.7-win64.zip \n 2. After installation, find the path you installed, and copy the current path, adding to the environment variable of windows \n\n Or you can directly check out the following article to install \n https://www.geeksforgeeks.org/how-to-install-protocol-buffers-on-windows/',

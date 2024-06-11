@@ -58,9 +58,13 @@ macro_rules! farm_profile_scope {
 macro_rules! farm_profile_function {
   ($s:expr) => {
     #[cfg(feature = "profile")]
-        let msg = farmfe_utils::transform_string_to_static_str(String::from($s));
-        #[cfg(feature = "profile")]
-        farmfe_core::puffin::profile_function!(msg);
+    let msg = farmfe_utils::transform_string_to_static_str(String::from($s));
+    #[cfg(feature = "profile")]
+    farmfe_core::puffin::profile_function!(msg);
+  };
+
+  () => {
+    farm_profile_function!("")
   };
 }
 

@@ -3,14 +3,11 @@ use std::{collections::HashMap, path::PathBuf, sync::Arc};
 use farmfe_compiler::Compiler;
 use farmfe_core::{
   config::{
-    bool_or_obj::BoolOrObj,
-    config_regex::ConfigRegex,
-    external::{ExternalConfig, ExternalConfigItem},
-    persistent_cache::PersistentCacheConfig,
-    preset_env::PresetEnvConfig,
-    Config, CssConfig, Mode, RuntimeConfig, SourcemapConfig,
+    bool_or_obj::BoolOrObj, config_regex::ConfigRegex, persistent_cache::PersistentCacheConfig,
+    preset_env::PresetEnvConfig, Config, CssConfig, Mode, RuntimeConfig, SourcemapConfig,
   },
   plugin::Plugin,
+  serde_json::Value,
 };
 use farmfe_testing_helpers::is_update_snapshot_from_env;
 use farmfe_toolkit::fs::read_file_utf8;
@@ -97,7 +94,7 @@ pub fn create_config(cwd: PathBuf, crate_path: PathBuf) -> Config {
 }
 
 #[allow(dead_code)]
-pub fn try_read_config_from_json(path: PathBuf) -> Option<Config> {
+pub fn try_read_config_from_json(path: PathBuf) -> Option<Value> {
   if !path.exists() {
     return None;
   }

@@ -5,7 +5,9 @@ use farmfe_core::{
   module::{ModuleId, ModuleSystem},
   swc_common::DUMMY_SP,
   swc_ecma_ast::{
-    AssignExpr, AssignOp, AssignTarget, BindingIdent, CallExpr, Callee, Decl, Expr, ExprOrSpread, ExprStmt, KeyValueProp, Lit, MemberExpr, MemberProp, ModuleItem, ObjectLit, Pat, Prop, PropName, PropOrSpread, SimpleAssignTarget, Stmt, VarDecl, VarDeclKind, VarDeclarator
+    AssignExpr, AssignOp, AssignTarget, BindingIdent, CallExpr, Callee, Decl, Expr, ExprOrSpread,
+    ExprStmt, KeyValueProp, Lit, MemberExpr, MemberProp, ModuleItem, ObjectLit, Pat, Prop,
+    PropName, PropOrSpread, SimpleAssignTarget, Stmt, VarDecl, VarDeclKind, VarDeclarator,
   },
 };
 
@@ -15,7 +17,10 @@ use crate::resource_pot_to_bundle::{
     ModuleAnalyzerManager,
   },
   common,
-  polyfill::cjs::{wrap_require_default, wrap_require_wildcard},
+  polyfill::{
+    cjs::{wrap_export_star, wrap_require_default, wrap_require_wildcard},
+    Polyfill, SimplePolyfill,
+  },
   uniq_name::BundleVariable,
 };
 
@@ -33,6 +38,7 @@ impl CjsGenerate {
     export: &ExternalReferenceExport,
     bundle_variable: &BundleVariable,
     module_analyzer_manager: &ModuleAnalyzerManager,
+    polyfill: &mut SimplePolyfill,
   ) -> Result<Vec<ModuleItem>> {
     let mut stmts = vec![];
     let mut ordered_keys = export.named.keys().collect::<Vec<_>>();
@@ -91,10 +97,8 @@ impl CjsGenerate {
 
           stmts.push(ModuleItem::Stmt(Stmt::Expr(ExprStmt {
             span: DUMMY_SP,
-            expr: Box::new(Expr::Call(CallExpr {
-              span: DUMMY_SP,
-              callee: Callee::Expr(Box::new(Expr::Ident("_export_star".into()))),
-              args: vec![
+            expr: wrap_export_star(
+              vec![
                 ExprOrSpread {
                   spread: None,
                   expr: Box::new(Expr::Ident(render_name.as_str().into())),
@@ -108,8 +112,8 @@ impl CjsGenerate {
                   })),
                 },
               ],
-              type_args: None,
-            })),
+              polyfill,
+            ),
           })));
         }
       }
@@ -191,6 +195,7 @@ impl CjsGenerate {
     bundle_variable: &BundleVariable,
     import_map: &HashMap<ReferenceKind, ExternalReferenceImport>,
     module_analyzer_manager: &ModuleAnalyzerManager,
+    polyfill: &mut SimplePolyfill,
   ) -> Result<Vec<ModuleItem>> {
     let mut stmts = vec![];
     let mut ordered_import = import_map.keys().collect::<Vec<_>>();
@@ -220,16 +225,16 @@ impl CjsGenerate {
       // =>
       // var foo_ns = _interop_require_wildcard(require("foo"));
       // var foo_default = foo_ns.default;
-      let try_wrap_namespace = |expr: Box<Expr>| {
+      let try_wrap_namespace = |expr: Box<Expr>, polyfill: &mut SimplePolyfill| {
         if import.namespace.is_some() {
-          return wrap_require_wildcard(expr);
+          return wrap_require_wildcard(expr, polyfill);
         }
 
         return expr;
       };
-      let try_wrap_require_default = |expr: Box<Expr>| {
+      let try_wrap_require_default = |expr: Box<Expr>, polyfill: &mut SimplePolyfill| {
         if import.default.is_some() {
-          return wrap_require_default(expr);
+          return wrap_require_default(expr, polyfill);
         }
 
         return expr;
@@ -246,15 +251,18 @@ impl CjsGenerate {
             id: namespace_name.as_str().into(),
             type_ann: None,
           }),
-          init: Some(try_wrap_namespace(Box::new(Expr::Call(CallExpr {
-            span: DUMMY_SP,
-            callee: Callee::Expr(Box::new(Expr::Ident("require".into()))),
-            args: vec![ExprOrSpread {
-              spread: None,
-              expr: Box::new(Expr::Lit(Lit::Str(module_id.to_string().as_str().into()))),
-            }],
-            type_args: None,
-          })))),
+          init: Some(try_wrap_namespace(
+            Box::new(Expr::Call(CallExpr {
+              span: DUMMY_SP,
+              callee: Callee::Expr(Box::new(Expr::Ident("require".into()))),
+              args: vec![ExprOrSpread {
+                spread: None,
+                expr: Box::new(Expr::Lit(Lit::Str(module_id.to_string().as_str().into()))),
+              }],
+              type_args: None,
+            })),
+            polyfill,
+          )),
           definite: false,
         }],
       })))));
@@ -274,7 +282,7 @@ impl CjsGenerate {
           init: Some(Box::new(Expr::Member(MemberExpr {
             span: DUMMY_SP,
             obj: if is_default {
-              try_wrap_require_default(init_expr)
+              try_wrap_require_default(init_expr, polyfill)
             } else {
               init_expr
             },
@@ -310,24 +318,4 @@ impl CjsGenerate {
 
     Ok(stmts)
   }
-
-  // pub fn generate_export_star(
-  //   bundle_variable: &BundleVariable,
-  //   ns: usize,
-  // ) -> Result<Vec<ModuleItem>> {
-  //   let render_name = bundle_variable.render_name(ns);
-
-  //   Ok(vec![ModuleItem::Stmt(Stmt::Expr(ExprStmt {
-  //     span: DUMMY_SP,
-  //     expr: Box::new(Expr::Call(CallExpr {
-  //       span: DUMMY_SP,
-  //       callee: Callee::Expr(Box::new(Expr::Ident("_export_star".into()))),
-  //       args: vec![ExprOrSpread {
-  //         spread: None,
-  //         expr: Box::new(Expr::Ident(render_name.as_str().into())),
-  //       }],
-  //       type_args: None,
-  //     })),
-  //   }))])
-  // }
 }

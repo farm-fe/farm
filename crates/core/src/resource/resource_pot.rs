@@ -97,14 +97,14 @@ impl ResourcePot {
     self.resources.clear();
   }
 
-  pub fn defer_minify_resource_pot(&mut self) {
+  pub fn defer_minify_as_resource_pot(&mut self) {
     self
       .meta
       .custom_data
       .insert(DEFER_BUNDLE_MINIFY.to_string(), "true".to_string());
   }
 
-  pub fn is_defer_minify_resource_pot(&self) -> bool {
+  pub fn is_defer_minify_as_resource_pot(&self) -> bool {
     self
       .meta
       .custom_data

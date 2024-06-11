@@ -5,8 +5,8 @@ use farmfe_core::{
   module::{module_graph::ModuleGraph, ModuleId},
   swc_common::{Mark, DUMMY_SP},
   swc_ecma_ast::{
-    self, BindingIdent, CallExpr, Callee, ComputedPropName, Expr, ExprOrSpread, Ident, Lit,
-    MemberExpr, MemberProp, Module as EcmaAstModule, ModuleItem, Pat, Stmt, VarDecl, VarDeclarator,
+    self, BindingIdent, CallExpr, ComputedPropName, Expr, ExprOrSpread, Ident, Lit, MemberExpr,
+    MemberProp, Module as EcmaAstModule, ModuleItem, Pat, Stmt, VarDecl, VarDeclarator,
   },
 };
 use farmfe_toolkit::{
@@ -19,7 +19,10 @@ use crate::resource_pot_to_bundle::{
     bundle_external::{ExternalReferenceExport, ExternalReferenceImport, ReferenceKind},
     ModuleGlobalUniqName,
   },
-  polyfill::cjs::{wrap_require_default, wrap_require_wildcard},
+  polyfill::{
+    cjs::{wrap_require_default, wrap_require_wildcard},
+    SimplePolyfill,
+  },
   uniq_name::BundleVariable,
 };
 
@@ -112,6 +115,7 @@ impl CjsModuleAnalyzer {
     bundle_variable: &BundleVariable,
     module_global_uniq_name: &ModuleGlobalUniqName,
     reference_import: &ExternalReferenceImport,
+    polyfill: &mut SimplePolyfill,
   ) -> Vec<ModuleItem> {
     let mut result = vec![];
 
@@ -136,7 +140,7 @@ impl CjsModuleAnalyzer {
         }),
         init: Some(Box::new(Expr::Member(MemberExpr {
           span: DUMMY_SP,
-          obj: wrap_require_default(Box::new(Expr::Call(cjs_caller.clone()))),
+          obj: wrap_require_default(Box::new(Expr::Call(cjs_caller.clone())), polyfill),
           prop: MemberProp::Ident("default".into()),
         }))),
         definite: false,
@@ -150,9 +154,10 @@ impl CjsModuleAnalyzer {
           id: Ident::from(bundle_variable.render_name(ns).as_str()),
           type_ann: None,
         }),
-        init: Some(wrap_require_wildcard(Box::new(Expr::Call(
-          cjs_caller.clone(),
-        )))),
+        init: Some(wrap_require_wildcard(
+          Box::new(Expr::Call(cjs_caller.clone())),
+          polyfill,
+        )),
         definite: false,
       });
     }
@@ -176,7 +181,7 @@ impl CjsModuleAnalyzer {
         init: Some(Box::new(Expr::Member(MemberExpr {
           span: DUMMY_SP,
           obj: if is_require_default {
-            wrap_require_default(init_expr)
+            wrap_require_default(init_expr, polyfill)
           } else {
             init_expr
           },

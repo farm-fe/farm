@@ -3,6 +3,10 @@ use std::{
   collections::{HashMap, HashSet},
   path::PathBuf,
   str::FromStr,
+  sync::{
+    atomic::{AtomicU64, AtomicUsize, Ordering},
+    Arc,
+  },
 };
 
 use farmfe_core::{
@@ -67,8 +71,10 @@ impl UniqName {
 
 #[derive(Debug, Default)]
 pub struct BundleVariable {
-  pub index: usize,
+  pub index: Arc<AtomicUsize>,
+  // TODO(improve) diff vec and hashmap
   pub variables: HashMap<usize, Var>,
+  // TODO(improve): maybe record top_level var, and only register same top_level var
   pub module_defined_vars: HashMap<ModuleId, HashMap<String, usize>>,
   pub uniq_name_hash_map: HashMap<ResourcePotId, UniqName>,
   pub namespace: String,
@@ -76,7 +82,11 @@ pub struct BundleVariable {
 }
 
 pub fn is_valid_char(ch: char) -> bool {
-  (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || ch == '_'
+  (ch >= '0' && ch <= '9') || is_valid_first_char(ch)
+}
+
+pub fn is_valid_first_char(ch: char) -> bool {
+  return (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || ch == '_';
 }
 
 fn normalize_file_name_as_variable(str: String) -> String {
@@ -84,28 +94,33 @@ fn normalize_file_name_as_variable(str: String) -> String {
   let mut res = String::with_capacity(str.len());
 
   let mut first = true;
-  let mut prev_is_valid = false;
+
+  let mut prev_is_invalid = false;
   for ch in str.chars() {
     if first {
-      if is_valid_char(ch) {
-        prev_is_valid = false;
-        first = false;
-        res.push(ch);
-      } else {
-        if !prev_is_valid {
-          res.push('_');
+      if !is_valid_first_char(ch) {
+        res.push('_');
+
+        if is_valid_char(ch) {
+          res.push(ch);
+        } else {
+          prev_is_invalid = true;
         }
-        prev_is_valid = true;
+      } else {
+        res.push(ch)
       }
+      first = false;
     } else {
       if is_valid_char(ch) || ch.is_digit(10) {
-        prev_is_valid = false;
         res.push(ch);
+        prev_is_invalid = false;
       } else {
-        if !prev_is_valid {
-          res.push('_');
+        if prev_is_invalid {
+          continue;
         }
-        prev_is_valid = true;
+
+        res.push('_');
+        prev_is_invalid = true;
       }
     }
   }
@@ -135,9 +150,8 @@ impl BundleVariable {
     }
   }
 
-  fn push(&mut self, var: Var) {
-    self.variables.insert(self.index, var);
-    self.index += 1;
+  fn push(&mut self, var: Var, index: usize) {
+    self.variables.insert(index, var);
   }
 
   pub fn is_in_used_name(&self, index: usize) -> bool {
@@ -193,7 +207,12 @@ impl BundleVariable {
       ..Default::default()
     };
 
-    let index = self.index;
+    let mut index = None;
+    let mut create_index = || {
+      let v = self.index.fetch_add(1, Ordering::Release);
+      index = Some(v);
+      v
+    };
 
     let var_ident = if strict {
       // a#1
@@ -210,16 +229,45 @@ impl BundleVariable {
         }
       }
 
-      map.insert(var_ident, index);
+      map.insert(var_ident, create_index());
     } else {
       let mut map = HashMap::new();
-      map.insert(var_ident, index);
+      map.insert(var_ident, create_index());
       self.module_defined_vars.insert(module_id.clone(), map);
     }
 
-    self.push(var);
+    self.push(var, index.unwrap());
 
-    return index;
+    return index.unwrap();
+  }
+
+  pub fn branch(&self) -> Self {
+    Self {
+      index: self.index.clone(),
+      ..Default::default()
+    }
+  }
+
+  pub fn merge(&mut self, other: Self) {
+    for (index, var) in other.variables {
+      self.variables.insert(index, var);
+    }
+
+    self.module_defined_vars.extend(other.module_defined_vars);
+    self.used_names.extend(other.used_names);
+
+    // when merge stage uniq_name is all unresolved var, so we only record once
+    for (resource_pot, uniq_name) in other.uniq_name_hash_map {
+      if let Some(self_uniq_name) = self.uniq_name_hash_map.get_mut(&resource_pot) {
+        uniq_name.name_count_map.into_iter().for_each(|(name, _)| {
+          self_uniq_name.insert(&name);
+        });
+      } else {
+        self.uniq_name_hash_map.insert(resource_pot, uniq_name);
+      }
+    }
+
+    // for item in other.uniq_name()
   }
 
   pub fn register_used_name_by_module_id(
@@ -489,13 +537,13 @@ mod tests {
     assert_eq!(normalized_str, "_a_b_C_D");
 
     let normalized_str = normalize_file_name_as_variable(String::from("123456789"));
-    assert_eq!(normalized_str, "_");
+    assert_eq!(normalized_str, "_123456789");
 
     let normalized_str = normalize_file_name_as_variable(String::from("1_2_3_4"));
-    assert_eq!(normalized_str, "__2_3_4");
+    assert_eq!(normalized_str, "_1_2_3_4");
 
     let normalized_str = normalize_file_name_as_variable(String::from("1text.ts"));
-    assert_eq!(normalized_str, "_text_ts");
+    assert_eq!(normalized_str, "_1text_ts");
   }
 
   #[test]

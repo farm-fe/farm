@@ -143,31 +143,28 @@ impl<'a> VisitMut for RenameIdent<'a> {
   fn visit_mut_object_pat(&mut self, n: &mut farmfe_core::swc_ecma_ast::ObjectPat) {
     for prop in &mut n.props {
       match prop {
-        ObjectPatProp::KeyValue(n) => {
-          n.visit_mut_with(self);
-        }
         ObjectPatProp::Assign(n) => {
           // const { field = 100 } = x;
           // =>
           // const { field: field = 100 } = x;
 
-          let mut new_value = if let Some(ref value) = n.value {
-            Box::new(Pat::Expr(Box::new(Expr::Assign(AssignExpr {
-              span: DUMMY_SP,
-              op: AssignOp::Assign,
-              left: AssignTarget::Simple(SimpleAssignTarget::Ident(n.key.clone())),
-              right: value.clone(),
-            }))))
-          } else {
-            Box::new(Pat::Ident(BindingIdent {
-              id: n.key.id.clone(),
-              type_ann: None,
-            }))
-          };
-
-          new_value.visit_mut_with(self);
-
           if self.rename(&n.key).is_some() {
+            let mut new_value = if let Some(ref value) = n.value {
+              Box::new(Pat::Expr(Box::new(Expr::Assign(AssignExpr {
+                span: DUMMY_SP,
+                op: AssignOp::Assign,
+                left: AssignTarget::Simple(SimpleAssignTarget::Ident(n.key.clone())),
+                right: value.clone(),
+              }))))
+            } else {
+              Box::new(Pat::Ident(BindingIdent {
+                id: n.key.id.clone(),
+                type_ann: None,
+              }))
+            };
+
+            new_value.visit_mut_with(self);
+
             *prop = ObjectPatProp::KeyValue(KeyValuePatProp {
               key: PropName::Ident(n.key.clone().into()),
               value: new_value,
@@ -176,7 +173,7 @@ impl<'a> VisitMut for RenameIdent<'a> {
             n.visit_mut_with(self);
           }
         }
-        ObjectPatProp::Rest(n) => n.visit_mut_with(self),
+        _ => prop.visit_mut_children_with(self),
       };
     }
   }

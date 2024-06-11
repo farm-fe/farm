@@ -1,14 +1,15 @@
 use std::sync::Arc;
 
 use farmfe_core::{
+  config::Mode,
   context::CompilationContext,
   error::Result,
   module::{module_graph::ModuleGraph, ModuleId, ModuleSystem},
   swc_common::{comments::SingleThreadedComments, util::take::Take, Mark, DUMMY_SP},
   swc_ecma_ast::{
     ArrowExpr, BindingIdent, BlockStmt, BlockStmtOrExpr, CallExpr, Callee, Decl, EsVersion, Expr,
-    ExprOrSpread, Ident, KeyValueProp, Module, Module as EcmaAstModule, ModuleItem, ObjectLit, Pat,
-    Prop, PropName, PropOrSpread, Stmt, VarDecl, VarDeclKind, VarDeclarator,
+    ExprOrSpread, Ident, KeyValueProp, Module as EcmaAstModule, ModuleItem, ObjectLit, Pat, Prop,
+    PropName, PropOrSpread, Stmt, VarDecl, VarDeclKind, VarDeclarator,
   },
 };
 use farmfe_toolkit::{
@@ -25,7 +26,7 @@ use farmfe_toolkit::{
 
 use crate::resource_pot_to_bundle::{
   bundle::{bundle_external::BundleReference, ModuleAnalyzerManager, ModuleGlobalUniqName},
-  polyfill::Polyfill,
+  polyfill::{Polyfill, SimplePolyfill},
   uniq_name::BundleVariable,
 };
 
@@ -39,6 +40,7 @@ impl CjsPatch {
     bundle_variable: &BundleVariable,
     module_global_uniq_name: &ModuleGlobalUniqName,
     ast: Vec<ModuleItem>,
+    mode: Mode,
   ) -> Result<Vec<ModuleItem>> {
     let mut patch_ast_items = vec![];
 
@@ -62,7 +64,10 @@ impl CjsPatch {
             expr: Box::new(Expr::Object(ObjectLit {
               span: DUMMY_SP,
               props: vec![PropOrSpread::Prop(Box::new(Prop::KeyValue(KeyValueProp {
-                key: PropName::Str(module_id.to_string().into()),
+                key: PropName::Str(match mode {
+                  Mode::Development => module_id.to_string().into(),
+                  Mode::Production => "".into(),
+                }),
                 value: Box::new(Expr::Arrow(ArrowExpr {
                   span: DUMMY_SP,
                   params: vec![
@@ -105,7 +110,7 @@ impl CjsPatch {
 
   pub fn to_cjs(
     module_id: &ModuleId,
-    ast: &mut Module,
+    ast: &mut EcmaAstModule,
     module_graph: &ModuleGraph,
     unresolved_mark: Mark,
     es_version: EsVersion,
@@ -137,18 +142,20 @@ impl CjsPatch {
     patch_ast: &mut Vec<ModuleItem>,
     bundle_variable: &BundleVariable,
     bundle_reference: &BundleReference,
+    polyfill: &mut SimplePolyfill,
   ) {
-    let module_analyzer = module_analyzer_manager
+    let mut module_analyzer = module_analyzer_manager
       .module_analyzer_mut(module_id)
       .unwrap();
 
+    let unresolved_mark = module_analyzer.mark.0;
     // if hybrid module, should transform to cjs
     if matches!(module_analyzer.module_system, ModuleSystem::Hybrid) {
       CjsPatch::to_cjs(
         module_id,
         &mut module_analyzer.ast,
         module_graph,
-        module_analyzer.mark.0.clone(),
+        unresolved_mark,
         context.config.script.target,
       );
     }
@@ -156,13 +163,16 @@ impl CjsPatch {
     // if commonjs module, should wrap function
     // see [Polyfill::WrapCommonJs]
     if module_analyzer.is_commonjs() {
+      polyfill.add(Polyfill::WrapCommonJs);
       let ast = module_analyzer.ast.body.take();
+      drop(module_analyzer);
 
       let new_body = CjsPatch::wrap_commonjs(
         module_id,
         bundle_variable,
         &module_analyzer_manager.module_global_uniq_name,
         ast,
+        context.config.mode.clone(),
       )
       .unwrap();
 
@@ -171,8 +181,6 @@ impl CjsPatch {
         .unwrap()
         .ast
         .body = new_body;
-
-      module_analyzer_manager.polyfill.add(Polyfill::WrapCommonJs);
     }
 
     if let Some(import) = bundle_reference
@@ -184,6 +192,7 @@ impl CjsPatch {
         bundle_variable,
         &module_analyzer_manager.module_global_uniq_name,
         import,
+        polyfill,
       ));
     }
   }

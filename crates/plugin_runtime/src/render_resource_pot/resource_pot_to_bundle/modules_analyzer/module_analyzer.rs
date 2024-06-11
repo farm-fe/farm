@@ -17,12 +17,13 @@ use farmfe_core::{
 };
 use farmfe_toolkit::{
   common::{create_swc_source_map, Source},
-  script::swc_try_with::{resolve_module_mark, try_with},
+  script::swc_try_with::try_with,
   swc_ecma_visit::VisitWith,
 };
 
 use crate::resource_pot_to_bundle::{
-  bundle::reference::ReferenceMap, targets::cjs::CjsModuleAnalyzer, uniq_name::BundleVariable, Var,
+  bundle::reference::ReferenceMap, common::get_module_mark, targets::cjs::CjsModuleAnalyzer,
+  uniq_name::BundleVariable, Var,
 };
 
 use super::analyze::{self, CollectUnresolvedIdent};
@@ -234,7 +235,7 @@ pub struct ModuleAnalyzer {
   pub ast: EcmaAstModule,
   pub module_id: ModuleId,
   pub resource_pot_id: ResourcePotId,
-  pub export_names: Option<Rc<ReferenceMap>>,
+  pub export_names: Option<Arc<ReferenceMap>>,
   pub entry: bool,
   pub external: bool,
   pub dynamic: bool,
@@ -261,23 +262,9 @@ impl ModuleAnalyzer {
       content: module.content.clone(),
     });
 
-    // TODO: resolve_module_mark
     let mut mark = None;
     try_with(cm.clone(), &context.meta.script.globals, || {
-      // let (unresolved_mark, top_level_mark) = if module.meta.as_script().unresolved_mark == 0
-      //   && module.meta.as_script().top_level_mark == 0
-      // {
-      //   resolve_module_mark(&mut ast, module.module_type.is_typescript(), context)
-      // } else {
-      //   let unresolved_mark = Mark::from_u32(module.meta.as_script().unresolved_mark);
-      //   let top_level_mark = Mark::from_u32(module.meta.as_script().top_level_mark);
-      //   (unresolved_mark, top_level_mark)
-      // };
-      mark = Some(resolve_module_mark(
-        &mut ast,
-        module.module_type.is_typescript(),
-        context,
-      ));
+      mark = Some(get_module_mark(module, &mut ast, context));
     })?;
 
     Ok(Self {
@@ -313,7 +300,7 @@ impl ModuleAnalyzer {
   }
 
   fn collect_unresolved_ident(&self, bundle_variable: &mut BundleVariable) {
-    farm_profile_function!("");
+    farm_profile_function!();
     let mut collection = CollectUnresolvedIdent::new(self.mark.0);
 
     self.ast.visit_with(&mut collection);
@@ -332,7 +319,7 @@ impl ModuleAnalyzer {
     &mut self,
     module_graph: &ModuleGraph,
     context: &Arc<CompilationContext>,
-    bundle_variable: &mut RefMut<BundleVariable>,
+    bundle_variable: &mut BundleVariable,
   ) -> Result<()> {
     farm_profile_function!("");
     try_with(self.cm.clone(), &context.meta.script.globals, || {
@@ -390,11 +377,11 @@ impl ModuleAnalyzer {
     variables
   }
 
-  pub fn export_names(&self) -> Rc<ReferenceMap> {
+  pub fn export_names(&self) -> Arc<ReferenceMap> {
     return self
       .export_names
       .clone()
-      .unwrap_or_else(|| Rc::new(ReferenceMap::new(self.module_system.clone())));
+      .unwrap_or_else(|| Arc::new(ReferenceMap::new(self.module_system.clone())));
   }
 
   pub fn build_rename_map<'a>(

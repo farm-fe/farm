@@ -6,7 +6,7 @@ use super::common::parse_module_item;
 pub mod cjs;
 
 // TODO: global polyfill
-#[derive(Debug, Hash, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Hash, PartialEq, Eq, PartialOrd, Ord, Clone)]
 pub enum Polyfill {
   ///
   /// ```ts
@@ -58,27 +58,28 @@ pub enum Polyfill {
 }
 
 impl Polyfill {
-  fn to_ast(&self) -> Result<Vec<ModuleItem>> {
-    Ok(match self {
-      Polyfill::WrapCommonJs => vec![parse_module_item(
-        r#"
+  fn to_str(&self) -> Vec<String> {
+    match self {
+      Polyfill::WrapCommonJs => vec![
+        (r#"
 function __commonJs(mod) {
-	var module;
-	return () => {
-		if (module) {
-			return module.exports;
-		}
-		module = {
-			exports: {},
-		};
-		mod[Object.keys(mod)[0]](module, module.exports);
-		return module.exports;
-	};
+  var module;
+  return () => {
+    if (module) {
+      return module.exports;
+    }
+    module = {
+      exports: {},
+    };
+    mod[Object.keys(mod)[0]](module, module.exports);
+    return module.exports;
+  };
 }
-      "#,
-      )?],
-      Polyfill::MergeNamespace => vec![parse_module_item(
-        r#"
+      "#
+        .into()),
+      ],
+      Polyfill::MergeNamespace => vec![
+        (r#"
 function _mergeNamespaces(n, m) {
     m.forEach(function (e) {
         e && typeof e !== 'string' && !Array.isArray(e) && Object.keys(e).forEach(function (k) {
@@ -93,11 +94,10 @@ function _mergeNamespaces(n, m) {
     });
     return Object.freeze(n);
 }
-"#,
-      )?],
+"#),
+      ],
       Polyfill::Wildcard => vec![
-        parse_module_item(
-          r#"
+        (r#"
 function _getRequireWildcardCache(nodeInterop) {
     if (typeof WeakMap !== "function") return null;
     var cacheBabelInterop = new WeakMap();
@@ -106,10 +106,8 @@ function _getRequireWildcardCache(nodeInterop) {
         return nodeInterop ? cacheNodeInterop : cacheBabelInterop;
     })(nodeInterop);
 }
-"#,
-        )?,
-        parse_module_item(
-          r#"
+"#),
+        (r#"
 function _interop_require_wildcard(obj, nodeInterop) {
     if (!nodeInterop && obj && obj.__esModule) return obj;
     if (obj === null || typeof obj !== "object" && typeof obj !== "function") return {
@@ -132,11 +130,10 @@ function _interop_require_wildcard(obj, nodeInterop) {
     if (cache) cache.set(obj, newObj);
     return newObj;
 }
-        "#,
-        )?,
+        "#),
       ],
-      Polyfill::ExportStar => vec![parse_module_item(
-        r#"
+      Polyfill::ExportStar => vec![
+        (r#"
 function _export_star(from, to) {
     Object.keys(from).forEach(function(k) {
         if (k !== "default" && !Object.prototype.hasOwnProperty.call(to, k)) {
@@ -150,18 +147,31 @@ function _export_star(from, to) {
     });
     return from;
 }
-      "#,
-      )?],
-      Polyfill::InteropRequireDefault => vec![parse_module_item(
-        r#"
+      "#),
+      ],
+      Polyfill::InteropRequireDefault => vec![
+        (r#"
 function _interop_require_default(obj) {
     return obj && obj.__esModule ? obj : {
         default: obj
     };
 }
-"#,
-      )?],
-    })
+"#),
+      ],
+    }
+    .into_iter()
+    .map(|item| item.trim().into())
+    .collect()
+  }
+
+  fn to_ast(&self) -> Result<Vec<ModuleItem>> {
+    let mut result = vec![];
+
+    for item in self.to_str() {
+      result.push(parse_module_item(&item)?);
+    }
+
+    Ok(result)
   }
 
   fn dependents(&self) -> Vec<Polyfill> {
@@ -182,7 +192,7 @@ function _interop_require_default(obj) {
   }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Default, Clone)]
 pub struct SimplePolyfill {
   polyfills: HashSet<Polyfill>,
 }
@@ -192,11 +202,6 @@ impl SimplePolyfill {
     let mut polyfills = HashSet::new();
 
     polyfills.extend(polyfill);
-
-    // preset polyfill
-    polyfills.insert(Polyfill::ExportStar);
-    polyfills.insert(Polyfill::InteropRequireDefault);
-    polyfills.insert(Polyfill::Wildcard);
 
     Self { polyfills }
   }
@@ -211,6 +216,10 @@ impl SimplePolyfill {
     self.polyfills.insert(polyfill);
 
     dependents.into_iter().for_each(|dep| self.add(dep));
+  }
+
+  pub fn contain(&self, polyfill: &Polyfill) -> bool {
+    self.polyfills.contains(polyfill)
   }
 
   pub fn to_ast(&self) -> Result<Vec<ModuleItem>> {
@@ -228,6 +237,21 @@ impl SimplePolyfill {
     Ok(asts)
   }
 
+  pub fn to_str(&self) -> Vec<String> {
+    farm_profile_scope!("polyfill to str");
+    let mut str_list = vec![];
+
+    let mut polyfills = self.polyfills.iter().collect::<Vec<_>>();
+
+    polyfills.sort();
+
+    for polyfill in &polyfills {
+      str_list.extend(polyfill.to_str())
+    }
+
+    str_list
+  }
+
   pub fn is_empty(&self) -> bool {
     self.polyfills.is_empty()
   }
@@ -243,5 +267,9 @@ impl SimplePolyfill {
     .into_iter()
     .flat_map(|polyfill| polyfill.name())
     .collect()
+  }
+
+  pub fn extends(&mut self, polyfill: &SimplePolyfill) {
+    self.polyfills.extend(polyfill.polyfills.clone());
   }
 }

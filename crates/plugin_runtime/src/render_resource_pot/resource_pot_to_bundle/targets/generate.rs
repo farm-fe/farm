@@ -20,6 +20,7 @@ use crate::resource_pot_to_bundle::{
     ModuleAnalyzerManager,
   },
   modules_analyzer::module_analyzer::ImportSpecifierInfo,
+  polyfill::{Polyfill, SimplePolyfill},
   uniq_name::BundleVariable,
 };
 
@@ -34,6 +35,7 @@ pub fn generate_namespace_by_reference_map(
   map: &ReferenceMap,
   module_analyzer_manager: &ModuleAnalyzerManager,
   order_index_map: &HashMap<ModuleId, usize>,
+  polyfill: &mut SimplePolyfill,
 ) -> Result<Vec<ModuleItem>> {
   let mut patch_ast_items = vec![];
   let namespace = bundle_variable.name(local);
@@ -102,56 +104,60 @@ pub fn generate_namespace_by_reference_map(
     }))));
   }
 
-  let declare_init =
-    if matches!(map.export_type, ModuleSystem::EsModule) && reexport_namespace.is_empty() && commonjs_fns.is_empty() {
-      Some(Box::new(Expr::Object(ObjectLit {
-        span: DUMMY_SP,
-        props,
-      })))
-    } else {
-      // dynamic
-      Some(Box::new(Expr::Call(CallExpr {
-        span: DUMMY_SP,
-        callee: swc_ecma_ast::Callee::Expr(Box::new(Expr::Ident(Ident::from("_mergeNamespaces")))),
-        args: vec![
-          // static
-          ExprOrSpread {
-            spread: None,
-            expr: Box::new(Expr::Object(ObjectLit {
-              span: DUMMY_SP,
-              props,
-            })),
-          },
-          ExprOrSpread {
-            spread: None,
-            expr: Box::new(Expr::Array(ArrayLit {
-              span: DUMMY_SP,
-              elems: commonjs_fns
-                .into_iter()
-                .map(|ident| {
-                  Some(ExprOrSpread {
-                    spread: None,
-                    expr: Box::new(Expr::Call(CallExpr {
-                      span: DUMMY_SP,
-                      callee: swc_ecma_ast::Callee::Expr(Box::new(Expr::Ident(ident))),
-                      args: vec![],
-                      type_args: None,
-                    })),
-                  })
+  let declare_init = if matches!(map.export_type, ModuleSystem::EsModule)
+    && reexport_namespace.is_empty()
+    && commonjs_fns.is_empty()
+  {
+    Some(Box::new(Expr::Object(ObjectLit {
+      span: DUMMY_SP,
+      props,
+    })))
+  } else {
+    polyfill.add(Polyfill::MergeNamespace);
+
+    // dynamic
+    Some(Box::new(Expr::Call(CallExpr {
+      span: DUMMY_SP,
+      callee: swc_ecma_ast::Callee::Expr(Box::new(Expr::Ident(Ident::from("_mergeNamespaces")))),
+      args: vec![
+        // static
+        ExprOrSpread {
+          spread: None,
+          expr: Box::new(Expr::Object(ObjectLit {
+            span: DUMMY_SP,
+            props,
+          })),
+        },
+        ExprOrSpread {
+          spread: None,
+          expr: Box::new(Expr::Array(ArrayLit {
+            span: DUMMY_SP,
+            elems: commonjs_fns
+              .into_iter()
+              .map(|ident| {
+                Some(ExprOrSpread {
+                  spread: None,
+                  expr: Box::new(Expr::Call(CallExpr {
+                    span: DUMMY_SP,
+                    callee: swc_ecma_ast::Callee::Expr(Box::new(Expr::Ident(ident))),
+                    args: vec![],
+                    type_args: None,
+                  })),
                 })
-                .chain(reexport_namespace.into_iter().map(|ns| {
-                  Some(ExprOrSpread {
-                    spread: None,
-                    expr: Box::new(Expr::Ident(ns)),
-                  })
-                }))
-                .collect(),
-            })),
-          },
-        ],
-        type_args: None,
-      })))
-    };
+              })
+              .chain(reexport_namespace.into_iter().map(|ns| {
+                Some(ExprOrSpread {
+                  spread: None,
+                  expr: Box::new(Expr::Ident(ns)),
+                })
+              }))
+              .collect(),
+          })),
+        },
+      ],
+      type_args: None,
+    })))
+  };
 
   patch_ast_items.push(ModuleItem::Stmt(Stmt::Decl(Decl::Var(Box::new(VarDecl {
     span: DUMMY_SP,
@@ -229,6 +235,7 @@ pub fn generate_export_by_reference_export(
   bundle_reference: &mut BundleReference,
   module_analyzer_manager: &ModuleAnalyzerManager,
   context: &Arc<CompilationContext>,
+  polyfill: &mut SimplePolyfill,
 ) -> Result<Vec<ModuleItem>> {
   let mut patch_export_to_module = vec![];
 
@@ -240,6 +247,7 @@ pub fn generate_export_by_reference_export(
       bundle_variable,
       &module_analyzer_manager,
       context,
+      polyfill,
     )?);
   }
 
@@ -260,6 +268,7 @@ pub fn generate_export_by_reference_export(
       bundle_variable,
       &module_analyzer_manager,
       context,
+      polyfill,
     )?);
   }
 
@@ -273,6 +282,7 @@ pub fn generate_export_as_module_export(
   bundle_variable: &BundleVariable,
   module_analyzer_manager: &ModuleAnalyzerManager,
   context: &Arc<CompilationContext>,
+  polyfill: &mut SimplePolyfill,
 ) -> Result<Vec<ModuleItem>> {
   let mut ordered_keys = export.named.keys().collect::<Vec<_>>();
 
@@ -295,6 +305,7 @@ pub fn generate_export_as_module_export(
         export,
         bundle_variable,
         module_analyzer_manager,
+        polyfill,
       );
     }
   }
@@ -307,6 +318,7 @@ pub fn generate_bundle_import_by_bundle_reference(
   bundle_variable: &BundleVariable,
   bundle_reference: &BundleReference,
   module_analyzer_manager: &ModuleAnalyzerManager,
+  polyfill: &mut SimplePolyfill,
 ) -> Result<Vec<ModuleItem>> {
   let mut patch_import_to_module = vec![];
 
@@ -316,6 +328,7 @@ pub fn generate_bundle_import_by_bundle_reference(
         bundle_variable,
         &bundle_reference.import_map,
         &module_analyzer_manager,
+        polyfill,
       )?);
     }
 
