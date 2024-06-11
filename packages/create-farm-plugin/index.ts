@@ -166,6 +166,10 @@ function replaceNamePlaceholders(
 ): string {
   const PLACEHOLDERS = [
     {
+      name: '<FARM-JS-PLUGIN-NPM-NAME>',
+      replace: () => options.pluginName
+    },
+    {
       name: '<FARM-RUST-PLUGIN-NPM-NAME>',
       replace: () => options.pluginName
     },
