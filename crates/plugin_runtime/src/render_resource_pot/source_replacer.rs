@@ -117,13 +117,6 @@ impl SourceReplacer<'_> {
       } = &mut call_expr.args[0]
       {
         let source = str.value.to_string();
-        let module_type = self
-          .module_graph
-          .module(&self.module_id)
-          .as_ref()
-          .unwrap()
-          .module_type
-          .clone();
 
         call_expr.callee = Callee::Expr(Box::new(Expr::Ident(Ident {
           span: DUMMY_SP,
