@@ -19,7 +19,7 @@ napi = { version = "2.15.2", default-features = false, features = [
   "serde-json",
 ] }
 napi-derive = "2.15.2"
-create-farm = { version = "0.1.0", path = "../../crates/create-farm-rs" }
+create-farm = { version = "0.1.1", path = "../../crates/create-farm-rs" }
 
 [build-dependencies]
 napi-build = "2.0.1"
