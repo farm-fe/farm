@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.0.8
+
+### Patch Changes
+
+- aabb5475: migration of `create-farm-node` to `create-farm`
+
 ## 0.0.7
 
 ### Patch Changes
