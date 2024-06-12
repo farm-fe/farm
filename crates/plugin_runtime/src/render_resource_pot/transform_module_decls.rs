@@ -4,12 +4,12 @@ use farmfe_core::{
   regex::Regex,
   swc_common::{util::take::Take, Mark, DUMMY_SP},
   swc_ecma_ast::{
-    AssignExpr, AssignOp, AssignTarget, BindingIdent, CallExpr, Callee, Class, ClassDecl,
-    ClassExpr, Decl, ExportAll, ExportDecl, ExportDefaultDecl, ExportDefaultExpr, Expr,
+    AssignExpr, AssignOp, AssignTarget, BindingIdent, BlockStmt, CallExpr, Callee, Class,
+    ClassDecl, ClassExpr, Decl, ExportAll, ExportDecl, ExportDefaultDecl, ExportDefaultExpr, Expr,
     ExprOrSpread, ExprStmt, FnDecl, FnExpr, Function, Id, Ident, ImportDecl, ImportSpecifier,
     KeyValueProp, Lit, MemberExpr, MemberProp, Module as SwcModule, ModuleDecl, ModuleExportName,
-    ModuleItem, NamedExport, Pat, Prop, SimpleAssignTarget, Stmt, Str, VarDecl, VarDeclKind,
-    VarDeclarator,
+    ModuleItem, NamedExport, Pat, Prop, ReturnStmt, SimpleAssignTarget, Stmt, Str, VarDecl,
+    VarDeclKind, VarDeclarator,
   },
 };
 use farmfe_toolkit::{
@@ -112,7 +112,7 @@ pub fn transform_module_decls(ast: &mut SwcModule, unresolved_mark: Mark) {
       span: DUMMY_SP,
       expr: Box::new(Expr::Call(CallExpr {
         span: DUMMY_SP,
-        callee: create_module_helper_callee("_m"),
+        callee: create_module_helper_callee("_m", unresolved_mark),
         args: vec![ExprOrSpread {
           spread: None,
           expr: Box::new(Expr::Ident(create_exports_ident(unresolved_mark))),
@@ -210,12 +210,9 @@ fn transform_export_decl(export_decl: ExportDecl, unresolved_mark: Mark) -> Vec<
         var_decl.name.visit_with(&mut idents_collector);
 
         for ident in idents_collector.defined_idents {
-          let exports_assign_left =
-            create_exports_assign_left(Ident::new(ident.0.clone(), DUMMY_SP), unresolved_mark);
-          local_items.push(create_exports_assign_stmt(
-            exports_assign_left,
-            Expr::Ident(Ident::new(ident.0, DUMMY_SP.with_ctxt(ident.1))),
-          ))
+          let call_expr =
+            create_define_export_property_ident_call_expr(None, ident, unresolved_mark);
+          local_items.push(create_module_item_from_call_expr(call_expr));
         }
       }
 
@@ -258,49 +255,46 @@ fn transform_export_named(named_export: NamedExport, unresolved_mark: Mark) -> V
         };
 
         if let Some(export_from_ident) = export_from_item.as_ref() {
+          let is_equal = exported_ident.to_id() == local_ident.to_id();
+          let mut args = vec![
+            ExprOrSpread {
+              spread: None,
+              expr: Box::new(Expr::Ident(create_exports_ident(unresolved_mark))),
+            },
+            ExprOrSpread {
+              spread: None,
+              expr: Box::new(Expr::Lit(Lit::Str(Str {
+                span: DUMMY_SP,
+                value: exported_ident.sym,
+                raw: None,
+              }))),
+            },
+            ExprOrSpread {
+              spread: None,
+              expr: Box::new(Expr::Ident(export_from_ident.clone())),
+            },
+          ];
+          if !is_equal {
+            args.push(ExprOrSpread {
+              spread: None,
+              expr: Box::new(Expr::Lit(Lit::Str(Str {
+                span: DUMMY_SP,
+                value: local_ident.sym,
+                raw: None,
+              }))),
+            })
+          }
           // module._(exports, exported_ident, export_from_ident, local_ident)
-          let callee = create_module_helper_callee("_");
-          let call_expr = Expr::Call(CallExpr {
-            span: DUMMY_SP,
-            callee,
-            args: vec![
-              ExprOrSpread {
-                spread: None,
-                expr: Box::new(Expr::Ident(create_exports_ident(unresolved_mark))),
-              },
-              ExprOrSpread {
-                spread: None,
-                expr: Box::new(Expr::Lit(Lit::Str(Str {
-                  span: DUMMY_SP,
-                  value: exported_ident.sym,
-                  raw: None,
-                }))),
-              },
-              ExprOrSpread {
-                spread: None,
-                expr: Box::new(Expr::Ident(export_from_ident.clone())),
-              },
-              ExprOrSpread {
-                spread: None,
-                expr: Box::new(Expr::Lit(Lit::Str(Str {
-                  span: DUMMY_SP,
-                  value: local_ident.sym,
-                  raw: None,
-                }))),
-              },
-            ],
-            type_args: None,
-          });
-          items.push(ModuleItem::Stmt(Stmt::Expr(ExprStmt {
-            span: DUMMY_SP,
-            expr: Box::new(call_expr),
-          })));
+          let call_expr = create_define_export_property_call_expr("_", args, unresolved_mark);
+
+          items.push(create_module_item_from_call_expr(call_expr));
         } else {
-          let exports_assign_left = create_exports_assign_left(exported_ident, unresolved_mark);
-          items.push(create_exports_assign_stmt(
-            exports_assign_left,
-            Expr::Ident(local_ident),
-          ));
+          let call_expr = create_define_export_property_ident_call_expr(
+            Some(exported_ident.to_id()),
+            local_ident.to_id(),
+            unresolved_mark,
+          );
+          items.push(create_module_item_from_call_expr(call_expr));
         }
       }
       farmfe_core::swc_ecma_ast::ExportSpecifier::Default(_) => {
@@ -365,7 +359,7 @@ fn transform_export_all(export_all: ExportAll, unresolved_mark: Mark) -> Vec<Mod
   items.push(require_item);
 
   // module._e(exports, val_name_ident)
-  let callee = create_module_helper_callee("_e");
+  let callee = create_module_helper_callee("_e", unresolved_mark);
   let call_expr = Expr::Call(CallExpr {
     span: DUMMY_SP,
     callee,
@@ -507,11 +501,20 @@ fn create_export_fn_decl_stmts(
   };
 
   // 2. create exports assign item
-  let exports_assign_left = create_exports_assign_left(exports_ident, unresolved_mark);
-  items.push(create_exports_assign_stmt(
-    exports_assign_left,
-    exports_assign_right,
-  ));
+  if let Expr::Ident(ident) = exports_assign_right {
+    let call_expr = create_define_export_property_ident_call_expr(
+      Some(exports_ident.to_id()),
+      ident.to_id(),
+      unresolved_mark,
+    );
+    items.push(create_module_item_from_call_expr(call_expr));
+  } else {
+    let exports_assign_left = create_exports_assign_left(exports_ident, unresolved_mark);
+    items.push(create_exports_assign_stmt(
+      exports_assign_left,
+      exports_assign_right,
+    ));
+  }
 
   items
 }
@@ -538,25 +541,112 @@ fn create_export_class_decl_stmts(
   };
 
   // 2. create exports assign item
-  let exports_assign_left = create_exports_assign_left(exports_ident, unresolved_mark);
-  items.push(create_exports_assign_stmt(
-    exports_assign_left,
-    exports_assign_right,
-  ));
+  if let Expr::Ident(ident) = exports_assign_right {
+    let call_expr = create_define_export_property_ident_call_expr(
+      Some(exports_ident.to_id()),
+      ident.to_id(),
+      unresolved_mark,
+    );
+    items.push(create_module_item_from_call_expr(call_expr));
+  } else {
+    let exports_assign_left = create_exports_assign_left(exports_ident, unresolved_mark);
+    items.push(create_exports_assign_stmt(
+      exports_assign_left,
+      exports_assign_right,
+    ));
+  }
 
   items
 }
 
-fn create_module_helper_callee(helper: &str) -> Callee {
+fn create_module_helper_callee(helper: &str, unresolved_mark: Mark) -> Callee {
   let prop = Ident::new(helper.into(), DUMMY_SP);
   Callee::Expr(Box::new(Expr::Member(MemberExpr {
     span: DUMMY_SP,
     obj: Box::new(Expr::Ident(Ident::new(
       FARM_MODULE_SYSTEM_MODULE.into(),
-      DUMMY_SP,
+      DUMMY_SP.apply_mark(unresolved_mark),
     ))),
     prop: MemberProp::Ident(prop),
   })))
+}
+
+fn create_define_export_property_call_expr(
+  helper: &str,
+  args: Vec<ExprOrSpread>,
+  unresolved_mark: Mark,
+) -> CallExpr {
+  let callee = create_module_helper_callee(helper, unresolved_mark);
+  let call_expr = CallExpr {
+    span: DUMMY_SP,
+    callee,
+    args,
+    type_args: None,
+  };
+  call_expr
+}
+
+fn create_define_export_property_ident_call_expr(
+  exported_ident: Option<Id>,
+  local_ident: Id,
+  unresolved_mark: Mark,
+) -> CallExpr {
+  let exported_ident = if let Some(exported_ident) = exported_ident {
+    exported_ident
+  } else {
+    local_ident.clone()
+  };
+  // module.o(exports, ident, function(){return ident;})
+  create_define_export_property_call_expr(
+    "o",
+    vec![
+      ExprOrSpread {
+        spread: None,
+        expr: Box::new(Expr::Ident(create_exports_ident(unresolved_mark))),
+      },
+      ExprOrSpread {
+        spread: None,
+        expr: Box::new(Expr::Lit(Lit::Str(Str {
+          span: DUMMY_SP,
+          value: exported_ident.0.clone(),
+          raw: None,
+        }))),
+      },
+      ExprOrSpread {
+        spread: None,
+        expr: Box::new(Expr::Fn(FnExpr {
+          ident: None,
+          function: Box::new(Function {
+            params: vec![],
+            decorators: vec![],
+            span: DUMMY_SP,
+            body: Some(BlockStmt {
+              span: DUMMY_SP,
+              stmts: vec![Stmt::Return(ReturnStmt {
+                span: DUMMY_SP,
+                arg: Some(Box::new(Expr::Ident(Ident::new(
+                  local_ident.0,
+                  DUMMY_SP.with_ctxt(local_ident.1),
+                )))),
+              })],
+            }),
+            is_generator: false,
+            is_async: false,
+            type_params: None,
+            return_type: None,
+          }),
+        })),
+      },
+    ],
+    unresolved_mark,
+  )
+}
+
+fn create_module_item_from_call_expr(call_expr: CallExpr) -> ModuleItem {
+  ModuleItem::Stmt(Stmt::Expr(ExprStmt {
+    span: DUMMY_SP,
+    expr: Box::new(Expr::Call(call_expr)),
+  }))
 }
 
 fn get_ident_from_module_export_name(name: ModuleExportName) -> Ident {
@@ -693,10 +783,18 @@ var _f_b = require("./b");
 var b = _f_b;
 var _f_c = require("./c");
 console.log(_f_a.default);
-exports.a = _f_a.a;
-exports.d = _f_a.c;
-exports.b = b;
-exports.e = _f_c.default;
+module.o(exports, "a", function() {
+    return _f_a.a;
+});
+module.o(exports, "d", function() {
+    return _f_a.c;
+});
+module.o(exports, "b", function() {
+    return b;
+});
+module.o(exports, "e", function() {
+    return _f_c.default;
+});
 var _f_d = require('./d');
 module._(exports, "a1", _f_d, "a1");
 module._(exports, "d1", _f_d, "d1");
@@ -705,21 +803,34 @@ module._(exports, "e2", _f_d, "e1");
 var _f_d = require('./d');
 var b2 = _f_d;
 const f = 1, h = 2;
-exports.f = f;
-exports.h = h;
+module.o(exports, "f", function() {
+    return f;
+});
+module.o(exports, "h", function() {
+    return h;
+});
 function g() {}
-exports.g = g;
+module.o(exports, "g", function() {
+    return g;
+});
 class i {
 }
-exports.i = i;
+module.o(exports, "i", function() {
+    return i;
+});
 exports.default = 'hello';
 class j {
 }
-exports.default = j;
+module.o(exports, "j", function() {
+    return j;
+});
 function k() {}
-exports.default = k;
+module.o(exports, "default", function() {
+    return k;
+});
 var _f_e = require('./e');
 module._e(exports, _f_e);
+module._m(exports);
 "#
       )
     })

@@ -15,15 +15,21 @@ export class Module {
     this.require = require;
   }
 
-  d(to: any, to_k: string, val: any) {
+  o(to: any, to_k: string, get: () => any) {
     Object.defineProperty(to, to_k, {
       enumerable: true,
-      get: function() {
-        return val;
-      }
+      get
     });
   }
 
+  // exports.xx = xx
+  d(to: any, to_k: string, val: any) {
+    this.o(to, to_k, function() {
+      return val;
+    });
+  }
+
+  // exports.__esModule
   _m(to: any) {
     const key = '__esModule';
     if (to[key]) return;
@@ -44,6 +50,6 @@ export class Module {
 
   // `export { xx } from` helper
   _(to: any, to_k: string, from: any, from_k: string) {
-    this.d(to, to_k, from[from_k]);
+    this.d(to, to_k, from[from_k || to_k]);
   }
 }
