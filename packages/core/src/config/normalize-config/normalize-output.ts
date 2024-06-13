@@ -1,4 +1,4 @@
-import { browsersWithSupportForFeatures } from 'browserslist-generator';
+import { browsersWithSupportForFeatures } from 'farm-browserslist-generator';
 
 import { Config } from '../../types/binding.js';
 import {
