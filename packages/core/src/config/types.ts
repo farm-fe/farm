@@ -56,7 +56,7 @@ export interface UserPreviewServerConfig {
 
 export type NormalizedServerConfig = Required<
   Omit<UserServerConfig, 'hmr'> & {
-    hmr: Required<UserHmrConfig>;
+    hmr?: Required<UserHmrConfig>;
   }
 >;
 

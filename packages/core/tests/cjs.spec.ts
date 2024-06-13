@@ -2,7 +2,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { expect, test } from 'vitest';
 
-import { normalizeDevServerOptions, resolveConfig } from '../src/index.js';
+import { normalizeDevServerConfig, resolveConfig } from '../src/index.js';
 import { Logger } from '../src/utils/logger.js';
 
 test('resolveUserConfig', async () => {
@@ -66,6 +66,6 @@ test('resolveUserConfig', async () => {
     moduleCacheKeyStrategy: {}
   });
   expect(config.server).toEqual(
-    normalizeDevServerOptions(config.server, 'development')
+    normalizeDevServerConfig(config.server, 'development')
   );
 });

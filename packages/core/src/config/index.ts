@@ -91,7 +91,7 @@ async function getDefaultConfig(
     logger
   );
 
-  resolvedUserConfig.server = normalizeDevServerOptions({}, mode);
+  resolvedUserConfig.server = normalizeDevServerConfig(inlineOptions, mode);
 
   resolvedUserConfig.compilation = await normalizeUserCompilationConfig(
     resolvedUserConfig,
@@ -191,7 +191,7 @@ export async function resolveConfig(
   );
 
   // normalize server config first cause it may be used in normalizeUserCompilationConfig
-  resolvedUserConfig.server = normalizeDevServerOptions(
+  resolvedUserConfig.server = normalizeDevServerConfig(
     resolvedUserConfig.server,
     mode
   );
@@ -589,7 +589,7 @@ function tryAsFileRead(value?: any): string | Buffer {
   return value;
 }
 
-export function normalizeDevServerOptions(
+export function normalizeDevServerConfig(
   options: UserServerConfig | undefined,
   mode: string
 ): NormalizedServerConfig {
@@ -809,24 +809,13 @@ export async function resolveMergedUserConfig(
   mode: 'development' | 'production' | string,
   logger: Logger = new Logger()
 ): Promise<ResolvedUserConfig> {
-  const serverConfig: NormalizedServerConfig = {
-    ...DEFAULT_DEV_SERVER_OPTIONS,
-    ...mergedUserConfig.server,
-    hmr: {
-      ...DEFAULT_HMR_OPTIONS,
-      ...(isObject(mergedUserConfig.server?.hmr)
-        ? mergedUserConfig.server.hmr
-        : {})
-    }
-  };
-  const resolvedUserConfig: ResolvedUserConfig = {
+  const resolvedUserConfig = {
     ...mergedUserConfig,
     compilation: {
       ...mergedUserConfig.compilation,
       external: []
-    },
-    server: serverConfig
-  };
+    }
+  } as ResolvedUserConfig;
 
   // set internal config
   resolvedUserConfig.envMode = mode;

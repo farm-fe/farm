@@ -5,7 +5,7 @@ import {
   Compiler,
   Logger,
   UserConfig,
-  normalizeDevServerOptions,
+  normalizeDevServerConfig,
   normalizeUserCompilationConfig,
   resolveMergedUserConfig
 } from '../src/index.js';
@@ -13,7 +13,7 @@ import {
 // just make sure the binding works
 test('Binding - should parse config to rust correctly', async () => {
   const currentDir = path.dirname(fileURLToPath(import.meta.url));
-  const serverConfig = normalizeDevServerOptions({}, 'production');
+  const serverConfig = normalizeDevServerConfig({}, 'production');
 
   const config: UserConfig = {
     root: path.resolve(currentDir, 'fixtures', 'binding'),
