@@ -62,7 +62,7 @@ jobs:
       - name: Test Create Farm React
         run: cd .. && pnpm create farm my-test-app-react --template react && cd my-test-app-react && pnpm i && pnpm build
       - name: Test Create Farm Vue
-        run: cd .. && pnpm create farm my-test-app-vue --template vue && cd my-test-app-vue && pnpm i && pnpm build
+        run: cd .. && pnpm create farm my-test-app-vue --template vue3 && cd my-test-app-vue && pnpm i && pnpm build
       - name: Test Create Farm Solid
         run: cd .. && pnpm create farm my-test-app-solid --template solid && cd my-test-app-solid && pnpm i && pnpm build
 
