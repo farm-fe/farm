@@ -49,3 +49,5 @@ yarn create farm my-vue-app --template react
 # pnpm
 pnpm create farm my-vue-app --template vue
 ```
+
+Inspiration comes from [create-tauri-app](https://github.com/tauri-apps/create-tauri-app/#usage)
