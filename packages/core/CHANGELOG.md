@@ -1,5 +1,11 @@
 # @farmfe/core
 
+## 1.1.14
+
+### Patch Changes
+
+- 4df945c3: fix: #1384
+
 ## 1.1.13
 
 ### Patch Changes
