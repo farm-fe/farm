@@ -66,8 +66,11 @@ pub fn tree_shake_modules(
 
       for dep_id in module_graph.dependencies_ids(&tree_shake_module_id) {
         // avoid cyclic dependencies
-        if visited_modules.contains(&dep_id) {
-          continue;
+        let dep_tree_shake_module = tree_shake_modules_map.get(&dep_id);
+        if let Some(dep_tree_shake_module) = dep_tree_shake_module {
+          if matches!(dep_tree_shake_module.handled_used_exports, UsedExports::All) {
+            continue;
+          }
         }
 
         set_dep_used_export_all(&dep_id, tree_shake_modules_map);
