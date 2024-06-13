@@ -1,5 +1,11 @@
 # @farmfe/core
 
+## 1.1.15
+
+### Patch Changes
+
+- c72238ee: Farm-browserslist-generator adapts to different node versions
+
 ## 1.1.14
 
 ### Patch Changes
