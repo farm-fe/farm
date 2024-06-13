@@ -14,7 +14,7 @@ import {
   resolveAsyncPlugins,
   resolveConfigHook,
   resolveConfigResolvedHook,
-  resolveFarmPlugins
+  resolvePlugins
 } from '../plugin/index.js';
 import { Server } from '../server/index.js';
 import { urlRegex } from '../utils/http.js';
@@ -168,7 +168,7 @@ export async function resolveConfig(
     config: rawConfig
   };
 
-  const { jsPlugins, rustPlugins } = await resolveFarmPlugins(userConfig);
+  const { jsPlugins, rustPlugins } = await resolvePlugins(userConfig);
 
   const rawJsPlugins = (await resolveAsyncPlugins(jsPlugins || [])).filter(
     Boolean

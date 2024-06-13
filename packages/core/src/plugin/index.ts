@@ -9,8 +9,8 @@ import type { JsPlugin } from './type.js';
 export * from './js/index.js';
 export * from './rust/index.js';
 
-export async function resolveFarmPlugins(config: UserConfig) {
-  const plugins = config.plugins ?? [];
+export async function resolvePlugins(config: UserConfig) {
+  let plugins = config.plugins ?? [];
 
   if (!plugins.length) {
     return {
@@ -18,9 +18,10 @@ export async function resolveFarmPlugins(config: UserConfig) {
       jsPlugins: []
     };
   }
+  // First, resolve any promises and flatten the array
+  plugins = await resolveAsyncPlugins(plugins);
 
   const rustPlugins = [];
-
   const jsPlugins: JsPlugin[] = [];
 
   for (const plugin of plugins) {
@@ -56,7 +57,6 @@ export async function resolveFarmPlugins(config: UserConfig) {
   };
 }
 
-// resolve promise plugins
 export async function resolveAsyncPlugins<T>(arr: T[]): Promise<T[]> {
   return arr.reduce<Promise<T[]>>(async (acc, current) => {
     const flattenedAcc = await acc;
