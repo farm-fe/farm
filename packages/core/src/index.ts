@@ -359,6 +359,7 @@ export async function createDevServer(
   resolvedUserConfig.jsPlugins.forEach((plugin: JsPlugin) =>
     plugin.configureDevServer?.(server)
   );
+
   watcher.watchExtraFiles();
 
   return server;
@@ -378,6 +379,10 @@ export async function createFileWatcher(
   }
 
   if (!devServer.config.hmr) {
+    return;
+  }
+
+  if (devServer.watcher) {
     return;
   }
 
