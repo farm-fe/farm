@@ -1,51 +1,37 @@
 {
   "name": "create-farm",
-  "version": "1.6.9",
-  "description": "use create-farm to create farm project",
-  "exports": {
-    ".": "./bin/create-farm.mjs"
+  "version": "0.0.8",
+  "description": "",
+  "main": "index.js",
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "types": "index.d.ts",
+  "napi": {
+    "name": "create-farm",
+    "triples": {
+      "additional": [
+        "aarch64-apple-darwin",
+        "aarch64-unknown-linux-gnu",
+        "aarch64-unknown-linux-musl",
+        "x86_64-unknown-linux-musl",
+        "i686-pc-windows-msvc",
+        "aarch64-pc-windows-msvc"
+      ]
+    }
   },
-  "main": "bin/create-farm.mjs",
-  "type": "module",
   "bin": {
-    "create-farm": "bin/create-farm.mjs"
+    "create-farm": "create-farm.js"
   },
   "scripts": {
-    "build": "farm build",
-    "dev": "farm watch",
-    "prepublishOnly": "npm run build"
-  },
-  "author": "",
-  "license": "MIT",
-  "keywords": [
-    "farm",
-    "create farm",
-    "rust bundler",
-    "bundler",
-    "build tool",
-    "web bundler"
-  ],
-  "files": [
-    "dist",
-    "templates"
-  ],
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/farm-fe/farm"
+    "create-farm": "node ./create-farm.js",
+    "artifacts": "napi artifacts",
+    "build": "napi build --platform --release",
+    "build:debug": "napi build --platform",
+    "prepublishOnly": "napi prepublish -t npm",
+    "version": "napi version"
   },
   "devDependencies": {
-    "@farmfe/cli": "workspace:*",
-    "@farmfe/core": "workspace:*",
-    "@farmfe/utils": "workspace:*",
-    "@types/cross-spawn": "^6.0.2",
-    "@types/minimist": "^1.2.2",
-    "@types/prompts": "^2.4.4",
-    "gradient-string": "^2.0.2",
-    "minimist": "^1.2.8",
-    "ora": "^6.3.0",
-    "prompts": "^2.4.2"
-  },
-  "dependencies": {
-    "cross-spawn": "^7.0.3"
+    "@napi-rs/cli": "2.18.3"
   }
 }

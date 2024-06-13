@@ -1,7 +1,7 @@
 [workspace]
 members = [
   "crates/*",
- "packages/create-farm-node",
+ "packages/create-farm",
   "rust-plugins/*",
 ]
 resolver = "2"
