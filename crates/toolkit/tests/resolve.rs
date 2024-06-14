@@ -15,7 +15,7 @@ fn load_package_json() {
     assert_eq!(result.name, Some("fixture-package-json".to_string()));
     assert_eq!(result.version, Some("1.0.0".to_string()));
     assert!(matches!(
-      result.side_effects(),
+      result.side_effects().unwrap(),
       ParsedSideEffects::Bool(false)
     ));
 
@@ -28,9 +28,12 @@ fn load_package_json() {
     assert_eq!(result.name, Some("sub-fixture".to_string()));
     assert_eq!(result.version, Some("1.0.0".to_string()));
 
-    assert!(matches!(result.side_effects(), ParsedSideEffects::Array(_)));
+    assert!(matches!(
+      result.side_effects().unwrap(),
+      ParsedSideEffects::Array(_)
+    ));
 
-    if let ParsedSideEffects::Array(arr) = result.side_effects() {
+    if let ParsedSideEffects::Array(arr) = result.side_effects().unwrap() {
       assert_eq!(
         *arr,
         vec![sub.join("main.css").to_string_lossy().to_string()]

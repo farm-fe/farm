@@ -131,6 +131,7 @@ pub fn create_compiler(
       external: vec![
         ConfigRegex::new("^react-refresh$"),
         ConfigRegex::new("^module$"),
+        ConfigRegex::new("^vue$"),
       ],
       sourcemap: SourcemapConfig::Bool(false),
       lazy_compilation: false,

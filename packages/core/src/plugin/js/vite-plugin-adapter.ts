@@ -2,6 +2,7 @@ import type { ResolvedUserConfig, UserConfig } from '../../config/types.js';
 import type { Server } from '../../server/index.js';
 import {
   CompilationContext,
+  CompilationContextEmitFileParams,
   JsPlugin,
   PluginFinalizeResourcesHookParams,
   PluginRenderResourcePotParams,
@@ -50,6 +51,9 @@ import type {
   RenderChunkHook,
   ResolveIdResult
 } from 'rollup';
+import { VIRTUAL_FARM_DYNAMIC_IMPORT_SUFFIX } from '../../compiler/index.js';
+import { CompilationMode } from '../../config/env.js';
+import { Logger } from '../../index.js';
 import {
   Config,
   PluginLoadHookParam,
@@ -58,10 +62,7 @@ import {
   PluginResolveHookResult,
   PluginTransformHookParam,
   PluginTransformHookResult
-} from '../../../binding/index.js';
-import { VIRTUAL_FARM_DYNAMIC_IMPORT_SUFFIX } from '../../compiler/index.js';
-import { CompilationMode } from '../../config/env.js';
-import { Logger } from '../../index.js';
+} from '../../types/binding.js';
 import merge from '../../utils/merge.js';
 import { applyHtmlTransform } from './apply-html-transform.js';
 import {
@@ -750,6 +751,16 @@ export class VitePluginAdapter implements JsPlugin {
     return {
       executor: this.wrapExecutor(
         async (param: PluginFinalizeResourcesHookParams, context) => {
+          // Fix resourcesMap deadlock called by emitFile.
+          // Cause Farm called resourcesMap.lock() before calling this hook, and this.emitFile would call resourcesMap.lock()
+          // this leads to deadlock when calling emitFile in finalize_resources hook.
+          // so we hack context.emitFile here to avoid deadlock
+          const emittedFiles: CompilationContextEmitFileParams[] = [];
+          context.emitFile = async (
+            params: CompilationContextEmitFileParams
+          ) => {
+            emittedFiles.push(params);
+          };
           const hook = this.wrapRawPluginHook(
             'generateBundle',
             this._rawPlugin.generateBundle,
@@ -769,16 +780,30 @@ export class VitePluginAdapter implements JsPlugin {
             bundles
           );
 
-          const result = Object.entries(bundles).reduce(
-            (res, [key, val]) => {
-              res[key] = transformRollupResource2FarmResource(
-                val,
-                param.resourcesMap[key]
-              );
+          const emittedFilesMap = emittedFiles.reduce(
+            (res, item) => {
+              res[item.name] = {
+                name: item.name,
+                bytes: item.content,
+                emitted: false,
+                resourceType: 'asset',
+                origin: {
+                  type: 'Module',
+                  value: 'vite-plugin-adapter-generate-bundle-hook'
+                }
+              };
               return res;
             },
             {} as PluginFinalizeResourcesHookParams['resourcesMap']
           );
+
+          const result = Object.entries(bundles).reduce((res, [key, val]) => {
+            res[key] = transformRollupResource2FarmResource(
+              val,
+              param.resourcesMap[key]
+            );
+            return res;
+          }, emittedFilesMap);
 
           return result;
         }

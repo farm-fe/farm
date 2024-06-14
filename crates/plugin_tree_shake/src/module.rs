@@ -1,112 +1,101 @@
 use std::{
-  borrow::Cow,
   collections::{HashMap, HashSet},
   mem,
 };
 
 use farmfe_core::{
   module::{Module, ModuleId, ModuleSystem},
-  swc_common::{Globals, Mark},
-  swc_ecma_ast::Ident,
+  swc_common::{comments::SingleThreadedComments, Mark},
 };
-use farmfe_toolkit::script::swc_try_with::try_with;
 
 use crate::statement_graph::{
-  module_analyze::{ItemId, ItemIdType, Mode, ModuleAnalyze, ModuleAnalyzeItemEdge},
-  ExportInfo, ExportSpecifierInfo, ImportInfo, StatementGraph, StatementId,
+  traced_used_import::TracedUsedImportStatement, ExportInfo, ExportSpecifierInfo, ImportInfo,
+  StatementGraph, StatementId, UsedStatementIdent,
 };
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub enum UsedIdent {
+pub enum UsedExportsIdent {
   /// Local ident
   SwcIdent(String),
   /// Default ident
   Default,
-  /// This ident is used and may be exported from other module
-  InExportAll(String),
   /// All idents is used and may be exported from other module
+  /// Marked as [UsedExportsIdent::ExportAll] when all potential exports of `export * from 'xxx'` are used.
+  /// Usually works for side effect module(e.g. entry module) that re-export other modules
   ExportAll,
+  /// All idents are used and may be imported from other module
+  /// Marked as [UsedExportsIdent::ImportAll] when `import * as xx from 'xxx'` are used.
+  ImportAll,
 }
 
-impl ToString for UsedIdent {
+impl UsedExportsIdent {
+  pub fn is_default(&self) -> bool {
+    matches!(self, Self::Default)
+  }
+
+  pub fn is_ident_matched(&self, ident_name: &str) -> bool {
+    matches!(self, Self::SwcIdent(i) if i == ident_name)
+      || (ident_name == "default" && self.is_default()) // handle `export { a as default }`
+  }
+
+  pub fn expect_ident(&self) -> &str {
+    if let Self::SwcIdent(ident) = self {
+      ident.as_str()
+    } else {
+      unreachable!("called expect_ident of UsedExportsIdent on no SwcIdent value")
+    }
+  }
+}
+
+impl ToString for UsedExportsIdent {
   fn to_string(&self) -> String {
     match self {
-      UsedIdent::SwcIdent(ident) => ident.to_string(),
-      UsedIdent::Default => "default".to_string(),
-      UsedIdent::InExportAll(ident) => ident.to_string(),
-      UsedIdent::ExportAll => "*".to_string(),
+      UsedExportsIdent::SwcIdent(ident) => ident.to_string(),
+      UsedExportsIdent::Default => "default".to_string(),
+      UsedExportsIdent::ExportAll => "*".to_string(),
+      UsedExportsIdent::ImportAll => "import_*_as".to_string(),
     }
   }
 }
 
 #[derive(Debug, Clone)]
 pub enum UsedExports {
-  All(HashMap<ModuleId, Vec<String>>),
-  Partial(HashMap<ModuleId, Vec<String>>),
+  All,
+  Partial(HashSet<UsedExportsIdent>),
 }
 
-#[derive(Debug)]
-enum VisitedMode {
-  Normal,
-  Enforce,
-}
-
-impl VisitedMode {
-  fn removable(&self) -> bool {
-    !matches!(self, VisitedMode::Enforce)
+impl Default for UsedExports {
+  fn default() -> Self {
+    UsedExports::Partial(Default::default())
   }
 }
 
 impl UsedExports {
-  pub fn add_used_export(&mut self, module_id: &ModuleId, used_export: &dyn ToString) {
+  pub fn as_partial(&self) -> &HashSet<UsedExportsIdent> {
     match self {
-      UsedExports::Partial(self_used_exports) | UsedExports::All(self_used_exports) => {
-        self_used_exports
-          .entry(module_id.clone())
-          .or_insert_with(Vec::new)
-          .push(used_export.to_string());
-      }
+      UsedExports::All => panic!("UsedExports is not Partial"),
+      UsedExports::Partial(res) => res,
     }
   }
 
-  pub fn remove_used_export(&mut self, module_id: &ModuleId, used_export: &dyn ToString) {
-    match self {
-      UsedExports::Partial(self_used_exports) | UsedExports::All(self_used_exports) => {
-        let s = used_export.to_string();
-        if !self_used_exports.contains_key(module_id) {
-          return;
-        }
-        if let Some(pos) = self_used_exports[module_id]
-          .iter()
-          .position(|item| item == &s)
-        {
-          self_used_exports.get_mut(module_id).unwrap().remove(pos);
-        }
-      }
-    };
-  }
-
-  pub fn remove_all_used_export(&mut self, module_id: &ModuleId) {
-    match self {
-      UsedExports::Partial(self_used_exports) | UsedExports::All(self_used_exports) => {
-        self_used_exports.remove(module_id);
-      }
+  pub fn add_used_export(&mut self, used_export: UsedExportsIdent) {
+    // All means all exports are used, only handle Partial here
+    if let UsedExports::Partial(used_exports) = self {
+      used_exports.insert(used_export);
     }
   }
 
   pub fn is_empty(&self) -> bool {
     match self {
-      UsedExports::All(_) => false,
-      UsedExports::Partial(self_used_exports) => {
-        !self_used_exports.values().any(|item| !item.is_empty())
-      }
+      UsedExports::All => false,
+      UsedExports::Partial(used_exports) => used_exports.is_empty(),
     }
   }
 
-  pub fn change_all(&mut self) {
+  pub fn set_export_all(&mut self) {
     match self {
-      UsedExports::Partial(self_used_exports) => {
-        *self = UsedExports::All(mem::take(self_used_exports));
+      UsedExports::Partial(_) => {
+        *self = UsedExports::All;
       }
       _ => {}
     }
@@ -114,18 +103,17 @@ impl UsedExports {
 
   pub fn to_string_vec(&self) -> Vec<String> {
     match self {
-      UsedExports::Partial(self_used_exports) | UsedExports::All(self_used_exports) => {
-        self_used_exports.values().flatten().cloned().collect()
+      Self::Partial(self_used_exports) => self_used_exports.iter().map(|i| i.to_string()).collect(),
+      Self::All => {
+        vec!["All".to_string()]
       }
     }
   }
 
-  pub fn idents(&mut self) -> HashSet<&String> {
+  pub fn contains(&self, used_export: &UsedExportsIdent) -> bool {
     match self {
-      UsedExports::Partial(self_used_exports) => {
-        self_used_exports.values().flatten().collect::<HashSet<_>>()
-      }
-      _ => Default::default(),
+      UsedExports::All => true,
+      UsedExports::Partial(used_exports) => used_exports.contains(used_export),
     }
   }
 }
@@ -134,15 +122,18 @@ pub struct TreeShakeModule {
   pub module_id: ModuleId,
   pub side_effects: bool,
   pub stmt_graph: StatementGraph,
+  /// true if the module or it's dependency modules contains self executed statement or has side effects
   pub contains_self_executed_stmt: bool,
-  pub is_self_executed_import: bool,
-  // used exports will be analyzed when tree shaking
-  pub used_exports: UsedExports,
+  /// used exports will be analyzed when tree shaking
+  /// side effects statement will be added to used exports too.
+  pub handled_used_exports: UsedExports,
+  /// pending used exports will be used to analyze the used exports of the module
+  pub pending_used_exports: UsedExports,
   pub module_system: ModuleSystem,
 }
 
 impl TreeShakeModule {
-  pub fn new(module: &Module) -> Self {
+  pub fn new(module: &mut Module) -> Self {
     farmfe_core::farm_profile_function!(format!(
       "TreeShakeModule::new {:?}",
       module.id.to_string()
@@ -150,68 +141,90 @@ impl TreeShakeModule {
     let module_system = module.meta.as_script().module_system.clone();
 
     // 1. generate statement graph
+    let comments_meta = module.meta.as_script_mut().take_comments();
     let ast = &module.meta.as_script().ast;
+    let unresolved_mark = Mark::from_u32(module.meta.as_script().unresolved_mark);
+    let top_level_mark = Mark::from_u32(module.meta.as_script().top_level_mark);
+    let comments = SingleThreadedComments::from(comments_meta);
     let stmt_graph = if module_system == ModuleSystem::EsModule {
-      StatementGraph::new(ast)
+      StatementGraph::new(ast, unresolved_mark, top_level_mark, &comments)
     } else {
       StatementGraph::empty()
     };
 
+    module.meta.as_script_mut().set_comments(comments.into());
+
     // 2. set default used exports
-    let used_exports = if module.side_effects {
-      UsedExports::All(Default::default())
-    } else {
-      UsedExports::Partial(Default::default())
-    };
+    let handled_used_exports = UsedExports::Partial(Default::default());
 
     Self {
       module_id: module.id.clone(),
-      contains_self_executed_stmt: stmt_graph.contains_self_executed_stmt(),
+      contains_self_executed_stmt: !matches!(module_system, ModuleSystem::EsModule)
+        || stmt_graph.contains_bare_import_stmt()
+        || !stmt_graph.preserved_side_effects_stmts().is_empty(),
       stmt_graph,
-      used_exports,
+      pending_used_exports: handled_used_exports.clone(),
+      handled_used_exports,
       side_effects: module.side_effects,
       module_system,
-      is_self_executed_import: false,
     }
   }
 
-  pub fn imports(&self) -> Vec<ImportInfo> {
+  pub fn is_all_pending_used_exports_handled(&self) -> bool {
+    self.pending_used_exports.is_empty()
+  }
+
+  pub fn is_used_exports_ident_handled(&self, used_export: &UsedExportsIdent) -> bool {
+    match &self.handled_used_exports {
+      UsedExports::All => true,
+      UsedExports::Partial(used_exports) => used_exports.contains(used_export),
+    }
+  }
+
+  pub fn clear_pending_used_exports(&mut self) {
+    let current_pending_used_exports = mem::take(&mut self.pending_used_exports);
+
+    match current_pending_used_exports {
+      UsedExports::Partial(used_exports) => {
+        for used_export in used_exports {
+          self.handled_used_exports.add_used_export(used_export);
+        }
+      }
+      UsedExports::All => {
+        self.handled_used_exports = UsedExports::All;
+      }
+    }
+  }
+
+  pub fn imports(&self) -> Vec<&ImportInfo> {
     let mut imports = vec![];
 
     for stmt in self.stmt_graph.stmts() {
       if let Some(import) = &stmt.import_info {
-        imports.push(import.clone());
+        imports.push(import);
       }
     }
 
     imports
   }
 
-  pub fn exports(&self) -> Vec<ExportInfo> {
+  pub fn exports(&self) -> Vec<&ExportInfo> {
     let mut exports = vec![];
 
     for stmt in self.stmt_graph.stmts() {
       if let Some(export) = &stmt.export_info {
-        exports.push(export.clone());
+        exports.push(export);
       }
     }
 
     exports
   }
 
-  pub fn used_statements(
-    &self,
-    module: &Module,
-    globals: &Globals,
-  ) -> HashMap<StatementId, HashSet<String>> {
-    farmfe_core::farm_profile_function!(format!(
-      "used_statements {:?}",
-      self.module_id.to_string()
-    ));
-
+  /// Trace the used statement starting from pending_used_exports and mark them as used.
+  /// Then merge pending_used_exports into used_exports
+  pub fn trace_and_mark_used_statements(&mut self) -> Vec<TracedUsedImportStatement> {
     // 1. get used exports
-    let used_exports_idents = self.used_exports_idents();
-
+    let used_exports_idents = self.used_exports_to_statement_idents();
     let mut stmt_used_idents_map = HashMap::new();
 
     for (used_ident, stmt_id) in used_exports_idents {
@@ -221,404 +234,80 @@ impl TreeShakeModule {
       used_idents.insert(used_ident);
     }
 
-    {
-      farmfe_core::farm_profile_scope!(format!(
-        "analyze self executed stmts {:?}",
-        self.module_id.to_string()
-      ));
-      let unresolved_mark = Mark::from_u32(module.meta.as_script().unresolved_mark);
-      let (ids, mut items_map) = ModuleAnalyze::analyze(module);
-      let mut module_analyze = ModuleAnalyze::new();
-      let mut entries: HashSet<ItemId> = HashSet::new();
+    // 2. trace used statements starting from used exports
+    self
+      .stmt_graph
+      .trace_and_mark_used_statements(stmt_used_idents_map)
+  }
 
-      // remove unused export specifiers
-      for (stmt, used_idents) in stmt_used_idents_map.iter() {
-        let default_str = UsedIdent::Default.to_string();
-        let used_idents_string = used_idents
-          .iter()
-          .filter_map(|ident| match ident {
-            UsedIdent::SwcIdent(ident) => Some(ident),
-            UsedIdent::Default => Some(&default_str),
-            _ => None,
-          })
-          .collect::<HashSet<_>>();
+  /// For param include_default_export: If it's false, the default export will not be included,
+  /// for example, export * from 'xxx' should not include default export
+  fn all_exports_to_statement_idents(
+    &self,
+    include_default_export: bool,
+  ) -> Vec<(UsedStatementIdent, StatementId)> {
+    let mut used_idents = vec![];
 
-        let is_need_removed = used_idents.iter().any(|ident| match ident {
-          // need remove
-          UsedIdent::SwcIdent(_) => true,
-          // save all
-          UsedIdent::Default => true,
-          _ => false,
-        });
-
-        if !is_need_removed
-          || (!used_idents_string.is_empty() && used_idents.contains(&UsedIdent::Default))
-        {
-          continue;
-        }
-
-        for item_id in ids.iter().filter(|item_id| &item_id.index() == stmt) {
-          let item = items_map.get_mut(item_id).unwrap();
-
-          let mut removed_idents = item
-            .read_vars
-            .iter()
-            .enumerate()
-            .filter_map(|(index, id)| {
-              if !used_idents_string.contains(&Ident::from(id.clone()).to_string()) {
-                Some(index)
-              } else {
-                None
-              }
-            })
-            .collect::<Vec<_>>();
-
-          removed_idents.sort();
-          removed_idents.reverse();
-
-          for index in removed_idents {
-            item.read_vars.remove(index);
-          }
-        }
-      }
-
-      // connect stmt's node
-      module_analyze.connect(&items_map, &ids);
-
-      // used global ident
-      try_with(Default::default(), globals, || {
-        let side_effect_ids = module_analyze.global_reference(&ids, &items_map, unresolved_mark);
-        entries.extend(side_effect_ids);
-      })
-      .unwrap();
-
-      // effect stmt
-      entries.extend(module_analyze.reference_side_effect_ids(&ids, &items_map));
-
-      // self executed stmts
-      for index in self.stmt_graph.stmts().iter().filter_map(|stmt| {
-        if stmt.is_self_executed {
-          Some(stmt.id)
-        } else {
-          None
-        }
-      }) {
-        entries.extend(module_analyze.items(&index));
-      }
-
-      // used export need to be the entry point to traversal
-      for stmt in stmt_used_idents_map.keys() {
-        entries.extend(module_analyze.items(stmt))
-      }
-
-      fn dfs<'a>(
-        entry: &'a ItemId,
-        stack: &mut Vec<&'a ItemId>,
-        result: &mut HashSet<ItemId>,
-        visited: &mut HashMap<&'a ItemId, VisitedMode>,
-        module_define_graph: &'a ModuleAnalyze,
-        stmt_graph: &StatementGraph,
-        reverse_terser_chain: &mut Vec<Mode>,
-      ) -> bool {
-        let collection_result = |visited: &mut HashMap<&'a ItemId, VisitedMode>,
-                                 reverse_terser_chain: &mut Vec<Mode>,
-                                 result: &mut HashSet<ItemId>,
-                                 stack: &mut Vec<&'a ItemId>| {
-          if !reverse_terser_chain.is_empty() {
-            if reverse_terser_chain
-              .iter()
-              .any(|mode| matches!(mode, Mode::Write))
-            {
-              let collections = stack.iter().map(|item| (*item).clone()).collect::<Vec<_>>();
-
-              for item in collections {
-                visited
-                  .get_mut(&item)
-                  .map(|item| *item = VisitedMode::Enforce);
-                result.insert(item);
-              }
-              true
-            } else {
-              false
-            }
-          } else {
-            result.extend(stack.iter().map(|item| (*item).clone()).collect::<Vec<_>>());
-            true
-          }
-        };
-
-        let break_tenser = |stack: &mut Vec<&'a ItemId>| {
-          stack.pop();
-        };
-
-        if visited.contains_key(entry) {
-          return collection_result(visited, reverse_terser_chain, result, stack);
-        }
-
-        stack.push(entry);
-
-        if !module_define_graph.has_node(entry) {
-          let is_collected = collection_result(visited, reverse_terser_chain, result, stack);
-          break_tenser(stack);
-          return is_collected;
-        }
-
-        let edges = module_define_graph.reference_edges(entry);
-
-        if edges.is_empty() || edges.iter().all(|(source, target, _)| source == target) {
-          let is_collected = collection_result(visited, reverse_terser_chain, result, stack);
-          break_tenser(stack);
-          is_collected
-        } else {
-          visited.insert(entry, VisitedMode::Normal);
-          let mut is_contain_reverse_edge = false;
-          let mut is_collected = false;
-          let push_reverse_terser_chain =
-            |reverse_terser_chain: &mut Vec<Mode>, mode: Mode, create| {
-              if !reverse_terser_chain.is_empty() || create {
-                reverse_terser_chain.push(mode);
-              }
-            };
-
-          let pop_reverse_terser_chain = |reverse_terser_chain: &mut Vec<Mode>| {
-            reverse_terser_chain.pop();
-          };
-
-          for (source, target, edge) in edges {
-            if source == target {
-              continue;
-            }
-
-            match (edge.mode, edge.nested) {
-              (Mode::Read, _) => {
-                push_reverse_terser_chain(reverse_terser_chain, Mode::Read, false);
-                is_collected = dfs(
-                  target,
-                  stack,
-                  result,
-                  visited,
-                  module_define_graph,
-                  stmt_graph,
-                  reverse_terser_chain,
-                ) || is_collected;
-                pop_reverse_terser_chain(reverse_terser_chain);
-
-                // ignore nested
-                // cache -> readCache { cache }
-                //
-                //```js
-                // const cache = {};
-                //
-                // function readCache(key) {
-                //   cache[key]
-                // }
-                //```
-                //
-
-                // ignore bar
-                //
-                // foo:2 -> foo:1,bar:1 -> bar:3
-                // ```js
-                // // bar.js
-                // 1: import { bar, foo } from './foo';
-                // 2: foo()
-                // 3: export { bar, foo }
-                //```
-
-                if !edge.nested
-                  && !matches!(
-                    target,
-                    ItemId::Item {
-                      kind: ItemIdType::Import(_),
-                      ..
-                    }
-                  )
-                {
-                  is_contain_reverse_edge = true;
-                  push_reverse_terser_chain(reverse_terser_chain, Mode::Read, true);
-                  is_collected = dfs(
-                    source,
-                    stack,
-                    result,
-                    visited,
-                    module_define_graph,
-                    stmt_graph,
-                    reverse_terser_chain,
-                  ) || is_collected;
-                  pop_reverse_terser_chain(reverse_terser_chain);
-                }
-              }
-
-              (Mode::Write, false) => {
-                push_reverse_terser_chain(reverse_terser_chain, Mode::Write, false);
-                is_collected = dfs(
-                  source,
-                  stack,
-                  result,
-                  visited,
-                  module_define_graph,
-                  stmt_graph,
-                  reverse_terser_chain,
-                ) || is_collected;
-                pop_reverse_terser_chain(reverse_terser_chain);
-              }
-
-              (Mode::Write, true) => {
-                push_reverse_terser_chain(reverse_terser_chain, Mode::Write, false);
-                is_collected = dfs(
-                  target,
-                  stack,
-                  result,
-                  visited,
-                  module_define_graph,
-                  stmt_graph,
-                  reverse_terser_chain,
-                ) || is_collected;
-                pop_reverse_terser_chain(reverse_terser_chain);
-              }
+    for export_info in self.exports() {
+      for sp in &export_info.specifiers {
+        match sp {
+          ExportSpecifierInfo::Default => {
+            if include_default_export {
+              used_idents.push((UsedStatementIdent::Default, export_info.stmt_id));
             }
           }
-
-          if is_contain_reverse_edge && !is_collected {
-            if let Some(mode) = visited.get(entry) {
-              if mode.removable() {
-                visited.remove(entry);
-              }
-            }
+          ExportSpecifierInfo::Named { local, .. } => {
+            used_idents.push((
+              UsedStatementIdent::SwcIdent(local.clone()),
+              export_info.stmt_id,
+            ));
           }
-
-          break_tenser(stack);
-
-          is_collected
-        }
-      }
-
-      let mut visited = HashMap::new();
-      let mut reference_chain = HashSet::new();
-
-      let mut entries = entries.into_iter().collect::<Vec<_>>();
-
-      entries.sort_by(|a, b| a.index().cmp(&b.index()));
-
-      for stmt in &entries {
-        dfs(
-          stmt,
-          &mut vec![],
-          &mut reference_chain,
-          &mut visited,
-          &module_analyze,
-          &self.stmt_graph,
-          &mut vec![],
-        );
-      }
-
-      let reference_stmts = reference_chain
-        .iter()
-        .map(|item| item.index())
-        .collect::<HashSet<_>>();
-
-      let mut used_self_execute_stmts = HashSet::new();
-
-      used_self_execute_stmts.extend(
-        reference_stmts
-          .into_iter()
-          .filter(|index| self.stmt_graph.stmt(&index).import_info.is_none()),
-      );
-
-      // dependencies cannot be used to obtain the ident that export stmt depends on.
-      for stmt in stmt_used_idents_map.keys() {
-        used_self_execute_stmts.remove(stmt);
-      }
-
-      for stmt_id in used_self_execute_stmts {
-        stmt_used_idents_map
-          .entry(stmt_id)
-          .or_insert(HashSet::new());
-
-        let dep_stmts = self.stmt_graph.dependencies(&stmt_id);
-        // let mut is_contain_stmts = vec![];
-        for (dep_stmt, referred_idents) in dep_stmts {
-          let used_idents = stmt_used_idents_map
-            .entry(dep_stmt.id)
-            .or_insert(HashSet::new());
-          used_idents.extend(referred_idents.into_iter().map(UsedIdent::SwcIdent));
+          ExportSpecifierInfo::Namespace(ns) => {
+            used_idents.push((
+              UsedStatementIdent::SwcIdent(ns.clone()),
+              export_info.stmt_id,
+            ));
+          }
+          ExportSpecifierInfo::All => {
+            used_idents.push((UsedStatementIdent::ExportAll, export_info.stmt_id));
+          }
         }
       }
     }
 
-    // 2. analyze used statements starting from used exports
-
-    self
-      .stmt_graph
-      .analyze_used_statements_and_idents(stmt_used_idents_map)
+    used_idents
   }
 
-  pub fn used_exports_idents(&self) -> Vec<(UsedIdent, StatementId)> {
+  pub fn used_exports_to_statement_idents(&self) -> Vec<(UsedStatementIdent, StatementId)> {
     farmfe_core::farm_profile_function!(format!(
       "used_exports_idents {:?}",
       self.module_id.to_string()
     ));
 
-    match &self.used_exports {
-      UsedExports::All(_) => {
+    match &self.pending_used_exports {
+      UsedExports::All => {
         // all exported identifiers are used
-        let mut used_idents = vec![];
-
-        for export_info in self.exports() {
-          for sp in export_info.specifiers {
-            match sp {
-              ExportSpecifierInfo::Default => {
-                used_idents.push((UsedIdent::Default, export_info.stmt_id));
-              }
-              ExportSpecifierInfo::Named { local, .. } => {
-                used_idents.push((UsedIdent::SwcIdent(local.clone()), export_info.stmt_id));
-              }
-              ExportSpecifierInfo::Namespace(ns) => {
-                used_idents.push((UsedIdent::SwcIdent(ns.clone()), export_info.stmt_id));
-              }
-              ExportSpecifierInfo::All(_) => {
-                used_idents.push((UsedIdent::ExportAll, export_info.stmt_id));
-              }
-            }
-          }
-        }
-
-        used_idents
+        self.all_exports_to_statement_idents(true)
       }
       UsedExports::Partial(idents) => {
         let mut used_idents = vec![];
-
-        let idents = idents.values().flatten().collect::<Vec<_>>();
-
-        let contain_export_all = idents.contains(&&UsedIdent::ExportAll.to_string());
-        if contain_export_all {
-          // for all content introduced, all export information needs to be collected
-          for export_info in self.exports() {
-            for sp in export_info.specifiers {
-              match sp {
-                ExportSpecifierInfo::Default => {
-                  used_idents.push((UsedIdent::Default, export_info.stmt_id));
-                }
-                ExportSpecifierInfo::Named { local, .. } => {
-                  used_idents.push((UsedIdent::SwcIdent(local.clone()), export_info.stmt_id));
-                }
-                ExportSpecifierInfo::Namespace(ns) => {
-                  used_idents.push((UsedIdent::SwcIdent(ns.clone()), export_info.stmt_id));
-                }
-                ExportSpecifierInfo::All(_) => {
-                  used_idents.push((UsedIdent::ExportAll, export_info.stmt_id));
-                }
-              }
-            }
-          }
-          return used_idents;
+        // statement `import * as xxx from './xxx'` is marked as used, we need to mark all exported idents as used the same as UsedExports::All
+        if idents.contains(&UsedExportsIdent::ImportAll) {
+          // all export information needs to be collected
+          return self.all_exports_to_statement_idents(true);
         }
-
-        for ident in &idents {
+        // statement `export * from './xxx'` is marked as used, we need to mark all exported idents as used the same as UsedExports::All
+        // except the default export when idents does not contain default export
+        if idents.contains(&UsedExportsIdent::ExportAll) {
+          return self.all_exports_to_statement_idents(idents.contains(&UsedExportsIdent::Default));
+        }
+        // find exported ident for every used idents.
+        for ident in idents {
+          let mut export_all_stmt_ids: Option<Vec<usize>> = None;
           // find the export info that contains the ident
           let export_info = self.exports().into_iter().find(|export_info| {
             export_info.specifiers.iter().any(|sp| match sp {
-              ExportSpecifierInfo::Default => *ident == "default",
+              ExportSpecifierInfo::Default => ident.is_default(),
               ExportSpecifierInfo::Named { local, exported } => {
                 let exported_ident = if let Some(exported) = exported {
                   exported
@@ -626,53 +315,69 @@ impl TreeShakeModule {
                   local
                 };
 
-                is_ident_equal(ident, exported_ident)
+                ident.is_ident_matched(exported_ident.0.as_str())
               }
-              ExportSpecifierInfo::Namespace(ns) => is_ident_equal(ident, ns),
-              ExportSpecifierInfo::All(_) => {
+              ExportSpecifierInfo::Namespace(ns) => ident.is_ident_matched(ns.0.as_str()),
+              ExportSpecifierInfo::All => {
                 /* Deal with All later */
+                if let Some(export_all_stmt_id) = &mut export_all_stmt_ids {
+                  export_all_stmt_id.push(export_info.stmt_id);
+                } else {
+                  export_all_stmt_ids = Some(vec![export_info.stmt_id]);
+                }
                 false
               }
             })
           });
 
           if let Some(export_info) = export_info {
-            for sp in export_info.specifiers {
+            for sp in &export_info.specifiers {
               match sp {
                 ExportSpecifierInfo::Default => {
-                  if *ident == "default" {
-                    used_idents.push((UsedIdent::Default, export_info.stmt_id));
+                  if ident.is_default() {
+                    used_idents.push((UsedStatementIdent::Default, export_info.stmt_id));
                   }
                 }
                 ExportSpecifierInfo::Named { local, exported } => {
                   if let Some(exported) = exported {
-                    if is_ident_equal(ident, &exported) {
-                      used_idents.push((UsedIdent::SwcIdent(local.clone()), export_info.stmt_id));
+                    if ident.is_ident_matched(exported.0.as_str()) {
+                      used_idents.push((
+                        UsedStatementIdent::SwcIdent(local.clone()),
+                        export_info.stmt_id,
+                      ));
                     }
-                  } else if is_ident_equal(ident, &local) {
-                    used_idents.push((UsedIdent::SwcIdent(local.clone()), export_info.stmt_id));
+                  } else if ident.is_ident_matched(local.0.as_str()) {
+                    used_idents.push((
+                      UsedStatementIdent::SwcIdent(local.clone()),
+                      export_info.stmt_id,
+                    ));
                   }
                 }
                 ExportSpecifierInfo::Namespace(ns) => {
-                  if is_ident_equal(ident, &ns) {
-                    used_idents.push((UsedIdent::SwcIdent(ns.clone()), export_info.stmt_id));
+                  if ident.is_ident_matched(ns.0.as_str()) {
+                    used_idents.push((
+                      UsedStatementIdent::SwcIdent(ns.clone()),
+                      export_info.stmt_id,
+                    ));
                   }
                 }
-                ExportSpecifierInfo::All(_) => {
+                ExportSpecifierInfo::All => {
                   unreachable!()
                 }
               }
             }
           } else {
             // if export info is not found, and there are ExportSpecifierInfo::All, then the ident may be exported by `export * from 'xxx'`
-            for export_info in self.exports() {
-              if export_info
-                .specifiers
-                .iter()
-                .any(|sp| matches!(sp, ExportSpecifierInfo::All(_)))
-              {
-                let stmt_id = export_info.stmt_id;
-                used_idents.push((UsedIdent::InExportAll(ident.to_string()), stmt_id));
+            if let Some(export_all_stmt_id) = export_all_stmt_ids {
+              let ident = ident.expect_ident().to_string();
+              // skip default for export * from 'xxx'
+              if ident != *"default" {
+                for export_all_stmt_id in export_all_stmt_id {
+                  used_idents.push((
+                    UsedStatementIdent::InExportAll(ident.clone()),
+                    export_all_stmt_id,
+                  ));
+                }
               }
             }
           }
@@ -681,16 +386,5 @@ impl TreeShakeModule {
         used_idents
       }
     }
-  }
-}
-
-fn is_ident_equal(ident1: &String, ident2: &String) -> bool {
-  let split1 = ident1.split('#').collect::<Vec<_>>();
-  let split2 = ident2.split('#').collect::<Vec<_>>();
-
-  if split1.len() == 2 && split2.len() == 2 {
-    split1[0] == split2[0] && split1[1] == split2[1]
-  } else {
-    split1[0] == split2[0]
   }
 }

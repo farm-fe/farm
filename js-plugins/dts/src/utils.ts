@@ -183,16 +183,15 @@ export function mergeObjects<
   const loop: Array<{
     source: Record<string, any>;
     target: Record<string, any>;
-    // merged: Record<string, any>
   }> = [
     {
       source: sourceObj,
       target: targetObj
-      // merged: mergedObj
     }
   ];
 
   while (loop.length) {
+    // biome-ignore lint/style/noNonNullAssertion: <explanation>
     const { source, target } = loop.pop()!;
 
     Object.keys(target).forEach((key) => {

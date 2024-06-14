@@ -1,5 +1,39 @@
 # @farmfe/core
 
+## 1.1.15
+
+### Patch Changes
+
+- c72238ee: Farm-browserslist-generator adapts to different node versions
+
+## 1.1.14
+
+### Patch Changes
+
+- 4df945c3: fix: #1384
+
+## 1.1.13
+
+### Patch Changes
+
+- 34336080: chore(refactor): optimize tree shake implemetation to improve performance
+- d9cb6902: fix: encode the lazy compile path
+- c2c6717c: fix failed fetch resource
+
+## 1.1.12
+
+### Patch Changes
+
+- 0f3c1a8f: fix: can't match resources with url parameters carried under devServer
+
+## 1.1.11
+
+### Patch Changes
+
+- 91f897b2: fix: format error message and fix output.targetEnv schema validate
+- f0f42b27: - core types should be included in the compilation process
+  - logger used should be obtained from the parameter
+
 ## 1.1.10
 
 ### Patch Changes

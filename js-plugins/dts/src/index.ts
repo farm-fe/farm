@@ -28,6 +28,14 @@ export default function farmDtsPlugin(options?: DtsPluginOptions): JsPlugin {
       },
       async executor(params) {
         const { resolvedPath } = params;
+        const loadFileExtName = path.extname(resolvedPath);
+        const isTypescriptFile = extension.some((ext) =>
+          new RegExp(ext).test(loadFileExtName)
+        );
+
+        if (!isTypescriptFile) {
+          return null;
+        }
         const content = await tryToReadFileSync(resolvedPath);
         return {
           content,
@@ -42,7 +50,7 @@ export default function farmDtsPlugin(options?: DtsPluginOptions): JsPlugin {
       async executor(params) {
         const { resolvedPath, content } = params;
         const [url] = resolvedPath.split('?');
-        ctx.handleTransform(resolvedPath);
+        ctx.handleTransform(resolvedPath, content);
 
         const ext = path.extname(url).slice(1);
 

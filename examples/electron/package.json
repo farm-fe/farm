@@ -1,0 +1,28 @@
+{
+  "name": "@farmfe-examples/react",
+  "version": "0.0.1",
+  "private": true,
+  "main": "dist-electron/main.js",
+  "type": "module",
+  "scripts": {
+    "dev": "farm",
+    "build": "farm build && electron-forge package",
+    "clean": "farm clean",
+    "farm": "farm"
+  },
+  "devDependencies": {
+    "@electron-forge/cli": "^7.4.0",
+    "@electron-forge/maker-deb": "^7.4.0",
+    "@electron-forge/maker-rpm": "^7.4.0",
+    "@electron-forge/maker-squirrel": "^7.4.0",
+    "@electron-forge/maker-zip": "^7.4.0",
+    "@electron-forge/shared-types": "^7.4.0",
+    "@farmfe/cli": "workspace:*",
+    "@farmfe/core": "workspace:*",
+    "@farmfe/js-plugin-electron": "workspace:*",
+    "electron": "^30.0.7",
+    "electron-builder": "^24.13.3",
+    "fs-extra": "^11.2.0",
+    "typescript": "^5.4.3"
+  }
+}

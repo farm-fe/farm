@@ -1,5 +1,11 @@
 # create-farm-plugin
 
+## 0.1.8
+
+### Patch Changes
+
+- 324e86c9: doesn't generate the plugin name when copying js plugin template
+
 ## 0.1.7
 
 ### Patch Changes

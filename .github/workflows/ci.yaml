@@ -54,7 +54,7 @@ jobs:
         id: download-create-farm-rust
         with:
           name: ${{ github.sha }}-${{ matrix.settings.abi }}
-          path: ./packages/create-farm-node
+          path: ./packages/create-farm
 
       - name: Build Examples - ${{ matrix.settings.abi }}
         run: node scripts/test-examples.mjs
@@ -66,21 +66,21 @@ jobs:
       - name: Build Create Farm
         run: cd packages/create-farm && npm run build
       - name: Test Create Farm React - ${{ matrix.settings.abi }}
-        run: cd .. && node farm/packages/create-farm/dist/index.js my-test-app-react --template react --skip-install && cd my-test-app-react && pnpm i && pnpm build
+        run: cd .. && node farm/packages/create-farm/create-farm.js my-test-app-react --template react && cd my-test-app-react && pnpm i && pnpm build
       - name: Test Create Farm Vue - ${{ matrix.settings.abi }}
-        run: cd .. && node farm/packages/create-farm/dist/index.js my-test-app-vue --template vue --skip-install && cd my-test-app-vue && pnpm i && pnpm build
+        run: cd .. && node farm/packages/create-farm/create-farm.js my-test-app-vue --template vue3 && cd my-test-app-vue && pnpm i && pnpm build
       - name: Test Create Farm Solid - ${{ matrix.settings.abi }}
-        run: cd .. && node farm/packages/create-farm/dist/index.js my-test-app-solid --template solid --skip-install && cd my-test-app-solid && pnpm i && pnpm build
+        run: cd .. && node farm/packages/create-farm/create-farm.js my-test-app-solid --template solid && cd my-test-app-solid && pnpm i && pnpm build
       - name: Test Create Farm Svelte - ${{ matrix.settings.abi }}
-        run: cd .. && node farm/packages/create-farm/dist/index.js my-test-app-svelte --template svelte --skip-install && cd my-test-app-svelte && pnpm i && pnpm build
+        run: cd .. && node farm/packages/create-farm/create-farm.js my-test-app-svelte --template svelte && cd my-test-app-svelte && pnpm i && pnpm build
       - name: Test Create Farm Lit - ${{ matrix.settings.abi }}
-        run: cd .. && node farm/packages/create-farm/dist/index.js my-test-app-lit --template lit --skip-install && cd my-test-app-lit && pnpm i && pnpm build
+        run: cd .. && node farm/packages/create-farm/create-farm.js my-test-app-lit --template lit && cd my-test-app-lit && pnpm i && pnpm build
       - name: Test Create Farm Vanilla - ${{ matrix.settings.abi }}
-        run: cd .. && node farm/packages/create-farm/dist/index.js my-test-app-vanilla --template vanilla --skip-install && cd my-test-app-vanilla && pnpm i && pnpm build
+        run: cd .. && node farm/packages/create-farm/create-farm.js my-test-app-vanilla --template vanilla && cd my-test-app-vanilla && pnpm i && pnpm build
       - name: Test Create Farm Preact - ${{ matrix.settings.abi }}
-        run: cd .. && node farm/packages/create-farm/dist/index.js my-test-app-preact --template preact --skip-install && cd my-test-app-preact && pnpm i && pnpm build
+        run: cd .. && node farm/packages/create-farm/create-farm.js my-test-app-preact --template preact && cd my-test-app-preact && pnpm i && pnpm build
       - name: Test Create Farm Vue2 - ${{ matrix.settings.abi }}
-        run: cd .. && node farm/packages/create-farm/dist/index.js my-test-app-vue2 --template vue2 --skip-install && cd my-test-app-vue2 && pnpm i && pnpm build
+        run: cd .. && node farm/packages/create-farm/create-farm.js my-test-app-vue2 --template vue2 && cd my-test-app-vue2 && pnpm i && pnpm build
 
   type-check:
     name: Type Check
