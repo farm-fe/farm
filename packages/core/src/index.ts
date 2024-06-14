@@ -47,9 +47,11 @@ export async function start(
   try {
     const resolvedUserConfig = await resolveConfig(
       inlineConfig,
-      logger,
-      'development'
+      'development',
+      logger
     );
+
+    // console.log(resolvedUserConfig);
 
     const compiler = await createCompiler(resolvedUserConfig, logger);
 
@@ -59,19 +61,7 @@ export async function start(
       logger
     );
 
-    const watcher = await createFileWatcher(
-      devServer,
-      resolvedUserConfig,
-      inlineConfig,
-      logger
-    );
-    // call configureDevServer hook after both server and watcher are ready
-    resolvedUserConfig.jsPlugins.forEach((plugin: JsPlugin) =>
-      plugin.configureDevServer?.(devServer)
-    );
-
     await devServer.listen();
-    watcher.watchExtraFiles();
   } catch (error) {
     logger.error(`Failed to start the server: \n ${error}`, { exit: true });
   }
@@ -86,8 +76,8 @@ export async function build(
 
   const resolvedUserConfig = await resolveConfig(
     inlineConfig,
-    logger,
     'production',
+    logger,
     false
   );
 
@@ -105,8 +95,8 @@ export async function preview(inlineConfig?: FarmCLIOptions): Promise<void> {
   const logger = inlineConfig.logger ?? new Logger();
   const resolvedUserConfig = await resolveConfig(
     inlineConfig,
-    logger,
-    'production'
+    'production',
+    logger
   );
 
   const { root, output } = resolvedUserConfig.compilation;
@@ -154,8 +144,8 @@ export async function watch(
 
   const resolvedUserConfig = await resolveConfig(
     inlineConfig,
-    logger,
     'development',
+    logger,
     true
   );
 
@@ -364,6 +354,13 @@ export async function createDevServer(
 ) {
   const server = new Server({ compiler, logger });
   await server.createDevServer(resolvedUserConfig.server);
+  const watcher = await createFileWatcher(server, resolvedUserConfig, logger);
+  // call configureDevServer hook after both server and watcher are ready
+  resolvedUserConfig.jsPlugins.forEach((plugin: JsPlugin) =>
+    plugin.configureDevServer?.(server)
+  );
+
+  watcher.watchExtraFiles();
 
   return server;
 }
@@ -371,8 +368,7 @@ export async function createDevServer(
 export async function createFileWatcher(
   devServer: Server,
   resolvedUserConfig: ResolvedUserConfig,
-  inlineConfig: FarmCLIOptions & UserConfig,
-  logger: Logger
+  logger: Logger = new Logger()
 ) {
   if (
     devServer.config.hmr &&
@@ -386,14 +382,15 @@ export async function createFileWatcher(
     return;
   }
 
+  if (devServer.watcher) {
+    return;
+  }
+
   const fileWatcher = new FileWatcher(devServer, resolvedUserConfig, logger);
   devServer.watcher = fileWatcher;
   await fileWatcher.watch();
 
-  // const farmWatcher = new ConfigWatcher(resolvedUserConfig);
-  const configFilePath = await getConfigFilePath(
-    inlineConfig.configPath ?? resolvedUserConfig.root
-  );
+  const configFilePath = await getConfigFilePath(resolvedUserConfig.root);
   const farmWatcher = new ConfigWatcher({
     ...resolvedUserConfig,
     configFilePath
@@ -407,7 +404,7 @@ export async function createFileWatcher(
 
       await devServer.close();
       __FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__ = true;
-      await start(inlineConfig);
+      await start(resolvedUserConfig as FarmCLIOptions & UserConfig);
     });
   });
   return fileWatcher;

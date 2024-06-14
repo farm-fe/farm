@@ -5,7 +5,7 @@ import {
   type JsPlugin,
   Logger,
   type UserConfig,
-  normalizeDevServerOptions
+  normalizeDevServerConfig
 } from '../../index.js';
 import merge from '../../utils/merge.js';
 import { resolveAsyncPlugins } from '../index.js';
@@ -34,7 +34,7 @@ export async function handleVitePlugins(
   if (vitePlugins.length) {
     userConfig = merge({}, userConfig, {
       compilation: userConfig.compilation,
-      server: normalizeDevServerOptions(
+      server: normalizeDevServerConfig(
         userConfig.server,
         userConfig.compilation?.mode ?? mode
       )

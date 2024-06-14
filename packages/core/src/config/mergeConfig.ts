@@ -25,9 +25,12 @@ export function mergeConfig<T extends Record<string, any>>(
 
     if (isArray(left) || isArray(right)) {
       result[key] = [
-        ...(isArray(left) ? left : []),
-        ...(isArray(right) ? right : [])
+        ...new Set([
+          ...(isArray(left) ? left : []),
+          ...(isArray(right) ? right : [])
+        ])
       ];
+
       continue;
     }
 
@@ -78,7 +81,10 @@ export function mergeFarmCliConfig(
       } else {
         target.root = cliRoot;
       }
+    } else {
+      target.root = process.cwd();
     }
+
     if (configRootPath) {
       target.root = configRootPath;
     }
@@ -134,4 +140,10 @@ export function mergeFarmCliConfig(
   }
 
   return mergeConfig(left, target);
+}
+
+export function initialCliOptions(options: FarmCLIOptions): FarmCLIOptions {
+  return {
+    ...options
+  };
 }
