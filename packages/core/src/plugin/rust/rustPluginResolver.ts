@@ -2,13 +2,7 @@ import { createRequire } from 'node:module';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 
-export type RustPlugin =
-  | string
-  | [
-      string,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      Record<string, any> | undefined
-    ];
+export type RustPlugin = string | [string, Record<string, unknown>];
 
 type RustPluginPathObject = {
   binary: string;
@@ -26,14 +20,13 @@ export async function rustPluginResolver(
   plugin: RustPlugin,
   root: string
 ): Promise<[string, string]> {
-  let pluginPath: string, options: string;
+  let pluginPath: string;
+  let options = '{}';
 
   if (typeof plugin === 'string') {
     pluginPath = plugin;
-    options = '{}';
   } else if (Array.isArray(plugin) && plugin.length === 2) {
-    pluginPath = plugin[0];
-    options = JSON.stringify(plugin[1]) ?? '{}';
+    [pluginPath, options] = [plugin[0], JSON.stringify(plugin[1]) ?? '{}'];
   } else {
     throw new Error(
       'Invalid config: [plugins]. A rust plugin must be a string, or [string, Record<string, any>]'

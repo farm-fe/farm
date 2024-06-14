@@ -4,7 +4,7 @@ import { Compiler as BindingCompiler } from '../../binding/index.js';
 
 import type { Resource } from '../index.js';
 import type { Config, JsUpdateResult } from '../types/binding.js';
-import type { ILogger } from '../utils/logger.js';
+import { type ILogger, Logger } from '../utils/logger.js';
 
 export const VIRTUAL_FARM_DYNAMIC_IMPORT_SUFFIX =
   '.farm_dynamic_import_virtual_module';
@@ -38,7 +38,7 @@ export class Compiler {
 
   constructor(
     public config: Config,
-    private logger: ILogger
+    private logger: ILogger = new Logger()
   ) {
     this._bindingCompiler = new BindingCompiler(this.config);
   }

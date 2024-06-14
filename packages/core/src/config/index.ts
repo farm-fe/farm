@@ -84,9 +84,10 @@ export function defineFarmConfig(config: UserConfigExport): UserConfigExport {
 async function getDefaultConfig(
   config: UserConfig,
   inlineOptions: FarmCLIOptions,
-  logger: Logger,
-  mode?: CompilationMode
+  mode?: CompilationMode,
+  logger?: Logger
 ) {
+  logger = logger ?? new Logger();
   const resolvedUserConfig = await resolveMergedUserConfig(
     config,
     undefined,
@@ -94,7 +95,7 @@ async function getDefaultConfig(
     logger
   );
 
-  resolvedUserConfig.server = normalizeDevServerOptions({}, mode);
+  resolvedUserConfig.server = normalizeDevServerConfig(inlineOptions, mode);
 
   resolvedUserConfig.compilation = await normalizeUserCompilationConfig(
     resolvedUserConfig,
@@ -129,15 +130,16 @@ async function handleServerPortConflict(
  * @param configPath
  */
 export async function resolveConfig(
-  inlineOptions: FarmCLIOptions & UserConfig,
-  logger: Logger,
+  inlineOptions: FarmCLIOptions & UserConfig = {},
   mode?: CompilationMode,
+  logger?: Logger,
   isHandleServerPortConflict = true
 ): Promise<ResolvedUserConfig> {
   // Clear the console according to the cli command
-  checkClearScreen(inlineOptions);
-  inlineOptions.mode = inlineOptions.mode ?? mode;
 
+  checkClearScreen(inlineOptions);
+  logger = logger ?? new Logger();
+  inlineOptions.mode = inlineOptions.mode ?? mode;
   // configPath may be file or directory
   let { configPath } = inlineOptions;
   let rawConfig: UserConfig = mergeFarmCliConfig(inlineOptions, {});
@@ -163,7 +165,7 @@ export async function resolveConfig(
   } else {
     mergeConfig(
       rawConfig,
-      await getDefaultConfig(rawConfig, inlineOptions, logger, mode)
+      await getDefaultConfig(rawConfig, inlineOptions, mode, logger)
     );
   }
 
@@ -172,26 +174,11 @@ export async function resolveConfig(
     config: rawConfig
   };
 
-  const { jsPlugins, rustPlugins } = await resolveFarmPlugins(userConfig);
-
-  const rawJsPlugins = (await resolveAsyncPlugins(jsPlugins || [])).filter(
-    Boolean
-  );
-
-  let vitePluginAdapters: JsPlugin[] = [];
-  const vitePlugins = (userConfig?.vitePlugins ?? []).filter(Boolean);
-  // run config and configResolved hook
-  if (vitePlugins.length) {
-    vitePluginAdapters = await handleVitePlugins(
-      vitePlugins,
-      userConfig,
-      logger,
-      mode
-    );
-  }
+  const { jsPlugins, vitePlugins, rustPlugins, vitePluginAdapters } =
+    await resolvePlugins(userConfig, logger, mode);
 
   const sortFarmJsPlugins = getSortedPlugins([
-    ...rawJsPlugins,
+    ...jsPlugins,
     ...vitePluginAdapters,
     externalAdapter()
   ]);
@@ -208,7 +195,7 @@ export async function resolveConfig(
   );
 
   // normalize server config first cause it may be used in normalizeUserCompilationConfig
-  resolvedUserConfig.server = normalizeDevServerOptions(
+  resolvedUserConfig.server = normalizeDevServerConfig(
     resolvedUserConfig.server,
     mode
   );
@@ -246,10 +233,6 @@ export async function resolveConfig(
 
   return resolvedUserConfig;
 }
-
-// type ServerConfig = {
-//   server?: NormalizedServerConfig;
-// };
 
 /**
  * Normalize user config and transform it to rust compiler compatible config
@@ -610,7 +593,7 @@ function tryAsFileRead(value?: any): string | Buffer {
   return value;
 }
 
-export function normalizeDevServerOptions(
+export function normalizeDevServerConfig(
   options: UserServerConfig | undefined,
   mode: string
 ): NormalizedServerConfig {
@@ -820,7 +803,7 @@ export function normalizePublicPath(
 
 function checkClearScreen(inlineConfig: FarmCLIOptions) {
   if (
-    inlineConfig.clearScreen &&
+    inlineConfig?.clearScreen &&
     !__FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__
   ) {
     clearScreen();
@@ -831,26 +814,15 @@ export async function resolveMergedUserConfig(
   mergedUserConfig: UserConfig,
   configFilePath: string | undefined,
   mode: 'development' | 'production' | string,
-  logger: Logger
+  logger: Logger = new Logger()
 ): Promise<ResolvedUserConfig> {
-  const serverConfig: NormalizedServerConfig = {
-    ...DEFAULT_DEV_SERVER_OPTIONS,
-    ...mergedUserConfig.server,
-    hmr: {
-      ...DEFAULT_HMR_OPTIONS,
-      ...(isObject(mergedUserConfig.server?.hmr)
-        ? mergedUserConfig.server.hmr
-        : {})
-    }
-  };
-  const resolvedUserConfig: ResolvedUserConfig = {
+  const resolvedUserConfig = {
     ...mergedUserConfig,
     compilation: {
       ...mergedUserConfig.compilation,
       external: []
-    },
-    server: serverConfig
-  };
+    }
+  } as ResolvedUserConfig;
 
   // set internal config
   resolvedUserConfig.envMode = mode;
@@ -1076,3 +1048,32 @@ const transformFarmPluginPath = (importers: string, root: string) => ({
     }
   }
 });
+export async function resolvePlugins(
+  userConfig: UserConfig,
+  logger: Logger,
+  mode: CompilationMode
+) {
+  const { jsPlugins, rustPlugins } = await resolveFarmPlugins(userConfig);
+  const rawJsPlugins = (await resolveAsyncPlugins(jsPlugins || [])).filter(
+    Boolean
+  );
+
+  let vitePluginAdapters: JsPlugin[] = [];
+  const vitePlugins = (userConfig?.vitePlugins ?? []).filter(Boolean);
+
+  if (vitePlugins.length) {
+    vitePluginAdapters = await handleVitePlugins(
+      vitePlugins,
+      userConfig,
+      logger,
+      mode
+    );
+  }
+
+  return {
+    jsPlugins: rawJsPlugins,
+    vitePlugins,
+    rustPlugins,
+    vitePluginAdapters
+  };
+}

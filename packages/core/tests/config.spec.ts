@@ -5,7 +5,7 @@ import { describe, expect, test } from 'vitest';
 import { parseUserConfig } from '../src/config/schema.js';
 import {
   DEFAULT_DEV_SERVER_OPTIONS,
-  normalizeDevServerOptions,
+  normalizeDevServerConfig,
   resolveConfig
 } from '../src/index.js';
 import { Logger } from '../src/utils/logger.js';
@@ -15,8 +15,8 @@ test('resolveUserConfig', async () => {
 
   const config = await resolveConfig(
     { configPath: path.join(filePath, 'fixtures', 'config', 'farm.config.ts') },
-    new Logger(),
-    'development'
+    'development',
+    new Logger()
   );
 
   expect(config.compilation.define).toEqual({
@@ -70,7 +70,7 @@ test('resolveUserConfig', async () => {
     moduleCacheKeyStrategy: {}
   });
   expect(config.server).toEqual(
-    normalizeDevServerOptions(config.server, 'development')
+    normalizeDevServerConfig(config.server, 'development')
   );
 });
 
@@ -79,8 +79,8 @@ test('resolveUserConfig-prod', async () => {
 
   const config = await resolveConfig(
     { configPath: path.join(filePath, 'fixtures', 'config', 'farm.config.ts') },
-    new Logger(),
-    'production'
+    'production',
+    new Logger()
   );
 
   expect(config.compilation.define).toEqual({
@@ -128,7 +128,7 @@ test('resolveUserConfig-prod', async () => {
     moduleCacheKeyStrategy: {}
   });
   expect(config.server).toEqual(
-    normalizeDevServerOptions(config.server, 'production')
+    normalizeDevServerConfig(config.server, 'production')
   );
 });
 
@@ -143,8 +143,8 @@ test('resolveUserConfig-input-html-prod', async () => {
   );
   const config = await resolveConfig(
     { configPath: configFilePath },
-    new Logger(),
-    'production'
+    'production',
+    new Logger()
   );
 
   expect(config.compilation.input).toEqual({
@@ -227,26 +227,26 @@ test('resolveUserConfig-input-html-prod', async () => {
   });
 
   expect(config.server).toEqual(
-    normalizeDevServerOptions(config.server, 'production')
+    normalizeDevServerConfig(config.server, 'production')
   );
 });
 
 describe('normalize-dev-server-options', () => {
   test('default', () => {
-    const options = normalizeDevServerOptions({}, 'development');
+    const options = normalizeDevServerConfig({}, 'development');
     expect(options.https).toBe(DEFAULT_DEV_SERVER_OPTIONS.https);
     expect(options.port).toBe(DEFAULT_DEV_SERVER_OPTIONS.port);
     expect(options.hmr).not.toBe(false);
   });
 
   test('custom port', () => {
-    const options = normalizeDevServerOptions({ port: 8080 }, 'development');
+    const options = normalizeDevServerConfig({ port: 8080 }, 'development');
     expect(options.https).toBe(DEFAULT_DEV_SERVER_OPTIONS.https);
     expect(options.port).toBe(8080);
   });
 
   test('disable HMR in prod', () => {
-    const options = normalizeDevServerOptions({}, 'production');
+    const options = normalizeDevServerConfig({}, 'production');
     expect(options.hmr).toBe(false);
   });
 });
