@@ -13,9 +13,9 @@ jobs:
     needs: [call-rust-build]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       # batch download artifacts
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
           path: /tmp/artifacts
       - name: Check Artifacts
@@ -26,11 +26,13 @@ jobs:
 
             test -f ./npm/${abi}/index.farm
           done
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.1.0
       - name: Setup Node.js 18.x
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: 18.x
-      - name: Install Dependencies
-        run: npm install -g pnpm@9.1.0
+          cache: 'pnpm'
       - name: Test Example
-        run: cd example && pnpm i && pnpm build
+        run: cd example && pnpm i --color && pnpm build
