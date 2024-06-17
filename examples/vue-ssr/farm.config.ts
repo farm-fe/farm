@@ -12,6 +12,7 @@ export default defineConfig({
       targetEnv: 'browser',
       path: './build'
     },
+    persistentCache: false,
     css: {
       prefixer: {
         targets: ['last 2 versions', 'Firefox ESR', '> 1%', 'ie >= 11']

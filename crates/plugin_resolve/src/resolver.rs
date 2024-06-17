@@ -574,6 +574,19 @@ impl Resolver {
   ) -> Option<String> {
     farm_profile_function!("try_package_subpath".to_string());
 
+    // try package.json under subpath, fix 1402
+    let abs_subpath = RelativePath::new(subpath)
+      .join("package.json")
+      .to_logical_path(package_path.clone());
+
+    if abs_subpath.exists() {
+      if let Some(result) =
+        self.try_package_entry(abs_subpath.parent().unwrap().to_path_buf(), kind, context)
+      {
+        return Some(result.clone());
+      }
+    }
+
     let package_json_info = load_package_json(
       package_path.clone(),
       Options {

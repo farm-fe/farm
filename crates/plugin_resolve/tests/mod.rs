@@ -419,3 +419,35 @@ fn resolve_package_end_with_js() {
     }
   );
 }
+
+#[test]
+fn resolve_package_subpath() {
+  fixture!(
+    "tests/fixtures/resolve-node-modules/issue-1402/index.ts",
+    |file, _| {
+      let cwd = file.parent().unwrap().to_path_buf();
+      let resolver = Resolver::new();
+
+      let resolved = resolver.resolve(
+        "bn.js/lib",
+        cwd.clone(),
+        &ResolveKind::Import,
+        &Arc::new(CompilationContext::default()),
+      );
+      assert!(resolved.is_some());
+
+      let resolved = resolved.unwrap();
+
+      assert_eq!(
+        resolved.resolved_path,
+        cwd
+          .join("node_modules")
+          .join("bn.js")
+          .join("lib")
+          .join("index.esm.js")
+          .to_string_lossy()
+          .to_string()
+      );
+    }
+  );
+}

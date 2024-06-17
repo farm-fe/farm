@@ -30,7 +30,7 @@ impl FarmPluginResolve {
     Self {
       root: config.root.clone(),
       resolver: Resolver::new(),
-      external_config: RwLock::new(None)
+      external_config: RwLock::new(None),
     }
   }
 }
@@ -120,6 +120,13 @@ impl Plugin for FarmPluginResolve {
     } else {
       result.map(|result| PluginResolveHookResult { query, ..result })
     };
+
+    if param.source.contains("primevue/icons/spinner") {
+      println!(
+        "{} from {:?} result {:?}",
+        param.source, param.importer, resolve_result
+      );
+    }
 
     if resolve_result.is_none() && context.config.resolve.auto_external_failed_resolve {
       resolve_result = Some(PluginResolveHookResult {
