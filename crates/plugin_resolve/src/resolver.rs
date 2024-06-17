@@ -84,16 +84,8 @@ impl Resolver {
     }
 
     let result = self._resolve(source, base_dir, kind, context);
-    match result {
-      Some(ref resolve_path) => {
-        if is_source_relative(resolve_path.resolved_path.into()) {
-          println!("resolved result: source {:?} / {:?}", source, resolve_path.resolved_path);
-        }
-      }
-      _ => {
-      }
-    }
     self.resolve_cache.lock().insert(cache_key, result.clone());
+
     result
   }
 
@@ -634,6 +626,9 @@ impl Resolver {
       },
     )
     .ok()?;
+    if &package_path.to_string_lossy().contains("esm-env") {
+      println!("package_json_info 是什么 {:?}", package_json_info);
+    }
 
     // exports should take precedence over module/main according to node docs (https://nodejs.org/api/packages.html#package-entry-points) by default
     // search normal entry, based on self.config.main_fields, e.g. module/main
