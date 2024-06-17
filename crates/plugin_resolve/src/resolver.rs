@@ -84,6 +84,15 @@ impl Resolver {
     }
 
     let result = self._resolve(source, base_dir, kind, context);
+    match result {
+      Some(ref resolve_path) => {
+        if is_source_relative(resolve_path.resolved_path.into()) {
+          println!("resolved result: source {:?} / {:?}", source, resolve_path.resolved_path);
+        }
+      }
+      _ => {
+      }
+    }
     self.resolve_cache.lock().insert(cache_key, result.clone());
     result
   }
@@ -107,7 +116,6 @@ impl Resolver {
 
     // 1. try `imports` field(https://nodejs.org/api/packages.html#subpath-imports).
     let resolved_imports = self.try_imports(source, base_dir.clone(), kind, context);
-
     let (source, base_dir) = if let Some((resolved_imports, package_dir)) = resolved_imports {
       (resolved_imports, PathBuf::from(&package_dir))
     } else {
@@ -461,7 +469,6 @@ impl Resolver {
         resolve_node_modules_cache.insert(key, result.clone());
       }
     }
-
     result
   }
 
