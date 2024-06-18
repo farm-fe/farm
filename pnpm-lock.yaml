@@ -241,6 +241,43 @@ importers:
         specifier: ^0.14.0
         version: 0.14.0
 
+  examples/css-url:
+    dependencies:
+      clsx:
+        specifier: ^1.2.1
+        version: 1.2.1
+      core-js:
+        specifier: ^3.30.1
+        version: 3.36.1
+      react:
+        specifier: '18'
+        version: 18.2.0
+      react-dom:
+        specifier: '18'
+        version: 18.2.0(react@18.2.0)
+    devDependencies:
+      '@farmfe/cli':
+        specifier: workspace:*
+        version: link:../../packages/cli
+      '@farmfe/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@farmfe/js-plugin-postcss':
+        specifier: workspace:^
+        version: link:../../js-plugins/postcss
+      '@farmfe/plugin-react':
+        specifier: workspace:^1.1.0
+        version: link:../../rust-plugins/react
+      '@types/react':
+        specifier: '18'
+        version: 18.2.35
+      '@types/react-dom':
+        specifier: '18'
+        version: 18.2.14
+      react-refresh:
+        specifier: ^0.14.0
+        version: 0.14.0
+
   examples/decorators:
     dependencies:
       core-js:
@@ -1654,6 +1691,9 @@ importers:
       express:
         specifier: ^4.18.2
         version: 4.18.2
+      primevue:
+        specifier: '3'
+        version: 3.52.0(vue@3.3.12(typescript@5.4.5))
       vue:
         specifier: ^3.3.12
         version: 3.3.12(typescript@5.4.5)
@@ -9072,6 +9112,11 @@ packages:
   pretty-format@29.7.0:
     resolution: {integrity: sha512-Pdlw/oPxN+aXdmM9R00JVC9WVFoCLTKJvDVLgmJ+qAffBMxsV85l/Lu7sNx4zSzPyoL2euImuEwHhOXdEgNFZQ==}
     engines: {node: ^14.15.0 || ^16.10.0 || >=18.0.0}
+
+  primevue@3.52.0:
+    resolution: {integrity: sha512-HLOVP5YI0ArFKUhIyfZsWmTNMaBYNCBWC/3DYvdd/Po4LY5/WXf7yIYvArE2q/3OuwSXJXvjlR8UNQeJYRSQog==}
+    peerDependencies:
+      vue: ^3.0.0
 
   printj@1.1.2:
     resolution: {integrity: sha512-zA2SmoLaxZyArQTOPj5LXecR+RagfPSU5Kw1qP+jkWeNlrq+eJZyY2oS68SU1Z/7/myXM4lo9716laOFAVStCQ==}
@@ -19912,6 +19957,10 @@ snapshots:
       '@jest/schemas': 29.6.3
       ansi-styles: 5.2.0
       react-is: 18.2.0
+
+  primevue@3.52.0(vue@3.3.12(typescript@5.4.5)):
+    dependencies:
+      vue: 3.3.12(typescript@5.4.5)
 
   printj@1.1.2: {}
 

@@ -102,6 +102,10 @@ pub fn handle_update_modules(
   Ok(
     filtered_paths
       .into_iter()
+      .filter(|p| {
+        let id = ModuleId::from_resolved_path_with_query(p, &context.config.root);
+        module_graph.has_module(&id)
+      })
       .map(|p| {
         if let Some((_, ty)) = paths.iter().find(|(pp, _)| *pp == p) {
           (p, ty.clone())
