@@ -8,7 +8,7 @@ const name = basename(import.meta.url);
 const projectPath = dirname(fileURLToPath(import.meta.url));
 
 test(`e2e tests - ${name}`, async () => {
-  const runTest = (command?: 'start' | 'preview') =>
+  const runTest = (command: 'start' | 'preview' = 'start') =>
     startProjectAndTest(
       projectPath,
       async (page) => {
