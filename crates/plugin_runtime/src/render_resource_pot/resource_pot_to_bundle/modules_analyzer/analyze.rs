@@ -176,7 +176,6 @@ impl<'a> Visit for AnalyzeModuleItem<'a> {
 
         match &export_default_decl.decl {
           DefaultDecl::Class(class_expr) => {
-            // TODO: no ident case
             if let Some(ident) = &class_expr.ident {
               specify.push(ExportSpecifierInfo::Default(
                 self.register_var(&ident, false),
@@ -191,7 +190,6 @@ impl<'a> Visit for AnalyzeModuleItem<'a> {
           }
 
           DefaultDecl::Fn(fn_decl) => {
-            // TODO: no ident case
             if let Some(ident) = &fn_decl.ident {
               specify.push(ExportSpecifierInfo::Default(
                 self.register_var(&ident, false),
