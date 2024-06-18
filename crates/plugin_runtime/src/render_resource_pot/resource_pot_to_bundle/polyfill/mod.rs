@@ -71,7 +71,11 @@ function __commonJs(mod) {
     module = {
       exports: {},
     };
-    mod[Object.keys(mod)[0]](module, module.exports);
+    if(typeof mod === "function") {
+      mod(module, module.exports);
+    }else {
+      mod[Object.keys(mod)[0]](module, module.exports);
+    }
     return module.exports;
   };
 }

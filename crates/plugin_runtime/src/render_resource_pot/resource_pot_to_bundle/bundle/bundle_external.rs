@@ -86,6 +86,7 @@ impl ExternalReferenceExport {
     }
   }
 
+  #[allow(dead_code)]
   fn contains(&self, export: &ExportSpecifierInfo) -> bool {
     match export {
       ExportSpecifierInfo::Named(named) => self.named.contains_key(&named.local()),

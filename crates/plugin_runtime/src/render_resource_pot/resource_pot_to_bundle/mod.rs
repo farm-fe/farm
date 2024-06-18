@@ -2,23 +2,20 @@ use std::{
   cell::RefCell,
   collections::HashMap,
   hash::Hash,
-  sync::{
-    atomic::{AtomicU32, Ordering},
-    Arc, Mutex,
-  },
+  sync::{Arc, Mutex},
 };
 
 use farmfe_core::{
   context::CompilationContext,
   enhanced_magic_string::bundle::Bundle,
-  error::{CompilationError, Result},
+  error::{CompilationError, MapCompletionError, Result},
   farm_profile_function, farm_profile_scope,
   module::{module_graph::ModuleGraph, ModuleId, ModuleType},
   rayon::iter::{IntoParallelIterator, ParallelIterator},
   resource::resource_pot::{ResourcePot, ResourcePotId, ResourcePotType},
   swc_ecma_ast::Id,
 };
-pub use polyfill::{SimplePolyfill, Polyfill};
+pub use polyfill::{Polyfill, SimplePolyfill};
 
 pub use crate::resource_pot_to_bundle::bundle::bundle_analyzer::BundleAnalyzer;
 
@@ -93,7 +90,7 @@ impl<'a> SharedBundle<'a> {
     resource_pots: Vec<&'a ResourcePot>,
     module_graph: &'a ModuleGraph,
     context: &'a Arc<CompilationContext>,
-  ) -> Self {
+  ) -> Result<Self> {
     farm_profile_function!("shared bundle initial");
     let module_analyzer_map: Mutex<HashMap<ModuleId, ModuleAnalyzer>> = Mutex::new(HashMap::new());
     let mut bundle_map: HashMap<ResourcePotId, BundleAnalyzer> = HashMap::new();
@@ -140,6 +137,7 @@ impl<'a> SharedBundle<'a> {
           let module = module_graph.module(module_id).unwrap();
           let is_runtime = matches!(module.module_type, ModuleType::Runtime);
 
+          // 1-2. analyze bundle module
           let module_analyzer = ModuleAnalyzer::new(
             module,
             &context,
@@ -147,18 +145,15 @@ impl<'a> SharedBundle<'a> {
             is_entry,
             is_dynamic,
             is_runtime,
-          )
-          .unwrap();
+          )?;
 
-          module_analyzer_map.lock().unwrap().insert(
-            module_id.clone(),
-            // 1-2. analyze bundle module
-            module_analyzer,
-          );
+          module_analyzer_map
+            .lock()
+            .map_c_error()?
+            .insert(module_id.clone(), module_analyzer);
 
           Ok::<(), CompilationError>(())
-        })
-        .unwrap();
+        })?;
 
       // 1-3. order bundle module
       bundle_analyzer.build_module_order(&order_map);
@@ -170,7 +165,7 @@ impl<'a> SharedBundle<'a> {
     let module_analyzer_manager =
       ModuleAnalyzerManager::new(module_analyzer_map.into_inner().unwrap(), &module_graph);
 
-    Self {
+    Ok(Self {
       module_analyzer_manager,
       bundle_map,
       module_graph,
@@ -178,14 +173,7 @@ impl<'a> SharedBundle<'a> {
       bundle_variables,
       order_index_map: order_map,
       order_resource_pot,
-    }
-  }
-
-  fn set_namespace(&self, resource_pot_id: &String) {
-    self
-      .bundle_variables
-      .borrow_mut()
-      .set_namespace(resource_pot_id.clone());
+    })
   }
 
   // 2-1 extract module data from ast
@@ -198,15 +186,13 @@ impl<'a> SharedBundle<'a> {
         resource_pot_id
       ));
 
-      self.set_namespace(&resource_pot_id);
-
       let bundle = self
         .bundle_map
         .get_mut(resource_pot_id)
         .map(Ok)
         .unwrap_or_else(|| {
           Err(CompilationError::GenericError(format!(
-            "fetch unknown resource pot {:?} failed",
+            "get resource pot {:?} failed",
             resource_pot_id
           )))
         })?;

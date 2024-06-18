@@ -4,7 +4,7 @@ use std::{
   path::PathBuf,
   str::FromStr,
   sync::{
-    atomic::{AtomicU64, AtomicUsize, Ordering},
+    atomic::{AtomicUsize, Ordering},
     Arc,
   },
 };
@@ -243,7 +243,7 @@ impl BundleVariable {
 
   pub fn branch(&self) -> Self {
     Self {
-      index: self.index.clone(),
+      index: Arc::clone(&self.index),
       ..Default::default()
     }
   }

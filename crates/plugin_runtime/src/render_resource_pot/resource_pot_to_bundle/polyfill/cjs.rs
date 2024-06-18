@@ -1,4 +1,7 @@
-use farmfe_core::{swc_common::DUMMY_SP, swc_ecma_ast::{CallExpr, Callee, Expr, ExprOrSpread}};
+use farmfe_core::{
+  swc_common::DUMMY_SP,
+  swc_ecma_ast::{CallExpr, Callee, Expr, ExprOrSpread},
+};
 
 use super::{Polyfill, SimplePolyfill};
 
@@ -31,6 +34,16 @@ pub fn wrap_export_star(args: Vec<ExprOrSpread>, polyfill: &mut SimplePolyfill) 
   Box::new(Expr::Call(CallExpr {
     span: DUMMY_SP,
     callee: Callee::Expr(Box::new(Expr::Ident("_export_star".into()))),
+    args,
+    type_args: None,
+  }))
+}
+
+pub fn wrap_commonjs(args: Vec<ExprOrSpread>, polyfill: &mut SimplePolyfill) -> Box<Expr> {
+  polyfill.add(Polyfill::WrapCommonJs);
+  Box::new(Expr::Call(CallExpr {
+    span: DUMMY_SP,
+    callee: Callee::Expr(Box::new(Expr::Ident(("__commonJs").into()))),
     args,
     type_args: None,
   }))

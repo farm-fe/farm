@@ -3,6 +3,18 @@
     return obj && obj.__esModule ? obj : {
         default: obj
     };
+}function _export_star(from, to) {
+    Object.keys(from).forEach(function(k) {
+        if (k !== "default" && !Object.prototype.hasOwnProperty.call(to, k)) {
+            Object.defineProperty(to, k, {
+                enumerable: true,
+                get: function() {
+                    return from[k];
+                }
+            });
+        }
+    });
+    return from;
 }function _interop_require_wildcard(obj, nodeInterop) {
     if (!nodeInterop && obj && obj.__esModule) return obj;
     if (obj === null || typeof obj !== "object" && typeof obj !== "function") return {
@@ -40,14 +52,16 @@
     module = {
       exports: {},
     };
-    mod[Object.keys(mod)[0]](module, module.exports);
+    if(typeof mod === "function") {
+      mod(module, module.exports);
+    }else {
+      mod[Object.keys(mod)[0]](module, module.exports);
+    }
     return module.exports;
   };
-}var cjs_ts_cjs = __commonJs({
-    "cjs.ts.farm-runtime": (module, exports)=>{
-        module.exports.name = "foo";
-        module.exports.age = 18;
-    }
+}var cjs_ts_cjs = __commonJs((module, exports)=>{
+    module.exports.name = "foo";
+    module.exports.age = 18;
 });
 var cjs = _interop_require_default(cjs_ts_cjs()).default, cjsNs = _interop_require_wildcard(cjs_ts_cjs()), name = cjs_ts_cjs()["name"];
 

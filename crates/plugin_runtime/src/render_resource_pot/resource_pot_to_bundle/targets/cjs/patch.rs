@@ -7,9 +7,9 @@ use farmfe_core::{
   module::{module_graph::ModuleGraph, ModuleId, ModuleSystem},
   swc_common::{comments::SingleThreadedComments, util::take::Take, Mark, DUMMY_SP},
   swc_ecma_ast::{
-    ArrowExpr, BindingIdent, BlockStmt, BlockStmtOrExpr, CallExpr, Callee, Decl, EsVersion, Expr,
-    ExprOrSpread, Ident, KeyValueProp, Module as EcmaAstModule, ModuleItem, ObjectLit, Pat, Prop,
-    PropName, PropOrSpread, Stmt, VarDecl, VarDeclKind, VarDeclarator,
+    ArrowExpr, BindingIdent, BlockStmt, BlockStmtOrExpr, Decl, EsVersion, Expr, ExprOrSpread,
+    Ident, KeyValueProp, Module as EcmaAstModule, ModuleItem, ObjectLit, Pat, Prop, PropName,
+    PropOrSpread, Stmt, VarDecl, VarDeclKind, VarDeclarator,
   },
 };
 use farmfe_toolkit::{
@@ -26,7 +26,7 @@ use farmfe_toolkit::{
 
 use crate::resource_pot_to_bundle::{
   bundle::{bundle_external::BundleReference, ModuleAnalyzerManager, ModuleGlobalUniqName},
-  polyfill::{Polyfill, SimplePolyfill},
+  polyfill::{cjs::wrap_commonjs, Polyfill, SimplePolyfill},
   uniq_name::BundleVariable,
 };
 
@@ -41,10 +41,41 @@ impl CjsPatch {
     module_global_uniq_name: &ModuleGlobalUniqName,
     ast: Vec<ModuleItem>,
     mode: Mode,
+    polyfill: &mut SimplePolyfill,
   ) -> Result<Vec<ModuleItem>> {
+    polyfill.add(Polyfill::WrapCommonJs);
+
     let mut patch_ast_items = vec![];
 
     let result = module_global_uniq_name.commonjs_name(module_id).unwrap();
+    let fn_expr = Box::new(Expr::Arrow(ArrowExpr {
+      span: DUMMY_SP,
+      params: vec![
+        Pat::Ident(BindingIdent {
+          id: Ident::from("module"),
+          type_ann: None,
+        }),
+        Pat::Ident(BindingIdent {
+          id: Ident::from("exports"),
+          type_ann: None,
+        }),
+      ],
+      body: Box::new(BlockStmtOrExpr::BlockStmt(BlockStmt {
+        span: DUMMY_SP,
+        stmts: ast
+          .into_iter()
+          .map(|module_item| match module_item {
+            // if esm module, should transform to commonjs before
+            ModuleItem::ModuleDecl(_) => unreachable!("module_decl should not be here"),
+            ModuleItem::Stmt(stmt) => stmt,
+          })
+          .collect(),
+      })),
+      is_async: false,
+      is_generator: false,
+      type_params: None,
+      return_type: None,
+    }));
 
     patch_ast_items.push(ModuleItem::Stmt(Stmt::Decl(Decl::Var(Box::new(VarDecl {
       span: DUMMY_SP,
@@ -56,51 +87,22 @@ impl CjsPatch {
           id: bundle_variable.render_name(result).as_str().into(),
           type_ann: None,
         }),
-        init: Some(Box::new(Expr::Call(CallExpr {
-          span: DUMMY_SP,
-          callee: Callee::Expr(Box::new(Expr::Ident(Ident::from("__commonJs")))),
-          args: vec![ExprOrSpread {
+        init: Some(wrap_commonjs(
+          vec![ExprOrSpread {
             spread: None,
-            expr: Box::new(Expr::Object(ObjectLit {
-              span: DUMMY_SP,
-              props: vec![PropOrSpread::Prop(Box::new(Prop::KeyValue(KeyValueProp {
-                key: PropName::Str(match mode {
-                  Mode::Development => module_id.to_string().into(),
-                  Mode::Production => "".into(),
-                }),
-                value: Box::new(Expr::Arrow(ArrowExpr {
-                  span: DUMMY_SP,
-                  params: vec![
-                    Pat::Ident(BindingIdent {
-                      id: Ident::from("module"),
-                      type_ann: None,
-                    }),
-                    Pat::Ident(BindingIdent {
-                      id: Ident::from("exports"),
-                      type_ann: None,
-                    }),
-                  ],
-                  body: Box::new(BlockStmtOrExpr::BlockStmt(BlockStmt {
-                    span: DUMMY_SP,
-                    stmts: ast
-                      .into_iter()
-                      .map(|module_item| match module_item {
-                        // if esm module, should transform to commonjs before
-                        ModuleItem::ModuleDecl(_) => unreachable!("module_decl should not be here"),
-                        ModuleItem::Stmt(stmt) => stmt,
-                      })
-                      .collect(),
-                  })),
-                  is_async: false,
-                  is_generator: false,
-                  type_params: None,
-                  return_type: None,
-                })),
-              })))],
-            })),
+            expr: match mode {
+              Mode::Development => Box::new(Expr::Object(ObjectLit {
+                span: DUMMY_SP,
+                props: vec![PropOrSpread::Prop(Box::new(Prop::KeyValue(KeyValueProp {
+                  key: PropName::Str(module_id.to_string().into()),
+                  value: fn_expr,
+                })))],
+              })),
+              Mode::Production => fn_expr,
+            },
           }],
-          type_args: None,
-        }))),
+          polyfill,
+        )),
         definite: false,
       }],
     })))));
@@ -144,9 +146,7 @@ impl CjsPatch {
     bundle_reference: &BundleReference,
     polyfill: &mut SimplePolyfill,
   ) {
-    let mut module_analyzer = module_analyzer_manager
-      .module_analyzer_mut(module_id)
-      .unwrap();
+    let module_analyzer = module_analyzer_manager.module_analyzer_mut_unchecked(module_id);
 
     let unresolved_mark = module_analyzer.mark.0;
     // if hybrid module, should transform to cjs
@@ -163,9 +163,7 @@ impl CjsPatch {
     // if commonjs module, should wrap function
     // see [Polyfill::WrapCommonJs]
     if module_analyzer.is_commonjs() {
-      polyfill.add(Polyfill::WrapCommonJs);
       let ast = module_analyzer.ast.body.take();
-      drop(module_analyzer);
 
       let new_body = CjsPatch::wrap_commonjs(
         module_id,
@@ -173,12 +171,12 @@ impl CjsPatch {
         &module_analyzer_manager.module_global_uniq_name,
         ast,
         context.config.mode.clone(),
+        polyfill,
       )
       .unwrap();
 
       module_analyzer_manager
-        .module_analyzer_mut(module_id)
-        .unwrap()
+        .module_analyzer_mut_unchecked(module_id)
         .ast
         .body = new_body;
     }

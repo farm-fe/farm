@@ -1,5 +1,9 @@
 //index.js:
- globalThis.nodeRequire = require;(globalThis || window || global)['__farm_default_namespace__'] = {__FARM_TARGET_ENV__: 'node'};function _export_star(from, to) {
+ globalThis.nodeRequire = require;(globalThis || window || global)['__farm_default_namespace__'] = {__FARM_TARGET_ENV__: 'node'};function _interop_require_default(obj) {
+    return obj && obj.__esModule ? obj : {
+        default: obj
+    };
+}function _export_star(from, to) {
     Object.keys(from).forEach(function(k) {
         if (k !== "default" && !Object.prototype.hasOwnProperty.call(to, k)) {
             Object.defineProperty(to, k, {
@@ -48,26 +52,28 @@
     module = {
       exports: {},
     };
-    mod[Object.keys(mod)[0]](module, module.exports);
+    if(typeof mod === "function") {
+      mod(module, module.exports);
+    }else {
+      mod[Object.keys(mod)[0]](module, module.exports);
+    }
     return module.exports;
   };
 }var node_fs_ns = _interop_require_wildcard(require("node:fs.farm-runtime"));
-var cjsExport_ts_cjs = __commonJs({
-    "cjsExport.ts.farm-runtime": (module, exports)=>{
-        "use strict";
-        Object.defineProperty(exports, "__esModule", {
-            value: true
-        });
-        Object.defineProperty(exports, "esmName", {
-            enumerable: true,
-            get: function() {
-                return esmName;
-            }
-        });
-        module.exports.name = "shulan";
-        module.exports.age = 18;
-        const esmName = "esm-shulan";
-    }
+var cjsExport_ts_cjs = __commonJs((module, exports)=>{
+    "use strict";
+    Object.defineProperty(exports, "__esModule", {
+        value: true
+    });
+    Object.defineProperty(exports, "esmName", {
+        enumerable: true,
+        get: function() {
+            return esmName;
+        }
+    });
+    module.exports.name = "shulan";
+    module.exports.age = 18;
+    const esmName = "esm-shulan";
 });
 var cjsExport_ts_ns = _interop_require_wildcard(cjsExport_ts_cjs());
 

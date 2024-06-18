@@ -145,7 +145,7 @@ pub fn render_resource_pots_and_generate_resources(
       res.resource.info = Some(resource_pot_info);
 
       resources.lock().push(res.resource);
-      Ok(())
+      Ok::<(), CompilationError>(())
     })?;
 
   let mut resources_map: farmfe_core::parking_lot::lock_api::MutexGuard<

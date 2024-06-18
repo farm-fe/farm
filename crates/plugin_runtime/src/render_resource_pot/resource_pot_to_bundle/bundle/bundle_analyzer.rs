@@ -848,7 +848,7 @@ impl<'a> BundleAnalyzer<'a> {
     )?);
 
     if !patch_import_to_module.is_empty() {
-      if let Some(mut module_analyzer) = self
+      if let Some(module_analyzer) = self
         .ordered_modules
         .first()
         .map(|item| module_analyzer_manager.module_analyzer_mut(item))
@@ -864,7 +864,7 @@ impl<'a> BundleAnalyzer<'a> {
     }
 
     if !patch_export_to_module.is_empty() {
-      if let Some(mut module_analyzer) = self
+      if let Some(module_analyzer) = self
         .ordered_modules
         .last()
         .map(|id| module_analyzer_manager.module_analyzer_mut(id))
@@ -897,9 +897,7 @@ impl<'a> BundleAnalyzer<'a> {
         .module_graph
         .module(&module_id)
         .unwrap_or_else(|| panic!("Module not found: {:?}", module_id));
-      let mut module_analyzer = module_analyzer_manager
-        .module_analyzer_mut(module_id)
-        .unwrap();
+      let module_analyzer = module_analyzer_manager.module_analyzer_mut_unchecked(module_id);
 
       let comments: SingleThreadedComments = module.meta.as_script().comments.clone().into();
 

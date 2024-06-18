@@ -6,8 +6,8 @@ use farmfe_core::{
   module::{module_graph::ModuleGraph, ModuleId},
   swc_common::Mark,
   swc_ecma_ast::{
-    self, Decl, DefaultDecl, ExportDecl, Expr, Id, Ident, ImportSpecifier, ModuleDecl,
-    ModuleExportName, ModuleItem, Pat, Stmt,
+    self, Decl, DefaultDecl, ExportDecl, Expr, Ident, ImportSpecifier, ModuleDecl,
+    ModuleExportName, ModuleItem,
   },
 };
 use farmfe_toolkit::swc_ecma_visit::{Visit, VisitWith};
@@ -40,95 +40,6 @@ impl Visit for CollectUnresolvedIdent {
       self.unresolved_ident.insert(n.sym.to_string());
     }
   }
-}
-
-pub struct CollectDefineIdent {
-  defined_ident: HashSet<Id>,
-}
-
-impl CollectDefineIdent {
-  pub fn new() -> Self {
-    Self {
-      defined_ident: HashSet::new(),
-    }
-  }
-}
-
-impl CollectDefineIdent {
-  fn collect_pat(&mut self, pat: &Pat) -> bool {
-    match pat {
-      Pat::Ident(n) => {
-        self.defined_ident.insert(n.id.to_id());
-        return true;
-      }
-
-      Pat::Array(n) => {
-        let mut is_collect = false;
-
-        for item in &n.elems {
-          if let Some(item) = item {
-            is_collect = self.collect_pat(item) || is_collect;
-          }
-        }
-
-        return is_collect;
-      }
-
-      Pat::Rest(pat) => {
-        return self.collect_pat(pat.arg.as_ref());
-      }
-
-      Pat::Object(pat) => {
-        let mut is_collect = false;
-
-        for item in &pat.props {
-          match item {
-            swc_ecma_ast::ObjectPatProp::KeyValue(kv) => {
-              is_collect = self.collect_pat(kv.value.as_ref()) || is_collect;
-            }
-
-            swc_ecma_ast::ObjectPatProp::Assign(assign) => {
-              is_collect = self.defined_ident.insert(assign.key.to_id()) || is_collect;
-            }
-
-            swc_ecma_ast::ObjectPatProp::Rest(rest) => {
-              is_collect = self.collect_pat(rest.arg.as_ref()) || is_collect;
-            }
-          }
-        }
-
-        return is_collect;
-      }
-
-      Pat::Assign(assign) => {
-        return self.collect_pat(&assign.left);
-      }
-
-      Pat::Expr(_) => {
-        return false;
-      }
-
-      Pat::Invalid(_) => {
-        return false;
-      }
-    }
-  }
-}
-
-impl Visit for CollectDefineIdent {
-  fn visit_var_decl(&mut self, n: &swc_ecma_ast::VarDecl) {
-    for decl in &n.decls {
-      if !self.collect_pat(&decl.name) {
-        decl.visit_children_with(self);
-      }
-    }
-  }
-}
-
-fn collect_define_ident<V: VisitWith<CollectDefineIdent>>(stmt: &V) -> HashSet<Id> {
-  let mut collector = CollectDefineIdent::new();
-  stmt.visit_with(&mut collector);
-  collector.defined_ident
 }
 
 struct AnalyzeModuleItem<'a> {

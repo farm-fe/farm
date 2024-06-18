@@ -5,7 +5,7 @@ use farmfe_core::{
     bool_or_obj::BoolOrObj, config_regex::ConfigRegex,
     partial_bundling::PartialBundlingEnforceResourceConfig, Mode, TargetEnv,
   },
-  serde::{de::DeserializeOwned, Deserialize},
+  serde::de::DeserializeOwned,
   serde_json::{self, Value},
 };
 mod common;

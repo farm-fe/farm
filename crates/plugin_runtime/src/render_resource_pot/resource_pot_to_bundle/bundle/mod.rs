@@ -1,15 +1,13 @@
 use std::{
-  cell::{Ref, RefCell, RefMut},
   collections::{HashMap, HashSet},
   mem::{self, replace},
-  rc::Rc,
-  sync::{Arc, Mutex, RwLock, RwLockReadGuard, RwLockWriteGuard},
+  sync::{Arc, Mutex, RwLock},
 };
 
 use bundle_external::BundleReference;
 use farmfe_core::{
   context::CompilationContext,
-  error::{CompilationError, Result},
+  error::{CompilationError, MapCompletionError, Result},
   farm_profile_function, farm_profile_scope,
   module::{module_graph::ModuleGraph, ModuleId, ModuleSystem},
   rayon::iter::{IntoParallelIterator, ParallelIterator},
@@ -39,7 +37,7 @@ use super::{
   uniq_name::BundleVariable,
 };
 pub struct ModuleAnalyzerManager<'a> {
-  pub module_map: HashMap<ModuleId, Arc<RwLock<ModuleAnalyzer>>>,
+  pub module_map: HashMap<ModuleId, ModuleAnalyzer>,
   pub namespace_modules: HashSet<ModuleId>,
 
   ///
@@ -165,10 +163,7 @@ impl Take for ModuleGlobalUniqName {
 impl<'a> ModuleAnalyzerManager<'a> {
   pub fn new(module_map: HashMap<ModuleId, ModuleAnalyzer>, module_graph: &'a ModuleGraph) -> Self {
     Self {
-      module_map: module_map
-        .into_iter()
-        .map(|(k, v)| (k, Arc::new(RwLock::new(v))))
-        .collect(),
+      module_map,
       namespace_modules: HashSet::new(),
       module_global_uniq_name: ModuleGlobalUniqName::new(),
       module_graph,
@@ -185,10 +180,15 @@ impl<'a> ModuleAnalyzerManager<'a> {
     farm_profile_function!();
 
     let data = Mutex::new(vec![]);
+    let module_map = {
+      mem::take(&mut self.module_map)
+        .into_iter()
+        .map(|(key, val)| (key, Arc::new(RwLock::new(val))))
+        .collect::<HashMap<ModuleId, Arc<RwLock<ModuleAnalyzer>>>>()
+    };
 
     modules.into_par_iter().try_for_each(|module_id| {
-      let mut module_analyzer = self
-        .module_map
+      let mut module_analyzer = module_map
         .get(&module_id)
         .map(|item| item.write().unwrap())
         .unwrap();
@@ -201,14 +201,25 @@ impl<'a> ModuleAnalyzerManager<'a> {
 
       module_analyzer.extract_statement(module_graph, context, &mut new_bundle_variable)?;
 
-      data.lock().unwrap().push((
+      data.lock().map_c_error()?.push((
         module_analyzer.cjs_module_analyzer.require_modules.clone(),
         new_bundle_variable,
       ));
       Ok::<(), CompilationError>(())
     })?;
 
-    for (require_modules, inner_bundle_variable) in data.into_inner().unwrap() {
+    let mut map = HashMap::new();
+
+    for (key, val) in module_map {
+      map.insert(
+        key,
+        Arc::try_unwrap(val).unwrap().into_inner().map_c_error()?,
+      );
+    }
+
+    let _ = mem::replace(&mut self.module_map, map);
+
+    for (require_modules, inner_bundle_variable) in data.into_inner().map_c_error()? {
       self.namespace_modules.extend(require_modules);
 
       bundle_variable.merge(inner_bundle_variable);
@@ -221,7 +232,7 @@ impl<'a> ModuleAnalyzerManager<'a> {
     self
       .module_map
       .get(module_id)
-      .map(|item| item.read().unwrap().is_commonjs())
+      .map(|item| item.is_commonjs())
       .unwrap_or(false)
   }
 
@@ -229,7 +240,7 @@ impl<'a> ModuleAnalyzerManager<'a> {
     self
       .module_map
       .get(module_id)
-      .map(|item| item.read().unwrap().module_system.clone())
+      .map(|item| item.module_system.clone())
       .unwrap()
   }
 
@@ -237,7 +248,7 @@ impl<'a> ModuleAnalyzerManager<'a> {
     self
       .module_map
       .get(module_id)
-      .map(|item| item.read().unwrap().is_hybrid_esm())
+      .map(|item| item.is_hybrid_esm())
       .unwrap_or(false)
   }
 
@@ -246,16 +257,18 @@ impl<'a> ModuleAnalyzerManager<'a> {
     self
       .module_map
       .get(module_id)
-      .map(|m| m.read().unwrap().export_names())
+      .map(|m| m.export_names())
       .unwrap_or_else(|| Arc::new(ReferenceMap::new(self.module_system(module_id))))
   }
 
   #[inline]
-  pub fn module_analyzer(&self, module_id: &ModuleId) -> Option<RwLockReadGuard<ModuleAnalyzer>> {
-    self
-      .module_map
-      .get(module_id)
-      .map(|item| item.read().unwrap())
+  pub fn module_analyzer(&self, module_id: &ModuleId) -> Option<&ModuleAnalyzer> {
+    self.module_map.get(module_id)
+  }
+
+  #[inline]
+  pub fn module_analyzer_unchecked(&self, module_id: &ModuleId) -> &ModuleAnalyzer {
+    &self.module_map[module_id]
   }
 
   #[inline]
@@ -267,14 +280,13 @@ impl<'a> ModuleAnalyzerManager<'a> {
   }
 
   #[inline]
-  pub fn module_analyzer_mut(
-    &self,
-    module_id: &ModuleId,
-  ) -> Option<RwLockWriteGuard<ModuleAnalyzer>> {
-    self
-      .module_map
-      .get(module_id)
-      .map(|item| item.write().unwrap())
+  pub fn module_analyzer_mut(&mut self, module_id: &ModuleId) -> Option<&mut ModuleAnalyzer> {
+    self.module_map.get_mut(module_id)
+  }
+
+  #[inline]
+  pub fn module_analyzer_mut_unchecked(&mut self, module_id: &ModuleId) -> &mut ModuleAnalyzer {
+    self.module_map.get_mut(module_id).unwrap()
   }
 
   #[inline]
@@ -365,7 +377,7 @@ impl<'a> ModuleAnalyzerManager<'a> {
       }
     }
 
-    if let Some(mut m) = self.module_analyzer_mut(module_id) {
+    if let Some(m) = self.module_analyzer_mut(module_id) {
       m.export_names = Some(Arc::new(map));
     }
 
@@ -441,7 +453,7 @@ impl<'a> ModuleAnalyzerManager<'a> {
     bundle_variable: &BundleVariable,
     commonjs_import_executed: &mut HashSet<ModuleId>,
   ) {
-    let mut module_analyzer = self.module_analyzer_mut(module_id).unwrap();
+    let module_analyzer = self.module_analyzer_mut_unchecked(module_id);
     let mut stmt_actions = module_analyzer
       .statement_actions
       .clone()
@@ -449,7 +461,6 @@ impl<'a> ModuleAnalyzerManager<'a> {
       .collect::<Vec<_>>();
     stmt_actions.sort_by(|a, b| b.index().cmp(&a.index()));
     let mut ast = module_analyzer.ast.take();
-    drop(module_analyzer);
 
     stmt_actions.iter().for_each(|action| {
             let mut replace_ast_item = |index: usize| {
@@ -568,7 +579,7 @@ impl<'a> ModuleAnalyzerManager<'a> {
 
         });
 
-    let mut module_analyzer = self.module_analyzer_mut(module_id).unwrap();
+    let module_analyzer = self.module_analyzer_mut_unchecked(module_id);
     module_analyzer.ast = ast;
   }
 
@@ -593,7 +604,6 @@ impl<'a> ModuleAnalyzerManager<'a> {
     let module_analyzer = self.module_analyzer_mut(module_id).unwrap();
 
     let cm = module_analyzer.cm.clone();
-    drop(module_analyzer);
 
     try_with(cm, &context.meta.script.globals, || {
       // 1. strip/remove export
@@ -631,7 +641,7 @@ impl<'a> ModuleAnalyzerManager<'a> {
       // 2. replace commonjs require
       // 3. rename
       {
-        let mut module_analyzer = self.module_analyzer_mut(module_id).unwrap();
+        let module_analyzer = self.module_analyzer_mut_unchecked(module_id);
         let mut ast = module_analyzer.ast.take();
         let rename_map = module_analyzer.build_rename_map(bundle_variable);
 
@@ -650,7 +660,6 @@ impl<'a> ModuleAnalyzerManager<'a> {
             &bundle_variable,
           )
         }
-        drop(module_analyzer);
 
         ast.body = mem::take(&mut ast.body)
           .into_iter()
@@ -687,11 +696,7 @@ impl<'a> ModuleAnalyzerManager<'a> {
         self.build_export_names(module_id, bundle_variable);
       }
 
-      let Some(ref module_analyzer) = self
-        .module_map
-        .get(module_id)
-        .map(|item| item.read().unwrap())
-      else {
+      let Some(ref module_analyzer) = self.module_map.get(module_id) else {
         continue;
       };
 

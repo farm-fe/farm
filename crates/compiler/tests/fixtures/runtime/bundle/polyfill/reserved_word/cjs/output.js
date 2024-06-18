@@ -52,7 +52,11 @@
     module = {
       exports: {},
     };
-    mod[Object.keys(mod)[0]](module, module.exports);
+    if(typeof mod === "function") {
+      mod(module, module.exports);
+    }else {
+      mod[Object.keys(mod)[0]](module, module.exports);
+    }
     return module.exports;
   };
 }function foo() {}
@@ -61,24 +65,22 @@ var dep_ts_ns = {
     __esModule: true
 };
 
-var export_ts_cjs = __commonJs({
-    "export.ts.farm-runtime": (module, exports)=>{
-        "use strict";
-        Object.defineProperty(exports, "__esModule", {
-            value: true
-        });
-        _export_star(dep_ts_ns, exports);
-        console.log(foo, dep_ts_ns);
-        function __commonJs$1() {}
-        function _mergeNamespaces$1() {}
-        function _getRequireWildcardCache$1() {}
-        function _interop_require_wildcard$1() {}
-        function _export_star$1() {}
-        function _interop_require_default$1() {}
-        const dep_ts_ns$1 = {};
-        module.exports.name = "shulan";
-        module.exports.age = 18;
-    }
+var export_ts_cjs = __commonJs((module, exports)=>{
+    "use strict";
+    Object.defineProperty(exports, "__esModule", {
+        value: true
+    });
+    _export_star(dep_ts_ns, exports);
+    console.log(foo, dep_ts_ns);
+    function __commonJs$1() {}
+    function _mergeNamespaces$1() {}
+    function _getRequireWildcardCache$1() {}
+    function _interop_require_wildcard$1() {}
+    function _export_star$1() {}
+    function _interop_require_default$1() {}
+    const dep_ts_ns$1 = {};
+    module.exports.name = "shulan";
+    module.exports.age = 18;
 });
 
 export_ts_cjs();

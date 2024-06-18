@@ -1,5 +1,9 @@
 //index.js:
- globalThis.nodeRequire = require;(globalThis || window || global)['__farm_default_namespace__'] = {__FARM_TARGET_ENV__: 'node'};function _export_star(from, to) {
+ globalThis.nodeRequire = require;(globalThis || window || global)['__farm_default_namespace__'] = {__FARM_TARGET_ENV__: 'node'};function _interop_require_default(obj) {
+    return obj && obj.__esModule ? obj : {
+        default: obj
+    };
+}function _export_star(from, to) {
     Object.keys(from).forEach(function(k) {
         if (k !== "default" && !Object.prototype.hasOwnProperty.call(to, k)) {
             Object.defineProperty(to, k, {

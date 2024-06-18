@@ -3,10 +3,7 @@
 use std::{
   any::Any,
   collections::{HashMap, HashSet, VecDeque},
-  sync::{
-    atomic::{AtomicBool, Ordering},
-    Arc, RwLock,
-  },
+  sync::Arc,
 };
 
 use farmfe_core::{
@@ -18,20 +15,18 @@ use farmfe_core::{
   context::CompilationContext,
   enhanced_magic_string::types::SourceMapOptions,
   error::CompilationError,
-  module::{ModuleId, ModuleMetaData, ModuleType},
+  module::{ModuleId, ModuleType},
   parking_lot::Mutex,
   plugin::{
-    Plugin, PluginAnalyzeDepsHookParam, PluginFinalizeResourcesHookParams,
-    PluginGenerateResourcesHookResult, PluginHookContext, PluginLoadHookParam,
-    PluginLoadHookResult, PluginResolveHookParam, PluginResolveHookResult,
-    PluginTransformHookResult,
+    Plugin, PluginFinalizeResourcesHookParams, PluginGenerateResourcesHookResult,
+    PluginHookContext, PluginLoadHookParam, PluginLoadHookResult, PluginResolveHookParam,
+    PluginResolveHookResult, PluginTransformHookResult,
   },
   resource::{
     resource_pot::{ResourcePot, ResourcePotMetaData, ResourcePotType},
     Resource, ResourceOrigin, ResourceType,
   },
   serde_json,
-  swc_ecma_ast::{ExportAll, ImportDecl, ImportSpecifier, ModuleDecl, ModuleItem},
 };
 use farmfe_toolkit::{
   fs::read_file_utf8,
@@ -41,7 +36,7 @@ use farmfe_toolkit::{
 
 use insert_runtime_plugins::insert_runtime_plugins;
 use render_resource_pot::{resource_pot_to_bundle::SharedBundle, *};
-use resource_pot_to_bundle::{Polyfill, SimplePolyfill};
+use resource_pot_to_bundle::Polyfill;
 
 pub const RUNTIME_SUFFIX: &str = ".farm-runtime";
 pub const ASYNC_MODULES: &str = "async_modules";
@@ -290,7 +285,7 @@ impl Plugin for FarmPluginRuntime {
     for resource_pot in resource_pots {
       match resource_pot.resource_pot_type {
         ResourcePotType::Runtime => {
-          let mut shared_bundle = SharedBundle::new(vec![&resource_pot], &module_graph, context);
+          let mut shared_bundle = SharedBundle::new(vec![&resource_pot], &module_graph, context)?;
 
           let polyfill = &mut shared_bundle
             .bundle_map

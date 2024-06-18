@@ -1,5 +1,21 @@
 //index.js:
- import __farmNodeModule from 'node:module';globalThis.nodeRequire = __farmNodeModule.createRequire(import.meta.url);(globalThis || window || global)['__farm_default_namespace__'] = {__FARM_TARGET_ENV__: 'node'};function _interop_require_wildcard(obj, nodeInterop) {
+ import __farmNodeModule from 'node:module';globalThis.nodeRequire = __farmNodeModule.createRequire(import.meta.url);(globalThis || window || global)['__farm_default_namespace__'] = {__FARM_TARGET_ENV__: 'node'};function _interop_require_default(obj) {
+    return obj && obj.__esModule ? obj : {
+        default: obj
+    };
+}function _export_star(from, to) {
+    Object.keys(from).forEach(function(k) {
+        if (k !== "default" && !Object.prototype.hasOwnProperty.call(to, k)) {
+            Object.defineProperty(to, k, {
+                enumerable: true,
+                get: function() {
+                    return from[k];
+                }
+            });
+        }
+    });
+    return from;
+}function _interop_require_wildcard(obj, nodeInterop) {
     if (!nodeInterop && obj && obj.__esModule) return obj;
     if (obj === null || typeof obj !== "object" && typeof obj !== "function") return {
         default: obj
@@ -49,14 +65,16 @@
     module = {
       exports: {},
     };
-    mod[Object.keys(mod)[0]](module, module.exports);
+    if(typeof mod === "function") {
+      mod(module, module.exports);
+    }else {
+      mod[Object.keys(mod)[0]](module, module.exports);
+    }
     return module.exports;
   };
-}var exportCjs_ts_cjs = __commonJs({
-    "exportCjs.ts.farm-runtime": (module, exports)=>{
-        module.exports.name = "shulan";
-        module.exports.age = 18;
-    }
+}var exportCjs_ts_cjs = __commonJs((module, exports)=>{
+    module.exports.name = "shulan";
+    module.exports.age = 18;
 });
 
 var export_ts_ns = _mergeNamespaces({

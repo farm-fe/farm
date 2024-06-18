@@ -1,8 +1,7 @@
 use std::{
-  cell::RefMut,
   collections::{HashMap, HashSet},
+  fmt::Debug,
   path::PathBuf,
-  rc::Rc,
   sync::Arc,
 };
 
@@ -243,6 +242,27 @@ pub struct ModuleAnalyzer {
   pub cjs_module_analyzer: CjsModuleAnalyzer,
   pub mark: (Mark, Mark),
   pub module_system: ModuleSystem,
+}
+
+impl Debug for ModuleAnalyzer {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    f.debug_struct("ModuleAnalyzer")
+      .field("statements", &self.statements)
+      .field("statement_actions", &self.statement_actions)
+      .field("cm", &"[skip]")
+      .field("ast", &self.ast)
+      .field("module_id", &self.module_id)
+      .field("resource_pot_id", &self.resource_pot_id)
+      .field("export_names", &self.export_names)
+      .field("entry", &self.entry)
+      .field("external", &self.external)
+      .field("dynamic", &self.dynamic)
+      .field("is_runtime", &self.is_runtime)
+      .field("cjs_module_analyzer", &"[skip]")
+      .field("mark", &self.mark)
+      .field("module_system", &self.module_system)
+      .finish()
+  }
 }
 
 impl ModuleAnalyzer {

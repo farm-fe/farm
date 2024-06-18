@@ -1,7 +1,7 @@
 use farmfe_core::{
   module::{module_graph::ModuleGraph, ModuleId},
   swc_common::{Mark, DUMMY_SP},
-  swc_ecma_ast::{CallExpr, Callee, Expr, ExprOrSpread, Ident, Lit},
+  swc_ecma_ast::{CallExpr, Expr, ExprOrSpread, Lit},
 };
 use farmfe_toolkit::{
   script::is_commonjs_require,
@@ -64,7 +64,6 @@ impl<'a> VisitMut for CJSReplace<'a> {
         return;
       }
 
-      // TODO: unresolved condition
       if is_commonjs_require(self.unresolved_mark, self.top_level_mark, call_expr) {
         if let ExprOrSpread {
           spread: None,
