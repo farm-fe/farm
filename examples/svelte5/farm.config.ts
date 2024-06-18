@@ -4,7 +4,8 @@ import { svelte } from '@sveltejs/vite-plugin-svelte';
 export default defineConfig({
   vitePlugins: [svelte()],
   compilation: {
-    persistentCache:false,
-    progress: false,
+    resolve: {
+      // mainFields: ['exports', 'main'],
+    }
   }
 });
