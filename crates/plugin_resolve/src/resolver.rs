@@ -47,7 +47,7 @@ pub struct Resolver {
 const NODE_MODULES: &str = "node_modules";
 const BROWSER_SUBPATH_EXTERNAL_ID: &str = "__FARM_BROWSER_SUBPATH_EXTERNAL__";
 const REGEX_PREFIX: &str = "$__farm_regex:";
-const HIGHEST_PRIORITY_fields: &str = "exports";
+const HIGHEST_PRIORITY_FIELD: &str = "exports";
 
 impl Resolver {
   pub fn new() -> Self {
@@ -633,13 +633,13 @@ impl Resolver {
 
     // highest priority: exports field, so we need handle this first
     let entry_point = raw_package_json_info
-      .get(HIGHEST_PRIORITY_fields)
+      .get(HIGHEST_PRIORITY_FIELD)
       .and_then(|field_value| {
         if let Value::Object(_) = field_value {
           resolve_exports_or_imports(
             &package_json_info,
             ".",
-            HIGHEST_PRIORITY_fields,
+            HIGHEST_PRIORITY_FIELD,
             kind,
             context,
           )
