@@ -16,7 +16,6 @@ use farmfe_core::{
   enhanced_magic_string::types::SourceMapOptions,
   error::CompilationError,
   module::{ModuleId, ModuleType},
-  parking_lot::Mutex,
   plugin::{
     Plugin, PluginFinalizeResourcesHookParams, PluginGenerateResourcesHookResult,
     PluginHookContext, PluginLoadHookParam, PluginLoadHookResult, PluginResolveHookParam,
@@ -35,8 +34,7 @@ use farmfe_toolkit::{
 };
 
 use insert_runtime_plugins::insert_runtime_plugins;
-use render_resource_pot::{resource_pot_to_bundle::SharedBundle, *};
-use resource_pot_to_bundle::Polyfill;
+use render_resource_pot::*;
 
 pub const RUNTIME_SUFFIX: &str = ".farm-runtime";
 pub const ASYNC_MODULES: &str = "async_modules";
@@ -45,13 +43,6 @@ mod find_async_modules;
 mod handle_entry_resources;
 mod insert_runtime_plugins;
 pub mod render_resource_pot;
-
-const MODULE_NEED_POLYFILLS: [Polyfill; 3] = [
-  Polyfill::Wildcard,
-  Polyfill::InteropRequireDefault,
-  Polyfill::ExportStar,
-];
-
 /// FarmPluginRuntime is charge of:
 /// * resolving, parsing and generating a executable runtime code and inject the code into the entries.
 /// * merge module's ast and render the script module using farm runtime's specification, for example, wrap the module to something like `function(module, exports, require) { xxx }`, see [Farm Runtime RFC](https://github.com/farm-fe/rfcs/pull/1)
@@ -60,9 +51,7 @@ const MODULE_NEED_POLYFILLS: [Polyfill; 3] = [
 /// when entry is script, the runtime will be injected into the entry module's head, makes sure the runtime execute before all other code.
 ///
 /// All runtime module (including the runtime core and its plugins) will be suffixed as `.farm-runtime` to distinguish with normal script modules.
-pub struct FarmPluginRuntime {
-  runtime_code: Mutex<Arc<String>>,
-}
+pub struct FarmPluginRuntime {}
 
 impl Plugin for FarmPluginRuntime {
   fn name(&self) -> &str {
@@ -270,65 +259,13 @@ impl Plugin for FarmPluginRuntime {
     Ok(Some(()))
   }
 
-  fn process_resource_pots(
-    &self,
-    resource_pots: &mut Vec<&mut ResourcePot>,
-    context: &Arc<CompilationContext>,
-  ) -> farmfe_core::error::Result<Option<()>> {
-    if !self.runtime_code.lock().is_empty() {
-      return Ok(None);
-    }
-    let module_graph = context.module_graph.read();
-
-    resource_pots.sort_by_key(|item| item.id.clone());
-
-    for resource_pot in resource_pots {
-      match resource_pot.resource_pot_type {
-        ResourcePotType::Runtime => {
-          let mut shared_bundle = SharedBundle::new(vec![&resource_pot], &module_graph, context)?;
-
-          let polyfill = &mut shared_bundle
-            .bundle_map
-            .get_mut(&resource_pot.id)
-            .unwrap()
-            .polyfill;
-
-          MODULE_NEED_POLYFILLS
-            .iter()
-            .for_each(|item| polyfill.add(item.clone()));
-          shared_bundle.render()?;
-
-          let resource_pot_id = resource_pot.id.clone();
-
-          let bundle = shared_bundle.codegen(&resource_pot_id)?;
-
-          resource_pot.defer_minify_as_resource_pot();
-
-          *self.runtime_code.lock() = Arc::new(bundle.to_string());
-          break;
-        }
-        _ => {}
-      }
-    }
-
-    Ok(Some(()))
-  }
-
   fn render_resource_pot_modules(
     &self,
     resource_pot: &ResourcePot,
     context: &Arc<CompilationContext>,
     _hook_context: &PluginHookContext,
   ) -> farmfe_core::error::Result<Option<ResourcePotMetaData>> {
-    if matches!(resource_pot.resource_pot_type, ResourcePotType::Runtime) {
-      return Ok(Some(ResourcePotMetaData {
-        rendered_modules: HashMap::new(),
-        rendered_content: self.runtime_code.lock().clone(),
-        rendered_map_chain: vec![],
-        custom_data: resource_pot.meta.custom_data.clone(),
-        ..Default::default()
-      }));
-    } else if matches!(resource_pot.resource_pot_type, ResourcePotType::Js) {
+    if matches!(resource_pot.resource_pot_type, ResourcePotType::Js) {
       let async_modules = self.get_async_modules(context);
       let async_modules = async_modules.downcast_ref::<HashSet<ModuleId>>().unwrap();
       let module_graph = context.module_graph.read();
@@ -505,9 +442,7 @@ impl Plugin for FarmPluginRuntime {
 
 impl FarmPluginRuntime {
   pub fn new(_: &Config) -> Self {
-    Self {
-      runtime_code: Mutex::new(Arc::new(String::new())),
-    }
+    Self {}
   }
 
   pub(crate) fn get_async_modules<'a>(

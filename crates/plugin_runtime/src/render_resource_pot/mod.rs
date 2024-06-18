@@ -28,7 +28,6 @@ use self::render_module::{render_module, RenderModuleResult};
 
 mod render_module;
 // mod farm_module_system;
-pub mod resource_pot_to_bundle;
 mod source_replacer;
 mod transform_async_module;
 
