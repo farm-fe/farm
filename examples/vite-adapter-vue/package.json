@@ -7,7 +7,7 @@
     "bcryptjs": "^2.4.3",
     "core-js": "^3.30.1",
     "element-plus": "^2.4.1",
-    "prettier": "^3",
+    "prettier": "^3.3.2",
     "vue": "^3.2.45",
     "vue-router": "^4.2.1"
   },
@@ -16,8 +16,8 @@
     "@farmfe/core": "workspace:*",
     "@farmfe/js-plugin-less": "workspace:^",
     "@farmfe/js-plugin-postcss": "workspace:^",
-    "@farmfe/js-plugin-visualizer": "workspace:^",
     "@farmfe/js-plugin-sass": "workspace:^",
+    "@farmfe/js-plugin-visualizer": "workspace:^",
     "@farmfe/js-plugin-vue": "workspace:*",
     "@farmfe/plugin-sass": "workspace:^",
     "@types/bcryptjs": "^2.4.5",
