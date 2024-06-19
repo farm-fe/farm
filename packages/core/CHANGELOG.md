@@ -1,5 +1,17 @@
 # @farmfe/core
 
+## 1.2.0
+
+### Minor Changes
+
+- 122ab6d0: optimize @farmfe/core api usage
+
+### Patch Changes
+
+- eb2eee75: Fix bugs:
+  - fix #1402
+  - fix #1405
+
 ## 1.1.15
 
 ### Patch Changes
