@@ -284,7 +284,7 @@ fn resolve_browser_entry_replace() {
           .join("node_modules")
           .join("priority")
           .join("lib")
-          .join("browser.js")
+          .join("index.mjs")
           .to_string_lossy()
           .to_string()
       );

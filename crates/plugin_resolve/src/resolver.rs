@@ -630,7 +630,6 @@ impl Resolver {
     // exports should take precedence over module/main according to node docs (https://nodejs.org/api/packages.html#package-entry-points) by default
     // search normal entry, based on self.config.main_fields, e.g. module/main
     let raw_package_json_info: Map<String, Value> = from_str(package_json_info.raw()).unwrap();
-
     // highest priority: exports field, so we need handle this first
     let entry_point = raw_package_json_info
       .get(HIGHEST_PRIORITY_FIELD)
@@ -658,7 +657,6 @@ impl Resolver {
             if main_field == "browser" && context.config.output.target_env == TargetEnv::Node {
               return None;
             }
-
             raw_package_json_info
               .get(main_field)
               .and_then(|field_value| match field_value {
@@ -684,7 +682,6 @@ impl Resolver {
               })
           })
       });
-
     if let Some(entry_point) = entry_point {
       let dir = package_json_info.dir();
       let entry_point = if !entry_point.starts_with("./") && !entry_point.starts_with("../") {
