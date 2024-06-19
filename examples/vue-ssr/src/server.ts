@@ -1,5 +1,7 @@
 import { renderToString } from 'vue/server-renderer';
 import { createSSRApp } from 'vue';
+import PrimeVue from 'primevue/config';
+import Button from 'primevue/button';
 
 import { createRoute } from './routes';
 import { createMemoryHistory } from 'vue-router';
@@ -7,7 +9,10 @@ import Main from './main.vue';
 
 export default async function render(url: string) {
   const app = createSSRApp(Main);
-
+  app.use(PrimeVue, {
+    unstyled: true
+  });
+  app.component('Button', Button);
   const route = createRoute(createMemoryHistory());
   route.push(url);
   await route.isReady();

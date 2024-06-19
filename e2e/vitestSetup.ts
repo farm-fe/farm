@@ -25,7 +25,7 @@ function getServerPort(): number {
 const visitPage = async (
   path: string,
   examplePath: string,
-  rawCb: (page: Page) => Promise<void>,
+  cb: (page: Page) => Promise<void>,
   command: string
 ) => {
   if (!path) return;
@@ -35,16 +35,6 @@ const visitPage = async (
   if (!wsEndpoint) {
     throw new Error('wsEndpoint not found');
   }
-
-  // make sure rawCb is called only once
-  const cb = (function () {
-    let called = false;
-    return async (page: Page) => {
-      if (called) return;
-      called = true;
-      return rawCb(page);
-    };
-  })();
 
   const browser = await chromium.connect(wsEndpoint);
   const page = await browser?.newPage();
@@ -73,9 +63,10 @@ const visitPage = async (
     });
 
     await page?.goto(path);
-
+    console.log('test page', examplePath);
     cb(page)
       .then(() => {
+        console.log('test page success', examplePath);
         resolve(null);
       })
       .catch((e) => {
@@ -88,6 +79,7 @@ const visitPage = async (
         reject(e);
       })
       .finally(() => {
+        console.log('test page finish', examplePath, 'close page');
         page?.close({
           reason: 'test finished',
           runBeforeUnload: false
@@ -98,21 +90,6 @@ const visitPage = async (
   } catch (e) {
     await page?.close();
     throw e;
-  }
-};
-
-const getFarmCLIBinPath = (examplePath: string) => {
-  try {
-    const binPath = join('node_modules', '@farmfe', 'cli', 'bin', 'farm.mjs');
-    const fullBinPath = join(examplePath, binPath);
-
-    if (existsSync(fullBinPath)) {
-      return binPath;
-    }
-    return '';
-  } catch (error) {
-    // console.error(' read json failed', error);
-    return '';
   }
 };
 

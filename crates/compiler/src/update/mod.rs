@@ -7,9 +7,7 @@ use farmfe_core::{
   cache::module_cache::CachedModule,
   context::CompilationContext,
   error::CompilationError,
-  module::{
-    module_graph::ModuleGraphEdgeDataItem, module_group::ModuleGroupId, Module, ModuleId,
-  },
+  module::{module_graph::ModuleGraphEdgeDataItem, module_group::ModuleGroupId, Module, ModuleId},
   plugin::{PluginResolveHookParam, ResolveKind, UpdateResult, UpdateType},
   resource::ResourceType,
   serde_json::json,
