@@ -65,7 +65,7 @@ impl UniqName {
       self.name_count_map.insert(base_uniq_name, count);
     }
 
-    return uniq_name;
+    uniq_name
   }
 }
 
@@ -82,11 +82,11 @@ pub struct BundleVariable {
 }
 
 pub fn is_valid_char(ch: char) -> bool {
-  (ch >= '0' && ch <= '9') || is_valid_first_char(ch)
+  ch.is_ascii_digit() || is_valid_first_char(ch)
 }
 
 pub fn is_valid_first_char(ch: char) -> bool {
-  return (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || ch == '_';
+  ch.is_ascii_lowercase() || ch.is_ascii_uppercase() || ch == '_'
 }
 
 fn normalize_file_name_as_variable(str: String) -> String {
@@ -110,27 +110,25 @@ fn normalize_file_name_as_variable(str: String) -> String {
         res.push(ch)
       }
       first = false;
+    } else if is_valid_char(ch) || ch.is_ascii_digit() {
+      res.push(ch);
+      prev_is_invalid = false;
     } else {
-      if is_valid_char(ch) || ch.is_digit(10) {
-        res.push(ch);
-        prev_is_invalid = false;
-      } else {
-        if prev_is_invalid {
-          continue;
-        }
-
-        res.push('_');
-        prev_is_invalid = true;
+      if prev_is_invalid {
+        continue;
       }
+
+      res.push('_');
+      prev_is_invalid = true;
     }
   }
 
   res
 }
 
-pub fn safe_name_from_module_id(module_id: &ModuleId, root: &String) -> String {
+pub fn safe_name_from_module_id(module_id: &ModuleId, root: &str) -> String {
   farm_profile_scope!("safe_name_from_module_id PathBuf");
-  let filename = module_id.resolved_path(&root);
+  let filename = module_id.resolved_path(root);
   let name = PathBuf::from_str(&filename)
     .map(|path| {
       path
@@ -225,7 +223,7 @@ impl BundleVariable {
     if let Some(map) = self.module_defined_vars.get_mut(module_id) {
       if !self.used_names.contains(&var_ident) {
         if let Some(exists_index) = map.get(&var_ident) {
-          return exists_index.clone();
+          return *exists_index;
         }
       }
 
@@ -238,7 +236,7 @@ impl BundleVariable {
 
     self.push(var, index.unwrap());
 
-    return index.unwrap();
+    index.unwrap()
   }
 
   pub fn branch(&self) -> Self {
@@ -256,7 +254,7 @@ impl BundleVariable {
     self.module_defined_vars.extend(other.module_defined_vars);
     self.used_names.extend(other.used_names);
 
-    // when merge stage uniq_name is all unresolved var, so we only record once
+    // when merge stage, uniq_name is all unresolved var, so we only record once
     for (resource_pot, uniq_name) in other.uniq_name_hash_map {
       if let Some(self_uniq_name) = self.uniq_name_hash_map.get_mut(&resource_pot) {
         uniq_name.name_count_map.into_iter().for_each(|(name, _)| {
@@ -266,15 +264,13 @@ impl BundleVariable {
         self.uniq_name_hash_map.insert(resource_pot, uniq_name);
       }
     }
-
-    // for item in other.uniq_name()
   }
 
   pub fn register_used_name_by_module_id(
     &mut self,
     module_id: &ModuleId,
     suffix: &str,
-    root: &String,
+    root: &str,
   ) -> usize {
     farm_profile_scope!("register name");
     let module_safe_name = format!("{}{suffix}", safe_name_from_module_id(module_id, root));
@@ -283,7 +279,7 @@ impl BundleVariable {
 
     self.add_used_name(uniq_name_safe_name.clone());
 
-    self.register_var(&module_id, &uniq_name_safe_name.as_str().into(), false)
+    self.register_var(module_id, &uniq_name_safe_name.as_str().into(), false)
   }
 
   pub fn var_by_index(&self, index: usize) -> &Var {
@@ -339,7 +335,7 @@ impl BundleVariable {
     self.uniq_name_mut().insert(&var_ident);
 
     if uniq_name != var_ident {
-      self.uniq_name_mut().insert(&uniq_name.as_str());
+      self.uniq_name_mut().insert(uniq_name.as_str());
     }
   }
 
@@ -362,7 +358,7 @@ impl BundleVariable {
       return Some(FindModuleExportResult::External(index, source.clone()));
     }
 
-    if let Some(module_analyzer) = module_analyzers.module_analyzer(&source) {
+    if let Some(module_analyzer) = module_analyzers.module_analyzer(source) {
       let module_system = module_analyzer.module_system.clone();
 
       if find_namespace || module_analyzers.is_commonjs(source) {
@@ -376,7 +372,7 @@ impl BundleVariable {
       let reference_map = module_analyzer.export_names();
 
       if module_analyzer.resource_pot_id != resource_pot_id {
-        if let Some(index) = reference_map.query_by_var_str(&var_ident, &self) {
+        if let Some(index) = reference_map.query_by_var_str(&var_ident, self) {
           return Some(FindModuleExportResult::Bundle(
             index,
             module_analyzer.resource_pot_id.clone(),
@@ -391,8 +387,7 @@ impl BundleVariable {
         if let Some(d) = reference_map
           .export
           .default
-          .clone()
-          .or_else(|| reference_map.export.query(&"default".to_string(), &self))
+          .or_else(|| reference_map.export.query(&"default".to_string(), self))
         {
           return Some(FindModuleExportResult::Local(
             d,
@@ -405,7 +400,7 @@ impl BundleVariable {
       }
 
       // find from local
-      if let Some(d) = reference_map.export.query(&var_ident, &self) {
+      if let Some(d) = reference_map.export.query(&var_ident, self) {
         return Some(FindModuleExportResult::Local(
           d,
           source.clone(),
@@ -415,7 +410,7 @@ impl BundleVariable {
 
       // find from reference external or bundle
       for (module_id, export) in &reference_map.reference_map {
-        if let Some(d) = export.query(&var_ident, &self) {
+        if let Some(d) = export.query(&var_ident, self) {
           if module_analyzers.is_external(module_id) {
             return Some(FindModuleExportResult::External(d, module_id.clone()));
           } else {

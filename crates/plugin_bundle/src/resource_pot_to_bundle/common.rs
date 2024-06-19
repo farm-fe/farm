@@ -1,19 +1,3 @@
-///
-/// ```rs
-/// // example
-/// otr!(Some(1), "error") // Ok(1);
-/// otr!(None, "error") // Err("error");
-/// ```
-///
-macro_rules! otr {
-  ($e:expr, $err:expr) => {
-    match $e {
-      Some(v) => Ok(v),
-      None => Err($err),
-    }
-  };
-}
-
 use std::{path::PathBuf, sync::Arc};
 
 use farmfe_core::{
@@ -29,7 +13,6 @@ use farmfe_toolkit::{
   common::{create_swc_source_map, Source},
   script::swc_try_with::resolve_module_mark,
 };
-pub(super) use otr;
 
 pub fn get_module_mark(
   module: &Module,
@@ -69,4 +52,25 @@ pub fn parse_module_item(string: &str) -> Result<ModuleItem> {
       resolved_path: "unknown temp parser".to_string(),
       msg: format!("failed parse content, cause: {:#?}", msg),
     })
+}
+
+pub trait OptionToResult<T> {
+  fn to_result<S: ToString>(self, error: S) -> Result<T>;
+  fn to_result_with_error(self, error: CompilationError) -> Result<T>;
+}
+
+impl<T> OptionToResult<T> for std::option::Option<T> {
+  fn to_result<S: ToString>(self, error: S) -> Result<T> {
+    match self {
+      Some(v) => Ok(v),
+      None => Err(CompilationError::GenericError(error.to_string())),
+    }
+  }
+
+  fn to_result_with_error(self, error: CompilationError) -> Result<T> {
+    match self {
+      Some(v) => Ok(v),
+      None => Err(error),
+    }
+  }
 }

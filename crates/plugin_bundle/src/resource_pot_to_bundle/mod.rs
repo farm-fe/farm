@@ -2,6 +2,7 @@ use std::{
   cell::RefCell,
   collections::HashMap,
   hash::Hash,
+  rc::Rc,
   sync::{Arc, Mutex},
 };
 
@@ -74,7 +75,7 @@ pub struct SharedBundle<'a> {
   module_analyzer_manager: ModuleAnalyzerManager<'a>,
   module_graph: &'a ModuleGraph,
   context: &'a Arc<CompilationContext>,
-  pub bundle_variables: Arc<RefCell<BundleVariable>>,
+  pub bundle_variables: Rc<RefCell<BundleVariable>>,
   order_index_map: HashMap<ModuleId, usize>,
   order_resource_pot: Vec<ResourcePotId>,
 }
@@ -95,7 +96,7 @@ impl<'a> SharedBundle<'a> {
     let module_analyzer_map: Mutex<HashMap<ModuleId, ModuleAnalyzer>> = Mutex::new(HashMap::new());
     let mut bundle_map: HashMap<ResourcePotId, BundleAnalyzer> = HashMap::new();
 
-    let bundle_variables = Arc::new(RefCell::new(BundleVariable::new()));
+    let bundle_variables = Rc::new(RefCell::new(BundleVariable::new()));
 
     let (toposort_modules, _) = module_graph.toposort();
     let mut order_resource_pot = vec![];
@@ -119,9 +120,9 @@ impl<'a> SharedBundle<'a> {
 
       // 1-1. analyze bundle
       let mut bundle_analyzer = BundleAnalyzer::new(
-        &resource_pot,
-        &module_graph,
-        &context,
+        resource_pot,
+        module_graph,
+        context,
         bundle_variables.clone(),
       );
 
@@ -140,7 +141,7 @@ impl<'a> SharedBundle<'a> {
           // 1-2. analyze bundle module
           let module_analyzer = ModuleAnalyzer::new(
             module,
-            &context,
+            context,
             resource_pot.id.clone(),
             is_entry,
             is_dynamic,
@@ -163,7 +164,7 @@ impl<'a> SharedBundle<'a> {
 
     // modules manager
     let module_analyzer_manager =
-      ModuleAnalyzerManager::new(module_analyzer_map.into_inner().unwrap(), &module_graph);
+      ModuleAnalyzerManager::new(module_analyzer_map.into_inner().unwrap(), module_graph);
 
     Ok(Self {
       module_analyzer_manager,
@@ -199,8 +200,8 @@ impl<'a> SharedBundle<'a> {
 
       self.module_analyzer_manager.extract_modules_statements(
         &bundle.ordered_modules,
-        &self.context,
-        &self.module_graph,
+        self.context,
+        self.module_graph,
         &mut bundle.bundle_variable.borrow_mut(),
       )?;
     }
@@ -226,7 +227,7 @@ impl<'a> SharedBundle<'a> {
 
     self
       .module_analyzer_manager
-      .link(bundle_variable, &self.order_index_map, &self.context);
+      .link(bundle_variable, &self.order_index_map, self.context);
 
     Ok(())
   }

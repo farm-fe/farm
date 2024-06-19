@@ -36,20 +36,18 @@ impl ExternalReferenceImport {
         .named
         .get(&bundle_variable.name(imported.unwrap_or(*local)))
         .cloned(),
-      ImportSpecifierInfo::Namespace(_) => self.namespace.clone(),
-      ImportSpecifierInfo::Default(_) => self.default.clone(),
+      ImportSpecifierInfo::Namespace(_) => self.namespace,
+      ImportSpecifierInfo::Default(_) => self.default,
     }
   }
 
   fn insert(&mut self, import_type: ImportSpecifierInfo, bundle_variable: &BundleVariable) {
     match import_type {
       ImportSpecifierInfo::Named { local, imported } => {
-        let imported = imported.unwrap_or_else(|| local.clone());
+        let imported = imported.unwrap_or(local);
         let name = bundle_variable.name(imported);
 
-        if !self.named.contains_key(&name) {
-          self.named.insert(name, local);
-        }
+        self.named.entry(name).or_insert(local);
       }
       ImportSpecifierInfo::Namespace(name) => {
         self.namespace = Some(name);
@@ -150,7 +148,7 @@ impl From<String> for ReferenceKind {
   }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct BundleReference {
   /// import { xxx } from './external_bundle_module' | './other_bundle_module'
   pub import_map: HashMap<ReferenceKind, ExternalReferenceImport>,
@@ -175,12 +173,7 @@ pub struct BundleReference {
 
 impl BundleReference {
   pub fn new() -> Self {
-    Self {
-      redeclare_commonjs_import: HashMap::new(),
-      import_map: HashMap::new(),
-      external_export_map: HashMap::new(),
-      export: None,
-    }
+    Self::default()
   }
 
   /// import "./cjs"
@@ -206,7 +199,6 @@ impl BundleReference {
     source: ReferenceKind,
     module_system: ModuleSystem,
   ) {
-    // self.external_export_map
     if self.external_export_map.contains_key(&source) {
       let map = self.external_export_map.get_mut(&source).unwrap();
       map.insert(specify.clone());

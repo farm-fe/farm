@@ -120,7 +120,7 @@ impl CjsModuleAnalyzer {
     let mut result = vec![];
 
     let cjs_name =
-      bundle_variable.render_name(module_global_uniq_name.commonjs_name(&module_id).unwrap());
+      bundle_variable.render_name(module_global_uniq_name.commonjs_name(module_id).unwrap());
 
     let mut decls = vec![];
 

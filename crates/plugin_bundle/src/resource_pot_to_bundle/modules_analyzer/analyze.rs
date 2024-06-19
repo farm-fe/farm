@@ -42,6 +42,8 @@ impl Visit for CollectUnresolvedIdent {
   }
 }
 
+type RegisterVarHandle<'a> = Box<&'a mut dyn FnMut(&Ident, bool) -> usize>;
+
 struct AnalyzeModuleItem<'a> {
   id: StatementId,
   import: Option<ImportInfo>,
@@ -49,7 +51,7 @@ struct AnalyzeModuleItem<'a> {
   defined_idents: HashSet<usize>,
   module_id: &'a ModuleId,
   module_graph: &'a ModuleGraph,
-  _register_var: Box<&'a mut dyn FnMut(&Ident, bool) -> usize>,
+  _register_var: RegisterVarHandle<'a>,
   is_in_export: bool,
   top_level_mark: Mark,
 }
@@ -75,7 +77,7 @@ impl<'a> AnalyzeModuleItem<'a> {
     }
   }
 
-  fn to_statement(self) -> Statement {
+  fn into_statement(self) -> Statement {
     Statement {
       id: self.id,
       import: self.import,
@@ -98,7 +100,7 @@ impl<'a> AnalyzeModuleItem<'a> {
 
   fn get_module_id_by_option_source(&self, source: Option<&str>) -> Result<Option<ModuleId>> {
     if let Some(source) = source {
-      self.get_module_id_by_source(source).map(|r| Some(r))
+      self.get_module_id_by_source(source).map(Some)
     } else {
       Ok(None)
     }
@@ -113,7 +115,7 @@ impl<'a> AnalyzeModuleItem<'a> {
 
   fn register_var(&mut self, ident: &Ident, strict: bool) -> usize {
     self._register_var.as_mut()(
-      &ident,
+      ident,
       strict || ident.span.ctxt.outer() != self.top_level_mark,
     )
   }
@@ -139,7 +141,7 @@ impl<'a> Visit for AnalyzeModuleItem<'a> {
               specifiers.push(ImportSpecifierInfo::Named {
                 local: self.register_var(&named.local, false),
                 imported: named.imported.as_ref().map(|i| match i {
-                  ModuleExportName::Ident(i) => self.register_var(&i, true),
+                  ModuleExportName::Ident(i) => self.register_var(i, true),
                   _ => panic!("non-ident imported is not supported when tree shaking"),
                 }),
               });
@@ -178,7 +180,7 @@ impl<'a> Visit for AnalyzeModuleItem<'a> {
           DefaultDecl::Class(class_expr) => {
             if let Some(ident) = &class_expr.ident {
               specify.push(ExportSpecifierInfo::Default(
-                self.register_var(&ident, false),
+                self.register_var(ident, false),
               ));
             } else {
               specify.push(ExportSpecifierInfo::Default(
@@ -192,7 +194,7 @@ impl<'a> Visit for AnalyzeModuleItem<'a> {
           DefaultDecl::Fn(fn_decl) => {
             if let Some(ident) = &fn_decl.ident {
               specify.push(ExportSpecifierInfo::Default(
-                self.register_var(&ident, false),
+                self.register_var(ident, false),
               ));
             } else {
               specify.push(ExportSpecifierInfo::Default(
@@ -215,11 +217,11 @@ impl<'a> Visit for AnalyzeModuleItem<'a> {
       }
 
       ModuleDecl::ExportDefaultExpr(export_default_expr) => match &export_default_expr.expr {
-        box Expr::Ident(ident) => {
+        box Expr::Ident(ref ident) => {
           self.export = Some(ExportInfo {
             source: None,
             specifiers: vec![ExportSpecifierInfo::Default(
-              self.register_var(&ident, false),
+              self.register_var(ident, false),
             )],
             stmt_id: self.id,
           });
@@ -251,7 +253,7 @@ impl<'a> Visit for AnalyzeModuleItem<'a> {
                 (
                   self.register_var(&local, false),
                   named.exported.as_ref().map(|i| match i {
-                    ModuleExportName::Ident(i) => self.register_var(&i, false),
+                    ModuleExportName::Ident(i) => self.register_var(i, false),
                     _ => panic!("non-ident exported is not supported when tree shaking"),
                   }),
                 )
@@ -263,7 +265,7 @@ impl<'a> Visit for AnalyzeModuleItem<'a> {
             }
             swc_ecma_ast::ExportSpecifier::Namespace(ns) => {
               let ident = match &ns.name {
-                ModuleExportName::Ident(ident) => self.register_var(&ident, false),
+                ModuleExportName::Ident(ident) => self.register_var(ident, false),
                 ModuleExportName::Str(_) => unreachable!("exporting a string is not supported"),
               };
 
@@ -366,7 +368,7 @@ impl<'a> Visit for AnalyzeModuleItem<'a> {
 
   fn visit_fn_expr(&mut self, n: &swc_ecma_ast::FnExpr) {
     if let Some(ref x) = n.ident {
-      let index = self.register_var(&x, false);
+      let index = self.register_var(x, false);
       self.defined_idents.insert(index);
     }
 
@@ -375,7 +377,7 @@ impl<'a> Visit for AnalyzeModuleItem<'a> {
 
   fn visit_class_expr(&mut self, n: &swc_ecma_ast::ClassExpr) {
     if let Some(ref x) = n.ident {
-      let index = self.register_var(&x, false);
+      let index = self.register_var(x, false);
       self.defined_idents.insert(index);
     }
 
@@ -397,5 +399,5 @@ pub fn analyze_imports_and_exports<F: FnMut(&Ident, bool) -> usize>(
 
   stmt.visit_with(&mut m);
 
-  Ok(m.to_statement())
+  Ok(m.into_statement())
 }

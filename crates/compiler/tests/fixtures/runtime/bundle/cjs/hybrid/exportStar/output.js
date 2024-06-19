@@ -86,8 +86,8 @@ var cjsExport_ts_cjs = __commonJs({
 const esmName = "esmName";
 const esmAge = 18;
 var esmExport_ts_ns = {
-    "esmAge": esmAge,
-    "esmName": esmName,
+    esmAge: esmAge,
+    esmName: esmName,
     __esModule: true
 };
 
@@ -96,8 +96,8 @@ const esmName2 = "esmName";
 const esmAge2 = 18;
 function foo() {}
 var esmExport2_ts_ns = {
-    "esmAge2": esmAge2,
-    "esmName2": esmName2,
+    esmAge2: esmAge2,
+    esmName2: esmName2,
     "default": foo,
     __esModule: true
 };

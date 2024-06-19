@@ -46,7 +46,7 @@
 }const a = 10;
 function foo() {}
 var dep_ts_ns = {
-    "a": a,
+    a: a,
     "default": foo,
     __esModule: true
 };

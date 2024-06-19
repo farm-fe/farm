@@ -57,8 +57,8 @@ var dep_ts_default = {
     c: c
 };
 var dep_ts_ns = {
-    "a": a,
-    "b": b,
+    a: a,
+    b: b,
     "default": dep_ts_default,
     __esModule: true
 };
@@ -66,8 +66,8 @@ var dep_ts_ns = {
 
 
 var exportAll_ts_ns = {
-    "a": a,
-    "b": b,
+    a: a,
+    b: b,
     __esModule: true
 };
 

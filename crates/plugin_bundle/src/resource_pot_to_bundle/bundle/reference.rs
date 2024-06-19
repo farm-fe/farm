@@ -94,7 +94,7 @@ impl ReferenceExport {
       }
     }
 
-    return None;
+    None
   }
 
   pub fn raw_query(
@@ -119,7 +119,7 @@ impl ReferenceExport {
       }
     }
 
-    return None;
+    None
   }
 }
 
@@ -164,13 +164,13 @@ impl ReferenceMap {
     export_from: &String,
     bundle_variable: &BundleVariable,
   ) -> Option<usize> {
-    if let Some(r) = self.export.query(&export_from, bundle_variable) {
+    if let Some(r) = self.export.query(export_from, bundle_variable) {
       Some(r)
     } else {
       self
         .reference_map
         .values()
-        .find_map(|item| item.query(&export_from, bundle_variable))
+        .find_map(|item| item.query(export_from, bundle_variable))
     }
   }
 

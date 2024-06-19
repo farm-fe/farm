@@ -79,8 +79,8 @@ var dep_ts_default = {
     removeDom: removeDom
 };
 var dep_ts_ns = {
-    "getChartSize": getChartSize,
-    "removeDom": removeDom,
+    getChartSize: getChartSize,
+    removeDom: removeDom,
     "default": dep_ts_default,
     __esModule: true
 };

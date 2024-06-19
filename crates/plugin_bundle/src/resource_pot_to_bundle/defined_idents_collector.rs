@@ -100,7 +100,6 @@ impl<'a> RenameIdent<'a> {
   pub fn new(map: HashMap<&'a Id, &'a Var>) -> Self {
     Self {
       map,
-      ..Default::default()
     }
   }
 
@@ -111,7 +110,7 @@ impl<'a> RenameIdent<'a> {
 
 impl<'a> VisitMut for RenameIdent<'a> {
   fn visit_mut_ident(&mut self, ident: &mut Ident) {
-    if let Some(new_name) = self.rename(&ident) {
+    if let Some(new_name) = self.rename(ident) {
       ident.sym = Atom::from(new_name.as_str());
       ident.span = DUMMY_SP;
     }
@@ -120,7 +119,7 @@ impl<'a> VisitMut for RenameIdent<'a> {
   fn visit_mut_prop(&mut self, n: &mut farmfe_core::swc_ecma_ast::Prop) {
     match n {
       Prop::Shorthand(m) => {
-        if let Some(new_name) = self.rename(&m) {
+        if let Some(new_name) = self.rename(m) {
           *n = farmfe_core::swc_ecma_ast::Prop::KeyValue(farmfe_core::swc_ecma_ast::KeyValueProp {
             key: farmfe_core::swc_ecma_ast::PropName::Ident(Ident {
               span: DUMMY_SP,

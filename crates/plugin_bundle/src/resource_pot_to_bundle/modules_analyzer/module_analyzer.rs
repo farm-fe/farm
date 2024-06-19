@@ -398,10 +398,10 @@ impl ModuleAnalyzer {
   }
 
   pub fn export_names(&self) -> Arc<ReferenceMap> {
-    return self
+    self
       .export_names
       .clone()
-      .unwrap_or_else(|| Arc::new(ReferenceMap::new(self.module_system.clone())));
+      .unwrap_or_else(|| Arc::new(ReferenceMap::new(self.module_system.clone())))
   }
 
   pub fn build_rename_map<'a>(
@@ -457,8 +457,7 @@ impl ModuleAnalyzer {
                 }
                 idents
               })
-              .unwrap_or_default()
-              .into_iter(),
+              .unwrap_or_default(),
           )
           .map(|item| bundle_variable.var_by_index(item))
           .filter(|item| item.rename.is_some())

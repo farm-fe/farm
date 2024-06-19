@@ -43,41 +43,25 @@
     return (_getRequireWildcardCache = function(nodeInterop) {
         return nodeInterop ? cacheNodeInterop : cacheBabelInterop;
     })(nodeInterop);
-}function _mergeNamespaces(n, m) {
-    m.forEach(function (e) {
-        e && typeof e !== 'string' && !Array.isArray(e) && Object.keys(e).forEach(function (k) {
-            if (k !== 'default' && !(k in n)) {
-                var d = Object.getOwnPropertyDescriptor(e, k);
-                Object.defineProperty(n, k, d.get ? d : {
-                    enumerable: true,
-                    get: function () { return e[k]; }
-                });
-            }
-        });
-    });
-    return Object.freeze(n);
-}import * as node_fs_ns from "node:fs.farm-runtime";
-var exportAll_ts_ns = _mergeNamespaces({
-    __esModule: true
-}, [
-    node_fs_ns
-]);
-
-const bundle2A = "bundle2A";
-const bundle2B = "bundle2B";
-var bundle2_dep_ts_ns = {
-    bundle2A: bundle2A,
-    bundle2B: bundle2B,
+}function foo$1() {
+    console.log("foo");
+}
+var dynamic_ts_ns = {
+    "default": foo$1,
     __esModule: true
 };
 
-var bundle2_index_ts_ns = {
-    bundle2A: bundle2A,
-    bundle2B: bundle2B,
-    __esModule: true
+Promise.resolve(dynamic_ts_ns).then((res)=>res.default());
+const foo = ()=>Promise.resolve(dynamic_ts_ns);
+function loader(m) {}
+loader(Promise.resolve(dynamic_ts_ns));
+Promise.resolve(dynamic_ts_ns);
+const data = {
+    foo: Promise.resolve(dynamic_ts_ns)
 };
-
-(globalThis || window || global)["__farm_default_namespace__"].__farm_module_system__.setPlugins([]);
+{
+    Promise.resolve(dynamic_ts_ns);
+}(globalThis || window || global)["__farm_default_namespace__"].__farm_module_system__.setPlugins([]);
 (function(_){for(var r in _){_[r].__farm_resource_pot__='index_dcdc.js';(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.register(r,_[r])}})({"b5d64806":function  (module, exports, farmRequire, farmDynamicRequire) {
     "use strict";
 }

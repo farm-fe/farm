@@ -67,7 +67,7 @@ var esmExport_ts_default = {
     age: age
 };
 var esmExport_ts_ns = {
-    "name": name,
+    name: name,
     "default": esmExport_ts_default,
     __esModule: true
 };

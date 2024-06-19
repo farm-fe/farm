@@ -54,12 +54,12 @@ var exportNamed_ts_default = {
     renamedC: namedC
 };
 var exportNamed_ts_ns = {
-    "namedA": namedA,
-    "namedB": namedB,
-    "namedC": namedC,
-    "renamedA": namedA,
-    "renamedB": namedB,
-    "renamedC": namedC,
+    namedA: namedA,
+    namedB: namedB,
+    namedC: namedC,
+    renamedA: namedA,
+    renamedB: namedB,
+    renamedC: namedC,
     "default": exportNamed_ts_default,
     __esModule: true
 };
@@ -74,7 +74,7 @@ function say() {
     console.log("hello");
 }
 var sameNameWithFile_ts_ns = {
-    "say": say,
+    say: say,
     __esModule: true
 };
 

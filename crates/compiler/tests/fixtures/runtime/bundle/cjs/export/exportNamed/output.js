@@ -71,8 +71,8 @@ var age$1 = dep_ts_cjs()["age"], name = dep_ts_cjs()["name"];
 
 // module_id: export.ts.farm-runtime
 var export_ts_ns = {
-    "cjsAge": age$1,
-    "name": name,
+    cjsAge: age$1,
+    name: name,
     __esModule: true
 };
 

@@ -78,8 +78,8 @@
 });
 
 var export_ts_ns = _mergeNamespaces({
-    "readFile": readFile,
-    "readFileSync": readFileSync,
+    readFile: readFile,
+    readFileSync: readFileSync,
     __esModule: true
 }, [
     exportCjs_ts_cjs()

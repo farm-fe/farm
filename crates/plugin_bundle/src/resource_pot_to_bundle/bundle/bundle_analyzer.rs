@@ -1,8 +1,5 @@
 use std::{
-  cell::RefCell,
-  cmp::Ordering,
-  collections::{HashMap, HashSet},
-  sync::Arc,
+  cell::RefCell, cmp::Ordering, collections::{HashMap, HashSet}, rc::Rc, sync::Arc
 };
 
 use farmfe_core::{
@@ -26,7 +23,7 @@ use farmfe_toolkit::{
 };
 
 use crate::resource_pot_to_bundle::{
-  common::{self},
+  common::OptionToResult,
   modules_analyzer::module_analyzer::{ExportSpecifierInfo, ImportSpecifierInfo, StmtAction},
   polyfill::SimplePolyfill,
   targets::generate::{
@@ -48,7 +45,7 @@ enum NamespaceExportType {
 pub struct BundleAnalyzer<'a> {
   pub resource_pot: &'a ResourcePot,
   pub ordered_modules: Vec<&'a ModuleId>,
-  pub bundle_variable: Arc<RefCell<BundleVariable>>,
+  pub bundle_variable: Rc<RefCell<BundleVariable>>,
 
   module_graph: &'a ModuleGraph,
   context: Arc<CompilationContext>,
@@ -62,7 +59,7 @@ impl<'a> BundleAnalyzer<'a> {
     resource_pot: &'a ResourcePot,
     module_graph: &'a ModuleGraph,
     context: &Arc<CompilationContext>,
-    bundle_variable: Arc<RefCell<BundleVariable>>,
+    bundle_variable: Rc<RefCell<BundleVariable>>,
   ) -> Self {
     Self {
       bundle_variable,
@@ -86,7 +83,7 @@ impl<'a> BundleAnalyzer<'a> {
         return Ordering::Greater;
       }
 
-      return order_index_map[*b].cmp(&order_index_map[*a]);
+      order_index_map[*b].cmp(&order_index_map[*a])
     });
 
     self.ordered_modules = resource_pot_modules;
@@ -100,7 +97,7 @@ impl<'a> BundleAnalyzer<'a> {
         "bundle module conflict name: {}",
         module_id.to_string()
       ));
-      if let Some(module_analyzer) = module_analyzer_manager.module_analyzer_mut(&module_id) {
+      if let Some(module_analyzer) = module_analyzer_manager.module_analyzer_mut(module_id) {
         let is_commonjs = module_analyzer.is_commonjs();
         let mut variables = module_analyzer.variables().into_iter().collect::<Vec<_>>();
 
@@ -156,7 +153,7 @@ impl<'a> BundleAnalyzer<'a> {
               continue;
             }
 
-            if let Some(_) = &export.source {
+            if export.source.is_some() {
               stmt_action.insert(StmtAction::StripExport(statement.id));
             } else {
               for specify in &export.specifiers {
@@ -183,7 +180,7 @@ impl<'a> BundleAnalyzer<'a> {
         }
       }
 
-      if let Some(mut module_analyzer) = module_analyzer_manager.module_analyzer_mut(module_id) {
+      if let Some(module_analyzer) = module_analyzer_manager.module_analyzer_mut(module_id) {
         module_analyzer.statement_actions.extend(stmt_action);
       }
     }
@@ -213,11 +210,9 @@ impl<'a> BundleAnalyzer<'a> {
           let importer = self.module_graph.dependents_ids(module_id);
 
           importer.iter().any(|importer| {
-            if let Some(m) = module_analyzer_manager.module_analyzer(importer) {
-              return m.resource_pot_id != resource_pot_id;
-            };
-
-            false
+            module_analyzer_manager
+              .module_analyzer(importer)
+              .is_some_and(|i| i.resource_pot_id != resource_pot_id)
           })
         };
 
@@ -230,7 +225,7 @@ impl<'a> BundleAnalyzer<'a> {
                   let target = self.bundle_variable.borrow().find_ident_by_index(
                     *ns,
                     &import.source,
-                    &module_analyzer_manager,
+                    module_analyzer_manager,
                     resource_pot_id.clone(),
                     false,
                     true,
@@ -267,15 +262,13 @@ impl<'a> BundleAnalyzer<'a> {
                           &self.bundle_variable.borrow(),
                         )?;
 
-                        let rename = common::otr!(
-                          module_analyzer_manager
-                            .module_global_uniq_name
-                            .namespace_name(&import.source),
-                          CompilationError::GenericError(format!(
+                        let rename = module_analyzer_manager
+                          .module_global_uniq_name
+                          .namespace_name(&import.source)
+                          .to_result(format!(
                             "not found module {:?} namespace named",
                             import.source
-                          ))
-                        )?;
+                          ))?;
 
                         self
                           .bundle_variable
@@ -306,7 +299,7 @@ impl<'a> BundleAnalyzer<'a> {
                   let target = self.bundle_variable.borrow().find_ident_by_index(
                     imported,
                     &import.source,
-                    &module_analyzer_manager,
+                    module_analyzer_manager,
                     resource_pot_id.clone(),
                     self.bundle_variable.borrow().name(imported) == "default",
                     false,
@@ -364,7 +357,7 @@ impl<'a> BundleAnalyzer<'a> {
                   let target = self.bundle_variable.borrow().find_ident_by_index(
                     *default,
                     &import.source,
-                    &module_analyzer_manager,
+                    module_analyzer_manager,
                     resource_pot_id.clone(),
                     true,
                     false,
@@ -421,7 +414,7 @@ impl<'a> BundleAnalyzer<'a> {
           }
 
           if let Some(export) = &statement.export {
-            if module_analyzer_manager.is_commonjs(&module_id) {
+            if module_analyzer_manager.is_commonjs(module_id) {
               continue;
             }
 
@@ -483,7 +476,7 @@ impl<'a> BundleAnalyzer<'a> {
                         source.clone().into(),
                         module_system.clone(),
                       );
-                    } else if module_analyzer_manager.is_commonjs(&source) {
+                    } else if module_analyzer_manager.is_commonjs(source) {
                       reexport_commonjs(source, &mut self.bundle_reference)?;
                     } else {
                       let export_names = &*module_analyzer_manager.get_export_names(source);
@@ -501,11 +494,10 @@ impl<'a> BundleAnalyzer<'a> {
 
                         if let Some(item) = &export_names.export.default {
                           self.bundle_reference.add_local_export(
-                            &&ExportSpecifierInfo::Default(*item),
+                            &ExportSpecifierInfo::Default(*item),
                             export_type.clone(),
                           );
                         }
-                        // TODO: namespace
                       }
 
                       {
@@ -521,7 +513,7 @@ impl<'a> BundleAnalyzer<'a> {
 
                             if let Some(item) = &reference.default {
                               self.bundle_reference.add_reference_export(
-                                &&ExportSpecifierInfo::Default(*item),
+                                &ExportSpecifierInfo::Default(*item),
                                 module_id.clone().into(),
                                 export_type.clone(),
                               );
@@ -544,7 +536,7 @@ impl<'a> BundleAnalyzer<'a> {
                               }
 
                               self.bundle_reference.add_reference_export(
-                                &&ExportSpecifierInfo::All(None),
+                                &ExportSpecifierInfo::All(None),
                                 module_id.clone().into(),
                                 export_type.clone(),
                               );
@@ -567,7 +559,7 @@ impl<'a> BundleAnalyzer<'a> {
                     let target = self.bundle_variable.borrow_mut().find_ident_by_index(
                       variables.local(),
                       source,
-                      &module_analyzer_manager,
+                      module_analyzer_manager,
                       resource_pot_id.clone(),
                       is_find_default,
                       false,
@@ -641,15 +633,10 @@ impl<'a> BundleAnalyzer<'a> {
                 // export default 1 + 1, Default("default")
                 ExportSpecifierInfo::Default(var) => {
                   if self.bundle_variable.borrow().name(*var) == "default" {
-                    let rendered_name = common::otr!(
-                      module_analyzer_manager
-                        .module_global_uniq_name
-                        .default_name(module_id),
-                      CompilationError::GenericError(format!(
-                        "not found module {:?} default name",
-                        module_id
-                      ))
-                    )?;
+                    let rendered_name = module_analyzer_manager
+                      .module_global_uniq_name
+                      .default_name(module_id)
+                      .to_result(format!("not found module {:?} default name", module_id))?;
 
                     let rendered_name = self.bundle_variable.borrow().render_name(rendered_name);
 
@@ -664,28 +651,21 @@ impl<'a> BundleAnalyzer<'a> {
                   if is_reference_by_another {
                     self
                       .bundle_reference
-                      .add_local_export(&specify, module_system.clone());
+                      .add_local_export(specify, module_system.clone());
                   }
                 }
 
                 // export * as ns from 'person'
                 ExportSpecifierInfo::Namespace(ns) => {
-                  let source = common::otr!(
-                    export.source.as_ref(),
-                    CompilationError::GenericError(
-                      "namespace should have source, but not found".to_string()
-                    )
-                  )?;
+                  let source = export
+                    .source
+                    .as_ref()
+                    .to_result("namespace should have source, but not found")?;
 
-                  let local_var = common::otr!(
-                    module_analyzer_manager
-                      .module_global_uniq_name
-                      .namespace_name(source),
-                    CompilationError::GenericError(format!(
-                      "not found module {:?} namespace named",
-                      source
-                    ))
-                  )?;
+                  let local_var = module_analyzer_manager
+                    .module_global_uniq_name
+                    .namespace_name(source)
+                    .to_result(format!("not found module {:?} namespace named", source))?;
 
                   let local_name = self.bundle_variable.borrow().render_name(local_var);
 
@@ -697,7 +677,7 @@ impl<'a> BundleAnalyzer<'a> {
                   let target = self.bundle_variable.borrow().find_ident_by_index(
                     local_var,
                     source,
-                    &module_analyzer_manager,
+                    module_analyzer_manager,
                     resource_pot_id.clone(),
                     false,
                     true,
@@ -792,7 +772,7 @@ impl<'a> BundleAnalyzer<'a> {
 
   /// 3-4
   /// 1. strip or remove import/export
-  /// 2. generate import/export, eg module from external or other bundle
+  /// 2. generate import/export, e.g: module from external or other bundle
   pub fn patch_ast(
     &mut self,
     module_analyzer_manager: &mut ModuleAnalyzerManager,
@@ -806,9 +786,9 @@ impl<'a> BundleAnalyzer<'a> {
         module_id.to_string()
       ));
       module_analyzer_manager.patch_module_analyzer_ast(
-        &module_id,
+        module_id,
         &self.context,
-        &self.module_graph,
+        self.module_graph,
         &mut self.bundle_variable.borrow_mut(),
         &mut self.bundle_reference,
         &mut commonjs_import_executed,
@@ -843,7 +823,7 @@ impl<'a> BundleAnalyzer<'a> {
       &self.context.config.output.format,
       &self.bundle_variable.borrow(),
       &self.bundle_reference,
-      &module_analyzer_manager,
+      module_analyzer_manager,
       &mut self.polyfill,
     )?);
 
@@ -851,14 +831,13 @@ impl<'a> BundleAnalyzer<'a> {
       if let Some(module_analyzer) = self
         .ordered_modules
         .first()
-        .map(|item| module_analyzer_manager.module_analyzer_mut(item))
-        .flatten()
+        .and_then(|item| module_analyzer_manager.module_analyzer_mut(item))
       {
         let ast = &mut module_analyzer.ast;
 
         ast.body = patch_import_to_module
           .into_iter()
-          .chain(ast.body.take().into_iter())
+          .chain(ast.body.take())
           .collect();
       };
     }
@@ -867,8 +846,7 @@ impl<'a> BundleAnalyzer<'a> {
       if let Some(module_analyzer) = self
         .ordered_modules
         .last()
-        .map(|id| module_analyzer_manager.module_analyzer_mut(id))
-        .flatten()
+        .and_then(|id| module_analyzer_manager.module_analyzer_mut(id))
       {
         let ast = &mut module_analyzer.ast;
 
@@ -895,7 +873,7 @@ impl<'a> BundleAnalyzer<'a> {
     for module_id in &self.ordered_modules {
       let module = self
         .module_graph
-        .module(&module_id)
+        .module(module_id)
         .unwrap_or_else(|| panic!("Module not found: {:?}", module_id));
       let module_analyzer = module_analyzer_manager.module_analyzer_mut_unchecked(module_id);
 
@@ -937,7 +915,7 @@ impl<'a> BundleAnalyzer<'a> {
       let code = String::from_utf8(code_bytes).map_err(|err| {
         CompilationError::GenericError(format!(
           "failed to convert code bytes to string, origin error: {}",
-          err.to_string()
+          err
         ))
       })?;
 

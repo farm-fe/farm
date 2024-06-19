@@ -17,15 +17,14 @@ const MODULE_NEED_POLYFILLS: [Polyfill; 3] = [
   Polyfill::ExportStar,
 ];
 
+#[derive(Default)]
 pub struct FarmPluginBundle {
   runtime_code: Mutex<Arc<String>>,
 }
 
 impl FarmPluginBundle {
   pub fn new() -> Self {
-    Self {
-      runtime_code: Mutex::new(Arc::new(String::new())),
-    }
+    Self::default()
   }
 }
 
@@ -47,31 +46,28 @@ impl Plugin for FarmPluginBundle {
     resource_pots.sort_by_key(|item| item.id.clone());
 
     for resource_pot in resource_pots {
-      match resource_pot.resource_pot_type {
-        ResourcePotType::Runtime => {
-          let mut shared_bundle = SharedBundle::new(vec![&resource_pot], &module_graph, context)?;
+      if matches!(resource_pot.resource_pot_type, ResourcePotType::Runtime) {
+        let mut shared_bundle = SharedBundle::new(vec![&resource_pot], &module_graph, context)?;
 
-          let polyfill = &mut shared_bundle
-            .bundle_map
-            .get_mut(&resource_pot.id)
-            .unwrap()
-            .polyfill;
+        let polyfill = &mut shared_bundle
+          .bundle_map
+          .get_mut(&resource_pot.id)
+          .unwrap()
+          .polyfill;
 
-          MODULE_NEED_POLYFILLS
-            .iter()
-            .for_each(|item| polyfill.add(item.clone()));
-          shared_bundle.render()?;
+        MODULE_NEED_POLYFILLS
+          .iter()
+          .for_each(|item| polyfill.add(item.clone()));
+        shared_bundle.render()?;
 
-          let resource_pot_id = resource_pot.id.clone();
+        let resource_pot_id = resource_pot.id.clone();
 
-          let bundle = shared_bundle.codegen(&resource_pot_id)?;
+        let bundle = shared_bundle.codegen(&resource_pot_id)?;
 
-          resource_pot.defer_minify_as_resource_pot();
+        resource_pot.defer_minify_as_resource_pot();
 
-          *self.runtime_code.lock() = Arc::new(bundle.to_string());
-          break;
-        }
-        _ => {}
+        *self.runtime_code.lock() = Arc::new(bundle.to_string());
+        break;
       }
     }
 
@@ -91,7 +87,6 @@ impl Plugin for FarmPluginBundle {
         rendered_content: self.runtime_code.lock().clone(),
         rendered_map_chain: vec![],
         custom_data: resource_pot.meta.custom_data.clone(),
-        ..Default::default()
       }));
     }
 

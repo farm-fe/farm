@@ -79,8 +79,7 @@ function __commonJs(mod) {
     return module.exports;
   };
 }
-      "#
-        .into()),
+      "#),
       ],
       Polyfill::MergeNamespace => vec![
         (r#"

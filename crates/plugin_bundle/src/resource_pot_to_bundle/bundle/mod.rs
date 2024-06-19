@@ -10,6 +10,7 @@ use farmfe_core::{
   error::{CompilationError, MapCompletionError, Result},
   farm_profile_function, farm_profile_scope,
   module::{module_graph::ModuleGraph, ModuleId, ModuleSystem},
+  plugin::ResolveKind,
   rayon::iter::{IntoParallelIterator, ParallelIterator},
   swc_common::{util::take::Take, DUMMY_SP},
   swc_ecma_ast::{
@@ -23,7 +24,9 @@ pub mod bundle_analyzer;
 pub mod bundle_external;
 pub mod bundle_variable;
 pub mod reference;
-use crate::resource_pot_to_bundle::targets::cjs::patch::CjsPatch;
+use crate::resource_pot_to_bundle::targets::{
+  cjs::patch::CjsPatch, dynamic_import::replace_dynamic_import,
+};
 
 use self::reference::ReferenceMap;
 
@@ -99,24 +102,18 @@ impl ModuleGlobalUniqName {
     self
       .module_map
       .get(module_id)
-      .map(|item| item.namespace)
-      .flatten()
+      .and_then(|item| item.namespace)
   }
 
   pub fn default_name(&self, module_id: &ModuleId) -> Option<usize> {
-    self
-      .module_map
-      .get(module_id)
-      .map(|item| item.default)
-      .flatten()
+    self.module_map.get(module_id).and_then(|item| item.default)
   }
 
   pub fn commonjs_name(&self, module_id: &ModuleId) -> Option<usize> {
     self
       .module_map
       .get(module_id)
-      .map(|item| item.commonjs)
-      .flatten()
+      .and_then(|item| item.commonjs)
   }
 
   fn entry_module(&mut self, module_id: &ModuleId) -> &mut ModuleGlobalName {
@@ -189,7 +186,7 @@ impl<'a> ModuleAnalyzerManager<'a> {
 
     modules.into_par_iter().try_for_each(|module_id| {
       let mut module_analyzer = module_map
-        .get(&module_id)
+        .get(module_id)
         .map(|item| item.write().unwrap())
         .unwrap();
       let mut new_bundle_variable = bundle_variable.branch();
@@ -289,6 +286,29 @@ impl<'a> ModuleAnalyzerManager<'a> {
     self.module_map.get_mut(module_id).unwrap()
   }
 
+  pub fn module_analyzer_by_source(
+    &self,
+    module_id: &ModuleId,
+    source: &str,
+  ) -> Option<&ModuleAnalyzer> {
+    if let Some(m) = self.module_graph.get_dep_by_source_optional(
+      module_id,
+      source,
+      Some(ResolveKind::DynamicImport),
+    ) {
+      return self.module_map.get(&m);
+    }
+
+    None
+  }
+
+  pub fn is_same_bundle(&self, a: &ModuleId, b: &ModuleId) -> bool {
+    match (self.module_analyzer(a), self.module_analyzer(b)) {
+      (Some(a), Some(b)) => a.resource_pot_id == b.resource_pot_id,
+      _ => false,
+    }
+  }
+
   #[inline]
   pub fn is_contain_namespace(&self, module_id: &ModuleId) -> bool {
     self
@@ -335,7 +355,7 @@ impl<'a> ModuleAnalyzerManager<'a> {
             continue;
           }
 
-          if self.is_commonjs(&source) {
+          if self.is_commonjs(source) {
             map.add_commonjs(source, specify);
             continue;
           }
@@ -459,7 +479,7 @@ impl<'a> ModuleAnalyzerManager<'a> {
       .clone()
       .into_iter()
       .collect::<Vec<_>>();
-    stmt_actions.sort_by(|a, b| b.index().cmp(&a.index()));
+    stmt_actions.sort_by_key(|a| std::cmp::Reverse(a.index()));
     let mut ast = module_analyzer.ast.take();
 
     stmt_actions.iter().for_each(|action| {
@@ -468,43 +488,40 @@ impl<'a> ModuleAnalyzerManager<'a> {
             };
 
             match action {
-              StmtAction::StripExport(index) => match replace_ast_item(*index) {
-                ModuleItem::ModuleDecl(ModuleDecl::ExportDecl(export_decl)) => {
+              StmtAction::StripExport(index) => {
+                if let ModuleItem::ModuleDecl(ModuleDecl::ExportDecl(export_decl)) = replace_ast_item(*index) {
                   ast.body[*index] = ModuleItem::Stmt(Stmt::Decl(export_decl.decl))
                 }
-                _ => {}
               },
 
-              StmtAction::StripDefaultExport(index, rename) => match replace_ast_item(*index) {
-                  ModuleItem::ModuleDecl(ModuleDecl::ExportDefaultDecl(export_decl)) => {
-                    let rendered_name = bundle_variable.render_name(*rename);
-                    ast.body[*index] = ModuleItem::Stmt(Stmt::Decl(match export_decl.decl {
-                      swc_ecma_ast::DefaultDecl::Class(class) => {
-                        Decl::Class(
-                          ClassDecl {
-                            ident: Ident::from(rendered_name.as_str()),
-                            declare: false,
-                            class: class.class,
-                          },
-                        )
-                      },
-                      swc_ecma_ast::DefaultDecl::Fn(f) => {
-                        Decl::Fn(FnDecl {
+              StmtAction::StripDefaultExport(index, rename) => {
+                if let ModuleItem::ModuleDecl(ModuleDecl::ExportDefaultDecl(export_decl)) = replace_ast_item(*index) {
+                  let rendered_name = bundle_variable.render_name(*rename);
+                  ast.body[*index] = ModuleItem::Stmt(Stmt::Decl(match export_decl.decl {
+                    swc_ecma_ast::DefaultDecl::Class(class) => {
+                      Decl::Class(
+                        ClassDecl {
                           ident: Ident::from(rendered_name.as_str()),
                           declare: false,
-                          function: f.function,
-                        })
-                      },
-                      _ => {
-                        unreachable!(
-                          "export_default_decl.decl should not be anything clone() other than a class, function"
-                        )
-                      },
-                    }));
-                  }
-                  _ => {
-                  }
+                          class: class.class,
+                        },
+                      )
+                    },
+                    swc_ecma_ast::DefaultDecl::Fn(f) => {
+                      Decl::Fn(FnDecl {
+                        ident: Ident::from(rendered_name.as_str()),
+                        declare: false,
+                        function: f.function,
+                      })
+                    },
+                    _ => {
+                      unreachable!(
+                        "export_default_decl.decl should not be anything clone() other than a class, function"
+                      )
+                    },
+                  }));
                 }
+              }
 
               StmtAction::DeclDefaultExpr(index, var) => {
                 match replace_ast_item(*index) {
@@ -633,7 +650,7 @@ impl<'a> ModuleAnalyzerManager<'a> {
         context,
         &mut patch_asts,
         bundle_variable,
-        &bundle_reference,
+        bundle_reference,
         polyfill,
       );
 
@@ -643,6 +660,7 @@ impl<'a> ModuleAnalyzerManager<'a> {
       {
         let module_analyzer = self.module_analyzer_mut_unchecked(module_id);
         let mut ast = module_analyzer.ast.take();
+
         let rename_map = module_analyzer.build_rename_map(bundle_variable);
 
         ast.body.extend(patch_asts);
@@ -652,12 +670,12 @@ impl<'a> ModuleAnalyzerManager<'a> {
           ModuleSystem::CommonJs | ModuleSystem::Hybrid
         ) {
           CjsPatch::replace_cjs_require(
-            module_analyzer.mark.clone(),
+            module_analyzer.mark,
             &mut ast,
             module_id,
             module_graph,
             &self.module_global_uniq_name,
-            &bundle_variable,
+            bundle_variable,
           )
         }
 
@@ -668,6 +686,12 @@ impl<'a> ModuleAnalyzerManager<'a> {
             _ => Some(item),
           })
           .collect::<Vec<_>>();
+
+        ast.visit_mut_with(&mut replace_dynamic_import(
+          self,
+          module_id,
+          bundle_variable,
+        ));
 
         ast.visit_mut_with(&mut RenameIdent::new(rename_map));
 
@@ -696,7 +720,7 @@ impl<'a> ModuleAnalyzerManager<'a> {
         self.build_export_names(module_id, bundle_variable);
       }
 
-      let Some(ref module_analyzer) = self.module_map.get(module_id) else {
+      let Some(module_analyzer) = self.module_map.get(module_id) else {
         continue;
       };
 
@@ -710,6 +734,7 @@ impl<'a> ModuleAnalyzerManager<'a> {
       // in this time, it import by cjs require
       if self.namespace_modules.contains(&module_analyzer.module_id)
         || self.is_external(&module_analyzer.module_id)
+        || self.module_graph.is_dynamic(module_id)
       {
         self
           .module_global_uniq_name

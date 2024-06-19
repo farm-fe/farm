@@ -54,9 +54,9 @@ class c {
 }
 var dep_ts_default = 40;
 var dep_ts_ns = {
-    "a": a,
-    "b": b,
-    "c": c,
+    a: a,
+    b: b,
+    c: c,
     "default": dep_ts_default,
     __esModule: true
 };

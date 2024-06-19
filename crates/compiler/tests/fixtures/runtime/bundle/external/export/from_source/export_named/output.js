@@ -48,14 +48,14 @@
 const bundle2A = "bundle2A";
 const bundle2B = "bundle2B";
 var bundle2_dep_ts_ns = {
-    "bundle2A": bundle2A,
-    "bundle2B": bundle2B,
+    bundle2A: bundle2A,
+    bundle2B: bundle2B,
     __esModule: true
 };
 
 var bundle2_index_ts_ns = {
-    "bundle2A": bundle2A,
-    "bundle2B": bundle2B,
+    bundle2A: bundle2A,
+    bundle2B: bundle2B,
     __esModule: true
 };
 

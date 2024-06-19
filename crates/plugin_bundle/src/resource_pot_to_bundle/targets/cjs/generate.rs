@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use farmfe_core::{
-  error::{CompilationError, Result},
+  error::Result,
   module::{ModuleId, ModuleSystem},
   swc_common::DUMMY_SP,
   swc_ecma_ast::{
@@ -16,10 +16,10 @@ use crate::resource_pot_to_bundle::{
     bundle_external::{ExternalReferenceExport, ExternalReferenceImport, ReferenceKind},
     ModuleAnalyzerManager,
   },
-  common,
+  common::OptionToResult,
   polyfill::{
     cjs::{wrap_export_star, wrap_require_default, wrap_require_wildcard},
-    Polyfill, SimplePolyfill,
+    SimplePolyfill,
   },
   uniq_name::BundleVariable,
 };
@@ -43,7 +43,7 @@ impl CjsGenerate {
     let mut stmts = vec![];
     let mut ordered_keys = export.named.keys().collect::<Vec<_>>();
 
-    ordered_keys.sort_by(|a, b| bundle_variable.name(**a).cmp(&bundle_variable.name(**b)));
+    ordered_keys.sort_by_key(|a| bundle_variable.name(**a));
 
     let module_export = |exported_name: &String, named_render_name: &String| {
       ModuleItem::Stmt(Stmt::Expr(ExprStmt {
@@ -87,12 +87,10 @@ impl CjsGenerate {
       if export.all.0 {
         let is_external = module_analyzer_manager.is_external(source);
         if is_external || module_analyzer_manager.is_commonjs(source) {
-          let ns = common::otr!(
-            module_analyzer_manager
-              .module_global_uniq_name
-              .namespace_name(source),
-            CompilationError::GenericError("export to cjs cannot find variable".to_string())
-          )?;
+          let ns = module_analyzer_manager
+            .module_global_uniq_name
+            .namespace_name(source)
+            .to_result("export to cjs cannot find variable")?;
           let render_name = bundle_variable.render_name(ns);
 
           stmts.push(ModuleItem::Stmt(Stmt::Expr(ExprStmt {
@@ -199,7 +197,7 @@ impl CjsGenerate {
   ) -> Result<Vec<ModuleItem>> {
     let mut stmts = vec![];
     let mut ordered_import = import_map.keys().collect::<Vec<_>>();
-    ordered_import.sort_by(|a, b| a.cmp(b));
+    ordered_import.sort();
 
     for source in ordered_import {
       let module_id = match source {
@@ -230,14 +228,14 @@ impl CjsGenerate {
           return wrap_require_wildcard(expr, polyfill);
         }
 
-        return expr;
+        expr
       };
       let try_wrap_require_default = |expr: Box<Expr>, polyfill: &mut SimplePolyfill| {
         if import.default.is_some() {
           return wrap_require_default(expr, polyfill);
         }
 
-        return expr;
+        expr
       };
 
       // if both namespace and default are imported, we need to import the namespace first

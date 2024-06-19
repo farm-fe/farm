@@ -12,7 +12,10 @@ use farmfe_core::{
 };
 
 use crate::resource_pot_to_bundle::{
-  bundle::{bundle_external::{ExternalReferenceExport, ExternalReferenceImport, ReferenceKind}, ModuleAnalyzerManager},
+  bundle::{
+    bundle_external::{ExternalReferenceExport, ExternalReferenceImport, ReferenceKind},
+    ModuleAnalyzerManager,
+  },
   uniq_name::BundleVariable,
 };
 
@@ -29,7 +32,7 @@ impl EsmGenerate {
     let mut specifiers = vec![];
     let mut ordered_keys = export.named.keys().collect::<Vec<_>>();
 
-    ordered_keys.sort_by(|a, b| bundle_variable.name(**a).cmp(&bundle_variable.name(**b)));
+    ordered_keys.sort_by_key(|a| bundle_variable.name(**a));
 
     for exported in ordered_keys {
       let local = &export.named[exported];
@@ -112,7 +115,7 @@ impl EsmGenerate {
   ) -> Result<Vec<ModuleItem>> {
     let mut stmts = vec![];
     let mut ordered_import = import_map.keys().collect::<Vec<_>>();
-    ordered_import.sort_by(|a, b| a.cmp(b));
+    ordered_import.sort();
 
     for source in ordered_import {
       let import = &import_map[source];
