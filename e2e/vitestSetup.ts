@@ -125,7 +125,7 @@ export const startProjectAndTest = async (
     child.stdout?.on('data', async (chunk) => {
       result = Buffer.concat([result, chunk]); // 将 chunk 添加到 result 中
       const res = result.toString();
-      const replacer = res.replace(/\n/g, '');
+      const replacer = res.replace(/\n/g, ' ');
 
       const matches = replacer.match(urlRegex);
       const pagePath = matches && (matches[1] || matches[0]);
@@ -134,6 +134,10 @@ export const startProjectAndTest = async (
         resolve(pagePath);
       }
     });
+
+    child.stderr.on('data', chunk => {
+      logger(chunk.toString());
+    })
 
     child.on('error', (error) => {
       logger(
