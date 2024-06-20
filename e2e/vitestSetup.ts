@@ -136,7 +136,7 @@ export const startProjectAndTest = async (
     });
 
     child.stderr.on('data', chunk => {
-      logger(chunk.toString());
+      logger(chunk.toString(), { color: 'red' });
     })
 
     child.on('error', (error) => {

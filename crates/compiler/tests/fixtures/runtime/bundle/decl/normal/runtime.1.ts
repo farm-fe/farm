@@ -10,3 +10,10 @@ function BB() {
 }
 
 console.log(a, b);
+
+
+const for1 = 'for1';
+
+const for2 = 'for2';
+
+const for3 = 'for3';

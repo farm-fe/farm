@@ -293,77 +293,72 @@ impl<'a> Visit for AnalyzeModuleItem<'a> {
     }
   }
 
-  fn visit_decl(&mut self, n: &Decl) {
+  fn visit_var_decl(&mut self, n: &swc_ecma_ast::VarDecl) {
     let is_export = self.is_in_export;
+    let mut specifiers = vec![];
 
-    match n {
-      Decl::Class(class_decl) => {
+    for v_decl in &n.decls {
+      let mut defined_idents_collector = DefinedIdentsCollector::new();
+      v_decl.name.visit_with(&mut defined_idents_collector);
+
+      for defined_ident in defined_idents_collector.defined_idents {
         if is_export {
-          self.export = Some(ExportInfo {
-            source: None,
-            specifiers: vec![ExportSpecifierInfo::Named(Variable(
-              self.register_var(&class_decl.ident, false),
-              None,
-            ))],
-            stmt_id: self.id,
-          });
+          specifiers.push(ExportSpecifierInfo::Named(
+            self.register_var(&Ident::from(defined_ident), false).into(),
+          ));
         } else {
-          let index = self.register_var(&class_decl.ident, false);
+          let index = self.register_var(&Ident::from(defined_ident), false);
           self.defined_idents.insert(index);
         }
-
-        self.with_in_export(false, |this| class_decl.class.visit_with(this));
       }
 
-      Decl::Fn(fn_decl) => {
-        if is_export {
-          self.export = Some(ExportInfo {
-            source: None,
-            specifiers: vec![ExportSpecifierInfo::Named(
-              self.register_var(&fn_decl.ident, false).into(),
-            )],
-            stmt_id: self.id,
-          })
-        } else {
-          let index = self.register_var(&fn_decl.ident, false);
-          self.defined_idents.insert(index);
-        };
-
-        self.with_in_export(false, |this| fn_decl.function.visit_with(this));
-      }
-
-      Decl::Var(var_decl) => {
-        let mut specifiers = vec![];
-
-        for v_decl in &var_decl.decls {
-          let mut defined_idents_collector = DefinedIdentsCollector::new();
-          v_decl.name.visit_with(&mut defined_idents_collector);
-
-          for defined_ident in defined_idents_collector.defined_idents {
-            if is_export {
-              specifiers.push(ExportSpecifierInfo::Named(
-                self.register_var(&Ident::from(defined_ident), false).into(),
-              ));
-            } else {
-              let index = self.register_var(&Ident::from(defined_ident), false);
-              self.defined_idents.insert(index);
-            }
-          }
-
-          self.with_in_export(false, |this| v_decl.init.visit_with(this));
-        }
-
-        if is_export {
-          self.export = Some(ExportInfo {
-            source: None,
-            specifiers,
-            stmt_id: self.id,
-          });
-        }
-      }
-
-      _ => {}
+      self.with_in_export(false, |this| v_decl.init.visit_with(this));
     }
+
+    if is_export {
+      self.export = Some(ExportInfo {
+        source: None,
+        specifiers,
+        stmt_id: self.id,
+      });
+    }
+  }
+
+  fn visit_class_decl(&mut self, n: &swc_ecma_ast::ClassDecl) {
+    let is_export = self.is_in_export;
+    if is_export {
+      self.export = Some(ExportInfo {
+        source: None,
+        specifiers: vec![ExportSpecifierInfo::Named(Variable(
+          self.register_var(&n.ident, false),
+          None,
+        ))],
+        stmt_id: self.id,
+      });
+    } else {
+      let index = self.register_var(&n.ident, false);
+      self.defined_idents.insert(index);
+    }
+
+    self.with_in_export(false, |this| n.class.visit_with(this));
+  }
+
+  fn visit_fn_decl(&mut self, n: &swc_ecma_ast::FnDecl) {
+    let is_export = self.is_in_export;
+    if is_export {
+      self.export = Some(ExportInfo {
+        source: None,
+        specifiers: vec![ExportSpecifierInfo::Named(
+          self.register_var(&n.ident, false).into(),
+        )],
+        stmt_id: self.id,
+      })
+    } else {
+      let index = self.register_var(&n.ident, false);
+      self.defined_idents.insert(index);
+    };
+
+    self.with_in_export(false, |this| n.function.visit_with(this));
   }
 
   fn visit_fn_expr(&mut self, n: &swc_ecma_ast::FnExpr) {

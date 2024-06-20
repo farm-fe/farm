@@ -79,10 +79,43 @@ function BB() {
     console.log(a$1, b$1);
 }
 console.log(a, b);
+const for1 = "for1";
+const for2 = "for2";
+const for3 = "for3";
 
 const a$2 = 1;
 const b$2 = 2;
 console.log(a$2, b$2);
+{
+    const a$3 = 1;
+    const b$3 = 2;
+}for(var for1$1 in [
+    1,
+    2,
+    3
+]){
+    console.log(for1$1);
+}
+for (var for1$1 of [
+    1,
+    2,
+    3
+]){
+    console.log(for1$1);
+}
+for (var for2$1 of [
+    1,
+    2,
+    3
+]){
+    console.log(for2$1);
+}
+for(var for3$1 = 123; for3$1 < 234; for3$1++){
+    console.log(for3$1);
+}
+for(const for3$2 = 123; for3$2 < 234; for3$2){
+    break;
+}
 (globalThis || window || global)["__farm_default_namespace__"].__farm_module_system__.setPlugins([]);
 (function(_){for(var r in _){_[r].__farm_resource_pot__='index_dcdc.js';(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.register(r,_[r])}})({"b5d64806":function  (module, exports, farmRequire, farmDynamicRequire) {
     "use strict";

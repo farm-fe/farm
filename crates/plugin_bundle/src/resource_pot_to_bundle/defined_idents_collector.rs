@@ -3,8 +3,8 @@ use std::collections::{HashMap, HashSet};
 use farmfe_core::{
   swc_common::DUMMY_SP,
   swc_ecma_ast::{
-    AssignExpr, AssignOp, AssignTarget, BindingIdent, Expr, Id, KeyValuePatProp,
-    ObjectPatProp, Pat, Prop, PropName, SimpleAssignTarget,
+    AssignExpr, AssignOp, AssignTarget, BindingIdent, Expr, Id, KeyValuePatProp, ObjectPatProp,
+    Pat, Prop, PropName, SimpleAssignTarget,
   },
 };
 use farmfe_toolkit::{
@@ -14,14 +14,12 @@ use farmfe_toolkit::{
 
 pub struct DefinedIdentsCollector {
   pub defined_idents: HashSet<Id>,
-  pub used_idents: HashSet<Id>,
 }
 
 impl DefinedIdentsCollector {
   pub fn new() -> Self {
     Self {
       defined_idents: HashSet::new(),
-      used_idents: HashSet::new(),
     }
   }
 }
@@ -48,11 +46,9 @@ impl Visit for DefinedIdentsCollector {
             }
             ObjectPatProp::Assign(assign_prop) => {
               self.defined_idents.insert(assign_prop.key.to_id());
-
-              let mut used_idents_collector = UsedIdentsCollector::new();
-              assign_prop.value.visit_with(&mut used_idents_collector);
-
-              self.used_idents.extend(used_idents_collector.used_idents);
+              if let Some(box ref value) = assign_prop.value {
+                value.visit_with(self);
+              }
             }
             ObjectPatProp::Rest(rest_prop) => {
               self.visit_pat(&rest_prop.arg);
@@ -64,7 +60,9 @@ impl Visit for DefinedIdentsCollector {
         self.visit_pat(&assign_pat.left);
       }
       Pat::Invalid(_) => {}
-      Pat::Expr(_) => {}
+      Pat::Expr(box expr) => {
+        expr.visit_with(self);
+      }
     }
   }
 }
@@ -73,24 +71,6 @@ use farmfe_core::swc_ecma_ast::Ident;
 
 use super::Var;
 
-pub struct UsedIdentsCollector {
-  pub used_idents: HashSet<Id>,
-}
-
-impl UsedIdentsCollector {
-  pub fn new() -> Self {
-    Self {
-      used_idents: HashSet::new(),
-    }
-  }
-}
-
-impl Visit for UsedIdentsCollector {
-  fn visit_ident(&mut self, ident: &Ident) {
-    self.used_idents.insert(ident.to_id());
-  }
-}
-
 #[derive(Debug, Default)]
 pub struct RenameIdent<'a> {
   map: HashMap<&'a Id, &'a Var>,
@@ -98,9 +78,7 @@ pub struct RenameIdent<'a> {
 
 impl<'a> RenameIdent<'a> {
   pub fn new(map: HashMap<&'a Id, &'a Var>) -> Self {
-    Self {
-      map,
-    }
+    Self { map }
   }
 
   fn rename(&self, ident: &Ident) -> Option<String> {
