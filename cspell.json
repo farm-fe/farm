@@ -124,6 +124,7 @@
     "pnpm",
     "preact",
     "prefixer",
+    "proto",
     "protobuf",
     "protoc",
     "querify",
@@ -178,7 +179,8 @@
     "xlink",
     "Yuxi",
     "wasmer",
-    "primevue"
+    "primevue",
+    "shulan"
   ],
   "ignorePaths": [
     "pnpm-lock.yaml",

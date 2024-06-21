@@ -1,0 +1,6 @@
+{
+  "mode": "development",
+  "output": {
+    "format": "cjs"
+  }
+}

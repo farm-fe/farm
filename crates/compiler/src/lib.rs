@@ -34,6 +34,7 @@ impl Compiler {
   pub fn new(config: Config, mut plugin_adapters: Vec<Arc<dyn Plugin>>) -> Result<Self> {
     let mut plugins = vec![
       Arc::new(farmfe_plugin_runtime::FarmPluginRuntime::new(&config)) as _,
+      Arc::new(farmfe_plugin_bundle::FarmPluginBundle::new()) as _,
       // register internal core plugins
       Arc::new(farmfe_plugin_script::FarmPluginScript::new(&config)) as _,
       Arc::new(farmfe_plugin_partial_bundling::FarmPluginPartialBundling::new(&config)) as _,

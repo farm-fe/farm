@@ -19,7 +19,7 @@
     "url": "https://github.com/farm-fe/farm"
   },
   "scripts": {
-    "build": "tsc -p tsconfig.json --noEmit",
+    "build": "tsc -p tsconfig.build.json --noEmit",
     "type-check": "tsc -p tsconfig.json --noEmit"
   },
   "devDependencies": {

@@ -15,12 +15,26 @@ export default defineConfig({
       targetEnv: 'node',
       format: 'esm'
     },
-    mode: 'development',
+    presetEnv: {
+      'options': {
+        targets: {
+          ie: 11,
+        }
+      }
+    },
+    // mode: 'development',
     external: [
       ...builtinModules.map((m) => `^node:${m}$`),
       ...builtinModules.map((m) => `^${m}$`)
     ],
-    minify: false,
+    runtime: {
+      isolate: true,
+    },
+    minify: {
+      'mangle': {
+        toplevel: true,
+      }
+    },
     persistentCache: false,
     lazyCompilation: false,
   },

@@ -6,6 +6,7 @@ use farmfe_core::{
     preset_env::{PresetEnvConfig, PresetEnvConfigObj},
     Config,
   },
+  module::ModuleType,
   plugin::Plugin,
   serde_json,
   swc_common::{comments::SingleThreadedComments, Mark},

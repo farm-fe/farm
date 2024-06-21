@@ -239,7 +239,7 @@ impl Plugin for FarmPluginScript {
     // cause the partial bundling is not support other module type yet
     param.module.module_type = ModuleType::Js;
     // set param.module.meta.module_system
-    set_module_system_for_module_meta(param);
+    set_module_system_for_module_meta(param, context);
 
     // find and replace `import.meta.xxx` to `module.meta.xxx` and detect hmr_accepted
     // skip transform import.meta when targetEnv is node
@@ -306,9 +306,9 @@ impl Plugin for FarmPluginScript {
 }
 
 impl FarmPluginScript {
-  pub fn new(config: &Config) -> Self {
+  pub fn new(_config: &Config) -> Self {
     #[cfg(feature = "swc_plugin")]
-    init_plugin_module_cache_once(config);
+    init_plugin_module_cache_once(_config);
     Self {}
   }
 }

@@ -699,7 +699,16 @@ async function readConfigFile(
       logger
     );
 
+    const FARM_PROFILE = process.env.FARM_PROFILE;
+    // disable FARM_PROFILE in farm_config
+    if (FARM_PROFILE) {
+      process.env.FARM_PROFILE = '';
+    }
     await compiler.compile();
+
+    if(FARM_PROFILE) {
+      process.env.FARM_PROFILE = FARM_PROFILE;
+    }
 
     compiler.writeResourcesToDisk();
 

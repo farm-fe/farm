@@ -15,20 +15,17 @@ use farmfe_core::{
   context::CompilationContext,
   enhanced_magic_string::types::SourceMapOptions,
   error::CompilationError,
-  module::{ModuleId, ModuleMetaData, ModuleType},
-  parking_lot::Mutex,
+  module::{ModuleId, ModuleType},
   plugin::{
-    Plugin, PluginAnalyzeDepsHookParam, PluginAnalyzeDepsHookResultEntry,
-    PluginFinalizeResourcesHookParams, PluginGenerateResourcesHookResult, PluginHookContext,
-    PluginLoadHookParam, PluginLoadHookResult, PluginResolveHookParam, PluginResolveHookResult,
-    PluginTransformHookResult, ResolveKind,
+    Plugin, PluginFinalizeResourcesHookParams, PluginGenerateResourcesHookResult,
+    PluginHookContext, PluginLoadHookParam, PluginLoadHookResult, PluginResolveHookParam,
+    PluginResolveHookResult, PluginTransformHookResult,
   },
   resource::{
     resource_pot::{ResourcePot, ResourcePotMetaData, ResourcePotType},
     Resource, ResourceOrigin, ResourceType,
   },
   serde_json,
-  swc_ecma_ast::{ExportAll, ImportDecl, ImportSpecifier, ModuleDecl, ModuleItem},
 };
 use farmfe_toolkit::{
   fs::read_file_utf8,
@@ -46,7 +43,6 @@ mod find_async_modules;
 mod handle_entry_resources;
 mod insert_runtime_plugins;
 pub mod render_resource_pot;
-
 /// FarmPluginRuntime is charge of:
 /// * resolving, parsing and generating a executable runtime code and inject the code into the entries.
 /// * merge module's ast and render the script module using farm runtime's specification, for example, wrap the module to something like `function(module, exports, require) { xxx }`, see [Farm Runtime RFC](https://github.com/farm-fe/rfcs/pull/1)
@@ -55,9 +51,7 @@ pub mod render_resource_pot;
 /// when entry is script, the runtime will be injected into the entry module's head, makes sure the runtime execute before all other code.
 ///
 /// All runtime module (including the runtime core and its plugins) will be suffixed as `.farm-runtime` to distinguish with normal script modules.
-pub struct FarmPluginRuntime {
-  runtime_code: Mutex<Arc<String>>,
-}
+pub struct FarmPluginRuntime {}
 
 impl Plugin for FarmPluginRuntime {
   fn name(&self) -> &str {
@@ -184,82 +178,15 @@ impl Plugin for FarmPluginRuntime {
     Ok(None)
   }
 
-  fn analyze_deps(
-    &self,
-    param: &mut PluginAnalyzeDepsHookParam,
-    _context: &Arc<CompilationContext>,
-  ) -> farmfe_core::error::Result<Option<()>> {
-    if !param.module.id.relative_path().ends_with(RUNTIME_SUFFIX) {
-      return Ok(None);
-    }
-
-    if let ModuleMetaData::Script(script) = &*param.module.meta {
-      let mut has_import_star = false;
-      let mut has_import_default = false;
-      let mut has_export_star = false;
-
-      // insert swc cjs module helper as soon as it has esm import
-      for stmt in &script.ast.body {
-        if let ModuleItem::ModuleDecl(ModuleDecl::Import(ImportDecl { specifiers, .. })) = stmt {
-          has_import_star = has_export_star
-            || specifiers
-              .iter()
-              .any(|sp| matches!(sp, ImportSpecifier::Namespace(_)));
-          has_import_default = has_import_default
-            || specifiers
-              .iter()
-              .any(|specifier| matches!(specifier, ImportSpecifier::Default(_)));
-        } else if let ModuleItem::ModuleDecl(ModuleDecl::ExportAll(ExportAll { .. })) = stmt {
-          has_export_star = true;
-        }
-      }
-
-      let exists = |source: &str, param: &mut PluginAnalyzeDepsHookParam| {
-        param.deps.iter().any(|dep| dep.source == source)
-      };
-      let insert_import =
-        |source: &str, kind: ResolveKind, param: &mut PluginAnalyzeDepsHookParam| {
-          param.deps.push(PluginAnalyzeDepsHookResultEntry {
-            kind,
-            source: source.to_string(),
-          });
-        };
-
-      if has_import_star && !exists("@swc/helpers/_/_interop_require_wildcard", param) {
-        insert_import(
-          "@swc/helpers/_/_interop_require_wildcard",
-          ResolveKind::Import,
-          param,
-        );
-      }
-
-      if has_import_default && !exists("@swc/helpers/_/_interop_require_default", param) {
-        insert_import(
-          "@swc/helpers/_/_interop_require_default",
-          ResolveKind::Import,
-          param,
-        );
-      }
-
-      if has_export_star && !exists("@swc/helpers/_/_export_star", param) {
-        insert_import("@swc/helpers/_/_export_star", ResolveKind::Import, param);
-      }
-    } else {
-      return Ok(None);
-    }
-
-    Ok(Some(()))
-  }
-
   fn finalize_module(
     &self,
     param: &mut farmfe_core::plugin::PluginFinalizeModuleHookParam,
-    _context: &Arc<CompilationContext>,
+    context: &Arc<CompilationContext>,
   ) -> farmfe_core::error::Result<Option<()>> {
     if param.module.id.relative_path().ends_with(RUNTIME_SUFFIX) {
       param.module.module_type = ModuleType::Runtime;
 
-      set_module_system_for_module_meta(param);
+      set_module_system_for_module_meta(param, context);
 
       Ok(Some(()))
     } else {
@@ -332,61 +259,13 @@ impl Plugin for FarmPluginRuntime {
     Ok(Some(()))
   }
 
-  fn process_resource_pots(
-    &self,
-    resource_pots: &mut Vec<&mut ResourcePot>,
-    context: &Arc<CompilationContext>,
-  ) -> farmfe_core::error::Result<Option<()>> {
-    if !self.runtime_code.lock().is_empty() {
-      return Ok(None);
-    }
-    let async_modules = self.get_async_modules(context);
-    let async_modules = async_modules.downcast_ref::<HashSet<ModuleId>>().unwrap();
-    let module_graph = context.module_graph.read();
-
-    for resource_pot in resource_pots {
-      if matches!(resource_pot.resource_pot_type, ResourcePotType::Runtime) {
-        let RenderedJsResourcePot { mut bundle, .. } =
-          resource_pot_to_runtime_object(resource_pot, &module_graph, async_modules, context)?;
-
-        bundle.prepend(
-          r#"(function(r,e){var t={};function n(r){return Promise.resolve(o(r))}function o(e){if(t[e])return t[e].exports;var i={id:e,exports:{}};t[e]=i;r[e](i,i.exports,o,n);return i.exports}o(e)})("#,
-        );
-
-        bundle.append(
-          &format!(
-            ",{:?});",
-            resource_pot
-              .entry_module
-              .as_ref()
-              .unwrap()
-              .id(context.config.mode.clone())
-          ),
-          None,
-        );
-
-        *self.runtime_code.lock() = Arc::new(bundle.to_string());
-        break;
-      }
-    }
-
-    Ok(Some(()))
-  }
-
   fn render_resource_pot_modules(
     &self,
     resource_pot: &ResourcePot,
     context: &Arc<CompilationContext>,
     _hook_context: &PluginHookContext,
   ) -> farmfe_core::error::Result<Option<ResourcePotMetaData>> {
-    if matches!(resource_pot.resource_pot_type, ResourcePotType::Runtime) {
-      return Ok(Some(ResourcePotMetaData {
-        rendered_modules: HashMap::new(),
-        rendered_content: self.runtime_code.lock().clone(),
-        rendered_map_chain: vec![],
-        ..Default::default()
-      }));
-    } else if matches!(resource_pot.resource_pot_type, ResourcePotType::Js) {
+    if matches!(resource_pot.resource_pot_type, ResourcePotType::Js) {
       let async_modules = self.get_async_modules(context);
       let async_modules = async_modules.downcast_ref::<HashSet<ModuleId>>().unwrap();
       let module_graph = context.module_graph.read();
@@ -563,9 +442,7 @@ impl Plugin for FarmPluginRuntime {
 
 impl FarmPluginRuntime {
   pub fn new(_: &Config) -> Self {
-    Self {
-      runtime_code: Mutex::new(Arc::new(String::new())),
-    }
+    Self {}
   }
 
   pub(crate) fn get_async_modules<'a>(
