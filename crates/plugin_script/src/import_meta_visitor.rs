@@ -1,9 +1,14 @@
 use std::{collections::HashSet, sync::Arc};
 
 use farmfe_core::{
-  config::FARM_MODULE, context::CompilationContext, module::ModuleId, plugin::{PluginResolveHookParam, ResolveKind}, swc_common::DUMMY_SP, swc_ecma_ast::{
+  config::FARM_MODULE,
+  context::CompilationContext,
+  module::ModuleId,
+  plugin::{PluginResolveHookParam, ResolveKind},
+  swc_common::DUMMY_SP,
+  swc_ecma_ast::{
     CallExpr, Callee, Expr, ExprOrSpread, Ident, Lit, MemberExpr, MemberProp, MetaPropKind, Str,
-  }
+  },
 };
 use farmfe_toolkit::swc_ecma_visit::{VisitMut, VisitMutWith};
 use farmfe_utils::stringify_query;

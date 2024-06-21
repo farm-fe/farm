@@ -3,11 +3,12 @@ import { existsSync, readdirSync, statSync } from 'fs';
 import { join } from 'path';
 import { startProjectAndTest } from './vitestSetup.js';
 import { logger } from './utils.js';
+import { describe } from 'node:test';
 // import { ssrExamples } from './test-utils.js';
 
 const excludeExamples: string[] = [];
 
-test('Default E2E Tests', async () => {
+describe('Default E2E Tests', async () => {
   const examples = readdirSync('./examples');
   // const examples = ['react-ssr', 'solid-ssr', 'vue-ssr'];
   logger(`Running E2E tests for ${examples.length} examples`);
@@ -32,23 +33,28 @@ test('Default E2E Tests', async () => {
       continue;
     }
 
-    console.log(`Testing ${example}`);
-
-    if (statSync(examplePath).isDirectory()) {
-      const runTest = (command?: 'start' | 'preview') =>
-        startProjectAndTest(
-          examplePath,
-          async (page) => {
-            // id root should be in the page
-            await page.waitForSelector('#root > *', { timeout: 10000 });
-            const child = await page.$('#root > *');
-            expect(child).toBeTruthy();
-          },
-          command
-        );
-
-      await runTest();
-      await runTest('preview');
+    if (!statSync(examplePath).isDirectory()) {
+      return;
     }
+
+    const runTest = (command?: 'start' | 'preview') =>
+      startProjectAndTest(
+        examplePath,
+        async (page) => {
+          // id root should be in the page
+          await page.waitForSelector('#root > *', { timeout: 10000 });
+          const child = await page.$('#root > *');
+          expect(child).toBeTruthy();
+        },
+        command
+      );
+
+    test(`test example ${example} start`, async () => {
+      await runTest();
+    });
+
+    test(`test example ${example} preview`, async () => {
+      await runTest('preview');
+    });
   }
 });

@@ -129,6 +129,11 @@ impl CacheStore {
 
   pub fn write_manifest(&self) {
     let manifest = self.manifest.clone().into_iter().collect::<HashMap<_, _>>();
+
+    if !self.cache_dir.exists() {
+      std::fs::create_dir_all(&self.cache_dir).unwrap();
+    }
+
     let manifest_file_path = &self.cache_dir.join(FARM_CACHE_MANIFEST_FILE);
     std::fs::write(
       manifest_file_path,
@@ -140,7 +145,6 @@ impl CacheStore {
   /// Write the cache map to the disk.
   pub fn write_cache(&self, cache_map: HashMap<CacheStoreKey, Vec<u8>>) {
     let cache_file_dir = &self.cache_dir;
-
     if !cache_file_dir.exists() {
       std::fs::create_dir_all(cache_file_dir).unwrap();
     }

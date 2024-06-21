@@ -445,6 +445,14 @@ impl ModuleGraph {
 
   /// get dependent of the specific module.
   /// don't ensure the result's order.
+  ///
+  /// ```js
+  /// // a.js
+  /// import c from './c.js';
+  /// // b.js
+  /// import c from './c.js';
+  /// ```
+  /// dependents("./c.js") return `['module a', 'module b']`, ensure the order of original imports.
   pub fn dependents(&self, module_id: &ModuleId) -> Vec<(ModuleId, &ModuleGraphEdge)> {
     let i = self
       .id_index_map
@@ -624,6 +632,13 @@ impl ModuleGraph {
       .get(&module.id)
       .unwrap_or_else(|| panic!("module_id {:?} should in the module graph", module.id));
     self.g[*i] = module;
+  }
+
+  pub fn is_dynamic(&self, module_id: &ModuleId) -> bool {
+    self
+      .dependents(module_id)
+      .iter()
+      .any(|(_, edge)| edge.is_dynamic())
   }
 }
 

@@ -21,11 +21,13 @@ use farmfe_core::{
   serialize,
 };
 use farmfe_toolkit::common::MinifyBuilder;
+
 use farmfe_utils::hash::sha256;
 
 use self::render_module::{render_module, RenderModuleResult};
 
 mod render_module;
+// mod farm_module_system;
 mod source_replacer;
 mod transform_async_module;
 

@@ -284,7 +284,7 @@ fn resolve_browser_entry_replace() {
           .join("node_modules")
           .join("priority")
           .join("lib")
-          .join("browser.js")
+          .join("index.mjs")
           .to_string_lossy()
           .to_string()
       );
@@ -333,6 +333,36 @@ fn resolve_browser_issue_941() {
           .join("node_modules")
           .join("component-indexof")
           .join("index.js")
+          .to_string_lossy()
+          .to_string()
+      );
+    }
+  );
+}
+
+
+#[test]
+fn resolve_browser_issue_1403() {
+  fixture!(
+    "tests/fixtures/resolve-node-modules/browser/index.ts",
+    |file, _| {
+      let cwd = file.parent().unwrap().to_path_buf();
+      let resolver = Resolver::new();
+
+      let resolved = resolver.resolve(
+        "exports-pkg",
+        cwd.clone(),
+        &ResolveKind::Import,
+        &Arc::new(CompilationContext::default()),
+      );
+      assert!(resolved.is_some());
+      let resolved = resolved.unwrap();
+      assert_eq!(
+        resolved.resolved_path,
+        cwd
+          .join("node_modules")
+          .join("exports-pkg")
+          .join("standalone.mjs")
           .to_string_lossy()
           .to_string()
       );
