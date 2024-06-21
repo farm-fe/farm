@@ -1,25 +1,57 @@
 import { chromium, type Page } from 'playwright-chromium';
-import { join } from 'path';
 import { logger } from './utils.js';
-import { inject, onTestFinished } from 'vitest';
+import { inject, onTestFinished, beforeEach, beforeAll } from 'vitest';
 import { execa } from 'execa';
-import { existsSync } from 'fs';
+import { mkdir, writeFile, readFile, unlink } from 'node:fs/promises';
+import { createWriteStream, existsSync } from 'node:fs'
+import path from 'node:path';
 
 // export const browserLogs: string[] = [];
 // export const browserErrors: Error[] = [];
 export const concurrencyLimit = 50;
 export const pageMap = new Map<string, Page>();
 
-const globalVar = globalThis as any;
-globalVar.CURRENT_PORT = 9100;
+const DEFAULT_PORT = 9100;
+const PORT_RECORD = 'port-record.json';
+const PORT_LOCK = 'port-record.lock';
 
-function getServerPort(): number {
-  const incPort = () => {
-    globalVar.CURRENT_PORT += 10;
-    console.log('generate port', globalVar.CURRENT_PORT);
-    return globalVar.CURRENT_PORT;
-  };
-  return incPort();
+const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+async function getServerPort(): Promise<number> {
+  const basedir = path.join(process.cwd(), 'node_modules/.farm/.test-e2e-port-lock');
+  const filename = path.join(basedir, PORT_RECORD);
+  const lockfile = path.join(basedir, PORT_LOCK);
+  let count = 0;
+  try {
+    while(true) {
+      if (count > 10) {
+        // if timeout, it's maybe error file
+        await unlink(lockfile);
+      }
+      if (!existsSync(PORT_LOCK)) {
+        await writeFile(lockfile, '');
+        count = 0;
+      }else {
+        count++;
+        await delay(30);
+        continue;
+      }
+
+      if (!existsSync(filename)) {
+        await mkdir(path.dirname(filename), { recursive: true })
+        await writeFile(filename, DEFAULT_PORT.toString());
+      }
+
+      const port = Number(await readFile(filename, 'utf-8'))
+
+      await writeFile(filename, (port + 10).toString());
+
+      return port;
+    }
+
+  } finally {
+    await unlink(lockfile);
+  }
 }
 
 const visitPage = async (
@@ -104,7 +136,7 @@ export const startProjectAndTest = async (
   // if (!cliBinPath) {
   //   throw new Error(`example ${examplePath} does not install @farmfe/cli`);
   // }
-  const port = getServerPort();
+  const port = await getServerPort();
   logger(`Executing npm run ${command} in ${examplePath}`);
   const child = execa('npm', ['run', command], {
     cwd: examplePath,
