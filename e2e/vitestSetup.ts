@@ -1,70 +1,17 @@
 import { chromium, type Page } from 'playwright-chromium';
 import { logger } from './utils.js';
-import { inject, onTestFinished, beforeEach, beforeAll } from 'vitest';
+import { inject, onTestFinished } from 'vitest';
 import { execa } from 'execa';
-import { mkdir, writeFile, readFile, unlink } from 'node:fs/promises';
-import { createWriteStream, existsSync } from 'node:fs';
-import path from 'node:path';
 
 // export const browserLogs: string[] = [];
 // export const browserErrors: Error[] = [];
 export const concurrencyLimit = 50;
 export const pageMap = new Map<string, Page>();
 
-const DEFAULT_PORT = 9100;
-const PORT_RECORD = 'port-record.json';
-const PORT_LOCK = 'port-record.lock';
-
-const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-
-const silent_unlink = async (filename: string) => {
-  await unlink(filename).catch(() => {});
-};
-
-async function getServerPort(): Promise<number> {
-  const basedir = path.join(
-    process.cwd(),
-    'node_modules/.farm/.test-e2e-port-lock'
-  );
-  const filename = path.join(basedir, PORT_RECORD);
-  const lockfile = path.join(basedir, PORT_LOCK);
-  let count = 0;
-  try {
-    while (true) {
-      if (count > 50) {
-        // if timeout, it's maybe error file
-        silent_unlink(lockfile);
-      }
-
-      if (!existsSync(basedir)) {
-        await mkdir(basedir, { recursive: true });
-      }
-
-      if (!existsSync(PORT_LOCK)) {
-        await writeFile(lockfile, '');
-        count = 0;
-      } else {
-        count++;
-        await delay(30 + Math.random() * 20);
-        continue;
-      }
-
-      if (!existsSync(filename)) {
-        await writeFile(filename, DEFAULT_PORT.toString());
-      }
-
-      const port = Number(await readFile(filename, 'utf-8'));
-
-      await writeFile(
-        filename,
-        Math.max((port + 10) % 5000, DEFAULT_PORT).toString()
-      );
-
-      return port;
-    }
-  } finally {
-    await silent_unlink(lockfile);
-  }
+function getServerPort(): Promise<number> {
+  return fetch('http://127.0.0.1:12306/port')
+    .then((r) => r.text())
+    .then(Number);
 }
 
 const visitPage = async (
