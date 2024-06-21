@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use farmfe_core::{context::CompilationContext, plugin::ResolveKind};
+use farmfe_core::{config::{Config, OutputConfig}, context::CompilationContext, plugin::ResolveKind};
 use farmfe_plugin_resolve::resolver::Resolver;
 use farmfe_testing_helpers::fixture;
 
@@ -451,6 +451,49 @@ fn resolve_exports_issue_997() {
           .join("query")
           .join("react")
           .join("rtk-query-react.modern.mjs")
+          .to_string_lossy()
+          .to_string()
+      );
+    }
+  );
+}
+
+#[test]
+fn resolve_exports_browser() {
+  fixture!(
+    "tests/fixtures/resolve-node-modules/exports/index.ts",
+    |file, _| {
+      let cwd = file.parent().unwrap().to_path_buf();
+      let resolver = Resolver::new();
+
+      let resolved = resolver.resolve(
+        "export-browser",
+        cwd.clone(),
+        &ResolveKind::Import,
+        // &Arc::new(CompilationContext::default()),
+        &Arc::new(
+          CompilationContext::new(
+            Config {
+              output: OutputConfig {
+                target_env: farmfe_core::config::TargetEnv::Node,
+                ..Default::default()
+              },
+              ..Default::default()
+            },
+            vec![],
+          )
+          .unwrap(),
+        ),
+      );
+      assert!(resolved.is_some());
+      let resolved = resolved.unwrap();
+      assert_eq!(
+        resolved.resolved_path,
+        cwd
+          .join("node_modules")
+          .join("export-browser")
+          // .join("dev-browser.js")
+          .join("dev-ssr.js")
           .to_string_lossy()
           .to_string()
       );

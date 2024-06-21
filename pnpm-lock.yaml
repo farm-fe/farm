@@ -1417,8 +1417,8 @@ importers:
         specifier: ^2.4.1
         version: 2.4.2(@vue/composition-api@1.7.2(vue@3.3.7(typescript@5.4.5)))(vue@3.3.7(typescript@5.4.5))
       prettier:
-        specifier: ^3
-        version: 3.0.3
+        specifier: ^3.3.2
+        version: 3.3.2
       vue:
         specifier: ^3.2.45
         version: 3.3.7(typescript@5.4.5)
@@ -9099,13 +9099,13 @@ packages:
     engines: {node: '>=10.13.0'}
     hasBin: true
 
-  prettier@3.0.3:
-    resolution: {integrity: sha512-L/4pUDMxcNa8R/EthV08Zt42WBO4h1rarVtK0K+QJG0X187OLo7l699jWw0GKuwzkPQ//jMFA/8Xm6Fh3J/DAg==}
+  prettier@3.2.5:
+    resolution: {integrity: sha512-3/GWa9aOC0YeD7LUfvOG2NiDyhOWRvt1k+rcKhOuYnMY24iiCphgneUfJDyFXd6rZCAnuLBv6UeAULtrhT/F4A==}
     engines: {node: '>=14'}
     hasBin: true
 
-  prettier@3.2.5:
-    resolution: {integrity: sha512-3/GWa9aOC0YeD7LUfvOG2NiDyhOWRvt1k+rcKhOuYnMY24iiCphgneUfJDyFXd6rZCAnuLBv6UeAULtrhT/F4A==}
+  prettier@3.3.2:
+    resolution: {integrity: sha512-rAVeHYMcv8ATV5d508CFdn+8/pHPpXeIid1DdrPwXnaAdH7cqjVbpJaT5eq4yRAFU/lsbwYwSF/n5iNrdJHPQA==}
     engines: {node: '>=14'}
     hasBin: true
 
@@ -11508,8 +11508,8 @@ snapshots:
 
   '@ampproject/remapping@2.2.1':
     dependencies:
-      '@jridgewell/gen-mapping': 0.3.3
-      '@jridgewell/trace-mapping': 0.3.20
+      '@jridgewell/gen-mapping': 0.3.5
+      '@jridgewell/trace-mapping': 0.3.25
 
   '@ant-design/colors@6.0.0':
     dependencies:
@@ -13558,7 +13558,7 @@ snapshots:
 
   '@rollup/pluginutils@5.1.0(rollup@4.14.1)':
     dependencies:
-      '@types/estree': 1.0.4
+      '@types/estree': 1.0.5
       estree-walker: 2.0.2
       picomatch: 2.3.1
     optionalDependencies:
@@ -15011,7 +15011,7 @@ snapshots:
 
   '@vitest/snapshot@1.4.0':
     dependencies:
-      magic-string: 0.30.5
+      magic-string: 0.30.10
       pathe: 1.1.1
       pretty-format: 29.7.0
 
@@ -15198,7 +15198,7 @@ snapshots:
       '@vue/reactivity-transform': 3.3.12
       '@vue/shared': 3.3.12
       estree-walker: 2.0.2
-      magic-string: 0.30.5
+      magic-string: 0.30.10
       postcss: 8.4.38
       source-map-js: 1.0.2
 
@@ -15223,9 +15223,9 @@ snapshots:
       '@vue/compiler-ssr': 3.4.15
       '@vue/shared': 3.4.15
       estree-walker: 2.0.2
-      magic-string: 0.30.5
+      magic-string: 0.30.10
       postcss: 8.4.38
-      source-map-js: 1.0.2
+      source-map-js: 1.2.0
 
   '@vue/compiler-sfc@3.4.27':
     dependencies:
@@ -15352,7 +15352,7 @@ snapshots:
       '@vue/compiler-core': 3.3.12
       '@vue/shared': 3.3.12
       estree-walker: 2.0.2
-      magic-string: 0.30.5
+      magic-string: 0.30.10
 
   '@vue/reactivity-transform@3.3.7':
     dependencies:
@@ -16840,7 +16840,7 @@ snapshots:
   css-tree@2.3.1:
     dependencies:
       mdn-data: 2.0.30
-      source-map-js: 1.0.2
+      source-map-js: 1.2.0
 
   css-what@6.1.0: {}
 
@@ -19018,7 +19018,7 @@ snapshots:
 
   magic-string-ast@0.3.0:
     dependencies:
-      magic-string: 0.30.5
+      magic-string: 0.30.10
 
   magic-string@0.26.7:
     dependencies:
@@ -19948,9 +19948,9 @@ snapshots:
 
   prettier@2.8.8: {}
 
-  prettier@3.0.3: {}
-
   prettier@3.2.5: {}
+
+  prettier@3.3.2: {}
 
   pretty-format@29.7.0:
     dependencies:
@@ -21533,7 +21533,7 @@ snapshots:
     dependencies:
       '@types/pug': 2.0.10
       detect-indent: 6.1.0
-      magic-string: 0.30.5
+      magic-string: 0.30.10
       sorcery: 0.11.0
       strip-indent: 3.0.0
       svelte: 4.0.0
@@ -22031,7 +22031,7 @@ snapshots:
       escape-string-regexp: 5.0.0
       fast-glob: 3.3.1
       local-pkg: 0.4.3
-      magic-string: 0.30.5
+      magic-string: 0.30.10
       mlly: 1.4.2
       pathe: 1.1.1
       pkg-types: 1.0.3

@@ -28,8 +28,6 @@ use crate::resolver::utils::{
 
 use self::browser::{BrowserMapResult, BrowserMapType};
 
-const REGEX_PREFIX: &str = "$__farm_regex:";
-
 mod browser;
 mod exports;
 mod utils;
@@ -48,6 +46,8 @@ pub struct Resolver {
 
 const NODE_MODULES: &str = "node_modules";
 const BROWSER_SUBPATH_EXTERNAL_ID: &str = "__FARM_BROWSER_SUBPATH_EXTERNAL__";
+const REGEX_PREFIX: &str = "$__farm_regex:";
+const HIGHEST_PRIORITY_FIELD: &str = "exports";
 
 impl Resolver {
   pub fn new() -> Self {
@@ -85,6 +85,7 @@ impl Resolver {
 
     let result = self._resolve(source, base_dir, kind, context);
     self.resolve_cache.lock().insert(cache_key, result.clone());
+
     result
   }
 
@@ -107,7 +108,6 @@ impl Resolver {
 
     // 1. try `imports` field(https://nodejs.org/api/packages.html#subpath-imports).
     let resolved_imports = self.try_imports(source, base_dir.clone(), kind, context);
-
     let (source, base_dir) = if let Some((resolved_imports, package_dir)) = resolved_imports {
       (resolved_imports, PathBuf::from(&package_dir))
     } else {
@@ -461,7 +461,6 @@ impl Resolver {
         resolve_node_modules_cache.insert(key, result.clone());
       }
     }
-
     result
   }
 
@@ -644,48 +643,66 @@ impl Resolver {
     // exports should take precedence over module/main according to node docs (https://nodejs.org/api/packages.html#package-entry-points) by default
     // search normal entry, based on self.config.main_fields, e.g. module/main
     let raw_package_json_info: Map<String, Value> = from_str(package_json_info.raw()).unwrap();
-
-    for main_field in &context.config.resolve.main_fields {
-      if main_field == "browser" && context.config.output.target_env == TargetEnv::Node {
-        continue;
-      }
-
-      let mut entry_point = None;
-
-      if let Some(field_value) = raw_package_json_info.get(main_field) {
+    // highest priority: exports field, so we need handle this first
+    let entry_point = raw_package_json_info
+      .get(HIGHEST_PRIORITY_FIELD)
+      .and_then(|field_value| {
         if let Value::Object(_) = field_value {
-          if main_field == "exports" {
-            if let Some(exports_entries) =
-              resolve_exports_or_imports(&package_json_info, ".", "exports", kind, context)
-            {
-              let entry = exports_entries.get(0).unwrap();
-              entry_point = Some(entry.to_string());
-            }
-          } else if main_field == "browser" {
-            let browser = get_field_value_from_package_json_info(&package_json_info, main_field);
-
-            if let Some(Value::Object(browser)) = browser {
-              if let Some(value) = browser.get(".") {
-                if let Value::String(value) = value {
-                  entry_point = Some(value.to_string());
-                }
-              }
-            }
-          }
-        } else if let Value::String(str) = field_value {
-          entry_point = Some(str.to_string());
-        }
-      }
-
-      if let Some(entry_point) = entry_point {
-        let dir = package_json_info.dir();
-        let entry_point = if !entry_point.starts_with("./") && !entry_point.starts_with("../") {
-          format!("./{}", entry_point)
+          resolve_exports_or_imports(
+            &package_json_info,
+            ".",
+            HIGHEST_PRIORITY_FIELD,
+            kind,
+            context,
+          )
+          .map(|exports_entries| exports_entries.get(0).unwrap().to_string())
         } else {
-          entry_point
-        };
-        return self.try_relative_path(&entry_point, PathBuf::from(dir), kind, context);
-      }
+          None
+        }
+      })
+      .or_else(|| {
+        context
+          .config
+          .resolve
+          .main_fields
+          .iter()
+          .find_map(|main_field| {
+            if main_field == "browser" && context.config.output.target_env == TargetEnv::Node {
+              return None;
+            }
+            raw_package_json_info
+              .get(main_field)
+              .and_then(|field_value| match field_value {
+                Value::Object(_) if main_field == "browser" => {
+                  get_field_value_from_package_json_info(&package_json_info, main_field).and_then(
+                    |browser| {
+                      if let Value::Object(browser) = browser {
+                        browser.get(".").and_then(|value| {
+                          if let Value::String(value) = value {
+                            Some(value.to_string())
+                          } else {
+                            None
+                          }
+                        })
+                      } else {
+                        None
+                      }
+                    },
+                  )
+                }
+                Value::String(str) => Some(str.to_string()),
+                _ => None,
+              })
+          })
+      });
+    if let Some(entry_point) = entry_point {
+      let dir = package_json_info.dir();
+      let entry_point = if !entry_point.starts_with("./") && !entry_point.starts_with("../") {
+        format!("./{}", entry_point)
+      } else {
+        entry_point
+      };
+      return self.try_relative_path(&entry_point, PathBuf::from(dir), kind, context);
     }
 
     // no main field found, try to resolve index.js file

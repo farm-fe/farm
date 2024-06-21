@@ -43,7 +43,6 @@ impl FromStr for Condition {
       "production" => Ok(Condition::Production),
       "module" => Ok(Condition::Module),
       c => Ok(Condition::Custom(c.to_string())),
-      // _ => {}
     }
   }
 }
