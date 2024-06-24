@@ -1,31 +1,23 @@
 import { chromium, type Page } from 'playwright-chromium';
-import { join } from 'path';
 import { logger } from './utils.js';
 import { inject, onTestFinished } from 'vitest';
 import { execa } from 'execa';
-import { existsSync } from 'fs';
 
 // export const browserLogs: string[] = [];
 // export const browserErrors: Error[] = [];
 export const concurrencyLimit = 50;
 export const pageMap = new Map<string, Page>();
 
-const globalVar = globalThis as any;
-globalVar.CURRENT_PORT = 9100;
-
-function getServerPort(): number {
-  const incPort = () => {
-    globalVar.CURRENT_PORT += 10;
-    console.log('generate port', globalVar.CURRENT_PORT);
-    return globalVar.CURRENT_PORT;
-  };
-  return incPort();
+function getServerPort(): Promise<number> {
+  return fetch('http://127.0.0.1:12306/port')
+    .then((r) => r.text())
+    .then(Number);
 }
 
 const visitPage = async (
   path: string,
   examplePath: string,
-  rawCb: (page: Page) => Promise<void>,
+  cb: (page: Page) => Promise<void>,
   command: string
 ) => {
   if (!path) return;
@@ -35,16 +27,6 @@ const visitPage = async (
   if (!wsEndpoint) {
     throw new Error('wsEndpoint not found');
   }
-
-  // make sure rawCb is called only once
-  const cb = (function () {
-    let called = false;
-    return async (page: Page) => {
-      if (called) return;
-      called = true;
-      return rawCb(page);
-    };
-  })();
 
   const browser = await chromium.connect(wsEndpoint);
   const page = await browser?.newPage();
@@ -73,9 +55,10 @@ const visitPage = async (
     });
 
     await page?.goto(path);
-
+    console.log('test page', examplePath);
     cb(page)
       .then(() => {
+        console.log('test page success', examplePath);
         resolve(null);
       })
       .catch((e) => {
@@ -88,6 +71,7 @@ const visitPage = async (
         reject(e);
       })
       .finally(() => {
+        console.log('test page finish', examplePath, 'close page');
         page?.close({
           reason: 'test finished',
           runBeforeUnload: false
@@ -98,21 +82,6 @@ const visitPage = async (
   } catch (e) {
     await page?.close();
     throw e;
-  }
-};
-
-const getFarmCLIBinPath = (examplePath: string) => {
-  try {
-    const binPath = join('node_modules', '@farmfe', 'cli', 'bin', 'farm.mjs');
-    const fullBinPath = join(examplePath, binPath);
-
-    if (existsSync(fullBinPath)) {
-      return binPath;
-    }
-    return '';
-  } catch (error) {
-    // console.error(' read json failed', error);
-    return '';
   }
 };
 
@@ -127,7 +96,7 @@ export const startProjectAndTest = async (
   // if (!cliBinPath) {
   //   throw new Error(`example ${examplePath} does not install @farmfe/cli`);
   // }
-  const port = getServerPort();
+  const port = await getServerPort();
   logger(`Executing npm run ${command} in ${examplePath}`);
   const child = execa('npm', ['run', command], {
     cwd: examplePath,
@@ -148,7 +117,7 @@ export const startProjectAndTest = async (
     child.stdout?.on('data', async (chunk) => {
       result = Buffer.concat([result, chunk]); // 将 chunk 添加到 result 中
       const res = result.toString();
-      const replacer = res.replace(/\n/g, '');
+      const replacer = res.replace(/\n/g, ' ');
 
       const matches = replacer.match(urlRegex);
       const pagePath = matches && (matches[1] || matches[0]);
@@ -156,6 +125,10 @@ export const startProjectAndTest = async (
       if (pagePath) {
         resolve(pagePath);
       }
+    });
+
+    child.stderr.on('data', (chunk) => {
+      logger(chunk.toString(), { color: 'red' });
     });
 
     child.on('error', (error) => {

@@ -1,4 +1,4 @@
-use std::error::Error;
+use std::{error::Error, sync::LockResult};
 
 use thiserror::Error;
 
@@ -115,6 +115,20 @@ where
       importer,
       src,
       source: Some(Box::new(self) as _),
+    }
+  }
+}
+
+pub trait MapCompletionError<T> {
+  fn map_c_error(self) -> Result<T>;
+}
+
+// mutex lock error
+impl<T> MapCompletionError<T> for LockResult<T> {
+  fn map_c_error(self) -> Result<T> {
+    match self {
+      Ok(v) => Ok(v),
+      Err(e) => Err(CompilationError::GenericError(e.to_string())),
     }
   }
 }

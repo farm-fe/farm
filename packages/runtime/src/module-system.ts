@@ -1,34 +1,31 @@
 import { Module } from './module';
-import { FarmRuntimePlugin, FarmRuntimePluginContainer } from './plugin';
+import { type FarmRuntimePlugin, FarmRuntimePluginContainer } from './plugin';
 import {
-  Resource,
+  type Resource,
   ResourceLoader,
   isBrowser,
   targetEnv
 } from './resource-loader';
-
-/* eslint-disable @typescript-eslint/ban-ts-comment */
-// @ts-ignore swc helpers does not have type definition
-import { _interop_require_default } from '@swc/helpers/_/_interop_require_default';
-// @ts-ignore swc helpers does not have type definition
-import { _interop_require_wildcard } from '@swc/helpers/_/_interop_require_wildcard';
-// @ts-ignore swc helpers does not have type definition
-import { _export_star } from '@swc/helpers/_/_export_star';
+import './global.d';
 
 const __global_this__ = globalThis || window;
 
+const scope__interop_require_default = (typeof _interop_require_default === 'function' ? _interop_require_default : undefined);
+const scope__interop_require_wildcard = (typeof _interop_require_wildcard === 'function' ? _interop_require_wildcard : undefined);
+const scope__export_star = (typeof _export_star === 'function' ? _export_star : undefined);
+
 const INTERNAL_MODULE_MAP: Record<string, any> = {
   '@swc/helpers/_/_interop_require_default': {
-    default: _interop_require_default,
-    _: _interop_require_default
+    default: scope__interop_require_default,
+    _: scope__interop_require_default
   },
   '@swc/helpers/_/_interop_require_wildcard': {
-    default: _interop_require_wildcard,
-    _: _interop_require_wildcard
+    default: scope__interop_require_wildcard,
+    _: scope__interop_require_wildcard
   },
   '@swc/helpers/_/_export_star': {
-    default: _export_star,
-    _: _export_star
+    default: scope__export_star,
+    _: scope__export_star
   }
 };
 

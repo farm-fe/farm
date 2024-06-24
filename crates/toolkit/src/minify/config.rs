@@ -48,6 +48,13 @@ impl NormalizedMinifyOptions {
       .unwrap_as_option(|default| match default {
         Some(true) => Some(Default::default()),
         _ => None,
+      })
+      .map(|mut mangle| {
+        if mangle.top_level.is_none() {
+          mangle.top_level = Some(true);
+        }
+
+        mangle
       });
 
     NormalizedMinifyOptions { compress, mangle }
