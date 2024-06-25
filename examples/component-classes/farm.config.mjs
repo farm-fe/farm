@@ -1,10 +1,13 @@
-export default {
+import { defineConfig } from "@farmfe/core";
+
+export default defineConfig({
   compilation: {
     input: {
-      index: './index.js'
+      index: "./index.js",
     },
+    minify: false,
     output: {
-      entryFilename: '[entryName].mjs'
-    }
-  }
-};
+      entryFilename: "[entryName].mjs",
+    },
+  },
+});

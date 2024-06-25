@@ -15,3 +15,6 @@ farmfe_toolkit = { path = "../toolkit", version = "0.0.9" }
 farmfe_testing_helpers = { path = "../testing_helpers", version = "0.0.9" }
 farmfe_utils = { path = "../utils", version = "0.1.4" }
 rkyv = { version = "0.7.42" }
+
+[features]
+profile = ["farmfe_core/profile"]

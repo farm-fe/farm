@@ -11,8 +11,8 @@
     <a href="https://discord.gg/mDErq9aFnF">
       <img src="https://img.shields.io/badge/chat-discord-blueviolet?style=flat&logo=discord&colorA=ffe3f5&colorB=711a5f" alt="discord chat" />
     </a>
-    <a href="https://twitter.com/fe_farm" > 
-      <img src="https://img.shields.io/twitter/url.svg?label=@fe_farm&style=social&url=https://twitter.com/fe_farm"/> 
+    <a href="https://twitter.com/FarmFe71928" > 
+      <img src="https://img.shields.io/twitter/url.svg?label=@fe_farm&style=social&url=https://twitter.com/FarmFe71928"/> 
     </a>
     <a href="https://npmjs.com/package/@farmfe/core"><img src="https://img.shields.io/npm/v/@farmfe/core.svg?style=flat-square&colorA=ffe3f5&colorB=711a5f" alt="npm package"></a>
     <a href="https://nodejs.org/en/about/releases/"><img src="https://img.shields.io/node/v/@farmfe/core.svg?style=flat-square&colorA=ffe3f5&colorB=711a5f" alt="node compatibility"></a>
@@ -108,7 +108,7 @@ See [Contributing Guide](https://github.com/farm-fe/farm/blob/main/CONTRIBUTING.
 
 - Wechat group
 
-<br><img src="https://github.com/ErKeLost/farm-nestjs/assets/66500121/f353581b-cdd1-45ee-9e17-efa202d672cf" width="30%" />
+<br><img src="https://github.com/ErKeLost/react-farm/assets/66500121/8ea5240b-b8d7-40ac-b02b-0f281e660a25" width="30%" />
 
 - QQ group
 

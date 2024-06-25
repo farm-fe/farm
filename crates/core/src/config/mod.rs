@@ -234,7 +234,6 @@ impl Default for ResolveConfig {
       alias: HashMap::new(),
       main_fields: vec![
         String::from("browser"),
-        String::from("exports"),
         String::from("module"),
         String::from("main"),
         String::from("jsnext:main"),

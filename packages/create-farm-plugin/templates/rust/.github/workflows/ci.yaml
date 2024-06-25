@@ -35,4 +35,4 @@ jobs:
           node-version: 18.x
           cache: 'pnpm'
       - name: Test Example
-        run: cd example && pnpm i --color && pnpm build
+        run: cd playground && pnpm i --color && pnpm build

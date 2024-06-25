@@ -1,5 +1,11 @@
 # create-farm-plugin
 
+## 0.1.9
+
+### Patch Changes
+
+- eb2eee75: Add Cargo.lock for rust plugin to ensure dependency consistency with farm core
+
 ## 0.1.8
 
 ### Patch Changes

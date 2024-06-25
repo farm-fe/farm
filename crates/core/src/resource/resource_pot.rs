@@ -7,6 +7,8 @@ use farmfe_macro_cache_item::cache_item;
 
 use crate::module::{module_group::ModuleGroupId, ModuleId, ModuleType};
 
+const DEFER_BUNDLE_MINIFY: &str = "DEFER_BUNDLE_MINIFY";
+
 #[cache_item]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -93,6 +95,21 @@ impl ResourcePot {
 
   pub fn clear_resources(&mut self) {
     self.resources.clear();
+  }
+
+  pub fn defer_minify_as_resource_pot(&mut self) {
+    self
+      .meta
+      .custom_data
+      .insert(DEFER_BUNDLE_MINIFY.to_string(), "true".to_string());
+  }
+
+  pub fn is_defer_minify_as_resource_pot(&self) -> bool {
+    self
+      .meta
+      .custom_data
+      .get(&DEFER_BUNDLE_MINIFY.to_string())
+      .is_some_and(|v| v == "true")
   }
 }
 

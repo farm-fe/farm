@@ -30,7 +30,7 @@ impl FarmPluginResolve {
     Self {
       root: config.root.clone(),
       resolver: Resolver::new(),
-      external_config: RwLock::new(None)
+      external_config: RwLock::new(None),
     }
   }
 }

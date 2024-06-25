@@ -15,6 +15,7 @@ struct Testing {
 #[derive(Debug)]
 struct WalkFiles {
   file: PathBuf,
+  #[allow(dead_code)]
   cwd: PathBuf,
   base_dir: PathBuf,
 }

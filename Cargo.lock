@@ -1387,6 +1387,7 @@ name = "farmfe_compiler"
 version = "0.0.9"
 dependencies = [
  "farmfe_core",
+ "farmfe_plugin_bundle",
  "farmfe_plugin_css",
  "farmfe_plugin_define",
  "farmfe_plugin_html",
@@ -1477,6 +1478,16 @@ dependencies = [
  "notify",
  "puffin_egui",
  "regex",
+]
+
+[[package]]
+name = "farmfe_plugin_bundle"
+version = "0.0.1"
+dependencies = [
+ "farmfe_core",
+ "farmfe_testing_helpers",
+ "farmfe_toolkit",
+ "farmfe_utils 0.1.4",
 ]
 
 [[package]]

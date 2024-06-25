@@ -14,7 +14,6 @@
       "tsconfig.base.json",
       "tsconfig.json",
       "cspell.json",
-      "e2e/**",
       "*.e2e.ts",
       "*.d.ts",
       "packages/runtime/**",

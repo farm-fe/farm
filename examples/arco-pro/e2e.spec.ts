@@ -7,8 +7,10 @@ import { readFileSync, writeFileSync } from 'fs';
 const name = basename(import.meta.url);
 const projectPath = dirname(fileURLToPath(import.meta.url));
 
+const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
 test(`e2e tests - ${name}`, async () => {
-  const runTest = (command?: 'start' | 'preview') =>
+  const runTest = (command: 'start' | 'preview' = 'start') =>
     startProjectAndTest(
       projectPath,
       async (page) => {
@@ -58,6 +60,9 @@ test(`e2e tests - ${name}`, async () => {
             'a[href="https://arco.design/react/docs/start/farm"]'
           );
           expect(reactLinkHmr).toBeTruthy();
+
+          await delay(3000);
+
           // revert change
           writeFileSync(filePath, content);
           const reactLinkHmr2 = await page.waitForSelector(
