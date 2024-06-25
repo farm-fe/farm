@@ -59,6 +59,13 @@ impl<'a> UsedIdentsVisitor<'a> {
     self.current_defined_ident = pre;
   }
 
+  pub fn into_scope(&mut self, f: impl FnOnce(&mut Self)) {
+    let pre = self.in_top_level;
+    self.in_top_level = false;
+    f(self);
+    self.in_top_level = pre;
+  }
+
   pub fn handled_used_ident(&mut self, stmt_id: &StatementId, ident: Id) {
     let edge = self.deps.entry(*stmt_id).or_default();
 
@@ -153,6 +160,18 @@ impl Visit for UsedIdentsVisitor<'_> {
       farmfe_core::swc_ecma_ast::DefaultDecl::TsInterfaceDecl(_) => {}
     }
     self.in_top_level = true;
+  }
+
+  fn visit_arrow_expr(&mut self, n: &farmfe_core::swc_ecma_ast::ArrowExpr) {
+    self.into_scope(|v| n.visit_children_with(v))
+  }
+
+  fn visit_constructor(&mut self, n: &farmfe_core::swc_ecma_ast::Constructor) {
+    self.into_scope(|v| n.visit_children_with(v))
+  }
+
+  fn visit_function(&mut self, n: &farmfe_core::swc_ecma_ast::Function) {
+    self.into_scope(|v| n.visit_children_with(v))
   }
 
   fn visit_decl(&mut self, n: &farmfe_core::swc_ecma_ast::Decl) {
