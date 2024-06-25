@@ -1,5 +1,15 @@
 # @farmfe/core
 
+## 1.2.1
+
+### Patch Changes
+
+- 8bf8c951: chore: Modify `main_fields` priority
+- d52a2ef4: Fix #1424
+- 58b256e2: runtime bundle
+- Updated dependencies [58b256e2]
+  - @farmfe/runtime@0.11.2
+
 ## 1.2.0
 
 ### Minor Changes
