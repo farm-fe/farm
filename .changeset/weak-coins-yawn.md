@@ -1,6 +1,6 @@
 ---
-"@farmfe/runtime": minor
-"@farmfe/core": minor
+"@farmfe/runtime": patch
+"@farmfe/core": patch
 ---
 
 runtime bundle

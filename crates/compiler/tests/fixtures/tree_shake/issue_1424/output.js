@@ -68,34 +68,18 @@
     Object.defineProperty(exports, "__esModule", {
         value: true
     });
-    function _export(target, all) {
-        for(var name in all)Object.defineProperty(target, name, {
-            enumerable: true,
-            get: all[name]
-        });
-    }
-    _export(exports, {
-        foo1: function() {
-            return foo1;
-        },
-        foo2: function() {
-            return foo2;
-        },
-        foo3: function() {
-            return foo3;
-        },
-        foo4: function() {
-            return foo4;
+    Object.defineProperty(exports, "Holder", {
+        enumerable: true,
+        get: function() {
+            return Holder;
         }
     });
-    function foo() {
-        console.log("hello world");
-    }
-    let foo1 = 1, foo2 = 2;
-    foo1 = 2;
-    var foo3 = foo;
-    var foo4 = foo;
-    foo3.create = foo;
+    const DEFAULT_DURATION = 3;
+    const Holder = React.forwardRef((props, ref)=>{
+        const { duration = DEFAULT_DURATION } = props;
+        console.log(duration);
+        return null;
+    });
 }
 ,
 "b5d64806":function  (module, exports, farmRequire, farmDynamicRequire) {
@@ -104,6 +88,6 @@
         value: true
     });
     var _dep = farmRequire("05ee5ec7");
-    console.log(_dep.foo1, _dep.foo2, _dep.foo3, _dep.foo4);
+    console.log(_dep.Holder);
 }
 ,});(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setInitialLoadedResources([]);(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setDynamicModuleResourcesMap({  });var farmModuleSystem = (globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__;farmModuleSystem.bootstrap();var entry = farmModuleSystem.require("b5d64806");
