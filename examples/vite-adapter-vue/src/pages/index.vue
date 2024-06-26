@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import HelloWorld from '../components/HelloWorld.vue'
 import Formatter from '../components/Formatter.vue';
-
+import IconComponent from '../assets/vue.svg?component'
 </script>
 
 <template>
@@ -17,6 +17,11 @@ import Formatter from '../components/Formatter.vue';
     </a>
     <a href="https://vuejs.org/" target="_blank">
       <my-svg-icon name="icon-vue" class="logo" style="height: 6.25rem; width: 6.25rem;" />
+    </a>
+
+    <a href="https://vuejs.org/" target="_blank">
+      vite-svg-loader component
+      <IconComponent class="logo" style="height: 6.25rem; width: 6.25rem;" />
     </a>
   </div>
 

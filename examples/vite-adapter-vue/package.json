@@ -29,7 +29,8 @@
     "unplugin-auto-import": "^0.16.7",
     "unplugin-svg-component": "^0.8.0",
     "unplugin-vue-components": "^0.25.2",
-    "unplugin-vue-router": "^0.7.0"
+    "unplugin-vue-router": "^0.7.0",
+    "vite-svg-loader": "^5.1.0"
   },
   "scripts": {
     "start": "farm start",

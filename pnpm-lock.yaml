@@ -1496,6 +1496,9 @@ importers:
       unplugin-vue-router:
         specifier: ^0.7.0
         version: 0.7.0(rollup@4.14.1)(vue-router@4.2.5(vue@3.3.7(typescript@5.4.5)))(vue@3.3.7(typescript@5.4.5))
+      vite-svg-loader:
+        specifier: ^5.1.0
+        version: 5.1.0(vue@3.3.7(typescript@5.4.5))
 
   examples/vite-adapter-vue-css:
     dependencies:
@@ -11122,6 +11125,11 @@ packages:
     peerDependencies:
       vite: ^2.0.0 || ^3.0.0 || ^4.0.0
       vue-template-compiler: ^2.2.0
+
+  vite-svg-loader@5.1.0:
+    resolution: {integrity: sha512-M/wqwtOEjgb956/+m5ZrYT/Iq6Hax0OakWbokj8+9PXOnB7b/4AxESHieEtnNEy7ZpjsjYW1/5nK8fATQMmRxw==}
+    peerDependencies:
+      vue: '>=3.2.13'
 
   vite-tsconfig-paths@4.3.1:
     resolution: {integrity: sha512-cfgJwcGOsIxXOLU/nELPny2/LUD/lcf1IbfyeKTv2bsupVbTH/xpFtdQlBmIP1GEK2CjjLxYhFfB+QODFAx5aw==}
@@ -22532,6 +22540,11 @@ snapshots:
       - vue
       - walrus
       - whiskers
+
+  vite-svg-loader@5.1.0(vue@3.3.7(typescript@5.4.5)):
+    dependencies:
+      svgo: 3.2.0
+      vue: 3.3.7(typescript@5.4.5)
 
   vite-tsconfig-paths@4.3.1(typescript@5.4.5)(vite@5.2.8(@types/node@18.18.8)(less@4.2.0)(sass@1.74.1)):
     dependencies:
