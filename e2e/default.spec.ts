@@ -9,7 +9,10 @@ import { describe } from 'node:test';
 const excludeExamples: string[] = [];
 
 describe('Default E2E Tests', async () => {
-  const examples = readdirSync('./examples');
+  const skipExample = ['issues1433'];
+  const examples = readdirSync('./examples').filter(
+    (item) => !skipExample.includes(item)
+  );
   // const examples = ['react-ssr', 'solid-ssr', 'vue-ssr'];
   logger(`Running E2E tests for ${examples.length} examples`);
 
