@@ -1,6 +1,7 @@
 {
-  "name": "issues1433",
+  "name": "@farmfe-examples/issues1433",
   "version": "1.0.0",
+  "private": true,
   "description": "",
   "main": "index.js",
   "type": "module",
