@@ -500,3 +500,36 @@ fn resolve_exports_browser() {
     }
   );
 }
+
+
+#[test]
+// resolve exports value is string
+fn resolve_exports_issue_1433() {
+  fixture!(
+    "tests/fixtures/resolve-node-modules/exports/index.ts",
+    |file, _| {
+      let cwd = file.parent().unwrap().to_path_buf();
+      let resolver = Resolver::new();
+      // Parsing packages in node_modules
+      let resolved = resolver.resolve(
+        "@issues/1433",
+        cwd.clone(),
+        &ResolveKind::Import,
+        &Arc::new(CompilationContext::default()),
+      );
+      assert!(resolved.is_some());
+      let resolved = resolved.unwrap();
+      assert_eq!(
+        resolved.resolved_path,
+        cwd
+          .join("node_modules")
+          .join("@issues")
+          .join("1433")
+          .join("lib")
+          .join("default.js")
+          .to_string_lossy()
+          .to_string()
+      );
+    }
+  );
+}

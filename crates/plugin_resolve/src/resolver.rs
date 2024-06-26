@@ -494,7 +494,6 @@ impl Resolver {
       let maybe_node_modules_path = current.join(NODE_MODULES);
       if maybe_node_modules_path.exists() && maybe_node_modules_path.is_dir() {
         let parse_package_source_result = utils::parse_package_source(source);
-
         if parse_package_source_result.is_none() {
           return (None, tried_paths);
         }
@@ -647,18 +646,14 @@ impl Resolver {
     let entry_point = raw_package_json_info
       .get(HIGHEST_PRIORITY_FIELD)
       .and_then(|field_value| {
-        if let Value::Object(_) = field_value {
-          resolve_exports_or_imports(
-            &package_json_info,
-            ".",
-            HIGHEST_PRIORITY_FIELD,
-            kind,
-            context,
-          )
-          .map(|exports_entries| exports_entries.get(0).unwrap().to_string())
-        } else {
-          None
-        }
+        resolve_exports_or_imports(
+          &package_json_info,
+          ".",
+          HIGHEST_PRIORITY_FIELD,
+          kind,
+          context,
+        )
+        .map(|exports_entries| exports_entries.get(0).unwrap().to_string())
       })
       .or_else(|| {
         context

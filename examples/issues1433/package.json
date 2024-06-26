@@ -1,0 +1,22 @@
+{
+  "name": "@farmfe-examples/issues1433",
+  "version": "1.0.0",
+  "private": true,
+  "description": "",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "build": "farm build"
+  },
+  "devDependencies": {
+    "@farmfe/cli": "workspace:*",
+    "@farmfe/core": "workspace:*"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "micromark-util-symbol": "^2.0.0",
+    "unist-util-stringify-position": "^4.0.0"
+  }
+}
