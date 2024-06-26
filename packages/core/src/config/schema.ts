@@ -330,9 +330,34 @@ const FarmConfigSchema = z
   })
   .strict();
 
-export function parseUserConfig(config: unknown) {
+export function parseUserConfig(config: unknown): UserConfig {
   try {
     const parsed = FarmConfigSchema.parse(config);
+    // Auto enable decorator by default when `script.decorators` is enabled
+    if (parsed.compilation?.script?.decorators !== undefined)
+      if (parsed.compilation.script.parser === undefined)
+        parsed.compilation.script.parser = {
+          esConfig: {
+            decorators: true
+          },
+          tsConfig: {
+            decorators: true
+          }
+        };
+      else {
+        if (parsed.compilation.script.parser.esConfig !== undefined)
+          parsed.compilation.script.parser.esConfig.decorators = true;
+        else
+          parsed.compilation.script.parser.esConfig = {
+            decorators: true
+          };
+        if (parsed.compilation.script.parser.tsConfig !== undefined)
+          parsed.compilation.script.parser.tsConfig.decorators = true;
+        else
+          parsed.compilation.script.parser.tsConfig = {
+            decorators: true
+          };
+      }
     return parsed as UserConfig;
     // return config as UserConfig;
   } catch (err) {

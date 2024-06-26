@@ -4,7 +4,7 @@ export interface ScriptParseConfig {
     jsx?: boolean;
     fnBind: boolean;
     // Enable decorators.
-    decorators: boolean;
+    decorators?: boolean;
 
     // babel: `decorators.decoratorsBeforeExport`
     // Effective only if `decorator` is true.
@@ -18,7 +18,7 @@ export interface ScriptParseConfig {
   };
   tsConfig?: {
     tsx: boolean;
-    decorators: boolean;
+    decorators?: boolean;
     /// `.d.ts`
     dts: boolean;
     noEarlyErrors: boolean;
