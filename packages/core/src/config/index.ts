@@ -516,6 +516,36 @@ export async function normalizeUserCompilationConfig(
     [CUSTOM_KEYS.runtime_isolate]: `${!!resolvedCompilation.runtime.isolate}`
   };
 
+  // Auto enable decorator by default when `script.decorators` is enabled
+  if (resolvedCompilation.script?.decorators !== undefined)
+    if (resolvedCompilation.script.parser === undefined) {
+      resolvedCompilation.script.parser = {
+        // @ts-ignore
+        esConfig: {
+          decorators: true
+        },
+        // @ts-ignore
+        tsConfig: {
+          decorators: true
+        }
+      };
+    } else {
+      if (resolvedCompilation.script.parser.esConfig !== undefined)
+        resolvedCompilation.script.parser.esConfig.decorators = true;
+      // @ts-ignore
+      else
+        resolvedCompilation.script.parser.esConfig = {
+          decorators: true
+        };
+      if (resolvedCompilation.script.parser.tsConfig !== undefined)
+        resolvedCompilation.script.parser.tsConfig.decorators = true;
+      // @ts-ignore
+      else
+        userConfig.compilation.script.parser.tsConfig = {
+          decorators: true
+        };
+    }
+
   // normalize persistent cache at last
   await normalizePersistentCache(
     resolvedCompilation,
@@ -706,7 +736,7 @@ async function readConfigFile(
     }
     await compiler.compile();
 
-    if(FARM_PROFILE) {
+    if (FARM_PROFILE) {
       process.env.FARM_PROFILE = FARM_PROFILE;
     }
 
