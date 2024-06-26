@@ -10,8 +10,8 @@ interface LazyCompilationQueueItem {
 }
 
 const FarmModuleSystem: any = 'FARM_MODULE_SYSTEM';
-const moduleId = `MODULE_ID`;
-const modulePath = `MODULE_PATH`;
+const moduleId = 'MODULE_ID';
+const modulePath = 'MODULE_PATH';
 const serverUrl = 'FARM_NODE_LAZY_COMPILE_SERVER_URL';
 
 /**
