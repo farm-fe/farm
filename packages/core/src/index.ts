@@ -354,13 +354,11 @@ export async function createDevServer(
 ) {
   const server = new Server({ compiler, logger });
   await server.createDevServer(resolvedUserConfig.server);
-  const watcher = await createFileWatcher(server, resolvedUserConfig, logger);
+  await createFileWatcher(server, resolvedUserConfig, logger);
   // call configureDevServer hook after both server and watcher are ready
   resolvedUserConfig.jsPlugins.forEach((plugin: JsPlugin) =>
     plugin.configureDevServer?.(server)
   );
-
-  watcher.watchExtraFiles();
 
   return server;
 }
