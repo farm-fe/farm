@@ -28,6 +28,22 @@ import Formatter from '../components/Formatter.vue';
 
 <style scoped src="./index.scss"></style>
 
+<style scoped lang="scss">
+@import "bootstrap/scss/bootstrap";
+
+aside {
+  width: 100%;
+  @include media-breakpoint-up(md) {
+    width: 18rem;
+  }
+}
+
+.h-full {
+  height: calc(100vh - 4rem);
+  /* max-width: calc(-webkit-fill-available - 4rem); */
+}
+</style>
+
 <style scoped lang="less">
 .container {
   .logo {
