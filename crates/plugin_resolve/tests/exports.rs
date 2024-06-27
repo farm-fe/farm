@@ -523,7 +523,6 @@ fn resolve_exports_browser() {
   );
 }
 
-
 #[test]
 // resolve exports value is string
 fn resolve_exports_issue_1433() {
@@ -537,6 +536,7 @@ fn resolve_exports_issue_1433() {
         "@issues/1433",
         cwd.clone(),
         &ResolveKind::Import,
+        &ResolveOptions::default(),
         &Arc::new(CompilationContext::default()),
       );
       assert!(resolved.is_some());
