@@ -9,6 +9,7 @@ import { ElementPlusResolver } from 'unplugin-vue-components/resolvers';
 import { VueRouterAutoImports } from 'unplugin-vue-router';
 import VueRouter from 'unplugin-vue-router/vite';
 import UnpluginSvgComponent from 'unplugin-svg-component/vite';
+import ViteSvgLoader from 'vite-svg-loader';
 
 import less from '@farmfe/js-plugin-less';
 import postcss from '@farmfe/js-plugin-postcss';
@@ -32,7 +33,8 @@ export default defineConfig({
     output:{
       path: "build",
       publicPath: "/vue-public-path/",
-    }
+    },
+    persistentCache: false,
   },
   plugins: [
     sass(),
@@ -45,6 +47,7 @@ export default defineConfig({
     process.env.FARM_VIEWER ? viewer() : undefined,
   ],
   vitePlugins: [
+    ViteSvgLoader(),
     VueRouter(),
     configureVitePluginVue,
     vueJsx(),

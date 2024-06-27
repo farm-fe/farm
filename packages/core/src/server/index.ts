@@ -124,6 +124,9 @@ export class Server implements ImplDevServer {
     // compile the project and start the dev server
     await this.compile();
 
+    // watch extra files after compile
+    this.watcher?.watchExtraFiles?.();
+
     bootstrap(Date.now() - start, this.compiler.config);
 
     await this.startServer(this.config);
