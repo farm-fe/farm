@@ -520,11 +520,9 @@ export async function normalizeUserCompilationConfig(
   if (resolvedCompilation.script?.decorators !== undefined)
     if (resolvedCompilation.script.parser === undefined) {
       resolvedCompilation.script.parser = {
-        // @ts-ignore
         esConfig: {
           decorators: true
         },
-        // @ts-ignore
         tsConfig: {
           decorators: true
         }
@@ -532,14 +530,12 @@ export async function normalizeUserCompilationConfig(
     } else {
       if (resolvedCompilation.script.parser.esConfig !== undefined)
         resolvedCompilation.script.parser.esConfig.decorators = true;
-      // @ts-ignore
       else
         resolvedCompilation.script.parser.esConfig = {
           decorators: true
         };
       if (resolvedCompilation.script.parser.tsConfig !== undefined)
         resolvedCompilation.script.parser.tsConfig.decorators = true;
-      // @ts-ignore
       else
         userConfig.compilation.script.parser.tsConfig = {
           decorators: true
