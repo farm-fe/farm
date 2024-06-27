@@ -42,12 +42,15 @@ fn load_package_json() {
 
     // make sure cache works
     let cache = PACKAGE_JSON_LOADER.cache();
-    assert!(cache.contains_key(&main.to_string_lossy().to_string()));
-    assert!(cache.contains_key(&dir.join("src").to_string_lossy().to_string()));
-    assert!(cache.contains_key(&dir.to_string_lossy().to_string()));
+    assert!(cache.contains_key(&PACKAGE_JSON_LOADER.get_cache_key(&main, &Default::default())));
+    assert!(
+      cache.contains_key(&PACKAGE_JSON_LOADER.get_cache_key(&dir.join("src"), &Default::default()))
+    );
+    assert!(cache
+      .contains_key(&PACKAGE_JSON_LOADER.get_cache_key(&dir.to_path_buf(), &Default::default())));
 
     let cached_result = cache
-      .get(&dir.join("src").to_string_lossy().to_string())
+      .get(&PACKAGE_JSON_LOADER.get_cache_key(&dir.join("src"), &Default::default()))
       .unwrap();
     assert_eq!(
       cached_result.value().name,

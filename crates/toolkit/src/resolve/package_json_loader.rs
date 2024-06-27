@@ -48,6 +48,15 @@ impl PackageJsonLoader {
     }
   }
 
+  pub fn get_cache_key(&self, path: &PathBuf, options: &Options) -> String {
+    format!(
+      "{}{}{}",
+      path.to_string_lossy(),
+      options.follow_symlinks,
+      options.resolve_ancestor_dir
+    )
+  }
+
   /// resolve package.json start from path to all its ancestor
   pub fn load(&self, path: PathBuf, options: Options) -> Result<PackageJsonInfo> {
     let mut current = path.clone();
@@ -56,12 +65,12 @@ impl PackageJsonLoader {
     while current.parent().is_some() {
       if self
         .cache
-        .contains_key(&current.to_string_lossy().to_string())
+        .contains_key(&self.get_cache_key(&current, &options))
       {
         return Ok(
           self
             .cache
-            .get(&current.to_string_lossy().to_string())
+            .get(&self.get_cache_key(&current, &options))
             .unwrap()
             .clone(),
         );
@@ -111,7 +120,7 @@ impl PackageJsonLoader {
         for visited in visited_stack {
           self
             .cache
-            .insert(visited.to_string_lossy().to_string(), result.clone());
+            .insert(self.get_cache_key(&visited, &options), result.clone());
         }
 
         return Ok(result);

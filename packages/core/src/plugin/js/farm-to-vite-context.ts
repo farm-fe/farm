@@ -11,7 +11,8 @@ export function farmContextToViteContext(
   currentHandlingFile?: string,
   pluginName?: string,
   hookName?: string,
-  config?: UserConfig
+  config?: UserConfig,
+  hookContext?: { caller?: string; meta: Record<string, unknown> }
 ): PluginContext {
   const cacheKey = pluginName + hookName + currentHandlingFile;
   if (contextCache.has(cacheKey)) {
@@ -139,7 +140,7 @@ export function farmContextToViteContext(
           kind: options.isEntry ? 'entry' : 'import'
         },
         {
-          meta: {},
+          meta: hookContext?.meta ?? {},
           caller: `${pluginName}.${hookName}`
         }
       );
