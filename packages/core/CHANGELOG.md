@@ -1,5 +1,13 @@
 # @farmfe/core
 
+## 1.2.3
+
+### Patch Changes
+
+- ca28145c: \* fix #1450 resolving css @import dependencies error
+  - fix #1449 vite plugin adapter wrong css plugin content
+  - fix #902 this.resolve panic when use vite-plugin-adapter
+
 ## 1.2.2
 
 ### Patch Changes

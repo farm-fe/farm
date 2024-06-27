@@ -34,7 +34,7 @@ export interface ViteModule {
 export interface CompilationContext {
   resolve(
     param: PluginResolveHookParam,
-    hookContext: { meta: Record<string, string>; caller: string }
+    hookContext: { meta: Record<string, unknown>; caller: string }
   ): Promise<PluginResolveHookResult>;
 
   addWatchFile(currentFile: string, targetFile: string): void;

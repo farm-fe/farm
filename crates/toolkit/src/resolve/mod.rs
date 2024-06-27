@@ -30,6 +30,8 @@ lazy_static! {
   pub static ref SYMLINKS_ANALYZER: SymlinksAnalyzer = SymlinksAnalyzer::new();
 }
 
+pub const DYNAMIC_EXTENSION_PRIORITY: &str = "DYNAMIC_EXTENSION_PRIORITY";
+
 /// Load closest package.json start from the specified path, return [farmfe_core::error::Result<Value>].
 pub fn load_package_json(
   path: PathBuf,

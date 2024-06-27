@@ -668,7 +668,7 @@ async function readConfigFile(
     const fileName = `farm.config.bundle-${Date.now()}-${Math.random()
       .toString(16)
       .split('.')
-      .join('')}.mjs`;
+      .join('')}.${process.env.FARM_CONFIG_FORMAT === 'cjs' ? 'cjs' : 'mjs'}`;
 
     const tsDefaultUserConfig: UserConfig = {
       root: inlineOptions.root,
@@ -679,10 +679,12 @@ async function readConfigFile(
         output: {
           entryFilename: '[entryName]',
           path: outputPath,
-          format: 'esm',
+          format: (process.env.FARM_CONFIG_FORMAT as 'esm' | 'cjs') ?? 'esm',
           targetEnv: 'node'
         },
-        external: ['!^(\\./|\\.\\./|[A-Za-z]:\\\\|/).*'],
+        external: process.env.FARM_CONFIG_FULL_BUNDLE
+          ? []
+          : ['!^(\\./|\\.\\./|[A-Za-z]:\\\\|/).*'],
         partialBundling: {
           enforceResources: [
             {
@@ -922,7 +924,6 @@ export async function loadConfigFile(
     // callback, causing the code not to execute. If the internal catch compiler's own
     // throw error can solve this problem, it will not continue to affect the execution of
     // external code. We just need to return the default config.
-
     const errorMessage = convertErrorMessage(error);
     const stackTrace =
       error.code === 'GenericFailure' ? '' : `\n${error.stack}`;
@@ -936,8 +937,11 @@ export async function loadConfigFile(
       );
     }
 
+    const potentialSolution =
+      'Potential solutions: \n1. Try set `FARM_CONFIG_FORMAT=cjs`(default to esm)\n2. Try set `FARM_CONFIG_FULL_BUNDLE=1`';
+
     throw new Error(
-      `Failed to load farm config file: ${errorMessage} \n ${error.stack}`
+      `Failed to load farm config file: ${errorMessage}. \n ${potentialSolution} \n ${error.stack}`
     );
   }
 }
