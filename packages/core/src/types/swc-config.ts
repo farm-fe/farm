@@ -2,26 +2,26 @@
 export interface ScriptParseConfig {
   esConfig?: {
     jsx?: boolean;
-    fnBind: boolean;
+    fnBind?: boolean;
     // Enable decorators.
-    decorators: boolean;
+    decorators?: boolean;
 
     // babel: `decorators.decoratorsBeforeExport`
     // Effective only if `decorator` is true.
-    decoratorsBeforeExport: boolean;
-    exportDefaultFrom: boolean;
+    decoratorsBeforeExport?: boolean;
+    exportDefaultFrom?: boolean;
     // Stage 3.
-    importAssertions: boolean;
-    privateInObject: boolean;
-    allowSuperOutsideMethod: boolean;
-    allowReturnOutsideFunction: boolean;
+    importAssertions?: boolean;
+    privateInObject?: boolean;
+    allowSuperOutsideMethod?: boolean;
+    allowReturnOutsideFunction?: boolean;
   };
   tsConfig?: {
-    tsx: boolean;
-    decorators: boolean;
+    tsx?: boolean;
+    decorators?: boolean;
     /// `.d.ts`
-    dts: boolean;
-    noEarlyErrors: boolean;
+    dts?: boolean;
+    noEarlyErrors?: boolean;
   };
 }
 
