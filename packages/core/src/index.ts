@@ -330,6 +330,7 @@ async function copyPublicDirectory(
 
   try {
     if (await fse.pathExists(absPublicDirPath)) {
+      // TODO 判断有没有 html 文件 然后是判断 config 的 output 有没有 path 在 publilc 下面的 html 里
       await fse.copy(
         absPublicDirPath,
         resolvedUserConfig.compilation.output.path
