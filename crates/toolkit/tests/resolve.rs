@@ -1,4 +1,4 @@
-use farmfe_core::common::ParsedSideEffects;
+use farmfe_core::common::SideEffects;
 use farmfe_testing_helpers::fixture;
 use farmfe_toolkit::resolve::{self, PACKAGE_JSON_LOADER};
 
@@ -16,7 +16,7 @@ fn load_package_json() {
     assert_eq!(result.version, Some("1.0.0".to_string()));
     assert!(matches!(
       result.side_effects().unwrap(),
-      ParsedSideEffects::Bool(false)
+      SideEffects::Bool(false)
     ));
 
     let sub = dir.join("sub");
@@ -30,14 +30,12 @@ fn load_package_json() {
 
     assert!(matches!(
       result.side_effects().unwrap(),
-      ParsedSideEffects::Array(_)
+      SideEffects::Array(_)
     ));
 
-    if let ParsedSideEffects::Array(arr) = result.side_effects().unwrap() {
-      assert_eq!(
-        *arr,
-        vec![sub.join("main.css").to_string_lossy().to_string()]
-      );
+    if let SideEffects::Array(arr) = result.side_effects().unwrap() {
+      assert!(arr.len() == 1);
+      assert!(arr[0].is_match("main.css"));
     }
 
     // make sure cache works

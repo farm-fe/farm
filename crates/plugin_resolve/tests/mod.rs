@@ -94,7 +94,7 @@ fn resolve_node_modules_normal() {
           .to_string()
       );
       assert!(!resolved.external);
-      assert!(resolved.side_effects);
+      assert!(!resolved.side_effects);
 
       let resolved = resolver.resolve(
         "pkg-a/index.js",
@@ -116,7 +116,7 @@ fn resolve_node_modules_normal() {
           .to_string()
       );
       assert!(!resolved.external);
-      assert!(resolved.side_effects);
+      assert!(!resolved.side_effects);
 
       let resolved = resolver.resolve(
         "pkg-a/lib",
@@ -184,6 +184,7 @@ fn resolve_node_modules_normal() {
           .to_string_lossy()
           .to_string()
       );
+      assert!(!resolved.side_effects);
     }
   );
 }
