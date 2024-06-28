@@ -9,11 +9,11 @@ use std::{
 use farmfe_core::{
   config::{
     config_regex::ConfigRegex, external::ExternalConfig,
-    partial_bundling::PartialBundlingEnforceResourceConfig, Config, ModuleFormat, TargetEnv,
+    partial_bundling::PartialBundlingEnforceResourceConfig, Config, Mode, ModuleFormat, TargetEnv,
     FARM_MODULE_SYSTEM,
   },
   context::CompilationContext,
-  enhanced_magic_string::types::SourceMapOptions,
+  enhanced_magic_string::types::{MappingsOptionHires, SourceMapOptions},
   error::CompilationError,
   module::{ModuleId, ModuleType},
   plugin::{
@@ -377,6 +377,11 @@ impl Plugin for FarmPluginRuntime {
               remap_source: Some(Box::new(move |src| {
                 format!("/{}", farmfe_utils::relative(&root, src))
               })),
+              hires: if matches!(context.config.mode, Mode::Production) {
+                Some(MappingsOptionHires::Boundary)
+              } else {
+                None
+              },
               ..Default::default()
             })
             .map_err(|_| CompilationError::GenerateSourceMapError {
