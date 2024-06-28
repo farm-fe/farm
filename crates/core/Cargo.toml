@@ -36,6 +36,7 @@ wax = { version = "0.6", default-features = false, features = [
   "miette",
   "walk",
 ] }
+globset = { version = "0.4.14" }
 swc_ecma_ast = { version = "0.112.6", features = ["rkyv-impl", "serde-impl"] }
 swc_ecma_parser = { version = "0.143.10" }
 swc_common = { version = "0.33.20", features = [

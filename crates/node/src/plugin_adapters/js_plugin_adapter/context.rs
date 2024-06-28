@@ -164,14 +164,7 @@ unsafe extern "C" fn resolve(env: napi_env, info: napi_callback_info) -> napi_va
       .map_err(|e| Error::new(Status::GenericFailure, format!("{}", e)));
 
     match resolved {
-      Ok(resolved) => promise.resolve(Box::new(move |e| {
-        resolved.map(|r| e.to_js_value(&r).unwrap()).ok_or_else(|| {
-          Error::new(
-            Status::GenericFailure,
-            format!("can not resolve {:?}", param),
-          )
-        })
-      })),
+      Ok(resolved) => promise.resolve(Box::new(move |e| e.to_js_value(&resolved))),
       Err(err) => promise.reject(Error::new(
         Status::GenericFailure,
         format!("can not resolve {:?}: {:?}", param, err),

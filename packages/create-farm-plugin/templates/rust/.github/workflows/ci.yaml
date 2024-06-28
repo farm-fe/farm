@@ -33,4 +33,4 @@ jobs:
       - name: Install Dependencies
         run: npm install -g pnpm@9.1.0
       - name: Test Example
-        run: cd example && pnpm i && pnpm build
+        run: cd playground && pnpm i && pnpm build

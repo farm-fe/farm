@@ -2,6 +2,6 @@
   "name": "sub-fixture",
   "version": "1.0.0",
   "sideEffects": [
-    "*.css"
+    "./*.css"
   ]
 }

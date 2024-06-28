@@ -1,4 +1,4 @@
-import { existsSync } from 'fs';
+import { existsSync, statSync } from 'fs';
 import path, { isAbsolute } from 'path';
 import { fileURLToPath, pathToFileURL } from 'url';
 import type {
@@ -166,7 +166,7 @@ async function resolveDependencyWithPrefix(
     path.posix.dirname(url),
     `${prefix}${path.posix.basename(url)}`
   );
-
+  
   const result = await ctx.resolve(
     {
       source: filename,
@@ -178,7 +178,7 @@ async function resolveDependencyWithPrefix(
       caller: '@farmfe/js-plugin-sass'
     }
   );
-
+  
   if (result?.resolvedPath) {
     return result.resolvedPath;
   }
@@ -192,7 +192,7 @@ async function resolveDependency(
   if (!isAbsolute(url)) {
     const relPath = path.join(path.dirname(transformParam.resolvedPath), url);
 
-    if (existsSync(relPath)) {
+    if (existsSync(relPath) && statSync(relPath).isFile()) {
       return relPath;
     }
   }
@@ -206,7 +206,7 @@ async function resolveDependency(
       '',
       ctx
     );
-    if (result) return result;
+    if (result && (result.endsWith('.scss') || result.endsWith('.sass'))) return result;
   } catch (error) {
     default_import_error = error;
   }
@@ -219,7 +219,9 @@ async function resolveDependency(
         prefix,
         ctx
       );
-      if (result) return result;
+      if (result) {
+        return result;
+      }
     } catch (_error) {
       /* do nothing */
     }
@@ -232,7 +234,7 @@ async function resolveDependency(
 
 const syntaxMap: Record<string, string> = {
   '.css': 'css',
-  '.sass': 'indent'
+  '.sass': 'indented'
 };
 
 function urlCanParse(file: string): boolean {
@@ -272,6 +274,7 @@ async function compileScss(param: CompileCssParams) {
       ...(options?.sassOptions ?? {}),
       sourceMap: options.sassOptions?.sourceMap ?? sourceMapEnabled,
       url: pathToFileURL(transformParam.resolvedPath),
+      syntax: syntaxMap[path.extname(transformParam.moduleId)] ?? 'scss',
       importers: [
         {
           async canonicalize(url, _) {
@@ -346,6 +349,7 @@ async function compileScssLegacy(param: CompileCssParams) {
         sourceMap: options.sassOptions?.sourceMap ?? sourceMapEnabled,
         outFile: transformParam.resolvedPath,
         sourceMapRoot: path.dirname(transformParam.resolvedPath),
+        indentedSyntax: transformParam.moduleId.endsWith('.sass'),
         importer: [
           function (url, _, done) {
             resolveDependency(url, transformParam, ctx).then((resolvedPath) => {

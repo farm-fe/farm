@@ -1,5 +1,41 @@
 # @farmfe/core
 
+## 1.2.4
+
+### Patch Changes
+
+- 8e3f1934: Enable parser.decorators by default when script.decorators is enabled
+- 4470ff51: Fix bugs:
+  - Tree shake side effect detection from package.json fail
+  - Sourcemap resolution when build for production
+- 8e3f1934: Make options in `ScriptParseConfig` optional
+
+## 1.2.3
+
+### Patch Changes
+
+- ca28145c: \* fix #1450 resolving css @import dependencies error
+  - fix #1449 vite plugin adapter wrong css plugin content
+  - fix #902 this.resolve panic when use vite-plugin-adapter
+
+## 1.2.2
+
+### Patch Changes
+
+- 68482a02: fix #1432
+- 223af33f: resolver priority exports field when string type
+- 97a42515: Fix #1418
+
+## 1.2.1
+
+### Patch Changes
+
+- 8bf8c951: chore: Modify `main_fields` priority
+- d52a2ef4: Fix #1424
+- 58b256e2: runtime bundle
+- Updated dependencies [58b256e2]
+  - @farmfe/runtime@0.11.2
+
 ## 1.2.0
 
 ### Minor Changes
