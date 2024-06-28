@@ -46,3 +46,5 @@ export type CompilationMode = 'development' | 'production';
 export function setProcessEnv(mode: CompilationMode) {
   process.env.NODE_ENV = mode;
 }
+
+export const isDisableCache = () => !!process.env.FARM_DISABLE_CACHE;

@@ -50,6 +50,9 @@ mod import_meta_visitor;
 #[cfg(feature = "swc_plugin")]
 mod swc_plugins;
 mod swc_script_transforms;
+mod transform_import_meta_url;
+
+use transform_import_meta_url::transform_url_with_import_meta_url;
 
 /// ScriptPlugin is used to support compiling js/ts/jsx/tsx/... files, support loading, parse, analyze dependencies and code generation.
 /// Note that we do not do transforms here, the transforms (e.g. strip types, jsx...) are handled in a separate plugin (farmfe_plugin_swc_transforms).
@@ -187,6 +190,7 @@ impl Plugin for FarmPluginScript {
           .to_string_lossy()
           .to_string()
       };
+      transform_url_with_import_meta_url(ast);
       transform_import_meta_glob(
         ast,
         context.config.root.clone(),

@@ -790,12 +790,8 @@ export function normalizePublicPath(
   let normalizedPublicPath = publicPath;
   let warning = false;
   // normalize relative path
-  if (
-    normalizedPublicPath.startsWith('.') ||
-    normalizedPublicPath.startsWith('..')
-  ) {
+  if (normalizedPublicPath.startsWith('..')) {
     warning = true;
-    normalizedPublicPath = normalizedPublicPath.replace(/^\.+/, '');
   }
 
   // normalize appended relative path
@@ -813,13 +809,6 @@ export function normalizePublicPath(
     !isPrefixNeeded
   ) {
     normalizedPublicPath = normalizedPublicPath.slice(1);
-  } else if (
-    isPrefixNeeded &&
-    !normalizedPublicPath.startsWith('/') &&
-    !urlRegex.test(normalizedPublicPath)
-  ) {
-    warning = true;
-    normalizedPublicPath = '/' + normalizedPublicPath;
   }
 
   warning &&

@@ -231,7 +231,7 @@ impl Plugin for FarmPluginStaticAssets {
             format!("export default \"/{}\"", resource_name)
           } else {
             format!(
-              "export default \"/{}/{}\"",
+              "export default \"{}/{}\"",
               normalized_public_path, resource_name
             )
           }

@@ -13,23 +13,12 @@ use crate::common::{
   assert_compiler_result_with_config, create_compiler_with_args, AssertCompilerResultConfig,
 };
 
-fn get<T: DeserializeOwned>(value: &Value, keys: &[&str]) -> Option<T> {
-  let mut v: &Value = value;
-
-  for key in keys.iter() {
-    v = v.get(key)?;
-  }
-
-  Some(
-    serde_json::from_value(v.clone())
-      .expect(format!("{} type is not correct", keys.join(".")).as_str()),
-  )
-}
-
 #[allow(dead_code)]
 #[cfg(test)]
 fn test(file: String, crate_path: String) {
-  use crate::common::try_read_config_from_json;
+  use common::get_config_field;
+
+use crate::common::try_read_config_from_json;
 
   let file_path_buf = PathBuf::from(file.clone());
   let create_path_buf = PathBuf::from(crate_path);
@@ -68,15 +57,15 @@ fn test(file: String, crate_path: String) {
       }];
 
       if let Some(config_from_file) = config_from_file {
-        if let Some(mode) = get(&config_from_file, &["mode"]) {
+        if let Some(mode) = get_config_field(&config_from_file, &["mode"]) {
           config.mode = mode;
         }
 
-        if let Some(format) = get(&config_from_file, &["output", "format"]) {
+        if let Some(format) = get_config_field(&config_from_file, &["output", "format"]) {
           config.output.format = format;
         }
 
-        if let Some(target_env) = get(&config_from_file, &["output", "targetEnv"]) {
+        if let Some(target_env) = get_config_field(&config_from_file, &["output", "targetEnv"]) {
           config.output.target_env = target_env;
         }
       }
