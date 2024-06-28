@@ -10,9 +10,6 @@ export default defineConfig(() => {
       // output: {
       //   publicPath: '/dist/'
       // },
-      // input: {
-      //   index: './index.html'
-      // }
     },
     server: {
       port: 6532,

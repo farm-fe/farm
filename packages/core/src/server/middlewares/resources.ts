@@ -73,14 +73,15 @@ export function resourcesMiddleware(compiler: Compiler, serverContext: Server) {
       serverContext.publicDir,
       'index.html'
     );
-    let isPublicHtml;
+
+    let isSkipPublicHtml;
     if (ctx.body instanceof ReadStream) {
       const readStream = ctx.body;
-      isPublicHtml = readStream.path === hasHtmlPathWithPublicDir;
+      isSkipPublicHtml = readStream.path === hasHtmlPathWithPublicDir;
     }
 
     // the response is already handled
-    if ((ctx.body || ctx.status !== 404) && !isPublicHtml) return;
+    if ((ctx.body || ctx.status !== 404) && !isSkipPublicHtml) return;
 
     const { config, publicPath } = serverContext;
     // if compiler is compiling, wait for it to finish
