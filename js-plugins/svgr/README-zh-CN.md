@@ -3,7 +3,7 @@
   <img src="../../assets/logo.png" width="550" />
   </a>
   <p>
-    <a href="https://github.com/farm-fe/farm/blob/main/js-plugins/less/README.md">English</a> |
+    <a href="https://github.com/farm-fe/farm/blob/main/js-plugins/svgr/README.md">English</a> |
     <span>简体中文</span>
 </div>
 
