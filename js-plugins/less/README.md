@@ -4,7 +4,7 @@
   </a>
   <p>
     <span>English</span> |
-    <a href="https://github.com/farm-fe/farm/blob/main/js-plugins/less/README-zh-CH.md">简体中文</a>  
+    <a href="https://github.com/farm-fe/farm/blob/main/js-plugins/less/README-zh-CN.md">简体中文</a>  
 </div>
 
 ---
