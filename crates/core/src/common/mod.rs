@@ -94,7 +94,7 @@ impl PackageJsonInfo {
             .into_iter()
             .filter_map(|s| {
               let abs_path = RelativePath::new(&s).to_logical_path(self.dir());
-              if let Ok(r) = globset::Glob::new(&relative(&self.dir(), &abs_path.to_string_lossy()))
+              if let Ok(r) = globset::Glob::new(&relative(self.dir(), &abs_path.to_string_lossy()))
               {
                 Some(r.compile_matcher())
               } else {
