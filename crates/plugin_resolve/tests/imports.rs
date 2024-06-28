@@ -5,7 +5,7 @@ use farmfe_core::{
   context::CompilationContext,
   plugin::ResolveKind,
 };
-use farmfe_plugin_resolve::resolver::Resolver;
+use farmfe_plugin_resolve::resolver::{ResolveOptions, Resolver};
 use farmfe_testing_helpers::fixture;
 
 #[test]
@@ -22,6 +22,7 @@ fn resolve_imports_basic() {
         "#ansi-styles",
         cwd.clone(),
         &ResolveKind::Import,
+        &ResolveOptions::default(),
         &Arc::new(CompilationContext::default()),
       );
       assert!(resolved.is_some());
@@ -53,6 +54,7 @@ fn resolve_imports_deep() {
         "#ansi-styles",
         cwd.clone(),
         &ResolveKind::Import,
+        &ResolveOptions::default(),
         &Arc::new(CompilationContext::default()),
       );
       assert!(resolved.is_some());
@@ -84,6 +86,7 @@ fn resolve_imports_replace_object() {
         "#supports-color",
         cwd.clone(),
         &ResolveKind::Import,
+        &ResolveOptions::default(),
         &Arc::new(CompilationContext::default()),
       );
       assert!(resolved.is_some());
@@ -116,6 +119,7 @@ fn resolve_imports_replace_deps() {
         "#ansi-styles-execa",
         cwd.clone(),
         &ResolveKind::Import,
+        &ResolveOptions::default(),
         &Arc::new(CompilationContext::default()),
       );
       assert!(resolved.is_some());
@@ -159,6 +163,7 @@ fn resolve_imports_target_browser() {
         "#supports-color",
         cwd.clone(),
         &ResolveKind::Import,
+        &ResolveOptions::default(),
         &Arc::new(context),
       );
       assert!(resolved.is_some());
@@ -201,6 +206,7 @@ fn resolve_imports_target_node() {
         "#supports-color",
         cwd.clone(),
         &ResolveKind::Import,
+        &ResolveOptions::default(),
         &Arc::new(context),
       );
       assert!(resolved.is_some());

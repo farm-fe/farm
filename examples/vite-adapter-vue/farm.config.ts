@@ -13,6 +13,7 @@ import ViteSvgLoader from 'vite-svg-loader';
 
 import less from '@farmfe/js-plugin-less';
 import postcss from '@farmfe/js-plugin-postcss';
+import sass from '@farmfe/js-plugin-sass';
 import viewer from '@farmfe/js-plugin-visualizer';
 
 function configureVitePluginVue() {
@@ -36,8 +37,12 @@ export default defineConfig({
     persistentCache: false,
   },
   plugins: [
-    '@farmfe/plugin-sass',
-    less(),
+    sass(),
+    less({
+      lessOptions: {
+        javascriptEnabled: true
+      }
+    }),
     postcss(),
     process.env.FARM_VIEWER ? viewer() : undefined,
   ],
@@ -49,6 +54,7 @@ export default defineConfig({
     AutoImport({
       resolvers: [ElementPlusResolver({ importStyle: 'sass' })],
       imports: [
+        'vue',
         VueRouterAutoImports
       ]
     }),

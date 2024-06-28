@@ -468,3 +468,15 @@ export function transformFarmConfigToRollupNormalizedInputOptions(
     preserveModules: undefined
   } satisfies NormalizedInputOptions;
 }
+
+export function normalizeFilterPath(path: string): string {
+  if (process.platform === 'win32') {
+    return compatibleWin32Path(path);
+  }
+
+  return path;
+}
+
+function compatibleWin32Path(path: string): string {
+  return path.replaceAll('/', '\\\\');
+}

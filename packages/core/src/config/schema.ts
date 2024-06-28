@@ -330,7 +330,7 @@ const FarmConfigSchema = z
   })
   .strict();
 
-export function parseUserConfig(config: unknown) {
+export function parseUserConfig(config: unknown): UserConfig {
   try {
     const parsed = FarmConfigSchema.parse(config);
     return parsed as UserConfig;
