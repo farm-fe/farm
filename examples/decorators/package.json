@@ -1,10 +1,10 @@
 {
   "name": "@farmfe-examples/decorators",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "private": true,
   "devDependencies": {
     "@farmfe/cli": "^1.0.1",
-    "@farmfe/core": "^1.0.0-beta.0"
+    "@farmfe/core": "^1.2.4"
   },
   "scripts": {
     "build": "farm build && node test.mjs"

@@ -18,6 +18,7 @@ use farmfe_core::{
 };
 
 use farmfe_toolkit::resolve::{follow_symlinks, load_package_json, package_json_loader::Options};
+use farmfe_utils::relative;
 
 use crate::resolver::browser::try_browser_map;
 use crate::resolver::exports::resolve_exports_or_imports;
@@ -698,7 +699,7 @@ impl Resolver {
     // highest priority: exports field, so we need handle this first
     let entry_point = raw_package_json_info
       .get(HIGHEST_PRIORITY_FIELD)
-      .and_then(|field_value| {
+      .and_then(|_| {
         resolve_exports_or_imports(
           &package_json_info,
           ".",
@@ -800,10 +801,10 @@ impl Resolver {
     farm_profile_function!("is_module_side_effects".to_string());
     match package_json_info.side_effects() {
       Some(side_effect) => match side_effect {
-        farmfe_core::common::ParsedSideEffects::Bool(b) => *b,
-        farmfe_core::common::ParsedSideEffects::Array(arr) => {
-          arr.iter().any(|s| s == resolved_path)
-        }
+        farmfe_core::common::SideEffects::Bool(b) => *b,
+        farmfe_core::common::SideEffects::Array(arr) => arr
+          .iter()
+          .any(|s| s.is_match(relative(package_json_info.dir(), resolved_path))),
       },
       None => true,
     }
