@@ -13,7 +13,7 @@
 
 use std::path::PathBuf;
 
-use farmfe_core::{common::PackageJsonInfo, serde_json::from_str};
+use farmfe_core::common::PackageJsonInfo;
 use lazy_static::lazy_static;
 
 pub mod package_json_loader;
@@ -50,13 +50,10 @@ pub fn load_package_json(
 /// ```
 /// And this function won't trigger any file/io operation
 pub fn default_package_json() -> PackageJsonInfo {
-  from_str(
-    r#"{
-    "name": "farm-default-package-info",
-    "version": "0.0.0"
-  }"#,
+  PackageJsonInfo::new(
+    Some("farm-default-package-info".to_string()),
+    Some("0.0.0".to_string()),
   )
-  .unwrap()
 }
 
 /// Try follow symlinks from the specified path, if any ancestor of the path is symlinked, it will be redirected to the real path.

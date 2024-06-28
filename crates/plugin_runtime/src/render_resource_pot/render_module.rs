@@ -143,8 +143,6 @@ pub fn render_module<F: Fn(&ModuleId) -> bool>(
     wrap_function(&mut cloned_module, unresolved_mark, is_async_module);
 
     if minify_enabled {
-      // wrap and unwrap are workaround functions to support minify module separately
-      wrap_initialize_function(&mut cloned_module);
       minify_js_module(
         &mut cloned_module,
         cm.clone(),
@@ -153,7 +151,6 @@ pub fn render_module<F: Fn(&ModuleId) -> bool>(
         top_level_mark,
         minify_builder.minify_options.as_ref().unwrap(),
       );
-      unwrap_initialize_function(&mut cloned_module);
     }
 
     cloned_module.visit_mut_with(&mut fixer(Some(&comments)));
@@ -301,55 +298,4 @@ fn wrap_function(module: &mut SwcModule, unresolved_mark: Mark, is_async_module:
       }),
     }),
   )));
-}
-
-/// `function (a, b) {}`` to `a = function (a, b) {}`
-fn wrap_initialize_function(module: &mut SwcModule) {
-  let mut body = module.body.take();
-  let function = body
-    .remove(0)
-    .expect_stmt()
-    .expect_decl()
-    .expect_fn_decl()
-    .function;
-
-  let assign_fn = Expr::Assign(AssignExpr {
-    span: DUMMY_SP,
-    op: AssignOp::Assign,
-    left: AssignTarget::Simple(SimpleAssignTarget::Ident(BindingIdent {
-      id: Ident::new("a".into(), DUMMY_SP),
-      type_ann: None,
-    })),
-    right: Box::new(Expr::Fn(FnExpr {
-      ident: None,
-      function,
-    })),
-  });
-
-  module.body.push(ModuleItem::Stmt(Stmt::Expr(ExprStmt {
-    span: DUMMY_SP,
-    expr: Box::new(assign_fn),
-  })))
-}
-
-/// `a = function (a, b) {}` to `function (a, b) {}`
-fn unwrap_initialize_function(module: &mut SwcModule) {
-  let mut body = module.body.take();
-  let function = body
-    .remove(0)
-    .expect_stmt()
-    .expect_expr()
-    .expr
-    .expect_assign()
-    .right
-    .expect_fn_expr()
-    .function;
-
-  module
-    .body
-    .push(ModuleItem::Stmt(Stmt::Decl(Decl::Fn(FnDecl {
-      ident: " ".into(),
-      declare: false,
-      function,
-    }))));
 }
