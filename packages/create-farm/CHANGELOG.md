@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.0.9
+
+### Patch Changes
+
+- 9a3723df: update template deps
+
 ## 0.0.8
 
 ### Patch Changes
