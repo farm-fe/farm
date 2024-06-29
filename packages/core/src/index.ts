@@ -330,10 +330,18 @@ async function copyPublicDirectory(
 
   try {
     if (await fse.pathExists(absPublicDirPath)) {
-      await fse.copy(
-        absPublicDirPath,
-        resolvedUserConfig.compilation.output.path
-      );
+      const files = await fse.readdir(absPublicDirPath);
+      const outputPath = resolvedUserConfig.compilation.output.path;
+      for (const file of files) {
+        const publicFile = path.join(absPublicDirPath, file);
+        const destFile = path.join(outputPath, file);
+
+        if (await fse.pathExists(destFile)) {
+          continue;
+        }
+        await fse.copy(publicFile, destFile);
+      }
+
       logger.info(
         `Public directory resources copied ${colors.bold(
           colors.green('successfully')
