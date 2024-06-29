@@ -10,6 +10,56 @@ use farmfe_toolkit::{
   swc_ecma_visit::{VisitMut, VisitMutWith},
 };
 
+fn normalized_glob_pattern(pattern: String) -> String {
+  let mut pattern_builder: Vec<String> = vec![];
+  let stack = pattern
+    .split("/")
+    .into_iter()
+    .filter(|str| str != &"")
+    .collect::<Vec<_>>();
+
+  for item in stack {
+    let mut file_pattern = String::with_capacity(item.len());
+
+    for ch in item.chars() {
+      if file_pattern.is_empty() {
+        file_pattern.push(ch);
+        continue;
+      }
+
+      match ch {
+        '*' => {
+          // x* push * => x*
+          if file_pattern.ends_with("*") && file_pattern.len() > 1 {
+            continue;
+          }
+
+          file_pattern.push(ch);
+        }
+
+        _ => {
+          // ** push - => *-
+          if ch != '*' && file_pattern.ends_with("**") {
+            file_pattern.pop();
+          }
+
+          file_pattern.push(ch);
+        }
+      }
+    }
+
+    // ./** push **
+    if file_pattern == "**" && pattern_builder.last().is_some_and(|s| s == "**") {
+      continue;
+    }
+
+    pattern_builder.push(file_pattern);
+  }
+
+  return pattern_builder.join("/");
+}
+
+// transform `new URL("url", import.meta.url)` to `import.meta.glob('url', { eager: true, import: 'default', query: 'url' })`
 struct ImportMetaURLVisitor {}
 
 impl ImportMetaURLVisitor {
@@ -54,7 +104,7 @@ impl VisitMut for ImportMetaURLVisitor {
               match &args[0].expr {
                 box Expr::Lit(Lit::Str(str)) => str.value.to_string(),
                 box Expr::Tpl(tpl) => {
-                  let mut pattern = String::from("");
+                  let mut pattern_builder = String::new();
                   // maybe quasis is continuous
                   let mut index = 0;
 
@@ -64,29 +114,23 @@ impl VisitMut for ImportMetaURLVisitor {
                         continue;
                       }
 
-                      if !item.raw.starts_with("/") && pattern.ends_with("**") {
-                        pattern.pop();
-                      }
-
-                      pattern.push_str(&item.raw);
+                      pattern_builder.push_str(&item.raw);
                     } else {
                       for exp in tpl.exprs.iter().skip(index) {
                         if item.span_hi() < exp.span_lo() {
-                          if !item.raw.starts_with("/") && pattern.ends_with("**") {
-                            pattern.pop();
-                          }
-
-                          pattern.push_str(&item.raw);
+                          pattern_builder.push_str(&item.raw);
                           break;
                         }
                       }
 
-                      pattern.push_str("**");
+                      pattern_builder.push_str(&"**");
                       index += 1;
                     }
                   }
 
-                  pattern
+                  pattern_builder = normalized_glob_pattern(pattern_builder);
+
+                  pattern_builder
                 }
                 _ => return,
               }
@@ -156,4 +200,33 @@ impl VisitMut for ImportMetaURLVisitor {
 
 pub fn transform_url_with_import_meta_url(ast: &mut Module) {
   ast.visit_mut_with(&mut ImportMetaURLVisitor {});
+}
+
+mod tests {
+
+  #[test]
+  fn test_normalized_glob_pattern() {
+    use super::normalized_glob_pattern;
+    assert_eq!(
+      normalized_glob_pattern("./**/*/**".to_string()),
+      "./**/*/**"
+    );
+    assert_eq!(normalized_glob_pattern("./**/**/**".to_string()), "./**");
+    assert_eq!(
+      normalized_glob_pattern("./foo/**-**".to_string()),
+      "./foo/*-*"
+    );
+    assert_eq!(
+      normalized_glob_pattern("./foo/*-**".to_string()),
+      "./foo/*-*"
+    );
+    assert_eq!(
+      normalized_glob_pattern("./foo/*-*".to_string()),
+      "./foo/*-*"
+    );
+    assert_eq!(
+      normalized_glob_pattern("./foo/***/*****".to_string()),
+      "./foo/**"
+    );
+  }
 }

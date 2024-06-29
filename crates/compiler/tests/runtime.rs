@@ -1,12 +1,8 @@
 use std::{collections::HashMap, path::PathBuf};
 
-use farmfe_core::{
-  config::{
-    bool_or_obj::BoolOrObj, config_regex::ConfigRegex,
-    partial_bundling::PartialBundlingEnforceResourceConfig, Mode, TargetEnv,
-  },
-  serde::de::DeserializeOwned,
-  serde_json::{self, Value},
+use farmfe_core::config::{
+  bool_or_obj::BoolOrObj, config_regex::ConfigRegex,
+  partial_bundling::PartialBundlingEnforceResourceConfig, Mode, TargetEnv,
 };
 mod common;
 use crate::common::{
@@ -18,7 +14,7 @@ use crate::common::{
 fn test(file: String, crate_path: String) {
   use common::get_config_field;
 
-use crate::common::try_read_config_from_json;
+  use crate::common::try_read_config_from_json;
 
   let file_path_buf = PathBuf::from(file.clone());
   let create_path_buf = PathBuf::from(crate_path);
