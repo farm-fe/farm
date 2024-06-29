@@ -53,7 +53,15 @@ fn normalized_glob_pattern(pattern: String) -> String {
       continue;
     }
 
+    if file_pattern.is_empty() {
+      continue;
+    }
+
     pattern_builder.push(file_pattern);
+  }
+
+  if pattern.starts_with("/") {
+    pattern_builder.insert(0, "".to_string());
   }
 
   return pattern_builder.join("/");
@@ -227,6 +235,11 @@ mod tests {
     assert_eq!(
       normalized_glob_pattern("./foo/***/*****".to_string()),
       "./foo/**"
+    );
+
+    assert_eq!(
+      normalized_glob_pattern("/foo/bar/**".to_string()),
+      "/foo/bar/**"
     );
   }
 }
