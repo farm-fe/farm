@@ -339,8 +339,7 @@ async function copyPublicDirectory(
         if (await fse.pathExists(destFile)) {
           continue;
         }
-
-        await fse.copy(publicFile, outputPath);
+        await fse.copy(publicFile, destFile);
       }
 
       logger.info(
