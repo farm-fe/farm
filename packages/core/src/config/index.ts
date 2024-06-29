@@ -520,6 +520,32 @@ export async function normalizeUserCompilationConfig(
     [CUSTOM_KEYS.runtime_isolate]: `${!!resolvedCompilation.runtime.isolate}`
   };
 
+  // Auto enable decorator by default when `script.decorators` is enabled
+  if (resolvedCompilation.script?.decorators !== undefined)
+    if (resolvedCompilation.script.parser === undefined) {
+      resolvedCompilation.script.parser = {
+        esConfig: {
+          decorators: true
+        },
+        tsConfig: {
+          decorators: true
+        }
+      };
+    } else {
+      if (resolvedCompilation.script.parser.esConfig !== undefined)
+        resolvedCompilation.script.parser.esConfig.decorators = true;
+      else
+        resolvedCompilation.script.parser.esConfig = {
+          decorators: true
+        };
+      if (resolvedCompilation.script.parser.tsConfig !== undefined)
+        resolvedCompilation.script.parser.tsConfig.decorators = true;
+      else
+        userConfig.compilation.script.parser.tsConfig = {
+          decorators: true
+        };
+    }
+
   // normalize persistent cache at last
   await normalizePersistentCache(
     resolvedCompilation,
@@ -646,7 +672,7 @@ async function readConfigFile(
     const fileName = `farm.config.bundle-${Date.now()}-${Math.random()
       .toString(16)
       .split('.')
-      .join('')}.mjs`;
+      .join('')}.${process.env.FARM_CONFIG_FORMAT === 'cjs' ? 'cjs' : 'mjs'}`;
 
     const tsDefaultUserConfig: UserConfig = {
       root: inlineOptions.root,
@@ -657,10 +683,12 @@ async function readConfigFile(
         output: {
           entryFilename: '[entryName]',
           path: outputPath,
-          format: 'esm',
+          format: (process.env.FARM_CONFIG_FORMAT as 'esm' | 'cjs') ?? 'esm',
           targetEnv: 'node'
         },
-        external: ['!^(\\./|\\.\\./|[A-Za-z]:\\\\|/).*'],
+        external: process.env.FARM_CONFIG_FULL_BUNDLE
+          ? []
+          : ['!^(\\./|\\.\\./|[A-Za-z]:\\\\|/).*'],
         partialBundling: {
           enforceResources: [
             {
@@ -713,7 +741,7 @@ async function readConfigFile(
     }
     await compiler.compile();
 
-    if(FARM_PROFILE) {
+    if (FARM_PROFILE) {
       process.env.FARM_PROFILE = FARM_PROFILE;
     }
 
@@ -903,7 +931,6 @@ export async function loadConfigFile(
     // callback, causing the code not to execute. If the internal catch compiler's own
     // throw error can solve this problem, it will not continue to affect the execution of
     // external code. We just need to return the default config.
-
     const errorMessage = convertErrorMessage(error);
     const stackTrace =
       error.code === 'GenericFailure' ? '' : `\n${error.stack}`;
@@ -917,8 +944,11 @@ export async function loadConfigFile(
       );
     }
 
+    const potentialSolution =
+      'Potential solutions: \n1. Try set `FARM_CONFIG_FORMAT=cjs`(default to esm)\n2. Try set `FARM_CONFIG_FULL_BUNDLE=1`';
+
     throw new Error(
-      `Failed to load farm config file: ${errorMessage} \n ${error.stack}`
+      `Failed to load farm config file: ${errorMessage}. \n ${potentialSolution} \n ${error.stack}`
     );
   }
 }

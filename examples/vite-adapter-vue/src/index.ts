@@ -8,6 +8,9 @@ import { routes } from 'vue-router/auto/routes';
 
 import SvgIcon from '~virtual/svg-component'
 
+import 'ant-design-vue/dist/antd.less';
+import "bootstrap/scss/bootstrap.scss"
+
 const app = createApp(App);
 
 app.component(SvgIcon.name, SvgIcon)

@@ -180,7 +180,8 @@
     "Yuxi",
     "wasmer",
     "primevue",
-    "shulan"
+    "shulan",
+    "globset"
   ],
   "ignorePaths": [
     "pnpm-lock.yaml",
