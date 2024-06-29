@@ -330,11 +330,19 @@ async function copyPublicDirectory(
 
   try {
     if (await fse.pathExists(absPublicDirPath)) {
-      // TODO 判断有没有 html 文件 然后是判断 config 的 output 有没有 path 在 publilc 下面的 html 里
-      await fse.copy(
-        absPublicDirPath,
-        resolvedUserConfig.compilation.output.path
-      );
+      const files = await fse.readdir(absPublicDirPath);
+      const outputPath = resolvedUserConfig.compilation.output.path;
+      for (const file of files) {
+        const publicFile = path.join(absPublicDirPath, file);
+        const destFile = path.join(outputPath, file);
+
+        if (await fse.pathExists(destFile)) {
+          continue;
+        }
+
+        await fse.copy(publicFile, outputPath);
+      }
+
       logger.info(
         `Public directory resources copied ${colors.bold(
           colors.green('successfully')
