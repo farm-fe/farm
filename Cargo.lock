@@ -846,7 +846,7 @@ dependencies = [
 
 [[package]]
 name = "create-farm"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "anyhow",
  "dialoguer",
@@ -1688,7 +1688,7 @@ dependencies = [
 
 [[package]]
 name = "farmfe_testing"
-version = "0.0.1"
+version = "0.0.2"
 dependencies = [
  "glob",
  "heck 0.4.1",
