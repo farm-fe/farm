@@ -224,7 +224,6 @@ impl Plugin for FarmPluginStaticAssets {
             .config
             .output
             .public_path
-            .trim_start_matches("/")
             .trim_end_matches("/");
 
           if normalized_public_path.is_empty() {
