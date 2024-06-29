@@ -5,6 +5,7 @@ import path, { dirname } from 'node:path';
 import readline from 'node:readline';
 import { fileURLToPath } from 'node:url';
 import { Config } from '../types/binding.js';
+import { slash } from './path.js';
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore import packageJson from '../../package.json';
 
@@ -71,7 +72,7 @@ export const version = JSON.parse(
 ).version;
 
 export function normalizePath(id: string): string {
-  return path.posix.normalize(id ?? process.cwd());
+  return path.posix.normalize(isWindows ? slash(id) : id);
 }
 
 export function normalizeBasePath(basePath: string): string {
@@ -158,4 +159,10 @@ export function mapTargetEnvValue(config: Config['config']) {
   } else if (FARM_TARGET_BROWSER_ENVS.includes(config.output.targetEnv)) {
     config.output.targetEnv = 'browser';
   }
+}
+
+export function tryStatSync(file: string): fs.Stats | undefined {
+  try {
+    return fs.statSync(file, { throwIfNoEntry: false });
+  } catch {}
 }
