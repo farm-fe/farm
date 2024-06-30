@@ -250,7 +250,7 @@ export async function normalizeUserCompilationConfig(
   mode: CompilationMode = 'development',
   isDefault = false
 ): Promise<ResolvedCompilation> {
-  const { compilation, root } = resolvedUserConfig;
+  const { compilation, root = process.cwd() } = resolvedUserConfig;
 
   // resolve root path
   const resolvedRootPath = normalizePath(root);
@@ -884,7 +884,8 @@ export async function resolveMergedUserConfig(
 
   resolvedUserConfig.env = {
     ...userEnv,
-    NODE_ENV: mode
+    NODE_ENV: mergedUserConfig.compilation.mode,
+    mode: mode
   };
 
   return resolvedUserConfig;
