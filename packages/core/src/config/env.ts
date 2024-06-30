@@ -49,7 +49,10 @@ export function loadEnv(
   }
 
   for (const key in process.env) {
-    if (prefixes.some((prefix) => key.startsWith(prefix))) {
+    if (
+      prefixes.some((prefix) => key.startsWith(prefix)) &&
+      key !== 'FARM_LIB_CORE_PATH'
+    ) {
       env[key] = process.env[key] as string;
     }
   }
