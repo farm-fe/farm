@@ -108,7 +108,7 @@ See [Contributing Guide](https://github.com/farm-fe/farm/blob/main/CONTRIBUTING.
 
 - Wechat group
 
-<br><img src="https://github.com/ErKeLost/react-farm/assets/66500121/8ea5240b-b8d7-40ac-b02b-0f281e660a25" width="30%" />
+<br><img src="https://github.com/ErKeLost/react-farm/assets/66500121/9780f176-98e6-488d-8118-c3b454737701" width="30%" />
 
 - QQ group
 
