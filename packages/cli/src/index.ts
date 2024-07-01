@@ -96,6 +96,7 @@ cli
       const defaultOptions = {
         root,
         configPath,
+        clearScreen: options.clearScreen,
         ...getOptionFromBuildOption(options)
       };
 
