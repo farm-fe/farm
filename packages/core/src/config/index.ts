@@ -404,7 +404,6 @@ export async function normalizeUserCompilationConfig(
   if (resolvedCompilation.mode === undefined) {
     resolvedCompilation.mode = mode;
   }
-
   setProcessEnv(resolvedCompilation.mode);
   // TODO add targetEnv `lib-browser` and `lib-node` support
   const is_entry_html =
@@ -884,7 +883,7 @@ export async function resolveMergedUserConfig(
 
   resolvedUserConfig.env = {
     ...userEnv,
-    NODE_ENV: mergedUserConfig.compilation.mode,
+    NODE_ENV: mergedUserConfig.compilation.mode ?? mode,
     mode: mode
   };
 
