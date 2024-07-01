@@ -24,10 +24,13 @@ test('resolveUserConfig', async () => {
     // FARM_HMR_PATH: '/__hmr',
     // FARM_HMR_PORT: '9000',
     FARM_PROCESS_ENV: {
-      NODE_ENV: 'development'
+      NODE_ENV: 'development',
+      mode: 'development'
     },
     // FARM_HMR_PROTOCOL: 'ws',
-    '$__farm_regex:(global(This)?\\.)?process\\.env\\.NODE_ENV': '"development"'
+    '$__farm_regex:(global(This)?\\.)?process\\.env\\.NODE_ENV':
+      '"development"',
+    '$__farm_regex:(global(This)?\\.)?process\\.env\\.mode': '"development"'
   });
   expect(config.compilation.input).toEqual({
     main: './main.tsx'
@@ -52,12 +55,14 @@ test('resolveUserConfig', async () => {
       'yarn.lock'
     ],
     envs: {
-      FARM_PROCESS_ENV: '{"NODE_ENV":"development"}',
+      FARM_PROCESS_ENV: '{"NODE_ENV":"development","mode":"development"}',
       NODE_ENV: 'development',
+      mode: 'development',
       'package.json[name]': 'farm-fe',
       'package.json[type]': 'unknown',
       '$__farm_regex:(global(This)?\\.)?process\\.env\\.NODE_ENV':
         '"development"',
+      '$__farm_regex:(global(This)?\\.)?process\\.env\\.mode': '"development"',
       'package.json[browser]': 'unknown',
       'package.json[exports]': 'unknown',
       'package.json[main]': 'unknown',
@@ -85,9 +90,11 @@ test('resolveUserConfig-prod', async () => {
 
   expect(config.compilation.define).toEqual({
     FARM_PROCESS_ENV: {
-      NODE_ENV: 'production'
+      NODE_ENV: 'production',
+      mode: 'production'
     },
-    '$__farm_regex:(global(This)?\\.)?process\\.env\\.NODE_ENV': '"production"'
+    '$__farm_regex:(global(This)?\\.)?process\\.env\\.NODE_ENV': '"production"',
+    '$__farm_regex:(global(This)?\\.)?process\\.env\\.mode': '"production"'
   });
   expect(config.compilation.input).toEqual({
     main: './main.tsx'
@@ -114,8 +121,9 @@ test('resolveUserConfig-prod', async () => {
       'yarn.lock'
     ],
     envs: {
-      FARM_PROCESS_ENV: '{"NODE_ENV":"production"}',
+      FARM_PROCESS_ENV: '{"NODE_ENV":"production","mode":"production"}',
       NODE_ENV: 'production',
+      mode: 'production',
       'package.json[name]': 'farm-fe',
       'package.json[type]': 'unknown',
       'package.json[browser]': 'unknown',
@@ -123,7 +131,8 @@ test('resolveUserConfig-prod', async () => {
       'package.json[main]': 'unknown',
       'package.json[module]': 'unknown',
       '$__farm_regex:(global(This)?\\.)?process\\.env\\.NODE_ENV':
-        '"production"'
+        '"production"',
+      '$__farm_regex:(global(This)?\\.)?process\\.env\\.mode': '"production"'
     },
     moduleCacheKeyStrategy: {}
   });
@@ -153,9 +162,11 @@ test('resolveUserConfig-input-html-prod', async () => {
 
   expect(config.compilation.define).toEqual({
     FARM_PROCESS_ENV: {
-      NODE_ENV: 'production'
+      NODE_ENV: 'production',
+      mode: 'production'
     },
-    '$__farm_regex:(global(This)?\\.)?process\\.env\\.NODE_ENV': '"production"'
+    '$__farm_regex:(global(This)?\\.)?process\\.env\\.NODE_ENV': '"production"',
+    '$__farm_regex:(global(This)?\\.)?process\\.env\\.mode': '"production"'
   });
 
   expect(config.compilation.output).toEqual({
@@ -212,8 +223,9 @@ test('resolveUserConfig-input-html-prod', async () => {
       'yarn.lock'
     ],
     envs: {
-      FARM_PROCESS_ENV: '{"NODE_ENV":"production"}',
+      FARM_PROCESS_ENV: '{"NODE_ENV":"production","mode":"production"}',
       NODE_ENV: 'production',
+      mode: 'production',
       'package.json[name]': 'farm-fe',
       'package.json[type]': 'unknown',
       'package.json[browser]': 'unknown',
@@ -221,7 +233,8 @@ test('resolveUserConfig-input-html-prod', async () => {
       'package.json[main]': 'unknown',
       'package.json[module]': 'unknown',
       '$__farm_regex:(global(This)?\\.)?process\\.env\\.NODE_ENV':
-        '"production"'
+        '"production"',
+      '$__farm_regex:(global(This)?\\.)?process\\.env\\.mode': '"production"'
     },
     moduleCacheKeyStrategy: {}
   });
