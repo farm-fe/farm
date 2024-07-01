@@ -226,7 +226,10 @@ export async function resolveConfig(
       resolvedUserConfig.compilation.resolve.alias as unknown as Array<Alias>
     );
   }
-
+  // farm.config.ts clearScreen，api clearScreen，cli clearScreen
+  if (resolvedUserConfig.clearScreen && inlineOptions.clearScreen === undefined) {
+    clearScreen()
+  }
   return resolvedUserConfig;
 }
 
