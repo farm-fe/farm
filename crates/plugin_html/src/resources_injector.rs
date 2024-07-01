@@ -1,4 +1,5 @@
-use std::{collections::HashMap, sync::Arc};
+use std::{collections::HashMap, fmt::Display, sync::Arc};
+use url::Url;
 
 use farmfe_core::{
   config::{custom::get_config_runtime_isolate, Mode, FARM_MODULE_SYSTEM},
@@ -18,12 +19,37 @@ use crate::utils::{
   is_script_src_or_type_module_code, FARM_ENTRY, FARM_RESOURCE,
 };
 
+#[derive(Debug, Clone)]
+pub struct PreloadResource {
+    pub href: String,
+    pub as_: String,
+    pub crossorigin: Option<String>,
+}
+
+#[derive(Debug, Clone)]
+pub struct PrefetchResource {
+    pub href: String,
+    pub as_: Option<String>,
+    pub crossorigin: Option<String>,
+}
+
+#[derive(Debug, Clone)]
+pub struct DynamicPrefetchResource {
+    pub module_id: ModuleId,
+    pub href: String,
+    pub as_: Option<String>,
+    pub crossorigin: Option<String>,
+}
+
 pub struct ResourcesInjectorOptions {
   pub mode: Mode,
   pub public_path: String,
   pub namespace: String,
   pub current_html_id: ModuleId,
   pub context: Arc<CompilationContext>,
+  pub preload: Vec<PreloadResource>,
+  pub prefetch: Vec<PrefetchResource>,
+  pub dynamic_prefetch: Vec<DynamicPrefetchResource>,
 }
 
 /// inject resources into the html ast
@@ -60,6 +86,93 @@ impl ResourcesInjector {
       options,
     }
   }
+
+  fn inject_preload_and_prefetch(&self, element: &mut Element) {
+    // Inject preload links
+    for resource in &self.options.preload {
+        let mut attrs = vec![
+            ("rel", "preload"),
+            ("href", resource.href.as_str()),
+            ("as", resource.as_.as_str()),
+        ];
+        if let Some(crossorigin) = &resource.crossorigin {
+            attrs.push(("crossorigin", crossorigin.as_str()));
+        }
+        element.children.push(Child::Element(create_element(
+            "link",
+            None,
+            attrs,
+        )));
+    }
+
+    // Inject prefetch links
+    for resource in &self.options.prefetch {
+        let mut attrs = vec![
+            ("rel", "prefetch"),
+            ("href", resource.href.as_str()),
+        ];
+        if let Some(as_) = &resource.as_ {
+            attrs.push(("as", as_.as_str()));
+        }
+        if let Some(crossorigin) = &resource.crossorigin {
+            attrs.push(("crossorigin", crossorigin.as_str()));
+        }
+        element.children.push(Child::Element(create_element(
+            "link",
+            None,
+            attrs,
+        )));
+    }
+}
+
+fn inject_dynamic_prefetch(&self, element: &mut Element) {
+    // Inject dynamic prefetch links
+    for resource in &self.options.dynamic_prefetch {
+        let mut attrs = vec![
+            ("rel", "prefetch"),
+            ("href", resource.href.as_str()),
+        ];
+        if let Some(as_) = &resource.as_ {
+            attrs.push(("as", as_.as_str()));
+        }
+        if let Some(crossorigin) = &resource.crossorigin {
+            attrs.push(("crossorigin", crossorigin.as_str()));
+        }
+        let onload = format!(
+            r#"
+            const moduleId = "{}";
+            const href = this.href;
+            const as_ = this.as;
+            const crossorigin = this.crossorigin;
+            const link = document.createElement("link");
+            link.rel = "modulepreload";
+            link.href = href;
+            link.as = as_;
+            link.crossorigin = crossorigin;
+            link.onload = () => {{
+              const dynamicResources = {}.{}.getDynamicModuleResourcesMap()[moduleId];
+              for (const [resource, type_] of dynamicResources) {{
+                if (type_ === "dynamic-import" && !resource.starts_with(href)) {{
+                  const prefetchLink = document.createElement("link");
+                  prefetchLink.rel = "prefetch";
+                  prefetchLink.href = resource;
+                  prefetchLink.as = "fetch";
+                  document.head.appendChild(prefetchLink);
+                }}
+              }}
+            }};
+            document.head.appendChild(link);
+            "#,
+            resource.module_id, self.farm_global_this, FARM_MODULE_SYSTEM
+        );
+        attrs.push(("onload", onload.as_str()));
+        element.children.push(Child::Element(create_element(
+            "link",
+            None,
+            attrs,
+        )));
+    }
+}
 
   pub fn inject(&mut self, ast: &mut Document) {
     ast.visit_mut_with(self);
@@ -267,6 +380,12 @@ impl VisitMut for ResourcesInjector {
     }
 
     if element.tag_name.to_string() == "head" {
+        // Inject preload and prefetch links
+        self.inject_preload_and_prefetch(element);
+
+        // Inject dynamic prefetch links
+        self.inject_dynamic_prefetch(element);
+
       // inject css <link>
       for css in &self.css_resources {
         element.children.push(Child::Element(create_element(
