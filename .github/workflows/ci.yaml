@@ -25,32 +25,39 @@ jobs:
           - os: windows-latest
             abi: win32-x64-msvc
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.1.0
+
+      - uses: actions/setup-node@v4
         with:
           node-version: 18
-      - name: Install Dependencies
-        run: npm install -g pnpm@9.1.0 && pnpm i --frozen-lockfile
+          cache: 'pnpm'
 
-      - uses: actions/download-artifact@v3
+      - name: Install Dependencies
+        run: pnpm i --color --frozen-lockfile
+
+      - uses: actions/download-artifact@v4
         id: download
         with:
           name: ${{ github.sha }}-${{ matrix.settings.abi }}
           path: ./packages/core/binding
 
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         id: download-plugin-sass
         with:
           name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-sass
           path: ./rust-plugins/sass/npm/${{ matrix.settings.abi }}
 
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         id: download-plugin-react
         with:
           name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-react
           path: ./rust-plugins/react/npm/${{ matrix.settings.abi }}
 
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         id: download-create-farm-rust
         with:
           name: ${{ github.sha }}-${{ matrix.settings.abi }}
@@ -86,14 +93,19 @@ jobs:
     name: Type Check
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - uses: actions/setup-node@v3
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.1.0
+  
+      - uses: actions/setup-node@v4
         with:
           node-version: 18
+          cache: 'pnpm'
       - name: Install Dependencies
-        run: npm install -g pnpm@9.1.0 && pnpm i --frozen-lockfile
+        run: pnpm i --color --frozen-lockfile
       - name: Build CLI and Core
         run: pnpm --filter @farmfe/cli run build
       - name: Type Check With Tsc
@@ -120,15 +132,19 @@ jobs:
           - os: windows-latest
             abi: win32-x64-msvc
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.1.0
+      - uses: actions/setup-node@v4
         with:
           node-version: 18
+          cache: 'pnpm'
       - name: Install Dependencies
-        run: npm install -g pnpm@9.1.0 && pnpm i --frozen-lockfile
+        run: pnpm i --color --frozen-lockfile
       - name: Build CLI and Core
         run: pnpm --filter @farmfe/cli run build
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         id: download
         with:
           name: ${{ github.sha }}-${{ matrix.settings.abi }}
@@ -146,7 +162,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: call-rust-build
     steps:
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
           path: /tmp/artifacts
       - name: Check
@@ -161,7 +177,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: call-rust-build
     steps:
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
           path: /tmp/artifacts
       - name: Check
@@ -183,7 +199,7 @@ jobs:
           - name: plugin-sass
           - name: plugin-react
     steps:
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
           path: /tmp/artifacts
       - name: Check

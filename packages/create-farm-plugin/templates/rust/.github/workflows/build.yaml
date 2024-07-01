@@ -69,16 +69,20 @@ jobs:
           #   osxcross: true
           #   zig: true
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Cache rust artifacts
         uses: Swatinem/rust-cache@v2
         with:
           shared-key: rust-build-${{ matrix.settings.abi }}
-      - uses: actions/setup-node@v3
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.1.0
+      - uses: actions/setup-node@v4
         with:
           node-version: 18
+          cache: 'pnpm'
       - name: Install Dependencies
-        run: npm install -g pnpm@9.1.0 && pnpm i --frozen-lockfile
+        run: pnpm i --color --frozen-lockfile
       - run: rustup target add ${{ matrix.settings.target }}
         if: ${{ matrix.settings.target }}
       # Use the v1 of this action
@@ -106,7 +110,7 @@ jobs:
         run: ${{ matrix.settings.build }}
         shell: bash
       - name: Upload Plugin
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin
           path: npm/${{ matrix.settings.abi }}/index.farm

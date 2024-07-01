@@ -9,7 +9,7 @@ jobs:
     name: Check
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Install Rust
         uses: oxidecomputer/actions-rs_toolchain@oxide/master
       - name: Cache rust artifacts
@@ -34,7 +34,7 @@ jobs:
           - macos-latest
           - windows-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Install Rust
         uses: oxidecomputer/actions-rs_toolchain@oxide/master
         with:
@@ -44,11 +44,16 @@ jobs:
         with:
           shared-key: cargo-test-release-${{ matrix.os }}
 
-      - uses: actions/setup-node@v3
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.1.0
+    
+      - uses: actions/setup-node@v4
         with:
           node-version: 18
+          cache: 'pnpm'
       - name: Install Dependencies
-        run: npm install -g pnpm@9.1.0 && pnpm i --frozen-lockfile
+        run: pnpm i --color --frozen-lockfile
 
       - uses: arduino/setup-protoc@v3
         with:
