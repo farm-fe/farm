@@ -1,5 +1,11 @@
 # create-farm-plugin
 
+## 0.1.12
+
+### Patch Changes
+
+- d6af590c: optimization rust plugin template
+
 ## 0.1.11
 
 ### Patch Changes
@@ -11,7 +17,6 @@
 ### Patch Changes
 
 - 7aa61a1c: fix: rust plugin template workflow test example path
-
 
 ## 0.1.9
 
