@@ -1,6 +1,6 @@
 [package]
 name = "farmfe_testing"
-version = "0.0.1"
+version = "0.0.2"
 edition = "2021"
 authors = ["shulandmimi <sshuang141@163.com>"]
 license = "MIT"
