@@ -1,5 +1,14 @@
 # @farmfe/core
 
+## 1.2.5
+
+### Patch Changes
+
+- 49523be7: bump dotenv version
+- 53f5115e: fix: publicDir find html resource middleware error
+- Updated dependencies [49523be7]
+  - @farmfe/runtime-plugin-import-meta@0.2.1
+
 ## 1.2.4
 
 ### Patch Changes
