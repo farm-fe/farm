@@ -27,7 +27,7 @@ use farmfe_toolkit::{
 use ident_generator::MinifiedIdentsGenerator;
 use imports_minifier::{IdentReplacer, ImportsMinifier};
 use minify_resource_pot::{minify_css, minify_js};
-use top_level_idents_collector::TopLevelIdentsCollector;
+use top_level_idents_collector::{TopLevelIdentsCollector, UnresolvedIdentCollector};
 
 mod exports_minifier;
 mod ident_generator;
@@ -88,8 +88,19 @@ impl Plugin for FarmPluginMinify {
         let mut top_level_idents_collector = TopLevelIdentsCollector::new();
         ast.visit_mut_with(&mut top_level_idents_collector);
 
-        let ident_generator =
-          MinifiedIdentsGenerator::new(top_level_idents_collector.top_level_idents);
+        let mut top_level_idents = top_level_idents_collector.top_level_idents;
+
+        let (cm, _) = create_swc_source_map(Source {
+          path: PathBuf::from(module.id.to_string()),
+          content: module.content.clone(),
+        });
+        try_with(cm, &context.meta.script.globals, || {
+          let mut collector = UnresolvedIdentCollector::new(Mark::from_u32(meta.unresolved_mark));
+          ast.visit_mut_with(&mut collector);
+          top_level_idents.extend(collector.unresolved_idents);
+        })
+        .unwrap();
+        let ident_generator = MinifiedIdentsGenerator::new(top_level_idents);
         ident_generator_map
           .lock()
           .insert(module.id.clone(), ident_generator);

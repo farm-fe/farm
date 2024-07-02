@@ -1,5 +1,6 @@
 use std::collections::HashSet;
 
+use farmfe_core::swc_common::Mark;
 use farmfe_toolkit::{
   script::defined_idents_collector::DefinedIdentsCollector,
   swc_ecma_visit::{VisitMut, VisitWith},
@@ -78,6 +79,28 @@ impl VisitMut for TopLevelIdentsCollector {
           self.top_level_idents.insert(ns.local.sym.to_string());
         }
       }
+    }
+  }
+}
+
+pub struct UnresolvedIdentCollector {
+  pub unresolved_idents: HashSet<String>,
+  unresolved_mark: Mark,
+}
+
+impl UnresolvedIdentCollector {
+  pub fn new(unresolved_mark: Mark) -> Self {
+    Self {
+      unresolved_idents: HashSet::new(),
+      unresolved_mark,
+    }
+  }
+}
+
+impl VisitMut for UnresolvedIdentCollector {
+  fn visit_mut_ident(&mut self, n: &mut farmfe_core::swc_ecma_ast::Ident) {
+    if n.span.ctxt.outer() == self.unresolved_mark {
+      self.unresolved_idents.insert(n.sym.to_string());
     }
   }
 }
