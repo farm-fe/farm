@@ -170,6 +170,7 @@ pub fn transform_css_to_script_modules(
           hmr_self_accepted: true,
           hmr_accepted_deps: Default::default(),
           comments: CommentsMetaData::from(comments),
+          custom: Default::default(),
         }));
 
         module.module_type = ModuleType::Js;

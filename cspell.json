@@ -181,7 +181,8 @@
     "wasmer",
     "primevue",
     "shulan",
-    "globset"
+    "globset",
+    "instanceof"
   ],
   "ignorePaths": [
     "pnpm-lock.yaml",

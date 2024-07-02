@@ -71,3 +71,9 @@ pub struct ScriptConfig {
   pub plugins: Vec<ScriptConfigPlugin>,
   pub decorators: ScriptDecoratorsConfig,
 }
+
+impl ScriptConfig {
+  pub fn is_target_legacy(&self) -> bool {
+    self.target == EsVersion::Es5 || self.target == EsVersion::Es3
+  }
+}

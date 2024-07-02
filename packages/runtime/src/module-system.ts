@@ -53,15 +53,6 @@ export class ModuleSystem {
   }
 
   require(moduleId: string, isCJS = false): any {
-    const getExports = (isCJS: boolean, module: Module) => {
-      if (isCJS || module.exports.__esModule) {
-        return module.exports;
-      }
-
-      module.exports.default = module.exports;
-      return module.exports;
-    };
-
     // return the cached exports if cache exists
     // console.log(`[Farm] require module "${moduleId}" from cache`);
     if (this.cache[moduleId]) {
@@ -72,7 +63,7 @@ export class ModuleSystem {
 
       // console.log(`[Farm] shouldSkip: ${shouldSkip} ${moduleId}`);
       if (!shouldSkip) {
-        return getExports(isCJS, this.cache[moduleId]);
+        return this.cache[moduleId].exports;
       }
     }
 
@@ -132,13 +123,13 @@ export class ModuleSystem {
         // call the module initialized hook
         this.pluginContainer.hookSerial("moduleInitialized", module);
         // return the exports of the module
-        return getExports(isCJS, module);
+        return module.exports;
       });
     } else {
       // call the module initialized hook
       this.pluginContainer.hookSerial("moduleInitialized", module);
       // return the exports of the module
-      return getExports(isCJS, module);
+      return module.exports;
     }
   }
 

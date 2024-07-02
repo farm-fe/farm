@@ -20,6 +20,7 @@ pub struct MinifyOptions {
   pub include: Vec<ConfigRegex>,
   pub exclude: Vec<ConfigRegex>,
   pub mode: MinifyMode,
+  pub module_decls: bool,
 }
 
 impl Default for MinifyOptions {
@@ -30,6 +31,7 @@ impl Default for MinifyOptions {
       include: vec![],
       exclude: vec![ConfigRegex::new(".+\\.min\\.(js|css|html)$")],
       mode: MinifyMode::Module,
+      module_decls: true,
     }
   }
 }
