@@ -1,5 +1,11 @@
 # @farmfe/core
 
+## 1.2.6
+
+### Patch Changes
+
+- a264f6c4: support mts/cts ext and fix traceDependencies use directory
+
 ## 1.2.5
 
 ### Patch Changes
