@@ -9,11 +9,6 @@ overrides:
 
 pnpmfileChecksum: sumf6mxlq4dh5nzuuhr3plyxpu
 
-patchedDependencies:
-  dotenv-expand@10.0.0:
-    hash: dcar2o2abbvm3f7ghlazy45mqy
-    path: patches/dotenv-expand@10.0.0.patch
-
 importers:
 
   .:
@@ -2102,7 +2097,7 @@ importers:
         specifier: workspace:3.5.2
         version: link:../runtime-plugin-hmr
       '@farmfe/runtime-plugin-import-meta':
-        specifier: workspace:0.2.0
+        specifier: workspace:0.2.1
         version: link:../runtime-plugin-import-meta
       '@farmfe/utils':
         specifier: workspace:*
@@ -2120,11 +2115,11 @@ importers:
         specifier: ^4.3.1
         version: 4.3.1
       dotenv:
-        specifier: ^16.3.1
-        version: 16.3.1
+        specifier: ^16.4.5
+        version: 16.4.5
       dotenv-expand:
-        specifier: ^10.0.0
-        version: 10.0.0(patch_hash=dcar2o2abbvm3f7ghlazy45mqy)
+        specifier: ^11.0.6
+        version: 11.0.6
       execa:
         specifier: ^7.1.1
         version: 7.2.0
@@ -6709,15 +6704,15 @@ packages:
     resolution: {integrity: sha512-QM8q3zDe58hqUqjraQOmzZ1LIH9SWQJTlEKCH4kJ2oQvLZk7RbQXvtDM2XEq3fwkV9CCvvH4LA0AV+ogFsBM2Q==}
     engines: {node: '>=8'}
 
-  dotenv-expand@10.0.0:
-    resolution: {integrity: sha512-GopVGCpVS1UKH75VKHGuQFqS1Gusej0z4FyQkPdwjil2gNIv+LNsqBlboOzpJFZKVT95GkCyWJbBSdFEFUWI2A==}
+  dotenv-expand@11.0.6:
+    resolution: {integrity: sha512-8NHi73otpWsZGBSZwwknTXS5pqMOrk9+Ssrna8xCaxkzEpU9OTf9R5ArQGVw03//Zmk9MOwLPng9WwndvpAJ5g==}
     engines: {node: '>=12'}
 
   dotenv-expand@5.1.0:
     resolution: {integrity: sha512-YXQl1DSa4/PQyRfgrv6aoNjhasp/p4qs9FjJ4q4cQk+8m4r6k4ZSiEyytKG8f8W9gi8WsQtIObNmKd+tMzNTmA==}
 
-  dotenv@16.3.1:
-    resolution: {integrity: sha512-IPzF4w4/Rd94bA9imS68tZBaYyBWSCE47V1RGuMrB94iyTOIEwRmVL2x/4An+6mETpLrKJ5hQkB8W4kFAadeIQ==}
+  dotenv@16.4.5:
+    resolution: {integrity: sha512-ZmdL2rui+eB2YwhsWzjInR8LldtZHGDoQ1ugH85ppHKwpUHL7j7rN0Ti9NCnGiQbhaZ11FpR+7ao1dNsmduNUg==}
     engines: {node: '>=12'}
 
   dotenv@9.0.2:
@@ -17321,11 +17316,13 @@ snapshots:
     dependencies:
       is-obj: 2.0.0
 
-  dotenv-expand@10.0.0(patch_hash=dcar2o2abbvm3f7ghlazy45mqy): {}
+  dotenv-expand@11.0.6:
+    dependencies:
+      dotenv: 16.4.5
 
   dotenv-expand@5.1.0: {}
 
-  dotenv@16.3.1: {}
+  dotenv@16.4.5: {}
 
   dotenv@9.0.2: {}
 

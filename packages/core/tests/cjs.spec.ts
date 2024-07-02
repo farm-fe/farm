@@ -1,6 +1,7 @@
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { expect, test } from 'vitest';
+import bindingPath from '../binding/resolve-binding.cjs';
 
 import { isDisableCache } from '../src/config/env.js';
 import { normalizeDevServerConfig, resolveConfig } from '../src/index.js';
@@ -21,10 +22,13 @@ test('resolveUserConfig', async () => {
     // FARM_HMR_PATH: '/__hmr',
     // FARM_HMR_PORT: '9000',
     FARM_PROCESS_ENV: {
-      NODE_ENV: 'development'
+      NODE_ENV: 'development',
+      mode: 'development'
     },
     // FARM_HMR_PROTOCOL: 'ws',
-    '$__farm_regex:(global(This)?\\.)?process\\.env\\.NODE_ENV': '"development"'
+    '$__farm_regex:(global(This)?\\.)?process\\.env\\.NODE_ENV':
+      '"development"',
+    '$__farm_regex:(global(This)?\\.)?process\\.env\\.mode': '"development"'
   });
   expect(config.compilation.input).toEqual({
     main: './main.tsx'
@@ -38,6 +42,36 @@ test('resolveUserConfig', async () => {
   expect(config.compilation.sourcemap).toEqual(true);
   expect(config.compilation.minify).toEqual(false);
   expect(config.compilation.presetEnv).toEqual(false);
+  expect(config.compilation.persistentCache).toEqual({
+    buildDependencies: [
+      // path.join(filePath, '..', 'src', 'config.ts'),
+      path.join(filePath, 'fixtures', 'config', 'farm.config.ts'),
+      path.join(filePath, 'fixtures', 'config', 'util.ts'),
+      'module',
+      'package-lock.json',
+      'pnpm-lock.yaml',
+      'yarn.lock'
+    ],
+    envs: {
+      FARM_PROCESS_ENV: '{"NODE_ENV":"development","mode":"development"}',
+      NODE_ENV: 'development',
+      mode: 'development',
+      'package.json[name]': 'farm-fe',
+      'package.json[type]': 'unknown',
+      '$__farm_regex:(global(This)?\\.)?process\\.env\\.NODE_ENV':
+        '"development"',
+      '$__farm_regex:(global(This)?\\.)?process\\.env\\.mode': '"development"',
+      'package.json[browser]': 'unknown',
+      'package.json[exports]': 'unknown',
+      'package.json[main]': 'unknown',
+      'package.json[module]': 'unknown'
+      // FARM_HMR_HOST: 'true',
+      // FARM_HMR_PATH: '/__hmr',
+      // FARM_HMR_PORT: '9000',
+      // FARM_HMR_PROTOCOL: 'ws'
+    },
+    moduleCacheKeyStrategy: {}
+  });
   expect(config.server).toEqual(
     normalizeDevServerConfig(config.server, 'development')
   );
