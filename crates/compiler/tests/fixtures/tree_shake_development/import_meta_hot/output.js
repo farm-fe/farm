@@ -67,53 +67,35 @@ var index_js_cjs = __commonJs({
     }
 });
 })());(function(_){for(var r in _){_[r].__farm_resource_pot__='index_ddf1.js';(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.register(r,_[r])}})({"dep.ts":function  (module, exports, farmRequire, farmDynamicRequire) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", {
-        value: true
+    module.o(exports, "a", function() {
+        return a;
     });
-    function _export(target, all) {
-        for(var name in all)Object.defineProperty(target, name, {
-            enumerable: true,
-            get: all[name]
-        });
-    }
-    _export(exports, {
-        a: function() {
-            return a;
-        },
-        invalidate: function() {
-            return invalidate;
-        }
+    module.o(exports, "invalidate", function() {
+        return invalidate;
     });
     if (module.meta.hot) {
         module.meta.hot.accept(()=>{
             module.meta.hot.invalidate("parent module should accept this");
         });
     }
-    const a = "1";
+    var a = "1";
     function invalidate() {
         return `invalidate data`;
     }
+    module._m(exports);
 }
 ,
 "index.ts":function  (module, exports, farmRequire, farmDynamicRequire) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", {
-        value: true
+    module.o(exports, "InvalidateParent", function() {
+        return InvalidateParent;
     });
-    Object.defineProperty(exports, "InvalidateParent", {
-        enumerable: true,
-        get: function() {
-            return InvalidateParent;
-        }
-    });
-    var _dep = farmRequire("dep.ts");
-    console.log(_dep.a);
+    var _f_dep = farmRequire("dep.ts");
+    console.log(_f_dep.a);
     const id = "InvalidateParent";
     function InvalidateParent() {
         return {
             render: ()=>{
-                const renderData = (0, _dep.invalidate)();
+                const renderData = _f_dep.invalidate();
                 const div = document.createElement("div", {});
                 div.id = id;
                 div.innerText = renderData;
@@ -131,5 +113,6 @@ var index_js_cjs = __commonJs({
             div.replaceWith(comp);
         }
     }
+    module._m(exports);
 }
 ,});(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setInitialLoadedResources([]);(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setDynamicModuleResourcesMap({  });var farmModuleSystem = (globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__;farmModuleSystem.bootstrap();var entry = farmModuleSystem.require("index.ts");var InvalidateParent=entry.InvalidateParent;export { InvalidateParent };

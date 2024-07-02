@@ -64,15 +64,8 @@
     console.log("runtime/index.js")(globalThis || window || global)["__farm_default_namespace__"].__farm_module_system__.setPlugins([]);
 });
 })());(function(_){for(var r in _){_[r].__farm_resource_pot__='index_a93b.js';(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.register(r,_[r])}})({"066a321b":function  (module, exports, farmRequire, farmDynamicRequire) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", {
-        value: true
-    });
-    Object.defineProperty(exports, "default", {
-        enumerable: true,
-        get: function() {
-            return resolve;
-        }
+    module.o(exports, "default", function() {
+        return resolve;
     });
     const schemeRegex = /^[\w+.-]+:\/\//;
     const urlRegex = /^([\w+.-]+:)\/\/([^@/#?]*@)?([^:/#?]*)(:\d+)?(\/[^#?]*)?(\?[^#]*)?(#.*)?/;
@@ -239,25 +232,15 @@
                 return url.scheme + "//" + url.user + url.host + url.port + url.path + queryHash;
         }
     }
+    module._m(exports);
 }
 ,
 "7cd09bc5":function  (module, exports, farmRequire, farmDynamicRequire) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", {
-        value: true
-    });
-    Object.defineProperty(exports, "default", {
-        enumerable: true,
-        get: function() {
-            return _default;
-        }
-    });
-    var _interop_require_default = farmRequire("@swc/helpers/_/_interop_require_default");
-    var _root = _interop_require_default._(farmRequire("b5147996"));
+    var _f__root = module.i(farmRequire("b5147996"));
     var freeExports = typeof exports == "object" && exports && !exports.nodeType && exports;
     var freeModule = freeExports && typeof module == "object" && module && !module.nodeType && module;
     var moduleExports = freeModule && freeModule.exports === freeExports;
-    var Buffer = moduleExports ? _root.default.Buffer : undefined, allocUnsafe = Buffer ? Buffer.allocUnsafe : undefined;
+    var Buffer = moduleExports ? module.f(_f__root).Buffer : undefined, allocUnsafe = Buffer ? Buffer.allocUnsafe : undefined;
     function cloneBuffer(buffer, isDeep) {
         if (isDeep) {
             return buffer.slice();
@@ -266,32 +249,20 @@
         buffer.copy(result);
         return result;
     }
-    var _default = cloneBuffer;
+    exports.default = cloneBuffer;
+    module._m(exports);
 }
 ,
 "b5147996":function  (module, exports, farmRequire, farmDynamicRequire) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", {
-        value: true
-    });
-    Object.defineProperty(exports, "default", {
-        enumerable: true,
-        get: function() {
-            return _default;
-        }
-    });
-    var _default = "/home";
+    exports.default = "/home";
+    module._m(exports);
 }
 ,
 "b5d64806":function  (module, exports, farmRequire, farmDynamicRequire) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", {
-        value: true
-    });
-    var _interop_require_default = farmRequire("@swc/helpers/_/_interop_require_default");
-    var _cloneBuffer = _interop_require_default._(farmRequire("7cd09bc5"));
-    var _resolveuri = _interop_require_default._(farmRequire("066a321b"));
-    console.log((0, _cloneBuffer.default)(Buffer.from("test")));
-    console.log((0, _resolveuri.default)("test"));
+    var _f__cloneBuffer = module.i(farmRequire("7cd09bc5"));
+    var _f_resolve_uri = module.i(farmRequire("066a321b"));
+    console.log(module.f(_f__cloneBuffer)(Buffer.from("test")));
+    console.log(module.f(_f_resolve_uri)("test"));
+    module._m(exports);
 }
 ,});(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setInitialLoadedResources([]);(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setDynamicModuleResourcesMap({  });var farmModuleSystem = (globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__;farmModuleSystem.bootstrap();var entry = farmModuleSystem.require("b5d64806");

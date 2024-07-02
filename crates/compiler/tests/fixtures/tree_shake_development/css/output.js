@@ -67,27 +67,16 @@ var index_js_cjs = __commonJs({
     }
 });
 })());(function(_){for(var r in _){_[r].__farm_resource_pot__='index_4246.js';(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.register(r,_[r])}})({"index.ts":function  (module, exports, farmRequire, farmDynamicRequire) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", {
-        value: true
+    module.o(exports, "c", function() {
+        return c;
     });
-    Object.defineProperty(exports, "c", {
-        enumerable: true,
-        get: function() {
-            return c;
-        }
-    });
-    var _interop_require_default = farmRequire("@swc/helpers/_/_interop_require_default");
     farmRequire("style/a.css");
-    var _logo1png = _interop_require_default._(farmRequire("style/logo1.png"));
-    const c = _logo1png.default;
+    var _f_logo1 = module.i(farmRequire("style/logo1.png"));
+    var c = module.f(_f_logo1);
+    module._m(exports);
 }
 ,
 "style/a.css":function  (module, exports, farmRequire, farmDynamicRequire) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", {
-        value: true
-    });
     farmRequire("style/b.css");
     const cssCode = `
 `;
@@ -107,10 +96,10 @@ var index_js_cjs = __commonJs({
             style.remove();
         });
     }
+    module._m(exports);
 }
 ,
 "style/b.css":function  (module, exports, farmRequire, farmDynamicRequire) {
-    "use strict";
     const cssCode = `* {
   margin: 0;
   padding: 0;
@@ -136,31 +125,13 @@ var index_js_cjs = __commonJs({
 }
 ,
 "style/logo.png":function  (module, exports, farmRequire, farmDynamicRequire) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", {
-        value: true
-    });
-    Object.defineProperty(exports, "default", {
-        enumerable: true,
-        get: function() {
-            return _default;
-        }
-    });
-    var _default = "/logo-73d4a8.png";
+    exports.default = "/logo-73d4a8.png";
+    module._m(exports);
 }
 ,
 "style/logo1.png":function  (module, exports, farmRequire, farmDynamicRequire) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", {
-        value: true
-    });
-    Object.defineProperty(exports, "default", {
-        enumerable: true,
-        get: function() {
-            return _default;
-        }
-    });
-    var _default = "/logo1-cbaed8.png";
+    exports.default = "/logo1-cbaed8.png";
+    module._m(exports);
 }
 ,});(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setInitialLoadedResources([]);(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setDynamicModuleResourcesMap({  });var farmModuleSystem = (globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__;farmModuleSystem.bootstrap();var entry = farmModuleSystem.require("index.ts");var c=entry.c;export { c };
 
