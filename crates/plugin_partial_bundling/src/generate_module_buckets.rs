@@ -27,6 +27,7 @@ impl ResourceType {
   }
 }
 
+#[derive(Debug)]
 pub struct ModuleGroupBuckets {
   pub module_group_id: ModuleGroupId,
   pub resource_type: ResourceType,

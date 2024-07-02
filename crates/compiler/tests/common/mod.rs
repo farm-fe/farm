@@ -12,7 +12,7 @@ use farmfe_core::{
 use farmfe_testing_helpers::is_update_snapshot_from_env;
 use farmfe_toolkit::fs::read_file_utf8;
 
-pub fn generate_runtime(crate_path: PathBuf) -> RuntimeConfig {
+pub fn generate_runtime(crate_path: PathBuf) -> Box<RuntimeConfig> {
   let swc_helpers_path = crate_path
     .join("tests")
     .join("fixtures")
@@ -29,12 +29,12 @@ pub fn generate_runtime(crate_path: PathBuf) -> RuntimeConfig {
     .to_string_lossy()
     .to_string();
 
-  RuntimeConfig {
+  Box::new(RuntimeConfig {
     path: runtime_path,
     plugins: vec![],
     swc_helpers_path,
     ..Default::default()
-  }
+  })
 }
 
 #[allow(dead_code)]
@@ -49,17 +49,17 @@ pub fn create_css_compiler(
       input,
       root: cwd.to_string_lossy().to_string(),
       runtime: generate_runtime(crate_path),
-      output: farmfe_core::config::OutputConfig {
+      output: Box::new(farmfe_core::config::OutputConfig {
         filename: "[resourceName].[ext]".to_string(),
         ..Default::default()
-      },
+      }),
       mode: Mode::Production,
       external: vec![
         ConfigRegex::new("^react-refresh$"),
         ConfigRegex::new("^module$"),
       ],
-      sourcemap: SourcemapConfig::Bool(false),
-      css: css_config,
+      sourcemap: Box::new(SourcemapConfig::Bool(false)),
+      css: Box::new(css_config),
       lazy_compilation: false,
       progress: false,
       minify: Box::new(BoolOrObj::Bool(false)),
@@ -80,10 +80,10 @@ pub fn create_config(cwd: PathBuf, crate_path: PathBuf) -> Config {
     input: HashMap::new(),
     root: cwd.to_string_lossy().to_string(),
     runtime: generate_runtime(crate_path),
-    output: farmfe_core::config::OutputConfig::default(),
+    output: Default::default(),
     mode: Mode::Production,
     external: Default::default(),
-    sourcemap: SourcemapConfig::Bool(false),
+    sourcemap: Box::new(SourcemapConfig::Bool(false)),
     lazy_compilation: false,
     progress: false,
     minify: Box::new(BoolOrObj::Bool(false)),
@@ -131,17 +131,17 @@ pub fn create_compiler(
       input,
       root: cwd.to_string_lossy().to_string(),
       runtime: generate_runtime(crate_path),
-      output: farmfe_core::config::OutputConfig {
+      output: Box::new(farmfe_core::config::OutputConfig {
         filename: "[resourceName].[ext]".to_string(),
         ..Default::default()
-      },
+      }),
       mode: Mode::Production,
       external: vec![
         ConfigRegex::new("^react-refresh$"),
         ConfigRegex::new("^module$"),
         ConfigRegex::new("^vue$"),
       ],
-      sourcemap: SourcemapConfig::Bool(false),
+      sourcemap: Box::new(SourcemapConfig::Bool(false)),
       lazy_compilation: false,
       progress: false,
       minify: Box::new(BoolOrObj::from(minify)),
@@ -183,17 +183,17 @@ pub fn create_compiler_with_plugins(
     Config {
       input,
       root: cwd.to_string_lossy().to_string(),
-      runtime: RuntimeConfig {
+      runtime: Box::new(RuntimeConfig {
         path: runtime_path,
         plugins: vec![],
         swc_helpers_path,
         ..Default::default()
-      },
+      }),
       external: vec![
         ConfigRegex::new("^react-refresh$"),
         ConfigRegex::new("^module$"),
       ],
-      sourcemap: SourcemapConfig::Bool(false),
+      sourcemap: Box::new(SourcemapConfig::Bool(false)),
       lazy_compilation: false,
       progress: false,
       minify: Box::new(BoolOrObj::from(minify)),

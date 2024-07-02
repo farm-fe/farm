@@ -28,17 +28,17 @@ fn create_compiler_internal(
       input,
       root: cwd.to_string_lossy().to_string(),
       runtime: generate_runtime(crate_path),
-      output: farmfe_core::config::OutputConfig {
+      output: Box::new(farmfe_core::config::OutputConfig {
         filename: "[resourceName].[ext]".to_string(),
         target_env,
         ..Default::default()
-      },
+      }),
       mode: Mode::Development,
       external: vec![
         ConfigRegex::new("^react-refresh$"),
         ConfigRegex::new("^module$"),
       ],
-      sourcemap: SourcemapConfig::Bool(false),
+      sourcemap: Box::new(SourcemapConfig::Bool(false)),
       progress: false,
       lazy_compilation,
       minify: Box::new(BoolOrObj::from(minify)),
