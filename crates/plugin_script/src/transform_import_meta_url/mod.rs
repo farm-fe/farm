@@ -1,24 +1,26 @@
 use farmfe_core::{
-  swc_common::{util::take::Take, Spanned, DUMMY_SP},
+  swc_common::{
+    comments::{Comments, SingleThreadedComments},
+    util::take::Take,
+    Spanned, DUMMY_SP,
+  },
   swc_ecma_ast::{
     CallExpr, Callee, ComputedPropName, Expr, ExprOrSpread, Ident, KeyValueProp, Lit, MemberExpr,
     MemberProp, MetaPropExpr, MetaPropKind, Module, ObjectLit, Prop, PropName, PropOrSpread,
   },
 };
-use farmfe_toolkit::{
-  swc_ecma_utils::ExprExt,
-  swc_ecma_visit::{VisitMut, VisitMutWith},
-};
+use farmfe_toolkit::swc_ecma_visit::{VisitMut, VisitMutWith};
+use farmfe_utils::is_skip_action_by_comment;
 
 fn normalized_glob_pattern(pattern: String) -> String {
   let mut pattern_builder: Vec<String> = vec![];
-  let stack = pattern
+  let path_split = pattern
     .split("/")
     .into_iter()
     .filter(|str| str != &"")
     .collect::<Vec<_>>();
 
-  for item in stack {
+  for item in path_split {
     let mut file_pattern = String::with_capacity(item.len());
 
     for ch in item.chars() {
@@ -67,10 +69,12 @@ fn normalized_glob_pattern(pattern: String) -> String {
   return pattern_builder.join("/");
 }
 
-// transform `new URL("url", import.meta.url)` to `import.meta.glob('url', { eager: true, import: 'default', query: 'url' })`
-struct ImportMetaURLVisitor {}
+// transform `new URL("url", import.meta.url)` to `new URL(import.meta.glob('url', { eager: true, import: 'default', query: 'url' }), import.meta.url71)`
+struct ImportMetaURLVisitor<'a> {
+  comments: &'a SingleThreadedComments,
+}
 
-impl ImportMetaURLVisitor {
+impl<'a> ImportMetaURLVisitor<'a> {
   fn is_import_meta_url(expr: &Expr) -> bool {
     if let Expr::Member(MemberExpr {
       obj:
@@ -87,28 +91,39 @@ impl ImportMetaURLVisitor {
 
     false
   }
-}
 
-impl VisitMut for ImportMetaURLVisitor {
-  fn visit_mut_expr(&mut self, node: &mut Expr) {
+  fn transform_url(&self, node: &mut Expr) -> Option<()> {
     let mut is_replace = false;
+
     match node {
       Expr::New(new) => {
         if let box Expr::Ident(ident) = &new.callee {
           if ident.sym != "URL" {
-            return;
+            return None;
           }
 
           if !new.args.as_ref().is_some_and(|a| {
             a.len() == 2
-              && a[0].expr.is_str()
+              && matches!(a[0].expr.as_ref(), Expr::Lit(_) | Expr::Tpl(_))
               && ImportMetaURLVisitor::is_import_meta_url(&a[1].expr)
           }) {
-            return;
+            return None;
           }
 
           if let Some(args) = &mut new.args {
             let url = {
+              // skip transform when contain skip comment
+              if self
+                .comments
+                .get_leading(args[0].span_lo())
+                .is_some_and(|c| {
+                  c.iter()
+                    .any(|item| is_skip_action_by_comment(&item.text.as_str()))
+                })
+              {
+                return None;
+              };
+
               match &args[0].expr {
                 box Expr::Lit(Lit::Str(str)) => str.value.to_string(),
                 box Expr::Tpl(tpl) => {
@@ -140,7 +155,7 @@ impl VisitMut for ImportMetaURLVisitor {
 
                   pattern_builder
                 }
-                _ => return,
+                _ => return None,
               }
             };
 
@@ -200,14 +215,24 @@ impl VisitMut for ImportMetaURLVisitor {
       _ => {}
     }
 
-    if !is_replace {
-      node.visit_mut_children_with(self);
+    if is_replace {
+      return Some(());
     }
+
+    None
   }
 }
 
-pub fn transform_url_with_import_meta_url(ast: &mut Module) {
-  ast.visit_mut_with(&mut ImportMetaURLVisitor {});
+impl<'a> VisitMut for ImportMetaURLVisitor<'a> {
+  fn visit_mut_expr(&mut self, node: &mut Expr) {
+    if self.transform_url(node).is_none() {
+      node.visit_mut_children_with(self);
+    };
+  }
+}
+
+pub fn transform_url_with_import_meta_url(ast: &mut Module, comments: &SingleThreadedComments) {
+  ast.visit_mut_with(&mut ImportMetaURLVisitor { comments });
 }
 
 mod tests {

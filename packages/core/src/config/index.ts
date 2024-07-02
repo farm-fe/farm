@@ -17,7 +17,6 @@ import {
   resolveFarmPlugins
 } from '../plugin/index.js';
 import { Server } from '../server/index.js';
-import { urlRegex } from '../utils/http.js';
 import {
   Logger,
   bold,
@@ -149,9 +148,9 @@ export async function resolveConfig(
     const loadedUserConfig = await loadConfigFile(
       configPath,
       inlineOptions,
-      logger,
-      mode
+      logger
     );
+
     if (loadedUserConfig) {
       configPath = loadedUserConfig.configFilePath;
       rawConfig = mergeConfig(rawConfig, loadedUserConfig.config);
@@ -257,14 +256,6 @@ export async function normalizeUserCompilationConfig(
 
   resolvedUserConfig.root = resolvedRootPath;
 
-  // resolve public path
-  if (compilation?.output?.publicPath) {
-    compilation.output.publicPath = normalizePublicPath(
-      compilation.output.publicPath,
-      logger
-    );
-  }
-
   if (!userConfig.compilation) {
     userConfig.compilation = {};
   }
@@ -290,7 +281,7 @@ export async function normalizeUserCompilationConfig(
 
   resolvedCompilation.coreLibPath = bindingPath;
 
-  normalizeOutput(resolvedCompilation, isProduction);
+  normalizeOutput(resolvedCompilation, isProduction, logger);
   normalizeExternal(userConfig, resolvedCompilation);
 
   // eslint-disable-next-line @typescript-eslint/ban-ts-comment
@@ -419,8 +410,7 @@ export async function normalizeUserCompilationConfig(
     is_entry_html &&
     !resolvedCompilation.runtime.plugins.includes(hmrClientPluginPath)
   ) {
-    const publicPath =
-      resolvedUserConfig.compilation?.output?.publicPath ?? '/';
+    const publicPath = resolvedCompilation.output.publicPath;
     const hmrPath = resolvedUserConfig.server.hmr.path;
     const serverOptions = resolvedUserConfig.server;
     const defineHmrPath = normalizeBasePath(path.join(publicPath, hmrPath));
@@ -585,8 +575,7 @@ export const DEFAULT_DEV_SERVER_OPTIONS: NormalizedServerConfig = {
 
 export const DEFAULT_COMPILATION_OPTIONS: Partial<ResolvedCompilation> = {
   output: {
-    path: './dist',
-    publicPath: '/'
+    path: './dist'
   },
   sourcemap: true,
   resolve: {
@@ -651,8 +640,7 @@ export function normalizeDevServerConfig(
 async function readConfigFile(
   inlineOptions: FarmCLIOptions,
   configFilePath: string,
-  logger: Logger,
-  mode: CompilationMode
+  logger: Logger
 ): Promise<UserConfig | undefined> {
   if (fs.existsSync(configFilePath)) {
     !__FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__ &&
@@ -703,6 +691,7 @@ async function readConfigFile(
         progress: false
       }
     };
+
     const tsDefaultResolvedUserConfig: ResolvedUserConfig =
       await resolveMergedUserConfig(
         tsDefaultUserConfig,
@@ -715,7 +704,7 @@ async function readConfigFile(
       tsDefaultResolvedUserConfig,
       tsDefaultUserConfig,
       logger,
-      mode as CompilationMode
+      'development'
     );
 
     const compiler = new Compiler(
@@ -774,50 +763,6 @@ export function normalizePublicDir(root: string, userPublicDir?: string) {
     ? publicDir
     : path.join(root, publicDir);
   return absPublicDirPath;
-}
-
-/**
- * @param publicPath  publicPath option
- * @param logger  logger instance
- * @param isPrefixNeeded  whether to add a prefix to the publicPath
- * @returns  normalized publicPath
- */
-export function normalizePublicPath(
-  publicPath = '/',
-  logger: Logger,
-  isPrefixNeeded = true
-) {
-  let normalizedPublicPath = publicPath;
-  let warning = false;
-  // normalize relative path
-  if (normalizedPublicPath.startsWith('..')) {
-    warning = true;
-  }
-
-  // normalize appended relative path
-  if (!normalizedPublicPath.endsWith('/')) {
-    if (!urlRegex.test(normalizedPublicPath)) {
-      warning = true;
-    }
-    normalizedPublicPath = normalizedPublicPath + '/';
-  }
-
-  // normalize prepended relative path
-  if (
-    normalizedPublicPath.startsWith('/') &&
-    !urlRegex.test(normalizedPublicPath) &&
-    !isPrefixNeeded
-  ) {
-    normalizedPublicPath = normalizedPublicPath.slice(1);
-  }
-
-  warning &&
-    isPrefixNeeded &&
-    logger.warn(
-      ` (!) Irregular 'publicPath' options: '${publicPath}', it should only be an absolute path like '/publicPath/', an url or an empty string.`
-    );
-
-  return normalizedPublicPath;
 }
 
 function checkClearScreen(inlineConfig: FarmCLIOptions) {
@@ -888,8 +833,7 @@ export async function resolveMergedUserConfig(
 export async function loadConfigFile(
   configPath: string,
   inlineOptions: FarmCLIOptions,
-  logger: Logger = new Logger(),
-  mode: CompilationMode
+  logger: Logger = new Logger()
 ): Promise<{ config: UserConfig; configFilePath: string } | undefined> {
   // if configPath points to a directory, try to find a config file in it using default config
   try {
@@ -899,8 +843,7 @@ export async function loadConfigFile(
       const config = await readConfigFile(
         inlineOptions,
         configFilePath,
-        logger,
-        mode
+        logger
       );
 
       return {

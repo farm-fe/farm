@@ -428,6 +428,15 @@ importers:
         specifier: workspace:*
         version: link:../../packages/core
 
+  examples/import-meta:
+    devDependencies:
+      '@farmfe/cli':
+        specifier: ^1.0.2
+        version: 1.0.2
+      '@farmfe/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+
   examples/issues1433:
     dependencies:
       micromark-util-symbol:

@@ -150,7 +150,7 @@ export class Compiler {
     return this._bindingCompiler.pluginStats() as PluginStats;
   }
 
-  writeResourcesToDisk(base = ''): void {
+  writeResourcesToDisk(): void {
     const resources = this.resources();
     const configOutputPath = this.config.config.output.path;
     const outputPath = path.isAbsolute(configOutputPath)
@@ -162,8 +162,7 @@ export class Compiler {
       const nameWithoutQuery = name.split('?')[0];
       const nameWithoutHash = nameWithoutQuery.split('#')[0];
 
-      const filePath = path.join(outputPath, base, nameWithoutHash);
-
+      let filePath = path.join(outputPath, nameWithoutHash);
       if (!existsSync(path.dirname(filePath))) {
         mkdirSync(path.dirname(filePath), { recursive: true });
       }
