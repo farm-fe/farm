@@ -1,14 +1,21 @@
-use crate::{package_manager::PackageManager, template::Template, utils::colors::*};
-use std::ffi::OsString;
-use pico_args::Arguments;
+use crate::{package_manager::PackageManager, template::Template};
+use clap::Parser;
 
-#[derive(Debug)]
+#[derive(Parser, Debug)]
+#[command(
+  name = "create-farm",
+  about,
+  long_about = None,
+  version,
+)]
 pub struct Args {
+  #[arg(help = "Project name")]
   pub project_name: Option<String>,
+  #[arg(short, long, help = "Package manager to use")]
   pub manager: Option<PackageManager>,
+  #[arg(short, long, help = "Project template to use")]
   pub template: Option<Template>,
 }
-
 
 impl Default for Args {
   fn default() -> Self {
@@ -18,31 +25,4 @@ impl Default for Args {
       template: Some(Template::Vanilla),
     }
   }
-}
-
-
-pub fn parse(argv: Vec<OsString>, bin_name: Option<String>) -> anyhow::Result<Args> {
-  let mut pargs = Arguments::from_vec(argv);
-
-  if pargs.contains(["-h", "--help"]) {
-      let help = format!(
-          r#""#
-      );
-
-      println!("{help}");
-      std::process::exit(0);
-  }
-  if pargs.contains(["-v", "--version"]) {
-      println!("{}", env!("CARGO_PKG_VERSION"));
-      std::process::exit(0);
-  }
-
-
-  let args = Args {
-      manager: pargs.opt_value_from_str(["-m", "--manager"])?,
-      template: pargs.opt_value_from_str(["-t", "--template"])?,
-      project_name: pargs.opt_free_from_str()?,
-  };
-
-  Ok(args)
 }
