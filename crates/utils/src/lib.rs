@@ -9,6 +9,23 @@ pub mod hash;
 
 pub const PARSE_QUERY_TRUE: &str = "";
 
+pub const FARM_IGNORE_ACTION_COMMENT: &str = "$farm-ignore";
+pub const FARM_IGNORE_ACTION_COMMENTS: [&str; 2] = [FARM_IGNORE_ACTION_COMMENT, "$vite-ignore"];
+
+pub fn is_skip_action_by_comment(comment: &str) -> bool {
+  if comment.is_empty() || !comment.contains("$") {
+    return false;
+  }
+
+  for action in FARM_IGNORE_ACTION_COMMENTS {
+    if comment.contains(action) {
+      return true;
+    }
+  }
+
+  false
+}
+
 /// parse `?a=b` to `HashMap { a: b }`, `?a` to `HashMap { a: "" }`
 pub fn parse_query(path: &str) -> Vec<(String, String)> {
   if !path.contains('?') {

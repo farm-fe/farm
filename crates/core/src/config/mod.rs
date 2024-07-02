@@ -6,7 +6,7 @@ use swc_css_prefixer::options::Targets;
 use swc_ecma_parser::{EsConfig, TsConfig};
 
 use self::{
-  bool_or_obj::BoolOrObj, comments::CommentsConfig, config_regex::ConfigRegex, external::ExternalConfig, html::HtmlConfig, partial_bundling::PartialBundlingConfig, preset_env::PresetEnvConfig, script::ScriptConfig
+  bool_or_obj::BoolOrObj, comments::CommentsConfig, config_regex::ConfigRegex, html::HtmlConfig, partial_bundling::PartialBundlingConfig, preset_env::PresetEnvConfig, script::ScriptConfig
 };
 
 pub const FARM_MODULE_SYSTEM: &str = "__farm_module_system__";
@@ -28,6 +28,9 @@ pub mod persistent_cache;
 pub mod preset_env;
 pub mod script;
 pub mod external;
+mod output;
+
+pub use output::*;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", default)]
@@ -99,33 +102,6 @@ impl Default for Config {
   }
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
-#[serde(rename_all = "camelCase", default)]
-pub struct OutputConfig {
-  pub path: String,
-  pub public_path: String,
-  pub entry_filename: String,
-  pub filename: String,
-  pub assets_filename: String,
-  pub target_env: TargetEnv,
-  pub format: ModuleFormat,
-}
-
-impl Default for OutputConfig {
-  fn default() -> Self {
-    Self {
-      entry_filename: "[entryName].[ext]".to_string(),
-      // [resourceName].[contentHash].[ext]
-      filename: "[resourceName].[ext]".to_string(),
-      // [resourceName].[contentHash].[ext]
-      assets_filename: "[resourceName].[ext]".to_string(),
-      public_path: "/".to_string(),
-      path: "dist".to_string(),
-      target_env: TargetEnv::default(),
-      format: ModuleFormat::default(),
-    }
-  }
-}
 
 #[derive(Debug, Copy, Clone, Serialize, Deserialize, Eq, PartialEq, Hash, Default)]
 pub enum TargetEnv {

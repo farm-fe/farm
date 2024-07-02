@@ -6,6 +6,7 @@ import { RustPlugin } from '../../plugin/index.js';
 import { Config } from '../../types/binding.js';
 import { Logger } from '../../utils/logger.js';
 import { traceDependencies } from '../../utils/trace-dependencies.js';
+import { isDisableCache } from '../env.js';
 import { ResolvedUserConfig } from '../index.js';
 
 const defaultGlobalBuiltinCacheKeyStrategy = {
@@ -21,6 +22,10 @@ export async function normalizePersistentCache(
   resolvedUserConfig: ResolvedUserConfig,
   logger: Logger
 ) {
+  if (isDisableCache()) {
+    config.persistentCache = false;
+  }
+
   if (config?.persistentCache === false) {
     return;
   }

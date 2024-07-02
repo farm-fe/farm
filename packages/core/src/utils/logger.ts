@@ -119,9 +119,24 @@ export class Logger implements ILogger {
 
   error(message: string | Error, errorOptions?: ErrorOptions): void {
     this.brandPrefix(colors.red);
-    this.logMessage(LogLevel.Error, message, colors.red);
 
     const effectiveOptions = { ...this.options, ...errorOptions };
+    const causeError = errorOptions?.e || errorOptions?.error;
+
+    let error;
+
+    if (typeof message === 'string') {
+      error = new Error(message);
+      error.stack = '';
+    } else {
+      error = message;
+    }
+
+    if (causeError) {
+      error.message += `\nCaused by: ${causeError.stack ?? causeError}`;
+    }
+
+    this.logMessage(LogLevel.Error, error, colors.red);
 
     if (effectiveOptions.exit) {
       process.exit(1);
@@ -164,9 +179,10 @@ export class NoopLogger extends Logger {
   error(_message: string | Error, _errorOptions?: ErrorOptions): void {
     if (_errorOptions.exit) {
       let e = _message instanceof Error ? _message : new Error(_message);
-      if (_errorOptions.e || _errorOptions.error) {
+      if (_errorOptions?.e || _errorOptions?.error) {
         e.cause = _errorOptions.e || _errorOptions.error;
       }
+
       throw e;
     }
   }

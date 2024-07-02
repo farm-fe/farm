@@ -13,9 +13,12 @@ import {
   NormalizedServerConfig,
   UserPreviewServerConfig,
   UserServerConfig,
-  normalizePublicDir,
-  normalizePublicPath
+  normalizePublicDir
 } from '../config/index.js';
+import {
+  getValidPublicPath,
+  normalizePublicPath
+} from '../config/normalize-config/normalize-output.js';
 import { resolveHostname, resolveServerUrls } from '../utils/http.js';
 import {
   Logger,
@@ -99,7 +102,8 @@ export class Server implements ImplDevServer {
 
     this.publicPath =
       normalizePublicPath(
-        compiler.config.config.output?.publicPath,
+        compiler.config.config.output.targetEnv,
+        compiler.config.config.output.publicPath,
         logger,
         false
       ) || '/';
@@ -135,8 +139,8 @@ export class Server implements ImplDevServer {
       (await this.displayServerUrls());
 
     if (open) {
-      const publicPath =
-        this.publicPath === '/' ? this.publicPath : `/${this.publicPath}`;
+      let publicPath = getValidPublicPath(this.publicPath) ?? '/';
+
       const serverUrl = `${protocol}://${hostname.name}:${port}${publicPath}`;
       openBrowser(serverUrl);
     }
@@ -150,8 +154,7 @@ export class Server implements ImplDevServer {
     }
 
     if (this.config.writeToDisk) {
-      const base = this.publicPath.match(/^https?:\/\//) ? '' : this.publicPath;
-      this.compiler.writeResourcesToDisk(base);
+      this.compiler.writeResourcesToDisk();
     } else {
       this.compiler.callWriteResourcesHook();
     }
@@ -404,9 +407,11 @@ export class Server implements ImplDevServer {
   }
 
   private async displayServerUrls(showPreviewFlag = false) {
-    const publicPath = this.compiler
-      ? this.compiler.config.config.output?.publicPath
-      : this.config.output.publicPath;
+    let publicPath = getValidPublicPath(
+      this.compiler
+        ? this.compiler.config.config.output?.publicPath
+        : this.config.output.publicPath
+    );
 
     this.resolvedUrls = await resolveServerUrls(
       this.server,

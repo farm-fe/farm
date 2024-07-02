@@ -132,6 +132,8 @@ export interface OutputConfig {
   /**
    * resource loading prefix. for example, if publicPath is `https://xxx.cdn.comm`,
    * then the url output files in html will be `https://xxx.cdn.com/index_ecad.xxxx.js`
+   *
+   * default by `output.targetEnv`, if node, publicPath is `./`, if browser, publicPath is `/`
    */
   publicPath?: string;
   /**

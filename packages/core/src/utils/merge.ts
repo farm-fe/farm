@@ -2,6 +2,7 @@ import deepmerge, { Options } from 'deepmerge';
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore ignore type check
 import { isPlainObject } from 'is-plain-object';
+import { isArray } from './share.js';
 
 function isValueSameDeep(target: any, source: any): boolean {
   if (target === source) {
@@ -67,7 +68,13 @@ export default function merge<T>(target: T, ...sources: Partial<T>[]): T {
         ) {
           destination[key] = deepmerge(destination[key], sourceValue, options);
         } else {
-          destination[key] = sourceValue;
+          if (isPlainObject(sourceValue)) {
+            destination[key] = deepmerge({}, sourceValue, options);
+          } else if (isArray(sourceValue)) {
+            destination[key] = deepmerge([], sourceValue, options);
+          } else {
+            destination[key] = sourceValue;
+          }
         }
       }
     } else {
