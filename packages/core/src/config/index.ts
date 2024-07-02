@@ -831,7 +831,9 @@ export function normalizePublicPath(
   return normalizedPublicPath;
 }
 
-function checkClearScreen(inlineConfig: FarmCLIOptions) {
+export function checkClearScreen(
+  inlineConfig: FarmCLIOptions | ResolvedUserConfig
+) {
   if (
     inlineConfig?.clearScreen &&
     !__FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__

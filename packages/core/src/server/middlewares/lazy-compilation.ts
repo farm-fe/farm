@@ -8,7 +8,7 @@ import { Context, Middleware, Next } from 'koa';
 import {
   VIRTUAL_FARM_DYNAMIC_IMPORT_SUFFIX,
   bold,
-  clearScreen,
+  checkClearScreen,
   cyan,
   green
 } from '../../index.js';
@@ -44,7 +44,7 @@ export function lazyCompilation(devSeverContext: Server): Middleware {
           return relative(compiler.config.config.root, resolvedPath);
         })
         .join(', ');
-      clearScreen();
+      checkClearScreen(compiler.config.config);
       devSeverContext.logger.info(`Lazy compiling ${bold(cyan(pathsStr))}`);
       const start = Date.now();
       // sync update when node is true
