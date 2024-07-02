@@ -28,6 +28,7 @@ use ident_generator::MinifiedIdentsGenerator;
 use imports_minifier::{IdentReplacer, ImportsMinifier};
 use minify_resource_pot::{minify_css, minify_js};
 use top_level_idents_collector::{TopLevelIdentsCollector, UnresolvedIdentCollector};
+use util::is_module_contains_export;
 
 mod exports_minifier;
 mod ident_generator;
@@ -66,6 +67,17 @@ impl Plugin for FarmPluginMinify {
     // if config.runtime.concatenate_modules is true, we don't need to minify the module decls cause it will be handled by swc_minifier
     // module decls will be handled when concatenate modules
     if !self.minify_options.module_decls || context.config.concatenate_modules {
+      return Ok(None);
+    }
+
+    // skip minify imports/exports if any of the entry modules contains export statement
+    // TODO remove this guard and handle entries in imports/exports minifier
+    if module_graph
+      .entries
+      .keys()
+      .into_iter()
+      .any(|module_id| is_module_contains_export(module_id, module_graph))
+    {
       return Ok(None);
     }
 
@@ -117,6 +129,20 @@ impl Plugin for FarmPluginMinify {
           .map(|(dep_id, _)| dep_id)
           .collect::<Vec<_>>()
       };
+    let get_require_deps =
+      |module_id: &ModuleId, module_graph: &farmfe_core::module::module_graph::ModuleGraph| {
+        module_graph
+          .dependencies(module_id)
+          .into_iter()
+          .filter(|(_, edge)| edge.contains_require())
+          .map(|(dep_id, _)| dep_id)
+          .collect::<Vec<_>>()
+      };
+
+    // modules that are required by cjs will always not be minified
+    // TODO handle skipped module ids the same as module_graph.entries
+    let mut skipped_module_ids = HashSet::new();
+
     // Handle conflicting export * from. e.g:
     // ```
     // export * from 'vue';
@@ -136,6 +162,18 @@ impl Plugin for FarmPluginMinify {
       {
         continue;
       }
+
+      // if module is skipped, all the dependencies are skipped
+      if skipped_module_ids.contains(module_id) {
+        let deps = module_graph
+          .dependencies(module_id)
+          .into_iter()
+          .map(|(dep_id, _)| dep_id);
+        skipped_module_ids.extend(deps);
+        // continue;
+      }
+
+      skipped_module_ids.extend(get_require_deps(module_id, &module_graph));
 
       let deps = get_export_from_deps(module_id, &module_graph);
       let current_used_idents = ident_generator_map
@@ -160,6 +198,7 @@ impl Plugin for FarmPluginMinify {
         .unwrap()
         .module_type
         .is_script()
+        || skipped_module_ids.contains(module_id)
       {
         continue;
       }
@@ -194,7 +233,7 @@ impl Plugin for FarmPluginMinify {
     for module_id in sorted_module_ids {
       let module = module_graph.module_mut(&module_id).unwrap();
 
-      if !module.module_type.is_script() {
+      if !module.module_type.is_script() || skipped_module_ids.contains(&module_id) {
         continue;
       }
 
@@ -235,11 +274,25 @@ impl Plugin for FarmPluginMinify {
 
         let meta = module.meta.as_script_mut();
         let ast = &mut meta.ast;
-        let id_to_replace = id_to_replace.lock().remove(&module.id).unwrap();
 
-        let mut ident_replacer = IdentReplacer::new(id_to_replace);
-        ast.visit_mut_with(&mut ident_replacer);
+        if let Some(id_to_replace) = id_to_replace.lock().remove(&module.id) {
+          let mut ident_replacer = IdentReplacer::new(id_to_replace);
+          ast.visit_mut_with(&mut ident_replacer);
+        }
       });
+
+    // update used exports of the module
+    module_graph.modules_mut().into_iter().for_each(|module| {
+      if let Some(minified_exports_map) = minified_module_exports_map.get(&module.id) {
+        for (export, minified) in minified_exports_map {
+          if module.used_exports.contains(export) {
+            // the minified may be changed even if the export is not changed
+            // we need to add the minified export to the used exports to make sure cache works as expected
+            module.used_exports.push(minified.clone());
+          }
+        }
+      }
+    });
 
     Ok(Some(()))
   }

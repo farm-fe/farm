@@ -65,26 +65,48 @@ impl<'a> ImportsMinifier<'a> {
     *self.imported_ident_count_map.entry(ident).or_default() += 1;
   }
 
-  pub fn get_imported_ident_with_count(&self, ident: &str) -> String {
+  pub fn get_imported_ident_with_count(&mut self, ident: &str) -> String {
     let count = self.imported_ident_count_map.get(ident).unwrap_or(&0);
-    if *count == 0 {
+    let mut used_ident = if *count == 0 {
       ident.to_string()
     } else {
       format!("{}{}", ident, count)
+    };
+
+    let mut count = *count;
+
+    while self.imported_ident_count_map.contains_key(&used_ident) {
+      count += 1;
+      used_ident = format!("{}{}", ident, count);
     }
+
+    self.inc_exported_ident_count(used_ident.clone());
+
+    used_ident
   }
 
   pub fn inc_exported_ident_count(&mut self, ident: String) {
     *self.exported_ident_count_map.entry(ident).or_default() += 1;
   }
 
-  pub fn get_exported_ident_with_count(&self, ident: &str) -> String {
+  pub fn get_exported_ident_with_count(&mut self, ident: &str) -> String {
     let count = self.exported_ident_count_map.get(ident).unwrap_or(&0);
-    if *count == 0 {
+    let mut used_ident = if *count == 0 {
       ident.to_string()
     } else {
       format!("{}{}", ident, count)
+    };
+
+    let mut count = *count;
+
+    while self.exported_ident_count_map.contains_key(&used_ident) {
+      count += 1;
+      used_ident = format!("{}{}", ident, count);
     }
+
+    self.inc_exported_ident_count(used_ident.clone());
+
+    used_ident
   }
 }
 
@@ -146,8 +168,9 @@ impl<'a> VisitMut for ImportsMinifier<'a> {
                   let mut ident_to_inc = vec![];
 
                   if let Some(orig_minified_export) = dep_minified_exports.get(&imported) {
+                    let orig_minified_export = orig_minified_export.clone();
                     // `minified_export`` should not be used in this module again
-                    self.ident_generator.add_used_ident(orig_minified_export);
+                    self.ident_generator.add_used_ident(&orig_minified_export);
 
                     if let Some(imported) = &mut named.imported {
                       match imported {
@@ -166,10 +189,10 @@ impl<'a> VisitMut for ImportsMinifier<'a> {
                       // import { hello } from './hello' -> import { a as a1 } from './hello' if a is already defined
                       if self
                         .imported_ident_count_map
-                        .contains_key(orig_minified_export)
+                        .contains_key(&orig_minified_export)
                       {
                         let minified_export =
-                          self.get_imported_ident_with_count(orig_minified_export);
+                          self.get_imported_ident_with_count(&orig_minified_export);
                         id_to_replace.insert(named.local.to_id(), minified_export.clone());
                         named.imported = Some(farmfe_core::swc_ecma_ast::ModuleExportName::Ident(
                           Ident::new(orig_minified_export.as_str().into(), DUMMY_SP),
@@ -179,7 +202,7 @@ impl<'a> VisitMut for ImportsMinifier<'a> {
                         id_to_replace.insert(named.local.to_id(), orig_minified_export.clone());
                         named.local.sym = orig_minified_export.as_str().into();
                       }
-                      ident_to_inc.push(orig_minified_export.clone());
+                      ident_to_inc.push(orig_minified_export);
                     }
                   }
 
@@ -295,17 +318,18 @@ impl<'a> VisitMut for ImportsMinifier<'a> {
                         named.exported = Some(ModuleExportName::Ident(exported));
                       } else if let Some(orig_minified_export) = dep_minified_exports.get(&orig_str)
                       {
+                        let orig_minified_export = orig_minified_export.clone();
                         // export { hello } from './hello' -> export { x } from './hello'
                         // or export { x as x1 } from './hello' only if x is already exported
                         if self
                           .exported_ident_count_map
-                          .contains_key(orig_minified_export)
+                          .contains_key(&orig_minified_export)
                         {
                           orig.sym = orig_minified_export.as_str().into();
                           named.orig = ModuleExportName::Ident(orig);
 
                           let minified_export =
-                            self.get_exported_ident_with_count(orig_minified_export);
+                            self.get_exported_ident_with_count(&orig_minified_export);
                           named.exported = Some(ModuleExportName::Ident(Ident::new(
                             minified_export.as_str().into(),
                             DUMMY_SP,
@@ -318,8 +342,8 @@ impl<'a> VisitMut for ImportsMinifier<'a> {
                           current_minified_exports.insert(orig_str, orig_minified_export.clone());
                         }
 
-                        self.ident_generator.add_used_ident(orig_minified_export);
-                        self.inc_exported_ident_count(orig_minified_export.clone());
+                        self.ident_generator.add_used_ident(&orig_minified_export);
+                        self.inc_exported_ident_count(orig_minified_export);
                       }
                     }
 
