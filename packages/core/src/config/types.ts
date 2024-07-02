@@ -69,6 +69,7 @@ export interface UserHmrConfig {
   host?: string | boolean;
   port?: number;
   path?: string;
+  overlay?: boolean;
   protocol?: string;
   watchOptions?: WatchOptions;
 }

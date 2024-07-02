@@ -201,7 +201,7 @@ export class HmrClient {
       case 'error': {
         this.notifyListeners('vite:error', payload);
         this.notifyListeners('farm:error', payload);
-        createOverlay(payload.err);
+        if (payload.overlay) createOverlay(payload.err);
         break;
       }
       case 'connected':

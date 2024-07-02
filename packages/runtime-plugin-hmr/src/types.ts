@@ -106,4 +106,5 @@ export interface ErrorPayload {
       column: number;
     };
   };
+  overlay: boolean;
 }
