@@ -1,15 +1,16 @@
 use std::{collections::HashMap, ffi::OsStr};
 
 use farmfe_core::{
+  module::ModuleId,
   regex::Regex,
   swc_common::{util::take::Take, Mark, DUMMY_SP},
   swc_ecma_ast::{
-    AssignExpr, AssignOp, AssignTarget, BindingIdent, BlockStmt, CallExpr, Callee, Class,
-    ClassDecl, ClassExpr, Decl, ExportAll, ExportDecl, ExportDefaultDecl, ExportDefaultExpr, Expr,
-    ExprOrSpread, ExprStmt, FnDecl, FnExpr, Function, Id, Ident, ImportDecl, ImportSpecifier,
-    KeyValueProp, Lit, MemberExpr, MemberProp, Module as SwcModule, ModuleDecl, ModuleExportName,
-    ModuleItem, NamedExport, Pat, Prop, ReturnStmt, SimpleAssignTarget, Stmt, Str, VarDecl,
-    VarDeclKind, VarDeclarator,
+    ArrowExpr, AssignExpr, AssignOp, AssignTarget, BindingIdent, BlockStmt, BlockStmtOrExpr,
+    CallExpr, Callee, Class, ClassDecl, ClassExpr, Decl, ExportAll, ExportDecl, ExportDefaultDecl,
+    ExportDefaultExpr, Expr, ExprOrSpread, ExprStmt, FnDecl, FnExpr, Function, Id, Ident,
+    ImportDecl, ImportSpecifier, KeyValueProp, Lit, MemberExpr, MemberProp, Module as SwcModule,
+    ModuleDecl, ModuleExportName, ModuleItem, NamedExport, Pat, Prop, ReturnStmt,
+    SimpleAssignTarget, Stmt, Str, VarDecl, VarDeclKind, VarDeclarator,
   },
 };
 use farmfe_toolkit::{
@@ -21,6 +22,16 @@ const FARM_MODULE_SYSTEM_MODULE: &str = "module";
 const FARM_MODULE_SYSTEM_REQUIRE: &str = "require";
 const FARM_MODULE_SYSTEM_DEFAULT: &str = "default";
 const FARM_MODULE_SYSTEM_EXPORTS: &str = "exports";
+
+struct ExportModuleItem {
+  declare_items: Vec<ModuleItem>,
+  export_items: Vec<ModuleItem>,
+}
+
+pub struct TransformModuleDeclsOptions {
+  pub module_id: ModuleId,
+  pub is_target_legacy: bool,
+}
 
 /// Transform import statement to cjs require/exports. Farm doesn't use swc commonjs transformer because it's output is too large.
 /// Example, transform:
@@ -52,10 +63,15 @@ const FARM_MODULE_SYSTEM_EXPORTS: &str = "exports";
 /// module._e(exports, require("./d"));
 ///
 /// ```
-pub fn transform_module_decls(ast: &mut SwcModule, unresolved_mark: Mark) {
+pub fn transform_module_decls(
+  ast: &mut SwcModule,
+  unresolved_mark: Mark,
+  options: TransformModuleDeclsOptions,
+) {
   let mut items = vec![];
   // all import items should be placed at the top of the module
   let mut import_items = vec![];
+  let mut export_items = vec![];
   let mut import_bindings_map = HashMap::new();
   let mut is_es_module = false;
 
@@ -73,13 +89,21 @@ pub fn transform_module_decls(ast: &mut SwcModule, unresolved_mark: Mark) {
             ));
           }
           ModuleDecl::ExportDecl(export_decl) => {
-            items.extend(transform_export_decl(export_decl, unresolved_mark));
+            let export = transform_export_decl(export_decl, unresolved_mark, &options);
+            items.extend(export.declare_items);
+            export_items.extend(export.export_items);
           }
           ModuleDecl::ExportNamed(export_named) => {
-            items.extend(transform_export_named(export_named, unresolved_mark));
+            export_items.extend(transform_export_named(
+              export_named,
+              unresolved_mark,
+              &options,
+            ));
           }
           ModuleDecl::ExportDefaultDecl(default_decl) => {
-            items.extend(transform_export_default_decl(default_decl, unresolved_mark));
+            let export = transform_export_default_decl(default_decl, unresolved_mark, &options);
+            items.extend(export.declare_items);
+            export_items.extend(export.export_items);
           }
           ModuleDecl::ExportDefaultExpr(export_expr) => {
             items.extend(transform_export_default_expr(export_expr, unresolved_mark));
@@ -96,8 +120,9 @@ pub fn transform_module_decls(ast: &mut SwcModule, unresolved_mark: Mark) {
     }
   }
 
-  import_items.extend(items);
-  let mut items = import_items;
+  export_items.extend(import_items);
+  export_items.extend(items);
+  let mut items = export_items;
 
   let mut handler = ImportBindingsHandler::new(import_bindings_map);
 
@@ -128,7 +153,7 @@ pub fn transform_module_decls(ast: &mut SwcModule, unresolved_mark: Mark) {
 fn transform_import_decl(
   import_decl: ImportDecl,
   unresolved_mark: Mark,
-  import_bindings_map: &mut HashMap<Id, MemberExpr>,
+  import_bindings_map: &mut HashMap<Id, Expr>,
 ) -> Vec<ModuleItem> {
   let mut items = vec![];
 
@@ -141,12 +166,15 @@ fn transform_import_decl(
   }
 
   // 1. push var val_name = require(src);
-  let (require_item, val_name_ident) = create_require_stmt(*import_decl.src, unresolved_mark);
-  items.push(require_item);
+  let val_name_ident = create_require_val_ident(import_decl.src.value.as_str());
+
+  let mut contains_default = false;
+  let mut contains_named = false;
 
   for specifier in import_decl.specifiers {
     match specifier {
       ImportSpecifier::Named(specifier) => {
+        contains_named = true;
         // 2. push var specifier.local = val_name.imported;
         let specifier_ident = specifier.local;
         let init = if let Some(imported) = specifier.imported {
@@ -163,18 +191,29 @@ fn transform_import_decl(
             prop: MemberProp::Ident(Ident::new(specifier_ident.sym.clone(), DUMMY_SP)),
           }
         };
-
-        import_bindings_map.insert(specifier_ident.to_id(), init);
+        import_bindings_map.insert(specifier_ident.to_id(), Expr::Member(init));
       }
       ImportSpecifier::Default(specifier) => {
-        let init = MemberExpr {
-          span: DUMMY_SP,
-          obj: Box::new(Expr::Ident(val_name_ident.clone())),
-          prop: MemberProp::Ident(Ident::new(FARM_MODULE_SYSTEM_DEFAULT.into(), DUMMY_SP)),
-        };
-        import_bindings_map.insert(specifier.local.to_id(), init);
+        contains_default = true;
+        // module.f(val_name_ident)
+        let init = create_module_helper_call_expr(
+          "f",
+          vec![ExprOrSpread {
+            spread: None,
+            expr: Box::new(Expr::Ident(val_name_ident.clone())),
+          }],
+          unresolved_mark,
+        );
+
+        import_bindings_map.insert(specifier.local.to_id(), Expr::Call(init));
       }
       ImportSpecifier::Namespace(specifier) => {
+        items.push(create_module_helper_item(
+          "w",
+          val_name_ident.clone(),
+          *import_decl.src.clone(),
+          unresolved_mark,
+        ));
         items.push(create_var_decl_stmt(
           specifier.local,
           Box::new(Expr::Ident(val_name_ident.clone())),
@@ -183,26 +222,61 @@ fn transform_import_decl(
     }
   }
 
+  if contains_named && contains_default {
+    items.push(create_module_helper_item(
+      "w",
+      val_name_ident.clone(),
+      *import_decl.src.clone(),
+      unresolved_mark,
+    ));
+  } else if contains_default {
+    items.push(create_module_helper_item(
+      "i",
+      val_name_ident.clone(),
+      *import_decl.src.clone(),
+      unresolved_mark,
+    ));
+  } else if contains_named {
+    let require_item = create_var_decl_stmt(
+      val_name_ident,
+      create_require_call_expr(*import_decl.src, unresolved_mark),
+    );
+    items.push(require_item);
+  }
+
   items
 }
 
-fn transform_export_decl(export_decl: ExportDecl, unresolved_mark: Mark) -> Vec<ModuleItem> {
-  let mut items = vec![];
+fn transform_export_decl(
+  export_decl: ExportDecl,
+  unresolved_mark: Mark,
+  options: &TransformModuleDeclsOptions,
+) -> ExportModuleItem {
+  let mut export = ExportModuleItem {
+    declare_items: vec![],
+    export_items: vec![],
+  };
 
   match export_decl.decl {
-    Decl::Class(class_decl) => items.extend(create_export_class_decl_stmts(
-      Some(class_decl.ident.clone()),
-      class_decl.ident,
-      class_decl.class,
-      unresolved_mark,
-    )),
-    Decl::Fn(fn_decl) => items.extend(create_export_fn_decl_stmts(
-      Some(fn_decl.ident.clone()),
-      fn_decl.ident,
-      fn_decl.function,
-      unresolved_mark,
-    )),
-    Decl::Var(var_decls) => {
+    Decl::Class(class_decl) => {
+      return create_export_class_decl_stmts(
+        Some(class_decl.ident.clone()),
+        class_decl.ident,
+        class_decl.class,
+        unresolved_mark,
+        options.is_target_legacy,
+      )
+    }
+    Decl::Fn(fn_decl) => {
+      return create_export_fn_decl_stmts(
+        Some(fn_decl.ident.clone()),
+        fn_decl.ident,
+        fn_decl.function,
+        unresolved_mark,
+        options.is_target_legacy,
+      )
+    }
+    Decl::Var(mut var_decls) => {
       let mut local_items = vec![];
 
       for var_decl in &var_decls.decls {
@@ -210,38 +284,51 @@ fn transform_export_decl(export_decl: ExportDecl, unresolved_mark: Mark) -> Vec<
         var_decl.name.visit_with(&mut idents_collector);
 
         for ident in idents_collector.defined_idents {
-          let call_expr =
-            create_define_export_property_ident_call_expr(None, ident, unresolved_mark);
+          let call_expr = create_define_export_property_ident_call_expr(
+            None,
+            ident,
+            unresolved_mark,
+            options.is_target_legacy,
+          );
           local_items.push(create_module_item_from_call_expr(call_expr));
         }
       }
 
-      items.push(ModuleItem::Stmt(Stmt::Decl(Decl::Var(var_decls))));
-      items.extend(local_items);
+      // transform let/const to var
+      var_decls.kind = VarDeclKind::Var;
+
+      export
+        .declare_items
+        .push(ModuleItem::Stmt(Stmt::Decl(Decl::Var(var_decls))));
+      export.export_items.extend(local_items);
     }
     _ => unreachable!("invalid export decl when rendering module system"),
   }
 
-  items
+  export
 }
 
-fn transform_export_named(named_export: NamedExport, unresolved_mark: Mark) -> Vec<ModuleItem> {
+fn transform_export_named(
+  named_export: NamedExport,
+  unresolved_mark: Mark,
+  options: &TransformModuleDeclsOptions,
+) -> Vec<ModuleItem> {
   let mut items = vec![];
-  let mut export_from_item = None;
+  let mut cached_export_from_item = None;
 
-  if let Some(src) = named_export.src {
-    let (require_item, val_name_ident) = create_require_stmt(*src, unresolved_mark);
-    items.push(require_item);
-    export_from_item = Some(val_name_ident);
-  }
+  let mut contains_default = false;
+  let mut contains_named = false;
+  let mut extra_items = vec![];
 
   for export_specifier in named_export.specifiers {
     match export_specifier {
       farmfe_core::swc_ecma_ast::ExportSpecifier::Namespace(specifier) => {
         let ident = get_ident_from_module_export_name(specifier.name);
-        items.push(create_var_decl_stmt(
+        items.push(create_module_helper_item(
+          "w",
           ident,
-          Box::new(Expr::Ident(export_from_item.as_ref().unwrap().clone())),
+          *named_export.src.clone().unwrap(),
+          unresolved_mark,
         ));
       }
       farmfe_core::swc_ecma_ast::ExportSpecifier::Named(specifier) => {
@@ -254,7 +341,16 @@ fn transform_export_named(named_export: NamedExport, unresolved_mark: Mark) -> V
           (orig_ident.clone(), orig_ident)
         };
 
-        if let Some(export_from_ident) = export_from_item.as_ref() {
+        if local_ident.sym == "default" {
+          contains_default = true;
+        } else {
+          contains_named = true;
+        }
+
+        if let Some(src) = &named_export.src {
+          let export_from_ident = cached_export_from_item
+            .clone()
+            .unwrap_or(create_require_val_ident(src.value.as_str()));
           let is_equal = exported_ident.to_id() == local_ident.to_id();
           let mut args = vec![
             ExprOrSpread {
@@ -284,17 +380,20 @@ fn transform_export_named(named_export: NamedExport, unresolved_mark: Mark) -> V
               }))),
             })
           }
-          // module._(exports, exported_ident, export_from_ident, local_ident)
-          let call_expr = create_define_export_property_call_expr("_", args, unresolved_mark);
 
-          items.push(create_module_item_from_call_expr(call_expr));
+          cached_export_from_item = Some(export_from_ident);
+          // module._(exports, exported_ident, export_from_ident, local_ident)
+          let call_expr = create_module_helper_call_expr("_", args, unresolved_mark);
+
+          extra_items.push(create_module_item_from_call_expr(call_expr));
         } else {
           let call_expr = create_define_export_property_ident_call_expr(
             Some(exported_ident.to_id()),
             local_ident.to_id(),
             unresolved_mark,
+            options.is_target_legacy,
           );
-          items.push(create_module_item_from_call_expr(call_expr));
+          extra_items.push(create_module_item_from_call_expr(call_expr));
         }
       }
       farmfe_core::swc_ecma_ast::ExportSpecifier::Default(_) => {
@@ -303,38 +402,62 @@ fn transform_export_named(named_export: NamedExport, unresolved_mark: Mark) -> V
     }
   }
 
+  if let Some(export_from_ident) = cached_export_from_item {
+    if contains_named && contains_default {
+      items.push(create_module_helper_item(
+        "w",
+        export_from_ident.clone(),
+        *named_export.src.clone().unwrap(),
+        unresolved_mark,
+      ));
+    } else if contains_default {
+      items.push(create_module_helper_item(
+        "i",
+        export_from_ident.clone(),
+        *named_export.src.clone().unwrap(),
+        unresolved_mark,
+      ));
+    } else if contains_named {
+      let require_item = create_var_decl_stmt(
+        export_from_ident,
+        create_require_call_expr(*named_export.src.clone().unwrap(), unresolved_mark),
+      );
+      items.push(require_item);
+    }
+  }
+
+  items.extend(extra_items);
   items
 }
 
 fn transform_export_default_decl(
   default_decl: ExportDefaultDecl,
   unresolved_mark: Mark,
-) -> Vec<ModuleItem> {
-  let mut items = vec![];
-
+  options: &TransformModuleDeclsOptions,
+) -> ExportModuleItem {
   match default_decl.decl {
     farmfe_core::swc_ecma_ast::DefaultDecl::Class(class_decl) => {
       let exported_ident = Ident::new(FARM_MODULE_SYSTEM_DEFAULT.into(), DUMMY_SP);
-      items.extend(create_export_class_decl_stmts(
+      return create_export_class_decl_stmts(
         class_decl.ident,
         exported_ident,
         class_decl.class,
         unresolved_mark,
-      ))
+        options.is_target_legacy,
+      );
     }
     farmfe_core::swc_ecma_ast::DefaultDecl::Fn(fn_decl) => {
       let exported_ident = Ident::new(FARM_MODULE_SYSTEM_DEFAULT.into(), DUMMY_SP);
-      items.extend(create_export_fn_decl_stmts(
+      return create_export_fn_decl_stmts(
         fn_decl.ident,
         exported_ident,
         fn_decl.function,
         unresolved_mark,
-      ));
+        options.is_target_legacy,
+      );
     }
     farmfe_core::swc_ecma_ast::DefaultDecl::TsInterfaceDecl(_) => unreachable!(),
   }
-
-  items
 }
 
 fn transform_export_default_expr(
@@ -481,8 +604,12 @@ fn create_export_fn_decl_stmts(
   exports_ident: Ident,
   function: Box<Function>,
   unresolved_mark: Mark,
-) -> Vec<ModuleItem> {
-  let mut items = vec![];
+  is_target_legacy: bool,
+) -> ExportModuleItem {
+  let mut export = ExportModuleItem {
+    export_items: vec![],
+    declare_items: vec![],
+  };
   // 1. create fn decl item
   let exports_assign_right = if let Some(ident) = fn_ident {
     let fn_decl = ModuleItem::Stmt(Stmt::Decl(Decl::Fn(FnDecl {
@@ -490,7 +617,7 @@ fn create_export_fn_decl_stmts(
       declare: false,
       function,
     })));
-    items.push(fn_decl);
+    export.declare_items.push(fn_decl);
 
     Expr::Ident(ident)
   } else {
@@ -506,17 +633,20 @@ fn create_export_fn_decl_stmts(
       Some(exports_ident.to_id()),
       ident.to_id(),
       unresolved_mark,
+      is_target_legacy,
     );
-    items.push(create_module_item_from_call_expr(call_expr));
+    export
+      .export_items
+      .push(create_module_item_from_call_expr(call_expr));
   } else {
     let exports_assign_left = create_exports_assign_left(exports_ident, unresolved_mark);
-    items.push(create_exports_assign_stmt(
+    export.declare_items.push(create_exports_assign_stmt(
       exports_assign_left,
       exports_assign_right,
     ));
   }
 
-  items
+  export
 }
 
 fn create_export_class_decl_stmts(
@@ -524,8 +654,12 @@ fn create_export_class_decl_stmts(
   exports_ident: Ident,
   class: Box<Class>,
   unresolved_mark: Mark,
-) -> Vec<ModuleItem> {
-  let mut items = vec![];
+  is_target_legacy: bool,
+) -> ExportModuleItem {
+  let mut export = ExportModuleItem {
+    export_items: vec![],
+    declare_items: vec![],
+  };
   // 1. create class decl item
   let exports_assign_right = if let Some(ident) = class_ident {
     let fn_decl = ModuleItem::Stmt(Stmt::Decl(Decl::Class(ClassDecl {
@@ -533,7 +667,7 @@ fn create_export_class_decl_stmts(
       declare: false,
       class,
     })));
-    items.push(fn_decl);
+    export.declare_items.push(fn_decl);
 
     Expr::Ident(ident)
   } else {
@@ -546,17 +680,20 @@ fn create_export_class_decl_stmts(
       Some(exports_ident.to_id()),
       ident.to_id(),
       unresolved_mark,
+      is_target_legacy,
     );
-    items.push(create_module_item_from_call_expr(call_expr));
+    export
+      .export_items
+      .push(create_module_item_from_call_expr(call_expr));
   } else {
     let exports_assign_left = create_exports_assign_left(exports_ident, unresolved_mark);
-    items.push(create_exports_assign_stmt(
+    export.declare_items.push(create_exports_assign_stmt(
       exports_assign_left,
       exports_assign_right,
     ));
   }
 
-  items
+  export
 }
 
 fn create_module_helper_callee(helper: &str, unresolved_mark: Mark) -> Callee {
@@ -571,7 +708,27 @@ fn create_module_helper_callee(helper: &str, unresolved_mark: Mark) -> Callee {
   })))
 }
 
-fn create_define_export_property_call_expr(
+fn create_module_helper_item(
+  helper: &str,
+  val_name_ident: Ident,
+  src: Str,
+  unresolved_mark: Mark,
+) -> ModuleItem {
+  let prop = ExprOrSpread {
+    spread: None,
+    expr: create_require_call_expr(src, unresolved_mark),
+  };
+  create_var_decl_stmt(
+    val_name_ident,
+    Box::new(Expr::Call(create_module_helper_call_expr(
+      helper,
+      vec![prop],
+      unresolved_mark,
+    ))),
+  )
+}
+
+fn create_module_helper_call_expr(
   helper: &str,
   args: Vec<ExprOrSpread>,
   unresolved_mark: Mark,
@@ -590,14 +747,52 @@ fn create_define_export_property_ident_call_expr(
   exported_ident: Option<Id>,
   local_ident: Id,
   unresolved_mark: Mark,
+  is_target_legacy: bool,
 ) -> CallExpr {
   let exported_ident = if let Some(exported_ident) = exported_ident {
     exported_ident
   } else {
     local_ident.clone()
   };
+  let expr = if is_target_legacy {
+    Expr::Fn(FnExpr {
+      ident: None,
+      function: Box::new(Function {
+        params: vec![],
+        decorators: vec![],
+        span: DUMMY_SP,
+        body: Some(BlockStmt {
+          span: DUMMY_SP,
+          stmts: vec![Stmt::Return(ReturnStmt {
+            span: DUMMY_SP,
+            arg: Some(Box::new(Expr::Ident(Ident::new(
+              local_ident.0,
+              DUMMY_SP.with_ctxt(local_ident.1),
+            )))),
+          })],
+        }),
+        is_generator: false,
+        is_async: false,
+        type_params: None,
+        return_type: None,
+      }),
+    })
+  } else {
+    Expr::Arrow(ArrowExpr {
+      span: DUMMY_SP,
+      params: vec![],
+      body: Box::new(BlockStmtOrExpr::Expr(Box::new(Expr::Ident(Ident::new(
+        local_ident.0,
+        DUMMY_SP.with_ctxt(local_ident.1),
+      ))))),
+      is_generator: false,
+      is_async: false,
+      return_type: None,
+      type_params: None,
+    })
+  };
   // module.o(exports, ident, function(){return ident;})
-  create_define_export_property_call_expr(
+  create_module_helper_call_expr(
     "o",
     vec![
       ExprOrSpread {
@@ -614,28 +809,7 @@ fn create_define_export_property_ident_call_expr(
       },
       ExprOrSpread {
         spread: None,
-        expr: Box::new(Expr::Fn(FnExpr {
-          ident: None,
-          function: Box::new(Function {
-            params: vec![],
-            decorators: vec![],
-            span: DUMMY_SP,
-            body: Some(BlockStmt {
-              span: DUMMY_SP,
-              stmts: vec![Stmt::Return(ReturnStmt {
-                span: DUMMY_SP,
-                arg: Some(Box::new(Expr::Ident(Ident::new(
-                  local_ident.0,
-                  DUMMY_SP.with_ctxt(local_ident.1),
-                )))),
-              })],
-            }),
-            is_generator: false,
-            is_async: false,
-            type_params: None,
-            return_type: None,
-          }),
-        })),
+        expr: Box::new(expr),
       },
     ],
     unresolved_mark,
@@ -657,11 +831,11 @@ fn get_ident_from_module_export_name(name: ModuleExportName) -> Ident {
 }
 
 struct ImportBindingsHandler {
-  import_bindings_map: HashMap<Id, MemberExpr>,
+  import_bindings_map: HashMap<Id, Expr>,
 }
 
 impl ImportBindingsHandler {
-  pub fn new(import_bindings_map: HashMap<Id, MemberExpr>) -> Self {
+  pub fn new(import_bindings_map: HashMap<Id, Expr>) -> Self {
     Self {
       import_bindings_map,
     }
@@ -687,7 +861,7 @@ impl VisitMut for ImportBindingsHandler {
       if let Some(expr) = self.import_bindings_map.get(&shorthand.to_id()) {
         *n = KeyValueProp {
           key: shorthand.take().into(),
-          value: Box::new(Expr::Member(expr.clone())),
+          value: Box::new(expr.clone()),
         }
         .into()
       }
@@ -700,7 +874,7 @@ impl VisitMut for ImportBindingsHandler {
     if let Expr::Ident(ident) = n {
       let id = ident.to_id();
       if let Some(member_expr) = self.import_bindings_map.get(&id) {
-        *n = Expr::Member(member_expr.clone());
+        *n = member_expr.clone();
       }
     } else {
       n.visit_mut_children_with(self);
@@ -768,7 +942,14 @@ export * from './e';
     .ast;
 
     try_with(cm.clone(), &Globals::new(), || {
-      transform_module_decls(&mut ast, Mark::new());
+      transform_module_decls(
+        &mut ast,
+        Mark::new(),
+        TransformModuleDeclsOptions {
+          module_id: "any".into(),
+          is_target_legacy: true,
+        },
+      );
 
       let code_bytes =
         codegen_module(&mut ast, EsVersion::latest(), cm, None, false, None).unwrap();
@@ -778,12 +959,7 @@ export * from './e';
 
       assert_eq!(
         code,
-        r#"var _f_a = require("./a");
-var _f_b = require("./b");
-var b = _f_b;
-var _f_c = require("./c");
-console.log(_f_a.default);
-module.o(exports, "a", function() {
+        r#"module.o(exports, "a", function() {
     return _f_a.a;
 });
 module.o(exports, "d", function() {
@@ -796,40 +972,92 @@ module.o(exports, "e", function() {
     return _f_c.default;
 });
 var _f_d = require('./d');
-module._(exports, "a1", _f_d, "a1");
-module._(exports, "d1", _f_d, "d1");
-module._(exports, "b1", _f_d, "b1");
+module._(exports, "a1", _f_d);
+module._(exports, "d1", _f_d);
+module._(exports, "b1", _f_d);
 module._(exports, "e2", _f_d, "e1");
 var _f_d = require('./d');
 var b2 = _f_d;
-const f = 1, h = 2;
 module.o(exports, "f", function() {
     return f;
 });
 module.o(exports, "h", function() {
     return h;
 });
-function g() {}
 module.o(exports, "g", function() {
     return g;
 });
-class i {
-}
 module.o(exports, "i", function() {
     return i;
 });
-exports.default = 'hello';
-class j {
-}
-module.o(exports, "j", function() {
+module.o(exports, "default", function() {
     return j;
 });
-function k() {}
 module.o(exports, "default", function() {
     return k;
 });
+var _f_a = require("./a");
+var _f_b = require("./b");
+var b = _f_b;
+var _f_c = require("./c");
+console.log(_f_a.default);
+var f = 1, h = 2;
+function g() {}
+class i {
+}
+exports.default = 'hello';
+class j {
+}
+function k() {}
 var _f_e = require('./e');
 module._e(exports, _f_e);
+module._m(exports);
+"#
+      )
+    })
+    .unwrap();
+  }
+
+  #[test]
+  fn test_transform_module_decls_not_target_legacy() {
+    let path = "any";
+    let content = r#"
+export const f = 1, h = 2;
+    "#;
+    let (cm, _) = create_swc_source_map(Source {
+      path: std::path::PathBuf::from(path),
+      content: Arc::new(content.to_string()),
+    });
+    let mut ast = parse_module(
+      path,
+      content,
+      Syntax::Es(Default::default()),
+      EsVersion::latest(),
+    )
+    .unwrap()
+    .ast;
+
+    try_with(cm.clone(), &Globals::new(), || {
+      transform_module_decls(
+        &mut ast,
+        Mark::new(),
+        TransformModuleDeclsOptions {
+          module_id: "any".into(),
+          is_target_legacy: false,
+        },
+      );
+
+      let code_bytes =
+        codegen_module(&mut ast, EsVersion::latest(), cm, None, false, None).unwrap();
+      let code = String::from_utf8(code_bytes).unwrap();
+
+      println!("{}", code);
+
+      assert_eq!(
+        code,
+        r#"module.o(exports, "f", ()=>f);
+module.o(exports, "h", ()=>h);
+var f = 1, h = 2;
 module._m(exports);
 "#
       )

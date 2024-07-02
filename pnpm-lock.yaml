@@ -1427,6 +1427,9 @@ importers:
 
   examples/vite-adapter-vue:
     dependencies:
+      '@sinclair/typebox':
+        specifier: ^0.32.33
+        version: 0.32.33
       ant-design-vue:
         specifier: '3'
         version: 3.2.20(vue@3.3.7(typescript@5.4.5))
@@ -3869,6 +3872,9 @@ packages:
 
   '@sinclair/typebox@0.27.8':
     resolution: {integrity: sha512-+Fj43pSMwJs4KRrH/938Uf+uAELIgVBmQzg/q1YG10djyfA3TnrU8N8XzqCh/okZdszqBQTZf96idMfE5lnwTA==}
+
+  '@sinclair/typebox@0.32.33':
+    resolution: {integrity: sha512-jM50BfkKA0fwfj0uRRO6asfNfbU0oZipJIb/bL2+BUH/THjuEf2BMiqBOvKfBji5Z9t59NboZQGNfKZbdV50Iw==}
 
   '@sindresorhus/is@4.6.0':
     resolution: {integrity: sha512-t09vSN3MdfsyCHoFcTRCH/iUtG7OJ0CsjzB8cjAmKc/va/kIgeDI/TxsigdncE/4be734m0cvIYwNaV4i2XqAw==}
@@ -13614,6 +13620,8 @@ snapshots:
       nanopop: 2.3.0
 
   '@sinclair/typebox@0.27.8': {}
+
+  '@sinclair/typebox@0.32.33': {}
 
   '@sindresorhus/is@4.6.0': {}
 
