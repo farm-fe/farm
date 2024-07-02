@@ -1,4 +1,5 @@
 use anyhow::Context;
+use clap::Parser;
 use dialoguer::{Confirm, Input, Select};
 use std::{ffi::OsString, fs, process::exit};
 
@@ -37,7 +38,11 @@ where
   handle_brand_text("\n ⚡ Welcome To Farm ! \n");
 
   let detected_manager = detected_manager.and_then(|p| p.parse::<PackageManager>().ok());
-  let args = args::parse(args.into_iter().map(Into::into).collect(), bin_name)?;
+  // Clap will auto parse the `bin_name` as the first argument, so we need to add it to the args
+  let args = args::Args::parse_from(
+    std::iter::once(OsString::from(bin_name.unwrap_or_default()))
+      .chain(args.into_iter().map(Into::into)),
+  );
   let defaults = args::Args::default();
   let args::Args {
     manager,
@@ -46,7 +51,7 @@ where
   } = args;
   let cwd = std::env::current_dir()?;
   let project_name = match project_name {
-    Some(name) => name,
+    Some(name) => to_valid_pkg_name(&name),
     None => Input::<String>::with_theme(&ColorfulTheme::default())
       .with_prompt("Project name")
       .default("farm-project".into())
@@ -54,6 +59,10 @@ where
       .trim()
       .into(),
   };
+  if !is_valid_pkg_name(&project_name) {
+    eprintln!("{BOLD}{RED}✘{RESET} Invalid project name: {BOLD}{YELLOW}{project_name}{RESET}");
+    exit(1);
+  }
   let target_dir = cwd.join(&project_name);
 
   if target_dir.exists() && target_dir.read_dir()?.next().is_some() {
@@ -78,10 +87,10 @@ where
     }
   };
 
-  let pkg_manager = match detected_manager {
+  let pkg_manager = manager.unwrap_or(match detected_manager {
     Some(manager) => manager,
     None => defaults.manager.context("default manager not set")?,
-  };
+  });
 
   let templates_no_flavors = pkg_manager.templates_no_flavors();
 
