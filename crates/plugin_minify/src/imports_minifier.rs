@@ -343,7 +343,13 @@ impl<'a> VisitMut for ImportsMinifier<'a> {
     }
 
     // rename conflicting re-exports when there are multiple export * from
+    let mut renamed_re_exports = renamed_re_exports.into_iter().collect::<Vec<_>>();
+    renamed_re_exports.sort_by(|a, b| b.0.cmp(&a.0));
+
     for (src, re_minified) in renamed_re_exports {
+      let mut re_minified = re_minified.into_iter().collect::<Vec<_>>();
+      re_minified.sort_by(|a, b| a.0.cmp(&b.0));
+
       let specifiers = re_minified
         .into_iter()
         .map(|(from, to)| {
@@ -375,6 +381,10 @@ impl<'a> VisitMut for ImportsMinifier<'a> {
     }
 
     // revert minified idents for import * as xx and export * as xx to avoid
+    let mut reverted_import_export_star =
+      reverted_import_export_star.into_iter().collect::<Vec<_>>();
+    reverted_import_export_star.sort_by(|a, b| a.0.cmp(&b.0));
+
     for (dep_module_id, (index, star_ident)) in reverted_import_export_star {
       let mut object_lit = ObjectLit {
         span: DUMMY_SP,
@@ -382,6 +392,9 @@ impl<'a> VisitMut for ImportsMinifier<'a> {
       };
 
       if let Some(dep_minified_exports) = self.minified_module_exports_map.get(&dep_module_id) {
+        let mut dep_minified_exports = dep_minified_exports.into_iter().collect::<Vec<_>>();
+        dep_minified_exports.sort_by(|a, b| a.1.cmp(&b.1));
+
         for (export, minified) in dep_minified_exports {
           object_lit
             .props
@@ -621,15 +634,16 @@ export { hello1, hello2, default as world1 } from './dep';
         ]),
       ),
     ]);
-    let mut imports_minifier = ImportsMinifier::new(
-      &module_id,
-      &mut minified_module_exports_map,
-      &module_graph,
-      &mut ident_generator,
-      Mark::new(),
-    );
 
     try_with(cm.clone(), &Globals::new(), || {
+      let mut imports_minifier = ImportsMinifier::new(
+        &module_id,
+        &mut minified_module_exports_map,
+        &module_graph,
+        &mut ident_generator,
+        Mark::new(),
+      );
+
       ast.visit_mut_with(&mut imports_minifier);
 
       let code_bytes =
@@ -643,11 +657,17 @@ export { hello1, hello2, default as world1 } from './dep';
         r#"import { aa, bb as a, default as b } from './dep';
 import { aa as aa1, bb, cc } from './dep2';
 import c from './dep';
+module.p({
+    "aa": "hello1",
+    "bb": "hello2",
+    "cc": "hello3"
+}, d);
 import * as d from './dep';
-console.log(aa, a, b, c, d);
-console.log(aa1, bb, cc);
+import e from './dep1';
+console.log(hello1, hello3, hello4, hello5, hello6, hello7);
+console.log(foo, zoo, bar);
 export * from './dep1';
-export { aa, bb, default as e } from './dep';
+export { aa, bb, default as f } from './dep';
 "#
       );
     })
@@ -659,7 +679,7 @@ export { aa, bb, default as e } from './dep';
       minified_exports_map,
       &HashMap::from([
         ("world".to_string(), "dd".to_string(),),
-        ("world1".to_string(), "e".to_string(),),
+        ("world1".to_string(), "f".to_string(),),
         ("hello1".to_string(), "aa".to_string(),),
         ("hello2".to_string(), "bb".to_string(),),
       ])

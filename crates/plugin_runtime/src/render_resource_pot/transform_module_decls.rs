@@ -282,8 +282,13 @@ fn transform_export_decl(
       for var_decl in &var_decls.decls {
         let mut idents_collector = DefinedIdentsCollector::new();
         var_decl.name.visit_with(&mut idents_collector);
+        let mut defined_idents = idents_collector
+          .defined_idents
+          .into_iter()
+          .collect::<Vec<_>>();
+        defined_idents.sort();
 
-        for ident in idents_collector.defined_idents {
+        for ident in defined_idents {
           let call_expr = create_define_export_property_ident_call_expr(
             None,
             ident,
@@ -969,15 +974,14 @@ module.o(exports, "b", function() {
     return b;
 });
 module.o(exports, "e", function() {
-    return _f_c.default;
+    return module.f(_f_c);
 });
 var _f_d = require('./d');
 module._(exports, "a1", _f_d);
 module._(exports, "d1", _f_d);
 module._(exports, "b1", _f_d);
 module._(exports, "e2", _f_d, "e1");
-var _f_d = require('./d');
-var b2 = _f_d;
+var b2 = module.w(require('./d'));
 module.o(exports, "f", function() {
     return f;
 });
@@ -997,9 +1001,9 @@ module.o(exports, "default", function() {
     return k;
 });
 var _f_a = require("./a");
-var _f_b = require("./b");
+var _f_b = module.w(require("./b"));
 var b = _f_b;
-var _f_c = require("./c");
+var _f_c = module.i(require("./c"));
 console.log(_f_a.default);
 var f = 1, h = 2;
 function g() {}
