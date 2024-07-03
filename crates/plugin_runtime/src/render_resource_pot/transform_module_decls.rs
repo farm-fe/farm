@@ -133,18 +133,21 @@ pub fn transform_module_decls(
   }
 
   if is_es_module {
-    items.push(ModuleItem::Stmt(Stmt::Expr(ExprStmt {
-      span: DUMMY_SP,
-      expr: Box::new(Expr::Call(CallExpr {
+    items.insert(
+      0,
+      ModuleItem::Stmt(Stmt::Expr(ExprStmt {
         span: DUMMY_SP,
-        callee: create_module_helper_callee("_m", unresolved_mark),
-        args: vec![ExprOrSpread {
-          spread: None,
-          expr: Box::new(Expr::Ident(create_exports_ident(unresolved_mark))),
-        }],
-        type_args: None,
+        expr: Box::new(Expr::Call(CallExpr {
+          span: DUMMY_SP,
+          callee: create_module_helper_callee("_m", unresolved_mark),
+          args: vec![ExprOrSpread {
+            spread: None,
+            expr: Box::new(Expr::Ident(create_exports_ident(unresolved_mark))),
+          }],
+          type_args: None,
+        })),
       })),
-    })))
+    )
   }
 
   ast.body = items;
@@ -964,7 +967,8 @@ export * from './e';
 
       assert_eq!(
         code,
-        r#"module.o(exports, "a", function() {
+        r#"module._m(exports);
+module.o(exports, "a", function() {
     return _f_a.a;
 });
 module.o(exports, "d", function() {
@@ -1015,7 +1019,6 @@ class j {
 function k() {}
 var _f_e = require('./e');
 module._e(exports, _f_e);
-module._m(exports);
 "#
       )
     })
@@ -1059,10 +1062,10 @@ export const f = 1, h = 2;
 
       assert_eq!(
         code,
-        r#"module.o(exports, "f", ()=>f);
+        r#"module._m(exports);
+module.o(exports, "f", ()=>f);
 module.o(exports, "h", ()=>h);
 var f = 1, h = 2;
-module._m(exports);
 "#
       )
     })

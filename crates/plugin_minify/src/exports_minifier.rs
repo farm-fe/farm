@@ -1,12 +1,6 @@
 use std::collections::HashMap;
 
-use farmfe_core::{
-  swc_common::{util::take::Take, DUMMY_SP},
-  swc_ecma_ast::{
-    BindingIdent, Decl, ExportDecl, Expr, Ident, Module, ModuleDecl, ModuleExportName, ModuleItem,
-    NamedExport, Pat, Stmt, VarDecl, VarDeclKind, VarDeclarator,
-  },
-};
+use farmfe_core::swc_ecma_ast::{Id, Module, ModuleDecl, ModuleExportName, ModuleItem};
 use farmfe_toolkit::{
   script::defined_idents_collector::DefinedIdentsCollector,
   swc_ecma_visit::{VisitMut, VisitWith},
@@ -16,6 +10,7 @@ use crate::{ident_generator::MinifiedIdentsGenerator, util::get_module_export_na
 
 pub struct ExportsMinifier<'a> {
   pub minified_exports_map: HashMap<String, String>,
+  pub ident_to_replace: HashMap<Id, String>,
 
   ident_generator: &'a mut MinifiedIdentsGenerator,
 }
@@ -24,63 +19,38 @@ impl<'a> ExportsMinifier<'a> {
   pub fn new(ident_generator: &'a mut MinifiedIdentsGenerator) -> Self {
     Self {
       minified_exports_map: HashMap::new(),
+      ident_to_replace: HashMap::new(),
       ident_generator,
     }
   }
 }
 
-impl<'a> ExportsMinifier<'a> {
-  fn create_export_var_item(&self, minified_ident: String, ident: Ident) -> ModuleItem {
-    ModuleItem::ModuleDecl(ModuleDecl::ExportDecl(ExportDecl {
-      span: DUMMY_SP,
-      decl: Decl::Var(Box::new(VarDecl {
-        span: DUMMY_SP,
-        kind: VarDeclKind::Var,
-        declare: false,
-        decls: vec![VarDeclarator {
-          span: DUMMY_SP,
-          name: Pat::Ident(BindingIdent {
-            id: Ident::new(minified_ident.into(), DUMMY_SP),
-            type_ann: None,
-          }),
-          init: Some(Box::new(Expr::Ident(ident))),
-          definite: false,
-        }],
-      })),
-    }))
-  }
-}
-
 impl<'a> VisitMut for ExportsMinifier<'a> {
   fn visit_mut_module(&mut self, n: &mut Module) {
-    let mut new_items = Vec::new();
-
-    for item in n.body.take() {
+    for item in &mut n.body {
       if let ModuleItem::ModuleDecl(decl) = item {
         match decl {
           ModuleDecl::ExportDecl(export_decl) => {
-            match export_decl.decl {
+            match &mut export_decl.decl {
               farmfe_core::swc_ecma_ast::Decl::Class(class) => {
-                let ident = class.ident.clone();
-                new_items.push(ModuleItem::Stmt(Stmt::Decl(Decl::Class(class))));
                 let minified_ident = self.ident_generator.generate();
                 self
                   .minified_exports_map
-                  .insert(ident.sym.to_string(), minified_ident.clone());
-                new_items.push(self.create_export_var_item(minified_ident, ident));
+                  .insert(class.ident.sym.to_string(), minified_ident.clone());
+                self
+                  .ident_to_replace
+                  .insert(class.ident.to_id(), minified_ident);
               }
               farmfe_core::swc_ecma_ast::Decl::Fn(func) => {
-                let ident = func.ident.clone();
-                new_items.push(ModuleItem::Stmt(Stmt::Decl(Decl::Fn(func))));
                 let minified_ident = self.ident_generator.generate();
                 self
                   .minified_exports_map
-                  .insert(ident.sym.to_string(), minified_ident.clone());
-                new_items.push(self.create_export_var_item(minified_ident, ident));
+                  .insert(func.ident.sym.to_string(), minified_ident.clone());
+                self
+                  .ident_to_replace
+                  .insert(func.ident.to_id(), minified_ident);
               }
               farmfe_core::swc_ecma_ast::Decl::Var(var_decl) => {
-                let mut decl_items = Vec::new();
-
                 for var_decl in &var_decl.decls {
                   let mut defined_idents_collector = DefinedIdentsCollector::new();
                   var_decl.name.visit_with(&mut defined_idents_collector);
@@ -90,80 +60,58 @@ impl<'a> VisitMut for ExportsMinifier<'a> {
                     self
                       .minified_exports_map
                       .insert(defined_ident.0.to_string(), minified_ident.clone());
-                    decl_items.push(self.create_export_var_item(
-                      minified_ident,
-                      Ident::new(defined_ident.0, DUMMY_SP.with_ctxt(defined_ident.1)),
-                    ));
+                    self.ident_to_replace.insert(defined_ident, minified_ident);
                   }
                 }
-
-                new_items.push(ModuleItem::Stmt(Stmt::Decl(Decl::Var(var_decl))));
-                new_items.extend(decl_items);
               }
               _ => { /* do nothing */ }
             }
           }
-          ModuleDecl::ExportNamed(mut export_named) => {
+          ModuleDecl::ExportNamed(export_named) => {
             // ignore export from, it will be handled in `minify_import` (expect export * as xxx from './xx')
             if export_named.src.is_some() {
               for sp in &mut export_named.specifiers {
                 if let farmfe_core::swc_ecma_ast::ExportSpecifier::Namespace(ns) = sp {
-                  let name = get_module_export_name(ns.name.clone()).sym.to_string();
-                  if &name == "default" {
+                  let mut name = get_module_export_name(ns.name.clone());
+                  let name_str = name.sym.to_string();
+                  if &name_str == "default" {
                     continue;
                   }
 
                   let minified_ident = self.ident_generator.generate();
                   self
                     .minified_exports_map
-                    .insert(name, minified_ident.clone());
-                  ns.name = ModuleExportName::Ident(Ident::new(minified_ident.into(), DUMMY_SP));
+                    .insert(name_str, minified_ident.clone());
+                  name.sym = minified_ident.as_str().into();
+                  ns.name = ModuleExportName::Ident(name);
                 }
               }
-              new_items.push(ModuleItem::ModuleDecl(ModuleDecl::ExportNamed(
-                export_named,
-              )));
             } else {
-              let mut preserved_specifiers = vec![];
-
-              for sp in export_named.specifiers {
+              for sp in &mut export_named.specifiers {
                 let minified_ident = self.ident_generator.generate();
-                // export { hello as hello1 } => export var a = hello; // minified_idents_map: hello1 -> a
+                // export { hello as hello1 } => export { hello as a }; // minified_idents_map: hello1 -> a
+                // export { hello as default } => export { hello as default };
+                // export { hello } => export { hello as a }; // minified_idents_map: hello -> a
                 match sp {
                   farmfe_core::swc_ecma_ast::ExportSpecifier::Namespace(_) => unreachable!(),
                   farmfe_core::swc_ecma_ast::ExportSpecifier::Named(named) => {
-                    let exported = if let Some(exported) = named.exported.clone() {
+                    let mut exported = if let Some(exported) = named.exported.clone() {
                       get_module_export_name(exported)
                     } else {
                       get_module_export_name(named.orig.clone())
                     };
                     if exported.sym == "default" {
-                      preserved_specifiers
-                        .push(farmfe_core::swc_ecma_ast::ExportSpecifier::Named(named));
                       continue;
                     }
                     self
                       .minified_exports_map
                       .insert(exported.sym.to_string(), minified_ident.clone());
-                    new_items.push(
-                      self
-                        .create_export_var_item(minified_ident, get_module_export_name(named.orig)),
-                    );
+                    exported.sym = minified_ident.as_str().into();
+
+                    named.exported = Some(ModuleExportName::Ident(exported));
                   }
                   farmfe_core::swc_ecma_ast::ExportSpecifier::Default(_) => unreachable!(),
                 }
-              }
-
-              if !preserved_specifiers.is_empty() {
-                new_items.push(ModuleItem::ModuleDecl(ModuleDecl::ExportNamed(
-                  NamedExport {
-                    span: DUMMY_SP,
-                    specifiers: preserved_specifiers,
-                    src: None,
-                    type_only: false,
-                    with: None,
-                  },
-                )));
               }
             }
           }
@@ -173,16 +121,10 @@ impl<'a> VisitMut for ExportsMinifier<'a> {
           | ModuleDecl::TsImportEquals(_)
           | ModuleDecl::Import(_)
           | ModuleDecl::TsExportAssignment(_)
-          | ModuleDecl::TsNamespaceExport(_) => {
-            new_items.push(ModuleItem::ModuleDecl(decl));
-          }
+          | ModuleDecl::TsNamespaceExport(_) => { /* do nothing */ }
         }
-      } else {
-        new_items.push(item);
       }
     }
-
-    n.body = new_items;
   }
 }
 
@@ -280,16 +222,11 @@ function c() {
 class e {
 }
 const long1 = 'long1', long2 = 'long2';
-export var d = long1;
-export { long2 as default };
-const long3 = 'long3', long4 = 'long4';
-export var g = long3;
-export var h = long4;
-function long5() {}
-export var i = long5;
-class long6 {
+export { long1 as d, long2 as default };
+export const long3 = 'long3', long4 = 'long4';
+export function long5() {}
+export class long6 {
 }
-export var j = long6;
 export default function long7() {}
 export default class long8 {
 }

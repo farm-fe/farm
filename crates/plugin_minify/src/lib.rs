@@ -18,6 +18,7 @@ use farmfe_core::{
   rayon::iter::{IntoParallelIterator, ParallelIterator},
   resource::resource_pot::{ResourcePot, ResourcePotType},
   swc_common::Mark,
+  swc_ecma_ast::Id,
 };
 use farmfe_toolkit::{
   common::{create_swc_source_map, Source},
@@ -129,12 +130,12 @@ impl Plugin for FarmPluginMinify {
           .map(|(dep_id, _)| dep_id)
           .collect::<Vec<_>>()
       };
-    let get_require_deps =
+    let get_require_or_dynamic_deps =
       |module_id: &ModuleId, module_graph: &farmfe_core::module::module_graph::ModuleGraph| {
         module_graph
           .dependencies(module_id)
           .into_iter()
-          .filter(|(_, edge)| edge.contains_require())
+          .filter(|(_, edge)| edge.contains_require() || edge.contains_dynamic())
           .map(|(dep_id, _)| dep_id)
           .collect::<Vec<_>>()
       };
@@ -173,7 +174,7 @@ impl Plugin for FarmPluginMinify {
         // continue;
       }
 
-      skipped_module_ids.extend(get_require_deps(module_id, &module_graph));
+      skipped_module_ids.extend(get_require_or_dynamic_deps(module_id, &module_graph));
 
       let deps = get_export_from_deps(module_id, &module_graph);
       let current_used_idents = ident_generator_map
@@ -191,6 +192,8 @@ impl Plugin for FarmPluginMinify {
 
     // reverse to make the module graph traverse from bottom to top
     sorted_module_ids.reverse();
+
+    let mut id_to_replace: HashMap<ModuleId, HashMap<Id, String>> = HashMap::new();
 
     for module_id in &sorted_module_ids {
       if !module_graph
@@ -226,9 +229,12 @@ impl Plugin for FarmPluginMinify {
       ast.visit_mut_with(&mut exports_minifier);
 
       minified_module_exports_map.insert(module.id.clone(), exports_minifier.minified_exports_map);
+      id_to_replace
+        .entry(module.id.clone())
+        .or_default()
+        .extend(exports_minifier.ident_to_replace);
     }
 
-    let mut id_to_replace = HashMap::new();
     // 2. rename all the imports of a module, handle export * from carefully
     for module_id in sorted_module_ids {
       let module = module_graph.module_mut(&module_id).unwrap();
@@ -255,7 +261,10 @@ impl Plugin for FarmPluginMinify {
           unresolved_mark,
         );
         ast.visit_mut_with(&mut imports_minifier);
-        id_to_replace.insert(module_id.clone(), imports_minifier.id_to_replace_map);
+        id_to_replace
+          .entry(module_id.clone())
+          .or_default()
+          .extend(imports_minifier.id_to_replace_map);
       })?;
 
       let module = module_graph.module_mut(&module_id).unwrap();
