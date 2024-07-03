@@ -4,7 +4,7 @@ use farmfe_core::{
   plugin::{PluginAnalyzeDepsHookResultEntry, ResolveKind},
   swc_css_ast::{ImportHref, Url},
 };
-use farmfe_toolkit::swc_css_visit::Visit;
+use farmfe_toolkit::{resolve::path_start_with_alias::is_start_with_alias, swc_css_visit::Visit};
 
 pub struct DepAnalyzer {
   pub deps: Vec<PluginAnalyzeDepsHookResultEntry>,
@@ -79,16 +79,4 @@ pub fn is_source_ignored(source: &str) -> bool {
     || source.starts_with("/")
     || source.starts_with("data:")
     || source.starts_with('#')
-}
-
-pub fn is_start_with_alias(alias: &HashMap<String, String>, source: &str) -> bool {
-  let mut alias_list: Vec<_> = alias.keys().collect();
-  alias_list.sort_by(|a, b| b.len().cmp(&a.len()));
-
-  for path in alias_list {
-    if source.starts_with(path) {
-      return true;
-    }
-  }
-  false
 }

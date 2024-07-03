@@ -77,7 +77,6 @@ fn analyze_deps() {
     };
 
     css_plugin.analyze_deps(&mut params, &context).unwrap();
-    println!("{:?}", params.deps);
 
     assert_eq!(
       params.deps,

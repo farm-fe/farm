@@ -8,9 +8,12 @@ use farmfe_core::{
   swc_css_ast::{AtRulePrelude, ImportHref, Rule, Str, Stylesheet, Url, UrlValue},
   swc_ecma_ast::Key,
 };
-use farmfe_toolkit::swc_css_visit::{VisitMut, VisitMutWith};
+use farmfe_toolkit::{
+  resolve::path_start_with_alias::is_start_with_alias,
+  swc_css_visit::{VisitMut, VisitMutWith},
+};
 
-use crate::dep_analyzer::{is_source_ignored, is_start_with_alias};
+use crate::dep_analyzer::is_source_ignored;
 
 pub struct SourceReplacer<'a> {
   module_id: ModuleId,
@@ -62,7 +65,6 @@ impl<'a> VisitMut for SourceReplacer<'a> {
                   } else {
                     self.public_path.trim_end_matches('/')
                   };
-                  println!("需要处理的路径{:?}==={:?}", source, normalized_public_path);
 
                   let normalized_public_path = if normalized_public_path.is_empty() {
                     "/".to_string()

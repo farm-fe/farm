@@ -17,6 +17,7 @@ use farmfe_core::common::PackageJsonInfo;
 use lazy_static::lazy_static;
 
 pub mod package_json_loader;
+pub mod path_start_with_alias;
 pub mod symlinks_analyzer;
 
 use package_json_loader::PackageJsonLoader;
