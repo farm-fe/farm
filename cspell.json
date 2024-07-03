@@ -130,6 +130,7 @@
     "proto",
     "protobuf",
     "protoc",
+    "quasis",
     "querify",
     "querystring",
     "Raspopov",
