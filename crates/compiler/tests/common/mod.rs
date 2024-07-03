@@ -5,9 +5,7 @@ use farmfe_core::{
   config::{
     bool_or_obj::BoolOrObj, config_regex::ConfigRegex, persistent_cache::PersistentCacheConfig,
     preset_env::PresetEnvConfig, Config, CssConfig, Mode, RuntimeConfig, SourcemapConfig,
-  },
-  plugin::Plugin,
-  serde_json::Value,
+  }, plugin::Plugin, serde::de::DeserializeOwned, serde_json::{self, Value}
 };
 use farmfe_testing_helpers::is_update_snapshot_from_env;
 use farmfe_toolkit::fs::read_file_utf8;
@@ -291,4 +289,18 @@ pub fn assert_compiler_result(compiler: &Compiler, entry_name: Option<&String>) 
       ..Default::default()
     },
   );
+}
+
+#[allow(dead_code)]
+pub fn get_config_field<T: DeserializeOwned>(value: &Value, keys: &[&str]) -> Option<T> {
+  let mut v: &Value = value;
+
+  for key in keys.iter() {
+    v = v.get(key)?;
+  }
+
+  Some(
+    serde_json::from_value(v.clone())
+      .expect(format!("{} type is not correct", keys.join(".")).as_str()),
+  )
 }

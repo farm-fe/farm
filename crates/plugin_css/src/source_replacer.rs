@@ -60,14 +60,14 @@ impl<'a> VisitMut for SourceReplacer<'a> {
                   let normalized_public_path = if self.public_path.is_empty() {
                     ""
                   } else {
-                    self.public_path.trim_matches('/')
+                    self.public_path.trim_end_matches('/')
                   };
                   println!("需要处理的路径{:?}==={:?}", source, normalized_public_path);
 
                   let normalized_public_path = if normalized_public_path.is_empty() {
                     "/".to_string()
                   } else {
-                    format!("/{normalized_public_path}/")
+                    format!("{normalized_public_path}/")
                   };
 
                   return format!("{normalized_public_path}{}", resource.name);
