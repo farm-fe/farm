@@ -17,8 +17,10 @@ pub fn is_start_with_alias(alias: &HashMap<String, String>, path: &str) -> bool 
       }
     } else if alias.ends_with("$") && path == alias.trim_end_matches('$') {
       return true;
-    } else if path.starts_with(alias) {
-      return true;
+    } else {
+      if path.starts_with(alias) {
+        return true;
+      }
     }
   }
 
