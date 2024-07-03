@@ -5,26 +5,20 @@ use farmfe_core::regex::Regex;
 const REGEX_PREFIX: &str = "$__farm_regex:";
 
 /// Determine whether the path conforms to the configuration of alias.
-pub fn is_start_with_alias(alias: &HashMap<String, String>, path: &str) -> bool {
-  let mut alias_list: Vec<_> = alias.keys().collect();
-  alias_list.sort_by(|a, b| b.len().cmp(&a.len()));
+pub fn is_start_with_alias(alias_map: &HashMap<String, String>, path: &str) -> bool {
+  let mut aliases: Vec<&str> = alias_map.keys().map(|k| k.as_str()).collect();
+  aliases.sort_by(|a, b| b.len().cmp(&a.len()));
 
-  for alias in alias_list {
-    if let Some(alias) = alias.strip_prefix(REGEX_PREFIX) {
-      let regex = Regex::new(alias).unwrap();
-      if regex.is_match(path) {
-        return true;
-      }
+  aliases.iter().any(|&alias| {
+    if let Some(stripped_alias) = alias.strip_prefix(REGEX_PREFIX) {
+      let regex = Regex::new(stripped_alias).unwrap();
+      return regex.is_match(path);
     } else if alias.ends_with("$") && path == alias.trim_end_matches('$') {
       return true;
     } else {
-      if path.starts_with(alias) {
-        return true;
-      }
+      return path.starts_with(alias);
     }
-  }
-
-  false
+  })
 }
 
 #[cfg(test)]
