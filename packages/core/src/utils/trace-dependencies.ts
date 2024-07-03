@@ -2,6 +2,7 @@ import { Compiler } from '../compiler/index.js';
 import { convertErrorMessage } from './error.js';
 import { Logger } from './logger.js';
 
+import * as fs from 'node:fs';
 import type { Config } from '../types/binding.js';
 
 function createTraceDepCompiler(entry: string, logger: Logger) {
@@ -15,6 +16,13 @@ export async function traceDependencies(
   logger: Logger
 ): Promise<string[]> {
   try {
+    // maybe not find config from local
+    if (
+      !(fs.existsSync(configFilePath) && fs.statSync(configFilePath).isFile())
+    ) {
+      return [];
+    }
+
     const compiler = createTraceDepCompiler(configFilePath, logger);
     const files = await compiler.traceDependencies();
     return files;

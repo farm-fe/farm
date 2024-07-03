@@ -71,7 +71,7 @@ export const version = JSON.parse(
 ).version;
 
 export function normalizePath(id: string): string {
-  return path.posix.normalize(id ?? process.cwd());
+  return path.posix.normalize(id);
 }
 
 export function normalizeBasePath(basePath: string): string {
@@ -158,4 +158,10 @@ export function mapTargetEnvValue(config: Config['config']) {
   } else if (FARM_TARGET_BROWSER_ENVS.includes(config.output.targetEnv)) {
     config.output.targetEnv = 'browser';
   }
+}
+
+export function tryStatSync(file: string): fs.Stats | undefined {
+  try {
+    return fs.statSync(file, { throwIfNoEntry: false });
+  } catch {}
 }

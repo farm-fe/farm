@@ -19,7 +19,7 @@ function App() {
 
       <div className="row">
         <a href="https://farmfe.org/" target="_blank">
-          <img src={FarmLogo} class="logo" alt="Farm logo" />
+          <img src={FarmLogo} className="logo" alt="Farm logo" />
         </a>
         <a href="https://tauri.app" target="_blank">
           <img src="/tauri.svg" className="logo tauri" alt="Tauri logo" />

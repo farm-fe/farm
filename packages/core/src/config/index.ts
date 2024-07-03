@@ -5,7 +5,10 @@ import path, { isAbsolute, join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 import { bindingPath } from '../../binding/index.js';
-import { type PluginTransformHookParam } from '../types/binding.js';
+import {
+  OutputConfig,
+  type PluginTransformHookParam
+} from '../types/binding.js';
 
 import { JsPlugin } from '../index.js';
 import {
@@ -250,7 +253,7 @@ export async function normalizeUserCompilationConfig(
   mode: CompilationMode = 'development',
   isDefault = false
 ): Promise<ResolvedCompilation> {
-  const { compilation, root } = resolvedUserConfig;
+  const { compilation, root = process.cwd() } = resolvedUserConfig;
 
   // resolve root path
   const resolvedRootPath = normalizePath(root);
@@ -404,7 +407,6 @@ export async function normalizeUserCompilationConfig(
   if (resolvedCompilation.mode === undefined) {
     resolvedCompilation.mode = mode;
   }
-
   setProcessEnv(resolvedCompilation.mode);
   // TODO add targetEnv `lib-browser` and `lib-node` support
   const is_entry_html =
@@ -601,7 +603,9 @@ export const DEFAULT_COMPILATION_OPTIONS: Partial<ResolvedCompilation> = {
       'cjs',
       'json',
       'html',
-      'css'
+      'css',
+      'mts',
+      'cts'
     ]
   }
 };
@@ -648,6 +652,19 @@ export function normalizeDevServerConfig(
   }) as NormalizedServerConfig;
 }
 
+type Format = Exclude<OutputConfig['format'], undefined>;
+const formatFromExt: Record<string, Format> = {
+  cjs: 'cjs',
+  mjs: 'esm',
+  cts: 'cjs',
+  mts: 'esm'
+};
+
+const formatToExt: Record<Format, string> = {
+  cjs: 'cjs',
+  esm: 'mjs'
+};
+
 async function readConfigFile(
   inlineOptions: FarmCLIOptions,
   configFilePath: string,
@@ -657,6 +674,11 @@ async function readConfigFile(
   if (fs.existsSync(configFilePath)) {
     !__FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__ &&
       logger.info(`Using config file at ${bold(green(configFilePath))}`);
+    const format: Format = process.env.FARM_CONFIG_FORMAT
+      ? process.env.FARM_CONFIG_FORMAT === 'cjs'
+        ? 'cjs'
+        : 'esm'
+      : formatFromExt[path.extname(configFilePath).slice(1)] ?? 'esm';
     // we need transform all type farm.config with __dirname and __filename
     const Compiler = (await import('../compiler/index.js')).Compiler;
     const outputPath = path.join(
@@ -668,7 +690,7 @@ async function readConfigFile(
     const fileName = `farm.config.bundle-${Date.now()}-${Math.random()
       .toString(16)
       .split('.')
-      .join('')}.${process.env.FARM_CONFIG_FORMAT === 'cjs' ? 'cjs' : 'mjs'}`;
+      .join('')}.${formatToExt[format]}`;
 
     const tsDefaultUserConfig: UserConfig = {
       root: inlineOptions.root,
@@ -679,7 +701,7 @@ async function readConfigFile(
         output: {
           entryFilename: '[entryName]',
           path: outputPath,
-          format: (process.env.FARM_CONFIG_FORMAT as 'esm' | 'cjs') ?? 'esm',
+          format,
           targetEnv: 'node'
         },
         external: process.env.FARM_CONFIG_FULL_BUNDLE
@@ -886,7 +908,8 @@ export async function resolveMergedUserConfig(
 
   resolvedUserConfig.env = {
     ...userEnv,
-    NODE_ENV: mode
+    NODE_ENV: mergedUserConfig.compilation.mode ?? mode,
+    mode: mode
   };
 
   return resolvedUserConfig;
