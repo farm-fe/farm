@@ -187,7 +187,7 @@ function tryGetDefaultPublicPath(
 
     if (targetEnv === 'node' && isAbsolute(publicPath)) {
       // vitejs plugin maybe set absolute path, should transform to relative path
-      const relativePath = './' + path.normalize(publicPath).slice(1);
+      const relativePath = './' + path.posix.normalize(publicPath).slice(1);
 
       logger.warn(
         `publicPath can't support absolute path in NodeJs, will be transform "${publicPath}" to "${relativePath}".`
@@ -259,7 +259,7 @@ export function getValidPublicPath(publicPath = '/'): string | undefined {
   if (publicPath.startsWith('/')) {
     validPublicPath = publicPath;
   } else if (publicPath.startsWith('.')) {
-    validPublicPath = path.normalize(path.join('/', publicPath));
+    validPublicPath = path.posix.normalize(path.join('/', publicPath));
   }
 
   return validPublicPath;
