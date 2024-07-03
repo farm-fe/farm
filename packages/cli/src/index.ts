@@ -112,7 +112,10 @@ const buildCommand = defineCommand({
     }
   },
   async run({ args }: { args: FarmCLICommonOptions & FarmCLIBuildOptions }) {
-    const { root, configPath } = resolveCliConfig(args.root, args.config);
+    const { root, configPath } = resolveCliConfig(
+      args.root,
+      args.config ?? args.c
+    );
 
     const defaultOptions = {
       root,
@@ -169,7 +172,10 @@ const watchCommand = defineCommand({
     }
   },
   async run({ args }: { args: FarmCLIBuildOptions & GlobalFarmCLIOptions }) {
-    const { root, configPath } = resolveCliConfig(args.root, args.config);
+    const { root, configPath } = resolveCliConfig(
+      args.root,
+      args.config ?? args.c
+    );
 
     const defaultOptions = {
       root,

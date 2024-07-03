@@ -7,12 +7,7 @@ import { Logger } from '@farmfe/core';
 import spawn from 'cross-spawn';
 import walkdir from 'walkdir';
 
-import type {
-  FarmCLICommonOptions,
-  FarmCLIServerOptions,
-  GlobalFarmCLIOptions,
-  ICleanOptions
-} from './types.js';
+import type { FarmCLICommonOptions, GlobalFarmCLIOptions } from './types.js';
 
 const logger = new Logger();
 interface installProps {
@@ -99,7 +94,7 @@ export async function install(options: installProps): Promise<void> {
 }
 /**
  * 用于规范化目标路径
- * @param {string |undefined} targetDir
+ * @param {string | undefined} targetDir
  * @returns
  */
 export function formatTargetDir(targetDir: string | undefined) {
@@ -148,7 +143,7 @@ export function cleanOptions(options: GlobalFarmCLIOptions) {
 export function resolveCommandOptions(
   options: GlobalFarmCLIOptions
 ): GlobalFarmCLIOptions {
-  const resolveOptions = { ...options };
+  const resolveOptions = resolveCommonOptions({ ...options });
   filterDuplicateOptions(resolveOptions);
   return cleanOptions(resolveOptions);
 }
@@ -193,4 +188,20 @@ export function resolveCliConfig(root: string, config: string) {
     root,
     configPath
   };
+}
+
+/**
+ * resolve common options to make sure they are consistent with the their alias
+ * @param {FarmCLICommonOptions & GlobalFarmCLIOptions} options
+ * @returns {GlobalFarmCLIOptions}
+ */
+export function resolveCommonOptions(
+  options: FarmCLICommonOptions & GlobalFarmCLIOptions
+): GlobalFarmCLIOptions {
+  const resolvedOptions = { ...options };
+  resolvedOptions.c && (resolvedOptions.config = resolvedOptions.c);
+  resolvedOptions.config && (resolvedOptions.c = resolvedOptions.config);
+  resolvedOptions.m && (resolvedOptions.mode = resolvedOptions.m);
+  resolvedOptions.mode && (resolvedOptions.m = resolvedOptions.mode);
+  return resolvedOptions;
 }

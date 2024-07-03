@@ -1,6 +1,6 @@
 export interface FarmCLICommonOptions {
   _?: string[];
-  c?: boolean | string;
+  c?: string;
   config?: string;
   m?: 'development' | 'production' | string;
   mode?: 'development' | 'production' | string;
@@ -59,10 +59,10 @@ export interface NormalizedFarmCLIBuildOptions extends FarmCLIBuildOptions {
 
 export interface GlobalFarmCLIOptions {
   _?: string[];
-  c?: boolean | string;
+  c?: string;
   config?: string;
   configPath?: string;
-  m?: string;
+  m?: 'development' | 'production';
   base?: string;
   mode?: 'development' | 'production';
   w?: boolean;
