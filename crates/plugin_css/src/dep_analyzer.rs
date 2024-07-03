@@ -70,7 +70,6 @@ impl Visit for DepAnalyzer {
 pub fn is_source_ignored(source: &str) -> bool {
   source.starts_with("http://")
     || source.starts_with("https://")
-    || source.starts_with('/')
     || source.starts_with("data:")
     || source.starts_with('#')
 }
