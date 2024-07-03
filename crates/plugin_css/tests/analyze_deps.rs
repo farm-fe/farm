@@ -1,7 +1,7 @@
 use std::{collections::HashMap, sync::Arc};
 
 use farmfe_core::{
-  config::Config,
+  config::{Config, ResolveConfig},
   context::CompilationContext,
   module::{ModuleId, ModuleType},
   plugin::{
@@ -14,8 +14,18 @@ use farmfe_testing_helpers::fixture;
 
 #[test]
 fn analyze_deps() {
-  fixture!("tests/fixtures/analyze_deps/basic.css", |file, _base| {
-    let context = Arc::new(CompilationContext::new(Config::default(), vec![]).unwrap());
+  fixture!("tests/fixtures/analyze_deps/basic.css", |file, cwd| {
+    let config = Config {
+      resolve: ResolveConfig {
+        alias: HashMap::from([
+          ("/@".to_string(), cwd.to_string_lossy().to_string()),
+          ("@".to_string(), cwd.to_string_lossy().to_string()),
+        ]),
+        ..Default::default()
+      },
+      ..Default::default()
+    };
+    let context = Arc::new(CompilationContext::new(config, vec![]).unwrap());
     let css_plugin = FarmPluginCss::new(&context.config);
     let load_result = css_plugin
       .load(
@@ -67,6 +77,7 @@ fn analyze_deps() {
     };
 
     css_plugin.analyze_deps(&mut params, &context).unwrap();
+    println!("{:?}", params.deps);
 
     assert_eq!(
       params.deps,
@@ -89,6 +100,14 @@ fn analyze_deps() {
         },
         PluginAnalyzeDepsHookResultEntry {
           source: "./img/home.png".to_string(),
+          kind: ResolveKind::CssUrl
+        },
+        PluginAnalyzeDepsHookResultEntry {
+          source: "/@/img/logo.png".to_string(),
+          kind: ResolveKind::CssUrl
+        },
+        PluginAnalyzeDepsHookResultEntry {
+          source: "@/img/logo.png".to_string(),
           kind: ResolveKind::CssUrl
         },
       ]

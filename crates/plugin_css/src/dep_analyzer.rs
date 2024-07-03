@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use farmfe_core::{
   plugin::{PluginAnalyzeDepsHookResultEntry, ResolveKind},
   swc_css_ast::{ImportHref, Url},
@@ -6,11 +8,15 @@ use farmfe_toolkit::swc_css_visit::Visit;
 
 pub struct DepAnalyzer {
   pub deps: Vec<PluginAnalyzeDepsHookResultEntry>,
+  alias: HashMap<String, String>,
 }
 
 impl DepAnalyzer {
-  pub fn new() -> Self {
-    Self { deps: vec![] }
+  pub fn new(alias: HashMap<String, String>) -> Self {
+    Self {
+      deps: vec![],
+      alias,
+    }
   }
 
   fn deal_url(&mut self, url: &Url, kind: ResolveKind) {
@@ -38,7 +44,7 @@ impl DepAnalyzer {
 
   fn insert_dep(&mut self, dep: PluginAnalyzeDepsHookResultEntry) -> bool {
     // ignore http and /
-    if is_source_ignored(&dep.source) {
+    if is_source_ignored(&dep.source) && !is_start_with_alias(&self.alias, &dep.source) {
       return false;
     }
 
@@ -70,6 +76,19 @@ impl Visit for DepAnalyzer {
 pub fn is_source_ignored(source: &str) -> bool {
   source.starts_with("http://")
     || source.starts_with("https://")
+    || source.starts_with("/")
     || source.starts_with("data:")
     || source.starts_with('#')
+}
+
+pub fn is_start_with_alias(alias: &HashMap<String, String>, source: &str) -> bool {
+  let mut alias_list: Vec<_> = alias.keys().collect();
+  alias_list.sort_by(|a, b| b.len().cmp(&a.len()));
+
+  for path in alias_list {
+    if source.starts_with(path) {
+      return true;
+    }
+  }
+  false
 }
