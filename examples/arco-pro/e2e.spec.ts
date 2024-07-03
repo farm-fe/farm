@@ -1,4 +1,4 @@
-import { test, expect } from 'vitest';
+import { test, expect, describe } from 'vitest';
 import { startProjectAndTest } from '../../e2e/vitestSetup';
 import path, { basename, dirname } from 'path';
 import { fileURLToPath } from 'url';
@@ -9,7 +9,7 @@ const projectPath = dirname(fileURLToPath(import.meta.url));
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-test(`e2e tests - ${name}`, async () => {
+describe(`e2e tests - ${name}`, async () => {
   const runTest = (command: 'start' | 'preview' = 'start') =>
     startProjectAndTest(
       projectPath,
@@ -74,6 +74,11 @@ test(`e2e tests - ${name}`, async () => {
       command
     );
 
-  await runTest();
-  await runTest('preview');
+    test('exmaples arco-pro run start', async () => {
+      await runTest();
+    })
+
+    test('exampels arco-pro run preview', async () => {
+      await runTest('preview');
+    })
 });

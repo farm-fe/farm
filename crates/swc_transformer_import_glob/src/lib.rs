@@ -392,6 +392,14 @@ impl<'a> ImportGlobVisitor<'a> {
         Ok(glob) => {
           let p = glob
             .walk(&root)
+            // filter out directory
+            .filter(|p| {
+              if p.is_err() {
+                true
+              } else {
+                p.as_ref().is_ok_and(|f| !f.path().is_dir())
+              }
+            })
             .map(|p| {
               (
                 source.clone(),
