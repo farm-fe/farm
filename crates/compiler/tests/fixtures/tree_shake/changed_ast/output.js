@@ -67,6 +67,7 @@ var index_js_cjs = __commonJs({
     }
 });
 })());(function(_){for(var r in _){_[r].__farm_resource_pot__='index_4924.js';(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.register(r,_[r])}})({"comp.tsx":function  (module, exports, farmRequire, farmDynamicRequire) {
+    module._m(exports);
     module.o(exports, "Description", function() {
         return Description;
     });
@@ -111,10 +112,10 @@ var index_js_cjs = __commonJs({
     var _c, _c1;
     $RefreshReg$(_c, "LazyComp");
     $RefreshReg$(_c1, "Description");
-    module._m(exports);
 }
 ,
 "dep.ts":function  (module, exports, farmRequire, farmDynamicRequire) {
+    module._m(exports);
     module.o(exports, "Suspense", function() {
         return Suspense;
     });
@@ -129,12 +130,11 @@ var index_js_cjs = __commonJs({
             console.log("lazy", promise);
         }
     };
-    module._m(exports);
 }
 ,
 "entry.ts":function  (module, exports, farmRequire, farmDynamicRequire) {
+    module._m(exports);
     var _f_comp = farmRequire("comp.tsx");
     console.log(_f_comp.Description());
-    module._m(exports);
 }
 ,});(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setInitialLoadedResources([]);(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setDynamicModuleResourcesMap({  });var farmModuleSystem = (globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__;farmModuleSystem.bootstrap();var entry = farmModuleSystem.require("entry.ts");

@@ -1,9 +1,9 @@
 ({"index.module.css":function  (module, exports, farmRequire, farmDynamicRequire) {
+    module._m(exports);
     farmRequire("index.module.css?farm_css_modules");
     exports.default = {
         "className": `className-ec324e46`
     };
-    module._m(exports);
 }
 ,
 "index.module.css?farm_css_modules":function  (module, exports, farmRequire, farmDynamicRequire) {
@@ -30,10 +30,10 @@
 }
 ,
 "index.ts":function  (module, exports, farmRequire, farmDynamicRequire) {
+    module._m(exports);
     farmRequire("index.css");
     var _f_index_module = module.i(farmRequire("index.module.css"));
     console.log(module.f(_f_index_module));
-    module._m(exports);
 }
 ,})
 {}

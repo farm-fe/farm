@@ -67,6 +67,7 @@ var index_js_cjs = __commonJs({
     }
 });
 })());(function(_){for(var r in _){_[r].__farm_resource_pot__='index_ddf1.js';(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.register(r,_[r])}})({"dep.ts":function  (module, exports, farmRequire, farmDynamicRequire) {
+    module._m(exports);
     module.o(exports, "a", function() {
         return a;
     });
@@ -82,10 +83,10 @@ var index_js_cjs = __commonJs({
     function invalidate() {
         return `invalidate data`;
     }
-    module._m(exports);
 }
 ,
 "index.ts":function  (module, exports, farmRequire, farmDynamicRequire) {
+    module._m(exports);
     module.o(exports, "InvalidateParent", function() {
         return InvalidateParent;
     });
@@ -113,6 +114,5 @@ var index_js_cjs = __commonJs({
             div.replaceWith(comp);
         }
     }
-    module._m(exports);
 }
 ,});(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setInitialLoadedResources([]);(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setDynamicModuleResourcesMap({  });var farmModuleSystem = (globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__;farmModuleSystem.bootstrap();var entry = farmModuleSystem.require("index.ts");var InvalidateParent=entry.InvalidateParent;export { InvalidateParent };

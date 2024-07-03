@@ -21,7 +21,7 @@ exports[`Js Plugin Execution - renderResourcePot 1`] = `
     "index.ts?foo=bar": {
       "id": "index.ts?foo=bar",
       "originalLength": 51,
-      "renderedContent": "function e(e,r,u,n){r.default="render-resource-pot-return-value",e._m(r);}",
+      "renderedContent": "function e(e,r,u,n){e._m(r),r.default="render-resource-pot-return-value";}",
       "renderedLength": 74,
       "renderedMap": null,
     },

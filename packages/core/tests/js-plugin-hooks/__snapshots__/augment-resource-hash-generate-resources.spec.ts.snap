@@ -3,7 +3,7 @@
 exports[`Js Plugin Execution - augmentResourceHash 1`] = `
 [
   "FARM_RUNTIME_runtime",
-  "index.7de09772.js",
+  "index.4a78ffd9.js",
 ]
 `;
 
@@ -28,7 +28,7 @@ exports[`Js Plugin Execution - augmentResourceHash 2`] = `
     "index.ts?foo=bar": {
       "id": "index.ts?foo=bar",
       "originalLength": 51,
-      "renderedContent": "function e(e,r,u,n){r.default="render-resource-pot-return-value",e._m(r);}",
+      "renderedContent": "function e(e,r,u,n){e._m(r),r.default="render-resource-pot-return-value";}",
       "renderedLength": 74,
       "renderedMap": null,
     },
@@ -41,6 +41,6 @@ exports[`Js Plugin Execution - augmentResourceHash 2`] = `
 exports[`Js Plugin Execution - augmentResourceHash 3`] = `
 [
   "FARM_RUNTIME_runtime",
-  "index.085ee3b9.js",
+  "index.b1e20720.js",
 ]
 `;

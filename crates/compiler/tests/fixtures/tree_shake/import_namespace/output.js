@@ -64,13 +64,14 @@
     console.log("runtime/index.js")(globalThis || window || global)["__farm_default_namespace__"].__farm_module_system__.setPlugins([]);
 });
 })());(function(_){for(var r in _){_[r].__farm_resource_pot__='index_7104.js';(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.register(r,_[r])}})({"b5d64806":function  (module, exports, farmRequire, farmDynamicRequire) {
+    module._m(exports);
     var _f_b = module.w(farmRequire("f380ea31"));
     var A = _f_b;
     console.log(A);
-    module._m(exports);
 }
 ,
 "f380ea31":function  (module, exports, farmRequire, farmDynamicRequire) {
+    module._m(exports);
     module.o(exports, "A", function() {
         return A;
     });
@@ -83,6 +84,5 @@
     var A = 10;
     var B = 20;
     var C = 30;
-    module._m(exports);
 }
 ,});(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setInitialLoadedResources([]);(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setDynamicModuleResourcesMap({  });var farmModuleSystem = (globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__;farmModuleSystem.bootstrap();var entry = farmModuleSystem.require("b5d64806");

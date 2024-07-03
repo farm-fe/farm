@@ -1,5 +1,6 @@
 //dep_8b00.js:
  (function(_){for(var r in _){_[r].__farm_resource_pot__='dep_8b00.js';(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.register(r,_[r])}})({"05ee5ec7":function  (module, exports, farmRequire, farmDynamicRequire) {
+    module._m(exports);
     module.o(exports, "dep", function() {
         return dep;
     });
@@ -9,14 +10,13 @@
         return module.f(_f_dep1)();
     };
     console.log("side effect in dep.ts");
-    module._m(exports);
 }
 ,
 "ef0c4c9d":function  (module, exports, farmRequire, farmDynamicRequire) {
+    module._m(exports);
     exports.default = function() {
         console.log("1111");
     };
-    module._m(exports);
 }
 ,});
 

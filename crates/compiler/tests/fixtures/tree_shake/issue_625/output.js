@@ -64,6 +64,7 @@
     console.log("runtime/index.js")(globalThis || window || global)["__farm_default_namespace__"].__farm_module_system__.setPlugins([]);
 });
 })());(function(_){for(var r in _){_[r].__farm_resource_pot__='index_2c69.js';(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.register(r,_[r])}})({"10c43cb2":function  (module, exports, farmRequire, farmDynamicRequire) {
+    module._m(exports);
     module.o(exports, "registerTickMethod", function() {
         return registerTickMethod;
     });
@@ -71,10 +72,10 @@
     function registerTickMethod(id, method) {
         cache[id] = method;
     }
-    module._m(exports);
 }
 ,
 "11ecb1ee":function  (module, exports, farmRequire, farmDynamicRequire) {
+    module._m(exports);
     module.o(exports, "scaleFunc", function() {
         return scaleFunc;
     });
@@ -82,16 +83,16 @@
     function scaleFunc() {
         return "tick";
     }
-    module._m(exports);
 }
 ,
 "3e3af5b6":function  (module, exports, farmRequire, farmDynamicRequire) {
+    module._m(exports);
     var _f_register = farmRequire("10c43cb2");
     _f_register.registerTickMethod("xxx", ()=>console.log("xxx"));
-    module._m(exports);
 }
 ,
 "b5d64806":function  (module, exports, farmRequire, farmDynamicRequire) {
+    module._m(exports);
     module.o(exports, "tick", function() {
         return tick;
     });
@@ -99,6 +100,5 @@
     function tick() {
         _f_dep_index.scaleFunc();
     }
-    module._m(exports);
 }
 ,});(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setInitialLoadedResources([]);(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setDynamicModuleResourcesMap({  });var farmModuleSystem = (globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__;farmModuleSystem.bootstrap();var entry = farmModuleSystem.require("b5d64806");var tick=entry.tick;export { tick };

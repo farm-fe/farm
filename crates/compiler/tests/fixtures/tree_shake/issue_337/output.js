@@ -64,6 +64,7 @@
     console.log("runtime/index.js")(globalThis || window || global)["__farm_default_namespace__"].__farm_module_system__.setPlugins([]);
 });
 })());(function(_){for(var r in _){_[r].__farm_resource_pot__='index_a93b.js';(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.register(r,_[r])}})({"066a321b":function  (module, exports, farmRequire, farmDynamicRequire) {
+    module._m(exports);
     module.o(exports, "default", function() {
         return resolve;
     });
@@ -232,10 +233,10 @@
                 return url.scheme + "//" + url.user + url.host + url.port + url.path + queryHash;
         }
     }
-    module._m(exports);
 }
 ,
 "7cd09bc5":function  (module, exports, farmRequire, farmDynamicRequire) {
+    module._m(exports);
     var _f__root = module.i(farmRequire("b5147996"));
     var freeExports = typeof exports == "object" && exports && !exports.nodeType && exports;
     var freeModule = freeExports && typeof module == "object" && module && !module.nodeType && module;
@@ -250,19 +251,18 @@
         return result;
     }
     exports.default = cloneBuffer;
-    module._m(exports);
 }
 ,
 "b5147996":function  (module, exports, farmRequire, farmDynamicRequire) {
-    exports.default = "/home";
     module._m(exports);
+    exports.default = "/home";
 }
 ,
 "b5d64806":function  (module, exports, farmRequire, farmDynamicRequire) {
+    module._m(exports);
     var _f__cloneBuffer = module.i(farmRequire("7cd09bc5"));
     var _f_resolve_uri = module.i(farmRequire("066a321b"));
     console.log(module.f(_f__cloneBuffer)(Buffer.from("test")));
     console.log(module.f(_f_resolve_uri)("test"));
-    module._m(exports);
 }
 ,});(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setInitialLoadedResources([]);(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setDynamicModuleResourcesMap({  });var farmModuleSystem = (globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__;farmModuleSystem.bootstrap();var entry = farmModuleSystem.require("b5d64806");

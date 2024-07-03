@@ -67,16 +67,17 @@ var index_js_cjs = __commonJs({
     }
 });
 })());(function(_){for(var r in _){_[r].__farm_resource_pot__='index_4246.js';(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.register(r,_[r])}})({"index.ts":function  (module, exports, farmRequire, farmDynamicRequire) {
+    module._m(exports);
     module.o(exports, "c", function() {
         return c;
     });
     farmRequire("style/a.css");
     var _f_logo1 = module.i(farmRequire("style/logo1.png"));
     var c = module.f(_f_logo1);
-    module._m(exports);
 }
 ,
 "style/a.css":function  (module, exports, farmRequire, farmDynamicRequire) {
+    module._m(exports);
     farmRequire("style/b.css");
     const cssCode = `
 `;
@@ -96,7 +97,6 @@ var index_js_cjs = __commonJs({
             style.remove();
         });
     }
-    module._m(exports);
 }
 ,
 "style/b.css":function  (module, exports, farmRequire, farmDynamicRequire) {
@@ -125,13 +125,13 @@ var index_js_cjs = __commonJs({
 }
 ,
 "style/logo.png":function  (module, exports, farmRequire, farmDynamicRequire) {
-    exports.default = "/logo-73d4a8.png";
     module._m(exports);
+    exports.default = "/logo-73d4a8.png";
 }
 ,
 "style/logo1.png":function  (module, exports, farmRequire, farmDynamicRequire) {
-    exports.default = "/logo1-cbaed8.png";
     module._m(exports);
+    exports.default = "/logo1-cbaed8.png";
 }
 ,});(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setInitialLoadedResources([]);(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setDynamicModuleResourcesMap({  });var farmModuleSystem = (globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__;farmModuleSystem.bootstrap();var entry = farmModuleSystem.require("index.ts");var c=entry.c;export { c };
 

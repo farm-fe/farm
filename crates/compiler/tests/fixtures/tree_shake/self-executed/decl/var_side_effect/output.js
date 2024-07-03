@@ -64,12 +64,13 @@
     console.log("runtime/index.js")(globalThis || window || global)["__farm_default_namespace__"].__farm_module_system__.setPlugins([]);
 });
 })());(function(_){for(var r in _){_[r].__farm_resource_pot__='index_5314.js';(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.register(r,_[r])}})({"b5d64806":function  (module, exports, farmRequire, farmDynamicRequire) {
+    module._m(exports);
     var _f_a = module.i(farmRequire("fa8c9120"));
     console.log(module.f(_f_a)());
-    module._m(exports);
 }
 ,
 "fa8c9120":function  (module, exports, farmRequire, farmDynamicRequire) {
+    module._m(exports);
     function invariant(condition, message) {
         if (condition) return;
         var error = new Error("loadable: " + message);
@@ -371,6 +372,5 @@
     var lazy$2 = lazy;
     lazy$2.lib = lazy$1;
     exports.default = loadable$2;
-    module._m(exports);
 }
 ,});(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setInitialLoadedResources([]);(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setDynamicModuleResourcesMap({  });var farmModuleSystem = (globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__;farmModuleSystem.bootstrap();var entry = farmModuleSystem.require("b5d64806");

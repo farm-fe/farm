@@ -70,6 +70,7 @@
 }
 ,
 "abc9a879":function  (module, exports, farmRequire, farmDynamicRequire) {
+    module._m(exports);
     module.o(exports, "Argument", function() {
         return Argument;
     });
@@ -105,12 +106,11 @@
     });
     var _f_command = module.i(farmRequire("4ef5be87"));
     var { program, createCommand, createArgument, createOption, CommanderError, InvalidArgumentError, InvalidOptionArgumentError, Command, Argument, Option, Help } = module.f(_f_command);
-    module._m(exports);
 }
 ,
 "b5d64806":function  (module, exports, farmRequire, farmDynamicRequire) {
+    module._m(exports);
     var _f_esm = farmRequire("abc9a879");
     _f_esm.program();
-    module._m(exports);
 }
 ,});(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setInitialLoadedResources([]);(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setDynamicModuleResourcesMap({  });var farmModuleSystem = (globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__;farmModuleSystem.bootstrap();var entry = farmModuleSystem.require("b5d64806");

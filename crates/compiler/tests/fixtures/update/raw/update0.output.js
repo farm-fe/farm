@@ -1,7 +1,7 @@
 ({"index.module.css":function  (module, exports, farmRequire, farmDynamicRequire) {
+    module._m(exports);
     farmRequire("index.module.css?farm_css_modules");
     exports.default = {};
-    module._m(exports);
 }
 ,
 "index.module.css?farm_css_modules":function  (module, exports, farmRequire, farmDynamicRequire) {
@@ -28,8 +28,8 @@
 }
 ,
 "index.module.css?raw":function  (module, exports, farmRequire, farmDynamicRequire) {
-    exports.default = "body {\n  color: red;\n}";
     module._m(exports);
+    exports.default = "body {\n  color: red;\n}";
 }
 ,})
 {}

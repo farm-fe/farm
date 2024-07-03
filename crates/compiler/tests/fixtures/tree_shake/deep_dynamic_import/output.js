@@ -1,5 +1,6 @@
 //dep_8b00.js:
  (function(_){for(var r in _){_[r].__farm_resource_pot__='dep_8b00.js';(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.register(r,_[r])}})({"05ee5ec7":function  (module, exports, farmRequire, farmDynamicRequire) {
+    module._m(exports);
     module.o(exports, "dep", function() {
         return dep;
     });
@@ -9,14 +10,13 @@
         return module.f(_f_dep1)();
     };
     console.log("side effect in dep.ts");
-    module._m(exports);
 }
 ,
 "ef0c4c9d":function  (module, exports, farmRequire, farmDynamicRequire) {
+    module._m(exports);
     exports.default = function() {
         console.log("1111");
     };
-    module._m(exports);
 }
 ,});
 
@@ -86,16 +86,16 @@
     console.log("runtime/index.js")(globalThis || window || global)["__farm_default_namespace__"].__farm_module_system__.setPlugins([]);
 });
 })());(function(_){for(var r in _){_[r].__farm_resource_pot__='index_5d9b.js';(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.register(r,_[r])}})({"7c4a34c2":async function  (module, exports, farmRequire, farmDynamicRequire) {
-    exports.default = await farmDynamicRequire("05ee5ec7");
     module._m(exports);
+    exports.default = await farmDynamicRequire("05ee5ec7");
 }
 ,
 "b5d64806":async function  (module, exports, farmRequire, farmDynamicRequire) {
     const [_f_main__f] = await Promise.all([
         farmRequire("7c4a34c2")
     ]);
+    module._m(exports);
     var _f_main = module.i(_f_main__f);
     console.log(module.f(_f_main));
-    module._m(exports);
 }
 ,});(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setInitialLoadedResources([]);(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setDynamicModuleResourcesMap({ '05ee5ec7': [{ path: 'dep_8b00.js', type: 'script' },] });var farmModuleSystem = (globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__;farmModuleSystem.bootstrap();var entry = farmModuleSystem.require("b5d64806");
