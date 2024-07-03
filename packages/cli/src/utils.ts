@@ -7,7 +7,12 @@ import { Logger } from '@farmfe/core';
 import spawn from 'cross-spawn';
 import walkdir from 'walkdir';
 
-import type { GlobalFarmCLIOptions, ICleanOptions } from './types.js';
+import type {
+  FarmCLICommonOptions,
+  FarmCLIServerOptions,
+  GlobalFarmCLIOptions,
+  ICleanOptions
+} from './types.js';
 
 const logger = new Logger();
 interface installProps {
@@ -126,7 +131,7 @@ export function clearScreen() {
 export function cleanOptions(options: GlobalFarmCLIOptions) {
   const resolveOptions = { ...options };
 
-  delete resolveOptions['--'];
+  delete resolveOptions._;
   delete resolveOptions.m;
   delete resolveOptions.c;
   delete resolveOptions.w;
@@ -181,12 +186,9 @@ export function resolveRootPath(rootPath = '') {
     : path.resolve(process.cwd(), rootPath);
 }
 
-export function resolveCliConfig(
-  root: string,
-  options: GlobalFarmCLIOptions & ICleanOptions
-) {
+export function resolveCliConfig(root: string, config: string) {
   root = resolveRootPath(root);
-  const configPath = getConfigPath(root, options.config);
+  const configPath = getConfigPath(root, config);
   return {
     root,
     configPath

@@ -1,8 +1,11 @@
 import { FarmCLIOptions, UserConfig } from '@farmfe/core';
-import { FarmCLIBuildOptions, GlobalFarmCLIOptions } from './types.js';
+import {
+  GlobalFarmCLIOptions,
+  NormalizedFarmCLIBuildOptions
+} from './types.js';
 
 export function getOptionFromBuildOption(
-  options: FarmCLIBuildOptions & GlobalFarmCLIOptions
+  options: NormalizedFarmCLIBuildOptions & GlobalFarmCLIOptions
 ): FarmCLIOptions & UserConfig {
   const {
     input,
