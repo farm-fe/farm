@@ -61,7 +61,7 @@ export async function start(
 
     await devServer.listen();
   } catch (error) {
-    logger.error(`Failed to start the server: \n ${error}`, { exit: true });
+    logger.error('Failed to start the server', { exit: true, error });
   }
 }
 

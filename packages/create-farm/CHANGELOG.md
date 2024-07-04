@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.0.10
+
+### Patch Changes
+
+- f181057e: Corrected the usage of class to className in an image tag within the Tauri > React template to resolve build errors.
+- 8106989f: Refactor create-farm with clap
+
 ## 0.0.9
 
 ### Patch Changes
