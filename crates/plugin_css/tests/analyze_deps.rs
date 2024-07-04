@@ -16,13 +16,13 @@ use farmfe_testing_helpers::fixture;
 fn analyze_deps() {
   fixture!("tests/fixtures/analyze_deps/basic.css", |file, cwd| {
     let config = Config {
-      resolve: ResolveConfig {
+      resolve: Box::new(ResolveConfig {
         alias: HashMap::from([
           ("/@".to_string(), cwd.to_string_lossy().to_string()),
           ("@".to_string(), cwd.to_string_lossy().to_string()),
         ]),
         ..Default::default()
-      },
+      }),
       ..Default::default()
     };
     let context = Arc::new(CompilationContext::new(config, vec![]).unwrap());

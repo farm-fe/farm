@@ -67,15 +67,11 @@
 
 //index.js:
  import "./__farm_runtime.0b5dd769.mjs";import "./index_7ecc.js";(function(_){for(var r in _){_[r].__farm_resource_pot__='index_7d8a.js';(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.register(r,_[r])}})({"363fc137":function  (module, exports, farmRequire, farmDynamicRequire) {
-    "use strict";
     console.log("utils.js");
 }
 ,
 "b5d64806":function  (module, exports, farmRequire, farmDynamicRequire) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", {
-        value: true
-    });
+    module._m(exports);
     const fs = farmRequire("e4b1dea3", true);
     const utils = farmRequire("363fc137", true);
     console.log(fs, utils);
@@ -84,7 +80,6 @@
 
 //index_7ecc.js:
  (function(_){for(var r in _){_[r].__farm_resource_pot__='index_7ecc.js';(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.register(r,_[r])}})({"e4b1dea3":function  (module, exports, farmRequire, farmDynamicRequire) {
-    "use strict";
     console.log("fs-extra");
 }
 ,});
