@@ -17,13 +17,13 @@ path = "src/main.rs"
 anyhow = "1"
 dialoguer = "0.11"
 # Default enable napi4 feature, see https://nodejs.org/api/n-api.html#node-api-version-matrix
-napi = { version = "2.15.2", default-features = false, features = [
+napi = { version = "2.16.8", default-features = false, features = [
   "napi4",
   "serde-json",
 ] }
-napi-derive = "2.15.2"
+napi-derive = "2.16.8"
 rust-embed = { version = "8.3", features = [ "compression", "interpolate-folder-path" ] }
 clap = { version = "4.5.8", features = ["derive"] }
 
 [build-dependencies]
-napi-build = "2.0.1"
+napi-build = "2.1.1"

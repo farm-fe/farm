@@ -135,26 +135,40 @@ unsafe extern "C" fn call_js_cb<P: Serialize, T: DeserializeOwned + Debug + Send
     Sender<Result<Option<T>>>,
   )> = Box::from_raw(data.cast());
   let (param, ctx, hook_context, sender) = *data;
-  // let js_context = create_js_context(raw_env, ctx);
+
+  let env = Env::from_raw(raw_env);
   let mut js_func = JsObject::from_napi_value(raw_env, func).unwrap();
-  let mut js_context = js_func
+
+  // Try to get the `farm_js_plugin_context` property
+  match js_func.get_named_property::<JsObject>("farm_js_plugin_context") {
+    Ok(js_context) => {
+      let context_type = JsUnknown::from_raw(raw_env, js_context.raw())
+        .unwrap()
+        .get_type()
+        .unwrap();
+      if context_type == ValueType::Undefined {
+        let new_js_context = create_js_context(raw_env, ctx.clone());
+        js_func
+          .set_named_property("farm_js_plugin_context", new_js_context)
+          .unwrap();
+      }
+    }
+    Err(_) => {
+      let new_js_context = create_js_context(raw_env, ctx.clone());
+      js_func
+        .set_named_property("farm_js_plugin_context", new_js_context)
+        .unwrap();
+    }
+  }
+
+  // Ensure js_context is correctly set
+  let js_context = js_func
     .get_named_property::<JsObject>("farm_js_plugin_context")
     .unwrap();
-
-  if JsUnknown::from_raw(raw_env, js_context.raw())
+  let js_context_type = JsUnknown::from_raw(raw_env, js_context.raw())
     .unwrap()
     .get_type()
-    .unwrap()
-    == ValueType::Undefined
-  {
-    let new_js_context = create_js_context(raw_env, ctx);
-    js_func
-      .set_named_property("farm_js_plugin_context", new_js_context)
-      .unwrap();
-    js_context = js_func
-      .get_named_property::<JsObject>("farm_js_plugin_context")
-      .unwrap();
-  }
+    .unwrap();
 
   unsafe fn to_napi_value<T: Serialize>(arg: T, raw_env: napi_env) -> napi_value {
     Env::from_raw(raw_env).to_js_value(&arg).unwrap().raw()
@@ -174,7 +188,7 @@ unsafe extern "C" fn call_js_cb<P: Serialize, T: DeserializeOwned + Debug + Send
     Err(e) => {
       sender
         .send(Err(CompilationError::NAPIError(format!(
-          "Invalid hook return, except object. {:?}",
+          "Invalid hook return, expected object. {:?}",
           e
         ))))
         .unwrap();
@@ -198,7 +212,7 @@ unsafe extern "C" fn call_js_cb<P: Serialize, T: DeserializeOwned + Debug + Send
       .map(|r| Some(r))
       .map_err(|e| {
         CompilationError::NAPIError(format!(
-          "Invalid hook return, can not transform it to rust struct. {:?}",
+          "Invalid hook return, cannot transform it to rust struct. {:?}",
           e
         ))
       });
