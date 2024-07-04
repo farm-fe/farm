@@ -1,6 +1,7 @@
 packages:
   - packages/*
   - examples/*
+  - examples/backend-integration/*
   - crates/*
   - rust-plugins/*
   - js-plugins/*
