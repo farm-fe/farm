@@ -38,8 +38,9 @@ export function useProxy(
 
     try {
       if (path.length > 0) {
+        const pathRegex = new RegExp(path);
         app.use((ctx, next) => {
-          if (ctx.path.startsWith(path)) {
+          if (pathRegex.test(ctx.path)) {
             return errorHandlerMiddleware(ctx, next);
           }
           return next();
