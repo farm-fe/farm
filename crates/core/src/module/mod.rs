@@ -466,8 +466,12 @@ impl<T: AsRef<str>> From<T> for ModuleType {
   fn from(s: T) -> Self {
     match s.as_ref() {
       "js" => Self::Js,
+      "mjs" => Self::Js,
+      "cjs" => Self::Js,
       "jsx" => Self::Jsx,
       "ts" => Self::Ts,
+      "cts" => Self::Ts,
+      "mts" => Self::Ts,
       "tsx" => Self::Tsx,
       "css" => Self::Css,
       "html" => Self::Html,
@@ -662,6 +666,17 @@ mod tests {
     suffix_vec
       .into_iter()
       .for_each(|(suffix, t)| assert_eq!(suffix, t.to_string()));
+
+    let suffix_vec = vec![
+      ("cjs", ModuleType::Js),
+      ("mjs", ModuleType::Js),
+      ("cts", ModuleType::Ts),
+      ("mts", ModuleType::Ts),
+    ];
+
+    suffix_vec.into_iter().for_each(|(suffix, t)| {
+      assert!(ModuleType::from(suffix) == t);
+    });
   }
 
   #[test]

@@ -10,6 +10,9 @@ export function Main() {
     <div className={'main-2'}>
       main-2
     </div>
+    <div className='main-3'>
+      main-3
+    </div>
     </>
   );
 }

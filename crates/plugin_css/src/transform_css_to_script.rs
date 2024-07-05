@@ -205,6 +205,7 @@ pub fn transform_css_stylesheet(
     &module_graph,
     &resources_map,
     context.config.output.public_path.clone(),
+    context.config.resolve.alias.clone(),
   );
 
   stylesheet

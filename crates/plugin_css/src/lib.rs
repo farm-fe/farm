@@ -463,14 +463,14 @@ impl Plugin for FarmPluginCss {
   fn analyze_deps(
     &self,
     param: &mut PluginAnalyzeDepsHookParam,
-    _context: &Arc<CompilationContext>,
+    context: &Arc<CompilationContext>,
   ) -> farmfe_core::error::Result<Option<()>> {
     if param.module.module_type == ModuleType::Css {
       let stylesheet = &param.module.meta.as_css().ast;
       // analyze dependencies:
       // 1. @import './xxx.css'
       // 2. url()
-      let mut dep_analyzer = DepAnalyzer::new();
+      let mut dep_analyzer = DepAnalyzer::new(context.config.resolve.alias.clone());
       stylesheet.visit_with(&mut dep_analyzer);
       param.deps.extend(dep_analyzer.deps);
     }
@@ -571,6 +571,7 @@ impl Plugin for FarmPluginCss {
             &module_graph,
             &resources_map,
             context.config.output.public_path.clone(),
+            context.config.resolve.alias.clone(),
           );
 
           if minify_enabled {
@@ -815,8 +816,14 @@ pub fn source_replace(
   module_graph: &ModuleGraph,
   resources_map: &HashMap<String, Resource>,
   public_path: String,
+  alias: HashMap<String, String>,
 ) {
-  let mut source_replacer =
-    SourceReplacer::new(module_id.clone(), module_graph, resources_map, public_path);
+  let mut source_replacer = SourceReplacer::new(
+    module_id.clone(),
+    module_graph,
+    resources_map,
+    public_path,
+    alias,
+  );
   stylesheet.visit_mut_with(&mut source_replacer);
 }
