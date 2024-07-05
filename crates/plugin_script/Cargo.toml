@@ -13,7 +13,7 @@ documentation = "https://docs.rs/farmfe_plugin_script"
 farmfe_core = { path = "../core", version = "0.6.0" }
 farmfe_toolkit = { path = "../toolkit", version = "0.0.9" }
 farmfe_testing_helpers = { path = "../testing_helpers", version = "0.0.9" }
-farmfe_utils = { path = "../utils", version = "0.1.4" }
+farmfe_utils = { path = "../utils", version = "0.1.5" }
 farmfe_swc_transformer_import_glob = { path = "../swc_transformer_import_glob", version = "0.0.7" }
 swc_plugin_proxy = { version = "0.39.10", features = [
   "plugin-rt",
