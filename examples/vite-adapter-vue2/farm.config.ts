@@ -10,7 +10,16 @@ export default defineConfig({
       alias: {
         '@': path.resolve('src')
       }
-    }
+    },
+  },
+  server: {
+    proxy: {
+      "/aaa": {
+        target: "https://apis.juhe.cn/environment/river",
+        changeOrigin: true,
+        pathRewrite: { "^/aaa": "" }
+      },
+    },
   },
   vitePlugins: [createVuePlugin(), createSvgPlugin(), {
     name: 'custom-plugin',
