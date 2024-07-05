@@ -446,6 +446,7 @@ export async function normalizeUserCompilationConfig(
     const input: Record<string, string> = {};
 
     for (const [key, value] of Object.entries(compilation.input)) {
+      if (!value && (value ?? true)) continue;
       if (!path.isAbsolute(value) && !value.startsWith('./')) {
         input[key] = `./${value}`;
       } else {
