@@ -5,7 +5,10 @@ use farmfe_core::{
   config::{
     bool_or_obj::BoolOrObj, config_regex::ConfigRegex, persistent_cache::PersistentCacheConfig,
     preset_env::PresetEnvConfig, Config, CssConfig, Mode, RuntimeConfig, SourcemapConfig,
-  }, plugin::Plugin, serde::de::DeserializeOwned, serde_json::{self, Value}
+  },
+  plugin::Plugin,
+  serde::de::DeserializeOwned,
+  serde_json::{self, Value},
 };
 use farmfe_testing_helpers::is_update_snapshot_from_env;
 use farmfe_toolkit::fs::read_file_utf8;
@@ -241,14 +244,15 @@ pub fn get_compiler_result(compiler: &Compiler, config: &AssertCompilerResultCon
 }
 
 #[allow(dead_code)]
-pub fn load_expected_result(cwd: PathBuf) -> String {
-  std::fs::read_to_string(cwd.join("output.js")).unwrap_or("".to_string())
+pub fn load_expected_result(cwd: PathBuf, output_file: &String) -> String {
+  std::fs::read_to_string(cwd.join(output_file)).unwrap_or("".to_string())
 }
 
 #[derive(Debug)]
 pub struct AssertCompilerResultConfig {
   pub entry_name: Option<String>,
   pub ignore_emitted_field: bool,
+  pub output_file: Option<String>,
 }
 
 impl Default for AssertCompilerResultConfig {
@@ -256,15 +260,28 @@ impl Default for AssertCompilerResultConfig {
     Self {
       entry_name: None,
       ignore_emitted_field: false,
+      output_file: Some("output.js".to_string()),
     }
+  }
+}
+impl AssertCompilerResultConfig {
+  pub fn output_file(&self) -> String {
+    self
+      .output_file
+      .clone()
+      .unwrap_or_else(|| "output.js".to_string())
   }
 }
 
 #[allow(dead_code)]
 pub fn assert_compiler_result_with_config(compiler: &Compiler, config: AssertCompilerResultConfig) {
-  let expected_result = load_expected_result(PathBuf::from(compiler.context().config.root.clone()));
+  let output_path = config.output_file();
+  let expected_result = load_expected_result(
+    PathBuf::from(compiler.context().config.root.clone()),
+    &output_path,
+  );
   let result = get_compiler_result(compiler, &config);
-  let output_path = PathBuf::from(compiler.context().config.root.clone()).join("output.js");
+  let output_path = PathBuf::from(compiler.context().config.root.clone()).join(output_path);
   if is_update_snapshot_from_env() || !output_path.exists() {
     std::fs::write(output_path, result).unwrap();
   } else {
