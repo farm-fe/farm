@@ -1,11 +1,13 @@
 import { FarmCLIOptions, UserConfig } from '@farmfe/core';
 import {
+  FarmCLIBuildOptions,
   GlobalFarmCLIOptions,
   NormalizedFarmCLIBuildOptions
 } from './types.js';
+import { resolveCommonOptions } from './utils.js';
 
 export function getOptionFromBuildOption(
-  options: NormalizedFarmCLIBuildOptions & GlobalFarmCLIOptions
+  options: FarmCLIBuildOptions & GlobalFarmCLIOptions
 ): FarmCLIOptions & UserConfig {
   const {
     input,
@@ -17,7 +19,8 @@ export function getOptionFromBuildOption(
     sourcemap,
     treeShaking,
     mode
-  } = options;
+  } = resolveCommonOptions(options) as NormalizedFarmCLIBuildOptions &
+    GlobalFarmCLIOptions;
 
   const output: UserConfig['compilation']['output'] = {
     ...(outDir && { path: outDir }),

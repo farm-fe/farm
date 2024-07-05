@@ -7,7 +7,11 @@ import { Logger } from '@farmfe/core';
 import spawn from 'cross-spawn';
 import walkdir from 'walkdir';
 
-import type { FarmCLICommonOptions, GlobalFarmCLIOptions } from './types.js';
+import type {
+  FarmCLIBuildOptions,
+  FarmCLICommonOptions,
+  GlobalFarmCLIOptions
+} from './types.js';
 
 const logger = new Logger();
 interface installProps {
@@ -186,7 +190,7 @@ export function resolveCliConfig(root: string, config: string) {
  */
 export function resolveCommonOptions(
   options: FarmCLICommonOptions & GlobalFarmCLIOptions
-): GlobalFarmCLIOptions {
+): FarmCLIBuildOptions & GlobalFarmCLIOptions {
   const resolvedOptions = { ...options };
   resolvedOptions.c && (resolvedOptions.config = resolvedOptions.c);
   resolvedOptions.config && (resolvedOptions.c = resolvedOptions.config);
