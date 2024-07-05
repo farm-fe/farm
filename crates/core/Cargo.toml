@@ -23,9 +23,9 @@ relative-path = "1.7"
 dashmap = "5.0"
 blake2 = "0.10"
 hex = "0.4"
-rkyv = { version = "=0.7.44" }
-rkyv_dyn = "=0.7.44"
-rkyv_typename = "=0.7.44"
+rkyv = { version = "0.7.44" }
+rkyv_dyn = "0.7.44"
+rkyv_typename = "0.7.44"
 ptr_meta = "0.1.4"
 thiserror = "1.0"
 rayon = "1.5"
