@@ -1,4 +1,4 @@
-use std::{any::Any, cell::RefCell, hash::Hash, path::Path, rc::Rc, sync::Arc};
+use std::{any::Any, cell::RefCell, fmt, hash::Hash, path::Path, rc::Rc, sync::Arc};
 
 use blake2::{
   digest::{Update, VariableOutput},
@@ -111,14 +111,15 @@ pub enum ModuleMetaData {
   Custom(Box<dyn SerializeCustomModuleMetaData>),
 }
 
-impl ToString for ModuleMetaData {
-  fn to_string(&self) -> String {
-    match self {
-      Self::Script(_) => "script".to_string(),
-      Self::Css(_) => "css".to_string(),
-      Self::Html(_) => "html".to_string(),
-      Self::Custom(_) => "custom".to_string(),
-    }
+impl fmt::Display for ModuleMetaData {
+  fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    let s = match self {
+      Self::Script(_) => "script",
+      Self::Css(_) => "css",
+      Self::Html(_) => "html",
+      Self::Custom(_) => "custom",
+    };
+    write!(f, "{}", s)
   }
 }
 
@@ -482,11 +483,11 @@ impl<T: AsRef<str>> From<T> for ModuleType {
   }
 }
 
-impl ToString for ModuleType {
-  fn to_string(&self) -> String {
+impl fmt::Display for ModuleType {
+  fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
     match *self {
-      Self::Custom(ref s) => s.to_string(),
-      _ => AsLowerCamelCase(format!("{:?}", self)).to_string(),
+      Self::Custom(ref s) => write!(f, "{}", s),
+      _ => write!(f, "{}", AsLowerCamelCase(format!("{:?}", self))),
     }
   }
 }
@@ -608,9 +609,9 @@ impl From<String> for ModuleId {
   }
 }
 
-impl ToString for ModuleId {
-  fn to_string(&self) -> String {
-    self.relative_path.to_string() + self.query_string.as_str()
+impl fmt::Display for ModuleId {
+  fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    write!(f, "{}{}", self.relative_path, self.query_string.as_str())
   }
 }
 

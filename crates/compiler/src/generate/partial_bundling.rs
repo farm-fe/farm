@@ -127,7 +127,7 @@ pub fn fill_necessary_fields_for_resource_pot(
     }
 
     resource_pot.entry_module = entry_module;
-    resource_pot.module_groups = module_groups.clone();
+    resource_pot.module_groups.clone_from(&module_groups);
 
     for module_group_id in module_groups {
       let module_group = module_group_graph

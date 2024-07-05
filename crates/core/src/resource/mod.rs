@@ -1,10 +1,8 @@
-use heck::AsLowerCamelCase;
-
+use crate::module::ModuleId;
 use farmfe_macro_cache_item::cache_item;
 use rkyv::with::Skip;
 use serde::{Deserialize, Serialize};
-
-use crate::module::ModuleId;
+use std::fmt;
 
 use self::resource_pot::{ResourcePotId, ResourcePotInfo};
 
@@ -23,12 +21,11 @@ pub enum ResourceType {
   Custom(String),
 }
 
-impl ToString for ResourceType {
-  fn to_string(&self) -> String {
+impl fmt::Display for ResourceType {
+  fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
     match *self {
-      Self::Custom(ref s) => s.to_string(),
-      Self::Asset(ref s) => s.to_string(),
-      _ => AsLowerCamelCase(format!("{:?}", self)).to_string(),
+      Self::Custom(ref s) => write!(f, "{}", s),
+      _ => write!(f, "{}", format!("{:?}", self).to_lowercase()),
     }
   }
 }

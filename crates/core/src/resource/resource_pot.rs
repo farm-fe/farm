@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 use std::collections::HashSet;
-use std::{collections::HashMap, sync::Arc};
+use std::{collections::HashMap, fmt, sync::Arc};
 
 use farmfe_macro_cache_item::cache_item;
 
@@ -58,7 +58,7 @@ impl ResourcePot {
   }
 
   pub fn gen_id(name: &str, ty: ResourcePotType) -> String {
-    format!("{}_{}", name, ty.to_string())
+    format!("{}_{}", name, ty)
   }
 
   pub fn add_module(&mut self, module_id: ModuleId) {
@@ -108,7 +108,7 @@ impl ResourcePot {
     self
       .meta
       .custom_data
-      .get(&DEFER_BUNDLE_MINIFY.to_string())
+      .get(DEFER_BUNDLE_MINIFY)
       .is_some_and(|v| v == "true")
   }
 }
@@ -274,9 +274,9 @@ impl From<ModuleType> for ResourcePotType {
   }
 }
 
-impl ToString for ResourcePotType {
-  fn to_string(&self) -> String {
-    format!("{:?}", self).to_lowercase()
+impl fmt::Display for ResourcePotType {
+  fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    write!(f, "{}", format!("{:?}", self).to_lowercase())
   }
 }
 

@@ -3,10 +3,11 @@ use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
 use swc_css_prefixer::options::Targets;
 
-use swc_ecma_parser::{EsConfig, TsConfig};
+use swc_ecma_parser::{EsSyntax, TsSyntax};
 
 use self::{
-  bool_or_obj::BoolOrObj, comments::CommentsConfig, config_regex::ConfigRegex, html::HtmlConfig, partial_bundling::PartialBundlingConfig, preset_env::PresetEnvConfig, script::ScriptConfig
+  bool_or_obj::BoolOrObj, comments::CommentsConfig, config_regex::ConfigRegex, html::HtmlConfig,
+  partial_bundling::PartialBundlingConfig, preset_env::PresetEnvConfig, script::ScriptConfig,
 };
 
 pub const FARM_MODULE_SYSTEM: &str = "__farm_module_system__";
@@ -21,14 +22,14 @@ pub mod bool_or_obj;
 pub mod comments;
 pub mod config_regex;
 pub mod custom;
+pub mod external;
 pub mod html;
 pub mod minify;
+mod output;
 pub mod partial_bundling;
 pub mod persistent_cache;
 pub mod preset_env;
 pub mod script;
-pub mod external;
-mod output;
 
 pub use output::*;
 
@@ -102,7 +103,6 @@ impl Default for Config {
   }
 }
 
-
 #[derive(Debug, Copy, Clone, Serialize, Deserialize, Eq, PartialEq, Hash, Default)]
 pub enum TargetEnv {
   #[serde(rename = "browser")]
@@ -135,12 +135,16 @@ impl Default for Mode {
   }
 }
 
-impl ToString for Mode {
-  fn to_string(&self) -> String {
-    match self {
-      Mode::Development => "development".to_string(),
-      Mode::Production => "production".to_string(),
-    }
+impl std::fmt::Display for Mode {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    write!(
+      f,
+      "{}",
+      match self {
+        Mode::Development => "development",
+        Mode::Production => "production",
+      }
+    )
   }
 }
 
@@ -187,8 +191,8 @@ impl Default for CssConfig {
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]
 #[serde(rename_all = "camelCase", default)]
 pub struct ScriptParserConfig {
-  pub es_config: EsConfig,
-  pub ts_config: TsConfig,
+  pub es_config: EsSyntax,
+  pub ts_config: TsSyntax,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

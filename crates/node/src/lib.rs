@@ -279,6 +279,9 @@ impl JsCompiler {
       e.create_deferred::<JsUpdateResult, Box<dyn FnOnce(Env) -> napi::Result<JsUpdateResult>>>()?;
 
     let compiler = self.compiler.clone();
+    let callback = move || {
+      thread_safe_callback.call((), ThreadsafeFunctionCallMode::Blocking);
+    };
     self.compiler.thread_pool.spawn(move || {
       match compiler
         .update(
@@ -286,9 +289,7 @@ impl JsCompiler {
             .into_iter()
             .map(|p| (p, UpdateType::Updated))
             .collect(),
-          move || {
-            thread_safe_callback.call((), ThreadsafeFunctionCallMode::Blocking);
-          },
+          callback,
           sync,
           generate_update_resource,
         )

@@ -53,17 +53,17 @@ impl ModuleGroupGraph {
     let from_node_index = self.id_index_map.get(from).unwrap_or_else(|| {
       panic!(
         "ModuleGroupGraph::remove_edge: from {} to {}. Not found: {}",
-        from.to_string(),
-        to.to_string(),
-        from.to_string()
+        from,
+        to,
+        from
       )
     });
     let to_node_index = self.id_index_map.get(to).unwrap_or_else(|| {
       panic!(
         "ModuleGroupGraph::remove_edge: from {} to {}. Not found: {}",
-        from.to_string(),
-        to.to_string(),
-        to.to_string()
+        from,
+        to,
+        to
       )
     });
     let edge_index = self.g.find_edge(*from_node_index, *to_node_index).unwrap();
@@ -203,7 +203,7 @@ impl ModuleGroupGraph {
     println!("digraph {{\n nodes:");
 
     for node in self.g.node_weights() {
-      println!("  \"{}\";", node.id.to_string());
+      println!("  \"{}\";", node.id);
     }
 
     println!("\nedges:");
@@ -313,11 +313,7 @@ impl ModuleGroup {
     resource_pot_map: &ResourcePotMap,
   ) -> Vec<ResourcePotId> {
     let mut resource_pots_order_map = HashMap::<String, usize>::new();
-    let mut sorted_resource_pots = self
-      .resource_pots()
-      .iter()
-      .cloned()
-      .collect::<Vec<_>>();
+    let mut sorted_resource_pots = self.resource_pots().iter().cloned().collect::<Vec<_>>();
 
     sorted_resource_pots.iter().for_each(|rp| {
       let rp = resource_pot_map.resource_pot(rp).unwrap();

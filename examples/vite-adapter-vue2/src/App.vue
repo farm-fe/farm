@@ -3,7 +3,9 @@
     <logo />
     <img :src="farmLogo" alt="farm logo" style="width: 100px" />
     {{ res }}
-    <h3>Welcome to use TDesign！</h3>
+    <t-button variant="outline" @click="clickBtn" class="placement-bottom-left"
+      >测试 proxy 请求地址</t-button
+    >
     <t-space>
       <t-button theme="primary">
         <add-icon slot="icon" />
@@ -50,10 +52,12 @@ export default {
     CloudDownloadIcon,
     Logo,
   },
-  created() {
-    axios.get("/aaa?key=caab07f6c5df752d2e28edfe447ae6d0").then((res) => {
-      console.log(res);
-    });
+  methods: {
+    clickBtn() {
+      axios.get("/aaa?key=caab07f6c5df752d2e28edfe447ae6d0").then((res) => {
+        this.$message.warning(res.data.reason);
+      });
+    },
   },
 };
 </script>

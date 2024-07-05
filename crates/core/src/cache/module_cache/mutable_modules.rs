@@ -33,7 +33,7 @@ impl MutableModulesMemoryStore {
 
   fn gen_cache_store_key(&self, module: &crate::module::Module) -> CacheStoreKey {
     let hash_key = sha256(
-      format!("{}{}", module.content_hash, module.id.to_string()).as_bytes(),
+      format!("{}{}", module.content_hash, module.id).as_bytes(),
       32,
     );
     CacheStoreKey {

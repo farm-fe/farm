@@ -146,8 +146,8 @@ pub fn patch_module_graph(
     let module = {
       let mut m = update_module_graph.take_module(&updated);
       let previous_module = module_graph.module(&updated).unwrap();
-      m.module_groups = previous_module.module_groups.clone();
-      m.resource_pot = previous_module.resource_pot.clone();
+      m.module_groups.clone_from(&previous_module.module_groups);
+      m.resource_pot.clone_from(&previous_module.resource_pot);
       m
     };
 

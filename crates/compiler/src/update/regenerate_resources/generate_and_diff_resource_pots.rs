@@ -230,7 +230,7 @@ fn diff_and_patch_resource_pot_map(
       module_groups.extend(module.module_groups.clone());
     }
 
-    resource_pot.module_groups = module_groups.clone();
+    resource_pot.module_groups.clone_from(&module_groups);
 
     for module_group_id in module_groups {
       let module_group = module_group_graph

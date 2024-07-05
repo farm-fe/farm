@@ -22,7 +22,7 @@ pub fn get_resource_cache_key(
     code.push_str(&module.content_hash);
 
     if context.cache_manager.module_cache.cache_outdated(module_id) {
-      code.push_str(&format!("[cache_outdated+{}]", module.id.to_string()));
+      code.push_str(&format!("[cache_outdated+{}]", module.id));
     }
 
     // if tree shaking is not enabled, we don't need to cache used_exports
