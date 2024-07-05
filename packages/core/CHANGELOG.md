@@ -1,5 +1,11 @@
 # @farmfe/core
 
+## 1.2.7
+
+### Patch Changes
+
+- 3cf0cdd9: use http-proxy as koa proxy middleware
+
 ## 1.2.6
 
 ### Patch Changes
