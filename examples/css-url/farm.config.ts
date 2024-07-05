@@ -28,12 +28,10 @@ export default defineConfig({
         '/@': resolve(__dirname, 'src'),
         '@': resolve(__dirname, 'src')
       },
-      
     }
   },
   server: {
     open: true,
   },
-  
-  plugins: ['@farmfe/plugin-react','@farmfe/plugin-sass', postcss()],
+  plugins: ['@farmfe/plugin-react', '@farmfe/plugin-sass', postcss()],
 });
