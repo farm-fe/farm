@@ -1,7 +1,11 @@
 import path from 'path';
 import { describe, expect, test } from 'vitest';
-import { normalizeUserCompilationConfig } from '../../src/config/index.js';
+import {
+  ResolvedCompilation,
+  normalizeUserCompilationConfig
+} from '../../src/config/index.js';
 import { mergeFarmCliConfig } from '../../src/config/mergeConfig.js';
+import { normalizeOutput } from '../../src/config/normalize-config/normalize-output.js';
 import { NoopLogger } from '../../src/index.js';
 
 describe('mergeFarmCliConfig', () => {
@@ -81,5 +85,46 @@ describe('mergeFarmCliConfig', () => {
 
       expect(config.input).toEqual({ index: 'index.ts' });
     });
+  });
+});
+
+describe('normalizeOutput', () => {
+  test('normalizeOutput with default', () => {
+    const resolvedConfig: ResolvedCompilation = {};
+    normalizeOutput(resolvedConfig, true, new NoopLogger());
+
+    expect(resolvedConfig.output?.targetEnv).toEqual('browser');
+    expect(resolvedConfig.output?.filename).toEqual(
+      '[resourceName].[contentHash].[ext]'
+    );
+    expect(resolvedConfig.output?.assetsFilename).toEqual(
+      '[resourceName].[contentHash].[ext]'
+    );
+    expect(resolvedConfig.output?.publicPath).toEqual('/');
+  });
+
+  test('normalizeOutput with targetEnv', () => {
+    const resolvedConfig: ResolvedCompilation = {
+      output: {
+        targetEnv: 'node'
+      }
+    };
+    normalizeOutput(resolvedConfig, true, new NoopLogger());
+
+    expect(resolvedConfig.output?.targetEnv).toEqual('node');
+    expect(resolvedConfig.output?.publicPath).toEqual('./');
+  });
+
+  test('normalizeOutput with node targetEnv and absolute publicPath', () => {
+    const resolvedConfig: ResolvedCompilation = {
+      output: {
+        targetEnv: 'node',
+        publicPath: '/public/'
+      }
+    };
+
+    normalizeOutput(resolvedConfig, true, new NoopLogger());
+    expect(resolvedConfig.output.targetEnv).toEqual('node');
+    expect(resolvedConfig.output.publicPath).toEqual('./public/');
   });
 });
