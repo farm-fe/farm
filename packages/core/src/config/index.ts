@@ -34,6 +34,7 @@ import {
   isWindows,
   normalizeBasePath,
   normalizePath,
+  slash,
   transformAliasWithVite
 } from '../utils/index.js';
 import { traceDependencies } from '../utils/trace-dependencies.js';
@@ -727,7 +728,10 @@ async function readConfigFile(
         config: normalizedConfig,
         jsPlugins: [
           replaceDirnamePlugin(),
-          transformFarmPluginPath(configFilePath, inlineOptions.root)
+          transformFarmPluginPath(
+            normalizePath(slash(configFilePath)),
+            inlineOptions.root
+          )
         ],
         rustPlugins: []
       },
