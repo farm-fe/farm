@@ -1,4 +1,4 @@
-use std::{collections::HashMap, fmt::Display, fs, io::Write, path, str::FromStr};
+use std::{collections::HashMap, fmt::Display, fs, path, str::FromStr};
 
 use crate::{
   package_manager::PackageManager,
@@ -213,7 +213,6 @@ impl Template {
         ElectronSubTemplate::Preact => "\x1b[38;2;255;215;0mElectron with Preact\x1b[39m",
       },
       Template::Nestjs => "\x1b[38;2;255;102;102mNestJS - (https://nestjs.com/)\x1b[39m",
-      _ => unreachable!(),
     }
   }
 }
@@ -266,7 +265,7 @@ impl<'a> Template {
   pub fn render(
     &self,
     target_dir: &path::Path,
-    pkg_manager: PackageManager,
+    _pkg_manager: PackageManager,
     project_name: &str,
     package_name: &str,
   ) -> anyhow::Result<()> {
@@ -302,7 +301,7 @@ impl<'a> Template {
           // skip manifest
           name if name.starts_with("%(") && name[1..].contains(")%") => {
             let mut s = name.strip_prefix("%(").unwrap().split(")%");
-            let (mut flags, name) = (
+            let (mut _flags, _name) = (
               s.next().unwrap().split('-').collect::<Vec<_>>(),
               s.next().unwrap(),
             );
@@ -348,7 +347,7 @@ impl<'a> Template {
     let skip_count = current_template_name.matches('/').count() + 1;
     for file in EMBEDDED_TEMPLATES::iter().filter(|e| {
       let path = path::PathBuf::from(e.to_string());
-      let components: Vec<_> = path.components().collect();
+      let _components: Vec<_> = path.components().collect();
       let path_str = path.to_string_lossy();
       // let template_name = components.first().unwrap().as_os_str().to_str().unwrap();
       path_str.starts_with(&current_template_name)
