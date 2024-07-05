@@ -115,7 +115,7 @@ export interface ResolvedUserConfig extends UserConfig {
   envDir?: string;
   envFiles?: string[];
   envPrefix?: string | string[];
-  configFilePath?: string;
+  configPath?: string;
   envMode?: string;
   configFileDependencies?: string[];
   compilation?: ResolvedCompilation;

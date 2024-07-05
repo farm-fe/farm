@@ -397,7 +397,7 @@ export async function createFileWatcher(
   const configFilePath = await getConfigFilePath(resolvedUserConfig.root);
   const farmWatcher = new ConfigWatcher({
     ...resolvedUserConfig,
-    configFilePath
+    configPath: configFilePath
   });
   farmWatcher.watch(async (files: string[]) => {
     clearScreen();

@@ -191,7 +191,6 @@ export async function resolveConfig(
     inlineOptions.mode ?? mode,
     logger
   );
-
   // normalize server config first cause it may be used in normalizeUserCompilationConfig
   resolvedUserConfig.server = normalizeDevServerConfig(
     resolvedUserConfig.server,
@@ -817,7 +816,7 @@ export async function resolveMergedUserConfig(
     const dependencies = await traceDependencies(configFilePath, logger);
     dependencies.sort();
     resolvedUserConfig.configFileDependencies = dependencies;
-    resolvedUserConfig.configFilePath = configFilePath;
+    resolvedUserConfig.configPath = configFilePath;
   }
 
   const resolvedRootPath = resolvedUserConfig.root ?? process.cwd();
