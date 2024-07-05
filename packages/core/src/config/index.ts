@@ -552,6 +552,7 @@ export const DEFAULT_HMR_OPTIONS: Required<UserHmrConfig> = {
       Number(process.env.FARM_DEFAULT_HMR_PORT)) ??
     undefined,
   path: '/__hmr',
+  overlay: true,
   protocol: 'ws',
   watchOptions: {}
 };

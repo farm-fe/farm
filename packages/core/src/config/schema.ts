@@ -369,7 +369,8 @@ const FarmConfigSchema = z
                   .object({
                     awaitWriteFinish: z.number().positive().int().optional()
                   })
-                  .optional()
+                  .optional(),
+                overlay: z.boolean().optional()
               })
               .strict()
           ])
