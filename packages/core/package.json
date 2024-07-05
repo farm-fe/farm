@@ -53,36 +53,6 @@
     "dev-server",
     "hmr"
   ],
-  "devDependencies": {
-    "@napi-rs/cli": "^2.15.2",
-    "@types/figlet": "^1.5.5",
-    "@types/fs-extra": "^11.0.1",
-    "@types/koa": "^2.13.5",
-    "@types/koa-compress": "^4.0.3",
-    "@types/koa-static": "^4.0.2",
-    "@types/koa__cors": "^5.0.0",
-    "@types/lodash.debounce": "^4.0.7",
-    "@types/mime-types": "^2.1.2",
-    "@types/ws": "^8.5.4",
-    "http-proxy-middleware": "^3.0.0",
-    "koa-connect": "^2.1.0",
-    "react-refresh": "^0.14.0"
-  },
-  "engines": {
-    "node": ">=16.15.1"
-  },
-  "files": [
-    "binding/binding.cjs",
-    "binding/binding.d.ts",
-    "binding/index.d.ts",
-    "binding/index.js",
-    "binding/resolve-binding.cjs",
-    "binding/swc-config.d.ts",
-    "dist",
-    "cjs",
-    "client.d.ts",
-    "types/**/*.d.ts"
-  ],
   "scripts": {
     "artifacts": "napi artifacts",
     "build:cjs": "node scripts/build-cjs.mjs",
@@ -96,6 +66,19 @@
     "version": "napi version",
     "start": "tsc -w -p tsconfig.build.json",
     "type-check": "tsc -p tsconfig.build.json"
+  },
+  "devDependencies": {
+    "@napi-rs/cli": "^2.15.2",
+    "@types/figlet": "^1.5.5",
+    "@types/fs-extra": "^11.0.1",
+    "@types/koa": "^2.13.5",
+    "@types/koa-compress": "^4.0.3",
+    "@types/koa-static": "^4.0.2",
+    "@types/koa__cors": "^5.0.0",
+    "@types/lodash.debounce": "^4.0.7",
+    "@types/mime-types": "^2.1.2",
+    "@types/ws": "^8.5.4",
+    "react-refresh": "^0.14.0"
   },
   "dependencies": {
     "@farmfe/runtime": "workspace:0.11.2",
@@ -116,6 +99,8 @@
     "koa": "^2.13.4",
     "koa-compress": "^5.1.1",
     "koa-static": "^5.0.0",
+    "http-proxy-middleware": "^3.0.0",
+    "koa-connect": "^2.1.0",
     "lodash.debounce": "^4.0.8",
     "loglevel": "^1.8.1",
     "mime-types": "^2.1.35",
@@ -124,5 +109,20 @@
     "ws": "^8.12.0",
     "zod": "^3.23.8",
     "zod-validation-error": "^3.3.0"
-  }
+  },
+  "engines": {
+    "node": ">=16.15.1"
+  },
+  "files": [
+    "binding/binding.cjs",
+    "binding/binding.d.ts",
+    "binding/index.d.ts",
+    "binding/index.js",
+    "binding/resolve-binding.cjs",
+    "binding/swc-config.d.ts",
+    "dist",
+    "cjs",
+    "client.d.ts",
+    "types/**/*.d.ts"
+  ]
 }
