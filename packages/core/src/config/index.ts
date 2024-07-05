@@ -155,6 +155,7 @@ export async function resolveConfig(
       logger,
       mode
     );
+
     if (loadedUserConfig) {
       configPath = loadedUserConfig.configFilePath;
       rawConfig = mergeConfig(rawConfig, loadedUserConfig.config);

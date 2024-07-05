@@ -4,6 +4,15 @@ import { fromZodError } from 'zod-validation-error';
 
 import type { UserConfig } from './types.js';
 
+const stringRewriteSchema = z.record(z.string(), z.string());
+
+const functionRewriteSchema = z.union([
+  z.function().args(z.string(), z.any()).returns(z.string()),
+  z.function().args(z.string(), z.any()).returns(z.promise(z.string()))
+]);
+
+const pathRewriteSchema = z.union([stringRewriteSchema, functionRewriteSchema]);
+
 const compilationConfigSchema = z
   .object({
     root: z.string().optional(),
@@ -297,10 +306,39 @@ const FarmConfigSchema = z
               agent: z.any().optional(),
               secure: z.boolean().optional(),
               logs: z.any().optional(),
-              rewrite: z
-                .function(z.tuple([z.string(), z.object({})]))
-                .optional(),
-              headers: z.record(z.string()).optional()
+              pathRewrite: pathRewriteSchema.optional(),
+              headers: z.record(z.string()).optional(),
+              on: z
+                .object({
+                  proxyReq: z
+                    .function()
+                    .args(
+                      z.instanceof(Object),
+                      z.instanceof(Object),
+                      z.instanceof(Object)
+                    )
+                    .returns(z.void())
+                    .optional(),
+                  proxyRes: z
+                    .function()
+                    .args(
+                      z.instanceof(Object),
+                      z.instanceof(Object),
+                      z.instanceof(Object)
+                    )
+                    .returns(z.void())
+                    .optional(),
+                  error: z
+                    .function()
+                    .args(
+                      z.instanceof(Error),
+                      z.instanceof(Object),
+                      z.instanceof(Object)
+                    )
+                    .returns(z.void())
+                    .optional()
+                })
+                .optional()
             })
           )
           .optional(),
@@ -330,7 +368,7 @@ const FarmConfigSchema = z
   })
   .strict();
 
-export function parseUserConfig(config: unknown): UserConfig {
+export function parseUserConfig(config: UserConfig): UserConfig {
   try {
     const parsed = FarmConfigSchema.parse(config);
     return parsed as UserConfig;

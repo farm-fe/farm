@@ -14,7 +14,7 @@ export function useProxy(
     let opts = options[path] as Options;
 
     if (typeof opts === 'string') {
-      opts = { target: opts, changeOrigin: true } as Options;
+      opts = { target: opts, changeOrigin: true };
     }
 
     const proxyMiddleware = createProxyMiddleware(opts);
@@ -56,7 +56,6 @@ export function proxy(devSeverContext: Server): Middleware {
   if (!config.proxy) {
     return;
   }
-
   const options = config.proxy;
   useProxy(options, devSeverContext.app(), logger);
 }
