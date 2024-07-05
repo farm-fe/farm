@@ -1,5 +1,11 @@
 # @farmfe/core
 
+## 1.2.8
+
+### Patch Changes
+
+- 83d05d59: fix: put http-proxy into production dependency
+
 ## 1.2.7
 
 ### Patch Changes
