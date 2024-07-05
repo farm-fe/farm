@@ -467,11 +467,11 @@ export async function normalizeUserCompilationConfig(
   if (resolvedCompilation.script?.plugins?.length) {
     logger.info(
       `Swc plugins are configured, note that Farm uses ${colors.yellow(
-        'swc_core v0.90'
+        'swc_core v0.95.6'
       )}, please make sure the plugin is ${colors.green(
         'compatible'
       )} with swc_core ${colors.yellow(
-        'swc_core v0.90'
+        'swc_core v0.95.6'
       )}. Otherwise, it may exit unexpectedly.`
     );
   }
