@@ -252,7 +252,7 @@ export async function normalizeUserCompilationConfig(
   mode: CompilationMode = 'development',
   isDefault = false
 ): Promise<ResolvedCompilation> {
-  const { compilation, root = process.cwd() } = resolvedUserConfig;
+  const { compilation, root = process.cwd(), clearScreen } = resolvedUserConfig;
 
   // resolve root path
   const resolvedRootPath = normalizePath(root);
@@ -274,6 +274,9 @@ export async function normalizeUserCompilationConfig(
     {
       input: inputIndexConfig,
       root: resolvedRootPath
+    },
+    {
+      clearScreen
     },
     compilation
   );

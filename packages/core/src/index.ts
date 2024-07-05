@@ -300,10 +300,8 @@ export async function createCompiler(
   const {
     jsPlugins,
     rustPlugins,
-    clearScreen,
     compilation: compilationConfig
   } = resolvedUserConfig;
-  compilationConfig.clearScreen = clearScreen;
   const compiler = new Compiler(
     {
       config: compilationConfig,
