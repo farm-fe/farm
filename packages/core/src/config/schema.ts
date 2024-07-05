@@ -1,3 +1,4 @@
+import http from 'http';
 import { SecureServerOptions } from 'node:http2';
 import { z } from 'zod';
 import { fromZodError } from 'zod-validation-error';
@@ -9,6 +10,15 @@ const stringRewriteSchema = z.record(z.string(), z.string());
 const functionRewriteSchema = z.union([
   z.function().args(z.string(), z.any()).returns(z.string()),
   z.function().args(z.string(), z.any()).returns(z.promise(z.string()))
+]);
+
+const pathFilterSchema = z.union([
+  z.string(),
+  z.array(z.string()),
+  z
+    .function()
+    .args(z.string(), z.instanceof(http.IncomingMessage))
+    .returns(z.boolean())
 ]);
 
 const pathRewriteSchema = z.union([stringRewriteSchema, functionRewriteSchema]);
@@ -300,46 +310,49 @@ const FarmConfigSchema = z
         cors: z.boolean().optional(),
         proxy: z
           .record(
-            z.object({
-              target: z.string(),
-              changeOrigin: z.boolean().optional(),
-              agent: z.any().optional(),
-              secure: z.boolean().optional(),
-              logs: z.any().optional(),
-              pathRewrite: pathRewriteSchema.optional(),
-              headers: z.record(z.string()).optional(),
-              on: z
-                .object({
-                  proxyReq: z
-                    .function()
-                    .args(
-                      z.instanceof(Object),
-                      z.instanceof(Object),
-                      z.instanceof(Object)
-                    )
-                    .returns(z.void())
-                    .optional(),
-                  proxyRes: z
-                    .function()
-                    .args(
-                      z.instanceof(Object),
-                      z.instanceof(Object),
-                      z.instanceof(Object)
-                    )
-                    .returns(z.void())
-                    .optional(),
-                  error: z
-                    .function()
-                    .args(
-                      z.instanceof(Error),
-                      z.instanceof(Object),
-                      z.instanceof(Object)
-                    )
-                    .returns(z.void())
-                    .optional()
-                })
-                .optional()
-            })
+            z
+              .object({
+                target: z.string(),
+                changeOrigin: z.boolean().optional(),
+                agent: z.any().optional(),
+                secure: z.boolean().optional(),
+                logs: z.any().optional(),
+                pathRewrite: pathRewriteSchema.optional(),
+                pathFilter: pathFilterSchema.optional(),
+                headers: z.record(z.string()).optional(),
+                on: z
+                  .object({
+                    proxyReq: z
+                      .function()
+                      .args(
+                        z.instanceof(Object),
+                        z.instanceof(Object),
+                        z.instanceof(Object)
+                      )
+                      .returns(z.void())
+                      .optional(),
+                    proxyRes: z
+                      .function()
+                      .args(
+                        z.instanceof(Object),
+                        z.instanceof(Object),
+                        z.instanceof(Object)
+                      )
+                      .returns(z.void())
+                      .optional(),
+                    error: z
+                      .function()
+                      .args(
+                        z.instanceof(Error),
+                        z.instanceof(Object),
+                        z.instanceof(Object)
+                      )
+                      .returns(z.void())
+                      .optional()
+                  })
+                  .optional()
+              })
+              .passthrough()
           )
           .optional(),
         strictPort: z.boolean().optional(),
@@ -377,7 +390,7 @@ export function parseUserConfig(config: UserConfig): UserConfig {
     const validationError = fromZodError(err);
     // the error now is readable by the user
     throw new Error(
-      `${validationError}. \n Please check your configuration file or command line configuration.`
+      `${validationError.toString()}. \n Please check your configuration file or command line configuration.`
     );
   }
 }
