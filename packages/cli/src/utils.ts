@@ -164,17 +164,6 @@ export async function handleAsyncOperationErrors<T>(
   }
 }
 
-// prevent node experimental warning
-export function preventExperimentalWarning() {
-  const defaultEmit = process.emit;
-  process.emit = function (...args: any[]) {
-    if (args[1].name === 'ExperimentalWarning') {
-      return undefined;
-    }
-    return defaultEmit.call(this, ...args);
-  };
-}
-
 export function resolveRootPath(rootPath = '') {
   return rootPath && path.isAbsolute(rootPath)
     ? rootPath
