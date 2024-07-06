@@ -287,6 +287,7 @@ fn get_entry_resource_and_dep_resources_name(
 pub fn handle_entry_resources(
   resources_map: &mut HashMap<String, Resource>,
   context: &Arc<CompilationContext>,
+  async_modules: &HashSet<ModuleId>,
 ) {
   let module_graph = context.module_graph.read();
   let module_group_graph = context.module_group_graph.read();
@@ -349,11 +350,18 @@ pub fn handle_entry_resources(
         r#"{farm_global_this}.{FARM_MODULE_SYSTEM}.setDynamicModuleResourcesMap({dynamic_resources_code});"#,
       );
 
+      let top_level_await_entry = if context.config.script.native_top_level_await && async_modules.contains(entry) {
+        "await "
+      } else {
+        ""
+      };
+
       // 5. append call entry
       let call_entry_code = format!(
-        r#"var farmModuleSystem = {}.{};farmModuleSystem.bootstrap();var entry = farmModuleSystem.require("{}");"#,
+        r#"var farmModuleSystem = {}.{};farmModuleSystem.bootstrap();var entry = {}farmModuleSystem.require("{}");"#,
         farm_global_this,
         FARM_MODULE_SYSTEM,
+        top_level_await_entry,
         entry.id(context.config.mode.clone()),
       );
 

@@ -76,6 +76,7 @@ fn test(file: String, crate_path: String) {
     AssertCompilerResultConfig {
       entry_name: Some(entry_name),
       ignore_emitted_field: false,
+      ..Default::default()
     },
   );
 }
