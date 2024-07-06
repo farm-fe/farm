@@ -31,7 +31,6 @@ import type {
 } from './config/types.js';
 import { logError } from './server/error.js';
 import { lazyCompilation } from './server/middlewares/lazy-compilation.js';
-import { resolveHostname } from './utils/http.js';
 import { clearScreen } from './utils/share.js';
 import { ConfigWatcher } from './watcher/config-watcher.js';
 
@@ -147,12 +146,9 @@ export async function watch(
     true
   );
 
-  const hostname = await resolveHostname(resolvedUserConfig.server.host);
   resolvedUserConfig.compilation.define = {
     ...(resolvedUserConfig.compilation.define ?? {}),
-    FARM_NODE_LAZY_COMPILE_SERVER_URL: `http://${
-      hostname.host || 'localhost'
-    }:${resolvedUserConfig.server.port}`
+    FARM_IS_NODE_LAZY_COMPILE: 'true'
   };
 
   const compilerFileWatcher = await createBundleHandler(
