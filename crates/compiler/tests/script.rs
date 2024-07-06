@@ -1,7 +1,8 @@
 use std::{collections::HashMap, path::PathBuf};
 
 use common::{
-  assert_compiler_result_with_config, create_compiler_with_args, get_config_field, try_read_config_from_json, AssertCompilerResultConfig
+  assert_compiler_result_with_config, create_compiler_with_args, get_config_field,
+  try_read_config_from_json, AssertCompilerResultConfig,
 };
 
 mod common;
@@ -26,8 +27,13 @@ fn script_test(file: String, crate_path: String) {
         if let Some(str) = get_config_field(&config_form_file, &["output", "publicPath"]) {
           config.output.public_path = str;
         }
-      }
 
+        if let Some(enable) =
+          get_config_field(&config_form_file, &["script", "nativeTopLevelAwait"])
+        {
+          config.script.native_top_level_await = enable;
+        }
+      }
 
       (config, plugins)
     });
@@ -39,6 +45,7 @@ fn script_test(file: String, crate_path: String) {
     AssertCompilerResultConfig {
       entry_name: Some(entry_name),
       ignore_emitted_field: false,
+      ..Default::default()
     },
   );
 }

@@ -70,4 +70,5 @@ pub struct ScriptConfig {
   pub parser: ScriptParserConfig,
   pub plugins: Vec<ScriptConfigPlugin>,
   pub decorators: ScriptDecoratorsConfig,
+  pub native_top_level_await: bool,
 }

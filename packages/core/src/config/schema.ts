@@ -156,7 +156,8 @@ const compilationConfigSchema = z
             excludes: z.array(z.string()).optional()
           })
           .optional(),
-        plugins: z.array(z.any()).optional()
+        plugins: z.array(z.any()).optional(),
+        nativeTopLevelAwait: z.boolean().optional()
       })
       .strict()
       .optional(),
@@ -368,7 +369,8 @@ const FarmConfigSchema = z
                   .object({
                     awaitWriteFinish: z.number().positive().int().optional()
                   })
-                  .optional()
+                  .optional(),
+                overlay: z.boolean().optional()
               })
               .strict()
           ])

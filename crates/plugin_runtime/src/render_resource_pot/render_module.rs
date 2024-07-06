@@ -124,6 +124,7 @@ pub fn render_module<F: Fn(&ModuleId) -> bool>(
       module_graph,
       module.id.clone(),
       context.config.mode.clone(),
+      context.config.output.target_env.clone(),
     );
     cloned_module.visit_mut_with(&mut source_replacer);
     cloned_module.visit_mut_with(&mut hygiene_with_config(HygieneConfig {
