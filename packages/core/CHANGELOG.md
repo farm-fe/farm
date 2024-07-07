@@ -1,5 +1,17 @@
 # @farmfe/core
 
+## 1.2.8
+
+### Patch Changes
+
+- 83d05d59: fix: put http-proxy into production dependency
+
+## 1.2.7
+
+### Patch Changes
+
+- 3cf0cdd9: use http-proxy as koa proxy middleware
+
 ## 1.2.6
 
 ### Patch Changes

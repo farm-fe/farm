@@ -1,22 +1,12 @@
 ({"index.module.css":function  (module, exports, farmRequire, farmDynamicRequire) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", {
-        value: true
-    });
-    Object.defineProperty(exports, "default", {
-        enumerable: true,
-        get: function() {
-            return _default;
-        }
-    });
+    module._m(exports);
     farmRequire("index.module.css?farm_css_modules");
-    var _default = {
+    exports.default = {
         "className": `className-ec324e46`
     };
 }
 ,
 "index.module.css?farm_css_modules":function  (module, exports, farmRequire, farmDynamicRequire) {
-    "use strict";
     const cssCode = `.className-ec324e46 {
   color: red;
 }
@@ -40,14 +30,10 @@
 }
 ,
 "index.ts":function  (module, exports, farmRequire, farmDynamicRequire) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", {
-        value: true
-    });
-    var _interop_require_default = farmRequire("@swc/helpers/_/_interop_require_default");
+    module._m(exports);
     farmRequire("index.css");
-    var _indexmodulecss = _interop_require_default._(farmRequire("index.module.css"));
-    console.log(_indexmodulecss.default);
+    var _f_index_module = module.i(farmRequire("index.module.css"));
+    console.log(module.f(_f_index_module));
 }
 ,})
 {}

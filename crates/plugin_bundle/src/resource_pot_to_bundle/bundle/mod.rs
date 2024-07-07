@@ -884,6 +884,7 @@ mod tests {
           hmr_self_accepted: false,
           hmr_accepted_deps: HashSet::default(),
           comments: Default::default(),
+          custom: Default::default(),
         }));
       })
       .unwrap();

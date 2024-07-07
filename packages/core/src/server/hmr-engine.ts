@@ -171,7 +171,8 @@ export class HmrEngine {
           client.rawSend(`
             {
               type: 'error',
-              err: ${errorStr}
+              err: ${errorStr},
+              overlay: ${this._devServer.config.hmr.overlay}
             }
           `);
         });

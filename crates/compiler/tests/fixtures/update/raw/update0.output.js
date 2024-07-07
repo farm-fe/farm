@@ -1,20 +1,10 @@
 ({"index.module.css":function  (module, exports, farmRequire, farmDynamicRequire) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", {
-        value: true
-    });
-    Object.defineProperty(exports, "default", {
-        enumerable: true,
-        get: function() {
-            return _default;
-        }
-    });
+    module._m(exports);
     farmRequire("index.module.css?farm_css_modules");
-    var _default = {};
+    exports.default = {};
 }
 ,
 "index.module.css?farm_css_modules":function  (module, exports, farmRequire, farmDynamicRequire) {
-    "use strict";
     const cssCode = `body {
   color: red;
 }
@@ -38,17 +28,8 @@
 }
 ,
 "index.module.css?raw":function  (module, exports, farmRequire, farmDynamicRequire) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", {
-        value: true
-    });
-    Object.defineProperty(exports, "default", {
-        enumerable: true,
-        get: function() {
-            return _default;
-        }
-    });
-    var _default = "body {\n  color: red;\n}";
+    module._m(exports);
+    exports.default = "body {\n  color: red;\n}";
 }
 ,})
 {}

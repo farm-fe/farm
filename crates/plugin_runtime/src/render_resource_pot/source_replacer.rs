@@ -8,11 +8,13 @@
 //! ```
 
 use farmfe_core::{
-  config::{Mode, FARM_DYNAMIC_REQUIRE, FARM_REQUIRE},
+  config::{Mode, TargetEnv, FARM_DYNAMIC_REQUIRE, FARM_REQUIRE},
   module::{module_graph::ModuleGraph, ModuleId, ModuleType},
   plugin::ResolveKind,
   swc_common::{Mark, DUMMY_SP},
-  swc_ecma_ast::{Bool, CallExpr, Callee, Expr, ExprOrSpread, Ident, Lit, Str},
+  swc_ecma_ast::{
+    Bool, CallExpr, Callee, Expr, ExprOrSpread, Ident, Lit, MemberExpr, MemberProp, Str,
+  },
 };
 use farmfe_toolkit::{
   script::{is_commonjs_require, is_dynamic_import},
@@ -33,6 +35,7 @@ pub struct SourceReplacer<'a> {
   module_id: ModuleId,
   mode: Mode,
   pub external_modules: Vec<String>,
+  target_env: TargetEnv,
 }
 
 impl<'a> SourceReplacer<'a> {
@@ -42,6 +45,7 @@ impl<'a> SourceReplacer<'a> {
     module_graph: &'a ModuleGraph,
     module_id: ModuleId,
     mode: Mode,
+    target_env: TargetEnv,
   ) -> Self {
     Self {
       unresolved_mark,
@@ -50,6 +54,7 @@ impl<'a> SourceReplacer<'a> {
       module_id,
       mode,
       external_modules: vec![],
+      target_env,
     }
   }
 }
@@ -78,6 +83,26 @@ enum SourceReplaceResult {
 }
 
 impl SourceReplacer<'_> {
+  fn find_real_module_meta_by_source(&self, source: &str) -> Option<(ModuleId, ResolveKind)> {
+    let mut id = None;
+    // treat non dynamic import as the same
+    for kind in [
+      ResolveKind::Import,
+      ResolveKind::ExportFrom,
+      ResolveKind::Require,
+    ] {
+      if let Some(dep_id) =
+        self
+          .module_graph
+          .get_dep_by_source_optional(&self.module_id, &source, Some(kind.clone()))
+      {
+        id = Some((dep_id, kind));
+        break;
+      }
+    }
+    id
+  }
+
   fn replace_source_with_id(&mut self, call_expr: &mut CallExpr) -> SourceReplaceResult {
     // require('./xxx') or require('./xxx', true)
     if call_expr.args.len() < 1 && call_expr.args.len() > 2 {
@@ -92,13 +117,6 @@ impl SourceReplacer<'_> {
       } = &mut call_expr.args[0]
       {
         let source = str.value.to_string();
-        let module_type = self
-          .module_graph
-          .module(&self.module_id)
-          .as_ref()
-          .unwrap()
-          .module_type
-          .clone();
 
         call_expr.callee = Callee::Expr(Box::new(Expr::Ident(Ident {
           span: DUMMY_SP,
@@ -106,44 +124,29 @@ impl SourceReplacer<'_> {
           optional: false,
         })));
 
-        if !matches!(module_type, ModuleType::Runtime)
-          && [
-            "@swc/helpers/_/_interop_require_default",
-            "@swc/helpers/_/_interop_require_wildcard",
-            "@swc/helpers/_/_export_star",
-          ]
-          .iter()
-          .any(|s| source == *s)
-        {
-          return SourceReplaceResult::NotReplaced;
-        }
-
-        let mut id = None;
-        // treat non dynamic import as the same
-        for kind in [
-          ResolveKind::Import,
-          ResolveKind::ExportFrom,
-          ResolveKind::Require,
-        ] {
-          if let Some(dep_id) =
-            self
-              .module_graph
-              .get_dep_by_source_optional(&self.module_id, &source, Some(kind))
-          {
-            id = Some(dep_id);
-            break;
-          }
-        }
-        let id = id.unwrap_or_else(|| {
-          panic!(
-            "Cannot find module id for source {:?} from {:?}",
-            source, self.module_id
-          )
-        });
+        let (id, resolve_kind) =
+          (self.find_real_module_meta_by_source(&source)).unwrap_or_else(|| {
+            panic!(
+              "Cannot find module id for source {:?} from {:?}",
+              source, self.module_id
+            )
+          });
         // only execute script module
         let dep_module = self.module_graph.module(&id).unwrap();
 
         if dep_module.external {
+          if matches!(resolve_kind, ResolveKind::Require)
+            && matches!(self.target_env, TargetEnv::Node)
+          {
+            // transform require("external") to globalThis.nodeRequire("external")
+            call_expr.callee = Callee::Expr(Box::new(Expr::Member(MemberExpr {
+              span: DUMMY_SP,
+              obj: Box::new(Expr::Ident("globalThis".into())),
+              prop: MemberProp::Ident("nodeRequire".into()),
+            })));
+            return SourceReplaceResult::NotReplaced;
+          }
+
           self.external_modules.push(id.to_string());
 
           return SourceReplaceResult::NotReplaced;

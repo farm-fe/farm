@@ -3,7 +3,7 @@ import { defineConfig } from '@farmfe/core'
 export default defineConfig({
   compilation: {
     presetEnv: false,
-    sourcemap: true,
+    sourcemap: false,
     persistentCache: false,
     minify: false
   },
