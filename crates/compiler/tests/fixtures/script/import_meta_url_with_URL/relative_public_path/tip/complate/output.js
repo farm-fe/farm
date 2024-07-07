@@ -64,7 +64,7 @@
   };
 }((function(){var index_js_cjs = __commonJs((module, exports)=>{
     "use strict";
-    console.log("runtime/index.js")(globalThis || window || global)["__farm_default_namespace__"].__farm_module_system__.setPlugins([]);
+    console.log('runtime/index.js')(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setPlugins([]);
 });
 })());(function(_){for(var r in _){_[r].__farm_resource_pot__='index_dff7.js';(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.register(r,_[r])}})({"b334ec2f":function  (module, exports, farmRequire, farmDynamicRequire) {
     module._m(exports);
@@ -76,8 +76,8 @@
     var _f_foo_bar = module.i(farmRequire("b334ec2f"));
     var _f_foo_bar1 = module.i(farmRequire("b334ec2f"));
     var _f_foo_bar2 = module.i(farmRequire("b334ec2f"));
-    const path1 = "foo";
-    const bar = "bar";
+    const path1 = 'foo';
+    const bar = 'bar';
     new URL({
         "./foo/bar/foo_bar.txt": module.f(_f_foo_bar2)
     }[`./foo/${path1}/${bar}`], module.meta.url);

@@ -67,7 +67,7 @@
   };
 }((function(){var index_js_cjs = __commonJs((module, exports)=>{
     "use strict";
-    console.log("runtime/index.js")(globalThis || window || global)["__farm_default_namespace__"].__farm_module_system__.setPlugins([]);
+    console.log('runtime/index.js')(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setPlugins([]);
 });
 })());(function(_){for(var r in _){_[r].__farm_resource_pot__='index_5425.js';(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.register(r,_[r])}})({"27eb6d1d":function  (module, exports, farmRequire, farmDynamicRequire) {
     module._m(exports);
@@ -84,7 +84,7 @@
     var _f_foo = module.i(farmRequire("27eb6d1d"));
     var _f_bar = module.i(farmRequire("8b8d3d28"));
     var _f_foo1 = module.i(farmRequire("27eb6d1d"));
-    const foo = "bar";
+    const foo = 'bar';
     console.log(new URL({
         "./foo/foo.txt": module.f(_f_foo1)
     }[`./foo/${foo}.txt`], module.meta.url));

@@ -3,10 +3,10 @@
   color: red;
 }
 `;
-    const farmId = "index.css";
+    const farmId = 'index.css';
     const previousStyle = document.querySelector(`style[data-farm-id="${farmId}"]`);
-    const style = document.createElement("style");
-    style.setAttribute("data-farm-id", farmId);
+    const style = document.createElement('style');
+    style.setAttribute('data-farm-id', farmId);
     style.innerHTML = cssCode;
     if (previousStyle) {
         previousStyle.replaceWith(style);

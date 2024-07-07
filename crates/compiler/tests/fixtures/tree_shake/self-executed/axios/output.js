@@ -61,7 +61,7 @@
   };
 }((function(){var index_js_cjs = __commonJs((module, exports)=>{
     "use strict";
-    console.log("runtime/index.js")(globalThis || window || global)["__farm_default_namespace__"].__farm_module_system__.setPlugins([]);
+    console.log('runtime/index.js')(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setPlugins([]);
 });
 })());(function(_){for(var r in _){_[r].__farm_resource_pot__='index_ddf1.js';(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.register(r,_[r])}})({"05ee5ec7":function  (module, exports, farmRequire, farmDynamicRequire) {
     module._m(exports);
@@ -70,13 +70,13 @@
     });
     function encode(str) {
         const charMap = {
-            "!": "%21",
-            "'": "%27",
-            "(": "%28",
-            ")": "%29",
-            "~": "%7E",
-            "%20": "+",
-            "%00": "\0"
+            '!': '%21',
+            "'": '%27',
+            '(': '%28',
+            ')': '%29',
+            '~': '%7E',
+            '%20': '+',
+            '%00': '\x00'
         };
         return encodeURIComponent(str).replace(/[!'()~]|%20|%00/g, function replacer(match) {
             return charMap[match];
@@ -98,8 +98,8 @@
             return encoder.call(this, value, encode);
         } : encode;
         return this._pairs.map(function each(pair) {
-            return _encode(pair[0]) + "=" + _encode(pair[1]);
-        }, "").join("&");
+            return _encode(pair[0]) + '=' + _encode(pair[1]);
+        }, '').join('&');
     };
     exports.default = AxiosURLSearchParams;
     function AxiosURLSearchParams2(params, options) {
