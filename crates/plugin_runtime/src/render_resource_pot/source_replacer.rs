@@ -124,18 +124,6 @@ impl SourceReplacer<'_> {
           optional: false,
         })));
 
-        if !matches!(module_type, ModuleType::Runtime)
-          && [
-            "@swc/helpers/_/_interop_require_default",
-            "@swc/helpers/_/_interop_require_wildcard",
-            "@swc/helpers/_/_export_star",
-          ]
-          .iter()
-          .any(|s| source == *s)
-        {
-          return SourceReplaceResult::NotReplaced;
-        }
-
         let (id, resolve_kind) =
           (self.find_real_module_meta_by_source(&source)).unwrap_or_else(|| {
             panic!(
