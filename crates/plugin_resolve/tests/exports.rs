@@ -496,10 +496,10 @@ fn resolve_exports_browser() {
         &Arc::new(
           CompilationContext::new(
             Config {
-              output: OutputConfig {
+              output: Box::new(OutputConfig {
                 target_env: farmfe_core::config::TargetEnv::Node,
                 ..Default::default()
-              },
+              }),
               ..Default::default()
             },
             vec![],

@@ -198,7 +198,10 @@ impl Plugin for FarmPluginHtml {
       let html_document =
         parse_html_document(module_id.to_string().as_str(), param.content.clone())?;
 
-      let meta = ModuleMetaData::Html(HtmlModuleMetaData { ast: html_document });
+      let meta = ModuleMetaData::Html(HtmlModuleMetaData {
+        ast: html_document,
+        custom: Default::default(),
+      });
 
       Ok(Some(meta))
     } else {

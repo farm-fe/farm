@@ -4,6 +4,7 @@
   "private": true,
   "dependencies": {
     "ant-design-vue": "3",
+    "@sinclair/typebox": "^0.32.33",
     "axios": "^1.4.0",
     "bcryptjs": "^2.4.3",
     "bootstrap": "^5.3.3",

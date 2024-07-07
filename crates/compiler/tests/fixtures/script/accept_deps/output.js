@@ -64,14 +64,11 @@
     console.log("runtime/index.js")(globalThis || window || global)["__farm_default_namespace__"].__farm_module_system__.setPlugins([]);
 });
 })());(function(_){for(var r in _){_[r].__farm_resource_pot__='index_fb79.js';(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.register(r,_[r])}})({"05ee5ec7":function  (module, exports, farmRequire, farmDynamicRequire) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", {
-        value: true
-    });
-    var _foo = farmRequire("59ebf907");
-    var _bar = farmRequire("e185e932");
-    (0, _foo.foo)();
-    (0, _bar.bar)();
+    module._m(exports);
+    var _f_foo = farmRequire("59ebf907");
+    var _f_bar = farmRequire("e185e932");
+    _f_foo.foo();
+    _f_bar.bar();
     module.meta.hot.accept([
         "foo.js",
         "bar.js"
@@ -79,15 +76,9 @@
 }
 ,
 "59ebf907":function  (module, exports, farmRequire, farmDynamicRequire) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", {
-        value: true
-    });
-    Object.defineProperty(exports, "foo", {
-        enumerable: true,
-        get: function() {
-            return foo;
-        }
+    module._m(exports);
+    module.o(exports, "foo", function() {
+        return foo;
     });
     function foo() {
         return "foo";
@@ -95,25 +86,17 @@
 }
 ,
 "b5d64806":function  (module, exports, farmRequire, farmDynamicRequire) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", {
-        value: true
-    });
-    var _foo = farmRequire("59ebf907");
+    module._m(exports);
+    var _f_foo = farmRequire("59ebf907");
     farmRequire("05ee5ec7");
-    (0, _foo.foo)();
+    _f_foo.foo();
+    ;
 }
 ,
 "e185e932":function  (module, exports, farmRequire, farmDynamicRequire) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", {
-        value: true
-    });
-    Object.defineProperty(exports, "bar", {
-        enumerable: true,
-        get: function() {
-            return bar;
-        }
+    module._m(exports);
+    module.o(exports, "bar", function() {
+        return bar;
     });
     function bar() {
         return "bar";

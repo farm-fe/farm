@@ -428,6 +428,7 @@ impl Plugin for FarmPluginCss {
       let meta = ModuleMetaData::Css(CssModuleMetaData {
         ast: css_stylesheet,
         comments,
+        custom: Default::default(),
       });
 
       Ok(Some(meta))
