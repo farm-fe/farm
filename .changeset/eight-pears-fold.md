@@ -2,4 +2,4 @@
 "@farmfe/core": patch
 ---
 
-clearScreen:Invalid to modify configuration entry
+fix: When clearScreen is false, clear fails
