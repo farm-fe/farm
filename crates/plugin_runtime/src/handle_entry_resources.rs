@@ -22,6 +22,7 @@ use farmfe_toolkit::get_dynamic_resources_map::{
 };
 use farmfe_toolkit::html::get_farm_global_this;
 use farmfe_toolkit::sourcemap::SourceMap;
+use farmfe_utils::transform_string_to_static_str;
 
 const FARM_NODE_MODULE: &str = "__farmNodeModule";
 
@@ -472,6 +473,9 @@ fn create_runtime_code(
     match &context.config.output.target_env {
       TargetEnv::Browser => "browser",
       TargetEnv::Node => "node",
+      // should never be here
+      TargetEnv::Library => "library",
+      TargetEnv::Custom(env) => transform_string_to_static_str(env.clone()),
     }
   );
 

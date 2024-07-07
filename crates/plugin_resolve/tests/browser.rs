@@ -48,10 +48,10 @@ fn resolve_browser_basic() {
         &Arc::new(
           CompilationContext::new(
             Config {
-              output: OutputConfig {
+              output: Box::new(OutputConfig {
                 target_env: farmfe_core::config::TargetEnv::Node,
                 ..Default::default()
-              },
+              }),
               ..Default::default()
             },
             vec![],
@@ -205,10 +205,10 @@ fn resolve_browser_target_env_node() {
         &Arc::new(
           CompilationContext::new(
             Config {
-              output: OutputConfig {
+              output: Box::new(OutputConfig {
                 target_env: TargetEnv::Node,
                 ..Default::default()
-              },
+              }),
               ..Default::default()
             },
             vec![],

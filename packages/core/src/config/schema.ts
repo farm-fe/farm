@@ -236,18 +236,25 @@ const compilationConfigSchema = z
     css: z
       .object({
         modules: z
-          .object({
-            indentName: z.string().optional()
-          })
+          .union([
+            z.null(),
+            z.object({
+              indentName: z.string().optional()
+            })
+          ])
+
           .optional(),
         prefixer: z
-          .object({
-            targets: z
-              .string()
-              .or(z.record(z.string()))
-              .or(z.array(z.string()))
-              .optional()
-          })
+          .union([
+            z.null(),
+            z.object({
+              targets: z
+                .string()
+                .or(z.record(z.string()))
+                .or(z.array(z.string()))
+                .optional()
+            })
+          ])
           .optional()
       })
       .optional(),
