@@ -91,7 +91,10 @@ impl PersistentCacheConfig {
           let mut content = String::new();
 
           for dep in &cloned_obj.build_dependencies {
-            if !PathBuf::from(dep).exists() || !PathBuf::from(dep).is_file() {
+            if !PathBuf::from(dep).exists()
+              || !PathBuf::from(dep).is_file()
+              || dep.ends_with(".farm")
+            {
               content.push_str(dep);
             } else {
               let c = std::fs::read_to_string(dep).unwrap();
