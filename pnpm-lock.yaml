@@ -3933,9 +3933,6 @@ packages:
   '@jridgewell/trace-mapping@0.3.9':
     resolution: {integrity: sha512-3Belt6tdc8bPgAtbcmdtNJlirVoTmEb5e2gC94PnkwEW9jI6CAHUeoG85tjWP5WquqfavoMtMwiG4P926ZKKuQ==}
 
-  '@jstors/farm-plugin-html-template@0.0.3':
-    resolution: {integrity: sha512-p1TSWmhY2/AiX+iv4UZ2vWMH+qfM1q530G2gu5ebfqRM5b6ER6thcB2dfaBDlPHsg3molV72rBV4rWGwe3cgNw==}
-
   '@juggle/resize-observer@3.4.0':
     resolution: {integrity: sha512-dfLbk+PwWvFzSxwk3n5ySL0hfBog779o8h68wK/7/APo/7cgyWp5jcXockbxdk5kFRkbeXWm4Fbi9FrdN381sA==}
 
@@ -7727,6 +7724,63 @@ packages:
   farm-browserslist-generator@1.0.0:
     resolution: {integrity: sha512-UGd1eWtSLOqxl0tlexRwpsy1JbHdO39iCDZKzdr7khBKYFXL5PDjjcyj1xelt5YUnLNB2vPAb8P+uD8IqRnBJQ==}
     engines: {node: '>=16.15.1', npm: '>=7.0.0', pnpm: '>=3.2.0', yarn: '>=1.13'}
+
+  farm-plugin-remove-console-darwin-arm64@0.1.8:
+    resolution: {integrity: sha512-LidqiNsSMjHvEXmv6wJF1PJ0IoIz+hNwyF3s2HZvPHhOip3yaAzGTRD1CIW2umSs5MHRaX+r1Pf7PAWl4sOT1w==}
+    engines: {node: '>= 10'}
+    cpu: [arm64]
+    os: [darwin]
+
+  farm-plugin-remove-console-darwin-x64@0.1.8:
+    resolution: {integrity: sha512-b0RZsZxbgH78FfMDGXrnt0vY5l+Lr3ZAW6BoE0crsf8ggNdj4dd2LEuPX3LaZd4/0WYP332o5yQeVzXXeBcMJg==}
+    engines: {node: '>= 10'}
+    cpu: [x64]
+    os: [darwin]
+
+  farm-plugin-remove-console-linux-arm64-gnu@0.1.8:
+    resolution: {integrity: sha512-ytvE84bzuYPby7s24Bc/7sWV9HlQ2J+PF08MebpW0lG6M5u5UwtBfJawhcdI2jB9dBZUJX0OZFT1C1YKP+AYpA==}
+    engines: {node: '>= 10'}
+    cpu: [arm64]
+    os: [linux]
+
+  farm-plugin-remove-console-linux-arm64-musl@0.1.8:
+    resolution: {integrity: sha512-vT1fy3hBdIqLNMI+hXi7I+Wseep6v3pUY99BDOnrkkHFkIjVuDzHCrQEYGLJOLchZM9fJnqidkhGTi0K+LZd6g==}
+    engines: {node: '>= 10'}
+    cpu: [arm64]
+    os: [linux]
+
+  farm-plugin-remove-console-linux-x64-gnu@0.1.8:
+    resolution: {integrity: sha512-MJkZn+OeWig78DkAb5ur/lxXYYlZwAO05WvQHJOgQLSjxyOAVTDPYn2j+mCGgPrZdDwyghODM9UdVlxe1lMb7w==}
+    engines: {node: '>= 10'}
+    cpu: [x64]
+    os: [linux]
+
+  farm-plugin-remove-console-linux-x64-musl@0.1.8:
+    resolution: {integrity: sha512-ZObFlj+/ulEqUjr1Ggpm03FRcZQ5BZepK24kWf36pxrB6cn/dSv40GsXzzKELfPrh12Q15NJZVSW/0AT4SLnTw==}
+    engines: {node: '>= 10'}
+    cpu: [x64]
+    os: [linux]
+
+  farm-plugin-remove-console-win32-arm64-msvc@0.1.8:
+    resolution: {integrity: sha512-3ygRsjuEbaF4g3xnGzvGpw1L0KG7GF3lGF/V/a/20qx7495OCIhyNK/POWtkhcGn4XDUkkcOs6/nWSRE0p0f/w==}
+    engines: {node: '>= 10'}
+    cpu: [arm64]
+    os: [win32]
+
+  farm-plugin-remove-console-win32-ia32-msvc@0.1.8:
+    resolution: {integrity: sha512-tS/OyEPBAGbnIMGjIg6bkfqfIMPFzQjKf1vOtw3J3jZzsrTAfmmwRnwEIQkNG+J0PuHCdqIju4Z8hc1cujV0EQ==}
+    engines: {node: '>= 10'}
+    cpu: [ia32]
+    os: [win32]
+
+  farm-plugin-remove-console-win32-x64-msvc@0.1.8:
+    resolution: {integrity: sha512-TKf7XFI9WRvBVAu6xzY5hHz1TGaYiTJjBBwAJ7uXBSgDz1Pnz+Gt9vb50ekWkK4TFr1RjLtLSq6Bs2ahxdX3Uw==}
+    engines: {node: '>= 10'}
+    cpu: [x64]
+    os: [win32]
+
+  farm-plugin-remove-console@0.1.8:
+    resolution: {integrity: sha512-t/QH2N97w2/VM4tj/hmnceU/95yYeORR5BnlWP91PherULRFhTVctECcC0JI33Psvyk06uSW4BuKgBPtktM5+w==}
 
   farmup@0.0.12:
     resolution: {integrity: sha512-B8RMixABXp/ILgadg2wQ1BAXwcdOqKdF1K4aq6rYur+7MsrRRlj6g/Wvifil0Xs1zvAUKBGEdCGIcu9TL29Brg==}
@@ -15108,18 +15162,6 @@ snapshots:
       '@jridgewell/resolve-uri': 3.1.1
       '@jridgewell/sourcemap-codec': 1.4.15
 
-  '@jstors/farm-plugin-html-template@0.0.3':
-    optionalDependencies:
-      farm-plugin-html-template-darwin-arm64: 0.0.3
-      farm-plugin-html-template-darwin-x64: 0.0.3
-      farm-plugin-html-template-linux-arm64-gnu: 0.0.3
-      farm-plugin-html-template-linux-arm64-musl: 0.0.3
-      farm-plugin-html-template-linux-x64-gnu: 0.0.3
-      farm-plugin-html-template-linux-x64-musl: 0.0.3
-      farm-plugin-html-template-win32-arm64-msvc: 0.0.3
-      farm-plugin-html-template-win32-ia32-msvc: 0.0.3
-      farm-plugin-html-template-win32-x64-msvc: 0.0.3
-
   '@juggle/resize-observer@3.4.0': {}
 
   '@koa/cors@5.0.0':
@@ -20131,6 +20173,49 @@ snapshots:
       object-path: 0.11.8
       semver: 7.5.4
       ua-parser-js: 1.0.37
+
+  farm-plugin-remove-console-darwin-arm64@0.1.8:
+    optional: true
+
+  farm-plugin-remove-console-darwin-x64@0.1.8:
+    optional: true
+
+  farm-plugin-remove-console-linux-arm64-gnu@0.1.8:
+    optional: true
+
+  farm-plugin-remove-console-linux-arm64-musl@0.1.8:
+    optional: true
+
+  farm-plugin-remove-console-linux-x64-gnu@0.1.8:
+    optional: true
+
+  farm-plugin-remove-console-linux-x64-musl@0.1.8:
+    optional: true
+
+  farm-plugin-remove-console-win32-arm64-msvc@0.1.8:
+    optional: true
+
+  farm-plugin-remove-console-win32-ia32-msvc@0.1.8:
+    optional: true
+
+  farm-plugin-remove-console-win32-x64-msvc@0.1.8:
+    optional: true
+
+  farm-plugin-remove-console@0.1.8:
+    dependencies:
+      '@changesets/cli': 2.27.2
+      '@farmfe/utils': 0.0.1
+      cac: 6.7.14
+    optionalDependencies:
+      farm-plugin-remove-console-darwin-arm64: 0.1.8
+      farm-plugin-remove-console-darwin-x64: 0.1.8
+      farm-plugin-remove-console-linux-arm64-gnu: 0.1.8
+      farm-plugin-remove-console-linux-arm64-musl: 0.1.8
+      farm-plugin-remove-console-linux-x64-gnu: 0.1.8
+      farm-plugin-remove-console-linux-x64-musl: 0.1.8
+      farm-plugin-remove-console-win32-arm64-msvc: 0.1.8
+      farm-plugin-remove-console-win32-ia32-msvc: 0.1.8
+      farm-plugin-remove-console-win32-x64-msvc: 0.1.8
 
   farmup@0.0.12:
     dependencies:
