@@ -148,10 +148,10 @@ fn resolve_imports_target_browser() {
       let cwd = file.parent().unwrap().to_path_buf();
       let context = CompilationContext::new(
         Config {
-          output: OutputConfig {
+          output: Box::new(OutputConfig {
             target_env: TargetEnv::Browser,
             ..Default::default()
-          },
+          }),
           ..Default::default()
         },
         vec![],
@@ -192,10 +192,10 @@ fn resolve_imports_target_node() {
       let resolver = Resolver::new();
       let context = CompilationContext::new(
         Config {
-          output: OutputConfig {
+          output: Box::new(OutputConfig {
             target_env: TargetEnv::Node,
             ..Default::default()
-          },
+          }),
           ..Default::default()
         },
         vec![],

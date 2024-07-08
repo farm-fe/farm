@@ -117,31 +117,12 @@ impl SourceReplacer<'_> {
       } = &mut call_expr.args[0]
       {
         let source = str.value.to_string();
-        let module_type = self
-          .module_graph
-          .module(&self.module_id)
-          .as_ref()
-          .unwrap()
-          .module_type
-          .clone();
 
         call_expr.callee = Callee::Expr(Box::new(Expr::Ident(Ident {
           span: DUMMY_SP,
           sym: FARM_REQUIRE.into(),
           optional: false,
         })));
-
-        if !matches!(module_type, ModuleType::Runtime)
-          && [
-            "@swc/helpers/_/_interop_require_default",
-            "@swc/helpers/_/_interop_require_wildcard",
-            "@swc/helpers/_/_export_star",
-          ]
-          .iter()
-          .any(|s| source == *s)
-        {
-          return SourceReplaceResult::NotReplaced;
-        }
 
         let (id, resolve_kind) =
           (self.find_real_module_meta_by_source(&source)).unwrap_or_else(|| {

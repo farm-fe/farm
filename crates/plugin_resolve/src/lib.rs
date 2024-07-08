@@ -86,15 +86,7 @@ impl Plugin for FarmPluginResolve {
     };
 
     // Entry module and internal modules should not be external
-    if !matches!(param.kind, ResolveKind::Entry(_))
-      && [
-        "@swc/helpers/_/_interop_require_default",
-        "@swc/helpers/_/_interop_require_wildcard",
-        "@swc/helpers/_/_export_star",
-      ]
-      .into_iter()
-      .all(|s| source != s)
-    {
+    if !matches!(param.kind, ResolveKind::Entry(_)) {
       farm_profile_scope!("plugin_resolve::resolve::check_external".to_string());
       // check external first, if the source is set as external, return it immediately
       if external_config.is_external(source) {

@@ -1,5 +1,4 @@
 ({"index.css":function  (module, exports, farmRequire, farmDynamicRequire) {
-    "use strict";
     const cssCode = `body {
   color: red;
 }

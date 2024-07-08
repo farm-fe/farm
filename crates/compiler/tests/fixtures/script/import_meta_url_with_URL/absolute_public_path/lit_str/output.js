@@ -67,28 +67,15 @@
     console.log("runtime/index.js")(globalThis || window || global)["__farm_default_namespace__"].__farm_module_system__.setPlugins([]);
 });
 })());(function(_){for(var r in _){_[r].__farm_resource_pot__='index_2f83.js';(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.register(r,_[r])}})({"b5d64806":function  (module, exports, farmRequire, farmDynamicRequire) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", {
-        value: true
-    });
-    var _interop_require_default = farmRequire("@swc/helpers/_/_interop_require_default");
-    var _footxturl = _interop_require_default._(farmRequire("e6cee430"));
+    module._m(exports);
+    var _f_foo = module.i(farmRequire("e6cee430"));
     console.log(new URL({
-        "./foo.txt": _footxturl.default
+        "./foo.txt": module.f(_f_foo)
     }["./foo.txt"], module.meta.url));
 }
 ,
 "e6cee430":function  (module, exports, farmRequire, farmDynamicRequire) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", {
-        value: true
-    });
-    Object.defineProperty(exports, "default", {
-        enumerable: true,
-        get: function() {
-            return _default;
-        }
-    });
-    var _default = "/foo-276e63.txt?url";
+    module._m(exports);
+    exports.default = "/foo-276e63.txt?url";
 }
 ,});(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setInitialLoadedResources([]);(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setDynamicModuleResourcesMap({  });var farmModuleSystem = (globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__;farmModuleSystem.bootstrap();var entry = farmModuleSystem.require("b5d64806");

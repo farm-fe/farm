@@ -67,6 +67,7 @@ pub fn create_module_with_comments(code: &str) -> Module {
     hmr_self_accepted: false,
     hmr_accepted_deps: Default::default(),
     comments: comments.into(),
+    custom: Default::default(),
   }));
   module
 }
@@ -83,6 +84,7 @@ pub fn create_module(code: &str) -> (Module, Arc<SourceMap>) {
     hmr_self_accepted: false,
     hmr_accepted_deps: Default::default(),
     comments: Default::default(),
+    custom: Default::default(),
   }));
   (module, cm)
 }
@@ -100,6 +102,7 @@ pub fn create_module_with_globals(code: &str) -> Module {
       hmr_self_accepted: false,
       hmr_accepted_deps: Default::default(),
       comments: Default::default(),
+      custom: Default::default(),
     }));
     module
   })

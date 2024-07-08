@@ -35,6 +35,7 @@ export default defineConfig({
       publicPath: "/vue-public-path/",
     },
     persistentCache: false,
+    sourcemap: false,
   },
   plugins: [
     sass(),

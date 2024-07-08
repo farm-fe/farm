@@ -300,6 +300,14 @@ impl ResolveKind {
     matches!(self, ResolveKind::DynamicImport)
       || matches!(self, ResolveKind::Custom(c) if c.starts_with("dynamic:"))
   }
+
+  pub fn is_export_from(&self) -> bool {
+    matches!(self, ResolveKind::ExportFrom)
+  }
+
+  pub fn is_require(&self) -> bool {
+    matches!(self, ResolveKind::Require)
+  }
 }
 
 impl From<&str> for ResolveKind {

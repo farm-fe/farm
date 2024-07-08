@@ -23,7 +23,7 @@ fn main() {
   let compiler = Compiler::new(
     Config {
       root: react_examples_root.to_string_lossy().to_string(),
-      runtime: RuntimeConfig {
+      runtime: Box::new(RuntimeConfig {
         path: cwd
           .join("packages")
           .join("runtime")
@@ -34,7 +34,7 @@ fn main() {
         plugins: vec![],
         swc_helpers_path,
         ..Default::default()
-      },
+      }),
       ..Default::default()
     },
     vec![],
