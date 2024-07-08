@@ -421,9 +421,10 @@ export async function normalizeUserCompilationConfig(
     const publicPath = getValidPublicPath(
       resolvedCompilation.output.publicPath
     );
-    const hmrPath = resolvedUserConfig.server.hmr.path;
     const serverOptions = resolvedUserConfig.server;
-    const defineHmrPath = normalizeBasePath(path.join(publicPath, hmrPath));
+    const defineHmrPath = normalizeBasePath(
+      path.join(publicPath, resolvedUserConfig.server.hmr.path)
+    );
 
     resolvedCompilation.runtime.plugins.push(hmrClientPluginPath);
     // TODO optimize get hmr logic
