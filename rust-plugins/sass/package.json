@@ -36,7 +36,6 @@
   "exports": {
     ".": {
       "import": "./func.js",
-      "require": "./func.js",
       "types": "./index.d.ts",
       "default": "./index.js"
     },
