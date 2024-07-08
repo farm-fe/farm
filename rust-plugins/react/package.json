@@ -23,11 +23,10 @@
   },
   "exports": {
     ".": {
-      "import": "./index.js",
-      "require": "./index.js",
+      "import": "./func.js",
+      "require": "./func.js",
       "types": "./index.d.ts"
     },
-    "./func":"./func.js",
     "./package.json": "./package.json"
   },
   "scripts": {
@@ -37,6 +36,7 @@
   },
   "files": [
     "index.js",
-    "index.d.ts"
+    "index.d.ts",
+    "func.js"
   ]
 }

@@ -1,13 +1,12 @@
 import crypto from 'node:crypto';
 import fs from 'node:fs';
-import module, { createRequire } from 'node:module';
+import module from 'node:module';
 import path, { isAbsolute, join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 import { bindingPath } from '../../binding/index.js';
 import {
   OutputConfig,
-  PluginResolveHookParam,
   type PluginTransformHookParam
 } from '../types/binding.js';
 
@@ -34,7 +33,6 @@ import {
   isWindows,
   normalizeBasePath,
   normalizePath,
-  slash,
   transformAliasWithVite
 } from '../utils/index.js';
 import { traceDependencies } from '../utils/trace-dependencies.js';
@@ -50,8 +48,7 @@ import merge from '../utils/merge.js';
 import {
   CUSTOM_KEYS,
   DEFAULT_CONFIG_NAMES,
-  FARM_DEFAULT_NAMESPACE,
-  FARM_RUST_PLUGIN_FUNCTION_ENTRY
+  FARM_DEFAULT_NAMESPACE
 } from './constants.js';
 import { mergeConfig, mergeFarmCliConfig } from './mergeConfig.js';
 import { normalizeExternal } from './normalize-config/normalize-external.js';
@@ -740,13 +737,7 @@ async function readConfigFile(
     const compiler = new Compiler(
       {
         config: normalizedConfig,
-        jsPlugins: [
-          replaceDirnamePlugin(),
-          transformFarmPluginPath(
-            normalizePath(slash(configFilePath)),
-            inlineOptions.root
-          )
-        ],
+        jsPlugins: [replaceDirnamePlugin()],
         rustPlugins: []
       },
       logger
@@ -1020,37 +1011,6 @@ export function replaceDirnamePlugin() {
   };
 }
 
-// try to transform rust plugin path to xxxx/func.js if this path is exists
-const transformFarmPluginPath = (importers: string, root: string) => ({
-  name: 'transform-farm-plugin-path',
-  priority: 101,
-  resolve: {
-    filters: {
-      sources: ['^.*farm.*plugin.*$'],
-      importers: [importers]
-    },
-    executor: async (param: PluginResolveHookParam) => {
-      let pluginPath = param.source;
-      if (!path.isAbsolute(pluginPath) && !pluginPath.startsWith('.')) {
-        const require = createRequire(path.join(root, 'package.json'));
-        pluginPath = require.resolve(pluginPath);
-        const funcPluginPath = path.resolve(
-          pluginPath,
-          '..',
-          FARM_RUST_PLUGIN_FUNCTION_ENTRY
-        );
-        if (fs.existsSync(funcPluginPath)) {
-          return {
-            resolvedPath: funcPluginPath,
-            external: false,
-            sideEffects: false
-          };
-        }
-      }
-      return null;
-    }
-  }
-});
 export async function resolvePlugins(
   userConfig: UserConfig,
   logger: Logger,

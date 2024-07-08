@@ -2,7 +2,7 @@ import { createRequire } from 'node:module';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 
-export type RustPlugin = string | [string, Record<string, unknown>];
+export type RustPlugin = string | [string, any];
 
 type RustPluginPathObject = {
   binary: string;

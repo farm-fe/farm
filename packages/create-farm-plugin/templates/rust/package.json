@@ -23,8 +23,8 @@
   },
   "exports": {
     ".": {
-      "import": "./scripts/index.js",
-      "require": "./scripts/index.js",
+      "import": "./scripts/func.js",
+      "require": "./scripts/func.js",
       "types": "./scripts/index.d.ts"
     },
     "./package.json": "./package.json"

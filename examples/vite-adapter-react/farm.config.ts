@@ -1,10 +1,14 @@
 import { defineConfig } from '@farmfe/core';
 import Pages from 'vite-plugin-pages';
+import react from '@farmfe/plugin-react'
 
 export default defineConfig({
   plugins: [
-    '@farmfe/plugin-react'
+    react({ runtime: 'automatic', refresh: true})
   ],
+  compilation:{
+    persistentCache: false
+  },
   vitePlugins: [
     Pages({
       resolver: 'react'
