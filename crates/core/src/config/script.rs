@@ -70,4 +70,11 @@ pub struct ScriptConfig {
   pub parser: ScriptParserConfig,
   pub plugins: Vec<ScriptConfigPlugin>,
   pub decorators: ScriptDecoratorsConfig,
+  pub native_top_level_await: bool,
+}
+
+impl ScriptConfig {
+  pub fn is_target_legacy(&self) -> bool {
+    self.target == EsVersion::Es5 || self.target == EsVersion::Es3
+  }
 }

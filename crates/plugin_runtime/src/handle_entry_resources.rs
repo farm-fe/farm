@@ -22,6 +22,7 @@ use farmfe_toolkit::get_dynamic_resources_map::{
 };
 use farmfe_toolkit::html::get_farm_global_this;
 use farmfe_toolkit::sourcemap::SourceMap;
+use farmfe_utils::transform_string_to_static_str;
 
 const FARM_NODE_MODULE: &str = "__farmNodeModule";
 
@@ -287,6 +288,7 @@ fn get_entry_resource_and_dep_resources_name(
 pub fn handle_entry_resources(
   resources_map: &mut HashMap<String, Resource>,
   context: &Arc<CompilationContext>,
+  async_modules: &HashSet<ModuleId>,
 ) {
   let module_graph = context.module_graph.read();
   let module_group_graph = context.module_group_graph.read();
@@ -349,11 +351,18 @@ pub fn handle_entry_resources(
         r#"{farm_global_this}.{FARM_MODULE_SYSTEM}.setDynamicModuleResourcesMap({dynamic_resources_code});"#,
       );
 
+      let top_level_await_entry = if context.config.script.native_top_level_await && async_modules.contains(entry) {
+        "await "
+      } else {
+        ""
+      };
+
       // 5. append call entry
       let call_entry_code = format!(
-        r#"var farmModuleSystem = {}.{};farmModuleSystem.bootstrap();var entry = farmModuleSystem.require("{}");"#,
+        r#"var farmModuleSystem = {}.{};farmModuleSystem.bootstrap();var entry = {}farmModuleSystem.require("{}");"#,
         farm_global_this,
         FARM_MODULE_SYSTEM,
+        top_level_await_entry,
         entry.id(context.config.mode.clone()),
       );
 
@@ -464,6 +473,9 @@ fn create_runtime_code(
     match &context.config.output.target_env {
       TargetEnv::Browser => "browser",
       TargetEnv::Node => "node",
+      // should never be here
+      TargetEnv::Library => "library",
+      TargetEnv::Custom(env) => transform_string_to_static_str(env.clone()),
     }
   );
 

@@ -182,7 +182,12 @@
     "wasmer",
     "wechat",
     "xlink",
-    "Yuxi"
+    "Yuxi",
+    "wasmer",
+    "primevue",
+    "shulan",
+    "globset",
+    "instanceof"
   ],
   "ignorePaths": [
     "pnpm-lock.yaml",

@@ -262,6 +262,12 @@ export interface ScriptConfig {
       moduleTypes?: ModuleType[];
     };
   }[];
+  /**
+   * keep output entry file top level await, it is useful when building library
+   *
+   * @default false
+   */
+  nativeTopLevelAwait?: boolean;
 }
 
 export interface CssConfig {
@@ -378,11 +384,14 @@ export interface PresetEnvConfig {
 
 export interface Config {
   config?: {
+    clearScreen?: boolean;
     coreLibPath?: string;
     /**
      * Compilation entries
+     *
+     * tip: if set to `null` or `undefined`, farm will be remove field
      */
-    input?: Record<string, string>;
+    input?: Record<string, string | undefined | null>;
     /**
      * Compilation outputs
      */

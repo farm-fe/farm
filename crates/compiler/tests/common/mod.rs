@@ -5,12 +5,15 @@ use farmfe_core::{
   config::{
     bool_or_obj::BoolOrObj, config_regex::ConfigRegex, persistent_cache::PersistentCacheConfig,
     preset_env::PresetEnvConfig, Config, CssConfig, Mode, RuntimeConfig, SourcemapConfig,
-  }, plugin::Plugin, serde::de::DeserializeOwned, serde_json::{self, Value}
+  },
+  plugin::Plugin,
+  serde::de::DeserializeOwned,
+  serde_json::{self, Value},
 };
 use farmfe_testing_helpers::is_update_snapshot_from_env;
 use farmfe_toolkit::fs::read_file_utf8;
 
-pub fn generate_runtime(crate_path: PathBuf) -> RuntimeConfig {
+pub fn generate_runtime(crate_path: PathBuf) -> Box<RuntimeConfig> {
   let swc_helpers_path = crate_path
     .join("tests")
     .join("fixtures")
@@ -27,12 +30,12 @@ pub fn generate_runtime(crate_path: PathBuf) -> RuntimeConfig {
     .to_string_lossy()
     .to_string();
 
-  RuntimeConfig {
+  Box::new(RuntimeConfig {
     path: runtime_path,
     plugins: vec![],
     swc_helpers_path,
     ..Default::default()
-  }
+  })
 }
 
 #[allow(dead_code)]
@@ -47,17 +50,17 @@ pub fn create_css_compiler(
       input,
       root: cwd.to_string_lossy().to_string(),
       runtime: generate_runtime(crate_path),
-      output: farmfe_core::config::OutputConfig {
+      output: Box::new(farmfe_core::config::OutputConfig {
         filename: "[resourceName].[ext]".to_string(),
         ..Default::default()
-      },
+      }),
       mode: Mode::Production,
       external: vec![
         ConfigRegex::new("^react-refresh$"),
         ConfigRegex::new("^module$"),
       ],
-      sourcemap: SourcemapConfig::Bool(false),
-      css: css_config,
+      sourcemap: Box::new(SourcemapConfig::Bool(false)),
+      css: Box::new(css_config),
       lazy_compilation: false,
       progress: false,
       minify: Box::new(BoolOrObj::Bool(false)),
@@ -78,10 +81,10 @@ pub fn create_config(cwd: PathBuf, crate_path: PathBuf) -> Config {
     input: HashMap::new(),
     root: cwd.to_string_lossy().to_string(),
     runtime: generate_runtime(crate_path),
-    output: farmfe_core::config::OutputConfig::default(),
+    output: Default::default(),
     mode: Mode::Production,
     external: Default::default(),
-    sourcemap: SourcemapConfig::Bool(false),
+    sourcemap: Box::new(SourcemapConfig::Bool(false)),
     lazy_compilation: false,
     progress: false,
     minify: Box::new(BoolOrObj::Bool(false)),
@@ -129,17 +132,17 @@ pub fn create_compiler(
       input,
       root: cwd.to_string_lossy().to_string(),
       runtime: generate_runtime(crate_path),
-      output: farmfe_core::config::OutputConfig {
+      output: Box::new(farmfe_core::config::OutputConfig {
         filename: "[resourceName].[ext]".to_string(),
         ..Default::default()
-      },
+      }),
       mode: Mode::Production,
       external: vec![
         ConfigRegex::new("^react-refresh$"),
         ConfigRegex::new("^module$"),
         ConfigRegex::new("^vue$"),
       ],
-      sourcemap: SourcemapConfig::Bool(false),
+      sourcemap: Box::new(SourcemapConfig::Bool(false)),
       lazy_compilation: false,
       progress: false,
       minify: Box::new(BoolOrObj::from(minify)),
@@ -181,17 +184,17 @@ pub fn create_compiler_with_plugins(
     Config {
       input,
       root: cwd.to_string_lossy().to_string(),
-      runtime: RuntimeConfig {
+      runtime: Box::new(RuntimeConfig {
         path: runtime_path,
         plugins: vec![],
         swc_helpers_path,
         ..Default::default()
-      },
+      }),
       external: vec![
         ConfigRegex::new("^react-refresh$"),
         ConfigRegex::new("^module$"),
       ],
-      sourcemap: SourcemapConfig::Bool(false),
+      sourcemap: Box::new(SourcemapConfig::Bool(false)),
       lazy_compilation: false,
       progress: false,
       minify: Box::new(BoolOrObj::from(minify)),
@@ -241,14 +244,15 @@ pub fn get_compiler_result(compiler: &Compiler, config: &AssertCompilerResultCon
 }
 
 #[allow(dead_code)]
-pub fn load_expected_result(cwd: PathBuf) -> String {
-  std::fs::read_to_string(cwd.join("output.js")).unwrap_or("".to_string())
+pub fn load_expected_result(cwd: PathBuf, output_file: &String) -> String {
+  std::fs::read_to_string(cwd.join(output_file)).unwrap_or("".to_string())
 }
 
 #[derive(Debug)]
 pub struct AssertCompilerResultConfig {
   pub entry_name: Option<String>,
   pub ignore_emitted_field: bool,
+  pub output_file: Option<String>,
 }
 
 impl Default for AssertCompilerResultConfig {
@@ -256,15 +260,28 @@ impl Default for AssertCompilerResultConfig {
     Self {
       entry_name: None,
       ignore_emitted_field: false,
+      output_file: Some("output.js".to_string()),
     }
+  }
+}
+impl AssertCompilerResultConfig {
+  pub fn output_file(&self) -> String {
+    self
+      .output_file
+      .clone()
+      .unwrap_or_else(|| "output.js".to_string())
   }
 }
 
 #[allow(dead_code)]
 pub fn assert_compiler_result_with_config(compiler: &Compiler, config: AssertCompilerResultConfig) {
-  let expected_result = load_expected_result(PathBuf::from(compiler.context().config.root.clone()));
+  let output_path = config.output_file();
+  let expected_result = load_expected_result(
+    PathBuf::from(compiler.context().config.root.clone()),
+    &output_path,
+  );
   let result = get_compiler_result(compiler, &config);
-  let output_path = PathBuf::from(compiler.context().config.root.clone()).join("output.js");
+  let output_path = PathBuf::from(compiler.context().config.root.clone()).join(output_path);
   if is_update_snapshot_from_env() || !output_path.exists() {
     std::fs::write(output_path, result).unwrap();
   } else {

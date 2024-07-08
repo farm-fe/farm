@@ -197,7 +197,7 @@ fn resolve_alias() {
     let context = Arc::new(
       CompilationContext::new(
         Config {
-          resolve: ResolveConfig {
+          resolve: Box::new(ResolveConfig {
             alias: HashMap::from([
               ("@".to_string(), cwd.to_string_lossy().to_string()),
               ("/@".to_string(), cwd.to_string_lossy().to_string()),
@@ -212,7 +212,7 @@ fn resolve_alias() {
               ),
             ]),
             ..Default::default()
-          },
+          }),
           ..Default::default()
         },
         vec![],

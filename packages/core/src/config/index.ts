@@ -6,8 +6,8 @@ import { pathToFileURL } from 'node:url';
 
 import { bindingPath } from '../../binding/index.js';
 import {
-  PluginResolveHookParam,
   OutputConfig,
+  PluginResolveHookParam,
   type PluginTransformHookParam
 } from '../types/binding.js';
 
@@ -255,7 +255,7 @@ export async function normalizeUserCompilationConfig(
   mode: CompilationMode = 'development',
   isDefault = false
 ): Promise<ResolvedCompilation> {
-  const { compilation, root = process.cwd() } = resolvedUserConfig;
+  const { compilation, root = process.cwd(), clearScreen } = resolvedUserConfig;
 
   // resolve root path
   const resolvedRootPath = normalizePath(root);
@@ -277,6 +277,9 @@ export async function normalizeUserCompilationConfig(
     {
       input: inputIndexConfig,
       root: resolvedRootPath
+    },
+    {
+      clearScreen
     },
     compilation
   );
@@ -449,6 +452,7 @@ export async function normalizeUserCompilationConfig(
     const input: Record<string, string> = {};
 
     for (const [key, value] of Object.entries(compilation.input)) {
+      if (!value && (value ?? true)) continue;
       if (!path.isAbsolute(value) && !value.startsWith('./')) {
         input[key] = `./${value}`;
       } else {
@@ -554,6 +558,7 @@ export const DEFAULT_HMR_OPTIONS: Required<UserHmrConfig> = {
       Number(process.env.FARM_DEFAULT_HMR_PORT)) ??
     undefined,
   path: '/__hmr',
+  overlay: true,
   protocol: 'ws',
   watchOptions: {}
 };
@@ -796,7 +801,9 @@ export function normalizePublicDir(root: string, userPublicDir?: string) {
   return absPublicDirPath;
 }
 
-function checkClearScreen(inlineConfig: FarmCLIOptions) {
+export function checkClearScreen(
+  inlineConfig: FarmCLIOptions | ResolvedUserConfig
+) {
   if (
     inlineConfig?.clearScreen &&
     !__FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__
