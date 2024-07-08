@@ -37,7 +37,8 @@
     ".": {
       "import": "./func.js",
       "require": "./func.js",
-      "types": "./index.d.ts"
+      "types": "./index.d.ts",
+      "default": "./index.js"
     },
     "./package.json": "./package.json"
   },

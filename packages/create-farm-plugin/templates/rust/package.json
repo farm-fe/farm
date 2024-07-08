@@ -25,7 +25,8 @@
     ".": {
       "import": "./scripts/func.js",
       "require": "./scripts/func.js",
-      "types": "./scripts/index.d.ts"
+      "types": "./scripts/index.d.ts",
+      "default": "./scripts/index.js"
     },
     "./package.json": "./package.json"
   },
