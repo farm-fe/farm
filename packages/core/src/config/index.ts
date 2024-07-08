@@ -252,7 +252,7 @@ export async function normalizeUserCompilationConfig(
   mode: CompilationMode = 'development',
   isDefault = false
 ): Promise<ResolvedCompilation> {
-  const { compilation, root = process.cwd() } = resolvedUserConfig;
+  const { compilation, root = process.cwd(), clearScreen } = resolvedUserConfig;
 
   // resolve root path
   const resolvedRootPath = normalizePath(root);
@@ -274,6 +274,9 @@ export async function normalizeUserCompilationConfig(
     {
       input: inputIndexConfig,
       root: resolvedRootPath
+    },
+    {
+      clearScreen
     },
     compilation
   );
@@ -789,7 +792,9 @@ export function normalizePublicDir(root: string, userPublicDir?: string) {
   return absPublicDirPath;
 }
 
-function checkClearScreen(inlineConfig: FarmCLIOptions) {
+export function checkClearScreen(
+  inlineConfig: FarmCLIOptions | ResolvedUserConfig
+) {
   if (
     inlineConfig?.clearScreen &&
     !__FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__
