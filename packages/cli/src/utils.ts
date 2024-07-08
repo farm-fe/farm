@@ -7,7 +7,11 @@ import { Logger } from '@farmfe/core';
 import spawn from 'cross-spawn';
 import walkdir from 'walkdir';
 
-import type { GlobalFarmCLIOptions, ICleanOptions } from './types.js';
+import type {
+  FarmCLIBuildOptions,
+  FarmCLICommonOptions,
+  GlobalFarmCLIOptions
+} from './types.js';
 
 const logger = new Logger();
 interface installProps {
@@ -94,7 +98,7 @@ export async function install(options: installProps): Promise<void> {
 }
 /**
  * 用于规范化目标路径
- * @param {string |undefined} targetDir
+ * @param {string | undefined} targetDir
  * @returns
  */
 export function formatTargetDir(targetDir: string | undefined) {
@@ -126,7 +130,7 @@ export function clearScreen() {
 export function cleanOptions(options: GlobalFarmCLIOptions) {
   const resolveOptions = { ...options };
 
-  delete resolveOptions['--'];
+  delete resolveOptions._;
   delete resolveOptions.m;
   delete resolveOptions.c;
   delete resolveOptions.w;
@@ -143,7 +147,7 @@ export function cleanOptions(options: GlobalFarmCLIOptions) {
 export function resolveCommandOptions(
   options: GlobalFarmCLIOptions
 ): GlobalFarmCLIOptions {
-  const resolveOptions = { ...options };
+  const resolveOptions = resolveCommonOptions({ ...options });
   filterDuplicateOptions(resolveOptions);
   return cleanOptions(resolveOptions);
 }
@@ -164,31 +168,33 @@ export async function handleAsyncOperationErrors<T>(
   }
 }
 
-// prevent node experimental warning
-export function preventExperimentalWarning() {
-  const defaultEmit = process.emit;
-  process.emit = function (...args: any[]) {
-    if (args[1].name === 'ExperimentalWarning') {
-      return undefined;
-    }
-    return defaultEmit.call(this, ...args);
-  };
-}
-
 export function resolveRootPath(rootPath = '') {
   return rootPath && path.isAbsolute(rootPath)
     ? rootPath
     : path.resolve(process.cwd(), rootPath);
 }
 
-export function resolveCliConfig(
-  root: string,
-  options: GlobalFarmCLIOptions & ICleanOptions
-) {
+export function resolveCliConfig(root: string, config: string) {
   root = resolveRootPath(root);
-  const configPath = getConfigPath(root, options.config);
+  const configPath = getConfigPath(root, config);
   return {
     root,
     configPath
   };
+}
+
+/**
+ * resolve common options to make sure they are consistent with the their alias
+ * @param {FarmCLICommonOptions & GlobalFarmCLIOptions} options
+ * @returns {GlobalFarmCLIOptions}
+ */
+export function resolveCommonOptions(
+  options: FarmCLICommonOptions & GlobalFarmCLIOptions
+): FarmCLIBuildOptions & GlobalFarmCLIOptions {
+  const resolvedOptions = { ...options };
+  resolvedOptions.c && (resolvedOptions.config = resolvedOptions.c);
+  resolvedOptions.config && (resolvedOptions.c = resolvedOptions.config);
+  resolvedOptions.m && (resolvedOptions.mode = resolvedOptions.m);
+  resolvedOptions.mode && (resolvedOptions.m = resolvedOptions.mode);
+  return resolvedOptions;
 }
