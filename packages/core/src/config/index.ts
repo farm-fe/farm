@@ -38,7 +38,10 @@ import {
 import { traceDependencies } from '../utils/trace-dependencies.js';
 import { __FARM_GLOBAL__ } from './_global.js';
 import { CompilationMode, loadEnv, setProcessEnv } from './env.js';
-import { normalizeOutput } from './normalize-config/normalize-output.js';
+import {
+  getValidPublicPath,
+  normalizeOutput
+} from './normalize-config/normalize-output.js';
 import { normalizePersistentCache } from './normalize-config/normalize-persistent-cache.js';
 import { parseUserConfig } from './schema.js';
 
@@ -415,10 +418,13 @@ export async function normalizeUserCompilationConfig(
     is_entry_html &&
     !resolvedCompilation.runtime.plugins.includes(hmrClientPluginPath)
   ) {
-    const publicPath = resolvedCompilation.output.publicPath;
-    const hmrPath = resolvedUserConfig.server.hmr.path;
+    const publicPath = getValidPublicPath(
+      resolvedCompilation.output.publicPath
+    );
     const serverOptions = resolvedUserConfig.server;
-    const defineHmrPath = normalizeBasePath(path.join(publicPath, hmrPath));
+    const defineHmrPath = normalizeBasePath(
+      path.join(publicPath, resolvedUserConfig.server.hmr.path)
+    );
 
     resolvedCompilation.runtime.plugins.push(hmrClientPluginPath);
     // TODO optimize get hmr logic
