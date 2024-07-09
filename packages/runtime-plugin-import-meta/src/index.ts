@@ -13,9 +13,9 @@ export default (<Plugin>{
     const isSSR = this._moduleSystem.targetEnv === "node";
     const { location } = __global_this__;
 
-    let base_url;
+    let baseUrl;
     try {
-      base_url = (
+      baseUrl = (
         location
           ? new URL(
               publicPath,
@@ -24,14 +24,14 @@ export default (<Plugin>{
           : new URL(module.resource_pot)
       ).pathname;
     } catch (_) {
-      base_url = '/';
+      baseUrl = '/';
     }
 
     module.meta.env = {
       ...(FARM_PROCESS_ENV ?? {}),
       dev: process.env.NODE_ENV === 'development',
       prod: process.env.NODE_ENV === 'production',
-      BASE_URL: base_url,
+      BASE_URL: baseUrl,
       SSR: isSSR,
     };
 
