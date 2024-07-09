@@ -18,7 +18,7 @@ export default (<Plugin>{
       base_url = (
         location
           ? new URL(
-              publicPath.replace(/\\/g, '/'),
+              publicPath,
               `${location.protocol}//${location.host}`,
             )
           : new URL(module.resource_pot)
