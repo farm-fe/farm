@@ -113,7 +113,7 @@ impl RecordManager {
     // reduce the number of accesses to resource_pot_map
     resource_pot_map
       .entry(id)
-      .or_insert_with(Vec::new)
+      .or_default()
       .push(record);
   }
 
