@@ -5,6 +5,7 @@
   "main": "dist-electron/main.js",
   "type": "module",
   "scripts": {
+    "start": "farm",
     "dev": "farm",
     "build": "farm build && electron-forge package",
     "clean": "farm clean",
