@@ -2315,8 +2315,8 @@ importers:
   packages/create-farm:
     devDependencies:
       '@napi-rs/cli':
-        specifier: 2.18.3
-        version: 2.18.3
+        specifier: ^2.18.4
+        version: 2.18.4
 
   packages/create-farm-plugin:
     devDependencies:
@@ -2351,8 +2351,8 @@ importers:
         specifier: workspace:*
         version: link:../utils
       '@napi-rs/cli':
-        specifier: ^2.15.2
-        version: 2.16.5
+        specifier: ^2.18.4
+        version: 2.18.4
       cac:
         specifier: ^6.7.14
         version: 6.7.14
@@ -3987,16 +3987,6 @@ packages:
     resolution: {integrity: sha512-00ioBig0x642hytVspPl7DbQyaSWRaolYie/UFNjoTdvoKPzo6xrXLhTk9ixgIKcLH5b5vDOjVNiGyY+uDCUlg==}
     peerDependencies:
       monaco-editor: '>= 0.21.0 < 1'
-
-  '@napi-rs/cli@2.16.5':
-    resolution: {integrity: sha512-mFEzwrg4IOLngGd2/P6yeqIWgwQNn59Z08n1rndu6kLDq1gg954NH9cM1O9Da0RJuybt46p43lqgSsnAY2mxqA==}
-    engines: {node: '>= 10'}
-    hasBin: true
-
-  '@napi-rs/cli@2.18.3':
-    resolution: {integrity: sha512-L0f4kP0dyG8W5Qtc7MtP73VvLLrOLyRcUEBzknIfu8Jk4Jfhrsx1ItMHgyalYqMSslWdY3ojEfAaU5sx1VyeQQ==}
-    engines: {node: '>= 10'}
-    hasBin: true
 
   '@napi-rs/cli@2.18.4':
     resolution: {integrity: sha512-SgJeA4df9DE2iAEpr3M2H0OKl/yjtg1BnRI5/JyowS71tUWhrfSu2LT0V3vlHET+g1hBVlrO60PmEXwUEKp8Mg==}
@@ -15232,10 +15222,6 @@ snapshots:
   '@monaco-editor/loader@1.4.0':
     dependencies:
       state-local: 1.0.7
-
-  '@napi-rs/cli@2.16.5': {}
-
-  '@napi-rs/cli@2.18.3': {}
 
   '@napi-rs/cli@2.18.4': {}
 
