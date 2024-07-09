@@ -43,10 +43,11 @@ impl RecordManager {
   }
 
   pub fn add_resolve_record(&self, source: String, mut record: ResolveRecord) {
-    let mut resolve_id_map = self.resolve_id_map.write().unwrap();
     self.update_plugin_stats(record.plugin.clone(), &record.hook, record.duration);
     // clone is quicker than to_owned
     record.trigger = self.trigger.read().unwrap().clone();
+
+    let mut resolve_id_map = self.resolve_id_map.write().unwrap();
     if let Some(records) = resolve_id_map.get_mut(&source) {
       records.push(record);
     } else {
@@ -86,9 +87,10 @@ impl RecordManager {
   }
 
   pub fn add_process_record(&self, id: String, mut record: ModuleRecord) {
-    let mut process_map = self.process_map.write().unwrap();
     self.update_plugin_stats(record.plugin.clone(), &record.hook.clone(), record.duration);
     record.trigger = self.trigger.read().unwrap().clone();
+
+    let mut process_map = self.process_map.write().unwrap();
     if let Some(records) = process_map.get_mut(&id) {
       records.push(record);
     }
