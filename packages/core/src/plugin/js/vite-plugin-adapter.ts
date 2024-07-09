@@ -778,7 +778,6 @@ export class VitePluginAdapter implements JsPlugin {
             },
             {} as OutputBundle
           );
-
           await hook?.(
             transformFarmConfigToRollupNormalizedOutputOptions(param.config),
             bundles
