@@ -335,8 +335,8 @@ impl ModuleGroup {
     });
 
     sorted_resource_pots.sort_by(|a, b| {
-      let a_order = resource_pots_order_map.get(&a.to_string()).unwrap_or(&0);
-      let b_order = resource_pots_order_map.get(&b.to_string()).unwrap_or(&0);
+      let a_order = resource_pots_order_map.get(a).unwrap_or(&0);
+      let b_order = resource_pots_order_map.get(b).unwrap_or(&0);
 
       a_order.cmp(b_order)
     });

@@ -336,7 +336,7 @@ fn walk(
     }
 
     if let Some(longest_key) = longest {
-      m = mapping.get(&longest_key.to_string());
+      m = mapping.get(longest_key);
     }
   }
   if m.is_none() {

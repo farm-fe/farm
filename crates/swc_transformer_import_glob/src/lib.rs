@@ -57,9 +57,11 @@ pub fn transform_import_meta_glob(
         globed_source
       };
       if let Some(import_glob_as) = &meta_info.glob_import_as {
-        if import_glob_as == &"raw".to_string() {
+        // variable is &String and can be automatically deref as &str
+        // so remove `&` and `to_string()` can be quicker and more readable
+        if import_glob_as == "raw" {
           // do nothing
-        } else if import_glob_as == &"url".to_string() {
+        } else if import_glob_as == "url" {
           ast.body.insert(
             0,
             farmfe_core::swc_ecma_ast::ModuleItem::ModuleDecl(
@@ -96,7 +98,7 @@ pub fn transform_import_meta_glob(
         }
       } else if meta_info.eager {
         if let Some(import) = &meta_info.import {
-          if import == &"default".to_string() {
+          if import == "default" {
             ast.body.insert(
               0,
               create_eager_default_import(index, glob_index, &globed_source),
