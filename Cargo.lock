@@ -1786,6 +1786,7 @@ dependencies = [
  "swc_ecma_loader",
  "swc_plugin_proxy",
  "swc_plugin_runner",
+ "tokio",
 ]
 
 [[package]]

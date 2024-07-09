@@ -30,6 +30,11 @@ swc_ecma_loader = { version = "0.46.1", features = [
   "tsc",
 ], optional = true }
 once_cell = { version = "1.10.0", optional = true }
+tokio = { features = [
+  "rt",
+  "rt-multi-thread",
+], version = "1", default-features = false, optional = true }
+
 
 [features]
 swc_plugin = [
@@ -37,4 +42,5 @@ swc_plugin = [
   "dep:swc_plugin_runner",
   "dep:swc_ecma_loader",
   "dep:once_cell",
+  "dep:tokio",
 ]
