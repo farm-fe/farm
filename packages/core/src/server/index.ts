@@ -223,10 +223,9 @@ export class Server implements ImplDevServer {
     const { https, host } = options;
     const protocol = https ? 'https' : 'http';
     const hostname = await resolveHostname(host);
-    const publicPath = getValidPublicPath(
+    const publicPath =
       this.compiler?.config.config.output?.publicPath ??
-        options?.output.publicPath
-    );
+      options?.output.publicPath;
     // TODO refactor previewServer If it's preview server, then you can't use create server. we need to create a new one because hmr is false when you preview.
     const hmrPath = normalizeBasePath(
       path.join(publicPath, options.hmr.path ?? DEFAULT_HMR_OPTIONS.path)

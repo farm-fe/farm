@@ -42,11 +42,12 @@ export function normalizeOutput(
   mapTargetEnvValue(config);
 
   // resolve public path
-  config.output.publicPath = normalizePublicPath(
+  const publicPath = normalizePublicPath(
     config.output.targetEnv,
     config.output?.publicPath,
     logger
   );
+  config.output.publicPath = getValidPublicPath(publicPath);
 }
 
 type TargetEnvKeys = Config['config']['output']['targetEnv'];
