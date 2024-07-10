@@ -68,7 +68,7 @@
     "type-check": "tsc -p tsconfig.build.json"
   },
   "devDependencies": {
-    "@napi-rs/cli": "^2.15.2",
+    "@napi-rs/cli": "^2.18.4",
     "@types/figlet": "^1.5.5",
     "@types/fs-extra": "^11.0.1",
     "@types/koa": "^2.13.5",

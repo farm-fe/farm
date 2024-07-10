@@ -61,25 +61,25 @@
   };
 }((function(){var index_js_cjs = __commonJs((module, exports)=>{
     "use strict";
-    console.log("runtime/index.js")(globalThis || window || global)["__farm_default_namespace__"].__farm_module_system__.setPlugins([]);
+    console.log('runtime/index.js')(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setPlugins([]);
 });
 })());(function(_){for(var r in _){_[r].__farm_resource_pot__='index_ecb7.js';(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.register(r,_[r])}})({"569704c1":function  (module, exports, farmRequire, farmDynamicRequire) {
     module._m(exports);
     (function() {
-        const iife_foo = "iife-foo";
+        const iife_foo = 'iife-foo';
     })();
     var UrlType;
     (function(UrlType) {
-        UrlType[UrlType["Empty"] = 1] = "Empty";
-        UrlType[UrlType["Hash"] = 2] = "Hash";
-        UrlType[UrlType["Query"] = 3] = "Query";
-        UrlType[UrlType["RelativePath"] = 4] = "RelativePath";
-        UrlType[UrlType["AbsolutePath"] = 5] = "AbsolutePath";
-        UrlType[UrlType["SchemeRelative"] = 6] = "SchemeRelative";
-        UrlType[UrlType["Absolute"] = 7] = "Absolute";
+        UrlType[UrlType['Empty'] = 1] = 'Empty';
+        UrlType[UrlType['Hash'] = 2] = 'Hash';
+        UrlType[UrlType['Query'] = 3] = 'Query';
+        UrlType[UrlType['RelativePath'] = 4] = 'RelativePath';
+        UrlType[UrlType['AbsolutePath'] = 5] = 'AbsolutePath';
+        UrlType[UrlType['SchemeRelative'] = 6] = 'SchemeRelative';
+        UrlType[UrlType['Absolute'] = 7] = 'Absolute';
     })(UrlType || (UrlType = {}));
     exports.default = function() {
-        console.log("foo");
+        console.log('foo');
     };
 }
 ,

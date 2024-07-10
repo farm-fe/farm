@@ -37,16 +37,16 @@ wax = { version = "0.6", default-features = false, features = [
   "walk",
 ] }
 globset = { version = "0.4.14" }
-swc_ecma_ast = { version = "0.112.6", features = ["rkyv-impl", "serde-impl"] }
-swc_ecma_parser = { version = "0.143.10" }
-swc_common = { version = "0.33.20", features = [
+swc_ecma_ast = { version = "0.115.1", features = ["rkyv-impl", "serde-impl"] }
+swc_ecma_parser = { version = "0.146.12" }
+swc_common = { version = "0.34.4", features = [
   "concurrent",
   "sourcemap",
   "rkyv-impl",
 ] }
-swc_css_ast = { version = "0.140.21", features = ["rkyv-impl"] }
-swc_css_prefixer = { version = "0.153.35" }
-swc_html_ast = { version = "0.33.20", features = ["rkyv-impl"] }
+swc_css_ast = { version = "0.141.0", features = ["rkyv-impl"] }
+swc_css_prefixer = { version = "0.155.0" }
+swc_html_ast = { version = "0.34.0", features = ["rkyv-impl"] }
 heck = "0.4.1"
 puffin = { version = "0.18.0", features = [
   "packing",
