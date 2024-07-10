@@ -61,70 +61,39 @@
   };
 }((function(){var index_js_cjs = __commonJs((module, exports)=>{
     "use strict";
-    console.log("runtime/index.js")(globalThis || window || global)["__farm_default_namespace__"].__farm_module_system__.setPlugins([]);
+    console.log('runtime/index.js')(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setPlugins([]);
 });
 })());(function(_){for(var r in _){_[r].__farm_resource_pot__='index_6d6c.js';(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.register(r,_[r])}})({"25593d80":function  (module, exports, farmRequire, farmDynamicRequire) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", {
-        value: true
-    });
-    function _export(target, all) {
-        for(var name in all)Object.defineProperty(target, name, {
-            enumerable: true,
-            get: all[name]
-        });
-    }
-    _export(exports, {
-        A1: function() {
-            return _ats.A1;
-        },
-        B1: function() {
-            return _bts.default;
-        }
-    });
-    var _interop_require_default = farmRequire("@swc/helpers/_/_interop_require_default");
-    var _bts = _interop_require_default._(farmRequire("f380ea31"));
-    var _ats = farmRequire("569704c1");
+    module._m(exports);
+    var _f_b = module.i(farmRequire("f380ea31"));
+    module._(exports, "B1", _f_b, "default");
+    var _f_a = farmRequire("569704c1");
+    module._(exports, "A1", _f_a);
 }
 ,
 "569704c1":function  (module, exports, farmRequire, farmDynamicRequire) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", {
-        value: true
-    });
-    Object.defineProperty(exports, "A1", {
-        enumerable: true,
-        get: function() {
-            return A1;
-        }
+    module._m(exports);
+    module.o(exports, "A1", function() {
+        return A1;
     });
     function A1() {
-        console.log("a1");
+        console.log('a1');
     }
 }
 ,
 "b5d64806":function  (module, exports, farmRequire, farmDynamicRequire) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", {
-        value: true
-    });
-    var _exportAll = farmRequire("25593d80");
-    console.log(_exportAll.B1, _exportAll.A1);
+    module._m(exports);
+    var _f_exportAll = farmRequire("25593d80");
+    console.log(_f_exportAll.B1, _f_exportAll.A1);
 }
 ,
 "f380ea31":function  (module, exports, farmRequire, farmDynamicRequire) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", {
-        value: true
-    });
-    Object.defineProperty(exports, "default", {
-        enumerable: true,
-        get: function() {
-            return B1;
-        }
+    module._m(exports);
+    module.o(exports, "default", function() {
+        return B1;
     });
     function B1() {
-        console.log("b1");
+        console.log('b1');
     }
 }
 ,});(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setInitialLoadedResources([]);(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setDynamicModuleResourcesMap({  });var farmModuleSystem = (globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__;farmModuleSystem.bootstrap();var entry = farmModuleSystem.require("b5d64806");

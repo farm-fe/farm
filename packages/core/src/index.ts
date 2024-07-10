@@ -13,6 +13,7 @@ import { Compiler } from './compiler/index.js';
 import { loadEnv, setProcessEnv } from './config/env.js';
 import {
   UserConfig,
+  checkClearScreen,
   getConfigFilePath,
   normalizePublicDir,
   resolveConfig
@@ -32,7 +33,6 @@ import type {
 import { logError } from './server/error.js';
 import { lazyCompilation } from './server/middlewares/lazy-compilation.js';
 import { resolveHostname } from './utils/http.js';
-import { clearScreen } from './utils/share.js';
 import { ConfigWatcher } from './watcher/config-watcher.js';
 
 import type { JsPlugin } from './plugin/type.js';
@@ -302,7 +302,6 @@ export async function createCompiler(
     rustPlugins,
     compilation: compilationConfig
   } = resolvedUserConfig;
-
   const compiler = new Compiler(
     {
       config: compilationConfig,
@@ -400,7 +399,7 @@ export async function createFileWatcher(
     configFilePath
   });
   farmWatcher.watch(async (files: string[]) => {
-    clearScreen();
+    checkClearScreen(resolvedUserConfig);
 
     devServer.restart(async () => {
       logFileChanges(files, resolvedUserConfig.root, logger);

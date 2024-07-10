@@ -61,18 +61,12 @@
   };
 }((function(){var index_js_cjs = __commonJs((module, exports)=>{
     "use strict";
-    console.log("runtime/index.js")(globalThis || window || global)["__farm_default_namespace__"].__farm_module_system__.setPlugins([]);
+    console.log('runtime/index.js')(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setPlugins([]);
 });
 })());(function(_){for(var r in _){_[r].__farm_resource_pot__='index_ddf1.js';(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.register(r,_[r])}})({"05ee5ec7":function  (module, exports, farmRequire, farmDynamicRequire) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", {
-        value: true
-    });
-    Object.defineProperty(exports, "Foo", {
-        enumerable: true,
-        get: function() {
-            return Foo;
-        }
+    module._m(exports);
+    module.o(exports, "Foo", function() {
+        return Foo;
     });
     class Foo {
     }
@@ -88,7 +82,7 @@
     }
     var BValidate = function(obj, options) {
         return new Validate(obj, Object.assign({
-            field: "value"
+            field: 'value'
         }, options));
     };
     BValidate.globalConfig = {};
@@ -98,11 +92,8 @@
 }
 ,
 "b5d64806":function  (module, exports, farmRequire, farmDynamicRequire) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", {
-        value: true
-    });
-    var _dep = farmRequire("05ee5ec7");
-    console.log(_dep.Foo);
+    module._m(exports);
+    var _f_dep = farmRequire("05ee5ec7");
+    console.log(_f_dep.Foo);
 }
 ,});(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setInitialLoadedResources([]);(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setDynamicModuleResourcesMap({  });var farmModuleSystem = (globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__;farmModuleSystem.bootstrap();var entry = farmModuleSystem.require("b5d64806");

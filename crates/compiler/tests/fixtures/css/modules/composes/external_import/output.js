@@ -61,52 +61,29 @@
   };
 }((function(){var index_js_cjs = __commonJs((module, exports)=>{
     "use strict";
-    console.log("runtime/index.js")(globalThis || window || global)["__farm_default_namespace__"].__farm_module_system__.setPlugins([]);
+    console.log('runtime/index.js')(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setPlugins([]);
 });
 })());(function(_){for(var r in _){_[r].__farm_resource_pot__='index_0467.js';(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.register(r,_[r])}})({"8b6840d6":function  (module, exports, farmRequire, farmDynamicRequire) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", {
-        value: true
-    });
-    Object.defineProperty(exports, "default", {
-        enumerable: true,
-        get: function() {
-            return _default;
-        }
-    });
+    module._m(exports);
     "";
-    var _default = {
+    exports.default = {
         "action": `farm-action`
     };
 }
 ,
 "95fe6ac5":function  (module, exports, farmRequire, farmDynamicRequire) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", {
-        value: true
-    });
-    Object.defineProperty(exports, "default", {
-        enumerable: true,
-        get: function() {
-            return _default;
-        }
-    });
-    var _interop_require_default = farmRequire("@swc/helpers/_/_interop_require_default");
+    module._m(exports);
     "";
-    var _actioncss = _interop_require_default._(farmRequire("8b6840d6"));
-    var _default = {
-        "base": `farm-base ${_actioncss.default["action"]}`
+    var _f_action = module.i(farmRequire("8b6840d6"));
+    exports.default = {
+        "base": `farm-base ${module.f(_f_action)["action"]}`
     };
 }
 ,
 "b5d64806":function  (module, exports, farmRequire, farmDynamicRequire) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", {
-        value: true
-    });
-    var _interop_require_default = farmRequire("@swc/helpers/_/_interop_require_default");
-    var _indexcss = _interop_require_default._(farmRequire("95fe6ac5"));
-    console.log(_indexcss.default.base);
+    module._m(exports);
+    var _f_index = module.i(farmRequire("95fe6ac5"));
+    console.log(module.f(_f_index).base);
 }
 ,});(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setInitialLoadedResources([]);(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setDynamicModuleResourcesMap({  });var farmModuleSystem = (globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__;farmModuleSystem.bootstrap();var entry = farmModuleSystem.require("b5d64806");
 

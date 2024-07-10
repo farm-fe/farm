@@ -30,7 +30,7 @@
 
 ## Intro
 
-Farm is a extremely fast vite-compatible web-building tool written in Rust. It's designed to be fast, powerful and consistent, aims to provide best experience for web development, which is the real next generation build tool.
+Farm is an extremely fast vite-compatible web-building tool written in Rust. It's designed to be fast, powerful and consistent, aims to provide best experience for web development, which is the real next generation build tool.
 
 ## Online experience
 

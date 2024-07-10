@@ -64,40 +64,29 @@
   };
 }((function(){var index_js_cjs = __commonJs((module, exports)=>{
     "use strict";
-    console.log("runtime/index.js")(globalThis || window || global)["__farm_default_namespace__"].__farm_module_system__.setPlugins([]);
+    console.log('runtime/index.js')(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setPlugins([]);
 });
 })());(function(_){for(var r in _){_[r].__farm_resource_pot__='index_dff7.js';(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.register(r,_[r])}})({"b334ec2f":function  (module, exports, farmRequire, farmDynamicRequire) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", {
-        value: true
-    });
-    Object.defineProperty(exports, "default", {
-        enumerable: true,
-        get: function() {
-            return _default;
-        }
-    });
-    var _default = "/foo_bar-47689c.txt?url";
+    module._m(exports);
+    exports.default = "/foo_bar-47689c.txt?url";
 }
 ,
 "b5d64806":function  (module, exports, farmRequire, farmDynamicRequire) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", {
-        value: true
-    });
-    var _interop_require_default = farmRequire("@swc/helpers/_/_interop_require_default");
-    var _foo_bartxturl = _interop_require_default._(farmRequire("b334ec2f"));
-    const path1 = "foo";
-    const bar = "bar";
+    module._m(exports);
+    var _f_foo_bar = module.i(farmRequire("b334ec2f"));
+    var _f_foo_bar1 = module.i(farmRequire("b334ec2f"));
+    var _f_foo_bar2 = module.i(farmRequire("b334ec2f"));
+    const path1 = 'foo';
+    const bar = 'bar';
     new URL({
-        "./foo/bar/foo_bar.txt": _foo_bartxturl.default
+        "./foo/bar/foo_bar.txt": module.f(_f_foo_bar2)
     }[`./foo/${path1}/${bar}`], module.meta.url);
     new URL({}[`./foo/${path1}-${bar}`], module.meta.url);
     new URL({
-        "./foo/bar/foo_bar.txt": _foo_bartxturl.default
+        "./foo/bar/foo_bar.txt": module.f(_f_foo_bar1)
     }[`./foo/${path1}/**/${bar}`], module.meta.url);
     new URL({
-        "./foo/bar/foo_bar.txt": _foo_bartxturl.default
+        "./foo/bar/foo_bar.txt": module.f(_f_foo_bar)
     }["./foo/**/*/**"], module.meta.url);
 }
 ,});(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setInitialLoadedResources([]);(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setDynamicModuleResourcesMap({  });var farmModuleSystem = (globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__;farmModuleSystem.bootstrap();var entry = farmModuleSystem.require("b5d64806");

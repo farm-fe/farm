@@ -1,33 +1,11 @@
-import { Module } from './module';
-import { type FarmRuntimePlugin, FarmRuntimePluginContainer } from './plugin';
+import { Module } from "./module";
+import { type FarmRuntimePlugin, FarmRuntimePluginContainer } from "./plugin";
 import {
   type Resource,
   ResourceLoader,
   isBrowser,
-  targetEnv
-} from './resource-loader';
-import './global.d';
-
-const __global_this__ = globalThis || window;
-
-const scope__interop_require_default = (typeof _interop_require_default === 'function' ? _interop_require_default : undefined);
-const scope__interop_require_wildcard = (typeof _interop_require_wildcard === 'function' ? _interop_require_wildcard : undefined);
-const scope__export_star = (typeof _export_star === 'function' ? _export_star : undefined);
-
-const INTERNAL_MODULE_MAP: Record<string, any> = {
-  '@swc/helpers/_/_interop_require_default': {
-    default: scope__interop_require_default,
-    _: scope__interop_require_default
-  },
-  '@swc/helpers/_/_interop_require_wildcard': {
-    default: scope__interop_require_wildcard,
-    _: scope__interop_require_wildcard
-  },
-  '@swc/helpers/_/_export_star': {
-    default: scope__export_star,
-    _: scope__export_star
-  }
-};
+  targetEnv,
+} from "./resource-loader";
 
 declare const nodeRequire: (id: string) => any;
 
@@ -36,7 +14,7 @@ type ModuleInitializationFunction = (
   module: Module,
   exports: any,
   __farm_require__: (moduleId: string) => any,
-  __farm_dynamic_require__: (moduleId: string) => any
+  __farm_dynamic_require__: (moduleId: string) => any,
 ) => void | Promise<void>;
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -60,7 +38,7 @@ export class ModuleSystem {
   resourceLoader: ResourceLoader;
   // runtime plugin container
   pluginContainer: FarmRuntimePluginContainer;
-  targetEnv: 'browser' | 'node';
+  targetEnv: "browser" | "node";
 
   constructor() {
     this.modules = {};
@@ -75,16 +53,12 @@ export class ModuleSystem {
   }
 
   require(moduleId: string, isCJS = false): any {
-    if (INTERNAL_MODULE_MAP[moduleId]) {
-      return INTERNAL_MODULE_MAP[moduleId];
-    }
-
     // return the cached exports if cache exists
     // console.log(`[Farm] require module "${moduleId}" from cache`);
     if (this.cache[moduleId]) {
       const shouldSkip = this.pluginContainer.hookBail(
-        'readModuleCache',
-        this.cache[moduleId]
+        "readModuleCache",
+        this.cache[moduleId],
       );
 
       // console.log(`[Farm] shouldSkip: ${shouldSkip} ${moduleId}`);
@@ -107,11 +81,11 @@ export class ModuleSystem {
         return exports;
       }
       // try node require if target Env is node
-      if ((this.targetEnv === 'node' || !isBrowser) && nodeRequire) {
+      if ((this.targetEnv === "node" || !isBrowser) && nodeRequire) {
         const externalModule = nodeRequire(moduleId);
         return externalModule;
       }
-      this.pluginContainer.hookSerial('moduleNotFound', moduleId);
+      this.pluginContainer.hookSerial("moduleNotFound", moduleId);
       // return a empty module if the module is not registered
       console.debug(`[Farm] Module "${moduleId}" is not registered`);
       return {};
@@ -122,7 +96,7 @@ export class ModuleSystem {
     const module = new Module(moduleId, this.require.bind(this));
     module.resource_pot = initializer.__farm_resource_pot__;
     // call the module created hook
-    this.pluginContainer.hookSerial('moduleCreated', module);
+    this.pluginContainer.hookSerial("moduleCreated", module);
 
     this.cache[moduleId] = module;
 
@@ -135,19 +109,20 @@ export class ModuleSystem {
       module,
       module.exports,
       this.require.bind(this),
-      this.farmDynamicRequire.bind(this)
+      this.farmDynamicRequire.bind(this),
     );
+
     // it's a async module, return the promise
     if (result && result instanceof Promise) {
       return result.then(() => {
         // call the module initialized hook
-        this.pluginContainer.hookSerial('moduleInitialized', module);
+        this.pluginContainer.hookSerial("moduleInitialized", module);
         // return the exports of the module
         return module.exports;
       });
     } else {
       // call the module initialized hook
-      this.pluginContainer.hookSerial('moduleInitialized', module);
+      this.pluginContainer.hookSerial("moduleInitialized", module);
       // return the exports of the module
       return module.exports;
     }
@@ -172,7 +147,7 @@ export class ModuleSystem {
 
     if (!resources || resources.length === 0) {
       throw new Error(
-        `Dynamic imported module "${moduleId}" does not belong to any resource`
+        `Dynamic imported module "${moduleId}" does not belong to any resource`,
       );
     }
     // force reload resources
@@ -187,12 +162,12 @@ export class ModuleSystem {
           this.resourceLoader.setLoadedResource(resource.path, false);
         }
         return this.resourceLoader.load(resource);
-      })
+      }),
     )
       .then(() => {
         if (!this.modules[moduleId]) {
           throw new Error(
-            `Dynamic imported module "${moduleId}" is not registered.`
+            `Dynamic imported module "${moduleId}" is not registered.`,
           );
         }
         this.reRegisterModules = false;
@@ -217,7 +192,7 @@ export class ModuleSystem {
       //   `Module "${moduleId}" has registered! It should not be registered twice`
       // );
       console.warn(
-        `Module "${moduleId}" has registered! It should not be registered twice`
+        `Module "${moduleId}" has registered! It should not be registered twice`,
       );
       return;
     }
@@ -241,14 +216,12 @@ export class ModuleSystem {
   }
 
   getModuleUrl(moduleId: string): string {
-    const publicPath = this.publicPaths[0] ?? '';
+    const publicPath = this.publicPaths[0] ?? "";
 
-    if (__global_this__.location) {
-      const url = `${__global_this__.location.protocol}//${
-        __global_this__.location.host
-      }${publicPath.endsWith('/') ? publicPath.slice(0, -1) : publicPath}/${
-        this.modules[moduleId].__farm_resource_pot__
-      }`;
+    if (isBrowser) {
+      const url = `${window.location.protocol}//${window.location.host}${
+        publicPath.endsWith("/") ? publicPath.slice(0, -1) : publicPath
+      }/${this.modules[moduleId].__farm_resource_pot__}`;
       return url;
     } else {
       return this.modules[moduleId].__farm_resource_pot__;
@@ -277,7 +250,7 @@ export class ModuleSystem {
   // These two methods are used to support dynamic module loading, the dynamic module info is collected by the compiler and injected during compile time
   // This method can also be called during runtime to add new dynamic modules
   setDynamicModuleResourcesMap(
-    dynamicModuleResourcesMap: Record<string, Resource[]>
+    dynamicModuleResourcesMap: Record<string, Resource[]>,
   ): void {
     this.dynamicModuleResourcesMap = dynamicModuleResourcesMap;
   }
@@ -301,7 +274,7 @@ export class ModuleSystem {
   // This method can be called during runtime to remove plugins
   removePlugin(pluginName: string): void {
     this.pluginContainer.plugins = this.pluginContainer.plugins.filter(
-      (p) => p.name !== pluginName
+      (p) => p.name !== pluginName,
     );
   }
 
@@ -313,6 +286,6 @@ export class ModuleSystem {
   // bootstrap should be called after all three methods above are called, and the bootstrap call is also injected during compile time
   // This method should only be called once
   bootstrap(): void {
-    this.pluginContainer.hookSerial('bootstrap', this);
+    this.pluginContainer.hookSerial("bootstrap", this);
   }
 }

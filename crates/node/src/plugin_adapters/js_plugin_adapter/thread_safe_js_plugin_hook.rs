@@ -138,7 +138,7 @@ unsafe extern "C" fn call_js_cb<P: Serialize, T: DeserializeOwned + Debug + Send
   // let js_context = create_js_context(raw_env, ctx);
   let mut js_func = JsObject::from_napi_value(raw_env, func).unwrap();
   let mut js_context = js_func
-    .get_named_property::<JsObject>("farm_js_plugin_context")
+    .get_named_property::<JsUnknown>("farm_js_plugin_context")
     .unwrap();
 
   if JsUnknown::from_raw(raw_env, js_context.raw())
@@ -152,7 +152,7 @@ unsafe extern "C" fn call_js_cb<P: Serialize, T: DeserializeOwned + Debug + Send
       .set_named_property("farm_js_plugin_context", new_js_context)
       .unwrap();
     js_context = js_func
-      .get_named_property::<JsObject>("farm_js_plugin_context")
+      .get_named_property::<JsUnknown>("farm_js_plugin_context")
       .unwrap();
   }
 

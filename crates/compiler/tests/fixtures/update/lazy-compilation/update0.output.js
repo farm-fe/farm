@@ -1,32 +1,14 @@
 ({"dep.ts":function  (module, exports, farmRequire, farmDynamicRequire) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", {
-        value: true
-    });
-    Object.defineProperty(exports, "default", {
-        enumerable: true,
-        get: function() {
-            return _default;
-        }
-    });
-    var _default = "dep";
+    module._m(exports);
+    exports.default = 'dep';
 }
 ,
 "dep.ts.farm_dynamic_import_virtual_module":function  (module, exports, farmRequire, farmDynamicRequire) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", {
-        value: true
-    });
-    Object.defineProperty(exports, "default", {
-        enumerable: true,
-        get: function() {
-            return _default;
-        }
-    });
-    var _export_star = farmRequire("@swc/helpers/_/_export_star");
-    var _interop_require_default = farmRequire("@swc/helpers/_/_interop_require_default");
-    var _depts = _interop_require_default._(_export_star._(farmRequire("dep.ts"), exports));
-    var _default = _depts.default;
+    module._m(exports);
+    var _f_dep = module.i(farmRequire("dep.ts"));
+    exports.default = module.f(_f_dep);
+    var _f_dep1 = farmRequire("dep.ts");
+    module._e(exports, _f_dep1);
 }
 ,})
 {}

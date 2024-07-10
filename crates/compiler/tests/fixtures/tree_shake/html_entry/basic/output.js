@@ -72,7 +72,7 @@
   };
 }((function(){var index_js_cjs = __commonJs((module, exports)=>{
     "use strict";
-    console.log("runtime/index.js")(globalThis || window || global)["__farm_default_namespace__"].__farm_module_system__.setPlugins([]);
+    console.log('runtime/index.js')(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setPlugins([]);
 });
 })());</script></head>
 <body>
@@ -82,7 +82,6 @@
 
 //index_564c.js:
  (function(_){for(var r in _){_[r].__farm_resource_pot__='index_564c.js';(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.register(r,_[r])}})({"7c4a34c2":function  (module, exports, farmRequire, farmDynamicRequire) {
-    "use strict";
-    console.log("1111");
+    console.log('1111');
 }
 ,});

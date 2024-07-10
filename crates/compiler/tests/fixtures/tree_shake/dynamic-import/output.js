@@ -1,46 +1,22 @@
 //dep_8b00.js:
  (function(_){for(var r in _){_[r].__farm_resource_pot__='dep_8b00.js';(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.register(r,_[r])}})({"05ee5ec7":function  (module, exports, farmRequire, farmDynamicRequire) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", {
-        value: true
+    module._m(exports);
+    module.o(exports, "dep", function() {
+        return dep;
     });
-    function _export(target, all) {
-        for(var name in all)Object.defineProperty(target, name, {
-            enumerable: true,
-            get: all[name]
-        });
-    }
-    _export(exports, {
-        default: function() {
-            return _default;
-        },
-        dep: function() {
-            return dep;
-        }
-    });
-    var _interop_require_default = farmRequire("@swc/helpers/_/_interop_require_default");
-    var _dep1 = _interop_require_default._(farmRequire("ef0c4c9d"));
-    const dep = "dep";
-    function _default() {
-        return (0, _dep1.default)();
-    }
-    console.log("side effect in dep.ts");
+    var _f_dep1 = module.i(farmRequire("ef0c4c9d"));
+    var dep = 'dep';
+    exports.default = function() {
+        return module.f(_f_dep1)();
+    };
+    console.log('side effect in dep.ts');
 }
 ,
 "ef0c4c9d":function  (module, exports, farmRequire, farmDynamicRequire) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", {
-        value: true
-    });
-    Object.defineProperty(exports, "default", {
-        enumerable: true,
-        get: function() {
-            return _default;
-        }
-    });
-    function _default() {
-        console.log("1111");
-    }
+    module._m(exports);
+    exports.default = function() {
+        console.log('1111');
+    };
 }
 ,});
 
@@ -107,10 +83,9 @@
   };
 }((function(){var index_js_cjs = __commonJs((module, exports)=>{
     "use strict";
-    console.log("runtime/index.js")(globalThis || window || global)["__farm_default_namespace__"].__farm_module_system__.setPlugins([]);
+    console.log('runtime/index.js')(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setPlugins([]);
 });
 })());(function(_){for(var r in _){_[r].__farm_resource_pot__='index_dcdc.js';(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.register(r,_[r])}})({"b5d64806":function  (module, exports, farmRequire, farmDynamicRequire) {
-    "use strict";
     farmDynamicRequire("05ee5ec7").then((dep)=>{
         console.log(dep);
     });

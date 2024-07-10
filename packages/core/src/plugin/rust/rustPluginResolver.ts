@@ -2,8 +2,16 @@ import { createRequire } from 'node:module';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 
-export type RustPlugin = string | [string, Record<string, unknown>];
+export type RustPlugin = string | [string, any];
 
+type RustPluginPathObject = {
+  binary: string;
+  options: Record<string, any>;
+};
+
+type RustPluginFunction = (
+  options?: Record<string, any>
+) => [string, typeof options];
 /**
  * Resolve the binary plugin file, return [filePath, jsonStringifiedOptions]
  * @param plugin rust plugin config
@@ -18,7 +26,7 @@ export async function rustPluginResolver(
   if (typeof plugin === 'string') {
     pluginPath = plugin;
   } else if (Array.isArray(plugin) && plugin.length === 2) {
-    [pluginPath, options] = [plugin[0], JSON.stringify(plugin[1])];
+    [pluginPath, options] = [plugin[0], JSON.stringify(plugin[1]) ?? '{}'];
   } else {
     throw new Error(
       'Invalid config: [plugins]. A rust plugin must be a string, or [string, Record<string, any>]'
@@ -39,13 +47,22 @@ export async function rustPluginResolver(
     } else {
       pluginPath = await import(pluginPath).then((m) => m.default);
     }
+    // console.log(pluginPath);
+
+    // Calling the plugin as a function
+    if (typeof pluginPath === 'function') {
+      const [_path, _options] = (pluginPath as RustPluginFunction)();
+      options = JSON.stringify({
+        ..._options,
+        ...JSON.parse(options)
+      });
+      pluginPath = _path;
+    }
 
     // The entry js file should return { binary: string, options: Record<string, any> } when it's not string
     if (typeof pluginPath !== 'string') {
-      const { binary, options: pluginOptions } = pluginPath as {
-        binary: string;
-        options: Record<string, any>;
-      };
+      const { binary, options: pluginOptions } =
+        pluginPath as RustPluginPathObject;
       options = JSON.stringify({
         ...pluginOptions,
         ...JSON.parse(options)

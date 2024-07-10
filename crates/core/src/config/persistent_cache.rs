@@ -71,7 +71,9 @@ impl PersistentCacheConfig {
         let default_config = Self::get_default_config(root);
 
         if cloned_obj.cache_dir.is_empty() {
-          cloned_obj.cache_dir = default_config.as_raw_object().cache_dir.clone();
+          cloned_obj
+            .cache_dir
+            .clone_from(&default_config.as_raw_object().cache_dir);
         }
 
         let mut envs = cloned_obj.envs.iter().collect::<Vec<_>>();
@@ -91,7 +93,10 @@ impl PersistentCacheConfig {
           let mut content = String::new();
 
           for dep in &cloned_obj.build_dependencies {
-            if !PathBuf::from(dep).exists() || !PathBuf::from(dep).is_file() {
+            if !PathBuf::from(dep).exists()
+              || !PathBuf::from(dep).is_file()
+              || dep.ends_with(".farm")
+            {
               content.push_str(dep);
             } else {
               let c = std::fs::read_to_string(dep).unwrap();
@@ -106,7 +111,9 @@ impl PersistentCacheConfig {
         }
 
         if cloned_obj.namespace.is_empty() {
-          cloned_obj.namespace = default_config.as_raw_object().namespace.clone();
+          cloned_obj
+            .namespace
+            .clone_from(&default_config.as_raw_object().namespace);
         }
 
         cloned_obj

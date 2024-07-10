@@ -38,7 +38,10 @@ import {
 import { traceDependencies } from '../utils/trace-dependencies.js';
 import { __FARM_GLOBAL__ } from './_global.js';
 import { CompilationMode, loadEnv, setProcessEnv } from './env.js';
-import { normalizeOutput } from './normalize-config/normalize-output.js';
+import {
+  getValidPublicPath,
+  normalizeOutput
+} from './normalize-config/normalize-output.js';
 import { normalizePersistentCache } from './normalize-config/normalize-persistent-cache.js';
 import { parseUserConfig } from './schema.js';
 
@@ -252,7 +255,7 @@ export async function normalizeUserCompilationConfig(
   mode: CompilationMode = 'development',
   isDefault = false
 ): Promise<ResolvedCompilation> {
-  const { compilation, root = process.cwd() } = resolvedUserConfig;
+  const { compilation, root = process.cwd(), clearScreen } = resolvedUserConfig;
 
   // resolve root path
   const resolvedRootPath = normalizePath(root);
@@ -274,6 +277,9 @@ export async function normalizeUserCompilationConfig(
     {
       input: inputIndexConfig,
       root: resolvedRootPath
+    },
+    {
+      clearScreen
     },
     compilation
   );
@@ -412,10 +418,13 @@ export async function normalizeUserCompilationConfig(
     is_entry_html &&
     !resolvedCompilation.runtime.plugins.includes(hmrClientPluginPath)
   ) {
-    const publicPath = resolvedCompilation.output.publicPath;
-    const hmrPath = resolvedUserConfig.server.hmr.path;
+    const publicPath = getValidPublicPath(
+      resolvedCompilation.output.publicPath
+    );
     const serverOptions = resolvedUserConfig.server;
-    const defineHmrPath = normalizeBasePath(path.join(publicPath, hmrPath));
+    const defineHmrPath = normalizeBasePath(
+      path.join(publicPath, resolvedUserConfig.server.hmr.path)
+    );
 
     resolvedCompilation.runtime.plugins.push(hmrClientPluginPath);
     // TODO optimize get hmr logic
@@ -468,11 +477,11 @@ export async function normalizeUserCompilationConfig(
   if (resolvedCompilation.script?.plugins?.length) {
     logger.info(
       `Swc plugins are configured, note that Farm uses ${colors.yellow(
-        'swc_core v0.90'
+        'swc_core v0.96'
       )}, please make sure the plugin is ${colors.green(
         'compatible'
       )} with swc_core ${colors.yellow(
-        'swc_core v0.90'
+        'swc_core v0.96'
       )}. Otherwise, it may exit unexpectedly.`
     );
   }
@@ -789,7 +798,9 @@ export function normalizePublicDir(root: string, userPublicDir?: string) {
   return absPublicDirPath;
 }
 
-function checkClearScreen(inlineConfig: FarmCLIOptions) {
+export function checkClearScreen(
+  inlineConfig: FarmCLIOptions | ResolvedUserConfig
+) {
   if (
     inlineConfig?.clearScreen &&
     !__FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__

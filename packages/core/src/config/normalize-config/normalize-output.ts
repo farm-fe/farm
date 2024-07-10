@@ -6,7 +6,8 @@ import { urlRegex } from '../../utils/http.js';
 import { Logger } from '../../utils/logger.js';
 import {
   FARM_TARGET_BROWSER_ENVS,
-  mapTargetEnvValue
+  mapTargetEnvValue,
+  normalizeBasePath
 } from '../../utils/share.js';
 import { ResolvedCompilation } from '../types.js';
 
@@ -259,7 +260,7 @@ export function getValidPublicPath(publicPath = '/'): string | undefined {
   if (publicPath.startsWith('/')) {
     validPublicPath = publicPath;
   } else if (publicPath.startsWith('.')) {
-    validPublicPath = path.posix.normalize(path.join('/', publicPath));
+    validPublicPath = normalizeBasePath(path.join('/', publicPath));
   }
 
   return validPublicPath;

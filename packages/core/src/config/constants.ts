@@ -13,3 +13,5 @@ export const CUSTOM_KEYS = {
   external_record: 'external.record',
   runtime_isolate: 'runtime.isolate'
 };
+
+export const FARM_RUST_PLUGIN_FUNCTION_ENTRY = 'func.js';

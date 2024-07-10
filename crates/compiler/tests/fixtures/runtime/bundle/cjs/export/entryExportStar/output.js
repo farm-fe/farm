@@ -73,7 +73,7 @@ var cjsExport_ts_cjs = __commonJs((module, exports)=>{
     });
     module.exports.name = "shulan";
     module.exports.age = 18;
-    const esmName = "esm-shulan";
+    const esmName = 'esm-shulan';
 });
 var cjsExport_ts_ns = _interop_require_wildcard(cjsExport_ts_cjs());
 
@@ -83,9 +83,7 @@ var esmExport_ts_ns = {
     __esModule: true
 };
 
-const esmName = "repeat-esm-shulan";
-(globalThis || window || global)["__farm_default_namespace__"].__farm_module_system__.setPlugins([]);
-(function(_){for(var r in _){_[r].__farm_resource_pot__='file://'+__filename;(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.register(r,_[r])}})({"b5d64806":function  (module, exports, farmRequire, farmDynamicRequire) {
-    "use strict";
-}
+const esmName = 'repeat-esm-shulan';
+(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setPlugins([]);
+(function(_){for(var r in _){_[r].__farm_resource_pot__='file://'+__filename;(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.register(r,_[r])}})({"b5d64806":function  (module, exports, farmRequire, farmDynamicRequire) {}
 ,});(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setInitialLoadedResources([]);(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setDynamicModuleResourcesMap({  });var farmModuleSystem = (globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__;farmModuleSystem.bootstrap();var entry = farmModuleSystem.require("b5d64806");

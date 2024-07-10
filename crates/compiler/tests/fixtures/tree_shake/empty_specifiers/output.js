@@ -61,44 +61,24 @@
   };
 }((function(){var index_js_cjs = __commonJs((module, exports)=>{
     "use strict";
-    console.log("runtime/index.js")(globalThis || window || global)["__farm_default_namespace__"].__farm_module_system__.setPlugins([]);
+    console.log('runtime/index.js')(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setPlugins([]);
 });
 })());(function(_){for(var r in _){_[r].__farm_resource_pot__='index_5de5.js';(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.register(r,_[r])}})({"6f462555":function  (module, exports, farmRequire, farmDynamicRequire) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", {
-        value: true
-    });
-    Object.defineProperty(exports, "default", {
-        enumerable: true,
-        get: function() {
-            return _default;
-        }
-    });
+    module._m(exports);
     "";
-    var _default = "comp";
+    exports.default = 'comp';
 }
 ,
 "b3d9bc98":function  (module, exports, farmRequire, farmDynamicRequire) {
-    "use strict";
-    console.log("resolved.ts");
+    console.log('resolved.ts');
 }
 ,
 "b5d64806":function  (module, exports, farmRequire, farmDynamicRequire) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", {
-        value: true
-    });
-    Object.defineProperty(exports, "default", {
-        enumerable: true,
-        get: function() {
-            return _default;
-        }
-    });
-    var _interop_require_default = farmRequire("@swc/helpers/_/_interop_require_default");
+    module._m(exports);
     farmRequire("b3d9bc98");
-    var _comp = _interop_require_default._(farmRequire("6f462555"));
-    console.log(_comp.default);
-    var _default = 2;
+    var _f_comp = module.i(farmRequire("6f462555"));
+    console.log(module.f(_f_comp));
+    exports.default = 2;
 }
 ,});(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setInitialLoadedResources([]);(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setDynamicModuleResourcesMap({  });var farmModuleSystem = (globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__;farmModuleSystem.bootstrap();var entry = farmModuleSystem.require("b5d64806");export default entry.default || entry;
 

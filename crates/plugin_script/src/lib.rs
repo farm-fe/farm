@@ -133,6 +133,7 @@ impl Plugin for FarmPluginScript {
           hmr_self_accepted: false,
           hmr_accepted_deps: Default::default(),
           comments: CommentsMetaData::from(comments),
+          custom: Default::default(),
         };
 
         Ok(Some(ModuleMetaData::Script(meta)))
