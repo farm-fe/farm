@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.8](https://github.com/farm-fe/farm/compare/farmfe_plugin_resolve-v0.0.7...farmfe_plugin_resolve-v0.0.8) - 2024-07-10
+
+### Other
+- optimize resolver  methods ([#1564](https://github.com/farm-fe/farm/pull/1564))
+
 ## [0.0.7](https://github.com/farm-fe/farm/compare/farmfe_plugin_resolve-v0.0.6...farmfe_plugin_resolve-v0.0.7) - 2024-05-28
 
 ### Added
