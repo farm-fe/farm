@@ -30,6 +30,7 @@ pub mod partial_bundling;
 pub mod persistent_cache;
 pub mod preset_env;
 pub mod script;
+pub mod tree_shaking;
 
 pub use output::*;
 
@@ -52,7 +53,7 @@ pub struct Config {
   pub partial_bundling: Box<PartialBundlingConfig>,
   pub lazy_compilation: bool,
   pub core_lib_path: Option<String>,
-  pub tree_shaking: bool,
+  pub tree_shaking: Box<BoolOrObj<serde_json::Value>>,
   pub minify: Box<BoolOrObj<serde_json::Value>>,
   pub preset_env: Box<PresetEnvConfig>,
   pub record: bool,
@@ -91,7 +92,7 @@ impl Default for Config {
       partial_bundling: Default::default(),
       lazy_compilation: true,
       core_lib_path: None,
-      tree_shaking: true,
+      tree_shaking: Box::new(BoolOrObj::Bool(true)),
       minify: Box::new(BoolOrObj::Bool(true)),
       preset_env: Box::<PresetEnvConfig>::default(),
       record: false,

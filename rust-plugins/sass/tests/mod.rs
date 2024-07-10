@@ -84,7 +84,7 @@ fn test_with_compiler() {
       sourcemap: Box::new(SourcemapConfig::Bool(false)),
       preset_env: Box::new(PresetEnvConfig::Bool(false)),
       minify: Box::new(BoolOrObj::from(false)),
-      tree_shaking: false,
+      tree_shaking: Box::new(BoolOrObj::Bool(false)),
       progress: false,
       resolve: Box::new(ResolveConfig {
         alias: std::collections::HashMap::from([(
