@@ -64,14 +64,14 @@ var exportNamed_ts_ns = {
     __esModule: true
 };
 
-console.log("export expr");
-var exportExpr_ts_default = "export expr";
+console.log('export expr');
+var exportExpr_ts_default = 'export expr';
 
 const sameNameWithFile_ts_ns$2 = 1;
 const sameNameWithFile_ts$1 = 2;
 const exportExpr_ts_default$1 = 3;
 function say() {
-    console.log("hello");
+    console.log('hello');
 }
 var sameNameWithFile_ts_ns = {
     say: say,
@@ -87,6 +87,6 @@ console.log({
     SameNameWithFileNamespace: sameNameWithFile_ts_ns,
     Expr: exportExpr_ts_default
 });
-(globalThis || window || global)["__farm_default_namespace__"].__farm_module_system__.setPlugins([]);
+(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setPlugins([]);
 (function(_){for(var r in _){_[r].__farm_resource_pot__='index_dcdc.js';(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.register(r,_[r])}})({"b5d64806":function  (module, exports, farmRequire, farmDynamicRequire) {}
 ,});(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setInitialLoadedResources([]);(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setDynamicModuleResourcesMap({  });var farmModuleSystem = (globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__;farmModuleSystem.bootstrap();var entry = farmModuleSystem.require("b5d64806");

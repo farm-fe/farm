@@ -108,7 +108,7 @@ impl ResourcePot {
     self
       .meta
       .custom_data
-      .get(&DEFER_BUNDLE_MINIFY.to_string())
+      .get(DEFER_BUNDLE_MINIFY)
       .is_some_and(|v| v == "true")
   }
 }

@@ -78,11 +78,6 @@ export class ModuleSystem {
           return exports.default || exports;
         }
 
-        if (exports.__esModule) {
-          return exports;
-        }
-
-        exports.default = exports;
         return exports;
       }
       // try node require if target Env is node

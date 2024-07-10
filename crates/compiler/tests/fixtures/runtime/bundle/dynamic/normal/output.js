@@ -44,7 +44,7 @@
         return nodeInterop ? cacheNodeInterop : cacheBabelInterop;
     })(nodeInterop);
 }function foo$1() {
-    console.log("foo");
+    console.log('foo');
 }
 var dynamic_ts_ns = {
     "default": foo$1,
@@ -61,6 +61,6 @@ const data = {
 };
 {
     Promise.resolve(dynamic_ts_ns);
-}(globalThis || window || global)["__farm_default_namespace__"].__farm_module_system__.setPlugins([]);
+}(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setPlugins([]);
 (function(_){for(var r in _){_[r].__farm_resource_pot__='index_dcdc.js';(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.register(r,_[r])}})({"b5d64806":function  (module, exports, farmRequire, farmDynamicRequire) {}
 ,});(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setInitialLoadedResources([]);(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setDynamicModuleResourcesMap({  });var farmModuleSystem = (globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__;farmModuleSystem.bootstrap();var entry = farmModuleSystem.require("b5d64806");
