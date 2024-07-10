@@ -10,7 +10,7 @@ repository = "https://github.com/farm-fe/farm"
 documentation = "https://docs.rs/farmfe_plugin_progress"
 
 [dependencies]
-farmfe_core = { path = "../core", version = "0.6.0" }
+farmfe_core = { path = "../core", version = "0.6.1" }
 farmfe_testing_helpers = { path = "../testing_helpers", version = "0.0.9" }
 indicatif = "0.17.7"
 console = "0.15.8"

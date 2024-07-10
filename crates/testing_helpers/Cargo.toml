@@ -10,4 +10,4 @@ repository = "https://github.com/farm-fe/farm"
 documentation = "https://docs.rs/farmfe_plugin_define"
 
 [dependencies]
-farmfe_core = { path = "../core", version = "0.6.0" }
+farmfe_core = { path = "../core", version = "0.6.1" }
