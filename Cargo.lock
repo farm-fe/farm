@@ -930,7 +930,7 @@ dependencies = [
 
 [[package]]
 name = "create-farm"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "anyhow",
  "clap",
@@ -1391,7 +1391,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "28941685318c3ab497f802f6dab956c80e1b373852f890fc373d8df18a7a31a6"
 dependencies = [
  "base64 0.22.1",
- "farmfe_utils 0.1.4 (registry+https://github.com/rust-lang/crates.io-index)",
+ "farmfe_utils 0.1.4",
  "parking_lot",
  "regex",
  "sourcemap",
@@ -1517,7 +1517,7 @@ dependencies = [
  "farmfe_testing",
  "farmfe_testing_helpers",
  "farmfe_toolkit",
- "farmfe_utils 0.1.4",
+ "farmfe_utils 0.1.5",
  "num_cpus",
 ]
 
@@ -1531,7 +1531,7 @@ dependencies = [
  "downcast-rs",
  "enhanced-magic-string",
  "farmfe_macro_cache_item",
- "farmfe_utils 0.1.4",
+ "farmfe_utils 0.1.5",
  "globset",
  "heck 0.4.1",
  "hex",
@@ -1600,7 +1600,7 @@ dependencies = [
  "farmfe_core",
  "farmfe_testing_helpers",
  "farmfe_toolkit",
- "farmfe_utils 0.1.4",
+ "farmfe_utils 0.1.5",
 ]
 
 [[package]]
@@ -1611,7 +1611,7 @@ dependencies = [
  "farmfe_macro_cache_item",
  "farmfe_testing_helpers",
  "farmfe_toolkit",
- "farmfe_utils 0.1.4",
+ "farmfe_utils 0.1.5",
  "rkyv",
 ]
 
@@ -1622,7 +1622,7 @@ dependencies = [
  "farmfe_core",
  "farmfe_testing_helpers",
  "farmfe_toolkit",
- "farmfe_utils 0.1.4",
+ "farmfe_utils 0.1.5",
 ]
 
 [[package]]
@@ -1651,7 +1651,7 @@ dependencies = [
  "farmfe_core",
  "farmfe_testing_helpers",
  "farmfe_toolkit",
- "farmfe_utils 0.1.4",
+ "farmfe_utils 0.1.5",
 ]
 
 [[package]]
@@ -1711,7 +1711,7 @@ dependencies = [
  "farmfe_core",
  "farmfe_testing_helpers",
  "farmfe_toolkit",
- "farmfe_utils 0.1.4",
+ "farmfe_utils 0.1.5",
 ]
 
 [[package]]
@@ -1721,7 +1721,7 @@ dependencies = [
  "farmfe_core",
  "farmfe_testing_helpers",
  "farmfe_toolkit",
- "farmfe_utils 0.1.4",
+ "farmfe_utils 0.1.5",
  "rkyv",
 ]
 
@@ -1735,7 +1735,7 @@ dependencies = [
  "farmfe_testing_helpers",
  "farmfe_toolkit",
  "farmfe_toolkit_plugin_types",
- "farmfe_utils 0.1.4",
+ "farmfe_utils 0.1.5",
  "sass-embedded",
  "serde",
 ]
@@ -1748,7 +1748,7 @@ dependencies = [
  "farmfe_swc_transformer_import_glob",
  "farmfe_testing_helpers",
  "farmfe_toolkit",
- "farmfe_utils 0.1.4",
+ "farmfe_utils 0.1.5",
  "once_cell",
  "swc_ecma_loader",
  "swc_plugin_proxy",
@@ -1764,7 +1764,7 @@ dependencies = [
  "farmfe_core",
  "farmfe_testing_helpers",
  "farmfe_toolkit",
- "farmfe_utils 0.1.4",
+ "farmfe_utils 0.1.5",
  "mime_guess",
  "rkyv",
 ]
@@ -1776,7 +1776,7 @@ dependencies = [
  "farmfe_core",
  "farmfe_testing_helpers",
  "farmfe_toolkit",
- "farmfe_utils 0.1.4",
+ "farmfe_utils 0.1.5",
 ]
 
 [[package]]
@@ -1786,12 +1786,12 @@ dependencies = [
  "farmfe_core",
  "farmfe_testing_helpers",
  "farmfe_toolkit",
- "farmfe_utils 0.1.4",
+ "farmfe_utils 0.1.5",
 ]
 
 [[package]]
 name = "farmfe_testing"
-version = "0.0.1"
+version = "0.0.2"
 dependencies = [
  "glob",
  "heck 0.4.1",
@@ -1817,7 +1817,7 @@ dependencies = [
  "farmfe_core",
  "farmfe_testing_helpers",
  "farmfe_toolkit_plugin_types",
- "farmfe_utils 0.1.4",
+ "farmfe_utils 0.1.5",
  "lazy_static",
  "preset_env_base",
  "sourcemap",
@@ -1855,6 +1855,8 @@ dependencies = [
 [[package]]
 name = "farmfe_utils"
 version = "0.1.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "264c2449b7c5b34e1b02b87781c961321730fce02eba189d2a06e95fe3e31489"
 dependencies = [
  "base64 0.21.7",
  "pathdiff",
@@ -1863,9 +1865,7 @@ dependencies = [
 
 [[package]]
 name = "farmfe_utils"
-version = "0.1.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "264c2449b7c5b34e1b02b87781c961321730fce02eba189d2a06e95fe3e31489"
+version = "0.1.5"
 dependencies = [
  "base64 0.21.7",
  "pathdiff",
