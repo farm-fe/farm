@@ -15,28 +15,22 @@ export default defineConfig({
       targetEnv: 'node',
       format: 'esm'
     },
-    presetEnv: {
-      'options': {
-        targets: {
-          ie: 11,
-        }
-      }
-    },
+    presetEnv: false,
     // mode: 'development',
     external: [
       ...builtinModules.map((m) => `^node:${m}$`),
       ...builtinModules.map((m) => `^${m}$`)
     ],
     runtime: {
-      isolate: true,
+      isolate: true
     },
     minify: {
-      'mangle': {
-        toplevel: true,
+      mangle: {
+        toplevel: true
       }
     },
     persistentCache: false,
-    lazyCompilation: false,
+    lazyCompilation: false
   },
   server: {
     hmr: false

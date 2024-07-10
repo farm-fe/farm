@@ -12,6 +12,7 @@ export default defineConfig({
   compilation: {
     output: {
       path: '../../build/client'
-    }
+    },
+    external: ['@farmfe/core']
   }
 });

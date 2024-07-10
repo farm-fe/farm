@@ -3,6 +3,26 @@ export * from './config/index.js';
 export * from './server/index.js';
 export * from './plugin/type.js';
 export * from './utils/index.js';
+export type {
+  Module,
+  ModuleType,
+  ResolveKind,
+  PluginLoadHookParam,
+  PluginLoadHookResult,
+  PluginResolveHookParam,
+  PluginResolveHookResult,
+  OutputConfig,
+  ResolveConfig,
+  RuntimeConfig,
+  ScriptConfig,
+  CssConfig,
+  PersistentCacheConfig,
+  PartialBundlingConfig,
+  PresetEnvConfig,
+  Config,
+  PluginTransformHookParam,
+  PluginTransformHookResult
+} from './types/binding.js';
 
 import { statSync } from 'node:fs';
 import fs from 'node:fs/promises';
