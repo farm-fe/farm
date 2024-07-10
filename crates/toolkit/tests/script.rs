@@ -44,7 +44,7 @@ fn parse_and_codegen_module() {
     let code = String::from_utf8(bytes).unwrap();
     assert_eq!(
       code,
-      "import a from \"./a\";\nimport b from \"./b\";\nconsole.log(a, b);\n"
+      "import a from './a';\nimport b from './b';\nconsole.log(a, b);\n"
     );
   });
 }

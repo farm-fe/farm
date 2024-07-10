@@ -2,6 +2,7 @@
 #![allow(clippy::needless_collect)]
 #![allow(clippy::ptr_arg)]
 #![allow(clippy::too_many_arguments)]
+#![allow(clippy::assigning_clones)]
 #![feature(box_patterns)]
 
 use std::sync::Arc;
