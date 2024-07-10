@@ -362,8 +362,8 @@ importers:
         specifier: workspace:*
         version: link:../../rust-plugins/react
       '@swc/plugin-emotion':
-        specifier: ^2.5.124
-        version: 2.5.124
+        specifier: ^3.0.9
+        version: 3.0.9
       '@types/react':
         specifier: '18'
         version: 18.2.35
@@ -2279,8 +2279,8 @@ importers:
         version: 3.3.0(zod@3.23.8)
     devDependencies:
       '@napi-rs/cli':
-        specifier: ^2.15.2
-        version: 2.16.5
+        specifier: ^2.18.4
+        version: 2.18.4
       '@types/figlet':
         specifier: ^1.5.5
         version: 1.5.7
@@ -2315,8 +2315,8 @@ importers:
   packages/create-farm:
     devDependencies:
       '@napi-rs/cli':
-        specifier: 2.18.3
-        version: 2.18.3
+        specifier: ^2.18.4
+        version: 2.18.4
 
   packages/create-farm-plugin:
     devDependencies:
@@ -2351,8 +2351,8 @@ importers:
         specifier: workspace:*
         version: link:../utils
       '@napi-rs/cli':
-        specifier: ^2.15.2
-        version: 2.16.5
+        specifier: ^2.18.4
+        version: 2.18.4
       cac:
         specifier: ^6.7.14
         version: 6.7.14
@@ -3988,13 +3988,8 @@ packages:
     peerDependencies:
       monaco-editor: '>= 0.21.0 < 1'
 
-  '@napi-rs/cli@2.16.5':
-    resolution: {integrity: sha512-mFEzwrg4IOLngGd2/P6yeqIWgwQNn59Z08n1rndu6kLDq1gg954NH9cM1O9Da0RJuybt46p43lqgSsnAY2mxqA==}
-    engines: {node: '>= 10'}
-    hasBin: true
-
-  '@napi-rs/cli@2.18.3':
-    resolution: {integrity: sha512-L0f4kP0dyG8W5Qtc7MtP73VvLLrOLyRcUEBzknIfu8Jk4Jfhrsx1ItMHgyalYqMSslWdY3ojEfAaU5sx1VyeQQ==}
+  '@napi-rs/cli@2.18.4':
+    resolution: {integrity: sha512-SgJeA4df9DE2iAEpr3M2H0OKl/yjtg1BnRI5/JyowS71tUWhrfSu2LT0V3vlHET+g1hBVlrO60PmEXwUEKp8Mg==}
     engines: {node: '>= 10'}
     hasBin: true
 
@@ -4378,8 +4373,8 @@ packages:
   '@swc/helpers@0.5.3':
     resolution: {integrity: sha512-FaruWX6KdudYloq1AHD/4nU+UsMTdNE8CKyrseXWEcgjDAbvkwJg2QGPAnfIJLIWsjZOSPLOAykK6fuYp4vp4A==}
 
-  '@swc/plugin-emotion@2.5.124':
-    resolution: {integrity: sha512-t6Z6oHnJUIKsTyQkWKHDz8xhhJPGKfUNO4zRnHBGy5EfHTLTs00cn6I187Fno7cyR72ZCZn92RqiRn7TbRw07w==}
+  '@swc/plugin-emotion@3.0.9':
+    resolution: {integrity: sha512-kPvC306/1FBZ4yiOhjm3EDErI4eWJQrNa8bFCDzmHvFW1zokoyRQazzYVterVPsweepmEdftrPRLoB3pQHfo1A==}
 
   '@sxzz/popperjs-es@2.11.7':
     resolution: {integrity: sha512-Ccy0NlLkzr0Ex2FKvh2X+OyERHXJ88XJ1MXtsI9y9fGexlaXaVTPzBCRBwIxFkORuOb+uBqeu+RqnpgYTEZRUQ==}
@@ -15228,9 +15223,7 @@ snapshots:
     dependencies:
       state-local: 1.0.7
 
-  '@napi-rs/cli@2.16.5': {}
-
-  '@napi-rs/cli@2.18.3': {}
+  '@napi-rs/cli@2.18.4': {}
 
   '@nestjs/cli@10.4.2':
     dependencies:
@@ -15622,7 +15615,7 @@ snapshots:
     dependencies:
       tslib: 2.6.2
 
-  '@swc/plugin-emotion@2.5.124':
+  '@swc/plugin-emotion@3.0.9':
     dependencies:
       '@swc/counter': 0.1.3
 
