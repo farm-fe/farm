@@ -18,7 +18,10 @@ export default {
     external: [
       ...builtinModules.map((m) => `^${m}$`),
       ...builtinModules.map((m) => `^node:${m}$`),
-      '@farmfe/core'
+      '@farmfe/core',
+      '^less$',
+      '^sass$',
+      '^stylus$'
     ],
     partialBundling: {
       enforceResources: [
