@@ -17,7 +17,8 @@ export default {
     },
     external: [
       ...builtinModules.map((m) => `^${m}$`),
-      ...builtinModules.map((m) => `^node:${m}$`)
+      ...builtinModules.map((m) => `^node:${m}$`),
+      '@farmfe/core'
     ],
     partialBundling: {
       enforceResources: [
