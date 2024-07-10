@@ -60,9 +60,9 @@
     return module.exports;
   };
 }var dep_ts_cjs = __commonJs((module, exports)=>{
-    module.exports.name = "shulan";
+    module.exports.name = 'shulan';
     module.exports.age = 18;
-    module.exports.default = "default";
+    module.exports.default = 'default';
 });
 var dep_ts_ns = _interop_require_wildcard(dep_ts_cjs());
 
@@ -74,6 +74,6 @@ var export_ts_ns = {
 console.log(export_ts_ns);
 const dep_ts_ns$1 = 18;
 console.log(dep_ts_ns$1);
-(globalThis || window || global)["__farm_default_namespace__"].__farm_module_system__.setPlugins([]);
+(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setPlugins([]);
 (function(_){for(var r in _){_[r].__farm_resource_pot__='index_dcdc.js';(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.register(r,_[r])}})({"b5d64806":function  (module, exports, farmRequire, farmDynamicRequire) {}
 ,});(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setInitialLoadedResources([]);(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setDynamicModuleResourcesMap({  });var farmModuleSystem = (globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__;farmModuleSystem.bootstrap();var entry = farmModuleSystem.require("b5d64806");
