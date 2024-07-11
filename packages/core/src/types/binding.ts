@@ -23,7 +23,6 @@ export type ResolveKind =
   | 'hmrUpdate'
   | string;
 
-export * from './binding.js';
 import type { WatchOptions } from 'chokidar';
 import { JsPlugin } from '../plugin/type.js';
 import {
