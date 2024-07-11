@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.1](https://github.com/farm-fe/farm/compare/farmfe_core-v0.6.0...farmfe_core-v0.6.1) - 2024-07-11
+
+### Fixed
+- disable swc remove import, fix [#1555](https://github.com/farm-fe/farm/pull/1555) ([#1565](https://github.com/farm-fe/farm/pull/1565))
+
 ## [0.6.0](https://github.com/farm-fe/farm/compare/farmfe_core-v0.5.1...farmfe_core-v0.6.0) - 2024-05-28
 
 ### Added
