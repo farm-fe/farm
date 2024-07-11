@@ -1,12 +1,12 @@
-import {
+import type {
   SFCDescriptor,
   SFCScriptCompileOptions,
   SFCStyleCompileOptions,
   SFCTemplateCompileOptions
 } from '@vue/compiler-sfc';
-import Less from 'less';
-import Sass from 'sass';
-import Stylus from 'stylus';
+import type Less from 'less';
+import type Sass from 'sass';
+import type Stylus from 'stylus';
 
 export interface outputData {
   id: string;

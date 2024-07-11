@@ -99,7 +99,6 @@ pub fn render_module<F: Fn(&ModuleId) -> bool>(
         &mut cloned_module,
         unresolved_mark,
         TransformModuleDeclsOptions {
-          module_id: module.id.clone(),
           is_target_legacy: context.config.script.is_target_legacy(),
         },
       );

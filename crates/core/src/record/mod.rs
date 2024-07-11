@@ -39,15 +39,15 @@ impl RecordManager {
   }
 
   pub fn set_trigger(&self, trigger: Trigger) {
-    let mut _trigger = self.trigger.write().unwrap();
-    *_trigger = trigger;
+    *self.trigger.write().unwrap() = trigger;
   }
 
   pub fn add_resolve_record(&self, source: String, mut record: ResolveRecord) {
+    self.update_plugin_stats(record.plugin.clone(), &record.hook, record.duration);
+    // clone is quicker than to_owned
+    record.trigger = self.trigger.read().unwrap().clone();
+
     let mut resolve_id_map = self.resolve_id_map.write().unwrap();
-    self.update_plugin_stats(record.plugin.clone(), &record.hook.clone(), record.duration);
-    let trigger = self.trigger.read().unwrap().to_owned();
-    record.trigger = trigger;
     if let Some(records) = resolve_id_map.get_mut(&source) {
       records.push(record);
     } else {
@@ -56,50 +56,51 @@ impl RecordManager {
   }
 
   pub fn add_load_record(&self, id: String, mut record: TransformRecord) {
+    self.update_plugin_stats(record.plugin.clone(), &record.hook, record.duration);
+    record.trigger = self.trigger.read().unwrap().clone();
+
     let mut transform_map = self.transform_map.write().unwrap();
-    self.update_plugin_stats(record.plugin.clone(), &record.hook.clone(), record.duration);
-    let trigger = self.trigger.read().unwrap().to_owned();
-    record.trigger = trigger;
     if transform_map.get(&id).is_none() {
       transform_map.insert(id, vec![record]);
     }
   }
 
   pub fn add_transform_record(&self, id: String, mut record: TransformRecord) {
+    self.update_plugin_stats(record.plugin.clone(), &record.hook, record.duration);
+    record.trigger = self.trigger.read().unwrap().clone();
+
+    // reduce lock holding time
     let mut transform_map = self.transform_map.write().unwrap();
-    self.update_plugin_stats(record.plugin.clone(), &record.hook.clone(), record.duration);
-    let trigger = self.trigger.read().unwrap().to_owned();
-    record.trigger = trigger;
     if let Some(records) = transform_map.get_mut(&id) {
       records.push(record);
     }
   }
 
   pub fn add_parse_record(&self, id: String, mut record: ModuleRecord) {
+    self.update_plugin_stats(record.plugin.clone(), &record.hook, record.duration);
+    record.trigger = self.trigger.read().unwrap().clone();
+
     let mut process_map = self.process_map.write().unwrap();
-    self.update_plugin_stats(record.plugin.clone(), &record.hook.clone(), record.duration);
-    let trigger = self.trigger.read().unwrap().to_owned();
-    record.trigger = trigger;
     if process_map.get(&id).is_none() {
       process_map.insert(id, vec![record]);
     }
   }
 
   pub fn add_process_record(&self, id: String, mut record: ModuleRecord) {
-    let mut process_map = self.process_map.write().unwrap();
     self.update_plugin_stats(record.plugin.clone(), &record.hook.clone(), record.duration);
-    let trigger = self.trigger.read().unwrap().to_owned();
-    record.trigger = trigger;
+    record.trigger = self.trigger.read().unwrap().clone();
+
+    let mut process_map = self.process_map.write().unwrap();
     if let Some(records) = process_map.get_mut(&id) {
       records.push(record);
     }
   }
 
   pub fn add_analyze_deps_record(&self, id: String, mut record: AnalyzeDepsRecord) {
-    let mut analyze_deps_map = self.analyze_deps_map.write().unwrap();
     self.update_plugin_stats(record.plugin.clone(), &record.hook.clone(), record.duration);
-    let trigger = self.trigger.read().unwrap().to_owned();
-    record.trigger = trigger;
+    record.trigger = self.trigger.read().unwrap().clone();
+
+    let mut analyze_deps_map = self.analyze_deps_map.write().unwrap();
     if let Some(records) = analyze_deps_map.get_mut(&id) {
       records.push(record);
     } else {
@@ -109,11 +110,11 @@ impl RecordManager {
 
   pub fn add_resource_pot_record(&self, id: String, record: ResourcePotRecord) {
     let mut resource_pot_map = self.resource_pot_map.write().unwrap();
-    if let Some(records) = resource_pot_map.get_mut(&id) {
-      records.push(record);
-    } else {
-      resource_pot_map.insert(id, vec![record]);
-    }
+    // reduce the number of accesses to resource_pot_map
+    resource_pot_map
+      .entry(id)
+      .or_default()
+      .push(record);
   }
 
   pub fn get_resolve_records_by_id(&self, id: &str) -> Vec<ResolveRecord> {
@@ -160,7 +161,7 @@ impl RecordManager {
   pub fn update_plugin_stats(&self, plugin_name: String, hook_name: &str, duration: i64) {
     let mut plugin_stats = self.plugin_stats.write().unwrap();
 
-    let plugin_entry = plugin_stats.entry(plugin_name.clone()).or_default();
+    let plugin_entry = plugin_stats.entry(plugin_name).or_default();
 
     let stats = plugin_entry
       .entry(hook_name.to_string())

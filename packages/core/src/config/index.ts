@@ -37,7 +37,12 @@ import {
 } from '../utils/index.js';
 import { traceDependencies } from '../utils/trace-dependencies.js';
 import { __FARM_GLOBAL__ } from './_global.js';
-import { CompilationMode, loadEnv, setProcessEnv } from './env.js';
+import {
+  CompilationMode,
+  getExistsEnvFiles,
+  loadEnv,
+  setProcessEnv
+} from './env.js';
 import {
   getValidPublicPath,
   normalizeOutput
@@ -703,9 +708,12 @@ async function readConfigFile(
           format,
           targetEnv: 'node'
         },
-        external: process.env.FARM_CONFIG_FULL_BUNDLE
-          ? []
-          : ['!^(\\./|\\.\\./|[A-Za-z]:\\\\|/).*'],
+        external: [
+          ...(process.env.FARM_CONFIG_FULL_BUNDLE
+            ? []
+            : ['!^(\\./|\\.\\./|[A-Za-z]:\\\\|/).*']),
+          '^@farmfe/core$'
+        ],
         partialBundling: {
           enforceResources: [
             {
@@ -838,10 +846,14 @@ export async function resolveMergedUserConfig(
     ? resolvedUserConfig.envDir
     : resolvedRootPath;
 
-  const [userEnv, existsEnvFiles] = loadEnv(
+  const userEnv = loadEnv(
     resolvedUserConfig.envMode ?? mode,
     resolvedEnvPath,
     resolvedUserConfig.envPrefix
+  );
+  const existsEnvFiles = getExistsEnvFiles(
+    resolvedUserConfig.envMode ?? mode,
+    resolvedEnvPath
   );
 
   resolvedUserConfig.envFiles = [

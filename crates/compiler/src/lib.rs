@@ -61,7 +61,7 @@ impl Compiler {
       );
     }
 
-    if config.tree_shaking {
+    if config.tree_shaking.enabled() {
       plugins.push(Arc::new(farmfe_plugin_tree_shake::FarmPluginTreeShake::new(&config)) as _);
     }
 
