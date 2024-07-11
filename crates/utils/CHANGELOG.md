@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.5](https://github.com/farm-fe/farm/compare/farmfe_utils-v0.1.4...farmfe_utils-v0.1.5) - 2024-07-11
+
+### Added
+- support new URL with import meta.url ([#1481](https://github.com/farm-fe/farm/pull/1481))
+
 ## [0.1.4](https://github.com/farm-fe/farm/compare/farmfe_utils-v0.1.3...farmfe_utils-v0.1.4) - 2024-03-24
 
 ### Fixed
