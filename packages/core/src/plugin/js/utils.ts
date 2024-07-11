@@ -2,7 +2,7 @@ import path from 'node:path';
 // import path from 'node:path';
 import * as querystring from 'node:querystring';
 import fse from 'fs-extra';
-import {
+import type {
   InternalModuleFormat,
   NormalizedInputOptions,
   NormalizedOutputOptions,
