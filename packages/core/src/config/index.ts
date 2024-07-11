@@ -708,9 +708,12 @@ async function readConfigFile(
           format,
           targetEnv: 'node'
         },
-        external: process.env.FARM_CONFIG_FULL_BUNDLE
-          ? []
-          : ['!^(\\./|\\.\\./|[A-Za-z]:\\\\|/).*'],
+        external: [
+          ...(process.env.FARM_CONFIG_FULL_BUNDLE
+            ? []
+            : ['!^(\\./|\\.\\./|[A-Za-z]:\\\\|/).*']),
+          '^@farmfe/core$'
+        ],
         partialBundling: {
           enforceResources: [
             {
