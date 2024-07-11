@@ -19,7 +19,7 @@ export function loadEnv(
   mode: string,
   envDir: string,
   prefixes: string | string[] = ['FARM_', 'VITE_']
-): [env: Record<string, string>, existsEnvFiles: string[]] {
+): Record<string, string> {
   if (mode === 'local') {
     throw new Error(
       `"local" cannot be used as a mode name because it conflicts with ` +
@@ -29,15 +29,12 @@ export function loadEnv(
   prefixes = arraify(prefixes);
   const env: Record<string, string> = {};
   const envFiles = getEnvFilesForMode(mode, envDir);
-  const existsEnvFiles: string[] = [];
   const parsed = Object.fromEntries(
     envFiles.flatMap((filePath) => {
       if (!tryStatSync(filePath)?.isFile()) return [];
-
       return Object.entries(parse(fs.readFileSync(filePath)));
     })
   );
-
   const processEnv = { ...process.env } as DotenvPopulateInput;
   expand({ parsed, processEnv });
 
@@ -47,7 +44,6 @@ export function loadEnv(
       env[key] = value;
     }
   }
-
   for (const key in process.env) {
     if (
       prefixes.some((prefix) => key.startsWith(prefix)) &&
@@ -56,8 +52,12 @@ export function loadEnv(
       env[key] = process.env[key] as string;
     }
   }
+  return env;
+}
 
-  return [env, existsEnvFiles];
+export function getExistsEnvFiles(mode: string, envDir: string): string[] {
+  const envFiles = getEnvFilesForMode(mode, envDir);
+  return envFiles.filter((filePath) => tryStatSync(filePath)?.isFile());
 }
 
 export type CompilationMode = 'development' | 'production';
