@@ -206,6 +206,22 @@ impl Plugin for RustPluginAdapter {
       .generate_resources(resource_pot, context, hook_context)
   }
 
+  fn process_generated_resources(
+    &self,
+    resources: &mut PluginGenerateResourcesHookResult,
+    context: &Arc<CompilationContext>,
+  ) -> Result<Option<()>> {
+    self.plugin.process_generated_resources(resources, context)
+  }
+
+  fn handle_entry_resource(
+    &self,
+    resource: &mut farmfe_core::plugin::PluginHandleEntryResourceHookParams,
+    context: &Arc<CompilationContext>,
+  ) -> Result<Option<()>> {
+    self.plugin.handle_entry_resource(resource, context)
+  }
+
   fn finalize_resources(
     &self,
     param: &mut PluginFinalizeResourcesHookParams,
