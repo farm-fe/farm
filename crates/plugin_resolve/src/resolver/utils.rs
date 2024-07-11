@@ -1,33 +1,26 @@
+use farmfe_core::{common::PackageJsonInfo, farm_profile_function, regex, serde_json::Value};
+use once_cell::sync::Lazy;
 use std::{path::PathBuf, str::FromStr};
 
-use farmfe_core::{common::PackageJsonInfo, farm_profile_function, regex, serde_json::Value};
-
-const PACKAGE_REGEX: &str = r"^(?P<group1>[^@][^/]*)|^(?P<group2>@[^/]+/[^/]+)";
+static PACKAGE_REGEX: Lazy<regex::Regex> =
+  Lazy::new(|| regex::Regex::new(r"^(?P<group1>[^@][^/]*)|^(?P<group2>@[^/]+/[^/]+)").unwrap());
 
 pub fn get_field_value_from_package_json_info(
   package_json_info: &PackageJsonInfo,
   field: &str,
 ) -> Option<Value> {
-  let raw_package_json_info = package_json_info.raw_map();
-
-  if let Some(field_value) = raw_package_json_info.get(field) {
-    return Some(field_value.clone());
-  }
-
-  None
+  package_json_info.raw_map().get(field).cloned()
 }
 
 pub fn is_source_relative(source: &str) -> bool {
   // fix: relative path start with .. or ../
-  source.starts_with("./") || source.starts_with("../") || source == "." || source == ".."
+  // source.starts_with("./") || source.starts_with("../") || source == "." || source == ".."
+  source.starts_with('.')
+    && (source.len() == 1 || source.starts_with("./") || source.starts_with(".."))
 }
 
 pub fn is_source_absolute(source: &str) -> bool {
-  if let Ok(sp) = PathBuf::from_str(source) {
-    sp.is_absolute()
-  } else {
-    false
-  }
+  PathBuf::from_str(source).map_or(false, |p| p.is_absolute())
 }
 
 pub fn is_source_dot(source: &str) -> bool {
@@ -46,26 +39,17 @@ pub struct ParsePackageSourceResult {
 
 pub fn parse_package_source(source: &str) -> Option<ParsePackageSourceResult> {
   farm_profile_function!("get_sub_path_of_source".to_string());
+  let source = source.split('?').next()?;
+  let captures = PACKAGE_REGEX.captures(source)?;
+  let package_name = captures
+    .name("group1")
+    .or_else(|| captures.name("group2"))
+    .map_or(source, |m| m.as_str());
 
-  // clean query of source
-  let source = source.split('?').collect::<Vec<&str>>()[0];
-
-  let regex = regex::Regex::new(PACKAGE_REGEX).unwrap();
-  let captures = regex.captures(source)?;
-
-  let package_name = if let Some(group1) = captures.name("group1") {
-    group1.as_str()
-  } else if let Some(group2) = captures.name("group2") {
-    group2.as_str()
-  } else {
-    source
-  };
-
-  let sub_path = if package_name == source {
-    None
-  } else {
-    Some(format!(".{}", source.strip_prefix(package_name).unwrap()))
-  };
+  let sub_path = source
+    .strip_prefix(package_name)
+    .map(|s| format!(".{}", s))
+    .filter(|_| package_name != source);
 
   Some(ParsePackageSourceResult {
     package_name: package_name.to_string(),

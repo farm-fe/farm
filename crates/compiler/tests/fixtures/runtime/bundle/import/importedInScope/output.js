@@ -43,11 +43,11 @@
     return (_getRequireWildcardCache = function(nodeInterop) {
         return nodeInterop ? cacheNodeInterop : cacheBabelInterop;
     })(nodeInterop);
-}const hello$5 = "hello1";
-const hello$1 = "hello";
+}const hello$5 = 'hello1';
+const hello$1 = 'hello';
 console.log(hello$5, hello$1);
 function export_nested() {
-    const hello = "hello";
+    const hello = 'hello';
     console.log(hello);
 }
 
@@ -63,6 +63,6 @@ function say() {
     }
 }
 say();
-(globalThis || window || global)["__farm_default_namespace__"].__farm_module_system__.setPlugins([]);
+(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setPlugins([]);
 (function(_){for(var r in _){_[r].__farm_resource_pot__='index_dcdc.js';(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.register(r,_[r])}})({"b5d64806":function  (module, exports, farmRequire, farmDynamicRequire) {}
 ,});(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setInitialLoadedResources([]);(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setDynamicModuleResourcesMap({  });var farmModuleSystem = (globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__;farmModuleSystem.bootstrap();var entry = farmModuleSystem.require("b5d64806");

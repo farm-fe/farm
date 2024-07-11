@@ -76,14 +76,14 @@
 import * as node_fs_ns from "node:fs.farm-runtime";
 var cjsExport_ts_cjs = __commonJs({
     "cjsExport.ts.farm-runtime": (module, exports)=>{
-        module.exports.name = "shulan";
+        module.exports.name = 'shulan';
         module.exports.age = 18;
-        module.exports.default = "default";
+        module.exports.default = 'default';
     }
 });
 
 // module_id: esmExport.ts.farm-runtime
-const esmName = "esmName";
+const esmName = 'esmName';
 const esmAge = 18;
 var esmExport_ts_ns = {
     esmAge: esmAge,
@@ -125,7 +125,7 @@ var cjsExportEsm_ts_cjs = __commonJs({
         });
         _export_star(esmExport_ts_ns, exports);
         var _esmExport2 = _interop_require_wildcard(esmExport2_ts_ns);
-        module.exports.cjs_export_esm = "shulan";
+        module.exports.cjs_export_esm = 'shulan';
     }
 });
 
@@ -140,6 +140,6 @@ var export_ts_ns = _mergeNamespaces({
 
 // module_id: runtime.ts.farm-runtime
 console.log(export_ts_ns);
-(globalThis || window || global)["__farm_default_namespace__"].__farm_module_system__.setPlugins([]);
+(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setPlugins([]);
 (function(_){for(var r in _){_[r].__farm_resource_pot__='index_dcdc.js';(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.register(r,_[r])}})({"index.ts":function  (module, exports, farmRequire, farmDynamicRequire) {}
 ,});(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setInitialLoadedResources([]);(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setDynamicModuleResourcesMap({  });var farmModuleSystem = (globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__;farmModuleSystem.bootstrap();var entry = farmModuleSystem.require("index.ts");

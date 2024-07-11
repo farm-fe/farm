@@ -61,18 +61,18 @@
   };
 }((function(){var index_js_cjs = __commonJs((module, exports)=>{
     "use strict";
-    console.log("runtime/index.js")(globalThis || window || global)["__farm_default_namespace__"].__farm_module_system__.setPlugins([]);
+    console.log('runtime/index.js')(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setPlugins([]);
 });
 })());(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setExternalModules({"module": ((globalThis||window||{})['module']||{}).default && !((globalThis||window||{})['module']||{}).__esModule ? {...((globalThis||window||{})['module']||{}),__esModule:true} : ({...(globalThis||window||{})['module']||{}})});(function(_){for(var r in _){_[r].__farm_resource_pot__='index_7f1c.js';(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.register(r,_[r])}})({"052dab48":function  (module, exports, farmRequire, farmDynamicRequire) {
     module._m(exports);
     exports.default = {
-        main: "./main.tsx"
+        main: './main.tsx'
     };
 }
 ,
 "b5d64806":function  (module, exports, farmRequire, farmDynamicRequire) {
     module._m(exports);
-    var _f_module = farmRequire("module");
+    var _f_module = farmRequire('module');
     var _f_config = farmRequire("edceee38");
     var _f_util = module.i(farmRequire("052dab48"));
     exports.default = _f_config.defineFarmConfig({

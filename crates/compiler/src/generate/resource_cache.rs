@@ -26,7 +26,7 @@ pub fn get_resource_cache_key(
     }
 
     // if tree shaking is not enabled, we don't need to cache used_exports
-    if context.config.tree_shaking {
+    if context.config.tree_shaking.enabled() {
       code.push_str(&module.used_exports.join(","));
     }
   }

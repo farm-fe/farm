@@ -44,24 +44,24 @@
         return nodeInterop ? cacheNodeInterop : cacheBabelInterop;
     })(nodeInterop);
 }function addClass() {
-    console.log("addClass");
+    console.log('addClass');
 }
 
 class AddClass {
     constructor(){
-        console.log("addClass");
+        console.log('addClass');
     }
 }
 
 var _addClass = function addClass$1() {
-    console.log("addClass");
+    console.log('addClass');
     addClass();
 };
-var _AddClass = class AddClass$1 {
+var _AddClass = (class AddClass$1 {
     constructor(){
-        console.log("addClass");
+        console.log('addClass');
         new AddClass();
     }
-}(globalThis || window || global)["__farm_default_namespace__"].__farm_module_system__.setPlugins([]);
+})(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setPlugins([]);
 (function(_){for(var r in _){_[r].__farm_resource_pot__='index_dcdc.js';(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.register(r,_[r])}})({"b5d64806":function  (module, exports, farmRequire, farmDynamicRequire) {}
 ,});(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setInitialLoadedResources([]);(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setDynamicModuleResourcesMap({  });var farmModuleSystem = (globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__;farmModuleSystem.bootstrap();var entry = farmModuleSystem.require("b5d64806");

@@ -63,7 +63,7 @@
 var index_js_cjs = __commonJs({
     "../../_internal/runtime/index.js.farm-runtime": (module, exports)=>{
         "use strict";
-        console.log("runtime/index.js")(globalThis || window || global)["__farm_default_namespace__"].__farm_module_system__.setPlugins([]);
+        console.log('runtime/index.js')(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setPlugins([]);
     }
 });
 })());(function(_){for(var r in _){_[r].__farm_resource_pot__='index_ddf1.js';(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.register(r,_[r])}})({"dep.ts":function  (module, exports, farmRequire, farmDynamicRequire) {
@@ -76,10 +76,10 @@ var index_js_cjs = __commonJs({
     });
     if (module.meta.hot) {
         module.meta.hot.accept(()=>{
-            module.meta.hot.invalidate("parent module should accept this");
+            module.meta.hot.invalidate('parent module should accept this');
         });
     }
-    var a = "1";
+    var a = '1';
     function invalidate() {
         return `invalidate data`;
     }
@@ -92,15 +92,15 @@ var index_js_cjs = __commonJs({
     });
     var _f_dep = farmRequire("dep.ts");
     console.log(_f_dep.a);
-    const id = "InvalidateParent";
+    const id = 'InvalidateParent';
     function InvalidateParent() {
         return {
             render: ()=>{
                 const renderData = _f_dep.invalidate();
-                const div = document.createElement("div", {});
+                const div = document.createElement('div', {});
                 div.id = id;
                 div.innerText = renderData;
-                div.className = "box";
+                div.className = 'box';
                 return div;
             }
         };

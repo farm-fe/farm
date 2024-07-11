@@ -9,14 +9,32 @@ export default (<Plugin>{
     this._moduleSystem = system;
   },
   moduleCreated(module) {
-    module.meta.env = {
-      ...((FARM_PROCESS_ENV) ?? {}),
-      dev: process.env.NODE_ENV === 'development',
-      prod: process.env.NODE_ENV === 'production'
-    };
-    const publicPath = this._moduleSystem.publicPaths?.[0] || '';
-
+    const publicPath = this._moduleSystem.publicPaths?.[0] || "";
+    const isSSR = this._moduleSystem.targetEnv === "node";
     const { location } = __global_this__;
+
+    let baseUrl;
+    try {
+      baseUrl = (
+        location
+          ? new URL(
+              publicPath,
+              `${location.protocol}//${location.host}`,
+            )
+          : new URL(module.resource_pot)
+      ).pathname;
+    } catch (_) {
+      baseUrl = '/';
+    }
+
+    module.meta.env = {
+      ...(FARM_PROCESS_ENV ?? {}),
+      dev: process.env.NODE_ENV === 'development',
+      prod: process.env.NODE_ENV === 'production',
+      BASE_URL: baseUrl,
+      SSR: isSSR,
+    };
+
     const url = location
       ? `${location.protocol}//${location.host}${publicPath.replace(
         /\/$/,

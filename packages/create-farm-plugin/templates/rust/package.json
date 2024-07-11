@@ -23,9 +23,9 @@
   },
   "exports": {
     ".": {
-      "import": "./scripts/index.js",
-      "require": "./scripts/index.js",
-      "types": "./scripts/index.d.ts"
+      "import": "./scripts/func.js",
+      "types": "./scripts/index.d.ts",
+      "default": "./scripts/index.js"
     },
     "./package.json": "./package.json"
   },
@@ -37,6 +37,7 @@
     "prepublishOnly": "farm-plugin-tools prepublish"
   },
   "files": [
-    "scripts"
+    "scripts",
+    "options.d.ts"
   ]
 }

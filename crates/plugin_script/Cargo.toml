@@ -15,21 +15,26 @@ farmfe_toolkit = { path = "../toolkit", version = "0.0.9" }
 farmfe_testing_helpers = { path = "../testing_helpers", version = "0.0.9" }
 farmfe_utils = { path = "../utils", version = "0.1.4" }
 farmfe_swc_transformer_import_glob = { path = "../swc_transformer_import_glob", version = "0.0.7" }
-swc_plugin_proxy = { version = "0.39.10", features = [
+swc_plugin_proxy = { version = "0.44.2", features = [
   "plugin-rt",
 ], optional = true }
-swc_plugin_runner = { version = "0.104.25", features = [
+swc_plugin_runner = { version = "0.109.1", features = [
   "ecma",
   "rkyv-impl",
   "plugin_transform_schema_v1",
   "plugin_transform_host_native",
 ], optional = true }
-swc_ecma_loader = { version = "0.45.10", features = [
+swc_ecma_loader = { version = "0.46.1", features = [
   "cache",
   "node",
   "tsc",
 ], optional = true }
 once_cell = { version = "1.10.0", optional = true }
+tokio = { features = [
+  "rt",
+  "rt-multi-thread",
+], version = "1", default-features = false, optional = true }
+
 
 [features]
 swc_plugin = [
@@ -37,4 +42,5 @@ swc_plugin = [
   "dep:swc_plugin_runner",
   "dep:swc_ecma_loader",
   "dep:once_cell",
+  "dep:tokio",
 ]

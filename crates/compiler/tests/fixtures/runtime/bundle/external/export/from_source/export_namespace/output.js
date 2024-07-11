@@ -45,15 +45,15 @@
     })(nodeInterop);
 }// module_id: exportNamespace.ts.farm-runtime
 var node_fs_ns = _interop_require_wildcard(require("node:fs.farm-runtime"));
-console.log("export namespace");
+console.log('export namespace');
 var exportNamespace_ts_ns = {
     "fs": node_fs_ns,
     __esModule: true
 };
 
 // module_id: bundle2-dep.ts.farm-runtime
-const bundle2A = "bundle2A";
-const bundle2B = "bundle2B";
+const bundle2A = 'bundle2A';
+const bundle2B = 'bundle2B';
 var bundle2_dep_ts_ns = {
     bundle2A: bundle2A,
     bundle2B: bundle2B,
@@ -68,6 +68,6 @@ var bundle2_index_ts_ns = {
 };
 
 // module_id: runtime.ts.farm-runtime
-(globalThis || window || global)["__farm_default_namespace__"].__farm_module_system__.setPlugins([]);
+(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setPlugins([]);
 (function(_){for(var r in _){_[r].__farm_resource_pot__='file://'+__filename;(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.register(r,_[r])}})({"index.ts":function  (module, exports, farmRequire, farmDynamicRequire) {}
 ,});(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setInitialLoadedResources([]);(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setDynamicModuleResourcesMap({  });var farmModuleSystem = (globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__;farmModuleSystem.bootstrap();var entry = farmModuleSystem.require("index.ts");

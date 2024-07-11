@@ -1,7 +1,6 @@
 use std::{collections::HashMap, ffi::OsStr};
 
 use farmfe_core::{
-  module::ModuleId,
   regex::Regex,
   swc_common::{util::take::Take, Mark, DUMMY_SP},
   swc_ecma_ast::{
@@ -29,7 +28,6 @@ struct ExportModuleItem {
 }
 
 pub struct TransformModuleDeclsOptions {
-  pub module_id: ModuleId,
   pub is_target_legacy: bool,
 }
 
@@ -954,7 +952,6 @@ export * from './e';
         &mut ast,
         Mark::new(),
         TransformModuleDeclsOptions {
-          module_id: "any".into(),
           is_target_legacy: true,
         },
       );
@@ -1049,7 +1046,6 @@ export const f = 1, h = 2;
         &mut ast,
         Mark::new(),
         TransformModuleDeclsOptions {
-          module_id: "any".into(),
           is_target_legacy: false,
         },
       );

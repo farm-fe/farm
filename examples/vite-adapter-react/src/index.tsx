@@ -8,6 +8,7 @@ const container = document.querySelector('#root');
 const root = createRoot(container);
 
 function App() {
+  console.log('this is a react app');
   return <Suspense fallback={<p>Loading...</p>}>{useRoutes(routes)}</Suspense>;
 }
 

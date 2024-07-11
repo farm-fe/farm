@@ -61,16 +61,16 @@
   };
 }((function(){var index_js_cjs = __commonJs((module, exports)=>{
     "use strict";
-    console.log("runtime/index.js")(globalThis || window || global)["__farm_default_namespace__"].__farm_module_system__.setPlugins([]);
+    console.log('runtime/index.js')(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setPlugins([]);
 });
 })());(function(_){for(var r in _){_[r].__farm_resource_pot__='index_5de5.js';(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.register(r,_[r])}})({"6f462555":function  (module, exports, farmRequire, farmDynamicRequire) {
     module._m(exports);
     "";
-    exports.default = "comp";
+    exports.default = 'comp';
 }
 ,
 "b3d9bc98":function  (module, exports, farmRequire, farmDynamicRequire) {
-    console.log("resolved.ts");
+    console.log('resolved.ts');
 }
 ,
 "b5d64806":function  (module, exports, farmRequire, farmDynamicRequire) {
