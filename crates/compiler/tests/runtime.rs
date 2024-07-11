@@ -40,7 +40,7 @@ fn test(file: String, crate_path: String) {
       config.input = HashMap::from_iter(vec![(entry_name.clone(), file)]);
 
       config.minify = Box::new(BoolOrObj::Bool(false));
-      config.tree_shaking = false;
+      config.tree_shaking = Box::new(BoolOrObj::Bool(false));
 
       config.external = vec![ConfigRegex::new("(^node:.*)"), ConfigRegex::new("^fs$")];
       config.output.target_env = TargetEnv::Node;

@@ -1,6 +1,6 @@
 use farmfe_compiler::Compiler;
 use farmfe_core::{
-  config::{Config, RuntimeConfig},
+  config::{bool_or_obj::BoolOrObj, Config, RuntimeConfig},
   plugin::UpdateType,
   relative_path::RelativePath,
 };
@@ -36,7 +36,7 @@ fn main() {
         swc_helpers_path,
         ..Default::default()
       }),
-      tree_shaking: false,
+      tree_shaking: Box::new(BoolOrObj::Bool(false)),
       ..Default::default()
     },
     vec![],
