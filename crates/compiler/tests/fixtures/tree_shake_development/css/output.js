@@ -63,7 +63,7 @@
 var index_js_cjs = __commonJs({
     "../../_internal/runtime/index.js.farm-runtime": (module, exports)=>{
         "use strict";
-        console.log("runtime/index.js")(globalThis || window || global)["__farm_default_namespace__"].__farm_module_system__.setPlugins([]);
+        console.log('runtime/index.js')(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setPlugins([]);
     }
 });
 })());(function(_){for(var r in _){_[r].__farm_resource_pot__='index_4246.js';(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.register(r,_[r])}})({"index.ts":function  (module, exports, farmRequire, farmDynamicRequire) {
@@ -81,10 +81,10 @@ var index_js_cjs = __commonJs({
     farmRequire("style/b.css");
     const cssCode = `
 `;
-    const farmId = "style/a.css";
+    const farmId = 'style/a.css';
     const previousStyle = document.querySelector(`style[data-farm-id="${farmId}"]`);
-    const style = document.createElement("style");
-    style.setAttribute("data-farm-id", farmId);
+    const style = document.createElement('style');
+    style.setAttribute('data-farm-id', farmId);
     style.innerHTML = cssCode;
     if (previousStyle) {
         previousStyle.replaceWith(style);
@@ -106,10 +106,10 @@ var index_js_cjs = __commonJs({
   background: url("/logo-73d4a8.png");
 }
 `;
-    const farmId = "style/b.css";
+    const farmId = 'style/b.css';
     const previousStyle = document.querySelector(`style[data-farm-id="${farmId}"]`);
-    const style = document.createElement("style");
-    style.setAttribute("data-farm-id", farmId);
+    const style = document.createElement('style');
+    style.setAttribute('data-farm-id', farmId);
     style.innerHTML = cssCode;
     if (previousStyle) {
         previousStyle.replaceWith(style);

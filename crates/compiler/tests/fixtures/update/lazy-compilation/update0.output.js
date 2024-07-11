@@ -1,6 +1,6 @@
 ({"dep.ts":function  (module, exports, farmRequire, farmDynamicRequire) {
     module._m(exports);
-    exports.default = "dep";
+    exports.default = 'dep';
 }
 ,
 "dep.ts.farm_dynamic_import_virtual_module":function  (module, exports, farmRequire, farmDynamicRequire) {

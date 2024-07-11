@@ -10,6 +10,7 @@ use farmfe_core::{
   context::CompilationContext,
   farm_profile_function,
   plugin::ResolveKind,
+  rayon::iter::{IntoParallelRefIterator, ParallelIterator},
   regex,
   serde_json::Value,
 };
@@ -247,18 +248,10 @@ fn loop_value(
       Some(vec![s])
     }
     Value::Array(values) => {
-      let arr_result = result.clone().unwrap_or_else(|| HashSet::new());
-      for item in values {
-        if let Some(item_result) = loop_value(item, conditions, &mut Some(arr_result.clone())) {
-          return Some(item_result);
-        }
-      }
-
-      if result.is_none() && !arr_result.is_empty() {
-        return Some(arr_result.into_iter().collect());
-      } else {
-        None
-      }
+      let arr_result = result.clone().unwrap_or_else(HashSet::new);
+      values
+        .par_iter()
+        .find_map_first(|item| loop_value(item.clone(), conditions, &mut Some(arr_result.clone())))
     }
     Value::Object(map) => {
       for (condition, val) in map.iter() {
@@ -274,17 +267,16 @@ fn loop_value(
 }
 
 fn throws(name: &str, entry: &str, condition: Option<i32>) {
-  let message = if let Some(cond) = condition {
-    if cond != 0 {
+  let message = match condition {
+    Some(cond) if cond != 0 => {
       format!(
         "No known conditions for \"{}\" specifier in \"{}\" package",
         entry, name
       )
-    } else {
+    }
+    _ => {
       format!("Missing \"{}\" specifier in \"{}\" package", entry, name)
     }
-  } else {
-    format!("Missing \"{}\" specifier in \"{}\" package", entry, name)
   };
   eprintln!("{}", message);
 }
@@ -336,7 +328,7 @@ fn walk(
     }
 
     if let Some(longest_key) = longest {
-      m = mapping.get(&longest_key.to_string());
+      m = mapping.get(longest_key);
     }
   }
   if m.is_none() {

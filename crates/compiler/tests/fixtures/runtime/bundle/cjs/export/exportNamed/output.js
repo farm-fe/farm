@@ -62,9 +62,9 @@
 }// module_id: dep.ts.farm-runtime
 var dep_ts_cjs = __commonJs({
     "dep.ts.farm-runtime": (module, exports)=>{
-        module.exports.name = "shulan";
+        module.exports.name = 'shulan';
         module.exports.age = 18;
-        module.exports.default = "default";
+        module.exports.default = 'default';
     }
 });
 var age$1 = dep_ts_cjs()["age"], name = dep_ts_cjs()["name"];
@@ -80,6 +80,6 @@ var export_ts_ns = {
 console.log(export_ts_ns);
 const age = 19;
 const cjsAge = 20;
-(globalThis || window || global)["__farm_default_namespace__"].__farm_module_system__.setPlugins([]);
+(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setPlugins([]);
 (function(_){for(var r in _){_[r].__farm_resource_pot__='index_dcdc.js';(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.register(r,_[r])}})({"index.ts":function  (module, exports, farmRequire, farmDynamicRequire) {}
 ,});(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setInitialLoadedResources([]);(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setDynamicModuleResourcesMap({  });var farmModuleSystem = (globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__;farmModuleSystem.bootstrap();var entry = farmModuleSystem.require("index.ts");

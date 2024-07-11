@@ -37,7 +37,12 @@ import {
 } from '../utils/index.js';
 import { traceDependencies } from '../utils/trace-dependencies.js';
 import { __FARM_GLOBAL__ } from './_global.js';
-import { CompilationMode, loadEnv, setProcessEnv } from './env.js';
+import {
+  CompilationMode,
+  getExistsEnvFiles,
+  loadEnv,
+  setProcessEnv
+} from './env.js';
 import {
   getValidPublicPath,
   normalizeOutput
@@ -477,11 +482,11 @@ export async function normalizeUserCompilationConfig(
   if (resolvedCompilation.script?.plugins?.length) {
     logger.info(
       `Swc plugins are configured, note that Farm uses ${colors.yellow(
-        'swc_core v0.90'
+        'swc_core v0.96'
       )}, please make sure the plugin is ${colors.green(
         'compatible'
       )} with swc_core ${colors.yellow(
-        'swc_core v0.90'
+        'swc_core v0.96'
       )}. Otherwise, it may exit unexpectedly.`
     );
   }
@@ -703,9 +708,12 @@ async function readConfigFile(
           format,
           targetEnv: 'node'
         },
-        external: process.env.FARM_CONFIG_FULL_BUNDLE
-          ? []
-          : ['!^(\\./|\\.\\./|[A-Za-z]:\\\\|/).*'],
+        external: [
+          ...(process.env.FARM_CONFIG_FULL_BUNDLE
+            ? []
+            : ['!^(\\./|\\.\\./|[A-Za-z]:\\\\|/).*']),
+          '^@farmfe/core$'
+        ],
         partialBundling: {
           enforceResources: [
             {
@@ -838,10 +846,14 @@ export async function resolveMergedUserConfig(
     ? resolvedUserConfig.envDir
     : resolvedRootPath;
 
-  const [userEnv, existsEnvFiles] = loadEnv(
+  const userEnv = loadEnv(
     resolvedUserConfig.envMode ?? mode,
     resolvedEnvPath,
     resolvedUserConfig.envPrefix
+  );
+  const existsEnvFiles = getExistsEnvFiles(
+    resolvedUserConfig.envMode ?? mode,
+    resolvedEnvPath
   );
 
   resolvedUserConfig.envFiles = [

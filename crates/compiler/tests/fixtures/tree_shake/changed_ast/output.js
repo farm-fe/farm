@@ -63,7 +63,7 @@
 var index_js_cjs = __commonJs({
     "../../_internal/runtime/index.js.farm-runtime": (module, exports)=>{
         "use strict";
-        console.log("runtime/index.js")(globalThis || window || global)["__farm_default_namespace__"].__farm_module_system__.setPlugins([]);
+        console.log('runtime/index.js')(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setPlugins([]);
     }
 });
 })());(function(_){for(var r in _){_[r].__farm_resource_pot__='index_4924.js';(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.register(r,_[r])}})({"comp.tsx":function  (module, exports, farmRequire, farmDynamicRequire) {
@@ -84,7 +84,7 @@ var index_js_cjs = __commonJs({
         }));
     _c = LazyComp;
     function Description() {
-        console.trace("In Description, the sourcemap should be correct");
+        console.trace('In Description, the sourcemap should be correct');
         return module.f(_f_dep).createElement(_f_dep.Suspense, {
             fallback: module.f(_f_dep).createElement("div", {
                 __source: {
@@ -120,14 +120,14 @@ var index_js_cjs = __commonJs({
         return Suspense;
     });
     var Suspense = function() {
-        console.log("Suspense");
+        console.log('Suspense');
     };
     exports.default = {
         createElement (comp, ...args) {
             console.log(comp(), args);
         },
         lazy: (promise)=>{
-            console.log("lazy", promise);
+            console.log('lazy', promise);
         }
     };
 }

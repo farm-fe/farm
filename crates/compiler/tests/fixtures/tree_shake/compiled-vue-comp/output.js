@@ -61,7 +61,7 @@
   };
 }((function(){var index_js_cjs = __commonJs((module, exports)=>{
     "use strict";
-    console.log("runtime/index.js")(globalThis || window || global)["__farm_default_namespace__"].__farm_module_system__.setPlugins([]);
+    console.log('runtime/index.js')(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setPlugins([]);
 });
 })());(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setExternalModules({"vue": ((globalThis||window||{})['vue']||{}).default && !((globalThis||window||{})['vue']||{}).__esModule ? {...((globalThis||window||{})['vue']||{}),__esModule:true} : ({...(globalThis||window||{})['vue']||{}})});(function(_){for(var r in _){_[r].__farm_resource_pot__='index_236f.js';(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.register(r,_[r])}})({"8cea7e1d":function  (module, exports, farmRequire, farmDynamicRequire) {
     module._m(exports);
@@ -70,13 +70,13 @@
 ,
 "ae8e2392":function  (module, exports, farmRequire, farmDynamicRequire) {
     module._m(exports);
-    var _f_vue = farmRequire("vue");
+    var _f_vue = farmRequire('vue');
     var _f_vue1 = farmRequire("vue");
     const _imports_0 = "URL_ADDRESS";
     const _hoisted_1 = {
         class: "container"
     };
-    const _hoisted_2 = _f_vue1.createStaticVNode('<a href="https://farmfe.org/" target="_blank" data-v-370e85d7><div class="logo1" data-v-370e85d7></div><div class="logo2" data-v-370e85d7></div></a><a href="https://farmfe.org/" target="_blank" data-v-370e85d7><img src="' + _imports_0 + '" class="logo" alt="Farm logo" data-v-370e85d7></a>', 2);
+    const _hoisted_2 = _f_vue1.createStaticVNode("<a href=\"https://farmfe.org/\" target=\"_blank\" data-v-370e85d7><div class=\"logo1\" data-v-370e85d7></div><div class=\"logo2\" data-v-370e85d7></div></a><a href=\"https://farmfe.org/\" target=\"_blank\" data-v-370e85d7><img src=\"" + _imports_0 + "\" class=\"logo\" alt=\"Farm logo\" data-v-370e85d7></a>", 2);
     const _hoisted_4 = {
         href: "https://vuejs.org/",
         target: "_blank"
@@ -84,7 +84,7 @@
     const HelloWorld = _f_vue.defineComponent({});
     const Formatter = _f_vue.defineComponent({});
     exports.default = _f_vue.defineComponent({
-        __name: "index",
+        __name: 'index',
         setup (__props) {
             return (_ctx, _cache)=>{
                 const _component_el_button = _f_vue1.resolveComponent("el-button");
@@ -93,7 +93,7 @@
                 return _f_vue1.openBlock(), _f_vue1.createElementBlock(_f_vue1.Fragment, null, [
                     _f_vue1.createVNode(_component_el_button, {
                         type: "primary",
-                        onClick: _cache[0] || (_cache[0] = ($event)=>_ctx.$router.push("/about"))
+                        onClick: _cache[0] || (_cache[0] = ($event)=>_ctx.$router.push('/about'))
                     }, {
                         default: _f_vue1.withCtx(()=>[
                                 _f_vue1.createTextVNode("to about page")
@@ -114,7 +114,7 @@
                         ])
                     ]),
                     _f_vue1.createVNode(_component_el_config_provider, {
-                        size: "large",
+                        size: 'large',
                         "z-index": 3000
                     }, {
                         default: _f_vue1.withCtx(()=>[
