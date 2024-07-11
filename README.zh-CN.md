@@ -106,7 +106,7 @@ Farm 远快于业界常用的 JS 构建工具，在 benchmark 测试中，Farm �
 
 - 微信交流群
 
-<br><img src="https://github.com/ErKeLost/react-farm/assets/66500121/9780f176-98e6-488d-8118-c3b454737701" width="30%" />
+<br><img src="https://github.com/ErKeLost/react/assets/66500121/3bb8046c-5b79-4f36-98b7-970c118de490" width="30%" />
 
 - QQ 群
 
