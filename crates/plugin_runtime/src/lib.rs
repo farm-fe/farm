@@ -9,11 +9,11 @@ use std::{
 use farmfe_core::{
   config::{
     config_regex::ConfigRegex, external::ExternalConfig,
-    partial_bundling::PartialBundlingEnforceResourceConfig, Config, ModuleFormat, TargetEnv,
+    partial_bundling::PartialBundlingEnforceResourceConfig, Config, Mode, ModuleFormat, TargetEnv,
     FARM_MODULE_SYSTEM,
   },
   context::CompilationContext,
-  enhanced_magic_string::types::SourceMapOptions,
+  enhanced_magic_string::types::{MappingsOptionHires, SourceMapOptions},
   error::CompilationError,
   module::{ModuleId, ModuleType},
   plugin::{
@@ -309,7 +309,7 @@ impl Plugin for FarmPluginRuntime {
             .into_iter()
             .map(
               |(name, source)| if context.config.output.format == ModuleFormat::EsModule {
-                format!("{source:?}: {name} && {name}.default && !{name}.__esModule ? {{...{name},__esModule:true}} : {name}")
+                format!("{source:?}: {name} && {name}.default && !{name}.__esModule ? {{...{name},__esModule:true}} : {{...{name}}}")
               } else {
                 format!("{source:?}: {name}")
               }
@@ -333,7 +333,7 @@ impl Plugin for FarmPluginRuntime {
 
           let source_obj = format!("(globalThis||window||{{}})['{}']||{{}}", replace_source);
           external_objs.push(if context.config.output.format == ModuleFormat::EsModule {
-            format!("{source:?}: ({source_obj}).default && !({source_obj}).__esModule ? {{...({source_obj}),__esModule:true}} : ({source_obj})")
+            format!("{source:?}: ({source_obj}).default && !({source_obj}).__esModule ? {{...({source_obj}),__esModule:true}} : ({{...{source_obj}}})")
           } else {
             format!("{source:?}: {source_obj}")
           });
@@ -377,6 +377,11 @@ impl Plugin for FarmPluginRuntime {
               remap_source: Some(Box::new(move |src| {
                 format!("/{}", farmfe_utils::relative(&root, src))
               })),
+              hires: if matches!(context.config.mode, Mode::Production) {
+                Some(MappingsOptionHires::Boundary)
+              } else {
+                None
+              },
               ..Default::default()
             })
             .map_err(|_| CompilationError::GenerateSourceMapError {
@@ -434,7 +439,9 @@ impl Plugin for FarmPluginRuntime {
     param: &mut PluginFinalizeResourcesHookParams,
     context: &Arc<CompilationContext>,
   ) -> farmfe_core::error::Result<Option<()>> {
-    handle_entry_resources::handle_entry_resources(param.resources_map, context);
+    let async_modules = self.get_async_modules(context);
+    let async_modules = async_modules.downcast_ref::<HashSet<ModuleId>>().unwrap();
+    handle_entry_resources::handle_entry_resources(param.resources_map, context, async_modules);
 
     Ok(Some(()))
   }

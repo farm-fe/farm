@@ -6,8 +6,9 @@ import { isAbsolute, relative } from 'node:path';
 
 import type { Resource } from '@farmfe/runtime/src/resource-loader.js';
 import { Compiler } from '../compiler/index.js';
+import { checkClearScreen } from '../config/index.js';
 import type { JsUpdateResult } from '../types/binding.js';
-import { Logger, bold, clearScreen, cyan, green } from '../utils/index.js';
+import { Logger, bold, cyan, green } from '../utils/index.js';
 import { logError } from './error.js';
 import { Server } from './index.js';
 import { WebSocketClient } from './ws.js';
@@ -70,7 +71,7 @@ export class HmrEngine {
     }
 
     try {
-      clearScreen();
+      checkClearScreen(this._compiler.config.config);
       const start = Date.now();
       const result = await this._compiler.update(queue);
       this._logger.info(
@@ -133,7 +134,7 @@ export class HmrEngine {
         }
       });
     } catch (err) {
-      clearScreen();
+      checkClearScreen(this._compiler.config.config);
       throw new Error(logError(err) as unknown as string);
     }
   };
@@ -170,7 +171,8 @@ export class HmrEngine {
           client.rawSend(`
             {
               type: 'error',
-              err: ${errorStr}
+              err: ${errorStr},
+              overlay: ${this._devServer.config.hmr.overlay}
             }
           `);
         });

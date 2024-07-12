@@ -72,6 +72,30 @@ impl ModuleGraphEdge {
     self.0.iter().all(|item| item.kind.is_dynamic())
   }
 
+  pub fn contains_export_from(&self) -> bool {
+    if self.0.is_empty() {
+      return false;
+    }
+
+    self.0.iter().any(|item| item.kind.is_export_from())
+  }
+
+  pub fn contains_require(&self) -> bool {
+    if self.0.is_empty() {
+      return false;
+    }
+
+    self.0.iter().any(|item| item.kind.is_require())
+  }
+
+  pub fn contains_dynamic(&self) -> bool {
+    if self.0.is_empty() {
+      return false;
+    }
+
+    self.0.iter().any(|item| item.kind.is_dynamic())
+  }
+
   pub fn is_empty(&self) -> bool {
     self.0.is_empty()
   }

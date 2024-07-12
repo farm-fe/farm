@@ -1,6 +1,6 @@
 {
   "name": "@farmfe-examples/css-url",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "private": true,
   "dependencies": {
     "clsx": "^1.2.1",
@@ -12,7 +12,8 @@
     "@farmfe/cli": "workspace:*",
     "@farmfe/core": "workspace:*",
     "@farmfe/js-plugin-postcss": "workspace:^",
-    "@farmfe/plugin-react": "workspace:^1.1.0",
+    "@farmfe/plugin-react": "workspace:*",
+    "@farmfe/plugin-sass": "workspace:*",
     "@types/react": "18",
     "@types/react-dom": "18",
     "react-refresh": "^0.14.0"

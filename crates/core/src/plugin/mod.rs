@@ -195,14 +195,32 @@ pub trait Plugin: Any + Send + Sync {
     Ok(None)
   }
 
-  /// Generate resources based on the [ResourcePot], return [Vec<Resource>] represents the final generated files.
-  /// For example, a .js file and its corresponding source map file
+  /// Generate resources based on the [ResourcePot], return [Resource] and [Option<SourceMap>]
   fn generate_resources(
     &self,
     _resource_pot: &mut ResourcePot,
     _context: &Arc<CompilationContext>,
     _hook_context: &PluginHookContext,
   ) -> Result<Option<PluginGenerateResourcesHookResult>> {
+    Ok(None)
+  }
+
+  /// Process generated resources after the file name of the resource is hashed
+  fn process_generated_resources(
+    &self,
+    _resources: &mut PluginGenerateResourcesHookResult,
+    _context: &Arc<CompilationContext>,
+  ) -> Result<Option<()>> {
+    Ok(None)
+  }
+
+  /// handle entry resource after all resources are generated and processed.
+  /// For example, insert the generated resources into html
+  fn handle_entry_resource(
+    &self,
+    _resource: &mut PluginHandleEntryResourceHookParams,
+    _context: &Arc<CompilationContext>,
+  ) -> Result<Option<()>> {
     Ok(None)
   }
 
@@ -299,6 +317,14 @@ impl ResolveKind {
   pub fn is_dynamic(&self) -> bool {
     matches!(self, ResolveKind::DynamicImport)
       || matches!(self, ResolveKind::Custom(c) if c.starts_with("dynamic:"))
+  }
+
+  pub fn is_export_from(&self) -> bool {
+    matches!(self, ResolveKind::ExportFrom)
+  }
+
+  pub fn is_require(&self) -> bool {
+    matches!(self, ResolveKind::Require)
   }
 }
 
@@ -542,4 +568,11 @@ pub struct PluginDriverRenderResourcePotHookResult {
 pub struct PluginFinalizeResourcesHookParams<'a> {
   pub resources_map: &'a mut HashMap<String, Resource>,
   pub config: &'a Config,
+}
+
+pub struct PluginHandleEntryResourceHookParams<'a> {
+  pub resource: &'a mut Resource,
+  pub module_graph: &'a ModuleGraph,
+  pub module_group_graph: &'a ModuleGroupGraph,
+  pub entry_module_id: &'a ModuleId,
 }

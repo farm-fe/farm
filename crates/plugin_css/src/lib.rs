@@ -29,7 +29,7 @@ use farmfe_core::{
     resource_pot::{RenderedModule, ResourcePot, ResourcePotMetaData, ResourcePotType},
     Resource, ResourceOrigin, ResourceType,
   },
-  serialize,
+  serde_json, serialize,
   swc_css_ast::Stylesheet,
 };
 use farmfe_macro_cache_item::cache_item;
@@ -37,6 +37,7 @@ use farmfe_toolkit::common::{create_swc_source_map, load_source_original_source_
 use farmfe_toolkit::css::ParseCssModuleResult;
 use farmfe_toolkit::lazy_static::lazy_static;
 use farmfe_toolkit::minify::minify_css_module;
+use farmfe_toolkit::resolve::DYNAMIC_EXTENSION_PRIORITY;
 use farmfe_toolkit::script::swc_try_with::try_with;
 use farmfe_toolkit::{
   common::Source,
@@ -109,28 +110,36 @@ impl Plugin for FarmPluginCssResolve {
         param.source.clone()
       };
       // fix #1230
-      let css_suffix = ".css";
-      let extensions = if matches!(param.kind, ResolveKind::CssAtImport) && !source.contains('.') {
-        vec![css_suffix, ""]
-      } else {
-        vec![""]
-      };
-      let resolve_css = |source: String| {
-        for ext in &extensions {
-          let source = format!("{source}{ext}");
-          if let Ok(Some(res)) = context.plugin_driver.resolve(
-            &PluginResolveHookParam {
-              source,
-              ..param.clone()
-            },
-            context,
-            &PluginHookContext {
-              caller: Some("FarmPluginCss".to_string()),
-              meta: Default::default(),
-            },
-          ) {
-            return Some(res);
+      let extensions = if matches!(param.kind, ResolveKind::CssAtImport) {
+        let mut ext = vec!["css"];
+        // fix #1450
+        for e in ["sass", "scss", "less"] {
+          if context.config.resolve.extensions.contains(&e.to_string()) {
+            ext.insert(0, e)
           }
+        }
+
+        ext
+      } else {
+        vec![]
+      };
+
+      let resolve_css = |source: String| {
+        if let Ok(Some(res)) = context.plugin_driver.resolve(
+          &PluginResolveHookParam {
+            source,
+            ..param.clone()
+          },
+          context,
+          &PluginHookContext {
+            caller: Some("FarmPluginCss".to_string()),
+            meta: HashMap::from([(
+              DYNAMIC_EXTENSION_PRIORITY.to_string(),
+              serde_json::to_string(&extensions).unwrap(),
+            )]),
+          },
+        ) {
+          return Some(res);
         }
 
         None
@@ -419,6 +428,7 @@ impl Plugin for FarmPluginCss {
       let meta = ModuleMetaData::Css(CssModuleMetaData {
         ast: css_stylesheet,
         comments,
+        custom: Default::default(),
       });
 
       Ok(Some(meta))
@@ -454,14 +464,14 @@ impl Plugin for FarmPluginCss {
   fn analyze_deps(
     &self,
     param: &mut PluginAnalyzeDepsHookParam,
-    _context: &Arc<CompilationContext>,
+    context: &Arc<CompilationContext>,
   ) -> farmfe_core::error::Result<Option<()>> {
     if param.module.module_type == ModuleType::Css {
       let stylesheet = &param.module.meta.as_css().ast;
       // analyze dependencies:
       // 1. @import './xxx.css'
       // 2. url()
-      let mut dep_analyzer = DepAnalyzer::new();
+      let mut dep_analyzer = DepAnalyzer::new(context.config.resolve.alias.clone());
       stylesheet.visit_with(&mut dep_analyzer);
       param.deps.extend(dep_analyzer.deps);
     }
@@ -562,6 +572,7 @@ impl Plugin for FarmPluginCss {
             &module_graph,
             &resources_map,
             context.config.output.public_path.clone(),
+            context.config.resolve.alias.clone(),
           );
 
           if minify_enabled {
@@ -806,8 +817,14 @@ pub fn source_replace(
   module_graph: &ModuleGraph,
   resources_map: &HashMap<String, Resource>,
   public_path: String,
+  alias: HashMap<String, String>,
 ) {
-  let mut source_replacer =
-    SourceReplacer::new(module_id.clone(), module_graph, resources_map, public_path);
+  let mut source_replacer = SourceReplacer::new(
+    module_id.clone(),
+    module_graph,
+    resources_map,
+    public_path,
+    alias,
+  );
   stylesheet.visit_mut_with(&mut source_replacer);
 }

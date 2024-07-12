@@ -101,19 +101,19 @@ var Trigger = function(_super) {
                 popupEventProps.onMouseLeave = this.onPopupMouseLeave;
             }
         } else {
-            mergeProps.onMouseEnter = this.triggerOriginEvent("onMouseEnter");
-            mergeProps.onMouseLeave = this.triggerOriginEvent("onMouseLeave");
+            mergeProps.onMouseEnter = this.triggerOriginEvent('onMouseEnter');
+            mergeProps.onMouseLeave = this.triggerOriginEvent('onMouseLeave');
         }
         if (this.isContextMenuTrigger() && !disabled) {
             mergeProps.onContextMenu = this.onContextMenu;
             mergeProps.onClick = this.hideContextMenu;
         } else {
-            mergeProps.onContextMenu = this.triggerOriginEvent("onContextMenu");
+            mergeProps.onContextMenu = this.triggerOriginEvent('onContextMenu');
         }
         if (this.isClickTrigger() && !disabled) {
             mergeProps.onClick = this.onClick;
         } else {
-            mergeProps.onClick = mergeProps.onClick || this.triggerOriginEvent("onClick");
+            mergeProps.onClick = mergeProps.onClick || this.triggerOriginEvent('onClick');
         }
         if (this.isFocusTrigger() && !disabled) {
             mergeProps.onFocus = this.onFocus;
@@ -121,13 +121,13 @@ var Trigger = function(_super) {
                 mergeProps.onBlur = this.onBlur;
             }
         } else {
-            mergeProps.onFocus = this.triggerOriginEvent("onFocus");
-            mergeProps.onBlur = this.triggerOriginEvent("onBlur");
+            mergeProps.onFocus = this.triggerOriginEvent('onFocus');
+            mergeProps.onBlur = this.triggerOriginEvent('onBlur');
         }
         if (!disabled) {
             mergeProps.onKeyDown = this.onKeyDown;
         } else {
-            mergeProps.onKeyDown = this.triggerOriginEvent("onKeyDown");
+            mergeProps.onKeyDown = this.triggerOriginEvent('onKeyDown');
         }
         var child = this.getChild();
         var popupChildren = React.Children.only(popup());
@@ -143,8 +143,6 @@ var Trigger = function(_super) {
     };
     return Trigger$1;
 };
-(globalThis || window || global)["__farm_default_namespace__"].__farm_module_system__.setPlugins([]);
-(function(_){for(var r in _){_[r].__farm_resource_pot__='index_dcdc.js';(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.register(r,_[r])}})({"b5d64806":function  (module, exports, farmRequire, farmDynamicRequire) {
-    "use strict";
-}
+(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setPlugins([]);
+(function(_){for(var r in _){_[r].__farm_resource_pot__='index_dcdc.js';(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.register(r,_[r])}})({"b5d64806":function  (module, exports, farmRequire, farmDynamicRequire) {}
 ,});(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setInitialLoadedResources([]);(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setDynamicModuleResourcesMap({  });var farmModuleSystem = (globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__;farmModuleSystem.bootstrap();var entry = farmModuleSystem.require("b5d64806");

@@ -24,7 +24,7 @@ use farmfe_core::{
     resource_pot::{ResourcePot, ResourcePotType},
     Resource, ResourceOrigin, ResourceType,
   },
-  swc_common::{Mark, GLOBALS},
+  swc_common::{comments::SingleThreadedComments, Mark, GLOBALS},
   swc_ecma_ast::EsVersion,
 };
 use farmfe_swc_transformer_import_glob::transform_import_meta_glob;
@@ -50,6 +50,9 @@ mod import_meta_visitor;
 #[cfg(feature = "swc_plugin")]
 mod swc_plugins;
 mod swc_script_transforms;
+mod transform_import_meta_url;
+
+use transform_import_meta_url::transform_url_with_import_meta_url;
 
 /// ScriptPlugin is used to support compiling js/ts/jsx/tsx/... files, support loading, parse, analyze dependencies and code generation.
 /// Note that we do not do transforms here, the transforms (e.g. strip types, jsx...) are handled in a separate plugin (farmfe_plugin_swc_transforms).
@@ -130,6 +133,7 @@ impl Plugin for FarmPluginScript {
           hmr_self_accepted: false,
           hmr_accepted_deps: Default::default(),
           comments: CommentsMetaData::from(comments),
+          custom: Default::default(),
         };
 
         Ok(Some(ModuleMetaData::Script(meta)))
@@ -176,7 +180,9 @@ impl Plugin for FarmPluginScript {
 
     if param.module_type.is_script() {
       // transform vite-style `import.meta.glob`
-      let ast = &mut param.meta.as_script_mut().ast;
+      let script = param.meta.as_script_mut();
+      let comments: SingleThreadedComments = script.take_comments().into();
+      let ast = &mut script.ast;
       let resolved_path = param.module_id.resolved_path(&context.config.root);
       let cur_dir = if resolved_path.starts_with(VIRTUAL_MODULE_PREFIX) {
         context.config.root.clone()
@@ -187,12 +193,14 @@ impl Plugin for FarmPluginScript {
           .to_string_lossy()
           .to_string()
       };
+      transform_url_with_import_meta_url(ast, &comments);
       transform_import_meta_glob(
         ast,
         context.config.root.clone(),
         cur_dir,
         &context.config.resolve.alias,
       )?;
+      script.set_comments(comments.into())
     }
 
     Ok(Some(()))

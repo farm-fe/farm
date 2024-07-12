@@ -61,7 +61,7 @@
   };
 }((function(){var index_js_cjs = __commonJs((module, exports)=>{
     "use strict";
-    console.log("runtime/index.js")(globalThis || window || global)["__farm_default_namespace__"].__farm_module_system__.setPlugins([]);
+    console.log('runtime/index.js')(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setPlugins([]);
 });
 })());(function(_){for(var r in _){_[r].__farm_resource_pot__='index_51e4.js';(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.register(r,_[r])}})({"4ef5be87":function  (module, exports, farmRequire, farmDynamicRequire) {
     module.exports = {
@@ -70,62 +70,47 @@
 }
 ,
 "abc9a879":function  (module, exports, farmRequire, farmDynamicRequire) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", {
-        value: true
+    module._m(exports);
+    module.o(exports, "Argument", function() {
+        return Argument;
     });
-    function _export(target, all) {
-        for(var name in all)Object.defineProperty(target, name, {
-            enumerable: true,
-            get: all[name]
-        });
-    }
-    _export(exports, {
-        Argument: function() {
-            return Argument;
-        },
-        Command: function() {
-            return Command;
-        },
-        CommanderError: function() {
-            return CommanderError;
-        },
-        Help: function() {
-            return Help;
-        },
-        InvalidArgumentError: function() {
-            return InvalidArgumentError;
-        },
-        InvalidOptionArgumentError: function() {
-            return InvalidOptionArgumentError;
-        },
-        Option: function() {
-            return Option;
-        },
-        createArgument: function() {
-            return createArgument;
-        },
-        createCommand: function() {
-            return createCommand;
-        },
-        createOption: function() {
-            return createOption;
-        },
-        program: function() {
-            return program;
-        }
+    module.o(exports, "Command", function() {
+        return Command;
     });
-    var _interop_require_default = farmRequire("@swc/helpers/_/_interop_require_default");
-    var _command = _interop_require_default._(farmRequire("4ef5be87"));
-    const { program, createCommand, createArgument, createOption, CommanderError, InvalidArgumentError, InvalidOptionArgumentError, Command, Argument, Option, Help } = _command.default;
+    module.o(exports, "CommanderError", function() {
+        return CommanderError;
+    });
+    module.o(exports, "Help", function() {
+        return Help;
+    });
+    module.o(exports, "InvalidArgumentError", function() {
+        return InvalidArgumentError;
+    });
+    module.o(exports, "InvalidOptionArgumentError", function() {
+        return InvalidOptionArgumentError;
+    });
+    module.o(exports, "Option", function() {
+        return Option;
+    });
+    module.o(exports, "createArgument", function() {
+        return createArgument;
+    });
+    module.o(exports, "createCommand", function() {
+        return createCommand;
+    });
+    module.o(exports, "createOption", function() {
+        return createOption;
+    });
+    module.o(exports, "program", function() {
+        return program;
+    });
+    var _f_command = module.i(farmRequire("4ef5be87"));
+    var { program, createCommand, createArgument, createOption, CommanderError, InvalidArgumentError, InvalidOptionArgumentError, Command, Argument, Option, Help } = module.f(_f_command);
 }
 ,
 "b5d64806":function  (module, exports, farmRequire, farmDynamicRequire) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", {
-        value: true
-    });
-    var _esm = farmRequire("abc9a879");
-    (0, _esm.program)();
+    module._m(exports);
+    var _f_esm = farmRequire("abc9a879");
+    _f_esm.program();
 }
 ,});(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setInitialLoadedResources([]);(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setDynamicModuleResourcesMap({  });var farmModuleSystem = (globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__;farmModuleSystem.bootstrap();var entry = farmModuleSystem.require("b5d64806");

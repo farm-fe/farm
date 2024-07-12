@@ -1,7 +1,11 @@
 use std::sync::Arc;
 
-use farmfe_core::{config::{Config, OutputConfig}, context::CompilationContext, plugin::ResolveKind};
-use farmfe_plugin_resolve::resolver::Resolver;
+use farmfe_core::{
+  config::{Config, OutputConfig},
+  context::CompilationContext,
+  plugin::ResolveKind,
+};
+use farmfe_plugin_resolve::resolver::{ResolveOptions, Resolver};
 use farmfe_testing_helpers::fixture;
 
 #[test]
@@ -16,6 +20,7 @@ fn resolve_exports_basic() {
         "basic",
         cwd.clone(),
         &ResolveKind::Import,
+        &ResolveOptions::default(),
         &Arc::new(CompilationContext::default()),
       );
       assert!(resolved.is_some());
@@ -46,6 +51,7 @@ fn resolve_exports_replace() {
         "replace/submodule.js",
         cwd.clone(),
         &ResolveKind::Import,
+        &ResolveOptions::default(),
         &Arc::new(CompilationContext::default()),
       );
       assert!(resolved.is_some());
@@ -65,6 +71,7 @@ fn resolve_exports_replace() {
         "replace/lib/basic-exports.js",
         cwd.clone(),
         &ResolveKind::Import,
+        &ResolveOptions::default(),
         &Arc::new(CompilationContext::default()),
       );
       assert!(resolved.is_some());
@@ -84,6 +91,7 @@ fn resolve_exports_replace() {
         "replace",
         cwd.clone(),
         &ResolveKind::Import,
+        &ResolveOptions::default(),
         &Arc::new(CompilationContext::default()),
       );
       assert!(resolved.is_some());
@@ -103,6 +111,7 @@ fn resolve_exports_replace() {
         "replace/feature",
         cwd.clone(),
         &ResolveKind::Import,
+        &ResolveOptions::default(),
         &Arc::new(CompilationContext::default()),
       );
       assert!(resolved.is_some());
@@ -133,6 +142,7 @@ fn resolve_exports_nesting() {
         "nesting/config",
         cwd.clone(),
         &ResolveKind::Import,
+        &ResolveOptions::default(),
         &Arc::new(CompilationContext::default()),
       );
       assert!(resolved.is_some());
@@ -163,6 +173,7 @@ fn resolve_exports_nesting_default() {
         "nest-resolve",
         cwd.clone(),
         &ResolveKind::Import,
+        &ResolveOptions::default(),
         &Arc::new(CompilationContext::default()),
       );
       assert!(resolved.is_some());
@@ -192,6 +203,7 @@ fn resolve_exports_degrade() {
         "degrade",
         cwd.clone(),
         &ResolveKind::Import,
+        &ResolveOptions::default(),
         &Arc::new(CompilationContext::default()),
       );
       assert!(resolved.is_some());
@@ -221,6 +233,7 @@ fn resolve_exports_direct_analysis() {
         "direct-analysis/module",
         cwd.clone(),
         &ResolveKind::Import,
+        &ResolveOptions::default(),
         &Arc::new(CompilationContext::default()),
       );
       assert!(resolved.is_some());
@@ -239,6 +252,7 @@ fn resolve_exports_direct_analysis() {
         "direct-analysis",
         cwd.clone(),
         &ResolveKind::Import,
+        &ResolveOptions::default(),
         &Arc::new(CompilationContext::default()),
       );
       assert!(resolved.is_some());
@@ -268,6 +282,7 @@ fn resolve_no_fields() {
         "no-fields",
         cwd.clone(),
         &ResolveKind::Import,
+        &ResolveOptions::default(),
         &Arc::new(CompilationContext::default()),
       );
       assert!(resolved.is_some());
@@ -298,6 +313,7 @@ fn resolve_priority() {
         "priority",
         cwd.clone(),
         &ResolveKind::Import,
+        &ResolveOptions::default(),
         &Arc::new(CompilationContext::default()),
       );
       assert!(resolved.is_some());
@@ -327,6 +343,7 @@ fn resolve_exports_require() {
         "nesting-require",
         cwd.clone(),
         &ResolveKind::Require,
+        &ResolveOptions::default(),
         &Arc::new(CompilationContext::default()),
       );
       assert!(resolved.is_some());
@@ -359,6 +376,7 @@ fn resolve_exports_import_require() {
         "require-import/config",
         cwd.clone(),
         &ResolveKind::Import,
+        &ResolveOptions::default(),
         &Arc::new(CompilationContext::default()),
       );
       assert!(resolved.is_some());
@@ -378,6 +396,7 @@ fn resolve_exports_import_require() {
         "require-import/config",
         cwd.clone(),
         &ResolveKind::Require,
+        &ResolveOptions::default(),
         &Arc::new(CompilationContext::default()),
       );
       assert!(resolved.is_some());
@@ -408,6 +427,7 @@ fn resolve_exports_jsnext() {
         "resolve-jsnext",
         cwd.clone(),
         &ResolveKind::Import,
+        &ResolveOptions::default(),
         &Arc::new(CompilationContext::default()),
       );
       assert!(resolved.is_some());
@@ -437,6 +457,7 @@ fn resolve_exports_issue_997() {
         "@issues/997/query/react",
         cwd.clone(),
         &ResolveKind::Import,
+        &ResolveOptions::default(),
         &Arc::new(CompilationContext::default()),
       );
       assert!(resolved.is_some());
@@ -470,14 +491,15 @@ fn resolve_exports_browser() {
         "export-browser",
         cwd.clone(),
         &ResolveKind::Import,
+        &ResolveOptions::default(),
         // &Arc::new(CompilationContext::default()),
         &Arc::new(
           CompilationContext::new(
             Config {
-              output: OutputConfig {
+              output: Box::new(OutputConfig {
                 target_env: farmfe_core::config::TargetEnv::Node,
                 ..Default::default()
-              },
+              }),
               ..Default::default()
             },
             vec![],
@@ -494,6 +516,39 @@ fn resolve_exports_browser() {
           .join("export-browser")
           // .join("dev-browser.js")
           .join("dev-ssr.js")
+          .to_string_lossy()
+          .to_string()
+      );
+    }
+  );
+}
+
+#[test]
+// resolve exports value is string
+fn resolve_exports_issue_1433() {
+  fixture!(
+    "tests/fixtures/resolve-node-modules/exports/index.ts",
+    |file, _| {
+      let cwd = file.parent().unwrap().to_path_buf();
+      let resolver = Resolver::new();
+      // Parsing packages in node_modules
+      let resolved = resolver.resolve(
+        "@issues/1433",
+        cwd.clone(),
+        &ResolveKind::Import,
+        &ResolveOptions::default(),
+        &Arc::new(CompilationContext::default()),
+      );
+      assert!(resolved.is_some());
+      let resolved = resolved.unwrap();
+      assert_eq!(
+        resolved.resolved_path,
+        cwd
+          .join("node_modules")
+          .join("@issues")
+          .join("1433")
+          .join("lib")
+          .join("default.js")
           .to_string_lossy()
           .to_string()
       );

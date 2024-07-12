@@ -8,7 +8,7 @@ import { Middleware } from 'koa';
 import type { Config } from '../types/binding.js';
 import type { RustPlugin } from '../plugin/rust/index.js';
 import type { JsPlugin } from '../plugin/type.js';
-import type { ProxiesOptions } from '../server/middlewares/proxy.js';
+import type { Options } from 'http-proxy-middleware';
 import type { Logger } from '../utils/index.js';
 
 export interface ConfigEnv {
@@ -34,7 +34,7 @@ export interface UserServerConfig {
   hostname?: { name: string; host: string | undefined };
   // http2?: boolean;
   hmr?: boolean | UserHmrConfig;
-  proxy?: Record<string, ProxiesOptions>;
+  proxy?: Record<string, Options>;
   strictPort?: boolean;
   open?: boolean;
   host?: string | boolean;
@@ -69,6 +69,7 @@ export interface UserHmrConfig {
   host?: string | boolean;
   port?: number;
   path?: string;
+  overlay?: boolean;
   protocol?: string;
   watchOptions?: WatchOptions;
 }

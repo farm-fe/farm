@@ -1,6 +1,6 @@
 .main {
   color: red;
-  background: url(./logo.png);
+  background: url(/@/logo.png);
   width: 100px;
   height: 100px;
   background-size: 100px 100px;
@@ -10,6 +10,16 @@
 .main-2 {
   color: red;
   background: url(./logo.aaa);
+  width: 100px;
+  height: 100px;
+  background-size: 100px 100px;
+  background-repeat: no-repeat;
+}
+
+
+.main-3 {
+  color: red;
+  background: url(@/logo.png);
   width: 100px;
   height: 100px;
   background-size: 100px 100px;

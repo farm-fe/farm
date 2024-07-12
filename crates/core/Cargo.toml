@@ -1,6 +1,6 @@
 [package]
 name = "farmfe_core"
-version = "0.6.0"
+version = "0.6.1"
 edition = "2021"
 authors = ["brightwu(吴明亮) <1521488775@qq.com>"]
 license = "MIT"
@@ -15,7 +15,7 @@ no-default-features = true
 
 [dependencies]
 farmfe_macro_cache_item = { version = "0.1.3", path = "../macro_cache_item" }
-farmfe_utils = { version = "0.1.4", path = "../utils" }
+farmfe_utils = { version = "0.1.5", path = "../utils" }
 serde = { version = "1.0", features = ["derive", "rc"] }
 serde_json = { version = "1.0", features = ["preserve_order"] }
 parking_lot = { version = "0.12", features = ["deadlock_detection"] }
@@ -36,16 +36,17 @@ wax = { version = "0.6", default-features = false, features = [
   "miette",
   "walk",
 ] }
-swc_ecma_ast = { version = "0.112.6", features = ["rkyv-impl", "serde-impl"] }
-swc_ecma_parser = { version = "0.143.10" }
-swc_common = { version = "0.33.20", features = [
+globset = { version = "0.4.14" }
+swc_ecma_ast = { version = "0.115.1", features = ["rkyv-impl", "serde-impl"] }
+swc_ecma_parser = { version = "0.146.12" }
+swc_common = { version = "0.34.4", features = [
   "concurrent",
   "sourcemap",
   "rkyv-impl",
 ] }
-swc_css_ast = { version = "0.140.21", features = ["rkyv-impl"] }
-swc_css_prefixer = { version = "0.153.35" }
-swc_html_ast = { version = "0.33.20", features = ["rkyv-impl"] }
+swc_css_ast = { version = "0.141.0", features = ["rkyv-impl"] }
+swc_css_prefixer = { version = "0.155.0" }
+swc_html_ast = { version = "0.34.0", features = ["rkyv-impl"] }
 heck = "0.4.1"
 puffin = { version = "0.18.0", features = [
   "packing",

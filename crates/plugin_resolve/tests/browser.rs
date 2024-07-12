@@ -5,7 +5,7 @@ use farmfe_core::{
   context::CompilationContext,
   plugin::ResolveKind,
 };
-use farmfe_plugin_resolve::resolver::Resolver;
+use farmfe_plugin_resolve::resolver::{ResolveOptions, Resolver};
 use farmfe_testing_helpers::fixture;
 
 /// See browser field spec (https://github.com/defunctzombie/package-browser-field-spec)
@@ -22,6 +22,7 @@ fn resolve_browser_basic() {
         "basic",
         cwd.clone(),
         &ResolveKind::Import,
+        &ResolveOptions::default(),
         &Arc::new(CompilationContext::default()),
       );
       assert!(resolved.is_some());
@@ -43,13 +44,14 @@ fn resolve_browser_basic() {
         "basic",
         cwd.clone(),
         &ResolveKind::Import,
+        &ResolveOptions::default(),
         &Arc::new(
           CompilationContext::new(
             Config {
-              output: OutputConfig {
+              output: Box::new(OutputConfig {
                 target_env: farmfe_core::config::TargetEnv::Node,
                 ..Default::default()
-              },
+              }),
               ..Default::default()
             },
             vec![],
@@ -85,6 +87,7 @@ fn resolve_browser_replace() {
         "module-a",
         cwd.clone(),
         &ResolveKind::Import,
+        &ResolveOptions::default(),
         &Arc::new(CompilationContext::default()),
       );
       assert!(resolved.is_some());
@@ -103,6 +106,7 @@ fn resolve_browser_replace() {
         "./only.js",
         cwd.join("server"),
         &ResolveKind::Import,
+        &ResolveOptions::default(),
         &Arc::new(CompilationContext::default()),
       );
       assert!(resolved.is_some());
@@ -122,6 +126,7 @@ fn resolve_browser_replace() {
         "./module-a.js",
         cwd.join("shims"),
         &ResolveKind::Import,
+        &ResolveOptions::default(),
         &Arc::new(CompilationContext::default()),
       );
       assert!(resolved.is_some());
@@ -151,6 +156,7 @@ fn resolve_browser_ignore() {
         "module-a",
         cwd.clone(),
         &ResolveKind::Import,
+        &ResolveOptions::default(),
         &Arc::new(CompilationContext::default()),
       );
       assert!(resolved.is_some());
@@ -163,6 +169,7 @@ fn resolve_browser_ignore() {
         "./only.js",
         cwd.join("server"),
         &ResolveKind::Import,
+        &ResolveOptions::default(),
         &Arc::new(CompilationContext::default()),
       );
       assert!(resolved.is_some());
@@ -194,13 +201,14 @@ fn resolve_browser_target_env_node() {
         "./only.js",
         cwd.join("server"),
         &ResolveKind::Import,
+        &ResolveOptions::default(),
         &Arc::new(
           CompilationContext::new(
             Config {
-              output: OutputConfig {
+              output: Box::new(OutputConfig {
                 target_env: TargetEnv::Node,
                 ..Default::default()
-              },
+              }),
               ..Default::default()
             },
             vec![],
@@ -225,6 +233,7 @@ fn resolve_browser_target_env_node() {
         "./module-a.js",
         cwd.join("shims"),
         &ResolveKind::Import,
+        &ResolveOptions::default(),
         &Arc::new(CompilationContext::default()),
       );
       assert!(resolved.is_some());
@@ -254,6 +263,7 @@ fn resolve_browser_entry_replace() {
         "entry-replace",
         cwd.clone(),
         &ResolveKind::Import,
+        &ResolveOptions::default(),
         &Arc::new(CompilationContext::default()),
       );
       assert!(resolved.is_some());
@@ -273,6 +283,7 @@ fn resolve_browser_entry_replace() {
         "priority",
         cwd.clone(),
         &ResolveKind::Import,
+        &ResolveOptions::default(),
         &Arc::new(CompilationContext::default()),
       );
       assert!(resolved1.is_some());
@@ -304,6 +315,7 @@ fn resolve_browser_issue_941() {
         "indexof",
         cwd.clone(),
         &ResolveKind::Import,
+        &ResolveOptions::default(),
         &Arc::new(CompilationContext::default()),
       );
       assert!(resolved.is_some());
@@ -322,6 +334,7 @@ fn resolve_browser_issue_941() {
         "component-indexof",
         cwd.clone(),
         &ResolveKind::Import,
+        &ResolveOptions::default(),
         &Arc::new(CompilationContext::default()),
       );
       assert!(resolved1.is_some());
@@ -340,7 +353,6 @@ fn resolve_browser_issue_941() {
   );
 }
 
-
 #[test]
 fn resolve_browser_issue_1403() {
   fixture!(
@@ -353,6 +365,7 @@ fn resolve_browser_issue_1403() {
         "exports-pkg",
         cwd.clone(),
         &ResolveKind::Import,
+        &ResolveOptions::default(),
         &Arc::new(CompilationContext::default()),
       );
       assert!(resolved.is_some());

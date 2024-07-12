@@ -6,9 +6,7 @@ use farmfe_core::{
   module::{module_graph::ModuleGraph, Module, ModuleId, ModuleSystem},
   resource::resource_pot::RenderedModule,
   swc_common::{comments::SingleThreadedComments, util::take::Take, Mark},
-  swc_ecma_ast::{
-    AssignExpr, AssignOp, AssignTarget, Decl, Expr, ExprStmt, FnExpr, Ident, SimpleAssignTarget,
-  },
+  swc_ecma_ast::{ArrowExpr, BlockStmtOrExpr, Expr, ExprStmt},
 };
 use farmfe_toolkit::{
   common::{build_source_map, create_swc_source_map, MinifyBuilder, Source},
@@ -19,15 +17,8 @@ use farmfe_toolkit::{
     CodeGenCommentsConfig,
   },
   swc_ecma_transforms::{
-    feature::enable_available_feature_from_es_version,
     fixer,
-    helpers::inject_helpers,
     hygiene::{hygiene_with_config, Config as HygieneConfig},
-    modules::{
-      common_js,
-      import_analysis::import_analyzer,
-      util::{Config, ImportInterop},
-    },
   },
   swc_ecma_transforms_base::fixer::paren_remover,
   swc_ecma_visit::VisitMutWith,
@@ -45,6 +36,7 @@ use farmfe_core::{
 use super::{
   source_replacer::{ExistingCommonJsRequireVisitor, SourceReplacer},
   transform_async_module,
+  transform_module_decls::{transform_module_decls, TransformModuleDeclsOptions},
 };
 
 pub struct RenderModuleResult {
@@ -103,18 +95,13 @@ pub fn render_module<F: Fn(&ModuleId) -> bool>(
       module.meta.as_script().module_system,
       ModuleSystem::EsModule | ModuleSystem::Hybrid
     ) {
-      cloned_module.visit_mut_with(&mut import_analyzer(ImportInterop::Swc, true));
-      cloned_module.visit_mut_with(&mut inject_helpers(unresolved_mark));
-      cloned_module.visit_mut_with(&mut common_js::<&SingleThreadedComments>(
+      transform_module_decls(
+        &mut cloned_module,
         unresolved_mark,
-        Config {
-          ignore_dynamic: true,
-          preserve_import_meta: true,
-          ..Default::default()
+        TransformModuleDeclsOptions {
+          is_target_legacy: context.config.script.is_target_legacy(),
         },
-        enable_available_feature_from_es_version(context.config.script.target),
-        Some(&comments),
-      ));
+      );
     }
 
     // replace import source with module id
@@ -124,6 +111,7 @@ pub fn render_module<F: Fn(&ModuleId) -> bool>(
       module_graph,
       module.id.clone(),
       context.config.mode.clone(),
+      context.config.output.target_env.clone(),
     );
     cloned_module.visit_mut_with(&mut source_replacer);
     cloned_module.visit_mut_with(&mut hygiene_with_config(HygieneConfig {
@@ -139,12 +127,11 @@ pub fn render_module<F: Fn(&ModuleId) -> bool>(
       // transform async module to meet the requirements of farm runtime
       transform_async_module::transform_async_module(&mut cloned_module);
     }
-
-    wrap_function(&mut cloned_module, unresolved_mark, is_async_module);
+    // swc code gen would emit a trailing `;` when is_target_legacy is false.
+    // we can not deal with this situation for now, so we set is_target_legacy to true here, it will be fixed in the future.
+    wrap_function(&mut cloned_module, unresolved_mark, is_async_module, true);
 
     if minify_enabled {
-      // wrap and unwrap are workaround functions to support minify module separately
-      wrap_initialize_function(&mut cloned_module);
       minify_js_module(
         &mut cloned_module,
         cm.clone(),
@@ -153,7 +140,6 @@ pub fn render_module<F: Fn(&ModuleId) -> bool>(
         top_level_mark,
         minify_builder.minify_options.as_ref().unwrap(),
       );
-      unwrap_initialize_function(&mut cloned_module);
     }
 
     cloned_module.visit_mut_with(&mut fixer(Some(&comments)));
@@ -240,116 +226,92 @@ pub fn render_module<F: Fn(&ModuleId) -> bool>(
 ///   exports.b = b;
 /// }
 /// ```
-fn wrap_function(module: &mut SwcModule, unresolved_mark: Mark, is_async_module: bool) {
+fn wrap_function(
+  module: &mut SwcModule,
+  unresolved_mark: Mark,
+  is_async_module: bool,
+  is_target_legacy: bool,
+) {
   let body = module.body.take();
 
-  module.body.push(ModuleItem::Stmt(Stmt::Decl(
-    farmfe_core::swc_ecma_ast::Decl::Fn(FnDecl {
+  let params = vec![
+    Param {
+      span: DUMMY_SP.apply_mark(unresolved_mark),
+      decorators: vec![],
+      pat: farmfe_core::swc_ecma_ast::Pat::Ident(BindingIdent {
+        id: FARM_MODULE.into(),
+        type_ann: None,
+      }),
+    },
+    Param {
+      span: DUMMY_SP.apply_mark(unresolved_mark),
+      decorators: vec![],
+      pat: farmfe_core::swc_ecma_ast::Pat::Ident(BindingIdent {
+        id: FARM_MODULE_EXPORT.into(),
+        type_ann: None,
+      }),
+    },
+    Param {
+      span: DUMMY_SP.apply_mark(unresolved_mark),
+      decorators: vec![],
+      pat: farmfe_core::swc_ecma_ast::Pat::Ident(BindingIdent {
+        id: FARM_REQUIRE.into(),
+        type_ann: None,
+      }),
+    },
+    Param {
+      span: DUMMY_SP.apply_mark(unresolved_mark),
+      decorators: vec![],
+      pat: farmfe_core::swc_ecma_ast::Pat::Ident(BindingIdent {
+        id: FARM_DYNAMIC_REQUIRE.into(),
+        type_ann: None,
+      }),
+    },
+  ];
+
+  let stmts = body
+    .into_iter()
+    .map(|body| match body {
+      ModuleItem::ModuleDecl(_) => unreachable!(),
+      ModuleItem::Stmt(stmt) => stmt,
+    })
+    .collect();
+
+  let item = if !is_target_legacy {
+    ModuleItem::Stmt(Stmt::Expr(ExprStmt {
+      span: DUMMY_SP,
+      expr: Box::new(Expr::Arrow(ArrowExpr {
+        span: DUMMY_SP,
+        params: params.into_iter().map(|p| p.pat).collect(),
+        body: Box::new(BlockStmtOrExpr::BlockStmt(BlockStmt {
+          span: DUMMY_SP,
+          stmts,
+        })),
+        is_async: is_async_module,
+        is_generator: false,
+        type_params: None,
+        return_type: None,
+      })),
+    }))
+  } else {
+    ModuleItem::Stmt(Stmt::Decl(farmfe_core::swc_ecma_ast::Decl::Fn(FnDecl {
       ident: " ".into(),
       declare: false,
       function: Box::new(Function {
-        params: vec![
-          Param {
-            span: DUMMY_SP.apply_mark(unresolved_mark),
-            decorators: vec![],
-            pat: farmfe_core::swc_ecma_ast::Pat::Ident(BindingIdent {
-              id: FARM_MODULE.into(),
-              type_ann: None,
-            }),
-          },
-          Param {
-            span: DUMMY_SP.apply_mark(unresolved_mark),
-            decorators: vec![],
-            pat: farmfe_core::swc_ecma_ast::Pat::Ident(BindingIdent {
-              id: FARM_MODULE_EXPORT.into(),
-              type_ann: None,
-            }),
-          },
-          Param {
-            span: DUMMY_SP.apply_mark(unresolved_mark),
-            decorators: vec![],
-            pat: farmfe_core::swc_ecma_ast::Pat::Ident(BindingIdent {
-              id: FARM_REQUIRE.into(),
-              type_ann: None,
-            }),
-          },
-          Param {
-            span: DUMMY_SP.apply_mark(unresolved_mark),
-            decorators: vec![],
-            pat: farmfe_core::swc_ecma_ast::Pat::Ident(BindingIdent {
-              id: FARM_DYNAMIC_REQUIRE.into(),
-              type_ann: None,
-            }),
-          },
-        ],
+        params,
         decorators: vec![],
         span: DUMMY_SP.apply_mark(unresolved_mark),
         body: Some(BlockStmt {
           span: DUMMY_SP.apply_mark(unresolved_mark),
-          stmts: body
-            .into_iter()
-            .map(|body| match body {
-              ModuleItem::ModuleDecl(_) => unreachable!(),
-              ModuleItem::Stmt(stmt) => stmt,
-            })
-            .collect(),
+          stmts,
         }),
         is_generator: false,
         is_async: is_async_module,
         type_params: None,
         return_type: None,
       }),
-    }),
-  )));
-}
+    })))
+  };
 
-/// `function (a, b) {}`` to `a = function (a, b) {}`
-fn wrap_initialize_function(module: &mut SwcModule) {
-  let mut body = module.body.take();
-  let function = body
-    .remove(0)
-    .expect_stmt()
-    .expect_decl()
-    .expect_fn_decl()
-    .function;
-
-  let assign_fn = Expr::Assign(AssignExpr {
-    span: DUMMY_SP,
-    op: AssignOp::Assign,
-    left: AssignTarget::Simple(SimpleAssignTarget::Ident(BindingIdent {
-      id: Ident::new("a".into(), DUMMY_SP),
-      type_ann: None,
-    })),
-    right: Box::new(Expr::Fn(FnExpr {
-      ident: None,
-      function,
-    })),
-  });
-
-  module.body.push(ModuleItem::Stmt(Stmt::Expr(ExprStmt {
-    span: DUMMY_SP,
-    expr: Box::new(assign_fn),
-  })))
-}
-
-/// `a = function (a, b) {}` to `function (a, b) {}`
-fn unwrap_initialize_function(module: &mut SwcModule) {
-  let mut body = module.body.take();
-  let function = body
-    .remove(0)
-    .expect_stmt()
-    .expect_expr()
-    .expr
-    .expect_assign()
-    .right
-    .expect_fn_expr()
-    .function;
-
-  module
-    .body
-    .push(ModuleItem::Stmt(Stmt::Decl(Decl::Fn(FnDecl {
-      ident: " ".into(),
-      declare: false,
-      function,
-    }))));
+  module.body.push(item);
 }

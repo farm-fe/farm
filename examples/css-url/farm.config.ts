@@ -1,3 +1,4 @@
+import { resolve } from 'node:path';
 import type { UserConfig } from '@farmfe/core';
 import postcss from '@farmfe/js-plugin-postcss';
 
@@ -10,6 +11,7 @@ export default defineConfig({
     input: {
       index: './index.html',
     },
+    persistentCache: false,
     output: {
       path: './build',
       publicPath: '/public-dir/',
@@ -18,9 +20,15 @@ export default defineConfig({
       include: ['aaa']
     },
     record: true,
-    sourcemap: true
+    sourcemap: true,
     // treeShaking: true,
     // minify: true,
+    resolve:{
+      alias: {
+        '/@': resolve(__dirname, 'src'),
+        '@': resolve(__dirname, 'src')
+      },
+    }
   },
   server: {
     open: true,

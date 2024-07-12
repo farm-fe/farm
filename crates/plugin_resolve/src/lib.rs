@@ -12,10 +12,12 @@ use farmfe_core::{
   plugin::{
     Plugin, PluginHookContext, PluginResolveHookParam, PluginResolveHookResult, ResolveKind,
   },
+  serde_json,
 };
 
+use farmfe_toolkit::resolve::DYNAMIC_EXTENSION_PRIORITY;
 use farmfe_utils::parse_query;
-use resolver::Resolver;
+use resolver::{ResolveOptions, Resolver};
 
 pub mod resolver;
 
@@ -44,7 +46,7 @@ impl Plugin for FarmPluginResolve {
     &self,
     param: &PluginResolveHookParam,
     context: &Arc<CompilationContext>,
-    _hook_context: &PluginHookContext,
+    hook_context: &PluginHookContext,
   ) -> Result<Option<PluginResolveHookResult>> {
     farm_profile_function!("plugin_resolve::resolve".to_string());
 
@@ -84,15 +86,7 @@ impl Plugin for FarmPluginResolve {
     };
 
     // Entry module and internal modules should not be external
-    if !matches!(param.kind, ResolveKind::Entry(_))
-      && [
-        "@swc/helpers/_/_interop_require_default",
-        "@swc/helpers/_/_interop_require_wildcard",
-        "@swc/helpers/_/_export_star",
-      ]
-      .into_iter()
-      .all(|s| source != s)
-    {
+    if !matches!(param.kind, ResolveKind::Entry(_)) {
       farm_profile_scope!("plugin_resolve::resolve::check_external".to_string());
       // check external first, if the source is set as external, return it immediately
       if external_config.is_external(source) {
@@ -106,8 +100,28 @@ impl Plugin for FarmPluginResolve {
       }
     }
 
+    let dynamic_extensions =
+      if let Some(dynamic_extensions) = hook_context.meta.get(DYNAMIC_EXTENSION_PRIORITY) {
+        let exts = serde_json::from_str::<Vec<String>>(dynamic_extensions).unwrap_or_default();
+
+        if exts.len() > 0 {
+          Some(exts)
+        } else {
+          None
+        }
+      } else {
+        None
+      };
+    let resolve_options = ResolveOptions { dynamic_extensions };
+
     let resolver = &self.resolver;
-    let result = resolver.resolve(source, basedir.clone(), &param.kind, context);
+    let result = resolver.resolve(
+      source,
+      basedir.clone(),
+      &param.kind,
+      &resolve_options,
+      context,
+    );
 
     // remove the .js if the result is not found to support using native esm with typescript
     let mut resolve_result = if result.is_none() && source.ends_with(".js") {
@@ -115,7 +129,7 @@ impl Plugin for FarmPluginResolve {
       let source = source.replace(".js", "");
 
       resolver
-        .resolve(&source, basedir, &param.kind, context)
+        .resolve(&source, basedir, &param.kind, &resolve_options, context)
         .map(|result| PluginResolveHookResult { query, ..result })
     } else {
       result.map(|result| PluginResolveHookResult { query, ..result })

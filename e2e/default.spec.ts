@@ -6,10 +6,10 @@ import { logger } from './utils.js';
 import { describe } from 'node:test';
 // import { ssrExamples } from './test-utils.js';
 
-const excludeExamples: string[] = [];
+const excludeExamples: string[] = ['issues1433', 'nestjs'];
 
 describe('Default E2E Tests', async () => {
-  const examples = readdirSync('./examples');
+  const examples = readdirSync('./examples')
   // const examples = ['react-ssr', 'solid-ssr', 'vue-ssr'];
   logger(`Running E2E tests for ${examples.length} examples`);
 

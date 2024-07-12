@@ -30,7 +30,7 @@
 
 ## Intro
 
-Farm is a extremely fast vite-compatible web-building tool written in Rust. It's designed to be fast, powerful and consistent, aims to provide best experience for web development, which is the real next generation build tool.
+Farm is an extremely fast vite-compatible web-building tool written in Rust. It's designed to be fast, powerful and consistent, aims to provide best experience for web development, which is the real next generation build tool.
 
 ## Online experience
 
@@ -108,7 +108,7 @@ See [Contributing Guide](https://github.com/farm-fe/farm/blob/main/CONTRIBUTING.
 
 - Wechat group
 
-<br><img src="https://github.com/ErKeLost/react-farm/assets/66500121/8ea5240b-b8d7-40ac-b02b-0f281e660a25" width="30%" />
+<br><img src="https://github.com/ErKeLost/react/assets/66500121/3bb8046c-5b79-4f36-98b7-970c118de490" width="30%" />
 
 - QQ group
 

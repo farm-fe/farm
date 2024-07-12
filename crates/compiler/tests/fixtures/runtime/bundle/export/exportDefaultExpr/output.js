@@ -50,8 +50,6 @@ var runtime_1_ts_default = runtime_2_ts_default + 20;
 
 const a$1 = 1;
 console.log(a$1, runtime_1_ts_default + 30);
-(globalThis || window || global)["__farm_default_namespace__"].__farm_module_system__.setPlugins([]);
-(function(_){for(var r in _){_[r].__farm_resource_pot__='index_dcdc.js';(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.register(r,_[r])}})({"b5d64806":function  (module, exports, farmRequire, farmDynamicRequire) {
-    "use strict";
-}
+(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setPlugins([]);
+(function(_){for(var r in _){_[r].__farm_resource_pot__='index_dcdc.js';(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.register(r,_[r])}})({"b5d64806":function  (module, exports, farmRequire, farmDynamicRequire) {}
 ,});(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setInitialLoadedResources([]);(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setDynamicModuleResourcesMap({  });var farmModuleSystem = (globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__;farmModuleSystem.bootstrap();var entry = farmModuleSystem.require("b5d64806");

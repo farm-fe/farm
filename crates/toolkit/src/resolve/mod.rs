@@ -13,10 +13,11 @@
 
 use std::path::PathBuf;
 
-use farmfe_core::{common::PackageJsonInfo, serde_json::from_str};
+use farmfe_core::common::PackageJsonInfo;
 use lazy_static::lazy_static;
 
 pub mod package_json_loader;
+pub mod path_start_with_alias;
 pub mod symlinks_analyzer;
 
 use package_json_loader::PackageJsonLoader;
@@ -29,6 +30,8 @@ lazy_static! {
   pub static ref PACKAGE_JSON_LOADER: PackageJsonLoader = PackageJsonLoader::new();
   pub static ref SYMLINKS_ANALYZER: SymlinksAnalyzer = SymlinksAnalyzer::new();
 }
+
+pub const DYNAMIC_EXTENSION_PRIORITY: &str = "DYNAMIC_EXTENSION_PRIORITY";
 
 /// Load closest package.json start from the specified path, return [farmfe_core::error::Result<Value>].
 pub fn load_package_json(
@@ -48,13 +51,10 @@ pub fn load_package_json(
 /// ```
 /// And this function won't trigger any file/io operation
 pub fn default_package_json() -> PackageJsonInfo {
-  from_str(
-    r#"{
-    "name": "farm-default-package-info",
-    "version": "0.0.0"
-  }"#,
+  PackageJsonInfo::new(
+    Some("farm-default-package-info".to_string()),
+    Some("0.0.0".to_string()),
   )
-  .unwrap()
 }
 
 /// Try follow symlinks from the specified path, if any ancestor of the path is symlinked, it will be redirected to the real path.

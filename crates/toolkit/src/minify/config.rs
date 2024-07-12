@@ -61,12 +61,12 @@ impl NormalizedMinifyOptions {
   }
 
   pub fn minify_options_for_module(minify: &MinifyOptions) -> NormalizedMinifyOptions {
-    let minify_options = Self::minify_options_for_resource_pot(minify);
+    let mut minify_options = Self::minify_options_for_resource_pot(minify);
 
-    // minify_options.compress = minify_options.compress.map(|mut v| {
-    //   v.unused = Some(false);
-    //   v
-    // });
+    minify_options.compress = minify_options.compress.map(|mut v| {
+      v.toplevel = None;
+      v
+    });
 
     minify_options
   }

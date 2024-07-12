@@ -9,5 +9,5 @@
   "engines": {
     "node": ">= 10"
   },
-  "libc": ["glibc"]
+  "libc": ["musl"]
 }

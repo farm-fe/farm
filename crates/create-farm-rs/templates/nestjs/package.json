@@ -34,7 +34,7 @@
     "cache-manager": "^5.5.2",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.1",
-    "farmup": "^0.0.10",
+    "farmup": "^0.0.12",
     "ioredis": "^5.4.1",
     "kafkajs": "^2.2.4",
     "mqtt": "^5.6.1",
@@ -44,7 +44,7 @@
     "utf-8-validate": "^6.0.4"
   },
   "devDependencies": {
-    "@farmfe/core": "^1.1.13",
+    "@farmfe/core": "^1.2.4",
     "@nestjs/cli": "^9.0.0",
     "@nestjs/schematics": "^9.0.0",
     "@nestjs/testing": "^9.0.0",

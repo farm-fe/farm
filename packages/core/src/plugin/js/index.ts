@@ -1,5 +1,3 @@
-import { existsSync, readFileSync } from 'node:fs';
-import { isAbsolute } from 'node:path';
 import { CompilationMode } from '../../config/env.js';
 import {
   type JsPlugin,
@@ -9,11 +7,9 @@ import {
 } from '../../index.js';
 import merge from '../../utils/merge.js';
 import { resolveAsyncPlugins } from '../index.js';
-import {
-  DEFAULT_FILTERS,
-  VITE_PLUGIN_DEFAULT_MODULE_TYPE,
-  getCssModuleType
-} from './utils.js';
+import { cssPluginUnwrap, cssPluginWrap } from './adapter-plugins/css.js';
+import { defaultLoadPlugin } from './adapter-plugins/default-load.js';
+import { DEFAULT_FILTERS, normalizeFilterPath } from './utils.js';
 import { VitePluginAdapter } from './vite-plugin-adapter.js';
 
 // export * from './jsPluginAdapter.js';
@@ -55,85 +51,18 @@ export async function handleVitePlugins(
     processVitePlugin(vitePlugin, userConfig, filters, jsPlugins, logger, mode);
   }
 
-  const resolvedPaths = Array.from(filtersUnion).map(normalizeFilterPath);
   // if vitePlugins is not empty, append a load plugin to load file
   // this plugin is only for compatibility
   if (vitePlugins.length) {
-    jsPlugins.push({
-      name: 'farm:load',
-      // has to be the last one
-      priority: -100,
-      load: {
-        filters: {
-          resolvedPaths
-        },
-        executor: async (params) => {
-          const { resolvedPath } = params;
-
-          // skip lazy compiled module and non-exist file
-          if (
-            VitePluginAdapter.isFarmInternalVirtualModule(resolvedPath) ||
-            !existsSync(resolvedPath)
-          ) {
-            // for virtual modules that is not loaded by plugins, it should be treated as empty module
-            // cause vite does not require load, vite can handle requests in middlewares
-            if (!isAbsolute(resolvedPath)) {
-              logger.info(
-                `No plugins load virtual ${resolvedPath} in load hook. Farm load it as "export default await import('/@id/' + '${resolvedPath}');" by default for Vite Compatibility`
-              );
-              return {
-                content: `export default await import('/@id/' + '${resolvedPath}');`,
-                moduleType: 'js'
-              };
-            }
-
-            return null;
-          }
-
-          const content = readFileSync(resolvedPath, 'utf-8');
-
-          return {
-            content,
-            moduleType: VITE_PLUGIN_DEFAULT_MODULE_TYPE
-          };
-        }
-      },
-      transform: {
-        filters: {
-          resolvedPaths,
-          moduleTypes: []
-        },
-        executor: async (params) => {
-          const { content, moduleId, moduleType, resolvedPath } = params;
-
-          // skip lazy compiled module and non-exist file
-          if (VitePluginAdapter.isFarmInternalVirtualModule(resolvedPath)) {
-            return null;
-          }
-          const cssModules = userConfig.compilation?.css?.modules?.paths ?? [
-            '\\.module\\.(css|less|sass|scss)$'
-          ];
-          // skip css module because it will be handled by Farm
-          const isCssModules = cssModules.some((reg) =>
-            new RegExp(reg).test(moduleId)
-          );
-
-          // treat all scss/less/.etc lang as css
-          // plugin should handle css module by itself
-          if (getCssModuleType(moduleId) && !isCssModules) {
-            return {
-              content,
-              moduleType: 'css'
-            };
-          }
-
-          return {
-            content,
-            moduleType
-          };
-        }
-      }
-    });
+    jsPlugins.push(
+      defaultLoadPlugin({
+        filtersUnion,
+        logger,
+        userConfig
+      })
+    );
+    jsPlugins.unshift(cssPluginWrap({ filtersUnion }));
+    jsPlugins.push(cssPluginUnwrap({ filtersUnion }));
   }
 
   return jsPlugins;
@@ -164,18 +93,6 @@ export function processVitePlugin(
   } else {
     processPlugin(vitePlugin);
   }
-}
-
-function normalizeFilterPath(path: string): string {
-  if (process.platform === 'win32') {
-    return compatibleWin32Path(path);
-  }
-
-  return path;
-}
-
-function compatibleWin32Path(path: string): string {
-  return path.replaceAll('/', '\\\\');
 }
 
 export function convertPlugin(plugin: JsPlugin): void {

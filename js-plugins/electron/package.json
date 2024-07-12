@@ -1,6 +1,6 @@
 {
   "name": "@farmfe/js-plugin-electron",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Support development Electron App using Farm.",
   "main": "./build/cjs/index.cjs",
   "types": "./build/cjs/index.d.ts",

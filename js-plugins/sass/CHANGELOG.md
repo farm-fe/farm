@@ -1,5 +1,14 @@
 # @farmfe/js-plugin-sass
 
+## 2.8.1
+
+### Patch Changes
+
+- ca28145c: \* Fix that .sass file should render with indentedSyntax
+  - Fix sass a few `@import` bugs when resolving dependencies
+- Updated dependencies [ca28145c]
+  - @farmfe/core@1.2.3
+
 ## 2.8.0
 
 ### Patch Changes

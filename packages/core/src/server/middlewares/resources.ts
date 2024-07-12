@@ -2,12 +2,11 @@
  * Serve resources that stored in memory. This middleware will be enabled when server.writeToDisk is false.
  */
 
-import { existsSync, readFileSync, statSync } from 'node:fs';
+import { ReadStream, existsSync, readFileSync, statSync } from 'node:fs';
 import path, { extname } from 'node:path';
 import { Context, Middleware, Next } from 'koa';
 import koaStatic from 'koa-static';
 import { Compiler } from '../../compiler/index.js';
-import { NormalizedServerConfig } from '../../config/types.js';
 import {
   generateFileTree,
   generateFileTreeHtml,
@@ -66,17 +65,25 @@ function findResource(
   }
 }
 
-export function resourcesMiddleware(
-  compiler: Compiler,
-  config: NormalizedServerConfig,
-  publicPath: string
-) {
+export function resourcesMiddleware(compiler: Compiler, serverContext: Server) {
   return async (ctx: Context, next: Next) => {
     await next();
     if (ctx.method !== 'HEAD' && ctx.method !== 'GET') return;
-    // the response is already handled
-    if (ctx.body || ctx.status !== 404) return;
+    const hasHtmlPathWithPublicDir = path.resolve(
+      serverContext.publicDir,
+      'index.html'
+    );
 
+    let isSkipPublicHtml;
+    if (ctx.body instanceof ReadStream) {
+      const readStream = ctx.body;
+      isSkipPublicHtml = readStream.path === hasHtmlPathWithPublicDir;
+    }
+
+    // the response is already handled
+    if ((ctx.body || ctx.status !== 404) && !isSkipPublicHtml) return;
+
+    const { config, publicPath } = serverContext;
     // if compiler is compiling, wait for it to finish
     if (compiler.compiling) {
       await new Promise((resolve) => {
@@ -183,11 +190,7 @@ export function resources(devSeverContext: Server): Middleware | Middleware[] {
   const middlewares = [];
   if (!devSeverContext.config.writeToDisk) {
     middlewares.push(
-      resourcesMiddleware(
-        devSeverContext.getCompiler(),
-        devSeverContext.config,
-        devSeverContext.publicPath
-      )
+      resourcesMiddleware(devSeverContext.getCompiler(), devSeverContext)
     );
   } else {
     middlewares.push(

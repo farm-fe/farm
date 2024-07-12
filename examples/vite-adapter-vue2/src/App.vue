@@ -25,23 +25,22 @@
 </template>
 
 <script>
-import Vue from 'vue';
+import Vue from "vue";
 import {
   AddIcon,
   CloudUploadIcon,
   DiscountIcon,
-  CloudDownloadIcon
-} from 'tdesign-icons-vue';
-import Logo from './assets/svg/assets-t-logo.svg?component';
-import farmLogo from './assets/logo.png';
-import { res } from '@/index';
-
-console.log(farmLogo)
+  CloudDownloadIcon,
+} from "tdesign-icons-vue";
+import Logo from "./assets/svg/assets-t-logo.svg?component";
+import farmLogo from "./assets/logo.png";
+import { res } from "@/index";
+import axios from "axios";
 export default {
   data() {
     return {
       res,
-      farmLogo
+      farmLogo,
     };
   },
   components: {
@@ -49,7 +48,12 @@ export default {
     CloudUploadIcon,
     DiscountIcon,
     CloudDownloadIcon,
-    Logo
-  }
+    Logo,
+  },
+  created() {
+    axios.get("/aaa?key=caab07f6c5df752d2e28edfe447ae6d0").then((res) => {
+      console.log(res);
+    });
+  },
 };
 </script>

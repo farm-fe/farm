@@ -5,14 +5,6 @@ export default defineConfig({
     script: {
       plugins: [],
       target: 'es2022',
-      parser: {
-        tsConfig: {
-          decorators: true,
-          dts: false,
-          noEarlyErrors: false,
-          tsx: false,
-        },
-      },
       decorators: {
         legacyDecorator: true,
         decoratorMetadata: false,

@@ -43,13 +43,10 @@ pub fn try_browser_map(
         || key == format!("{}.js", sub_path)
         || key == format!("{}/index.js", sub_path)
       {
-        if let Value::String(str) = value {
-          return Some(BrowserMapResult::Str(str));
-        }
-        if let Value::Bool(b) = value {
-          if b == false {
-            return Some(BrowserMapResult::External);
-          }
+        match value {
+          Value::String(str) => return Some(BrowserMapResult::Str(str.clone())),
+          Value::Bool(false) => return Some(BrowserMapResult::External),
+          _ => {}
         }
       }
     }

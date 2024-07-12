@@ -111,9 +111,12 @@ pub fn render_resource_pots_and_generate_resources(
             &r.resource_type.to_ext(),
           );
         }
-
-        // resource_pot_info.file_name = r.name.clone();
       }
+
+      // process generated resources after rendering
+      context
+        .plugin_driver
+        .process_generated_resources(&mut res, context)?;
 
       let mut cached_result: PluginGenerateResourcesHookResult =
         PluginGenerateResourcesHookResult {
@@ -123,7 +126,11 @@ pub fn render_resource_pots_and_generate_resources(
       // if source map is generated, we need to update the resource name and the content of the resource
       // to make sure the source map can be found.
       if let Some(mut source_map) = res.source_map {
-        source_map.name = format!("{}.{}", r.name, source_map.resource_type.to_ext());
+        source_map.name = format!(
+          "{}.{}",
+          res.resource.name,
+          source_map.resource_type.to_ext()
+        );
         append_source_map_comment(&mut res.resource, &source_map, &context.config.sourcemap);
 
         if context.config.persistent_cache.enabled() {

@@ -9,7 +9,7 @@ use std::{
 use base64::engine::{general_purpose, Engine};
 use farmfe_core::{
   cache_item,
-  config::Config,
+  config::{Config, TargetEnv},
   context::{CompilationContext, EmitFileParams},
   deserialize,
   module::ModuleType,
@@ -23,7 +23,7 @@ use farmfe_toolkit::{
   fs::{read_file_raw, read_file_utf8, transform_output_filename},
   lazy_static::lazy_static,
 };
-use farmfe_utils::{hash::sha256, stringify_query};
+use farmfe_utils::{hash::sha256, stringify_query, FARM_IGNORE_ACTION_COMMENT};
 
 // Default supported static assets: png, jpg, jpeg, gif, svg, webp, mp4, webm, wav, mp3, wma, m4a, aac, ico, ttf, woff, woff2
 lazy_static! {
@@ -217,26 +217,24 @@ impl Plugin for FarmPluginStaticAssets {
           &bytes,
           ext,
         ) + stringify_query(&param.query).as_str();
+
         let resource_name = Self::get_resource_name(&resource_name, &param.module_id);
 
-        let content = if !context.config.output.public_path.is_empty() {
-          let normalized_public_path = context
-            .config
-            .output
-            .public_path
-            .trim_start_matches("/")
-            .trim_end_matches("/");
+        let assets_path = if !context.config.output.public_path.is_empty() {
+          let normalized_public_path = context.config.output.public_path.trim_end_matches("/");
 
-          if normalized_public_path.is_empty() {
-            format!("export default \"/{}\"", resource_name)
-          } else {
-            format!(
-              "export default \"/{}/{}\"",
-              normalized_public_path, resource_name
-            )
-          }
+          format!("{}/{}", normalized_public_path, resource_name)
         } else {
-          format!("export default \"/{}\"", resource_name)
+          format!("/{}", resource_name)
+        };
+
+        let content = if matches!(context.config.output.target_env, TargetEnv::Node) {
+          format!(
+            "export default new URL(/* {} */{:?}, import.meta.url)",
+            FARM_IGNORE_ACTION_COMMENT, assets_path
+          )
+        } else {
+          format!("export default {:?};", assets_path)
         };
 
         context.emit_file(EmitFileParams {

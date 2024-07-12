@@ -24,10 +24,13 @@ test('resolveUserConfig', async () => {
     // FARM_HMR_PATH: '/__hmr',
     // FARM_HMR_PORT: '9000',
     FARM_PROCESS_ENV: {
-      NODE_ENV: 'development'
+      NODE_ENV: 'development',
+      mode: 'development'
     },
     // FARM_HMR_PROTOCOL: 'ws',
-    '$__farm_regex:(global(This)?\\.)?process\\.env\\.NODE_ENV': '"development"'
+    '$__farm_regex:(global(This)?\\.)?process\\.env\\.NODE_ENV':
+      '"development"',
+    '$__farm_regex:(global(This)?\\.)?process\\.env\\.mode': '"development"'
   });
   expect(config.compilation.input).toEqual({
     main: './main.tsx'
@@ -41,34 +44,6 @@ test('resolveUserConfig', async () => {
   expect(config.compilation.sourcemap).toEqual(true);
   expect(config.compilation.minify).toEqual(false);
   expect(config.compilation.presetEnv).toEqual(false);
-  expect(config.compilation.persistentCache).toEqual({
-    buildDependencies: [
-      // path.join(filePath, '..', 'src', 'config.ts'),
-      path.join(filePath, 'fixtures', 'config', 'farm.config.ts'),
-      path.join(filePath, 'fixtures', 'config', 'util.ts'),
-      'module',
-      'package-lock.json',
-      'pnpm-lock.yaml',
-      'yarn.lock'
-    ],
-    envs: {
-      FARM_PROCESS_ENV: '{"NODE_ENV":"development"}',
-      NODE_ENV: 'development',
-      'package.json[name]': 'farm-fe',
-      'package.json[type]': 'unknown',
-      '$__farm_regex:(global(This)?\\.)?process\\.env\\.NODE_ENV':
-        '"development"',
-      'package.json[browser]': 'unknown',
-      'package.json[exports]': 'unknown',
-      'package.json[main]': 'unknown',
-      'package.json[module]': 'unknown'
-      // FARM_HMR_HOST: 'true',
-      // FARM_HMR_PATH: '/__hmr',
-      // FARM_HMR_PORT: '9000',
-      // FARM_HMR_PROTOCOL: 'ws'
-    },
-    moduleCacheKeyStrategy: {}
-  });
   expect(config.server).toEqual(
     normalizeDevServerConfig(config.server, 'development')
   );
@@ -85,9 +60,11 @@ test('resolveUserConfig-prod', async () => {
 
   expect(config.compilation.define).toEqual({
     FARM_PROCESS_ENV: {
-      NODE_ENV: 'production'
+      NODE_ENV: 'production',
+      mode: 'production'
     },
-    '$__farm_regex:(global(This)?\\.)?process\\.env\\.NODE_ENV': '"production"'
+    '$__farm_regex:(global(This)?\\.)?process\\.env\\.NODE_ENV': '"production"',
+    '$__farm_regex:(global(This)?\\.)?process\\.env\\.mode': '"production"'
   });
   expect(config.compilation.input).toEqual({
     main: './main.tsx'
@@ -103,30 +80,6 @@ test('resolveUserConfig-prod', async () => {
   expect(config.compilation.sourcemap).toEqual(true);
   expect(config.compilation.minify).toEqual(true);
   expect(config.compilation.presetEnv).toEqual(false);
-  expect(config.compilation.persistentCache).toEqual({
-    buildDependencies: [
-      // path.join(filePath, '..', 'src', 'config.ts'),
-      path.join(filePath, 'fixtures', 'config', 'farm.config.ts'),
-      path.join(filePath, 'fixtures', 'config', 'util.ts'),
-      'module',
-      'package-lock.json',
-      'pnpm-lock.yaml',
-      'yarn.lock'
-    ],
-    envs: {
-      FARM_PROCESS_ENV: '{"NODE_ENV":"production"}',
-      NODE_ENV: 'production',
-      'package.json[name]': 'farm-fe',
-      'package.json[type]': 'unknown',
-      'package.json[browser]': 'unknown',
-      'package.json[exports]': 'unknown',
-      'package.json[main]': 'unknown',
-      'package.json[module]': 'unknown',
-      '$__farm_regex:(global(This)?\\.)?process\\.env\\.NODE_ENV':
-        '"production"'
-    },
-    moduleCacheKeyStrategy: {}
-  });
   expect(config.server).toEqual(
     normalizeDevServerConfig(config.server, 'production')
   );
@@ -153,9 +106,11 @@ test('resolveUserConfig-input-html-prod', async () => {
 
   expect(config.compilation.define).toEqual({
     FARM_PROCESS_ENV: {
-      NODE_ENV: 'production'
+      NODE_ENV: 'production',
+      mode: 'production'
     },
-    '$__farm_regex:(global(This)?\\.)?process\\.env\\.NODE_ENV': '"production"'
+    '$__farm_regex:(global(This)?\\.)?process\\.env\\.NODE_ENV': '"production"',
+    '$__farm_regex:(global(This)?\\.)?process\\.env\\.mode': '"production"'
   });
 
   expect(config.compilation.output).toEqual({
@@ -201,29 +156,6 @@ test('resolveUserConfig-input-html-prod', async () => {
         'unreleased kaios versions'
       ]
     }
-  });
-
-  expect(config.compilation.persistentCache).toEqual({
-    buildDependencies: [
-      configFilePath,
-      'module',
-      'package-lock.json',
-      'pnpm-lock.yaml',
-      'yarn.lock'
-    ],
-    envs: {
-      FARM_PROCESS_ENV: '{"NODE_ENV":"production"}',
-      NODE_ENV: 'production',
-      'package.json[name]': 'farm-fe',
-      'package.json[type]': 'unknown',
-      'package.json[browser]': 'unknown',
-      'package.json[exports]': 'unknown',
-      'package.json[main]': 'unknown',
-      'package.json[module]': 'unknown',
-      '$__farm_regex:(global(This)?\\.)?process\\.env\\.NODE_ENV':
-        '"production"'
-    },
-    moduleCacheKeyStrategy: {}
   });
 
   expect(config.server).toEqual(

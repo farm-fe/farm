@@ -2,7 +2,7 @@ import path from 'node:path';
 // import path from 'node:path';
 import * as querystring from 'node:querystring';
 import fse from 'fs-extra';
-import {
+import type {
   InternalModuleFormat,
   NormalizedInputOptions,
   NormalizedOutputOptions,
@@ -467,4 +467,16 @@ export function transformFarmConfigToRollupNormalizedInputOptions(
     onwarn: noop,
     preserveModules: undefined
   } satisfies NormalizedInputOptions;
+}
+
+export function normalizeFilterPath(path: string): string {
+  if (process.platform === 'win32') {
+    return compatibleWin32Path(path);
+  }
+
+  return path;
+}
+
+function compatibleWin32Path(path: string): string {
+  return path.replaceAll('/', '\\\\');
 }

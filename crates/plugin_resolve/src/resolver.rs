@@ -18,6 +18,7 @@ use farmfe_core::{
 };
 
 use farmfe_toolkit::resolve::{follow_symlinks, load_package_json, package_json_loader::Options};
+use farmfe_utils::relative;
 
 use crate::resolver::browser::try_browser_map;
 use crate::resolver::exports::resolve_exports_or_imports;
@@ -37,6 +38,12 @@ pub struct ResolveCacheKey {
   pub source: String,
   pub base_dir: String,
   pub kind: ResolveKind,
+  pub options: ResolveOptions,
+}
+
+#[derive(Debug, Clone, Hash, PartialEq, Eq, Default)]
+pub struct ResolveOptions {
+  pub dynamic_extensions: Option<Vec<String>>,
 }
 
 pub struct Resolver {
@@ -61,6 +68,7 @@ impl Resolver {
     source: &str,
     base_dir: PathBuf,
     kind: &ResolveKind,
+    options: &ResolveOptions,
     context: &Arc<CompilationContext>,
   ) -> Option<PluginResolveHookResult> {
     let base_dir = if base_dir.is_absolute() {
@@ -74,6 +82,7 @@ impl Resolver {
       source: source.to_string(),
       base_dir: base_dir.to_string_lossy().to_string(),
       kind: kind.clone(),
+      options: options.clone(),
     };
 
     if let Some(result) = self.resolve_cache.lock().get(&cache_key) {
@@ -83,7 +92,7 @@ impl Resolver {
       }
     }
 
-    let result = self._resolve(source, base_dir, kind, context);
+    let result = self._resolve(source, base_dir, kind, options, context);
     self.resolve_cache.lock().insert(cache_key, result.clone());
 
     result
@@ -102,6 +111,7 @@ impl Resolver {
     source: &str,
     base_dir: PathBuf,
     kind: &ResolveKind,
+    options: &ResolveOptions,
     context: &Arc<CompilationContext>,
   ) -> Option<PluginResolveHookResult> {
     farm_profile_function!("resolver::resolve".to_string());
@@ -116,17 +126,20 @@ impl Resolver {
     let source = source.as_str();
 
     self
-      .try_alias(source, base_dir.clone(), kind, context)
-      .or_else(|| self.try_relative_or_absolute_path(source, base_dir.clone(), kind, context))
+      .try_alias(source, base_dir.clone(), kind, options, context)
+      .or_else(|| {
+        self.try_relative_or_absolute_path(source, base_dir.clone(), kind, options, context)
+      })
       .or_else(|| {
         self.try_browser(
           BrowserMapType::Source(source.to_string()),
           base_dir.clone(),
           kind,
+          options,
           context,
         )
       })
-      .or_else(|| self.try_node_modules(source, base_dir, kind, context))
+      .or_else(|| self.try_node_modules(source, base_dir, kind, options, context))
   }
 
   fn try_browser(
@@ -134,6 +147,7 @@ impl Resolver {
     browser_map_type: BrowserMapType,
     base_dir: PathBuf,
     kind: &ResolveKind,
+    options: &ResolveOptions,
     context: &Arc<CompilationContext>,
   ) -> Option<PluginResolveHookResult> {
     farm_profile_function!("try_browser".to_string());
@@ -157,11 +171,11 @@ impl Resolver {
         BrowserMapResult::Str(mapped_value) => {
           // alias to external package
           let result = if !is_source_relative(&mapped_value) && !is_source_absolute(&mapped_value) {
-            self.try_node_modules(&mapped_value, package_path, kind, context)
+            self.try_node_modules(&mapped_value, package_path, kind, options, context)
           } else {
             // alias to local file
             self
-              .try_relative_path(&mapped_value, package_path, kind, context)
+              .try_relative_path(&mapped_value, package_path, kind, options, context)
               .map(|resolved_path| PluginResolveHookResult {
                 resolved_path,
                 external: false,
@@ -209,16 +223,18 @@ impl Resolver {
     source: &str,
     base_dir: PathBuf,
     kind: &ResolveKind,
+    options: &ResolveOptions,
+
     context: &Arc<CompilationContext>,
   ) -> Option<PluginResolveHookResult> {
     // try relative path or absolute path
     self
-      .try_absolute_path(source, kind, context)
-      .or_else(|| self.try_relative_path(source, base_dir.clone(), kind, context))
+      .try_absolute_path(source, kind, options, context)
+      .or_else(|| self.try_relative_path(source, base_dir.clone(), kind, options, context))
       .map(|resolved_path| {
         // try browser map first
         let browser_map_type = BrowserMapType::ResolvedPath(resolved_path.clone());
-        if let Some(result) = self.try_browser(browser_map_type, base_dir, kind, context) {
+        if let Some(result) = self.try_browser(browser_map_type, base_dir, kind, options, context) {
           return result;
         }
 
@@ -246,6 +262,7 @@ impl Resolver {
     &self,
     path: &str,
     kind: &ResolveKind,
+    options: &ResolveOptions,
     context: &Arc<CompilationContext>,
   ) -> Option<String> {
     farm_profile_function!("try_absolute_path".to_string());
@@ -256,8 +273,8 @@ impl Resolver {
     }
 
     self
-      .try_file(&path_buf, context)
-      .or_else(|| self.try_directory(&path_buf, kind, false, context))
+      .try_file(&path_buf, options, context)
+      .or_else(|| self.try_directory(&path_buf, kind, false, options, context))
   }
 
   fn try_relative_path(
@@ -265,6 +282,7 @@ impl Resolver {
     source: &str,
     base_dir: PathBuf,
     kind: &ResolveKind,
+    options: &ResolveOptions,
     context: &Arc<CompilationContext>,
   ) -> Option<String> {
     if !is_source_relative(source) {
@@ -272,8 +290,8 @@ impl Resolver {
     }
 
     self
-      .try_dot_path(source, base_dir.clone(), kind, context)
-      .or_else(|| self.try_double_dot(source, base_dir.clone(), kind, context))
+      .try_dot_path(source, base_dir.clone(), kind, options, context)
+      .or_else(|| self.try_double_dot(source, base_dir.clone(), kind, options, context))
       .or_else(|| {
         farm_profile_function!("try_relative_path".to_string());
         let normalized_path = RelativePath::new(source).to_logical_path(base_dir);
@@ -287,8 +305,8 @@ impl Resolver {
 
         // TODO try read symlink from the resolved path step by step to its parent util the root
         self
-          .try_file(&normalized_path, context)
-          .or_else(|| self.try_directory(&normalized_path, kind, false, context))
+          .try_file(&normalized_path, options, context)
+          .or_else(|| self.try_directory(&normalized_path, kind, false, options, context))
       })
   }
 
@@ -297,11 +315,12 @@ impl Resolver {
     source: &str,
     base_dir: PathBuf,
     kind: &ResolveKind,
+    options: &ResolveOptions,
     context: &Arc<CompilationContext>,
   ) -> Option<String> {
     farm_profile_function!("try_dot_path".to_string());
     if is_source_dot(source) {
-      return self.try_directory(&base_dir, kind, false, context);
+      return self.try_directory(&base_dir, kind, false, options, context);
     }
 
     None
@@ -312,12 +331,13 @@ impl Resolver {
     source: &str,
     base_dir: PathBuf,
     kind: &ResolveKind,
+    options: &ResolveOptions,
     context: &Arc<CompilationContext>,
   ) -> Option<String> {
     farm_profile_function!("try_double_dot".to_string());
     if is_double_source_dot(source) {
       let parent_path = Path::new(&base_dir).parent().unwrap().to_path_buf();
-      return self.try_directory(&parent_path, kind, false, context);
+      return self.try_directory(&parent_path, kind, false, options, context);
     }
 
     None
@@ -329,6 +349,7 @@ impl Resolver {
     dir: &Path,
     kind: &ResolveKind,
     skip_try_package: bool,
+    options: &ResolveOptions,
     context: &Arc<CompilationContext>,
   ) -> Option<String> {
     if !dir.is_dir() {
@@ -338,13 +359,13 @@ impl Resolver {
     for main_file in &context.config.resolve.main_files {
       let file = dir.join(main_file);
 
-      if let Some(found) = self.try_file(&file, context) {
+      if let Some(found) = self.try_file(&file, options, context) {
         return Some(found);
       }
     }
 
     if !skip_try_package {
-      let res = self.try_package_entry(dir.to_path_buf(), kind, context);
+      let res = self.try_package_entry(dir.to_path_buf(), kind, options, context);
 
       if let Some(res) = res {
         return Some(res);
@@ -356,7 +377,12 @@ impl Resolver {
 
   /// Try resolve as a file with the configured extensions.
   /// If `/root/index` exists, return `/root/index`, otherwise try `/root/index.[configured extension]` in order, once any extension exists (like `/root/index.ts`), return it immediately
-  fn try_file(&self, file: &PathBuf, context: &Arc<CompilationContext>) -> Option<String> {
+  fn try_file(
+    &self,
+    file: &PathBuf,
+    options: &ResolveOptions,
+    context: &Arc<CompilationContext>,
+  ) -> Option<String> {
     // TODO add a test that for directory imports like `import 'comps/button'` where comps/button is a dir
     if file.exists() && file.is_file() {
       Some(file.to_string_lossy().to_string())
@@ -365,7 +391,12 @@ impl Resolver {
         let file_name = file.file_name().unwrap().to_string_lossy().to_string();
         file.with_file_name(format!("{}.{}", file_name, ext))
       };
-      let ext = context.config.resolve.extensions.iter().find(|&ext| {
+      let extensions = if let Some(ext) = &options.dynamic_extensions {
+        ext
+      } else {
+        &context.config.resolve.extensions
+      };
+      let ext = extensions.iter().find(|&ext| {
         let new_file = append_extension(file, ext);
         new_file.exists() && new_file.is_file()
       });
@@ -379,6 +410,7 @@ impl Resolver {
     source: &str,
     base_dir: PathBuf,
     kind: &ResolveKind,
+    options: &ResolveOptions,
     context: &Arc<CompilationContext>,
   ) -> Option<PluginResolveHookResult> {
     farm_profile_function!("try_alias".to_string());
@@ -395,10 +427,10 @@ impl Resolver {
         let regex = regex::Regex::new(alias).unwrap();
         if regex.is_match(source) {
           let replaced = regex.replace(source, replaced.as_str()).to_string();
-          result = self.resolve(&replaced, base_dir.clone(), kind, context);
+          result = self.resolve(&replaced, base_dir.clone(), kind, options, context);
         }
       } else if alias.ends_with('$') && source == alias.trim_end_matches('$') {
-        result = self.resolve(replaced, base_dir.clone(), kind, context);
+        result = self.resolve(replaced, base_dir.clone(), kind, options, context);
       } else if !alias.ends_with('$') && source.starts_with(alias) {
         // Add absolute path and values in node_modules package
 
@@ -408,13 +440,18 @@ impl Resolver {
           .to_string_lossy()
           .to_string();
         if Path::new(&new_source).is_absolute() && !Path::new(&new_source).is_relative() {
-          result = self.resolve(&new_source, base_dir.clone(), kind, context);
+          result = self.resolve(&new_source, base_dir.clone(), kind, options, context);
         }
-        let (res, _) =
-          self._try_node_modules_internal(new_source.as_str(), base_dir.clone(), kind, context);
+        let (res, _) = self._try_node_modules_internal(
+          new_source.as_str(),
+          base_dir.clone(),
+          kind,
+          options,
+          context,
+        );
         if let Some(resolve_result) = res {
           let resolved_path = resolve_result.resolved_path;
-          result = self.resolve(&resolved_path, base_dir.clone(), kind, context);
+          result = self.resolve(&resolved_path, base_dir.clone(), kind, options, context);
         }
       }
 
@@ -431,6 +468,7 @@ impl Resolver {
     source: &str,
     base_dir: PathBuf,
     kind: &ResolveKind,
+    options: &ResolveOptions,
     context: &Arc<CompilationContext>,
   ) -> Option<PluginResolveHookResult> {
     // do not try node_modules for absolute path or relative path
@@ -443,11 +481,13 @@ impl Resolver {
       source: source.to_string(),
       base_dir: base_dir.to_string_lossy().to_string(),
       kind: kind.clone(),
+      options: options.clone(),
     }) {
       return result.clone();
     }
 
-    let (result, tried_paths) = self._try_node_modules_internal(source, base_dir, kind, context);
+    let (result, tried_paths) =
+      self._try_node_modules_internal(source, base_dir, kind, options, context);
     // cache the result
     for tried_path in tried_paths {
       let mut resolve_node_modules_cache = self.resolve_cache.lock();
@@ -455,6 +495,7 @@ impl Resolver {
         source: source.to_string(),
         base_dir: tried_path.to_string_lossy().to_string(),
         kind: kind.clone(),
+        options: options.clone(),
       };
 
       if !resolve_node_modules_cache.contains_key(&key) {
@@ -470,6 +511,7 @@ impl Resolver {
     source: &str,
     base_dir: PathBuf,
     kind: &ResolveKind,
+    options: &ResolveOptions,
     context: &Arc<CompilationContext>,
   ) -> (Option<PluginResolveHookResult>, Vec<PathBuf>) {
     farm_profile_function!("try_node_modules".to_string());
@@ -483,6 +525,7 @@ impl Resolver {
         source: source.to_string(),
         base_dir: current.to_string_lossy().to_string(),
         kind: kind.clone(),
+        options: options.clone(),
       };
 
       if let Some(result) = self.resolve_cache.lock().get(&key) {
@@ -494,7 +537,6 @@ impl Resolver {
       let maybe_node_modules_path = current.join(NODE_MODULES);
       if maybe_node_modules_path.exists() && maybe_node_modules_path.is_dir() {
         let parse_package_source_result = utils::parse_package_source(source);
-
         if parse_package_source_result.is_none() {
           return (None, tried_paths);
         }
@@ -513,15 +555,21 @@ impl Resolver {
         };
 
         let resolved_path = if let Some(sub_path) = sub_path {
-          self.try_package_subpath(&sub_path, package_path.clone(), kind, context)
+          self.try_package_subpath(&sub_path, package_path.clone(), kind, options, context)
         } else {
           self
-            .try_package_entry(package_path.clone(), kind, context)
+            .try_package_entry(package_path.clone(), kind, options, context)
             .map(|resolved_path| {
               // browser map package entry
               let browser_map_type = BrowserMapType::ResolvedPath(resolved_path.clone());
               self
-                .try_browser(browser_map_type, package_path.clone(), kind, context)
+                .try_browser(
+                  browser_map_type,
+                  package_path.clone(),
+                  kind,
+                  options,
+                  context,
+                )
                 .map(|res| res.resolved_path)
                 .unwrap_or(resolved_path)
             })
@@ -569,6 +617,7 @@ impl Resolver {
     subpath: &str,
     package_path: PathBuf,
     kind: &ResolveKind,
+    options: &ResolveOptions,
     context: &Arc<CompilationContext>,
   ) -> Option<String> {
     farm_profile_function!("try_package_subpath".to_string());
@@ -579,9 +628,12 @@ impl Resolver {
       .to_logical_path(package_path.clone());
 
     if abs_subpath.exists() {
-      if let Some(result) =
-        self.try_package_entry(abs_subpath.parent().unwrap().to_path_buf(), kind, context)
-      {
+      if let Some(result) = self.try_package_entry(
+        abs_subpath.parent().unwrap().to_path_buf(),
+        kind,
+        options,
+        context,
+      ) {
         return Some(result.clone());
       }
     }
@@ -619,7 +671,7 @@ impl Resolver {
     if relative_path == BROWSER_SUBPATH_EXTERNAL_ID {
       Some(BROWSER_SUBPATH_EXTERNAL_ID.to_string())
     } else {
-      self.try_relative_path(&relative_path, package_path, kind, context)
+      self.try_relative_path(&relative_path, package_path, kind, options, context)
     }
   }
 
@@ -627,12 +679,13 @@ impl Resolver {
     &self,
     package_path: PathBuf,
     kind: &ResolveKind,
+    options: &ResolveOptions,
     context: &Arc<CompilationContext>,
   ) -> Option<String> {
     farm_profile_function!("try_package".to_string());
 
     let package_json_info = load_package_json(
-      package_path,
+      package_path.clone(),
       Options {
         follow_symlinks: context.config.resolve.symlinks,
         resolve_ancestor_dir: false, // only look for current directory
@@ -646,19 +699,15 @@ impl Resolver {
     // highest priority: exports field, so we need handle this first
     let entry_point = raw_package_json_info
       .get(HIGHEST_PRIORITY_FIELD)
-      .and_then(|field_value| {
-        if let Value::Object(_) = field_value {
-          resolve_exports_or_imports(
-            &package_json_info,
-            ".",
-            HIGHEST_PRIORITY_FIELD,
-            kind,
-            context,
-          )
-          .map(|exports_entries| exports_entries.get(0).unwrap().to_string())
-        } else {
-          None
-        }
+      .and_then(|_| {
+        resolve_exports_or_imports(
+          &package_json_info,
+          ".",
+          HIGHEST_PRIORITY_FIELD,
+          kind,
+          context,
+        )
+        .map(|exports_entries| exports_entries.get(0).unwrap().to_string())
       })
       .or_else(|| {
         context
@@ -702,11 +751,17 @@ impl Resolver {
       } else {
         entry_point
       };
-      return self.try_relative_path(&entry_point, PathBuf::from(dir), kind, context);
+      return self.try_relative_path(&entry_point, PathBuf::from(dir), kind, options, context);
     }
 
     // no main field found, try to resolve index.js file
-    self.try_directory(Path::new(package_json_info.dir()), kind, true, context)
+    self.try_directory(
+      Path::new(package_json_info.dir()),
+      kind,
+      true,
+      options,
+      context,
+    )
   }
 
   fn try_imports(
@@ -746,10 +801,10 @@ impl Resolver {
     farm_profile_function!("is_module_side_effects".to_string());
     match package_json_info.side_effects() {
       Some(side_effect) => match side_effect {
-        farmfe_core::common::ParsedSideEffects::Bool(b) => *b,
-        farmfe_core::common::ParsedSideEffects::Array(arr) => {
-          arr.iter().any(|s| s == resolved_path)
-        }
+        farmfe_core::common::SideEffects::Bool(b) => *b,
+        farmfe_core::common::SideEffects::Array(arr) => arr
+          .iter()
+          .any(|s| s.is_match(relative(package_json_info.dir(), resolved_path))),
       },
       None => true,
     }

@@ -76,23 +76,23 @@ fn test_with_compiler() {
     let config = Config {
       input: HashMap::from([("index".to_string(), resolved_path.clone())]),
       root: cwd.to_string_lossy().to_string(),
-      runtime: RuntimeConfig {
+      runtime: Box::new(RuntimeConfig {
         path: runtime_path,
         ..Default::default()
-      },
+      }),
       mode: farmfe_core::config::Mode::Production,
-      sourcemap: SourcemapConfig::Bool(false),
+      sourcemap: Box::new(SourcemapConfig::Bool(false)),
       preset_env: Box::new(PresetEnvConfig::Bool(false)),
       minify: Box::new(BoolOrObj::from(false)),
-      tree_shaking: false,
+      tree_shaking: Box::new(BoolOrObj::Bool(false)),
       progress: false,
-      resolve: ResolveConfig {
+      resolve: Box::new(ResolveConfig {
         alias: std::collections::HashMap::from([(
           "@".to_string(),
           cwd.to_string_lossy().to_string(),
         )]),
         ..Default::default()
-      },
+      }),
       ..Default::default()
     };
 

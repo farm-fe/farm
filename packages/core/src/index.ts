@@ -3,6 +3,26 @@ export * from './config/index.js';
 export * from './server/index.js';
 export * from './plugin/type.js';
 export * from './utils/index.js';
+export type {
+  Module,
+  ModuleType,
+  ResolveKind,
+  PluginLoadHookParam,
+  PluginLoadHookResult,
+  PluginResolveHookParam,
+  PluginResolveHookResult,
+  OutputConfig,
+  ResolveConfig,
+  RuntimeConfig,
+  ScriptConfig,
+  CssConfig,
+  PersistentCacheConfig,
+  PartialBundlingConfig,
+  PresetEnvConfig,
+  Config,
+  PluginTransformHookParam,
+  PluginTransformHookResult
+} from './types/binding.js';
 
 import { statSync } from 'node:fs';
 import fs from 'node:fs/promises';
@@ -13,6 +33,7 @@ import { Compiler } from './compiler/index.js';
 import { loadEnv, setProcessEnv } from './config/env.js';
 import {
   UserConfig,
+  checkClearScreen,
   getConfigFilePath,
   normalizePublicDir,
   resolveConfig
@@ -32,7 +53,6 @@ import type {
 import { logError } from './server/error.js';
 import { lazyCompilation } from './server/middlewares/lazy-compilation.js';
 import { resolveHostname } from './utils/http.js';
-import { clearScreen } from './utils/share.js';
 import { ConfigWatcher } from './watcher/config-watcher.js';
 
 import type { JsPlugin } from './plugin/type.js';
@@ -51,8 +71,6 @@ export async function start(
       logger
     );
 
-    // console.log(resolvedUserConfig);
-
     const compiler = await createCompiler(resolvedUserConfig, logger);
 
     const devServer = await createDevServer(
@@ -63,7 +81,7 @@ export async function start(
 
     await devServer.listen();
   } catch (error) {
-    logger.error(`Failed to start the server: \n ${error}`, { exit: true });
+    logger.error('Failed to start the server', { exit: true, error });
   }
 }
 
@@ -304,7 +322,6 @@ export async function createCompiler(
     rustPlugins,
     compilation: compilationConfig
   } = resolvedUserConfig;
-
   const compiler = new Compiler(
     {
       config: compilationConfig,
@@ -332,10 +349,18 @@ async function copyPublicDirectory(
 
   try {
     if (await fse.pathExists(absPublicDirPath)) {
-      await fse.copy(
-        absPublicDirPath,
-        resolvedUserConfig.compilation.output.path
-      );
+      const files = await fse.readdir(absPublicDirPath);
+      const outputPath = resolvedUserConfig.compilation.output.path;
+      for (const file of files) {
+        const publicFile = path.join(absPublicDirPath, file);
+        const destFile = path.join(outputPath, file);
+
+        if (await fse.pathExists(destFile)) {
+          continue;
+        }
+        await fse.copy(publicFile, destFile);
+      }
+
       logger.info(
         `Public directory resources copied ${colors.bold(
           colors.green('successfully')
@@ -354,13 +379,11 @@ export async function createDevServer(
 ) {
   const server = new Server({ compiler, logger });
   await server.createDevServer(resolvedUserConfig.server);
-  const watcher = await createFileWatcher(server, resolvedUserConfig, logger);
+  await createFileWatcher(server, resolvedUserConfig, logger);
   // call configureDevServer hook after both server and watcher are ready
   resolvedUserConfig.jsPlugins.forEach((plugin: JsPlugin) =>
     plugin.configureDevServer?.(server)
   );
-
-  watcher.watchExtraFiles();
 
   return server;
 }
@@ -396,7 +419,7 @@ export async function createFileWatcher(
     configFilePath
   });
   farmWatcher.watch(async (files: string[]) => {
-    clearScreen();
+    checkClearScreen(resolvedUserConfig);
 
     devServer.restart(async () => {
       logFileChanges(files, resolvedUserConfig.root, logger);

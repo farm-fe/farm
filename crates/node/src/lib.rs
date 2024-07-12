@@ -1,5 +1,6 @@
 #![deny(clippy::all)]
 #![allow(clippy::redundant_allocation)]
+#![allow(clippy::blocks_in_conditions)]
 #[cfg(feature = "file_watcher")]
 use std::path::PathBuf;
 use std::{collections::HashMap, path::Path, sync::Arc};
