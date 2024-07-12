@@ -140,6 +140,11 @@ export function createViteDevServerAdapter(
     new ViteDevServerAdapter(pluginName, config, server),
     {
       get(target, key) {
+        const objectKeys = [
+          'constructor',
+          'Symbol(Symbol.toStringTag)',
+          'prototype'
+        ];
         const allowedKeys = [
           'moduleGraph',
           'config',
@@ -149,7 +154,10 @@ export function createViteDevServerAdapter(
           'ws',
           'httpServer'
         ];
-        if (allowedKeys.includes(String(key))) {
+        if (
+          objectKeys.includes(String(key)) ||
+          allowedKeys.includes(String(key))
+        ) {
           return target[key as keyof typeof target];
         }
 
