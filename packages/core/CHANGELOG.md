@@ -1,5 +1,59 @@
 # @farmfe/core
 
+## 1.2.8
+
+### Patch Changes
+
+- 83d05d59: fix: put http-proxy into production dependency
+
+## 1.2.7
+
+### Patch Changes
+
+- 3cf0cdd9: use http-proxy as koa proxy middleware
+
+## 1.2.6
+
+### Patch Changes
+
+- a264f6c4: support mts/cts ext and fix traceDependencies use directory
+- 0915328e: support new URL with import.meta.url
+
+## 1.2.5
+
+### Patch Changes
+
+- 49523be7: bump dotenv version
+- 53f5115e: fix: publicDir find html resource middleware error
+- Updated dependencies [49523be7]
+  - @farmfe/runtime-plugin-import-meta@0.2.1
+
+## 1.2.4
+
+### Patch Changes
+
+- 8e3f1934: Enable parser.decorators by default when script.decorators is enabled
+- 4470ff51: Fix bugs:
+  - Tree shake side effect detection from package.json fail
+  - Sourcemap resolution when build for production
+- 8e3f1934: Make options in `ScriptParseConfig` optional
+
+## 1.2.3
+
+### Patch Changes
+
+- ca28145c: \* fix #1450 resolving css @import dependencies error
+  - fix #1449 vite plugin adapter wrong css plugin content
+  - fix #902 this.resolve panic when use vite-plugin-adapter
+
+## 1.2.2
+
+### Patch Changes
+
+- 68482a02: fix #1432
+- 223af33f: resolver priority exports field when string type
+- 97a42515: Fix #1418
+
 ## 1.2.1
 
 ### Patch Changes

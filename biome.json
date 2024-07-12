@@ -10,20 +10,15 @@
     "ignore": [
       "crates/**",
       "*.vue",
-      "examples/**",
       "tsconfig.base.json",
       "tsconfig.json",
       "cspell.json",
-      "*.e2e.ts",
       "*.d.ts",
       "packages/runtime/**",
       "packages/runtime-plugin-import-meta/**",
       "packages/create-farm/templates/**",
       "packages/create-farm-plugin/templates/**",
-      "rust-plugins/**",
-      "js-plugins/vue",
-      "js-plugins/less",
-      "js-plugins/sass"
+      "rust-plugins/**"
     ],
     "ignoreUnknown": true
   },
@@ -34,11 +29,22 @@
     "indentWidth": 2,
     "lineEnding": "lf",
     "lineWidth": 80,
-    "attributePosition": "auto"
+    "attributePosition": "auto",
+    "include": [
+      "**/*.ts"
+    ],
+    "ignore": [
+      "node_modules",
+      "dist"
+    ]
   },
   "organizeImports": {
     "enabled": true,
-    "include": ["./**/*.js", "./**/*.ts", "./**/*.mjs"]
+    "include": [
+      "./**/*.js",
+      "./**/*.ts",
+      "./**/*.mjs"
+    ]
   },
   "linter": {
     "enabled": true,

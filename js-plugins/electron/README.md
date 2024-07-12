@@ -4,7 +4,7 @@
   </a>
   <p>
     <span>English</span> |
-    <a href="./README-zh-CH.md">简体中文</a>  
+    <a href="./README-zh-CN.md">简体中文</a>  
 </div>
 
 ---

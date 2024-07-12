@@ -14,7 +14,7 @@ use farmfe_core::{
   plugin::{PluginFinalizeModuleHookParam, ResolveKind},
   swc_common::{
     comments::{Comments, SingleThreadedComments},
-    BytePos, FileName, LineCol, Mark, SourceMap, GLOBALS,
+    BytePos, FileName, LineCol, Mark, SourceMap,
   },
   swc_ecma_ast::{
     CallExpr, Callee, EsVersion, Expr, Ident, Import, MemberProp, Module as SwcModule, ModuleItem,
@@ -30,6 +30,7 @@ pub use farmfe_toolkit_plugin_types::swc_ast::ParseScriptModuleResult;
 
 use self::swc_try_with::try_with;
 
+pub mod defined_idents_collector;
 pub mod swc_try_with;
 
 /// parse the content of a module to [SwcModule] ast.
@@ -153,15 +154,7 @@ pub fn codegen_module(
 pub fn module_type_from_id(id: &str) -> Option<ModuleType> {
   let path = PathBuf::from(id);
 
-  path.extension().map(|ext| match ext.to_str().unwrap() {
-    "ts" => ModuleType::Ts,
-    "tsx" => ModuleType::Tsx,
-    "js" | "mjs" | "cjs" => ModuleType::Js,
-    "jsx" => ModuleType::Jsx,
-    "css" => ModuleType::Css,
-    "html" => ModuleType::Html,
-    ext => ModuleType::Custom(ext.to_string()),
-  })
+  path.extension().map(|ext| ext.to_str().unwrap().into())
 }
 
 /// return [None] if module type is not script

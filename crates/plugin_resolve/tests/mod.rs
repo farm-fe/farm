@@ -5,7 +5,7 @@ use farmfe_core::{
   context::CompilationContext,
   plugin::ResolveKind,
 };
-use farmfe_plugin_resolve::resolver::Resolver;
+use farmfe_plugin_resolve::resolver::{ResolveOptions, Resolver};
 use farmfe_testing_helpers::fixture;
 
 #[test]
@@ -20,6 +20,7 @@ fn resolve_relative_specifier_without_extension() {
         "./index",
         cwd.clone(),
         &ResolveKind::Entry(String::new()),
+        &ResolveOptions::default(),
         &Arc::new(CompilationContext::default()),
       );
       assert!(resolved.is_some());
@@ -44,6 +45,7 @@ fn resolve_relative_specifier_with_extension() {
         "./index.html",
         cwd.clone(),
         &ResolveKind::Entry(String::new()),
+        &ResolveOptions::default(),
         &Arc::new(CompilationContext::default()),
       );
       assert!(resolved.is_none());
@@ -52,6 +54,7 @@ fn resolve_relative_specifier_with_extension() {
         "./index.ts",
         cwd.clone(),
         &ResolveKind::Entry(String::new()),
+        &ResolveOptions::default(),
         &Arc::new(CompilationContext::default()),
       );
       let resolved = resolved.unwrap();
@@ -75,6 +78,7 @@ fn resolve_node_modules_normal() {
         "pkg-a",
         cwd.clone(),
         &ResolveKind::Import,
+        &ResolveOptions::default(),
         &Arc::new(CompilationContext::default()),
       );
       assert!(resolved.is_some());
@@ -90,12 +94,13 @@ fn resolve_node_modules_normal() {
           .to_string()
       );
       assert!(!resolved.external);
-      assert!(resolved.side_effects);
+      assert!(!resolved.side_effects);
 
       let resolved = resolver.resolve(
         "pkg-a/index.js",
         cwd.clone(),
         &ResolveKind::Import,
+        &ResolveOptions::default(),
         &Arc::new(CompilationContext::default()),
       );
       assert!(resolved.is_some());
@@ -111,12 +116,13 @@ fn resolve_node_modules_normal() {
           .to_string()
       );
       assert!(!resolved.external);
-      assert!(resolved.side_effects);
+      assert!(!resolved.side_effects);
 
       let resolved = resolver.resolve(
         "pkg-a/lib",
         cwd.clone(),
         &ResolveKind::Import,
+        &ResolveOptions::default(),
         &Arc::new(CompilationContext::default()),
       );
       assert!(resolved.is_some());
@@ -139,6 +145,7 @@ fn resolve_node_modules_normal() {
         "pkg-b",
         cwd.clone(),
         &ResolveKind::Import,
+        &ResolveOptions::default(),
         &Arc::new(CompilationContext::default()),
       );
       assert!(resolved.is_some());
@@ -161,6 +168,7 @@ fn resolve_node_modules_normal() {
         "dir-main",
         cwd.clone(),
         &ResolveKind::Import,
+        &ResolveOptions::default(),
         &Arc::new(CompilationContext::default()),
       );
       assert!(resolved.is_some());
@@ -176,6 +184,7 @@ fn resolve_node_modules_normal() {
           .to_string_lossy()
           .to_string()
       );
+      assert!(!resolved.side_effects);
     }
   );
 }
@@ -188,7 +197,7 @@ fn resolve_alias() {
     let context = Arc::new(
       CompilationContext::new(
         Config {
-          resolve: ResolveConfig {
+          resolve: Box::new(ResolveConfig {
             alias: HashMap::from([
               ("@".to_string(), cwd.to_string_lossy().to_string()),
               ("/@".to_string(), cwd.to_string_lossy().to_string()),
@@ -203,7 +212,7 @@ fn resolve_alias() {
               ),
             ]),
             ..Default::default()
-          },
+          }),
           ..Default::default()
         },
         vec![],
@@ -211,7 +220,13 @@ fn resolve_alias() {
       .unwrap(),
     );
 
-    let resolved = resolver.resolve("@/pages/a", cwd.clone(), &ResolveKind::Import, &context);
+    let resolved = resolver.resolve(
+      "@/pages/a",
+      cwd.clone(),
+      &ResolveKind::Import,
+      &ResolveOptions::default(),
+      &context,
+    );
     assert!(resolved.is_some());
     let resolved = resolved.unwrap();
 
@@ -224,7 +239,13 @@ fn resolve_alias() {
         .to_string()
     );
 
-    let resolved = resolver.resolve("/@/pages/a", cwd.clone(), &ResolveKind::Import, &context);
+    let resolved = resolver.resolve(
+      "/@/pages/a",
+      cwd.clone(),
+      &ResolveKind::Import,
+      &ResolveOptions::default(),
+      &context,
+    );
     assert!(resolved.is_some());
     let resolved = resolved.unwrap();
 
@@ -241,6 +262,7 @@ fn resolve_alias() {
       "@/components/button",
       cwd.clone(),
       &ResolveKind::Import,
+      &ResolveOptions::default(),
       &context,
     );
 
@@ -256,7 +278,13 @@ fn resolve_alias() {
         .to_string()
     );
 
-    let resolved = resolver.resolve("/utils", cwd.clone(), &ResolveKind::Import, &context);
+    let resolved = resolver.resolve(
+      "/utils",
+      cwd.clone(),
+      &ResolveKind::Import,
+      &ResolveOptions::default(),
+      &context,
+    );
 
     assert!(resolved.is_some());
     let resolved = resolved.unwrap();
@@ -282,6 +310,7 @@ fn resolve_dot() {
       ".",
       cwd.clone(),
       &ResolveKind::Import,
+      &ResolveOptions::default(),
       &Arc::new(CompilationContext::default()),
     );
     assert!(resolved.is_some());
@@ -306,6 +335,7 @@ fn resolve_double_dot() {
         "..",
         cwd.clone(),
         &ResolveKind::Import,
+        &ResolveOptions::default(),
         &Arc::new(CompilationContext::default()),
       );
       assert!(resolved.is_some());
@@ -336,6 +366,7 @@ fn resolve_absolute_specifier() {
         file.to_str().unwrap(),
         cwd.clone(),
         &ResolveKind::Import,
+        &ResolveOptions::default(),
         &Arc::new(CompilationContext::default()),
       );
       assert!(resolved.is_some());
@@ -347,6 +378,7 @@ fn resolve_absolute_specifier() {
         cwd.join("lib").to_str().unwrap(),
         cwd.clone(),
         &ResolveKind::Import,
+        &ResolveOptions::default(),
         &Arc::new(CompilationContext::default()),
       );
 
@@ -377,6 +409,7 @@ fn resolve_package_dir() {
         cwd.to_str().unwrap(),
         cwd.clone(),
         &ResolveKind::Import,
+        &ResolveOptions::default(),
         &Arc::new(CompilationContext::default()),
       );
       assert!(resolved.is_some());
@@ -400,6 +433,7 @@ fn resolve_package_end_with_js() {
         "bn.js",
         cwd.clone(),
         &ResolveKind::Import,
+        &ResolveOptions::default(),
         &Arc::new(CompilationContext::default()),
       );
       assert!(resolved.is_some());
@@ -432,6 +466,7 @@ fn resolve_package_subpath() {
         "bn.js/lib",
         cwd.clone(),
         &ResolveKind::Import,
+        &ResolveOptions::default(),
         &Arc::new(CompilationContext::default()),
       );
       assert!(resolved.is_some());

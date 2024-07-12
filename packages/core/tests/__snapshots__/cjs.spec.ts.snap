@@ -1,0 +1,12 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`resolveUserConfig > resolveUserConfig 1`] = `
+{
+  "$__farm_regex:(global(This)?\\.)?process\\.env\\.NODE_ENV": ""development"",
+  "$__farm_regex:(global(This)?\\.)?process\\.env\\.mode": ""development"",
+  "FARM_PROCESS_ENV": {
+    "NODE_ENV": "development",
+    "mode": "development",
+  },
+}
+`;

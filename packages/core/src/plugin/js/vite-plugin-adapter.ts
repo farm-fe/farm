@@ -338,7 +338,8 @@ export class VitePluginAdapter implements JsPlugin {
     hookName: string,
     hook?: ObjectHook<(...args: any[]) => any, { sequential?: boolean }>,
     farmContext?: CompilationContext,
-    currentHandlingFile?: string
+    currentHandlingFile?: string,
+    hookContext?: { caller?: string; meta: Record<string, unknown> }
   ): (
     ...args: any[]
   ) => any | undefined | Promise<(...args: any[]) => any | undefined> {
@@ -374,7 +375,8 @@ export class VitePluginAdapter implements JsPlugin {
         currentHandlingFile,
         this.name,
         hookName,
-        this._farmConfig
+        this._farmConfig,
+        hookContext
       );
       return hook.bind(pluginContext);
     } else {
@@ -419,7 +421,9 @@ export class VitePluginAdapter implements JsPlugin {
           const hook = this.wrapRawPluginHook(
             'resolveId',
             this._rawPlugin.resolveId,
-            context
+            context,
+            undefined,
+            hookContext
           );
           const absImporterPath = normalizePath(
             path.resolve(process.cwd(), params.importer ?? '')

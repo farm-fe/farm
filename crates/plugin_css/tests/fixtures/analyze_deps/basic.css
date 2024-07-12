@@ -12,3 +12,11 @@ body {
 .home {
   background: url('./img/home.png') no-repeat;
 }
+
+div {
+  background: url('/@/img/logo.png');
+}
+
+p {
+  background: url('@/img/logo.png');
+}

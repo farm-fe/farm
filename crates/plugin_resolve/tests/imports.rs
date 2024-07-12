@@ -5,7 +5,7 @@ use farmfe_core::{
   context::CompilationContext,
   plugin::ResolveKind,
 };
-use farmfe_plugin_resolve::resolver::Resolver;
+use farmfe_plugin_resolve::resolver::{ResolveOptions, Resolver};
 use farmfe_testing_helpers::fixture;
 
 #[test]
@@ -22,6 +22,7 @@ fn resolve_imports_basic() {
         "#ansi-styles",
         cwd.clone(),
         &ResolveKind::Import,
+        &ResolveOptions::default(),
         &Arc::new(CompilationContext::default()),
       );
       assert!(resolved.is_some());
@@ -53,6 +54,7 @@ fn resolve_imports_deep() {
         "#ansi-styles",
         cwd.clone(),
         &ResolveKind::Import,
+        &ResolveOptions::default(),
         &Arc::new(CompilationContext::default()),
       );
       assert!(resolved.is_some());
@@ -84,6 +86,7 @@ fn resolve_imports_replace_object() {
         "#supports-color",
         cwd.clone(),
         &ResolveKind::Import,
+        &ResolveOptions::default(),
         &Arc::new(CompilationContext::default()),
       );
       assert!(resolved.is_some());
@@ -116,6 +119,7 @@ fn resolve_imports_replace_deps() {
         "#ansi-styles-execa",
         cwd.clone(),
         &ResolveKind::Import,
+        &ResolveOptions::default(),
         &Arc::new(CompilationContext::default()),
       );
       assert!(resolved.is_some());
@@ -144,10 +148,10 @@ fn resolve_imports_target_browser() {
       let cwd = file.parent().unwrap().to_path_buf();
       let context = CompilationContext::new(
         Config {
-          output: OutputConfig {
+          output: Box::new(OutputConfig {
             target_env: TargetEnv::Browser,
             ..Default::default()
-          },
+          }),
           ..Default::default()
         },
         vec![],
@@ -159,6 +163,7 @@ fn resolve_imports_target_browser() {
         "#supports-color",
         cwd.clone(),
         &ResolveKind::Import,
+        &ResolveOptions::default(),
         &Arc::new(context),
       );
       assert!(resolved.is_some());
@@ -187,10 +192,10 @@ fn resolve_imports_target_node() {
       let resolver = Resolver::new();
       let context = CompilationContext::new(
         Config {
-          output: OutputConfig {
+          output: Box::new(OutputConfig {
             target_env: TargetEnv::Node,
             ..Default::default()
-          },
+          }),
           ..Default::default()
         },
         vec![],
@@ -201,6 +206,7 @@ fn resolve_imports_target_node() {
         "#supports-color",
         cwd.clone(),
         &ResolveKind::Import,
+        &ResolveOptions::default(),
         &Arc::new(context),
       );
       assert!(resolved.is_some());

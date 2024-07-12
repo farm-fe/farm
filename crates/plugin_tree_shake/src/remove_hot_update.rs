@@ -37,9 +37,10 @@ impl VisitMut for UselessHotUpdateStmtRemover {
           ..
         }) = &*if_stmt.test
         {
-          if module.to_string() == "module"
-            && meta.to_string() == "meta"
-            && hot.to_string() == "hot"
+          // use `&` to circumvent additional heap allocations
+          if &module.to_string() == "module"
+            && &meta.to_string() == "meta"
+            && &hot.to_string() == "hot"
           {
             // set test tuning to false
             *stmt = Stmt::Empty(EmptyStmt { span: DUMMY_SP })

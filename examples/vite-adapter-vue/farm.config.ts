@@ -9,9 +9,11 @@ import { ElementPlusResolver } from 'unplugin-vue-components/resolvers';
 import { VueRouterAutoImports } from 'unplugin-vue-router';
 import VueRouter from 'unplugin-vue-router/vite';
 import UnpluginSvgComponent from 'unplugin-svg-component/vite';
+import ViteSvgLoader from 'vite-svg-loader';
 
 import less from '@farmfe/js-plugin-less';
 import postcss from '@farmfe/js-plugin-postcss';
+import sass from '@farmfe/js-plugin-sass';
 import viewer from '@farmfe/js-plugin-visualizer';
 
 function configureVitePluginVue() {
@@ -31,21 +33,29 @@ export default defineConfig({
     output:{
       path: "build",
       publicPath: "/vue-public-path/",
-    }
+    },
+    persistentCache: false,
+    sourcemap: false,
   },
   plugins: [
-    '@farmfe/plugin-sass',
-    less(),
+    sass(),
+    less({
+      lessOptions: {
+        javascriptEnabled: true
+      }
+    }),
     postcss(),
     process.env.FARM_VIEWER ? viewer() : undefined,
   ],
   vitePlugins: [
+    ViteSvgLoader(),
     VueRouter(),
     configureVitePluginVue,
     vueJsx(),
     AutoImport({
       resolvers: [ElementPlusResolver({ importStyle: 'sass' })],
       imports: [
+        'vue',
         VueRouterAutoImports
       ]
     }),

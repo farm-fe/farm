@@ -15,11 +15,11 @@ function App() {
 
   return (
     <div className="container">
-      <h1>Welcome to Tauri!</h1>
+      <h1>Welcome to Farm!</h1>
 
       <div className="row">
         <a href="https://farmfe.org/" target="_blank">
-          <img src={FarmLogo} class="logo" alt="Farm logo" />
+          <img src={FarmLogo} className="logo" alt="Farm logo" />
         </a>
         <a href="https://tauri.app" target="_blank">
           <img src="/tauri.svg" className="logo tauri" alt="Tauri logo" />
@@ -29,7 +29,7 @@ function App() {
         </a>
       </div>
 
-      <p>Click on the Tauri, Farm, and React logos to learn more.</p>
+      <p>Click on the Farm, Tauri, and React logos to learn more.</p>
 
       <form
         className="row"

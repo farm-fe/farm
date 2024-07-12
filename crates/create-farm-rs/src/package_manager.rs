@@ -57,7 +57,7 @@ impl<'a> PackageManager {
   ];
 
   /// Node.js managers
-  pub const NODE: &'a [PackageManager] = &[
+  pub const _NODE: &'a [PackageManager] = &[
     PackageManager::Pnpm,
     PackageManager::Yarn,
     PackageManager::Npm,
@@ -85,7 +85,7 @@ impl PackageManager {
     }
   }
 
-  pub const fn templates(&self) -> &[Template] {
+  pub const fn _templates(&self) -> &[Template] {
     match self {
       PackageManager::Pnpm | PackageManager::Yarn | PackageManager::Npm | PackageManager::Bun => &[
         Template::Vanilla,
@@ -108,7 +108,6 @@ impl PackageManager {
       PackageManager::Yarn => Some("yarn"),
       PackageManager::Npm => Some("npm install"),
       PackageManager::Bun => Some("bun install"),
-      _ => None,
     }
   }
 
@@ -121,7 +120,7 @@ impl PackageManager {
     }
   }
 
-  pub const fn is_node(&self) -> bool {
+  pub const fn _is_node(&self) -> bool {
     matches!(
       self,
       PackageManager::Pnpm | PackageManager::Yarn | PackageManager::Npm | PackageManager::Bun,

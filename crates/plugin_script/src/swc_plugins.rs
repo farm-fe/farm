@@ -145,12 +145,19 @@ impl RustPlugins {
       return Ok(n);
     }
 
-    self.apply_inner(n).with_context(|| {
-      format!(
-        "failed to invoke plugin on '{:?}'",
-        self.metadata_context.filename
-      )
-    })
+    let fut = async move {
+      self.apply_inner(n).with_context(|| {
+        format!(
+          "failed to invoke plugin on '{:?}'",
+          self.metadata_context.filename
+        )
+      })
+    };
+    if let Ok(handle) = tokio::runtime::Handle::try_current() {
+      handle.block_on(fut)
+    } else {
+      tokio::runtime::Runtime::new().unwrap().block_on(fut)
+    }
   }
 
   fn apply_inner(&mut self, n: Program) -> std::result::Result<Program, anyhow::Error> {

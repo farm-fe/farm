@@ -80,8 +80,6 @@ conflict_ts_cjs();
 const { Col: Col$1 } = Grid;
 const { Row: Row$1 } = Grid;
 const { Row: Row$2 = 100 } = Grid;
-console.log(Row$2, Col$1)(globalThis || window || global)["__farm_default_namespace__"].__farm_module_system__.setPlugins([]);
-(function(_){for(var r in _){_[r].__farm_resource_pot__='index_dcdc.js';(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.register(r,_[r])}})({"b5d64806":function  (module, exports, farmRequire, farmDynamicRequire) {
-    "use strict";
-}
+console.log(Row$2, Col$1)(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setPlugins([]);
+(function(_){for(var r in _){_[r].__farm_resource_pot__='index_dcdc.js';(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.register(r,_[r])}})({"b5d64806":function  (module, exports, farmRequire, farmDynamicRequire) {}
 ,});(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setInitialLoadedResources([]);(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setDynamicModuleResourcesMap({  });var farmModuleSystem = (globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__;farmModuleSystem.bootstrap();var entry = farmModuleSystem.require("b5d64806");

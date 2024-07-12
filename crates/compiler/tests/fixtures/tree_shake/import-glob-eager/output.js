@@ -61,47 +61,29 @@
   };
 }((function(){var index_js_cjs = __commonJs((module, exports)=>{
     "use strict";
-    console.log("runtime/index.js")(globalThis || window || global)["__farm_default_namespace__"].__farm_module_system__.setPlugins([]);
+    console.log('runtime/index.js')(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setPlugins([]);
 });
 })());(function(_){for(var r in _){_[r].__farm_resource_pot__='index_de21.js';(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.register(r,_[r])}})({"05ee5ec7":function  (module, exports, farmRequire, farmDynamicRequire) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", {
-        value: true
+    module._m(exports);
+    module.o(exports, "routes", function() {
+        return routes;
     });
-    Object.defineProperty(exports, "routes", {
-        enumerable: true,
-        get: function() {
-            return routes;
-        }
-    });
-    var _interop_require_wildcard = farmRequire("@swc/helpers/_/_interop_require_wildcard");
-    var _depts = _interop_require_wildcard._(farmRequire("edfa0cee"));
-    const routes = {
-        "./modules/dep.ts": _depts
+    var _f_dep = module.w(farmRequire("edfa0cee"));
+    var __glob__0_0 = _f_dep;
+    var routes = {
+        "./modules/dep.ts": __glob__0_0
     };
 }
 ,
 "b5d64806":function  (module, exports, farmRequire, farmDynamicRequire) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", {
-        value: true
-    });
-    var _dep = farmRequire("05ee5ec7");
-    console.log(_dep.routes);
+    module._m(exports);
+    var _f_dep = farmRequire("05ee5ec7");
+    console.log(_f_dep.routes);
 }
 ,
 "edfa0cee":function  (module, exports, farmRequire, farmDynamicRequire) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", {
-        value: true
-    });
-    Object.defineProperty(exports, "default", {
-        enumerable: true,
-        get: function() {
-            return _default;
-        }
-    });
-    var _default = {
+    module._m(exports);
+    exports.default = {
         path: "/vue-flow",
         redirect: "/vue-flow/index",
         meta: {

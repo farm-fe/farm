@@ -13,9 +13,12 @@ import {
   NormalizedServerConfig,
   UserPreviewServerConfig,
   UserServerConfig,
-  normalizePublicDir,
-  normalizePublicPath
+  normalizePublicDir
 } from '../config/index.js';
+import {
+  getValidPublicPath,
+  normalizePublicPath
+} from '../config/normalize-config/normalize-output.js';
 import { resolveHostname, resolveServerUrls } from '../utils/http.js';
 import {
   Logger,
@@ -99,7 +102,8 @@ export class Server implements ImplDevServer {
 
     this.publicPath =
       normalizePublicPath(
-        compiler.config.config.output?.publicPath,
+        compiler.config.config.output.targetEnv,
+        compiler.config.config.output.publicPath,
         logger,
         false
       ) || '/';
@@ -124,6 +128,9 @@ export class Server implements ImplDevServer {
     // compile the project and start the dev server
     await this.compile();
 
+    // watch extra files after compile
+    this.watcher?.watchExtraFiles?.();
+
     bootstrap(Date.now() - start, this.compiler.config);
 
     await this.startServer(this.config);
@@ -132,8 +139,8 @@ export class Server implements ImplDevServer {
       (await this.displayServerUrls());
 
     if (open) {
-      const publicPath =
-        this.publicPath === '/' ? this.publicPath : `/${this.publicPath}`;
+      let publicPath = getValidPublicPath(this.publicPath) ?? '/';
+
       const serverUrl = `${protocol}://${hostname.name}:${port}${publicPath}`;
       openBrowser(serverUrl);
     }
@@ -147,8 +154,7 @@ export class Server implements ImplDevServer {
     }
 
     if (this.config.writeToDisk) {
-      const base = this.publicPath.match(/^https?:\/\//) ? '' : this.publicPath;
-      this.compiler.writeResourcesToDisk(base);
+      this.compiler.writeResourcesToDisk();
     } else {
       this.compiler.callWriteResourcesHook();
     }
@@ -217,9 +223,10 @@ export class Server implements ImplDevServer {
     const { https, host } = options;
     const protocol = https ? 'https' : 'http';
     const hostname = await resolveHostname(host);
-    const publicPath =
+    const publicPath = getValidPublicPath(
       this.compiler?.config.config.output?.publicPath ??
-      options?.output.publicPath;
+        options?.output.publicPath
+    );
     // TODO refactor previewServer If it's preview server, then you can't use create server. we need to create a new one because hmr is false when you preview.
     const hmrPath = normalizeBasePath(
       path.join(publicPath, options.hmr.path ?? DEFAULT_HMR_OPTIONS.path)
@@ -401,9 +408,11 @@ export class Server implements ImplDevServer {
   }
 
   private async displayServerUrls(showPreviewFlag = false) {
-    const publicPath = this.compiler
-      ? this.compiler.config.config.output?.publicPath
-      : this.config.output.publicPath;
+    let publicPath = getValidPublicPath(
+      this.compiler
+        ? this.compiler.config.config.output?.publicPath
+        : this.config.output.publicPath
+    );
 
     this.resolvedUrls = await resolveServerUrls(
       this.server,

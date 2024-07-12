@@ -39,8 +39,7 @@ export default function farmElectronPlugin(
     config(config) {
       config.compilation ??= {};
       config.compilation.output ??= {};
-      // TODO: support '.' and './'
-      config.compilation.output.publicPath ??= '';
+      config.compilation.output.publicPath ??= './';
 
       // Not work
       // config.compilation.assets ??= {}

@@ -1,5 +1,17 @@
 # create-farm-plugin
 
+## 0.1.12
+
+### Patch Changes
+
+- d6af590c: optimization rust plugin template
+
+## 0.1.11
+
+### Patch Changes
+
+- optimization rust plugin template
+
 ## 0.1.10
 
 ### Patch Changes

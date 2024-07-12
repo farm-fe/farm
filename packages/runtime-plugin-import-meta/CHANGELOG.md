@@ -1,5 +1,11 @@
 # @farmfe/runtime-plugin-import-meta
 
+## 0.2.1
+
+### Patch Changes
+
+- 49523be7: import meta resolve process NODE_ENV
+
 ## 0.2.0
 
 ### Minor Changes

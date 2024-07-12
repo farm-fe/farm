@@ -11,11 +11,18 @@ use farmfe_toolkit::{
   script::swc_try_with::try_with,
   swc_ecma_transforms::{
     proposals::{decorator_2022_03::decorator_2022_03, decorators},
-    typescript::{strip, tsx, Config as TsConfig, TsxConfig},
+    typescript::{tsx, typescript, Config as TsConfig, ImportsNotUsedAsValues, TsxConfig},
   },
   swc_ecma_transforms_base::helpers::inject_helpers,
   swc_ecma_visit::{FoldWith, VisitMutWith},
 };
+
+fn default_config() -> TsConfig {
+  TsConfig {
+    import_not_used_as_values: ImportsNotUsedAsValues::Preserve,
+    ..Default::default()
+  }
+}
 
 pub fn strip_typescript(
   param: &mut PluginProcessModuleHookParam,
@@ -33,19 +40,19 @@ pub fn strip_typescript(
         // Do nothing, jsx should be handled by other plugins
       }
       farmfe_core::module::ModuleType::Ts => {
-        program.visit_mut_with(&mut strip(top_level_mark));
+        program.visit_mut_with(&mut typescript(default_config(), top_level_mark));
       }
       farmfe_core::module::ModuleType::Tsx => {
         let comments: SingleThreadedComments = param.meta.as_script().comments.clone().into();
         // TODO make it configurable
         program.visit_mut_with(&mut tsx(
           cm.clone(),
-          TsConfig::default(),
+          default_config(),
           TsxConfig::default(),
           comments,
           top_level_mark,
         ));
-        program.visit_mut_with(&mut strip(top_level_mark));
+        program.visit_mut_with(&mut typescript(default_config(), top_level_mark));
       }
       _ => {}
     }

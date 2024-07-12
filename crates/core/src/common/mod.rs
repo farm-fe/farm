@@ -1,16 +1,14 @@
-use farmfe_macro_cache_item::cache_item;
+use farmfe_utils::relative;
+use relative_path::RelativePath;
 use serde_json::{Map, Value};
-use wax::Glob;
 
-#[cache_item]
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub enum ParsedSideEffects {
+#[derive(Debug, Clone)]
+pub enum SideEffects {
   Bool(bool),
-  Array(Vec<String>),
+  Array(Vec<globset::GlobMatcher>),
 }
 
-impl Default for ParsedSideEffects {
+impl Default for SideEffects {
   fn default() -> Self {
     Self::Bool(false)
   }
@@ -18,13 +16,12 @@ impl Default for ParsedSideEffects {
 
 /// package json info that farm used.
 /// **Note**: if you want to use the field that not defined here, you can deserialize raw and get the raw package.json [serde_json::Value]
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, Default)]
-#[serde(rename_all = "camelCase")]
+#[derive(Debug, Clone, Default)]
 pub struct PackageJsonInfo {
   pub name: Option<String>,
   pub version: Option<String>,
 
-  parsed_side_effects: Option<ParsedSideEffects>,
+  parsed_side_effects: Option<SideEffects>,
   raw: Option<String>,
   raw_map: Option<Map<String, Value>>,
   /// the directory this package.json belongs to
@@ -32,6 +29,17 @@ pub struct PackageJsonInfo {
 }
 
 impl PackageJsonInfo {
+  pub fn new(name: Option<String>, version: Option<String>) -> Self {
+    Self {
+      name,
+      version,
+      parsed_side_effects: None,
+      raw: None,
+      raw_map: None,
+      dir: None,
+    }
+  }
+
   pub fn set_raw(&mut self, raw: String) {
     self.raw = Some(raw);
   }
@@ -64,37 +72,37 @@ impl PackageJsonInfo {
     self.analyze_parsed_side_effects(&package_value);
   }
 
-  pub fn side_effects(&self) -> Option<&ParsedSideEffects> {
+  pub fn side_effects(&self) -> Option<&SideEffects> {
     self.parsed_side_effects.as_ref()
   }
 
   fn analyze_parsed_side_effects(&mut self, package_value: &serde_json::Map<String, Value>) {
     self.parsed_side_effects = if let Some(side_effects) = package_value.get("sideEffects") {
       if let Value::Bool(b) = side_effects {
-        Some(ParsedSideEffects::Bool(*b))
+        Some(SideEffects::Bool(*b))
       } else if let Value::Array(arr) = side_effects {
         let mut res = vec![];
 
         for item in arr {
           if let Value::String(str) = item {
-            let glob = Glob::new(str);
-
-            if let Err(e) = glob {
-              println!("error parsing glob: {:?}", e);
-              continue;
-            }
-            let glob = glob.unwrap();
-
-            let paths = glob.walk(self.dir());
-
-            for p in paths.flatten() {
-              let path = p.path().to_string_lossy().to_string();
-              res.push(path);
-            }
+            res.push(str.to_string());
           }
         }
 
-        Some(ParsedSideEffects::Array(res))
+        Some(SideEffects::Array(
+          res
+            .into_iter()
+            .filter_map(|s| {
+              let abs_path = RelativePath::new(&s).to_logical_path(self.dir());
+              if let Ok(r) = globset::Glob::new(&relative(self.dir(), &abs_path.to_string_lossy()))
+              {
+                Some(r.compile_matcher())
+              } else {
+                None
+              }
+            })
+            .collect::<Vec<_>>(),
+        ))
       } else {
         // unknown side effects config, treat it as None
         None

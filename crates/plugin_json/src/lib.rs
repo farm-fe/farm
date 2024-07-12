@@ -1,6 +1,5 @@
 use farmfe_core::{
   config::Config,
-  error::CompilationError,
   module::ModuleType,
   plugin::{Plugin, PluginLoadHookResult},
   serde_json,

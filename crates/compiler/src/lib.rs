@@ -2,6 +2,7 @@
 #![allow(clippy::needless_collect)]
 #![allow(clippy::ptr_arg)]
 #![allow(clippy::too_many_arguments)]
+#![allow(clippy::assigning_clones)]
 #![feature(box_patterns)]
 
 use std::sync::Arc;
@@ -60,7 +61,7 @@ impl Compiler {
       );
     }
 
-    if config.tree_shaking {
+    if config.tree_shaking.enabled() {
       plugins.push(Arc::new(farmfe_plugin_tree_shake::FarmPluginTreeShake::new(&config)) as _);
     }
 

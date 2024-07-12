@@ -1,24 +1,30 @@
 import { browsersWithSupportForFeatures } from 'farm-browserslist-generator';
 
+import path, { isAbsolute } from 'node:path';
 import { Config } from '../../types/binding.js';
+import { urlRegex } from '../../utils/http.js';
+import { Logger } from '../../utils/logger.js';
 import {
   FARM_TARGET_BROWSER_ENVS,
-  mapTargetEnvValue
+  mapTargetEnvValue,
+  normalizeBasePath
 } from '../../utils/share.js';
 import { ResolvedCompilation } from '../types.js';
 
-export async function normalizeOutput(
+export function normalizeOutput(
   config: ResolvedCompilation,
-  isProduction: boolean
+  isProduction: boolean,
+  logger: Logger
 ) {
+  if (!config.output) {
+    config.output = {};
+  }
+
   if (!config.output.targetEnv) {
     config.output.targetEnv = 'browser';
   }
 
   if (isProduction) {
-    if (!config.output) {
-      config.output = {};
-    }
     if (!config.output.filename) {
       config.output.filename = '[resourceName].[contentHash].[ext]';
     }
@@ -34,6 +40,13 @@ export async function normalizeOutput(
 
   // the rust compiler only receives 'node' or 'browser'.
   mapTargetEnvValue(config);
+
+  // resolve public path
+  config.output.publicPath = normalizePublicPath(
+    config.output.targetEnv,
+    config.output?.publicPath,
+    logger
+  );
 }
 
 type TargetEnvKeys = Config['config']['output']['targetEnv'];
@@ -80,6 +93,11 @@ const targetsMap: TargetsMap = {
   'browser-esnext': null
 };
 
+export const targetEnvMapPlatform: Record<string, string> = {
+  'lib-node': 'node',
+  'lib-browser': 'browser'
+};
+
 /**
  * Set up targets for the given targetEnv.
  * @param config
@@ -109,6 +127,7 @@ function normalizeTargetEnv(config: Config['config']) {
       } else {
         if (
           FARM_TARGET_BROWSER_ENVS.includes(targetEnv) &&
+          config.input &&
           Object.values(config.input).some((v) => v?.endsWith('.html'))
         ) {
           config.presetEnv = {
@@ -151,4 +170,98 @@ function normalizeTargetEnv(config: Config['config']) {
     config.css ??= {};
     config.css.prefixer = null;
   }
+}
+
+function tryGetDefaultPublicPath(
+  targetEnv: string,
+  publicPath: string | undefined,
+  logger: Logger
+): string | undefined {
+  if (!targetEnv) {
+    return publicPath;
+  }
+
+  if (publicPath) {
+    if (urlRegex.test(publicPath)) {
+      return publicPath;
+    }
+
+    if (targetEnv === 'node' && isAbsolute(publicPath)) {
+      // vitejs plugin maybe set absolute path, should transform to relative path
+      const relativePath = './' + path.posix.normalize(publicPath).slice(1);
+
+      logger.warn(
+        `publicPath can't support absolute path in NodeJs, will be transform "${publicPath}" to "${relativePath}".`
+      );
+
+      return relativePath;
+    }
+
+    return publicPath;
+  }
+
+  if (['node', 'browser'].includes(targetEnv)) {
+    return targetEnv === 'node' ? './' : '/';
+  }
+}
+
+/**
+ * @param outputConfig  publicPath option
+ * @param logger  logger instance
+ * @param isPrefixNeeded  whether to add a prefix to the publicPath
+ * @returns  normalized publicPath
+ */
+export function normalizePublicPath(
+  targetEnv: string,
+  publicPath: string | undefined,
+  logger: Logger,
+  isPrefixNeeded = true
+) {
+  let defaultPublicPath =
+    tryGetDefaultPublicPath(targetEnv, publicPath, logger) ?? '/';
+
+  let warning = false;
+  // ../ or ../xxx warning
+  // normalize relative path
+  if (defaultPublicPath.startsWith('..')) {
+    warning = true;
+  }
+
+  // . ./xx => ./ ./xx/
+  // normalize appended relative path
+  if (!defaultPublicPath.endsWith('/')) {
+    if (!urlRegex.test(defaultPublicPath)) {
+      warning = true;
+    }
+    defaultPublicPath = defaultPublicPath + '/';
+  }
+
+  // normalize prepended relative path
+  if (
+    defaultPublicPath.startsWith('/') &&
+    !urlRegex.test(defaultPublicPath) &&
+    !isPrefixNeeded
+  ) {
+    defaultPublicPath = defaultPublicPath.slice(1);
+  }
+
+  warning &&
+    isPrefixNeeded &&
+    logger.warn(
+      ` (!) Irregular 'publicPath' options: '${publicPath}', it should only be an absolute path like '/publicPath/', './', an url or an empty string.`
+    );
+
+  return defaultPublicPath;
+}
+
+export function getValidPublicPath(publicPath = '/'): string | undefined {
+  let validPublicPath;
+
+  if (publicPath.startsWith('/')) {
+    validPublicPath = publicPath;
+  } else if (publicPath.startsWith('.')) {
+    validPublicPath = normalizeBasePath(path.join('/', publicPath));
+  }
+
+  return validPublicPath;
 }

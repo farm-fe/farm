@@ -8,8 +8,7 @@ import { BizType } from './enums';
 
 export function Main() {
   const store = useStore();
-  console.log(process.env.NODE_ENV);
-  console.log(import.meta);
+  console.log(import.meta.env);
   return (
     <>
       <div>

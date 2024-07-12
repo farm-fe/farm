@@ -61,18 +61,12 @@
   };
 }((function(){var index_js_cjs = __commonJs((module, exports)=>{
     "use strict";
-    console.log("runtime/index.js")(globalThis || window || global)["__farm_default_namespace__"].__farm_module_system__.setPlugins([]);
+    console.log('runtime/index.js')(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setPlugins([]);
 });
 })());(function(_){for(var r in _){_[r].__farm_resource_pot__='index_f1d9.js';(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.register(r,_[r])}})({"4312d062":function  (module, exports, farmRequire, farmDynamicRequire) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", {
-        value: true
-    });
-    Object.defineProperty(exports, "default", {
-        enumerable: true,
-        get: function() {
-            return F;
-        }
+    module._m(exports);
+    module.o(exports, "default", function() {
+        return F;
     });
     function $e() {
         return {
@@ -99,23 +93,12 @@
 }
 ,
 "81077a1f":function  (module, exports, farmRequire, farmDynamicRequire) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", {
-        value: true
+    module._m(exports);
+    module.o(exports, "useFullscreen", function() {
+        return useFullscreen;
     });
-    function _export(target, all) {
-        for(var name in all)Object.defineProperty(target, name, {
-            enumerable: true,
-            get: all[name]
-        });
-    }
-    _export(exports, {
-        document1: function() {
-            return document1;
-        },
-        useFullscreen: function() {
-            return useFullscreen;
-        }
+    module.o(exports, "document1", function() {
+        return document1;
     });
     const defaultDocument = globalThis.isClient ? window.document : undefined;
     const defaultWindow = globalThis.isClient ? window : undefined;
@@ -128,13 +111,9 @@
 }
 ,
 "b5d64806":function  (module, exports, farmRequire, farmDynamicRequire) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", {
-        value: true
-    });
-    var _interop_require_default = farmRequire("@swc/helpers/_/_interop_require_default");
-    var _dep = _interop_require_default._(farmRequire("4312d062"));
-    var _objectassign = farmRequire("81077a1f");
-    console.log(_dep.default, _objectassign.useFullscreen, _objectassign.document1);
+    module._m(exports);
+    var _f_dep = module.i(farmRequire("4312d062"));
+    var _f_object_assign = farmRequire("81077a1f");
+    console.log(module.f(_f_dep), _f_object_assign.useFullscreen, _f_object_assign.document1);
 }
 ,});(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setInitialLoadedResources([]);(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setDynamicModuleResourcesMap({  });var farmModuleSystem = (globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__;farmModuleSystem.bootstrap();var entry = farmModuleSystem.require("b5d64806");

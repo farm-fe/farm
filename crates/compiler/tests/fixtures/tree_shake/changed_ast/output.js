@@ -63,37 +63,30 @@
 var index_js_cjs = __commonJs({
     "../../_internal/runtime/index.js.farm-runtime": (module, exports)=>{
         "use strict";
-        console.log("runtime/index.js")(globalThis || window || global)["__farm_default_namespace__"].__farm_module_system__.setPlugins([]);
+        console.log('runtime/index.js')(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setPlugins([]);
     }
 });
 })());(function(_){for(var r in _){_[r].__farm_resource_pot__='index_4924.js';(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.register(r,_[r])}})({"comp.tsx":function  (module, exports, farmRequire, farmDynamicRequire) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", {
-        value: true
+    module._m(exports);
+    module.o(exports, "Description", function() {
+        return Description;
     });
-    Object.defineProperty(exports, "Description", {
-        enumerable: true,
-        get: function() {
-            return Description;
-        }
-    });
-    var _interop_require_wildcard = farmRequire("@swc/helpers/_/_interop_require_wildcard");
-    var _dep = _interop_require_wildcard._(farmRequire("dep.ts"));
-    const LazyComp = _dep.default.lazy(()=>Promise.resolve({
-            default: ()=>_dep.default.createElement("div", {
+    var _f_dep = module.w(farmRequire("dep.ts"));
+    const LazyComp = module.f(_f_dep).lazy(()=>Promise.resolve({
+            default: ()=>module.f(_f_dep).createElement("div", {
                     __source: {
                         fileName: "comp.tsx",
                         lineNumber: 3,
                         columnNumber: 73
                     },
-                    __self: void 0
+                    __self: this
                 }, "Lazy")
         }));
     _c = LazyComp;
     function Description() {
-        console.trace("In Description, the sourcemap should be correct");
-        return _dep.default.createElement(_dep.Suspense, {
-            fallback: _dep.default.createElement("div", {
+        console.trace('In Description, the sourcemap should be correct');
+        return module.f(_f_dep).createElement(_f_dep.Suspense, {
+            fallback: module.f(_f_dep).createElement("div", {
                 __source: {
                     fileName: "comp.tsx",
                     lineNumber: 8,
@@ -106,7 +99,7 @@ var index_js_cjs = __commonJs({
                 columnNumber: 10
             },
             __self: this
-        }, _dep.default.createElement(LazyComp, {
+        }, module.f(_f_dep).createElement(LazyComp, {
             __source: {
                 fileName: "comp.tsx",
                 lineNumber: 8,
@@ -122,43 +115,26 @@ var index_js_cjs = __commonJs({
 }
 ,
 "dep.ts":function  (module, exports, farmRequire, farmDynamicRequire) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", {
-        value: true
+    module._m(exports);
+    module.o(exports, "Suspense", function() {
+        return Suspense;
     });
-    function _export(target, all) {
-        for(var name in all)Object.defineProperty(target, name, {
-            enumerable: true,
-            get: all[name]
-        });
-    }
-    _export(exports, {
-        Suspense: function() {
-            return Suspense;
-        },
-        default: function() {
-            return _default;
-        }
-    });
-    const Suspense = function() {
-        console.log("Suspense");
+    var Suspense = function() {
+        console.log('Suspense');
     };
-    var _default = {
+    exports.default = {
         createElement (comp, ...args) {
             console.log(comp(), args);
         },
         lazy: (promise)=>{
-            console.log("lazy", promise);
+            console.log('lazy', promise);
         }
     };
 }
 ,
 "entry.ts":function  (module, exports, farmRequire, farmDynamicRequire) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", {
-        value: true
-    });
-    var _comp = farmRequire("comp.tsx");
-    console.log((0, _comp.Description)());
+    module._m(exports);
+    var _f_comp = farmRequire("comp.tsx");
+    console.log(_f_comp.Description());
 }
 ,});(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setInitialLoadedResources([]);(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setDynamicModuleResourcesMap({  });var farmModuleSystem = (globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__;farmModuleSystem.bootstrap();var entry = farmModuleSystem.require("entry.ts");

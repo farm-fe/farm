@@ -1,6 +1,6 @@
 {
   "name": "create-farm",
-  "version": "0.0.8",
+  "version": "0.0.10",
   "description": "",
   "main": "index.js",
   "keywords": [],
@@ -32,6 +32,6 @@
     "version": "napi version"
   },
   "devDependencies": {
-    "@napi-rs/cli": "2.18.3"
+    "@napi-rs/cli": "^2.18.4"
   }
 }

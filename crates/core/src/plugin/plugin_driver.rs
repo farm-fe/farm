@@ -6,10 +6,11 @@ use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use super::{
   Plugin, PluginAnalyzeDepsHookParam, PluginDriverRenderResourcePotHookResult,
   PluginFinalizeModuleHookParam, PluginFinalizeResourcesHookParams,
-  PluginGenerateResourcesHookResult, PluginHookContext, PluginLoadHookParam, PluginLoadHookResult,
-  PluginModuleGraphUpdatedHookParams, PluginParseHookParam, PluginProcessModuleHookParam,
-  PluginRenderResourcePotHookParam, PluginResolveHookParam, PluginResolveHookResult,
-  PluginTransformHookParam, PluginUpdateModulesHookParams,
+  PluginGenerateResourcesHookResult, PluginHandleEntryResourceHookParams, PluginHookContext,
+  PluginLoadHookParam, PluginLoadHookResult, PluginModuleGraphUpdatedHookParams,
+  PluginParseHookParam, PluginProcessModuleHookParam, PluginRenderResourcePotHookParam,
+  PluginResolveHookParam, PluginResolveHookResult, PluginTransformHookParam,
+  PluginUpdateModulesHookParams,
 };
 use crate::{
   config::Config,
@@ -621,6 +622,16 @@ impl PluginDriver {
     resource_pot: &mut ResourcePot,
     context: &Arc<CompilationContext>,
     _hook_context: &PluginHookContext
+  );
+
+  hook_serial!(
+    process_generated_resources,
+    &mut PluginGenerateResourcesHookResult
+  );
+
+  hook_serial!(
+    handle_entry_resource,
+    &mut PluginHandleEntryResourceHookParams
   );
 
   hook_serial!(finalize_resources, &mut PluginFinalizeResourcesHookParams);

@@ -18,39 +18,33 @@ fn test(file: String, crate_path: String) {
     create_compiler_with_args(cwd.to_path_buf(), create_path_buf, |mut config, plugins| {
       config.input = HashMap::from_iter(vec![(entry_name.clone(), file.clone())]);
 
-      if normolized_file.contains("/browser/") || normolized_file.contains("/node/") {
-        config.output.target_env = if normolized_file.contains("browser") {
-          TargetEnv::Browser
-        } else {
-          TargetEnv::Node
-        };
-      }
+      config.output.target_env = if normolized_file.contains("browser") {
+        TargetEnv::Browser
+      } else {
+        TargetEnv::Node
+      };
 
-      if normolized_file.contains("/normal/") || normolized_file.contains("/object/") || true {
-        if normolized_file.contains("/object") {
-          config
-            .custom
-            .entry(CUSTOM_CONFIG_EXTERNAL_RECORD.to_string())
-            .or_insert(
-              r#"
+      if normolized_file.contains("/object") {
+        config
+          .custom
+          .entry(CUSTOM_CONFIG_EXTERNAL_RECORD.to_string())
+          .or_insert(
+            r#"
 {
   "jquery": "$"
 }
 "#
-              .to_string(),
-            );
-        } else {
-          config.external = vec![ConfigRegex::new("^jquery$")];
-        }
+            .to_string(),
+          );
+      } else {
+        config.external = vec![ConfigRegex::new("^jquery$")];
       }
 
-      if normolized_file.contains("/cjs/") || normolized_file.contains("/esm/") {
-        config.output.format = if normolized_file.contains("cjs") {
-          ModuleFormat::CommonJs
-        } else {
-          ModuleFormat::EsModule
-        };
-      }
+      config.output.format = if normolized_file.contains("cjs") {
+        ModuleFormat::CommonJs
+      } else {
+        ModuleFormat::EsModule
+      };
 
       (config, plugins)
     });
@@ -60,4 +54,4 @@ fn test(file: String, crate_path: String) {
   assert_compiler_result(&compiler, Some(&entry_name));
 }
 
-farmfe_testing::testing! {"tests/fixtures/external/**/*.ts", test}
+farmfe_testing::testing! {"tests/fixtures/external/**/index.ts", test}

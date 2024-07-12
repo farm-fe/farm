@@ -6,7 +6,8 @@ use swc_css_prefixer::options::Targets;
 use swc_ecma_parser::{EsConfig, TsConfig};
 
 use self::{
-  bool_or_obj::BoolOrObj, comments::CommentsConfig, config_regex::ConfigRegex, external::ExternalConfig, html::HtmlConfig, partial_bundling::PartialBundlingConfig, preset_env::PresetEnvConfig, script::ScriptConfig
+  bool_or_obj::BoolOrObj, comments::CommentsConfig, config_regex::ConfigRegex, html::HtmlConfig,
+  partial_bundling::PartialBundlingConfig, preset_env::PresetEnvConfig, script::ScriptConfig,
 };
 
 pub const FARM_MODULE_SYSTEM: &str = "__farm_module_system__";
@@ -21,39 +22,46 @@ pub mod bool_or_obj;
 pub mod comments;
 pub mod config_regex;
 pub mod custom;
+pub mod external;
 pub mod html;
 pub mod minify;
+mod output;
 pub mod partial_bundling;
 pub mod persistent_cache;
 pub mod preset_env;
 pub mod script;
-pub mod external;
+pub mod tree_shaking;
+
+pub use output::*;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", default)]
 pub struct Config {
   pub input: HashMap<String, String>,
-  pub output: OutputConfig,
+  pub output: Box<OutputConfig>,
   pub root: String,
   pub mode: Mode,
-  pub resolve: ResolveConfig,
+  pub resolve: Box<ResolveConfig>,
   pub external: Vec<ConfigRegex>,
   pub define: HashMap<String, serde_json::Value>,
-  pub runtime: RuntimeConfig,
-  pub script: ScriptConfig,
-  pub assets: AssetsConfig,
-  pub css: CssConfig,
+  pub runtime: Box<RuntimeConfig>,
+  pub script: Box<ScriptConfig>,
+  pub assets: Box<AssetsConfig>,
+  pub css: Box<CssConfig>,
   pub html: Box<HtmlConfig>,
-  pub sourcemap: SourcemapConfig,
-  pub partial_bundling: PartialBundlingConfig,
+  pub sourcemap: Box<SourcemapConfig>,
+  pub partial_bundling: Box<PartialBundlingConfig>,
   pub lazy_compilation: bool,
   pub core_lib_path: Option<String>,
-  pub tree_shaking: bool,
+  pub tree_shaking: Box<BoolOrObj<serde_json::Value>>,
   pub minify: Box<BoolOrObj<serde_json::Value>>,
   pub preset_env: Box<PresetEnvConfig>,
   pub record: bool,
   pub progress: bool,
   pub persistent_cache: Box<persistent_cache::PersistentCacheConfig>,
+  /// concatenateModules is used to concatenate modules into a single file. And it will not be wrapped by the runtime.
+  /// Note: all runtime options will be ignored if concatenateModules is true. Which means you can't use `runtime.plugins`, `path` and so on.
+  pub concatenate_modules: bool,
   /// comments config for script, css and html
   pub comments: Box<CommentsConfig>,
   /// preserved for future compatibility usage when there are more config options
@@ -70,9 +78,9 @@ impl Default for Config {
     Self {
       input: HashMap::from([("index".to_string(), "./index.html".to_string())]),
       root: root.clone(),
-      output: OutputConfig::default(),
+      output: Default::default(),
       mode: Mode::Development,
-      resolve: ResolveConfig::default(),
+      resolve: Default::default(),
       define: HashMap::new(),
       external: Default::default(),
       runtime: Default::default(),
@@ -81,10 +89,10 @@ impl Default for Config {
       html: Box::default(),
       assets: Default::default(),
       sourcemap: Default::default(),
-      partial_bundling: PartialBundlingConfig::default(),
+      partial_bundling: Default::default(),
       lazy_compilation: true,
       core_lib_path: None,
-      tree_shaking: true,
+      tree_shaking: Box::new(BoolOrObj::Bool(true)),
       minify: Box::new(BoolOrObj::Bool(true)),
       preset_env: Box::<PresetEnvConfig>::default(),
       record: false,
@@ -93,47 +101,23 @@ impl Default for Config {
         // the config file path will be set after the Config is initialized
         persistent_cache::PersistentCacheConfig::get_default_config(&root),
       ),
+      concatenate_modules: false,
       comments: Box::default(),
       custom: Box::<HashMap<String, String>>::default(),
     }
   }
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
-#[serde(rename_all = "camelCase", default)]
-pub struct OutputConfig {
-  pub path: String,
-  pub public_path: String,
-  pub entry_filename: String,
-  pub filename: String,
-  pub assets_filename: String,
-  pub target_env: TargetEnv,
-  pub format: ModuleFormat,
-}
-
-impl Default for OutputConfig {
-  fn default() -> Self {
-    Self {
-      entry_filename: "[entryName].[ext]".to_string(),
-      // [resourceName].[contentHash].[ext]
-      filename: "[resourceName].[ext]".to_string(),
-      // [resourceName].[contentHash].[ext]
-      assets_filename: "[resourceName].[ext]".to_string(),
-      public_path: "/".to_string(),
-      path: "dist".to_string(),
-      target_env: TargetEnv::default(),
-      format: ModuleFormat::default(),
-    }
-  }
-}
-
-#[derive(Debug, Copy, Clone, Serialize, Deserialize, Eq, PartialEq, Hash, Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, Eq, PartialEq, Hash, Default)]
 pub enum TargetEnv {
   #[serde(rename = "browser")]
   #[default]
   Browser,
   #[serde(rename = "node")]
   Node,
+  #[serde(rename = "library")]
+  Library,
+  Custom(String),
 }
 
 #[derive(Debug, Copy, Clone, Serialize, Deserialize, Eq, PartialEq, Hash, Default)]

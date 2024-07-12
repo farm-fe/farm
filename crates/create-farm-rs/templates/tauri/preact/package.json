@@ -17,7 +17,7 @@
     "@preact/preset-vite": "^2.5.0",
     "typescript": "^5.0.2",
     "@farmfe/cli": "^1.0.2",
-    "@farmfe/core": "^1.1.13",
+    "@farmfe/core": "^1.2.4",
     "@tauri-apps/cli": "^1"
   }
 }

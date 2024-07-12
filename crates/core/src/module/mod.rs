@@ -1,4 +1,6 @@
-use std::{any::Any, cell::RefCell, hash::Hash, path::Path, rc::Rc, sync::Arc};
+use std::{
+  any::Any, cell::RefCell, collections::HashMap, hash::Hash, path::Path, rc::Rc, sync::Arc,
+};
 
 use blake2::{
   digest::{Update, VariableOutput},
@@ -36,7 +38,6 @@ pub const VIRTUAL_MODULE_PREFIX: &str = "virtual:";
 /// A [Module] is a basic compilation unit
 /// The [Module] is created by plugins in the parse hook of build stage
 #[cache_item]
-#[derive(Clone)]
 pub struct Module {
   /// the id of this module, generated from the resolved id.
   pub id: ModuleId,
@@ -74,6 +75,47 @@ pub struct Module {
   pub package_name: String,
   /// package version of this module
   pub package_version: String,
+
+  // custom meta map
+  pub custom: HashMap<String, Box<dyn SerializeCustomModuleMetaData>>,
+}
+
+impl Clone for Module {
+  fn clone(&self) -> Self {
+    let custom = if self.custom.is_empty() {
+      HashMap::new()
+    } else {
+      let mut custom = HashMap::new();
+      for (k, v) in self.custom.iter() {
+        let cloned_data = crate::serialize!(v);
+        let cloned_custom =
+          crate::deserialize!(&cloned_data, Box<dyn SerializeCustomModuleMetaData>);
+        custom.insert(k.clone(), cloned_custom);
+      }
+      custom
+    };
+
+    Self {
+      id: self.id.clone(),
+      module_type: self.module_type.clone(),
+      module_groups: self.module_groups.clone(),
+      resource_pot: self.resource_pot.clone(),
+      meta: self.meta.clone(),
+      side_effects: self.side_effects,
+      source_map_chain: self.source_map_chain.clone(),
+      external: self.external,
+      immutable: self.immutable,
+      execution_order: self.execution_order,
+      size: self.size,
+      content: self.content.clone(),
+      used_exports: self.used_exports.clone(),
+      last_update_timestamp: self.last_update_timestamp,
+      content_hash: self.content_hash.clone(),
+      package_name: self.package_name.clone(),
+      package_version: self.package_version.clone(),
+      custom,
+    }
+  }
 }
 
 impl Module {
@@ -97,6 +139,7 @@ impl Module {
       content_hash: "".to_string(),
       package_name: "".to_string(),
       package_version: "".to_string(),
+      custom: HashMap::new(),
     }
   }
 }
@@ -277,7 +320,6 @@ impl From<CommentsMetaData> for SingleThreadedComments {
 
 /// Script specific meta data, for example, [swc_ecma_ast::Module]
 #[cache_item]
-#[derive(Clone)]
 pub struct ScriptModuleMetaData {
   pub ast: SwcModule,
   pub top_level_mark: u32,
@@ -287,6 +329,7 @@ pub struct ScriptModuleMetaData {
   pub hmr_self_accepted: bool,
   pub hmr_accepted_deps: HashSet<ModuleId>,
   pub comments: CommentsMetaData,
+  pub custom: HashMap<String, Box<dyn SerializeCustomModuleMetaData>>,
 }
 
 impl Default for ScriptModuleMetaData {
@@ -303,6 +346,35 @@ impl Default for ScriptModuleMetaData {
       hmr_self_accepted: false,
       hmr_accepted_deps: Default::default(),
       comments: Default::default(),
+      custom: Default::default(),
+    }
+  }
+}
+
+impl Clone for ScriptModuleMetaData {
+  fn clone(&self) -> Self {
+    let custom = if self.custom.is_empty() {
+      HashMap::new()
+    } else {
+      let mut custom = HashMap::new();
+      for (k, v) in self.custom.iter() {
+        let cloned_data = crate::serialize!(v);
+        let cloned_custom =
+          crate::deserialize!(&cloned_data, Box<dyn SerializeCustomModuleMetaData>);
+        custom.insert(k.clone(), cloned_custom);
+      }
+      custom
+    };
+
+    Self {
+      ast: self.ast.clone(),
+      top_level_mark: self.top_level_mark,
+      unresolved_mark: self.unresolved_mark,
+      module_system: self.module_system.clone(),
+      hmr_self_accepted: self.hmr_self_accepted,
+      hmr_accepted_deps: self.hmr_accepted_deps.clone(),
+      comments: self.comments.clone(),
+      custom,
     }
   }
 }
@@ -369,10 +441,33 @@ impl ModuleSystem {
 }
 
 #[cache_item]
-#[derive(Clone)]
 pub struct CssModuleMetaData {
   pub ast: Stylesheet,
   pub comments: CommentsMetaData,
+  pub custom: HashMap<String, Box<dyn SerializeCustomModuleMetaData>>,
+}
+
+impl Clone for CssModuleMetaData {
+  fn clone(&self) -> Self {
+    let custom = if self.custom.is_empty() {
+      HashMap::new()
+    } else {
+      let mut custom = HashMap::new();
+      for (k, v) in self.custom.iter() {
+        let cloned_data = crate::serialize!(v);
+        let cloned_custom =
+          crate::deserialize!(&cloned_data, Box<dyn SerializeCustomModuleMetaData>);
+        custom.insert(k.clone(), cloned_custom);
+      }
+      custom
+    };
+
+    Self {
+      ast: self.ast.clone(),
+      comments: self.comments.clone(),
+      custom,
+    }
+  }
 }
 
 impl CssModuleMetaData {
@@ -392,9 +487,31 @@ impl CssModuleMetaData {
 }
 
 #[cache_item]
-#[derive(Clone)]
 pub struct HtmlModuleMetaData {
   pub ast: Document,
+  pub custom: HashMap<String, Box<dyn SerializeCustomModuleMetaData>>,
+}
+
+impl Clone for HtmlModuleMetaData {
+  fn clone(&self) -> Self {
+    let custom = if self.custom.is_empty() {
+      HashMap::new()
+    } else {
+      let mut custom = HashMap::new();
+      for (k, v) in self.custom.iter() {
+        let cloned_data = crate::serialize!(v);
+        let cloned_custom =
+          crate::deserialize!(&cloned_data, Box<dyn SerializeCustomModuleMetaData>);
+        custom.insert(k.clone(), cloned_custom);
+      }
+      custom
+    };
+
+    Self {
+      ast: self.ast.clone(),
+      custom,
+    }
+  }
 }
 
 /// Internal support module types by the core plugins,
@@ -466,8 +583,12 @@ impl<T: AsRef<str>> From<T> for ModuleType {
   fn from(s: T) -> Self {
     match s.as_ref() {
       "js" => Self::Js,
+      "mjs" => Self::Js,
+      "cjs" => Self::Js,
       "jsx" => Self::Jsx,
       "ts" => Self::Ts,
+      "cts" => Self::Ts,
+      "mts" => Self::Ts,
       "tsx" => Self::Tsx,
       "css" => Self::Css,
       "html" => Self::Html,
@@ -662,6 +783,17 @@ mod tests {
     suffix_vec
       .into_iter()
       .for_each(|(suffix, t)| assert_eq!(suffix, t.to_string()));
+
+    let suffix_vec = vec![
+      ("cjs", ModuleType::Js),
+      ("mjs", ModuleType::Js),
+      ("cts", ModuleType::Ts),
+      ("mts", ModuleType::Ts),
+    ];
+
+    suffix_vec.into_iter().for_each(|(suffix, t)| {
+      assert!(ModuleType::from(suffix) == t);
+    });
   }
 
   #[test]

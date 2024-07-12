@@ -6,8 +6,12 @@ use farmfe_core::{
   resource::{Resource, ResourceOrigin},
   swc_common::DUMMY_SP,
   swc_css_ast::{AtRulePrelude, ImportHref, Rule, Str, Stylesheet, Url, UrlValue},
+  swc_ecma_ast::Key,
 };
-use farmfe_toolkit::swc_css_visit::{VisitMut, VisitMutWith};
+use farmfe_toolkit::{
+  resolve::path_start_with_alias::is_start_with_alias,
+  swc_css_visit::{VisitMut, VisitMutWith},
+};
 
 use crate::dep_analyzer::is_source_ignored;
 
@@ -16,6 +20,7 @@ pub struct SourceReplacer<'a> {
   module_graph: &'a ModuleGraph,
   resources_map: &'a HashMap<String, Resource>,
   public_path: String,
+  alias: HashMap<String, String>,
 }
 
 impl<'a> SourceReplacer<'a> {
@@ -24,12 +29,14 @@ impl<'a> SourceReplacer<'a> {
     module_graph: &'a ModuleGraph,
     resources_map: &'a HashMap<String, Resource>,
     public_path: String,
+    alias: HashMap<String, String>,
   ) -> Self {
     Self {
       module_id,
       module_graph,
       resources_map,
       public_path,
+      alias,
     }
   }
 }
@@ -40,10 +47,9 @@ impl<'a> VisitMut for SourceReplacer<'a> {
       if name == "url" {
         if let Some(value) = &mut url.value {
           let deal_url_value = |source: &str| -> String {
-            if is_source_ignored(source) {
+            if is_source_ignored(source) && !is_start_with_alias(&self.alias, source) {
               return source.to_string();
             }
-
             let dep_module = self.module_graph.get_dep_by_source(
               &self.module_id,
               source,
@@ -57,12 +63,13 @@ impl<'a> VisitMut for SourceReplacer<'a> {
                   let normalized_public_path = if self.public_path.is_empty() {
                     ""
                   } else {
-                    self.public_path.trim_matches('/')
+                    self.public_path.trim_end_matches('/')
                   };
+
                   let normalized_public_path = if normalized_public_path.is_empty() {
                     "/".to_string()
                   } else {
-                    format!("/{normalized_public_path}/")
+                    format!("{normalized_public_path}/")
                   };
 
                   return format!("{normalized_public_path}{}", resource.name);
