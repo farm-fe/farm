@@ -306,11 +306,7 @@ export async function createBundleHandler(
     logger
   );
 
-  // do not create file watcher in production mode
-  if (
-    resolvedUserConfig.compilation.mode !== 'production' &&
-    (resolvedUserConfig.compilation?.watch || watchMode)
-  ) {
+  if (watchMode) {
     const watcher = new FileWatcher(compiler, resolvedUserConfig, logger);
     await watcher.watch();
     return watcher;
