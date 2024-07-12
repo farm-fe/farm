@@ -427,18 +427,7 @@ export async function createFileWatcher(
 
       await devServer.close();
       __FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__ = true;
-
-      const defaultOptions = {
-        root: resolvedUserConfig.root,
-        compilation: {
-          lazyCompilation: resolvedUserConfig.compilation.lazyCompilation
-        },
-        server: resolvedUserConfig.server,
-        clearScreen: resolvedUserConfig.clearScreen,
-        configPath: path.dirname(resolvedUserConfig.configFilePath),
-        mode: resolvedUserConfig.envMode
-      };
-      await start(defaultOptions as FarmCLIOptions & UserConfig);
+      await start(resolvedUserConfig as FarmCLIOptions & UserConfig);
     });
   });
   return fileWatcher;
