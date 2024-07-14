@@ -1,5 +1,16 @@
 # create-farm-plugin
 
+## 0.1.13
+
+### Patch Changes
+
+- c1168b36: fix rust plugin github action build task
+- c1168b36: fix: rust plugin template workflow test example path
+- 385e5b25: feat: normalize usage of rust plugins and js plugins
+- d8b325d8: Add plugins hooks:
+  - process_genereated_resources: process genererated resources after transform file name and before adding the resources to resources_map
+  - handle_entry_resource: handle entry resources after all resources are generated and before finalize resources
+
 ## 0.1.12
 
 ### Patch Changes

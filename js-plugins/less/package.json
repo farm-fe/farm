@@ -1,6 +1,6 @@
 {
   "name": "@farmfe/js-plugin-less",
-  "version": "1.8.0",
+  "version": "2.0.0",
   "description": "support less compile for farm.",
   "main": "./build/cjs/index.cjs",
   "types": "./build/cjs/index.d.ts",
@@ -40,13 +40,13 @@
   "license": "MIT",
   "devDependencies": {
     "@farmfe/cli": "workspace:*",
-    "@farmfe/core": "workspace:^1.2.0",
+    "@farmfe/core": "workspace:^1.3.0",
     "@farmfe/js-plugin-dts": "workspace:^",
     "@types/less": "^3.0.3",
     "less": "^4.1.3"
   },
   "peerDependencies": {
-    "@farmfe/core": "workspace:^1.2.0",
+    "@farmfe/core": "workspace:^1.3.0",
     "less": "^3.5.0 || ^4.0.0"
   }
 }

@@ -1,6 +1,6 @@
 {
   "name": "@farmfe/plugin-sass",
-  "version": "1.0.5",
+  "version": "1.1.0",
   "main": "index.js",
   "types": "index.d.ts",
   "type": "module",

@@ -1,5 +1,28 @@
 # @farmfe/core
 
+## 1.3.0
+
+### Minor Changes
+
+- 966e2507: Optimize production size
+
+### Patch Changes
+
+- 7b0c4ffe: Allow objectKeys for proxy getter
+- ce30b785: fix: When clearScreen is false, clear fails
+- b18ca7fe: 1. disable external hosting when use require 2. improve NestJs template 3. add nativeTopLevelAwait option
+- 385e5b25: feat: normalize usage of rust plugins and js plugins
+- 11081589: disable swc remove import
+- 89c40302: Support disable overlay
+- Updated dependencies [2cc62c49]
+- Updated dependencies [966e2507]
+- Updated dependencies [2cc62c49]
+- Updated dependencies [89c40302]
+- Updated dependencies [de2c4821]
+  - @farmfe/runtime-plugin-import-meta@0.2.2
+  - @farmfe/runtime@0.12.0
+  - @farmfe/runtime-plugin-hmr@3.5.3
+
 ## 1.2.8
 
 ### Patch Changes

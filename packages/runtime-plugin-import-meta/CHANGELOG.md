@@ -1,5 +1,12 @@
 # @farmfe/runtime-plugin-import-meta
 
+## 0.2.2
+
+### Patch Changes
+
+- 2cc62c49: Adapter vite `improt.meta.env`
+- 2cc62c49: Update test snapshot
+
 ## 0.2.1
 
 ### Patch Changes
