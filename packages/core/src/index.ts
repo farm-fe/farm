@@ -58,7 +58,7 @@ import { ConfigWatcher } from './watcher/config-watcher.js';
 
 import type { JsPlugin } from './plugin/type.js';
 
-export async function start(
+export async function startTestWs(
   inlineConfig?: FarmCLIOptions & UserConfig
 ): Promise<void> {
   inlineConfig = inlineConfig ?? {};
@@ -83,6 +83,34 @@ export async function start(
     // );
 
     // await devServer.listen();
+  } catch (error) {
+    logger.error('Failed to start the server', { exit: true, error });
+  }
+}
+
+export async function start(
+  inlineConfig?: FarmCLIOptions & UserConfig
+): Promise<void> {
+  inlineConfig = inlineConfig ?? {};
+  const logger = inlineConfig.logger ?? new Logger();
+  setProcessEnv('development');
+
+  try {
+    const resolvedUserConfig = await resolveConfig(
+      inlineConfig,
+      'development',
+      logger
+    );
+
+    const compiler = await createCompiler(resolvedUserConfig, logger);
+
+    const devServer = await createDevServer(
+      compiler,
+      resolvedUserConfig,
+      logger
+    );
+
+    await devServer.listen();
   } catch (error) {
     logger.error('Failed to start the server', { exit: true, error });
   }
