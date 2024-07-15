@@ -559,8 +559,7 @@ export async function normalizeUserCompilationConfig(
   return resolvedCompilation;
 }
 
-export const DEFAULT_HMR_OPTIONS: Required<UserHmrConfig> = {
-  host: true,
+export const DEFAULT_HMR_OPTIONS: UserHmrConfig = {
   port:
     (process.env.FARM_DEFAULT_HMR_PORT &&
       Number(process.env.FARM_DEFAULT_HMR_PORT)) ??
@@ -588,6 +587,7 @@ export const DEFAULT_DEV_SERVER_OPTIONS: NormalizedServerConfig = {
   cors: false,
   spa: true,
   middlewares: [],
+  middlewareMode: false,
   writeToDisk: false
 };
 

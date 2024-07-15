@@ -38,6 +38,7 @@ import {
   normalizePublicDir,
   resolveConfig
 } from './config/index.js';
+import { newServer } from './newServer/index.js';
 import { Server } from './server/index.js';
 import { compilerHandler } from './utils/build.js';
 import { colors } from './utils/color.js';
@@ -72,14 +73,16 @@ export async function start(
     );
 
     const compiler = await createCompiler(resolvedUserConfig, logger);
+    const server = new newServer(compiler, resolvedUserConfig);
+    server.createServer();
 
-    const devServer = await createDevServer(
-      compiler,
-      resolvedUserConfig,
-      logger
-    );
+    // const devServer = await createDevServer(
+    //   compiler,
+    //   resolvedUserConfig,
+    //   logger
+    // );
 
-    await devServer.listen();
+    // await devServer.listen();
   } catch (error) {
     logger.error('Failed to start the server', { exit: true, error });
   }
