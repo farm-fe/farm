@@ -1386,12 +1386,12 @@ checksum = "a357d28ed41a50f9c765dbfe56cbc04a64e53e5fc58ba79fbc34c10ef3df831f"
 
 [[package]]
 name = "enhanced-magic-string"
-version = "0.0.14"
+version = "0.0.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "28941685318c3ab497f802f6dab956c80e1b373852f890fc373d8df18a7a31a6"
+checksum = "6082b74cc322c69840d97a7d7cba3ee9ed34fa70536fb51a69824f36742960f5"
 dependencies = [
  "base64 0.22.1",
- "farmfe_utils 0.1.4",
+ "farmfe_utils 0.1.5 (registry+https://github.com/rust-lang/crates.io-index)",
  "parking_lot",
  "regex",
  "sourcemap",
@@ -1855,9 +1855,7 @@ dependencies = [
 
 [[package]]
 name = "farmfe_utils"
-version = "0.1.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "264c2449b7c5b34e1b02b87781c961321730fce02eba189d2a06e95fe3e31489"
+version = "0.1.5"
 dependencies = [
  "base64 0.21.7",
  "pathdiff",
@@ -1867,6 +1865,8 @@ dependencies = [
 [[package]]
 name = "farmfe_utils"
 version = "0.1.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d797c8fb2b5c357bd730dc119169e663f8ae7dfbc606696350c104e39324749d"
 dependencies = [
  "base64 0.21.7",
  "pathdiff",

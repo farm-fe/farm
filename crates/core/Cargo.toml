@@ -54,7 +54,7 @@ puffin = { version = "0.18.0", features = [
   "serialization",
 ], optional = true }
 regex = "1.7.3"
-enhanced-magic-string = { version = "0.0.14" }
+enhanced-magic-string = { version = "0.0.15" }
 
 [features]
 profile = ["dep:puffin"]
