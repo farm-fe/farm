@@ -126,6 +126,7 @@ export class newServer {
       this.server,
       this.config,
       this.httpsOptions,
+      this.publicPath,
       null
     );
   }
