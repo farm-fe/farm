@@ -1,0 +1,12 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "target": "ESNext",
+    "module": "ESNext",
+    "moduleResolution": "node",
+    "noEmit": true,
+    "jsx": "react",
+    "types": ["@farmfe/core/client"]
+  },
+  "include": ["src", "farm.config.js", "farm.config-test.ts"]
+}

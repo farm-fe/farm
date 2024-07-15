@@ -25,6 +25,12 @@ importers:
       '@commitlint/config-conventional':
         specifier: ^17.0.3
         version: 17.8.1
+      '@farmfe/cli':
+        specifier: workspace:*
+        version: link:packages/cli
+      '@farmfe/core':
+        specifier: workspace:*
+        version: link:packages/core
       '@types/node':
         specifier: ^18.0.1
         version: 18.18.8
@@ -827,49 +833,25 @@ importers:
 
   examples/react:
     dependencies:
-      '@reduxjs/toolkit':
-        specifier: ^2.2.1
-        version: 2.2.1(react-redux@7.2.9(react-dom@18.2.0(react@18.2.0))(react@18.2.0))(react@18.2.0)
-      clsx:
-        specifier: ^1.2.1
-        version: 1.2.1
-      core-js:
-        specifier: ^3.30.1
-        version: 3.33.2
       react:
         specifier: '18'
         version: 18.2.0
       react-dom:
         specifier: '18'
         version: 18.2.0(react@18.2.0)
-      react-redux:
-        specifier: ^7.2.6
-        version: 7.2.9(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
     devDependencies:
-      '@farmfe/cli':
-        specifier: workspace:*
-        version: link:../../packages/cli
-      '@farmfe/core':
-        specifier: workspace:*
-        version: link:../../packages/core
-      '@farmfe/js-plugin-sass':
-        specifier: workspace:*
-        version: link:../../js-plugins/sass
       '@farmfe/plugin-react':
         specifier: workspace:*
         version: link:../../rust-plugins/react
-      '@farmfe/plugin-sass':
-        specifier: workspace:*
-        version: link:../../rust-plugins/sass
       '@types/react':
         specifier: '18'
         version: 18.2.35
       '@types/react-dom':
         specifier: '18'
         version: 18.2.14
-      '@types/react-redux':
-        specifier: ^7.1.33
-        version: 7.1.33
+      core-js:
+        specifier: ^3.36.1
+        version: 3.36.1
       react-refresh:
         specifier: ^0.14.0
         version: 0.14.0
@@ -925,6 +907,55 @@ importers:
       axios:
         specifier: ^1.6.5
         version: 1.6.5
+      react-refresh:
+        specifier: ^0.14.0
+        version: 0.14.0
+
+  examples/react-env:
+    dependencies:
+      '@reduxjs/toolkit':
+        specifier: ^2.2.1
+        version: 2.2.1(react-redux@7.2.9(react-dom@18.2.0(react@18.2.0))(react@18.2.0))(react@18.2.0)
+      clsx:
+        specifier: ^1.2.1
+        version: 1.2.1
+      core-js:
+        specifier: ^3.30.1
+        version: 3.36.1
+      react:
+        specifier: '18'
+        version: 18.2.0
+      react-dom:
+        specifier: '18'
+        version: 18.2.0(react@18.2.0)
+      react-redux:
+        specifier: ^7.2.6
+        version: 7.2.9(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
+    devDependencies:
+      '@farmfe/cli':
+        specifier: workspace:*
+        version: link:../../packages/cli
+      '@farmfe/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@farmfe/js-plugin-sass':
+        specifier: workspace:*
+        version: link:../../js-plugins/sass
+      '@farmfe/plugin-react':
+        specifier: workspace:*
+        version: link:../../rust-plugins/react
+      '@farmfe/plugin-sass':
+        specifier: workspace:*
+        version: link:../../rust-plugins/sass
+      '@types/react':
+        specifier: '18'
+        version: 18.2.35
+      '@types/react-dom':
+        specifier: '18'
+        version: 18.2.14
+      '@types/react-redux':
+        specifier: ^7.1.33
+        version: 7.1.33
       react-refresh:
         specifier: ^0.14.0
         version: 0.14.0
@@ -2284,12 +2315,18 @@ importers:
       '@napi-rs/cli':
         specifier: ^2.18.4
         version: 2.18.4
+      '@types/connect':
+        specifier: ^3.4.38
+        version: 3.4.38
       '@types/figlet':
         specifier: ^1.5.5
         version: 1.5.7
       '@types/fs-extra':
         specifier: ^11.0.1
         version: 11.0.3
+      '@types/http-proxy':
+        specifier: ^1.17.14
+        version: 1.17.14
       '@types/koa':
         specifier: ^2.13.5
         version: 2.13.10
@@ -2311,6 +2348,12 @@ importers:
       '@types/ws':
         specifier: ^8.5.4
         version: 8.5.8
+      connect:
+        specifier: ^3.7.0
+        version: 3.7.0
+      http-proxy:
+        specifier: ^1.18.1
+        version: 1.18.1(debug@4.3.4)
       react-refresh:
         specifier: ^0.14.0
         version: 0.14.0
@@ -4787,6 +4830,9 @@ packages:
   '@types/connect@3.4.37':
     resolution: {integrity: sha512-zBUSRqkfZ59OcwXon4HVxhx5oWCJmc0OtBTK05M+p0dYjgN6iTwIL2T/WbsQZrEsdnwaF9cWQ+azOnpPvIqY3Q==}
 
+  '@types/connect@3.4.38':
+    resolution: {integrity: sha512-K6uROf1LD88uDQqJCktA4yzL1YYAK6NgfsI0v/mTgyPKWsX1CnJ0XPSDhViejru1GcRkLWb8RlzFYJRqGUbaug==}
+
   '@types/content-disposition@0.5.7':
     resolution: {integrity: sha512-V9/5u21RHFR1zfdm3rQ6pJUKV+zSSVQt+yq16i1YhdivVzWgPEoKedc3GdT8aFjsqQbakdxuy3FnEdePUQOamQ==}
 
@@ -6418,6 +6464,10 @@ packages:
     resolution: {integrity: sha512-aMKprgk5YhBNyH25hj8wGt2+D52Sw1DRRIzqBwLp2Ya9mFmY8KPvvtvmna8SxVR9JMZ4kzMD68N22vlaRpkeFA==}
     engines: {node: '>=8'}
 
+  connect@3.7.0:
+    resolution: {integrity: sha512-ZqRXc+tZukToSNmh5C2iWMSoV3X1YUcPbqEM4DkEG5tNQXrQUZCNVGGv3IuicnkMtPfGf3Xtp8WCXs295iQ1pQ==}
+    engines: {node: '>= 0.10.0'}
+
   consola@2.15.3:
     resolution: {integrity: sha512-9vAdYbHj6x2fLKC4+oPH0kFzY/orMZyG2Aj+kNylHxKGJ/Ed4dpNyAQYwJOdqO4zdM7XpVHmyejQDcQHrnuXbw==}
 
@@ -7920,6 +7970,10 @@ packages:
   filter-obj@1.1.0:
     resolution: {integrity: sha512-8rXg1ZnX7xzy2NGDVkBVaAy+lSlPNwad13BtgSlLuxfIslyt5Vg64U7tFcCt4WS1R0hvtnQybT/IyCkGZ3DpXQ==}
     engines: {node: '>=0.10.0'}
+
+  finalhandler@1.1.2:
+    resolution: {integrity: sha512-aAWcW57uxVNrQZqFXjITpW3sIUQmHGG3qSb9mUah9MgMC4NeWhNOlNjXEYq3HjRAvL6arUviZGGJsBg6z0zsWA==}
+    engines: {node: '>= 0.8'}
 
   finalhandler@1.2.0:
     resolution: {integrity: sha512-5uXcUVftlQMFnWC9qu/svkWv3GTd2PfUhK/3PLkYNAe7FbqJMt3515HaxE6eRL74GdsriiwujiawdaB1BpEISg==}
@@ -9858,6 +9912,10 @@ packages:
   object.pick@1.3.0:
     resolution: {integrity: sha512-tqa/UMy/CCoYmj+H5qc07qvSL9dqcs/WZENZ1JbtWBlATP+iVOe778gE6MSijnyCnORzDuX6hU+LA4SZ09YjFQ==}
     engines: {node: '>=0.10.0'}
+
+  on-finished@2.3.0:
+    resolution: {integrity: sha512-ikqdkGAAyf/X/gPhXGvfgAytDZtDbr+bkNUJ0N9h5MI/dmdgCs3l6hoHrcUv41sRKew3jIwrp4qQDXiK99Utww==}
+    engines: {node: '>= 0.8'}
 
   on-finished@2.4.1:
     resolution: {integrity: sha512-oVlzkg3ENAhCk2zdv7IJwd/QUD4z2RxRwpkcGY8psCVcCYZNq4wYnVWALHM+brtuJjePWiYF/ClmuDr8Ch5+kg==}
@@ -16589,13 +16647,17 @@ snapshots:
     dependencies:
       '@types/node': 18.18.8
 
+  '@types/connect@3.4.38':
+    dependencies:
+      '@types/node': 18.18.8
+
   '@types/content-disposition@0.5.7': {}
 
   '@types/cookiejar@2.1.5': {}
 
   '@types/cookies@0.7.9':
     dependencies:
-      '@types/connect': 3.4.37
+      '@types/connect': 3.4.38
       '@types/express': 4.17.21
       '@types/keygrip': 1.0.4
       '@types/node': 18.18.8
@@ -18117,7 +18179,7 @@ snapshots:
 
   axios@1.6.5:
     dependencies:
-      follow-redirects: 1.15.4(debug@4.3.4)
+      follow-redirects: 1.15.4
       form-data: 4.0.0
       proxy-from-env: 1.1.0
     transitivePeerDependencies:
@@ -18125,7 +18187,7 @@ snapshots:
 
   axios@1.7.2:
     dependencies:
-      follow-redirects: 1.15.6
+      follow-redirects: 1.15.6(debug@4.3.4)
       form-data: 4.0.0
       proxy-from-env: 1.1.0
     transitivePeerDependencies:
@@ -18910,6 +18972,15 @@ snapshots:
       unique-string: 2.0.0
       write-file-atomic: 3.0.3
       xdg-basedir: 4.0.0
+
+  connect@3.7.0:
+    dependencies:
+      debug: 2.6.9
+      finalhandler: 1.1.2
+      parseurl: 1.3.3
+      utils-merge: 1.0.1
+    transitivePeerDependencies:
+      - supports-color
 
   consola@2.15.3: {}
 
@@ -20395,6 +20466,18 @@ snapshots:
 
   filter-obj@1.1.0: {}
 
+  finalhandler@1.1.2:
+    dependencies:
+      debug: 2.6.9
+      encodeurl: 1.0.2
+      escape-html: 1.0.3
+      on-finished: 2.3.0
+      parseurl: 1.3.3
+      statuses: 1.5.0
+      unpipe: 1.0.0
+    transitivePeerDependencies:
+      - supports-color
+
   finalhandler@1.2.0:
     dependencies:
       debug: 2.6.9
@@ -20457,11 +20540,11 @@ snapshots:
 
   follow-redirects@1.15.3: {}
 
-  follow-redirects@1.15.4(debug@4.3.4):
+  follow-redirects@1.15.4: {}
+
+  follow-redirects@1.15.6(debug@4.3.4):
     optionalDependencies:
       debug: 4.3.4
-
-  follow-redirects@1.15.6: {}
 
   for-each@0.3.3:
     dependencies:
@@ -20971,7 +21054,7 @@ snapshots:
   http-proxy@1.18.1(debug@4.3.4):
     dependencies:
       eventemitter3: 4.0.7
-      follow-redirects: 1.15.4(debug@4.3.4)
+      follow-redirects: 1.15.6(debug@4.3.4)
       requires-port: 1.0.0
     transitivePeerDependencies:
       - debug
@@ -22666,6 +22749,10 @@ snapshots:
   object.pick@1.3.0:
     dependencies:
       isobject: 3.0.1
+
+  on-finished@2.3.0:
+    dependencies:
+      ee-first: 1.1.1
 
   on-finished@2.4.1:
     dependencies:

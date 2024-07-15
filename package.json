@@ -23,6 +23,8 @@
     "prepare": "husky"
   },
   "devDependencies": {
+    "@farmfe/cli": "workspace:*",
+    "@farmfe/core": "workspace:*",
     "@biomejs/biome": "1.7.2",
     "@changesets/cli": "^2.26.0",
     "@commitlint/cli": "^17.0.3",
