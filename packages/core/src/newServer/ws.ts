@@ -104,6 +104,7 @@ export class WsServer {
     private httpServer: HttpServer,
     private config: ResolvedUserConfig,
     private httpsOptions: HttpsServerOptions,
+    private publicPath: string,
     private hmrEngine: HmrEngine,
     logger?: ILogger
   ) {
@@ -147,6 +148,48 @@ export class WsServer {
     const host = (hmr && hmr.host) || undefined;
 
     if (this.wsServerOrHmrServer) {
+      let hmrBase = this.publicPath;
+      const hmrPath = hmr ? hmr.path : undefined;
+      if (hmrPath) {
+        hmrBase = path.posix.join(hmrBase, hmrPath as string);
+      }
+      wss = new WebSocketServerRaw({ noServer: true });
+      hmrServerWsListener = (req, socket, head) => {
+        if (
+          req.headers['sec-websocket-protocol'] === HMR_HEADER &&
+          req.url === hmrBase
+        ) {
+          wss.handleUpgrade(req, socket as Socket, head, (ws) => {
+            wss.emit('connection', ws, req);
+          });
+        }
+      };
+      this.wsServerOrHmrServer.on('upgrade', hmrServerWsListener);
+    } else {
+      // http server request handler keeps the same with
+      // https://github.com/websockets/ws/blob/45e17acea791d865df6b255a55182e9c42e5877a/lib/websocket-server.js#L88-L96
+      const route = ((_, res) => {
+        const statusCode = 426;
+        const body = STATUS_CODES[statusCode];
+        if (!body)
+          throw new Error(
+            `No body text found for the ${statusCode} status code`
+          );
+
+        res.writeHead(statusCode, {
+          'Content-Length': body.length,
+          'Content-Type': 'text/plain'
+        });
+        res.end(body);
+      }) as Parameters<typeof createHttpServer>[1];
+      if (this.httpsOptions) {
+        wsHttpServer = createHttpsServer(this.httpsOptions, route);
+      } else {
+        wsHttpServer = createHttpServer(route);
+      }
+      // vite dev server in middleware mode
+      // need to call ws listen manually
+      wss = new WebSocketServerRaw({ server: wsHttpServer });
     }
   }
 }
