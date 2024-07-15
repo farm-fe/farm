@@ -751,8 +751,8 @@ async function readConfigFile(
     const compiler = new Compiler(
       {
         config: normalizedConfig,
-        jsPlugins: [replaceDirnamePlugin()],
-        rustPlugins: []
+        jsPlugins: [],
+        rustPlugins: [['farm-plugin-replace-dirname', '']]
       },
       logger
     );
@@ -994,39 +994,6 @@ export async function getConfigFilePath(
   }
 
   return undefined;
-}
-
-// transform __dirname and __filename with resolve config file path
-export function replaceDirnamePlugin() {
-  const moduleTypes = ['ts', 'js', 'cjs', 'mjs', 'mts', 'cts'];
-  const resolvedPaths: string[] = [];
-  return {
-    name: 'replace-dirname',
-    transform: {
-      filters: {
-        moduleTypes,
-        resolvedPaths
-      },
-      async executor(param: PluginTransformHookParam) {
-        const { content, resolvedPath, moduleType } = param;
-        let replaceContent = content;
-        const dirPath = path.dirname(resolvedPath);
-
-        replaceContent = param.content
-          .replace(/__dirname/g, JSON.stringify(dirPath))
-          .replace(/__filename/g, JSON.stringify(resolvedPath))
-          .replace(
-            /import\.meta\.url/g,
-            JSON.stringify(pathToFileURL(resolvedPath))
-          );
-
-        return {
-          content: replaceContent,
-          moduleType
-        };
-      }
-    }
-  };
 }
 
 export async function resolvePlugins(
