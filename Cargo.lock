@@ -1608,7 +1608,6 @@ name = "farmfe_plugin_css"
 version = "0.0.10"
 dependencies = [
  "farmfe_core",
- "farmfe_macro_cache_item",
  "farmfe_testing_helpers",
  "farmfe_toolkit",
  "farmfe_utils 0.1.5",
@@ -1689,6 +1688,10 @@ dependencies = [
  "farmfe_core",
  "farmfe_testing_helpers",
  "indicatif",
+ "ptr_meta",
+ "rkyv",
+ "rkyv_dyn",
+ "rkyv_typename",
 ]
 
 [[package]]

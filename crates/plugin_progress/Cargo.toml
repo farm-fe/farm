@@ -14,3 +14,7 @@ farmfe_core = { path = "../core", version = "0.6.1" }
 farmfe_testing_helpers = { path = "../testing_helpers", version = "0.0.10" }
 indicatif = "0.17.7"
 console = "0.15.8"
+rkyv = "0.7"
+rkyv_dyn = "0.7"
+rkyv_typename = "0.7"
+ptr_meta = "0.1"

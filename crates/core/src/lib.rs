@@ -16,7 +16,7 @@ pub mod record;
 pub mod resource;
 pub mod stats;
 
-pub use farmfe_macro_cache_item::cache_item;
+pub use farmfe_macro_cache_item::{cache_item, custom_meta_data};
 
 /// Version of this core crate, if the core data structures changed, and the changes will affect the memory layout,
 /// like adding or removing a field, this version should be bumped. So plugin loader can recognize compatibility of the dynamic library plugins and the core.
@@ -24,9 +24,11 @@ pub const VERSION: &str = "0.5.0";
 
 // re-export common external crates
 pub use dashmap;
+pub use downcast_rs;
 pub use enhanced_magic_string;
 pub use parking_lot;
 pub use petgraph;
+pub use ptr_meta;
 #[cfg(feature = "profile")]
 pub use puffin;
 pub use rayon;

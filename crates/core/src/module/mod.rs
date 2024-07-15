@@ -7,7 +7,7 @@ use blake2::{
   Blake2bVar,
 };
 use downcast_rs::{impl_downcast, Downcast};
-use farmfe_macro_cache_item::cache_item;
+use farmfe_macro_cache_item::{cache_item, custom_meta_data};
 use farmfe_utils::relative;
 use heck::AsLowerCamelCase;
 use relative_path::RelativePath;
@@ -262,7 +262,7 @@ pub trait CustomModuleMetaData: Any + Send + Sync + Downcast {}
 impl_downcast!(SerializeCustomModuleMetaData);
 
 /// initial empty custom data, plugins may replace this
-#[cache_item(CustomModuleMetaData)]
+#[custom_meta_data]
 pub struct EmptyModuleMetaData;
 
 #[cache_item]
@@ -754,7 +754,7 @@ impl serde::Serialize for ModuleId {
 #[cfg(test)]
 mod tests {
   use crate::config::Mode;
-  use farmfe_macro_cache_item::cache_item;
+  use farmfe_macro_cache_item::custom_meta_data;
   use rkyv_dyn::archive_dyn;
   use rkyv_typename::TypeName;
   use std::collections::HashSet;
@@ -858,7 +858,7 @@ mod tests {
   fn module_serialization() {
     let mut module = Module::new(ModuleId::new("/root/index.ts", "", "/root"));
 
-    #[cache_item(CustomModuleMetaData)]
+    #[custom_meta_data]
     pub struct StructModuleData {
       ast: String,
       imports: Vec<String>,
