@@ -5,5 +5,5 @@
     "module": "ESNext",
     "moduleResolution": "bundler"
   },
-  "include": ["vite.config.ts"]
+  "include": ["farm.config.ts"]
 }

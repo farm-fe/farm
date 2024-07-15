@@ -39,7 +39,7 @@ jobs:
             target: i686-pc-windows-msvc
             build: |
               export CARGO_PROFILE_RELEASE_LTO=false
-              cargo install cargo-xwin
+              cargo install --locked cargo-xwin
               npm run build -- --target i686-pc-windows-msvc --abi win32-ia32-msvc --cargo-flags="--no-default-features"
           - os: windows-latest
             abi: win32-arm64-msvc
@@ -47,7 +47,7 @@ jobs:
             build: |
               export CARGO_PROFILE_RELEASE_CODEGEN_UNITS=256
               export CARGO_PROFILE_RELEASE_LTO=false
-              cargo install cargo-xwin
+              cargo install --locked cargo-xwin
               npm run build -- --target aarch64-pc-windows-msvc --abi win32-arm64-msvc --cargo-flags="--no-default-features"
           # linux
           - os: ubuntu-latest

@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.1.0
+
+### Minor Changes
+
+- 966e2507: Bump version cause core changed
+
+### Patch Changes
+
+- 385e5b25: feat: normalize usage of rust plugins and js plugins
+
 ## 1.0.5
 
 ### Patch Changes

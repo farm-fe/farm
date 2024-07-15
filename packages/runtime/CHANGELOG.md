@@ -1,5 +1,11 @@
 # @farmfe/runtime
 
+## 0.12.0
+
+### Minor Changes
+
+- 966e2507: Optimize production size
+
 ## 0.11.2
 
 ### Patch Changes

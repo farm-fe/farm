@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.0.11
+
+### Patch Changes
+
+- a27597bb: Include farm instead of vite
+
 ## 0.0.10
 
 ### Patch Changes
