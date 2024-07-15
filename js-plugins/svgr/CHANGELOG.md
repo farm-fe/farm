@@ -1,6 +1,6 @@
 # @farmfe/js-plugin-svgr
 
-## 2.0.0
+## 1.6.0
 
 ### Patch Changes
 

@@ -1,6 +1,6 @@
 {
   "name": "@farmfe/js-plugin-less",
-  "version": "2.0.0",
+  "version": "1.9.0",
   "description": "support less compile for farm.",
   "main": "./build/cjs/index.cjs",
   "types": "./build/cjs/index.d.ts",
@@ -33,9 +33,7 @@
     "clean": "rimraf dist build tsconfig.build.tsbuildinfo",
     "type-check": "tsc -p ./tsconfig.build.json --noEmit"
   },
-  "files": [
-    "build"
-  ],
+  "files": ["build"],
   "keywords": [],
   "license": "MIT",
   "devDependencies": {

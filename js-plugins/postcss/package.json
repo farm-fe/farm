@@ -1,6 +1,6 @@
 {
   "name": "@farmfe/js-plugin-postcss",
-  "version": "2.0.0",
+  "version": "1.8.0",
   "description": "support postcss for farm.",
   "main": "./build/cjs/index.cjs",
   "types": "./build/cjs/index.d.ts",
@@ -33,9 +33,7 @@
     "prepublishOnly": "npm run build",
     "type-check": "tsc -p ./tsconfig.build.json --noEmit"
   },
-  "files": [
-    "build"
-  ],
+  "files": ["build"],
   "keywords": [],
   "license": "MIT",
   "devDependencies": {
