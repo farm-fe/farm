@@ -5,10 +5,7 @@ import path, { isAbsolute, join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 import { bindingPath } from '../../binding/index.js';
-import {
-  OutputConfig,
-  type PluginTransformHookParam
-} from '../types/binding.js';
+import { OutputConfig } from '../types/binding.js';
 
 import { JsPlugin } from '../index.js';
 import {
