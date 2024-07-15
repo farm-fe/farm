@@ -79,10 +79,15 @@
     "@types/koa__cors": "^5.0.0",
     "@types/lodash.debounce": "^4.0.7",
     "@types/mime-types": "^2.1.2",
-    "@types/ws": "^8.5.4",
+    "@types/ws": "^8.5.8",
     "connect": "^3.7.0",
+    "cors": "^2.8.5",
+    "debug": "^4.3.5",
+    "etag": "^1.8.1",
     "http-proxy": "^1.18.1",
-    "react-refresh": "^0.14.0"
+    "react-refresh": "^0.14.0",
+    "sirv": "^2.0.3",
+    "ws": "^8.14.2"
   },
   "dependencies": {
     "@farmfe/runtime": "workspace:0.12.1",
@@ -111,7 +116,6 @@
     "mime-types": "^2.1.35",
     "open": "^9.1.0",
     "slashes": "^3.0.12",
-    "ws": "^8.12.0",
     "zod": "^3.23.8",
     "zod-validation-error": "^3.3.0"
   },
