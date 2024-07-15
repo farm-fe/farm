@@ -2194,13 +2194,13 @@ importers:
   packages/core:
     dependencies:
       '@farmfe/runtime':
-        specifier: workspace:0.11.2
+        specifier: workspace:0.12.0
         version: link:../runtime
       '@farmfe/runtime-plugin-hmr':
-        specifier: workspace:3.5.2
+        specifier: workspace:3.5.3
         version: link:../runtime-plugin-hmr
       '@farmfe/runtime-plugin-import-meta':
-        specifier: workspace:0.2.1
+        specifier: workspace:0.2.2
         version: link:../runtime-plugin-import-meta
       '@farmfe/utils':
         specifier: workspace:*
@@ -2377,7 +2377,7 @@ importers:
         version: 3.33.2
     devDependencies:
       '@farmfe/runtime':
-        specifier: workspace:^0.11.1
+        specifier: workspace:^0.12.0
         version: link:../runtime
 
   packages/runtime-plugin-import-meta:
@@ -2387,7 +2387,7 @@ importers:
         version: 3.30.1
     devDependencies:
       '@farmfe/runtime':
-        specifier: workspace:^0.11.0
+        specifier: workspace:^0.12.0
         version: link:../runtime
 
   packages/utils: {}

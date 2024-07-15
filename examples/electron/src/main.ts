@@ -1,14 +1,18 @@
-import './style.css'
-import typescriptLogo from './typescript.svg'
-import Logo from './assets/logo.png'
-import { setupCounter } from './counter.ts'
+import './style.css';
+import typescriptLogo from './typescript.svg';
+import Logo from './assets/logo.png';
+import { setupCounter } from './counter.ts';
 
 // Use contextBridge
 window.ipcRenderer.on('main-process-message', (_event, message) => {
-  console.log('Main process active push message:',message)
-})
+  console.log('Main process active push message:', message);
+});
 
-document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
+const appElement = document.querySelector<HTMLDivElement>(
+  '#app'
+) as HTMLDivElement;
+
+appElement.innerHTML = `
   <div>
     <a href="https://farmfe.org/" target="_blank">
       <img src="${Logo}" class="logo" alt="Vite logo" />
@@ -24,6 +28,6 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
       Click on the Farm and TypeScript logos to learn more
     </p>
   </div>
-`
+`;
 
-setupCounter(document.querySelector<HTMLButtonElement>('#counter')!)
+setupCounter(document.querySelector('#counter') as HTMLButtonElement);
