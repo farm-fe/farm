@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.2](https://github.com/farm-fe/farm/compare/farmfe_core-v0.6.1...farmfe_core-v0.6.2) - 2024-07-15
+
+### Other
+- update crates deps ([#1611](https://github.com/farm-fe/farm/pull/1611))
+
 ## [0.6.1](https://github.com/farm-fe/farm/compare/farmfe_core-v0.6.0...farmfe_core-v0.6.1) - 2024-07-11
 
 ### Fixed
