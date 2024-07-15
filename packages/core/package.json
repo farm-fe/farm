@@ -93,7 +93,7 @@
     "dotenv-expand": "^11.0.6",
     "execa": "^7.1.1",
     "farm-browserslist-generator": "^1.0.0",
-    "farm-plugin-replace-dirname": "^0.0.3",
+    "farm-plugin-replace-dirname": "^0.2.0",
     "fast-glob": "^3.3.2",
     "fs-extra": "^11.1.1",
     "http-proxy-middleware": "^3.0.0",
