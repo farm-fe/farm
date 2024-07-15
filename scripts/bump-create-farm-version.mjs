@@ -4,12 +4,15 @@ import path from 'node:path';
 const templatesDir = path.resolve('crates/create-farm-rs/templates'); 
 
 const packageCorePath = path.resolve('packages/core/package.json');
+const packageReactPluginPath = path.resolve('rust-plugins/react/package.json');
 const packageCliPath = path.resolve('packages/cli/package.json');
 const packageCoreJson = JSON.parse(fs.readFileSync(packageCorePath, 'utf8'));
 const packageCliJson = JSON.parse(fs.readFileSync(packageCliPath, 'utf8'));
+const packageReactPluginJson = JSON.parse(fs.readFileSync(packageReactPluginPath, 'utf8'));
 const dependenciesToUpdate = {
   "@farmfe/core": `^${packageCoreJson.version}`,
-  "@farmfe/cli": `^${packageCliJson.version}`
+  "@farmfe/cli": `^${packageCliJson.version}`,
+  "@farmfe/plugin-react": `^${packageReactPluginJson.version}`,
 };
 
 function updatePackageJsonDependencies(dir) {
