@@ -17,6 +17,7 @@ export default defineConfig({
       "/aaa": {
         target: "https://apis.juhe.cn/environment/river",
         changeOrigin: true,
+        ws: true,
         pathRewrite: { "^/aaa": "" }
       },
     },
