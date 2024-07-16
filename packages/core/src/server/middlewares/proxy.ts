@@ -58,15 +58,14 @@ export function proxy(devSeverContext: Server): Middleware {
     return;
   }
   const options = config.proxy;
-  const server = devSeverContext.server;
+
   useProxy(options, devSeverContext.app(), logger);
+  const server = devSeverContext.server;
   if (server) {
     server.on('upgrade', (req, socket: any, head) => {
-      const url = req.url;
-      const rewrite = (path: string) => {
-        return path.replace(/^\/aaa/, '');
-      };
-      for (const path in Object.keys(options)) {
+      if (req.url === config.hmr.path) return;
+
+      for (const path in options) {
         const opts = options[path] as Options;
         if (
           opts.ws ||
@@ -75,12 +74,24 @@ export function proxy(devSeverContext: Server): Middleware {
         ) {
           const proxy = createProxyMiddleware(opts);
           if (opts.pathRewrite) {
-            req.url = rewrite(url);
+            const fromPath = Object.keys(opts.pathRewrite)[0];
+            const toPath: string = (
+              opts.pathRewrite as { [regexp: string]: string }
+            )[fromPath];
+            req.url = rewritePath(req.url, fromPath, toPath);
           }
           proxy.upgrade(req, socket, head);
           return;
         }
       }
     });
+  }
+}
+
+function rewritePath(path: string, fromPath: RegExp | string, toPath: string) {
+  if (fromPath instanceof RegExp) {
+    return path.replace(fromPath, toPath);
+  } else {
+    return path.replace(new RegExp(fromPath), toPath);
   }
 }
