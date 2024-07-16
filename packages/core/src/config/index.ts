@@ -14,7 +14,8 @@ import {
   resolveAsyncPlugins,
   resolveConfigHook,
   resolveConfigResolvedHook,
-  resolveFarmPlugins
+  resolveFarmPlugins,
+  rustPluginResolver
 } from '../plugin/index.js';
 import { Server } from '../server/index.js';
 import {
@@ -745,11 +746,16 @@ async function readConfigFile(
       'development'
     );
 
+    const replaceDirnamePlugin = await rustPluginResolver(
+      'farm-plugin-replace-dirname',
+      normalizedConfig.root
+    );
+
     const compiler = new Compiler(
       {
         config: normalizedConfig,
         jsPlugins: [],
-        rustPlugins: [['farm-plugin-replace-dirname', '']]
+        rustPlugins: [replaceDirnamePlugin]
       },
       logger
     );
