@@ -105,7 +105,7 @@ export interface ResourcePotRecord {
   resources: Array<string>
 }
 export type JsCompiler = Compiler
-export declare class Compiler {
+export class Compiler {
   constructor(config: object)
   traceDependencies(): Array<string>
   /** async compile, return promise */
