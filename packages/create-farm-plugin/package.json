@@ -1,6 +1,6 @@
 {
   "name": "create-farm-plugin",
-  "version": "0.1.12",
+  "version": "0.1.13",
   "description": "use create-farm-plugin to create farm plugin",
   "exports": {
     ".": "./bin/create-farm-plugin.mjs"
