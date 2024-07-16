@@ -930,7 +930,7 @@ dependencies = [
 
 [[package]]
 name = "create-farm"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "anyhow",
  "clap",
@@ -943,7 +943,7 @@ dependencies = [
 
 [[package]]
 name = "create_farm_node"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "create-farm",
  "napi",
@@ -1496,7 +1496,7 @@ checksum = "4443176a9f2c162692bd3d352d745ef9413eec5782a80d8fd6f8a1ac692a07f7"
 
 [[package]]
 name = "farmfe_compiler"
-version = "0.0.9"
+version = "0.0.10"
 dependencies = [
  "farmfe_core",
  "farmfe_plugin_bundle",
