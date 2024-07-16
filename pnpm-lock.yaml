@@ -2230,7 +2230,7 @@ importers:
         specifier: ^1.0.0
         version: 1.0.0
       farm-plugin-replace-dirname:
-        specifier: ^0.2.0
+        specifier: 0.2.0
         version: 0.2.0
       fast-glob:
         specifier: ^3.3.2
