@@ -57,7 +57,11 @@ export default class WsServer implements IWebSocketServer {
 
   private createWebSocketServer() {
     try {
-      this.wss = new WebSocketServerRaw({ noServer: true });
+      const WebSocketServer = process.versions.bun
+        ? // @ts-expect-error: Bun defines `import.meta.require`
+          import.meta.require('ws').WebSocketServer
+        : WebSocketServerRaw;
+      this.wss = new WebSocketServer({ noServer: true });
       this.connection();
       // TODO IF not have httpServer
       this.httpServer.on('upgrade', this.upgradeWsServer.bind(this));
