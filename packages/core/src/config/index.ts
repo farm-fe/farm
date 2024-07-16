@@ -751,11 +751,14 @@ async function readConfigFile(
       normalizedConfig.root
     );
 
+    console.log(replaceDirnamePlugin);
+
     const compiler = new Compiler(
       {
         config: normalizedConfig,
         jsPlugins: [],
-        rustPlugins: [replaceDirnamePlugin]
+        // rustPlugins: [replaceDirnamePlugin]
+        rustPlugins: []
       },
       logger
     );
