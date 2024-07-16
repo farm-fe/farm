@@ -62,11 +62,11 @@ export function proxy(devSeverContext: Server): Middleware {
   useProxy(options, devSeverContext.app(), logger);
   if (server) {
     server.on('upgrade', (req, socket: any, head) => {
-      const url = req.url!;
+      const url = req.url;
       const rewrite = (path: string) => {
-        path.replace(/^\/aaa/, '');
+        return path.replace(/^\/aaa/, '');
       };
-      for (const path in options) {
+      for (const path in Object.keys(options)) {
         const opts = options[path] as Options;
         if (
           opts.ws ||
@@ -75,7 +75,6 @@ export function proxy(devSeverContext: Server): Middleware {
         ) {
           const proxy = createProxyMiddleware(opts);
           if (opts.pathRewrite) {
-            // @ts-ignore
             req.url = rewrite(url);
           }
           proxy.upgrade(req, socket, head);
