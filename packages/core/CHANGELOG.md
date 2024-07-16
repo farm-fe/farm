@@ -1,5 +1,12 @@
 # @farmfe/core
 
+## 1.3.1
+
+### Patch Changes
+
+- afe48ab7: fix: proxy ws error
+- a3788445: Add protocol option in config schema
+
 ## 1.3.0
 
 ### Minor Changes
