@@ -58,5 +58,30 @@ export function proxy(devSeverContext: Server): Middleware {
     return;
   }
   const options = config.proxy;
+  const server = devSeverContext.server;
   useProxy(options, devSeverContext.app(), logger);
+  if (server) {
+    server.on('upgrade', (req, socket: any, head) => {
+      const url = req.url!;
+      const rewrite = (path: string) => {
+        path.replace(/^\/aaa/, '');
+      };
+      for (const path in options) {
+        const opts = options[path] as Options;
+        if (
+          opts.ws ||
+          opts.target?.toString().startsWith('ws:') ||
+          opts.target?.toString().startsWith('wss:')
+        ) {
+          const proxy = createProxyMiddleware(opts);
+          if (opts.pathRewrite) {
+            // @ts-ignore
+            req.url = rewrite(url);
+          }
+          proxy.upgrade(req, socket, head);
+          return;
+        }
+      }
+    });
+  }
 }
