@@ -2,7 +2,14 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import readline from 'node:readline';
 import { fileURLToPath } from 'node:url';
-import type { build, clean, preview, start, watch } from '@farmfe/core';
+import type {
+  build,
+  clean,
+  preview,
+  start,
+  startTestRefactorCli,
+  watch
+} from '@farmfe/core';
 import { Logger } from '@farmfe/core';
 import spawn from 'cross-spawn';
 import walkdir from 'walkdir';
@@ -27,6 +34,7 @@ export async function resolveCore(): Promise<{
   watch: typeof watch;
   preview: typeof preview;
   clean: typeof clean;
+  startTestRefactorCli: typeof startTestRefactorCli;
 }> {
   try {
     return import('@farmfe/core');
