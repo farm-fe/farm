@@ -58,5 +58,40 @@ export function proxy(devSeverContext: Server): Middleware {
     return;
   }
   const options = config.proxy;
+
   useProxy(options, devSeverContext.app(), logger);
+  const server = devSeverContext.server;
+  if (server) {
+    server.on('upgrade', (req, socket: any, head) => {
+      if (req.url === config.hmr.path) return;
+
+      for (const path in options) {
+        const opts = options[path] as Options;
+        if (
+          opts.ws ||
+          opts.target?.toString().startsWith('ws:') ||
+          opts.target?.toString().startsWith('wss:')
+        ) {
+          const proxy = createProxyMiddleware(opts);
+          if (opts.pathRewrite) {
+            const fromPath = Object.keys(opts.pathRewrite)[0];
+            const toPath: string = (
+              opts.pathRewrite as { [regexp: string]: string }
+            )[fromPath];
+            req.url = rewritePath(req.url, fromPath, toPath);
+          }
+          proxy.upgrade(req, socket, head);
+          return;
+        }
+      }
+    });
+  }
+}
+
+function rewritePath(path: string, fromPath: RegExp | string, toPath: string) {
+  if (fromPath instanceof RegExp) {
+    return path.replace(fromPath, toPath);
+  } else {
+    return path.replace(new RegExp(fromPath), toPath);
+  }
 }

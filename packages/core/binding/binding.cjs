@@ -224,14 +224,72 @@ switch (platform) {
         }
         break
       case 'arm':
+        if (isMusl()) {
+          localFileExisted = existsSync(
+            join(__dirname, 'farm.linux-arm-musleabihf.node')
+          )
+          try {
+            if (localFileExisted) {
+              nativeBinding = require('./farm.linux-arm-musleabihf.node')
+            } else {
+              nativeBinding = require('@farmfe/core-linux-arm-musleabihf')
+            }
+          } catch (e) {
+            loadError = e
+          }
+        } else {
+          localFileExisted = existsSync(
+            join(__dirname, 'farm.linux-arm-gnueabihf.node')
+          )
+          try {
+            if (localFileExisted) {
+              nativeBinding = require('./farm.linux-arm-gnueabihf.node')
+            } else {
+              nativeBinding = require('@farmfe/core-linux-arm-gnueabihf')
+            }
+          } catch (e) {
+            loadError = e
+          }
+        }
+        break
+      case 'riscv64':
+        if (isMusl()) {
+          localFileExisted = existsSync(
+            join(__dirname, 'farm.linux-riscv64-musl.node')
+          )
+          try {
+            if (localFileExisted) {
+              nativeBinding = require('./farm.linux-riscv64-musl.node')
+            } else {
+              nativeBinding = require('@farmfe/core-linux-riscv64-musl')
+            }
+          } catch (e) {
+            loadError = e
+          }
+        } else {
+          localFileExisted = existsSync(
+            join(__dirname, 'farm.linux-riscv64-gnu.node')
+          )
+          try {
+            if (localFileExisted) {
+              nativeBinding = require('./farm.linux-riscv64-gnu.node')
+            } else {
+              nativeBinding = require('@farmfe/core-linux-riscv64-gnu')
+            }
+          } catch (e) {
+            loadError = e
+          }
+        }
+        break
+      case 's390x':
         localFileExisted = existsSync(
-          join(__dirname, 'farm.linux-arm-gnueabihf.node')
+          join(__dirname, 'farm.linux-s390x-gnu.node')
         )
         try {
           if (localFileExisted) {
-            nativeBinding = require('./farm.linux-arm-gnueabihf.node')
+            nativeBinding = require('./farm.linux-s390x-gnu.node')
           } else {
-            nativeBinding = require('@farmfe/core-linux-arm-gnueabihf')
+            nativeBinding = require('@farmfe/core-linux-s390x-gnu')
           }
         } catch (e) {
           loadError = e
