@@ -30,7 +30,7 @@ export default {
       (server) => {
         server.app().use(async (ctx, next) => {
           await next();
-
+          console.log(import.meta.url);
           if (ctx.path === '/' || ctx.status === 404) {
             // console.log('ctx.path', ctx.path);
             const template = server
