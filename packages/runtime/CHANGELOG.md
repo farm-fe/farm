@@ -1,5 +1,11 @@
 # @farmfe/runtime
 
+## 0.12.1
+
+### Patch Changes
+
+- bf8bd9fe: Fix define \_\_esModule
+
 ## 0.12.0
 
 ### Minor Changes
