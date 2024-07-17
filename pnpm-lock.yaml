@@ -2230,8 +2230,8 @@ importers:
         specifier: ^1.0.0
         version: 1.0.0
       farm-plugin-replace-dirname:
-        specifier: 0.2.0
-        version: 0.2.0
+        specifier: 0.2.1
+        version: 0.2.1
       fast-glob:
         specifier: ^3.3.2
         version: 3.3.2
@@ -7777,62 +7777,62 @@ packages:
   farm-plugin-remove-console@0.1.8:
     resolution: {integrity: sha512-t/QH2N97w2/VM4tj/hmnceU/95yYeORR5BnlWP91PherULRFhTVctECcC0JI33Psvyk06uSW4BuKgBPtktM5+w==}
 
-  farm-plugin-replace-dirname-darwin-arm64@0.2.0:
-    resolution: {integrity: sha512-WWSGLOSbV/Kv3kbo6ZDBslpd3viNV8wBYxnXcsV4iZMTI4nv8ugtuDJ0yG+2IAXkk1xZn0p70gV/tzlKiS/T3Q==}
+  farm-plugin-replace-dirname-darwin-arm64@0.2.1:
+    resolution: {integrity: sha512-9FThv/qoFuj3cJjv9P6YnXbBwPQ5TwGjnr50ejXdZn13Ehz0+7w7EscbRsZHNvT7p24p6i0Y9NUSallcWc2syw==}
     engines: {node: '>= 10'}
     cpu: [arm64]
     os: [darwin]
 
-  farm-plugin-replace-dirname-darwin-x64@0.2.0:
-    resolution: {integrity: sha512-/3K/vMBhWO2lOZnPArG3FECroWCo4v5zylId7eBj+iIwoWom/1lE7jWQCGXVLAmV2PlYDBieCW0yKhQBuNmNuw==}
+  farm-plugin-replace-dirname-darwin-x64@0.2.1:
+    resolution: {integrity: sha512-Msqrh8mAPBbEpANpa0z9uQBr1/MO+PaHgBxym/aNs1vpxB4KAs6JQWYKtO+Ob7JzFyV6d9lIRhpnpxzxTqSIfA==}
     engines: {node: '>= 10'}
     cpu: [x64]
     os: [darwin]
 
-  farm-plugin-replace-dirname-linux-arm64-gnu@0.2.0:
-    resolution: {integrity: sha512-n0L8P3E122JqBM9AOOtWrVJR5IQ63DrM+9K4cuaZhc6YIFy4WA6igTsTEmsnXQ5Md+OyXXy5lsKj0rcOvT8Daw==}
+  farm-plugin-replace-dirname-linux-arm64-gnu@0.2.1:
+    resolution: {integrity: sha512-ZKuxGu9G01CW521uTQHh+IP8pcT/NolGQfcQuEmBpD8epJ8per8Ps52fS05u5TGniaOg+ySZpt7HxbX+++k1YQ==}
     engines: {node: '>= 10'}
     cpu: [arm64]
     os: [linux]
 
-  farm-plugin-replace-dirname-linux-arm64-musl@0.2.0:
-    resolution: {integrity: sha512-Lk8YXqehuqX1EhnFV20tH+wCu8rV59Xir5L2U7mfWZbJrsCMr4fplyr34Zw+IW9kqZ74yMCt1n+8yavnxrFy6g==}
+  farm-plugin-replace-dirname-linux-arm64-musl@0.2.1:
+    resolution: {integrity: sha512-m3gH8ggczbRYTHZSNp3LjIQIcqhvDO4O78bxXc8O1ozKD8M47/YfQLyQV06M7H4rZ8s6XV3Bb1kAcRAASp3M5A==}
     engines: {node: '>= 10'}
     cpu: [arm64]
     os: [linux]
 
-  farm-plugin-replace-dirname-linux-x64-gnu@0.2.0:
-    resolution: {integrity: sha512-jjJGTthPM87s/nsZoc/9WhQmKvdtys225BkUjFwnhFE0FekYNNc3FP8eBTeQoykjHdb15yBNie4gLUm9IZ6a3A==}
+  farm-plugin-replace-dirname-linux-x64-gnu@0.2.1:
+    resolution: {integrity: sha512-MehKkoM2RFw3sCnEu9nCbXKjxtC3hfTad0h/dC+Z8iEBcLEReVLoNzHWWUa6BxkxqDtB82/BWO/ObSUj/VUnwQ==}
     engines: {node: '>= 10'}
     cpu: [x64]
     os: [linux]
 
-  farm-plugin-replace-dirname-linux-x64-musl@0.2.0:
-    resolution: {integrity: sha512-3aApdB5w4AOkcMQMLabMLcol+5XJLxKoupUqsk4BtWql8GA0Qost1XnN3l2TF3EsDOREfinw9u73GZ9Heo1PWw==}
+  farm-plugin-replace-dirname-linux-x64-musl@0.2.1:
+    resolution: {integrity: sha512-o1qPZi16N/sHOteZYJVv6UmZFK3QKpVQrywk/4spJI0mPH9A9Y+G6iBE2Tqjb3d+1Hb6phr++EBJHZ2x1ajtGQ==}
     engines: {node: '>= 10'}
     cpu: [x64]
     os: [linux]
 
-  farm-plugin-replace-dirname-win32-arm64-msvc@0.2.0:
-    resolution: {integrity: sha512-dJFcqmyf7snR1Sf9Q7Sd8jY82B2vf3B5mLmHXCpZl8efSWfBWY0FosOSIcawClgW+vJfLn8dDDxjR28gh7GD6A==}
+  farm-plugin-replace-dirname-win32-arm64-msvc@0.2.1:
+    resolution: {integrity: sha512-Xn/wYFkgb7SsTlSaefFtvxNbXEVdvZB854b/rBZu47+MRQpSnBIPwnTGcqo8eNTMjtnY4beGGtcd78iqMVAHFQ==}
     engines: {node: '>= 10'}
     cpu: [arm64]
     os: [win32]
 
-  farm-plugin-replace-dirname-win32-ia32-msvc@0.2.0:
-    resolution: {integrity: sha512-ihqG2sn/DslFj/8L6xWGai49uYDfFoOCjxgW3+sU4b5rgConQytuuj/uZUK9kzp0nmJeOaZaxdosT0DaXwxY3Q==}
+  farm-plugin-replace-dirname-win32-ia32-msvc@0.2.1:
+    resolution: {integrity: sha512-YtIu5CS/BSgbQZb1qjaBg0cEKvB4vCIbBxNn64H468zwliPbE93SAIyiwu6cL3la59cjBP4sEbz4ZAWyY9GoMQ==}
     engines: {node: '>= 10'}
     cpu: [ia32]
     os: [win32]
 
-  farm-plugin-replace-dirname-win32-x64-msvc@0.2.0:
-    resolution: {integrity: sha512-l5nuPPdXmuVImYvgrZDKY6pz+3K4kb9XYtIbbGvyISuYrxLO5tZdzhXxtS+wfojBUpVKBisG86BA4Z5xAKGNhg==}
+  farm-plugin-replace-dirname-win32-x64-msvc@0.2.1:
+    resolution: {integrity: sha512-KUAf4rcv3Nz+CpGs4zr+ZRu4hWRp7SHQBgpX+mb0hhMjRvn+LoWm2qCL2q9Gp3jsTDVmzjPbyZxp/9UJKx13lQ==}
     engines: {node: '>= 10'}
     cpu: [x64]
     os: [win32]
 
-  farm-plugin-replace-dirname@0.2.0:
-    resolution: {integrity: sha512-nbijE7W6zSiREzOZkeBdPJp0pYzibOiS9/ig61Py0Y+py+2GEFYle5vklIWd9V1uSaBoQwntSmQ+WS8+5L7GQg==}
+  farm-plugin-replace-dirname@0.2.1:
+    resolution: {integrity: sha512-aJ4euQzxoq0sVu4AwXrNQflHJrSZdrdApGEyVRtN6KiCop3CHXnTg9ydlyCNXN2unQB283aNjojvCd5E/32KgA==}
 
   farmup@0.0.12:
     resolution: {integrity: sha512-B8RMixABXp/ILgadg2wQ1BAXwcdOqKdF1K4aq6rYur+7MsrRRlj6g/Wvifil0Xs1zvAUKBGEdCGIcu9TL29Brg==}
@@ -20258,48 +20258,48 @@ snapshots:
       farm-plugin-remove-console-win32-ia32-msvc: 0.1.8
       farm-plugin-remove-console-win32-x64-msvc: 0.1.8
 
-  farm-plugin-replace-dirname-darwin-arm64@0.2.0:
+  farm-plugin-replace-dirname-darwin-arm64@0.2.1:
     optional: true
 
-  farm-plugin-replace-dirname-darwin-x64@0.2.0:
+  farm-plugin-replace-dirname-darwin-x64@0.2.1:
     optional: true
 
-  farm-plugin-replace-dirname-linux-arm64-gnu@0.2.0:
+  farm-plugin-replace-dirname-linux-arm64-gnu@0.2.1:
     optional: true
 
-  farm-plugin-replace-dirname-linux-arm64-musl@0.2.0:
+  farm-plugin-replace-dirname-linux-arm64-musl@0.2.1:
     optional: true
 
-  farm-plugin-replace-dirname-linux-x64-gnu@0.2.0:
+  farm-plugin-replace-dirname-linux-x64-gnu@0.2.1:
     optional: true
 
-  farm-plugin-replace-dirname-linux-x64-musl@0.2.0:
+  farm-plugin-replace-dirname-linux-x64-musl@0.2.1:
     optional: true
 
-  farm-plugin-replace-dirname-win32-arm64-msvc@0.2.0:
+  farm-plugin-replace-dirname-win32-arm64-msvc@0.2.1:
     optional: true
 
-  farm-plugin-replace-dirname-win32-ia32-msvc@0.2.0:
+  farm-plugin-replace-dirname-win32-ia32-msvc@0.2.1:
     optional: true
 
-  farm-plugin-replace-dirname-win32-x64-msvc@0.2.0:
+  farm-plugin-replace-dirname-win32-x64-msvc@0.2.1:
     optional: true
 
-  farm-plugin-replace-dirname@0.2.0:
+  farm-plugin-replace-dirname@0.2.1:
     dependencies:
       '@changesets/cli': 2.27.2
       '@farmfe/utils': 0.0.1
       cac: 6.7.14
     optionalDependencies:
-      farm-plugin-replace-dirname-darwin-arm64: 0.2.0
-      farm-plugin-replace-dirname-darwin-x64: 0.2.0
-      farm-plugin-replace-dirname-linux-arm64-gnu: 0.2.0
-      farm-plugin-replace-dirname-linux-arm64-musl: 0.2.0
-      farm-plugin-replace-dirname-linux-x64-gnu: 0.2.0
-      farm-plugin-replace-dirname-linux-x64-musl: 0.2.0
-      farm-plugin-replace-dirname-win32-arm64-msvc: 0.2.0
-      farm-plugin-replace-dirname-win32-ia32-msvc: 0.2.0
-      farm-plugin-replace-dirname-win32-x64-msvc: 0.2.0
+      farm-plugin-replace-dirname-darwin-arm64: 0.2.1
+      farm-plugin-replace-dirname-darwin-x64: 0.2.1
+      farm-plugin-replace-dirname-linux-arm64-gnu: 0.2.1
+      farm-plugin-replace-dirname-linux-arm64-musl: 0.2.1
+      farm-plugin-replace-dirname-linux-x64-gnu: 0.2.1
+      farm-plugin-replace-dirname-linux-x64-musl: 0.2.1
+      farm-plugin-replace-dirname-win32-arm64-msvc: 0.2.1
+      farm-plugin-replace-dirname-win32-ia32-msvc: 0.2.1
+      farm-plugin-replace-dirname-win32-x64-msvc: 0.2.1
 
   farmup@0.0.12:
     dependencies:
