@@ -36,9 +36,8 @@ export default {
               .getCompiler()
               .resource('index_client.html')
               .toString();
-            // console.log('html template', template);
             const moudlePath = path.join(
-              path.dirname(fileURLToPath(import.meta.url)),
+              path.dirname(import.meta.url),
               'dist',
               'index.js'
             );
