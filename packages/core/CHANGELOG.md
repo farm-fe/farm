@@ -1,5 +1,20 @@
 # @farmfe/core
 
+## 1.3.2
+
+### Patch Changes
+
+- bf8bd9fe: Fix define \_\_esModule
+- Updated dependencies [bf8bd9fe]
+  - @farmfe/runtime@0.12.1
+
+## 1.3.1
+
+### Patch Changes
+
+- afe48ab7: fix: proxy ws error
+- a3788445: Add protocol option in config schema
+
 ## 1.3.0
 
 ### Minor Changes

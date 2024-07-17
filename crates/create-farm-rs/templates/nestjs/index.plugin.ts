@@ -4,9 +4,10 @@ export default function NestPlugin(): JsPlugin {
   return {
     name: 'NestPlugin',
     config: (config) => {
-      const mode = config.compilation.mode ?? process.env.NODE_ENV ?? 'development';
+      const mode =
+        config.compilation.mode ?? process.env.NODE_ENV ?? 'development';
       const isDev = mode === 'development';
-      const compilation = config.compilation ?? {}
+      const compilation = config.compilation ?? {};
 
       const script = compilation.script ?? { plugins: [] };
       return {
@@ -22,10 +23,11 @@ export default function NestPlugin(): JsPlugin {
                 tsx: script.parser?.tsConfig?.tsx ?? false,
               },
             },
-            decorators:  {
+            decorators: {
               legacyDecorator: script.decorators?.legacyDecorator ?? true,
               decoratorMetadata: script.decorators?.decoratorMetadata ?? true,
-              decoratorVersion: script.decorators?.decoratorVersion ?? '2021-12',
+              decoratorVersion:
+                script.decorators?.decoratorVersion ?? '2021-12',
               includes: [],
               excludes: ['node_modules/**/*'],
             },
@@ -35,11 +37,12 @@ export default function NestPlugin(): JsPlugin {
           output: {
             format: compilation.output?.format ?? 'esm',
             targetEnv: compilation.output?.targetEnv ?? 'node',
-            entryFilename: compilation.output?.entryFilename ?? '[entryName].js',
+            entryFilename:
+              compilation.output?.entryFilename ?? '[entryName].js',
             filename: compilation.output?.filename ?? '[name].[hash].mjs',
           },
-        }
-      }
-    }
+        },
+      };
+    },
   };
 }

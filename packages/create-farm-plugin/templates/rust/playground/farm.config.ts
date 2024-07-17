@@ -1,4 +1,6 @@
 import { defineConfig } from "@farmfe/core";
+import react from '@farmfe/plugin-react';
+import farmPlugin from '<FARM-RUST-PLUGIN-NPM-NAME>';
 
 export default defineConfig({
   compilation: {
@@ -9,6 +11,7 @@ export default defineConfig({
     progress: false,
   },
   plugins: [
-    ["@farmfe/plugin-react", { runtime: "automatic" }],
+    react({ runtime: "automatic" }),
+    farmPlugin()
   ],
 });
