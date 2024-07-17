@@ -1,5 +1,6 @@
 import http from 'node:http';
 import http2 from 'node:http2';
+import * as httpsServer from 'node:https';
 import Koa from 'koa';
 import compression from 'koa-compress';
 
@@ -243,14 +244,20 @@ export class Server implements ImplDevServer {
       hostname
     };
 
+    const isProxy = Object.keys(options.proxy).length;
     if (https) {
-      this.server = http2.createSecureServer(
-        {
-          ...https,
-          allowHTTP1: true
-        },
-        this._app.callback()
-      );
+      if (isProxy) {
+        this.server = httpsServer.createServer(this._app.callback());
+      } else {
+        this.server = http2.createSecureServer(
+          {
+            maxSessionMemory: 1000,
+            ...https,
+            allowHTTP1: true
+          },
+          this._app.callback()
+        );
+      }
     } else {
       this.server = http.createServer(this._app.callback());
     }
