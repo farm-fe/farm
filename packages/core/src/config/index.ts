@@ -99,7 +99,10 @@ async function getDefaultConfig(
     logger
   );
 
-  resolvedUserConfig.server = normalizeDevServerConfig(inlineOptions, mode);
+  resolvedUserConfig.server = normalizeDevServerConfig(
+    inlineOptions.server,
+    mode
+  );
 
   resolvedUserConfig.compilation = await normalizeUserCompilationConfig(
     resolvedUserConfig,
