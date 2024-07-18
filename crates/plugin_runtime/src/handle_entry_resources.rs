@@ -406,8 +406,8 @@ pub fn handle_entry_resources(
       for post in vec![
         set_initial_loaded_resources_code,
         set_dynamic_resources_map_code,
-        call_entry_code,
-        export_info_code,
+        // call_entry_code,
+        // export_info_code,
       ] {
         entry_bundle.append(&post);
       }

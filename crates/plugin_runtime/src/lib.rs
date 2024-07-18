@@ -259,152 +259,152 @@ impl Plugin for FarmPluginRuntime {
     Ok(Some(()))
   }
 
-  fn render_resource_pot_modules(
-    &self,
-    resource_pot: &ResourcePot,
-    context: &Arc<CompilationContext>,
-    _hook_context: &PluginHookContext,
-  ) -> farmfe_core::error::Result<Option<ResourcePotMetaData>> {
-    if matches!(resource_pot.resource_pot_type, ResourcePotType::Js) {
-      let async_modules = self.get_async_modules(context);
-      let async_modules = async_modules.downcast_ref::<HashSet<ModuleId>>().unwrap();
-      let module_graph = context.module_graph.read();
-      let external_config = ExternalConfig::from(&*context.config);
-      let RenderedJsResourcePot {
-        mut bundle,
-        rendered_modules,
-        external_modules,
-      } = resource_pot_to_runtime_object(resource_pot, &module_graph, async_modules, context)?;
+  // fn render_resource_pot_modules(
+  //   &self,
+  //   resource_pot: &ResourcePot,
+  //   context: &Arc<CompilationContext>,
+  //   _hook_context: &PluginHookContext,
+  // ) -> farmfe_core::error::Result<Option<ResourcePotMetaData>> {
+  //   if matches!(resource_pot.resource_pot_type, ResourcePotType::Js) {
+  //     let async_modules = self.get_async_modules(context);
+  //     let async_modules = async_modules.downcast_ref::<HashSet<ModuleId>>().unwrap();
+  //     let module_graph = context.module_graph.read();
+  //     let external_config = ExternalConfig::from(&*context.config);
+  //     let RenderedJsResourcePot {
+  //       mut bundle,
+  //       rendered_modules,
+  //       external_modules,
+  //     } = resource_pot_to_runtime_object(resource_pot, &module_graph, async_modules, context)?;
 
-      let mut external_modules_str = None;
+  //     let mut external_modules_str = None;
 
-      let farm_global_this = get_farm_global_this(&context.config.runtime.namespace);
+  //     let farm_global_this = get_farm_global_this(&context.config.runtime.namespace);
 
-      // inject global externals
-      if !external_modules.is_empty() && context.config.output.target_env == TargetEnv::Node {
-        let mut import_strings = vec![];
-        let mut source_to_names = vec![];
+  //     // inject global externals
+  //     if !external_modules.is_empty() && context.config.output.target_env == TargetEnv::Node {
+  //       let mut import_strings = vec![];
+  //       let mut source_to_names = vec![];
 
-        for external_module in external_modules {
-          // replace all invalid characters with `_`
-          let mut name = external_module
-            .chars()
-            .map(|c| if c.is_alphanumeric() { c } else { '_' })
-            .collect::<String>();
-          name = format!("__farm_external_module_{}", name);
+  //       for external_module in external_modules {
+  //         // replace all invalid characters with `_`
+  //         let mut name = external_module
+  //           .chars()
+  //           .map(|c| if c.is_alphanumeric() { c } else { '_' })
+  //           .collect::<String>();
+  //         name = format!("__farm_external_module_{}", name);
 
-          let import_str = if context.config.output.format == ModuleFormat::EsModule {
-            format!("import * as {name} from {external_module:?};")
-          } else {
-            format!("var {name} = require({external_module:?});")
-          };
-          import_strings.push(import_str);
-          source_to_names.push((name, external_module));
-        }
+  //         let import_str = if context.config.output.format == ModuleFormat::EsModule {
+  //           format!("import * as {name} from {external_module:?};")
+  //         } else {
+  //           format!("var {name} = require({external_module:?});")
+  //         };
+  //         import_strings.push(import_str);
+  //         source_to_names.push((name, external_module));
+  //       }
 
-        let mut prepend_str = import_strings.join("");
-        prepend_str.push_str(&format!(
-          "{farm_global_this}.{FARM_MODULE_SYSTEM}.setExternalModules({{{}}});",
-          source_to_names
-            .into_iter()
-            .map(
-              |(name, source)| if context.config.output.format == ModuleFormat::EsModule {
-                format!("{source:?}: {name} && {name}.default && !{name}.__esModule ? {{...{name},__esModule:true}} : {{...{name}}}")
-              } else {
-                format!("{source:?}: {name}")
-              }
-            )
-            .collect::<Vec<_>>()
-            .join(",")
-        ));
+  //       let mut prepend_str = import_strings.join("");
+  //       prepend_str.push_str(&format!(
+  //         "{farm_global_this}.{FARM_MODULE_SYSTEM}.setExternalModules({{{}}});",
+  //         source_to_names
+  //           .into_iter()
+  //           .map(
+  //             |(name, source)| if context.config.output.format == ModuleFormat::EsModule {
+  //               format!("{source:?}: {name} && {name}.default && !{name}.__esModule ? {{...{name},__esModule:true}} : {{...{name}}}")
+  //             } else {
+  //               format!("{source:?}: {name}")
+  //             }
+  //           )
+  //           .collect::<Vec<_>>()
+  //           .join(",")
+  //       ));
 
-        external_modules_str = Some(prepend_str);
-      } else if !external_modules.is_empty()
-        && context.config.output.target_env == TargetEnv::Browser
-      {
-        let mut external_objs = Vec::new();
+  //       external_modules_str = Some(prepend_str);
+  //     } else if !external_modules.is_empty()
+  //       && context.config.output.target_env == TargetEnv::Browser
+  //     {
+  //       let mut external_objs = Vec::new();
 
-        for source in external_modules {
-          let replace_source = external_config
-            .find_match(&source)
-            .map(|v| v.source(&source))
-            // it's maybe from plugin
-            .unwrap_or(source.clone());
+  //       for source in external_modules {
+  //         let replace_source = external_config
+  //           .find_match(&source)
+  //           .map(|v| v.source(&source))
+  //           // it's maybe from plugin
+  //           .unwrap_or(source.clone());
 
-          let source_obj = format!("(globalThis||window||{{}})['{}']||{{}}", replace_source);
-          external_objs.push(if context.config.output.format == ModuleFormat::EsModule {
-            format!("{source:?}: ({source_obj}).default && !({source_obj}).__esModule ? {{...({source_obj}),__esModule:true}} : ({{...{source_obj}}})")
-          } else {
-            format!("{source:?}: {source_obj}")
-          });
-        }
+  //         let source_obj = format!("(globalThis||window||{{}})['{}']||{{}}", replace_source);
+  //         external_objs.push(if context.config.output.format == ModuleFormat::EsModule {
+  //           format!("{source:?}: ({source_obj}).default && !({source_obj}).__esModule ? {{...({source_obj}),__esModule:true}} : ({{...{source_obj}}})")
+  //         } else {
+  //           format!("{source:?}: {source_obj}")
+  //         });
+  //       }
 
-        let prepend_str = format!(
-          "{farm_global_this}.{FARM_MODULE_SYSTEM}.setExternalModules({{{}}});",
-          external_objs.join(",")
-        );
-        external_modules_str = Some(prepend_str);
-      }
+  //       let prepend_str = format!(
+  //         "{farm_global_this}.{FARM_MODULE_SYSTEM}.setExternalModules({{{}}});",
+  //         external_objs.join(",")
+  //       );
+  //       external_modules_str = Some(prepend_str);
+  //     }
 
-      let is_target_node_and_cjs = context.config.output.target_env == TargetEnv::Node
-        && context.config.output.format == ModuleFormat::CommonJs;
+  //     let is_target_node_and_cjs = context.config.output.target_env == TargetEnv::Node
+  //       && context.config.output.format == ModuleFormat::CommonJs;
 
-      let str = format!(
-        r#"(function(_){{for(var r in _){{_[r].__farm_resource_pot__={};{farm_global_this}.{FARM_MODULE_SYSTEM}.register(r,_[r])}}}})("#,
-        if is_target_node_and_cjs {
-          "'file://'+__filename".to_string()
-        } else {
-          // TODO make it final output file name
-          format!("'{}'", resource_pot.name.to_string() + ".js")
-        },
-      );
+  //     let str = format!(
+  //       r#"(function(_){{for(var r in _){{_[r].__farm_resource_pot__={};{farm_global_this}.{FARM_MODULE_SYSTEM}.register(r,_[r])}}}})("#,
+  //       if is_target_node_and_cjs {
+  //         "'file://'+__filename".to_string()
+  //       } else {
+  //         // TODO make it final output file name
+  //         format!("'{}'", resource_pot.name.to_string() + ".js")
+  //       },
+  //     );
 
-      bundle.prepend(&str);
-      bundle.append(");", None);
+  //     bundle.prepend(&str);
+  //     bundle.append(");", None);
 
-      if let Some(external_modules_str) = external_modules_str {
-        bundle.prepend(&external_modules_str);
-      }
+  //     if let Some(external_modules_str) = external_modules_str {
+  //       bundle.prepend(&external_modules_str);
+  //     }
 
-      return Ok(Some(ResourcePotMetaData {
-        rendered_modules,
-        rendered_content: Arc::new(bundle.to_string()),
-        rendered_map_chain: if context.config.sourcemap.enabled(resource_pot.immutable) {
-          let root = context.config.root.clone();
-          let map = bundle
-            .generate_map(SourceMapOptions {
-              include_content: Some(true),
-              remap_source: Some(Box::new(move |src| {
-                format!("/{}", farmfe_utils::relative(&root, src))
-              })),
-              hires: if matches!(context.config.mode, Mode::Production) {
-                Some(MappingsOptionHires::Boundary)
-              } else {
-                None
-              },
-              ..Default::default()
-            })
-            .map_err(|_| CompilationError::GenerateSourceMapError {
-              id: resource_pot.id.to_string(),
-            })?;
-          let mut buf = vec![];
-          map
-            .to_writer(&mut buf)
-            .map_err(|e| CompilationError::RenderScriptModuleError {
-              id: resource_pot.id.to_string(),
-              source: Some(Box::new(e)),
-            })?;
+  //     return Ok(Some(ResourcePotMetaData {
+  //       rendered_modules,
+  //       rendered_content: Arc::new(bundle.to_string()),
+  //       rendered_map_chain: if context.config.sourcemap.enabled(resource_pot.immutable) {
+  //         let root = context.config.root.clone();
+  //         let map = bundle
+  //           .generate_map(SourceMapOptions {
+  //             include_content: Some(true),
+  //             remap_source: Some(Box::new(move |src| {
+  //               format!("/{}", farmfe_utils::relative(&root, src))
+  //             })),
+  //             hires: if matches!(context.config.mode, Mode::Production) {
+  //               Some(MappingsOptionHires::Boundary)
+  //             } else {
+  //               None
+  //             },
+  //             ..Default::default()
+  //           })
+  //           .map_err(|_| CompilationError::GenerateSourceMapError {
+  //             id: resource_pot.id.to_string(),
+  //           })?;
+  //         let mut buf = vec![];
+  //         map
+  //           .to_writer(&mut buf)
+  //           .map_err(|e| CompilationError::RenderScriptModuleError {
+  //             id: resource_pot.id.to_string(),
+  //             source: Some(Box::new(e)),
+  //           })?;
 
-          vec![Arc::new(String::from_utf8(buf).unwrap())]
-        } else {
-          vec![]
-        },
-        ..Default::default()
-      }));
-    }
+  //         vec![Arc::new(String::from_utf8(buf).unwrap())]
+  //       } else {
+  //         vec![]
+  //       },
+  //       ..Default::default()
+  //     }));
+  //   }
 
-    Ok(None)
-  }
+  //   Ok(None)
+  // }
 
   fn generate_resources(
     &self,

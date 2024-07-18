@@ -86,8 +86,6 @@ impl Plugin for FarmPluginBundle {
         } else {
           self.bundle_map.lock().insert(resource_pot_id, bundle);
         }
-
-        break;
       }
     }
 
@@ -115,7 +113,9 @@ impl Plugin for FarmPluginBundle {
         custom_data: resource_pot.meta.custom_data.clone(),
       }));
     } else if matches!(resource_pot.resource_pot_type, ResourcePotType::Js) {
-      let bundle = self.bundle_map.lock().remove(&resource_pot.id).unwrap();
+      let bundle_map = self.bundle_map.lock();
+
+      let bundle = bundle_map.get(&resource_pot.id).unwrap();
 
       return Ok(Some(ResourcePotMetaData {
         // TODO

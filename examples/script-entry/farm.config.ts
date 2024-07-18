@@ -24,6 +24,8 @@ export default defineConfig({
     runtime: {
       isolate: true
     },
+    minify: false,
+    mode: 'development',
     partialBundling: {
       enforceResources: [
         {
