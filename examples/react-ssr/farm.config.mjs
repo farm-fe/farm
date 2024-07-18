@@ -1,5 +1,5 @@
 import path from 'path';
-
+import { fileURLToPath } from 'url';
 /**
  * @type {import('@farmfe/core').UserConfig}
  */
@@ -30,20 +30,18 @@ export default {
       (server) => {
         server.app().use(async (ctx, next) => {
           await next();
-
           if (ctx.path === '/' || ctx.status === 404) {
             // console.log('ctx.path', ctx.path);
             const template = server
               .getCompiler()
               .resource('index_client.html')
               .toString();
-            // console.log('html template', template);
-            console.log(
-              path.join(path.dirname(import.meta.url), 'dist', 'index.js')
+            const moudlePath = path.join(
+              path.dirname(import.meta.url),
+              'dist',
+              'index.js'
             );
-            const render = await import(
-              path.join(path.dirname(import.meta.url), 'dist', 'index.js')
-            ).then((m) => m.default);
+            const render = await import(moudlePath).then((m) => m.default);
             const renderedHtml = render(ctx.path);
             // console.log(renderedHtml);
             const html = template.replace(
