@@ -18,7 +18,7 @@ test(`e2e tests - ${name}`, async () => {
         const body = await page.$('body');
         expect(body).toBeTruthy();
 
-        const color = await app?.evaluate((el) => {
+        const color = await body?.evaluate((el) => {
           console.log('color', getComputedStyle(el).getPropertyValue('background-color'));
           return getComputedStyle(el).getPropertyValue('background-color');
         });
