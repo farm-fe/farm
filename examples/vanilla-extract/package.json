@@ -1,0 +1,22 @@
+{
+  "name": "@farmfe-examples/vanilla-extract",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "farm",
+    "start": "farm",
+    "build": "farm build",
+    "preview": "farm preview",
+    "clean": "farm clean"
+  },
+  "devDependencies": {
+    "@farmfe/cli": "workspace:*",
+    "@farmfe/core": "workspace:*",
+    "typescript": "^5.4.3",
+    "vite": "^5.2.6"
+  },
+  "dependencies": {
+    "@vanilla-extract/css": "^1.15.3",
+    "@vanilla-extract/vite-plugin": "^4.0.13"
+  }
+}
