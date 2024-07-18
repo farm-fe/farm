@@ -787,6 +787,11 @@ async function readConfigFile(
     const userConfig = (await import(filePath as string)).default;
     try {
       fs.unlink(filePath, () => void 0);
+      // remove parent dir if empty
+      const isEmpty = fs.readdirSync(outputPath).length === 0;
+      if (isEmpty) {
+        fs.rmSync(outputPath);
+      }
     } catch {
       /** do nothing */
     }

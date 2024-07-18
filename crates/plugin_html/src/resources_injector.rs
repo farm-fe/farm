@@ -84,6 +84,7 @@ impl ResourcesInjector {
         "script",
         None,
         vec![
+          ("defer", "defer"),
           (FARM_ENTRY, "true"),
           ("src", &format!("/{}", resource.name)),
         ],
@@ -94,7 +95,7 @@ impl ResourcesInjector {
       element.children.push(Child::Element(create_element(
         "script",
         Some(&self.runtime_code),
-        vec![(FARM_ENTRY, "true")],
+        vec![(FARM_ENTRY, "true"), ("defer", "defer")],
       )));
     }
   }
@@ -267,6 +268,12 @@ impl VisitMut for ResourcesInjector {
     }
 
     if element.tag_name.to_string() == "head" {
+      // inject global this
+      self.inject_global_this(element);
+
+      // inject runtime <script>
+      self.inject_runtime_resources(element);
+
       // inject css <link>
       for css in &self.css_resources {
         element.children.push(Child::Element(create_element(
@@ -278,12 +285,6 @@ impl VisitMut for ResourcesInjector {
           ],
         )));
       }
-
-      // inject global this
-      self.inject_global_this(element);
-
-      // inject runtime <script>
-      self.inject_runtime_resources(element);
     } else if element.tag_name.to_string() == "body" {
       for script in &self.script_resources {
         element.children.push(Child::Element(create_element(

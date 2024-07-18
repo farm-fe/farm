@@ -140,7 +140,7 @@ export class Server implements ImplDevServer {
       (await this.displayServerUrls());
 
     if (open) {
-      let publicPath = getValidPublicPath(this.publicPath) ?? '/';
+      let publicPath = getValidPublicPath(this.publicPath) || '/';
 
       const serverUrl = `${protocol}://${hostname.name}:${port}${publicPath}`;
       openBrowser(serverUrl);
