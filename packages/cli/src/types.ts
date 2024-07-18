@@ -1,11 +1,11 @@
-export interface GlobalFarmCLIOptions {
+export interface GlobalCliOptions {
   '--'?: string[];
   c?: boolean | string;
   config?: string;
   configPath?: string;
   m?: string;
   base?: string;
-  mode?: 'development' | 'production';
+  mode?: 'development' | 'production' | string;
   w?: boolean;
   watch?: boolean;
   watchPath?: string;
@@ -15,12 +15,12 @@ export interface GlobalFarmCLIOptions {
   clearScreen?: boolean;
 }
 
-export interface ICleanOptions {
+export interface CleanOptions {
   path?: string;
   recursive?: boolean;
 }
 
-export interface FarmCLIServerOptions {
+export interface CliServerOptions {
   port?: string;
   open?: boolean;
   https?: boolean;
@@ -28,7 +28,7 @@ export interface FarmCLIServerOptions {
   strictPort?: boolean;
 }
 
-export interface FarmCLIBuildOptions {
+export interface CliBuildOptions {
   input?: string;
   outDir?: string;
   sourcemap?: boolean;
@@ -47,7 +47,7 @@ export interface FarmCLIBuildOptions {
     | 'browser-esnext';
 }
 
-export interface FarmCLIPreviewOptions {
+export interface CliPreviewOptions {
   open?: boolean;
   port?: number;
 }

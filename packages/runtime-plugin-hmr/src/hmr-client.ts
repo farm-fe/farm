@@ -67,7 +67,7 @@ export class HmrClient {
 
       logger.debug('disconnected from the server, please reload the page.');
       await waitForSuccessfulPing(socketProtocol, `${socketHostUrl}`);
-      location.reload();
+      // location.reload();
     });
 
     return socket;

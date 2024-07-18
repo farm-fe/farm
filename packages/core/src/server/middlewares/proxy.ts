@@ -36,13 +36,11 @@ export function useProxy(
               const toPath: string = (
                 opts.pathRewrite as { [regexp: string]: string }
               )[fromPath];
-              if (req.url === hmrOptions.path) {
-                req.url = '';
-              }
               req.url = rewritePath(req.url, fromPath, toPath);
             }
-            proxy.upgrade(req, socket, head);
-            return;
+            if (req.url !== hmrOptions.path) {
+              proxy.upgrade(req, socket, head);
+            }
           }
         }
       });

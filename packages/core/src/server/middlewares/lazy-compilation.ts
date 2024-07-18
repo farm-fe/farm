@@ -81,7 +81,7 @@ export function lazyCompilation(devSeverContext: Server): Middleware {
               dynamicResourcesMap = {} as Record<string, Resource[]>;
             }
 
-            dynamicResourcesMap[key] = value.map((r) => ({
+            dynamicResourcesMap[key] = (value as any[]).map((r) => ({
               path: r[0],
               type: r[1] as 'script' | 'link'
             }));

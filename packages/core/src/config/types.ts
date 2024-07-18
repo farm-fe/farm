@@ -14,6 +14,8 @@ import { HmrOptions } from '../newServer/index.js';
 
 export interface ConfigEnv {
   mode: string;
+  command: string;
+  isPreview: boolean;
 }
 
 export type UserConfigFnPromise = (env: ConfigEnv) => Promise<UserConfig>;
@@ -122,7 +124,7 @@ export interface ResolvedUserConfig extends UserConfig {
   rustPlugins?: [string, string][];
 }
 
-export interface GlobalFarmCLIOptions {
+export interface GlobalCliOptions {
   '--'?: string[];
   c?: boolean | string;
   config?: string;
@@ -152,11 +154,12 @@ export interface FarmCLIPreviewOptions {
   host?: string | boolean;
 }
 
-export interface FarmCLIOptions
+export interface FarmCliOptions
   extends FarmCLIBuildOptions,
   FarmCLIPreviewOptions {
   logger?: Logger;
   config?: string;
+  configFile?: string;
   configPath?: string;
   compilation?: Config['config'];
   mode?: string;

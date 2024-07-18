@@ -4,6 +4,7 @@
     <img :src="farmLogo" alt="farm logo" style="width: 100px" />
     {{ res }}
     <h3>Welcome to use TDesign！</h3>
+    {{ counter }}
     <t-space>
       <t-button theme="primary">
         <add-icon slot="icon" />
@@ -19,7 +20,9 @@
       <t-button shape="circle" theme="primary">
         <cloud-download-icon slot="icon" />
       </t-button>
-      <t-button variant="outline"> 搜索 </t-button>
+      <t-button variant="outline" @click="() => counter++">
+        搜索我要搜索1321123123
+      </t-button>
     </t-space>
   </t-space>
 </template>
@@ -41,6 +44,7 @@ export default {
     return {
       res,
       farmLogo,
+      counter: 0,
     };
   },
   components: {

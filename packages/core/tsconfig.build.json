@@ -4,7 +4,10 @@
     "rootDir": "src",
     "outDir": "dist",
     "composite": true,
-    "noUnusedLocals": false
+    "noUnusedLocals": false,
+    "noImplicitAny": false,
+    "strict": false,
+    "strictNullChecks": false
   },
   "include": ["src/**/*.ts", "binding/**/*.d.ts"],
   "exclude": ["src/**/*.spec.ts"],
