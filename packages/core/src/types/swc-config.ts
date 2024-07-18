@@ -250,4 +250,9 @@ export interface JsMinifyOptions {
    * @default 'minify-module'
    */
   mode?: 'minify-module' | 'minify-resource-pot';
+
+  /**
+   * @default true
+   */
+  moduleDecls?: boolean;
 }
