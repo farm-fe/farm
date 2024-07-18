@@ -322,6 +322,7 @@ export async function createCompiler(
     rustPlugins,
     compilation: compilationConfig
   } = resolvedUserConfig;
+
   const compiler = new Compiler(
     {
       config: compilationConfig,

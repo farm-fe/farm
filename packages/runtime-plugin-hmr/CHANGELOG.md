@@ -1,5 +1,12 @@
 # @farmfe/runtime-plugin-hmr
 
+## 3.5.3
+
+### Patch Changes
+
+- 89c40302: Support disable overlay
+- de2c4821: Auto add `/` in socket URL if missing
+
 ## 3.5.2
 
 ### Patch Changes

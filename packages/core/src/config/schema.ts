@@ -216,7 +216,8 @@ const compilationConfigSchema = z
               z.literal('minify-module'),
               z.literal('minify-resource-pot')
             ])
-            .optional()
+            .optional(),
+          moduleDecls: z.boolean().optional()
         })
       ])
       .optional(),
@@ -369,7 +370,8 @@ const FarmConfigSchema = z
             z.boolean(),
             z
               .object({
-                host: z.union([z.string().nonempty(), z.boolean()]).optional(),
+                protocol: z.string().optional(),
+                host: z.union([z.string().min(1), z.boolean()]).optional(),
                 port: z.number().positive().int().optional(),
                 path: z.string().optional(),
                 watchOptions: z

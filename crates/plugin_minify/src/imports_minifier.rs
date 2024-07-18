@@ -80,7 +80,7 @@ impl<'a> ImportsMinifier<'a> {
       used_ident = format!("{}{}", ident, count);
     }
 
-    self.inc_exported_ident_count(used_ident.clone());
+    self.inc_imported_ident_count(used_ident.clone());
 
     used_ident
   }
@@ -207,7 +207,7 @@ impl<'a> VisitMut for ImportsMinifier<'a> {
                   }
 
                   for ident in ident_to_inc {
-                    self.inc_imported_ident_count(ident.clone());
+                    self.inc_imported_ident_count(ident);
                   }
                 }
                 farmfe_core::swc_ecma_ast::ImportSpecifier::Default(default) => {

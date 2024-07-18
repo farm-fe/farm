@@ -33,7 +33,7 @@ export class Module {
   _m(to: any) {
     const key = '__esModule';
     if (to[key]) return;
-    this.d(to, key, true);
+    Object.defineProperty(to, key, { value: true });
   }
 
   // `export * from` helper

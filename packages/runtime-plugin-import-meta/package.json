@@ -1,6 +1,6 @@
 {
   "name": "@farmfe/runtime-plugin-import-meta",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Runtime Import Meta plugin of Farm",
   "author": {
     "name": "Ming07",
@@ -23,7 +23,7 @@
     "type-check": "tsc -p tsconfig.json --noEmit"
   },
   "devDependencies": {
-    "@farmfe/runtime": "workspace:^0.11.0"
+    "@farmfe/runtime": "workspace:^0.12.0"
   },
   "dependencies": {
     "core-js": "^3.30.1"
