@@ -38,7 +38,6 @@ import {
   normalizePublicDir,
   resolveConfig
 } from './config/index.js';
-import { newServer } from './newServer/index.js';
 import { Server } from './server/index.js';
 import { compilerHandler } from './utils/build.js';
 import { colors } from './utils/color.js';
@@ -68,10 +67,7 @@ export async function start(
   try {
     const resolvedUserConfig = await resolveConfig(
       inlineConfig,
-      'start',
       'development',
-      'development',
-      false,
       logger
     );
 
@@ -98,10 +94,7 @@ export async function build(
 
   const resolvedUserConfig = await resolveConfig(
     inlineConfig,
-    'build',
     'production',
-    'production',
-    false,
     logger,
     false
   );
@@ -120,10 +113,7 @@ export async function preview(inlineConfig?: FarmCliOptions): Promise<void> {
   const logger = inlineConfig.logger ?? new Logger();
   const resolvedUserConfig = await resolveConfig(
     inlineConfig,
-    'preview',
     'production',
-    'production',
-    true,
     logger
   );
 
@@ -172,10 +162,7 @@ export async function watch(
 
   const resolvedUserConfig = await resolveConfig(
     inlineConfig,
-    'build',
     'development',
-    'development',
-    false,
     logger,
     true
   );
@@ -459,59 +446,3 @@ export function logFileChanges(files: string[], root: string, logger: Logger) {
 export { defineFarmConfig as defineConfig } from './config/index.js';
 
 export { loadEnv };
-
-export async function startTestRefactorCli(
-  config?: FarmCliOptions & UserConfig
-): Promise<void> {
-  config = config ?? {};
-  const logger = new Logger();
-
-  try {
-    await resolveConfig(config, 'start');
-
-    // const compiler = await createCompiler(resolvedUserConfig, logger);
-
-    // const devServer = await createDevServer(
-    //   compiler,
-    //   resolvedUserConfig,
-    //   logger
-    // );
-
-    // await devServer.listen();
-  } catch (error) {
-    logger.error('Failed to start the server', { exit: true, error });
-  }
-}
-
-export async function startTestWebSocketAndHmr(
-  inlineConfig?: FarmCliOptions & UserConfig
-): Promise<void> {
-  inlineConfig = inlineConfig ?? {};
-  const logger = inlineConfig.logger ?? new Logger();
-  setProcessEnv('development');
-
-  try {
-    const resolvedUserConfig = await resolveConfig(
-      inlineConfig,
-      'start',
-      'development',
-      'development',
-      false,
-      logger
-    );
-
-    const compiler = await createCompiler(resolvedUserConfig, logger);
-    const server = new newServer(compiler, resolvedUserConfig);
-    server.createServer();
-
-    // const devServer = await createDevServer(
-    //   compiler,
-    //   resolvedUserConfig,
-    //   logger
-    // );
-
-    // await devServer.listen();
-  } catch (error) {
-    logger.error('Failed to start the server', { exit: true, error });
-  }
-}

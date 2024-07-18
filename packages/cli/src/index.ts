@@ -225,9 +225,10 @@ cli
         mode: options.mode
       };
 
-      const { startTestRefactorCli } = await resolveCore();
+      // const { startTestRefactorCli } = await resolveCore();
+      const { start } = await resolveCore();
       handleAsyncOperationErrors(
-        startTestRefactorCli(defaultOptions),
+        start(defaultOptions),
         'Failed to start server'
       );
     }
