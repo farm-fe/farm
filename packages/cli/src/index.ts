@@ -245,3 +245,44 @@ cli
       );
     }
   );
+
+cli
+  .command(
+    '[root]',
+    'Compile the project in dev mode and serve it with farm dev server'
+  )
+  .alias('start')
+  .alias('dev')
+  .option('-l, --lazy', 'lazyCompilation')
+  .option('--host <host>', 'specify host')
+  .option('--port <port>', 'specify port')
+  .option('--open', 'open browser on server start')
+  .option('--hmr', 'enable hot module replacement')
+  .option('--cors', 'enable cors')
+  .option('--strictPort', 'specified port is already in use, exit with error')
+  .action(
+    async (
+      rootPath: string,
+      options: FarmCLIServerOptions & GlobalFarmCLIOptions
+    ) => {
+      const { root, configPath } = resolveCliConfig(rootPath, options);
+      const resolveOptions = resolveCommandOptions(options);
+
+      const defaultOptions = {
+        root,
+        compilation: {
+          lazyCompilation: options.lazy
+        },
+        server: resolveOptions,
+        clearScreen: options.clearScreen,
+        configPath,
+        mode: options.mode
+      };
+
+      const { startTestRefactorCli } = await resolveCore();
+      handleAsyncOperationErrors(
+        startTestRefactorCli(defaultOptions),
+        'Failed to start server'
+      );
+    }
+  );
