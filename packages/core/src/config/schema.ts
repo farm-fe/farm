@@ -216,7 +216,8 @@ const compilationConfigSchema = z
               z.literal('minify-module'),
               z.literal('minify-resource-pot')
             ])
-            .optional()
+            .optional(),
+          moduleDecls: z.boolean().optional()
         })
       ])
       .optional(),

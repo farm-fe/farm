@@ -1,5 +1,12 @@
 # @farmfe/core
 
+## 1.3.4
+
+### Patch Changes
+
+- 87e6ad70: Fix import/export minify #1625
+- 735117ac: Fix config reload
+
 ## 1.3.3
 
 ### Patch Changes

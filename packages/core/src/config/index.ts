@@ -218,7 +218,10 @@ export async function resolveConfig(
     mode
   );
 
-  resolvedUserConfig.root = resolvedUserConfig.compilation.root;
+  // normalize root path
+  resolvedUserConfig.root = normalizeBasePath(
+    resolvedUserConfig.compilation.root
+  );
   resolvedUserConfig.jsPlugins = sortFarmJsPlugins;
   resolvedUserConfig.rustPlugins = rustPlugins;
 

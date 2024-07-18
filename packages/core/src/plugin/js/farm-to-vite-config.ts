@@ -245,7 +245,11 @@ export function proxyViteConfig(
         'experimental',
         'test',
         'clearScreen',
-        'customLogger'
+        'customLogger',
+        // compat @vanilla-extract/vite-plugin
+        // these options are undefined now
+        'configFile',
+        'inlineConfig'
       ];
 
       return getTargetField(

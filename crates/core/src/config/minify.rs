@@ -13,7 +13,7 @@ pub enum MinifyMode {
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
-#[serde(default)]
+#[serde(default, rename_all = "camelCase")]
 pub struct MinifyOptions {
   pub compress: BoolOrObj<Value>,
   pub mangle: BoolOrObj<Value>,
@@ -59,7 +59,9 @@ impl From<&BoolOrObj<Value>> for Option<MinifyOptions> {
   }
 }
 
+#[cfg(test)]
 mod tests {
+  use crate::config::minify::MinifyMode;
 
   #[test]
   fn deserialize_minify_mode() {
@@ -99,10 +101,20 @@ mod tests {
       "include": ["@farmfe/runtime"],
       "exclude": ["node_modules/"],
       "mode": "minify-resource-pot",
+      "moduleDecls": false,
     });
     let minify =
       BoolOrObj::Obj(options).map(|val| serde_json::from_value::<MinifyOptions>(val).unwrap());
 
-    assert!(matches!(minify, BoolOrObj::Obj(MinifyOptions { .. })));
+    assert!(matches!(
+      minify,
+      BoolOrObj::Obj(MinifyOptions {
+        compress: BoolOrObj::Bool(true),
+        mangle: BoolOrObj::Bool(true),
+        mode: MinifyMode::ResourcePot,
+        module_decls: false,
+        ..
+      })
+    ));
   }
 }
