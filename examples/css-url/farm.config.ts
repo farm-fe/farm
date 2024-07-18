@@ -1,20 +1,20 @@
 import { resolve } from 'node:path';
-import type { UserConfig } from '@farmfe/core';
+import { defineConfig } from '@farmfe/core';
 import postcss from '@farmfe/js-plugin-postcss';
 
-function defineConfig(config: UserConfig) {
-  return config;
-}
+console.log(__dirname);
+console.log(__filename);
+console.log(import.meta.url);
 
 export default defineConfig({
   compilation: {
     input: {
-      index: './index.html',
+      index: './index.html'
     },
     persistentCache: false,
     output: {
       path: './build',
-      publicPath: '/public-dir/',
+      publicPath: '/public-dir/'
     },
     assets: {
       include: ['aaa']
@@ -23,15 +23,13 @@ export default defineConfig({
     sourcemap: true,
     // treeShaking: true,
     // minify: true,
-    resolve:{
+    resolve: {
       alias: {
         '/@': resolve(__dirname, 'src'),
         '@': resolve(__dirname, 'src')
-      },
+      }
     }
   },
-  server: {
-    open: true,
-  },
-  plugins: ['@farmfe/plugin-react', '@farmfe/plugin-sass', postcss()],
+  server: {},
+  plugins: ['@farmfe/plugin-react', '@farmfe/plugin-sass', postcss()]
 });
