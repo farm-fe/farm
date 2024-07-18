@@ -24,10 +24,13 @@ export default defineConfig({
     runtime: {
       isolate: true
     },
-    minify: {
-      mangle: {
-        toplevel: true
-      }
+    partialBundling: {
+      enforceResources: [
+        {
+          name: 'xxx',
+          test: ['.+']
+        }
+      ]
     },
     persistentCache: false,
     lazyCompilation: false
