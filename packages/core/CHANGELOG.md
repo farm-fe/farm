@@ -1,5 +1,14 @@
 # @farmfe/core
 
+## 1.3.3
+
+### Patch Changes
+
+- 54ddee1c: fix: proxy req.url request hmrPath error
+- 166406d0: fix: http2 not support http-proxy :path options
+- c6a8c813: Fix css @import starting with ~
+- 045e712b: fix: https options error
+
 ## 1.3.2
 
 ### Patch Changes
