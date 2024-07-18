@@ -23,7 +23,7 @@ test(`e2e tests - ${name}`, async () => {
           return getComputedStyle(el).getPropertyValue('background-color');
         });
 
-        expect(color).toBe('#242424');
+        expect(color).toBe('rgb(36, 36, 36)');
       },
       command
     );
