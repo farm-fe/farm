@@ -1,5 +1,11 @@
 # create-farm-plugin
 
+## 0.1.15
+
+### Patch Changes
+
+- dd99b245: Fix image encoding error in `create-plugin`
+
 ## 0.1.14
 
 ### Patch Changes
