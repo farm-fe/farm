@@ -254,8 +254,8 @@ export function normalizePublicPath(
   return defaultPublicPath;
 }
 
-export function getValidPublicPath(publicPath = '/'): string | undefined {
-  let validPublicPath;
+export function getValidPublicPath(publicPath = '/'): string {
+  let validPublicPath = '';
 
   if (publicPath.startsWith('/')) {
     validPublicPath = publicPath;

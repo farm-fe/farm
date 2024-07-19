@@ -14,8 +14,7 @@ import {
   resolveAsyncPlugins,
   resolveConfigHook,
   resolveConfigResolvedHook,
-  resolveFarmPlugins,
-  rustPluginResolver
+  resolveFarmPlugins
 } from '../plugin/index.js';
 import { Server } from '../server/index.js';
 import {
@@ -752,16 +751,15 @@ async function readConfigFile(
       'development'
     );
 
-    const replaceDirnamePlugin = await rustPluginResolver(
-      'farm-plugin-replace-dirname',
-      normalizedConfig.root
-    );
+    const replaceDirnamePlugin = await import(
+      'farm-plugin-replace-dirname'
+    ).then((mod) => mod.default);
 
     const compiler = new Compiler(
       {
         config: normalizedConfig,
         jsPlugins: [],
-        rustPlugins: [replaceDirnamePlugin]
+        rustPlugins: [[replaceDirnamePlugin, '{}']]
       },
       logger
     );
@@ -787,6 +785,11 @@ async function readConfigFile(
     const userConfig = (await import(filePath as string)).default;
     try {
       fs.unlink(filePath, () => void 0);
+      // remove parent dir if empty
+      const isEmpty = fs.readdirSync(outputPath).length === 0;
+      if (isEmpty) {
+        fs.rmSync(outputPath);
+      }
     } catch {
       /** do nothing */
     }

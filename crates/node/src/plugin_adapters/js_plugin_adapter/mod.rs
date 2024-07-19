@@ -30,6 +30,7 @@ use self::hooks::{
   transform_html::{
     JsPluginTransformHtmlHook, JsPluginTransformHtmlHookOrder, JsPluginTransformHtmlHookParams,
   },
+  update_finished::JsPluginUpdateFinishedHook,
   update_modules::JsPluginUpdateModulesHook,
   write_plugin_cache::JsPluginWritePluginCacheHook,
 };
@@ -56,6 +57,7 @@ pub struct JsPluginAdapter {
   js_augment_resource_hash_hook: Option<JsPluginAugmentResourceHashHook>,
   js_finalize_resources_hook: Option<JsPluginFinalizeResourcesHook>,
   js_transform_html_hook: Option<JsPluginTransformHtmlHook>,
+  js_update_finished_hook: Option<JsPluginUpdateFinishedHook>,
 }
 
 impl JsPluginAdapter {
@@ -89,6 +91,8 @@ impl JsPluginAdapter {
       get_named_property::<JsObject>(env, &js_plugin_object, "finalizeResources").ok();
     let transform_html_obj =
       get_named_property::<JsObject>(env, &js_plugin_object, "transformHtml").ok();
+    let update_finished_obj =
+      get_named_property::<JsObject>(env, &js_plugin_object, "updateFinished").ok();
 
     Ok(Self {
       name,
@@ -114,6 +118,8 @@ impl JsPluginAdapter {
         .map(|obj| JsPluginFinalizeResourcesHook::new(env, obj)),
       js_transform_html_hook: transform_html_obj
         .map(|obj| JsPluginTransformHtmlHook::new(env, obj)),
+      js_update_finished_hook: update_finished_obj
+        .map(|obj| JsPluginUpdateFinishedHook::new(env, obj)),
     })
   }
 
@@ -281,6 +287,15 @@ impl Plugin for JsPluginAdapter {
   ) -> Result<Option<()>> {
     if let Some(js_finish_hook) = &self.js_finish_hook {
       js_finish_hook.call(EmptyPluginHookParam {}, context.clone())?;
+      Ok(Some(()))
+    } else {
+      Ok(None)
+    }
+  }
+
+  fn update_finished(&self, context: &Arc<CompilationContext>) -> Result<Option<()>> {
+    if let Some(js_update_finished_hook) = &self.js_update_finished_hook {
+      js_update_finished_hook.call(EmptyPluginHookParam {}, context.clone())?;
       Ok(Some(()))
     } else {
       Ok(None)
