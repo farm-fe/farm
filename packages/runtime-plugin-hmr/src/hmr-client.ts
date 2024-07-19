@@ -133,6 +133,8 @@ export class HmrClient {
           if (!hotContext) {
             console.error('hot context is empty for ', boundary);
             location.reload();
+            // fix multi page application hmr
+            continue;
           }
 
           // get all the accept callbacks of the boundary module that accepts the updated module
