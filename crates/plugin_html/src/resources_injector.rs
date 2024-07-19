@@ -84,7 +84,6 @@ impl ResourcesInjector {
         "script",
         None,
         vec![
-          ("defer", "defer"),
           (FARM_ENTRY, "true"),
           ("src", &format!("/{}", resource.name)),
         ],
@@ -95,7 +94,7 @@ impl ResourcesInjector {
       element.children.push(Child::Element(create_element(
         "script",
         Some(&self.runtime_code),
-        vec![(FARM_ENTRY, "true"), ("defer", "defer")],
+        vec![(FARM_ENTRY, "true")],
       )));
     }
   }
