@@ -1,5 +1,17 @@
 # @farmfe/core
 
+## 1.3.5
+
+### Patch Changes
+
+- 6a64fe20: Support update_finished for js plugins
+- 6a64fe20: Fix:
+
+  - Public path undefined error when normalizing hmr path
+  - Resource order in html, `<link>` should present last
+
+- b1362e88: Normalize root path for vite plugins compatibility
+
 ## 1.3.4
 
 ### Patch Changes
