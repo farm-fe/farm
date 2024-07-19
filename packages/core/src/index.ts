@@ -45,8 +45,9 @@ import { Logger } from './utils/logger.js';
 import { FileWatcher } from './watcher/index.js';
 
 import { __FARM_GLOBAL__ } from './config/_global.js';
+import { resolveConfig2 } from './config/new-config.js';
 import type {
-  FarmCLIOptions,
+  FarmCliOptions,
   ResolvedUserConfig,
   UserPreviewServerConfig
 } from './config/types.js';
@@ -58,7 +59,7 @@ import { ConfigWatcher } from './watcher/config-watcher.js';
 import type { JsPlugin } from './plugin/type.js';
 
 export async function start(
-  inlineConfig?: FarmCLIOptions & UserConfig
+  inlineConfig?: FarmCliOptions & UserConfig
 ): Promise<void> {
   inlineConfig = inlineConfig ?? {};
   const logger = inlineConfig.logger ?? new Logger();
@@ -85,8 +86,38 @@ export async function start(
   }
 }
 
+export async function startRefactorCli(
+  inlineConfig?: FarmCliOptions & UserConfig
+): Promise<void> {
+  inlineConfig = inlineConfig ?? {};
+  const logger = inlineConfig.logger ?? new Logger();
+  setProcessEnv('development');
+
+  try {
+    const resolvedUserConfig = await resolveConfig2(
+      inlineConfig,
+      'start',
+      'development',
+      'development',
+      false
+    );
+
+    const compiler = await createCompiler(resolvedUserConfig, logger);
+
+    const devServer = await createDevServer(
+      compiler,
+      resolvedUserConfig,
+      logger
+    );
+
+    await devServer.listen();
+  } catch (error) {
+    logger.error('Failed to start the server', { exit: true, error });
+  }
+}
+
 export async function build(
-  inlineConfig?: FarmCLIOptions & UserConfig
+  inlineConfig?: FarmCliOptions & UserConfig
 ): Promise<void> {
   inlineConfig = inlineConfig ?? {};
   const logger = inlineConfig.logger ?? new Logger();
@@ -108,7 +139,7 @@ export async function build(
   }
 }
 
-export async function preview(inlineConfig?: FarmCLIOptions): Promise<void> {
+export async function preview(inlineConfig?: FarmCliOptions): Promise<void> {
   inlineConfig = inlineConfig ?? {};
   const logger = inlineConfig.logger ?? new Logger();
   const resolvedUserConfig = await resolveConfig(
@@ -154,7 +185,7 @@ export async function preview(inlineConfig?: FarmCLIOptions): Promise<void> {
 }
 
 export async function watch(
-  inlineConfig?: FarmCLIOptions & UserConfig
+  inlineConfig?: FarmCliOptions & UserConfig
 ): Promise<void> {
   inlineConfig = inlineConfig ?? {};
   const logger = inlineConfig.logger ?? new Logger();
@@ -428,7 +459,7 @@ export async function createFileWatcher(
 
       await devServer.close();
       __FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__ = true;
-      await start(resolvedUserConfig as FarmCLIOptions & UserConfig);
+      await start(resolvedUserConfig as FarmCliOptions & UserConfig);
     });
   });
   return fileWatcher;

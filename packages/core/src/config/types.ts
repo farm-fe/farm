@@ -10,9 +10,12 @@ import type { RustPlugin } from '../plugin/rust/index.js';
 import type { JsPlugin } from '../plugin/type.js';
 import type { Options } from 'http-proxy-middleware';
 import type { Logger } from '../utils/index.js';
+import { HmrOptions } from '../newServer/index.js';
 
 export interface ConfigEnv {
   mode: string;
+  command: string;
+  isPreview: boolean;
 }
 
 export type UserConfigFnPromise = (env: ConfigEnv) => Promise<UserConfig>;
@@ -42,6 +45,7 @@ export interface UserServerConfig {
   // whether to serve static assets in spa mode, default to true
   spa?: boolean;
   middlewares?: DevServerMiddleware[];
+  middlewareMode?: boolean | string;
   writeToDisk?: boolean;
 }
 
@@ -56,7 +60,7 @@ export interface UserPreviewServerConfig {
 
 export type NormalizedServerConfig = Required<
   Omit<UserServerConfig, 'hmr'> & {
-    hmr?: Required<UserHmrConfig>;
+    hmr?: UserHmrConfig;
   }
 >;
 
@@ -65,12 +69,7 @@ export interface NormalizedConfig {
   serverConfig?: NormalizedServerConfig;
 }
 
-export interface UserHmrConfig {
-  host?: string | boolean;
-  port?: number;
-  path?: string;
-  overlay?: boolean;
-  protocol?: string;
+export interface UserHmrConfig extends HmrOptions {
   watchOptions?: WatchOptions;
 }
 
@@ -125,7 +124,7 @@ export interface ResolvedUserConfig extends UserConfig {
   rustPlugins?: [string, string][];
 }
 
-export interface GlobalFarmCLIOptions {
+export interface GlobalCliOptions {
   '--'?: string[];
   c?: boolean | string;
   config?: string;
@@ -155,11 +154,12 @@ export interface FarmCLIPreviewOptions {
   host?: string | boolean;
 }
 
-export interface FarmCLIOptions
+export interface FarmCliOptions
   extends FarmCLIBuildOptions,
-    FarmCLIPreviewOptions {
+  FarmCLIPreviewOptions {
   logger?: Logger;
   config?: string;
+  configFile?: string;
   configPath?: string;
   compilation?: Config['config'];
   mode?: string;
