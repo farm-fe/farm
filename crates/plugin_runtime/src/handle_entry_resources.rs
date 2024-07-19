@@ -351,11 +351,12 @@ pub fn handle_entry_resources(
         r#"{farm_global_this}.{FARM_MODULE_SYSTEM}.setDynamicModuleResourcesMap({dynamic_resources_code});"#,
       );
 
-      let top_level_await_entry = if context.config.script.native_top_level_await && async_modules.contains(entry) {
-        "await "
-      } else {
-        ""
-      };
+      let top_level_await_entry =
+        if context.config.script.native_top_level_await && async_modules.contains(entry) {
+          "await "
+        } else {
+          ""
+        };
 
       // 5. append call entry
       let call_entry_code = format!(
@@ -406,8 +407,8 @@ pub fn handle_entry_resources(
       for post in vec![
         set_initial_loaded_resources_code,
         set_dynamic_resources_map_code,
-        // call_entry_code,
-        // export_info_code,
+        call_entry_code,
+        export_info_code,
       ] {
         entry_bundle.append(&post);
       }

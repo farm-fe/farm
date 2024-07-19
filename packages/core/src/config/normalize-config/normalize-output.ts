@@ -90,12 +90,8 @@ const targetsMap: TargetsMap = {
     cssTargets: es2017Browsers,
     scriptGenTarget: 'es2017'
   },
-  'browser-esnext': null
-};
-
-export const targetEnvMapPlatform: Record<string, string> = {
-  'lib-node': 'node',
-  'lib-browser': 'browser'
+  'browser-esnext': null,
+  library: null
 };
 
 /**

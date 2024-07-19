@@ -3,6 +3,7 @@
 use std::{collections::HashMap, sync::Arc};
 
 use farmfe_core::{
+  config::TargetEnv,
   enhanced_magic_string::bundle::Bundle,
   parking_lot::Mutex,
   plugin::Plugin,
@@ -71,10 +72,10 @@ impl Plugin for FarmPluginBundle {
 
     let mut defer_minify = vec![];
     for resource_pot in resource_pots.iter() {
-      if matches!(
-        resource_pot.resource_pot_type,
-        ResourcePotType::Runtime | ResourcePotType::Js
-      ) {
+      if matches!(resource_pot.resource_pot_type, ResourcePotType::Runtime)
+        || (context.config.output.target_env == TargetEnv::Library
+          && resource_pot.resource_pot_type == ResourcePotType::Js)
+      {
         let resource_pot_id = resource_pot.id.clone();
 
         let bundle = shared_bundle.codegen(&resource_pot_id)?;
@@ -112,11 +113,7 @@ impl Plugin for FarmPluginBundle {
         rendered_map_chain: vec![],
         custom_data: resource_pot.meta.custom_data.clone(),
       }));
-    } else if matches!(resource_pot.resource_pot_type, ResourcePotType::Js) {
-      let bundle_map = self.bundle_map.lock();
-
-      let bundle = bundle_map.get(&resource_pot.id).unwrap();
-
+    } else if let Some(bundle) = self.bundle_map.lock().get(&resource_pot.id) {
       return Ok(Some(ResourcePotMetaData {
         // TODO
         rendered_modules: HashMap::new(),
