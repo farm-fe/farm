@@ -2,7 +2,7 @@
   "name": "react-template",
   "version": "1.0.0",
   "scripts": {
-    "dev": "farm come",
+    "dev": "farm dev",
     "start": "farm start",
     "build": "farm build",
     "preview": "farm preview",
