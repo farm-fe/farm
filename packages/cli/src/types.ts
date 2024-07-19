@@ -29,6 +29,7 @@ export interface CliServerOptions {
 }
 
 export interface CliBuildOptions {
+  configFile?: string | undefined;
   input?: string;
   outDir?: string;
   sourcemap?: boolean;
@@ -48,6 +49,9 @@ export interface CliBuildOptions {
 }
 
 export interface CliPreviewOptions {
-  open?: boolean;
+  host?: string | boolean;
   port?: number;
+  open?: boolean | string;
+  strictPort?: boolean;
+  outDir?: string;
 }
