@@ -30,28 +30,19 @@
     "lineEnding": "lf",
     "lineWidth": 80,
     "attributePosition": "auto",
-    "include": [
-      "**/*.ts"
-    ],
-    "ignore": [
-      "node_modules",
-      "dist"
-    ]
+    "include": ["**/*.ts"],
+    "ignore": ["node_modules", "dist"]
   },
   "organizeImports": {
     "enabled": true,
-    "include": [
-      "./**/*.js",
-      "./**/*.ts",
-      "./**/*.mjs"
-    ]
+    "include": ["./**/*.js", "./**/*.ts", "./**/*.mjs"]
   },
   "linter": {
     "enabled": true,
     "rules": {
       "recommended": false,
       "complexity": {
-        "noBannedTypes": "error",
+        "noBannedTypes": "off",
         "noExtraBooleanCast": "error",
         "noMultipleSpacesInRegularExpressionLiterals": "error",
         "noUselessCatch": "error",
@@ -78,7 +69,7 @@
         "noUnsafeFinally": "error",
         "noUnsafeOptionalChaining": "error",
         "noUnusedLabels": "error",
-        "noUnusedVariables": "warn",
+        "noUnusedVariables": "off",
         "useIsNan": "error",
         "useValidForDirection": "error",
         "useYield": "error"
