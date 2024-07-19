@@ -64,6 +64,11 @@ export default function farmDtsPlugin(options?: DtsPluginOptions): JsPlugin {
       async executor() {
         ctx.handleCloseBundle();
       }
+    },
+    updateFinished: {
+      async executor() {
+        ctx.handleCloseBundle();
+      }
     }
   };
 }

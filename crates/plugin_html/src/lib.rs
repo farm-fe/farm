@@ -337,7 +337,9 @@ impl FarmPluginHtml {
   }
 }
 
-pub struct FarmPluginTransformHtml {}
+pub struct FarmPluginTransformHtml {
+  minify_config: MinifyBuilder,
+}
 
 impl Plugin for FarmPluginTransformHtml {
   fn name(&self) -> &str {
@@ -492,7 +494,10 @@ impl Plugin for FarmPluginTransformHtml {
       };
       absolute_path_handler.add_public_path_prefix(&mut html_ast);
 
-      let code = codegen_html_document(&html_ast, context.config.minify.enabled());
+      let code = codegen_html_document(
+        &html_ast,
+        self.minify_config.is_enabled(&html_resource.name),
+      );
       html_resource.bytes = code.bytes().collect();
 
       resources_injector.update_resource(params.resources_map);
@@ -503,8 +508,10 @@ impl Plugin for FarmPluginTransformHtml {
 }
 
 impl FarmPluginTransformHtml {
-  pub fn new(_: &Config) -> Self {
-    Self {}
+  pub fn new(config: &Config) -> Self {
+    Self {
+      minify_config: MinifyBuilder::create_builder(&config.minify, None),
+    }
   }
 }
 
@@ -536,9 +543,7 @@ impl Plugin for FarmPluginMinifyHtml {
   ) -> farmfe_core::error::Result<Option<()>> {
     for resource in params.resources_map.values_mut() {
       if matches!(resource.resource_type, ResourceType::Html) {
-        let is_enable_minify = self.minify_config.is_enabled(&resource.name);
-
-        if !is_enable_minify {
+        if !self.minify_config.is_enabled(&resource.name) {
           continue;
         }
 
