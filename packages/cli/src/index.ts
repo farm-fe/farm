@@ -78,6 +78,7 @@ cli
 
       // const { start } = await resolveCore();
       const { startRefactorCli } = await resolveCore();
+
       handleAsyncOperationErrors(
         startRefactorCli(defaultOptions),
         'Failed to start server'
