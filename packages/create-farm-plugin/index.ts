@@ -213,8 +213,12 @@ function copy(src: string, dest: string, options: IResultType) {
     copyDir(src, dest, options);
   } else {
     fs.copyFileSync(src, dest);
-    const destContent = fs.readFileSync(dest, 'utf-8');
-    fs.writeFileSync(dest, replaceNamePlaceholders(destContent, options));
+    const destContent = fs.readFileSync(dest, 'binary');
+    fs.writeFileSync(
+      dest,
+      replaceNamePlaceholders(destContent, options),
+      'binary'
+    );
   }
 }
 
