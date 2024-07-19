@@ -10,5 +10,6 @@ pub mod render_start;
 pub mod resolve;
 pub mod transform;
 pub mod transform_html;
+pub mod update_finished;
 pub mod update_modules;
 pub mod write_plugin_cache;

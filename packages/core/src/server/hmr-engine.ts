@@ -71,6 +71,17 @@ export class HmrEngine {
     }
 
     try {
+      // we must add callback before update
+      this._compiler.onUpdateFinish(async () => {
+        // if there are more updates, recompile again
+        if (this._updateQueue.length > 0) {
+          await this.recompileAndSendResult();
+        }
+        if (this._devServer?.config?.writeToDisk) {
+          this._compiler.writeResourcesToDisk();
+        }
+      });
+
       checkClearScreen(this._compiler.config.config);
       const start = Date.now();
       const result = await this._compiler.update(queue);
@@ -125,13 +136,6 @@ export class HmrEngine {
           result: ${resultStr}
         }
       `);
-      });
-
-      this._compiler.onUpdateFinish(async () => {
-        // if there are more updates, recompile again
-        if (this._updateQueue.length > 0) {
-          await this.recompileAndSendResult();
-        }
       });
     } catch (err) {
       checkClearScreen(this._compiler.config.config);
