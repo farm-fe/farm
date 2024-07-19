@@ -180,6 +180,7 @@ function tryGetDefaultPublicPath(
   if (!targetEnv) {
     return publicPath;
   }
+  console.log('🤖 == publicPath:', publicPath);
 
   if (publicPath) {
     if (urlRegex.test(publicPath)) {
@@ -250,6 +251,7 @@ export function normalizePublicPath(
     logger.warn(
       ` (!) Irregular 'publicPath' options: '${publicPath}', it should only be an absolute path like '/publicPath/', './', an url or an empty string.`
     );
+  console.log('🤖 == defaultPublicPath:', defaultPublicPath);
 
   return defaultPublicPath;
 }

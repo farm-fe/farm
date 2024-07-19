@@ -304,6 +304,7 @@ export function transformResourceInfo2RollupResource(
       type: 'chunk',
       code: source,
       name: resource.name,
+      fileName: resource.name,
       map: undefined,
       sourcemapFileName: null,
       preliminaryFileName: resource.origin.value
@@ -311,9 +312,8 @@ export function transformResourceInfo2RollupResource(
   } else {
     let source: string | Uint8Array = Uint8Array.from(resource.bytes);
     if (resource.resourceType === 'html' || resource.resourceType === 'css') {
-      source = String.fromCharCode(...source);
+      source = Buffer.from(resource.bytes).toString('utf-8');
     }
-
     return {
       fileName: resource.name,
       name: resource.name,

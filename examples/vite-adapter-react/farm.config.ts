@@ -9,6 +9,11 @@ export default defineConfig({
   ],
   compilation:{
     persistentCache: false,
+    minify: false,
+    output: {
+      publicPath: '/a',
+      targetEnv: 'browser',
+    }
   },
   vitePlugins: [
     Pages({
