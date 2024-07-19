@@ -1,5 +1,11 @@
 # @farmfe/runtime-plugin-hmr
 
+## 3.5.4
+
+### Patch Changes
+
+- 5a2936a3: Fix multiple page application hmr error
+
 ## 3.5.3
 
 ### Patch Changes
