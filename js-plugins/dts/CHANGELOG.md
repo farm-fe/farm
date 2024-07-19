@@ -1,5 +1,11 @@
 # @farmfe/js-plugin-dts
 
+## 0.6.1
+
+### Patch Changes
+
+- 6a64fe20: Emit dts files when running watch mode
+
 ## 0.6.0
 
 ### Minor Changes
