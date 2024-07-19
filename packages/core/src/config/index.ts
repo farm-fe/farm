@@ -5,10 +5,7 @@ import path, { isAbsolute, join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 import { bindingPath } from '../../binding/index.js';
-import {
-  OutputConfig,
-  type PluginTransformHookParam
-} from '../types/binding.js';
+import { OutputConfig } from '../types/binding.js';
 
 import { JsPlugin } from '../index.js';
 import {
@@ -101,7 +98,10 @@ async function getDefaultConfig(
     logger
   );
 
-  resolvedUserConfig.server = normalizeDevServerConfig(inlineOptions, mode);
+  resolvedUserConfig.server = normalizeDevServerConfig(
+    inlineOptions.server,
+    mode
+  );
 
   resolvedUserConfig.compilation = await normalizeUserCompilationConfig(
     resolvedUserConfig,
@@ -217,7 +217,10 @@ export async function resolveConfig(
     mode
   );
 
-  resolvedUserConfig.root = resolvedUserConfig.compilation.root;
+  // normalize root path
+  resolvedUserConfig.root = normalizeBasePath(
+    resolvedUserConfig.compilation.root
+  );
   resolvedUserConfig.jsPlugins = sortFarmJsPlugins;
   resolvedUserConfig.rustPlugins = rustPlugins;
 
@@ -748,11 +751,15 @@ async function readConfigFile(
       'development'
     );
 
+    const replaceDirnamePlugin = await import(
+      'farm-plugin-replace-dirname'
+    ).then((mod) => mod.default);
+
     const compiler = new Compiler(
       {
         config: normalizedConfig,
-        jsPlugins: [replaceDirnamePlugin()],
-        rustPlugins: []
+        jsPlugins: [],
+        rustPlugins: [[replaceDirnamePlugin, '{}']]
       },
       logger
     );
@@ -778,6 +785,11 @@ async function readConfigFile(
     const userConfig = (await import(filePath as string)).default;
     try {
       fs.unlink(filePath, () => void 0);
+      // remove parent dir if empty
+      const isEmpty = fs.readdirSync(outputPath).length === 0;
+      if (isEmpty) {
+        fs.rmSync(outputPath);
+      }
     } catch {
       /** do nothing */
     }
@@ -994,39 +1006,6 @@ export async function getConfigFilePath(
   }
 
   return undefined;
-}
-
-// transform __dirname and __filename with resolve config file path
-export function replaceDirnamePlugin() {
-  const moduleTypes = ['ts', 'js', 'cjs', 'mjs', 'mts', 'cts'];
-  const resolvedPaths: string[] = [];
-  return {
-    name: 'replace-dirname',
-    transform: {
-      filters: {
-        moduleTypes,
-        resolvedPaths
-      },
-      async executor(param: PluginTransformHookParam) {
-        const { content, resolvedPath, moduleType } = param;
-        let replaceContent = content;
-        const dirPath = path.dirname(resolvedPath);
-
-        replaceContent = param.content
-          .replace(/__dirname/g, JSON.stringify(dirPath))
-          .replace(/__filename/g, JSON.stringify(resolvedPath))
-          .replace(
-            /import\.meta\.url/g,
-            JSON.stringify(pathToFileURL(resolvedPath))
-          );
-
-        return {
-          content: replaceContent,
-          moduleType
-        };
-      }
-    }
-  };
 }
 
 export async function resolvePlugins(

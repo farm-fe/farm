@@ -223,6 +223,7 @@ export interface JsPlugin {
   };
 
   finish?: { executor: Callback<Record<string, never>, void> };
+  updateFinished?: { executor: Callback<Record<string, never>, void> };
 
   updateModules?: {
     executor: Callback<

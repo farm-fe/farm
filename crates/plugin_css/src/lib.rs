@@ -104,7 +104,7 @@ impl Plugin for FarmPluginCssResolve {
       }));
     } else if matches!(param.kind, ResolveKind::CssAtImport | ResolveKind::CssUrl) {
       // if dep starts with '~', means it's from node_modules.
-      let source = if let Some(striped_source) = param.source.strip_suffix('~') {
+      let source = if let Some(striped_source) = param.source.strip_prefix('~') {
         striped_source.to_string()
       } else {
         param.source.clone()

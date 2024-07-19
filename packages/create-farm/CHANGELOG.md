@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.0.12
+
+### Patch Changes
+
+- ad55abb5: bump version
+
+## 0.0.11
+
+### Patch Changes
+
+- a27597bb: Include farm instead of vite
+
 ## 0.0.10
 
 ### Patch Changes
