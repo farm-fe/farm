@@ -11,7 +11,7 @@ export default defineConfig({
     },
     presetEnv: false,
     sourcemap: true,
-    persistentCache: true
+    persistentCache: false,
   },
   server: {
     writeToDisk: false,

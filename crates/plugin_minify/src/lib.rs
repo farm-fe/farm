@@ -284,10 +284,17 @@ impl Plugin for FarmPluginMinify {
         let meta = module.meta.as_script_mut();
         let ast = &mut meta.ast;
 
-        if let Some(id_to_replace) = id_to_replace.lock().remove(&module.id) {
-          let mut ident_replacer = IdentReplacer::new(id_to_replace);
-          ast.visit_mut_with(&mut ident_replacer);
-        }
+        let (cm, _) = create_swc_source_map(Source {
+          path: PathBuf::from(module.id.to_string()),
+          content: module.content.clone(),
+        });
+        try_with(cm, &context.meta.script.globals, || {
+          if let Some(id_to_replace) = id_to_replace.lock().remove(&module.id) {
+            let mut ident_replacer = IdentReplacer::new(id_to_replace);
+            ast.visit_mut_with(&mut ident_replacer);
+          }
+        })
+        .unwrap();
       });
 
     // update used exports of the module
