@@ -7,9 +7,9 @@
   "type": "module",
   "exports": {
     ".": {
-      "default": "./build/index.cjs",
       "require": "./build/index.cjs",
       "import": "./dist/index.js",
+      "default": "./build/index.cjs",
       "types": "./dist/index.d.ts"
     }
   },

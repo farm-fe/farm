@@ -351,11 +351,12 @@ pub fn handle_entry_resources(
         r#"{farm_global_this}.{FARM_MODULE_SYSTEM}.setDynamicModuleResourcesMap({dynamic_resources_code});"#,
       );
 
-      let top_level_await_entry = if context.config.script.native_top_level_await && async_modules.contains(entry) {
-        "await "
-      } else {
-        ""
-      };
+      let top_level_await_entry =
+        if context.config.script.native_top_level_await && async_modules.contains(entry) {
+          "await "
+        } else {
+          ""
+        };
 
       // 5. append call entry
       let call_entry_code = format!(

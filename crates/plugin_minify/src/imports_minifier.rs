@@ -5,9 +5,10 @@ use farmfe_core::{
   plugin::ResolveKind,
   swc_common::{Mark, DUMMY_SP},
   swc_ecma_ast::{
-    CallExpr, Callee, ExportNamedSpecifier, ExportSpecifier, Expr, ExprOrSpread, ExprStmt, Id,
-    Ident, KeyValueProp, Lit, MemberExpr, MemberProp, ModuleDecl, ModuleExportName, ModuleItem,
-    NamedExport, ObjectLit, Prop, PropName, PropOrSpread, Stmt, Str,
+    BindingIdent, CallExpr, Callee, ExportNamedSpecifier, ExportSpecifier, Expr, ExprOrSpread,
+    ExprStmt, Id, Ident, KeyValuePatProp, KeyValueProp, Lit, MemberExpr, MemberProp, ModuleDecl,
+    ModuleExportName, ModuleItem, NamedExport, ObjectLit, Pat, Prop, PropName, PropOrSpread, Stmt,
+    Str,
   },
 };
 use farmfe_toolkit::swc_ecma_visit::{VisitMut, VisitMutWith};
@@ -510,6 +511,32 @@ impl<'a> VisitMut for IdentReplacer {
       }
     }
   }
+
+  fn visit_mut_object_pat(&mut self, pat: &mut farmfe_core::swc_ecma_ast::ObjectPat) {
+    for n in &mut pat.props {
+      match n {
+        farmfe_core::swc_ecma_ast::ObjectPatProp::KeyValue(key) => key.value.visit_mut_with(self),
+        farmfe_core::swc_ecma_ast::ObjectPatProp::Assign(a) => {
+          if let Some(value) = &mut a.value {
+            value.visit_mut_with(self);
+          } else if let Some(replaced) = self.id_to_replace.get(&a.key.id.to_id()) {
+            *n = farmfe_core::swc_ecma_ast::ObjectPatProp::KeyValue(KeyValuePatProp {
+              key: PropName::Ident(a.key.id.clone()),
+              value: Box::new(Pat::Ident(BindingIdent {
+                id: Ident::new(
+                  replaced.as_str().into(),
+                  DUMMY_SP.apply_mark(a.key.id.span.ctxt().outer()),
+                ),
+                type_ann: None,
+              })),
+            })
+          }
+        }
+        farmfe_core::swc_ecma_ast::ObjectPatProp::Rest(r) => r.visit_mut_with(self),
+      }
+    }
+  }
+
   fn visit_mut_ident(&mut self, n: &mut farmfe_core::swc_ecma_ast::Ident) {
     if let Some(replaced) = self.id_to_replace.get(&n.to_id()) {
       n.sym = replaced.as_str().into();

@@ -10,7 +10,7 @@ const config: UserConfig = {
     output: {
       path: 'dist/cjs',
       entryFilename: '[entryName].cjs',
-      targetEnv: 'node-legacy',
+      targetEnv: 'library',
       format: 'cjs'
     },
     lazyCompilation: false,

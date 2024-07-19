@@ -157,6 +157,8 @@ export function mapTargetEnvValue(config: Config['config']) {
     config.output.targetEnv = 'node';
   } else if (FARM_TARGET_BROWSER_ENVS.includes(config.output.targetEnv)) {
     config.output.targetEnv = 'browser';
+  } else {
+    config.output.targetEnv = 'library';
   }
 }
 

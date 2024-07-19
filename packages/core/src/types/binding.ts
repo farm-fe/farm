@@ -153,7 +153,8 @@ export interface OutputConfig {
     | 'browser-legacy'
     | 'browser-es2015'
     | 'browser-es2017'
-    | 'browser-esnext';
+    | 'browser-esnext'
+    | 'library';
   /**
    * output module format
    */
