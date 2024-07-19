@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.12](https://github.com/farm-fe/farm/compare/farmfe_plugin_css-v0.0.11...farmfe_plugin_css-v0.0.12) - 2024-07-19
+
+### Fixed
+- css @import starting with ~ ([#1622](https://github.com/farm-fe/farm/pull/1622))
+
 ## [0.0.11](https://github.com/farm-fe/farm/compare/farmfe_plugin_css-v0.0.10...farmfe_plugin_css-v0.0.11) - 2024-07-15
 
 ### Other
