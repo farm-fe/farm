@@ -45,6 +45,7 @@ import { Logger } from './utils/logger.js';
 import { FileWatcher } from './watcher/index.js';
 
 import { __FARM_GLOBAL__ } from './config/_global.js';
+import { resolveConfig2 } from './config/new-config.js';
 import type {
   FarmCliOptions,
   ResolvedUserConfig,
@@ -69,6 +70,36 @@ export async function start(
       inlineConfig,
       'development',
       logger
+    );
+
+    const compiler = await createCompiler(resolvedUserConfig, logger);
+
+    const devServer = await createDevServer(
+      compiler,
+      resolvedUserConfig,
+      logger
+    );
+
+    await devServer.listen();
+  } catch (error) {
+    logger.error('Failed to start the server', { exit: true, error });
+  }
+}
+
+export async function startRefactorCli(
+  inlineConfig?: FarmCliOptions & UserConfig
+): Promise<void> {
+  inlineConfig = inlineConfig ?? {};
+  const logger = inlineConfig.logger ?? new Logger();
+  setProcessEnv('development');
+
+  try {
+    const resolvedUserConfig = await resolveConfig2(
+      inlineConfig,
+      'start',
+      'development',
+      'development',
+      false
     );
 
     const compiler = await createCompiler(resolvedUserConfig, logger);

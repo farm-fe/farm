@@ -7,7 +7,7 @@ import type {
   clean,
   preview,
   start,
-  // startTestRefactorCli,
+  startRefactorCli,
   watch
 } from '@farmfe/core';
 import { Logger } from '@farmfe/core';
@@ -34,7 +34,7 @@ export async function resolveCore(): Promise<{
   watch: typeof watch;
   preview: typeof preview;
   clean: typeof clean;
-  // startTestRefactorCli: typeof startTestRefactorCli;
+  startRefactorCli: typeof startRefactorCli;
 }> {
   try {
     return import('@farmfe/core');

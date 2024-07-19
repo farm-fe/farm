@@ -226,9 +226,9 @@ cli
       };
 
       // const { startTestRefactorCli } = await resolveCore();
-      const { start } = await resolveCore();
+      const { startRefactorCli } = await resolveCore();
       handleAsyncOperationErrors(
-        start(defaultOptions),
+        startRefactorCli(defaultOptions),
         'Failed to start server'
       );
     }

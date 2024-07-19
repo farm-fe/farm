@@ -768,6 +768,8 @@ async function readConfigFile(
       logger
     );
 
+    console.log(normalizedConfig);
+
     const FARM_PROFILE = process.env.FARM_PROFILE;
     // disable FARM_PROFILE in farm_config
     if (FARM_PROFILE) {
