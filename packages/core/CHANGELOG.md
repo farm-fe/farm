@@ -1,5 +1,11 @@
 # @farmfe/core
 
+## 1.3.6
+
+### Patch Changes
+
+- b258c415: Support single bundle library
+
 ## 1.3.5
 
 ### Patch Changes
