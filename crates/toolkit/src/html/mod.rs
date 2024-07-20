@@ -73,12 +73,12 @@ pub fn codegen_html_document(document: &Document, minify: bool) -> String {
     html_writer,
     CodegenConfig {
       minify,
+      quotes: Some(true),
       ..Default::default()
     },
   );
 
   html_gen.emit(document).unwrap();
-
   html_code
 }
 

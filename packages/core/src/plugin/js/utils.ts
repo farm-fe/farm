@@ -304,16 +304,21 @@ export function transformResourceInfo2RollupResource(
       type: 'chunk',
       code: source,
       name: resource.name,
+      fileName: resource.name,
       map: undefined,
       sourcemapFileName: null,
       preliminaryFileName: resource.origin.value
     } satisfies OutputChunk;
   } else {
+    let source: string | Uint8Array = Uint8Array.from(resource.bytes);
+    if (resource.resourceType === 'html' || resource.resourceType === 'css') {
+      source = Buffer.from(resource.bytes).toString('utf-8');
+    }
     return {
       fileName: resource.name,
       name: resource.name,
       needsCodeReference: false,
-      source: Uint8Array.from(resource.bytes),
+      source,
       type: 'asset'
     } satisfies OutputAsset;
   }
@@ -331,6 +336,10 @@ export function transformRollupResource2FarmResource(
       name: chunk.name
     };
   } else {
+    if (chunk.fileName.endsWith('.html') || chunk.fileName.endsWith('.css')) {
+      const encoder = new TextEncoder();
+      chunk.source = encoder.encode(chunk.source as string);
+    }
     return {
       bytes: Array.from(chunk.source as Uint8Array) as number[],
       emitted: originResource.emitted,

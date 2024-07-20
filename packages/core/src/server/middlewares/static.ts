@@ -21,11 +21,13 @@ export function staticMiddleware(devServerContext: Server): Middleware {
 
   return async (ctx: Context, next: Next) => {
     const requestPath = ctx.request?.path;
+    console.log('🤖 == return == requestPath:', requestPath);
 
     if (requestPath && requestPath.startsWith(config.output.publicPath)) {
       const modifiedPath = requestPath.substring(
         config.output.publicPath.length
       );
+      console.log('🤖 == return == modifiedPath:', modifiedPath);
 
       ctx.request.path = `/${modifiedPath}`;
 
