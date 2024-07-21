@@ -35,6 +35,7 @@ export async function resolveCore(): Promise<{
   preview: typeof preview;
   clean: typeof clean;
   startRefactorCli: typeof startRefactorCli;
+  buildRefactorCli: typeof build;
 }> {
   try {
     return import('@farmfe/core');

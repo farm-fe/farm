@@ -45,7 +45,6 @@ import { Logger } from './utils/logger.js';
 import { FileWatcher } from './watcher/index.js';
 
 import { __FARM_GLOBAL__ } from './config/_global.js';
-import { resolveConfig2 } from './config/new-config.js';
 import type {
   FarmCliOptions,
   ResolvedUserConfig,
@@ -68,8 +67,10 @@ export async function start(
   try {
     const resolvedUserConfig = await resolveConfig(
       inlineConfig,
+      'start',
       'development',
-      logger
+      'development',
+      false
     );
 
     const compiler = await createCompiler(resolvedUserConfig, logger);
@@ -94,7 +95,7 @@ export async function startRefactorCli(
   setProcessEnv('development');
 
   try {
-    const resolvedUserConfig = await resolveConfig2(
+    const resolvedUserConfig = await resolveConfig(
       inlineConfig,
       'start',
       'development',
@@ -116,6 +117,30 @@ export async function startRefactorCli(
   }
 }
 
+export async function buildRefactorCli(
+  inlineConfig?: FarmCliOptions & UserConfig
+): Promise<void> {
+  inlineConfig = inlineConfig ?? {};
+  const logger = inlineConfig.logger ?? new Logger();
+  setProcessEnv('production');
+
+  try {
+    const resolvedUserConfig = await resolveConfig(
+      inlineConfig,
+      'build',
+      'production',
+      'production',
+      false
+    );
+
+    await createBundleHandler(resolvedUserConfig, logger);
+    // copy resources under publicDir to output.path
+    await copyPublicDirectory(resolvedUserConfig, logger);
+  } catch (err) {
+    logger.error(`Failed to build: ${err}`, { exit: true });
+  }
+}
+
 export async function build(
   inlineConfig?: FarmCliOptions & UserConfig
 ): Promise<void> {
@@ -125,8 +150,9 @@ export async function build(
 
   const resolvedUserConfig = await resolveConfig(
     inlineConfig,
+    'build',
     'production',
-    logger,
+    'production',
     false
   );
 
@@ -144,8 +170,10 @@ export async function preview(inlineConfig?: FarmCliOptions): Promise<void> {
   const logger = inlineConfig.logger ?? new Logger();
   const resolvedUserConfig = await resolveConfig(
     inlineConfig,
+    'preview',
     'production',
-    logger
+    'production',
+    true
   );
 
   const { root, output } = resolvedUserConfig.compilation;
@@ -193,9 +221,10 @@ export async function watch(
 
   const resolvedUserConfig = await resolveConfig(
     inlineConfig,
-    'development',
-    logger,
-    true
+    'build',
+    'production',
+    'production',
+    false
   );
 
   const hostname = await resolveHostname(resolvedUserConfig.server.host);

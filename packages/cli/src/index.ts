@@ -8,6 +8,7 @@ import {
   resolveCore
 } from './utils.js';
 
+import { UserConfig } from '@farmfe/core';
 import type {
   CleanOptions,
   CliBuildOptions,
@@ -105,8 +106,8 @@ cli
       root,
       configFile: options.configFile,
       mode: options.mode,
+      watch: options.watch,
       compilation: {
-        watch: options.watch,
         output: {
           path: options?.outDir,
           targetEnv: options?.target,
@@ -121,8 +122,20 @@ cli
       }
     };
 
-    const { build } = await resolveCore();
-    handleAsyncOperationErrors(build(defaultOptions), 'error during build');
+    const { root: path, configPath } = resolveCliConfig(root, options);
+
+    const defaultOption2 = {
+      root: path,
+      configPath,
+      ...getOptionFromBuildOption(options)
+    };
+
+    // const { build } = await resolveCore();
+    const { buildRefactorCli } = await resolveCore();
+    handleAsyncOperationErrors(
+      buildRefactorCli(defaultOption2),
+      'error during build'
+    );
   });
 
 cli
@@ -234,3 +247,39 @@ cli.help();
 cli.version(version);
 
 cli.parse();
+
+export function getOptionFromBuildOption(options: any) {
+  const {
+    input,
+    outDir,
+    target,
+    format,
+    watch,
+    minify,
+    sourcemap,
+    treeShaking,
+    mode
+  } = options;
+
+  const output: UserConfig['compilation']['output'] = {
+    ...(outDir && { path: outDir }),
+    ...(target && { targetEnv: target }),
+    ...(format && { format })
+  };
+
+  const compilation: UserConfig['compilation'] = {
+    input: { ...(input && { index: input }) },
+    output,
+    ...(watch && { watch }),
+    ...(minify && { minify }),
+    ...(sourcemap && { sourcemap }),
+    ...(treeShaking && { treeShaking })
+  };
+
+  const defaultOptions: any & UserConfig = {
+    compilation,
+    ...(mode && { mode })
+  };
+
+  return defaultOptions;
+}
