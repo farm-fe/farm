@@ -512,6 +512,14 @@ impl<'a> VisitMut for IdentReplacer {
     }
   }
 
+  // fix #1644. Do not replace ident of member expression
+  fn visit_mut_member_prop(&mut self, n: &mut MemberProp) {
+    // ignore ident and private name of member expression
+    if let MemberProp::Computed(computed) = n {
+      computed.expr.visit_mut_with(self);
+    }
+  }
+
   fn visit_mut_object_pat(&mut self, pat: &mut farmfe_core::swc_ecma_ast::ObjectPat) {
     for n in &mut pat.props {
       match n {
