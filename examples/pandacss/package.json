@@ -1,0 +1,29 @@
+{
+  "name": "@farmfe-examples/pandacss",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "farm start",
+    "start": "farm start",
+    "build": "farm build",
+    "preview": "farm preview",
+    "clean": "farm clean",
+    "prepare": "pandacss codegen"
+  },
+  "dependencies": {
+    "react": "18",
+    "react-dom": "18"
+  },
+  "devDependencies": {
+    "@farmfe/cli": "workspace:*",
+    "@farmfe/core": "workspace:*",
+    "@farmfe/js-plugin-postcss": "workspace:*",
+    "@farmfe/plugin-react": "workspace:*",
+    "@pandacss/dev": "^0.42.0",
+    "@types/react": "18",
+    "@types/react-dom": "18",
+    "core-js": "^3.37.1",
+    "postcss": "^8.4.39",
+    "react-refresh": "^0.14.2"
+  }
+}
