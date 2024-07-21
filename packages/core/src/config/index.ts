@@ -87,37 +87,6 @@ export function defineFarmConfig(config: UserConfigExport): UserConfigExport {
   return config;
 }
 
-async function getDefaultConfig(
-  config: UserConfig,
-  inlineOptions: FarmCliOptions,
-  mode?: CompilationMode,
-  logger?: Logger
-) {
-  logger = logger ?? new Logger();
-  const resolvedUserConfig = await resolveMergedUserConfig(
-    config,
-    undefined,
-    inlineOptions.mode ?? mode,
-    logger
-  );
-
-  resolvedUserConfig.server = normalizeDevServerConfig(
-    inlineOptions.server,
-    mode
-  );
-
-  resolvedUserConfig.compilation = await normalizeUserCompilationConfig(
-    resolvedUserConfig,
-    config,
-    mode
-  );
-  resolvedUserConfig.root = resolvedUserConfig.compilation.root;
-  resolvedUserConfig.jsPlugins = [];
-  resolvedUserConfig.rustPlugins = [];
-
-  return resolvedUserConfig;
-}
-
 export async function handleServerPortConflict(
   resolvedUserConfig: ResolvedUserConfig,
   logger: Logger,
@@ -155,7 +124,7 @@ export async function resolveConfig(
   }
 
   const configEnv: ConfigEnv = {
-    mode,
+    mode: envMode,
     command,
     isPreview
   };
@@ -195,14 +164,15 @@ export async function resolveConfig(
 
   const mergedUserConfig = mergeFarmCliConfig(inlineOptions, config);
 
+  // 这里哈 已经 用了 mergeUserConfig 了 后面看看怎么优化一下 下面那个 normalizeUserCompilationConfig没必要传两个了哈
   const resolvedUserConfig = await resolveUserConfig(
     mergedUserConfig,
     configFilePath,
-    inlineOptions.mode ?? mode,
+    mode,
     logger
   );
 
-  // // normalize server config first cause it may be used in normalizeUserCompilationConfig
+  // normalize server config first cause it may be used in normalizeUserCompilationFnConfig
   resolvedUserConfig.server = normalizeDevServerConfig(
     resolvedUserConfig.server,
     mode
@@ -211,12 +181,16 @@ export async function resolveConfig(
   // if (isHandleServerPortConflict) {
   //   await handleServerPortConflict(resolvedUserConfig, logger, mode);
   // }
+  console.log(inlineOptions);
+  console.log(mergedUserConfig, '我是 mergedUserConfig');
 
   resolvedUserConfig.compilation = await normalizeUserCompilationConfig(
     resolvedUserConfig,
     mergedUserConfig,
     'development'
   );
+
+  // console.log(resolvedUserConfig.compilation);
 
   resolvedUserConfig.root = resolvedUserConfig.compilation.root;
   resolvedUserConfig.jsPlugins = sortFarmJsPlugins;
@@ -261,7 +235,7 @@ export async function normalizeUserCompilationConfig(
   isDefault = false,
   logger: Logger = new Logger()
 ): Promise<ResolvedCompilation> {
-  const { compilation, root = process.cwd(), clearScreen } = resolvedUserConfig;
+  const { compilation, root, clearScreen } = resolvedUserConfig;
 
   // resolve root path
   const resolvedRootPath = normalizePath(root);
