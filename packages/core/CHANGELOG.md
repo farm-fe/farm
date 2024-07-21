@@ -1,5 +1,11 @@
 # @farmfe/core
 
+## 1.3.8
+
+### Patch Changes
+
+- 5c603a65: fix moduleDecls minify bug #1644
+
 ## 1.3.7
 
 ### Patch Changes
