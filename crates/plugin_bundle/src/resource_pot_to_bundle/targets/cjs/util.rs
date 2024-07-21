@@ -1,7 +1,8 @@
 use farmfe_core::{
+  config::{Config, ModuleFormat},
   module::{module_graph::ModuleGraph, ModuleId},
   swc_common::{Mark, DUMMY_SP},
-  swc_ecma_ast::{CallExpr, Expr, ExprOrSpread, Lit},
+  swc_ecma_ast::{CallExpr, Callee, Expr, ExprOrSpread, Lit, MemberExpr, MemberProp},
 };
 use farmfe_toolkit::{
   script::is_commonjs_require,
@@ -52,6 +53,7 @@ pub struct CJSReplace<'a> {
   pub module_id: ModuleId,
   pub module_global_uniq_name: &'a ModuleGlobalUniqName,
   pub bundle_variable: &'a BundleVariable,
+  pub config: &'a Config,
 }
 
 impl<'a> VisitMut for CJSReplace<'a> {
@@ -77,10 +79,18 @@ impl<'a> VisitMut for CJSReplace<'a> {
               .module_graph
               .get_dep_by_source_optional(&self.module_id, &source, None)
           {
-            if let Some(commonjs_name) = self.module_global_uniq_name.commonjs_name(&id) {
+            if self.module_graph.module(&id).is_some_and(|m| m.external)
+              && matches!(self.config.output.format, ModuleFormat::EsModule)
+            {
+              call_expr.callee = Callee::Expr(Box::new(Expr::Member(MemberExpr {
+                span: DUMMY_SP,
+                obj: Box::new(Expr::Ident("globalThis".into())),
+                prop: MemberProp::Ident("nodeRequire".into()),
+              })));
+            } else if let Some(commonjs_name) = self.module_global_uniq_name.commonjs_name(&id) {
               *call_expr = CallExpr {
                 span: DUMMY_SP,
-                callee: farmfe_core::swc_ecma_ast::Callee::Expr(Box::new(Expr::Ident(
+                callee: Callee::Expr(Box::new(Expr::Ident(
                   self
                     .bundle_variable
                     .render_name(commonjs_name)

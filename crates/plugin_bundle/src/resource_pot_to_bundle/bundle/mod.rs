@@ -676,6 +676,7 @@ impl<'a> ModuleAnalyzerManager<'a> {
             module_graph,
             &self.module_global_uniq_name,
             bundle_variable,
+            &context.config,
           )
         }
 

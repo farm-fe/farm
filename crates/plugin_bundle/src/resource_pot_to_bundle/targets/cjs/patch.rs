@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use farmfe_core::{
-  config::Mode,
+  config::{Config, Mode},
   context::CompilationContext,
   error::Result,
   module::{module_graph::ModuleGraph, ModuleId, ModuleSystem},
@@ -18,7 +18,7 @@ use farmfe_toolkit::{
     modules::{
       common_js,
       import_analysis::import_analyzer,
-      util::{Config, ImportInterop},
+      util::{Config as SwcConfig, ImportInterop},
     },
   },
   swc_ecma_visit::VisitMutWith,
@@ -125,7 +125,7 @@ impl CjsPatch {
 
     ast.visit_mut_with(&mut common_js::<&SingleThreadedComments>(
       unresolved_mark,
-      Config {
+      SwcConfig {
         ignore_dynamic: true,
         preserve_import_meta: true,
         ..Default::default()
@@ -202,6 +202,7 @@ impl CjsPatch {
     module_graph: &ModuleGraph,
     module_global_uniq_name: &ModuleGlobalUniqName,
     bundle_variable: &BundleVariable,
+    config: &Config,
   ) {
     let mut replacer: CJSReplace = CJSReplace {
       unresolved_mark: mark.0,
@@ -210,6 +211,7 @@ impl CjsPatch {
       module_id: module_id.clone(),
       module_global_uniq_name,
       bundle_variable,
+      config,
     };
 
     ast.visit_mut_with(&mut replacer);
