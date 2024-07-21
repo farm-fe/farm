@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.10](https://github.com/farm-fe/farm/compare/farmfe_plugin_runtime-v0.0.9...farmfe_plugin_runtime-v0.0.10) - 2024-07-19
+
+### Added
+- support single library bundle ([#1640](https://github.com/farm-fe/farm/pull/1640))
+
 ## [0.0.9](https://github.com/farm-fe/farm/compare/farmfe_plugin_runtime-v0.0.8...farmfe_plugin_runtime-v0.0.9) - 2024-07-15
 
 ### Other
