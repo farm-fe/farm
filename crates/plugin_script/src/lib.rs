@@ -193,7 +193,9 @@ impl Plugin for FarmPluginScript {
           .to_string_lossy()
           .to_string()
       };
+
       transform_url_with_import_meta_url(ast, &comments);
+
       transform_import_meta_glob(
         ast,
         context.config.root.clone(),
@@ -251,8 +253,9 @@ impl Plugin for FarmPluginScript {
 
     // find and replace `import.meta.xxx` to `module.meta.xxx` and detect hmr_accepted
     // skip transform import.meta when targetEnv is node
-    if matches!(context.config.output.target_env, TargetEnv::Browser)
-      || matches!(context.config.output.format, ModuleFormat::CommonJs)
+    if !matches!(context.config.output.target_env, TargetEnv::Library)
+      && (matches!(context.config.output.target_env, TargetEnv::Browser)
+        || matches!(context.config.output.format, ModuleFormat::CommonJs))
     {
       // transform `import.meta.xxx` to `module.meta.xxx`
       let ast = &mut param.module.meta.as_script_mut().ast;
