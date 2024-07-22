@@ -1,5 +1,11 @@
 # @farmfe/core
 
+## 1.3.9
+
+### Patch Changes
+
+- 0483fd9a: Support compiler.traceModuleGraph
+
 ## 1.3.8
 
 ### Patch Changes

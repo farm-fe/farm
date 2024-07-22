@@ -29,6 +29,18 @@ export type PluginStats = Record<
   >
 >;
 
+export interface TracedModuleGraph {
+  root: string;
+  modules: Array<{
+    id: string;
+    contentHash: string;
+    packageName: string;
+    packageVersion: string;
+  }>;
+  edges: Record<string, string[]>;
+  reverseEdges: Record<string, string[]>;
+}
+
 export class Compiler {
   private _bindingCompiler: BindingCompiler;
   private _updateQueue: UpdateQueueItem[] = [];
@@ -45,6 +57,10 @@ export class Compiler {
 
   async traceDependencies() {
     return this._bindingCompiler.traceDependencies();
+  }
+
+  async traceModuleGraph(): Promise<TracedModuleGraph> {
+    return this._bindingCompiler.traceModuleGraph() as TracedModuleGraph;
   }
 
   async compile() {

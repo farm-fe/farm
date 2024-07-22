@@ -213,6 +213,16 @@ impl JsCompiler {
       .map_err(|e| napi::Error::new(Status::GenericFailure, format!("{}", e)))
   }
 
+  #[napi]
+  pub fn trace_module_graph(&self, e: Env) -> napi::Result<JsUnknown> {
+    let graph = self
+      .compiler
+      .trace_module_graph()
+      .map_err(|e| napi::Error::new(Status::GenericFailure, format!("{}", e)))?;
+
+    e.to_js_value(&graph)
+  }
+
   /// async compile, return promise
   #[napi]
   pub fn compile(&self, e: Env) -> napi::Result<JsObject> {

@@ -108,6 +108,7 @@ export type JsCompiler = Compiler
 export declare class Compiler {
   constructor(config: object)
   traceDependencies(): Array<string>
+  traceModuleGraph(): unknown
   /** async compile, return promise */
   compile(): object
   /** sync compile */
