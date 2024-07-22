@@ -164,7 +164,6 @@ export async function resolveConfig(
 
   const mergedUserConfig = mergeFarmCliConfig(inlineOptions, config);
 
-  // 这里哈 已经 用了 mergeUserConfig 了 后面看看怎么优化一下 下面那个 normalizeUserCompilationFnConfig没必要传两个了哈
   const resolvedUserConfig = await resolveUserConfig(
     mergedUserConfig,
     configFilePath,
@@ -181,8 +180,6 @@ export async function resolveConfig(
   // if (isHandleServerPortConflict) {
   //   await handleServerPortConflict(resolvedUserConfig, logger, mode);
   // }
-  // console.log(inlineOptions, "我是 inlineOptions");
-  // console.log(mergedUserConfig, '我是 mergedUserConfig');
 
   resolvedUserConfig.compilation = await normalizeUserCompilationConfig(
     resolvedUserConfig,
@@ -233,13 +230,10 @@ export async function normalizeUserCompilationConfig(
   const { compilation, root, clearScreen } = resolvedUserConfig;
 
   // resolve root path
+
   const resolvedRootPath = normalizePath(root);
 
   resolvedUserConfig.root = resolvedRootPath;
-
-  // if (!userConfig.compilation) {
-  //   userConfig.compilation = {};
-  // }
 
   // if normalize default config, skip check input option
   const inputIndexConfig = checkCompilationInputValue(
@@ -381,12 +375,14 @@ export async function normalizeUserCompilationConfig(
     resolvedCompilation.mode = mode;
   }
   setProcessEnv(resolvedCompilation.mode);
+
   // TODO add targetEnv `lib-browser` and `lib-node` support
   const is_entry_html =
     Object.keys(resolvedCompilation.input).length === 0 ||
-    Object.values(resolvedCompilation.input).some((value) =>
-      value.endsWith('.html')
-    );
+    Object.values(resolvedCompilation.input)
+      .filter(Boolean)
+      .some((value) => value.endsWith('.html'));
+
   if (
     resolvedCompilation.output.targetEnv !== 'node' &&
     isArray(resolvedCompilation.runtime.plugins) &&
@@ -867,13 +863,14 @@ export async function loadConfigFile(
 function checkCompilationInputValue(userConfig: UserConfig, logger: Logger) {
   const { compilation } = userConfig;
   const targetEnv = compilation?.output?.targetEnv;
+  const inputValue = Object.values(compilation?.input).filter(Boolean);
   const isTargetNode = targetEnv === 'node';
   const defaultHtmlPath = './index.html';
   let inputIndexConfig: { index?: string } = { index: '' };
   let errorMessage = '';
 
   // Check if input is specified
-  if (!isEmptyObject(compilation?.input)) {
+  if (!isEmptyObject(compilation?.input) && inputValue.length) {
     inputIndexConfig = compilation?.input;
   } else {
     if (isTargetNode) {
@@ -964,8 +961,8 @@ export async function resolvePlugins(
 export async function resolveDefaultUserConfig(options: any) {
   const { inlineOptions, format, outputPath, fileName, configFilePath } =
     options;
-  const baseConfig: UserConfig = {
-    root: inlineOptions.root,
+  const defaultConfig: UserConfig = {
+    root: path.resolve(inlineOptions.root ?? '.'),
     compilation: {
       input: {
         [fileName]: configFilePath
@@ -1002,13 +999,10 @@ export async function resolveDefaultUserConfig(options: any) {
   };
 
   const resolvedUserConfig: ResolvedUserConfig = await resolveUserConfig(
-    baseConfig,
+    defaultConfig,
     undefined,
     'development'
   );
-
-  console.log(resolvedUserConfig, '我是 resolvedUserConfig');
-  console.log(baseConfig, '我是 baseConfig');
 
   const normalizedConfig = await normalizeUserCompilationConfig(
     resolvedUserConfig,
@@ -1025,11 +1019,7 @@ export async function resolveUserConfig(
   logger: Logger = new Logger()
 ): Promise<ResolvedUserConfig> {
   const resolvedUserConfig = {
-    ...userConfig,
-    compilation: {
-      ...userConfig.compilation
-      // external: []
-    }
+    ...userConfig
   } as ResolvedUserConfig;
 
   // set internal config

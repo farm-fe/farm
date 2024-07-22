@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
-
 import { cac } from 'cac';
+
 import {
   handleAsyncOperationErrors,
   resolveCliConfig,
@@ -8,7 +8,7 @@ import {
   resolveCore
 } from './utils.js';
 
-import { UserConfig } from '@farmfe/core';
+import type { UserConfig } from '@farmfe/core';
 import type {
   CleanOptions,
   CliBuildOptions,
@@ -61,27 +61,48 @@ cli
     '--strictPort',
     '[boolean] specified port is already in use, exit with error (default: true)'
   )
+  .option('--target <target>', '[string] transpile targetEnv node, browser')
+  .option('--format <format>', '[string] transpile format esm, commonjs')
+  .option('--sourcemap', '[boolean] output source maps for build')
+  .option(
+    '--treeShaking',
+    '[boolean] Eliminate useless code without side effects'
+  )
+  .option('--minify', '[boolean] code compression at build time')
   .action(
-    async (rootPath: string, options: CliServerOptions & GlobalCliOptions) => {
+    async (
+      rootPath: string,
+      options: CliServerOptions & CliBuildOptions & GlobalCliOptions
+    ) => {
       const { root, configPath } = resolveCliConfig(rootPath, options);
       const resolveOptions = resolveCommandOptions(options);
 
       const defaultOptions = {
         root,
-        compilation: {
-          lazyCompilation: options.lazy
-        },
         server: resolveOptions,
         clearScreen: options.clearScreen,
         configPath,
-        mode: options.mode
+        mode: options.mode,
+        compilation: {
+          lazyCompilation: options.lazy,
+          output: {
+            path: options?.outDir,
+            targetEnv: options?.target,
+            format: options?.format
+          },
+          input: {
+            index: options?.input
+          },
+          sourcemap: options.sourcemap,
+          minify: options.minify,
+          treeShaking: options.treeShaking
+        }
       };
 
-      // const { start } = await resolveCore();
-      const { startRefactorCli } = await resolveCore();
+      const { start } = await resolveCore();
 
       handleAsyncOperationErrors(
-        startRefactorCli(defaultOptions),
+        start(defaultOptions),
         'Failed to start server'
       );
     }
@@ -122,20 +143,9 @@ cli
       }
     };
 
-    const { root: path, configPath } = resolveCliConfig(root, options);
+    const { build } = await resolveCore();
 
-    const defaultOption2 = {
-      root: path,
-      configPath,
-      ...getOptionFromBuildOption(options)
-    };
-
-    // const { build } = await resolveCore();
-    const { buildRefactorCli } = await resolveCore();
-    handleAsyncOperationErrors(
-      buildRefactorCli(defaultOption2),
-      'error during build'
-    );
+    handleAsyncOperationErrors(build(defaultOptions), 'error during build');
   });
 
 cli
@@ -172,6 +182,7 @@ cli
     };
 
     const { watch } = await resolveCore();
+
     handleAsyncOperationErrors(
       watch(defaultOptions),
       'error during watch project'
@@ -206,6 +217,7 @@ cli
       };
 
       const { preview } = await resolveCore();
+
       handleAsyncOperationErrors(
         preview(defaultOptions),
         'Failed to start preview server'
@@ -247,39 +259,3 @@ cli.help();
 cli.version(version);
 
 cli.parse();
-
-export function getOptionFromBuildOption(options: any) {
-  const {
-    input,
-    outDir,
-    target,
-    format,
-    watch,
-    minify,
-    sourcemap,
-    treeShaking,
-    mode
-  } = options;
-
-  const output: UserConfig['compilation']['output'] = {
-    ...(outDir && { path: outDir }),
-    ...(target && { targetEnv: target }),
-    ...(format && { format })
-  };
-
-  const compilation: UserConfig['compilation'] = {
-    input: { ...(input && { index: input }) },
-    output,
-    ...(watch && { watch }),
-    ...(minify && { minify }),
-    ...(sourcemap && { sourcemap }),
-    ...(treeShaking && { treeShaking })
-  };
-
-  const defaultOptions: any & UserConfig = {
-    compilation,
-    ...(mode && { mode })
-  };
-
-  return defaultOptions;
-}
