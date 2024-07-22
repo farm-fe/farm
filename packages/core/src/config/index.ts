@@ -164,7 +164,7 @@ export async function resolveConfig(
 
   const mergedUserConfig = mergeFarmCliConfig(inlineOptions, config);
 
-  // 这里哈 已经 用了 mergeUserConfig 了 后面看看怎么优化一下 下面那个 normalizeUserCompilationConfig没必要传两个了哈
+  // 这里哈 已经 用了 mergeUserConfig 了 后面看看怎么优化一下 下面那个 normalizeUserCompilationFnConfig没必要传两个了哈
   const resolvedUserConfig = await resolveUserConfig(
     mergedUserConfig,
     configFilePath,
@@ -181,16 +181,13 @@ export async function resolveConfig(
   // if (isHandleServerPortConflict) {
   //   await handleServerPortConflict(resolvedUserConfig, logger, mode);
   // }
-  console.log(inlineOptions);
-  console.log(mergedUserConfig, '我是 mergedUserConfig');
+  // console.log(inlineOptions, "我是 inlineOptions");
+  // console.log(mergedUserConfig, '我是 mergedUserConfig');
 
   resolvedUserConfig.compilation = await normalizeUserCompilationConfig(
     resolvedUserConfig,
-    mergedUserConfig,
     'development'
   );
-
-  // console.log(resolvedUserConfig.compilation);
 
   resolvedUserConfig.root = resolvedUserConfig.compilation.root;
   resolvedUserConfig.jsPlugins = sortFarmJsPlugins;
@@ -230,9 +227,7 @@ export async function resolveConfig(
  */
 export async function normalizeUserCompilationConfig(
   resolvedUserConfig: ResolvedUserConfig,
-  userConfig: UserConfig,
   mode: CompilationMode = 'development',
-  isDefault = false,
   logger: Logger = new Logger()
 ): Promise<ResolvedCompilation> {
   const { compilation, root, clearScreen } = resolvedUserConfig;
@@ -242,14 +237,15 @@ export async function normalizeUserCompilationConfig(
 
   resolvedUserConfig.root = resolvedRootPath;
 
-  if (!userConfig.compilation) {
-    userConfig.compilation = {};
-  }
+  // if (!userConfig.compilation) {
+  //   userConfig.compilation = {};
+  // }
 
   // if normalize default config, skip check input option
-  const inputIndexConfig = !isDefault
-    ? checkCompilationInputValue(userConfig, logger)
-    : {};
+  const inputIndexConfig = checkCompilationInputValue(
+    resolvedUserConfig,
+    logger
+  );
 
   const resolvedCompilation: ResolvedCompilation = merge(
     {},
@@ -271,7 +267,7 @@ export async function normalizeUserCompilationConfig(
   resolvedCompilation.coreLibPath = bindingPath;
 
   normalizeOutput(resolvedCompilation, isProduction, logger);
-  normalizeExternal(userConfig, resolvedCompilation);
+  normalizeExternal(resolvedUserConfig, resolvedCompilation);
 
   // eslint-disable-next-line @typescript-eslint/ban-ts-comment
   // @ts-ignore do not check type for this internal option
@@ -518,10 +514,6 @@ export async function normalizeUserCompilationConfig(
         };
       if (resolvedCompilation.script.parser.tsConfig !== undefined)
         resolvedCompilation.script.parser.tsConfig.decorators = true;
-      else
-        userConfig.compilation.script.parser.tsConfig = {
-          decorators: true
-        };
     }
 
   // normalize persistent cache at last
@@ -1015,9 +1007,11 @@ export async function resolveDefaultUserConfig(options: any) {
     'development'
   );
 
+  console.log(resolvedUserConfig, '我是 resolvedUserConfig');
+  console.log(baseConfig, '我是 baseConfig');
+
   const normalizedConfig = await normalizeUserCompilationConfig(
     resolvedUserConfig,
-    baseConfig,
     'development'
   );
 
@@ -1033,8 +1027,8 @@ export async function resolveUserConfig(
   const resolvedUserConfig = {
     ...userConfig,
     compilation: {
-      ...userConfig.compilation,
-      external: []
+      ...userConfig.compilation
+      // external: []
     }
   } as ResolvedUserConfig;
 
