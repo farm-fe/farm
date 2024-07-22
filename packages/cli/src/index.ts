@@ -1,11 +1,11 @@
-import { readFileSync } from 'node:fs';
 import { cac } from 'cac';
 
 import {
   handleAsyncOperationErrors,
   resolveCliConfig,
   resolveCommandOptions,
-  resolveCore
+  resolveCore,
+  version
 } from './utils.js';
 
 import type { UserConfig } from '@farmfe/core';
@@ -16,10 +16,6 @@ import type {
   CliServerOptions,
   GlobalCliOptions
 } from './types.js';
-
-const { version } = JSON.parse(
-  readFileSync(new URL('../package.json', import.meta.url)).toString()
-);
 
 const cli = cac('farm');
 
@@ -71,17 +67,16 @@ cli
   .option('--minify', '[boolean] code compression at build time')
   .action(
     async (
-      rootPath: string,
+      root: string,
       options: CliServerOptions & CliBuildOptions & GlobalCliOptions
     ) => {
-      const { root, configPath } = resolveCliConfig(rootPath, options);
       const resolveOptions = resolveCommandOptions(options);
 
       const defaultOptions = {
         root,
         server: resolveOptions,
         clearScreen: options.clearScreen,
-        configPath,
+        configFile: options.config,
         mode: options.mode,
         compilation: {
           lazyCompilation: options.lazy,
@@ -233,16 +228,12 @@ cli
   )
   .action(async (rootPath: string, options: CleanOptions) => {
     const { root } = resolveCliConfig(rootPath, options);
-    const { clean } = await resolveCore();
 
-    try {
-      await clean(root, options?.recursive);
-    } catch (e) {
-      const { Logger } = await import('@farmfe/core');
-      const logger = new Logger();
-      logger.error(`Failed to clean cache: \n ${e.stack}`);
-      process.exit(1);
-    }
+    const { clean } = await resolveCore();
+    handleAsyncOperationErrors(
+      clean(root, options?.recursive),
+      'Failed to clean cache'
+    );
   });
 
 // Listening for unknown command
@@ -250,7 +241,7 @@ cli.on('command:*', async () => {
   const { Logger } = await import('@farmfe/core');
   const logger = new Logger();
   logger.error(
-    'Unknown command place Run "farm --help" to see available commands'
+    `Unknown command place Run "farm --help" to see available commands`
   );
 });
 
