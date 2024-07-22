@@ -23,6 +23,7 @@ pub use farmfe_plugin_runtime::RUNTIME_SUFFIX;
 
 pub mod build;
 pub mod generate;
+pub mod trace_module_graph;
 pub mod update;
 
 pub struct Compiler {
