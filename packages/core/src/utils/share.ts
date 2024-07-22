@@ -71,7 +71,7 @@ export const version = JSON.parse(
 ).version;
 
 export function normalizePath(id: string): string {
-  return path.posix.normalize(id);
+  return path.posix.normalize(isWindows ? id.replace(/\\/g, '/') : id);
 }
 
 export function normalizeBasePath(basePath: string): string {

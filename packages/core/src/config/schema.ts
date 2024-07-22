@@ -44,8 +44,7 @@ const compilationConfigSchema = z
             'browser-legacy',
             'browser-esnext',
             'browser-es2015',
-            'browser-es2017',
-            'library'
+            'browser-es2017'
           ])
           .optional(),
         format: z.enum(['cjs', 'esm']).optional()
@@ -217,8 +216,7 @@ const compilationConfigSchema = z
               z.literal('minify-module'),
               z.literal('minify-resource-pot')
             ])
-            .optional(),
-          moduleDecls: z.boolean().optional()
+            .optional()
         })
       ])
       .optional(),

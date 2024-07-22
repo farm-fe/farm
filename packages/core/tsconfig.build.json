@@ -7,7 +7,7 @@
     "noUnusedLocals": false
   },
   "include": ["src/**/*.ts", "binding/**/*.d.ts"],
-  "exclude": ["src/**/*.spec.ts", "src/newServer/**"],
+  "exclude": ["src/**/*.spec.ts"],
   "references": [
     {
       "path": "../utils/tsconfig.json"
