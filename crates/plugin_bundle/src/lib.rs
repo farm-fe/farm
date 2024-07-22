@@ -61,12 +61,12 @@ impl Plugin for FarmPluginBundle {
       .collect::<Vec<_>>();
     let mut shared_bundle = SharedBundle::new(r, &module_graph, context)?;
 
-    let runtime_resource_pot = resource_pots
+    let runtime_resource_pot_id = resource_pots
       .iter()
       .find(|item| matches!(item.resource_pot_type, ResourcePotType::Runtime))
       .map(|i| i.id.clone());
 
-    if let Some(runtime_resource_pot_id) = runtime_resource_pot {
+    if let Some(runtime_resource_pot_id) = runtime_resource_pot_id {
       let polyfill = &mut shared_bundle
         .bundle_map
         .get_mut(&runtime_resource_pot_id)

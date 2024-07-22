@@ -1,5 +1,9 @@
 use std::{
-  cell::RefCell, cmp::Ordering, collections::{HashMap, HashSet}, rc::Rc, sync::Arc
+  cell::RefCell,
+  cmp::Ordering,
+  collections::{HashMap, HashSet},
+  rc::Rc,
+  sync::Arc,
 };
 
 use farmfe_core::{
@@ -964,7 +968,12 @@ impl<'a> BundleAnalyzer<'a> {
       bundle.append("})());", None);
     }
 
-    if !self.polyfill.is_empty() {
+    let is_runtime_resource_pot = matches!(
+      self.resource_pot.resource_pot_type,
+      ResourcePotType::Runtime
+    );
+
+    if !self.polyfill.is_empty() && is_runtime_resource_pot {
       for item in self.polyfill.to_str() {
         bundle.prepend(&item);
       }

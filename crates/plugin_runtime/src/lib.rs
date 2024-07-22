@@ -59,11 +59,6 @@ impl Plugin for FarmPluginRuntime {
   }
 
   fn config(&self, config: &mut Config) -> farmfe_core::error::Result<Option<()>> {
-    // library bundle does not contain runtime
-    if config.output.target_env.is_library() {
-      return Ok(None);
-    }
-
     // runtime package entry file
     if !config.runtime.path.is_empty() {
       config.input.insert(
@@ -446,10 +441,6 @@ impl Plugin for FarmPluginRuntime {
     param: &mut PluginFinalizeResourcesHookParams,
     context: &Arc<CompilationContext>,
   ) -> farmfe_core::error::Result<Option<()>> {
-    if context.config.output.target_env.is_library() {
-      return Ok(None);
-    }
-
     let async_modules = self.get_async_modules(context);
     let async_modules = async_modules.downcast_ref::<HashSet<ModuleId>>().unwrap();
     handle_entry_resources::handle_entry_resources(param.resources_map, context, async_modules);

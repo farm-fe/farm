@@ -56,7 +56,6 @@ pub fn parse_module_item(string: &str) -> Result<ModuleItem> {
 
 pub trait OptionToResult<T> {
   fn to_result<S: ToString>(self, error: S) -> Result<T>;
-  fn to_result_with_error(self, error: CompilationError) -> Result<T>;
 }
 
 impl<T> OptionToResult<T> for std::option::Option<T> {
@@ -64,13 +63,6 @@ impl<T> OptionToResult<T> for std::option::Option<T> {
     match self {
       Some(v) => Ok(v),
       None => Err(CompilationError::GenericError(error.to_string())),
-    }
-  }
-
-  fn to_result_with_error(self, error: CompilationError) -> Result<T> {
-    match self {
-      Some(v) => Ok(v),
-      None => Err(error),
     }
   }
 }
