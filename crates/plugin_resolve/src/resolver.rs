@@ -151,7 +151,7 @@ impl Resolver {
     context: &Arc<CompilationContext>,
   ) -> Option<PluginResolveHookResult> {
     farm_profile_function!("try_browser".to_string());
-    if context.config.output.target_env != TargetEnv::Browser {
+    if !context.config.output.target_env.is_browser() {
       return None;
     }
 
@@ -650,7 +650,7 @@ impl Resolver {
       resolve_exports_or_imports(&package_json_info, subpath, "exports", kind, context)
         .map(|resolve_exports_path| resolve_exports_path.get(0).unwrap().to_string())
         .or_else(|| {
-          if context.config.output.target_env == TargetEnv::Browser {
+          if context.config.output.target_env.is_browser() {
             try_browser_map(
               &package_json_info,
               BrowserMapType::Source(subpath.to_string()),
@@ -716,7 +716,7 @@ impl Resolver {
           .main_fields
           .iter()
           .find_map(|main_field| {
-            if main_field == "browser" && context.config.output.target_env == TargetEnv::Node {
+            if main_field == "browser" && !context.config.output.target_env.is_browser() {
               return None;
             }
             raw_package_json_info

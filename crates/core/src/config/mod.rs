@@ -115,9 +115,28 @@ pub enum TargetEnv {
   Browser,
   #[serde(rename = "node")]
   Node,
+  /// [TargetEnv::Library] is alias of [TargetEnv::Custom("library-browser")]
   #[serde(rename = "library")]
   Library,
+  #[serde(untagged)]
   Custom(String),
+}
+
+impl TargetEnv {
+  pub fn is_browser(&self) -> bool {
+    matches!(self, TargetEnv::Browser | TargetEnv::Library)
+      || matches!(self, TargetEnv::Custom(custom) if custom == "library-browser")
+  }
+
+  pub fn is_node(&self) -> bool {
+    matches!(self, TargetEnv::Node)
+      || matches!(self, TargetEnv::Custom(custom) if custom == "library-node")
+  }
+
+  pub fn is_library(&self) -> bool {
+    matches!(self, TargetEnv::Library)
+      || matches!(self, TargetEnv::Custom(custom) if custom == "library-browser" || custom == "library-node")
+  }
 }
 
 #[derive(Debug, Copy, Clone, Serialize, Deserialize, Eq, PartialEq, Hash, Default)]
@@ -354,5 +373,39 @@ mod tests {
     let config: SourcemapConfig = serde_json::from_str("\"all\"").expect("failed to parse");
 
     assert!(matches!(config, SourcemapConfig::All));
+  }
+
+  #[test]
+  fn target_env() {
+    use super::TargetEnv;
+    let env = TargetEnv::Browser;
+    assert!(env.is_browser());
+    assert!(!env.is_node());
+    assert!(!env.is_library());
+
+    let env = TargetEnv::Node;
+    assert!(env.is_node());
+    assert!(!env.is_browser());
+    assert!(!env.is_library());
+
+    let env = TargetEnv::Library;
+    assert!(env.is_library());
+    assert!(!env.is_node());
+    assert!(env.is_browser());
+
+    let env = TargetEnv::Custom("library-browser".to_string());
+    assert!(env.is_library());
+    assert!(!env.is_node());
+    assert!(env.is_browser());
+
+    let env = TargetEnv::Custom("library-node".to_string());
+    assert!(env.is_library());
+    assert!(env.is_node());
+    assert!(!env.is_browser());
+
+    let env: TargetEnv = serde_json::from_str("\"library-browser\"").expect("failed to parse");
+    assert!(env.is_library());
+    assert!(!env.is_node());
+    assert!(env.is_browser());
   }
 }
