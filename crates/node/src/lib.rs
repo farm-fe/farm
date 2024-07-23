@@ -5,7 +5,7 @@
 use std::path::PathBuf;
 use std::{collections::HashMap, path::Path, sync::Arc};
 
-use farmfe_compiler::Compiler;
+use farmfe_compiler::{trace_module_graph::TracedModuleGraph, Compiler};
 
 pub mod plugin_adapters;
 pub mod plugin_toolkit;
@@ -46,6 +46,42 @@ extern crate napi_derive;
 pub struct WatchDiffResult {
   pub add: Vec<String>,
   pub remove: Vec<String>,
+}
+
+#[napi(object)]
+pub struct JsTracedModule {
+  pub id: String,
+  pub content_hash: String,
+  pub package_name: String,
+  pub package_version: String,
+}
+
+#[napi(object)]
+pub struct JsTracedModuleGraph {
+  pub root: String,
+  pub modules: Vec<JsTracedModule>,
+  pub edges: HashMap<String, Vec<String>>,
+  pub reverse_edges: HashMap<String, Vec<String>>,
+}
+
+impl From<TracedModuleGraph> for JsTracedModuleGraph {
+  fn from(t: TracedModuleGraph) -> Self {
+    Self {
+      root: t.root,
+      modules: t
+        .modules
+        .into_iter()
+        .map(|m| JsTracedModule {
+          id: m.id,
+          content_hash: m.content_hash,
+          package_name: m.package_name,
+          package_version: m.package_version,
+        })
+        .collect(),
+      edges: t.edges,
+      reverse_edges: t.reverse_edges,
+    }
+  }
 }
 
 #[napi(object)]
@@ -206,21 +242,49 @@ impl JsCompiler {
   }
 
   #[napi]
-  pub fn trace_dependencies(&self) -> napi::Result<Vec<String>> {
-    self
-      .compiler
-      .trace_dependencies()
-      .map_err(|e| napi::Error::new(Status::GenericFailure, format!("{}", e)))
+  pub fn trace_dependencies(&self, e: Env) -> napi::Result<JsObject> {
+    let (promise, result) =
+      e.create_deferred::<Vec<String>, Box<dyn FnOnce(Env) -> napi::Result<Vec<String>>>>()?;
+
+    let compiler = self.compiler.clone();
+    self.compiler.thread_pool.spawn(move || {
+      match compiler
+        .trace_dependencies()
+        .map_err(|e| napi::Error::new(Status::GenericFailure, format!("{}", e)))
+      {
+        Ok(deps) => {
+          promise.resolve(Box::new(|_| Ok(deps)));
+        }
+        Err(err) => {
+          promise.reject(err);
+        }
+      }
+    });
+
+    Ok(result)
   }
 
   #[napi]
-  pub fn trace_module_graph(&self, e: Env) -> napi::Result<JsUnknown> {
-    let graph = self
-      .compiler
-      .trace_module_graph()
-      .map_err(|e| napi::Error::new(Status::GenericFailure, format!("{}", e)))?;
+  pub fn trace_module_graph(&self, e: Env) -> napi::Result<JsObject> {
+    let (promise, result) =
+      e.create_deferred::<JsTracedModuleGraph, Box<dyn FnOnce(Env) -> napi::Result<JsTracedModuleGraph>>>()?;
 
-    e.to_js_value(&graph)
+    let compiler = self.compiler.clone();
+    self.compiler.thread_pool.spawn(move || {
+      match compiler
+        .trace_module_graph()
+        .map_err(|e| napi::Error::new(Status::GenericFailure, format!("{}", e)))
+      {
+        Ok(graph) => {
+          promise.resolve(Box::new(|_| Ok(graph.into())));
+        }
+        Err(err) => {
+          promise.reject(err);
+        }
+      }
+    });
+
+    Ok(result)
   }
 
   /// async compile, return promise

@@ -24,7 +24,7 @@ export async function traceDependencies(
     }
 
     const compiler = createTraceDepCompiler(configFilePath, logger);
-    const files = await compiler.traceDependencies();
+    const files = (await compiler.traceDependencies()) as string[];
     return files;
   } catch (error) {
     const errorMessage = convertErrorMessage(error);
