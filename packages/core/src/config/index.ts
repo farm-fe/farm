@@ -115,44 +115,48 @@ export async function resolveConfig(
 ): Promise<ResolvedUserConfig> {
   logger = logger ?? new Logger();
 
-  let mode = defaultMode;
-  const envMode = inlineOptions.mode || defaultMode;
+  const compileMode = defaultMode;
+  const mode = inlineOptions.mode || defaultMode;
   const isNodeEnvSet = !!process.env.NODE_ENV;
-  inlineOptions.mode = inlineOptions.mode ?? mode;
+  inlineOptions.mode = mode;
+
   if (!isNodeEnvSet) {
     setProcessEnv(defaultNodeEnv);
   }
 
   const configEnv: ConfigEnv = {
-    mode: envMode,
+    mode,
     command,
     isPreview
   };
 
   // configPath may be file or directory
-  let { configPath } = inlineOptions;
-  const { configFile } = inlineOptions;
+  const { configFile, configPath: initialConfigPath } = inlineOptions;
   const loadedUserConfig: any = await loadConfigFile(
     configFile,
     inlineOptions,
     configEnv
   );
 
-  let rawConfig: UserConfig = mergeFarmCliConfig(inlineOptions, {});
+  let rawConfig: UserConfig = mergeFarmCliConfig(
+    inlineOptions,
+    {},
+    compileMode
+  );
+  let configPath = initialConfigPath;
 
   if (loadedUserConfig) {
     configPath = loadedUserConfig.configFilePath;
     rawConfig = mergeConfig(rawConfig, loadedUserConfig.config);
   }
-  rawConfig.compilation.mode =
-    loadedUserConfig?.config?.compilation?.mode ?? mode;
+
   const { config: userConfig, configFilePath } = {
     configFilePath: configPath,
     config: rawConfig
   };
 
   const { jsPlugins, vitePlugins, rustPlugins, vitePluginAdapters } =
-    await resolvePlugins(userConfig, logger, mode);
+    await resolvePlugins(userConfig, logger, compileMode);
 
   const sortFarmJsPlugins = getSortedPlugins([
     ...jsPlugins,
@@ -162,19 +166,17 @@ export async function resolveConfig(
 
   const config = await resolveConfigHook(userConfig, sortFarmJsPlugins);
 
-  const mergedUserConfig = mergeFarmCliConfig(inlineOptions, config);
-
   const resolvedUserConfig = await resolveUserConfig(
-    mergedUserConfig,
+    config,
     configFilePath,
-    mode,
+    compileMode,
     logger
   );
 
   // normalize server config first cause it may be used in normalizeUserCompilationFnConfig
   resolvedUserConfig.server = normalizeDevServerConfig(
     resolvedUserConfig.server,
-    mode
+    compileMode
   );
 
   // if (isHandleServerPortConflict) {
@@ -190,7 +192,7 @@ export async function resolveConfig(
   resolvedUserConfig.jsPlugins = sortFarmJsPlugins;
   resolvedUserConfig.rustPlugins = rustPlugins;
 
-  // // Temporarily dealing with alias objects and arrays in js will be unified in rust in the future.]
+  // Temporarily dealing with alias objects and arrays in js will be unified in rust in the future.]
   if (vitePlugins.length) {
     resolvedUserConfig.compilation.resolve.alias = getAliasEntries(
       resolvedUserConfig.compilation.resolve.alias
@@ -199,7 +201,7 @@ export async function resolveConfig(
 
   await resolveConfigResolvedHook(resolvedUserConfig, sortFarmJsPlugins); // Fix: Await the Promise<void> and pass the resolved value to the function.
 
-  // // TODO Temporarily solve the problem of alias adaptation to vite
+  //TODO Temporarily solve the problem of alias adaptation to vite
   if (resolvedUserConfig.compilation?.resolve?.alias && vitePlugins.length) {
     resolvedUserConfig.compilation.resolve.alias = transformAliasWithVite(
       resolvedUserConfig.compilation.resolve.alias as unknown as Array<Alias>
