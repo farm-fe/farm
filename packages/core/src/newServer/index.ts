@@ -77,7 +77,7 @@ export class newServer {
   httpsOptions: HttpsServerOptions;
   publicDir?: string;
   publicPath?: string;
-  server?: HttpServer;
+  httpServer?: HttpServer;
   watcher: FileWatcher;
 
   constructor(compiler: CompilerType, config: ResolvedUserConfig) {
@@ -105,7 +105,7 @@ export class newServer {
     this.httpsOptions = await resolveHttpsConfig(serverConfig.https);
     const { middlewareMode } = serverConfig;
     const middlewares = connect() as connect.Server;
-    this.server = middlewareMode
+    this.httpServer = middlewareMode
       ? null
       : await resolveHttpServer(
           serverConfig as CommonServerOptions,
@@ -119,11 +119,11 @@ export class newServer {
   }
 
   public async createWebSocketServer() {
-    if (!this.server) {
+    if (!this.httpServer) {
       throw new Error('Websocket requires a server.');
     }
     const wsServer = new WsServer(
-      this.server,
+      this.httpServer,
       this.config,
       this.httpsOptions,
       this.publicPath,

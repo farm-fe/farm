@@ -38,6 +38,7 @@ import {
   normalizePublicDir,
   resolveConfig
 } from './config/index.js';
+import { newServer } from './newServer/index.js';
 import { Server } from './server/index.js';
 import { compilerHandler } from './utils/build.js';
 import { colors } from './utils/color.js';
@@ -74,70 +75,19 @@ export async function start(
     );
 
     const compiler = await createCompiler(resolvedUserConfig, logger);
+    const server = new newServer(compiler, resolvedUserConfig);
+    await server.createServer();
+    console.log(server.httpServer);
 
-    const devServer = await createDevServer(
-      compiler,
-      resolvedUserConfig,
-      logger
-    );
+    // const devServer = await createDevServer(
+    //   compiler,
+    //   resolvedUserConfig,
+    //   logger
+    // );
 
-    await devServer.listen();
+    // await devServer.listen();
   } catch (error) {
     logger.error('Failed to start the server', { exit: true, error });
-  }
-}
-
-export async function startRefactorCli(
-  inlineConfig?: FarmCliOptions & UserConfig
-): Promise<void> {
-  inlineConfig = inlineConfig ?? {};
-  const logger = inlineConfig.logger ?? new Logger();
-  setProcessEnv('development');
-
-  try {
-    const resolvedUserConfig = await resolveConfig(
-      inlineConfig,
-      'start',
-      'development',
-      'development',
-      false
-    );
-
-    const compiler = await createCompiler(resolvedUserConfig, logger);
-
-    const devServer = await createDevServer(
-      compiler,
-      resolvedUserConfig,
-      logger
-    );
-
-    await devServer.listen();
-  } catch (error) {
-    logger.error('Failed to start the server', { exit: true, error });
-  }
-}
-
-export async function buildRefactorCli(
-  inlineConfig?: FarmCliOptions & UserConfig
-): Promise<void> {
-  inlineConfig = inlineConfig ?? {};
-  const logger = inlineConfig.logger ?? new Logger();
-  setProcessEnv('production');
-
-  try {
-    const resolvedUserConfig = await resolveConfig(
-      inlineConfig,
-      'build',
-      'production',
-      'production',
-      false
-    );
-
-    await createBundleHandler(resolvedUserConfig, logger);
-    // copy resources under publicDir to output.path
-    await copyPublicDirectory(resolvedUserConfig, logger);
-  } catch (err) {
-    logger.error(`Failed to build: ${err}`, { exit: true });
   }
 }
 
