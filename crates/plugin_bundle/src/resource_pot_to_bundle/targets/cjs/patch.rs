@@ -165,20 +165,18 @@ impl CjsPatch {
     if module_analyzer.is_commonjs() {
       let ast = module_analyzer.ast.body.take();
 
-      let new_body = CjsPatch::wrap_commonjs(
+      module_analyzer_manager.set_ast_body(
         module_id,
-        bundle_variable,
-        &module_analyzer_manager.module_global_uniq_name,
-        ast,
-        context.config.mode.clone(),
-        polyfill,
-      )
-      .unwrap();
-
-      module_analyzer_manager
-        .module_analyzer_mut_unchecked(module_id)
-        .ast
-        .body = new_body;
+        CjsPatch::wrap_commonjs(
+          module_id,
+          bundle_variable,
+          &module_analyzer_manager.module_global_uniq_name,
+          ast,
+          context.config.mode.clone(),
+          polyfill,
+        )
+        .unwrap(),
+      );
     }
 
     if let Some(import) = bundle_reference

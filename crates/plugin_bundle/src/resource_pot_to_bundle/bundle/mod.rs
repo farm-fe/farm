@@ -15,7 +15,7 @@ use farmfe_core::{
   swc_common::{util::take::Take, DUMMY_SP},
   swc_ecma_ast::{
     self, BindingIdent, CallExpr, ClassDecl, Decl, EmptyStmt, Expr, ExprStmt, FnDecl, Ident,
-    ModuleDecl, ModuleItem, Stmt, VarDecl, VarDeclarator,
+    Module, ModuleDecl, ModuleItem, Stmt, VarDecl, VarDeclarator,
   },
 };
 use farmfe_toolkit::{script::swc_try_with::try_with, swc_ecma_visit::VisitMutWith};
@@ -31,6 +31,7 @@ use crate::resource_pot_to_bundle::targets::{
 use self::reference::ReferenceMap;
 
 use super::{
+  common::OptionToResult,
   defined_idents_collector::RenameIdent,
   modules_analyzer::module_analyzer::{
     ExportSpecifierInfo, ImportSpecifierInfo, ModuleAnalyzer, StmtAction,
@@ -43,6 +44,9 @@ pub struct ModuleAnalyzerManager<'a> {
   pub module_map: HashMap<ModuleId, ModuleAnalyzer>,
   pub namespace_modules: HashSet<ModuleId>,
 
+  ///
+  ///
+  /// TODO: dynamic generate
   ///
   /// ```js
   /// // namespace/moduleA.js
@@ -114,6 +118,12 @@ impl ModuleGlobalUniqName {
       .module_map
       .get(module_id)
       .and_then(|item| item.commonjs)
+  }
+
+  pub fn default_name_result(&self, module_id: &ModuleId) -> Result<usize> {
+    self
+      .default_name(module_id)
+      .to_result("not found module {:?} default name")
   }
 
   fn entry_module(&mut self, module_id: &ModuleId) -> &mut ModuleGlobalName {
@@ -225,11 +235,21 @@ impl<'a> ModuleAnalyzerManager<'a> {
     Ok(())
   }
 
+  #[inline]
   pub fn is_commonjs(&self, module_id: &ModuleId) -> bool {
     self
       .module_map
       .get(module_id)
       .map(|item| item.is_commonjs())
+      .unwrap_or(false)
+  }
+
+  #[inline]
+  pub fn is_entry(&self, module_id: &ModuleId) -> bool {
+    self
+      .module_map
+      .get(module_id)
+      .map(|item| item.entry)
       .unwrap_or(false)
   }
 
@@ -286,6 +306,16 @@ impl<'a> ModuleAnalyzerManager<'a> {
     self.module_map.get_mut(module_id).unwrap()
   }
 
+  #[inline]
+  pub fn set_ast_body(&mut self, module_id: &ModuleId, ast_body: Vec<ModuleItem>) {
+    self.module_analyzer_mut_unchecked(module_id).ast.body = ast_body;
+  }
+
+  #[inline]
+  pub fn set_ast(&mut self, module_id: &ModuleId, ast_body: Module) {
+    self.module_analyzer_mut_unchecked(module_id).ast = ast_body;
+  }
+
   pub fn module_analyzer_by_source(
     &self,
     module_id: &ModuleId,
@@ -331,8 +361,6 @@ impl<'a> ModuleAnalyzerManager<'a> {
     module_id: &ModuleId,
     bundle_variable: &BundleVariable,
   ) -> Arc<ReferenceMap> {
-    let mut map = ReferenceMap::new(self.module_system(module_id));
-
     let exports_stmts = if let Some(module_analyzer) = self.module_analyzer(module_id) {
       if let Some(export_names) = &module_analyzer.export_names {
         return export_names.clone();
@@ -346,6 +374,13 @@ impl<'a> ModuleAnalyzerManager<'a> {
     } else {
       vec![]
     };
+
+    let mut map = ReferenceMap::new(self.module_system(module_id));
+
+    // preventing circular references
+    if let Some(m) = self.module_analyzer_mut(module_id) {
+      m.export_names = Some(Arc::new(map.clone()));
+    }
 
     for export in exports_stmts {
       for specify in export.specifiers.iter() {
@@ -395,6 +430,10 @@ impl<'a> ModuleAnalyzerManager<'a> {
           }
         }
       }
+    }
+
+    if self.is_commonjs(module_id) && self.module_analyzer(module_id).is_some_and(|m| m.entry) {
+      // map
     }
 
     if let Some(m) = self.module_analyzer_mut(module_id) {
@@ -696,7 +735,7 @@ impl<'a> ModuleAnalyzerManager<'a> {
 
         ast.visit_mut_with(&mut RenameIdent::new(rename_map));
 
-        self.module_analyzer_mut(module_id).unwrap().ast = ast;
+        self.set_ast(module_id, ast);
       }
     })
     .unwrap();
@@ -817,7 +856,15 @@ impl<'a> ModuleAnalyzerManager<'a> {
                     .add_namespace(source, |s| bundle_variable.register_used_name_by_module_id(source, s, root));
                 }
               }
-              _ => {}
+              ExportSpecifierInfo::Named(var) => {
+                if bundle_variable.name(var.local()) == "default" {
+                  self
+                    .module_global_uniq_name
+                    .add_default(&module_analyzer.module_id, |s| {
+                      bundle_variable.register_used_name_by_module_id(&module_analyzer.module_id, s, root)
+                    });
+                }
+              }
             }
           }
         }
