@@ -7,7 +7,7 @@ use farmfe_core::{
   module::Module,
   swc_common::{comments::SingleThreadedComments, Mark},
   swc_ecma_ast::{Module as EcmaAstModule, ModuleItem},
-  swc_ecma_parser::{lexer::Lexer, EsConfig, Parser, StringInput, Syntax},
+  swc_ecma_parser::{lexer::Lexer, EsSyntax as EsConfig, Parser, StringInput, Syntax},
 };
 use farmfe_toolkit::{
   common::{create_swc_source_map, Source},

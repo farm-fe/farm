@@ -203,6 +203,7 @@ impl<'a> BundleAnalyzer<'a> {
   }
 
   // 3-3 find module relation and link local variable
+  // TODO: refactor bundle_reference logic
   pub fn link_module_relation(
     &mut self,
     module_analyzer_manager: &mut ModuleAnalyzerManager,
@@ -1056,7 +1057,7 @@ impl<'a> BundleAnalyzer<'a> {
           })?;
         let map = Arc::new(String::from_utf8(buf).unwrap());
 
-        source_map_chain = module.source_map_chain.clone();
+        source_map_chain.clone_from(&module.source_map_chain);
         source_map_chain.push(map);
       }
 

@@ -51,11 +51,8 @@ impl Plugin for FarmPluginBundle {
     let r = resource_pots
       .iter()
       .filter(|item| {
-        if matches!(context.config.output.target_env, TargetEnv::Library) {
-          true
-        } else {
-          matches!(item.resource_pot_type, ResourcePotType::Runtime)
-        }
+        matches!(context.config.output.target_env, TargetEnv::Library)
+          || matches!(item.resource_pot_type, ResourcePotType::Runtime)
       })
       .map(|item| &**item)
       .collect::<Vec<_>>();

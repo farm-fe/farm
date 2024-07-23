@@ -20,7 +20,7 @@ use crate::resource_pot_to_bundle::{
     ModuleGlobalUniqName,
   },
   polyfill::{
-    cjs::{self, wrap_require_default, wrap_require_wildcard},
+    cjs::{wrap_require_default, wrap_require_wildcard},
     SimplePolyfill,
   },
   uniq_name::BundleVariable,
