@@ -5,6 +5,9 @@ export default defineConfig({
   compilation: {
     presetEnv: false,
     progress: false,
-    sourcemap: false
+    sourcemap: false,
+    runtime: {
+      isolate: true
+    }
   }
 });
