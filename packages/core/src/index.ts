@@ -77,7 +77,6 @@ export async function start(
     const compiler = await createCompiler(resolvedUserConfig, logger);
     const server = new newServer(compiler, resolvedUserConfig);
     await server.createServer();
-    console.log(server.httpServer);
 
     // const devServer = await createDevServer(
     //   compiler,

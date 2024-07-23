@@ -7,11 +7,13 @@ import path from 'node:path';
 import { WatchOptions } from 'chokidar';
 import connect from 'connect';
 import fse from 'fs-extra';
+import { WebSocketServer as WebSocketServerRaw_ } from 'ws';
 import { Compiler } from '../compiler/index.js';
 import { normalizePublicPath } from '../config/normalize-config/normalize-output.js';
 import { NormalizedServerConfig, ResolvedUserConfig } from '../config/types.js';
 import { logger } from '../utils/logger.js';
 import { initPublicFiles } from '../utils/publicDir.js';
+import { isObject } from '../utils/share.js';
 import { FileWatcher } from '../watcher/index.js';
 import { HMRChannel } from './hmr.js';
 import {
@@ -19,7 +21,7 @@ import {
   resolveHttpServer,
   resolveHttpsConfig
 } from './http.js';
-import { WsServer } from './ws.js';
+import { WebSocketClient, WebSocketServer, WsServer } from './ws.js';
 export type HttpServer = http.Server | Http2SecureServer;
 
 type CompilerType = Compiler | null;
@@ -68,6 +70,11 @@ export interface ServerOptions extends CommonServerOptions {
       };
   origin?: string;
 }
+
+function noop() {
+  // noop
+}
+
 export class newServer {
   private compiler: CompilerType;
 
@@ -119,9 +126,31 @@ export class newServer {
   }
 
   public async createWebSocketServer() {
+    // @ts-ignore
+    if (this.config.server.ws === false) {
+      return {
+        name: 'ws',
+        get clients() {
+          return new Set<WebSocketClient>();
+        },
+        async close() {
+          // noop
+        },
+        on: noop as any as WebSocketServer['on'],
+        off: noop as any as WebSocketServer['off'],
+        listen: noop,
+        send: noop
+      };
+    }
     if (!this.httpServer) {
       throw new Error('Websocket requires a server.');
     }
+
+    let wss: WebSocketServerRaw_;
+    let wsHttpServer: Server | undefined = undefined;
+    const hmr = isObject(this.config.server.hmr) && this.config.server.hmr;
+    const hmrServer = hmr && hmr.server;
+    const hmrPort = hmr && hmr.port;
     const wsServer = new WsServer(
       this.httpServer,
       this.config,
