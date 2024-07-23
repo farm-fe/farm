@@ -8,10 +8,10 @@ function defineConfig(config: UserConfig) {
 export default defineConfig({
   compilation: {
     input: {
-      index: './index.html',
+      index: './index.html'
     },
     output: {
-      path: './build',
+      path: './build'
     },
     record: true,
     sourcemap: true
@@ -19,7 +19,7 @@ export default defineConfig({
     // minify: true,
   },
   server: {
-    open: true,
+    open: true
   },
-  plugins: ['@farmfe/plugin-react', '@farmfe/plugin-sass', postcss()],
+  plugins: ['@farmfe/plugin-react', '@farmfe/plugin-sass', postcss()]
 });

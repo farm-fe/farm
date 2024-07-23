@@ -91,7 +91,9 @@ const targetsMap: TargetsMap = {
     scriptGenTarget: 'es2017'
   },
   'browser-esnext': null,
-  library: null
+  library: null,
+  'library-browser': null,
+  'library-node': null
 };
 
 /**

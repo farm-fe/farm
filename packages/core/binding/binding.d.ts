@@ -32,6 +32,18 @@ export interface WatchDiffResult {
   add: Array<string>
   remove: Array<string>
 }
+export interface JsTracedModule {
+  id: string
+  contentHash: string
+  packageName: string
+  packageVersion: string
+}
+export interface JsTracedModuleGraph {
+  root: string
+  modules: Array<JsTracedModule>
+  edges: Record<string, Array<string>>
+  reverseEdges: Record<string, Array<string>>
+}
 export interface JsUpdateResult {
   added: Array<string>
   changed: Array<string>
@@ -107,8 +119,8 @@ export interface ResourcePotRecord {
 export type JsCompiler = Compiler
 export declare class Compiler {
   constructor(config: object)
-  traceDependencies(): Array<string>
-  traceModuleGraph(): unknown
+  traceDependencies(): object
+  traceModuleGraph(): object
   /** async compile, return promise */
   compile(): object
   /** sync compile */

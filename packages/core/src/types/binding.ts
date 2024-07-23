@@ -154,7 +154,9 @@ export interface OutputConfig {
     | 'browser-es2015'
     | 'browser-es2017'
     | 'browser-esnext'
-    | 'library';
+    | 'library'
+    | 'library-browser'
+    | 'library-node';
   /**
    * output module format
    */
