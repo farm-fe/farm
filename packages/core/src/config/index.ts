@@ -254,9 +254,7 @@ export async function normalizeUserCompilationConfig(
   // eslint-disable-next-line @typescript-eslint/ban-ts-comment
   // @ts-ignore do not check type for this internal option
   if (!resolvedCompilation.assets?.publicDir) {
-    if (!resolvedCompilation.assets) {
-      resolvedCompilation.assets = {};
-    }
+    resolvedCompilation.assets ??= {};
 
     const userPublicDir = resolvedUserConfig.publicDir
       ? resolvedUserConfig.publicDir
@@ -318,20 +316,15 @@ export async function normalizeUserCompilationConfig(
   if (!resolvedCompilation.runtime.plugins) {
     resolvedCompilation.runtime.plugins = [];
   } else {
+    const resolvePluginPath = (plugin: any) => {
+      if (path.isAbsolute(plugin)) return plugin;
+      return plugin.startsWith('.')
+        ? path.resolve(resolvedRootPath, plugin)
+        : require.resolve(plugin);
+    };
     // make sure all plugin paths are absolute
     resolvedCompilation.runtime.plugins =
-      resolvedCompilation.runtime.plugins.map((plugin) => {
-        if (!path.isAbsolute(plugin)) {
-          if (!plugin.startsWith('.')) {
-            // resolve plugin from node_modules
-            return require.resolve(plugin);
-          } else {
-            return path.resolve(resolvedRootPath, plugin);
-          }
-        }
-
-        return plugin;
-      });
+      resolvedCompilation.runtime.plugins.map(resolvePluginPath);
   }
   // set namespace to package.json name field's hash
   if (!resolvedCompilation.runtime.namespace) {
@@ -352,24 +345,19 @@ export async function normalizeUserCompilationConfig(
   if (isProduction) {
     resolvedCompilation.lazyCompilation = false;
   } else if (resolvedCompilation.lazyCompilation === undefined) {
-    if (isDevelopment) {
-      resolvedCompilation.lazyCompilation = true;
-    } else {
-      resolvedCompilation.lazyCompilation = false;
-    }
+    resolvedCompilation.lazyCompilation ??= isDevelopment;
   }
 
-  if (resolvedCompilation.mode === undefined) {
-    resolvedCompilation.mode = mode;
-  }
+  resolvedCompilation.mode ??= mode;
+
   setProcessEnv(resolvedCompilation.mode);
 
   // TODO add targetEnv `lib-browser` and `lib-node` support
   const is_entry_html =
-    Object.keys(resolvedCompilation.input).length === 0 ||
-    Object.values(resolvedCompilation.input)
-      .filter(Boolean)
-      .some((value) => value.endsWith('.html'));
+    !resolvedCompilation.input ||
+    Object.values(resolvedCompilation.input).some(
+      (value) => value && value.endsWith('.html')
+    );
 
   if (
     resolvedCompilation.output.targetEnv !== 'node' &&
@@ -427,11 +415,7 @@ export async function normalizeUserCompilationConfig(
   }
 
   if (resolvedCompilation.treeShaking === undefined) {
-    if (isProduction) {
-      resolvedCompilation.treeShaking = true;
-    } else {
-      resolvedCompilation.treeShaking = false;
-    }
+    resolvedCompilation.treeShaking ??= isProduction;
   }
 
   if (resolvedCompilation.script?.plugins?.length) {
@@ -457,19 +441,11 @@ export async function normalizeUserCompilationConfig(
   }
 
   if (resolvedCompilation.minify === undefined) {
-    if (isProduction) {
-      resolvedCompilation.minify = true;
-    } else {
-      resolvedCompilation.minify = false;
-    }
+    resolvedCompilation.minify ??= isProduction;
   }
 
   if (resolvedCompilation.presetEnv === undefined) {
-    if (isProduction) {
-      resolvedCompilation.presetEnv = true;
-    } else {
-      resolvedCompilation.presetEnv = false;
-    }
+    resolvedCompilation.presetEnv ??= isProduction;
   }
 
   // setting the custom configuration
