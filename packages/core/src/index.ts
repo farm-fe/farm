@@ -176,13 +176,17 @@ export async function watch(
     false
   );
 
-  const hostname = await resolveHostname(resolvedUserConfig.server.host);
-  resolvedUserConfig.compilation.define = {
-    ...(resolvedUserConfig.compilation.define ?? {}),
-    FARM_NODE_LAZY_COMPILE_SERVER_URL: `http://${
-      hostname.host || 'localhost'
-    }:${resolvedUserConfig.server.port}`
-  };
+  const lazyEnabled = resolvedUserConfig.compilation?.lazyCompilation;
+
+  if (lazyEnabled) {
+    const hostname = await resolveHostname(resolvedUserConfig.server.host);
+    resolvedUserConfig.compilation.define = {
+      ...(resolvedUserConfig.compilation.define ?? {}),
+      FARM_NODE_LAZY_COMPILE_SERVER_URL: `http://${
+        hostname.host || 'localhost'
+      }:${resolvedUserConfig.server.port}`
+    };
+  }
 
   const compilerFileWatcher = await createBundleHandler(
     resolvedUserConfig,
@@ -190,7 +194,6 @@ export async function watch(
     true
   );
 
-  const lazyEnabled = resolvedUserConfig.compilation?.lazyCompilation;
   let devServer: Server | undefined;
   // create dev server for lazy compilation
   if (lazyEnabled) {

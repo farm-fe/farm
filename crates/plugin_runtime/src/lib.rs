@@ -59,7 +59,8 @@ impl Plugin for FarmPluginRuntime {
   }
 
   fn config(&self, config: &mut Config) -> farmfe_core::error::Result<Option<()>> {
-    if config.output.target_env == TargetEnv::Library {
+    // library bundle does not contain runtime
+    if config.output.target_env.is_library() {
       return Ok(None);
     }
 
@@ -269,7 +270,7 @@ impl Plugin for FarmPluginRuntime {
     context: &Arc<CompilationContext>,
     _hook_context: &PluginHookContext,
   ) -> farmfe_core::error::Result<Option<ResourcePotMetaData>> {
-    if context.config.output.target_env != TargetEnv::Library
+    if !context.config.output.target_env.is_library()
       && matches!(resource_pot.resource_pot_type, ResourcePotType::Js)
     {
       let async_modules = self.get_async_modules(context);
@@ -445,7 +446,7 @@ impl Plugin for FarmPluginRuntime {
     param: &mut PluginFinalizeResourcesHookParams,
     context: &Arc<CompilationContext>,
   ) -> farmfe_core::error::Result<Option<()>> {
-    if context.config.output.target_env == TargetEnv::Library {
+    if context.config.output.target_env.is_library() {
       return Ok(None);
     }
 

@@ -73,7 +73,7 @@ impl Plugin for FarmPluginBundle {
     let mut defer_minify = vec![];
     for resource_pot in resource_pots.iter() {
       if matches!(resource_pot.resource_pot_type, ResourcePotType::Runtime)
-        || (context.config.output.target_env == TargetEnv::Library
+        || (context.config.output.target_env.is_library()
           && resource_pot.resource_pot_type == ResourcePotType::Js)
       {
         let resource_pot_id = resource_pot.id.clone();

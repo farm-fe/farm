@@ -47,7 +47,8 @@ export function mergeConfig<T extends Record<string, any>>(
 
 export function mergeFarmCliConfig(
   cliOption: FarmCliOptions & UserConfig,
-  target: UserConfig
+  target: UserConfig,
+  mode?: 'development' | 'production'
 ): UserConfig {
   let left: UserConfig = {};
   const options = initialCliOptions(cliOption);
@@ -121,7 +122,7 @@ export function mergeFarmCliConfig(
   if (options.mode) {
     left = mergeConfig(left, {
       compilation: {
-        mode: options.mode as UserConfig['compilation']['mode']
+        mode: mode ?? (options.mode as UserConfig['compilation']['mode'])
       }
     });
   }

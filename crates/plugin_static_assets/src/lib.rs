@@ -228,7 +228,7 @@ impl Plugin for FarmPluginStaticAssets {
           format!("/{}", resource_name)
         };
 
-        let content = if matches!(context.config.output.target_env, TargetEnv::Node) {
+        let content = if context.config.output.target_env.is_node() {
           format!(
             "export default new URL(/* {} */{:?}, import.meta.url)",
             FARM_IGNORE_ACTION_COMMENT, assets_path

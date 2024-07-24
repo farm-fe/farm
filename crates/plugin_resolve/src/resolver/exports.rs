@@ -93,7 +93,7 @@ pub fn resolve_exports_or_imports(
   }
 
   // resolve exports field
-  let is_browser = context.config.output.target_env == TargetEnv::Browser;
+  let is_browser = context.config.output.target_env.is_browser();
   let is_require = match kind {
     ResolveKind::Require => true,
     _ => false,
