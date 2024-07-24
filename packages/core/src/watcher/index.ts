@@ -34,9 +34,11 @@ export class FileWatcher implements ImplFileWatcher {
   }
 
   filterWatchFile(file: string, root: string): boolean {
+    const suffix = process.platform === 'win32' ? '\\' : '/';
+
     return (
-      !file.startsWith(root) &&
-      !file.includes('node_modules/') &&
+      !file.startsWith(`${root}${suffix}`) &&
+      !file.includes(`node_modules${suffix}`) &&
       !file.includes('\0') &&
       existsSync(file)
     );

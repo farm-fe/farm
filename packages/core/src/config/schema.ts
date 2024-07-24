@@ -44,7 +44,10 @@ const compilationConfigSchema = z
             'browser-legacy',
             'browser-esnext',
             'browser-es2015',
-            'browser-es2017'
+            'browser-es2017',
+            'library',
+            'library-browser',
+            'library-node'
           ])
           .optional(),
         format: z.enum(['cjs', 'esm']).optional()

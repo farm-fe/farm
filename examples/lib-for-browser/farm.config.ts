@@ -11,7 +11,7 @@ export default defineConfig({
       format: 'esm',
       path: 'dist',
       entryFilename: '[entryName].js',
-      filename: '[name].jsx',
+      filename: '[name].jsx'
     },
     minify: false,
     presetEnv: false,
@@ -24,7 +24,5 @@ export default defineConfig({
       ]
     }
   },
-  plugins: [
-    farmJsPluginDts({})
-  ]
-})
+  plugins: [farmJsPluginDts({})]
+});
