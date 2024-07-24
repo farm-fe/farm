@@ -2259,7 +2259,7 @@ importers:
         specifier: workspace:0.12.1
         version: link:../runtime
       '@farmfe/runtime-plugin-hmr':
-        specifier: workspace:3.5.4
+        specifier: workspace:3.5.5
         version: link:../runtime-plugin-hmr
       '@farmfe/runtime-plugin-import-meta':
         specifier: workspace:0.2.2
@@ -18106,7 +18106,7 @@ snapshots:
 
   '@vueuse/shared@9.13.0(@vue/composition-api@1.7.2(vue@3.3.7(typescript@5.4.5)))(vue@3.3.7(typescript@5.4.5))':
     dependencies:
-      vue-demi: 0.14.8(@vue/composition-api@1.7.2(vue@3.3.7(typescript@5.4.5)))(vue@3.3.7(typescript@5.4.5))
+      vue-demi: 0.14.9(@vue/composition-api@1.7.2(vue@3.3.7(typescript@5.4.5)))(vue@3.3.7(typescript@5.4.5))
     transitivePeerDependencies:
       - '@vue/composition-api'
       - vue
@@ -26678,6 +26678,12 @@ snapshots:
       '@vue/composition-api': 1.7.2(vue@3.4.15(typescript@5.4.5))
 
   vue-demi@0.14.8(@vue/composition-api@1.7.2(vue@3.3.7(typescript@5.4.5)))(vue@3.3.7(typescript@5.4.5)):
+    dependencies:
+      vue: 3.3.7(typescript@5.4.5)
+    optionalDependencies:
+      '@vue/composition-api': 1.7.2(vue@3.3.7(typescript@5.4.5))
+
+  vue-demi@0.14.9(@vue/composition-api@1.7.2(vue@3.3.7(typescript@5.4.5)))(vue@3.3.7(typescript@5.4.5)):
     dependencies:
       vue: 3.3.7(typescript@5.4.5)
     optionalDependencies:
