@@ -287,7 +287,7 @@ importers:
     devDependencies:
       '@farmfe/cli':
         specifier: ^1.0.1
-        version: 1.0.2
+        version: link:../../packages/cli
       '@farmfe/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -387,7 +387,7 @@ importers:
     devDependencies:
       '@farmfe/cli':
         specifier: ^1.0.1
-        version: 1.0.2
+        version: link:../../packages/cli
       '@farmfe/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -432,8 +432,8 @@ importers:
   examples/import-meta:
     devDependencies:
       '@farmfe/cli':
-        specifier: ^1.0.2
-        version: 1.0.2
+        specifier: ^1.0.3
+        version: link:../../packages/cli
       '@farmfe/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -1538,8 +1538,8 @@ importers:
   examples/vite-adapter-svelte:
     devDependencies:
       '@farmfe/cli':
-        specifier: ^1.0.2
-        version: 1.0.2
+        specifier: ^1.0.3
+        version: link:../../packages/cli
       '@farmfe/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -1683,13 +1683,13 @@ importers:
     devDependencies:
       '@farmfe/cli':
         specifier: ^1.0.2
-        version: 1.0.2
+        version: link:../../packages/cli
       '@farmfe/core':
         specifier: workspace:*
         version: link:../../packages/core
       '@farmfe/plugin-sass':
         specifier: ^1.0.5
-        version: 1.0.5
+        version: link:../../rust-plugins/sass
       '@vitejs/plugin-vue':
         specifier: ^5.0.4
         version: 5.0.4(vite@5.2.8(@types/node@20.12.12)(less@4.2.0)(lightningcss@1.25.1)(sass@1.74.1)(terser@5.31.1))(vue@3.4.27(typescript@5.4.5))
@@ -3790,69 +3790,6 @@ packages:
   '@eslint/js@8.57.0':
     resolution: {integrity: sha512-Ys+3g2TaW7gADOJzPt83SJtCDhMjndcDMFVQ/Tj9iA1BfJzFKD9mAUXT3OenpuPHbI6P/myECxRJrofUsDx/5g==}
     engines: {node: ^12.22.0 || ^14.17.0 || >=16.0.0}
-
-  '@farmfe/cli@1.0.2':
-    resolution: {integrity: sha512-ZZRmXOSLkA7kWzmj6IVSH5U4NimNzFSa9hI0rRlPbgNwsfBIooUfthMjMZPnMwnFD9SIxLurlMJkwKyb4wpDKQ==}
-    engines: {node: '>= 16'}
-    hasBin: true
-
-  '@farmfe/plugin-sass-darwin-arm64@1.0.5':
-    resolution: {integrity: sha512-0uRiWqEjLUjEQbaJBXFKCdp4P++00vHE0WegUBgA7KpnQ8USWBJEJ+AQklBKuZitjpqlkJqCsq09bEmkwzEVYA==}
-    engines: {node: '>= 10'}
-    cpu: [arm64]
-    os: [darwin]
-
-  '@farmfe/plugin-sass-darwin-x64@1.0.5':
-    resolution: {integrity: sha512-lVogirOJiRMtDUkeEksYpt+40yRn7/syWGPCqBOn489tyKSvr1WMvIICAntqO4+FryVTQU3tgck11XYUd87cMA==}
-    engines: {node: '>= 10'}
-    cpu: [x64]
-    os: [darwin]
-
-  '@farmfe/plugin-sass-linux-arm64-gnu@1.0.5':
-    resolution: {integrity: sha512-0Iv6bzrTRqaGZ4QKt+aabJrvMRHPa8Vv9kSgGbqhs40Spm1cqUIMoHBfS76L8PX+BG6327C/5iqv4oOERmWoNg==}
-    engines: {node: '>= 10'}
-    cpu: [arm64]
-    os: [linux]
-
-  '@farmfe/plugin-sass-linux-arm64-musl@1.0.5':
-    resolution: {integrity: sha512-uOjnGp9fxMaIbRo3CPBtH2EivpSHhB1nje+f40JFcbiklPhcEs41/W62ZgSg6NOq2ocNbUbv1sdp1/6eBt0v7Q==}
-    engines: {node: '>= 10'}
-    cpu: [arm64]
-    os: [linux]
-
-  '@farmfe/plugin-sass-linux-x64-gnu@1.0.5':
-    resolution: {integrity: sha512-29uzHgjLt0ZdWwthr+VmcWXAj1M9SGMbrt9j4UdPxJcnTdfSKNhrIPkfaQOWOHNvpy4IF2HRb3bdLVC3Nm3qyw==}
-    engines: {node: '>= 10'}
-    cpu: [x64]
-    os: [linux]
-
-  '@farmfe/plugin-sass-linux-x64-musl@1.0.5':
-    resolution: {integrity: sha512-FDLnfXk6oGjVbsA4/9ddgpSlAOfC6b+iK5ZlfiN83q4D2twviTQ+/iFLXOlz+U5Wdz8oa250O694iRYEV8qwBA==}
-    engines: {node: '>= 10'}
-    cpu: [x64]
-    os: [linux]
-
-  '@farmfe/plugin-sass-win32-arm64-msvc@1.0.5':
-    resolution: {integrity: sha512-PW3XEK+SO3ygIP7mfCn/hM6x5VS70C7CNU50ijLGjm9Fp4S1HKePyGlE0sk5JAqgTpfcPTv8fqgwj2PKFd/byw==}
-    engines: {node: '>= 10'}
-    cpu: [arm64]
-    os: [win32]
-
-  '@farmfe/plugin-sass-win32-ia32-msvc@1.0.5':
-    resolution: {integrity: sha512-nPuwI7N5ug/niQ+W1IMmGBqAHDi8M47da6OSkpK00HEvSYiqelf5x2dfJNA3ICcVck3tSxp1yrjfpO9Z8TJOuw==}
-    engines: {node: '>= 10'}
-    cpu: [ia32]
-    os: [win32]
-
-  '@farmfe/plugin-sass-win32-x64-msvc@1.0.5':
-    resolution: {integrity: sha512-C7kCrWBdHo+EZsMM5sq3IyVLGwCThu3eWA6jAv5PFJoXhQ4jKWq8/PoanIhz5fJU1joJT7tNYVulRzkCAE0pdg==}
-    engines: {node: '>= 10'}
-    cpu: [x64]
-    os: [win32]
-
-  '@farmfe/plugin-sass@1.0.5':
-    resolution: {integrity: sha512-uTcXGS3ONqP0aqqFMIrnK9S2fP7IsRlwX9DKUUfHTq5NAi7MkbJ/nz8fnKL7xzKxPzuoxUaWgirmqbtqNlf3vA==}
-    engines: {node: '>=16'}
 
   '@farmfe/utils@0.0.1':
     resolution: {integrity: sha512-QLbgNrojcvxfumXA/H329XAXhoCahmeSH3JmaiwwJEGS2QAmWfgAJMegjwlt6OmArGVO4gSbJ7Xbmm1idZZs+g==}
@@ -8731,10 +8668,6 @@ packages:
     resolution: {integrity: sha512-M1WuAmb7pn9zdFRtQYk26ZBoY043Sse0wVDdk4Bppr+JOXyQYybdtvK+l9wUibhtjdjvtoiNy8tk+EgsYIUqKg==}
     engines: {node: '>=12.0.0'}
 
-  inquirer@9.2.11:
-    resolution: {integrity: sha512-B2LafrnnhbRzCWfAdOXisUzL89Kg8cVJlYmhqoi3flSiV/TveO+nsXwgKr9h9PIo+J1hz7nBSk6gegRIMBBf7g==}
-    engines: {node: '>=14.18.0'}
-
   inquirer@9.2.12:
     resolution: {integrity: sha512-mg3Fh9g2zfuVWJn6lhST0O7x4n03k7G8Tx5nvikJkbq8/CK47WDVm+UznF0G6s5Zi0KcyUisr6DU8T67N5U+1Q==}
     engines: {node: '>=14.18.0'}
@@ -12976,6 +12909,17 @@ packages:
       '@vue/composition-api':
         optional: true
 
+  vue-demi@0.14.9:
+    resolution: {integrity: sha512-dC1TJMODGM8lxhP6wLToncaDPPNB3biVxxRDuNCYpuXwi70ou7NsGd97KVTJ2omepGId429JZt8oaZKeXbqxwg==}
+    engines: {node: '>=12'}
+    hasBin: true
+    peerDependencies:
+      '@vue/composition-api': ^1.0.0-rc.1
+      vue: ^3.0.0-0 || ^2.6.0
+    peerDependenciesMeta:
+      '@vue/composition-api':
+        optional: true
+
   vue-router@4.2.5:
     resolution: {integrity: sha512-DIUpKcyg4+PTQKfFPX88UWhlagBEBEfJ5A8XDXRJLUnZOvcpMF8o/dnL90vpVkGaPbjvXazV/rC1qBKrZlFugw==}
     peerDependencies:
@@ -15286,59 +15230,6 @@ snapshots:
 
   '@eslint/js@8.57.0': {}
 
-  '@farmfe/cli@1.0.2':
-    dependencies:
-      cac: 6.7.14
-      cross-spawn: 7.0.3
-      inquirer: 9.2.11
-      walkdir: 0.4.1
-
-  '@farmfe/plugin-sass-darwin-arm64@1.0.5':
-    optional: true
-
-  '@farmfe/plugin-sass-darwin-x64@1.0.5':
-    optional: true
-
-  '@farmfe/plugin-sass-linux-arm64-gnu@1.0.5':
-    optional: true
-
-  '@farmfe/plugin-sass-linux-arm64-musl@1.0.5':
-    optional: true
-
-  '@farmfe/plugin-sass-linux-x64-gnu@1.0.5':
-    optional: true
-
-  '@farmfe/plugin-sass-linux-x64-musl@1.0.5':
-    optional: true
-
-  '@farmfe/plugin-sass-win32-arm64-msvc@1.0.5':
-    optional: true
-
-  '@farmfe/plugin-sass-win32-ia32-msvc@1.0.5':
-    optional: true
-
-  '@farmfe/plugin-sass-win32-x64-msvc@1.0.5':
-    optional: true
-
-  '@farmfe/plugin-sass@1.0.5':
-    optionalDependencies:
-      '@farmfe/plugin-sass-darwin-arm64': 1.0.5
-      '@farmfe/plugin-sass-darwin-x64': 1.0.5
-      '@farmfe/plugin-sass-linux-arm64-gnu': 1.0.5
-      '@farmfe/plugin-sass-linux-arm64-musl': 1.0.5
-      '@farmfe/plugin-sass-linux-x64-gnu': 1.0.5
-      '@farmfe/plugin-sass-linux-x64-musl': 1.0.5
-      '@farmfe/plugin-sass-win32-arm64-msvc': 1.0.5
-      '@farmfe/plugin-sass-win32-ia32-msvc': 1.0.5
-      '@farmfe/plugin-sass-win32-x64-msvc': 1.0.5
-      sass-embedded-darwin-arm64: 1.62.0
-      sass-embedded-darwin-x64: 1.62.0
-      sass-embedded-linux-arm64: 1.62.0
-      sass-embedded-linux-ia32: 1.62.0
-      sass-embedded-linux-x64: 1.62.0
-      sass-embedded-win32-ia32: 1.62.0
-      sass-embedded-win32-x64: 1.62.0
-
   '@farmfe/utils@0.0.1': {}
 
   '@floating-ui/core@1.5.0':
@@ -15358,7 +15249,7 @@ snapshots:
     dependencies:
       '@monaco-editor/loader': 1.4.0
       vue: 3.4.15(typescript@5.4.5)
-      vue-demi: 0.14.8(@vue/composition-api@1.7.2(vue@3.4.15(typescript@5.4.5)))(vue@3.4.15(typescript@5.4.5))
+      vue-demi: 0.14.9(@vue/composition-api@1.7.2(vue@3.4.15(typescript@5.4.5)))(vue@3.4.15(typescript@5.4.5))
     optionalDependencies:
       '@vue/composition-api': 1.7.2(vue@3.4.15(typescript@5.4.5))
 
@@ -21792,24 +21683,6 @@ snapshots:
       through: 2.3.8
       wrap-ansi: 6.2.0
 
-  inquirer@9.2.11:
-    dependencies:
-      '@ljharb/through': 2.3.11
-      ansi-escapes: 4.3.2
-      chalk: 5.3.0
-      cli-cursor: 3.1.0
-      cli-width: 4.1.0
-      external-editor: 3.1.0
-      figures: 5.0.0
-      lodash: 4.17.21
-      mute-stream: 1.0.0
-      ora: 5.4.1
-      run-async: 3.0.0
-      rxjs: 7.8.1
-      string-width: 4.2.3
-      strip-ansi: 6.0.1
-      wrap-ansi: 6.2.0
-
   inquirer@9.2.12:
     dependencies:
       '@ljharb/through': 2.3.13
@@ -26810,7 +26683,7 @@ snapshots:
     optionalDependencies:
       '@vue/composition-api': 1.7.2(vue@3.3.7(typescript@5.4.5))
 
-  vue-demi@0.14.8(@vue/composition-api@1.7.2(vue@3.4.15(typescript@5.4.5)))(vue@3.4.15(typescript@5.4.5)):
+  vue-demi@0.14.9(@vue/composition-api@1.7.2(vue@3.4.15(typescript@5.4.5)))(vue@3.4.15(typescript@5.4.5)):
     dependencies:
       vue: 3.4.15(typescript@5.4.5)
     optionalDependencies:
