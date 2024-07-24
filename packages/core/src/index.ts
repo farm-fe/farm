@@ -75,16 +75,14 @@ export async function start(
     );
 
     const compiler = await createCompiler(resolvedUserConfig, logger);
-    const server = new newServer(compiler, resolvedUserConfig);
-    await server.createServer();
 
-    // const devServer = await createDevServer(
-    //   compiler,
-    //   resolvedUserConfig,
-    //   logger
-    // );
+    const devServer = await createDevServer(
+      compiler,
+      resolvedUserConfig,
+      logger
+    );
 
-    // await devServer.listen();
+    await devServer.listen();
   } catch (error) {
     logger.error('Failed to start the server', { exit: true, error });
   }
@@ -458,3 +456,35 @@ export function logFileChanges(files: string[], root: string, logger: Logger) {
 export { defineFarmConfig as defineConfig } from './config/index.js';
 
 export { loadEnv };
+
+export async function start2(
+  inlineConfig?: FarmCliOptions & UserConfig
+): Promise<void> {
+  inlineConfig = inlineConfig ?? {};
+  const logger = inlineConfig.logger ?? new Logger();
+  setProcessEnv('development');
+
+  try {
+    const resolvedUserConfig = await resolveConfig(
+      inlineConfig,
+      'start',
+      'development',
+      'development',
+      false
+    );
+
+    const compiler = await createCompiler(resolvedUserConfig, logger);
+    const server = new newServer(compiler, resolvedUserConfig);
+    await server.createServer();
+    await server.listen();
+    // const devServer = await createDevServer(
+    //   compiler,
+    //   resolvedUserConfig,
+    //   logger
+    // );
+
+    // await devServer.listen();
+  } catch (error) {
+    logger.error('Failed to start the server', { exit: true, error });
+  }
+}

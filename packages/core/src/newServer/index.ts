@@ -11,6 +11,7 @@ import { WebSocketServer as WebSocketServerRaw_ } from 'ws';
 import { Compiler } from '../compiler/index.js';
 import { normalizePublicPath } from '../config/normalize-config/normalize-output.js';
 import { NormalizedServerConfig, ResolvedUserConfig } from '../config/types.js';
+import { logError } from '../server/error.js';
 import { logger } from '../utils/logger.js';
 import { initPublicFiles } from '../utils/publicDir.js';
 import { isObject } from '../utils/share.js';
@@ -127,30 +128,10 @@ export class newServer {
 
   public async createWebSocketServer() {
     // @ts-ignore
-    if (this.config.server.ws === false) {
-      return {
-        name: 'ws',
-        get clients() {
-          return new Set<WebSocketClient>();
-        },
-        async close() {
-          // noop
-        },
-        on: noop as any as WebSocketServer['on'],
-        off: noop as any as WebSocketServer['off'],
-        listen: noop,
-        send: noop
-      };
-    }
     if (!this.httpServer) {
       throw new Error('Websocket requires a server.');
     }
 
-    let wss: WebSocketServerRaw_;
-    let wsHttpServer: Server | undefined = undefined;
-    const hmr = isObject(this.config.server.hmr) && this.config.server.hmr;
-    const hmrServer = hmr && hmr.server;
-    const hmrPort = hmr && hmr.port;
     const wsServer = new WsServer(
       this.httpServer,
       this.config,
@@ -158,5 +139,65 @@ export class newServer {
       this.publicPath,
       null
     );
+  }
+
+  public async listen(): Promise<void> {
+    if (!this.httpServer) {
+      // this.logger.error('HTTP server is not created yet');
+      return;
+    }
+    const { port, open, protocol, hostname } = this.config.server;
+
+    await this.compile();
+    const { createServer } = await import('node:http');
+
+    // this.httpServer = createServer((req, res) => {
+    //   if (req.url === '/') {
+    //     // res.writeHead(200, { 'Content-Type': 'text/plain' });
+    //     // res.end('Hello, World!');
+    //   } else if (req.url === '/about') {
+    //     res.writeHead(200, { 'Content-Type': 'text/plain' });
+    //     res.end('About page');
+    //   } else {
+    //     res.writeHead(404, { 'Content-Type': 'text/plain' });
+    //     res.end('404 Not Found');
+    //   }
+    // });
+
+    this.httpServer.on('request', (req, res) => {
+      // 设置响应头
+      // res.writeHead(200, { 'Content-Type': 'application/json' });
+
+      // 创建响应体对象
+      const responseBody = {
+        message: "这是使用 on('request') 方法的响应",
+        timestamp: new Date().toISOString(),
+        path: req.url
+      };
+
+      // 将对象转换为 JSON 字符串
+      const jsonResponse = JSON.stringify(responseBody);
+      res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+      // 发送响应
+      res.end('我是默认请求头');
+    });
+
+    this.httpServer.listen(port, hostname.name, () => {
+      console.log(`Server running at ${protocol}://${hostname.name}:${port}/`);
+    });
+  }
+
+  private async compile(): Promise<void> {
+    try {
+      await this.compiler.compile();
+    } catch (err) {
+      throw new Error(logError(err) as unknown as string);
+    }
+
+    if (this.config.server.writeToDisk) {
+      this.compiler.writeResourcesToDisk();
+    } else {
+      this.compiler.callWriteResourcesHook();
+    }
   }
 }

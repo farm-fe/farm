@@ -3852,11 +3852,6 @@ packages:
     resolution: {integrity: sha512-Ys+3g2TaW7gADOJzPt83SJtCDhMjndcDMFVQ/Tj9iA1BfJzFKD9mAUXT3OenpuPHbI6P/myECxRJrofUsDx/5g==}
     engines: {node: ^12.22.0 || ^14.17.0 || >=16.0.0}
 
-  '@farmfe/cli@1.0.2':
-    resolution: {integrity: sha512-ZZRmXOSLkA7kWzmj6IVSH5U4NimNzFSa9hI0rRlPbgNwsfBIooUfthMjMZPnMwnFD9SIxLurlMJkwKyb4wpDKQ==}
-    engines: {node: '>= 16'}
-    hasBin: true
-
   '@farmfe/plugin-react-darwin-arm64@1.2.0':
     resolution: {integrity: sha512-9a8wp6lg8NytO+kU8hu2gCFer+PL4TJ92SkU/5v9xdcsioElWpnMDGlwcoI8bXqi60/WR8RyExsDIBubCgjbXQ==}
     engines: {node: '>= 10'}
@@ -3913,64 +3908,6 @@ packages:
 
   '@farmfe/plugin-react@1.2.0':
     resolution: {integrity: sha512-S5kU7NgqiyyhnDsZ7DEvszQIE6sCA0CNp7oTbdDcPxotPNBoyOcBHviSP3P5jvtIv6mmlF8Me2C1aLWJQRw9PA==}
-
-  '@farmfe/plugin-sass-darwin-arm64@1.0.5':
-    resolution: {integrity: sha512-0uRiWqEjLUjEQbaJBXFKCdp4P++00vHE0WegUBgA7KpnQ8USWBJEJ+AQklBKuZitjpqlkJqCsq09bEmkwzEVYA==}
-    engines: {node: '>= 10'}
-    cpu: [arm64]
-    os: [darwin]
-
-  '@farmfe/plugin-sass-darwin-x64@1.0.5':
-    resolution: {integrity: sha512-lVogirOJiRMtDUkeEksYpt+40yRn7/syWGPCqBOn489tyKSvr1WMvIICAntqO4+FryVTQU3tgck11XYUd87cMA==}
-    engines: {node: '>= 10'}
-    cpu: [x64]
-    os: [darwin]
-
-  '@farmfe/plugin-sass-linux-arm64-gnu@1.0.5':
-    resolution: {integrity: sha512-0Iv6bzrTRqaGZ4QKt+aabJrvMRHPa8Vv9kSgGbqhs40Spm1cqUIMoHBfS76L8PX+BG6327C/5iqv4oOERmWoNg==}
-    engines: {node: '>= 10'}
-    cpu: [arm64]
-    os: [linux]
-
-  '@farmfe/plugin-sass-linux-arm64-musl@1.0.5':
-    resolution: {integrity: sha512-uOjnGp9fxMaIbRo3CPBtH2EivpSHhB1nje+f40JFcbiklPhcEs41/W62ZgSg6NOq2ocNbUbv1sdp1/6eBt0v7Q==}
-    engines: {node: '>= 10'}
-    cpu: [arm64]
-    os: [linux]
-
-  '@farmfe/plugin-sass-linux-x64-gnu@1.0.5':
-    resolution: {integrity: sha512-29uzHgjLt0ZdWwthr+VmcWXAj1M9SGMbrt9j4UdPxJcnTdfSKNhrIPkfaQOWOHNvpy4IF2HRb3bdLVC3Nm3qyw==}
-    engines: {node: '>= 10'}
-    cpu: [x64]
-    os: [linux]
-
-  '@farmfe/plugin-sass-linux-x64-musl@1.0.5':
-    resolution: {integrity: sha512-FDLnfXk6oGjVbsA4/9ddgpSlAOfC6b+iK5ZlfiN83q4D2twviTQ+/iFLXOlz+U5Wdz8oa250O694iRYEV8qwBA==}
-    engines: {node: '>= 10'}
-    cpu: [x64]
-    os: [linux]
-
-  '@farmfe/plugin-sass-win32-arm64-msvc@1.0.5':
-    resolution: {integrity: sha512-PW3XEK+SO3ygIP7mfCn/hM6x5VS70C7CNU50ijLGjm9Fp4S1HKePyGlE0sk5JAqgTpfcPTv8fqgwj2PKFd/byw==}
-    engines: {node: '>= 10'}
-    cpu: [arm64]
-    os: [win32]
-
-  '@farmfe/plugin-sass-win32-ia32-msvc@1.0.5':
-    resolution: {integrity: sha512-nPuwI7N5ug/niQ+W1IMmGBqAHDi8M47da6OSkpK00HEvSYiqelf5x2dfJNA3ICcVck3tSxp1yrjfpO9Z8TJOuw==}
-    engines: {node: '>= 10'}
-    cpu: [ia32]
-    os: [win32]
-
-  '@farmfe/plugin-sass-win32-x64-msvc@1.0.5':
-    resolution: {integrity: sha512-C7kCrWBdHo+EZsMM5sq3IyVLGwCThu3eWA6jAv5PFJoXhQ4jKWq8/PoanIhz5fJU1joJT7tNYVulRzkCAE0pdg==}
-    engines: {node: '>= 10'}
-    cpu: [x64]
-    os: [win32]
-
-  '@farmfe/plugin-sass@1.0.5':
-    resolution: {integrity: sha512-uTcXGS3ONqP0aqqFMIrnK9S2fP7IsRlwX9DKUUfHTq5NAi7MkbJ/nz8fnKL7xzKxPzuoxUaWgirmqbtqNlf3vA==}
-    engines: {node: '>=16'}
 
   '@farmfe/utils@0.0.1':
     resolution: {integrity: sha512-QLbgNrojcvxfumXA/H329XAXhoCahmeSH3JmaiwwJEGS2QAmWfgAJMegjwlt6OmArGVO4gSbJ7Xbmm1idZZs+g==}
@@ -15475,13 +15412,6 @@ snapshots:
 
   '@eslint/js@8.57.0': {}
 
-  '@farmfe/cli@1.0.2':
-    dependencies:
-      cac: 6.7.14
-      cross-spawn: 7.0.3
-      inquirer: 9.2.11
-      walkdir: 0.4.1
-
   '@farmfe/plugin-react-darwin-arm64@1.2.0':
     optional: true
 
@@ -15520,52 +15450,6 @@ snapshots:
       '@farmfe/plugin-react-win32-arm64-msvc': 1.2.0
       '@farmfe/plugin-react-win32-ia32-msvc': 1.2.0
       '@farmfe/plugin-react-win32-x64-msvc': 1.2.0
-
-  '@farmfe/plugin-sass-darwin-arm64@1.0.5':
-    optional: true
-
-  '@farmfe/plugin-sass-darwin-x64@1.0.5':
-    optional: true
-
-  '@farmfe/plugin-sass-linux-arm64-gnu@1.0.5':
-    optional: true
-
-  '@farmfe/plugin-sass-linux-arm64-musl@1.0.5':
-    optional: true
-
-  '@farmfe/plugin-sass-linux-x64-gnu@1.0.5':
-    optional: true
-
-  '@farmfe/plugin-sass-linux-x64-musl@1.0.5':
-    optional: true
-
-  '@farmfe/plugin-sass-win32-arm64-msvc@1.0.5':
-    optional: true
-
-  '@farmfe/plugin-sass-win32-ia32-msvc@1.0.5':
-    optional: true
-
-  '@farmfe/plugin-sass-win32-x64-msvc@1.0.5':
-    optional: true
-
-  '@farmfe/plugin-sass@1.0.5':
-    optionalDependencies:
-      '@farmfe/plugin-sass-darwin-arm64': 1.0.5
-      '@farmfe/plugin-sass-darwin-x64': 1.0.5
-      '@farmfe/plugin-sass-linux-arm64-gnu': 1.0.5
-      '@farmfe/plugin-sass-linux-arm64-musl': 1.0.5
-      '@farmfe/plugin-sass-linux-x64-gnu': 1.0.5
-      '@farmfe/plugin-sass-linux-x64-musl': 1.0.5
-      '@farmfe/plugin-sass-win32-arm64-msvc': 1.0.5
-      '@farmfe/plugin-sass-win32-ia32-msvc': 1.0.5
-      '@farmfe/plugin-sass-win32-x64-msvc': 1.0.5
-      sass-embedded-darwin-arm64: 1.62.0
-      sass-embedded-darwin-x64: 1.62.0
-      sass-embedded-linux-arm64: 1.62.0
-      sass-embedded-linux-ia32: 1.62.0
-      sass-embedded-linux-x64: 1.62.0
-      sass-embedded-win32-ia32: 1.62.0
-      sass-embedded-win32-x64: 1.62.0
 
   '@farmfe/utils@0.0.1': {}
 
@@ -18447,7 +18331,7 @@ snapshots:
 
   '@vueuse/shared@9.13.0(@vue/composition-api@1.7.2(vue@3.3.7(typescript@5.4.5)))(vue@3.3.7(typescript@5.4.5))':
     dependencies:
-      vue-demi: 0.14.8(@vue/composition-api@1.7.2(vue@3.3.7(typescript@5.4.5)))(vue@3.3.7(typescript@5.4.5))
+      vue-demi: 0.14.9(@vue/composition-api@1.7.2(vue@3.3.7(typescript@5.4.5)))(vue@3.3.7(typescript@5.4.5))
     transitivePeerDependencies:
       - '@vue/composition-api'
       - vue
@@ -27079,6 +26963,12 @@ snapshots:
       '@vue/composition-api': 1.7.2(vue@3.4.15(typescript@5.4.5))
 
   vue-demi@0.14.8(@vue/composition-api@1.7.2(vue@3.3.7(typescript@5.4.5)))(vue@3.3.7(typescript@5.4.5)):
+    dependencies:
+      vue: 3.3.7(typescript@5.4.5)
+    optionalDependencies:
+      '@vue/composition-api': 1.7.2(vue@3.3.7(typescript@5.4.5))
+
+  vue-demi@0.14.9(@vue/composition-api@1.7.2(vue@3.3.7(typescript@5.4.5)))(vue@3.3.7(typescript@5.4.5)):
     dependencies:
       vue: 3.3.7(typescript@5.4.5)
     optionalDependencies:

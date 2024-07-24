@@ -9,5 +9,8 @@ export default defineConfig({
     runtime: {
       isolate: true
     }
+  },
+  server: {
+    writeToDisk: true,
   }
 });
