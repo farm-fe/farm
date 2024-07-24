@@ -292,7 +292,7 @@ pub fn handle_entry_resources(
 ) {
   let module_graph = context.module_graph.read();
   let module_group_graph = context.module_group_graph.read();
-  let is_library = matches!(context.config.output.target_env, TargetEnv::Library);
+  let is_library = context.config.output.target_env.is_library();
 
   // create a runtime resource
   let mut runtime_code = None;
@@ -457,10 +457,7 @@ fn create_runtime_code(
   resources_map: &HashMap<String, Resource>,
   context: &Arc<CompilationContext>,
 ) -> String {
-  let node_specific_code = if matches!(
-    context.config.output.target_env,
-    TargetEnv::Library | TargetEnv::Node
-  ) {
+  let node_specific_code = if context.config.output.target_env.is_node() {
     match context.config.output.format {
       ModuleFormat::EsModule => {
         format!(

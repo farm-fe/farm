@@ -1,5 +1,5 @@
 //index.js:
- import __farmNodeModule from 'node:module';globalThis.nodeRequire = __farmNodeModule.createRequire(import.meta.url);(globalThis || window || global)['__farm_default_namespace__'] = {__FARM_TARGET_ENV__: 'library'};function _interop_require_default(obj) {
+ import __farmNodeModule from 'node:module';globalThis.nodeRequire = __farmNodeModule.createRequire(import.meta.url);(globalThis || window || global)['__farm_default_namespace__'] = {__FARM_TARGET_ENV__: 'library-node'};function _interop_require_default(obj) {
     return obj && obj.__esModule ? obj : {
         default: obj
     };

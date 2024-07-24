@@ -51,7 +51,7 @@ impl Plugin for FarmPluginBundle {
     let r = resource_pots
       .iter()
       .filter(|item| {
-        matches!(context.config.output.target_env, TargetEnv::Library)
+        context.config.output.target_env.is_library()
           || matches!(item.resource_pot_type, ResourcePotType::Runtime)
       })
       .map(|item| &**item)
