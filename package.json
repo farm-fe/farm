@@ -17,7 +17,7 @@
     "clean": "node scripts/clean.mjs && rimraf node_modules **/*/node_modules",
     "bump": "node scripts/bump.mjs",
     "bump:create-farm": "node scripts/bump-create-farm-version.mjs",
-    "test:rs:update": "cross-env FARM_UPDATE_SNAPSHOTS=1 cargo test -p farmfe_compiler",
+    "test:rs:update": "cross-env FARM_UPDATE_SNAPSHOTS=1 INSTA_UPDATE=always cargo test -p farmfe_compiler",
     "ready": "node scripts/ready.mjs",
     "test-e2e": "vitest run -c vitest.config.e2e.ts",
     "prepare": "husky"

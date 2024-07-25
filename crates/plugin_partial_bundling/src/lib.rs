@@ -1,6 +1,7 @@
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::{collections::VecDeque, sync::Arc};
 
+use farmfe_core::config::custom::CUSTOM_CONFIG_PARTIAL_BUNDLING_GROUPS_ENFORCE_MAP;
 use farmfe_core::{
   config::Config,
   context::CompilationContext,
@@ -28,6 +29,31 @@ mod utils;
 pub struct FarmPluginPartialBundling {}
 
 impl Plugin for FarmPluginPartialBundling {
+  fn config(&self, config: &mut Config) -> farmfe_core::error::Result<Option<()>> {
+    let partial_bundling_group_enforce_map_str = config
+      .custom
+      .get(CUSTOM_CONFIG_PARTIAL_BUNDLING_GROUPS_ENFORCE_MAP);
+
+    let enforce_map: HashMap<String, bool> = partial_bundling_group_enforce_map_str
+      .map(|s| {
+        farmfe_core::serde_json::from_str(s)
+          .expect("failed to parse partial bundling group enforce map")
+      })
+      .unwrap_or_default();
+
+    for group in config.partial_bundling.groups.iter_mut() {
+      if enforce_map
+        .iter()
+        .find(|(key, _)| group.name == **key)
+        .is_some_and(|(_, v)| *v)
+      {
+        group.enforce = true;
+      };
+    }
+
+    Ok(Some(()))
+  }
+
   fn name(&self) -> &str {
     "FarmPluginPartialBundling"
   }
@@ -79,7 +105,7 @@ impl Plugin for FarmPluginPartialBundling {
       module_group_buckets,
       module_buckets_map,
       &module_graph,
-      &context.config.partial_bundling,
+      &context.config,
     );
 
     Ok(Some(resource_pots))

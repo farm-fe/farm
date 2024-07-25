@@ -1,7 +1,7 @@
 use std::collections::{HashMap, HashSet};
 
 use farmfe_core::{
-  config::partial_bundling::PartialBundlingConfig,
+  config::{partial_bundling::PartialBundlingConfig, Config},
   module::{module_graph::ModuleGraph, Module, ModuleId},
 };
 
@@ -10,26 +10,19 @@ use crate::{generate_module_buckets::ResourceType, module_pot::ModulePot};
 pub fn generate_module_pots(
   modules: &HashSet<ModuleId>,
   module_graph: &ModuleGraph,
-  config: &PartialBundlingConfig,
+  config: &Config,
   resource_type: ResourceType,
 ) -> Vec<ModulePot> {
+  let partial_bundling = &config.partial_bundling;
   let mut module_pot_map = HashMap::<String, ModulePot>::new();
 
   for module_id in modules {
     let module = module_graph.module(module_id).unwrap();
-    let module_pot_name = generate_module_pot_name(module, config, resource_type.clone());
-    let module_pot_id = ModulePot::gen_id(
-      &module_pot_name,
-      module.module_type.clone(),
-      module.immutable,
-    );
+    let (id, name) = generate_module_pot_name(module, partial_bundling, resource_type.clone());
+    let module_pot_id = ModulePot::gen_id(&id, module.module_type.clone(), module.immutable);
 
     let module_pot = module_pot_map.entry(module_pot_id).or_insert_with(|| {
-      ModulePot::new(
-        module_pot_name,
-        module.module_type.clone(),
-        module.immutable,
-      )
+      ModulePot::new(id, name, module.module_type.clone(), module.immutable, true)
     });
 
     module_pot.add_module(module_id.clone(), module.size, module.execution_order);
@@ -38,15 +31,16 @@ pub fn generate_module_pots(
   // split module_pots from module_pot_map that its size larger that target_max_size
   let mut exceed_size_module_pot_ids = module_pot_map
     .iter()
-    .filter(|(_, module_pot)| module_pot.size > config.target_max_size)
+    .filter(|(_, module_pot)| module_pot.size > partial_bundling.target_max_size)
     .map(|(module_pot_id, _)| module_pot_id.clone())
     .collect::<Vec<_>>();
   exceed_size_module_pot_ids.sort();
 
   for exceed_size_module_pot_id in exceed_size_module_pot_ids {
     let module_pot = module_pot_map.remove(&exceed_size_module_pot_id).unwrap();
-    let new_module_pot_numbers = (module_pot.size / config.target_max_size) + 1;
+    let new_module_pot_numbers = (module_pot.size / partial_bundling.target_max_size) + 1;
     let module_pot_name = module_pot.name.clone();
+    let module_pot_id = module_pot.id.clone();
     let immutable = module_pot.immutable;
     let ty = module_pot.module_type.clone();
     let mut modules = module_pot.take_modules().into_iter().collect::<Vec<_>>();
@@ -54,12 +48,18 @@ pub fn generate_module_pots(
     let page_size = modules.len() / new_module_pot_numbers;
 
     for i in 0..new_module_pot_numbers {
-      let new_module_pot_name = format!("{}-{}", module_pot_name, i);
+      let new_module_pot_name = format!("{}-{}", module_pot_id, i);
       let new_module_pot_id = ModulePot::gen_id(&new_module_pot_name, ty.clone(), immutable);
 
-      let new_module_pot = module_pot_map
-        .entry(new_module_pot_id)
-        .or_insert_with(|| ModulePot::new(new_module_pot_name, ty.clone(), immutable));
+      let new_module_pot = module_pot_map.entry(new_module_pot_id).or_insert_with(|| {
+        ModulePot::new(
+          new_module_pot_name,
+          module_pot_name.clone(),
+          ty.clone(),
+          immutable,
+          true,
+        )
+      });
 
       let start = i * page_size;
       let end = if i == new_module_pot_numbers - 1 {
@@ -89,7 +89,7 @@ fn generate_module_pot_name(
   module: &Module,
   config: &PartialBundlingConfig,
   resource_type: ResourceType,
-) -> String {
+) -> (String, Option<String>) {
   // 1. get name from partialBundling.groups
   for group_config in &config.groups {
     // use the first matched group name, so the order of groups is important
@@ -101,17 +101,20 @@ fn generate_module_pot_name(
       if (group_config.group_type.is_match(module.immutable))
         && (resource_type.is_match(group_config.resource_type.clone()))
       {
-        return group_config.name.clone();
+        return (group_config.name.clone(), Some(group_config.name.clone()));
       }
     }
   }
 
   // 2. get name from immutable package
   if module.immutable {
-    return format!("{}@{}", module.package_name, module.package_version);
+    return (
+      format!("{}@{}", module.package_name, module.package_version),
+      None,
+    );
   }
 
-  module.id.to_string()
+  (module.id.to_string(), None)
 }
 
 #[cfg(test)]
@@ -123,16 +126,28 @@ mod tests {
         PartialBundlingConfig, PartialBundlingGroupConfig, PartialBundlingGroupConfigGroupType,
         PartialBundlingGroupConfigResourceType,
       },
+      Config,
     },
     module::{module_graph::ModuleGraph, Module, ModuleType},
   };
-  use farmfe_testing_helpers::fixture;
+  use farmfe_testing_helpers::{assert_debug_snapshot, fixture};
   use std::collections::HashSet;
+  use std::mem;
 
-  use crate::{
-    generate_module_buckets::ResourceType, generate_module_pots::generate_module_pots,
-    module_pot::ModulePot,
-  };
+  use crate::{generate_module_buckets::ResourceType, generate_module_pots::generate_module_pots};
+
+  macro_rules! assert_module_pot_snapshot {
+    ($module_pots:expr) => {
+      for module_pot in $module_pots.iter_mut() {
+        let mut modules = mem::take(&mut module_pot.modules)
+          .into_iter()
+          .collect::<Vec<_>>();
+        modules.sort();
+        assert_debug_snapshot!((&module_pot, &modules));
+        module_pot.modules = modules.into_iter().collect();
+      }
+    };
+  }
 
   #[test]
   fn test_generate_module_pots_package() {
@@ -178,7 +193,7 @@ mod tests {
           .map(|m| m.id.clone())
           .collect::<HashSet<_>>();
 
-        let module_pots = generate_module_pots(
+        let mut module_pots = generate_module_pots(
           &modules,
           &module_graph,
           &Default::default(),
@@ -186,28 +201,29 @@ mod tests {
         );
 
         assert_eq!(module_pots.len(), 2);
-        assert_eq!(module_pots[0].name, "test-package1@1.0.0");
-        assert_eq!(module_pots[0].size, 1 * 1024);
-        assert_eq!(module_pots[0].module_type, ModuleType::Js);
-        assert_eq!(module_pots[0].immutable, true);
-        assert_eq!(module_pots[0].execution_order, 1);
-        assert_eq!(
-          module_pots[0].modules(),
-          &HashSet::from(["tests/fixtures/generate_module_pots/basic1/index.ts".into()])
-        );
+        assert_module_pot_snapshot!(module_pots);
+        // assert_eq!(module_pots[0].name, "test-package1@1.0.0");
+        // assert_eq!(module_pots[0].size, 1 * 1024);
+        // assert_eq!(module_pots[0].module_type, ModuleType::Js);
+        // assert_eq!(module_pots[0].immutable, true);
+        // assert_eq!(module_pots[0].execution_order, 1);
+        // assert_eq!(
+        //   module_pots[0].modules(),
+        //   &HashSet::from(["tests/fixtures/generate_module_pots/basic1/index.ts".into()])
+        // );
 
-        assert_eq!(module_pots[1].name, "test-package@1.0.0");
-        assert_eq!(module_pots[1].size, 15 * 1024);
-        assert_eq!(module_pots[1].module_type, ModuleType::Js);
-        assert_eq!(module_pots[1].immutable, true);
-        assert_eq!(module_pots[1].execution_order, 2);
-        assert_eq!(
-          module_pots[1].modules(),
-          &HashSet::from([
-            "tests/fixtures/generate_module_pots/basic/index.ts".into(),
-            "tests/fixtures/generate_module_pots/basic/utils.ts".into()
-          ])
-        );
+        // assert_eq!(module_pots[1].name, "test-package@1.0.0");
+        // assert_eq!(module_pots[1].size, 15 * 1024);
+        // assert_eq!(module_pots[1].module_type, ModuleType::Js);
+        // assert_eq!(module_pots[1].immutable, true);
+        // assert_eq!(module_pots[1].execution_order, 2);
+        // assert_eq!(
+        //   module_pots[1].modules(),
+        //   &HashSet::from([
+        //     "tests/fixtures/generate_module_pots/basic/index.ts".into(),
+        //     "tests/fixtures/generate_module_pots/basic/utils.ts".into()
+        //   ])
+        // );
       }
     );
   }
@@ -241,122 +257,77 @@ mod tests {
       .map(|m| m.id.clone())
       .collect::<HashSet<_>>();
 
-    let assert_group_works = |module_pots: Vec<ModulePot>| {
-      assert_eq!(module_pots.len(), 2);
-
-      assert_eq!(module_pots[0].name, "test");
-      assert_eq!(module_pots[0].size, 15 * 1024);
-      assert_eq!(module_pots[0].module_type, ModuleType::Js);
-      assert_eq!(module_pots[0].immutable, false);
-      assert_eq!(module_pots[0].execution_order, 1);
-      assert_eq!(
-        module_pots[0].modules(),
-        &HashSet::from(["src/a.ts".into(), "src/b.ts".into()])
-      );
-
-      assert_eq!(module_pots[1].name, "utils/c.ts");
-      assert_eq!(module_pots[1].size, 1 * 1024);
-      assert_eq!(module_pots[1].module_type, ModuleType::Js);
-      assert_eq!(module_pots[1].immutable, false);
-      assert_eq!(module_pots[1].execution_order, 3);
-      assert_eq!(
-        module_pots[1].modules(),
-        &HashSet::from(["utils/c.ts".into()])
-      );
-    };
-
-    let assert_group_not_works = |module_pots: Vec<ModulePot>| {
-      assert_eq!(module_pots.len(), 3);
-
-      assert_eq!(module_pots[0].name, "src/a.ts");
-      assert_eq!(module_pots[0].size, 10 * 1024);
-      assert_eq!(module_pots[0].module_type, ModuleType::Js);
-      assert_eq!(module_pots[0].immutable, false);
-      assert_eq!(module_pots[0].execution_order, 1);
-      assert_eq!(
-        module_pots[0].modules(),
-        &HashSet::from(["src/a.ts".into()])
-      );
-
-      assert_eq!(module_pots[1].name, "src/b.ts");
-      assert_eq!(module_pots[1].size, 5 * 1024);
-      assert_eq!(module_pots[1].module_type, ModuleType::Js);
-      assert_eq!(module_pots[1].immutable, false);
-      assert_eq!(module_pots[1].execution_order, 2);
-      assert_eq!(
-        module_pots[1].modules(),
-        &HashSet::from(["src/b.ts".into()])
-      );
-
-      assert_eq!(module_pots[2].name, "utils/c.ts");
-      assert_eq!(module_pots[2].size, 1 * 1024);
-      assert_eq!(module_pots[2].module_type, ModuleType::Js);
-      assert_eq!(module_pots[2].immutable, false);
-      assert_eq!(module_pots[2].execution_order, 3);
-      assert_eq!(
-        module_pots[2].modules(),
-        &HashSet::from(["utils/c.ts".into()])
-      );
-    };
-
     // Default config for group_type and resource_type
-    let config = PartialBundlingConfig {
-      groups: vec![PartialBundlingGroupConfig {
-        name: "test".into(),
-        test: vec![ConfigRegex::new("src/.*")],
+    let config = Config {
+      partial_bundling: Box::new(PartialBundlingConfig {
+        groups: vec![PartialBundlingGroupConfig {
+          name: "test".into(),
+          test: vec![ConfigRegex::new("src/.*")],
+          ..Default::default()
+        }],
         ..Default::default()
-      }],
+      }),
       ..Default::default()
     };
 
-    let module_pots = generate_module_pots(&modules, &module_graph, &config, ResourceType::Initial);
-    assert_group_works(module_pots);
+    let mut module_pots =
+      generate_module_pots(&modules, &module_graph, &config, ResourceType::Initial);
+    assert_module_pot_snapshot!(module_pots);
 
     // only match mutable modules
-    let config = PartialBundlingConfig {
-      groups: vec![PartialBundlingGroupConfig {
-        name: "test".into(),
-        test: vec![ConfigRegex::new("src/.*")],
-        group_type: PartialBundlingGroupConfigGroupType::Immutable,
+    let config = Config {
+      partial_bundling: Box::new(PartialBundlingConfig {
+        groups: vec![PartialBundlingGroupConfig {
+          name: "test".into(),
+          test: vec![ConfigRegex::new("src/.*")],
+          group_type: PartialBundlingGroupConfigGroupType::Immutable,
+          ..Default::default()
+        }],
         ..Default::default()
-      }],
+      }),
       ..Default::default()
     };
 
-    let module_pots = generate_module_pots(&modules, &module_graph, &config, ResourceType::Initial);
+    let mut module_pots =
+      generate_module_pots(&modules, &module_graph, &config, ResourceType::Initial);
+    assert_module_pot_snapshot!(module_pots);
 
-    assert_group_not_works(module_pots);
-
-    let config = PartialBundlingConfig {
-      groups: vec![PartialBundlingGroupConfig {
-        name: "test".into(),
-        test: vec![ConfigRegex::new("src/.*")],
-        resource_type: PartialBundlingGroupConfigResourceType::Async,
+    let config = Config {
+      partial_bundling: Box::new(PartialBundlingConfig {
+        groups: vec![PartialBundlingGroupConfig {
+          name: "test".into(),
+          test: vec![ConfigRegex::new("src/.*")],
+          resource_type: PartialBundlingGroupConfigResourceType::Async,
+          ..Default::default()
+        }],
         ..Default::default()
-      }],
+      }),
       ..Default::default()
     };
 
-    let module_pots = generate_module_pots(&modules, &module_graph, &config, ResourceType::Initial);
+    let mut module_pots =
+      generate_module_pots(&modules, &module_graph, &config, ResourceType::Initial);
+    assert_module_pot_snapshot!(module_pots);
 
-    assert_group_not_works(module_pots);
+    let mut module_pots =
+      generate_module_pots(&modules, &module_graph, &config, ResourceType::Async);
+    assert_module_pot_snapshot!(module_pots);
 
-    let module_pots = generate_module_pots(&modules, &module_graph, &config, ResourceType::Async);
-
-    assert_group_works(module_pots);
-
-    let config = PartialBundlingConfig {
-      groups: vec![PartialBundlingGroupConfig {
-        name: "test".into(),
-        test: vec![ConfigRegex::new("src/.*")],
-        resource_type: PartialBundlingGroupConfigResourceType::Initial,
+    let config = Config {
+      partial_bundling: Box::new(PartialBundlingConfig {
+        groups: vec![PartialBundlingGroupConfig {
+          name: "test".into(),
+          test: vec![ConfigRegex::new("src/.*")],
+          resource_type: PartialBundlingGroupConfigResourceType::Initial,
+          ..Default::default()
+        }],
         ..Default::default()
-      }],
+      }),
       ..Default::default()
     };
 
-    let module_pots = generate_module_pots(&modules, &module_graph, &config, ResourceType::Initial);
-
-    assert_group_works(module_pots);
+    let mut module_pots =
+      generate_module_pots(&modules, &module_graph, &config, ResourceType::Initial);
+    assert_module_pot_snapshot!(module_pots);
   }
 }
