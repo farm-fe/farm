@@ -1,4 +1,4 @@
-import { test, expect } from 'vitest';
+import { test, expect, describe } from 'vitest';
 import { watchProjectAndTest } from '../../e2e/vitestSetup.js';
 import { basename, dirname } from 'path';
 import { fileURLToPath } from 'url';
@@ -6,7 +6,7 @@ import { fileURLToPath } from 'url';
 const name = basename(import.meta.url);
 const projectPath = dirname(fileURLToPath(import.meta.url));
 
-test(`e2e tests - ${name}`, async () => {
+describe(`e2e tests - ${name}`, async () => {
   const runTest = (command?: 'watch' | 'preview') =>
     watchProjectAndTest(
       projectPath,
@@ -23,8 +23,17 @@ test(`e2e tests - ${name}`, async () => {
       },
       command
     );
+
   // preview build
-  await runTest('preview');
-  await runTest('watch');
-  await runTest('preview');
+  test('preview', async () => {
+    await runTest('preview');
+  });
+
+  test('watch', async () => {
+    await runTest('watch');
+  });
+
+  test('preview', async () => {
+    await runTest('preview');
+  });
 });

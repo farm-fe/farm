@@ -1,0 +1,22 @@
+---
+source: crates/plugin_partial_bundling/src/generate_module_pots.rs
+input_file: crates/plugin_partial_bundling/src/generate_module_pots.rs
+---
+(
+    ModulePot {
+        name: None,
+        id: "test-package1@1.0.0",
+        size: 1024,
+        module_type: Js,
+        immutable: true,
+        execution_order: 1,
+        enforce: true,
+        modules: {},
+    },
+    [
+        ModuleId {
+            relative_path: "tests/fixtures/generate_module_pots/basic1/index.ts",
+            query_string: "",
+        },
+    ],
+)

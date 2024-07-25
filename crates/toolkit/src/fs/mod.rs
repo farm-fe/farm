@@ -69,3 +69,77 @@ pub fn transform_output_entry_filename(
 
   transform_output_filename(res, name, bytes, ext)
 }
+
+fn is_valid_char(ch: char) -> bool {
+  ch.is_ascii_digit() || is_valid_first_char(ch)
+}
+
+fn is_valid_first_char(ch: char) -> bool {
+  ch.is_ascii_lowercase() || ch.is_ascii_uppercase() || ch == '_'
+}
+
+/// normalize file name as variable name.
+pub fn normalize_file_name_as_variable(str: String) -> String {
+  let mut res = String::with_capacity(str.len());
+
+  let mut first = true;
+
+  let mut prev_is_invalid = false;
+  for ch in str.chars() {
+    if first {
+      if !is_valid_first_char(ch) {
+        res.push('_');
+
+        if is_valid_char(ch) {
+          res.push(ch);
+        } else {
+          prev_is_invalid = true;
+        }
+      } else {
+        res.push(ch)
+      }
+      first = false;
+    } else if is_valid_char(ch) || ch.is_ascii_digit() {
+      res.push(ch);
+      prev_is_invalid = false;
+    } else {
+      if prev_is_invalid {
+        continue;
+      }
+
+      res.push('_');
+      prev_is_invalid = true;
+    }
+  }
+
+  res
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::fs::normalize_file_name_as_variable;
+
+  #[test]
+  fn test_normalize_name() {
+    let normalized_str = normalize_file_name_as_variable(String::from("F:\\path\\to\\file.ts"));
+    assert_eq!(normalized_str, "F_path_to_file_ts");
+
+    let normalized_str = normalize_file_name_as_variable(String::from("/path/to/file.ts"));
+    assert_eq!(normalized_str, "_path_to_file_ts");
+
+    let normalized_str = normalize_file_name_as_variable(String::from("$_#$()axq"));
+    assert_eq!(normalized_str, "___axq");
+
+    let normalized_str = normalize_file_name_as_variable(String::from("_a_b_C_D"));
+    assert_eq!(normalized_str, "_a_b_C_D");
+
+    let normalized_str = normalize_file_name_as_variable(String::from("123456789"));
+    assert_eq!(normalized_str, "_123456789");
+
+    let normalized_str = normalize_file_name_as_variable(String::from("1_2_3_4"));
+    assert_eq!(normalized_str, "_1_2_3_4");
+
+    let normalized_str = normalize_file_name_as_variable(String::from("1text.ts"));
+    assert_eq!(normalized_str, "_1text_ts");
+  }
+}

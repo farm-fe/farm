@@ -10,6 +10,7 @@ use super::{
 
 const CUSTOM_CONFIG_RUNTIME_ISOLATE: &str = "runtime.isolate";
 pub const CUSTOM_CONFIG_EXTERNAL_RECORD: &str = "external.record";
+pub const CUSTOM_CONFIG_PARTIAL_BUNDLING_GROUPS_ENFORCE_MAP: &str = "partial_bundling.groups.enforce";
 
 pub fn get_config_runtime_isolate(context: &Arc<CompilationContext>) -> bool {
   if let Some(val) = context.config.custom.get(CUSTOM_CONFIG_RUNTIME_ISOLATE) {
