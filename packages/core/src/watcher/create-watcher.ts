@@ -21,12 +21,13 @@ function resolveChokidarOptions(
       ? config.compilation.persistentCache.cacheDir
       : (cacheDir = path.resolve(config.root, cacheDir));
   } else {
-    path.resolve(config.root, 'node_modules', '.farm', 'cache');
+    cacheDir = path.resolve(config.root, 'node_modules', '.farm', 'cache');
   }
 
   const options: WatchOptions = {
     ignored: [
       '**/.git/**',
+      '**/node_modules/**',
       '**/test-results/**', // Playwright
       glob.escapePath(cacheDir) + '/**',
       glob.escapePath(
