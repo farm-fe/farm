@@ -2,12 +2,6 @@
 members = ["crates/*", "packages/create-farm", "rust-plugins/*"]
 resolver = "2"
 
-[profile.dev]
-codegen-units = 16
-debug = 2
-incremental = true
-panic = "abort"
-
 [profile.release]
 codegen-units = 1
 lto = "fat"
