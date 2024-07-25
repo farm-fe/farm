@@ -41,9 +41,6 @@ export function cleanOptions(options: GlobalCliOptions) {
   delete resolveOptions['--'];
   delete resolveOptions.m;
   delete resolveOptions.c;
-  delete resolveOptions.w;
-  delete resolveOptions.l;
-  delete resolveOptions.lazy;
   delete resolveOptions.mode;
   delete resolveOptions.base;
   delete resolveOptions.config;
