@@ -1,5 +1,5 @@
 //index.js:
- import __farmNodeModule from 'node:module';globalThis.nodeRequire = __farmNodeModule.createRequire(import.meta.url);(globalThis || window || global)['__farm_default_namespace__'] = {__FARM_TARGET_ENV__: 'library-node'};function _interop_require_default(obj) {
+ function _interop_require_default(obj) {
     return obj && obj.__esModule ? obj : {
         default: obj
     };
@@ -43,28 +43,7 @@
     return (_getRequireWildcardCache = function(nodeInterop) {
         return nodeInterop ? cacheNodeInterop : cacheBabelInterop;
     })(nodeInterop);
-}function __commonJs(mod) {
-  var module;
-  return () => {
-    if (module) {
-      return module.exports;
-    }
-    module = {
-      exports: {},
-    };
-    if(typeof mod === "function") {
-      mod(module, module.exports);
-    }else {
-      mod[Object.keys(mod)[0]](module, module.exports);
-    }
-    return module.exports;
-  };
-}var runtime_ts_cjs = __commonJs((module, exports)=>{
-    "use strict";
-    console.log('runtime');
-    (globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setPlugins([]);
-});
-var foo_default = 'foo';
+}var foo_default = 'foo';
 const foo = 'foo';
 const bar = 'bar';
 var foo_ns = {

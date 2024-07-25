@@ -1,5 +1,6 @@
 //index.js:
- import __farmNodeModule from 'node:module';globalThis.nodeRequire = __farmNodeModule.createRequire(import.meta.url);(globalThis || window || global)['__farm_default_namespace__'] = {__FARM_TARGET_ENV__: 'library-node'};function _interop_require_default(obj) {
+ import __farmNodeModule from 'module';
+globalThis.nodeRequire = __farmNodeModule.createRequire(import.meta.url);function _interop_require_default(obj) {
     return obj && obj.__esModule ? obj : {
         default: obj
     };
@@ -59,12 +60,7 @@
     }
     return module.exports;
   };
-}var runtime_ts_cjs = __commonJs((module, exports)=>{
-    "use strict";
-    console.log('runtime');
-    (globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setPlugins([]);
-});
-import fs from "node:fs";
+}import fs from "node:fs";
 var index_cjs = __commonJs((module, exports)=>{
     "use strict";
     Object.defineProperty(exports, "__esModule", {
