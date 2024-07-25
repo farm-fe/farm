@@ -41,11 +41,11 @@ export class FileWatcher implements ImplFileWatcher {
     return this._watcher;
   }
 
-  filterWatchFile(file: string, root: string): boolean {
+  private filterWatchFile(file: string): boolean {
     const suffix = process.platform === 'win32' ? '\\' : '/';
 
     return (
-      !file.startsWith(`${root}${suffix}`) &&
+      !file.startsWith(`${this._root}${suffix}`) &&
       !file.includes(`node_modules${suffix}`) &&
       !file.includes('\0') &&
       existsSync(file)
@@ -58,7 +58,7 @@ export class FileWatcher implements ImplFileWatcher {
     return [
       ...compiler.resolvedModulePaths(this._root),
       ...compiler.resolvedWatchPaths()
-    ].filter((file) => this.filterWatchFile(file, this._root));
+    ].filter((file) => this.filterWatchFile(file));
   }
 
   watchExtraFiles() {
@@ -73,7 +73,6 @@ export class FileWatcher implements ImplFileWatcher {
   }
 
   async watch() {
-    // Determine how to compile the project
     const compiler = this.compiler;
 
     const handlePathChange = async (path: string): Promise<void> => {
@@ -82,11 +81,10 @@ export class FileWatcher implements ImplFileWatcher {
       }
 
       try {
-        if (this.server) {
-          await this.server.hmrEngine.hmrUpdate(path);
-        }
+        this.server && (await this.server.hmrEngine.hmrUpdate(path));
 
-        if (!this.server && this.compiler.hasModule(path)) {
+        // Determine how to compile the project
+        if (!this.server && compiler.hasModule(path)) {
           compilerHandler(
             async () => {
               const result = await compiler.update([path], true);
@@ -125,9 +123,7 @@ export class FileWatcher implements ImplFileWatcher {
         );
         return resolvedPath;
       });
-      const filteredAdded = added.filter((file) =>
-        this.filterWatchFile(file, this._root)
-      );
+      const filteredAdded = added.filter((file) => this.filterWatchFile(file));
 
       if (filteredAdded.length > 0) {
         this._watcher.add(filteredAdded);
