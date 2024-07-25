@@ -19,7 +19,7 @@ function resolveChokidarOptions(
   ) {
     cacheDir = path.isAbsolute(cacheDir)
       ? config.compilation.persistentCache.cacheDir
-      : (cacheDir = path.resolve(config.root, cacheDir));
+      : path.resolve(config.root, cacheDir);
   } else {
     cacheDir = path.resolve(config.root, 'node_modules', '.farm', 'cache');
   }
