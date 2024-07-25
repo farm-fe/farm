@@ -4,7 +4,7 @@ import { FSWatcher } from 'chokidar';
 
 import { Compiler } from '../compiler/index.js';
 import { Server } from '../server/index.js';
-import { Logger, compilerHandler } from '../utils/index.js';
+import { Logger, compilerHandler, normalizeBasePath } from '../utils/index.js';
 
 import { existsSync } from 'node:fs';
 import type { ResolvedUserConfig } from '../config/index.js';
@@ -42,14 +42,20 @@ export class FileWatcher implements ImplFileWatcher {
   }
 
   private filterWatchFile(file: string): boolean {
-    const suffix = process.platform === 'win32' ? '\\' : '/';
+    file = normalizeBasePath(file);
 
-    return (
-      !file.startsWith(`${this._root}${suffix}`) &&
-      !file.includes(`node_modules${suffix}`) &&
-      !file.includes('\0') &&
-      existsSync(file)
-    );
+    if (
+      file.startsWith(`${this._root}/`) ||
+      file.includes(`node_modules/`) ||
+      file.includes('\0')
+    )
+      return false;
+
+    for (const watchedFile of this._watchedFiles) {
+      if (file.startsWith(watchedFile)) return false;
+    }
+
+    return existsSync(file);
   }
 
   getExtraWatchedFiles() {
@@ -127,6 +133,7 @@ export class FileWatcher implements ImplFileWatcher {
 
       if (filteredAdded.length > 0) {
         this._watcher.add(filteredAdded);
+        filteredAdded.forEach((file) => this._watchedFiles.add(file));
       }
     };
 
