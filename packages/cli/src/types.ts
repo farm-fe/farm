@@ -17,7 +17,7 @@ export interface CleanOptions {
 export interface CliServerOptions {
   l?: boolean;
   lazy?: boolean;
-  port?: string;
+  port?: number;
   open?: boolean;
   https?: boolean;
   hmr?: boolean;

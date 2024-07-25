@@ -3,7 +3,12 @@ import path from 'node:path';
 import type { build, clean, preview, start, watch } from '@farmfe/core';
 import { Logger } from '@farmfe/core';
 
-import type { CleanOptions, GlobalCliOptions } from './types.js';
+import type {
+  CleanOptions,
+  CliBuildOptions,
+  CliServerOptions,
+  GlobalCliOptions
+} from './types.js';
 
 const logger = new Logger();
 
@@ -35,12 +40,17 @@ export function filterDuplicateOptions<T>(options: T) {
   }
 }
 
-export function cleanOptions(options: GlobalCliOptions) {
+export function cleanOptions(
+  options: GlobalCliOptions & CliServerOptions & CliBuildOptions
+) {
   const resolveOptions = { ...options };
 
   delete resolveOptions['--'];
   delete resolveOptions.m;
   delete resolveOptions.c;
+  delete resolveOptions.w;
+  delete resolveOptions.l;
+  delete resolveOptions.lazy;
   delete resolveOptions.mode;
   delete resolveOptions.base;
   delete resolveOptions.config;
