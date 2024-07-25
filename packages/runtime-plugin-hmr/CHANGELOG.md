@@ -1,5 +1,11 @@
 # @farmfe/runtime-plugin-hmr
 
+## 3.5.5
+
+### Patch Changes
+
+- 01e3100b: Fix do not full reload when boundary module not found for multi-page-app
+
 ## 3.5.4
 
 ### Patch Changes
