@@ -20,13 +20,21 @@ export class FileWatcher implements ImplFileWatcher {
   private _watcher: FSWatcher;
   private _close = false;
   private _watchedFiles = new Set<string>();
+  public server: Server | null = null;
+  public compiler: Compiler;
 
   constructor(
-    public serverOrCompiler: Server | Compiler,
+    serverOrCompiler: Server | Compiler,
     public options: ResolvedUserConfig,
     private _logger: Logger
   ) {
     this._root = options.root;
+    if (serverOrCompiler instanceof Server) {
+      this.server = serverOrCompiler;
+      this.compiler = serverOrCompiler.getCompiler();
+    } else {
+      this.compiler = serverOrCompiler;
+    }
   }
 
   getInternalWatcher() {
@@ -45,9 +53,7 @@ export class FileWatcher implements ImplFileWatcher {
   }
 
   getExtraWatchedFiles() {
-    const compiler = this.getCompilerFromServerOrCompiler(
-      this.serverOrCompiler
-    );
+    const compiler = this.compiler;
 
     return [
       ...compiler.resolvedModulePaths(this._root),
@@ -68,9 +74,7 @@ export class FileWatcher implements ImplFileWatcher {
 
   async watch() {
     // Determine how to compile the project
-    const compiler = this.getCompilerFromServerOrCompiler(
-      this.serverOrCompiler
-    );
+    const compiler = this.compiler;
 
     const handlePathChange = async (path: string): Promise<void> => {
       if (this._close) {
@@ -78,14 +82,11 @@ export class FileWatcher implements ImplFileWatcher {
       }
 
       try {
-        if (this.serverOrCompiler instanceof Server) {
-          await this.serverOrCompiler.hmrEngine.hmrUpdate(path);
+        if (this.server) {
+          await this.server.hmrEngine.hmrUpdate(path);
         }
 
-        if (
-          this.serverOrCompiler instanceof Compiler &&
-          this.serverOrCompiler.hasModule(path)
-        ) {
+        if (!this.server && this.compiler.hasModule(path)) {
           compilerHandler(
             async () => {
               const result = await compiler.update([path], true);
@@ -133,23 +134,16 @@ export class FileWatcher implements ImplFileWatcher {
       }
     };
 
-    if (this.serverOrCompiler instanceof Server) {
-      this.serverOrCompiler.hmrEngine?.onUpdateFinish(handleUpdateFinish);
+    if (this.server) {
+      this.server.hmrEngine?.onUpdateFinish(handleUpdateFinish);
     }
-  }
-
-  private getCompilerFromServerOrCompiler(
-    serverOrCompiler: Server | Compiler
-  ): Compiler {
-    return serverOrCompiler instanceof Server
-      ? serverOrCompiler.getCompiler()
-      : serverOrCompiler;
   }
 
   close() {
     this._close = true;
     this._watcher = null;
-    this.serverOrCompiler = null;
+    this.server = null;
+    this.compiler = null;
   }
 }
 
