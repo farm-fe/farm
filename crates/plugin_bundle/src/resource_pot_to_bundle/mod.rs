@@ -296,7 +296,7 @@ impl<'a> SharedBundle<'a> {
 
     let bundle = self.bundle_map.get_mut(resource_pot_id).unwrap();
 
-    let bundle = bundle.codegen(&mut self.module_analyzer_manager)?;
+    let bundle = bundle.codegen(&mut self.module_analyzer_manager, &self.context.config)?;
 
     Ok(bundle)
   }

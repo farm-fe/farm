@@ -6,6 +6,7 @@ use std::{
 
 use bundle_external::BundleReference;
 use farmfe_core::{
+  config::external::ExternalConfig,
   context::CompilationContext,
   error::{CompilationError, MapCompletionError, Result},
   farm_profile_function, farm_profile_scope,
@@ -453,6 +454,7 @@ impl<'a> ModuleAnalyzerManager<'a> {
     commonjs_import_executed: &mut HashSet<ModuleId>,
     order_index_map: &HashMap<ModuleId, usize>,
     polyfill: &mut SimplePolyfill,
+    external_config: &ExternalConfig,
   ) -> Result<()> {
     farm_profile_function!(format!(
       "patch module analyzer ast: {}",
@@ -471,6 +473,7 @@ impl<'a> ModuleAnalyzerManager<'a> {
       commonjs_import_executed,
       order_index_map,
       polyfill,
+      external_config,
     )?;
 
     Ok(())
@@ -650,6 +653,7 @@ impl<'a> ModuleAnalyzerManager<'a> {
     commonjs_import_executed: &mut HashSet<ModuleId>,
     order_index_map: &HashMap<ModuleId, usize>,
     polyfill: &mut SimplePolyfill,
+    external_config: &ExternalConfig,
   ) -> Result<()> {
     farm_profile_function!("");
 
@@ -716,6 +720,8 @@ impl<'a> ModuleAnalyzerManager<'a> {
             &self.module_global_uniq_name,
             bundle_variable,
             &context.config,
+            polyfill,
+            external_config
           )
         }
 

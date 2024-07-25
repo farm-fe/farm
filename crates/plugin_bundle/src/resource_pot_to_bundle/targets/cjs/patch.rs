@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use farmfe_core::{
-  config::{Config, Mode},
+  config::{external::ExternalConfig, Config, Mode},
   context::CompilationContext,
   error::Result,
   module::{module_graph::ModuleGraph, ModuleId, ModuleSystem},
@@ -201,6 +201,8 @@ impl CjsPatch {
     module_global_uniq_name: &ModuleGlobalUniqName,
     bundle_variable: &BundleVariable,
     config: &Config,
+    polyfill: &mut SimplePolyfill,
+    external_config: &ExternalConfig,
   ) {
     let mut replacer: CJSReplace = CJSReplace {
       unresolved_mark: mark.0,
@@ -210,6 +212,8 @@ impl CjsPatch {
       module_global_uniq_name,
       bundle_variable,
       config,
+      polyfill,
+      external_config
     };
 
     ast.visit_mut_with(&mut replacer);

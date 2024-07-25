@@ -1,5 +1,5 @@
 use farmfe_core::{
-  config::{Config, ModuleFormat},
+  config::{external::ExternalConfig, Config, ModuleFormat},
   module::{module_graph::ModuleGraph, ModuleId},
   swc_common::{Mark, DUMMY_SP},
   swc_ecma_ast::{CallExpr, Callee, Expr, ExprOrSpread, Lit, MemberExpr, MemberProp},
@@ -9,7 +9,9 @@ use farmfe_toolkit::{
   swc_ecma_visit::{VisitMut, VisitMutWith},
 };
 
-use crate::resource_pot_to_bundle::{bundle::ModuleGlobalUniqName, uniq_name::BundleVariable};
+use crate::resource_pot_to_bundle::{
+  bundle::ModuleGlobalUniqName, uniq_name::BundleVariable, Polyfill, SimplePolyfill,
+};
 
 enum ReplaceType {
   None,
@@ -54,6 +56,8 @@ pub struct CJSReplace<'a> {
   pub module_global_uniq_name: &'a ModuleGlobalUniqName,
   pub bundle_variable: &'a BundleVariable,
   pub config: &'a Config,
+  pub polyfill: &'a mut SimplePolyfill,
+  pub external_config: &'a ExternalConfig,
 }
 
 impl<'a> VisitMut for CJSReplace<'a> {
@@ -79,14 +83,38 @@ impl<'a> VisitMut for CJSReplace<'a> {
               .module_graph
               .get_dep_by_source_optional(&self.module_id, &source, None)
           {
-            if self.module_graph.module(&id).is_some_and(|m| m.external)
-              && matches!(self.config.output.format, ModuleFormat::EsModule)
-            {
-              call_expr.callee = Callee::Expr(Box::new(Expr::Member(MemberExpr {
-                span: DUMMY_SP,
-                obj: Box::new(Expr::Ident("globalThis".into())),
-                prop: MemberProp::Ident("nodeRequire".into()),
-              })));
+            if self.module_graph.module(&id).is_some_and(|m| m.external) {
+              if self.config.output.target_env.is_library()
+                && self.config.output.target_env.is_node()
+              {
+                // node esm
+                if matches!(self.config.output.format, ModuleFormat::EsModule) {
+                  self.polyfill.add(Polyfill::NodeEsmGlobalRequireHelper);
+                  call_expr.callee = Callee::Expr(Box::new(Expr::Member(MemberExpr {
+                    span: DUMMY_SP,
+                    obj: Box::new(Expr::Ident("globalThis".into())),
+                    prop: MemberProp::Ident("nodeRequire".into()),
+                  })));
+                }
+              } else {
+                // browser
+                self.polyfill.add(Polyfill::BrowserExternalRequire);
+
+                let replace_source = self
+                  .external_config
+                  .find_match(&source)
+                  .map(|v| v.source(&source))
+                  // it's maybe from plugin
+                  .unwrap_or(source.clone());
+
+                call_expr.callee =
+                  Callee::Expr(Box::new(Expr::Ident("loadExternalRequire".into())));
+                call_expr.args = vec![ExprOrSpread {
+                  spread: None,
+                  expr: Box::new(Expr::Lit(Lit::Str(replace_source.into()))),
+                }];
+                call_expr.span = DUMMY_SP;
+              }
             } else if let Some(commonjs_name) = self.module_global_uniq_name.commonjs_name(&id) {
               *call_expr = CallExpr {
                 span: DUMMY_SP,
@@ -105,7 +133,7 @@ impl<'a> VisitMut for CJSReplace<'a> {
               replaced = ReplaceType::Ident(ns);
             }
           }
-          // TODO: other bundle | external
+          // TODO: other bundle
         }
       }
 

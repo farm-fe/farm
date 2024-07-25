@@ -7,7 +7,7 @@ use std::{
 };
 
 use farmfe_core::{
-  config::{Mode, ModuleFormat, TargetEnv},
+  config::{external::ExternalConfig, Config, Mode, ModuleFormat, TargetEnv},
   context::CompilationContext,
   enhanced_magic_string::{
     bundle::{Bundle, BundleOptions},
@@ -905,6 +905,8 @@ impl<'a> BundleAnalyzer<'a> {
   ) -> Result<()> {
     farm_profile_function!("");
     let mut commonjs_import_executed: HashSet<ModuleId> = HashSet::new();
+    let external_config = ExternalConfig::from(self.context.config.as_ref());
+
     for module_id in &self.ordered_modules {
       farm_profile_scope!(format!(
         "bundle patch ast module: {}",
@@ -919,6 +921,7 @@ impl<'a> BundleAnalyzer<'a> {
         &mut commonjs_import_executed,
         order_index_map,
         &mut self.polyfill,
+        &external_config
       )?;
     }
 
@@ -988,7 +991,11 @@ impl<'a> BundleAnalyzer<'a> {
   }
 
   // step: 4 generate bundle code
-  pub fn codegen(&mut self, module_analyzer_manager: &mut ModuleAnalyzerManager) -> Result<Bundle> {
+  pub fn codegen(
+    &mut self,
+    module_analyzer_manager: &mut ModuleAnalyzerManager,
+    config: &Config,
+  ) -> Result<Bundle> {
     let mut bundle = Bundle::new(BundleOptions {
       separator: Some('\n'),
       intro: None,
@@ -1087,14 +1094,16 @@ impl<'a> BundleAnalyzer<'a> {
     {
       bundle.prepend("((function(){");
       bundle.append("})());", None);
-    }
+    };
 
-    let is_runtime_resource_pot = matches!(
-      self.resource_pot.resource_pot_type,
-      ResourcePotType::Runtime
-    );
+    let injectable_resource_pot = (config.output.target_env.is_library()
+      && self.resource_pot.entry_module.is_some())
+      || matches!(
+        self.resource_pot.resource_pot_type,
+        ResourcePotType::Runtime
+      );
 
-    if !self.polyfill.is_empty() && is_runtime_resource_pot {
+    if !self.polyfill.is_empty() && injectable_resource_pot {
       for item in self.polyfill.to_str() {
         bundle.prepend(&item);
       }
