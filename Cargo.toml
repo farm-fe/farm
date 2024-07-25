@@ -1,7 +1,16 @@
 [workspace]
-members = [
-  "crates/*",
- "packages/create-farm",
-  "rust-plugins/*",
-]
+members = ["crates/*", "packages/create-farm", "rust-plugins/*"]
 resolver = "2"
+
+[profile.dev]
+codegen-units = 16
+debug = 2
+incremental = true
+panic = "abort"
+
+[profile.release]
+codegen-units = 1
+lto = "fat"
+opt-level = 3
+strip = true
+panic = "abort"
