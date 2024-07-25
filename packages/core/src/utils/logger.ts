@@ -3,7 +3,9 @@ import { ColorFunction, PersistentCacheBrand, colors } from './color.js';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { pad, version } from './share.js';
 
-type LogLevelNames = 'trace' | 'debug' | 'info' | 'warn' | 'error';
+type ToUnion<T extends Record<string, string | number>> = keyof {
+  [Prop in keyof T as `${T[Prop]}`]: Prop;
+};
 
 enum LogLevel {
   Trace = 'trace',
@@ -12,6 +14,8 @@ enum LogLevel {
   Warn = 'warn',
   Error = 'error'
 }
+
+type LogLevelNames = ToUnion<typeof LogLevel>;
 
 export interface ILogger {
   trace(message: string): void;
@@ -28,10 +32,12 @@ export interface ErrorOptions {
   e?: Error;
   error?: Error;
 }
+
 interface LoggerOptions {
   name?: string;
   brandColor?: ColorFunction;
   exit?: boolean;
+  customLogger?: (options: any) => ILogger;
 }
 
 const LOGGER_METHOD = {
@@ -47,16 +53,17 @@ const errorOnceMessages = new Set();
 export class Logger implements ILogger {
   constructor(
     public options?: LoggerOptions,
-    private levelValues: Record<LogLevelNames, number> = {
+    private levelValues?: Record<LogLevelNames, number>,
+    private prefix?: string
+  ) {
+    if (!this.options) this.options = {};
+    this.levelValues = {
       trace: 0,
       debug: 1,
       info: 2,
       warn: 3,
       error: 4
-    },
-    private prefix?: string
-  ) {
-    if (!this.options) this.options = {};
+    };
     this.brandPrefix();
   }
 
