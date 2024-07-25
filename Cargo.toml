@@ -8,3 +8,8 @@ lto = "fat"
 opt-level = 3
 strip = true
 panic = "abort"
+
+[profile.ci-test]
+inherits = "release"
+opt-level = 'z'
+codegen-units = 16
