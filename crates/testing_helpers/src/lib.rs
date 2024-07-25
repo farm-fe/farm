@@ -12,8 +12,25 @@ use farmfe_core::{
   wax::Glob,
 };
 
+pub mod assert;
+pub use insta;
+
+#[macro_export]
+macro_rules! assert_debug_snapshot {
+  ($ex:expr) => {
+    let mut setting = farmfe_testing_helpers::insta::Settings::clone_current();
+    setting.set_sort_maps(true);
+    setting.set_omit_expression(true);
+    setting.set_input_file(file!());
+    setting.set_prepend_module_to_snapshot(false);
+    setting.bind(|| {
+      farmfe_testing_helpers::insta::assert_debug_snapshot!($ex);
+    });
+  };
+}
+
 pub fn is_update_snapshot_from_env() -> bool {
-  std::env::var("FARM_UPDATE_SNAPSHOTS").is_ok()
+  std::env::var("FARM_UPDATE_SNAPSHOTS").is_ok() || std::env::var("INSTA_UPDATE").is_ok()
 }
 
 /// construct a test module graph like below:

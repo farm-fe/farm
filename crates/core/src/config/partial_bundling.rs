@@ -59,6 +59,8 @@ pub struct PartialBundlingGroupConfig {
   pub group_type: PartialBundlingGroupConfigGroupType,
   /// all, initial, async
   pub resource_type: PartialBundlingGroupConfigResourceType,
+  /// disable group merge
+  pub enforce: bool,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
