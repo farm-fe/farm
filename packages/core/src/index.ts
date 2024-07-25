@@ -100,6 +100,7 @@ export async function build(
   );
 
   try {
+    // TODO watch mode
     await createBundleHandler(resolvedUserConfig, logger);
     // copy resources under publicDir to output.path
     await copyPublicDirectory(resolvedUserConfig, logger);
@@ -179,7 +180,9 @@ export async function watch(
     };
   }
 
-  const compilerFileWatcher = await createBundleHandler(
+  await createBundleHandler(resolvedUserConfig, logger);
+
+  const compilerFileWatcher = await createWatcher(
     resolvedUserConfig,
     logger,
     true
@@ -290,8 +293,7 @@ async function findNodeModulesRecursively(rootPath: string): Promise<string[]> {
 
 export async function createBundleHandler(
   resolvedUserConfig: ResolvedUserConfig,
-  logger: Logger,
-  watchMode = false
+  logger: Logger
 ) {
   const compiler = await createCompiler(resolvedUserConfig, logger);
 
@@ -308,7 +310,14 @@ export async function createBundleHandler(
     resolvedUserConfig,
     logger
   );
+}
 
+export async function createWatcher(
+  resolvedUserConfig: ResolvedUserConfig,
+  logger: Logger,
+  watchMode = false
+) {
+  const compiler = await createCompiler(resolvedUserConfig, logger);
   if (resolvedUserConfig.compilation?.watch || watchMode) {
     const watcher = new FileWatcher(compiler, resolvedUserConfig, logger);
     await watcher.watch();
