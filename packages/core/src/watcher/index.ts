@@ -44,12 +44,7 @@ export class FileWatcher implements ImplFileWatcher {
   private filterWatchFile(file: string): boolean {
     file = normalizeBasePath(file);
 
-    if (
-      file.startsWith(`${this._root}/`) ||
-      file.includes(`node_modules/`) ||
-      file.includes('\0')
-    )
-      return false;
+    if (file.startsWith(`${this._root}/`) || file.includes('\0')) return false;
 
     for (const watchedFile of this._watchedFiles) {
       if (file.startsWith(watchedFile)) return false;

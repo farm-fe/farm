@@ -27,7 +27,6 @@ function resolveChokidarOptions(
   const options: WatchOptions = {
     ignored: [
       '**/.git/**',
-      '**/node_modules/**',
       '**/test-results/**', // Playwright
       glob.escapePath(cacheDir) + '/**',
       glob.escapePath(
