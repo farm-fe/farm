@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.11](https://github.com/farm-fe/farm/compare/farmfe_compiler-v0.0.10...farmfe_compiler-v0.0.11) - 2024-07-25
+
+### Added
+- support compiler.traceModuleGraph ([#1654](https://github.com/farm-fe/farm/pull/1654))
+
 ## [0.0.10](https://github.com/farm-fe/farm/compare/farmfe_compiler-v0.0.9...farmfe_compiler-v0.0.10) - 2024-07-19
 
 ### Other

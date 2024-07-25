@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.4](https://github.com/farm-fe/farm/compare/farmfe_core-v0.6.3...farmfe_core-v0.6.4) - 2024-07-25
+
+### Added
+- support targetEnv library library-browser/node ([#1656](https://github.com/farm-fe/farm/pull/1656))
+
 ## [0.6.3](https://github.com/farm-fe/farm/compare/farmfe_core-v0.6.2...farmfe_core-v0.6.3) - 2024-07-19
 
 ### Fixed

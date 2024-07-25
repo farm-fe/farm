@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.11](https://github.com/farm-fe/farm/compare/farmfe_plugin_static_assets-v0.0.10...farmfe_plugin_static_assets-v0.0.11) - 2024-07-25
+
+### Added
+- support targetEnv library library-browser/node ([#1656](https://github.com/farm-fe/farm/pull/1656))
+
 ## [0.0.10](https://github.com/farm-fe/farm/compare/farmfe_plugin_static_assets-v0.0.9...farmfe_plugin_static_assets-v0.0.10) - 2024-07-19
 
 ### Other
