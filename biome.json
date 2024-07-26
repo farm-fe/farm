@@ -8,6 +8,7 @@
   },
   "files": {
     "ignore": [
+      "**/node_modules/**",
       "crates/**",
       "*.vue",
       "tsconfig.base.json",
