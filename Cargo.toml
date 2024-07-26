@@ -16,6 +16,8 @@ strip = true
 panic = "abort"
 
 [profile.ci-test]
-inherits = "release"
 opt-level = 0
-codegen-units = 16
+debug = 2
+lto = false
+panic = 'unwind'
+codegen-units = 256
