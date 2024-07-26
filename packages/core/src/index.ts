@@ -180,9 +180,10 @@ export async function watch(
     };
   }
 
-  await createBundleHandler(resolvedUserConfig, logger);
+  const compiler = await createBundleHandler(resolvedUserConfig, logger);
 
   const compilerFileWatcher = await createWatcher(
+    compiler,
     resolvedUserConfig,
     logger,
     true
@@ -220,6 +221,7 @@ export async function watch(
     }
   }
 
+  await compilerFileWatcher?.watch();
   const farmWatcher = new ConfigWatcher(resolvedUserConfig).watch(
     handleFileChange
   );
@@ -294,7 +296,7 @@ async function findNodeModulesRecursively(rootPath: string): Promise<string[]> {
 export async function createBundleHandler(
   resolvedUserConfig: ResolvedUserConfig,
   logger: Logger
-) {
+): Promise<Compiler> {
   const compiler = await createCompiler(resolvedUserConfig, logger);
 
   await compilerHandler(
@@ -310,17 +312,18 @@ export async function createBundleHandler(
     resolvedUserConfig,
     logger
   );
+
+  return compiler;
 }
 
 export async function createWatcher(
+  compiler: Compiler,
   resolvedUserConfig: ResolvedUserConfig,
   logger: Logger,
   watchMode = false
-) {
-  const compiler = await createCompiler(resolvedUserConfig, logger);
+): Promise<FileWatcher | undefined> {
   if (resolvedUserConfig.compilation?.watch || watchMode) {
     const watcher = new FileWatcher(compiler, resolvedUserConfig, logger);
-    await watcher.watch();
     return watcher;
   }
 }
