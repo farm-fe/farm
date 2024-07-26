@@ -113,6 +113,7 @@
     "koa-static": "^5.0.0",
     "lodash.debounce": "^4.0.8",
     "loglevel": "^1.8.1",
+    "mime": "^4.0.4",
     "mime-types": "^2.1.35",
     "open": "10.1.0",
     "slashes": "^3.0.12",

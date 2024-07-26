@@ -22,6 +22,7 @@ import {
   resolveHttpServer,
   resolveHttpsConfig
 } from './http.js';
+import { resourceMiddleware } from './middlewares/resource.js';
 import { WebSocketClient, WebSocketServer, WsServer } from './ws.js';
 export type HttpServer = http.Server | Http2SecureServer;
 
@@ -124,6 +125,34 @@ export class newServer {
     const publicFiles = await initPublicFilesPromise;
     const { publicDir } = this.config.compilation.assets;
     this.createWebSocketServer();
+
+    // middleware
+
+    middlewares.use(
+      resourceMiddleware(this.httpServer, this.compiler, this.publicPath)
+    );
+
+    middlewares.use((req, _res, next) => {
+      console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
+      next();
+    });
+
+    // 定义一个响应中间件
+    // middlewares.use((req, res, next) => {
+    //   if (req.url === '/') {
+    //     res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+    //     res.end('你好，这是 Connect 中间件！');
+    //   } else {
+    //     next();
+    //   }
+    // });
+
+    // // 定义一个 404 处理中间件
+    // middlewares.use((_req, res) => {
+    //   res.statusCode = 404;
+    //   res.setHeader('Content-Type', 'text/plain;charset=utf-8');
+    //   res.end('404 - 页面未找到');
+    // });
   }
 
   public async createWebSocketServer() {
@@ -149,7 +178,7 @@ export class newServer {
     const { port, open, protocol, hostname } = this.config.server;
 
     await this.compile();
-    const { createServer } = await import('node:http');
+    // const { createServer } = await import('node:http');
 
     // this.httpServer = createServer((req, res) => {
     //   if (req.url === '/') {
@@ -164,23 +193,24 @@ export class newServer {
     //   }
     // });
 
-    this.httpServer.on('request', (req, res) => {
-      // 设置响应头
-      // res.writeHead(200, { 'Content-Type': 'application/json' });
+    // this.httpServer.on('request', (req, res) => {
+    //   // 设置响应头
+    //   // res.writeHead(200, { 'Content-Type': 'application/json' });
+    //   res.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8' });
 
-      // 创建响应体对象
-      const responseBody = {
-        message: "这是使用 on('request') 方法的响应",
-        timestamp: new Date().toISOString(),
-        path: req.url
-      };
+    //   // 创建响应体对象
+    //   const responseBody = {
+    //     message: "这是使用 on('request') 方法的响应",
+    //     timestamp: new Date().toISOString(),
+    //     path: req.url
+    //   };
 
-      // 将对象转换为 JSON 字符串
-      const jsonResponse = JSON.stringify(responseBody);
-      res.setHeader('Content-Type', 'text/plain; charset=utf-8');
-      // 发送响应
-      res.end('我是默认请求头');
-    });
+    //   // 将对象转换为 JSON 字符串
+    //   const jsonResponse = JSON.stringify(responseBody);
+    //   // res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+    //   // 发送响应
+    //   res.end(jsonResponse);
+    // });
 
     this.httpServer.listen(port, hostname.name, () => {
       console.log(`Server running at ${protocol}://${hostname.name}:${port}/`);
