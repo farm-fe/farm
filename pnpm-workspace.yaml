@@ -4,3 +4,4 @@ packages:
   - crates/*
   - rust-plugins/*
   - js-plugins/*
+  - bench/*

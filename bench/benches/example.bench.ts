@@ -3,8 +3,8 @@ import { bench, describe } from 'vitest';
 import { build } from '@farmfe/core';
 async function build_react_example() {
   await build({
-    root: path.resolve('../examples/react'),
-    configPath: path.resolve('../examples/react'),
+    root: path.resolve(process.cwd(), './examples/react'),
+    configPath: path.resolve('./examples/react'),
     compilation: { input: {}, output: {} }
   });
 }
