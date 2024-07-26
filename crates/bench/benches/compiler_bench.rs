@@ -15,27 +15,27 @@ fn setup_compiler() -> Compiler {
   Compiler::new(
     Config {
       root: react_examples_root.to_string_lossy().to_string(),
-      // runtime: Box::new(RuntimeConfig {
-      //   path: cwd
-      //     .join("packages")
-      //     .join("runtime")
-      //     .join("src")
-      //     .join("index.ts")
-      //     .to_string_lossy()
-      //     .to_string(),
-      //   plugins: vec![],
-      //   swc_helpers_path: cwd
-      //     .join("packages")
-      //     .join("core")
-      //     .join("node_modules")
-      //     .join("@swc")
-      //     .join("helpers")
-      //     .read_link()
-      //     .unwrap()
-      //     .to_string_lossy()
-      //     .to_string(),
-      //   ..Default::default()
-      // }),
+      runtime: Box::new(RuntimeConfig {
+        path: cwd
+          .join("packages")
+          .join("runtime")
+          .join("src")
+          .join("index.ts")
+          .to_string_lossy()
+          .to_string(),
+        plugins: vec![],
+        swc_helpers_path: cwd
+          .join("packages")
+          .join("core")
+          .join("node_modules")
+          .join("@swc")
+          .join("helpers")
+          .read_link()
+          .unwrap()
+          .to_string_lossy()
+          .to_string(),
+        ..Default::default()
+      }),
       ..Default::default()
     },
     vec![],
@@ -44,12 +44,12 @@ fn setup_compiler() -> Compiler {
 }
 
 fn bench_compiler_compile(c: &mut Criterion) {
-  // let mut compiler = setup_compiler();
-  // c.bench_function("compiler_compile", |b| {
-  //     b.iter(|| {
-  //         black_box(compiler.compile().unwrap());
-  //     })
-  // });
+  let mut compiler = setup_compiler();
+  c.bench_function("compiler_compile", |b| {
+      b.iter(|| {
+          black_box(compiler.compile().unwrap());
+      })
+  });
 }
 
 criterion_group!(benches, bench_compiler_compile);
