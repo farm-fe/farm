@@ -6,6 +6,8 @@ export interface GlobalCliOptions {
   base?: string;
   m?: string;
   mode?: 'development' | 'production' | string;
+  l?: boolean;
+  lazy?: boolean;
   port?: number;
   clearScreen?: boolean;
 }
@@ -15,8 +17,6 @@ export interface CleanOptions {
 }
 
 export interface CliServerOptions {
-  l?: boolean;
-  lazy?: boolean;
   port?: number;
   open?: boolean;
   https?: boolean;

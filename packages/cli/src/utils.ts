@@ -12,6 +12,16 @@ import type {
 
 const logger = new Logger();
 
+/**
+ *
+ * @returns  {Promise<{ start: typeof start, build: typeof build, watch: typeof watch, preview: typeof preview, clean: typeof clean }>}
+ * A promise that resolves to an object containing the core functionalities:
+ *   - `start`: Compile the project in dev mode and serve it with farm dev server'.
+ *   - `build`: compile the project in production mode'.
+ *   - `watch`: watch file change'.
+ *   - `preview`: compile the project in watch mode'.
+ *   - `clean`: Clean up the cache built incrementally'.
+ */
 export async function resolveCore(): Promise<{
   start: typeof start;
   build: typeof build;
@@ -39,7 +49,10 @@ export function filterDuplicateOptions<T>(options: T) {
     }
   }
 }
-
+/**
+ * @param options The cli passes parameters
+ * @returns Remove parameters that are not required
+ */
 export function cleanOptions(
   options: GlobalCliOptions & CliServerOptions & CliBuildOptions
 ) {
@@ -59,6 +72,11 @@ export function cleanOptions(
   return resolveOptions;
 }
 
+/**
+ *
+ * @param options cli parameters
+ * @returns resolve command options
+ */
 export function resolveCommandOptions(
   options: GlobalCliOptions
 ): GlobalCliOptions {
@@ -67,10 +85,21 @@ export function resolveCommandOptions(
   return cleanOptions(resolveOptions);
 }
 
+/**
+ *
+ * @param root root path
+ * @param configPath  config path
+ * @returns config path absolute path
+ */
 export function getConfigPath(root: string, configPath: string) {
   return path.resolve(root, configPath ?? '');
 }
 
+/**
+ *
+ * @param asyncOperation The asynchronous operation to be executed.
+ * @param errorMessage The error message to log if the operation fails.
+ */
 export async function handleAsyncOperationErrors<T>(
   asyncOperation: Promise<T>,
   errorMessage: string
@@ -83,12 +112,25 @@ export async function handleAsyncOperationErrors<T>(
   }
 }
 
+/**
+ *
+ * @param rootPath root path
+ * @returns absolute path
+ */
 export function resolveRootPath(rootPath = '') {
   return rootPath && path.isAbsolute(rootPath)
     ? rootPath
     : path.resolve(process.cwd(), rootPath);
 }
 
+/**
+ *
+ * @param root root path
+ * @param options cli parameters
+ * @returns
+ *  - root root path
+ *  - configPath
+ */
 export function resolveCliConfig(
   root: string,
   options: GlobalCliOptions & CleanOptions
