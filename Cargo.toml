@@ -2,6 +2,12 @@
 members = ["crates/*", "packages/create-farm", "rust-plugins/*"]
 resolver = "2"
 
+[workspace.package]
+edition = "2021"
+homepage = "https://farmfe.org"
+license = "MIT"
+repository = "https://github.com/farm-fe/farm"
+
 [profile.release]
 codegen-units = 1
 lto = "fat"
@@ -12,7 +18,4 @@ panic = "abort"
 [profile.ci-test]
 inherits = "release"
 opt-level = 0
-codegen-units = 256
-incremental = true
-lto = false
-debug = true
+codegen-units = 16

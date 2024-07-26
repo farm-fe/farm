@@ -28,6 +28,12 @@ importers:
       '@commitlint/config-conventional':
         specifier: ^17.0.3
         version: 17.8.1
+      '@farmfe/cli':
+        specifier: workspace:*
+        version: link:packages/cli
+      '@farmfe/core':
+        specifier: workspace:*
+        version: link:packages/core
       '@types/node':
         specifier: 20.14.12
         version: 20.14.12
