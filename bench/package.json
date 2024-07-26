@@ -6,6 +6,9 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
+  "devDependencies": {
+    "@farmfe/core": "workspace:*"
+  },
   "keywords": [],
   "author": "",
   "license": "ISC"
