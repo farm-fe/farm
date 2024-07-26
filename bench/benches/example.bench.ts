@@ -1,6 +1,7 @@
 import path from 'node:path';
 import { bench, describe } from 'vitest';
 import { build } from '@farmfe/core';
+
 async function build_react_example() {
   await build({
     root: path.resolve(process.cwd(), './examples/react'),

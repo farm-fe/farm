@@ -10,7 +10,11 @@ on:
   workflow_dispatch:
 
 jobs:
+  call-rust-build:
+    uses: ./.github/workflows/rust-build.yaml
+
   benchmarks:
+    needs: [call-rust-build]
     runs-on: ubuntu-latest
     steps:
       - uses: "actions/checkout@v3"
