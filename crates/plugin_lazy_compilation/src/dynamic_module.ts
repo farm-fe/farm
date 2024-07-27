@@ -15,8 +15,17 @@ const moduleId = 'MODULE_ID';
 const modulePath = 'MODULE_PATH';
 const serverUrl = 'FARM_LAZY_COMPILE_SERVER_URL';
 
+function getServerUrl() {
+  // server url is not defined, return empty string instead
+  if (serverUrl === 'FARM_LAZY' + '_COMPILE_SERVER_URL') {
+    return '';
+  }
+
+  return serverUrl;
+}
+
 async function fetch(path: string) {
-  const url = `${serverUrl}${path}`;
+  const url = `${getServerUrl()}${path}`;
   const http = 'http';
   return import(http).then((http) => {
     return new Promise((resolve, reject) => {
@@ -89,7 +98,7 @@ if (compilingModules.has(modulePath)) {
       }`;
 
       const fetchLazyCompileResult = !isNodeLazyCompile
-        ? import(`${serverUrl}${url}`)      // Adding full uri to make it work in webview context like vscode extension
+        ? import(`${getServerUrl()}${url}`)      // Adding full uri to make it work in webview context like vscode extension
         : fetch(url);
 
       return fetchLazyCompileResult.then((module: any) => {
