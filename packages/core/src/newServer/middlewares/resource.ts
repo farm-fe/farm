@@ -1,3 +1,4 @@
+import { Readable } from 'node:stream';
 import mime from 'mime';
 import { extname } from 'path/posix';
 import { Compiler } from '../../compiler/index.js';
@@ -28,8 +29,13 @@ export function resourceMiddleware(
       return next();
     }
 
-    // const url = req.url && cleanUrl(req.url);
-    const url = req.url?.slice(1) || 'index.html';
+    const url = req.url && cleanUrl(req.url);
+    console.log('url:', url);
+
+    // TODO resolve html but not input file html
+    // htmlFallbackMiddleware appends '.html' to URLs
+    // if (url?.endsWith('.html') && req.headers['sec-fetch-dest'] !== 'script') {
+    // }
 
     if (compiler.compiling) {
       await new Promise((resolve) => {
@@ -37,21 +43,37 @@ export function resourceMiddleware(
       });
     }
 
-    let stripQueryAndHashUrl = stripQueryAndHash(url);
-    const resourceResult: any = findResource(
-      [url, stripQueryAndHashUrl],
-      compiler,
-      res,
-      publicPath
-    );
+    const resourceResult: any = findResource(url, compiler, res, publicPath);
 
     if (resourceResult === true) {
       next();
     }
 
+    // if (resourceResult) {
+    //   res.setHeader('Content-Type', mime.getType(extname(url || 'index.html')));
+    //   res.end(resourceResult.resource);
+    //   return;
+    // }
+
     if (resourceResult) {
+      if (resourceResult.etag) {
+        const ifNoneMatch = req.headers['if-none-match'];
+        if (ifNoneMatch === resourceResult.etag) {
+          res.statusCode = 304;
+          res.end();
+          return;
+        }
+        res.setHeader('ETag', resourceResult.etag);
+      }
+
+      res.setHeader('Cache-Control', 'max-age=31536000,immutable');
       res.setHeader('Content-Type', mime.getType(extname(url || 'index.html')));
-      res.end(resourceResult.resource);
+
+      if (resourceResult.resource.length > 1024 * 1024) {
+        Readable.from(resourceResult.resource).pipe(res);
+      } else {
+        res.end(resourceResult.resource);
+      }
       return;
     }
 
@@ -60,35 +82,33 @@ export function resourceMiddleware(
 }
 
 function findResource(
-  paths: string[],
+  paths: string,
   compiler: Compiler,
   res: any,
   publicPath: string
 ): true | undefined | RealResourcePath {
-  for (const resourcePath of new Set(paths)) {
-    // output_files
-    if (resourcePath === '_output_files') {
-      const files = Object.keys(compiler.resources()).sort();
-      const fileTree = generateFileTree(files);
-      res.type = '.html';
-      res.body = generateFileTreeHtml(fileTree);
-      return true;
-    }
+  // output_files
+  if (paths === '_output_files') {
+    const files = Object.keys(compiler.resources()).sort();
+    const fileTree = generateFileTree(files);
+    res.type = '.html';
+    res.body = generateFileTreeHtml(fileTree);
+    return true;
+  }
 
-    const { resourceWithoutPublicPath } = normalizePathByPublicPath(
-      publicPath,
-      resourcePath
-    );
+  const { resourceWithoutPublicPath } = normalizePathByPublicPath(
+    publicPath,
+    paths
+  );
 
-    const resource = compiler.resource(resourceWithoutPublicPath);
+  const resource = compiler.resource(resourceWithoutPublicPath);
 
-    if (resource) {
-      return {
-        resource,
-        resourcePath: resourceWithoutPublicPath,
-        rawPath: resourcePath
-      };
-    }
+  if (resource) {
+    return {
+      resource,
+      resourcePath: resourceWithoutPublicPath,
+      rawPath: paths
+    };
   }
 }
 

@@ -65,9 +65,13 @@ export async function resolveHttpServer(
   // https://github.com/nxtedition/node-http2-proxy
   // https://github.com/fastify/fastify-http-proxy
   if (proxy) {
+    console.log('走的是哪里');
+
     const { createServer } = await import('node:https');
     return createServer(httpsOptions, app);
   } else {
+    console.log('我现在用的就是 http2');
+
     const { createSecureServer } = await import('node:http2');
     return createSecureServer(
       {

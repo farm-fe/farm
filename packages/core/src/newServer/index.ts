@@ -5,6 +5,7 @@ import { type Http2SecureServer } from 'node:http2';
 import type { ServerOptions as HttpsServerOptions } from 'node:https';
 import path from 'node:path';
 import { WatchOptions } from 'chokidar';
+import compression from 'compression';
 import connect from 'connect';
 import fse from 'fs-extra';
 import { WebSocketServer as WebSocketServerRaw_ } from 'ws';
@@ -22,6 +23,7 @@ import {
   resolveHttpServer,
   resolveHttpsConfig
 } from './http.js';
+import { htmlFallbackMiddleware } from './middlewares/htmlFallback.js';
 import { resourceMiddleware } from './middlewares/resource.js';
 import { WebSocketClient, WebSocketServer, WsServer } from './ws.js';
 export type HttpServer = http.Server | Http2SecureServer;
@@ -127,15 +129,24 @@ export class newServer {
     this.createWebSocketServer();
 
     // middleware
+    // middlewares.use(compression());
+    // TODO todo add appType
+    middlewares.use(
+      htmlFallbackMiddleware(
+        this.httpServer,
+        this.compiler,
+        this.publicPath,
+        this.config
+      )
+    );
 
     middlewares.use(
       resourceMiddleware(this.httpServer, this.compiler, this.publicPath)
     );
 
-    middlewares.use((req, _res, next) => {
-      console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
-      next();
-    });
+    // middlewares.use((req, _res, next) => {
+    //   next();
+    // });
 
     // 定义一个响应中间件
     // middlewares.use((req, res, next) => {
