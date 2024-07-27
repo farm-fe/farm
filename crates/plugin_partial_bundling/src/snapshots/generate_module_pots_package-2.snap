@@ -10,7 +10,7 @@ input_file: crates/plugin_partial_bundling/src/generate_module_pots.rs
         module_type: Js,
         immutable: true,
         execution_order: 2,
-        enforce: true,
+        enforce: false,
         modules: {},
     },
     [
