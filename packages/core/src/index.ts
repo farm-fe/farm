@@ -52,7 +52,6 @@ import type {
 } from './config/types.js';
 import { logError } from './server/error.js';
 import { lazyCompilation } from './server/middlewares/lazy-compilation.js';
-import { resolveHostname } from './utils/http.js';
 import { ConfigWatcher } from './watcher/config-watcher.js';
 
 import type { JsPlugin } from './plugin/type.js';
@@ -164,20 +163,10 @@ export async function watch(
     inlineConfig,
     'development',
     logger,
-    true
+    false
   );
 
   const lazyEnabled = resolvedUserConfig.compilation?.lazyCompilation;
-
-  if (lazyEnabled) {
-    const hostname = await resolveHostname(resolvedUserConfig.server.host);
-    resolvedUserConfig.compilation.define = {
-      ...(resolvedUserConfig.compilation.define ?? {}),
-      FARM_NODE_LAZY_COMPILE_SERVER_URL: `http://${
-        hostname.host || 'localhost'
-      }:${resolvedUserConfig.server.port}`
-    };
-  }
 
   const compilerFileWatcher = await createBundleHandler(
     resolvedUserConfig,
@@ -297,7 +286,9 @@ export async function createBundleHandler(
 
   await compilerHandler(
     async () => {
-      compiler.removeOutputPathDir();
+      if (resolvedUserConfig.compilation?.output?.clean) {
+        compiler.removeOutputPathDir();
+      }
       try {
         await compiler.compile();
       } catch (err) {

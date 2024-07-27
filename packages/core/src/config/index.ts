@@ -409,6 +409,17 @@ export async function normalizeUserCompilationConfig(
     }
   }
 
+  if (resolvedCompilation.lazyCompilation && resolvedUserConfig.server) {
+    resolvedUserConfig.compilation.define = {
+      ...(resolvedUserConfig.compilation?.define ?? {}),
+      FARM_LAZY_COMPILE_SERVER_URL: `${
+        resolvedUserConfig.server.protocol || 'http'
+      }://${resolvedUserConfig.server.host || 'localhost'}:${
+        resolvedUserConfig.server.port
+      }`
+    };
+  }
+
   if (resolvedCompilation.mode === undefined) {
     resolvedCompilation.mode = mode;
   }
