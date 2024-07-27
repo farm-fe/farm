@@ -251,7 +251,7 @@ impl Plugin for FarmPluginScript {
     // set param.module.meta.module_system
     set_module_system_for_module_meta(param, context);
 
-    let is_replace_import_meta_url = matches!(context.config.output.target_env, TargetEnv::Library)
+    let is_replace_import_meta_url = context.config.output.target_env.is_library()
       && matches!(context.config.output.format, ModuleFormat::CommonJs);
 
     if is_replace_import_meta_url {
@@ -261,7 +261,7 @@ impl Plugin for FarmPluginScript {
 
     // find and replace `import.meta.xxx` to `module.meta.xxx` and detect hmr_accepted
     // skip transform import.meta when targetEnv is node
-    if !matches!(context.config.output.target_env, TargetEnv::Library)
+    if !context.config.output.target_env.is_library()
       && (matches!(context.config.output.target_env, TargetEnv::Browser)
         || matches!(context.config.output.format, ModuleFormat::CommonJs))
     {
