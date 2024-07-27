@@ -23,8 +23,9 @@ import {
   resolveHttpServer,
   resolveHttpsConfig
 } from './http.js';
-import { htmlFallbackMiddleware } from './middlewares/htmlFallback.js';
-import { resourceMiddleware } from './middlewares/resource.js';
+import { htmlFallbackMiddleware } from './middlewares/htmlFallbackMiddleware.js';
+import { publicMiddleware } from './middlewares/publicMiddleware.js';
+import { resourceMiddleware } from './middlewares/resourceMiddleware.js';
 import { WebSocketClient, WebSocketServer, WsServer } from './ws.js';
 export type HttpServer = http.Server | Http2SecureServer;
 
@@ -130,6 +131,17 @@ export class newServer {
 
     // middleware
     // middlewares.use(compression());
+
+    if (this.publicDir) {
+      middlewares.use(
+        publicMiddleware(
+          this.httpServer,
+          this.compiler,
+          this.publicPath,
+          this.config
+        )
+      );
+    }
     // TODO todo add appType
     middlewares.use(
       htmlFallbackMiddleware(
