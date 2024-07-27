@@ -5,24 +5,42 @@ use farmfe_core::{
   module::{module_graph::ModuleGraph, Module, ModuleId},
 };
 
-use crate::{generate_module_buckets::ResourceType, module_pot::ModulePot};
+use crate::{
+  generate_module_buckets::ResourceType, module_pot::ModulePot, utils::group_is_enforce,
+};
 
 pub fn generate_module_pots(
   modules: &HashSet<ModuleId>,
   module_graph: &ModuleGraph,
   config: &Config,
   resource_type: ResourceType,
+  groups_enforce_map: &HashMap<String, bool>,
 ) -> Vec<ModulePot> {
   let partial_bundling = &config.partial_bundling;
   let mut module_pot_map = HashMap::<String, ModulePot>::new();
 
   for module_id in modules {
     let module = module_graph.module(module_id).unwrap();
-    let (id, name) = generate_module_pot_name(module, partial_bundling, resource_type.clone());
-    let module_pot_id = ModulePot::gen_id(&id, module.module_type.clone(), module.immutable);
+    let module_pot_meta = generate_module_pot_meta(
+      module,
+      partial_bundling,
+      resource_type.clone(),
+      groups_enforce_map,
+    );
+    let module_pot_id = ModulePot::gen_id(
+      &module_pot_meta.id,
+      module.module_type.clone(),
+      module.immutable,
+    );
 
     let module_pot = module_pot_map.entry(module_pot_id).or_insert_with(|| {
-      ModulePot::new(id, name, module.module_type.clone(), module.immutable, true)
+      ModulePot::new(
+        module_pot_meta.id,
+        module_pot_meta.name,
+        module.module_type.clone(),
+        module.immutable,
+        module_pot_meta.enforce,
+      )
     });
 
     module_pot.add_module(module_id.clone(), module.size, module.execution_order);
@@ -43,6 +61,7 @@ pub fn generate_module_pots(
     let module_pot_id = module_pot.id.clone();
     let immutable = module_pot.immutable;
     let ty = module_pot.module_type.clone();
+    let enforce = module_pot.enforce;
     let mut modules = module_pot.take_modules().into_iter().collect::<Vec<_>>();
     modules.sort_by_key(|m| m.to_string());
     let page_size = modules.len() / new_module_pot_numbers;
@@ -57,7 +76,7 @@ pub fn generate_module_pots(
           module_pot_name.clone(),
           ty.clone(),
           immutable,
-          true,
+          enforce,
         )
       });
 
@@ -85,11 +104,19 @@ pub fn generate_module_pots(
   module_pots
 }
 
-fn generate_module_pot_name(
+#[derive(Debug, Default)]
+pub struct ModulePotMeta {
+  id: String,
+  name: Option<String>,
+  enforce: bool,
+}
+
+fn generate_module_pot_meta(
   module: &Module,
   config: &PartialBundlingConfig,
   resource_type: ResourceType,
-) -> (String, Option<String>) {
+  groups_enforce_map: &HashMap<String, bool>,
+) -> ModulePotMeta {
   // 1. get name from partialBundling.groups
   for group_config in &config.groups {
     // use the first matched group name, so the order of groups is important
@@ -101,20 +128,28 @@ fn generate_module_pot_name(
       if (group_config.group_type.is_match(module.immutable))
         && (resource_type.is_match(group_config.resource_type.clone()))
       {
-        return (group_config.name.clone(), Some(group_config.name.clone()));
+        return ModulePotMeta {
+          name: Some(group_config.name.clone()),
+          id: group_config.name.clone(),
+          enforce: group_is_enforce(&group_config.name, groups_enforce_map),
+        };
       }
     }
   }
 
   // 2. get name from immutable package
   if module.immutable {
-    return (
-      format!("{}@{}", module.package_name, module.package_version),
-      None,
-    );
+    return ModulePotMeta {
+      id: format!("{}@{}", module.package_name, module.package_version),
+      ..Default::default()
+    };
   }
 
-  (module.id.to_string(), None)
+  ModulePotMeta {
+    id: module.id.to_string(),
+    name: None,
+    enforce: false,
+  }
 }
 
 #[cfg(test)]
@@ -198,6 +233,7 @@ mod tests {
           &module_graph,
           &Default::default(),
           ResourceType::Initial,
+          &Default::default(),
         );
 
         assert_eq!(module_pots.len(), 2);
@@ -270,8 +306,13 @@ mod tests {
       ..Default::default()
     };
 
-    let mut module_pots =
-      generate_module_pots(&modules, &module_graph, &config, ResourceType::Initial);
+    let mut module_pots = generate_module_pots(
+      &modules,
+      &module_graph,
+      &config,
+      ResourceType::Initial,
+      &Default::default(),
+    );
     assert_module_pot_snapshot!(module_pots);
 
     // only match mutable modules
@@ -288,8 +329,13 @@ mod tests {
       ..Default::default()
     };
 
-    let mut module_pots =
-      generate_module_pots(&modules, &module_graph, &config, ResourceType::Initial);
+    let mut module_pots = generate_module_pots(
+      &modules,
+      &module_graph,
+      &config,
+      ResourceType::Initial,
+      &Default::default(),
+    );
     assert_module_pot_snapshot!(module_pots);
 
     let config = Config {
@@ -305,12 +351,22 @@ mod tests {
       ..Default::default()
     };
 
-    let mut module_pots =
-      generate_module_pots(&modules, &module_graph, &config, ResourceType::Initial);
+    let mut module_pots = generate_module_pots(
+      &modules,
+      &module_graph,
+      &config,
+      ResourceType::Initial,
+      &Default::default(),
+    );
     assert_module_pot_snapshot!(module_pots);
 
-    let mut module_pots =
-      generate_module_pots(&modules, &module_graph, &config, ResourceType::Async);
+    let mut module_pots = generate_module_pots(
+      &modules,
+      &module_graph,
+      &config,
+      ResourceType::Async,
+      &Default::default(),
+    );
     assert_module_pot_snapshot!(module_pots);
 
     let config = Config {
@@ -326,8 +382,13 @@ mod tests {
       ..Default::default()
     };
 
-    let mut module_pots =
-      generate_module_pots(&modules, &module_graph, &config, ResourceType::Initial);
+    let mut module_pots = generate_module_pots(
+      &modules,
+      &module_graph,
+      &config,
+      ResourceType::Initial,
+      &Default::default(),
+    );
     assert_module_pot_snapshot!(module_pots);
   }
 }

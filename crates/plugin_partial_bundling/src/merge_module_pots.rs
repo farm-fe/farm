@@ -237,8 +237,10 @@ fn merge_resource_pots_by_buckets(
       mutable_target_size
     };
 
+    let is_same_groups = module_pots.iter().all(|m| m.name == module_pots[0].name);
+
     for module_pot in module_pots {
-      if module_pot.enforce {
+      if module_pot.enforce && !is_same_groups {
         resource_pots.push(create_resource_by_meta(
           base_resource_pot_name.to_string(),
           &module_pot.modules,
