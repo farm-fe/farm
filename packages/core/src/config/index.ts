@@ -410,7 +410,11 @@ export async function normalizeUserCompilationConfig(
     }
   }
 
-  if (resolvedCompilation.lazyCompilation && resolvedUserConfig.server) {
+  if (
+    resolvedCompilation.lazyCompilation &&
+    resolvedUserConfig.server &&
+    typeof resolvedUserConfig.server.host === 'string'
+  ) {
     const hostname = await resolveHostname(resolvedUserConfig.server.host);
     resolvedCompilation.define = {
       ...(resolvedCompilation.define ?? {}),
