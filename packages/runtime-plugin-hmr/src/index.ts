@@ -10,11 +10,11 @@ let hmrClient: HmrClient;
 export default (<Plugin>{
   name: 'farm-runtime-hmr-client-plugin',
   bootstrap(moduleSystem) {
-    hmrClient = new HmrClient(moduleSystem);
-    hmrClient.connect();
+    // hmrClient = new HmrClient(moduleSystem);
+    // hmrClient.connect();
   },
   moduleCreated(module) {
     // create a hot context for each module
-    module.meta.hot = createHotContext(module.id, hmrClient);
+    // module.meta.hot = createHotContext(module.id, hmrClient);
   }
 });

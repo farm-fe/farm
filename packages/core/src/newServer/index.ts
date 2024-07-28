@@ -127,7 +127,7 @@ export class newServer {
 
     const publicFiles = await initPublicFilesPromise;
     const { publicDir } = this.config.compilation.assets;
-    this.createWebSocketServer();
+    // this.createWebSocketServer();
 
     // middleware
     // middlewares.use(compression());
@@ -160,27 +160,6 @@ export class newServer {
         this.config
       )
     );
-
-    // middlewares.use((req, _res, next) => {
-    //   next();
-    // });
-
-    // 定义一个响应中间件
-    // middlewares.use((req, res, next) => {
-    //   if (req.url === '/') {
-    //     res.setHeader('Content-Type', 'text/plain; charset=utf-8');
-    //     res.end('你好，这是 Connect 中间件！');
-    //   } else {
-    //     next();
-    //   }
-    // });
-
-    // // 定义一个 404 处理中间件
-    // middlewares.use((_req, res) => {
-    //   res.statusCode = 404;
-    //   res.setHeader('Content-Type', 'text/plain;charset=utf-8');
-    //   res.end('404 - 页面未找到');
-    // });
   }
 
   public async createWebSocketServer() {
@@ -189,13 +168,13 @@ export class newServer {
       throw new Error('Websocket requires a server.');
     }
 
-    const wsServer = new WsServer(
-      this.httpServer,
-      this.config,
-      this.httpsOptions,
-      this.publicPath,
-      null
-    );
+    // const wsServer = new WsServer(
+    //   this.httpServer,
+    //   this.config,
+    //   this.httpsOptions,
+    //   this.publicPath,
+    //   null
+    // );
   }
 
   public async listen(): Promise<void> {
