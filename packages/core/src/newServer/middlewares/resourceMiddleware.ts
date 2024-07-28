@@ -52,8 +52,6 @@ export function resourceMiddleware(
     }
 
     if (resourceResult) {
-      console.log(url);
-
       // need judge if resource is a deps node_modules set cache-control to 1 year
       const headers = config.server.headers || {};
       send(req, res, resourceResult.resource, url, { headers });
