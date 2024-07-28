@@ -1,30 +1,39 @@
-# name: codspeed-benchmarks
+name: codspeed-benchmarks
 
-# on:
-#   push:
-#     branches:
-#       - "main"
-#   pull_request:
-#   # `workflow_dispatch` allows CodSpeed to trigger backtest
-#   # performance analysis in order to generate initial data.
-#   workflow_dispatch:
+on:
+  push:
+    branches:
+      - "main"
+  pull_request:
+  # `workflow_dispatch` allows CodSpeed to trigger backtest
+  # performance analysis in order to generate initial data.
+  workflow_dispatch:
 
-# jobs:
-#   call-rust-build:
-#     uses: ./.github/workflows/rust-build.yaml
+jobs:
+  call-rust-build:
+    uses: ./.github/workflows/rust-build.yaml
 
-#   benchmarks:
-#     needs: [call-rust-build]
-#     runs-on: ubuntu-latest
-#     steps:
-#       - uses: "actions/checkout@v3"
-#       - uses: actions/setup-node@v3
-#         with:
-#           node-version: 18
-#       - name: Install Dependencies
-#         run: npm install -g pnpm@9.4.0 && pnpm i --frozen-lockfile
-#       - name: Run benchmarks
-#         uses: CodSpeedHQ/action@v2
-#         with:
-#           run: npm exec vitest bench
-#           token: ${{ secrets.CODSPEED_TOKEN }}
+  benchmarks:
+    needs: [call-rust-build]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: "actions/checkout@v3"
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 18
+      - name: Install Dependencies
+        run: npm install -g pnpm@9.4.0 && pnpm i --frozen-lockfile
+      - name: Build CLI and Core
+        run: pnpm --filter @farmfe/cli run build
+      - uses: actions/download-artifact@v3
+        id: download
+        with:
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}
+          path: ./packages/core/binding
+      - name: Build Core CJS
+        run: cd packages/core && pnpm run build:cjs
+      - name: Run benchmarks
+        uses: CodSpeedHQ/action@v2
+        with:
+          run: npm exec vitest bench
+          token: ${{ secrets.CODSPEED_TOKEN }}
