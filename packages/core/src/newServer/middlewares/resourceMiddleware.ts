@@ -2,6 +2,7 @@ import { Readable } from 'node:stream';
 import mime from 'mime';
 import { extname } from 'path/posix';
 import { Compiler } from '../../compiler/index.js';
+import { ResolvedUserConfig } from '../../config/types.js';
 import {
   generateFileTree,
   generateFileTreeHtml,
@@ -9,6 +10,7 @@ import {
 } from '../../utils/index.js';
 import { cleanUrl } from '../../utils/url.js';
 import { HttpServer } from '../index.js';
+import { send } from '../send.js';
 interface RealResourcePath {
   resourcePath: string;
   rawPath: string;
@@ -18,7 +20,8 @@ interface RealResourcePath {
 export function resourceMiddleware(
   server: HttpServer,
   compiler: Compiler,
-  publicPath: string
+  publicPath: string,
+  config: ResolvedUserConfig
 ) {
   return async function generateResourceMiddleware(
     req: any,
@@ -30,7 +33,6 @@ export function resourceMiddleware(
     }
 
     const url = req.url && cleanUrl(req.url);
-    console.log('url:', url);
 
     // TODO resolve html but not input file html
     // htmlFallbackMiddleware appends '.html' to URLs
@@ -49,31 +51,12 @@ export function resourceMiddleware(
       next();
     }
 
-    // if (resourceResult) {
-    //   res.setHeader('Content-Type', mime.getType(extname(url || 'index.html')));
-    //   res.end(resourceResult.resource);
-    //   return;
-    // }
-
     if (resourceResult) {
-      if (resourceResult.etag) {
-        const ifNoneMatch = req.headers['if-none-match'];
-        if (ifNoneMatch === resourceResult.etag) {
-          res.statusCode = 304;
-          res.end();
-          return;
-        }
-        res.setHeader('ETag', resourceResult.etag);
-      }
+      console.log(url);
 
-      res.setHeader('Cache-Control', 'max-age=31536000,immutable');
-      res.setHeader('Content-Type', mime.getType(extname(url || 'index.html')));
-
-      if (resourceResult.resource.length > 1024 * 1024) {
-        Readable.from(resourceResult.resource).pipe(res);
-      } else {
-        res.end(resourceResult.resource);
-      }
+      // need judge if resource is a deps node_modules set cache-control to 1 year
+      const headers = config.server.headers || {};
+      send(req, res, resourceResult.resource, url, { headers });
       return;
     }
 

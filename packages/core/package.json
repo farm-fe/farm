@@ -71,6 +71,7 @@
     "@napi-rs/cli": "^2.18.4",
     "@types/compression": "^1.7.5",
     "@types/connect": "^3.4.38",
+    "@types/etag": "^1.8.3",
     "@types/figlet": "^1.5.5",
     "@types/fs-extra": "^11.0.1",
     "@types/http-proxy": "^1.17.14",

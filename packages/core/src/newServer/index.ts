@@ -153,7 +153,12 @@ export class newServer {
     );
 
     middlewares.use(
-      resourceMiddleware(this.httpServer, this.compiler, this.publicPath)
+      resourceMiddleware(
+        this.httpServer,
+        this.compiler,
+        this.publicPath,
+        this.config
+      )
     );
 
     // middlewares.use((req, _res, next) => {

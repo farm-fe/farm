@@ -2392,6 +2392,9 @@ importers:
       '@types/connect':
         specifier: ^3.4.38
         version: 3.4.38
+      '@types/etag':
+        specifier: ^1.8.3
+        version: 1.8.3
       '@types/figlet':
         specifier: ^1.5.5
         version: 1.5.7
@@ -4959,6 +4962,9 @@ packages:
 
   '@types/estree@1.0.5':
     resolution: {integrity: sha512-/kYRxGDLWzHOB7q+wtSUQlFrtcdUccpfy+X+9iMBpHK8QLLhx2wIPYuS5DYtR9Wa/YlZAbIovy7qVdB1Aq6Lyw==}
+
+  '@types/etag@1.8.3':
+    resolution: {integrity: sha512-QYHv9Yeh1ZYSMPQOoxY4XC4F1r+xRUiAriB303F4G6uBsT3KKX60DjiogvVv+2VISVDuJhcIzMdbjT+Bm938QQ==}
 
   '@types/express-serve-static-core@4.17.39':
     resolution: {integrity: sha512-BiEUfAiGCOllomsRAZOiMFP7LAnrifHpt56pc4Z7l9K6ACyN06Ns1JLMBxwkfLOjJRlSf06NwWsT7yzfpaVpyQ==}
@@ -17214,6 +17220,10 @@ snapshots:
   '@types/estree@1.0.4': {}
 
   '@types/estree@1.0.5': {}
+
+  '@types/etag@1.8.3':
+    dependencies:
+      '@types/node': 18.18.8
 
   '@types/express-serve-static-core@4.17.39':
     dependencies:
