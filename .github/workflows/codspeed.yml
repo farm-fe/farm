@@ -45,7 +45,7 @@ jobs:
       - name: Build Core CJS
         run: cd packages/core && pnpm run build:cjs
       - name: Run benchmarks
-        uses: CodSpeedHQ/action@v2
+        uses: CodSpeedHQ/action@v3
         with:
           run: npm exec vitest bench
           token: ${{ secrets.CODSPEED_TOKEN }}
