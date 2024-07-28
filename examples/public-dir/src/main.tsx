@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import "./main.css";
 import reactLogo from "./assets/react.svg";
-// import FarmLogo from "../public/logo.png";
+import FarmLogo from "../newPublic/new-logo.png";
 export function Main() {
   const [count, setCount] = useState(0);
 
@@ -9,7 +9,7 @@ export function Main() {
     <>
       <div>
         <a href="https://farmfe.org/" target="_blank">
-          {/* <img src={FarmLogo} className="logo" alt="Farm logo" /> */}
+          <img src={FarmLogo} className="logo" alt="Farm logo" />
         </a>
         <a href="https://react.dev" target="_blank">
           <img src={reactLogo} className="logo react" alt="React logo" />

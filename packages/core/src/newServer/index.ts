@@ -132,15 +132,8 @@ export class newServer {
     // middleware
     // middlewares.use(compression());
 
-    if (this.publicDir) {
-      middlewares.use(
-        publicMiddleware(
-          this.httpServer,
-          this.compiler,
-          this.publicPath,
-          this.config
-        )
-      );
+    if (publicDir) {
+      middlewares.use(publicMiddleware(this.config, publicFiles));
     }
     // TODO todo add appType
     middlewares.use(

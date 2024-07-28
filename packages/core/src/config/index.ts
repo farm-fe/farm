@@ -118,6 +118,7 @@ export async function resolveConfig(
 
   // configPath may be file or directory
   const { configFile, configPath: initialConfigPath } = inlineOptions;
+
   const loadedUserConfig: any = await loadConfigFile(
     configFile,
     inlineOptions,
@@ -698,6 +699,7 @@ export function normalizePublicDir(root: string, publicDir = 'public') {
   const absPublicDirPath = path.isAbsolute(publicDir)
     ? publicDir
     : path.resolve(root, publicDir);
+
   return absPublicDirPath;
 }
 
@@ -915,6 +917,11 @@ export async function resolveUserConfig(
     NODE_ENV: userConfig.compilation.mode,
     mode
   };
+
+  resolvedUserConfig.publicDir = normalizePublicDir(
+    resolvedRootPath,
+    userConfig.publicDir
+  );
 
   return resolvedUserConfig;
 }
