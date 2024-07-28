@@ -15,7 +15,19 @@ jobs:
 
   benchmarks:
     needs: [call-rust-build]
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.settings.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        settings:
+          - os: ubuntu-latest
+            abi: linux-x64-gnu
+          - os: macos-latest
+            abi: darwin-arm64
+          - os: macos-13
+            abi: darwin-x64
+          - os: windows-latest
+            abi: win32-x64-msvc
     steps:
       - uses: "actions/checkout@v3"
       - uses: actions/setup-node@v3
