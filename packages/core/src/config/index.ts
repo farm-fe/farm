@@ -49,7 +49,6 @@ import { parseUserConfig } from './schema.js';
 
 import { externalAdapter } from '../plugin/js/external-adapter.js';
 import { convertErrorMessage } from '../utils/error.js';
-import { resolveHostname } from '../utils/http.js';
 import merge from '../utils/merge.js';
 import {
   CUSTOM_KEYS,
@@ -408,20 +407,6 @@ export async function normalizeUserCompilationConfig(
     } else {
       resolvedCompilation.lazyCompilation = false;
     }
-  }
-
-  if (
-    resolvedCompilation.lazyCompilation &&
-    resolvedUserConfig.server &&
-    typeof resolvedUserConfig.server.host === 'string'
-  ) {
-    const hostname = await resolveHostname(resolvedUserConfig.server.host);
-    resolvedCompilation.define = {
-      ...(resolvedCompilation.define ?? {}),
-      FARM_LAZY_COMPILE_SERVER_URL: `${
-        resolvedUserConfig.server.protocol || 'http'
-      }://${hostname.host || 'localhost'}:${resolvedUserConfig.server.port}`
-    };
   }
 
   if (resolvedCompilation.mode === undefined) {
