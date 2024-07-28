@@ -474,7 +474,7 @@ export async function start2(
     );
 
     const compiler = await createCompiler(resolvedUserConfig, logger);
-    const server = new newServer(compiler, resolvedUserConfig);
+    const server = new newServer(compiler, resolvedUserConfig, logger);
     await server.createServer();
     await server.listen();
     // const devServer = await createDevServer(

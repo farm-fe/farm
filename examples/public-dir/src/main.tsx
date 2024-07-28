@@ -1,7 +1,8 @@
 import React, { useState } from "react";
 import "./main.css";
 import reactLogo from "./assets/react.svg";
-import FarmLogo from "../newPublic/new-logo.png";
+import FarmLogo from "/new-logo.png";
+// import FarmLogo from "../newPublic/new-logo.png";
 export function Main() {
   const [count, setCount] = useState(0);
 

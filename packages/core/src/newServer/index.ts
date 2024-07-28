@@ -13,7 +13,7 @@ import { Compiler } from '../compiler/index.js';
 import { normalizePublicPath } from '../config/normalize-config/normalize-output.js';
 import { NormalizedServerConfig, ResolvedUserConfig } from '../config/types.js';
 import { logError } from '../server/error.js';
-import { logger } from '../utils/logger.js';
+import { Logger, logger } from '../utils/logger.js';
 import { initPublicFiles } from '../utils/publicDir.js';
 import { isObject } from '../utils/share.js';
 import { FileWatcher } from '../watcher/index.js';
@@ -91,11 +91,16 @@ export class newServer {
   publicPath?: string;
   httpServer?: HttpServer;
   watcher: FileWatcher;
+  logger: Logger;
 
-  constructor(compiler: CompilerType, config: ResolvedUserConfig) {
+  constructor(
+    compiler: CompilerType,
+    config: ResolvedUserConfig,
+    logger: Logger
+  ) {
     this.compiler = compiler;
     this.config = config;
-
+    this.logger = logger;
     if (!this.compiler) return;
 
     this.publicPath =
@@ -133,7 +138,7 @@ export class newServer {
     // middlewares.use(compression());
 
     if (publicDir) {
-      middlewares.use(publicMiddleware(this.config, publicFiles));
+      middlewares.use(publicMiddleware(this.logger, this.config, publicFiles));
     }
     // TODO todo add appType
     middlewares.use(

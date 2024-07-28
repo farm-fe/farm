@@ -4,6 +4,7 @@ import { ResolvedUserConfig } from '../../config/types.js';
 import { commonFsUtils } from '../../utils/fsUtils.js';
 import { cleanUrl } from '../../utils/url.js';
 import { HttpServer } from '../index.js';
+
 export function htmlFallbackMiddleware(
   server: HttpServer,
   compiler: Compiler,
