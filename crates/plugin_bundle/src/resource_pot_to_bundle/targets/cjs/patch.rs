@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use farmfe_core::{
-  config::Mode,
+  config::{external::ExternalConfig, Config, Mode},
   context::CompilationContext,
   error::Result,
   module::{module_graph::ModuleGraph, ModuleId, ModuleSystem},
@@ -18,7 +18,7 @@ use farmfe_toolkit::{
     modules::{
       common_js,
       import_analysis::import_analyzer,
-      util::{Config, ImportInterop},
+      util::{Config as SwcConfig, ImportInterop},
     },
   },
   swc_ecma_visit::VisitMutWith,
@@ -125,7 +125,7 @@ impl CjsPatch {
 
     ast.visit_mut_with(&mut common_js::<&SingleThreadedComments>(
       unresolved_mark,
-      Config {
+      SwcConfig {
         ignore_dynamic: true,
         preserve_import_meta: true,
         ..Default::default()
@@ -165,20 +165,18 @@ impl CjsPatch {
     if module_analyzer.is_commonjs() {
       let ast = module_analyzer.ast.body.take();
 
-      let new_body = CjsPatch::wrap_commonjs(
+      module_analyzer_manager.set_ast_body(
         module_id,
-        bundle_variable,
-        &module_analyzer_manager.module_global_uniq_name,
-        ast,
-        context.config.mode.clone(),
-        polyfill,
-      )
-      .unwrap();
-
-      module_analyzer_manager
-        .module_analyzer_mut_unchecked(module_id)
-        .ast
-        .body = new_body;
+        CjsPatch::wrap_commonjs(
+          module_id,
+          bundle_variable,
+          &module_analyzer_manager.module_global_uniq_name,
+          ast,
+          context.config.mode.clone(),
+          polyfill,
+        )
+        .unwrap(),
+      );
     }
 
     if let Some(import) = bundle_reference
@@ -202,6 +200,9 @@ impl CjsPatch {
     module_graph: &ModuleGraph,
     module_global_uniq_name: &ModuleGlobalUniqName,
     bundle_variable: &BundleVariable,
+    config: &Config,
+    polyfill: &mut SimplePolyfill,
+    external_config: &ExternalConfig,
   ) {
     let mut replacer: CJSReplace = CJSReplace {
       unresolved_mark: mark.0,
@@ -210,6 +211,9 @@ impl CjsPatch {
       module_id: module_id.clone(),
       module_global_uniq_name,
       bundle_variable,
+      config,
+      polyfill,
+      external_config
     };
 
     ast.visit_mut_with(&mut replacer);

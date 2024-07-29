@@ -59,11 +59,9 @@ impl Plugin for FarmPluginRuntime {
   }
 
   fn config(&self, config: &mut Config) -> farmfe_core::error::Result<Option<()>> {
-    // library bundle does not contain runtime
     if config.output.target_env.is_library() {
       return Ok(None);
     }
-
     // runtime package entry file
     if !config.runtime.path.is_empty() {
       config.input.insert(
