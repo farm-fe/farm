@@ -55,4 +55,4 @@ jobs:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Run cargo test
-        run: cargo test --release --tests
+        run: cargo test --profile ci-test --tests
