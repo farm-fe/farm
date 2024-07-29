@@ -55,6 +55,26 @@ pub enum Polyfill {
   /// const fs = _interop_require_default(node_fs);
   /// ```
   InteropRequireDefault,
+  ///
+  /// support use require in esm
+  ///
+  /// ```ts
+  /// // esm pre
+  /// import __farmNodeModule from 'module';
+  /// globalThis.nodeRequire = __farmNodeModule.createRequire(import.meta.url);
+  /// ```
+  ///
+  NodeEsmGlobalRequireHelper,
+
+  ///
+  /// browser external load
+  /// ```ts
+  /// const events = require("events");
+  /// // =>
+  /// loadExternalRequire('events');
+  /// ```
+  ///
+  BrowserExternalRequire,
 }
 
 impl Polyfill {
@@ -161,6 +181,34 @@ function _interop_require_default(obj) {
 }
 "#),
       ],
+      Polyfill::NodeEsmGlobalRequireHelper => vec![
+        r#"
+import __farmNodeModule from 'module';
+globalThis.nodeRequire = __farmNodeModule.createRequire(import.meta.url);
+"#,
+      ],
+      Polyfill::BrowserExternalRequire => vec![
+        r#"
+function loadExternalRequire(name) {
+  var _g = (globalThis || window || {});
+  var m = _g[name];
+  var assign = function() {
+    var args = Array.prototype.slice.call(arguments);
+    var target = args.shift();
+    var hasOwnProperty = Object.hasOwnProperty;
+    for(var i = 0; i < args.length; i ++) {
+      for(var key in args[i]) {
+        if(!hasOwnProperty.call(target, key)) {
+          target[key] = args[i][key];
+        }
+      }
+    }
+    return target;
+  }
+  return m ? m.default && !m.__esModule ? assign({}, m, {__esModule: true}) : (assign({}, m)) : m;
+};
+        "#,
+      ],
     }
     .into_iter()
     .map(|item| item.trim().into())
@@ -188,6 +236,8 @@ function _interop_require_default(obj) {
       Polyfill::Wildcard => vec!["_getRequireWildcardCache", "_interop_require_wildcard"],
       Polyfill::ExportStar => vec!["_export_star"],
       Polyfill::InteropRequireDefault => vec!["_interop_require_default"],
+      Polyfill::NodeEsmGlobalRequireHelper => vec!["__farmNodeModule"],
+      Polyfill::BrowserExternalRequire => vec!["loadExternalRequire"],
     })
     .into_iter()
     .map(|item| item.into())
@@ -266,6 +316,7 @@ impl SimplePolyfill {
       Polyfill::Wildcard,
       Polyfill::ExportStar,
       Polyfill::InteropRequireDefault,
+      Polyfill::NodeEsmGlobalRequireHelper,
     ]
     .into_iter()
     .flat_map(|polyfill| polyfill.name())
