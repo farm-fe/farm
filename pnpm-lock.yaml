@@ -1647,6 +1647,9 @@ importers:
       '@farmfe/js-plugin-visualizer':
         specifier: workspace:^
         version: link:../../js-plugins/visualizer
+      '@farmfe/js-plugin-vue':
+        specifier: workspace:*
+        version: link:../../js-plugins/vue
       '@farmfe/plugin-sass':
         specifier: workspace:^
         version: link:../../rust-plugins/sass
