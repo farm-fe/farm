@@ -74,6 +74,7 @@ import type {
 } from './types.js';
 
 export * from './types.js';
+export * from './constants.js';
 
 export function defineFarmConfig(config: UserConfig): UserConfig;
 export function defineFarmConfig(
