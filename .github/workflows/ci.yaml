@@ -1,12 +1,8 @@
 name: E2E Tests
 on:
-  push:
-    branches:
-      - "main"
   pull_request:
-  # `workflow_dispatch` allows CodSpeed to trigger backtest
-  # performance analysis in order to generate initial data.
-  workflow_dispatch:
+    branches:
+      - main
 
 jobs:
   call-rust-build:
