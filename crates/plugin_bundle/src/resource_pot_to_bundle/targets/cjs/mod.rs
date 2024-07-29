@@ -5,8 +5,8 @@ use farmfe_core::{
   module::{module_graph::ModuleGraph, ModuleId},
   swc_common::{Mark, DUMMY_SP},
   swc_ecma_ast::{
-    self, BindingIdent, CallExpr, ComputedPropName, Expr, ExprOrSpread, Ident, Lit, MemberExpr,
-    MemberProp, Module as EcmaAstModule, ModuleItem, Pat, Stmt, VarDecl, VarDeclarator,
+    self, BindingIdent, CallExpr, ComputedPropName, Expr, ExprOrSpread, ExprStmt, Ident, Lit,
+    MemberExpr, MemberProp, Module as EcmaAstModule, ModuleItem, Pat, Stmt, VarDecl, VarDeclarator,
   },
 };
 use farmfe_toolkit::{
@@ -130,6 +130,14 @@ impl CjsModuleAnalyzer {
       args: vec![],
       type_args: None,
     };
+
+    if reference_import.is_empty() {
+      result.push(ModuleItem::Stmt(Stmt::Expr(ExprStmt {
+        span: DUMMY_SP,
+        expr: Box::new(Expr::Call(cjs_caller)),
+      })));
+      return result;
+    }
 
     if let Some(default) = reference_import.default {
       decls.push(VarDeclarator {

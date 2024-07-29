@@ -242,13 +242,37 @@ impl<'a> SharedBundle<'a> {
 
       let bundle_analyzer = self.bundle_map.get_mut(resource_pot_id).unwrap();
 
-      bundle_analyzer
-        .bundle_variable
-        .borrow_mut()
-        .set_namespace(bundle_analyzer.resource_pot.id.clone());
+      bundle_analyzer.set_namespace(&bundle_analyzer.resource_pot.id);
 
       bundle_analyzer.render(&mut self.module_analyzer_manager, &self.order_index_map)?;
     }
+
+    let mut polyfill = SimplePolyfill::new(vec![]);
+
+    for resource_pot_id in &self.order_resource_pot {
+      let bundle_analyzer = self.bundle_map.get(resource_pot_id).unwrap();
+
+      if matches!(
+        bundle_analyzer.resource_pot.resource_pot_type,
+        ResourcePotType::Js
+      ) {
+        polyfill.extends(&bundle_analyzer.polyfill);
+      }
+    }
+
+    let runtime_resource_pot_id = self.order_resource_pot.iter().find(|item| {
+      self.bundle_map.get_mut(*item).is_some_and(|item| {
+        matches!(
+          item.resource_pot.resource_pot_type,
+          ResourcePotType::Runtime
+        )
+      })
+    });
+
+    if let Some(runtime_resource_pot_id) = runtime_resource_pot_id {
+      let bundle_analyzer = self.bundle_map.get_mut(runtime_resource_pot_id).unwrap();
+      bundle_analyzer.polyfill.extends(&polyfill);
+    };
 
     Ok(())
   }
@@ -272,7 +296,7 @@ impl<'a> SharedBundle<'a> {
 
     let bundle = self.bundle_map.get_mut(resource_pot_id).unwrap();
 
-    let bundle = bundle.codegen(&mut self.module_analyzer_manager)?;
+    let bundle = bundle.codegen(&mut self.module_analyzer_manager, &self.context.config)?;
 
     Ok(bundle)
   }
