@@ -58,6 +58,7 @@
     "build:cjs": "node scripts/build-cjs.mjs",
     "build": "tsc -p tsconfig.build.json && npm run build:cjs",
     "build:rs": "npm run build:rs:debug -- --release",
+    "build:rs-dev": "npm run build:rs:debug -- --dev",
     "build:rs:publish": "npm run build:rs:debug -- --release",
     "build:rs:debug": "napi build --platform --cargo-name farmfe_node -p farmfe_node --cargo-cwd ../../ binding --js binding.cjs --dts binding.d.ts",
     "build:rs:profile": "cross-env FARM_PROFILE=1 npm run build:rs -- --features profile",
