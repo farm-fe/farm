@@ -1,0 +1,12 @@
+{
+  "name": "bench",
+  "version": "1.0.0",
+  "description": "",
+  "scripts": {},
+  "dependencies": {
+    "@farmfe/core": "workspace:*"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}

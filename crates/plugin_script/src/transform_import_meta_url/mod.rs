@@ -69,7 +69,7 @@ fn normalized_glob_pattern(pattern: String) -> String {
   return pattern_builder.join("/");
 }
 
-// transform `new URL("url", import.meta.url)` to `new URL(import.meta.glob('url', { eager: true, import: 'default', query: 'url' }), import.meta.url71)`
+// transform `new URL("url", import.meta.url)` to `new URL(import.meta.glob('url', { eager: true, import: 'default', query: 'url' }), import.meta.url)`
 struct ImportMetaURLVisitor<'a> {
   comments: &'a SingleThreadedComments,
 }

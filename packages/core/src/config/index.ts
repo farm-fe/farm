@@ -1,7 +1,6 @@
-import crypto from 'node:crypto';
-import fs from 'node:fs';
-import module from 'node:module';
-import path, { isAbsolute, join } from 'node:path';
+import { createHash } from 'node:crypto';
+import { createRequire } from 'node:module';
+import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import fse from 'fs-extra';
 
@@ -74,6 +73,7 @@ import type {
 } from './types.js';
 
 export * from './types.js';
+export * from './constants.js';
 
 export function defineFarmConfig(config: UserConfig): UserConfig;
 export function defineFarmConfig(
@@ -258,16 +258,16 @@ export async function normalizeUserCompilationConfig(
 
     const userPublicDir = resolvedUserConfig.publicDir
       ? resolvedUserConfig.publicDir
-      : join(resolvedCompilation.root, 'public');
+      : path.join(resolvedCompilation.root, 'public');
 
-    if (isAbsolute(userPublicDir)) {
+    if (path.isAbsolute(userPublicDir)) {
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-ignore do not check type for this internal option
       resolvedCompilation.assets.publicDir = userPublicDir;
     } else {
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-ignore do not check type for this internal option
-      resolvedCompilation.assets.publicDir = join(
+      resolvedCompilation.assets.publicDir = path.join(
         resolvedCompilation.root,
         userPublicDir
       );
@@ -290,7 +290,7 @@ export async function normalizeUserCompilationConfig(
         }, {})
   );
 
-  const require = module.createRequire(import.meta.url);
+  const require = createRequire(import.meta.url);
   const hmrClientPluginPath = require.resolve('@farmfe/runtime-plugin-hmr');
   const ImportMetaPluginPath = require.resolve(
     '@farmfe/runtime-plugin-import-meta'
@@ -332,12 +332,11 @@ export async function normalizeUserCompilationConfig(
     const packageJsonPath = path.resolve(resolvedRootPath, 'package.json');
     const packageJsonExists = fse.existsSync(packageJsonPath);
     const namespaceName = packageJsonExists
-      ? JSON.parse(fse.readFileSync(packageJsonPath, { encoding: 'utf-8' }))
-          ?.name ?? FARM_DEFAULT_NAMESPACE
+      ? JSON.parse(fse.readFileSync(packageJsonPath, 'utf-8')).name ||
+        FARM_DEFAULT_NAMESPACE
       : FARM_DEFAULT_NAMESPACE;
 
-    resolvedCompilation.runtime.namespace = crypto
-      .createHash('md5')
+    resolvedCompilation.runtime.namespace = createHash('md5')
       .update(namespaceName)
       .digest('hex');
   }
@@ -553,10 +552,10 @@ function tryHttpsAsFileRead(value: unknown): string | Buffer | unknown {
   if (typeof value === 'string') {
     try {
       const resolvedPath = path.resolve(value);
-      const stats = fs.statSync(resolvedPath);
+      const stats = fse.statSync(resolvedPath);
 
       if (stats.isFile()) {
-        return fs.readFileSync(resolvedPath);
+        return fse.readFileSync(resolvedPath);
       }
     } catch {}
   }
@@ -742,11 +741,8 @@ export async function loadConfigFile(
     const stackTrace =
       error.code === 'GenericFailure' ? '' : `\n${error.stack}`;
     if (inlineOptions.mode === 'production') {
-      logger.error(
-        `Failed to load config file: ${errorMessage} \n${stackTrace}`,
-        {
-          exit: true
-        }
+      throw new Error(
+        `Failed to load farm config file: ${errorMessage} \n${stackTrace}`
       );
     }
     const potentialSolution =
@@ -824,11 +820,14 @@ export async function getConfigFilePath(
 
   for (const name of DEFAULT_CONFIG_NAMES) {
     const resolvedPath = path.join(configRootPath, name);
-    const fileStat = await fse.stat(resolvedPath);
-    if (fileStat.isFile()) {
-      return resolvedPath;
-    }
+    try {
+      const fileStat = await fse.stat(resolvedPath);
+      if (fileStat.isFile()) {
+        return resolvedPath;
+      }
+    } catch {}
   }
+
   return undefined;
 }
 
@@ -976,7 +975,7 @@ export async function checkFileExists(filePath: string): Promise<boolean> {
 }
 
 export async function resolveConfigFilePath(
-  configFile: string,
+  configFile: string | undefined,
   root: string,
   configRootPath: string
 ): Promise<string | undefined> {

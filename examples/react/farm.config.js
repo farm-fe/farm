@@ -4,7 +4,7 @@ export default defineConfig(() => {
   return {
     compilation: {
       sourcemap: true,
-      persistentCache: false,
+      // persistentCache: false,
       presetEnv: false,
       progress: false
       // output: {
