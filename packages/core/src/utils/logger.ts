@@ -40,11 +40,22 @@ const LOGGER_METHOD = {
   error: 'error'
 } as const;
 
-const warnOnceMessages = new Set();
-const infoOnceMessages = new Set();
-const errorOnceMessages = new Set();
+const onceMessages = {
+  info: new Set<string>(),
+  warn: new Set<string>(),
+  error: new Set<string>(),
+  trace: new Set<string>(),
+  debug: new Set<string>()
+};
 
 export class Logger implements ILogger {
+  private colorMap: Record<LogLevelNames, (s: string | string[]) => string> = {
+    trace: colors.magenta,
+    debug: colors.blue,
+    info: colors.brandColor,
+    warn: colors.yellow,
+    error: colors.red
+  };
   constructor(
     public options?: LoggerOptions,
     private levelValues: Record<LogLevelNames, number> = {
@@ -67,6 +78,25 @@ export class Logger implements ILogger {
     this.prefix = color ? color(formattedPrefix) : formattedPrefix;
   }
 
+  private createErrorMessage(
+    message: string | Error,
+    causeError?: Error
+  ): Error {
+    let error;
+    if (typeof message === 'string') {
+      error = new Error(message);
+      error.stack = '';
+    } else {
+      error = message;
+    }
+
+    if (causeError) {
+      error.message += `\nCaused by: ${causeError.stack ?? causeError}`;
+    }
+
+    return error;
+  }
+
   private logMessage(
     level: LogLevelNames,
     message: string | Error,
@@ -84,6 +114,18 @@ export class Logger implements ILogger {
     }
   }
 
+  private logWithLevel(level: LogLevelNames, message: string): void {
+    this.brandPrefix(this.colorMap[level]);
+    this.logMessage(level, message, this.colorMap[level]);
+  }
+
+  private logOnce(level: LogLevelNames, message: string): void {
+    if (!onceMessages[level].has(message)) {
+      onceMessages[level].add(message);
+      this.logWithLevel(level, message);
+    }
+  }
+
   setPrefix(options: LoggerOptions): void {
     if (options.name) {
       this.options.name = options.name;
@@ -92,79 +134,53 @@ export class Logger implements ILogger {
   }
 
   trace(message: string): void {
-    this.brandPrefix(colors.green);
-    this.logMessage(LogLevel.Trace, message, colors.magenta);
+    this.logWithLevel(LogLevel.Trace, message);
   }
 
   debug(message: string): void {
-    this.brandPrefix(colors.debugColor);
-    this.logMessage(LogLevel.Debug, message, colors.blue);
+    this.logWithLevel(LogLevel.Debug, message);
   }
 
   info(message: string, iOptions?: LoggerOptions): void {
-    const options: LoggerOptions | undefined = iOptions;
-    if (options) {
-      this.setPrefix(options);
+    if (iOptions) {
+      this.setPrefix(iOptions);
     }
-    if (!options || !options.brandColor) {
-      this.brandPrefix(colors.brandColor);
-    }
-    this.logMessage(LogLevel.Info, message, null);
+    this.logWithLevel(LogLevel.Info, message);
   }
 
   warn(message: string): void {
-    this.brandPrefix(colors.yellow);
-    this.logMessage(LogLevel.Warn, message, colors.yellow);
+    this.logWithLevel(LogLevel.Warn, message);
   }
 
   error(message: string | Error, errorOptions?: ErrorOptions): void {
-    this.brandPrefix(colors.red);
-
     const effectiveOptions = { ...this.options, ...errorOptions };
     const causeError = errorOptions?.e || errorOptions?.error;
+    const error = this.createErrorMessage(message, causeError);
 
-    let error;
-
-    if (typeof message === 'string') {
-      error = new Error(message);
-      error.stack = '';
-    } else {
-      error = message;
-    }
-
-    if (causeError) {
-      error.message += `\nCaused by: ${causeError.stack ?? causeError}`;
-    }
-
-    this.logMessage(LogLevel.Error, error, colors.red);
+    this.logWithLevel(LogLevel.Error, error.toString());
 
     if (effectiveOptions.exit) {
       process.exit(1);
     }
   }
-  infoOnce(message: string) {
-    if (!infoOnceMessages.has(message)) {
-      infoOnceMessages.add(message);
-      this.info(message);
-    }
+  infoOnce(message: string): void {
+    this.logOnce(LogLevel.Info, message);
   }
-  warnOnce(message: string) {
-    if (!warnOnceMessages.has(message)) {
-      warnOnceMessages.add(message);
-      this.warn(message);
-    }
+
+  warnOnce(message: string): void {
+    this.logOnce(LogLevel.Warn, message);
   }
-  errorOnce(message: string | Error) {
-    if (!errorOnceMessages.has(message)) {
-      errorOnceMessages.add(message);
-      this.error(message);
-    }
+
+  errorOnce(message: string | Error): void {
+    this.logOnce(LogLevel.Error, message.toString());
   }
-  hasErrorLogged(message: string | Error) {
-    return errorOnceMessages.has(message);
+
+  hasErrorLogged(message: string | Error): boolean {
+    return onceMessages.error.has(message.toString());
   }
-  hasWarnLogged(message: string) {
-    return warnOnceMessages.has(message);
+
+  hasWarnLogged(message: string): boolean {
+    return onceMessages.warn.has(message);
   }
 }
 
@@ -218,8 +234,11 @@ export function printServerUrls(
   urls.network.map((url: string) => logUrl(url, 'Network: '));
 }
 
-export function bootstrapLogger(options?: LoggerOptions): Logger {
-  return new Logger(options);
+export function bootstrapLogger(
+  customLogger?: ILogger,
+  options?: LoggerOptions
+): ILogger {
+  return customLogger || new Logger(options);
 }
 
 export function bootstrap(times: number, config: Config) {
