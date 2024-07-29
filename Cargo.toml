@@ -20,5 +20,4 @@ inherits = "release"
 opt-level = 0
 debug = 2
 lto = false
-panic = 'unwind'
-codegen-units = 256
+codegen-units = 16
