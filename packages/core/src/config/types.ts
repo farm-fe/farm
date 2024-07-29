@@ -4,11 +4,11 @@ import { Server } from '../index.js';
 import type { OutgoingHttpHeaders } from 'http';
 import type cors from '@koa/cors';
 import { WatchOptions } from 'chokidar';
+import type { Options } from 'http-proxy-middleware';
 import { Middleware } from 'koa';
-import type { Config } from '../types/binding.js';
 import type { RustPlugin } from '../plugin/rust/index.js';
 import type { JsPlugin } from '../plugin/type.js';
-import type { Options } from 'http-proxy-middleware';
+import type { Config } from '../types/binding.js';
 import type { Logger } from '../utils/index.js';
 
 export interface ConfigEnv {
@@ -107,7 +107,8 @@ export interface UserConfig {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
-export interface ResolvedCompilation extends Exclude<Config['config'], undefined> {
+export interface ResolvedCompilation
+  extends Exclude<Config['config'], undefined> {
   external?: string[];
 }
 
