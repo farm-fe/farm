@@ -3,7 +3,7 @@ import { defineConfig } from '@farmfe/core';
 import farmJsPluginLess from '@farmfe/js-plugin-less';
 import farmJsPluginSvgr from '@farmfe/js-plugin-svgr';
 
-export default defineConfig(async (env) => {
+export default defineConfig((env) => {
   return {
     compilation: {
       input: {
@@ -22,7 +22,7 @@ export default defineConfig(async (env) => {
       },
       minify: false,
       mode: 'development',
-      persistentCache: false,
+      // persistentCache: false,
       output: {
         path: './build',
         filename: 'assets/[resourceName].[contentHash].[ext]',

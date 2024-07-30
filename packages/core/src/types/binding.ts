@@ -161,6 +161,10 @@ export interface OutputConfig {
    * output module format
    */
   format?: 'cjs' | 'esm';
+  /**
+   * clean output.path automatically or not
+   */
+  clean?: boolean;
 }
 
 export interface ResolveConfig {

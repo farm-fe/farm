@@ -48,18 +48,28 @@ impl Plugin for FarmPluginBundle {
 
     resource_pots.sort_by_key(|item| item.id.clone());
 
-    let r = resource_pots.iter().map(|item| &**item).collect::<Vec<_>>();
+    let r = resource_pots
+      .iter()
+      .filter(|item| {
+        context.config.output.target_env.is_library()
+          || matches!(item.resource_pot_type, ResourcePotType::Runtime)
+      })
+      .map(|item| &**item)
+      .collect::<Vec<_>>();
     let mut shared_bundle = SharedBundle::new(r, &module_graph, context)?;
 
-    let runtime_resource_pot = resource_pots
+    let inject_resource_pot_id = resource_pots
       .iter()
-      .find(|item| matches!(item.resource_pot_type, ResourcePotType::Runtime))
+      .find(|item| {
+        (context.config.output.target_env.is_library() && item.entry_module.is_some())
+          || matches!(item.resource_pot_type, ResourcePotType::Runtime)
+      })
       .map(|i| i.id.clone());
 
-    if let Some(runtime_resource_pot_id) = runtime_resource_pot {
+    if let Some(resource_pot_id) = inject_resource_pot_id {
       let polyfill = &mut shared_bundle
         .bundle_map
-        .get_mut(&runtime_resource_pot_id)
+        .get_mut(&resource_pot_id)
         .unwrap()
         .polyfill;
 

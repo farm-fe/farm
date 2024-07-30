@@ -33,6 +33,7 @@
     "codeframe",
     "codegen",
     "Codepen",
+    "codspeed",
     "commitlint",
     "compat",
     "concurrentify",
@@ -60,6 +61,7 @@
     "execa",
     "fargs",
     "farmfe",
+    "fibo",
     "flac",
     "fnames",
     "Fock",
@@ -76,6 +78,7 @@
     "importee",
     "Inctive",
     "indicatif",
+    "instanceof",
     "Instantiator",
     "jfif",
     "JIDA",
@@ -182,12 +185,7 @@
     "wasmer",
     "wechat",
     "xlink",
-    "Yuxi",
-    "wasmer",
-    "primevue",
-    "shulan",
-    "globset",
-    "instanceof"
+    "Yuxi"
   ],
   "ignorePaths": [
     "pnpm-lock.yaml",

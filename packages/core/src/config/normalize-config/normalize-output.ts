@@ -33,6 +33,10 @@ export function normalizeOutput(
     }
   }
 
+  if (config.output.clean === undefined) {
+    config.output.clean = true;
+  }
+
   // only set default polyfill in production
   if (isProduction) {
     normalizeTargetEnv(config);

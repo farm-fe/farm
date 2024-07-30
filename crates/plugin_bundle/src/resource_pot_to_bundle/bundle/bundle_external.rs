@@ -153,12 +153,15 @@ pub struct BundleReference {
   /// import { xxx } from './external_bundle_module' | './other_bundle_module'
   pub import_map: HashMap<ReferenceKind, ExternalReferenceImport>,
 
+  ///
+  /// ```ts
   /// export { } from "./cjs_module";
   /// export * as ns from "./cjs_module";
   /// export { default } ns from "./cjs_module";
-  /// import { } from "./cjs_module";
-  /// import * as ns from "./cjs_module";
-  /// import cjs from "./cjs_module";
+  /// // =>
+  /// const cjs_module_cjs = cjs_module()["default"];
+  /// ```
+  ///
   pub redeclare_commonjs_import: HashMap<ReferenceKind, ExternalReferenceImport>,
 
   // pub declare_commonjs_export: HashMap<ReferenceKind, ExternalReferenceExport>,
@@ -215,7 +218,7 @@ impl BundleReference {
     }
   }
 
-  pub fn add_import_helper(
+  fn add_import_helper(
     map: &mut HashMap<ReferenceKind, ExternalReferenceImport>,
     import: &ImportSpecifierInfo,
     source: ReferenceKind,
