@@ -88,7 +88,7 @@
     "etag": "^1.8.1",
     "http-proxy": "^1.18.1",
     "react-refresh": "^0.14.0",
-    "sirv": "^2.0.3",
+    "sirv": "^2.0.4",
     "ws": "^8.14.2"
   },
   "dependencies": {

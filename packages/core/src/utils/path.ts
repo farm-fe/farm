@@ -14,3 +14,11 @@ const postfixRE = /[?#].*$/;
 export function stripQueryAndHash(path: string): string {
   return path.replace(postfixRE, '');
 }
+
+export function removeHashFromPath(url: string): string {
+  const hashPattern = /(_[a-zA-Z\d]{4,8})\./;
+
+  const newURL = url.replace(hashPattern, '.');
+
+  return newURL;
+}

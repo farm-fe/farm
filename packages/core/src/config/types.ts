@@ -160,6 +160,7 @@ export interface FarmCliOptions
   logger?: Logger;
   config?: string;
   configFile?: string;
+  // todo: check to delete
   configPath?: string;
   compilation?: Config['config'];
   mode?: string;
