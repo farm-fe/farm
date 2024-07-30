@@ -1,6 +1,6 @@
 import path from 'node:path';
-import { bench, describe } from 'vitest';
 import { build } from '@farmfe/core';
+import { bench, describe } from 'vitest';
 
 async function build_react_example() {
   await build({
