@@ -78,8 +78,8 @@ export function cleanOptions(
  * @returns resolve command options
  */
 export function resolveCommandOptions(
-  options: GlobalCliOptions
-): GlobalCliOptions {
+  options: GlobalCliOptions & CliServerOptions
+): GlobalCliOptions & CliServerOptions {
   const resolveOptions = { ...options };
   filterDuplicateOptions(resolveOptions);
   return cleanOptions(resolveOptions);
@@ -143,6 +143,8 @@ export function resolveCliConfig(
   };
 }
 
-export const { version } = JSON.parse(
+const { version } = JSON.parse(
   readFileSync(new URL('../package.json', import.meta.url)).toString()
 );
+
+export const VERSION = version;

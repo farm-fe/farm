@@ -2,13 +2,9 @@ export interface GlobalCliOptions {
   '--'?: string[];
   c?: boolean | string;
   config?: string;
-  configPath?: string;
   base?: string;
   m?: string;
   mode?: 'development' | 'production' | string;
-  l?: boolean;
-  lazy?: boolean;
-  port?: number;
   clearScreen?: boolean;
 }
 
@@ -19,7 +15,6 @@ export interface CleanOptions {
 export interface CliServerOptions {
   port?: number;
   open?: boolean;
-  https?: boolean;
   hmr?: boolean;
   cors?: boolean;
   strictPort?: boolean;
@@ -32,11 +27,12 @@ export interface CliBuildOptions {
   input?: string;
   w?: boolean;
   watch?: boolean;
+  l?: boolean;
+  lazy?: boolean;
   sourcemap?: boolean;
   minify?: boolean;
   treeShaking?: boolean;
   format?: 'cjs' | 'esm';
-  configFile?: string | undefined;
   target?:
     | 'browser'
     | 'node'
@@ -46,7 +42,10 @@ export interface CliBuildOptions {
     | 'browser-legacy'
     | 'browser-es2015'
     | 'browser-es2017'
-    | 'browser-esnext';
+    | 'browser-esnext'
+    | 'library'
+    | 'library-browser'
+    | 'library-node';
 }
 
 export interface CliPreviewOptions {

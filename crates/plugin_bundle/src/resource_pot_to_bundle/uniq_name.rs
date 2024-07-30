@@ -309,6 +309,11 @@ impl BundleVariable {
     self.var_by_index(index).var.0.to_string()
   }
 
+  #[inline]
+  pub fn is_default_key(&self, index: usize) -> bool {
+    self.name(index) == "default"
+  }
+
   pub fn render_name(&self, index: usize) -> String {
     let var = self.var_by_index(index);
     if let Some(rename) = var.rename.as_ref() {

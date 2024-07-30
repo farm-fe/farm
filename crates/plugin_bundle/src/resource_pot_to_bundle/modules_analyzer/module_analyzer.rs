@@ -9,7 +9,7 @@ use farmfe_core::{
   context::CompilationContext,
   error::Result,
   farm_profile_function,
-  module::{module_graph::ModuleGraph, Module, ModuleId, ModuleSystem},
+  module::{module_graph::ModuleGraph, Module, ModuleId, ModuleSystem, ModuleType},
   resource::resource_pot::ResourcePotId,
   swc_common::{Mark, SourceMap},
   swc_ecma_ast::{Id, Module as EcmaAstModule},
@@ -242,6 +242,7 @@ pub struct ModuleAnalyzer {
   pub cjs_module_analyzer: CjsModuleAnalyzer,
   pub mark: (Mark, Mark),
   pub module_system: ModuleSystem,
+  pub module_type: ModuleType,
 }
 
 impl Debug for ModuleAnalyzer {
@@ -302,6 +303,7 @@ impl ModuleAnalyzer {
       cjs_module_analyzer: CjsModuleAnalyzer::new(),
       mark: mark.unwrap(),
       module_system: module.meta.as_script().module_system.clone(),
+      module_type: module.module_type.clone(),
     })
   }
 

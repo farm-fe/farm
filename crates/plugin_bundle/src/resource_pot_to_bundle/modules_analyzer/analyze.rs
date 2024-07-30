@@ -6,7 +6,7 @@ use farmfe_core::{
   module::{module_graph::ModuleGraph, ModuleId},
   swc_common::Mark,
   swc_ecma_ast::{
-    self, Decl, DefaultDecl, ExportDecl, Expr, Ident, ImportSpecifier, ModuleDecl,
+    self, DefaultDecl, ExportDecl, Expr, Ident, ImportSpecifier, ModuleDecl,
     ModuleExportName, ModuleItem,
   },
 };
