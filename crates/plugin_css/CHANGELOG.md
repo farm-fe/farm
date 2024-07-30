@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.14](https://github.com/farm-fe/farm/compare/farmfe_plugin_css-v0.0.13...farmfe_plugin_css-v0.0.14) - 2024-07-30
+
+### Other
+- updated the following local packages: farmfe_core, farmfe_utils
+
 ## [0.0.13](https://github.com/farm-fe/farm/compare/farmfe_plugin_css-v0.0.12...farmfe_plugin_css-v0.0.13) - 2024-07-25
 
 ### Other
