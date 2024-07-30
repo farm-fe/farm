@@ -89,7 +89,7 @@ export const installLinuxProtobuf = async () => {
 
 // build core command
 export const buildCore = () =>
-  execa(DEFAULT_PACKAGE_MANAGER, ['build:rs-dev'], {
+  execa(DEFAULT_PACKAGE_MANAGER, ['build:rs'], {
     cwd: PKG_CORE
   }).then(buildCoreCjs);
 
