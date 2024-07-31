@@ -194,7 +194,7 @@ export async function watch(
   if (lazyEnabled) {
     devServer = new Server({
       logger,
-      compiler: compilerFileWatcher.serverOrCompiler as Compiler
+      compiler: compilerFileWatcher.compiler
     });
     await devServer.createServer(resolvedUserConfig.server);
     devServer.applyMiddlewares([lazyCompilation]);

@@ -4,7 +4,7 @@ import { FSWatcher } from 'chokidar';
 
 import { Compiler } from '../compiler/index.js';
 import { Server } from '../server/index.js';
-import { Logger, compilerHandler } from '../utils/index.js';
+import { Logger, compilerHandler, normalizeBasePath } from '../utils/index.js';
 
 import { existsSync } from 'node:fs';
 import type { ResolvedUserConfig } from '../config/index.js';
@@ -20,39 +20,46 @@ export class FileWatcher implements ImplFileWatcher {
   private _watcher: FSWatcher;
   private _close = false;
   private _watchedFiles = new Set<string>();
+  public server: Server | null = null;
+  public compiler: Compiler;
 
   constructor(
-    public serverOrCompiler: Server | Compiler,
+    serverOrCompiler: Server | Compiler,
     public options: ResolvedUserConfig,
     private _logger: Logger
   ) {
     this._root = options.root;
+    if (serverOrCompiler instanceof Server) {
+      this.server = serverOrCompiler;
+      this.compiler = serverOrCompiler.getCompiler();
+    } else {
+      this.compiler = serverOrCompiler;
+    }
   }
 
   getInternalWatcher() {
     return this._watcher;
   }
 
-  filterWatchFile(file: string, root: string): boolean {
-    const suffix = process.platform === 'win32' ? '\\' : '/';
+  private filterWatchFile(file: string): boolean {
+    file = normalizeBasePath(file);
 
-    return (
-      !file.startsWith(`${root}${suffix}`) &&
-      !file.includes(`node_modules${suffix}`) &&
-      !file.includes('\0') &&
-      existsSync(file)
-    );
+    if (file.startsWith(`${this._root}/`) || file.includes('\0')) return false;
+
+    for (const watchedFile of this._watchedFiles) {
+      if (file.startsWith(watchedFile)) return false;
+    }
+
+    return existsSync(file);
   }
 
   getExtraWatchedFiles() {
-    const compiler = this.getCompilerFromServerOrCompiler(
-      this.serverOrCompiler
-    );
+    const compiler = this.compiler;
 
     return [
       ...compiler.resolvedModulePaths(this._root),
       ...compiler.resolvedWatchPaths()
-    ].filter((file) => this.filterWatchFile(file, this._root));
+    ].filter((file) => this.filterWatchFile(file));
   }
 
   watchExtraFiles() {
@@ -67,10 +74,7 @@ export class FileWatcher implements ImplFileWatcher {
   }
 
   async watch() {
-    // Determine how to compile the project
-    const compiler = this.getCompilerFromServerOrCompiler(
-      this.serverOrCompiler
-    );
+    const compiler = this.compiler;
 
     const handlePathChange = async (path: string): Promise<void> => {
       if (this._close) {
@@ -78,14 +82,10 @@ export class FileWatcher implements ImplFileWatcher {
       }
 
       try {
-        if (this.serverOrCompiler instanceof Server) {
-          await this.serverOrCompiler.hmrEngine.hmrUpdate(path);
-        }
+        this.server && (await this.server.hmrEngine.hmrUpdate(path));
 
-        if (
-          this.serverOrCompiler instanceof Compiler &&
-          this.serverOrCompiler.hasModule(path)
-        ) {
+        // Determine how to compile the project
+        if (!this.server && compiler.hasModule(path)) {
           compilerHandler(
             async () => {
               const result = await compiler.update([path], true);
@@ -124,32 +124,24 @@ export class FileWatcher implements ImplFileWatcher {
         );
         return resolvedPath;
       });
-      const filteredAdded = added.filter((file) =>
-        this.filterWatchFile(file, this._root)
-      );
+      const filteredAdded = added.filter((file) => this.filterWatchFile(file));
 
       if (filteredAdded.length > 0) {
         this._watcher.add(filteredAdded);
+        filteredAdded.forEach((file) => this._watchedFiles.add(file));
       }
     };
 
-    if (this.serverOrCompiler instanceof Server) {
-      this.serverOrCompiler.hmrEngine?.onUpdateFinish(handleUpdateFinish);
+    if (this.server) {
+      this.server.hmrEngine?.onUpdateFinish(handleUpdateFinish);
     }
-  }
-
-  private getCompilerFromServerOrCompiler(
-    serverOrCompiler: Server | Compiler
-  ): Compiler {
-    return serverOrCompiler instanceof Server
-      ? serverOrCompiler.getCompiler()
-      : serverOrCompiler;
   }
 
   close() {
     this._close = true;
     this._watcher = null;
-    this.serverOrCompiler = null;
+    this.server = null;
+    this.compiler = null;
   }
 }
 
