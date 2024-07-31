@@ -71,6 +71,7 @@ export interface NormalizedConfig {
 
 export interface UserHmrConfig extends HmrOptions {
   watchOptions?: WatchOptions;
+  overlay?: boolean;
 }
 
 type InternalConfig = Config['config'] extends undefined

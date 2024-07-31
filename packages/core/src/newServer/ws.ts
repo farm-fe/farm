@@ -99,7 +99,7 @@ export class WsServer {
   public clientsMap = new WeakMap<WebSocketRaw, WebSocketClient>();
   public bufferedError: ErrorPayload | null = null;
   public logger: ILogger;
-  public wsServerOrHmrServer: Server;
+  public wsServer: Server;
 
   constructor(
     private httpServer: HttpServer,
@@ -110,7 +110,7 @@ export class WsServer {
     logger?: ILogger
   ) {
     this.logger = logger ?? new Logger();
-    this.createWebSocketServer();
+    // this.createWebSocketServer();
   }
 
   createWebSocketServer() {
@@ -138,8 +138,7 @@ export class WsServer {
     const hmrPort = hmr && hmr.port;
     const portsAreCompatible = !hmrPort || hmrPort === serverConfig.port;
     // @ts-ignore
-    this.wsServerOrHmrServer =
-      hmrServer || (portsAreCompatible && this.httpServer);
+    this.wsServer = hmrServer || (portsAreCompatible && this.httpServer);
     let hmrServerWsListener: (
       req: InstanceType<typeof IncomingMessage>,
       socket: Duplex,
@@ -148,7 +147,7 @@ export class WsServer {
     const port = hmrPort || 9000;
     const host = (hmr && hmr.host) || undefined;
 
-    if (this.wsServerOrHmrServer) {
+    if (this.wsServer) {
       let hmrBase = this.publicPath;
       const hmrPath = hmr ? hmr.path : undefined;
       if (hmrPath) {
@@ -165,7 +164,7 @@ export class WsServer {
           });
         }
       };
-      this.wsServerOrHmrServer.on('upgrade', hmrServerWsListener);
+      this.wsServer.on('upgrade', hmrServerWsListener);
     } else {
       // http server request handler keeps the same with
       // https://github.com/websockets/ws/blob/45e17acea791d865df6b255a55182e9c42e5877a/lib/websocket-server.js#L88-L96
@@ -192,5 +191,186 @@ export class WsServer {
       // need to call ws listen manually
       wss = new WebSocketServerRaw({ server: wsHttpServer });
     }
+
+    wss.on('connection', (socket) => {
+      socket.on('message', (raw) => {
+        if (!this.customListeners.size) return;
+        let parsed: any;
+        try {
+          parsed = JSON.parse(String(raw));
+        } catch {}
+        if (!parsed || parsed.type !== 'custom' || !parsed.event) return;
+        const listeners = this.customListeners.get(parsed.event);
+        if (!listeners?.size) return;
+        const client = this.getSocketClient(socket);
+        listeners.forEach((listener) => listener(parsed.data, client));
+      });
+      socket.on('error', (err) => {
+        console.log('ws error:', err);
+
+        // config.logger.error(`${colors.red(`ws error:`)}\n${err.stack}`, {
+        //   timestamp: true,
+        //   error: err
+        // });
+      });
+      socket.send(JSON.stringify({ type: 'connected' }));
+      if (this.bufferedError) {
+        socket.send(JSON.stringify(this.bufferedError));
+        this.bufferedError = null;
+      }
+    });
+
+    wss.on('error', (e: Error & { code: string }) => {
+      if (e.code === 'EADDRINUSE') {
+        console.log('WebSocket server error: Port is already in use');
+
+        // config.logger.error(
+        //   colors.red(`WebSocket server error: Port is already in use`),
+        //   { error: e }
+        // );
+      } else {
+        console.log('WebSocket server error:', e.stack || e.message);
+
+        // config.logger.error(
+        //   colors.red(`WebSocket server error:\n${e.stack || e.message}`),
+        //   { error: e }
+        // );
+      }
+    });
+    const self = this;
+    function getSocketClient(socket: WebSocketRaw) {
+      if (!this.clientsMap.has(socket)) {
+        this.clientsMap.set(socket, {
+          send: (...args: any) => {
+            let payload: HMRPayload;
+            if (typeof args[0] === 'string') {
+              payload = {
+                type: 'custom',
+                event: args[0],
+                data: args[1]
+              };
+            } else {
+              payload = args[0];
+            }
+            socket.send(JSON.stringify(payload));
+          },
+          // @ts-ignore
+          rawSend: (str: string) => socket.send(str),
+          socket
+        });
+      }
+      return this.clientsMap.get(socket);
+    }
+
+    return {
+      name: 'ws',
+      listen: () => {
+        // @ts-ignore
+        wsHttpServer?.listen(port, host);
+      },
+      on: ((event: string, fn: () => void) => {
+        if (wsServerEvents.includes(event)) wss.on(event, fn);
+        else {
+          if (!this.customListeners.has(event)) {
+            this.customListeners.set(event, new Set());
+          }
+          this.customListeners.get(event).add(fn);
+        }
+      }) as WebSocketServer['on'],
+      off: ((event: string, fn: () => void) => {
+        if (wsServerEvents.includes(event)) {
+          wss.off(event, fn);
+        } else {
+          this.customListeners.get(event)?.delete(fn);
+        }
+      }) as WebSocketServer['off'],
+
+      get clients() {
+        // return new Set(Array.from(wss.clients).map(getSocketClient));
+        return new Set(
+          Array.from(wss.clients).map((socket) => self.getSocketClient(socket))
+        );
+      },
+
+      send(...args: any[]) {
+        let payload: HMRPayload;
+        if (typeof args[0] === 'string') {
+          payload = {
+            type: 'custom',
+            event: args[0],
+            data: args[1]
+          };
+        } else {
+          payload = args[0];
+        }
+
+        if (payload.type === 'error' && !wss.clients.size) {
+          this.bufferedError = payload;
+          return;
+        }
+
+        const stringified = JSON.stringify(payload);
+        wss.clients.forEach((client) => {
+          // readyState 1 means the connection is open
+          if (client.readyState === 1) {
+            client.send(stringified);
+          }
+        });
+      },
+
+      close() {
+        // should remove listener if hmr.server is set
+        // otherwise the old listener swallows all WebSocket connections
+        if (hmrServerWsListener && this.wsServer) {
+          this.wsServer.off('upgrade', hmrServerWsListener);
+        }
+        return new Promise<void>((resolve, reject) => {
+          wss.clients.forEach((client) => {
+            client.terminate();
+          });
+          wss.close((err) => {
+            if (err) {
+              reject(err);
+            } else {
+              if (wsHttpServer) {
+                wsHttpServer.close((err) => {
+                  if (err) {
+                    reject(err);
+                  } else {
+                    resolve();
+                  }
+                });
+              } else {
+                resolve();
+              }
+            }
+          });
+        });
+      }
+    };
+  }
+
+  getSocketClient(socket: WebSocketRaw) {
+    if (!this.clientsMap.has(socket)) {
+      this.clientsMap.set(socket, {
+        send: (...args) => {
+          let payload: HMRPayload;
+          if (typeof args[0] === 'string') {
+            payload = {
+              type: 'custom',
+              event: args[0],
+              data: args[1]
+            };
+          } else {
+            payload = args[0];
+          }
+          socket.send(JSON.stringify(payload));
+        },
+        // @ts-ignore
+        rawSend: (str: string) => socket.send(str),
+        socket
+      });
+    }
+    return this.clientsMap.get(socket);
   }
 }

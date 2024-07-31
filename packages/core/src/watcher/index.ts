@@ -78,7 +78,10 @@ export class FileWatcher implements ImplFileWatcher {
       }
 
       try {
-        if (this.serverOrCompiler instanceof Server) {
+        // if (this.serverOrCompiler instanceof Server) {
+        // @ts-ignore
+        if (this.serverOrCompiler.compiler) {
+          // @ts-ignore
           await this.serverOrCompiler.hmrEngine.hmrUpdate(path);
         }
 
@@ -141,8 +144,10 @@ export class FileWatcher implements ImplFileWatcher {
   private getCompilerFromServerOrCompiler(
     serverOrCompiler: Server | Compiler
   ): Compiler {
-    return serverOrCompiler instanceof Server
-      ? serverOrCompiler.getCompiler()
+    // @ts-ignore
+    return serverOrCompiler.getCompiler
+      ? // @ts-ignore
+        serverOrCompiler.getCompiler()
       : serverOrCompiler;
   }
 

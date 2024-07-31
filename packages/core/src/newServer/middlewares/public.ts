@@ -1,5 +1,5 @@
 import sirv from 'sirv';
-import { ResolvedUserConfig } from '../../config/types.js';
+
 import { colors } from '../../utils/color.js';
 import { Logger } from '../../utils/logger.js';
 import { removeHashFromPath, withTrailingSlash } from '../../utils/path.js';
@@ -11,6 +11,8 @@ import {
   removeImportQuery,
   urlRE
 } from '../../utils/url.js';
+
+import type { ResolvedUserConfig } from '../../config/types.js';
 
 function warnAboutPublicDir(url: string, publicPath: string) {
   let warning: string;
@@ -61,7 +63,7 @@ export function publicMiddleware(
       }
       if (headers) {
         for (const name in headers) {
-          res.setHeader(name, headers[name]!);
+          res.setHeader(name, headers[name]);
         }
       }
     }
@@ -83,7 +85,7 @@ export function publicMiddleware(
     res: any,
     next: () => void
   ) {
-    const url = removeHashFromPath(req.url!);
+    const url = removeHashFromPath(req.url);
     const filePath = toFilePath(url);
 
     // If it is not equal, it means that it is recognized as a module

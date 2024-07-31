@@ -13,10 +13,11 @@ import { Compiler } from '../compiler/index.js';
 import { normalizePublicPath } from '../config/normalize-config/normalize-output.js';
 import { NormalizedServerConfig, ResolvedUserConfig } from '../config/types.js';
 import { logError } from '../server/error.js';
-import { Logger, logger } from '../utils/logger.js';
+import { Logger, bootstrap, logger } from '../utils/logger.js';
 import { initPublicFiles } from '../utils/publicDir.js';
 import { isObject } from '../utils/share.js';
 import { FileWatcher } from '../watcher/index.js';
+import { HmrEngine } from './hmr-engine.js';
 import { HMRChannel } from './hmr.js';
 import {
   CommonServerOptions,
@@ -76,14 +77,14 @@ export interface ServerOptions extends CommonServerOptions {
   origin?: string;
 }
 
-function noop() {
+export function noop() {
   // noop
 }
 
 export class newServer {
   private compiler: CompilerType;
 
-  ws: WsServer;
+  ws: any;
   config: ResolvedUserConfig;
   serverConfig: CommonServerOptions & NormalizedServerConfig;
   httpsOptions: HttpsServerOptions;
@@ -91,6 +92,7 @@ export class newServer {
   publicPath?: string;
   httpServer?: HttpServer;
   watcher: FileWatcher;
+  hmrEngine?: HmrEngine;
   logger: Logger;
 
   constructor(
@@ -132,10 +134,18 @@ export class newServer {
 
     const publicFiles = await initPublicFilesPromise;
     const { publicDir } = this.config.compilation.assets;
-    // this.createWebSocketServer();
+
+    this.createWebSocketServer();
+    this.hmrEngine = new HmrEngine(
+      this.compiler,
+      this.httpServer,
+      this.config,
+      this.ws,
+      this.logger
+    );
 
     // middleware
-    // middlewares.use(compression());
+    middlewares.use(compression());
 
     if (publicDir) {
       middlewares.use(publicMiddleware(this.logger, this.config, publicFiles));
@@ -166,56 +176,28 @@ export class newServer {
       throw new Error('Websocket requires a server.');
     }
 
-    // const wsServer = new WsServer(
-    //   this.httpServer,
-    //   this.config,
-    //   this.httpsOptions,
-    //   this.publicPath,
-    //   null
-    // );
+    const wsServer = new WsServer(
+      this.httpServer,
+      this.config,
+      this.httpsOptions,
+      this.publicPath,
+      null
+    );
+
+    const ws = wsServer.createWebSocketServer();
+    this.ws = ws;
   }
 
   public async listen(): Promise<void> {
     if (!this.httpServer) {
-      // this.logger.error('HTTP server is not created yet');
+      this.logger.warn('HTTP server is not created yet');
       return;
     }
     const { port, open, protocol, hostname } = this.config.server;
 
+    const start = Date.now();
     await this.compile();
-    // const { createServer } = await import('node:http');
-
-    // this.httpServer = createServer((req, res) => {
-    //   if (req.url === '/') {
-    //     // res.writeHead(200, { 'Content-Type': 'text/plain' });
-    //     // res.end('Hello, World!');
-    //   } else if (req.url === '/about') {
-    //     res.writeHead(200, { 'Content-Type': 'text/plain' });
-    //     res.end('About page');
-    //   } else {
-    //     res.writeHead(404, { 'Content-Type': 'text/plain' });
-    //     res.end('404 Not Found');
-    //   }
-    // });
-
-    // this.httpServer.on('request', (req, res) => {
-    //   // 设置响应头
-    //   // res.writeHead(200, { 'Content-Type': 'application/json' });
-    //   res.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8' });
-
-    //   // 创建响应体对象
-    //   const responseBody = {
-    //     message: "这是使用 on('request') 方法的响应",
-    //     timestamp: new Date().toISOString(),
-    //     path: req.url
-    //   };
-
-    //   // 将对象转换为 JSON 字符串
-    //   const jsonResponse = JSON.stringify(responseBody);
-    //   // res.setHeader('Content-Type', 'text/plain; charset=utf-8');
-    //   // 发送响应
-    //   res.end(jsonResponse);
-    // });
+    bootstrap(Date.now() - start, this.compiler.config);
 
     this.httpServer.listen(port, hostname.name, () => {
       console.log(`Server running at ${protocol}://${hostname.name}:${port}/`);

@@ -38,7 +38,7 @@ import {
   normalizePublicDir,
   resolveConfig
 } from './config/index.js';
-import { newServer } from './newServer/index.js';
+import { HttpServer, newServer } from './newServer/index.js';
 import { Server } from './server/index.js';
 import { compilerHandler } from './utils/build.js';
 import { colors } from './utils/color.js';
@@ -444,6 +444,52 @@ export async function createFileWatcher(
   return fileWatcher;
 }
 
+export async function createFileWatcher2(
+  devServer: HttpServer,
+  resolvedUserConfig: ResolvedUserConfig,
+  logger: Logger = new Logger()
+) {
+  if (
+    resolvedUserConfig.server.hmr &&
+    resolvedUserConfig.compilation.mode === 'production'
+  ) {
+    logger.error('HMR cannot be enabled in production mode.');
+    return;
+  }
+
+  if (!resolvedUserConfig.server.hmr) {
+    return;
+  }
+
+  // if (resolvedUserConfig.server.watcher) {
+  //   return;
+  // }
+
+  // @ts-ignore
+  const fileWatcher = new FileWatcher(devServer, resolvedUserConfig, logger);
+  // devServer.watcher = fileWatcher;
+  await fileWatcher.watch();
+
+  const configFilePath = await getConfigFilePath(resolvedUserConfig.root);
+  const farmWatcher = new ConfigWatcher({
+    ...resolvedUserConfig,
+    configFilePath
+  });
+  farmWatcher.watch(async (files: string[]) => {
+    checkClearScreen(resolvedUserConfig);
+
+    // devServer.restart(async () => {
+    //   logFileChanges(files, resolvedUserConfig.root, logger);
+    //   farmWatcher?.close();
+
+    //   await devServer.close();
+    //   __FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__ = true;
+    //   await start(resolvedUserConfig as FarmCliOptions & UserConfig);
+    // });
+  });
+  return fileWatcher;
+}
+
 export function logFileChanges(files: string[], root: string, logger: Logger) {
   const changedFiles = files
     .map((file) => path.relative(root, file))
@@ -476,6 +522,12 @@ export async function start2(
     const compiler = await createCompiler(resolvedUserConfig, logger);
     const server = new newServer(compiler, resolvedUserConfig, logger);
     await server.createServer();
+    // @ts-ignore
+    await createFileWatcher2(server, resolvedUserConfig, logger);
+    // call configureDevServer hook after both server and watcher are ready
+    // resolvedUserConfig.jsPlugins.forEach((plugin: JsPlugin) =>
+    //   plugin.configureDevServer?.(server)
+    // );
     await server.listen();
     // const devServer = await createDevServer(
     //   compiler,
