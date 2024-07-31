@@ -18,7 +18,7 @@ import connect from 'connect';
 import fse from 'fs-extra';
 import { Logger } from '../utils/logger.js';
 import { HttpServer } from './index.js';
-import { ProxyOptions } from './middlewares/proxyMiddleware.js';
+import { ProxyOptions } from './middlewares/proxy.js';
 
 export interface CommonServerOptions {
   port?: number;

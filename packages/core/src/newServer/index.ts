@@ -23,9 +23,9 @@ import {
   resolveHttpServer,
   resolveHttpsConfig
 } from './http.js';
-import { htmlFallbackMiddleware } from './middlewares/htmlFallbackMiddleware.js';
-import { publicMiddleware } from './middlewares/publicMiddleware.js';
-import { resourceMiddleware } from './middlewares/resourceMiddleware.js';
+import { htmlFallbackMiddleware } from './middlewares/htmlFallback.js';
+import { publicMiddleware } from './middlewares/public.js';
+import { resourceMiddleware } from './middlewares/resource.js';
 import { WebSocketClient, WebSocketServer, WsServer } from './ws.js';
 export type HttpServer = http.Server | Http2SecureServer;
 
