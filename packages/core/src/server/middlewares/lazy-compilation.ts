@@ -60,7 +60,7 @@ export function lazyCompilation(devSeverContext: Server): Middleware {
         return;
       }
 
-      if (ctx.query.node) {
+      if (ctx.query.node || devSeverContext.config.writeToDisk) {
         compiler.writeResourcesToDisk();
       }
 
@@ -98,6 +98,10 @@ export function lazyCompilation(devSeverContext: Server): Middleware {
           ? 'application/javascript'
           : 'application/json';
         ctx.body = code;
+        // enable cors
+        ctx.set('Access-Control-Allow-Origin', '*');
+        ctx.set('Access-Control-Allow-Methods', '*');
+        ctx.set('Access-Control-Allow-Headers', '*');
       } else {
         throw new Error(`Lazy compilation result not found for paths ${paths}`);
       }

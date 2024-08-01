@@ -53,10 +53,10 @@ import type {
 } from './config/types.js';
 import { logError } from './server/error.js';
 import { lazyCompilation } from './server/middlewares/lazy-compilation.js';
-import { resolveHostname } from './utils/http.js';
 import { ConfigWatcher } from './watcher/config-watcher.js';
 
 import type { JsPlugin } from './plugin/type.js';
+import { resolveHostname } from './utils/http.js';
 
 export async function start(
   inlineConfig?: FarmCliOptions & UserConfig
@@ -68,11 +68,16 @@ export async function start(
   try {
     const resolvedUserConfig = await resolveConfig(
       inlineConfig,
-      'start',
       'development',
-      'development',
-      false
+      logger
     );
+
+    if (
+      resolvedUserConfig.compilation.lazyCompilation &&
+      typeof resolvedUserConfig.server?.host === 'string'
+    ) {
+      await setLazyCompilationDefine(resolvedUserConfig);
+    }
 
     const compiler = await createCompiler(resolvedUserConfig, logger);
 
@@ -171,19 +176,14 @@ export async function watch(
     'build',
     'production',
     'production',
+    logger,
     false
   );
 
   const lazyEnabled = resolvedUserConfig.compilation?.lazyCompilation;
 
   if (lazyEnabled) {
-    const hostname = await resolveHostname(resolvedUserConfig.server.host);
-    resolvedUserConfig.compilation.define = {
-      ...(resolvedUserConfig.compilation.define ?? {}),
-      FARM_NODE_LAZY_COMPILE_SERVER_URL: `http://${
-        hostname.host || 'localhost'
-      }:${resolvedUserConfig.server.port}`
-    };
+    await setLazyCompilationDefine(resolvedUserConfig);
   }
 
   const compilerFileWatcher = await createBundleHandler(
@@ -304,7 +304,9 @@ export async function createBundleHandler(
 
   await compilerHandler(
     async () => {
-      compiler.removeOutputPathDir();
+      if (resolvedUserConfig.compilation?.output?.clean) {
+        compiler.removeOutputPathDir();
+      }
       try {
         await compiler.compile();
       } catch (err) {
@@ -497,6 +499,18 @@ export function logFileChanges(files: string[], root: string, logger: Logger) {
   logger.info(
     colors.bold(colors.green(`${changedFiles} changed, server will restart.`))
   );
+}
+
+async function setLazyCompilationDefine(
+  resolvedUserConfig: ResolvedUserConfig
+) {
+  const hostname = await resolveHostname(resolvedUserConfig.server.host);
+  resolvedUserConfig.compilation.define = {
+    ...(resolvedUserConfig.compilation.define ?? {}),
+    FARM_LAZY_COMPILE_SERVER_URL: `${
+      resolvedUserConfig.server.protocol || 'http'
+    }://${hostname.host || 'localhost'}:${resolvedUserConfig.server.port}`
+  };
 }
 
 export { defineFarmConfig as defineConfig } from './config/index.js';
