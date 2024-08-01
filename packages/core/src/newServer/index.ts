@@ -82,58 +82,59 @@ export function noop() {
 }
 
 export class newServer {
-  private compiler: CompilerType;
-
   ws: any;
-  config: ResolvedUserConfig;
-  serverConfig: CommonServerOptions & NormalizedServerConfig;
+  serverOptions: CommonServerOptions & NormalizedServerConfig;
   httpsOptions: HttpsServerOptions;
-  publicDir?: string;
+  // public assets directory
+  publicDir?: string | boolean;
+  // base path of server
   publicPath?: string;
+  // publicFile
+  publicFiles?: string[];
   httpServer?: HttpServer;
   watcher: FileWatcher;
   hmrEngine?: HmrEngine;
-  logger: Logger;
 
   constructor(
-    compiler: CompilerType,
-    config: ResolvedUserConfig,
-    logger: Logger
+    private readonly compiler: CompilerType,
+    private readonly config: ResolvedUserConfig,
+    private readonly logger: Logger
   ) {
-    this.compiler = compiler;
-    this.config = config;
-    this.logger = logger;
-    if (!this.compiler) return;
-
-    this.publicPath =
-      normalizePublicPath(
-        compiler.config.config.output.targetEnv,
-        compiler.config.config.output.publicPath,
-        logger,
-        false
-      ) || '/';
+    if (!this.compiler) {
+      this.logger.error(
+        'Compiler is not provided, server will not work, please provide a compiler e.q. `new Compiler(config)`'
+      );
+      return;
+    }
+    this.resolveOptions(config);
   }
 
-  getCompiler(): CompilerType {
+  public getCompiler(): CompilerType {
     return this.compiler;
   }
 
-  async createServer() {
-    const initPublicFilesPromise = initPublicFiles(this.config);
-    const { root, server: serverConfig } = this.config;
-    this.httpsOptions = await resolveHttpsConfig(serverConfig.https);
-    const { middlewareMode } = serverConfig;
+  private resolveOptions(config: ResolvedUserConfig) {
+    const { targetEnv, publicPath } = config.compilation.output;
+    this.publicDir = config.compilation.assets.publicDir;
+    this.publicPath =
+      normalizePublicPath(targetEnv, publicPath, this.logger, false) || '/';
+
+    this.serverOptions = config.server as CommonServerOptions &
+      NormalizedServerConfig;
+  }
+
+  public async createServer() {
+    this.httpsOptions = await resolveHttpsConfig(this.serverOptions.https);
+    const publicFiles = await this.handlePublicFiles();
+    const { middlewareMode } = this.serverOptions;
     const middlewares = connect() as connect.Server;
     this.httpServer = middlewareMode
       ? null
       : await resolveHttpServer(
-          serverConfig as CommonServerOptions,
+          this.serverOptions as CommonServerOptions,
           middlewares,
           this.httpsOptions
         );
-
-    const publicFiles = await initPublicFilesPromise;
-    const { publicDir } = this.config.compilation.assets;
 
     this.createWebSocketServer();
     this.hmrEngine = new HmrEngine(
@@ -145,9 +146,9 @@ export class newServer {
     );
 
     // middleware
-    middlewares.use(compression());
+    // middlewares.use(compression());
 
-    if (publicDir) {
+    if (this.publicDir) {
       middlewares.use(publicMiddleware(this.logger, this.config, publicFiles));
     }
     // TODO todo add appType
@@ -170,22 +171,25 @@ export class newServer {
     );
   }
 
+  private async handlePublicFiles() {
+    const initPublicFilesPromise = initPublicFiles(this.config);
+    return await initPublicFilesPromise;
+  }
+
   public async createWebSocketServer() {
-    // @ts-ignore
     if (!this.httpServer) {
-      throw new Error('Websocket requires a server.');
+      throw new Error(
+        'Websocket requires a http server. please check the server is be created'
+      );
     }
 
-    const wsServer = new WsServer(
+    this.ws = new WsServer(
       this.httpServer,
       this.config,
       this.httpsOptions,
       this.publicPath,
       null
     );
-
-    const ws = wsServer.createWebSocketServer();
-    this.ws = ws;
   }
 
   public async listen(): Promise<void> {

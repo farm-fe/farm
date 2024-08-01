@@ -7,7 +7,7 @@ export function Main() {
 
   return (
     <>
-      <div>2
+      <div>
         <a href="https://farmfe.org/" target="_blank">
           <img src={FarmLogo} className="logo" alt="Farm logo" />
         </a>

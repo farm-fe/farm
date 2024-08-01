@@ -110,7 +110,7 @@ export class WsServer {
     logger?: ILogger
   ) {
     this.logger = logger ?? new Logger();
-    // this.createWebSocketServer();
+    this.createWebSocketServer();
   }
 
   createWebSocketServer() {
