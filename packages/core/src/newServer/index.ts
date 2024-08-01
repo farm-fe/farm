@@ -148,6 +148,14 @@ export class newServer {
     // middleware
     // middlewares.use(compression());
 
+    middlewares.use(function handleHMRPingMiddleware(req, res, next) {
+      if (req.headers['accept'] === 'text/x-farm-ping') {
+        res.writeHead(204).end();
+      } else {
+        next();
+      }
+    });
+
     if (this.publicDir) {
       middlewares.use(publicMiddleware(this.logger, this.config, publicFiles));
     }
