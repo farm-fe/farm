@@ -1,6 +1,6 @@
 {
   "name": "create-farm-linux-x64-gnu",
-  "version": "0.0.0",
+  "version": "0.0.12",
   "os": [
     "linux"
   ],
@@ -11,10 +11,10 @@
   "files": [
     "create-farm.linux-x64-gnu.node"
   ],
-  "license": "MIT",
-  "engines": {
-    "node": ">= 10"
-  },
+  "description": "",
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
   "libc": [
     "glibc"
   ]

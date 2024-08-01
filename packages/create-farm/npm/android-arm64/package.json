@@ -1,15 +1,15 @@
 {
-  "name": "create-farm-darwin-arm64",
+  "name": "create-farm-android-arm64",
   "version": "0.0.12",
   "os": [
-    "darwin"
+    "android"
   ],
   "cpu": [
     "arm64"
   ],
-  "main": "create-farm.darwin-arm64.node",
+  "main": "create-farm.android-arm64.node",
   "files": [
-    "create-farm.darwin-arm64.node"
+    "create-farm.android-arm64.node"
   ],
   "description": "",
   "keywords": [],

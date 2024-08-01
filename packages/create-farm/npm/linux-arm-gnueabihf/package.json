@@ -1,0 +1,18 @@
+{
+  "name": "create-farm-linux-arm-gnueabihf",
+  "version": "0.0.12",
+  "os": [
+    "linux"
+  ],
+  "cpu": [
+    "arm"
+  ],
+  "main": "create-farm.linux-arm-gnueabihf.node",
+  "files": [
+    "create-farm.linux-arm-gnueabihf.node"
+  ],
+  "description": "",
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}

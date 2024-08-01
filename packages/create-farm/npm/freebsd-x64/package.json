@@ -1,15 +1,15 @@
 {
-  "name": "create-farm-darwin-arm64",
+  "name": "create-farm-freebsd-x64",
   "version": "0.0.12",
   "os": [
-    "darwin"
+    "freebsd"
   ],
   "cpu": [
-    "arm64"
+    "x64"
   ],
-  "main": "create-farm.darwin-arm64.node",
+  "main": "create-farm.freebsd-x64.node",
   "files": [
-    "create-farm.darwin-arm64.node"
+    "create-farm.freebsd-x64.node"
   ],
   "description": "",
   "keywords": [],

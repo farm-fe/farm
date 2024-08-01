@@ -1,0 +1,18 @@
+{
+  "name": "create-farm-android-arm-eabi",
+  "version": "0.0.12",
+  "os": [
+    "android"
+  ],
+  "cpu": [
+    "arm"
+  ],
+  "main": "create-farm.android-arm-eabi.node",
+  "files": [
+    "create-farm.android-arm-eabi.node"
+  ],
+  "description": "",
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}
