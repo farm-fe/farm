@@ -67,8 +67,10 @@ export async function start(
   try {
     const resolvedUserConfig = await resolveConfig(
       inlineConfig,
+      'start',
       'development',
-      logger
+      'development',
+      false
     );
 
     if (
@@ -175,8 +177,8 @@ export async function watch(
     'build',
     'production',
     'production',
-    logger,
-    false
+    false,
+    logger
   );
 
   const lazyEnabled = resolvedUserConfig.compilation?.lazyCompilation;
