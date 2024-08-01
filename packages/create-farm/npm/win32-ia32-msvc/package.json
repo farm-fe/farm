@@ -11,8 +11,16 @@
   "files": [
     "create-farm.win32-ia32-msvc.node"
   ],
-  "description": "",
-  "keywords": [],
+  "description": "Rapidly create a new farm project.",
+  "keywords": [
+    "farm",
+    "create-farm"
+  ],
   "author": "",
-  "license": "ISC"
+  "homepage": "https://www.farmfe.org/docs/quick-start#create-a-farm-project",
+  "license": "ISC",
+  "repository": "https://github.com/farm-fe/farm/tree/main/packages/create-farm",
+  "bugs": {
+    "url": "https://github.com/farm-fe/farm/issues"
+  }
 }
