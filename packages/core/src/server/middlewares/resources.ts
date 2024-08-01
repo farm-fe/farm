@@ -32,22 +32,25 @@ function normalizePathByPublicPath(publicPath: string, resourcePath: string) {
   return { resourceWithoutPublicPath, fullPath: resourcePath };
 }
 
-function findResource(
-  paths: string[],
-  compiler: Compiler,
-  ctx: Context,
-  publicPath: string
-): true | undefined | RealResourcePath {
-  for (const resourcePath of new Set(paths)) {
-    // output_files
-    if (resourcePath === '_output_files') {
+function outputFilesMiddleware(compiler: Compiler): Middleware {
+  return async (ctx: Context, next: Next) => {
+    if (ctx.path === '/_output_files') {
       const files = Object.keys(compiler.resources()).sort();
       const fileTree = generateFileTree(files);
       ctx.type = '.html';
       ctx.body = generateFileTreeHtml(fileTree);
-      return true;
+    } else {
+      await next();
     }
+  };
+}
 
+function findResource(
+  paths: string[],
+  compiler: Compiler,
+  publicPath: string
+): true | undefined | RealResourcePath {
+  for (const resourcePath of new Set(paths)) {
     const { resourceWithoutPublicPath } = normalizePathByPublicPath(
       publicPath,
       resourcePath
@@ -97,7 +100,6 @@ export function resourcesMiddleware(compiler: Compiler, serverContext: Server) {
     const resourceResult = findResource(
       [url, stripQueryAndHashUrl],
       compiler,
-      ctx,
       publicPath
     );
 
@@ -187,7 +189,7 @@ export function resourcesMiddleware(compiler: Compiler, serverContext: Server) {
 }
 
 export function resources(devSeverContext: Server): Middleware | Middleware[] {
-  const middlewares = [];
+  const middlewares = [outputFilesMiddleware(devSeverContext.getCompiler())];
   if (!devSeverContext.config.writeToDisk) {
     middlewares.push(
       resourcesMiddleware(devSeverContext.getCompiler(), devSeverContext)

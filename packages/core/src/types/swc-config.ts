@@ -1,4 +1,3 @@
-
 export interface ScriptParseConfig {
   esConfig?: {
     jsx?: boolean;
@@ -81,9 +80,7 @@ export interface SwcPresetEnvOptions {
   forceAllTransforms?: boolean;
 }
 
-interface TerserEcmaVersion {
-
-}
+interface TerserEcmaVersion {}
 
 interface TerserManglePropertiesOptions {}
 

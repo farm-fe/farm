@@ -36,6 +36,7 @@ test('resolveUserConfig', async () => {
     main: './main.tsx'
   });
   expect(config.compilation.output).toEqual({
+    clean: true,
     path: './dist',
     publicPath: '/',
     targetEnv: 'browser'
@@ -71,6 +72,7 @@ test('resolveUserConfig-prod', async () => {
   });
   expect(config.compilation.output).toEqual({
     assetsFilename: '[resourceName].[contentHash].[ext]',
+    clean: true,
     filename: '[resourceName].[contentHash].[ext]',
     path: './dist',
     publicPath: '/',
@@ -115,6 +117,7 @@ test('resolveUserConfig-input-html-prod', async () => {
 
   expect(config.compilation.output).toEqual({
     assetsFilename: '[resourceName].[contentHash].[ext]',
+    clean: true,
     filename: '[resourceName].[contentHash].[ext]',
     path: './dist',
     publicPath: '/',

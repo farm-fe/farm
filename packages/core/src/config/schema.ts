@@ -50,7 +50,8 @@ const compilationConfigSchema = z
             'library-node'
           ])
           .optional(),
-        format: z.enum(['cjs', 'esm']).optional()
+        format: z.enum(['cjs', 'esm']).optional(),
+        clean: z.boolean().optional()
       })
       .strict()
       .optional(),

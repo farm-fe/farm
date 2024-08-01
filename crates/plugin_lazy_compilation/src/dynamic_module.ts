@@ -9,20 +9,23 @@ interface LazyCompilationQueueItem {
   promise: Promise<void>;
 }
 
+// Inject during compile time
 const FarmModuleSystem: any = 'FARM_MODULE_SYSTEM';
 const moduleId = 'MODULE_ID';
 const modulePath = 'MODULE_PATH';
-const serverUrl = 'FARM_NODE_LAZY_COMPILE_SERVER_URL';
+const serverUrl = 'FARM_LAZY_COMPILE_SERVER_URL';
 
-/**
- * If the serverUrl is 'FARM_NODE_LAZY_COMPILE_SERVER_URL', it means the serverUrl is not set and it's not node lazy compile, and we should think it's a browser lazy compile.
- * FARM_NODE_LAZY_COMPILE_SERVER_URL will be replaced by the real server url during the build process when node lazy compile is enabled.
- */
-const isNodeLazyCompile =
-  serverUrl !== 'FARM_NODE_LAZY' + '_COMPILE_SERVER_URL';
+function getServerUrl() {
+  // server url is not defined, return empty string instead
+  if (serverUrl === 'FARM_LAZY' + '_COMPILE_SERVER_URL') {
+    return '';
+  }
+
+  return serverUrl;
+}
 
 async function fetch(path: string) {
-  const url = `${serverUrl}${path}`;
+  const url = `${getServerUrl()}${path}`;
   const http = 'http';
   return import(http).then((http) => {
     return new Promise((resolve, reject) => {
@@ -85,6 +88,7 @@ if (compilingModules.has(modulePath)) {
     }
   } else {
     const compileModules = () => {
+      const isNodeLazyCompile = FarmModuleSystem.targetEnv === 'node';
       FarmModuleSystem.lazyCompiling = true;
       const queue = [...FarmModuleSystem.lazyCompilingQueue];
       FarmModuleSystem.lazyCompilingQueue = [];
@@ -94,7 +98,7 @@ if (compilingModules.has(modulePath)) {
       }`;
 
       const fetchLazyCompileResult = !isNodeLazyCompile
-        ? import(url)
+        ? import(`${getServerUrl()}${url}`)      // Adding full uri to make it work in webview context like vscode extension
         : fetch(url);
 
       return fetchLazyCompileResult.then((module: any) => {

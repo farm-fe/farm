@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
 use swc_css_prefixer::options::Targets;
 
-use swc_ecma_parser::{EsConfig, TsConfig};
+use swc_ecma_parser::{EsSyntax as EsConfig, TsSyntax as TsConfig};
 
 use self::{
   bool_or_obj::BoolOrObj, comments::CommentsConfig, config_regex::ConfigRegex, html::HtmlConfig,

@@ -1,5 +1,14 @@
 # @farmfe/core
 
+## 1.3.12
+
+### Patch Changes
+
+- 7417d0f3: - Fix dynamic import not work in webview context like vscode extension, we have specify the full lazy compilation path like `http://127.0.0.1:9000/__lazyCompile` instead of `/__layzeCompile`
+  - Support `compilation.output.clean` to control remove `output.path` or not, default to true
+- 49448561: import.meta.url and require compatible esm and cjs
+- eff069c4: chore: Improve binary performance
+
 ## 1.3.11
 
 ### Patch Changes
