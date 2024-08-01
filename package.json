@@ -25,7 +25,7 @@
   "devDependencies": {
     "@farmfe/core": "workspace:*",
     "@farmfe/cli": "workspace:*",
-    "@biomejs/biome": "1.7.2",
+    "@biomejs/biome": "1.8.3",
     "@changesets/cli": "^2.26.0",
     "@codspeed/vitest-plugin": "^3.1.1",
     "@commitlint/cli": "^17.0.3",

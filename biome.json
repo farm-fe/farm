@@ -1,5 +1,5 @@
 {
-  "$schema": "https://biomejs.dev/schemas/1.7.2/schema.json",
+  "$schema": "https://biomejs.dev/schemas/1.8.3/schema.json",
   "vcs": {
     "clientKind": "git",
     "enabled": true,
@@ -19,7 +19,12 @@
       "packages/runtime-plugin-import-meta/**",
       "packages/create-farm/templates/**",
       "packages/create-farm-plugin/templates/**",
-      "rust-plugins/**"
+      "rust-plugins/**",
+      "js-plugins/vue/**",
+      "e2e/**",
+      "js-plugins/solid/**",
+      "examples/**",
+      "**/*.{js,mjs,cjs}"
     ],
     "ignoreUnknown": true
   },
@@ -103,7 +108,7 @@
         "noMisleadingInstantiator": "error",
         "noPrototypeBuiltins": "warn",
         "noRedeclare": "error",
-        "noShadowRestrictedNames": "error",
+        "noShadowRestrictedNames": "warn",
         "noUnsafeNegation": "error",
         "useGetterReturn": "error",
         "useNamespaceKeyword": "error",
@@ -123,7 +128,7 @@
     "formatter": {
       "jsxQuoteStyle": "single",
       "quoteProperties": "asNeeded",
-      "trailingComma": "none",
+      "trailingCommas": "none",
       "semicolons": "always",
       "arrowParentheses": "always",
       "bracketSpacing": true,

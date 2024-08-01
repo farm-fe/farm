@@ -166,7 +166,7 @@ async function resolveDependencyWithPrefix(
     path.posix.dirname(url),
     `${prefix}${path.posix.basename(url)}`
   );
-  
+
   const result = await ctx.resolve(
     {
       source: filename,
@@ -178,7 +178,7 @@ async function resolveDependencyWithPrefix(
       caller: '@farmfe/js-plugin-sass'
     }
   );
-  
+
   if (result?.resolvedPath) {
     return result.resolvedPath;
   }
@@ -206,7 +206,8 @@ async function resolveDependency(
       '',
       ctx
     );
-    if (result && (result.endsWith('.scss') || result.endsWith('.sass'))) return result;
+    if (result && (result.endsWith('.scss') || result.endsWith('.sass')))
+      return result;
   } catch (error) {
     default_import_error = error;
   }
