@@ -171,7 +171,7 @@ export async function resolveConfig(
 
   resolvedUserConfig.compilation = await normalizeUserCompilationConfig(
     resolvedUserConfig,
-    'development'
+    mode as CompilationMode
   );
 
   resolvedUserConfig.root = resolvedUserConfig.compilation.root;
@@ -193,7 +193,6 @@ export async function resolveConfig(
       resolvedUserConfig.compilation.resolve.alias as unknown as Array<Alias>
     );
   }
-
   return resolvedUserConfig;
 }
 
