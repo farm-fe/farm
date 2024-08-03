@@ -89,7 +89,7 @@ jobs:
             cli_only: true
             zig: false
           - os: ubuntu-latest
-            abi: android-arm-gnueabihf
+            abi: linux-arm-gnueabihf
             target: armv7-unknown-linux-gnueabihf
             build: >-
               sudo apt-get update && sudo apt-get install gcc-arm-linux-gnueabihf -y &&
