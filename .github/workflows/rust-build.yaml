@@ -80,7 +80,7 @@ jobs:
             zig: true
           - os: ubuntu-latest
             target: armv7-linux-androideabi
-            abi: armv7-linux-androideabi
+            abi: android-arm-eabi
             cli_only: true
             zig: false
           # - os: ubuntu-latest
@@ -135,17 +135,13 @@ jobs:
           options: -v ${{ env.HOME }}/.cargo/git:/root/.cargo/git -v ${{ env.HOME }}/.cargo/registry:/root/.cargo/registry -v ${{ github.workspace }}:/build -w /build
           run: ${{ matrix.settings.build }}
       - name: Default Build
-        if: ${{ !matrix.settings.docker && !matrix.settings.build && !matrix.settings.cli_only }}
+        if: ${{ !matrix.settings.docker && !matrix.settings.build }}
         run: >-
           cd packages/core && npm run build:rs:publish -- ${{ matrix.settings.target && format('--target {0}', matrix.settings.target) || '' }} ${{ matrix.settings.zig && '--zig' || '' }} &&
           cd ../create-farm && npm run build -- ${{ matrix.settings.target && format('--target {0}', matrix.settings.target) || '' }} ${{ matrix.settings.zig && '--zig' || '' }} &&
           cd ../../rust-plugins/react && npm run build -- ${{ matrix.settings.target && format('--target {0}', matrix.settings.target) || '' }} ${{ matrix.settings.zig && '--zig' || '' }} --abi ${{ matrix.settings.abi }} &&
           cd ../sass && npm run build -- ${{ matrix.settings.target && format('--target {0}', matrix.settings.target) || '' }} ${{ matrix.settings.zig && '--zig' || '' }} --abi ${{ matrix.settings.abi }}
         shell: bash
-      - name: Build CLI Only
-        if: ${{ matrix.settings.cli_only }}
-        run: >-
-          cd packages/create-farm && npm run build -- ${{ matrix.settings.target && format('--target {0}', matrix.settings.target) || '' }} ${{ matrix.settings.zig && '--zig' || '' }}
       - name: LS Create Farm Rust
         if: ${{ matrix.settings.cli_only }}
         run: ls -la ./packages/create-farm/
