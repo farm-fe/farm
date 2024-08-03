@@ -81,6 +81,7 @@ jobs:
           - os: ubuntu-latest
             target: armv7-linux-androideabi
             abi: android-armv7
+            cli_only: true
             zig: false
           # - os: ubuntu-latest
           #   abi: darwin-x64
@@ -134,18 +135,23 @@ jobs:
           options: -v ${{ env.HOME }}/.cargo/git:/root/.cargo/git -v ${{ env.HOME }}/.cargo/registry:/root/.cargo/registry -v ${{ github.workspace }}:/build -w /build
           run: ${{ matrix.settings.build }}
       - name: Default Build
-        if: ${{ !matrix.settings.docker && !matrix.settings.build }}
+        if: ${{ !matrix.settings.docker && !matrix.settings.build && !matrix.settings.cli_only }}
         run: >-
           cd packages/core && npm run build:rs:publish -- ${{ matrix.settings.target && format('--target {0}', matrix.settings.target) || '' }} ${{ matrix.settings.zig && '--zig' || '' }} &&
           cd ../create-farm && npm run build -- ${{ matrix.settings.target && format('--target {0}', matrix.settings.target) || '' }} ${{ matrix.settings.zig && '--zig' || '' }} &&
           cd ../../rust-plugins/react && npm run build -- ${{ matrix.settings.target && format('--target {0}', matrix.settings.target) || '' }} ${{ matrix.settings.zig && '--zig' || '' }} --abi ${{ matrix.settings.abi }} &&
           cd ../sass && npm run build -- ${{ matrix.settings.target && format('--target {0}', matrix.settings.target) || '' }} ${{ matrix.settings.zig && '--zig' || '' }} --abi ${{ matrix.settings.abi }}
         shell: bash
+      - name: Build CLI Only
+        if: ${{ matrix.settings.cli_only }}
+        run: >-
+          cd packages/create-farm && npm run build -- ${{ matrix.settings.target && format('--target {0}', matrix.settings.target) || '' }} ${{ matrix.settings.zig && '--zig' || '' }} 
       - name: Build
         if: ${{ !matrix.settings.docker && matrix.settings.build }}
         run: ${{ matrix.settings.build }}
         shell: bash
       - name: Upload Core
+        if: ${{ !matrix.settings.cli_only }}
         uses: actions/upload-artifact@v3
         with:
           name: ${{ github.sha }}-${{ matrix.settings.abi }}
@@ -156,11 +162,13 @@ jobs:
           name: ${{ github.sha }}-${{ matrix.settings.abi }}-create-farm
           path: ./packages/create-farm/create-farm.${{ matrix.settings.abi }}.node
       - name: Upload Plugin React
+        if: ${{ !matrix.settings.cli_only }}
         uses: actions/upload-artifact@v3
         with:
           name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-react
           path: rust-plugins/react/npm/${{ matrix.settings.abi }}/index.farm
       - name: Upload Plugin Sass
+        if: ${{ !matrix.settings.cli_only }}
         uses: actions/upload-artifact@v3
         with:
           name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-sass
