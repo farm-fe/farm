@@ -95,7 +95,7 @@ jobs:
           #   osxcross: true
           #   zig: true
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Cache rust artifacts
         uses: Swatinem/rust-cache@v2
         with:
@@ -143,13 +143,13 @@ jobs:
           cd ../../rust-plugins/react && npm run build -- ${{ matrix.settings.target && format('--target {0}', matrix.settings.target) || '' }} ${{ matrix.settings.zig && '--zig' || '' }} --abi ${{ matrix.settings.abi }} &&
           cd ../sass && npm run build -- ${{ matrix.settings.target && format('--target {0}', matrix.settings.target) || '' }} ${{ matrix.settings.zig && '--zig' || '' }} --abi ${{ matrix.settings.abi }}
         shell: bash
-      - name: LS Create Farm Rust
-        if: ${{ matrix.settings.cli_only }}
-        run: ls -la ./packages/create-farm/
       - name: Build
         if: ${{ !matrix.settings.docker && matrix.settings.build }}
         run: ${{ matrix.settings.build }}
         shell: bash
+      - name: LS Create Farm Rust
+        if: ${{ matrix.settings.cli_only }}
+        run: ls -la ./packages/create-farm/
       - name: Upload Core
         if: ${{ !matrix.settings.cli_only }}
         uses: actions/upload-artifact@v4
