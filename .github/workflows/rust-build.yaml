@@ -41,10 +41,13 @@ jobs:
 
           - os: windows-latest
             abi: win32-x64-msvc
+            target: x86_64-pc-windows-msvc
           - os: macos-13
             abi: darwin-x64
+            target: x86_64-apple-darwin
           - os: macos-latest
             abi: darwin-arm64
+            target: aarch64-apple-darwin
 
           # cross compile
           # windows. Note swc plugins is not supported on ia32 and arm64
@@ -78,17 +81,6 @@ jobs:
             abi: linux-arm64-gnu
             target: aarch64-unknown-linux-gnu
             zig: true
-          # - os: ubuntu-latest
-          #   abi: darwin-x64
-          #   target: x86_64-apple-darwin
-          #   osxcross: true
-          #   zig: true
-          # - os: ubuntu-latest
-          #   abi: darwin-arm64
-          #   target: aarch64-apple-darwin
-          #   osxcross: true
-          #   zig: true
-
           # Build for Create Farm CLI only
           - os: ubuntu-latest
             abi: android-arm-eabi
@@ -96,12 +88,6 @@ jobs:
             build: pnpm --filter create-farm build --target armv7-linux-androideabi
             cli_only: true
             zig: false
-          - os: macos-latest
-            abi: darwin-x64
-            target: x86_64-apple-darwin
-            # build: pnpm --filter create-farm build --target x86_64-apple-darwin
-            osxcross: true
-            zig: true
     steps:
       - uses: actions/checkout@v4
       - name: Cache rust artifacts
