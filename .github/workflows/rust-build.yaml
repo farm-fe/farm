@@ -97,7 +97,7 @@ jobs:
             cli_only: true
             zig: true
           - os: ubuntu-latest
-            abi: android-arm64-v8a
+            abi: android-arm64
             target: aarch64-linux-android
             build: pnpm --filter create-farm build --target aarch64-linux-android
             cli_only: true
