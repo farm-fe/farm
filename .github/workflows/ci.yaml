@@ -166,7 +166,7 @@ jobs:
           path: /tmp/artifacts
       - name: Check
         run: |
-          for abi in linux-x64-gnu linux-x64-musl darwin-x64 win32-x64-msvc linux-arm64-musl linux-arm64-gnu darwin-arm64 win32-ia32-msvc win32-arm64-msvc
+          for abi in linux-x64-gnu linux-x64-musl darwin-x64 win32-x64-msvc linux-arm64-musl linux-arm64-gnu darwin-arm64 win32-ia32-msvc win32-arm64-msvc android-arm64-v8a linux-arm-gnueabihf android-arm-eabi
           do
             ls /tmp/artifacts/
             test -f  /tmp/artifacts/${{ github.sha }}-${abi}-create-farm/create-farm.${abi}.node
