@@ -93,9 +93,9 @@ jobs:
             target: armv7-unknown-linux-gnueabihf
             build: >-
               sudo apt-get update && sudo apt-get install gcc-arm-linux-gnueabihf -y &&
-              pnpm --filter create-farm build --target armv7-unknown-linux-gnueabihf
+              pnpm --filter create-farm build --target armv7-unknown-linux-gnueabihf --zig
             cli_only: true
-            zig: false
+            zig: true
           - os: ubuntu-latest
             abi: android-arm64-v8a
             target: aarch64-linux-android

@@ -33,3 +33,4 @@ linker = "rust-lld"
 
 [target.armv7-unknown-linux-gnueabi]
 linker = "arm-linux-gnueabihf-gcc"
+rustflags = ["-C", "target-feature=-crt-static"]
