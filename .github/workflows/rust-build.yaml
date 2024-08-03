@@ -81,7 +81,7 @@ jobs:
           - os: ubuntu-latest
             target: armv7-linux-androideabi
             abi: android-arm-eabi
-            build: pnpm --filter create-farm build
+            build: pnpm --filter create-farm build --target armv7-linux-androideabi
             cli_only: true
             zig: false
           # - os: ubuntu-latest
