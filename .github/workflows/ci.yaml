@@ -32,25 +32,25 @@ jobs:
       - name: Install Dependencies
         run: npm install -g pnpm@9.1.0 && pnpm i --frozen-lockfile
 
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         id: download
         with:
           name: ${{ github.sha }}-${{ matrix.settings.abi }}
           path: ./packages/core/binding
 
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         id: download-plugin-sass
         with:
           name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-sass
           path: ./rust-plugins/sass/npm/${{ matrix.settings.abi }}
 
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         id: download-plugin-react
         with:
           name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-react
           path: ./rust-plugins/react/npm/${{ matrix.settings.abi }}
 
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         id: download-create-farm-rust
         with:
           name: ${{ github.sha }}-${{ matrix.settings.abi }}
@@ -128,7 +128,7 @@ jobs:
         run: npm install -g pnpm@9.1.0 && pnpm i --frozen-lockfile
       - name: Build CLI and Core
         run: pnpm --filter @farmfe/cli run build
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         id: download
         with:
           name: ${{ github.sha }}-${{ matrix.settings.abi }}
@@ -146,7 +146,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: call-rust-build
     steps:
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
           path: /tmp/artifacts
       - name: Check
@@ -161,7 +161,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: call-rust-build
     steps:
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
           path: /tmp/artifacts
       - name: Check
@@ -183,7 +183,7 @@ jobs:
           - name: plugin-sass
           - name: plugin-react
     steps:
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
           path: /tmp/artifacts
       - name: Check
