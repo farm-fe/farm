@@ -81,6 +81,7 @@ jobs:
           - os: ubuntu-latest
             target: armv7-linux-androideabi
             abi: android-arm-eabi
+            build: pnpm --filter create-farm build
             cli_only: true
             zig: false
           # - os: ubuntu-latest
@@ -151,7 +152,7 @@ jobs:
         shell: bash
       - name: Upload Core
         if: ${{ !matrix.settings.cli_only }}
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ github.sha }}-${{ matrix.settings.abi }}
           path: ./packages/core/binding/farm.${{ matrix.settings.abi }}.node
@@ -162,13 +163,13 @@ jobs:
           path: ./packages/create-farm/create-farm.${{ matrix.settings.abi }}.node
       - name: Upload Plugin React
         if: ${{ !matrix.settings.cli_only }}
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-react
           path: rust-plugins/react/npm/${{ matrix.settings.abi }}/index.farm
       - name: Upload Plugin Sass
         if: ${{ !matrix.settings.cli_only }}
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-sass
           path: rust-plugins/sass/npm/${{ matrix.settings.abi }}/index.farm
