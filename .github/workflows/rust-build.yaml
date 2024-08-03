@@ -94,11 +94,19 @@ jobs:
         uses: Swatinem/rust-cache@v2
         with:
           shared-key: rust-build-${{ matrix.settings.abi }}
-      - uses: actions/setup-node@v3
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.1.0
+          run_install: false
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
         with:
           node-version: 18
+          cache: 'pnpm'
       - name: Install Dependencies
-        run: npm install -g pnpm@9.1.0 && pnpm i --frozen-lockfile
+        run: pnpm i --frozen-lockfile
+
       - name: Build Plugin Tools
         run: pnpm --filter @farmfe/plugin-tools run build
       - run: rustup target add ${{ matrix.settings.target }}
