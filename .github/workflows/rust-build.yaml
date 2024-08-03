@@ -80,9 +80,9 @@ jobs:
             zig: true
           - os: ubuntu-latest
             target: armv7-linux-androideabi
-            abi: android-armv7
+            abi: armv7-linux-androideabi
             cli_only: true
-            zig: true
+            zig: false
           # - os: ubuntu-latest
           #   abi: darwin-x64
           #   target: x86_64-apple-darwin
