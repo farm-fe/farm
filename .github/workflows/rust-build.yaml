@@ -91,15 +91,15 @@ jobs:
           - os: ubuntu-latest
             abi: android-arm-gnueabihf
             target: armv7-unknown-linux-gnueabihf
-            build: pnpm --filter create-farm build --target armv7-unknown-linux-gnueabihf
+            build: >-
+              sudo apt-get update && sudo apt-get install gcc-arm-linux-gnueabihf -y &&
+              pnpm --filter create-farm build --target armv7-unknown-linux-gnueabihf
             cli_only: true
             zig: false
           - os: ubuntu-latest
             abi: android-arm64-v8a
             target: aarch64-linux-android
-            build: >-
-              sudo apt-get update && sudo apt-get install gcc-arm-linux-gnueabihf -y &&
-              pnpm --filter create-farm build --target aarch64-linux-android
+            build: pnpm --filter create-farm build --target aarch64-linux-android
             cli_only: true
             zig: false
     steps:
