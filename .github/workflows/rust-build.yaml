@@ -78,12 +78,6 @@ jobs:
             abi: linux-arm64-gnu
             target: aarch64-unknown-linux-gnu
             zig: true
-          - os: ubuntu-latest
-            target: armv7-linux-androideabi
-            abi: android-arm-eabi
-            build: pnpm --filter create-farm build --target armv7-linux-androideabi
-            cli_only: true
-            zig: false
           # - os: ubuntu-latest
           #   abi: darwin-x64
           #   target: x86_64-apple-darwin
@@ -94,6 +88,20 @@ jobs:
           #   target: aarch64-apple-darwin
           #   osxcross: true
           #   zig: true
+
+          # Build for Create Farm CLI only
+          - os: ubuntu-latest
+            abi: android-arm-eabi
+            target: armv7-linux-androideabi
+            build: pnpm --filter create-farm build --target armv7-linux-androideabi
+            cli_only: true
+            zig: false
+          - os: macos-latest
+            abi: darwin-x64
+            target: x86_64-apple-darwin
+            # build: pnpm --filter create-farm build --target x86_64-apple-darwin
+            osxcross: true
+            zig: true
     steps:
       - uses: actions/checkout@v4
       - name: Cache rust artifacts
