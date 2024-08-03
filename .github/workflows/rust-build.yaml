@@ -145,7 +145,10 @@ jobs:
       - name: Build CLI Only
         if: ${{ matrix.settings.cli_only }}
         run: >-
-          cd packages/create-farm && npm run build -- ${{ matrix.settings.target && format('--target {0}', matrix.settings.target) || '' }} ${{ matrix.settings.zig && '--zig' || '' }} 
+          cd packages/create-farm && npm run build -- ${{ matrix.settings.target && format('--target {0}', matrix.settings.target) || '' }} ${{ matrix.settings.zig && '--zig' || '' }}
+      - name: LS Create Farm Rust
+        if: ${{ !matrix.settings.cli_only }}
+        run: ls -la ./packages/create-farm/
       - name: Build
         if: ${{ !matrix.settings.docker && matrix.settings.build }}
         run: ${{ matrix.settings.build }}
