@@ -91,7 +91,7 @@ jobs:
           - os: ubuntu-latest
             abi: android-arm-gnueabihf
             target: armv7-unknown-linux-gnueabihf
-            build: pnpm --filter create-farm build --target armv7-linux-androideabi
+            build: pnpm --filter create-farm build --target armv7-unknown-linux-gnueabihf
             cli_only: true
             zig: false
           - os: ubuntu-latest
