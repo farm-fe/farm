@@ -43,6 +43,11 @@ jobs:
             test -f ./rust-plugins/react/npm/${abi}/index.farm
             test -f ./rust-plugins/sass/npm/${abi}/index.farm
           done
+          for abi in android-arm-eabi linux-arm-gnueabihf android-arm64-v8a
+          do
+            mv /tmp/artifacts/${{ github.sha }}-${abi}-create-farm/* ./packages/create-farm/npm/${abi}
+            test -f ./packages/create-farm/npm/${abi}/create-farm.${abi}.node
+          done
 
       - name: Install Dependencies
         run: npm install -g pnpm@9.1.0 && pnpm i --frozen-lockfile
