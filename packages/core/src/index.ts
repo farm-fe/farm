@@ -167,6 +167,9 @@ export async function watch(
   const logger = inlineConfig.logger ?? new Logger();
   setProcessEnv('development');
 
+  inlineConfig.server ??= {};
+  inlineConfig.server.hmr ??= false;
+
   const resolvedUserConfig = await resolveConfig(
     inlineConfig,
     'development',

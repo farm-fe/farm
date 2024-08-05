@@ -122,12 +122,16 @@ impl ResourcesInjector {
   }
 
   fn inject_dynamic_resources_map(&mut self, element: &mut Element) {
-    let dynamic_resources_code =
+    let (dynamic_resources, dynamic_module_resources_map) =
       get_dynamic_resources_code(&self.dynamic_resources_map, self.options.mode.clone());
 
+    if dynamic_resources.is_empty() {
+      return;
+    }
+
     let finalize_code = format!(
-      r#"{}.{}.setDynamicModuleResourcesMap({});"#,
-      self.farm_global_this, FARM_MODULE_SYSTEM, dynamic_resources_code
+      r#"{}.{}.setDynamicModuleResourcesMap({},{});"#,
+      self.farm_global_this, FARM_MODULE_SYSTEM, dynamic_resources, dynamic_module_resources_map
     );
 
     if get_config_runtime_isolate(&self.options.context) {

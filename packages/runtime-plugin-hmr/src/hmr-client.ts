@@ -112,8 +112,11 @@ export class HmrClient {
       }
     }
 
-    if (result.dynamicResourcesMap) {
-      moduleSystem.dynamicModuleResourcesMap = result.dynamicResourcesMap;
+    if (result.dynamicResources && result) {
+      moduleSystem.setDynamicModuleResourcesMap(
+        result.dynamicResources,
+        result.dynamicModuleResourcesMap
+      );
     }
 
     for (const chains of Object.values(result.boundaries)) {
@@ -256,7 +259,8 @@ export class HmrClient {
         removed: result.removed,
         boundaries: result.boundaries,
         modules,
-        dynamicResourcesMap: result.dynamicResourcesMap
+        dynamicResources: result.dynamicResources,
+        dynamicModuleResourcesMap: result.dynamicModuleResourcesMap
       },
       this.moduleSystem
     );
