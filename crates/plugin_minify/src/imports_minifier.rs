@@ -523,7 +523,14 @@ impl<'a> VisitMut for IdentReplacer {
   fn visit_mut_object_pat(&mut self, pat: &mut farmfe_core::swc_ecma_ast::ObjectPat) {
     for n in &mut pat.props {
       match n {
-        farmfe_core::swc_ecma_ast::ObjectPatProp::KeyValue(key) => key.value.visit_mut_with(self),
+        farmfe_core::swc_ecma_ast::ObjectPatProp::KeyValue(key) => {
+          // fix #1672. Replace ident of computed property of object pattern
+          if let PropName::Computed(c) = &mut key.key {
+            c.expr.visit_mut_with(self);
+          }
+
+          key.value.visit_mut_with(self);
+        }
         farmfe_core::swc_ecma_ast::ObjectPatProp::Assign(a) => {
           if let Some(value) = &mut a.value {
             value.visit_mut_with(self);
