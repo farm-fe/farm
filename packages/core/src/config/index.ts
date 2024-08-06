@@ -172,7 +172,7 @@ export async function resolveConfig(
 
   resolvedUserConfig.compilation = await normalizeUserCompilationConfig(
     resolvedUserConfig,
-    'development'
+    mode as CompilationMode
   );
 
   resolvedUserConfig.root = resolvedUserConfig.compilation.root;
@@ -194,7 +194,6 @@ export async function resolveConfig(
       resolvedUserConfig.compilation.resolve.alias as unknown as Array<Alias>
     );
   }
-
   return resolvedUserConfig;
 }
 
@@ -498,8 +497,7 @@ export const DEFAULT_HMR_OPTIONS: Required<UserHmrConfig> = {
   watchOptions: {},
   clientPort: 9000,
   timeout: 0,
-  server: null,
-  channels: []
+  server: null
 };
 
 export const DEFAULT_DEV_SERVER_OPTIONS: NormalizedServerConfig = {

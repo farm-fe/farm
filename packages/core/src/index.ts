@@ -71,7 +71,7 @@ export async function start(
       'start',
       'development',
       'development',
-      true
+      false
     );
 
     if (
