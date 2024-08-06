@@ -68,8 +68,10 @@ export async function start(
   try {
     const resolvedUserConfig = await resolveConfig(
       inlineConfig,
+      'start',
       'development',
-      logger
+      'development',
+      true
     );
 
     if (
@@ -176,7 +178,6 @@ export async function watch(
     'build',
     'production',
     'production',
-    logger,
     false
   );
 
