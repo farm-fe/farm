@@ -1896,7 +1896,7 @@ importers:
         version: 3.4.35(typescript@5.4.5)
     devDependencies:
       '@farmfe/cli':
-        specifier: /Users/bytedance/Desktop/opensource/farm/packages/cli
+        specifier: workspace:*
         version: link:../../packages/cli
       '@farmfe/core':
         specifier: workspace:*
