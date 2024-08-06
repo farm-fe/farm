@@ -85,22 +85,22 @@ export function publicMiddleware(
     res: any,
     next: () => void
   ) {
-    const url = removeHashFromPath(req.url);
-    const filePath = toFilePath(url);
-
+    const url = req.url;
+    const cleanedUrl = removeHashFromPath(url);
+    const cleanFilePath = toFilePath(cleanedUrl);
     // If it is not equal, it means that it is recognized as a module
     if (
       publicDir.startsWith(withTrailingSlash(root)) &&
-      publicFiles.has(url) &&
-      req.url !== url
+      publicFiles.has(cleanFilePath) &&
+      cleanedUrl !== url
     ) {
-      const publicDirWarning = warnAboutPublicDir(url, publicPath);
+      const publicDirWarning = warnAboutPublicDir(cleanFilePath, publicPath);
       if (publicDirWarning) {
         logger.warn(publicDirWarning);
       }
     }
 
-    if (publicFiles && !publicFiles.has(filePath)) {
+    if (publicFiles && !publicFiles.has(toFilePath(url))) {
       return next();
     }
 
