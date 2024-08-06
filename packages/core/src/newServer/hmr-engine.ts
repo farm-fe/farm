@@ -40,7 +40,8 @@ export class HmrEngine {
     this._devServer = devServer;
     // this._lastAttemptWasError = false;
     this._lastModifiedTimestamp = new Map();
-    this.ws = ws;
+    // @ts-ignore
+    this.ws = ws.wss;
   }
 
   callUpdates(result: JsUpdateResult) {
@@ -140,7 +141,7 @@ export class HmrEngine {
 
       this.ws.clients.forEach((client: WebSocketClient) => {
         // @ts-ignore
-        client.rawSend(`
+        client.send(`
         {
           type: 'farm-update',
           result: ${resultStr}

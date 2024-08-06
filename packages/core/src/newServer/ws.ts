@@ -94,7 +94,7 @@ const WebSocketServerRaw = process.versions.bun
   : WebSocketServerRaw_;
 
 export class WsServer {
-  public wss: WebSocketRaw;
+  public wss: WebSocketServerRaw_;
   public customListeners = new Map<string, Set<WebSocketCustomListener<any>>>();
   public clientsMap = new WeakMap<WebSocketRaw, WebSocketClient>();
   public bufferedError: ErrorPayload | null = null;
@@ -114,7 +114,7 @@ export class WsServer {
   }
 
   createWebSocketServer() {
-    const serverConfig = this.config.server as ServerOptions;
+    const serverConfig = this.config.server as unknown as ServerOptions;
     if (serverConfig.ws === false) {
       return {
         name: 'ws',
@@ -130,7 +130,6 @@ export class WsServer {
         send: noop
       };
     }
-    let wss: WebSocketServerRaw_;
     let wsHttpServer: Server | undefined = undefined;
 
     const hmr = isObject(serverConfig.hmr) && serverConfig.hmr;
@@ -153,14 +152,14 @@ export class WsServer {
       if (hmrPath) {
         hmrBase = path.posix.join(hmrBase, hmrPath as string);
       }
-      wss = new WebSocketServerRaw({ noServer: true });
+      this.wss = new WebSocketServerRaw({ noServer: true });
       hmrServerWsListener = (req, socket, head) => {
         if (
           req.headers['sec-websocket-protocol'] === HMR_HEADER &&
           req.url === hmrBase
         ) {
-          wss.handleUpgrade(req, socket as Socket, head, (ws) => {
-            wss.emit('connection', ws, req);
+          this.wss.handleUpgrade(req, socket as Socket, head, (ws) => {
+            this.wss.emit('connection', ws, req);
           });
         }
       };
@@ -189,10 +188,10 @@ export class WsServer {
       }
       // vite dev server in middleware mode
       // need to call ws listen manually
-      wss = new WebSocketServerRaw({ server: wsHttpServer });
+      this.wss = new WebSocketServerRaw({ server: wsHttpServer });
     }
 
-    wss.on('connection', (socket) => {
+    this.wss.on('connection', (socket) => {
       socket.on('message', (raw) => {
         if (!this.customListeners.size) return;
         let parsed: any;
@@ -220,7 +219,7 @@ export class WsServer {
       }
     });
 
-    wss.on('error', (e: Error & { code: string }) => {
+    this.wss.on('error', (e: Error & { code: string }) => {
       if (e.code === 'EADDRINUSE') {
         console.log('WebSocket server error: Port is already in use');
 
@@ -269,7 +268,7 @@ export class WsServer {
         wsHttpServer?.listen(port, host);
       },
       on: ((event: string, fn: () => void) => {
-        if (wsServerEvents.includes(event)) wss.on(event, fn);
+        if (wsServerEvents.includes(event)) this.wss.on(event, fn);
         else {
           if (!this.customListeners.has(event)) {
             this.customListeners.set(event, new Set());
@@ -279,7 +278,7 @@ export class WsServer {
       }) as WebSocketServer['on'],
       off: ((event: string, fn: () => void) => {
         if (wsServerEvents.includes(event)) {
-          wss.off(event, fn);
+          this.wss.off(event, fn);
         } else {
           this.customListeners.get(event)?.delete(fn);
         }
@@ -288,7 +287,9 @@ export class WsServer {
       get clients() {
         // return new Set(Array.from(wss.clients).map(getSocketClient));
         return new Set(
-          Array.from(wss.clients).map((socket) => self.getSocketClient(socket))
+          Array.from(this.wss.clients).map((socket: any) =>
+            self.getSocketClient(socket)
+          )
         );
       },
 
@@ -304,13 +305,13 @@ export class WsServer {
           payload = args[0];
         }
 
-        if (payload.type === 'error' && !wss.clients.size) {
+        if (payload.type === 'error' && !this.wss.clients.size) {
           this.bufferedError = payload;
           return;
         }
 
         const stringified = JSON.stringify(payload);
-        wss.clients.forEach((client) => {
+        this.wss.clients.forEach((client: any) => {
           // readyState 1 means the connection is open
           if (client.readyState === 1) {
             client.send(stringified);
@@ -325,10 +326,10 @@ export class WsServer {
           this.wsServer.off('upgrade', hmrServerWsListener);
         }
         return new Promise<void>((resolve, reject) => {
-          wss.clients.forEach((client) => {
+          this.wss.clients.forEach((client: any) => {
             client.terminate();
           });
-          wss.close((err) => {
+          this.wss.close((err: any) => {
             if (err) {
               reject(err);
             } else {

@@ -12,6 +12,7 @@ export default defineConfig((env) => {
       // minify: false,
       presetEnv: false,
       // persistentCache: false,
+      lazyCompilation: false,
       resolve: {
         symlinks: true,
         alias: {
