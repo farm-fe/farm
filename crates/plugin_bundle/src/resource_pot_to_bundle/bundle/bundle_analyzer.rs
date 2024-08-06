@@ -252,13 +252,13 @@ impl<'a> BundleAnalyzer<'a> {
 
                     match target {
                       FindModuleExportResult::Local(_, target_module_id, _) => {
-                        if let Some(mut local) = module_analyzer_manager
+                        if let Some(mut uniq_ns) = module_analyzer_manager
                           .module_global_uniq_name
                           .namespace_name(&target_module_id)
                         {
                           if is_common_js {
-                            local = self.bundle_reference.add_declare_commonjs_import(
-                              specify,
+                            uniq_ns = self.bundle_reference.add_declare_commonjs_import(
+                              &ImportSpecifierInfo::Namespace(uniq_ns),
                               target_module_id.into(),
                               &self.bundle_variable.borrow(),
                             )?;
@@ -267,7 +267,7 @@ impl<'a> BundleAnalyzer<'a> {
                           self
                             .bundle_variable
                             .borrow_mut()
-                            .set_rename_from_other_render_name(*ns, local);
+                            .set_rename_from_other_render_name(*ns, uniq_ns);
                         }
                       }
 
@@ -289,7 +289,7 @@ impl<'a> BundleAnalyzer<'a> {
                         self
                           .bundle_variable
                           .borrow_mut()
-                          .set_rename_from_other_name(*ns, rename);
+                          .set_rename_from_other_render_name(*ns, rename);
                       }
 
                       // TODO: bundle
@@ -921,7 +921,7 @@ impl<'a> BundleAnalyzer<'a> {
         &mut commonjs_import_executed,
         order_index_map,
         &mut self.polyfill,
-        &external_config
+        &external_config,
       )?;
     }
 
