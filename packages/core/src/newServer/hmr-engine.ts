@@ -26,18 +26,28 @@ export class HmrEngine {
   private _onUpdates: ((result: JsUpdateResult) => void)[];
 
   private _lastModifiedTimestamp: Map<string, string>;
+  private _logger: Logger;
 
   public config: UserConfig;
   public ws: WebSocketServer;
   constructor(
-    compiler: Compiler,
-    devServer: HttpServer,
-    config: UserConfig,
-    ws: WebSocketServer,
-    private _logger: Logger
+    // compiler: Compiler,
+    // devServer: HttpServer,
+    // config: UserConfig,
+    // ws: WebSocketServer,
+    // private _logger: Logger
+    app: any
   ) {
+    const {
+      compiler,
+      httpServer,
+      resolvedUserConfig: config,
+      ws,
+      logger
+    } = app;
     this._compiler = compiler;
-    this._devServer = devServer;
+    this._devServer = httpServer;
+    this._logger = logger;
     // this._lastAttemptWasError = false;
     this._lastModifiedTimestamp = new Map();
     // @ts-ignore

@@ -139,15 +139,17 @@ export class newServer {
             this.httpsOptions
           );
 
-      // init hmr engine
-      this.createHmrEngine();
-
       // init websocket server
       this.createWebSocketServer();
 
+      // init hmr engine
+      this.createHmrEngine();
+
       this.initializeMiddlewares();
     } catch (error) {
-      this.logger.error('handle create server error:', error);
+      console.log(error);
+
+      this.logger.error(`handle create server error: ${error}`);
     }
   }
 
@@ -176,13 +178,7 @@ export class newServer {
       );
     }
 
-    this.hmrEngine = new HmrEngine(
-      this.compiler,
-      this.httpServer,
-      this.resolvedUserConfig,
-      this.ws,
-      this.logger
-    );
+    this.hmrEngine = new HmrEngine(this);
   }
 
   public async createWebSocketServer() {
@@ -192,13 +188,7 @@ export class newServer {
       );
     }
 
-    this.ws = new WsServer(
-      this.httpServer,
-      this.resolvedUserConfig,
-      this.httpsOptions,
-      this.publicPath,
-      null
-    );
+    this.ws = new WsServer(this);
   }
 
   public async listen(): Promise<void> {
