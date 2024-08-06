@@ -45,12 +45,9 @@ function warnAboutPublicDir(url: string, publicPath: string) {
   return warning;
 }
 
-export function publicMiddleware(
-  logger: Logger,
-  config: ResolvedUserConfig,
-  publicFiles?: Set<string>
-) {
-  const { publicDir, root } = config;
+export function publicMiddleware(app: any) {
+  const { resolvedUserConfig: config, publicDir, publicFiles, logger } = app;
+  const { root } = config;
   const publicPath = `${publicDir.slice(root.length)}`;
   const headers = config.server.headers;
   const serve = sirv(publicDir, {

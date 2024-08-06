@@ -6,12 +6,13 @@ export default defineConfig({
     // presetEnv: false,
     // progress: false,
     // sourcemap: false,
-    // persistentCache: false,
+    persistentCache: false,
     runtime: {
       isolate: true
     }
   },
   server: {
+    port: 3212,
     writeToDisk: true,
   }
 });

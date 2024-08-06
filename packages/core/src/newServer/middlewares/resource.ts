@@ -17,12 +17,7 @@ interface RealResourcePath {
   resource: Buffer;
 }
 
-export function resourceMiddleware(
-  server: HttpServer,
-  compiler: Compiler,
-  publicPath: string,
-  config: ResolvedUserConfig
-) {
+export function resourceMiddleware(app: any) {
   return async function generateResourceMiddleware(
     req: any,
     res: any,
@@ -33,7 +28,7 @@ export function resourceMiddleware(
     }
 
     const url = req.url && cleanUrl(req.url);
-
+    const { compiler, resolvedUserConfig: config, publicPath } = app;
     // TODO resolve html but not input file html
     // htmlFallbackMiddleware appends '.html' to URLs
     // if (url?.endsWith('.html') && req.headers['sec-fetch-dest'] !== 'script') {
