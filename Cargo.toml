@@ -18,7 +18,7 @@ panic = "abort"
 
 [profile.ci-test]
 inherits = "release"
-opt-level = 0
-debug = 2
-lto = false
-codegen-units = 16
+# opt-level = 0
+# debug = 2
+# lto = false
+# codegen-units = 16
