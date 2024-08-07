@@ -1,8 +1,11 @@
 import type * as http from 'node:http';
-import type { Server } from 'node:http';
-import type { OutgoingHttpHeaders as HttpServerHeaders } from 'node:http';
-import { type Http2SecureServer } from 'node:http2';
-import type { ServerOptions as HttpsServerOptions } from 'node:https';
+import type {
+  ServerOptions as HttpsServerOptions,
+  IncomingMessage,
+  OutgoingHttpHeaders,
+  Server
+} from 'node:http';
+import type { Http2SecureServer } from 'node:http2';
 import path from 'node:path';
 import { WatchOptions } from 'chokidar';
 import compression from 'compression';
@@ -24,11 +27,13 @@ import {
   resolveHttpServer,
   resolveHttpsConfig
 } from './http.js';
+import { HMRPingMiddleware } from './middlewares/hmrPing.js';
 import { htmlFallbackMiddleware } from './middlewares/htmlFallback.js';
 import { publicMiddleware } from './middlewares/public.js';
 import { resourceMiddleware } from './middlewares/resource.js';
 import { WebSocketClient, WebSocketServer, WsServer } from './ws.js';
-export type HttpServer = http.Server | Http2SecureServer;
+
+export type HttpServer = Server | Http2SecureServer;
 
 type CompilerType = Compiler | null;
 
@@ -90,23 +95,23 @@ export class newServer {
   // base path of server
   publicPath?: string;
   // publicFile
-  publicFiles?: string[];
+  publicFiles?: Set<string>;
   httpServer?: HttpServer;
   watcher: FileWatcher;
   hmrEngine?: HmrEngine;
+  middlewares: connect.Server;
 
   constructor(
     private readonly compiler: CompilerType,
-    private readonly config: ResolvedUserConfig,
+    private readonly resolvedUserConfig: ResolvedUserConfig,
     private readonly logger: Logger
   ) {
     if (!this.compiler) {
-      this.logger.error(
-        'Compiler is not provided, server will not work, please provide a compiler e.q. `new Compiler(config)`'
+      throw new Error(
+        'Compiler is not provided. Server initialization failed. Please provide a compiler instance, e.g., `new Compiler(config)`.'
       );
-      return;
     }
-    this.resolveOptions(config);
+    this.resolveOptions(resolvedUserConfig);
   }
 
   public getCompiler(): CompilerType {
@@ -124,64 +129,54 @@ export class newServer {
   }
 
   public async createServer() {
-    this.httpsOptions = await resolveHttpsConfig(this.serverOptions.https);
-    const publicFiles = await this.handlePublicFiles();
-    const { middlewareMode } = this.serverOptions;
-    const middlewares = connect() as connect.Server;
-    this.httpServer = middlewareMode
-      ? null
-      : await resolveHttpServer(
-          this.serverOptions as CommonServerOptions,
-          middlewares,
-          this.httpsOptions
-        );
+    try {
+      const { https, middlewareMode } = this.serverOptions;
 
-    this.createWebSocketServer();
-    this.hmrEngine = new HmrEngine(
-      this.compiler,
-      this.httpServer,
-      this.config,
-      this.ws,
-      this.logger
-    );
+      this.httpsOptions = await resolveHttpsConfig(https);
+      this.publicFiles = await this.handlePublicFiles();
 
-    // middleware
-    // middlewares.use(compression());
+      this.middlewares = connect() as connect.Server;
+      this.httpServer = middlewareMode
+        ? null
+        : await resolveHttpServer(
+            this.serverOptions as CommonServerOptions,
+            this.middlewares,
+            this.httpsOptions
+          );
 
-    middlewares.use(function handleHMRPingMiddleware(req, res, next) {
-      if (req.headers['accept'] === 'text/x-farm-ping') {
-        res.writeHead(204).end();
-      } else {
-        next();
-      }
-    });
+      // init websocket server
+      this.createWebSocketServer();
 
-    if (this.publicDir) {
-      middlewares.use(publicMiddleware(this.logger, this.config, publicFiles));
+      // init hmr engine
+      this.createHmrEngine();
+
+      // init middlewares
+      this.initializeMiddlewares();
+    } catch (error) {
+      throw new Error(`handle create server error: ${error}`);
     }
-    // TODO todo add appType
-    middlewares.use(
-      htmlFallbackMiddleware(
-        this.httpServer,
-        this.compiler,
-        this.publicPath,
-        this.config
-      )
-    );
-
-    middlewares.use(
-      resourceMiddleware(
-        this.httpServer,
-        this.compiler,
-        this.publicPath,
-        this.config
-      )
-    );
   }
 
-  private async handlePublicFiles() {
-    const initPublicFilesPromise = initPublicFiles(this.config);
-    return await initPublicFilesPromise;
+  private initializeMiddlewares() {
+    this.middlewares.use(HMRPingMiddleware());
+
+    if (this.publicDir) {
+      this.middlewares.use(publicMiddleware(this));
+    }
+    // TODO todo add appType
+    this.middlewares.use(htmlFallbackMiddleware(this));
+
+    this.middlewares.use(resourceMiddleware(this));
+  }
+
+  public createHmrEngine() {
+    if (!this.httpServer) {
+      throw new Error(
+        'HmrEngine requires a http server. please check the server is be created'
+      );
+    }
+
+    this.hmrEngine = new HmrEngine(this);
   }
 
   public async createWebSocketServer() {
@@ -191,13 +186,7 @@ export class newServer {
       );
     }
 
-    this.ws = new WsServer(
-      this.httpServer,
-      this.config,
-      this.httpsOptions,
-      this.publicPath,
-      null
-    );
+    this.ws = new WsServer(this);
   }
 
   public async listen(): Promise<void> {
@@ -205,7 +194,8 @@ export class newServer {
       this.logger.warn('HTTP server is not created yet');
       return;
     }
-    const { port, open, protocol, hostname } = this.config.server;
+    // TODO open browser when server is ready && open config is true
+    const { port, open, protocol, hostname } = this.resolvedUserConfig.server;
 
     const start = Date.now();
     await this.compile();
@@ -223,10 +213,15 @@ export class newServer {
       throw new Error(logError(err) as unknown as string);
     }
 
-    if (this.config.server.writeToDisk) {
+    if (this.resolvedUserConfig.server.writeToDisk) {
       this.compiler.writeResourcesToDisk();
     } else {
       this.compiler.callWriteResourcesHook();
     }
+  }
+
+  private async handlePublicFiles() {
+    const initPublicFilesPromise = initPublicFiles(this.resolvedUserConfig);
+    return await initPublicFilesPromise;
   }
 }

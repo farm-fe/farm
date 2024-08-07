@@ -35,7 +35,6 @@ export class HmrClient {
       `${socketProtocol}://${socketHostUrl}`,
       'farm_hmr'
     );
-    console.log(`${socketProtocol}://${socketHostUrl}`);
 
     this.socket = socket;
     // listen for the message from the server
@@ -67,9 +66,11 @@ export class HmrClient {
       this.notifyListeners('vite:ws:disconnect', { webSocket: socket });
       this.notifyListeners('farm:ws:disconnect', { webSocket: socket });
 
-      logger.debug('disconnected from the server, please reload the page.');
+      logger.debug(
+        'disconnected from the server, Please refresh the page manually. If you still encounter errors, this may be a farm bug. Please submit an issue. https://github.com/farm-fe/farm/issues'
+      );
       await waitForSuccessfulPing(socketProtocol, `${socketHostUrl}`);
-      location.reload();
+      // location.reload();
     });
 
     return socket;

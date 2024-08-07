@@ -5,12 +5,7 @@ import { commonFsUtils } from '../../utils/fsUtils.js';
 import { cleanUrl } from '../../utils/url.js';
 import { HttpServer } from '../index.js';
 
-export function htmlFallbackMiddleware(
-  server: HttpServer,
-  compiler: Compiler,
-  publicPath: string,
-  config: ResolvedUserConfig
-) {
+export function htmlFallbackMiddleware(app: any) {
   return async function htmlFallbackMiddleware(
     req: any,
     res: any,
@@ -33,7 +28,7 @@ export function htmlFallbackMiddleware(
     }
     const url = cleanUrl(req.url);
     const pathname = decodeURIComponent(url);
-
+    const { resolvedUserConfig: config } = app;
     if (pathname.endsWith('.html')) {
       const filePath = path.join(config.root, pathname);
       if (commonFsUtils.existsSync(filePath)) {

@@ -19,25 +19,27 @@ import { WebSocketClient, WebSocketServer } from './ws.js';
 
 export class HmrEngine {
   private _updateQueue: string[] = [];
-  // private _updateResults: Map<string, { result: string; count: number }> =
+  private _updateResults: Map<string, { result: string; count: number }>;
 
-  private _compiler: Compiler;
-  private _devServer: HttpServer;
   private _onUpdates: ((result: JsUpdateResult) => void)[];
 
   private _lastModifiedTimestamp: Map<string, string>;
-
-  public config: UserConfig;
-  public ws: WebSocketServer;
   constructor(
-    compiler: Compiler,
-    devServer: HttpServer,
-    config: UserConfig,
-    ws: WebSocketServer,
-    private _logger: Logger
+    // compiler: Compiler,
+    // devServer: HttpServer,
+    // config: UserConfig,
+    // ws: WebSocketServer,
+    // private _logger: Logger
+    private readonly app: any
   ) {
-    this._compiler = compiler;
-    this._devServer = devServer;
+    const {
+      compiler,
+      httpServer,
+      resolvedUserConfig: config,
+      ws,
+      logger
+    } = this.app;
+
     // this._lastAttemptWasError = false;
     this._lastModifiedTimestamp = new Map();
     // @ts-ignore
@@ -65,13 +67,13 @@ export class HmrEngine {
     let updatedFilesStr = queue
       .map((item) => {
         if (isAbsolute(item)) {
-          return relative(this._compiler.config.config.root, item);
+          return relative(this.app.compiler.config.config.root, item);
         } else {
-          const resolvedPath = this._compiler.transformModulePath(
-            this._compiler.config.config.root,
+          const resolvedPath = this.app.compiler.transformModulePath(
+            this.app.compiler.config.config.root,
             item
           );
-          return relative(this._compiler.config.config.root, resolvedPath);
+          return relative(this.app.compiler.config.config.root, resolvedPath);
         }
       })
       .join(', ');
@@ -82,20 +84,20 @@ export class HmrEngine {
 
     try {
       // we must add callback before update
-      this._compiler.onUpdateFinish(async () => {
+      this.app.compiler.onUpdateFinish(async () => {
         // if there are more updates, recompile again
         if (this._updateQueue.length > 0) {
           await this.recompileAndSendResult();
         }
-        if (this.config?.server.writeToDisk) {
-          this._compiler.writeResourcesToDisk();
+        if (this.app.resolvedUserConfig?.server.writeToDisk) {
+          this.app.compiler.writeResourcesToDisk();
         }
       });
 
-      checkClearScreen(this._compiler.config.config);
+      checkClearScreen(this.app.compiler.config.config);
       const start = Date.now();
-      const result = await this._compiler.update(queue);
-      this._logger.info(
+      const result = await this.app.compiler.update(queue);
+      this.app.logger.info(
         `${bold(cyan(updatedFilesStr))} updated in ${bold(
           green(`${Date.now() - start}ms`)
         )}`
@@ -113,6 +115,8 @@ export class HmrEngine {
           if (!dynamicResourcesMap) {
             dynamicResourcesMap = {} as Record<string, Resource[]>;
           }
+
+          // @ts-ignore
           dynamicResourcesMap[key] = value.map((r) => ({
             path: r[0],
             type: r[1] as 'script' | 'link'
@@ -138,8 +142,7 @@ export class HmrEngine {
       }`;
 
       this.callUpdates(result);
-
-      this.ws.clients.forEach((client: WebSocketClient) => {
+      this.app.ws.wss.clients.forEach((client: WebSocketClient) => {
         // @ts-ignore
         client.send(`
         {
@@ -149,9 +152,8 @@ export class HmrEngine {
       `);
       });
     } catch (err) {
-      checkClearScreen(this._compiler.config.config);
-      console.log(err);
-      // throw new Error(logError(err) as unknown as string);
+      // checkClearScreen(this.app.compiler.config.config);
+      throw new Error(err);
     }
   };
 
@@ -159,7 +161,10 @@ export class HmrEngine {
     const paths = Array.isArray(absPath) ? absPath : [absPath];
 
     for (const path of paths) {
-      if (this._compiler.hasModule(path) && !this._updateQueue.includes(path)) {
+      if (
+        this.app.compiler.hasModule(path) &&
+        !this._updateQueue.includes(path)
+      ) {
         if (fse.existsSync(path)) {
           const lastModifiedTimestamp = this._lastModifiedTimestamp.get(path);
           const currentTimestamp = (await stat(path)).mtime.toISOString();
@@ -174,7 +179,7 @@ export class HmrEngine {
       }
     }
 
-    if (!this._compiler.compiling && this._updateQueue.length > 0) {
+    if (!this.app.compiler.compiling && this._updateQueue.length > 0) {
       try {
         await this.recompileAndSendResult();
       } catch (e) {
@@ -183,17 +188,19 @@ export class HmrEngine {
         const errorStr = `${JSON.stringify({
           message: serialization
         })}`;
-        this.ws.clients.forEach((client: WebSocketClient) => {
+        this.app.ws.wss.clients.forEach((client: WebSocketClient) => {
           // @ts-ignore
-          client.rawSend(`
+          // client.rawSend(`
+          client.send(`
             {
               type: 'error',
               err: ${errorStr},
-              overlay: ${(this.config.server.hmr as UserHmrConfig).overlay}
+              overlay: ${(this.app.resolvedUserConfig.server.hmr as UserHmrConfig).overlay}
             }
           `);
         });
-        this._logger.error(e);
+        // this.app.logger.error(e);
+        throw new Error(`hmr update failed: ${e.stack}`);
       }
     }
   }
