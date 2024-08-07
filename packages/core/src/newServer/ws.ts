@@ -7,7 +7,7 @@ import path from 'node:path';
 import type { Duplex } from 'node:stream';
 import type { WebSocket as WebSocketRaw } from 'ws';
 import { WebSocketServer as WebSocketServerRaw_ } from 'ws';
-import { NormalizedServerConfig, ResolvedUserConfig } from '../config/types.js';
+import { NormalizedServerConfig } from '../config/types.js';
 import { HmrEngine } from '../server/hmr-engine.js';
 import { WebSocket as WebSocketTypes } from '../types/ws.js';
 import { ILogger, Logger } from '../utils/logger.js';
@@ -102,19 +102,21 @@ export class WsServer {
   public wsServer: Server;
 
   constructor(
-    private httpServer: HttpServer,
-    private config: ResolvedUserConfig,
-    private httpsOptions: HttpsServerOptions,
-    private publicPath: string,
-    private hmrEngine: HmrEngine,
-    logger?: ILogger
+    // private httpServer: HttpServer,
+    // private config: ResolvedUserConfig,
+    // private httpsOptions: HttpsServerOptions,
+    // private publicPath: string,
+    // private hmrEngine: HmrEngine,
+    // logger?: ILogger
+    private readonly app: any
   ) {
-    this.logger = logger ?? new Logger();
+    this.logger = app.logger ?? new Logger();
     this.createWebSocketServer();
   }
 
   createWebSocketServer() {
-    const serverConfig = this.config.server as unknown as ServerOptions;
+    const { resolvedUserConfig: config } = this.app;
+    const serverConfig = config.server as unknown as ServerOptions;
     if (serverConfig.ws === false) {
       return {
         name: 'ws',
@@ -137,7 +139,7 @@ export class WsServer {
     const hmrPort = hmr && hmr.port;
     const portsAreCompatible = !hmrPort || hmrPort === serverConfig.port;
     // @ts-ignore
-    this.wsServer = hmrServer || (portsAreCompatible && this.httpServer);
+    this.wsServer = hmrServer || (portsAreCompatible && this.app.httpServer);
     let hmrServerWsListener: (
       req: InstanceType<typeof IncomingMessage>,
       socket: Duplex,
@@ -147,7 +149,8 @@ export class WsServer {
     const host = (hmr && hmr.host) || undefined;
 
     if (this.wsServer) {
-      let hmrBase = this.publicPath;
+      let hmrBase = this.app.publicPath;
+
       const hmrPath = hmr ? hmr.path : undefined;
       if (hmrPath) {
         hmrBase = path.posix.join(hmrBase, hmrPath as string);
@@ -181,8 +184,9 @@ export class WsServer {
         });
         res.end(body);
       }) as Parameters<typeof createHttpServer>[1];
-      if (this.httpsOptions) {
-        wsHttpServer = createHttpsServer(this.httpsOptions, route);
+
+      if (this.app.httpsOptions) {
+        wsHttpServer = createHttpsServer(this.app.httpsOptions, route);
       } else {
         wsHttpServer = createHttpServer(route);
       }
@@ -205,12 +209,7 @@ export class WsServer {
         listeners.forEach((listener) => listener(parsed.data, client));
       });
       socket.on('error', (err) => {
-        console.log('ws error:', err);
-
-        // config.logger.error(`${colors.red(`ws error:`)}\n${err.stack}`, {
-        //   timestamp: true,
-        //   error: err
-        // });
+        throw new Error(`ws error:\n${err.stack}`);
       });
       socket.send(JSON.stringify({ type: 'connected' }));
       if (this.bufferedError) {

@@ -1,8 +1,11 @@
 import type * as http from 'node:http';
-import type { Server } from 'node:http';
-import type { OutgoingHttpHeaders as HttpServerHeaders } from 'node:http';
-import { type Http2SecureServer } from 'node:http2';
-import type { ServerOptions as HttpsServerOptions } from 'node:https';
+import type {
+  ServerOptions as HttpsServerOptions,
+  IncomingMessage,
+  OutgoingHttpHeaders,
+  Server
+} from 'node:http';
+import type { Http2SecureServer } from 'node:http2';
 import path from 'node:path';
 import { WatchOptions } from 'chokidar';
 import compression from 'compression';
@@ -24,11 +27,13 @@ import {
   resolveHttpServer,
   resolveHttpsConfig
 } from './http.js';
+import { HMRPingMiddleware } from './middlewares/hmrPing.js';
 import { htmlFallbackMiddleware } from './middlewares/htmlFallback.js';
 import { publicMiddleware } from './middlewares/public.js';
 import { resourceMiddleware } from './middlewares/resource.js';
 import { WebSocketClient, WebSocketServer, WsServer } from './ws.js';
-export type HttpServer = http.Server | Http2SecureServer;
+
+export type HttpServer = Server | Http2SecureServer;
 
 type CompilerType = Compiler | null;
 
@@ -145,22 +150,15 @@ export class newServer {
       // init hmr engine
       this.createHmrEngine();
 
+      // init middlewares
       this.initializeMiddlewares();
     } catch (error) {
-      console.log(error);
-
-      this.logger.error(`handle create server error: ${error}`);
+      throw new Error(`handle create server error: ${error}`);
     }
   }
 
   private initializeMiddlewares() {
-    this.middlewares.use(function handleHMRPingMiddleware(req, res, next) {
-      if (req.headers['accept'] === 'text/x-farm-ping') {
-        res.writeHead(204).end();
-      } else {
-        next();
-      }
-    });
+    this.middlewares.use(HMRPingMiddleware());
 
     if (this.publicDir) {
       this.middlewares.use(publicMiddleware(this));
