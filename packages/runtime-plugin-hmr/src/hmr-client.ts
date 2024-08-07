@@ -108,10 +108,9 @@ export class HmrClient {
 
     for (const id of result.changed) {
       moduleSystem.update(id, result.modules[id]);
-
       if (!result.boundaries[id]) {
         // do not found boundary module, reload the window
-        location.reload();
+        // location.reload();
       }
     }
 
@@ -199,6 +198,8 @@ export class HmrClient {
    * @param payload Vite HMR payload
    */
   async handleMessage(payload: HMRPayload) {
+    console.log(payload);
+
     switch (payload.type) {
       case 'farm-update':
         this.notifyListeners('farm:beforeUpdate', payload);

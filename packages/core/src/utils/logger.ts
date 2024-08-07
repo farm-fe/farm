@@ -227,7 +227,7 @@ export function bootstrap(times: number, config: Config) {
   const persistentCacheFlag = usePersistentCache
     ? colors.bold(PersistentCacheBrand)
     : '';
-
+  // TODO add timer transform ms / s
   console.log(
     '\n',
     colors.bold(colors.brandColor(`${'ϟ'}  Farm  v${version}`))
@@ -235,7 +235,7 @@ export function bootstrap(times: number, config: Config) {
   console.log(
     `${colors.bold(colors.green(` ✓`))}  ${colors.bold(
       'Ready in'
-    )} ${colors.bold(colors.green(`${times}ms`))} ${persistentCacheFlag}`,
+    )} ${colors.bold(colors.green(`${Math.floor(times) / 1000}s`))} ${persistentCacheFlag}`,
     '\n'
   );
 }

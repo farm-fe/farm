@@ -32,9 +32,10 @@ export default defineConfig({
     // persistentCache: false
     output:{
       path: "build",
-      publicPath: "/vue-public-path/",
+      // publicPath: "/vue-public-path/",
     },
-    persistentCache: false,
+    // persistentCache: false,
+    lazyCompilation: false,
     sourcemap: false,
   },
   plugins: [
