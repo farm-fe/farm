@@ -68,8 +68,8 @@ where
   let target_dir = cwd.join(&project_name);
 
   if target_dir.exists() && target_dir.read_dir()?.next().is_some() {
-    let overwrite = if !force {
-      prompts::confirm(
+    let overwrite = force
+      || prompts::confirm(
         &format!(
           "{} directory is not empty, do you want to overwrite?",
           if target_dir == cwd {
@@ -83,10 +83,7 @@ where
           }
         ),
         false,
-      )?
-    } else {
-      force
-    };
+      )?;
     if !overwrite {
       eprintln!("{BOLD}{RED}✘{RESET} Directory is not empty, Operation Cancelled");
       exit(1);
