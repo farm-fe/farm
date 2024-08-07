@@ -15,8 +15,11 @@ use std::mem::transmute;
 #[allow(clippy::upper_case_acronyms, non_camel_case_types)]
 struct EMBEDDED_TEMPLATES;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) trait Displayable {
+  fn display_text(&self) -> &str;
+}
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ElectronSubTemplate {
   React,
   Vue,
@@ -27,7 +30,7 @@ pub enum ElectronSubTemplate {
 }
 
 impl ElectronSubTemplate {
-  pub fn to_simple_string(&self) -> &str {
+  pub(crate) fn to_simple_string(&self) -> &str {
     match self {
       ElectronSubTemplate::React => "react",
       ElectronSubTemplate::Vue => "vue",
@@ -35,6 +38,19 @@ impl ElectronSubTemplate {
       ElectronSubTemplate::Vanilla => "vanilla",
       ElectronSubTemplate::Solid => "solid",
       ElectronSubTemplate::Preact => "preact",
+    }
+  }
+}
+
+impl Displayable for ElectronSubTemplate {
+  fn display_text(&self) -> &'static str {
+    match self {
+      ElectronSubTemplate::React => "\x1b[36mReact - (https://reactjs.org/)\x1b[39m",
+      ElectronSubTemplate::Vue => "\x1b[32mVue - (https://vuejs.org/)\x1b[39m",
+      ElectronSubTemplate::Svelte => "\x1b[38;2;255;137;54mSvelte - (https://svelte.dev/)\x1b[39m",
+      ElectronSubTemplate::Vanilla => "\x1b[33mVanilla\x1b[39m",
+      ElectronSubTemplate::Solid => "\x1b[38;2;68;206;246mSolid - (https://solidjs.com/)\x1b[39m",
+      ElectronSubTemplate::Preact => "\x1b[36mPreact - (https://preactjs.com/)\x1b[36m",
     }
   }
 }
@@ -75,7 +91,7 @@ pub enum TauriSubTemplate {
 }
 
 impl TauriSubTemplate {
-  pub fn to_simple_string(&self) -> &str {
+  pub(crate) fn to_simple_string(&self) -> &str {
     match self {
       TauriSubTemplate::React => "react",
       TauriSubTemplate::Vue => "vue",
@@ -83,6 +99,19 @@ impl TauriSubTemplate {
       TauriSubTemplate::Vanilla => "vanilla",
       TauriSubTemplate::Solid => "solid",
       TauriSubTemplate::Preact => "preact",
+    }
+  }
+}
+
+impl Displayable for TauriSubTemplate {
+  fn display_text(&self) -> &'static str {
+    match self {
+      TauriSubTemplate::React => "\x1b[36mReact - (https://react.dev/)\x1b[39m",
+      TauriSubTemplate::Vue => "\x1b[32mVue - (https://vuejs.org/)\x1b[39m",
+      TauriSubTemplate::Svelte => "\x1b[38;2;255;137;54mSvelte - (https://svelte.dev/)\x1b[39m",
+      TauriSubTemplate::Vanilla => "\x1b[33mVanilla\x1b[39m",
+      TauriSubTemplate::Solid => "\x1b[38;2;68;206;246mSolid - (https://solidjs.com/)\x1b[39m",
+      TauriSubTemplate::Preact => "\x1b[36mPreact - (https://preactjs.com/)\x1b[36m",
     }
   }
 }
@@ -156,6 +185,7 @@ impl Display for Template {
 
 impl FromStr for Template {
   type Err = String;
+
   fn from_str(s: &str) -> Result<Self, Self::Err> {
     match s {
       "vanilla" => Ok(Template::Vanilla),
@@ -171,7 +201,7 @@ impl FromStr for Template {
       "electron" => Ok(Template::Electron(None)),
       _ => Err(format!(
         "{YELLOW}{s}{RESET} is not a valid template. Valid templates are [{}]",
-        Template::ALL
+        Template::ALL_TOP_LEVEL
           .iter()
           .map(|e| format!("{GREEN}{e}{RESET}"))
           .collect::<Vec<_>>()
@@ -181,8 +211,8 @@ impl FromStr for Template {
   }
 }
 
-impl Template {
-  pub const fn select_text<'a>(&self) -> &'a str {
+impl Displayable for Template {
+  fn display_text(&self) -> &'static str {
     match self {
       Template::Vanilla => "\x1b[33mVanilla\x1b[39m",
       Template::React => "\x1b[36mReact - (https://react.dev/)\x1b[39m",
@@ -218,7 +248,7 @@ impl Template {
 }
 
 impl<'a> Template {
-  pub const ALL: &'a [Template] = &[
+  pub(crate) const ALL_TOP_LEVEL: &'a [Template] = &[
     Template::Vanilla,
     Template::React,
     Template::Vue3,
@@ -229,19 +259,7 @@ impl<'a> Template {
     Template::Preact,
     Template::Nestjs,
     Template::Tauri(None),
-    Template::Tauri(Some(TauriSubTemplate::React)),
-    Template::Tauri(Some(TauriSubTemplate::Vue)),
-    Template::Tauri(Some(TauriSubTemplate::Vanilla)),
-    Template::Tauri(Some(TauriSubTemplate::Svelte)),
-    Template::Tauri(Some(TauriSubTemplate::Solid)),
-    Template::Tauri(Some(TauriSubTemplate::Preact)),
     Template::Electron(None),
-    Template::Electron(Some(ElectronSubTemplate::React)),
-    Template::Electron(Some(ElectronSubTemplate::Vue)),
-    Template::Electron(Some(ElectronSubTemplate::Vanilla)),
-    Template::Electron(Some(ElectronSubTemplate::Svelte)),
-    Template::Electron(Some(ElectronSubTemplate::Solid)),
-    Template::Electron(Some(ElectronSubTemplate::Preact)),
   ];
 
   fn transform_to_pascal_case(s: String) -> String {
@@ -262,7 +280,7 @@ impl<'a> Template {
     result
   }
 
-  pub fn render(
+  pub(crate) fn render(
     &self,
     target_dir: &path::Path,
     _pkg_manager: PackageManager,
@@ -317,13 +335,17 @@ impl<'a> Template {
             EMBEDDED_TEMPLATES::get(file).unwrap().data.to_vec(),
             &template_data,
           )?
-          .into_bytes();
-          (data, new_name)
+          .replace("<FARM-TEMPLATE-NAME>", project_name);
+          (data.into_bytes(), new_name)
         } else {
-          (
-            EMBEDDED_TEMPLATES::get(file).unwrap().data.to_vec(),
-            file_name,
-          )
+          let plain_data = EMBEDDED_TEMPLATES::get(file).unwrap().data.to_vec();
+          let data = String::from_utf8(plain_data.clone())
+            .map(|s| {
+              s.replace("<FARM-TEMPLATE-NAME>", &project_name)
+                .into_bytes()
+            })
+            .unwrap_or(plain_data);
+          (data, file_name)
         };
 
         let file_name = lte::render(file_name, &template_data)?;
