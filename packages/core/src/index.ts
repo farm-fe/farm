@@ -308,6 +308,7 @@ export async function createBundleHandler(
       if (resolvedUserConfig.compilation?.output?.clean) {
         compiler.removeOutputPathDir();
       }
+
       try {
         await compiler.compile();
       } catch (err) {
@@ -407,13 +408,13 @@ export async function createFileWatcher(
   resolvedUserConfig: ResolvedUserConfig,
   logger: Logger = new Logger()
 ) {
-  if (
-    devServer.config.hmr &&
-    resolvedUserConfig.compilation.mode === 'production'
-  ) {
-    logger.error('HMR cannot be enabled in production mode.');
-    return;
-  }
+  // if (
+  //   devServer.config.hmr &&
+  //   resolvedUserConfig.compilation.mode === "production"
+  // ) {
+  //   logger.error("HMR cannot be enabled in production mode.");
+  //   return;
+  // }
 
   if (!devServer.config.hmr) {
     return;
@@ -452,13 +453,13 @@ export async function createFileWatcher2(
   resolvedUserConfig: ResolvedUserConfig,
   logger: Logger = new Logger()
 ) {
-  if (
-    resolvedUserConfig.server.hmr &&
-    resolvedUserConfig.compilation.mode === 'production'
-  ) {
-    logger.error('HMR cannot be enabled in production mode.');
-    return;
-  }
+  // if (
+  //   resolvedUserConfig.server.hmr &&
+  //   resolvedUserConfig.compilation.mode === "production"
+  // ) {
+  //   logger.error("HMR cannot be enabled in production mode.");
+  //   return;
+  // }
 
   if (!resolvedUserConfig.server.hmr) {
     return;

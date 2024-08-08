@@ -47,8 +47,6 @@ export class HmrClient {
         this.closeConnectionGracefully();
         return;
       }
-      console.log(result);
-
       this.handleMessage(result);
     });
 

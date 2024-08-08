@@ -5,6 +5,9 @@ export default defineConfig({
   vitePlugins: [
     vue(),
   ],
+  compilation: {
+    mode: 'production'
+  },
   server: {
     port: 5232
   }
