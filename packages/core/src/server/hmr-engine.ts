@@ -84,10 +84,10 @@ export class HmrEngine {
 
       checkClearScreen(this._compiler.config.config);
       const start = Date.now();
-      console.log(queue);
+      console.log('start recompileAndSendResult', queue);
+      console.log(this._compiler.config);
 
       const result = await this._compiler.update(queue);
-      console.log(result);
 
       this._logger.info(
         `${bold(cyan(updatedFilesStr))} updated in ${bold(

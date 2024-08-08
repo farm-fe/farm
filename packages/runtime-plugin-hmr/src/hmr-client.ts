@@ -47,6 +47,8 @@ export class HmrClient {
         this.closeConnectionGracefully();
         return;
       }
+      console.log(result);
+
       this.handleMessage(result);
     });
 
@@ -198,8 +200,6 @@ export class HmrClient {
    * @param payload Vite HMR payload
    */
   async handleMessage(payload: HMRPayload) {
-    console.log(payload);
-
     switch (payload.type) {
       case 'farm-update':
         this.notifyListeners('farm:beforeUpdate', payload);

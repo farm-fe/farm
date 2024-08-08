@@ -283,6 +283,7 @@ export class VitePluginAdapter implements JsPlugin {
     );
 
     if (hook) {
+      console.log('走进来了么');
       await hook(this._viteDevServer);
       this._viteDevServer.middlewareCallbacks.forEach((cb) => {
         devServer.app().use((ctx, koaNext) => {

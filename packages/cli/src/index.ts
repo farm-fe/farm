@@ -94,12 +94,12 @@ cli
         }
       };
 
-      const { start2 }: any = await resolveCore();
-      // const { start }: any = await resolveCore();
+      // const { start2 }: any = await resolveCore();
+      const { start }: any = await resolveCore();
 
       handleAsyncOperationErrors(
-        start2(defaultOptions),
-        // start(defaultOptions),
+        start(defaultOptions),
+        // start2(defaultOptions),
         'Failed to start server'
       );
     }

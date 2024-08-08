@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import HelloWorld from './components/HelloWorld.vue'
+import HelloWorld from "./components/HelloWorld.vue";
 </script>
 
 <template>
   <div>
     <a href="https://farmfe.org/" target="_blank">
       <img src="./assets/logo.png" class="logo" alt="Farm logo" />
-    </a>22222222
+    </a>4123789478945622278922222
     <a href="https://vuejs.org/" target="_blank">
       <img src="./assets/vue.svg" class="logo vue" alt="Vue logo" />
     </a>
@@ -23,7 +23,7 @@ import HelloWorld from './components/HelloWorld.vue'
 }
 
 .logo:hover {
-  filter: drop-shadow(0 0 2em #9F1A8Faa);
+  filter: drop-shadow(0 0 2em #9f1a8faa);
 }
 
 .logo.vue:hover {

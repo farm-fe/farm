@@ -19,7 +19,7 @@ import { WebSocketClient, WebSocketServer } from './ws.js';
 
 export class HmrEngine {
   private _updateQueue: string[] = [];
-  private _updateResults: Map<string, { result: string; count: number }>;
+  // private _updateResults: Map<string, { result: string; count: number }>;
 
   private _onUpdates: ((result: JsUpdateResult) => void)[];
 
@@ -86,11 +86,10 @@ export class HmrEngine {
 
       checkClearScreen(this.app.compiler.config.config);
       const start = performance.now();
-      console.log(queue);
+      console.log('start recompileAndSendResult', queue);
+      console.log(this.app.compiler.config);
 
       const result = await this.app.compiler.update(queue);
-      console.log(result);
-
       this.app.logger.info(
         `${bold(cyan(updatedFilesStr))} updated in ${bold(
           green(`${performance.now() - start}ms`)
