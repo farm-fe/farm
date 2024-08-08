@@ -6,6 +6,6 @@ export default defineConfig({
     vue(),
   ],
   server: {
-    port: 5234
+    port: 5232
   }
 });

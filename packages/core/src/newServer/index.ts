@@ -212,7 +212,11 @@ export class newServer {
     // TODO open browser when server is ready && open config is true
     const { port, open, protocol, hostname } = this.resolvedUserConfig.server;
 
+    // compile the project and start the dev server
     await this.startCompilation();
+
+    // watch extra files after compile
+    this.watcher?.watchExtraFiles?.();
 
     this.httpServer.listen(port, hostname.name, () => {
       console.log(`Server running at ${protocol}://${hostname.name}:${port}/`);
