@@ -113,30 +113,31 @@ export function resourcesMiddleware(compiler: Compiler, serverContext: Server) {
       return;
     }
 
-    // const { fullPath, resourceWithoutPublicPath } = normalizePathByPublicPath(
-    //   publicPath,
-    //   stripQueryAndHashUrl
-    // );
+    const { fullPath, resourceWithoutPublicPath } = normalizePathByPublicPath(
+      publicPath,
+      stripQueryAndHashUrl
+    );
 
-    // // if resource is image or font, try it in local file system to be compatible with vue
-    // {
-    //   // try local file system
-    //   const absPath = path.join(
-    //     compiler.config.config.root,
-    //     resourceWithoutPublicPath
-    //   );
-    //   // const mimeStr = mime.lookup(absPath);
+    // if resource is image or font, try it in local file system to be compatible with vue
+    {
+      // try local file system
+      const absPath = path.join(
+        compiler.config.config.root,
+        resourceWithoutPublicPath
+      );
+      // const mimeStr = mime.lookup(absPath);
 
-    //   if (
-    //     existsSync(absPath) &&
-    //     statSync(absPath).isFile()
-    //     // mimeStr &&
-    //     // (mimeStr.startsWith('image') || mimeStr.startsWith('font'))
-    //   ) {
-    //     ctx.type = extname(fullPath);
-    //     ctx.body = readFileSync(absPath);
-    //     return;
-    //   }
+      if (
+        existsSync(absPath) &&
+        statSync(absPath).isFile()
+        // mimeStr &&
+        // (mimeStr.startsWith('image') || mimeStr.startsWith('font'))
+      ) {
+        ctx.type = extname(fullPath);
+        ctx.body = readFileSync(absPath);
+        return;
+      }
+    }
 
     //   // try local file system with publicDir
     //   const absPathPublicDir = path.resolve(

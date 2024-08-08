@@ -84,9 +84,6 @@ export class HmrEngine {
 
       checkClearScreen(this._compiler.config.config);
       const start = Date.now();
-      console.log('start recompileAndSendResult', queue);
-      console.log(this._compiler.config);
-
       const result = await this._compiler.update(queue);
 
       this._logger.info(
