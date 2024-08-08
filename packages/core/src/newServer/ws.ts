@@ -325,6 +325,32 @@ export class WsServer {
     };
   }
 
+  send(...args: any[]) {
+    let payload: HMRPayload;
+    if (typeof args[0] === 'string') {
+      payload = {
+        type: 'custom',
+        event: args[0],
+        data: args[1]
+      };
+    } else {
+      payload = args[0];
+    }
+
+    if (payload.type === 'error' && !this.wss.clients.size) {
+      this.bufferedError = payload;
+      return;
+    }
+
+    const stringified = JSON.stringify(payload);
+    this.wss.clients.forEach((client: any) => {
+      // readyState 1 means the connection is open
+      if (client.readyState === 1) {
+        client.send(stringified);
+      }
+    });
+  }
+
   getSocketClient(socket: WebSocketRaw) {
     if (!this.clientsMap.has(socket)) {
       this.clientsMap.set(socket, {
