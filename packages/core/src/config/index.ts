@@ -50,6 +50,7 @@ import { parseUserConfig } from './schema.js';
 
 import { externalAdapter } from '../plugin/js/external-adapter.js';
 import { convertErrorMessage } from '../utils/error.js';
+import { resolveHostname } from '../utils/http.js';
 import merge from '../utils/merge.js';
 import {
   CUSTOM_KEYS,
@@ -93,14 +94,14 @@ export function defineFarmConfig(config: UserConfigExport): UserConfigExport {
  */
 export async function resolveConfig(
   inlineOptions: FarmCliOptions & UserConfig,
-  command: 'start' | 'build' | 'preview',
+  command: 'start' | 'build' | 'watch' | 'preview',
   defaultMode: CompilationMode = 'development',
   defaultNodeEnv: CompilationMode = 'development',
   isPreview = false,
   logger?: Logger
 ): Promise<ResolvedUserConfig> {
   logger = logger ?? new Logger();
-
+  // TODO mode 这块还是不对 要区分 mode 和 build 还是 dev 环境
   const compileMode = defaultMode;
   const mode = inlineOptions.mode || defaultMode;
   const isNodeEnvSet = !!process.env.NODE_ENV;
@@ -193,6 +194,25 @@ export async function resolveConfig(
       resolvedUserConfig.compilation.resolve.alias as unknown as Array<Alias>
     );
   }
+
+  switch (configEnv.command) {
+    case 'start':
+      if (
+        resolvedUserConfig.compilation.lazyCompilation &&
+        typeof resolvedUserConfig.server?.host === 'string'
+      ) {
+        await setLazyCompilationDefine(resolvedUserConfig);
+      }
+      break;
+    case 'watch':
+      if (resolvedUserConfig.compilation?.lazyCompilation) {
+        await setLazyCompilationDefine(resolvedUserConfig);
+      }
+      break;
+    default:
+      break;
+  }
+
   return resolvedUserConfig;
 }
 
@@ -1021,4 +1041,16 @@ export function getFilePath(outputPath: string, fileName: string): string {
   return isWindows
     ? pathToFileURL(path.join(outputPath, fileName)).toString()
     : path.join(outputPath, fileName);
+}
+
+async function setLazyCompilationDefine(
+  resolvedUserConfig: ResolvedUserConfig
+) {
+  const hostname = await resolveHostname(resolvedUserConfig.server.host);
+  resolvedUserConfig.compilation.define = {
+    ...(resolvedUserConfig.compilation.define ?? {}),
+    FARM_LAZY_COMPILE_SERVER_URL: `${
+      resolvedUserConfig.server.protocol || 'http'
+    }://${hostname.host || 'localhost'}:${resolvedUserConfig.server.port}`
+  };
 }
