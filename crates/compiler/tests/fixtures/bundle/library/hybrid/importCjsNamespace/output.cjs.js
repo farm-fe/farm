@@ -1,5 +1,5 @@
 //index.js:
- import __farmNodeModule from 'node:module';globalThis.nodeRequire = __farmNodeModule.createRequire(import.meta.url);(globalThis || window || global)['__farm_default_namespace__'] = {__FARM_TARGET_ENV__: 'node'};function _interop_require_default(obj) {
+ function _interop_require_default(obj) {
     return obj && obj.__esModule ? obj : {
         default: obj
     };
@@ -59,18 +59,16 @@
     }
     return module.exports;
   };
-}var cjs_ts_cjs = __commonJs((module, exports)=>{
-    module.exports.name = "foo";
-    module.exports.age = 18;
+}var lodash_cjs = __commonJs((module, exports)=>{
+    module.exports.name = 'lodash';
+    module.exports.default = 'foo';
 });
-var cjs = _interop_require_default(cjs_ts_cjs()).default, cjs_ts_ns = _interop_require_wildcard(cjs_ts_cjs()), name = cjs_ts_cjs()["name"];
+var lodash$1 = _interop_require_default(lodash_cjs()).default, lodash_ns = _interop_require_wildcard(lodash_cjs());
 
-console.log(cjs);
+const lodash = 'a.ts';
+console.log(lodash);
+var a_default = 'a.ts';
 
-console.log(name);
+console.log('b.ts', lodash_ns);
 
-console.log(cjs_ts_ns);
-
-(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setPlugins([]);
-(function(_){for(var r in _){_[r].__farm_resource_pot__='index_dcdc.js';(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.register(r,_[r])}})({"b5d64806":function  (module, exports, farmRequire, farmDynamicRequire) {}
-,});(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setInitialLoadedResources([]);(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setDynamicModuleResourcesMap({  });var farmModuleSystem = (globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__;farmModuleSystem.bootstrap();var entry = farmModuleSystem.require("b5d64806");
+console.log('index.ts', lodash$1);

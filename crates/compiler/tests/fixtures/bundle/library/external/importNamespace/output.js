@@ -1,5 +1,5 @@
 //index.js:
- import __farmNodeModule from 'node:module';globalThis.nodeRequire = __farmNodeModule.createRequire(import.meta.url);(globalThis || window || global)['__farm_default_namespace__'] = {__FARM_TARGET_ENV__: 'node'};function _interop_require_default(obj) {
+ function _interop_require_default(obj) {
     return obj && obj.__esModule ? obj : {
         default: obj
     };
@@ -43,34 +43,12 @@
     return (_getRequireWildcardCache = function(nodeInterop) {
         return nodeInterop ? cacheNodeInterop : cacheBabelInterop;
     })(nodeInterop);
-}function __commonJs(mod) {
-  var module;
-  return () => {
-    if (module) {
-      return module.exports;
-    }
-    module = {
-      exports: {},
-    };
-    if(typeof mod === "function") {
-      mod(module, module.exports);
-    }else {
-      mod[Object.keys(mod)[0]](module, module.exports);
-    }
-    return module.exports;
-  };
-}var cjs_ts_cjs = __commonJs((module, exports)=>{
-    module.exports.name = "foo";
-    module.exports.age = 18;
-});
-var cjs = _interop_require_default(cjs_ts_cjs()).default, cjs_ts_ns = _interop_require_wildcard(cjs_ts_cjs()), name = cjs_ts_cjs()["name"];
+}import * as node_fs_ns from "node:fs";
+import fs$1 from "node:fs";
+const fs = 'a.ts';
+console.log(fs);
+var a_default = 'a.ts';
 
-console.log(cjs);
+console.log('b.ts', node_fs_ns);
 
-console.log(name);
-
-console.log(cjs_ts_ns);
-
-(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setPlugins([]);
-(function(_){for(var r in _){_[r].__farm_resource_pot__='index_dcdc.js';(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.register(r,_[r])}})({"b5d64806":function  (module, exports, farmRequire, farmDynamicRequire) {}
-,});(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setInitialLoadedResources([]);(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setDynamicModuleResourcesMap({  });var farmModuleSystem = (globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__;farmModuleSystem.bootstrap();var entry = farmModuleSystem.require("b5d64806");
+console.log('index.ts', fs$1);
