@@ -113,78 +113,78 @@ export function resourcesMiddleware(compiler: Compiler, serverContext: Server) {
       return;
     }
 
-    // const { fullPath, resourceWithoutPublicPath } = normalizePathByPublicPath(
-    //   publicPath,
-    //   stripQueryAndHashUrl
-    // );
+    const { fullPath, resourceWithoutPublicPath } = normalizePathByPublicPath(
+      publicPath,
+      stripQueryAndHashUrl
+    );
 
-    // // if resource is image or font, try it in local file system to be compatible with vue
-    // {
-    //   // try local file system
-    //   const absPath = path.join(
-    //     compiler.config.config.root,
-    //     resourceWithoutPublicPath
-    //   );
-    //   // const mimeStr = mime.lookup(absPath);
+    // if resource is image or font, try it in local file system to be compatible with vue
+    {
+      // try local file system
+      const absPath = path.join(
+        compiler.config.config.root,
+        resourceWithoutPublicPath
+      );
+      // const mimeStr = mime.lookup(absPath);
 
-    //   if (
-    //     existsSync(absPath) &&
-    //     statSync(absPath).isFile()
-    //     // mimeStr &&
-    //     // (mimeStr.startsWith('image') || mimeStr.startsWith('font'))
-    //   ) {
-    //     ctx.type = extname(fullPath);
-    //     ctx.body = readFileSync(absPath);
-    //     return;
-    //   }
+      if (
+        existsSync(absPath) &&
+        statSync(absPath).isFile()
+        // mimeStr &&
+        // (mimeStr.startsWith('image') || mimeStr.startsWith('font'))
+      ) {
+        ctx.type = extname(fullPath);
+        ctx.body = readFileSync(absPath);
+        return;
+      }
 
-    //   // try local file system with publicDir
-    //   const absPathPublicDir = path.resolve(
-    //     compiler.config.config.root,
-    //     compiler.config.config.assets.publicDir,
-    //     resourceWithoutPublicPath
-    //   );
+      // try local file system with publicDir
+      const absPathPublicDir = path.resolve(
+        compiler.config.config.root,
+        compiler.config.config.assets.publicDir,
+        resourceWithoutPublicPath
+      );
 
-    //   if (existsSync(absPathPublicDir) && statSync(absPathPublicDir).isFile()) {
-    //     ctx.type = extname(fullPath);
-    //     ctx.body = readFileSync(absPathPublicDir);
-    //     return;
-    //   }
-    // }
+      if (existsSync(absPathPublicDir) && statSync(absPathPublicDir).isFile()) {
+        ctx.type = extname(fullPath);
+        ctx.body = readFileSync(absPathPublicDir);
+        return;
+      }
+    }
 
-    // // if resource is not found and spa is not disabled, find the closest index.html from resourcePath
-    // {
-    //   // if request mime is not html, return 404
-    //   if (!ctx.accepts('html')) {
-    //     ctx.status = 404;
-    //   } else if (config.spa !== false) {
-    //     const pathComps = resourceWithoutPublicPath.split('/');
+    // if resource is not found and spa is not disabled, find the closest index.html from resourcePath
+    {
+      // if request mime is not html, return 404
+      if (!ctx.accepts('html')) {
+        ctx.status = 404;
+      } else if (config.spa !== false) {
+        const pathComps = resourceWithoutPublicPath.split('/');
 
-    //     while (pathComps.length > 0) {
-    //       const pathStr = pathComps.join('/') + '.html';
-    //       const resource = compiler.resources()[pathStr];
+        while (pathComps.length > 0) {
+          const pathStr = pathComps.join('/') + '.html';
+          const resource = compiler.resources()[pathStr];
 
-    //       if (resource) {
-    //         ctx.type = '.html';
-    //         ctx.body = resource;
-    //         return;
-    //       }
+          if (resource) {
+            ctx.type = '.html';
+            ctx.body = resource;
+            return;
+          }
 
-    //       pathComps.pop();
-    //     }
+          pathComps.pop();
+        }
 
-    //     const indexHtml = compiler.resources()['index.html'];
+        const indexHtml = compiler.resources()['index.html'];
 
-    //     if (indexHtml) {
-    //       ctx.type = '.html';
-    //       ctx.body = indexHtml;
-    //       return;
-    //     }
-    //   } else {
-    //     // cannot find index.html, return 404
-    //     ctx.status = 404;
-    //   }
-    // }
+        if (indexHtml) {
+          ctx.type = '.html';
+          ctx.body = indexHtml;
+          return;
+        }
+      } else {
+        // cannot find index.html, return 404
+        ctx.status = 404;
+      }
+    }
   };
 }
 

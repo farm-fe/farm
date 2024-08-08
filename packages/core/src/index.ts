@@ -308,6 +308,7 @@ export async function createBundleHandler(
       if (resolvedUserConfig.compilation?.output?.clean) {
         compiler.removeOutputPathDir();
       }
+
       try {
         await compiler.compile();
       } catch (err) {
@@ -407,13 +408,13 @@ export async function createFileWatcher(
   resolvedUserConfig: ResolvedUserConfig,
   logger: Logger = new Logger()
 ) {
-  if (
-    devServer.config.hmr &&
-    resolvedUserConfig.compilation.mode === 'production'
-  ) {
-    logger.error('HMR cannot be enabled in production mode.');
-    return;
-  }
+  // if (
+  //   devServer.config.hmr &&
+  //   resolvedUserConfig.compilation.mode === "production"
+  // ) {
+  //   logger.error("HMR cannot be enabled in production mode.");
+  //   return;
+  // }
 
   if (!devServer.config.hmr) {
     return;
@@ -448,17 +449,17 @@ export async function createFileWatcher(
 }
 
 export async function createFileWatcher2(
-  devServer: HttpServer,
+  devServer: HttpServer & any,
   resolvedUserConfig: ResolvedUserConfig,
   logger: Logger = new Logger()
 ) {
-  if (
-    resolvedUserConfig.server.hmr &&
-    resolvedUserConfig.compilation.mode === 'production'
-  ) {
-    logger.error('HMR cannot be enabled in production mode.');
-    return;
-  }
+  // if (
+  //   resolvedUserConfig.server.hmr &&
+  //   resolvedUserConfig.compilation.mode === "production"
+  // ) {
+  //   logger.error("HMR cannot be enabled in production mode.");
+  //   return;
+  // }
 
   if (!resolvedUserConfig.server.hmr) {
     return;
@@ -470,7 +471,7 @@ export async function createFileWatcher2(
 
   // @ts-ignore
   const fileWatcher = new FileWatcher(devServer, resolvedUserConfig, logger);
-  // devServer.watcher = fileWatcher;
+  devServer.watcher = fileWatcher;
   await fileWatcher.watch();
 
   const configFilePath = await getConfigFilePath(resolvedUserConfig.root);
@@ -539,10 +540,12 @@ export async function start2(
     await server.createServer();
     // @ts-ignore
     await createFileWatcher2(server, resolvedUserConfig, logger);
+
     // call configureDevServer hook after both server and watcher are ready
-    // resolvedUserConfig.jsPlugins.forEach((plugin: JsPlugin) =>
-    //   plugin.configureDevServer?.(server)
-    // );
+    resolvedUserConfig.jsPlugins.forEach((plugin: JsPlugin) =>
+      // @ts-ignore
+      plugin.configureDevServer?.(server)
+    );
     await server.listen();
     // const devServer = await createDevServer(
     //   compiler,

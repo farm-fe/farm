@@ -1,7 +1,7 @@
 <script lang="ts">
-  import svelteLogo from './assets/svelte.svg'
-  import farmLogo from '/logo.png'
-  import Counter from './lib/Counter.svelte'
+  import svelteLogo from "./assets/svelte.svg";
+  import farmLogo from "/logo.png";
+  import Counter from "./lib/Counter.svelte";
 </script>
 
 <main>
@@ -23,9 +23,7 @@
     Powered by <a href="https://farmfe.org">Farm</a> and svelet vite plugin
   </p>
 
-  <p class="read-the-docs">
-    Click on the Farm and Svelte logos to learn more
-  </p>
+  <p class="read-the-docs">Click on the Farm and Svelte logos to learn more</p>
 </main>
 
 <style>

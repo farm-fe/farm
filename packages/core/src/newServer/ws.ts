@@ -115,6 +115,7 @@ export class WsServer {
   }
 
   createWebSocketServer() {
+    const self = this;
     const { resolvedUserConfig: config } = this.app;
     const serverConfig = config.server as unknown as ServerOptions;
     if (serverConfig.ws === false) {
@@ -201,7 +202,14 @@ export class WsServer {
         let parsed: any;
         try {
           parsed = JSON.parse(String(raw));
-        } catch {}
+        } catch {
+          this.logger.error('Failed to parse WebSocket message: ' + raw);
+        }
+        // transform vite js-update to farm update
+        if (parsed?.type === 'js-update' && parsed?.path) {
+          this.app.hmrEngine.hmrUpdate(parsed.path, true);
+          return;
+        }
         if (!parsed || parsed.type !== 'custom' || !parsed.event) return;
         const listeners = this.customListeners.get(parsed.event);
         if (!listeners?.size) return;
@@ -211,7 +219,9 @@ export class WsServer {
       socket.on('error', (err) => {
         throw new Error(`ws error:\n${err.stack}`);
       });
+
       socket.send(JSON.stringify({ type: 'connected' }));
+
       if (this.bufferedError) {
         socket.send(JSON.stringify(this.bufferedError));
         this.bufferedError = null;
@@ -220,45 +230,11 @@ export class WsServer {
 
     this.wss.on('error', (e: Error & { code: string }) => {
       if (e.code === 'EADDRINUSE') {
-        console.log('WebSocket server error: Port is already in use');
-
-        // config.logger.error(
-        //   colors.red(`WebSocket server error: Port is already in use`),
-        //   { error: e }
-        // );
+        throw new Error('WebSocket server error: Port is already in use');
       } else {
-        console.log('WebSocket server error:', e.stack || e.message);
-
-        // config.logger.error(
-        //   colors.red(`WebSocket server error:\n${e.stack || e.message}`),
-        //   { error: e }
-        // );
+        throw new Error(`WebSocket server error ${e.stack || e.message}`);
       }
     });
-    const self = this;
-    function getSocketClient(socket: WebSocketRaw) {
-      if (!this.clientsMap.has(socket)) {
-        this.clientsMap.set(socket, {
-          send: (...args: any) => {
-            let payload: HMRPayload;
-            if (typeof args[0] === 'string') {
-              payload = {
-                type: 'custom',
-                event: args[0],
-                data: args[1]
-              };
-            } else {
-              payload = args[0];
-            }
-            socket.send(JSON.stringify(payload));
-          },
-          // @ts-ignore
-          rawSend: (str: string) => socket.send(str),
-          socket
-        });
-      }
-      return this.clientsMap.get(socket);
-    }
 
     return {
       name: 'ws',
@@ -284,7 +260,6 @@ export class WsServer {
       }) as WebSocketServer['off'],
 
       get clients() {
-        // return new Set(Array.from(wss.clients).map(getSocketClient));
         return new Set(
           Array.from(this.wss.clients).map((socket: any) =>
             self.getSocketClient(socket)
@@ -348,6 +323,32 @@ export class WsServer {
         });
       }
     };
+  }
+
+  send(...args: any[]) {
+    let payload: HMRPayload;
+    if (typeof args[0] === 'string') {
+      payload = {
+        type: 'custom',
+        event: args[0],
+        data: args[1]
+      };
+    } else {
+      payload = args[0];
+    }
+
+    if (payload.type === 'error' && !this.wss.clients.size) {
+      this.bufferedError = payload;
+      return;
+    }
+
+    const stringified = JSON.stringify(payload);
+    this.wss.clients.forEach((client: any) => {
+      // readyState 1 means the connection is open
+      if (client.readyState === 1) {
+        client.send(stringified);
+      }
+    });
   }
 
   getSocketClient(socket: WebSocketRaw) {

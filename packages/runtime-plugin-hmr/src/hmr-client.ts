@@ -108,10 +108,9 @@ export class HmrClient {
 
     for (const id of result.changed) {
       moduleSystem.update(id, result.modules[id]);
-
       if (!result.boundaries[id]) {
         // do not found boundary module, reload the window
-        location.reload();
+        // location.reload();
       }
     }
 

@@ -19,7 +19,7 @@ import { WebSocketClient, WebSocketServer } from './ws.js';
 
 export class HmrEngine {
   private _updateQueue: string[] = [];
-  private _updateResults: Map<string, { result: string; count: number }>;
+  // private _updateResults: Map<string, { result: string; count: number }>;
 
   private _onUpdates: ((result: JsUpdateResult) => void)[];
 
@@ -32,18 +32,8 @@ export class HmrEngine {
     // private _logger: Logger
     private readonly app: any
   ) {
-    const {
-      compiler,
-      httpServer,
-      resolvedUserConfig: config,
-      ws,
-      logger
-    } = this.app;
-
     // this._lastAttemptWasError = false;
     this._lastModifiedTimestamp = new Map();
-    // @ts-ignore
-    this.ws = ws.wss;
   }
 
   callUpdates(result: JsUpdateResult) {
@@ -95,11 +85,11 @@ export class HmrEngine {
       });
 
       checkClearScreen(this.app.compiler.config.config);
-      const start = Date.now();
+      const start = performance.now();
       const result = await this.app.compiler.update(queue);
       this.app.logger.info(
         `${bold(cyan(updatedFilesStr))} updated in ${bold(
-          green(`${Date.now() - start}ms`)
+          green(`${performance.now() - start}ms`)
         )}`
       );
 
@@ -142,6 +132,7 @@ export class HmrEngine {
       }`;
 
       this.callUpdates(result);
+
       this.app.ws.wss.clients.forEach((client: WebSocketClient) => {
         // @ts-ignore
         client.send(`

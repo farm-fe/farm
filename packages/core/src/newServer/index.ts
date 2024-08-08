@@ -102,7 +102,7 @@ export class newServer {
   middlewares: connect.Server;
 
   constructor(
-    private readonly compiler: CompilerType,
+    private compiler: CompilerType,
     private readonly resolvedUserConfig: ResolvedUserConfig,
     private readonly logger: Logger
   ) {
@@ -144,11 +144,15 @@ export class newServer {
             this.httpsOptions
           );
 
+      // init hmr engine When actually updating, we need to get the clients of ws for broadcast, 、
+      // so we can instantiate hmrEngine by default at the beginning.
+      this.createHmrEngine();
+
       // init websocket server
       this.createWebSocketServer();
 
-      // init hmr engine
-      this.createHmrEngine();
+      // invalidate vite handler
+      this.invalidateVite();
 
       // init middlewares
       this.initializeMiddlewares();
@@ -189,6 +193,17 @@ export class newServer {
     this.ws = new WsServer(this);
   }
 
+  private invalidateVite() {
+    // Note: path should be Farm's id, which is a relative path in dev mode,
+    // but in vite, it's a url path like /xxx/xxx.js
+    this.ws.wss.on('vite:invalidate', ({ path, message }: any) => {
+      // find hmr boundary starting from the parent of the file
+      this.logger.info(`HMR invalidate: ${path}. ${message ?? ''} `);
+      const parentFiles = this.compiler.getParentFiles(path);
+      this.hmrEngine.hmrUpdate(parentFiles, true);
+    });
+  }
+
   public async listen(): Promise<void> {
     if (!this.httpServer) {
       this.logger.warn('HTTP server is not created yet');
@@ -197,13 +212,23 @@ export class newServer {
     // TODO open browser when server is ready && open config is true
     const { port, open, protocol, hostname } = this.resolvedUserConfig.server;
 
-    const start = Date.now();
-    await this.compile();
-    bootstrap(Date.now() - start, this.compiler.config);
+    // compile the project and start the dev server
+    await this.startCompilation();
+
+    // watch extra files after compile
+    this.watcher?.watchExtraFiles?.();
 
     this.httpServer.listen(port, hostname.name, () => {
       console.log(`Server running at ${protocol}://${hostname.name}:${port}/`);
     });
+  }
+
+  addWatchFile(root: string, deps: string[]): void {
+    this.getCompiler().addExtraWatchFile(root, deps);
+  }
+
+  setCompiler(compiler: Compiler) {
+    this.compiler = compiler;
   }
 
   private async compile(): Promise<void> {
@@ -218,6 +243,13 @@ export class newServer {
     } else {
       this.compiler.callWriteResourcesHook();
     }
+  }
+
+  private async startCompilation() {
+    const start = performance.now();
+    await this.compile();
+    const duration = performance.now() - start;
+    bootstrap(duration, this.compiler.config);
   }
 
   private async handlePublicFiles() {

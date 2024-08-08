@@ -85,6 +85,7 @@ export class HmrEngine {
       checkClearScreen(this._compiler.config.config);
       const start = Date.now();
       const result = await this._compiler.update(queue);
+
       this._logger.info(
         `${bold(cyan(updatedFilesStr))} updated in ${bold(
           green(`${Date.now() - start}ms`)
