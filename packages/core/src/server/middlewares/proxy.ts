@@ -23,6 +23,10 @@ export function useProxy(
     const hmrOptions = options.hmr as UserHmrConfig;
     if (server) {
       server.on('upgrade', (req, socket: any, head) => {
+        if (req.url === hmrOptions.path) {
+          req.url = '';
+          return;
+        }
         for (const path in options.proxy) {
           const opts = proxyOption[path] as Options;
           if (
@@ -36,9 +40,6 @@ export function useProxy(
               const toPath: string = (
                 opts.pathRewrite as { [regexp: string]: string }
               )[fromPath];
-              if (req.url === hmrOptions.path) {
-                req.url = '';
-              }
               req.url = rewritePath(req.url, fromPath, toPath);
             }
             proxy.upgrade(req, socket, head);
