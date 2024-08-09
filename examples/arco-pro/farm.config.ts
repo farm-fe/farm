@@ -29,7 +29,18 @@ export default defineConfig((env) => {
         assetsFilename: 'static/[resourceName].[contentHash].[ext]'
       },
       partialBundling: {
-        targetMinSize: 1024 * 2
+        targetMinSize: 1024 * 2,
+        groups: [
+          {
+            name: 'components',
+            test: ['src/components/.+'],
+            enforce: true,
+          },
+          {
+            name: 'xxxx',
+            test: ['src/pages/.+']
+          }
+        ]
       },
       progress: true
     },

@@ -219,7 +219,7 @@ mod tests {
     plugin::{Plugin, PluginHookContext},
   };
   use farmfe_plugin_partial_bundling::module_group_graph_from_entries;
-  use farmfe_testing_helpers::construct_test_module_graph_complex;
+  use farmfe_testing_helpers::{assert_resource_pots, construct_test_module_graph_complex};
 
   use super::generate_resource_pot_map;
 
@@ -263,43 +263,7 @@ mod tests {
     resource_pots.sort_by_key(|p| p.id.clone());
 
     assert_eq!(resource_pots.len(), 5);
-    // A, C
-    assert_eq!(resource_pots[0].modules(), vec![&"A".into(), &"C".into()]);
-    assert_eq!(resource_pots[0].entry_module, Some("A".into()));
-    // B, E
-    assert_eq!(resource_pots[1].modules(), vec![&"B".into(), &"E".into()]);
-    assert_eq!(resource_pots[1].entry_module, Some("B".into()));
-    // D
-    assert_eq!(resource_pots[2].modules(), vec![&"D".into()]);
-    // G
-    assert_eq!(resource_pots[3].modules(), vec![&"G".into()]);
-    // F, H
-    assert_eq!(resource_pots[4].modules(), vec![&"F".into(), &"H".into()]);
-
-    // assert necessary fields are filled
-    assert_eq!(
-      resource_pots[0].module_groups,
-      HashSet::from(["A".into(), "F".into()])
-    );
-    assert_eq!(resource_pots[0].entry_module, Some("A".into()));
-
-    assert_eq!(resource_pots[1].module_groups, HashSet::from(["B".into()]));
-    assert_eq!(resource_pots[1].entry_module, Some("B".into()));
-
-    assert_eq!(
-      resource_pots[2].module_groups,
-      HashSet::from(["D".into(), "B".into()])
-    );
-    assert_eq!(resource_pots[2].entry_module, None);
-
-    assert_eq!(resource_pots[3].module_groups, HashSet::from(["G".into()]));
-    assert_eq!(resource_pots[3].entry_module, None);
-
-    assert_eq!(
-      resource_pots[4].module_groups,
-      HashSet::from(["F".into(), "G".into(), "B".into(), "D".into()])
-    );
-    assert_eq!(resource_pots[4].entry_module, None);
+    assert_resource_pots!(resource_pots);
   }
 
   #[test]
@@ -341,39 +305,7 @@ mod tests {
     resource_pots.sort_by_key(|p| p.id.clone());
 
     assert_eq!(resource_pots.len(), 5);
-    // A, C
-    assert_eq!(resource_pots[0].modules(), vec![&"A".into(), &"C".into()]);
-    assert_eq!(resource_pots[0].entry_module, Some("A".into()));
-    // B, E
-    assert_eq!(resource_pots[1].modules(), vec![&"B".into(), &"E".into()]);
-    assert_eq!(resource_pots[1].entry_module, Some("B".into()));
-    // D
-    assert_eq!(resource_pots[2].modules(), vec![&"D".into()]);
-    // F, H
-    assert_eq!(resource_pots[3].modules(), vec![&"F".into()]);
-    // G
-    assert_eq!(resource_pots[4].modules(), vec![&"G".into()]);
 
-    // assert necessary fields are filled
-    assert_eq!(
-      resource_pots[0].module_groups,
-      HashSet::from(["A".into(), "F".into()])
-    );
-    assert_eq!(resource_pots[0].entry_module, Some("A".into()));
-
-    assert_eq!(resource_pots[1].module_groups, HashSet::from(["B".into()]));
-    assert_eq!(resource_pots[1].entry_module, Some("B".into()));
-
-    assert_eq!(
-      resource_pots[2].module_groups,
-      HashSet::from(["D".into(), "B".into()])
-    );
-    assert_eq!(resource_pots[2].entry_module, None);
-
-    assert_eq!(resource_pots[3].module_groups, HashSet::from(["F".into()]));
-    assert_eq!(resource_pots[3].entry_module, None);
-
-    assert_eq!(resource_pots[4].module_groups, HashSet::from(["G".into()]));
-    assert_eq!(resource_pots[4].entry_module, None);
+    assert_resource_pots!(&mut resource_pots);
   }
 }
