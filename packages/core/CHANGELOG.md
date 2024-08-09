@@ -1,5 +1,11 @@
 # @farmfe/core
 
+## 1.3.13
+
+### Patch Changes
+
+- ed5c5278: fix bundle import namespace name uniq
+
 ## 1.3.12
 
 ### Patch Changes
