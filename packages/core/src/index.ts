@@ -107,6 +107,7 @@ export async function build(
   );
 
   try {
+    // TODO watch mode
     await createBundleHandler(resolvedUserConfig, logger);
     // copy resources under publicDir to output.path
     await copyPublicDirectory(resolvedUserConfig, logger);
@@ -180,7 +181,10 @@ export async function watch(
     await setLazyCompilationDefine(resolvedUserConfig);
   }
 
-  const compilerFileWatcher = await createBundleHandler(
+  const compiler = await createBundleHandler(resolvedUserConfig, logger);
+
+  const compilerFileWatcher = await createWatcher(
+    compiler,
     resolvedUserConfig,
     logger,
     true
@@ -191,7 +195,7 @@ export async function watch(
   if (lazyEnabled) {
     devServer = new Server({
       logger,
-      compiler: compilerFileWatcher.serverOrCompiler as Compiler
+      compiler: compilerFileWatcher.compiler
     });
     await devServer.createServer(resolvedUserConfig.server);
     devServer.applyMiddlewares([lazyCompilation]);
@@ -218,6 +222,7 @@ export async function watch(
     }
   }
 
+  await compilerFileWatcher?.watch();
   const farmWatcher = new ConfigWatcher(resolvedUserConfig).watch(
     handleFileChange
   );
@@ -291,9 +296,8 @@ async function findNodeModulesRecursively(rootPath: string): Promise<string[]> {
 
 export async function createBundleHandler(
   resolvedUserConfig: ResolvedUserConfig,
-  logger: Logger,
-  watchMode = false
-) {
+  logger: Logger
+): Promise<Compiler> {
   const compiler = await createCompiler(resolvedUserConfig, logger);
 
   await compilerHandler(
@@ -312,9 +316,17 @@ export async function createBundleHandler(
     logger
   );
 
+  return compiler;
+}
+
+export async function createWatcher(
+  compiler: Compiler,
+  resolvedUserConfig: ResolvedUserConfig,
+  logger: Logger,
+  watchMode = false
+): Promise<FileWatcher | undefined> {
   if (resolvedUserConfig.compilation?.watch || watchMode) {
     const watcher = new FileWatcher(compiler, resolvedUserConfig, logger);
-    await watcher.watch();
     return watcher;
   }
 }
