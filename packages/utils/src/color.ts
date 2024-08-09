@@ -27,6 +27,8 @@ const gradientPurpleColor = [176, 106, 179];
 const gradientPinkColor = [198, 66, 110];
 const brandGradientColors = [255, 182, 193];
 const brandGradientColors2 = [128, 0, 128];
+const gradientOrangeColor = [255, 165, 0];
+const gradientGoldColor = [255, 215, 0];
 
 const argv = process.argv || [],
   env = process.env;
@@ -175,17 +177,28 @@ export function interpolateColor(
 export const PersistentCacheBrand =
   brandColor('⚡️') +
   gradientString(`FULL EXTREME!`, [
+    // gradientPurpleColor,
+    // interpolateColor(gradientPurpleColor, gradientPinkColor, 0.1),
+    // interpolateColor(gradientPurpleColor, gradientPinkColor, 0.2),
+    // interpolateColor(gradientPurpleColor, gradientPinkColor, 0.3),
+    // interpolateColor(gradientPurpleColor, gradientPinkColor, 0.4),
+    // interpolateColor(gradientPurpleColor, gradientPinkColor, 0.5),
+    // interpolateColor(gradientPurpleColor, gradientPinkColor, 0.6),
+    // interpolateColor(gradientPurpleColor, gradientPinkColor, 0.7),
+    // interpolateColor(gradientPurpleColor, gradientPinkColor, 0.8),
+    // interpolateColor(gradientPurpleColor, gradientPinkColor, 0.9),
+    // gradientPinkColor
     gradientPurpleColor,
-    interpolateColor(gradientPurpleColor, gradientPinkColor, 0.1),
     interpolateColor(gradientPurpleColor, gradientPinkColor, 0.2),
-    interpolateColor(gradientPurpleColor, gradientPinkColor, 0.3),
     interpolateColor(gradientPurpleColor, gradientPinkColor, 0.4),
-    interpolateColor(gradientPurpleColor, gradientPinkColor, 0.5),
     interpolateColor(gradientPurpleColor, gradientPinkColor, 0.6),
-    interpolateColor(gradientPurpleColor, gradientPinkColor, 0.7),
     interpolateColor(gradientPurpleColor, gradientPinkColor, 0.8),
-    interpolateColor(gradientPurpleColor, gradientPinkColor, 0.9),
-    gradientPinkColor
+    gradientPinkColor,
+    interpolateColor(gradientPinkColor, gradientOrangeColor, 0.3),
+    interpolateColor(gradientPinkColor, gradientOrangeColor, 0.6),
+    gradientOrangeColor,
+    interpolateColor(gradientOrangeColor, gradientGoldColor, 0.5),
+    gradientGoldColor
   ]);
 
 export function handleBrandText(text: string) {

@@ -7,3 +7,5 @@ export function cors(devSeverContext: Server): Middleware {
   if (!config.cors) return;
   return koaCors(typeof config.cors === 'boolean' ? {} : config.cors);
 }
+
+export const corsMiddleware = cors;

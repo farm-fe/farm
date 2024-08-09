@@ -102,6 +102,7 @@ export async function resolveConfig(
 ): Promise<ResolvedUserConfig> {
   logger = logger ?? new Logger();
   // TODO mode 这块还是不对 要区分 mode 和 build 还是 dev 环境
+  // TODO 在使用 vite 插件的时候 不要在开发环境使用 生产环境的mode vue 插件会导致 hmr 失效 记在文档里
   const compileMode = defaultMode;
   const mode = inlineOptions.mode || defaultMode;
   const isNodeEnvSet = !!process.env.NODE_ENV;
@@ -119,6 +120,7 @@ export async function resolveConfig(
 
   // configPath may be file or directory
   const { configFile, configPath: initialConfigPath } = inlineOptions;
+
   const loadedUserConfig: any = await loadConfigFile(
     configFile,
     inlineOptions,
@@ -715,6 +717,7 @@ export function normalizePublicDir(root: string, publicDir = 'public') {
   const absPublicDirPath = path.isAbsolute(publicDir)
     ? publicDir
     : path.resolve(root, publicDir);
+
   return absPublicDirPath;
 }
 
@@ -932,6 +935,11 @@ export async function resolveUserConfig(
     NODE_ENV: userConfig.compilation.mode,
     mode
   };
+
+  resolvedUserConfig.publicDir = normalizePublicDir(
+    resolvedRootPath,
+    userConfig.publicDir
+  );
 
   return resolvedUserConfig;
 }

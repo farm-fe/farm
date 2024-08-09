@@ -38,6 +38,7 @@ import {
   normalizePublicDir,
   resolveConfig
 } from './config/index.js';
+import { HttpServer, newServer } from './newServer/index.js';
 import { Server } from './server/index.js';
 import { compilerHandler } from './utils/build.js';
 import { colors } from './utils/color.js';
@@ -169,8 +170,7 @@ export async function watch(
     'build',
     'production',
     'production',
-    false,
-    logger
+    false
   );
 
   const compilerFileWatcher = await createBundleHandler(
@@ -295,6 +295,7 @@ export async function createBundleHandler(
       if (resolvedUserConfig.compilation?.output?.clean) {
         compiler.removeOutputPathDir();
       }
+
       try {
         await compiler.compile();
       } catch (err) {
@@ -394,13 +395,13 @@ export async function createFileWatcher(
   resolvedUserConfig: ResolvedUserConfig,
   logger: Logger = new Logger()
 ) {
-  if (
-    devServer.config.hmr &&
-    resolvedUserConfig.compilation.mode === 'production'
-  ) {
-    logger.error('HMR cannot be enabled in production mode.');
-    return;
-  }
+  // if (
+  //   devServer.config.hmr &&
+  //   resolvedUserConfig.compilation.mode === "production"
+  // ) {
+  //   logger.error("HMR cannot be enabled in production mode.");
+  //   return;
+  // }
 
   if (!devServer.config.hmr) {
     return;
@@ -434,6 +435,52 @@ export async function createFileWatcher(
   return fileWatcher;
 }
 
+export async function createFileWatcher2(
+  devServer: HttpServer & any,
+  resolvedUserConfig: ResolvedUserConfig,
+  logger: Logger = new Logger()
+) {
+  // if (
+  //   resolvedUserConfig.server.hmr &&
+  //   resolvedUserConfig.compilation.mode === "production"
+  // ) {
+  //   logger.error("HMR cannot be enabled in production mode.");
+  //   return;
+  // }
+
+  if (!resolvedUserConfig.server.hmr) {
+    return;
+  }
+
+  // if (resolvedUserConfig.server.watcher) {
+  //   return;
+  // }
+
+  // @ts-ignore
+  const fileWatcher = new FileWatcher(devServer, resolvedUserConfig, logger);
+  devServer.watcher = fileWatcher;
+  await fileWatcher.watch();
+
+  const configFilePath = await getConfigFilePath(resolvedUserConfig.root);
+  const farmWatcher = new ConfigWatcher({
+    ...resolvedUserConfig,
+    configFilePath
+  });
+  farmWatcher.watch(async (files: string[]) => {
+    checkClearScreen(resolvedUserConfig);
+
+    // devServer.restart(async () => {
+    //   logFileChanges(files, resolvedUserConfig.root, logger);
+    //   farmWatcher?.close();
+
+    //   await devServer.close();
+    //   __FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__ = true;
+    //   await start(resolvedUserConfig as FarmCliOptions & UserConfig);
+    // });
+  });
+  return fileWatcher;
+}
+
 export function logFileChanges(files: string[], root: string, logger: Logger) {
   const changedFiles = files
     .map((file) => path.relative(root, file))
@@ -446,3 +493,43 @@ export function logFileChanges(files: string[], root: string, logger: Logger) {
 export { defineFarmConfig as defineConfig } from './config/index.js';
 
 export { loadEnv };
+
+export async function start2(
+  inlineConfig?: FarmCliOptions & UserConfig
+): Promise<void> {
+  inlineConfig = inlineConfig ?? {};
+  const logger = inlineConfig.logger ?? new Logger();
+  setProcessEnv('development');
+
+  try {
+    const resolvedUserConfig = await resolveConfig(
+      inlineConfig,
+      'start',
+      'development',
+      'development',
+      false
+    );
+
+    const compiler = await createCompiler(resolvedUserConfig, logger);
+    const server = new newServer(compiler, resolvedUserConfig, logger);
+    await server.createServer();
+    // @ts-ignore
+    await createFileWatcher2(server, resolvedUserConfig, logger);
+
+    // call configureDevServer hook after both server and watcher are ready
+    resolvedUserConfig.jsPlugins.forEach((plugin: JsPlugin) =>
+      // @ts-ignore
+      plugin.configureDevServer?.(server)
+    );
+    await server.listen();
+    // const devServer = await createDevServer(
+    //   compiler,
+    //   resolvedUserConfig,
+    //   logger
+    // );
+
+    // await devServer.listen();
+  } catch (error) {
+    logger.error('Failed to start the server', { exit: true, error });
+  }
+}

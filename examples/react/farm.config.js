@@ -5,6 +5,10 @@ export default defineConfig(() => {
     compilation: {
       sourcemap: true,
       // persistentCache: false,
+      persistentCache: {
+        // cacheDir: "node_modules/.farm/adny",
+        cacheDir: "node_modules/adny/cache",
+      },
       presetEnv: false,
       progress: false
       // output: {

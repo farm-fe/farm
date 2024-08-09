@@ -28,6 +28,9 @@ const baseRewriteSchema = z.union([
     .returns(z.union([z.string(), z.promise(z.string())]))
 ]);
 
+const stringRewriteSchema = baseRewriteSchema;
+const functionRewriteSchema = baseRewriteSchema;
+
 const pathFilterSchema = z.union([
   z.string(),
   z.array(z.string()),
@@ -380,6 +383,7 @@ const FarmConfigSchema = z
     envDir: z.string().optional(),
     envPrefix: z.union([z.string(), z.array(z.string())]).optional(),
     publicDir: z.string().optional(),
+    formatTimer: z.string().optional(),
     plugins: z.array(z.any()).optional(),
     vitePlugins: z.array(z.any()).optional(),
     compilation: compilationConfigSchema.optional(),

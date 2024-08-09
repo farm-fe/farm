@@ -81,6 +81,7 @@ export interface NormalizedConfig {
 
 export interface UserHmrConfig extends HmrOptions {
   watchOptions?: WatchOptions;
+  overlay?: boolean;
 }
 
 type InternalConfig = Config['config'] extends undefined
@@ -99,6 +100,7 @@ export interface UserConfig {
   envDir?: string;
   envPrefix?: string | string[];
   publicDir?: string;
+  formatTimer?: 'ms' | 's';
   /** js plugin(which is a javascript object) and rust plugin(which is string refer to a .farm file or a package) */
   plugins?: (RustPlugin | JsPlugin | JsPlugin[] | undefined | null | false)[];
   /** vite plugins */
@@ -171,6 +173,7 @@ export interface FarmCliOptions
   logger?: Logger;
   config?: string;
   configFile?: string;
+  // todo: check to delete
   configPath?: string;
   compilation?: Config['config'];
   mode?: string;

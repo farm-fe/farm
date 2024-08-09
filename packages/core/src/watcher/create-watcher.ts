@@ -12,10 +12,7 @@ function resolveChokidarOptions(
   const { ignored = [], ...userChokidarOptions } =
     config.server?.hmr?.watchOptions ?? {};
 
-  const cacheDir = getCacheDir(
-    config.root,
-    config.compilation?.persistentCache
-  );
+  const cacheDir = getCacheDir(config.root, config.compilation.persistentCache);
 
   const options: WatchOptions = {
     ignored: [

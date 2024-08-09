@@ -178,6 +178,7 @@ export default class WsServer implements IWebSocketServer {
         const listeners = this.customListeners.get(parsed.event);
         if (!listeners?.size) return;
         const client = this.getSocketClient(socket);
+
         listeners.forEach((listener) => listener(parsed.data, client));
       });
 

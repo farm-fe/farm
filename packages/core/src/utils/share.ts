@@ -177,3 +177,16 @@ export function tryStatSync(file: string): fs.Stats | undefined {
     return fs.statSync(file, { throwIfNoEntry: false });
   } catch {}
 }
+
+export function formatExecutionTime(
+  time: number,
+  format: 'ms' | 's' = 'ms'
+): string {
+  switch (format) {
+    case 's':
+      return `${Math.floor(time) / 1000}s`;
+    case 'ms':
+    default:
+      return `${Math.floor(time)}ms`;
+  }
+}
