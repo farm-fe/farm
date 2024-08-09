@@ -6,7 +6,7 @@ jobs:
     name: Rust Code Lint
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Install Rust
         uses: oxidecomputer/actions-rs_toolchain@oxide/master
       - name: Cache rust artifacts
@@ -26,11 +26,15 @@ jobs:
     name: TS Code Lint
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.1.0
+      - uses: actions/setup-node@v4
         with:
           node-version: 18
+          cache: 'pnpm'
       - name: Install Dependencies
-        run: npm install -g pnpm@9.1.0 && pnpm i --frozen-lockfile
+        run: pnpm i --color --frozen-lockfile
       - name: Run lint
         run: npx biome check --no-errors-on-unmatched --files-ignore-unknown=true
