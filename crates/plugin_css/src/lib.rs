@@ -4,6 +4,7 @@ use std::collections::HashMap;
 use std::{path::PathBuf, sync::Arc};
 
 use dep_analyzer::DepAnalyzer;
+use farmfe_core::cache_item;
 use farmfe_core::config::minify::MinifyOptions;
 use farmfe_core::module::CommentsMetaData;
 use farmfe_core::{
@@ -32,7 +33,6 @@ use farmfe_core::{
   serde_json, serialize,
   swc_css_ast::Stylesheet,
 };
-use farmfe_macro_cache_item::cache_item;
 use farmfe_toolkit::common::{create_swc_source_map, load_source_original_source_map, PathFilter};
 use farmfe_toolkit::css::ParseCssModuleResult;
 use farmfe_toolkit::lazy_static::lazy_static;
