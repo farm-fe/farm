@@ -24,7 +24,7 @@ jobs:
           node-version: 18.x
 
       # batch download artifacts
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
           path: /tmp/artifacts
       - name: Copy Farm Core Binary
@@ -42,6 +42,11 @@ jobs:
             test -f ./packages/create-farm/npm/${abi}/create-farm.${abi}.node
             test -f ./rust-plugins/react/npm/${abi}/index.farm
             test -f ./rust-plugins/sass/npm/${abi}/index.farm
+          done
+          for abi in android-arm-eabi linux-arm-gnueabihf android-arm64
+          do
+            mv /tmp/artifacts/${{ github.sha }}-${abi}-create-farm/* ./packages/create-farm/npm/${abi}
+            test -f ./packages/create-farm/npm/${abi}/create-farm.${abi}.node
           done
 
       - name: Install Dependencies

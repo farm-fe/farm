@@ -1,15 +1,15 @@
 {
-  "name": "create-farm-darwin-x64",
+  "name": "create-farm-linux-arm-gnueabihf",
   "version": "0.0.12",
   "os": [
-    "darwin"
+    "linux"
   ],
   "cpu": [
-    "x64"
+    "arm"
   ],
-  "main": "create-farm.darwin-x64.node",
+  "main": "create-farm.linux-arm-gnueabihf.node",
   "files": [
-    "create-farm.darwin-x64.node"
+    "create-farm.linux-arm-gnueabihf.node"
   ],
   "description": "Rapidly create a new farm project.",
   "keywords": [

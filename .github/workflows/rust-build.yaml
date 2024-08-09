@@ -41,10 +41,13 @@ jobs:
 
           - os: windows-latest
             abi: win32-x64-msvc
+            target: x86_64-pc-windows-msvc
           - os: macos-13
             abi: darwin-x64
+            target: x86_64-apple-darwin
           - os: macos-latest
             abi: darwin-arm64
+            target: aarch64-apple-darwin
 
           # cross compile
           # windows. Note swc plugins is not supported on ia32 and arm64
@@ -78,27 +81,46 @@ jobs:
             abi: linux-arm64-gnu
             target: aarch64-unknown-linux-gnu
             zig: true
-          # - os: ubuntu-latest
-          #   abi: darwin-x64
-          #   target: x86_64-apple-darwin
-          #   osxcross: true
-          #   zig: true
-          # - os: ubuntu-latest
-          #   abi: darwin-arm64
-          #   target: aarch64-apple-darwin
-          #   osxcross: true
-          #   zig: true
+          # Build for Create Farm CLI only
+          - os: ubuntu-latest
+            abi: android-arm-eabi
+            target: armv7-linux-androideabi
+            build: pnpm --filter create-farm build --target armv7-linux-androideabi
+            cli_only: true
+            zig: false
+          - os: ubuntu-latest
+            abi: linux-arm-gnueabihf
+            target: armv7-unknown-linux-gnueabihf
+            build: >-
+              sudo apt-get update && sudo apt-get install gcc-arm-linux-gnueabihf -y &&
+              pnpm --filter create-farm build --target armv7-unknown-linux-gnueabihf --zig
+            cli_only: true
+            zig: true
+          - os: ubuntu-latest
+            abi: android-arm64
+            target: aarch64-linux-android
+            build: pnpm --filter create-farm build --target aarch64-linux-android
+            cli_only: true
+            zig: false
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Cache rust artifacts
         uses: Swatinem/rust-cache@v2
         with:
           shared-key: rust-build-${{ matrix.settings.abi }}
-      - uses: actions/setup-node@v3
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.1.0
+          run_install: false
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: 18
+          cache: 'pnpm'
       - name: Install Dependencies
-        run: npm install -g pnpm@9.1.0 && pnpm i --frozen-lockfile
+        run: pnpm i --frozen-lockfile
+
       - name: Build Plugin Tools
         run: pnpm --filter @farmfe/plugin-tools run build
       - run: rustup target add ${{ matrix.settings.target }}
@@ -133,23 +155,29 @@ jobs:
         if: ${{ !matrix.settings.docker && matrix.settings.build }}
         run: ${{ matrix.settings.build }}
         shell: bash
+      - name: LS Create Farm Rust
+        if: ${{ matrix.settings.cli_only }}
+        run: ls -la ./packages/create-farm/
       - name: Upload Core
-        uses: actions/upload-artifact@v3
+        if: ${{ !matrix.settings.cli_only }}
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ github.sha }}-${{ matrix.settings.abi }}
           path: ./packages/core/binding/farm.${{ matrix.settings.abi }}.node
       - name: Upload Create Farm Rust
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ github.sha }}-${{ matrix.settings.abi }}-create-farm
           path: ./packages/create-farm/create-farm.${{ matrix.settings.abi }}.node
       - name: Upload Plugin React
-        uses: actions/upload-artifact@v3
+        if: ${{ !matrix.settings.cli_only }}
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-react
           path: rust-plugins/react/npm/${{ matrix.settings.abi }}/index.farm
       - name: Upload Plugin Sass
-        uses: actions/upload-artifact@v3
+        if: ${{ !matrix.settings.cli_only }}
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-sass
           path: rust-plugins/sass/npm/${{ matrix.settings.abi }}/index.farm

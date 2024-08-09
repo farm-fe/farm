@@ -31,7 +31,7 @@ jobs:
         run: npm install -g pnpm@9.4.0 && pnpm i --frozen-lockfile
       - name: Build CLI and Core
         run: pnpm --filter @farmfe/cli run build
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         id: download
         with:
           name: ${{ github.sha }}-${{ matrix.settings.abi }}
