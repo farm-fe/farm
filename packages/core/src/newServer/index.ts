@@ -169,12 +169,12 @@ export class newServer {
     if (this.publicDir) {
       this.middlewares.use(publicMiddleware(this));
     }
-    // TODO todo add appType
+    // TODO todo add appType 这块要判断 单页面还是 多页面 多 html 处理不一样
     this.middlewares.use(htmlFallbackMiddleware(this));
 
     this.middlewares.use(resourceMiddleware(this));
 
-    // this.middlewares.use(adaptorViteMiddleware(this));
+    this.middlewares.use(adaptorViteMiddleware(this));
   }
 
   public createHmrEngine() {

@@ -1,14 +1,9 @@
-import { defineConfig } from '@farmfe/core';
-import vue from '@vitejs/plugin-vue';
+import { defineConfig } from "@farmfe/core";
+import vue from "@vitejs/plugin-vue";
 
 export default defineConfig({
-  vitePlugins: [
-    vue(),
-  ],
-  compilation: {
-    mode: 'production'
-  },
+  vitePlugins: [vue()],
   server: {
-    port: 5232
-  }
+    port: 5232,
+  },
 });
