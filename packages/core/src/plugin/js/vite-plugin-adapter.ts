@@ -284,8 +284,8 @@ export class VitePluginAdapter implements JsPlugin {
 
     if (hook) {
       await hook(this._viteDevServer);
+
       this._viteDevServer.middlewareCallbacks.forEach((cb) => {
-        // console.log(cb);
         devServer.middlewares.use(cb);
         // devServer.app().use((ctx: any, koaNext: any) => {
         //   return new Promise((resolve, reject) => {
