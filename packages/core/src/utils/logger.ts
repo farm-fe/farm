@@ -1,7 +1,7 @@
 import { Config } from '../types/binding.js';
 import { ColorFunction, PersistentCacheBrand, colors } from './color.js';
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { pad, version } from './share.js';
+import { formatExecutionTime, pad, version } from './share.js';
 
 type LogLevelNames = 'trace' | 'debug' | 'info' | 'warn' | 'error';
 
@@ -232,10 +232,11 @@ export function bootstrap(times: number, config: Config, hasCacheDir: boolean) {
     '\n',
     colors.bold(colors.brandColor(`${'ϟ'}  Farm  v${version}`))
   );
+
   console.log(
     `${colors.bold(colors.green(` ✓`))}  ${colors.bold(
       'Ready in'
-    )} ${colors.bold(colors.green(`${Math.floor(times) / 1000}s`))} ${persistentCacheFlag}`,
+    )} ${colors.bold(colors.green(formatExecutionTime(times, 's')))} ${persistentCacheFlag}`,
     '\n'
   );
 }

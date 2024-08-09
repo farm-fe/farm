@@ -16,6 +16,7 @@ import { Compiler } from '../compiler/index.js';
 import { normalizePublicPath } from '../config/normalize-config/normalize-output.js';
 import { NormalizedServerConfig, ResolvedUserConfig } from '../config/types.js';
 import { logError } from '../server/error.js';
+import { getCacheDir, isCacheDirExists } from '../utils/cacheDir.js';
 import { Logger, bootstrap, logger } from '../utils/logger.js';
 import { initPublicFiles } from '../utils/publicDir.js';
 import { isObject } from '../utils/share.js';
@@ -246,10 +247,15 @@ export class newServer {
   }
 
   private async startCompilation() {
+    // check if cache dir exists
+    const { root, persistentCache } = this.compiler.config.config;
+    const hasCacheDir = await isCacheDirExists(
+      getCacheDir(root, persistentCache)
+    );
     const start = performance.now();
     await this.compile();
     const duration = performance.now() - start;
-    bootstrap(duration, this.compiler.config);
+    bootstrap(duration, this.compiler.config, hasCacheDir);
   }
 
   private async handlePublicFiles() {
