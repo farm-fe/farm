@@ -1,0 +1,22 @@
+{
+  "name": "@farmfe-examples/vue-naiveui",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "farm start",
+    "start": "farm start",
+    "build": "farm build",
+    "preview": "farm preview",
+    "clean": "farm clean"
+  },
+  "dependencies": {
+    "vue": "^3.4.34"
+  },
+  "devDependencies": {
+    "@farmfe/cli": "workspace:*",
+    "@farmfe/core": "wrokspace:*",
+    "@vitejs/plugin-vue": "^5.1.1",
+    "core-js": "^3.37.1",
+    "naive-ui": "^2.39.0"
+  }
+}

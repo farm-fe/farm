@@ -5,7 +5,7 @@ import type { ResourceLoadResult } from './plugin';
 
 export interface Resource {
   path: string;
-  type: 'script' | 'link';
+  type: 0 | 1; // 0: script, 1: link
 }
 
 // Injected during build
@@ -39,9 +39,9 @@ export class ResourceLoader {
       if (result) {
         return result.then((res: ResourceLoadResult) => {
           if (!res.success && res.retryWithDefaultResourceLoader) {
-            if (resource.type === 'script') {
+            if (resource.type === 0) {
               return this._loadScript(`./${resource.path}`);
-            } else if (resource.type === 'link') {
+            } else if (resource.type === 1) {
               return this._loadLink(`./${resource.path}`);
             }
           } else if (!res.success) {
@@ -51,9 +51,9 @@ export class ResourceLoader {
           }
         });
       } else {
-        if (resource.type === 'script') {
+        if (resource.type === 0) {
           return this._loadScript(`./${resource.path}`);
-        } else if (resource.type === 'link') {
+        } else if (resource.type === 1) {
           return this._loadLink(`./${resource.path}`);
         }
       }
@@ -103,9 +103,9 @@ export class ResourceLoader {
   private _load(url: string, resource: Resource, index: number): Promise<void> {
     let promise = Promise.resolve();
 
-    if (resource.type === 'script') {
+    if (resource.type === 0) {
       promise = this._loadScript(url);
-    } else if (resource.type === 'link') {
+    } else if (resource.type === 1) {
       promise = this._loadLink(url);
     }
 

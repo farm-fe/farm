@@ -32,8 +32,9 @@ export class ModuleSystem {
   private reRegisterModules: boolean;
   // available public paths, when loading resources, we will try each publicPath until it is available, this is so called `resource loading retry`
   publicPaths: string[];
+  dynamicResources: Resource[];
   // dynamic module entry and resources map
-  dynamicModuleResourcesMap: Record<string, Resource[]>;
+  dynamicModuleResourcesMap: Record<string, number[]>;
   // resources loader
   resourceLoader: ResourceLoader;
   // runtime plugin container
@@ -143,7 +144,7 @@ export class ModuleSystem {
   }
 
   loadDynamicResources(moduleId: string, force = false): Promise<any> {
-    const resources = this.dynamicModuleResourcesMap[moduleId];
+    const resources = this.dynamicModuleResourcesMap[moduleId].map((index) => this.dynamicResources[index]);
 
     if (!resources || resources.length === 0) {
       throw new Error(
@@ -250,8 +251,10 @@ export class ModuleSystem {
   // These two methods are used to support dynamic module loading, the dynamic module info is collected by the compiler and injected during compile time
   // This method can also be called during runtime to add new dynamic modules
   setDynamicModuleResourcesMap(
-    dynamicModuleResourcesMap: Record<string, Resource[]>,
+    dynamicResources: Resource[],
+    dynamicModuleResourcesMap: Record<string, number[]>,
   ): void {
+    this.dynamicResources = dynamicResources;
     this.dynamicModuleResourcesMap = dynamicModuleResourcesMap;
   }
 

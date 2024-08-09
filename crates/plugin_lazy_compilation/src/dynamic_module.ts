@@ -1,5 +1,11 @@
+interface Resource {
+  path: string;
+  type: 0 | 1; // 0: script, 1: link
+}
+
 interface RawLazyCompileResult {
-  dynamicResourcesMap: Record<string, any>;
+  dynamicResources: Resource[];
+  dynamicModuleResourcesMap: Record<string, number[]>;
 }
 
 interface LazyCompilationQueueItem {
@@ -104,9 +110,10 @@ if (compilingModules.has(modulePath)) {
       return fetchLazyCompileResult.then((module: any) => {
         const result: RawLazyCompileResult = module.default || module;
 
-        if (result.dynamicResourcesMap) {
+        if (result.dynamicResources && result.dynamicModuleResourcesMap) {
           FarmModuleSystem.setDynamicModuleResourcesMap(
-            result.dynamicResourcesMap
+            result.dynamicResources,
+            result.dynamicModuleResourcesMap
           );
         }
 

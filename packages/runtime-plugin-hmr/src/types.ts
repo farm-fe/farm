@@ -21,7 +21,8 @@ export interface HmrUpdateResult {
   boundaries: Record<string, string[][]>;
   // modules which are added or changed
   modules: ModuleMap;
-  dynamicResourcesMap: Record<string, Resource[]> | null;
+  dynamicResources: Resource[] | null;
+  dynamicModuleResourcesMap: Record<string, number[]> | null;
 }
 
 export interface RawHmrUpdateResult {
@@ -31,7 +32,8 @@ export interface RawHmrUpdateResult {
   boundaries: Record<string, string[][]>;
   immutableModules: string;
   mutableModules: string;
-  dynamicResourcesMap: Record<string, Resource[]> | null;
+  dynamicResources: Resource[] | null;
+  dynamicModuleResourcesMap: Record<string, number[]> | null;
 }
 
 // the same as Vite, see LICENSE. modified by @farmfe

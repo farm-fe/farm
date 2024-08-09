@@ -51,7 +51,10 @@ describe('resolveUserConfig', () => {
             'fixtures',
             'config',
             'farm.config.ts'
-          )
+          ),
+          server: {
+            hmr: false
+          }
         },
         'development',
         new Logger()
