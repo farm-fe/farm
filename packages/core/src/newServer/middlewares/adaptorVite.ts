@@ -6,7 +6,7 @@
  */
 
 import { existsSync, readFileSync, statSync } from 'node:fs';
-import path, { extname } from 'node:path';
+import path from 'node:path';
 import { stripQueryAndHash } from '../../utils/path.js';
 import { normalizePathByPublicPath } from '../publicDir.js';
 import { send } from '../send.js';

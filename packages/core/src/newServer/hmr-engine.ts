@@ -13,7 +13,13 @@ import {
 } from '../config/index.js';
 import { HttpServer } from '../newServer/index.js';
 import type { JsUpdateResult } from '../types/binding.js';
-import { Logger, bold, cyan, green } from '../utils/index.js';
+import {
+  Logger,
+  bold,
+  cyan,
+  formatExecutionTime,
+  green
+} from '../utils/index.js';
 import { logError } from './error.js';
 import { WebSocketClient, WebSocketServer } from './ws.js';
 
@@ -89,7 +95,7 @@ export class HmrEngine {
       const result = await this.app.compiler.update(queue);
       this.app.logger.info(
         `${bold(cyan(updatedFilesStr))} updated in ${bold(
-          green(`${performance.now() - start}ms`)
+          green(formatExecutionTime(performance.now() - start, 's'))
         )}`
       );
 

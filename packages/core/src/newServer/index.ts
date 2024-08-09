@@ -174,7 +174,7 @@ export class newServer {
 
     this.middlewares.use(resourceMiddleware(this));
 
-    this.middlewares.use(adaptorViteMiddleware(this));
+    // this.middlewares.use(adaptorViteMiddleware(this));
   }
 
   public createHmrEngine() {
