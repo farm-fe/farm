@@ -222,8 +222,8 @@ export function bootstrapLogger(options?: LoggerOptions): Logger {
   return new Logger(options);
 }
 
-export function bootstrap(times: number, config: Config) {
-  const usePersistentCache = config.config.persistentCache;
+export function bootstrap(times: number, config: Config, hasCacheDir: boolean) {
+  const usePersistentCache = config.config.persistentCache && hasCacheDir;
   const persistentCacheFlag = usePersistentCache
     ? colors.bold(PersistentCacheBrand)
     : '';

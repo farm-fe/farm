@@ -124,6 +124,21 @@ impl EsmGenerate {
         continue;
       }
 
+      let create_import = |specifiers: Vec<farmfe_core::swc_ecma_ast::ImportSpecifier>| {
+        ModuleItem::ModuleDecl(ModuleDecl::Import(ImportDecl {
+          span: DUMMY_SP,
+          specifiers,
+          src: Box::new(Str {
+            span: DUMMY_SP,
+            value: source.to_string().as_str().into(),
+            raw: None,
+          }),
+          type_only: false,
+          with: None,
+          phase: farmfe_core::swc_ecma_ast::ImportPhase::Evaluation,
+        }))
+      };
+
       let mut specifiers = vec![];
 
       let mut ordered_named_keys = import.named.keys().collect::<Vec<_>>();
@@ -149,12 +164,12 @@ impl EsmGenerate {
       }
 
       if let Some(namespace) = import.namespace.as_ref() {
-        specifiers.push(farmfe_core::swc_ecma_ast::ImportSpecifier::Namespace(
-          ImportStarAsSpecifier {
+        stmts.push(create_import(vec![
+          farmfe_core::swc_ecma_ast::ImportSpecifier::Namespace(ImportStarAsSpecifier {
             span: DUMMY_SP,
             local: bundle_variable.render_name(*namespace).as_str().into(),
-          },
-        ));
+          }),
+        ]));
       }
 
       if let Some(default) = import.default.as_ref() {
@@ -166,18 +181,9 @@ impl EsmGenerate {
         ));
       }
 
-      stmts.push(ModuleItem::ModuleDecl(ModuleDecl::Import(ImportDecl {
-        span: DUMMY_SP,
-        specifiers,
-        src: Box::new(Str {
-          span: DUMMY_SP,
-          value: source.to_string().as_str().into(),
-          raw: None,
-        }),
-        type_only: false,
-        with: None,
-        phase: farmfe_core::swc_ecma_ast::ImportPhase::Evaluation,
-      })));
+      if !specifiers.is_empty() {
+        stmts.push(create_import(specifiers));
+      }
     }
 
     Ok(stmts)

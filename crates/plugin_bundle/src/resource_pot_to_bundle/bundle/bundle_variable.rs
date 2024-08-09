@@ -7,12 +7,10 @@ impl BundleVariable {
   }
 
   pub fn set_rename_from_other_render_name(&mut self, target: usize, from: usize) {
-    let rendered_name = self.render_name(from);
-    self.set_rename(target, rendered_name);
+    self.set_rename(target, self.render_name(from));
   }
 
   pub fn set_rename_from_other_name(&mut self, target: usize, from: usize) {
-    let name = self.name(from);
-    self.set_rename(target, name);
+    self.set_rename(target, self.name(from));
   }
 }

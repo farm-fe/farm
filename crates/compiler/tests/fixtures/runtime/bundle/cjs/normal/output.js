@@ -81,13 +81,13 @@ var cjsExport_ts_cjs = __commonJs({
         };
     }
 });
-var cjsDefault = _interop_require_default(cjsExport_ts_cjs()).default, cjsNs = _interop_require_wildcard(cjsExport_ts_cjs()), cjsNamed = cjsExport_ts_cjs()["age"];
+var cjsDefault = _interop_require_default(cjsExport_ts_cjs()).default, cjsExport_ts_ns = _interop_require_wildcard(cjsExport_ts_cjs()), cjsNamed = cjsExport_ts_cjs()["age"];
 
 // module_id: esmImprot.ts.farm-runtime
 console.log({
     cjsNamed: cjsNamed,
     cjsDefault: cjsDefault,
-    cjsNs: cjsNs
+    cjsNs: cjsExport_ts_ns
 });
 console.log({
     esmNamed: name,
