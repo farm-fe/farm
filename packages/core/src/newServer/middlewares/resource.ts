@@ -10,6 +10,7 @@ import {
 } from '../../utils/index.js';
 import { cleanUrl } from '../../utils/url.js';
 import { HttpServer } from '../index.js';
+import { normalizePathByPublicPath } from '../publicDir.js';
 import { send } from '../send.js';
 interface RealResourcePath {
   resourcePath: string;
@@ -48,7 +49,7 @@ export function resourceMiddleware(app: any) {
 
     if (resourceResult) {
       // need judge if resource is a deps node_modules set cache-control to 1 year
-      const headers = config.server.headers || {};
+      const headers = config.server.headers;
       send(req, res, resourceResult.resource, url, { headers });
       return;
     }
@@ -86,16 +87,4 @@ function findResource(
       rawPath: paths
     };
   }
-}
-
-function normalizePathByPublicPath(publicPath: string, resourcePath: string) {
-  const base = publicPath.match(/^https?:\/\//) ? '' : publicPath;
-  let resourceWithoutPublicPath = resourcePath;
-
-  if (base && resourcePath.startsWith(base)) {
-    resourcePath = resourcePath.replace(new RegExp(`([^/]+)${base}`), '$1/');
-    resourceWithoutPublicPath = resourcePath.slice(base.length);
-  }
-
-  return { resourceWithoutPublicPath, fullPath: resourcePath };
 }

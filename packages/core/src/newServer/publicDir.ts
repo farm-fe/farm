@@ -32,3 +32,18 @@ export function getPublicFiles(
 ): Set<string> | undefined {
   return publicFilesMap.get(config);
 }
+
+export function normalizePathByPublicPath(
+  publicPath: string,
+  resourcePath: string
+) {
+  const base = publicPath.match(/^https?:\/\//) ? '' : publicPath;
+  let resourceWithoutPublicPath = resourcePath;
+
+  if (base && resourcePath.startsWith(base)) {
+    resourcePath = resourcePath.replace(new RegExp(`([^/]+)${base}`), '$1/');
+    resourceWithoutPublicPath = resourcePath.slice(base.length);
+  }
+
+  return { resourceWithoutPublicPath, fullPath: resourcePath };
+}

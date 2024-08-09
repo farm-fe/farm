@@ -28,6 +28,7 @@ import {
   resolveHttpServer,
   resolveHttpsConfig
 } from './http.js';
+import { adaptorViteMiddleware } from './middlewares/adaptorVite.js';
 import { HMRPingMiddleware } from './middlewares/hmrPing.js';
 import { htmlFallbackMiddleware } from './middlewares/htmlFallback.js';
 import { publicMiddleware } from './middlewares/public.js';
@@ -172,6 +173,8 @@ export class newServer {
     this.middlewares.use(htmlFallbackMiddleware(this));
 
     this.middlewares.use(resourceMiddleware(this));
+
+    this.middlewares.use(adaptorViteMiddleware(this));
   }
 
   public createHmrEngine() {
