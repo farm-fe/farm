@@ -14,7 +14,7 @@ export default (<UserConfig>{
     external: [
       '@farmfe/core',
       'chokidar',
-      'browserslist-generator',
+      'farm-browserslist-generator',
       '@farmfe/core-.*',
       './farm.*.node$'
     ].map((id) => `^${id}$`),
