@@ -48,7 +48,6 @@ export interface WebSocketServer extends HMRChannel {
    * Unregister event listener.
    */
   off: WebSocketTypes.Server['off'] & {
-    // biome-ignore lint/complexity/noBannedTypes: <explanation>
     (event: string, listener: Function): void;
   };
 }

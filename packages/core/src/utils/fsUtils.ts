@@ -82,8 +82,8 @@ function optimizeSafeRealPathSync() {
   exec('net use', (error, stdout) => {
     if (error) return;
     const lines = stdout.split('\n');
-    // OK           Y:        \\NETWORKA\Foo         Microsoft Windows Network
-    // OK           Z:        \\NETWORKA\Bar         Microsoft Windows Network
+    // OK           Y:        \\NETWORK\Foo         Microsoft Windows Network
+    // OK           Z:        \\NETWORK\Bar         Microsoft Windows Network
     for (const line of lines) {
       const m = line.match(parseNetUseRE);
       if (m) windowsNetworkMap.set(m[3], m[2]);

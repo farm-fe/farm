@@ -33,7 +33,6 @@ export interface HMRChannel {
    * Unregister event listener
    */
 
-  // biome-ignore lint/complexity/noBannedTypes: <explanation>
   off(event: string, listener: Function): void;
   /**
    * Start listening for messages
