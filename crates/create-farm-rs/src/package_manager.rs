@@ -55,14 +55,6 @@ impl<'a> PackageManager {
     PackageManager::Npm,
     PackageManager::Bun,
   ];
-
-  /// Node.js managers
-  pub const _NODE: &'a [PackageManager] = &[
-    PackageManager::Pnpm,
-    PackageManager::Yarn,
-    PackageManager::Npm,
-    PackageManager::Bun,
-  ];
 }
 
 impl PackageManager {
@@ -85,23 +77,6 @@ impl PackageManager {
     }
   }
 
-  pub const fn _templates(&self) -> &[Template] {
-    match self {
-      PackageManager::Pnpm | PackageManager::Yarn | PackageManager::Npm | PackageManager::Bun => &[
-        Template::Vanilla,
-        Template::React,
-        Template::Vue3,
-        Template::Vue2,
-        Template::Svelte,
-        Template::Solid,
-        Template::Lit,
-        Template::Preact,
-        Template::Tauri(None),
-        Template::Electron(None)
-      ],
-    }
-  }
-
   pub const fn install_cmd(&self) -> Option<&str> {
     match self {
       PackageManager::Pnpm => Some("pnpm install"),
@@ -111,19 +86,12 @@ impl PackageManager {
     }
   }
 
-  pub const fn run_cmd(&self) -> &str {
+  pub const fn default_cmd(&self) -> &'static str {
     match self {
       PackageManager::Pnpm => "pnpm dev",
       PackageManager::Yarn => "yarn dev",
       PackageManager::Npm => "npm run dev",
       PackageManager::Bun => "bun run dev",
     }
-  }
-
-  pub const fn _is_node(&self) -> bool {
-    matches!(
-      self,
-      PackageManager::Pnpm | PackageManager::Yarn | PackageManager::Npm | PackageManager::Bun,
-    )
   }
 }

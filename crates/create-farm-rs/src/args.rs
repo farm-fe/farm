@@ -1,5 +1,5 @@
 use crate::{package_manager::PackageManager, template::Template};
-use clap::Parser;
+use clap::{ArgAction, Parser};
 
 #[derive(Parser, Debug)]
 #[command(
@@ -15,6 +15,8 @@ pub struct Args {
   pub manager: Option<PackageManager>,
   #[arg(short, long, help = "Project template to use")]
   pub template: Option<Template>,
+  #[arg(short, long, help = "Force overwrite of existing files", action = ArgAction::SetTrue)]
+  pub force: bool,
 }
 
 impl Default for Args {
@@ -23,6 +25,7 @@ impl Default for Args {
       project_name: Some("farm-project".to_string()),
       manager: Some(PackageManager::Npm),
       template: Some(Template::Vanilla),
+      force: false,
     }
   }
 }

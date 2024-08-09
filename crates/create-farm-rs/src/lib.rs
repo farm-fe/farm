@@ -1,7 +1,8 @@
 use anyhow::Context;
 use clap::Parser;
-use dialoguer::{Confirm, Input, Select};
+use dialoguer::Input;
 use std::{ffi::OsString, fs, process::exit};
+use utils::prompts;
 
 use crate::{
   package_manager::PackageManager,
@@ -35,19 +36,20 @@ where
   I: IntoIterator<Item = A>,
   A: Into<OsString> + Clone,
 {
-  handle_brand_text("\n ⚡ Welcome To Farm ! \n");
-
   let detected_manager = detected_manager.and_then(|p| p.parse::<PackageManager>().ok());
   // Clap will auto parse the `bin_name` as the first argument, so we need to add it to the args
   let args = args::Args::parse_from(
     std::iter::once(OsString::from(bin_name.unwrap_or_default()))
       .chain(args.into_iter().map(Into::into)),
   );
+
+  handle_brand_text("\n ⚡ Welcome To Farm ! \n");
   let defaults = args::Args::default();
   let args::Args {
     manager,
     project_name,
     template,
+    force,
   } = args;
   let cwd = std::env::current_dir()?;
   let project_name = match project_name {
@@ -66,21 +68,22 @@ where
   let target_dir = cwd.join(&project_name);
 
   if target_dir.exists() && target_dir.read_dir()?.next().is_some() {
-    let overwrite = Confirm::with_theme(&ColorfulTheme::default())
-      .with_prompt(format!(
-        "{} directory is not empty, do you want to overwrite?",
-        if target_dir == cwd {
-          "Current".to_string()
-        } else {
-          target_dir
-            .file_name()
-            .unwrap()
-            .to_string_lossy()
-            .to_string()
-        }
-      ))
-      .default(false)
-      .interact()?;
+    let overwrite = force
+      || prompts::confirm(
+        &format!(
+          "{} directory is not empty, do you want to overwrite?",
+          if target_dir == cwd {
+            "Current".to_string()
+          } else {
+            target_dir
+              .file_name()
+              .unwrap()
+              .to_string_lossy()
+              .to_string()
+          }
+        ),
+        false,
+      )?;
     if !overwrite {
       eprintln!("{BOLD}{RED}✘{RESET} Directory is not empty, Operation Cancelled");
       exit(1);
@@ -97,80 +100,41 @@ where
   let template = match template {
     Some(template) => template,
     None => {
-      let templates_text = templates_no_flavors
-        .iter()
-        .map(|t| t.select_text())
-        .collect::<Vec<_>>();
+      let selected_template =
+        prompts::select("Select a framework:", &templates_no_flavors, Some(0))?.unwrap();
 
-      let index = Select::with_theme(&ColorfulTheme::default())
-        .with_prompt("Select a framework:")
-        .items(&templates_text)
-        .default(0)
-        .interact()?;
-
-      let selected_template = templates_no_flavors[index];
       match selected_template {
         Template::Tauri(None) => {
-          let sub_templates_text = vec![
+          let sub_templates = vec![
             TauriSubTemplate::React,
             TauriSubTemplate::Vue,
             TauriSubTemplate::Svelte,
             TauriSubTemplate::Vanilla,
             TauriSubTemplate::Solid,
             TauriSubTemplate::Preact,
-          ]
-          .iter()
-          .map(|sub_template| format!("{}", sub_template))
-          .collect::<Vec<_>>();
+          ];
 
-          let sub_template_index = Select::with_theme(&ColorfulTheme::default())
-            .with_prompt("Select a Tauri template:")
-            .items(&sub_templates_text)
-            .default(0)
-            .interact()?;
+          let sub_template =
+            prompts::select("Select a Tauri template:", &sub_templates, Some(0))?.unwrap();
 
-          let sub_template = match sub_template_index {
-            0 => TauriSubTemplate::React,
-            1 => TauriSubTemplate::Vue,
-            2 => TauriSubTemplate::Svelte,
-            3 => TauriSubTemplate::Vanilla,
-            4 => TauriSubTemplate::Solid,
-            5 => TauriSubTemplate::Preact,
-            _ => unreachable!(),
-          };
-          Template::Tauri(Some(sub_template))
+          Template::Tauri(Some(*sub_template))
         }
         Template::Electron(None) => {
-          let sub_templates_text = vec![
+          let sub_templates = vec![
             ElectronSubTemplate::React,
             ElectronSubTemplate::Vue,
             ElectronSubTemplate::Svelte,
             ElectronSubTemplate::Vanilla,
             ElectronSubTemplate::Solid,
             ElectronSubTemplate::Preact,
-          ]
-          .iter()
-          .map(|sub_template| format!("{}", sub_template))
-          .collect::<Vec<_>>();
+          ];
 
-          let sub_template_index = Select::with_theme(&ColorfulTheme::default())
-            .with_prompt("Select an Electron template:")
-            .items(&sub_templates_text)
-            .default(0)
-            .interact()?;
+          let sub_template =
+            prompts::select("Select an Electron template:", &sub_templates, Some(0))?.unwrap();
 
-          let sub_template = match sub_template_index {
-            0 => ElectronSubTemplate::React,
-            1 => ElectronSubTemplate::Vue,
-            2 => ElectronSubTemplate::Svelte,
-            3 => ElectronSubTemplate::Vanilla,
-            4 => ElectronSubTemplate::Solid,
-            5 => ElectronSubTemplate::Preact,
-            _ => unreachable!(),
-          };
-          Template::Electron(Some(sub_template))
+          Template::Electron(Some(*sub_template))
         }
-        _ => selected_template,
+        _ => *selected_template,
       }
     }
   };
@@ -196,7 +160,7 @@ where
     let _ = fs::create_dir_all(&target_dir);
   }
 
-  //   Render the template
+  // Render the template
   template.render(&target_dir, pkg_manager, &project_name, &project_name)?;
 
   handle_brand_text("\n >  Initial Farm Project created successfully ✨ ✨ \n");
@@ -214,7 +178,7 @@ where
   if let Some(cmd) = pkg_manager.install_cmd() {
     handle_brand_text(&format!("    {} \n", cmd));
   }
-  handle_brand_text(&format!("    {} \n", &pkg_manager.run_cmd()));
+  handle_brand_text(&format!("    {} \n", get_run_cmd(&pkg_manager, &template)));
 
   Ok(())
 }
@@ -242,5 +206,17 @@ fn to_valid_pkg_name(project_name: &str) -> String {
     "farm-project".to_string()
   } else {
     ret
+  }
+}
+
+fn get_run_cmd(pkg_manager: &PackageManager, template: &Template) -> &'static str {
+  match template {
+    Template::Tauri(_) => match pkg_manager {
+      PackageManager::Pnpm => "pnpm tauri dev",
+      PackageManager::Yarn => "yarn tauri dev",
+      PackageManager::Npm => "npm run tauri dev",
+      PackageManager::Bun => "bun tauri dev",
+    },
+    _ => pkg_manager.default_cmd(),
   }
 }

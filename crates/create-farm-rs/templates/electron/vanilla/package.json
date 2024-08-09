@@ -1,5 +1,5 @@
 {
-  "name": "electron-farm-react",
+  "name": "<FARM-TEMPLATE-NAME>",
   "version": "1.0.0",
   "main": "dist-electron/main.js",
   "type": "module",
