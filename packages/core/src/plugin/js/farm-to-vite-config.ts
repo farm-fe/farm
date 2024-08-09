@@ -375,6 +375,7 @@ export function viteConfigToFarmConfig(
 
   if (config.server) {
     farmConfig.server ??= {};
+    // @ts-ignore
     farmConfig.server.hmr = config.server.hmr;
     farmConfig.server.port = config.server.port;
 

@@ -3,7 +3,8 @@
   "compilerOptions": {
     "rootDir": "src",
     "outDir": "dist",
-    "composite": true
+    "composite": true,
+    "noUnusedLocals": false
   },
   "include": ["src/**/*.ts", "binding/**/*.d.ts"],
   "exclude": ["src/**/*.spec.ts"],

@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+
 export const DEFAULT_CONFIG_NAMES = [
   'farm.config.ts',
   'farm.config.js',
@@ -15,3 +17,9 @@ export const CUSTOM_KEYS = {
 };
 
 export const FARM_RUST_PLUGIN_FUNCTION_ENTRY = 'func.js';
+
+const { version } = JSON.parse(
+  readFileSync(new URL('../../package.json', import.meta.url)).toString()
+);
+
+export const VERSION = version;

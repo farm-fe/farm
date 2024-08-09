@@ -3,7 +3,7 @@ import type { AddressInfo } from 'node:net';
 import path from 'node:path';
 // TODO: submit a PR to farm(export default farm)
 import {
-  type FarmCLIOptions,
+  type FarmCliOptions,
   type JsPlugin,
   type Server,
   type UserConfig,
@@ -158,8 +158,8 @@ function resolveFarmConfig(
     });
   }
 
-  // TODO: submit a PR to farm(Omit<FarmCLIOptions, 'server'> & UserConfig)
-  return opts.farm as FarmCLIOptions;
+  // TODO: submit a PR to farm(Omit<FarmCliOptions, 'server'> & UserConfig)
+  return opts.farm as FarmCliOptions;
 }
 
 function resolveServerUrl(server: Server) {

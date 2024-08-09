@@ -3,7 +3,7 @@ import path from 'node:path';
 import chokidar, { FSWatcher, WatchOptions } from 'chokidar';
 import glob from 'fast-glob';
 
-import { ResolvedUserConfig } from '../index.js';
+import { ResolvedUserConfig, getCacheDir } from '../index.js';
 
 function resolveChokidarOptions(
   config: ResolvedUserConfig,
@@ -11,18 +11,11 @@ function resolveChokidarOptions(
 ) {
   const { ignored = [], ...userChokidarOptions } =
     config.server?.hmr?.watchOptions ?? {};
-  let cacheDir = path.resolve(config.root, 'node_modules', '.farm', 'cache');
 
-  if (
-    typeof config.compilation?.persistentCache === 'object' &&
-    config.compilation.persistentCache.cacheDir
-  ) {
-    cacheDir = config.compilation.persistentCache.cacheDir;
-
-    if (!path.isAbsolute(cacheDir)) {
-      cacheDir = path.resolve(config.root, cacheDir);
-    }
-  }
+  const cacheDir = getCacheDir(
+    config.root,
+    config.compilation?.persistentCache
+  );
 
   const options: WatchOptions = {
     ignored: [
