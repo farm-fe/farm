@@ -10,12 +10,10 @@ const incrementA = () => {
 const getMessage = () => {
   return a.value % 2 === 0 ? "a 是偶数" : "a 是奇数";
 };
-
-fetch(
-  "https://apis.juhe.cn/environment/river?key=caab07f6c5df752d2e28edfe447ae6d0",
-)
+const Bdata = ref([]);
+fetch("/aaa?type=&page=&page_size=&is_filter=&key=0b8d6c14fc67d1d9268c6ce73ad9c83d")
   .then((res) => res.json())
-  .then((data) => console.log(data));
+  .then((data) => Bdata.value = data.result.data);
 </script>
 
 <template>
@@ -31,6 +29,9 @@ fetch(
     </a>
   </div>
   <HelloWorld msg="Farm + Vue" />
+  <div v-for="item in Bdata">
+    {{ item.title }}
+  </div>
 </template>
 
 <style scoped>

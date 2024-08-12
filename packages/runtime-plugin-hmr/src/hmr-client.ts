@@ -70,7 +70,7 @@ export class HmrClient {
         'disconnected from the server, Please refresh the page manually. If you still encounter errors, this may be a farm bug. Please submit an issue. https://github.com/farm-fe/farm/issues'
       );
       await waitForSuccessfulPing(socketProtocol, `${socketHostUrl}`);
-      // location.reload();
+      location.reload();
     });
 
     return socket;
@@ -110,7 +110,7 @@ export class HmrClient {
       moduleSystem.update(id, result.modules[id]);
       if (!result.boundaries[id]) {
         // do not found boundary module, reload the window
-        // location.reload();
+        location.reload();
       }
     }
 

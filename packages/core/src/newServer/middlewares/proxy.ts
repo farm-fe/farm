@@ -17,83 +17,122 @@ export interface ProxyOptions extends httpProxy.ServerOptions {
 }
 
 export function proxyMiddleware(app: any, server?: any) {
+  const { serverOptions, ResolvedUserConfig } = app;
+
+  const proxies: Record<string, [Server, ProxyOptions]> = {};
+  Object.keys(serverOptions.proxy).forEach((context) => {
+    let opts = serverOptions.proxy[context];
+    if (!opts) {
+      return;
+    }
+    if (typeof opts === 'string') {
+      opts = { target: opts, changeOrigin: true } as ProxyOptions;
+    }
+    const proxy = httpProxy.createProxyServer(opts) as Server;
+
+    if (opts.configure) {
+      opts.configure(proxy, opts);
+    }
+
+    proxy.on('error', (err, req, originalRes) => {
+      // When it is ws proxy, res is net.Socket
+      // originalRes can be falsy if the proxy itself errored
+      const res = originalRes as http.ServerResponse | net.Socket | undefined;
+      if (!res) {
+        console.log(
+          `${colors.red(`http proxy error: ${err.message}`)}\n${err.stack}`
+        );
+      } else if ('req' in res) {
+        // console.log(
+        //   `${colors.red(`http proxy error: ${originalRes.req.url}`)}\n${
+        //     err.stack
+        //   }`,
+        // );
+
+        if (!res.headersSent && !res.writableEnded) {
+          res
+            .writeHead(500, {
+              'Content-Type': 'text/plain'
+            })
+            .end();
+        }
+      } else {
+        console.log(`${colors.red(`ws proxy error:`)}\n${err.stack}`);
+        res.end();
+      }
+    });
+
+    proxy.on('proxyReqWs', (proxyReq, req, socket, options, head) => {
+      rewriteOriginHeader(proxyReq, options, ResolvedUserConfig);
+
+      socket.on('error', (err) => {
+        console.log(`${colors.red(`ws proxy socket error:`)}\n${err.stack}`);
+      });
+    });
+
+    // https://github.com/http-party/node-http-proxy/issues/1520#issue-877626125
+    // https://github.com/chimurai/http-proxy-middleware/blob/cd58f962aec22c925b7df5140502978da8f87d5f/src/plugins/default/debug-proxy-errors-plugin.ts#L25-L37
+    proxy.on('proxyRes', (proxyRes, req, res) => {
+      res.on('close', () => {
+        if (!res.writableEnded) {
+          proxyRes.destroy();
+        }
+      });
+    });
+
+    // clone before saving because http-proxy mutates the options
+    proxies[context] = [proxy, { ...opts }];
+  });
+
+  if (app.httpServer) {
+    app.httpServer.on('upgrade', (req: any, socket: any, head: any) => {
+      const url = req.url;
+      for (const context in proxies) {
+        if (doesProxyContextMatchUrl(context, url)) {
+          const [proxy, opts] = proxies[context];
+          if (
+            opts.ws ||
+            opts.target?.toString().startsWith('ws:') ||
+            opts.target?.toString().startsWith('wss:')
+          ) {
+            if (opts.rewrite) {
+              req.url = opts.rewrite(url);
+            }
+            proxy.ws(req, socket, head);
+            return;
+          }
+        }
+      }
+    });
+  }
   return function handleProxyMiddleware(
     req: http.IncomingMessage,
     res: http.ServerResponse,
     next: () => void
   ) {
-    const { serverOptions, ResolvedUserConfig } = app;
+    const url = req.url;
+    for (const context in proxies) {
+      if (doesProxyContextMatchUrl(context, url)) {
+        const [proxy, opts] = proxies[context];
+        const options: httpProxy.ServerOptions = {};
 
-    const proxies: Record<string, [Server, ProxyOptions]> = {};
-    Object.keys(serverOptions.proxy).forEach((context) => {
-      let opts = serverOptions.proxy[context];
-      if (!opts) {
+        if (opts.bypass) {
+          const bypassResult = opts.bypass(req, res, opts);
+          if (typeof bypassResult === 'string') {
+            req.url = bypassResult;
+            return next();
+          } else if (bypassResult === false) {
+            res.statusCode = 404;
+            return res.end();
+          }
+        }
+
+        if (opts.rewrite) {
+          req.url = opts.rewrite(req.url!);
+        }
+        proxy.web(req, res, options);
         return;
       }
-      if (typeof opts === 'string') {
-        opts = { target: opts, changeOrigin: true } as ProxyOptions;
-      }
-      const proxy = httpProxy.createProxyServer(opts) as Server;
-
-      if (opts.configure) {
-        opts.configure(proxy, opts);
-      }
-
-      proxy.on('error', (err, req, originalRes) => {
-        // When it is ws proxy, res is net.Socket
-        // originalRes can be falsy if the proxy itself errored
-        const res = originalRes as http.ServerResponse | net.Socket | undefined;
-        if (!res) {
-          console.log(
-            `${colors.red(`http proxy error: ${err.message}`)}\n${err.stack}`
-          );
-        } else if ('req' in res) {
-          // console.log(
-          //   `${colors.red(`http proxy error: ${originalRes.req.url}`)}\n${
-          //     err.stack
-          //   }`,
-          // );
-
-          if (!res.headersSent && !res.writableEnded) {
-            res
-              .writeHead(500, {
-                'Content-Type': 'text/plain'
-              })
-              .end();
-          }
-        } else {
-          console.log(`${colors.red(`ws proxy error:`)}\n${err.stack}`);
-          res.end();
-        }
-      });
-
-      proxy.on('proxyReqWs', (proxyReq, req, socket, options, head) => {
-        rewriteOriginHeader(proxyReq, options, ResolvedUserConfig);
-
-        socket.on('error', (err) => {
-          console.log(`${colors.red(`ws proxy socket error:`)}\n${err.stack}`);
-        });
-      });
-
-      // https://github.com/http-party/node-http-proxy/issues/1520#issue-877626125
-      // https://github.com/chimurai/http-proxy-middleware/blob/cd58f962aec22c925b7df5140502978da8f87d5f/src/plugins/default/debug-proxy-errors-plugin.ts#L25-L37
-      proxy.on('proxyRes', (proxyRes, req, res) => {
-        res.on('close', () => {
-          if (!res.writableEnded) {
-            proxyRes.destroy();
-          }
-        });
-      });
-
-      // clone before saving because http-proxy mutates the options
-      proxies[context] = [proxy, { ...opts }];
-    });
-
-    if (app.httpServer) {
-      // app.httpServer.on("upgrade", (req, socket, head) => {
-      //   const url = req.url;
-      //   console.log(req.url);
-      // });
     }
     next();
   };

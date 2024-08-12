@@ -664,7 +664,7 @@ importers:
         version: 5.1.3(@types/eslint@8.56.10)(eslint-config-prettier@9.1.0(eslint@8.57.0))(eslint@8.57.0)(prettier@3.3.2)
       farmup:
         specifier: latest
-        version: 0.1.0
+        version: 0.1.1
       jest:
         specifier: ^29.5.0
         version: 29.7.0(@types/node@20.12.12)(babel-plugin-macros@3.1.0)(ts-node@10.9.1(@types/node@20.12.12)(typescript@5.4.5))
@@ -2392,6 +2392,9 @@ importers:
       '@types/connect':
         specifier: ^3.4.38
         version: 3.4.38
+      '@types/cors':
+        specifier: ^2.8.17
+        version: 2.8.17
       '@types/etag':
         specifier: ^1.8.3
         version: 1.8.3
@@ -4954,6 +4957,9 @@ packages:
 
   '@types/cookies@0.7.9':
     resolution: {integrity: sha512-SrGYvhKohd/WSOII0WpflC73RgdJhQoqpwq9q+n/qugNGiDSGYXfHy3QvB4+X+J/gYe27j2fSRnK4B+1A3nvsw==}
+
+  '@types/cors@2.8.17':
+    resolution: {integrity: sha512-8CGDvrBj1zgo2qE+oS3pOCyYNqCPryMWY2bGfwA0dcfopWGgxs+78df0Rs3rc9THP4JkOhLsAa+15VdpAqkcUA==}
 
   '@types/d3-timer@2.0.2':
     resolution: {integrity: sha512-Dz39VLKZhWWeqSqbgYKF5BDJDUiPITo9M2cev/+HQBvXs+biES2d3LndnopuJ5YwaKK1h56CPWqDB+ghUXhm9A==}
@@ -8082,8 +8088,8 @@ packages:
   farm-plugin-replace-dirname@0.2.1:
     resolution: {integrity: sha512-aJ4euQzxoq0sVu4AwXrNQflHJrSZdrdApGEyVRtN6KiCop3CHXnTg9ydlyCNXN2unQB283aNjojvCd5E/32KgA==}
 
-  farmup@0.1.0:
-    resolution: {integrity: sha512-+xQuuQFGmHZsy9p/vDDwKOepdD7id4/THKorHmzvX3AeescqFQGJenksyhZab3cMJMYSqfJ8vbr1RkLIKgs7mg==}
+  farmup@0.1.1:
+    resolution: {integrity: sha512-JXP4PJZOs1WzI/cHbCfVGuBca66++AVItFLoZNLESjnyua9jfFz+TzgeNIXLnfsbb7pMmDLjAt6j7oJEtKA10Q==}
     hasBin: true
 
   fast-deep-equal@3.1.3:
@@ -17265,6 +17271,10 @@ snapshots:
       '@types/keygrip': 1.0.4
       '@types/node': 18.18.8
 
+  '@types/cors@2.8.17':
+    dependencies:
+      '@types/node': 18.18.8
+
   '@types/d3-timer@2.0.2': {}
 
   '@types/debug@4.1.12':
@@ -21117,7 +21127,7 @@ snapshots:
       farm-plugin-replace-dirname-win32-ia32-msvc: 0.2.1
       farm-plugin-replace-dirname-win32-x64-msvc: 0.2.1
 
-  farmup@0.1.0:
+  farmup@0.1.1:
     dependencies:
       '@farmfe/core': link:packages/core
 

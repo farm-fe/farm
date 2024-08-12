@@ -10,6 +10,7 @@ import path from 'node:path';
 import { WatchOptions } from 'chokidar';
 import compression from 'compression';
 import connect from 'connect';
+import corsMiddleware from 'cors';
 import fse from 'fs-extra';
 import { WebSocketServer as WebSocketServerRaw_ } from 'ws';
 import { Compiler } from '../compiler/index.js';
@@ -167,7 +168,13 @@ export class newServer {
   private initializeMiddlewares() {
     this.middlewares.use(HMRPingMiddleware());
 
-    const { proxy, middlewareMode } = this.serverOptions;
+    const { proxy, middlewareMode, cors } = this.serverOptions;
+
+    if (cors !== false) {
+      this.middlewares.use(
+        corsMiddleware(typeof cors === 'boolean' ? {} : cors)
+      );
+    }
     // TODO 默认值给 undefined 现在默认 {}
     if (proxy) {
       const middlewareServer =
