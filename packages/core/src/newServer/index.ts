@@ -175,8 +175,6 @@ export class newServer {
 
     const { proxy, middlewareMode, cors } = this.serverOptions;
 
-    this.middlewares.use(publicPathMiddleware(this));
-
     if (cors) {
       this.middlewares.use(
         corsMiddleware(typeof cors === 'boolean' ? {} : cors)
@@ -189,6 +187,10 @@ export class newServer {
         (isObject(middlewareMode) ? middlewareMode.server : null) ??
         this.httpServer;
       this.middlewares.use(proxyMiddleware(this, middlewareServer));
+    }
+
+    if (this.publicPath !== '/') {
+      this.middlewares.use(publicPathMiddleware(this));
     }
 
     if (this.publicDir) {
