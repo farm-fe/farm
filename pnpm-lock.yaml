@@ -1660,12 +1660,6 @@ importers:
         specifier: ^4.2.1
         version: 4.2.5(vue@3.3.7(typescript@5.4.5))
     devDependencies:
-      '@farmfe/cli':
-        specifier: workspace:*
-        version: link:../../packages/cli
-      '@farmfe/core':
-        specifier: workspace:*
-        version: link:../../packages/core
       '@farmfe/js-plugin-less':
         specifier: workspace:^
         version: link:../../js-plugins/less
@@ -1953,9 +1947,18 @@ importers:
 
   examples/vue3:
     dependencies:
+      unplugin-auto-import:
+        specifier: ^0.16.7
+        version: 0.16.7(@vueuse/core@9.13.0(vue@3.4.27(typescript@5.4.5)))(rollup@4.14.1)
+      unplugin-vue-router:
+        specifier: ^0.7.0
+        version: 0.7.0(rollup@4.14.1)(vue-router@4.4.3(vue@3.4.27(typescript@5.4.5)))(vue@3.4.27(typescript@5.4.5))
       vue:
         specifier: ^3.4.0
         version: 3.4.27(typescript@5.4.5)
+      vue-router:
+        specifier: ^4.4.3
+        version: 4.4.3(vue@3.4.27(typescript@5.4.5))
     devDependencies:
       '@vitejs/plugin-vue':
         specifier: ^5.0.4
@@ -2641,9 +2644,6 @@ packages:
 
   '@antfu/utils@0.7.10':
     resolution: {integrity: sha512-+562v9k4aI80m1+VuMHehNJWLOFjBnXn3tdOitzD0il5b7smkSBal4+a3oKiQTbrwMmN/TBUMDvbdoWDehgOww==}
-
-  '@antfu/utils@0.7.6':
-    resolution: {integrity: sha512-pvFiLP2BeOKA/ZOS6jxx4XhKzdVLHDhGlFEaZ2flWWYf2xOqVniqpk38I04DFRyz+L0ASggl7SkItTc+ZLju4w==}
 
   '@antv/adjust@0.2.5':
     resolution: {integrity: sha512-MfWZOkD9CqXRES6MBGRNe27Q577a72EIwyMnE29wIlPliFvJfWwsrONddpGU7lilMpVKecS3WAzOoip3RfPTRQ==}
@@ -5525,6 +5525,9 @@ packages:
 
   '@vue/devtools-api@6.5.1':
     resolution: {integrity: sha512-+KpckaAQyfbvshdDW5xQylLni1asvNSGme1JFs8I1+/H5pHEhqUKMEQD/qn3Nx5+/nycBq11qAEi8lk+LXI2dA==}
+
+  '@vue/devtools-api@6.6.3':
+    resolution: {integrity: sha512-0MiMsFma/HqA6g3KLKn+AGpL1kgKhFWszC9U29NfpWK5LE7bjeXxySWJrOJ77hBz+TBrBQ7o4QJqbPbqbs8rJw==}
 
   '@vue/reactivity-transform@3.3.12':
     resolution: {integrity: sha512-g5TijmML7FyKkLt6QnpqNmA4KD7K/T5SbXa88Bhq+hydNQEkzA8veVXWAQuNqg9rjaFYD0rPf0a9NofKA0ENgg==}
@@ -12873,9 +12876,6 @@ packages:
     resolution: {integrity: sha512-d6Mhq8RJeGA8UfKCu54Um4lFA0eSaRa3XxdAJg8tIdxbu1ubW0hBCZUL7yI2uGyYCRndvbK8FLHzqy2XKfeMsg==}
     engines: {node: '>=14.0.0'}
 
-  unplugin@1.5.0:
-    resolution: {integrity: sha512-9ZdRwbh/4gcm1JTOkp9lAkIDrtOyOxgHmY7cjuwI8L/2RTikMcVG25GsZwNAgRuap3iDw2jeq7eoqtAsz5rW3A==}
-
   unset-value@1.0.0:
     resolution: {integrity: sha512-PcA2tsuGSF9cnySLHTLSh2qrQiJ70mn+r+Glzxv2TWZblxsxCC52BDlZoPCsz7STd9pN7EZetkWZBAvk4cgZdQ==}
     engines: {node: '>=0.10.0'}
@@ -13123,6 +13123,11 @@ packages:
     peerDependencies:
       vue: ^3.2.0
 
+  vue-router@4.4.3:
+    resolution: {integrity: sha512-sv6wmNKx2j3aqJQDMxLFzs/u/mjA9Z5LCgy6BE0f7yFWMjrPLnS/sPNn8ARY/FXw6byV18EFutn5lTO6+UsV5A==}
+    peerDependencies:
+      vue: ^3.2.0
+
   vue-template-babel-compiler@1.2.0:
     resolution: {integrity: sha512-CScBSX1/wCdmmZ/Lvj/63p2CCVTS0FMj0F69VRBo73CuJrjvPAPGmeNJ7D/cwt/VS2PduowRWbO8N4Zh4Z3b0g==}
     engines: {node: '>=12.0.0'}
@@ -13214,9 +13219,6 @@ packages:
 
   webpack-virtual-modules@0.4.6:
     resolution: {integrity: sha512-5tyDlKLqPfMqjT3Q9TAqf2YqjwmnUleZwzJi1A5qXnlBCdj2AtOJ6wAWdglTIDOPgOiOrXeBeFcsQ8+aGQ6QbA==}
-
-  webpack-virtual-modules@0.5.0:
-    resolution: {integrity: sha512-kyDivFZ7ZM0BVOUteVbDFhlRt7Ah/CSPwJdi8hBpkK7QLumUqdLtVfm/PX/hkcnrvr0i77fO5+TjZ94Pe+C9iw==}
 
   webpack-virtual-modules@0.6.2:
     resolution: {integrity: sha512-66/V2i5hQanC51vBQKPH4aI8NMAcBW59FVBs+rC7eGHupMyfn34q7rZIE+ETlJ+XTevqfUhVVBgSUNSW2flEUQ==}
@@ -13558,8 +13560,6 @@ snapshots:
       throttle-debounce: 5.0.0
 
   '@antfu/utils@0.7.10': {}
-
-  '@antfu/utils@0.7.6': {}
 
   '@antv/adjust@0.2.5':
     dependencies:
@@ -17874,6 +17874,19 @@ snapshots:
     transitivePeerDependencies:
       - rollup
 
+  '@vue-macros/common@1.10.0(rollup@4.14.1)(vue@3.4.27(typescript@5.4.5))':
+    dependencies:
+      '@babel/types': 7.24.0
+      '@rollup/pluginutils': 5.1.0(rollup@4.14.1)
+      '@vue/compiler-sfc': 3.4.27
+      ast-kit: 0.11.3(rollup@4.14.1)
+      local-pkg: 0.5.0
+      magic-string-ast: 0.3.0
+    optionalDependencies:
+      vue: 3.4.27(typescript@5.4.5)
+    transitivePeerDependencies:
+      - rollup
+
   '@vue/babel-helper-vue-jsx-merge-props@1.4.0': {}
 
   '@vue/babel-helper-vue-transform-on@1.2.2': {}
@@ -18211,6 +18224,8 @@ snapshots:
 
   '@vue/devtools-api@6.5.1': {}
 
+  '@vue/devtools-api@6.6.3': {}
+
   '@vue/reactivity-transform@3.3.12':
     dependencies:
       '@babel/parser': 7.24.5
@@ -18331,6 +18346,17 @@ snapshots:
       - '@vue/composition-api'
       - vue
 
+  '@vueuse/core@9.13.0(vue@3.4.27(typescript@5.4.5))':
+    dependencies:
+      '@types/web-bluetooth': 0.0.16
+      '@vueuse/metadata': 9.13.0
+      '@vueuse/shared': 9.13.0(vue@3.4.27(typescript@5.4.5))
+      vue-demi: 0.14.10(vue@3.4.27(typescript@5.4.5))
+    transitivePeerDependencies:
+      - '@vue/composition-api'
+      - vue
+    optional: true
+
   '@vueuse/metadata@9.13.0': {}
 
   '@vueuse/shared@9.13.0(@vue/composition-api@1.7.2(vue@3.3.7(typescript@5.4.5)))(vue@3.3.7(typescript@5.4.5))':
@@ -18339,6 +18365,14 @@ snapshots:
     transitivePeerDependencies:
       - '@vue/composition-api'
       - vue
+
+  '@vueuse/shared@9.13.0(vue@3.4.27(typescript@5.4.5))':
+    dependencies:
+      vue-demi: 0.14.10(vue@3.4.27(typescript@5.4.5))
+    transitivePeerDependencies:
+      - '@vue/composition-api'
+      - vue
+    optional: true
 
   '@webassemblyjs/ast@1.12.1':
     dependencies:
@@ -18816,7 +18850,7 @@ snapshots:
     dependencies:
       '@babel/parser': 7.24.5
       '@rollup/pluginutils': 5.1.0(rollup@4.14.1)
-      pathe: 1.1.1
+      pathe: 1.1.2
     transitivePeerDependencies:
       - rollup
 
@@ -18824,7 +18858,7 @@ snapshots:
     dependencies:
       '@babel/parser': 7.24.5
       '@rollup/pluginutils': 5.1.0(rollup@4.14.1)
-      pathe: 1.1.1
+      pathe: 1.1.2
     transitivePeerDependencies:
       - rollup
 
@@ -23344,8 +23378,8 @@ snapshots:
 
   mlly@1.4.2:
     dependencies:
-      acorn: 8.11.2
-      pathe: 1.1.1
+      acorn: 8.12.0
+      pathe: 1.1.2
       pkg-types: 1.0.3
       ufo: 1.3.1
 
@@ -25670,7 +25704,7 @@ snapshots:
 
   strip-literal@1.3.0:
     dependencies:
-      acorn: 8.11.2
+      acorn: 8.12.0
 
   strip-outer@1.0.1:
     dependencies:
@@ -26403,11 +26437,11 @@ snapshots:
       local-pkg: 0.4.3
       magic-string: 0.30.10
       mlly: 1.4.2
-      pathe: 1.1.1
+      pathe: 1.1.2
       pkg-types: 1.0.3
       scule: 1.0.0
       strip-literal: 1.3.0
-      unplugin: 1.5.0
+      unplugin: 1.10.1
     transitivePeerDependencies:
       - rollup
 
@@ -26442,16 +26476,31 @@ snapshots:
 
   unplugin-auto-import@0.16.7(@vueuse/core@9.13.0(@vue/composition-api@1.7.2(vue@3.3.7(typescript@5.4.5)))(vue@3.3.7(typescript@5.4.5)))(rollup@4.14.1):
     dependencies:
-      '@antfu/utils': 0.7.6
-      '@rollup/pluginutils': 5.0.5(rollup@4.14.1)
-      fast-glob: 3.3.1
+      '@antfu/utils': 0.7.10
+      '@rollup/pluginutils': 5.1.0(rollup@4.14.1)
+      fast-glob: 3.3.2
       local-pkg: 0.5.0
-      magic-string: 0.30.5
-      minimatch: 9.0.3
+      magic-string: 0.30.10
+      minimatch: 9.0.5
       unimport: 3.4.0(rollup@4.14.1)
-      unplugin: 1.5.0
+      unplugin: 1.10.1
     optionalDependencies:
       '@vueuse/core': 9.13.0(@vue/composition-api@1.7.2(vue@3.3.7(typescript@5.4.5)))(vue@3.3.7(typescript@5.4.5))
+    transitivePeerDependencies:
+      - rollup
+
+  unplugin-auto-import@0.16.7(@vueuse/core@9.13.0(vue@3.4.27(typescript@5.4.5)))(rollup@4.14.1):
+    dependencies:
+      '@antfu/utils': 0.7.10
+      '@rollup/pluginutils': 5.1.0(rollup@4.14.1)
+      fast-glob: 3.3.2
+      local-pkg: 0.5.0
+      magic-string: 0.30.10
+      minimatch: 9.0.5
+      unimport: 3.4.0(rollup@4.14.1)
+      unplugin: 1.10.1
+    optionalDependencies:
+      '@vueuse/core': 9.13.0(vue@3.4.27(typescript@5.4.5))
     transitivePeerDependencies:
       - rollup
 
@@ -26489,21 +26538,42 @@ snapshots:
 
   unplugin-vue-router@0.7.0(rollup@4.14.1)(vue-router@4.2.5(vue@3.3.7(typescript@5.4.5)))(vue@3.3.7(typescript@5.4.5)):
     dependencies:
-      '@babel/types': 7.23.0
-      '@rollup/pluginutils': 5.0.5(rollup@4.14.1)
+      '@babel/types': 7.24.0
+      '@rollup/pluginutils': 5.1.0(rollup@4.14.1)
       '@vue-macros/common': 1.10.0(rollup@4.14.1)(vue@3.3.7(typescript@5.4.5))
       ast-walker-scope: 0.5.0(rollup@4.14.1)
-      chokidar: 3.5.3
-      fast-glob: 3.3.1
+      chokidar: 3.6.0
+      fast-glob: 3.3.2
       json5: 2.2.3
       local-pkg: 0.4.3
       mlly: 1.4.2
-      pathe: 1.1.1
+      pathe: 1.1.2
       scule: 1.0.0
-      unplugin: 1.5.0
+      unplugin: 1.10.1
       yaml: 2.3.4
     optionalDependencies:
       vue-router: 4.2.5(vue@3.3.7(typescript@5.4.5))
+    transitivePeerDependencies:
+      - rollup
+      - vue
+
+  unplugin-vue-router@0.7.0(rollup@4.14.1)(vue-router@4.4.3(vue@3.4.27(typescript@5.4.5)))(vue@3.4.27(typescript@5.4.5)):
+    dependencies:
+      '@babel/types': 7.24.0
+      '@rollup/pluginutils': 5.1.0(rollup@4.14.1)
+      '@vue-macros/common': 1.10.0(rollup@4.14.1)(vue@3.4.27(typescript@5.4.5))
+      ast-walker-scope: 0.5.0(rollup@4.14.1)
+      chokidar: 3.6.0
+      fast-glob: 3.3.2
+      json5: 2.2.3
+      local-pkg: 0.4.3
+      mlly: 1.4.2
+      pathe: 1.1.2
+      scule: 1.0.0
+      unplugin: 1.10.1
+      yaml: 2.3.4
+    optionalDependencies:
+      vue-router: 4.4.3(vue@3.4.27(typescript@5.4.5))
     transitivePeerDependencies:
       - rollup
       - vue
@@ -26521,13 +26591,6 @@ snapshots:
       chokidar: 3.6.0
       webpack-sources: 3.2.3
       webpack-virtual-modules: 0.6.2
-
-  unplugin@1.5.0:
-    dependencies:
-      acorn: 8.11.2
-      chokidar: 3.6.0
-      webpack-sources: 3.2.3
-      webpack-virtual-modules: 0.5.0
 
   unset-value@1.0.0:
     dependencies:
@@ -26994,6 +27057,11 @@ snapshots:
     optionalDependencies:
       '@vue/composition-api': 1.7.2(vue@3.4.15(typescript@5.4.5))
 
+  vue-demi@0.14.10(vue@3.4.27(typescript@5.4.5)):
+    dependencies:
+      vue: 3.4.27(typescript@5.4.5)
+    optional: true
+
   vue-demi@0.14.7(@vue/composition-api@1.7.2(vue@3.4.15(typescript@5.4.5)))(vue@3.4.15(typescript@5.4.5)):
     dependencies:
       vue: 3.4.15(typescript@5.4.5)
@@ -27018,6 +27086,11 @@ snapshots:
   vue-router@4.3.2(vue@3.4.27(typescript@5.4.5)):
     dependencies:
       '@vue/devtools-api': 6.5.1
+      vue: 3.4.27(typescript@5.4.5)
+
+  vue-router@4.4.3(vue@3.4.27(typescript@5.4.5)):
+    dependencies:
+      '@vue/devtools-api': 6.6.3
       vue: 3.4.27(typescript@5.4.5)
 
   vue-template-babel-compiler@1.2.0(vue-template-compiler@2.6.14(vue@2.6.14)):
@@ -27133,8 +27206,6 @@ snapshots:
   webpack-sources@3.2.3: {}
 
   webpack-virtual-modules@0.4.6: {}
-
-  webpack-virtual-modules@0.5.0: {}
 
   webpack-virtual-modules@0.6.2: {}
 

@@ -9,7 +9,10 @@
     "clean": "farm clean"
   },
   "dependencies": {
-    "vue": "^3.4.0"
+    "unplugin-auto-import": "^0.16.7",
+    "unplugin-vue-router": "^0.7.0",
+    "vue": "^3.4.0",
+    "vue-router": "^4.4.3"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^5.0.4",
