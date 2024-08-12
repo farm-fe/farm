@@ -1,8 +1,10 @@
 import type * as http from 'node:http';
-// import type * as net from 'node:net';
-// import connect from 'connect';
+import type * as net from 'node:net';
+import connect from 'connect';
 import httpProxy from 'http-proxy';
-
+import type Server from 'http-proxy';
+import { ResolvedUserConfig } from '../../config/types.js';
+import { colors } from '../../utils/color.js';
 export interface ProxyOptions extends httpProxy.ServerOptions {
   rewrite?: (path: string) => string;
   configure?: (proxy: httpProxy, options: ProxyOptions) => void;
@@ -12,4 +14,124 @@ export interface ProxyOptions extends httpProxy.ServerOptions {
     options: ProxyOptions
   ) => void | null | undefined | false | string;
   rewriteWsOrigin?: boolean | undefined;
+}
+
+export function proxyMiddleware(app: any, server?: any) {
+  return function handleProxyMiddleware(
+    req: http.IncomingMessage,
+    res: http.ServerResponse,
+    next: () => void
+  ) {
+    const { serverOptions, ResolvedUserConfig } = app;
+
+    const proxies: Record<string, [Server, ProxyOptions]> = {};
+    Object.keys(serverOptions.proxy).forEach((context) => {
+      let opts = serverOptions.proxy[context];
+      if (!opts) {
+        return;
+      }
+      if (typeof opts === 'string') {
+        opts = { target: opts, changeOrigin: true } as ProxyOptions;
+      }
+      const proxy = httpProxy.createProxyServer(opts) as Server;
+
+      if (opts.configure) {
+        opts.configure(proxy, opts);
+      }
+
+      proxy.on('error', (err, req, originalRes) => {
+        // When it is ws proxy, res is net.Socket
+        // originalRes can be falsy if the proxy itself errored
+        const res = originalRes as http.ServerResponse | net.Socket | undefined;
+        if (!res) {
+          console.log(
+            `${colors.red(`http proxy error: ${err.message}`)}\n${err.stack}`
+          );
+        } else if ('req' in res) {
+          // console.log(
+          //   `${colors.red(`http proxy error: ${originalRes.req.url}`)}\n${
+          //     err.stack
+          //   }`,
+          // );
+
+          if (!res.headersSent && !res.writableEnded) {
+            res
+              .writeHead(500, {
+                'Content-Type': 'text/plain'
+              })
+              .end();
+          }
+        } else {
+          console.log(`${colors.red(`ws proxy error:`)}\n${err.stack}`);
+          res.end();
+        }
+      });
+
+      proxy.on('proxyReqWs', (proxyReq, req, socket, options, head) => {
+        rewriteOriginHeader(proxyReq, options, ResolvedUserConfig);
+
+        socket.on('error', (err) => {
+          console.log(`${colors.red(`ws proxy socket error:`)}\n${err.stack}`);
+        });
+      });
+
+      // https://github.com/http-party/node-http-proxy/issues/1520#issue-877626125
+      // https://github.com/chimurai/http-proxy-middleware/blob/cd58f962aec22c925b7df5140502978da8f87d5f/src/plugins/default/debug-proxy-errors-plugin.ts#L25-L37
+      proxy.on('proxyRes', (proxyRes, req, res) => {
+        res.on('close', () => {
+          if (!res.writableEnded) {
+            proxyRes.destroy();
+          }
+        });
+      });
+
+      // clone before saving because http-proxy mutates the options
+      proxies[context] = [proxy, { ...opts }];
+    });
+
+    if (app.httpServer) {
+      // app.httpServer.on("upgrade", (req, socket, head) => {
+      //   const url = req.url;
+      //   console.log(req.url);
+      // });
+    }
+    next();
+  };
+}
+
+function rewriteOriginHeader(
+  proxyReq: http.ClientRequest,
+  options: ProxyOptions,
+  config: ResolvedUserConfig
+) {
+  // Browsers may send Origin headers even with same-origin
+  // requests. It is common for WebSocket servers to check the Origin
+  // header, so if rewriteWsOrigin is true we change the Origin to match
+  // the target URL.
+  if (options.rewriteWsOrigin) {
+    const { target } = options;
+
+    if (proxyReq.headersSent) {
+      console.warn(
+        'Unable to rewrite Origin header as headers are already sent.'
+      );
+      return;
+    }
+
+    if (proxyReq.getHeader('origin') && target) {
+      const changedOrigin =
+        typeof target === 'object'
+          ? `${target.protocol}//${target.host}`
+          : target;
+
+      proxyReq.setHeader('origin', changedOrigin);
+    }
+  }
+}
+
+function doesProxyContextMatchUrl(context: string, url: string): boolean {
+  return (
+    (context[0] === '^' && new RegExp(context).test(url)) ||
+    url.startsWith(context)
+  );
 }

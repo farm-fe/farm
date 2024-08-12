@@ -2,7 +2,20 @@
 import { ref } from "vue";
 import HelloWorld from "./components/HelloWorld.vue";
 const a = ref(666);
-console.log(a);
+
+const incrementA = () => {
+  a.value++;
+};
+
+const getMessage = () => {
+  return a.value % 2 === 0 ? "a 是偶数" : "a 是奇数";
+};
+
+fetch(
+  "https://apis.juhe.cn/environment/river?key=caab07f6c5df752d2e28edfe447ae6d0",
+)
+  .then((res) => res.json())
+  .then((data) => console.log(data));
 </script>
 
 <template>
@@ -10,6 +23,9 @@ console.log(a);
     <a href="https://farmfe.org/" target="_blank">
       <img src="./assets/logo.png" class="logo" alt="Farm logo" />
     </a>
+    {{ a }}
+    <button @click="incrementA">增加 a</button>
+    <p>{{ getMessage() }}</p>
     <a href="https://vuejs.org/" target="_blank">
       <img src="./assets/vue.svg" class="logo vue" alt="Vue logo" />
     </a>

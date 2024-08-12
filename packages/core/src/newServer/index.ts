@@ -31,6 +31,7 @@ import {
 import { adaptorViteMiddleware } from './middlewares/adaptorVite.js';
 import { HMRPingMiddleware } from './middlewares/hmrPing.js';
 import { htmlFallbackMiddleware } from './middlewares/htmlFallback.js';
+import { proxyMiddleware } from './middlewares/proxy.js';
 import { publicMiddleware } from './middlewares/public.js';
 import { resourceMiddleware } from './middlewares/resource.js';
 import { WebSocketClient, WebSocketServer, WsServer } from './ws.js';
@@ -165,6 +166,15 @@ export class newServer {
 
   private initializeMiddlewares() {
     this.middlewares.use(HMRPingMiddleware());
+
+    const { proxy, middlewareMode } = this.serverOptions;
+    // TODO 默认值给 undefined 现在默认 {}
+    if (proxy) {
+      const middlewareServer =
+        (isObject(middlewareMode) ? middlewareMode.server : null) ??
+        this.httpServer;
+      this.middlewares.use(proxyMiddleware(this, middlewareServer));
+    }
 
     if (this.publicDir) {
       this.middlewares.use(publicMiddleware(this));
