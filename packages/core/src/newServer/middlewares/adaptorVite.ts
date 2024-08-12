@@ -29,6 +29,7 @@ export function adaptorViteMiddleware(app: any) {
       resourceWithoutPublicPath
     );
 
+    // TODO use sirv to serve static file
     // try local file system
     if (existsSync(localFilePath) && statSync(localFilePath).isFile()) {
       const headers = app.resolvedUserConfig.server.headers;

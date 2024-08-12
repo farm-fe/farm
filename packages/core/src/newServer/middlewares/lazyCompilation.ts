@@ -89,16 +89,19 @@ export function lazyCompilationMiddleware(app: any) {
           "dynamicResourcesMap": ${JSON.stringify(dynamicResourcesMap)}
         }`;
       const code = !queryNode ? `export default ${returnObj}` : returnObj;
+
       const contentType = !queryNode
         ? 'application/javascript'
         : 'application/json';
+
+      const lazyCompilationHeaders = {
+        'Content-Type': contentType,
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': '*',
+        'Access-Control-Allow-Headers': '*'
+      };
       send(req, res, code, req.url, {
-        headers: {
-          'Content-Type': contentType,
-          'Access-Control-Allow-Origin': '*',
-          'Access-Control-Allow-Methods': '*',
-          'Access-Control-Allow-Headers': '*'
-        }
+        headers: lazyCompilationHeaders
       });
     } else {
       throw new Error(`Lazy compilation result not found for paths ${paths}`);

@@ -184,9 +184,9 @@ export class newServer {
       this.middlewares.use(proxyMiddleware(this, middlewareServer));
     }
 
-    // if (this.publicDir) {
-    //   this.middlewares.use(publicMiddleware(this));
-    // }
+    if (this.publicDir) {
+      this.middlewares.use(publicMiddleware(this));
+    }
 
     if (this.resolvedUserConfig.compilation.lazyCompilation) {
       this.middlewares.use(lazyCompilationMiddleware(this));

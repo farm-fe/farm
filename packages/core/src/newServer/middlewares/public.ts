@@ -12,48 +12,43 @@ import {
   urlRE
 } from '../../utils/url.js';
 
-import type { ResolvedUserConfig } from '../../config/types.js';
+// TODO: if url endsWith importQueryRE we need can check if it is a module then serve or not
+// function warnAboutPublicDir(url: string, publicPath: string) {
+//   let warning: string;
+//   if (isImportRequest(url)) {
+//     const rawUrl = removeImportQuery(url);
+//     if (urlRE.test(url)) {
+//       warning =
+//         `Assets in the public directory are directly accessible at the root path.\n` +
+//         `Use ${colors.brandColor(
+//           rawUrl.replace(publicPath, "/")
+//         )} instead of the explicit ${colors.brandColor(rawUrl)}.`;
+//     } else {
+//       warning =
+//         "Assets in the public directory should not be imported directly in JavaScript.\n" +
+//         `To import an asset, place it inside the src directory. Use ${colors.brandColor(
+//           rawUrl.replace(publicPath, "/src/")
+//         )} instead of ${colors.cyan(rawUrl)}.\n` +
+//         `For referencing the asset's path, use ${colors.brandColor(
+//           rawUrl.replace(publicPath, "/")
+//         )}.`;
+//     }
+//   } else {
+//     warning =
+//       `Public directory files are accessible directly at the root path.\n` +
+//       `Use ${colors.brandColor(
+//         url.replace(publicPath, "/")
+//       )} directly, rather than ${colors.brandColor(`${publicPath}${url}`)}.`;
+//   }
 
-function warnAboutPublicDir(url: string, publicPath: string) {
-  let warning: string;
-  if (isImportRequest(url)) {
-    const rawUrl = removeImportQuery(url);
-    if (urlRE.test(url)) {
-      warning =
-        `Assets in the public directory are directly accessible at the root path.\n` +
-        `Use ${colors.brandColor(
-          rawUrl.replace(publicPath, '/')
-        )} instead of the explicit ${colors.brandColor(rawUrl)}.`;
-    } else {
-      warning =
-        'Assets in the public directory should not be imported directly in JavaScript.\n' +
-        `To import an asset, place it inside the src directory. Use ${colors.brandColor(
-          rawUrl.replace(publicPath, '/src/')
-        )} instead of ${colors.cyan(rawUrl)}.\n` +
-        `For referencing the asset's path, use ${colors.brandColor(
-          rawUrl.replace(publicPath, '/')
-        )}.`;
-    }
-  } else {
-    warning =
-      `Public directory files are accessible directly at the root path.\n` +
-      `Use ${colors.brandColor(
-        url.replace(publicPath, '/')
-      )} directly, rather than ${colors.brandColor(`${publicPath}${url}`)}.`;
-  }
-
-  return warning;
-}
+//   return warning;
+// }
 
 export function publicMiddleware(app: any) {
-  const { resolvedUserConfig: config, publicDir, publicFiles, logger } = app;
-  const { root } = config;
-  const publicPath = `${publicDir.slice(root.length)}`;
+  const { resolvedUserConfig: config, publicDir, publicFiles } = app;
   const headers = config.server.headers;
   const serve = sirv(publicDir, {
-    dev: true,
     etag: true,
-    extensions: [],
     setHeaders: (res, path) => {
       if (knownJavascriptExtensionRE.test(path)) {
         res.setHeader('Content-Type', 'text/javascript');
@@ -82,22 +77,7 @@ export function publicMiddleware(app: any) {
     res: any,
     next: () => void
   ) {
-    const url = req.url;
-    const cleanedUrl = removeHashFromPath(url);
-    const cleanFilePath = toFilePath(cleanedUrl);
-    // If it is not equal, it means that it is recognized as a module
-    if (
-      publicDir.startsWith(withTrailingSlash(root)) &&
-      publicFiles.has(cleanFilePath) &&
-      cleanedUrl !== url
-    ) {
-      const publicDirWarning = warnAboutPublicDir(cleanFilePath, publicPath);
-      if (publicDirWarning) {
-        logger.warn(publicDirWarning);
-      }
-    }
-
-    if (publicFiles && !publicFiles.has(toFilePath(url))) {
+    if (publicFiles && !publicFiles.has(toFilePath(req.url))) {
       return next();
     }
 
