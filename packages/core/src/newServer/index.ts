@@ -29,13 +29,17 @@ import {
   resolveHttpServer,
   resolveHttpsConfig
 } from './http.js';
-import { adaptorViteMiddleware } from './middlewares/adaptorVite.js';
-import { HMRPingMiddleware } from './middlewares/hmrPing.js';
-import { htmlFallbackMiddleware } from './middlewares/htmlFallback.js';
-import { lazyCompilationMiddleware } from './middlewares/lazyCompilation.js';
-import { proxyMiddleware } from './middlewares/proxy.js';
-import { publicMiddleware } from './middlewares/public.js';
-import { resourceMiddleware } from './middlewares/resource.js';
+import {
+  adaptorViteMiddleware,
+  hmrPingMiddleware,
+  htmlFallbackMiddleware,
+  lazyCompilationMiddleware,
+  proxyMiddleware,
+  publicMiddleware,
+  publicPathMiddleware,
+  resourceMiddleware
+} from './middlewares/index.js';
+
 import { WebSocketClient, WebSocketServer, WsServer } from './ws.js';
 
 export type HttpServer = Server | Http2SecureServer;
@@ -167,15 +171,18 @@ export class newServer {
   }
 
   private initializeMiddlewares() {
-    this.middlewares.use(HMRPingMiddleware());
+    this.middlewares.use(hmrPingMiddleware());
 
     const { proxy, middlewareMode, cors } = this.serverOptions;
+
+    this.middlewares.use(publicPathMiddleware(this));
 
     if (cors) {
       this.middlewares.use(
         corsMiddleware(typeof cors === 'boolean' ? {} : cors)
       );
     }
+
     // TODO 默认值给 undefined 现在默认 {}
     if (proxy) {
       const middlewareServer =

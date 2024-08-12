@@ -1,4 +1,4 @@
-export function HMRPingMiddleware() {
+export function hmrPingMiddleware() {
   return function handleHMRPingMiddleware(
     req: any,
     res: any,

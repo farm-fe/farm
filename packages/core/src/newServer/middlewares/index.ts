@@ -1,4 +1,3 @@
-export * from './cors.js';
 export * from './error.js';
 export * from './htmlFallback.js';
 export * from './lazyCompilation.js';
@@ -6,4 +5,7 @@ export * from './notFound.js';
 export * from './proxy.js';
 export * from './static.js';
 export * from './resource.js';
-export * from './public.js';
+export * from './publicResource.js';
+export * from './publicPath.js';
+export * from './hmrPing.js';
+export * from './adaptorVite.js';

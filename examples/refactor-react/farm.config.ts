@@ -10,6 +10,9 @@ export default defineConfig({
     // persistentCache: false,
     runtime: {
       isolate: true
+    },
+    output: {
+      publicPath: '/dist'
     }
   },
   server: {
