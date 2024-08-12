@@ -32,6 +32,7 @@ import {
 import { adaptorViteMiddleware } from './middlewares/adaptorVite.js';
 import { HMRPingMiddleware } from './middlewares/hmrPing.js';
 import { htmlFallbackMiddleware } from './middlewares/htmlFallback.js';
+import { lazyCompilationMiddleware } from './middlewares/lazyCompilation.js';
 import { proxyMiddleware } from './middlewares/proxy.js';
 import { publicMiddleware } from './middlewares/public.js';
 import { resourceMiddleware } from './middlewares/resource.js';
@@ -170,7 +171,7 @@ export class newServer {
 
     const { proxy, middlewareMode, cors } = this.serverOptions;
 
-    if (cors !== false) {
+    if (cors) {
       this.middlewares.use(
         corsMiddleware(typeof cors === 'boolean' ? {} : cors)
       );
@@ -183,8 +184,12 @@ export class newServer {
       this.middlewares.use(proxyMiddleware(this, middlewareServer));
     }
 
-    if (this.publicDir) {
-      this.middlewares.use(publicMiddleware(this));
+    // if (this.publicDir) {
+    //   this.middlewares.use(publicMiddleware(this));
+    // }
+
+    if (this.resolvedUserConfig.compilation.lazyCompilation) {
+      this.middlewares.use(lazyCompilationMiddleware(this));
     }
     // TODO todo add appType 这块要判断 单页面还是 多页面 多 html 处理不一样
     this.middlewares.use(htmlFallbackMiddleware(this));

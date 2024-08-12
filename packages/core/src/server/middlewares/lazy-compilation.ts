@@ -27,6 +27,8 @@ export function lazyCompilation(devSeverContext: Server): Middleware {
 
   return async (ctx: Context, next: Next) => {
     if (ctx.path === '/__lazy_compile') {
+      console.log(ctx.query.paths);
+
       const paths = (ctx.query.paths as string).split(',');
       const pathsStr = paths
         .map((p) => {

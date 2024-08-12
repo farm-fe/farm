@@ -35,7 +35,7 @@ export default defineConfig({
       // publicPath: "/vue-public-path/",
     },
     // persistentCache: false,
-    lazyCompilation: false,
+    // lazyCompilation: false,
     sourcemap: false,
   },
   plugins: [
