@@ -96,29 +96,17 @@ export function publicMiddleware(app: any) {
     const originalUrl = req.url;
     const filePath = toFilePath(originalUrl);
 
-    console.log('Original URL:', originalUrl);
-    console.log('File path:', filePath);
-    console.log('Public path:', publicPath);
-
     // 移除 URL 开头的 publicPath
     const urlWithoutPublicPath = filePath.startsWith('/' + publicPath)
       ? filePath.slice(publicPath.length + 1)
       : filePath;
 
-    console.log('URL without public path:', urlWithoutPublicPath);
-
     // 检查文件是否在 publicFiles 中
     if (publicFiles && publicFiles.has('/' + urlWithoutPublicPath)) {
-      // 如果文件在 publicFiles 中，修改 req.url
       req.url = '/' + urlWithoutPublicPath;
-      console.log('Modified URL:', req.url);
-
-      // 使用 sirv 处理请求
       serve(req, res, next);
-    } else {
-      // 如果文件不在 publicFiles 中，直接调用 next()
-      console.log('File not found in publicFiles');
-      next();
     }
+
+    next();
   };
 }

@@ -7,8 +7,8 @@ export function publicPathMiddleware(app: any) {
     //  Location: base + url.slice(pathname.length),
     // })
     // console.log(req.url);
-    const url = req.url!;
-    const pathname = cleanUrl(url);
+    const url = cleanUrl(req.url);
+    console.log(url);
 
     next();
   };

@@ -48,6 +48,7 @@ export function lazyCompilationMiddleware(app: any) {
 
     let result;
     try {
+      // TODO 我想知道能不能把时间算法 单独写成一个 middleware
       // sync regenerate resources
       result = await compiler.update(paths, true, false, false);
     } catch (e) {
