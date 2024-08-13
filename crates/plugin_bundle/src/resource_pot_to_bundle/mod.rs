@@ -6,6 +6,7 @@ use std::{
   sync::{Arc, Mutex},
 };
 
+use bundle::bundle_reference::BundleReferenceManager;
 use farmfe_core::{
   context::CompilationContext,
   enhanced_magic_string::bundle::Bundle,
@@ -30,6 +31,7 @@ mod common;
 mod defined_idents_collector;
 mod modules_analyzer;
 mod targets;
+pub use common::FARM_BUNDLE_REFERENCE_SLOT_PREFIX;
 
 #[derive(Debug, Default, PartialEq, Eq)]
 pub struct Var {
@@ -72,6 +74,7 @@ pub type BundleMap<'a> = HashMap<ResourcePotId, BundleAnalyzer<'a>>;
 
 pub struct SharedBundle<'a> {
   pub bundle_map: BundleMap<'a>,
+  bundle_reference: BundleReferenceManager,
   module_analyzer_manager: ModuleAnalyzerManager<'a>,
   module_graph: &'a ModuleGraph,
   context: &'a Arc<CompilationContext>,
@@ -174,6 +177,7 @@ impl<'a> SharedBundle<'a> {
       bundle_variables,
       order_index_map: order_map,
       order_resource_pot,
+      bundle_reference: Default::default(),
     })
   }
 
@@ -224,9 +228,12 @@ impl<'a> SharedBundle<'a> {
       }
     }
 
-    self
-      .module_analyzer_manager
-      .link(bundle_variable, &self.order_index_map, self.context);
+    self.module_analyzer_manager.link(
+      bundle_variable,
+      &self.order_index_map,
+      self.context,
+      &self.order_resource_pot,
+    );
 
     Ok(())
   }
@@ -235,7 +242,6 @@ impl<'a> SharedBundle<'a> {
   fn render_bundle(&mut self) -> Result<()> {
     farm_profile_function!("");
 
-    // TODO: multiple bundle should merge polyfill to runtime bundle, and reexport to other bundle
     for resource_pot_id in &self.order_resource_pot {
       farm_profile_scope!(format!("render bundle: {}", resource_pot_id));
 
@@ -243,9 +249,14 @@ impl<'a> SharedBundle<'a> {
 
       bundle_analyzer.set_namespace(&bundle_analyzer.resource_pot.id);
 
-      bundle_analyzer.render(&mut self.module_analyzer_manager, &self.order_index_map)?;
+      bundle_analyzer.render(
+        &mut self.module_analyzer_manager,
+        &self.order_index_map,
+        &mut self.bundle_reference,
+      )?;
     }
 
+    // multiple bundle should merge polyfill to runtime or entry bundle, and reexport to other bundle
     let mut polyfill = SimplePolyfill::new(vec![]);
 
     for resource_pot_id in &self.order_resource_pot {

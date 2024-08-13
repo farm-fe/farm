@@ -64,6 +64,7 @@
     console.log('runtime/index.js');
     window['__farm_default_namespace__'].__farm_module_system__.setPlugins([]);
 });
+index_js_cjs();
 })());
 
 //index.js:

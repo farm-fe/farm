@@ -25,7 +25,7 @@ use farmfe_toolkit::{
 };
 
 use crate::resource_pot_to_bundle::{
-  bundle::{bundle_external::BundleReference, ModuleAnalyzerManager, ModuleGlobalUniqName},
+  bundle::{bundle_reference::BundleReference, ModuleAnalyzerManager, ModuleGlobalUniqName},
   polyfill::{cjs::wrap_commonjs, Polyfill, SimplePolyfill},
   uniq_name::BundleVariable,
 };
@@ -185,11 +185,13 @@ impl CjsPatch {
         .unwrap(),
       );
     }
+    println!("module_id {:#?}", module_id.to_string());
 
     if let Some(import) = bundle_reference
       .redeclare_commonjs_import
       .get(&module_id.clone().into())
     {
+      println!("patch_cjs_module bundle_reference: {:#?}", import);
       patch_ast.extend(CjsModuleAnalyzer::redeclare_commonjs_export(
         module_id,
         bundle_variable,

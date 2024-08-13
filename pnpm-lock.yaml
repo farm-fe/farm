@@ -1516,6 +1516,9 @@ importers:
       core-js:
         specifier: ^3.35.1
         version: 3.35.1
+      lodash-es:
+        specifier: ^4.17.21
+        version: 4.17.21
     devDependencies:
       '@farmfe/cli':
         specifier: workspace:*
@@ -1526,6 +1529,9 @@ importers:
       '@farmfe/js-plugin-dts':
         specifier: workspace:^
         version: link:../../js-plugins/dts
+      '@types/lodash-es':
+        specifier: ^4.17.12
+        version: 4.17.12
       lodash:
         specifier: ^4.17.21
         version: 4.17.21

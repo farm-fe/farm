@@ -1,14 +1,22 @@
 #![feature(box_patterns)]
 
-use std::{collections::HashMap, sync::Arc};
+use std::{
+  borrow::Cow,
+  collections::{HashMap, HashSet},
+  sync::Arc,
+};
 
 use farmfe_core::{
   enhanced_magic_string::bundle::Bundle,
   parking_lot::Mutex,
   plugin::Plugin,
-  resource::resource_pot::{ResourcePotMetaData, ResourcePotType},
+  regex::Regex,
+  resource::{
+    resource_pot::{ResourcePotMetaData, ResourcePotType},
+    ResourceType,
+  },
 };
-use resource_pot_to_bundle::{Polyfill, SharedBundle};
+use resource_pot_to_bundle::{Polyfill, SharedBundle, FARM_BUNDLE_REFERENCE_SLOT_PREFIX};
 
 pub mod resource_pot_to_bundle;
 
@@ -22,6 +30,7 @@ const MODULE_NEED_POLYFILLS: [Polyfill; 3] = [
 pub struct FarmPluginBundle {
   runtime_code: Mutex<Arc<String>>,
   bundle_map: Mutex<HashMap<String, Bundle>>,
+  resource_pot_id_resource_map: Mutex<HashMap<String, String>>,
 }
 
 impl FarmPluginBundle {
@@ -130,6 +139,87 @@ impl Plugin for FarmPluginBundle {
         rendered_map_chain: vec![],
         custom_data: resource_pot.meta.custom_data.clone(),
       }));
+    }
+
+    Ok(None)
+  }
+
+  fn process_generated_resources(
+    &self,
+    resources: &mut farmfe_core::plugin::PluginGenerateResourcesHookResult,
+    _context: &Arc<farmfe_core::context::CompilationContext>,
+  ) -> farmfe_core::error::Result<Option<()>> {
+    if let Some(resource_pot_id) = resources.resource.info.as_ref().map(|i| i.id.clone()) {
+      self
+        .resource_pot_id_resource_map
+        .lock()
+        .insert(resource_pot_id, resources.resource.name.clone());
+    }
+
+    Ok(None)
+  }
+
+  fn finalize_resources(
+    &self,
+    param: &mut farmfe_core::plugin::PluginFinalizeResourcesHookParams,
+    context: &Arc<farmfe_core::context::CompilationContext>,
+  ) -> farmfe_core::error::Result<Option<()>> {
+    if !context.config.output.target_env.is_library() {
+      return Ok(None);
+    }
+    let mut map = HashMap::new();
+    for (name, resource) in param.resources_map.iter() {
+      map.insert(resource.info.as_ref().unwrap().id.clone(), name.clone());
+    }
+
+    for (name, resource) in param.resources_map.iter_mut() {
+      if !matches!(
+        resource.resource_type,
+        ResourceType::Js | ResourceType::Runtime
+      ) {
+        continue;
+      }
+      let before = std::time::Instant::now();
+
+      println!("\n\nresource name: {}", name);
+
+      let mut content = String::from_utf8_lossy(&resource.bytes).to_string();
+
+      let reg =
+        Regex::new(format!("{}\\(\\(.+?\\)\\)", FARM_BUNDLE_REFERENCE_SLOT_PREFIX).as_str())
+          .unwrap();
+
+      let items = reg
+        .captures_iter(&content)
+        .into_iter()
+        .flat_map(|i| {
+          i.iter()
+            .filter_map(|i| i)
+            .map(|i| i.as_str().to_string())
+            .collect::<Vec<_>>()
+        })
+        .map(|i| i.as_str().to_string())
+        .collect::<HashSet<_>>();
+
+      if items.is_empty() {
+        continue;
+      }
+
+      for item in items {
+        let resource_pot_id = item
+          .trim_start_matches(FARM_BUNDLE_REFERENCE_SLOT_PREFIX)
+          .trim_start_matches("((")
+          .trim_end_matches("))");
+        let resource_name = map
+          .get(resource_pot_id)
+          .expect("cannot find bundle reference, please ensure your resource cornet");
+
+        content = content.replace(&item, resource_name);
+      }
+
+      resource.bytes = content.into_bytes();
+
+      println!("resource_name time: {}", before.elapsed().as_secs_f32());
     }
 
     Ok(None)

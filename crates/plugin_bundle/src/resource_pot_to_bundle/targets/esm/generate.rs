@@ -13,7 +13,7 @@ use farmfe_core::{
 
 use crate::resource_pot_to_bundle::{
   bundle::{
-    bundle_external::{ExternalReferenceExport, ExternalReferenceImport, ReferenceKind},
+    bundle_reference::{ExternalReferenceExport, ExternalReferenceImport, ReferenceKind},
     ModuleAnalyzerManager,
   },
   uniq_name::BundleVariable,

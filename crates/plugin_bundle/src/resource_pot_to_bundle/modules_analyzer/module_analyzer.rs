@@ -352,7 +352,9 @@ impl ModuleAnalyzer {
           &self.module_id,
           module_graph,
           self.mark.1,
-          &mut |ident, strict| bundle_variable.register_var(&self.module_id, ident, strict),
+          &mut |ident, strict| {
+            bundle_variable.register_var(&self.module_id.to_string(), ident, strict)
+          },
         )
         .unwrap();
 

@@ -13,10 +13,10 @@ use farmfe_core::{
 
 use crate::resource_pot_to_bundle::{
   bundle::{
-    bundle_external::{ExternalReferenceExport, ExternalReferenceImport, ReferenceKind},
+    bundle_reference::{ExternalReferenceExport, ExternalReferenceImport, ReferenceKind},
     ModuleAnalyzerManager,
   },
-  common::OptionToResult,
+  common::{with_bundle_reference_slot_name, OptionToResult},
   polyfill::{
     cjs::{wrap_export_star, wrap_require_default, wrap_require_wildcard},
     SimplePolyfill,
@@ -195,29 +195,25 @@ impl CjsGenerate {
     import_map: &HashMap<ReferenceKind, ExternalReferenceImport>,
     module_analyzer_manager: &ModuleAnalyzerManager,
     polyfill: &mut SimplePolyfill,
+    resource_pot_id: &str,
   ) -> Result<Vec<ModuleItem>> {
     let mut stmts = vec![];
     let mut ordered_import = import_map.keys().collect::<Vec<_>>();
     ordered_import.sort();
 
+    println!("import_map: {:?}", import_map);
+
     for source in ordered_import {
+      let import = &import_map[source];
+
       let module_id = match source {
         ReferenceKind::Bundle(_) => continue,
         ReferenceKind::Module(m) => m,
       };
 
-      let import = &import_map[source];
-
       if import.named.is_empty() && import.namespace.is_none() && import.default.is_none() {
         continue;
       }
-
-      let namespace_name = bundle_variable.name(
-        module_analyzer_manager
-          .module_global_uniq_name
-          .namespace_name(module_id)
-          .unwrap(),
-      );
 
       // import * as foo_ns from "foo";
       // import foo from "foo";
@@ -239,6 +235,24 @@ impl CjsGenerate {
         expr
       };
 
+      let source_bundle_id = module_analyzer_manager
+        .module_analyzer(module_id)
+        .map(|m| m.resource_pot_id.clone())
+        .unwrap();
+      let is_commonjs = module_analyzer_manager.is_commonjs(module_id);
+
+      let namespace_name = bundle_variable.name(if source_bundle_id != resource_pot_id {
+        module_analyzer_manager
+          .module_global_uniq_name
+          .namespace_name(source_bundle_id.to_string())
+          .unwrap()
+      } else {
+        module_analyzer_manager
+          .module_global_uniq_name
+          .namespace_name(module_id)
+          .unwrap()
+      });
+
       // if both namespace and default are imported, we need to import the namespace first
       stmts.push(ModuleItem::Stmt(Stmt::Decl(Decl::Var(Box::new(VarDecl {
         span: DUMMY_SP,
@@ -256,7 +270,13 @@ impl CjsGenerate {
               callee: Callee::Expr(Box::new(Expr::Ident("require".into()))),
               args: vec![ExprOrSpread {
                 spread: None,
-                expr: Box::new(Expr::Lit(Lit::Str(module_id.to_string().as_str().into()))),
+                expr: Box::new(Expr::Lit(Lit::Str(
+                  if source_bundle_id != resource_pot_id {
+                    with_bundle_reference_slot_name(&source_bundle_id).into()
+                  } else {
+                    source.to_url().as_str().into()
+                  },
+                ))),
               }],
               type_args: None,
               ctxt: SyntaxContext::empty(),
@@ -269,10 +289,20 @@ impl CjsGenerate {
       })))));
 
       let mut decls: Vec<VarDeclarator> = vec![];
+      let namespace_expr = if is_commonjs {
+        Expr::Call(CallExpr {
+          span: DUMMY_SP,
+          callee: Callee::Expr(Box::new(Expr::Ident(namespace_name.as_str().into()))),
+          args: vec![],
+          type_args: None,
+        })
+      } else {
+        Expr::Ident(namespace_name.as_str().into())
+      };
 
       let mut add_decl = |name: &str, property: &str| {
         let is_default = property == "default";
-        let init_expr = Box::new(Expr::Ident(namespace_name.as_str().into()));
+        let init_expr = Box::new(namespace_expr.clone());
 
         decls.push(VarDeclarator {
           span: DUMMY_SP,

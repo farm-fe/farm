@@ -1,10 +1,11 @@
 use std::{
   collections::{HashMap, HashSet},
+  fmt::Debug,
   mem::{self, replace},
   sync::{Arc, Mutex, RwLock},
 };
 
-use bundle_external::BundleReference;
+use bundle_reference::{BundleReference, ReferenceKind};
 use farmfe_core::{
   config::external::ExternalConfig,
   context::CompilationContext,
@@ -13,6 +14,7 @@ use farmfe_core::{
   module::{module_graph::ModuleGraph, ModuleId, ModuleSystem},
   plugin::ResolveKind,
   rayon::iter::{IntoParallelIterator, ParallelIterator},
+  resource::resource_pot::ResourcePotId,
   swc_common::{util::take::Take, SyntaxContext, DUMMY_SP},
   swc_ecma_ast::{
     self, BindingIdent, CallExpr, ClassDecl, Decl, EmptyStmt, Expr, ExprStmt, FnDecl, Ident,
@@ -22,7 +24,7 @@ use farmfe_core::{
 use farmfe_toolkit::{script::swc_try_with::try_with, swc_ecma_visit::VisitMutWith};
 
 pub mod bundle_analyzer;
-pub mod bundle_external;
+pub mod bundle_reference;
 pub mod bundle_variable;
 pub mod reference;
 use crate::resource_pot_to_bundle::targets::{
@@ -93,7 +95,7 @@ impl ModuleGlobalName {
 
 #[derive(Debug, Default)]
 pub struct ModuleGlobalUniqName {
-  module_map: HashMap<ModuleId, ModuleGlobalName>,
+  module_map: HashMap<ReferenceKind, ModuleGlobalName>,
 }
 
 impl ModuleGlobalUniqName {
@@ -103,41 +105,61 @@ impl ModuleGlobalUniqName {
     }
   }
 
-  pub fn namespace_name(&self, module_id: &ModuleId) -> Option<usize> {
+  pub fn namespace_name<R: Into<ReferenceKind>>(&self, module_id: R) -> Option<usize> {
     self
       .module_map
-      .get(module_id)
+      .get(&module_id.into())
       .and_then(|item| item.namespace)
   }
 
-  pub fn default_name(&self, module_id: &ModuleId) -> Option<usize> {
-    self.module_map.get(module_id).and_then(|item| item.default)
-  }
-
-  pub fn commonjs_name(&self, module_id: &ModuleId) -> Option<usize> {
+  pub fn default_name<R: Into<ReferenceKind>>(&self, module_id: R) -> Option<usize> {
     self
       .module_map
-      .get(module_id)
+      .get(&module_id.into())
+      .and_then(|item| item.default)
+  }
+
+  pub fn commonjs_name<R: Into<ReferenceKind>>(&self, module_id: R) -> Option<usize> {
+    self
+      .module_map
+      .get(&module_id.into())
       .and_then(|item| item.commonjs)
   }
 
-  pub fn default_name_result(&self, module_id: &ModuleId) -> Result<usize> {
+  pub fn commonjs_name_result<R: Into<ReferenceKind> + Debug + Clone>(
+    &self,
+    module_id: R,
+  ) -> Result<usize> {
     self
-      .default_name(module_id)
-      .to_result("not found module {:?} default name")
+      .commonjs_name(module_id.clone())
+      .to_result(format!("not found module commonjs name by {:?}", module_id))
   }
 
-  fn entry_module(&mut self, module_id: &ModuleId) -> &mut ModuleGlobalName {
-    if !self.module_map.contains_key(module_id) {
+  pub fn default_name_result<R: Into<ReferenceKind> + Debug + Clone>(
+    &self,
+    module_id: R,
+  ) -> Result<usize> {
+    self
+      .default_name(module_id.clone())
+      .to_result(format!("not found module default name by {:?}", module_id))
+  }
+
+  fn entry_module<R: Into<ReferenceKind>>(&mut self, module_id: R) -> &mut ModuleGlobalName {
+    let reference_kind = module_id.into();
+    if !self.module_map.contains_key(&reference_kind) {
       self
         .module_map
-        .insert(module_id.clone(), ModuleGlobalName::new());
+        .insert(reference_kind.clone(), ModuleGlobalName::new());
     }
 
-    self.module_map.get_mut(module_id).unwrap()
+    self.module_map.get_mut(&reference_kind).unwrap()
   }
 
-  fn add_namespace<F: FnOnce(&str) -> usize>(&mut self, module_id: &ModuleId, v: F) {
+  fn add_namespace<F: FnOnce(&str) -> usize, R: Into<ReferenceKind>>(
+    &mut self,
+    module_id: R,
+    v: F,
+  ) {
     let m = self.entry_module(module_id);
 
     if m.namespace.is_none() {
@@ -145,7 +167,7 @@ impl ModuleGlobalUniqName {
     }
   }
 
-  fn add_default<F: FnOnce(&str) -> usize>(&mut self, module_id: &ModuleId, v: F) {
+  fn add_default<F: FnOnce(&str) -> usize, R: Into<ReferenceKind>>(&mut self, module_id: R, v: F) {
     let m = self.entry_module(module_id);
 
     if m.default.is_none() {
@@ -153,7 +175,7 @@ impl ModuleGlobalUniqName {
     }
   }
 
-  fn add_commonjs<F: FnOnce(&str) -> usize>(&mut self, module_id: &ModuleId, v: F) {
+  fn add_commonjs<F: FnOnce(&str) -> usize, R: Into<ReferenceKind>>(&mut self, module_id: R, v: F) {
     let m = self.entry_module(module_id);
 
     if m.commonjs.is_none() {
@@ -755,12 +777,21 @@ impl<'a> ModuleAnalyzerManager<'a> {
     bundle_variable: &mut BundleVariable,
     order_index_map: &HashMap<ModuleId, usize>,
     context: &Arc<CompilationContext>,
+    order_resource_pot: &Vec<ResourcePotId>,
   ) {
     farm_profile_scope!("link module analyzer");
     let root = &context.config.root;
     let mut ordered_module_ids = order_index_map.keys().collect::<Vec<_>>();
 
     ordered_module_ids.sort_by(|a, b| order_index_map[b].cmp(&order_index_map[a]));
+
+    for resource_pot_id in order_resource_pot {
+      self
+        .module_global_uniq_name
+        .add_namespace(resource_pot_id, |v| {
+          bundle_variable.register_common_used_name(v, &resource_pot_id)
+        });
+    }
 
     for module_id in ordered_module_ids {
       if self.module_map.contains_key(module_id) {
@@ -985,9 +1016,9 @@ mod tests {
     // moduleC.js a1 -> a2
     // moduleD.js a2
     let module_index_foo_export_origin =
-      bundle_variables.register_var(&module_index_id, &Ident::from("foo"), false);
+      bundle_variables.register_var(&module_index_id.to_string(), &Ident::from("foo"), false);
     let module_index_bar_export_as =
-      bundle_variables.register_var(&module_index_id, &Ident::from("bar"), false);
+      bundle_variables.register_var(&module_index_id.to_string(), &Ident::from("bar"), false);
 
     module_analyzer_index.statements.push(Statement {
       id: 0,
@@ -1004,7 +1035,7 @@ mod tests {
     });
 
     let module_a_foo_export_origin =
-      bundle_variables.register_var(&module_a_id, &Ident::from("foo"), false);
+      bundle_variables.register_var(&module_a_id.to_string(), &Ident::from("foo"), false);
     module_analyzer_a.statements.push(Statement {
       id: 0,
       import: None,
@@ -1020,9 +1051,9 @@ mod tests {
     });
 
     let module_b_a1_export_origin =
-      bundle_variables.register_var(&module_b_id, &Ident::from("a1"), false);
+      bundle_variables.register_var(&module_b_id.to_string(), &Ident::from("a1"), false);
     let module_b_foo_export_as =
-      bundle_variables.register_var(&module_b_id, &Ident::from("foo"), false);
+      bundle_variables.register_var(&module_b_id.to_string(), &Ident::from("foo"), false);
     module_analyzer_b.statements.push(Statement {
       id: 0,
       import: None,
@@ -1038,11 +1069,11 @@ mod tests {
     });
 
     let module_c_a2_export_origin =
-      bundle_variables.register_var(&module_c_id, &Ident::from("a2"), false);
+      bundle_variables.register_var(&module_c_id.to_string(), &Ident::from("a2"), false);
     let module_c_a1_export_as =
-      bundle_variables.register_var(&module_c_id, &Ident::from("a1"), false);
+      bundle_variables.register_var(&module_c_id.to_string(), &Ident::from("a1"), false);
     let module_c_d3_export_namespace =
-      bundle_variables.register_var(&module_c_id, &Ident::from("d3"), false);
+      bundle_variables.register_var(&module_c_id.to_string(), &Ident::from("d3"), false);
 
     module_analyzer_c.statements.push(Statement {
       id: 0,
@@ -1062,7 +1093,7 @@ mod tests {
     });
 
     let module_d_a2_export_origin =
-      bundle_variables.register_var(&module_d_id, &Ident::from("a2"), false);
+      bundle_variables.register_var(&module_d_id.to_string(), &Ident::from("a2"), false);
     module_analyzer_d.statements.push(Statement {
       id: 0,
       import: None,

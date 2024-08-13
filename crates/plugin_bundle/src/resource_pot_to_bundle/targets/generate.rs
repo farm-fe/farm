@@ -15,7 +15,7 @@ use farmfe_core::{
 
 use crate::resource_pot_to_bundle::{
   bundle::{
-    bundle_external::{BundleReference, ExternalReferenceExport},
+    bundle_reference::{BundleReference, ExternalReferenceExport},
     reference::{ReferenceExport, ReferenceMap},
     ModuleAnalyzerManager,
   },
@@ -48,12 +48,12 @@ pub fn generate_namespace_by_reference_map(
     generate_export_as_object_prop(&mut props, &map.export, bundle_variable);
   }
 
-  let mut module_ids = map.reference_map.keys().collect::<Vec<_>>();
+  let mut module_ids = map.reexport_map.keys().collect::<Vec<_>>();
 
   module_ids.sort_by_key(|a| &order_index_map[a]);
 
   for module_id in module_ids {
-    let reference_export = &map.reference_map[module_id];
+    let reference_export = &map.reexport_map[module_id];
 
     if module_analyzer_manager.is_external(module_id) {
       if reference_export.is_empty() || reference_export.all {
@@ -253,7 +253,7 @@ pub fn generate_export_by_reference_export(
     .keys()
     .collect::<Vec<_>>();
 
-  ordered_external_export.sort_by_key(|a| a.to_string());
+  ordered_external_export.sort_by_key(|a| a.to_url());
 
   for source in ordered_external_export {
     let export = &bundle_reference.external_export_map[source];
@@ -309,6 +309,7 @@ pub fn generate_bundle_import_by_bundle_reference(
   bundle_reference: &BundleReference,
   module_analyzer_manager: &ModuleAnalyzerManager,
   polyfill: &mut SimplePolyfill,
+  resource_pot_id: &str,
 ) -> Result<Vec<ModuleItem>> {
   let mut patch_import_to_module = vec![];
 
@@ -319,6 +320,7 @@ pub fn generate_bundle_import_by_bundle_reference(
         &bundle_reference.import_map,
         module_analyzer_manager,
         polyfill,
+        resource_pot_id,
       )?);
     }
 
