@@ -77,17 +77,6 @@ export function publicMiddleware(app: any) {
     return normalizePath(filePath);
   };
 
-  // return async function farmHandlerPublicMiddleware(
-  //   req: any,
-  //   res: any,
-  //   next: () => void
-  // ) {
-  //   if (publicFiles && !publicFiles.has(toFilePath(req.url))) {
-  //     return next();
-  //   }
-
-  //   serve(req, res, next);
-  // };
   return async function farmHandlerPublicMiddleware(
     req: any,
     res: any,
@@ -101,11 +90,14 @@ export function publicMiddleware(app: any) {
       ? filePath.slice(publicPath.length + 1)
       : filePath;
 
-    // 检查文件是否在 publicFiles 中
-    if (publicFiles && publicFiles.has('/' + urlWithoutPublicPath)) {
+    // 检查文件是否在 publicFiles 中或者在 public 目录中
+    if (
+      (publicFiles && publicFiles.has('/' + urlWithoutPublicPath)) ||
+      (publicDir && serve(req, res, () => {}))
+    ) {
       req.url = '/' + urlWithoutPublicPath;
 
-      serve(req, res, next);
+      return serve(req, res, next);
     }
 
     next();
