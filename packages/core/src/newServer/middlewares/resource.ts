@@ -1,6 +1,6 @@
 import { Readable } from 'node:stream';
 import mime from 'mime';
-import { extname } from 'path/posix';
+import path, { extname } from 'path/posix';
 import { Compiler } from '../../compiler/index.js';
 import { ResolvedUserConfig } from '../../config/types.js';
 import {
@@ -27,8 +27,8 @@ export function resourceMiddleware(app: any) {
     if (res.writableEnded) {
       return next();
     }
+    const url = cleanUrl(req.url);
 
-    const url = req.url && cleanUrl(req.url);
     const { compiler, resolvedUserConfig: config, publicPath } = app;
     // TODO resolve html but not input file html
     // htmlFallbackMiddleware appends '.html' to URLs
@@ -41,12 +41,12 @@ export function resourceMiddleware(app: any) {
       });
     }
 
-    const resourceResult: any = findResource(url, compiler, res, publicPath);
+    const resourceResult: any = findResource(req, res, compiler, publicPath);
 
     if (resourceResult === true) {
       next();
     }
-
+    // TODO if write to dist should be use sirv middleware
     if (resourceResult) {
       // need judge if resource is a deps node_modules set cache-control to 1 year
       const headers = config.server.headers;
@@ -54,18 +54,62 @@ export function resourceMiddleware(app: any) {
       return;
     }
 
-    next();
+    // publicPath
+    // 处理找不到资源的情况
+
+    const { resourceWithoutPublicPath } = normalizePathByPublicPath(
+      publicPath,
+      url
+    );
+
+    const extension = path.extname(resourceWithoutPublicPath).toLowerCase();
+    const mimeType = mime.getType(extension) || 'application/octet-stream';
+    const isHtmlRequest =
+      mimeType === 'text/html' ||
+      (extension === '' && req.headers.accept?.includes('text/html'));
+
+    if (!isHtmlRequest) {
+      // 对于非 HTML 请求，尝试在根目录查找资源
+      const rootResource = compiler.resource(
+        path.basename(resourceWithoutPublicPath)
+      );
+      if (rootResource) {
+        send(req, res, rootResource, url, {
+          headers: config.server.headers
+        });
+        return;
+      }
+      // 如果在根目录也找不到，返回 404
+      res.statusCode = 404;
+      res.end('Not found');
+      return;
+    }
+
+    if (config.spa !== false) {
+      let indexHtml = compiler.resources()['index.html'];
+
+      if (indexHtml) {
+        res.setHeader('Content-Type', 'text/html');
+        res.end(indexHtml);
+        return;
+      }
+    }
+
+    // 如果找不到任何匹配的资源，返回 404
+    res.statusCode = 404;
+    res.end('Not found');
   };
 }
 
 function findResource(
-  paths: string,
-  compiler: Compiler,
+  req: any,
   res: any,
+  compiler: Compiler,
   publicPath: string
 ): true | undefined | RealResourcePath {
+  const url = req.url && cleanUrl(req.url);
   // output_files
-  if (paths === '_output_files') {
+  if (url === '_output_files') {
     const files = Object.keys(compiler.resources()).sort();
     const fileTree = generateFileTree(files);
     res.type = '.html';
@@ -75,7 +119,7 @@ function findResource(
 
   const { resourceWithoutPublicPath } = normalizePathByPublicPath(
     publicPath,
-    paths
+    url
   );
 
   const resource = compiler.resource(resourceWithoutPublicPath);
@@ -84,7 +128,7 @@ function findResource(
     return {
       resource,
       resourcePath: resourceWithoutPublicPath,
-      rawPath: paths
+      rawPath: url
     };
   }
 }

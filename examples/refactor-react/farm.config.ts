@@ -12,7 +12,7 @@ export default defineConfig({
       isolate: true
     },
     output: {
-      // publicPath: '/dist'
+      publicPath: '/aaa/'
     }
   },
   server: {

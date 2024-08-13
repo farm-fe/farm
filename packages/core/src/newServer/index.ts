@@ -189,10 +189,6 @@ export class newServer {
       this.middlewares.use(proxyMiddleware(this, middlewareServer));
     }
 
-    if (this.publicPath !== '/') {
-      this.middlewares.use(publicPathMiddleware(this));
-    }
-
     if (this.publicDir) {
       this.middlewares.use(publicMiddleware(this));
     }
@@ -206,6 +202,10 @@ export class newServer {
     this.middlewares.use(resourceMiddleware(this));
 
     this.middlewares.use(adaptorViteMiddleware(this));
+
+    if (this.publicPath !== '/') {
+      this.middlewares.use(publicPathMiddleware(this));
+    }
   }
 
   public createHmrEngine() {
