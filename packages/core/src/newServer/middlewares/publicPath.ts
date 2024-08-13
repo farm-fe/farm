@@ -21,36 +21,37 @@ export function publicPathMiddleware(app: any) {
     if (url === '/' || url === '/index.html') {
       // redirect root visit to based url with search and hash
       res.writeHead(302, {
-        Location: publicPath + url.slice(url.length)
+        Location: `/${publicPath}` + url.slice(url.length)
       });
       res.end();
       return;
     }
-    next();
 
-    // const redirectPath =
-    //   withTrailingSlash(url) !== publicPath ? joinUrlSegments(publicPath, url) : publicPath;
-    // if (req.headers.accept?.includes("text/html")) {
+    const redirectPath =
+      withTrailingSlash(url) !== publicPath
+        ? joinUrlSegments(`/${publicPath}`, url)
+        : publicPath;
 
-    //   res.writeHead(404, {
-    //     "Content-Type": "text/html",
-    //   });
-    //   res.end(
-    //     `The server is configured with a public base URL of ${publicPath} - ` +
-    //       `did you mean to visit <a href="${redirectPath}">${redirectPath}</a> instead?`
-    //   );
-    //   return;
-    // } else {
-    //   // not found for resources
-    //   res.writeHead(404, {
-    //     "Content-Type": "text/plain",
-    //   });
-    //   res.end(
-    //     `The server is configured with a public base URL of ${publicPath} - ` +
-    //       `did you mean to visit ${redirectPath} instead?`
-    //   );
-    //   return;
-    // }
+    if (req.headers.accept?.includes('text/html')) {
+      res.writeHead(404, {
+        'Content-Type': 'text/html'
+      });
+      res.end(
+        `The server is configured with a public base URL of ${publicPath} - ` +
+          `did you mean to visit <a href="${redirectPath}">${redirectPath}</a> instead?`
+      );
+      return;
+    } else {
+      // not found for resources
+      res.writeHead(404, {
+        'Content-Type': 'text/plain'
+      });
+      res.end(
+        `The server is configured with a public base URL of ${publicPath} - ` +
+          `did you mean to visit ${redirectPath} instead?`
+      );
+      return;
+    }
   };
 }
 
