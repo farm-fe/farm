@@ -16,7 +16,7 @@ use farmfe_toolkit::{
 
 use crate::resource_pot_to_bundle::{
   bundle::{
-    bundle_external::{ExternalReferenceExport, ExternalReferenceImport, ReferenceKind},
+    bundle_reference::{ExternalReferenceExport, ExternalReferenceImport, ReferenceKind},
     ModuleGlobalUniqName,
   },
   polyfill::{
