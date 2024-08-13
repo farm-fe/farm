@@ -104,6 +104,7 @@ export function publicMiddleware(app: any) {
     // 检查文件是否在 publicFiles 中
     if (publicFiles && publicFiles.has('/' + urlWithoutPublicPath)) {
       req.url = '/' + urlWithoutPublicPath;
+
       serve(req, res, next);
     }
 
