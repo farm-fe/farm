@@ -5,11 +5,9 @@ export function publicPathMiddleware(app: any) {
   const { publicPath, serverOptions } = app;
   return function handlePublicPathMiddleware(req: any, res: any, next: any) {
     // auto redirect to public path
-    // e.g:      res.writeHead(302, {
-    //  Location: base + url.slice(pathname.length),
-    // })
     const url = cleanUrl(req.url);
-    if (url.startsWith(publicPath)) {
+
+    if (url.startsWith(`/${publicPath}`)) {
       req.url = stripBase(url, publicPath);
       return next();
     }

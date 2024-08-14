@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import "./main.css";
 import reactLogo from "/react.svg";
 import FarmLogo from "./assets/logo.png";
