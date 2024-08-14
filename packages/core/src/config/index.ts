@@ -102,7 +102,8 @@ const COMMANDS = {
   START: 'start',
   BUILD: 'build',
   WATCH: 'watch',
-  PREVIEW: 'preview'
+  PREVIEW: 'preview',
+  CLEAN: 'clean'
 } as const;
 
 /**
@@ -223,7 +224,7 @@ async function handleLazyCompilation(
   command: keyof typeof COMMANDS
 ) {
   const commandHandlers = {
-    [COMMANDS.START]: async (cfg: any) => {
+    [COMMANDS.START]: async (cfg: ResolvedUserConfig) => {
       if (
         cfg.compilation.lazyCompilation &&
         typeof cfg.server?.host === 'string'
@@ -231,14 +232,17 @@ async function handleLazyCompilation(
         await setLazyCompilationDefine(cfg);
       }
     },
-    [COMMANDS.WATCH]: async (cfg: any) => {
+    [COMMANDS.WATCH]: async (cfg: ResolvedUserConfig) => {
       if (cfg.compilation?.lazyCompilation) {
         await setLazyCompilationDefine(cfg);
       }
     }
   };
 
-  await commandHandlers[command]?.(config);
+  const handler = commandHandlers[command as keyof typeof commandHandlers];
+  if (handler) {
+    await handler(config);
+  }
 }
 
 /**
@@ -554,7 +558,7 @@ export const DEFAULT_DEV_SERVER_OPTIONS: NormalizedServerConfig = {
   protocol: 'http',
   hostname: { name: 'localhost', host: undefined },
   host: true,
-  proxy: {},
+  proxy: undefined,
   hmr: DEFAULT_HMR_OPTIONS,
   middlewareMode: false,
   open: false,
