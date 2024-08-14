@@ -1,10 +1,6 @@
-import { defineConfig } from '@farmfe/core';
+import { defineConfig } from "@farmfe/core";
 
+import react from "@farmfe/plugin-react";
 export default defineConfig({
-  plugins: ['@farmfe/plugin-react'],
-  compilation: {
-    output: {
-      publicPath: '/aaa/'
-    }
-  },
+  plugins: [react()],
 });

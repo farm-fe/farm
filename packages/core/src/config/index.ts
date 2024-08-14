@@ -88,6 +88,24 @@ export function defineFarmConfig(config: UserConfigExport): UserConfigExport {
   return config;
 }
 
+// may be use object type
+type ResolveConfigOptions = {
+  inlineOptions: FarmCliOptions & UserConfig;
+  command: keyof typeof COMMANDS;
+  defaultMode?: CompilationMode;
+  defaultNodeEnv?: CompilationMode;
+  isPreview?: boolean;
+  logger?: Logger;
+};
+
+const COMMANDS = {
+  START: 'start',
+  BUILD: 'build',
+  WATCH: 'watch',
+  PREVIEW: 'preview',
+  CLEAN: 'clean'
+} as const;
+
 /**
  * Resolve and load user config from the specified path
  * @param configPath
@@ -98,7 +116,7 @@ export async function resolveConfig(
   defaultMode: CompilationMode = 'development',
   defaultNodeEnv: CompilationMode = 'development',
   isPreview = false,
-  logger?: Logger
+  logger = new Logger()
 ): Promise<ResolvedUserConfig> {
   logger = logger ?? new Logger();
   // TODO mode 这块还是不对 要区分 mode 和 build 还是 dev 环境
@@ -132,20 +150,16 @@ export async function resolveConfig(
     {},
     compileMode
   );
-  let configPath = initialConfigPath;
+
+  let configFilePath = initialConfigPath;
 
   if (loadedUserConfig) {
-    configPath = loadedUserConfig.configFilePath;
+    configFilePath = loadedUserConfig.configFilePath;
     rawConfig = mergeConfig(rawConfig, loadedUserConfig.config);
   }
 
-  const { config: userConfig, configFilePath } = {
-    configFilePath: configPath,
-    config: rawConfig
-  };
-
   const { jsPlugins, vitePlugins, rustPlugins, vitePluginAdapters } =
-    await resolvePlugins(userConfig, compileMode, logger);
+    await resolvePlugins(rawConfig, compileMode, logger);
 
   const sortFarmJsPlugins = getSortedPlugins([
     ...jsPlugins,
@@ -153,7 +167,7 @@ export async function resolveConfig(
     externalAdapter()
   ]);
 
-  const config = await resolveConfigHook(userConfig, sortFarmJsPlugins);
+  const config = await resolveConfigHook(rawConfig, sortFarmJsPlugins);
 
   const resolvedUserConfig = await resolveUserConfig(
     config,
@@ -177,9 +191,11 @@ export async function resolveConfig(
     mode as CompilationMode
   );
 
-  resolvedUserConfig.root = resolvedUserConfig.compilation.root;
-  resolvedUserConfig.jsPlugins = sortFarmJsPlugins;
-  resolvedUserConfig.rustPlugins = rustPlugins;
+  Object.assign(resolvedUserConfig, {
+    root: resolvedUserConfig.compilation.root,
+    jsPlugins: sortFarmJsPlugins,
+    rustPlugins: rustPlugins
+  });
 
   // Temporarily dealing with alias objects and arrays in js will be unified in rust in the future.]
   if (vitePlugins.length) {
@@ -197,25 +213,38 @@ export async function resolveConfig(
     );
   }
 
-  switch (configEnv.command) {
-    case 'start':
-      if (
-        resolvedUserConfig.compilation.lazyCompilation &&
-        typeof resolvedUserConfig.server?.host === 'string'
-      ) {
-        await setLazyCompilationDefine(resolvedUserConfig);
-      }
-      break;
-    case 'watch':
-      if (resolvedUserConfig.compilation?.lazyCompilation) {
-        await setLazyCompilationDefine(resolvedUserConfig);
-      }
-      break;
-    default:
-      break;
-  }
+  await handleLazyCompilation(
+    resolvedUserConfig,
+    command as keyof typeof COMMANDS
+  );
 
   return resolvedUserConfig;
+}
+
+async function handleLazyCompilation(
+  config: ResolvedUserConfig,
+  command: keyof typeof COMMANDS
+) {
+  const commandHandlers = {
+    [COMMANDS.START]: async (cfg: ResolvedUserConfig) => {
+      if (
+        cfg.compilation.lazyCompilation &&
+        typeof cfg.server?.host === 'string'
+      ) {
+        await setLazyCompilationDefine(cfg);
+      }
+    },
+    [COMMANDS.WATCH]: async (cfg: ResolvedUserConfig) => {
+      if (cfg.compilation?.lazyCompilation) {
+        await setLazyCompilationDefine(cfg);
+      }
+    }
+  };
+
+  const handler = commandHandlers[command as keyof typeof commandHandlers];
+  if (handler) {
+    await handler(config);
+  }
 }
 
 /**
@@ -531,7 +560,7 @@ export const DEFAULT_DEV_SERVER_OPTIONS: NormalizedServerConfig = {
   protocol: 'http',
   hostname: { name: 'localhost', host: undefined },
   host: true,
-  proxy: {},
+  proxy: undefined,
   hmr: DEFAULT_HMR_OPTIONS,
   middlewareMode: false,
   open: false,

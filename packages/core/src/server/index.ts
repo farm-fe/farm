@@ -254,7 +254,7 @@ export class Server implements ImplDevServer {
       hostname
     };
 
-    const isProxy = Object.keys(options.proxy).length;
+    const isProxy = options.proxy;
     if (https) {
       if (isProxy) {
         this.server = httpsServer.createServer(https, this._app.callback());
