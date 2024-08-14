@@ -7,7 +7,7 @@ export function publicPathMiddleware(app: any) {
     // auto redirect to public path
     const url = cleanUrl(req.url);
 
-    if (url.startsWith(`/${publicPath}`)) {
+    if (url.startsWith(publicPath)) {
       req.url = stripBase(url, publicPath);
       return next();
     }
@@ -19,7 +19,7 @@ export function publicPathMiddleware(app: any) {
     if (url === '/' || url === '/index.html') {
       // redirect root visit to based url with search and hash
       res.writeHead(302, {
-        Location: `/${publicPath}` + url.slice(url.length)
+        Location: `${publicPath}${url.slice(url.length)}`
       });
       res.end();
       return;
@@ -27,7 +27,7 @@ export function publicPathMiddleware(app: any) {
 
     const redirectPath =
       withTrailingSlash(url) !== publicPath
-        ? joinUrlSegments(`/${publicPath}`, url)
+        ? joinUrlSegments(publicPath, url)
         : publicPath;
 
     if (req.headers.accept?.includes('text/html')) {

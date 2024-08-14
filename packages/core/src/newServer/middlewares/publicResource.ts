@@ -86,16 +86,16 @@ export function publicMiddleware(app: any) {
     const filePath = toFilePath(originalUrl);
 
     // 移除 URL 开头的 publicPath
-    const urlWithoutPublicPath = filePath.startsWith('/' + publicPath)
+    const urlWithoutPublicPath = filePath.startsWith(publicPath)
       ? filePath.slice(publicPath.length + 1)
       : filePath;
 
     // 检查文件是否在 publicFiles 中或者在 public 目录中
     if (
-      (publicFiles && publicFiles.has('/' + urlWithoutPublicPath)) ||
+      (publicFiles && publicFiles.has(urlWithoutPublicPath)) ||
       (publicDir && serve(req, res, () => {}))
     ) {
-      req.url = '/' + urlWithoutPublicPath;
+      req.url = urlWithoutPublicPath;
 
       return serve(req, res, next);
     }

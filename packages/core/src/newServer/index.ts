@@ -34,6 +34,7 @@ import {
   hmrPingMiddleware,
   htmlFallbackMiddleware,
   lazyCompilationMiddleware,
+  notFoundMiddleware,
   proxyMiddleware,
   publicMiddleware,
   publicPathMiddleware,
@@ -128,10 +129,9 @@ export class newServer {
   }
 
   private resolveOptions(config: ResolvedUserConfig) {
-    const { targetEnv, publicPath } = config.compilation.output;
+    const { publicPath } = config.compilation.output;
     this.publicDir = config.compilation.assets.publicDir;
-    this.publicPath =
-      normalizePublicPath(targetEnv, publicPath, this.logger, false) || '/';
+    this.publicPath = publicPath;
 
     this.serverOptions = config.server as CommonServerOptions &
       NormalizedServerConfig;
@@ -206,6 +206,8 @@ export class newServer {
     this.middlewares.use(resourceMiddleware(this));
 
     this.middlewares.use(adaptorViteMiddleware(this));
+
+    this.middlewares.use(notFoundMiddleware());
   }
 
   public createHmrEngine() {

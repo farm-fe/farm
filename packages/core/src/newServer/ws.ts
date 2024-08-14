@@ -161,7 +161,7 @@ export class WsServer {
         // TODO 这里需要处理一下 normalizePublicPath 的问题  hmrBase 路径匹配不到 req.url 的问题
         if (
           req.headers['sec-websocket-protocol'] === HMR_HEADER &&
-          req.url === `/${hmrBase}`
+          req.url === hmrBase
         ) {
           this.wss.handleUpgrade(req, socket as Socket, head, (ws) => {
             this.wss.emit('connection', ws, req);
