@@ -108,10 +108,9 @@ export async function httpServerStart(
     port: number;
     strictPort: boolean | undefined;
     host: string | undefined;
-    logger: Logger;
   }
 ): Promise<number> {
-  let { port, strictPort, host, logger } = serverOptions;
+  let { port, strictPort, host } = serverOptions;
 
   return new Promise((resolve, reject) => {
     const onError = (e: Error & { code?: string }) => {
@@ -120,7 +119,7 @@ export async function httpServerStart(
           httpServer.removeListener('error', onError);
           reject(new Error(`Port ${port} is already in use`));
         } else {
-          logger.info(`Port ${port} is in use, trying another one...`);
+          console.info(`Port ${port} is in use, trying another one...`);
           httpServer.listen(++port, host);
         }
       } else {
@@ -132,6 +131,7 @@ export async function httpServerStart(
     httpServer.on('error', onError);
 
     httpServer.listen(port, host, () => {
+      console.log(`Server running at http://localhost:${port}/`);
       httpServer.removeListener('error', onError);
       resolve(port);
     });

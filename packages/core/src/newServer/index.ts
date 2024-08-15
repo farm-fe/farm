@@ -27,6 +27,7 @@ import { HmrEngine } from './hmr-engine.js';
 import { HMRChannel } from './hmr.js';
 import {
   CommonServerOptions,
+  httpServerStart,
   resolveHttpServer,
   resolveHttpsConfig
 } from './http.js';
@@ -42,6 +43,7 @@ import {
   resourceMiddleware
 } from './middlewares/index.js';
 
+import { createCompiler } from '../index.js';
 import { WebSocketClient, WebSocketServer, WsServer } from './ws.js';
 
 export type HttpServer = Server | Http2SecureServer;
@@ -111,17 +113,17 @@ export class newServer {
   watcher: FileWatcher;
   hmrEngine?: HmrEngine;
   middlewares: connect.Server;
-
+  compiler: CompilerType;
   constructor(
-    private compiler: CompilerType,
+    // private compiler: CompilerType,
     private readonly resolvedUserConfig: ResolvedUserConfig,
     private readonly logger: Logger
   ) {
-    if (!this.compiler) {
-      throw new Error(
-        'Compiler is not provided. Server initialization failed. Please provide a compiler instance, e.g., `new Compiler(config)`.'
-      );
-    }
+    // if (!this.compiler) {
+    //   throw new Error(
+    //     "Compiler is not provided. Server initialization failed. Please provide a compiler instance, e.g., `new Compiler(config)`."
+    //   );
+    // }
     this.resolveOptions(resolvedUserConfig);
   }
 
@@ -251,15 +253,27 @@ export class newServer {
     // TODO open browser when server is ready && open config is true
     const { port, open, protocol, hostname } = this.resolvedUserConfig.server;
 
+    const serverPort = await httpServerStart(this.httpServer, {
+      port,
+      strictPort: this.serverOptions.strictPort,
+      host: hostname.host
+    });
+
+    // 这块要重新设计 restart 还有 端口冲突的问题
+    // this.resolvedUserConfig
+    this.resolvedUserConfig.compilation.define.FARM_HMR_PORT =
+      serverPort.toString();
+    this.compiler = await createCompiler(this.resolvedUserConfig, logger);
+
     // compile the project and start the dev server
     await this.startCompilation();
 
     // watch extra files after compile
     this.watcher?.watchExtraFiles?.();
 
-    this.httpServer.listen(port, hostname.name, () => {
-      console.log(`Server running at ${protocol}://${hostname.name}:${port}/`);
-    });
+    // this.httpServer.listen(port, hostname.name, () => {
+    //   console.log(`Server running at ${protocol}://${hostname.name}:${port}/`);
+    // });
   }
 
   addWatchFile(root: string, deps: string[]): void {
@@ -272,6 +286,8 @@ export class newServer {
 
   private async compile(): Promise<void> {
     try {
+      console.log(this.compiler);
+
       await this.compiler.compile();
     } catch (err) {
       throw new Error(logError(err) as unknown as string);

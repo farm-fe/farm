@@ -510,9 +510,9 @@ export async function start2(
       false
     );
 
-    const compiler = await createCompiler(resolvedUserConfig, logger);
-    const server = new newServer(compiler, resolvedUserConfig, logger);
+    const server = new newServer(resolvedUserConfig, logger);
     await server.createServer();
+    await server.listen();
     // @ts-ignore
     await createFileWatcher2(server, resolvedUserConfig, logger);
 
@@ -521,7 +521,6 @@ export async function start2(
       // @ts-ignore
       plugin.configureDevServer?.(server)
     );
-    await server.listen();
     // const devServer = await createDevServer(
     //   compiler,
     //   resolvedUserConfig,
