@@ -122,6 +122,7 @@ export async function resolveConfig(
   // TODO mode 这块还是不对 要区分 mode 和 build 还是 dev 环境
   // TODO 在使用 vite 插件的时候 不要在开发环境使用 生产环境的mode vue 插件会导致 hmr 失效 记在文档里
   const compileMode = defaultMode;
+
   const mode = inlineOptions.mode || defaultMode;
   const isNodeEnvSet = !!process.env.NODE_ENV;
   inlineOptions.mode = mode;
@@ -182,10 +183,6 @@ export async function resolveConfig(
     compileMode
   );
 
-  // if (isHandleServerPortConflict) {
-  //   await handleServerPortConflict(resolvedUserConfig, logger, mode);
-  // }
-
   resolvedUserConfig.compilation = await normalizeUserCompilationConfig(
     resolvedUserConfig,
     mode as CompilationMode
@@ -206,7 +203,7 @@ export async function resolveConfig(
 
   await resolveConfigResolvedHook(resolvedUserConfig, sortFarmJsPlugins); // Fix: Await the Promise<void> and pass the resolved value to the function.
 
-  //TODO Temporarily solve the problem of alias adaptation to vite we should resolve this in rust side
+  //TODO solve the problem of alias adaptation to vite we should resolve this in rust side
   if (resolvedUserConfig.compilation?.resolve?.alias && vitePlugins.length) {
     resolvedUserConfig.compilation.resolve.alias = transformAliasWithVite(
       resolvedUserConfig.compilation.resolve.alias as unknown as Array<Alias>

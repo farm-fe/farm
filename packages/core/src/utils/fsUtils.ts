@@ -1,6 +1,7 @@
 import { exec } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
+import fse from 'fs-extra';
 import { isWindows, normalizePath } from './share.js';
 
 export function tryStatSync(file: string): fs.Stats | undefined {
@@ -129,3 +130,10 @@ export const commonFsUtils = {
   tryResolveRealFileWithExtensions,
   tryResolveRealFileOrType
 };
+
+export async function readFileIfExists(value?: string | Buffer | any[]) {
+  if (typeof value === 'string') {
+    return fse.readFile(path.resolve(value)).catch(() => value);
+  }
+  return value;
+}

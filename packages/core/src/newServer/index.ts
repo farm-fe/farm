@@ -25,12 +25,7 @@ import { isObject } from '../utils/share.js';
 import { FileWatcher } from '../watcher/index.js';
 import { HmrEngine } from './hmr-engine.js';
 import { HMRChannel } from './hmr.js';
-import {
-  CommonServerOptions,
-  httpServerStart,
-  resolveHttpServer,
-  resolveHttpsConfig
-} from './http.js';
+import { CommonServerOptions, httpServer } from './http.js';
 import {
   adaptorViteMiddleware,
   hmrPingMiddleware,
@@ -99,7 +94,7 @@ export function noop() {
   // noop
 }
 
-export class newServer {
+export class newServer extends httpServer {
   ws: any;
   serverOptions: CommonServerOptions & NormalizedServerConfig;
   httpsOptions: HttpsServerOptions;
@@ -109,7 +104,7 @@ export class newServer {
   publicPath?: string;
   // publicFile
   publicFiles?: Set<string>;
-  httpServer?: HttpServer;
+  httpServer: HttpServer;
   watcher: FileWatcher;
   hmrEngine?: HmrEngine;
   middlewares: connect.Server;
@@ -117,13 +112,9 @@ export class newServer {
   constructor(
     // private compiler: CompilerType,
     private readonly resolvedUserConfig: ResolvedUserConfig,
-    private readonly logger: Logger
+    readonly logger: Logger
   ) {
-    // if (!this.compiler) {
-    //   throw new Error(
-    //     "Compiler is not provided. Server initialization failed. Please provide a compiler instance, e.g., `new Compiler(config)`."
-    //   );
-    // }
+    super(logger);
     this.resolveOptions(resolvedUserConfig);
   }
 
@@ -132,45 +123,44 @@ export class newServer {
   }
 
   private resolveOptions(config: ResolvedUserConfig) {
-    const { publicPath } = config.compilation.output;
+    this.publicPath = config.compilation.output.publicPath;
     this.publicDir = config.compilation.assets.publicDir;
-    this.publicPath = publicPath;
 
     this.serverOptions = config.server as CommonServerOptions &
       NormalizedServerConfig;
   }
 
   public async createServer() {
-    // try {
-    const { https, middlewareMode } = this.serverOptions;
+    try {
+      const { https, middlewareMode } = this.serverOptions;
 
-    this.httpsOptions = await resolveHttpsConfig(https);
-    this.publicFiles = await this.handlePublicFiles();
+      this.httpsOptions = await this.resolveHttpsConfig(https);
+      this.publicFiles = await this.handlePublicFiles();
 
-    this.middlewares = connect() as connect.Server;
-    this.httpServer = middlewareMode
-      ? null
-      : await resolveHttpServer(
-          this.serverOptions as CommonServerOptions,
-          this.middlewares,
-          this.httpsOptions
-        );
+      this.middlewares = connect() as connect.Server;
+      this.httpServer = middlewareMode
+        ? null
+        : await this.resolveHttpServer(
+            this.serverOptions as CommonServerOptions,
+            this.middlewares,
+            this.httpsOptions
+          );
 
-    // init hmr engine When actually updating, we need to get the clients of ws for broadcast, 、
-    // so we can instantiate hmrEngine by default at the beginning.
-    this.createHmrEngine();
+      // init hmr engine When actually updating, we need to get the clients of ws for broadcast, 、
+      // so we can instantiate hmrEngine by default at the beginning.
+      this.createHmrEngine();
 
-    // init websocket server
-    this.createWebSocketServer();
+      // init websocket server
+      this.createWebSocketServer();
 
-    // invalidate vite handler
-    this.invalidateVite();
+      // invalidate vite handler
+      this.invalidateVite();
 
-    // init middlewares
-    this.initializeMiddlewares();
-    // } catch (error) {
-    //   throw new Error(`handle create farm server error: ${error}`);
-    // }
+      // init middlewares
+      this.initializeMiddlewares();
+    } catch (error) {
+      throw new Error(`handle create farm server error: ${error}`);
+    }
   }
 
   private initializeMiddlewares() {
@@ -184,7 +174,6 @@ export class newServer {
       );
     }
 
-    // TODO 默认值给 undefined 现在默认 {}
     if (proxy) {
       const middlewareServer =
         (isObject(middlewareMode) ? middlewareMode.server : null) ??
@@ -234,46 +223,39 @@ export class newServer {
     this.ws = new WsServer(this);
   }
 
-  private invalidateVite() {
-    // Note: path should be Farm's id, which is a relative path in dev mode,
-    // but in vite, it's a url path like /xxx/xxx.js
-    this.ws.wss.on('vite:invalidate', ({ path, message }: any) => {
-      // find hmr boundary starting from the parent of the file
-      this.logger.info(`HMR invalidate: ${path}. ${message ?? ''} `);
-      const parentFiles = this.compiler.getParentFiles(path);
-      this.hmrEngine.hmrUpdate(parentFiles, true);
-    });
-  }
-
   public async listen(): Promise<void> {
     if (!this.httpServer) {
       this.logger.warn('HTTP server is not created yet');
       return;
     }
     // TODO open browser when server is ready && open config is true
-    const { port, open, protocol, hostname } = this.resolvedUserConfig.server;
+    const { port, hostname, protocol, strictPort } = this.serverOptions;
 
-    const serverPort = await httpServerStart(this.httpServer, {
-      port,
-      strictPort: this.serverOptions.strictPort,
-      host: hostname.host
-    });
+    try {
+      const serverPort = await this.httpServerStart({
+        port,
+        strictPort: strictPort,
+        host: hostname.host
+      });
 
-    // 这块要重新设计 restart 还有 端口冲突的问题
-    // this.resolvedUserConfig
-    this.resolvedUserConfig.compilation.define.FARM_HMR_PORT =
-      serverPort.toString();
-    this.compiler = await createCompiler(this.resolvedUserConfig, logger);
+      // 这块要重新设计 restart 还有 端口冲突的问题
+      // this.resolvedUserConfig
+      this.resolvedUserConfig.compilation.define.FARM_HMR_PORT =
+        serverPort.toString();
 
-    // compile the project and start the dev server
-    await this.startCompilation();
+      this.compiler = await createCompiler(this.resolvedUserConfig, logger);
 
-    // watch extra files after compile
-    this.watcher?.watchExtraFiles?.();
+      // compile the project and start the dev server
+      await this.startCompilation();
 
-    // this.httpServer.listen(port, hostname.name, () => {
-    //   console.log(`Server running at ${protocol}://${hostname.name}:${port}/`);
-    // });
+      // watch extra files after compile
+      this.watcher?.watchExtraFiles?.();
+
+      console.log(`Server running at ${protocol}://${hostname.name}:${port}/`);
+    } catch (error) {
+      this.logger.error(`start farm dev server error: ${error}`);
+      throw error;
+    }
   }
 
   addWatchFile(root: string, deps: string[]): void {
@@ -286,8 +268,6 @@ export class newServer {
 
   private async compile(): Promise<void> {
     try {
-      console.log(this.compiler);
-
       await this.compiler.compile();
     } catch (err) {
       throw new Error(logError(err) as unknown as string);
@@ -298,6 +278,42 @@ export class newServer {
     } else {
       this.compiler.callWriteResourcesHook();
     }
+  }
+
+  protected async httpServerStart(serverOptions: {
+    port: number;
+    strictPort: boolean | undefined;
+    host: string | undefined;
+  }): Promise<number> {
+    if (!this.httpServer) {
+      throw new Error('httpServer is not initialized');
+    }
+
+    let { port, strictPort, host } = serverOptions;
+
+    return new Promise((resolve, reject) => {
+      const onError = (e: Error & { code?: string }) => {
+        if (e.code === 'EADDRINUSE') {
+          if (strictPort) {
+            this.httpServer.removeListener('error', onError);
+            reject(new Error(`Port ${port} is already in use`));
+          } else {
+            console.info(`Port ${port} is in use, trying another one...`);
+            this.httpServer.listen(++port, host);
+          }
+        } else {
+          this.httpServer.removeListener('error', onError);
+          reject(e);
+        }
+      };
+
+      this.httpServer.on('error', onError);
+
+      this.httpServer.listen(port, host, () => {
+        this.httpServer.removeListener('error', onError);
+        resolve(port);
+      });
+    });
   }
 
   private async startCompilation() {
@@ -315,5 +331,16 @@ export class newServer {
   private async handlePublicFiles() {
     const initPublicFilesPromise = initPublicFiles(this.resolvedUserConfig);
     return await initPublicFilesPromise;
+  }
+
+  private invalidateVite() {
+    // Note: path should be Farm's id, which is a relative path in dev mode,
+    // but in vite, it's a url path like /xxx/xxx.js
+    this.ws.wss.on('vite:invalidate', ({ path, message }: any) => {
+      // find hmr boundary starting from the parent of the file
+      this.logger.info(`HMR invalidate: ${path}. ${message ?? ''} `);
+      const parentFiles = this.compiler.getParentFiles(path);
+      this.hmrEngine.hmrUpdate(parentFiles, true);
+    });
   }
 }

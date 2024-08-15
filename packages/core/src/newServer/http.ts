@@ -16,6 +16,7 @@ import type { ServerOptions as HttpsServerOptions } from 'node:https';
 import path from 'node:path';
 import connect from 'connect';
 import fse from 'fs-extra';
+import { readFileIfExists } from '../utils/fsUtils.js';
 import { Logger } from '../utils/logger.js';
 import { HttpServer } from './index.js';
 import { ProxyOptions } from './middlewares/proxy.js';
@@ -48,92 +49,59 @@ export interface CorsOptions {
 
 // For the unencrypted tls protocol, we use http service.
 // In other cases, https / http2 is used.
-export async function resolveHttpServer(
-  { proxy }: CommonServerOptions,
-  app: connect.Server,
-  httpsOptions?: HttpsServerOptions
-): Promise<HttpServer> {
-  if (!httpsOptions) {
-    const { createServer } = await import('node:http');
-    return createServer(app);
+export class httpServer {
+  public logger: Logger;
+  protected httpServer: HttpServer | null = null;
+
+  constructor(logger: Logger) {
+    this.logger = logger = new Logger();
   }
 
-  // EXISTING PROBLEM:
-  // https://github.com/http-party/node-http-proxy/issues/1237
+  protected async resolveHttpServer(
+    { proxy }: CommonServerOptions,
+    app: connect.Server,
+    httpsOptions?: HttpsServerOptions
+  ): Promise<HttpServer> {
+    if (!httpsOptions) {
+      const { createServer } = await import('node:http');
+      return createServer(app);
+    }
 
-  // MAYBE SOLUTION:
-  // https://github.com/nxtedition/node-http2-proxy
-  // https://github.com/fastify/fastify-http-proxy
-  if (proxy) {
-    const { createServer } = await import('node:https');
-    return createServer(httpsOptions, app);
-  } else {
-    const { createSecureServer } = await import('node:http2');
-    return createSecureServer(
-      {
-        maxSessionMemory: 1000,
-        ...httpsOptions,
-        allowHTTP1: true
-      },
-      // @ts-ignore
-      app
-    );
+    // EXISTING PROBLEM:
+    // https://github.com/http-party/node-http-proxy/issues/1237
+
+    // MAYBE SOLUTION:
+    // https://github.com/nxtedition/node-http2-proxy
+    // https://github.com/fastify/fastify-http-proxy
+
+    if (proxy) {
+      const { createServer } = await import('node:https');
+      return createServer(httpsOptions, app);
+    } else {
+      const { createSecureServer } = await import('node:http2');
+      return createSecureServer(
+        {
+          maxSessionMemory: 1000,
+          ...httpsOptions,
+          allowHTTP1: true
+        },
+        // @ts-ignore
+        app
+      );
+    }
   }
-}
 
-export async function resolveHttpsConfig(
-  https: HttpsServerOptions | undefined
-): Promise<HttpsServerOptions | undefined> {
-  if (!https) return undefined;
+  protected async resolveHttpsConfig(
+    https: HttpsServerOptions | undefined
+  ): Promise<HttpsServerOptions | undefined> {
+    if (!https) return undefined;
 
-  const [ca, cert, key, pfx] = await Promise.all([
-    readFileIfExists(https.ca),
-    readFileIfExists(https.cert),
-    readFileIfExists(https.key),
-    readFileIfExists(https.pfx)
-  ]);
-  return { ...https, ca, cert, key, pfx };
-}
-
-async function readFileIfExists(value?: string | Buffer | any[]) {
-  if (typeof value === 'string') {
-    return fse.readFile(path.resolve(value)).catch(() => value);
+    const [ca, cert, key, pfx] = await Promise.all([
+      readFileIfExists(https.ca),
+      readFileIfExists(https.cert),
+      readFileIfExists(https.key),
+      readFileIfExists(https.pfx)
+    ]);
+    return { ...https, ca, cert, key, pfx };
   }
-  return value;
-}
-
-export async function httpServerStart(
-  httpServer: HttpServer,
-  serverOptions: {
-    port: number;
-    strictPort: boolean | undefined;
-    host: string | undefined;
-  }
-): Promise<number> {
-  let { port, strictPort, host } = serverOptions;
-
-  return new Promise((resolve, reject) => {
-    const onError = (e: Error & { code?: string }) => {
-      if (e.code === 'EADDRINUSE') {
-        if (strictPort) {
-          httpServer.removeListener('error', onError);
-          reject(new Error(`Port ${port} is already in use`));
-        } else {
-          console.info(`Port ${port} is in use, trying another one...`);
-          httpServer.listen(++port, host);
-        }
-      } else {
-        httpServer.removeListener('error', onError);
-        reject(e);
-      }
-    };
-
-    httpServer.on('error', onError);
-
-    httpServer.listen(port, host, () => {
-      console.log(`Server running at http://localhost:${port}/`);
-      httpServer.removeListener('error', onError);
-      resolve(port);
-    });
-  });
 }
