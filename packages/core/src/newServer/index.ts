@@ -19,7 +19,7 @@ import { normalizePublicPath } from '../config/normalize-config/normalize-output
 import { NormalizedServerConfig, ResolvedUserConfig } from '../config/types.js';
 import { logError } from '../server/error.js';
 import { getCacheDir, isCacheDirExists } from '../utils/cacheDir.js';
-import { Logger, bootstrap, logger } from '../utils/logger.js';
+import { Logger, bootstrap, logger, printServerUrls } from '../utils/logger.js';
 import { initPublicFiles } from '../utils/publicDir.js';
 import { isObject } from '../utils/share.js';
 import { FileWatcher } from '../watcher/index.js';
@@ -39,6 +39,7 @@ import {
 } from './middlewares/index.js';
 
 import { createCompiler } from '../index.js';
+import { resolveServerUrls } from '../utils/http.js';
 import { WebSocketClient, WebSocketServer, WsServer } from './ws.js';
 
 export type HttpServer = Server | Http2SecureServer;
@@ -251,10 +252,24 @@ export class newServer extends httpServer {
       // watch extra files after compile
       this.watcher?.watchExtraFiles?.();
 
-      console.log(`Server running at ${protocol}://${hostname.name}:${port}/`);
+      this.displayServerUrls();
     } catch (error) {
       this.logger.error(`start farm dev server error: ${error}`);
       throw error;
+    }
+  }
+
+  private async displayServerUrls(showPreviewFlag = false) {
+    const resolvedUrls = await resolveServerUrls(
+      this.httpServer,
+      this.serverOptions,
+      this.publicPath
+    );
+
+    if (resolvedUrls) {
+      printServerUrls(resolvedUrls, this.logger, showPreviewFlag);
+    } else {
+      throw new Error('cannot print server URLs with Server Error.');
     }
   }
 
