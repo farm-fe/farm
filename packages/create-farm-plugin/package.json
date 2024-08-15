@@ -38,8 +38,6 @@
     "url": "https://github.com/farm-fe/farm"
   },
   "devDependencies": {
-    "@farmfe/cli": "workspace:*",
-    "@farmfe/core": "workspace:*",
     "@farmfe/utils": "workspace:*",
     "@types/minimist": "^1.2.2",
     "@types/prompts": "^2.4.4",

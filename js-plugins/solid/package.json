@@ -34,8 +34,6 @@
     "solid-refresh": "^0.5.3"
   },
   "devDependencies": {
-    "@farmfe/cli": "workspace:*",
-    "@farmfe/core": "workspace:*",
     "@farmfe/js-plugin-dts": "workspace:*",
     "@types/babel__core": "^7.20.1",
     "solid-js": "^1.7.8"
