@@ -5,14 +5,14 @@
 </script>
 
 <main>
-  <div>
+  <dbiv>
     <a href="https://farmfe.org" target="_blank" rel="noreferrer">
       <img src={farmLogo} class="logo" alt="Farm Logo" />
     </a>
     <a href="https://svelte.dev" target="_blank" rel="noreferrer">
       <img src={svelteLogo} class="logo svelte" alt="Svelte Logo" />
     </a>
-  </div>
+  </dbiv>
   <h1>Farm + Svelte</h1>
 
   <div class="card">

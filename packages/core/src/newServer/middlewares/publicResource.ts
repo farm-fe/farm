@@ -1,5 +1,5 @@
+import fs from 'node:fs';
 import sirv from 'sirv';
-
 import { colors } from '../../utils/color.js';
 import { Logger } from '../../utils/logger.js';
 import { removeHashFromPath, withTrailingSlash } from '../../utils/path.js';
@@ -13,36 +13,6 @@ import {
 } from '../../utils/url.js';
 
 // TODO: if url endsWith importQueryRE we need can check if it is a module then serve or not
-// function warnAboutPublicDir(url: string, publicPath: string) {
-//   let warning: string;
-//   if (isImportRequest(url)) {
-//     const rawUrl = removeImportQuery(url);
-//     if (urlRE.test(url)) {
-//       warning =
-//         `Assets in the public directory are directly accessible at the root path.\n` +
-//         `Use ${colors.brandColor(
-//           rawUrl.replace(publicPath, "/")
-//         )} instead of the explicit ${colors.brandColor(rawUrl)}.`;
-//     } else {
-//       warning =
-//         "Assets in the public directory should not be imported directly in JavaScript.\n" +
-//         `To import an asset, place it inside the src directory. Use ${colors.brandColor(
-//           rawUrl.replace(publicPath, "/src/")
-//         )} instead of ${colors.cyan(rawUrl)}.\n` +
-//         `For referencing the asset's path, use ${colors.brandColor(
-//           rawUrl.replace(publicPath, "/")
-//         )}.`;
-//     }
-//   } else {
-//     warning =
-//       `Public directory files are accessible directly at the root path.\n` +
-//       `Use ${colors.brandColor(
-//         url.replace(publicPath, "/")
-//       )} directly, rather than ${colors.brandColor(`${publicPath}${url}`)}.`;
-//   }
-
-//   return warning;
-// }
 
 export function publicMiddleware(app: any) {
   const {
@@ -51,10 +21,12 @@ export function publicMiddleware(app: any) {
     publicFiles,
     publicPath
   } = app;
+
   const headers = config.server.headers;
   const serve = sirv(publicDir, {
     etag: true,
     setHeaders: (res, path) => {
+      // res.setHeader("Cache-Control", "public,max-age=31536000,immutable");
       if (knownJavascriptExtensionRE.test(path)) {
         res.setHeader('Content-Type', 'text/javascript');
       }
@@ -84,9 +56,9 @@ export function publicMiddleware(app: any) {
   ) {
     const originalUrl = req.url;
     const filePath = toFilePath(originalUrl);
-
+    // TODO public 缓存问题
     // 移除 URL 开头的 publicPath
-    const urlWithoutPublicPath = filePath.startsWith(publicPath)
+    const urlWithoutPublicPath = filePath.startsWith('/' + publicPath)
       ? filePath.slice(publicPath.length + 1)
       : filePath;
 
