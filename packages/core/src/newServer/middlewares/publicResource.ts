@@ -1,5 +1,5 @@
+import fs from 'node:fs';
 import sirv from 'sirv';
-
 import { colors } from '../../utils/color.js';
 import { Logger } from '../../utils/logger.js';
 import { removeHashFromPath, withTrailingSlash } from '../../utils/path.js';
@@ -21,6 +21,7 @@ export function publicMiddleware(app: any) {
     publicFiles,
     publicPath
   } = app;
+
   const headers = config.server.headers;
   const serve = sirv(publicDir, {
     etag: true,

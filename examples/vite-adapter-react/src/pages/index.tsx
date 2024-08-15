@@ -4,7 +4,7 @@ import FarmLogo from '../assets/logo.png';
 import reactLogo from '../assets/react.svg';
 import './main.css';
 
- export default function () {
+export default function () {
   const [count, setCount] = useState(0);
   const go = useNavigate();
 
@@ -14,7 +14,6 @@ import './main.css';
         <a href="https://farmfe.org/" target="_blank" rel="noreferrer">
           <img src={FarmLogo} className="logo" alt="Farm logo" />
         </a>
-        113222222222222
         <a href="https://react.dev" target="_blank" rel="noreferrer">
           <img src={reactLogo} className="logo react" alt="React logo" />
         </a>

@@ -1,3 +1,4 @@
+import fs, { PathLike } from 'node:fs';
 import type * as http from 'node:http';
 import type {
   ServerOptions as HttpsServerOptions,
@@ -138,36 +139,36 @@ export class newServer {
   }
 
   public async createServer() {
-    try {
-      const { https, middlewareMode } = this.serverOptions;
+    // try {
+    const { https, middlewareMode } = this.serverOptions;
 
-      this.httpsOptions = await resolveHttpsConfig(https);
-      this.publicFiles = await this.handlePublicFiles();
+    this.httpsOptions = await resolveHttpsConfig(https);
+    this.publicFiles = await this.handlePublicFiles();
 
-      this.middlewares = connect() as connect.Server;
-      this.httpServer = middlewareMode
-        ? null
-        : await resolveHttpServer(
-            this.serverOptions as CommonServerOptions,
-            this.middlewares,
-            this.httpsOptions
-          );
+    this.middlewares = connect() as connect.Server;
+    this.httpServer = middlewareMode
+      ? null
+      : await resolveHttpServer(
+          this.serverOptions as CommonServerOptions,
+          this.middlewares,
+          this.httpsOptions
+        );
 
-      // init hmr engine When actually updating, we need to get the clients of ws for broadcast, 、
-      // so we can instantiate hmrEngine by default at the beginning.
-      this.createHmrEngine();
+    // init hmr engine When actually updating, we need to get the clients of ws for broadcast, 、
+    // so we can instantiate hmrEngine by default at the beginning.
+    this.createHmrEngine();
 
-      // init websocket server
-      this.createWebSocketServer();
+    // init websocket server
+    this.createWebSocketServer();
 
-      // invalidate vite handler
-      this.invalidateVite();
+    // invalidate vite handler
+    this.invalidateVite();
 
-      // init middlewares
-      this.initializeMiddlewares();
-    } catch (error) {
-      throw new Error(`handle create server error: ${error}`);
-    }
+    // init middlewares
+    this.initializeMiddlewares();
+    // } catch (error) {
+    //   throw new Error(`handle create farm server error: ${error}`);
+    // }
   }
 
   private initializeMiddlewares() {
@@ -193,13 +194,14 @@ export class newServer {
       this.middlewares.use(publicPathMiddleware(this));
     }
 
-    if (this.publicDir) {
+    if (fs.existsSync(this.publicDir as PathLike)) {
       this.middlewares.use(publicMiddleware(this));
     }
 
     if (this.resolvedUserConfig.compilation.lazyCompilation) {
       this.middlewares.use(lazyCompilationMiddleware(this));
     }
+
     // TODO todo add appType 这块要判断 单页面还是 多页面 多 html 处理不一样
     this.middlewares.use(htmlFallbackMiddleware(this));
 
