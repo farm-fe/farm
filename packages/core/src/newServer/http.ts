@@ -13,11 +13,10 @@
 
 import type { OutgoingHttpHeaders as HttpServerHeaders } from 'node:http';
 import type { ServerOptions as HttpsServerOptions } from 'node:https';
-import path from 'node:path';
 import connect from 'connect';
-import fse from 'fs-extra';
 import { readFileIfExists } from '../utils/fsUtils.js';
-import { Logger } from '../utils/logger.js';
+import { resolveServerUrls } from '../utils/http.js';
+import { Logger, printServerUrls } from '../utils/logger.js';
 import { HttpServer } from './index.js';
 import { ProxyOptions } from './middlewares/proxy.js';
 
@@ -47,12 +46,17 @@ export interface CorsOptions {
   optionsSuccessStatus?: number;
 }
 
+export interface ResolvedServerUrls {
+  local: string[];
+  network: string[];
+}
+
 // For the unencrypted tls protocol, we use http service.
 // In other cases, https / http2 is used.
 export class httpServer {
   public logger: Logger;
   protected httpServer: HttpServer | null = null;
-
+  protected resolvedUrls: ResolvedServerUrls | null = null;
   constructor(logger: Logger) {
     this.logger = logger = new Logger();
   }
@@ -103,5 +107,23 @@ export class httpServer {
       readFileIfExists(https.pfx)
     ]);
     return { ...https, ca, cert, key, pfx };
+  }
+
+  async displayServerUrls(
+    serverOptions: any,
+    publicPath?: string,
+    showPreviewFlag = false
+  ) {
+    this.resolvedUrls = await resolveServerUrls(
+      this.httpServer,
+      serverOptions,
+      publicPath
+    );
+
+    if (this.resolvedUrls) {
+      printServerUrls(this.resolvedUrls, this.logger, showPreviewFlag);
+    } else {
+      throw new Error('cannot print server URLs with Server Error.');
+    }
   }
 }

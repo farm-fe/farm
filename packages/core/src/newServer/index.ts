@@ -38,8 +38,10 @@ import {
   resourceMiddleware
 } from './middlewares/index.js';
 
+import { __FARM_GLOBAL__ } from '../config/_global.js';
 import { createCompiler } from '../index.js';
 import { resolveServerUrls } from '../utils/http.js';
+import { openBrowser } from './open.js';
 import { WebSocketClient, WebSocketServer, WsServer } from './ws.js';
 
 export type HttpServer = Server | Http2SecureServer;
@@ -230,7 +232,7 @@ export class newServer extends httpServer {
       return;
     }
     // TODO open browser when server is ready && open config is true
-    const { port, hostname, protocol, strictPort } = this.serverOptions;
+    const { port, hostname, open, strictPort } = this.serverOptions;
 
     try {
       const serverPort = await this.httpServerStart({
@@ -251,25 +253,17 @@ export class newServer extends httpServer {
 
       // watch extra files after compile
       this.watcher?.watchExtraFiles?.();
+      !__FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__ &&
+        (await this.displayServerUrls(this.serverOptions, this.publicPath));
 
-      this.displayServerUrls();
+      if (!open) {
+        const url =
+          this.resolvedUrls?.local[0] ?? this.resolvedUrls?.network[0];
+        openBrowser(url);
+      }
     } catch (error) {
       this.logger.error(`start farm dev server error: ${error}`);
       throw error;
-    }
-  }
-
-  private async displayServerUrls(showPreviewFlag = false) {
-    const resolvedUrls = await resolveServerUrls(
-      this.httpServer,
-      this.serverOptions,
-      this.publicPath
-    );
-
-    if (resolvedUrls) {
-      printServerUrls(resolvedUrls, this.logger, showPreviewFlag);
-    } else {
-      throw new Error('cannot print server URLs with Server Error.');
     }
   }
 
