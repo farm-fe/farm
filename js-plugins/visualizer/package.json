@@ -31,8 +31,6 @@
     "ws": "^8.14.2"
   },
   "devDependencies": {
-    "@farmfe/cli": "workspace:*",
-    "@farmfe/core": "workspace:*",
     "@farmfe/js-plugin-dts": "workspace:*",
     "@farmfe/js-plugin-less": "workspace:*",
     "@farmfe/js-plugin-postcss": "workspace:*",
