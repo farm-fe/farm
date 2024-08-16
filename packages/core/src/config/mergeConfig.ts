@@ -98,8 +98,8 @@ export function mergeFarmCliConfig(
   }
 
   if (
-    isString(options.server.host) ||
-    typeof options.server.host === 'boolean'
+    isString(options.server?.host) ||
+    typeof options.server?.host === 'boolean'
   ) {
     left = mergeConfig(left, { server: { host: options.host } });
   }
@@ -114,7 +114,7 @@ export function mergeFarmCliConfig(
     });
   }
 
-  if (options.server.port) {
+  if (options.server?.port) {
     left = mergeConfig(left, {
       server: {
         port: options.port
@@ -130,7 +130,7 @@ export function mergeFarmCliConfig(
     });
   }
 
-  if (options.server.https) {
+  if (options.server?.https) {
     left = mergeConfig(left, {
       server: {
         https: options.https
@@ -138,7 +138,7 @@ export function mergeFarmCliConfig(
     });
   }
 
-  if (options.compilation.sourcemap) {
+  if (options.compilation?.sourcemap) {
     left = mergeConfig(left, {
       compilation: { sourcemap: options.sourcemap }
     });
@@ -149,12 +149,15 @@ export function mergeFarmCliConfig(
 
 export function initialCliOptions(options: any): any {
   const { mode, watch } = options;
-  const { outDir, target, format, minify, sourcemap, treeShaking } =
-    options.compilation;
 
-  const input = Object.values(options.compilation.input).filter(Boolean).length
-    ? options.compilation.input
-    : {};
+  const compilationOptions = options.compilation || {};
+  const { minify, sourcemap, treeShaking } = compilationOptions;
+  const { outDir, target, format } = compilationOptions.output || {};
+
+  const input = compilationOptions.input
+    ? Object.values(compilationOptions.input).filter(Boolean)
+    : [];
+  const hasInput = input.length > 0;
 
   const output: UserConfig['compilation']['output'] = {
     ...(outDir && { path: outDir }),
@@ -163,7 +166,7 @@ export function initialCliOptions(options: any): any {
   };
 
   const compilation: UserConfig['compilation'] = {
-    input: Object.values(input).filter(Boolean).length ? input : {},
+    input: hasInput ? { ...compilationOptions.input } : {},
     output,
     ...(watch && { watch }),
     ...(minify && { minify }),
