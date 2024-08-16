@@ -43,6 +43,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.3](https://github.com/farm-fe/farm/compare/create_farm_node-v0.1.2...create_farm_node-v0.1.3) - 2024-08-16
+
+### Other
+- *(create-farm)* add multiple platforms ([#1689](https://github.com/farm-fe/farm/pull/1689))
+
 ## [0.1.2](https://github.com/farm-fe/farm/compare/create_farm_node-v0.1.1...create_farm_node-v0.1.2) - 2024-07-19
 
 ### Other

@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.12](https://github.com/farm-fe/farm/compare/farmfe_compiler-v0.0.11...farmfe_compiler-v0.0.12) - 2024-08-16
+
+### Fixed
+- bundle import namespace name uniq ([#1696](https://github.com/farm-fe/farm/pull/1696))
+- single bundle ([#1653](https://github.com/farm-fe/farm/pull/1653))
+
 ## [0.0.11](https://github.com/farm-fe/farm/compare/farmfe_compiler-v0.0.10...farmfe_compiler-v0.0.11) - 2024-07-25
 
 ### Added
