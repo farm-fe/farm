@@ -5,7 +5,9 @@
   "dependencies": {
     "@farmfe-examples/lib-for-browser": "workspace:^",
     "@ant-design/icons": "^5.0.1",
+    "@ant-design/pro-chat": "1.13.7",
     "antd": "^5.4.2",
+    "antd-style": "3.6.2",
     "clsx": "^1.2.1",
     "core-js": "^3.30.1",
     "react": "18",
