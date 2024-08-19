@@ -100,15 +100,7 @@ export class WsServer {
   public logger: ILogger;
   public wsServer: Server;
 
-  constructor(
-    // private httpServer: HttpServer,
-    // private config: ResolvedUserConfig,
-    // private httpsOptions: HttpsServerOptions,
-    // private publicPath: string,
-    // private hmrEngine: HmrEngine,
-    // logger?: ILogger
-    private readonly app: any
-  ) {
+  constructor(private readonly app: any) {
     this.logger = app.logger ?? new Logger();
     this.createWebSocketServer();
   }
@@ -138,7 +130,6 @@ export class WsServer {
     const hmrServer = hmr && hmr.server;
     const hmrPort = hmr && hmr.port;
     const portsAreCompatible = !hmrPort || hmrPort === serverConfig.port;
-    // @ts-ignore
     this.wsServer = hmrServer || (portsAreCompatible && this.app.httpServer);
     let hmrServerWsListener: (
       req: InstanceType<typeof IncomingMessage>,
@@ -151,7 +142,7 @@ export class WsServer {
     if (this.wsServer) {
       let hmrBase = this.app.publicPath;
 
-      const hmrPath = hmr ? hmr.path : undefined;
+      const hmrPath = hmr?.path;
       if (hmrPath) {
         hmrBase = path.posix.join(hmrBase, hmrPath as string);
       }
@@ -294,34 +285,27 @@ export class WsServer {
         });
       },
 
-      close() {
+      async close() {
         // should remove listener if hmr.server is set
         // otherwise the old listener swallows all WebSocket connections
         if (hmrServerWsListener && this.wsServer) {
           this.wsServer.off('upgrade', hmrServerWsListener);
         }
-        return new Promise<void>((resolve, reject) => {
+        try {
           this.wss.clients.forEach((client: any) => {
             client.terminate();
           });
-          this.wss.close((err: any) => {
-            if (err) {
-              reject(err);
-            } else {
-              if (wsHttpServer) {
-                wsHttpServer.close((err) => {
-                  if (err) {
-                    reject(err);
-                  } else {
-                    resolve();
-                  }
-                });
-              } else {
-                resolve();
-              }
-            }
+          await new Promise<void>((resolve, reject) => {
+            this.wss.close((err: any) => (err ? reject(err) : resolve()));
           });
-        });
+          if (wsHttpServer) {
+            await new Promise<void>((resolve, reject) => {
+              wsHttpServer.close((err) => (err ? reject(err) : resolve()));
+            });
+          }
+        } catch (err) {
+          throw new Error(`Failed to close WebSocket server: ${err}`);
+        }
       }
     };
   }
