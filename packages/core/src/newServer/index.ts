@@ -97,15 +97,14 @@ export function noop() {
   // noop
 }
 
+type ServerConfig = CommonServerOptions & NormalizedServerConfig;
+
 export class newServer extends httpServer {
-  ws: any;
-  serverOptions: CommonServerOptions & NormalizedServerConfig;
+  ws: WsServer;
+  serverOptions: ServerConfig;
   httpsOptions: HttpsServerOptions;
-  // public assets directory
-  publicDir?: string | boolean;
-  // base path of server
+  publicDir: string | boolean | undefined;
   publicPath?: string;
-  // publicFile
   publicFiles?: Set<string>;
   httpServer: HttpServer;
   watcher: FileWatcher;
@@ -113,32 +112,31 @@ export class newServer extends httpServer {
   middlewares: connect.Server;
   compiler: CompilerType;
   constructor(
-    // private compiler: CompilerType,
     private readonly resolvedUserConfig: ResolvedUserConfig,
     readonly logger: Logger
   ) {
     super(logger);
-    this.resolveOptions(resolvedUserConfig);
+    this.#resolveOptions();
   }
 
-  public getCompiler(): CompilerType {
+  getCompiler(): CompilerType {
     return this.compiler;
   }
 
-  private resolveOptions(config: ResolvedUserConfig) {
-    this.publicPath = config.compilation.output.publicPath;
-    this.publicDir = config.compilation.assets.publicDir;
+  #resolveOptions() {
+    const { compilation, server } = this.resolvedUserConfig;
+    this.publicPath = compilation.output.publicPath;
+    this.publicDir = compilation.assets.publicDir;
 
-    this.serverOptions = config.server as CommonServerOptions &
-      NormalizedServerConfig;
+    this.serverOptions = server as CommonServerOptions & NormalizedServerConfig;
   }
 
-  public async createServer() {
+  async createServer(): Promise<void> {
     try {
       const { https, middlewareMode } = this.serverOptions;
 
       this.httpsOptions = await this.resolveHttpsConfig(https);
-      this.publicFiles = await this.handlePublicFiles();
+      this.publicFiles = await this.#handlePublicFiles();
 
       this.middlewares = connect() as connect.Server;
       this.httpServer = middlewareMode
@@ -157,16 +155,17 @@ export class newServer extends httpServer {
       this.createWebSocketServer();
 
       // invalidate vite handler
-      this.invalidateVite();
+      this.#invalidateVite();
 
       // init middlewares
-      this.initializeMiddlewares();
+      this.#initializeMiddlewares();
     } catch (error) {
-      throw new Error(`handle create farm server error: ${error}`);
+      this.logger.error(`Failed to create farm server: ${error}`);
+      throw error;
     }
   }
 
-  private initializeMiddlewares() {
+  #initializeMiddlewares() {
     this.middlewares.use(hmrPingMiddleware());
 
     const { proxy, middlewareMode, cors } = this.serverOptions;
@@ -179,8 +178,10 @@ export class newServer extends httpServer {
 
     if (proxy) {
       const middlewareServer =
-        (isObject(middlewareMode) ? middlewareMode.server : null) ??
-        this.httpServer;
+        isObject(middlewareMode) && 'server' in middlewareMode
+          ? middlewareMode.server
+          : this.httpServer;
+
       this.middlewares.use(proxyMiddleware(this, middlewareServer));
     }
 
@@ -206,7 +207,7 @@ export class newServer extends httpServer {
     this.middlewares.use(notFoundMiddleware());
   }
 
-  public createHmrEngine() {
+  createHmrEngine() {
     if (!this.httpServer) {
       throw new Error(
         'HmrEngine requires a http server. please check the server is be created'
@@ -216,7 +217,7 @@ export class newServer extends httpServer {
     this.hmrEngine = new HmrEngine(this);
   }
 
-  public async createWebSocketServer() {
+  async createWebSocketServer() {
     if (!this.httpServer) {
       throw new Error(
         'Websocket requires a http server. please check the server is be created'
@@ -226,7 +227,7 @@ export class newServer extends httpServer {
     this.ws = new WsServer(this);
   }
 
-  public async listen(): Promise<void> {
+  async listen(): Promise<void> {
     if (!this.httpServer) {
       this.logger.warn('HTTP server is not created yet');
       return;
@@ -249,7 +250,7 @@ export class newServer extends httpServer {
       this.compiler = await createCompiler(this.resolvedUserConfig, logger);
 
       // compile the project and start the dev server
-      await this.startCompilation();
+      await this.#startCompilation();
 
       // watch extra files after compile
       this.watcher?.watchExtraFiles?.();
@@ -257,9 +258,7 @@ export class newServer extends httpServer {
         (await this.displayServerUrls(this.serverOptions, this.publicPath));
 
       if (!open) {
-        const url =
-          this.resolvedUrls?.local[0] ?? this.resolvedUrls?.network[0];
-        openBrowser(url);
+        this.#openServerBrowser();
       }
     } catch (error) {
       this.logger.error(`start farm dev server error: ${error}`);
@@ -275,18 +274,24 @@ export class newServer extends httpServer {
     this.compiler = compiler;
   }
 
-  private async compile(): Promise<void> {
+  async #compile(): Promise<void> {
     try {
       await this.compiler.compile();
+      if (this.resolvedUserConfig.server.writeToDisk) {
+        await this.compiler.writeResourcesToDisk();
+      } else {
+        await this.compiler.callWriteResourcesHook();
+      }
     } catch (err) {
-      throw new Error(logError(err) as unknown as string);
+      this.logger.error(`Compilation failed: ${err}`);
+      throw err;
     }
+  }
 
-    if (this.resolvedUserConfig.server.writeToDisk) {
-      this.compiler.writeResourcesToDisk();
-    } else {
-      this.compiler.callWriteResourcesHook();
-    }
+  async #openServerBrowser() {
+    const url =
+      this.resolvedUrls?.local?.[0] ?? this.resolvedUrls?.network?.[0] ?? '';
+    openBrowser(url);
   }
 
   protected async httpServerStart(serverOptions: {
@@ -325,24 +330,24 @@ export class newServer extends httpServer {
     });
   }
 
-  private async startCompilation() {
+  async #startCompilation() {
     // check if cache dir exists
     const { root, persistentCache } = this.compiler.config.config;
     const hasCacheDir = await isCacheDirExists(
       getCacheDir(root, persistentCache)
     );
     const start = performance.now();
-    await this.compile();
+    await this.#compile();
     const duration = performance.now() - start;
     bootstrap(duration, this.compiler.config, hasCacheDir);
   }
 
-  private async handlePublicFiles() {
+  async #handlePublicFiles() {
     const initPublicFilesPromise = initPublicFiles(this.resolvedUserConfig);
     return await initPublicFilesPromise;
   }
 
-  private invalidateVite() {
+  #invalidateVite(): void {
     // Note: path should be Farm's id, which is a relative path in dev mode,
     // but in vite, it's a url path like /xxx/xxx.js
     this.ws.wss.on('vite:invalidate', ({ path, message }: any) => {
