@@ -39,8 +39,6 @@
   "keywords": [],
   "license": "MIT",
   "devDependencies": {
-    "@farmfe/cli": "workspace:*",
-    "@farmfe/core": "workspace:^1.3.10",
     "@farmfe/js-plugin-dts": "workspace:*",
     "@types/postcss-import": "^14.0.3",
     "@types/postcss-url": "^10.0.4",

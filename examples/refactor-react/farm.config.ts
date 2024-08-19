@@ -1,13 +1,9 @@
-import { defineConfig } from '@farmfe/core';
+import { defineConfig } from "@farmfe/core";
 
+import react from "@farmfe/plugin-react";
 export default defineConfig({
-  plugins: ['@farmfe/plugin-react'],
-  compilation: {
-    presetEnv: false,
-    progress: false,
-    sourcemap: false,
-    runtime: {
-      isolate: true
-    }
-  }
+  plugins: [react()],
+  server: {
+    // port: 3005,
+  },
 });

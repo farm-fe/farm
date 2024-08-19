@@ -25,6 +25,8 @@ import {
   Logger,
   bootstrap,
   clearScreen,
+  getCacheDir,
+  isCacheDirExists,
   normalizeBasePath,
   printServerUrls
 } from '../utils/index.js';
@@ -125,6 +127,14 @@ export class Server implements ImplDevServer {
     }
     const { port, open, protocol, hostname } = this.config;
 
+    // check if cache dir exists
+    const hasCacheDir = await isCacheDirExists(
+      getCacheDir(
+        this.compiler.config.config.root,
+        this.compiler.config.config.persistentCache
+      )
+    );
+
     const start = Date.now();
     // compile the project and start the dev server
     await this.compile();
@@ -132,7 +142,7 @@ export class Server implements ImplDevServer {
     // watch extra files after compile
     this.watcher?.watchExtraFiles?.();
 
-    bootstrap(Date.now() - start, this.compiler.config);
+    bootstrap(Date.now() - start, this.compiler.config, hasCacheDir);
 
     await this.startServer(this.config);
 
@@ -244,7 +254,7 @@ export class Server implements ImplDevServer {
       hostname
     };
 
-    const isProxy = Object.keys(options.proxy).length;
+    const isProxy = options.proxy;
     if (https) {
       if (isProxy) {
         this.server = httpsServer.createServer(https, this._app.callback());

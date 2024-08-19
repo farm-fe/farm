@@ -92,26 +92,29 @@ export function mergeFarmCliConfig(
     }
 
     if (target.root && !isAbsolute(target.root)) {
-      const resolvedRoot = path.resolve(cliOption.configPath, target.root);
+      const resolvedRoot = path.resolve(cliOption.configFile, target.root);
       target.root = resolvedRoot;
     }
   }
 
-  if (isString(options.host) || typeof options.host === 'boolean') {
+  if (
+    isString(options.server?.host) ||
+    typeof options.server?.host === 'boolean'
+  ) {
     left = mergeConfig(left, { server: { host: options.host } });
   }
 
-  if (typeof options.minify === 'boolean') {
+  if (typeof options.compilation.minify === 'boolean') {
     left = mergeConfig(left, { compilation: { minify: options.minify } });
   }
 
-  if (options.outDir) {
+  if (options.compilation.output.outDir) {
     left = mergeConfig(left, {
       compilation: { output: { path: options.outDir } }
     });
   }
 
-  if (options.port) {
+  if (options.server?.port) {
     left = mergeConfig(left, {
       server: {
         port: options.port
@@ -127,7 +130,7 @@ export function mergeFarmCliConfig(
     });
   }
 
-  if (options.https) {
+  if (options.server?.https) {
     left = mergeConfig(left, {
       server: {
         https: options.https
@@ -135,7 +138,7 @@ export function mergeFarmCliConfig(
     });
   }
 
-  if (options.sourcemap) {
+  if (options.compilation?.sourcemap) {
     left = mergeConfig(left, {
       compilation: { sourcemap: options.sourcemap }
     });
@@ -145,17 +148,16 @@ export function mergeFarmCliConfig(
 }
 
 export function initialCliOptions(options: any): any {
-  const {
-    input,
-    outDir,
-    target,
-    format,
-    watch,
-    minify,
-    sourcemap,
-    treeShaking,
-    mode
-  } = options;
+  const { mode, watch } = options;
+
+  const compilationOptions = options.compilation || {};
+  const { minify, sourcemap, treeShaking } = compilationOptions;
+  const { outDir, target, format } = compilationOptions.output || {};
+
+  const input = compilationOptions.input
+    ? Object.values(compilationOptions.input).filter(Boolean)
+    : [];
+  const hasInput = input.length > 0;
 
   const output: UserConfig['compilation']['output'] = {
     ...(outDir && { path: outDir }),
@@ -164,7 +166,7 @@ export function initialCliOptions(options: any): any {
   };
 
   const compilation: UserConfig['compilation'] = {
-    input: { ...(input && { index: input }) },
+    input: hasInput ? { ...compilationOptions.input } : {},
     output,
     ...(watch && { watch }),
     ...(minify && { minify }),
@@ -175,6 +177,7 @@ export function initialCliOptions(options: any): any {
   const defaultOptions: any = {
     compilation,
     root: options.root,
+    server: options.server,
     configFile: options.configFile,
     ...(mode && { mode })
   };

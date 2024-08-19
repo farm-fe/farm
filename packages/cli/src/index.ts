@@ -1,11 +1,11 @@
+import { VERSION as CORE_VERSION } from '@farmfe/core';
 import { cac } from 'cac';
-
 import {
+  VERSION,
   handleAsyncOperationErrors,
   resolveCliConfig,
   resolveCommandOptions,
-  resolveCore,
-  version
+  resolveCore
 } from './utils.js';
 
 import type { UserConfig } from '@farmfe/core';
@@ -120,7 +120,7 @@ cli
   .action(async (root: string, options: CliBuildOptions & GlobalCliOptions) => {
     const defaultOptions = {
       root,
-      configFile: options.configFile,
+      configFile: options.config,
       mode: options.mode,
       watch: options.watch,
       compilation: {
@@ -158,7 +158,7 @@ cli
   .action(async (root: string, options: CliBuildOptions & GlobalCliOptions) => {
     const defaultOptions = {
       root,
-      configFile: options.configFile,
+      configFile: options.config,
       mode: options.mode,
       compilation: {
         watch: options.watch,
@@ -202,7 +202,7 @@ cli
           host: options.host,
           open: options.open
         },
-        configPath: options.configPath,
+        configFile: options.config,
         port: options.port,
         compilation: {
           output: {
@@ -236,17 +236,8 @@ cli
     );
   });
 
-// Listening for unknown command
-cli.on('command:*', async () => {
-  const { Logger } = await import('@farmfe/core');
-  const logger = new Logger();
-  logger.error(
-    `Unknown command place Run "farm --help" to see available commands`
-  );
-});
-
 cli.help();
 
-cli.version(version);
+cli.version(`@farmfe/cli ${VERSION} @farmfe/core ${CORE_VERSION}`);
 
 cli.parse();

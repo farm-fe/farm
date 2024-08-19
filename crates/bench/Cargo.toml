@@ -1,0 +1,20 @@
+[package]
+name = "bench"
+version = "0.0.1"
+
+edition = { workspace = true }
+homepage = { workspace = true }
+license = { workspace = true }
+repository = { workspace = true }
+
+[dependencies]
+criterion2 = { version = "0.11.0", default-features = false }
+farmfe_core = { path = "../core", version = "0.6.4" }
+farmfe_compiler = { path = "../compiler", version = "0.0.11" }
+
+[[bench]]
+name = "compiler_bench"
+harness = false
+
+[features]
+codspeed = ["criterion2/codspeed"]

@@ -52,7 +52,6 @@ import type {
 } from './config/types.js';
 import { logError } from './server/error.js';
 import { lazyCompilation } from './server/middlewares/lazy-compilation.js';
-import { resolveHostname } from './utils/http.js';
 import { ConfigWatcher } from './watcher/config-watcher.js';
 
 import type { JsPlugin } from './plugin/type.js';
@@ -84,60 +83,6 @@ export async function start(
     await devServer.listen();
   } catch (error) {
     logger.error('Failed to start the server', { exit: true, error });
-  }
-}
-
-export async function startRefactorCli(
-  inlineConfig?: FarmCliOptions & UserConfig
-): Promise<void> {
-  inlineConfig = inlineConfig ?? {};
-  const logger = inlineConfig.logger ?? new Logger();
-  setProcessEnv('development');
-
-  try {
-    const resolvedUserConfig = await resolveConfig(
-      inlineConfig,
-      'start',
-      'development',
-      'development',
-      false
-    );
-
-    const compiler = await createCompiler(resolvedUserConfig, logger);
-
-    const devServer = await createDevServer(
-      compiler,
-      resolvedUserConfig,
-      logger
-    );
-
-    await devServer.listen();
-  } catch (error) {
-    logger.error('Failed to start the server', { exit: true, error });
-  }
-}
-
-export async function buildRefactorCli(
-  inlineConfig?: FarmCliOptions & UserConfig
-): Promise<void> {
-  inlineConfig = inlineConfig ?? {};
-  const logger = inlineConfig.logger ?? new Logger();
-  setProcessEnv('production');
-
-  try {
-    const resolvedUserConfig = await resolveConfig(
-      inlineConfig,
-      'build',
-      'production',
-      'production',
-      false
-    );
-
-    await createBundleHandler(resolvedUserConfig, logger);
-    // copy resources under publicDir to output.path
-    await copyPublicDirectory(resolvedUserConfig, logger);
-  } catch (err) {
-    logger.error(`Failed to build: ${err}`, { exit: true });
   }
 }
 
@@ -224,20 +169,9 @@ export async function watch(
     'build',
     'production',
     'production',
-    false
+    false,
+    logger
   );
-
-  const lazyEnabled = resolvedUserConfig.compilation?.lazyCompilation;
-
-  if (lazyEnabled) {
-    const hostname = await resolveHostname(resolvedUserConfig.server.host);
-    resolvedUserConfig.compilation.define = {
-      ...(resolvedUserConfig.compilation.define ?? {}),
-      FARM_NODE_LAZY_COMPILE_SERVER_URL: `http://${
-        hostname.host || 'localhost'
-      }:${resolvedUserConfig.server.port}`
-    };
-  }
 
   const compilerFileWatcher = await createBundleHandler(
     resolvedUserConfig,
@@ -247,6 +181,7 @@ export async function watch(
 
   let devServer: Server | undefined;
   // create dev server for lazy compilation
+  const lazyEnabled = resolvedUserConfig.compilation.lazyCompilation;
   if (lazyEnabled) {
     devServer = new Server({
       logger,
@@ -357,7 +292,9 @@ export async function createBundleHandler(
 
   await compilerHandler(
     async () => {
-      compiler.removeOutputPathDir();
+      if (resolvedUserConfig.compilation?.output?.clean) {
+        compiler.removeOutputPathDir();
+      }
       try {
         await compiler.compile();
       } catch (err) {

@@ -41,7 +41,7 @@ use farmfe_toolkit::{
   swc_ecma_visit::VisitMutWith,
 };
 
-use import_meta_visitor::ImportMetaVisitor;
+use import_meta_visitor::{replace_import_meta_url, ImportMetaVisitor};
 #[cfg(feature = "swc_plugin")]
 use swc_plugins::{init_plugin_module_cache_once, transform_by_swc_plugins};
 
@@ -193,7 +193,9 @@ impl Plugin for FarmPluginScript {
           .to_string_lossy()
           .to_string()
       };
+
       transform_url_with_import_meta_url(ast, &comments);
+
       transform_import_meta_glob(
         ast,
         context.config.root.clone(),
@@ -249,10 +251,19 @@ impl Plugin for FarmPluginScript {
     // set param.module.meta.module_system
     set_module_system_for_module_meta(param, context);
 
+    let is_replace_import_meta_url = context.config.output.target_env.is_library()
+      && matches!(context.config.output.format, ModuleFormat::CommonJs);
+
+    if is_replace_import_meta_url {
+      let ast = &mut param.module.meta.as_script_mut().ast;
+      replace_import_meta_url(ast)
+    };
+
     // find and replace `import.meta.xxx` to `module.meta.xxx` and detect hmr_accepted
     // skip transform import.meta when targetEnv is node
-    if matches!(context.config.output.target_env, TargetEnv::Browser)
-      || matches!(context.config.output.format, ModuleFormat::CommonJs)
+    if !context.config.output.target_env.is_library()
+      && (matches!(context.config.output.target_env, TargetEnv::Browser)
+        || matches!(context.config.output.format, ModuleFormat::CommonJs))
     {
       // transform `import.meta.xxx` to `module.meta.xxx`
       let ast = &mut param.module.meta.as_script_mut().ast;

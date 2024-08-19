@@ -24,6 +24,7 @@ describe('resolveUserConfig', () => {
       main: './main.tsx'
     });
     expect(config.compilation.output).toEqual({
+      clean: true,
       path: './dist',
       publicPath: '/',
       targetEnv: 'browser'
