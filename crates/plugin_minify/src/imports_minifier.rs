@@ -277,6 +277,7 @@ impl<'a> VisitMut for ImportsMinifier<'a> {
                 match sp {
                   farmfe_core::swc_ecma_ast::ExportSpecifier::Namespace(ns) => {
                     let ident = self.ident_generator.generate();
+                    self.inc_exported_ident_count(ident.clone());
                     let mut ns_ident = get_module_export_name(ns.name.clone());
                     id_to_replace.insert(ns_ident.to_id(), ident.clone());
                     ns_ident.sym = ident.as_str().into();
