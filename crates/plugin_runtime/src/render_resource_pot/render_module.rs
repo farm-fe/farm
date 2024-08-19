@@ -1,4 +1,4 @@
-use std::{path::PathBuf, sync::Arc};
+use std::{collections::HashMap, path::PathBuf, sync::Arc};
 
 use farmfe_core::{
   context::CompilationContext,
@@ -34,7 +34,7 @@ use farmfe_core::{
 };
 
 use super::{
-  source_replacer::{ExistingCommonJsRequireVisitor, SourceReplacer},
+  source_replacer::{ExistingCommonJsRequireVisitor, SourceReplacer, SourceReplacerOptions},
   transform_async_module,
   transform_module_decls::{transform_module_decls, TransformModuleDeclsOptions},
 };
@@ -45,14 +45,26 @@ pub struct RenderModuleResult {
   pub source_map_chain: Vec<Arc<String>>,
 }
 
-pub fn render_module<F: Fn(&ModuleId) -> bool>(
-  module: &Module,
-  module_graph: &ModuleGraph,
-  is_enabled_minify: F,
-  minify_builder: &MinifyBuilder,
-  is_async_module: bool,
-  context: &Arc<CompilationContext>,
+pub struct RenderModuleOptions<'a, F: Fn(&ModuleId) -> bool> {
+  pub module: &'a Module,
+  pub module_graph: &'a ModuleGraph,
+  pub is_enabled_minify: F,
+  pub minify_builder: &'a MinifyBuilder,
+  pub is_async_module: bool,
+  pub context: &'a Arc<CompilationContext>,
+}
+
+pub fn render_module<'a, F: Fn(&ModuleId) -> bool>(
+  options: RenderModuleOptions<'a, F>,
 ) -> farmfe_core::error::Result<RenderModuleResult> {
+  let RenderModuleOptions {
+    module,
+    module_graph,
+    is_enabled_minify,
+    minify_builder,
+    is_async_module,
+    context,
+  } = options;
   let mut cloned_module = module.meta.as_script().ast.clone();
   let (cm, _) = create_swc_source_map(Source {
     path: PathBuf::from(module.id.resolved_path_with_query(&context.config.root)),
@@ -105,14 +117,14 @@ pub fn render_module<F: Fn(&ModuleId) -> bool>(
     }
 
     // replace import source with module id
-    let mut source_replacer = SourceReplacer::new(
+    let mut source_replacer = SourceReplacer::new(SourceReplacerOptions {
       unresolved_mark,
       top_level_mark,
       module_graph,
-      module.id.clone(),
-      context.config.mode.clone(),
-      context.config.output.target_env.clone(),
-    );
+      module_id: module.id.clone(),
+      mode: context.config.mode.clone(),
+      target_env: context.config.output.target_env.clone(),
+    });
     cloned_module.visit_mut_with(&mut source_replacer);
     cloned_module.visit_mut_with(&mut hygiene_with_config(HygieneConfig {
       top_level_mark,

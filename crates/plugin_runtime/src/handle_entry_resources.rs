@@ -213,7 +213,8 @@ struct EntryResourceAndDepResources {
   pub entry_js_resource_source_map_name: String,
   pub entry_js_resource_code: Arc<String>,
   pub dep_resources: Vec<String>,
-  pub dynamic_resources_code: String,
+  pub dynamic_resources: String,
+  pub dynamic_module_resources_map: String,
 }
 
 fn get_entry_resource_and_dep_resources_name(
@@ -278,10 +279,11 @@ fn get_entry_resource_and_dep_resources_name(
     resource_map,
     module_graph,
   );
-  let dynamic_resources_code =
+  let (dynamic_resources, dynamic_module_resources_map) =
     get_dynamic_resources_code(&dynamic_resources_map, context.config.mode.clone());
 
-  result.dynamic_resources_code = dynamic_resources_code;
+  result.dynamic_resources = dynamic_resources;
+  result.dynamic_module_resources_map = dynamic_module_resources_map;
   result
 }
 
@@ -312,7 +314,8 @@ pub fn handle_entry_resources(
         entry_js_resource_source_map_name,
         entry_js_resource_source_map,
         mut dep_resources,
-        dynamic_resources_code,
+        dynamic_resources,
+        dynamic_module_resources_map,
       } = get_entry_resource_and_dep_resources_name(
         entry,
         module,
@@ -348,9 +351,13 @@ pub fn handle_entry_resources(
           .collect::<Vec<_>>()
           .join(",")
       );
-      let set_dynamic_resources_map_code = format!(
-        r#"{farm_global_this}.{FARM_MODULE_SYSTEM}.setDynamicModuleResourcesMap({dynamic_resources_code});"#,
-      );
+      let set_dynamic_resources_map_code = if !dynamic_resources.is_empty() {
+        format!(
+          r#"{farm_global_this}.{FARM_MODULE_SYSTEM}.setDynamicModuleResourcesMap({dynamic_resources},{dynamic_module_resources_map});"#,
+        )
+      } else {
+        "".to_string()
+      };
 
       let top_level_await_entry =
         if context.config.script.native_top_level_await && async_modules.contains(entry) {

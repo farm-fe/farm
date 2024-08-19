@@ -4,6 +4,7 @@ import { AntdLayout } from './antd-layout';
 import { createBrowserRouter } from 'react-router-dom';
 
 import url from '../assets/plugin.svg?inline';
+import { getRoutes } from './extra-routes';
 
 export const router = createBrowserRouter(
   [
@@ -19,14 +20,7 @@ export const router = createBrowserRouter(
             </div>
           )
         },
-        {
-          path: '2',
-          element: <div>test two</div>
-        },
-        {
-          path: '3',
-          element: <div>test</div>
-        }
+        ...getRoutes(),
       ]
     }
   ],
