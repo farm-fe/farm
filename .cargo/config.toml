@@ -30,3 +30,7 @@ rustflags = ["-C", "target-feature=+crt-static", "-Zshare-generics=y"]
 
 [target.aarch64-pc-windows-msvc]
 linker = "rust-lld"
+
+[target.armv7-unknown-linux-gnueabi]
+linker = "arm-linux-gnueabihf-gcc"
+rustflags = ["-C", "target-feature=-crt-static"]

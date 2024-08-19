@@ -14,7 +14,10 @@ test('resolveUserConfig', async () => {
   const filePath = fileURLToPath(path.dirname(import.meta.url));
 
   const config = await resolveConfig(
-    { configPath: path.join(filePath, 'fixtures', 'config', 'farm.config.ts') },
+    {
+      configPath: path.join(filePath, 'fixtures', 'config', 'farm.config.ts'),
+      server: { hmr: false }
+    },
     'development',
     new Logger()
   );

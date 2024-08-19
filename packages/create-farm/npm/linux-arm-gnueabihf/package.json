@@ -1,0 +1,26 @@
+{
+  "name": "create-farm-linux-arm-gnueabihf",
+  "version": "0.0.12",
+  "os": [
+    "linux"
+  ],
+  "cpu": [
+    "arm"
+  ],
+  "main": "create-farm.linux-arm-gnueabihf.node",
+  "files": [
+    "create-farm.linux-arm-gnueabihf.node"
+  ],
+  "description": "Rapidly create a new farm project.",
+  "keywords": [
+    "farm",
+    "create-farm"
+  ],
+  "author": "",
+  "homepage": "https://www.farmfe.org/docs/quick-start#create-a-farm-project",
+  "license": "ISC",
+  "repository": "https://github.com/farm-fe/farm/tree/main/packages/create-farm",
+  "bugs": {
+    "url": "https://github.com/farm-fe/farm/issues"
+  }
+}

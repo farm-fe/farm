@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.2.1
+
+### Patch Changes
+
+- ef19162f: Optimize dynamic resources map size and fix minify.moduleDecls cyclic dependencies issues
+
 ## 1.2.0
 
 ### Minor Changes

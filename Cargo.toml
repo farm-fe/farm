@@ -8,7 +8,8 @@ homepage = "https://farmfe.org"
 license = "MIT"
 repository = "https://github.com/farm-fe/farm"
 
-[profile.release]
+[profile.release-publish]
+inherits = "release"
 codegen-units = 1
 lto = "fat"
 opt-level = 3
@@ -17,7 +18,7 @@ panic = "abort"
 
 [profile.ci-test]
 inherits = "release"
-opt-level = 0
-debug = 2
-lto = false
-codegen-units = 16
+# opt-level = 0
+# debug = 2
+# lto = false
+# codegen-units = 16
