@@ -41,7 +41,7 @@ export default {
               'dist',
               'index.js'
             );
-            const render = await import(moudlePath).then((m) => m.default);
+            const render = await import(moudlePath).then((m) => m['default']);
             const renderedHtml = render(ctx.path);
             // console.log(renderedHtml);
             const html = template.replace(
