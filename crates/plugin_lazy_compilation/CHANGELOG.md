@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.12](https://github.com/farm-fe/farm/compare/farmfe_plugin_lazy_compilation-v0.0.11...farmfe_plugin_lazy_compilation-v0.0.12) - 2024-08-19
+
+### Fixed
+- [#1672](https://github.com/farm-fe/farm/pull/1672) ([#1692](https://github.com/farm-fe/farm/pull/1692))
+- lazy compile url ([#1671](https://github.com/farm-fe/farm/pull/1671))
+
 ## [0.0.11](https://github.com/farm-fe/farm/compare/farmfe_plugin_lazy_compilation-v0.0.10...farmfe_plugin_lazy_compilation-v0.0.11) - 2024-07-25
 
 ### Other
