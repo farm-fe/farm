@@ -1,5 +1,11 @@
 # @farmfe/runtime
 
+## 0.12.2
+
+### Patch Changes
+
+- ef19162f: Optimize dynamic resources map size and fix minify.moduleDecls cyclic dependencies issues
+
 ## 0.12.1
 
 ### Patch Changes
