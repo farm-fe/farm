@@ -152,7 +152,10 @@ impl Plugin for FarmPluginMinify {
     // ```
     // minified h conflicts with the exported ident of vue. we should rename h to h1 to avoid conflict.
     // topo sort the module graph, and traverse the module graph from bottom to top
-    let (mut sorted_module_ids, _) = module_graph.toposort();
+    let (mut sorted_module_ids, cyclic_module_ids) = module_graph.toposort();
+    // skip cyclic module ids and its dependencies. TODO: handle cyclic module ids in the future
+    skipped_module_ids.extend(cyclic_module_ids.into_iter().flatten().into_iter());
+
     // traverse the module graph from top to bottom to avoid export * from name conflict
     for module_id in &sorted_module_ids {
       if !module_graph

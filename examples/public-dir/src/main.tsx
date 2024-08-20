@@ -6,11 +6,13 @@ import FarmLogo from "/new-logo.png";
 export function Main() {
   const [count, setCount] = useState(0);
 
+  const farmLogo = new URL("/new-logo.png", import.meta.url).href;
+
   return (
     <>
       <div>
         <a href="https://farmfe.org/" target="_blank">
-          <img src={FarmLogo} className="logo" alt="Farm logo" />
+          <img src={farmLogo} className="logo" alt="Farm logo" />
         </a>
         <a href="https://react.dev" target="_blank">
           <img src={reactLogo} className="logo react" alt="React logo" />

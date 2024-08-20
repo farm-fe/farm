@@ -4,11 +4,16 @@ import fse from 'fs-extra';
 import { stat } from 'node:fs/promises';
 import { isAbsolute, relative } from 'node:path';
 
-import type { Resource } from '@farmfe/runtime/src/resource-loader.js';
 import { Compiler } from '../compiler/index.js';
 import { checkClearScreen } from '../config/index.js';
 import type { JsUpdateResult } from '../types/binding.js';
-import { Logger, bold, cyan, green } from '../utils/index.js';
+import {
+  Logger,
+  bold,
+  cyan,
+  getDynamicResources,
+  green
+} from '../utils/index.js';
 import { logError } from './error.js';
 import { Server } from './index.js';
 import { WebSocketClient } from './ws.js';
@@ -97,19 +102,9 @@ export class HmrEngine {
         (item) => !queue.includes(item)
       );
 
-      let dynamicResourcesMap: Record<string, Resource[]> = null;
+      const { dynamicResources, dynamicModuleResourcesMap } =
+        getDynamicResources(result.dynamicResourcesMap);
 
-      if (result.dynamicResourcesMap) {
-        for (const [key, value] of Object.entries(result.dynamicResourcesMap)) {
-          if (!dynamicResourcesMap) {
-            dynamicResourcesMap = {} as Record<string, Resource[]>;
-          }
-          dynamicResourcesMap[key] = value.map((r) => ({
-            path: r[0],
-            type: r[1] as 'script' | 'link'
-          }));
-        }
-      }
       const {
         added,
         changed,
@@ -125,7 +120,8 @@ export class HmrEngine {
         immutableModules: ${JSON.stringify(immutableModules.trim())},
         mutableModules: ${JSON.stringify(mutableModules.trim())},
         boundaries: ${JSON.stringify(boundaries)},
-        dynamicResourcesMap: ${JSON.stringify(dynamicResourcesMap)}
+        dynamicResources: ${JSON.stringify(dynamicResources)},
+        dynamicModuleResourcesMap: ${JSON.stringify(dynamicModuleResourcesMap)}
       }`;
 
       this.callUpdates(result);

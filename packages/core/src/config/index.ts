@@ -409,7 +409,6 @@ export async function normalizeUserCompilationConfig(
     resolvedCompilation.output.targetEnv !== 'node' &&
     isArray(resolvedCompilation.runtime.plugins) &&
     resolvedUserConfig.server?.hmr &&
-    is_entry_html &&
     !resolvedCompilation.runtime.plugins.includes(hmrClientPluginPath)
   ) {
     const publicPath = getValidPublicPath(
@@ -983,7 +982,7 @@ export function createDefaultConfig(options: any): UserConfig {
         entryFilename: '[entryName]',
         path: outputPath,
         format,
-        targetEnv: 'node'
+        targetEnv: 'library-node'
       },
       external: [
         ...(process.env.FARM_CONFIG_FULL_BUNDLE

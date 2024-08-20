@@ -45,7 +45,7 @@ export default {
                 : __dirname;
             const render = await import(
               path.join(curDir.toString(), 'dist', 'index.js')
-            ).then((m) => m.default);
+            ).then((m) => m['default']);
             const renderedHtml = render(ctx.path);
 
             const html = template

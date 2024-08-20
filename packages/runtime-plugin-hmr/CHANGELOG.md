@@ -1,5 +1,11 @@
 # @farmfe/runtime-plugin-hmr
 
+## 3.5.6
+
+### Patch Changes
+
+- ef19162f: Optimize dynamic resources map size and fix minify.moduleDecls cyclic dependencies issues
+
 ## 3.5.5
 
 ### Patch Changes

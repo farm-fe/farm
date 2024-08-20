@@ -1,5 +1,15 @@
 # @farmfe/core
 
+## 1.3.13
+
+### Patch Changes
+
+- ed5c5278: fix bundle import namespace name uniq
+- ef19162f: Optimize dynamic resources map size and fix minify.moduleDecls cyclic dependencies issues
+- Updated dependencies [ef19162f]
+  - @farmfe/runtime-plugin-hmr@3.5.6
+  - @farmfe/runtime@0.12.2
+
 ## 1.3.12
 
 ### Patch Changes

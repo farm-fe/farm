@@ -10,12 +10,12 @@ import {
   bold,
   checkClearScreen,
   cyan,
+  getDynamicResources,
   green
 } from '../../index.js';
 import { Server } from '../index.js';
 
 import { existsSync } from 'node:fs';
-import type { Resource } from '@farmfe/runtime/src/resource-loader.js';
 import { logError } from '../error.js';
 
 export function lazyCompilation(devSeverContext: Server): Middleware {
@@ -73,25 +73,14 @@ export function lazyCompilation(devSeverContext: Server): Middleware {
       );
 
       if (result) {
-        let dynamicResourcesMap: Record<string, Resource[]> = null;
-
-        if (result.dynamicResourcesMap) {
-          for (const [key, value] of Object.entries(
-            result.dynamicResourcesMap
-          )) {
-            if (!dynamicResourcesMap) {
-              dynamicResourcesMap = {} as Record<string, Resource[]>;
-            }
-
-            dynamicResourcesMap[key] = value.map((r) => ({
-              path: r[0],
-              type: r[1] as 'script' | 'link'
-            }));
-          }
-        }
+        const { dynamicResources, dynamicModuleResourcesMap } =
+          getDynamicResources(result.dynamicResourcesMap);
 
         const returnObj = `{
-          "dynamicResourcesMap": ${JSON.stringify(dynamicResourcesMap)}
+          "dynamicResources": ${JSON.stringify(dynamicResources)},
+          "dynamicModuleResourcesMap": ${JSON.stringify(
+            dynamicModuleResourcesMap
+          )}
         }`;
         const code = !ctx.query.node
           ? `export default ${returnObj}`
