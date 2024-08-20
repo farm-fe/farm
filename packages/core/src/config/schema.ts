@@ -71,6 +71,7 @@ const serverSchema = z
     open: z.boolean().optional(),
     https: z.custom<SecureServerOptions>(),
     cors: z.boolean().optional(),
+    spa: z.boolean().optional(),
     proxy: z
       .record(
         z
