@@ -1,5 +1,5 @@
 {
-  "name": "vue-example",
+  "name": "<FARM-TEMPLATE-NAME>",
   "version": "1.0.0",
   "scripts": {
     "dev": "farm start",
