@@ -3,7 +3,6 @@ import { JsPlugin, ResolvedUserConfig, checkPublicFile } from '@farmfe/core';
 import glob from 'fast-glob';
 import { ProcessOptions, Processor } from 'postcss';
 import postcssLoadConfig from 'postcss-load-config';
-import type { base } from './aa.js';
 import { getPostcssImplementation, pluginName, tryRead } from './utils.js';
 export type PostcssPluginOptions = {
   /**
@@ -12,7 +11,7 @@ export type PostcssPluginOptions = {
    */
   postcssLoadConfig?: {
     ctx?: postcssLoadConfig.ConfigContext;
-    path?: string | base;
+    path?: string;
     options?: Parameters<typeof postcssLoadConfig>[2];
   };
   filters?: {

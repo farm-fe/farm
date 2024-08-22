@@ -1,6 +1,5 @@
 import { JsPlugin } from '@farmfe/core';
 import postcssLoadConfig from 'postcss-load-config';
-import type { base } from './aa.js';
 export type PostcssPluginOptions = {
     /**
      * @default undefined
@@ -8,7 +7,7 @@ export type PostcssPluginOptions = {
      */
     postcssLoadConfig?: {
         ctx?: postcssLoadConfig.ConfigContext;
-        path?: string | base;
+        path?: string;
         options?: Parameters<typeof postcssLoadConfig>[2];
     };
     filters?: {
