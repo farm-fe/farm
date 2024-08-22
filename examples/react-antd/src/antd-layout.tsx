@@ -10,6 +10,7 @@ import type { MenuProps } from 'antd';
 import { Breadcrumb, Layout, Menu, theme } from 'antd';
 import { Button as LibButton } from '@farmfe-examples/lib-for-browser';
 import { useNavigate, Outlet } from 'react-router-dom';
+import { ProChat } from '@ant-design/pro-chat';
 
 import './main.css';
 import logo from '../assets/logo.png';
@@ -112,6 +113,7 @@ export const AntdLayout: React.FC = () => {
               background: colorBgContainer
             }}
           >
+            <ProChat />
             <div>
               <img width={600} src={logo} />
             </div>

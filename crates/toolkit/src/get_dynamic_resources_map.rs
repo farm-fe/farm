@@ -78,20 +78,29 @@ pub fn get_dynamic_resources_map(
 pub fn get_dynamic_resources_code(
   dynamic_resources_map: &HashMap<ModuleId, Vec<(String, ResourceType)>>,
   mode: Mode,
-) -> String {
+) -> (String, String) {
   let mut dynamic_resources_code_vec = vec![];
+  let mut dynamic_resources = vec![];
+  let mut visited_resources = HashMap::new();
 
   // inject dynamic resources
   for (module_id, resources) in dynamic_resources_map {
-    let mut resources_code = String::new();
+    let mut dynamic_resources_index = vec![];
 
     for (resource_name, resource_type) in resources {
+      let key = format!("{}{:?}", resource_name, resource_type);
+
+      if let Some(index) = visited_resources.get(&key) {
+        dynamic_resources_index.push(format!("{}", *index));
+        continue;
+      }
+
       match resource_type {
         ResourceType::Js => {
-          resources_code += &format!(r#"{{ path: '{}', type: 'script' }},"#, resource_name)
+          dynamic_resources.push(format!(r#"{{ path: '{}', type: 0 }}"#, resource_name));
         }
         ResourceType::Css => {
-          resources_code += &format!(r#"{{ path: '{}', type: 'link' }},"#, resource_name)
+          dynamic_resources.push(format!(r#"{{ path: '{}', type: 1 }}"#, resource_name));
         }
         _ => {
           panic!(
@@ -100,10 +109,13 @@ pub fn get_dynamic_resources_code(
           )
         }
       }
+
+      dynamic_resources_index.push(format!("{}", dynamic_resources.len() - 1));
+      visited_resources.insert(key, dynamic_resources.len() - 1);
     }
 
     let id = module_id.id(mode.clone()).replace(r"\", r"\\");
-    dynamic_resources_code_vec.push((id, resources_code));
+    dynamic_resources_code_vec.push((id, dynamic_resources_index.join(",")));
   }
 
   let mut dynamic_resources_code = dynamic_resources_code_vec
@@ -114,5 +126,8 @@ pub fn get_dynamic_resources_code(
 
   dynamic_resources_code = format!("{{ {} }}", dynamic_resources_code);
 
-  dynamic_resources_code
+  (
+    format!("[{}]", dynamic_resources.join(",")),
+    dynamic_resources_code,
+  )
 }

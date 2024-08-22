@@ -13,6 +13,7 @@ use lazy_static::lazy_static;
 const REFRESH_RUNTIME_IMPORT: &str = "import RefreshRuntime from 'react-refresh'";
 pub const IS_REACT_REFRESH_BOUNDARY: &str = "farmfe_plugin_react_is_react_refresh_boundary";
 
+// TODO namespace window.$RefreshReg$ and window.$RefreshSig$
 lazy_static! {
   pub static ref PRE_CODE: String = {
     format!(

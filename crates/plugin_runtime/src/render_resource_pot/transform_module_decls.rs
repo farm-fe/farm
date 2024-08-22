@@ -92,11 +92,10 @@ pub fn transform_module_decls(
             export_items.extend(export.export_items);
           }
           ModuleDecl::ExportNamed(export_named) => {
-            export_items.extend(transform_export_named(
-              export_named,
-              unresolved_mark,
-              &options,
-            ));
+            let export = transform_export_named(export_named, unresolved_mark, &options);
+
+            items.extend(export.declare_items);
+            export_items.extend(export.export_items);
           }
           ModuleDecl::ExportDefaultDecl(default_decl) => {
             let export = transform_export_default_decl(default_decl, unresolved_mark, &options);
@@ -318,8 +317,9 @@ fn transform_export_named(
   named_export: NamedExport,
   unresolved_mark: Mark,
   options: &TransformModuleDeclsOptions,
-) -> Vec<ModuleItem> {
+) -> ExportModuleItem {
   let mut items = vec![];
+  let mut export_items = vec![];
   let mut cached_export_from_item = None;
 
   let mut contains_default = false;
@@ -330,6 +330,15 @@ fn transform_export_named(
     match export_specifier {
       farmfe_core::swc_ecma_ast::ExportSpecifier::Namespace(specifier) => {
         let ident = get_ident_from_module_export_name(specifier.name);
+        // module.o(exports, ident, () => ident)
+        let call_expr = create_define_export_property_ident_call_expr(
+          Some(ident.to_id()),
+          ident.to_id(),
+          unresolved_mark,
+          options.is_target_legacy,
+        );
+        export_items.push(create_module_item_from_call_expr(call_expr));
+        // var ident = module.w(require(src))
         items.push(create_module_helper_item(
           "w",
           ident,
@@ -399,7 +408,7 @@ fn transform_export_named(
             unresolved_mark,
             options.is_target_legacy,
           );
-          extra_items.push(create_module_item_from_call_expr(call_expr));
+          export_items.push(create_module_item_from_call_expr(call_expr));
         }
       }
       farmfe_core::swc_ecma_ast::ExportSpecifier::Default(_) => {
@@ -433,7 +442,11 @@ fn transform_export_named(
   }
 
   items.extend(extra_items);
-  items
+
+  ExportModuleItem {
+    declare_items: items,
+    export_items: export_items,
+  }
 }
 
 fn transform_export_default_decl(
@@ -920,6 +933,7 @@ import e from "./c";
 
 console.log(de);
 
+export * from './c';
 export { a, d, b, e };
 export { a1, d1, b1, e1 as e2} from './d';
 export * as b2 from './d';
@@ -977,12 +991,9 @@ module.o(exports, "b", function() {
 module.o(exports, "e", function() {
     return module.f(_f_c);
 });
-var _f_d = require('./d');
-module._(exports, "a1", _f_d);
-module._(exports, "d1", _f_d);
-module._(exports, "b1", _f_d);
-module._(exports, "e2", _f_d, "e1");
-var b2 = module.w(require('./d'));
+module.o(exports, "b2", function() {
+    return b2;
+});
 module.o(exports, "f", function() {
     return f;
 });
@@ -1006,6 +1017,14 @@ var _f_b = module.w(require("./b"));
 var b = _f_b;
 var _f_c = module.i(require("./c"));
 console.log(_f_a.default);
+var _f_c = require('./c');
+module._e(exports, _f_c);
+var _f_d = require('./d');
+module._(exports, "a1", _f_d);
+module._(exports, "d1", _f_d);
+module._(exports, "b1", _f_d);
+module._(exports, "e2", _f_d, "e1");
+var b2 = module.w(require('./d'));
 var f = 1, h = 2;
 function g() {}
 class i {

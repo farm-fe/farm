@@ -1,5 +1,5 @@
 [package]
-name = "preact"
+name = "<FARM-TEMPLATE-NAME>"
 version = "0.0.0"
 description = "A Tauri App"
 authors = ["you"]
