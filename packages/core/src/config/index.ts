@@ -697,8 +697,7 @@ export async function readConfigFile(
     {
       config: normalizedConfig,
       jsPlugins: [],
-      // rustPlugins: [[replaceDirnamePlugin, "{}"]],
-      rustPlugins: []
+      rustPlugins: [[replaceDirnamePlugin, '{}']]
     },
     logger
   );
