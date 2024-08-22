@@ -25,7 +25,7 @@ pub(crate) fn select<'t, T: Displayable>(
   Ok(items.get(selected))
 }
 
-pub(crate) fn input<'v>(
+pub(crate) fn input(
   prompt: &str,
   default: Option<&str>,
   allow_empty: bool,
