@@ -60,7 +60,7 @@ export default class Context {
     const folderPath = libFolderPath && ensureAbsolute(libFolderPath, root);
     const compilerOptions = userOptions.compilerOptions ?? {};
 
-    const mergeCompilerOptions = {
+    const tsCompilerOptions = {
       compilerOptions: mergeObjects(compilerOptions, {
         rootDir: compilerOptions.rootDir || root,
         noEmitOnError: false,
@@ -77,7 +77,8 @@ export default class Context {
       skipAddingFilesFromTsConfig: true,
       libFolderPath: folderPath
     };
-    this.project = new Project(mergeCompilerOptions);
+
+    this.project = new Project(tsCompilerOptions);
     const tsConfigOptions = getTsConfig(
       tsConfigPath,
       this.project.getFileSystem().readFileSync
@@ -89,7 +90,8 @@ export default class Context {
       options.exclude ?? tsConfigOptions.exclude ?? 'node_modules/**'
     ).map(normalizeGlob);
 
-    const aliasOptions: any = config?.resolve?.alias ?? [];
+    const aliasOptions: UserConfig['compilation']['resolve']['alias'] =
+      config?.resolve?.alias ?? {};
     let aliases: any[] = [];
     if (isObject(aliasOptions)) {
       aliases = Object.entries(aliasOptions).map(([key, value]) => {
@@ -156,6 +158,9 @@ export default class Context {
         service
           .getEmitOutput(sourceFile, true)
           .getOutputFiles()
+          .filter((outputFile) =>
+            outputFile.compilerObject.name.startsWith(this.options.root)
+          )
           .map((outputFile) => ({
             path: resolve(
               this.options.root,
@@ -211,7 +216,6 @@ export default class Context {
 
       // check if there are dts files in the project
       const dtsRE = /\.d\.(m|c)?tsx?$/;
-
       for (const file of files) {
         if (dtsRE.test(file)) {
           this.options.sourceDtsFiles.add(
