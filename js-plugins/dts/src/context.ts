@@ -158,6 +158,9 @@ export default class Context {
         service
           .getEmitOutput(sourceFile, true)
           .getOutputFiles()
+          .filter((outputFile) =>
+            outputFile.compilerObject.name.startsWith(this.options.root)
+          )
           .map((outputFile) => ({
             path: resolve(
               this.options.root,
@@ -166,8 +169,7 @@ export default class Context {
             content: outputFile.getText()
           }))
       )
-      .concat(dtsOutputFiles)
-      .filter((file) => file.path.startsWith(this.options.root));
+      .concat(dtsOutputFiles);
 
     let entryRoot = this.options.entryRoot ?? '';
     entryRoot =
