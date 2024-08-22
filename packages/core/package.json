@@ -1,6 +1,6 @@
 {
   "name": "@farmfe/core",
-  "version": "1.3.12",
+  "version": "1.3.13",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "type": "module",
@@ -58,7 +58,7 @@
     "build:cjs": "node scripts/build-cjs.mjs",
     "build": "tsc -p tsconfig.build.json && npm run build:cjs",
     "build:rs": "npm run build:rs:debug -- --release",
-    "build:rs:publish": "npm run build:rs:debug -- --release",
+    "build:rs:publish": "npm run build:rs:debug -- --profile release-publish",
     "build:rs:debug": "napi build --platform --cargo-name farmfe_node -p farmfe_node --cargo-cwd ../../ binding --js binding.cjs --dts binding.d.ts",
     "build:rs:profile": "cross-env FARM_PROFILE=1 npm run build:rs -- --features profile",
     "prepublishOnly": "napi prepublish -t npm && FARM_PUBLISH=true npm run build:cjs",
@@ -77,8 +77,8 @@
     "@types/ws": "^8.5.4"
   },
   "dependencies": {
-    "@farmfe/runtime": "workspace:0.12.1",
-    "@farmfe/runtime-plugin-hmr": "workspace:3.5.5",
+    "@farmfe/runtime": "workspace:0.12.2",
+    "@farmfe/runtime-plugin-hmr": "workspace:3.5.6",
     "@farmfe/runtime-plugin-import-meta": "workspace:0.2.2",
     "@farmfe/utils": "workspace:*",
     "@koa/cors": "^5.0.0",

@@ -23,6 +23,7 @@ use farmfe_core::{
 use farmfe_toolkit::common::MinifyBuilder;
 
 use farmfe_utils::hash::sha256;
+use render_module::RenderModuleOptions;
 
 use self::render_module::{render_module, RenderModuleResult};
 
@@ -119,14 +120,14 @@ pub fn resource_pot_to_runtime_object(
         rendered_module,
         external_modules,
         source_map_chain,
-      } = render_module(
+      } = render_module(RenderModuleOptions {
         module,
         module_graph,
         is_enabled_minify,
-        &minify_builder,
+        minify_builder: &minify_builder,
         is_async_module,
         context,
-      )?;
+      })?;
       let code = rendered_module.rendered_content.clone();
 
       // cache the code and sourcemap

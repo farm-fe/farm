@@ -31,7 +31,7 @@ impl Default for MinifyOptions {
       include: vec![],
       exclude: vec![ConfigRegex::new(".+\\.min\\.(js|css|html)$")],
       mode: MinifyMode::Module,
-      module_decls: true,
+      module_decls: false,
     }
   }
 }

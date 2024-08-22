@@ -414,16 +414,10 @@ export async function normalizeUserCompilationConfig(
   }
   setProcessEnv(resolvedCompilation.mode);
   // TODO add targetEnv `lib-browser` and `lib-node` support
-  const is_entry_html =
-    Object.keys(resolvedCompilation.input).length === 0 ||
-    Object.values(resolvedCompilation.input).some((value) =>
-      value.endsWith('.html')
-    );
   if (
     resolvedCompilation.output.targetEnv !== 'node' &&
     isArray(resolvedCompilation.runtime.plugins) &&
     resolvedUserConfig.server?.hmr &&
-    is_entry_html &&
     !resolvedCompilation.runtime.plugins.includes(hmrClientPluginPath)
   ) {
     const publicPath = getValidPublicPath(
@@ -709,7 +703,7 @@ async function readConfigFile(
           entryFilename: '[entryName]',
           path: outputPath,
           format,
-          targetEnv: 'node'
+          targetEnv: 'library-node'
         },
         external: [
           ...(process.env.FARM_CONFIG_FULL_BUNDLE
@@ -784,7 +778,7 @@ async function readConfigFile(
     // Change to vm.module of node or loaders as far as it is stable
     const userConfig = (await import(filePath as string)).default;
     try {
-      fs.unlink(filePath, () => void 0);
+      // fs.unlink(filePath, () => void 0);
       // remove parent dir if empty
       const isEmpty = fs.readdirSync(outputPath).length === 0;
       if (isEmpty) {

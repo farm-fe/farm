@@ -159,6 +159,10 @@ impl<'a> ImportMetaURLVisitor<'a> {
               }
             };
 
+            if url.is_empty() || url.starts_with('/') {
+              return None;
+            }
+
             is_replace = true;
 
             args[0] = ExprOrSpread {
