@@ -85,17 +85,18 @@ pub fn is_script_resource(element: &Element) -> bool {
 pub fn create_farm_runtime_output_resource(
   bytes: Vec<u8>,
   resource_name: &str,
-  context: &Arc<CompilationContext>,
+  _context: &Arc<CompilationContext>,
 ) -> Resource {
   let name = transform_output_entry_filename(
     "[entryName]_[hash].[ext]".to_string(),
     resource_name,
     resource_name,
     &bytes,
-    match context.config.output.format {
-      ModuleFormat::EsModule => "mjs",
-      ModuleFormat::CommonJs => "cjs",
-    },
+    "js", // todo: support configuring extension
+          // match context.config.output.format {
+          //   ModuleFormat::EsModule => "mjs",
+          //   ModuleFormat::CommonJs => "cjs",
+          // },
   );
   Resource {
     name: name.clone(),

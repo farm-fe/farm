@@ -1,5 +1,5 @@
 //index.js:
- (globalThis || window || global)['__farm_default_namespace__'] = {__FARM_TARGET_ENV__: 'browser'};function _interop_require_default(obj) {
+ window['__farm_default_namespace__'] = {__FARM_TARGET_ENV__: 'browser'};function _interop_require_default(obj) {
     return obj && obj.__esModule ? obj : {
         default: obj
     };
@@ -63,10 +63,11 @@
 var index_js_cjs = __commonJs({
     "../../_internal/runtime/index.js.farm-runtime": (module, exports)=>{
         "use strict";
-        console.log('runtime/index.js')(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setPlugins([]);
+        console.log('runtime/index.js');
+        window['__farm_default_namespace__'].__farm_module_system__.setPlugins([]);
     }
 });
-})());(function(_){for(var r in _){_[r].__farm_resource_pot__='index_ddf1.js';(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.register(r,_[r])}})({"dep.ts":function  (module, exports, farmRequire, farmDynamicRequire) {
+})());(function(_){for(var r in _){_[r].__farm_resource_pot__='index_ddf1.js';window['__farm_default_namespace__'].__farm_module_system__.register(r,_[r])}})({"dep.ts":function  (module, exports, farmRequire, farmDynamicRequire) {
     module._m(exports);
     module.o(exports, "a", function() {
         return a;
@@ -115,4 +116,4 @@ var index_js_cjs = __commonJs({
         }
     }
 }
-,});(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setInitialLoadedResources([]);(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setDynamicModuleResourcesMap([],{  });var farmModuleSystem = (globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__;farmModuleSystem.bootstrap();var entry = farmModuleSystem.require("index.ts");var InvalidateParent=entry.InvalidateParent;export { InvalidateParent };
+,});window['__farm_default_namespace__'].__farm_module_system__.setInitialLoadedResources([]);window['__farm_default_namespace__'].__farm_module_system__.setDynamicModuleResourcesMap([],{  });var farmModuleSystem = window['__farm_default_namespace__'].__farm_module_system__;farmModuleSystem.bootstrap();var entry = farmModuleSystem.require("index.ts");var InvalidateParent=entry.InvalidateParent;export { InvalidateParent };

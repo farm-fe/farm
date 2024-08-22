@@ -1,5 +1,5 @@
 //index.js:
- import __farmNodeModule from 'node:module';globalThis.nodeRequire = __farmNodeModule.createRequire(import.meta.url);(globalThis || window || global)['__farm_default_namespace__'] = {__FARM_TARGET_ENV__: 'node'};function _interop_require_default(obj) {
+ import __farmNodeModule from 'node:module';global.nodeRequire = __farmNodeModule.createRequire(import.meta.url);global['__farm_default_namespace__'] = {__FARM_TARGET_ENV__: 'node'};function _interop_require_default(obj) {
     return obj && obj.__esModule ? obj : {
         default: obj
     };
@@ -51,8 +51,8 @@ console.log('external 2', fs);
 
 console.log('external 3', fs$1);
 
-(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setPlugins([]);
-import * as __farm_external_module_fs from "fs";import * as __farm_external_module_node_fs from "node:fs";(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setExternalModules({"fs": __farm_external_module_fs && __farm_external_module_fs.default && !__farm_external_module_fs.__esModule ? {...__farm_external_module_fs,__esModule:true} : {...__farm_external_module_fs},"node:fs": __farm_external_module_node_fs && __farm_external_module_node_fs.default && !__farm_external_module_node_fs.__esModule ? {...__farm_external_module_node_fs,__esModule:true} : {...__farm_external_module_node_fs}});(function(_){for(var r in _){_[r].__farm_resource_pot__='index_7eea.js';(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.register(r,_[r])}})({"632ff088":function  (module, exports, farmRequire, farmDynamicRequire) {
+global['__farm_default_namespace__'].__farm_module_system__.setPlugins([]);
+import * as __farm_external_module_fs from "fs";import * as __farm_external_module_node_fs from "node:fs";global['__farm_default_namespace__'].__farm_module_system__.setExternalModules({"fs": __farm_external_module_fs && __farm_external_module_fs.default && !__farm_external_module_fs.__esModule ? {...__farm_external_module_fs,__esModule:true} : {...__farm_external_module_fs},"node:fs": __farm_external_module_node_fs && __farm_external_module_node_fs.default && !__farm_external_module_node_fs.__esModule ? {...__farm_external_module_node_fs,__esModule:true} : {...__farm_external_module_node_fs}});(function(_){for(var r in _){_[r].__farm_resource_pot__='index_7eea.js';global['__farm_default_namespace__'].__farm_module_system__.register(r,_[r])}})({"632ff088":function  (module, exports, farmRequire, farmDynamicRequire) {
     module._m(exports);
     var _f_node_fs = module.i(farmRequire('node:fs'));
     console.log('external 2', module.f(_f_node_fs));
@@ -76,4 +76,4 @@ import * as __farm_external_module_fs from "fs";import * as __farm_external_modu
     var _f_fs = module.i(farmRequire('fs'));
     console.log('external 3', module.f(_f_fs));
 }
-,});(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setInitialLoadedResources([]);(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setDynamicModuleResourcesMap([],{  });var farmModuleSystem = (globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__;farmModuleSystem.bootstrap();var entry = farmModuleSystem.require("b5d64806");
+,});global['__farm_default_namespace__'].__farm_module_system__.setInitialLoadedResources([]);global['__farm_default_namespace__'].__farm_module_system__.setDynamicModuleResourcesMap([],{  });var farmModuleSystem = global['__farm_default_namespace__'].__farm_module_system__;farmModuleSystem.bootstrap();var entry = farmModuleSystem.require("b5d64806");

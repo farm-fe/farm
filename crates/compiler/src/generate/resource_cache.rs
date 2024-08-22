@@ -16,7 +16,9 @@ pub fn get_resource_cache_key(
   let mut code = resource_pot.id.to_string();
 
   for module_id in &resource_pot.modules() {
-    let module = module_graph.module(module_id).unwrap();
+    let module = module_graph
+      .module(module_id)
+      .unwrap_or_else(|| panic!("module not found: {:?}", module_id.to_string()));
 
     // make sure cache is correct when tree shaking is enabled
     code.push_str(&module.content_hash);

@@ -1,6 +1,6 @@
 //index.js:
  import __farmNodeModule from 'module';
-globalThis.nodeRequire = __farmNodeModule.createRequire(import.meta.url);function _interop_require_default(obj) {
+global.nodeRequire = __farmNodeModule.createRequire(import.meta.url);function _interop_require_default(obj) {
     return obj && obj.__esModule ? obj : {
         default: obj
     };
@@ -83,7 +83,7 @@ var index_cjs = __commonJs((module, exports)=>{
             return foo;
         }
     });
-    const os = globalThis.nodeRequire('node:os');
+    const os = global.nodeRequire('node:os');
     console.log(fs.read, os.cpus);
     var _default = {
         read: fs.read,

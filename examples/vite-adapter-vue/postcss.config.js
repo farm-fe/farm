@@ -4,5 +4,6 @@ module.exports = {
       rootValue: 16,
       propList: ['*'],
     }),
+    require('@unocss/postcss')
   ]
 }
