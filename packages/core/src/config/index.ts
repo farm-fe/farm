@@ -689,16 +689,16 @@ export async function readConfigFile(
     fileName
   });
 
-  const replaceDirnamePlugin = await rustPluginResolver(
-    'farm-plugin-replace-dirname',
-    normalizedConfig.root
+  const replaceDirnamePlugin = await import('farm-plugin-replace-dirname').then(
+    (mod) => mod.default
   );
 
   const compiler = new Compiler(
     {
       config: normalizedConfig,
       jsPlugins: [],
-      rustPlugins: [replaceDirnamePlugin]
+      // rustPlugins: [[replaceDirnamePlugin, "{}"]],
+      rustPlugins: []
     },
     logger
   );
