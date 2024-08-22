@@ -12,9 +12,12 @@ export default defineConfig(() => {
       // },
     },
     server: {
-      port: 6532,
-      hmr: {
-        path: '/__farm_hmr'
+      port: 4000,
+      proxy: {
+        '^/(api|login|register|messages)': {
+          target: 'https://petstore.swagger.io/v2',
+          ws: true
+        },
       }
     },
     plugins: ['@farmfe/plugin-react', '@farmfe/plugin-sass']
