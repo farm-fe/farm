@@ -7,5 +7,8 @@ export default defineConfig({
     output: {
       publicPath: '/aaa/',
     }
+  },
+  server: {
+    // open: false
   }
 });

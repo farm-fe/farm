@@ -126,6 +126,9 @@ export class Server implements ImplDevServer {
       this.logger.error('HTTP server is not created yet');
       return;
     }
+
+    console.log(this.config);
+
     const { port, open, protocol, hostname } = this.config;
 
     // check if cache dir exists
@@ -153,8 +156,8 @@ export class Server implements ImplDevServer {
     if (open) {
       let publicPath = getValidPublicPath(this.publicPath) || '/';
 
-      const serverUrl = `${protocol}://${hostname.name}:${port}${publicPath}`;
-      openBrowser(serverUrl);
+      // const serverUrl = `${protocol}://${hostname.name}:${port}${publicPath}`;
+      // openBrowser(serverUrl);
     }
   }
 

@@ -1,26 +1,28 @@
-import type { IncomingMessage, Server } from 'node:http';
 import { STATUS_CODES, createServer as createHttpServer } from 'node:http';
-import type { ServerOptions as HttpsServerOptions } from 'node:https';
 import { createServer as createHttpsServer } from 'node:https';
-import type { Socket } from 'node:net';
 import path from 'node:path';
-import type { Duplex } from 'node:stream';
-import type { WebSocket as WebSocketRaw } from 'ws';
 import { WebSocketServer as WebSocketServerRaw_ } from 'ws';
-import { NormalizedServerConfig } from '../config/types.js';
-import { HmrEngine } from '../server/hmr-engine.js';
-import { WebSocket as WebSocketTypes } from '../types/ws.js';
+
 import { ILogger, Logger } from '../utils/logger.js';
 import { isObject } from '../utils/share.js';
 import { HMRChannel } from './hmr.js';
-import { CommonServerOptions } from './http.js';
-import { HttpServer, ServerOptions } from './index.js';
+import { ServerOptions, newServer } from './index.js';
+
+import type { IncomingMessage, Server } from 'node:http';
+import type { Socket } from 'node:net';
+import type { Duplex } from 'node:stream';
+import type { WebSocket as WebSocketRaw } from 'ws';
+import type { WebSocket as WebSocketTypes } from '../types/ws.js';
+
 import {
   CustomPayload,
   ErrorPayload,
   HMRPayload,
   InferCustomEventPayload
 } from './type.js';
+
+const WS_CONNECTED_MESSAGE = JSON.stringify({ type: 'connected' });
+const WS_CUSTOM_EVENT_TYPE = 'custom';
 
 export interface WebSocketServer extends HMRChannel {
   /**
@@ -99,15 +101,27 @@ export class WsServer {
   public clientsMap = new WeakMap<WebSocketRaw, WebSocketClient>();
   public bufferedError: ErrorPayload | null = null;
   public logger: ILogger;
-  public wsServer: Server;
-
+  public wsServer: any;
+  wsHttpServer: Server | undefined;
+  private serverConfig: ServerOptions;
+  private port: number;
+  private host: string | undefined;
+  private hmrServerWsListener: (
+    req: InstanceType<typeof IncomingMessage>,
+    socket: Duplex,
+    head: Buffer
+  ) => void;
   constructor(private readonly app: any) {
     this.logger = app.logger ?? new Logger();
-    this.createWebSocketServer();
+    this.serverConfig = app.resolvedUserConfig.server as ServerOptions;
+    this.#createWebSocketServer();
   }
 
-  createWebSocketServer() {
-    const self = this;
+  get name(): string {
+    return 'ws';
+  }
+
+  #createWebSocketServer() {
     const { resolvedUserConfig: config } = this.app;
     const serverConfig = config.server as unknown as ServerOptions;
     if (serverConfig.ws === false) {
@@ -125,20 +139,15 @@ export class WsServer {
         send: noop
       };
     }
-    let wsHttpServer: Server | undefined = undefined;
 
-    const hmr = isObject(serverConfig.hmr) && serverConfig.hmr;
-    const hmrServer = hmr && hmr.server;
-    const hmrPort = hmr && hmr.port;
+    const hmr = isObject(serverConfig.hmr) ? serverConfig.hmr : undefined;
+    const hmrServer = hmr?.server;
+    const hmrPort = hmr?.port;
     const portsAreCompatible = !hmrPort || hmrPort === serverConfig.port;
     this.wsServer = hmrServer || (portsAreCompatible && this.app.httpServer);
-    let hmrServerWsListener: (
-      req: InstanceType<typeof IncomingMessage>,
-      socket: Duplex,
-      head: Buffer
-    ) => void;
-    const port = hmrPort || 9000;
-    const host = (hmr && hmr.host) || undefined;
+
+    this.port = (hmrPort as number) || 9000;
+    this.host = ((hmr && hmr.host) as string) || undefined;
 
     if (this.wsServer) {
       let hmrBase = this.app.publicPath;
@@ -149,7 +158,7 @@ export class WsServer {
       }
 
       this.wss = new WebSocketServerRaw({ noServer: true });
-      hmrServerWsListener = (req, socket, head) => {
+      this.hmrServerWsListener = (req, socket, head) => {
         // TODO 这里需要处理一下 normalizePublicPath 的问题  hmrBase 路径匹配不到 req.url 的问题
         if (
           req.headers['sec-websocket-protocol'] === HMR_HEADER &&
@@ -160,7 +169,7 @@ export class WsServer {
           });
         }
       };
-      this.wsServer.on('upgrade', hmrServerWsListener);
+      this.wsServer.on('upgrade', this.hmrServerWsListener);
     } else {
       // http server request handler keeps the same with
       // https://github.com/websockets/ws/blob/45e17acea791d865df6b255a55182e9c42e5877a/lib/websocket-server.js#L88-L96
@@ -180,13 +189,13 @@ export class WsServer {
       }) as Parameters<typeof createHttpServer>[1];
 
       if (this.app.httpsOptions) {
-        wsHttpServer = createHttpsServer(this.app.httpsOptions, route);
+        this.wsHttpServer = createHttpsServer(this.app.httpsOptions, route);
       } else {
-        wsHttpServer = createHttpServer(route);
+        this.wsHttpServer = createHttpServer(route);
       }
       // vite dev server in middleware mode
       // need to call ws listen manually
-      this.wss = new WebSocketServerRaw({ server: wsHttpServer });
+      this.wss = new WebSocketServerRaw({ server: this.wsHttpServer });
     }
 
     this.wss.on('connection', (socket) => {
@@ -203,17 +212,18 @@ export class WsServer {
           this.app.hmrEngine.hmrUpdate(parsed.path, true);
           return;
         }
-        if (!parsed || parsed.type !== 'custom' || !parsed.event) return;
+        if (!parsed || parsed.type !== WS_CUSTOM_EVENT_TYPE || !parsed.event)
+          return;
         const listeners = this.customListeners.get(parsed.event);
         if (!listeners?.size) return;
-        const client = this.getSocketClient(socket);
+        const client = this.#getSocketClient(socket);
         listeners.forEach((listener) => listener(parsed.data, client));
       });
       socket.on('error', (err) => {
-        throw new Error(`ws error:\n${err.stack}`);
+        throw new Error(`WebSocket error: \n${err.stack}`);
       });
 
-      socket.send(JSON.stringify({ type: 'connected' }));
+      socket.send(WS_CONNECTED_MESSAGE);
 
       if (this.bufferedError) {
         socket.send(JSON.stringify(this.bufferedError));
@@ -228,101 +238,41 @@ export class WsServer {
         throw new Error(`WebSocket server error ${e.stack || e.message}`);
       }
     });
+  }
 
-    return {
-      name: 'ws',
-      listen: () => {
-        // @ts-ignore
-        wsHttpServer?.listen(port, host);
-      },
-      on: ((event: string, fn: () => void) => {
-        if (wsServerEvents.includes(event)) this.wss.on(event, fn);
-        else {
-          if (!this.customListeners.has(event)) {
-            this.customListeners.set(event, new Set());
-          }
-          this.customListeners.get(event).add(fn);
-        }
-      }) as WebSocketServer['on'],
-      off: ((event: string, fn: () => void) => {
-        if (wsServerEvents.includes(event)) {
-          this.wss.off(event, fn);
-        } else {
-          this.customListeners.get(event)?.delete(fn);
-        }
-      }) as WebSocketServer['off'],
+  listen() {
+    this.wsHttpServer?.listen(this.port, this.host);
+  }
 
-      get clients() {
-        return new Set(
-          Array.from(this.wss.clients).map((socket: any) =>
-            self.getSocketClient(socket)
-          )
-        );
-      },
-
-      send(...args: any[]) {
-        let payload: HMRPayload;
-        if (typeof args[0] === 'string') {
-          payload = {
-            type: 'custom',
-            event: args[0],
-            data: args[1]
-          };
-        } else {
-          payload = args[0];
-        }
-
-        if (payload.type === 'error' && !this.wss.clients.size) {
-          this.bufferedError = payload;
-          return;
-        }
-
-        const stringified = JSON.stringify(payload);
-        this.wss.clients.forEach((client: any) => {
-          // readyState 1 means the connection is open
-          if (client.readyState === 1) {
-            client.send(stringified);
-          }
-        });
-      },
-
-      async close() {
-        // should remove listener if hmr.server is set
-        // otherwise the old listener swallows all WebSocket connections
-        if (hmrServerWsListener && this.wsServer) {
-          this.wsServer.off('upgrade', hmrServerWsListener);
-        }
-        try {
-          this.wss.clients.forEach((client: any) => {
-            client.terminate();
-          });
-          await new Promise<void>((resolve, reject) => {
-            this.wss.close((err: any) => (err ? reject(err) : resolve()));
-          });
-          if (wsHttpServer) {
-            await new Promise<void>((resolve, reject) => {
-              wsHttpServer.close((err) => (err ? reject(err) : resolve()));
-            });
-          }
-        } catch (err) {
-          throw new Error(`Failed to close WebSocket server: ${err}`);
-        }
+  on(event: string, fn: () => void) {
+    if (wsServerEvents.includes(event)) {
+      this.wss.on(event, fn);
+    } else {
+      if (!this.customListeners.has(event)) {
+        this.customListeners.set(event, new Set());
       }
-    };
+      this.customListeners.get(event).add(fn);
+    }
+  }
+
+  off(event: string, fn: () => void) {
+    if (wsServerEvents.includes(event)) {
+      this.wss.off(event, fn);
+    } else {
+      this.customListeners.get(event)?.delete(fn);
+    }
+  }
+
+  get clients() {
+    return new Set(
+      Array.from(this.wss.clients).map((socket: any) =>
+        this.#getSocketClient(socket)
+      )
+    );
   }
 
   send(...args: any[]) {
-    let payload: HMRPayload;
-    if (typeof args[0] === 'string') {
-      payload = {
-        type: 'custom',
-        event: args[0],
-        data: args[1]
-      };
-    } else {
-      payload = args[0];
-    }
-
+    const payload: HMRPayload = this.#createPayload(...args);
     if (payload.type === 'error' && !this.wss.clients.size) {
       this.bufferedError = payload;
       return;
@@ -337,20 +287,48 @@ export class WsServer {
     });
   }
 
-  getSocketClient(socket: WebSocketRaw) {
+  async close() {
+    // should remove listener if hmr.server is set
+    // otherwise the old listener swallows all WebSocket connections
+    if (this.hmrServerWsListener && this.wsServer) {
+      this.wsServer.off('upgrade', this.hmrServerWsListener);
+    }
+    try {
+      this.wss.clients.forEach((client: any) => {
+        client.terminate();
+      });
+      await new Promise<void>((resolve, reject) => {
+        this.wss.close((err: any) => (err ? reject(err) : resolve()));
+      });
+      if (this.wsHttpServer) {
+        await new Promise<void>((resolve, reject) => {
+          this.wsHttpServer.close((err: any) =>
+            err ? reject(err) : resolve()
+          );
+        });
+      }
+    } catch (err) {
+      throw new Error(`Failed to close WebSocket server: ${err}`);
+    }
+  }
+
+  #createPayload(...args: any[]): HMRPayload {
+    if (typeof args[0] === 'string') {
+      return {
+        type: 'custom',
+        event: args[0],
+        data: args[1]
+      };
+    } else {
+      return args[0];
+    }
+  }
+
+  #getSocketClient(socket: WebSocketRaw) {
     if (!this.clientsMap.has(socket)) {
       this.clientsMap.set(socket, {
         send: (...args) => {
-          let payload: HMRPayload;
-          if (typeof args[0] === 'string') {
-            payload = {
-              type: 'custom',
-              event: args[0],
-              data: args[1]
-            };
-          } else {
-            payload = args[0];
-          }
+          const payload: HMRPayload = this.#createPayload(...args);
           socket.send(JSON.stringify(payload));
         },
         // @ts-ignore
