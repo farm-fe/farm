@@ -14,7 +14,7 @@
   },
   "devDependencies": {
     "@farmfe/cli": "workspace:*",
-    "@farmfe/core": "wrokspace:*",
+    "@farmfe/core": "workspace:*",
     "@vitejs/plugin-vue": "^5.1.1",
     "core-js": "^3.37.1",
     "naive-ui": "^2.39.0"
