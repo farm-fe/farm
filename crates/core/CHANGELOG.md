@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.5](https://github.com/farm-fe/farm/compare/farmfe_core-v0.6.4...farmfe_core-v0.6.5) - 2024-08-23
+
+### Fixed
+- globalThis undefined ([#1726](https://github.com/farm-fe/farm/pull/1726))
+- [#1672](https://github.com/farm-fe/farm/pull/1672) ([#1692](https://github.com/farm-fe/farm/pull/1692))
+- single bundle ([#1653](https://github.com/farm-fe/farm/pull/1653))
+
 ## [0.6.4](https://github.com/farm-fe/farm/compare/farmfe_core-v0.6.3...farmfe_core-v0.6.4) - 2024-07-25
 
 ### Added
