@@ -137,7 +137,7 @@ export class ResourceLoader {
 
   private _loadScript(path: string): Promise<void> {
     // @ts-ignore
-    if (FARM_TARGET_ENV !== 'browser') {
+    if (FARM_RUNTIME_TARGET_ENV !== 'browser') {
       return import(path);
     } else {
       return new Promise((resolve, reject) => {
@@ -157,7 +157,7 @@ export class ResourceLoader {
 
   private _loadLink(path: string): Promise<void> {
     // @ts-ignore
-    if (FARM_TARGET_ENV !== 'browser') {
+    if (FARM_RUNTIME_TARGET_ENV !== 'browser') {
       // return Promise.reject(new Error('Not support loading css in SSR'));
       // ignore css loading in SSR
       return Promise.resolve();

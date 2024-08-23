@@ -77,7 +77,7 @@ describe('resolveUserConfig', () => {
             '$__farm_regex:(global(This)?\\.)?process\\.env\\.mode':
               JSON.stringify('development'),
             FARM_PROCESS_ENV: '{"NODE_ENV":"development","mode":"development"}',
-            FARM_TARGET_ENV: '"browser"',
+            FARM_RUNTIME_TARGET_ENV: '"browser"',
             NODE_ENV: 'development',
             mode: 'development',
             'package.json[browser]': 'unknown',
