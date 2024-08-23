@@ -85,10 +85,10 @@ pub fn is_script_resource(element: &Element) -> bool {
 pub fn create_farm_runtime_output_resource(
   bytes: Vec<u8>,
   resource_name: &str,
-  _context: &Arc<CompilationContext>,
+  context: &Arc<CompilationContext>,
 ) -> Resource {
   let name = transform_output_entry_filename(
-    "[entryName]_[hash].[ext]".to_string(),
+    context.config.output.entry_filename.clone(),
     resource_name,
     resource_name,
     &bytes,

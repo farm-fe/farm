@@ -510,13 +510,10 @@ fn create_runtime_code(
   format!("{node_specific_code}{farm_global_this_code}{runtime_resource_code}")
 }
 
-fn create_farm_runtime_resource(
-  runtime_code: &str,
-  _context: &Arc<CompilationContext>,
-) -> Resource {
+fn create_farm_runtime_resource(runtime_code: &str, context: &Arc<CompilationContext>) -> Resource {
   let bytes = runtime_code.to_string().into_bytes();
   let name = transform_output_entry_filename(
-    "[entryName].[hash].[ext]".to_string(),
+    context.config.output.entry_filename.clone(),
     "__farm_runtime",
     "__farm_runtime",
     &bytes,
