@@ -1,14 +1,11 @@
-import { createRequire } from 'node:module';
-
-import { FSWatcher } from 'chokidar';
-
-import { Compiler } from '../compiler/index.js';
-import { Server } from '../server/index.js';
-import { Logger, compilerHandler } from '../utils/index.js';
-
 import { existsSync } from 'node:fs';
+import { createRequire } from 'node:module';
+import { FSWatcher } from 'chokidar';
+import { Compiler } from '../compiler/index.js';
 import type { ResolvedUserConfig } from '../config/index.js';
+import { Server } from '../server/index.js';
 import type { JsUpdateResult } from '../types/binding.js';
+import { Logger, compilerHandler } from '../utils/index.js';
 import { createWatcher } from './create-watcher.js';
 
 interface ImplFileWatcher {
@@ -34,20 +31,16 @@ export class FileWatcher implements ImplFileWatcher {
   }
 
   filterWatchFile(file: string, root: string): boolean {
-    const suffix = process.platform === 'win32' ? '\\' : '/';
-
+    const separator = process.platform === 'win32' ? '\\' : '/';
     return (
-      !file.startsWith(`${root}${suffix}`) &&
+      !file.startsWith(`${root}${separator}`) &&
       !file.includes('\0') &&
       existsSync(file)
     );
   }
 
   getExtraWatchedFiles() {
-    const compiler = this.getCompilerFromServerOrCompiler(
-      this.serverOrCompiler
-    );
-
+    const compiler = this.getCompiler();
     return [
       ...compiler.resolvedModulePaths(this._root),
       ...compiler.resolvedWatchPaths()
@@ -55,32 +48,25 @@ export class FileWatcher implements ImplFileWatcher {
   }
 
   watchExtraFiles() {
-    const files = this.getExtraWatchedFiles();
-
-    for (const file of files) {
+    this.getExtraWatchedFiles().forEach((file) => {
       if (!this._watchedFiles.has(file)) {
         this._watcher.add(file);
         this._watchedFiles.add(file);
       }
-    }
+    });
   }
 
   async watch() {
-    // Determine how to compile the project
-    const compiler = this.getCompilerFromServerOrCompiler(
-      this.serverOrCompiler
-    );
+    const compiler = this.getCompiler();
 
-    const handlePathChange = async (path: string): Promise<void> => {
-      if (this._close) {
-        return;
-      }
+    const handlePathChange = async (path: string) => {
+      if (this._close) return;
 
       try {
-        // if (this.serverOrCompiler instanceof Server) {
-        // @ts-ignore
-        if (this.serverOrCompiler.compiler) {
-          // @ts-ignore
+        if (
+          this.serverOrCompiler instanceof Server &&
+          this.serverOrCompiler.getCompiler()
+        ) {
           await this.serverOrCompiler.hmrEngine.hmrUpdate(path);
         }
 
@@ -88,10 +74,10 @@ export class FileWatcher implements ImplFileWatcher {
           this.serverOrCompiler instanceof Compiler &&
           this.serverOrCompiler.hasModule(path)
         ) {
-          compilerHandler(
+          await compilerHandler(
             async () => {
               const result = await compiler.update([path], true);
-              handleUpdateFinish(result);
+              this.handleUpdateFinish(result, compiler);
               compiler.writeResourcesToDisk();
             },
             this.options,
@@ -104,55 +90,51 @@ export class FileWatcher implements ImplFileWatcher {
       }
     };
 
-    const watchedFiles = this.getExtraWatchedFiles();
-
-    const files = [this.options.root, ...watchedFiles];
-    this._watchedFiles = new Set(files);
-    this._watcher = createWatcher(this.options, files);
+    const filesToWatch = [this.options.root, ...this.getExtraWatchedFiles()];
+    this._watchedFiles = new Set(filesToWatch);
+    this._watcher = createWatcher(this.options, filesToWatch);
 
     this._watcher.on('change', (path) => {
       if (this._close) return;
       handlePathChange(path);
     });
 
-    const handleUpdateFinish = (updateResult: JsUpdateResult) => {
-      const added = [
-        ...updateResult.added,
-        ...updateResult.extraWatchResult.add
-      ].map((addedModule) => {
-        const resolvedPath = compiler.transformModulePath(
-          this._root,
-          addedModule
-        );
-        return resolvedPath;
-      });
-      const filteredAdded = added.filter((file) =>
-        this.filterWatchFile(file, this._root)
-      );
-
-      if (filteredAdded.length > 0) {
-        this._watcher.add(filteredAdded);
-      }
-    };
-
     if (this.serverOrCompiler instanceof Server) {
-      this.serverOrCompiler.hmrEngine?.onUpdateFinish(handleUpdateFinish);
+      this.serverOrCompiler.hmrEngine?.onUpdateFinish((result) =>
+        this.handleUpdateFinish(result, compiler)
+      );
     }
   }
 
-  private getCompilerFromServerOrCompiler(
-    serverOrCompiler: Server | Compiler
-  ): Compiler {
-    // @ts-ignore
-    return serverOrCompiler.getCompiler
-      ? // @ts-ignore
-        serverOrCompiler.getCompiler()
-      : serverOrCompiler;
+  private handleUpdateFinish(updateResult: JsUpdateResult, compiler: Compiler) {
+    const addedFiles = [
+      ...updateResult.added,
+      ...updateResult.extraWatchResult.add
+    ].map((addedModule) =>
+      compiler.transformModulePath(this._root, addedModule)
+    );
+
+    const filteredAdded = addedFiles.filter((file) =>
+      this.filterWatchFile(file, this._root)
+    );
+
+    if (filteredAdded.length > 0) {
+      this._watcher.add(filteredAdded);
+    }
+  }
+
+  private getCompiler(): Compiler {
+    return this.serverOrCompiler instanceof Server
+      ? this.serverOrCompiler.getCompiler()
+      : this.serverOrCompiler;
   }
 
   close() {
-    this._close = true;
-    this._watcher = null;
+    if (this._watcher) {
+      this._close = true;
+      this._watcher.close();
+      this._watcher = null;
+    }
     this.serverOrCompiler = null;
   }
 }
