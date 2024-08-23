@@ -33,6 +33,7 @@ import {
 import { FileWatcher } from '../watcher/index.js';
 import { logError } from './error.js';
 import { HmrEngine } from './hmr-engine.js';
+import { hmrPing } from './middlewares/hmrPing.js';
 import {
   cors,
   headers,
@@ -413,6 +414,7 @@ export class Server implements ImplDevServer {
   private applyServerMiddlewares(middlewares?: DevServerMiddleware[]): void {
     const internalMiddlewares = [
       ...(middlewares || []),
+      hmrPing,
       headers,
       lazyCompilation,
       cors,

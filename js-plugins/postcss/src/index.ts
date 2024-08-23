@@ -4,7 +4,6 @@ import glob from 'fast-glob';
 import { ProcessOptions, Processor } from 'postcss';
 import postcssLoadConfig from 'postcss-load-config';
 import { getPostcssImplementation, pluginName, tryRead } from './utils.js';
-
 export type PostcssPluginOptions = {
   /**
    * @default undefined
