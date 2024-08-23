@@ -8,13 +8,13 @@ import { ResolvedUserConfig, getCacheDir } from '../index.js';
 function resolveChokidarOptions(
   config: ResolvedUserConfig,
   insideChokidarOptions: WatchOptions
-): WatchOptions {
+) {
   const { ignored = [], ...userChokidarOptions } =
     config.server?.hmr?.watchOptions ?? {};
 
   const cacheDir = getCacheDir(config.root, config.compilation.persistentCache);
 
-  const options = {
+  const options: WatchOptions = {
     ignored: [
       '**/.git/**',
       '**/node_modules/**',
