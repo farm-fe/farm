@@ -329,7 +329,8 @@ export async function normalizeUserCompilationConfig(
   resolvedCompilation.define = Object.assign(
     {
       // skip self define
-      ['FARM' + '_PROCESS_ENV']: resolvedUserConfig.env
+      ['FARM' + '_PROCESS_ENV']: resolvedUserConfig.env,
+      FARM_TARGET_ENV: JSON.stringify(resolvedCompilation.output?.targetEnv)
     },
     resolvedCompilation?.define,
     // for node target, we should not define process.env.NODE_ENV

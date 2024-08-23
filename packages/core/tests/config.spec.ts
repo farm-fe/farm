@@ -30,6 +30,7 @@ test('resolveUserConfig', async () => {
       NODE_ENV: 'development',
       mode: 'development'
     },
+    FARM_TARGET_ENV: '"browser"',
     // FARM_HMR_PROTOCOL: 'ws',
     '$__farm_regex:(global(This)?\\.)?process\\.env\\.NODE_ENV':
       '"development"',
@@ -67,6 +68,7 @@ test('resolveUserConfig-prod', async () => {
       NODE_ENV: 'production',
       mode: 'production'
     },
+    FARM_TARGET_ENV: '"browser"',
     '$__farm_regex:(global(This)?\\.)?process\\.env\\.NODE_ENV': '"production"',
     '$__farm_regex:(global(This)?\\.)?process\\.env\\.mode': '"production"'
   });
@@ -114,6 +116,7 @@ test('resolveUserConfig-input-html-prod', async () => {
       NODE_ENV: 'production',
       mode: 'production'
     },
+    FARM_TARGET_ENV: '"browser"',
     '$__farm_regex:(global(This)?\\.)?process\\.env\\.NODE_ENV': '"production"',
     '$__farm_regex:(global(This)?\\.)?process\\.env\\.mode': '"production"'
   });
