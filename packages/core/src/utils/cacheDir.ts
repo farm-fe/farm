@@ -7,14 +7,14 @@ export function getCacheDir(
   root: string,
   persistentCache?: boolean | PersistentCacheConfig
 ) {
-  let cacheDir = path.resolve(root, 'node_modules', '.farm', 'cache');
+  let cacheDir: string;
 
   if (typeof persistentCache === 'object' && persistentCache.cacheDir) {
-    cacheDir = persistentCache.cacheDir;
-
-    if (!path.isAbsolute(cacheDir)) {
-      cacheDir = path.resolve(root, cacheDir);
-    }
+    cacheDir = path.isAbsolute(cacheDir)
+      ? persistentCache.cacheDir
+      : path.resolve(root, cacheDir);
+  } else {
+    cacheDir = path.resolve(root, 'node_modules', '.farm', 'cache');
   }
 
   return cacheDir;
@@ -25,7 +25,7 @@ export async function isCacheDirExists(dir: string): Promise<boolean> {
     const hasCacheDir = fs.readdirSync(dir, { withFileTypes: true });
 
     return !!(hasCacheDir && hasCacheDir.length);
-  } catch (e) {
+  } catch (_) {
     return false;
   }
 }
