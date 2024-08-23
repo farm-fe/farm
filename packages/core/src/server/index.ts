@@ -33,6 +33,7 @@ import {
 import { FileWatcher } from '../watcher/index.js';
 import { logError } from './error.js';
 import { HmrEngine } from './hmr-engine.js';
+import { hmrPing } from './middlewares/hmrPing.js';
 import {
   cors,
   headers,
@@ -125,6 +126,9 @@ export class Server implements ImplDevServer {
       this.logger.error('HTTP server is not created yet');
       return;
     }
+
+    console.log(this.config);
+
     const { port, open, protocol, hostname } = this.config;
 
     // check if cache dir exists
@@ -152,8 +156,8 @@ export class Server implements ImplDevServer {
     if (open) {
       let publicPath = getValidPublicPath(this.publicPath) || '/';
 
-      const serverUrl = `${protocol}://${hostname.name}:${port}${publicPath}`;
-      openBrowser(serverUrl);
+      // const serverUrl = `${protocol}://${hostname.name}:${port}${publicPath}`;
+      // openBrowser(serverUrl);
     }
   }
 
@@ -413,6 +417,7 @@ export class Server implements ImplDevServer {
   private applyServerMiddlewares(middlewares?: DevServerMiddleware[]): void {
     const internalMiddlewares = [
       ...(middlewares || []),
+      hmrPing,
       headers,
       lazyCompilation,
       cors,

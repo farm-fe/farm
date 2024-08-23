@@ -1,4 +1,4 @@
-# Farm + Svelte
+# Farm + TypeScript
 
 This template should help you start developing using TypeScript in Farm.
 
