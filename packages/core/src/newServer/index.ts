@@ -1,31 +1,22 @@
 import fs, { PathLike } from 'node:fs';
-import type * as http from 'node:http';
-import type {
-  ServerOptions as HttpsServerOptions,
-  IncomingMessage,
-  OutgoingHttpHeaders,
-  Server
-} from 'node:http';
-import type { Http2SecureServer } from 'node:http2';
-import path from 'node:path';
 import { WatchOptions } from 'chokidar';
-import compression from 'compression';
 import connect from 'connect';
 import corsMiddleware from 'cors';
-import fse from 'fs-extra';
-import { WebSocketServer as WebSocketServerRaw_ } from 'ws';
+
 import { Compiler } from '../compiler/index.js';
-import { normalizePublicPath } from '../config/normalize-config/normalize-output.js';
-import { NormalizedServerConfig, ResolvedUserConfig } from '../config/types.js';
-import { logError } from '../server/error.js';
-import { getCacheDir, isCacheDirExists } from '../utils/cacheDir.js';
-import { Logger, bootstrap, logger, printServerUrls } from '../utils/logger.js';
-import { initPublicFiles } from '../utils/publicDir.js';
-import { isObject } from '../utils/share.js';
+import { createCompiler } from '../index.js';
 import { FileWatcher } from '../watcher/index.js';
 import { HmrEngine } from './hmr-engine.js';
-import { HMRChannel } from './hmr.js';
 import { CommonServerOptions, httpServer } from './http.js';
+import { openBrowser } from './open.js';
+import { WsServer } from './ws.js';
+
+import { __FARM_GLOBAL__ } from '../config/_global.js';
+import { getCacheDir, isCacheDirExists } from '../utils/cacheDir.js';
+import { Logger, bootstrap, logger } from '../utils/logger.js';
+import { initPublicFiles } from '../utils/publicDir.js';
+import { isObject } from '../utils/share.js';
+
 import {
   adaptorViteMiddleware,
   hmrPingMiddleware,
@@ -38,15 +29,19 @@ import {
   resourceMiddleware
 } from './middlewares/index.js';
 
-import { __FARM_GLOBAL__ } from '../config/_global.js';
-import { createCompiler } from '../index.js';
-import { resolveServerUrls } from '../utils/http.js';
-import { openBrowser } from './open.js';
-import { WebSocketClient, WebSocketServer, WsServer } from './ws.js';
+import type * as http from 'node:http';
+import type { ServerOptions as HttpsServerOptions, Server } from 'node:http';
+import type { Http2SecureServer } from 'node:http2';
+import type { HMRChannel } from './hmr.js';
+
+import type {
+  NormalizedServerConfig,
+  ResolvedUserConfig
+} from '../config/types.js';
 
 export type HttpServer = Server | Http2SecureServer;
 
-type CompilerType = Compiler | null;
+type CompilerType = Compiler | undefined;
 
 export interface HmrOptions {
   protocol?: string;
@@ -75,7 +70,7 @@ export interface ServerOptions extends CommonServerOptions {
    * chokidar watch options or null to disable FS watching
    * https://github.com/paulmillr/chokidar#api
    */
-  watchOptions?: WatchOptions | null;
+  watchOptions?: WatchOptions | undefined;
   /**
    * Create dev server to be used as a middleware in an existing server
    * @default false
@@ -99,6 +94,7 @@ export function noop() {
 
 type ServerConfig = CommonServerOptions & NormalizedServerConfig;
 
+// TODO 改 newServer 的 name and PascalCase
 export class newServer extends httpServer {
   ws: WsServer;
   serverOptions: ServerConfig;
@@ -112,8 +108,8 @@ export class newServer extends httpServer {
   middlewares: connect.Server;
   compiler: CompilerType;
   constructor(
-    private readonly resolvedUserConfig: ResolvedUserConfig,
-    readonly logger: Logger
+    readonly resolvedUserConfig: ResolvedUserConfig,
+    logger: Logger
   ) {
     super(logger);
     this.#resolveOptions();
@@ -233,6 +229,7 @@ export class newServer extends httpServer {
       return;
     }
     // TODO open browser when server is ready && open config is true
+
     const { port, hostname, open, strictPort } = this.serverOptions;
 
     try {
@@ -257,7 +254,7 @@ export class newServer extends httpServer {
       !__FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__ &&
         (await this.displayServerUrls(this.serverOptions, this.publicPath));
 
-      if (!open) {
+      if (open) {
         this.#openServerBrowser();
       }
     } catch (error) {
@@ -277,13 +274,11 @@ export class newServer extends httpServer {
   async #compile(): Promise<void> {
     try {
       await this.compiler.compile();
-      if (this.resolvedUserConfig.server.writeToDisk) {
-        await this.compiler.writeResourcesToDisk();
-      } else {
-        await this.compiler.callWriteResourcesHook();
-      }
+      await (this.resolvedUserConfig.server.writeToDisk
+        ? this.compiler.writeResourcesToDisk()
+        : this.compiler.callWriteResourcesHook());
     } catch (err) {
-      this.logger.error(`Compilation failed: ${err}`);
+      this.logger.error('Compilation failed:', err);
       throw err;
     }
   }
