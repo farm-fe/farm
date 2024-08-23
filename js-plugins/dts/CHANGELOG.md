@@ -1,5 +1,11 @@
 # @farmfe/js-plugin-dts
 
+## 0.6.2
+
+### Patch Changes
+
+- 750b6b97: fix: resolveSourceFileDependencies get all deps with node_modules
+
 ## 0.6.1
 
 ### Patch Changes
