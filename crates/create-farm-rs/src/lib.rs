@@ -1,13 +1,12 @@
 use anyhow::Context;
 use clap::Parser;
-use dialoguer::Input;
 use std::{ffi::OsString, fs, process::exit};
 use utils::prompts;
 
 use crate::{
   package_manager::PackageManager,
   template::{ElectronSubTemplate, TauriSubTemplate, Template},
-  utils::{colors::*, theme::ColorfulTheme},
+  utils::colors::*,
 };
 
 mod args;
@@ -51,20 +50,26 @@ where
     template,
     force,
   } = args;
+
   let cwd = std::env::current_dir()?;
+  let mut default_project_name = "farm-project";
   let project_name = match project_name {
     Some(name) => to_valid_pkg_name(&name),
-    None => Input::<String>::with_theme(&ColorfulTheme::default())
-      .with_prompt("Project name")
-      .default("farm-project".into())
-      .interact_text()?
-      .trim()
-      .into(),
+    None => loop {
+      let input = prompts::input("Project name", Some(default_project_name), false)?
+        .trim()
+        .to_string();
+      if !is_valid_pkg_name(&input) {
+        eprintln!(
+          "{BOLD}{RED}✘{RESET} Invalid project name: {BOLD}{YELLOW}{input}{RESET}, {}",
+          "package name should only include lowercase alphanumeric character and hyphens \"-\" and doesn't start with numbers"
+        );
+        default_project_name = to_valid_pkg_name(&input).leak();
+        continue;
+      };
+      break input;
+    },
   };
-  if !is_valid_pkg_name(&project_name) {
-    eprintln!("{BOLD}{RED}✘{RESET} Invalid project name: {BOLD}{YELLOW}{project_name}{RESET}");
-    exit(1);
-  }
   let target_dir = cwd.join(&project_name);
 
   if target_dir.exists() && target_dir.read_dir()?.next().is_some() {
@@ -202,7 +207,7 @@ fn to_valid_pkg_name(project_name: &str) -> String {
     .skip_while(|ch| ch.is_ascii_digit() || *ch == '-')
     .collect::<String>();
 
-  if ret.is_empty() {
+  if ret.is_empty() || !is_valid_pkg_name(&ret) {
     "farm-project".to_string()
   } else {
     ret

@@ -25,6 +25,21 @@ pub(crate) fn select<'t, T: Displayable>(
   Ok(items.get(selected))
 }
 
+pub(crate) fn input(
+  prompt: &str,
+  default: Option<&str>,
+  allow_empty: bool,
+) -> Result<String> {
+  let theme = ColorfulTheme::default();
+  let mut builder = dialoguer::Input::with_theme(&theme)
+    .with_prompt(prompt)
+    .allow_empty(allow_empty);
+  if let Some(default) = default {
+    builder = builder.default(default.to_string());
+  }
+  Ok(builder.interact_text()?)
+}
+
 pub(crate) fn confirm(prompt: &str, default: bool) -> Result<bool> {
   let theme = ColorfulTheme::default();
   let builder = dialoguer::Confirm::with_theme(&theme)
