@@ -18,7 +18,8 @@ import {
   bold,
   cyan,
   formatExecutionTime,
-  green
+  green,
+  lightCyan
 } from '../utils/index.js';
 import { logError } from './error.js';
 import { WebSocketClient, WebSocketServer } from './ws.js';
@@ -94,7 +95,7 @@ export class HmrEngine {
       const start = performance.now();
       const result = await this.app.compiler.update(queue);
       this.app.logger.info(
-        `${bold(cyan(updatedFilesStr))} updated in ${bold(
+        `${bold(lightCyan(updatedFilesStr))} updated in ${bold(
           green(formatExecutionTime(performance.now() - start, 's'))
         )}`
       );

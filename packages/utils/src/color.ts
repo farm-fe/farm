@@ -118,12 +118,16 @@ export const purple = enabled
 export const orange = enabled
   ? createFormatter('\x1b[38;2;255;137;54m', '\x1b[39m')
   : String;
+export const lightCyan = enabled
+  ? createFormatter('\x1b[38;2;180;240;240m', '\x1b[39m')
+  : String;
 export const cyan = enabled ? createFormatter('\x1b[36m', '\x1b[39m') : String;
 export const white = enabled ? createFormatter('\x1b[37m', '\x1b[39m') : String;
 
 export const bgBlack = enabled
   ? createFormatter('\x1b[40m', '\x1b[49m')
   : String;
+
 export const bgRed = enabled ? createFormatter('\x1b[41m', '\x1b[49m') : String;
 export const bgGreen = enabled
   ? createFormatter('\x1b[42m', '\x1b[49m')
