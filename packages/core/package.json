@@ -90,7 +90,6 @@
     "react-refresh": "^0.14.0",
     "sirv": "^2.0.4",
     "ws": "^8.14.2"
-    "@types/ws": "^8.5.4"
   },
   "dependencies": {
     "@farmfe/runtime": "workspace:0.12.2",
