@@ -3,7 +3,7 @@ import path from 'node:path';
 import chokidar, { FSWatcher, WatchOptions } from 'chokidar';
 import glob from 'fast-glob';
 
-import { ResolvedUserConfig, getCacheDir } from '../index.js';
+import { type ResolvedUserConfig, getCacheDir } from '../index.js';
 
 function resolveChokidarOptions(
   config: ResolvedUserConfig,
@@ -17,7 +17,6 @@ function resolveChokidarOptions(
   const options = {
     ignored: [
       '**/.git/**',
-      '**/node_modules/**',
       '**/test-results/**', // Playwright
       glob.escapePath(cacheDir) + '/**',
       glob.escapePath(

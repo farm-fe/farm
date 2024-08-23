@@ -38,7 +38,6 @@ export class FileWatcher implements ImplFileWatcher {
 
     return (
       !file.startsWith(`${root}${suffix}`) &&
-      !file.includes(`node_modules${suffix}`) &&
       !file.includes('\0') &&
       existsSync(file)
     );
