@@ -1,5 +1,11 @@
 # @farmfe/cli
 
+## 1.0.4
+
+### Patch Changes
+
+- 5f484c5e: Re-prompting for the project name when illegal project name is provided
+
 ## 1.0.3
 
 ### Patch Changes
