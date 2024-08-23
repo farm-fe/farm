@@ -170,7 +170,7 @@ export default class Context {
           }))
       )
       .concat(dtsOutputFiles);
-
+    console.log('outputFiles', outputFiles, this.options.outputDir);
     let entryRoot = this.options.entryRoot ?? '';
     entryRoot =
       entryRoot ||

@@ -61,7 +61,7 @@ pub enum Polyfill {
   /// ```ts
   /// // esm pre
   /// import __farmNodeModule from 'module';
-  /// globalThis.nodeRequire = __farmNodeModule.createRequire(import.meta.url);
+  /// global.nodeRequire = __farmNodeModule.createRequire(import.meta.url);
   /// ```
   ///
   NodeEsmGlobalRequireHelper,
@@ -184,13 +184,13 @@ function _interop_require_default(obj) {
       Polyfill::NodeEsmGlobalRequireHelper => vec![
         r#"
 import __farmNodeModule from 'module';
-globalThis.nodeRequire = __farmNodeModule.createRequire(import.meta.url);
+global.nodeRequire = __farmNodeModule.createRequire(import.meta.url);
 "#,
       ],
       Polyfill::BrowserExternalRequire => vec![
         r#"
 function loadExternalRequire(name) {
-  var _g = (globalThis || window || {});
+  var _g = (window || {});
   var m = _g[name];
   var assign = function() {
     var args = Array.prototype.slice.call(arguments);
