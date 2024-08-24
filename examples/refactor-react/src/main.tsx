@@ -4,7 +4,6 @@ import reactLogo from "/react.svg";
 import FarmLogo from "./assets/logo.png";
 export function Main() {
   const [count, setCount] = useState(0);
-
   return (
     <>
       <div>
