@@ -92,7 +92,7 @@ export class FileWatcher implements ImplFileWatcher {
 
     const filesToWatch = [this.options.root, ...this.getExtraWatchedFiles()];
     this._watchedFiles = new Set(filesToWatch);
-    this._watcher = createWatcher(this.options, filesToWatch);
+    this._watcher ??= createWatcher(this.options, filesToWatch);
 
     this._watcher.on('change', (path) => {
       if (this._close) return;
@@ -104,6 +104,36 @@ export class FileWatcher implements ImplFileWatcher {
         this.handleUpdateFinish(result, compiler)
       );
     }
+  }
+
+  async watchConfigs(callback: (files: string[]) => void) {
+    const filesToWatch = Array.from([
+      ...(this.options.envFiles ?? []),
+      ...(this.options.configFileDependencies ?? []),
+      ...(this.options.configFilePath ? [this.options.configFilePath] : [])
+    ]).filter((file) => file && existsSync(file));
+    const chokidarOptions = {
+      awaitWriteFinish:
+        process.platform === 'linux'
+          ? undefined
+          : {
+              stabilityThreshold: 10,
+              pollInterval: 80
+            }
+    };
+    this._watcher ??= createWatcher(
+      this.options,
+      filesToWatch,
+      chokidarOptions
+    );
+
+    this._watcher.on('change', (path) => {
+      if (this._close) return;
+      if (filesToWatch.includes(path)) {
+        callback([path]);
+      }
+    });
+    return this;
   }
 
   private handleUpdateFinish(updateResult: JsUpdateResult, compiler: Compiler) {
@@ -129,10 +159,10 @@ export class FileWatcher implements ImplFileWatcher {
       : this.serverOrCompiler;
   }
 
-  close() {
+  async close() {
     if (this._watcher) {
       this._close = true;
-      this._watcher.close();
+      await this._watcher.close();
       this._watcher = null;
     }
     this.serverOrCompiler = null;
