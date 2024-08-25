@@ -411,6 +411,7 @@ export async function createFileWatcher(
 
   const configFilePath = await getConfigFilePath(resolvedUserConfig.root);
   const fileWatcher = new FileWatcher(
+    // @ts-ignore
     devServer,
     { ...resolvedUserConfig, configFilePath },
     logger
@@ -434,7 +435,7 @@ export async function createFileWatcher(
 }
 
 export async function createFileWatcher2(
-  devServer: HttpServer & any,
+  devServer: newServer,
   resolvedUserConfig: ResolvedUserConfig,
   logger: Logger = new Logger()
 ) {
@@ -465,7 +466,13 @@ export async function createFileWatcher2(
 
   fileWatcher.watchConfigs(async (files: string[]) => {
     checkClearScreen(resolvedUserConfig);
+    logFileChanges(files, resolvedUserConfig.root, logger);
 
+    await fileWatcher.close();
+    await devServer.close();
+    __FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__ = true;
+
+    await start2(resolvedUserConfig as FarmCliOptions & UserConfig);
     // devServer.restart(async () => {
     //   logFileChanges(files, resolvedUserConfig.root, logger);
     //   farmWatcher?.close();
@@ -509,8 +516,11 @@ export async function start2(
 
     const server = new newServer(resolvedUserConfig, logger);
     await server.createServer();
+
+    const compiler = await createCompiler(resolvedUserConfig, logger);
+    server.setCompiler(compiler);
     await server.listen();
-    // @ts-ignore
+
     await createFileWatcher2(server, resolvedUserConfig, logger);
 
     // call configureDevServer hook after both server and watcher are ready

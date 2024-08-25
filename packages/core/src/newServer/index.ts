@@ -352,4 +352,9 @@ export class newServer extends httpServer {
       this.hmrEngine.hmrUpdate(parentFiles, true);
     });
   }
+
+  async close(): Promise<void> {
+    this.httpServer?.close();
+    await this.ws?.close();
+  }
 }

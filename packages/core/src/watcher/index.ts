@@ -3,7 +3,8 @@ import { createRequire } from 'node:module';
 import { FSWatcher } from 'chokidar';
 import { Compiler } from '../compiler/index.js';
 import type { ResolvedUserConfig } from '../config/index.js';
-import { Server } from '../server/index.js';
+// import { Server } from '../server/index.js';
+import { newServer } from '../newServer/index.js';
 import type { JsUpdateResult } from '../types/binding.js';
 import { Logger, compilerHandler } from '../utils/index.js';
 import { createWatcher } from './create-watcher.js';
@@ -19,7 +20,7 @@ export class FileWatcher implements ImplFileWatcher {
   private _watchedFiles = new Set<string>();
 
   constructor(
-    public serverOrCompiler: Server | Compiler,
+    public serverOrCompiler: newServer | Compiler,
     public options: ResolvedUserConfig,
     private _logger: Logger
   ) {
@@ -64,7 +65,7 @@ export class FileWatcher implements ImplFileWatcher {
 
       try {
         if (
-          this.serverOrCompiler instanceof Server &&
+          this.serverOrCompiler instanceof newServer &&
           this.serverOrCompiler.getCompiler()
         ) {
           await this.serverOrCompiler.hmrEngine.hmrUpdate(path);
@@ -99,7 +100,7 @@ export class FileWatcher implements ImplFileWatcher {
       handlePathChange(path);
     });
 
-    if (this.serverOrCompiler instanceof Server) {
+    if (this.serverOrCompiler instanceof newServer) {
       this.serverOrCompiler.hmrEngine?.onUpdateFinish((result) =>
         this.handleUpdateFinish(result, compiler)
       );
@@ -154,7 +155,7 @@ export class FileWatcher implements ImplFileWatcher {
   }
 
   private getCompiler(): Compiler {
-    return this.serverOrCompiler instanceof Server
+    return this.serverOrCompiler instanceof newServer
       ? this.serverOrCompiler.getCompiler()
       : this.serverOrCompiler;
   }
