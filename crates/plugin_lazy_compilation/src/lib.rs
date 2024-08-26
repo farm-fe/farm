@@ -153,7 +153,10 @@ impl Plugin for FarmPluginLazyCompilation {
 
     if param.resolved_path.ends_with(DYNAMIC_VIRTUAL_SUFFIX) {
       if param.meta.get(ORIGINAL_RESOLVED_PATH).is_none() {
-        let farm_global_this = get_farm_global_this(&context.config.runtime.namespace);
+        let farm_global_this = get_farm_global_this(
+          &context.config.runtime.namespace,
+          &context.config.output.target_env,
+        );
         let resolved_path = param.resolved_path;
         let dynamic_code = include_str!("dynamic_module.ts")
           .replace("MODULE_PATH", &resolved_path.replace('\\', r"\\"))

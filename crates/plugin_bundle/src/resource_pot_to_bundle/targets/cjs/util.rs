@@ -92,7 +92,7 @@ impl<'a> VisitMut for CJSReplace<'a> {
                   self.polyfill.add(Polyfill::NodeEsmGlobalRequireHelper);
                   call_expr.callee = Callee::Expr(Box::new(Expr::Member(MemberExpr {
                     span: DUMMY_SP,
-                    obj: Box::new(Expr::Ident("globalThis".into())),
+                    obj: Box::new(Expr::Ident("global".into())),
                     prop: MemberProp::Ident("nodeRequire".into()),
                   })));
                 }

@@ -1,5 +1,5 @@
 //index.js:
- (globalThis || window || global)['__farm_default_namespace__'] = {__FARM_TARGET_ENV__: 'browser'};function _interop_require_default(obj) {
+ window['__farm_default_namespace__'] = {__FARM_TARGET_ENV__: 'browser'};function _interop_require_default(obj) {
     return obj && obj.__esModule ? obj : {
         default: obj
     };
@@ -61,9 +61,10 @@
   };
 }((function(){var index_js_cjs = __commonJs((module, exports)=>{
     "use strict";
-    console.log('runtime/index.js')(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setPlugins([]);
+    console.log('runtime/index.js');
+    window['__farm_default_namespace__'].__farm_module_system__.setPlugins([]);
 });
-})());(function(_){for(var r in _){_[r].__farm_resource_pot__='index_cb11.js';(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.register(r,_[r])}})({"44a34200":function  (module, exports, farmRequire, farmDynamicRequire) {
+})());(function(_){for(var r in _){_[r].__farm_resource_pot__='index_cb11.js';window['__farm_default_namespace__'].__farm_module_system__.register(r,_[r])}})({"44a34200":function  (module, exports, farmRequire, farmDynamicRequire) {
     module._m(exports);
     module.o(exports, "c", function() {
         return c;
@@ -82,7 +83,7 @@
     module._m(exports);
     exports.default = "/logo-73d4a8.png";
 }
-,});(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setInitialLoadedResources([]);(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setDynamicModuleResourcesMap([],{  });var farmModuleSystem = (globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__;farmModuleSystem.bootstrap();var entry = farmModuleSystem.require("b5d64806");
+,});window['__farm_default_namespace__'].__farm_module_system__.setInitialLoadedResources([]);window['__farm_default_namespace__'].__farm_module_system__.setDynamicModuleResourcesMap([],{  });var farmModuleSystem = window['__farm_default_namespace__'].__farm_module_system__;farmModuleSystem.bootstrap();var entry = farmModuleSystem.require("b5d64806");
 
 //index_3b2e.css:
  * {

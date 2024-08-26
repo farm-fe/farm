@@ -433,6 +433,9 @@ impl Plugin for FarmPluginTransformHtml {
       let mut css_resources: Vec<String> = vec![];
 
       for res_id in dep_resources {
+        if !params.resources_map.contains_key(&res_id) {
+          continue;
+        }
         let res = params.resources_map.get(&res_id).unwrap();
 
         if matches!(res.resource_type, ResourceType::Js) {

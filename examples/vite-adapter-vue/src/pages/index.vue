@@ -7,7 +7,7 @@ import IconComponent from '../assets/vue.svg?component'
 <template>
   <el-button type="primary" @click="$router.push('/about')">to about page</el-button>
 
-  <div class="container">
+  <div class="container" flex item-center>
     <a href="https://farmfe.org/" target="_blank">
       <div class="logo1" />
       <div class="logo2" />
@@ -21,7 +21,7 @@ import IconComponent from '../assets/vue.svg?component'
 
     <a href="https://vuejs.org/" target="_blank">
       vite-svg-loader component
-      <IconComponent class="logo" style="height: 6.25rem; width: 6.25rem;" />
+      <IconComponent class="logo" h-100px w-100px />
     </a>
   </div>
 

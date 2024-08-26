@@ -28,6 +28,8 @@ export interface ConfigEnv {
   isPreview: boolean;
 }
 
+export type ProxyOptions = Options;
+
 export type UserConfigFnPromise = (env: ConfigEnv) => Promise<UserConfig>;
 export type UserConfigFn = (env: ConfigEnv) => UserConfig | Promise<UserConfig>;
 export type UserConfigFnObject = (env: ConfigEnv) => UserConfig;

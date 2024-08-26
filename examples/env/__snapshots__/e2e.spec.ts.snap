@@ -42,7 +42,7 @@ exports[`e2e tests - e2e.spec.ts 1`] = `
     </script>
   
 
-<script data-farm-entry-script="true">(globalThis || window || global)['4c4d99f12bb13ca32da8c12d962efd60'].__farm_module_system__.setInitialLoadedResources([]);</script><script data-farm-entry-script="true">(globalThis || window || global)['4c4d99f12bb13ca32da8c12d962efd60'].__farm_module_system__.setDynamicModuleResourcesMap([],{  });</script><script data-farm-entry-script="true">(globalThis || window || global)['4c4d99f12bb13ca32da8c12d962efd60'].__farm_module_system__.setPublicPaths(['/']);</script><script data-farm-entry-script="true">(globalThis || window || global)['4c4d99f12bb13ca32da8c12d962efd60'].__farm_module_system__.bootstrap();</script>"
+<script data-farm-entry-script="true">window['4c4d99f12bb13ca32da8c12d962efd60'].__farm_module_system__.setInitialLoadedResources([]);</script><script data-farm-entry-script="true">window['4c4d99f12bb13ca32da8c12d962efd60'].__farm_module_system__.setDynamicModuleResourcesMap([],{  });</script><script data-farm-entry-script="true">window['4c4d99f12bb13ca32da8c12d962efd60'].__farm_module_system__.setPublicPaths(['/']);</script><script data-farm-entry-script="true">window['4c4d99f12bb13ca32da8c12d962efd60'].__farm_module_system__.bootstrap();</script>"
 `;
 
 exports[`e2e tests - e2e.spec.ts 2`] = `
@@ -68,5 +68,5 @@ exports[`e2e tests - e2e.spec.ts 2`] = `
     <p>
       FARM_CUSTOM_ENV_VARIABLE(global process env): <code class="global">2</code>
     </p>
-    <script>function text(t,e){document.querySelector(t).textContent=e}text(".custom","2"),text(".file",".env.production"),text(".bool","true"),text(".prefix","2"),text(".expand_a",""),text(".expand_b",""),text(".escape_b","escape$"),text(".escape_a","escape$"),text(".globalThis","2"),text(".global","2")</script><script data-farm-entry-script="true">(globalThis||window||global)["4c4d99f12bb13ca32da8c12d962efd60"].__farm_module_system__.setInitialLoadedResources([]),(globalThis||window||global)["4c4d99f12bb13ca32da8c12d962efd60"].__farm_module_system__.setDynamicModuleResourcesMap([],{}),(globalThis||window||global)["4c4d99f12bb13ca32da8c12d962efd60"].__farm_module_system__.setPublicPaths(["/"]),(globalThis||window||global)["4c4d99f12bb13ca32da8c12d962efd60"].__farm_module_system__.bootstrap()</script>"
+    <script>function text(t,e){document.querySelector(t).textContent=e}text(".custom","2"),text(".file",".env.production"),text(".bool","true"),text(".prefix","2"),text(".expand_a",""),text(".expand_b",""),text(".escape_b","escape$"),text(".escape_a","escape$"),text(".globalThis","2"),text(".global","2")</script><script data-farm-entry-script="true">window["4c4d99f12bb13ca32da8c12d962efd60"].__farm_module_system__.setInitialLoadedResources([]),window["4c4d99f12bb13ca32da8c12d962efd60"].__farm_module_system__.setDynamicModuleResourcesMap([],{}),window["4c4d99f12bb13ca32da8c12d962efd60"].__farm_module_system__.setPublicPaths(["/"]),window["4c4d99f12bb13ca32da8c12d962efd60"].__farm_module_system__.bootstrap()</script>"
 `;

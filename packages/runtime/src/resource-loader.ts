@@ -10,10 +10,11 @@ export interface Resource {
 
 // Injected during build
 export const __farm_global_this__: any = '<@__farm_global_this__@>';
+export const __global_this__: any = typeof window !== 'undefined' ? window : typeof global !== 'undefined' ? global : {};
 
 export const targetEnv = __farm_global_this__.__FARM_TARGET_ENV__ || 'node';
 export const isBrowser =
-  targetEnv === 'browser' && (globalThis || window).document;
+  targetEnv === 'browser' && __global_this__.document;
 
 /**
  * Loading resources according to their type and target env.
@@ -135,7 +136,8 @@ export class ResourceLoader {
   }
 
   private _loadScript(path: string): Promise<void> {
-    if (!isBrowser) {
+    // @ts-ignore
+    if (FARM_RUNTIME_TARGET_ENV !== 'browser') {
       return import(path);
     } else {
       return new Promise((resolve, reject) => {
@@ -154,7 +156,8 @@ export class ResourceLoader {
   }
 
   private _loadLink(path: string): Promise<void> {
-    if (!isBrowser) {
+    // @ts-ignore
+    if (FARM_RUNTIME_TARGET_ENV !== 'browser') {
       // return Promise.reject(new Error('Not support loading css in SSR'));
       // ignore css loading in SSR
       return Promise.resolve();
