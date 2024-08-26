@@ -3,6 +3,7 @@ import { type FarmRuntimePlugin, FarmRuntimePluginContainer } from "./plugin";
 import {
   type Resource,
   ResourceLoader,
+  __global_this__,
   isBrowser,
   targetEnv,
 } from "./resource-loader";
@@ -101,8 +102,8 @@ export class ModuleSystem {
 
     this.cache[moduleId] = module;
 
-    if (!(globalThis || global || window || {}).require) {
-      (globalThis || global || window || { require: undefined }).require =
+    if (!__global_this__.require) {
+      __global_this__.require =
         this.require.bind(this);
     }
     // initialize the new module

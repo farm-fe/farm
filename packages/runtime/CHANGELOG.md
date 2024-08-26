@@ -1,5 +1,11 @@
 # @farmfe/runtime
 
+## 0.12.3
+
+### Patch Changes
+
+- ae6e0ca9: Fix import compatibility
+
 ## 0.12.2
 
 ### Patch Changes

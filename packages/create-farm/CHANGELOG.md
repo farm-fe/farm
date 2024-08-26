@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.0.14
+
+### Patch Changes
+
+- ee7ea4e3: Fix tauri development command in `create-farm`
+- ee7ea4e3: Refactor `create-farm` prompts
+- ee7ea4e3: Fix supported templates display
+- ee7ea4e3: Auto rewrite template project name in `create-farm`
+- ee7ea4e3: Support `create-farm` to run with `--force`
+
 ## 0.0.13
 
 ### Patch Changes

@@ -1,11 +1,13 @@
 [package]
-name = "bench"
+name = "farmfe_bench"
 version = "0.0.1"
-
-edition = { workspace = true }
-homepage = { workspace = true }
-license = { workspace = true }
-repository = { workspace = true }
+edition = "2021"
+authors = ["brightwu(吴明亮) <1521488775@qq.com>"]
+license = "MIT"
+description = "Farm Bench"
+homepage = "https://farmfe.org"
+repository = "https://github.com/farm-fe/farm"
+documentation = "https://docs.rs/farmfe_bench"
 
 [dependencies]
 criterion2 = { version = "0.11.0", default-features = false }

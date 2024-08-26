@@ -1,6 +1,7 @@
 use std::{path::PathBuf, sync::Arc};
 
 use farmfe_core::{
+  config::TargetEnv,
   error::CompilationError,
   swc_common::{input::SourceFileInput, DUMMY_SP},
   swc_html_ast::{Attribute, Child, Document, Element, Namespace, Text},
@@ -119,6 +120,10 @@ pub fn create_attribute(name: &str, value: Option<&str>) -> Attribute {
   }
 }
 
-pub fn get_farm_global_this(namespace: &str) -> String {
-  format!("(globalThis || window || global)['{}']", namespace)
+pub fn get_farm_global_this(namespace: &str, target_env: &TargetEnv) -> String {
+  if target_env.is_node() {
+    format!("global['{}']", namespace)
+  } else {
+    format!("window['{}']", namespace)
+  }
 }

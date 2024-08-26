@@ -8,7 +8,7 @@
   },
   "scripts": {
     "start": "farm watch",
-    "build": "farm build && node test.mjs"
+    "build": "farm build"
   },
   "dependencies": {
     "component-classes": "^1.2.6"

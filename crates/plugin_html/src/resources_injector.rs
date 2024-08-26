@@ -56,7 +56,10 @@ impl ResourcesInjector {
       script_resources,
       script_entries,
       dynamic_resources_map,
-      farm_global_this: get_farm_global_this(&options.namespace),
+      farm_global_this: get_farm_global_this(
+        &options.namespace,
+        &options.context.config.output.target_env,
+      ),
       options,
     }
   }

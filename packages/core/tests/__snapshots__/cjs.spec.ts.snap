@@ -12,5 +12,6 @@ exports[`resolveUserConfig > resolveUserConfig 1`] = `
     "NODE_ENV": "development",
     "mode": "development",
   },
+  "FARM_RUNTIME_TARGET_ENV": ""browser"",
 }
 `;

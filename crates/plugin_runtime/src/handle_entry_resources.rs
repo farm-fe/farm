@@ -340,7 +340,10 @@ pub fn handle_entry_resources(
         .collect::<Vec<_>>()
         .join("");
 
-      let farm_global_this = get_farm_global_this(&context.config.runtime.namespace);
+      let farm_global_this = get_farm_global_this(
+        &context.config.runtime.namespace,
+        &context.config.output.target_env,
+      );
 
       // 4. setInitialLoadedResources and setDynamicModuleResourcesMap
       let set_initial_loaded_resources_code = format!(
@@ -468,17 +471,20 @@ fn create_runtime_code(
     match context.config.output.format {
       ModuleFormat::EsModule => {
         format!(
-          r#"import {FARM_NODE_MODULE} from 'node:module';globalThis.nodeRequire = {FARM_NODE_MODULE}.createRequire(import.meta.url);"#
+          r#"import {FARM_NODE_MODULE} from 'node:module';global.nodeRequire = {FARM_NODE_MODULE}.createRequire(import.meta.url);"#
         )
       }
-      ModuleFormat::CommonJs => r#"globalThis.nodeRequire = require;"#.to_string(), // _ => panic!("node only support cjs and esm format"),
+      ModuleFormat::CommonJs => r#"global.nodeRequire = require;"#.to_string(), // _ => panic!("node only support cjs and esm format"),
     }
   } else {
     "".to_string()
   };
 
   // 2. __farm_global_this by namespace
-  let farm_global_this = get_farm_global_this(&context.config.runtime.namespace);
+  let farm_global_this = get_farm_global_this(
+    &context.config.runtime.namespace,
+    &context.config.output.target_env,
+  );
   let farm_global_this_code = format!(
     r#"{farm_global_this} = {{__FARM_TARGET_ENV__: '{}'}};"#,
     match &context.config.output.target_env {
@@ -507,14 +513,15 @@ fn create_runtime_code(
 fn create_farm_runtime_resource(runtime_code: &str, context: &Arc<CompilationContext>) -> Resource {
   let bytes = runtime_code.to_string().into_bytes();
   let name = transform_output_entry_filename(
-    "[entryName].[hash].[ext]".to_string(),
+    context.config.output.entry_filename.clone(),
     "__farm_runtime",
     "__farm_runtime",
     &bytes,
-    match context.config.output.format {
-      ModuleFormat::EsModule => "mjs",
-      ModuleFormat::CommonJs => "cjs",
-    },
+    "js", // todo: support configuring extension
+          // match context.config.output.format {
+          //   ModuleFormat::EsModule => "mjs",
+          //   ModuleFormat::CommonJs => "cjs",
+          // },
   );
   Resource {
     name: name.clone(),

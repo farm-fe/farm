@@ -1,5 +1,5 @@
 //index.js:
- (globalThis || window || global)['__farm_default_namespace__'] = {__FARM_TARGET_ENV__: 'browser'};function _interop_require_default(obj) {
+ window['__farm_default_namespace__'] = {__FARM_TARGET_ENV__: 'browser'};function _interop_require_default(obj) {
     return obj && obj.__esModule ? obj : {
         default: obj
     };
@@ -61,9 +61,10 @@
   };
 }((function(){var index_js_cjs = __commonJs((module, exports)=>{
     "use strict";
-    console.log('runtime/index.js')(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setPlugins([]);
+    console.log('runtime/index.js');
+    window['__farm_default_namespace__'].__farm_module_system__.setPlugins([]);
 });
-})());(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setExternalModules({"vue": ((globalThis||window||{})['vue']||{}).default && !((globalThis||window||{})['vue']||{}).__esModule ? {...((globalThis||window||{})['vue']||{}),__esModule:true} : ({...(globalThis||window||{})['vue']||{}})});(function(_){for(var r in _){_[r].__farm_resource_pot__='index_236f.js';(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.register(r,_[r])}})({"8cea7e1d":function  (module, exports, farmRequire, farmDynamicRequire) {
+})());window['__farm_default_namespace__'].__farm_module_system__.setExternalModules({"vue": (window['vue']||{}).default && !(window['vue']||{}).__esModule ? {...(window['vue']||{}),__esModule:true} : ({...window['vue']||{}})});(function(_){for(var r in _){_[r].__farm_resource_pot__='index_236f.js';window['__farm_default_namespace__'].__farm_module_system__.register(r,_[r])}})({"8cea7e1d":function  (module, exports, farmRequire, farmDynamicRequire) {
     module._m(exports);
     exports.default = (a)=>a;
 }
@@ -147,4 +148,4 @@
     module._e(exports, _f_comp_ts1);
     exports.default = module.f(_f_helper)(module.f(_f_comp_ts));
 }
-,});(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setInitialLoadedResources([]);(globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__.setDynamicModuleResourcesMap([],{  });var farmModuleSystem = (globalThis || window || global)['__farm_default_namespace__'].__farm_module_system__;farmModuleSystem.bootstrap();var entry = farmModuleSystem.require("b5d64806");
+,});window['__farm_default_namespace__'].__farm_module_system__.setInitialLoadedResources([]);window['__farm_default_namespace__'].__farm_module_system__.setDynamicModuleResourcesMap([],{  });var farmModuleSystem = window['__farm_default_namespace__'].__farm_module_system__;farmModuleSystem.bootstrap();var entry = farmModuleSystem.require("b5d64806");

@@ -89,7 +89,7 @@ impl Plugin for FarmPluginRuntime {
       "'<@__farm_global_this__@>'".to_string(),
       serde_json::Value::String(format!(
         "{}",
-        get_farm_global_this(&config.runtime.namespace)
+        get_farm_global_this(&config.runtime.namespace, &config.output.target_env)
       )),
     );
 
@@ -283,7 +283,10 @@ impl Plugin for FarmPluginRuntime {
 
       let mut external_modules_str = None;
 
-      let farm_global_this = get_farm_global_this(&context.config.runtime.namespace);
+      let farm_global_this = get_farm_global_this(
+        &context.config.runtime.namespace,
+        &context.config.output.target_env,
+      );
 
       // inject global externals
       if !external_modules.is_empty() && context.config.output.target_env == TargetEnv::Node {
@@ -336,7 +339,7 @@ impl Plugin for FarmPluginRuntime {
             // it's maybe from plugin
             .unwrap_or(source.clone());
 
-          let source_obj = format!("(globalThis||window||{{}})['{}']||{{}}", replace_source);
+          let source_obj = format!("window['{}']||{{}}", replace_source);
           external_objs.push(if context.config.output.format == ModuleFormat::EsModule {
             format!("{source:?}: ({source_obj}).default && !({source_obj}).__esModule ? {{...({source_obj}),__esModule:true}} : ({{...{source_obj}}})")
           } else {

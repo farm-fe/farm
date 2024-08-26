@@ -88,14 +88,15 @@ pub fn create_farm_runtime_output_resource(
   context: &Arc<CompilationContext>,
 ) -> Resource {
   let name = transform_output_entry_filename(
-    "[entryName]_[hash].[ext]".to_string(),
+    context.config.output.entry_filename.clone(),
     resource_name,
     resource_name,
     &bytes,
-    match context.config.output.format {
-      ModuleFormat::EsModule => "mjs",
-      ModuleFormat::CommonJs => "cjs",
-    },
+    "js", // todo: support configuring extension
+          // match context.config.output.format {
+          //   ModuleFormat::EsModule => "mjs",
+          //   ModuleFormat::CommonJs => "cjs",
+          // },
   );
   Resource {
     name: name.clone(),

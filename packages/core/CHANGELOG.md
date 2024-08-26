@@ -1,5 +1,20 @@
 # @farmfe/core
 
+## 1.3.15
+
+### Patch Changes
+
+- Updated dependencies [ae6e0ca9]
+  - @farmfe/runtime@0.12.3
+
+## 1.3.14
+
+### Patch Changes
+
+- 535d0b2c: Fix globalThis is not defined in legacy browsers
+- 8e67cdab: fix: Setting ws in proxy causes an infinite loop
+- 73cfd570: fix: Add flag in config/schema to disable spa mode
+
 ## 1.3.13
 
 ### Patch Changes
