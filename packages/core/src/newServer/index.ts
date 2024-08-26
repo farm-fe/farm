@@ -95,7 +95,7 @@ export function noop() {
 type ServerConfig = CommonServerOptions & NormalizedServerConfig;
 
 // TODO 改 newServer 的 name and PascalCase
-export class newServer extends httpServer {
+export class NewServer extends httpServer {
   ws: WsServer;
   serverOptions: ServerConfig;
   httpsOptions: HttpsServerOptions;
@@ -115,18 +115,22 @@ export class newServer extends httpServer {
     this.#resolveOptions();
   }
 
-  getCompiler(): CompilerType {
-    return this.compiler;
-  }
-
-  #resolveOptions() {
-    const { compilation, server } = this.resolvedUserConfig;
-    this.publicPath = compilation.output.publicPath;
-    this.publicDir = compilation.assets.publicDir;
-
-    this.serverOptions = server as CommonServerOptions & NormalizedServerConfig;
-  }
-
+  /**
+   * Creates and initializes the server.
+   *
+   * This method performs the following operations:
+   * Resolves HTTPS configuration
+   * Handles public files
+   * Creates middleware
+   * Creates HTTP server (if not in middleware mode)
+   * Initializes HMR engine
+   * Creates WebSocket server
+   * Sets up Vite invalidation handler
+   * Initializes middlewares
+   *
+   * @returns {Promise<void>} A promise that resolves when the server creation process is complete
+   * @throws {Error} If an error occurs during the server creation process
+   */
   async createServer(): Promise<void> {
     try {
       const { https, middlewareMode } = this.serverOptions;
@@ -161,6 +165,167 @@ export class newServer extends httpServer {
     }
   }
 
+  /**
+   * Creates and initializes the WebSocket server.
+   * @throws {Error} If the HTTP server is not created.
+   */
+  async createWebSocketServer() {
+    if (!this.httpServer) {
+      throw new Error(
+        'Websocket requires a http server. please check the server is be created'
+      );
+    }
+
+    this.ws = new WsServer(this);
+  }
+
+  /**
+   * Creates and initializes the Hot Module Replacement (HMR) engine.
+   * @throws {Error} If the HTTP server is not created.
+   */
+  createHmrEngine() {
+    if (!this.httpServer) {
+      throw new Error(
+        'HmrEngine requires a http server. please check the server is be created'
+      );
+    }
+
+    this.hmrEngine = new HmrEngine(this);
+  }
+
+  /**
+   * Starts the server and begins listening for connections.
+   * @returns {Promise<void>}
+   * @throws {Error} If there's an error starting the server.
+   */
+  async listen(): Promise<void> {
+    if (!this.httpServer) {
+      this.logger.warn('HTTP server is not created yet');
+      return;
+    }
+    // TODO open browser when server is ready && open config is true
+
+    const { port, hostname, open, strictPort } = this.serverOptions;
+
+    try {
+      const serverPort = await this.httpServerStart({
+        port,
+        strictPort: strictPort,
+        host: hostname.host
+      });
+
+      // 这块要重新设计 restart 还有 端口冲突的问题
+      // this.resolvedUserConfig
+      this.resolvedUserConfig.compilation.define.FARM_HMR_PORT =
+        serverPort.toString();
+
+      this.compiler = await createCompiler(this.resolvedUserConfig, logger);
+
+      // compile the project and start the dev server
+      await this.#startCompilation();
+
+      // watch extra files after compile
+      this.watcher?.watchExtraFiles?.();
+      !__FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__ &&
+        (await this.displayServerUrls(this.serverOptions, this.publicPath));
+
+      if (open) {
+        this.#openServerBrowser();
+      }
+    } catch (error) {
+      this.logger.error(`start farm dev server error: ${error}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Starts the HTTP server.
+   * @protected
+   * @param {Object} serverOptions - The server options.
+   * @returns {Promise<number>} The port the server is listening on.
+   * @throws {Error} If the server fails to start.
+   */
+  protected async httpServerStart(serverOptions: {
+    port: number;
+    strictPort: boolean | undefined;
+    host: string | undefined;
+  }): Promise<number> {
+    if (!this.httpServer) {
+      throw new Error('httpServer is not initialized');
+    }
+
+    let { port, strictPort, host } = serverOptions;
+
+    return new Promise((resolve, reject) => {
+      const onError = (e: Error & { code?: string }) => {
+        if (e.code === 'EADDRINUSE') {
+          if (strictPort) {
+            this.httpServer.removeListener('error', onError);
+            reject(new Error(`Port ${port} is already in use`));
+          } else {
+            console.info(`Port ${port} is in use, trying another one...`);
+            this.httpServer.listen(++port, host);
+          }
+        } else {
+          this.httpServer.removeListener('error', onError);
+          reject(e);
+        }
+      };
+
+      this.httpServer.on('error', onError);
+
+      this.httpServer.listen(port, host, () => {
+        this.httpServer.removeListener('error', onError);
+        resolve(port);
+      });
+    });
+  }
+
+  /**
+   * Get current compiler instance in the server
+   * @returns { CompilerType } return current compiler, may be compiler or undefined
+   */
+  getCompiler(): CompilerType {
+    return this.compiler;
+  }
+
+  /**
+   * Set current compiler instance in the server
+   * @param { Compiler } compiler - choose a new compiler instance
+   */
+  setCompiler(compiler: Compiler) {
+    this.compiler = compiler;
+  }
+
+  /**
+   * Adds additional files to be watched by the compiler.
+   * @param {string} root - The root directory.
+   * @param {string[]} deps - Array of file paths to be watched.
+   */
+  addWatchFile(root: string, deps: string[]): void {
+    this.getCompiler().addExtraWatchFile(root, deps);
+  }
+
+  /**
+   * resolve and setting server options
+   *
+   * this method extracts compilation and server options from resolvedUserConfig
+   * and set the publicPath and publicDir， and then resolve server options
+   * @private
+   * @returns { void }
+   */
+  #resolveOptions() {
+    const { compilation, server } = this.resolvedUserConfig;
+    this.publicPath = compilation.output.publicPath;
+    this.publicDir = compilation.assets.publicDir;
+
+    this.serverOptions = server as CommonServerOptions & NormalizedServerConfig;
+  }
+
+  /**
+   * Initializes and configures the middleware stack for the server.
+   * @private
+   */
   #initializeMiddlewares() {
     this.middlewares.use(hmrPingMiddleware());
 
@@ -203,74 +368,12 @@ export class newServer extends httpServer {
     this.middlewares.use(notFoundMiddleware());
   }
 
-  createHmrEngine() {
-    if (!this.httpServer) {
-      throw new Error(
-        'HmrEngine requires a http server. please check the server is be created'
-      );
-    }
-
-    this.hmrEngine = new HmrEngine(this);
-  }
-
-  async createWebSocketServer() {
-    if (!this.httpServer) {
-      throw new Error(
-        'Websocket requires a http server. please check the server is be created'
-      );
-    }
-
-    this.ws = new WsServer(this);
-  }
-
-  async listen(): Promise<void> {
-    if (!this.httpServer) {
-      this.logger.warn('HTTP server is not created yet');
-      return;
-    }
-    // TODO open browser when server is ready && open config is true
-
-    const { port, hostname, open, strictPort } = this.serverOptions;
-
-    try {
-      const serverPort = await this.httpServerStart({
-        port,
-        strictPort: strictPort,
-        host: hostname.host
-      });
-
-      // 这块要重新设计 restart 还有 端口冲突的问题
-      // this.resolvedUserConfig
-      this.resolvedUserConfig.compilation.define.FARM_HMR_PORT =
-        serverPort.toString();
-
-      this.compiler = await createCompiler(this.resolvedUserConfig, logger);
-
-      // compile the project and start the dev server
-      await this.#startCompilation();
-
-      // watch extra files after compile
-      this.watcher?.watchExtraFiles?.();
-      !__FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__ &&
-        (await this.displayServerUrls(this.serverOptions, this.publicPath));
-
-      if (open) {
-        this.#openServerBrowser();
-      }
-    } catch (error) {
-      this.logger.error(`start farm dev server error: ${error}`);
-      throw error;
-    }
-  }
-
-  addWatchFile(root: string, deps: string[]): void {
-    this.getCompiler().addExtraWatchFile(root, deps);
-  }
-
-  setCompiler(compiler: Compiler) {
-    this.compiler = compiler;
-  }
-
+  /**
+   * Compiles the project.
+   * @private
+   * @returns {Promise<void>}
+   * @throws {Error} If compilation fails.
+   */
   async #compile(): Promise<void> {
     try {
       await this.compiler.compile();
@@ -283,48 +386,20 @@ export class newServer extends httpServer {
     }
   }
 
+  /**
+   * Opens the server URL in the default browser.
+   * @private
+   */
   async #openServerBrowser() {
     const url =
       this.resolvedUrls?.local?.[0] ?? this.resolvedUrls?.network?.[0] ?? '';
     openBrowser(url);
   }
 
-  protected async httpServerStart(serverOptions: {
-    port: number;
-    strictPort: boolean | undefined;
-    host: string | undefined;
-  }): Promise<number> {
-    if (!this.httpServer) {
-      throw new Error('httpServer is not initialized');
-    }
-
-    let { port, strictPort, host } = serverOptions;
-
-    return new Promise((resolve, reject) => {
-      const onError = (e: Error & { code?: string }) => {
-        if (e.code === 'EADDRINUSE') {
-          if (strictPort) {
-            this.httpServer.removeListener('error', onError);
-            reject(new Error(`Port ${port} is already in use`));
-          } else {
-            console.info(`Port ${port} is in use, trying another one...`);
-            this.httpServer.listen(++port, host);
-          }
-        } else {
-          this.httpServer.removeListener('error', onError);
-          reject(e);
-        }
-      };
-
-      this.httpServer.on('error', onError);
-
-      this.httpServer.listen(port, host, () => {
-        this.httpServer.removeListener('error', onError);
-        resolve(port);
-      });
-    });
-  }
-
+  /**
+   * Starts the compilation process.
+   * @private
+   */
   async #startCompilation() {
     // check if cache dir exists
     const { root, persistentCache } = this.compiler.config.config;
@@ -337,11 +412,20 @@ export class newServer extends httpServer {
     bootstrap(duration, this.compiler.config, hasCacheDir);
   }
 
+  /**
+   * Handles the initialization of public files.
+   * @private
+   * @returns {Promise<Set<string>>} A promise that resolves to a set of public file paths.
+   */
   async #handlePublicFiles() {
     const initPublicFilesPromise = initPublicFiles(this.resolvedUserConfig);
     return await initPublicFilesPromise;
   }
 
+  /**
+   * Sets up the Vite invalidation handler.
+   * @private
+   */
   #invalidateVite(): void {
     // Note: path should be Farm's id, which is a relative path in dev mode,
     // but in vite, it's a url path like /xxx/xxx.js

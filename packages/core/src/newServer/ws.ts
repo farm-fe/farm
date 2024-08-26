@@ -6,7 +6,7 @@ import { WebSocketServer as WebSocketServerRaw_ } from 'ws';
 import { ILogger, Logger } from '../utils/logger.js';
 import { isObject } from '../utils/share.js';
 import { HMRChannel } from './hmr.js';
-import { ServerOptions, newServer } from './index.js';
+import { ServerOptions } from './index.js';
 
 import type { IncomingMessage, Server } from 'node:http';
 import type { Socket } from 'node:net';
@@ -111,20 +111,29 @@ export class WsServer {
     socket: Duplex,
     head: Buffer
   ) => void;
+  /**
+   * Creates a new WebSocket server instance.
+   * @param {any} app - The application instance containing configuration and logger.
+   */
   constructor(private readonly app: any) {
     this.logger = app.logger ?? new Logger();
     this.serverConfig = app.resolvedUserConfig.server as ServerOptions;
-    this.#createWebSocketServer();
+    this.createWebSocketServer();
   }
 
+  /**
+   * Gets the server name.
+   * @returns {string} Returns "ws".
+   */
   get name(): string {
     return 'ws';
   }
 
-  #createWebSocketServer() {
-    const { resolvedUserConfig: config } = this.app;
-    const serverConfig = config.server as unknown as ServerOptions;
-    if (serverConfig.ws === false) {
+  /**
+   * Creates the WebSocket server.
+   */
+  createWebSocketServer() {
+    if (this.serverConfig.ws === false) {
       return {
         name: 'ws',
         get clients() {
@@ -140,10 +149,12 @@ export class WsServer {
       };
     }
 
-    const hmr = isObject(serverConfig.hmr) ? serverConfig.hmr : undefined;
+    const hmr = isObject(this.serverConfig.hmr)
+      ? this.serverConfig.hmr
+      : undefined;
     const hmrServer = hmr?.server;
     const hmrPort = hmr?.port;
-    const portsAreCompatible = !hmrPort || hmrPort === serverConfig.port;
+    const portsAreCompatible = !hmrPort || hmrPort === this.serverConfig.port;
     this.wsServer = hmrServer || (portsAreCompatible && this.app.httpServer);
 
     this.port = (hmrPort as number) || 9000;
@@ -240,10 +251,18 @@ export class WsServer {
     });
   }
 
+  /**
+   * Starts listening for WebSocket connections.
+   */
   listen() {
     this.wsHttpServer?.listen(this.port, this.host);
   }
 
+  /**
+   * Adds a listener for the specified event.
+   * @param {string} event - The name of the event.
+   * @param {Function} fn - The listener function.
+   */
   on(event: string, fn: () => void) {
     if (wsServerEvents.includes(event)) {
       this.wss.on(event, fn);
@@ -255,6 +274,11 @@ export class WsServer {
     }
   }
 
+  /**
+   * Removes a listener for the specified event.
+   * @param {string} event - The name of the event.
+   * @param {Function} fn - The listener function to remove.
+   */
   off(event: string, fn: () => void) {
     if (wsServerEvents.includes(event)) {
       this.wss.off(event, fn);
@@ -263,6 +287,10 @@ export class WsServer {
     }
   }
 
+  /**
+   * Gets all connected clients.
+   * @returns {Set<WebSocketClient>} A set of connected clients.
+   */
   get clients() {
     return new Set(
       Array.from(this.wss.clients).map((socket: any) =>
@@ -271,6 +299,10 @@ export class WsServer {
     );
   }
 
+  /**
+   * Sends a message to all connected clients.
+   * @param {...any} args - The message arguments to send.
+   */
   send(...args: any[]) {
     const payload: HMRPayload = this.#createPayload(...args);
     if (payload.type === 'error' && !this.wss.clients.size) {
@@ -287,6 +319,10 @@ export class WsServer {
     });
   }
 
+  /**
+   * Closes the WebSocket server.
+   * @returns {Promise<void>} A promise that resolves when the server is closed.
+   */
   async close() {
     // should remove listener if hmr.server is set
     // otherwise the old listener swallows all WebSocket connections
@@ -312,6 +348,12 @@ export class WsServer {
     }
   }
 
+  /**
+   * Creates an HMR payload.
+   * @private
+   * @param {...any} args - The payload arguments.
+   * @returns {HMRPayload} The HMR payload object.
+   */
   #createPayload(...args: any[]): HMRPayload {
     if (typeof args[0] === 'string') {
       return {
@@ -324,6 +366,12 @@ export class WsServer {
     }
   }
 
+  /**
+   * Gets the client object associated with a WebSocket.
+   * @private
+   * @param {WebSocketRaw} socket - The raw WebSocket object.
+   * @returns {WebSocketClient} The client object.
+   */
   #getSocketClient(socket: WebSocketRaw) {
     if (!this.clientsMap.has(socket)) {
       this.clientsMap.set(socket, {

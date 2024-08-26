@@ -38,7 +38,7 @@ import {
   normalizePublicDir,
   resolveConfig
 } from './config/index.js';
-import { HttpServer, newServer } from './newServer/index.js';
+import { HttpServer, NewServer } from './newServer/index.js';
 import { Server } from './server/index.js';
 import { compilerHandler } from './utils/build.js';
 import { colors } from './utils/color.js';
@@ -513,7 +513,7 @@ export async function start2(
       false
     );
 
-    const server = new newServer(resolvedUserConfig, logger);
+    const server = new NewServer(resolvedUserConfig, logger);
     await server.createServer();
     await server.listen();
     // @ts-ignore
