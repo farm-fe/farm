@@ -1,5 +1,12 @@
 # @farmfe/core
 
+## 1.3.15
+
+### Patch Changes
+
+- Updated dependencies [ae6e0ca9]
+  - @farmfe/runtime@0.12.3
+
 ## 1.3.14
 
 ### Patch Changes

@@ -1,6 +1,6 @@
 {
   "name": "@farmfe/runtime",
-  "version": "0.12.2",
+  "version": "0.12.3",
   "description": "Runtime of Farm",
   "author": {
     "name": "bright wu",
