@@ -38,7 +38,7 @@ import {
   normalizePublicDir,
   resolveConfig
 } from './config/index.js';
-import { HttpServer, NewServer } from './newServer/index.js';
+import { NewServer } from './newServer/index.js';
 import { Server } from './server/index.js';
 import { compilerHandler } from './utils/build.js';
 import { colors } from './utils/color.js';
@@ -435,7 +435,7 @@ export async function createFileWatcher(
 }
 
 export async function createFileWatcher2(
-  devServer: newServer,
+  devServer: NewServer,
   resolvedUserConfig: ResolvedUserConfig,
   logger: Logger = new Logger()
 ) {
