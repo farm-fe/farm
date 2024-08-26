@@ -25,7 +25,8 @@ export default defineComponent({
   setup() {
     const plugin_stats = ref<PluginStats | null>(null);
     getPluginStats().then((data) => {
-      plugin_stats.value = data;
+      plugin_stats.value = JSON.parse(data);
+      console.log('plugin_stats:', plugin_stats.value);
     });
 
     const tableData = computed(() => {

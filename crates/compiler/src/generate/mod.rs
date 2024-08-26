@@ -49,6 +49,13 @@ impl Compiler {
       .plugin_driver
       .optimize_module_graph(&mut module_graph, &self.context)?;
 
+    if self.context.config.record {
+      self
+        .context
+        .record_manager
+        .set_optimized_module_graph_stats(&module_graph);
+    }
+
     Ok(())
   }
 

@@ -14,7 +14,6 @@ use farmfe_core::{
   farm_profile_function,
   plugin::Plugin,
   rayon::{ThreadPool, ThreadPoolBuilder},
-  stats::Stats,
 };
 
 pub use farmfe_plugin_css::FARM_CSS_MODULES_SUFFIX;
@@ -120,6 +119,7 @@ impl Compiler {
 
   /// Compile the project using the configuration
   pub fn compile(&self) -> Result<()> {
+    self.context.record_manager.set_start_time();
     if self.context.config.persistent_cache.enabled() {
       self
         .context
@@ -131,22 +131,9 @@ impl Compiler {
     {
       #[cfg(feature = "profile")]
       farmfe_core::puffin::profile_scope!("Build Stage");
-      // let write_module_cache = || {
-      //   if self.context.config.persistent_cache.enabled() {
-      //     self.context.cache_manager.module_cache.write_cache();
-      //   }
-      // };
       self.build()?;
-      // .map(|v| {
-      //   write_module_cache();
-      //   v
-      // })
-      // .map_err(|err| {
-      //   write_module_cache();
-      //   err
-      // })?;
     }
-
+    self.context.record_manager.set_build_end_time();
     {
       #[cfg(feature = "profile")]
       farmfe_core::puffin::profile_scope!("Generate Stage");
@@ -156,7 +143,7 @@ impl Compiler {
     self
       .context
       .plugin_driver
-      .finish(&Stats {}, &self.context)?;
+      .finish(&self.context.record_manager, &self.context)?;
 
     if self.context.config.persistent_cache.enabled() {
       self
@@ -176,6 +163,8 @@ impl Compiler {
         write_cache(self.context.clone());
       }
     }
+
+    self.context.record_manager.set_end_time();
 
     Ok(())
   }

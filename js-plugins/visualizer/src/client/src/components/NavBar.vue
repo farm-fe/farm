@@ -97,8 +97,9 @@ export default defineComponent({
 
     const navigation = [
       { name: 'Dashboard', href: '/dashboard' },
-      { name: 'Module Analysis', href: '/analysis/module' },
-      { name: 'Plugin Analysis', href: '/analysis/plugin' },
+      { name: 'Compilation Analysis', href: '/analysis/compilation' },
+      { name: 'Module Graph', href: '/analysis/module' },
+      { name: 'Plugin Performance', href: '/analysis/plugin' },
       { name: 'Bundle Analysis', href: '/analysis/bundle' }
     ];
     return { isOpen, navigation, route };

@@ -1,6 +1,5 @@
 use std::sync::Arc;
 
-use farmfe_utils::stringify_query;
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 
 use super::{
@@ -20,11 +19,8 @@ use crate::{
     module_graph::ModuleGraph, module_group::ModuleGroupGraph, Module, ModuleId, ModuleMetaData,
     ModuleType,
   },
-  record::{
-    AnalyzeDepsRecord, ModuleRecord, ResolveRecord, ResourcePotRecord, TransformRecord, Trigger,
-  },
   resource::resource_pot::{ResourcePot, ResourcePotInfo, ResourcePotMetaData},
-  stats::Stats,
+  stats::{CompilationPluginHookStats, Stats},
 };
 use std::time::SystemTime;
 use std::time::UNIX_EPOCH;
@@ -64,12 +60,12 @@ macro_rules! hook_first {
               let start_time = SystemTime::now()
               .duration_since(UNIX_EPOCH)
               .expect("Time went backwards")
-              .as_micros() as i64;
+              .as_millis();
               let ret = plugin.$func_name($($arg),*)?;
               let end_time = SystemTime::now()
               .duration_since(UNIX_EPOCH)
               .expect("hook_first get end_time failed")
-              .as_micros() as i64;
+              .as_millis();
               if ret.is_some() {
                   let plugin_name = plugin.name().to_string();
                   $callback(&ret, plugin_name, start_time, end_time, $($arg),*);
@@ -106,12 +102,12 @@ macro_rules! hook_serial {
           let start_time = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .expect("Time went backwards")
-            .as_micros() as i64;
+            .as_millis();
           let ret = plugin.$func_name(param, context)?;
           let end_time = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .expect("hook_first get end_time failed")
-            .as_micros() as i64;
+            .as_millis();
           if ret.is_some() {
             let plugin_name = plugin.name().to_string();
             $callback(plugin_name, start_time, end_time, param, context);
@@ -199,9 +195,42 @@ impl PluginDriver {
   }
 
   pub fn plugin_cache_loaded(&self, context: &Arc<CompilationContext>) -> Result<()> {
+    let start_time = if context.config.record {
+      SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .expect("Time went backwards")
+        .as_millis()
+    } else {
+      0
+    };
+
     for plugin in &self.plugins {
       if let Some(plugin_cache) = context.cache_manager.plugin_cache.read_cache(plugin.name()) {
         plugin.plugin_cache_loaded(plugin_cache.value(), context)?;
+
+        if context.config.record {
+          let end_time = if context.config.record {
+            SystemTime::now()
+              .duration_since(UNIX_EPOCH)
+              .expect("hook_first get end_time failed")
+              .as_millis()
+          } else {
+            0
+          };
+          context
+            .record_manager
+            .add_plugin_hook_stats(CompilationPluginHookStats {
+              plugin_name: plugin.name().to_string(),
+              hook_name: "plugin_cache_loaded".to_string(),
+              hook_context: None,
+              module_id: "root".into(),
+              input: "".to_string(),
+              output: "".to_string(),
+              duration: end_time - start_time,
+              start_time,
+              end_time,
+            });
+        }
       }
     }
 
@@ -215,30 +244,24 @@ impl PluginDriver {
     Result<Option<PluginResolveHookResult>>,
     |result: &Option<PluginResolveHookResult>,
      plugin_name: String,
-     start_time: i64,
-     end_time: i64,
+     start_time: u128,
+     end_time: u128,
      param: &PluginResolveHookParam,
      context: &Arc<CompilationContext>,
-     _hook_context: &PluginHookContext| {
+     hook_context: &PluginHookContext| {
       match result {
         Some(resolve_result) => {
-          context.record_manager.add_resolve_record(
-            resolve_result.resolved_path.clone() + stringify_query(&resolve_result.query).as_str(),
-            ResolveRecord {
-              start_time,
-              end_time,
-              duration: end_time - start_time,
-              plugin: plugin_name,
-              hook: "resolve".to_string(),
-              source: param.source.clone(),
-              importer: param
-                .importer
-                .clone()
-                .map(|module_id| module_id.relative_path().to_string()),
-              kind: String::from(param.kind.clone()),
-              trigger: Trigger::Compiler,
-            },
-          );
+          context.record_manager.add_plugin_hook_stats(CompilationPluginHookStats {
+            plugin_name: plugin_name.to_string(),
+            hook_name: "resolve".to_string(),
+            hook_context: Some(hook_context.clone()),
+            module_id: param.importer.clone().unwrap_or("root".into()),
+            input: serde_json::to_string(param).unwrap(),
+            output: serde_json::to_string(resolve_result).unwrap(),
+            duration: end_time - start_time,
+            start_time,
+            end_time
+          });
         }
         None => {}
       }
@@ -253,27 +276,24 @@ impl PluginDriver {
     Result<Option<PluginLoadHookResult>>,
     |result: &Option<PluginLoadHookResult>,
      plugin_name: String,
-     start_time: i64,
-     end_time: i64,
+     start_time: u128,
+     end_time: u128,
      param: &PluginLoadHookParam,
      context: &Arc<CompilationContext>,
-     _hook_context: &PluginHookContext| {
+     hook_context: &PluginHookContext| {
       match result {
         Some(load_result) => {
-          context.record_manager.add_load_record(
-            param.resolved_path.to_string() + stringify_query(&param.query).as_str(),
-            TransformRecord {
-              plugin: plugin_name,
-              hook: "load".to_string(),
-              content: load_result.content.clone(),
-              source_maps: None,
-              module_type: load_result.module_type.clone(),
-              trigger: Trigger::Compiler,
-              start_time,
-              end_time,
-              duration: end_time - start_time,
-            },
-          );
+          context.record_manager.add_plugin_hook_stats(CompilationPluginHookStats {
+            plugin_name: plugin_name.to_string(),
+            hook_name: "load".to_string(),
+            hook_context: Some(hook_context.clone()),
+            module_id: param.module_id.clone().into(),
+            input: serde_json::to_string(param).unwrap(),
+            output: serde_json::to_string(load_result).unwrap(),
+            duration: end_time - start_time,
+            start_time,
+            end_time
+          });
         }
         None => {}
       }
@@ -294,13 +314,18 @@ impl PluginDriver {
       module_type: None,
     };
 
+    fn transform_fn_with_hook() {}
+
+    let transform_fn = transform_fn_with_hook;
+    transform_fn();
+
     for plugin in &self.plugins {
       let start_time = if self.record {
         Some(
           SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .expect("Time went backwards")
-            .as_micros() as i64,
+            .as_millis(),
         )
       } else {
         None
@@ -312,35 +337,36 @@ impl PluginDriver {
             SystemTime::now()
               .duration_since(UNIX_EPOCH)
               .expect("hook_first get end_time failed")
-              .as_micros() as i64,
+              .as_millis(),
           )
         } else {
           None
         };
+
+        if self.record {
+          let plugin_name = plugin.name().to_string();
+          let start_time = start_time.unwrap();
+          let end_time = end_time.unwrap();
+          context
+            .record_manager
+            .add_plugin_hook_stats(CompilationPluginHookStats {
+              plugin_name: plugin_name.to_string(),
+              hook_name: "transform".to_string(),
+              hook_context: None,
+              module_id: param.module_id.clone().into(),
+              input: serde_json::to_string(&param).unwrap(),
+              output: serde_json::to_string(&plugin_result).unwrap(),
+              duration: end_time - start_time,
+              start_time,
+              end_time,
+            });
+        }
+
         param.content = plugin_result.content;
         param.module_type = plugin_result.module_type.unwrap_or(param.module_type);
 
         if plugin_result.ignore_previous_source_map {
           result.source_map_chain.clear();
-        }
-
-        if self.record {
-          let plugin_name = plugin.name().to_string();
-
-          context.record_manager.add_transform_record(
-            param.resolved_path.to_string() + stringify_query(&param.query).as_str(),
-            TransformRecord {
-              plugin: plugin_name,
-              hook: "transform".to_string(),
-              content: param.content.clone(),
-              source_maps: plugin_result.source_map.clone(),
-              module_type: param.module_type.clone(),
-              trigger: Trigger::Compiler,
-              start_time: start_time.unwrap(),
-              end_time: end_time.unwrap(),
-              duration: end_time.unwrap() - start_time.unwrap(),
-            },
-          );
         }
 
         if let Some(source_map) = plugin_result.source_map {
@@ -362,21 +388,22 @@ impl PluginDriver {
     Result<Option<ModuleMetaData>>,
     |_result: &Option<ModuleMetaData>,
      plugin_name: String,
-     start_time: i64,
-     end_time: i64,
+     start_time: u128,
+     end_time: u128,
      param: &PluginParseHookParam,
      context: &Arc<CompilationContext>,
-     _hook_context: &PluginHookContext| {
-      context.record_manager.add_parse_record(
-        param.resolved_path.to_string() + stringify_query(&param.query).as_str(),
-        ModuleRecord {
-          plugin: plugin_name,
-          hook: "parse".to_string(),
-          module_type: param.module_type.clone(),
-          trigger: Trigger::Compiler,
+     hook_context: &PluginHookContext| {
+      context.record_manager.add_plugin_hook_stats(
+        CompilationPluginHookStats {
+          plugin_name: plugin_name.to_string(),
+          hook_name: "parse".to_string(),
+          hook_context: Some(hook_context.clone()),
+          module_id: param.module_id.clone(),
+          input: serde_json::to_string(param).unwrap(),
+          output: "".to_string(),
+          duration: end_time - start_time,
           start_time,
           end_time,
-          duration: end_time - start_time,
         },
       );
     },
@@ -389,22 +416,23 @@ impl PluginDriver {
     process_module,
     &mut PluginProcessModuleHookParam,
     |plugin_name: String,
-     start_time: i64,
-     end_time: i64,
+     start_time: u128,
+     end_time: u128,
      param: &mut PluginProcessModuleHookParam,
      context: &Arc<CompilationContext>| {
-      context.record_manager.add_process_record(
-        param.module_id.resolved_path(&context.config.root) + param.module_id.query_string(),
-        ModuleRecord {
-          plugin: plugin_name,
-          hook: "process".to_string(),
-          module_type: param.module_type.clone(),
-          trigger: Trigger::Compiler,
+      context
+        .record_manager
+        .add_plugin_hook_stats(CompilationPluginHookStats {
+          plugin_name: plugin_name.to_string(),
+          hook_name: "process_module".to_string(),
+          hook_context: None,
+          module_id: param.module_id.clone(),
+          input: "".to_string(),
+          output: "".to_string(),
+          duration: end_time - start_time,
           start_time,
           end_time,
-          duration: end_time - start_time,
-        },
-      );
+        })
     }
   );
 
@@ -412,23 +440,23 @@ impl PluginDriver {
     analyze_deps,
     &mut PluginAnalyzeDepsHookParam,
     |plugin_name: String,
-     start_time: i64,
-     end_time: i64,
+     start_time: u128,
+     end_time: u128,
      param: &mut PluginAnalyzeDepsHookParam,
      context: &Arc<CompilationContext>| {
-      context.record_manager.add_analyze_deps_record(
-        param.module.id.resolved_path(&context.config.root) + param.module.id.query_string(),
-        AnalyzeDepsRecord {
-          plugin: plugin_name,
-          hook: "analyze_deps".to_string(),
-          module_type: param.module.module_type.clone(),
-          trigger: Trigger::Compiler,
-          deps: param.deps.clone(),
+      context
+        .record_manager
+        .add_plugin_hook_stats(CompilationPluginHookStats {
+          plugin_name: plugin_name.to_string(),
+          hook_name: "analyze_deps".to_string(),
+          hook_context: None,
+          module_id: param.module.id.clone(),
+          input: "".to_string(),
+          output: serde_json::to_string(&param.deps).unwrap(),
+          duration: end_time - start_time,
           start_time,
           end_time,
-          duration: end_time - start_time,
-        },
-      );
+        })
     }
   );
 
@@ -453,28 +481,27 @@ impl PluginDriver {
     Result<Option<Vec<ResourcePot>>>,
     |result: &Option<Vec<ResourcePot>>,
      plugin_name: String,
-     start_time: i64,
-     end_time: i64,
-     _modules: &Vec<ModuleId>,
+     start_time: u128,
+     end_time: u128,
+     modules: &Vec<ModuleId>,
      context: &Arc<CompilationContext>,
-     _hook_context: &PluginHookContext| {
-      context.record_manager.update_plugin_stats(plugin_name.clone(), "partial_bundling", end_time - start_time);
-      match result {
-        Some(resource_pots) => {
-          for resource_pot in resource_pots.iter() {
-            context.record_manager.add_resource_pot_record(
-              resource_pot.id.to_string(),
-              ResourcePotRecord {
-                name: plugin_name.clone(),
-                hook: "partial_bundling".to_string(),
-                modules: resource_pot.modules().into_iter().cloned().collect(),
-                resources: vec![],
-              },
-            )
-          }
-        }
-        None => {}
+     hook_context: &PluginHookContext| {
+      if result.is_none() {
+        return;
       }
+      context.record_manager.add_plugin_hook_stats(
+        CompilationPluginHookStats {
+          plugin_name: plugin_name.to_string(),
+          hook_name: "partial_bundling".to_string(),
+          hook_context: Some(hook_context.clone()),
+          module_id: "".into(),
+          input: serde_json::to_string(&modules).unwrap(),
+          output: serde_json::to_string(&result).unwrap(),
+          duration: end_time - start_time,
+          start_time,
+          end_time,
+        },
+      )
     },
     modules: &Vec<ModuleId>,
     context: &Arc<CompilationContext>,
@@ -485,26 +512,23 @@ impl PluginDriver {
     process_resource_pots,
     &mut Vec<&mut ResourcePot>,
     |plugin_name: String,
-     start_time: i64,
-     end_time: i64,
-     resource_pots: &mut Vec<&mut ResourcePot>,
+     start_time: u128,
+     end_time: u128,
+     _resource_pots: &mut Vec<&mut ResourcePot>,
      context: &Arc<CompilationContext>| {
-      context.record_manager.update_plugin_stats(
-        plugin_name.clone(),
-        "process_resource_pots",
-        end_time - start_time,
-      );
-      for resource_pot in resource_pots.iter() {
-        context.record_manager.add_resource_pot_record(
-          resource_pot.id.to_string(),
-          ResourcePotRecord {
-            name: plugin_name.clone(),
-            hook: "process_resource_pots".to_string(),
-            modules: resource_pot.modules().into_iter().cloned().collect(),
-            resources: vec![],
-          },
-        )
-      }
+      context
+        .record_manager
+        .add_plugin_hook_stats(CompilationPluginHookStats {
+          plugin_name: plugin_name.to_string(),
+          hook_name: "partial_bundling".to_string(),
+          hook_context: None,
+          module_id: "".into(),
+          input: "".to_string(),
+          output: "".to_string(),
+          duration: end_time - start_time,
+          start_time,
+          end_time,
+        })
     }
   );
 
@@ -513,6 +537,30 @@ impl PluginDriver {
   hook_first!(
     render_resource_pot_modules,
     Result<Option<ResourcePotMetaData>>,
+    |result: &Option<ResourcePotMetaData>,
+     plugin_name: String,
+     start_time: u128,
+     end_time: u128,
+     resource_pot: &ResourcePot,
+     context: &Arc<CompilationContext>,
+     hook_context: &PluginHookContext| {
+      if result.is_none() {
+        return;
+      }
+      context.record_manager.add_plugin_hook_stats(
+        CompilationPluginHookStats {
+          plugin_name: plugin_name.to_string(),
+          hook_name: "render_resource_pot_modules".to_string(),
+          hook_context: Some(hook_context.clone()),
+          module_id: "".into(),
+          input: serde_json::to_string(resource_pot).unwrap(),
+          output: serde_json::to_string(&result).unwrap(),
+          duration: end_time - start_time,
+          start_time,
+          end_time,
+        },
+      )
+    },
     resource_pot: &ResourcePot,
     context: &Arc<CompilationContext>,
     _hook_context: &PluginHookContext
@@ -524,8 +572,36 @@ impl PluginDriver {
     context: &Arc<CompilationContext>,
   ) -> Result<PluginDriverRenderResourcePotHookResult> {
     for plugin in &self.plugins {
+      let start_time = if context.config.record {
+        std::time::SystemTime::now()
+          .duration_since(std::time::UNIX_EPOCH)
+          .unwrap()
+          .as_millis()
+      } else {
+        0
+      };
       // if the transform hook returns None, treat it as empty hook and ignore it
       if let Some(plugin_result) = plugin.render_resource_pot(param, context)? {
+        if context.config.record {
+          let end_time = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_millis();
+          context
+            .record_manager
+            .add_plugin_hook_stats(CompilationPluginHookStats {
+              plugin_name: plugin.name().to_string(),
+              hook_name: "render_resource_pot".to_string(),
+              hook_context: None,
+              module_id: "".into(),
+              input: serde_json::to_string(param).unwrap(),
+              output: serde_json::to_string(&plugin_result).unwrap(),
+              duration: end_time - start_time,
+              start_time,
+              end_time,
+            })
+        }
+
         param.content = Arc::new(plugin_result.content);
 
         if let Some(source_map) = plugin_result.source_map {
@@ -569,19 +645,23 @@ impl PluginDriver {
     optimize_resource_pot,
     &mut ResourcePot,
     |plugin_name: String,
-     _start_time: i64,
-     _end_time: i64,
-     resource_pot: &mut ResourcePot,
+     start_time: u128,
+     end_time: u128,
+     _resource_pot: &mut ResourcePot,
      context: &Arc<CompilationContext>| {
-      context.record_manager.add_resource_pot_record(
-        resource_pot.id.to_string(),
-        ResourcePotRecord {
-          name: plugin_name,
-          hook: "optimize_resource_pot".to_string(),
-          modules: resource_pot.modules().into_iter().cloned().collect(),
-          resources: vec![],
-        },
-      );
+      context
+        .record_manager
+        .add_plugin_hook_stats(CompilationPluginHookStats {
+          plugin_name: plugin_name.to_string(),
+          hook_name: "optimize_resource_pot".to_string(),
+          hook_context: None,
+          module_id: "".into(),
+          input: "".to_string(),
+          output: "".to_string(),
+          duration: end_time - start_time,
+          start_time,
+          end_time,
+        })
     }
   );
 
@@ -590,29 +670,24 @@ impl PluginDriver {
     Result<Option<PluginGenerateResourcesHookResult>>,
     |result: &Option<PluginGenerateResourcesHookResult>,
      plugin_name: String,
-     _start_time: i64,
-     _end_time: i64,
+     start_time: u128,
+     end_time: u128,
      resource_pot: &mut ResourcePot,
      context: &Arc<CompilationContext>,
-     _hook_context: &PluginHookContext| {
+     hook_context: &PluginHookContext| {
       match result {
         Some(resources) => {
-          context.record_manager.add_resource_pot_record(
-            resource_pot.id.to_string(),
-            ResourcePotRecord {
-              name: plugin_name,
-              hook: "generate_resources".to_string(),
-              modules: resource_pot.modules().into_iter().cloned().collect(),
-              resources: vec![
-                resources.resource.name.clone(),
-                resources
-                  .source_map
-                  .as_ref()
-                  .map_or(String::new(), |r| r.name.clone()),
-              ]
-              .into_iter()
-              .filter(|r| !r.is_empty())
-              .collect(),
+          context.record_manager.add_plugin_hook_stats(
+            CompilationPluginHookStats {
+              plugin_name: plugin_name.to_string(),
+              hook_name: "generate_resources".to_string(),
+              hook_context: Some(hook_context.clone()),
+              module_id: "".into(),
+              input: serde_json::to_string(resource_pot).unwrap(),
+              output: serde_json::to_string(resources).unwrap(),
+              duration: end_time - start_time,
+              start_time,
+              end_time,
             },
           );
         }
@@ -641,12 +716,32 @@ impl PluginDriver {
   hook_parallel!(
     finish,
     stat: &Stats,
-    |_plugin_name: String, context: &Arc<CompilationContext>| {
-      context.record_manager.set_trigger(Trigger::Update);
-    }
+    |_plugin_name: String, _context: &Arc<CompilationContext>| {}
   );
 
-  hook_serial!(update_modules, &mut PluginUpdateModulesHookParams);
+  hook_serial!(
+    update_modules,
+    &mut PluginUpdateModulesHookParams,
+    |plugin_name: String,
+     start_time: u128,
+     end_time: u128,
+     params: &mut PluginUpdateModulesHookParams,
+     context: &Arc<CompilationContext>| {
+      context
+        .record_manager
+        .add_plugin_hook_stats(CompilationPluginHookStats {
+          plugin_name,
+          hook_name: "update_modules".to_string(),
+          hook_context: None,
+          module_id: "".into(),
+          input: "".to_string(),
+          output: serde_json::to_string(params).unwrap(),
+          duration: end_time - start_time,
+          start_time,
+          end_time,
+        })
+    }
+  );
 
   hook_parallel!(
     module_graph_updated,
@@ -664,6 +759,15 @@ impl PluginDriver {
 
   pub fn write_plugin_cache(&self, context: &Arc<CompilationContext>) -> Result<()> {
     for plugin in &self.plugins {
+      let start_time = if context.config.record {
+        SystemTime::now()
+          .duration_since(UNIX_EPOCH)
+          .expect("Time went backwards")
+          .as_millis()
+      } else {
+        0
+      };
+
       let plugin_cache = plugin.write_plugin_cache(context)?;
 
       if let Some(plugin_cache) = plugin_cache {
@@ -671,6 +775,31 @@ impl PluginDriver {
           .cache_manager
           .plugin_cache
           .set_cache(plugin.name(), plugin_cache);
+
+        if context.config.record {
+          let end_time = if context.config.record {
+            SystemTime::now()
+              .duration_since(UNIX_EPOCH)
+              .expect("Time went backwards")
+              .as_millis()
+          } else {
+            0
+          };
+
+          context
+            .record_manager
+            .add_plugin_hook_stats(CompilationPluginHookStats {
+              plugin_name: plugin.name().to_string(),
+              hook_name: "write_plugin_cache".to_string(),
+              hook_context: None,
+              module_id: "".into(),
+              input: "".to_string(),
+              output: "".to_string(),
+              duration: end_time - start_time,
+              start_time,
+              end_time,
+            });
+        }
       }
     }
 

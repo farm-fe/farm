@@ -2,8 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-
-
 .home-wrap {
   display: flex;
   background: #EEEDEB;

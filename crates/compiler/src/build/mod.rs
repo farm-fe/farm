@@ -102,6 +102,20 @@ enum ResolveModuleResult {
 }
 
 impl Compiler {
+  fn set_module_graph_stats(&self) {
+    if self.context.config.record {
+      let module_graph = self.context.module_graph.read();
+      self
+        .context
+        .record_manager
+        .set_module_graph_stats(&module_graph);
+      self
+        .context
+        .record_manager
+        .set_entries(module_graph.entries.keys().cloned().collect())
+    }
+  }
+
   pub(crate) fn build(&self) -> Result<()> {
     self.context.plugin_driver.build_start(&self.context)?;
     validate_config::validate_config(&self.context.config);
@@ -134,6 +148,11 @@ impl Compiler {
 
     self.handle_global_log(&mut errors);
     if !errors.is_empty() {
+      // set stats if stats is enabled
+      self.context.record_manager.set_build_end_time();
+      self.context.record_manager.set_end_time();
+      self.set_module_graph_stats();
+
       let mut error_messages = vec![];
       for error in errors {
         error_messages.push(error.to_string());
@@ -163,6 +182,9 @@ impl Compiler {
     let mut module_graph = self.context.module_graph.write();
     module_graph.update_execution_order_for_modules();
     drop(module_graph);
+
+    // set stats if stats is enabled
+    self.set_module_graph_stats();
 
     {
       farm_profile_scope!("call build_end hook".to_string());

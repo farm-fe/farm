@@ -106,6 +106,7 @@ export interface Module {
   resourcePot?: string
   sideEffects: boolean
   sourceMapChain: Array<string>
+  content: string
   external: boolean
   immutable: boolean
   size: number
@@ -135,11 +136,6 @@ export declare class Compiler {
   watchModules(): Array<string>
   relativeModulePaths(): Array<string>
   resource(name: string): Buffer | null
+  stats(): string
   modules(): Array<Module>
-  getResolveRecordsById(id: string): Array<ResolveRecord>
-  getTransformRecordsById(id: string): Array<TransformRecord>
-  getProcessRecordsById(id: string): Array<ModuleRecord>
-  getAnalyzeDepsRecordsById(id: string): Array<AnalyzeDepsRecord>
-  getResourcePotRecordsById(id: string): Array<ResourcePotRecord>
-  pluginStats(): Record<string, unknown>
 }

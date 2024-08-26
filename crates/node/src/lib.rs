@@ -16,7 +16,6 @@ use farmfe_core::{
   config::{Config, Mode},
   module::ModuleId,
   plugin::UpdateType,
-  record::Trigger,
 };
 
 #[cfg(feature = "file_watcher")]
@@ -160,6 +159,7 @@ pub struct JsModule {
   pub resource_pot: Option<String>,
   pub side_effects: bool,
   pub source_map_chain: Vec<String>,
+  pub content: String,
   pub external: bool,
   pub immutable: bool,
   pub size: i64,
@@ -541,6 +541,12 @@ impl JsCompiler {
   }
 
   #[napi]
+  pub fn stats(&self) -> String {
+    let context = self.compiler.context();
+    context.record_manager.to_string()
+  }
+
+  #[napi]
   pub fn modules(&self) -> Vec<JsModule> {
     let context = self.compiler.context();
     let module_graph = context.module_graph.read();
@@ -556,6 +562,7 @@ impl JsCompiler {
           .into_iter()
           .map(|group| group.resolved_path(&context.config.root) + group.query_string())
           .collect(),
+        content: m.content.to_string(),
         resource_pot: m.resource_pot.clone(),
         side_effects: m.side_effects,
         source_map_chain: m
@@ -569,132 +576,6 @@ impl JsCompiler {
         size: m.size as i64,
       })
       .collect()
-  }
-
-  #[napi]
-  pub fn get_resolve_records_by_id(&self, id: String) -> Vec<JsResolveRecord> {
-    let context = self.compiler.context();
-    let record_manager = &context.record_manager;
-    let resolve_records = record_manager.get_resolve_records_by_id(&id);
-    let js_resolve_records: Vec<JsResolveRecord> = resolve_records
-      .into_iter()
-      .map(|record| JsResolveRecord {
-        plugin: record.plugin,
-        hook: record.hook,
-        source: record.source,
-        importer: record.importer,
-        kind: record.kind,
-        is_hmr: matches!(record.trigger, Trigger::Update),
-        start_time: record.start_time,
-        end_time: record.end_time,
-        duration: record.duration,
-      })
-      .collect();
-    js_resolve_records
-  }
-
-  #[napi]
-  pub fn get_transform_records_by_id(&self, id: String) -> Vec<JsTransformRecord> {
-    let context = self.compiler.context();
-    let record_manager = &context.record_manager;
-    let transform_records = record_manager.get_transform_records_by_id(&id);
-    let js_transform_records: Vec<JsTransformRecord> = transform_records
-      .into_iter()
-      .map(|record| JsTransformRecord {
-        plugin: record.plugin,
-        hook: record.hook,
-        content: record.content,
-        module_type: record.module_type.to_string(),
-        source_maps: record.source_maps,
-        is_hmr: matches!(record.trigger, Trigger::Update),
-        start_time: record.start_time,
-        end_time: record.end_time,
-        duration: record.duration,
-      })
-      .collect();
-    js_transform_records
-  }
-
-  #[napi]
-  pub fn get_process_records_by_id(&self, id: String) -> Vec<JsModuleRecord> {
-    let context = self.compiler.context();
-    let record_manager = &context.record_manager;
-    let process_records = record_manager.get_process_records_by_id(&id);
-    let js_process_records: Vec<JsModuleRecord> = process_records
-      .into_iter()
-      .map(|record| JsModuleRecord {
-        plugin: record.plugin,
-        hook: record.hook,
-        module_type: record.module_type.to_string(),
-        is_hmr: matches!(record.trigger, Trigger::Update),
-        start_time: record.start_time,
-        end_time: record.end_time,
-        duration: record.duration,
-      })
-      .collect();
-    js_process_records
-  }
-
-  #[napi]
-  pub fn get_analyze_deps_records_by_id(&self, id: String) -> Vec<JsAnalyzeDepsRecord> {
-    let context = self.compiler.context();
-    let record_manager = &context.record_manager;
-    let analyze_deps_records = record_manager.get_analyze_deps_records_by_id(&id);
-    let js_analyze_deps_records: Vec<JsAnalyzeDepsRecord> = analyze_deps_records
-      .into_iter()
-      .map(|record| JsAnalyzeDepsRecord {
-        plugin: record.plugin,
-        hook: record.hook,
-        module_type: record.module_type.to_string(),
-        is_hmr: matches!(record.trigger, Trigger::Update),
-        start_time: record.start_time,
-        end_time: record.end_time,
-        duration: record.duration,
-        deps: record
-          .deps
-          .into_iter()
-          .map(|dep| JsAnalyzeDep {
-            source: dep.source,
-            kind: String::from(dep.kind),
-          })
-          .collect(),
-      })
-      .collect();
-    js_analyze_deps_records
-  }
-
-  #[napi]
-  pub fn get_resource_pot_records_by_id(&self, id: String) -> Vec<JsResourcePotRecord> {
-    let context = self.compiler.context();
-    let record_manager = &context.record_manager;
-    let resource_pot_records = record_manager.get_resource_pot_records_by_id(&id);
-    let js_resource_pot_records: Vec<JsResourcePotRecord> = resource_pot_records
-      .into_iter()
-      .map(|record| JsResourcePotRecord {
-        name: record.name,
-        hook: record.hook,
-        modules: record
-          .modules
-          .into_iter()
-          .map(|id| id.to_string())
-          .collect(),
-        resources: record.resources,
-      })
-      .collect();
-    js_resource_pot_records
-  }
-
-  #[napi]
-  pub fn plugin_stats(&self, e: Env) -> HashMap<String, JsUnknown> {
-    let context = self.compiler.context();
-    let stats = &context.record_manager.plugin_stats.read().unwrap();
-    let mut plugin_stats_map = HashMap::new();
-
-    for (plugin_name, data) in stats.iter() {
-      plugin_stats_map.insert(plugin_name.clone(), e.to_js_value(data).unwrap());
-    }
-
-    plugin_stats_map
   }
 }
 

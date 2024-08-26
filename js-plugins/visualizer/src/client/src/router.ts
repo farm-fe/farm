@@ -10,6 +10,10 @@ export const routes = [
     component: () => import('./pages/Home.vue')
   },
   {
+    path: '/analysis/compilation',
+    component: () => import('./pages/analysis/Compilation.vue')
+  },
+  {
     path: '/analysis/bundle',
     component: () => import('./pages/analysis/Bundle.vue')
   },

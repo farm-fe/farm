@@ -8,10 +8,8 @@
       <div class="flex gap-x-5 w-full max-h-[70vh]">
         <!-- Module List -->
         <ModuleList class="w-1/3" @select="handleSelect"></ModuleList>
-        <ModuleRecords
-          class="w-2/3 flex flex-col"
-          :module-id="currentModule?.id"
-        ></ModuleRecords>
+
+        <div></div>
       </div>
     </Card>
   </div>
@@ -22,9 +20,7 @@ import { Card, Tree, Drawer } from "ant-design-vue";
 import { defineComponent, ref } from "vue";
 import FileTree from "../../components/FileTree.vue";
 import ResourcePots from "../../components/ResourcePots.vue";
-import CodeViewer from "../../components/CodeViewer.vue";
 import ModuleList from "../../components/ModuleList.vue";
-import ModuleRecords from "../../components/ModuleRecords.vue";
 import type { Module } from "@farmfe/core";
 
 export default defineComponent({
@@ -34,10 +30,8 @@ export default defineComponent({
     Tree,
     ResourcePots,
     FileTree,
-    CodeViewer,
     Drawer,
     ModuleList,
-    ModuleRecords,
   },
   setup() {
     const currentModule = ref<Module>();
