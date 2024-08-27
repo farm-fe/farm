@@ -7,14 +7,12 @@ export function getCacheDir(
   root: string,
   persistentCache?: boolean | PersistentCacheConfig
 ) {
-  let cacheDir: string;
+  let cacheDir = path.resolve(root, 'node_modules', '.farm', 'cache');
 
   if (typeof persistentCache === 'object' && persistentCache.cacheDir) {
-    cacheDir = path.isAbsolute(cacheDir)
+    cacheDir = path.isAbsolute(persistentCache.cacheDir)
       ? persistentCache.cacheDir
-      : path.resolve(root, cacheDir);
-  } else {
-    cacheDir = path.resolve(root, 'node_modules', '.farm', 'cache');
+      : path.resolve(root, persistentCache.cacheDir);
   }
 
   return cacheDir;
