@@ -14,7 +14,7 @@ export function Main() {
           <img src={reactLogo} className="logo react" alt="React logo" />
         </a> */}
       </div>
-      <h1>Farm + React</h1>
+      <h1>Farm + React22222222222222</h1>
       <div className="card">
         <button onClick={() => setCount((count) => count + 1)}>
           count is {count}

@@ -1,4 +1,4 @@
-<script setup lang="ts">
+<!-- <script setup lang="ts">
 import { ref } from "vue";
 import HelloWorld from "./components/HelloWorld.vue";
 const a = ref(666);
@@ -49,4 +49,4 @@ fetch("/aaa?type=&page=&page_size=&is_filter=&key=0b8d6c14fc67d1d9268c6ce73ad9c8
 .logo.vue:hover {
   filter: drop-shadow(0 0 2em #42b883aa);
 }
-</style>
+</style> -->

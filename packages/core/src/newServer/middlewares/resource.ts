@@ -68,11 +68,13 @@ export function resourceMiddleware(app: any) {
       mimeType === 'text/html' ||
       (extension === '' && req.headers.accept?.includes('text/html'));
 
+    // TODO 这块是 vite vue 插件处理 图片的时候找不到 资源应该考虑在上面的 vite 插件里做
     if (!isHtmlRequest) {
       // 对于非 HTML 请求，尝试在根目录查找资源
       const rootResource = compiler.resource(
         path.basename(resourceWithoutPublicPath)
       );
+
       if (rootResource) {
         send(req, res, rootResource, url, {
           headers: config.server.headers
