@@ -74,6 +74,10 @@ impl FarmPluginStaticAssets {
       )
     }
   }
+
+  fn remove_resource_name_query(name: &str) -> String {
+    name.split('?').next().unwrap_or(name).to_string()
+  }
 }
 
 impl Plugin for FarmPluginStaticAssets {
@@ -239,7 +243,7 @@ impl Plugin for FarmPluginStaticAssets {
 
         context.emit_file(EmitFileParams {
           resolved_path: param.module_id.clone(),
-          name: resource_name,
+          name: Self::remove_resource_name_query(&resource_name),
           content: bytes,
           resource_type: ResourceType::Asset(ext.to_string()),
         });
