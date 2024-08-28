@@ -1,4 +1,4 @@
-//foo_bar-47689c.txt?url:
+//foo_bar-47689c.txt:
  foo_bar
 
 //index.js:
