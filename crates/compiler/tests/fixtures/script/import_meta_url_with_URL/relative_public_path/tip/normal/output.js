@@ -1,7 +1,7 @@
-//bar-a57e94.txt?url:
+//bar-a57e94.txt:
  bar
 
-//foo-8bdf4c.txt?url:
+//foo-8bdf4c.txt:
  foo
 
 //index.js:

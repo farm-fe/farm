@@ -34,6 +34,7 @@ import type { ServerOptions as HttpsServerOptions, Server } from 'node:http';
 import type { Http2SecureServer } from 'node:http2';
 import type { HMRChannel } from './hmr.js';
 
+import { normalizePublicPath } from '../config/normalize-config/normalize-output.js';
 import type {
   NormalizedServerConfig,
   ResolvedUserConfig
@@ -317,6 +318,7 @@ export class NewServer extends httpServer {
   #resolveOptions() {
     const { compilation, server } = this.resolvedUserConfig;
     this.publicPath = compilation.output.publicPath;
+
     this.publicDir = compilation.assets.publicDir;
 
     this.serverOptions = server as CommonServerOptions & NormalizedServerConfig;
@@ -358,12 +360,14 @@ export class NewServer extends httpServer {
       this.middlewares.use(lazyCompilationMiddleware(this));
     }
 
+    if (this.resolvedUserConfig.vitePlugins.length) {
+      this.middlewares.use(adaptorViteMiddleware(this));
+    }
+
     // TODO todo add appType 这块要判断 单页面还是 多页面 多 html 处理不一样
     this.middlewares.use(htmlFallbackMiddleware(this));
 
     this.middlewares.use(resourceMiddleware(this));
-
-    this.middlewares.use(adaptorViteMiddleware(this));
 
     this.middlewares.use(notFoundMiddleware());
   }

@@ -18,6 +18,7 @@ export function adaptorViteMiddleware(app: any) {
     next: () => void
   ) {
     let stripQueryAndHashUrl = stripQueryAndHash(req.url);
+
     const { resourceWithoutPublicPath } = normalizePathByPublicPath(
       app.publicPath,
       stripQueryAndHashUrl

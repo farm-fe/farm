@@ -94,7 +94,6 @@ const WebSocketServerRaw = process.versions.bun
     import.meta.require('ws').WebSocketServer
   : WebSocketServerRaw_;
 
-// TODO return 出来的值 最后需要跟 ws 保持一致 不需要在包装一层 ws 📦
 export class WsServer {
   public wss: WebSocketServerRaw_;
   public customListeners = new Map<string, Set<WebSocketCustomListener<any>>>();

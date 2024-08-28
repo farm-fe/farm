@@ -286,7 +286,7 @@ export class VitePluginAdapter implements JsPlugin {
       await hook(this._viteDevServer);
 
       this._viteDevServer.middlewareCallbacks.forEach((cb) => {
-        devServer.middlewares.use(cb);
+        // devServer.middlewares.use(cb);
         // devServer.app().use((ctx: any, koaNext: any) => {
         //   return new Promise((resolve, reject) => {
         //     // koaNext is async, but vite's next is sync, we need a adapter here
@@ -294,7 +294,6 @@ export class VitePluginAdapter implements JsPlugin {
         //       if (err) reject(err);
         //       koaNext().then(resolve);
         //     };
-
         //     return cb(ctx.req, ctx.res, next);
         //   });
         // });
