@@ -407,6 +407,7 @@ impl ScriptModuleMetaData {
 #[cache_item]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum ModuleSystem {
+  UnInitial,
   EsModule,
   CommonJs,
   // Hybrid of commonjs and es-module
@@ -416,7 +417,12 @@ pub enum ModuleSystem {
 
 impl ModuleSystem {
   pub fn merge(&self, module_system: ModuleSystem) -> ModuleSystem {
+    if matches!(module_system, ModuleSystem::UnInitial) {
+      return self.clone();
+    }
+
     match self {
+      ModuleSystem::UnInitial => module_system,
       ModuleSystem::EsModule => {
         if matches!(module_system, ModuleSystem::CommonJs) {
           ModuleSystem::Hybrid
@@ -909,6 +915,26 @@ mod tests {
 
   #[test]
   fn module_system_merge() {
+    assert_eq!(
+      ModuleSystem::UnInitial.merge(ModuleSystem::EsModule),
+      ModuleSystem::EsModule
+    );
+
+    assert_eq!(
+      ModuleSystem::EsModule.merge(ModuleSystem::UnInitial),
+      ModuleSystem::EsModule
+    );
+
+    assert_eq!(
+      ModuleSystem::UnInitial.merge(ModuleSystem::CommonJs),
+      ModuleSystem::CommonJs
+    );
+
+    assert_eq!(
+      ModuleSystem::CommonJs.merge(ModuleSystem::UnInitial),
+      ModuleSystem::CommonJs
+    );
+
     let module_system = ModuleSystem::EsModule;
 
     assert_eq!(

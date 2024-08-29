@@ -266,6 +266,8 @@ impl Visit for ModuleSystemAnalyzer {
             self.contain_module_exports = true;
           }
         }
+      } else if sym == "exports" && span.ctxt.outer() == self.unresolved_mark {
+        self.contain_module_exports = true;
       } else {
         n.visit_children_with(self);
       }
@@ -312,18 +314,16 @@ pub fn set_module_system_for_module_meta(
 ) {
   // default to commonjs
   let module_system_from_deps_option = if !param.deps.is_empty() {
-    Some(module_system_from_deps(
-      param.deps.iter().map(|d| d.kind.clone()).collect(),
-    ))
+    module_system_from_deps(param.deps.iter().map(|d| d.kind.clone()).collect())
   } else {
-    None
+    ModuleSystem::UnInitial
   };
 
   // param.module.meta.as_script_mut().module_system = module_system.clone();
 
   let ast = &param.module.meta.as_script().ast;
 
-  let mut module_system_from_ast = None;
+  let mut module_system_from_ast: ModuleSystem = ModuleSystem::UnInitial;
   {
     // try_with(param.module.meta.as_script().comments.into(), globals, op)
 
@@ -343,28 +343,24 @@ pub fn set_module_system_for_module_meta(
       ast.visit_with(&mut analyzer);
 
       if analyzer.contain_module_exports {
-        module_system_from_ast = Some(ModuleSystem::CommonJs);
+        module_system_from_ast = module_system_from_ast.merge(ModuleSystem::CommonJs);
       }
 
       if analyzer.contain_esm {
-        let v = module_system_from_ast
-          .take()
-          .unwrap_or(ModuleSystem::EsModule)
-          .merge(ModuleSystem::EsModule);
-
-        module_system_from_ast = Some(v);
+        module_system_from_ast = module_system_from_ast.merge(ModuleSystem::EsModule);
       }
     })
     .unwrap();
   }
 
-  param.module.meta.as_script_mut().module_system =
-    [module_system_from_deps_option, module_system_from_ast]
-      .into_iter()
-      .filter_map(|x| x)
-      .reduce(|a, b| a.merge(b))
-      .unwrap_or(ModuleSystem::Hybrid);
+  let mut v = [module_system_from_deps_option, module_system_from_ast]
+    .into_iter()
+    .reduce(|a, b| a.merge(b))
+    .unwrap_or(ModuleSystem::UnInitial);
 
-  // param.module.meta.as_script_mut().module_system =
-  //   module_system_from_ast(ast, module_system_from_deps_option, !param.deps.is_empty());
+  if matches!(v, ModuleSystem::UnInitial) {
+    v = ModuleSystem::Hybrid;
+  }
+
+  param.module.meta.as_script_mut().module_system = v;
 }

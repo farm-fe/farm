@@ -6,7 +6,6 @@ use farmfe_core::{
     preset_env::{PresetEnvConfig, PresetEnvConfigObj},
     Config,
   },
-  module::ModuleType,
   plugin::Plugin,
   serde_json,
   swc_common::{comments::SingleThreadedComments, Mark},
@@ -30,7 +29,7 @@ pub struct FarmPluginPolyfill {
 
 impl FarmPluginPolyfill {
   pub fn new(config: &Config) -> Self {
-    let (config, include, exclude, assumptions) = match &*config.preset_env {
+    let (config, include, mut exclude, assumptions) = match &*config.preset_env {
       PresetEnvConfig::Bool(_) => {
         let PresetEnvConfigObj {
           include,
@@ -69,6 +68,8 @@ impl FarmPluginPolyfill {
       }
     };
 
+    exclude.push(ConfigRegex::new("node_modules/core-js"));
+
     Self {
       config,
       include,
@@ -99,9 +100,22 @@ impl Plugin for FarmPluginPolyfill {
     // ignore node_modules by default
     let relative_path = param.module_id.relative_path();
 
-    if !self.include.iter().any(|r| r.is_match(relative_path))
-      && self.exclude.iter().any(|r| r.is_match(relative_path))
-    {
+    let is_exclude = || {
+      if self.exclude.is_empty() {
+        return false;
+      }
+
+      self.exclude.iter().any(|r| r.is_match(relative_path))
+    };
+
+    if is_exclude() {
+      return Ok(None);
+    }
+
+    let is_include =
+      || self.include.is_empty() || self.include.iter().any(|r| r.is_match(relative_path));
+
+    if !is_include() {
       return Ok(None);
     }
 
