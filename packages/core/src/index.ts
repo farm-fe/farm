@@ -38,7 +38,7 @@ import {
   normalizePublicDir,
   resolveConfig
 } from './config/index.js';
-import { HttpServer, NewServer } from './newServer/index.js';
+import { NewServer } from './newServer/index.js';
 import { Server } from './server/index.js';
 import { compilerHandler } from './utils/build.js';
 import { colors } from './utils/color.js';
@@ -53,7 +53,6 @@ import type {
 } from './config/types.js';
 import { logError } from './server/error.js';
 import { lazyCompilation } from './server/middlewares/lazy-compilation.js';
-import { ConfigWatcher } from './watcher/config-watcher.js';
 
 import type { JsPlugin } from './plugin/type.js';
 
@@ -176,7 +175,7 @@ export async function watch(
     false
   );
 
-  const compilerFileWatcher = await createBundleHandler(
+  const fileWatcher = await createBundleHandler(
     resolvedUserConfig,
     logger,
     true
@@ -188,7 +187,7 @@ export async function watch(
   if (lazyEnabled) {
     devServer = new Server({
       logger,
-      compiler: compilerFileWatcher.serverOrCompiler as Compiler
+      compiler: fileWatcher.serverOrCompiler as Compiler
     });
     await devServer.createServer(resolvedUserConfig.server);
     devServer.applyMiddlewares([lazyCompilation]);
@@ -199,15 +198,13 @@ export async function watch(
     logFileChanges(files, resolvedUserConfig.root, logger);
 
     try {
-      farmWatcher.close();
-
       if (lazyEnabled && devServer) {
         devServer.close();
       }
 
       __FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__ = true;
 
-      compilerFileWatcher?.close();
+      await fileWatcher?.close();
 
       await watch(inlineConfig);
     } catch (error) {
@@ -215,9 +212,7 @@ export async function watch(
     }
   }
 
-  const farmWatcher = new ConfigWatcher(resolvedUserConfig).watch(
-    handleFileChange
-  );
+  fileWatcher.watchConfigs(handleFileChange);
 }
 
 export async function clean(
@@ -414,21 +409,22 @@ export async function createFileWatcher(
     return;
   }
 
-  const fileWatcher = new FileWatcher(devServer, resolvedUserConfig, logger);
+  const configFilePath = await getConfigFilePath(resolvedUserConfig.root);
+  const fileWatcher = new FileWatcher(
+    // @ts-ignore
+    devServer,
+    { ...resolvedUserConfig, configFilePath },
+    logger
+  );
   devServer.watcher = fileWatcher;
   await fileWatcher.watch();
 
-  const configFilePath = await getConfigFilePath(resolvedUserConfig.root);
-  const farmWatcher = new ConfigWatcher({
-    ...resolvedUserConfig,
-    configFilePath
-  });
-  farmWatcher.watch(async (files: string[]) => {
+  fileWatcher.watchConfigs(async (files: string[]) => {
     checkClearScreen(resolvedUserConfig);
 
     devServer.restart(async () => {
       logFileChanges(files, resolvedUserConfig.root, logger);
-      farmWatcher?.close();
+      fileWatcher?.close();
 
       await devServer.close();
       __FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__ = true;
@@ -439,7 +435,7 @@ export async function createFileWatcher(
 }
 
 export async function createFileWatcher2(
-  devServer: HttpServer & any,
+  devServer: NewServer,
   resolvedUserConfig: ResolvedUserConfig,
   logger: Logger = new Logger()
 ) {
@@ -459,19 +455,24 @@ export async function createFileWatcher2(
   //   return;
   // }
 
-  // @ts-ignore
-  const fileWatcher = new FileWatcher(devServer, resolvedUserConfig, logger);
+  const configFilePath = await getConfigFilePath(resolvedUserConfig.root);
+  const fileWatcher = new FileWatcher(
+    devServer,
+    { ...resolvedUserConfig, configFilePath },
+    logger
+  );
   devServer.watcher = fileWatcher;
   await fileWatcher.watch();
 
-  const configFilePath = await getConfigFilePath(resolvedUserConfig.root);
-  const farmWatcher = new ConfigWatcher({
-    ...resolvedUserConfig,
-    configFilePath
-  });
-  farmWatcher.watch(async (files: string[]) => {
+  fileWatcher.watchConfigs(async (files: string[]) => {
     checkClearScreen(resolvedUserConfig);
+    logFileChanges(files, resolvedUserConfig.root, logger);
 
+    await fileWatcher.close();
+    await devServer.close();
+    __FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__ = true;
+
+    await start2(resolvedUserConfig as FarmCliOptions & UserConfig);
     // devServer.restart(async () => {
     //   logFileChanges(files, resolvedUserConfig.root, logger);
     //   farmWatcher?.close();
@@ -515,8 +516,11 @@ export async function start2(
 
     const server = new NewServer(resolvedUserConfig, logger);
     await server.createServer();
+
+    const compiler = await createCompiler(resolvedUserConfig, logger);
+    server.setCompiler(compiler);
     await server.listen();
-    // @ts-ignore
+
     await createFileWatcher2(server, resolvedUserConfig, logger);
 
     // call configureDevServer hook after both server and watcher are ready
