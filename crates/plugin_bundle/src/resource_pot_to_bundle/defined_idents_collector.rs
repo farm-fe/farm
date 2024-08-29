@@ -1,4 +1,7 @@
-use std::collections::{HashMap, HashSet};
+use std::{
+  cell::RefCell,
+  collections::{HashMap, HashSet},
+};
 
 use farmfe_core::{
   swc_common::DUMMY_SP,
@@ -70,20 +73,31 @@ impl Visit for DefinedIdentsCollector {
 
 use farmfe_core::swc_ecma_ast::Ident;
 
-use super::Var;
+use super::{modules_analyzer::module_analyzer::VarRefKey, uniq_name::BundleVariable, Var};
 
-#[derive(Debug, Default)]
+type RenameMap<'a> = HashMap<VarRefKey<'a>, usize>;
+
+#[derive(Debug)]
 pub struct RenameIdent<'a> {
-  map: HashMap<&'a Id, &'a Var>,
+  map: RenameMap<'a>,
+  bundle_variable: &'a BundleVariable,
 }
 
 impl<'a> RenameIdent<'a> {
-  pub fn new(map: HashMap<&'a Id, &'a Var>) -> Self {
-    Self { map }
+  pub fn new(map: RenameMap<'a>, bundle_variable: &'a BundleVariable) -> Self {
+    Self {
+      map,
+      bundle_variable,
+    }
   }
 
   fn rename(&self, ident: &Ident) -> Option<String> {
-    self.map.get(&ident.to_id()).map(|var| var.render_name())
+    let r = RefCell::new(ident.to_id());
+    let xx = self
+      .map
+      .get(&(r.borrow().into()))
+      .map(|var| self.bundle_variable.render_name(*var));
+    xx
   }
 }
 

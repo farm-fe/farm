@@ -1,4 +1,8 @@
-use std::{cell::RefCell, collections::HashMap, rc::Rc};
+use std::{
+  cell::{Ref, RefCell, RefMut},
+  collections::HashMap,
+  rc::Rc,
+};
 
 use farmfe_core::{
   config::{Config, ModuleFormat},
@@ -20,6 +24,7 @@ pub struct ExternalReferenceImport {
   pub named: HashMap<String, usize>,
   pub namespace: Option<usize>,
   pub default: Option<usize>,
+  pub source: Option<ReferenceKind>,
 }
 
 impl ExternalReferenceImport {
@@ -28,6 +33,7 @@ impl ExternalReferenceImport {
       named: HashMap::new(),
       namespace: None,
       default: None,
+      source: None,
     }
   }
 
@@ -51,7 +57,7 @@ impl ExternalReferenceImport {
       ImportSpecifierInfo::Named { local, imported } => {
         let imported = imported.unwrap_or(local);
         let name = bundle_variable.name(imported);
-
+        // TODO: use index
         self.named.entry(name).or_insert(local);
       }
       ImportSpecifierInfo::Namespace(name) => {
@@ -124,6 +130,10 @@ pub enum ReferenceKind {
 }
 
 impl ReferenceKind {
+  pub fn is_module_id(&self) -> bool {
+    matches!(self, ReferenceKind::Module(_))
+  }
+
   pub fn to_module_id(&self) -> ModuleId {
     match self {
       ReferenceKind::Bundle(name) => ModuleId::from(with_bundle_reference_slot_name(name)),
@@ -171,6 +181,23 @@ impl From<&String> for ReferenceKind {
   }
 }
 
+///
+/// {
+///   import: {
+///     source: xxx
+///   },
+///   commonjs: {
+///     source: xxx
+///   },
+///   external: {
+///     source: xxx
+///   },
+///   local_export: {
+///     aa: bb
+///   }
+/// }
+///
+
 #[derive(Debug, Default)]
 pub struct BundleReference {
   /// import { xxx } from './external_bundle_module' | './other_bundle_module'
@@ -202,6 +229,13 @@ impl BundleReference {
     Self::default()
   }
 
+  pub fn is_empty(&self) -> bool {
+    self.import_map.is_empty()
+      && self.redeclare_commonjs_import.is_empty()
+      && self.external_export_map.is_empty()
+      && self.export.is_none()
+  }
+
   /// import "./cjs"
   pub fn execute_module_for_cjs(&mut self, import_kind: ReferenceKind) {
     self
@@ -214,6 +248,7 @@ impl BundleReference {
     if self.export.is_none() {
       self.export = Some(ExternalReferenceExport::new(module_system));
     }
+
     if let Some(ref mut export) = self.export {
       export.insert(specify.clone())
     };
@@ -527,6 +562,7 @@ impl BundleReference {
     Ok(())
   }
 
+  // TODO: refactor ModuleItem
   pub fn add_export_named(&mut self) {}
 
   pub fn add_reexport_named(&mut self) {}

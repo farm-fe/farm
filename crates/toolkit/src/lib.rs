@@ -43,3 +43,4 @@ pub mod minify;
 
 // pluginutils
 pub mod pluginutils;
+pub mod constant;

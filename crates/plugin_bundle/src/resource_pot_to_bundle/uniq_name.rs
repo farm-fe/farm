@@ -1,5 +1,6 @@
 use std::{
   borrow::Cow,
+  cell::{Ref, RefCell, RefMut},
   collections::{HashMap, HashSet},
   path::PathBuf,
   str::FromStr,
@@ -76,12 +77,15 @@ impl UniqName {
 pub struct BundleVariable {
   pub index: Arc<AtomicUsize>,
   // TODO(improve) diff vec and hashmap
-  pub variables: HashMap<usize, Var>,
+  pub variables: HashMap<usize, RefCell<Var>>,
   // TODO(improve): maybe record top_level var, and only register same top_level var
-  pub module_defined_vars: HashMap<String, HashMap<String, usize>>,
+  pub module_defined_vars: HashMap<ModuleId, HashMap<String, usize>>,
   pub uniq_name_hash_map: HashMap<ResourcePotId, UniqName>,
   pub namespace: String,
   pub used_names: HashSet<String>,
+  pub module_order_map: Arc<HashMap<ModuleId, usize>>,
+  pub module_order_index_set: Arc<Vec<ModuleId>>,
+  pub polyfill_index_map: HashMap<String, usize>
 }
 
 pub fn safe_name_from_module_id(module_id: &ModuleId, root: &str) -> String {
@@ -102,12 +106,14 @@ pub fn safe_name_from_module_id(module_id: &ModuleId, root: &str) -> String {
 impl BundleVariable {
   pub fn new() -> Self {
     Self {
+      index: Arc::new(AtomicUsize::new(1)),
       ..Default::default()
     }
   }
 
-  fn push(&mut self, var: Var, index: usize) {
-    self.variables.insert(index, var);
+  fn push(&mut self, mut var: Var, index: usize) {
+    var.index = index;
+    self.variables.insert(index, RefCell::new(var));
   }
 
   pub fn is_in_used_name(&self, index: usize) -> bool {
@@ -155,11 +161,12 @@ impl BundleVariable {
     self.used_names.insert(used_name);
   }
 
-  pub fn register_var(&mut self, module_id: &str, ident: &Ident, strict: bool) -> usize {
+  pub fn register_var(&mut self, module_id: &ModuleId, ident: &Ident, strict: bool) -> usize {
     farm_profile_scope!("register var");
     let var = Var {
       var: ident.to_id(),
       rename: None,
+      module_id: self.module_order_map.get(module_id).cloned(),
       ..Default::default()
     };
 
@@ -189,7 +196,7 @@ impl BundleVariable {
     } else {
       let mut map = HashMap::new();
       map.insert(var_ident, create_index());
-      self.module_defined_vars.insert(module_id.to_string(), map);
+      self.module_defined_vars.insert(module_id.clone(), map);
     }
 
     self.push(var, index.unwrap());
@@ -197,9 +204,15 @@ impl BundleVariable {
     index.unwrap()
   }
 
-  pub fn branch(&self) -> Self {
+  pub fn branch(
+    index: &Arc<AtomicUsize>,
+    module_order_map: &Arc<HashMap<ModuleId, usize>>,
+    module_order_index_set: &Arc<Vec<ModuleId>>,
+  ) -> Self {
     Self {
-      index: Arc::clone(&self.index),
+      index: Arc::clone(&index),
+      module_order_map: Arc::clone(module_order_map),
+      module_order_index_set: Arc::clone(module_order_index_set),
       ..Default::default()
     }
   }
@@ -237,11 +250,7 @@ impl BundleVariable {
 
     self.add_used_name(uniq_name_safe_name.clone());
 
-    self.register_var(
-      &module_id.to_string(),
-      &uniq_name_safe_name.as_str().into(),
-      false,
-    )
+    self.register_var(&module_id, &uniq_name_safe_name.as_str().into(), false)
   }
 
   pub fn register_common_used_name(&mut self, suffix: &str, name: &str) -> usize {
@@ -257,22 +266,98 @@ impl BundleVariable {
     self.add_used_name(uniq_name.clone());
 
     self.register_var(
-      "__FARM_BUNDLE_COMMON_USED_NAME__",
+      &ModuleId::from("__FARM_BUNDLE_COMMON_USED_NAME__"),
       &uniq_name.as_str().into(),
       false,
     )
   }
 
-  pub fn var_by_index(&self, index: usize) -> &Var {
-    &self.variables[&index]
+  // ---------- var ------------
+
+  pub fn var(&self, index: usize) -> (Ref<Var>, Option<Ref<Var>>) {
+    let v = self.var_by_index(index);
+
+    if let Some(root) = v.root {
+      return (v, Some(self.var_or_root(root)));
+    }
+
+    (v, None)
   }
 
-  pub fn var_mut_by_index(&mut self, index: usize) -> &mut Var {
-    self.variables.get_mut(&index).unwrap()
+  pub fn module_id_by_var_index(&self, index: usize) -> Option<&ModuleId> {
+    let v = self.var_by_index(index);
+
+    v.module_id.map(|i| &self.module_order_index_set[i])
   }
 
-  pub fn set_rename(&mut self, index: usize, rename: String) {
-    let var = self.var_mut_by_index(index);
+  pub fn module_id_by_var(&self, var: &Var) -> Option<&ModuleId> {
+    var.module_id.map(|i| &self.module_order_index_set[i])
+  }
+
+  pub fn var_mut(&self, index: usize) -> (RefMut<Var>, Option<RefMut<Var>>) {
+    let v = self.var_mut_by_index(index);
+
+    if let Some(root) = v.root {
+      return (v, Some(self.var_mut_by_index(root)));
+    }
+
+    (v, None)
+  }
+
+  pub fn set_var_root(&self, index: usize, root: usize) {
+    let mut var = self.var_mut_by_index(index);
+    var.root = Some(root);
+  }
+
+  pub fn var_or_root(&self, index: usize) -> Ref<Var> {
+    let mut v = self.var_by_index(index);
+
+    let mut paths = vec![index];
+    loop {
+      if let Some(root) = v.root.map(|root| self.var_by_index(root)) {
+        if paths.contains(&root.index) {
+          break;
+        }
+
+        v = root;
+        paths.push(v.index);
+      } else {
+        break;
+      }
+    }
+
+    for path in paths.into_iter().rev().skip(1) {
+      if path == index {
+        continue;
+      }
+
+      self.set_var_root(path, v.index);
+    }
+
+    v
+  }
+
+  pub fn var_root_mut(&self, index: usize) -> RefMut<Var> {
+    let v = self.var_mut_by_index(index);
+
+    if let Some(root) = v.root {
+      return self.var_mut_by_index(root);
+    }
+
+    v
+  }
+
+  pub fn var_by_index(&self, index: usize) -> Ref<Var> {
+    self.variables[&index].borrow()
+  }
+
+  pub fn var_mut_by_index(&self, index: usize) -> RefMut<Var> {
+    self.variables[&index].borrow_mut()
+  }
+
+  pub fn set_rename(&self, index: usize, rename: String) {
+    let mut var = self.var_mut_by_index(index);
+
     if var.rename.is_none() {
       var.rename = Some(rename);
     }
@@ -282,12 +367,28 @@ impl BundleVariable {
     self.var_mut_by_index(index).rename = Some(rename);
   }
 
-  pub fn rename(&self, index: usize) -> Option<&String> {
-    self.var_by_index(index).rename.as_ref()
+  pub fn rename(&self, index: usize) -> Option<Ref<String>> {
+    let v = self.var_or_root(index);
+
+    if v.rename.is_some() {
+      return Some(Ref::map(v, |item| item.rename.as_ref().unwrap()));
+    }
+
+    None
   }
 
   pub fn name(&self, index: usize) -> String {
     self.var_by_index(index).var.0.to_string()
+  }
+
+  pub fn render_name(&self, index: usize) -> String {
+    let var = self.var_or_root(index);
+
+    var
+      .rename
+      .as_ref()
+      .map(|r| r.clone())
+      .unwrap_or_else(|| var.var.0.to_string())
   }
 
   #[inline]
@@ -295,20 +396,13 @@ impl BundleVariable {
     self.name(index) == "default"
   }
 
-  pub fn render_name(&self, index: usize) -> String {
-    let var = self.var_by_index(index);
-    if let Some(rename) = var.rename.as_ref() {
-      return rename.clone();
-    }
-
-    var.var.0.to_string()
-  }
-
   pub fn set_var_uniq_rename_string(&mut self, index: usize, var_ident: String) {
     let var = self.var_by_index(index);
     if var.rename.is_some() {
       return;
     }
+
+    drop(var);
 
     let uniq_name = if self.uniq_name().contain(&var_ident) {
       self.uniq_name_mut().uniq_name(&var_ident)
@@ -339,7 +433,6 @@ impl BundleVariable {
     find_namespace: bool,
   ) -> Option<FindModuleExportResult> {
     let var_ident = self.name(index);
-
     if module_analyzers.is_external(source) {
       return Some(FindModuleExportResult::External(
         index,
@@ -354,7 +447,7 @@ impl BundleVariable {
       let reference_map = module_analyzer.export_names();
 
       if module_analyzer.resource_pot_id != resource_pot_id {
-        if find_namespace || module_analyzers.is_commonjs(source) || find_default {
+        if find_namespace || find_default || module_analyzers.is_commonjs(source) {
           let Some(res) = self.find_ident_by_index(
             index,
             source,
@@ -589,9 +682,8 @@ mod tests {
       false,
       false,
     )?;
-    let external_export =
-      bundle_variable.register_var(&b_module_id.to_string(), &"a".into(), false);
-    let local_variable = bundle_variable.register_var(&b_module_id.to_string(), &"b".into(), false);
+    let external_export = bundle_variable.register_var(&b_module_id, &"a".into(), false);
+    let local_variable = bundle_variable.register_var(&b_module_id, &"b".into(), false);
 
     b_module_analyzer.statements.push(Statement {
       id: 0,
@@ -699,11 +791,10 @@ mod tests {
       false,
     )?;
 
-    let bundle_export =
-      bundle_variable.register_var(&bundle_module_id.to_string(), &"bundleB".into(), false);
+    let bundle_export = bundle_variable.register_var(&bundle_module_id, &"bundleB".into(), false);
     let index_export_from =
-      bundle_variable.register_var(&index_module_id.to_string(), &"bundleB".into(), false);
-    let export_as = bundle_variable.register_var(&index_module_id.to_string(), &"b".into(), false);
+      bundle_variable.register_var(&index_module_id, &"bundleB".into(), false);
+    let export_as = bundle_variable.register_var(&index_module_id, &"b".into(), false);
 
     index_module_analyzer.statements.push(Statement {
       id: 0,

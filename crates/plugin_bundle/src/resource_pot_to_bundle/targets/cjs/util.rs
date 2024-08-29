@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use farmfe_core::{
   config::{external::ExternalConfig, Config, ModuleFormat},
   module::{module_graph::ModuleGraph, ModuleId},
@@ -10,7 +12,11 @@ use farmfe_toolkit::{
 };
 
 use crate::resource_pot_to_bundle::{
-  bundle::ModuleGlobalUniqName, uniq_name::BundleVariable, Polyfill, SimplePolyfill,
+  bundle::{bundle_reference::BundleReference, ModuleGlobalUniqName},
+  common::with_bundle_reference_slot_name,
+  modules_analyzer::module_analyzer::{ImportSpecifierInfo, ModuleAnalyzer},
+  uniq_name::BundleVariable,
+  Polyfill, SimplePolyfill,
 };
 
 enum ReplaceType {
@@ -58,6 +64,19 @@ pub struct CJSReplace<'a> {
   pub config: &'a Config,
   pub polyfill: &'a mut SimplePolyfill,
   pub external_config: &'a ExternalConfig,
+  pub bundle_reference: &'a mut BundleReference,
+  pub module_map: &'a HashMap<ModuleId, ModuleAnalyzer>,
+}
+
+impl<'a> CJSReplace<'a> {
+  fn is_same_bundle(&self, a: &ModuleId, b: &ModuleId) -> bool {
+    match (self.module_map.get(a), self.module_map.get(b)) {
+      (Some(a), Some(b)) => a.resource_pot_id == b.resource_pot_id,
+      // maybe external
+      (Some(_), None) | (None, Some(_)) => true,
+      _ => false,
+    }
+  }
 }
 
 impl<'a> VisitMut for CJSReplace<'a> {
@@ -78,15 +97,18 @@ impl<'a> VisitMut for CJSReplace<'a> {
         {
           let source = str.value.to_string();
 
-          if let Some(id) =
+          let reference_id =
             self
               .module_graph
-              .get_dep_by_source_optional(&self.module_id, &source, None)
-          {
-            if self.module_graph.module(&id).is_some_and(|m| m.external) {
-              if self.config.output.target_env.is_library()
-                && self.config.output.target_env.is_node()
-              {
+              .get_dep_by_source_optional(&self.module_id, &source, None);
+
+          if let Some(id) = reference_id {
+            let is_external = self.module_graph.module(&id).is_some_and(|m| m.external);
+            let is_library_node =
+              self.config.output.target_env.is_library() && self.config.output.target_env.is_node();
+
+            if is_external {
+              if is_library_node {
                 // node esm
                 if matches!(self.config.output.format, ModuleFormat::EsModule) {
                   self.polyfill.add(Polyfill::NodeEsmGlobalRequireHelper);
@@ -115,23 +137,61 @@ impl<'a> VisitMut for CJSReplace<'a> {
                 }];
                 call_expr.span = DUMMY_SP;
               }
-            } else if let Some(commonjs_name) = self.module_global_uniq_name.commonjs_name(&id) {
-              *call_expr = CallExpr {
-                span: DUMMY_SP,
-                callee: Callee::Expr(Box::new(Expr::Ident(
+            } else {
+              let is_same_bundle = self.is_same_bundle(&self.module_id, &id);
+              let commonjs_name = self.module_global_uniq_name.commonjs_name(&id);
+
+              // require('./moduleA') => moduleA_cjs()
+              if let Some(commonjs_name) = commonjs_name {
+                *call_expr = CallExpr {
+                  ctxt: SyntaxContext::empty(),
+                  span: DUMMY_SP,
+                  callee: Callee::Expr(Box::new(Expr::Ident(
+                    self
+                      .bundle_variable
+                      .render_name(commonjs_name)
+                      .as_str()
+                      .into(),
+                  ))),
+                  args: vec![],
+                  type_args: None,
+                };
+                replaced = ReplaceType::Call;
+
+                if !is_same_bundle {
                   self
-                    .bundle_variable
-                    .render_name(commonjs_name)
-                    .as_str()
-                    .into(),
-                ))),
-                args: vec![],
-                type_args: None,
-                ctxt: SyntaxContext::empty(),
-              };
-              replaced = ReplaceType::Call;
-            } else if let Some(ns) = self.module_global_uniq_name.namespace_name(&id) {
-              replaced = ReplaceType::Ident(ns);
+                    .bundle_reference
+                    .add_import(
+                      &ImportSpecifierInfo::Named {
+                        local: commonjs_name,
+                        imported: None,
+                      },
+                      id.clone().into(),
+                      &self.bundle_variable,
+                    )
+                    .unwrap();
+                }
+              } else if let Some(ns) = self.module_global_uniq_name.namespace_name(id) {
+                replaced = ReplaceType::Ident(ns);
+              }
+
+              // if let Some(commonjs_name) = self.module_global_uniq_name.commonjs_name(&id) {
+              //   *call_expr = CallExpr {
+              //     span: DUMMY_SP,
+              //     callee: Callee::Expr(Box::new(Expr::Ident(
+              //       self
+              //         .bundle_variable
+              //         .render_name(commonjs_name)
+              //         .as_str()
+              //         .into(),
+              //     ))),
+              //     args: vec![],
+              //     type_args: None,
+              //   };
+              //   replaced = ReplaceType::Call;
+              // } else if let Some(ns) = self.module_global_uniq_name.namespace_name(&id) {
+              //   replaced = ReplaceType::Ident(ns);
+              // }
             }
           }
           // TODO: other bundle

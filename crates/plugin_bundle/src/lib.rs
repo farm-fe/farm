@@ -7,16 +7,24 @@ use std::{
 };
 
 use farmfe_core::{
+  config::{config_regex::ConfigRegex, partial_bundling::PartialBundlingEnforceResourceConfig},
   enhanced_magic_string::bundle::Bundle,
+  module::{ModuleId, ModuleType},
   parking_lot::Mutex,
-  plugin::Plugin,
+  plugin::{Plugin, PluginLoadHookResult, PluginResolveHookResult},
   regex::Regex,
+  relative_path::RelativePath,
   resource::{
     resource_pot::{ResourcePotMetaData, ResourcePotType},
     ResourceType,
   },
+  swc_common::DUMMY_SP,
+  swc_ecma_ast::{ImportDecl, ImportPhase, ModuleDecl, ModuleItem},
 };
-use resource_pot_to_bundle::{Polyfill, SharedBundle, FARM_BUNDLE_REFERENCE_SLOT_PREFIX};
+use farmfe_toolkit::constant::RUNTIME_SUFFIX;
+use resource_pot_to_bundle::{
+  Polyfill, SharedBundle, FARM_BUNDLE_POLYFILL_SLOT, FARM_BUNDLE_REFERENCE_SLOT_PREFIX,
+};
 
 pub mod resource_pot_to_bundle;
 
@@ -44,6 +52,86 @@ impl Plugin for FarmPluginBundle {
     "farm-plugin-bundle"
   }
 
+  fn config(
+    &self,
+    config: &mut farmfe_core::config::Config,
+  ) -> farmfe_core::error::Result<Option<()>> {
+    config
+      .partial_bundling
+      .enforce_resources
+      .push(PartialBundlingEnforceResourceConfig {
+        name: "farm_runtime".to_string(),
+        test: vec![ConfigRegex::new(FARM_BUNDLE_POLYFILL_SLOT)],
+      });
+
+    Ok(None)
+  }
+
+  fn resolve(
+    &self,
+    param: &farmfe_core::plugin::PluginResolveHookParam,
+    _context: &Arc<farmfe_core::context::CompilationContext>,
+    _hook_context: &farmfe_core::plugin::PluginHookContext,
+  ) -> farmfe_core::error::Result<Option<farmfe_core::plugin::PluginResolveHookResult>> {
+    if param.source.starts_with(FARM_BUNDLE_POLYFILL_SLOT) {
+      return Ok(Some(PluginResolveHookResult {
+        resolved_path: FARM_BUNDLE_POLYFILL_SLOT.to_string(),
+        external: false,
+        side_effects: true,
+        query: vec![],
+        meta: Default::default(),
+      }));
+    }
+
+    Ok(None)
+  }
+
+  fn load(
+    &self,
+    _param: &farmfe_core::plugin::PluginLoadHookParam,
+    _context: &Arc<farmfe_core::context::CompilationContext>,
+    _hook_context: &farmfe_core::plugin::PluginHookContext,
+  ) -> farmfe_core::error::Result<Option<farmfe_core::plugin::PluginLoadHookResult>> {
+    if _param.resolved_path.starts_with(FARM_BUNDLE_POLYFILL_SLOT) {
+      return Ok(Some(PluginLoadHookResult {
+        content: format!("export {{}}"),
+        module_type: ModuleType::Js,
+        source_map: None,
+      }));
+    }
+
+    Ok(None)
+  }
+
+  fn process_module(
+    &self,
+    param: &mut farmfe_core::plugin::PluginProcessModuleHookParam,
+    context: &Arc<farmfe_core::context::CompilationContext>,
+  ) -> farmfe_core::error::Result<Option<()>> {
+    let module_graph = context.module_graph.read();
+
+    if module_graph.entries.contains_key(param.module_id)
+      && param.module_type.is_script()
+      && !param.module_id.to_string().ends_with(RUNTIME_SUFFIX)
+    {
+      let script = param.meta.as_script_mut();
+
+      script.ast.body.insert(
+        0,
+        ModuleItem::ModuleDecl(ModuleDecl::Import(ImportDecl {
+          span: DUMMY_SP,
+          specifiers: vec![],
+          src: Box::new(FARM_BUNDLE_POLYFILL_SLOT.into()),
+          type_only: false,
+          with: None,
+          phase: ImportPhase::Evaluation,
+        })),
+      );
+    }
+
+    Ok(None)
+  }
+
   fn process_resource_pots(
     &self,
     resource_pots: &mut Vec<&mut farmfe_core::resource::resource_pot::ResourcePot>,
@@ -66,33 +154,13 @@ impl Plugin for FarmPluginBundle {
       .collect::<Vec<_>>();
     let mut shared_bundle = SharedBundle::new(r, &module_graph, context)?;
 
-    let inject_resource_pot_id = resource_pots
-      .iter()
-      .find(|item| {
-        (context.config.output.target_env.is_library() && item.entry_module.is_some())
-          || matches!(item.resource_pot_type, ResourcePotType::Runtime)
-      })
-      .map(|i| i.id.clone());
-
-    if let Some(resource_pot_id) = inject_resource_pot_id {
-      let polyfill = &mut shared_bundle
-        .bundle_map
-        .get_mut(&resource_pot_id)
-        .unwrap()
-        .polyfill;
-
-      MODULE_NEED_POLYFILLS
-        .iter()
-        .for_each(|item| polyfill.add(item.clone()));
-    }
-
     shared_bundle.render()?;
 
     let mut defer_minify = vec![];
     for resource_pot in resource_pots.iter() {
       if matches!(resource_pot.resource_pot_type, ResourcePotType::Runtime)
         || (context.config.output.target_env.is_library()
-          && resource_pot.resource_pot_type == ResourcePotType::Js)
+          && matches!(resource_pot.resource_pot_type, ResourcePotType::Js))
       {
         let resource_pot_id = resource_pot.id.clone();
 
@@ -169,7 +237,9 @@ impl Plugin for FarmPluginBundle {
     }
     let mut map = HashMap::new();
     for (name, resource) in param.resources_map.iter() {
-      map.insert(resource.info.as_ref().unwrap().id.clone(), name.clone());
+      if let Some(ref info) = resource.info {
+        map.insert(info.id.clone(), name.clone());
+      }
     }
 
     for (name, resource) in param.resources_map.iter_mut() {
@@ -181,7 +251,8 @@ impl Plugin for FarmPluginBundle {
       }
       let before = std::time::Instant::now();
 
-      println!("\n\nresource name: {}", name);
+      let r = format!("/{}", name);
+      let relative_path = RelativePath::new(&r);
 
       let mut content = String::from_utf8_lossy(&resource.bytes).to_string();
 
@@ -214,7 +285,20 @@ impl Plugin for FarmPluginBundle {
           .get(resource_pot_id)
           .expect("cannot find bundle reference, please ensure your resource cornet");
 
-        content = content.replace(&item, resource_name);
+        let r1 = format!("/{}", resource_name);
+
+        let relative_resource_path = RelativePath::new(&r1);
+        content = content.replace(
+          &item,
+          &format!(
+            "./{}",
+            relative_path
+              .parent()
+              .map(|i| i.relative(relative_resource_path).to_string())
+              .unwrap()
+              .trim_start_matches("/")
+          ),
+        );
       }
 
       resource.bytes = content.into_bytes();

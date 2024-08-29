@@ -2,6 +2,7 @@ use std::{
   collections::{HashMap, HashSet},
   fmt::Debug,
   mem::{self, replace},
+  rc::Rc,
   sync::{Arc, Mutex, RwLock},
 };
 
@@ -42,7 +43,9 @@ use super::{
   polyfill::SimplePolyfill,
   targets::generate::generate_namespace_by_reference_map,
   uniq_name::BundleVariable,
+  FARM_BUNDLE_POLYFILL_SLOT,
 };
+
 pub struct ModuleAnalyzerManager<'a> {
   pub module_map: HashMap<ModuleId, ModuleAnalyzer>,
   pub namespace_modules: HashSet<ModuleId>,
@@ -73,7 +76,7 @@ pub struct ModuleAnalyzerManager<'a> {
   ///
   ///
   pub module_global_uniq_name: ModuleGlobalUniqName,
-  module_graph: &'a ModuleGraph,
+  pub module_graph: &'a ModuleGraph,
 }
 
 #[derive(Debug)]
@@ -126,6 +129,16 @@ impl ModuleGlobalUniqName {
       .and_then(|item| item.commonjs)
   }
 
+  pub fn namespace_name_result<R: Into<ReferenceKind> + Debug + Clone>(
+    &self,
+    module_id: R,
+  ) -> Result<usize> {
+    self.namespace_name(module_id.clone()).to_result(format!(
+      "not found module namespace name by {:?}",
+      module_id
+    ))
+  }
+
   pub fn commonjs_name_result<R: Into<ReferenceKind> + Debug + Clone>(
     &self,
     module_id: R,
@@ -139,9 +152,12 @@ impl ModuleGlobalUniqName {
     &self,
     module_id: R,
   ) -> Result<usize> {
-    self
-      .default_name(module_id.clone())
-      .to_result(format!("not found module default name by {:?}", module_id))
+    Ok(
+      self
+        .default_name(module_id.clone())
+        .expect(format!("not found module default name by {:?}", module_id).as_str()),
+    )
+    // .to_result(format!("not found module default name by {:?}", module_id))
   }
 
   fn entry_module<R: Into<ReferenceKind>>(&mut self, module_id: R) -> &mut ModuleGlobalName {
@@ -200,6 +216,12 @@ impl<'a> ModuleAnalyzerManager<'a> {
     }
   }
 
+  pub fn polyfill_resource_pot(&self) -> Option<ResourcePotId> {
+    self
+      .module_analyzer(&ModuleId::from(FARM_BUNDLE_POLYFILL_SLOT))
+      .and_then(|m| Some(m.resource_pot_id.clone()))
+  }
+
   pub fn extract_modules_statements(
     &mut self,
     modules: &Vec<&ModuleId>,
@@ -217,12 +239,18 @@ impl<'a> ModuleAnalyzerManager<'a> {
         .collect::<HashMap<ModuleId, Arc<RwLock<ModuleAnalyzer>>>>()
     };
 
+    let index = bundle_variable.index.clone();
+    let module_order_map = bundle_variable.module_order_map.clone();
+    let module_order_index_set = bundle_variable.module_order_index_set.clone();
+
     modules.into_par_iter().try_for_each(|module_id| {
       let mut module_analyzer = module_map
         .get(module_id)
         .map(|item| item.write().unwrap())
         .unwrap();
-      let mut new_bundle_variable = bundle_variable.branch();
+      let mut new_bundle_variable =
+        BundleVariable::branch(&index, &module_order_map, &module_order_index_set);
+
       new_bundle_variable.set_namespace(module_analyzer.resource_pot_id.clone());
       farm_profile_scope!(format!(
         "extract module statement: {:?}",
@@ -307,6 +335,11 @@ impl<'a> ModuleAnalyzerManager<'a> {
   }
 
   #[inline]
+  pub fn resource_pot_id(&self, module_id: &ModuleId) -> Option<&ResourcePotId> {
+    self.module_map.get(module_id).map(|m| &m.resource_pot_id)
+  }
+
+  #[inline]
   pub fn module_analyzer_unchecked(&self, module_id: &ModuleId) -> &ModuleAnalyzer {
     &self.module_map[module_id]
   }
@@ -360,6 +393,12 @@ impl<'a> ModuleAnalyzerManager<'a> {
       (Some(a), Some(b)) => a.resource_pot_id == b.resource_pot_id,
       _ => false,
     }
+  }
+
+  pub fn is_same_bundle_by_bundle(&self, source: &ModuleId, name: &str) -> bool {
+    self
+      .module_analyzer(source)
+      .is_some_and(|m| m.resource_pot_id == name)
   }
 
   #[inline]
@@ -427,6 +466,8 @@ impl<'a> ModuleAnalyzerManager<'a> {
             ExportSpecifierInfo::Named(export) => {
               let export_map = self.build_export_names(source, bundle_variable);
               if let Some(i) = export_map.query(export.export_from(), bundle_variable) {
+                // bundle_variable.set_var_root(export.export_as(), i);
+
                 map.add_local(&ExportSpecifierInfo::Named(
                   (i, Some(export.export_as())).into(),
                 ))
@@ -470,7 +511,6 @@ impl<'a> ModuleAnalyzerManager<'a> {
     &mut self,
     module_id: &ModuleId,
     context: &Arc<CompilationContext>,
-    module_graph: &ModuleGraph,
     bundle_variable: &mut BundleVariable,
     bundle_reference: &mut BundleReference,
     commonjs_import_executed: &mut HashSet<ModuleId>,
@@ -489,7 +529,6 @@ impl<'a> ModuleAnalyzerManager<'a> {
       module_id,
       context,
       bundle_variable,
-      module_graph,
       namespace,
       bundle_reference,
       commonjs_import_executed,
@@ -670,7 +709,6 @@ impl<'a> ModuleAnalyzerManager<'a> {
     module_id: &ModuleId,
     context: &Arc<CompilationContext>,
     bundle_variable: &mut BundleVariable,
-    module_graph: &ModuleGraph,
     namespace: Option<usize>,
     bundle_reference: &mut BundleReference,
     commonjs_import_executed: &mut HashSet<ModuleId>,
@@ -709,10 +747,9 @@ impl<'a> ModuleAnalyzerManager<'a> {
         .unwrap();
 
       // 3. process hybrid module or commonjs
-      CjsPatch::patch_cjs_module(
+      CjsPatch::transform_hybrid_or_commonjs_to_esm(
         self,
         module_id,
-        module_graph,
         context,
         &mut patch_asts,
         bundle_variable,
@@ -725,6 +762,7 @@ impl<'a> ModuleAnalyzerManager<'a> {
       // 3. rename
       {
         let module_analyzer = self.module_analyzer_mut_unchecked(module_id);
+        let mark = module_analyzer.mark.clone();
         let mut ast = module_analyzer.ast.take();
 
         let rename_map = module_analyzer.build_rename_map(bundle_variable);
@@ -736,16 +774,18 @@ impl<'a> ModuleAnalyzerManager<'a> {
           ModuleSystem::CommonJs | ModuleSystem::Hybrid
         ) {
           CjsPatch::replace_cjs_require(
-            module_analyzer.mark,
+            mark,
             &mut ast,
             module_id,
-            module_graph,
-            &self.module_global_uniq_name,
             bundle_variable,
             &context.config,
             polyfill,
             external_config,
-          )
+            bundle_reference,
+            &self.module_graph,
+            &self.module_global_uniq_name,
+            &self.module_map,
+          );
         }
 
         ast.body = mem::take(&mut ast.body)
@@ -762,7 +802,7 @@ impl<'a> ModuleAnalyzerManager<'a> {
           bundle_variable,
         ));
 
-        ast.visit_mut_with(&mut RenameIdent::new(rename_map));
+        ast.visit_mut_with(&mut RenameIdent::new(rename_map, &bundle_variable));
 
         self.set_ast(module_id, ast);
       }
@@ -812,7 +852,7 @@ impl<'a> ModuleAnalyzerManager<'a> {
       // in this time, it import by cjs require
       if self.namespace_modules.contains(&module_analyzer.module_id)
         || self.is_external(&module_analyzer.module_id)
-        || self.module_graph.is_dynamic(module_id)
+        || module_analyzer.is_dynamic
       {
         self
           .module_global_uniq_name
@@ -876,13 +916,12 @@ impl<'a> ModuleAnalyzerManager<'a> {
           for specify in &s.specifiers {
             match specify {
               ExportSpecifierInfo::Default(n) => {
-                if bundle_variable.name(*n) == "default" {
-                  self
-                    .module_global_uniq_name
-                    .add_default(&module_analyzer.module_id, |s| {
-                      bundle_variable.register_used_name_by_module_id(&module_analyzer.module_id, s, root)
-                    });
-                }
+                // TODO: only add default when it is export default expression e.g: export default 1 + 1
+                self
+                  .module_global_uniq_name
+                  .add_default(&module_analyzer.module_id, |s| {
+                    bundle_variable.register_used_name_by_module_id(&module_analyzer.module_id, s, root)
+                  });
               }
 
               ExportSpecifierInfo::Namespace(_) |
@@ -1016,9 +1055,9 @@ mod tests {
     // moduleC.js a1 -> a2
     // moduleD.js a2
     let module_index_foo_export_origin =
-      bundle_variables.register_var(&module_index_id.to_string(), &Ident::from("foo"), false);
+      bundle_variables.register_var(&module_index_id, &Ident::from("foo"), false);
     let module_index_bar_export_as =
-      bundle_variables.register_var(&module_index_id.to_string(), &Ident::from("bar"), false);
+      bundle_variables.register_var(&module_index_id, &Ident::from("bar"), false);
 
     module_analyzer_index.statements.push(Statement {
       id: 0,
@@ -1035,7 +1074,7 @@ mod tests {
     });
 
     let module_a_foo_export_origin =
-      bundle_variables.register_var(&module_a_id.to_string(), &Ident::from("foo"), false);
+      bundle_variables.register_var(&module_a_id, &Ident::from("foo"), false);
     module_analyzer_a.statements.push(Statement {
       id: 0,
       import: None,
@@ -1051,9 +1090,9 @@ mod tests {
     });
 
     let module_b_a1_export_origin =
-      bundle_variables.register_var(&module_b_id.to_string(), &Ident::from("a1"), false);
+      bundle_variables.register_var(&module_b_id, &Ident::from("a1"), false);
     let module_b_foo_export_as =
-      bundle_variables.register_var(&module_b_id.to_string(), &Ident::from("foo"), false);
+      bundle_variables.register_var(&module_b_id, &Ident::from("foo"), false);
     module_analyzer_b.statements.push(Statement {
       id: 0,
       import: None,
@@ -1069,11 +1108,11 @@ mod tests {
     });
 
     let module_c_a2_export_origin =
-      bundle_variables.register_var(&module_c_id.to_string(), &Ident::from("a2"), false);
+      bundle_variables.register_var(&module_c_id, &Ident::from("a2"), false);
     let module_c_a1_export_as =
-      bundle_variables.register_var(&module_c_id.to_string(), &Ident::from("a1"), false);
+      bundle_variables.register_var(&module_c_id, &Ident::from("a1"), false);
     let module_c_d3_export_namespace =
-      bundle_variables.register_var(&module_c_id.to_string(), &Ident::from("d3"), false);
+      bundle_variables.register_var(&module_c_id, &Ident::from("d3"), false);
 
     module_analyzer_c.statements.push(Statement {
       id: 0,
@@ -1093,7 +1132,7 @@ mod tests {
     });
 
     let module_d_a2_export_origin =
-      bundle_variables.register_var(&module_d_id.to_string(), &Ident::from("a2"), false);
+      bundle_variables.register_var(&module_d_id, &Ident::from("a2"), false);
     module_analyzer_d.statements.push(Statement {
       id: 0,
       import: None,

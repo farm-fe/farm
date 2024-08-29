@@ -1,6 +1,8 @@
 use std::{
+  cell::Ref,
   collections::{HashMap, HashSet},
   fmt::Debug,
+  hash::Hash,
   path::PathBuf,
   sync::Arc,
 };
@@ -237,7 +239,7 @@ pub struct ModuleAnalyzer {
   pub export_names: Option<Arc<ReferenceMap>>,
   pub entry: bool,
   pub external: bool,
-  pub dynamic: bool,
+  pub is_dynamic: bool,
   pub is_runtime: bool,
   pub cjs_module_analyzer: CjsModuleAnalyzer,
   pub mark: (Mark, Mark),
@@ -257,7 +259,7 @@ impl Debug for ModuleAnalyzer {
       .field("export_names", &self.export_names)
       .field("entry", &self.entry)
       .field("external", &self.external)
-      .field("dynamic", &self.dynamic)
+      .field("dynamic", &self.is_dynamic)
       .field("is_runtime", &self.is_runtime)
       .field("cjs_module_analyzer", &"[skip]")
       .field("mark", &self.mark)
@@ -298,7 +300,7 @@ impl ModuleAnalyzer {
       resource_pot_id,
       external: module.external,
       entry: is_entry,
-      dynamic: is_dynamic,
+      is_dynamic,
       is_runtime,
       cjs_module_analyzer: CjsModuleAnalyzer::new(),
       mark: mark.unwrap(),
@@ -352,9 +354,7 @@ impl ModuleAnalyzer {
           &self.module_id,
           module_graph,
           self.mark.1,
-          &mut |ident, strict| {
-            bundle_variable.register_var(&self.module_id.to_string(), ident, strict)
-          },
+          &mut |ident, strict| bundle_variable.register_var(&self.module_id, ident, strict),
         )
         .unwrap();
 
@@ -411,7 +411,7 @@ impl ModuleAnalyzer {
   pub fn build_rename_map<'a>(
     &self,
     bundle_variable: &'a BundleVariable,
-  ) -> HashMap<&'a Id, &'a Var> {
+  ) -> HashMap<VarRefKey<'a>, usize> {
     self
       .statements
       .iter()
@@ -465,8 +465,33 @@ impl ModuleAnalyzer {
           )
           .map(|item| bundle_variable.var_by_index(item))
           .filter(|item| item.rename.is_some())
-          .map(|item| (&item.var, item))
+          .map(|item| (Ref::map(Ref::clone(&item), |item| &item.var).into(), item.index))
       })
       .collect::<HashMap<_, _>>()
+  }
+}
+
+#[derive(Debug)]
+pub struct VarRefKey<'a> {
+  inner: Ref<'a, Id>,
+}
+
+impl<'a> PartialEq for VarRefKey<'a> {
+  fn eq(&self, other: &Self) -> bool {
+    *self.inner == *other.inner
+  }
+}
+
+impl<'a> Eq for VarRefKey<'a> {}
+
+impl<'a> Hash for VarRefKey<'a> {
+  fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+    self.inner.hash(state);
+  }
+}
+
+impl<'a> From<Ref<'a, Id>> for VarRefKey<'a> {
+  fn from(value: Ref<'a, Id>) -> Self {
+    Self { inner: value }
   }
 }
