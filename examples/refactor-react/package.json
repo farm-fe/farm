@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "dev": "farm",
-    "start": "farm start",
+    "start": "farm start --debug",
     "build": "farm build",
     "preview": "farm preview",
     "clean": "farm clean"

@@ -187,6 +187,8 @@ export async function watch(
   if (lazyEnabled) {
     devServer = new Server({
       logger,
+      // TODO type error
+      // @ts-ignore
       compiler: fileWatcher.serverOrCompiler as Compiler
     });
     await devServer.createServer(resolvedUserConfig.server);
@@ -461,7 +463,7 @@ export async function createFileWatcher2(
     { ...resolvedUserConfig, configFilePath },
     logger
   );
-  devServer.watcher = fileWatcher;
+  // devServer.watcher = fileWatcher;
   await fileWatcher.watch();
 
   fileWatcher.watchConfigs(async (files: string[]) => {
@@ -515,26 +517,14 @@ export async function start2(
     );
 
     const server = new NewServer(resolvedUserConfig, logger);
+
     await server.createServer();
 
-    const compiler = await createCompiler(resolvedUserConfig, logger);
-    server.setCompiler(compiler);
-    await server.listen();
-
-    await createFileWatcher2(server, resolvedUserConfig, logger);
-
-    // call configureDevServer hook after both server and watcher are ready
     resolvedUserConfig.jsPlugins.forEach((plugin: JsPlugin) =>
       // @ts-ignore
       plugin.configureDevServer?.(server)
     );
-    // const devServer = await createDevServer(
-    //   compiler,
-    //   resolvedUserConfig,
-    //   logger
-    // );
-
-    // await devServer.listen();
+    server.listen();
   } catch (error) {
     logger.error('Failed to start the server', { exit: true, error });
   }

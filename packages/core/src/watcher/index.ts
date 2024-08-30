@@ -1,34 +1,46 @@
+import EventEmitter from 'node:events';
 import { existsSync } from 'node:fs';
 import { createRequire } from 'node:module';
-import { FSWatcher } from 'chokidar';
+import path from 'node:path';
+import chokidar from 'chokidar';
+import type { FSWatcher, WatchOptions } from 'chokidar';
+import glob from 'fast-glob';
 import { Compiler } from '../compiler/index.js';
 import type { ResolvedUserConfig } from '../config/index.js';
 // import { Server } from '../server/index.js';
 import { NewServer } from '../newServer/index.js';
 import type { JsUpdateResult } from '../types/binding.js';
-import { Logger, compilerHandler } from '../utils/index.js';
+import { createDebugger } from '../utils/debug.js';
+import {
+  Logger,
+  arraify,
+  compilerHandler,
+  getCacheDir
+} from '../utils/index.js';
 import { createWatcher } from './create-watcher.js';
 
 interface ImplFileWatcher {
   watch(): Promise<void>;
 }
 
-export class FileWatcher implements ImplFileWatcher {
-  private _root: string;
-  private _watcher: FSWatcher;
-  private _close = false;
-  private _watchedFiles = new Set<string>();
+export const debugWatcher = createDebugger('farm:watcher');
+
+// TODO remove FileWatcher
+export default class Watcher implements ImplFileWatcher {
+  private watchedFiles = new Set<string>();
+  resolvedWatchOptions: WatchOptions;
+  watcher: FSWatcher;
 
   constructor(
-    public serverOrCompiler: NewServer | Compiler,
-    public options: ResolvedUserConfig,
-    private _logger: Logger
+    public compiler: NewServer | Compiler,
+    public config: ResolvedUserConfig,
+    private logger: Logger = new Logger()
   ) {
-    this._root = options.root;
+    this.resolveChokidarOptions();
   }
 
   getInternalWatcher() {
-    return this._watcher;
+    return this.watcher;
   }
 
   filterWatchFile(file: string, root: string): boolean {
@@ -43,16 +55,16 @@ export class FileWatcher implements ImplFileWatcher {
   getExtraWatchedFiles() {
     const compiler = this.getCompiler();
     return [
-      ...compiler.resolvedModulePaths(this._root),
+      ...compiler.resolvedModulePaths(this.config.root),
       ...compiler.resolvedWatchPaths()
-    ].filter((file) => this.filterWatchFile(file, this._root));
+    ].filter((file) => this.filterWatchFile(file, this.config.root));
   }
 
   watchExtraFiles() {
     this.getExtraWatchedFiles().forEach((file) => {
-      if (!this._watchedFiles.has(file)) {
-        this._watcher.add(file);
-        this._watchedFiles.add(file);
+      if (!this.watchedFiles.has(file)) {
+        this.watcher.add(file);
+        this.watchedFiles.add(file);
       }
     });
   }
@@ -61,19 +73,16 @@ export class FileWatcher implements ImplFileWatcher {
     const compiler = this.getCompiler();
 
     const handlePathChange = async (path: string) => {
-      if (this._close) return;
+      if (this.close) return;
 
       try {
-        if (
-          this.serverOrCompiler instanceof NewServer &&
-          this.serverOrCompiler.getCompiler()
-        ) {
-          await this.serverOrCompiler.hmrEngine.hmrUpdate(path);
+        if (this.compiler instanceof NewServer && this.compiler.getCompiler()) {
+          await this.compiler.hmrEngine.hmrUpdate(path);
         }
 
         if (
-          this.serverOrCompiler instanceof Compiler &&
-          this.serverOrCompiler.hasModule(path)
+          this.compiler instanceof Compiler &&
+          this.compiler.hasModule(path)
         ) {
           await compilerHandler(
             async () => {
@@ -81,27 +90,27 @@ export class FileWatcher implements ImplFileWatcher {
               this.handleUpdateFinish(result, compiler);
               compiler.writeResourcesToDisk();
             },
-            this.options,
-            this._logger,
+            this.config,
+            this.logger,
             { clear: true }
           );
         }
       } catch (error) {
-        this._logger.error(error);
+        this.logger.error(error);
       }
     };
 
-    const filesToWatch = [this.options.root, ...this.getExtraWatchedFiles()];
-    this._watchedFiles = new Set(filesToWatch);
-    this._watcher ??= createWatcher(this.options, filesToWatch);
+    const filesToWatch = [this.config.root, ...this.getExtraWatchedFiles()];
+    this.watchedFiles = new Set(filesToWatch);
+    this.watcher ??= createWatcher(this.config, filesToWatch);
 
-    this._watcher.on('change', (path) => {
-      if (this._close) return;
+    this.watcher.on('change', (path) => {
+      if (this.close) return;
       handlePathChange(path);
     });
 
-    if (this.serverOrCompiler instanceof NewServer) {
-      this.serverOrCompiler.hmrEngine?.onUpdateFinish((result) =>
+    if (this.compiler instanceof NewServer) {
+      this.compiler.hmrEngine?.onUpdateFinish((result) =>
         this.handleUpdateFinish(result, compiler)
       );
     }
@@ -109,9 +118,9 @@ export class FileWatcher implements ImplFileWatcher {
 
   async watchConfigs(callback: (files: string[]) => void) {
     const filesToWatch = Array.from([
-      ...(this.options.envFiles ?? []),
-      ...(this.options.configFileDependencies ?? []),
-      ...(this.options.configFilePath ? [this.options.configFilePath] : [])
+      ...(this.config.envFiles ?? []),
+      ...(this.config.configFileDependencies ?? []),
+      ...(this.config.configFilePath ? [this.config.configFilePath] : [])
     ]).filter((file) => file && existsSync(file));
     const chokidarOptions = {
       awaitWriteFinish:
@@ -122,14 +131,10 @@ export class FileWatcher implements ImplFileWatcher {
               pollInterval: 80
             }
     };
-    this._watcher ??= createWatcher(
-      this.options,
-      filesToWatch,
-      chokidarOptions
-    );
+    this.watcher ??= createWatcher(this.config, filesToWatch, chokidarOptions);
 
-    this._watcher.on('change', (path) => {
-      if (this._close) return;
+    this.watcher.on('change', (path) => {
+      if (this.close) return;
       if (filesToWatch.includes(path)) {
         callback([path]);
       }
@@ -142,35 +147,311 @@ export class FileWatcher implements ImplFileWatcher {
       ...updateResult.added,
       ...updateResult.extraWatchResult.add
     ].map((addedModule) =>
-      compiler.transformModulePath(this._root, addedModule)
+      compiler.transformModulePath(this.config.root, addedModule)
     );
 
     const filteredAdded = addedFiles.filter((file) =>
-      this.filterWatchFile(file, this._root)
+      this.filterWatchFile(file, this.config.root)
     );
 
     if (filteredAdded.length > 0) {
-      this._watcher.add(filteredAdded);
+      this.watcher.add(filteredAdded);
     }
   }
 
-  private getCompiler(): Compiler {
-    return this.serverOrCompiler instanceof NewServer
-      ? this.serverOrCompiler.getCompiler()
-      : this.serverOrCompiler;
+  createWatcher() {
+    // TODO error here
+    // @ts-ignore
+    const enabledWatcher = this.config.watch !== null;
+    const files = [this.config.root, ...this.getExtraWatchedFiles()];
+    this.watcher = enabledWatcher
+      ? (chokidar.watch(files, this.resolvedWatchOptions) as FSWatcher)
+      : new NoopWatcher(this.resolvedWatchOptions);
+  }
+
+  resolveChokidarOptions() {
+    // TODO use config.cacheDir
+    const cacheDir = getCacheDir(
+      this.config.root,
+      this.config.compilation.persistentCache
+    );
+
+    // TODO error here
+    // @ts-ignore
+    const userWatchOptions = this.config.server.watch;
+    const { ignored: ignoredList, ...otherOptions } = userWatchOptions ?? {};
+    const ignored: WatchOptions['ignored'] = [
+      '**/.git/**',
+      // TODO node_modules 这块的处理逻辑 以及是否会影响性能
+      '**/node_modules/**',
+      '**/test-results/**', // Playwright
+      glob.escapePath(
+        path.resolve(this.config.root, this.config.compilation.output.path)
+      ) + '/**',
+      glob.escapePath(cacheDir) + '/**',
+      ...arraify(ignoredList || [])
+    ];
+
+    this.resolvedWatchOptions = {
+      ignored,
+      ignoreInitial: true,
+      ignorePermissionErrors: true,
+      awaitWriteFinish:
+        process.platform === 'linux'
+          ? undefined
+          : {
+              stabilityThreshold: 10,
+              pollInterval: 10
+            },
+      ...otherOptions
+    };
+  }
+
+  getCompiler(): Compiler {
+    //@ts-ignore
+    return this.compiler;
+  }
+
+  setCompiler(compiler: Compiler) {
+    this.compiler = compiler;
   }
 
   async close() {
-    if (this._watcher) {
-      this._close = true;
-      await this._watcher.close();
-      this._watcher = null;
+    if (this.watcher) {
+      // this.close = true;
+      debugWatcher?.('close watcher');
+      await this.watcher.close();
+      this.watcher = null;
     }
-    this.serverOrCompiler = null;
+    this.compiler = null;
   }
 }
 
-export function clearModuleCache(modulePath: string) {
-  const _require = createRequire(import.meta.url);
-  delete _require.cache[_require.resolve(modulePath)];
+export class FileWatcher implements ImplFileWatcher {
+  private watcher: FSWatcher;
+  private watchedFiles = new Set<string>();
+  resolvedWatchOptions: WatchOptions;
+  constructor(
+    public compiler: NewServer | Compiler,
+    public config: ResolvedUserConfig,
+    private logger: Logger = new Logger()
+  ) {
+    this.resolveChokidarOptions();
+  }
+
+  getInternalWatcher() {
+    return this.watcher;
+  }
+
+  filterWatchFile(file: string, root: string): boolean {
+    const separator = process.platform === 'win32' ? '\\' : '/';
+    return (
+      !file.startsWith(`${root}${separator}`) &&
+      !file.includes('\0') &&
+      existsSync(file)
+    );
+  }
+
+  getExtraWatchedFiles() {
+    const compiler = this.getCompiler();
+    return [
+      ...compiler.resolvedModulePaths(this.config.root),
+      ...compiler.resolvedWatchPaths()
+    ].filter((file) => this.filterWatchFile(file, this.config.root));
+  }
+
+  watchExtraFiles() {
+    this.getExtraWatchedFiles().forEach((file) => {
+      if (!this.watchedFiles.has(file)) {
+        this.watcher.add(file);
+        this.watchedFiles.add(file);
+      }
+    });
+  }
+
+  async watch() {
+    const compiler = this.getCompiler();
+
+    const handlePathChange = async (path: string) => {
+      if (this.close) return;
+
+      try {
+        if (this.compiler instanceof NewServer && this.compiler.getCompiler()) {
+          await this.compiler.hmrEngine.hmrUpdate(path);
+        }
+
+        if (
+          this.compiler instanceof Compiler &&
+          this.compiler.hasModule(path)
+        ) {
+          await compilerHandler(
+            async () => {
+              const result = await compiler.update([path], true);
+              this.handleUpdateFinish(result, compiler);
+              compiler.writeResourcesToDisk();
+            },
+            this.config,
+            this.logger,
+            { clear: true }
+          );
+        }
+      } catch (error) {
+        this.logger.error(error);
+      }
+    };
+
+    const filesToWatch = [this.config.root, ...this.getExtraWatchedFiles()];
+    this.watchedFiles = new Set(filesToWatch);
+    this.watcher ??= createWatcher(this.config, filesToWatch);
+
+    this.watcher.on('change', (path) => {
+      if (this.close) return;
+      handlePathChange(path);
+    });
+
+    if (this.compiler instanceof NewServer) {
+      this.compiler.hmrEngine?.onUpdateFinish((result) =>
+        this.handleUpdateFinish(result, compiler)
+      );
+    }
+  }
+
+  async watchConfigs(callback: (files: string[]) => void) {
+    const filesToWatch = Array.from([
+      ...(this.config.envFiles ?? []),
+      ...(this.config.configFileDependencies ?? []),
+      ...(this.config.configFilePath ? [this.config.configFilePath] : [])
+    ]).filter((file) => file && existsSync(file));
+    const chokidarOptions = {
+      awaitWriteFinish:
+        process.platform === 'linux'
+          ? undefined
+          : {
+              stabilityThreshold: 10,
+              pollInterval: 80
+            }
+    };
+    this.watcher ??= createWatcher(this.config, filesToWatch, chokidarOptions);
+
+    this.watcher.on('change', (path) => {
+      if (this.close) return;
+      if (filesToWatch.includes(path)) {
+        callback([path]);
+      }
+    });
+    return this;
+  }
+
+  private handleUpdateFinish(updateResult: JsUpdateResult, compiler: Compiler) {
+    const addedFiles = [
+      ...updateResult.added,
+      ...updateResult.extraWatchResult.add
+    ].map((addedModule) =>
+      compiler.transformModulePath(this.config.root, addedModule)
+    );
+
+    const filteredAdded = addedFiles.filter((file) =>
+      this.filterWatchFile(file, this.config.root)
+    );
+
+    if (filteredAdded.length > 0) {
+      this.watcher.add(filteredAdded);
+    }
+  }
+
+  createWatcher() {
+    // TODO error here
+    // @ts-ignore
+    const enabledWatcher = this.config.watch !== null;
+    const files = [this.config.root, ...this.getExtraWatchedFiles()];
+    this.watcher = enabledWatcher
+      ? (chokidar.watch(files, this.resolvedWatchOptions) as FSWatcher)
+      : new NoopWatcher(this.resolvedWatchOptions);
+  }
+
+  resolveChokidarOptions() {
+    // TODO use config.cacheDir
+    const cacheDir = getCacheDir(
+      this.config.root,
+      this.config.compilation.persistentCache
+    );
+
+    // TODO error here
+    // @ts-ignore
+    const userWatchOptions = this.config.server.watch;
+    const { ignored: ignoredList, ...otherOptions } = userWatchOptions ?? {};
+    const ignored: WatchOptions['ignored'] = [
+      '**/.git/**',
+      // TODO node_modules 这块的处理逻辑 以及是否会影响性能
+      '**/node_modules/**',
+      '**/test-results/**', // Playwright
+      glob.escapePath(
+        path.resolve(this.config.root, this.config.compilation.output.path)
+      ) + '/**',
+      glob.escapePath(cacheDir) + '/**',
+      ...arraify(ignoredList || [])
+    ];
+
+    this.resolvedWatchOptions = {
+      ignored,
+      ignoreInitial: true,
+      ignorePermissionErrors: true,
+      awaitWriteFinish:
+        process.platform === 'linux'
+          ? undefined
+          : {
+              stabilityThreshold: 10,
+              pollInterval: 10
+            },
+      ...otherOptions
+    };
+  }
+
+  getCompiler(): Compiler {
+    //@ts-ignore
+    return this.compiler;
+  }
+
+  setCompiler(compiler: Compiler) {
+    this.compiler = compiler;
+  }
+
+  async close() {
+    if (this.watcher) {
+      // this.close = true;
+      await this.watcher.close();
+      this.watcher = null;
+    }
+    this.compiler = null;
+  }
+}
+
+class NoopWatcher extends EventEmitter implements FSWatcher {
+  constructor(public options: WatchOptions) {
+    super();
+  }
+
+  add() {
+    return this;
+  }
+
+  unwatch() {
+    return this;
+  }
+
+  getWatched() {
+    return {};
+  }
+
+  ref() {
+    return this;
+  }
+
+  unref() {
+    return this;
+  }
+
+  async close() {
+    // noop
+  }
 }

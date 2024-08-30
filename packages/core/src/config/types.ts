@@ -126,6 +126,8 @@ export interface ResolvedCompilation
 }
 
 export interface ResolvedUserConfig extends UserConfig {
+  // watch?: boolean;
+  // root?: string;
   env?: Record<string, any>;
   envDir?: string;
   envFiles?: string[];

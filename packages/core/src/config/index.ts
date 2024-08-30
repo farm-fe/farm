@@ -177,6 +177,10 @@ export async function resolveConfig(
     logger
   );
 
+  // TODO start watch options with browser and lib
+  // @ts-ignore
+  resolvedUserConfig.watch = true;
+
   // normalize server config first cause it may be used in normalizeUserCompilationFnConfig
   resolvedUserConfig.server = normalizeDevServerConfig(
     resolvedUserConfig.server,

@@ -4,8 +4,8 @@ import connect from 'connect';
 import corsMiddleware from 'cors';
 
 import { Compiler } from '../compiler/index.js';
-import { createCompiler } from '../index.js';
-import { FileWatcher } from '../watcher/index.js';
+import { colors, createCompiler } from '../index.js';
+import Watcher, { FileWatcher } from '../watcher/index.js';
 import { HmrEngine } from './hmr-engine.js';
 import { CommonServerOptions, httpServer } from './http.js';
 import { openBrowser } from './open.js';
@@ -32,13 +32,15 @@ import {
 import type * as http from 'node:http';
 import type { ServerOptions as HttpsServerOptions, Server } from 'node:http';
 import type { Http2SecureServer } from 'node:http2';
+import type * as net from 'node:net';
 import type { HMRChannel } from './hmr.js';
 
-import { normalizePublicPath } from '../config/normalize-config/normalize-output.js';
 import type {
   NormalizedServerConfig,
   ResolvedUserConfig
 } from '../config/types.js';
+import { JsUpdateResult } from '../types/binding.js';
+import { createDebugger } from '../utils/debug.js';
 
 export type HttpServer = Server | Http2SecureServer;
 
@@ -89,6 +91,8 @@ export interface ServerOptions extends CommonServerOptions {
   origin?: string;
 }
 
+export const debugServer = createDebugger('farm:server');
+
 export function noop() {
   // noop
 }
@@ -104,10 +108,11 @@ export class NewServer extends httpServer {
   publicPath?: string;
   publicFiles?: Set<string>;
   httpServer: HttpServer;
-  watcher: FileWatcher;
+  watcher: Watcher;
   hmrEngine?: HmrEngine;
   middlewares: connect.Server;
   compiler: CompilerType;
+  root: string;
   constructor(
     readonly resolvedUserConfig: ResolvedUserConfig,
     logger: Logger
@@ -167,6 +172,55 @@ export class NewServer extends httpServer {
   }
 
   /**
+   *
+   */
+  async #startWatcher() {
+    this.watcher = new Watcher(this.compiler, this.resolvedUserConfig);
+    this.watcher.createWatcher();
+    this.watcher.watcher.on('change', async (file) => {
+      const isConfigFile = this.resolvedUserConfig.configFilePath === file;
+      const isConfigDependencyFile =
+        this.resolvedUserConfig.configFileDependencies.some(
+          (name) => file === name
+        );
+      const isEnvFile = this.resolvedUserConfig.envFiles.some(
+        (name) => file === name
+      );
+      if (isConfigFile || isConfigDependencyFile || isEnvFile) {
+        debugServer?.(`[config change] ${colors.dim(file)}`);
+        this.close();
+      }
+      // TODO 做一个 onHmrUpdate 方法
+      try {
+        this.hmrEngine.hmrUpdate(file);
+      } catch (error) {
+        this.logger.error(error);
+      }
+    });
+    const handleUpdateFinish = (updateResult: JsUpdateResult) => {
+      const added = [
+        ...updateResult.added,
+        ...updateResult.extraWatchResult.add
+      ].map((addedModule) => {
+        const resolvedPath = this.compiler.transformModulePath(
+          this.root,
+          addedModule
+        );
+        return resolvedPath;
+      });
+      const filteredAdded = added.filter((file) =>
+        this.watcher.filterWatchFile(file, this.root)
+      );
+
+      if (filteredAdded.length > 0) {
+        this.watcher.watcher.add(filteredAdded);
+      }
+    };
+
+    this.hmrEngine?.onUpdateFinish(handleUpdateFinish);
+  }
+
+  /**
    * Creates and initializes the WebSocket server.
    * @throws {Error} If the HTTP server is not created.
    */
@@ -215,15 +269,18 @@ export class NewServer extends httpServer {
         host: hostname.host
       });
 
-      // 这块要重新设计 restart 还有 端口冲突的问题
+      // TODO 这块要重新设计 restart 还有 端口冲突的问题
       // this.resolvedUserConfig
       this.resolvedUserConfig.compilation.define.FARM_HMR_PORT =
         serverPort.toString();
 
       this.compiler = await createCompiler(this.resolvedUserConfig, logger);
 
+      // start watcher
+      this.#startWatcher();
+
       // compile the project and start the dev server
-      await this.#startCompilation();
+      await this.#startCompile();
 
       // watch extra files after compile
       this.watcher?.watchExtraFiles?.();
@@ -322,6 +379,8 @@ export class NewServer extends httpServer {
     this.publicDir = compilation.assets.publicDir;
 
     this.serverOptions = server as CommonServerOptions & NormalizedServerConfig;
+
+    this.root = compilation.root;
   }
 
   /**
@@ -360,7 +419,7 @@ export class NewServer extends httpServer {
       this.middlewares.use(lazyCompilationMiddleware(this));
     }
 
-    if (this.resolvedUserConfig.vitePlugins.length) {
+    if (this.resolvedUserConfig.vitePlugins?.length) {
       this.middlewares.use(adaptorViteMiddleware(this));
     }
 
@@ -404,11 +463,11 @@ export class NewServer extends httpServer {
    * Starts the compilation process.
    * @private
    */
-  async #startCompilation() {
+  async #startCompile() {
     // check if cache dir exists
-    const { root, persistentCache } = this.compiler.config.config;
+    const { persistentCache } = this.compiler.config.config;
     const hasCacheDir = await isCacheDirExists(
-      getCacheDir(root, persistentCache)
+      getCacheDir(this.root, persistentCache)
     );
     const start = performance.now();
     await this.#compile();
@@ -440,9 +499,69 @@ export class NewServer extends httpServer {
       this.hmrEngine.hmrUpdate(parentFiles, true);
     });
   }
+  async closeServerAndExit() {
+    try {
+      await this.httpServer.close();
+    } finally {
+      process.exit();
+    }
+  }
 
-  async close(): Promise<void> {
-    this.httpServer?.close();
-    await this.ws?.close();
+  closeServer(): () => Promise<void> {
+    if (!this.httpServer) {
+      return () => Promise.resolve();
+    }
+    debugServer?.(`prepare close dev server`);
+
+    let hasListened = false;
+    const openSockets = new Set<net.Socket>();
+
+    this.httpServer.on('connection', (socket) => {
+      openSockets.add(socket);
+      debugServer?.(`has open server socket ${openSockets}`);
+
+      socket.on('close', () => {
+        debugServer?.('close all server socket');
+        openSockets.delete(socket);
+      });
+    });
+
+    this.httpServer.once('listening', () => {
+      hasListened = true;
+    });
+
+    return () =>
+      new Promise<void>((resolve, reject) => {
+        openSockets.forEach((s) => s.destroy());
+        if (hasListened) {
+          this.httpServer.close((err) => {
+            if (err) {
+              reject(err);
+            } else {
+              resolve();
+            }
+          });
+        } else {
+          resolve();
+        }
+      });
+  }
+
+  async close() {
+    if (!this.serverOptions.middlewareMode) {
+      teardownSIGTERMListener(this.closeServerAndExit);
+    }
+    const closeHttpServerFn = this.closeServer();
+
+    await Promise.allSettled([this.watcher.close(), closeHttpServerFn()]);
   }
 }
+
+export const teardownSIGTERMListener = (
+  callback: () => Promise<void>
+): void => {
+  process.off('SIGTERM', callback);
+  if (process.env.CI !== 'true') {
+    process.stdin.off('end', callback);
+  }
+};
