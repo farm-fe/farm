@@ -6,7 +6,6 @@ use farmfe_core::{
     preset_env::{PresetEnvConfig, PresetEnvConfigObj},
     Config,
   },
-  module::ModuleType,
   plugin::Plugin,
   serde_json,
   swc_common::{comments::SingleThreadedComments, Mark},
@@ -25,6 +24,7 @@ pub struct FarmPluginPolyfill {
   config: swc_ecma_preset_env::Config,
   include: Vec<ConfigRegex>,
   exclude: Vec<ConfigRegex>,
+  enforce_exclude: Vec<ConfigRegex>,
   assumptions: Assumptions,
 }
 
@@ -74,6 +74,7 @@ impl FarmPluginPolyfill {
       include,
       exclude,
       assumptions,
+      enforce_exclude: vec![ConfigRegex::new("node_modules/core-js")],
     }
   }
 }
@@ -101,6 +102,14 @@ impl Plugin for FarmPluginPolyfill {
 
     if !self.include.iter().any(|r| r.is_match(relative_path))
       && self.exclude.iter().any(|r| r.is_match(relative_path))
+    {
+      return Ok(None);
+    }
+
+    if self
+      .enforce_exclude
+      .iter()
+      .any(|r| r.is_match(relative_path))
     {
       return Ok(None);
     }
