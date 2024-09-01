@@ -32,7 +32,6 @@ import fse from 'fs-extra';
 import { Compiler } from './compiler/index.js';
 import { loadEnv, setProcessEnv } from './config/env.js';
 import {
-  UserConfig,
   checkClearScreen,
   getConfigFilePath,
   normalizePublicDir,
@@ -47,6 +46,7 @@ import { FileWatcher } from './watcher/index.js';
 import { __FARM_GLOBAL__ } from './config/_global.js';
 import type {
   FarmCLIOptions,
+  InlineConfig,
   ResolvedUserConfig,
   UserPreviewServerConfig
 } from './config/types.js';
@@ -57,9 +57,7 @@ import { ConfigWatcher } from './watcher/config-watcher.js';
 import type { JsPlugin } from './plugin/type.js';
 import { resolveHostname } from './utils/http.js';
 
-export async function start(
-  inlineConfig?: FarmCLIOptions & UserConfig
-): Promise<void> {
+export async function start(inlineConfig?: InlineConfig): Promise<void> {
   inlineConfig = inlineConfig ?? {};
   const logger = inlineConfig.logger ?? new Logger();
   setProcessEnv('development');
@@ -92,9 +90,7 @@ export async function start(
   }
 }
 
-export async function build(
-  inlineConfig?: FarmCLIOptions & UserConfig
-): Promise<void> {
+export async function build(inlineConfig?: InlineConfig): Promise<void> {
   inlineConfig = inlineConfig ?? {};
   const logger = inlineConfig.logger ?? new Logger();
   setProcessEnv('production');
@@ -160,9 +156,7 @@ export async function preview(inlineConfig?: FarmCLIOptions): Promise<void> {
   server.createPreviewServer(previewOptions);
 }
 
-export async function watch(
-  inlineConfig?: FarmCLIOptions & UserConfig
-): Promise<void> {
+export async function watch(inlineConfig?: InlineConfig): Promise<void> {
   inlineConfig = inlineConfig ?? {};
   const logger = inlineConfig.logger ?? new Logger();
   setProcessEnv('development');
@@ -437,7 +431,7 @@ export async function createFileWatcher(
 
       await devServer.close();
       __FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__ = true;
-      await start(resolvedUserConfig as FarmCLIOptions & UserConfig);
+      await start(resolvedUserConfig as InlineConfig);
     });
   });
   return fileWatcher;

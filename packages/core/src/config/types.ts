@@ -114,6 +114,8 @@ export interface ResolvedCompilation
   external?: string[];
 }
 
+export type InlineConfig = UserConfig & FarmCLIOptions;
+
 export interface ResolvedUserConfig extends UserConfig {
   env?: Record<string, any>;
   envDir?: string;

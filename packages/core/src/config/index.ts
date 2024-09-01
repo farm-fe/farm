@@ -60,6 +60,7 @@ import { normalizeExternal } from './normalize-config/normalize-external.js';
 import type {
   Alias,
   FarmCLIOptions,
+  InlineConfig,
   NormalizedServerConfig,
   ResolvedCompilation,
   ResolvedUserConfig,
@@ -136,15 +137,15 @@ async function handleServerPortConflict(
  * @param configPath
  */
 export async function resolveConfig(
-  inlineOptions: FarmCLIOptions & UserConfig = {},
+  inlineOptions: InlineConfig = {},
   mode?: CompilationMode,
   logger?: Logger,
   isHandleServerPortConflict = true
 ): Promise<ResolvedUserConfig> {
   // Clear the console according to the cli command
-
   checkClearScreen(inlineOptions);
-  logger = logger ?? new Logger();
+
+  logger ??= new Logger();
   inlineOptions.mode = inlineOptions.mode ?? mode;
   // configPath may be file or directory
   let { configPath } = inlineOptions;

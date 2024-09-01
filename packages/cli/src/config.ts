@@ -1,9 +1,9 @@
-import { FarmCLIOptions, UserConfig } from '@farmfe/core';
+import { FarmCLIOptions, InlineConfig, UserConfig } from '@farmfe/core';
 import { FarmCLIBuildOptions, GlobalFarmCLIOptions } from './types.js';
 
 export function getOptionFromBuildOption(
   options: FarmCLIBuildOptions & GlobalFarmCLIOptions
-): FarmCLIOptions & UserConfig {
+): InlineConfig {
   const {
     input,
     outDir,
@@ -31,7 +31,7 @@ export function getOptionFromBuildOption(
     ...(treeShaking && { treeShaking })
   };
 
-  const defaultOptions: FarmCLIOptions & UserConfig = {
+  const defaultOptions: InlineConfig = {
     compilation,
     ...(mode && { mode })
   };
