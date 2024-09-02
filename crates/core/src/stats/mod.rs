@@ -47,12 +47,18 @@ impl ToString for Stats {
   }
 }
 
-impl Stats {
-  pub fn new() -> Self {
+impl Default for Stats {
+  fn default() -> Self {
     Self {
       initial_compilation_flow_stats: RwLock::new(CompilationStats::new()),
       hmr_compilation_flow_stats: RwLock::new(vec![]),
     }
+  }
+}
+
+impl Stats {
+  pub fn new() -> Self {
+    Self::default()
   }
 
   pub fn set_start_time(&self) {
@@ -101,7 +107,7 @@ impl Stats {
   }
 }
 
-#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(serde::Serialize, serde::Deserialize, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct CompilationStats {
   pub entries: Vec<ModuleId>,
@@ -115,15 +121,7 @@ pub struct CompilationStats {
 
 impl CompilationStats {
   pub fn new() -> Self {
-    Self {
-      entries: vec![],
-      hook_stats_map: HashMap::new(),
-      module_graph_stats: CompilationModuleGraphStats::new(),
-      duration: 0,
-      start_time: 0,
-      build_end_time: 0,
-      end_time: 0,
-    }
+    Self::default()
   }
 
   pub fn set_start_time(&mut self) {
@@ -152,7 +150,7 @@ impl CompilationStats {
     let hook_stats_vec = self
       .hook_stats_map
       .entry(hook_stats.hook_name.clone())
-      .or_insert(vec![]);
+      .or_default();
     hook_stats_vec.push(hook_stats);
   }
 
@@ -178,7 +176,7 @@ pub struct CompilationPluginHookStats {
   pub end_time: u128,
 }
 
-#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(serde::Serialize, serde::Deserialize, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct CompilationModuleGraphStats {
   pub modules: HashMap<ModuleId, CompilationModuleStats>,
@@ -187,10 +185,7 @@ pub struct CompilationModuleGraphStats {
 
 impl CompilationModuleGraphStats {
   pub fn new() -> Self {
-    Self {
-      modules: HashMap::new(),
-      edges: HashMap::new(),
-    }
+    Self::default()
   }
 }
 
@@ -206,7 +201,7 @@ impl From<&ModuleGraph> for CompilationModuleGraphStats {
         },
       );
       for (dep_module_id, edge) in module_graph.dependencies(&module.id) {
-        let edges = stats.edges.entry(module.id.clone()).or_insert(Vec::new());
+        let edges = stats.edges.entry(module.id.clone()).or_default();
         edges.push((dep_module_id.clone(), edge.clone()));
       }
     }

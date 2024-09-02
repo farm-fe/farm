@@ -3,7 +3,7 @@
   "compilerOptions": {
     "outDir": "build",
     "composite": true,
-    "rootDir": "src",
+    "rootDir": "src"
   },
   "include": ["src/**/*.ts"],
   "exclude": ["node_modules", "src/client/*"]
