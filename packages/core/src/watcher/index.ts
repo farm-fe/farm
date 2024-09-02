@@ -1,6 +1,5 @@
 import EventEmitter from 'node:events';
 import { existsSync } from 'node:fs';
-import { createRequire } from 'node:module';
 import path from 'node:path';
 import chokidar from 'chokidar';
 import type { FSWatcher, WatchOptions } from 'chokidar';
@@ -252,6 +251,7 @@ export class FileWatcher implements ImplFileWatcher {
     );
   }
 
+  // TODO watcher 里的 compiler 使用单独的 compiler 不要用传递进来的
   getExtraWatchedFiles() {
     const compiler = this.getCompiler();
     return [

@@ -39,6 +39,7 @@ import type {
   NormalizedServerConfig,
   ResolvedUserConfig
 } from '../config/types.js';
+import { getPluginHooks, getSortedPluginHooks } from '../plugin/index.js';
 import { JsUpdateResult } from '../types/binding.js';
 import { createDebugger } from '../utils/debug.js';
 
@@ -113,6 +114,7 @@ export class NewServer extends httpServer {
   middlewares: connect.Server;
   compiler: CompilerType;
   root: string;
+  closeHttpServerFn: () => Promise<void>;
   constructor(
     readonly resolvedUserConfig: ResolvedUserConfig,
     logger: Logger
@@ -153,6 +155,9 @@ export class NewServer extends httpServer {
             this.httpsOptions
           );
 
+      // close server function prepare promise
+      this.closeHttpServerFn = this.closeServer();
+
       // init hmr engine When actually updating, we need to get the clients of ws for broadcast, 、
       // so we can instantiate hmrEngine by default at the beginning.
       this.createHmrEngine();
@@ -165,6 +170,25 @@ export class NewServer extends httpServer {
 
       // init middlewares
       this.#initializeMiddlewares();
+
+      this.#startWatcher();
+
+      if (!middlewareMode && this.httpServer) {
+        this.httpServer.once('listening', () => {
+          // update actual port since this may be different from initial value
+          this.serverOptions.port = (
+            this.httpServer.address() as net.AddressInfo
+          ).port;
+        });
+      }
+      // apply server configuration hooks from plugins e.g. vite configureServer
+      const postHooks: ((() => void) | void)[] = [];
+      // console.log(this.resolvedUserConfig.jsPlugins);
+
+      // TODO 要在这里做 vite 插件和 js 插件的适配器
+      // for (const hook of getPluginHooks(applyPlugins, "configureServer")) {
+      //   postHooks.push(await hook(reflexServer));
+      // }
     } catch (error) {
       this.logger.error(`Failed to create farm server: ${error}`);
       throw error;
@@ -277,7 +301,8 @@ export class NewServer extends httpServer {
       this.compiler = await createCompiler(this.resolvedUserConfig, logger);
 
       // start watcher
-      this.#startWatcher();
+      // TODO 这个 watcher 应该在 createserver 的时候 而不是 listen 的时候创建 不然 适配器那边过不去
+      // this.#startWatcher();
 
       // compile the project and start the dev server
       await this.#startCompile();
@@ -533,6 +558,7 @@ export class NewServer extends httpServer {
     return () =>
       new Promise<void>((resolve, reject) => {
         openSockets.forEach((s) => s.destroy());
+
         if (hasListened) {
           this.httpServer.close((err) => {
             if (err) {
@@ -551,9 +577,8 @@ export class NewServer extends httpServer {
     if (!this.serverOptions.middlewareMode) {
       teardownSIGTERMListener(this.closeServerAndExit);
     }
-    const closeHttpServerFn = this.closeServer();
 
-    await Promise.allSettled([this.watcher.close(), closeHttpServerFn()]);
+    await Promise.allSettled([this.watcher.close(), this.closeHttpServerFn()]);
   }
 }
 

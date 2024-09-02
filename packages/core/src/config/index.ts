@@ -14,8 +14,7 @@ import {
   resolveAsyncPlugins,
   resolveConfigHook,
   resolveConfigResolvedHook,
-  resolveFarmPlugins,
-  rustPluginResolver
+  resolveFarmPlugins
 } from '../plugin/index.js';
 import { Server } from '../server/index.js';
 import {
@@ -88,16 +87,6 @@ export function defineFarmConfig(config: UserConfigExport): UserConfigExport {
   return config;
 }
 
-// may be use object type
-type ResolveConfigOptions = {
-  inlineOptions: FarmCliOptions & UserConfig;
-  command: keyof typeof COMMANDS;
-  defaultMode?: CompilationMode;
-  defaultNodeEnv?: CompilationMode;
-  isPreview?: boolean;
-  logger?: Logger;
-};
-
 const COMMANDS = {
   START: 'start',
   BUILD: 'build',
@@ -140,7 +129,7 @@ export async function resolveConfig(
   // configPath may be file or directory
   const { configFile, configPath: initialConfigPath } = inlineOptions;
 
-  const loadedUserConfig: any = await loadConfigFile(
+  const loadedUserConfig = await loadConfigFile(
     configFile,
     inlineOptions,
     configEnv
@@ -151,6 +140,7 @@ export async function resolveConfig(
     {},
     compileMode
   );
+  const inlineConfig = rawConfig;
 
   let configFilePath = initialConfigPath;
 
@@ -195,7 +185,8 @@ export async function resolveConfig(
   Object.assign(resolvedUserConfig, {
     root: resolvedUserConfig.compilation.root,
     jsPlugins: sortFarmJsPlugins,
-    rustPlugins: rustPlugins
+    rustPlugins: rustPlugins,
+    inlineConfig
   });
 
   // Temporarily dealing with alias objects and arrays in js will be unified in rust in the future.]

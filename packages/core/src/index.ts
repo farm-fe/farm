@@ -332,7 +332,7 @@ export async function createCompiler(
     },
     logger
   );
-
+  // 这块逻辑也需要过滤 拿到最新的
   for (const plugin of jsPlugins) {
     await plugin.configureCompiler?.(compiler);
   }
@@ -519,7 +519,7 @@ export async function start2(
     const server = new NewServer(resolvedUserConfig, logger);
 
     await server.createServer();
-
+    // TODO 这段逻辑放在 创建 http server 之后 放到  server 里面
     resolvedUserConfig.jsPlugins.forEach((plugin: JsPlugin) =>
       // @ts-ignore
       plugin.configureDevServer?.(server)

@@ -23,7 +23,9 @@ export class ViteDevServerAdapter {
     // watcher is not used in Farm vite plugin for now
     // it's only for compatibility
     // this.watcher = watch(config.root);
+
     this.watcher = server.watcher.getInternalWatcher();
+
     this.middlewareCallbacks = [];
     this.middlewares = new Proxy(
       {

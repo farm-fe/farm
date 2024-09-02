@@ -5,10 +5,8 @@ export default defineConfig({
   plugins: [react()],
   compilation: {
     output: {
-      publicPath: '/aaa/',
-    }
+      publicPath: "/aaa/",
+    },
   },
-  server: {
-    
-  }
+  server: {},
 });
