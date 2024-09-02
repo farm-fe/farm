@@ -95,84 +95,6 @@ pub struct JsUpdateResult {
   pub extra_watch_result: WatchDiffResult,
 }
 
-#[napi(object, js_name = "ResolveRecord")]
-pub struct JsResolveRecord {
-  pub plugin: String,
-  pub hook: String,
-  pub source: String,
-  pub importer: Option<String>,
-  pub kind: String,
-  pub is_hmr: bool,
-  pub start_time: i64,
-  pub end_time: i64,
-  pub duration: i64,
-}
-
-#[napi(object, js_name = "TransformRecord")]
-pub struct JsTransformRecord {
-  pub plugin: String,
-  pub hook: String,
-  pub content: String,
-  pub source_maps: Option<String>,
-  pub module_type: String,
-  pub is_hmr: bool,
-  pub start_time: i64,
-  pub end_time: i64,
-  pub duration: i64,
-}
-
-#[napi(object, js_name = "ModuleRecord")]
-pub struct JsModuleRecord {
-  pub plugin: String,
-  pub hook: String,
-  pub module_type: String,
-  pub is_hmr: bool,
-  pub start_time: i64,
-  pub end_time: i64,
-  pub duration: i64,
-}
-
-#[napi(object, js_name = "AnalyzeDep")]
-pub struct JsAnalyzeDep {
-  pub source: String,
-  pub kind: String,
-}
-
-#[napi(object, js_name = "AnalyzeDepsRecord")]
-pub struct JsAnalyzeDepsRecord {
-  pub plugin: String,
-  pub hook: String,
-  pub module_type: String,
-  pub is_hmr: bool,
-  pub deps: Vec<JsAnalyzeDep>,
-  pub start_time: i64,
-  pub end_time: i64,
-  pub duration: i64,
-}
-
-#[derive(Debug)]
-#[napi(object, js_name = "Module")]
-pub struct JsModule {
-  pub id: String,
-  pub module_type: String,
-  pub module_groups: Vec<String>,
-  pub resource_pot: Option<String>,
-  pub side_effects: bool,
-  pub source_map_chain: Vec<String>,
-  pub content: String,
-  pub external: bool,
-  pub immutable: bool,
-  pub size: i64,
-}
-
-#[napi(object, js_name = "ResourcePotRecord")]
-pub struct JsResourcePotRecord {
-  pub name: String,
-  pub hook: String,
-  pub modules: Vec<String>,
-  pub resources: Vec<String>,
-}
-
 #[napi(js_name = "Compiler")]
 pub struct JsCompiler {
   compiler: Arc<Compiler>,
@@ -544,38 +466,6 @@ impl JsCompiler {
   pub fn stats(&self) -> String {
     let context = self.compiler.context();
     context.record_manager.to_string()
-  }
-
-  #[napi]
-  pub fn modules(&self) -> Vec<JsModule> {
-    let context = self.compiler.context();
-    let module_graph = context.module_graph.read();
-    module_graph
-      .modules()
-      .into_iter()
-      .map(|m| JsModule {
-        id: m.id.resolved_path(&context.config.root) + m.id.query_string(),
-        module_type: m.module_type.to_string(),
-        module_groups: m
-          .module_groups
-          .clone()
-          .into_iter()
-          .map(|group| group.resolved_path(&context.config.root) + group.query_string())
-          .collect(),
-        content: m.content.to_string(),
-        resource_pot: m.resource_pot.clone(),
-        side_effects: m.side_effects,
-        source_map_chain: m
-          .source_map_chain
-          .clone()
-          .into_iter()
-          .map(|s| s.to_string())
-          .collect(),
-        external: m.external,
-        immutable: m.immutable,
-        size: m.size as i64,
-      })
-      .collect()
   }
 }
 

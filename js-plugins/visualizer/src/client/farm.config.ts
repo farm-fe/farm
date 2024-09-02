@@ -13,7 +13,6 @@ export default defineConfig((env) => ({
     output: {
       path: '../../build/client'
     },
-    persistentCache: false,
     external: ['@farmfe/core']
   }
 }));

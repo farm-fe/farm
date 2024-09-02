@@ -236,10 +236,6 @@ export class Compiler {
     this._bindingCompiler.addWatchFiles(root, paths);
   }
 
-  modules() {
-    return this._bindingCompiler.modules();
-  }
-
   stats() {
     return this._bindingCompiler.stats();
   }

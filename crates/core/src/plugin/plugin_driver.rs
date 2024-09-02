@@ -20,7 +20,7 @@ use crate::{
     ModuleType,
   },
   resource::resource_pot::{ResourcePot, ResourcePotInfo, ResourcePotMetaData},
-  stats::{CompilationPluginHookStats, Stats},
+  stats::{CompilationModuleGraphStats, CompilationPluginHookStats, Stats},
 };
 use std::time::SystemTime;
 use std::time::UNIX_EPOCH;
@@ -95,7 +95,7 @@ macro_rules! hook_serial {
     }
   };
 
-  ($func_name:ident, $param_ty:ty, $callback:expr) => {
+  ($func_name:ident, $param_ty:ty, $before_transformer:expr, $after_transformer:expr, $callback:expr) => {
     pub fn $func_name(&self, param: $param_ty, context: &Arc<CompilationContext>) -> Result<()> {
       for plugin in &self.plugins {
         if self.record {
@@ -110,7 +110,17 @@ macro_rules! hook_serial {
             .as_millis();
           if ret.is_some() {
             let plugin_name = plugin.name().to_string();
-            $callback(plugin_name, start_time, end_time, param, context);
+            let before = $before_transformer(param);
+            let after = $after_transformer(param);
+            $callback(
+              plugin_name,
+              start_time,
+              end_time,
+              before,
+              after,
+              param,
+              context,
+            );
           }
         } else {
           plugin.$func_name(param, context)?;
@@ -415,10 +425,14 @@ impl PluginDriver {
   hook_serial!(
     process_module,
     &mut PluginProcessModuleHookParam,
+    |_: &mut PluginProcessModuleHookParam| { "".to_string() },
+    |_: &mut PluginProcessModuleHookParam| { "".to_string() },
     |plugin_name: String,
      start_time: u128,
      end_time: u128,
-     param: &mut PluginProcessModuleHookParam,
+     input: String,
+     output: String,
+     param: &PluginProcessModuleHookParam,
      context: &Arc<CompilationContext>| {
       context
         .record_manager
@@ -427,8 +441,8 @@ impl PluginDriver {
           hook_name: "process_module".to_string(),
           hook_context: None,
           module_id: param.module_id.clone(),
-          input: "".to_string(),
-          output: "".to_string(),
+          input,
+          output,
           duration: end_time - start_time,
           start_time,
           end_time,
@@ -439,10 +453,18 @@ impl PluginDriver {
   hook_serial!(
     analyze_deps,
     &mut PluginAnalyzeDepsHookParam,
+    |before_param: &mut PluginAnalyzeDepsHookParam| {
+      serde_json::to_string(&before_param.deps).unwrap()
+    },
+    |after_param: &mut PluginAnalyzeDepsHookParam| {
+      serde_json::to_string(&after_param.deps).unwrap()
+    },
     |plugin_name: String,
      start_time: u128,
      end_time: u128,
-     param: &mut PluginAnalyzeDepsHookParam,
+     input: String,
+     output: String,
+     param: &PluginAnalyzeDepsHookParam,
      context: &Arc<CompilationContext>| {
       context
         .record_manager
@@ -451,8 +473,8 @@ impl PluginDriver {
           hook_name: "analyze_deps".to_string(),
           hook_context: None,
           module_id: param.module.id.clone(),
-          input: "".to_string(),
-          output: serde_json::to_string(&param.deps).unwrap(),
+          input,
+          output,
           duration: end_time - start_time,
           start_time,
           end_time,
@@ -466,7 +488,37 @@ impl PluginDriver {
 
   hook_parallel!(generate_start);
 
-  hook_serial!(optimize_module_graph, &mut ModuleGraph);
+  hook_serial!(
+    optimize_module_graph,
+    &mut ModuleGraph,
+    |before_param: &mut ModuleGraph| {
+      serde_json::to_string(&CompilationModuleGraphStats::from(&*before_param)).unwrap()
+    },
+    |after_param: &mut ModuleGraph| {
+      serde_json::to_string(&CompilationModuleGraphStats::from(&*after_param)).unwrap()
+    },
+    |plugin_name: String,
+     start_time: u128,
+     end_time: u128,
+     input: String,
+     output: String,
+     _: &mut ModuleGraph,
+     context: &Arc<CompilationContext>| {
+      context
+        .record_manager
+        .add_plugin_hook_stats(CompilationPluginHookStats {
+          plugin_name: plugin_name.to_string(),
+          hook_name: "optimize_module_graph".to_string(),
+          hook_context: None,
+          module_id: "".into(),
+          input,
+          output,
+          duration: end_time - start_time,
+          start_time,
+          end_time,
+        })
+    }
+  );
 
   hook_first!(
     analyze_module_graph,
@@ -511,20 +563,28 @@ impl PluginDriver {
   hook_serial!(
     process_resource_pots,
     &mut Vec<&mut ResourcePot>,
+    |before_resource_pots: &mut Vec<&mut ResourcePot>| {
+      serde_json::to_string(&before_resource_pots).unwrap()
+    },
+    |after_resource_pots: &mut Vec<&mut ResourcePot>| {
+      serde_json::to_string(&after_resource_pots).unwrap()
+    },
     |plugin_name: String,
      start_time: u128,
      end_time: u128,
+     input: String,
+     output: String,
      _resource_pots: &mut Vec<&mut ResourcePot>,
      context: &Arc<CompilationContext>| {
       context
         .record_manager
         .add_plugin_hook_stats(CompilationPluginHookStats {
           plugin_name: plugin_name.to_string(),
-          hook_name: "partial_bundling".to_string(),
+          hook_name: "process_resource_pots".to_string(),
           hook_context: None,
           module_id: "".into(),
-          input: "".to_string(),
-          output: "".to_string(),
+          input,
+          output,
           duration: end_time - start_time,
           start_time,
           end_time,
@@ -644,9 +704,15 @@ impl PluginDriver {
   hook_serial!(
     optimize_resource_pot,
     &mut ResourcePot,
+    |before_resource_pot: &mut ResourcePot| {
+      serde_json::to_string(&before_resource_pot).unwrap()
+    },
+    |after_resource_pot: &mut ResourcePot| { serde_json::to_string(&after_resource_pot).unwrap() },
     |plugin_name: String,
      start_time: u128,
      end_time: u128,
+     input: String,
+     output: String,
      _resource_pot: &mut ResourcePot,
      context: &Arc<CompilationContext>| {
       context
@@ -656,8 +722,8 @@ impl PluginDriver {
           hook_name: "optimize_resource_pot".to_string(),
           hook_context: None,
           module_id: "".into(),
-          input: "".to_string(),
-          output: "".to_string(),
+          input,
+          output,
           duration: end_time - start_time,
           start_time,
           end_time,
@@ -722,10 +788,18 @@ impl PluginDriver {
   hook_serial!(
     update_modules,
     &mut PluginUpdateModulesHookParams,
+    |before_params: &mut PluginUpdateModulesHookParams| {
+      serde_json::to_string(&before_params).unwrap()
+    },
+    |after_params: &mut PluginUpdateModulesHookParams| {
+      serde_json::to_string(&after_params).unwrap()
+    },
     |plugin_name: String,
      start_time: u128,
      end_time: u128,
-     params: &mut PluginUpdateModulesHookParams,
+     input: String,
+     output: String,
+     _: &mut PluginUpdateModulesHookParams,
      context: &Arc<CompilationContext>| {
       context
         .record_manager
@@ -734,8 +808,8 @@ impl PluginDriver {
           hook_name: "update_modules".to_string(),
           hook_context: None,
           module_id: "".into(),
-          input: "".to_string(),
-          output: serde_json::to_string(params).unwrap(),
+          input,
+          output,
           duration: end_time - start_time,
           start_time,
           end_time,

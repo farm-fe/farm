@@ -94,12 +94,6 @@ impl Stats {
     })
   }
 
-  pub fn set_optimized_module_graph_stats(&self, module_graph: &ModuleGraph) {
-    handle_compilation_stats!(self, |compilation_stats: &mut CompilationStats| {
-      compilation_stats.set_optimized_module_graph_stats(module_graph);
-    })
-  }
-
   pub fn set_entries(&self, entries: Vec<ModuleId>) {
     handle_compilation_stats!(self, |compilation_stats: &mut CompilationStats| {
       compilation_stats.entries = entries;
@@ -113,7 +107,6 @@ pub struct CompilationStats {
   pub entries: Vec<ModuleId>,
   pub hook_stats_map: HashMap<String, Vec<CompilationPluginHookStats>>,
   pub module_graph_stats: CompilationModuleGraphStats,
-  pub optimized_module_graph_stats: CompilationModuleGraphStats,
   pub duration: u128,
   pub start_time: u128,
   pub build_end_time: u128,
@@ -126,7 +119,6 @@ impl CompilationStats {
       entries: vec![],
       hook_stats_map: HashMap::new(),
       module_graph_stats: CompilationModuleGraphStats::new(),
-      optimized_module_graph_stats: CompilationModuleGraphStats::new(),
       duration: 0,
       start_time: 0,
       build_end_time: 0,
@@ -166,10 +158,6 @@ impl CompilationStats {
 
   pub fn set_module_graph_stats(&mut self, module_graph: &ModuleGraph) {
     self.module_graph_stats = module_graph.into();
-  }
-
-  pub fn set_optimized_module_graph_stats(&mut self, module_graph: &ModuleGraph) {
-    self.optimized_module_graph_stats = module_graph.into();
   }
 }
 

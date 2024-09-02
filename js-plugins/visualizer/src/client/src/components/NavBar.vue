@@ -98,7 +98,7 @@ export default defineComponent({
     const navigation = [
       { name: 'Dashboard', href: '/dashboard' },
       { name: 'Compilation Analysis', href: '/analysis/compilation' },
-      { name: 'Module Graph', href: '/analysis/module' },
+      // { name: 'Compilation Context', href: '/analysis/module' },
       { name: 'Plugin Performance', href: '/analysis/plugin' },
       { name: 'Bundle Analysis', href: '/analysis/bundle' }
     ];
