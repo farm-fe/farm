@@ -19,7 +19,7 @@ export default defineConfig({
     assets: {
       include: ['aaa']
     },
-    record: true,
+    // record: true,
     sourcemap: true,
     // treeShaking: true,
     // minify: true,

@@ -13,6 +13,7 @@ export default function farmRecorderPlugin(): JsPlugin {
   return {
     name: 'record-viewer-dev-data-source',
     config(config) {
+      config.compilation ??= {};
       config.compilation = { ...config.compilation, record: true };
       return config;
     },
