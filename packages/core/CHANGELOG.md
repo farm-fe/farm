@@ -1,5 +1,11 @@
 # @farmfe/core
 
+## 1.3.17
+
+### Patch Changes
+
+- 83b89e72: Refactor stats implementation
+
 ## 1.3.16
 
 ### Patch Changes
