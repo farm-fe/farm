@@ -449,7 +449,7 @@ pub struct PluginTransformHookResult {
   pub ignore_previous_source_map: bool,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct PluginParseHookParam {
   /// module id
   pub module_id: ModuleId,
@@ -469,13 +469,14 @@ pub struct PluginProcessModuleHookParam<'a> {
   pub meta: &'a mut ModuleMetaData,
 }
 
+#[derive(Clone)]
 pub struct PluginAnalyzeDepsHookParam<'a> {
   pub module: &'a Module,
   /// analyzed deps from previous plugins, you can push new entries to it for your plugin.
   pub deps: Vec<PluginAnalyzeDepsHookResultEntry>,
 }
 
-#[derive(Debug, PartialEq, Eq, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone, serde::Serialize, serde::Deserialize)]
 #[cache_item]
 pub struct PluginAnalyzeDepsHookResultEntry {
   pub source: String,
@@ -539,7 +540,7 @@ pub struct EmptyPluginHookParam {}
 pub struct EmptyPluginHookResult {}
 
 #[cache_item]
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PluginGenerateResourcesHookResult {
   pub resource: Resource,

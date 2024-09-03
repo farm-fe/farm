@@ -3,10 +3,10 @@ import farmPostcssPlugin from '@farmfe/js-plugin-postcss';
 import vitejsPluginVue from '@vitejs/plugin-vue';
 import record from '../dev';
 
-export default defineConfig({
+export default defineConfig((env) => ({
   plugins: [
     farmPostcssPlugin(),
-    ...(process.env.NODE_ENV === 'development' ? [record()] : [])
+    ...(env.mode === 'development' ? [record()] : [])
   ],
   vitePlugins: [vitejsPluginVue()],
   compilation: {
@@ -15,4 +15,4 @@ export default defineConfig({
     },
     external: ['@farmfe/core']
   }
-});
+}));

@@ -14,8 +14,8 @@ use crate::{
     module_graph::ModuleGraph, module_group::ModuleGroupGraph, watch_graph::WatchGraph, ModuleId,
   },
   plugin::{plugin_driver::PluginDriver, Plugin, PluginResolveHookParam, PluginResolveHookResult},
-  record::RecordManager,
   resource::{resource_pot_map::ResourcePotMap, Resource, ResourceOrigin, ResourceType},
+  stats::Stats,
 };
 
 use self::log_store::LogStore;
@@ -35,7 +35,8 @@ pub struct CompilationContext {
   pub resources_map: Box<Mutex<HashMap<String, Resource>>>,
   pub cache_manager: Box<CacheManager>,
   pub meta: Box<ContextMetaData>,
-  pub record_manager: Box<RecordManager>,
+  /// Record stats for the compilation, for example, compilation time, plugin hook time, etc.
+  pub record_manager: Box<Stats>,
   pub log_store: Box<Mutex<LogStore>>,
   pub resolve_cache: Box<Mutex<HashMap<PluginResolveHookParam, PluginResolveHookResult>>>,
   pub custom: Box<DashMap<String, Box<dyn Any + Send + Sync>>>,
@@ -59,7 +60,7 @@ impl CompilationContext {
       )),
       config: Box::new(config),
       meta: Box::new(ContextMetaData::new()),
-      record_manager: Box::new(RecordManager::new()),
+      record_manager: Box::new(Stats::new()),
       log_store: Box::new(Mutex::new(LogStore::new())),
       resolve_cache: Box::new(Mutex::new(HashMap::new())),
       custom: Box::new(DashMap::new()),

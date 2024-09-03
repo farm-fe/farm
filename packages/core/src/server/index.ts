@@ -37,7 +37,6 @@ import {
   headers,
   lazyCompilation,
   proxy,
-  records,
   resources,
   staticMiddleware
 } from './middlewares/index.js';
@@ -409,7 +408,6 @@ export class Server implements ImplDevServer {
       lazyCompilation,
       cors,
       resources,
-      records,
       proxy
     ];
 

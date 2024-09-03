@@ -24,7 +24,7 @@ export function createRecordViewerServer(opts: RecordViewerServerOptions) {
     });
   });
   server.listen(port, host, () => {
-    console.log(`Farm Record Viewer run at http://${host}:${port}`);
+    // console.log(`Farm Record Viewer run at http://${host}:${port}`);
   });
-  return server;
+  return { server, host, port };
 }

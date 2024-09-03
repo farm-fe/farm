@@ -29,7 +29,7 @@ import { Card, Tag, Button } from 'ant-design-vue';
 import { CodepenCircleFilled } from '@ant-design/icons-vue';
 import { formatSize } from '../utils/size';
 import { getModules } from '../api';
-import { Module } from '@farmfe/core/binding';
+import { Module } from '@farmfe/core/binding/binding';
 
 export default defineComponent({
   name: 'ResourcePots',

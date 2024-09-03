@@ -68,6 +68,20 @@ struct HandleUpdateDependenciesParams {
 }
 
 impl Compiler {
+  fn set_update_module_graph_stats(&self, update_context: &Arc<UpdateContext>) {
+    if self.context.config.record {
+      let update_module_graph = update_context.module_graph.read();
+      self
+        .context
+        .record_manager
+        .set_module_graph_stats(&update_module_graph);
+      self
+        .context
+        .record_manager
+        .set_entries(update_module_graph.entries.keys().cloned().collect())
+    }
+  }
+
   pub fn update<F>(
     &self,
     paths: Vec<(String, UpdateType)>,
@@ -78,48 +92,13 @@ impl Compiler {
   where
     F: FnOnce() + Send + Sync + 'static,
   {
+    self.context.record_manager.add_hmr_compilation_stats();
+    self.context.record_manager.set_start_time();
+
     // mark the compilation as update
     self.context.set_update();
     let (err_sender, err_receiver) = Self::create_thread_channel();
     let update_context = Arc::new(UpdateContext::new());
-
-    let watch_graph = self.context.watch_graph.read();
-    let module_graph = self.context.module_graph.read();
-    // fetch watch file relation module, and replace watch file
-    let paths: Vec<(String, UpdateType)> = paths
-      .into_iter()
-      .flat_map(|(path, update_type)| {
-        let id = ModuleId::new(&path, "", &self.context.config.root);
-
-        if watch_graph.has_module(&id) {
-          let r: Vec<(String, UpdateType)> = watch_graph
-            .relation_roots(&id)
-            .into_iter()
-            .map(|item| {
-              (
-                item.resolved_path(&self.context.config.root),
-                UpdateType::Updated,
-              )
-            })
-            .collect();
-
-          if module_graph.has_module(&ModuleId::new(path.as_str(), "", &self.context.config.root)) {
-            return [r, vec![(path, update_type)]].concat();
-          };
-
-          if !r.is_empty() {
-            r
-          } else {
-            vec![(path, update_type)]
-          }
-        } else {
-          vec![(path, update_type)]
-        }
-      })
-      .collect();
-
-    drop(watch_graph);
-    drop(module_graph);
 
     let mut old_watch_extra_resources: HashSet<ModuleId> = self
       .context
@@ -183,6 +162,10 @@ impl Compiler {
     self.handle_global_log(&mut errors);
 
     if !errors.is_empty() {
+      self.context.record_manager.set_build_end_time();
+      self.context.record_manager.set_end_time();
+      self.set_update_module_graph_stats(&update_context);
+
       let mut error_messages = vec![];
       for error in errors {
         error_messages.push(error.to_string());
@@ -193,6 +176,9 @@ impl Compiler {
         .collect::<Vec<_>>());
       return Err(CompilationError::GenericError(errors_json.to_string()));
     }
+
+    self.context.record_manager.set_build_end_time();
+    self.set_update_module_graph_stats(&update_context);
 
     let previous_module_groups = {
       let module_group_graph = self.context.module_group_graph.read();
@@ -374,7 +360,7 @@ impl Compiler {
             let mut module = Module::new(module_id.clone());
             module.external = true;
 
-            Self::add_module_to_update_module_graph(&update_context, module);
+            Self::add_module_to_update_module_graph(&update_context, &resolve_param.kind, module);
             Self::add_edge_to_update_module_graph(
               &update_context,
               &resolve_param,
@@ -432,7 +418,7 @@ impl Compiler {
 
     let module_id = module.id.clone();
     let immutable = module.immutable;
-    Self::add_module_to_update_module_graph(&update_context, module);
+    Self::add_module_to_update_module_graph(&update_context, &resolve_param.kind, module);
     Self::add_edge_to_update_module_graph(&update_context, &resolve_param, &module_id, order);
 
     for (order, (dep, cached_dependency)) in deps.into_iter().enumerate() {
@@ -456,8 +442,18 @@ impl Compiler {
     }
   }
 
-  fn add_module_to_update_module_graph(update_context: &Arc<UpdateContext>, module: Module) {
+  fn add_module_to_update_module_graph(
+    update_context: &Arc<UpdateContext>,
+    kind: &ResolveKind,
+    module: Module,
+  ) {
     let mut update_module_graph = update_context.module_graph.write();
+
+    if ResolveKind::HmrUpdate == *kind {
+      update_module_graph
+        .entries
+        .insert(module.id.clone(), module.id.to_string());
+    }
 
     if update_module_graph.has_module(&module.id) {
       update_module_graph.replace_module(module);
@@ -593,6 +589,7 @@ impl Compiler {
         .plugin_driver
         .update_finished(&self.context)
         .unwrap();
+      self.context.record_manager.set_end_time();
     } else {
       std::thread::spawn(move || {
         if let Err(e) = regenerate_resources_for_affected_module_groups(
@@ -612,6 +609,7 @@ impl Compiler {
           .plugin_driver
           .update_finished(&cloned_context)
           .unwrap();
+        cloned_context.record_manager.set_end_time();
       });
     }
 

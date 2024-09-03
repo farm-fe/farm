@@ -18,17 +18,6 @@ export interface UpdateQueueItem {
   resolve: (res: JsUpdateResult) => void;
 }
 
-export type PluginStats = Record<
-  string,
-  Record<
-    string,
-    {
-      totalDuration: number;
-      callCount: number;
-    }
-  >
->;
-
 export interface TracedModuleGraph {
   root: string;
   modules: Array<{
@@ -162,10 +151,6 @@ export class Compiler {
     return this._bindingCompiler.resourcesMap() as Record<string, Resource>;
   }
 
-  pluginStats() {
-    return this._bindingCompiler.pluginStats() as PluginStats;
-  }
-
   writeResourcesToDisk(): void {
     const resources = this.resources();
     const configOutputPath = this.config.config.output.path;
@@ -251,27 +236,7 @@ export class Compiler {
     this._bindingCompiler.addWatchFiles(root, paths);
   }
 
-  modules() {
-    return this._bindingCompiler.modules();
-  }
-
-  getResolveRecords(id: string) {
-    return this._bindingCompiler.getResolveRecordsById(id);
-  }
-
-  getTransformRecords(id: string) {
-    return this._bindingCompiler.getTransformRecordsById(id);
-  }
-
-  getProcessRecords(id: string) {
-    return this._bindingCompiler.getProcessRecordsById(id);
-  }
-
-  getAnalyzeDepsRecords(id: string) {
-    return this._bindingCompiler.getAnalyzeDepsRecordsById(id);
-  }
-
-  getResourcePotRecordsById(id: string) {
-    return this._bindingCompiler.getResourcePotRecordsById(id);
+  stats() {
+    return this._bindingCompiler.stats();
   }
 }
