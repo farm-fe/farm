@@ -171,10 +171,10 @@ export class NewServer extends httpServer {
 
       this.#createWatcher();
 
+      this.handleConfigureServer();
+
       // init middlewares
       this.#initializeMiddlewares();
-
-      this.handleConfigureServer();
 
       if (!middlewareMode && this.httpServer) {
         this.httpServer.once('listening', () => {
@@ -209,7 +209,6 @@ export class NewServer extends httpServer {
       }
     });
     const { jsPlugins } = this.resolvedUserConfig;
-    // const postHooks: ((() => void) | void)[] = [];
     // TODO type error and 而且还要排序 插件排序
     // @ts-ignore
     for (const hook of getPluginHooks(jsPlugins, 'configureServer')) {
