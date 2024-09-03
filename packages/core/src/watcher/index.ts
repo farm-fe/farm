@@ -6,6 +6,7 @@ import type { FSWatcher, WatchOptions } from 'chokidar';
 import glob from 'fast-glob';
 import { Compiler } from '../compiler/index.js';
 import type { ResolvedUserConfig } from '../config/index.js';
+import { createInlineCompiler } from '../index.js';
 // import { Server } from '../server/index.js';
 import { NewServer } from '../newServer/index.js';
 import type { JsUpdateResult } from '../types/binding.js';
@@ -19,7 +20,7 @@ import {
 import { createWatcher } from './create-watcher.js';
 
 interface ImplFileWatcher {
-  watch(): Promise<void>;
+  // watch(): Promise<void>;
 }
 
 export const debugWatcher = createDebugger('farm:watcher');
@@ -29,9 +30,9 @@ export default class Watcher implements ImplFileWatcher {
   private watchedFiles = new Set<string>();
   resolvedWatchOptions: WatchOptions;
   watcher: FSWatcher;
+  extraWatchedFiles: string[];
 
   constructor(
-    public compiler: NewServer | Compiler,
     public config: ResolvedUserConfig,
     private logger: Logger = new Logger()
   ) {
@@ -51,16 +52,17 @@ export default class Watcher implements ImplFileWatcher {
     );
   }
 
-  getExtraWatchedFiles() {
-    const compiler = this.getCompiler();
-    return [
+  getExtraWatchedFiles(compiler?: Compiler | null) {
+    // const compiler = !watchCompiler ? this.getCompiler() : watchCompiler;
+    this.extraWatchedFiles = [
       ...compiler.resolvedModulePaths(this.config.root),
       ...compiler.resolvedWatchPaths()
     ].filter((file) => this.filterWatchFile(file, this.config.root));
+    return this.extraWatchedFiles;
   }
 
   watchExtraFiles() {
-    this.getExtraWatchedFiles().forEach((file) => {
+    this.extraWatchedFiles.forEach((file) => {
       if (!this.watchedFiles.has(file)) {
         this.watcher.add(file);
         this.watchedFiles.add(file);
@@ -68,101 +70,111 @@ export default class Watcher implements ImplFileWatcher {
     });
   }
 
-  async watch() {
-    const compiler = this.getCompiler();
+  // async watch() {
+  //   const compiler = this.getCompiler();
 
-    const handlePathChange = async (path: string) => {
-      if (this.close) return;
+  //   const handlePathChange = async (path: string) => {
+  //     if (this.close) return;
 
-      try {
-        if (this.compiler instanceof NewServer && this.compiler.getCompiler()) {
-          await this.compiler.hmrEngine.hmrUpdate(path);
-        }
+  //     try {
+  //       if (this.compiler instanceof NewServer && this.compiler.getCompiler()) {
+  //         await this.compiler.hmrEngine.hmrUpdate(path);
+  //       }
 
-        if (
-          this.compiler instanceof Compiler &&
-          this.compiler.hasModule(path)
-        ) {
-          await compilerHandler(
-            async () => {
-              const result = await compiler.update([path], true);
-              this.handleUpdateFinish(result, compiler);
-              compiler.writeResourcesToDisk();
-            },
-            this.config,
-            this.logger,
-            { clear: true }
-          );
-        }
-      } catch (error) {
-        this.logger.error(error);
-      }
-    };
+  //       if (
+  //         this.compiler instanceof Compiler &&
+  //         this.compiler.hasModule(path)
+  //       ) {
+  //         await compilerHandler(
+  //           async () => {
+  //             const result = await compiler.update([path], true);
+  //             this.handleUpdateFinish(result, compiler);
+  //             compiler.writeResourcesToDisk();
+  //           },
+  //           this.config,
+  //           this.logger,
+  //           { clear: true }
+  //         );
+  //       }
+  //     } catch (error) {
+  //       this.logger.error(error);
+  //     }
+  //   };
 
-    const filesToWatch = [this.config.root, ...this.getExtraWatchedFiles()];
-    this.watchedFiles = new Set(filesToWatch);
-    this.watcher ??= createWatcher(this.config, filesToWatch);
+  //   const filesToWatch = [this.config.root, ...this.getExtraWatchedFiles()];
+  //   this.watchedFiles = new Set(filesToWatch);
+  //   this.watcher ??= createWatcher(this.config, filesToWatch);
 
-    this.watcher.on('change', (path) => {
-      if (this.close) return;
-      handlePathChange(path);
-    });
+  //   this.watcher.on('change', (path) => {
+  //     if (this.close) return;
+  //     handlePathChange(path);
+  //   });
 
-    if (this.compiler instanceof NewServer) {
-      this.compiler.hmrEngine?.onUpdateFinish((result) =>
-        this.handleUpdateFinish(result, compiler)
-      );
-    }
-  }
+  //   if (this.compiler instanceof NewServer) {
+  //     this.compiler.hmrEngine?.onUpdateFinish((result) =>
+  //       this.handleUpdateFinish(result, compiler)
+  //     );
+  //   }
+  // }
 
-  async watchConfigs(callback: (files: string[]) => void) {
-    const filesToWatch = Array.from([
-      ...(this.config.envFiles ?? []),
-      ...(this.config.configFileDependencies ?? []),
-      ...(this.config.configFilePath ? [this.config.configFilePath] : [])
-    ]).filter((file) => file && existsSync(file));
-    const chokidarOptions = {
-      awaitWriteFinish:
-        process.platform === 'linux'
-          ? undefined
-          : {
-              stabilityThreshold: 10,
-              pollInterval: 80
-            }
-    };
-    this.watcher ??= createWatcher(this.config, filesToWatch, chokidarOptions);
+  // async watchConfigs(callback: (files: string[]) => void) {
+  //   const filesToWatch = Array.from([
+  //     ...(this.config.envFiles ?? []),
+  //     ...(this.config.configFileDependencies ?? []),
+  //     ...(this.config.configFilePath ? [this.config.configFilePath] : [])
+  //   ]).filter((file) => file && existsSync(file));
+  //   const chokidarOptions = {
+  //     awaitWriteFinish:
+  //       process.platform === 'linux'
+  //         ? undefined
+  //         : {
+  //             stabilityThreshold: 10,
+  //             pollInterval: 80
+  //           }
+  //   };
+  //   this.watcher ??= createWatcher(this.config, filesToWatch, chokidarOptions);
 
-    this.watcher.on('change', (path) => {
-      if (this.close) return;
-      if (filesToWatch.includes(path)) {
-        callback([path]);
-      }
-    });
-    return this;
-  }
+  //   this.watcher.on('change', (path) => {
+  //     if (this.close) return;
+  //     if (filesToWatch.includes(path)) {
+  //       callback([path]);
+  //     }
+  //   });
+  //   return this;
+  // }
 
-  private handleUpdateFinish(updateResult: JsUpdateResult, compiler: Compiler) {
-    const addedFiles = [
-      ...updateResult.added,
-      ...updateResult.extraWatchResult.add
-    ].map((addedModule) =>
-      compiler.transformModulePath(this.config.root, addedModule)
-    );
+  // private handleUpdateFinish(updateResult: JsUpdateResult, compiler: Compiler) {
+  //   const addedFiles = [
+  //     ...updateResult.added,
+  //     ...updateResult.extraWatchResult.add
+  //   ].map((addedModule) =>
+  //     compiler.transformModulePath(this.config.root, addedModule)
+  //   );
 
-    const filteredAdded = addedFiles.filter((file) =>
-      this.filterWatchFile(file, this.config.root)
-    );
+  //   const filteredAdded = addedFiles.filter((file) =>
+  //     this.filterWatchFile(file, this.config.root)
+  //   );
 
-    if (filteredAdded.length > 0) {
-      this.watcher.add(filteredAdded);
-    }
-  }
+  //   if (filteredAdded.length > 0) {
+  //     this.watcher.add(filteredAdded);
+  //   }
+  // }
 
-  createWatcher() {
-    // TODO error here
+  async createWatcher() {
+    // add 监听额外的文件 需要new 一个 compiler instance
+    // const Compiler = (await import("../compiler/index.js")).Compiler;
+    // const compiler = new Compiler({
+    //   config: { ...this.config.compilation, progress: false },
+    //   jsPlugins: this.config.jsPlugins,
+    //   rustPlugins: this.config.rustPlugins,
+    // });
+    const compiler = createInlineCompiler(this.config, { progress: false });
+
+    // TODO type error here
     // @ts-ignore
     const enabledWatcher = this.config.watch !== null;
-    const files = [this.config.root, ...this.getExtraWatchedFiles()];
+    const files = [this.config.root, ...this.getExtraWatchedFiles(compiler)];
+
     this.watcher = enabledWatcher
       ? (chokidar.watch(files, this.resolvedWatchOptions) as FSWatcher)
       : new NoopWatcher(this.resolvedWatchOptions);
@@ -175,7 +187,7 @@ export default class Watcher implements ImplFileWatcher {
       this.config.compilation.persistentCache
     );
 
-    // TODO error here
+    // TODO type error here
     // @ts-ignore
     const userWatchOptions = this.config.server.watch;
     const { ignored: ignoredList, ...otherOptions } = userWatchOptions ?? {};
@@ -206,14 +218,14 @@ export default class Watcher implements ImplFileWatcher {
     };
   }
 
-  getCompiler(): Compiler {
-    //@ts-ignore
-    return this.compiler;
-  }
+  // getCompiler(): Compiler {
+  //   //@ts-ignore
+  //   return this.compiler;
+  // }
 
-  setCompiler(compiler: Compiler) {
-    this.compiler = compiler;
-  }
+  // setCompiler(compiler: Compiler) {
+  //   this.compiler = compiler;
+  // }
 
   async close() {
     if (this.watcher) {
@@ -222,207 +234,7 @@ export default class Watcher implements ImplFileWatcher {
       await this.watcher.close();
       this.watcher = null;
     }
-    this.compiler = null;
-  }
-}
-
-export class FileWatcher implements ImplFileWatcher {
-  private watcher: FSWatcher;
-  private watchedFiles = new Set<string>();
-  resolvedWatchOptions: WatchOptions;
-  constructor(
-    public compiler: NewServer | Compiler,
-    public config: ResolvedUserConfig,
-    private logger: Logger = new Logger()
-  ) {
-    this.resolveChokidarOptions();
-  }
-
-  getInternalWatcher() {
-    return this.watcher;
-  }
-
-  filterWatchFile(file: string, root: string): boolean {
-    const separator = process.platform === 'win32' ? '\\' : '/';
-    return (
-      !file.startsWith(`${root}${separator}`) &&
-      !file.includes('\0') &&
-      existsSync(file)
-    );
-  }
-
-  // TODO watcher 里的 compiler 使用单独的 compiler 不要用传递进来的
-  getExtraWatchedFiles() {
-    const compiler = this.getCompiler();
-    return [
-      ...compiler.resolvedModulePaths(this.config.root),
-      ...compiler.resolvedWatchPaths()
-    ].filter((file) => this.filterWatchFile(file, this.config.root));
-  }
-
-  watchExtraFiles() {
-    this.getExtraWatchedFiles().forEach((file) => {
-      if (!this.watchedFiles.has(file)) {
-        this.watcher.add(file);
-        this.watchedFiles.add(file);
-      }
-    });
-  }
-
-  async watch() {
-    const compiler = this.getCompiler();
-
-    const handlePathChange = async (path: string) => {
-      if (this.close) return;
-
-      try {
-        if (this.compiler instanceof NewServer && this.compiler.getCompiler()) {
-          await this.compiler.hmrEngine.hmrUpdate(path);
-        }
-
-        if (
-          this.compiler instanceof Compiler &&
-          this.compiler.hasModule(path)
-        ) {
-          await compilerHandler(
-            async () => {
-              const result = await compiler.update([path], true);
-              this.handleUpdateFinish(result, compiler);
-              compiler.writeResourcesToDisk();
-            },
-            this.config,
-            this.logger,
-            { clear: true }
-          );
-        }
-      } catch (error) {
-        this.logger.error(error);
-      }
-    };
-
-    const filesToWatch = [this.config.root, ...this.getExtraWatchedFiles()];
-    this.watchedFiles = new Set(filesToWatch);
-    this.watcher ??= createWatcher(this.config, filesToWatch);
-
-    this.watcher.on('change', (path) => {
-      if (this.close) return;
-      handlePathChange(path);
-    });
-
-    if (this.compiler instanceof NewServer) {
-      this.compiler.hmrEngine?.onUpdateFinish((result) =>
-        this.handleUpdateFinish(result, compiler)
-      );
-    }
-  }
-
-  async watchConfigs(callback: (files: string[]) => void) {
-    const filesToWatch = Array.from([
-      ...(this.config.envFiles ?? []),
-      ...(this.config.configFileDependencies ?? []),
-      ...(this.config.configFilePath ? [this.config.configFilePath] : [])
-    ]).filter((file) => file && existsSync(file));
-    const chokidarOptions = {
-      awaitWriteFinish:
-        process.platform === 'linux'
-          ? undefined
-          : {
-              stabilityThreshold: 10,
-              pollInterval: 80
-            }
-    };
-    this.watcher ??= createWatcher(this.config, filesToWatch, chokidarOptions);
-
-    this.watcher.on('change', (path) => {
-      if (this.close) return;
-      if (filesToWatch.includes(path)) {
-        callback([path]);
-      }
-    });
-    return this;
-  }
-
-  private handleUpdateFinish(updateResult: JsUpdateResult, compiler: Compiler) {
-    const addedFiles = [
-      ...updateResult.added,
-      ...updateResult.extraWatchResult.add
-    ].map((addedModule) =>
-      compiler.transformModulePath(this.config.root, addedModule)
-    );
-
-    const filteredAdded = addedFiles.filter((file) =>
-      this.filterWatchFile(file, this.config.root)
-    );
-
-    if (filteredAdded.length > 0) {
-      this.watcher.add(filteredAdded);
-    }
-  }
-
-  createWatcher() {
-    // TODO error here
-    // @ts-ignore
-    const enabledWatcher = this.config.watch !== null;
-    const files = [this.config.root, ...this.getExtraWatchedFiles()];
-    this.watcher = enabledWatcher
-      ? (chokidar.watch(files, this.resolvedWatchOptions) as FSWatcher)
-      : new NoopWatcher(this.resolvedWatchOptions);
-  }
-
-  resolveChokidarOptions() {
-    // TODO use config.cacheDir
-    const cacheDir = getCacheDir(
-      this.config.root,
-      this.config.compilation.persistentCache
-    );
-
-    // TODO error here
-    // @ts-ignore
-    const userWatchOptions = this.config.server.watch;
-    const { ignored: ignoredList, ...otherOptions } = userWatchOptions ?? {};
-    const ignored: WatchOptions['ignored'] = [
-      '**/.git/**',
-      // TODO node_modules 这块的处理逻辑 以及是否会影响性能
-      '**/node_modules/**',
-      '**/test-results/**', // Playwright
-      glob.escapePath(
-        path.resolve(this.config.root, this.config.compilation.output.path)
-      ) + '/**',
-      glob.escapePath(cacheDir) + '/**',
-      ...arraify(ignoredList || [])
-    ];
-
-    this.resolvedWatchOptions = {
-      ignored,
-      ignoreInitial: true,
-      ignorePermissionErrors: true,
-      awaitWriteFinish:
-        process.platform === 'linux'
-          ? undefined
-          : {
-              stabilityThreshold: 10,
-              pollInterval: 10
-            },
-      ...otherOptions
-    };
-  }
-
-  getCompiler(): Compiler {
-    //@ts-ignore
-    return this.compiler;
-  }
-
-  setCompiler(compiler: Compiler) {
-    this.compiler = compiler;
-  }
-
-  async close() {
-    if (this.watcher) {
-      // this.close = true;
-      await this.watcher.close();
-      this.watcher = null;
-    }
-    this.compiler = null;
+    // this.compiler = null;
   }
 }
 

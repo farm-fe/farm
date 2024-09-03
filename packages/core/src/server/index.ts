@@ -20,6 +20,7 @@ import {
   getValidPublicPath,
   normalizePublicPath
 } from '../config/normalize-config/normalize-output.js';
+import { FileWatcher } from '../old-watcher/index.js';
 import { resolveHostname, resolveServerUrls } from '../utils/http.js';
 import {
   Logger,
@@ -30,7 +31,6 @@ import {
   normalizeBasePath,
   printServerUrls
 } from '../utils/index.js';
-import { FileWatcher } from '../watcher/index.js';
 import { logError } from './error.js';
 import { HmrEngine } from './hmr-engine.js';
 import { hmrPing } from './middlewares/hmrPing.js';

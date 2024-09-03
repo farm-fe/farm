@@ -5,7 +5,7 @@ import corsMiddleware from 'cors';
 
 import { Compiler } from '../compiler/index.js';
 import { colors, createCompiler } from '../index.js';
-import Watcher, { FileWatcher } from '../watcher/index.js';
+import Watcher from '../watcher/index.js';
 import { HmrEngine } from './hmr-engine.js';
 import { CommonServerOptions, httpServer } from './http.js';
 import { openBrowser } from './open.js';
@@ -171,7 +171,7 @@ export class NewServer extends httpServer {
       // init middlewares
       this.#initializeMiddlewares();
 
-      this.#startWatcher();
+      this.#createWatcher();
 
       if (!middlewareMode && this.httpServer) {
         this.httpServer.once('listening', () => {
@@ -181,7 +181,7 @@ export class NewServer extends httpServer {
           ).port;
         });
       }
-      // apply server configuration hooks from plugins e.g. vite configureServer
+      // TODO apply server configuration hooks from plugins e.g. vite configureServer
       const postHooks: ((() => void) | void)[] = [];
       // console.log(this.resolvedUserConfig.jsPlugins);
 
@@ -198,50 +198,50 @@ export class NewServer extends httpServer {
   /**
    *
    */
-  async #startWatcher() {
-    this.watcher = new Watcher(this.compiler, this.resolvedUserConfig);
+  async #createWatcher() {
+    this.watcher = new Watcher(this.resolvedUserConfig);
     this.watcher.createWatcher();
-    this.watcher.watcher.on('change', async (file) => {
-      const isConfigFile = this.resolvedUserConfig.configFilePath === file;
-      const isConfigDependencyFile =
-        this.resolvedUserConfig.configFileDependencies.some(
-          (name) => file === name
-        );
-      const isEnvFile = this.resolvedUserConfig.envFiles.some(
-        (name) => file === name
-      );
-      if (isConfigFile || isConfigDependencyFile || isEnvFile) {
-        debugServer?.(`[config change] ${colors.dim(file)}`);
-        this.close();
-      }
-      // TODO 做一个 onHmrUpdate 方法
-      try {
-        this.hmrEngine.hmrUpdate(file);
-      } catch (error) {
-        this.logger.error(error);
-      }
-    });
-    const handleUpdateFinish = (updateResult: JsUpdateResult) => {
-      const added = [
-        ...updateResult.added,
-        ...updateResult.extraWatchResult.add
-      ].map((addedModule) => {
-        const resolvedPath = this.compiler.transformModulePath(
-          this.root,
-          addedModule
-        );
-        return resolvedPath;
-      });
-      const filteredAdded = added.filter((file) =>
-        this.watcher.filterWatchFile(file, this.root)
-      );
+    // this.watcher.watcher.on("change", async (file: string | string[] | any) => {
+    //   const isConfigFile = this.resolvedUserConfig.configFilePath === file;
+    //   const isConfigDependencyFile =
+    //     this.resolvedUserConfig.configFileDependencies.some(
+    //       (name) => file === name,
+    //     );
+    //   const isEnvFile = this.resolvedUserConfig.envFiles.some(
+    //     (name) => file === name,
+    //   );
+    //   if (isConfigFile || isConfigDependencyFile || isEnvFile) {
+    //     debugServer?.(`[config change] ${colors.dim(file)}`);
+    //     this.close();
+    //   }
+    //   // TODO 做一个 onHmrUpdate 方法
+    //   try {
+    //     this.hmrEngine.hmrUpdate(file);
+    //   } catch (error) {
+    //     this.logger.error(`Farm Hmr Update Error: ${error}`);
+    //   }
+    // });
+    // const handleUpdateFinish = (updateResult: JsUpdateResult) => {
+    //   const added = [
+    //     ...updateResult.added,
+    //     ...updateResult.extraWatchResult.add,
+    //   ].map((addedModule) => {
+    //     const resolvedPath = this.compiler.transformModulePath(
+    //       this.root,
+    //       addedModule,
+    //     );
+    //     return resolvedPath;
+    //   });
+    //   const filteredAdded = added.filter((file) =>
+    //     this.watcher.filterWatchFile(file, this.root),
+    //   );
 
-      if (filteredAdded.length > 0) {
-        this.watcher.watcher.add(filteredAdded);
-      }
-    };
+    //   if (filteredAdded.length > 0) {
+    //     this.watcher.watcher.add(filteredAdded);
+    //   }
+    // };
 
-    this.hmrEngine?.onUpdateFinish(handleUpdateFinish);
+    // this.hmrEngine?.onUpdateFinish(handleUpdateFinish);
   }
 
   /**
@@ -298,19 +298,16 @@ export class NewServer extends httpServer {
       this.resolvedUserConfig.compilation.define.FARM_HMR_PORT =
         serverPort.toString();
 
+      // TODO 暂时注释掉
       this.compiler = await createCompiler(this.resolvedUserConfig, logger);
-
-      // start watcher
-      // TODO 这个 watcher 应该在 createserver 的时候 而不是 listen 的时候创建 不然 适配器那边过不去
-      // this.#startWatcher();
 
       // compile the project and start the dev server
       await this.#startCompile();
 
       // watch extra files after compile
-      this.watcher?.watchExtraFiles?.();
-      !__FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__ &&
-        (await this.displayServerUrls(this.serverOptions, this.publicPath));
+      // this.watcher?.watchExtraFiles?.();
+      // !__FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__ &&
+      await this.displayServerUrls(this.serverOptions, this.publicPath);
 
       if (open) {
         this.#openServerBrowser();

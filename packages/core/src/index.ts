@@ -39,11 +39,11 @@ import {
   resolveConfig
 } from './config/index.js';
 import { NewServer } from './newServer/index.js';
+import { FileWatcher } from './old-watcher/index.js';
 import { Server } from './server/index.js';
 import { compilerHandler } from './utils/build.js';
 import { colors } from './utils/color.js';
 import { Logger } from './utils/logger.js';
-import { FileWatcher } from './watcher/index.js';
 
 import { __FARM_GLOBAL__ } from './config/_global.js';
 import type {
@@ -214,7 +214,7 @@ export async function watch(
     }
   }
 
-  fileWatcher.watchConfigs(handleFileChange);
+  // fileWatcher.watchConfigs(handleFileChange);
 }
 
 export async function clean(
@@ -318,6 +318,20 @@ export async function createCompiler(
   resolvedUserConfig: ResolvedUserConfig,
   logger: Logger
 ) {
+  const compiler = initInlineCompiler(resolvedUserConfig, logger);
+  // TODO 这也不对 这块要 先排序 然后过滤掉对应的 存在这个钩子的插件 然后进而调用一些 like e.g 中间件
+  // 这块逻辑也需要过滤 拿到最新的
+  for (const plugin of resolvedUserConfig.jsPlugins) {
+    await plugin.configureCompiler?.(compiler);
+  }
+
+  return compiler;
+}
+
+export function initInlineCompiler(
+  resolvedUserConfig: ResolvedUserConfig,
+  logger: Logger
+) {
   const {
     jsPlugins,
     rustPlugins,
@@ -332,12 +346,19 @@ export async function createCompiler(
     },
     logger
   );
-  // 这块逻辑也需要过滤 拿到最新的
-  for (const plugin of jsPlugins) {
-    await plugin.configureCompiler?.(compiler);
-  }
-
   return compiler;
+}
+
+export async function createInlineCompiler(
+  config: ResolvedUserConfig,
+  options = {}
+) {
+  const { Compiler } = await import('./compiler/index.js');
+  return new Compiler({
+    config: { ...config.compilation, ...options },
+    jsPlugins: config.jsPlugins,
+    rustPlugins: config.rustPlugins
+  });
 }
 
 async function copyPublicDirectory(
@@ -421,18 +442,18 @@ export async function createFileWatcher(
   devServer.watcher = fileWatcher;
   await fileWatcher.watch();
 
-  fileWatcher.watchConfigs(async (files: string[]) => {
-    checkClearScreen(resolvedUserConfig);
+  // fileWatcher.watchConfigs(async (files: string[]) => {
+  //   checkClearScreen(resolvedUserConfig);
 
-    devServer.restart(async () => {
-      logFileChanges(files, resolvedUserConfig.root, logger);
-      fileWatcher?.close();
+  //   devServer.restart(async () => {
+  //     logFileChanges(files, resolvedUserConfig.root, logger);
+  //     fileWatcher?.close();
 
-      await devServer.close();
-      __FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__ = true;
-      await start(resolvedUserConfig as FarmCliOptions & UserConfig);
-    });
-  });
+  //     await devServer.close();
+  //     __FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__ = true;
+  //     await start(resolvedUserConfig as FarmCliOptions & UserConfig);
+  //   });
+  // });
   return fileWatcher;
 }
 
@@ -458,33 +479,33 @@ export async function createFileWatcher2(
   // }
 
   const configFilePath = await getConfigFilePath(resolvedUserConfig.root);
-  const fileWatcher = new FileWatcher(
-    devServer,
-    { ...resolvedUserConfig, configFilePath },
-    logger
-  );
+  // const fileWatcher = new FileWatcher(
+  //   devServer,
+  //   { ...resolvedUserConfig, configFilePath },
+  //   logger,
+  // );
   // devServer.watcher = fileWatcher;
-  await fileWatcher.watch();
+  // await fileWatcher.watch();
 
-  fileWatcher.watchConfigs(async (files: string[]) => {
-    checkClearScreen(resolvedUserConfig);
-    logFileChanges(files, resolvedUserConfig.root, logger);
+  // fileWatcher.watchConfigs(async (files: string[]) => {
+  //   checkClearScreen(resolvedUserConfig);
+  //   logFileChanges(files, resolvedUserConfig.root, logger);
 
-    await fileWatcher.close();
-    await devServer.close();
-    __FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__ = true;
+  //   await fileWatcher.close();
+  //   await devServer.close();
+  //   __FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__ = true;
 
-    await start2(resolvedUserConfig as FarmCliOptions & UserConfig);
-    // devServer.restart(async () => {
-    //   logFileChanges(files, resolvedUserConfig.root, logger);
-    //   farmWatcher?.close();
+  //   await start2(resolvedUserConfig as FarmCliOptions & UserConfig);
+  //   // devServer.restart(async () => {
+  //   //   logFileChanges(files, resolvedUserConfig.root, logger);
+  //   //   farmWatcher?.close();
 
-    //   await devServer.close();
-    //   __FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__ = true;
-    //   await start(resolvedUserConfig as FarmCliOptions & UserConfig);
-    // });
-  });
-  return fileWatcher;
+  //   //   await devServer.close();
+  //   //   __FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__ = true;
+  //   //   await start(resolvedUserConfig as FarmCliOptions & UserConfig);
+  //   // });
+  // });
+  // return fileWatcher;
 }
 
 export function logFileChanges(files: string[], root: string, logger: Logger) {
