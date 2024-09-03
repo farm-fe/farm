@@ -53,7 +53,6 @@ export default class Watcher implements ImplFileWatcher {
   }
 
   getExtraWatchedFiles(compiler?: Compiler | null) {
-    // const compiler = !watchCompiler ? this.getCompiler() : watchCompiler;
     this.extraWatchedFiles = [
       ...compiler.resolvedModulePaths(this.config.root),
       ...compiler.resolvedWatchPaths()
@@ -161,22 +160,13 @@ export default class Watcher implements ImplFileWatcher {
   // }
 
   async createWatcher() {
-    // add 监听额外的文件 需要new 一个 compiler instance
-    // const Compiler = (await import("../compiler/index.js")).Compiler;
-    // const compiler = new Compiler({
-    //   config: { ...this.config.compilation, progress: false },
-    //   jsPlugins: this.config.jsPlugins,
-    //   rustPlugins: this.config.rustPlugins,
-    // });
-    const compiler = createInlineCompiler(this.config, { progress: false });
-
+    const compiler = await createInlineCompiler(this.config, {
+      progress: false
+    });
     // TODO type error here
     // @ts-ignore
     const enabledWatcher = this.config.watch !== null;
-    const files = [
-      this.config.root,
-      ...this.getExtraWatchedFiles(await compiler)
-    ];
+    const files = [this.config.root, ...this.getExtraWatchedFiles(compiler)];
 
     this.watcher = enabledWatcher
       ? (chokidar.watch(files, this.resolvedWatchOptions) as FSWatcher)
@@ -221,23 +211,12 @@ export default class Watcher implements ImplFileWatcher {
     };
   }
 
-  // getCompiler(): Compiler {
-  //   //@ts-ignore
-  //   return this.compiler;
-  // }
-
-  // setCompiler(compiler: Compiler) {
-  //   this.compiler = compiler;
-  // }
-
   async close() {
     if (this.watcher) {
-      // this.close = true;
       debugWatcher?.('close watcher');
       await this.watcher.close();
       this.watcher = null;
     }
-    // this.compiler = null;
   }
 }
 

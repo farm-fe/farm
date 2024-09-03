@@ -115,6 +115,7 @@ export class NewServer extends httpServer {
   compiler: CompilerType;
   root: string;
   closeHttpServerFn: () => Promise<void>;
+  postConfigureServerHooks: ((() => void) | void)[] = [];
   constructor(
     readonly resolvedUserConfig: ResolvedUserConfig,
     logger: Logger
@@ -168,10 +169,12 @@ export class NewServer extends httpServer {
       // invalidate vite handler
       this.#invalidateVite();
 
+      this.#createWatcher();
+
       // init middlewares
       this.#initializeMiddlewares();
 
-      this.#createWatcher();
+      this.handleConfigureServer();
 
       if (!middlewareMode && this.httpServer) {
         this.httpServer.once('listening', () => {
@@ -182,9 +185,8 @@ export class NewServer extends httpServer {
         });
       }
       // TODO apply server configuration hooks from plugins e.g. vite configureServer
-      const postHooks: ((() => void) | void)[] = [];
+      // const postHooks: ((() => void) | void)[] = [];
       // console.log(this.resolvedUserConfig.jsPlugins);
-
       // TODO 要在这里做 vite 插件和 js 插件的适配器
       // for (const hook of getPluginHooks(applyPlugins, "configureServer")) {
       //   postHooks.push(await hook(reflexServer));
@@ -195,53 +197,86 @@ export class NewServer extends httpServer {
     }
   }
 
+  async handleConfigureServer() {
+    const reflexServer = new Proxy(this, {
+      get: (_, property: keyof NewServer) => {
+        return this[property];
+      },
+      set: (_, property: keyof NewServer, value: never) => {
+        //@ts-ignore
+        this[property] = value;
+        return true;
+      }
+    });
+    const { jsPlugins } = this.resolvedUserConfig;
+    // const postHooks: ((() => void) | void)[] = [];
+    // TODO type error and 而且还要排序 插件排序
+    // @ts-ignore
+    for (const hook of getPluginHooks(jsPlugins, 'configureServer')) {
+      this.postConfigureServerHooks.push(await hook(reflexServer));
+    }
+  }
+
   /**
    *
    */
   async #createWatcher() {
     this.watcher = new Watcher(this.resolvedUserConfig);
-    this.watcher.createWatcher();
-    // this.watcher.watcher.on("change", async (file: string | string[] | any) => {
-    //   const isConfigFile = this.resolvedUserConfig.configFilePath === file;
-    //   const isConfigDependencyFile =
-    //     this.resolvedUserConfig.configFileDependencies.some(
-    //       (name) => file === name,
-    //     );
-    //   const isEnvFile = this.resolvedUserConfig.envFiles.some(
-    //     (name) => file === name,
-    //   );
-    //   if (isConfigFile || isConfigDependencyFile || isEnvFile) {
-    //     debugServer?.(`[config change] ${colors.dim(file)}`);
-    //     this.close();
-    //   }
-    //   // TODO 做一个 onHmrUpdate 方法
-    //   try {
-    //     this.hmrEngine.hmrUpdate(file);
-    //   } catch (error) {
-    //     this.logger.error(`Farm Hmr Update Error: ${error}`);
-    //   }
-    // });
-    // const handleUpdateFinish = (updateResult: JsUpdateResult) => {
-    //   const added = [
-    //     ...updateResult.added,
-    //     ...updateResult.extraWatchResult.add,
-    //   ].map((addedModule) => {
-    //     const resolvedPath = this.compiler.transformModulePath(
-    //       this.root,
-    //       addedModule,
-    //     );
-    //     return resolvedPath;
-    //   });
-    //   const filteredAdded = added.filter((file) =>
-    //     this.watcher.filterWatchFile(file, this.root),
-    //   );
 
-    //   if (filteredAdded.length > 0) {
-    //     this.watcher.watcher.add(filteredAdded);
-    //   }
-    // };
+    await this.watcher.createWatcher();
 
-    // this.hmrEngine?.onUpdateFinish(handleUpdateFinish);
+    this.watcher.watcher.on('change', async (file: string | string[] | any) => {
+      const isConfigFile = this.resolvedUserConfig.configFilePath === file;
+      const isConfigDependencyFile =
+        this.resolvedUserConfig.configFileDependencies.some(
+          (name) => file === name
+        );
+      const isEnvFile = this.resolvedUserConfig.envFiles.some(
+        (name) => file === name
+      );
+      if (isConfigFile || isConfigDependencyFile || isEnvFile) {
+        debugServer?.(`[config change] ${colors.dim(file)}`);
+        await this.close();
+        console.log('重启大法');
+
+        setTimeout(() => {
+          this.restartServer();
+        }, 3000);
+      }
+      // TODO 做一个 onHmrUpdate 方法
+      try {
+        this.hmrEngine.hmrUpdate(file);
+      } catch (error) {
+        this.logger.error(`Farm Hmr Update Error: ${error}`);
+      }
+    });
+    const handleUpdateFinish = (updateResult: JsUpdateResult) => {
+      const added = [
+        ...updateResult.added,
+        ...updateResult.extraWatchResult.add
+      ].map((addedModule) => {
+        const resolvedPath = this.compiler.transformModulePath(
+          this.root,
+          addedModule
+        );
+        return resolvedPath;
+      });
+      const filteredAdded = added.filter((file) =>
+        this.watcher.filterWatchFile(file, this.root)
+      );
+
+      if (filteredAdded.length > 0) {
+        this.watcher.watcher.add(filteredAdded);
+      }
+    };
+
+    this.hmrEngine?.onUpdateFinish(handleUpdateFinish);
+  }
+
+  async restartServer() {
+    console.log('开启重启大法呜啦啦');
+    await this.createServer();
+    await this.listen();
   }
 
   /**
@@ -305,7 +340,7 @@ export class NewServer extends httpServer {
       await this.#startCompile();
 
       // watch extra files after compile
-      // this.watcher?.watchExtraFiles?.();
+      this.watcher?.watchExtraFiles?.();
       // !__FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__ &&
       await this.displayServerUrls(this.serverOptions, this.publicPath);
 
@@ -444,6 +479,8 @@ export class NewServer extends httpServer {
     if (this.resolvedUserConfig.vitePlugins?.length) {
       this.middlewares.use(adaptorViteMiddleware(this));
     }
+
+    this.postConfigureServerHooks.forEach((fn) => fn && fn());
 
     // TODO todo add appType 这块要判断 单页面还是 多页面 多 html 处理不一样
     this.middlewares.use(htmlFallbackMiddleware(this));
