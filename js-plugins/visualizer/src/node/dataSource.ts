@@ -23,16 +23,6 @@ export function createDateSourceMiddleware(compiler: Compiler) {
 
       if (pathname === '/__record/modules') {
         handleRecordRequest(compiler.modules());
-      } else if (pathname === '/__record/resolve') {
-        handleRecordRequest(compiler.getResolveRecords(id));
-      } else if (pathname === '/__record/transform') {
-        handleRecordRequest(compiler.getTransformRecords(id));
-      } else if (pathname === '/__record/process') {
-        handleRecordRequest(compiler.getProcessRecords(id));
-      } else if (pathname === '/__record/analyze_deps') {
-        handleRecordRequest(compiler.getAnalyzeDepsRecords(id));
-      } else if (pathname === '/__record/resource_pot') {
-        handleRecordRequest(compiler.getResourcePotRecordsById(id));
       } else if (pathname === '/__record/farm_env_info') {
         const info = await getFarmEnvInfo();
         if (typeof info === 'object') {
@@ -49,7 +39,7 @@ export function createDateSourceMiddleware(compiler: Compiler) {
         const resource = compiler.resource(id);
         handleRecordRequest(resource);
       } else if (pathname === '/__record/stats') {
-        const stats = compiler.pluginStats();
+        const stats = compiler.stats();
         handleRecordRequest(stats);
       } else {
         await next();

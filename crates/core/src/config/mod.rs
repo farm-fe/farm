@@ -56,6 +56,7 @@ pub struct Config {
   pub tree_shaking: Box<BoolOrObj<serde_json::Value>>,
   pub minify: Box<BoolOrObj<serde_json::Value>>,
   pub preset_env: Box<PresetEnvConfig>,
+  /// whether to record the compilation flow stats, default is false.
   pub record: bool,
   pub progress: bool,
   pub persistent_cache: Box<persistent_cache::PersistentCacheConfig>,

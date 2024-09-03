@@ -4,7 +4,6 @@ export * from './server/index.js';
 export * from './plugin/type.js';
 export * from './utils/index.js';
 export type {
-  Module,
   ModuleType,
   ResolveKind,
   PluginLoadHookParam,

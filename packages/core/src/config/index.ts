@@ -716,8 +716,19 @@ export async function readConfigFile(
     compiler.writeResourcesToDisk();
 
     const filePath = getFilePath(outputPath, fileName);
+    
     // Change to vm.module of node or loaders as far as it is stable
-    const { default: userConfig } = await import(filePath);
+    const userConfig = (await import(filePath as string)).default;
+    try {
+      fs.unlink(filePath, () => void 0);
+      // remove parent dir if empty
+      const isEmpty = fs.readdirSync(outputPath).length === 0;
+      if (isEmpty) {
+        fs.rmSync(outputPath);
+      }
+    } catch {
+      /** do nothing */
+    }
 
     const config = await (typeof userConfig === 'function'
       ? userConfig(configEnv)

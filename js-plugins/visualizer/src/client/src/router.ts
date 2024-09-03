@@ -10,13 +10,17 @@ export const routes = [
     component: () => import('./pages/Home.vue')
   },
   {
+    path: '/analysis/compilation',
+    component: () => import('./pages/analysis/Compilation.vue')
+  },
+  {
     path: '/analysis/bundle',
     component: () => import('./pages/analysis/Bundle.vue')
   },
-  {
-    path: '/analysis/module',
-    component: () => import('./pages/analysis/Module.vue')
-  },
+  // {
+  //   path: '/analysis/module',
+  //   component: () => import('./pages/analysis/Module.vue')
+  // },
   {
     path: '/analysis/plugin',
     component: () => import('./pages/analysis/Plugin.vue')
