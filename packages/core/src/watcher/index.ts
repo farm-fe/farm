@@ -173,7 +173,10 @@ export default class Watcher implements ImplFileWatcher {
     // TODO type error here
     // @ts-ignore
     const enabledWatcher = this.config.watch !== null;
-    const files = [this.config.root, ...this.getExtraWatchedFiles(compiler)];
+    const files = [
+      this.config.root,
+      ...this.getExtraWatchedFiles(await compiler)
+    ];
 
     this.watcher = enabledWatcher
       ? (chokidar.watch(files, this.resolvedWatchOptions) as FSWatcher)

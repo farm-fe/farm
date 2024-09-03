@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto';
+import fs from 'node:fs';
 import { createRequire } from 'node:module';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -716,7 +717,7 @@ export async function readConfigFile(
     compiler.writeResourcesToDisk();
 
     const filePath = getFilePath(outputPath, fileName);
-    
+
     // Change to vm.module of node or loaders as far as it is stable
     const userConfig = (await import(filePath as string)).default;
     try {
