@@ -1,5 +1,11 @@
 # @farmfe/js-plugin-record-viewer
 
+## 1.1.0
+
+### Minor Changes
+
+- 83b89e72: Refactor architecture
+
 ## 1.0.0
 
 ### Major Changes
