@@ -1,11 +1,12 @@
 // import { watch } from 'chokidar';
 import { FSWatcher } from 'chokidar';
-import { Server } from '../../index.js';
-import { Server as httpServer } from '../../server/type.js';
-import WsServer from '../../server/ws.js';
+// import { Server } from '../../index.js';
+import { Server as httpServer } from '../../server/index.js';
+// import WsServer from '../../server/ws.js';
 import { CompilationContext, ViteModule } from '../type.js';
 import { throwIncompatibleError } from './utils.js';
 
+// TODO type error refactor vite adaptor
 export class ViteDevServerAdapter {
   moduleGraph: ViteModuleGraphAdapter;
   config: any;
@@ -13,10 +14,10 @@ export class ViteDevServerAdapter {
   watcher: FSWatcher;
   middlewares: any;
   middlewareCallbacks: any[];
-  ws: WsServer;
+  ws: any;
   httpServer: httpServer;
 
-  constructor(pluginName: string, config: any, server: Server) {
+  constructor(pluginName: string, config: any, server: any) {
     this.moduleGraph = createViteModuleGraphAdapter(pluginName);
     this.config = config;
     this.pluginName = pluginName;
@@ -136,7 +137,7 @@ function proxyViteModuleNode(
 export function createViteDevServerAdapter(
   pluginName: string,
   config: any,
-  server: Server
+  server: any
 ) {
   const proxy = new Proxy(
     new ViteDevServerAdapter(pluginName, config, server),

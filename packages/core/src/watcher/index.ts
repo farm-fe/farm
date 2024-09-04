@@ -8,7 +8,7 @@ import { Compiler } from '../compiler/index.js';
 import type { ResolvedUserConfig } from '../config/index.js';
 import { createInlineCompiler } from '../index.js';
 // import { Server } from '../server/index.js';
-import { NewServer } from '../newServer/index.js';
+import { Server } from '../server/index.js';
 import type { JsUpdateResult } from '../types/binding.js';
 import { createDebugger } from '../utils/debug.js';
 import {
@@ -17,7 +17,6 @@ import {
   compilerHandler,
   getCacheDir
 } from '../utils/index.js';
-import { createWatcher } from './create-watcher.js';
 
 interface ImplFileWatcher {
   // watch(): Promise<void>;

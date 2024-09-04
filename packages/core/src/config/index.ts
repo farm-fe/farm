@@ -542,7 +542,8 @@ export const DEFAULT_HMR_OPTIONS: Required<UserHmrConfig> = {
   watchOptions: {},
   clientPort: 9000,
   timeout: 0,
-  server: null
+  server: null,
+  channels: []
 };
 
 export const DEFAULT_DEV_SERVER_OPTIONS: NormalizedServerConfig = {
@@ -1046,19 +1047,19 @@ export async function resolveConfigFilePath(
   }
 }
 
-export async function handleServerPortConflict(
-  resolvedUserConfig: ResolvedUserConfig,
-  logger: Logger,
-  mode?: CompilationMode
-) {
-  // check port availability: auto increment the port if a conflict occurs
+// export async function handleServerPortConflict(
+//   resolvedUserConfig: ResolvedUserConfig,
+//   logger: Logger,
+//   mode?: CompilationMode
+// ) {
+//   // check port availability: auto increment the port if a conflict occurs
 
-  try {
-    mode !== 'production' &&
-      (await Server.resolvePortConflict(resolvedUserConfig.server, logger));
-    // eslint-disable-next-line no-empty
-  } catch {}
-}
+//   try {
+//     mode !== 'production' &&
+//       (await Server.resolvePortConflict(resolvedUserConfig.server, logger));
+//     // eslint-disable-next-line no-empty
+//   } catch {}
+// }
 
 export function checkClearScreen(
   inlineConfig: FarmCliOptions | ResolvedUserConfig

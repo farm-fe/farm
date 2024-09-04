@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
-import type { build, clean, preview, start, watch } from '@farmfe/core';
+// import type { build, clean, preview, start, watch } from '@farmfe/core';
+import type { clean, start } from '@farmfe/core';
 import { Logger } from '@farmfe/core';
 
 import type {
@@ -24,12 +25,13 @@ const logger = new Logger();
  */
 export async function resolveCore(): Promise<{
   start: typeof start;
-  build: typeof build;
-  watch: typeof watch;
-  preview: typeof preview;
+  build: any;
+  watch: any;
+  preview: any;
   clean: typeof clean;
 }> {
   try {
+    // @ts-ignore
     return import('@farmfe/core');
   } catch (err) {
     logger.error(

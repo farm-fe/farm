@@ -1,449 +1,630 @@
-import http from 'node:http';
-import http2 from 'node:http2';
-import * as httpsServer from 'node:https';
-import Koa from 'koa';
-import compression from 'koa-compress';
+import fs, { PathLike } from 'node:fs';
+import { WatchOptions } from 'chokidar';
+import connect from 'connect';
+import corsMiddleware from 'cors';
 
-import path from 'node:path';
-import { promisify } from 'node:util';
 import { Compiler } from '../compiler/index.js';
-import { __FARM_GLOBAL__ } from '../config/_global.js';
-import {
-  DEFAULT_HMR_OPTIONS,
-  DevServerMiddleware,
-  NormalizedServerConfig,
-  UserPreviewServerConfig,
-  UserServerConfig,
-  normalizePublicDir
-} from '../config/index.js';
-import {
-  getValidPublicPath,
-  normalizePublicPath
-} from '../config/normalize-config/normalize-output.js';
-import { FileWatcher } from '../old-watcher/index.js';
-import { resolveHostname, resolveServerUrls } from '../utils/http.js';
-import {
-  Logger,
-  bootstrap,
-  clearScreen,
-  getCacheDir,
-  isCacheDirExists,
-  normalizeBasePath,
-  printServerUrls
-} from '../utils/index.js';
-import { logError } from './error.js';
+import { colors, createCompiler } from '../index.js';
+import Watcher from '../watcher/index.js';
 import { HmrEngine } from './hmr-engine.js';
-import { hmrPing } from './middlewares/hmrPing.js';
-import {
-  cors,
-  headers,
-  lazyCompilation,
-  proxy,
-  resources,
-  staticMiddleware
-} from './middlewares/index.js';
+import { CommonServerOptions, httpServer } from './http.js';
 import { openBrowser } from './open.js';
-import { Server as httpServer } from './type.js';
-import WsServer from './ws.js';
+import { WsServer } from './ws.js';
 
-/**
- * Farm Dev Server, responsible for:
- * * parse and normalize dev server options
- * * launch http server based on options
- * * compile the project in dev mode and serve the production
- * * HMR middleware and websocket supported
- */
-interface ServerUrls {
-  local: string[];
-  network: string[];
+import { __FARM_GLOBAL__ } from '../config/_global.js';
+import { getCacheDir, isCacheDirExists } from '../utils/cacheDir.js';
+import { Logger, bootstrap, logger } from '../utils/logger.js';
+import { initPublicFiles } from '../utils/publicDir.js';
+import { isObject } from '../utils/share.js';
+
+import {
+  adaptorViteMiddleware,
+  hmrPingMiddleware,
+  htmlFallbackMiddleware,
+  lazyCompilationMiddleware,
+  notFoundMiddleware,
+  proxyMiddleware,
+  publicMiddleware,
+  publicPathMiddleware,
+  resourceMiddleware
+} from './middlewares/index.js';
+
+import type * as http from 'node:http';
+import type {
+  Server as HttpBaseServer,
+  ServerOptions as HttpsServerOptions
+} from 'node:http';
+import type { Http2SecureServer } from 'node:http2';
+import type * as net from 'node:net';
+import type { HMRChannel } from './hmr.js';
+
+import type {
+  HmrOptions,
+  NormalizedServerConfig,
+  ResolvedUserConfig
+} from '../config/types.js';
+import { getPluginHooks, getSortedPluginHooks } from '../plugin/index.js';
+import { JsUpdateResult } from '../types/binding.js';
+import { createDebugger } from '../utils/debug.js';
+
+export type HttpServer = HttpBaseServer | Http2SecureServer;
+
+type CompilerType = Compiler | undefined;
+
+// export interface HmrOptions {
+//   protocol?: string;
+//   host?: string;
+//   port?: number;
+//   clientPort?: number;
+//   path?: string;
+//   timeout?: number;
+//   overlay?: boolean;
+//   server?: Server;
+//   /** @internal */
+//   channels?: HMRChannel[];
+// }
+
+export interface ServerOptions extends CommonServerOptions {
+  /**
+   * Configure HMR-specific options (port, host, path & protocol)
+   */
+  hmr?: HmrOptions | boolean;
+  /**
+   * Do not start the websocket connection.
+   * @experimental
+   */
+  ws?: false;
+  /**
+   * chokidar watch options or null to disable FS watching
+   * https://github.com/paulmillr/chokidar#api
+   */
+  watchOptions?: WatchOptions | undefined;
+  /**
+   * Create dev server to be used as a middleware in an existing server
+   * @default false
+   */
+  middlewareMode?:
+    | boolean
+    | {
+        /**
+         * Parent server instance to attach to
+         *
+         * This is needed to proxy WebSocket connections to the parent server.
+         */
+        server: http.Server;
+      };
+  origin?: string;
 }
 
-type ErrorMap = {
-  EACCES: string;
-  EADDRNOTAVAIL: string;
-};
+export const debugServer = createDebugger('farm:server');
 
-interface ImplDevServer {
-  createServer(options: UserServerConfig): void;
-  createDevServer(options: UserServerConfig): void;
-  createPreviewServer(options: UserServerConfig): void;
-  listen(): Promise<void>;
-  close(): Promise<void>;
-  getCompiler(): Compiler;
+export function noop() {
+  // noop
 }
 
-export class Server implements ImplDevServer {
-  private _app: Koa;
-  private restart_promise: Promise<void> | null = null;
-  private compiler: Compiler | null;
-  public logger: Logger;
+type ServerConfig = CommonServerOptions & NormalizedServerConfig;
 
+// TODO 改 Server 的 name and PascalCase
+export class Server extends httpServer {
   ws: WsServer;
-  config: NormalizedServerConfig & UserPreviewServerConfig;
-  hmrEngine?: HmrEngine;
-  server?: httpServer;
-  publicDir?: string;
+  serverOptions: ServerConfig;
+  httpsOptions: HttpsServerOptions;
+  publicDir: string | boolean | undefined;
   publicPath?: string;
-  resolvedUrls?: ServerUrls;
-  watcher: FileWatcher;
-
-  constructor({
-    compiler = null,
-    logger
-  }: {
-    compiler?: Compiler | null;
-    logger: Logger;
-  }) {
-    this.compiler = compiler;
-    this.logger = logger ?? new Logger();
-
-    this.initializeKoaServer();
-
-    if (!compiler) return;
-
-    this.publicDir = normalizePublicDir(compiler?.config.config.root);
-
-    this.publicPath =
-      normalizePublicPath(
-        compiler.config.config.output.targetEnv,
-        compiler.config.config.output.publicPath,
-        logger,
-        false
-      ) || '/';
+  publicFiles?: Set<string>;
+  httpServer: HttpServer;
+  watcher: Watcher;
+  hmrEngine?: HmrEngine;
+  middlewares: connect.Server;
+  compiler: CompilerType;
+  root: string;
+  closeHttpServerFn: () => Promise<void>;
+  postConfigureServerHooks: ((() => void) | void)[] = [];
+  constructor(
+    readonly resolvedUserConfig: ResolvedUserConfig,
+    logger: Logger
+  ) {
+    super(logger);
+    this.#resolveOptions();
   }
 
-  getCompiler(): Compiler {
+  /**
+   * Creates and initializes the server.
+   *
+   * This method performs the following operations:
+   * Resolves HTTPS configuration
+   * Handles public files
+   * Creates middleware
+   * Creates HTTP server (if not in middleware mode)
+   * Initializes HMR engine
+   * Creates WebSocket server
+   * Sets up Vite invalidation handler
+   * Initializes middlewares
+   *
+   * @returns {Promise<void>} A promise that resolves when the server creation process is complete
+   * @throws {Error} If an error occurs during the server creation process
+   */
+  async createServer(): Promise<void> {
+    try {
+      const { https, middlewareMode } = this.serverOptions;
+
+      this.httpsOptions = await this.resolveHttpsConfig(https);
+      this.publicFiles = await this.#handlePublicFiles();
+
+      this.middlewares = connect() as connect.Server;
+      this.httpServer = middlewareMode
+        ? null
+        : await this.resolveHttpServer(
+            this.serverOptions as CommonServerOptions,
+            this.middlewares,
+            this.httpsOptions
+          );
+
+      // close server function prepare promise
+      this.closeHttpServerFn = this.closeServer();
+
+      // init hmr engine When actually updating, we need to get the clients of ws for broadcast, 、
+      // so we can instantiate hmrEngine by default at the beginning.
+      this.createHmrEngine();
+
+      // init websocket server
+      this.createWebSocketServer();
+
+      // invalidate vite handler
+      this.#invalidateVite();
+
+      this.#createWatcher();
+
+      this.handleConfigureServer();
+
+      // init middlewares
+      this.#initializeMiddlewares();
+
+      if (!middlewareMode && this.httpServer) {
+        this.httpServer.once('listening', () => {
+          // update actual port since this may be different from initial value
+          this.serverOptions.port = (
+            this.httpServer.address() as net.AddressInfo
+          ).port;
+        });
+      }
+      // TODO apply server configuration hooks from plugins e.g. vite configureServer
+      // const postHooks: ((() => void) | void)[] = [];
+      // console.log(this.resolvedUserConfig.jsPlugins);
+      // TODO 要在这里做 vite 插件和 js 插件的适配器
+      // for (const hook of getPluginHooks(applyPlugins, "configureServer")) {
+      //   postHooks.push(await hook(reflexServer));
+      // }
+    } catch (error) {
+      this.logger.error(`Failed to create farm server: ${error}`);
+      throw error;
+    }
+  }
+
+  async handleConfigureServer() {
+    const reflexServer = new Proxy(this, {
+      get: (_, property: keyof Server) => {
+        //@ts-ignore
+        return this[property];
+      },
+      set: (_, property: keyof Server, value: never) => {
+        //@ts-ignore
+        this[property] = value;
+        return true;
+      }
+    });
+    const { jsPlugins } = this.resolvedUserConfig;
+    // TODO type error and 而且还要排序 插件排序
+    // @ts-ignore
+    for (const hook of getPluginHooks(jsPlugins, 'configureServer')) {
+      this.postConfigureServerHooks.push(await hook(reflexServer));
+    }
+  }
+
+  /**
+   *
+   */
+  async #createWatcher() {
+    this.watcher = new Watcher(this.resolvedUserConfig);
+
+    await this.watcher.createWatcher();
+
+    this.watcher.watcher.on('change', async (file: string | string[] | any) => {
+      const isConfigFile = this.resolvedUserConfig.configFilePath === file;
+      const isConfigDependencyFile =
+        this.resolvedUserConfig.configFileDependencies.some(
+          (name) => file === name
+        );
+      const isEnvFile = this.resolvedUserConfig.envFiles.some(
+        (name) => file === name
+      );
+      if (isConfigFile || isConfigDependencyFile || isEnvFile) {
+        debugServer?.(`[config change] ${colors.dim(file)}`);
+        await this.close();
+        console.log('重启大法');
+
+        setTimeout(() => {
+          this.restartServer();
+        }, 3000);
+      }
+      // TODO 做一个 onHmrUpdate 方法
+      try {
+        this.hmrEngine.hmrUpdate(file);
+      } catch (error) {
+        this.logger.error(`Farm Hmr Update Error: ${error}`);
+      }
+    });
+    const handleUpdateFinish = (updateResult: JsUpdateResult) => {
+      const added = [
+        ...updateResult.added,
+        ...updateResult.extraWatchResult.add
+      ].map((addedModule) => {
+        const resolvedPath = this.compiler.transformModulePath(
+          this.root,
+          addedModule
+        );
+        return resolvedPath;
+      });
+      const filteredAdded = added.filter((file) =>
+        this.watcher.filterWatchFile(file, this.root)
+      );
+
+      if (filteredAdded.length > 0) {
+        this.watcher.watcher.add(filteredAdded);
+      }
+    };
+
+    this.hmrEngine?.onUpdateFinish(handleUpdateFinish);
+  }
+
+  async restartServer() {
+    console.log('开启重启大法呜啦啦');
+    await this.createServer();
+    await this.listen();
+  }
+
+  /**
+   * Creates and initializes the WebSocket server.
+   * @throws {Error} If the HTTP server is not created.
+   */
+  async createWebSocketServer() {
+    if (!this.httpServer) {
+      throw new Error(
+        'Websocket requires a http server. please check the server is be created'
+      );
+    }
+
+    this.ws = new WsServer(this);
+  }
+
+  /**
+   * Creates and initializes the Hot Module Replacement (HMR) engine.
+   * @throws {Error} If the HTTP server is not created.
+   */
+  createHmrEngine() {
+    if (!this.httpServer) {
+      throw new Error(
+        'HmrEngine requires a http server. please check the server is be created'
+      );
+    }
+
+    this.hmrEngine = new HmrEngine(this);
+  }
+
+  /**
+   * Starts the server and begins listening for connections.
+   * @returns {Promise<void>}
+   * @throws {Error} If there's an error starting the server.
+   */
+  async listen(): Promise<void> {
+    if (!this.httpServer) {
+      this.logger.warn('HTTP server is not created yet');
+      return;
+    }
+    // TODO open browser when server is ready && open config is true
+
+    const { port, hostname, open, strictPort } = this.serverOptions;
+
+    try {
+      const serverPort = await this.httpServerStart({
+        port,
+        strictPort: strictPort,
+        host: hostname.host
+      });
+
+      // TODO 这块要重新设计 restart 还有 端口冲突的问题
+      // this.resolvedUserConfig
+      this.resolvedUserConfig.compilation.define.FARM_HMR_PORT =
+        serverPort.toString();
+
+      // TODO 暂时注释掉
+      this.compiler = await createCompiler(this.resolvedUserConfig, logger);
+
+      // compile the project and start the dev server
+      await this.#startCompile();
+
+      // watch extra files after compile
+      this.watcher?.watchExtraFiles?.();
+      // !__FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__ &&
+      await this.displayServerUrls(this.serverOptions, this.publicPath);
+
+      if (open) {
+        this.#openServerBrowser();
+      }
+    } catch (error) {
+      this.logger.error(`start farm dev server error: ${error}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Starts the HTTP server.
+   * @protected
+   * @param {Object} serverOptions - The server options.
+   * @returns {Promise<number>} The port the server is listening on.
+   * @throws {Error} If the server fails to start.
+   */
+  protected async httpServerStart(serverOptions: {
+    port: number;
+    strictPort: boolean | undefined;
+    host: string | undefined;
+  }): Promise<number> {
+    if (!this.httpServer) {
+      throw new Error('httpServer is not initialized');
+    }
+
+    let { port, strictPort, host } = serverOptions;
+
+    return new Promise((resolve, reject) => {
+      const onError = (e: Error & { code?: string }) => {
+        if (e.code === 'EADDRINUSE') {
+          if (strictPort) {
+            this.httpServer.removeListener('error', onError);
+            reject(new Error(`Port ${port} is already in use`));
+          } else {
+            console.info(`Port ${port} is in use, trying another one...`);
+            this.httpServer.listen(++port, host);
+          }
+        } else {
+          this.httpServer.removeListener('error', onError);
+          reject(e);
+        }
+      };
+
+      this.httpServer.on('error', onError);
+
+      this.httpServer.listen(port, host, () => {
+        this.httpServer.removeListener('error', onError);
+        resolve(port);
+      });
+    });
+  }
+
+  /**
+   * Get current compiler instance in the server
+   * @returns { CompilerType } return current compiler, may be compiler or undefined
+   */
+  getCompiler(): CompilerType {
     return this.compiler;
   }
 
-  app(): Koa {
-    return this._app;
+  /**
+   * Set current compiler instance in the server
+   * @param { Compiler } compiler - choose a new compiler instance
+   */
+  setCompiler(compiler: Compiler) {
+    this.compiler = compiler;
   }
 
-  async listen(): Promise<void> {
-    if (!this.server) {
-      this.logger.error('HTTP server is not created yet');
-      return;
-    }
-
-    console.log(this.config);
-
-    const { port, open, protocol, hostname } = this.config;
-
-    // check if cache dir exists
-    const hasCacheDir = await isCacheDirExists(
-      getCacheDir(
-        this.compiler.config.config.root,
-        this.compiler.config.config.persistentCache
-      )
-    );
-
-    const start = Date.now();
-    // compile the project and start the dev server
-    await this.compile();
-
-    // watch extra files after compile
-    this.watcher?.watchExtraFiles?.();
-
-    bootstrap(Date.now() - start, this.compiler.config, hasCacheDir);
-
-    await this.startServer(this.config);
-
-    !__FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__ &&
-      (await this.displayServerUrls());
-
-    if (open) {
-      let publicPath = getValidPublicPath(this.publicPath) || '/';
-
-      // const serverUrl = `${protocol}://${hostname.name}:${port}${publicPath}`;
-      // openBrowser(serverUrl);
-    }
+  /**
+   * Adds additional files to be watched by the compiler.
+   * @param {string} root - The root directory.
+   * @param {string[]} deps - Array of file paths to be watched.
+   */
+  addWatchFile(root: string, deps: string[]): void {
+    this.getCompiler().addExtraWatchFile(root, deps);
   }
 
-  private async compile(): Promise<void> {
+  /**
+   * resolve and setting server options
+   *
+   * this method extracts compilation and server options from resolvedUserConfig
+   * and set the publicPath and publicDir， and then resolve server options
+   * @private
+   * @returns { void }
+   */
+  #resolveOptions() {
+    const { compilation, server } = this.resolvedUserConfig;
+    this.publicPath = compilation.output.publicPath;
+
+    this.publicDir = compilation.assets.publicDir;
+
+    this.serverOptions = server as CommonServerOptions & NormalizedServerConfig;
+
+    this.root = compilation.root;
+  }
+
+  /**
+   * Initializes and configures the middleware stack for the server.
+   * @private
+   */
+  #initializeMiddlewares() {
+    this.middlewares.use(hmrPingMiddleware());
+
+    const { proxy, middlewareMode, cors } = this.serverOptions;
+
+    if (cors) {
+      this.middlewares.use(
+        corsMiddleware(typeof cors === 'boolean' ? {} : cors)
+      );
+    }
+
+    if (proxy) {
+      const middlewareServer =
+        isObject(middlewareMode) && 'server' in middlewareMode
+          ? middlewareMode.server
+          : this.httpServer;
+
+      this.middlewares.use(proxyMiddleware(this, middlewareServer));
+    }
+
+    if (this.publicPath !== '/') {
+      this.middlewares.use(publicPathMiddleware(this));
+    }
+
+    if (fs.existsSync(this.publicDir as PathLike)) {
+      this.middlewares.use(publicMiddleware(this));
+    }
+
+    if (this.resolvedUserConfig.compilation.lazyCompilation) {
+      this.middlewares.use(lazyCompilationMiddleware(this));
+    }
+
+    if (this.resolvedUserConfig.vitePlugins?.length) {
+      this.middlewares.use(adaptorViteMiddleware(this));
+    }
+
+    this.postConfigureServerHooks.forEach((fn) => fn && fn());
+
+    // TODO todo add appType 这块要判断 单页面还是 多页面 多 html 处理不一样
+    this.middlewares.use(htmlFallbackMiddleware(this));
+
+    this.middlewares.use(resourceMiddleware(this));
+
+    this.middlewares.use(notFoundMiddleware());
+  }
+
+  /**
+   * Compiles the project.
+   * @private
+   * @returns {Promise<void>}
+   * @throws {Error} If compilation fails.
+   */
+  async #compile(): Promise<void> {
     try {
       await this.compiler.compile();
+      await (this.resolvedUserConfig.server.writeToDisk
+        ? this.compiler.writeResourcesToDisk()
+        : this.compiler.callWriteResourcesHook());
     } catch (err) {
-      throw new Error(logError(err) as unknown as string);
-    }
-
-    if (this.config.writeToDisk) {
-      this.compiler.writeResourcesToDisk();
-    } else {
-      this.compiler.callWriteResourcesHook();
+      this.logger.error('Compilation failed:', err);
+      throw err;
     }
   }
 
-  async startServer(serverOptions: UserServerConfig) {
-    const { port, hostname } = serverOptions;
-    const listen = promisify(this.server.listen).bind(this.server);
-    try {
-      await listen(port, hostname.host);
-    } catch (error) {
-      this.handleServerError(error, port, hostname.host);
-    }
+  /**
+   * Opens the server URL in the default browser.
+   * @private
+   */
+  async #openServerBrowser() {
+    const url =
+      this.resolvedUrls?.local?.[0] ?? this.resolvedUrls?.network?.[0] ?? '';
+    openBrowser(url);
   }
 
-  handleServerError(
-    error: Error & { code?: string },
-    port: number,
-    host: string | undefined
-  ) {
-    const errorMap: ErrorMap = {
-      EACCES: `Permission denied to use port ${port} `,
-      EADDRNOTAVAIL: `The IP address host: ${host} is not available on this machine.`
-    };
-
-    const errorMessage =
-      errorMap[error.code as keyof ErrorMap] ||
-      `An error occurred: ${error.stack} `;
-    this.logger.error(errorMessage);
-  }
-
-  async close() {
-    if (!this.server) {
-      this.logger.error('HTTP server is not created yet');
-    }
-    // the server is already closed
-    if (!this.server.listening) {
-      return;
-    }
-    const promises = [];
-    if (this.ws) {
-      promises.push(this.ws.close());
-    }
-
-    if (this.server) {
-      promises.push(new Promise((resolve) => this.server.close(resolve)));
-    }
-
-    await Promise.all(promises);
-  }
-
-  async restart(promise: () => Promise<void>) {
-    if (!this.restart_promise) {
-      this.restart_promise = promise();
-    }
-    return this.restart_promise;
-  }
-
-  private initializeKoaServer() {
-    this._app = new Koa();
-  }
-
-  public async createServer(
-    options: NormalizedServerConfig & UserPreviewServerConfig
-  ) {
-    const { https, host } = options;
-    const protocol = https ? 'https' : 'http';
-    const hostname = await resolveHostname(host);
-    const publicPath = getValidPublicPath(
-      this.compiler?.config.config.output?.publicPath ??
-        options?.output.publicPath
+  /**
+   * Starts the compilation process.
+   * @private
+   */
+  async #startCompile() {
+    // check if cache dir exists
+    const { persistentCache } = this.compiler.config.config;
+    const hasCacheDir = await isCacheDirExists(
+      getCacheDir(this.root, persistentCache)
     );
-    // TODO refactor previewServer If it's preview server, then you can't use create server. we need to create a new one because hmr is false when you preview.
-    const hmrPath = normalizeBasePath(
-      path.join(publicPath, options.hmr.path ?? DEFAULT_HMR_OPTIONS.path)
-    );
-
-    this.config = {
-      ...options,
-      port: Number(process.env.FARM_DEV_SERVER_PORT || options.port),
-      hmr: {
-        ...options.hmr,
-        path: hmrPath
-      },
-      protocol,
-      hostname
-    };
-
-    const isProxy = options.proxy;
-    if (https) {
-      if (isProxy) {
-        this.server = httpsServer.createServer(https, this._app.callback());
-      } else {
-        this.server = http2.createSecureServer(
-          {
-            maxSessionMemory: 1000,
-            ...https,
-            allowHTTP1: true
-          },
-          this._app.callback()
-        );
-      }
-    } else {
-      this.server = http.createServer(this._app.callback());
-    }
+    const start = performance.now();
+    await this.#compile();
+    const duration = performance.now() - start;
+    bootstrap(duration, this.compiler.config, hasCacheDir);
   }
 
-  public createWebSocket() {
-    if (!this.server) {
-      throw new Error('Websocket requires a server.');
-    }
-    this.ws = new WsServer(this.server, this.config, this.hmrEngine);
+  /**
+   * Handles the initialization of public files.
+   * @private
+   * @returns {Promise<Set<string>>} A promise that resolves to a set of public file paths.
+   */
+  async #handlePublicFiles() {
+    const initPublicFilesPromise = initPublicFiles(this.resolvedUserConfig);
+    return await initPublicFilesPromise;
   }
 
-  private invalidateVite() {
+  /**
+   * Sets up the Vite invalidation handler.
+   * @private
+   */
+  #invalidateVite(): void {
     // Note: path should be Farm's id, which is a relative path in dev mode,
     // but in vite, it's a url path like /xxx/xxx.js
-    this.ws.on('vite:invalidate', ({ path, message }) => {
+    this.ws.wss.on('vite:invalidate', ({ path, message }: any) => {
       // find hmr boundary starting from the parent of the file
       this.logger.info(`HMR invalidate: ${path}. ${message ?? ''} `);
       const parentFiles = this.compiler.getParentFiles(path);
       this.hmrEngine.hmrUpdate(parentFiles, true);
     });
   }
-
-  public async createPreviewServer(options: UserPreviewServerConfig) {
-    await this.createServer(options as NormalizedServerConfig);
-
-    this.applyPreviewServerMiddlewares(this.config.middlewares);
-
-    await this.startServer(this.config);
-
-    await this.displayServerUrls(true);
-  }
-
-  public async createDevServer(options: NormalizedServerConfig) {
-    if (!this.compiler) {
-      throw new Error('DevServer requires a compiler for development mode.');
+  async closeServerAndExit() {
+    try {
+      await this.httpServer.close();
+    } finally {
+      process.exit();
     }
-
-    await this.createServer(options);
-
-    this.hmrEngine = new HmrEngine(this.compiler, this, this.logger);
-
-    this.createWebSocket();
-
-    this.invalidateVite();
-
-    this.applyServerMiddlewares(options.middlewares);
   }
 
-  static async resolvePortConflict(
-    normalizedDevConfig: NormalizedServerConfig,
-    logger: Logger
-  ): Promise<void> {
-    let devPort = normalizedDevConfig.port;
-    let hmrPort = normalizedDevConfig.hmr.port;
+  closeServer(): () => Promise<void> {
+    if (!this.httpServer) {
+      return () => Promise.resolve();
+    }
+    debugServer?.(`prepare close dev server`);
 
-    const { strictPort, host } = normalizedDevConfig;
-    const httpServer = http.createServer();
-    const isPortAvailable = (portToCheck: number) => {
-      return new Promise((resolve, reject) => {
-        const onError = async (error: { code: string }) => {
-          if (error.code === 'EADDRINUSE') {
-            clearScreen();
-            if (strictPort) {
-              httpServer.removeListener('error', onError);
-              reject(new Error(`Port ${devPort} is already in use`));
-            } else {
-              logger.warn(`Port ${devPort} is in use, trying another one...`);
-              httpServer.removeListener('error', onError);
-              resolve(false);
-            }
-          } else {
-            logger.error(`Error in httpServer: ${error} `);
-            reject(true);
-          }
-        };
-        httpServer.on('error', onError);
-        httpServer.on('listening', () => {
-          httpServer.close();
-          resolve(true);
-        });
-        httpServer.listen(portToCheck, host as string);
+    let hasListened = false;
+    const openSockets = new Set<net.Socket>();
+
+    this.httpServer.on('connection', (socket) => {
+      openSockets.add(socket);
+      debugServer?.(`has open server socket ${openSockets}`);
+
+      socket.on('close', () => {
+        debugServer?.('close all server socket');
+        openSockets.delete(socket);
       });
-    };
+    });
 
-    let isPortAvailableResult = await isPortAvailable(devPort);
+    this.httpServer.once('listening', () => {
+      hasListened = true;
+    });
 
-    while (isPortAvailableResult === false) {
-      if (typeof normalizedDevConfig.hmr === 'object') {
-        normalizedDevConfig.hmr.port = ++hmrPort;
-      }
+    return () =>
+      new Promise<void>((resolve, reject) => {
+        openSockets.forEach((s) => s.destroy());
 
-      normalizedDevConfig.port = ++devPort;
-      isPortAvailableResult = await isPortAvailable(devPort);
-    }
-  }
-
-  /**
-   * Add listening files for root manually
-   *
-   * > listening file with root must as file.
-   *
-   * @param root
-   * @param deps
-   */
-
-  addWatchFile(root: string, deps: string[]): void {
-    this.getCompiler().addExtraWatchFile(root, deps);
-  }
-
-  applyMiddlewares(internalMiddlewares?: DevServerMiddleware[]) {
-    internalMiddlewares.forEach((middleware) => {
-      const middlewareImpl = middleware(this);
-
-      if (middlewareImpl) {
-        if (Array.isArray(middlewareImpl)) {
-          middlewareImpl.forEach((m) => {
-            this._app.use(m);
+        if (hasListened) {
+          this.httpServer.close((err) => {
+            if (err) {
+              reject(err);
+            } else {
+              resolve();
+            }
           });
         } else {
-          this._app.use(middlewareImpl);
+          resolve();
         }
-      }
-    });
+      });
   }
 
-  setCompiler(compiler: Compiler) {
-    this.compiler = compiler;
-  }
-
-  private applyPreviewServerMiddlewares(
-    middlewares?: DevServerMiddleware[]
-  ): void {
-    const internalMiddlewares = [
-      ...(middlewares || []),
-      compression,
-      proxy,
-      staticMiddleware
-    ];
-    this.applyMiddlewares(internalMiddlewares as DevServerMiddleware[]);
-  }
-
-  private applyServerMiddlewares(middlewares?: DevServerMiddleware[]): void {
-    const internalMiddlewares = [
-      ...(middlewares || []),
-      hmrPing,
-      headers,
-      lazyCompilation,
-      cors,
-      resources,
-      proxy
-    ];
-
-    this.applyMiddlewares(internalMiddlewares as DevServerMiddleware[]);
-  }
-
-  private async displayServerUrls(showPreviewFlag = false) {
-    let publicPath = getValidPublicPath(
-      this.compiler
-        ? this.compiler.config.config.output?.publicPath
-        : this.config.output.publicPath
-    );
-
-    this.resolvedUrls = await resolveServerUrls(
-      this.server,
-      this.config,
-      publicPath
-    );
-
-    if (this.resolvedUrls) {
-      printServerUrls(this.resolvedUrls, this.logger, showPreviewFlag);
-    } else {
-      throw new Error('cannot print server URLs with Server Error.');
+  async close() {
+    if (!this.serverOptions.middlewareMode) {
+      teardownSIGTERMListener(this.closeServerAndExit);
     }
+
+    await Promise.allSettled([this.watcher.close(), this.closeHttpServerFn()]);
   }
 }
+
+export const teardownSIGTERMListener = (
+  callback: () => Promise<void>
+): void => {
+  process.off('SIGTERM', callback);
+  if (process.env.CI !== 'true') {
+    process.stdin.off('end', callback);
+  }
+};
