@@ -228,6 +228,7 @@ export class Server extends httpServer {
    */
   async #createWatcher() {
     this.watcher = new Watcher(this.resolvedUserConfig);
+
     await this.watcher.createWatcher();
 
     this.watcher.watcher.on('change', async (file: string | string[] | any) => {
@@ -241,10 +242,7 @@ export class Server extends httpServer {
       );
       if (isConfigFile || isConfigDependencyFile || isEnvFile) {
         debugServer?.(`[config change] ${colors.dim(file)}`);
-        await this.close();
-        setTimeout(() => {
-          this.restartServer();
-        }, 1000);
+        this.restartServer();
       }
       // TODO 做一个 onHmrUpdate 方法
       try {
@@ -277,6 +275,7 @@ export class Server extends httpServer {
   }
 
   async restartServer() {
+    await this.close();
     await this.createServer();
     await this.listen();
   }

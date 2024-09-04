@@ -28,7 +28,7 @@ export default defineConfig({
     compressionMiddleware(),
   ],
   compilation: {
-    persistentCache: false,
+    // persistentCache: false,
   },
   // plugins: [compressionMiddleware()],
   // server: {

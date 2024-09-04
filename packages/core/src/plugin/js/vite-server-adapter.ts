@@ -27,40 +27,6 @@ export class ViteDevServerAdapter {
     this.watcher = server.watcher.getInternalWatcher();
 
     this.middlewares = server.middlewares;
-    // this.middlewares = new Proxy(
-    //   {
-    //     use: (...args: any[]) => {
-    //       if (
-    //         args.length === 2 &&
-    //         typeof args[0] === "string" &&
-    //         typeof args[1] === "function"
-    //       ) {
-    //         this.middlewareCallbacks.push((req: any, res: any, next: any) => {
-    //           const [url, cb] = args;
-    //           if (req.url.startsWith(url)) {
-    //             cb(req, res, next);
-    //           }
-    //         });
-    //       } else if (args.length === 1 && typeof args[0] === "function") {
-    //         this.middlewareCallbacks.push(args[0]);
-    //       }
-    //     },
-    //   },
-    //   {
-    //     get(target, key) {
-    //       if (key === "use") {
-    //         return target[key as keyof typeof target];
-    //       }
-
-    //       throwIncompatibleError(
-    //         pluginName,
-    //         "viteDevServer.middlewares",
-    //         ["use"],
-    //         key,
-    //       );
-    //     },
-    //   },
-    // );
 
     this.ws = server.ws;
 
