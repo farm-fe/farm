@@ -137,10 +137,10 @@ cli
         treeShaking: options.treeShaking
       }
     };
+    // TODO build
+    // const { build } = await resolveCore();
 
-    const { build } = await resolveCore();
-
-    handleAsyncOperationErrors(build(defaultOptions), 'error during build');
+    // handleAsyncOperationErrors(build(defaultOptions), 'error during build');
   });
 
 cli

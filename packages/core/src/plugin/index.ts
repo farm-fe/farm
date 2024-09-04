@@ -154,3 +154,15 @@ export function getSortedPluginHooks(
 ): any {
   return plugins.map((p: JsPlugin) => p[hookName]).filter(Boolean);
 }
+
+export function getPluginHooksThis(
+  plugins: JsPlugin[],
+  hookName: keyof JsPlugin
+) {
+  return plugins
+    .map((p: JsPlugin) =>
+      typeof p[hookName] === 'function' ? p[hookName].bind(p) : p[hookName]
+    )
+    .filter(Boolean)
+    .filter(Boolean);
+}

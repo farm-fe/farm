@@ -16,6 +16,7 @@
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^5.0.4",
+    "compression": "^1.7.4",
     "core-js": "^3.30.1"
   }
 }

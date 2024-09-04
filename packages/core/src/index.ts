@@ -538,11 +538,12 @@ export async function start(
     const server = new Server(resolvedUserConfig, logger);
 
     await server.createServer();
+
     // TODO 这段逻辑放在 创建 http server 之后 放到  server 里面
-    resolvedUserConfig.jsPlugins.forEach((plugin: JsPlugin) =>
-      // @ts-ignore
-      plugin.configureDevServer?.(server)
-    );
+    // resolvedUserConfig.jsPlugins.forEach((plugin: JsPlugin) =>
+    //   // @ts-ignore
+    //   plugin.configureServer?.(server),
+    // );
     server.listen();
   } catch (error) {
     logger.error('Failed to start the server', { exit: true, error });

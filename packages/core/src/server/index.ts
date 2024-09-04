@@ -43,7 +43,11 @@ import type {
   NormalizedServerConfig,
   ResolvedUserConfig
 } from '../config/types.js';
-import { getPluginHooks, getSortedPluginHooks } from '../plugin/index.js';
+import {
+  getPluginHooks,
+  getPluginHooksThis,
+  getSortedPluginHooks
+} from '../plugin/index.js';
 import { JsUpdateResult } from '../types/binding.js';
 import { createDebugger } from '../utils/debug.js';
 
@@ -173,12 +177,10 @@ export class Server extends httpServer {
       // invalidate vite handler
       this.#invalidateVite();
 
-      this.#createWatcher();
-
-      this.handleConfigureServer();
+      await this.#createWatcher();
 
       // init middlewares
-      this.#initializeMiddlewares();
+      await this.#initializeMiddlewares();
 
       if (!middlewareMode && this.httpServer) {
         this.httpServer.once('listening', () => {
@@ -216,7 +218,7 @@ export class Server extends httpServer {
     const { jsPlugins } = this.resolvedUserConfig;
     // TODO type error and 而且还要排序 插件排序
     // @ts-ignore
-    for (const hook of getPluginHooks(jsPlugins, 'configureServer')) {
+    for (const hook of getPluginHooksThis(jsPlugins, 'configureServer')) {
       this.postConfigureServerHooks.push(await hook(reflexServer));
     }
   }
@@ -226,7 +228,6 @@ export class Server extends httpServer {
    */
   async #createWatcher() {
     this.watcher = new Watcher(this.resolvedUserConfig);
-
     await this.watcher.createWatcher();
 
     this.watcher.watcher.on('change', async (file: string | string[] | any) => {
@@ -241,11 +242,9 @@ export class Server extends httpServer {
       if (isConfigFile || isConfigDependencyFile || isEnvFile) {
         debugServer?.(`[config change] ${colors.dim(file)}`);
         await this.close();
-        console.log('重启大法');
-
         setTimeout(() => {
           this.restartServer();
-        }, 3000);
+        }, 1000);
       }
       // TODO 做一个 onHmrUpdate 方法
       try {
@@ -278,7 +277,6 @@ export class Server extends httpServer {
   }
 
   async restartServer() {
-    console.log('开启重启大法呜啦啦');
     await this.createServer();
     await this.listen();
   }
@@ -448,8 +446,10 @@ export class Server extends httpServer {
    * Initializes and configures the middleware stack for the server.
    * @private
    */
-  #initializeMiddlewares() {
+  async #initializeMiddlewares() {
     this.middlewares.use(hmrPingMiddleware());
+
+    await this.handleConfigureServer();
 
     const { proxy, middlewareMode, cors } = this.serverOptions;
 
@@ -555,6 +555,7 @@ export class Server extends httpServer {
   #invalidateVite(): void {
     // Note: path should be Farm's id, which is a relative path in dev mode,
     // but in vite, it's a url path like /xxx/xxx.js
+
     this.ws.wss.on('vite:invalidate', ({ path, message }: any) => {
       // find hmr boundary starting from the parent of the file
       this.logger.info(`HMR invalidate: ${path}. ${message ?? ''} `);

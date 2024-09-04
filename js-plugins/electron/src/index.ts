@@ -46,7 +46,7 @@ export default function farmElectronPlugin(
       // config.compilation.assets.publicDir ??= ''
       return config;
     },
-    configureDevServer(server) {
+    configureServer(server) {
       isDev = true;
 
       server.server?.once('listening', () => {
