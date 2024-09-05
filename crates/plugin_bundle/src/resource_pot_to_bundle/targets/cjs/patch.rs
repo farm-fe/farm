@@ -151,12 +151,10 @@ impl CjsPatch {
     module_analyzer_manager: &mut ModuleAnalyzerManager,
     module_id: &ModuleId,
     context: &Arc<CompilationContext>,
-    patch_ast: &mut Vec<ModuleItem>,
     bundle_variable: &BundleVariable,
-    bundle_reference: &BundleReference,
+    bundle_reference: &mut BundleReference,
     polyfill: &mut SimplePolyfill,
-    patch_to_bundle_first: &mut Vec<ModuleItem>,
-  ) {
+  ) -> Result<()> {
     let module_analyzer = module_analyzer_manager
       .module_map
       .get_mut(module_id)
@@ -174,32 +172,48 @@ impl CjsPatch {
       );
     }
 
+    let mut ast = module_analyzer.ast.body.take();
     // if commonjs module, should wrap function
     // see [Polyfill::WrapCommonJs]
     if module_analyzer.is_commonjs() {
-      let ast = module_analyzer.ast.body.take();
-
-      module_analyzer_manager.set_ast_body(
+      ast = CjsPatch::wrap_commonjs(
         module_id,
-        CjsPatch::wrap_commonjs(
-          module_id,
-          bundle_variable,
-          &module_analyzer_manager.module_global_uniq_name,
-          ast,
-          context.config.mode.clone(),
-          polyfill,
-        )
-        .unwrap(),
-      );
+        bundle_variable,
+        &module_analyzer_manager.module_global_uniq_name,
+        ast,
+        context.config.mode.clone(),
+        polyfill,
+      )?;
     }
 
-    patch_to_bundle_first.extend(CjsModuleAnalyzer::redeclare_commonjs_export(
-      module_id,
-      bundle_variable,
-      &bundle_reference.redeclare_commonjs_import,
-      &module_analyzer_manager.module_global_uniq_name,
-      polyfill,
-    ));
+    let reference_kind = module_id.clone().into();
+    println!("reference_kind: {:#?}", reference_kind);
+
+    if let Some(import) = bundle_reference
+      .redeclare_commonjs_import
+      .get(&reference_kind)
+    {
+      if let Some((_, x)) = CjsModuleAnalyzer::redeclare_commonjs_export_item(
+        bundle_variable,
+        (&reference_kind, &import),
+        &module_analyzer_manager.module_global_uniq_name,
+        polyfill,
+      )? {
+        let item = x.to_module_item();
+
+        println!("item: {:#?}", item);
+
+        ast.push(item);
+
+        bundle_reference
+          .redeclare_commonjs_import
+          .remove(&reference_kind);
+      }
+    }
+
+    module_analyzer_manager.set_ast_body(module_id, ast);
+
+    Ok(())
   }
 
   pub fn replace_cjs_require<'a>(

@@ -514,7 +514,7 @@ impl<'a> ModuleAnalyzerManager<'a> {
     order_index_map: &HashMap<ModuleId, usize>,
     polyfill: &mut SimplePolyfill,
     external_config: &ExternalConfig,
-  ) -> Result<Vec<ModuleItem>> {
+  ) -> Result<()> {
     farm_profile_function!(format!(
       "patch module analyzer ast: {}",
       module_id.to_string()
@@ -710,12 +710,11 @@ impl<'a> ModuleAnalyzerManager<'a> {
     order_index_map: &HashMap<ModuleId, usize>,
     polyfill: &mut SimplePolyfill,
     external_config: &ExternalConfig,
-  ) -> Result<Vec<ModuleItem>> {
+  ) -> Result<()> {
     farm_profile_function!("");
-    let mut patch_first_bundle = vec![];
 
     if self.module_analyzer(module_id).is_none() {
-      return Ok(patch_first_bundle);
+      return Ok(());
     }
 
     let module_analyzer = self.module_analyzer_mut(module_id).unwrap();
@@ -747,12 +746,11 @@ impl<'a> ModuleAnalyzerManager<'a> {
         self,
         module_id,
         context,
-        &mut patch_asts,
         bundle_variable,
         bundle_reference,
         polyfill,
-        &mut patch_first_bundle,
-      );
+      )
+      .unwrap();
 
       // 1. append ast
       // 2. replace commonjs require
@@ -803,7 +801,7 @@ impl<'a> ModuleAnalyzerManager<'a> {
     })
     .unwrap();
 
-    Ok(patch_first_bundle)
+    Ok(())
   }
 
   pub fn build_rename_map(

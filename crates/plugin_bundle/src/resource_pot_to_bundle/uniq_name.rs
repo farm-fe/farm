@@ -120,39 +120,27 @@ impl BundleVariable {
     self.used_names.contains(&self.name(index))
   }
 
+  // TODO: remove split by resource_pot_id
   pub fn uniq_name_mut(&mut self) -> &mut UniqName {
-    self.uniq_name_hash_map.get_mut(&self.namespace).unwrap()
+    self.uniq_name_hash_map.get_mut("default").unwrap()
   }
 
   pub fn uniq_name(&mut self) -> &UniqName {
-    self.uniq_name_hash_map.get(&self.namespace).unwrap()
-  }
-
-  pub fn with_namespace<T, F: FnOnce(&mut Self) -> T>(&mut self, namespace: String, f: F) -> T {
-    let prev = self.namespace.clone();
-
-    if self.uniq_name_hash_map.contains_key(&namespace) {
-      self
-        .uniq_name_hash_map
-        .insert(namespace.clone(), UniqName::new());
-    }
-    self.namespace = namespace;
-
-    let r = f(self);
-
-    self.namespace = prev;
-
-    r
+    self.uniq_name_hash_map.get("default").unwrap()
   }
 
   pub fn set_namespace(&mut self, namespace: String) {
-    if !self.uniq_name_hash_map.contains_key(&namespace) {
-      self
-        .uniq_name_hash_map
-        .insert(namespace.clone(), UniqName::new());
-    }
+    // if !self.uniq_name_hash_map.contains_key(&namespace) {
+    //   self
+    //     .uniq_name_hash_map
+    //     .insert(namespace.clone(), UniqName::new());
+    // }
 
-    self.namespace = namespace;
+    // self.namespace = namespace;
+    self
+      .uniq_name_hash_map
+      .entry("default".to_string())
+      .or_insert_with(|| UniqName::new());
   }
 
   pub fn add_used_name(&mut self, used_name: String) {

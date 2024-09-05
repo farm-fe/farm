@@ -455,31 +455,7 @@ impl ModuleAnalyzer {
               })
               .unwrap_or_default(),
           )
-          .map(|item| {
-            bundle_variable.var_by_index(item)
-            // let (v, root) = bundle_variable.var(item);
-
-            // let Some(root) = root else {
-            //   return v;
-            // };
-
-            // let v_module_id = bundle_variable.module_id_by_var(&v);
-            // let root_module_id = bundle_variable.module_id_by_var(&root);
-
-            // let (Some(v_module_id), Some(root_module_id)) = (v_module_id, root_module_id) else {
-            //   return v;
-            // };
-
-            // if module_analyzer_manager.is_same_bundle(v_module_id, root_module_id) {
-            //   return v;
-            // }
-
-            // if module_analyzer_manager.is_commonjs(root_module_id) {
-            //   return v;
-            // }
-
-            // v
-          })
+          .map(|item| bundle_variable.var_by_index(item))
           .filter(|item| item.rename.is_some())
           .map(|item| {
             (

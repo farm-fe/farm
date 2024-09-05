@@ -29,7 +29,7 @@ pub fn get_module_mark(
   }
 }
 
-pub fn parse_module_item(string: &str) -> Result<ModuleItem> {
+pub fn parse_module_item(string: &str) -> Result<Vec<ModuleItem>> {
   let (_, source_file) = create_swc_source_map(Source {
     path: PathBuf::from("unknown"),
     content: Arc::new(string.to_string()),
@@ -47,11 +47,12 @@ pub fn parse_module_item(string: &str) -> Result<ModuleItem> {
   let mut parser = Parser::new_from(lexer);
 
   parser
-    .parse_module_item()
+    .parse_module()
     .map_err(|msg| CompilationError::ParseError {
       resolved_path: "unknown temp parser".to_string(),
       msg: format!("failed parse content, cause: {msg:#?}"),
     })
+    .map(|i| i.body)
 }
 
 pub trait OptionToResult<T> {

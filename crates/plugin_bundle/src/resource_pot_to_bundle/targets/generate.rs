@@ -236,51 +236,44 @@ pub fn generate_export_by_reference_export(
 ) -> Result<Vec<ModuleItem>> {
   let mut patch_export_to_module = vec![];
 
-  let mut generate_reexport = |bundle_reference: &BundleReference| {
-    if let Some(export) = bundle_reference.export.as_ref() {
-      patch_export_to_module.extend(generate_export_as_module_export(
-        resource_pot_id,
-        None,
-        export,
-        bundle_variable,
-        module_analyzer_manager,
-        context,
-        polyfill,
-      )?);
-    }
+  if let Some(export) = bundle_reference.export.as_ref() {
+    patch_export_to_module.extend(generate_export_as_module_export(
+      resource_pot_id,
+      None,
+      export,
+      bundle_variable,
+      module_analyzer_manager,
+      context,
+      polyfill,
+    )?);
+  }
 
-    let mut ordered_external_export = bundle_reference
-      .external_export_map
-      .keys()
-      .collect::<Vec<_>>();
+  let mut ordered_external_export = bundle_reference
+    .external_export_map
+    .keys()
+    .collect::<Vec<_>>();
 
-    ordered_external_export.sort_by_key(|a: &&ReferenceKind| a.to_url());
+  ordered_external_export.sort_by_key(|a: &&ReferenceKind| a.to_url());
 
-    for source in ordered_external_export {
-      let export = &bundle_reference.external_export_map[source];
+  for source in ordered_external_export {
+    let export = &bundle_reference.external_export_map[source];
 
-      patch_export_to_module.extend(generate_export_as_module_export(
-        resource_pot_id,
-        Some(&source),
-        export,
-        bundle_variable,
-        module_analyzer_manager,
-        context,
-        polyfill,
-      )?);
-    }
-
-    Result::<()>::Ok(())
-  };
-
-  generate_reexport(&bundle_reference)?;
+    patch_export_to_module.extend(generate_export_as_module_export(
+      resource_pot_id,
+      Some(&source),
+      export,
+      bundle_variable,
+      module_analyzer_manager,
+      context,
+      polyfill,
+    )?);
+  }
 
   Ok(patch_export_to_module)
 }
 
 pub fn generate_export_as_module_export(
-  resource_pot_name: &str,
-  // module_id: &ReferenceKind,
+  _resource_pot_name: &str,
   source: Option<&ReferenceKind>,
   export: &ExternalReferenceExport,
   bundle_variable: &BundleVariable,
@@ -288,10 +281,6 @@ pub fn generate_export_as_module_export(
   context: &Arc<CompilationContext>,
   polyfill: &mut SimplePolyfill,
 ) -> Result<Vec<ModuleItem>> {
-  let mut ordered_keys = export.named.keys().collect::<Vec<_>>();
-
-  ordered_keys.sort_by_key(|a| bundle_variable.name(**a));
-
   match (&export.module_system, context.config.output.format) {
     // hybrid dynamic es module cannot support, if hybrid, only export static export
     (_, ModuleFormat::EsModule) => {
@@ -309,7 +298,6 @@ pub fn generate_export_as_module_export(
 }
 
 /// generate bundle import
-
 pub fn generate_bundle_import_by_bundle_reference(
   format: &ModuleFormat,
   bundle_variable: &BundleVariable,
@@ -318,36 +306,21 @@ pub fn generate_bundle_import_by_bundle_reference(
   polyfill: &mut SimplePolyfill,
   resource_pot_id: &str,
 ) -> Result<Vec<ModuleItem>> {
-  let mut patch_import_to_module = vec![];
-
+  // TODO: sort import by order
   match format {
-    ModuleFormat::EsModule => {
-      patch_import_to_module.extend(EsmGenerate::generate_import(
-        bundle_variable,
-        &bundle_reference.import_map,
-        module_analyzer_manager,
-        resource_pot_id,
-      )?);
-    }
+    ModuleFormat::EsModule => EsmGenerate::generate_import(
+      bundle_variable,
+      &bundle_reference.import_map,
+      module_analyzer_manager,
+      resource_pot_id,
+    ),
 
-    ModuleFormat::CommonJs => {
-      patch_import_to_module.extend(CjsGenerate::generate_import(
-        bundle_variable,
-        &bundle_reference.import_map,
-        module_analyzer_manager,
-        polyfill,
-        resource_pot_id,
-      )?);
-    }
+    ModuleFormat::CommonJs => CjsGenerate::generate_import(
+      bundle_variable,
+      &bundle_reference.import_map,
+      module_analyzer_manager,
+      polyfill,
+      resource_pot_id,
+    ),
   }
-
-  Ok(patch_import_to_module)
-}
-
-pub fn generate_bundle_polyfill(polyfill: &mut SimplePolyfill) -> Result<Vec<ModuleItem>> {
-  let result = vec![];
-
-  for name in polyfill.to_names() {}
-
-  Ok(result)
 }

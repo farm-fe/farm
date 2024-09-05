@@ -38,8 +38,8 @@ const foo_named = '123';
 // module_id: index.ts
 console.log(default_default$1, foo_named, namespace_ns);
 var index_default = 'index';
-module.exports.default_default$1 = default_default$1;
 module.exports.namespace_default = namespace_default;
+module.exports.default_default$1 = default_default$1;
 module.exports.foo_named = foo_named;
 module.exports.foo_ns = foo_ns;
 module.exports.namespace_ns = namespace_ns;

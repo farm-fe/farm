@@ -321,7 +321,11 @@ impl CjsGenerate {
         let local = &import.named[imported];
         let local_named = bundle_variable.render_name(*local);
 
-        add_decl(&local_named, imported);
+        if is_import_uniq_name {
+          add_decl(&local_named, &local_named);
+        } else {
+          add_decl(&local_named, &imported);
+        }
       }
 
       if let Some(default) = import.default.as_ref() {

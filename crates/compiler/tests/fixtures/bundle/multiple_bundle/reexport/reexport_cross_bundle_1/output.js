@@ -33,4 +33,4 @@ const foo_named = '123';
 console.log(default_default$1, foo_named, namespace_ns);
 var index_default = 'index';
 export default index_default;
-export { namespace_default, default_default$1, foo_named, foo_ns, namespace_ns };
+export { default_default$1, namespace_default, foo_named, foo_ns, namespace_ns };

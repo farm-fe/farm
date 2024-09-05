@@ -226,7 +226,9 @@ impl<'a> SharedBundle<'a> {
 
     let polyfill_module_id = ModuleId::from(FARM_BUNDLE_POLYFILL_SLOT);
 
-    let reserved_word = SimplePolyfill::reserved_word();
+    let mut reserved_word = SimplePolyfill::reserved_word();
+
+    reserved_word.push("module".to_string());
 
     if let Some(bundle_analyzer) = self
       .module_analyzer_manager
@@ -267,6 +269,12 @@ impl<'a> SharedBundle<'a> {
   }
 
   fn each_render(&mut self) -> Result<()> {
+    // let mut defer_bundle_relation = vec![];
+
+    let mut ordered_modules = self.order_index_map.iter().collect::<Vec<_>>();
+
+    ordered_modules.sort_by(|a, b| a.1.cmp(b.1).reverse());
+
     for resource_pot_id in &self.order_resource_pot {
       farm_profile_scope!(format!("render bundle: {}", resource_pot_id));
 
@@ -274,7 +282,24 @@ impl<'a> SharedBundle<'a> {
 
       bundle_analyzer.set_namespace(&bundle_analyzer.resource_pot.id);
 
-      bundle_analyzer.render(
+      bundle_analyzer.render(&mut self.module_analyzer_manager)?;
+    }
+
+    for (module_id, _) in ordered_modules {
+      farm_profile_scope!(format!("render module: {}", module_id));
+
+      let Some(module_analyzer) = self.module_analyzer_manager.module_analyzer(module_id) else {
+        continue;
+      };
+
+      let resource_pot_id = module_analyzer.resource_pot_id.clone();
+
+      let bundle_analyzer = self.bundle_map.get_mut(&resource_pot_id).unwrap();
+
+      bundle_analyzer.set_namespace(&bundle_analyzer.resource_pot.id);
+
+      bundle_analyzer.link_module_relation(
+        module_id,
         &mut self.module_analyzer_manager,
         &mut self.bundle_reference,
       )?;
@@ -359,7 +384,6 @@ impl<'a> SharedBundle<'a> {
     self.link_modules_meta()?;
 
     self.render_bundle()?;
-    println!("bundle_variable: {:#?}", self.bundle_variables);
 
     Ok(())
   }
