@@ -17,7 +17,7 @@ use crate::{
 
 use super::{Module, ModuleId};
 
-#[derive(Debug, Default, Clone, PartialEq, Eq)]
+#[derive(Debug, Default, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 #[cache_item]
 pub struct ModuleGraphEdgeDataItem {
   /// the source of this edge, for example, `./index.css`
@@ -32,7 +32,7 @@ pub struct ModuleGraphEdgeDataItem {
   pub order: usize,
 }
 
-#[derive(Debug, Default, Clone, PartialEq, Eq)]
+#[derive(Debug, Default, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 #[cache_item]
 pub struct ModuleGraphEdge(pub(crate) Vec<ModuleGraphEdgeDataItem>);
 

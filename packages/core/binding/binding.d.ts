@@ -54,68 +54,6 @@ export interface JsUpdateResult {
   dynamicResourcesMap?: Record<string, Array<Array<string>>>
   extraWatchResult: WatchDiffResult
 }
-export interface ResolveRecord {
-  plugin: string
-  hook: string
-  source: string
-  importer?: string
-  kind: string
-  isHmr: boolean
-  startTime: number
-  endTime: number
-  duration: number
-}
-export interface TransformRecord {
-  plugin: string
-  hook: string
-  content: string
-  sourceMaps?: string
-  moduleType: string
-  isHmr: boolean
-  startTime: number
-  endTime: number
-  duration: number
-}
-export interface ModuleRecord {
-  plugin: string
-  hook: string
-  moduleType: string
-  isHmr: boolean
-  startTime: number
-  endTime: number
-  duration: number
-}
-export interface AnalyzeDep {
-  source: string
-  kind: string
-}
-export interface AnalyzeDepsRecord {
-  plugin: string
-  hook: string
-  moduleType: string
-  isHmr: boolean
-  deps: Array<AnalyzeDep>
-  startTime: number
-  endTime: number
-  duration: number
-}
-export interface Module {
-  id: string
-  moduleType: string
-  moduleGroups: Array<string>
-  resourcePot?: string
-  sideEffects: boolean
-  sourceMapChain: Array<string>
-  external: boolean
-  immutable: boolean
-  size: number
-}
-export interface ResourcePotRecord {
-  name: string
-  hook: string
-  modules: Array<string>
-  resources: Array<string>
-}
 export type JsCompiler = Compiler
 export declare class Compiler {
   constructor(config: object)
@@ -135,11 +73,5 @@ export declare class Compiler {
   watchModules(): Array<string>
   relativeModulePaths(): Array<string>
   resource(name: string): Buffer | null
-  modules(): Array<Module>
-  getResolveRecordsById(id: string): Array<ResolveRecord>
-  getTransformRecordsById(id: string): Array<TransformRecord>
-  getProcessRecordsById(id: string): Array<ModuleRecord>
-  getAnalyzeDepsRecordsById(id: string): Array<AnalyzeDepsRecord>
-  getResourcePotRecordsById(id: string): Array<ResourcePotRecord>
-  pluginStats(): Record<string, unknown>
+  stats(): string
 }

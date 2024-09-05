@@ -4,6 +4,8 @@ use farmfe_core::{
   context::CompilationContext,
   module::ModuleId,
   plugin::{PluginUpdateModulesHookParams, UpdateResult, UpdateType},
+  serde_json,
+  stats::CompilationPluginHookStats,
 };
 use farmfe_utils::relative;
 
@@ -12,12 +14,54 @@ pub fn handle_update_modules(
   context: &Arc<CompilationContext>,
   update_result: &mut UpdateResult,
 ) -> farmfe_core::error::Result<Vec<(String, UpdateType)>> {
+  let (before_paths, start_time) = if context.config.record {
+    (
+      paths.clone(),
+      std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap()
+        .as_millis(),
+    )
+  } else {
+    (vec![], 0)
+  };
+  let paths = resolve_watch_graph_paths(paths, context);
+  if context.config.record {
+    let end_time = std::time::SystemTime::now()
+      .duration_since(std::time::UNIX_EPOCH)
+      .unwrap()
+      .as_millis();
+    context
+      .record_manager
+      .add_plugin_hook_stats(CompilationPluginHookStats {
+        plugin_name: "InternalWatchGraphPlugin".to_string(),
+        hook_name: "update_modules".to_string(),
+        module_id: "".into(),
+        hook_context: None,
+        input: serde_json::to_string(&before_paths).unwrap(),
+        output: serde_json::to_string(&paths).unwrap(),
+        duration: end_time - start_time,
+        start_time,
+        end_time,
+      })
+  }
   let mut plugin_update_modules_hook_params = PluginUpdateModulesHookParams { paths };
 
   context
     .plugin_driver
     .update_modules(&mut plugin_update_modules_hook_params, context)?;
 
+  let (before_params, start_time) = if context.config.record {
+    (
+      serde_json::to_string(&plugin_update_modules_hook_params).unwrap(),
+      std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap()
+        .as_millis(),
+    )
+  } else {
+    ("".to_string(), 0)
+  };
   let paths = plugin_update_modules_hook_params.paths;
   let mut module_graph = context.module_graph.write();
 
@@ -99,20 +143,91 @@ pub fn handle_update_modules(
     })
     .collect::<Vec<_>>();
 
-  Ok(
-    filtered_paths
-      .into_iter()
-      .filter(|p| {
-        let id = ModuleId::from_resolved_path_with_query(p, &context.config.root);
-        module_graph.has_module(&id)
+  let result: Vec<(String, UpdateType)> = filtered_paths
+    .into_iter()
+    .filter(|p| {
+      let id = ModuleId::from_resolved_path_with_query(p, &context.config.root);
+      module_graph.has_module(&id)
+    })
+    .map(|p| {
+      if let Some((_, ty)) = paths.iter().find(|(pp, _)| *pp == p) {
+        (p, ty.clone())
+      } else {
+        (p, UpdateType::Updated)
+      }
+    })
+    .collect();
+
+  if context.config.record {
+    let end_time = std::time::SystemTime::now()
+      .duration_since(std::time::UNIX_EPOCH)
+      .unwrap()
+      .as_millis();
+    context
+      .record_manager
+      .add_plugin_hook_stats(CompilationPluginHookStats {
+        plugin_name: "InternalUpdateModulesPlugin".to_string(),
+        hook_name: "update_modules".to_string(),
+        module_id: "".into(),
+        hook_context: None,
+        input: before_params,
+        output: serde_json::to_string(&UpdateModulesStatsResult {
+          paths: result.clone(),
+          update_result: update_result.clone(),
+        })
+        .unwrap(),
+        duration: end_time - start_time,
+        start_time,
+        end_time,
       })
-      .map(|p| {
-        if let Some((_, ty)) = paths.iter().find(|(pp, _)| *pp == p) {
-          (p, ty.clone())
+  }
+  Ok(result)
+}
+
+#[derive(farmfe_core::serde::Serialize, farmfe_core::serde::Deserialize)]
+#[serde(crate = "farmfe_core::serde", rename_all = "camelCase")]
+struct UpdateModulesStatsResult {
+  pub paths: Vec<(String, UpdateType)>,
+  pub update_result: UpdateResult,
+}
+
+fn resolve_watch_graph_paths(
+  paths: Vec<(String, UpdateType)>,
+  context: &Arc<CompilationContext>,
+) -> Vec<(String, UpdateType)> {
+  let watch_graph = context.watch_graph.read();
+  let module_graph = context.module_graph.read();
+
+  // fetch watch file relation module, and replace watch file
+  paths
+    .into_iter()
+    .flat_map(|(path, update_type)| {
+      let id = ModuleId::new(&path, "", &context.config.root);
+
+      if watch_graph.has_module(&id) {
+        let r: Vec<(String, UpdateType)> = watch_graph
+          .relation_roots(&id)
+          .into_iter()
+          .map(|item| {
+            (
+              item.resolved_path(&context.config.root),
+              UpdateType::Updated,
+            )
+          })
+          .collect();
+
+        if module_graph.has_module(&ModuleId::new(path.as_str(), "", &context.config.root)) {
+          return [r, vec![(path, update_type)]].concat();
+        };
+
+        if !r.is_empty() {
+          r
         } else {
-          (p, UpdateType::Updated)
+          vec![(path, update_type)]
         }
-      })
-      .collect(),
-  )
+      } else {
+        vec![(path, update_type)]
+      }
+    })
+    .collect()
 }

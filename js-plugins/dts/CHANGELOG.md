@@ -1,5 +1,17 @@
 # @farmfe/js-plugin-dts
 
+## 0.6.4
+
+### Patch Changes
+
+- 83b89e72: Remove unused console.log
+
+## 0.6.3
+
+### Patch Changes
+
+- 2e7f4f90: remove console
+
 ## 0.6.2
 
 ### Patch Changes

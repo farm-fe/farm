@@ -12,7 +12,6 @@ pub mod context;
 pub mod error;
 pub mod module;
 pub mod plugin;
-pub mod record;
 pub mod resource;
 pub mod stats;
 

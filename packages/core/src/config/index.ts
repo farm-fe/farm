@@ -781,7 +781,7 @@ async function readConfigFile(
     // Change to vm.module of node or loaders as far as it is stable
     const userConfig = (await import(filePath as string)).default;
     try {
-      // fs.unlink(filePath, () => void 0);
+      fs.unlink(filePath, () => void 0);
       // remove parent dir if empty
       const isEmpty = fs.readdirSync(outputPath).length === 0;
       if (isEmpty) {

@@ -284,7 +284,7 @@ fn wrap_function(
   let stmts = body
     .into_iter()
     .map(|body| match body {
-      ModuleItem::ModuleDecl(_) => unreachable!(),
+      ModuleItem::ModuleDecl(decl) => unreachable!("{:?}", decl),
       ModuleItem::Stmt(stmt) => stmt,
     })
     .collect();

@@ -1,5 +1,19 @@
 # @farmfe/core
 
+## 1.3.17
+
+### Patch Changes
+
+- 83b89e72: Refactor stats implementation
+
+## 1.3.16
+
+### Patch Changes
+
+- b5d2a4c3: module system analyze & improve preset_env module path match
+- 2e7f4f90: plugin_static_assets emit resource_map remove query
+- b7fb695a: revert preset-env match & add enforce exclude
+
 ## 1.3.15
 
 ### Patch Changes
