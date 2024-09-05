@@ -15,8 +15,8 @@ import { __FARM_GLOBAL__ } from '../config/_global.js';
 import { getSortedPluginHooksBindThis } from '../plugin/index.js';
 import { getCacheDir, isCacheDirExists } from '../utils/cacheDir.js';
 import { createDebugger } from '../utils/debug.js';
-import { teardownSIGTERMListener } from '../utils/http.js';
-import { Logger, bootstrap, logger } from '../utils/logger.js';
+import { resolveServerUrls, teardownSIGTERMListener } from '../utils/http.js';
+import { Logger, bootstrap, logger, printServerUrls } from '../utils/logger.js';
 import { initPublicFiles } from '../utils/publicDir.js';
 import { arrayEqual, isObject, normalizePath } from '../utils/share.js';
 
@@ -265,17 +265,19 @@ export class Server extends httpServer {
       return;
     }
     const { port: prevPort, host: prevHost } = this.serverOptions;
-    // TODO 把所有 要打印的 url 配置出来 不是直接打印所有 url
     const prevUrls = this.resolvedUrls;
     await this.restart();
 
     const { port, host } = this.serverOptions;
+
     if (
       port !== prevPort ||
       host !== prevHost ||
       this.hasUrlsChanged(prevUrls, this.resolvedUrls)
     ) {
-      console.log('端口或者 host 发生变化');
+      __FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__ = false;
+    } else {
+      __FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__ = true;
     }
   }
 
@@ -362,7 +364,7 @@ export class Server extends httpServer {
       // watch extra files after compile
       this.watcher?.watchExtraFiles?.();
       !__FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__ &&
-        (await this.displayServerUrls(this.serverOptions, this.publicPath));
+        (await this.displayServerUrls());
 
       if (open) {
         this.#openServerBrowser();
@@ -661,5 +663,23 @@ export class Server extends httpServer {
     }
 
     await Promise.allSettled([this.watcher.close(), this.closeHttpServerFn()]);
+  }
+
+  async displayServerUrls() {
+    this.resolvedUrls = await resolveServerUrls(
+      this.httpServer,
+      this.serverOptions,
+      this.publicPath
+    );
+
+    if (this.resolvedUrls) {
+      printServerUrls(this.resolvedUrls, this.serverOptions.host, this.logger);
+    } else if (this.serverOptions.middlewareMode) {
+      throw new Error('cannot print server URLs in middleware mode.');
+    } else {
+      throw new Error(
+        'cannot print server URLs before server.listen is called.'
+      );
+    }
   }
 }

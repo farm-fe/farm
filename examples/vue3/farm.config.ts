@@ -8,10 +8,12 @@ const compressionMiddleware = () => {
   return {
     name: "compression",
     configureServer(server) {
+      // console.log("server", server.middlewares);
       server.middlewares.use(compression());
     },
   };
 };
+
 
 export default defineConfig({
   vitePlugins: [

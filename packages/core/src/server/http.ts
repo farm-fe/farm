@@ -108,22 +108,4 @@ export class httpServer {
     ]);
     return { ...https, ca, cert, key, pfx };
   }
-
-  async displayServerUrls(
-    serverOptions: any,
-    publicPath?: string,
-    showPreviewFlag = false
-  ) {
-    this.resolvedUrls = await resolveServerUrls(
-      this.httpServer,
-      serverOptions,
-      publicPath
-    );
-
-    if (this.resolvedUrls) {
-      printServerUrls(this.resolvedUrls, this.logger, showPreviewFlag);
-    } else {
-      throw new Error('cannot print server URLs with Server Error.');
-    }
-  }
 }
