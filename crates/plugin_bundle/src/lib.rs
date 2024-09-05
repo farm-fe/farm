@@ -1,21 +1,27 @@
 #![feature(box_patterns)]
 
 use std::{
-  borrow::Cow,
   collections::{HashMap, HashSet},
   sync::Arc,
 };
 
 use farmfe_core::{
-  config::{config_regex::ConfigRegex, partial_bundling::PartialBundlingEnforceResourceConfig},
+  config::{
+    config_regex::ConfigRegex, partial_bundling::PartialBundlingEnforceResourceConfig, Config,
+  },
+  context::CompilationContext,
   enhanced_magic_string::bundle::Bundle,
-  module::{ModuleId, ModuleType},
+  module::ModuleType,
   parking_lot::Mutex,
-  plugin::{Plugin, PluginLoadHookResult, PluginResolveHookResult},
+  plugin::{
+    Plugin, PluginFinalizeResourcesHookParams, PluginGenerateResourcesHookResult,
+    PluginHookContext, PluginLoadHookParam, PluginLoadHookResult, PluginProcessModuleHookParam,
+    PluginResolveHookParam, PluginResolveHookResult,
+  },
   regex::Regex,
   relative_path::RelativePath,
   resource::{
-    resource_pot::{ResourcePotMetaData, ResourcePotType},
+    resource_pot::{ResourcePot, ResourcePotMetaData, ResourcePotType},
     ResourceType,
   },
   swc_common::DUMMY_SP,
@@ -23,16 +29,10 @@ use farmfe_core::{
 };
 use farmfe_toolkit::constant::RUNTIME_SUFFIX;
 use resource_pot_to_bundle::{
-  Polyfill, SharedBundle, FARM_BUNDLE_POLYFILL_SLOT, FARM_BUNDLE_REFERENCE_SLOT_PREFIX,
+  SharedBundle, FARM_BUNDLE_POLYFILL_SLOT, FARM_BUNDLE_REFERENCE_SLOT_PREFIX,
 };
 
 pub mod resource_pot_to_bundle;
-
-const MODULE_NEED_POLYFILLS: [Polyfill; 3] = [
-  Polyfill::Wildcard,
-  Polyfill::InteropRequireDefault,
-  Polyfill::ExportStar,
-];
 
 #[derive(Default)]
 pub struct FarmPluginBundle {
@@ -52,10 +52,7 @@ impl Plugin for FarmPluginBundle {
     "farm-plugin-bundle"
   }
 
-  fn config(
-    &self,
-    config: &mut farmfe_core::config::Config,
-  ) -> farmfe_core::error::Result<Option<()>> {
+  fn config(&self, config: &mut Config) -> farmfe_core::error::Result<Option<()>> {
     config
       .partial_bundling
       .enforce_resources
@@ -69,10 +66,10 @@ impl Plugin for FarmPluginBundle {
 
   fn resolve(
     &self,
-    param: &farmfe_core::plugin::PluginResolveHookParam,
-    _context: &Arc<farmfe_core::context::CompilationContext>,
-    _hook_context: &farmfe_core::plugin::PluginHookContext,
-  ) -> farmfe_core::error::Result<Option<farmfe_core::plugin::PluginResolveHookResult>> {
+    param: &PluginResolveHookParam,
+    _context: &Arc<CompilationContext>,
+    _hook_context: &PluginHookContext,
+  ) -> farmfe_core::error::Result<Option<PluginResolveHookResult>> {
     if param.source.starts_with(FARM_BUNDLE_POLYFILL_SLOT) {
       return Ok(Some(PluginResolveHookResult {
         resolved_path: FARM_BUNDLE_POLYFILL_SLOT.to_string(),
@@ -88,10 +85,10 @@ impl Plugin for FarmPluginBundle {
 
   fn load(
     &self,
-    _param: &farmfe_core::plugin::PluginLoadHookParam,
-    _context: &Arc<farmfe_core::context::CompilationContext>,
-    _hook_context: &farmfe_core::plugin::PluginHookContext,
-  ) -> farmfe_core::error::Result<Option<farmfe_core::plugin::PluginLoadHookResult>> {
+    _param: &PluginLoadHookParam,
+    _context: &Arc<CompilationContext>,
+    _hook_context: &PluginHookContext,
+  ) -> farmfe_core::error::Result<Option<PluginLoadHookResult>> {
     if _param.resolved_path.starts_with(FARM_BUNDLE_POLYFILL_SLOT) {
       return Ok(Some(PluginLoadHookResult {
         content: format!("export {{}}"),
@@ -105,8 +102,8 @@ impl Plugin for FarmPluginBundle {
 
   fn process_module(
     &self,
-    param: &mut farmfe_core::plugin::PluginProcessModuleHookParam,
-    context: &Arc<farmfe_core::context::CompilationContext>,
+    param: &mut PluginProcessModuleHookParam,
+    context: &Arc<CompilationContext>,
   ) -> farmfe_core::error::Result<Option<()>> {
     let module_graph = context.module_graph.read();
 
@@ -134,8 +131,8 @@ impl Plugin for FarmPluginBundle {
 
   fn process_resource_pots(
     &self,
-    resource_pots: &mut Vec<&mut farmfe_core::resource::resource_pot::ResourcePot>,
-    context: &std::sync::Arc<farmfe_core::context::CompilationContext>,
+    resource_pots: &mut Vec<&mut ResourcePot>,
+    context: &Arc<CompilationContext>,
   ) -> farmfe_core::error::Result<Option<()>> {
     if !self.runtime_code.lock().is_empty() {
       return Ok(None);
@@ -187,11 +184,10 @@ impl Plugin for FarmPluginBundle {
 
   fn render_resource_pot_modules(
     &self,
-    resource_pot: &farmfe_core::resource::resource_pot::ResourcePot,
-    _context: &Arc<farmfe_core::context::CompilationContext>,
-    _hook_context: &farmfe_core::plugin::PluginHookContext,
-  ) -> farmfe_core::error::Result<Option<farmfe_core::resource::resource_pot::ResourcePotMetaData>>
-  {
+    resource_pot: &ResourcePot,
+    _context: &Arc<CompilationContext>,
+    _hook_context: &PluginHookContext,
+  ) -> farmfe_core::error::Result<Option<ResourcePotMetaData>> {
     if matches!(resource_pot.resource_pot_type, ResourcePotType::Runtime) {
       return Ok(Some(ResourcePotMetaData {
         rendered_modules: HashMap::new(),
@@ -214,8 +210,8 @@ impl Plugin for FarmPluginBundle {
 
   fn process_generated_resources(
     &self,
-    resources: &mut farmfe_core::plugin::PluginGenerateResourcesHookResult,
-    _context: &Arc<farmfe_core::context::CompilationContext>,
+    resources: &mut PluginGenerateResourcesHookResult,
+    _context: &Arc<CompilationContext>,
   ) -> farmfe_core::error::Result<Option<()>> {
     if let Some(resource_pot_id) = resources.resource.info.as_ref().map(|i| i.id.clone()) {
       self
@@ -229,8 +225,8 @@ impl Plugin for FarmPluginBundle {
 
   fn finalize_resources(
     &self,
-    param: &mut farmfe_core::plugin::PluginFinalizeResourcesHookParams,
-    context: &Arc<farmfe_core::context::CompilationContext>,
+    param: &mut PluginFinalizeResourcesHookParams,
+    context: &Arc<CompilationContext>,
   ) -> farmfe_core::error::Result<Option<()>> {
     if !context.config.output.target_env.is_library() {
       return Ok(None);

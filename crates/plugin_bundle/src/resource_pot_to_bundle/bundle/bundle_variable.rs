@@ -48,7 +48,7 @@ impl BundleVariable {
 
       self.set_namespace(prev_namespace);
 
-      self.set_rename(local, self.render_name(target));
+      self.set_var_uniq_rename(local);
     }
   }
 

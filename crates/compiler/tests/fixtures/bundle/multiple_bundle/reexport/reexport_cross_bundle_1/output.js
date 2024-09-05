@@ -9,10 +9,12 @@ console.log({
 export { default_default$1, foo_named, namespace_ns };
 
 
-//index.js:
+//farm_runtime.js:
  // module_id: __FARM_BUNDLE_POLYFILL_SLOT__
 
-// module_id: default.ts
+
+//index.js:
+ // module_id: default.ts
 var default_default$1 = '123';
 
 // module_id: namespace.ts
@@ -31,4 +33,4 @@ const foo_named = '123';
 console.log(default_default$1, foo_named, namespace_ns);
 var index_default = 'index';
 export default index_default;
-export { default_default$1, namespace_default, foo_named, foo_ns, namespace_ns };
+export { namespace_default, default_default$1, foo_named, foo_ns, namespace_ns };
