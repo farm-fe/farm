@@ -155,6 +155,7 @@ impl CjsPatch {
     bundle_variable: &BundleVariable,
     bundle_reference: &BundleReference,
     polyfill: &mut SimplePolyfill,
+    patch_to_bundle_first: &mut Vec<ModuleItem>,
   ) {
     let module_analyzer = module_analyzer_manager
       .module_map
@@ -192,30 +193,13 @@ impl CjsPatch {
       );
     }
 
-    // if let Some(external_reference) = bundle_reference.external_reference(module_id.clone().into())
-    // {
-    for (source, import) in &bundle_reference.redeclare_commonjs_import {
-      patch_ast.extend(CjsModuleAnalyzer::redeclare_commonjs_export(
-        &source.to_module_id(),
-        bundle_variable,
-        &module_analyzer_manager.module_global_uniq_name,
-        &import,
-        polyfill,
-      ));
-    }
-    // }
-
-    // if let Some(inner_reference) = bundle_reference.inner_reference(module_id.clone().into()) {
-    //   for (source, import) in &inner_reference.redeclare_commonjs_import {
-    //     patch_ast.extend(CjsModuleAnalyzer::redeclare_commonjs_export(
-    //       &source.to_module_id(),
-    //       bundle_variable,
-    //       &module_analyzer_manager.module_global_uniq_name,
-    //       &import,
-    //       polyfill,
-    //     ));
-    //   }
-    // }
+    patch_to_bundle_first.extend(CjsModuleAnalyzer::redeclare_commonjs_export(
+      module_id,
+      bundle_variable,
+      &bundle_reference.redeclare_commonjs_import,
+      &module_analyzer_manager.module_global_uniq_name,
+      polyfill,
+    ));
   }
 
   pub fn replace_cjs_require<'a>(

@@ -13,7 +13,6 @@ use farmfe_toolkit::{
 
 use crate::resource_pot_to_bundle::{
   bundle::{bundle_reference::BundleReference, ModuleGlobalUniqName},
-  common::with_bundle_reference_slot_name,
   modules_analyzer::module_analyzer::{ImportSpecifierInfo, ModuleAnalyzer},
   uniq_name::BundleVariable,
   Polyfill, SimplePolyfill,
@@ -194,7 +193,6 @@ impl<'a> VisitMut for CJSReplace<'a> {
               // }
             }
           }
-          // TODO: other bundle
         }
       }
 

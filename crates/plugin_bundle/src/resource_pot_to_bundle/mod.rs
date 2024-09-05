@@ -20,7 +20,6 @@ use farmfe_core::{
 pub use polyfill::{Polyfill, SimplePolyfill};
 
 pub use crate::resource_pot_to_bundle::bundle::bundle_analyzer::BundleAnalyzer;
-use crate::MODULE_NEED_POLYFILLS;
 
 use self::{
   bundle::ModuleAnalyzerManager, modules_analyzer::module_analyzer::ModuleAnalyzer,
@@ -89,9 +88,8 @@ pub struct SharedBundle<'a> {
 
 ///
 /// TODO:
-/// 1. multiple bundle
-/// 2. dynamic bundle
-/// 3. multiple environment process
+/// 1. multiple environment process
+///   - browser polyfill
 ///
 impl<'a> SharedBundle<'a> {
   pub fn new(
@@ -223,7 +221,7 @@ impl<'a> SharedBundle<'a> {
     Ok(())
   }
 
-  fn link_resource_polyfill(&mut self) {
+  fn link_resource_polyfill_to_variables(&mut self) {
     let bundle_variable = &mut self.bundle_variables.borrow_mut();
 
     let polyfill_module_id = ModuleId::from(FARM_BUNDLE_POLYFILL_SLOT);
@@ -255,7 +253,7 @@ impl<'a> SharedBundle<'a> {
   }
 
   // 2-2 process common module data
-  fn link_modules(&mut self) -> Result<()> {
+  fn link_modules_meta(&mut self) -> Result<()> {
     farm_profile_function!("");
 
     self.module_analyzer_manager.link(
@@ -353,14 +351,15 @@ impl<'a> SharedBundle<'a> {
   pub fn render(&mut self) -> Result<()> {
     farm_profile_function!("");
 
-    self.link_resource_polyfill();
+    self.link_resource_polyfill_to_variables();
 
     self.extract_modules()?;
 
     // TODO: try async foreach
-    self.link_modules()?;
+    self.link_modules_meta()?;
 
     self.render_bundle()?;
+    println!("bundle_variable: {:#?}", self.bundle_variables);
 
     Ok(())
   }

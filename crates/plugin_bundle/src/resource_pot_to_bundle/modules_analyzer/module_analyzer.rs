@@ -23,8 +23,10 @@ use farmfe_toolkit::{
 };
 
 use crate::resource_pot_to_bundle::{
-  bundle::reference::ReferenceMap, common::get_module_mark, targets::cjs::CjsModuleAnalyzer,
-  uniq_name::BundleVariable, Var,
+  bundle::{reference::ReferenceMap, ModuleAnalyzerManager, ModuleMap},
+  common::get_module_mark,
+  targets::cjs::CjsModuleAnalyzer,
+  uniq_name::BundleVariable,
 };
 
 use super::analyze::{self, CollectUnresolvedIdent};
@@ -83,19 +85,9 @@ pub enum StmtAction {
   /// import cjs from './cjs_module';
   /// // =>
   /// remove
-  /// // or
   ///
   /// ```
   StripCjsImport(usize, Option<ModuleId>),
-  //
-  // ```ts
-  // export { name as cjsName } from "./cjs";
-  // export { age as cjsAge } from "./cjs";
-  // // =>
-  // const { name, age } = require_cjs();
-  // ```
-  //
-  // ReplaceCjsExport(ModuleId),
 }
 
 impl StmtAction {
@@ -106,7 +98,6 @@ impl StmtAction {
       StmtAction::DeclDefaultExpr(index, _) => Some(*index),
       StmtAction::RemoveImport(index) => Some(*index),
       StmtAction::StripCjsImport(index, _) => Some(*index),
-      // StmtAction::ReplaceCjsExport(_) => None,
     }
   }
 }
@@ -411,6 +402,7 @@ impl ModuleAnalyzer {
   pub fn build_rename_map<'a>(
     &self,
     bundle_variable: &'a BundleVariable,
+    module_analyzer_manager: &ModuleAnalyzerManager,
   ) -> HashMap<VarRefKey<'a>, usize> {
     self
       .statements
@@ -463,9 +455,38 @@ impl ModuleAnalyzer {
               })
               .unwrap_or_default(),
           )
-          .map(|item| bundle_variable.var_by_index(item))
+          .map(|item| {
+            bundle_variable.var_by_index(item)
+            // let (v, root) = bundle_variable.var(item);
+
+            // let Some(root) = root else {
+            //   return v;
+            // };
+
+            // let v_module_id = bundle_variable.module_id_by_var(&v);
+            // let root_module_id = bundle_variable.module_id_by_var(&root);
+
+            // let (Some(v_module_id), Some(root_module_id)) = (v_module_id, root_module_id) else {
+            //   return v;
+            // };
+
+            // if module_analyzer_manager.is_same_bundle(v_module_id, root_module_id) {
+            //   return v;
+            // }
+
+            // if module_analyzer_manager.is_commonjs(root_module_id) {
+            //   return v;
+            // }
+
+            // v
+          })
           .filter(|item| item.rename.is_some())
-          .map(|item| (Ref::map(Ref::clone(&item), |item| &item.var).into(), item.index))
+          .map(|item| {
+            (
+              Ref::map(Ref::clone(&item), |item| &item.var).into(),
+              item.index,
+            )
+          })
       })
       .collect::<HashMap<_, _>>()
   }

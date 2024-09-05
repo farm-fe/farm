@@ -2,7 +2,6 @@ use std::{
   collections::{HashMap, HashSet},
   fmt::Debug,
   mem::{self, replace},
-  rc::Rc,
   sync::{Arc, Mutex, RwLock},
 };
 
@@ -46,8 +45,10 @@ use super::{
   FARM_BUNDLE_POLYFILL_SLOT,
 };
 
+pub type ModuleMap = HashMap<ModuleId, ModuleAnalyzer>;
+
 pub struct ModuleAnalyzerManager<'a> {
-  pub module_map: HashMap<ModuleId, ModuleAnalyzer>,
+  pub module_map: ModuleMap,
   pub namespace_modules: HashSet<ModuleId>,
 
   ///
@@ -496,10 +497,6 @@ impl<'a> ModuleAnalyzerManager<'a> {
       }
     }
 
-    if self.is_commonjs(module_id) && self.module_analyzer(module_id).is_some_and(|m| m.entry) {
-      // map
-    }
-
     if let Some(m) = self.module_analyzer_mut(module_id) {
       m.export_names = Some(Arc::new(map));
     }
@@ -517,7 +514,7 @@ impl<'a> ModuleAnalyzerManager<'a> {
     order_index_map: &HashMap<ModuleId, usize>,
     polyfill: &mut SimplePolyfill,
     external_config: &ExternalConfig,
-  ) -> Result<()> {
+  ) -> Result<Vec<ModuleItem>> {
     farm_profile_function!(format!(
       "patch module analyzer ast: {}",
       module_id.to_string()
@@ -535,9 +532,7 @@ impl<'a> ModuleAnalyzerManager<'a> {
       order_index_map,
       polyfill,
       external_config,
-    )?;
-
-    Ok(())
+    )
   }
 
   fn patch_namespace(
@@ -715,11 +710,12 @@ impl<'a> ModuleAnalyzerManager<'a> {
     order_index_map: &HashMap<ModuleId, usize>,
     polyfill: &mut SimplePolyfill,
     external_config: &ExternalConfig,
-  ) -> Result<()> {
+  ) -> Result<Vec<ModuleItem>> {
     farm_profile_function!("");
+    let mut patch_first_bundle = vec![];
 
     if self.module_analyzer(module_id).is_none() {
-      return Ok(());
+      return Ok(patch_first_bundle);
     }
 
     let module_analyzer = self.module_analyzer_mut(module_id).unwrap();
@@ -755,6 +751,7 @@ impl<'a> ModuleAnalyzerManager<'a> {
         bundle_variable,
         bundle_reference,
         polyfill,
+        &mut patch_first_bundle,
       );
 
       // 1. append ast
@@ -764,8 +761,6 @@ impl<'a> ModuleAnalyzerManager<'a> {
         let module_analyzer = self.module_analyzer_mut_unchecked(module_id);
         let mark = module_analyzer.mark.clone();
         let mut ast = module_analyzer.ast.take();
-
-        let rename_map = module_analyzer.build_rename_map(bundle_variable);
 
         ast.body.extend(patch_asts);
 
@@ -801,15 +796,25 @@ impl<'a> ModuleAnalyzerManager<'a> {
           module_id,
           bundle_variable,
         ));
-
-        ast.visit_mut_with(&mut RenameIdent::new(rename_map, &bundle_variable));
+        self.build_rename_map(module_id, bundle_variable, &mut ast);
 
         self.set_ast(module_id, ast);
       }
     })
     .unwrap();
 
-    Ok(())
+    Ok(patch_first_bundle)
+  }
+
+  pub fn build_rename_map(
+    &mut self,
+    module_id: &ModuleId,
+    bundle_variable: &mut BundleVariable,
+    ast: &mut Module,
+  ) {
+    let module_analyzer = self.module_map.get(module_id).unwrap();
+    let rename_map = module_analyzer.build_rename_map(bundle_variable, self);
+    ast.visit_mut_with(&mut RenameIdent::new(rename_map, &bundle_variable, self));
   }
 
   pub fn link(

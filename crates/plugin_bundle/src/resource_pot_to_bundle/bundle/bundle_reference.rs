@@ -1,8 +1,4 @@
-use std::{
-  cell::{Ref, RefCell, RefMut},
-  collections::HashMap,
-  rc::Rc,
-};
+use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
 use farmfe_core::{
   config::{Config, ModuleFormat},
@@ -198,6 +194,9 @@ impl From<&String> for ReferenceKind {
 /// }
 ///
 
+
+pub type CommonJsImportMap = HashMap<ReferenceKind, ExternalReferenceImport>;
+
 #[derive(Debug, Default)]
 pub struct BundleReference {
   /// import { xxx } from './external_bundle_module' | './other_bundle_module'
@@ -212,7 +211,7 @@ pub struct BundleReference {
   /// const cjs_module_cjs = cjs_module()["default"];
   /// ```
   ///
-  pub redeclare_commonjs_import: HashMap<ReferenceKind, ExternalReferenceImport>,
+  pub redeclare_commonjs_import: CommonJsImportMap,
 
   // pub declare_commonjs_export: HashMap<ReferenceKind, ExternalReferenceExport>,
   /// export xxx from './external_bundle_module'

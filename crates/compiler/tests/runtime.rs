@@ -12,8 +12,6 @@ use crate::common::{
 #[allow(dead_code)]
 #[cfg(test)]
 fn test(file: String, crate_path: String) {
-  use std::fs;
-
   use common::{get_config_field, get_dir_config_files};
 
   use crate::common::try_read_config_from_json;

@@ -268,12 +268,12 @@ impl<'a, 'b> VisitMut for ReplaceDynamicVisit<'a, 'b> {
 }
 
 pub fn replace_dynamic_import<'a, 'b>(
-  module_manager: &'b ModuleAnalyzerManager<'b>,
+  module_analyzer_manager: &'b ModuleAnalyzerManager<'b>,
   module_id: &'a ModuleId,
   bundle_variable: &'a BundleVariable,
 ) -> ReplaceDynamicVisit<'a, 'b> {
   ReplaceDynamicVisit {
-    module_manager,
+    module_manager: module_analyzer_manager,
     module_id,
     bundle_variable,
   }

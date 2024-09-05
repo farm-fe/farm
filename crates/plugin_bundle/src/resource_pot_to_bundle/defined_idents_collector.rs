@@ -73,31 +73,60 @@ impl Visit for DefinedIdentsCollector {
 
 use farmfe_core::swc_ecma_ast::Ident;
 
-use super::{modules_analyzer::module_analyzer::VarRefKey, uniq_name::BundleVariable, Var};
+use super::{
+  bundle::ModuleAnalyzerManager, modules_analyzer::module_analyzer::VarRefKey,
+  uniq_name::BundleVariable,
+};
 
 type RenameMap<'a> = HashMap<VarRefKey<'a>, usize>;
 
-#[derive(Debug)]
+// #[derive(Debug)]
 pub struct RenameIdent<'a> {
   map: RenameMap<'a>,
   bundle_variable: &'a BundleVariable,
+  module_analyzer_manager: &'a ModuleAnalyzerManager<'a>,
 }
 
 impl<'a> RenameIdent<'a> {
-  pub fn new(map: RenameMap<'a>, bundle_variable: &'a BundleVariable) -> Self {
+  pub fn new(
+    map: RenameMap<'a>,
+    bundle_variable: &'a BundleVariable,
+    module_analyzer_manager: &'a ModuleAnalyzerManager<'a>,
+  ) -> Self {
     Self {
       map,
       bundle_variable,
+      module_analyzer_manager,
     }
   }
 
   fn rename(&self, ident: &Ident) -> Option<String> {
     let r = RefCell::new(ident.to_id());
-    let xx = self
-      .map
-      .get(&(r.borrow().into()))
-      .map(|var| self.bundle_variable.render_name(*var));
-    xx
+    let v = self.map.get(&(r.borrow().into())).map(|var| {
+      return self.bundle_variable.render_name(*var);
+      let (var, root) = self.bundle_variable.var(*var);
+
+      let Some(root) = root else {
+        return var.render_name();
+      };
+
+      let var_module_id = self.bundle_variable.module_id_by_var(&var);
+      let root_module_id = self.bundle_variable.module_id_by_var(&root);
+
+      let (Some(var_module_id), Some(root_module_id)) = (var_module_id, root_module_id) else {
+        return root.render_name();
+      };
+
+      if self
+        .module_analyzer_manager
+        .is_same_bundle(var_module_id, root_module_id)
+      {
+        return root.render_name();
+      }
+
+      var.render_name()
+    });
+    v
   }
 }
 

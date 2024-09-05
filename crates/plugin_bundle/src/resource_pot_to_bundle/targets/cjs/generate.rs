@@ -301,17 +301,7 @@ impl CjsGenerate {
           prop: MemberProp::Ident(property.into()),
         });
 
-        let t = Box::new(if !is_commonjs {
-          init_expr
-        } else {
-          Expr::Call(CallExpr {
-            ctxt: SyntaxContext::empty(),
-            span: DUMMY_SP,
-            callee: Callee::Expr(Box::new(init_expr)),
-            args: vec![],
-            type_args: None,
-          })
-        });
+        let t = Box::new(init_expr);
 
         decls.push(VarDeclarator {
           span: DUMMY_SP,
@@ -359,15 +349,6 @@ impl CjsGenerate {
           },
         );
       }
-
-      // if !decls.is_empty() {
-      //   stmts.push(ModuleItem::Stmt(Stmt::Decl(Decl::Var(Box::new(VarDecl {
-      //     span: DUMMY_SP,
-      //     kind: VarDeclKind::Var,
-      //     declare: false,
-      //     decls,
-      //   })))));
-      // }
     }
 
     for (url, merged_import_generate) in generate_import_specifies {
@@ -427,7 +408,7 @@ fn try_wrap_namespace(
   expr
 }
 
-struct MergedImportGenerate {
+pub struct MergedImportGenerate {
   specifies: Vec<VarDeclarator>,
   namespace_name: String,
   is_contain_namespace: bool,

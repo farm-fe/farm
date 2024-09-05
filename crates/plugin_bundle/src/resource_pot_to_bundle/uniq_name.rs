@@ -85,7 +85,7 @@ pub struct BundleVariable {
   pub used_names: HashSet<String>,
   pub module_order_map: Arc<HashMap<ModuleId, usize>>,
   pub module_order_index_set: Arc<Vec<ModuleId>>,
-  pub polyfill_index_map: HashMap<String, usize>
+  pub polyfill_index_map: HashMap<String, usize>,
 }
 
 pub fn safe_name_from_module_id(module_id: &ModuleId, root: &str) -> String {
@@ -278,7 +278,7 @@ impl BundleVariable {
     let v = self.var_by_index(index);
 
     if let Some(root) = v.root {
-      return (v, Some(self.var_or_root(root)));
+      return (v, Some(self.var_by_index(root)));
     }
 
     (v, None)
@@ -305,8 +305,11 @@ impl BundleVariable {
   }
 
   pub fn set_var_root(&self, index: usize, root: usize) {
+    if index == root {
+      return;
+    }
     let mut var = self.var_mut_by_index(index);
-    var.root = Some(root);
+    var.root = Some(self.var_or_root(root).index);
   }
 
   pub fn var_or_root(&self, index: usize) -> Ref<Var> {
@@ -384,11 +387,7 @@ impl BundleVariable {
   pub fn render_name(&self, index: usize) -> String {
     let var = self.var_or_root(index);
 
-    var
-      .rename
-      .as_ref()
-      .map(|r| r.clone())
-      .unwrap_or_else(|| var.var.0.to_string())
+    var.render_name()
   }
 
   #[inline]

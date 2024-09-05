@@ -287,7 +287,6 @@ pub fn assert_compiler_result_with_config(compiler: &Compiler, config: AssertCom
   );
   let result = get_compiler_result(compiler, &config);
   let output_path = PathBuf::from(compiler.context().config.root.clone()).join(output_path);
-  println!("output_path: {}", output_path.to_string_lossy().to_string());
   if is_update_snapshot_from_env() || !output_path.exists() {
     std::fs::write(output_path, result).unwrap();
   } else {
@@ -360,7 +359,6 @@ pub fn get_dir_config_files(cwd: &Path) -> Vec<(String, PathBuf)> {
         .collect::<Vec<_>>()
     })
     .unwrap_or_default();
-  println!("fff: {:#?}", files);
 
   if !files.iter().any(|(name, _)| name.is_empty()) {
     files.push(("".to_string(), cwd.to_path_buf().join("config.json")));
