@@ -8,13 +8,11 @@ const compressionMiddleware = () => {
   return {
     name: "compression",
     configureServer(server) {
-      console.log("Middleware stack:", server.middlewares.stack.length);
       // console.log("server", server.middlewares);
       server.middlewares.use(compression());
       server.middlewares.use((req, res, next) => {
         next();
       });
-      console.log("Middleware count:", server.middlewares.stack.length);
     },
   };
 };
@@ -27,9 +25,15 @@ export default defineConfig({
     vue(),
     compressionMiddleware(),
   ],
+
   compilation: {
     // persistentCache: false,
   },
+  server: {
+    port:5233
+
+  }
+
   // plugins: [compressionMiddleware()],
   // server: {
   //   port: 5232,

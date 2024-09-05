@@ -527,23 +527,10 @@ export async function start(
   setProcessEnv('development');
 
   try {
-    const resolvedUserConfig = await resolveConfig(
-      inlineConfig,
-      'start',
-      'development',
-      'development',
-      false
-    );
-
-    const server = new Server(resolvedUserConfig, logger);
+    const server = new Server(inlineConfig, logger);
 
     await server.createServer();
 
-    // TODO 这段逻辑放在 创建 http server 之后 放到  server 里面
-    // resolvedUserConfig.jsPlugins.forEach((plugin: JsPlugin) =>
-    //   // @ts-ignore
-    //   plugin.configureServer?.(server),
-    // );
     server.listen();
   } catch (error) {
     logger.error('Failed to start the server', { exit: true, error });

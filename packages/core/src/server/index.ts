@@ -4,7 +4,7 @@ import connect from 'connect';
 import corsMiddleware from 'cors';
 
 import { Compiler } from '../compiler/index.js';
-import { colors, createCompiler } from '../index.js';
+import { colors, createCompiler, resolveConfig } from '../index.js';
 import Watcher from '../watcher/index.js';
 import { HmrEngine } from './hmr-engine.js';
 import { CommonServerOptions, httpServer } from './http.js';
@@ -15,7 +15,7 @@ import { __FARM_GLOBAL__ } from '../config/_global.js';
 import { getCacheDir, isCacheDirExists } from '../utils/cacheDir.js';
 import { Logger, bootstrap, logger } from '../utils/logger.js';
 import { initPublicFiles } from '../utils/publicDir.js';
-import { isObject } from '../utils/share.js';
+import { isObject, normalizePath } from '../utils/share.js';
 
 import {
   adaptorViteMiddleware,
@@ -39,9 +39,11 @@ import type * as net from 'node:net';
 import type { HMRChannel } from './hmr.js';
 
 import type {
+  FarmCliOptions,
   HmrOptions,
   NormalizedServerConfig,
-  ResolvedUserConfig
+  ResolvedUserConfig,
+  UserConfig
 } from '../config/types.js';
 import {
   getPluginHooks,
@@ -122,14 +124,14 @@ export class Server extends httpServer {
   middlewares: connect.Server;
   compiler: CompilerType;
   root: string;
+  resolvedUserConfig: ResolvedUserConfig;
   closeHttpServerFn: () => Promise<void>;
   postConfigureServerHooks: ((() => void) | void)[] = [];
   constructor(
-    readonly resolvedUserConfig: ResolvedUserConfig,
+    readonly inlineConfig: FarmCliOptions & UserConfig,
     logger: Logger
   ) {
     super(logger);
-    this.#resolveOptions();
   }
 
   /**
@@ -150,13 +152,21 @@ export class Server extends httpServer {
    */
   async createServer(): Promise<void> {
     try {
-      const { https, middlewareMode } = this.serverOptions;
+      this.resolvedUserConfig = await resolveConfig(
+        this.inlineConfig,
+        'start',
+        'development',
+        'development',
+        false
+      );
+      this.#resolveOptions();
 
-      this.httpsOptions = await this.resolveHttpsConfig(https);
+      this.httpsOptions = await this.resolveHttpsConfig(
+        this.serverOptions.https
+      );
       this.publicFiles = await this.#handlePublicFiles();
-
       this.middlewares = connect() as connect.Server;
-      this.httpServer = middlewareMode
+      this.httpServer = this.serverOptions.middlewareMode
         ? null
         : await this.resolveHttpServer(
             this.serverOptions as CommonServerOptions,
@@ -182,7 +192,7 @@ export class Server extends httpServer {
       // init middlewares
       await this.#initializeMiddlewares();
 
-      if (!middlewareMode && this.httpServer) {
+      if (!this.serverOptions.middlewareMode && this.httpServer) {
         this.httpServer.once('listening', () => {
           // update actual port since this may be different from initial value
           this.serverOptions.port = (
@@ -232,6 +242,7 @@ export class Server extends httpServer {
     await this.watcher.createWatcher();
 
     this.watcher.watcher.on('change', async (file: string | string[] | any) => {
+      file = normalizePath(file);
       const isConfigFile = this.resolvedUserConfig.configFilePath === file;
       const isConfigDependencyFile =
         this.resolvedUserConfig.configFileDependencies.some(
@@ -242,7 +253,11 @@ export class Server extends httpServer {
       );
       if (isConfigFile || isConfigDependencyFile || isEnvFile) {
         debugServer?.(`[config change] ${colors.dim(file)}`);
-        this.restartServer();
+        try {
+          await this.restartServer();
+        } catch (e) {
+          this.logger.error(colors.red(e));
+        }
       }
       // TODO 做一个 onHmrUpdate 方法
       try {
@@ -275,9 +290,49 @@ export class Server extends httpServer {
   }
 
   async restartServer() {
+    if (this.serverOptions.middlewareMode) {
+      // TODO restart
+      await this.restart();
+      return;
+    }
+    const { port: prevPort, host: prevHost } = this.serverOptions;
+    // TODO 把所有 要打印的 url 配置出来 不是直接打印所有 url
+    const prevUrls = this.resolvedUrls;
+    // console.log(prevHost, prevPort);
+
+    // console.log(this.resolvedUrls);
+    // await this.createServer();
+    // await this.listen();
+    // console.log(this.middlewares.stack);
+    await this.restart();
+    console.log('调用了几次啊');
+
+    const { port, host } = this.serverOptions;
+    if (
+      port !== prevPort ||
+      host !== prevHost ||
+      this.hasUrlsChanged(prevUrls, this.resolvedUrls)
+    ) {
+      console.log('端口或者 host 发生变化');
+    }
+
+    // this._transferState(newServer);
+  }
+
+  hasUrlsChanged(oldUrls: any, newUrls: any) {
+    return !(
+      oldUrls === newUrls ||
+      (oldUrls &&
+        newUrls &&
+        arrayEqual(oldUrls.local, newUrls.local) &&
+        arrayEqual(oldUrls.network, newUrls.network))
+    );
+  }
+
+  async restart() {
     await this.close();
     await this.createServer();
-    await this.listen();
+    this.listen();
   }
 
   /**
@@ -342,8 +397,8 @@ export class Server extends httpServer {
 
       // watch extra files after compile
       this.watcher?.watchExtraFiles?.();
-      // !__FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__ &&
-      await this.displayServerUrls(this.serverOptions, this.publicPath);
+      !__FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__ &&
+        (await this.displayServerUrls(this.serverOptions, this.publicPath));
 
       if (open) {
         this.#openServerBrowser();
@@ -628,3 +683,12 @@ export const teardownSIGTERMListener = (
     process.stdin.off('end', callback);
   }
 };
+
+export function arrayEqual(a: any[], b: any[]): boolean {
+  if (a === b) return true;
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) {
+    if (a[i] !== b[i]) return false;
+  }
+  return true;
+}

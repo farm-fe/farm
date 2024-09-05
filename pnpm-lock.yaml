@@ -1978,6 +1978,9 @@ importers:
       '@vitejs/plugin-vue':
         specifier: ^5.1.1
         version: 5.1.2(vite@5.2.8(@types/node@22.5.0)(less@4.2.0)(lightningcss@1.25.1)(sass@1.74.1)(terser@5.31.1))(vue@3.4.35(typescript@5.5.4))
+      compression:
+        specifier: ^1.7.4
+        version: 1.7.4
       core-js:
         specifier: ^3.37.1
         version: 3.37.1

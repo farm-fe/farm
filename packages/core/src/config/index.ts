@@ -29,7 +29,6 @@ import {
   isEmptyObject,
   isObject,
   isWindows,
-  normalizeBasePath,
   normalizePath,
   transformAliasWithVite
 } from '../utils/index.js';
@@ -414,7 +413,7 @@ export async function normalizeUserCompilationConfig(
       resolvedCompilation.output.publicPath
     );
     const serverOptions = resolvedUserConfig.server;
-    const defineHmrPath = normalizeBasePath(
+    const defineHmrPath = normalizePath(
       path.join(publicPath, resolvedUserConfig.server.hmr.path)
     );
 

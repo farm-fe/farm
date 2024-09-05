@@ -6,7 +6,7 @@ import HelloWorld from "./components/HelloWorld.vue";
   <div>
     <a href="https://farmfe.org/" target="_blank">
       <img src="./assets/logo.png" class="logo" alt="Farm logo" />
-    </a>请问请问俄武器22wwwwwwwwwwwqweqweqw123123131123123123
+    </a>
     <a href="https://vuejs.org/" target="_blank">
       <img src="./assets/vue.svg" class="logo vue" alt="Vue logo" />
     </a>
