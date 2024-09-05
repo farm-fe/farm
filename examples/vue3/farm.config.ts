@@ -8,14 +8,11 @@ const compressionMiddleware = () => {
   return {
     name: "compression",
     configureServer(server) {
-      // console.log("server", server.middlewares);
       server.middlewares.use(compression());
-      server.middlewares.use((req, res, next) => {
-        next();
-      });
     },
   };
 };
+
 export default defineConfig({
   vitePlugins: [
     // VueRouter(),
@@ -27,12 +24,11 @@ export default defineConfig({
   ],
 
   compilation: {
-    // persistentCache: false,
+    persistentCache: false,
   },
   server: {
-    port:5233
-
-  }
+    port: 5233,
+  },
 
   // plugins: [compressionMiddleware()],
   // server: {

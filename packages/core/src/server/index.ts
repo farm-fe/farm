@@ -7,15 +7,18 @@ import { Compiler } from '../compiler/index.js';
 import { colors, createCompiler, resolveConfig } from '../index.js';
 import Watcher from '../watcher/index.js';
 import { HmrEngine } from './hmr-engine.js';
-import { CommonServerOptions, httpServer } from './http.js';
+import { httpServer } from './http.js';
 import { openBrowser } from './open.js';
 import { WsServer } from './ws.js';
 
 import { __FARM_GLOBAL__ } from '../config/_global.js';
+import { getSortedPluginHooksBindThis } from '../plugin/index.js';
 import { getCacheDir, isCacheDirExists } from '../utils/cacheDir.js';
+import { createDebugger } from '../utils/debug.js';
+import { teardownSIGTERMListener } from '../utils/http.js';
 import { Logger, bootstrap, logger } from '../utils/logger.js';
 import { initPublicFiles } from '../utils/publicDir.js';
-import { isObject, normalizePath } from '../utils/share.js';
+import { arrayEqual, isObject, normalizePath } from '../utils/share.js';
 
 import {
   adaptorViteMiddleware,
@@ -36,7 +39,6 @@ import type {
 } from 'node:http';
 import type { Http2SecureServer } from 'node:http2';
 import type * as net from 'node:net';
-import type { HMRChannel } from './hmr.js';
 
 import type {
   FarmCliOptions,
@@ -45,30 +47,12 @@ import type {
   ResolvedUserConfig,
   UserConfig
 } from '../config/types.js';
-import {
-  getPluginHooks,
-  getPluginHooksThis,
-  getSortedPluginHooks
-} from '../plugin/index.js';
-import { JsUpdateResult } from '../types/binding.js';
-import { createDebugger } from '../utils/debug.js';
+import type { JsUpdateResult } from '../types/binding.js';
+import type { CommonServerOptions, ResolvedServerUrls } from './http.js';
 
 export type HttpServer = HttpBaseServer | Http2SecureServer;
 
 type CompilerType = Compiler | undefined;
-
-// export interface HmrOptions {
-//   protocol?: string;
-//   host?: string;
-//   port?: number;
-//   clientPort?: number;
-//   path?: string;
-//   timeout?: number;
-//   overlay?: boolean;
-//   server?: Server;
-//   /** @internal */
-//   channels?: HMRChannel[];
-// }
 
 export interface ServerOptions extends CommonServerOptions {
   /**
@@ -102,15 +86,18 @@ export interface ServerOptions extends CommonServerOptions {
   origin?: string;
 }
 
+type ServerConfig = CommonServerOptions & NormalizedServerConfig;
+
 export const debugServer = createDebugger('farm:server');
 
 export function noop() {
   // noop
 }
 
-type ServerConfig = CommonServerOptions & NormalizedServerConfig;
-
-// TODO 改 Server 的 name and PascalCase
+/**
+ * Represents a Farm development server.
+ * @class
+ */
 export class Server extends httpServer {
   ws: WsServer;
   serverOptions: ServerConfig;
@@ -127,6 +114,11 @@ export class Server extends httpServer {
   resolvedUserConfig: ResolvedUserConfig;
   closeHttpServerFn: () => Promise<void>;
   postConfigureServerHooks: ((() => void) | void)[] = [];
+  /**
+   * Creates an instance of Server.
+   * @param {FarmCliOptions & UserConfig} inlineConfig - The inline configuration options.
+   * @param {Logger} logger - The logger instance.
+   */
   constructor(
     readonly inlineConfig: FarmCliOptions & UserConfig,
     logger: Logger
@@ -187,6 +179,7 @@ export class Server extends httpServer {
       // invalidate vite handler
       this.#invalidateVite();
 
+      // init watcher
       await this.#createWatcher();
 
       // init middlewares
@@ -200,36 +193,9 @@ export class Server extends httpServer {
           ).port;
         });
       }
-      // TODO apply server configuration hooks from plugins e.g. vite configureServer
-      // const postHooks: ((() => void) | void)[] = [];
-      // console.log(this.resolvedUserConfig.jsPlugins);
-      // TODO 要在这里做 vite 插件和 js 插件的适配器
-      // for (const hook of getPluginHooks(applyPlugins, "configureServer")) {
-      //   postHooks.push(await hook(reflexServer));
-      // }
     } catch (error) {
       this.logger.error(`Failed to create farm server: ${error}`);
       throw error;
-    }
-  }
-
-  async handleConfigureServer() {
-    const reflexServer = new Proxy(this, {
-      get: (_, property: keyof Server) => {
-        //@ts-ignore
-        return this[property];
-      },
-      set: (_, property: keyof Server, value: never) => {
-        //@ts-ignore
-        this[property] = value;
-        return true;
-      }
-    });
-    const { jsPlugins } = this.resolvedUserConfig;
-    // TODO type error and 而且还要排序 插件排序
-    // @ts-ignore
-    for (const hook of getPluginHooksThis(jsPlugins, 'configureServer')) {
-      this.postConfigureServerHooks.push(await hook(reflexServer));
     }
   }
 
@@ -259,7 +225,7 @@ export class Server extends httpServer {
           this.logger.error(colors.red(e));
         }
       }
-      // TODO 做一个 onHmrUpdate 方法
+
       try {
         this.hmrEngine.hmrUpdate(file);
       } catch (error) {
@@ -289,23 +255,19 @@ export class Server extends httpServer {
     this.hmrEngine?.onUpdateFinish(handleUpdateFinish);
   }
 
+  /**
+   * Restarts the server.
+   * @returns {Promise<void>}
+   */
   async restartServer() {
     if (this.serverOptions.middlewareMode) {
-      // TODO restart
       await this.restart();
       return;
     }
     const { port: prevPort, host: prevHost } = this.serverOptions;
     // TODO 把所有 要打印的 url 配置出来 不是直接打印所有 url
     const prevUrls = this.resolvedUrls;
-    // console.log(prevHost, prevPort);
-
-    // console.log(this.resolvedUrls);
-    // await this.createServer();
-    // await this.listen();
-    // console.log(this.middlewares.stack);
     await this.restart();
-    console.log('调用了几次啊');
 
     const { port, host } = this.serverOptions;
     if (
@@ -315,11 +277,15 @@ export class Server extends httpServer {
     ) {
       console.log('端口或者 host 发生变化');
     }
-
-    // this._transferState(newServer);
   }
 
-  hasUrlsChanged(oldUrls: any, newUrls: any) {
+  /**
+   * Checks if the server URLs have changed.
+   * @param {ResolvedServerUrls} oldUrls - The old server URLs.
+   * @param {ResolvedServerUrls} newUrls - The new server URLs.
+   * @returns {boolean} True if the URLs have changed, false otherwise.
+   */
+  hasUrlsChanged(oldUrls: ResolvedServerUrls, newUrls: ResolvedServerUrls) {
     return !(
       oldUrls === newUrls ||
       (oldUrls &&
@@ -329,6 +295,9 @@ export class Server extends httpServer {
     );
   }
 
+  /**
+   * Restarts the server.
+   */
   async restart() {
     await this.close();
     await this.createServer();
@@ -373,8 +342,6 @@ export class Server extends httpServer {
       this.logger.warn('HTTP server is not created yet');
       return;
     }
-    // TODO open browser when server is ready && open config is true
-
     const { port, hostname, open, strictPort } = this.serverOptions;
 
     try {
@@ -384,12 +351,9 @@ export class Server extends httpServer {
         host: hostname.host
       });
 
-      // TODO 这块要重新设计 restart 还有 端口冲突的问题
-      // this.resolvedUserConfig
       this.resolvedUserConfig.compilation.define.FARM_HMR_PORT =
         serverPort.toString();
 
-      // TODO 暂时注释掉
       this.compiler = await createCompiler(this.resolvedUserConfig, logger);
 
       // compile the project and start the dev server
@@ -475,6 +439,27 @@ export class Server extends httpServer {
    */
   addWatchFile(root: string, deps: string[]): void {
     this.getCompiler().addExtraWatchFile(root, deps);
+  }
+
+  /**
+   * Handles the configureServer hook.
+   */
+  async handleConfigureServer() {
+    const reflexServer = new Proxy(this, {
+      get: (_, property: keyof Server) =>
+        this[property as keyof this] ?? undefined,
+      set: (_, property: keyof Server, value: unknown) => {
+        this[property as keyof this] = value as this[keyof this];
+        return true;
+      }
+    });
+    const { jsPlugins } = this.resolvedUserConfig;
+    for (const hook of getSortedPluginHooksBindThis(
+      jsPlugins,
+      'configureServer'
+    )) {
+      this.postConfigureServerHooks.push(await hook(reflexServer));
+    }
   }
 
   /**
@@ -625,6 +610,10 @@ export class Server extends httpServer {
     }
   }
 
+  /**
+   * Closes the server and sockets.
+   * @returns {() => Promise<void>}
+   */
   closeServer(): () => Promise<void> {
     if (!this.httpServer) {
       return () => Promise.resolve();
@@ -673,22 +662,4 @@ export class Server extends httpServer {
 
     await Promise.allSettled([this.watcher.close(), this.closeHttpServerFn()]);
   }
-}
-
-export const teardownSIGTERMListener = (
-  callback: () => Promise<void>
-): void => {
-  process.off('SIGTERM', callback);
-  if (process.env.CI !== 'true') {
-    process.stdin.off('end', callback);
-  }
-};
-
-export function arrayEqual(a: any[], b: any[]): boolean {
-  if (a === b) return true;
-  if (a.length !== b.length) return false;
-  for (let i = 0; i < a.length; i++) {
-    if (a[i] !== b[i]) return false;
-  }
-  return true;
 }
