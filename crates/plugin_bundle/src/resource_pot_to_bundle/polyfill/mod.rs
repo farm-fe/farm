@@ -77,6 +77,30 @@ pub enum Polyfill {
   BrowserExternalRequire,
 }
 
+pub enum NamedType {
+  Export(String),
+  Inner(String),
+}
+
+impl NamedType {
+  pub fn to_name(&self) -> String {
+    match self {
+      NamedType::Export(name) => name.to_string(),
+      NamedType::Inner(name) => name.to_string(),
+    }
+  }
+
+  pub fn exportable(&self) -> bool {
+    matches!(self, NamedType::Export(_))
+  }
+}
+
+impl From<&str> for NamedType {
+  fn from(name: &str) -> Self {
+    NamedType::Inner(name.to_string())
+  }
+}
+
 impl Polyfill {
   fn to_str(&self) -> Vec<String> {
     match self {
@@ -184,7 +208,11 @@ function _interop_require_default(obj) {
       Polyfill::NodeEsmGlobalRequireHelper => vec![
         r#"
 import __farmNodeModule from 'module';
-global.nodeRequire = __farmNodeModule.createRequire(import.meta.url);
+var __nodeRequireInstance = __farmNodeModule.createRequire(import.meta.url);
+
+function _nodeRequire() {
+  return __nodeRequireInstance.apply(null, arguments);
+}
 "#,
       ],
       Polyfill::BrowserExternalRequire => vec![
@@ -219,7 +247,8 @@ function loadExternalRequire(name) {
     let mut result = vec![];
 
     for item in self.to_str() {
-      result.push(parse_module_item(&item)?);
+      let items = parse_module_item(&item)?;
+      result.extend(items);
     }
 
     Ok(result)
@@ -229,15 +258,21 @@ function loadExternalRequire(name) {
     vec![]
   }
 
-  fn name(&self) -> Vec<String> {
+  fn name(&self) -> Vec<NamedType> {
     (match self {
-      Polyfill::WrapCommonJs => vec!["__commonJs"],
-      Polyfill::MergeNamespace => vec!["_mergeNamespaces"],
-      Polyfill::Wildcard => vec!["_getRequireWildcardCache", "_interop_require_wildcard"],
-      Polyfill::ExportStar => vec!["_export_star"],
-      Polyfill::InteropRequireDefault => vec!["_interop_require_default"],
-      Polyfill::NodeEsmGlobalRequireHelper => vec!["__farmNodeModule"],
-      Polyfill::BrowserExternalRequire => vec!["loadExternalRequire"],
+      Polyfill::WrapCommonJs => vec![NamedType::Export("__commonJs".into())],
+      Polyfill::MergeNamespace => vec![NamedType::Export("_mergeNamespaces".into())],
+      Polyfill::Wildcard => vec![
+        "_getRequireWildcardCache".into(),
+        NamedType::Export("_interop_require_wildcard".into()),
+      ],
+      Polyfill::ExportStar => vec![NamedType::Export("_export_star".into())],
+      Polyfill::InteropRequireDefault => vec![NamedType::Export("_interop_require_default".into())],
+      Polyfill::NodeEsmGlobalRequireHelper => vec![
+        "__farmNodeModule".into(),
+        NamedType::Export("_nodeRequire".into()),
+      ],
+      Polyfill::BrowserExternalRequire => vec![NamedType::Export("loadExternalRequire".into())],
     })
     .into_iter()
     .map(|item| item.into())
@@ -313,10 +348,38 @@ impl SimplePolyfill {
     polyfills.sort();
 
     for polyfill in &polyfills {
-      names.extend(polyfill.name())
+      names.extend(
+        polyfill
+          .name()
+          .into_iter()
+          .map(|i| i.to_name())
+          .collect::<Vec<_>>(),
+      )
     }
 
     names
+  }
+
+  pub fn to_export(&self) -> Vec<String> {
+    farm_profile_scope!("polyfill to export");
+    let mut exports = vec![];
+
+    let mut polyfills = self.polyfills.iter().collect::<Vec<_>>();
+
+    polyfills.sort();
+
+    for polyfill in &polyfills {
+      exports.extend(
+        polyfill
+          .name()
+          .into_iter()
+          .filter(|i| i.exportable())
+          .map(|i| i.to_name())
+          .collect::<Vec<_>>(),
+      )
+    }
+
+    exports
   }
 
   pub fn to_str(&self) -> Vec<String> {
@@ -348,7 +411,7 @@ impl SimplePolyfill {
       Polyfill::NodeEsmGlobalRequireHelper,
     ]
     .into_iter()
-    .flat_map(|polyfill| polyfill.name())
+    .flat_map(|polyfill| polyfill.name().into_iter().map(|i| i.to_name()))
     .collect()
   }
 

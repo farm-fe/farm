@@ -244,6 +244,10 @@ impl EsmGenerate {
       }
     }
 
+    let mut generate_import_specifies = generate_import_specifies.into_iter().collect::<Vec<_>>();
+
+    generate_import_specifies.sort_by(|a, b| a.0.cmp(&b.0));
+
     for (url, import_item) in generate_import_specifies {
       stmts.push(ModuleItem::ModuleDecl(ModuleDecl::Import(ImportDecl {
         span: DUMMY_SP,
@@ -281,6 +285,7 @@ fn init_import_specify<'a>(
   }
 }
 
+#[derive(Debug)]
 struct ImportItem {
   import_specifies: Vec<ImportSpecifier>,
   used_named: HashSet<String>,

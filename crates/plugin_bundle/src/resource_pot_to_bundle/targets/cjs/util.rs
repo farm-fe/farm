@@ -111,11 +111,7 @@ impl<'a> VisitMut for CJSReplace<'a> {
                 // node esm
                 if matches!(self.config.output.format, ModuleFormat::EsModule) {
                   self.polyfill.add(Polyfill::NodeEsmGlobalRequireHelper);
-                  call_expr.callee = Callee::Expr(Box::new(Expr::Member(MemberExpr {
-                    span: DUMMY_SP,
-                    obj: Box::new(Expr::Ident("global".into())),
-                    prop: MemberProp::Ident("nodeRequire".into()),
-                  })));
+                  call_expr.callee = Callee::Expr(Box::new(Expr::Ident("_nodeRequire".into())));
                 }
               } else {
                 // browser
