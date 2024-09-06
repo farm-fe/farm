@@ -2,10 +2,11 @@
 name: Preview Commit
 
 on:
-  workflow_call:
+  # workflow_call:
   push:
     branches:
       - refactor/node
+
 jobs:
   build:
     name: Build bindings and node packages
