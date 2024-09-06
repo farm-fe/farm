@@ -1,36 +1,36 @@
-# name: Lint
-# on: [pull_request]
+name: Lint
+on: [pull_request]
 
-# jobs:
-#   rust-lint:
-#     name: Rust Code Lint
-#     runs-on: ubuntu-latest
-#     steps:
-#       - uses: actions/checkout@v3
-#       - name: Install Rust
-#         uses: oxidecomputer/actions-rs_toolchain@oxide/master
-#       - name: Cache rust artifacts
-#         uses: Swatinem/rust-cache@v2
-#         with:
-#           shared-key: cargo-clippy
+jobs:
+  rust-lint:
+    name: Rust Code Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install Rust
+        uses: oxidecomputer/actions-rs_toolchain@oxide/master
+      - name: Cache rust artifacts
+        uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: cargo-clippy
 
-#       - uses: arduino/setup-protoc@v3
-#         with:
-#           repo-token: ${{ secrets.GITHUB_TOKEN }}
+      - uses: arduino/setup-protoc@v3
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
 
-#       - name: Run cargo fmt
-#         run: cargo fmt
-#       - name: Run cargo clippy
-#         run: cargo clippy
-#   lint:
-#     name: TS Code Lint
-#     runs-on: ubuntu-latest
-#     steps:
-#       - uses: actions/checkout@v3
-#       - uses: actions/setup-node@v3
-#         with:
-#           node-version: 18
-#       - name: Install Dependencies
-#         run: npm install -g pnpm@9.1.0 && pnpm i --frozen-lockfile
-#       - name: Run lint
-#         run: npx biome check --no-errors-on-unmatched --files-ignore-unknown=true
+      - name: Run cargo fmt
+        run: cargo fmt
+      - name: Run cargo clippy
+        run: cargo clippy
+  lint:
+    name: TS Code Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 18
+      - name: Install Dependencies
+        run: npm install -g pnpm@9.1.0 && pnpm i --frozen-lockfile
+      - name: Run lint
+        run: npx biome check --no-errors-on-unmatched --files-ignore-unknown=true

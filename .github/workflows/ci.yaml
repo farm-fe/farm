@@ -1,225 +1,225 @@
-# name: E2E Tests
-# on:
-#   pull_request:
-#     branches:
-#       - main
+name: E2E Tests
+on:
+  pull_request:
+    branches:
+      - main
 
-# jobs:
-#   call-rust-build:
-#     uses: ./.github/workflows/rust-build.yaml
+jobs:
+  call-rust-build:
+    uses: ./.github/workflows/rust-build.yaml
 
-#   examples-test:
-#     name: Examples Test
-#     runs-on: ${{ matrix.settings.os }}
-#     needs: [call-rust-build]
-#     strategy:
-#       fail-fast: false
-#       matrix:
-#         settings:
-#           - os: ubuntu-latest
-#             abi: linux-x64-gnu
-#           - os: macos-latest
-#             abi: darwin-arm64
-#           - os: macos-13
-#             abi: darwin-x64
-#           - os: windows-latest
-#             abi: win32-x64-msvc
-#     steps:
-#       - uses: actions/checkout@v3
-#       - uses: actions/setup-node@v3
-#         with:
-#           node-version: 18
-#       - name: Install Dependencies
-#         run: npm install -g pnpm@9.1.0 && pnpm i --frozen-lockfile
+  examples-test:
+    name: Examples Test
+    runs-on: ${{ matrix.settings.os }}
+    needs: [call-rust-build]
+    strategy:
+      fail-fast: false
+      matrix:
+        settings:
+          - os: ubuntu-latest
+            abi: linux-x64-gnu
+          - os: macos-latest
+            abi: darwin-arm64
+          - os: macos-13
+            abi: darwin-x64
+          - os: windows-latest
+            abi: win32-x64-msvc
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 18
+      - name: Install Dependencies
+        run: npm install -g pnpm@9.1.0 && pnpm i --frozen-lockfile
 
-#       - uses: actions/download-artifact@v4
-#         id: download
-#         with:
-#           name: ${{ github.sha }}-${{ matrix.settings.abi }}
-#           path: ./packages/core/binding
+      - uses: actions/download-artifact@v4
+        id: download
+        with:
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}
+          path: ./packages/core/binding
 
-#       - uses: actions/download-artifact@v4
-#         id: download-plugin-sass
-#         with:
-#           name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-sass
-#           path: ./rust-plugins/sass/npm/${{ matrix.settings.abi }}
+      - uses: actions/download-artifact@v4
+        id: download-plugin-sass
+        with:
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-sass
+          path: ./rust-plugins/sass/npm/${{ matrix.settings.abi }}
 
-#       - uses: actions/download-artifact@v4
-#         id: download-plugin-react
-#         with:
-#           name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-react
-#           path: ./rust-plugins/react/npm/${{ matrix.settings.abi }}
+      - uses: actions/download-artifact@v4
+        id: download-plugin-react
+        with:
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-react
+          path: ./rust-plugins/react/npm/${{ matrix.settings.abi }}
 
-#       - uses: actions/download-artifact@v4
-#         id: download-create-farm-rust
-#         with:
-#           name: ${{ github.sha }}-${{ matrix.settings.abi }}
-#           path: ./packages/create-farm
+      - uses: actions/download-artifact@v4
+        id: download-create-farm-rust
+        with:
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}
+          path: ./packages/create-farm
 
-#       - name: Build Examples - ${{ matrix.settings.abi }}
-#         run: node scripts/test-examples.mjs
+      - name: Build Examples - ${{ matrix.settings.abi }}
+        run: node scripts/test-examples.mjs
 
-#       - name: E2E Test Examples - ${{ matrix.settings.abi }}
-#         run: npm run test-e2e
+      - name: E2E Test Examples - ${{ matrix.settings.abi }}
+        run: npm run test-e2e
 
-#       # test create farm
-#       - name: Build Create Farm
-#         run: cd packages/create-farm && npm run build
-#       - name: Test Create Farm React - ${{ matrix.settings.abi }}
-#         run: cd .. && node farm/packages/create-farm/create-farm.js my-test-app-react --template react && cd my-test-app-react && pnpm i && pnpm build
-#       - name: Test Create Farm Vue - ${{ matrix.settings.abi }}
-#         run: cd .. && node farm/packages/create-farm/create-farm.js my-test-app-vue --template vue3 && cd my-test-app-vue && pnpm i && pnpm build
-#       - name: Test Create Farm Solid - ${{ matrix.settings.abi }}
-#         run: cd .. && node farm/packages/create-farm/create-farm.js my-test-app-solid --template solid && cd my-test-app-solid && pnpm i && pnpm build
-#       - name: Test Create Farm Svelte - ${{ matrix.settings.abi }}
-#         run: cd .. && node farm/packages/create-farm/create-farm.js my-test-app-svelte --template svelte && cd my-test-app-svelte && pnpm i && pnpm build
-#       - name: Test Create Farm Lit - ${{ matrix.settings.abi }}
-#         run: cd .. && node farm/packages/create-farm/create-farm.js my-test-app-lit --template lit && cd my-test-app-lit && pnpm i && pnpm build
-#       - name: Test Create Farm Vanilla - ${{ matrix.settings.abi }}
-#         run: cd .. && node farm/packages/create-farm/create-farm.js my-test-app-vanilla --template vanilla && cd my-test-app-vanilla && pnpm i && pnpm build
-#       - name: Test Create Farm Preact - ${{ matrix.settings.abi }}
-#         run: cd .. && node farm/packages/create-farm/create-farm.js my-test-app-preact --template preact && cd my-test-app-preact && pnpm i && pnpm build
-#       - name: Test Create Farm Vue2 - ${{ matrix.settings.abi }}
-#         run: cd .. && node farm/packages/create-farm/create-farm.js my-test-app-vue2 --template vue2 && cd my-test-app-vue2 && pnpm i && pnpm build
+      # test create farm
+      - name: Build Create Farm
+        run: cd packages/create-farm && npm run build
+      - name: Test Create Farm React - ${{ matrix.settings.abi }}
+        run: cd .. && node farm/packages/create-farm/create-farm.js my-test-app-react --template react && cd my-test-app-react && pnpm i && pnpm build
+      - name: Test Create Farm Vue - ${{ matrix.settings.abi }}
+        run: cd .. && node farm/packages/create-farm/create-farm.js my-test-app-vue --template vue3 && cd my-test-app-vue && pnpm i && pnpm build
+      - name: Test Create Farm Solid - ${{ matrix.settings.abi }}
+        run: cd .. && node farm/packages/create-farm/create-farm.js my-test-app-solid --template solid && cd my-test-app-solid && pnpm i && pnpm build
+      - name: Test Create Farm Svelte - ${{ matrix.settings.abi }}
+        run: cd .. && node farm/packages/create-farm/create-farm.js my-test-app-svelte --template svelte && cd my-test-app-svelte && pnpm i && pnpm build
+      - name: Test Create Farm Lit - ${{ matrix.settings.abi }}
+        run: cd .. && node farm/packages/create-farm/create-farm.js my-test-app-lit --template lit && cd my-test-app-lit && pnpm i && pnpm build
+      - name: Test Create Farm Vanilla - ${{ matrix.settings.abi }}
+        run: cd .. && node farm/packages/create-farm/create-farm.js my-test-app-vanilla --template vanilla && cd my-test-app-vanilla && pnpm i && pnpm build
+      - name: Test Create Farm Preact - ${{ matrix.settings.abi }}
+        run: cd .. && node farm/packages/create-farm/create-farm.js my-test-app-preact --template preact && cd my-test-app-preact && pnpm i && pnpm build
+      - name: Test Create Farm Vue2 - ${{ matrix.settings.abi }}
+        run: cd .. && node farm/packages/create-farm/create-farm.js my-test-app-vue2 --template vue2 && cd my-test-app-vue2 && pnpm i && pnpm build
 
-#   type-check:
-#     name: Type Check
-#     runs-on: ubuntu-latest
-#     steps:
-#       - uses: actions/checkout@v3
-#         with:
-#           fetch-depth: 0
-#       - uses: actions/setup-node@v3
-#         with:
-#           node-version: 18
-#       - name: Install Dependencies
-#         run: npm install -g pnpm@9.1.0 && pnpm i --frozen-lockfile
-#       - name: Build CLI and Core
-#         run: pnpm --filter @farmfe/cli run build
-#       - name: Type Check With Tsc
-#         run: pnpm run --filter "@farmfe/*" type-check
-#       - name: Changesets Check
-#         run: npx changeset status --since=origin/main
+  type-check:
+    name: Type Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 18
+      - name: Install Dependencies
+        run: npm install -g pnpm@9.1.0 && pnpm i --frozen-lockfile
+      - name: Build CLI and Core
+        run: pnpm --filter @farmfe/cli run build
+      - name: Type Check With Tsc
+        run: pnpm run --filter "@farmfe/*" type-check
+      - name: Changesets Check
+        run: npx changeset status --since=origin/main
 
-#   ts-test:
-#     name: Typescript Test
-#     runs-on: ${{ matrix.settings.os }}
-#     needs: call-rust-build
-#     strategy:
-#       fail-fast: false
-#       matrix:
-#         settings:
-#           - os: ubuntu-latest
-#             abi: linux-x64-gnu
-#           - os: ubuntu-20.04
-#             abi: linux-x64-gnu
-#           - os: macos-13
-#             abi: darwin-x64
-#           - os: macos-latest
-#             abi: darwin-arm64
-#           - os: windows-latest
-#             abi: win32-x64-msvc
-#     steps:
-#       - uses: actions/checkout@v3
-#       - uses: actions/setup-node@v3
-#         with:
-#           node-version: 18
-#       - name: Install Dependencies
-#         run: npm install -g pnpm@9.1.0 && pnpm i --frozen-lockfile
-#       - name: Build CLI and Core
-#         run: pnpm --filter @farmfe/cli run build
-#       - uses: actions/download-artifact@v4
-#         id: download
-#         with:
-#           name: ${{ github.sha }}-${{ matrix.settings.abi }}
-#           path: ./packages/core/binding
-#       - name: Build Core CJS
-#         run: cd packages/core && pnpm run build:cjs
-#       - name: Test - ${{ matrix.settings.abi }}
-#         run: npm run test
-#       # - name: Setup tmate session
-#       #   if: ${{ failure() }}
-#       #   uses: mxschmitt/action-tmate@v3
+  ts-test:
+    name: Typescript Test
+    runs-on: ${{ matrix.settings.os }}
+    needs: call-rust-build
+    strategy:
+      fail-fast: false
+      matrix:
+        settings:
+          - os: ubuntu-latest
+            abi: linux-x64-gnu
+          - os: ubuntu-20.04
+            abi: linux-x64-gnu
+          - os: macos-13
+            abi: darwin-x64
+          - os: macos-latest
+            abi: darwin-arm64
+          - os: windows-latest
+            abi: win32-x64-msvc
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 18
+      - name: Install Dependencies
+        run: npm install -g pnpm@9.1.0 && pnpm i --frozen-lockfile
+      - name: Build CLI and Core
+        run: pnpm --filter @farmfe/cli run build
+      - uses: actions/download-artifact@v4
+        id: download
+        with:
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}
+          path: ./packages/core/binding
+      - name: Build Core CJS
+        run: cd packages/core && pnpm run build:cjs
+      - name: Test - ${{ matrix.settings.abi }}
+        run: npm run test
+      # - name: Setup tmate session
+      #   if: ${{ failure() }}
+      #   uses: mxschmitt/action-tmate@v3
 
-#   check-core-artifacts:
-#     name: Check Core Artifacts
-#     runs-on: ubuntu-latest
-#     needs: call-rust-build
-#     steps:
-#       - uses: actions/download-artifact@v4
-#         with:
-#           path: /tmp/artifacts
-#       - name: Check
-#         run: |
-#           for abi in linux-x64-gnu darwin-x64 darwin-arm64
-#           do
-#             test -f  /tmp/artifacts/${{ github.sha }}-${abi}/farm.${abi}.node
-#           done
+  check-core-artifacts:
+    name: Check Core Artifacts
+    runs-on: ubuntu-latest
+    needs: call-rust-build
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: /tmp/artifacts
+      - name: Check
+        run: |
+          for abi in linux-x64-gnu darwin-x64 darwin-arm64
+          do
+            test -f  /tmp/artifacts/${{ github.sha }}-${abi}/farm.${abi}.node
+          done
 
-#   check-create-farm-rust-artifacts:
-#     name: Check Create Farm Rust Artifacts
-#     runs-on: ubuntu-latest
-#     needs: call-rust-build
-#     steps:
-#       - uses: actions/download-artifact@v4
-#         with:
-#           path: /tmp/artifacts
-#       - name: Check
-#         run: |
-#           for abi in linux-x64-gnu linux-x64-musl darwin-x64 win32-x64-msvc linux-arm64-musl linux-arm64-gnu darwin-arm64 win32-ia32-msvc win32-arm64-msvc android-arm64 linux-arm-gnueabihf android-arm-eabi
-#           do
-#             ls /tmp/artifacts/
-#             test -f  /tmp/artifacts/${{ github.sha }}-${abi}-create-farm/create-farm.${abi}.node
-#           done
+  check-create-farm-rust-artifacts:
+    name: Check Create Farm Rust Artifacts
+    runs-on: ubuntu-latest
+    needs: call-rust-build
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: /tmp/artifacts
+      - name: Check
+        run: |
+          for abi in linux-x64-gnu linux-x64-musl darwin-x64 win32-x64-msvc linux-arm64-musl linux-arm64-gnu darwin-arm64 win32-ia32-msvc win32-arm64-msvc android-arm64 linux-arm-gnueabihf android-arm-eabi
+          do
+            ls /tmp/artifacts/
+            test -f  /tmp/artifacts/${{ github.sha }}-${abi}-create-farm/create-farm.${abi}.node
+          done
 
-#   check-plugin-artifacts:
-#     name: Check ${{ matrix.settings.name }} Artifacts
-#     runs-on: ubuntu-latest
-#     needs: call-rust-build
-#     strategy:
-#       fail-fast: false
-#       matrix:
-#         settings:
-#           - name: plugin-sass
-#           - name: plugin-react
-#     steps:
-#       - uses: actions/download-artifact@v4
-#         with:
-#           path: /tmp/artifacts
-#       - name: Check
-#         run: |
-#           for abi in linux-x64-gnu linux-x64-musl darwin-x64 win32-x64-msvc linux-arm64-musl linux-arm64-gnu darwin-arm64 win32-ia32-msvc win32-arm64-msvc
-#           do
-#             test -f /tmp/artifacts/${{ github.sha }}-${abi}-${{ matrix.settings.name }}/index.farm
-#           done
+  check-plugin-artifacts:
+    name: Check ${{ matrix.settings.name }} Artifacts
+    runs-on: ubuntu-latest
+    needs: call-rust-build
+    strategy:
+      fail-fast: false
+      matrix:
+        settings:
+          - name: plugin-sass
+          - name: plugin-react
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: /tmp/artifacts
+      - name: Check
+        run: |
+          for abi in linux-x64-gnu linux-x64-musl darwin-x64 win32-x64-msvc linux-arm64-musl linux-arm64-gnu darwin-arm64 win32-ia32-msvc win32-arm64-msvc
+          do
+            test -f /tmp/artifacts/${{ github.sha }}-${abi}-${{ matrix.settings.name }}/index.farm
+          done
 
-#   benchmarks:
-#     needs: [call-rust-build]
-#     runs-on: ${{ matrix.settings.os }}
-#     strategy:
-#       fail-fast: false
-#       matrix:
-#         settings:
-#           - os: ubuntu-latest
-#             abi: linux-x64-gnu
-#     steps:
-#       - uses: "actions/checkout@v3"
-#       - uses: actions/setup-node@v3
-#         with:
-#           node-version: 18
-#       - name: Install Dependencies
-#         run: npm install -g pnpm@9.1.0 && pnpm i --frozen-lockfile
-#       - name: Build CLI and Core
-#         run: pnpm --filter @farmfe/cli run build
-#       - uses: actions/download-artifact@v4
-#         id: download
-#         with:
-#           name: ${{ github.sha }}-${{ matrix.settings.abi }}
-#           path: ./packages/core/binding
-#       - name: Build Core CJS
-#         run: cd packages/core && pnpm run build:cjs
-#       - name: Run benchmarks
-#         uses: CodSpeedHQ/action@v3
-#         with:
-#           run: npm exec vitest bench
-#           token: ${{ secrets.CODSPEED_TOKEN }}
+  benchmarks:
+    needs: [call-rust-build]
+    runs-on: ${{ matrix.settings.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        settings:
+          - os: ubuntu-latest
+            abi: linux-x64-gnu
+    steps:
+      - uses: "actions/checkout@v3"
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 18
+      - name: Install Dependencies
+        run: npm install -g pnpm@9.1.0 && pnpm i --frozen-lockfile
+      - name: Build CLI and Core
+        run: pnpm --filter @farmfe/cli run build
+      - uses: actions/download-artifact@v4
+        id: download
+        with:
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}
+          path: ./packages/core/binding
+      - name: Build Core CJS
+        run: cd packages/core && pnpm run build:cjs
+      - name: Run benchmarks
+        uses: CodSpeedHQ/action@v3
+        with:
+          run: npm exec vitest bench
+          token: ${{ secrets.CODSPEED_TOKEN }}
