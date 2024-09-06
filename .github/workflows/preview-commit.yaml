@@ -3,9 +3,9 @@ name: Preview Commit
 
 on:
   # workflow_call:
-  push:
+  pull_request:
     branches:
-      - refactor/node
+      - main
 
 jobs:
   build:
