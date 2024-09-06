@@ -48,6 +48,7 @@ import type {
   UserConfig
 } from '../config/types.js';
 import type { JsUpdateResult } from '../types/binding.js';
+import { convertErrorMessage } from '../utils/error.js';
 import type { CommonServerOptions, ResolvedServerUrls } from './http.js';
 
 export type HttpServer = HttpBaseServer | Http2SecureServer;
@@ -222,7 +223,7 @@ export class Server extends httpServer {
         try {
           await this.restartServer();
         } catch (e) {
-          this.logger.error(colors.red(e));
+          this.logger.error(`restart server error ${e}`);
         }
       }
 
@@ -371,7 +372,7 @@ export class Server extends httpServer {
       }
     } catch (error) {
       this.logger.error(`start farm dev server error: ${error}`);
-      throw error;
+      // throw error;
     }
   }
 
@@ -548,8 +549,8 @@ export class Server extends httpServer {
         ? this.compiler.writeResourcesToDisk()
         : this.compiler.callWriteResourcesHook());
     } catch (err) {
-      this.logger.error('Compilation failed:', err);
-      throw err;
+      this.logger.error(`Compilation failed: ${convertErrorMessage(err)}`);
+      // throw err;
     }
   }
 

@@ -181,7 +181,7 @@ export class HmrClient {
         } catch (err) {
           // The boundary module's dependencies may not present in current module system for a multi-page application. We should reload the window in this case.
           // See https://github.com/farm-fe/farm/issues/383
-          logger.error(err);
+          logger.error(`Error occurred while applying hot updates: ${err}`);
           location.reload();
         }
       }

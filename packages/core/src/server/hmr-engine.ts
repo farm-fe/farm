@@ -5,24 +5,11 @@ import { stat } from 'node:fs/promises';
 import { isAbsolute, relative } from 'node:path';
 
 import type { Resource } from '@farmfe/runtime/src/resource-loader.js';
-import { Compiler } from '../compiler/index.js';
-import {
-  UserConfig,
-  UserHmrConfig,
-  checkClearScreen
-} from '../config/index.js';
-import { HttpServer } from '../server/index.js';
+import { UserHmrConfig, checkClearScreen } from '../config/index.js';
 import type { JsUpdateResult } from '../types/binding.js';
-import {
-  Logger,
-  bold,
-  cyan,
-  formatExecutionTime,
-  green,
-  lightCyan
-} from '../utils/index.js';
-import { logError } from './error.js';
-import { WebSocketClient, WebSocketServer } from './ws.js';
+import { convertErrorMessage } from '../utils/error.js';
+import { bold, formatExecutionTime, green, lightCyan } from '../utils/index.js';
+import { WebSocketClient } from './ws.js';
 
 export class HmrEngine {
   private _updateQueue: string[] = [];
@@ -151,7 +138,8 @@ export class HmrEngine {
       });
     } catch (err) {
       // checkClearScreen(this.app.compiler.config.config);
-      throw new Error(err);
+      this.app.logger.error(convertErrorMessage(err));
+      // throw new Error(err);
     }
   };
 
@@ -197,8 +185,8 @@ export class HmrEngine {
             }
           `);
         });
-        // this.app.logger.error(e);
-        throw new Error(`hmr update failed: ${e.stack}`);
+        this.app.logger.error(convertErrorMessage(e));
+        // throw new Error(`hmr update failed: ${e.stack}`);
       }
     }
   }
