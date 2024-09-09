@@ -1,5 +1,7 @@
 use farmfe_core::config::Config;
-use farmfe_toolkit::fs::{ENTRY_NAME, RESOURCE_NAME, RESOURCE_NAME_NEW};
+use farmfe_toolkit::fs::{
+  CONTENT_HASH, CONTENT_HASH_NEW, ENTRY_NAME, RESOURCE_NAME, RESOURCE_NAME_NEW,
+};
 
 /// Check possible errors in config
 pub fn validate_config(config: &Config) {
@@ -12,13 +14,21 @@ pub fn validate_config(config: &Config) {
     ));
   }
 
+  let is_contain_name = || {
+    config.output.filename.contains(RESOURCE_NAME)
+      || config.output.filename.contains(RESOURCE_NAME_NEW)
+  };
+  let is_contain_hash = || {
+    config.output.filename.contains(CONTENT_HASH)
+      || config.output.filename.contains(CONTENT_HASH_NEW)
+  };
+
   if config.partial_bundling.enforce_resources.len() <= 1
-    && !config.output.filename.contains(RESOURCE_NAME)
-    && !config.output.filename.contains(RESOURCE_NAME_NEW)
+    && !(is_contain_name() || is_contain_hash())
   {
     errors.push(format!(
-      "`output.filename` must contain {} when `partial_bundling.module_buckets` is not configured",
-      RESOURCE_NAME
+      "`output.filename` must contain one of {}、{}、{}、{} when `partial_bundling.module_buckets` is not configured",
+      RESOURCE_NAME, RESOURCE_NAME_NEW, CONTENT_HASH, CONTENT_HASH_NEW
     ));
   }
 
