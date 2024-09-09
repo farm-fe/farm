@@ -1,4 +1,4 @@
-use std::{collections::HashMap, sync::Arc};
+use std::{borrow::Cow, collections::HashMap, rc::Rc, sync::Arc};
 
 use farmfe_core::{
   config::{custom::get_config_runtime_isolate, Mode, FARM_MODULE_SYSTEM},
@@ -14,8 +14,8 @@ use farmfe_toolkit::{
 };
 
 use crate::utils::{
-  create_farm_runtime_output_resource, is_link_css_or_code, is_script_entry, is_script_resource,
-  is_script_src_or_type_module_code, FARM_ENTRY, FARM_RESOURCE,
+  create_farm_runtime_output_resource, is_link_css_or_code, is_script_resource,
+  is_script_src_or_type_module_code, FARM_RESOURCE,
 };
 
 pub struct ResourcesInjectorOptions {
@@ -27,27 +27,31 @@ pub struct ResourcesInjectorOptions {
 }
 
 /// inject resources into the html ast
-pub struct ResourcesInjector {
+pub struct ResourcesInjector<'a> {
   additional_inject_resources: Vec<Resource>,
-  runtime_code: String,
+  runtime_code: Rc<String>,
   script_resources: Vec<String>,
   css_resources: Vec<String>,
   script_entries: Vec<String>,
   dynamic_resources_map: HashMap<ModuleId, Vec<(String, ResourceType)>>,
   options: ResourcesInjectorOptions,
   farm_global_this: String,
+  already_injected_resources: &'a mut Vec<String>,
 }
 pub const FARM_RUNTIME_INJECT_RESOURCE: &str = "farm_runtime_resource";
+pub const FARM_MODULE_SYSTEM_RESOURCE: &str = "farm_module_system";
+pub const FARM_DYNAMIC_RESOURCES_MAP_RESOURCE: &str = "farm_dynamic_resources_map";
 
-impl ResourcesInjector {
+impl<'a> ResourcesInjector<'a> {
   pub fn new(
     additional_inject_resources: Vec<Resource>,
-    runtime_code: String,
+    runtime_code: Rc<String>,
     script_resources: Vec<String>,
     css_resources: Vec<String>,
     script_entries: Vec<String>,
     dynamic_resources_map: HashMap<ModuleId, Vec<(String, ResourceType)>>,
     options: ResourcesInjectorOptions,
+    already_injected_resources: &'a mut Vec<String>,
   ) -> Self {
     Self {
       additional_inject_resources,
@@ -61,6 +65,7 @@ impl ResourcesInjector {
         &options.context.config.output.target_env,
       ),
       options,
+      already_injected_resources,
     }
   }
 
@@ -69,35 +74,34 @@ impl ResourcesInjector {
   }
 
   // insert the runtime and other resources that need to be inject in the resource_map.
-  pub fn update_resource(&mut self, resources_map: &mut HashMap<String, Resource>) {
-    for resource in &self.additional_inject_resources {
+  pub fn update_resource(self, resources_map: &mut HashMap<String, Resource>) {
+    for resource in self.additional_inject_resources {
       resources_map.insert(resource.name.clone(), resource.clone());
+      self.already_injected_resources.push(resource.name);
     }
   }
 
   // Support isolate runtime resource (https://github.com/farm-fe/farm/issues/434)
   fn inject_runtime_resources(&mut self, element: &mut Element) {
     if get_config_runtime_isolate(&self.options.context) {
-      let resource = create_farm_runtime_output_resource(
-        self.runtime_code.clone().into_bytes(),
+      let (name, resource) = create_farm_runtime_output_resource(
+        Cow::Borrowed(self.runtime_code.as_bytes()),
         FARM_RUNTIME_INJECT_RESOURCE,
         &self.options.context,
+        &self.already_injected_resources,
       );
-      let script_element = create_element(
-        "script",
-        None,
-        vec![
-          (FARM_ENTRY, "true"),
-          ("src", &format!("/{}", resource.name)),
-        ],
-      );
+
+      let script_element = create_element("script", None, vec![("src", &format!("/{}", name))]);
       element.children.push(Child::Element(script_element));
-      self.additional_inject_resources.push(resource.clone());
+
+      if let Some(resource) = resource {
+        self.additional_inject_resources.push(resource);
+      }
     } else {
       element.children.push(Child::Element(create_element(
         "script",
         Some(&self.runtime_code),
-        vec![(FARM_ENTRY, "true")],
+        vec![],
       )));
     }
   }
@@ -120,7 +124,7 @@ impl ResourcesInjector {
         r#"{}.{}.setInitialLoadedResources([{}]);"#,
         self.farm_global_this, FARM_MODULE_SYSTEM, initial_resources_code
       )),
-      vec![(FARM_ENTRY, "true")],
+      vec![],
     )));
   }
 
@@ -138,25 +142,27 @@ impl ResourcesInjector {
     );
 
     if get_config_runtime_isolate(&self.options.context) {
-      let resource = create_farm_runtime_output_resource(
-        finalize_code.into_bytes(),
-        "dynamic_resources_map",
+      let (name, resource) = create_farm_runtime_output_resource(
+        Cow::Owned(finalize_code.into_bytes()),
+        FARM_DYNAMIC_RESOURCES_MAP_RESOURCE,
         &self.options.context,
+        &self.already_injected_resources,
       );
+
       element.children.push(Child::Element(create_element(
         "script",
         None,
-        vec![
-          ("FARM_ENTRY", "true"),
-          ("src", &format!("/{}", resource.name)),
-        ],
+        vec![("src", &format!("/{}", name))],
       )));
-      self.additional_inject_resources.push(resource);
+
+      if let Some(resource) = resource {
+        self.additional_inject_resources.push(resource);
+      }
     } else {
       element.children.push(Child::Element(create_element(
         "script",
         Some(&finalize_code),
-        vec![(FARM_ENTRY, "true")],
+        vec![],
       )));
     }
   }
@@ -174,7 +180,7 @@ impl ResourcesInjector {
     element.children.push(Child::Element(create_element(
       "script",
       Some(&code),
-      vec![(FARM_ENTRY, "true")],
+      vec![],
     )));
   }
 
@@ -185,7 +191,7 @@ impl ResourcesInjector {
         r#"{}.{}.setPublicPaths(['{}']);"#,
         self.farm_global_this, FARM_MODULE_SYSTEM, self.options.public_path
       )),
-      vec![(FARM_ENTRY, "true")],
+      vec![],
     )));
 
     element.children.push(Child::Element(create_element(
@@ -194,7 +200,7 @@ impl ResourcesInjector {
         r#"{}.{}.bootstrap();"#,
         self.farm_global_this, FARM_MODULE_SYSTEM
       )),
-      vec![(FARM_ENTRY, "true")],
+      vec![],
     )));
 
     for entry in &self.script_entries {
@@ -204,7 +210,7 @@ impl ResourcesInjector {
           r#"{}.{}.require("{}")"#,
           self.farm_global_this, FARM_MODULE_SYSTEM, entry
         )),
-        vec![(FARM_ENTRY, "true")],
+        vec![],
       )));
     }
   }
@@ -226,25 +232,26 @@ impl ResourcesInjector {
       ))
     }
     // create resource
-    let resource = create_farm_runtime_output_resource(
-      finalize_code.into_bytes(),
-      "farm_module_system",
+    let (name, resource) = create_farm_runtime_output_resource(
+      Cow::Owned(finalize_code.into_bytes()),
+      FARM_MODULE_SYSTEM_RESOURCE,
       &self.options.context,
+      &self.already_injected_resources
     );
     // inject script
     element.children.push(Child::Element(create_element(
       "script",
       None,
-      vec![
-        (FARM_ENTRY, "true"),
-        ("src", &format!("/{}", resource.name)),
-      ],
+      vec![("src", &format!("/{}", name))],
     )));
-    self.additional_inject_resources.push(resource);
+
+    if let Some(resource) = resource {
+      self.additional_inject_resources.push(resource);
+    }
   }
 }
 
-impl VisitMut for ResourcesInjector {
+impl<'a> VisitMut for ResourcesInjector<'a> {
   fn visit_mut_element(&mut self, element: &mut Element) {
     if element.tag_name.to_string() == "head" || element.tag_name.to_string() == "body" {
       let mut children_to_remove = vec![];
@@ -253,7 +260,6 @@ impl VisitMut for ResourcesInjector {
       for (i, child) in element.children.iter().enumerate() {
         if let Child::Element(e) = child {
           if is_link_css_or_code(e, &self.options.current_html_id, &self.options.context)
-            || is_script_entry(e)
             || is_script_src_or_type_module_code(
               e,
               &self.options.current_html_id,

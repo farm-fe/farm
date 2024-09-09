@@ -1,4 +1,5 @@
 use std::mem;
+use std::rc::Rc;
 use std::sync::Arc;
 use std::{collections::HashMap, path::PathBuf};
 
@@ -359,11 +360,11 @@ impl Plugin for FarmPluginTransformHtml {
     // 2. inject script and css link in topo order
     // 3. execute direct script module dependency
 
-    let mut runtime_code = String::new();
+    let mut runtime_code = Rc::new(String::new());
 
     for resource in params.resources_map.values() {
       if matches!(resource.resource_type, ResourceType::Runtime) {
-        runtime_code = String::from_utf8(resource.bytes.to_vec()).unwrap();
+        runtime_code = Rc::new(String::from_utf8(resource.bytes.to_vec()).unwrap());
         break;
       }
     }
@@ -374,8 +375,9 @@ impl Plugin for FarmPluginTransformHtml {
       .clone()
       .into_iter()
       .filter(|(m, _)| {
-        let module = module_graph.module(m).unwrap();
-        matches!(module.module_type, ModuleType::Html)
+        module_graph
+          .module(m)
+          .is_some_and(|m| matches!(m.module_type, ModuleType::Html))
       })
       .collect::<Vec<_>>();
 
@@ -426,6 +428,8 @@ impl Plugin for FarmPluginTransformHtml {
         (dep_resources, dynamic_resources_map),
       );
     }
+
+    let mut already_injected_resources = Vec::new();
 
     for (html_resource_name, (dep_resources, dynamic_resources_map)) in resources_to_inject {
       let mut resource_pot_map = context.resource_pot_map.write();
@@ -481,6 +485,7 @@ impl Plugin for FarmPluginTransformHtml {
           current_html_id: current_html_id.clone(),
           context: context.clone(),
         },
+        &mut already_injected_resources,
       );
 
       let resource_pot = resource_pot_map
