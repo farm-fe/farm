@@ -61,7 +61,6 @@ pub(crate) mod module_cache;
 pub(crate) mod parse;
 pub(crate) mod resolve;
 pub(crate) mod transform;
-pub mod validate_config;
 
 #[derive(Debug)]
 pub(crate) struct ResolveModuleIdResult {
@@ -118,7 +117,6 @@ impl Compiler {
 
   pub(crate) fn build(&self) -> Result<()> {
     self.context.plugin_driver.build_start(&self.context)?;
-    validate_config::validate_config(&self.context.config);
 
     let (err_sender, err_receiver) = Self::create_thread_channel();
 

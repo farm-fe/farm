@@ -6,11 +6,11 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Document</title>
-<script data-farm-entry-script="true">
+<script>
 window['__farm_default_namespace__'] = {};
 window['__farm_default_namespace__'] = {
   __FARM_TARGET_ENV__: 'browser',
-};</script><script data-farm-entry-script="true">function _interop_require_default(obj) {
+};</script><script>function _interop_require_default(obj) {
     return obj && obj.__esModule ? obj : {
         default: obj
     };
@@ -79,7 +79,7 @@ window['__farm_default_namespace__'] = {
 <body>
   
 
-<script src="/index_564c.js" data-farm-resource="true"></script><script data-farm-entry-script="true">window['__farm_default_namespace__'].__farm_module_system__.setInitialLoadedResources(['index_564c.js']);</script><script data-farm-entry-script="true">window['__farm_default_namespace__'].__farm_module_system__.setDynamicModuleResourcesMap([],{  });</script><script data-farm-entry-script="true">window['__farm_default_namespace__'].__farm_module_system__.setPublicPaths(['/']);</script><script data-farm-entry-script="true">window['__farm_default_namespace__'].__farm_module_system__.bootstrap();</script><script data-farm-entry-script="true">window['__farm_default_namespace__'].__farm_module_system__.require("7c4a34c2")</script></body></html>
+<script src="/index_564c.js" data-farm-resource="true"></script><script>window['__farm_default_namespace__'].__farm_module_system__.setInitialLoadedResources(['index_564c.js']);</script><script>window['__farm_default_namespace__'].__farm_module_system__.setDynamicModuleResourcesMap([],{  });</script><script>window['__farm_default_namespace__'].__farm_module_system__.setPublicPaths(['/']);</script><script>window['__farm_default_namespace__'].__farm_module_system__.bootstrap();</script><script>window['__farm_default_namespace__'].__farm_module_system__.require("7c4a34c2")</script></body></html>
 
 //index_564c.js:
  (function(_){for(var r in _){_[r].__farm_resource_pot__='index_564c.js';window['__farm_default_namespace__'].__farm_module_system__.register(r,_[r])}})({"7c4a34c2":function  (module, exports, farmRequire, farmDynamicRequire) {
