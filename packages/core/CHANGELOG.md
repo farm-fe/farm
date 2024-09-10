@@ -1,5 +1,11 @@
 # @farmfe/core
 
+## 1.3.18
+
+### Patch Changes
+
+- e4e8b92b: fix html runtime inject failed when build multiple page & in output.filename, can choose either name or hash to use
+
 ## 1.3.17
 
 ### Patch Changes
