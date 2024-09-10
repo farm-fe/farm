@@ -436,7 +436,8 @@ export async function createFileWatcher(
 
       await devServer.close();
       __FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__ = true;
-      await start(resolvedUserConfig as FarmCLIOptions & UserConfig);
+      // TODO: resolvedUserConfig params type check
+      await start(resolvedUserConfig as unknown as FarmCLIOptions & UserConfig);
     });
   });
   return fileWatcher;

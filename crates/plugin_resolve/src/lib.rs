@@ -1,13 +1,13 @@
 use std::{
-  collections::HashMap,
+  collections::{HashMap, HashSet},
   path::Path,
-  sync::{Arc, RwLock},
+  sync::Arc,
 };
 
 use farmfe_core::{
-  config::{external::ExternalConfig, Config},
+  config::{custom::get_config_resolve_dedupe, external::ExternalConfig, Config},
   context::CompilationContext,
-  error::{CompilationError, Result},
+  error::Result,
   farm_profile_function, farm_profile_scope,
   plugin::{
     Plugin, PluginHookContext, PluginResolveHookParam, PluginResolveHookResult, ResolveKind,
@@ -17,22 +17,25 @@ use farmfe_core::{
 
 use farmfe_toolkit::resolve::DYNAMIC_EXTENSION_PRIORITY;
 use farmfe_utils::parse_query;
-use resolver::{ResolveOptions, Resolver};
+use once_cell::sync::OnceCell;
+use resolver::{parse_package_source, ResolveOptions, Resolver};
 
 pub mod resolver;
 
 pub struct FarmPluginResolve {
   root: String,
   resolver: Resolver,
-  external_config: RwLock<Option<ExternalConfig>>,
+  external_config: OnceCell<ExternalConfig>,
+  dedupe: HashSet<String>,
 }
 
 impl FarmPluginResolve {
   pub fn new(config: &Config) -> Self {
     Self {
+      dedupe: get_config_resolve_dedupe(&config).into_iter().collect(),
       root: config.root.clone(),
       resolver: Resolver::new(),
-      external_config: RwLock::new(None),
+      external_config: OnceCell::new(),
     }
   }
 }
@@ -50,23 +53,9 @@ impl Plugin for FarmPluginResolve {
   ) -> Result<Option<PluginResolveHookResult>> {
     farm_profile_function!("plugin_resolve::resolve".to_string());
 
-    let mut external_config = self
+    let external_config = self
       .external_config
-      .read()
-      .map_err(|_| CompilationError::GenericError("failed get lock".to_string()))?;
-
-    if external_config.is_none() {
-      drop(external_config);
-      let mut external_config_mut = self.external_config.write().unwrap();
-
-      *external_config_mut = Some(ExternalConfig::from(&*context.config));
-
-      drop(external_config_mut);
-
-      external_config = self.external_config.read().unwrap();
-    }
-
-    let external_config = external_config.as_ref().unwrap();
+      .get_or_init(|| ExternalConfig::from(&*context.config));
 
     let source = &param.source;
 
@@ -75,15 +64,18 @@ impl Plugin for FarmPluginResolve {
     let splits: Vec<&str> = source.split('?').collect();
     let source = splits[0];
 
-    let basedir = if let Some(importer) = &param.importer {
-      if let Some(p) = Path::new(&importer.resolved_path(&context.config.root)).parent() {
-        p.to_path_buf()
+    let basedir =
+      if parse_package_source(source).is_some_and(|r| self.dedupe.contains(&r.package_name)) {
+        Path::new(&self.root).to_path_buf()
+      } else if let Some(importer) = &param.importer {
+        if let Some(p) = Path::new(&importer.resolved_path(&context.config.root)).parent() {
+          p.to_path_buf()
+        } else {
+          Path::new(&importer.resolved_path(&context.config.root)).to_path_buf()
+        }
       } else {
-        Path::new(&importer.resolved_path(&context.config.root)).to_path_buf()
-      }
-    } else {
-      Path::new(&self.root).to_path_buf()
-    };
+        Path::new(&self.root).to_path_buf()
+      };
 
     // Entry module and internal modules should not be external
     if !matches!(param.kind, ResolveKind::Entry(_)) {

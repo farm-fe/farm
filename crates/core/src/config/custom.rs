@@ -10,6 +10,7 @@ use super::{
 
 const CUSTOM_CONFIG_RUNTIME_ISOLATE: &str = "runtime.isolate";
 pub const CUSTOM_CONFIG_EXTERNAL_RECORD: &str = "external.record";
+pub const CUSTOM_CONFIG_RESOLVE_DEDUPE: &str = "resolve.dedupe";
 
 pub fn get_config_runtime_isolate(context: &Arc<CompilationContext>) -> bool {
   if let Some(val) = context.config.custom.get(CUSTOM_CONFIG_RUNTIME_ISOLATE) {
@@ -43,5 +44,13 @@ pub fn get_config_external_record(config: &Config) -> ExternalConfig {
     external_config
   } else {
     ExternalConfig::new()
+  }
+}
+
+pub fn get_config_resolve_dedupe(config: &Config) -> Vec<String> {
+  if let Some(val) = config.custom.get(CUSTOM_CONFIG_RESOLVE_DEDUPE) {
+    serde_json::from_str(val).unwrap_or_else(|_| vec![])
+  } else {
+    vec![]
   }
 }
