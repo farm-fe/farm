@@ -1,6 +1,6 @@
 use std::{
-  collections::HashMap,
-  path::{Path, PathBuf},
+  collections::{HashMap, HashSet},
+  path::Path,
   sync::Arc,
 };
 
@@ -18,7 +18,7 @@ use farmfe_core::{
 use farmfe_toolkit::resolve::DYNAMIC_EXTENSION_PRIORITY;
 use farmfe_utils::parse_query;
 use once_cell::sync::OnceCell;
-use resolver::{find_package_workspace_by_sub_file, ResolveOptions, Resolver};
+use resolver::{parse_package_source, ResolveOptions, Resolver};
 
 pub mod resolver;
 
@@ -26,11 +26,13 @@ pub struct FarmPluginResolve {
   root: String,
   resolver: Resolver,
   external_config: OnceCell<ExternalConfig>,
+  dedupe: HashSet<String>,
 }
 
 impl FarmPluginResolve {
   pub fn new(config: &Config) -> Self {
     Self {
+      dedupe: get_config_resolve_dedupe(&config).into_iter().collect(),
       root: config.root.clone(),
       resolver: Resolver::new(),
       external_config: OnceCell::new(),
@@ -41,42 +43,6 @@ impl FarmPluginResolve {
 impl Plugin for FarmPluginResolve {
   fn name(&self) -> &str {
     "FarmPluginResolve"
-  }
-
-  fn config(&self, config: &mut Config) -> Result<Option<()>> {
-    // TODO: config should receive context params?
-    let context = Arc::new(CompilationContext::new(config.clone(), vec![]).unwrap());
-
-    let dedupe = get_config_resolve_dedupe(&config);
-
-    for dedupe in &dedupe {
-      if config.resolve.alias.contains_key(dedupe) {
-        continue;
-      }
-
-      let Some(result) = self.resolver.resolve(
-        &dedupe,
-        self.root.clone().into(),
-        &ResolveKind::Import,
-        &ResolveOptions {
-          dynamic_extensions: None,
-        },
-        &context,
-      ) else {
-        continue;
-      };
-
-      let resolved_path = PathBuf::from(result.resolved_path);
-
-      if let Some(package_workspace) = find_package_workspace_by_sub_file(resolved_path.as_path()) {
-        config.resolve.alias.insert(
-          dedupe.clone(),
-          package_workspace.to_string_lossy().to_string(),
-        );
-      };
-    }
-
-    Ok(None)
   }
 
   fn resolve(
@@ -98,15 +64,18 @@ impl Plugin for FarmPluginResolve {
     let splits: Vec<&str> = source.split('?').collect();
     let source = splits[0];
 
-    let basedir = if let Some(importer) = &param.importer {
-      if let Some(p) = Path::new(&importer.resolved_path(&context.config.root)).parent() {
-        p.to_path_buf()
+    let basedir =
+      if parse_package_source(source).is_some_and(|r| self.dedupe.contains(&r.package_name)) {
+        Path::new(&self.root).to_path_buf()
+      } else if let Some(importer) = &param.importer {
+        if let Some(p) = Path::new(&importer.resolved_path(&context.config.root)).parent() {
+          p.to_path_buf()
+        } else {
+          Path::new(&importer.resolved_path(&context.config.root)).to_path_buf()
+        }
       } else {
-        Path::new(&importer.resolved_path(&context.config.root)).to_path_buf()
-      }
-    } else {
-      Path::new(&self.root).to_path_buf()
-    };
+        Path::new(&self.root).to_path_buf()
+      };
 
     // Entry module and internal modules should not be external
     if !matches!(param.kind, ResolveKind::Entry(_)) {

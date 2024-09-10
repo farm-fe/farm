@@ -32,7 +32,7 @@ mod browser;
 mod exports;
 mod utils;
 
-pub use utils::find_package_workspace_by_sub_file;
+pub use utils::parse_package_source;
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq)]
 pub struct ResolveCacheKey {

@@ -111,28 +111,3 @@ mod tests {
     assert_eq!(result, None);
   }
 }
-
-pub fn find_package_workspace_by_sub_file(mut entry_path: &Path) -> Option<&Path> {
-  while entry_path.exists() {
-    if entry_path.is_dir() {
-      let node_modules = entry_path.join(NODE_MODULES);
-      let package_json = entry_path.join("package.json");
-
-      if node_modules.exists()
-        && node_modules.is_dir()
-        && package_json.exists()
-        && package_json.is_file()
-      {
-        return Some(entry_path);
-      }
-    }
-
-    if let Some(parent) = entry_path.parent() {
-      entry_path = parent;
-    } else {
-      break;
-    }
-  }
-
-  None
-}
