@@ -201,6 +201,11 @@ export interface ResolveConfig {
    * @default false
    */
   autoExternalFailedResolve?: boolean;
+  /**
+   *
+   * @default []
+   */
+  dedupe?: string[];
 }
 
 export interface RuntimeConfig {

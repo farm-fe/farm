@@ -1,6 +1,11 @@
 use farmfe_core::{common::PackageJsonInfo, farm_profile_function, regex, serde_json::Value};
 use once_cell::sync::Lazy;
-use std::{path::PathBuf, str::FromStr};
+use std::{
+  path::{Path, PathBuf},
+  str::FromStr,
+};
+
+use super::NODE_MODULES;
 
 static PACKAGE_REGEX: Lazy<regex::Regex> =
   Lazy::new(|| regex::Regex::new(r"^(?P<group1>[^@][^/]*)|^(?P<group2>@[^/]+/[^/]+)").unwrap());
@@ -105,4 +110,29 @@ mod tests {
     let result = super::parse_package_source(source);
     assert_eq!(result, None);
   }
+}
+
+pub fn find_package_workspace_by_sub_file(mut entry_path: &Path) -> Option<&Path> {
+  while entry_path.exists() {
+    if entry_path.is_dir() {
+      let node_modules = entry_path.join(NODE_MODULES);
+      let package_json = entry_path.join("package.json");
+
+      if node_modules.exists()
+        && node_modules.is_dir()
+        && package_json.exists()
+        && package_json.is_file()
+      {
+        return Some(entry_path);
+      }
+    }
+
+    if let Some(parent) = entry_path.parent() {
+      entry_path = parent;
+    } else {
+      break;
+    }
+  }
+
+  None
 }

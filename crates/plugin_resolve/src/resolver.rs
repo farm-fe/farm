@@ -8,7 +8,6 @@ use std::{
 use farmfe_core::regex;
 use farmfe_core::{
   common::PackageJsonInfo,
-  config::TargetEnv,
   context::CompilationContext,
   farm_profile_function,
   parking_lot::Mutex,
@@ -33,6 +32,8 @@ mod browser;
 mod exports;
 mod utils;
 
+pub use utils::find_package_workspace_by_sub_file;
+
 #[derive(Debug, Clone, Hash, PartialEq, Eq)]
 pub struct ResolveCacheKey {
   pub source: String,
@@ -51,7 +52,7 @@ pub struct Resolver {
   resolve_cache: Mutex<HashMap<ResolveCacheKey, Option<PluginResolveHookResult>>>,
 }
 
-const NODE_MODULES: &str = "node_modules";
+pub const NODE_MODULES: &str = "node_modules";
 const BROWSER_SUBPATH_EXTERNAL_ID: &str = "__FARM_BROWSER_SUBPATH_EXTERNAL__";
 const REGEX_PREFIX: &str = "$__farm_regex:";
 const HIGHEST_PRIORITY_FIELD: &str = "exports";

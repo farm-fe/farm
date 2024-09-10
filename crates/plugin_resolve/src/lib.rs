@@ -1,13 +1,13 @@
 use std::{
   collections::HashMap,
-  path::Path,
-  sync::{Arc, RwLock},
+  path::{Path, PathBuf},
+  sync::Arc,
 };
 
 use farmfe_core::{
-  config::{external::ExternalConfig, Config},
+  config::{custom::get_config_resolve_dedupe, external::ExternalConfig, Config},
   context::CompilationContext,
-  error::{CompilationError, Result},
+  error::Result,
   farm_profile_function, farm_profile_scope,
   plugin::{
     Plugin, PluginHookContext, PluginResolveHookParam, PluginResolveHookResult, ResolveKind,
@@ -17,14 +17,15 @@ use farmfe_core::{
 
 use farmfe_toolkit::resolve::DYNAMIC_EXTENSION_PRIORITY;
 use farmfe_utils::parse_query;
-use resolver::{ResolveOptions, Resolver};
+use once_cell::sync::OnceCell;
+use resolver::{find_package_workspace_by_sub_file, ResolveOptions, Resolver};
 
 pub mod resolver;
 
 pub struct FarmPluginResolve {
   root: String,
   resolver: Resolver,
-  external_config: RwLock<Option<ExternalConfig>>,
+  external_config: OnceCell<ExternalConfig>,
 }
 
 impl FarmPluginResolve {
@@ -32,7 +33,7 @@ impl FarmPluginResolve {
     Self {
       root: config.root.clone(),
       resolver: Resolver::new(),
-      external_config: RwLock::new(None),
+      external_config: OnceCell::new(),
     }
   }
 }
@@ -40,6 +41,42 @@ impl FarmPluginResolve {
 impl Plugin for FarmPluginResolve {
   fn name(&self) -> &str {
     "FarmPluginResolve"
+  }
+
+  fn config(&self, config: &mut Config) -> Result<Option<()>> {
+    // TODO: config should receive context params?
+    let context = Arc::new(CompilationContext::new(config.clone(), vec![]).unwrap());
+
+    let dedupe = get_config_resolve_dedupe(&config);
+
+    for dedupe in &dedupe {
+      if config.resolve.alias.contains_key(dedupe) {
+        continue;
+      }
+
+      let Some(result) = self.resolver.resolve(
+        &dedupe,
+        self.root.clone().into(),
+        &ResolveKind::Import,
+        &ResolveOptions {
+          dynamic_extensions: None,
+        },
+        &context,
+      ) else {
+        continue;
+      };
+
+      let resolved_path = PathBuf::from(result.resolved_path);
+
+      if let Some(package_workspace) = find_package_workspace_by_sub_file(resolved_path.as_path()) {
+        config.resolve.alias.insert(
+          dedupe.clone(),
+          package_workspace.to_string_lossy().to_string(),
+        );
+      };
+    }
+
+    Ok(None)
   }
 
   fn resolve(
@@ -50,23 +87,9 @@ impl Plugin for FarmPluginResolve {
   ) -> Result<Option<PluginResolveHookResult>> {
     farm_profile_function!("plugin_resolve::resolve".to_string());
 
-    let mut external_config = self
+    let external_config = self
       .external_config
-      .read()
-      .map_err(|_| CompilationError::GenericError("failed get lock".to_string()))?;
-
-    if external_config.is_none() {
-      drop(external_config);
-      let mut external_config_mut = self.external_config.write().unwrap();
-
-      *external_config_mut = Some(ExternalConfig::from(&*context.config));
-
-      drop(external_config_mut);
-
-      external_config = self.external_config.read().unwrap();
-    }
-
-    let external_config = external_config.as_ref().unwrap();
+      .get_or_init(|| ExternalConfig::from(&*context.config));
 
     let source = &param.source;
 

@@ -373,10 +373,7 @@ export function transformFarmConfigToRollupNormalizedOutputOptions(
     dynamicImportInCjs: true,
     entryFileNames: config.output.entryFilename,
     esModule: 'if-default-prop',
-    experimentalMinChunkSize:
-      config.partialBundling.targetMinSize ||
-      config.partialBundling.targetMinSize ||
-      1,
+    experimentalMinChunkSize: config?.partialBundling?.targetMinSize || 1,
     exports: 'auto',
     extend: false,
     externalImportAssertions: false,
