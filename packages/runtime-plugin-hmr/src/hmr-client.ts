@@ -35,6 +35,7 @@ export class HmrClient {
       `${socketProtocol}://${socketHostUrl}`,
       'farm_hmr'
     );
+
     this.socket = socket;
     // listen for the message from the server
     // when the user save the file, the server will recompile the file(and its dependencies as long as its dependencies are changed)
@@ -65,7 +66,9 @@ export class HmrClient {
       this.notifyListeners('vite:ws:disconnect', { webSocket: socket });
       this.notifyListeners('farm:ws:disconnect', { webSocket: socket });
 
-      logger.debug('disconnected from the server, please reload the page.');
+      logger.debug(
+        'disconnected from the server, Please refresh the page manually. If you still encounter errors, this may be a farm bug. Please submit an issue. https://github.com/farm-fe/farm/issues'
+      );
       await waitForSuccessfulPing(socketProtocol, `${socketHostUrl}`);
       location.reload();
     });
@@ -105,7 +108,6 @@ export class HmrClient {
 
     for (const id of result.changed) {
       moduleSystem.update(id, result.modules[id]);
-
       if (!result.boundaries[id]) {
         // do not found boundary module, reload the window
         location.reload();
@@ -179,7 +181,7 @@ export class HmrClient {
         } catch (err) {
           // The boundary module's dependencies may not present in current module system for a multi-page application. We should reload the window in this case.
           // See https://github.com/farm-fe/farm/issues/383
-          logger.error(err);
+          logger.error(`Error occurred while applying hot updates: ${err}`);
           location.reload();
         }
       }

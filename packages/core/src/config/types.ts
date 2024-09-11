@@ -8,11 +8,37 @@ import type { Options } from 'http-proxy-middleware';
 import { Middleware } from 'koa';
 import type { RustPlugin } from '../plugin/rust/index.js';
 import type { JsPlugin } from '../plugin/type.js';
+import { HMRChannel } from '../server/hmr.js';
 import type { Config } from '../types/binding.js';
 import type { Logger } from '../utils/index.js';
 
+// export interface HmrOptions {
+//   protocol?: string;
+//   host?: string;
+//   port?: number;
+//   clientPort?: number;
+//   path?: string;
+//   timeout?: number;
+//   overlay?: boolean;
+//   server?: Server;
+// }
+export interface HmrOptions {
+  protocol?: string;
+  host?: string;
+  port?: number;
+  clientPort?: number;
+  path?: string;
+  timeout?: number;
+  overlay?: boolean;
+  server?: Server;
+  /** @internal */
+  channels?: HMRChannel[];
+}
+
 export interface ConfigEnv {
   mode: string;
+  command: string;
+  isPreview: boolean;
 }
 
 export type ProxyOptions = Options;
@@ -44,6 +70,7 @@ export interface UserServerConfig {
   // whether to serve static assets in spa mode, default to true
   spa?: boolean;
   middlewares?: DevServerMiddleware[];
+  middlewareMode?: boolean | string;
   writeToDisk?: boolean;
 }
 
@@ -58,7 +85,7 @@ export interface UserPreviewServerConfig {
 
 export type NormalizedServerConfig = Required<
   Omit<UserServerConfig, 'hmr'> & {
-    hmr?: Required<UserHmrConfig>;
+    hmr?: UserHmrConfig;
   }
 >;
 
@@ -67,13 +94,9 @@ export interface NormalizedConfig {
   serverConfig?: NormalizedServerConfig;
 }
 
-export interface UserHmrConfig {
-  host?: string | boolean;
-  port?: number;
-  path?: string;
-  overlay?: boolean;
-  protocol?: string;
+export interface UserHmrConfig extends HmrOptions {
   watchOptions?: WatchOptions;
+  overlay?: boolean;
 }
 
 type InternalConfig = Config['config'] extends undefined
@@ -92,6 +115,7 @@ export interface UserConfig {
   envDir?: string;
   envPrefix?: string | string[];
   publicDir?: string;
+  formatTimer?: 'ms' | 's';
   /** js plugin(which is a javascript object) and rust plugin(which is string refer to a .farm file or a package) */
   plugins?: (RustPlugin | JsPlugin | JsPlugin[] | undefined | null | false)[];
   /** vite plugins */
@@ -118,6 +142,8 @@ export interface ResolvedCompilation
 }
 
 export interface ResolvedUserConfig extends UserConfig {
+  // watch?: boolean;
+  // root?: string;
   env?: Record<string, any>;
   envDir?: string;
   envFiles?: string[];
@@ -131,7 +157,7 @@ export interface ResolvedUserConfig extends UserConfig {
   rustPlugins?: [string, string][];
 }
 
-export interface GlobalFarmCLIOptions {
+export interface GlobalCliOptions {
   '--'?: string[];
   c?: boolean | string;
   config?: string;
@@ -161,11 +187,13 @@ export interface FarmCLIPreviewOptions {
   host?: string | boolean;
 }
 
-export interface FarmCLIOptions
+export interface FarmCliOptions
   extends FarmCLIBuildOptions,
     FarmCLIPreviewOptions {
   logger?: Logger;
   config?: string;
+  configFile?: string;
+  // todo: check to delete
   configPath?: string;
   compilation?: Config['config'];
   mode?: string;

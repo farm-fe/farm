@@ -270,12 +270,11 @@ export class VitePluginAdapter implements JsPlugin {
     }
   }
 
-  async configureDevServer(devServer: Server) {
+  async configureServer(devServer: any) {
     const hook = this.wrapRawPluginHook(
       'configureServer',
       this._rawPlugin.configureServer
     );
-
     this._viteDevServer = createViteDevServerAdapter(
       this.name,
       this._viteConfig,
@@ -284,19 +283,6 @@ export class VitePluginAdapter implements JsPlugin {
 
     if (hook) {
       await hook(this._viteDevServer);
-      this._viteDevServer.middlewareCallbacks.forEach((cb) => {
-        devServer.app().use((ctx, koaNext) => {
-          return new Promise((resolve, reject) => {
-            // koaNext is async, but vite's next is sync, we need a adapter here
-            const next = (err: Error) => {
-              if (err) reject(err);
-              koaNext().then(resolve);
-            };
-
-            return cb(ctx.req, ctx.res, next);
-          });
-        });
-      });
     }
   }
 

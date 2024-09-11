@@ -48,7 +48,7 @@
     "rules": {
       "recommended": false,
       "complexity": {
-        "noBannedTypes": "warn",
+        "noBannedTypes": "off",
         "noExtraBooleanCast": "error",
         "noMultipleSpacesInRegularExpressionLiterals": "error",
         "noUselessCatch": "error",
@@ -75,7 +75,7 @@
         "noUnsafeFinally": "error",
         "noUnsafeOptionalChaining": "error",
         "noUnusedLabels": "error",
-        "noUnusedVariables": "warn",
+        "noUnusedVariables": "off",
         "useIsNan": "error",
         "useValidForDirection": "error",
         "useYield": "error"

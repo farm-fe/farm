@@ -1,7 +1,7 @@
 import { Config } from '../types/binding.js';
 import { ColorFunction, PersistentCacheBrand, colors } from './color.js';
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import { pad, version } from './share.js';
+import { ResolvedServerUrls } from './http.js';
+import { formatExecutionTime, pad, version } from './share.js';
 
 type LogLevelNames = 'trace' | 'debug' | 'info' | 'warn' | 'error';
 
@@ -197,33 +197,12 @@ export class NoopLogger extends Logger {
   }
 }
 
-export function printServerUrls(
-  urls: any,
-  logger: Logger,
-  previewFlag = false
-): void {
-  if (previewFlag)
-    logger.info(colors.bold(colors.magenta('preview server running at: \n')));
-  const colorUrl = (url: string) =>
-    colors.cyan(url.replace(/:(\d+)\//, (_, port) => `:${colors.bold(port)}/`));
-
-  const logUrl = (url: string, type: string) =>
-    logger.info(
-      `${colors.bold(colors.magenta('>'))} ${colors.bold(type)}${colors.bold(
-        colorUrl(url)
-      )}`
-    );
-
-  urls.local.map((url: string) => logUrl(url, 'Local:   '));
-  urls.network.map((url: string) => logUrl(url, 'Network: '));
-}
-
 export function bootstrapLogger(options?: LoggerOptions): Logger {
   return new Logger(options);
 }
 
-export function bootstrap(times: number, config: Config) {
-  const usePersistentCache = config.config.persistentCache;
+export function bootstrap(times: number, config: Config, hasCacheDir: boolean) {
+  const usePersistentCache = config.config.persistentCache && hasCacheDir;
   const persistentCacheFlag = usePersistentCache
     ? colors.bold(PersistentCacheBrand)
     : '';
@@ -232,10 +211,11 @@ export function bootstrap(times: number, config: Config) {
     '\n',
     colors.bold(colors.brandColor(`${'ϟ'}  Farm  v${version}`))
   );
+
   console.log(
     `${colors.bold(colors.green(` ✓`))}  ${colors.bold(
-      'Ready in'
-    )} ${colors.bold(colors.green(`${times}ms`))} ${persistentCacheFlag}`,
+      'Compile in'
+    )} ${colors.bold(colors.green(formatExecutionTime(times, 's')))} ${persistentCacheFlag}`,
     '\n'
   );
 }
@@ -260,4 +240,30 @@ function cleanStack(stack: string) {
     .split(/\n/g)
     .filter((l) => /^\s*at/.test(l))
     .join('\n');
+}
+
+export function printServerUrls(
+  urls: ResolvedServerUrls,
+  optionsHost: string | boolean | undefined,
+  logger: ILogger
+): void {
+  const colorUrl = (url: string) =>
+    colors.cyan(url.replace(/:(\d+)\//, (_, port) => `:${colors.bold(port)}/`));
+  for (const url of urls.local) {
+    logger.info(
+      `${colors.bold(colors.green('➜'))} ${colors.bold('Local')}:   ${colors.bold(colorUrl(url))}`
+    );
+  }
+  for (const url of urls.network) {
+    logger.info(
+      `${colors.bold(colors.green('➜'))} ${colors.bold('Network')}: ${colors.bold(colorUrl(url))}`
+    );
+  }
+  if (urls.network.length === 0 && optionsHost === undefined) {
+    logger.info(
+      colors.dim(`  ${colors.green('➜')}  ${colors.bold('Network')}: use `) +
+        colors.bold('--host') +
+        colors.dim(' to expose')
+    );
+  }
 }

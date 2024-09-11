@@ -8,4 +8,5 @@ export * from './path.js';
 export * from './publicDir.js';
 export * from './rebase-url.js';
 export * from './plugin-utils.js';
+export * from './cacheDir.js';
 export * from './dynamic-resources.js';

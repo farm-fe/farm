@@ -1,98 +1,176 @@
-import { Options, createProxyMiddleware } from 'http-proxy-middleware';
-import { Context, Middleware, Next } from 'koa';
+import type * as http from 'node:http';
+import type * as net from 'node:net';
+import connect from 'connect';
+import httpProxy from 'http-proxy';
+import type Server from 'http-proxy';
+import { ResolvedUserConfig } from '../../config/types.js';
+import { colors } from '../../utils/color.js';
+export interface ProxyOptions extends httpProxy.ServerOptions {
+  rewrite?: (path: string) => string;
+  configure?: (proxy: httpProxy, options: ProxyOptions) => void;
+  bypass?: (
+    req: http.IncomingMessage,
+    res: http.ServerResponse,
+    options: ProxyOptions
+  ) => void | null | undefined | false | string;
+  rewriteWsOrigin?: boolean | undefined;
+}
 
-import { UserConfig, UserHmrConfig } from '../../config/types.js';
-import { Logger } from '../../utils/logger.js';
-import type { Server } from '../index.js';
+export function proxyMiddleware(app: any, server?: any) {
+  const { serverOptions, ResolvedUserConfig } = app;
 
-export function useProxy(
-  options: UserConfig['server'],
-  devSeverContext: Server,
-  logger: Logger
-) {
-  const proxyOption = options['proxy'];
-  for (const path of Object.keys(proxyOption)) {
-    let opts = proxyOption[path] as Options;
-
+  const proxies: Record<string, [Server, ProxyOptions]> = {};
+  Object.keys(serverOptions.proxy).forEach((context) => {
+    let opts = serverOptions.proxy[context];
+    if (!opts) {
+      return;
+    }
     if (typeof opts === 'string') {
-      opts = { target: opts, changeOrigin: true };
+      opts = { target: opts, changeOrigin: true } as ProxyOptions;
+    }
+    const proxy = httpProxy.createProxyServer(opts) as Server;
+
+    if (opts.configure) {
+      opts.configure(proxy, opts);
     }
 
-    const proxyMiddleware = createProxyMiddleware(opts);
-    const server = devSeverContext.server;
-    const hmrOptions = options.hmr as UserHmrConfig;
-    if (server) {
-      server.on('upgrade', (req, socket: any, head) => {
-        if (req.url === hmrOptions.path) return;
-        for (const path in options.proxy) {
-          const opts = proxyOption[path] as Options;
+    proxy.on('error', (err, req, originalRes) => {
+      // When it is ws proxy, res is net.Socket
+      // originalRes can be falsy if the proxy itself errored
+      const res = originalRes as http.ServerResponse | net.Socket | undefined;
+      if (!res) {
+        console.log(
+          `${colors.red(`http proxy error: ${err.message}`)}\n${err.stack}`
+        );
+      } else if ('req' in res) {
+        // console.log(
+        //   `${colors.red(`http proxy error: ${originalRes.req.url}`)}\n${
+        //     err.stack
+        //   }`,
+        // );
+
+        if (!res.headersSent && !res.writableEnded) {
+          res
+            .writeHead(500, {
+              'Content-Type': 'text/plain'
+            })
+            .end();
+        }
+      } else {
+        console.log(`${colors.red(`ws proxy error:`)}\n${err.stack}`);
+        res.end();
+      }
+    });
+
+    proxy.on('proxyReqWs', (proxyReq, req, socket, options, head) => {
+      rewriteOriginHeader(proxyReq, options, ResolvedUserConfig);
+
+      socket.on('error', (err) => {
+        console.log(`${colors.red(`ws proxy socket error:`)}\n${err.stack}`);
+      });
+    });
+
+    // https://github.com/http-party/node-http-proxy/issues/1520#issue-877626125
+    // https://github.com/chimurai/http-proxy-middleware/blob/cd58f962aec22c925b7df5140502978da8f87d5f/src/plugins/default/debug-proxy-errors-plugin.ts#L25-L37
+    proxy.on('proxyRes', (proxyRes, req, res) => {
+      res.on('close', () => {
+        if (!res.writableEnded) {
+          proxyRes.destroy();
+        }
+      });
+    });
+
+    // clone before saving because http-proxy mutates the options
+    proxies[context] = [proxy, { ...opts }];
+  });
+
+  if (app.httpServer) {
+    app.httpServer.on('upgrade', (req: any, socket: any, head: any) => {
+      const url = req.url;
+      for (const context in proxies) {
+        if (doesProxyContextMatchUrl(context, url)) {
+          const [proxy, opts] = proxies[context];
           if (
             opts.ws ||
             opts.target?.toString().startsWith('ws:') ||
             opts.target?.toString().startsWith('wss:')
           ) {
-            const proxy = createProxyMiddleware(opts);
-            if (opts.pathRewrite) {
-              const fromPath = Object.keys(opts.pathRewrite)[0];
-              const toPath: string = (
-                opts.pathRewrite as { [regexp: string]: string }
-              )[fromPath];
-              req.url = rewritePath(req.url, fromPath, toPath);
+            if (opts.rewrite) {
+              req.url = opts.rewrite(url);
             }
-            proxy.upgrade(req, socket, head);
+            proxy.ws(req, socket, head);
             return;
           }
         }
-      });
-    }
-
-    const errorHandlerMiddleware = async (ctx: Context, next: Next) => {
-      try {
-        await new Promise<void>((resolve, reject) => {
-          proxyMiddleware(ctx.req, ctx.res, (err) => {
-            if (err) {
-              reject(err);
-            } else {
-              resolve();
-            }
-          });
-        });
-        await next();
-      } catch (err) {
-        logger.error(`Error in proxy for path ${path}: \n ${err.stack}`);
       }
-    };
+    });
+  }
+  return function handleProxyMiddleware(
+    req: http.IncomingMessage,
+    res: http.ServerResponse,
+    next: () => void
+  ) {
+    const url = req.url;
+    for (const context in proxies) {
+      if (doesProxyContextMatchUrl(context, url)) {
+        const [proxy, opts] = proxies[context];
+        const options: httpProxy.ServerOptions = {};
 
-    try {
-      if (path.length > 0) {
-        const pathRegex = new RegExp(path);
-        const app = devSeverContext.app();
-        app.use((ctx, next) => {
-          if (pathRegex.test(ctx.path)) {
-            return errorHandlerMiddleware(ctx, next);
+        if (opts.bypass) {
+          const bypassResult = opts.bypass(req, res, opts);
+          if (typeof bypassResult === 'string') {
+            req.url = bypassResult;
+            return next();
+          } else if (bypassResult === false) {
+            res.statusCode = 404;
+            return res.end();
           }
-          return next();
-        });
+        }
+
+        if (opts.rewrite) {
+          req.url = opts.rewrite(req.url!);
+        }
+        proxy.web(req, res, options);
+        return;
       }
-    } catch (err) {
-      logger.error(`Error setting proxy for path ${path}: \n ${err.stack}`);
+    }
+    next();
+  };
+}
+
+function rewriteOriginHeader(
+  proxyReq: http.ClientRequest,
+  options: ProxyOptions,
+  config: ResolvedUserConfig
+) {
+  // Browsers may send Origin headers even with same-origin
+  // requests. It is common for WebSocket servers to check the Origin
+  // header, so if rewriteWsOrigin is true we change the Origin to match
+  // the target URL.
+  if (options.rewriteWsOrigin) {
+    const { target } = options;
+
+    if (proxyReq.headersSent) {
+      console.warn(
+        'Unable to rewrite Origin header as headers are already sent.'
+      );
+      return;
+    }
+
+    if (proxyReq.getHeader('origin') && target) {
+      const changedOrigin =
+        typeof target === 'object'
+          ? `${target.protocol}//${target.host}`
+          : target;
+
+      proxyReq.setHeader('origin', changedOrigin);
     }
   }
 }
 
-export function proxy(devSeverContext: Server): Middleware {
-  const { config, logger } = devSeverContext;
-  if (!config.proxy) {
-    return;
-  }
-
-  useProxy(config, devSeverContext, logger);
-}
-
-function rewritePath(path: string, fromPath: RegExp | string, toPath: string) {
-  if (fromPath instanceof RegExp) {
-    return path.replace(fromPath, toPath);
-  } else {
-    return path.replace(new RegExp(fromPath), toPath);
-  }
+function doesProxyContextMatchUrl(context: string, url: string): boolean {
+  return (
+    (context[0] === '^' && new RegExp(context).test(url)) ||
+    url.startsWith(context)
+  );
 }

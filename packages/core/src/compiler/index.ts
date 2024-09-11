@@ -53,11 +53,7 @@ export class Compiler {
   }
 
   async compile() {
-    if (this.compiling) {
-      this.logger.error('Already compiling', {
-        exit: true
-      });
-    }
+    this.checkCompiling();
 
     this.compiling = true;
     if (process.env.FARM_PROFILE) {
@@ -69,11 +65,8 @@ export class Compiler {
   }
 
   compileSync() {
-    if (this.compiling) {
-      this.logger.error('Already compiling', {
-        exit: true
-      });
-    }
+    this.checkCompiling();
+
     this.compiling = true;
     this._bindingCompiler.compileSync();
     this.compiling = false;
@@ -153,17 +146,11 @@ export class Compiler {
 
   writeResourcesToDisk(): void {
     const resources = this.resources();
-    const configOutputPath = this.config.config.output.path;
-    const outputPath = path.isAbsolute(configOutputPath)
-      ? configOutputPath
-      : path.join(this.config.config.root, configOutputPath);
+    const outputPath = this.getOutputPath();
 
     for (const [name, resource] of Object.entries(resources)) {
-      // remove query params and hash of name
-      const nameWithoutQuery = name.split('?')[0];
-      const nameWithoutHash = nameWithoutQuery.split('#')[0];
+      const filePath = path.join(outputPath, name.split(/[?#]/)[0]);
 
-      let filePath = path.join(outputPath, nameWithoutHash);
       if (!existsSync(path.dirname(filePath))) {
         mkdirSync(path.dirname(filePath), { recursive: true });
       }
@@ -175,7 +162,7 @@ export class Compiler {
   }
 
   callWriteResourcesHook() {
-    for (const jsPlugin of this.config.jsPlugins ?? []) {
+    for (const jsPlugin of this.config.jsPlugins) {
       jsPlugin.writeResources?.executor?.({
         resourcesMap: this._bindingCompiler.resourcesMap() as Record<
           string,
@@ -208,15 +195,7 @@ export class Compiler {
       p = p.slice(0, -VIRTUAL_FARM_DYNAMIC_IMPORT_SUFFIX.length);
     }
 
-    if (path.isAbsolute(p)) {
-      return p;
-    }
-
-    if (p.includes('?')) {
-      return path.join(root, p.split('?')[0]);
-    }
-
-    return path.join(root, p);
+    return path.isAbsolute(p) ? p : path.join(root, p.split('?')[0]);
   }
 
   onUpdateFinish(cb: () => void) {
@@ -224,12 +203,7 @@ export class Compiler {
   }
 
   outputPath() {
-    const { output, root } = this.config.config;
-    const configOutputPath = output.path;
-    const outputPath = path.isAbsolute(configOutputPath)
-      ? configOutputPath
-      : path.join(root, configOutputPath);
-    return outputPath;
+    return this.getOutputPath();
   }
 
   addExtraWatchFile(root: string, paths: string[]) {
@@ -238,5 +212,22 @@ export class Compiler {
 
   stats() {
     return this._bindingCompiler.stats();
+  }
+
+  private checkCompiling() {
+    if (this.compiling) {
+      this.logger.error('Already compiling', {
+        exit: true
+      });
+    }
+  }
+
+  private getOutputPath(): string {
+    const { output, root } = this.config.config;
+    const configOutputPath = output.path;
+    const outputPath = path.isAbsolute(configOutputPath)
+      ? configOutputPath
+      : path.join(root, configOutputPath);
+    return outputPath;
   }
 }

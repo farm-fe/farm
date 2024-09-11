@@ -1,18 +1,18 @@
 <script lang="ts">
-  import svelteLogo from './assets/svelte.svg'
-  import farmLogo from '/logo.png'
-  import Counter from './lib/Counter.svelte'
+  import svelteLogo from "./assets/svelte.svg";
+  import farmLogo from "/logo.png";
+  import Counter from "./lib/Counter.svelte";
 </script>
 
 <main>
-  <div>
+  <dbiv>
     <a href="https://farmfe.org" target="_blank" rel="noreferrer">
       <img src={farmLogo} class="logo" alt="Farm Logo" />
     </a>
     <a href="https://svelte.dev" target="_blank" rel="noreferrer">
       <img src={svelteLogo} class="logo svelte" alt="Svelte Logo" />
     </a>
-  </div>
+  </dbiv>
   <h1>Farm + Svelte</h1>
 
   <div class="card">
@@ -23,9 +23,7 @@
     Powered by <a href="https://farmfe.org">Farm</a> and svelet vite plugin
   </p>
 
-  <p class="read-the-docs">
-    Click on the Farm and Svelte logos to learn more
-  </p>
+  <p class="read-the-docs">Click on the Farm and Svelte logos to learn more</p>
 </main>
 
 <style>

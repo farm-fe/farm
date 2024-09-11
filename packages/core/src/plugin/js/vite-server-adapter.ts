@@ -1,67 +1,36 @@
 // import { watch } from 'chokidar';
 import { FSWatcher } from 'chokidar';
-import { Server } from '../../index.js';
-import { Server as httpServer } from '../../server/type.js';
-import WsServer from '../../server/ws.js';
+// import { Server } from '../../index.js';
+import { Server as httpServer } from '../../server/index.js';
+// import WsServer from '../../server/ws.js';
 import { CompilationContext, ViteModule } from '../type.js';
 import { throwIncompatibleError } from './utils.js';
 
+// TODO type error refactor vite adaptor
 export class ViteDevServerAdapter {
   moduleGraph: ViteModuleGraphAdapter;
   config: any;
   pluginName: string;
   watcher: FSWatcher;
   middlewares: any;
-  middlewareCallbacks: any[];
-  ws: WsServer;
+  ws: any;
   httpServer: httpServer;
 
-  constructor(pluginName: string, config: any, server: Server) {
+  constructor(pluginName: string, config: any, server: any) {
     this.moduleGraph = createViteModuleGraphAdapter(pluginName);
     this.config = config;
     this.pluginName = pluginName;
     // watcher is not used in Farm vite plugin for now
     // it's only for compatibility
     // this.watcher = watch(config.root);
-    this.watcher = server.watcher.getInternalWatcher();
-    this.middlewareCallbacks = [];
-    this.middlewares = new Proxy(
-      {
-        use: (...args: any[]) => {
-          if (
-            args.length === 2 &&
-            typeof args[0] === 'string' &&
-            typeof args[1] === 'function'
-          ) {
-            this.middlewareCallbacks.push((req: any, res: any, next: any) => {
-              const [url, cb] = args;
-              if (req.url.startsWith(url)) {
-                cb(req, res, next);
-              }
-            });
-          } else if (args.length === 1 && typeof args[0] === 'function') {
-            this.middlewareCallbacks.push(args[0]);
-          }
-        }
-      },
-      {
-        get(target, key) {
-          if (key === 'use') {
-            return target[key as keyof typeof target];
-          }
 
-          throwIncompatibleError(
-            pluginName,
-            'viteDevServer.middlewares',
-            ['use'],
-            key
-          );
-        }
-      }
-    );
+    this.watcher = server.watcher.getInternalWatcher();
+
+    this.middlewares = server.middlewares;
 
     this.ws = server.ws;
-    this.httpServer = server.server;
+
+    this.httpServer = server.httpServer;
   }
 }
 
@@ -134,7 +103,7 @@ function proxyViteModuleNode(
 export function createViteDevServerAdapter(
   pluginName: string,
   config: any,
-  server: Server
+  server: any
 ) {
   const proxy = new Proxy(
     new ViteDevServerAdapter(pluginName, config, server),

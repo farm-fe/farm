@@ -124,3 +124,12 @@ function createServerUrl(
   const hostnameName = hostname.includes(':') ? `[${hostname}]` : hostname;
   return `${protocol}://${hostnameName}:${port}${publicPath}`;
 }
+
+export const teardownSIGTERMListener = (
+  callback: () => Promise<void>
+): void => {
+  process.off('SIGTERM', callback);
+  if (process.env.CI !== 'true') {
+    process.stdin.off('end', callback);
+  }
+};

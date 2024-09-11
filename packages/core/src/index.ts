@@ -41,189 +41,178 @@ import { Server } from './server/index.js';
 import { compilerHandler } from './utils/build.js';
 import { colors } from './utils/color.js';
 import { Logger } from './utils/logger.js';
-import { FileWatcher } from './watcher/index.js';
 
 import { __FARM_GLOBAL__ } from './config/_global.js';
 import type {
-  FarmCLIOptions,
+  FarmCliOptions,
   ResolvedUserConfig,
   UserPreviewServerConfig
 } from './config/types.js';
-import { logError } from './server/error.js';
-import { lazyCompilation } from './server/middlewares/lazy-compilation.js';
-import { ConfigWatcher } from './watcher/config-watcher.js';
+// import { logError } from './server/error.js';
+// import { lazyCompilation } from './server/middlewares/lazy-compilation.js';
 
 import type { JsPlugin } from './plugin/type.js';
-import { resolveHostname } from './utils/http.js';
 
-export async function start(
-  inlineConfig?: FarmCLIOptions & UserConfig
-): Promise<void> {
-  inlineConfig = inlineConfig ?? {};
-  const logger = inlineConfig.logger ?? new Logger();
-  setProcessEnv('development');
+// export async function start(
+//   inlineConfig?: FarmCliOptions & UserConfig
+// ): Promise<void> {
+//   inlineConfig = inlineConfig ?? {};
+//   const logger = inlineConfig.logger ?? new Logger();
+//   setProcessEnv('development');
 
-  try {
-    const resolvedUserConfig = await resolveConfig(
-      inlineConfig,
-      'development',
-      logger
-    );
+//   try {
+//     const resolvedUserConfig = await resolveConfig(
+//       inlineConfig,
+//       'start',
+//       'development',
+//       'development',
+//       false
+//     );
 
-    if (
-      resolvedUserConfig.compilation.lazyCompilation &&
-      typeof resolvedUserConfig.server?.host === 'string'
-    ) {
-      await setLazyCompilationDefine(resolvedUserConfig);
-    }
+//     const compiler = await createCompiler(resolvedUserConfig, logger);
 
-    const compiler = await createCompiler(resolvedUserConfig, logger);
+//     const devServer = await createDevServer(
+//       compiler,
+//       resolvedUserConfig,
+//       logger
+//     );
 
-    const devServer = await createDevServer(
-      compiler,
-      resolvedUserConfig,
-      logger
-    );
+//     await devServer.listen();
+//   } catch (error) {
+//     logger.error('Failed to start the server', { exit: true, error });
+//   }
+// }
 
-    await devServer.listen();
-  } catch (error) {
-    logger.error('Failed to start the server', { exit: true, error });
-  }
-}
+// export async function build(
+//   inlineConfig?: FarmCliOptions & UserConfig
+// ): Promise<void> {
+//   inlineConfig = inlineConfig ?? {};
+//   const logger = inlineConfig.logger ?? new Logger();
+//   setProcessEnv('production');
 
-export async function build(
-  inlineConfig?: FarmCLIOptions & UserConfig
-): Promise<void> {
-  inlineConfig = inlineConfig ?? {};
-  const logger = inlineConfig.logger ?? new Logger();
-  setProcessEnv('production');
+//   const resolvedUserConfig = await resolveConfig(
+//     inlineConfig,
+//     'build',
+//     'production',
+//     'production',
+//     false
+//   );
 
-  const resolvedUserConfig = await resolveConfig(
-    inlineConfig,
-    'production',
-    logger,
-    false
-  );
+//   try {
+//     await createBundleHandler(resolvedUserConfig, logger);
+//     // copy resources under publicDir to output.path
+//     await copyPublicDirectory(resolvedUserConfig, logger);
+//   } catch (err) {
+//     logger.error(`Failed to build: ${err}`, { exit: true });
+//   }
+// }
 
-  try {
-    await createBundleHandler(resolvedUserConfig, logger);
-    // copy resources under publicDir to output.path
-    await copyPublicDirectory(resolvedUserConfig, logger);
-  } catch (err) {
-    logger.error(`Failed to build: ${err}`, { exit: true });
-  }
-}
+// export async function preview(inlineConfig?: FarmCliOptions): Promise<void> {
+//   inlineConfig = inlineConfig ?? {};
+//   const logger = inlineConfig.logger ?? new Logger();
+//   const resolvedUserConfig = await resolveConfig(
+//     inlineConfig,
+//     'preview',
+//     'production',
+//     'production',
+//     true
+//   );
 
-export async function preview(inlineConfig?: FarmCLIOptions): Promise<void> {
-  inlineConfig = inlineConfig ?? {};
-  const logger = inlineConfig.logger ?? new Logger();
-  const resolvedUserConfig = await resolveConfig(
-    inlineConfig,
-    'production',
-    logger
-  );
+//   const { root, output } = resolvedUserConfig.compilation;
+//   const distDir = path.resolve(root, output.path);
 
-  const { root, output } = resolvedUserConfig.compilation;
-  const distDir = path.resolve(root, output.path);
+//   try {
+//     statSync(distDir);
+//   } catch (err) {
+//     if (err.code === 'ENOENT') {
+//       throw new Error(
+//         `The directory "${distDir}" does not exist. Did you build your project?`
+//       );
+//     }
+//   }
 
-  try {
-    statSync(distDir);
-  } catch (err) {
-    if (err.code === 'ENOENT') {
-      throw new Error(
-        `The directory "${distDir}" does not exist. Did you build your project?`
-      );
-    }
-  }
+//   // reusing port conflict check from DevServer
+//   const serverConfig = {
+//     ...resolvedUserConfig.server,
+//     host: inlineConfig.host ?? true,
+//     port:
+//       inlineConfig.port ??
+//       (Number(process.env.FARM_DEFAULT_SERVER_PORT) || 1911)
+//   };
+//   await Server.resolvePortConflict(serverConfig, logger);
+//   const port = serverConfig.port;
+//   const host = serverConfig.host;
+//   const previewOptions: UserPreviewServerConfig = {
+//     ...serverConfig,
+//     distDir,
+//     output: { path: output.path, publicPath: output.publicPath },
+//     port,
+//     host
+//   };
 
-  // reusing port conflict check from DevServer
-  const serverConfig = {
-    ...resolvedUserConfig.server,
-    host: inlineConfig.host ?? true,
-    port:
-      inlineConfig.port ??
-      (Number(process.env.FARM_DEFAULT_SERVER_PORT) || 1911)
-  };
-  await Server.resolvePortConflict(serverConfig, logger);
-  const port = serverConfig.port;
-  const host = serverConfig.host;
-  const previewOptions: UserPreviewServerConfig = {
-    ...serverConfig,
-    distDir,
-    output: { path: output.path, publicPath: output.publicPath },
-    port,
-    host
-  };
+//   // const server = new Server({ logger });
+//   server.createPreviewServer(previewOptions);
+// }
 
-  const server = new Server({ logger });
-  server.createPreviewServer(previewOptions);
-}
+// export async function watch(
+//   inlineConfig?: FarmCliOptions & UserConfig
+// ): Promise<void> {
+//   inlineConfig = inlineConfig ?? {};
+//   const logger = inlineConfig.logger ?? new Logger();
+//   setProcessEnv('development');
 
-export async function watch(
-  inlineConfig?: FarmCLIOptions & UserConfig
-): Promise<void> {
-  inlineConfig = inlineConfig ?? {};
-  const logger = inlineConfig.logger ?? new Logger();
-  setProcessEnv('development');
+//   inlineConfig.server ??= {};
+//   inlineConfig.server.hmr ??= false;
 
-  inlineConfig.server ??= {};
-  inlineConfig.server.hmr ??= false;
+//   const resolvedUserConfig = await resolveConfig(
+//     inlineConfig,
+//     'build',
+//     'production',
+//     'production',
+//     false
+//   );
 
-  const resolvedUserConfig = await resolveConfig(
-    inlineConfig,
-    'development',
-    logger,
-    false
-  );
+//   const fileWatcher = await createBundleHandler(
+//     resolvedUserConfig,
+//     logger,
+//     true
+//   );
 
-  const lazyEnabled = resolvedUserConfig.compilation?.lazyCompilation;
+//   let devServer: Server | undefined;
+//   // create dev server for lazy compilation
+//   const lazyEnabled = resolvedUserConfig.compilation.lazyCompilation;
+//   if (lazyEnabled) {
+//     devServer = new Server({
+//       logger,
+//       // TODO type error
+//       // @ts-ignore
+//       compiler: fileWatcher.serverOrCompiler as Compiler
+//     });
+//     await devServer.createServer(resolvedUserConfig.server);
+//     devServer.applyMiddlewares([lazyCompilation]);
+//     await devServer.startServer(resolvedUserConfig.server);
+//   }
 
-  if (lazyEnabled) {
-    await setLazyCompilationDefine(resolvedUserConfig);
-  }
+//   async function handleFileChange(files: string[]) {
+//     logFileChanges(files, resolvedUserConfig.root, logger);
 
-  const compilerFileWatcher = await createBundleHandler(
-    resolvedUserConfig,
-    logger,
-    true
-  );
+//     try {
+//       if (lazyEnabled && devServer) {
+//         devServer.close();
+//       }
 
-  let devServer: Server | undefined;
-  // create dev server for lazy compilation
-  if (lazyEnabled) {
-    devServer = new Server({
-      logger,
-      compiler: compilerFileWatcher.serverOrCompiler as Compiler
-    });
-    await devServer.createServer(resolvedUserConfig.server);
-    devServer.applyMiddlewares([lazyCompilation]);
-    await devServer.startServer(resolvedUserConfig.server);
-  }
+//       __FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__ = true;
 
-  async function handleFileChange(files: string[]) {
-    logFileChanges(files, resolvedUserConfig.root, logger);
+//       await fileWatcher?.close();
 
-    try {
-      farmWatcher.close();
+//       await watch(inlineConfig);
+//     } catch (error) {
+//       logger.error(`Error restarting the watcher: ${error.message}`);
+//     }
+//   }
 
-      if (lazyEnabled && devServer) {
-        devServer.close();
-      }
-
-      __FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__ = true;
-
-      compilerFileWatcher?.close();
-
-      await watch(inlineConfig);
-    } catch (error) {
-      logger.error(`Error restarting the watcher: ${error.message}`);
-    }
-  }
-
-  const farmWatcher = new ConfigWatcher(resolvedUserConfig).watch(
-    handleFileChange
-  );
-}
+//   // fileWatcher.watchConfigs(handleFileChange);
+// }
 
 export async function clean(
   rootPath: string,
@@ -291,37 +280,53 @@ async function findNodeModulesRecursively(rootPath: string): Promise<string[]> {
   return result;
 }
 
-export async function createBundleHandler(
-  resolvedUserConfig: ResolvedUserConfig,
-  logger: Logger,
-  watchMode = false
-) {
-  const compiler = await createCompiler(resolvedUserConfig, logger);
+// export async function createBundleHandler(
+//   resolvedUserConfig: ResolvedUserConfig,
+//   logger: Logger,
+//   watchMode = false
+// ) {
+//   const compiler = await createCompiler(resolvedUserConfig, logger);
 
-  await compilerHandler(
-    async () => {
-      if (resolvedUserConfig.compilation?.output?.clean) {
-        compiler.removeOutputPathDir();
-      }
-      try {
-        await compiler.compile();
-      } catch (err) {
-        throw new Error(logError(err) as unknown as string);
-      }
-      compiler.writeResourcesToDisk();
-    },
-    resolvedUserConfig,
-    logger
-  );
+//   await compilerHandler(
+//     async () => {
+//       if (resolvedUserConfig.compilation?.output?.clean) {
+//         compiler.removeOutputPathDir();
+//       }
 
-  if (resolvedUserConfig.compilation?.watch || watchMode) {
-    const watcher = new FileWatcher(compiler, resolvedUserConfig, logger);
-    await watcher.watch();
-    return watcher;
-  }
-}
+//       try {
+//         await compiler.compile();
+//       } catch (err) {
+//         // throw new Error(logError(err) as unknown as string);
+//         throw new Error(err as unknown as string);
+//       }
+//       compiler.writeResourcesToDisk();
+//     },
+//     resolvedUserConfig,
+//     logger
+//   );
+
+//   if (resolvedUserConfig.compilation?.watch || watchMode) {
+//     const watcher = new FileWatcher(compiler, resolvedUserConfig, logger);
+//     await watcher.watch();
+//     return watcher;
+//   }
+// }
 
 export async function createCompiler(
+  resolvedUserConfig: ResolvedUserConfig,
+  logger: Logger
+) {
+  const compiler = initInlineCompiler(resolvedUserConfig, logger);
+  // TODO 这也不对 这块要 先排序 然后过滤掉对应的 存在这个钩子的插件 然后进而调用一些 like e.g 中间件
+  // 这块逻辑也需要过滤 拿到最新的
+  for (const plugin of resolvedUserConfig.jsPlugins) {
+    await plugin.configureCompiler?.(compiler);
+  }
+
+  return compiler;
+}
+
+export function initInlineCompiler(
   resolvedUserConfig: ResolvedUserConfig,
   logger: Logger
 ) {
@@ -339,12 +344,19 @@ export async function createCompiler(
     },
     logger
   );
-
-  for (const plugin of jsPlugins) {
-    await plugin.configureCompiler?.(compiler);
-  }
-
   return compiler;
+}
+
+export async function createInlineCompiler(
+  config: ResolvedUserConfig,
+  options = {}
+) {
+  const { Compiler } = await import('./compiler/index.js');
+  return new Compiler({
+    config: { ...config.compilation, ...options },
+    jsPlugins: config.jsPlugins,
+    rustPlugins: config.rustPlugins
+  });
 }
 
 async function copyPublicDirectory(
@@ -381,68 +393,6 @@ async function copyPublicDirectory(
   }
 }
 
-export async function createDevServer(
-  compiler: Compiler,
-  resolvedUserConfig: ResolvedUserConfig,
-  logger: Logger
-) {
-  const server = new Server({ compiler, logger });
-  await server.createDevServer(resolvedUserConfig.server);
-  await createFileWatcher(server, resolvedUserConfig, logger);
-  // call configureDevServer hook after both server and watcher are ready
-  resolvedUserConfig.jsPlugins.forEach((plugin: JsPlugin) =>
-    plugin.configureDevServer?.(server)
-  );
-
-  return server;
-}
-
-export async function createFileWatcher(
-  devServer: Server,
-  resolvedUserConfig: ResolvedUserConfig,
-  logger: Logger = new Logger()
-) {
-  if (
-    devServer.config.hmr &&
-    resolvedUserConfig.compilation.mode === 'production'
-  ) {
-    logger.error('HMR cannot be enabled in production mode.');
-    return;
-  }
-
-  if (!devServer.config.hmr) {
-    return;
-  }
-
-  if (devServer.watcher) {
-    return;
-  }
-
-  const fileWatcher = new FileWatcher(devServer, resolvedUserConfig, logger);
-  devServer.watcher = fileWatcher;
-  await fileWatcher.watch();
-
-  const configFilePath = await getConfigFilePath(resolvedUserConfig.root);
-  const farmWatcher = new ConfigWatcher({
-    ...resolvedUserConfig,
-    configFilePath
-  });
-  farmWatcher.watch(async (files: string[]) => {
-    checkClearScreen(resolvedUserConfig);
-
-    devServer.restart(async () => {
-      logFileChanges(files, resolvedUserConfig.root, logger);
-      farmWatcher?.close();
-
-      await devServer.close();
-      __FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__ = true;
-      // TODO: resolvedUserConfig params type check
-      await start(resolvedUserConfig as unknown as FarmCLIOptions & UserConfig);
-    });
-  });
-  return fileWatcher;
-}
-
 export function logFileChanges(files: string[], root: string, logger: Logger) {
   const changedFiles = files
     .map((file) => path.relative(root, file))
@@ -452,18 +402,24 @@ export function logFileChanges(files: string[], root: string, logger: Logger) {
   );
 }
 
-async function setLazyCompilationDefine(
-  resolvedUserConfig: ResolvedUserConfig
-) {
-  const hostname = await resolveHostname(resolvedUserConfig.server.host);
-  resolvedUserConfig.compilation.define = {
-    ...(resolvedUserConfig.compilation.define ?? {}),
-    FARM_LAZY_COMPILE_SERVER_URL: `${
-      resolvedUserConfig.server.protocol || 'http'
-    }://${hostname.host || 'localhost'}:${resolvedUserConfig.server.port}`
-  };
-}
-
 export { defineFarmConfig as defineConfig } from './config/index.js';
 
-export { loadEnv };
+export { loadEnv, Server };
+
+export async function start(
+  inlineConfig?: FarmCliOptions & UserConfig
+): Promise<void> {
+  inlineConfig = inlineConfig ?? {};
+  const logger = inlineConfig.logger ?? new Logger();
+  setProcessEnv('development');
+
+  try {
+    const server = new Server(inlineConfig, logger);
+
+    await server.createServer();
+
+    server.listen();
+  } catch (error) {
+    logger.error('Failed to start the server', { exit: true, error });
+  }
+}

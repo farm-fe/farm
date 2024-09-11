@@ -1,0 +1,22 @@
+{
+  "name": "farm",
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "farm start",
+    "start": "farm start",
+    "build": "farm build",
+    "preview": "farm preview",
+    "clean": "farm clean"
+  },
+  "dependencies": {
+    "unplugin-auto-import": "^0.16.7",
+    "unplugin-vue-router": "^0.7.0",
+    "vue": "^3.4.0",
+    "vue-router": "^4.4.3"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^5.0.4",
+    "compression": "^1.7.4",
+    "core-js": "^3.30.1"
+  }
+}

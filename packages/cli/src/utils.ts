@@ -1,34 +1,37 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import path from 'node:path';
-import readline from 'node:readline';
-import { fileURLToPath } from 'node:url';
-import type { build, clean, preview, start, watch } from '@farmfe/core';
+// import type { build, clean, preview, start, watch } from '@farmfe/core';
+import type { clean, start } from '@farmfe/core';
 import { Logger } from '@farmfe/core';
-import spawn from 'cross-spawn';
-import walkdir from 'walkdir';
 
-import type { GlobalFarmCLIOptions, ICleanOptions } from './types.js';
+import type {
+  CleanOptions,
+  CliBuildOptions,
+  CliServerOptions,
+  GlobalCliOptions
+} from './types.js';
 
 const logger = new Logger();
-interface installProps {
-  cwd: string;
-  package: string;
-}
 
-export const TEMPLATES_DIR = path.join(
-  path.dirname(fileURLToPath(import.meta.url)),
-  '..',
-  'templates'
-);
-
+/**
+ *
+ * @returns  {Promise<{ start: typeof start, build: typeof build, watch: typeof watch, preview: typeof preview, clean: typeof clean }>}
+ * A promise that resolves to an object containing the core functionalities:
+ *   - `start`: Compile the project in dev mode and serve it with farm dev server'.
+ *   - `build`: compile the project in production mode'.
+ *   - `watch`: watch file change'.
+ *   - `preview`: compile the project in watch mode'.
+ *   - `clean`: Clean up the cache built incrementally'.
+ */
 export async function resolveCore(): Promise<{
   start: typeof start;
-  build: typeof build;
-  watch: typeof watch;
-  preview: typeof preview;
+  build: any;
+  watch: any;
+  preview: any;
   clean: typeof clean;
 }> {
   try {
+    // @ts-ignore
     return import('@farmfe/core');
   } catch (err) {
     logger.error(
@@ -36,69 +39,6 @@ export async function resolveCore(): Promise<{
     );
     process.exit(1);
   }
-}
-
-export function copyFiles(
-  source: string,
-  dest: string,
-  callback?: (content: string) => string
-): void {
-  walkdir(source, { sync: true }, (p, stat) => {
-    if (stat.isFile()) {
-      const content = readFileSync(p).toString();
-      const newContent = callback?.(content) ?? content;
-
-      const relativePath = path.relative(source, p);
-      const destPath = path.join(dest, relativePath);
-
-      if (!existsSync(path.dirname(destPath))) {
-        mkdirSync(path.dirname(destPath), { recursive: true });
-      }
-
-      writeFileSync(destPath, newContent);
-    }
-  });
-
-  if (!existsSync(path.join(dest, '.gitignore'))) {
-    writeFileSync(
-      path.join(dest, '.gitignore'),
-      `
-node_modules
-*.farm`
-    );
-  }
-}
-
-export async function install(options: installProps): Promise<void> {
-  const cwd = options.cwd;
-  return new Promise((resolve, reject) => {
-    const command = options.package;
-    const args = ['install'];
-
-    const child = spawn(command, args, {
-      cwd,
-      stdio: 'inherit'
-    });
-
-    child.once('close', (code: number) => {
-      if (code !== 0) {
-        reject({
-          command: `${command} ${args.join(' ')}`
-        });
-        return;
-      }
-      resolve();
-    });
-    child.once('error', reject);
-  });
-}
-/**
- * 用于规范化目标路径
- * @param {string |undefined} targetDir
- * @returns
- */
-export function formatTargetDir(targetDir: string | undefined) {
-  return targetDir?.trim()?.replace(/\/+$/g, '');
 }
 
 /**
@@ -111,19 +51,13 @@ export function filterDuplicateOptions<T>(options: T) {
     }
   }
 }
-
 /**
- * clear command screen
+ * @param options The cli passes parameters
+ * @returns Remove parameters that are not required
  */
-export function clearScreen() {
-  const repeatCount = process.stdout.rows - 2;
-  const blank = repeatCount > 0 ? '\n'.repeat(repeatCount) : '';
-  console.log(blank);
-  readline.cursorTo(process.stdout, 0, 0);
-  readline.clearScreenDown(process.stdout);
-}
-
-export function cleanOptions(options: GlobalFarmCLIOptions) {
+export function cleanOptions(
+  options: GlobalCliOptions & CliServerOptions & CliBuildOptions
+) {
   const resolveOptions = { ...options };
 
   delete resolveOptions['--'];
@@ -140,18 +74,34 @@ export function cleanOptions(options: GlobalFarmCLIOptions) {
   return resolveOptions;
 }
 
+/**
+ *
+ * @param options cli parameters
+ * @returns resolve command options
+ */
 export function resolveCommandOptions(
-  options: GlobalFarmCLIOptions
-): GlobalFarmCLIOptions {
+  options: GlobalCliOptions & CliServerOptions
+): GlobalCliOptions & CliServerOptions {
   const resolveOptions = { ...options };
   filterDuplicateOptions(resolveOptions);
   return cleanOptions(resolveOptions);
 }
 
+/**
+ *
+ * @param root root path
+ * @param configPath  config path
+ * @returns config path absolute path
+ */
 export function getConfigPath(root: string, configPath: string) {
   return path.resolve(root, configPath ?? '');
 }
 
+/**
+ *
+ * @param asyncOperation The asynchronous operation to be executed.
+ * @param errorMessage The error message to log if the operation fails.
+ */
 export async function handleAsyncOperationErrors<T>(
   asyncOperation: Promise<T>,
   errorMessage: string
@@ -164,26 +114,28 @@ export async function handleAsyncOperationErrors<T>(
   }
 }
 
-// prevent node experimental warning
-export function preventExperimentalWarning() {
-  const defaultEmit = process.emit;
-  process.emit = function (...args: any[]) {
-    if (args[1].name === 'ExperimentalWarning') {
-      return undefined;
-    }
-    return defaultEmit.call(this, ...args);
-  };
-}
-
+/**
+ *
+ * @param rootPath root path
+ * @returns absolute path
+ */
 export function resolveRootPath(rootPath = '') {
   return rootPath && path.isAbsolute(rootPath)
     ? rootPath
     : path.resolve(process.cwd(), rootPath);
 }
 
+/**
+ *
+ * @param root root path
+ * @param options cli parameters
+ * @returns
+ *  - root root path
+ *  - configPath
+ */
 export function resolveCliConfig(
   root: string,
-  options: GlobalFarmCLIOptions & ICleanOptions
+  options: GlobalCliOptions & CleanOptions
 ) {
   root = resolveRootPath(root);
   const configPath = getConfigPath(root, options.config);
@@ -192,3 +144,9 @@ export function resolveCliConfig(
     configPath
   };
 }
+
+const { version } = JSON.parse(
+  readFileSync(new URL('../package.json', import.meta.url)).toString()
+);
+
+export const VERSION = version;
