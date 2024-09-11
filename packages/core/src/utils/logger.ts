@@ -49,6 +49,13 @@ const errorOnceMessages = new Set();
 export class Logger implements ILogger {
   private clear: () => void = () => {};
   canClearScreen: boolean;
+  colorMap: {
+    trace: (input: string) => string;
+    debug: (input: string) => string;
+    info: (input: string) => string;
+    warn: (input: string) => string;
+    error: (input: string) => string;
+  };
   constructor(
     public options?: LoggerOptions,
     private levelValues: Record<LogLevelNames, number> = {
@@ -63,6 +70,13 @@ export class Logger implements ILogger {
     this.canClearScreen =
       this.options.allowClearScreen && process.stdout.isTTY && !process.env.CI;
     this.clear = this.canClearScreen ? clearScreen : () => {};
+    this.colorMap = {
+      trace: colors.green,
+      debug: colors.debugColor,
+      info: colors.brandColor,
+      warn: colors.yellow,
+      error: colors.red
+    };
     this.brandPrefix();
   }
 
@@ -85,9 +99,10 @@ export class Logger implements ILogger {
         : 'log';
     if (this.levelValues[level] <= this.levelValues[level]) {
       this.canClearScreen && this.clear();
-      const prefix = showBanner ? this.options.prefix + ' ' : '';
-      const loggerMessage = color ? color(prefix + message) : prefix + message;
-      console[loggerMethod](loggerMessage);
+      const prefix = showBanner ? `${this.options.prefix} ` : '';
+      const prefixColor = this.colorMap[level];
+      const loggerMessage = color ? color(message as string) : message;
+      console[loggerMethod](prefixColor(prefix) + loggerMessage);
     }
   }
 
@@ -99,34 +114,22 @@ export class Logger implements ILogger {
   }
 
   trace(message: string): void {
-    this.brandPrefix(colors.green);
     this.logMessage(LogLevel.Trace, message, colors.magenta);
   }
 
   debug(message: string): void {
-    this.brandPrefix(colors.debugColor);
     this.logMessage(LogLevel.Debug, message, colors.blue);
   }
 
-  info(message: string, iOptions?: LoggerOptions): void {
-    const options: LoggerOptions | undefined = iOptions;
-    if (options) {
-      this.setPrefix(options);
-    }
-    if (!options || !options.brandColor) {
-      this.brandPrefix(colors.brandColor);
-    }
+  info(message: string): void {
     this.logMessage(LogLevel.Info, message, null);
   }
 
   warn(message: string): void {
-    this.brandPrefix(colors.yellow);
     this.logMessage(LogLevel.Warn, message, colors.yellow);
   }
 
   error(message: string | Error, errorOptions?: ErrorOptions): void {
-    this.brandPrefix(colors.red);
-
     const effectiveOptions = { ...this.options, ...errorOptions };
     const causeError = errorOptions?.e || errorOptions?.error;
 
@@ -172,25 +175,6 @@ export class Logger implements ILogger {
   }
   hasWarnLogged(message: string) {
     return warnOnceMessages.has(message);
-  }
-
-  private createErrorMessage(
-    message: string | Error,
-    causeError?: Error
-  ): Error {
-    let error;
-    if (typeof message === 'string') {
-      error = new Error(message);
-      error.stack = '';
-    } else {
-      error = message;
-    }
-
-    if (causeError) {
-      error.message += `\nCaused by: ${causeError.stack ?? causeError}`;
-    }
-
-    return error;
   }
 }
 
