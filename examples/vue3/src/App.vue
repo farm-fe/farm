@@ -9,6 +9,7 @@ fetch("https://wallhaven.fun/api/wallhaven/w/yx6e9l")
 
 <template>
   <div>
+    
     <a href="https://farmfe.org/" target="_blank">
       <img src="./assets/logo.png" class="logo" alt="Farm logo" />
     </a>
