@@ -2,7 +2,7 @@ import type { ModuleSystem, Plugin } from '@farmfe/runtime';
 
 const __global_this__ = typeof globalThis !== 'undefined' ? globalThis : window;
 
-export default (<Plugin>{
+export default {
   name: 'farm-runtime-import-meta',
   _moduleSystem: {} as ModuleSystem,
   bootstrap(system: ModuleSystem) {
@@ -43,4 +43,4 @@ export default (<Plugin>{
       : module.resource_pot;
     module.meta.url = url;
   }
-});
+};

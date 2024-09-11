@@ -152,6 +152,13 @@ export class Server extends httpServer {
         'development',
         false
       );
+    } catch (error) {
+      console.log('catch 到没有');
+
+      this.logger.error(`Failed to resolve user config: ${error}`);
+      return;
+    }
+    try {
       this.#resolveOptions();
 
       this.httpsOptions = await this.resolveHttpsConfig(

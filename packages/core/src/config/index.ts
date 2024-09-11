@@ -527,7 +527,7 @@ export async function normalizeUserCompilationConfig(
     logger
   );
 
-  normalizeResolve(userConfig, resolvedCompilation);
+  normalizeResolve(resolvedUserConfig, resolvedCompilation);
 
   return resolvedCompilation;
 }
@@ -805,8 +805,12 @@ export async function loadConfigFile(
     }
     const potentialSolution =
       'Potential solutions: \n1. Try set `FARM_CONFIG_FORMAT=cjs`(default to esm)\n2. Try set `FARM_CONFIG_FULL_BUNDLE=1`';
+    // throw new Error(
+    // `Failed to load farm config file: ${errorMessage}. \n ${potentialSolution} \n ${error.stack}`
+    // );
     throw new Error(
-      `Failed to load farm config file: ${errorMessage}. \n ${potentialSolution} \n ${error.stack}`
+      // `Failed to load farm config file: ${errorMessage}. \n ${potentialSolution} \n ${error.stack}`
+      `Failed to load farm config file: ${errorMessage}.`
     );
   }
 }
@@ -859,8 +863,8 @@ export async function checkCompilationInputValue(
       logger.error(
         `Build failed due to errors: Can not resolve ${
           isTargetNode ? 'index.js or index.ts' : 'index.html'
-        }  from ${userConfig.root}. \n${errorMessage}`,
-        { exit: true }
+        }  from ${userConfig.root}. \n${errorMessage}`
+        // { exit: true }
       );
     }
   }

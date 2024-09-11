@@ -420,6 +420,6 @@ export async function start(
 
     server.listen();
   } catch (error) {
-    logger.error('Failed to start the server', { exit: true, error });
+    logger.error('Failed to start the server', { exit: false, error });
   }
 }

@@ -9,6 +9,7 @@
     "clean": "farm clean"
   },
   "dependencies": {
+    "@farmfe/plugin-auto-import": "^0.0.2",
     "unplugin-auto-import": "^0.16.7",
     "unplugin-vue-router": "^0.7.0",
     "vue": "^3.4.0",

@@ -26,10 +26,10 @@ export default defineConfig({
   ],
 
   compilation: {
-    persistentCache: false,
+    // persistentCache: false,
   },
   server: {
-    port: 5233,
+    port: 5244,
   },
 
   // plugins: [compressionMiddleware()],
