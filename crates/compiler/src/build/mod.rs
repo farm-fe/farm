@@ -35,6 +35,7 @@ use crate::{
     analyze_deps::analyze_deps, finalize_module::finalize_module, load::load, parse::parse,
     resolve::resolve, transform::transform,
   },
+  utils::get_module_ids_from_compilation_errors,
   Compiler,
 };
 
@@ -115,6 +116,17 @@ impl Compiler {
     }
   }
 
+  pub fn set_last_fail_module_ids(&self, errors: &[CompilationError]) {
+    let mut last_fail_module_ids = self.last_fail_module_ids.lock();
+    last_fail_module_ids.clear();
+
+    for id in get_module_ids_from_compilation_errors(errors) {
+      if !last_fail_module_ids.contains(&id) {
+        last_fail_module_ids.push(id);
+      }
+    }
+  }
+
   pub(crate) fn build(&self) -> Result<()> {
     self.context.plugin_driver.build_start(&self.context)?;
 
@@ -145,11 +157,16 @@ impl Compiler {
     }
 
     self.handle_global_log(&mut errors);
+    let mut res = Ok(());
+
     if !errors.is_empty() {
       // set stats if stats is enabled
       self.context.record_manager.set_build_end_time();
       self.context.record_manager.set_end_time();
       self.set_module_graph_stats();
+
+      // set last failed module ids
+      self.set_last_fail_module_ids(&errors);
 
       let mut error_messages = vec![];
       for error in errors {
@@ -159,7 +176,9 @@ impl Compiler {
         .iter()
         .map(|e| e.to_string())
         .collect::<Vec<_>>());
-      return Err(CompilationError::GenericError(errors_json.to_string()));
+      res = Err(CompilationError::GenericError(errors_json.to_string()));
+    } else {
+      self.set_last_fail_module_ids(&[]);
     }
 
     // set module graph cache
@@ -186,8 +205,10 @@ impl Compiler {
 
     {
       farm_profile_scope!("call build_end hook".to_string());
-      self.context.plugin_driver.build_end(&self.context)
+      self.context.plugin_driver.build_end(&self.context)?;
     }
+
+    res
   }
 
   pub(crate) fn handle_global_log(&self, errors: &mut Vec<CompilationError>) {
