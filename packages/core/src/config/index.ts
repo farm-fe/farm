@@ -141,6 +141,7 @@ export async function resolveConfig(
     {},
     compileMode
   );
+
   const inlineConfig = rawConfig;
 
   let configFilePath = initialConfigPath;

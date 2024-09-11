@@ -155,6 +155,7 @@ export interface ResolvedUserConfig extends UserConfig {
   server?: NormalizedServerConfig;
   jsPlugins?: JsPlugin[];
   rustPlugins?: [string, string][];
+  inlineConfig?: FarmCliOptions;
 }
 
 export interface GlobalCliOptions {

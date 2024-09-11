@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import HelloWorld from "./components/HelloWorld.vue";
 console.log(import.meta.env);
-fetch("https://corsproxy.io/?https://wallhaven.cc/api/v1/w/yx6e9l")
+fetch("https://wallhaven.fun/api/wallhaven/w/yx6e9l")
   .then((res) => res.json())
   .then((data) => console.log(data))
   .catch((err) => console.error(err));

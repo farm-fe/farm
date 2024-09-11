@@ -152,9 +152,8 @@ export class Server extends httpServer {
         'development',
         false
       );
+      console.log(this.resolvedUserConfig.inlineConfig);
     } catch (error) {
-      console.log('catch 到没有');
-
       this.logger.error(`Failed to resolve user config: ${error}`);
       return;
     }
