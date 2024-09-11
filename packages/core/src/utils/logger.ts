@@ -1,7 +1,7 @@
 import { Config } from '../types/binding.js';
 import { ColorFunction, PersistentCacheBrand, colors } from './color.js';
 import { ResolvedServerUrls } from './http.js';
-import { formatExecutionTime, pad, version } from './share.js';
+import { clearScreen, formatExecutionTime, pad, version } from './share.js';
 
 type LogLevelNames = 'trace' | 'debug' | 'info' | 'warn' | 'error';
 
@@ -47,6 +47,8 @@ const infoOnceMessages = new Set();
 const errorOnceMessages = new Set();
 
 export class Logger implements ILogger {
+  private clear: () => void = () => {};
+  canClearScreen: boolean;
   constructor(
     public options?: LoggerOptions,
     private levelValues: Record<LogLevelNames, number> = {
@@ -55,10 +57,12 @@ export class Logger implements ILogger {
       info: 2,
       warn: 3,
       error: 4
-    },
-    private prefix?: string
+    }
   ) {
     if (!this.options) this.options = {};
+    this.canClearScreen =
+      this.options.allowClearScreen && process.stdout.isTTY && !process.env.CI;
+    this.clear = this.canClearScreen ? clearScreen : () => {};
     this.brandPrefix();
   }
 
@@ -66,7 +70,7 @@ export class Logger implements ILogger {
     const { prefix = 'Farm' } = this.options;
     const formattedName = colors.bold(prefix);
     const formattedPrefix = colors.bold(`[ ${formattedName} ]`);
-    this.prefix = color ? color(formattedPrefix) : formattedPrefix;
+    this.options.prefix = color ? color(formattedPrefix) : formattedPrefix;
   }
 
   private logMessage(
@@ -80,7 +84,8 @@ export class Logger implements ILogger {
         ? LOGGER_METHOD[level as keyof typeof LOGGER_METHOD]
         : 'log';
     if (this.levelValues[level] <= this.levelValues[level]) {
-      const prefix = showBanner ? this.prefix + ' ' : '';
+      this.canClearScreen && this.clear();
+      const prefix = showBanner ? this.options.prefix + ' ' : '';
       const loggerMessage = color ? color(prefix + message) : prefix + message;
       console[loggerMethod](loggerMessage);
     }
