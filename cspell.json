@@ -46,6 +46,7 @@
     "csspart",
     "ctxt",
     "dashmap",
+    "dedupe",
     "deepmerge",
     "Denysov",
     "Deoptimization",
@@ -158,6 +159,7 @@
     "safelisted",
     "shulan",
     "shulandmimi",
+    "Sider",
     "sirv",
     "Skeen",
     "srcset",
@@ -196,8 +198,7 @@
     "wechat",
     "Wojtkowiak",
     "xlink",
-    "Yuxi",
-    "Sider"
+    "Yuxi"
   ],
   "ignorePaths": [
     "pnpm-lock.yaml",

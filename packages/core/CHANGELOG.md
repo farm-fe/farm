@@ -1,5 +1,11 @@
 # @farmfe/core
 
+## 1.3.19
+
+### Patch Changes
+
+- 2095f173: support resolve dedupe
+
 ## 1.3.18
 
 ### Patch Changes

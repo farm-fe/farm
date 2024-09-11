@@ -37,7 +37,8 @@ export function farmUserConfigToViteConfig(config: UserConfig): ViteUserConfig {
       extensions: config.compilation?.resolve?.extensions,
       mainFields: config.compilation?.resolve?.mainFields,
       conditions: config.compilation?.resolve?.conditions,
-      preserveSymlinks: config.compilation?.resolve?.symlinks === false
+      preserveSymlinks: config.compilation?.resolve?.symlinks === false,
+      dedupe: config.compilation?.resolve?.dedupe
     },
     plugins: vitePlugins,
     server: {

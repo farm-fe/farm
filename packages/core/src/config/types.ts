@@ -136,6 +136,9 @@ export interface UserConfig {
 export interface ResolvedCompilation
   extends Exclude<Config['config'], undefined> {
   external?: string[];
+  resolve?: {
+    dedupe?: never;
+  } & Config['config']['resolve'];
 }
 
 export interface ResolvedUserConfig extends UserConfig {

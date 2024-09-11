@@ -58,6 +58,7 @@ import {
 } from './constants.js';
 import { mergeConfig, mergeFarmCliConfig } from './mergeConfig.js';
 import { normalizeExternal } from './normalize-config/normalize-external.js';
+import { normalizeResolve } from './normalize-config/normalize-resolve.js';
 import type {
   Alias,
   ConfigEnv,
@@ -525,6 +526,8 @@ export async function normalizeUserCompilationConfig(
     resolvedUserConfig,
     logger
   );
+
+  normalizeResolve(userConfig, resolvedCompilation);
 
   return resolvedCompilation;
 }

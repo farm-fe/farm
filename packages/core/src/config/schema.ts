@@ -145,7 +145,8 @@ const compilationConfigSchema = z
         conditions: z.array(z.string()).optional(),
         symlinks: z.boolean().optional(),
         strictExports: z.boolean().optional(),
-        autoExternalFailedResolve: z.boolean().optional()
+        autoExternalFailedResolve: z.boolean().optional(),
+        dedupe: z.array(z.string()).optional()
       })
       .strict()
       .optional(),
