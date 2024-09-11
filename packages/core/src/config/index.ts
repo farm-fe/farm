@@ -105,10 +105,9 @@ export async function resolveConfig(
   command: 'start' | 'build' | 'watch' | 'preview',
   defaultMode: CompilationMode = 'development',
   defaultNodeEnv: CompilationMode = 'development',
-  isPreview = false,
-  logger = new Logger()
+  isPreview = false
 ): Promise<ResolvedUserConfig> {
-  logger = logger ?? new Logger();
+  // const logger = new Logger();
   // TODO mode 这块还是不对 要区分 mode 和 build 还是 dev 环境
   // TODO 在使用 vite 插件的时候 不要在开发环境使用 生产环境的mode vue 插件会导致 hmr 失效 记在文档里
   const compileMode = defaultMode;
@@ -135,6 +134,8 @@ export async function resolveConfig(
     inlineOptions,
     configEnv
   );
+
+  const logger = loadedUserConfig.config?.customLogger ?? new Logger();
 
   let rawConfig: UserConfig = mergeFarmCliConfig(
     inlineOptions,
@@ -211,6 +212,9 @@ export async function resolveConfig(
     resolvedUserConfig,
     command as keyof typeof COMMANDS
   );
+
+  // 这个 logger 位置不对 放到前面去
+  resolvedUserConfig.logger = logger;
 
   return resolvedUserConfig;
 }
@@ -660,14 +664,14 @@ const formatToExt: Record<Format, string> = {
 export async function readConfigFile(
   inlineOptions: FarmCliOptions,
   configFilePath: string,
-  configEnv: any,
-  logger: Logger
+  configEnv: any
+  // logger: Logger
 ): Promise<UserConfig | undefined> {
   if (!fse.existsSync(configFilePath)) return;
   if (!__FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__) {
-    logger.info(`Using config file at ${bold(green(configFilePath))}`);
+    // logger.info(`Using config file at ${bold(green(configFilePath))}`);
+    console.info(`Using config file at ${bold(green(configFilePath))}`);
   }
-
   const format = getFormat(configFilePath);
 
   // we need transform all type farm.config with __dirname and __filename
@@ -696,14 +700,11 @@ export async function readConfigFile(
     (mod) => mod.default
   );
 
-  const compiler = new Compiler(
-    {
-      config: normalizedConfig,
-      jsPlugins: [],
-      rustPlugins: [[replaceDirnamePlugin, '{}']]
-    },
-    logger
-  );
+  const compiler = new Compiler({
+    config: normalizedConfig,
+    jsPlugins: [],
+    rustPlugins: [[replaceDirnamePlugin, '{}']]
+  });
 
   const FARM_PROFILE = process.env.FARM_PROFILE;
   // disable FARM_PROFILE in farm_config
@@ -768,8 +769,8 @@ export function normalizePublicDir(root: string, publicDir = 'public') {
 export async function loadConfigFile(
   configFile: string,
   inlineOptions: any,
-  configEnv: any,
-  logger: Logger = new Logger()
+  configEnv: any
+  // logger: Logger
 ): Promise<{ config: any; configFilePath: string } | undefined> {
   const { root = '.' } = inlineOptions;
   const configRootPath = path.resolve(root);
@@ -784,8 +785,8 @@ export async function loadConfigFile(
     const config = await readConfigFile(
       inlineOptions,
       resolvedPath,
-      configEnv,
-      logger
+      configEnv
+      // logger
     );
     return {
       config: config && parseUserConfig(config),

@@ -410,16 +410,13 @@ export async function start(
   inlineConfig?: FarmCliOptions & UserConfig
 ): Promise<void> {
   inlineConfig = inlineConfig ?? {};
-  const logger = inlineConfig.logger ?? new Logger();
   setProcessEnv('development');
-
+  const server = new Server(inlineConfig);
   try {
-    const server = new Server(inlineConfig, logger);
-
     await server.createServer();
 
     server.listen();
   } catch (error) {
-    logger.error('Failed to start the server', { exit: false, error });
+    server.logger.error('Failed to start the server', { exit: false, error });
   }
 }

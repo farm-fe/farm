@@ -1,4 +1,4 @@
-import { defineConfig } from "@farmfe/core";
+import { defineConfig, Logger } from "@farmfe/core";
 import vue from "@vitejs/plugin-vue";
 // import { VueRouterAutoImports } from "unplugin-vue-router";
 // import VueRouter from "unplugin-vue-router/vite";
@@ -13,7 +13,9 @@ const compressionMiddleware = () => {
     },
   };
 };
-
+const logger = new Logger({
+  prefix: "Erkelost"
+})
 
 export default defineConfig({
   vitePlugins: [
@@ -24,7 +26,7 @@ export default defineConfig({
     vue(),
     compressionMiddleware(),
   ],
-
+  customLogger: logger,
   compilation: {
     // persistentCache: false,
   },

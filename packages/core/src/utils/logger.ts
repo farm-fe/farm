@@ -29,7 +29,9 @@ export interface ErrorOptions {
   error?: Error;
 }
 interface LoggerOptions {
-  name?: string;
+  prefix?: string;
+  customLogger?: Logger;
+  allowClearScreen?: boolean;
   brandColor?: ColorFunction;
   exit?: boolean;
 }
@@ -61,8 +63,8 @@ export class Logger implements ILogger {
   }
 
   private brandPrefix(color?: (s: string | string[]) => string): void {
-    const { name = 'Farm' } = this.options;
-    const formattedName = colors.bold(name);
+    const { prefix = 'Farm' } = this.options;
+    const formattedName = colors.bold(prefix);
     const formattedPrefix = colors.bold(`[ ${formattedName} ]`);
     this.prefix = color ? color(formattedPrefix) : formattedPrefix;
   }
@@ -85,8 +87,8 @@ export class Logger implements ILogger {
   }
 
   setPrefix(options: LoggerOptions): void {
-    if (options.name) {
-      this.options.name = options.name;
+    if (options.prefix) {
+      this.options.prefix = options.prefix;
       this.brandPrefix(options.brandColor);
     }
   }
@@ -215,7 +217,9 @@ export function bootstrap(times: number, config: Config, hasCacheDir: boolean) {
   console.log(
     `${colors.bold(colors.green(` ✓`))}  ${colors.bold(
       'Compile in'
-    )} ${colors.bold(colors.green(formatExecutionTime(times, 's')))} ${persistentCacheFlag}`,
+    )} ${colors.bold(
+      colors.green(formatExecutionTime(times, 's'))
+    )} ${persistentCacheFlag}`,
     '\n'
   );
 }
@@ -251,12 +255,16 @@ export function printServerUrls(
     colors.cyan(url.replace(/:(\d+)\//, (_, port) => `:${colors.bold(port)}/`));
   for (const url of urls.local) {
     logger.info(
-      `${colors.bold(colors.green('➜'))} ${colors.bold('Local')}:   ${colors.bold(colorUrl(url))}`
+      `${colors.bold(colors.green('➜'))} ${colors.bold(
+        'Local'
+      )}:   ${colors.bold(colorUrl(url))}`
     );
   }
   for (const url of urls.network) {
     logger.info(
-      `${colors.bold(colors.green('➜'))} ${colors.bold('Network')}: ${colors.bold(colorUrl(url))}`
+      `${colors.bold(colors.green('➜'))} ${colors.bold(
+        'Network'
+      )}: ${colors.bold(colorUrl(url))}`
     );
   }
   if (urls.network.length === 0 && optionsHost === undefined) {

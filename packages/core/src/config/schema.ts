@@ -390,7 +390,9 @@ const FarmConfigSchema = z
     vitePlugins: z.array(z.any()).optional(),
     compilation: compilationConfigSchema.optional(),
     mode: z.string().optional(),
-    server: serverSchema.optional()
+    server: serverSchema.optional(),
+    // TODO ANY type
+    customLogger: z.any().optional()
   })
   .strict();
 

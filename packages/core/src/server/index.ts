@@ -120,11 +120,8 @@ export class Server extends httpServer {
    * @param {FarmCliOptions & UserConfig} inlineConfig - The inline configuration options.
    * @param {Logger} logger - The logger instance.
    */
-  constructor(
-    readonly inlineConfig: FarmCliOptions & UserConfig,
-    logger: Logger
-  ) {
-    super(logger);
+  constructor(readonly inlineConfig: FarmCliOptions & UserConfig) {
+    super();
   }
 
   /**
@@ -152,9 +149,10 @@ export class Server extends httpServer {
         'development',
         false
       );
-      console.log(this.resolvedUserConfig.inlineConfig);
     } catch (error) {
-      this.logger.error(`Failed to resolve user config: ${error}`);
+      this.resolvedUserConfig.logger.error(
+        `Failed to resolve user config: ${error}`
+      );
       return;
     }
     try {
@@ -201,7 +199,9 @@ export class Server extends httpServer {
         });
       }
     } catch (error) {
-      this.logger.error(`Failed to create farm server: ${error}`);
+      this.resolvedUserConfig.logger.error(
+        `Failed to create farm server: ${error}`
+      );
       throw error;
     }
   }
@@ -229,14 +229,14 @@ export class Server extends httpServer {
         try {
           await this.restartServer();
         } catch (e) {
-          this.logger.error(`restart server error ${e}`);
+          this.resolvedUserConfig.logger.error(`restart server error ${e}`);
         }
       }
 
       try {
         this.hmrEngine.hmrUpdate(file);
       } catch (error) {
-        this.logger.error(`Farm Hmr Update Error: ${error}`);
+        this.resolvedUserConfig.logger.error(`Farm Hmr Update Error: ${error}`);
       }
     });
     const handleUpdateFinish = (updateResult: JsUpdateResult) => {
@@ -348,7 +348,7 @@ export class Server extends httpServer {
    */
   async listen(): Promise<void> {
     if (!this.httpServer) {
-      this.logger.warn('HTTP server is not created yet');
+      this.resolvedUserConfig.logger.warn('HTTP server is not created yet');
       return;
     }
     const { port, hostname, open, strictPort } = this.serverOptions;
@@ -377,7 +377,7 @@ export class Server extends httpServer {
         this.#openServerBrowser();
       }
     } catch (error) {
-      this.logger.error(`start farm dev server error: ${error}`);
+      // this.resolvedUserConfig.logger.error(`start farm dev server error: ${error}`);
       // throw error;
     }
   }
@@ -555,7 +555,9 @@ export class Server extends httpServer {
         ? this.compiler.writeResourcesToDisk()
         : this.compiler.callWriteResourcesHook());
     } catch (err) {
-      this.logger.error(`Compilation failed: ${convertErrorMessage(err)}`);
+      this.resolvedUserConfig.logger.error(
+        `Compilation failed: ${convertErrorMessage(err)}`
+      );
       // throw err;
     }
   }
@@ -606,7 +608,9 @@ export class Server extends httpServer {
 
     this.ws.wss.on('vite:invalidate', ({ path, message }: any) => {
       // find hmr boundary starting from the parent of the file
-      this.logger.info(`HMR invalidate: ${path}. ${message ?? ''} `);
+      this.resolvedUserConfig.logger.info(
+        `HMR invalidate: ${path}. ${message ?? ''} `
+      );
       const parentFiles = this.compiler.getParentFiles(path);
       this.hmrEngine.hmrUpdate(parentFiles, true);
     });
@@ -680,7 +684,11 @@ export class Server extends httpServer {
     );
 
     if (this.resolvedUrls) {
-      printServerUrls(this.resolvedUrls, this.serverOptions.host, this.logger);
+      printServerUrls(
+        this.resolvedUrls,
+        this.serverOptions.host,
+        this.resolvedUserConfig.logger
+      );
     } else if (this.serverOptions.middlewareMode) {
       throw new Error('cannot print server URLs in middleware mode.');
     } else {

@@ -57,9 +57,7 @@ export class httpServer {
   public logger: Logger;
   protected httpServer: HttpServer | null = null;
   protected resolvedUrls: ResolvedServerUrls | null = null;
-  constructor(logger: Logger) {
-    this.logger = logger = new Logger();
-  }
+  constructor() {}
 
   protected async resolveHttpServer(
     { proxy }: CommonServerOptions,
