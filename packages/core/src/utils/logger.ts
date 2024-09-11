@@ -173,6 +173,25 @@ export class Logger implements ILogger {
   hasWarnLogged(message: string) {
     return warnOnceMessages.has(message);
   }
+
+  private createErrorMessage(
+    message: string | Error,
+    causeError?: Error
+  ): Error {
+    let error;
+    if (typeof message === 'string') {
+      error = new Error(message);
+      error.stack = '';
+    } else {
+      error = message;
+    }
+
+    if (causeError) {
+      error.message += `\nCaused by: ${causeError.stack ?? causeError}`;
+    }
+
+    return error;
+  }
 }
 
 // use in test
