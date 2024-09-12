@@ -36,6 +36,7 @@ export default defineConfig({
   },
   server: {
     port: 5284,
+    open: true,
   },
 
   // plugins: [compressionMiddleware()],

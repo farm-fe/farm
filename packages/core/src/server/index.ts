@@ -315,6 +315,8 @@ export class Server extends httpServer {
    * Restarts the server.
    */
   async restart() {
+    // TODO 这里是如果createServer 新建 newServer 都完事了 才去关闭旧的 server 这样可以保证原来的 watcher 继续运行 这里不应该先关闭所有 watcher
+    await this.close();
     try {
       await this.createServer();
     } catch (error) {
@@ -323,8 +325,7 @@ export class Server extends httpServer {
       );
       return;
     }
-    // TODO 这里是如果createServer 新建 newServer 都完事了 才去关闭旧的 server 这样可以保证原来的 watcher 继续运行 这里不应该先关闭所有 watcher
-    await this.close();
+
     this.listen();
   }
 
