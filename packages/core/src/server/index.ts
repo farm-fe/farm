@@ -156,13 +156,7 @@ export class Server extends httpServer {
         'development',
         false
       );
-    } catch (error) {
-      this.resolvedUserConfig.logger.error(
-        `Failed to resolve user config: ${error}`
-      );
-      return;
-    }
-    try {
+
       this.#resolveOptions();
 
       this.httpsOptions = await this.resolveHttpsConfig(
@@ -321,8 +315,16 @@ export class Server extends httpServer {
    * Restarts the server.
    */
   async restart() {
+    try {
+      await this.createServer();
+    } catch (error) {
+      this.resolvedUserConfig.logger.error(
+        `Failed to resolve user config: ${error}`
+      );
+      return;
+    }
+    // TODO 这里是如果createServer 新建 newServer 都完事了 才去关闭旧的 server 这样可以保证原来的 watcher 继续运行 这里不应该先关闭所有 watcher
     await this.close();
-    await this.createServer();
     this.listen();
   }
 
@@ -420,7 +422,7 @@ export class Server extends httpServer {
             this.httpServer.removeListener('error', onError);
             reject(new Error(`Port ${port} is already in use`));
           } else {
-            console.info(`Port ${port} is in use, trying another one...`);
+            this.logger.info(`Port ${port} is in use, trying another one...`);
             this.httpServer.listen(++port, host);
           }
         } else {
