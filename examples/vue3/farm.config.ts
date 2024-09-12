@@ -11,7 +11,7 @@ const compressionMiddleware = () => {
     configureServer(server) {
       // console.log("server", server.middlewares);
       server.middlewares.use(compression());
-    },
+    }
   };
 };
 
