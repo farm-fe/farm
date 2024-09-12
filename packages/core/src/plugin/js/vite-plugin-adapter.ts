@@ -1,5 +1,4 @@
 import type { ResolvedUserConfig, UserConfig } from '../../config/types.js';
-import type { Server } from '../../server/index.js';
 import {
   CompilationContext,
   CompilationContextEmitFileParams,
@@ -124,7 +123,6 @@ export class VitePluginAdapter implements JsPlugin {
     rawPlugin: Plugin,
     farmConfig: UserConfig,
     filters: string[],
-    logger: Logger,
     mode: CompilationMode
   ) {
     this.name = rawPlugin.name || `vite-plugin-adapted-${Date.now()}`;
@@ -138,7 +136,7 @@ export class VitePluginAdapter implements JsPlugin {
     this._rawPlugin = rawPlugin;
     this._farmConfig = farmConfig;
     this._viteConfig = farmUserConfigToViteConfig(farmConfig);
-    this._logger = logger;
+    this._logger = new Logger();
 
     this.filters = filters;
 

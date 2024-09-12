@@ -4,7 +4,14 @@ import connect from 'connect';
 import corsMiddleware from 'cors';
 
 import { Compiler } from '../compiler/index.js';
-import { colors, createCompiler, resolveConfig } from '../index.js';
+import {
+  bold,
+  colors,
+  createCompiler,
+  getShortName,
+  green,
+  resolveConfig
+} from '../index.js';
 import Watcher from '../watcher/index.js';
 import { HmrEngine } from './hmr-engine.js';
 import { httpServer } from './http.js';
@@ -216,6 +223,7 @@ export class Server extends httpServer {
 
     this.watcher.watcher.on('change', async (file: string | string[] | any) => {
       file = normalizePath(file);
+      const shortFile = getShortName(file, this.resolvedUserConfig.root);
       const isConfigFile = this.resolvedUserConfig.configFilePath === file;
       const isConfigDependencyFile =
         this.resolvedUserConfig.configFileDependencies.some(
@@ -225,6 +233,11 @@ export class Server extends httpServer {
         (name) => file === name
       );
       if (isConfigFile || isConfigDependencyFile || isEnvFile) {
+        __FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__ = true;
+        this.resolvedUserConfig.logger.info(
+          `${bold(green(shortFile))} changed, Server is being restarted`,
+          true
+        );
         debugServer?.(`[config change] ${colors.dim(file)}`);
         try {
           await this.restartServer();
@@ -282,9 +295,9 @@ export class Server extends httpServer {
       host !== prevHost ||
       this.hasUrlsChanged(prevUrls, this.resolvedUrls)
     ) {
-      __FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__ = false;
+      __FARM_GLOBAL__.__FARM_SHOW_DEV_SERVER_URL__ = true;
     } else {
-      __FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__ = true;
+      __FARM_GLOBAL__.__FARM_SHOW_DEV_SERVER_URL__ = false;
     }
   }
 
@@ -370,7 +383,7 @@ export class Server extends httpServer {
 
       // watch extra files after compile
       this.watcher?.watchExtraFiles?.();
-      !__FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__ &&
+      __FARM_GLOBAL__.__FARM_SHOW_DEV_SERVER_URL__ &&
         (await this.displayServerUrls());
 
       if (open) {
@@ -585,7 +598,12 @@ export class Server extends httpServer {
     const start = performance.now();
     await this.#compile();
     const duration = performance.now() - start;
-    bootstrap(duration, this.compiler.config, hasCacheDir);
+    bootstrap(
+      duration,
+      this.compiler.config,
+      hasCacheDir,
+      this.resolvedUserConfig
+    );
   }
 
   /**

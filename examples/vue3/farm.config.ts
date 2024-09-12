@@ -4,6 +4,7 @@ import vue from "@vitejs/plugin-vue";
 // import VueRouter from "unplugin-vue-router/vite";
 // import AutoImport from 'unplugin-auto-import/vite';
 import compression from "compression";
+import { aaa } from "./test.js"
 const compressionMiddleware = () => {
   return {
     name: "compression",
@@ -13,9 +14,11 @@ const compressionMiddleware = () => {
     },
   };
 };
+
 const logger = new Logger({
-  prefix: "Erkelost"
-})
+  prefix: "我是曼"
+});
+
 
 export default defineConfig({
   vitePlugins: [
@@ -26,12 +29,13 @@ export default defineConfig({
     vue(),
     compressionMiddleware(),
   ],
-  customLogger: logger,
+  // customLogger: logger,
+
   compilation: {
     // persistentCache: false,
   },
   server: {
-    port: 5244,
+    port: 5384,
   },
 
   // plugins: [compressionMiddleware()],

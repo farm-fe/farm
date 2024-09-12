@@ -1,6 +1,16 @@
+import { clear } from 'console';
+import { __FARM_GLOBAL__ } from '../config/_global.js';
+import { ResolvedUserConfig } from '../config/types.js';
 import { Config } from '../types/binding.js';
-import { ColorFunction, PersistentCacheBrand, colors } from './color.js';
+import {
+  ColorFunction,
+  PersistentCacheBrand,
+  bold,
+  colors,
+  green
+} from './color.js';
 import { ResolvedServerUrls } from './http.js';
+import { getShortName } from './path.js';
 import { clearScreen, formatExecutionTime, pad, version } from './share.js';
 
 type LogLevelNames = 'trace' | 'debug' | 'info' | 'warn' | 'error';
@@ -14,13 +24,17 @@ enum LogLevel {
 }
 
 export interface ILogger {
-  trace(message: string): void;
-  debug(message: string): void;
-  info(message: string): void;
-  warn(message: string): void;
-  warnOnce(message: string): void;
-  errorOnce(message: string | Error): void;
-  error(message: string | Error, options?: ErrorOptions): void;
+  trace(message: string, clearScreen?: Boolean): void;
+  debug(message: string, clearScreen?: Boolean): void;
+  info(message: string, clearScreen?: Boolean): void;
+  warn(message: string, clearScreen?: Boolean): void;
+  warnOnce(message: string, clearScreen?: Boolean): void;
+  errorOnce(message: string | Error, clearScreen?: Boolean): void;
+  error(
+    message: string | Error,
+    options?: ErrorOptions,
+    clearScreen?: Boolean
+  ): void;
 }
 
 export interface ErrorOptions {
@@ -47,7 +61,7 @@ const infoOnceMessages = new Set();
 const errorOnceMessages = new Set();
 
 export class Logger implements ILogger {
-  private clear: () => void = () => {};
+  prefix: string;
   canClearScreen: boolean;
   colorMap: {
     trace: (input: string) => string;
@@ -56,8 +70,17 @@ export class Logger implements ILogger {
     warn: (input: string) => string;
     error: (input: string) => string;
   };
+
+  private clear: () => void = () => {};
+  private customLogger?: Logger;
+
   constructor(
-    public options?: LoggerOptions,
+    {
+      prefix = 'Farm',
+      allowClearScreen = true,
+      customLogger,
+      brandColor
+    }: LoggerOptions = {},
     private levelValues: Record<LogLevelNames, number> = {
       trace: 0,
       debug: 1,
@@ -66,40 +89,45 @@ export class Logger implements ILogger {
       error: 4
     }
   ) {
-    if (!this.options) this.options = {};
     this.canClearScreen =
-      this.options.allowClearScreen && process.stdout.isTTY && !process.env.CI;
+      allowClearScreen && process.stdout.isTTY && !process.env.CI;
     this.clear = this.canClearScreen ? clearScreen : () => {};
     this.colorMap = {
       trace: colors.green,
       debug: colors.debugColor,
-      info: colors.brandColor,
+      info: brandColor ?? colors.brandColor,
       warn: colors.yellow,
       error: colors.red
     };
+    this.prefix = prefix;
+    this.customLogger = customLogger;
     this.brandPrefix();
   }
 
   private brandPrefix(color?: (s: string | string[]) => string): void {
-    const { prefix = 'Farm' } = this.options;
-    const formattedName = colors.bold(prefix);
+    const formattedName = colors.bold(this.prefix);
     const formattedPrefix = colors.bold(`[ ${formattedName} ]`);
-    this.options.prefix = color ? color(formattedPrefix) : formattedPrefix;
+    this.prefix = color ? color(formattedPrefix) : formattedPrefix;
   }
 
   private logMessage(
     level: LogLevelNames,
     message: string | Error,
     color?: (s: string | string[]) => string,
+    clearScreen = false,
     showBanner = true
   ): void {
+    if (this.customLogger) {
+      this.customLogger.logMessage(level, message, color, clearScreen);
+      return;
+    }
     const loggerMethod =
       level in LOGGER_METHOD
         ? LOGGER_METHOD[level as keyof typeof LOGGER_METHOD]
         : 'log';
     if (this.levelValues[level] <= this.levelValues[level]) {
-      this.canClearScreen && this.clear();
-      const prefix = showBanner ? `${this.options.prefix} ` : '';
+      this.canClearScreen && clearScreen && this.clear();
+      const prefix = showBanner ? `${this.prefix} ` : '';
       const prefixColor = this.colorMap[level];
       const loggerMessage = color ? color(message as string) : message;
       console[loggerMethod](prefixColor(prefix) + loggerMessage);
@@ -108,29 +136,32 @@ export class Logger implements ILogger {
 
   setPrefix(options: LoggerOptions): void {
     if (options.prefix) {
-      this.options.prefix = options.prefix;
+      this.prefix = options.prefix;
       this.brandPrefix(options.brandColor);
     }
   }
 
-  trace(message: string): void {
-    this.logMessage(LogLevel.Trace, message, colors.magenta);
+  trace(message: string, clearScreen = false): void {
+    this.logMessage('trace', message, colors.magenta, clearScreen);
   }
 
-  debug(message: string): void {
-    this.logMessage(LogLevel.Debug, message, colors.blue);
+  debug(message: string, clearScreen = false): void {
+    this.logMessage('debug', message, colors.blue, clearScreen);
   }
 
-  info(message: string): void {
-    this.logMessage(LogLevel.Info, message, null);
+  info(message: string, clearScreen = false): void {
+    this.logMessage('info', message, null, clearScreen);
   }
 
-  warn(message: string): void {
-    this.logMessage(LogLevel.Warn, message, colors.yellow);
+  warn(message: string, clearScreen = false): void {
+    this.logMessage('warn', message, colors.yellow, clearScreen);
   }
 
-  error(message: string | Error, errorOptions?: ErrorOptions): void {
-    const effectiveOptions = { ...this.options, ...errorOptions };
+  error(
+    message: string | Error,
+    errorOptions?: ErrorOptions,
+    clearScreen = false
+  ): void {
     const causeError = errorOptions?.e || errorOptions?.error;
 
     let error;
@@ -146,30 +177,30 @@ export class Logger implements ILogger {
       error.message += `\nCaused by: ${causeError.stack ?? causeError}`;
     }
 
-    this.logMessage(LogLevel.Error, error, colors.red);
-
-    if (effectiveOptions.exit) {
-      process.exit(1);
-    }
+    this.logMessage('error', error, colors.red, clearScreen);
   }
-  infoOnce(message: string) {
+
+  infoOnce(message: string, clearScreen = false): void {
     if (!infoOnceMessages.has(message)) {
       infoOnceMessages.add(message);
-      this.info(message);
+      this.info(message, clearScreen);
     }
   }
-  warnOnce(message: string) {
+
+  warnOnce(message: string, clearScreen = false): void {
     if (!warnOnceMessages.has(message)) {
       warnOnceMessages.add(message);
-      this.warn(message);
+      this.warn(message, clearScreen);
     }
   }
-  errorOnce(message: string | Error) {
+
+  errorOnce(message: string | Error, clearScreen = false): void {
     if (!errorOnceMessages.has(message)) {
       errorOnceMessages.add(message);
-      this.error(message);
+      this.error(message, undefined, clearScreen);
     }
   }
+
   hasErrorLogged(message: string | Error) {
     return errorOnceMessages.has(message);
   }
@@ -184,7 +215,7 @@ export class NoopLogger extends Logger {
   setPrefix(_options: LoggerOptions): void {}
   trace(_message: string): void {}
   debug(_message: string): void {}
-  info(_message: string, _iOptions?: LoggerOptions): void {}
+  info(_message: string): void {}
   warn(_message: string): void {}
   error(_message: string | Error, _errorOptions?: ErrorOptions): void {
     if (_errorOptions.exit) {
@@ -211,7 +242,19 @@ export function bootstrapLogger(options?: LoggerOptions): Logger {
   return new Logger(options);
 }
 
-export function bootstrap(times: number, config: Config, hasCacheDir: boolean) {
+export function bootstrap(
+  times: number,
+  config: Config,
+  hasCacheDir: boolean,
+  userConfig: ResolvedUserConfig
+): void {
+  if (!__FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__) {
+    const shortFile = getShortName(userConfig.configFilePath, userConfig.root);
+    userConfig.logger.info(
+      `Using config file at ${bold(green(shortFile))}`,
+      true
+    );
+  }
   const usePersistentCache = config.config.persistentCache && hasCacheDir;
   const persistentCacheFlag = usePersistentCache
     ? colors.bold(PersistentCacheBrand)

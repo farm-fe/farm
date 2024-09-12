@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import { createRequire } from 'node:module';
-import path from 'node:path';
+import path, { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import fse from 'fs-extra';
 
@@ -135,8 +135,6 @@ export async function resolveConfig(
     configEnv
   );
 
-  const logger = loadedUserConfig.config?.customLogger ?? new Logger();
-
   let rawConfig: UserConfig = mergeFarmCliConfig(
     inlineOptions,
     {},
@@ -153,7 +151,7 @@ export async function resolveConfig(
   }
 
   const { jsPlugins, vitePlugins, rustPlugins, vitePluginAdapters } =
-    await resolvePlugins(rawConfig, compileMode, logger);
+    await resolvePlugins(rawConfig, compileMode);
 
   const sortFarmJsPlugins = getSortedPlugins([
     ...jsPlugins,
@@ -162,6 +160,11 @@ export async function resolveConfig(
   ]);
 
   const config = await resolveConfigHook(rawConfig, sortFarmJsPlugins);
+  // define logger when resolvedConfigHook
+  const logger = new Logger({
+    customLogger: loadedUserConfig.config?.customLogger,
+    allowClearScreen: loadedUserConfig.config?.clearScreen
+  });
 
   const resolvedUserConfig = await resolveUserConfig(
     config,
@@ -169,6 +172,8 @@ export async function resolveConfig(
     compileMode,
     logger
   );
+
+  resolvedUserConfig.logger = logger;
 
   // TODO start watch options with browser and lib
   // @ts-ignore
@@ -212,9 +217,6 @@ export async function resolveConfig(
     resolvedUserConfig,
     command as keyof typeof COMMANDS
   );
-
-  // 这个 logger 位置不对 放到前面去
-  resolvedUserConfig.logger = logger;
 
   return resolvedUserConfig;
 }
@@ -668,10 +670,7 @@ export async function readConfigFile(
   // logger: Logger
 ): Promise<UserConfig | undefined> {
   if (!fse.existsSync(configFilePath)) return;
-  if (!__FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__) {
-    // logger.info(`Using config file at ${bold(green(configFilePath))}`);
-    console.info(`Using config file at ${bold(green(configFilePath))}`);
-  }
+
   const format = getFormat(configFilePath);
 
   // we need transform all type farm.config with __dirname and __filename
@@ -782,12 +781,7 @@ export async function loadConfigFile(
       configRootPath
     );
 
-    const config = await readConfigFile(
-      inlineOptions,
-      resolvedPath,
-      configEnv
-      // logger
-    );
+    const config = await readConfigFile(inlineOptions, resolvedPath, configEnv);
     return {
       config: config && parseUserConfig(config),
       configFilePath: resolvedPath
@@ -897,8 +891,7 @@ export async function getConfigFilePath(
 
 export async function resolvePlugins(
   userConfig: UserConfig,
-  mode: CompilationMode,
-  logger: Logger
+  mode: CompilationMode
 ) {
   const { jsPlugins: rawJsPlugins, rustPlugins } =
     await resolveFarmPlugins(userConfig);
@@ -907,7 +900,7 @@ export async function resolvePlugins(
   const vitePlugins = (userConfig?.vitePlugins ?? []).filter(Boolean);
 
   const vitePluginAdapters = vitePlugins.length
-    ? await handleVitePlugins(vitePlugins, userConfig, logger, mode)
+    ? await handleVitePlugins(vitePlugins, userConfig, mode)
     : [];
 
   return {
@@ -983,6 +976,10 @@ export async function resolveUserConfig(
     resolvedRootPath,
     userConfig.publicDir
   );
+
+  // TODO type error
+  // @ts-ignore
+  // resolveUserConfig.logger = logger;
 
   return resolvedUserConfig;
 }

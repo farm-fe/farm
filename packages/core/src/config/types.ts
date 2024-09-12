@@ -130,6 +130,7 @@ export interface UserConfig {
   /** config related to dev server */
   server?: UserServerConfig;
   /** Files under this dir will always be treated as static assets. serve it in dev, and copy it to output.path when build */
+  logger?: Logger;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
