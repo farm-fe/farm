@@ -1,5 +1,12 @@
 # bench
 
+## 1.0.9
+
+### Patch Changes
+
+- Updated dependencies [ca00a930]
+  - @farmfe/core@1.3.20
+
 ## 1.0.8
 
 ### Patch Changes
