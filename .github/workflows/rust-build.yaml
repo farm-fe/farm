@@ -218,8 +218,12 @@ jobs:
             env
             freebsd-version
 
-            cd packages/create-farm && pnpm install && pnpm build --target x86_64-unknown-freebsd
-            ls -a
+            echo "~~~~ Install dependencies ~~~~"
+            cd packages/create-farm && pnpm install
+            echo "~~~~ Build ~~~~"
+            pnpm build --target x86_64-unknown-freebsd
+            echo "~~~~ ls -lah ~~~~"
+            ls -lah
 
             rm -rf node_modules
             rm -rf target
