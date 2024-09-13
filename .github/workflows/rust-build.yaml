@@ -231,4 +231,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ${{ github.sha }}-x86_64-unknown-freebsd-create-farm
-          path: ./create-farm.x86_64-unknown-freebsd.node
+          path: ./create-farm.freebsd-x64.node
