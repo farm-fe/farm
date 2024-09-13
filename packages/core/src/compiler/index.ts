@@ -96,7 +96,6 @@ export class Compiler {
       this._updateQueue.push({ paths, resolve });
       return promise;
     }
-
     this.compiling = true;
     try {
       const res = await this._bindingCompiler.update(
@@ -113,11 +112,13 @@ export class Compiler {
             ).then(next.resolve);
           } else {
             this.compiling = false;
-            for (const cb of this._onUpdateFinishQueue) {
+            while (this._onUpdateFinishQueue.length) {
+              if (this.compiling) {
+                break;
+              }
+              const cb = this._onUpdateFinishQueue.shift();
               await cb();
             }
-            // clear update finish queue
-            this._onUpdateFinishQueue = [];
           }
         },
         sync,
