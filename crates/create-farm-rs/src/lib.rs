@@ -1,7 +1,10 @@
 use anyhow::Context;
 use clap::Parser;
 use std::{ffi::OsString, fs, process::exit};
-use utils::prompts;
+use utils::{
+  prompts,
+  validator::{is_valid_pkg_name, to_valid_pkg_name},
+};
 
 use crate::{
   package_manager::PackageManager,
@@ -186,32 +189,6 @@ where
   handle_brand_text(&format!("    {} \n", get_run_cmd(&pkg_manager, &template)));
 
   Ok(())
-}
-
-fn is_valid_pkg_name(project_name: &str) -> bool {
-  let mut chars = project_name.chars().peekable();
-  !project_name.is_empty()
-    && !chars.peek().map(|c| c.is_ascii_digit()).unwrap_or_default()
-    && !chars.any(|ch| !(ch.is_alphanumeric() || ch == '-' || ch == '_') || ch.is_uppercase())
-}
-
-fn to_valid_pkg_name(project_name: &str) -> String {
-  let ret = project_name
-    .trim()
-    .to_lowercase()
-    .replace([':', ';', ' ', '~'], "-")
-    .replace(['.', '\\', '/'], "");
-
-  let ret = ret
-    .chars()
-    .skip_while(|ch| ch.is_ascii_digit() || *ch == '-')
-    .collect::<String>();
-
-  if ret.is_empty() || !is_valid_pkg_name(&ret) {
-    "farm-project".to_string()
-  } else {
-    ret
-  }
 }
 
 fn get_run_cmd(pkg_manager: &PackageManager, template: &Template) -> &'static str {

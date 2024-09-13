@@ -24,6 +24,7 @@ napi = { version = "2.15.2", default-features = false, features = [
 napi-derive = "2.15.2"
 rust-embed = { version = "8.3", features = [ "compression", "interpolate-folder-path" ] }
 clap = { version = "4.5.8", features = ["derive"] }
+regex = "1.10.6"
 
 [build-dependencies]
 napi-build = "2.0.1"
