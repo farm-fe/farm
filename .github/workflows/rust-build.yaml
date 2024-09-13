@@ -183,7 +183,7 @@ jobs:
           path: rust-plugins/sass/npm/${{ matrix.settings.abi }}/index.farm
   # Now for create-farm cli only builds
   build-freebsd:
-    name: Build and Upload Artifacts - FreeBSD
+    name: Build and Upload Artifacts - x86_64-unknown-freebsd
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -217,9 +217,8 @@ jobs:
             whoami
             env
             freebsd-version
-            pnpm install
 
-            cd ../create-farm && pnpm build 
+            cd packages/create-farm && pnpm install && pnpm build --target x86_64-unknown-freebsd
 
             rm -rf node_modules
             rm -rf target
