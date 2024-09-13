@@ -219,6 +219,7 @@ jobs:
             freebsd-version
 
             cd packages/create-farm && pnpm install && pnpm build --target x86_64-unknown-freebsd
+            ls -a
 
             rm -rf node_modules
             rm -rf target
@@ -226,4 +227,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ${{ github.sha }}-x86_64-unknown-freebsd-create-farm
-          path: ./packages/create-farm/create-farm.x86_64-unknown-freebsd.node
+          path: ./create-farm.x86_64-unknown-freebsd.node
