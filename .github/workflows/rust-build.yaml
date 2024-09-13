@@ -219,7 +219,7 @@ jobs:
             freebsd-version
 
             echo "~~~~ Install dependencies ~~~~"
-            cd packages/create-farm && pnpm i --frozen-lockfile
+            cd packages/create-farm && pnpm i --frozen-lockfile --ignore-scripts
             echo "~~~~ Build ~~~~"
             pnpm build --target x86_64-unknown-freebsd
             echo "~~~~ ls -lah ~~~~"
