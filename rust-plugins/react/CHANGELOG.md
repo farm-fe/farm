@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.2.2
+
+### Patch Changes
+
+- afc1776e: fix class component cannot be hot-updated
+
 ## 1.2.1
 
 ### Patch Changes
