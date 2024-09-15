@@ -81,7 +81,7 @@ export class HmrEngine {
       checkClearScreen(this.app.compiler.config.config);
       const start = performance.now();
       const result = await this.app.compiler.update(queue);
-      this.app.logger.info(
+      this.app.resolvedUserConfig.logger.info(
         `${bold(lightCyan(updatedFilesStr))} updated in ${bold(
           green(formatExecutionTime(performance.now() - start, 's'))
         )}`
@@ -138,14 +138,13 @@ export class HmrEngine {
       });
     } catch (err) {
       // checkClearScreen(this.app.compiler.config.config);
-      this.app.logger.error(convertErrorMessage(err));
+      this.app.resolvedUserConfig.logger.error(convertErrorMessage(err));
       // throw new Error(err);
     }
   };
 
   async hmrUpdate(absPath: string | string[], force = false) {
     const paths = Array.isArray(absPath) ? absPath : [absPath];
-
     for (const path of paths) {
       if (
         this.app.compiler.hasModule(path) &&
@@ -185,7 +184,7 @@ export class HmrEngine {
             }
           `);
         });
-        this.app.logger.error(convertErrorMessage(e));
+        this.app.resolvedUserConfig.logger.error(convertErrorMessage(e));
         // throw new Error(`hmr update failed: ${e.stack}`);
       }
     }

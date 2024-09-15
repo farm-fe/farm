@@ -122,6 +122,7 @@ export class Server extends httpServer {
   resolvedUserConfig: ResolvedUserConfig;
   closeHttpServerFn: () => Promise<void>;
   postConfigureServerHooks: ((() => void) | void)[] = [];
+  logger: Logger;
   /**
    * Creates an instance of Server.
    * @param {FarmCliOptions & UserConfig} inlineConfig - The inline configuration options.
@@ -129,6 +130,7 @@ export class Server extends httpServer {
    */
   constructor(readonly inlineConfig: FarmCliOptions & UserConfig) {
     super();
+    this.logger = new Logger();
   }
 
   /**
@@ -156,6 +158,7 @@ export class Server extends httpServer {
         'development',
         false
       );
+      this.logger = this.resolvedUserConfig.logger;
 
       this.#resolveOptions();
 
@@ -200,9 +203,9 @@ export class Server extends httpServer {
         });
       }
     } catch (error) {
-      this.resolvedUserConfig.logger.error(
-        `Failed to create farm server: ${error}`
-      );
+      // this.logger.error(
+      //   `Failed to create farm server: ${error}`
+      // );
       throw error;
     }
   }
@@ -228,18 +231,18 @@ export class Server extends httpServer {
       );
       if (isConfigFile || isConfigDependencyFile || isEnvFile) {
         __FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__ = true;
-        this.resolvedUserConfig.logger.info(
+        this.logger.info(
           `${bold(green(shortFile))} changed, Server is being restarted`,
           true
         );
         debugServer?.(`[config change] ${colors.dim(file)}`);
         try {
           await this.restartServer();
+          return;
         } catch (e) {
           this.resolvedUserConfig.logger.error(`restart server error ${e}`);
         }
       }
-
       try {
         this.hmrEngine.hmrUpdate(file);
       } catch (error) {
@@ -280,6 +283,7 @@ export class Server extends httpServer {
     }
     const { port: prevPort, host: prevHost } = this.serverOptions;
     const prevUrls = this.resolvedUrls;
+
     await this.restart();
 
     const { port, host } = this.serverOptions;
@@ -315,18 +319,18 @@ export class Server extends httpServer {
    * Restarts the server.
    */
   async restart() {
-    // TODO 这里是如果createServer 新建 newServer 都完事了 才去关闭旧的 server 这样可以保证原来的 watcher 继续运行 这里不应该先关闭所有 watcher
-    await this.close();
+    let newServer: Server = null;
     try {
-      await this.createServer();
+      await this.close();
+      newServer = new Server(this.inlineConfig);
+      await newServer.createServer();
     } catch (error) {
-      this.resolvedUserConfig.logger.error(
-        `Failed to resolve user config: ${error}`
-      );
+      this.logger.error(`Failed to restart server :\n ${error}`);
       return;
     }
-
-    this.listen();
+    await this.watcher.close();
+    await newServer.listen();
+    this.logger.info(bold(green('Server restarted successfully')));
   }
 
   /**
@@ -364,7 +368,7 @@ export class Server extends httpServer {
    */
   async listen(): Promise<void> {
     if (!this.httpServer) {
-      this.resolvedUserConfig.logger.warn('HTTP server is not created yet');
+      this.logger.warn('HTTP server is not created yet');
       return;
     }
     const { port, hostname, open, strictPort } = this.serverOptions;
@@ -694,7 +698,7 @@ export class Server extends httpServer {
       teardownSIGTERMListener(this.closeServerAndExit);
     }
 
-    await Promise.allSettled([this.watcher.close(), this.closeHttpServerFn()]);
+    await Promise.allSettled([this.ws.wss.close(), this.closeHttpServerFn()]);
   }
 
   async displayServerUrls() {

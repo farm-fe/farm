@@ -47,10 +47,10 @@
   },
   "lint-staged": {
     "packages/**/*.ts": [
-      "npx biome check --no-errors-on-unmatched --files-ignore-unknown=true --apply"
+      "npx biome check --no-errors-on-unmatched --files-ignore-unknown=true --write"
     ],
     "js-plugins/**/*.ts": [
-      "npx biome check --no-errors-on-unmatched --files-ignore-unknown=true --apply"
+      "npx biome check --no-errors-on-unmatched --files-ignore-unknown=true --write"
     ]
   },
   "pnpm": {

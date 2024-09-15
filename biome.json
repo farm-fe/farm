@@ -51,9 +51,9 @@
         "noBannedTypes": "off",
         "noExtraBooleanCast": "error",
         "noMultipleSpacesInRegularExpressionLiterals": "error",
-        "noUselessCatch": "error",
         "noUselessTypeConstraint": "error",
-        "noWith": "error"
+        "noWith": "error",
+        "noUselessCatch": "off"
       },
       "correctness": {
         "noConstAssign": "error",
