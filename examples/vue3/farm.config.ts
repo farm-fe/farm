@@ -35,7 +35,7 @@ export default defineConfig({
     // persistentCache: false,
   },
   server: {
-    port: 5284,
+    port: 5384,
     open: true,
   },
 

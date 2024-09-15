@@ -4,10 +4,6 @@ import { logger } from './logger';
 import { ErrorOverlay, overlayId } from './overlay';
 import { HMRPayload, HmrUpdateResult, RawHmrUpdateResult } from './types';
 
-declare const FARM_HMR_PORT: number;
-declare const FARM_HMR_HOST: string | boolean;
-declare const FARM_HMR_PATH: string;
-
 // Inject during compile time
 const hmrPort = Number(FARM_HMR_PORT);
 
