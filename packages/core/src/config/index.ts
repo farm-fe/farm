@@ -54,8 +54,8 @@ import {
 import { mergeConfig, mergeFarmCliConfig } from './mergeConfig.js';
 import { normalizeCss } from './normalize-config/normalize-css.js';
 import { normalizeExternal } from './normalize-config/normalize-external.js';
-import { normalizeResolve } from './normalize-config/normalize-resolve.js';
 import normalizePartialBundling from './normalize-config/normalize-partial-bundling.js';
+import { normalizeResolve } from './normalize-config/normalize-resolve.js';
 import type {
   ConfigEnv,
   FarmCliOptions,
