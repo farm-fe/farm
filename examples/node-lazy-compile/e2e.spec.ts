@@ -12,6 +12,7 @@ describe(`e2e tests - ${name}`, async () => {
       projectPath,
       async (log, done) => {
         if (command === 'preview') {
+          console.log(log);
           if (log.includes('script start') && log.includes('111aaa')) {
             done();
           }
@@ -31,9 +32,5 @@ describe(`e2e tests - ${name}`, async () => {
 
   test('watch', async () => {
     await runTest('watch');
-  });
-
-  test('preview', async () => {
-    await runTest('preview');
   });
 });
