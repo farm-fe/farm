@@ -1,5 +1,11 @@
 # @farmfe/core
 
+## 1.3.20
+
+### Patch Changes
+
+- ca00a930: fix hmr update no in time
+
 ## 1.3.19
 
 ### Patch Changes
