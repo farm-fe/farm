@@ -2,11 +2,12 @@ import { test, expect } from 'vitest';
 import { startProjectAndTest } from '../../e2e/vitestSetup';
 import { basename, dirname } from 'path';
 import { fileURLToPath } from 'url';
+import { describe } from 'vitest';
 
 const name = basename(import.meta.url);
 const projectPath = dirname(fileURLToPath(import.meta.url));
 
-test(`e2e tests - ${name}`, async () => {
+describe(`e2e tests vanilla-extract - ${name}`, async () => {
   const runTest = (command?: 'start' | 'preview') =>
     startProjectAndTest(
       projectPath,
@@ -28,6 +29,11 @@ test(`e2e tests - ${name}`, async () => {
       command
     );
 
-  await runTest();
-  await runTest('preview');
+    test('run start', async () => {
+      await runTest();
+    })
+
+    test('run start', async () => {
+      await runTest("preview");
+    })
 });

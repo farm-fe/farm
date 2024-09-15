@@ -107,6 +107,11 @@ export class Module {
 
   // minify x.default
   f(v: any) {
-    return v.default;
+    if(typeof v.default !== 'undefined') {
+      return v.default;
+    }
+
+    // compatible `import default from "module"`
+    return v;
   }
 }
