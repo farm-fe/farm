@@ -1,5 +1,11 @@
 # @farmfe/core
 
+## 1.3.21
+
+### Patch Changes
+
+- 1b1a7c17: compatible `import default from "module"`
+
 ## 1.3.20
 
 ### Patch Changes
