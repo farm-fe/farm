@@ -6,7 +6,7 @@ export function Main() {
   const [count, setCount] = useState(0);
   return (
     <>
-      <div
+      <div>
         <a href="https://farmfe.org/" target="_blank">
           <img src={FarmLogo} className="logo" alt="Farm logo" />
         </a>
