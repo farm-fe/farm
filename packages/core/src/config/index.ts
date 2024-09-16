@@ -969,7 +969,9 @@ export async function resolveUserConfig(
   resolvedUserConfig.env = {
     ...userEnv,
     NODE_ENV: userConfig.compilation.mode,
-    mode
+    mode,
+    DEV: mode === 'development',
+    PROD: mode === 'production'
   };
 
   resolvedUserConfig.publicDir = normalizePublicDir(

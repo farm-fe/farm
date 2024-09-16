@@ -85,6 +85,8 @@ export function farmUserConfigToViteConfig(config: UserConfig): ViteUserConfig {
     // TODO make it configurable
     cacheDir: 'node_modules/.farm/cache',
     envDir: config.envDir,
+    // @ts-ignore
+    env: config.env,
     assetsInclude: [
       ...VITE_DEFAULT_ASSETS,
       ...(config.compilation?.assets?.include ?? [])
@@ -234,6 +236,7 @@ export function proxyViteConfig(
         'css',
         'build',
         'logger',
+        'env',
         'cacheDir',
         'envDir',
         'assetsInclude',
