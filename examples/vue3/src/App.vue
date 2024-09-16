@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import HelloWorld from "./components/HelloWorld.vue";
-console.log(import.meta.env);
+// console.log(import.meta.env);
 fetch("https://wallhaven.fun/api/wallhaven/w/yx6e9l")
   .then((res) => res.json())
-  .then((data) => console.log(data))
-  .catch((err) => console.error(err));
+  // .then((data) => console.log(data))
+  // .catch((err) => console.error(err));
 </script>
 
 <template>

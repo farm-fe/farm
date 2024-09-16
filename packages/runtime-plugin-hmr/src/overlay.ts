@@ -1,3 +1,5 @@
+import { parseIfJSON, splitErrorMessage, stripAnsi } from './utils';
+
 const base = '/';
 
 // set :host styles to make playwright detect the element as visible
@@ -34,7 +36,7 @@ const template = /*html*/ `
 .window {
   font-family: var(--monospace);
   line-height: 1.5;
-  width: 800px;
+  width: 1000px;
   color: var(--window-color);
   margin: 60px auto;
   position: relative;
@@ -75,11 +77,12 @@ pre.frame {
 }
 
 .message {
-  max-height: 400px;
+  max-height: 500px;
   padding: 25px 30px;
   line-height: 1.3;
   font-weight: 600;
   white-space: pre-wrap;
+  overflow-y: auto;
 }
 
 .message-body {
@@ -124,6 +127,27 @@ kbd {
   border-image: initial;
 }
 
+
+.code-block {
+  background-color: #f8f8f8;
+  border-radius: 3px;
+  padding: 10px;
+  margin: 10px 0;
+}
+
+.special-char {
+  color: #ffbbaa;
+}
+
+.line-number {
+  color: #007bff;
+  font-weight: bold;
+}
+
+.file-info {
+  color: #28a745;
+}
+
 kbd {
   line-height: 1.5;
   font-family: ui-monospace, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
@@ -138,10 +162,12 @@ kbd {
   border-color: rgb(54, 57, 64);
   border-image: initial;
 }
+.message-container {
+}
 </style>
 <div class="backdrop" part="backdrop">
   <div class="window" part="window">
-    <pre class="message" part="message"><span class="plugin" part="plugin"></span><span class="message-body" part="message-body"></span></pre>
+    <div class="message-container" part="message-container"></div>
     <div class="footer">
       <div class="tip" part="tip">
         Click outside, press <kbd>Esc</kbd> key, or fix the code to dismiss.<br />
@@ -165,28 +191,8 @@ export class ErrorOverlay extends HTMLElement {
     super();
     this.root = this.attachShadow({ mode: 'open' });
     this.root.innerHTML = template;
-
-    codeframeRE.lastIndex = 0;
-    const hasFrame = err.frame && codeframeRE.test(err.frame);
-    const message = hasFrame
-      ? err.message.replace(codeframeRE, '')
-      : err.message;
-    if (err.plugin) {
-      this.text('.plugin', `[plugin:${err.plugin}] `);
-    }
-    this.text('.message-body', message);
-
-    const [file] = (err.loc?.file || err.id || 'unknown file').split(`?`);
-    if (err.loc) {
-      this.text('.file', `${file}:${err.loc.line}:${err.loc.column}`, links);
-    } else if (err.id) {
-      this.text('.file', file);
-    }
-
-    if (hasFrame) {
-      this.text('.frame', err.frame?.trim());
-    }
-    this.text('.stack', err.stack, links);
+    const messages = JSON.parse(err.message);
+    this.renderMessages(messages, links);
 
     this.root.querySelector('.window')?.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -236,13 +242,169 @@ export class ErrorOverlay extends HTMLElement {
       }
     }
   }
+
+  setMessageText(element: HTMLElement, text: string, linkFiles: boolean) {
+    if (!linkFiles) {
+      element.textContent = text;
+    } else {
+      element.innerHTML = '';
+      let lastIndex = 0;
+      text.replace(fileRE, (file, index) => {
+        if (index > lastIndex) {
+          element.appendChild(
+            document.createTextNode(text.substring(lastIndex, index))
+          );
+        }
+        const link = document.createElement('a');
+        link.textContent = file;
+        link.className = 'file-link';
+        link.onclick = () => {
+          fetch(`${base}__open-in-editor?file=${encodeURIComponent(file)}`);
+        };
+        element.appendChild(link);
+        lastIndex = index + file.length;
+        return file;
+      });
+      if (lastIndex < text.length) {
+        element.appendChild(document.createTextNode(text.substring(lastIndex)));
+      }
+    }
+  }
+
+  highlightCodeBlock(codeBlock: string) {
+    const lines = codeBlock.split('\n');
+    let highlightedHtml = '<pre class="code-block">';
+
+    lines.forEach((line) => {
+      let highlightedLine = line
+        .replace(
+          /[<>&]/g,
+          (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' })[c] || c
+        )
+        .replace(/^(\s*)(.*)$/, (_, spaces, content) => {
+          return (
+            spaces +
+            content
+              .replace(
+                /[│·╰╭─]/g,
+                (match: string) => `<span class="special-char">${match}</span>`
+              )
+              .replace(/(\d+)(\s*│)/, '<span class="line-number">$1</span>$2')
+              .replace(
+                /$$.*?$$/,
+                (match: string) => `<span class="file-info">${match}</span>`
+              )
+          );
+        });
+      highlightedHtml += `${highlightedLine}\n`;
+    });
+
+    highlightedHtml += '</pre>';
+    return highlightedHtml;
+  }
+
+  // renderMessages(messages: any[], links: boolean) {
+  //   const messageContainer = this.root.querySelector(".message-container")!;
+  //   messageContainer.innerHTML = ""; // 清空现有内容
+
+  //   messages.forEach((msg, index) => {
+  //     const messageElement = document.createElement("div");
+  //     messageElement.className = "error-message";
+
+  //     if (msg.plugin) {
+  //       const pluginElement = document.createElement("span");
+  //       pluginElement.className = "plugin";
+  //       pluginElement.textContent = `[plugin:${msg.plugin}] `;
+  //       messageElement.appendChild(pluginElement);
+  //     }
+
+  //     const messageBody = document.createElement("div");
+  //     messageBody.className = "message";
+  //     const splitMessage = splitErrorMessage(msg);
+
+  //     console.error(splitMessage.errorBrowser);
+
+  //     console.log(splitMessage.codeBlocks);
+
+  //     this.setMessageText(messageBody, msg.message || stripAnsi(msg), links);
+  //     messageElement.appendChild(messageBody);
+
+  //     if (msg.frame) {
+  //       const frame = document.createElement("pre");
+  //       frame.className = "frame";
+  //       frame.textContent = msg.frame.trim();
+  //       messageElement.appendChild(frame);
+  //     }
+
+  //     if (msg.stack) {
+  //       const stack = document.createElement("pre");
+  //       stack.className = "stack";
+  //       this.setMessageText(stack, msg.stack, links);
+  //       messageElement.appendChild(stack);
+  //     }
+
+  //     messageContainer.appendChild(messageElement);
+  //   });
+  // }
+
+  renderMessages(messages: any[], links: boolean) {
+    const messageContainer = this.root.querySelector('.message-container')!;
+    messageContainer.innerHTML = '';
+
+    messages.forEach((msg, index) => {
+      const messageElement = document.createElement('div');
+      messageElement.className = 'error-message';
+
+      if (msg.plugin) {
+        const pluginElement = document.createElement('span');
+        pluginElement.className = 'plugin';
+        pluginElement.textContent = `[plugin:${msg.plugin}] `;
+        messageElement.appendChild(pluginElement);
+      }
+
+      const messageBody = document.createElement('div');
+      messageBody.className = 'message';
+      const splitMessage = splitErrorMessage(msg);
+
+      console.error(splitMessage.errorBrowser);
+
+      if (splitMessage.codeBlocks && splitMessage.codeBlocks.length > 0) {
+        splitMessage.codeBlocks.forEach((codeBlock) => {
+          const highlightedCode = this.highlightCodeBlock(codeBlock);
+          const codeElement = document.createElement('div');
+          codeElement.innerHTML = highlightedCode;
+          messageBody.appendChild(codeElement);
+        });
+      }
+
+      // this.setMessageText(messageBody, msg.message || stripAnsi(msg), links);
+      messageElement.appendChild(messageBody);
+
+      if (msg.frame) {
+        const frame = document.createElement('pre');
+        frame.className = 'frame';
+        frame.textContent = msg.frame.trim();
+        messageElement.appendChild(frame);
+      }
+
+      if (msg.stack) {
+        const stack = document.createElement('pre');
+        stack.className = 'stack';
+        this.setMessageText(stack, msg.stack, links);
+        messageElement.appendChild(stack);
+      }
+
+      messageContainer.appendChild(messageElement);
+    });
+  }
+
   close(): void {
     this.parentNode?.removeChild(this);
     document.removeEventListener('keydown', this.closeOnEsc);
   }
 }
 
-export const overlayId = 'vite-error-overlay';
+export const overlayId = 'farm-error-overlay';
 const { customElements } = globalThis; // Ensure `customElements` is defined before the next line.
 if (customElements && !customElements.get(overlayId)) {
   customElements.define(overlayId, ErrorOverlay);

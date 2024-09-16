@@ -3,6 +3,7 @@ import { HotModuleState } from './hot-module-state';
 import { logger } from './logger';
 import { ErrorOverlay, overlayId } from './overlay';
 import { HMRPayload, HmrUpdateResult, RawHmrUpdateResult } from './types';
+import { parseIfJSON } from './utils';
 
 // Inject during compile time
 const hmrPort = Number(FARM_HMR_PORT);
@@ -41,10 +42,8 @@ export class HmrClient {
     // when the user save the file, the server will recompile the file(and its dependencies as long as its dependencies are changed)
     // after the file is recompiled, the server will generated a update resource and send its id to the client
     // the client will apply the update
-    console.log('链接成功');
 
     socket.addEventListener('message', (event) => {
-      console.log(event.data);
       const result: HMRPayload = new Function(`return (${event.data})`)();
       if (result?.type === 'closing') {
         this.closeConnectionGracefully();
@@ -205,7 +204,6 @@ export class HmrClient {
    * @param payload Vite HMR payload
    */
   async handleMessage(payload: HMRPayload) {
-    console.log(payload);
     switch (payload.type) {
       case 'farm-update':
         this.notifyListeners('farm:beforeUpdate', payload);

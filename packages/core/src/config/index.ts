@@ -969,6 +969,7 @@ export async function resolveUserConfig(
   resolvedUserConfig.env = {
     ...userEnv,
     NODE_ENV: userConfig.compilation.mode,
+    BASE_URL: userConfig.compilation.output.publicPath,
     mode,
     DEV: mode === 'development',
     PROD: mode === 'production'
