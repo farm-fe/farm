@@ -55,43 +55,59 @@ export function cleanStack(stack: string) {
     .join('\n');
 }
 
-export function splitErrorMessage(errorMsg: string) {
-  const potentialCausesRegex = /Potential Causes:[\s\S]*$/;
+export function splitErrorMessage(errorMsg: any) {
+  // const potentialCausesRegex = /Potential Causes:[\s\S]*$/;
 
-  const potentialCausesMatch = errorMsg.match(potentialCausesRegex);
-  let potentialCauses = '';
-  if (potentialCausesMatch) {
-    const causes = potentialCausesMatch[0].split('\n\n')[0].trim();
-    potentialCauses = causes;
-  }
+  // const potentialCausesMatch = errorMsg.match(potentialCausesRegex);
+  // let potentialCauses = "";
+  // if (potentialCausesMatch) {
+  // const causes = potentialCausesMatch[0].split("\n\n")[0].trim();
+  // potentialCauses = causes;
+  // }
 
-  let errorInfo = errorMsg.replace(potentialCausesRegex, '').trim();
-
+  // let errorInfo = errorMsg.replace(potentialCausesRegex, "").trim();
+  // @ts-ignore
+  const potentialCauses = errorMsg.cause;
   return {
-    errorInfo: stripAnsi(errorInfo),
-    codeBlocks: extractCodeBlocks(stripAnsi(errorInfo)),
+    errorInfo: stripAnsi(errorMsg.message),
+    codeBlocks: extractCodeBlocks(stripAnsi(errorMsg.frame)),
     potentialCauses,
-    errorBrowser: `${errorInfo}\n\n${potentialCauses}\n\n`
+    errorBrowser: `${stripAnsi(errorMsg.message)}\n\n${potentialCauses}\n\n`
   };
 }
 
-export function extractCodeBlocks(errorMsg: any) {
+export function extractCodeBlocks(errorMsg: string) {
   const lines = errorMsg.split('\n');
   let codeBlocks = [];
-  let currentBlock = [];
+  let currentBlock: any = [];
   let inCodeBlock = false;
+  let errorLine = '';
 
   for (const line of lines) {
-    if (line.includes('╭─[')) {
+    if (line.trim().startsWith('×')) {
+      // 如果当前有正在处理的代码块，先保存它
+      if (inCodeBlock) {
+        codeBlocks.push(currentBlock.join('\n'));
+        currentBlock = [];
+      }
+      errorLine = line;
+      inCodeBlock = false;
+    } else if (line.includes('╭─[')) {
       inCodeBlock = true;
-      currentBlock = [line];
+      currentBlock = errorLine ? [errorLine, line] : [line];
+      errorLine = '';
     } else if (inCodeBlock) {
       currentBlock.push(line);
       if (line.includes('╰────')) {
         codeBlocks.push(currentBlock.join('\n'));
+        currentBlock = [];
         inCodeBlock = false;
       }
     }
+  }
+
+  if (currentBlock.length > 0) {
+    codeBlocks.push(currentBlock.join('\n'));
   }
 
   return codeBlocks;

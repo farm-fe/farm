@@ -1,4 +1,6 @@
+import hljs from 'highlight.js';
 import { parseIfJSON, splitErrorMessage, stripAnsi } from './utils';
+// import "highlight.js/styles/default.css";
 
 const base = '/';
 
@@ -17,7 +19,7 @@ const template = /*html*/ `
   --red: #ff5555;
   --brand-color: #9f1a8f;
   --window-background: #ffffff;
-  --window-color: #d8d8d8;
+  --window-color: #ccc;
   --brand-color-o: rgba(248, 44, 224, 0.3);
 }
 
@@ -78,7 +80,7 @@ pre.frame {
 
 .message {
   max-height: 500px;
-  padding: 25px 30px;
+  padding: 15px 10px;
   line-height: 1.3;
   font-weight: 600;
   white-space: pre-wrap;
@@ -164,6 +166,114 @@ kbd {
 }
 .message-container {
 }
+pre code.hljs {
+  display: block;
+  overflow-x: auto;
+  padding: 1em
+}
+code.hljs {
+  padding: 3px 5px
+}
+/*
+
+Atom One Dark by Daniel Gamage
+Original One Dark Syntax theme from https://github.com/atom/one-dark-syntax
+
+base:    #282c34
+mono-1:  #abb2bf
+mono-2:  #818896
+mono-3:  #5c6370
+hue-1:   #56b6c2
+hue-2:   #61aeee
+hue-3:   #c678dd
+hue-4:   #98c379
+hue-5:   #e06c75
+hue-5-2: #be5046
+hue-6:   #d19a66
+hue-6-2: #e6c07b
+
+*/
+.hljs {
+  color: #abb2bf;
+  background: #282c34
+}
+.hljs-comment,
+.hljs-quote {
+  color: #5c6370;
+  font-style: italic
+}
+.hljs-doctag,
+.hljs-keyword,
+.hljs-formula {
+  color: #c678dd
+}
+.hljs-section,
+.hljs-name,
+.hljs-selector-tag,
+.hljs-deletion,
+.hljs-subst {
+  color: #e06c75
+}
+.hljs-literal {
+  color: #56b6c2
+}
+.hljs-string,
+.hljs-regexp,
+.hljs-addition,
+.hljs-attribute,
+.hljs-meta .hljs-string {
+  color: #98c379
+}
+.hljs-attr,
+.hljs-variable,
+.hljs-template-variable,
+.hljs-type,
+.hljs-selector-class,
+.hljs-selector-attr,
+.hljs-selector-pseudo,
+.hljs-number {
+  color: #d19a66
+}
+.hljs-symbol,
+.hljs-bullet,
+.hljs-link,
+.hljs-meta,
+.hljs-selector-id,
+.hljs-title {
+  color: #61aeee
+}
+.hljs-built_in,
+.hljs-title.class_,
+.hljs-class .hljs-title {
+  color: #e6c07b
+}
+.hljs-emphasis {
+  font-style: italic
+}
+.hljs-strong {
+  font-weight: bold
+}
+.hljs-link {
+  text-decoration: underline
+}
+
+.code-block-wrapper {
+  background-color: #282c34; /* Atom One Dark 背景色 */
+  border-radius: 6px;
+  padding: 16px;
+  margin: 10px 0;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.code-block-wrapper pre {
+  margin: 0;
+}
+
+.code-block-wrapper code {
+  font-family: 'Consolas', 'Monaco', 'Andale Mono', 'Ubuntu Mono', monospace;
+  font-size: 14px;
+  line-height: 1.5;
+}
 </style>
 <div class="backdrop" part="backdrop">
   <div class="window" part="window">
@@ -192,6 +302,7 @@ export class ErrorOverlay extends HTMLElement {
     this.root = this.attachShadow({ mode: 'open' });
     this.root.innerHTML = template;
     const messages = JSON.parse(err.message);
+
     this.renderMessages(messages, links);
 
     this.root.querySelector('.window')?.addEventListener('click', (e) => {
@@ -271,36 +382,11 @@ export class ErrorOverlay extends HTMLElement {
     }
   }
 
-  highlightCodeBlock(codeBlock: string) {
-    const lines = codeBlock.split('\n');
-    let highlightedHtml = '<pre class="code-block">';
-
-    lines.forEach((line) => {
-      let highlightedLine = line
-        .replace(
-          /[<>&]/g,
-          (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' })[c] || c
-        )
-        .replace(/^(\s*)(.*)$/, (_, spaces, content) => {
-          return (
-            spaces +
-            content
-              .replace(
-                /[│·╰╭─]/g,
-                (match: string) => `<span class="special-char">${match}</span>`
-              )
-              .replace(/(\d+)(\s*│)/, '<span class="line-number">$1</span>$2')
-              .replace(
-                /$$.*?$$/,
-                (match: string) => `<span class="file-info">${match}</span>`
-              )
-          );
-        });
-      highlightedHtml += `${highlightedLine}\n`;
-    });
-
-    highlightedHtml += '</pre>';
-    return highlightedHtml;
+  highlightCode(code: string, language = 'javascript') {
+    if (language) {
+      return hljs.highlight(code, { language }).value;
+    }
+    return hljs.highlightAuto(code).value;
   }
 
   // renderMessages(messages: any[], links: boolean) {
@@ -354,7 +440,8 @@ export class ErrorOverlay extends HTMLElement {
     messages.forEach((msg, index) => {
       const messageElement = document.createElement('div');
       messageElement.className = 'error-message';
-
+      console.log(JSON.parse(msg));
+      msg = JSON.parse(msg);
       if (msg.plugin) {
         const pluginElement = document.createElement('span');
         pluginElement.className = 'plugin';
@@ -367,11 +454,13 @@ export class ErrorOverlay extends HTMLElement {
       const splitMessage = splitErrorMessage(msg);
 
       console.error(splitMessage.errorBrowser);
+      console.log(splitMessage);
 
       if (splitMessage.codeBlocks && splitMessage.codeBlocks.length > 0) {
         splitMessage.codeBlocks.forEach((codeBlock) => {
-          const highlightedCode = this.highlightCodeBlock(codeBlock);
+          const highlightedCode = this.highlightCode(codeBlock);
           const codeElement = document.createElement('div');
+          codeElement.classList.add('code-block-wrapper');
           codeElement.innerHTML = highlightedCode;
           messageBody.appendChild(codeElement);
         });
@@ -384,7 +473,7 @@ export class ErrorOverlay extends HTMLElement {
         const frame = document.createElement('pre');
         frame.className = 'frame';
         frame.textContent = msg.frame.trim();
-        messageElement.appendChild(frame);
+        // messageElement.appendChild(frame);
       }
 
       if (msg.stack) {

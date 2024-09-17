@@ -27,6 +27,7 @@
     "@farmfe/runtime": "workspace:^0.12.2"
   },
   "dependencies": {
-    "core-js": "^3.30.1"
+    "core-js": "^3.30.1",
+    "highlight.js": "^11.10.0"
   }
 }
