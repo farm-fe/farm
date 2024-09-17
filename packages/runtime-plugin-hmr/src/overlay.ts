@@ -80,6 +80,7 @@ pre.frame {
 
 .message {
   max-height: 500px;
+  font-size: 14px;
   padding: 15px 10px;
   line-height: 1.3;
   font-weight: 600;
