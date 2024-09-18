@@ -84,7 +84,8 @@ export class HmrEngine {
     this.app.logger.info(
       `${bold(lightCyan(updatedFilesStr))} updated in ${bold(
         green(formatExecutionTime(performance.now() - start, 's'))
-      )}`
+      )}`,
+      true
     );
 
     // clear update queue after update finished
@@ -181,11 +182,15 @@ export class HmrEngine {
             {
               type: 'error',
               err: ${errorStr},
-              overlay: ${(this.app.resolvedUserConfig.server.hmr as UserHmrConfig).overlay}
+              overlay: ${
+                (this.app.resolvedUserConfig.server.hmr as UserHmrConfig)
+                  .overlay
+              }
             }
           `);
         });
-        this.app.logger.error(convertErrorMessage(e));
+
+        this.app.logger.error(convertErrorMessage(e), true);
         // throw new Error(`hmr update failed: ${e.stack}`);
       }
     }

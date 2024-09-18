@@ -143,7 +143,7 @@ kbd {
   border-image: initial;
 }
 .message-container {
-  padding: 15px 10px;
+  padding: 10px 10px;
 }
 
 
@@ -282,7 +282,7 @@ hue-6-2: #e6c07b
 }
 .alert {
   box-sizing: border-box;
-  margin: 0;
+  margin: 8px 0;
   padding: 0;
   color: rgba(0, 0, 0, 0.85);
   font-size: 14px;
@@ -357,7 +357,7 @@ hue-6-2: #e6c07b
   background-color: #1e1e1e;
   border-radius: 6px;
   overflow: hidden;
-  margin: 10px 0;
+  margin: 4px 0;
 }
 
 .file-info {
@@ -593,6 +593,7 @@ export class ErrorOverlay extends HTMLElement {
 
       const messageBody = document.createElement('div');
       messageBody.className = 'message';
+
       const splitMessage = splitErrorMessage(msg);
 
       console.error(splitMessage.errorBrowser);
@@ -655,7 +656,9 @@ export class ErrorOverlay extends HTMLElement {
         `;
 
         fileInfoLeft.className = 'file-info-left';
-        fileInfoLeft.textContent = `Error Info ${msg.plugin ? `[plugin: ${msg.plugin}]` : ''}`;
+        fileInfoLeft.textContent = `Error Info ${
+          msg.plugin ? `[plugin: ${msg.plugin}]` : ''
+        }`;
 
         fileInfo.appendChild(fileInfoLeft);
         fileInfo.appendChild(fileInfoRight);

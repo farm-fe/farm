@@ -7,7 +7,7 @@ export default defineConfig({
     persistentCache: false,
     progress: false,
     output: {
-      publicPath: "/aaa/",
+      // publicPath: "/aaa/",
     },
   },
   server: {

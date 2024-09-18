@@ -9,7 +9,10 @@ use crate::resource::resource_pot::ResourcePotType;
 #[derive(Debug, Error, Serialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum CompilationError {
-  #[error("Can not resolve `{src}` from {importer}.\nOriginal error: {source:?}.\n\nPotential Causes:\n1.The file that `{src}` points to does not exist.\n2.Install it first if `{src}` is an dependency from node_modules, if you are using pnpm refer to [https://pnpm.io/faq#pnpm-does-not-work-with-your-project-here] for solutions.\n3. If `{src}` is a alias, make sure your alias config is correct.\n")]
+  // #[error("Can not resolve `{src}` from {importer}.\nOriginal error: {source:?}.\n\nPotential Causes:\n1.The file that `{src}` points to does not exist.\n2.Install it first if `{src}` is an dependency from node_modules, if you are using pnpm refer to [https://pnpm.io/faq#pnpm-does-not-work-with-your-project-here] for solutions.\n3. If `{src}` is a alias, make sure your alias config is correct.\n")]
+  #[error("{}", serde_json::to_string(&serialize_resolve_error(&src, &importer, &source))
+  .map_err(|_| "Failed to serialize resolve error type message".to_string())
+  .unwrap_or_else(|e| e))]
   ResolveError {
     importer: String,
     src: String,
@@ -27,11 +30,11 @@ pub enum CompilationError {
   },
 
   // #[error("Transform `{resolved_path}` failed.\n {msg}")]
-  // #[error("{}", serialize_transform_error(resolved_path, msg))]
   #[error("{}", serde_json::to_string(&serialize_transform_error(&resolved_path, &msg))
   .map_err(|_| "Failed to serialize transform error type message".to_string())
   .unwrap_or_else(|e| e))]
   TransformError { resolved_path: String, msg: String },
+
   // TODO, give the specific recommended plugin of this kind of module
   // #[error("Parse `{resolved_path}` failed.\n {msg}\nPotential Causes:\n1.The module have syntax error.\n2.This kind of module is not supported, you may need plugins to support it\n")]
   #[error("{}", serde_json::to_string(&serialize_parse_error(&resolved_path, &msg))
@@ -108,6 +111,35 @@ pub enum CompilationError {
   },
 }
 
+fn serialize_resolve_error(
+  src: &str,
+  importer: &str,
+  source: &Option<Box<dyn Error + Send + Sync>>,
+) -> serde_json::Value {
+  let mut msg = format!("Can not resolve `{}` from `{}`.", src, importer);
+  if let Some(source) = source {
+    msg.push_str(&format!("\nOriginal error: {}.", source));
+  }
+
+  let cause = format!(
+      "Potential Causes:\n\
+       1. The file that `{}` points to does not exist.\n\
+       2. Install it first if `{}` is a dependency from node_modules. If you are using pnpm, refer to [https://pnpm.io/faq#pnpm-does-not-work-with-your-project-here] for solutions.\n\
+       3. If `{}` is an alias, make sure your alias config is correct.",
+      src, src, src
+  );
+
+  let full_message = format!("{}\n{}", msg, cause);
+
+  json!({
+      "id": importer,
+      "type": "Resolve Error",
+      "errorFrame": msg,
+      "message": full_message,
+      "cause": cause
+  })
+}
+
 fn serialize_parse_error(resolved_path: &str, msg: &str) -> serde_json::Value {
   if let Ok(parsed) = serde_json::from_str::<serde_json::Value>(msg) {
     return parsed;
@@ -128,7 +160,7 @@ fn serialize_transform_error(resolved_path: &str, msg: &str) -> serde_json::Valu
   json!({
       "type": "Transform Error",
       "id": resolved_path,
-      "frame": msg,
+      "errorFrame": msg,
       "cause": "Potential Causes:\n1.This kind of module is not supported, you may need plugins to support it.\n",
       "message": format!("Transform `{}` failed.\n {}", resolved_path, msg)
   })

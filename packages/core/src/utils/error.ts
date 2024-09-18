@@ -1,10 +1,20 @@
 export function convertErrorMessage(error: Error) {
-  let errorMessage = '';
+  let errorMessages = [];
 
   try {
-    errorMessage = JSON.parse(error.message).join('\n');
+    const parsedErrors = JSON.parse(error.message);
+    if (Array.isArray(parsedErrors)) {
+      errorMessages = parsedErrors.map(
+        (item) => JSON.parse(item).message || String(item)
+      );
+    } else {
+      errorMessages = [
+        JSON.parse(parsedErrors).message || String(parsedErrors)
+      ];
+    }
   } catch {
-    errorMessage = error.message;
+    errorMessages = [error.message];
   }
-  return errorMessage;
+
+  return errorMessages.join('\n');
 }
