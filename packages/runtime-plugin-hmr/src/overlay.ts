@@ -278,7 +278,8 @@ hue-6-2: #e6c07b
 </style>
 <div class="backdrop" part="backdrop">
   <div class="window" part="window">
-    <div class="message-container" part="message-container"></div>
+    <div class="message-container" part="message-container">
+    </div>
     <div class="footer">
       <div class="tip" part="tip">
         Click outside, press <kbd>Esc</kbd> key, or fix the code to dismiss.<br />
