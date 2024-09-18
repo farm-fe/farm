@@ -23,7 +23,7 @@ export function parseIfJSON(str: string): any {
     if (Object(parsed) !== parsed) {
       return str;
     }
-    return prepareError(parsed);
+    return parsed;
   } catch (e) {
     return str;
   }
@@ -56,39 +56,36 @@ export function cleanStack(stack: string) {
 }
 
 export function splitErrorMessage(errorMsg: any) {
-  // const potentialCausesRegex = /Potential Causes:[\s\S]*$/;
-
-  // const potentialCausesMatch = errorMsg.match(potentialCausesRegex);
-  // let potentialCauses = "";
-  // if (potentialCausesMatch) {
-  // const causes = potentialCausesMatch[0].split("\n\n")[0].trim();
-  // potentialCauses = causes;
-  // }
-
-  // let errorInfo = errorMsg.replace(potentialCausesRegex, "").trim();
   // @ts-ignore
   const potentialCauses = errorMsg.cause;
+  const { codeBlocks, idCodeLines } = extractSwcCodeBlocks(
+    stripAnsi(errorMsg?.errorFrame ?? '')
+  );
   return {
     errorInfo: stripAnsi(errorMsg.message),
-    codeBlocks: extractCodeBlocks(stripAnsi(errorMsg.frame)),
+    codeBlocks,
     potentialCauses,
+    idCodeLines,
     errorBrowser: `${stripAnsi(errorMsg.message)}\n\n${potentialCauses}\n\n`
   };
 }
 
-export function extractCodeBlocks(errorMsg: string) {
+export function extractSwcCodeBlocks(errorMsg: string) {
   const lines = errorMsg.split('\n');
   let codeBlocks = [];
+  let idCodeLines = [];
   let currentBlock: any = [];
   let inCodeBlock = false;
   let errorLine = '';
+  let currentIdCodeLine = '';
 
   for (const line of lines) {
     if (line.trim().startsWith('×')) {
-      // 如果当前有正在处理的代码块，先保存它
       if (inCodeBlock) {
         codeBlocks.push(currentBlock.join('\n'));
+        idCodeLines.push(currentIdCodeLine);
         currentBlock = [];
+        currentIdCodeLine = '';
       }
       errorLine = line;
       inCodeBlock = false;
@@ -96,11 +93,18 @@ export function extractCodeBlocks(errorMsg: string) {
       inCodeBlock = true;
       currentBlock = errorLine ? [errorLine, line] : [line];
       errorLine = '';
+      const match = line.match(/\s*╭─(.*?)$$/);
+
+      if (match) {
+        currentIdCodeLine = match[1];
+      }
     } else if (inCodeBlock) {
       currentBlock.push(line);
       if (line.includes('╰────')) {
         codeBlocks.push(currentBlock.join('\n'));
+        idCodeLines.push(currentIdCodeLine);
         currentBlock = [];
+        currentIdCodeLine = '';
         inCodeBlock = false;
       }
     }
@@ -108,7 +112,16 @@ export function extractCodeBlocks(errorMsg: string) {
 
   if (currentBlock.length > 0) {
     codeBlocks.push(currentBlock.join('\n'));
+    idCodeLines.push(currentIdCodeLine);
   }
 
-  return codeBlocks;
+  return { codeBlocks, idCodeLines };
+}
+
+export function extractErrorMessage(errorString: string) {
+  const regex = /^([\s\S]*?)(?=\s+at constructor)/;
+
+  const match = errorString.match(regex);
+
+  return match ? match[1].trim() : errorString;
 }

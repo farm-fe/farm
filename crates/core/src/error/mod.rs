@@ -114,7 +114,7 @@ fn serialize_parse_error(resolved_path: &str, msg: &str) -> serde_json::Value {
   }
   json!({
       "id": resolved_path,
-      "frame": msg,
+      "errorFrame": msg,
       "type": "Parse Error",
       "cause": "Potential Causes:\n1.The module have syntax error.\n2.This kind of module is not supported, you may need plugins to support it.\n",
       "message": format!("Parse `{}` failed.\n {}", resolved_path, msg)

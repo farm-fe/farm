@@ -3,7 +3,6 @@ import { HotModuleState } from './hot-module-state';
 import { logger } from './logger';
 import { ErrorOverlay, overlayId } from './overlay';
 import { HMRPayload, HmrUpdateResult, RawHmrUpdateResult } from './types';
-import { parseIfJSON } from './utils';
 
 // Inject during compile time
 const hmrPort = Number(FARM_HMR_PORT);

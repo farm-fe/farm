@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import HelloWorld from "./components/HelloWorld.vue";
 // console.log(import.meta.env);
+import { bbb} from './indexa.ts'
+bbb()
 fetch("https://wallhaven.fun/api/wallhaven/w/yx6e9l")
   .then((res) => res.json())
   // .then((data) => console.log(data))
@@ -11,7 +13,7 @@ fetch("https://wallhaven.fun/api/wallhaven/w/yx6e9l")
   <div>
     <a href="https://farmfe.org/" target="_blank">
       <img src="./assets/logo.png" class="logo" alt="Farm logo" />
-    </a>
+    </a>ww
     <a href="https://vuejs.org/" target="_blank">
       <img src="./assets/vue.svg" class="logo vue" alt="Vue logo" />
     </a>
