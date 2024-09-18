@@ -4,7 +4,7 @@ import HelloWorld from "./components/HelloWorld.vue";
 import { bbb} from './indexa.ts'
 bbb()
 fetch("https://wallhaven.fun/api/wallhaven/w/yx6e9l")
-  .then((res) => res.json())
+  .then((res) => res.json()
   // .then((data) => console.log(data))
   // .catch((err) => console.error(err));
 </script>
