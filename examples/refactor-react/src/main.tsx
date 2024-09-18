@@ -2,8 +2,11 @@ import { useState } from "react";
 import "./main.css";
 import reactLogo from "/react.svg";
 import FarmLogo from "./assets/logo.png";
+import { a } from './a.js'
 export function Main() {
   const [count, setCount] = useState(0);
+  console.log(a);
+  
   return (
     <>
       <div>

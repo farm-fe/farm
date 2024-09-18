@@ -218,6 +218,18 @@ export class Server extends httpServer {
 
     await this.watcher.createWatcher();
 
+    this.watcher.watcher.on('add', async (file: string | string[] | any) => {
+      // TODO pluginContainer hooks
+    });
+
+    this.watcher.watcher.on('unlink', async (file: string | string[] | any) => {
+      const parentFiles = this.compiler.getParentFiles(file);
+      const normalizeParentFiles = parentFiles.map((file) =>
+        normalizePath(file)
+      );
+      this.hmrEngine.hmrUpdate(normalizeParentFiles, true);
+    });
+
     this.watcher.watcher.on('change', async (file: string | string[] | any) => {
       file = normalizePath(file);
       const shortFile = getShortName(file, this.resolvedUserConfig.root);
@@ -637,7 +649,10 @@ export class Server extends httpServer {
         `HMR invalidate: ${path}. ${message ?? ''} `
       );
       const parentFiles = this.compiler.getParentFiles(path);
-      this.hmrEngine.hmrUpdate(parentFiles, true);
+      const normalizeParentFiles = parentFiles.map((file) =>
+        normalizePath(file)
+      );
+      this.hmrEngine.hmrUpdate(normalizeParentFiles, true);
     });
   }
   async closeServerAndExit() {
