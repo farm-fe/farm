@@ -596,7 +596,7 @@ export class ErrorOverlay extends HTMLElement {
 
       const splitMessage = splitErrorMessage(msg);
 
-      console.error(splitMessage.errorBrowser);
+      console.error(splitMessage.errorInfo);
 
       if (splitMessage.codeBlocks && splitMessage.codeBlocks.length > 0) {
         splitMessage.codeBlocks.forEach((codeBlock, blockIndex) => {
@@ -635,8 +635,9 @@ export class ErrorOverlay extends HTMLElement {
         });
       } else if (splitMessage.errorInfo) {
         const terminalBlock = document.createElement('div');
+
         const highlightedCode = this.highlightCode(
-          extractErrorMessage(splitMessage.errorInfo)
+          extractErrorMessage(splitMessage.frame)
         );
 
         terminalBlock.className = 'terminal-block';

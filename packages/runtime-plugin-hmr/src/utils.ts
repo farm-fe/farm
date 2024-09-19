@@ -58,14 +58,14 @@ export function cleanStack(stack: string) {
 export function splitErrorMessage(errorMsg: any) {
   // @ts-ignore
   const potentialCauses = errorMsg.cause;
-  const { codeBlocks, idCodeLines } = extractSwcCodeBlocks(
-    stripAnsi(errorMsg?.errorFrame ?? '')
-  );
+  const stripErrorFrame = stripAnsi(errorMsg.errorFrame ?? '');
+  const { codeBlocks, idCodeLines } = extractSwcCodeBlocks(stripErrorFrame);
   return {
     errorInfo: stripAnsi(errorMsg.message),
     codeBlocks,
     potentialCauses,
     idCodeLines,
+    frame: stripErrorFrame,
     errorBrowser: `${stripAnsi(errorMsg.message)}\n\n${potentialCauses}\n\n`
   };
 }

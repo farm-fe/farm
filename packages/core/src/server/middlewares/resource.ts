@@ -35,10 +35,14 @@ export function resourceMiddleware(app: any) {
     // if (url?.endsWith('.html') && req.headers['sec-fetch-dest'] !== 'script') {
     // }
 
-    if (compiler.compiling) {
-      await new Promise((resolve) => {
-        compiler.onUpdateFinish(() => resolve(undefined));
-      });
+    if (compiler._isInitialCompile) {
+      await compiler.waitForInitialCompileFinish();
+    } else {
+      if (compiler.compiling) {
+        await new Promise((resolve) => {
+          compiler.onUpdateFinish(() => resolve(undefined));
+        });
+      }
     }
 
     const resourceResult: any = findResource(req, res, compiler, publicPath);

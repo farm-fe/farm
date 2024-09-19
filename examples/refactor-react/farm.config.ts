@@ -11,7 +11,7 @@ export default defineConfig({
     progress: false,
     output: {
       // publicPath: "/aaa/",
-    },
+    }
   },
   server: {},
 });
@@ -19,9 +19,9 @@ export default defineConfig({
 
 function myCustomPlugin() {
   return {
-    name: 'vite-plugin-custom',
+    name: 'custom',
     updateModules: {
-      executor(data) {
+      executor(data: any) {
         console.log(data, "更新的模块");
       },
     },

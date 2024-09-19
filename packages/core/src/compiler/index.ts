@@ -36,6 +36,9 @@ export class Compiler {
   private _onUpdateFinishQueue: (() => void | Promise<void>)[] = [];
 
   public compiling = false;
+  private _compileFinishPromise: Promise<void> | null = null;
+  private _resolveCompileFinish: (() => void) | null = null;
+  private _isInitialCompile = true;
 
   constructor(
     public config: Config,
@@ -54,7 +57,7 @@ export class Compiler {
 
   async compile() {
     this.checkCompiling();
-
+    this._createCompileFinishPromise();
     this.compiling = true;
     if (process.env.FARM_PROFILE) {
       this._bindingCompiler.compileSync();
@@ -62,14 +65,22 @@ export class Compiler {
       await this._bindingCompiler.compile();
     }
     this.compiling = false;
+    this._resolveCompileFinishPromise();
+    if (this._isInitialCompile) {
+      this._isInitialCompile = false;
+    }
   }
 
   compileSync() {
     this.checkCompiling();
-
+    this._createCompileFinishPromise();
     this.compiling = true;
     this._bindingCompiler.compileSync();
     this.compiling = false;
+    this._resolveCompileFinishPromise();
+    if (this._isInitialCompile) {
+      this._isInitialCompile = false;
+    }
   }
 
   async update(
@@ -213,6 +224,33 @@ export class Compiler {
 
   stats() {
     return this._bindingCompiler.stats();
+  }
+
+  // wait for the compiler to finish compiling
+  async waitForInitialCompileFinish() {
+    if (this._isInitialCompile) {
+      await this.waitForCompileFinish();
+    }
+  }
+
+  async waitForCompileFinish() {
+    if (this.compiling && this._compileFinishPromise) {
+      await this._compileFinishPromise;
+    }
+  }
+
+  private _createCompileFinishPromise() {
+    this._compileFinishPromise = new Promise<void>((resolve) => {
+      this._resolveCompileFinish = resolve;
+    });
+  }
+
+  private _resolveCompileFinishPromise() {
+    if (this._resolveCompileFinish) {
+      this._resolveCompileFinish();
+      this._compileFinishPromise = null;
+      this._resolveCompileFinish = null;
+    }
   }
 
   private checkCompiling() {

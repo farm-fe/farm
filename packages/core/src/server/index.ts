@@ -564,6 +564,7 @@ export class Server extends httpServer {
       this.middlewares.use(adaptorViteMiddleware(this));
     }
 
+    // TODO server post hooks not work bug!
     this.postConfigureServerHooks.forEach((fn) => fn && fn());
 
     // TODO todo add appType 这块要判断 单页面还是 多页面 多 html 处理不一样
@@ -616,6 +617,7 @@ export class Server extends httpServer {
     );
     const start = performance.now();
     await this.#compile();
+
     const duration = performance.now() - start;
     bootstrap(
       duration,

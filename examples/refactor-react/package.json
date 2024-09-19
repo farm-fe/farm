@@ -10,6 +10,7 @@
     "clean": "farm clean"
   },
   "dependencies": {
+    "@ant-design/happy-work-theme": "^1.0.0",
     "antd": "^5.4.2",
     "react": "18",
     "react-dom": "18"
