@@ -22,5 +22,4 @@ function normalizeCssModules(
         JSON.stringify(localsConvention);
     }
   }
-  console.log(resolvedCompilation.custom);
 }
