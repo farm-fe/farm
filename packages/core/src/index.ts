@@ -38,7 +38,10 @@ import { Server } from './server/index.js';
 import { PersistentCacheBrand, bold, colors, green } from './utils/color.js';
 import { Logger } from './utils/logger.js';
 
-import { createCompiler } from './compiler/utils.js';
+import {
+  createCompiler,
+  resolveConfigureCompilerHook
+} from './compiler/utils.js';
 import { __FARM_GLOBAL__ } from './config/_global.js';
 import type { FarmCliOptions, ResolvedUserConfig } from './config/types.js';
 
@@ -202,51 +205,6 @@ async function findNodeModulesRecursively(rootPath: string): Promise<string[]> {
   return result;
 }
 
-// export async function createBundleHandler(
-//   resolvedUserConfig: ResolvedUserConfig,
-//   logger: Logger,
-//   watchMode = false
-// ) {
-//   const compiler = await createCompiler(resolvedUserConfig, logger);
-
-//   await compilerHandler(
-//     async () => {
-//       if (resolvedUserConfig.compilation?.output?.clean) {
-//         compiler.removeOutputPathDir();
-//       }
-
-//       try {
-//         await compiler.compile();
-//       } catch (err) {
-//         // throw new Error(logError(err) as unknown as string);
-//         throw new Error(err as unknown as string);
-//       }
-//       compiler.writeResourcesToDisk();
-//     },
-//     resolvedUserConfig,
-//     logger
-//   );
-
-//   if (resolvedUserConfig.compilation?.watch || watchMode) {
-//     const watcher = new FileWatcher(compiler, resolvedUserConfig, logger);
-//     await watcher.watch();
-//     return watcher;
-//   }
-// }
-
-export async function create12Compiler(
-  resolvedUserConfig: ResolvedUserConfig,
-  logger: Logger
-) {
-  // const compiler = initInlineCompiler(resolvedUserConfig, logger);
-  // TODO 这也不对 这块要 先排序 然后过滤掉对应的 存在这个钩子的插件 然后进而调用一些 like e.g 中间件
-  // 这块逻辑也需要过滤 拿到最新的
-  // for (const plugin of resolvedUserConfig.jsPlugins) {
-  //   await plugin.configureCompiler?.(compiler);
-  // }
-  // return compiler;
-}
-
 export async function createInlineCompiler(
   config: ResolvedUserConfig,
   options = {}
@@ -339,6 +297,8 @@ export async function build(
 
   try {
     const compiler = await createCompiler(resolvedUserConfig);
+    await resolveConfigureCompilerHook(resolvedUserConfig);
+
     if (output?.clean) {
       compiler.removeOutputPathDir();
     }

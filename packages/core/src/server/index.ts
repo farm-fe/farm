@@ -40,7 +40,10 @@ import type {
 import type { Http2SecureServer } from 'node:http2';
 import type * as net from 'node:net';
 
-import { createCompiler } from '../compiler/utils.js';
+import {
+  createCompiler,
+  resolveConfigureCompilerHook
+} from '../compiler/utils.js';
 import type {
   FarmCliOptions,
   HmrOptions,
@@ -389,7 +392,7 @@ export class Server extends httpServer {
         serverPort.toString();
 
       this.compiler = await createCompiler(this.resolvedUserConfig);
-
+      await resolveConfigureCompilerHook(this.resolvedUserConfig);
       // compile the project and start the dev server
       await this.#startCompile();
 
