@@ -1,22 +1,16 @@
-import { Readable } from 'node:stream';
 import mime from 'mime';
-import path, { extname } from 'path/posix';
+import path from 'path/posix';
 import { Compiler } from '../../compiler/index.js';
-import { ResolvedUserConfig } from '../../config/types.js';
-import {
-  generateFileTree,
-  generateFileTreeHtml,
-  stripQueryAndHash
-} from '../../utils/index.js';
+import { generateFileTree, generateFileTreeHtml } from '../../utils/index.js';
 import { cleanUrl } from '../../utils/url.js';
-import { HttpServer } from '../index.js';
 import { normalizePathByPublicPath } from '../publicDir.js';
 import { send } from '../send.js';
-interface RealResourcePath {
+
+type RealResourcePath = {
   resourcePath: string;
   rawPath: string;
   resource: Buffer;
-}
+};
 
 export function resourceMiddleware(app: any) {
   return async function generateResourceMiddleware(
@@ -39,16 +33,14 @@ export function resourceMiddleware(app: any) {
       await compiler.waitForInitialCompileFinish();
     } else {
       if (compiler.compiling) {
-        await new Promise((resolve) => {
-          compiler.onUpdateFinish(() => resolve(undefined));
-        });
+        await new Promise((resolve) => compiler.onUpdateFinish(resolve));
       }
     }
 
     const resourceResult: any = findResource(req, res, compiler, publicPath);
 
     if (resourceResult === true) {
-      next();
+      return next();
     }
     // TODO if write to dist should be use sirv middleware
     if (resourceResult) {
@@ -68,9 +60,10 @@ export function resourceMiddleware(app: any) {
 
     const extension = path.extname(resourceWithoutPublicPath).toLowerCase();
     const mimeType = mime.getType(extension) || 'application/octet-stream';
+
     const isHtmlRequest =
       mimeType === 'text/html' ||
-      (extension === '' && req.headers.accept?.includes('text/html'));
+      (!extension && req.headers.accept?.includes('text/html'));
 
     if (!isHtmlRequest) {
       // 对于非 HTML 请求，尝试在根目录查找资源

@@ -4,14 +4,7 @@ import connect from 'connect';
 import corsMiddleware from 'cors';
 
 import { Compiler } from '../compiler/index.js';
-import {
-  bold,
-  colors,
-  createCompiler,
-  getShortName,
-  green,
-  resolveConfig
-} from '../index.js';
+import { bold, colors, getShortName, green, resolveConfig } from '../index.js';
 import Watcher from '../watcher/index.js';
 import { HmrEngine } from './hmr-engine.js';
 import { httpServer } from './http.js';
@@ -23,7 +16,7 @@ import { getSortedPluginHooksBindThis } from '../plugin/index.js';
 import { getCacheDir, isCacheDirExists } from '../utils/cacheDir.js';
 import { createDebugger } from '../utils/debug.js';
 import { resolveServerUrls, teardownSIGTERMListener } from '../utils/http.js';
-import { Logger, bootstrap, logger, printServerUrls } from '../utils/logger.js';
+import { Logger, bootstrap, printServerUrls } from '../utils/logger.js';
 import { initPublicFiles } from '../utils/publicDir.js';
 import { arrayEqual, isObject, normalizePath } from '../utils/share.js';
 
@@ -47,6 +40,7 @@ import type {
 import type { Http2SecureServer } from 'node:http2';
 import type * as net from 'node:net';
 
+import { createCompiler } from '../compiler/utils.js';
 import type {
   FarmCliOptions,
   HmrOptions,
@@ -155,8 +149,7 @@ export class Server extends httpServer {
         this.inlineConfig,
         'start',
         'development',
-        'development',
-        false
+        'development'
       );
       this.logger = this.resolvedUserConfig.logger;
 
@@ -395,7 +388,7 @@ export class Server extends httpServer {
       this.resolvedUserConfig.compilation.define.FARM_HMR_PORT =
         serverPort.toString();
 
-      this.compiler = await createCompiler(this.resolvedUserConfig, logger);
+      this.compiler = await createCompiler(this.resolvedUserConfig);
 
       // compile the project and start the dev server
       await this.#startCompile();

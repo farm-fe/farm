@@ -3,6 +3,7 @@ use std::{collections::HashMap, path::PathBuf};
 use farmfe_utils::hash::sha256;
 use relative_path::RelativePath;
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(untagged)]
@@ -76,13 +77,16 @@ impl PersistentCacheConfig {
             .clone_from(&default_config.as_raw_object().cache_dir);
         }
 
-        let mut envs = cloned_obj.envs.iter().collect::<Vec<_>>();
-        envs.sort();
-        let config_str = envs
-          .into_iter()
-          .map(|(k, v)| format!("{}={}", k, v))
-          .collect::<Vec<_>>()
-          .join("&");
+        let mut keys: Vec<_> = cloned_obj.envs.keys().collect();
+        keys.sort();
+        let config_str = keys
+            .into_iter()
+            .map(|k| {
+                let v = cloned_obj.envs.get(k).unwrap();
+                format!("{}={}", k, v)
+            })
+            .collect::<Vec<_>>()
+            .join("&");
         let config_hash = sha256(config_str.as_bytes(), 32);
 
         cloned_obj.build_dependencies.push(config_hash);
@@ -138,7 +142,7 @@ pub struct PersistentCacheConfigObj {
   /// It's absolute paths of farm.config by default. Farm will use their timestamp and hash to invalidate cache.
   /// Note that farm will resolve the config file dependencies from node side
   pub build_dependencies: Vec<String>,
-  pub envs: HashMap<String, String>,
+  pub envs: HashMap<String, Value>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

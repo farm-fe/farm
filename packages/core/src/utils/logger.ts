@@ -306,21 +306,21 @@ export function printServerUrls(
     colors.cyan(url.replace(/:(\d+)\//, (_, port) => `:${colors.bold(port)}/`));
   for (const url of urls.local) {
     logger.info(
-      `${colors.bold(colors.green('➜'))} ${colors.bold(
+      `${colors.bold(colors.green('➜ '))} ${colors.bold(
         'Local'
       )}:   ${colors.bold(colorUrl(url))}`
     );
   }
   for (const url of urls.network) {
     logger.info(
-      `${colors.bold(colors.green('➜'))} ${colors.bold(
+      `${colors.bold(colors.green('➜ '))} ${colors.bold(
         'Network'
       )}: ${colors.bold(colorUrl(url))}`
     );
   }
   if (urls.network.length === 0 && optionsHost === undefined) {
     logger.info(
-      colors.dim(`  ${colors.green('➜')}  ${colors.bold('Network')}: use `) +
+      colors.dim(`  ${colors.green('➜ ')}  ${colors.bold('Network')}: use `) +
         colors.bold('--host') +
         colors.dim(' to expose')
     );

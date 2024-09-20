@@ -108,7 +108,7 @@ cli
   .command('build [root]', 'compile the project in production mode')
   .option('-o, --outDir <dir>', '[string] output directory')
   .option('-i, --input <file>', '[string] input file path')
-  .option('-w, --watch', '[boolean] watch file change')
+  .option('-w, --watch', '[boolean] watch file change and rebuild')
   .option('--target <target>', '[string] transpile targetEnv node, browser')
   .option('--format <format>', '[string] transpile format esm, commonjs')
   .option('--sourcemap', '[boolean] output source maps for build')
@@ -137,52 +137,51 @@ cli
         treeShaking: options.treeShaking
       }
     };
-    // TODO build
-    // const { build } = await resolveCore();
+    const { build } = await resolveCore();
 
-    // handleAsyncOperationErrors(build(defaultOptions), 'error during build');
+    handleAsyncOperationErrors(build(defaultOptions), 'error during build');
   });
 
-cli
-  .command('watch [root]', 'watch file change')
-  .option('-o, --outDir <dir>', '[string] output directory')
-  .option('-i, --input <file>', '[string] input file path')
-  .option('--target <target>', '[string] transpile targetEnv node, browser')
-  .option('--format <format>', '[string] transpile format esm, commonjs')
-  .option('--sourcemap', '[boolean] output source maps for build')
-  .option(
-    '--treeShaking',
-    '[boolean] Eliminate useless code without side effects'
-  )
-  .option('--minify', '[boolean] code compression at build time')
-  .action(async (root: string, options: CliBuildOptions & GlobalCliOptions) => {
-    const defaultOptions = {
-      root,
-      configFile: options.config,
-      mode: options.mode,
-      compilation: {
-        watch: options.watch,
-        output: {
-          path: options?.outDir,
-          targetEnv: options?.target,
-          format: options?.format
-        },
-        input: {
-          index: options?.input
-        },
-        sourcemap: options.sourcemap,
-        minify: options.minify,
-        treeShaking: options.treeShaking
-      }
-    };
+// cli
+//   .command('watch [root]', 'watch file change')
+//   .option('-o, --outDir <dir>', '[string] output directory')
+//   .option('-i, --input <file>', '[string] input file path')
+//   .option('--target <target>', '[string] transpile targetEnv node, browser')
+//   .option('--format <format>', '[string] transpile format esm, commonjs')
+//   .option('--sourcemap', '[boolean] output source maps for build')
+//   .option(
+//     '--treeShaking',
+//     '[boolean] Eliminate useless code without side effects'
+//   )
+//   .option('--minify', '[boolean] code compression at build time')
+//   .action(async (root: string, options: CliBuildOptions & GlobalCliOptions) => {
+//     const defaultOptions = {
+//       root,
+//       configFile: options.config,
+//       mode: options.mode,
+//       compilation: {
+//         watch: options.watch,
+//         output: {
+//           path: options?.outDir,
+//           targetEnv: options?.target,
+//           format: options?.format
+//         },
+//         input: {
+//           index: options?.input
+//         },
+//         sourcemap: options.sourcemap,
+//         minify: options.minify,
+//         treeShaking: options.treeShaking
+//       }
+//     };
 
-    const { watch } = await resolveCore();
+//     const { watch } = await resolveCore();
 
-    handleAsyncOperationErrors(
-      watch(defaultOptions),
-      'error during watch project'
-    );
-  });
+//     handleAsyncOperationErrors(
+//       watch(defaultOptions),
+//       'error during watch project'
+//     );
+//   });
 
 cli
   .command('preview [root]', 'compile the project in watch mode')

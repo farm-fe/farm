@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 // import type { build, clean, preview, start, watch } from '@farmfe/core';
-import type { clean, start } from '@farmfe/core';
+import type { build, clean, start } from '@farmfe/core';
 import { Logger } from '@farmfe/core';
 
 import type {
@@ -25,7 +25,7 @@ const logger = new Logger();
  */
 export async function resolveCore(): Promise<{
   start: typeof start;
-  build: any;
+  build: typeof build;
   watch: any;
   preview: any;
   clean: typeof clean;

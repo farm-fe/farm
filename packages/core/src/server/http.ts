@@ -15,8 +15,7 @@ import type { OutgoingHttpHeaders as HttpServerHeaders } from 'node:http';
 import type { ServerOptions as HttpsServerOptions } from 'node:https';
 import connect from 'connect';
 import { readFileIfExists } from '../utils/fsUtils.js';
-import { resolveServerUrls } from '../utils/http.js';
-import { Logger, printServerUrls } from '../utils/logger.js';
+import { Logger } from '../utils/logger.js';
 import { HttpServer } from './index.js';
 import { ProxyOptions } from './middlewares/proxy.js';
 

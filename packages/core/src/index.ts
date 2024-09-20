@@ -28,30 +28,19 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import fse from 'fs-extra';
 
-import { Compiler } from './compiler/index.js';
 import { loadEnv, setProcessEnv } from './config/env.js';
 import {
   UserConfig,
-  checkClearScreen,
-  getConfigFilePath,
   normalizePublicDir,
   resolveConfig
 } from './config/index.js';
 import { Server } from './server/index.js';
-import { compilerHandler } from './utils/build.js';
-import { colors } from './utils/color.js';
+import { PersistentCacheBrand, bold, colors, green } from './utils/color.js';
 import { Logger } from './utils/logger.js';
 
+import { createCompiler } from './compiler/utils.js';
 import { __FARM_GLOBAL__ } from './config/_global.js';
-import type {
-  FarmCliOptions,
-  ResolvedUserConfig,
-  UserPreviewServerConfig
-} from './config/types.js';
-// import { logError } from './server/error.js';
-// import { lazyCompilation } from './server/middlewares/lazy-compilation.js';
-
-import type { JsPlugin } from './plugin/type.js';
+import type { FarmCliOptions, ResolvedUserConfig } from './config/types.js';
 
 // export async function start(
 //   inlineConfig?: FarmCliOptions & UserConfig
@@ -80,30 +69,6 @@ import type { JsPlugin } from './plugin/type.js';
 //     await devServer.listen();
 //   } catch (error) {
 //     logger.error('Failed to start the server', { exit: true, error });
-//   }
-// }
-
-// export async function build(
-//   inlineConfig?: FarmCliOptions & UserConfig
-// ): Promise<void> {
-//   inlineConfig = inlineConfig ?? {};
-//   const logger = inlineConfig.logger ?? new Logger();
-//   setProcessEnv('production');
-
-//   const resolvedUserConfig = await resolveConfig(
-//     inlineConfig,
-//     'build',
-//     'production',
-//     'production',
-//     false
-//   );
-
-//   try {
-//     await createBundleHandler(resolvedUserConfig, logger);
-//     // copy resources under publicDir to output.path
-//     await copyPublicDirectory(resolvedUserConfig, logger);
-//   } catch (err) {
-//     logger.error(`Failed to build: ${err}`, { exit: true });
 //   }
 // }
 
@@ -214,49 +179,6 @@ import type { JsPlugin } from './plugin/type.js';
 //   // fileWatcher.watchConfigs(handleFileChange);
 // }
 
-export async function clean(
-  rootPath: string,
-  recursive?: boolean | undefined
-): Promise<void> {
-  // TODO After optimizing the reading of config, put the clean method into compiler
-  const logger = new Logger();
-
-  const nodeModulesFolders = recursive
-    ? await findNodeModulesRecursively(rootPath)
-    : [path.join(rootPath, 'node_modules')];
-
-  await Promise.all(
-    nodeModulesFolders.map(async (nodeModulesPath) => {
-      // TODO Bug .farm cacheDir folder not right
-      const farmFolderPath = path.join(nodeModulesPath, '.farm');
-      try {
-        const stats = await fs.stat(farmFolderPath);
-        if (stats.isDirectory()) {
-          await fs.rm(farmFolderPath, { recursive: true, force: true });
-          // TODO optimize nodeModulePath path e.g: /Users/xxx/node_modules/.farm/cache
-          logger.info(
-            `Cache cleaned at ${colors.bold(colors.green(nodeModulesPath))}`
-          );
-        }
-      } catch (error) {
-        if (error.code === 'ENOENT') {
-          logger.warn(
-            `No cached files found in ${colors.bold(
-              colors.green(nodeModulesPath)
-            )}`
-          );
-        } else {
-          logger.error(
-            `Error cleaning cache in ${colors.bold(
-              colors.green(nodeModulesPath)
-            )}: ${error.message}`
-          );
-        }
-      }
-    })
-  );
-}
-
 async function findNodeModulesRecursively(rootPath: string): Promise<string[]> {
   const result: string[] = [];
 
@@ -312,39 +234,17 @@ async function findNodeModulesRecursively(rootPath: string): Promise<string[]> {
 //   }
 // }
 
-export async function createCompiler(
+export async function create12Compiler(
   resolvedUserConfig: ResolvedUserConfig,
   logger: Logger
 ) {
-  const compiler = initInlineCompiler(resolvedUserConfig, logger);
+  // const compiler = initInlineCompiler(resolvedUserConfig, logger);
   // TODO 这也不对 这块要 先排序 然后过滤掉对应的 存在这个钩子的插件 然后进而调用一些 like e.g 中间件
   // 这块逻辑也需要过滤 拿到最新的
-  for (const plugin of resolvedUserConfig.jsPlugins) {
-    await plugin.configureCompiler?.(compiler);
-  }
-
-  return compiler;
-}
-
-export function initInlineCompiler(
-  resolvedUserConfig: ResolvedUserConfig,
-  logger: Logger
-) {
-  const {
-    jsPlugins,
-    rustPlugins,
-    compilation: compilationConfig
-  } = resolvedUserConfig;
-
-  const compiler = new Compiler(
-    {
-      config: compilationConfig,
-      jsPlugins,
-      rustPlugins
-    },
-    logger
-  );
-  return compiler;
+  // for (const plugin of resolvedUserConfig.jsPlugins) {
+  //   await plugin.configureCompiler?.(compiler);
+  // }
+  // return compiler;
 }
 
 export async function createInlineCompiler(
@@ -360,8 +260,7 @@ export async function createInlineCompiler(
 }
 
 async function copyPublicDirectory(
-  resolvedUserConfig: ResolvedUserConfig,
-  logger: Logger
+  resolvedUserConfig: ResolvedUserConfig
 ): Promise<void> {
   const absPublicDirPath = normalizePublicDir(
     resolvedUserConfig.root,
@@ -382,14 +281,16 @@ async function copyPublicDirectory(
         await fse.copy(publicFile, destFile);
       }
 
-      logger.info(
+      resolvedUserConfig.logger.info(
         `Public directory resources copied ${colors.bold(
           colors.green('successfully')
         )}.`
       );
     }
   } catch (error) {
-    logger.error(`Error copying public directory: ${error.message}`);
+    resolvedUserConfig.logger.error(
+      `Error copying public directory: ${error.message}`
+    );
   }
 }
 
@@ -419,4 +320,86 @@ export async function start(
   } catch (error) {
     server.logger.error('Failed to start the server', { exit: false, error });
   }
+}
+
+export async function build(
+  inlineConfig?: FarmCliOptions & UserConfig
+): Promise<void> {
+  inlineConfig = inlineConfig ?? {};
+  setProcessEnv('production');
+
+  const resolvedUserConfig = await resolveConfig(
+    inlineConfig,
+    'build',
+    'production',
+    'production'
+  );
+
+  const { persistentCache, output } = resolvedUserConfig.compilation;
+
+  try {
+    const compiler = await createCompiler(resolvedUserConfig);
+    if (output?.clean) {
+      compiler.removeOutputPathDir();
+    }
+    const startTime = performance.now();
+    await compiler.compile();
+    const elapsedTime = Math.floor(performance.now() - startTime);
+    const persistentCacheText = persistentCache
+      ? bold(PersistentCacheBrand)
+      : '';
+
+    compiler.writeResourcesToDisk();
+    resolvedUserConfig.logger.info(
+      `Build completed in ${bold(
+        green(`${elapsedTime}ms`)
+      )} ${persistentCacheText} Resources emitted to ${bold(green(output.path))}.`
+    );
+    await copyPublicDirectory(resolvedUserConfig);
+  } catch (err) {
+    resolvedUserConfig.logger.error(`Failed to build: ${err}`, { exit: true });
+  }
+}
+
+export async function clean(
+  rootPath: string,
+  recursive?: boolean | undefined
+): Promise<void> {
+  // TODO After optimizing the reading of config, put the clean method into compiler
+  const logger = new Logger();
+
+  const nodeModulesFolders = recursive
+    ? await findNodeModulesRecursively(rootPath)
+    : [path.join(rootPath, 'node_modules')];
+
+  await Promise.all(
+    nodeModulesFolders.map(async (nodeModulesPath) => {
+      // TODO Bug .farm cacheDir folder not right
+      const farmFolderPath = path.join(nodeModulesPath, '.farm');
+      try {
+        const stats = await fs.stat(farmFolderPath);
+        if (stats.isDirectory()) {
+          await fs.rm(farmFolderPath, { recursive: true, force: true });
+          // TODO optimize nodeModulePath path e.g: /Users/xxx/node_modules/.farm/cache
+          logger.info(
+            `Cache cleaned at ${colors.bold(colors.green(nodeModulesPath))}`
+          );
+        }
+      } catch (error) {
+        if (error.code === 'ENOENT') {
+          logger.warn(
+            `No cached files found in ${colors.bold(
+              colors.green(nodeModulesPath)
+            )}`
+          );
+        } else {
+          logger.error(
+            `Error cleaning cache in ${colors.bold(
+              colors.green(nodeModulesPath)
+            )}: ${error.message}`
+          );
+        }
+      }
+    })
+  );
 }

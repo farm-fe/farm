@@ -7,7 +7,7 @@ export default defineConfig({
     myCustomPlugin()
   ],
   compilation: {
-    persistentCache: false,
+    // persistentCache: false,
     progress: false,
     output: {
       // publicPath: "/aaa/",
