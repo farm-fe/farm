@@ -1,5 +1,5 @@
 import { ResolvedUserConfig } from '../config/types.js';
-import { getPluginHooks, getSortedPlugins } from '../plugin/index.js';
+import { getPluginHooks } from '../plugin/index.js';
 import { Compiler } from './index.js';
 
 export function createCompiler(resolvedUserConfig: ResolvedUserConfig) {
