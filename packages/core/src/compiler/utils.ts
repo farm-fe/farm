@@ -1,4 +1,5 @@
 import { ResolvedUserConfig } from '../config/types.js';
+import { getPluginHooks, getSortedPlugins } from '../plugin/index.js';
 import { Compiler } from './index.js';
 
 export function createCompiler(resolvedUserConfig: ResolvedUserConfig) {
@@ -20,9 +21,11 @@ export function createCompiler(resolvedUserConfig: ResolvedUserConfig) {
   return compiler;
 }
 
-export function resolveConfigureCompilerHook(config: ResolvedUserConfig) {
-  console.log(config.jsPlugins);
-  // for (const plugin of resolvedUserConfig.jsPlugins) {
-  //   await plugin.configureCompiler?.(compiler);
-  // }
+export async function resolveConfigureCompilerHook(
+  compiler: Compiler,
+  config: ResolvedUserConfig
+) {
+  for (const plugin of getPluginHooks(config.jsPlugins, 'configureCompiler')) {
+    await plugin.configureCompiler?.(compiler);
+  }
 }

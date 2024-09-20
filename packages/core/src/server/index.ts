@@ -392,7 +392,10 @@ export class Server extends httpServer {
         serverPort.toString();
 
       this.compiler = await createCompiler(this.resolvedUserConfig);
-      await resolveConfigureCompilerHook(this.resolvedUserConfig);
+      await resolveConfigureCompilerHook(
+        this.compiler,
+        this.resolvedUserConfig
+      );
       // compile the project and start the dev server
       await this.#startCompile();
 

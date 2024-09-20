@@ -4,7 +4,8 @@ import react from "@farmfe/plugin-react";
 export default defineConfig({
   plugins: [
     react(),
-    myCustomPlugin()
+    myCustomPlugin(),
+    compilerPlugin(),
   ],
   compilation: {
     // persistentCache: false,
@@ -24,6 +25,15 @@ function myCustomPlugin() {
       executor(data: any) {
         console.log(data, "更新的模块");
       },
+    },
+  }
+}
+
+function compilerPlugin() {
+  return {
+    name: 'compiler',
+    configureCompiler(compiler: any) {
+      console.log(compiler.compile, "compiler");
     },
   }
 }

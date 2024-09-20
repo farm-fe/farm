@@ -297,7 +297,7 @@ export async function build(
 
   try {
     const compiler = await createCompiler(resolvedUserConfig);
-    await resolveConfigureCompilerHook(resolvedUserConfig);
+    await resolveConfigureCompilerHook(compiler, resolvedUserConfig);
 
     if (output?.clean) {
       compiler.removeOutputPathDir();
