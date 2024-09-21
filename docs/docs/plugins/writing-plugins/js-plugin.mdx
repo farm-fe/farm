@@ -1,0 +1,203 @@
+import CodeBlock from "@theme/CodeBlock";
+import Tabs from "@theme/Tabs";
+import TabItem from "@theme/TabItem";
+
+
+# Writing JavaScript Plugins
+
+A JavaScript plugin is simply a pure JavaScript object that defines a set of property hooks:
+
+```js
+// farm.config.ts
+import { defineConfig } from "@farmfe/core";
+
+export default defineConfig({
+  // ...
+  plugins: [
+    // a plugin object
+    {
+      name: "my-resolve-plugin",
+      priority: 1000, // the priority of this plugin, the larger the value, the earlier the execution. Normally internal plugins is 100.
+      resolve: {
+        filters: {
+          // Only execute the hook when following conditions satisfied
+          sources: ["\\./index.ts"], // a regex array
+          importers: ["None"],
+        },
+        executor: async (param) => {
+          // this hook executor
+          console.log(param); // resolve params
+          // return the resolve result
+          return {
+            resolvedPath: "virtual:my-module",
+            query: {},
+            sideEffects: false,
+            external: false,
+          };
+        },
+      },
+    },
+    // load, transform are similar to resolve, refer to their types
+  ],
+});
+```
+
+If you want to pass args to your plugins，you can use a closure.
+
+```ts
+// my-resolve-plugin.ts
+export function myResolvePlugin(options: Options) {
+  const { xx } = options;
+
+  return {
+    name: "my-resolve-plugin",
+    resolve: {
+      // ...
+    },
+  };
+}
+
+// farm.config.ts
+import { defineConfig } from "@farmfe/core";
+import { myResolvePlugin } from "./myResolvePlugin.ts";
+
+export default defineConfig({
+  // ...
+  plugins: [myResolvePlugin({ xx: "xx" })],
+});
+```
+
+:::note
+* See [Create Plugin](#create-plugin) to create a new plugin quickly based on official plugin templates.
+* This document only covers how to create, develop and publish a js plugin, for more detail about the plugin hooks, see [Js Plugin Hooks](/docs/api/js-plugin-api).
+:::
+
+## Conventions
+
+For farm specific js plugins:
+
+- The Farm Js plugin should have a name with a `farm-plugin-` prefix and clear semantics.
+- Include the `farm-plugin-` keyword in package.json.
+
+If your plugin is only applicable to a specific framework, its name should follow the following prefix format:
+
+- `farm-plugin-vue-`: Prefix as a Vue plugin
+- `farm-plugin-react-`: Prefix as a React plugin
+- `farm-plugin-svelte-`: Prefix as a svelte plugin
+- ...
+
+## Concepts
+Before you start to write your js plugin, you should know the following concepts:
+* **filters**: Cause Js Plugins are much slower than Rust Plugins, your js plugin need to set explicit filters to avoid unnecessary call for js plugins hook. For example, you should set `transform.filters.moduleTypes = ['js']` to make sure that the transform hook of your js plugin only runs for `.js/mjs/cjs` files.
+* **module_type**: The type of the module, it can be `js`, `ts`, `css`, `sass`, `json`, etc. Farm supports `js/ts/jsx/tsx`, `css`, `html`, `json`, `static assets(png, svg, etc)` natively. `module_type` is returned by `load` hook or `transform` hook.
+* **resolved_path and module_id**: `resolved_path` is the absolute path of the module, and `module_id` is the unique id of the module, it's usually `relative path of the module from the project root` + `query`. For example, we import a module as `import './a?query'`, the resolved_path is `/project/src/a.ts` and the module_id is `src/a.ts?query`.
+* **context**: All the hooks in the plugin accept a `context` argument, it's the compilation context of the farm project, you can use it to get the ModuleGraph, Module, Resources, etc.
+* **Resource and Resource Pot**: `Resource` is the final output bundle file, and `Resource Pot` is the abstract representation of the resource, similar to `Chunk` of other bundlers. Inside Farm, first we will generate `Resource Pots` from `ModuleGraph`, render `Resource Pots` and finally generate `Resources` from `Resource Pots`.
+
+### Filters
+Cause `Js Plugins` are much slower than `Rust Plugins`, Farm use `filters` to control the execution of js plugin hooks. The plugin hook executes only when given `filters` matched to improve performance. `filters` is neccessary for some commonly used hooks, such as `resolve`, `load`, `transform`, etc. 
+
+For example, if you want to transform css files, you can use `transform.filters.moduleTypes = ['css']` to make sure that the transform hook of your js plugin only runs for `.css` files:
+
+```ts
+const myCssPlugin = {
+  name: "my-css-plugin",
+  transform: {
+    filters: {
+      // Only execute the hook when following conditions satisfied
+      // resolvedPaths: ["\\./index.ts"], // a regex array to match the resolvedPaths
+      moduleTypes: ["css"],
+    },
+    executor: async (param) => {
+      // transform css
+    },
+  },
+};
+```
+
+### Module Type
+In Farm, every thing is `First Class Citizens`, so Farm designs `module_type` to identify the type of a module and handle different kinds of ModuleTypes in different plugins. 
+
+`module_type` returned by `load` hook, and can be transformed by `transform` hook. Farm supports `js/ts/jsx/tsx`, `css`, `html`, `json`, `static assets(png, svg, etc)` natively. For these module types, you can return them directly in `load` or `transform` hook directly. But if you want to handle custom module types, you may need to implement ohter hooks like `parse`, `render_resource_pot_modules`, `generate resources`, etc to control how to parse, render and generate resources for the custom module types.
+
+:::note
+Js Plugins don't support `parse`, `render_resource_pot_modules`, `generate resources` hooks, you have to use Rust Plugins to handle custom module types.
+::: 
+
+## Create Plugin
+Farm provides official templates to help your create your js plugins quickly:
+<>
+    <Tabs>
+      <TabItem value="pnpm" label="pnpm">
+          <CodeBlock>pnpm create farm-plugin</CodeBlock>
+              </TabItem>
+          <TabItem value="npm" label="npm">
+              <CodeBlock>npm create farm-plugin@latest</CodeBlock>
+              </TabItem>
+
+  <TabItem value="yarn" label="yarn">
+          <CodeBlock>yarn create farm-plugin</CodeBlock>
+              </TabItem>
+          </Tabs>
+</>
+
+then follow the prompts to create your plugin.
+
+or you can create a plugin derectly by running the following command:
+<Tabs>
+      <TabItem value="pnpm" label="pnpm">
+          <CodeBlock>pnpm create farm-plugin my-farm-plugin --type js</CodeBlock>
+              </TabItem>
+          <TabItem value="npm" label="npm">
+              <CodeBlock>npm create my-farm-plugin --type js</CodeBlock>
+              </TabItem>
+
+  <TabItem value="yarn" label="yarn">
+          <CodeBlock>yarn create my-farm-plugin --type js</CodeBlock>
+              </TabItem>
+          </Tabs>
+Above command will create new js plugin with name `my-farm-plugin` in the current directory. `--type` can be `rust` or `js`
+
+## Develop Plugin
+After creating the plugin, you can start to develop your plugin. The plugin is a pure JavaScript object that defines a set of property hooks:
+
+```ts
+// import { readFileSync } from 'node:fs';
+import type { JsPlugin } from '@farmfe/core';
+
+interface Options {
+  /* Your options here */
+}
+
+export default function farmPlugin(options: Options): JsPlugin {
+  return {
+    name: '<FARM-JS-PLUGIN-NPM-NAME>',
+    /* Your plugin hooks here: */ 
+
+    // transform: {
+    //   filters: {
+    //     moduleTypes: ['js']
+    //   },
+    //   async executor(params) {
+    //     const { content } = params;
+    //     return {
+    //       content,
+    //       moduleType: 'js'
+    //     };
+    //   }
+    // },
+    // finish: {
+    //   executor() {}
+    // }
+  };
+}
+```
+
+:::tip
+For more detail about the plugin hooks, see [Js Plugin Hooks](/docs/api/js-plugin-api).
+:::
+
+Run `npm run dev` to compile the plugin and watch for changes. Run `npm run build` to build the plugin.
+
+## Publish Plugin
+A js plugin package is a normal npm package, you can publish it to npm registry by running `npm publish`.

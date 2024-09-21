@@ -1,0 +1,88 @@
+import CodeBlock from "@theme/CodeBlock";
+import Tabs from "@theme/Tabs";
+import TabItem from "@theme/TabItem";
+
+# @farmfe/js-plugin-svgr
+Support `React SVG Components` for Farm.
+
+## Installation
+
+<Tabs>
+  <TabItem value="npm" label="npm">
+    <CodeBlock>npm install @farmfe/js-plugin-svgr</CodeBlock>
+  </TabItem>
+  <TabItem value="yarn" label="yarn">
+    <CodeBlock>yarn add @farmfe/js-plugin-svgr</CodeBlock>
+  </TabItem>
+  <TabItem value="pnpm" label="pnpm">
+    <CodeBlock>pnpm add @farmfe/js-plugin-svgr</CodeBlock>
+  </TabItem>
+</Tabs>
+
+## Usage
+```ts {2,6}
+import { UserConfig } from '@farmfe/core';
+import farmJsPluginSvgr from '@farmfe/js-plugin-svgr';
+
+const config: UserConfig = {
+  plugins: [
+    farmJsPluginSvgr({ /* options */ })
+  ]
+}
+```
+
+## Options
+```ts
+export interface FarmSvgrPluginOptions {
+  svgrOptions?: SvgrOptions;
+  filters?: {
+    resolvedPaths?: string[];
+  };
+}
+```
+
+### svgrOptions
+See [svgr options](https://react-svgr.com/docs/options/) for more details.
+
+Example:
+```ts
+import path from 'node:path';
+import { UserConfig } from '@farmfe/core';
+import farmJsPluginSvgr from '@farmfe/js-plugin-svgr';
+
+const config: UserConfig = {
+  plugins: [
+    farmJsPluginSvgr({
+      svgrOptions: {
+        loadPaths: [path.resolve(process.cwd(), 'styles')]
+      }
+    })
+  ]
+}
+
+export default config;
+```
+
+### filters
+Which files should be processed by `svgr`. Default to `{ resolvedPaths: ['\\.svg$'] }`.
+
+* `resolvedPaths`: Only files under these paths will be processed. Support regex.
+
+Example:
+```ts
+import { UserConfig } from '@farmfe/core';
+import farmJsPluginSvgr from '@farmfe/js-plugin-svgr';
+
+const config: UserConfig = {
+  plugins: [
+    farmJsPluginSvgr({
+      filters: {
+        // all files end with .custom-svg will be processed
+        resolvedPaths: ['\\.custom-svg$'],
+      }
+    })
+  ]
+}
+
+export default config;
+```

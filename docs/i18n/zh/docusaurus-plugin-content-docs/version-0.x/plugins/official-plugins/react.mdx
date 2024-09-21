@@ -1,0 +1,33 @@
+import CodeBlock from "@theme/CodeBlock";
+import Tabs from "@theme/Tabs";
+import TabItem from "@theme/TabItem";
+
+# @farmfe/plugin-react
+支持 `React Jsx` 和 `React Refresh`
+
+## Installation
+
+<Tabs>
+  <TabItem value="npm" label="npm">
+    <CodeBlock>npm install @farmfe/plugin-react</CodeBlock>
+  </TabItem>
+  <TabItem value="yarn" label="yarn">
+    <CodeBlock>yarn add @farmfe/plugin-react</CodeBlock>
+  </TabItem>
+  <TabItem value="pnpm" label="pnpm">
+    <CodeBlock>pnpm add @farmfe/plugin-react</CodeBlock>
+  </TabItem>
+</Tabs>
+
+## Usage
+`@farmfe/plugin-react` 是一个 Rust 插件，你只需要在 `farm.config.ts` 的 `plugins` 字段中配置它的包名。
+```ts {4}
+import { UserConfig } from '@farmfe/core';
+
+const config: UserConfig = {
+  plugins: ['@farmfe/plugin-react', { /** options here */}]
+}
+```
+
+## Options
+请参阅[SWC 转换 React 选项](https://swc.rs/docs/configuration/compilation#jsctransformreact)。
