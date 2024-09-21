@@ -71,8 +71,15 @@
   --docusaurus-highlighted-code-line-bg: #ff9ff310;
 }
 
+[date-theme="light"] {
+  --ui-background: #fff;
+  --background: rgb(var(--ui-background) / var(--tw-bg-opacity));
+}
+
 /* For readability concerns, you should choose a lighter palette in dark mode. */
 [data-theme="dark"] {
+  --ui-background: #181818;
+  --background: rgb(var(--ui-background) / var(--tw-bg-opacity));
   --ifm-color-soft: rgb(82 82 82 / var(--tw-text-opacity));
   --ifm-f-bg-soft: #252529;
   --ifm-background-color: #000 !important;
@@ -275,4 +282,32 @@ a {
 
 figure {
   margin: 12px 12px;
+}
+
+body {
+  background: var(--background);
+}
+
+.package-manager-tab {
+  cursor: pointer;
+}
+
+.package-manager-name {
+  margin-left: 8px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+/* 选中状态的样式 */
+.react-tabs__tab--selected .package-manager-tab {
+  background-color: rgba(0, 0, 0, 0.1);
+}
+
+.codeBlock {
+  margin: 0 !important;
+  border-radius: none;
+  pre {
+    margin: 0;
+    
+  }
 }

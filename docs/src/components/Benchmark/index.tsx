@@ -1,5 +1,5 @@
 import { ProgressBar } from "./ProgressBar";
-import FarmCard from "../Card";
+import farmCard from "../Card";
 import { useInView } from "react-intersection-observer";
 import styles from "./index.module.css";
 import Translate from "@docusaurus/Translate";
@@ -10,109 +10,109 @@ import ShinyTextEx from "../MagicUi/shiny-text";
 const BENCHMARK_DATA = {
   ColdStart: [
     {
-      name: "Farm",
+      name: "farm",
       time: 0.396,
     },
     {
-      name: "RsBuild",
+      name: "rsbuild",
       time: 0.468,
     },
     {
-      name: "Vite",
+      name: "vite",
       time: 1.700,
     },
     {
-      name: "Webpack",
+      name: "webpack",
       time: 2.078,
     },
   ],
   HotStart: [
     {
-      name: "Farm",
+      name: "farm",
       time: 0.273,
     },
     {
-      name: "RsBuild",
+      name: "rsbuild",
       time: 0.468,
     },
     {
-      name: "Vite",
+      name: "vite",
       time: 1.426,
     },
     {
-      name: "Webpack",
+      name: "webpack",
       time: 0.945,
     },
   ],
   HmrRoot: [
     {
-      name: "Farm",
+      name: "farm",
       time: 0.018,
     },
     {
-      name: "RsBuild",
+      name: "rsbuild",
       time: 0.087,
     },
     {
-      name: "Vite",
+      name: "vite",
       time: 0.022,
     },
     {
-      name: "Webpack",
+      name: "webpack",
       time: 0.532,
     },
   ],
   HmrLeaf: [
     {
-      name: "Farm",
+      name: "farm",
       time: 0.013,
     },
     {
-      name: "RsBuild",
+      name: "rsbuild",
       time: 0.074,
     },
     {
-      name: "Vite",
+      name: "vite",
       time: 0.011,
     },
     {
-      name: "Webpack",
+      name: "webpack",
       time: 0.165,
     },
   ],
   ColdBuild: [
     {
-      name: "Farm",
+      name: "farm",
       time: 0.313,
     },
     {
-      name: "RsBuild",
+      name: "rsbuild",
       time: 0.363,
     },
     {
-      name: "Vite",
+      name: "vite",
       time: 1.543,
     },
     {
-      name: "Webpack",
+      name: "webpack",
       time: 4.128,
     },
   ],
   HotBuild: [
     {
-      name: "Farm",
+      name: "farm",
       time: 0.16,
     },
     {
-      name: "RsBuild",
+      name: "rsbuild",
       time: 0.363,
     },
     {
-      name: "Vite",
+      name: "vite",
       time: 1.540,
     },
     {
-      name: "Webpack",
+      name: "webpack",
       time: 0.527,
     },
   ],

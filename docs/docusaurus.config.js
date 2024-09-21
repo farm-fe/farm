@@ -52,11 +52,11 @@ const config = {
           lastVersion: "current",
           versions: {
             current: {
-              label: "1.0.0",
+              label: "2.0.0",
             },
-            "0.x": {
-              label: "0.15",
-            },
+            // "0.x": {
+            //   label: "0.15",
+            // },
           },
         },
         theme: {

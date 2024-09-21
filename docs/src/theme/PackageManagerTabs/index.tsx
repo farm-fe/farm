@@ -1,10 +1,12 @@
 import { Tabs, Tab } from '../ManagerTabs';
+import React from 'react';
 import CodeBlock from "@theme/CodeBlock";
 import { Npm } from './icons/Npm';
 import { Yarn } from './icons/Yarn';
 import { Pnpm } from './icons/Pnpm';
 import { Bun } from './icons/Bun';
-
+import { codeToHtml } from 'shiki';
+import { useEffect, useState } from 'react';
 export interface PackageManagerTabProps {
   skip?: boolean;
   command:
@@ -60,7 +62,7 @@ export function PackageManagerTabs({
     yarn?: string;
     pnpm?: string;
     bun?: string;
-    [key: string]: string;
+    [key: string]: string | undefined;
   };
 
   // Init Icons
@@ -102,28 +104,53 @@ export function PackageManagerTabs({
       commandInfo[tool] = replaceTool(command, tool);
     });
   }
+  const [highlightedCode, setHighlightedCode] = useState({});
+  useEffect(() => {
+    async function highlightCode() {
+      const highlighted = {};
+      for (const [key, value] of Object.entries(commandInfo)) {
+        highlighted[key] = await codeToHtml(value as string, {
+          lang: 'bash',
+          theme: 'nord'
+        });
+      }
+      setHighlightedCode(highlighted);
+    }
+    highlightCode();
+  }, [command]);
   return (
-    <Tabs
-      groupId="package.manager"
-      values={Object.entries(commandInfo).map(([key]) => (
-        <div
-          key={key}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            fontSize: 15,
-          }}
-        >
-          {packageMangerToIcon[key]}
-          <span style={{ marginLeft: 6, marginBottom: 2 }}>{key}</span>
-        </div>
-      ))}
-    >
-      {Object.entries(commandInfo).map(([key, value]) => (
-        <Tab key={key}>
-          <CodeBlock className='my-2'>{value}</CodeBlock>
-        </Tab>
-      ))}
-    </Tabs>
+    <div className="border-solid my-4 rounded-md border-gray-100">
+      <Tabs
+        groupId="package.manager"
+        values={Object.entries(commandInfo).map(([key]) => (
+          <div
+            key={key}
+            className="package-manager-tab"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              padding: '2px 4px',
+              borderRadius: '4px',
+              transition: 'background-color 0.3s ease',
+            }}
+          >
+            {packageMangerToIcon[key]}
+            <span className="package-manager-name">{key}</span>
+          </div>
+        ))}
+      >
+        {Object.entries(commandInfo).map(([key, value]) => (
+          <Tab key={key}>
+            {/* <CodeBlock className='codeBlock rounded-lg shadow-md'
+              dangerouslySetInnerHTML={{ __html: highlightedCode[key] || '' }}
+            >{highlightedCode[key]}</CodeBlock> */}
+
+            <div className='codeBlock shadow-md'
+              dangerouslySetInnerHTML={{ __html: highlightedCode[key] || '' }}
+            ></div>
+          </Tab>
+        ))}
+      </Tabs>
+    </div>
   );
 }

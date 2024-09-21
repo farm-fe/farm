@@ -1,85 +1,45 @@
 html[data-theme="light"] {
-  --note-color: #241800;
+  --admonition-color: #404040;
 
-  --admonition-note-c-bg: linear-gradient(
-    to bottom,
-    var(--ifm-alert-note-background-color),
-    transparent 40%
-  );
-  --admonition-info-c-bg: linear-gradient(
-    to bottom,
-    var(--ifm-alert-info-background-color),
-    transparent 40%
-  );
-  --admonition-tip-c-bg: linear-gradient(
-    to bottom,
-    var(--ifm-alert-tip-background-color),
-    transparent 40%
-  );
-  --admonition-warning-c-bg: linear-gradient(
-    to bottom,
-    var(--ifm-alert-warning-background-color),
-    transparent 40%
-  );
-  --admonition-caution-c-bg: linear-gradient(
-    to bottom,
-    var(--ifm-alert-caution-background-color),
-    transparent 40%
-  );
-  --admonition-danger-c-bg: linear-gradient(
-    to bottom,
-    var(--ifm-alert-danger-background-color),
-    transparent 40%
-  );
-  --admonition-note-c-color: #ff9ff3;
+  --admonition-note-border-color: #60a5fa4d !important;
+  --admonition-note-c-bg: #bfdbfe66 !important;
+
+  --admonition-tip-border-color: #4ade804d !important;
+  --admonition-tip-c-bg: #bbf7d066 !important;
+
+  --admonition-warning-border-color: #fbbf244d !important;
+  --admonition-warning-c-bg: #fde68a4d !important;
+
+  --admonition-important-border-color: #a78bfa4d !important;
+  --admonition-important-c-bg: #ddd6fe80 !important;
+
+  --admonition-danger-border-color: #f871714d !important;
+  --admonition-danger-c-bg: #fecaca66 !important;
+
   --admonition-info-c-color: inherit;
   --admonition-tip-c-color: inherit;
   --admonition-warning-c-color: inherit;
   --admonition-caution-c-color: inherit;
   --admonition-danger-c-color: inherit;
-
-  --admonition-code-note-c-bg: #ff9ff350;
-  --admonition-code-info-c-bg: var(--c-teal-20);
-  --admonition-code-warning-c-bg: var(--c-yellow-20);
-  --admonition-code-tip-c-bg: var(--c-green-20);
-  --admonition-code-caution-c-bg: var(--c-orange-20);
-  --admonition-code-danger-c-bg: var(--c-red-10);
-  --admonition-tip-border: var(--c-green-100);
-  --admonition-tip-color: var(--c-green-100);
-  --ifm-alert-warning-background-color: var(--c-yellow-10);
-  --ifm-alert-tip-background-color: var(--c-green-10);
-  --ifm-alert-danger-background-color: var(--c-red-10);
-  --ifm-alert-note-background-color: #ff9ff360;
-  --ifm-alert-info-background-color: var(--c-teal-10);
-  --ifm-alert-caution-background-color: var(--c-green-10);
-  // body {
-  //   --angle: 220deg;
-  //   background-image: linear-gradient(
-  //     var(--angle),
-  //     white 15%,
-  //     #ff9ff360 20%,
-  //     white 25%,
-  //     #f4eef8 30%,
-  //     white 35%,
-  //     #f8edf5 40%,
-  //     white 60%
-  //   );
-  //   background-attachment: fixed;
-  //   background-size: cover;
-  // }
 }
 
 html[data-theme="dark"] {
-  --note-color: #e3e3e3;
-  --admonition-tip-border: var(--c-green-50);
-  --admonition-tip-color: var(--c-green-50);
+  --admonition-color: rgb(var(--color-gray-300) / var(--tw-text-opacity));
 
-  --admonition-note-c-bg: transparent;
-  --admonition-info-c-bg: transparent;
-  --admonition-tip-c-bg: transparent;
-  --admonition-warning-c-bg: transparent;
-  --admonition-caution-c-bg: transparent;
-  --admonition-danger-c-bg: transparent;
+  --admonition-note-border-color: #2563eb4d !important;
+  --admonition-note-c-bg: #1e40af66 !important;
+
+  --admonition-tip-border-color: #16a34a4d !important;
+  --admonition-tip-c-bg: #16653466 !important;
+
+  --admonition-warning-border-color: #92400e66 !important;
+  --admonition-warning-c-bg: #92400e66 !important;
+
+  --admonition-important-border-color: #7c3aed4d !important;
+  --admonition-important-c-bg: #5b21b64d !important;
+
+  --admonition-danger-border-color: #dc26264d !important;
+  --admonition-danger-c-bg: #991b1b66 !important;
 
   --admonition-note-c-color: #ff9ff3;
   --admonition-info-c-color: var(--c-blue-50);
@@ -119,8 +79,8 @@ html[data-theme="dark"] {
   border: none;
 
   --ifm-alert-color: var(--ifm-font-color-base);
-  --ifm-alert-padding-horizontal: 2rem;
-  --ifm-alert-padding-vertical: 1.5rem;
+  --ifm-alert-padding-horizontal: 1.5rem;
+  --ifm-alert-padding-vertical: 1rem;
 
   [class^="admonitionHeading_"] {
     text-transform: capitalize;
@@ -146,98 +106,45 @@ html[data-theme="dark"] {
     }
   }
 
-  // &::before {
-  //   content: "";
-  //   position: absolute;
-  //   z-index: 2;
-  //   left: 0;
-  //   top: 0;
-  //   bottom: 0;
-  //   width: 5px;
-  //   background: var(--admonition-bar-c-bg);
-  //   border-radius: 4px 0 0 4px;
-  // }
-  &-warning {
-    --admonition-bar-c-bg: var(--admonition-bar-note-c-bg);
-    --admonition-code-c-bg: var(--admonition-code-warning-c-bg);
-    --admonition-link-c: var(--admonition-link-note-c);
-    border: 2px solid var(--c-yellow-90-a);
-    // background: var(--admonition-warning-c-bg);
-    // color: var(--admonition-warning-c-color);
-    background: transparent;
-    color: var(--c-yellow-90);
-  }
-
   &-note {
-    --admonition-bar-c-bg: var(--admonition-bar-note-c-bg);
-    --admonition-code-c-bg: var(--admonition-code-note-c-bg);
-    --admonition-link-c: var(--admonition-link-note-c);
-    border: 2px solid var(--c-brand-a);
-    // background: var(--admonition-note-c-bg);
-    // color: var(--admonition-note-c-color);
-    background: transparent;
-    color: var(--c-brand);
-  }
-
-  &-info {
-    --ifm-alert-background-color: var(--c-teal-210);
-    --admonition-bar-c-bg: var(--admonition-bar-info-c-bg);
-    --admonition-code-c-bg: var(--admonition-code-info-c-bg);
-    --admonition-link-c: var(--admonition-link-info-c);
-    border: 2px solid var(--c-teal-60);
-    // background: var(--admonition-info-c-bg);
-    // color: var(--admonition-info-c-color);
-    background: transparent;
-    color: var(--c-teal-90);
+    border: 1px solid var(--admonition-note-border-color);
+    background: var(--admonition-note-c-bg);
+    color: var(--admonition-color);
   }
 
   &-tip {
-    --admonition-bar-c-bg: var(--admonition-bar-tip-c-bg);
-    --admonition-code-c-bg: var(--admonition-code-tip-c-bg);
-    --admonition-link-c: var(--admonition-link-tip-c);
-    border: 2px solid var(--admonition-tip-border);
-    // background: var(--admonition-tip-c-bg);
-    // color: var(--admonition-tip-c-color);
-    background: transparent;
-    color: var(--admonition-tip-color);
+    border: 1px solid var(--admonition-tip-border-color);
+    background: var(--admonition-tip-c-bg);
+    color: var(--admonition-color);
+  }
+
+  &-info {
+    border: 1px solid var(--admonition-note-border-color);
+    background: var(--admonition-note-c-bg);
+    color: var(--admonition-color);
+  }
+
+  &-warning {
+    border: 1px solid var(--admonition-warning-border-color);
+    background: var(--admonition-warning-c-bg);
+    color: var(--admonition-color);
   }
 
   &-caution {
-    --ifm-alert-background-color: var(--admonition-caution-c-bg);
-    --admonition-bar-c-bg: var(--admonition-bar-caution-c-bg);
-    --admonition-code-c-bg: var(--admonition-code-caution-c-bg);
-    --admonition-link-c: var(--admonition-link-caution-c);
-    // background: var(--admonition-caution-c-bg);
-    // color: var(--admonition-caution-c-color);
-    background: transparent;
+    border: 1px solid var(--admonition-important-border-color);
+    background: var(--admonition-important-c-bg);
+    color: var(--admonition-color);
   }
 
   &-danger {
-    --ifm-alert-background-color: var(--admonition-danger-c-bg);
-    --admonition-bar-c-bg: var(--admonition-bar-danger-c-bg);
-    --admonition-code-c-bg: var(--admonition-code-danger-c-bg);
-    --admonition-link-c: var(--admonition-link-danger-c);
-    border: 2px solid var(--c-red-50-a);
-    // background: var(--admonition-danger-c-bg);
-    // color: var(--admonition-danger-c-color);
-    background: transparent;
-    color: var(--c-red-50);
+    border: 1px solid var(--admonition-danger-border-color);
+    background: var(--admonition-danger-c-bg);
+    color: var(--admonition-color);
   }
 
   &-important {
-    --ifm-alert-background-color: var(--c-lavender-210);
-    --admonition-bar-c-bg: var(--admonition-bar-danger-c-bg);
-    --admonition-code-c-bg: var(--admonition-code-danger-c-bg);
-    --admonition-link-c: var(--admonition-link-danger-c);
-    border: 2px solid var(--c-lavender-220);
-    background: linear-gradient(
-      to bottom,
-      var(--ifm-alert-background-color),
-      transparent
-    );
+    border: 1px solid var(--admonition-important-border-color);
+    background: var(--admonition-important-c-bg);
+    color: var(--admonition-color);
   }
-}
-
-.alert--secondary {
-  // color: var(--ifm-font-color-base);
 }

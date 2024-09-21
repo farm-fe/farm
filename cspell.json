@@ -116,6 +116,7 @@
     "NAPI",
     "nodebuffer",
     "Nonoctal",
+    "nord",
     "normpath",
     "npmlog",
     "onwarn",

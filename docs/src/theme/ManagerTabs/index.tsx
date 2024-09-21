@@ -3,6 +3,7 @@
 Use the rspress tabs component to rewrite tabs
 https://rspress.dev/
 */
+import React from 'react';
 import {
   Children,
   type ReactNode,
@@ -198,7 +199,7 @@ export function Tab({
 }: ComponentPropsWithRef<'div'> &
   Pick<TabItem, 'label' | 'value'>): ReactElement {
   return (
-    <div {...props} className="rounded px-2">
+    <div {...props} className="rounded-md">
       {children}
     </div>
   );

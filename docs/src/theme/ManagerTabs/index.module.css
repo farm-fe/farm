@@ -3,7 +3,7 @@
   contain: content;
   border-radius: 6px;
 
-  :global(div[class*='language-']) {
+  :global(div[class*="language-"]) {
     margin: 6px 0;
 
     code {
@@ -16,15 +16,15 @@
   display: flex;
   min-width: 100%;
   overflow-x: scroll;
-  padding: 4px 0 8px 8px;
+  padding: 8px 0 8px 8px;
 }
 
 .tab {
   /* color: var(--rp-c-text-2); */
-  border-bottom: 2px solid transparent;
+  border: 1px solid transparent;
   box-sizing: border-box;
   margin-right: 10px;
-  padding: 6px 12px;
+  padding: 4px 6px;
   margin-bottom: -1px;
   user-select: none;
   transition: all 0.2s ease-in-out;
@@ -35,14 +35,10 @@
   margin-right: 0;
 }
 
-.not-selected:hover {
-  /* color: var(--rp-c-text-1); */
-  /* border-color: var(--rp-c-gray); */
-}
-
 .selected {
-  /* color: var(--rp-c-link); */
-  border-color: currentColor;
+  border-color: rgb(244 244 245);
+  background-color: rgb(244 244 245);
+  border-radius: 0.55rem;
 }
 
 .no-scrollbar::-webkit-scrollbar {
@@ -53,3 +49,5 @@
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+
+
