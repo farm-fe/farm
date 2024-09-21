@@ -23,28 +23,6 @@ const config = {
   onBrokenLinks: "ignore",
   // onBrokenLinks: "throw",
   onBrokenMarkdownLinks: "warn",
-  // TODO BUIlD Error
-  // webpack: {
-  //   jsLoader: (isServer) => ({
-  //     loader: require.resolve("swc-loader"),
-  //     options: {
-  //       jsc: {
-  //         parser: {
-  //           syntax: "typescript",
-  //           tsx: true,
-  //         },
-  //         target: "es2017",
-  //       },
-  //       module: {
-  //         type: isServer ? "commonjs" : "es6",
-  //       },
-  //     },
-  //   }),
-  // },
-
-  // Even if you don't use internalization, you can use this field to set useful
-  // metadata like html lang. For example, if your site is Chinese, you may want
-  // to replace "en" with "zh-Hans".
 
   i18n: {
     defaultLocale: "en",

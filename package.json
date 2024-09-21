@@ -12,6 +12,7 @@
     "test": "cross-env NODE_OPTIONS=--trace-exit vitest run",
     "start:rs": "cargo watch -w crates -w rust-plugins -s 'scripts/watch.sh'",
     "start": "pnpm --filter @farmfe/cli start",
+    "doc": "pnpm --filter farm-docs dev",
     "release": "node scripts/release.mjs",
     "check": "biome check . --diagnostic-level=warn --apply",
     "clean": "node scripts/clean.mjs && rimraf node_modules **/*/node_modules",

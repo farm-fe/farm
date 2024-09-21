@@ -1,6 +1,4 @@
 import Link from "@docusaurus/Link";
-// import useBaseUrl from '@docusaurus/useBaseUrl';
-import ThemedImage from '@theme/ThemedImage';
 import Translate from "@docusaurus/Translate";
 import useDocusaurusContext from "@docusaurus/useDocusaurusContext";
 import Layout from "@theme/Layout";
@@ -12,6 +10,7 @@ import BlurFade from "../components/MagicUi/blur-fade";
 import BentoGridCard from "../components/MagicUi/card";
 import StarrySky from "../components/StarrySky";
 import { AuroraBackground } from "../components/ui/aurora-back";
+import { useColorMode } from "@docusaurus/theme-common";
 import styles from "./index.module.css";
 
 function HomepageHeader() {
@@ -101,6 +100,8 @@ function HomepageHeader() {
 
 
 const HomeBaseContent = () => {
+  const { colorMode } = useColorMode();
+
   const mainContent = React.useMemo(() => {
     return (
       <main className="mb-20 my-10 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8max-w-6xl">
@@ -111,16 +112,21 @@ const HomeBaseContent = () => {
     );
   }, []);
 
-  return (
-    <>
-      <ThemedImage sources={{
-        light: <StarrySky />,
-        dark: <AuroraBackground />,
-      }}
-      />
-      {mainContent}
-    </>
-  );
+  if (colorMode === "dark") {
+    return (
+      <>
+        <StarrySky />
+        {mainContent}
+      </>
+    );
+  } else {
+    return (
+      <>
+        <AuroraBackground />
+        {mainContent}
+      </>
+    );
+  }
 };
 
 
