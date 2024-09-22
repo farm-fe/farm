@@ -245,7 +245,9 @@ const compilationConfigSchema = z
           .union([
             z.null(),
             z.object({
-              indentName: z.string().optional()
+              indentName: z.string().optional(),
+              localsConversion: z.string().optional(),
+              paths: z.array(z.string()).optional()
             })
           ])
 

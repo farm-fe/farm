@@ -291,6 +291,16 @@ export interface CssConfig {
     paths?: string[];
     // configure the generated css class name, the default is `[name]-[hash]`
     indentName?: string;
+    /**
+     *
+     * - `asIs` - Do not convert the local variable name
+     * - `lowerCamel` - Convert the local variable name to lower camel case e.g: `fooBar`
+     * - `upperCamel` - Convert the local variable name to upper camel case e.g: `FooBar`
+     * - `snake` - Convert the local variable name to snake case e.g: `foo_bar`
+     *
+     * @default 'asIs'
+     */
+    localsConversion?: 'asIs' | 'lowerCamel' | 'upperCamel' | 'snake';
   } | null;
   /**
    * Configure CSS compatibility prefixes, such as -webkit-.

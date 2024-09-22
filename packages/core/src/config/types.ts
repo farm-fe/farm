@@ -8,7 +8,7 @@ import type { Options } from 'http-proxy-middleware';
 import { Middleware } from 'koa';
 import type { RustPlugin } from '../plugin/rust/index.js';
 import type { JsPlugin } from '../plugin/type.js';
-import type { Config } from '../types/binding.js';
+import type { Config, CssConfig } from '../types/binding.js';
 import type { Logger } from '../utils/index.js';
 
 export interface ConfigEnv {
@@ -108,6 +108,12 @@ export interface UserConfig {
   /** Files under this dir will always be treated as static assets. serve it in dev, and copy it to output.path when build */
 }
 
+interface ResolvedCss extends CssConfig {
+  modules?: CssConfig['modules'] & {
+    localsConversion?: never;
+  };
+}
+
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
 export interface ResolvedCompilation
   extends Exclude<Config['config'], undefined> {
@@ -115,6 +121,7 @@ export interface ResolvedCompilation
   resolve?: {
     dedupe?: never;
   } & Config['config']['resolve'];
+  css?: ResolvedCss;
 }
 
 export interface ResolvedUserConfig extends UserConfig {

@@ -4,6 +4,8 @@ use std::collections::HashMap;
 use std::{path::PathBuf, sync::Arc};
 
 use dep_analyzer::DepAnalyzer;
+use farmfe_core::config::css::NameConversion;
+use farmfe_core::config::custom::get_config_css_modules_local_conversion;
 use farmfe_core::config::minify::MinifyOptions;
 use farmfe_core::module::CommentsMetaData;
 use farmfe_core::{
@@ -171,6 +173,7 @@ pub struct FarmPluginCss {
   ast_map: Mutex<HashMap<String, (Stylesheet, CommentsMetaData)>>,
   content_map: Mutex<HashMap<String, String>>,
   sourcemap_map: Mutex<HashMap<String, String>>,
+  locals_conversion: NameConversion,
 }
 
 fn prefixer(stylesheet: &mut Stylesheet, css_prefixer_config: &CssPrefixerConfig) {
@@ -184,6 +187,7 @@ impl Plugin for FarmPluginCss {
   fn name(&self) -> &str {
     "FarmPluginCss"
   }
+
   /// This plugin should be executed at last
   fn priority(&self) -> i32 {
     -99
@@ -336,10 +340,14 @@ impl Plugin for FarmPluginCss {
               }
             }
           }
-          export_names.push((name, after_transform_classes));
+
+          export_names.push((
+            self.locals_conversion.transform(&name),
+            after_transform_classes,
+          ));
         }
 
-        export_names.sort_by_key(|e| e.0);
+        export_names.sort_by_key(|e| e.0.to_string());
 
         let code = format!(
           r#"
@@ -764,6 +772,7 @@ impl FarmPluginCss {
       ast_map: Mutex::new(Default::default()),
       content_map: Mutex::new(Default::default()),
       sourcemap_map: Mutex::new(Default::default()),
+      locals_conversion: get_config_css_modules_local_conversion(config),
     }
   }
 
