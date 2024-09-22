@@ -77,12 +77,9 @@
 .code-content {
   padding: 1em;
   overflow-x: auto;
-}
-
-/* Shiki 生成的代码样式适配 */
-.shiki {
-  background-color: transparent !important;
-  padding: 0 !important;
+  pre {
+    background-color: var(--code-pre-bg) !important;
+  }
 }
 
 .shiki code {

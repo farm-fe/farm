@@ -1,3 +1,5 @@
+import { themes as prismThemes } from "prism-react-renderer";
+
 /** @type {import('@docusaurus/types').Config} */
 const config = {
   title: "Farm",
@@ -122,7 +124,7 @@ const config = {
             ],
           },
           {
-            to: '/roadmap',
+            to: "/roadmap",
             position: "left",
             label: "Roadmap",
           },
@@ -146,7 +148,24 @@ const config = {
       docs: {
         versionPersistence: "localStorage",
       },
-
+      prism: {
+        additionalLanguages: ["powershell"],
+        theme: prismThemes.nightOwlLight,
+        darkTheme: prismThemes.oneDark,
+        magicComments: [
+          // Remember to extend the default highlight class name as well!
+          {
+            className: "theme-code-block-highlighted-line",
+            line: "highlight-next-line",
+            block: { start: "highlight-start", end: "highlight-end" },
+          },
+          {
+            className: "code-block-highlight-line",
+            line: "c-highlight-next-line",
+            block: { start: "c-highlight-start", end: "c-highlight-end" },
+          },
+        ],
+      },
       // announcementBar: {
       //   id: "announcementBar-2", // Increment on change
       //   content: `🎉 Farm is now in 1.0.0 stable and production ready. If you like Farm, give it a ⭐️ on <a target="_blank" rel="noopener noreferrer" href="https://github.com/farm-fe/farm">GitHub</a>`,

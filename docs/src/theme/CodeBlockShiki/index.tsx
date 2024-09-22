@@ -5,7 +5,7 @@ import styles from './index.module.css'
 const CodeBlock = ({ children, className, metastring }) => {
   const [highlightedCode, setHighlightedCode] = useState('');
   const [copied, setCopied] = useState(false);
-  const language = className ? className.replace(/language-/, '') : 'text';
+  const language = className ? className.replace(/language-/, '') : 'javascript';
   const title = metastring ? metastring.match(/title="([^"]+)"/) : null;
   const fileName = title ? title[1] : null;
   const highlightLines = metastring ? metastring.match(/{([\d,-]+)}/) : null;

@@ -317,11 +317,13 @@ body {
 
 html[data-theme="light"] {
   --code-block-border: 1px solid rgb(243 244 246);
+  --code-pre-bg: #f6f8fa;
 }
 
 html[data-theme="dark"] {
   --code-block-border: 1px solid rgb(31 41 55);
   --code-block-select-color: #2e3440ff;
+  --code-pre-bg: #121212;
 }
 
 .border-package {
