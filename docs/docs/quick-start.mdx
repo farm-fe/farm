@@ -2,7 +2,7 @@
 sidebar_position: 1
 ---
 
-import { PackageManagerTabs } from "../src/theme/PackageManagerTabs";
+import { PackageManagerTabs } from "@site/src/theme/PackageManagerTabs";
 
 # Quick Start
 
@@ -39,7 +39,7 @@ The project will start at `http://localhost:9000` by default.
 
 The project is configured by `farm.config.ts/js/mjs` file in the root directory of the project.
 
-```ts title="farm.config.ts"
+```ts /build/ title="farm.config.ts" {10,11}
 import { defineConfig } from "@farmfe/core";
 
 export default defineConfig({

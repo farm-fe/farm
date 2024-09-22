@@ -1,16 +1,9 @@
-// @ts-nocheck
-// Note: type annotations allow type checking and IDEs autocompletion
-
-// const progress = require("./scripts/progress_translate_lang.json");
-import { themes as prismThemes } from "prism-react-renderer";
-
 /** @type {import('@docusaurus/types').Config} */
 const config = {
   title: "Farm",
   tagline: "Super fast web build tool written in Rust",
   favicon: "img/favicon.ico",
 
-  // Set the production url of your site here
   url: "https://farmfe.org",
   // Set the /<baseUrl>/ pathname under which your site is served
   // For GitHub pages deployment, it is often '/<projectName>/'
@@ -54,9 +47,6 @@ const config = {
             current: {
               label: "2.0.0",
             },
-            // "0.x": {
-            //   label: "0.15",
-            // },
           },
         },
         theme: {
@@ -65,7 +55,6 @@ const config = {
       }),
     ],
   ],
-  // themes: ["@docusaurus/theme-search-algolia"],
   themeConfig:
     /** @type {import('@docusaurus/preset-classic').ThemeConfig} */
     ({
@@ -164,24 +153,6 @@ const config = {
       // },
       customFields: {
         customFooter: "src/theme/Footer/index.tsx",
-      },
-      prism: {
-        additionalLanguages: ["powershell"],
-        theme: prismThemes.nightOwlLight,
-        darkTheme: prismThemes.oneDark,
-        magicComments: [
-          // Remember to extend the default highlight class name as well!
-          {
-            className: "theme-code-block-highlighted-line",
-            line: "highlight-next-line",
-            block: { start: "highlight-start", end: "highlight-end" },
-          },
-          {
-            className: "code-block-highlight-line",
-            line: "c-highlight-next-line",
-            block: { start: "c-highlight-start", end: "c-highlight-end" },
-          },
-        ],
       },
       algolia: {
         appId: "G3J92PUFY2",
