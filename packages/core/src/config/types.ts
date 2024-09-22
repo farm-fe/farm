@@ -2,10 +2,7 @@ import { SecureServerOptions } from 'node:http2';
 import { Server } from '../index.js';
 
 import type { OutgoingHttpHeaders } from 'http';
-import type cors from '@koa/cors';
 import { WatchOptions } from 'chokidar';
-import type { Options } from 'http-proxy-middleware';
-import { Middleware } from 'koa';
 import type { RustPlugin } from '../plugin/rust/index.js';
 import type { JsPlugin } from '../plugin/type.js';
 import { HMRChannel } from '../server/hmr.js';
@@ -41,8 +38,6 @@ export interface ConfigEnv {
   isPreview: boolean;
 }
 
-export type ProxyOptions = Options;
-
 export type UserConfigFnPromise = (env: ConfigEnv) => Promise<UserConfig>;
 export type UserConfigFn = (env: ConfigEnv) => UserConfig | Promise<UserConfig>;
 export type UserConfigFnObject = (env: ConfigEnv) => UserConfig;
@@ -62,11 +57,11 @@ export interface UserServerConfig {
   hostname?: { name: string; host: string | undefined };
   // http2?: boolean;
   hmr?: boolean | UserHmrConfig;
-  proxy?: Record<string, Options>;
+  proxy?: Record<string, any>;
   strictPort?: boolean;
   open?: boolean;
   host?: string | boolean;
-  cors?: boolean | cors.Options;
+  cors?: boolean | any;
   // whether to serve static assets in spa mode, default to true
   spa?: boolean;
   middlewares?: DevServerMiddleware[];
@@ -205,7 +200,7 @@ export interface FarmCliOptions
   clearScreen?: boolean;
 }
 
-export type DevServerMiddleware = (context: Server) => Middleware | undefined;
+export type DevServerMiddleware = (context: Server) => any | undefined;
 
 export interface Alias {
   // TODO support RegExp
