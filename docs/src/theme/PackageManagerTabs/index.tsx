@@ -119,7 +119,7 @@ export function PackageManagerTabs({
     highlightCode();
   }, [command]);
   return (
-    <div className="border-solid my-4 rounded-md border-gray-100">
+    <div className="border-solid my-4 rounded-md border-package">
       <Tabs
         groupId="package.manager"
         values={Object.entries(commandInfo).map(([key]) => (
@@ -135,17 +135,13 @@ export function PackageManagerTabs({
             }}
           >
             {packageMangerToIcon[key]}
-            <span className="package-manager-name">{key}</span>
+            <span className="package-manager-name ">{key}</span>
           </div>
         ))}
       >
         {Object.entries(commandInfo).map(([key, value]) => (
           <Tab key={key}>
-            {/* <CodeBlock className='codeBlock rounded-lg shadow-md'
-              dangerouslySetInnerHTML={{ __html: highlightedCode[key] || '' }}
-            >{highlightedCode[key]}</CodeBlock> */}
-
-            <div className='codeBlock shadow-md'
+            <div className='codeBlock-tab shadow-md'
               dangerouslySetInnerHTML={{ __html: highlightedCode[key] || '' }}
             ></div>
           </Tab>

@@ -1,6 +1,7 @@
 @use "./doc.siderbar";
 @use "./admonition";
 @use "./token.css";
+
 @tailwind components;
 @tailwind base;
 @tailwind utilities;
@@ -298,21 +299,31 @@ body {
   font-weight: 500;
 }
 
-/* 选中状态的样式 */
 .react-tabs__tab--selected .package-manager-tab {
   background-color: rgba(0, 0, 0, 0.1);
 }
 
-.codeBlock {
+.codeBlock-tab {
   margin: 0 !important;
   border-radius: none;
   pre {
     margin: 0;
-    
   }
 }
 
-
 .highlighted-line {
-  background-color: rgba(255, 255, 0, 0.2);
+  background-color: var(--ifm-menu-color-background-active);
+}
+
+html[data-theme="light"] {
+  --code-block-border: 1px solid rgb(243 244 246);
+}
+
+html[data-theme="dark"] {
+  --code-block-border: 1px solid rgb(31 41 55);
+  --code-block-select-color: #2e3440ff;
+}
+
+.border-package {
+  border: var(--code-block-border);
 }
