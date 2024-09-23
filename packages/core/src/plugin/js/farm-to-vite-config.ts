@@ -2,8 +2,7 @@ import type { UserConfig as ViteUserConfig } from 'vite';
 import type { UserConfig } from '../../config/types.js';
 import { Logger } from '../../index.js';
 import merge from '../../utils/merge.js';
-import { VITE_EXTERNAL_KEYS, internalKeys } from './constant.js';
-import { VITE_DEFAULT_ASSETS } from './constants.js';
+import { EXTERNAL_KEYS, VITE_DEFAULT_ASSETS } from './constants.js';
 import {
   deleteUndefinedPropertyDeeply,
   throwIncompatibleError
@@ -109,7 +108,7 @@ function getTargetField(
     return target[key as unknown as keyof typeof target];
   }
 
-  if ([...internalKeys, ...VITE_EXTERNAL_KEYS].includes(key)) {
+  if (EXTERNAL_KEYS.includes(key)) {
     return (target as Record<string, any>)[key];
   }
 

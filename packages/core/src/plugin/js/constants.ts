@@ -38,3 +38,17 @@ export const VITE_DEFAULT_ASSETS = [
 ];
 // the name of the virtual module internal the adapter
 export const VITE_ADAPTER_VIRTUAL_MODULE = 'vite-adapter-virtual:';
+
+export const VITE_EXTERNAL_KEYS: string[] = ['esbuild'];
+
+export const RESERVED_OBJECT_PROPERTIES = [
+  'then',
+  'length',
+  'constructor',
+  'prototype'
+];
+
+export const EXTERNAL_KEYS = [
+  ...VITE_EXTERNAL_KEYS,
+  ...RESERVED_OBJECT_PROPERTIES
+];
