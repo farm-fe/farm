@@ -6,7 +6,7 @@ import { WatchOptions } from 'chokidar';
 import type { RustPlugin } from '../plugin/rust/index.js';
 import type { JsPlugin } from '../plugin/type.js';
 import { HMRChannel } from '../server/hmr.js';
-import type { Config } from '../types/binding.js';
+import type { Config, CssConfig } from '../types/binding.js';
 import type { Logger } from '../utils/index.js';
 
 // export interface HmrOptions {
@@ -128,6 +128,12 @@ export interface UserConfig {
   logger?: Logger;
 }
 
+interface ResolvedCss extends CssConfig {
+  modules?: CssConfig['modules'] & {
+    localsConversion?: never;
+  };
+}
+
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
 export interface ResolvedCompilation
   extends Exclude<Config['config'], undefined> {
@@ -135,6 +141,7 @@ export interface ResolvedCompilation
   resolve?: {
     dedupe?: never;
   } & Config['config']['resolve'];
+  css?: ResolvedCss;
 }
 
 export interface ResolvedUserConfig extends UserConfig {

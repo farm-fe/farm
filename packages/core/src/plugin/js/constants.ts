@@ -1,4 +1,4 @@
-export const VITE_DEFAULT_ASSETS = [
+export const VITE_DEFAULT_ASSETS: string[] = [
   // images
   'apng',
   'png',
@@ -36,5 +36,20 @@ export const VITE_DEFAULT_ASSETS = [
   'pdf',
   'txt'
 ];
+
 // the name of the virtual module internal the adapter
-export const VITE_ADAPTER_VIRTUAL_MODULE = 'vite-adapter-virtual:';
+export const VITE_ADAPTER_VIRTUAL_MODULE: string = 'vite-adapter-virtual:';
+
+export const VITE_EXTERNAL_KEYS: string[] = ['esbuild'];
+
+export const RESERVED_OBJECT_PROPERTIES: string[] = [
+  'then',
+  'length',
+  'constructor',
+  'prototype'
+];
+
+export const EXTERNAL_KEYS: string[] = [
+  ...VITE_EXTERNAL_KEYS,
+  ...RESERVED_OBJECT_PROPERTIES
+];
