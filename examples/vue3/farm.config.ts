@@ -94,7 +94,7 @@ export default defineConfig({
   // customLogger: logger,
 
   compilation: {
-    persistentCache: false,
+    // persistentCache: false,
   },
   server: {
     // https: true,
