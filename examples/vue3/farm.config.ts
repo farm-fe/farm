@@ -24,12 +24,12 @@ function myCustomPlugin() {
     name: 'vite-plugin-custom',
     configureServer(server) {
       server.middlewares.use((req, res, next) => {
-        // console.log(`收到请求: ${req.url}`);
+        console.log(`收到请求 之前的: ${req.url}`);
         next();
       });
       return () => {
         server.middlewares.use((req, res, next) => {
-          // console.log(`收到请求: ${req.url}`);
+          console.log(`收到请求 posthook的: ${req.url}`);
           next();
         });
       };
@@ -49,7 +49,7 @@ const logger = new Logger({
 export default defineConfig({
   vitePlugins: [
     // mkcert(),
-    viteCompression(),
+    // viteCompression(),
     // VueRouter(),
     // AutoImport({
     //   imports: ["vue", VueRouterAutoImports],

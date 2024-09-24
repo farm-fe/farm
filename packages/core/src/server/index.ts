@@ -498,6 +498,8 @@ export class Server extends httpServer {
       jsPlugins,
       'configureServer'
     )) {
+      console.log(hook);
+
       this.postConfigureServerHooks.push(await hook(reflexServer));
     }
   }
