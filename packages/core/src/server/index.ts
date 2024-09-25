@@ -498,8 +498,6 @@ export class Server extends httpServer {
       jsPlugins,
       'configureServer'
     )) {
-      console.log(hook);
-
       this.postConfigureServerHooks.push(await hook(reflexServer));
     }
   }
@@ -565,8 +563,9 @@ export class Server extends httpServer {
       this.middlewares.use(adaptorViteMiddleware(this));
     }
 
-    // TODO server post hooks not work bug!
-    this.postConfigureServerHooks.forEach((fn) => fn && fn());
+    this.postConfigureServerHooks.reduce((_, fn) => {
+      if (typeof fn === 'function') fn();
+    }, null);
 
     // TODO todo add appType 这块要判断 单页面还是 多页面 多 html 处理不一样
     this.middlewares.use(htmlFallbackMiddleware(this));

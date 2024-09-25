@@ -4,29 +4,30 @@ import vue from "@vitejs/plugin-vue";
 // import VueRouter from "unplugin-vue-router/vite";
 // import AutoImport from 'unplugin-auto-import/vite';
 import compression from "compression";
-import { createHtmlPlugin } from 'vite-plugin-html'
-import viteCompression from 'vite-plugin-compression';
-import mkcert from 'vite-plugin-mkcert'
-import Inspect from 'vite-plugin-inspect'
-import { aaa } from "./test.js"
+import { createHtmlPlugin } from "vite-plugin-html";
+import viteCompression from "vite-plugin-compression";
+import mkcert from "vite-plugin-mkcert";
+import Inspect from "vite-plugin-inspect";
+import { aaa } from "./test.js";
 const compressionMiddleware = () => {
   return {
     name: "compression",
     configureServer(server) {
       // console.log("server", server.middlewares);
       server.middlewares.use(compression());
-    }
+    },
   };
 };
 
 function myCustomPlugin() {
   return {
-    name: 'vite-plugin-custom',
+    name: "vite-plugin-custom",
     configureServer(server) {
       server.middlewares.use((req, res, next) => {
         console.log(`收到请求 之前的: ${req.url}`);
         next();
       });
+
       return () => {
         server.middlewares.use((req, res, next) => {
           console.log(`收到请求 posthook的: ${req.url}`);
@@ -37,14 +38,12 @@ function myCustomPlugin() {
     configResolved(resolvedConfig) {
       // console.log(resolvedConfig.env);
     },
-  }
+  };
 }
 
-
 const logger = new Logger({
-  prefix: "我是曼"
+  prefix: "我是曼",
 });
-
 
 export default defineConfig({
   vitePlugins: [
@@ -98,11 +97,9 @@ export default defineConfig({
   },
   server: {
     // https: true,
-    port: 5384,
+    port: 5380,
   },
-  plugins: [
-    // myCustomPlugin(),
-  ]
+  // plugins: [myCustomPlugin()],
   // plugins: [compressionMiddleware()],
   // server: {
   //   port: 5232,

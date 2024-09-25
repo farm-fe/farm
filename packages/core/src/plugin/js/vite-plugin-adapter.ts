@@ -273,6 +273,7 @@ export class VitePluginAdapter implements JsPlugin {
       'configureServer',
       this._rawPlugin.configureServer
     );
+
     this._viteDevServer = createViteDevServerAdapter(
       this.name,
       this._viteConfig,
@@ -280,7 +281,7 @@ export class VitePluginAdapter implements JsPlugin {
     );
 
     if (hook) {
-      await hook(this._viteDevServer);
+      return await hook(this._viteDevServer);
     }
   }
 
