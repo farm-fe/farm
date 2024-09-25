@@ -1,5 +1,12 @@
 # @farmfe/core
 
+## 1.3.23
+
+### Patch Changes
+
+- e17551ad: support css module name coversion
+- 4542c3d8: Temporarily disable the esbuild attribute in the vite plugin
+
 ## 1.3.22
 
 ### Patch Changes

@@ -187,6 +187,7 @@ impl Plugin for FarmPluginCss {
   fn name(&self) -> &str {
     "FarmPluginCss"
   }
+
   /// This plugin should be executed at last
   fn priority(&self) -> i32 {
     -99

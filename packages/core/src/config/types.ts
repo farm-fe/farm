@@ -134,6 +134,12 @@ interface ResolvedCss extends CssConfig {
   };
 }
 
+interface ResolvedCss extends CssConfig {
+  modules?: CssConfig['modules'] & {
+    localsConversion?: never;
+  };
+}
+
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
 export interface ResolvedCompilation
   extends Exclude<Config['config'], undefined> {
