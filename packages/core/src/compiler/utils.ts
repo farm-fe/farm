@@ -25,7 +25,7 @@ export async function resolveConfigureCompilerHook(
   compiler: Compiler,
   config: ResolvedUserConfig
 ) {
-  for (const plugin of getPluginHooks(config.jsPlugins, 'configureCompiler')) {
-    await plugin.configureCompiler?.(compiler);
+  for (const hook of getPluginHooks(config.jsPlugins, 'configureCompiler')) {
+    await hook?.(compiler);
   }
 }

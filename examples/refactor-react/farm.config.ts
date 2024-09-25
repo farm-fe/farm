@@ -5,34 +5,33 @@ export default defineConfig({
   plugins: [
     react(),
     // myCustomPlugin(),
-    // compilerPlugin(),
+    compilerPlugin(),
   ],
   compilation: {
     // persistentCache: false,
     output: {
       // publicPath: "/aaa/",
-    }
+    },
   },
   server: {},
 });
 
-
 function myCustomPlugin() {
   return {
-    name: 'custom',
+    name: "custom",
     updateModules: {
       executor(data: any) {
         console.log(data, "更新的模块");
       },
     },
-  }
+  };
 }
 
 function compilerPlugin() {
   return {
-    name: 'compiler',
+    name: "compiler",
     configureCompiler(compiler: any) {
-      console.log(compiler.compile, "compiler");
+      console.log(compiler, "compiler");
     },
-  }
+  };
 }
