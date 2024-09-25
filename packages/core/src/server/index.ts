@@ -158,6 +158,12 @@ export class Server extends httpServer {
 
       this.#resolveOptions();
 
+      // TODO createCompiler 到底在何时创建
+      this.compiler = await createCompiler(this.resolvedUserConfig);
+      await resolveConfigureCompilerHook(
+        this.compiler,
+        this.resolvedUserConfig
+      );
       this.httpsOptions = await this.resolveHttpsConfig(
         this.serverOptions.https
       );
@@ -391,11 +397,11 @@ export class Server extends httpServer {
       this.resolvedUserConfig.compilation.define.FARM_HMR_PORT =
         serverPort.toString();
 
-      this.compiler = await createCompiler(this.resolvedUserConfig);
-      await resolveConfigureCompilerHook(
-        this.compiler,
-        this.resolvedUserConfig
-      );
+      // this.compiler = await createCompiler(this.resolvedUserConfig);
+      // await resolveConfigureCompilerHook(
+      //   this.compiler,
+      //   this.resolvedUserConfig,
+      // );
       // compile the project and start the dev server
       await this.#startCompile();
 

@@ -8,7 +8,7 @@ import { HttpServer } from '../index.js';
 export function htmlFallbackMiddleware(app: any) {
   return async function htmlFallbackMiddleware(
     req: any,
-    res: any,
+    _res: any,
     next: () => void
   ) {
     if (

@@ -6,21 +6,22 @@ import {
   Resource,
   VIRTUAL_FARM_DYNAMIC_IMPORT_SUFFIX,
   bold,
-  checkClearScreen,
   cyan,
   green
 } from '../../index.js';
 import { send } from '../send.js';
 
+const DEFAULT_LAZY_COMPILATION_PATH = '/__lazy_compile';
+
 export function lazyCompilationMiddleware(app: any) {
-  const { resolvedUserConfig, compiler } = app;
-  const DEFAULT_LAZY_COMPILATION_PATH = '/__lazy_compile';
   return async function handleLazyCompilationMiddleware(
     req: any,
     res: any,
     next: any
   ) {
-    if (!req.url.startsWith('/__lazy_compile')) {
+    const { resolvedUserConfig, compiler } = app;
+
+    if (!req.url.startsWith(DEFAULT_LAZY_COMPILATION_PATH)) {
       return next();
     }
     const parsedUrl = url.parse(req.url, true);

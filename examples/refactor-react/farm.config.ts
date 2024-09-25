@@ -27,11 +27,12 @@ function myCustomPlugin() {
   };
 }
 
+
 function compilerPlugin() {
   return {
     name: "compiler",
     configureCompiler(compiler: any) {
-      console.log(compiler, "compiler");
+      // console.log(compiler, "compiler")
     },
   };
 }
