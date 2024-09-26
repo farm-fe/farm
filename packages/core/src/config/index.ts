@@ -661,13 +661,11 @@ export async function readConfigFile(
   inlineOptions: FarmCliOptions,
   configFilePath: string,
   configEnv: any
-  // logger: Logger
 ): Promise<UserConfig | undefined> {
   if (!fse.existsSync(configFilePath)) return;
 
   const format = getFormat(configFilePath);
 
-  // we need transform all type farm.config with __dirname and __filename
   const Compiler = (await import('../compiler/index.js')).Compiler;
 
   const outputPath = path.join(
