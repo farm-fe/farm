@@ -110,6 +110,7 @@ export interface UserConfig {
   envDir?: string;
   envPrefix?: string | string[];
   publicDir?: string;
+  timeUnit?: 'ms' | 's';
   formatTimer?: 'ms' | 's';
   /** js plugin(which is a javascript object) and rust plugin(which is string refer to a .farm file or a package) */
   plugins?: (RustPlugin | JsPlugin | JsPlugin[] | undefined | null | false)[];
@@ -159,6 +160,7 @@ export interface ResolvedUserConfig extends UserConfig {
   envPrefix?: string | string[];
   configFilePath?: string;
   envMode?: string;
+  timeUnit?: 'ms' | 's';
   configFileDependencies?: string[];
   compilation?: ResolvedCompilation;
   server?: NormalizedServerConfig;

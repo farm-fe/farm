@@ -16,7 +16,6 @@ export default defineConfig({
 export interface UserConfig {
   /** 该项目的当前根目录，默认为当前工作目录 */
   root?: string;
-  clearScreen?: boolean;
   envDir?: string;
   envPrefix?: string | string[];
   /** 该目录下的文件将始终被视为静态资产。 在dev中提供它，并在构建时将其复制到output.path */

@@ -385,6 +385,7 @@ const FarmConfigSchema = z
     clearScreen: z.boolean().optional(),
     configPath: z.string().optional(),
     envDir: z.string().optional(),
+    timeUnit: z.union([z.literal('ms'), z.literal('s')]).optional(),
     envPrefix: z.union([z.string(), z.array(z.string())]).optional(),
     publicDir: z.string().optional(),
     formatTimer: z.string().optional(),

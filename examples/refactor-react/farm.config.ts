@@ -13,6 +13,7 @@ export default defineConfig({
       // publicPath: "/aaa/",
     },
   },
+  timeUnit: "s",
   server: {},
 });
 

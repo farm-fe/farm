@@ -269,7 +269,7 @@ export function bootstrap(
     `${colors.bold(colors.green(` ✓`))}  ${colors.bold(
       'Compile in'
     )} ${colors.bold(
-      colors.green(formatExecutionTime(times, 'ms'))
+      colors.green(formatExecutionTime(times, userConfig.timeUnit))
     )} ${persistentCacheFlag}`,
     '\n'
   );

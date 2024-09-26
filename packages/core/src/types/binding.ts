@@ -405,7 +405,6 @@ export interface PresetEnvConfig {
 
 export interface Config {
   config?: {
-    clearScreen?: boolean;
     coreLibPath?: string;
     /**
      * Compilation entries
