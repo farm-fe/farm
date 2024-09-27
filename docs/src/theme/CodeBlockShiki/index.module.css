@@ -71,17 +71,3 @@
 .copy-button svg {
   animation: popIn 0.3s ease forwards;
 }
-
-.code-content {
-  padding: 1em;
-  overflow-x: auto;
-  pre {
-    background-color: var(--code-pre-bg) !important;
-  }
-}
-
-.shiki code {
-  font-family: "Fira Code", monospace;
-  font-size: 0.9em;
-  line-height: 1.5;
-}

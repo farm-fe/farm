@@ -1,12 +1,13 @@
 import { Tabs, Tab } from '../ManagerTabs';
 import React from 'react';
-import CodeBlock from "@theme/CodeBlock";
 import { Npm } from './icons/Npm';
 import { Yarn } from './icons/Yarn';
 import { Pnpm } from './icons/Pnpm';
 import { Bun } from './icons/Bun';
 import { codeToHtml } from 'shiki';
 import { useEffect, useState } from 'react';
+import useIsBrowser from '@docusaurus/useIsBrowser';
+import { useColorMode } from '@docusaurus/theme-common';
 export interface PackageManagerTabProps {
   skip?: boolean;
   command:
@@ -105,19 +106,25 @@ export function PackageManagerTabs({
     });
   }
   const [highlightedCode, setHighlightedCode] = useState({});
+  const { colorMode } = useColorMode();
+  const isBrowser = useIsBrowser();
   useEffect(() => {
     async function highlightCode() {
-      const highlighted = {};
-      for (const [key, value] of Object.entries(commandInfo)) {
-        highlighted[key] = await codeToHtml(value as string, {
-          lang: 'bash',
-          theme: 'nord'
-        });
+      if (isBrowser) {
+        const { codeToHtml } = await import('shiki');
+        const highlighted = {};
+        for (const [key, value] of Object.entries(commandInfo)) {
+          highlighted[key] = await codeToHtml(value as string, {
+            lang: 'bash',
+            theme: colorMode === 'dark' ? 'vitesse-dark' : 'vitesse-light',
+          });
+        }
+        setHighlightedCode(highlighted);
       }
-      setHighlightedCode(highlighted);
     }
     highlightCode();
-  }, [command]);
+  }, [command, colorMode, isBrowser]);
+
   return (
     <div className="border-solid my-4 rounded-md border-package">
       <Tabs

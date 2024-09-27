@@ -82,7 +82,7 @@
 /* For readability concerns, you should choose a lighter palette in dark mode. */
 [data-theme="dark"] {
   --code-border-color: #fff;
-  --code-block: rgb(25,25,25);
+  --code-block: rgb(25, 25, 25);
   --ui-background: #181818;
   --background: rgb(var(--ui-background) / var(--tw-bg-opacity));
   --ifm-color-soft: rgb(82 82 82 / var(--tw-text-opacity));
@@ -322,38 +322,52 @@ body {
 html[data-theme="light"] {
   --code-block: #fff;
   --code-block-border: 1px solid #eee;
-  --code-pre-bg: #f6f8fa;
 }
 
 html[data-theme="dark"] {
   --code-block: rgb(25, 25, 25);
   --code-block-border: 1px solid #303030;
   --code-block-select-color: #2e3440ff;
-  --code-pre-bg: #121212;
 }
 
 .border-package {
   border: var(--code-block-border);
 }
 
-[data-theme='light'] .shiki.dark-plus {
+[data-theme="light"] .shiki.dark-plus {
   display: none;
 }
 
-[data-theme='dark'] .shiki.light-plus {
+[data-theme="dark"] .shiki.light-plus {
   display: none;
 }
 
-
-[class*='codeBlockContainer_'] {
+[class*="codeBlockContainer_"] {
   margin-bottom: 0 !important;
 }
 
-[class*='codeBlockTitle_'] {
+[class*="codeBlockTitle_"] {
   display: none;
 }
 
-[class*='codeBlock_'] {
+[class*="codeBlock_"] {
   background-color: var(--code-block) !important;
 }
 
+.shiki {
+  margin: 0;
+  border-radius: 0;
+}
+
+.file-icon {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  margin-right: 8px;
+  vertical-align: middle;
+}
+
+.file-icon svg {
+  width: 100%;
+  height: 100%;
+}
