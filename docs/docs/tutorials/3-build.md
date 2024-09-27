@@ -22,7 +22,7 @@ Add build script in `package.json`:
 ```
 Then execute `npm run build`, the built resources will be emitted to `build` dir:
 
-```text
+```text title="Project Build Resource Structure"
 build
 ├─ favicon.ico
 ├─ index.html
@@ -43,7 +43,7 @@ If you want to custom the path that the resources emitted to, you can use:
 * [`output.filename`](/docs/config/compilation-options#outputfilename)
 * [`output.assetsFilename`](/docs/config/compilation-options#outputassetsfilename)
 
-```ts
+```ts title="farm.config.ts"
 import defineConfig from '@farmfe/core';
 
 export default defineConfig({

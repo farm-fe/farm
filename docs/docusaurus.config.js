@@ -1,4 +1,5 @@
 import { themes as prismThemes } from "prism-react-renderer";
+import remarkGfm from "remark-gfm";
 
 /** @type {import('@docusaurus/types').Config} */
 const config = {
@@ -35,14 +36,21 @@ const config = {
   },
 
   presets: [
+    // [
+    //   'docusaurus-preset-shiki-twoslash',
+    //   {
+    //     themes: ['light-plus', 'dark-plus'],
+    //   },
+    // ],
     [
-      "classic",
+      "@docusaurus/preset-classic",
       /** @type {import('@docusaurus/preset-classic').Options} */
       ({
         docs: {
           sidebarPath: require.resolve("./sidebars.js"),
           // Please change this to your repo.
           // Remove this to remove the "edit this page" links.
+          // remarkPlugins: [remarkGfm],
           editUrl: "https://github.com/farm-fe/farm-fe.github.io/tree/main/",
           lastVersion: "current",
           versions: {
