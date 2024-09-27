@@ -31,10 +31,7 @@ export default class Watcher implements ImplFileWatcher {
   watcher: FSWatcher;
   extraWatchedFiles: string[];
 
-  constructor(
-    public config: ResolvedUserConfig,
-    private logger: Logger = new Logger()
-  ) {
+  constructor(public config: ResolvedUserConfig) {
     this.resolveChokidarOptions();
   }
 
@@ -185,7 +182,6 @@ export default class Watcher implements ImplFileWatcher {
     const { ignored: ignoredList, ...otherOptions } = userWatchOptions ?? {};
     const ignored: WatchOptions['ignored'] = [
       '**/.git/**',
-      // TODO node_modules 这块的处理逻辑 以及是否会影响性能
       '**/node_modules/**',
       '**/test-results/**', // Playwright
       glob.escapePath(
