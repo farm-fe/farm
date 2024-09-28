@@ -82,6 +82,7 @@ cli
         clearScreen: options.clearScreen,
         configFile: options.config,
         mode: options.mode,
+        timeUnit: options.timeUnit,
         compilation: {
           lazyCompilation: options.lazy,
           output: {

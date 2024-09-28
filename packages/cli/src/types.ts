@@ -18,6 +18,7 @@ export interface CliServerOptions {
   hmr?: boolean;
   cors?: boolean;
   strictPort?: boolean;
+  timeUnit?: 'ms' | 's';
 }
 
 export interface CliBuildOptions {
