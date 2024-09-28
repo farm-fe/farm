@@ -42,6 +42,7 @@ pub use swc_ecma_ast;
 pub use swc_ecma_parser;
 pub use swc_html_ast;
 pub use wax;
+pub use heck;
 
 #[macro_export]
 macro_rules! farm_profile_scope {

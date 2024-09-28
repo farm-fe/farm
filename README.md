@@ -92,7 +92,7 @@ Visit [Farm Documentation](https://farmfe.org) to learn more about Farm.
 
 Farm is much faster than similar tool， **20x** faster than webpack and **10x** faster than Vite in the benchmark:
 
-![benchmark](./assets/benchmark-full.png)
+![benchmark](https://raw.githubusercontent.com/farm-fe/performance-compare/main/full.png)
 
 See [Benchmark](https://github.com/farm-fe/performance-compare) for details.
 
