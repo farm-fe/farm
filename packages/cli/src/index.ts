@@ -1,5 +1,6 @@
 import { VERSION as CORE_VERSION } from '@farmfe/core';
 import { cac } from 'cac';
+
 import {
   VERSION,
   handleAsyncOperationErrors,
@@ -128,6 +129,7 @@ cli
       configFile: options.config,
       mode: options.mode,
       watch: options.watch,
+      timeUnit: options.timeUnit,
       compilation: {
         output: {
           path: options?.outDir,
@@ -201,6 +203,8 @@ cli
 
 cli.help();
 
-cli.version(`@farmfe/cli ${VERSION} @farmfe/core ${CORE_VERSION}`);
+cli.version(
+  `@farmfe/cli ${VERSION ?? 'unknown'} @farmfe/core ${CORE_VERSION ?? 'unknown'}`
+);
 
 cli.parse();
