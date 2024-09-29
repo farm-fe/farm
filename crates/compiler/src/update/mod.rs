@@ -10,7 +10,9 @@ use farmfe_core::{
   module::{module_graph::ModuleGraphEdgeDataItem, module_group::ModuleGroupId, Module, ModuleId},
   plugin::{PluginResolveHookParam, ResolveKind, UpdateResult, UpdateType},
   resource::ResourceType,
-  serde_json::json,
+  serde::Serialize,
+  serde_json::{self, json},
+  stats::CompilationPluginHookStats,
 };
 
 use farmfe_toolkit::get_dynamic_resources_map::get_dynamic_resources_map;
@@ -79,6 +81,46 @@ impl Compiler {
         .context
         .record_manager
         .set_entries(update_module_graph.entries.keys().cloned().collect())
+    }
+  }
+
+  fn set_module_group_graph_stats(&self) {
+    if self.context.config.record {
+      let module_group_graph = self.context.module_group_graph.read();
+      self
+        .context
+        .record_manager
+        .add_plugin_hook_stats(CompilationPluginHookStats {
+          plugin_name: "HmrUpdate".to_string(),
+          hook_name: "analyze_module_graph".to_string(),
+          hook_context: None,
+          module_id: "".into(),
+          input: "".to_string(),
+          output: serde_json::to_string(&module_group_graph.print_graph()).unwrap(),
+          duration: 0,
+          start_time: 0,
+          end_time: 0,
+        })
+    }
+  }
+
+  fn set_hmr_diff_stats(&self, diff_stats: PrintedDiffAndPatchContext) {
+    // record diff and patch result
+    if self.context.config.record {
+      self
+        .context
+        .record_manager
+        .add_plugin_hook_stats(CompilationPluginHookStats {
+          plugin_name: "HmrUpdate".to_string(),
+          hook_name: "diffAndPatchContext".to_string(),
+          module_id: "".into(),
+          hook_context: None,
+          input: "".to_string(),
+          output: serde_json::to_string(&diff_stats).unwrap_or_default(),
+          duration: 0,
+          start_time: 0,
+          end_time: 0,
+        });
     }
   }
 
@@ -191,6 +233,8 @@ impl Compiler {
 
     let (affected_module_groups, updated_module_ids, diff_result, removed_modules) =
       self.diff_and_patch_context(paths, &update_context);
+    // record graph patch result
+    self.set_module_group_graph_stats();
 
     // update cache
     set_updated_modules_cache(&updated_module_ids, &diff_result, &self.context);
@@ -504,6 +548,7 @@ impl Compiler {
       .collect();
     let mut module_graph = self.context.module_graph.write();
     let mut update_module_graph = update_context.module_graph.write();
+    update_module_graph.update_execution_order_for_modules();
 
     let diff_result = diff_module_graph(start_points.clone(), &module_graph, &update_module_graph);
 
@@ -523,6 +568,14 @@ impl Compiler {
       &mut module_graph,
       &mut module_group_graph,
     );
+
+    // record diff and patch result
+    self.set_hmr_diff_stats(PrintedDiffAndPatchContext {
+      removed_modules: removed_modules.iter().map(|m| m.0.clone()).collect(),
+      affected_module_groups: affected_module_groups.clone(),
+      diff_result: diff_result.clone(),
+      start_points: start_points.clone(),
+    });
 
     (
       affected_module_groups,
@@ -703,4 +756,13 @@ fn resolve_module(
     ),
     resolve_module_id_result,
   })))
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase", crate = "farmfe_core::serde")]
+struct PrintedDiffAndPatchContext {
+  affected_module_groups: HashSet<ModuleGroupId>,
+  start_points: Vec<ModuleId>,
+  diff_result: DiffResult,
+  removed_modules: HashSet<ModuleId>,
 }
