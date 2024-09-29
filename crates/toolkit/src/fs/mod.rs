@@ -12,12 +12,7 @@ pub const ENTRY_NAME: &str = "[entryName]";
 /// read content of the path, return utf8 string.
 pub fn read_file_utf8(path: &str) -> Result<String> {
   let raw = read_file_raw(path)?;
-  String::from_utf8(raw).map_err(|e| {
-    CompilationError::GenericError(format!(
-      "File `{}` is not utf8! Detailed Error: {:?}",
-      path, e
-    ))
-  })
+  Ok(String::from_utf8_lossy(&raw).into_owned())
 }
 
 /// read content of the path, return bytes.
