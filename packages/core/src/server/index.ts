@@ -107,7 +107,7 @@ export class Server extends httpServer {
   ws: WsServer;
   serverOptions: ServerConfig;
   httpsOptions: HttpsServerOptions;
-  publicDir: string | boolean | undefined;
+  publicDir: string | undefined;
   publicPath?: string;
   publicFiles?: Set<string>;
   httpServer: HttpServer;

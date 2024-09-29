@@ -7,24 +7,13 @@ import glob from 'fast-glob';
 import { Compiler } from '../compiler/index.js';
 import type { ResolvedUserConfig } from '../config/index.js';
 import { createInlineCompiler } from '../index.js';
-// import { Server } from '../server/index.js';
-import { Server } from '../server/index.js';
-import type { JsUpdateResult } from '../types/binding.js';
 import { createDebugger } from '../utils/debug.js';
-import {
-  Logger,
-  arraify,
-  compilerHandler,
-  getCacheDir
-} from '../utils/index.js';
-
-interface ImplFileWatcher {
-  // watch(): Promise<void>;
-}
+import { arraify, getCacheDir } from '../utils/index.js';
 
 export const debugWatcher = createDebugger('farm:watcher');
 
 // TODO remove FileWatcher
+interface ImplFileWatcher {}
 export default class Watcher implements ImplFileWatcher {
   private watchedFiles = new Set<string>();
   resolvedWatchOptions: WatchOptions;

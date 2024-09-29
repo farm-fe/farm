@@ -1,9 +1,12 @@
 import { withTrailingSlash } from '../../utils/path.js';
 import { cleanUrl } from '../../utils/url.js';
 
-export function publicPathMiddleware(app: any) {
+import type Connect from 'connect';
+import type { Server } from '../index.js';
+
+export function publicPathMiddleware(app: Server): Connect.NextHandleFunction {
   const { publicPath, serverOptions } = app;
-  return function handlePublicPathMiddleware(req: any, res: any, next: any) {
+  return function handlePublicPathMiddleware(req, res, next) {
     // auto redirect to public path
     const url = cleanUrl(req.url);
 

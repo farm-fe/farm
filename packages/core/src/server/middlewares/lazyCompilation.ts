@@ -7,6 +7,7 @@ import {
   VIRTUAL_FARM_DYNAMIC_IMPORT_SUFFIX,
   bold,
   cyan,
+  formatExecutionTime,
   getDynamicResources,
   green
 } from '../../index.js';
@@ -44,7 +45,10 @@ export function lazyCompilationMiddleware(
       })
       .join(', ');
 
-    resolvedUserConfig.logger.info(`Lazy compiling ${bold(cyan(pathsStr))}`);
+    resolvedUserConfig.logger.info(
+      `${bold(green('✨Lazy compiling'))} ${bold(cyan(pathsStr))}`,
+      true
+    );
     const start = performance.now();
 
     let result;
@@ -59,15 +63,23 @@ export function lazyCompilationMiddleware(
       return next();
     }
 
-    // TODO 取的对象不对
-    if (isNodeEnvironment || resolvedUserConfig.writeToDisk) {
+    // TODO 取的对象不对 writeToDisk
+    // if (isNodeEnvironment || resolvedUserConfig.writeToDisk) {
+    if (isNodeEnvironment) {
       compiler.writeResourcesToDisk();
     }
 
     resolvedUserConfig.logger.info(
-      `${bold(green(`✓`))} Lazy compilation done ${bold(
+      `${bold(green(`✓ Lazy compilation done`))} ${bold(
         cyan(pathsStr)
-      )} in ${bold(green(`${performance.now() - start}ms`))}.`
+      )} in ${bold(
+        green(
+          formatExecutionTime(
+            performance.now() - start,
+            resolvedUserConfig.timeUnit
+          )
+        )
+      )}.`
     );
 
     if (result) {

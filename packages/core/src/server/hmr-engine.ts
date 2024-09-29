@@ -79,13 +79,17 @@ export class HmrEngine {
     });
 
     const start = performance.now();
-    console.log(queue);
 
     const result = await this.app.compiler.update(queue);
 
     this.app.logger.info(
       `${bold(lightCyan(updatedFilesStr))} updated in ${bold(
-        green(formatExecutionTime(performance.now() - start, 's'))
+        green(
+          formatExecutionTime(
+            performance.now() - start,
+            this.app.resolvedUserConfig.timeUnit
+          )
+        )
       )}`,
       true
     );

@@ -1,16 +1,15 @@
-import path from 'path';
-import { Compiler } from '../../compiler/index.js';
-import { ResolvedUserConfig } from '../../config/types.js';
+import path from 'node:path';
+
 import { commonFsUtils } from '../../utils/fsUtils.js';
 import { cleanUrl } from '../../utils/url.js';
-import { HttpServer } from '../index.js';
 
-export function htmlFallbackMiddleware(app: any) {
-  return async function htmlFallbackMiddleware(
-    req: any,
-    _res: any,
-    next: () => void
-  ) {
+import type Connect from 'connect';
+import type { Server } from '../index.js';
+
+export function htmlFallbackMiddleware(
+  app: Server
+): Connect.NextHandleFunction {
+  return async function htmlFallbackMiddleware(req, _res, next) {
     if (
       // Only accept GET or HEAD
       (req.method !== 'GET' && req.method !== 'HEAD') ||
