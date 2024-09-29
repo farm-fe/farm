@@ -44,6 +44,7 @@ import {
 } from './compiler/utils.js';
 import { __FARM_GLOBAL__ } from './config/_global.js';
 import type { FarmCliOptions, ResolvedUserConfig } from './config/types.js';
+import { getShortName } from './utils/path.js';
 
 // export async function start(
 //   inlineConfig?: FarmCliOptions & UserConfig
@@ -309,12 +310,19 @@ export async function build(
       ? bold(PersistentCacheBrand)
       : '';
 
-    compiler.writeResourcesToDisk();
+    const shortFile = getShortName(
+      resolvedUserConfig.configFilePath,
+      resolvedUserConfig.root
+    );
+    resolvedUserConfig.logger.info(
+      `Using config file at ${bold(green(shortFile))}`
+    );
     resolvedUserConfig.logger.info(
       `Build completed in ${bold(
         green(`${elapsedTime}ms`)
       )} ${persistentCacheText} Resources emitted to ${bold(green(output.path))}.`
     );
+    compiler.writeResourcesToDisk();
     await copyPublicDirectory(resolvedUserConfig);
   } catch (err) {
     resolvedUserConfig.logger.error(`Failed to build: ${err}`, { exit: true });
