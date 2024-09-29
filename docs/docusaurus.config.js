@@ -36,12 +36,6 @@ const config = {
   },
 
   presets: [
-    // [
-    //   'docusaurus-preset-shiki-twoslash',
-    //   {
-    //     themes: ['light-plus', 'dark-plus'],
-    //   },
-    // ],
     [
       "@docusaurus/preset-classic",
       /** @type {import('@docusaurus/preset-classic').Options} */
