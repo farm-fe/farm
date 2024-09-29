@@ -70,12 +70,16 @@ export interface UserServerConfig {
 }
 
 export interface UserPreviewServerConfig {
+  host?: string | boolean;
+  port?: number;
+  strictPort?: boolean;
+  open?: boolean;
+  // cors?: boolean | cors.Options;
+  headers?: OutgoingHttpHeaders;
   // write static output file
   output?: { path?: string; publicPath?: string };
   distDir?: string;
   https?: SecureServerOptions;
-  port?: number;
-  host?: string | boolean;
 }
 
 export type NormalizedServerConfig = Required<
@@ -125,6 +129,8 @@ export interface UserConfig {
   compilation?: Pick<InternalConfig, AvailableUserConfigKeys>;
   /** config related to dev server */
   server?: UserServerConfig;
+  /** config related to preview server */
+  preview?: UserPreviewServerConfig;
   /** Files under this dir will always be treated as static assets. serve it in dev, and copy it to output.path when build */
   logger?: Logger;
 }

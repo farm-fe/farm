@@ -44,6 +44,7 @@ import {
 } from './compiler/utils.js';
 import { __FARM_GLOBAL__ } from './config/_global.js';
 import type { FarmCliOptions, ResolvedUserConfig } from './config/types.js';
+import { PreviewServer } from './server/preview.js';
 
 // export async function start(
 //   inlineConfig?: FarmCliOptions & UserConfig
@@ -277,6 +278,25 @@ export async function start(
     server.listen();
   } catch (error) {
     server.logger.error('Failed to start the server', { exit: false, error });
+  }
+}
+
+export async function preview(
+  inlineConfig?: FarmCliOptions & UserConfig
+): Promise<void> {
+  inlineConfig = inlineConfig ?? {};
+  setProcessEnv('production');
+
+  const previewServer = new PreviewServer(inlineConfig);
+  try {
+    await previewServer.createServer();
+
+    previewServer.listen();
+  } catch (error) {
+    previewServer.logger.error('Failed to start the preview server', {
+      exit: false,
+      error
+    });
   }
 }
 
