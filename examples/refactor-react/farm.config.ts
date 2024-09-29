@@ -13,8 +13,10 @@ export default defineConfig({
       // publicPath: "/aaa/",
     },
   },
-  timeUnit: "s",
-  server: {},
+  // timeUnit: "s",
+  server: {
+    port: 8854
+  },
 });
 
 function myCustomPlugin() {

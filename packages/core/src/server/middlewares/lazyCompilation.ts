@@ -1,32 +1,35 @@
 import { existsSync } from 'node:fs';
 import { relative } from 'node:path';
-import url from 'node:url';
+import { parse as parseUrl } from 'node:url';
 
 import {
-  Resource,
+  Server,
   VIRTUAL_FARM_DYNAMIC_IMPORT_SUFFIX,
   bold,
   cyan,
+  getDynamicResources,
   green
 } from '../../index.js';
 import { send } from '../send.js';
 
+import type Connect from 'connect';
+
 const DEFAULT_LAZY_COMPILATION_PATH = '/__lazy_compile';
 
-export function lazyCompilationMiddleware(app: any) {
-  return async function handleLazyCompilationMiddleware(
-    req: any,
-    res: any,
-    next: any
-  ) {
+export function lazyCompilationMiddleware(
+  app: Server
+): Connect.NextHandleFunction {
+  return async function handleLazyCompilationMiddleware(req, res, next) {
     const { resolvedUserConfig, compiler } = app;
 
     if (!req.url.startsWith(DEFAULT_LAZY_COMPILATION_PATH)) {
-      return next();
+      return await next();
     }
-    const parsedUrl = url.parse(req.url, true);
+    const parsedUrl = parseUrl(req.url, true);
     const paths = (parsedUrl.query.paths as string).split(',');
-    const queryNode = parsedUrl.query.node;
+
+    const isNodeEnvironment = parsedUrl.query.node;
+    const root = compiler.config.config.root;
     const pathsStr = paths
       .map((p) => {
         if (
@@ -36,74 +39,61 @@ export function lazyCompilationMiddleware(app: any) {
         ) {
           return p;
         }
-        const resolvedPath = compiler.transformModulePath(
-          compiler.config.config.root,
-          p
-        );
-        return relative(compiler.config.config.root, resolvedPath);
+        const resolvedPath = compiler.transformModulePath(root, p);
+        return relative(root, resolvedPath);
       })
       .join(', ');
 
-    console.info(`Lazy compiling ${bold(cyan(pathsStr))}`);
+    resolvedUserConfig.logger.info(`Lazy compiling ${bold(cyan(pathsStr))}`);
     const start = performance.now();
 
     let result;
     try {
-      // TODO 我想知道能不能把时间算法 单独写成一个 middleware
       // sync regenerate resources
       result = await compiler.update(paths, true, false, false);
     } catch (e) {
-      console.log(e);
+      throw new Error(`Lazy compilation update failed: ${e.message}`);
     }
 
     if (!result) {
-      return;
+      return next();
     }
 
-    if (queryNode || resolvedUserConfig.writeToDisk) {
+    // TODO 取的对象不对
+    if (isNodeEnvironment || resolvedUserConfig.writeToDisk) {
       compiler.writeResourcesToDisk();
     }
 
-    console.info(
+    resolvedUserConfig.logger.info(
       `${bold(green(`✓`))} Lazy compilation done ${bold(
         cyan(pathsStr)
       )} in ${bold(green(`${performance.now() - start}ms`))}.`
     );
 
     if (result) {
-      let dynamicResourcesMap: Record<string, Resource[]> = null;
+      const { dynamicResources, dynamicModuleResourcesMap } =
+        getDynamicResources(result.dynamicResourcesMap);
 
-      if (result.dynamicResourcesMap) {
-        for (const [key, value] of Object.entries(result.dynamicResourcesMap)) {
-          if (!dynamicResourcesMap) {
-            dynamicResourcesMap = {} as Record<string, Resource[]>;
-          }
+      const responseData = {
+        dynamicResources,
+        dynamicModuleResourcesMap
+      };
 
-          // @ts-ignore
-          dynamicResourcesMap[key] = value.map((r) => ({
-            path: r[0],
-            type: r[1] as 'script' | 'link'
-          }));
-        }
-      }
+      const lazyCompilationContent = !isNodeEnvironment
+        ? `export default ${JSON.stringify(responseData)}`
+        : JSON.stringify(responseData);
 
-      const returnObj = `{
-          "dynamicResourcesMap": ${JSON.stringify(dynamicResourcesMap)}
-        }`;
-      const code = !queryNode ? `export default ${returnObj}` : returnObj;
-
-      const contentType = !queryNode
+      const contentType = !isNodeEnvironment
         ? 'application/javascript'
         : 'application/json';
 
-      const lazyCompilationHeaders = {
-        'Content-Type': contentType,
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': '*',
-        'Access-Control-Allow-Headers': '*'
-      };
-      send(req, res, code, req.url, {
-        headers: lazyCompilationHeaders
+      send(req, res, lazyCompilationContent, req.url, {
+        headers: {
+          'Content-Type': contentType,
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': '*',
+          'Access-Control-Allow-Headers': '*'
+        }
       });
     } else {
       throw new Error(`Lazy compilation result not found for paths ${paths}`);
