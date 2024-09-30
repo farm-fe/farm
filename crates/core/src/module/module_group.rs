@@ -216,7 +216,7 @@ impl ModuleGroupGraph {
       graph.edges.push((source, target));
     }
 
-    return graph;
+    graph
   }
 }
 
