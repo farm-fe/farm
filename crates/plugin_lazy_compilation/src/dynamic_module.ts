@@ -53,25 +53,26 @@ async function fetch(path: string) {
 
 function startLazyCompiling(queue: any[]) {
   FarmModuleSystem.lazyCompiling = true;
-  // @ts-ignore ignore type
-  if (window.__farm_hide_lazy_compile_progress === true) {
-    // show the compiling progress at the top of the page
-    const progress = document.getElementById('farm-lazy-compiling') || document.createElement('div');
-    progress.id = 'farm-lazy-compiling';
-    progress.style.backgroundColor = '#ff9ff330';
-    progress.style.color = '#6f1a5f';
-    progress.style.zIndex = '9999999999';
-    document.body.prepend(progress);
-    progress.innerText = 'Compiling ' + queue.map((item) => item.modulePath).join(', ') + '...';
-  }
+  // TODO enable following feature in 2.0
+  // // @ts-ignore ignore type
+  // if (window.__farm_hide_lazy_compile_progress === true) {
+  //   // show the compiling progress at the top of the page
+  //   const progress = document.getElementById('farm-lazy-compiling') || document.createElement('div');
+  //   progress.id = 'farm-lazy-compiling';
+  //   progress.style.backgroundColor = '#ff9ff330';
+  //   progress.style.color = '#6f1a5f';
+  //   progress.style.zIndex = '9999999999';
+  //   document.body.prepend(progress);
+  //   progress.innerText = 'Compiling ' + queue.map((item) => item.modulePath).join(', ') + '...';
+  // }
 }
 
 function endLazyCompiling() {
   FarmModuleSystem.lazyCompiling = false;
-  const progress = document.getElementById('farm-lazy-compiling');
-  if (progress) {
-    document.body.removeChild(progress);
-  }
+  // const progress = document.getElementById('farm-lazy-compiling');
+  // if (progress) {
+  //   document.body.removeChild(progress);
+  // }
 }
 
 if (FarmModuleSystem.lazyCompiling === undefined) {
