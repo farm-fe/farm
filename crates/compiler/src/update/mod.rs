@@ -104,7 +104,13 @@ impl Compiler {
     }
   }
 
-  fn set_hmr_diff_stats(&self, diff_stats: PrintedDiffAndPatchContext) {
+  fn set_hmr_diff_stats(
+    &self,
+    removed_modules: &HashMap<ModuleId, Module>,
+    affected_module_groups: &HashSet<ModuleGroupId>,
+    diff_result: &DiffResult,
+    start_points: &Vec<ModuleId>,
+  ) {
     // record diff and patch result
     if self.context.config.record {
       self
@@ -116,7 +122,13 @@ impl Compiler {
           module_id: "".into(),
           hook_context: None,
           input: "".to_string(),
-          output: serde_json::to_string(&diff_stats).unwrap_or_default(),
+          output: serde_json::to_string(&PrintedDiffAndPatchContext {
+            removed_modules: removed_modules.iter().map(|m| m.0.clone()).collect(),
+            affected_module_groups: affected_module_groups.clone(),
+            diff_result: diff_result.clone(),
+            start_points: start_points.clone(),
+          })
+          .unwrap_or_default(),
           duration: 0,
           start_time: 0,
           end_time: 0,
@@ -570,12 +582,12 @@ impl Compiler {
     );
 
     // record diff and patch result
-    self.set_hmr_diff_stats(PrintedDiffAndPatchContext {
-      removed_modules: removed_modules.iter().map(|m| m.0.clone()).collect(),
-      affected_module_groups: affected_module_groups.clone(),
-      diff_result: diff_result.clone(),
-      start_points: start_points.clone(),
-    });
+    self.set_hmr_diff_stats(
+      &removed_modules,
+      &affected_module_groups,
+      &diff_result,
+      &start_points,
+    );
 
     (
       affected_module_groups,
