@@ -10,7 +10,7 @@ use crate::resource::resource_pot::ResourcePotType;
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum CompilationError {
   // #[error("Can not resolve `{src}` from {importer}.\nOriginal error: {source:?}.\n\nPotential Causes:\n1.The file that `{src}` points to does not exist.\n2.Install it first if `{src}` is an dependency from node_modules, if you are using pnpm refer to [https://pnpm.io/faq#pnpm-does-not-work-with-your-project-here] for solutions.\n3. If `{src}` is a alias, make sure your alias config is correct.\n")]
-  #[error("{}", serde_json::to_string(&serialize_resolve_error(&src, &importer, &source))
+  #[error("{}", serde_json::to_string(&serialize_resolve_error(src, importer, source))
   .map_err(|_| "Failed to serialize resolve error type message".to_string())
   .unwrap_or_else(|e| e))]
   ResolveError {
