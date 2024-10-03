@@ -184,6 +184,9 @@ importers:
       sass:
         specifier: ^1.63.6
         version: 1.74.1
+      tailwindcss-animate:
+        specifier: ^1.0.7
+        version: 1.0.7(tailwindcss@3.4.12(ts-node@10.9.1(@swc/core@1.7.26(@swc/helpers@0.5.3))(@types/node@22.5.0)(typescript@5.5.4)))
       three:
         specifier: 0.168.0
         version: 0.168.0
@@ -1963,7 +1966,7 @@ importers:
         version: 0.2.5(vue@2.6.14)
       tdesign-vue:
         specifier: latest
-        version: 1.10.2(vue@2.6.14)
+        version: 1.10.3(vue@2.6.14)
       vite-plugin-vue2-svg:
         specifier: ^0.4.0
         version: 0.4.0(ejs@3.1.10)(lodash@4.17.21)(vue-template-compiler@2.6.14(vue@2.6.14))
@@ -1997,7 +2000,7 @@ importers:
         version: 0.2.5(vue@2.7.16)
       tdesign-vue:
         specifier: latest
-        version: 1.10.2(vue@2.7.16)
+        version: 1.10.3(vue@2.7.16)
       vite-plugin-vue2-svg:
         specifier: ^0.4.0
         version: 0.4.0(ejs@3.1.10)(lodash@4.17.21)(vue-template-compiler@2.7.16(vue@2.7.16))
@@ -17385,6 +17388,11 @@ packages:
   tailwind-merge@2.5.2:
     resolution: {integrity: sha512-kjEBm+pvD+6eAwzJL2Bi+02/9LFLal1Gs61+QB7HvTfQQ0aXwC5LGT8PEt1gS0CWKktKe6ysPTAy3cBC5MeiIg==}
 
+  tailwindcss-animate@1.0.7:
+    resolution: {integrity: sha512-bl6mpH3T7I3UFxuvDEXLxy/VuFxBk5bbzplh7tXI68mwMokNYd1t9qPBHlnyTwfa4JGC4zP516I1hYYtQ/vspA==}
+    peerDependencies:
+      tailwindcss: '>=3.0.0 || insiders'
+
   tailwindcss@3.3.5:
     resolution: {integrity: sha512-5SEZU4J7pxZgSkv7FP1zY8i2TIAOooNZ1e/OGtxIEv6GltpoiXUqWvLy89+a10qYTB1N5Ifkuw9lqQkN9sscvA==}
     engines: {node: '>=14.0.0'}
@@ -17429,8 +17437,8 @@ packages:
     peerDependencies:
       vue: ^2.6.12
 
-  tdesign-vue@1.10.2:
-    resolution: {integrity: sha512-BsI4Fip2Cxklgpr+/iBHUBhRdczBkxHErcr9srMyz3DO/cjHtsyxuYHGNvERO063VPgefbA87Tc5ORn/dEhc+g==}
+  tdesign-vue@1.10.3:
+    resolution: {integrity: sha512-jo6GrrBRDWpL5m1LivSC6UbppbqwOxIhJNfVYAB4KfiMY6MjRCYfJOaX6hirff8ycEItKw2ot+vj80F3+fuItw==}
     peerDependencies:
       vue: ~2.6.10
 
@@ -38329,6 +38337,10 @@ snapshots:
 
   tailwind-merge@2.5.2: {}
 
+  tailwindcss-animate@1.0.7(tailwindcss@3.4.12(ts-node@10.9.1(@swc/core@1.7.26(@swc/helpers@0.5.3))(@types/node@22.5.0)(typescript@5.5.4))):
+    dependencies:
+      tailwindcss: 3.4.12(ts-node@10.9.1(@swc/core@1.7.26(@swc/helpers@0.5.3))(@types/node@22.5.0)(typescript@5.5.4))
+
   tailwindcss@3.3.5(ts-node@10.9.1(@swc/core@1.7.26(@swc/helpers@0.5.3))(@types/node@22.5.0)(typescript@5.5.4)):
     dependencies:
       '@alloc/quick-lru': 5.2.0
@@ -38456,7 +38468,7 @@ snapshots:
       classnames: 2.3.2
       vue: 2.7.16
 
-  tdesign-vue@1.10.2(vue@2.6.14):
+  tdesign-vue@1.10.3(vue@2.6.14):
     dependencies:
       '@babel/runtime': 7.23.2
       '@popperjs/core': 2.11.8
@@ -38478,7 +38490,7 @@ snapshots:
       validator: 13.11.0
       vue: 2.6.14
 
-  tdesign-vue@1.10.2(vue@2.7.16):
+  tdesign-vue@1.10.3(vue@2.7.16):
     dependencies:
       '@babel/runtime': 7.23.2
       '@popperjs/core': 2.11.8
