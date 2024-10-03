@@ -19,13 +19,13 @@ function HomepageHeader() {
     <header
       className={clsx(
         "grid grid-cols-1 gap-10 relative z-10 mx-auto max-w-8xl py-4 sm:py-6 lg:py-8",
-        "lg:grid-cols-2",
+        "lg:grid-cols-3",
         styles.heroBanner,
       )}
     >
-      <div className="container w-full flex flex-col my-1 px-2">
+      <div className="container w-full flex flex-col my-1 px-2 col-span-2">
         <BlurFade delay={0.25} inView>
-          <div className="font-extrabold text-3xl sm:text-6xl lg:text-6xl text-left mb-6 flex flex-col gap-2">
+          <div className="font-extrabold text-3xl sm:text-6xl lg:text-7xl text-left mb-6 flex flex-col gap-2">
             <div>
               <span>
                 <Translate>Extremely</Translate>
