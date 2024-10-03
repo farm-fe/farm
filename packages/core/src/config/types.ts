@@ -168,6 +168,7 @@ export interface ResolvedUserConfig extends UserConfig {
   rustPlugins?: [string, string][];
   inlineConfig?: FarmCliOptions;
   logger?: Logger;
+  watch?: boolean;
 }
 
 export interface GlobalCliOptions {

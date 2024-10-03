@@ -9,7 +9,6 @@ import {
   resolveCore
 } from './utils.js';
 
-import type { UserConfig } from '@farmfe/core';
 import type {
   CleanOptions,
   CliBuildOptions,

@@ -29,3 +29,15 @@ export async function resolveConfigureCompilerHook(
     await hook?.(compiler);
   }
 }
+
+export async function createInlineCompiler(
+  config: ResolvedUserConfig,
+  options = {}
+) {
+  const { Compiler } = await import('./index.js');
+  return new Compiler({
+    config: { ...config.compilation, ...options },
+    jsPlugins: config.jsPlugins,
+    rustPlugins: config.rustPlugins
+  });
+}

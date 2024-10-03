@@ -5,7 +5,7 @@ import { stat } from 'node:fs/promises';
 import { isAbsolute, relative } from 'node:path';
 
 import type { Resource } from '@farmfe/runtime/src/resource-loader.js';
-import { UserHmrConfig, checkClearScreen } from '../config/index.js';
+import { UserHmrConfig } from '../config/index.js';
 import type { JsUpdateResult } from '../types/binding.js';
 import { convertErrorMessage } from '../utils/error.js';
 import { bold, formatExecutionTime, green, lightCyan } from '../utils/index.js';

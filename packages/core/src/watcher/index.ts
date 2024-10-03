@@ -5,8 +5,8 @@ import chokidar from 'chokidar';
 import type { FSWatcher, WatchOptions } from 'chokidar';
 import glob from 'fast-glob';
 import { Compiler } from '../compiler/index.js';
+import { createInlineCompiler } from '../compiler/utils.js';
 import type { ResolvedUserConfig } from '../config/index.js';
-import { createInlineCompiler } from '../index.js';
 import { createDebugger } from '../utils/debug.js';
 import { arraify, getCacheDir } from '../utils/index.js';
 
@@ -53,6 +53,8 @@ export default class Watcher implements ImplFileWatcher {
       }
     });
   }
+
+  async watch() {}
 
   // async watch() {
   //   const compiler = this.getCompiler();

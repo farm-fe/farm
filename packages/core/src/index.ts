@@ -3,6 +3,9 @@ export * from './config/index.js';
 export * from './server/index.js';
 export * from './plugin/type.js';
 export * from './utils/index.js';
+
+export { defineFarmConfig as defineConfig } from './config/index.js';
+
 export type {
   ModuleType,
   ResolveKind,
@@ -23,254 +26,34 @@ export type {
   PluginTransformHookResult
 } from './types/binding.js';
 
-import { statSync } from 'node:fs';
 import fs from 'node:fs/promises';
-import path from 'node:path';
-import fse from 'fs-extra';
+import path, { resolve } from 'node:path';
 
-import { loadEnv, setProcessEnv } from './config/env.js';
-import {
-  UserConfig,
-  normalizePublicDir,
-  resolveConfig
-} from './config/index.js';
+import { UserConfig, resolveConfig } from './config/index.js';
 import { Server } from './server/index.js';
 import { PersistentCacheBrand, bold, colors, green } from './utils/color.js';
 import { Logger } from './utils/logger.js';
 
+import { JsUpdateResult } from '../binding/binding.js';
 import {
   createCompiler,
   resolveConfigureCompilerHook
 } from './compiler/utils.js';
 import { __FARM_GLOBAL__ } from './config/_global.js';
 import type { FarmCliOptions, ResolvedUserConfig } from './config/types.js';
+import { convertErrorMessage } from './utils/error.js';
+import {
+  copyPublicDirectory,
+  findNodeModulesRecursively
+} from './utils/fsUtils.js';
 import { getShortName } from './utils/path.js';
-
-// export async function start(
-//   inlineConfig?: FarmCliOptions & UserConfig
-// ): Promise<void> {
-//   inlineConfig = inlineConfig ?? {};
-//   const logger = inlineConfig.logger ?? new Logger();
-//   setProcessEnv('development');
-
-//   try {
-//     const resolvedUserConfig = await resolveConfig(
-//       inlineConfig,
-//       'start',
-//       'development',
-//       'development',
-//       false
-//     );
-
-//     const compiler = await createCompiler(resolvedUserConfig, logger);
-
-//     const devServer = await createDevServer(
-//       compiler,
-//       resolvedUserConfig,
-//       logger
-//     );
-
-//     await devServer.listen();
-//   } catch (error) {
-//     logger.error('Failed to start the server', { exit: true, error });
-//   }
-// }
-
-// export async function preview(inlineConfig?: FarmCliOptions): Promise<void> {
-//   inlineConfig = inlineConfig ?? {};
-//   const logger = inlineConfig.logger ?? new Logger();
-//   const resolvedUserConfig = await resolveConfig(
-//     inlineConfig,
-//     'preview',
-//     'production',
-//     'production',
-//     true
-//   );
-
-//   const { root, output } = resolvedUserConfig.compilation;
-//   const distDir = path.resolve(root, output.path);
-
-//   try {
-//     statSync(distDir);
-//   } catch (err) {
-//     if (err.code === 'ENOENT') {
-//       throw new Error(
-//         `The directory "${distDir}" does not exist. Did you build your project?`
-//       );
-//     }
-//   }
-
-//   // reusing port conflict check from DevServer
-//   const serverConfig = {
-//     ...resolvedUserConfig.server,
-//     host: inlineConfig.host ?? true,
-//     port:
-//       inlineConfig.port ??
-//       (Number(process.env.FARM_DEFAULT_SERVER_PORT) || 1911)
-//   };
-//   await Server.resolvePortConflict(serverConfig, logger);
-//   const port = serverConfig.port;
-//   const host = serverConfig.host;
-//   const previewOptions: UserPreviewServerConfig = {
-//     ...serverConfig,
-//     distDir,
-//     output: { path: output.path, publicPath: output.publicPath },
-//     port,
-//     host
-//   };
-
-//   // const server = new Server({ logger });
-//   server.createPreviewServer(previewOptions);
-// }
-
-// export async function watch(
-//   inlineConfig?: FarmCliOptions & UserConfig
-// ): Promise<void> {
-//   inlineConfig = inlineConfig ?? {};
-//   const logger = inlineConfig.logger ?? new Logger();
-//   setProcessEnv('development');
-
-//   inlineConfig.server ??= {};
-//   inlineConfig.server.hmr ??= false;
-
-//   const resolvedUserConfig = await resolveConfig(
-//     inlineConfig,
-//     'build',
-//     'production',
-//     'production',
-//     false
-//   );
-
-//   const fileWatcher = await createBundleHandler(
-//     resolvedUserConfig,
-//     logger,
-//     true
-//   );
-
-//   let devServer: Server | undefined;
-//   // create dev server for lazy compilation
-//   const lazyEnabled = resolvedUserConfig.compilation.lazyCompilation;
-//   if (lazyEnabled) {
-//     devServer = new Server({
-//       logger,
-//       // TODO type error
-//       // @ts-ignore
-//       compiler: fileWatcher.serverOrCompiler as Compiler
-//     });
-//     await devServer.createServer(resolvedUserConfig.server);
-//     devServer.applyMiddlewares([lazyCompilation]);
-//     await devServer.startServer(resolvedUserConfig.server);
-//   }
-
-//   async function handleFileChange(files: string[]) {
-//     logFileChanges(files, resolvedUserConfig.root, logger);
-
-//     try {
-//       if (lazyEnabled && devServer) {
-//         devServer.close();
-//       }
-
-//       __FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__ = true;
-
-//       await fileWatcher?.close();
-
-//       await watch(inlineConfig);
-//     } catch (error) {
-//       logger.error(`Error restarting the watcher: ${error.message}`);
-//     }
-//   }
-
-//   // fileWatcher.watchConfigs(handleFileChange);
-// }
-
-async function findNodeModulesRecursively(rootPath: string): Promise<string[]> {
-  const result: string[] = [];
-
-  async function traverse(currentPath: string) {
-    const items = await fs.readdir(currentPath);
-    for (const item of items) {
-      const fullPath = path.join(currentPath, item);
-      const stats = await fs.stat(fullPath);
-
-      if (stats.isDirectory()) {
-        if (item === 'node_modules') {
-          result.push(fullPath);
-        } else {
-          await traverse(fullPath);
-        }
-      }
-    }
-  }
-
-  await traverse(rootPath);
-  return result;
-}
-
-export async function createInlineCompiler(
-  config: ResolvedUserConfig,
-  options = {}
-) {
-  const { Compiler } = await import('./compiler/index.js');
-  return new Compiler({
-    config: { ...config.compilation, ...options },
-    jsPlugins: config.jsPlugins,
-    rustPlugins: config.rustPlugins
-  });
-}
-
-async function copyPublicDirectory(
-  resolvedUserConfig: ResolvedUserConfig
-): Promise<void> {
-  const absPublicDirPath = normalizePublicDir(
-    resolvedUserConfig.root,
-    resolvedUserConfig.publicDir
-  );
-
-  try {
-    if (await fse.pathExists(absPublicDirPath)) {
-      const files = await fse.readdir(absPublicDirPath);
-      const outputPath = resolvedUserConfig.compilation.output.path;
-      for (const file of files) {
-        const publicFile = path.join(absPublicDirPath, file);
-        const destFile = path.join(outputPath, file);
-
-        if (await fse.pathExists(destFile)) {
-          continue;
-        }
-        await fse.copy(publicFile, destFile);
-      }
-
-      resolvedUserConfig.logger.info(
-        `Public directory resources copied ${colors.bold(
-          colors.green('successfully')
-        )}.`
-      );
-    }
-  } catch (error) {
-    resolvedUserConfig.logger.error(
-      `Error copying public directory: ${error.message}`
-    );
-  }
-}
-
-export function logFileChanges(files: string[], root: string, logger: Logger) {
-  const changedFiles = files
-    .map((file) => path.relative(root, file))
-    .join(', ');
-  logger.info(
-    colors.bold(colors.green(`${changedFiles} changed, server will restart.`))
-  );
-}
-
-export { defineFarmConfig as defineConfig } from './config/index.js';
-
-export { loadEnv, Server };
+import { normalizePath } from './utils/share.js';
+import Watcher from './watcher/index.js';
 
 export async function start(
   inlineConfig?: FarmCliOptions & UserConfig
 ): Promise<void> {
   inlineConfig = inlineConfig ?? {};
-  setProcessEnv('development');
   const server = new Server(inlineConfig);
   try {
     await server.createServer();
@@ -285,7 +68,6 @@ export async function build(
   inlineConfig?: FarmCliOptions & UserConfig
 ): Promise<void> {
   inlineConfig = inlineConfig ?? {};
-  setProcessEnv('production');
 
   const resolvedUserConfig = await resolveConfig(
     inlineConfig,
@@ -324,6 +106,75 @@ export async function build(
     );
     compiler.writeResourcesToDisk();
     await copyPublicDirectory(resolvedUserConfig);
+    if (resolvedUserConfig.watch) {
+      // TODO 传 一个 参数 多加一个 compiler 的参数
+      const watcher = new Watcher(resolvedUserConfig);
+
+      await watcher.createWatcher();
+      watcher.watcher.on('change', async (file: string | string[] | any) => {
+        file = normalizePath(file);
+        const shortFile = getShortName(file, resolvedUserConfig.root);
+        const isConfigFile = resolvedUserConfig.configFilePath === file;
+        const isConfigDependencyFile =
+          resolvedUserConfig.configFileDependencies.some(
+            (name) => file === name
+          );
+        const isEnvFile = resolvedUserConfig.envFiles.some(
+          (name) => file === name
+        );
+        if (isConfigFile || isConfigDependencyFile || isEnvFile) {
+          __FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__ = true;
+          resolvedUserConfig.logger.info(
+            `${bold(green(shortFile))} changed, Bundler Config is being reloaded`,
+            true
+          );
+          try {
+            // TODO 是否需要做这种操作
+            console.log('restart build config compiler');
+            return;
+          } catch (e) {
+            resolvedUserConfig.logger.error(`restart server error ${e}`);
+          }
+        }
+        const handleUpdateFinish = (updateResult: JsUpdateResult) => {
+          const added = [
+            ...updateResult.added,
+            ...updateResult.extraWatchResult.add
+          ].map((addedModule) => {
+            const resolvedPath = compiler.transformModulePath(
+              resolvedUserConfig.root,
+              addedModule
+            );
+            return resolvedPath;
+          });
+
+          const filteredAdded = added.filter((file) =>
+            watcher.filterWatchFile(file, resolvedUserConfig.root)
+          );
+
+          if (filteredAdded.length > 0) {
+            watcher.watcher.add(filteredAdded);
+          }
+        };
+
+        try {
+          const start = performance.now();
+          const result = await compiler.update([file], true);
+          const elapsedTime = Math.floor(performance.now() - start);
+          resolvedUserConfig.logger.info(
+            `Build completed in ${bold(
+              green(`${elapsedTime}ms`)
+            )} ${persistentCacheText} Resources emitted to ${bold(green(output.path))}.`
+          );
+          handleUpdateFinish(result);
+          compiler.writeResourcesToDisk();
+        } catch (error) {
+          resolvedUserConfig.logger.error(
+            `Farm Update Error: ${convertErrorMessage(error)}`
+          );
+        }
+      });
+    }
   } catch (err) {
     resolvedUserConfig.logger.error(`Failed to build: ${err}`, { exit: true });
   }
@@ -342,7 +193,7 @@ export async function clean(
 
   await Promise.all(
     nodeModulesFolders.map(async (nodeModulesPath) => {
-      // TODO Bug .farm cacheDir folder not right
+      // TODO Bug .farm cacheDir folder not right find config
       const farmFolderPath = path.join(nodeModulesPath, '.farm');
       try {
         const stats = await fs.stat(farmFolderPath);
