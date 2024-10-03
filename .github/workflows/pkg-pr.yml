@@ -1,0 +1,40 @@
+name: 'pkg-pr'
+on:
+  push:
+    branches:
+      - 'refactor/node'
+    tags:
+      - '!**'
+  pull_request:
+    branches:
+      - 'refactor/node'
+  pull_request_review:
+    types: [submitted]
+
+
+jobs:
+  continuous-release:
+    if: github.repository == 'farm-fe/farm' &&  github.event.review.state == 'APPROVED'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: '.node-version'
+          registry-url: 'https://registry.npmjs.org'
+          cache: 'pnpm'
+
+      - name: Install deps
+        run: pnpm install
+
+      - name: Build
+        run: pnpm build --withTypes
+
+      - name: Release
+        run: pnpx pkg-pr-new publish --compact --pnpm './packages/cli' './packages/core'
