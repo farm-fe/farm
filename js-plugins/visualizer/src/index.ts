@@ -42,11 +42,11 @@ export default function farmRecorderPlugin(
           `[finish] Farm Record Viewer run at http://${host}:${port}`
         );
       }
-    },
-    updateFinished: {
-      executor() {
-        // set message to client to refresh stats
-      }
     }
+    // updateFinished: {
+    //   async executor() {
+    //     // set message to client to refresh stats
+    //   }
+    // }
   };
 }

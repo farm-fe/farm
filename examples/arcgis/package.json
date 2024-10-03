@@ -1,0 +1,20 @@
+{
+  "name": "@farmfe-examples/arcgis-core",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "start": "farm start",
+    "build": "farm build",
+    "preview": "farm preview"
+  },
+  "devDependencies": {
+    "@farmfe/cli": "workspace:^",
+    "@farmfe/core": "workspace:^",
+    "@farmfe/js-plugin-visualizer": "workspace:^"
+  },
+  "dependencies": {
+    "@arcgis/core": "^4.30.9",
+    "@arcgis/map-components": "^4.30.7",
+    "core-js": "^3.34.0"
+  }
+}
