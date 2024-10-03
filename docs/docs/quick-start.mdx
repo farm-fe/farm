@@ -42,27 +42,11 @@ The project is configured by `farm.config.ts/js/mjs` file in the root directory 
 
 ```ts title="farm.config.ts" 
 import { defineConfig } from "@farmfe/core";
+import react from '@farmfe/plugin-react';
 
 export default defineConfig({
-  // Options related to the compilation
-  compilation: {
-    input: {
-      // can be a relative path or an absolute path
-      index: "./index.html",
-    },
-    output: {
-      path: "./build",
-      publicPath: "/",
-    },
-    // ...
-  },
-  // Options related to the dev server
-  server: {
-    port: 9000,
-    // ...
-  },
   // Additional plugins
-  plugins: [],
+  plugins: [react()],
 });
 ```
 
