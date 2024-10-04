@@ -20,6 +20,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Cache rust artifacts
+        uses: oxidecomputer/actions-rs_toolchain@oxide/master
+
       - name: Install pnpm
         uses: pnpm/action-setup@v4
 
