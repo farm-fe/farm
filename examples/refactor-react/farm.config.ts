@@ -1,6 +1,7 @@
 import { defineConfig } from "@farmfe/core";
 
 import react from "@farmfe/plugin-react";
+
 export default defineConfig({
   plugins: [
     react(),
@@ -15,7 +16,7 @@ export default defineConfig({
   },
   // timeUnit: "s",
   server: {
-    port: 8854
+    port: 8854,
   },
 });
 
@@ -29,7 +30,6 @@ function myCustomPlugin() {
     },
   };
 }
-
 
 function compilerPlugin() {
   return {
