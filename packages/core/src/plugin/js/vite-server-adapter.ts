@@ -1,56 +1,43 @@
-// import { watch } from 'chokidar';
-import { FSWatcher } from 'chokidar';
-// import { Server } from '../../index.js';
-import { Server, Server as httpServer } from '../../server/index.js';
-// import WsServer from '../../server/ws.js';
+import { Server } from '../../server/index.js';
 import { CompilationContext, ViteModule } from '../type.js';
 import { throwIncompatibleError } from './utils.js';
 
 // TODO type error refactor vite adaptor
 export class ViteDevServerAdapter {
-  moduleGraph: ViteModuleGraphAdapter;
-  config: any;
-  pluginName: string;
-  // printUrls: any;
-  resolvedUrls: any;
-  serverOptions: any;
-  watcher: FSWatcher;
-  middlewares: any;
-  ws: any;
-  httpServer: httpServer;
   private _server: any;
-
+  private _config: any;
+  private _moduleGraphAdapter: any;
+  [key: string]: any;
+  [key: symbol]: any;
   constructor(pluginName: string, config: any, server: any) {
-    this.moduleGraph = createViteModuleGraphAdapter(pluginName);
-    this.config = config;
-    this.pluginName = pluginName;
-    // watcher is not used in Farm vite plugin for now
-    // it's only for compatibility
-    // this.watcher = watch(config.root);
-
     this._server = server;
+    this._config = config;
+    this._moduleGraphAdapter = createViteModuleGraphAdapter(pluginName);
 
-    this.watcher = server.watcher.getInternalWatcher();
-
-    this.middlewares = server.middlewares;
-
-    // this.printUrls = server.printUrls;
-
-    this.resolvedUrls = server.resolvedUrls;
-
-    this.serverOptions = server.serverOptions;
-
-    this.ws = server.ws;
-
-    this.httpServer = server.httpServer;
-  }
-
-  get printUrls() {
-    return this._server.printUrls;
-  }
-
-  set printUrls(value) {
-    this._server.printUrls = value;
+    return new Proxy(this, {
+      get: (_target, prop) => {
+        switch (prop) {
+          case 'moduleGraph':
+            return this._moduleGraphAdapter;
+          case 'watcher':
+            return this._server.watcher.getInternalWatcher();
+          case 'middlewares':
+            return this._server.middlewares;
+          case 'config':
+            return this._config;
+          default: {
+            const value = this._server[prop];
+            return typeof value === 'function'
+              ? value.bind(this._server)
+              : value;
+          }
+        }
+      },
+      set: (_target, prop, value) => {
+        this._server[prop] = value;
+        return true;
+      }
+    });
   }
 }
 
@@ -154,12 +141,6 @@ export function createViteDevServerAdapter(
         }
 
         throwIncompatibleError(pluginName, 'viteDevServer', allowedKeys, key);
-      },
-      set(target, key, value) {
-        const handler =
-          handleSetOperation[key as keyof typeof handleSetOperation] ||
-          handleSetOperation.default;
-        return handler(target, key, value, server);
       }
     }
   );
@@ -196,35 +177,3 @@ export function createViteModuleGraphAdapter(pluginName: string) {
 
   return proxy;
 }
-
-type SetOperationHandler<T> = (
-  target: T,
-  key: string | symbol,
-  value: any,
-  server: Server
-) => boolean;
-
-type HandleSetOperationType<T> = {
-  [K in keyof T]?: SetOperationHandler<T>;
-} & {
-  default: SetOperationHandler<T>;
-};
-
-export const handleSetOperation: HandleSetOperationType<ViteDevServerAdapter> =
-  {
-    printUrls: (target, _key, value, server) => {
-      // target.printUrls = function() {
-      //   value.call(server);
-      // };
-      if (_key === 'printUrls') {
-        server[_key] = value.bind(server);
-      } else {
-        (target as any)[_key] = value;
-      }
-      return true;
-    },
-    default: (target, key, value) => {
-      (target as any)[key] = value;
-      return true;
-    }
-  };

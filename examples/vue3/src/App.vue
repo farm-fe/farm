@@ -2,7 +2,6 @@
 import HelloWorld from "./components/HelloWorld.vue";
 // console.log(import.meta.env);
 import { bbb } from "./indexa.ts";
-import { ref } from "vue";
 bbb();
 fetch("https://wallhaven.fun/api/wallhaven/w/yx6e9l").then((res) => res.json());
 // .then((data) => console.log(data))
@@ -16,7 +15,7 @@ window.onbeforeunload = function () {
   );
 };
 
-const aa = ref(9299)
+const aa = ref(92922299)
 console.log(aa.value);
 
 </script>

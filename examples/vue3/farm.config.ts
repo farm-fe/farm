@@ -61,7 +61,7 @@ export default defineConfig({
       imports: ["vue", VueRouterAutoImports],
     }),
     vue(),
-    // Inspector(),
+    Inspector(),
     // compressionMiddleware(),
     // myCustomPlugin(),
     // createHtmlPlugin({
