@@ -8,6 +8,7 @@ import { createHtmlPlugin } from "vite-plugin-html";
 import viteCompression from "vite-plugin-compression";
 import mkcert from "vite-plugin-mkcert";
 import Inspect from "vite-plugin-inspect";
+import Inspector from 'unplugin-vue-inspector/vite'
 import { aaa } from "./test.js";
 const compressionMiddleware = () => {
   return {
@@ -23,6 +24,8 @@ function myCustomPlugin() {
   return {
     name: "vite-plugin-custom",
     configureServer(server) {
+      console.log(server.printUrls);
+      
       server.middlewares.use((req, res, next) => {
         console.log(`收到请求 之前的: ${req.url}`);
         next();
@@ -54,6 +57,7 @@ export default defineConfig({
     //   imports: ["vue", VueRouterAutoImports],
     // }),
     vue(),
+    Inspector(),
     myCustomPlugin(),
     // createHtmlPlugin({
     //   minify: true,
