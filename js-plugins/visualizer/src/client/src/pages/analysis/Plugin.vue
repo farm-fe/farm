@@ -30,7 +30,6 @@ onMounted(() => {
   getPluginStats().then((data) => {
     // TODO support HMR compilation compare
     plugin_stats.value = JSON.parse(data).initialCompilationFlowStats.hookStatsMap;
-    console.log('plugin_stats:', plugin_stats.value);
   }).finally(() => {
     loading.value = false;
   });
@@ -42,9 +41,7 @@ const tableData = computed(() => {
     const map: Record<string, any> = {};
     
     for (const hookName in plugin_stats.value) {
-      console.log('hookName:', hookName);
       const hooks = plugin_stats.value[hookName] as Array<HookType>;
-      console.log('hooks:', hooks);
 
       for (const hook of hooks) {
         const { pluginName, duration } = hook;
