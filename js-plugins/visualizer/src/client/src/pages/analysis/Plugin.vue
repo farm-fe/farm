@@ -16,6 +16,12 @@ interface TableDataType {
   duration: number;
 }
 
+interface HookType {
+  hookName: string;
+  pluginName: string;
+  duration: number;
+}
+
 const plugin_stats = ref<any | null>(null);
 const loading = ref(false);
 
@@ -24,20 +30,18 @@ onMounted(() => {
   getPluginStats().then((data) => {
     // TODO support HMR compilation compare
     plugin_stats.value = JSON.parse(data).initialCompilationFlowStats.hookStatsMap;
-    console.log('plugin_stats:', plugin_stats.value);
   }).finally(() => {
     loading.value = false;
   });
 });
+
 const tableData = computed(() => {
   if (plugin_stats.value) {
     loading.value = true;
     const map: Record<string, any> = {};
     
     for (const hookName in plugin_stats.value) {
-      console.log('hookName:', hookName);
-      const hooks = plugin_stats.value[hookName];
-      console.log('hooks:', hooks);
+      const hooks = plugin_stats.value[hookName] as Array<HookType>;
 
       for (const hook of hooks) {
         const { pluginName, duration } = hook;
@@ -78,12 +82,37 @@ const tableData = computed(() => {
   return [];
 });
 
-const pluginFilter = computed(() => {
+const pluginNameFilter = computed(() => {
   if (plugin_stats.value) {
-    return Object.keys(plugin_stats.value).map((pluginName) => {
+    const pluginNamesSet = new Set<string>();
+    for (const hooks of Object.values(plugin_stats.value)) {
+      for (const hook of hooks as Array<HookType>) {
+        pluginNamesSet.add(hook.pluginName);
+      }
+    }
+    return Array.from(pluginNamesSet).map((pluginName) => {
       return {
         text: pluginName,
         value: pluginName
+      };
+    });
+  } else {
+    return [];
+  }
+});
+
+const hookFilter = computed(() => {
+  if (plugin_stats.value) {
+    const hooksSet = new Set<string>();
+    for (const hooks of Object.values(plugin_stats.value)) {
+      for (const hook of hooks as Array<HookType>) {
+        hooksSet.add(hook.hookName);
+      }
+    }
+    return Array.from(hooksSet).map((hookName) => {
+      return {
+        text: hookName,
+        value: hookName
       };
     });
   } else {
@@ -97,14 +126,17 @@ const columns = computed(() => {
       title: 'Plugin Name',
       dataIndex: 'plugin_name',
       key: 'plugin_name',
-      filters: pluginFilter.value,
+      filters: pluginNameFilter.value,
       onFilter: (value: string, record: TableDataType) =>
         record.plugin_name.indexOf(value) === 0
     },
     {
       title: 'Hook',
       dataIndex: 'hook',
-      key: 'hook'
+      key: 'hook',
+      filters: hookFilter.value,
+      onFilter: (value: string, record: TableDataType) =>
+        record.hook.indexOf(value) === 0,
     },
     {
       title: 'Calls',
