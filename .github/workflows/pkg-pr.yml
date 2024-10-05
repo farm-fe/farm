@@ -25,11 +25,13 @@ jobs:
 
       - name: Install pnpm
         uses: pnpm/action-setup@v4
+        with:
+          version: 9
 
       - name: Install Node.js
         uses: actions/setup-node@v4
         with:
-          node-version-file: '.node-version'
+          node-version: '20'
           registry-url: 'https://registry.npmjs.org'
           cache: 'pnpm'
 
