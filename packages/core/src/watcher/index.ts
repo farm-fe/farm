@@ -5,36 +5,22 @@ import chokidar from 'chokidar';
 import type { FSWatcher, WatchOptions } from 'chokidar';
 import glob from 'fast-glob';
 import { Compiler } from '../compiler/index.js';
+import { createInlineCompiler } from '../compiler/utils.js';
 import type { ResolvedUserConfig } from '../config/index.js';
-import { createInlineCompiler } from '../index.js';
-// import { Server } from '../server/index.js';
-import { Server } from '../server/index.js';
-import type { JsUpdateResult } from '../types/binding.js';
 import { createDebugger } from '../utils/debug.js';
-import {
-  Logger,
-  arraify,
-  compilerHandler,
-  getCacheDir
-} from '../utils/index.js';
-
-interface ImplFileWatcher {
-  // watch(): Promise<void>;
-}
+import { arraify, getCacheDir } from '../utils/index.js';
 
 export const debugWatcher = createDebugger('farm:watcher');
 
 // TODO remove FileWatcher
+interface ImplFileWatcher {}
 export default class Watcher implements ImplFileWatcher {
   private watchedFiles = new Set<string>();
   resolvedWatchOptions: WatchOptions;
   watcher: FSWatcher;
   extraWatchedFiles: string[];
 
-  constructor(
-    public config: ResolvedUserConfig,
-    private logger: Logger = new Logger()
-  ) {
+  constructor(public config: ResolvedUserConfig) {
     this.resolveChokidarOptions();
   }
 
@@ -67,6 +53,8 @@ export default class Watcher implements ImplFileWatcher {
       }
     });
   }
+
+  async watch() {}
 
   // async watch() {
   //   const compiler = this.getCompiler();
@@ -185,7 +173,6 @@ export default class Watcher implements ImplFileWatcher {
     const { ignored: ignoredList, ...otherOptions } = userWatchOptions ?? {};
     const ignored: WatchOptions['ignored'] = [
       '**/.git/**',
-      // TODO node_modules 这块的处理逻辑 以及是否会影响性能
       '**/node_modules/**',
       '**/test-results/**', // Playwright
       glob.escapePath(

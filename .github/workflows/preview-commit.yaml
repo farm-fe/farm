@@ -1,65 +1,55 @@
 # https://github.com/stackblitz-labs/pkg.pr.new
 name: Preview Commit
 
-on: [pull_request]
+on:
+  workflow_call:
 
 jobs:
-  build:
-    name: Build bindings and node packages
-    uses: ./.github/workflows/rust-build.yml
+  call-rust-build:
+    uses: ./.github/workflows/rust-build.yaml
+
+  check-changed:
+    runs-on: ubuntu-latest
+    name: Check Changed
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          predicate-quantifier: "every"
+          filters: |
+            changed:
+              - "crates"
+              - "packages/core/**"
+              - "packages/cli/**"
+              - "packages/runtime/**"
+              - "packages/runtime-plugin-hmr"
+              - "packages/plugin-import-meta"
 
   publish:
-    if: github.repository == 'farm-fe/farm'
+    if: github.repository == '@farmfe/farm'
     name: Pkg Preview
     runs-on: ubuntu-latest
     needs:
-      - build
+      - call-rust-build
+      - check-changed
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Node
-        uses: ./.github/actions/setup-node
+      - name: Pnpm Cache
+        uses: ./.github/actions/pnpm-cache
 
-      - name: Git Reset Hard
-        run: git reset --hard # fix pnpm install add new line for package.json
-
-      # - name: Download Binding Artifacts
-      #   uses: actions/download-artifact@v4
-      #   with:
-      #     path: packages/rolldown/artifacts
-
-      # - name: Move Binding Artifacts
-      #   run: pnpm --filter rolldown artifacts
-
-      # - name: List Rolldown Bindings
-      #   run: ls -R ./packages/rolldown/npm
-      #   shell: bash
-
-      # - name: Download Node Artifacts
-      #   uses: actions/download-artifact@v4
-      #   with:
-      #     path: packages/rolldown/dist
-      #     name: node-artifact
-
-            # batch download artifacts
-      - uses: actions/download-artifact@v4
+      - name: Download artifacts
+        uses: actions/download-artifact@v4.1.7
         with:
-          path: /tmp/artifacts
-      - name: Copy Farm Core Binary
-        run: cp /tmp/artifacts/${{ github.sha }}-linux-x64-gnu/* ./packages/core/binding
-      - name: Move Artifacts
-        run: |
-          for abi in linux-x64-gnu linux-x64-musl linux-arm64-musl linux-arm64-gnu
-          do
-            mv /tmp/artifacts/${{ github.sha }}-${abi}/* ./packages/core/npm/${abi}
+          path: artifacts
 
-            test -f ./packages/core/npm/${abi}/farm.${abi}.node
-          done
+      - name: Build node packages
+        run: pnpm build:cli && pnpm build:core
 
-      - name: Copy Licenses
-        run: |
-          find ./packages/ -type d -maxdepth 1 -exec cp LICENSE {} \;
-          find ./packages/ -type d -maxdepth 1 -exec cp THIRD-PARTY-LICENSE {} \;
+      - name: Show binding packages
+        run: ls -R npm
 
       - name: Release
-        run: pnpx pkg-pr-new publish --compact --pnpm './packages/core/npm/*' './packages/core'
+        if: needs.check-changed.outputs.changed == 'true'
+        run: npx pkg-pr-new publish --compact --pnpm './npm/*' './packages/core' './packages/cli' './packages/runtime' './packages/runtime-plugin-hmr' './packages/runtime-plugin-import-meta'

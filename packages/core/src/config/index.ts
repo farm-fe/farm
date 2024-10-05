@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import { createRequire } from 'node:module';
-import path, { resolve } from 'node:path';
+import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import fse from 'fs-extra';
 
@@ -129,7 +129,8 @@ export async function resolveConfig(
   const loadedUserConfig = await loadConfigFile(
     configFile,
     inlineOptions,
-    configEnv
+    configEnv,
+    defaultNodeEnv
   );
 
   let rawConfig: UserConfig = mergeFarmCliConfig(
@@ -171,10 +172,6 @@ export async function resolveConfig(
   );
 
   resolvedUserConfig.logger = logger;
-
-  // TODO start watch options with browser and lib
-  // @ts-ignore
-  resolvedUserConfig.watch = true;
 
   // normalize server config first cause it may be used in normalizeUserCompilationFnConfig
   resolvedUserConfig.server = normalizeDevServerConfig(
@@ -660,7 +657,8 @@ const formatToExt: Record<Format, string> = {
 export async function readConfigFile(
   inlineOptions: FarmCliOptions,
   configFilePath: string,
-  configEnv: any
+  configEnv: any,
+  mode: CompilationMode = 'development'
 ): Promise<UserConfig | undefined> {
   if (!fse.existsSync(configFilePath)) return;
 
@@ -684,7 +682,8 @@ export async function readConfigFile(
     configFilePath,
     format,
     outputPath,
-    fileName
+    fileName,
+    mode
   });
 
   const replaceDirnamePlugin = await import('farm-plugin-replace-dirname').then(
@@ -760,8 +759,8 @@ export function normalizePublicDir(root: string, publicDir = 'public') {
 export async function loadConfigFile(
   configFile: string,
   inlineOptions: any,
-  configEnv: any
-  // logger: Logger
+  configEnv: any,
+  mode: CompilationMode = 'development'
 ): Promise<{ config: any; configFilePath: string } | undefined> {
   const { root = '.' } = inlineOptions;
   const configRootPath = path.resolve(root);
@@ -773,7 +772,12 @@ export async function loadConfigFile(
       configRootPath
     );
 
-    const config = await readConfigFile(inlineOptions, resolvedPath, configEnv);
+    const config = await readConfigFile(
+      inlineOptions,
+      resolvedPath,
+      configEnv,
+      mode
+    );
     return {
       config: config && parseUserConfig(config),
       configFilePath: resolvedPath
@@ -797,7 +801,7 @@ export async function loadConfigFile(
     // `Failed to load farm config file: ${errorMessage}. \n ${potentialSolution} \n ${error.stack}`
     // );
     throw new Error(
-      `Failed to load farm config file: ${errorMessage}. \n ${potentialSolution} \n ${error.stack}`
+      `Failed to load farm config file: ${errorMessage}. \n ${potentialSolution}`
       // `Failed to load farm config file: ${errorMessage}.`,
     );
   }
@@ -909,7 +913,7 @@ export async function resolveDefaultUserConfig(options: any) {
   const resolvedUserConfig: ResolvedUserConfig = await resolveUserConfig(
     defaultConfig,
     undefined,
-    'development'
+    defaultConfig.compilation.mode
   );
 
   const normalizedConfig = await normalizeUserCompilationConfig(
@@ -981,8 +985,9 @@ export async function resolveUserConfig(
 }
 
 export function createDefaultConfig(options: any): UserConfig {
-  const { inlineOptions, format, outputPath, fileName, configFilePath } =
+  const { inlineOptions, mode, format, outputPath, fileName, configFilePath } =
     options;
+
   return {
     root: path.resolve(inlineOptions.root ?? '.'),
     compilation: {
@@ -995,6 +1000,7 @@ export function createDefaultConfig(options: any): UserConfig {
         format,
         targetEnv: 'library-node'
       },
+      mode,
       external: [
         ...(process.env.FARM_CONFIG_FULL_BUNDLE
           ? []
@@ -1009,7 +1015,6 @@ export function createDefaultConfig(options: any): UserConfig {
           }
         ]
       },
-      watch: false,
       sourcemap: false,
       treeShaking: false,
       minify: false,

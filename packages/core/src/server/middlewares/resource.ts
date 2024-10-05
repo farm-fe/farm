@@ -1,10 +1,15 @@
 import mime from 'mime';
-import path from 'path/posix';
+
+import path from 'node:path/posix';
+
 import { Compiler } from '../../compiler/index.js';
 import { generateFileTree, generateFileTreeHtml } from '../../utils/index.js';
 import { cleanUrl } from '../../utils/url.js';
 import { normalizePathByPublicPath } from '../publicDir.js';
 import { send } from '../send.js';
+
+import type Connect from 'connect';
+import type { Server } from '../index.js';
 
 type RealResourcePath = {
   resourcePath: string;
@@ -12,12 +17,8 @@ type RealResourcePath = {
   resource: Buffer;
 };
 
-export function resourceMiddleware(app: any) {
-  return async function generateResourceMiddleware(
-    req: any,
-    res: any,
-    next: () => void
-  ) {
+export function resourceMiddleware(app: Server): Connect.NextHandleFunction {
+  return async function generateResourceMiddleware(req, res, next) {
     if (res.writableEnded) {
       return next();
     }
@@ -33,7 +34,9 @@ export function resourceMiddleware(app: any) {
       await compiler.waitForInitialCompileFinish();
     } else {
       if (compiler.compiling) {
-        await new Promise((resolve) => compiler.onUpdateFinish(resolve));
+        await new Promise<void>((resolve) =>
+          compiler.onUpdateFinish(() => resolve())
+        );
       }
     }
 
@@ -82,15 +85,16 @@ export function resourceMiddleware(app: any) {
       return;
     }
 
-    if (config.spa !== false) {
-      let indexHtml = compiler.resources()['index.html'];
+    // TODO prepare add spa config or else
+    // if (config.spa !== false) {
+    //   let indexHtml = compiler.resources()["index.html"];
 
-      if (indexHtml) {
-        res.setHeader('Content-Type', 'text/html');
-        res.end(indexHtml);
-        return;
-      }
-    }
+    //   if (indexHtml) {
+    //     res.setHeader("Content-Type", "text/html");
+    //     res.end(indexHtml);
+    //     return;
+    //   }
+    // }
 
     // 如果找不到任何匹配的资源，返回 404
     res.statusCode = 404;

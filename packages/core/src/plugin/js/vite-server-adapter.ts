@@ -115,6 +115,7 @@ export function createViteDevServerAdapter(
           'prototype'
         ];
         const allowedKeys = [
+          'printUrls',
           'moduleGraph',
           'config',
           'watcher',

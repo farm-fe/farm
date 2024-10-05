@@ -108,10 +108,10 @@ export interface UserConfig {
   root?: string;
   clearScreen?: boolean;
   envDir?: string;
+  watch?: boolean;
   envPrefix?: string | string[];
   publicDir?: string;
   timeUnit?: 'ms' | 's';
-  formatTimer?: 'ms' | 's';
   /** js plugin(which is a javascript object) and rust plugin(which is string refer to a .farm file or a package) */
   plugins?: (RustPlugin | JsPlugin | JsPlugin[] | undefined | null | false)[];
   /** vite plugins */
@@ -168,6 +168,7 @@ export interface ResolvedUserConfig extends UserConfig {
   rustPlugins?: [string, string][];
   inlineConfig?: FarmCliOptions;
   logger?: Logger;
+  watch?: boolean;
 }
 
 export interface GlobalCliOptions {

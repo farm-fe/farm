@@ -1,20 +1,14 @@
-import fs from 'node:fs';
 import sirv from 'sirv';
-import { colors } from '../../utils/color.js';
-import { Logger } from '../../utils/logger.js';
-import { removeHashFromPath, withTrailingSlash } from '../../utils/path.js';
+
 import { normalizePath } from '../../utils/share.js';
-import {
-  cleanUrl,
-  isImportRequest,
-  knownJavascriptExtensionRE,
-  removeImportQuery,
-  urlRE
-} from '../../utils/url.js';
+import { cleanUrl, knownJavascriptExtensionRE } from '../../utils/url.js';
+
+import type Connect from 'connect';
+import type { Server } from '../index.js';
 
 // TODO: if url endsWith importQueryRE we need can check if it is a module then serve or not
 
-export function publicMiddleware(app: any) {
+export function publicMiddleware(app: Server): Connect.NextHandleFunction {
   const {
     resolvedUserConfig: config,
     publicDir,

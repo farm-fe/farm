@@ -3,7 +3,6 @@
   border-radius: 8px;
   overflow: hidden;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  background-color: #f8f9fa;
   transition: box-shadow 0.3s ease;
 }
 
@@ -22,7 +21,6 @@
 
 .code-title {
   font-weight: 600;
-  color: #495057;
   font-size: 0.9em;
 }
 
@@ -34,7 +32,6 @@
   border-radius: 4px;
   padding: 0.25em 0.5em;
   font-size: 0.85em;
-  color: #495057;
   cursor: pointer;
   transition: all 0.2s ease;
 }
@@ -72,18 +69,4 @@
 
 .copy-button svg {
   animation: popIn 0.3s ease forwards;
-}
-
-.code-content {
-  padding: 1em;
-  overflow-x: auto;
-  pre {
-    background-color: var(--code-pre-bg) !important;
-  }
-}
-
-.shiki code {
-  font-family: "Fira Code", monospace;
-  font-size: 0.9em;
-  line-height: 1.5;
 }

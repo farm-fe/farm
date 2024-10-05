@@ -38,7 +38,7 @@ export class Compiler {
   public compiling = false;
   private _compileFinishPromise: Promise<void> | null = null;
   private _resolveCompileFinish: (() => void) | null = null;
-  private _isInitialCompile = true;
+  _isInitialCompile = true;
 
   constructor(
     public config: Config,
@@ -167,7 +167,7 @@ export class Compiler {
         mkdirSync(path.dirname(filePath), { recursive: true });
       }
 
-      writeFileSync(filePath, resource);
+      writeFileSync(filePath, new Uint8Array(resource));
     }
 
     this.callWriteResourcesHook();

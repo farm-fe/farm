@@ -18,6 +18,7 @@
   --serif: Iowan Old Style, Apple Garamond, Baskerville, Times New Roman;
   --monospaced: Menlo;
   --border: rgb(3, 169, 244);
+  --code-block: #fff;
   --g1: rgba(0, 0, 0, 0.2);
   --g2: rgba(143, 26, 127, 0.2);
   --g3: rgba(31, 31, 31, 0.2);
@@ -73,12 +74,15 @@
 }
 
 [date-theme="light"] {
+  --code-block: #fff;
   --ui-background: #fff;
   --background: rgb(var(--ui-background) / var(--tw-bg-opacity));
 }
 
 /* For readability concerns, you should choose a lighter palette in dark mode. */
 [data-theme="dark"] {
+  --code-border-color: #fff;
+  --code-block: rgb(25, 25, 25);
   --ui-background: #181818;
   --background: rgb(var(--ui-background) / var(--tw-bg-opacity));
   --ifm-color-soft: rgb(82 82 82 / var(--tw-text-opacity));
@@ -316,16 +320,54 @@ body {
 }
 
 html[data-theme="light"] {
-  --code-block-border: 1px solid rgb(243 244 246);
-  --code-pre-bg: #f6f8fa;
+  --code-block: #fff;
+  --code-block-border: 1px solid #eee;
 }
 
 html[data-theme="dark"] {
-  --code-block-border: 1px solid rgb(31 41 55);
+  --code-block: rgb(25, 25, 25);
+  --code-block-border: 1px solid #303030;
   --code-block-select-color: #2e3440ff;
-  --code-pre-bg: #121212;
 }
 
 .border-package {
   border: var(--code-block-border);
+}
+
+[data-theme="light"] .shiki.dark-plus {
+  display: none;
+}
+
+[data-theme="dark"] .shiki.light-plus {
+  display: none;
+}
+
+[class*="codeBlockContainer_"] {
+  margin-bottom: 0 !important;
+}
+
+[class*="codeBlockTitle_"] {
+  display: none;
+}
+
+[class*="codeBlock_"] {
+  background-color: var(--code-block) !important;
+}
+
+.shiki {
+  margin: 0;
+  border-radius: 0;
+}
+
+.file-icon {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  margin-right: 8px;
+  vertical-align: middle;
+}
+
+.file-icon svg {
+  width: 100%;
+  height: 100%;
 }

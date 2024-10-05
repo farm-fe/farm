@@ -7,16 +7,17 @@
 
 import { existsSync, readFileSync, statSync } from 'node:fs';
 import path from 'node:path';
+
 import { stripQueryAndHash } from '../../utils/path.js';
 import { normalizePathByPublicPath } from '../publicDir.js';
 import { send } from '../send.js';
 
-export function adaptorViteMiddleware(app: any) {
-  return function handleAdaptorViteMiddleware(
-    req: any,
-    res: any,
-    next: () => void
-  ) {
+import type Connect from 'connect';
+import type { Server } from '../index.js';
+
+export function adaptorViteMiddleware(app: Server): Connect.NextHandleFunction {
+  const { resolvedUserConfig, compiler } = app;
+  return function handleAdaptorViteMiddleware(req, res, next) {
     let stripQueryAndHashUrl = stripQueryAndHash(req.url);
 
     const { resourceWithoutPublicPath } = normalizePathByPublicPath(
@@ -26,14 +27,14 @@ export function adaptorViteMiddleware(app: any) {
 
     // try local file system
     const localFilePath = path.join(
-      app.compiler.config.config.root,
+      compiler.config.config.root,
       resourceWithoutPublicPath
     );
 
     // TODO maybe we can use sirv to serve static file
     // try local file system
     if (existsSync(localFilePath) && statSync(localFilePath).isFile()) {
-      const headers = app.resolvedUserConfig.server.headers;
+      const headers = resolvedUserConfig.server.headers;
       send(req, res, readFileSync(localFilePath), stripQueryAndHashUrl, {
         headers
       });

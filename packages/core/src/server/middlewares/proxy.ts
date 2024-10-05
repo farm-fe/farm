@@ -1,10 +1,13 @@
-import type * as http from 'node:http';
-import type * as net from 'node:net';
-import connect from 'connect';
 import httpProxy from 'http-proxy';
-import type Server from 'http-proxy';
 import { ResolvedUserConfig } from '../../config/types.js';
 import { colors } from '../../utils/color.js';
+
+import type * as http from 'node:http';
+import type * as net from 'node:net';
+import type Server from 'http-proxy';
+
+import type Connect from 'connect';
+import type { Server as DevServer, HttpServer } from '../index.js';
 export interface ProxyOptions extends httpProxy.ServerOptions {
   rewrite?: (path: string) => string;
   configure?: (proxy: httpProxy, options: ProxyOptions) => void;
@@ -16,8 +19,11 @@ export interface ProxyOptions extends httpProxy.ServerOptions {
   rewriteWsOrigin?: boolean | undefined;
 }
 
-export function proxyMiddleware(app: any, server?: any) {
-  const { serverOptions, ResolvedUserConfig } = app;
+export function proxyMiddleware(
+  app: DevServer,
+  middlewareServer: HttpServer | unknown
+): Connect.NextHandleFunction {
+  const { serverOptions, resolvedUserConfig } = app;
 
   const proxies: Record<string, [Server, ProxyOptions]> = {};
   Object.keys(serverOptions.proxy).forEach((context) => {
@@ -34,7 +40,7 @@ export function proxyMiddleware(app: any, server?: any) {
       opts.configure(proxy, opts);
     }
 
-    proxy.on('error', (err, req, originalRes) => {
+    proxy.on('error', (err, _req, originalRes) => {
       // When it is ws proxy, res is net.Socket
       // originalRes can be falsy if the proxy itself errored
       const res = originalRes as http.ServerResponse | net.Socket | undefined;
@@ -62,8 +68,8 @@ export function proxyMiddleware(app: any, server?: any) {
       }
     });
 
-    proxy.on('proxyReqWs', (proxyReq, req, socket, options, head) => {
-      rewriteOriginHeader(proxyReq, options, ResolvedUserConfig);
+    proxy.on('proxyReqWs', (proxyReq, _req, socket, options, _head) => {
+      rewriteOriginHeader(proxyReq, options, resolvedUserConfig);
 
       socket.on('error', (err) => {
         console.log(`${colors.red(`ws proxy socket error:`)}\n${err.stack}`);
@@ -72,7 +78,7 @@ export function proxyMiddleware(app: any, server?: any) {
 
     // https://github.com/http-party/node-http-proxy/issues/1520#issue-877626125
     // https://github.com/chimurai/http-proxy-middleware/blob/cd58f962aec22c925b7df5140502978da8f87d5f/src/plugins/default/debug-proxy-errors-plugin.ts#L25-L37
-    proxy.on('proxyRes', (proxyRes, req, res) => {
+    proxy.on('proxyRes', (proxyRes, _req, res) => {
       res.on('close', () => {
         if (!res.writableEnded) {
           proxyRes.destroy();
@@ -105,11 +111,7 @@ export function proxyMiddleware(app: any, server?: any) {
       }
     });
   }
-  return function handleProxyMiddleware(
-    req: http.IncomingMessage,
-    res: http.ServerResponse,
-    next: () => void
-  ) {
+  return function handleProxyMiddleware(req, res, next) {
     const url = req.url;
     for (const context in proxies) {
       if (doesProxyContextMatchUrl(context, url)) {

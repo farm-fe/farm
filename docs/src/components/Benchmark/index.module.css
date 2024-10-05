@@ -1,8 +1,8 @@
 .progress-bar-container {
   width: 50vw;
-  height: 25px;
+  height: 35px;
   border-radius: 4px;
-  padding: 4px;
+  padding: 2px 6px;
   box-sizing: content-box;
   border: 1px solid var(--farm--border);
 }

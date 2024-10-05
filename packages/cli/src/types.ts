@@ -6,6 +6,7 @@ export interface GlobalCliOptions {
   m?: string;
   mode?: 'development' | 'production' | string;
   clearScreen?: boolean;
+  timeUnit?: 'ms' | 's';
 }
 
 export interface CleanOptions {
