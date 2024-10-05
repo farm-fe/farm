@@ -1,20 +1,30 @@
-import { defineConfig, Logger } from "@farmfe/core";
+import { bold, defineConfig, green, Logger, yellow } from "@farmfe/core";
 import vue from "@vitejs/plugin-vue";
-// import { VueRouterAutoImports } from "unplugin-vue-router";
-// import VueRouter from "unplugin-vue-router/vite";
-// import AutoImport from 'unplugin-auto-import/vite';
+import { VueRouterAutoImports } from "unplugin-vue-router";
+import VueRouter from "unplugin-vue-router/vite";
+import AutoImport from 'unplugin-auto-import/vite';
 import compression from "compression";
 import { createHtmlPlugin } from "vite-plugin-html";
 import viteCompression from "vite-plugin-compression";
 import mkcert from "vite-plugin-mkcert";
 import Inspect from "vite-plugin-inspect";
-import Inspector from 'unplugin-vue-inspector/vite'
+import Inspector from "unplugin-vue-inspector/vite";
 import { aaa } from "./test.js";
+
+const logger = new Logger({});
 const compressionMiddleware = () => {
   return {
     name: "compression",
     configureServer(server) {
       // console.log("server", server.middlewares);
+      const _printUrls = server.printUrls.bind(server);
+      
+      server.printUrls = () => {
+        _printUrls();
+        logger.info(
+          `${green("➜")}  ${bold("Vue Inspector")}: ${green(`Press ${yellow("Ctrl(^)+Shift(⇧)")} in App to toggle the Inspector`)}\n`,
+        );
+      };
       server.middlewares.use(compression());
     },
   };
@@ -24,8 +34,6 @@ function myCustomPlugin() {
   return {
     name: "vite-plugin-custom",
     configureServer(server) {
-      console.log(server.printUrls);
-      
       server.middlewares.use((req, res, next) => {
         console.log(`收到请求 之前的: ${req.url}`);
         next();
@@ -44,21 +52,18 @@ function myCustomPlugin() {
   };
 }
 
-const logger = new Logger({
-  prefix: "我是曼",
-});
-
 export default defineConfig({
   vitePlugins: [
     // mkcert(),
     // viteCompression(),
-    // VueRouter(),
-    // AutoImport({
-    //   imports: ["vue", VueRouterAutoImports],
-    // }),
+    VueRouter(),
+    AutoImport({
+      imports: ["vue", VueRouterAutoImports],
+    }),
     vue(),
-    Inspector(),
-    myCustomPlugin(),
+    // Inspector(),
+    // compressionMiddleware(),
+    // myCustomPlugin(),
     // createHtmlPlugin({
     //   minify: true,
     //   /**

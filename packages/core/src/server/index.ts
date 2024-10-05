@@ -193,8 +193,10 @@ export class Server extends httpServer {
       // init watcher
       await this.#createWatcher();
 
+      await this.handleConfigureServer();
+
       // init middlewares
-      await this.#initializeMiddlewares();
+      this.#initializeMiddlewares();
 
       if (!this.serverOptions.middlewareMode && this.httpServer) {
         this.httpServer.once('listening', () => {
@@ -402,17 +404,23 @@ export class Server extends httpServer {
       //   this.compiler,
       //   this.resolvedUserConfig,
       // );
+
+      this.resolvedUrls = await resolveServerUrls(
+        this.httpServer,
+        this.serverOptions,
+        this.publicPath
+      );
       // compile the project and start the dev server
       await this.#startCompile();
 
       // watch extra files after compile
       this.watcher?.watchExtraFiles?.();
-      __FARM_GLOBAL__.__FARM_SHOW_DEV_SERVER_URL__ &&
-        (await this.displayServerUrls());
 
       if (open) {
         this.#openServerBrowser();
       }
+
+      __FARM_GLOBAL__.__FARM_SHOW_DEV_SERVER_URL__ && this.printUrls();
     } catch (error) {
       // this.resolvedUserConfig.logger.error(`start farm dev server error: ${error}`);
       // throw error;
@@ -500,6 +508,7 @@ export class Server extends httpServer {
       }
     });
     const { jsPlugins } = this.resolvedUserConfig;
+
     for (const hook of getSortedPluginHooksBindThis(
       jsPlugins,
       'configureServer'
@@ -531,10 +540,8 @@ export class Server extends httpServer {
    * Initializes and configures the middleware stack for the server.
    * @private
    */
-  async #initializeMiddlewares() {
+  #initializeMiddlewares() {
     this.middlewares.use(hmrPingMiddleware());
-
-    await this.handleConfigureServer();
 
     const { proxy, middlewareMode, cors } = this.serverOptions;
 
@@ -724,13 +731,7 @@ export class Server extends httpServer {
     await Promise.allSettled([this.ws.wss.close(), this.closeHttpServerFn()]);
   }
 
-  async displayServerUrls() {
-    this.resolvedUrls = await resolveServerUrls(
-      this.httpServer,
-      this.serverOptions,
-      this.publicPath
-    );
-
+  printUrls() {
     if (this.resolvedUrls) {
       printServerUrls(
         this.resolvedUrls,

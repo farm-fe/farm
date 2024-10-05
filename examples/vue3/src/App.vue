@@ -2,6 +2,7 @@
 import HelloWorld from "./components/HelloWorld.vue";
 // console.log(import.meta.env);
 import { bbb } from "./indexa.ts";
+import { ref } from "vue";
 bbb();
 fetch("https://wallhaven.fun/api/wallhaven/w/yx6e9l").then((res) => res.json());
 // .then((data) => console.log(data))
@@ -14,13 +15,17 @@ window.onbeforeunload = function () {
     JSON.stringify({ key: "value" })
   );
 };
+
+const aa = ref(9299)
+console.log(aa.value);
+
 </script>
 
 <template>
   <div>
     <a href="https://farmfe.org/" target="_blank">
       <img src="./assets/logo.png" class="logo" alt="Farm logo" /> </a
-    >ww222222
+    >ww222222222222222
     <a href="https://vuejs.org/" target="_blank">
       <img src="./assets/vue.svg" class="logo vue" alt="Vue logo" />
     </a>
