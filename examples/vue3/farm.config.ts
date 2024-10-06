@@ -7,7 +7,6 @@ import compression from "compression";
 import { createHtmlPlugin } from "vite-plugin-html";
 import viteCompression from "vite-plugin-compression";
 import mkcert from "vite-plugin-mkcert";
-import Inspect from "vite-plugin-inspect";
 import Inspector from "unplugin-vue-inspector/vite";
 import { aaa } from "./test.js";
 
@@ -56,10 +55,10 @@ export default defineConfig({
   vitePlugins: [
     // mkcert(),
     // viteCompression(),
-    VueRouter(),
-    AutoImport({
-      imports: ["vue", VueRouterAutoImports],
-    }),
+    // VueRouter(),
+    // AutoImport({
+      // imports: ["vue", VueRouterAutoImports],
+    // }),
     vue(),
     Inspector(),
     // compressionMiddleware(),
