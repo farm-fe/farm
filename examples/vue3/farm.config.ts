@@ -2,7 +2,7 @@ import { bold, defineConfig, green, Logger, yellow } from "@farmfe/core";
 import vue from "@vitejs/plugin-vue";
 import { VueRouterAutoImports } from "unplugin-vue-router";
 import VueRouter from "unplugin-vue-router/vite";
-import AutoImport from 'unplugin-auto-import/vite';
+import AutoImport from "unplugin-auto-import/vite";
 import compression from "compression";
 import { createHtmlPlugin } from "vite-plugin-html";
 import viteCompression from "vite-plugin-compression";
@@ -17,7 +17,7 @@ const compressionMiddleware = () => {
     configureServer(server) {
       // console.log("server", server.middlewares);
       const _printUrls = server.printUrls.bind(server);
-      
+
       server.printUrls = () => {
         _printUrls();
         logger.info(
@@ -32,21 +32,26 @@ const compressionMiddleware = () => {
 function myCustomPlugin() {
   return {
     name: "vite-plugin-custom",
-    configureServer(server) {
-      server.middlewares.use((req, res, next) => {
-        console.log(`收到请求 之前的: ${req.url}`);
-        next();
-      });
+    // configureServer(server) {
+    //   server.middlewares.use((req, res, next) => {
+    //     console.log(`收到请求 之前的: ${req.url}`);
+    //     next();
+    //   });
 
-      return () => {
-        server.middlewares.use((req, res, next) => {
-          console.log(`收到请求 posthook的: ${req.url}`);
-          next();
-        });
-      };
-    },
-    configResolved(resolvedConfig) {
-      // console.log(resolvedConfig.env);
+    //   return () => {
+    //     server.middlewares.use((req, res, next) => {
+    //       console.log(`收到请求 posthook的: ${req.url}`);
+    //       next();
+    //     });
+    //   };
+    // },
+    load: {
+      filters: {
+        resolvedPaths: [".*"],
+      },
+      executor: async (param, context, hookContext) => {
+        // console.log(param.resolvedPath);
+      },
     },
   };
 }
@@ -57,10 +62,12 @@ export default defineConfig({
     // viteCompression(),
     // VueRouter(),
     // AutoImport({
-      // imports: ["vue", VueRouterAutoImports],
+    // imports: ["vue", VueRouterAutoImports],
     // }),
     vue(),
-    Inspector(),
+    Inspector({
+      enabled: true,
+    }),
     // compressionMiddleware(),
     // myCustomPlugin(),
     // createHtmlPlugin({
@@ -101,13 +108,17 @@ export default defineConfig({
   // customLogger: logger,
 
   compilation: {
-    // persistentCache: false,
+    persistentCache: false,
+    runtime: {
+      isolate: true,
+    },
+    progress: false,
   },
   server: {
     // https: true,
     port: 5380,
   },
-  // plugins: [myCustomPlugin()],
+  plugins: [myCustomPlugin()],
   // plugins: [compressionMiddleware()],
   // server: {
   //   port: 5232,
