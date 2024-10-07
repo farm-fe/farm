@@ -5,7 +5,6 @@ import type {
   UserConfig
 } from '@farmfe/core';
 import { compile } from '@tailwindcss/node';
-import { clearRequireCache } from '@tailwindcss/node/require-cache';
 
 import fs from 'node:fs/promises';
 import path from 'path';
@@ -312,7 +311,6 @@ class Root {
     let inputBase = path.dirname(path.resolve(inputPath));
 
     if (!this.compiler || !this.scanner || this.requiresRebuild) {
-      clearRequireCache(Array.from(this.dependencies));
       this.dependencies = new Set([idToPath(inputPath)]);
 
       let postcssCompiled = await postcss([

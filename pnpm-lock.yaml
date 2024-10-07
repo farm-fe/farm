@@ -732,7 +732,7 @@ importers:
         version: 5.1.3(@types/eslint@8.56.10)(eslint-config-prettier@9.1.0(eslint@8.57.0))(eslint@8.57.0)(prettier@3.3.2)
       farmup:
         specifier: latest
-        version: 0.1.2
+        version: 0.1.4
       jest:
         specifier: ^29.5.0
         version: 29.7.0(@types/node@18.19.67)(babel-plugin-macros@3.1.0)(ts-node@10.9.1(@types/node@18.19.67)(typescript@5.4.5))
@@ -1479,16 +1479,62 @@ importers:
         version: 18.2.14
       autoprefixer:
         specifier: ^10.4.14
-        version: 10.4.16(postcss@8.4.31)
+        version: 10.4.16(postcss@8.4.47)
       postcss:
         specifier: ^8.4.24
-        version: 8.4.31
+        version: 8.4.47
       react-refresh:
         specifier: ^0.14.0
         version: 0.14.0
       tailwindcss:
         specifier: ^3.3.2
         version: 3.3.5(ts-node@10.9.1(@types/node@20.14.12)(typescript@5.4.5))
+
+  examples/tailwind-next:
+    dependencies:
+      '@farmfe/js-plugin-tailwindcss':
+        specifier: workspace:^
+        version: link:../../js-plugins/tailwindcss
+      clsx:
+        specifier: ^1.2.1
+        version: 1.2.1
+      core-js:
+        specifier: ^3.30.1
+        version: 3.37.1
+      react:
+        specifier: '18'
+        version: 18.2.0
+      react-dom:
+        specifier: '18'
+        version: 18.2.0(react@18.2.0)
+    devDependencies:
+      '@farmfe/cli':
+        specifier: workspace:*
+        version: link:../../packages/cli
+      '@farmfe/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@farmfe/js-plugin-postcss':
+        specifier: workspace:*
+        version: link:../../js-plugins/postcss
+      '@farmfe/plugin-react':
+        specifier: workspace:*
+        version: link:../../rust-plugins/react
+      '@types/react':
+        specifier: '18'
+        version: 18.2.35
+      '@types/react-dom':
+        specifier: '18'
+        version: 18.2.14
+      autoprefixer:
+        specifier: ^10.4.14
+        version: 10.4.16(postcss@8.4.47)
+      react-refresh:
+        specifier: ^0.14.0
+        version: 0.14.2
+      tailwindcss:
+        specifier: 4.0.0-alpha.26
+        version: 4.0.0-alpha.26
 
   examples/target-env:
     dependencies:
@@ -1861,7 +1907,7 @@ importers:
         version: 0.2.5(vue@2.6.14)
       tdesign-vue:
         specifier: latest
-        version: 1.10.0(vue@2.6.14)
+        version: 1.10.3(vue@2.6.14)
       vite-plugin-vue2-svg:
         specifier: ^0.4.0
         version: 0.4.0(ejs@3.1.10)(lodash@4.17.21)(vue-template-compiler@2.6.14(vue@2.6.14))
@@ -1895,7 +1941,7 @@ importers:
         version: 0.2.5(vue@2.7.16)
       tdesign-vue:
         specifier: latest
-        version: 1.10.0(vue@2.7.16)
+        version: 1.10.3(vue@2.7.16)
       vite-plugin-vue2-svg:
         specifier: ^0.4.0
         version: 0.4.0(ejs@3.1.10)(lodash@4.17.21)(vue-template-compiler@2.7.16(vue@2.7.16))
@@ -10107,8 +10153,8 @@ packages:
   farm-plugin-replace-dirname@0.2.1:
     resolution: {integrity: sha512-aJ4euQzxoq0sVu4AwXrNQflHJrSZdrdApGEyVRtN6KiCop3CHXnTg9ydlyCNXN2unQB283aNjojvCd5E/32KgA==}
 
-  farmup@0.1.2:
-    resolution: {integrity: sha512-mWdAVzyi3fnvL/ARNomH5jI8IahLAPuW9xg0BRSMO72qLrCI3w2hpOgmKfEiOJf742DRSvpH3Z3pcqAa32sLmw==}
+  farmup@0.1.4:
+    resolution: {integrity: sha512-zOr66ynrL9F3WmfuhkwQ73wg1IBBdDAEAJBw3MuOfKRdpKzqyn2T5dVBvVqE4YAIF7GnDyBrw1f/V2Z94+9WNw==}
     hasBin: true
 
   fast-check@3.23.2:
@@ -14886,6 +14932,9 @@ packages:
   tailwindcss@4.0.0-alpha.24:
     resolution: {integrity: sha512-SOowAXp/sGer9VCOPO1HlnwbCmDz9nD/aXkdNzt4zkMRRlSAPdE1w6TD3I+RgR1qD0QDw5J9nkBA47mrFMjYPQ==}
 
+  tailwindcss@4.0.0-alpha.26:
+    resolution: {integrity: sha512-jHLs/18tHTLWkuaWMrTFdeF8qM0ZqCtZHo/YvtZOuhZGA9wW1TVpIvPkAHECXRSp4JiTKBkCzUPdv505kMkgow==}
+
   tapable@2.2.1:
     resolution: {integrity: sha512-GNzQvQTOIP6RyTfE2Qxb8ZVlNmw0n88vp1szwWRimP02mnTsx3Wtn5qRdqY9w2XduFNUgvOwhNnQsjwCp+kqaQ==}
     engines: {node: '>=6'}
@@ -14903,8 +14952,8 @@ packages:
     peerDependencies:
       vue: ^2.6.12
 
-  tdesign-vue@1.10.0:
-    resolution: {integrity: sha512-vhAkNCn/8+FQd3+DE91DzMBfvc38XK9ZHrwLYuKKyuVGE+BzRFOdWuvcNEdSCcJSalw3arK/h+aycsHqwGVQ8Q==}
+  tdesign-vue@1.10.3:
+    resolution: {integrity: sha512-jo6GrrBRDWpL5m1LivSC6UbppbqwOxIhJNfVYAB4KfiMY6MjRCYfJOaX6hirff8ycEItKw2ot+vj80F3+fuItw==}
     peerDependencies:
       vue: ~2.6.10
 
@@ -23496,12 +23545,12 @@ snapshots:
 
   '@types/postcss-import@14.0.3':
     dependencies:
-      postcss: 8.4.40
+      postcss: 8.4.47
 
   '@types/postcss-url@10.0.4':
     dependencies:
       '@types/node': 18.19.67
-      postcss: 8.4.40
+      postcss: 8.4.47
 
   '@types/prompts@2.4.7':
     dependencies:
@@ -24347,7 +24396,7 @@ snapshots:
   '@vue/compiler-sfc@2.7.16':
     dependencies:
       '@babel/parser': 7.24.1
-      postcss: 8.4.40
+      postcss: 8.4.47
       source-map: 0.6.1
     optionalDependencies:
       prettier: 2.8.8
@@ -24362,7 +24411,7 @@ snapshots:
       '@vue/shared': 3.3.12
       estree-walker: 2.0.2
       magic-string: 0.30.10
-      postcss: 8.4.40
+      postcss: 8.4.47
       source-map-js: 1.2.0
 
   '@vue/compiler-sfc@3.3.7':
@@ -24375,7 +24424,7 @@ snapshots:
       '@vue/shared': 3.3.7
       estree-walker: 2.0.2
       magic-string: 0.30.5
-      postcss: 8.4.40
+      postcss: 8.4.47
       source-map-js: 1.0.2
 
   '@vue/compiler-sfc@3.4.15':
@@ -24387,7 +24436,7 @@ snapshots:
       '@vue/shared': 3.4.15
       estree-walker: 2.0.2
       magic-string: 0.30.10
-      postcss: 8.4.40
+      postcss: 8.4.47
       source-map-js: 1.2.0
 
   '@vue/compiler-sfc@3.4.19':
@@ -24399,7 +24448,7 @@ snapshots:
       '@vue/shared': 3.4.19
       estree-walker: 2.0.2
       magic-string: 0.30.10
-      postcss: 8.4.40
+      postcss: 8.4.47
       source-map-js: 1.2.0
 
   '@vue/compiler-sfc@3.4.27':
@@ -24411,7 +24460,7 @@ snapshots:
       '@vue/shared': 3.4.27
       estree-walker: 2.0.2
       magic-string: 0.30.10
-      postcss: 8.4.40
+      postcss: 8.4.47
       source-map-js: 1.2.0
 
   '@vue/compiler-sfc@3.4.35':
@@ -24423,7 +24472,7 @@ snapshots:
       '@vue/shared': 3.4.35
       estree-walker: 2.0.2
       magic-string: 0.30.10
-      postcss: 8.4.40
+      postcss: 8.4.47
       source-map-js: 1.2.0
 
   '@vue/compiler-ssr@3.3.12':
@@ -25258,16 +25307,6 @@ snapshots:
 
   author-regex@1.0.0: {}
 
-  autoprefixer@10.4.16(postcss@8.4.31):
-    dependencies:
-      browserslist: 4.22.1
-      caniuse-lite: 1.0.30001561
-      fraction.js: 4.3.7
-      normalize-range: 0.1.2
-      picocolors: 1.0.0
-      postcss: 8.4.31
-      postcss-value-parser: 4.2.0
-
   autoprefixer@10.4.16(postcss@8.4.35):
     dependencies:
       browserslist: 4.22.1
@@ -25276,6 +25315,16 @@ snapshots:
       normalize-range: 0.1.2
       picocolors: 1.0.0
       postcss: 8.4.35
+      postcss-value-parser: 4.2.0
+
+  autoprefixer@10.4.16(postcss@8.4.47):
+    dependencies:
+      browserslist: 4.22.1
+      caniuse-lite: 1.0.30001561
+      fraction.js: 4.3.7
+      normalize-range: 0.1.2
+      picocolors: 1.0.0
+      postcss: 8.4.47
       postcss-value-parser: 4.2.0
 
   available-typed-arrays@1.0.5: {}
@@ -27719,7 +27768,7 @@ snapshots:
       farm-plugin-replace-dirname-win32-ia32-msvc: 0.2.1
       farm-plugin-replace-dirname-win32-x64-msvc: 0.2.1
 
-  farmup@0.1.2:
+  farmup@0.1.4:
     dependencies:
       '@farmfe/core': link:packages/core
       tmp: 0.2.3
@@ -33213,6 +33262,8 @@ snapshots:
 
   tailwindcss@4.0.0-alpha.24: {}
 
+  tailwindcss@4.0.0-alpha.26: {}
+
   tapable@2.2.1: {}
 
   tape@4.17.0:
@@ -33255,7 +33306,7 @@ snapshots:
       classnames: 2.3.2
       vue: 2.7.16
 
-  tdesign-vue@1.10.0(vue@2.6.14):
+  tdesign-vue@1.10.3(vue@2.6.14):
     dependencies:
       '@babel/runtime': 7.23.2
       '@popperjs/core': 2.11.8
@@ -33277,7 +33328,7 @@ snapshots:
       validator: 13.11.0
       vue: 2.6.14
 
-  tdesign-vue@1.10.0(vue@2.7.16):
+  tdesign-vue@1.10.3(vue@2.7.16):
     dependencies:
       '@babel/runtime': 7.23.2
       '@popperjs/core': 2.11.8
@@ -34380,7 +34431,7 @@ snapshots:
   vite@5.2.8(@types/node@18.19.67)(less@4.2.0)(lightningcss@1.27.0)(sass@1.74.1)(terser@5.31.1):
     dependencies:
       esbuild: 0.20.2
-      postcss: 8.4.40
+      postcss: 8.4.47
       rollup: 4.14.1
     optionalDependencies:
       '@types/node': 18.19.67
@@ -34393,7 +34444,7 @@ snapshots:
   vite@5.2.8(@types/node@20.14.12)(less@4.2.0)(lightningcss@1.27.0)(sass@1.69.5)(terser@5.31.1):
     dependencies:
       esbuild: 0.20.2
-      postcss: 8.4.40
+      postcss: 8.4.47
       rollup: 4.14.1
     optionalDependencies:
       '@types/node': 20.14.12
@@ -34406,7 +34457,7 @@ snapshots:
   vite@5.2.8(@types/node@20.14.12)(less@4.2.0)(lightningcss@1.27.0)(sass@1.74.1)(terser@5.31.1):
     dependencies:
       esbuild: 0.20.2
-      postcss: 8.4.40
+      postcss: 8.4.47
       rollup: 4.14.1
     optionalDependencies:
       '@types/node': 20.14.12
