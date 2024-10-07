@@ -1,7 +1,7 @@
 import { defineConfig } from "@farmfe/core";
 
 import react from "@farmfe/plugin-react";
-
+import path from "path";
 export default defineConfig({
   plugins: [
     react(),
@@ -12,6 +12,12 @@ export default defineConfig({
     // persistentCache: false,
     output: {
       // publicPath: "/aaa/",
+    },
+    resolve: {
+      // alias: {
+      //   "@": path.resolve("src"),
+      // },
+      alias: [{ find: "@", replacement: path.resolve("src") }],
     },
   },
   // timeUnit: "s",

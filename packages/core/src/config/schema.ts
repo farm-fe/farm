@@ -132,6 +132,16 @@ const serverSchema = z
   })
   .strict();
 
+const aliasItemSchema = z.object({
+  find: z.union([z.string(), z.instanceof(RegExp)]),
+  replacement: z.string(),
+  customResolver: z
+    .union([z.function(), z.object({ resolve: z.function() })])
+    .optional()
+});
+
+const aliasSchema = z.union([z.record(z.string()), z.array(aliasItemSchema)]);
+
 const compilationConfigSchema = z
   .object({
     root: z.string().optional(),
@@ -140,7 +150,7 @@ const compilationConfigSchema = z
     resolve: z
       .object({
         extensions: z.array(z.string()).optional(),
-        alias: z.record(z.string()).optional(),
+        alias: aliasSchema.optional(),
         mainFields: z.array(z.string()).optional(),
         conditions: z.array(z.string()).optional(),
         symlinks: z.boolean().optional(),

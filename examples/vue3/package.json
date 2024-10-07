@@ -9,6 +9,7 @@
     "clean": "farm clean"
   },
   "dependencies": {
+    "@module-federation/vite": "^1.1.1",
     "unplugin-auto-import": "^0.16.7",
     "unplugin-vue-router": "^0.7.0",
     "vue": "^3.4.0",

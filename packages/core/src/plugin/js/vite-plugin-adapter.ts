@@ -52,7 +52,7 @@ import type {
 } from 'rollup';
 import { VIRTUAL_FARM_DYNAMIC_IMPORT_SUFFIX } from '../../compiler/index.js';
 import { CompilationMode } from '../../config/env.js';
-import { Logger } from '../../index.js';
+import { Logger, Server } from '../../index.js';
 import {
   Config,
   PluginLoadHookParam,
@@ -136,6 +136,7 @@ export class VitePluginAdapter implements JsPlugin {
     this._rawPlugin = rawPlugin;
     this._farmConfig = farmConfig;
     this._viteConfig = farmUserConfigToViteConfig(farmConfig);
+
     this._logger = new Logger();
 
     this.filters = filters;
@@ -147,7 +148,6 @@ export class VitePluginAdapter implements JsPlugin {
       load: () => (this.load = this.viteLoadToFarmLoad()),
       transform: () => (this.transform = this.viteTransformToFarmTransform()),
       buildEnd: () => (this.buildEnd = this.viteBuildEndToFarmBuildEnd()),
-      // closeBundle: () => (this.finish = this.viteCloseBundleToFarmFinish()),
       handleHotUpdate: () =>
         (this.updateModules = this.viteHandleHotUpdateToFarmUpdateModules()),
       renderChunk: () =>
@@ -268,7 +268,7 @@ export class VitePluginAdapter implements JsPlugin {
     }
   }
 
-  async configureServer(devServer: any) {
+  async configureServer(server: Server) {
     const hook = this.wrapRawPluginHook(
       'configureServer',
       this._rawPlugin.configureServer
@@ -277,7 +277,7 @@ export class VitePluginAdapter implements JsPlugin {
     this._viteDevServer = createViteDevServerAdapter(
       this.name,
       this._viteConfig,
-      devServer
+      server
     );
 
     if (hook) {
@@ -815,7 +815,7 @@ export class VitePluginAdapter implements JsPlugin {
     };
 
     return {
-      order: orderMap[order] ?? 1,
+      order: 1,
       executor: this.wrapExecutor(
         async (params: { htmlResource: Resource }, context) => {
           const { htmlResource } = params;

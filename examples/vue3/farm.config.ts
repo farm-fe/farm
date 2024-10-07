@@ -4,11 +4,13 @@ import { VueRouterAutoImports } from "unplugin-vue-router";
 import VueRouter from "unplugin-vue-router/vite";
 import AutoImport from "unplugin-auto-import/vite";
 import compression from "compression";
+import { federation } from "@module-federation/vite";
 import { createHtmlPlugin } from "vite-plugin-html";
 import viteCompression from "vite-plugin-compression";
 import mkcert from "vite-plugin-mkcert";
 import Inspector from "unplugin-vue-inspector/vite";
 import { aaa } from "./test.js";
+import path from "path";
 
 const logger = new Logger({});
 const compressionMiddleware = () => {
@@ -32,6 +34,27 @@ const compressionMiddleware = () => {
 function myCustomPlugin() {
   return {
     name: "vite-plugin-custom",
+    apply: "serve",
+    config(config, { command }) {},
+    configureServer(server) {
+      server.httpServer?.once?.("listening", () => {
+        const { port } = server.config.server;
+      });
+      server.middlewares.use((req, res, next) => {
+        next();
+      });
+    },
+    transformIndexHtml(c) {
+      return c.replace(
+        "<head>",
+        `<head><script type="module" src=${JSON.stringify(
+          "/@id/".replace(/.+?\:([/\\])[/\\]?/, "$1").replace(/\\\\?/g, "/"),
+        )}></script>`,
+      );
+    },
+    configResolved(config) {
+      // console.log(config.build.rollupOptions);
+    },
     // configureServer(server) {
     //   server.middlewares.use((req, res, next) => {
     //     console.log(`收到请求 之前的: ${req.url}`);
@@ -45,14 +68,6 @@ function myCustomPlugin() {
     //     });
     //   };
     // },
-    load: {
-      filters: {
-        resolvedPaths: [".*"],
-      },
-      executor: async (param, context, hookContext) => {
-        // console.log(param.resolvedPath);
-      },
-    },
   };
 }
 
@@ -65,9 +80,17 @@ export default defineConfig({
     // imports: ["vue", VueRouterAutoImports],
     // }),
     vue(),
-    Inspector({
-      enabled: true,
-    }),
+    // federation({
+    //   name: "remote",
+    //   filename: "remoteEntry.js",
+    //   exposes: {
+    //     "./remote-app": "./src/App.vue",
+    //   },
+    //   shared: ["vue"],
+    // }),
+    // Inspector({
+    //   enabled: true,
+    // }),
     // compressionMiddleware(),
     // myCustomPlugin(),
     // createHtmlPlugin({
@@ -108,17 +131,26 @@ export default defineConfig({
   // customLogger: logger,
 
   compilation: {
+    input: {
+      index: "index.html",
+    },
     persistentCache: false,
     runtime: {
       isolate: true,
     },
     progress: false,
+    resolve: {
+      // alias: {
+        // "@": path.resolve("src"),
+      // },
+      alias: [{ find: "@", replacement: path.resolve("src") }],
+    },
   },
   server: {
     // https: true,
     port: 5380,
   },
-  plugins: [myCustomPlugin()],
+  // plugins: [myCustomPlugin()],
   // plugins: [compressionMiddleware()],
   // server: {
   //   port: 5232,

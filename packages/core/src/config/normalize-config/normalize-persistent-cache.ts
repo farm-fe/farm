@@ -19,8 +19,7 @@ const defaultGlobalBuiltinCacheKeyStrategy = {
 
 export async function normalizePersistentCache(
   config: Config['config'],
-  resolvedUserConfig: ResolvedUserConfig,
-  logger: Logger
+  resolvedUserConfig: ResolvedUserConfig
 ) {
   if (isDisableCache()) {
     config.persistentCache = false;
@@ -134,7 +133,10 @@ export async function normalizePersistentCache(
   ) {
     const files = resolvedUserConfig?.configFileDependencies?.length
       ? resolvedUserConfig.configFileDependencies
-      : await traceDependencies(resolvedUserConfig.configFilePath, logger);
+      : await traceDependencies(
+          resolvedUserConfig.configFilePath,
+          resolvedUserConfig.logger
+        );
 
     const packages = [];
 

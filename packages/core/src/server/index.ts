@@ -154,6 +154,7 @@ export class Server extends httpServer {
         'development',
         'development'
       );
+
       this.logger = this.resolvedUserConfig.logger;
 
       this.#resolveOptions();

@@ -8,9 +8,7 @@ use std::{
 
 use farmfe_core::{
   config::{
-    config_regex::ConfigRegex, external::ExternalConfig,
-    partial_bundling::PartialBundlingEnforceResourceConfig, Config, Mode, ModuleFormat, TargetEnv,
-    FARM_MODULE_SYSTEM,
+    config_regex::ConfigRegex, external::ExternalConfig, partial_bundling::PartialBundlingEnforceResourceConfig, AliasItem, Config, Mode, ModuleFormat, StringOrRegex, TargetEnv, FARM_MODULE_SYSTEM
   },
   context::CompilationContext,
   enhanced_magic_string::types::{MappingsOptionHires, SourceMapOptions},
@@ -71,10 +69,10 @@ impl Plugin for FarmPluginRuntime {
     }
 
     if !config.runtime.swc_helpers_path.is_empty() {
-      config.resolve.alias.insert(
-        "@swc/helpers".to_string(),
-        config.runtime.swc_helpers_path.clone(),
-      );
+      config.resolve.alias.push(AliasItem::Complex {
+        find: StringOrRegex::String("@swc/helpers".to_string()),
+        replacement: config.runtime.swc_helpers_path.clone(),
+      });
     }
 
     config.partial_bundling.enforce_resources.insert(

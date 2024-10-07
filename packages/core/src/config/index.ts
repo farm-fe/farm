@@ -192,20 +192,20 @@ export async function resolveConfig(
   });
 
   // Temporarily dealing with alias objects and arrays in js will be unified in rust in the future.]
-  if (vitePlugins.length) {
-    resolvedUserConfig.compilation.resolve.alias = getAliasEntries(
-      resolvedUserConfig.compilation.resolve.alias
-    );
-  }
+  // if (vitePlugins.length) {
+  //   resolvedUserConfig.compilation.resolve.alias = getAliasEntries(
+  //     resolvedUserConfig.compilation.resolve.alias,
+  //   );
+  // }
 
   await resolveConfigResolvedHook(resolvedUserConfig, sortFarmJsPlugins); // Fix: Await the Promise<void> and pass the resolved value to the function.
 
   //TODO solve the problem of alias adaptation to vite we should resolve this in rust side
-  if (resolvedUserConfig.compilation?.resolve?.alias && vitePlugins.length) {
-    resolvedUserConfig.compilation.resolve.alias = transformAliasWithVite(
-      resolvedUserConfig.compilation.resolve.alias as unknown as Array<Alias>
-    );
-  }
+  // if (resolvedUserConfig.compilation?.resolve?.alias && vitePlugins.length) {
+  //   resolvedUserConfig.compilation.resolve.alias = transformAliasWithVite(
+  //     resolvedUserConfig.compilation.resolve.alias as unknown as Array<Alias>,
+  //   );
+  // }
 
   await handleLazyCompilation(
     resolvedUserConfig,
@@ -256,8 +256,7 @@ async function handleLazyCompilation(
  */
 export async function normalizeUserCompilationConfig(
   resolvedUserConfig: ResolvedUserConfig,
-  mode: CompilationMode = 'development',
-  logger: Logger = new Logger()
+  mode: CompilationMode = 'development'
 ): Promise<ResolvedCompilation> {
   const { compilation, root } = resolvedUserConfig;
 
@@ -270,7 +269,7 @@ export async function normalizeUserCompilationConfig(
   // if normalize default config, skip check input option
   const inputIndexConfig = await checkCompilationInputValue(
     resolvedUserConfig,
-    logger
+    resolvedUserConfig.logger
   );
 
   const resolvedCompilation: ResolvedCompilation = merge(
@@ -289,7 +288,7 @@ export async function normalizeUserCompilationConfig(
 
   resolvedCompilation.coreLibPath = bindingPath;
 
-  normalizeOutput(resolvedCompilation, isProduction, logger);
+  normalizeOutput(resolvedCompilation, isProduction, resolvedUserConfig.logger);
   normalizeExternal(resolvedUserConfig, resolvedCompilation);
 
   // eslint-disable-next-line @typescript-eslint/ban-ts-comment
@@ -461,7 +460,7 @@ export async function normalizeUserCompilationConfig(
   }
 
   if (resolvedCompilation.script?.plugins?.length) {
-    logger.info(
+    resolvedUserConfig.logger.info(
       `Swc plugins are configured, note that Farm uses ${colors.yellow(
         'swc_core v0.96'
       )}, please make sure the plugin is ${colors.green(
@@ -476,7 +475,7 @@ export async function normalizeUserCompilationConfig(
   // so, it only happens in development mode
   // https://github.com/farm-fe/farm/issues/962
   if (resolvedCompilation.treeShaking && resolvedCompilation.lazyCompilation) {
-    logger.error(
+    resolvedUserConfig.logger.error(
       'treeShaking option is not supported in lazyCompilation mode, lazyCompilation will be disabled.'
     );
     resolvedCompilation.lazyCompilation = false;
@@ -519,11 +518,7 @@ export async function normalizeUserCompilationConfig(
     }
 
   // normalize persistent cache at last
-  await normalizePersistentCache(
-    resolvedCompilation,
-    resolvedUserConfig,
-    logger
-  );
+  await normalizePersistentCache(resolvedCompilation, resolvedUserConfig);
 
   normalizeResolve(resolvedUserConfig, resolvedCompilation);
   normalizeCss(resolvedUserConfig, resolvedCompilation);
