@@ -31,7 +31,7 @@ pub enum CompilationError {
   },
 
   // #[error("Transform `{resolved_path}` failed.\n {msg}")]
-  #[error("{}", serde_json::to_string(&serialize_transform_error(&resolved_path, &msg))
+  #[error("{}", serde_json::to_string(&serialize_transform_error(resolved_path, msg))
   .map_err(|_| "Failed to serialize transform error type message".to_string())
   .unwrap_or_else(|e| e))]
   TransformError { resolved_path: String, msg: String },
