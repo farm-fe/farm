@@ -1,5 +1,11 @@
 # @farmfe/runtime
 
+## 0.12.5
+
+### Patch Changes
+
+- 772381b0: Fix concurrent lazy compilation failed
+
 ## 0.12.4
 
 ### Patch Changes

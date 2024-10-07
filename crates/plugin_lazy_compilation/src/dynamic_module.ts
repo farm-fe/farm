@@ -51,6 +51,30 @@ async function fetch(path: string) {
   });
 }
 
+function startLazyCompiling(queue: any[]) {
+  FarmModuleSystem.lazyCompiling = true;
+  // TODO enable following feature in 2.0
+  // // @ts-ignore ignore type
+  // if (window.__farm_hide_lazy_compile_progress === true) {
+  //   // show the compiling progress at the top of the page
+  //   const progress = document.getElementById('farm-lazy-compiling') || document.createElement('div');
+  //   progress.id = 'farm-lazy-compiling';
+  //   progress.style.backgroundColor = '#ff9ff330';
+  //   progress.style.color = '#6f1a5f';
+  //   progress.style.zIndex = '9999999999';
+  //   document.body.prepend(progress);
+  //   progress.innerText = 'Compiling ' + queue.map((item) => item.modulePath).join(', ') + '...';
+  // }
+}
+
+function endLazyCompiling() {
+  FarmModuleSystem.lazyCompiling = false;
+  // const progress = document.getElementById('farm-lazy-compiling');
+  // if (progress) {
+  //   document.body.removeChild(progress);
+  // }
+}
+
 if (FarmModuleSystem.lazyCompiling === undefined) {
   FarmModuleSystem.lazyCompiling = false;
 }
@@ -80,7 +104,7 @@ function queueLazyCompilation() {
 }
 
 if (compilingModules.has(modulePath)) {
-  promise = promise.then(() => compilingModules.get(modulePath));
+  promise = compilingModules.get(modulePath);
 } else {
   if (FarmModuleSystem.lazyCompiling) {
     const queueItem = FarmModuleSystem.lazyCompilingQueue.find(
@@ -95,9 +119,9 @@ if (compilingModules.has(modulePath)) {
   } else {
     const compileModules = () => {
       const isNodeLazyCompile = FarmModuleSystem.targetEnv === 'node';
-      FarmModuleSystem.lazyCompiling = true;
       const queue = [...FarmModuleSystem.lazyCompilingQueue];
       FarmModuleSystem.lazyCompilingQueue = [];
+      startLazyCompiling(queue);
       const paths = queue.map((item) => item.modulePath);
       const url = `/__lazy_compile?paths=${encodeURIComponent(paths.join(','))}&t=${Date.now()}${
         isNodeLazyCompile ? '&node=true' : ''
@@ -116,21 +140,24 @@ if (compilingModules.has(modulePath)) {
             result.dynamicModuleResourcesMap
           );
         }
-
+        FarmModuleSystem.reRegisterModules = true;
         const promises: Promise<any>[] = [];
 
         for (const { modulePath, resolve, moduleId } of queue) {
           compilingModules.delete(modulePath);
           promises.push(
-            FarmModuleSystem.loadDynamicResources(moduleId, true).then(resolve)
-          );
+            FarmModuleSystem.loadDynamicResources(moduleId, true).then((mod) => {
+              resolve(mod);
+              compilingModules.delete(modulePath);
+          }));
         }
 
         return Promise.all(promises).then(() => {
           if (FarmModuleSystem.lazyCompilingQueue.length > 0) {
             return compileModules();
           } else {
-            FarmModuleSystem.lazyCompiling = false;
+            endLazyCompiling();
+            FarmModuleSystem.reRegisterModules = false;
           }
         });
       });

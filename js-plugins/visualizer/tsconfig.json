@@ -9,6 +9,8 @@
   ],
   "compilerOptions": {
     "skipLibCheck": true,
-    "noEmit": true
+    "noEmit": true,
+    "module": "ESNext",
+    "moduleResolution": "Bundler"
   },
 }
