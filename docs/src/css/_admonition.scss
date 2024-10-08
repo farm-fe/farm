@@ -1,0 +1,150 @@
+html[data-theme="light"] {
+  --admonition-color: #404040;
+
+  --admonition-note-border-color: #60a5fa4d !important;
+  --admonition-note-c-bg: #bfdbfe66 !important;
+
+  --admonition-tip-border-color: #4ade804d !important;
+  --admonition-tip-c-bg: #bbf7d066 !important;
+
+  --admonition-warning-border-color: #fbbf244d !important;
+  --admonition-warning-c-bg: #fde68a4d !important;
+
+  --admonition-important-border-color: #a78bfa4d !important;
+  --admonition-important-c-bg: #ddd6fe80 !important;
+
+  --admonition-danger-border-color: #f871714d !important;
+  --admonition-danger-c-bg: #fecaca66 !important;
+
+  --admonition-info-c-color: inherit;
+  --admonition-tip-c-color: inherit;
+  --admonition-warning-c-color: inherit;
+  --admonition-caution-c-color: inherit;
+  --admonition-danger-c-color: inherit;
+}
+
+html[data-theme="dark"] {
+  --admonition-color: rgb(var(--color-gray-300) / var(--tw-text-opacity));
+
+  --admonition-note-border-color: #2563eb4d !important;
+  --admonition-note-c-bg: #1e40af66 !important;
+
+  --admonition-tip-border-color: #16a34a4d !important;
+  --admonition-tip-c-bg: #16653466 !important;
+
+  --admonition-warning-border-color: #92400e66 !important;
+  --admonition-warning-c-bg: #92400e66 !important;
+
+  --admonition-important-border-color: #7c3aed4d !important;
+  --admonition-important-c-bg: #5b21b64d !important;
+
+  --admonition-danger-border-color: #dc26264d !important;
+  --admonition-danger-c-bg: #991b1b66 !important;
+
+  --admonition-note-c-color: #ff9ff3;
+  --admonition-info-c-color: var(--c-blue-50);
+  --admonition-tip-c-color: var(--c-green-50);
+  --admonition-warning-c-color: var(--c-yellow-50);
+  --admonition-caution-c-color: var(--c-orange-50);
+  --admonition-danger-c-color: var(--c-red-50);
+
+  --ifm-alert-tip-background-color: var(--c-green-50-a);
+  --admonition-code-note-c-bg: #ff9ff350;
+  --admonition-code-warning-c-bg: var(--c-yellow-50-a);
+  --admonition-code-info-c-bg: #00163d;
+  --admonition-code-tip-c-bg: #003d11;
+  --admonition-code-caution-c-bg: #3d1200;
+  --admonition-code-danger-c-bg: #3d0003;
+  --ifm-alert-warning-background-color: var(--c-yellow-30-a);
+}
+
+:root {
+  --admonition-bar-note-c-bg: var(--c-yellow-80);
+  --admonition-bar-info-c-bg: var(--c-blue-80);
+  --admonition-bar-tip-c-bg: var(--c-green-80);
+  --admonition-bar-caution-c-bg: var(--c-orange-80);
+  --admonition-bar-danger-c-bg: var(--c-red-60);
+
+  --admonition-link-note-c: var(--c-brand);
+  --admonition-link-info-c: var(--c-teal-90);
+  --admonition-link-tip-c: var(--c-green-60);
+  --admonition-color-tip-c: var(--note-color);
+  --admonition-color-note-c: var(--note-color);
+  --admonition-link-caution-c: var(--c-orange-90);
+  --admonition-link-danger-c: var(--c-red-60);
+}
+
+.theme-admonition {
+  position: relative;
+  border: none;
+
+  --ifm-alert-color: var(--ifm-font-color-base);
+  --ifm-alert-padding-horizontal: 1.5rem;
+  --ifm-alert-padding-vertical: 1rem;
+
+  [class^="admonitionHeading_"] {
+    text-transform: capitalize;
+
+    font-size: 1rem;
+    line-height: 1.6;
+
+    [class^="admonitionIcon_"] {
+      display: none;
+    }
+  }
+
+  [class^="admonitionContent_"] {
+    p {
+      a {
+        color: var(--admonition-link-c);
+        text-decoration: underline;
+      }
+
+      code {
+        background: var(--admonition-code-c-bg);
+      }
+    }
+  }
+
+  &-note {
+    border: 1px solid var(--admonition-note-border-color);
+    background: var(--admonition-note-c-bg);
+    color: var(--admonition-color);
+  }
+
+  &-tip {
+    border: 1px solid var(--admonition-tip-border-color);
+    background: var(--admonition-tip-c-bg);
+    color: var(--admonition-color);
+  }
+
+  &-info {
+    border: 1px solid var(--admonition-note-border-color);
+    background: var(--admonition-note-c-bg);
+    color: var(--admonition-color);
+  }
+
+  &-warning {
+    border: 1px solid var(--admonition-warning-border-color);
+    background: var(--admonition-warning-c-bg);
+    color: var(--admonition-color);
+  }
+
+  &-caution {
+    border: 1px solid var(--admonition-important-border-color);
+    background: var(--admonition-important-c-bg);
+    color: var(--admonition-color);
+  }
+
+  &-danger {
+    border: 1px solid var(--admonition-danger-border-color);
+    background: var(--admonition-danger-c-bg);
+    color: var(--admonition-color);
+  }
+
+  &-important {
+    border: 1px solid var(--admonition-important-border-color);
+    background: var(--admonition-important-c-bg);
+    color: var(--admonition-color);
+  }
+}

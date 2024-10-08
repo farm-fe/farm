@@ -1,0 +1,58 @@
+name: Unit Tests
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  cargo-check:
+    name: Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install Rust
+        uses: oxidecomputer/actions-rs_toolchain@oxide/master
+      - name: Cache rust artifacts
+        uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: cargo-check
+
+      - uses: arduino/setup-protoc@v3
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Run cargo check
+        run: cargo check --color always --all --all-targets
+  cargo-test:
+    name: Test - ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+          - macos-latest
+          - windows-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install Rust
+        uses: oxidecomputer/actions-rs_toolchain@oxide/master
+        with:
+          profile: minimal
+      - name: Cache rust artifacts
+        uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: cargo-test-release-${{ matrix.os }}
+
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 18
+      - name: Install Dependencies
+        run: npm install -g pnpm@9.1.0 && pnpm i --frozen-lockfile
+
+      - uses: arduino/setup-protoc@v3
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Run cargo test
+        run: cargo test --profile ci-test --tests

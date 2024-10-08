@@ -7,7 +7,7 @@ import { createHotContext } from './hot-module-state';
 
 let hmrClient: HmrClient;
 
-export default (<Plugin>{
+export default {
   name: 'farm-runtime-hmr-client-plugin',
   bootstrap(moduleSystem) {
     hmrClient = new HmrClient(moduleSystem);
@@ -17,4 +17,4 @@ export default (<Plugin>{
     // create a hot context for each module
     module.meta.hot = createHotContext(module.id, hmrClient);
   }
-});
+};

@@ -37,8 +37,6 @@
   "author": "ysy945",
   "license": "MIT",
   "devDependencies": {
-    "@farmfe/cli": "workspace:^",
-    "@farmfe/core": "workspace:^",
     "@farmfe/js-plugin-dts": "workspace:^",
     "@jridgewell/gen-mapping": "^0.3.2",
     "@jridgewell/trace-mapping": "^0.3.17",

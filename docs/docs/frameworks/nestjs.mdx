@@ -1,0 +1,26 @@
+import { PackageManagerTabs } from "../../src/theme/PackageManagerTabs";
+
+# NestJs
+
+Create a `NestJs` project based on `Farm`.
+
+`Farm` provides two approaches to support creating `NestJs` projects: 
+- Use the `create-farm` scaffold to create a scaffold project
+- You can manually create a `NestJs` project following the current documentation
+
+### Creating a NestJs Project
+
+<PackageManagerTabs command="npm create farm@latest" />
+
+Select `NestJs` template in `Select Framework`
+
+The nestjs project uses [farmup](https://github.com/farm-fe/farmup) to start and build the project. [Farmup](https://github.com/farm-fe/farmup) is built based on farm to simplify the way you run ts files in node js.
+
+After downloading the template, run pnpm dev to start the nestjs project
+
+<PackageManagerTabs command="npm run dev" />
+
+
+Start enjoying the development experience of millisecond builds
+
+For more example details: [React Example](https://github.com/farm-fe/farm/tree/main/examples/react)

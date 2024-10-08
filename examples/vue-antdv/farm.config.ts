@@ -11,7 +11,8 @@ export default defineConfig({
       alias: {
         '/@': path.join(process.cwd(), 'src')
       }
-    }
+    },
+    lazyCompilation: false,
   },
   plugins: [farmJsPluginLess()],
   vitePlugins: [Vue()]

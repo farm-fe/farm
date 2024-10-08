@@ -1,0 +1,55 @@
+# https://github.com/stackblitz-labs/pkg.pr.new
+name: Preview Commit
+
+on:
+  workflow_call:
+
+jobs:
+  call-rust-build:
+    uses: ./.github/workflows/rust-build.yaml
+
+  check-changed:
+    runs-on: ubuntu-latest
+    name: Check Changed
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          predicate-quantifier: "every"
+          filters: |
+            changed:
+              - "crates"
+              - "packages/core/**"
+              - "packages/cli/**"
+              - "packages/runtime/**"
+              - "packages/runtime-plugin-hmr"
+              - "packages/plugin-import-meta"
+
+  publish:
+    if: github.repository == '@farmfe/farm'
+    name: Pkg Preview
+    runs-on: ubuntu-latest
+    needs:
+      - call-rust-build
+      - check-changed
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Pnpm Cache
+        uses: ./.github/actions/pnpm-cache
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v4.1.7
+        with:
+          path: artifacts
+
+      - name: Build node packages
+        run: pnpm build:cli && pnpm build:core
+
+      - name: Show binding packages
+        run: ls -R npm
+
+      - name: Release
+        if: needs.check-changed.outputs.changed == 'true'
+        run: npx pkg-pr-new publish --compact --pnpm './npm/*' './packages/core' './packages/cli' './packages/runtime' './packages/runtime-plugin-hmr' './packages/runtime-plugin-import-meta'

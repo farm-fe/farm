@@ -1,0 +1,30 @@
+import { PackageManagerTabs } from "../../src/theme/PackageManagerTabs";
+
+# Vanilla
+
+Create a `Vanilla` project based on `Farm`.
+
+`Farm` provides two approaches to support creating `Vanilla` projects: 
+- Use the `create-farm` scaffold to create a scaffold project
+- You can manually create a `Vanilla` project following the current documentation
+
+### Creating a Vanilla Project
+
+<PackageManagerTabs command="npm create farm@latest" />
+
+
+Select `Vanilla` template in `Select Framework`
+
+Using the vanilla template you do not need to install any other framework dependencies, just run dev to start devServer
+
+<PackageManagerTabs command="pnpm dev" />
+
+If you need to run the build production environment product command
+
+<PackageManagerTabs command="pnpm build" />
+
+If you need to preview your build product
+
+<PackageManagerTabs command="pnpm preview" />
+
+For more example details: [React Example](https://github.com/farm-fe/farm/tree/main/crates/create-farm-rs/template/vanilla)
