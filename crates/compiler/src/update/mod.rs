@@ -311,6 +311,7 @@ impl Compiler {
       let module = module_graph.module(id).unwrap();
       !module.module_type.is_script()
     });
+
     let (immutable_resources, mutable_resources) = if should_reload_page {
       ("window.location.reload()".to_string(), "{}".to_string())
     } else if generate_update_resource {
@@ -767,16 +768,7 @@ fn resolve_module(
   );
 
   Ok(ResolveModuleResult::Success(Box::new(ResolvedModuleInfo {
-    module: Compiler::create_module(
-      resolve_module_id_result.module_id.clone(),
-      resolve_module_id_result.resolve_result.external,
-      context
-        .config
-        .partial_bundling
-        .immutable_modules
-        .iter()
-        .any(|im| im.is_match(&module_id.to_string())),
-    ),
+    module: Compiler::create_module_from_resolve_result(&resolve_module_id_result, context),
     resolve_module_id_result,
   })))
 }

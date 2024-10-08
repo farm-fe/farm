@@ -146,11 +146,15 @@ export default function farmPostcssPlugin(
               } else if (message.type === 'dir-dependency') {
                 const { dir, glob: globPattern = '**' } = message;
                 // https://github.com/postcss/postcss/blob/main/docs/guidelines/runner.md#3-dependencies
-                const files = glob.sync(path.join(dir, globPattern), {
-                  ignore: ['**/node_modules/**']
+                const files = glob.sync(globPattern, {
+                  ignore: ['**/node_modules/**'],
+                  cwd: dir
                 });
                 for (const file of files) {
-                  context.addWatchFile(param.resolvedPath, file);
+                  context.addWatchFile(
+                    param.resolvedPath,
+                    path.isAbsolute(file) ? file : path.join(dir, file)
+                  );
                 }
               } else if (message.type === 'warning') {
                 console.warn(`[${pluginName}] ${message.text}`);

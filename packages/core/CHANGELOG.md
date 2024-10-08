@@ -1,5 +1,11 @@
 # @farmfe/core
 
+## 1.3.25
+
+### Patch Changes
+
+- 97408595: Fix persistent cache panic when working with lazy compilation
+
 ## 1.3.24
 
 ### Patch Changes

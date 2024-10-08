@@ -1,5 +1,12 @@
 # @farmfe/js-plugin-record-viewer
 
+## 1.1.2
+
+### Patch Changes
+
+- 978e2dd2: Optimize filters for Plugin Analysis
+- 97408595: Optimize plugin performance panel
+
 ## 1.1.1
 
 ### Patch Changes
