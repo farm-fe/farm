@@ -12,9 +12,7 @@ import { arraify, getCacheDir } from '../utils/index.js';
 
 export const debugWatcher = createDebugger('farm:watcher');
 
-// TODO remove FileWatcher
-interface ImplFileWatcher {}
-export default class Watcher implements ImplFileWatcher {
+export default class Watcher {
   private watchedFiles = new Set<string>();
   resolvedWatchOptions: WatchOptions;
   watcher: FSWatcher;

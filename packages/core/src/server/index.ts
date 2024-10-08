@@ -159,16 +159,17 @@ export class Server extends httpServer {
 
       this.#resolveOptions();
 
-      // TODO createCompiler 到底在何时创建
       this.compiler = await createCompiler(this.resolvedUserConfig);
       await resolveConfigureCompilerHook(
         this.compiler,
         this.resolvedUserConfig
       );
-      this.httpsOptions = await this.resolveHttpsConfig(
-        this.serverOptions.https
-      );
-      this.publicFiles = await this.#handlePublicFiles();
+      const [httpsOptions, publicFiles] = await Promise.all([
+        this.resolveHttpsConfig(this.serverOptions.https),
+        this.#handlePublicFiles()
+      ]);
+      this.httpsOptions = httpsOptions;
+      this.publicFiles = publicFiles;
       this.middlewares = connect() as connect.Server;
       this.httpServer = this.serverOptions.middlewareMode
         ? null
@@ -216,18 +217,18 @@ export class Server extends httpServer {
   }
 
   /**
-   *
+   * create watcher
    */
   async #createWatcher() {
     this.watcher = new Watcher(this.resolvedUserConfig);
 
     await this.watcher.createWatcher();
 
-    this.watcher.watcher.on('add', async (file: string | string[] | any) => {
+    this.watcher.watcher.on('add', async (file: string) => {
       // TODO pluginContainer hooks
     });
 
-    this.watcher.watcher.on('unlink', async (file: string | string[] | any) => {
+    this.watcher.watcher.on('unlink', async (file: string) => {
       const parentFiles = this.compiler.getParentFiles(file);
       const normalizeParentFiles = parentFiles.map((file) =>
         normalizePath(file)
@@ -235,7 +236,7 @@ export class Server extends httpServer {
       this.hmrEngine.hmrUpdate(normalizeParentFiles, true);
     });
 
-    this.watcher.watcher.on('change', async (file: string | string[] | any) => {
+    this.watcher.watcher.on('change', async (file: string) => {
       file = normalizePath(file);
       const shortFile = getShortName(file, this.resolvedUserConfig.root);
       const isConfigFile = this.resolvedUserConfig.configFilePath === file;
@@ -400,16 +401,9 @@ export class Server extends httpServer {
       this.resolvedUserConfig.compilation.define.FARM_HMR_PORT =
         serverPort.toString();
 
-      // this.compiler = await createCompiler(this.resolvedUserConfig);
-      // await resolveConfigureCompilerHook(
-      //   this.compiler,
-      //   this.resolvedUserConfig,
-      // );
-
       this.resolvedUrls = await resolveServerUrls(
         this.httpServer,
-        this.serverOptions,
-        this.publicPath
+        this.resolvedUserConfig
       );
       // compile the project and start the dev server
       await this.#startCompile();
@@ -423,7 +417,9 @@ export class Server extends httpServer {
 
       __FARM_GLOBAL__.__FARM_SHOW_DEV_SERVER_URL__ && this.printUrls();
     } catch (error) {
-      // this.resolvedUserConfig.logger.error(`start farm dev server error: ${error}`);
+      this.resolvedUserConfig.logger.error(
+        `start farm dev server error: ${error}`
+      );
       // throw error;
     }
   }
@@ -453,7 +449,7 @@ export class Server extends httpServer {
             this.httpServer.removeListener('error', onError);
             reject(new Error(`Port ${port} is already in use`));
           } else {
-            this.logger.info(`Port ${port} is in use, trying another one...`);
+            this.logger.warn(`Port ${port} is in use, trying another one...`);
             this.httpServer.listen(++port, host);
           }
         } else {
@@ -527,14 +523,19 @@ export class Server extends httpServer {
    * @returns { void }
    */
   #resolveOptions() {
-    const { compilation, server } = this.resolvedUserConfig;
-    this.publicPath = compilation.output.publicPath;
-
-    this.publicDir = compilation.assets.publicDir;
+    const {
+      compilation: {
+        output: { publicPath },
+        assets: { publicDir }
+      },
+      root,
+      server
+    } = this.resolvedUserConfig;
+    this.publicPath = publicPath;
+    this.publicDir = publicDir;
 
     this.serverOptions = server as CommonServerOptions & NormalizedServerConfig;
-
-    this.root = compilation.root;
+    this.root = root;
   }
 
   /**

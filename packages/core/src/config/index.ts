@@ -191,21 +191,7 @@ export async function resolveConfig(
     inlineConfig
   });
 
-  // Temporarily dealing with alias objects and arrays in js will be unified in rust in the future.]
-  // if (vitePlugins.length) {
-  //   resolvedUserConfig.compilation.resolve.alias = getAliasEntries(
-  //     resolvedUserConfig.compilation.resolve.alias,
-  //   );
-  // }
-
   await resolveConfigResolvedHook(resolvedUserConfig, sortFarmJsPlugins); // Fix: Await the Promise<void> and pass the resolved value to the function.
-
-  //TODO solve the problem of alias adaptation to vite we should resolve this in rust side
-  // if (resolvedUserConfig.compilation?.resolve?.alias && vitePlugins.length) {
-  //   resolvedUserConfig.compilation.resolve.alias = transformAliasWithVite(
-  //     resolvedUserConfig.compilation.resolve.alias as unknown as Array<Alias>,
-  //   );
-  // }
 
   await handleLazyCompilation(
     resolvedUserConfig,

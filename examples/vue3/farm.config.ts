@@ -37,12 +37,7 @@ function myCustomPlugin() {
     apply: "serve",
     config(config, { command }) {},
     configureServer(server) {
-      server.httpServer?.once?.("listening", () => {
-        const { port } = server.config.server;
-      });
-      server.middlewares.use((req, res, next) => {
-        next();
-      });
+      console.log(server.moduleGraph.getModuleById);
     },
     transformIndexHtml(c) {
       return c.replace(
@@ -92,7 +87,7 @@ export default defineConfig({
     //   enabled: true,
     // }),
     // compressionMiddleware(),
-    // myCustomPlugin(),
+    myCustomPlugin(),
     // createHtmlPlugin({
     //   minify: true,
     //   /**
@@ -141,7 +136,7 @@ export default defineConfig({
     progress: false,
     resolve: {
       // alias: {
-        // "@": path.resolve("src"),
+      // "@": path.resolve("src"),
       // },
       alias: [{ find: "@", replacement: path.resolve("src") }],
     },

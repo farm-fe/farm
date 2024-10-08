@@ -7,9 +7,10 @@
  * https://github.com/vitejs/vite/blob/main/LICENSE
  */
 
+import { promises as dns } from 'node:dns';
 import type { AddressInfo, Server } from 'node:net';
 import os from 'node:os';
-import { UserServerConfig } from '../index.js';
+import { ResolvedUserConfig, UserServerConfig } from '../index.js';
 
 export interface ResolvedServerUrls {
   local: string[];
@@ -38,8 +39,7 @@ export const wildcardHosts = new Set([
 
 export async function resolveServerUrls(
   server: Server,
-  options: UserServerConfig,
-  publicPath?: string
+  config: ResolvedUserConfig
 ): Promise<ResolvedServerUrls> {
   const address = server.address();
   const isAddressInfo = (x: any): x is AddressInfo => x?.address;
@@ -47,26 +47,29 @@ export async function resolveServerUrls(
   if (!isAddressInfo(address)) {
     return { local: [], network: [] };
   }
-
+  const serverOptions = config.server;
   const local: string[] = [];
   const network: string[] = [];
-  const hostname = await resolveHostname(options.host);
-  const protocol = options.https ? 'https' : 'http';
-  const { port } = getAddressHostnamePort(address);
-  const base = publicPath || '';
+  const hostname = await resolveHostname(serverOptions.host);
+  const protocol = serverOptions.https ? 'https' : 'http';
+  const port = address.port;
+  const base = config.compilation.output.publicPath;
 
   if (hostname.host !== undefined && !wildcardHosts.has(hostname.host)) {
-    const url = createServerUrl(protocol, hostname.name, port, base);
+    let hostnameName = hostname.name;
+    // ipv6 host
+    if (hostnameName.includes(':')) {
+      hostnameName = `[${hostnameName}]`;
+    }
+    const address = `${protocol}://${hostnameName}:${port}${base}`;
     if (loopbackHosts.has(hostname.host)) {
-      local.push(url);
+      local.push(address);
     } else {
-      network.push(url);
+      network.push(address);
     }
   } else {
-    const networkInterfaces = Object.values(os.networkInterfaces()).flatMap(
-      (nInterface) => nInterface || []
-    );
-    networkInterfaces
+    Object.values(os.networkInterfaces())
+      .flatMap((nInterface) => nInterface ?? [])
       .filter(
         (detail) =>
           detail &&
@@ -77,14 +80,18 @@ export async function resolveServerUrls(
       )
       .forEach((detail) => {
         let host = detail.address.replace('127.0.0.1', hostname.name);
-        host = host.includes(':') ? `[${host}]` : host;
-        const url = createServerUrl(protocol, host, port, base);
-        detail.address.includes('127.0.0.1')
-          ? local.push(url)
-          : network.push(url);
+        // ipv6 host
+        if (host.includes(':')) {
+          host = `[${host}]`;
+        }
+        const url = `${protocol}://${host}:${port}${base}`;
+        if (detail.address.includes('127.0.0.1')) {
+          local.push(url);
+        } else {
+          network.push(url);
+        }
       });
   }
-
   return { local, network };
 }
 
@@ -93,15 +100,25 @@ export async function resolveHostname(
 ): Promise<Hostname> {
   let host: string | undefined;
   if (optionsHost === undefined || optionsHost === false) {
+    // Use a secure default
     host = 'localhost';
   } else if (optionsHost === true) {
-    host = undefined;
+    // If passed --host in the CLI without arguments
+    host = undefined; // undefined typically means 0.0.0.0 or :: (listen on all IPs)
   } else {
     host = optionsHost;
   }
 
-  const name =
-    host === undefined || wildcardHosts.has(host) ? 'localhost' : host;
+  // Set host name to localhost when possible
+  let name = host === undefined || wildcardHosts.has(host) ? 'localhost' : host;
+
+  if (host === 'localhost') {
+    // See #8647 for more details.
+    const localhostAddr = await getLocalhostAddressIfDiffersFromDNS();
+    if (localhostAddr) {
+      name = localhostAddr;
+    }
+  }
 
   return { host, name };
 }
@@ -133,3 +150,23 @@ export const teardownSIGTERMListener = (
     process.stdin.off('end', callback);
   }
 };
+
+/**
+ * Returns resolved localhost address when `dns.lookup` result differs from DNS
+ *
+ * `dns.lookup` result is same when defaultResultOrder is `verbatim`.
+ * Even if defaultResultOrder is `ipv4first`, `dns.lookup` result maybe same.
+ * For example, when IPv6 is not supported on that machine/network.
+ */
+export async function getLocalhostAddressIfDiffersFromDNS(): Promise<
+  string | undefined
+> {
+  const [nodeResult, dnsResult] = await Promise.all([
+    dns.lookup('localhost'),
+    dns.lookup('localhost', { verbatim: true })
+  ]);
+  const isSame =
+    nodeResult.family === dnsResult.family &&
+    nodeResult.address === dnsResult.address;
+  return isSame ? undefined : nodeResult.address;
+}

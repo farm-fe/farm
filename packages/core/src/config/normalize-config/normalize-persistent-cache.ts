@@ -4,7 +4,6 @@ import path from 'node:path';
 
 import { RustPlugin } from '../../plugin/index.js';
 import { Config } from '../../types/binding.js';
-import { Logger } from '../../utils/logger.js';
 import { traceDependencies } from '../../utils/trace-dependencies.js';
 import { isDisableCache } from '../env.js';
 import { ResolvedUserConfig } from '../index.js';
