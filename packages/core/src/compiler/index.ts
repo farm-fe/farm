@@ -1,13 +1,12 @@
 import { existsSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
-import { Compiler as BindingCompiler } from '../../binding/index.js';
 
-import type { Resource } from '../index.js';
-import type { Config, JsUpdateResult } from '../types/binding.js';
-import { type ILogger, Logger } from '../utils/logger.js';
+import { Compiler as BindingCompiler } from '../../binding/index.js';
+import type { ResolvedUserConfig, Resource } from '../index.js';
+import type { JsUpdateResult } from '../types/binding.js';
 
 export const VIRTUAL_FARM_DYNAMIC_IMPORT_SUFFIX =
-  '.farm_dynamic_import_virtual_module';
+  '.farm_dynamic_import_virtual_module' as const;
 
 /**
  * Cause the update process is async, we need to keep the update queue to make sure the update process is executed in order.
@@ -40,11 +39,13 @@ export class Compiler {
   private _resolveCompileFinish: (() => void) | null = null;
   _isInitialCompile = true;
 
-  constructor(
-    public config: Config,
-    private logger: ILogger = new Logger()
-  ) {
-    this._bindingCompiler = new BindingCompiler(this.config);
+  constructor(public config: ResolvedUserConfig) {
+    this._bindingCompiler = new BindingCompiler({
+      // @ts-ignore
+      config: { ...config.compilation, ...config.config },
+      jsPlugins: config.jsPlugins,
+      rustPlugins: config.rustPlugins
+    });
   }
 
   async traceDependencies() {
@@ -59,14 +60,15 @@ export class Compiler {
     this.checkCompiling();
     this._createCompileFinishPromise();
     this.compiling = true;
-    if (process.env.FARM_PROFILE) {
-      this._bindingCompiler.compileSync();
-    } else {
-      await this._bindingCompiler.compile();
-    }
-    this.compiling = false;
-    this._resolveCompileFinishPromise();
-    if (this._isInitialCompile) {
+    try {
+      if (process.env.FARM_PROFILE) {
+        this._bindingCompiler.compileSync();
+      } else {
+        await this._bindingCompiler.compile();
+      }
+    } finally {
+      this.compiling = false;
+      this._resolveCompileFinishPromise();
       this._isInitialCompile = false;
     }
   }
@@ -160,15 +162,11 @@ export class Compiler {
     const resources = this.resources();
     const outputPath = this.getOutputPath();
 
-    for (const [name, resource] of Object.entries(resources)) {
+    Object.entries(resources).forEach(([name, resource]) => {
       const filePath = path.join(outputPath, name.split(/[?#]/)[0]);
-
-      if (!existsSync(path.dirname(filePath))) {
-        mkdirSync(path.dirname(filePath), { recursive: true });
-      }
-
+      mkdirSync(path.dirname(filePath), { recursive: true });
       writeFileSync(filePath, new Uint8Array(resource));
-    }
+    });
 
     this.callWriteResourcesHook();
   }
@@ -180,7 +178,7 @@ export class Compiler {
           string,
           Resource
         >,
-        config: this.config.config
+        config: this.config.compilation
       });
     }
   }
@@ -255,14 +253,14 @@ export class Compiler {
 
   private checkCompiling() {
     if (this.compiling) {
-      this.logger.error('Already compiling', {
+      this.config.logger.error('Already compiling', {
         exit: true
       });
     }
   }
 
   private getOutputPath(): string {
-    const { output, root } = this.config.config;
+    const { output, root } = this.config.compilation;
     const configOutputPath = output.path;
     const outputPath = path.isAbsolute(configOutputPath)
       ? configOutputPath

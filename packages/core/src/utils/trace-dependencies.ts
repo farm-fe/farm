@@ -1,19 +1,16 @@
-import { Compiler } from '../compiler/index.js';
 import { convertErrorMessage } from './error.js';
-import { Logger } from './logger.js';
 
 import * as fs from 'node:fs';
+import { createInlineCompiler } from '../compiler/utils.js';
 import type { Config } from '../types/binding.js';
 
-function createTraceDepCompiler(entry: string, logger: Logger) {
+function createTraceDepCompiler(entry: string) {
   const config = getDefaultTraceDepCompilerConfig(entry);
-  config.config.progress = false;
-  return new Compiler(config, logger);
+  return createInlineCompiler(config, { progress: false });
 }
 
 export async function traceDependencies(
-  configFilePath: string,
-  logger: Logger
+  configFilePath: string
 ): Promise<string[]> {
   try {
     // maybe not find config from local
@@ -23,7 +20,7 @@ export async function traceDependencies(
       return [];
     }
 
-    const compiler = createTraceDepCompiler(configFilePath, logger);
+    const compiler = createTraceDepCompiler(configFilePath);
     const files = (await compiler.traceDependencies()) as string[];
     return files;
   } catch (error) {

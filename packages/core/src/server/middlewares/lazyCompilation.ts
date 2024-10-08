@@ -30,7 +30,7 @@ export function lazyCompilationMiddleware(
     const paths = (parsedUrl.query.paths as string).split(',');
 
     const isNodeEnvironment = parsedUrl.query.node;
-    const root = compiler.config.config.root;
+    const root = compiler.config.root;
     const pathsStr = paths
       .map((p) => {
         if (

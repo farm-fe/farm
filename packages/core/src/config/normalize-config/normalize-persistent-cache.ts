@@ -132,10 +132,7 @@ export async function normalizePersistentCache(
   ) {
     const files = resolvedUserConfig?.configFileDependencies?.length
       ? resolvedUserConfig.configFileDependencies
-      : await traceDependencies(
-          resolvedUserConfig.configFilePath,
-          resolvedUserConfig.logger
-        );
+      : await traceDependencies(resolvedUserConfig.configFilePath);
 
     const packages = [];
 

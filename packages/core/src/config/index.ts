@@ -167,8 +167,7 @@ export async function resolveConfig(
   const resolvedUserConfig = await resolveUserConfig(
     config,
     configFilePath,
-    compileMode,
-    logger
+    compileMode
   );
 
   resolvedUserConfig.logger = logger;
@@ -672,7 +671,7 @@ export async function readConfigFile(
   );
 
   const compiler = new Compiler({
-    config: normalizedConfig,
+    compilation: normalizedConfig,
     jsPlugins: [],
     rustPlugins: [[replaceDirnamePlugin, '{}']]
   });
@@ -908,8 +907,7 @@ export async function resolveDefaultUserConfig(options: any) {
 export async function resolveUserConfig(
   userConfig: UserConfig,
   configFilePath?: string | undefined,
-  mode: 'development' | 'production' | string = 'development',
-  logger: Logger = new Logger()
+  mode: 'development' | 'production' | string = 'development'
 ): Promise<ResolvedUserConfig> {
   const resolvedUserConfig = {
     ...userConfig,
@@ -918,7 +916,7 @@ export async function resolveUserConfig(
 
   // set internal config
   if (configFilePath) {
-    const dependencies = await traceDependencies(configFilePath, logger);
+    const dependencies = await traceDependencies(configFilePath);
     resolvedUserConfig.configFileDependencies = dependencies.sort();
     resolvedUserConfig.configFilePath = configFilePath;
   }

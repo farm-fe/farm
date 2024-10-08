@@ -12,7 +12,10 @@ import { openBrowser } from './open.js';
 import { WsServer } from './ws.js';
 
 import { __FARM_GLOBAL__ } from '../config/_global.js';
-import { getSortedPluginHooksBindThis } from '../plugin/index.js';
+import {
+  getPluginHooks,
+  getSortedPluginHooksBindThis
+} from '../plugin/index.js';
 import { getCacheDir, isCacheDirExists } from '../utils/cacheDir.js';
 import { createDebugger } from '../utils/debug.js';
 import { resolveServerUrls, teardownSIGTERMListener } from '../utils/http.js';
@@ -40,10 +43,7 @@ import type {
 import type { Http2SecureServer } from 'node:http2';
 import type * as net from 'node:net';
 
-import {
-  createCompiler,
-  resolveConfigureCompilerHook
-} from '../compiler/utils.js';
+import { createCompiler } from '../compiler/utils.js';
 import type {
   FarmCliOptions,
   HmrOptions,
@@ -160,10 +160,14 @@ export class Server extends httpServer {
       this.#resolveOptions();
 
       this.compiler = await createCompiler(this.resolvedUserConfig);
-      await resolveConfigureCompilerHook(
-        this.compiler,
-        this.resolvedUserConfig
-      );
+
+      for (const hook of getPluginHooks(
+        this.resolvedUserConfig.jsPlugins,
+        'configureCompiler'
+      )) {
+        await hook?.(this.compiler);
+      }
+
       const [httpsOptions, publicFiles] = await Promise.all([
         this.resolveHttpsConfig(this.serverOptions.https),
         this.#handlePublicFiles()
@@ -418,7 +422,7 @@ export class Server extends httpServer {
       __FARM_GLOBAL__.__FARM_SHOW_DEV_SERVER_URL__ && this.printUrls();
     } catch (error) {
       this.resolvedUserConfig.logger.error(
-        `start farm dev server error: ${error}`
+        `start farm dev server error: ${error} \n ${error.stack}`
       );
       // throw error;
     }
@@ -626,7 +630,7 @@ export class Server extends httpServer {
    */
   async #startCompile() {
     // check if cache dir exists
-    const { persistentCache } = this.compiler.config.config;
+    const { persistentCache } = this.compiler.config.compilation;
     const hasCacheDir = await isCacheDirExists(
       getCacheDir(this.root, persistentCache)
     );
@@ -634,12 +638,7 @@ export class Server extends httpServer {
     await this.#compile();
 
     const duration = performance.now() - start;
-    bootstrap(
-      duration,
-      this.compiler.config,
-      hasCacheDir,
-      this.resolvedUserConfig
-    );
+    bootstrap(duration, this.compiler.config, hasCacheDir);
   }
 
   /**

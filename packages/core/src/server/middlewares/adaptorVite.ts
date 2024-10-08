@@ -27,7 +27,7 @@ export function adaptorViteMiddleware(app: Server): Connect.NextHandleFunction {
 
     // try local file system
     const localFilePath = path.join(
-      compiler.config.config.root,
+      compiler.config.root,
       resourceWithoutPublicPath
     );
 

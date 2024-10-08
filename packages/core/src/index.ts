@@ -13,13 +13,11 @@ import path from 'node:path';
 
 import { JsUpdateResult } from '../binding/binding.js';
 import { Compiler } from './compiler/index.js';
-import {
-  createCompiler,
-  resolveConfigureCompilerHook
-} from './compiler/utils.js';
+import { createCompiler } from './compiler/utils.js';
 import { __FARM_GLOBAL__ } from './config/_global.js';
 import { UserConfig, resolveConfig } from './config/index.js';
 import type { FarmCliOptions, ResolvedUserConfig } from './config/types.js';
+import { getPluginHooks } from './plugin/index.js';
 import { Server } from './server/index.js';
 import { PersistentCacheBrand, bold, colors, green } from './utils/color.js';
 import { convertErrorMessage } from './utils/error.js';
@@ -59,8 +57,13 @@ export async function build(
 
   try {
     const compiler = await createCompiler(resolvedUserConfig);
-    await resolveConfigureCompilerHook(compiler, resolvedUserConfig);
 
+    for (const hook of getPluginHooks(
+      resolvedUserConfig.jsPlugins,
+      'configureCompiler'
+    )) {
+      await hook?.(compiler);
+    }
     if (output?.clean) {
       compiler.removeOutputPathDir();
     }

@@ -51,13 +51,13 @@ export class HmrEngine {
     let updatedFilesStr = queue
       .map((item) => {
         if (isAbsolute(item)) {
-          return relative(this.app.compiler.config.config.root, item);
+          return relative(this.app.compiler.config.root, item);
         } else {
           const resolvedPath = this.app.compiler.transformModulePath(
-            this.app.compiler.config.config.root,
+            this.app.compiler.config.root,
             item
           );
-          return relative(this.app.compiler.config.config.root, resolvedPath);
+          return relative(this.app.compiler.config.root, resolvedPath);
         }
       })
       .join(', ');
