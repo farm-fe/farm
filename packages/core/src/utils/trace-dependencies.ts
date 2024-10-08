@@ -2,11 +2,12 @@ import { convertErrorMessage } from './error.js';
 
 import * as fs from 'node:fs';
 import { createInlineCompiler } from '../compiler/utils.js';
-import type { Config } from '../types/binding.js';
+import { ResolvedUserConfig } from '../config/types.js';
 
 function createTraceDepCompiler(entry: string) {
   const config = getDefaultTraceDepCompilerConfig(entry);
-  return createInlineCompiler(config, { progress: false });
+
+  return createInlineCompiler(config);
 }
 
 export async function traceDependencies(
@@ -29,9 +30,9 @@ export async function traceDependencies(
   }
 }
 
-function getDefaultTraceDepCompilerConfig(entry: string): Config {
+function getDefaultTraceDepCompilerConfig(entry: string): ResolvedUserConfig {
   return {
-    config: {
+    compilation: {
       input: {
         index: entry
       },
@@ -43,6 +44,7 @@ function getDefaultTraceDepCompilerConfig(entry: string): Config {
       presetEnv: false,
       persistentCache: false,
       minify: false,
+      progress: false,
       lazyCompilation: false
     },
     jsPlugins: [

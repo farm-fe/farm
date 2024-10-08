@@ -37,7 +37,7 @@ function myCustomPlugin() {
     apply: "serve",
     config(config, { command }) {},
     configureServer(server) {
-      console.log(server.moduleGraph.getModuleById);
+      // console.log(server.moduleGraph.getModuleById);
     },
     transformIndexHtml(c) {
       return c.replace(

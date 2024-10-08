@@ -42,7 +42,7 @@ export class Compiler {
   constructor(public config: ResolvedUserConfig) {
     this._bindingCompiler = new BindingCompiler({
       // @ts-ignore
-      config: { ...config.compilation, ...config.config },
+      config: config.compilation,
       jsPlugins: config.jsPlugins,
       rustPlugins: config.rustPlugins
     });
