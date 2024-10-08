@@ -69,6 +69,7 @@ export default function tailwindcss(): JsPlugin[] {
 
         roots.get(id).requiresRebuild = false;
         server.hmrEngine?.hmrUpdate(id, true);
+        server.getCompiler().invalidateModule(id);
       }
     }
   }
@@ -88,16 +89,16 @@ export default function tailwindcss(): JsPlugin[] {
   return [
     {
       name: 'farm:tailwindcss:scan',
-      priority: 98,
+      priority: 100,
       config(_config) {
         config = _config;
         minify = !!config.compilation?.minify;
 
         return {
-          compilation: {
-            // TODO: should invalidate entry css file when config changes
-            persistentCache: false
-          }
+          // compilation: {
+          //   // TODO: should invalidate entry css file when config changes
+          //   persistentCache: false
+          // }
         };
       },
       configureDevServer(server) {
@@ -138,7 +139,7 @@ export default function tailwindcss(): JsPlugin[] {
 
     {
       name: 'farm:tailwindcss:post',
-      priority: 100,
+      priority: 98,
       transform: {
         filters: {
           resolvedPaths: ['.+']
@@ -146,13 +147,12 @@ export default function tailwindcss(): JsPlugin[] {
         async executor(param, context) {
           if (!isPotentialCssRootFile(param.resolvedPath)) return;
           let root = roots.get(param.resolvedPath);
-
           // We do a first pass to generate valid CSS for the downstream plugins.
           // However, since not all candidates are guaranteed to be extracted by
           // this time, we have to re-run a transform for the root later.
-          let generated = await root.generate(param.content, (file) =>
-            context?.addWatchFile(param.resolvedPath, file)
-          );
+          let generated = await root.generate(param.content, (file) => {
+            return context?.addWatchFile(param.resolvedPath, file);
+          });
 
           if (!generated) {
             roots.delete(param.resolvedPath);

@@ -13212,10 +13212,6 @@ packages:
     resolution: {integrity: sha512-0vzE+lAiG7hZl1/9I8yzKLx3aR9Xbof3fBHKunvMfOCYAtMhrsnccJY2iTURb9EZd5+pLuiNV9/c/GZJOHsgIw==}
     engines: {node: ^10 || ^12 || >=14}
 
-  postcss@8.4.40:
-    resolution: {integrity: sha512-YF2kKIUzAofPMpfH6hOi2cGnv/HrUlfucspc7pDyvv7kGdqXrfj8SCl/t8owkEgKEuu8ZcRjSOxFxVLqwChZ2Q==}
-    engines: {node: ^10 || ^12 || >=14}
-
   postcss@8.4.47:
     resolution: {integrity: sha512-56rxCq7G/XfB4EkXq9Egn5GCqugWvDFjafDOThIdMBsI15iqPqR5r15TfSr1YPYeEI19YeaXMCbY6u88Y76GLQ==}
     engines: {node: ^10 || ^12 || >=14}
@@ -31138,9 +31134,9 @@ snapshots:
     dependencies:
       postcss: 8.4.39
 
-  postcss-import@15.1.0(postcss@8.4.40):
+  postcss-import@15.1.0(postcss@8.4.47):
     dependencies:
-      postcss: 8.4.40
+      postcss: 8.4.47
       postcss-value-parser: 4.2.0
       read-cache: 1.0.0
       resolve: 1.22.8
@@ -31159,10 +31155,10 @@ snapshots:
       read-cache: 1.0.0
       resolve: 1.22.8
 
-  postcss-js@4.0.1(postcss@8.4.40):
+  postcss-js@4.0.1(postcss@8.4.47):
     dependencies:
       camelcase-css: 2.0.1
-      postcss: 8.4.40
+      postcss: 8.4.47
 
   postcss-load-config@4.0.1(postcss@8.4.31)(ts-node@10.9.1(@types/node@20.14.12)(typescript@5.4.5)):
     dependencies:
@@ -31172,12 +31168,12 @@ snapshots:
       postcss: 8.4.31
       ts-node: 10.9.1(@types/node@20.14.12)(typescript@5.4.5)
 
-  postcss-load-config@4.0.1(postcss@8.4.40)(ts-node@10.9.1(@types/node@20.14.12)(typescript@5.4.5)):
+  postcss-load-config@4.0.1(postcss@8.4.47)(ts-node@10.9.1(@types/node@20.14.12)(typescript@5.4.5)):
     dependencies:
       lilconfig: 2.1.0
       yaml: 2.3.4
     optionalDependencies:
-      postcss: 8.4.40
+      postcss: 8.4.47
       ts-node: 10.9.1(@types/node@20.14.12)(typescript@5.4.5)
 
   postcss-merge-rules@7.0.2(postcss@8.4.39):
@@ -31199,9 +31195,9 @@ snapshots:
       postcss: 8.4.39
       postcss-selector-parser: 6.0.13
 
-  postcss-nested@6.0.1(postcss@8.4.40):
+  postcss-nested@6.0.1(postcss@8.4.47):
     dependencies:
-      postcss: 8.4.40
+      postcss: 8.4.47
       postcss-selector-parser: 6.0.13
 
   postcss-normalize-whitespace@7.0.0(postcss@8.4.39):
@@ -31282,12 +31278,6 @@ snapshots:
       source-map-js: 1.2.0
 
   postcss@8.4.39:
-    dependencies:
-      nanoid: 3.3.7
-      picocolors: 1.0.1
-      source-map-js: 1.2.0
-
-  postcss@8.4.40:
     dependencies:
       nanoid: 3.3.7
       picocolors: 1.0.1
@@ -33249,11 +33239,11 @@ snapshots:
       normalize-path: 3.0.0
       object-hash: 3.0.0
       picocolors: 1.0.0
-      postcss: 8.4.40
-      postcss-import: 15.1.0(postcss@8.4.40)
-      postcss-js: 4.0.1(postcss@8.4.40)
-      postcss-load-config: 4.0.1(postcss@8.4.40)(ts-node@10.9.1(@types/node@20.14.12)(typescript@5.4.5))
-      postcss-nested: 6.0.1(postcss@8.4.40)
+      postcss: 8.4.47
+      postcss-import: 15.1.0(postcss@8.4.47)
+      postcss-js: 4.0.1(postcss@8.4.47)
+      postcss-load-config: 4.0.1(postcss@8.4.47)(ts-node@10.9.1(@types/node@20.14.12)(typescript@5.4.5))
+      postcss-nested: 6.0.1(postcss@8.4.47)
       postcss-selector-parser: 6.0.13
       resolve: 1.22.8
       sucrase: 3.34.0

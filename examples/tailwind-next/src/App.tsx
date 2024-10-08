@@ -17,7 +17,7 @@ const App = () => {
           Edit <code>src/App.tsx</code> and save to reload.
         </p>
         <a
-          className="text-red-500 text-[30px]"
+          className="text-red-600 text-[28px]"
           href="https://github.com/tailwindcss/tailwindcss"
           target="_blank"
           rel="noopener noreferrer"

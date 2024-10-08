@@ -1,6 +1,6 @@
-import type { UserConfig } from '@farmfe/core';
+import type { UserConfig } from "@farmfe/core";
 // import farmPostcssPlugin from '@farmfe/js-plugin-postcss';
-import tailwind from '@farmfe/js-plugin-tailwindcss';
+import tailwind from "@farmfe/js-plugin-tailwindcss";
 
 function defineConfig(config: UserConfig) {
   return config;
@@ -9,15 +9,21 @@ function defineConfig(config: UserConfig) {
 export default defineConfig({
   compilation: {
     input: {
-      index: './index.html'
+      index: "./index.html",
     },
     output: {
-      path: './build'
+      path: "./build",
     },
-    sourcemap: true
+    sourcemap: false,
+    resolve: {
+      dedupe: ["tailwindcss"],
+    },
   },
   server: {
-    hmr: true
+    hmr: true,
   },
-  plugins: ['@farmfe/plugin-react', tailwind()]
+  plugins: [
+    "@farmfe/plugin-react",
+    tailwind()
+  ],
 });
