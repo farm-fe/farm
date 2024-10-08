@@ -31,14 +31,14 @@ pub enum CompilationError {
   },
 
   // #[error("Transform `{resolved_path}` failed.\n {msg}")]
-  #[error("{}", serde_json::to_string(&serialize_transform_error(&resolved_path, &msg))
+  #[error("{}", serde_json::to_string(&serialize_transform_error(resolved_path, msg))
   .map_err(|_| "Failed to serialize transform error type message".to_string())
   .unwrap_or_else(|e| e))]
   TransformError { resolved_path: String, msg: String },
 
   // TODO, give the specific recommended plugin of this kind of module
   // #[error("Parse `{resolved_path}` failed.\n {msg}\nPotential Causes:\n1.The module have syntax error.\n2.This kind of module is not supported, you may need plugins to support it\n")]
-  #[error("{}", serde_json::to_string(&serialize_parse_error(&resolved_path, &msg))
+  #[error("{}", serde_json::to_string(&serialize_parse_error(resolved_path, msg))
     .map_err(|_| "Failed to serialize parse error type  message".to_string())
     .unwrap_or_else(|e| e))]
   ParseError { resolved_path: String, msg: String },

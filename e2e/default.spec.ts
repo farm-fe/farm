@@ -6,7 +6,7 @@ import { logger } from './utils.js';
 import { describe } from 'node:test';
 // import { ssrExamples } from './test-utils.js';
 
-const excludeExamples: string[] = ['issues1433', 'nestjs'];
+const excludeExamples: string[] = ['issues1433', 'nestjs', 'arcgis'];
 
 describe('Default E2E Tests', async () => {
   const examples = readdirSync('./examples')

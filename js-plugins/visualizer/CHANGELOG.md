@@ -1,5 +1,11 @@
 # @farmfe/js-plugin-record-viewer
 
+## 1.1.1
+
+### Patch Changes
+
+- 772381b0: Fix concurrent lazy compilation failed
+
 ## 1.1.0
 
 ### Minor Changes

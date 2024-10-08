@@ -1,5 +1,14 @@
 # @farmfe/core
 
+## 1.3.24
+
+### Patch Changes
+
+- 772381b0: Fix concurrent lazy compilation failed
+- 732c046d: Ignore non-utf8 error when getting file contents
+- Updated dependencies [772381b0]
+  - @farmfe/runtime@0.12.5
+
 ## 1.3.23
 
 ### Patch Changes
