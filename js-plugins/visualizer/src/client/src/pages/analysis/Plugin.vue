@@ -1,12 +1,17 @@
 <template>
   <Card title="Plugin Analysis">
+    <div>
+      <Select
+        style="width: 100%"
+       :options="allStats.map((item: any) => ({label:item.entries.join(','), value:item.entries.join(',')}))" v-model:value="selectedStat"></Select>
+    </div>
     <Table :loading="loading" :columns="columns" :dataSource="tableData"></Table>
   </Card>
 </template>
 
 <script lang="ts" setup>
-import { computed, ref, onMounted } from 'vue';
-import { Card, Table } from 'ant-design-vue';
+import { computed, ref, onMounted, watchEffect } from 'vue';
+import { Card, Select, Table } from 'ant-design-vue';
 import { getPluginStats } from '../../api';
 
 interface TableDataType {
@@ -23,13 +28,35 @@ interface HookType {
 }
 
 const plugin_stats = ref<any | null>(null);
+const allStats = ref<any | null>([]);
 const loading = ref(false);
+
+const selectedStat = ref('');
+
+watchEffect(() => {
+  if (selectedStat.value) {
+    const stat = allStats.value.find((item: any) => item.entries.join(',') === selectedStat.value);
+    if (stat) {
+      plugin_stats.value = stat.hookStatsMap;
+    } else {
+      plugin_stats.value = null;
+    }
+  }
+});
 
 onMounted(() => {
   loading.value = true;
   getPluginStats().then((data) => {
+    const parsedData = JSON.parse(data);
+    const result = [...parsedData.hmrCompilationFlowStats, parsedData.initialCompilationFlowStats];
+    allStats.value = result.map((item: any) => {
+      item.entries = item.entries.filter((item: any) => !item.endsWith('.farm-runtime'))
+      return item;
+    });
     // TODO support HMR compilation compare
-    plugin_stats.value = JSON.parse(data).initialCompilationFlowStats.hookStatsMap;
+    plugin_stats.value = parsedData.initialCompilationFlowStats.hookStatsMap;
+    selectedStat.value = result[0]?.entries.join(',');
+    console.log('plugin_stats:', plugin_stats.value);
   }).finally(() => {
     loading.value = false;
   });
