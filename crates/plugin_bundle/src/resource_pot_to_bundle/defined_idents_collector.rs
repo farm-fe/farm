@@ -6,9 +6,7 @@ use std::{
 use farmfe_core::{
   swc_common::DUMMY_SP,
   swc_ecma_ast::{
-    AssignExpr, AssignOp, AssignTarget, BindingIdent, Expr, Id, IdentName, KeyValuePatProp,
-    KeyValueProp, MemberProp, ObjectPat, ObjectPatProp, Pat, Prop, PropName, PropOrSpread,
-    SimpleAssignTarget,
+    AssignExpr, AssignOp, AssignTarget, BindingIdent, Expr, Id, IdentName, KeyValuePatProp, KeyValueProp, MemberProp, ObjectPat, ObjectPatProp, Pat, Prop, PropName, PropOrSpread, SimpleAssignTarget
   },
 };
 use farmfe_toolkit::{
@@ -104,27 +102,6 @@ impl<'a> RenameIdent<'a> {
     let r = RefCell::new(ident.to_id());
     let v = self.map.get(&(r.borrow().into())).map(|var| {
       return self.bundle_variable.render_name(*var);
-      let (var, root) = self.bundle_variable.var(*var);
-
-      let Some(root) = root else {
-        return var.render_name();
-      };
-
-      let var_module_id = self.bundle_variable.module_id_by_var(&var);
-      let root_module_id = self.bundle_variable.module_id_by_var(&root);
-
-      let (Some(var_module_id), Some(root_module_id)) = (var_module_id, root_module_id) else {
-        return root.render_name();
-      };
-
-      if self
-        .module_analyzer_manager
-        .is_same_bundle(var_module_id, root_module_id)
-      {
-        return root.render_name();
-      }
-
-      var.render_name()
     });
     v
   }

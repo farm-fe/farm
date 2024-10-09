@@ -1,10 +1,9 @@
 //bundle1.js:
  // module_id: bundle2.ts
 import { _interop_require_wildcard } from "./farm_runtime.js";
-import { namespace_cjs } from "./index.js";
+import { d, namespace_cjs } from "./index.js";
 var ns = _interop_require_wildcard(namespace_cjs());
-export { ns };
-export { d } from "./index.js";
+export { d, ns };
 
 
 //farm_runtime.js:

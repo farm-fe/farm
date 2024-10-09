@@ -13,7 +13,7 @@ use farmfe_core::{
   farm_profile_function,
   module::{module_graph::ModuleGraph, Module, ModuleId, ModuleSystem, ModuleType},
   resource::resource_pot::ResourcePotId,
-  swc_common::{Mark, SourceMap},
+  swc_common::{sync::OnceCell, Mark, SourceMap},
   swc_ecma_ast::{Id, Module as EcmaAstModule},
 };
 use farmfe_toolkit::{
@@ -23,9 +23,7 @@ use farmfe_toolkit::{
 };
 
 use crate::resource_pot_to_bundle::{
-  bundle::{reference::ReferenceMap, ModuleAnalyzerManager, ModuleMap},
-  common::get_module_mark,
-  targets::cjs::CjsModuleAnalyzer,
+  bundle::reference::ReferenceMap, common::get_module_mark, targets::cjs::CjsModuleAnalyzer,
   uniq_name::BundleVariable,
 };
 
@@ -236,6 +234,7 @@ pub struct ModuleAnalyzer {
   pub mark: (Mark, Mark),
   pub module_system: ModuleSystem,
   pub module_type: ModuleType,
+  pub is_reference_by_another: OnceCell<bool>,
 }
 
 impl Debug for ModuleAnalyzer {
@@ -255,6 +254,7 @@ impl Debug for ModuleAnalyzer {
       .field("cjs_module_analyzer", &"[skip]")
       .field("mark", &self.mark)
       .field("module_system", &self.module_system)
+      .field("is_reference_by_other", &self.is_reference_by_another)
       .finish()
   }
 }
@@ -297,6 +297,7 @@ impl ModuleAnalyzer {
       mark: mark.unwrap(),
       module_system: module.meta.as_script().module_system.clone(),
       module_type: module.module_type.clone(),
+      is_reference_by_another: OnceCell::new(),
     })
   }
 
@@ -312,6 +313,10 @@ impl ModuleAnalyzer {
       self.module_system,
       ModuleSystem::EsModule | ModuleSystem::Hybrid
     )
+  }
+
+  pub fn is_reference_by_another<F: Fn() -> bool>(&self, f: F) -> bool {
+    *self.is_reference_by_another.get_or_init(f)
   }
 
   fn collect_unresolved_ident(&self, bundle_variable: &mut BundleVariable) {

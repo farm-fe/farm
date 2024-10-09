@@ -134,10 +134,7 @@ impl ModuleGlobalUniqName {
     &self,
     module_id: R,
   ) -> Result<usize> {
-    self.namespace_name(module_id.clone()).to_result(format!(
-      "not found module namespace name by {:?}",
-      module_id
-    ))
+    Ok(self.namespace_name(module_id.clone()).unwrap())
   }
 
   pub fn commonjs_name_result<R: Into<ReferenceKind> + Debug + Clone>(
@@ -580,120 +577,130 @@ impl<'a> ModuleAnalyzerManager<'a> {
     stmt_actions.sort_by_key(|a| std::cmp::Reverse(a.index()));
     let mut ast = module_analyzer.ast.take();
 
-    stmt_actions.iter().for_each(|action| {
-            let mut replace_ast_item = |index: usize| {
-              replace(&mut ast.body[index], ModuleItem::Stmt(Stmt::Empty(EmptyStmt { span: DUMMY_SP })))
-            };
+    for action in &stmt_actions {
+      let mut replace_ast_item = |index: usize| {
+        replace(
+          &mut ast.body[index],
+          ModuleItem::Stmt(Stmt::Empty(EmptyStmt { span: DUMMY_SP })),
+        )
+      };
 
-            match action {
-              StmtAction::StripExport(index) => {
-                if let ModuleItem::ModuleDecl(ModuleDecl::ExportDecl(export_decl)) = replace_ast_item(*index) {
-                  ast.body[*index] = ModuleItem::Stmt(Stmt::Decl(export_decl.decl))
-                }
-              },
+      match action {
+        StmtAction::StripExport(index) => {
+          if let ModuleItem::ModuleDecl(ModuleDecl::ExportDecl(export_decl)) =
+            replace_ast_item(*index)
+          {
+            ast.body[*index] = ModuleItem::Stmt(Stmt::Decl(export_decl.decl))
+          }
+        }
 
-              StmtAction::StripDefaultExport(index, rename) => {
-                if let ModuleItem::ModuleDecl(ModuleDecl::ExportDefaultDecl(export_decl)) = replace_ast_item(*index) {
-                  let rendered_name = bundle_variable.render_name(*rename);
-                  ast.body[*index] = ModuleItem::Stmt(Stmt::Decl(match export_decl.decl {
-                    swc_ecma_ast::DefaultDecl::Class(class) => {
-                      Decl::Class(
-                        ClassDecl {
-                          ident: Ident::from(rendered_name.as_str()),
-                          declare: false,
-                          class: class.class,
-                        },
-                      )
-                    },
-                    swc_ecma_ast::DefaultDecl::Fn(f) => {
-                      Decl::Fn(FnDecl {
-                        ident: Ident::from(rendered_name.as_str()),
-                        declare: false,
-                        function: f.function,
-                      })
-                    },
-                    _ => {
-                      unreachable!(
-                        "export_default_decl.decl should not be anything clone() other than a class, function"
-                      )
-                    },
-                  }));
-                }
+        StmtAction::StripDefaultExport(index, rename) => {
+          if let ModuleItem::ModuleDecl(ModuleDecl::ExportDefaultDecl(export_decl)) =
+            replace_ast_item(*index)
+          {
+            let rendered_name = bundle_variable.render_name(*rename);
+            ast.body[*index] = ModuleItem::Stmt(Stmt::Decl(match export_decl.decl {
+              swc_ecma_ast::DefaultDecl::Class(class) => Decl::Class(ClassDecl {
+                ident: Ident::from(rendered_name.as_str()),
+                declare: false,
+                class: class.class,
+              }),
+              swc_ecma_ast::DefaultDecl::Fn(f) => Decl::Fn(FnDecl {
+                ident: Ident::from(rendered_name.as_str()),
+                declare: false,
+                function: f.function,
+              }),
+              _ => {
+                unreachable!(
+                  "export_default_decl.decl should not be anything clone() other than a class, function"
+                )
               }
+            }));
+          }
+        }
 
-              StmtAction::DeclDefaultExpr(index, var) => {
-                match replace_ast_item(*index) {
-                  ModuleItem::ModuleDecl(decl) => {
-                    match decl {
-                        ModuleDecl::ExportDefaultDecl(export) => {
-                          let default_name = bundle_variable.render_name(self.module_global_uniq_name.default_name(module_id).unwrap());
-                          match export.decl {
-                            swc_ecma_ast::DefaultDecl::Class(class) => {
-                              ast.body[*index] = ModuleItem::Stmt(Stmt::Decl(Decl::Class(ClassDecl {
-                                ident: Ident::from(default_name.as_str()),
-                                declare: false,
-                                class: class.class,
-                              })));
-                            },
-                            swc_ecma_ast::DefaultDecl::Fn(f) => {
-                              ast.body[*index] = ModuleItem::Stmt(Stmt::Decl(Decl::Fn(FnDecl {
-                                ident: Ident::from(default_name.as_str()),
-                                declare: false,
-                                function: f.function,
-                              })));
-                            },
-                            _ => {
-                              unreachable!("ExportDefault should not be anything other than a class, function")
-                            }
-                          }
-                        },
-                        ModuleDecl::ExportDefaultExpr(export_default_decl) => {
-                          ast.body[*index] =
-                          ModuleItem::Stmt(Stmt::Decl(Decl::Var(Box::new(VarDecl {
-                            span: DUMMY_SP,
-                            kind: swc_ecma_ast::VarDeclKind::Var,
-                            declare: false,
-                            decls: vec![VarDeclarator {
-                              span: DUMMY_SP,
-                              name: swc_ecma_ast::Pat::Ident(BindingIdent {
-                                id: Ident::from(bundle_variable.render_name(*var).as_str()),
-                                type_ann: None,
-                              }),
-                              init: Some(export_default_decl.expr),
-                              definite: false,
-                            }],
-                            ctxt: SyntaxContext::empty()
-                          }))));
-                        },
-                        _ => {}
-                    }
-                  },
-                  _ => {
-                    unreachable!("ExportDefault should not be anything other than a class, function");
-                  }
+        StmtAction::DeclDefaultExpr(index, var) => match replace_ast_item(*index) {
+          ModuleItem::ModuleDecl(decl) => match decl {
+            ModuleDecl::ExportDefaultDecl(export) => {
+              let default_name = bundle_variable.render_name(
+                self
+                  .module_global_uniq_name
+                  .default_name(module_id)
+                  .unwrap(),
+              );
+              match export.decl {
+                swc_ecma_ast::DefaultDecl::Class(class) => {
+                  ast.body[*index] = ModuleItem::Stmt(Stmt::Decl(Decl::Class(ClassDecl {
+                    ident: Ident::from(default_name.as_str()),
+                    declare: false,
+                    class: class.class,
+                  })));
                 }
-              }
-
-              StmtAction::StripCjsImport(index, import_execute_module) => {
-                replace_ast_item(*index);
-                if let Some(source) = import_execute_module {
-                  if !commonjs_import_executed.contains(source) {
-                    ast.body[*index] = ModuleItem::Stmt(Stmt::Expr(
-                      ExprStmt { span: DUMMY_SP, expr: Box::new(Expr::Call(
-                        CallExpr { span: DUMMY_SP, callee: swc_ecma_ast::Callee::Expr(Box::new(Expr::Ident(bundle_variable.name(self.module_global_uniq_name.commonjs_name(source).unwrap()).as_str().into()))), args: vec![], type_args: None, ctxt: SyntaxContext::empty() }
-                      )) }
-                    ));
-                    commonjs_import_executed.insert(source.clone());
-                  }
+                swc_ecma_ast::DefaultDecl::Fn(f) => {
+                  ast.body[*index] = ModuleItem::Stmt(Stmt::Decl(Decl::Fn(FnDecl {
+                    ident: Ident::from(default_name.as_str()),
+                    declare: false,
+                    function: f.function,
+                  })));
                 }
-              }
-
-              StmtAction::RemoveImport(index) => {
-                replace_ast_item(*index);
+                _ => {
+                  unreachable!("ExportDefault should not be anything other than a class, function")
+                }
               }
             }
+            ModuleDecl::ExportDefaultExpr(export_default_decl) => {
+              ast.body[*index] = ModuleItem::Stmt(Stmt::Decl(Decl::Var(Box::new(VarDecl {
+                ctxt: SyntaxContext::empty(),
+                span: DUMMY_SP,
+                kind: swc_ecma_ast::VarDeclKind::Var,
+                declare: false,
+                decls: vec![VarDeclarator {
+                  span: DUMMY_SP,
+                  name: swc_ecma_ast::Pat::Ident(BindingIdent {
+                    id: Ident::from(bundle_variable.render_name(*var).as_str()),
+                    type_ann: None,
+                  }),
+                  init: Some(export_default_decl.expr),
+                  definite: false,
+                }],
+              }))));
+            }
+            _ => {}
+          },
+          _ => {
+            unreachable!("ExportDefault should not be anything other than a class, function");
+          }
+        },
 
-        });
+        StmtAction::StripCjsImport(index, import_execute_module) => {
+          replace_ast_item(*index);
+          if let Some(source) = import_execute_module {
+            if !commonjs_import_executed.contains(source) {
+              ast.body[*index] = ModuleItem::Stmt(Stmt::Expr(ExprStmt {
+                span: DUMMY_SP,
+                expr: Box::new(Expr::Call(CallExpr {
+                  ctxt: SyntaxContext::empty(),
+                  span: DUMMY_SP,
+                  callee: swc_ecma_ast::Callee::Expr(Box::new(Expr::Ident(
+                    bundle_variable
+                      .name(self.module_global_uniq_name.commonjs_name(source).unwrap())
+                      .as_str()
+                      .into(),
+                  ))),
+                  args: vec![],
+                  type_args: None,
+                })),
+              }));
+              commonjs_import_executed.insert(source.clone());
+            }
+          }
+        }
+
+        StmtAction::RemoveImport(index) => {
+          replace_ast_item(*index);
+        }
+      }
+    }
 
     let module_analyzer = self.module_analyzer_mut_unchecked(module_id);
     module_analyzer.ast = ast;
@@ -794,6 +801,7 @@ impl<'a> ModuleAnalyzerManager<'a> {
           module_id,
           bundle_variable,
         ));
+
         self.build_rename_map(module_id, bundle_variable, &mut ast);
 
         self.set_ast(module_id, ast);

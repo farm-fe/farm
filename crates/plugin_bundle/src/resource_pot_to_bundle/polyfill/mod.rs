@@ -3,7 +3,6 @@ use std::collections::HashSet;
 use farmfe_core::{error::Result, farm_profile_scope, swc_ecma_ast::ModuleItem};
 
 use super::common::parse_module_item;
-pub mod cjs;
 
 // TODO: global polyfill
 #[derive(Debug, Hash, PartialEq, Eq, PartialOrd, Ord, Clone)]

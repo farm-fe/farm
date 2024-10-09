@@ -7,9 +7,7 @@ use farmfe_core::{
   module::{ModuleId, ModuleSystem},
   swc_common::{SyntaxContext, DUMMY_SP},
   swc_ecma_ast::{
-    self, ArrayLit, BindingIdent, Bool, CallExpr, Decl, Expr, ExprOrSpread, Ident, IdentName,
-    KeyValueProp, ModuleItem, ObjectLit, Pat, Prop, PropName, PropOrSpread, Stmt, Str, VarDecl,
-    VarDeclKind, VarDeclarator,
+    self, BindingIdent, Bool, Decl, Expr, Ident, IdentName, KeyValueProp, ModuleItem, ObjectLit, Pat, Prop, PropName, PropOrSpread, Stmt, Str, VarDecl, VarDeclKind, VarDeclarator
   },
 };
 
@@ -19,12 +17,12 @@ use crate::resource_pot_to_bundle::{
     reference::{ReferenceExport, ReferenceMap},
     ModuleAnalyzerManager,
   },
-  modules_analyzer::module_analyzer::ImportSpecifierInfo,
-  polyfill::{Polyfill, SimplePolyfill},
+  modules_analyzer::module_analyzer::{ExportSpecifierInfo, ImportSpecifierInfo},
+  polyfill::SimplePolyfill,
   uniq_name::BundleVariable,
 };
 
-use super::{cjs::generate::CjsGenerate, esm::generate::EsmGenerate};
+use super::{cjs::generate::CjsGenerate, esm::generate::EsmGenerate, util::create_merge_namespace};
 
 /// namespace
 pub fn generate_namespace_by_reference_map(
@@ -113,52 +111,13 @@ pub fn generate_namespace_by_reference_map(
       props,
     })))
   } else {
-    polyfill.add(Polyfill::MergeNamespace);
-
     // dynamic
-    Some(Box::new(Expr::Call(CallExpr {
-      span: DUMMY_SP,
-      callee: swc_ecma_ast::Callee::Expr(Box::new(Expr::Ident(Ident::from("_mergeNamespaces")))),
-      args: vec![
-        // static
-        ExprOrSpread {
-          spread: None,
-          expr: Box::new(Expr::Object(ObjectLit {
-            span: DUMMY_SP,
-            props,
-          })),
-        },
-        ExprOrSpread {
-          spread: None,
-          expr: Box::new(Expr::Array(ArrayLit {
-            span: DUMMY_SP,
-            elems: commonjs_fns
-              .into_iter()
-              .map(|ident| {
-                Some(ExprOrSpread {
-                  spread: None,
-                  expr: Box::new(Expr::Call(CallExpr {
-                    span: DUMMY_SP,
-                    callee: swc_ecma_ast::Callee::Expr(Box::new(Expr::Ident(ident))),
-                    args: vec![],
-                    type_args: None,
-                    ctxt: SyntaxContext::empty(),
-                  })),
-                })
-              })
-              .chain(reexport_namespace.into_iter().map(|ns| {
-                Some(ExprOrSpread {
-                  spread: None,
-                  expr: Box::new(Expr::Ident(ns)),
-                })
-              }))
-              .collect(),
-          })),
-        },
-      ],
-      type_args: None,
-      ctxt: SyntaxContext::empty(),
-    })))
+    Some(create_merge_namespace(
+      props,
+      commonjs_fns,
+      reexport_namespace,
+      polyfill,
+    ))
   };
 
   patch_ast_items.push(ModuleItem::Stmt(Stmt::Decl(Decl::Var(Box::new(VarDecl {
@@ -228,23 +187,26 @@ pub fn generate_export_as_object_prop(
 /// generate bundle export
 pub fn generate_export_by_reference_export(
   resource_pot_id: &str,
+  should_reexport_raw: bool,
   bundle_variable: &BundleVariable,
   bundle_reference: &mut BundleReference,
   module_analyzer_manager: &ModuleAnalyzerManager,
   context: &Arc<CompilationContext>,
   polyfill: &mut SimplePolyfill,
+  is_already_polyfilled: &mut bool,
 ) -> Result<Vec<ModuleItem>> {
   let mut patch_export_to_module = vec![];
-
   if let Some(export) = bundle_reference.export.as_ref() {
     patch_export_to_module.extend(generate_export_as_module_export(
       resource_pot_id,
+      should_reexport_raw,
       None,
       export,
       bundle_variable,
       module_analyzer_manager,
       context,
       polyfill,
+      is_already_polyfilled,
     )?);
   }
 
@@ -260,12 +222,14 @@ pub fn generate_export_by_reference_export(
 
     patch_export_to_module.extend(generate_export_as_module_export(
       resource_pot_id,
+      should_reexport_raw,
       Some(&source),
       export,
       bundle_variable,
       module_analyzer_manager,
       context,
       polyfill,
+      is_already_polyfilled,
     )?);
   }
 
@@ -274,18 +238,24 @@ pub fn generate_export_by_reference_export(
 
 pub fn generate_export_as_module_export(
   resource_pot_name: &str,
+  should_reexport_raw: bool,
   source: Option<&ReferenceKind>,
   export: &ExternalReferenceExport,
   bundle_variable: &BundleVariable,
   module_analyzer_manager: &ModuleAnalyzerManager,
   context: &Arc<CompilationContext>,
   polyfill: &mut SimplePolyfill,
+  is_already_polyfilled: &mut bool,
 ) -> Result<Vec<ModuleItem>> {
   match (&export.module_system, context.config.output.format) {
     // hybrid dynamic es module cannot support, if hybrid, only export static export
-    (_, ModuleFormat::EsModule) => {
-      EsmGenerate::generate_export(source, export, bundle_variable, module_analyzer_manager)
-    }
+    (_, ModuleFormat::EsModule) => EsmGenerate::generate_export(
+      should_reexport_raw,
+      source,
+      export,
+      bundle_variable,
+      module_analyzer_manager,
+    ),
 
     (_, ModuleFormat::CommonJs) => CjsGenerate::generate_export(
       source,
@@ -293,6 +263,7 @@ pub fn generate_export_as_module_export(
       bundle_variable,
       module_analyzer_manager,
       polyfill,
+      is_already_polyfilled,
     ),
   }
 }

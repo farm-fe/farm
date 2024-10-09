@@ -30,7 +30,8 @@ use crate::resource_pot_to_bundle::{
     ModuleAnalyzerManager, ModuleGlobalUniqName,
   },
   modules_analyzer::module_analyzer::ModuleAnalyzer,
-  polyfill::{cjs::wrap_commonjs, Polyfill, SimplePolyfill},
+  polyfill::{Polyfill, SimplePolyfill},
+  targets::util::wrap_commonjs,
   uniq_name::BundleVariable,
 };
 
@@ -184,30 +185,6 @@ impl CjsPatch {
         context.config.mode.clone(),
         polyfill,
       )?;
-    }
-
-    let reference_kind = module_id.clone().into();
-
-    if let Some(import) = bundle_reference
-      .redeclare_commonjs_import
-      .get(&reference_kind)
-    {
-      if let Some((_, x)) = CjsModuleAnalyzer::redeclare_commonjs_export_item(
-        bundle_variable,
-        (&reference_kind, &import),
-        &module_analyzer_manager.module_global_uniq_name,
-        polyfill,
-      )? {
-        let item = x.to_module_item();
-
-        println!("item: {:#?}", item);
-
-        ast.push(item);
-
-        bundle_reference
-          .redeclare_commonjs_import
-          .remove(&reference_kind);
-      }
     }
 
     module_analyzer_manager.set_ast_body(module_id, ast);

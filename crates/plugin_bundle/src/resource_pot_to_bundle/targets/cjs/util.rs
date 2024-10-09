@@ -4,7 +4,10 @@ use farmfe_core::{
   config::{external::ExternalConfig, Config, ModuleFormat},
   module::{module_graph::ModuleGraph, ModuleId},
   swc_common::{Mark, SyntaxContext, DUMMY_SP},
-  swc_ecma_ast::{CallExpr, Callee, Expr, ExprOrSpread, Lit, MemberExpr, MemberProp},
+  swc_ecma_ast::{
+    CallExpr, Callee, Expr, ExprOrSpread, ExprStmt, KeyValueProp, Lit, MemberExpr, MemberProp,
+    ModuleItem, ObjectLit, Prop, PropName, PropOrSpread, Stmt,
+  },
 };
 use farmfe_toolkit::{
   script::is_commonjs_require,
@@ -166,7 +169,21 @@ impl<'a> VisitMut for CJSReplace<'a> {
                     )
                     .unwrap();
                 }
-              } else if let Some(ns) = self.module_global_uniq_name.namespace_name(id) {
+              } else if let Some(ns) = self.module_global_uniq_name.namespace_name(&id) {
+                if !is_same_bundle {
+                  self
+                    .bundle_reference
+                    .add_import(
+                      &ImportSpecifierInfo::Named {
+                        local: ns,
+                        imported: None,
+                      },
+                      id.clone().into(),
+                      &self.bundle_variable,
+                    )
+                    .unwrap();
+                }
+
                 replaced = ReplaceType::Ident(ns);
               }
 
@@ -201,4 +218,47 @@ impl<'a> VisitMut for CJSReplace<'a> {
       expr.visit_mut_children_with(self);
     }
   }
+}
+
+///
+/// ```js
+/// Object.defineProperty(exports, '__esModule', {
+///   value: true,
+/// });
+/// ```
+///
+pub fn create_esm_flag() -> ModuleItem {
+  ModuleItem::Stmt(Stmt::Expr(ExprStmt {
+    span: DUMMY_SP,
+    expr: Box::new(Expr::Call(CallExpr {
+      ctxt: SyntaxContext::empty(),
+      span: DUMMY_SP,
+      callee: Callee::Expr(Box::new(Expr::Member(MemberExpr {
+        span: DUMMY_SP,
+        obj: Box::new(Expr::Ident("Object".into())),
+        prop: MemberProp::Ident("defineProperty".into()),
+      }))),
+      args: vec![
+        ExprOrSpread {
+          spread: None,
+          expr: Box::new(Expr::Ident("exports".into())),
+        },
+        ExprOrSpread {
+          spread: None,
+          expr: Box::new(Expr::Lit("__esModule".into())),
+        },
+        ExprOrSpread {
+          spread: None,
+          expr: Box::new(Expr::Object(ObjectLit {
+            span: DUMMY_SP,
+            props: vec![PropOrSpread::Prop(Box::new(Prop::KeyValue(KeyValueProp {
+              key: PropName::Ident("value".into()),
+              value: Box::new(Expr::Lit(Lit::Bool(true.into()))),
+            })))],
+          })),
+        },
+      ],
+      type_args: None,
+    })),
+  }))
 }

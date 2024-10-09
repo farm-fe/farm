@@ -6,16 +6,14 @@ use farmfe_core::{
   module::{module_graph::ModuleGraph, ModuleId},
   swc_common::{Mark, SyntaxContext, DUMMY_SP},
   swc_ecma_ast::{
-    self, BindingIdent, CallExpr, ComputedPropName, EmptyStmt, Expr, ExprOrSpread, ExprStmt, Ident,
-    Lit, MemberExpr, MemberProp, Module as EcmaAstModule, ModuleItem, Pat, Stmt, VarDecl,
-    VarDeclarator,
+    self, BindingIdent, CallExpr, ComputedPropName, Expr, ExprOrSpread, ExprStmt, Ident, Lit,
+    MemberExpr, MemberProp, Module as EcmaAstModule, ModuleItem, Pat, Stmt, VarDecl, VarDeclarator,
   },
 };
 use farmfe_toolkit::{
   script::is_commonjs_require,
   swc_ecma_visit::{Visit, VisitWith},
 };
-use generate::MergedImportGenerate;
 
 use crate::resource_pot_to_bundle::{
   bundle::{
@@ -24,12 +22,9 @@ use crate::resource_pot_to_bundle::{
     },
     ModuleGlobalUniqName,
   },
-  polyfill::{
-    cjs::{wrap_require_default, wrap_require_wildcard},
-    SimplePolyfill,
-  },
+  polyfill::SimplePolyfill,
+  targets::util::{wrap_require_default, wrap_require_wildcard},
   uniq_name::BundleVariable,
-  Polyfill,
 };
 
 pub mod generate;

@@ -14,9 +14,10 @@ use farmfe_core::{
   module::ModuleType,
   parking_lot::Mutex,
   plugin::{
-    Plugin, PluginFinalizeResourcesHookParams, PluginGenerateResourcesHookResult,
-    PluginHookContext, PluginLoadHookParam, PluginLoadHookResult, PluginProcessModuleHookParam,
-    PluginResolveHookParam, PluginResolveHookResult,
+    Plugin, PluginAnalyzeDepsHookResultEntry, PluginFinalizeResourcesHookParams,
+    PluginGenerateResourcesHookResult, PluginHookContext, PluginLoadHookParam,
+    PluginLoadHookResult, PluginProcessModuleHookParam, PluginResolveHookParam,
+    PluginResolveHookResult, ResolveKind,
   },
   regex::Regex,
   relative_path::RelativePath,
@@ -24,8 +25,6 @@ use farmfe_core::{
     resource_pot::{ResourcePot, ResourcePotMetaData, ResourcePotType},
     ResourceType,
   },
-  swc_common::DUMMY_SP,
-  swc_ecma_ast::{ImportDecl, ImportPhase, ModuleDecl, ModuleItem},
 };
 use farmfe_toolkit::constant::RUNTIME_SUFFIX;
 use resource_pot_to_bundle::{
@@ -53,13 +52,16 @@ impl Plugin for FarmPluginBundle {
   }
 
   fn config(&self, config: &mut Config) -> farmfe_core::error::Result<Option<()>> {
-    config
-      .partial_bundling
-      .enforce_resources
-      .push(PartialBundlingEnforceResourceConfig {
-        name: "farm_runtime".to_string(),
-        test: vec![ConfigRegex::new(FARM_BUNDLE_POLYFILL_SLOT)],
-      });
+    if config.output.target_env.is_library() {
+      // push it last
+      config
+        .partial_bundling
+        .enforce_resources
+        .push(PartialBundlingEnforceResourceConfig {
+          name: "farm_runtime".to_string(),
+          test: vec![ConfigRegex::new(FARM_BUNDLE_POLYFILL_SLOT)],
+        });
+    }
 
     Ok(None)
   }
@@ -105,27 +107,46 @@ impl Plugin for FarmPluginBundle {
     param: &mut PluginProcessModuleHookParam,
     context: &Arc<CompilationContext>,
   ) -> farmfe_core::error::Result<Option<()>> {
+    // let module_graph = context.module_graph.read();
+
+    // if module_graph.entries.contains_key(param.module_id)
+    //   && param.module_type.is_script()
+    //   && !param.module_id.to_string().ends_with(RUNTIME_SUFFIX)
+    // {
+    //   let script = param.meta.as_script_mut();
+
+    //   script.ast.body.insert(
+    //     0,
+    //     ModuleItem::ModuleDecl(ModuleDecl::Import(ImportDecl {
+    //       span: DUMMY_SP,
+    //       specifiers: vec![],
+    //       src: Box::new(FARM_BUNDLE_POLYFILL_SLOT.into()),
+    //       type_only: false,
+    //       with: None,
+    //       phase: ImportPhase::Evaluation,
+    //     })),
+    //   );
+    // }
+
+    Ok(None)
+  }
+
+  fn analyze_deps(
+    &self,
+    param: &mut farmfe_core::plugin::PluginAnalyzeDepsHookParam,
+    context: &Arc<CompilationContext>,
+  ) -> farmfe_core::error::Result<Option<()>> {
     let module_graph = context.module_graph.read();
 
-    if module_graph.entries.contains_key(param.module_id)
-      && param.module_type.is_script()
-      && !param.module_id.to_string().ends_with(RUNTIME_SUFFIX)
+    if module_graph.entries.contains_key(&param.module.id)
+      && param.module.module_type.is_script()
+      && !param.module.id.to_string().ends_with(RUNTIME_SUFFIX)
     {
-      let script = param.meta.as_script_mut();
-
-      script.ast.body.insert(
-        0,
-        ModuleItem::ModuleDecl(ModuleDecl::Import(ImportDecl {
-          span: DUMMY_SP,
-          specifiers: vec![],
-          src: Box::new(FARM_BUNDLE_POLYFILL_SLOT.into()),
-          type_only: false,
-          with: None,
-          phase: ImportPhase::Evaluation,
-        })),
-      );
+      param.deps.push(PluginAnalyzeDepsHookResultEntry {
+        source: FARM_BUNDLE_POLYFILL_SLOT.to_string(),
+        kind: ResolveKind::Import,
+      });
     }
-
     Ok(None)
   }
 
@@ -231,7 +252,9 @@ impl Plugin for FarmPluginBundle {
     if !context.config.output.target_env.is_library() {
       return Ok(None);
     }
+
     let mut map = HashMap::new();
+
     for (name, resource) in param.resources_map.iter() {
       if let Some(ref info) = resource.info {
         map.insert(info.id.clone(), name.clone());
@@ -282,7 +305,7 @@ impl Plugin for FarmPluginBundle {
           .expect("cannot find bundle reference, please ensure your resource cornet");
 
         let r1 = format!("/{}", resource_name);
-
+        println!("resource pot id {} to {} ", resource_pot_id, r1);
         let relative_resource_path = RelativePath::new(&r1);
         content = content.replace(
           &item,
@@ -299,7 +322,11 @@ impl Plugin for FarmPluginBundle {
 
       resource.bytes = content.into_bytes();
 
-      println!("resource_name time: {}", before.elapsed().as_secs_f32());
+      println!(
+        "resource_name {} time: {}",
+        name,
+        before.elapsed().as_secs_f32()
+      );
     }
 
     Ok(None)

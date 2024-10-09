@@ -6,8 +6,8 @@ use farmfe_core::{
   swc_common::{SyntaxContext, DUMMY_SP},
   swc_ecma_ast::{
     AssignExpr, AssignOp, AssignTarget, BindingIdent, CallExpr, Callee, Decl, Expr, ExprOrSpread,
-    ExprStmt, KeyValueProp, Lit, MemberExpr, MemberProp, ModuleItem, ObjectLit, Pat, Prop,
-    PropName, PropOrSpread, SimpleAssignTarget, Stmt, VarDecl, VarDeclKind, VarDeclarator,
+    ExprStmt, Lit, MemberExpr, MemberProp, ModuleItem, Pat, SimpleAssignTarget, Stmt, VarDecl,
+    VarDeclKind, VarDeclarator,
   },
 };
 
@@ -17,12 +17,12 @@ use crate::resource_pot_to_bundle::{
     ModuleAnalyzerManager,
   },
   common::{with_bundle_reference_slot_name, OptionToResult},
-  polyfill::{
-    cjs::{wrap_export_star, wrap_require_default, wrap_require_wildcard},
-    SimplePolyfill,
-  },
+  polyfill::SimplePolyfill,
+  targets::util::{wrap_export_star, wrap_require_default, wrap_require_wildcard},
   uniq_name::BundleVariable,
 };
+
+use super::util::create_esm_flag;
 
 // export * from "./moduleA";
 // esm => export * from "./moduleA";
@@ -39,6 +39,7 @@ impl CjsGenerate {
     bundle_variable: &BundleVariable,
     module_analyzer_manager: &ModuleAnalyzerManager,
     polyfill: &mut SimplePolyfill,
+    is_already_polyfilled: &mut bool,
   ) -> Result<Vec<ModuleItem>> {
     let mut stmts = vec![];
     let mut ordered_keys = export.named.keys().collect::<Vec<_>>();
@@ -144,47 +145,14 @@ impl CjsGenerate {
       ));
     };
 
-    if matches!(
-      export.module_system,
-      ModuleSystem::EsModule | ModuleSystem::Hybrid
-    ) {
-      // Object.defineProperty(exports, '__esModule', {
-      //   value: true,
-      // });
-
-      stmts.push(ModuleItem::Stmt(Stmt::Expr(ExprStmt {
-        span: DUMMY_SP,
-        expr: Box::new(Expr::Call(CallExpr {
-          span: DUMMY_SP,
-          callee: Callee::Expr(Box::new(Expr::Member(MemberExpr {
-            span: DUMMY_SP,
-            obj: Box::new(Expr::Ident("Object".into())),
-            prop: MemberProp::Ident("defineProperty".into()),
-          }))),
-          args: vec![
-            ExprOrSpread {
-              spread: None,
-              expr: Box::new(Expr::Ident("exports".into())),
-            },
-            ExprOrSpread {
-              spread: None,
-              expr: Box::new(Expr::Lit("__esModule".into())),
-            },
-            ExprOrSpread {
-              spread: None,
-              expr: Box::new(Expr::Object(ObjectLit {
-                span: DUMMY_SP,
-                props: vec![PropOrSpread::Prop(Box::new(Prop::KeyValue(KeyValueProp {
-                  key: PropName::Ident("value".into()),
-                  value: Box::new(Expr::Lit(Lit::Bool(true.into()))),
-                })))],
-              })),
-            },
-          ],
-          type_args: None,
-          ctxt: SyntaxContext::empty(),
-        })),
-      })));
+    if !*is_already_polyfilled
+      && matches!(
+        export.module_system,
+        ModuleSystem::EsModule | ModuleSystem::Hybrid
+      )
+    {
+      stmts.push(create_esm_flag());
+      *is_already_polyfilled = true;
     }
 
     Ok(stmts)
@@ -385,13 +353,15 @@ impl CjsGenerate {
         }],
       })))));
 
-      stmts.push(ModuleItem::Stmt(Stmt::Decl(Decl::Var(Box::new(VarDecl {
-        ctxt: SyntaxContext::empty(),
-        span: DUMMY_SP,
-        kind: VarDeclKind::Var,
-        declare: false,
-        decls: merged_import_generate.specifies,
-      })))));
+      if !merged_import_generate.specifies.is_empty() {
+        stmts.push(ModuleItem::Stmt(Stmt::Decl(Decl::Var(Box::new(VarDecl {
+          ctxt: SyntaxContext::empty(),
+          span: DUMMY_SP,
+          kind: VarDeclKind::Var,
+          declare: false,
+          decls: merged_import_generate.specifies,
+        })))));
+      }
     }
 
     Ok(stmts)
