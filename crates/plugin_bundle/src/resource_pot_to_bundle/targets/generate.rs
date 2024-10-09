@@ -10,6 +10,7 @@ use farmfe_core::{
     self, BindingIdent, Bool, Decl, Expr, Ident, IdentName, KeyValueProp, ModuleItem, ObjectLit, Pat, Prop, PropName, PropOrSpread, Stmt, Str, VarDecl, VarDeclKind, VarDeclarator
   },
 };
+use farmfe_toolkit::itertools::Itertools;
 
 use crate::resource_pot_to_bundle::{
   bundle::{
@@ -210,12 +211,11 @@ pub fn generate_export_by_reference_export(
     )?);
   }
 
-  let mut ordered_external_export = bundle_reference
+  let ordered_external_export = bundle_reference
     .external_export_map
     .keys()
+    .sorted_by_key(|a| a.to_string())
     .collect::<Vec<_>>();
-
-  ordered_external_export.sort_by_key(|a: &&ReferenceKind| a.to_url());
 
   for source in ordered_external_export {
     let export = &bundle_reference.external_export_map[source];

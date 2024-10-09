@@ -10,6 +10,7 @@ use farmfe_core::{
     VarDeclKind, VarDeclarator,
   },
 };
+use farmfe_toolkit::itertools::Itertools;
 
 use crate::resource_pot_to_bundle::{
   bundle::{
@@ -42,9 +43,6 @@ impl CjsGenerate {
     is_already_polyfilled: &mut bool,
   ) -> Result<Vec<ModuleItem>> {
     let mut stmts = vec![];
-    let mut ordered_keys = export.named.keys().collect::<Vec<_>>();
-
-    ordered_keys.sort_by_key(|a| bundle_variable.name(**a));
 
     let index_is_entry = |i: usize| {
       bundle_variable
@@ -72,7 +70,11 @@ impl CjsGenerate {
       }))
     };
 
-    for exported in ordered_keys {
+    for exported in export
+      .named
+      .keys()
+      .sorted_by_key(|a| bundle_variable.render_name(**a))
+    {
       let local = &export.named[exported];
       if bundle_variable.var_by_index(*local).removed {
         continue;

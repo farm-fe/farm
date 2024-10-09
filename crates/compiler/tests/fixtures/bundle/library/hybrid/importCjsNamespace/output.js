@@ -52,18 +52,12 @@ function _interop_require_default(obj) {
         default: obj
     };
 }
-module.exports.__commonJs = __commonJs;
-module.exports._interop_require_default = _interop_require_default;
-module.exports._interop_require_wildcard = _interop_require_wildcard;
-Object.defineProperty(exports, "__esModule", {
-    value: true
-});
+export { __commonJs, _interop_require_default, _interop_require_wildcard };
 
 
 //index.js:
  // module_id: lodash.ts
-var farm_runtime_js_ns = require("./farm_runtime.js");
-var __commonJs = farm_runtime_js_ns.__commonJs, _interop_require_default = farm_runtime_js_ns._interop_require_default, _interop_require_wildcard = farm_runtime_js_ns._interop_require_wildcard;
+import { __commonJs, _interop_require_default, _interop_require_wildcard } from "./farm_runtime.js";
 var lodash_cjs = __commonJs({
     "lodash.ts": (module, exports)=>{
         module.exports.name = 'lodash';

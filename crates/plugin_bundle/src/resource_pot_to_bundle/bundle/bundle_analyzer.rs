@@ -302,7 +302,7 @@ impl<'a> BundleAnalyzer<'a> {
                       {
                         if is_common_js {
                           local = bundle_reference1.add_declare_commonjs_import(
-                            specify,
+                            &ImportSpecifierInfo::Namespace(local),
                             target_module_id.into(),
                             &self.bundle_variable.borrow(),
                           )?;
@@ -1320,11 +1320,6 @@ impl<'a> BundleAnalyzer<'a> {
         )?);
       }
     }
-
-    println!(
-      "bundle resource pot id: {} import_map: {:#?}",
-      self.resource_pot.id, total_bundle_reference.import_map
-    );
 
     // 2. maybe import external、other bundle, should generate import
     patch_import_to_module.extend(generate_bundle_import_by_bundle_reference(

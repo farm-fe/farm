@@ -280,8 +280,6 @@ impl<'a> SharedBundle<'a> {
 
     self.patch_polyfill()?;
 
-    println!("bundle_reference: {:#?}", self.bundle_reference);
-
     Ok(())
   }
 
