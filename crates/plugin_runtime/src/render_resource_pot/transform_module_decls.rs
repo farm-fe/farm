@@ -70,6 +70,8 @@ pub fn transform_module_decls(
   // all import items should be placed at the top of the module
   let mut import_items = vec![];
   let mut export_items = vec![];
+  // export all items should be placed at the bottom of the module
+  let mut export_all_items = vec![];
   let mut import_bindings_map = HashMap::new();
   let mut is_es_module = false;
 
@@ -106,7 +108,9 @@ pub fn transform_module_decls(
             items.extend(transform_export_default_expr(export_expr, unresolved_mark));
           }
           ModuleDecl::ExportAll(export_all) => {
-            items.extend(transform_export_all(export_all, unresolved_mark));
+            let (item, all_item) = transform_export_all(export_all, unresolved_mark);
+            items.push(item);
+            export_all_items.push(all_item);
           }
           ModuleDecl::TsImportEquals(_)
           | ModuleDecl::TsExportAssignment(_)
@@ -119,6 +123,7 @@ pub fn transform_module_decls(
 
   export_items.extend(import_items);
   export_items.extend(items);
+  export_items.extend(export_all_items);
   let mut items = export_items;
 
   let mut handler = ImportBindingsHandler::new(import_bindings_map);
@@ -495,10 +500,8 @@ fn transform_export_default_expr(
   items
 }
 
-fn transform_export_all(export_all: ExportAll, unresolved_mark: Mark) -> Vec<ModuleItem> {
-  let mut items = vec![];
+fn transform_export_all(export_all: ExportAll, unresolved_mark: Mark) -> (ModuleItem, ModuleItem) {
   let (require_item, val_name_ident) = create_require_stmt(*export_all.src, unresolved_mark);
-  items.push(require_item);
 
   // module._e(exports, val_name_ident)
   let callee = create_module_helper_callee("_e", unresolved_mark);
@@ -517,12 +520,13 @@ fn transform_export_all(export_all: ExportAll, unresolved_mark: Mark) -> Vec<Mod
     ],
     type_args: None,
   });
-  items.push(ModuleItem::Stmt(Stmt::Expr(ExprStmt {
-    span: DUMMY_SP,
-    expr: Box::new(call_expr),
-  })));
-
-  items
+  (
+    require_item,
+    ModuleItem::Stmt(Stmt::Expr(ExprStmt {
+      span: DUMMY_SP,
+      expr: Box::new(call_expr),
+    })),
+  )
 }
 
 fn get_name_from_src(src: &str) -> String {
@@ -1018,7 +1022,6 @@ var b = _f_b;
 var _f_c = module.i(require("./c"));
 console.log(_f_a.default);
 var _f_c = require('./c');
-module._e(exports, _f_c);
 var _f_d = require('./d');
 module._(exports, "a1", _f_d);
 module._(exports, "d1", _f_d);
@@ -1034,6 +1037,7 @@ class j {
 }
 function k() {}
 var _f_e = require('./e');
+module._e(exports, _f_c);
 module._e(exports, _f_e);
 "#
       )
