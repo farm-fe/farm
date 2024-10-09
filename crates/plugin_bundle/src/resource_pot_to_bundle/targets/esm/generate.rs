@@ -4,10 +4,9 @@ use farmfe_core::{
   error::Result,
   swc_common::DUMMY_SP,
   swc_ecma_ast::{
-    BindingIdent, CallExpr, Callee, Decl, ExportAll, ExportDefaultExpr, ExportNamedSpecifier,
-    ExportNamespaceSpecifier, ExportSpecifier, Expr, ImportDecl, ImportDefaultSpecifier,
-    ImportNamedSpecifier, ImportSpecifier, ImportStarAsSpecifier, ModuleDecl, ModuleExportName,
-    ModuleItem, NamedExport, Pat, Stmt, Str, VarDecl, VarDeclKind, VarDeclarator,
+    ExportAll, ExportNamedSpecifier, ExportNamespaceSpecifier, ExportSpecifier, ImportDecl,
+    ImportDefaultSpecifier, ImportNamedSpecifier, ImportSpecifier, ImportStarAsSpecifier,
+    ModuleDecl, ModuleExportName, ModuleItem, NamedExport, Str,
   },
 };
 use farmfe_toolkit::itertools::Itertools;
@@ -25,6 +24,7 @@ pub struct EsmGenerate {}
 
 impl EsmGenerate {
   pub fn generate_export(
+    should_reexport_raw: bool,
     source: Option<&ReferenceKind>,
     export: &ExternalReferenceExport,
     bundle_variable: &BundleVariable,
@@ -32,8 +32,6 @@ impl EsmGenerate {
   ) -> Result<Vec<ModuleItem>> {
     let mut stmts = vec![];
     let mut specifiers = vec![];
-
-    println!("source: {:#?}", source);
 
     let source_url = source.map(|target_id| {
       if let ReferenceKind::Module(target_id) = target_id {
@@ -45,15 +43,7 @@ impl EsmGenerate {
       target_id.to_module_id().to_string()
     });
 
-    println!("source_url: {:#?}", source_url);
-
     let mut uniq_sets = HashSet::new();
-
-    let index_is_entry = |i: usize| {
-      bundle_variable
-        .module_id_by_var_index(i)
-        .is_some_and(|m| !module_analyzer_manager.is_entry(m))
-    };
 
     for exported in export
       .named
@@ -65,8 +55,6 @@ impl EsmGenerate {
         continue;
       }
 
-      let should_reexport_uniq = index_is_entry(*local);
-
       let named_render_name = bundle_variable.render_name(*local);
       let exported_name = bundle_variable.name(*exported);
 
@@ -75,7 +63,7 @@ impl EsmGenerate {
       }
       uniq_sets.insert(named_render_name.clone());
 
-      let exported_name = if should_reexport_uniq || named_render_name == exported_name {
+      let exported_name = if !should_reexport_raw || named_render_name == exported_name {
         None
       } else {
         Some(exported_name.as_str().into())
@@ -113,21 +101,13 @@ impl EsmGenerate {
 
     if let Some(default) = export.default.as_ref() {
       let name = bundle_variable.render_name(*default).as_str().into();
-      if index_is_entry(*default) {
-        specifiers.push(ExportSpecifier::Named(ExportNamedSpecifier {
-          span: DUMMY_SP,
-          orig: ModuleExportName::Ident(name),
-          exported: None,
-          is_type_only: false,
-        }));
-      } else {
-        stmts.push(ModuleItem::ModuleDecl(ModuleDecl::ExportDefaultExpr(
-          ExportDefaultExpr {
-            span: DUMMY_SP,
-            expr: Box::new(Expr::Ident(name)),
-          },
-        )));
-      }
+
+      specifiers.push(ExportSpecifier::Named(ExportNamedSpecifier {
+        span: DUMMY_SP,
+        orig: ModuleExportName::Ident(name),
+        exported: should_reexport_raw.then(|| ModuleExportName::Ident("default".into())),
+        is_type_only: false,
+      }));
     }
 
     if !specifiers.is_empty() {

@@ -15,7 +15,7 @@ use crate::resource_pot_to_bundle::{
 
 use super::ModuleAnalyzerManager;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ExternalReferenceImport {
   pub named: HashMap<String, usize>,
   pub namespace: Option<usize>,
@@ -24,7 +24,7 @@ pub struct ExternalReferenceImport {
 }
 
 impl ExternalReferenceImport {
-  fn new() -> Self {
+  pub fn new() -> Self {
     Self {
       named: HashMap::new(),
       namespace: None,
@@ -68,9 +68,23 @@ impl ExternalReferenceImport {
   pub fn is_empty(&self) -> bool {
     self.named.is_empty() && self.namespace.is_none() && self.default.is_none()
   }
+
+  pub fn extend(&mut self, other: &Self) {
+    self
+      .named
+      .extend(other.named.iter().map(|(k, v)| (k.clone(), *v)));
+
+    if self.namespace.is_none() {
+      self.namespace = other.namespace;
+    }
+
+    if self.default.is_none() {
+      self.default = other.default;
+    }
+  }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ExternalReferenceExport {
   pub named: HashMap<usize, usize>,
   pub default: Option<usize>,
@@ -115,6 +129,20 @@ impl ExternalReferenceExport {
       ExportSpecifierInfo::Namespace(name) => {
         self.namespace = Some(name);
       }
+    }
+  }
+
+  pub fn extend(&mut self, other: &Self) {
+    self.named.extend(other.named.clone());
+
+    if self.default.is_none() {
+      self.default = other.default;
+    }
+
+    self.all.0 = self.all.0 || other.all.0;
+
+    if self.namespace.is_none() {
+      self.namespace = other.namespace;
     }
   }
 }
@@ -194,7 +222,6 @@ impl From<&String> for ReferenceKind {
 /// }
 ///
 
-
 pub type CommonJsImportMap = HashMap<ReferenceKind, ExternalReferenceImport>;
 
 #[derive(Debug, Default)]
@@ -209,6 +236,13 @@ pub struct BundleReference {
   /// export { default } ns from "./cjs_module";
   /// // =>
   /// const cjs_module_cjs = cjs_module()["default"];
+  ///
+  /// {
+  ///   "cjs_module": {
+  ///     default: None,
+  ///     named: {}
+  ///   }
+  /// }
   /// ```
   ///
   pub redeclare_commonjs_import: CommonJsImportMap,
@@ -241,6 +275,10 @@ impl BundleReference {
       .redeclare_commonjs_import
       .entry(import_kind)
       .or_insert_with(ExternalReferenceImport::new);
+  }
+
+  pub fn add_execute_module(&mut self, import_kind: ReferenceKind) {
+      self.import_map.entry(import_kind).or_insert_with(ExternalReferenceImport::new);
   }
 
   pub fn add_local_export(&mut self, specify: &ExportSpecifierInfo, module_system: ModuleSystem) {
@@ -584,6 +622,7 @@ impl BundleReference {
 #[derive(Debug, Default)]
 pub struct BundleReferenceManager {
   bundle_reference: HashMap<ResourcePotId, Rc<RefCell<BundleReference>>>,
+  bundle_reference1: HashMap<ModuleId, Rc<RefCell<BundleReference>>>,
 }
 
 impl BundleReferenceManager {
@@ -594,6 +633,17 @@ impl BundleReferenceManager {
       self
         .bundle_reference
         .entry(resource_pot_id.clone())
+        .or_insert_with(|| Rc::new(RefCell::new(BundleReference::new())))
+    })
+  }
+
+  pub fn reference1_mut(&mut self, module_id: &ModuleId) -> Rc<RefCell<BundleReference>> {
+    Rc::clone(if self.bundle_reference1.contains_key(module_id) {
+      self.bundle_reference1.get(module_id).unwrap()
+    } else {
+      self
+        .bundle_reference1
+        .entry(module_id.clone())
         .or_insert_with(|| Rc::new(RefCell::new(BundleReference::new())))
     })
   }

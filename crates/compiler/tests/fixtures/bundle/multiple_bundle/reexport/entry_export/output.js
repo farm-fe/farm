@@ -11,4 +11,5 @@ export { bundle2_default, named };
 
 //index.js:
  // module_id: index.ts
-export { bundle2_default as default, named } from "./bundle1.js";
+import { bundle2_default, named } from "./bundle1.js";
+export { bundle2_default as default, named };

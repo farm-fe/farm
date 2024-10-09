@@ -115,7 +115,7 @@ fn multiple_bundle_test(file: String, crate_path: String) {
 // farmfe_testing::testing! {"tests/fixtures/bundle/library/reexport/reexport_hybrid_cjs/namespace/**/index.ts", single_bundle_test}
 
 farmfe_testing::testing! {
-  "tests/fixtures/bundle/multiple_bundle/reexport/entry_export/**/index.ts",
+  "tests/fixtures/bundle/**/index.ts",
   multiple_bundle_test
 }
 // farmfe_testing::testing! {"tests/fixtures/runtime/bundle/cjs/export/entryExportStar/**/index.ts", test}

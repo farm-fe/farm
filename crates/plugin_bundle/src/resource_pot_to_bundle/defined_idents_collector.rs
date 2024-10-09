@@ -6,8 +6,8 @@ use std::{
 use farmfe_core::{
   swc_common::DUMMY_SP,
   swc_ecma_ast::{
-    AssignExpr, AssignOp, AssignTarget, BindingIdent, Expr, Id, KeyValuePatProp, ObjectPatProp,
-    Pat, Prop, PropName, SimpleAssignTarget,
+    AssignExpr, AssignOp, AssignTarget, BindingIdent, Expr, Id, KeyValuePatProp, KeyValueProp,
+    ObjectPatProp, Pat, Prop, PropName, PropOrSpread, SimpleAssignTarget,
   },
 };
 use farmfe_toolkit::{
@@ -103,27 +103,6 @@ impl<'a> RenameIdent<'a> {
     let r = RefCell::new(ident.to_id());
     let v = self.map.get(&(r.borrow().into())).map(|var| {
       return self.bundle_variable.render_name(*var);
-      let (var, root) = self.bundle_variable.var(*var);
-
-      let Some(root) = root else {
-        return var.render_name();
-      };
-
-      let var_module_id = self.bundle_variable.module_id_by_var(&var);
-      let root_module_id = self.bundle_variable.module_id_by_var(&root);
-
-      let (Some(var_module_id), Some(root_module_id)) = (var_module_id, root_module_id) else {
-        return root.render_name();
-      };
-
-      if self
-        .module_analyzer_manager
-        .is_same_bundle(var_module_id, root_module_id)
-      {
-        return root.render_name();
-      }
-
-      var.render_name()
     });
     v
   }
@@ -141,7 +120,7 @@ impl<'a> VisitMut for RenameIdent<'a> {
     match n {
       Prop::Shorthand(m) => {
         if let Some(new_name) = self.rename(m) {
-          *n = farmfe_core::swc_ecma_ast::Prop::KeyValue(farmfe_core::swc_ecma_ast::KeyValueProp {
+          *n = Prop::KeyValue(farmfe_core::swc_ecma_ast::KeyValueProp {
             key: farmfe_core::swc_ecma_ast::PropName::Ident(Ident {
               span: DUMMY_SP,
               sym: m.sym.as_str().into(),
@@ -151,12 +130,44 @@ impl<'a> VisitMut for RenameIdent<'a> {
               new_name.as_str().into(),
             )),
           });
-
+        } else {
           n.visit_mut_children_with(self);
         }
       }
 
       _ => n.visit_mut_children_with(self),
+    }
+  }
+
+  fn visit_mut_prop_or_spread(&mut self, n: &mut PropOrSpread) {
+    match n {
+      PropOrSpread::Prop(box p) => match p {
+        Prop::Shorthand(ident) => {
+          if let Some(new_name) = self.rename(ident) {
+            *p = Prop::KeyValue(KeyValueProp {
+              key: farmfe_core::swc_ecma_ast::PropName::Ident(Ident {
+                span: DUMMY_SP,
+                sym: ident.sym.as_str().into(),
+                optional: false,
+              }),
+              value: Box::new(farmfe_core::swc_ecma_ast::Expr::Ident(
+                new_name.as_str().into(),
+              )),
+            });
+          } else {
+            p.visit_mut_with(self);
+          }
+        }
+        Prop::KeyValue(key_value_prop) => {
+          key_value_prop.value.visit_mut_with(self);
+        }
+        _ => {
+          p.visit_mut_with(self);
+        }
+      },
+      PropOrSpread::Spread(s) => {
+        s.visit_mut_with(self);
+      }
     }
   }
 
@@ -192,6 +203,9 @@ impl<'a> VisitMut for RenameIdent<'a> {
           } else {
             n.visit_mut_with(self);
           }
+        }
+        ObjectPatProp::KeyValue(n) => {
+          n.value.visit_mut_with(self);
         }
         _ => prop.visit_mut_children_with(self),
       };
