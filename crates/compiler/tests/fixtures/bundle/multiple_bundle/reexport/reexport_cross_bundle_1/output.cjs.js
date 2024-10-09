@@ -43,7 +43,7 @@ module.exports.default_default$1 = default_default$1;
 module.exports.foo_named = foo_named;
 module.exports.foo_ns = foo_ns;
 module.exports.namespace_ns = namespace_ns;
-module.exports.default = index_default;
 Object.defineProperty(exports, "__esModule", {
     value: true
 });
+module.exports.default = index_default;

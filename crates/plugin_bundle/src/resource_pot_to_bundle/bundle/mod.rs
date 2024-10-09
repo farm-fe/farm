@@ -811,7 +811,7 @@ impl<'a> ModuleAnalyzerManager<'a> {
     ast: &mut Module,
   ) {
     let module_analyzer = self.module_map.get(module_id).unwrap();
-    let rename_map = module_analyzer.build_rename_map(bundle_variable, self);
+    let rename_map = module_analyzer.build_rename_map(bundle_variable);
     ast.visit_mut_with(&mut RenameIdent::new(rename_map, &bundle_variable, self));
   }
 

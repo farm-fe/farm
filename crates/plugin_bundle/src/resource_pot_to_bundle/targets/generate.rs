@@ -273,7 +273,7 @@ pub fn generate_export_by_reference_export(
 }
 
 pub fn generate_export_as_module_export(
-  _resource_pot_name: &str,
+  resource_pot_name: &str,
   source: Option<&ReferenceKind>,
   export: &ExternalReferenceExport,
   bundle_variable: &BundleVariable,

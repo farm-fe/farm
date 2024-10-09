@@ -103,7 +103,8 @@ impl<'a> SharedBundle<'a> {
 
     let bundle_variables = Rc::new(RefCell::new(BundleVariable::new()));
 
-    let (toposort_modules, _) = module_graph.toposort();
+    let (toposort_modules, circles) = module_graph.toposort();
+    println!("circles: {:#?}", circles);
     let mut order_resource_pot = vec![];
     let order_map: Arc<HashMap<ModuleId, usize>> = Arc::new(
       toposort_modules
@@ -221,6 +222,7 @@ impl<'a> SharedBundle<'a> {
     Ok(())
   }
 
+  // 2-2 process common module data
   fn link_resource_polyfill_to_variables(&mut self) {
     let bundle_variable = &mut self.bundle_variables.borrow_mut();
 
@@ -254,7 +256,7 @@ impl<'a> SharedBundle<'a> {
     }
   }
 
-  // 2-2 process common module data
+  // 2-3
   fn link_modules_meta(&mut self) -> Result<()> {
     farm_profile_function!("");
 
@@ -264,6 +266,21 @@ impl<'a> SharedBundle<'a> {
       self.context,
       &self.order_resource_pot,
     );
+
+    Ok(())
+  }
+
+  // 2-4
+  fn render_bundle(&mut self) -> Result<()> {
+    farm_profile_function!("");
+
+    self.each_render()?;
+
+    self.each_patch_ast()?;
+
+    self.patch_polyfill()?;
+
+    println!("bundle_reference: {:#?}", self.bundle_reference);
 
     Ok(())
   }
@@ -286,6 +303,7 @@ impl<'a> SharedBundle<'a> {
     }
 
     for (module_id, _) in ordered_modules {
+      println!("module_id: {}", module_id.to_string());
       farm_profile_scope!(format!("render module: {}", module_id));
 
       let Some(module_analyzer) = self.module_analyzer_manager.module_analyzer(module_id) else {
@@ -355,19 +373,6 @@ impl<'a> SharedBundle<'a> {
     if let Some(bundle_analyzer) = polyfill_bundle {
       bundle_analyzer.patch_polyfill(&mut self.module_analyzer_manager, polyfill)?;
     };
-
-    Ok(())
-  }
-
-  // 2-3 start process bundle
-  fn render_bundle(&mut self) -> Result<()> {
-    farm_profile_function!("");
-
-    self.each_render()?;
-
-    self.each_patch_ast()?;
-
-    self.patch_polyfill()?;
 
     Ok(())
   }

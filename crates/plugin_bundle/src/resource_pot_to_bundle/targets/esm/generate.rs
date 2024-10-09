@@ -10,6 +10,7 @@ use farmfe_core::{
     ModuleItem, NamedExport, Pat, Stmt, Str, VarDecl, VarDeclKind, VarDeclarator,
   },
 };
+use farmfe_toolkit::itertools::Itertools;
 
 use crate::resource_pot_to_bundle::{
   bundle::{
@@ -28,13 +29,24 @@ impl EsmGenerate {
     export: &ExternalReferenceExport,
     bundle_variable: &BundleVariable,
     module_analyzer_manager: &ModuleAnalyzerManager,
-    // should_reexport_uniq: bool,
   ) -> Result<Vec<ModuleItem>> {
     let mut stmts = vec![];
     let mut specifiers = vec![];
-    let mut ordered_keys = export.named.keys().collect::<Vec<_>>();
 
-    ordered_keys.sort_by_key(|a| bundle_variable.name(**a));
+    println!("source: {:#?}", source);
+
+    let source_url = source.map(|target_id| {
+      if let ReferenceKind::Module(target_id) = target_id {
+        if let Some(target_module_analyzer) = module_analyzer_manager.module_analyzer(target_id) {
+          return with_bundle_reference_slot_name(&target_module_analyzer.resource_pot_id);
+        }
+      }
+
+      target_id.to_module_id().to_string()
+    });
+
+    println!("source_url: {:#?}", source_url);
+
     let mut uniq_sets = HashSet::new();
 
     let index_is_entry = |i: usize| {
@@ -43,7 +55,11 @@ impl EsmGenerate {
         .is_some_and(|m| !module_analyzer_manager.is_entry(m))
     };
 
-    for exported in ordered_keys {
+    for exported in export
+      .named
+      .keys()
+      .sorted_by_key(|a| bundle_variable.render_name(**a))
+    {
       let local = &export.named[exported];
       if bundle_variable.var_by_index(*local).removed {
         continue;
@@ -88,7 +104,7 @@ impl EsmGenerate {
       if export.all.0 && !module_analyzer_manager.is_commonjs(source) {
         stmts.push(ModuleItem::ModuleDecl(ModuleDecl::ExportAll(ExportAll {
           span: DUMMY_SP,
-          src: Box::new(source.to_string().as_str().into()),
+          src: Box::new(source_url.as_ref().unwrap().as_str().into()),
           type_only: false,
           with: None,
         })));
@@ -119,7 +135,7 @@ impl EsmGenerate {
         NamedExport {
           span: DUMMY_SP,
           specifiers,
-          src: source.map(|source| Box::new(source.to_string().as_str().into())),
+          src: source_url.map(|source| Box::new(source.as_str().into())),
           type_only: false,
           with: None,
         },
@@ -136,14 +152,12 @@ impl EsmGenerate {
     resource_pot_name: &str,
   ) -> Result<Vec<ModuleItem>> {
     let mut stmts = vec![];
-    let mut ordered_import_keys = import_map.keys().collect::<Vec<_>>();
-    ordered_import_keys.sort();
     let mut generate_import_specifies: HashMap<String, ImportItem> = HashMap::new();
 
-    for source in ordered_import_keys {
+    for source in import_map.keys().sorted() {
       let mut is_import_uniq_name = false;
 
-      let (module_id, url) = match source {
+      let (_, url) = match source {
         ReferenceKind::Bundle(_) => continue,
         ReferenceKind::Module(m) => {
           if module_analyzer_manager.is_external(m) {
@@ -189,69 +203,68 @@ impl EsmGenerate {
 
         let used_name = imported.unwrap_or(&local_named).to_string();
 
-        if import_item.used_named.contains(&used_name) {
+        if import_item.contains_key(&used_name) {
           continue;
         }
 
-        import_item
-          .used_named
-          .insert(imported.unwrap_or(&local_named).to_string());
-
-        import_item
-          .import_specifies
-          .push(ImportSpecifier::Named(ImportNamedSpecifier {
+        import_item.insert(
+          used_name,
+          ImportSpecifier::Named(ImportNamedSpecifier {
             span: DUMMY_SP,
             local: local_named.as_str().into(),
             imported: imported.map(|s| ModuleExportName::Ident(s.into())),
             is_type_only: false,
-          }));
+          }),
+        );
       }
 
       if let Some(namespace) = import.namespace.as_ref() {
-        import_item
-          .import_specifies
-          .push(ImportSpecifier::Namespace(ImportStarAsSpecifier {
+        let namespace_name = bundle_variable.render_name(*namespace).as_str().into();
+        import_item.insert(
+          namespace_name,
+          ImportSpecifier::Namespace(ImportStarAsSpecifier {
             span: DUMMY_SP,
             local: bundle_variable.render_name(*namespace).as_str().into(),
-          }));
+          }),
+        );
       }
 
       if let Some(default) = import.default.as_ref() {
         let name = bundle_variable.render_name(*default);
-        if import_item.used_named.contains(&name) {
+        if import_item.contains_key(&name) {
           continue;
         }
 
-        import_item.used_named.insert(name.to_string());
-
-        if is_import_uniq_name {
-          import_item
-            .import_specifies
-            .push(ImportSpecifier::Named(ImportNamedSpecifier {
+        import_item.insert(
+          name.clone(),
+          if is_import_uniq_name {
+            ImportSpecifier::Named(ImportNamedSpecifier {
               span: DUMMY_SP,
               local: name.as_str().into(),
               imported: None,
               is_type_only: false,
-            }));
-        } else {
-          import_item
-            .import_specifies
-            .push(ImportSpecifier::Default(ImportDefaultSpecifier {
+            })
+          } else {
+            ImportSpecifier::Default(ImportDefaultSpecifier {
               span: DUMMY_SP,
               local: name.as_str().into(),
-            }));
-        }
+            })
+          },
+        );
       }
     }
 
-    let mut generate_import_specifies = generate_import_specifies.into_iter().collect::<Vec<_>>();
-
-    generate_import_specifies.sort_by(|a, b| a.0.cmp(&b.0));
-
-    for (url, import_item) in generate_import_specifies {
+    for (url, import_item) in generate_import_specifies
+      .into_iter()
+      .sorted_by(|a, b| a.0.cmp(&b.0))
+    {
       stmts.push(ModuleItem::ModuleDecl(ModuleDecl::Import(ImportDecl {
         span: DUMMY_SP,
-        specifiers: import_item.import_specifies,
+        specifiers: import_item
+          .into_iter()
+          .sorted_by(|a, b| a.0.cmp(&b.0))
+          .map(|item| item.1)
+          .collect::<Vec<_>>(),
         src: Box::new(Str {
           span: DUMMY_SP,
           value: url.into(),
@@ -268,25 +281,14 @@ impl EsmGenerate {
 }
 
 fn init_import_specify<'a>(
-  generate_import_specifies: &'a mut HashMap<String, ImportItem>,
+  generate_import_specifies: &'a mut HashMap<String, HashMap<String, ImportSpecifier>>,
   url: &String,
 ) -> &'a mut ImportItem {
-  if generate_import_specifies.contains_key(url) {
-    generate_import_specifies.get_mut(url).unwrap()
-  } else {
-    generate_import_specifies.insert(
-      url.clone(),
-      ImportItem {
-        import_specifies: vec![],
-        used_named: HashSet::new(),
-      },
-    );
-    generate_import_specifies.get_mut(url).unwrap()
+  if !generate_import_specifies.contains_key(url) {
+    generate_import_specifies.insert(url.clone(), Default::default());
   }
+
+  generate_import_specifies.get_mut(url).unwrap()
 }
 
-#[derive(Debug)]
-struct ImportItem {
-  import_specifies: Vec<ImportSpecifier>,
-  used_named: HashSet<String>,
-}
+type ImportItem = HashMap<String, ImportSpecifier>;

@@ -187,7 +187,6 @@ impl CjsPatch {
     }
 
     let reference_kind = module_id.clone().into();
-    println!("reference_kind: {:#?}", reference_kind);
 
     if let Some(import) = bundle_reference
       .redeclare_commonjs_import

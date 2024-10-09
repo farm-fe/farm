@@ -269,7 +269,6 @@ impl CjsGenerate {
         .map(|m| m.resource_pot_id.clone())
         // maybe external
         .unwrap_or(resource_pot_id.to_string());
-      let is_commonjs = module_analyzer_manager.is_commonjs(module_id);
       let is_same_bundle = source_bundle_id == resource_pot_id;
 
       let namespace_name = bundle_variable.name(if !is_same_bundle {
