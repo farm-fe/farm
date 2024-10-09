@@ -90,7 +90,7 @@ importers:
         version: 4.30.9(@floating-ui/utils@0.2.8)
       '@arcgis/map-components':
         specifier: ^4.30.7
-        version: 4.30.7(@arcgis/core@4.30.9(@floating-ui/utils@0.2.8))(@esri/calcite-components@2.12.2(@floating-ui/utils@0.2.8))
+        version: 4.30.7(@arcgis/core@4.30.9(@floating-ui/utils@0.2.8))(@esri/calcite-components@2.13.0(@floating-ui/utils@0.2.8))
       core-js:
         specifier: ^3.34.0
         version: 3.37.1
@@ -324,7 +324,7 @@ importers:
     devDependencies:
       '@farmfe/cli':
         specifier: ^1.0.1
-        version: link:../../packages/cli
+        version: 1.0.4
       '@farmfe/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -424,7 +424,7 @@ importers:
     devDependencies:
       '@farmfe/cli':
         specifier: ^1.0.1
-        version: link:../../packages/cli
+        version: 1.0.4
       '@farmfe/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -686,7 +686,7 @@ importers:
         version: 5.1.3(@types/eslint@8.56.10)(eslint-config-prettier@9.1.0(eslint@8.57.0))(eslint@8.57.0)(prettier@3.3.2)
       farmup:
         specifier: latest
-        version: 0.1.0
+        version: 0.1.2
       jest:
         specifier: ^29.5.0
         version: 29.7.0(@types/node@20.12.12)(babel-plugin-macros@3.1.0)(ts-node@10.9.1(@types/node@20.12.12)(typescript@5.4.5))
@@ -1260,9 +1260,6 @@ importers:
       core-js:
         specifier: ^3.35.1
         version: 3.35.1
-      lodash-es:
-        specifier: ^4.17.21
-        version: 4.17.21
     devDependencies:
       '@farmfe/cli':
         specifier: workspace:*
@@ -1273,9 +1270,6 @@ importers:
       '@farmfe/js-plugin-dts':
         specifier: workspace:^
         version: link:../../js-plugins/dts
-      '@types/lodash-es':
-        specifier: ^4.17.12
-        version: 4.17.12
       lodash:
         specifier: ^4.17.21
         version: 4.17.21
@@ -1738,7 +1732,7 @@ importers:
     devDependencies:
       '@farmfe/cli':
         specifier: ^1.0.2
-        version: link:../../packages/cli
+        version: 1.0.4
       '@farmfe/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -1778,10 +1772,10 @@ importers:
     dependencies:
       tdesign-icons-vue:
         specifier: latest
-        version: 0.2.4(vue@2.6.14)
+        version: 0.2.5(vue@2.6.14)
       tdesign-vue:
         specifier: latest
-        version: 1.9.8(vue@2.6.14)
+        version: 1.10.0(vue@2.6.14)
       vite-plugin-vue2-svg:
         specifier: ^0.4.0
         version: 0.4.0(ejs@3.1.10)(lodash@4.17.21)(vue-template-compiler@2.6.14(vue@2.6.14))
@@ -1812,10 +1806,10 @@ importers:
     dependencies:
       tdesign-icons-vue:
         specifier: latest
-        version: 0.2.4(vue@2.7.16)
+        version: 0.2.5(vue@2.7.16)
       tdesign-vue:
         specifier: latest
-        version: 1.9.8(vue@2.7.16)
+        version: 1.10.0(vue@2.7.16)
       vite-plugin-vue2-svg:
         specifier: ^0.4.0
         version: 0.4.0(ejs@3.1.10)(lodash@4.17.21)(vue-template-compiler@2.7.16(vue@2.7.16))
@@ -4311,11 +4305,16 @@ packages:
   '@esri/calcite-colors@6.1.0':
     resolution: {integrity: sha512-wHQYWFtDa6c328EraXEVZvgOiaQyYr0yuaaZ0G3cB4C3lSkWefW34L/e5TLAhtuG3zJ/wR6pl5X1YYNfBc0/4Q==}
 
-  '@esri/calcite-components@2.12.2':
-    resolution: {integrity: sha512-Fmm7WpG+B7il0mpf7grL0ZsFJ06y6g04fGgcnpjLCjhmqy+kKiv8NFeMX529kVr5uyb43dcVOcbd/bv5RniJxg==}
+  '@esri/calcite-components@2.13.0':
+    resolution: {integrity: sha512-szlPLr4RjxegU9Bvxwf4/U2ciI2zJdoDpW7/A7353nz5x+bJJa3GvwEYyuye533faC9p2KoGpEXcB/8susISIg==}
 
-  '@esri/calcite-ui-icons@3.31.0':
-    resolution: {integrity: sha512-Ca3xVXU0LoxljEebuM9r3ss4tyXBfHROcxlFmbNwa2kDTVNSjUKCBgthgXnMD7akgguwwcL7zGnAp645SkJpow==}
+  '@esri/calcite-ui-icons@3.32.0':
+    resolution: {integrity: sha512-2UEddEeSnpXVWp/uNrgym3mrb8lZ5+vXFbtmvXv5NiE32nQGw2MFZD52L5Z+FsxqHJ9vVrtl/X6pTIgkd0c8jA==}
+    hasBin: true
+
+  '@farmfe/cli@1.0.4':
+    resolution: {integrity: sha512-bau/2P7DylHUDksUvbvJod/Ew4dl5ZICYVgTNn0EfrJM/ZuwLaV8LjmPo0pM4y1QOZmg/N3B9DwkXO89DrutYQ==}
+    engines: {node: '>= 16'}
     hasBin: true
 
   '@farmfe/utils@0.0.1':
@@ -4332,6 +4331,9 @@ packages:
 
   '@floating-ui/dom@1.6.10':
     resolution: {integrity: sha512-fskgCFv8J8OamCmyun8MfjB1Olfn+uZKjOKZ0vhYF3gRmEUXcGOjxWL8bBr7i4kIuPZ2KD2S3EUIOxnjC8kl2A==}
+
+  '@floating-ui/dom@1.6.11':
+    resolution: {integrity: sha512-qkMCxSR24v2vGkhYDo/UzxfJN3D4syqSjyuTFz6C7XcpU1pASPRieNI0Kj5VP3/503mOfYiGY891ugBX1GlABQ==}
 
   '@floating-ui/react-dom@2.1.1':
     resolution: {integrity: sha512-4h84MJt3CHrtG18mGsXuLCHMrug49d7DFkU0RMIyshRveBeyV2hmV/pDaF2Uxtu8kgq5r46llp5E5FQiR0K2Yg==}
@@ -5822,9 +5824,6 @@ packages:
 
   '@types/sizzle@2.3.8':
     resolution: {integrity: sha512-0vWLNK2D5MT9dg0iOo8GlKguPAU02QjmZitPEsXRuJXU/OGIOt9vT9Fc26wtYuavLxtO45v9PGleoL9Z0k1LHg==}
-
-  '@types/sortablejs@1.15.7':
-    resolution: {integrity: sha512-PvgWCx1Lbgm88FdQ6S7OGvLIjWS66mudKPlfdrWil0TjsO5zmoZmzoKiiwRShs1dwPgrlkr0N4ewuy0/+QUXYQ==}
 
   '@types/sortablejs@1.15.8':
     resolution: {integrity: sha512-b79830lW+RZfwaztgs1aVPgbasJ8e7AXtZYHTELNXZPsERt4ymJdjV4OccDbHQAvHrCcFpbF78jkm0R6h/pZVg==}
@@ -8250,6 +8249,9 @@ packages:
   dayjs@1.11.12:
     resolution: {integrity: sha512-Rt2g+nTbLlDWZTwwrIXjy9MeiZmSDI375FvZs72ngxx8PDC6YXOeR3q5LAuPzjZQxhiWdRKac7RKV+YyQYfYIg==}
 
+  dayjs@1.11.13:
+    resolution: {integrity: sha512-oaMBel6gjolK862uaPQOVTA7q3TZhuSvuMQAAglQDOWYO9A91IrAOUJEyKVlqJlHE0vq5p5UXxzdPfMH/x6xNg==}
+
   de-indent@1.0.2:
     resolution: {integrity: sha512-e/1zu3xH5MQryN2zdVaF0OrdNLUbvWxzMbi+iNA6Bky7l1RoP8a2fIbRocyHclXt/arDrrR6lL3TqFD9pMQTsg==}
 
@@ -9074,8 +9076,8 @@ packages:
   farm-plugin-replace-dirname@0.2.1:
     resolution: {integrity: sha512-aJ4euQzxoq0sVu4AwXrNQflHJrSZdrdApGEyVRtN6KiCop3CHXnTg9ydlyCNXN2unQB283aNjojvCd5E/32KgA==}
 
-  farmup@0.1.0:
-    resolution: {integrity: sha512-+xQuuQFGmHZsy9p/vDDwKOepdD7id4/THKorHmzvX3AeescqFQGJenksyhZab3cMJMYSqfJ8vbr1RkLIKgs7mg==}
+  farmup@0.1.2:
+    resolution: {integrity: sha512-mWdAVzyi3fnvL/ARNomH5jI8IahLAPuW9xg0BRSMO72qLrCI3w2hpOgmKfEiOJf742DRSvpH3Z3pcqAa32sLmw==}
     hasBin: true
 
   fast-deep-equal@3.1.3:
@@ -9220,8 +9222,8 @@ packages:
     resolution: {integrity: sha512-a8Ge6cdKh9za/GZR/qtigTAk7SrGore56EFcoMshClsh7FLk1zwszc/ltuMfKhx56qeuyL/jWQ4J4axou0iJ9w==}
     engines: {node: '>=10'}
 
-  focus-trap@7.5.4:
-    resolution: {integrity: sha512-N7kHdlgsO/v+iD/dMoJKtsSqs5Dz/dXZVebRgJw23LDk+jMi/974zyiOYDziY2JPp8xivq9BmUGwIJMiuSBi7w==}
+  focus-trap@7.6.0:
+    resolution: {integrity: sha512-1td0l3pMkWJLFipobUcGaf+5DTY4PLDDrcqoSaKP8ediO/CoWCCYk/fT/Y2A4e6TNB+Sh6clRJCjOPPnKoNHnQ==}
 
   follow-redirects@1.15.3:
     resolution: {integrity: sha512-1VzOtuEM8pC9SFU1E+8KfTjZyMztRsgEfwQl44z8A25uy13jSzTj6dyK2Df52iV0vgHCfBwLhDWevLn95w5v6Q==}
@@ -13384,11 +13386,11 @@ packages:
     resolution: {integrity: sha512-J69LQ22xrQB1cIFJhPfgtLuI6BpWRiWu1Y3vSsIwK/eAScqJxd/+CJlUuHQRdX2C9NGFamq+KqNywGgaThwfHw==}
     hasBin: true
 
-  sortablejs@1.15.1:
-    resolution: {integrity: sha512-P5Cjvb0UG1ZVNiDPj/n4V+DinttXG6K8n7vM/HQf0C25K3YKQTQY6fsr/sEGsJGpQ9exmPxluHxKBc0mLKU1lQ==}
-
   sortablejs@1.15.2:
     resolution: {integrity: sha512-FJF5jgdfvoKn1MAKSdGs33bIqLi3LmsgVTliuX6iITj834F+JRQZN90Z93yql8h0K2t0RwDPBmxwlbZfDcxNZA==}
+
+  sortablejs@1.15.3:
+    resolution: {integrity: sha512-zdK3/kwwAK1cJgy1rwl1YtNTbRmc8qW/+vgXf75A7NHag5of4pyI6uK86ktmQETyWRH7IGaE73uZOOBcGxgqZg==}
 
   source-map-js@1.0.2:
     resolution: {integrity: sha512-R0XvVJ9WusLiqTCEiGCmICCMplcCkIwwR11mOSD9CR5u+IXYdiseeEuXCVAjS54zqwkLcPNnmU4OeJ6tUrWhDw==}
@@ -13775,13 +13777,13 @@ packages:
     resolution: {integrity: sha512-DZ4yORTwrbTj/7MZYq2w+/ZFdI6OZ/f9SFHR+71gIVUZhOQPHzVCLpvRnPgyaMpfWxxk/4ONva3GQSyNIKRv6A==}
     engines: {node: '>=10'}
 
-  tdesign-icons-vue@0.2.4:
-    resolution: {integrity: sha512-rgBVBW/Tes+ZFXtmkN0crmQuIszLeL+MqkmDme41dxwObxjFQ+SBkPWn8m+IUrTZ9CX/uNGjFG+QTaC8qcm90g==}
+  tdesign-icons-vue@0.2.5:
+    resolution: {integrity: sha512-wKah1jB2JqLf4dj9fyTUrjl+JfdVqP91HiXyE368Nm2VFxbA1HiQcwhnvRixwqTh7S3++/whq3pzV8BLcRtOeA==}
     peerDependencies:
       vue: ^2.6.12
 
-  tdesign-vue@1.9.8:
-    resolution: {integrity: sha512-8kdsbb/AChhpvopfMs9lAK9Uxy8jvxu+ZQk35MjRFuQlZ5PW2CdfctEnsnz7yUGlFBGOJB4+08KxhPi6xDkH6A==}
+  tdesign-vue@1.10.0:
+    resolution: {integrity: sha512-vhAkNCn/8+FQd3+DE91DzMBfvc38XK9ZHrwLYuKKyuVGE+BzRFOdWuvcNEdSCcJSalw3arK/h+aycsHqwGVQ8Q==}
     peerDependencies:
       vue: ~2.6.10
 
@@ -13852,8 +13854,8 @@ packages:
   through@2.3.8:
     resolution: {integrity: sha512-w89qg7PI8wAdvX60bMDP+bFoD5Dvhm9oLheFp5O4a2QF0cSBGsBX4qZmadPMvVqlLJBBci+WqGGOAPvcDeNSVg==}
 
-  timezone-groups@0.9.1:
-    resolution: {integrity: sha512-1+GERLQpmebtCpkroy+AAfN/PZu8drrp4VAX/KSFBWvoaAT+5ANZIMTSn8CDW2uwfrpo1SaxIJ6MqdlACYbq/g==}
+  timezone-groups@0.10.2:
+    resolution: {integrity: sha512-01G9JdlIybA9Njp0wJcGenXKWAw+woWbv6W/oMexWyPs7Nr/S2p2n1NRrMHbHaFzdf+PNNStQp1WILdnAGjYXQ==}
     engines: {node: '>=18.12.0'}
 
   tiny-each-async@2.0.3:
@@ -15436,7 +15438,7 @@ snapshots:
     dependencies:
       '@esri/arcgis-html-sanitizer': 4.0.3
       '@esri/calcite-colors': 6.1.0
-      '@esri/calcite-components': 2.12.2(@floating-ui/utils@0.2.8)
+      '@esri/calcite-components': 2.13.0(@floating-ui/utils@0.2.8)
       '@vaadin/grid': 24.3.22
       '@zip.js/zip.js': 2.7.52
       luxon: 3.4.4
@@ -15445,12 +15447,12 @@ snapshots:
     transitivePeerDependencies:
       - '@floating-ui/utils'
 
-  '@arcgis/map-components@4.30.7(@arcgis/core@4.30.9(@floating-ui/utils@0.2.8))(@esri/calcite-components@2.12.2(@floating-ui/utils@0.2.8))':
+  '@arcgis/map-components@4.30.7(@arcgis/core@4.30.9(@floating-ui/utils@0.2.8))(@esri/calcite-components@2.13.0(@floating-ui/utils@0.2.8))':
     dependencies:
       '@arcgis/components-controllers': 4.30.7(@arcgis/core@4.30.9(@floating-ui/utils@0.2.8))
       '@arcgis/components-utils': 4.30.7
       '@arcgis/core': 4.30.9(@floating-ui/utils@0.2.8)
-      '@esri/calcite-components': 2.12.2(@floating-ui/utils@0.2.8)
+      '@esri/calcite-components': 2.13.0(@floating-ui/utils@0.2.8)
       '@stencil/core': 4.17.1
     transitivePeerDependencies:
       - '@arcgis/core-adapter'
@@ -17677,26 +17679,33 @@ snapshots:
 
   '@esri/calcite-colors@6.1.0': {}
 
-  '@esri/calcite-components@2.12.2(@floating-ui/utils@0.2.8)':
+  '@esri/calcite-components@2.13.0(@floating-ui/utils@0.2.8)':
     dependencies:
-      '@esri/calcite-ui-icons': 3.31.0
-      '@floating-ui/dom': 1.6.10
+      '@esri/calcite-ui-icons': 3.32.0
+      '@floating-ui/dom': 1.6.11
       '@stencil/core': 4.20.0
       '@types/color': 3.0.6
-      '@types/sortablejs': 1.15.7
+      '@types/sortablejs': 1.15.8
       color: 4.2.3
       composed-offset-position: 0.0.6(@floating-ui/utils@0.2.8)
-      dayjs: 1.11.12
-      focus-trap: 7.5.4
+      dayjs: 1.11.13
+      focus-trap: 7.6.0
       interactjs: 1.10.27
       lodash-es: 4.17.21
-      sortablejs: 1.15.1
-      timezone-groups: 0.9.1
+      sortablejs: 1.15.3
+      timezone-groups: 0.10.2
       type-fest: 4.18.2
     transitivePeerDependencies:
       - '@floating-ui/utils'
 
-  '@esri/calcite-ui-icons@3.31.0': {}
+  '@esri/calcite-ui-icons@3.32.0': {}
+
+  '@farmfe/cli@1.0.4':
+    dependencies:
+      cac: 6.7.14
+      cross-spawn: 7.0.3
+      inquirer: 9.2.12
+      walkdir: 0.4.1
 
   '@farmfe/utils@0.0.1': {}
 
@@ -17714,6 +17723,11 @@ snapshots:
       '@floating-ui/utils': 0.1.6
 
   '@floating-ui/dom@1.6.10':
+    dependencies:
+      '@floating-ui/core': 1.6.8
+      '@floating-ui/utils': 0.2.8
+
+  '@floating-ui/dom@1.6.11':
     dependencies:
       '@floating-ui/core': 1.6.8
       '@floating-ui/utils': 0.2.8
@@ -20074,8 +20088,6 @@ snapshots:
       '@types/node': 18.18.8
 
   '@types/sizzle@2.3.8': {}
-
-  '@types/sortablejs@1.15.7': {}
 
   '@types/sortablejs@1.15.8': {}
 
@@ -23153,6 +23165,8 @@ snapshots:
 
   dayjs@1.11.12: {}
 
+  dayjs@1.11.13: {}
+
   de-indent@1.0.2: {}
 
   debug@2.6.9:
@@ -24210,9 +24224,10 @@ snapshots:
       farm-plugin-replace-dirname-win32-ia32-msvc: 0.2.1
       farm-plugin-replace-dirname-win32-x64-msvc: 0.2.1
 
-  farmup@0.1.0:
+  farmup@0.1.2:
     dependencies:
       '@farmfe/core': link:packages/core
+      tmp: 0.2.3
 
   fast-deep-equal@3.1.3: {}
 
@@ -24377,7 +24392,7 @@ snapshots:
     dependencies:
       tslib: 2.6.3
 
-  focus-trap@7.5.4:
+  focus-trap@7.6.0:
     dependencies:
       tabbable: 6.2.0
 
@@ -29255,9 +29270,9 @@ snapshots:
       minimist: 1.2.8
       sander: 0.5.1
 
-  sortablejs@1.15.1: {}
-
   sortablejs@1.15.2: {}
+
+  sortablejs@1.15.3: {}
 
   source-map-js@1.0.2: {}
 
@@ -29726,19 +29741,19 @@ snapshots:
       mkdirp: 1.0.4
       yallist: 4.0.0
 
-  tdesign-icons-vue@0.2.4(vue@2.6.14):
+  tdesign-icons-vue@0.2.5(vue@2.6.14):
     dependencies:
       '@babel/runtime': 7.23.2
       classnames: 2.3.2
       vue: 2.6.14
 
-  tdesign-icons-vue@0.2.4(vue@2.7.16):
+  tdesign-icons-vue@0.2.5(vue@2.7.16):
     dependencies:
       '@babel/runtime': 7.23.2
       classnames: 2.3.2
       vue: 2.7.16
 
-  tdesign-vue@1.9.8(vue@2.6.14):
+  tdesign-vue@1.10.0(vue@2.6.14):
     dependencies:
       '@babel/runtime': 7.23.2
       '@popperjs/core': 2.11.8
@@ -29755,12 +29770,12 @@ snapshots:
       mitt: 3.0.1
       raf: 3.4.1
       sortablejs: 1.15.2
-      tdesign-icons-vue: 0.2.4(vue@2.6.14)
+      tdesign-icons-vue: 0.2.5(vue@2.6.14)
       tinycolor2: 1.6.0
       validator: 13.11.0
       vue: 2.6.14
 
-  tdesign-vue@1.9.8(vue@2.7.16):
+  tdesign-vue@1.10.0(vue@2.7.16):
     dependencies:
       '@babel/runtime': 7.23.2
       '@popperjs/core': 2.11.8
@@ -29777,7 +29792,7 @@ snapshots:
       mitt: 3.0.1
       raf: 3.4.1
       sortablejs: 1.15.2
-      tdesign-icons-vue: 0.2.4(vue@2.7.16)
+      tdesign-icons-vue: 0.2.5(vue@2.7.16)
       tinycolor2: 1.6.0
       validator: 13.11.0
       vue: 2.7.16
@@ -29848,7 +29863,7 @@ snapshots:
 
   through@2.3.8: {}
 
-  timezone-groups@0.9.1: {}
+  timezone-groups@0.10.2: {}
 
   tiny-each-async@2.0.3:
     optional: true

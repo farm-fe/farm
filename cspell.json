@@ -85,6 +85,7 @@
     "indicatif",
     "instanceof",
     "Instantiator",
+    "itertools",
     "jfif",
     "JIDA",
     "jquery",

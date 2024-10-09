@@ -1919,6 +1919,7 @@ dependencies = [
  "farmfe_testing_helpers",
  "farmfe_toolkit_plugin_types",
  "farmfe_utils 0.1.5",
+ "itertools 0.13.0",
  "lazy_static",
  "preset_env_base",
  "sourcemap",

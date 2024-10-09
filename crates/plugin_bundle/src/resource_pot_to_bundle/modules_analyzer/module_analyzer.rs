@@ -402,7 +402,6 @@ impl ModuleAnalyzer {
   pub fn build_rename_map<'a>(
     &self,
     bundle_variable: &'a BundleVariable,
-    module_analyzer_manager: &ModuleAnalyzerManager,
   ) -> HashMap<VarRefKey<'a>, usize> {
     self
       .statements

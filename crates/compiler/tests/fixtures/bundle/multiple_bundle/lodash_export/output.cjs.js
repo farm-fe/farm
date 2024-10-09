@@ -15,11 +15,6 @@ module.exports.bundle2_cjs = bundle2_cjs;
 
 //farm_runtime.js:
  // module_id: __FARM_BUNDLE_POLYFILL_SLOT__
-function _interop_require_default(obj) {
-    return obj && obj.__esModule ? obj : {
-        default: obj
-    };
-}
 function __commonJs(mod) {
     var module;
     return ()=>{
@@ -35,6 +30,11 @@ function __commonJs(mod) {
             mod[Object.keys(mod)[0]](module, module.exports);
         }
         return module.exports;
+    };
+}
+function _interop_require_default(obj) {
+    return obj && obj.__esModule ? obj : {
+        default: obj
     };
 }
 module.exports.__commonJs = __commonJs;
