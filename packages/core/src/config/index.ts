@@ -58,6 +58,7 @@ import {
 import { mergeConfig, mergeFarmCliConfig } from './mergeConfig.js';
 import { normalizeCss } from './normalize-config/normalize-css.js';
 import { normalizeExternal } from './normalize-config/normalize-external.js';
+import normalizePartialBundling from './normalize-config/normalize-partial-bundling.js';
 import { normalizeResolve } from './normalize-config/normalize-resolve.js';
 import type {
   Alias,
@@ -560,6 +561,7 @@ export async function normalizeUserCompilationConfig(
 
   normalizeResolve(userConfig, resolvedCompilation);
   normalizeCss(userConfig, resolvedCompilation);
+  normalizePartialBundling(resolvedCompilation);
 
   return resolvedCompilation;
 }

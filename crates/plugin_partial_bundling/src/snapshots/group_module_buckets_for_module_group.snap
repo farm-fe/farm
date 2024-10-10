@@ -1,0 +1,62 @@
+---
+source: crates/plugin_partial_bundling/src/generate_module_buckets.rs
+input_file: crates/plugin_partial_bundling/src/generate_module_buckets.rs
+---
+[
+    ModuleGroupBuckets {
+        module_group_id: ModuleId {
+            relative_path: "A",
+            query_string: "",
+        },
+        resource_type: Initial,
+        buckets: [
+            "__farm_unknown_false_A_F",
+        ],
+    },
+    ModuleGroupBuckets {
+        module_group_id: ModuleId {
+            relative_path: "B",
+            query_string: "",
+        },
+        resource_type: Initial,
+        buckets: [
+            "__farm_unknown_false_B",
+            "__farm_unknown_false_B_D",
+            "__farm_unknown_false_B_D_F_G",
+        ],
+    },
+    ModuleGroupBuckets {
+        module_group_id: ModuleId {
+            relative_path: "D",
+            query_string: "",
+        },
+        resource_type: Async,
+        buckets: [
+            "__farm_unknown_false_B_D",
+            "__farm_unknown_false_B_D_F_G",
+        ],
+    },
+    ModuleGroupBuckets {
+        module_group_id: ModuleId {
+            relative_path: "F",
+            query_string: "",
+        },
+        resource_type: Async,
+        buckets: [
+            "__farm_unknown_false_A_F",
+            "__farm_unknown_false_B_D_F_G",
+            "__farm_unknown_false_F",
+        ],
+    },
+    ModuleGroupBuckets {
+        module_group_id: ModuleId {
+            relative_path: "G",
+            query_string: "",
+        },
+        resource_type: Async,
+        buckets: [
+            "__farm_unknown_false_B_D_F_G",
+            "__farm_unknown_false_G",
+        ],
+    },
+]
