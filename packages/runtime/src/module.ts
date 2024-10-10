@@ -38,10 +38,9 @@ export class Module {
 
   // `export * from` helper
   _e(to: any, from: any) {
-    const self = this;
     Object.keys(from).forEach(function (k) {
       if (k !== "default" && !Object.prototype.hasOwnProperty.call(to, k)) {
-        self.d(to, k, from[k]);
+        Object.defineProperty(to, k, { value: from[k], enumerable: true, configurable: true });
       }
     });
 
