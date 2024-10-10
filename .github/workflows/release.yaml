@@ -43,7 +43,7 @@ jobs:
             test -f ./rust-plugins/react/npm/${abi}/index.farm
             test -f ./rust-plugins/sass/npm/${abi}/index.farm
           done
-          for abi in android-arm-eabi linux-arm-gnueabihf android-arm64
+          for abi in android-arm-eabi linux-arm-gnueabihf android-arm64 freebsd-x64
           do
             mv /tmp/artifacts/${{ github.sha }}-${abi}-create-farm/* ./packages/create-farm/npm/${abi}
             test -f ./packages/create-farm/npm/${abi}/create-farm.${abi}.node
@@ -58,8 +58,8 @@ jobs:
         id: changesets
         uses: changesets/action@v1
         with:
-          version: pnpm run bump
-          publish: npm run release
+          version: pnpm bump
+          publish: pnpm release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
