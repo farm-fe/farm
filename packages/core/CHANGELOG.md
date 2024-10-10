@@ -1,5 +1,11 @@
 # @farmfe/core
 
+## 1.3.26
+
+### Patch Changes
+
+- ed676f02: Fix #1755
+
 ## 1.3.25
 
 ### Patch Changes
