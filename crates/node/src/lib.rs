@@ -391,10 +391,18 @@ impl JsCompiler {
     } else {
       resolved_path.into()
     };
+    let current_exec_order = module_graph
+      .module(&module_id)
+      .map(|m| m.execution_order)
+      .unwrap_or(usize::MAX);
     let parents = module_graph.dependents_ids(&module_id);
 
     parents
       .into_iter()
+      .filter(|id| {
+        let module = module_graph.module(id).unwrap();
+        module.execution_order > current_exec_order
+      })
       .map(|p| p.resolved_path_with_query(&context.config.root))
       .collect()
   }
