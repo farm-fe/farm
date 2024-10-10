@@ -6,6 +6,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.14](https://github.com/farm-fe/farm/compare/farmfe_toolkit-v0.0.13...farmfe_toolkit-v0.0.14) - 2024-10-10
+
+### Fixed
+
+- arcgis lazy compile fail ([#1750](https://github.com/farm-fe/farm/pull/1750))
+- ignore non-utf8 error when getting file contents ([#1799](https://github.com/farm-fe/farm/pull/1799))
+- preset_env plugin match and module system `analyze` ([#1751](https://github.com/farm-fe/farm/pull/1751))
+- globalThis undefined ([#1726](https://github.com/farm-fe/farm/pull/1726))
+- [#1672](https://github.com/farm-fe/farm/pull/1672) ([#1692](https://github.com/farm-fe/farm/pull/1692))
+
 ## [0.0.13](https://github.com/farm-fe/farm/compare/farmfe_toolkit-v0.0.12...farmfe_toolkit-v0.0.13) - 2024-07-25
 
 ### Other

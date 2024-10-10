@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.12](https://github.com/farm-fe/farm/compare/farmfe_plugin_static_assets-v0.0.11...farmfe_plugin_static_assets-v0.0.12) - 2024-10-10
+
+### Other
+
+- remove `query_string` when `emit_file` to `resource_map` in `plugin_static_assets` ([#1746](https://github.com/farm-fe/farm/pull/1746))
+
 ## [0.0.11](https://github.com/farm-fe/farm/compare/farmfe_plugin_static_assets-v0.0.10...farmfe_plugin_static_assets-v0.0.11) - 2024-07-25
 
 ### Added

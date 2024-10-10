@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.14](https://github.com/farm-fe/farm/compare/farmfe_plugin_css-v0.0.13...farmfe_plugin_css-v0.0.14) - 2024-10-10
+
+### Added
+
+- *(css)* support css module name coversion ([#1784](https://github.com/farm-fe/farm/pull/1784))
+
 ## [0.0.13](https://github.com/farm-fe/farm/compare/farmfe_plugin_css-v0.0.12...farmfe_plugin_css-v0.0.13) - 2024-07-25
 
 ### Other
