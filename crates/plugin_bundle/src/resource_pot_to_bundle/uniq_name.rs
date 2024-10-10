@@ -1,5 +1,6 @@
 use std::{
   borrow::Cow,
+  cell::{Ref, RefCell, RefMut},
   collections::{HashMap, HashSet},
   path::PathBuf,
   str::FromStr,
@@ -16,8 +17,10 @@ use farmfe_core::{
   swc_ecma_ast::Ident,
 };
 
+use crate::resource_pot_to_bundle::bundle::reference::ReferenceQueryResult;
+
 use super::{
-  bundle::{bundle_external::ReferenceKind, ModuleAnalyzerManager},
+  bundle::{bundle_reference::ReferenceKind, ModuleAnalyzerManager},
   Var,
 };
 
@@ -73,12 +76,15 @@ impl UniqName {
 pub struct BundleVariable {
   pub index: Arc<AtomicUsize>,
   // TODO(improve) diff vec and hashmap
-  pub variables: HashMap<usize, Var>,
+  pub variables: HashMap<usize, RefCell<Var>>,
   // TODO(improve): maybe record top_level var, and only register same top_level var
   pub module_defined_vars: HashMap<ModuleId, HashMap<String, usize>>,
   pub uniq_name_hash_map: HashMap<ResourcePotId, UniqName>,
   pub namespace: String,
   pub used_names: HashSet<String>,
+  pub module_order_map: Arc<HashMap<ModuleId, usize>>,
+  pub module_order_index_set: Arc<Vec<ModuleId>>,
+  pub polyfill_index_map: HashMap<String, usize>,
 }
 
 pub fn is_valid_char(ch: char) -> bool {
@@ -89,7 +95,7 @@ pub fn is_valid_first_char(ch: char) -> bool {
   ch.is_ascii_lowercase() || ch.is_ascii_uppercase() || ch == '_'
 }
 
-fn normalize_file_name_as_variable(str: String) -> String {
+pub fn normalize_file_name_as_variable(str: String) -> String {
   farm_profile_function!("");
   let mut res = String::with_capacity(str.len());
 
@@ -144,51 +150,41 @@ pub fn safe_name_from_module_id(module_id: &ModuleId, root: &str) -> String {
 impl BundleVariable {
   pub fn new() -> Self {
     Self {
+      index: Arc::new(AtomicUsize::new(1)),
       ..Default::default()
     }
   }
 
-  fn push(&mut self, var: Var, index: usize) {
-    self.variables.insert(index, var);
+  fn push(&mut self, mut var: Var, index: usize) {
+    var.index = index;
+    self.variables.insert(index, RefCell::new(var));
   }
 
   pub fn is_in_used_name(&self, index: usize) -> bool {
     self.used_names.contains(&self.name(index))
   }
 
+  // TODO: remove split by resource_pot_id
   pub fn uniq_name_mut(&mut self) -> &mut UniqName {
-    self.uniq_name_hash_map.get_mut(&self.namespace).unwrap()
+    self.uniq_name_hash_map.get_mut("default").unwrap()
   }
 
   pub fn uniq_name(&mut self) -> &UniqName {
-    self.uniq_name_hash_map.get(&self.namespace).unwrap()
-  }
-
-  pub fn with_namespace<T, F: FnOnce(&mut Self) -> T>(&mut self, namespace: String, f: F) -> T {
-    let prev = self.namespace.clone();
-
-    if self.uniq_name_hash_map.contains_key(&namespace) {
-      self
-        .uniq_name_hash_map
-        .insert(namespace.clone(), UniqName::new());
-    }
-    self.namespace = namespace;
-
-    let r = f(self);
-
-    self.namespace = prev;
-
-    r
+    self.uniq_name_hash_map.get("default").unwrap()
   }
 
   pub fn set_namespace(&mut self, namespace: String) {
-    if !self.uniq_name_hash_map.contains_key(&namespace) {
-      self
-        .uniq_name_hash_map
-        .insert(namespace.clone(), UniqName::new());
-    }
+    // if !self.uniq_name_hash_map.contains_key(&namespace) {
+    //   self
+    //     .uniq_name_hash_map
+    //     .insert(namespace.clone(), UniqName::new());
+    // }
 
-    self.namespace = namespace;
+    // self.namespace = namespace;
+    self
+      .uniq_name_hash_map
+      .entry("default".to_string())
+      .or_insert_with(|| UniqName::new());
   }
 
   pub fn add_used_name(&mut self, used_name: String) {
@@ -202,6 +198,7 @@ impl BundleVariable {
     let var = Var {
       var: ident.to_id(),
       rename: None,
+      module_id: self.module_order_map.get(module_id).cloned(),
       ..Default::default()
     };
 
@@ -239,9 +236,15 @@ impl BundleVariable {
     index.unwrap()
   }
 
-  pub fn branch(&self) -> Self {
+  pub fn branch(
+    index: &Arc<AtomicUsize>,
+    module_order_map: &Arc<HashMap<ModuleId, usize>>,
+    module_order_index_set: &Arc<Vec<ModuleId>>,
+  ) -> Self {
     Self {
-      index: Arc::clone(&self.index),
+      index: Arc::clone(&index),
+      module_order_map: Arc::clone(module_order_map),
+      module_order_index_set: Arc::clone(module_order_index_set),
       ..Default::default()
     }
   }
@@ -279,19 +282,117 @@ impl BundleVariable {
 
     self.add_used_name(uniq_name_safe_name.clone());
 
-    self.register_var(module_id, &uniq_name_safe_name.as_str().into(), false)
+    self.register_var(&module_id, &uniq_name_safe_name.as_str().into(), false)
   }
 
-  pub fn var_by_index(&self, index: usize) -> &Var {
-    &self.variables[&index]
+  pub fn register_common_used_name(&mut self, suffix: &str, name: &str) -> usize {
+    let uniq_name = self.uniq_name_mut().uniq_name(
+      format!(
+        "{}{}",
+        normalize_file_name_as_variable(name.to_string()),
+        suffix
+      )
+      .as_str(),
+    );
+
+    self.add_used_name(uniq_name.clone());
+
+    self.register_var(
+      &ModuleId::from("__FARM_BUNDLE_COMMON_USED_NAME__"),
+      &uniq_name.as_str().into(),
+      false,
+    )
   }
 
-  pub fn var_mut_by_index(&mut self, index: usize) -> &mut Var {
-    self.variables.get_mut(&index).unwrap()
+  // ---------- var ------------
+
+  pub fn var(&self, index: usize) -> (Ref<Var>, Option<Ref<Var>>) {
+    let v = self.var_by_index(index);
+
+    if let Some(root) = v.root {
+      return (v, Some(self.var_by_index(root)));
+    }
+
+    (v, None)
   }
 
-  pub fn set_rename(&mut self, index: usize, rename: String) {
-    let var = self.var_mut_by_index(index);
+  pub fn module_id_by_var_index(&self, index: usize) -> Option<&ModuleId> {
+    let v = self.var_by_index(index);
+
+    v.module_id.map(|i| &self.module_order_index_set[i])
+  }
+
+  pub fn module_id_by_var(&self, var: &Var) -> Option<&ModuleId> {
+    var.module_id.map(|i| &self.module_order_index_set[i])
+  }
+
+  pub fn var_mut(&self, index: usize) -> (RefMut<Var>, Option<RefMut<Var>>) {
+    let v = self.var_mut_by_index(index);
+
+    if let Some(root) = v.root {
+      return (v, Some(self.var_mut_by_index(root)));
+    }
+
+    (v, None)
+  }
+
+  pub fn set_var_root(&self, index: usize, root: usize) {
+    if index == root {
+      return;
+    }
+    let mut var = self.var_mut_by_index(index);
+    var.root = Some(self.var_or_root(root).index);
+  }
+
+  pub fn var_or_root(&self, index: usize) -> Ref<Var> {
+    let mut v = self.var_by_index(index);
+
+    let mut paths = vec![index];
+    loop {
+      if let Some(root) = v.root.map(|root| self.var_by_index(root)) {
+        if paths.contains(&root.index) {
+          break;
+        }
+
+        v = root;
+        paths.push(v.index);
+      } else {
+        break;
+      }
+    }
+
+    for path in paths.into_iter().rev().skip(1) {
+      if path == index {
+        continue;
+      }
+
+      self.set_var_root(path, v.index);
+    }
+
+    v
+  }
+
+  pub fn var_root_mut(&self, index: usize) -> RefMut<Var> {
+    let v = self.var_mut_by_index(index);
+
+    if let Some(root) = v.root {
+      return self.var_mut_by_index(root);
+    }
+
+    v
+  }
+
+  pub fn var_by_index(&self, index: usize) -> Ref<Var> {
+    self.variables[&index].borrow()
+  }
+
+  pub fn var_mut_by_index(&self, index: usize) -> RefMut<Var> {
+    self.variables[&index].borrow_mut()
+  }
+
+  pub fn set_rename(&self, index: usize, rename: String) {
+    let mut var = self.var_mut_by_index(index);
+
     if var.rename.is_none() {
       var.rename = Some(rename);
     }
@@ -301,12 +402,24 @@ impl BundleVariable {
     self.var_mut_by_index(index).rename = Some(rename);
   }
 
-  pub fn rename(&self, index: usize) -> Option<&String> {
-    self.var_by_index(index).rename.as_ref()
+  pub fn rename(&self, index: usize) -> Option<Ref<String>> {
+    let v = self.var_or_root(index);
+
+    if v.rename.is_some() {
+      return Some(Ref::map(v, |item| item.rename.as_ref().unwrap()));
+    }
+
+    None
   }
 
   pub fn name(&self, index: usize) -> String {
     self.var_by_index(index).var.0.to_string()
+  }
+
+  pub fn render_name(&self, index: usize) -> String {
+    let var = self.var_or_root(index);
+
+    var.render_name()
   }
 
   #[inline]
@@ -314,20 +427,13 @@ impl BundleVariable {
     self.name(index) == "default"
   }
 
-  pub fn render_name(&self, index: usize) -> String {
-    let var = self.var_by_index(index);
-    if let Some(rename) = var.rename.as_ref() {
-      return rename.clone();
-    }
-
-    var.var.0.to_string()
-  }
-
   pub fn set_var_uniq_rename_string(&mut self, index: usize, var_ident: String) {
     let var = self.var_by_index(index);
     if var.rename.is_some() {
       return;
     }
+
+    drop(var);
 
     let uniq_name = if self.uniq_name().contain(&var_ident) {
       self.uniq_name_mut().uniq_name(&var_ident)
@@ -358,13 +464,62 @@ impl BundleVariable {
     find_namespace: bool,
   ) -> Option<FindModuleExportResult> {
     let var_ident = self.name(index);
-
     if module_analyzers.is_external(source) {
-      return Some(FindModuleExportResult::External(index, source.clone()));
+      return Some(FindModuleExportResult::External(
+        index,
+        source.clone(),
+        false,
+      ));
     }
 
     if let Some(module_analyzer) = module_analyzers.module_analyzer(source) {
       let module_system = module_analyzer.module_system.clone();
+
+      let reference_map = module_analyzer.export_names();
+
+      if module_analyzer.resource_pot_id != resource_pot_id {
+        if find_namespace || find_default || module_analyzers.is_commonjs(source) {
+          let Some(res) = self.find_ident_by_index(
+            index,
+            source,
+            module_analyzers,
+            module_analyzer.resource_pot_id.clone(),
+            find_default,
+            find_namespace,
+          ) else {
+            return None;
+          };
+
+          match res {
+            FindModuleExportResult::Local(i, target, _)
+            | FindModuleExportResult::External(i, target, _) => {
+              let is_reexport = module_analyzers
+                .module_analyzer(&target)
+                .is_some_and(|m| m.resource_pot_id == module_analyzer.resource_pot_id);
+
+              return Some(FindModuleExportResult::Bundle(
+                i,
+                module_analyzer.module_id.clone(),
+                module_system,
+                is_reexport,
+              ));
+            }
+            _ => return Some(res),
+          }
+        }
+
+        if let Some(ReferenceQueryResult { index, is_reexport }) =
+          reference_map.query_by_var_str_and_meta(&var_ident, self)
+        {
+          return Some(FindModuleExportResult::Bundle(
+            index,
+            module_analyzer.module_id.clone(),
+            // support cjs
+            module_system,
+            is_reexport,
+          ));
+        }
+      }
 
       if find_namespace || module_analyzers.is_commonjs(source) {
         return Some(FindModuleExportResult::Local(
@@ -374,34 +529,12 @@ impl BundleVariable {
         ));
       }
 
-      let reference_map = module_analyzer.export_names();
-
-      if module_analyzer.resource_pot_id != resource_pot_id {
-        if let Some(index) = reference_map.query_by_var_str(&var_ident, self) {
-          return Some(FindModuleExportResult::Bundle(
-            index,
-            module_analyzer.resource_pot_id.clone(),
-            // support cjs
-            module_system,
-          ));
-          // TODO: error?
-        }
-      }
-
       if find_default {
-        if let Some(d) = reference_map
+        return reference_map
           .export
           .default
           .or_else(|| reference_map.export.query(&"default".to_string(), self))
-        {
-          return Some(FindModuleExportResult::Local(
-            d,
-            source.clone(),
-            module_system,
-          ));
-        }
-
-        return None;
+          .map(|i| FindModuleExportResult::Local(i, source.clone(), module_system));
       }
 
       // find from local
@@ -414,10 +547,10 @@ impl BundleVariable {
       }
 
       // find from reference external or bundle
-      for (module_id, export) in &reference_map.reference_map {
+      for (module_id, export) in &reference_map.reexport_map {
         if let Some(d) = export.query(&var_ident, self) {
           if module_analyzers.is_external(module_id) {
-            return Some(FindModuleExportResult::External(d, module_id.clone()));
+            return Some(FindModuleExportResult::External(d, module_id.clone(), true));
           } else {
             return Some(FindModuleExportResult::Local(
               d,
@@ -436,15 +569,15 @@ impl BundleVariable {
 #[derive(Debug)]
 pub enum FindModuleExportResult {
   Local(usize, ModuleId, ModuleSystem),
-  External(usize, ModuleId),
-  Bundle(usize, ResourcePotId, ModuleSystem),
+  External(usize, ModuleId, bool),
+  Bundle(usize, ModuleId, ModuleSystem, bool),
 }
 
 impl FindModuleExportResult {
   pub fn is_common_js(&self) -> bool {
     match self {
       FindModuleExportResult::Local(_, _, module_system)
-      | FindModuleExportResult::Bundle(_, _, module_system) => {
+      | FindModuleExportResult::Bundle(_, _, module_system, _) => {
         matches!(module_system, ModuleSystem::CommonJs | ModuleSystem::Hybrid)
       }
 
@@ -455,16 +588,24 @@ impl FindModuleExportResult {
   pub fn module_system(&self) -> Option<ModuleSystem> {
     match self {
       FindModuleExportResult::Local(_, _, module_system)
-      | FindModuleExportResult::Bundle(_, _, module_system) => Some(module_system.clone()),
-      FindModuleExportResult::External(_, _) => None,
+      | FindModuleExportResult::Bundle(_, _, module_system, _) => Some(module_system.clone()),
+      FindModuleExportResult::External(_, _, _) => None,
     }
   }
 
   pub fn target_source(&self) -> ReferenceKind {
     match self {
       FindModuleExportResult::Local(_, target_source, _) => target_source.clone().into(),
-      FindModuleExportResult::External(_, target_source) => target_source.clone().into(),
-      FindModuleExportResult::Bundle(_, target_bundle, _) => target_bundle.clone().into(),
+      FindModuleExportResult::External(_, target_source, _) => target_source.clone().into(),
+      FindModuleExportResult::Bundle(_, target_bundle, _, _) => target_bundle.clone().into(),
+    }
+  }
+
+  pub fn is_reexport(&self) -> bool {
+    match self {
+      FindModuleExportResult::Local(_, _, _) => false,
+      FindModuleExportResult::External(_, _, reexport) => *reexport,
+      FindModuleExportResult::Bundle(_, _, _, reexport) => *reexport,
     }
   }
 }
@@ -639,7 +780,7 @@ mod tests {
 
     assert!(matches!(
       result,
-      Some(FindModuleExportResult::External(_, _))
+      Some(FindModuleExportResult::External(_, _, _))
     ));
 
     if let FindModuleExportResult::External(index, ..) = result.unwrap() {
@@ -762,7 +903,7 @@ mod tests {
 
     assert!(matches!(
       result,
-      Some(FindModuleExportResult::Bundle(_, _, _))
+      Some(FindModuleExportResult::Bundle(_, _, _, _))
     ));
 
     if let FindModuleExportResult::Bundle(index, ..) = result.unwrap() {

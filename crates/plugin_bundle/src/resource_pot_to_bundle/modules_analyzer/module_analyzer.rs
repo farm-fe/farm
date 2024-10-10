@@ -1,6 +1,8 @@
 use std::{
+  cell::Ref,
   collections::{HashMap, HashSet},
   fmt::Debug,
+  hash::Hash,
   path::PathBuf,
   sync::Arc,
 };
@@ -11,7 +13,7 @@ use farmfe_core::{
   farm_profile_function,
   module::{module_graph::ModuleGraph, Module, ModuleId, ModuleSystem, ModuleType},
   resource::resource_pot::ResourcePotId,
-  swc_common::{Mark, SourceMap},
+  swc_common::{sync::OnceCell, Mark, SourceMap},
   swc_ecma_ast::{Id, Module as EcmaAstModule},
 };
 use farmfe_toolkit::{
@@ -22,7 +24,7 @@ use farmfe_toolkit::{
 
 use crate::resource_pot_to_bundle::{
   bundle::reference::ReferenceMap, common::get_module_mark, targets::cjs::CjsModuleAnalyzer,
-  uniq_name::BundleVariable, Var,
+  uniq_name::BundleVariable,
 };
 
 use super::analyze::{self, CollectUnresolvedIdent};
@@ -81,19 +83,9 @@ pub enum StmtAction {
   /// import cjs from './cjs_module';
   /// // =>
   /// remove
-  /// // or
   ///
   /// ```
   StripCjsImport(usize, Option<ModuleId>),
-  //
-  // ```ts
-  // export { name as cjsName } from "./cjs";
-  // export { age as cjsAge } from "./cjs";
-  // // =>
-  // const { name, age } = require_cjs();
-  // ```
-  //
-  // ReplaceCjsExport(ModuleId),
 }
 
 impl StmtAction {
@@ -104,7 +96,6 @@ impl StmtAction {
       StmtAction::DeclDefaultExpr(index, _) => Some(*index),
       StmtAction::RemoveImport(index) => Some(*index),
       StmtAction::StripCjsImport(index, _) => Some(*index),
-      // StmtAction::ReplaceCjsExport(_) => None,
     }
   }
 }
@@ -237,12 +228,13 @@ pub struct ModuleAnalyzer {
   pub export_names: Option<Arc<ReferenceMap>>,
   pub entry: bool,
   pub external: bool,
-  pub dynamic: bool,
+  pub is_dynamic: bool,
   pub is_runtime: bool,
   pub cjs_module_analyzer: CjsModuleAnalyzer,
   pub mark: (Mark, Mark),
   pub module_system: ModuleSystem,
   pub module_type: ModuleType,
+  pub is_reference_by_another: OnceCell<bool>,
 }
 
 impl Debug for ModuleAnalyzer {
@@ -257,11 +249,12 @@ impl Debug for ModuleAnalyzer {
       .field("export_names", &self.export_names)
       .field("entry", &self.entry)
       .field("external", &self.external)
-      .field("dynamic", &self.dynamic)
+      .field("dynamic", &self.is_dynamic)
       .field("is_runtime", &self.is_runtime)
       .field("cjs_module_analyzer", &"[skip]")
       .field("mark", &self.mark)
       .field("module_system", &self.module_system)
+      .field("is_reference_by_other", &self.is_reference_by_another)
       .finish()
   }
 }
@@ -298,12 +291,13 @@ impl ModuleAnalyzer {
       resource_pot_id,
       external: module.external,
       entry: is_entry,
-      dynamic: is_dynamic,
+      is_dynamic,
       is_runtime,
       cjs_module_analyzer: CjsModuleAnalyzer::new(),
       mark: mark.unwrap(),
       module_system: module.meta.as_script().module_system.clone(),
       module_type: module.module_type.clone(),
+      is_reference_by_another: OnceCell::new(),
     })
   }
 
@@ -319,6 +313,10 @@ impl ModuleAnalyzer {
       self.module_system,
       ModuleSystem::EsModule | ModuleSystem::Hybrid
     )
+  }
+
+  pub fn is_reference_by_another<F: Fn() -> bool>(&self, f: F) -> bool {
+    *self.is_reference_by_another.get_or_init(f)
   }
 
   fn collect_unresolved_ident(&self, bundle_variable: &mut BundleVariable) {
@@ -409,7 +407,7 @@ impl ModuleAnalyzer {
   pub fn build_rename_map<'a>(
     &self,
     bundle_variable: &'a BundleVariable,
-  ) -> HashMap<&'a Id, &'a Var> {
+  ) -> HashMap<VarRefKey<'a>, usize> {
     self
       .statements
       .iter()
@@ -463,8 +461,38 @@ impl ModuleAnalyzer {
           )
           .map(|item| bundle_variable.var_by_index(item))
           .filter(|item| item.rename.is_some())
-          .map(|item| (&item.var, item))
+          .map(|item| {
+            (
+              Ref::map(Ref::clone(&item), |item| &item.var).into(),
+              item.index,
+            )
+          })
       })
       .collect::<HashMap<_, _>>()
+  }
+}
+
+#[derive(Debug)]
+pub struct VarRefKey<'a> {
+  inner: Ref<'a, Id>,
+}
+
+impl<'a> PartialEq for VarRefKey<'a> {
+  fn eq(&self, other: &Self) -> bool {
+    *self.inner == *other.inner
+  }
+}
+
+impl<'a> Eq for VarRefKey<'a> {}
+
+impl<'a> Hash for VarRefKey<'a> {
+  fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+    self.inner.hash(state);
+  }
+}
+
+impl<'a> From<Ref<'a, Id>> for VarRefKey<'a> {
+  fn from(value: Ref<'a, Id>) -> Self {
+    Self { inner: value }
   }
 }

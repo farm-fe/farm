@@ -6,8 +6,8 @@ use farmfe_core::{
   module::{module_graph::ModuleGraph, ModuleId},
   swc_common::Mark,
   swc_ecma_ast::{
-    self, DefaultDecl, ExportDecl, Expr, Ident, ImportSpecifier, ModuleDecl,
-    ModuleExportName, ModuleItem,
+    self, DefaultDecl, ExportDecl, Expr, Ident, ImportSpecifier, ModuleDecl, ModuleExportName,
+    ModuleItem,
   },
 };
 use farmfe_toolkit::swc_ecma_visit::{Visit, VisitWith};

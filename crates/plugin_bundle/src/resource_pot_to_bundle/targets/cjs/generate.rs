@@ -2,27 +2,28 @@ use std::collections::HashMap;
 
 use farmfe_core::{
   error::Result,
-  module::{ModuleId, ModuleSystem},
+  module::ModuleSystem,
   swc_common::DUMMY_SP,
   swc_ecma_ast::{
     AssignExpr, AssignOp, AssignTarget, BindingIdent, CallExpr, Callee, Decl, Expr, ExprOrSpread,
-    ExprStmt, KeyValueProp, Lit, MemberExpr, MemberProp, ModuleItem, ObjectLit, Pat, Prop,
-    PropName, PropOrSpread, SimpleAssignTarget, Stmt, VarDecl, VarDeclKind, VarDeclarator,
+    ExprStmt, Lit, MemberExpr, MemberProp, ModuleItem, Pat, SimpleAssignTarget, Stmt, VarDecl,
+    VarDeclKind, VarDeclarator,
   },
 };
+use farmfe_toolkit::itertools::Itertools;
 
 use crate::resource_pot_to_bundle::{
   bundle::{
-    bundle_external::{ExternalReferenceExport, ExternalReferenceImport, ReferenceKind},
+    bundle_reference::{ExternalReferenceExport, ExternalReferenceImport, ReferenceKind},
     ModuleAnalyzerManager,
   },
-  common::OptionToResult,
-  polyfill::{
-    cjs::{wrap_export_star, wrap_require_default, wrap_require_wildcard},
-    SimplePolyfill,
-  },
+  common::{with_bundle_reference_slot_name, OptionToResult},
+  polyfill::SimplePolyfill,
+  targets::util::{wrap_export_star, wrap_require_default, wrap_require_wildcard},
   uniq_name::BundleVariable,
 };
+
+use super::util::create_esm_flag;
 
 // export * from "./moduleA";
 // esm => export * from "./moduleA";
@@ -34,16 +35,20 @@ pub struct CjsGenerate {}
 
 impl CjsGenerate {
   pub fn generate_export(
-    source: Option<&ModuleId>,
+    source: Option<&ReferenceKind>,
     export: &ExternalReferenceExport,
     bundle_variable: &BundleVariable,
     module_analyzer_manager: &ModuleAnalyzerManager,
     polyfill: &mut SimplePolyfill,
+    is_already_polyfilled: &mut bool,
   ) -> Result<Vec<ModuleItem>> {
     let mut stmts = vec![];
-    let mut ordered_keys = export.named.keys().collect::<Vec<_>>();
 
-    ordered_keys.sort_by_key(|a| bundle_variable.name(**a));
+    let index_is_entry = |i: usize| {
+      bundle_variable
+        .module_id_by_var_index(i)
+        .is_some_and(|m| !module_analyzer_manager.is_entry(m))
+    };
 
     let module_export = |exported_name: &String, named_render_name: &String| {
       ModuleItem::Stmt(Stmt::Expr(ExprStmt {
@@ -65,16 +70,31 @@ impl CjsGenerate {
       }))
     };
 
-    for exported in ordered_keys {
+    for exported in export
+      .named
+      .keys()
+      .sorted_by_key(|a| bundle_variable.render_name(**a))
+    {
       let local = &export.named[exported];
       if bundle_variable.var_by_index(*local).removed {
         continue;
       }
 
+      let should_reexport_uniq = index_is_entry(*local);
+
       let named_render_name = bundle_variable.render_name(*local);
       let exported_name = bundle_variable.name(*exported);
 
-      stmts.push(module_export(&exported_name, &named_render_name));
+      let exported_name = if should_reexport_uniq || named_render_name == exported_name {
+        None
+      } else {
+        Some(exported_name.as_str().into())
+      };
+
+      stmts.push(module_export(
+        exported_name.as_ref().unwrap_or(&named_render_name),
+        &named_render_name,
+      ));
     }
 
     if let Some(namespace) = export.namespace.as_ref() {
@@ -83,10 +103,11 @@ impl CjsGenerate {
       stmts.push(module_export(&exported_name, &named_render_name));
     }
 
-    if let Some(source) = source {
+    if let Some(ReferenceKind::Module(source)) = source {
       if export.all.0 {
         let is_external = module_analyzer_manager.is_external(source);
-        if is_external || module_analyzer_manager.is_commonjs(source) {
+        let is_commonjs = module_analyzer_manager.is_commonjs(source);
+        if is_external || is_commonjs {
           let ns = module_analyzer_manager
             .module_global_uniq_name
             .namespace_name(source)
@@ -126,46 +147,14 @@ impl CjsGenerate {
       ));
     };
 
-    if matches!(
-      export.module_system,
-      ModuleSystem::EsModule | ModuleSystem::Hybrid
-    ) {
-      // Object.defineProperty(exports, '__esModule', {
-      //   value: true,
-      // });
-
-      stmts.push(ModuleItem::Stmt(Stmt::Expr(ExprStmt {
-        span: DUMMY_SP,
-        expr: Box::new(Expr::Call(CallExpr {
-          span: DUMMY_SP,
-          callee: Callee::Expr(Box::new(Expr::Member(MemberExpr {
-            span: DUMMY_SP,
-            obj: Box::new(Expr::Ident("Object".into())),
-            prop: MemberProp::Ident("defineProperty".into()),
-          }))),
-          args: vec![
-            ExprOrSpread {
-              spread: None,
-              expr: Box::new(Expr::Ident("exports".into())),
-            },
-            ExprOrSpread {
-              spread: None,
-              expr: Box::new(Expr::Lit("__esModule".into())),
-            },
-            ExprOrSpread {
-              spread: None,
-              expr: Box::new(Expr::Object(ObjectLit {
-                span: DUMMY_SP,
-                props: vec![PropOrSpread::Prop(Box::new(Prop::KeyValue(KeyValueProp {
-                  key: PropName::Ident("value".into()),
-                  value: Box::new(Expr::Lit(Lit::Bool(true.into()))),
-                })))],
-              })),
-            },
-          ],
-          type_args: None,
-        })),
-      })));
+    if !*is_already_polyfilled
+      && matches!(
+        export.module_system,
+        ModuleSystem::EsModule | ModuleSystem::Hybrid
+      )
+    {
+      stmts.push(create_esm_flag());
+      *is_already_polyfilled = true;
     }
 
     Ok(stmts)
@@ -194,42 +183,49 @@ impl CjsGenerate {
     import_map: &HashMap<ReferenceKind, ExternalReferenceImport>,
     module_analyzer_manager: &ModuleAnalyzerManager,
     polyfill: &mut SimplePolyfill,
+    resource_pot_id: &str,
   ) -> Result<Vec<ModuleItem>> {
     let mut stmts = vec![];
     let mut ordered_import = import_map.keys().collect::<Vec<_>>();
     ordered_import.sort();
 
-    for source in ordered_import {
-      let module_id = match source {
-        ReferenceKind::Bundle(_) => continue,
-        ReferenceKind::Module(m) => m,
-      };
+    let mut generate_import_specifies: HashMap<String, MergedImportGenerate> = HashMap::new();
 
+    for source in ordered_import {
       let import = &import_map[source];
+
+      let mut is_import_uniq_name = false;
+
+      let (module_id, url) = match source {
+        ReferenceKind::Bundle(_) => continue,
+        ReferenceKind::Module(m) => (
+          m,
+          if module_analyzer_manager.is_external(m) {
+            m.to_string()
+          } else {
+            if !module_analyzer_manager.is_entry(m) {
+              is_import_uniq_name = true;
+            }
+
+            with_bundle_reference_slot_name(
+              &module_analyzer_manager
+                .module_analyzer(m)
+                .map(|m| m.resource_pot_id.clone())
+                .unwrap(),
+            )
+          },
+        ),
+      };
 
       if import.named.is_empty() && import.namespace.is_none() && import.default.is_none() {
         continue;
       }
 
-      let namespace_name = bundle_variable.name(
-        module_analyzer_manager
-          .module_global_uniq_name
-          .namespace_name(module_id)
-          .unwrap(),
-      );
-
       // import * as foo_ns from "foo";
       // import foo from "foo";
       // =>
       // var foo_ns = _interop_require_wildcard(require("foo"));
-      // var foo_default = foo_ns.default;
-      let try_wrap_namespace = |expr: Box<Expr>, polyfill: &mut SimplePolyfill| {
-        if import.namespace.is_some() {
-          return wrap_require_wildcard(expr, polyfill);
-        }
 
-        expr
-      };
       let try_wrap_require_default = |expr: Box<Expr>, polyfill: &mut SimplePolyfill| {
         if import.default.is_some() {
           return wrap_require_default(expr, polyfill);
@@ -238,38 +234,43 @@ impl CjsGenerate {
         expr
       };
 
-      // if both namespace and default are imported, we need to import the namespace first
-      stmts.push(ModuleItem::Stmt(Stmt::Decl(Decl::Var(Box::new(VarDecl {
-        span: DUMMY_SP,
-        kind: farmfe_core::swc_ecma_ast::VarDeclKind::Var,
-        declare: false,
-        decls: vec![VarDeclarator {
-          span: DUMMY_SP,
-          name: Pat::Ident(BindingIdent {
-            id: namespace_name.as_str().into(),
-            type_ann: None,
-          }),
-          init: Some(try_wrap_namespace(
-            Box::new(Expr::Call(CallExpr {
-              span: DUMMY_SP,
-              callee: Callee::Expr(Box::new(Expr::Ident("require".into()))),
-              args: vec![ExprOrSpread {
-                spread: None,
-                expr: Box::new(Expr::Lit(Lit::Str(module_id.to_string().as_str().into()))),
-              }],
-              type_args: None,
-            })),
-            polyfill,
-          )),
-          definite: false,
-        }],
-      })))));
+      let source_bundle_id = module_analyzer_manager
+        .module_analyzer(module_id)
+        .map(|m| m.resource_pot_id.clone())
+        // maybe external
+        .unwrap_or(resource_pot_id.to_string());
+      let is_same_bundle = source_bundle_id == resource_pot_id;
+
+      let namespace_name = bundle_variable.name(if !is_same_bundle {
+        module_analyzer_manager
+          .module_global_uniq_name
+          .namespace_name(source_bundle_id.to_string())
+          .unwrap()
+      } else {
+        module_analyzer_manager
+          .module_global_uniq_name
+          .namespace_name(module_id)
+          .unwrap()
+      });
 
       let mut decls: Vec<VarDeclarator> = vec![];
+      let namespace_expr = Expr::Ident(namespace_name.as_str().into());
 
       let mut add_decl = |name: &str, property: &str| {
         let is_default = property == "default";
-        let init_expr = Box::new(Expr::Ident(namespace_name.as_str().into()));
+        let init_expr = Box::new(namespace_expr.clone());
+
+        let init_expr = Expr::Member(MemberExpr {
+          span: DUMMY_SP,
+          obj: if is_default {
+            try_wrap_require_default(init_expr, polyfill)
+          } else {
+            init_expr
+          },
+          prop: MemberProp::Ident(property.into()),
+        });
+
+        let t = Box::new(init_expr);
 
         decls.push(VarDeclarator {
           span: DUMMY_SP,
@@ -277,15 +278,7 @@ impl CjsGenerate {
             id: name.into(),
             type_ann: None,
           }),
-          init: Some(Box::new(Expr::Member(MemberExpr {
-            span: DUMMY_SP,
-            obj: if is_default {
-              try_wrap_require_default(init_expr, polyfill)
-            } else {
-              init_expr
-            },
-            prop: MemberProp::Ident(property.into()),
-          }))),
+          init: Some(t),
           definite: false,
         });
       };
@@ -297,23 +290,105 @@ impl CjsGenerate {
         let local = &import.named[imported];
         let local_named = bundle_variable.render_name(*local);
 
-        add_decl(&local_named, imported);
+        if is_import_uniq_name {
+          add_decl(&local_named, &local_named);
+        } else {
+          add_decl(&local_named, &imported);
+        }
       }
 
       if let Some(default) = import.default.as_ref() {
-        add_decl(&bundle_variable.render_name(*default), "default");
+        let name = bundle_variable.render_name(*default);
+        if is_import_uniq_name {
+          add_decl(&name, &name);
+        } else {
+          add_decl(&name, "default");
+        }
       }
 
-      if !decls.is_empty() {
+      if let Some(v) = generate_import_specifies.get_mut(&url) {
+        v.merge(MergedImportGenerate {
+          specifies: decls,
+          namespace_name,
+          is_contain_namespace: import.namespace.is_some(),
+        });
+      } else {
+        generate_import_specifies.insert(
+          url,
+          MergedImportGenerate {
+            specifies: decls,
+            namespace_name,
+            is_contain_namespace: import.namespace.is_some(),
+          },
+        );
+      }
+    }
+
+    for (url, merged_import_generate) in generate_import_specifies {
+      // if both namespace and default are imported, we need to import the namespace first
+      stmts.push(ModuleItem::Stmt(Stmt::Decl(Decl::Var(Box::new(VarDecl {
+        span: DUMMY_SP,
+        kind: farmfe_core::swc_ecma_ast::VarDeclKind::Var,
+        declare: false,
+        decls: vec![VarDeclarator {
+          span: DUMMY_SP,
+          name: Pat::Ident(BindingIdent {
+            id: merged_import_generate.namespace_name.as_str().into(),
+            type_ann: None,
+          }),
+          init: Some(try_wrap_namespace(
+            Box::new(Expr::Call(CallExpr {
+              span: DUMMY_SP,
+              callee: Callee::Expr(Box::new(Expr::Ident("require".into()))),
+              args: vec![ExprOrSpread {
+                spread: None,
+                expr: Box::new(Expr::Lit(Lit::Str(url.as_str().into()))),
+              }],
+              type_args: None,
+            })),
+            polyfill,
+            merged_import_generate.is_contain_namespace,
+          )),
+          definite: false,
+        }],
+      })))));
+
+      if !merged_import_generate.specifies.is_empty() {
         stmts.push(ModuleItem::Stmt(Stmt::Decl(Decl::Var(Box::new(VarDecl {
           span: DUMMY_SP,
           kind: VarDeclKind::Var,
           declare: false,
-          decls,
+          decls: merged_import_generate.specifies,
         })))));
       }
     }
 
     Ok(stmts)
+  }
+}
+
+// var foo_default = foo_ns.default;
+fn try_wrap_namespace(
+  expr: Box<Expr>,
+  polyfill: &mut SimplePolyfill,
+  is_contain_namespace: bool,
+) -> Box<Expr> {
+  if is_contain_namespace {
+    return wrap_require_wildcard(expr, polyfill);
+  }
+
+  expr
+}
+
+pub struct MergedImportGenerate {
+  specifies: Vec<VarDeclarator>,
+  namespace_name: String,
+  is_contain_namespace: bool,
+}
+
+impl MergedImportGenerate {
+  fn merge(&mut self, other: MergedImportGenerate) {
+    self.specifies.extend(other.specifies);
+    self.is_contain_namespace = self.is_contain_namespace || other.is_contain_namespace;
   }
 }
