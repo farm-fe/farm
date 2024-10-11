@@ -10,6 +10,9 @@ export default defineConfig({
   ],
   compilation: {
     // persistentCache: false,
+    persistentCache: {
+      cacheDir: "node_modules/.adny",
+    },
     output: {
       // publicPath: "/aaa/",
     },

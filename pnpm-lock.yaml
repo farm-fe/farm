@@ -2222,6 +2222,9 @@ importers:
       core-js:
         specifier: ^3.30.1
         version: 3.37.1
+      unocss:
+        specifier: ^0.62.2
+        version: 0.62.2(postcss@8.4.47)(rollup@4.14.1)(vite@5.2.8(@types/node@22.5.0)(less@4.2.0)(lightningcss@1.25.1)(sass@1.74.1)(terser@5.31.1))
       unplugin-vue-inspector:
         specifier: ^2.2.0
         version: 2.2.0(vite@5.2.8(@types/node@22.5.0)(less@4.2.0)(lightningcss@1.25.1)(sass@1.74.1)(terser@5.31.1))
@@ -20131,7 +20134,7 @@ snapshots:
     dependencies:
       '@babel/core': 7.25.2
       '@babel/helper-compilation-targets': 7.23.6
-      '@babel/helper-plugin-utils': 7.24.0
+      '@babel/helper-plugin-utils': 7.25.7
       debug: 4.3.6
       lodash.debounce: 4.0.8
       resolve: 1.22.8
@@ -20530,29 +20533,14 @@ snapshots:
     dependencies:
       '@babel/core': 7.25.2
 
-  '@babel/plugin-syntax-async-generators@7.8.4(@babel/core@7.24.3)':
-    dependencies:
-      '@babel/core': 7.24.3
-      '@babel/helper-plugin-utils': 7.25.7
-
   '@babel/plugin-syntax-async-generators@7.8.4(@babel/core@7.25.2)':
     dependencies:
       '@babel/core': 7.25.2
       '@babel/helper-plugin-utils': 7.25.7
 
-  '@babel/plugin-syntax-bigint@7.8.3(@babel/core@7.24.3)':
-    dependencies:
-      '@babel/core': 7.24.3
-      '@babel/helper-plugin-utils': 7.24.8
-
   '@babel/plugin-syntax-bigint@7.8.3(@babel/core@7.25.2)':
     dependencies:
       '@babel/core': 7.25.2
-      '@babel/helper-plugin-utils': 7.24.8
-
-  '@babel/plugin-syntax-class-properties@7.12.13(@babel/core@7.24.3)':
-    dependencies:
-      '@babel/core': 7.24.3
       '@babel/helper-plugin-utils': 7.25.7
 
   '@babel/plugin-syntax-class-properties@7.12.13(@babel/core@7.25.2)':
@@ -20595,19 +20583,9 @@ snapshots:
       '@babel/core': 7.25.2
       '@babel/helper-plugin-utils': 7.25.7
 
-  '@babel/plugin-syntax-import-meta@7.10.4(@babel/core@7.24.3)':
-    dependencies:
-      '@babel/core': 7.24.3
-      '@babel/helper-plugin-utils': 7.25.7
-
   '@babel/plugin-syntax-import-meta@7.10.4(@babel/core@7.25.2)':
     dependencies:
       '@babel/core': 7.25.2
-      '@babel/helper-plugin-utils': 7.25.7
-
-  '@babel/plugin-syntax-json-strings@7.8.3(@babel/core@7.24.3)':
-    dependencies:
-      '@babel/core': 7.24.3
       '@babel/helper-plugin-utils': 7.25.7
 
   '@babel/plugin-syntax-json-strings@7.8.3(@babel/core@7.25.2)':
@@ -20640,14 +20618,14 @@ snapshots:
       '@babel/core': 7.25.2
       '@babel/helper-plugin-utils': 7.24.8
 
+  '@babel/plugin-syntax-jsx@7.25.7(@babel/core@7.24.3)':
+    dependencies:
+      '@babel/core': 7.24.3
+      '@babel/helper-plugin-utils': 7.25.7
+
   '@babel/plugin-syntax-jsx@7.25.7(@babel/core@7.25.2)':
     dependencies:
       '@babel/core': 7.25.2
-      '@babel/helper-plugin-utils': 7.25.7
-
-  '@babel/plugin-syntax-logical-assignment-operators@7.10.4(@babel/core@7.24.3)':
-    dependencies:
-      '@babel/core': 7.24.3
       '@babel/helper-plugin-utils': 7.25.7
 
   '@babel/plugin-syntax-logical-assignment-operators@7.10.4(@babel/core@7.25.2)':
@@ -20665,11 +20643,6 @@ snapshots:
       '@babel/core': 7.25.2
       '@babel/helper-plugin-utils': 7.24.0
 
-  '@babel/plugin-syntax-numeric-separator@7.10.4(@babel/core@7.24.3)':
-    dependencies:
-      '@babel/core': 7.24.3
-      '@babel/helper-plugin-utils': 7.25.7
-
   '@babel/plugin-syntax-numeric-separator@7.10.4(@babel/core@7.25.2)':
     dependencies:
       '@babel/core': 7.25.2
@@ -20684,11 +20657,6 @@ snapshots:
     dependencies:
       '@babel/core': 7.25.2
       '@babel/helper-plugin-utils': 7.24.0
-
-  '@babel/plugin-syntax-optional-catch-binding@7.8.3(@babel/core@7.24.3)':
-    dependencies:
-      '@babel/core': 7.24.3
-      '@babel/helper-plugin-utils': 7.25.7
 
   '@babel/plugin-syntax-optional-catch-binding@7.8.3(@babel/core@7.25.2)':
     dependencies:
@@ -20708,11 +20676,6 @@ snapshots:
   '@babel/plugin-syntax-private-property-in-object@7.14.5(@babel/core@7.25.2)':
     dependencies:
       '@babel/core': 7.25.2
-      '@babel/helper-plugin-utils': 7.25.7
-
-  '@babel/plugin-syntax-top-level-await@7.14.5(@babel/core@7.24.3)':
-    dependencies:
-      '@babel/core': 7.24.3
       '@babel/helper-plugin-utils': 7.25.7
 
   '@babel/plugin-syntax-top-level-await@7.14.5(@babel/core@7.25.2)':
@@ -27167,6 +27130,17 @@ snapshots:
       - rollup
       - supports-color
 
+  '@unocss/astro@0.62.2(rollup@4.14.1)(vite@5.2.8(@types/node@22.5.0)(less@4.2.0)(lightningcss@1.25.1)(sass@1.74.1)(terser@5.31.1))':
+    dependencies:
+      '@unocss/core': 0.62.2
+      '@unocss/reset': 0.62.2
+      '@unocss/vite': 0.62.2(rollup@4.14.1)(vite@5.2.8(@types/node@22.5.0)(less@4.2.0)(lightningcss@1.25.1)(sass@1.74.1)(terser@5.31.1))
+    optionalDependencies:
+      vite: 5.2.8(@types/node@22.5.0)(less@4.2.0)(lightningcss@1.25.1)(sass@1.74.1)(terser@5.31.1)
+    transitivePeerDependencies:
+      - rollup
+      - supports-color
+
   '@unocss/cli@0.62.2(rollup@4.14.1)':
     dependencies:
       '@ampproject/remapping': 2.3.0
@@ -27214,6 +27188,18 @@ snapshots:
       css-tree: 2.3.1
       magic-string: 0.30.11
       postcss: 8.4.32
+      tinyglobby: 0.2.2
+    transitivePeerDependencies:
+      - supports-color
+
+  '@unocss/postcss@0.62.2(postcss@8.4.47)':
+    dependencies:
+      '@unocss/config': 0.62.2
+      '@unocss/core': 0.62.2
+      '@unocss/rule-utils': 0.62.2
+      css-tree: 2.3.1
+      magic-string: 0.30.11
+      postcss: 8.4.47
       tinyglobby: 0.2.2
     transitivePeerDependencies:
       - supports-color
@@ -27275,7 +27261,7 @@ snapshots:
   '@unocss/transformer-attributify-jsx-babel@0.62.2':
     dependencies:
       '@babel/core': 7.25.2
-      '@babel/plugin-syntax-jsx': 7.24.7(@babel/core@7.25.2)
+      '@babel/plugin-syntax-jsx': 7.25.7(@babel/core@7.25.2)
       '@babel/preset-typescript': 7.24.7(@babel/core@7.25.2)
       '@unocss/core': 0.62.2
     transitivePeerDependencies:
@@ -27312,6 +27298,23 @@ snapshots:
       magic-string: 0.30.11
       tinyglobby: 0.2.2
       vite: 5.2.8(@types/node@22.5.0)(less@4.2.0)(lightningcss@1.25.1)(sass@1.69.5)(terser@5.31.1)
+    transitivePeerDependencies:
+      - rollup
+      - supports-color
+
+  '@unocss/vite@0.62.2(rollup@4.14.1)(vite@5.2.8(@types/node@22.5.0)(less@4.2.0)(lightningcss@1.25.1)(sass@1.74.1)(terser@5.31.1))':
+    dependencies:
+      '@ampproject/remapping': 2.3.0
+      '@rollup/pluginutils': 5.1.0(rollup@4.14.1)
+      '@unocss/config': 0.62.2
+      '@unocss/core': 0.62.2
+      '@unocss/inspector': 0.62.2
+      '@unocss/scope': 0.62.2
+      '@unocss/transformer-directives': 0.62.2
+      chokidar: 3.6.0
+      magic-string: 0.30.11
+      tinyglobby: 0.2.2
+      vite: 5.2.8(@types/node@22.5.0)(less@4.2.0)(lightningcss@1.25.1)(sass@1.74.1)(terser@5.31.1)
     transitivePeerDependencies:
       - rollup
       - supports-color
@@ -27432,7 +27435,7 @@ snapshots:
 
   '@vanilla-extract/babel-plugin-debug-ids@1.0.6':
     dependencies:
-      '@babel/core': 7.24.3
+      '@babel/core': 7.25.2
     transitivePeerDependencies:
       - supports-color
 
@@ -27748,7 +27751,7 @@ snapshots:
     dependencies:
       '@babel/core': 7.24.3
       '@babel/helper-module-imports': 7.24.7
-      '@babel/plugin-syntax-jsx': 7.24.1(@babel/core@7.24.3)
+      '@babel/plugin-syntax-jsx': 7.25.7(@babel/core@7.24.3)
       '@vue/babel-helper-vue-jsx-merge-props': 1.4.0
       html-tags: 2.0.0
       lodash.kebabcase: 4.1.1
@@ -27775,27 +27778,27 @@ snapshots:
   '@vue/babel-sugar-composition-api-inject-h@1.4.0(@babel/core@7.24.3)':
     dependencies:
       '@babel/core': 7.24.3
-      '@babel/plugin-syntax-jsx': 7.24.1(@babel/core@7.24.3)
+      '@babel/plugin-syntax-jsx': 7.25.7(@babel/core@7.24.3)
 
   '@vue/babel-sugar-composition-api-render-instance@1.4.0(@babel/core@7.24.3)':
     dependencies:
       '@babel/core': 7.24.3
-      '@babel/plugin-syntax-jsx': 7.24.1(@babel/core@7.24.3)
+      '@babel/plugin-syntax-jsx': 7.25.7(@babel/core@7.24.3)
 
   '@vue/babel-sugar-functional-vue@1.4.0(@babel/core@7.24.3)':
     dependencies:
       '@babel/core': 7.24.3
-      '@babel/plugin-syntax-jsx': 7.24.1(@babel/core@7.24.3)
+      '@babel/plugin-syntax-jsx': 7.25.7(@babel/core@7.24.3)
 
   '@vue/babel-sugar-inject-h@1.4.0(@babel/core@7.24.3)':
     dependencies:
       '@babel/core': 7.24.3
-      '@babel/plugin-syntax-jsx': 7.24.1(@babel/core@7.24.3)
+      '@babel/plugin-syntax-jsx': 7.25.7(@babel/core@7.24.3)
 
   '@vue/babel-sugar-v-model@1.4.0(@babel/core@7.24.3)':
     dependencies:
       '@babel/core': 7.24.3
-      '@babel/plugin-syntax-jsx': 7.24.1(@babel/core@7.24.3)
+      '@babel/plugin-syntax-jsx': 7.25.7(@babel/core@7.24.3)
       '@vue/babel-helper-vue-jsx-merge-props': 1.4.0
       '@vue/babel-plugin-transform-vue-jsx': 1.4.0(@babel/core@7.24.3)
       camelcase: 5.3.1
@@ -27807,7 +27810,7 @@ snapshots:
   '@vue/babel-sugar-v-on@1.4.0(@babel/core@7.24.3)':
     dependencies:
       '@babel/core': 7.24.3
-      '@babel/plugin-syntax-jsx': 7.24.1(@babel/core@7.24.3)
+      '@babel/plugin-syntax-jsx': 7.25.7(@babel/core@7.24.3)
       '@vue/babel-plugin-transform-vue-jsx': 1.4.0(@babel/core@7.24.3)
       camelcase: 5.3.1
     transitivePeerDependencies:
@@ -28937,19 +28940,6 @@ snapshots:
 
   b4a@1.6.7: {}
 
-  babel-jest@29.7.0(@babel/core@7.24.3):
-    dependencies:
-      '@babel/core': 7.24.3
-      '@jest/transform': 29.7.0
-      '@types/babel__core': 7.20.3
-      babel-plugin-istanbul: 6.1.1
-      babel-preset-jest: 29.6.3(@babel/core@7.24.3)
-      chalk: 4.1.2
-      graceful-fs: 4.2.11
-      slash: 3.0.0
-    transitivePeerDependencies:
-      - supports-color
-
   babel-jest@29.7.0(@babel/core@7.25.2):
     dependencies:
       '@babel/core': 7.25.2
@@ -28962,7 +28952,6 @@ snapshots:
       slash: 3.0.0
     transitivePeerDependencies:
       - supports-color
-    optional: true
 
   babel-loader@9.2.1(@babel/core@7.25.2)(webpack@5.92.1(@swc/core@1.7.26(@swc/helpers@0.5.3))):
     dependencies:
@@ -28977,7 +28966,7 @@ snapshots:
 
   babel-plugin-istanbul@6.1.1:
     dependencies:
-      '@babel/helper-plugin-utils': 7.24.8
+      '@babel/helper-plugin-utils': 7.25.7
       '@istanbuljs/load-nyc-config': 1.1.0
       '@istanbuljs/schema': 0.1.3
       istanbul-lib-instrument: 5.2.1
@@ -29066,22 +29055,6 @@ snapshots:
       core-js: 2.6.12
       regenerator-runtime: 0.10.5
 
-  babel-preset-current-node-syntax@1.0.1(@babel/core@7.24.3):
-    dependencies:
-      '@babel/core': 7.24.3
-      '@babel/plugin-syntax-async-generators': 7.8.4(@babel/core@7.24.3)
-      '@babel/plugin-syntax-bigint': 7.8.3(@babel/core@7.24.3)
-      '@babel/plugin-syntax-class-properties': 7.12.13(@babel/core@7.24.3)
-      '@babel/plugin-syntax-import-meta': 7.10.4(@babel/core@7.24.3)
-      '@babel/plugin-syntax-json-strings': 7.8.3(@babel/core@7.24.3)
-      '@babel/plugin-syntax-logical-assignment-operators': 7.10.4(@babel/core@7.24.3)
-      '@babel/plugin-syntax-nullish-coalescing-operator': 7.8.3(@babel/core@7.24.3)
-      '@babel/plugin-syntax-numeric-separator': 7.10.4(@babel/core@7.24.3)
-      '@babel/plugin-syntax-object-rest-spread': 7.8.3(@babel/core@7.24.3)
-      '@babel/plugin-syntax-optional-catch-binding': 7.8.3(@babel/core@7.24.3)
-      '@babel/plugin-syntax-optional-chaining': 7.8.3(@babel/core@7.24.3)
-      '@babel/plugin-syntax-top-level-await': 7.14.5(@babel/core@7.24.3)
-
   babel-preset-current-node-syntax@1.0.1(@babel/core@7.25.2):
     dependencies:
       '@babel/core': 7.25.2
@@ -29098,18 +29071,11 @@ snapshots:
       '@babel/plugin-syntax-optional-chaining': 7.8.3(@babel/core@7.25.2)
       '@babel/plugin-syntax-top-level-await': 7.14.5(@babel/core@7.25.2)
 
-  babel-preset-jest@29.6.3(@babel/core@7.24.3):
-    dependencies:
-      '@babel/core': 7.24.3
-      babel-plugin-jest-hoist: 29.6.3
-      babel-preset-current-node-syntax: 1.0.1(@babel/core@7.24.3)
-
   babel-preset-jest@29.6.3(@babel/core@7.25.2):
     dependencies:
       '@babel/core': 7.25.2
       babel-plugin-jest-hoist: 29.6.3
       babel-preset-current-node-syntax: 1.0.1(@babel/core@7.25.2)
-    optional: true
 
   babel-preset-solid@1.8.4(@babel/core@7.23.2):
     dependencies:
@@ -33512,10 +33478,10 @@ snapshots:
 
   jest-config@29.7.0(@types/node@20.12.12)(babel-plugin-macros@3.1.0)(ts-node@10.9.1(@swc/core@1.7.26(@swc/helpers@0.5.3))(@types/node@20.12.12)(typescript@5.4.5)):
     dependencies:
-      '@babel/core': 7.24.3
+      '@babel/core': 7.25.2
       '@jest/test-sequencer': 29.7.0
       '@jest/types': 29.6.3
-      babel-jest: 29.7.0(@babel/core@7.24.3)
+      babel-jest: 29.7.0(@babel/core@7.25.2)
       chalk: 4.1.2
       ci-info: 3.9.0
       deepmerge: 4.3.1
@@ -33543,10 +33509,10 @@ snapshots:
 
   jest-config@29.7.0(@types/node@20.14.12)(babel-plugin-macros@3.1.0)(ts-node@10.9.1(@swc/core@1.7.26(@swc/helpers@0.5.3))(@types/node@20.12.12)(typescript@5.4.5)):
     dependencies:
-      '@babel/core': 7.24.3
+      '@babel/core': 7.25.2
       '@jest/test-sequencer': 29.7.0
       '@jest/types': 29.6.3
-      babel-jest: 29.7.0(@babel/core@7.24.3)
+      babel-jest: 29.7.0(@babel/core@7.25.2)
       chalk: 4.1.2
       ci-info: 3.9.0
       deepmerge: 4.3.1
@@ -33730,7 +33696,7 @@ snapshots:
     dependencies:
       '@babel/core': 7.25.2
       '@babel/generator': 7.25.0
-      '@babel/plugin-syntax-jsx': 7.24.1(@babel/core@7.25.2)
+      '@babel/plugin-syntax-jsx': 7.25.7(@babel/core@7.25.2)
       '@babel/plugin-syntax-typescript': 7.24.1(@babel/core@7.25.2)
       '@babel/types': 7.24.0
       '@jest/expect-utils': 29.7.0
@@ -40165,6 +40131,35 @@ snapshots:
       - rollup
       - supports-color
 
+  unocss@0.62.2(postcss@8.4.47)(rollup@4.14.1)(vite@5.2.8(@types/node@22.5.0)(less@4.2.0)(lightningcss@1.25.1)(sass@1.74.1)(terser@5.31.1)):
+    dependencies:
+      '@unocss/astro': 0.62.2(rollup@4.14.1)(vite@5.2.8(@types/node@22.5.0)(less@4.2.0)(lightningcss@1.25.1)(sass@1.74.1)(terser@5.31.1))
+      '@unocss/cli': 0.62.2(rollup@4.14.1)
+      '@unocss/core': 0.62.2
+      '@unocss/extractor-arbitrary-variants': 0.62.2
+      '@unocss/postcss': 0.62.2(postcss@8.4.47)
+      '@unocss/preset-attributify': 0.62.2
+      '@unocss/preset-icons': 0.62.2
+      '@unocss/preset-mini': 0.62.2
+      '@unocss/preset-tagify': 0.62.2
+      '@unocss/preset-typography': 0.62.2
+      '@unocss/preset-uno': 0.62.2
+      '@unocss/preset-web-fonts': 0.62.2
+      '@unocss/preset-wind': 0.62.2
+      '@unocss/reset': 0.62.2
+      '@unocss/transformer-attributify-jsx': 0.62.2
+      '@unocss/transformer-attributify-jsx-babel': 0.62.2
+      '@unocss/transformer-compile-class': 0.62.2
+      '@unocss/transformer-directives': 0.62.2
+      '@unocss/transformer-variant-group': 0.62.2
+      '@unocss/vite': 0.62.2(rollup@4.14.1)(vite@5.2.8(@types/node@22.5.0)(less@4.2.0)(lightningcss@1.25.1)(sass@1.74.1)(terser@5.31.1))
+    optionalDependencies:
+      vite: 5.2.8(@types/node@22.5.0)(less@4.2.0)(lightningcss@1.25.1)(sass@1.74.1)(terser@5.31.1)
+    transitivePeerDependencies:
+      - postcss
+      - rollup
+      - supports-color
+
   unpipe@1.0.0: {}
 
   unplugin-auto-import@0.16.7(@vueuse/core@9.13.0(@vue/composition-api@1.7.2(vue@3.3.7(typescript@5.5.4)))(vue@3.3.7(typescript@5.5.4)))(rollup@4.14.1):
@@ -40489,7 +40484,7 @@ snapshots:
     dependencies:
       cac: 6.7.14
       debug: 4.3.6
-      pathe: 1.1.1
+      pathe: 1.1.2
       picocolors: 1.1.0
       vite: 5.2.8(@types/node@22.5.0)(less@4.2.0)(lightningcss@1.25.1)(sass@1.74.1)(terser@5.31.1)
     transitivePeerDependencies:

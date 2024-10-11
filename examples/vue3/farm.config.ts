@@ -10,6 +10,7 @@ import viteCompression from "vite-plugin-compression";
 import mkcert from "vite-plugin-mkcert";
 import Inspector from "unplugin-vue-inspector/vite";
 import { aaa } from "./test.js";
+import UnoCSS from 'unocss/vite'
 import path from "path";
 
 const logger = new Logger({});
@@ -75,6 +76,7 @@ export default defineConfig({
     // imports: ["vue", VueRouterAutoImports],
     // }),
     vue(),
+    UnoCSS(),
     // federation({
     //   name: "remote",
     //   filename: "remoteEntry.js",

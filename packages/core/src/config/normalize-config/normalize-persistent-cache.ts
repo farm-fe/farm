@@ -28,6 +28,16 @@ export async function normalizePersistentCache(
     return;
   }
 
+  if (
+    typeof config.persistentCache === 'object' &&
+    config.persistentCache.cacheDir
+  ) {
+    config.persistentCache.cacheDir = path.resolve(
+      config.root,
+      config.persistentCache.cacheDir
+    );
+  }
+
   if (config.persistentCache === true || config.persistentCache == undefined) {
     config.persistentCache = {
       buildDependencies: [],
