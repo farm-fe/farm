@@ -2,9 +2,9 @@ import { exec } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import fse from 'fs-extra';
-import { ResolvedUserConfig, normalizePublicDir } from '../config/index.js';
+import { ResolvedUserConfig, normalizePublicDir } from '../config/index';
 import { colors } from './color.js';
-import { isWindows, normalizePath } from './share.js';
+import { isWindows, normalizePath } from './share';
 
 export function tryStatSync(file: string): fs.Stats | undefined {
   try {

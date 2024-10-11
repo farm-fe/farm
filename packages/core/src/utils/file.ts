@@ -1,7 +1,7 @@
 import fs from 'fs';
 import fsp from 'node:fs/promises';
 import path from 'path';
-import { normalizePath } from './share.js';
+import { normalizePath } from './share';
 
 interface FileNode {
   isLeaf: boolean;

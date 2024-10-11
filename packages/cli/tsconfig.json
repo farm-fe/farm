@@ -5,15 +5,10 @@
     "outDir": "dist",
     "declaration": false,
     "noUnusedLocals": false,
-    "noUnusedParameters": false,
-    "module": "NodeNext"
+    "noUnusedParameters": false
   },
-  "exclude": [
-    "node_modules"
-  ],
-  "include": [
-    "src/**/*"
-  ],
+  "exclude": ["node_modules"],
+  "include": ["src/**/*"],
   "references": [
     {
       "path": "../core/tsconfig.build.json"

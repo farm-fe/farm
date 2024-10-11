@@ -5,10 +5,10 @@ import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import fse from 'fs-extra';
 
-import { bindingPath } from '../../binding/index.js';
-import { OutputConfig } from '../types/binding.js';
+import { bindingPath } from '../../binding/index';
+import { OutputConfig } from '../types/binding';
 
-import { JsPlugin } from '../index.js';
+import { JsPlugin } from '../index';
 import {
   getSortedPlugins,
   handleVitePlugins,
@@ -16,21 +16,19 @@ import {
   resolveConfigHook,
   resolveConfigResolvedHook,
   resolveFarmPlugins
-} from '../plugin/index.js';
+} from '../plugin/index';
 import {
   Logger,
   clearScreen,
   colors,
-  getAliasEntries,
   isArray,
   isEmptyObject,
   isObject,
   isWindows,
-  normalizePath,
-  transformAliasWithVite
-} from '../utils/index.js';
-import { traceDependencies } from '../utils/trace-dependencies.js';
-import { __FARM_GLOBAL__ } from './_global.js';
+  normalizePath
+} from '../utils/index';
+import { traceDependencies } from '../utils/trace-dependencies';
+import { __FARM_GLOBAL__ } from './_global';
 import {
   CompilationMode,
   getExistsEnvFiles,
@@ -40,25 +38,24 @@ import {
 import {
   getValidPublicPath,
   normalizeOutput
-} from './normalize-config/normalize-output.js';
-import { normalizePersistentCache } from './normalize-config/normalize-persistent-cache.js';
-import { parseUserConfig } from './schema.js';
+} from './normalize-config/normalize-output';
+import { normalizePersistentCache } from './normalize-config/normalize-persistent-cache';
+import { parseUserConfig } from './schema';
 
-import { externalAdapter } from '../plugin/js/external-adapter.js';
-import { convertErrorMessage } from '../utils/error.js';
-import { resolveHostname } from '../utils/http.js';
-import merge from '../utils/merge.js';
+import { externalAdapter } from '../plugin/js/external-adapter';
+import { convertErrorMessage } from '../utils/error';
+import { resolveHostname } from '../utils/http';
+import merge from '../utils/merge';
 import {
   CUSTOM_KEYS,
   DEFAULT_CONFIG_NAMES,
   FARM_DEFAULT_NAMESPACE
-} from './constants.js';
-import { mergeConfig, mergeFarmCliConfig } from './mergeConfig.js';
-import { normalizeCss } from './normalize-config/normalize-css.js';
-import { normalizeExternal } from './normalize-config/normalize-external.js';
-import { normalizeResolve } from './normalize-config/normalize-resolve.js';
+} from './constants';
+import { mergeConfig, mergeFarmCliConfig } from './mergeConfig';
+import { normalizeCss } from './normalize-config/normalize-css';
+import { normalizeExternal } from './normalize-config/normalize-external';
+import { normalizeResolve } from './normalize-config/normalize-resolve';
 import type {
-  Alias,
   ConfigEnv,
   FarmCliOptions,
   NormalizedServerConfig,

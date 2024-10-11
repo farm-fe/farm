@@ -2,11 +2,12 @@ import module from 'node:module';
 
 import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
-import { Config } from '../../types/binding.js';
-import { safeJsonParse } from '../../utils/json.js';
-import { isObject } from '../../utils/share.js';
-import { CUSTOM_KEYS } from '../constants.js';
-import type { ResolvedCompilation, UserConfig } from '../types.js';
+
+import { Config } from '../../types/binding';
+import { isObject, safeJsonParse } from '../../utils';
+import { CUSTOM_KEYS } from '../constants';
+
+import type { ResolvedCompilation, UserConfig } from '../types';
 
 type PartialExternal = [string[], Record<string, string>];
 

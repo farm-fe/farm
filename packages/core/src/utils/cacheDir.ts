@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'node:path';
 
-import { PersistentCacheConfig } from '../types/binding.js';
+import { PersistentCacheConfig } from '../types/binding';
 
 export function getCacheDir(
   root: string,

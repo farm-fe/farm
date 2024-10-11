@@ -5,20 +5,20 @@ import chokidar from 'chokidar';
 import type { FSWatcher, WatchOptions } from 'chokidar';
 import glob from 'fast-glob';
 
-import { Compiler } from '../compiler/index.js';
-import { createInlineCompiler } from '../compiler/index.js';
-import { createDebugger } from '../utils/debug.js';
-import { convertErrorMessage } from '../utils/error.js';
+import { Compiler } from '../compiler/index';
+import { createInlineCompiler } from '../compiler/index';
+import { createDebugger } from '../utils/debug';
+import { convertErrorMessage } from '../utils/error';
 import {
   arraify,
   bold,
   getCacheDir,
   green,
   normalizePath
-} from '../utils/index.js';
+} from '../utils/index';
 
-import type { ResolvedUserConfig } from '../config/index.js';
-import type { JsUpdateResult } from '../types/binding.js';
+import type { ResolvedUserConfig } from '../config/index';
+import type { JsUpdateResult } from '../types/binding';
 
 export const debugWatcher = createDebugger('farm:watcher');
 

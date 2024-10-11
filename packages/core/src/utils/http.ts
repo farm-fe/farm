@@ -10,7 +10,7 @@
 import { promises as dns } from 'node:dns';
 import type { AddressInfo, Server } from 'node:net';
 import os from 'node:os';
-import { ResolvedUserConfig, UserServerConfig } from '../index.js';
+import { ResolvedUserConfig } from '../index';
 
 export interface ResolvedServerUrls {
   local: string[];

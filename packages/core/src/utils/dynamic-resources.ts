@@ -1,4 +1,4 @@
-import type { Resource } from '@farmfe/runtime/src/resource-loader.js';
+import type { Resource } from '@farmfe/runtime/src/resource-loader';
 
 export function getDynamicResources(
   dynamicResourcesMap: Record<string, string[][]> | null
