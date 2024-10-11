@@ -9,27 +9,22 @@ export { defineFarmConfig as defineConfig } from './config/index.js';
 export type { Compiler as BindingCompiler } from './types/binding.js';
 
 import fs from 'node:fs/promises';
-import path from 'node:path';
 
-import { JsUpdateResult } from '../binding/binding.js';
-import { Compiler } from './compiler/index.js';
 import { createCompiler } from './compiler/utils.js';
 import { __FARM_GLOBAL__ } from './config/_global.js';
 import { UserConfig, resolveConfig } from './config/index.js';
-import type { FarmCliOptions, ResolvedUserConfig } from './config/types.js';
 import { getPluginHooks } from './plugin/index.js';
 import { Server } from './server/index.js';
 import { PersistentCacheConfig } from './types/binding.js';
 import { PersistentCacheBrand, bold, colors, green } from './utils/color.js';
-import { convertErrorMessage } from './utils/error.js';
 import {
   copyPublicDirectory,
   findNodeModulesRecursively
 } from './utils/fsUtils.js';
-import { Logger } from './utils/logger.js';
 import { getShortName } from './utils/path.js';
-import { normalizePath } from './utils/share.js';
-import Watcher from './watcher/index.js';
+import { handlerWatcher } from './watcher/index.js';
+
+import type { FarmCliOptions, ResolvedUserConfig } from './config/types.js';
 
 export async function start(
   inlineConfig?: FarmCliOptions & UserConfig
@@ -92,7 +87,7 @@ export async function build(
     compiler.writeResourcesToDisk();
     await copyPublicDirectory(resolvedUserConfig);
     if (resolvedUserConfig.watch) {
-      setupWatcher(resolvedUserConfig, compiler);
+      handlerWatcher(resolvedUserConfig, compiler);
     }
   } catch (err) {
     resolvedUserConfig.logger.error(`Failed to build: ${err}`, { exit: true });
@@ -123,8 +118,8 @@ export async function clean(
   await Promise.all(
     nodeModulesFolders.map(async (nodeModulesPath) => {
       try {
-        const stats = await fs.stat(cachePath);
-        if (stats.isDirectory()) {
+        const farmFolderStats = await fs.stat(cachePath);
+        if (farmFolderStats.isDirectory()) {
           await fs.rm(cachePath, { recursive: true, force: true });
           resolvedUserConfig.logger.info(
             `✨ ✨ Cache cleaned at ${colors.bold(colors.green(cachePath))}`
@@ -147,72 +142,4 @@ export async function clean(
       }
     })
   );
-}
-
-export async function setupWatcher(
-  resolvedUserConfig: ResolvedUserConfig,
-  compiler: Compiler
-) {
-  const watcher = new Watcher(resolvedUserConfig);
-  await watcher.createWatcher();
-  watcher.watcher.on('change', async (file: string | string[] | any) => {
-    file = normalizePath(file);
-    const shortFile = getShortName(file, resolvedUserConfig.root);
-    const isConfigFile = resolvedUserConfig.configFilePath === file;
-    const isConfigDependencyFile =
-      resolvedUserConfig.configFileDependencies.some((name) => file === name);
-    const isEnvFile = resolvedUserConfig.envFiles.some((name) => file === name);
-    if (isConfigFile || isConfigDependencyFile || isEnvFile) {
-      __FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__ = true;
-      resolvedUserConfig.logger.info(
-        `${bold(green(shortFile))} changed, Bundler Config is being reloaded`,
-        true
-      );
-      // try {
-      //   // TODO need rebuild compiler or not ？
-      //   return;
-      // } catch (e) {
-      //   resolvedUserConfig.logger.error(`restart server error ${e}`);
-      // }
-    }
-    const handleUpdateFinish = (updateResult: JsUpdateResult) => {
-      const added = [
-        ...updateResult.added,
-        ...updateResult.extraWatchResult.add
-      ].map((addedModule) => {
-        const resolvedPath = compiler.transformModulePath(
-          resolvedUserConfig.root,
-          addedModule
-        );
-        return resolvedPath;
-      });
-
-      const filteredAdded = added.filter((file) =>
-        watcher.filterWatchFile(file, resolvedUserConfig.root)
-      );
-
-      if (filteredAdded.length > 0) {
-        watcher.watcher.add(filteredAdded);
-      }
-    };
-
-    try {
-      const start = performance.now();
-      const result = await compiler.update([file], true);
-      const elapsedTime = Math.floor(performance.now() - start);
-      resolvedUserConfig.logger.info(
-        `update completed in ${bold(
-          green(`${elapsedTime}ms`)
-        )} Resources emitted to ${bold(
-          green(resolvedUserConfig.compilation.output.path)
-        )}.`
-      );
-      handleUpdateFinish(result);
-      compiler.writeResourcesToDisk();
-    } catch (error) {
-      resolvedUserConfig.logger.error(
-        `Farm Update Error: ${convertErrorMessage(error)}`
-      );
-    }
-  });
 }

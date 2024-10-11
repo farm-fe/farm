@@ -4,11 +4,21 @@ import path from 'node:path';
 import chokidar from 'chokidar';
 import type { FSWatcher, WatchOptions } from 'chokidar';
 import glob from 'fast-glob';
+
 import { Compiler } from '../compiler/index.js';
 import { createInlineCompiler } from '../compiler/utils.js';
-import type { ResolvedUserConfig } from '../config/index.js';
 import { createDebugger } from '../utils/debug.js';
-import { arraify, getCacheDir } from '../utils/index.js';
+import { convertErrorMessage } from '../utils/error.js';
+import {
+  arraify,
+  bold,
+  getCacheDir,
+  green,
+  normalizePath
+} from '../utils/index.js';
+
+import type { ResolvedUserConfig } from '../config/index.js';
+import type { JsUpdateResult } from '../types/binding.js';
 
 export const debugWatcher = createDebugger('farm:watcher');
 
@@ -232,4 +242,68 @@ class NoopWatcher extends EventEmitter implements FSWatcher {
   async close() {
     // noop
   }
+}
+
+export async function handlerWatcher(
+  resolvedUserConfig: ResolvedUserConfig,
+  compiler: Compiler
+) {
+  const watcher = new Watcher(resolvedUserConfig);
+  await watcher.createWatcher();
+  watcher.watcher.on('change', async (file: string | string[] | any) => {
+    file = normalizePath(file);
+    // TODO restart with node side v2.0 we may be think about this feature
+    // const shortFile = getShortName(file, resolvedUserConfig.root);
+    // const isConfigFile = resolvedUserConfig.configFilePath === file;
+    // const isConfigDependencyFile =
+    //   resolvedUserConfig.configFileDependencies.some((name) => file === name);
+    // const isEnvFile = resolvedUserConfig.envFiles.some((name) => file === name);
+    // if (isConfigFile || isConfigDependencyFile || isEnvFile) {
+    //   __FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__ = true;
+    //   resolvedUserConfig.logger.info(
+    //     `${bold(green(shortFile))} changed, Bundler Config is being reloaded`,
+    //     true
+    //   );
+    // TODO then rebuild node side
+    // }
+    const handleUpdateFinish = (updateResult: JsUpdateResult) => {
+      const added = [
+        ...updateResult.added,
+        ...updateResult.extraWatchResult.add
+      ].map((addedModule) => {
+        const resolvedPath = compiler.transformModulePath(
+          resolvedUserConfig.root,
+          addedModule
+        );
+        return resolvedPath;
+      });
+
+      const filteredAdded = added.filter((file) =>
+        watcher.filterWatchFile(file, resolvedUserConfig.root)
+      );
+
+      if (filteredAdded.length > 0) {
+        watcher.watcher.add(filteredAdded);
+      }
+    };
+
+    try {
+      const start = performance.now();
+      const result = await compiler.update([file], true);
+      const elapsedTime = Math.floor(performance.now() - start);
+      resolvedUserConfig.logger.info(
+        `update completed in ${bold(
+          green(`${elapsedTime}ms`)
+        )} Resources emitted to ${bold(
+          green(resolvedUserConfig.compilation.output.path)
+        )}.`
+      );
+      handleUpdateFinish(result);
+      compiler.writeResourcesToDisk();
+    } catch (error) {
+      resolvedUserConfig.logger.error(
+        `Farm Update Error: ${convertErrorMessage(error)}`
+      );
+    }
+  });
 }
