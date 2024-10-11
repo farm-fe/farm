@@ -6,6 +6,11 @@ import './main.css';
 
 import { BizType } from './enums';
 
+import * as Sentry from '@sentry/react';
+
+Sentry.init({});
+
+
 export function Main() {
   const store = useStore();
   console.log(import.meta.env);

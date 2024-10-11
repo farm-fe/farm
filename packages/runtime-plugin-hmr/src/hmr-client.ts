@@ -164,8 +164,6 @@ export class HmrClient {
 
               const disposer = this.disposeMap.get(acceptedId);
               if (disposer) await disposer(acceptHotContext.data);
-              // clear accept callbacks, it will be re-registered in the accepted module when the module is required
-              acceptHotContext.acceptCallbacks = [];
 
               const acceptedExports = moduleSystem.require(acceptedId);
 

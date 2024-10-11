@@ -383,7 +383,7 @@ impl Plugin for FarmPluginRuntime {
               remap_source: Some(Box::new(move |src| {
                 format!("/{}", farmfe_utils::relative(&root, src))
               })),
-              hires: if matches!(context.config.mode, Mode::Production) {
+              hires: if context.config.minify.enabled() {
                 Some(MappingsOptionHires::Boundary)
               } else {
                 None
