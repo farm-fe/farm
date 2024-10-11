@@ -1,5 +1,13 @@
 # @farmfe/core
 
+## 1.3.27
+
+### Patch Changes
+
+- Bump version
+- Updated dependencies
+  - @farmfe/runtime@0.12.6
+
 ## 1.3.26
 
 ### Patch Changes
