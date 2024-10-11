@@ -2330,7 +2330,7 @@ importers:
         specifier: workspace:0.12.5
         version: link:../runtime
       '@farmfe/runtime-plugin-hmr':
-        specifier: workspace:3.5.6
+        specifier: workspace:3.5.7
         version: link:../runtime-plugin-hmr
       '@farmfe/runtime-plugin-import-meta':
         specifier: workspace:0.2.2

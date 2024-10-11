@@ -1,5 +1,14 @@
 # @farmfe/core
 
+## 1.3.26
+
+### Patch Changes
+
+- 3b6eb912: fix #1755 and support useAbsolutePath for plugin-react
+- ed676f02: Fix #1755
+- Updated dependencies [3b6eb912]
+  - @farmfe/runtime-plugin-hmr@3.5.7
+
 ## 1.3.25
 
 ### Patch Changes
