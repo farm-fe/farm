@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.2.3
+
+### Patch Changes
+
+- 3b6eb912: fix #1755 and support useAbsolutePath for plugin-react
+
 ## 1.2.2
 
 ### Patch Changes
