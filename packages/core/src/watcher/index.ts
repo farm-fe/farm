@@ -9,16 +9,10 @@ import { Compiler } from '../compiler/index';
 import { createInlineCompiler } from '../compiler/index';
 import { createDebugger } from '../utils/debug';
 import { convertErrorMessage } from '../utils/error';
-import {
-  arraify,
-  bold,
-  getCacheDir,
-  green,
-  normalizePath
-} from '../utils/index';
+import { arraify, bold, green, normalizePath } from '../utils/index';
 
 import type { ResolvedUserConfig } from '../config/index';
-import type { JsUpdateResult } from '../types/binding';
+import type { JsUpdateResult, PersistentCacheConfig } from '../types/binding';
 
 export const debugWatcher = createDebugger('farm:watcher');
 
@@ -169,12 +163,6 @@ export default class Watcher {
   }
 
   resolveChokidarOptions() {
-    // TODO use config.cacheDir
-    const cacheDir = getCacheDir(
-      this.config.root,
-      this.config.compilation.persistentCache
-    );
-
     // TODO type error here
     // @ts-ignore
     const userWatchOptions = this.config.server.watch;
@@ -186,7 +174,10 @@ export default class Watcher {
       glob.escapePath(
         path.resolve(this.config.root, this.config.compilation.output.path)
       ) + '/**',
-      glob.escapePath(cacheDir) + '/**',
+      glob.escapePath(
+        (this.config.compilation.persistentCache as PersistentCacheConfig)
+          .cacheDir
+      ) + '/**',
       ...arraify(ignoredList || [])
     ];
 

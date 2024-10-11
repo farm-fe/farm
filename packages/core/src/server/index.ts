@@ -16,7 +16,7 @@ import {
   getPluginHooks,
   getSortedPluginHooksBindThis
 } from '../plugin/index.js';
-import { getCacheDir, isCacheDirExists } from '../utils/cacheDir.js';
+import { isCacheDirExists } from '../utils/cacheDir.js';
 import { createDebugger } from '../utils/debug.js';
 import { resolveServerUrls, teardownSIGTERMListener } from '../utils/http.js';
 import { Logger, bootstrap, printServerUrls } from '../utils/logger.js';
@@ -51,7 +51,10 @@ import type {
   ResolvedUserConfig,
   UserConfig
 } from '../config/types.js';
-import type { JsUpdateResult } from '../types/binding.js';
+import type {
+  JsUpdateResult,
+  PersistentCacheConfig
+} from '../types/binding.js';
 import { convertErrorMessage } from '../utils/error.js';
 import type { CommonServerOptions, ResolvedServerUrls } from './http.js';
 
@@ -632,7 +635,7 @@ export class Server extends httpServer {
     // check if cache dir exists
     const { persistentCache } = this.compiler.config.compilation;
     const hasCacheDir = await isCacheDirExists(
-      getCacheDir(this.root, persistentCache)
+      (persistentCache as PersistentCacheConfig).cacheDir
     );
     const start = performance.now();
     await this.#compile();
