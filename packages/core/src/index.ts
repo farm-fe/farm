@@ -10,7 +10,7 @@ export type { Compiler as BindingCompiler } from './types/binding.js';
 
 import fs from 'node:fs/promises';
 
-import { createCompiler } from './compiler/utils.js';
+import { createCompiler } from './compiler/index.js';
 import { __FARM_GLOBAL__ } from './config/_global.js';
 import { UserConfig, resolveConfig } from './config/index.js';
 import { getPluginHooks } from './plugin/index.js';
@@ -60,9 +60,11 @@ export async function build(
     )) {
       await hook?.(compiler);
     }
+
     if (output?.clean) {
       compiler.removeOutputPathDir();
     }
+
     const startTime = performance.now();
     await compiler.compile();
     const elapsedTime = Math.floor(performance.now() - startTime);

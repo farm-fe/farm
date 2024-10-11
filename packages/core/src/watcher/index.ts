@@ -6,7 +6,7 @@ import type { FSWatcher, WatchOptions } from 'chokidar';
 import glob from 'fast-glob';
 
 import { Compiler } from '../compiler/index.js';
-import { createInlineCompiler } from '../compiler/utils.js';
+import { createInlineCompiler } from '../compiler/index.js';
 import { createDebugger } from '../utils/debug.js';
 import { convertErrorMessage } from '../utils/error.js';
 import {

@@ -2,7 +2,11 @@ import { existsSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 
 import { Compiler as BindingCompiler } from '../../binding/index.js';
-import type { ResolvedUserConfig, Resource } from '../index.js';
+import type {
+  ResolvedCompilation,
+  ResolvedUserConfig,
+  Resource
+} from '../index.js';
 import type { JsUpdateResult } from '../types/binding.js';
 
 export const VIRTUAL_FARM_DYNAMIC_IMPORT_SUFFIX =
@@ -267,4 +271,18 @@ export class Compiler {
       : path.join(root, configOutputPath);
     return outputPath;
   }
+}
+
+export function createCompiler(resolvedUserConfig: ResolvedUserConfig) {
+  return new Compiler(resolvedUserConfig);
+}
+
+export function createInlineCompiler(
+  config: ResolvedUserConfig,
+  options: ResolvedCompilation = {}
+) {
+  return new Compiler({
+    ...config,
+    compilation: { ...config.compilation, ...options }
+  });
 }

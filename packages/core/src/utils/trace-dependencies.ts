@@ -1,7 +1,7 @@
 import { convertErrorMessage } from './error.js';
 
 import * as fs from 'node:fs';
-import { createInlineCompiler } from '../compiler/utils.js';
+import { createInlineCompiler } from '../compiler/index.js';
 import { ResolvedUserConfig } from '../config/types.js';
 
 function createTraceDepCompiler(entry: string) {

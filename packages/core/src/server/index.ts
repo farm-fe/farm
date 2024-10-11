@@ -43,7 +43,7 @@ import type {
 import type { Http2SecureServer } from 'node:http2';
 import type * as net from 'node:net';
 
-import { createCompiler } from '../compiler/utils.js';
+import { createCompiler } from '../compiler/index.js';
 import type {
   FarmCliOptions,
   HmrOptions,
