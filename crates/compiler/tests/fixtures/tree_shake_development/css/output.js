@@ -137,7 +137,6 @@ var index_js_cjs = __commonJs({
 ,});window['__farm_default_namespace__'].__farm_module_system__.setInitialLoadedResources([]);window['__farm_default_namespace__'].__farm_module_system__.setDynamicModuleResourcesMap([],{  });var farmModuleSystem = window['__farm_default_namespace__'].__farm_module_system__;farmModuleSystem.bootstrap();var entry = farmModuleSystem.require("index.ts");var c=entry.c;export { c };
 
 //logo-73d4a8.png:
- 
+
 
 //logo1-cbaed8.png:
- 

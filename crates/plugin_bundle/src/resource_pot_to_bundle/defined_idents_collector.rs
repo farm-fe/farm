@@ -1,10 +1,12 @@
-use std::collections::{HashMap, HashSet};
+use std::{
+  cell::RefCell,
+  collections::{HashMap, HashSet},
+};
 
 use farmfe_core::{
   swc_common::DUMMY_SP,
   swc_ecma_ast::{
-    AssignExpr, AssignOp, AssignTarget, BindingIdent, Expr, Id, KeyValuePatProp, ObjectPatProp,
-    Pat, Prop, PropName, SimpleAssignTarget,
+    AssignExpr, AssignOp, AssignTarget, BindingIdent, Expr, Id, KeyValuePatProp, KeyValueProp, MemberProp, ObjectPatProp, Pat, Prop, PropName, PropOrSpread, SimpleAssignTarget
   },
 };
 use farmfe_toolkit::{
@@ -69,20 +71,39 @@ impl Visit for DefinedIdentsCollector {
 
 use farmfe_core::swc_ecma_ast::Ident;
 
-use super::Var;
+use super::{
+  bundle::ModuleAnalyzerManager, modules_analyzer::module_analyzer::VarRefKey,
+  uniq_name::BundleVariable,
+};
 
-#[derive(Debug, Default)]
+type RenameMap<'a> = HashMap<VarRefKey<'a>, usize>;
+
+// #[derive(Debug)]
 pub struct RenameIdent<'a> {
-  map: HashMap<&'a Id, &'a Var>,
+  map: RenameMap<'a>,
+  bundle_variable: &'a BundleVariable,
+  module_analyzer_manager: &'a ModuleAnalyzerManager<'a>,
 }
 
 impl<'a> RenameIdent<'a> {
-  pub fn new(map: HashMap<&'a Id, &'a Var>) -> Self {
-    Self { map }
+  pub fn new(
+    map: RenameMap<'a>,
+    bundle_variable: &'a BundleVariable,
+    module_analyzer_manager: &'a ModuleAnalyzerManager<'a>,
+  ) -> Self {
+    Self {
+      map,
+      bundle_variable,
+      module_analyzer_manager,
+    }
   }
 
   fn rename(&self, ident: &Ident) -> Option<String> {
-    self.map.get(&ident.to_id()).map(|var| var.render_name())
+    let r = RefCell::new(ident.to_id());
+    let v = self.map.get(&(r.borrow().into())).map(|var| {
+      return self.bundle_variable.render_name(*var);
+    });
+    v
   }
 }
 
@@ -98,7 +119,7 @@ impl<'a> VisitMut for RenameIdent<'a> {
     match n {
       Prop::Shorthand(m) => {
         if let Some(new_name) = self.rename(m) {
-          *n = farmfe_core::swc_ecma_ast::Prop::KeyValue(farmfe_core::swc_ecma_ast::KeyValueProp {
+          *n = Prop::KeyValue(farmfe_core::swc_ecma_ast::KeyValueProp {
             key: farmfe_core::swc_ecma_ast::PropName::Ident(Ident {
               span: DUMMY_SP,
               sym: m.sym.as_str().into(),
@@ -108,13 +129,72 @@ impl<'a> VisitMut for RenameIdent<'a> {
               new_name.as_str().into(),
             )),
           });
-
-          n.visit_mut_children_with(self);
+          return;
         }
       }
 
-      _ => n.visit_mut_children_with(self),
+      _ => {}
     }
+
+    n.visit_mut_children_with(self);
+  }
+
+  fn visit_mut_prop_or_spread(&mut self, n: &mut PropOrSpread) {
+    match n {
+      PropOrSpread::Prop(box p) => match p {
+        Prop::Shorthand(ident) => {
+          if let Some(new_name) = self.rename(ident) {
+            *p = Prop::KeyValue(KeyValueProp {
+              key: farmfe_core::swc_ecma_ast::PropName::Ident(Ident {
+                span: DUMMY_SP,
+                sym: ident.sym.as_str().into(),
+                optional: false,
+              }),
+              value: Box::new(farmfe_core::swc_ecma_ast::Expr::Ident(
+                new_name.as_str().into(),
+              )),
+            });
+          } else {
+            p.visit_mut_with(self);
+          }
+        }
+        Prop::KeyValue(key_value_prop) => {
+          key_value_prop.visit_mut_with(self);
+        }
+        _ => {
+          p.visit_mut_with(self);
+        }
+      },
+      PropOrSpread::Spread(s) => {
+        s.visit_mut_with(self);
+      }
+    }
+  }
+
+  fn visit_mut_key_value_prop(&mut self, n: &mut KeyValueProp) {
+    //
+    // skip it
+    // ```js
+    // {
+    //   key: value,
+    // }
+    // ```
+    //
+    if let farmfe_core::swc_ecma_ast::PropName::Ident(_) = n.key {
+    } else {
+      n.key.visit_mut_with(self);
+    }
+
+    n.value.visit_mut_with(self);
+  }
+
+  fn visit_mut_key_value_pat_prop(&mut self, n: &mut KeyValuePatProp) {
+    if let PropName::Ident(_) = n.key {
+    } else {
+      n.key.visit_mut_with(self);
+    }
+
+    n.value.visit_mut_with(self);
   }
 
   fn visit_mut_object_pat(&mut self, n: &mut farmfe_core::swc_ecma_ast::ObjectPat) {
@@ -150,8 +230,20 @@ impl<'a> VisitMut for RenameIdent<'a> {
             n.visit_mut_with(self);
           }
         }
+        ObjectPatProp::KeyValue(n) => {
+          n.visit_mut_with(self);
+        }
         _ => prop.visit_mut_children_with(self),
       };
     }
+  }
+
+  fn visit_mut_member_prop(&mut self, n: &mut MemberProp) {
+    // ns.default, skip
+    if let MemberProp::Ident(_) = n {
+      return;
+    }
+
+    n.visit_mut_children_with(self);
   }
 }

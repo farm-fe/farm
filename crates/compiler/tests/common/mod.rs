@@ -1,4 +1,9 @@
-use std::{collections::HashMap, path::PathBuf, sync::Arc};
+use std::{
+  collections::HashMap,
+  fs,
+  path::{Path, PathBuf},
+  sync::Arc,
+};
 
 use farmfe_compiler::Compiler;
 use farmfe_core::{
@@ -320,4 +325,53 @@ pub fn get_config_field<T: DeserializeOwned>(value: &Value, keys: &[&str]) -> Op
     serde_json::from_value(v.clone())
       .expect(format!("{} type is not correct", keys.join(".")).as_str()),
   )
+}
+
+#[allow(dead_code)]
+pub fn get_dir_config_files(cwd: &Path) -> Vec<(String, PathBuf)> {
+  // println!("fs::read_dir(cwd): {:#?}", fs::read(format!("{}/", cwd.to_string_lossy().to_string())));
+  let mut files = fs::read_dir(cwd.to_path_buf())
+    .map(|item| {
+      item
+        .into_iter()
+        .filter_map(|file| match file {
+          Ok(v) => Some(v),
+          Err(_) => None,
+        })
+        .map(|v| v.path())
+        .filter(|v| v.is_file())
+        .filter(|v| {
+          let m = v.file_name().unwrap().to_string_lossy().to_string();
+          m.starts_with("config") && m.ends_with(".json")
+        })
+        .map(|v| {
+          let m = v.file_name().unwrap().to_string_lossy().to_string();
+
+          (
+            m.trim_start_matches("config")
+              .trim_start_matches(".")
+              .trim_end_matches("json")
+              .trim_end_matches(".")
+              .to_string(),
+            v,
+          )
+        })
+        .collect::<Vec<_>>()
+    })
+    .unwrap_or_default();
+
+  if !files.iter().any(|(name, _)| name.is_empty()) {
+    files.push(("".to_string(), cwd.to_path_buf().join("config.json")));
+  }
+
+  files
+}
+
+#[allow(dead_code)]
+pub fn format_output_name(name: String) -> String {
+  if name.is_empty() {
+    return "output.js".to_string();
+  }
+
+  format!("output.{}.js", name)
 }

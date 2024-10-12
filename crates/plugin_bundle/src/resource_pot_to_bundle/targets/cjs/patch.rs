@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{collections::HashMap, sync::Arc};
 
 use farmfe_core::{
   config::{external::ExternalConfig, Config, Mode},
@@ -25,8 +25,13 @@ use farmfe_toolkit::{
 };
 
 use crate::resource_pot_to_bundle::{
-  bundle::{bundle_external::BundleReference, ModuleAnalyzerManager, ModuleGlobalUniqName},
-  polyfill::{cjs::wrap_commonjs, Polyfill, SimplePolyfill},
+  bundle::{
+    bundle_reference::{BundleReference, BundleReferenceManager},
+    ModuleAnalyzerManager, ModuleGlobalUniqName,
+  },
+  modules_analyzer::module_analyzer::ModuleAnalyzer,
+  polyfill::{Polyfill, SimplePolyfill},
+  targets::util::wrap_commonjs,
   uniq_name::BundleVariable,
 };
 
@@ -35,7 +40,7 @@ use super::{util::CJSReplace, CjsModuleAnalyzer};
 pub struct CjsPatch {}
 
 impl CjsPatch {
-  pub fn wrap_commonjs(
+  fn wrap_commonjs(
     module_id: &ModuleId,
     bundle_variable: &BundleVariable,
     module_global_uniq_name: &ModuleGlobalUniqName,
@@ -110,7 +115,7 @@ impl CjsPatch {
     Ok(patch_ast_items)
   }
 
-  pub fn to_cjs(
+  fn to_cjs(
     module_id: &ModuleId,
     ast: &mut EcmaAstModule,
     module_graph: &ModuleGraph,
@@ -136,17 +141,18 @@ impl CjsPatch {
   }
 
   /// transform hybrid and commonjs module to esm
-  pub fn patch_cjs_module(
+  pub fn transform_hybrid_or_commonjs_to_esm(
     module_analyzer_manager: &mut ModuleAnalyzerManager,
     module_id: &ModuleId,
-    module_graph: &ModuleGraph,
     context: &Arc<CompilationContext>,
-    patch_ast: &mut Vec<ModuleItem>,
     bundle_variable: &BundleVariable,
-    bundle_reference: &BundleReference,
+    bundle_reference: &mut BundleReference,
     polyfill: &mut SimplePolyfill,
-  ) {
-    let module_analyzer = module_analyzer_manager.module_analyzer_mut_unchecked(module_id);
+  ) -> Result<()> {
+    let module_analyzer = module_analyzer_manager
+      .module_map
+      .get_mut(module_id)
+      .unwrap();
 
     let unresolved_mark = module_analyzer.mark.0;
     // if hybrid module, should transform to cjs
@@ -154,66 +160,56 @@ impl CjsPatch {
       CjsPatch::to_cjs(
         module_id,
         &mut module_analyzer.ast,
-        module_graph,
+        module_analyzer_manager.module_graph,
         unresolved_mark,
         context.config.script.target,
       );
     }
 
+    let mut ast = module_analyzer.ast.body.take();
     // if commonjs module, should wrap function
     // see [Polyfill::WrapCommonJs]
     if module_analyzer.is_commonjs() {
-      let ast = module_analyzer.ast.body.take();
-
-      module_analyzer_manager.set_ast_body(
-        module_id,
-        CjsPatch::wrap_commonjs(
-          module_id,
-          bundle_variable,
-          &module_analyzer_manager.module_global_uniq_name,
-          ast,
-          context.config.mode.clone(),
-          polyfill,
-        )
-        .unwrap(),
-      );
-    }
-
-    if let Some(import) = bundle_reference
-      .redeclare_commonjs_import
-      .get(&module_id.clone().into())
-    {
-      patch_ast.extend(CjsModuleAnalyzer::redeclare_commonjs_export(
+      ast = CjsPatch::wrap_commonjs(
         module_id,
         bundle_variable,
         &module_analyzer_manager.module_global_uniq_name,
-        import,
+        ast,
+        context.config.mode.clone(),
         polyfill,
-      ));
+      )?;
     }
+
+    module_analyzer_manager.set_ast_body(module_id, ast);
+
+    Ok(())
   }
 
-  pub fn replace_cjs_require(
+  pub fn replace_cjs_require<'a>(
     mark: (Mark, Mark),
     ast: &mut EcmaAstModule,
-    module_id: &ModuleId,
+    module_id: &'a ModuleId,
+    bundle_variable: &'a BundleVariable,
+    config: &'a Config,
+    polyfill: &'a mut SimplePolyfill,
+    external_config: &'a ExternalConfig,
+    bundle_reference: &'a mut BundleReference,
     module_graph: &ModuleGraph,
     module_global_uniq_name: &ModuleGlobalUniqName,
-    bundle_variable: &BundleVariable,
-    config: &Config,
-    polyfill: &mut SimplePolyfill,
-    external_config: &ExternalConfig,
+    module_map: &HashMap<ModuleId, ModuleAnalyzer>,
   ) {
     let mut replacer: CJSReplace = CJSReplace {
       unresolved_mark: mark.0,
       top_level_mark: mark.1,
-      module_graph,
       module_id: module_id.clone(),
-      module_global_uniq_name,
       bundle_variable,
       config,
       polyfill,
-      external_config
+      external_config,
+      module_global_uniq_name,
+      module_graph,
+      bundle_reference,
+      module_map,
     };
 
     ast.visit_mut_with(&mut replacer);
