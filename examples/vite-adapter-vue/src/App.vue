@@ -2,6 +2,11 @@
   <div>
     <img src="/logo.png" alt="">
     <test />
+
+    <TinyButton type="primary" @click="btnClick">
+      Tiny Vue Modal 最大化显示
+    </TinyButton>
+    
     <test1 />
     <aboute />
     <home/>
@@ -10,6 +15,12 @@
 </template>
 
 <script lang="ts" setup>
+import { Button as TinyButton, Modal } from '@opentiny/vue'
+
+function btnClick() {
+  Modal.alert({ message: '最大化显示', fullscreen: true })
+}
+
 import test1 from './components/test1.vue';
 import test from './components/test.vue';
 import home from './pages/index.vue';
