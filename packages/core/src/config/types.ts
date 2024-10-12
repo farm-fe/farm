@@ -1,13 +1,13 @@
 import { SecureServerOptions } from 'node:http2';
-import { Server } from '../index.js';
+import { Server } from '../index';
 
 import type { OutgoingHttpHeaders } from 'http';
 import { WatchOptions } from 'chokidar';
-import type { RustPlugin } from '../plugin/rust/index.js';
-import type { JsPlugin } from '../plugin/type.js';
-import { HMRChannel } from '../server/hmr.js';
-import type { Config, CssConfig } from '../types/binding.js';
-import type { Logger } from '../utils/index.js';
+import type { RustPlugin } from '../plugin/rust/index';
+import type { JsPlugin } from '../plugin/type';
+import { HMRChannel } from '../server/hmr';
+import type { Config, CssConfig } from '../types/binding';
+import type { Logger } from '../utils/index';
 
 // export interface HmrOptions {
 //   protocol?: string;

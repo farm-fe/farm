@@ -26,7 +26,7 @@ SOFTWARE.
 
 import path from 'node:path';
 import fse from 'fs-extra';
-import { normalizePath } from './share.js';
+import { normalizePath } from './share';
 
 const nonEscapedDoubleQuoteRe = /(?<!\\)(")/g;
 

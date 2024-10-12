@@ -1,6 +1,6 @@
 import type { RollupError } from 'rollup';
-import { colors } from '../utils/color.js';
-import { pad } from '../utils/share.js';
+import { colors } from '../utils/color';
+import { pad } from '../utils/share';
 
 export function prepareError(err: Error & { potentialSolution?: string }) {
   return {

@@ -1,8 +1,9 @@
+import { Logger } from '../../utils/logger';
+
 import type { PluginContext } from 'rollup';
-import type { UserConfig } from '../../config/types.js';
-import { Logger } from '../../utils/logger.js';
-import type { CompilationContext } from '../type.js';
-import { normalizePath, revertNormalizePath } from './utils.js';
+import type { UserConfig } from '../../config/types';
+import type { CompilationContext } from '../type';
+import { normalizePath, revertNormalizePath } from './utils';
 
 const contextCache = new Map<string, PluginContext>();
 

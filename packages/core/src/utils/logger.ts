@@ -1,27 +1,17 @@
-import { clear } from 'console';
-import { __FARM_GLOBAL__ } from '../config/_global.js';
-import { ResolvedUserConfig } from '../config/types.js';
-import { Config } from '../types/binding.js';
+import { __FARM_GLOBAL__ } from '../config/_global';
+import { ResolvedUserConfig } from '../config/types';
 import {
   ColorFunction,
   PersistentCacheBrand,
   bold,
   colors,
   green
-} from './color.js';
-import { ResolvedServerUrls } from './http.js';
-import { getShortName } from './path.js';
-import { clearScreen, formatExecutionTime, pad, version } from './share.js';
+} from './color';
+import { ResolvedServerUrls } from './http';
+import { getShortName } from './path';
+import { clearScreen, formatExecutionTime, pad, version } from './share';
 
 type LogLevelNames = 'trace' | 'debug' | 'info' | 'warn' | 'error';
-
-enum LogLevel {
-  Trace = 'trace',
-  Debug = 'debug',
-  Info = 'info',
-  Warn = 'warn',
-  Error = 'error'
-}
 
 export interface ILogger {
   trace(message: string, clearScreen?: Boolean): void;

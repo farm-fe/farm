@@ -1,15 +1,15 @@
 import { browsersWithSupportForFeatures } from 'farm-browserslist-generator';
 
 import path, { isAbsolute } from 'node:path';
-import { Config } from '../../types/binding.js';
-import { urlRegex } from '../../utils/http.js';
-import { Logger } from '../../utils/logger.js';
+import { Config } from '../../types/binding';
+import { urlRegex } from '../../utils/http';
+import { Logger } from '../../utils/logger';
 import {
   FARM_TARGET_BROWSER_ENVS,
   mapTargetEnvValue,
   normalizePath
-} from '../../utils/share.js';
-import { ResolvedCompilation } from '../types.js';
+} from '../../utils/share';
+import { ResolvedCompilation } from '../types';
 
 export function normalizeOutput(
   config: ResolvedCompilation,

@@ -1,9 +1,10 @@
 import http from 'node:http';
 import { SecureServerOptions } from 'node:http2';
+
 import { z } from 'zod';
 import { fromZodError } from 'zod-validation-error';
 
-import type { UserConfig } from './types.js';
+import type { UserConfig } from './types';
 
 const TARGET_ENV = {
   BROWSER: 'browser',

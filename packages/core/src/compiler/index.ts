@@ -1,13 +1,13 @@
 import { existsSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 
-import { Compiler as BindingCompiler } from '../../binding/index.js';
+import { Compiler as BindingCompiler } from '../../binding/index';
 import type {
   ResolvedCompilation,
   ResolvedUserConfig,
   Resource
-} from '../index.js';
-import type { JsUpdateResult } from '../types/binding.js';
+} from '../index';
+import type { JsUpdateResult } from '../types/binding';
 
 export const VIRTUAL_FARM_DYNAMIC_IMPORT_SUFFIX =
   '.farm_dynamic_import_virtual_module' as const;

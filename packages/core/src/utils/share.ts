@@ -4,7 +4,7 @@ import os from 'node:os';
 import path, { dirname } from 'node:path';
 import readline from 'node:readline';
 import { fileURLToPath } from 'node:url';
-import { Config } from '../types/binding.js';
+import { Config } from '../types/binding';
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore import packageJson from '../../package.json';
 

@@ -1,19 +1,18 @@
-import { CompilationMode } from '../../config/env.js';
+import { CompilationMode } from '../../config/env';
 import {
   type JsPlugin,
-  Logger,
   type UserConfig,
   normalizeDevServerConfig
-} from '../../index.js';
-import merge from '../../utils/merge.js';
-import { resolveAsyncPlugins } from '../index.js';
-import { cssPluginUnwrap, cssPluginWrap } from './adapter-plugins/css.js';
-import { defaultLoadPlugin } from './adapter-plugins/default-load.js';
-import { DEFAULT_FILTERS, normalizeFilterPath } from './utils.js';
-import { VitePluginAdapter } from './vite-plugin-adapter.js';
+} from '../../index';
+import merge from '../../utils/merge';
+import { resolveAsyncPlugins } from '../index';
+import { cssPluginUnwrap, cssPluginWrap } from './adapter-plugins/css';
+import { defaultLoadPlugin } from './adapter-plugins/default-load';
+import { DEFAULT_FILTERS, normalizeFilterPath } from './utils';
+import { VitePluginAdapter } from './vite-plugin-adapter';
 
 // export * from './jsPluginAdapter.js';
-export { VitePluginAdapter } from './vite-plugin-adapter.js';
+export { VitePluginAdapter } from './vite-plugin-adapter';
 
 type VitePluginType = object | (() => { vitePlugin: any; filters: string[] });
 type VitePluginsType = VitePluginType[];

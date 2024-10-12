@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import fse from 'fs-extra';
 import { ResolvedUserConfig, normalizePublicDir } from '../config/index';
-import { colors } from './color.js';
+import { colors } from './color';
 import { isWindows, normalizePath } from './share';
 
 export function tryStatSync(file: string): fs.Stats | undefined {

@@ -1,14 +1,14 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { isAbsolute } from 'node:path';
-import { UserConfig } from '../../../config/types.js';
-import { Logger } from '../../../utils/logger.js';
-import { JsPlugin } from '../../type.js';
+import { UserConfig } from '../../../config/types';
+import { Logger } from '../../../utils/logger';
+import { JsPlugin } from '../../type';
 import {
   VITE_PLUGIN_DEFAULT_MODULE_TYPE,
   getCssModuleType,
   normalizeFilterPath
-} from '../utils.js';
-import { VitePluginAdapter } from '../vite-plugin-adapter.js';
+} from '../utils';
+import { VitePluginAdapter } from '../vite-plugin-adapter';
 
 export function defaultLoadPlugin(options: {
   filtersUnion: Set<string>;

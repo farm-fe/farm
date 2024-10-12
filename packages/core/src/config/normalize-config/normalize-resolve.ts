@@ -1,9 +1,5 @@
-import { CUSTOM_KEYS } from '../constants.js';
-import {
-  ResolvedCompilation,
-  ResolvedUserConfig,
-  UserConfig
-} from '../types.js';
+import { CUSTOM_KEYS } from '../constants';
+import { ResolvedCompilation, UserConfig } from '../types';
 
 export function normalizeResolve(
   config: UserConfig,

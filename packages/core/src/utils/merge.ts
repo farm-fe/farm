@@ -2,7 +2,7 @@ import deepmerge, { Options } from 'deepmerge';
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore ignore type check
 import { isPlainObject } from 'is-plain-object';
-import { isArray } from './share.js';
+import { isArray } from './share';
 
 function isValueSameDeep(target: any, source: any): boolean {
   if (target === source) {

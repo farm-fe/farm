@@ -13,7 +13,7 @@ import path from 'node:path';
 
 import { parse } from 'dotenv';
 import { type DotenvPopulateInput, expand } from 'dotenv-expand';
-import { arraify, normalizePath, tryStatSync } from '../utils/index.js';
+import { arraify, normalizePath, tryStatSync } from '../utils/index';
 
 export function loadEnv(
   mode: string,

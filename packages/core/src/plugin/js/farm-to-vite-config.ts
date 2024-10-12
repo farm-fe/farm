@@ -1,8 +1,8 @@
 import type { UserConfig as ViteUserConfig } from 'vite';
-import type { UserConfig } from '../../config/types.js';
-import { Logger } from '../../index.js';
-import merge from '../../utils/merge.js';
-import { EXTERNAL_KEYS, VITE_DEFAULT_ASSETS } from './constants.js';
+import type { UserConfig } from '../../config/types';
+import { Logger } from '../../index';
+import merge from '../../utils/merge';
+import { EXTERNAL_KEYS, VITE_DEFAULT_ASSETS } from './constants';
 import {
   deleteUndefinedPropertyDeeply,
   throwIncompatibleError
