@@ -157,10 +157,10 @@ export async function resolveConfig(
     if (!path.isAbsolute(configPath)) {
       throw new Error('configPath must be an absolute path');
     }
-
     const loadedUserConfig = await loadConfigFile(
       configPath,
       inlineOptions,
+      mode,
       logger
     );
 
@@ -678,7 +678,8 @@ const formatToExt: Record<Format, string> = {
 async function readConfigFile(
   inlineOptions: FarmCLIOptions,
   configFilePath: string,
-  logger: Logger
+  logger: Logger,
+  mode: CompilationMode = 'development'
 ): Promise<UserConfig | undefined> {
   if (fs.existsSync(configFilePath)) {
     !__FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__ &&
@@ -742,7 +743,7 @@ async function readConfigFile(
       await resolveMergedUserConfig(
         tsDefaultUserConfig,
         undefined,
-        'development',
+        mode,
         logger
       );
 
@@ -750,7 +751,7 @@ async function readConfigFile(
       tsDefaultResolvedUserConfig,
       tsDefaultUserConfig,
       logger,
-      'development'
+      mode
     );
 
     const replaceDirnamePlugin = await import(
@@ -895,6 +896,7 @@ export async function resolveMergedUserConfig(
 export async function loadConfigFile(
   configPath: string,
   inlineOptions: FarmCLIOptions,
+  mode: CompilationMode = 'development',
   logger: Logger = new Logger()
 ): Promise<{ config: UserConfig; configFilePath: string } | undefined> {
   // if configPath points to a directory, try to find a config file in it using default config
@@ -905,7 +907,8 @@ export async function loadConfigFile(
       const config = await readConfigFile(
         inlineOptions,
         configFilePath,
-        logger
+        logger,
+        mode
       );
 
       return {
