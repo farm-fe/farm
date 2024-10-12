@@ -82,7 +82,7 @@ var foo_cjs = __commonJs({
         module.exports.cjs = true;
     }
 });
+var foo_ns = _interop_require_wildcard(foo_cjs());
 
 // module_id: index.ts
-var foo_ns = _interop_require_wildcard(foo_cjs());
 export { foo_ns as ns };

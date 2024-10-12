@@ -5,7 +5,7 @@ use std::{
   sync::{Arc, Mutex, RwLock},
 };
 
-use bundle_reference::{BundleReference, ReferenceKind};
+use bundle_reference::{BundleReference, CommonJsImportMap, ReferenceKind};
 use farmfe_core::{
   config::external::ExternalConfig,
   context::CompilationContext,
@@ -729,7 +729,7 @@ impl<'a> ModuleAnalyzerManager<'a> {
     let cm = module_analyzer.cm.clone();
 
     try_with(cm, &context.meta.script.globals, || {
-      // 1. strip/remove export
+      // 1. strip/remove export/import
       self.strip_module_decl(module_id, bundle_variable, commonjs_import_executed);
 
       let mut patch_asts = vec![];
@@ -802,8 +802,6 @@ impl<'a> ModuleAnalyzerManager<'a> {
           bundle_variable,
         ));
 
-        self.build_rename_map(module_id, bundle_variable, &mut ast);
-
         self.set_ast(module_id, ast);
       }
     })
@@ -812,15 +810,27 @@ impl<'a> ModuleAnalyzerManager<'a> {
     Ok(())
   }
 
-  pub fn build_rename_map(
+  pub fn patch_rename(
     &mut self,
     module_id: &ModuleId,
+    context: &Arc<CompilationContext>,
     bundle_variable: &mut BundleVariable,
-    ast: &mut Module,
+    commonjs_import_map: &CommonJsImportMap,
   ) {
-    let module_analyzer = self.module_map.get(module_id).unwrap();
-    let rename_map = module_analyzer.build_rename_map(bundle_variable);
-    ast.visit_mut_with(&mut RenameIdent::new(rename_map, &bundle_variable, self));
+    let module_analyzer = self.module_analyzer_mut_unchecked(module_id);
+
+    let cm = module_analyzer.cm.clone();
+    let mut ast = module_analyzer.ast.take();
+
+    try_with(cm, &context.meta.script.globals, || {
+      let module_analyzer = self.module_analyzer_unchecked(module_id);
+
+      let rename_map = module_analyzer.build_rename_map(bundle_variable, commonjs_import_map);
+      ast.visit_mut_with(&mut RenameIdent::new(rename_map, &bundle_variable, self));
+
+      self.set_ast(module_id, ast);
+    })
+    .unwrap();
   }
 
   pub fn link(

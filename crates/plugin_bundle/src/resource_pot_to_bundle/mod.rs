@@ -41,6 +41,8 @@ pub struct Var {
   root: Option<usize>,
   module_id: Option<usize>,
   index: usize,
+  // only for uniq name
+  placeholder: bool,
 }
 
 impl Var {

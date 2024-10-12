@@ -9,7 +9,9 @@ use farmfe_core::{
 
 use crate::resource_pot_to_bundle::{
   common::with_bundle_reference_slot_name,
-  modules_analyzer::module_analyzer::{ExportSpecifierInfo, ImportSpecifierInfo, ModuleAnalyzer},
+  modules_analyzer::module_analyzer::{
+    self, ExportSpecifierInfo, ImportSpecifierInfo, ModuleAnalyzer,
+  },
   uniq_name::BundleVariable,
 };
 
@@ -147,6 +149,7 @@ impl ExternalReferenceExport {
   }
 }
 
+// TODO: remove
 #[derive(Debug, PartialEq, Eq, Hash, Clone, PartialOrd, Ord)]
 pub enum ReferenceKind {
   Bundle(String),
@@ -278,7 +281,10 @@ impl BundleReference {
   }
 
   pub fn add_execute_module(&mut self, import_kind: ReferenceKind) {
-      self.import_map.entry(import_kind).or_insert_with(ExternalReferenceImport::new);
+    self
+      .import_map
+      .entry(import_kind)
+      .or_insert_with(ExternalReferenceImport::new);
   }
 
   pub fn add_local_export(&mut self, specify: &ExportSpecifierInfo, module_system: ModuleSystem) {
@@ -621,20 +627,124 @@ impl BundleReference {
 
 #[derive(Debug, Default)]
 pub struct BundleReferenceManager {
-  bundle_reference: HashMap<ResourcePotId, Rc<RefCell<BundleReference>>>,
+  bundle_reference: HashMap<ResourcePotId, Rc<RefCell<CombineBundleReference>>>,
   bundle_reference1: HashMap<ModuleId, Rc<RefCell<BundleReference>>>,
 }
 
+#[derive(Debug, Default)]
+pub struct CombineBundleReference {
+  pub reexport_raw: BundleReference,
+  pub bundle_reference1: BundleReference,
+}
+
+// TODO: improve logic
+impl CombineBundleReference {
+  pub fn fetch(
+    &self,
+    module_id: &ModuleId,
+    module_analyzer_manager: &ModuleAnalyzerManager,
+  ) -> &BundleReference {
+    if module_analyzer_manager.is_entry(module_id) {
+      &self.reexport_raw
+    } else {
+      &self.bundle_reference1
+    }
+  }
+
+  pub fn fetch_mut(
+    &mut self,
+    module_id: &ModuleId,
+    module_analyzer_manager: &ModuleAnalyzerManager,
+  ) -> &mut BundleReference {
+    if module_analyzer_manager.is_entry(module_id) {
+      &mut self.reexport_raw
+    } else {
+      &mut self.bundle_reference1
+    }
+  }
+
+  pub fn query_redeclare_both(&mut self, module_id: &ModuleId) -> Option<BundleReference> {
+    let mut bundle_reference = BundleReference::new();
+    let reference_kind: ReferenceKind = module_id.clone().into();
+
+    let mut is_empty = true;
+    for item in [
+      &self.bundle_reference1.redeclare_commonjs_import,
+      &self.reexport_raw.redeclare_commonjs_import,
+    ] {
+      if let Some(m) = item.get(&reference_kind) {
+        is_empty = false;
+        bundle_reference
+          .redeclare_commonjs_import
+          .entry(reference_kind.clone())
+          .or_insert_with(|| ExternalReferenceImport::new())
+          .extend(m);
+      };
+    }
+
+    // for item in [
+    //   &self.bundle_reference1.import_map,
+    //   &self.reexport_raw.import_map,
+    // ] {
+    //   if let Some(m) = item.get(&reference_kind) {
+    //     is_empty = false;
+    //     bundle_reference
+    //       .import_map
+    //       .entry(reference_kind.clone())
+    //       .or_insert_with(|| ExternalReferenceImport::new())
+    //       .extend(m);
+    //   }
+    // }
+
+    if is_empty {
+      None
+    } else {
+      Some(bundle_reference)
+    }
+  }
+
+  pub fn query_all_redeclare(&self) -> CommonJsImportMap {
+    let mut bundle_reference = CommonJsImportMap::new();
+
+    for map in [
+      &self.bundle_reference1.redeclare_commonjs_import,
+      &self.reexport_raw.redeclare_commonjs_import,
+    ] {
+      for (key, item) in map {
+        bundle_reference
+          .entry(key.clone())
+          .or_insert_with(|| ExternalReferenceImport::new())
+          .extend(item);
+      }
+    }
+
+    bundle_reference
+  }
+}
+
 impl BundleReferenceManager {
-  pub fn reference_mut(&mut self, resource_pot_id: &ResourcePotId) -> Rc<RefCell<BundleReference>> {
+  // import compress
+  pub fn reference_mut(
+    &mut self,
+    resource_pot_id: &ResourcePotId,
+  ) -> Rc<RefCell<CombineBundleReference>> {
     Rc::clone(if self.bundle_reference.contains_key(resource_pot_id) {
       self.bundle_reference.get(resource_pot_id).unwrap()
     } else {
       self
         .bundle_reference
         .entry(resource_pot_id.clone())
-        .or_insert_with(|| Rc::new(RefCell::new(BundleReference::new())))
+        .or_insert_with(|| Rc::new(RefCell::new(CombineBundleReference::default())))
     })
+  }
+
+  pub fn reference_mut_by_module(
+    &mut self,
+    module_id: &ModuleId,
+    module_analyzer_manager: &ModuleAnalyzerManager,
+  ) -> Rc<RefCell<CombineBundleReference>> {
+    let resource_pot_id = module_analyzer_manager.resource_pot_id(module_id).unwrap();
+    self.reference_mut(resource_pot_id)
   }
 
   pub fn reference1_mut(&mut self, module_id: &ModuleId) -> Rc<RefCell<BundleReference>> {

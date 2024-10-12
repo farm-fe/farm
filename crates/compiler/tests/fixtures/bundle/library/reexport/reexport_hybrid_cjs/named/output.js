@@ -48,7 +48,7 @@ var foo_cjs = __commonJs({
         module.exports.cjs = true;
     }
 });
+var bar = foo_cjs()["bar"], foo = foo_cjs()["foo"];
 
 // module_id: index.ts
-var bar = foo_cjs()["bar"], foo = foo_cjs()["foo"];
 export { bar, foo };

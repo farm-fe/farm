@@ -149,6 +149,14 @@ impl BundleVariable {
     self.used_names.insert(used_name);
   }
 
+  pub fn register_placeholder(&mut self, module_id: &ModuleId, ident: &Ident) -> usize {
+    let index = self.register_var(module_id, ident, true);
+
+    self.var_mut_by_index(index).placeholder = true;
+
+    index
+  }
+
   pub fn register_var(&mut self, module_id: &ModuleId, ident: &Ident, strict: bool) -> usize {
     farm_profile_scope!("register var");
     let var = Var {
@@ -165,6 +173,8 @@ impl BundleVariable {
       v
     };
 
+    // TODO: maybe top-level var should register, other var should as placeholder
+    // TODO: should use ident.id as key
     let var_ident = if strict {
       // a#1
       ident.to_string()
@@ -174,6 +184,7 @@ impl BundleVariable {
     };
 
     if let Some(map) = self.module_defined_vars.get_mut(module_id) {
+      // TODO: used name should effect to uniq
       if !self.used_names.contains(&var_ident) {
         if let Some(exists_index) = map.get(&var_ident) {
           return *exists_index;

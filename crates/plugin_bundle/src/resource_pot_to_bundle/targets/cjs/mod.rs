@@ -11,6 +11,7 @@ use farmfe_core::{
   },
 };
 use farmfe_toolkit::{
+  itertools::Itertools,
   script::is_commonjs_require,
   swc_ecma_visit::{Visit, VisitWith},
 };
@@ -119,12 +120,9 @@ impl CjsModuleAnalyzer {
   ) -> Result<Vec<ModuleItem>> {
     let mut result = vec![];
 
-    let mut ordered_import = import_map.keys().collect::<Vec<_>>();
-    ordered_import.sort();
-
     let mut generate_import_specifies: HashMap<String, CommonJsDeclareResult> = HashMap::new();
 
-    for source in ordered_import {
+    for source in import_map.keys().sorted() {
       let import = &import_map[source];
       let Some((name, r)) = Self::redeclare_commonjs_export_item(
         bundle_variable,
@@ -169,7 +167,7 @@ impl CjsModuleAnalyzer {
 
   pub fn redeclare_commonjs_export_item(
     bundle_variable: &BundleVariable,
-    (source, import): (&ReferenceKind, &ExternalReferenceImport),
+    (source, import_map): (&ReferenceKind, &ExternalReferenceImport),
     module_global_uniq_name: &ModuleGlobalUniqName,
     polyfill: &mut SimplePolyfill,
   ) -> Result<Option<(String, CommonJsDeclareResult)>> {
@@ -189,7 +187,7 @@ impl CjsModuleAnalyzer {
       type_args: None,
     };
 
-    if import.is_empty() {
+    if import_map.is_empty() {
       return Ok(Some((
         cjs_name,
         CommonJsDeclareResult::Execute(ModuleItem::Stmt(Stmt::Expr(ExprStmt {
@@ -201,7 +199,7 @@ impl CjsModuleAnalyzer {
 
     let mut decls = vec![];
 
-    if let Some(default) = import.default {
+    if let Some(default) = import_map.default {
       decls.push(VarDeclarator {
         span: DUMMY_SP,
         name: Pat::Ident(BindingIdent {
@@ -217,7 +215,7 @@ impl CjsModuleAnalyzer {
       });
     }
 
-    if let Some(ns) = import.namespace {
+    if let Some(ns) = import_map.namespace {
       decls.push(VarDeclarator {
         span: DUMMY_SP,
         name: Pat::Ident(BindingIdent {
@@ -232,11 +230,8 @@ impl CjsModuleAnalyzer {
       });
     }
 
-    let mut ordered_keys = import.named.keys().collect::<Vec<_>>();
-    ordered_keys.sort();
-
-    for imported in ordered_keys {
-      let named_index = &import.named[imported];
+    for imported in import_map.named.keys().sorted() {
+      let named_index = &import_map.named[imported];
       let require_name = bundle_variable.name(*named_index);
 
       let is_require_default = require_name == "default";
