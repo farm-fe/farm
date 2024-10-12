@@ -1,5 +1,11 @@
 # @farmfe/runtime
 
+## 0.12.6
+
+### Patch Changes
+
+- Bump version
+
 ## 0.12.5
 
 ### Patch Changes
