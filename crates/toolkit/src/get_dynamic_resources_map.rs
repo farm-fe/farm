@@ -57,7 +57,7 @@ pub fn get_dynamic_resources_map(
         for r in rp.resources() {
           let resource = resources_map
             .get(r)
-            .unwrap_or_else(|| panic!("{} not found", r));
+            .unwrap_or_else(|| panic!("{r} not found"));
 
           // Currently only support js and css
           if !matches!(resource.resource_type, ResourceType::Js | ResourceType::Css) {
@@ -90,7 +90,7 @@ pub fn get_dynamic_resources_code(
     let mut dynamic_resources_index = vec![];
 
     for (resource_name, resource_type) in resources {
-      let key = format!("{}{:?}", resource_name, resource_type);
+      let key = format!("{resource_name}{resource_type:?}");
 
       if let Some(index) = visited_resources.get(&key) {
         dynamic_resources_index.push(format!("{}", *index));
@@ -99,15 +99,14 @@ pub fn get_dynamic_resources_code(
 
       match resource_type {
         ResourceType::Js => {
-          dynamic_resources.push(format!(r#"{{ path: '{}', type: 0 }}"#, resource_name));
+          dynamic_resources.push(format!(r#"{{ path: '{resource_name}', type: 0 }}"#));
         }
         ResourceType::Css => {
-          dynamic_resources.push(format!(r#"{{ path: '{}', type: 1 }}"#, resource_name));
+          dynamic_resources.push(format!(r#"{{ path: '{resource_name}', type: 1 }}"#));
         }
         _ => {
           panic!(
-            "unsupported type ({:?}) when injecting dynamic resources",
-            resource_type
+            "unsupported type ({resource_type:?}) when injecting dynamic resources"
           )
         }
       }
@@ -122,11 +121,11 @@ pub fn get_dynamic_resources_code(
 
   let mut dynamic_resources_code = dynamic_resources_code_vec
     .into_iter()
-    .map(|(id, resources_code)| format!(r#"'{}': [{}]"#, id, resources_code))
+    .map(|(id, resources_code)| format!(r#"'{id}': [{resources_code}]"#))
     .collect::<Vec<_>>()
     .join(",");
 
-  dynamic_resources_code = format!("{{ {} }}", dynamic_resources_code);
+  dynamic_resources_code = format!("{{ {dynamic_resources_code} }}");
 
   (
     format!("[{}]", dynamic_resources.join(",")),

@@ -53,7 +53,7 @@ impl UniqName {
 
     if let Some(mut count) = self.name_count_map.get_mut(&base_uniq_name).cloned() {
       loop {
-        uniq_name = format!("{}${}", base_uniq_name, count);
+        uniq_name = format!("{base_uniq_name}${count}");
 
         if !self.name_count_map.contains_key(&uniq_name) {
           break;

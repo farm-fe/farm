@@ -1,11 +1,10 @@
 use farmfe_core::{common::PackageJsonInfo, farm_profile_function, regex, serde_json::Value};
 use once_cell::sync::Lazy;
 use std::{
-  path::{Path, PathBuf},
+  path::{PathBuf},
   str::FromStr,
 };
 
-use super::NODE_MODULES;
 
 static PACKAGE_REGEX: Lazy<regex::Regex> =
   Lazy::new(|| regex::Regex::new(r"^(?P<group1>[^@][^/]*)|^(?P<group2>@[^/]+/[^/]+)").unwrap());
@@ -53,7 +52,7 @@ pub fn parse_package_source(source: &str) -> Option<ParsePackageSourceResult> {
 
   let sub_path = source
     .strip_prefix(package_name)
-    .map(|s| format!(".{}", s))
+    .map(|s| format!(".{s}"))
     .filter(|_| package_name != source);
 
   Some(ParsePackageSourceResult {

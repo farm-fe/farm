@@ -80,7 +80,7 @@ impl PersistentCacheConfig {
         envs.sort();
         let config_str = envs
           .into_iter()
-          .map(|(k, v)| format!("{}={}", k, v))
+          .map(|(k, v)| format!("{k}={v}"))
           .collect::<Vec<_>>()
           .join("&");
         let config_hash = sha256(config_str.as_bytes(), 32);

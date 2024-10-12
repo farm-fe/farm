@@ -198,7 +198,7 @@ impl VisitMut for FarmRequireVisitor {
 }
 
 fn rename_ident(name: &str) -> String {
-  format!("{}__f", name)
+  format!("{name}__f")
 }
 
 fn try_get_farm_require_id(expr: &Expr) -> Option<String> {

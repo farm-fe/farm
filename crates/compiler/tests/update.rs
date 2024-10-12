@@ -81,7 +81,7 @@ fn asset_update_result_code(
   let immutable_code = &result.immutable_resources;
 
   let output = cwd.join(name.unwrap_or("").to_string() + ".output.js");
-  let code = format!("{}\n{}", mutable_code, immutable_code);
+  let code = format!("{mutable_code}\n{immutable_code}");
   if !output.exists() {
     std::fs::write(output, code).unwrap();
   } else {
@@ -356,7 +356,7 @@ fn update_lazy_compilation() {
       compiler.compile().unwrap();
 
       let update_file = cwd.join("dep.ts").to_string_lossy().to_string();
-      let update_module_id = format!("{}{}", update_file, DYNAMIC_VIRTUAL_SUFFIX);
+      let update_module_id = format!("{update_file}{DYNAMIC_VIRTUAL_SUFFIX}");
       let result = compiler
         .update(
           vec![(update_module_id.clone(), UpdateType::Updated)],
@@ -369,7 +369,7 @@ fn update_lazy_compilation() {
       assert_eq!(result.added_module_ids, vec!["dep.ts".into()]);
       assert_eq!(
         result.updated_module_ids,
-        vec![format!("dep.ts{}", DYNAMIC_VIRTUAL_SUFFIX).into()]
+        vec![format!("dep.ts{DYNAMIC_VIRTUAL_SUFFIX}").into()]
       );
       assert_eq!(result.removed_module_ids.len(), 0);
     }
@@ -393,7 +393,7 @@ fn update_lazy_compilation_node() {
       compiler.compile().unwrap();
 
       let update_file = cwd.join("dep.ts").to_string_lossy().to_string();
-      let update_module_id = format!("{}{}", update_file, DYNAMIC_VIRTUAL_SUFFIX);
+      let update_module_id = format!("{update_file}{DYNAMIC_VIRTUAL_SUFFIX}");
       let result = compiler
         .update(
           vec![(update_module_id.clone(), UpdateType::Updated)],
@@ -406,7 +406,7 @@ fn update_lazy_compilation_node() {
       assert_eq!(result.added_module_ids, vec!["dep.ts".into()]);
       assert_eq!(
         result.updated_module_ids,
-        vec![format!("dep.ts{}", DYNAMIC_VIRTUAL_SUFFIX).into()]
+        vec![format!("dep.ts{DYNAMIC_VIRTUAL_SUFFIX}").into()]
       );
       assert_eq!(result.removed_module_ids.len(), 0);
 

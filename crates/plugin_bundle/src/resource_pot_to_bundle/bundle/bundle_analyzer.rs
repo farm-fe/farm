@@ -782,7 +782,7 @@ impl<'a> BundleAnalyzer<'a> {
                   let local_var = module_analyzer_manager
                     .module_global_uniq_name
                     .namespace_name(source)
-                    .to_result(format!("not found module {:?} namespace named", source))?;
+                    .to_result(format!("not found module {source:?} namespace named"))?;
 
                   let local_name = self.bundle_variable.borrow().render_name(local_var);
 
@@ -1006,7 +1006,7 @@ impl<'a> BundleAnalyzer<'a> {
       let module = self
         .module_graph
         .module(module_id)
-        .unwrap_or_else(|| panic!("Module not found: {:?}", module_id));
+        .unwrap_or_else(|| panic!("Module not found: {module_id:?}"));
       let module_analyzer = module_analyzer_manager.module_analyzer_mut_unchecked(module_id);
 
       let comments: SingleThreadedComments = module.meta.as_script().comments.clone().into();
@@ -1046,8 +1046,7 @@ impl<'a> BundleAnalyzer<'a> {
 
       let code = String::from_utf8(code_bytes).map_err(|err| {
         CompilationError::GenericError(format!(
-          "failed to convert code bytes to string, origin error: {}",
-          err
+          "failed to convert code bytes to string, origin error: {err}"
         ))
       })?;
 

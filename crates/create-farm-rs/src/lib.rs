@@ -174,14 +174,14 @@ where
     handle_brand_text(&format!(
       "    cd {} \n",
       if project_name.contains(' ') {
-        format!("\"{}\"", project_name)
+        format!("\"{project_name}\"")
       } else {
         project_name.to_string()
       }
     ));
   }
   if let Some(cmd) = pkg_manager.install_cmd() {
-    handle_brand_text(&format!("    {} \n", cmd));
+    handle_brand_text(&format!("    {cmd} \n"));
   }
   handle_brand_text(&format!("    {} \n", get_run_cmd(&pkg_manager, &template)));
 

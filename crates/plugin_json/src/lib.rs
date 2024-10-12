@@ -52,7 +52,7 @@ impl Plugin for FarmPluginJson {
     if matches!(param.module_type, ModuleType::Custom(ref suffix) if suffix == "json") {
       // if json value can not be parsed, means it's handled by other plugins
       if let Ok(json) = serde_json::from_str::<serde_json::Value>(&param.content) {
-        let js = format!("module.exports = {}", json);
+        let js = format!("module.exports = {json}");
 
         return Ok(Some(farmfe_core::plugin::PluginTransformHookResult {
           content: js,

@@ -88,7 +88,7 @@ export default 'default';
 
     let bytes = codegen_module(swc_module, EsVersion::EsNext, cm, None, false, None).unwrap();
     let result = String::from_utf8(bytes).unwrap();
-    println!("{}", result);
+    println!("{result}");
     let expect = r#"import { aValue } from './foo';
 const a = aValue;
 const c = 3;

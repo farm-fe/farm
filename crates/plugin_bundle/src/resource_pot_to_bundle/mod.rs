@@ -193,8 +193,7 @@ impl<'a> SharedBundle<'a> {
         .map(Ok)
         .unwrap_or_else(|| {
           Err(CompilationError::GenericError(format!(
-            "get resource pot {:?} failed",
-            resource_pot_id
+            "get resource pot {resource_pot_id:?} failed"
           )))
         })?;
 

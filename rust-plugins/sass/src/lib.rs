@@ -165,12 +165,12 @@ impl Importer for ImporterCollection {
         url
       } else {
         Url::from_file_path(url)
-          .map_err(|_| Exception::new(format!("parse raw {:?} to Url failed.", url)))?
+          .map_err(|_| Exception::new(format!("parse raw {url:?} to Url failed.")))?
       }
     } else {
       let resolved_path = RelativePath::new(url).to_logical_path(&self.context.config.root);
       Url::from_file_path(&resolved_path)
-        .map_err(|_| Exception::new(format!("parse {:?} to Url failed.", resolved_path)))?
+        .map_err(|_| Exception::new(format!("parse {resolved_path:?} to Url failed.")))?
     };
 
     Ok(Some(url))
@@ -330,7 +330,7 @@ fn get_os() -> &'static str {
     "linux" => "linux",
     "macos" => "darwin",
     "windows" => "win32",
-    os => panic!("dart-sass-embed is not supported OS: {}", os),
+    os => panic!("dart-sass-embed is not supported OS: {os}"),
   }
 }
 
@@ -339,7 +339,7 @@ fn get_arch() -> &'static str {
     "x86" => "ia32",
     "x86_64" => "x64",
     "aarch64" => "arm64",
-    arch => panic!("dart-sass-embed is not supported arch: {}", arch),
+    arch => panic!("dart-sass-embed is not supported arch: {arch}"),
   }
 }
 

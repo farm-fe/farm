@@ -537,7 +537,7 @@ fn get_name_from_src(src: &str) -> String {
 
   assert!(val_name.len() > 0);
 
-  format!("_f_{}", val_name)
+  format!("_f_{val_name}")
 }
 
 fn create_var_decl_stmt(val_name_ident: Ident, init: Box<Expr>) -> ModuleItem {
@@ -974,7 +974,7 @@ export * from './e';
         codegen_module(&mut ast, EsVersion::latest(), cm, None, false, None).unwrap();
       let code = String::from_utf8(code_bytes).unwrap();
 
-      println!("{}", code);
+      println!("{code}");
 
       assert_eq!(
         code,
@@ -1073,7 +1073,7 @@ export const f = 1, h = 2;
         codegen_module(&mut ast, EsVersion::latest(), cm, None, false, None).unwrap();
       let code = String::from_utf8(code_bytes).unwrap();
 
-      println!("{}", code);
+      println!("{code}");
 
       assert_eq!(
         code,

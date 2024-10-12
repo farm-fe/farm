@@ -169,7 +169,7 @@ mod tests {
   fn replace() {
     let content = "a { b: url('c'); d: url('e');".to_string();
     let result = super::replace(content, &CSS_URL_RE, |raw, matched| {
-      return Ok(raw.replace(matched, "'matched'"));
+      Ok(raw.replace(matched, "'matched'"))
     })
     .unwrap();
 

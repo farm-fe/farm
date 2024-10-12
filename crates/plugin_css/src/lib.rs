@@ -148,7 +148,7 @@ impl Plugin for FarmPluginCssResolve {
       };
       // try relative path first
       if !source.starts_with('.') {
-        if let Some(res) = resolve_css(format!("./{}", source)) {
+        if let Some(res) = resolve_css(format!("./{source}")) {
           return Ok(Some(res));
         }
       }
@@ -637,7 +637,7 @@ impl Plugin for FarmPluginCss {
           }),
         );
         bundle.add_source(magic_module, None).map_err(|e| {
-          CompilationError::GenericError(format!("failed to add source to bundle: {:?}", e))
+          CompilationError::GenericError(format!("failed to add source to bundle: {e:?}"))
         })?;
       }
 
@@ -652,7 +652,7 @@ impl Plugin for FarmPluginCss {
               ..Default::default()
             })
             .map_err(|e| {
-              CompilationError::GenericError(format!("failed to generate source map: {:?}", e))
+              CompilationError::GenericError(format!("failed to generate source map: {e:?}"))
             })?,
         )
         .map(|v| {
@@ -799,7 +799,7 @@ fn transform_css_module_indent_name(
   context: HashMap<String, &String>,
 ) -> String {
   context.iter().fold(indent_name, |acc, (key, value)| {
-    acc.replace(&format!("[{}]", key), value)
+    acc.replace(&format!("[{key}]"), value)
   })
 }
 

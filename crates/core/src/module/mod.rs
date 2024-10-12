@@ -609,7 +609,7 @@ impl ToString for ModuleType {
   fn to_string(&self) -> String {
     match *self {
       Self::Custom(ref s) => s.to_string(),
-      _ => AsLowerCamelCase(format!("{:?}", self)).to_string(),
+      _ => AsLowerCamelCase(format!("{self:?}")).to_string(),
     }
   }
 }
@@ -707,7 +707,7 @@ impl ModuleId {
     let (resolved_path, query) = p.split_once('?').unwrap_or((p, ""));
 
     if !query.is_empty() {
-      return (resolved_path.to_string(), format!("?{}", query));
+      return (resolved_path.to_string(), format!("?{query}"));
     }
 
     (p.to_string(), query.to_string())
