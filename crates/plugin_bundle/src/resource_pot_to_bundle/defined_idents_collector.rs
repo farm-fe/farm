@@ -6,8 +6,7 @@ use std::{
 use farmfe_core::{
   swc_common::DUMMY_SP,
   swc_ecma_ast::{
-    AssignExpr, AssignOp, AssignTarget, BindingIdent, Expr, Id, KeyValuePatProp, KeyValueProp,
-    ObjectPatProp, Pat, Prop, PropName, PropOrSpread, SimpleAssignTarget,
+    AssignExpr, AssignOp, AssignTarget, BindingIdent, Expr, Id, KeyValuePatProp, KeyValueProp, MemberProp, ObjectPatProp, Pat, Prop, PropName, PropOrSpread, SimpleAssignTarget
   },
 };
 use farmfe_toolkit::{
@@ -130,13 +129,14 @@ impl<'a> VisitMut for RenameIdent<'a> {
               new_name.as_str().into(),
             )),
           });
-        } else {
-          n.visit_mut_children_with(self);
+          return;
         }
       }
 
-      _ => n.visit_mut_children_with(self),
+      _ => {}
     }
+
+    n.visit_mut_children_with(self);
   }
 
   fn visit_mut_prop_or_spread(&mut self, n: &mut PropOrSpread) {
@@ -159,7 +159,7 @@ impl<'a> VisitMut for RenameIdent<'a> {
           }
         }
         Prop::KeyValue(key_value_prop) => {
-          key_value_prop.value.visit_mut_with(self);
+          key_value_prop.visit_mut_with(self);
         }
         _ => {
           p.visit_mut_with(self);
@@ -169,6 +169,32 @@ impl<'a> VisitMut for RenameIdent<'a> {
         s.visit_mut_with(self);
       }
     }
+  }
+
+  fn visit_mut_key_value_prop(&mut self, n: &mut KeyValueProp) {
+    //
+    // skip it
+    // ```js
+    // {
+    //   key: value,
+    // }
+    // ```
+    //
+    if let farmfe_core::swc_ecma_ast::PropName::Ident(_) = n.key {
+    } else {
+      n.key.visit_mut_with(self);
+    }
+
+    n.value.visit_mut_with(self);
+  }
+
+  fn visit_mut_key_value_pat_prop(&mut self, n: &mut KeyValuePatProp) {
+    if let PropName::Ident(_) = n.key {
+    } else {
+      n.key.visit_mut_with(self);
+    }
+
+    n.value.visit_mut_with(self);
   }
 
   fn visit_mut_object_pat(&mut self, n: &mut farmfe_core::swc_ecma_ast::ObjectPat) {
@@ -205,10 +231,19 @@ impl<'a> VisitMut for RenameIdent<'a> {
           }
         }
         ObjectPatProp::KeyValue(n) => {
-          n.value.visit_mut_with(self);
+          n.visit_mut_with(self);
         }
         _ => prop.visit_mut_children_with(self),
       };
     }
+  }
+
+  fn visit_mut_member_prop(&mut self, n: &mut MemberProp) {
+    // ns.default, skip
+    if let MemberProp::Ident(_) = n {
+      return;
+    }
+
+    n.visit_mut_children_with(self);
   }
 }

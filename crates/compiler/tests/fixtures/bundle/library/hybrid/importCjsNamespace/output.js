@@ -64,6 +64,7 @@ var lodash_cjs = __commonJs({
         module.exports.default = 'foo';
     }
 });
+var lodash$1 = _interop_require_default(lodash_cjs()).default, lodash_ns = _interop_require_wildcard(lodash_cjs());
 
 // module_id: a.ts
 const lodash = 'a.ts';
@@ -71,7 +72,6 @@ console.log(lodash, 'a.ts');
 var a_default = 'a.ts';
 
 // module_id: b.ts
-var lodash$1 = _interop_require_default(lodash_cjs()).default, lodash_ns = _interop_require_wildcard(lodash_cjs());
 console.log('b.ts', lodash_ns);
 
 // module_id: index.ts

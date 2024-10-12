@@ -6,6 +6,13 @@ import { builtinModules } from 'module';
  */
 export default defineConfig({
   compilation: {
+    // multiple bundle recommend config
+    treeShaking: false,
+    partialBundling: {
+      targetConcurrentRequests: Number.MAX_SAFE_INTEGER,
+      targetMinSize: 1,
+    },
+
     input: {
       index: './index.ts'
     },
@@ -21,19 +28,8 @@ export default defineConfig({
       ...builtinModules.map((m) => `^node:${m}$`),
       ...builtinModules.map((m) => `^${m}$`)
     ],
-    runtime: {
-      isolate: true
-    },
     minify: false,
     mode: 'development',
-    partialBundling: {
-      enforceResources: [
-        {
-          name: 'xxx',
-          test: ['.+']
-        }
-      ]
-    },
     persistentCache: false,
     lazyCompilation: false
   },

@@ -57,7 +57,7 @@ var foo_cjs = __commonJs({
         module.exports.cjs = true;
     }
 });
+var foo_default = _interop_require_default(foo_cjs()).default, bar = foo_cjs()["bar"], foo = foo_cjs()["foo"];
 
 // module_id: index.ts
-var foo_default = _interop_require_default(foo_cjs()).default, bar = foo_cjs()["bar"], foo = foo_cjs()["foo"];
 export { bar, foo, foo_default as default };

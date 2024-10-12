@@ -7,16 +7,16 @@ use crate::resource_pot_to_bundle::uniq_name::BundleVariable;
 use super::ModuleAnalyzerManager;
 
 impl BundleVariable {
-  pub fn set_uniq_name_both(&mut self, v1: usize, v2: usize) {
-    self.set_var_root(v2, v1);
-    self.set_var_uniq_rename(v1);
-    self.set_rename(v2, self.render_name(v1));
+  pub fn set_uniq_name_both(&mut self, root: usize, local: usize) {
+    self.set_var_root(local, root);
+    self.set_var_uniq_rename(root);
+    self.set_rename(local, self.render_name(root));
   }
 
-  pub fn set_rename_from_other_render_name(&mut self, target: usize, from: usize) {
-    self.set_var_root(target, from);
-    let rendered_name = self.render_name(from);
-    self.set_rename(target, rendered_name);
+  pub fn set_rename_from_other_render_name(&mut self, local: usize, root: usize) {
+    self.set_var_root(local, root);
+    let rendered_name = self.render_name(root);
+    self.set_rename(local, rendered_name);
   }
 
   pub fn set_rename_from_other_name(&mut self, target: usize, from: usize) {

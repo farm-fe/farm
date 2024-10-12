@@ -23,7 +23,9 @@ use farmfe_toolkit::{
 };
 
 use crate::resource_pot_to_bundle::{
-  bundle::reference::ReferenceMap, common::get_module_mark, targets::cjs::CjsModuleAnalyzer,
+  bundle::{bundle_reference::CommonJsImportMap, reference::ReferenceMap},
+  common::get_module_mark,
+  targets::cjs::CjsModuleAnalyzer,
   uniq_name::BundleVariable,
 };
 
@@ -350,7 +352,13 @@ impl ModuleAnalyzer {
           &self.module_id,
           module_graph,
           self.mark.1,
-          &mut |ident, strict| bundle_variable.register_var(&self.module_id, ident, strict),
+          &mut |ident, strict, is_placeholder| {
+            if is_placeholder {
+              bundle_variable.register_placeholder(&self.module_id, ident)
+            } else {
+              bundle_variable.register_var(&self.module_id, ident, strict)
+            }
+          },
         )
         .unwrap();
 
@@ -407,6 +415,7 @@ impl ModuleAnalyzer {
   pub fn build_rename_map<'a>(
     &self,
     bundle_variable: &'a BundleVariable,
+    commonjs_import_map: &'a CommonJsImportMap,
   ) -> HashMap<VarRefKey<'a>, usize> {
     self
       .statements
@@ -442,25 +451,36 @@ impl ModuleAnalyzer {
               .as_ref()
               .map(|item| {
                 let mut idents = vec![];
+                let commonjs = commonjs_import_map.get(&item.source.clone().into());
+
                 for specify in &item.specifiers {
                   match specify {
                     ImportSpecifierInfo::Namespace(local) => {
-                      idents.push(*local);
+                      if let Some(i) = commonjs.and_then(|i| i.namespace) {
+                        idents.push(i);
+                      } else {
+                        idents.push(*local);
+                      }
                     }
                     ImportSpecifierInfo::Named { local, imported: _ } => {
                       idents.push(*local);
                     }
                     ImportSpecifierInfo::Default(local) => {
-                      idents.push(*local);
+                      if let Some(i) = commonjs.and_then(|i| i.default) {
+                        idents.push(i);
+                      } else {
+                        idents.push(*local);
+                      }
                     }
                   }
                 }
+
                 idents
               })
               .unwrap_or_default(),
           )
           .map(|item| bundle_variable.var_by_index(item))
-          .filter(|item| item.rename.is_some())
+          .filter(|item| item.rename.is_some() && !item.placeholder)
           .map(|item| {
             (
               Ref::map(Ref::clone(&item), |item| &item.var).into(),

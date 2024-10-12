@@ -39,7 +39,7 @@ var foo_cjs = __commonJs({
         var _default = 'foo';
     }
 });
+var foo_default = foo_cjs()["default"];
 
 // module_id: index.ts
-var foo_default = foo_cjs()["default"];
 export { foo_default as default };

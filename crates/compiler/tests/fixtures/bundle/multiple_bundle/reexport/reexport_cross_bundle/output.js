@@ -37,5 +37,5 @@ const foo_str1 = 123;
 const foo_str3$1 = 'index-foo_str3';
 console.log(foo_str1, foo_str3$1);
 var index_default = 'index default';
-export { foo_default, foo_str1$1, foo_str2 };
 export { index_bar, index_foo$1 as index_foo, index_default as default };
+export { foo_default, foo_str1$1, foo_str2 };

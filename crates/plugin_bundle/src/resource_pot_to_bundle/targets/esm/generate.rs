@@ -168,10 +168,7 @@ impl EsmGenerate {
         continue;
       }
 
-      let mut ordered_named_keys = import.named.keys().collect::<Vec<_>>();
-      ordered_named_keys.sort();
-
-      for imported in ordered_named_keys {
+      for imported in import.named.keys().sorted() {
         let local = import.named[imported];
         let local_named = bundle_variable.render_name(local);
 

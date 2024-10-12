@@ -32,5 +32,5 @@ const foo_named = '123';
 // module_id: index.ts
 console.log(default_default$1, foo_named, namespace_ns);
 var index_default = 'index';
-export { default_default$1, foo_named, foo_ns, namespace_default, namespace_ns };
 export { index_default as default };
+export { default_default$1, foo_named, foo_ns, namespace_default, namespace_ns };
