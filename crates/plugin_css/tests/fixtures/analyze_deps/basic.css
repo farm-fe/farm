@@ -19,4 +19,7 @@ div {
 
 p {
   background: url('@/img/logo.png');
+  top: -8px/2 + 1;
 }
+
+.home {filter: progid:DXImageTransform.Microsoft.Alpha(opacity=20)}
