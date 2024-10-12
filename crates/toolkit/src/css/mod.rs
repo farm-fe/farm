@@ -2,6 +2,7 @@ use std::{path::PathBuf, sync::Arc};
 
 use farmfe_core::{
   error::CompilationError,
+  regex::Regex,
   swc_common::{comments::SingleThreadedComments, input::SourceFileInput},
   swc_css_ast::Stylesheet,
 };
@@ -25,11 +26,23 @@ pub struct ParseCssModuleResult {
 /// parse the input css file content to [Stylesheet]
 pub fn parse_css_stylesheet(
   id: &str,
-  content: Arc<String>,
+  orig_content: Arc<String>,
 ) -> farmfe_core::error::Result<ParseCssModuleResult> {
+  // swc_css_parser does not support parsing invalid css, so we need to replace known invalid css here
+  // 1. replace --: '' to --farm-empty: ''
+  let mut content = orig_content.replace("--:", "--farm-empty:");
+  // 2. replace filter: xxx.Microsoft.xxx to filter: "xxx.Microsoft.xxx" using regex. fix #1557
+  let regex = Regex::new(r#"filter:\s*(.*?)\.Microsoft\.(.*?)(;|\})"#).unwrap();
+  content = regex
+    .replace_all(&content, "filter:\"$1.Microsoft.$2\"$3")
+    .to_string();
+  // 3. replace invalid operator, eg: top: -8px/2 + 1 to top: "-8px/2 + 1" using regex. fix #1748
+  let regex = Regex::new(r#":\s*([^;{}]*?\d\s(?:\+|-|\*|/)\s\d[^;{}]*?)\s*(;|\})"#).unwrap();
+  content = regex.replace_all(&content, ":\"$1\"$2").to_string();
+
   let (cm, source_file) = create_swc_source_map(Source {
     path: PathBuf::from(id),
-    content,
+    content: Arc::new(content),
   });
 
   let config = ParserConfig {
