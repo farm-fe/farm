@@ -1,5 +1,16 @@
 # @farmfe/core
 
+## 1.3.28
+
+### Patch Changes
+
+- e1f5c696: fix namespace import MemberProp name failed
+- a2a32f51: Fix invalid css syntax #1748 #1557
+- 04a124fe: Fix css dynamic loading runtime error #1551
+- 7d84234e: fix resolve env config node env error
+- Updated dependencies [04a124fe]
+  - @farmfe/runtime@0.12.7
+
 ## 1.3.27
 
 ### Patch Changes
