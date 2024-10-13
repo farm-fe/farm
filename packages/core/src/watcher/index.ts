@@ -5,14 +5,17 @@ import chokidar from 'chokidar';
 import type { FSWatcher, WatchOptions } from 'chokidar';
 import glob from 'fast-glob';
 
-import { Compiler } from '../compiler/index';
-import { createInlineCompiler } from '../compiler/index';
-import { createDebugger } from '../utils/debug';
-import { convertErrorMessage } from '../utils/error';
-import { arraify, bold, green, normalizePath } from '../utils/index';
+import { Compiler } from '../compiler/index.js';
+import { createInlineCompiler } from '../compiler/index.js';
+import { createDebugger } from '../utils/debug.js';
+import { convertErrorMessage } from '../utils/error.js';
+import { arraify, bold, green, normalizePath } from '../utils/index.js';
 
-import type { ResolvedUserConfig } from '../config/index';
-import type { JsUpdateResult, PersistentCacheConfig } from '../types/binding';
+import type { ResolvedUserConfig } from '../config/index.js';
+import type {
+  JsUpdateResult,
+  PersistentCacheConfig
+} from '../types/binding.js';
 
 export const debugWatcher = createDebugger('farm:watcher');
 

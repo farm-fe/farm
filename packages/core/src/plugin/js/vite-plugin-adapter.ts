@@ -1,4 +1,4 @@
-import type { ResolvedUserConfig, UserConfig } from '../../config/types';
+import type { ResolvedUserConfig, UserConfig } from '../../config/types.js';
 import {
   CompilationContext,
   CompilationContextEmitFileParams,
@@ -7,7 +7,7 @@ import {
   PluginRenderResourcePotParams,
   Resource,
   ResourcePotInfo
-} from '../type';
+} from '../type.js';
 import {
   FARM_CSS_MODULES_SUFFIX,
   VITE_PLUGIN_DEFAULT_MODULE_TYPE,
@@ -29,7 +29,7 @@ import {
   transformFarmConfigToRollupNormalizedOutputOptions,
   transformResourceInfo2RollupRenderedChunk,
   transformRollupResource2FarmResource
-} from './utils';
+} from './utils.js';
 
 // only use types from vite and we do not install vite as a dependency
 import type {

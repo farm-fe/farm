@@ -1,7 +1,6 @@
 import path from 'node:path';
 
-import { commonFsUtils } from '../../utils/fsUtils.js';
-import { cleanUrl } from '../../utils/url.js';
+import { cleanUrl, commonFsUtils } from '../../utils/index.js';
 
 import type Connect from 'connect';
 import type { Server } from '../index.js';

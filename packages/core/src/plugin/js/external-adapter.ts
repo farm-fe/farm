@@ -1,11 +1,11 @@
-import { CUSTOM_KEYS } from '../../config/constants';
+import { CUSTOM_KEYS } from '../../config/constants.js';
 import {
   mergeCustomExternal,
   partialExternal
-} from '../../config/normalize-config/normalize-external';
-import { UserConfig } from '../../config/types';
-import { isArray } from '../../utils/share';
-import { JsPlugin } from '../type';
+} from '../../config/normalize-config/normalize-external.js';
+import { UserConfig } from '../../config/types.js';
+import { isArray } from '../../utils/share.js';
+import { JsPlugin } from '../type.js';
 
 /**
  * avoid add new external in config hook

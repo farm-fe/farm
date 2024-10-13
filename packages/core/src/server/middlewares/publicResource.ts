@@ -1,7 +1,10 @@
 import sirv from 'sirv';
 
-import { normalizePath } from '../../utils/share.js';
-import { cleanUrl, knownJavascriptExtensionRE } from '../../utils/url.js';
+import {
+  cleanUrl,
+  knownJavascriptExtensionRE,
+  normalizePath
+} from '../../utils/index.js';
 
 import type Connect from 'connect';
 import type { Server } from '../index.js';

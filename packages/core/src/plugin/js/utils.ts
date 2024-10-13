@@ -11,10 +11,14 @@ import type {
   RenderedModule
 } from 'rollup';
 
-import { VITE_ADAPTER_VIRTUAL_MODULE } from './constants';
+import { VITE_ADAPTER_VIRTUAL_MODULE } from './constants.js';
 
-import type { Config } from '../../types/binding';
-import type { JsResourcePotInfoData, Resource, ResourcePotInfo } from '../type';
+import type { Config } from '../../types/binding.js';
+import type {
+  JsResourcePotInfoData,
+  Resource,
+  ResourcePotInfo
+} from '../type.js';
 
 export type WatchChangeEvents = 'create' | 'update' | 'delete';
 

@@ -7,7 +7,7 @@ import {
   resolveCliConfig,
   resolveCommandOptions,
   resolveCore
-} from './utils';
+} from './utils.js';
 
 import type {
   CleanOptions,
@@ -15,7 +15,7 @@ import type {
   CliPreviewOptions,
   CliServerOptions,
   GlobalCliOptions
-} from './types';
+} from './types.js';
 
 const cli = cac('farm');
 

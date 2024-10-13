@@ -1,7 +1,7 @@
 import path, { isAbsolute } from 'node:path';
-import { isString } from '../plugin/js/utils';
-import { isArray, isObject } from '../utils/share';
-import { FarmCliOptions, UserConfig } from './types';
+import { isString } from '../plugin/js/utils.js';
+import { isArray, isObject } from '../utils/share.js';
+import { FarmCliOptions, UserConfig } from './types.js';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function mergeConfig<T extends Record<string, any>>(

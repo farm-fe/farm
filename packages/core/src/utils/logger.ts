@@ -1,15 +1,15 @@
-import { __FARM_GLOBAL__ } from '../config/_global';
-import { ResolvedUserConfig } from '../config/types';
+import { __FARM_GLOBAL__ } from '../config/_global.js';
+import { ResolvedUserConfig } from '../config/types.js';
 import {
   ColorFunction,
   PersistentCacheBrand,
   bold,
   colors,
   green
-} from './color';
-import { ResolvedServerUrls } from './http';
-import { getShortName } from './path';
-import { clearScreen, formatExecutionTime, pad, version } from './share';
+} from './color.js';
+import { ResolvedServerUrls } from './http.js';
+import { getShortName } from './path.js';
+import { clearScreen, formatExecutionTime, pad, version } from './share.js';
 
 type LogLevelNames = 'trace' | 'debug' | 'info' | 'warn' | 'error';
 

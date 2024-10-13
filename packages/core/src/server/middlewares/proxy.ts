@@ -1,6 +1,6 @@
 import httpProxy from 'http-proxy';
 import { ResolvedUserConfig } from '../../config/types.js';
-import { colors } from '../../utils/color.js';
+import { colors } from '../../utils/index.js';
 
 import type * as http from 'node:http';
 import type * as net from 'node:net';

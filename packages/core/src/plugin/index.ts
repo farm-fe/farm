@@ -1,13 +1,13 @@
-import { isArray, isObject } from '../utils';
-import { convertPlugin } from './js/index';
-import { rustPluginResolver } from './rust';
+import { isArray, isObject } from '../utils/index.js';
+import { convertPlugin } from './js/index.js';
+import { rustPluginResolver } from './rust/index.js';
 
-import { ResolvedUserConfig, type UserConfig } from '../config';
-import merge from '../utils/merge';
-import type { JsPlugin } from './type';
+import { ResolvedUserConfig, type UserConfig } from '../config/index.js';
+import merge from '../utils/merge.js';
+import type { JsPlugin } from './type.js';
 
-export * from './js';
-export * from './rust';
+export * from './js/index.js';
+export * from './rust/index.js';
 
 export async function resolveFarmPlugins(config: UserConfig) {
   const plugins = config.plugins ?? [];

@@ -1,30 +1,33 @@
-export * from './compiler/index';
-export * from './config/index';
-export * from './server/index';
-export * from './plugin/type';
-export * from './utils/index';
+export * from './compiler/index.js';
+export * from './config/index.js';
+export * from './server/index.js';
+export * from './plugin/type.js';
+export * from './utils/index.js';
 
-export { defineFarmConfig as defineConfig } from './config/index';
+export { defineFarmConfig as defineConfig } from './config/index.js';
 
-export type { Compiler as BindingCompiler } from './types/binding';
+export type { Compiler as BindingCompiler } from './types/binding.js';
 
 import fs from 'node:fs/promises';
 
-import { createCompiler } from './compiler/index';
-import { __FARM_GLOBAL__ } from './config/_global';
-import { UserConfig, resolveConfig } from './config/index';
-import { getPluginHooks } from './plugin/index';
-import { Server } from './server/index';
-import { PersistentCacheConfig } from './types/binding';
-import { PersistentCacheBrand, bold, colors, green } from './utils/color';
+import { createCompiler } from './compiler/index.js';
+import { __FARM_GLOBAL__ } from './config/_global.js';
+import { UserConfig, resolveConfig } from './config/index.js';
+import { getPluginHooks } from './plugin/index.js';
+import { Server } from './server/index.js';
+import { PersistentCacheConfig } from './types/binding.js';
 import {
+  PersistentCacheBrand,
+  bold,
+  colors,
   copyPublicDirectory,
-  findNodeModulesRecursively
-} from './utils/fsUtils.js';
-import { getShortName } from './utils/path';
-import { handlerWatcher } from './watcher/index';
+  findNodeModulesRecursively,
+  getShortName,
+  green
+} from './utils/index.js';
+import { handlerWatcher } from './watcher/index.js';
 
-import type { FarmCliOptions } from './config/types';
+import type { FarmCliOptions } from './config/types.js';
 
 export async function start(
   inlineConfig?: FarmCliOptions & UserConfig

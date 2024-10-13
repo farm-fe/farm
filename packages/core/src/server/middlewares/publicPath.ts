@@ -1,5 +1,4 @@
-import { withTrailingSlash } from '../../utils/path.js';
-import { cleanUrl } from '../../utils/url.js';
+import { cleanUrl, withTrailingSlash } from '../../utils/index.js';
 
 import type Connect from 'connect';
 import type { Server } from '../index.js';

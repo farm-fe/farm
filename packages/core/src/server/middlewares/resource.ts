@@ -3,8 +3,11 @@ import mime from 'mime';
 import path from 'node:path/posix';
 
 import { Compiler } from '../../compiler/index.js';
-import { generateFileTree, generateFileTreeHtml } from '../../utils/index.js';
-import { cleanUrl } from '../../utils/url.js';
+import {
+  cleanUrl,
+  generateFileTree,
+  generateFileTreeHtml
+} from '../../utils/index.js';
 import { normalizePathByPublicPath } from '../publicDir.js';
 import { send } from '../send.js';
 

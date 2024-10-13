@@ -1,5 +1,5 @@
-import { CompilationContext, ViteModule } from '../type';
-import { throwIncompatibleError } from './utils';
+import { CompilationContext, ViteModule } from '../type.js';
+import { throwIncompatibleError } from './utils.js';
 
 // TODO type error refactor vite adaptor
 export class ViteDevServerAdapter {

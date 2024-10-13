@@ -1,1 +1,1 @@
-export * from './rustPluginResolver';
+export * from './rustPluginResolver.js';
