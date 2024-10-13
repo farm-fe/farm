@@ -10,34 +10,46 @@ const projectPath = dirname(fileURLToPath(import.meta.url));
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-const waitMatchConsole = (page: Page, text: string) => new Promise((resolve) => {
+const waitMatchConsole = (page: Page, text: string, timeout = 5000) => new Promise((resolve, reject) => {
+  let timer: NodeJS.Timeout | null = setTimeout(() => {
+    reject('wait match console message timeout');
+  }, timeout);
+
+  let cleanTimer = () => {
+    if (timer) {
+      clearTimeout(timer);
+      timer = null;;
+    }
+  }
   let handler = (message: ConsoleMessage) => {
-    console.log({ message })
+
     if(message.text().includes(text)) {
+      cleanTimer();
       resolve(undefined);
     };
 
     page.off('console', handler);
   };
+
+
   page.on('console', handler);
 })
 
-async function testFileHmr(page: Page, element: ElementHandle<SVGElement | HTMLElement>, filename: string, originText: string, afterText: string) {
+async function expectTestFileHmr(page: Page, element: ElementHandle<SVGElement | HTMLElement>, filename: string, originText: string, afterText: string) {
 
   const matchUpdateMessage = `[Farm HMR] ${normalize(filename)} updated`;
 
-  let waitClassUpdate = waitMatchConsole(page, matchUpdateMessage);
+  const waitUpdatePromise = waitMatchConsole(page, matchUpdateMessage);
 
   const recover = await editFile(path.join(projectPath, filename), originText, afterText);
 
   try {
-    await waitClassUpdate;
-    await delay(300);
+    await waitUpdatePromise;
+    await delay(1000);
     expect((await element.textContent())).toContain(afterText);
   } finally {
     await recover?.()
   }
-  await delay(300);
 }
 
 describe(`e2e tests - ${name}`, async () => {
@@ -55,9 +67,11 @@ describe(`e2e tests - ${name}`, async () => {
 
         expect(content).toContain('function component');
 
-        await testFileHmr(page, root, './src/components/ClassC.tsx', 'class component', 'class component update');
+        await expectTestFileHmr(page, root, './src/components/ClassC.tsx', 'class component', 'class component update');
 
-        await testFileHmr(page, root, './src/components/FnC.tsx', 'function component', 'function component update');
+        await delay(3000);
+
+        await expectTestFileHmr(page, root, './src/components/FnC.tsx', 'function component', 'function component update');
       },
       command
     );
