@@ -1,6 +1,6 @@
 import { test, expect, describe } from 'vitest';
 import { startProjectAndTest } from '../../e2e/vitestSetup';
-import path, { basename, dirname, normalize } from 'path';
+import path, { basename, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { editFile } from '../../e2e/utils';
 import { ConsoleMessage, ElementHandle, Page } from 'playwright-chromium';
@@ -10,7 +10,7 @@ const projectPath = dirname(fileURLToPath(import.meta.url));
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-const waitMatchConsole = (page: Page, text: string, timeout = 5000) => new Promise((resolve, reject) => {
+const waitMatchConsole = (page: Page, text: string, timeout = 10000) => new Promise((resolve, reject) => {
   let timer: NodeJS.Timeout | null = setTimeout(() => {
     reject('wait match console message timeout');
   }, timeout);
@@ -26,9 +26,9 @@ const waitMatchConsole = (page: Page, text: string, timeout = 5000) => new Promi
     if(message.text().includes(text)) {
       cleanTimer();
       resolve(undefined);
-    };
 
-    page.off('console', handler);
+      page.off('console', handler);
+    };
   };
 
 
@@ -37,7 +37,7 @@ const waitMatchConsole = (page: Page, text: string, timeout = 5000) => new Promi
 
 async function expectTestFileHmr(page: Page, element: ElementHandle<SVGElement | HTMLElement>, filename: string, originText: string, afterText: string) {
 
-  const matchUpdateMessage = `[Farm HMR] ${normalize(filename)} updated`;
+  const matchUpdateMessage = `[Farm HMR] ${path.posix.normalize(filename)} updated`;
 
   const waitUpdatePromise = waitMatchConsole(page, matchUpdateMessage);
 
