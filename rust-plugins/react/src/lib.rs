@@ -39,6 +39,12 @@ impl FarmPluginReact {
     let react_options = serde_json::from_str::<SwcTransformReactOptions>(&options).unwrap();
     let is_dev = matches!(config.mode, farmfe_core::config::Mode::Development);
 
+    // remove useAbsolutePath in options
+    let mut options_obj =
+      serde_json::from_str::<serde_json::Map<String, serde_json::Value>>(&options).unwrap();
+    options_obj.remove("useAbsolutePath");
+    let options = serde_json::to_string(&options_obj).unwrap();
+
     Self {
       core_lib: load_core_lib(config.core_lib_path.as_ref().unwrap()),
       options,
