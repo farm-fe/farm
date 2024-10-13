@@ -1,5 +1,5 @@
 ---
-"@farmfe/core": patch
+"@farmfe/core": minor
 ---
 
 improve partial bundle group named

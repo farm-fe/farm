@@ -34,7 +34,21 @@ export default defineConfig({
       path: "build",
       // publicPath: "/vue-public-path/",
     },
-    sourcemap: false,
+    partialBundling: {
+      targetMinSize: 200 * 1024,
+      enforceTargetMinSize: true,
+      groups: [
+        {
+          name: "vue-pack",
+          enforce: true,
+          test: [
+            "node_modules/vue",
+            "node_modules/vue-router",
+            "node_modules/@vue"
+          ]
+        }
+      ]
+    }
   },
   plugins: [
     sass(),
