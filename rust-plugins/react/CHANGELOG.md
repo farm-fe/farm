@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.2.4
+
+### Patch Changes
+
+- a4c0363b: Fix(plugin-react) useAbsolutePath is panic
+- 55ae82fa: fix class component hmr
+
 ## 1.2.3
 
 ### Patch Changes
