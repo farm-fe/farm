@@ -9,7 +9,7 @@ use std::{
 
 use crate::config::Mode;
 
-const FARM_CACHE_VERSION: &str = "0.4.8";
+const FARM_CACHE_VERSION: &str = "0.4.9";
 const FARM_CACHE_MANIFEST_FILE: &str = "farm-cache.json";
 
 // TODO make CacheStore a trait and implement DiskCacheStore or RemoteCacheStore or more.
