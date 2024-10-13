@@ -1,6 +1,9 @@
 import { defineConfig } from '@farmfe/core';
 
-export default defineConfig(() => {
+export default defineConfig((env) => {
+  console.log(env);
+  console.log(process.env.NODE_ENV);
+  
   return {
     compilation: {
       sourcemap: true,
