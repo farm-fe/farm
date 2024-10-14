@@ -20,7 +20,7 @@ export default defineConfig({
       // alias: {
       //   "@": path.resolve("src"),
       // },
-      // alias: [{ find: "@", replacement: path.resolve("src") }],
+      alias: [{ find: "@", replacement: path.resolve("src") }],
     },
   },
   // timeUnit: "s",
