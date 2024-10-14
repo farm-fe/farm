@@ -1,5 +1,11 @@
 # @farmfe/runtime
 
+## 0.12.7
+
+### Patch Changes
+
+- 04a124fe: Fix css dynamic loading runtime error #1551
+
 ## 0.12.6
 
 ### Patch Changes
