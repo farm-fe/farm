@@ -8,7 +8,7 @@ use std::{
 
 use farmfe_core::{
   config::{
-    config_regex::ConfigRegex, external::ExternalConfig, partial_bundling::PartialBundlingEnforceResourceConfig, AliasItem, Config, Mode, ModuleFormat, StringOrRegex, TargetEnv, FARM_MODULE_SYSTEM
+    config_regex::ConfigRegex, external::ExternalConfig, partial_bundling::PartialBundlingEnforceResourceConfig, AliasItem, Config, ModuleFormat, StringOrRegex, TargetEnv, FARM_MODULE_SYSTEM,
   },
   context::CompilationContext,
   enhanced_magic_string::types::{MappingsOptionHires, SourceMapOptions},
@@ -79,7 +79,7 @@ impl Plugin for FarmPluginRuntime {
       0,
       PartialBundlingEnforceResourceConfig {
         name: "FARM_RUNTIME".to_string(),
-        test: vec![ConfigRegex::new(&format!(".+{}", RUNTIME_SUFFIX))],
+        test: vec![ConfigRegex::new(&format!(".+{RUNTIME_SUFFIX}"))],
       },
     );
 
@@ -153,7 +153,7 @@ impl Plugin for FarmPluginRuntime {
           source_map: None,
         }))
       } else {
-        panic!("unknown module type for {}", real_file_path);
+        panic!("unknown module type for {real_file_path}");
       }
     } else {
       Ok(None)
@@ -297,7 +297,7 @@ impl Plugin for FarmPluginRuntime {
             .chars()
             .map(|c| if c.is_alphanumeric() { c } else { '_' })
             .collect::<String>();
-          name = format!("__farm_external_module_{}", name);
+          name = format!("__farm_external_module_{name}");
 
           let import_str = if context.config.output.format == ModuleFormat::EsModule {
             format!("import * as {name} from {external_module:?};")
@@ -337,7 +337,7 @@ impl Plugin for FarmPluginRuntime {
             // it's maybe from plugin
             .unwrap_or(source.clone());
 
-          let source_obj = format!("window['{}']||{{}}", replace_source);
+          let source_obj = format!("window['{replace_source}']||{{}}");
           external_objs.push(if context.config.output.format == ModuleFormat::EsModule {
             format!("{source:?}: ({source_obj}).default && !({source_obj}).__esModule ? {{...({source_obj}),__esModule:true}} : ({{...{source_obj}}})")
           } else {

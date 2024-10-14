@@ -42,7 +42,7 @@ pub fn parse_query(path: &str) -> Vec<(String, String)> {
       let kv = pair.split('=').collect::<Vec<_>>();
 
       if kv.len() != 2 {
-        panic!("Invalid query: {}", pair);
+        panic!("Invalid query: {pair}");
       }
 
       query.push((kv[0], kv[1]));
@@ -71,7 +71,7 @@ pub fn stringify_query(query: &Vec<(String, String)>) -> String {
     if v == PARSE_QUERY_TRUE || v.is_empty() {
       qs.push(k.to_string());
     } else {
-      qs.push(format!("{}={}", k, v));
+      qs.push(format!("{k}={v}"));
     }
   }
 
@@ -100,14 +100,14 @@ pub fn relative(from: &str, to: &str) -> String {
   let to = file_url_to_path(to);
 
   if !PathBuf::from(&from).is_absolute() {
-    panic!("from path must be absolute. from: {} to: {}", from, to);
+    panic!("from path must be absolute. from: {from} to: {to}");
   }
 
   let rp = diff_paths(&to, &from).unwrap_or_else(|| {
     if !PathBuf::from(&to).is_absolute() {
       return PathBuf::from(&to);
     }
-    panic!("failed to get relative path from {} to {}", from, to);
+    panic!("failed to get relative path from {from} to {to}");
   });
 
   // make sure the relative path is platform independent
@@ -138,7 +138,7 @@ pub fn relative(from: &str, to: &str) -> String {
         if result.is_empty() {
           result += &c;
         } else {
-          result = format!("{}/{}", result, c);
+          result = format!("{result}/{c}");
         }
       }
     }

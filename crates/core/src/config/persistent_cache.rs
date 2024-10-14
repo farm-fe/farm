@@ -83,7 +83,7 @@ impl PersistentCacheConfig {
             .into_iter()
             .map(|k| {
                 let v = cloned_obj.envs.get(k).unwrap();
-                format!("{}={}", k, v)
+                format!("{k}={v}")
             })
             .collect::<Vec<_>>()
             .join("&");

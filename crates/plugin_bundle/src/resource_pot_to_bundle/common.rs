@@ -50,7 +50,7 @@ pub fn parse_module_item(string: &str) -> Result<ModuleItem> {
     .parse_module_item()
     .map_err(|msg| CompilationError::ParseError {
       resolved_path: "unknown temp parser".to_string(),
-      msg: format!("failed parse content, cause: {:#?}", msg),
+      msg: format!("failed parse content, cause: {msg:#?}"),
     })
 }
 

@@ -54,7 +54,7 @@ pub fn transform_import_meta_glob(
   for (index, meta_info) in visitor.import_globs.into_iter().enumerate() {
     for (glob_index, globed_source) in meta_info.globed_sources.into_iter().enumerate() {
       let globed_source = if let Some(query) = &meta_info.query {
-        format!("{}?{}", globed_source, query)
+        format!("{globed_source}?{query}")
       } else {
         globed_source
       };
@@ -75,14 +75,14 @@ pub fn transform_import_meta_glob(
                     farmfe_core::swc_ecma_ast::ImportDefaultSpecifier {
                       span: DUMMY_SP,
                       local: farmfe_core::swc_ecma_ast::Ident::new(
-                        format!("__glob__{}_{}", index, glob_index).into(),
+                        format!("__glob__{index}_{glob_index}").into(),
                         DUMMY_SP,
                       ),
                     },
                   )],
                   src: Box::new(farmfe_core::swc_ecma_ast::Str {
                     span: DUMMY_SP,
-                    value: format!("{}?url", globed_source).into(),
+                    value: format!("{globed_source}?url").into(),
                     raw: None,
                   }),
                   type_only: false,
@@ -138,7 +138,7 @@ fn create_eager_named_import(
         farmfe_core::swc_ecma_ast::ImportNamedSpecifier {
           span: DUMMY_SP,
           local: farmfe_core::swc_ecma_ast::Ident::new(
-            format!("__glob__{}_{}", index, glob_index).into(),
+            format!("__glob__{index}_{glob_index}").into(),
             DUMMY_SP,
           ),
           imported: Some(farmfe_core::swc_ecma_ast::ModuleExportName::Ident(
@@ -171,7 +171,7 @@ fn create_eager_namespace_import(
         farmfe_core::swc_ecma_ast::ImportStarAsSpecifier {
           span: DUMMY_SP,
           local: farmfe_core::swc_ecma_ast::Ident::new(
-            format!("__glob__{}_{}", index, glob_index).into(),
+            format!("__glob__{index}_{glob_index}").into(),
             DUMMY_SP,
           ),
         },
@@ -196,7 +196,7 @@ fn create_eager_default_import(index: usize, glob_index: usize, globed_source: &
         farmfe_core::swc_ecma_ast::ImportDefaultSpecifier {
           span: DUMMY_SP,
           local: farmfe_core::swc_ecma_ast::Ident::new(
-            format!("__glob__{}_{}", index, glob_index).into(),
+            format!("__glob__{index}_{glob_index}").into(),
             DUMMY_SP,
           ),
         },
@@ -383,7 +383,7 @@ impl<'a> ImportGlobVisitor<'a> {
       .unwrap_or_else(|| source.to_string());
 
     if negative {
-      format!("!{}", result)
+      format!("!{result}")
     } else {
       result
     }
@@ -404,7 +404,7 @@ impl<'a> ImportGlobVisitor<'a> {
       };
 
       let source = if !source.starts_with('.') && !source.starts_with('/') {
-        format!("./{}", source)
+        format!("./{source}")
       } else {
         source.to_string()
       };
@@ -486,7 +486,7 @@ impl<'a> ImportGlobVisitor<'a> {
               let rel_source = relative(&self.root, &file);
 
               if !rel_source.starts_with('/') {
-                format!("/{}", rel_source)
+                format!("/{rel_source}")
               } else {
                 rel_source
               }
@@ -494,7 +494,7 @@ impl<'a> ImportGlobVisitor<'a> {
               let rel_source = relative(&self.cur_dir, &file);
 
               if !rel_source.starts_with('.') {
-                format!("./{}", rel_source)
+                format!("./{rel_source}")
               } else {
                 rel_source
               }
@@ -503,7 +503,7 @@ impl<'a> ImportGlobVisitor<'a> {
             let mut relative_file = relative(&self.cur_dir, &file);
 
             if !relative_file.starts_with('.') {
-              relative_file = format!("./{}", relative_file);
+              relative_file = format!("./{relative_file}");
             }
 
             if negative && filtered_paths.contains_key(&relative_file) {
@@ -549,7 +549,7 @@ impl<'a> ImportGlobVisitor<'a> {
       Some((
         source.to_string(),
         Box::new(Expr::Ident(Ident::new(
-          format!("__glob__{}_{}", cur_index, entry_index).into(),
+          format!("__glob__{cur_index}_{entry_index}").into(),
           DUMMY_SP,
         ))),
       ))
@@ -709,7 +709,7 @@ impl<'a> VisitMut for ImportGlobVisitor<'a> {
                 props.push((
                   source.clone(),
                   Box::new(Expr::Ident(Ident::new(
-                    format!("__glob__{}_{}", cur_index, entry_index).into(),
+                    format!("__glob__{cur_index}_{entry_index}").into(),
                     DUMMY_SP,
                   ))),
                 ));
@@ -717,8 +717,8 @@ impl<'a> VisitMut for ImportGlobVisitor<'a> {
                 // add "./dir/foo.js": () => import('./dir/foo.js')
                 let (rel_file, source) = if let Some(query) = &import_glob_info.query {
                   (
-                    format!("{}?{}", relative_file, query),
-                    format!("{}?{}", source, query),
+                    format!("{relative_file}?{query}"),
+                    format!("{source}?{query}"),
                   )
                 } else {
                   (relative_file.clone(), source.clone())

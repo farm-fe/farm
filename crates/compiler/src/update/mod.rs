@@ -676,8 +676,8 @@ impl Compiler {
           &removed_modules,
           &cloned_context,
         ) {
-          println!("Failed to regenerate resources: {}", e);
-          println!("modules to regenerate: {:?}", cloned_updated_module_ids);
+          println!("Failed to regenerate resources: {e}");
+          println!("modules to regenerate: {cloned_updated_module_ids:?}");
         }
 
         finalize_resources(&cloned_context).unwrap();

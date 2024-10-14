@@ -139,7 +139,7 @@ impl JsCompiler {
     for js_plugin_object in js_plugins {
       let js_plugin = Arc::new(
         JsPluginAdapter::new(&env, js_plugin_object)
-          .unwrap_or_else(|e| panic!("load js plugin error: {:?}", e)),
+          .unwrap_or_else(|e| panic!("load js plugin error: {e:?}")),
       ) as _;
       plugins_adapters.push(js_plugin);
     }
@@ -150,7 +150,7 @@ impl JsCompiler {
 
       let rust_plugin = Arc::new(
         RustPluginAdapter::new(&rust_plugin_path, &config, rust_plugin_options)
-          .unwrap_or_else(|e| panic!("load rust plugin error: {:?}", e)),
+          .unwrap_or_else(|e| panic!("load rust plugin error: {e:?}")),
       ) as _;
       plugins_adapters.push(rust_plugin);
     }
@@ -158,7 +158,7 @@ impl JsCompiler {
     Ok(Self {
       compiler: Arc::new(
         Compiler::new(config, plugins_adapters)
-          .map_err(|e| napi::Error::new(Status::GenericFailure, format!("{}", e)))?,
+          .map_err(|e| napi::Error::new(Status::GenericFailure, format!("{e}")))?,
       ),
     })
   }
@@ -172,7 +172,7 @@ impl JsCompiler {
     self.compiler.thread_pool.spawn(move || {
       match compiler
         .trace_dependencies()
-        .map_err(|e| napi::Error::new(Status::GenericFailure, format!("{}", e)))
+        .map_err(|e| napi::Error::new(Status::GenericFailure, format!("{e}")))
       {
         Ok(deps) => {
           promise.resolve(Box::new(|_| Ok(deps)));
@@ -195,7 +195,7 @@ impl JsCompiler {
     self.compiler.thread_pool.spawn(move || {
       match compiler
         .trace_module_graph()
-        .map_err(|e| napi::Error::new(Status::GenericFailure, format!("{}", e)))
+        .map_err(|e| napi::Error::new(Status::GenericFailure, format!("{e}")))
       {
         Ok(graph) => {
           promise.resolve(Box::new(|_| Ok(graph.into())));
@@ -219,7 +219,7 @@ impl JsCompiler {
     self.compiler.thread_pool.spawn(move || {
       match compiler
         .compile()
-        .map_err(|e| napi::Error::new(Status::GenericFailure, format!("{}", e)))
+        .map_err(|e| napi::Error::new(Status::GenericFailure, format!("{e}")))
       {
         Ok(_) => {
           promise.resolve(Box::new(|e| e.get_undefined()));
@@ -253,7 +253,7 @@ impl JsCompiler {
     self
       .compiler
       .compile()
-      .map_err(|e| napi::Error::new(Status::GenericFailure, format!("{}", e)))?;
+      .map_err(|e| napi::Error::new(Status::GenericFailure, format!("{e}")))?;
 
     Ok(())
   }
@@ -289,7 +289,7 @@ impl JsCompiler {
           sync,
           generate_update_resource,
         )
-        .map_err(|e| napi::Error::new(Status::GenericFailure, format!("{}", e)))
+        .map_err(|e| napi::Error::new(Status::GenericFailure, format!("{e}")))
       {
         Ok(res) => {
           let js_update_result = JsUpdateResult {

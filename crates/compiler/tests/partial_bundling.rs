@@ -12,7 +12,7 @@ fn partial_bundling_test() {
     "tests/fixtures/partial_bundling/**/index.ts",
     |file, crate_path| {
       let cwd = file.parent().unwrap();
-      println!("testing tree shake: {:?}", cwd);
+      println!("testing tree shake: {cwd:?}");
 
       let entry_name = "index".to_string();
       let compiler = create_compiler(

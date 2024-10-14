@@ -13,7 +13,7 @@ use farmfe_core::{
   plugin::ResolveKind,
   swc_common::{Mark, DUMMY_SP},
   swc_ecma_ast::{
-    Bool, CallExpr, Callee, Expr, ExprOrSpread, Ident, Lit, MemberExpr, MemberProp, Number, Str,
+    Bool, CallExpr, Callee, Expr, ExprOrSpread, Ident, Lit, MemberExpr, MemberProp, Str,
   },
 };
 use farmfe_toolkit::{

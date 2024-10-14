@@ -182,8 +182,7 @@ pub fn load_source_original_source_map(
   // try load source map when load module content.
   if content.contains(source_map_comment_prefix) {
     let base64_prefix = format!(
-      "{}=data:application/json;base64,",
-      source_map_comment_prefix
+      "{source_map_comment_prefix}=data:application/json;base64,"
     );
     // detect that the source map is inline or not
     let source_map = if content.contains(&base64_prefix) {
@@ -195,7 +194,7 @@ pub fn load_source_original_source_map(
         .map(|source_map| base64_decode(source_map.as_bytes()))
     } else {
       // external source map
-      let prefix = format!("{}=", source_map_comment_prefix);
+      let prefix = format!("{source_map_comment_prefix}=");
       let mut source_map_path = content.split(&prefix);
       let source_map_path = source_map_path.nth(1).unwrap().to_string();
       let resolved_path = Path::new(resolved_path);

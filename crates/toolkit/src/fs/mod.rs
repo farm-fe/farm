@@ -17,7 +17,7 @@ pub fn read_file_utf8(path: &str) -> Result<String> {
 
 /// read content of the path, return bytes.
 pub fn read_file_raw(path: &str) -> Result<Vec<u8>> {
-  std::fs::read(path).map_err(|e| CompilationError::GenericError(format!("{:?}", e)))
+  std::fs::read(path).map_err(|e| CompilationError::GenericError(format!("{e:?}")))
 }
 
 pub fn transform_output_filename(

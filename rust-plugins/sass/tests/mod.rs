@@ -61,7 +61,7 @@ fn normalize_css(css: &str) -> String {
 #[test]
 fn test_with_compiler() {
   fixture!("tests/fixtures/**/*/index.scss", |file, crate_path| {
-    println!("testing: {:?}", file);
+    println!("testing: {file:?}");
     let resolved_path = file.to_string_lossy().to_string();
     let cwd = file.parent().unwrap();
     let runtime_path = crate_path

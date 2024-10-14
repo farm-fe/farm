@@ -48,7 +48,7 @@ pub fn construct_test_module_graph() -> ModuleGraph {
         &from.into(),
         &to.into(),
         ModuleGraphEdgeDataItem {
-          source: format!("./{}", to),
+          source: format!("./{to}"),
           kind: ResolveKind::Import,
           order,
         },
@@ -62,7 +62,7 @@ pub fn construct_test_module_graph() -> ModuleGraph {
         &from.into(),
         &to.into(),
         ModuleGraphEdgeDataItem {
-          source: format!("./{}", to),
+          source: format!("./{to}"),
           kind: ResolveKind::DynamicImport,
           order,
         },
@@ -170,7 +170,7 @@ pub fn construct_test_module_graph_complex() -> ModuleGraph {
         &from.into(),
         &to.into(),
         ModuleGraphEdgeDataItem {
-          source: format!("./{}", to),
+          source: format!("./{to}"),
           kind: ResolveKind::Import,
           order,
         },
@@ -271,6 +271,6 @@ where
   }
 
   if !exists {
-    panic!("no fixtures found under {}", pattern);
+    panic!("no fixtures found under {pattern}");
   }
 }
