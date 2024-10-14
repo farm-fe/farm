@@ -1,4 +1,4 @@
-import type { ModuleSystem, Plugin } from '@farmfe/runtime';
+import type { ModuleSystem } from '@farmfe/runtime';
 
 const __global_this__ = typeof globalThis !== 'undefined' ? globalThis : window;
 
@@ -8,7 +8,7 @@ export default {
   bootstrap(system: ModuleSystem) {
     this._moduleSystem = system;
   },
-  moduleCreated(module) {
+  moduleCreated(module: any) {
     const publicPath = this._moduleSystem.publicPaths?.[0] || "";
     const isSSR = this._moduleSystem.targetEnv === "node";
     const { location } = __global_this__;
