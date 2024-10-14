@@ -212,7 +212,7 @@ fn resolve_alias() {
                 replacement: cwd.join("components").to_string_lossy().to_string(),
               },
               AliasItem::Complex {
-                find: StringOrRegex::Regex(Regex::new("$__farm_regex:^/(utils)$").unwrap()),
+                find: StringOrRegex::String("$__farm_regex:^/(utils)$".to_string()),
                 replacement: cwd.join("$1").to_string_lossy().to_string(),
               },
             ],
