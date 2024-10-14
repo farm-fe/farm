@@ -296,7 +296,7 @@ const getAllSupportedHooks = (moduleIds: string[] = []) => {
   // sort the hooks by resolve -> load -> transform ...
   const orderedHooks = [
     'update_modules', 'resolve', 'load', 'transform', 'parse', 'process_module', 'analyze_deps',
-    'finalize_module', 'optimize_module_graph', 'partial_bundling', 'render_resource_pot_modules', 
+    'finalize_module', 'build_end', 'optimize_module_graph', 'analyze_module_graph', 'partial_bundling', 'render_resource_pot_modules', 
     'render_resource_pot', 'generate_resources'
   ];
   let inOrderedHooks = hooks.filter((item: any) => {

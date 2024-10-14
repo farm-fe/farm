@@ -4,6 +4,7 @@ use petgraph::{
   stable_graph::{DefaultIx, NodeIndex, StableDiGraph},
   visit::{Bfs, Dfs, DfsPostOrder, EdgeRef, IntoEdgeReferences},
 };
+use serde::{Deserialize, Serialize};
 
 use crate::resource::{resource_pot::ResourcePotId, resource_pot_map::ResourcePotMap};
 
@@ -199,23 +200,30 @@ impl ModuleGroupGraph {
     sorted
   }
 
-  pub fn print_graph(&self) {
-    println!("digraph {{\n nodes:");
+  pub fn print_graph(&self) -> PrintedModuleGroupGraph {
+    let mut graph = PrintedModuleGroupGraph {
+      module_groups: Vec::new(),
+      edges: Vec::new(),
+    };
 
-    for node in self.g.node_weights() {
-      println!("  \"{}\";", node.id.to_string());
+    for module_group in self.module_groups() {
+      graph.module_groups.push(module_group.clone());
     }
-
-    println!("\nedges:");
 
     for edge in self.g.edge_references() {
       let source = self.g[edge.source()].id.to_string();
       let target = self.g[edge.target()].id.to_string();
-      println!("  \"{}\" -> \"{}\";", source, target);
+      graph.edges.push((source, target));
     }
 
-    println!("}}");
+    graph
   }
+}
+
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
+pub struct PrintedModuleGroupGraph {
+  pub module_groups: Vec<ModuleGroup>,
+  pub edges: Vec<(String, String)>,
 }
 
 impl Default for ModuleGroupGraph {
@@ -264,7 +272,7 @@ impl Eq for ModuleGroupGraph {}
 
 pub type ModuleGroupId = ModuleId;
 
-#[derive(Debug, PartialEq, Eq, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone, Serialize, Deserialize)]
 pub struct ModuleGroup {
   /// the module group's id is the same as its entry module's id.
   pub id: ModuleGroupId,
@@ -313,11 +321,7 @@ impl ModuleGroup {
     resource_pot_map: &ResourcePotMap,
   ) -> Vec<ResourcePotId> {
     let mut resource_pots_order_map = HashMap::<String, usize>::new();
-    let mut sorted_resource_pots = self
-      .resource_pots()
-      .iter()
-      .cloned()
-      .collect::<Vec<_>>();
+    let mut sorted_resource_pots = self.resource_pots().iter().cloned().collect::<Vec<_>>();
 
     sorted_resource_pots.iter().for_each(|rp| {
       let rp = resource_pot_map.resource_pot(rp).unwrap();

@@ -1,14 +1,7 @@
 "use client";
 
 import { cn } from "../../lib/utils";
-import {
-  CSSProperties,
-  ReactElement,
-  ReactNode,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
+import React, { CSSProperties, ReactNode, useEffect, useRef, useState, useMemo } from "react";
 
 interface NeonColorsProps {
   firstColor: string;
@@ -17,120 +10,78 @@ interface NeonColorsProps {
 }
 
 interface NeonGradientCardProps {
-  /**
-   * @default <div />
-   * @type ReactElement
-   * @description
-   * The component to be rendered as the card
-   * */
-  as?: ReactElement;
-  /**
-   * @default ""
-   * @type string
-   * @description
-   * The className of the card
-   */
   className?: string;
-
-  /**
-   * @default ""
-   * @type ReactNode
-   * @description
-   * The children of the card
-   * */
   children?: ReactNode;
-
-  /**
-   * @default 5
-   * @type number
-   * @description
-   * The size of the border in pixels
-   * */
   borderSize?: number;
-
-  /**
-   * @default 20
-   * @type number
-   * @description
-   * The size of the radius in pixels
-   * */
   borderRadius?: number;
-
-  /**
-   * @default "{ firstColor: '#ffaa40', secondColor: '#9c40ff' }"
-   * @type string
-   * @description
-   * The colors of the neon gradient
-   * */
   neonColors?: NeonColorsProps;
-
   height?: string;
-
   [key: string]: any;
 }
 
-const NeonGradientCard: React.FC<NeonGradientCardProps> = ({
+const DEFAULT_NEON_COLORS: NeonColorsProps = {
+  firstColor: "#ffaa40",
+  secondColor: "#9c40ff",
+  thirdColor: "#00FFF1",
+};
+
+const NeonGradientCard: React.FC<NeonGradientCardProps> = React.memo(({
   className,
   children,
   borderSize = 0,
   borderRadius = 20,
   height = '26rem',
-  neonColors = {
-    firstColor: "#ffaa40",
-    secondColor: "#9c40ff",
-    thirdColor: "#00FFF1",
-  },
+  neonColors = DEFAULT_NEON_COLORS,
   ...props
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
+  const childrenRef = useRef(children);
 
-  useEffect(() => {
-    const updateDimensions = () => {
-      if (containerRef.current) {
-        const { offsetWidth, offsetHeight } = containerRef.current;
-        setDimensions({ width: offsetWidth, height: offsetHeight });
-      }
-    };
-
-    updateDimensions();
-    window.addEventListener("resize", updateDimensions);
-
-    return () => {
-      window.removeEventListener("resize", updateDimensions);
-    };
-  }, []);
-
-  useEffect(() => {
+  const updateDimensions = () => {
     if (containerRef.current) {
       const { offsetWidth, offsetHeight } = containerRef.current;
       setDimensions({ width: offsetWidth, height: offsetHeight });
     }
+  };
+
+  useEffect(() => {
+    updateDimensions();
+    window.addEventListener("resize", updateDimensions);
+    return () => window.removeEventListener("resize", updateDimensions);
+  }, []);
+
+  useEffect(() => {
+    if (childrenRef.current !== children) {
+      childrenRef.current = children;
+      updateDimensions();
+    }
   }, [children]);
+
+  const cardStyle = useMemo(() => {
+    return {
+      "--border-size": `${borderSize}px`,
+      "--border-radius": `${borderRadius}px`,
+      "--neon-first-color": neonColors.firstColor,
+      "--neon-second-color": neonColors.secondColor,
+      "--neon-third-color": neonColors.thirdColor,
+      "--card-width": `${dimensions.width}px`,
+      "--card-height": `${dimensions.height}px`,
+      "--card-content-radius": `${borderRadius - borderSize}px`,
+      "--pseudo-element-background-image": `linear-gradient(0deg, ${neonColors.firstColor}, ${neonColors.secondColor}, ${neonColors.thirdColor})`,
+      "--pseudo-element-width": `${dimensions.width + borderSize * 2}px`,
+      "--pseudo-element-height": height,
+      "--after-blur": `${dimensions.width / 3}px`,
+    } as CSSProperties;
+  }, [borderSize, borderRadius, neonColors, dimensions, height]);
 
   return (
     <div
       ref={containerRef}
-      style={
-        {
-          "--border-size": `${borderSize}px`,
-          "--border-radius": `${borderRadius}px`,
-          "--neon-first-color": neonColors.firstColor,
-          "--neon-second-color": neonColors.secondColor,
-          "--neon-third-color": neonColors.thirdColor,
-          "--card-width": `${dimensions.width}px`,
-          "--card-height": `${dimensions.height}px`,
-          "--card-content-radius": `${borderRadius - borderSize}px`,
-          "--pseudo-element-background-image": `linear-gradient(0deg, ${neonColors.firstColor}, ${neonColors.secondColor}, ${neonColors.thirdColor})`,
-          "--pseudo-element-width": `${dimensions.width + borderSize * 2}px`,
-          // "--pseudo-element-height": `${dimensions.height + borderSize * 2}px`,
-          "--pseudo-element-height": height,
-          "--after-blur": `${dimensions.width / 3}px`,
-        } as CSSProperties
-      }
+      style={cardStyle}
       className={cn(
         "relative z-10 h-full w-full rounded-[var(--border-radius)]",
-        className,
+        className
       )}
       {...props}
     >
@@ -146,15 +97,14 @@ const NeonGradientCard: React.FC<NeonGradientCardProps> = ({
           "after:bg-[linear-gradient(0deg,var(--neon-first-color),var(--neon-second-color),var(--neon-third-color))] after:bg-[length:100%_200%] after:opacity-80",
           "after:animate-backgroundPositionSpin",
           "after:animation-duration: 10s",
-          // "dark:bg-transparent dark:before:bg-transparent dark:after:bg-transparent",
           "dark:bg-[rgb(2,2,2)]",
-          "navbar--fixed-top",
+          "navbar--fixed-top"
         )}
       >
         {children}
       </div>
     </div>
   );
-};
+});
 
 export default NeonGradientCard;

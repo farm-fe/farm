@@ -1,5 +1,23 @@
 # @farmfe/runtime
 
+## 0.12.7
+
+### Patch Changes
+
+- 04a124fe: Fix css dynamic loading runtime error #1551
+
+## 0.12.6
+
+### Patch Changes
+
+- Bump version
+
+## 0.12.5
+
+### Patch Changes
+
+- 772381b0: Fix concurrent lazy compilation failed
+
 ## 0.12.4
 
 ### Patch Changes

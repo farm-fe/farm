@@ -8,4 +8,4 @@ const container = document.querySelector('#root');
 // biome-ignore lint/style/noNonNullAssertion: <explanation>
 const root = createRoot(container!);
 
-root.render(<Main />);
+root.render(<Main />)

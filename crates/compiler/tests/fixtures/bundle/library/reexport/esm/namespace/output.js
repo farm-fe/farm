@@ -44,13 +44,15 @@
         return nodeInterop ? cacheNodeInterop : cacheBabelInterop;
     })(nodeInterop);
 }var foo_default = 'foo';
-const foo = 'foo';
+const foo$1 = 'foo';
 const bar = 'bar';
 var foo_ns = {
     bar: bar,
-    foo: foo,
+    foo: foo$1,
     "default": foo_default,
     __esModule: true
 };
 
+const foo = 123;
+console.log(foo_ns.default, foo_ns.foo, foo);
 export { foo_ns as ns };

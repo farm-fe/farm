@@ -36,12 +36,6 @@ const config = {
   },
 
   presets: [
-    // [
-    //   'docusaurus-preset-shiki-twoslash',
-    //   {
-    //     themes: ['light-plus', 'dark-plus'],
-    //   },
-    // ],
     [
       "@docusaurus/preset-classic",
       /** @type {import('@docusaurus/preset-classic').Options} */
@@ -55,7 +49,7 @@ const config = {
           lastVersion: "current",
           versions: {
             current: {
-              label: "2.0.0",
+              label: "2.0.0-preview",
             },
           },
         },

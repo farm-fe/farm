@@ -1,9 +1,8 @@
 import { readFileSync } from 'node:fs';
-import path from 'node:path';
-// import type { build, clean, preview, start, watch } from '@farmfe/core';
-import type { build, clean, start } from '@farmfe/core';
+import { isAbsolute, resolve } from 'node:path';
 import { Logger } from '@farmfe/core';
 
+import type { build, clean, preview, start } from '@farmfe/core';
 import type {
   CleanOptions,
   CliBuildOptions,
@@ -26,8 +25,7 @@ const logger = new Logger();
 export async function resolveCore(): Promise<{
   start: typeof start;
   build: typeof build;
-  watch: any;
-  preview: any;
+  preview: typeof preview;
   clean: typeof clean;
 }> {
   try {
@@ -35,9 +33,9 @@ export async function resolveCore(): Promise<{
     return import('@farmfe/core');
   } catch (err) {
     logger.error(
-      `Cannot find @farmfe/core module, Did you successfully install: \n${err.stack},`
+      `Cannot find @farmfe/core module, Did you successfully install: \n${err.stack},`,
+      { exit: true }
     );
-    process.exit(1);
   }
 }
 
@@ -94,7 +92,7 @@ export function resolveCommandOptions(
  * @returns config path absolute path
  */
 export function getConfigPath(root: string, configPath: string) {
-  return path.resolve(root, configPath ?? '');
+  return resolve(root, configPath ?? '');
 }
 
 /**
@@ -109,8 +107,7 @@ export async function handleAsyncOperationErrors<T>(
   try {
     await asyncOperation;
   } catch (error) {
-    logger.error(`${errorMessage}:\n${error.stack}`);
-    process.exit(1);
+    logger.error(`${errorMessage}:\n${error.stack}`, { exit: true });
   }
 }
 
@@ -120,9 +117,9 @@ export async function handleAsyncOperationErrors<T>(
  * @returns absolute path
  */
 export function resolveRootPath(rootPath = '') {
-  return rootPath && path.isAbsolute(rootPath)
+  return rootPath && isAbsolute(rootPath)
     ? rootPath
-    : path.resolve(process.cwd(), rootPath);
+    : resolve(process.cwd(), rootPath);
 }
 
 /**

@@ -23,6 +23,7 @@ const GLOBAL_INJECT_MODULE_ID: &str = "farmfe_plugin_react_global_inject";
 #[serde(rename_all = "camelCase", default)]
 struct SwcTransformReactOptions {
   pub refresh: Option<bool>,
+  pub use_absolute_path: Option<bool>,
 }
 
 #[farm_plugin]
@@ -30,6 +31,7 @@ pub struct FarmPluginReact {
   core_lib: Library,
   options: String,
   enable_react_refresh: bool,
+  use_absolute_path: bool,
 }
 
 impl FarmPluginReact {
@@ -37,10 +39,17 @@ impl FarmPluginReact {
     let react_options = serde_json::from_str::<SwcTransformReactOptions>(&options).unwrap();
     let is_dev = matches!(config.mode, farmfe_core::config::Mode::Development);
 
+    // remove useAbsolutePath in options
+    let mut options_obj =
+      serde_json::from_str::<serde_json::Map<String, serde_json::Value>>(&options).unwrap();
+    options_obj.remove("useAbsolutePath");
+    let options = serde_json::to_string(&options_obj).unwrap();
+
     Self {
       core_lib: load_core_lib(config.core_lib_path.as_ref().unwrap()),
       options,
       enable_react_refresh: is_dev && react_options.refresh.unwrap_or(true),
+      use_absolute_path: react_options.use_absolute_path.unwrap_or(false),
     }
   }
 }
@@ -117,11 +126,13 @@ impl Plugin for FarmPluginReact {
       let unresolved_mark = param.meta.as_script().unresolved_mark;
       let ast = &mut param.meta.as_script_mut().ast;
 
-      let (cm, _) = create_swc_source_map(
-        &self.core_lib,
-        &param.module_id.to_string(),
-        param.content.clone(),
-      )?;
+      let file_name = if self.use_absolute_path {
+        param.module_id.resolved_path(&context.config.root)
+      } else {
+        param.module_id.to_string()
+      };
+
+      let (cm, _) = create_swc_source_map(&self.core_lib, &file_name, param.content.clone())?;
 
       swc_transform_react(
         &self.core_lib,

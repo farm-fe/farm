@@ -1,3 +1,5 @@
+import fs from 'node:fs/promises';
+import { isAbsolute, join } from 'node:path';
 export type SimpleUnwrapArray<T> = T extends ReadonlyArray<infer P> ? P : T;
 
 export function logger(msg: any, { title = 'FARM INFO', color = 'green' } = {}) {
@@ -92,3 +94,19 @@ export const concurrentMap = <
 >(arr: Arr, maxConcurrent: number, cb: F) => arr.map(
   concurrentify(maxConcurrent, cb) as any,
 ) as ReturnType<F>[];
+
+
+export async function editFile(_filename: string, matched: string | RegExp, to: string): Promise<undefined | (() => Promise<void>)> {
+  const filename = isAbsolute(_filename) ? _filename : join(process.cwd(), _filename);
+  const content = await fs.readFile(filename, 'utf-8')
+
+  let newContent = content.replaceAll(matched, to);
+
+  if(content.length !== newContent.length || content !== newContent) {
+    await fs.writeFile(filename, newContent);
+
+    return async () => {
+      await fs.writeFile(filename, content)
+    }
+  }
+}

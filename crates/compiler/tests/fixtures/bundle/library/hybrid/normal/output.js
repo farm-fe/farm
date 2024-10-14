@@ -76,7 +76,7 @@ var index_cjs = __commonJs((module, exports)=>{
         bar: function() {
             return bar;
         },
-        index_default: function() {
+        default: function() {
             return _default;
         },
         foo: function() {
@@ -92,6 +92,6 @@ var index_cjs = __commonJs((module, exports)=>{
     const foo = 'foo';
     const bar = 'bar';
 });
-var index_default = _interop_require_default(index_cjs()).index_default, bar = index_cjs()["bar"], foo = index_cjs()["foo"];
+var index_default = _interop_require_default(index_cjs()).default, bar = index_cjs()["bar"], foo = index_cjs()["foo"];
 export { bar, foo };
 export default index_default;

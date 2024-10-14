@@ -12,8 +12,11 @@ import { openBrowser } from './open.js';
 import { WsServer } from './ws.js';
 
 import { __FARM_GLOBAL__ } from '../config/_global.js';
-import { getSortedPluginHooksBindThis } from '../plugin/index.js';
-import { getCacheDir, isCacheDirExists } from '../utils/cacheDir.js';
+import {
+  getPluginHooks,
+  getSortedPluginHooksBindThis
+} from '../plugin/index.js';
+import { isCacheDirExists } from '../utils/cacheDir.js';
 import { createDebugger } from '../utils/debug.js';
 import { resolveServerUrls, teardownSIGTERMListener } from '../utils/http.js';
 import { Logger, bootstrap, printServerUrls } from '../utils/logger.js';
@@ -40,10 +43,7 @@ import type {
 import type { Http2SecureServer } from 'node:http2';
 import type * as net from 'node:net';
 
-import {
-  createCompiler,
-  resolveConfigureCompilerHook
-} from '../compiler/utils.js';
+import { createCompiler } from '../compiler/index.js';
 import type {
   FarmCliOptions,
   HmrOptions,
@@ -51,7 +51,10 @@ import type {
   ResolvedUserConfig,
   UserConfig
 } from '../config/types.js';
-import type { JsUpdateResult } from '../types/binding.js';
+import type {
+  JsUpdateResult,
+  PersistentCacheConfig
+} from '../types/binding.js';
 import { convertErrorMessage } from '../utils/error.js';
 import type { CommonServerOptions, ResolvedServerUrls } from './http.js';
 
@@ -107,7 +110,7 @@ export class Server extends httpServer {
   ws: WsServer;
   serverOptions: ServerConfig;
   httpsOptions: HttpsServerOptions;
-  publicDir: string | boolean | undefined;
+  publicDir: string | undefined;
   publicPath?: string;
   publicFiles?: Set<string>;
   httpServer: HttpServer;
@@ -154,21 +157,27 @@ export class Server extends httpServer {
         'development',
         'development'
       );
+
       this.logger = this.resolvedUserConfig.logger;
 
       this.#resolveOptions();
 
-      // TODO createCompiler 到底在何时创建
       this.compiler = await createCompiler(this.resolvedUserConfig);
-      await resolveConfigureCompilerHook(
-        this.compiler,
-        this.resolvedUserConfig
-      );
-      this.httpsOptions = await this.resolveHttpsConfig(
-        this.serverOptions.https
-      );
-      this.publicFiles = await this.#handlePublicFiles();
-      this.middlewares = connect();
+
+      for (const hook of getPluginHooks(
+        this.resolvedUserConfig.jsPlugins,
+        'configureCompiler'
+      )) {
+        await hook?.(this.compiler);
+      }
+
+      const [httpsOptions, publicFiles] = await Promise.all([
+        this.resolveHttpsConfig(this.serverOptions.https),
+        this.#handlePublicFiles()
+      ]);
+      this.httpsOptions = httpsOptions;
+      this.publicFiles = publicFiles;
+      this.middlewares = connect() as connect.Server;
       this.httpServer = this.serverOptions.middlewareMode
         ? null
         : await this.resolveHttpServer(
@@ -193,8 +202,10 @@ export class Server extends httpServer {
       // init watcher
       await this.#createWatcher();
 
+      await this.handleConfigureServer();
+
       // init middlewares
-      await this.#initializeMiddlewares();
+      this.#initializeMiddlewares();
 
       if (!this.serverOptions.middlewareMode && this.httpServer) {
         this.httpServer.once('listening', () => {
@@ -213,18 +224,18 @@ export class Server extends httpServer {
   }
 
   /**
-   *
+   * create watcher
    */
   async #createWatcher() {
     this.watcher = new Watcher(this.resolvedUserConfig);
 
     await this.watcher.createWatcher();
 
-    this.watcher.watcher.on('add', async (file: string | string[] | any) => {
+    this.watcher.watcher.on('add', async (file: string) => {
       // TODO pluginContainer hooks
     });
 
-    this.watcher.watcher.on('unlink', async (file: string | string[] | any) => {
+    this.watcher.watcher.on('unlink', async (file: string) => {
       const parentFiles = this.compiler.getParentFiles(file);
       const normalizeParentFiles = parentFiles.map((file) =>
         normalizePath(file)
@@ -232,7 +243,7 @@ export class Server extends httpServer {
       this.hmrEngine.hmrUpdate(normalizeParentFiles, true);
     });
 
-    this.watcher.watcher.on('change', async (file: string | string[] | any) => {
+    this.watcher.watcher.on('change', async (file: string) => {
       file = normalizePath(file);
       const shortFile = getShortName(file, this.resolvedUserConfig.root);
       const isConfigFile = this.resolvedUserConfig.configFilePath === file;
@@ -344,7 +355,7 @@ export class Server extends httpServer {
     }
     await this.watcher.close();
     await newServer.listen();
-    this.logger.info(bold(green('Server restarted successfully')));
+    this.logger.info(bold(green('Server restarted successfully ✨ ✨')));
   }
 
   /**
@@ -397,24 +408,25 @@ export class Server extends httpServer {
       this.resolvedUserConfig.compilation.define.FARM_HMR_PORT =
         serverPort.toString();
 
-      // this.compiler = await createCompiler(this.resolvedUserConfig);
-      // await resolveConfigureCompilerHook(
-      //   this.compiler,
-      //   this.resolvedUserConfig,
-      // );
+      this.resolvedUrls = await resolveServerUrls(
+        this.httpServer,
+        this.resolvedUserConfig
+      );
       // compile the project and start the dev server
       await this.#startCompile();
 
       // watch extra files after compile
       this.watcher?.watchExtraFiles?.();
-      __FARM_GLOBAL__.__FARM_SHOW_DEV_SERVER_URL__ &&
-        (await this.displayServerUrls());
 
       if (open) {
         this.#openServerBrowser();
       }
+
+      __FARM_GLOBAL__.__FARM_SHOW_DEV_SERVER_URL__ && this.printUrls();
     } catch (error) {
-      // this.resolvedUserConfig.logger.error(`start farm dev server error: ${error}`);
+      this.resolvedUserConfig.logger.error(
+        `start farm dev server error: ${error} \n ${error.stack}`
+      );
       // throw error;
     }
   }
@@ -444,7 +456,7 @@ export class Server extends httpServer {
             this.httpServer.removeListener('error', onError);
             reject(new Error(`Port ${port} is already in use`));
           } else {
-            this.logger.info(`Port ${port} is in use, trying another one...`);
+            this.logger.warn(`Port ${port} is in use, trying another one...`);
             this.httpServer.listen(++port, host);
           }
         } else {
@@ -500,6 +512,7 @@ export class Server extends httpServer {
       }
     });
     const { jsPlugins } = this.resolvedUserConfig;
+
     for (const hook of getSortedPluginHooksBindThis(
       jsPlugins,
       'configureServer'
@@ -517,24 +530,27 @@ export class Server extends httpServer {
    * @returns { void }
    */
   #resolveOptions() {
-    const { compilation, server } = this.resolvedUserConfig;
-    this.publicPath = compilation.output.publicPath;
-
-    this.publicDir = compilation.assets.publicDir;
+    const {
+      compilation: {
+        output: { publicPath },
+        assets: { publicDir }
+      },
+      root,
+      server
+    } = this.resolvedUserConfig;
+    this.publicPath = publicPath;
+    this.publicDir = publicDir;
 
     this.serverOptions = server as CommonServerOptions & NormalizedServerConfig;
-
-    this.root = compilation.root;
+    this.root = root;
   }
 
   /**
    * Initializes and configures the middleware stack for the server.
    * @private
    */
-  async #initializeMiddlewares() {
+  #initializeMiddlewares() {
     this.middlewares.use(hmrPingMiddleware());
-
-    await this.handleConfigureServer();
 
     const { proxy, middlewareMode, cors } = this.serverOptions;
 
@@ -617,20 +633,15 @@ export class Server extends httpServer {
    */
   async #startCompile() {
     // check if cache dir exists
-    const { persistentCache } = this.compiler.config.config;
+    const { persistentCache } = this.compiler.config.compilation;
     const hasCacheDir = await isCacheDirExists(
-      getCacheDir(this.root, persistentCache)
+      (persistentCache as PersistentCacheConfig).cacheDir
     );
     const start = performance.now();
     await this.#compile();
 
     const duration = performance.now() - start;
-    bootstrap(
-      duration,
-      this.compiler.config,
-      hasCacheDir,
-      this.resolvedUserConfig
-    );
+    bootstrap(duration, this.compiler.config, hasCacheDir);
   }
 
   /**
@@ -724,13 +735,7 @@ export class Server extends httpServer {
     await Promise.allSettled([this.ws.wss.close(), this.closeHttpServerFn()]);
   }
 
-  async displayServerUrls() {
-    this.resolvedUrls = await resolveServerUrls(
-      this.httpServer,
-      this.serverOptions,
-      this.publicPath
-    );
-
+  printUrls() {
     if (this.resolvedUrls) {
       printServerUrls(
         this.resolvedUrls,

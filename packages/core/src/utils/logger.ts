@@ -1,7 +1,5 @@
-import { clear } from 'console';
 import { __FARM_GLOBAL__ } from '../config/_global.js';
 import { ResolvedUserConfig } from '../config/types.js';
-import { Config } from '../types/binding.js';
 import {
   ColorFunction,
   PersistentCacheBrand,
@@ -14,14 +12,6 @@ import { getShortName } from './path.js';
 import { clearScreen, formatExecutionTime, pad, version } from './share.js';
 
 type LogLevelNames = 'trace' | 'debug' | 'info' | 'warn' | 'error';
-
-enum LogLevel {
-  Trace = 'trace',
-  Debug = 'debug',
-  Info = 'info',
-  Warn = 'warn',
-  Error = 'error'
-}
 
 export interface ILogger {
   trace(message: string, clearScreen?: Boolean): void;
@@ -244,18 +234,14 @@ export function bootstrapLogger(options?: LoggerOptions): Logger {
 
 export function bootstrap(
   times: number,
-  config: Config,
-  hasCacheDir: boolean,
-  userConfig: ResolvedUserConfig
+  config: ResolvedUserConfig,
+  hasCacheDir: boolean
 ): void {
   if (!__FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__) {
-    const shortFile = getShortName(userConfig.configFilePath, userConfig.root);
-    userConfig.logger.info(
-      `Using config file at ${bold(green(shortFile))}`,
-      true
-    );
+    const shortFile = getShortName(config.configFilePath, config.root);
+    config.logger.info(`Using config file at ${bold(green(shortFile))}`, true);
   }
-  const usePersistentCache = config.config.persistentCache && hasCacheDir;
+  const usePersistentCache = config.compilation.persistentCache && hasCacheDir;
   const persistentCacheFlag = usePersistentCache
     ? colors.bold(PersistentCacheBrand)
     : '';
@@ -269,7 +255,7 @@ export function bootstrap(
     `${colors.bold(colors.green(` ✓`))}  ${colors.bold(
       'Compile in'
     )} ${colors.bold(
-      colors.green(formatExecutionTime(times, userConfig.timeUnit))
+      colors.green(formatExecutionTime(times, config.timeUnit))
     )} ${persistentCacheFlag}`,
     '\n'
   );

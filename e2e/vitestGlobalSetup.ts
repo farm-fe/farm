@@ -6,15 +6,14 @@ import { createServer, Server } from 'http';
 let browserServer: BrowserServer | undefined;
 let client: Server | undefined;
 
-const buffer = new SharedArrayBuffer(2);
-const u16 = new Uint16Array(buffer);
+let port = 23000;
 
 function addPort() {
-  return Atomics.add(u16, 0, 10);
+  return (port += 10);
 }
 
-function setPort(port: number) {
-  return Atomics.store(u16, 0, port);
+function setPort(_port: number) {
+  return (port = _port);
 }
 
 setPort(9100);

@@ -1,5 +1,6 @@
 import http from 'node:http';
 import { SecureServerOptions } from 'node:http2';
+
 import { z } from 'zod';
 import { fromZodError } from 'zod-validation-error';
 
@@ -146,6 +147,16 @@ const previewServerSchema = z.object({
   https: z.any().optional()
 });
 
+const aliasItemSchema = z.object({
+  find: z.union([z.string(), z.instanceof(RegExp)]),
+  replacement: z.string(),
+  customResolver: z
+    .union([z.function(), z.object({ resolve: z.function() })])
+    .optional()
+});
+
+const aliasSchema = z.union([z.record(z.string()), z.array(aliasItemSchema)]);
+
 const compilationConfigSchema = z
   .object({
     root: z.string().optional(),
@@ -154,7 +165,7 @@ const compilationConfigSchema = z
     resolve: z
       .object({
         extensions: z.array(z.string()).optional(),
-        alias: z.record(z.string()).optional(),
+        alias: aliasSchema.optional(),
         mainFields: z.array(z.string()).optional(),
         conditions: z.array(z.string()).optional(),
         symlinks: z.boolean().optional(),
@@ -402,11 +413,11 @@ const FarmConfigSchema = z
     timeUnit: z.union([z.literal('ms'), z.literal('s')]).optional(),
     envPrefix: z.union([z.string(), z.array(z.string())]).optional(),
     publicDir: z.string().optional(),
-    formatTimer: z.enum(['ms', 's']).optional(),
     plugins: z.array(z.any()).optional(),
     vitePlugins: z.array(z.any()).optional(),
     compilation: compilationConfigSchema.optional(),
     mode: z.string().optional(),
+    watch: z.boolean().optional(),
     server: serverSchema.optional(),
     preview: previewServerSchema.optional(),
     // TODO ANY type

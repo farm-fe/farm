@@ -611,6 +611,25 @@ impl Compiler {
     module
   }
 
+  pub(crate) fn create_module_from_resolve_result(
+    resolve_module_id_result: &ResolveModuleIdResult,
+    context: &Arc<CompilationContext>,
+  ) -> Module {
+    let module_id_str = resolve_module_id_result.module_id.to_string();
+    Compiler::create_module(
+      resolve_module_id_result.module_id.clone(),
+      resolve_module_id_result.resolve_result.external,
+      // treat all lazy virtual modules as mutable
+      !module_id_str.ends_with(DYNAMIC_VIRTUAL_SUFFIX)
+        && context
+          .config
+          .partial_bundling
+          .immutable_modules
+          .iter()
+          .any(|im| im.is_match(&module_id_str)),
+    )
+  }
+
   pub(crate) fn insert_dummy_module(module_id: &ModuleId, module_graph: &mut ModuleGraph) {
     // insert a dummy module to the graph to prevent the module from being handled twice
     module_graph.add_module(Compiler::create_module(module_id.clone(), false, false));
@@ -669,20 +688,8 @@ fn resolve_module(
     };
 
     Compiler::insert_dummy_module(&resolve_module_id_result.module_id, &mut module_graph);
-    let module_id_str = resolve_module_id_result.module_id.to_string();
     ResolveModuleResult::Success(Box::new(ResolvedModuleInfo {
-      module: Compiler::create_module(
-        resolve_module_id_result.module_id.clone(),
-        resolve_module_id_result.resolve_result.external,
-        // treat all lazy virtual modules as mutable
-        !module_id_str.ends_with(DYNAMIC_VIRTUAL_SUFFIX)
-          && context
-            .config
-            .partial_bundling
-            .immutable_modules
-            .iter()
-            .any(|im| im.is_match(&module_id_str)),
-      ),
+      module: Compiler::create_module_from_resolve_result(&resolve_module_id_result, context),
       resolve_module_id_result,
     }))
   };

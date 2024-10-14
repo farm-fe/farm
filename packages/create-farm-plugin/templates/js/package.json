@@ -31,6 +31,6 @@
     "cross-env": "^7.0.3"
   },
   "files": [
-    "dist"
+    "build"
   ]
 }

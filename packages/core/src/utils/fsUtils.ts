@@ -2,16 +2,9 @@ import { exec } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import fse from 'fs-extra';
-import { isWindows, normalizePath } from './share.js';
-
-export function tryStatSync(file: string): fs.Stats | undefined {
-  try {
-    // The "throwIfNoEntry" is a performance optimization for cases where the file does not exist
-    return fs.statSync(file, { throwIfNoEntry: false });
-  } catch {
-    // Ignore errors
-  }
-}
+import { ResolvedUserConfig, normalizePublicDir } from '../config/index.js';
+import { colors } from './color.js';
+import { isWindows, normalizePath, tryStatSync } from './share.js';
 
 function isDirectory(path: string): boolean {
   const stat = tryStatSync(path);
@@ -136,4 +129,64 @@ export async function readFileIfExists(value?: string | Buffer | any[]) {
     return fse.readFile(path.resolve(value)).catch(() => value);
   }
   return value;
+}
+
+export async function findNodeModulesRecursively(
+  rootPath: string
+): Promise<string[]> {
+  const result: string[] = [];
+
+  async function traverse(currentPath: string) {
+    const items = await fse.readdir(currentPath);
+    for (const item of items) {
+      const fullPath = path.join(currentPath, item);
+      const stats = await fse.stat(fullPath);
+
+      if (stats.isDirectory()) {
+        if (item === 'node_modules') {
+          result.push(fullPath);
+        } else {
+          await traverse(fullPath);
+        }
+      }
+    }
+  }
+
+  await traverse(rootPath);
+  return result;
+}
+
+export async function copyPublicDirectory(
+  resolvedUserConfig: ResolvedUserConfig
+): Promise<void> {
+  const absPublicDirPath = normalizePublicDir(
+    resolvedUserConfig.root,
+    resolvedUserConfig.publicDir
+  );
+
+  try {
+    if (await fse.pathExists(absPublicDirPath)) {
+      const files = await fse.readdir(absPublicDirPath);
+      const outputPath = resolvedUserConfig.compilation.output.path;
+      for (const file of files) {
+        const publicFile = path.join(absPublicDirPath, file);
+        const destFile = path.join(outputPath, file);
+
+        if (await fse.pathExists(destFile)) {
+          continue;
+        }
+        await fse.copy(publicFile, destFile);
+      }
+
+      resolvedUserConfig.logger.info(
+        `Public directory resources copied ${colors.bold(
+          colors.green('successfully')
+        )}.`
+      );
+    }
+  } catch (error) {
+    resolvedUserConfig.logger.error(
+      `Error copying public directory: ${error.message}`
+    );
+  }
 }

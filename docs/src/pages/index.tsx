@@ -11,6 +11,7 @@ import BentoGridCard from "../components/MagicUi/card";
 import StarrySky from "../components/StarrySky";
 import { AuroraBackground } from "../components/ui/aurora-back";
 import { useColorMode } from "@docusaurus/theme-common";
+import NeonGradientCard from "../components/MagicUi/neon-gradient-card";
 import styles from "./index.module.css";
 
 function HomepageHeader() {
@@ -18,13 +19,13 @@ function HomepageHeader() {
     <header
       className={clsx(
         "grid grid-cols-1 gap-10 relative z-10 mx-auto max-w-8xl py-4 sm:py-6 lg:py-8",
-        "lg:grid-cols-2",
-        styles.heroBanner
+        "lg:grid-cols-3",
+        styles.heroBanner,
       )}
     >
-      <div className="container w-full flex flex-col my-1 px-2">
+      <div className="container w-full flex flex-col my-1 px-2 col-span-2">
         <BlurFade delay={0.25} inView>
-          <div className="font-extrabold text-3xl sm:text-6xl lg:text-6xl text-left mb-6 flex flex-col gap-2">
+          <div className="font-extrabold text-3xl sm:text-6xl lg:text-7xl text-left mb-6 flex flex-col gap-2">
             <div>
               <span>
                 <Translate>Extremely</Translate>
@@ -72,7 +73,7 @@ function HomepageHeader() {
             <div
               className={clsx(
                 styles.farmButton,
-                "flex w-36 sm:w-40 items-center justify-center font-bold"
+                "flex w-36 sm:w-40 items-center justify-center font-bold",
               )}
             >
               <Translate>Quick Start</Translate>
@@ -85,7 +86,7 @@ function HomepageHeader() {
             <div
               className={clsx(
                 styles.farmButton2,
-                "flex w-36 sm:w-40  items-center justify-center font-bold"
+                "flex w-36 sm:w-40  items-center justify-center font-bold",
               )}
             >
               <Translate>Why Farm?</Translate>
@@ -93,11 +94,9 @@ function HomepageHeader() {
           </Link>
         </div>
       </div>
-      <Benchmark />
     </header>
   );
 }
-
 
 const HomeBaseContent = () => {
   const { colorMode } = useColorMode();
@@ -107,6 +106,9 @@ const HomeBaseContent = () => {
       <main className="mb-20 my-10 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8max-w-6xl">
         <AnimatedGradientStarWithGithub />
         <HomepageHeader />
+        <NeonGradientCard>
+        </NeonGradientCard>
+        <Benchmark />
         <BentoGridCard />
       </main>
     );
@@ -128,7 +130,6 @@ const HomeBaseContent = () => {
     );
   }
 };
-
 
 export default function Home() {
   const { siteConfig } = useDocusaurusContext();

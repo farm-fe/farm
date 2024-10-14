@@ -1,7 +1,6 @@
 import { CompilationMode } from '../../config/env.js';
 import {
   type JsPlugin,
-  Logger,
   type UserConfig,
   normalizeDevServerConfig
 } from '../../index.js';

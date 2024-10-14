@@ -4,7 +4,7 @@ import { useInView } from "react-intersection-observer";
 import styles from "./index.module.css";
 import Translate from "@docusaurus/Translate";
 import Link from "@docusaurus/Link";
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import clsx from "clsx";
 import ShinyTextEx from "../MagicUi/shiny-text";
 const BENCHMARK_DATA = {
@@ -127,8 +127,11 @@ export default function Benchmark() {
     { name: <Translate>HotBuild</Translate>, title: "HotBuild" },
   ];
   const [activeScene, setActiveScene] = useState("ColdStart");
-  const { ref, inView } = useInView();
-  const performanceInfoList = BENCHMARK_DATA[activeScene];
+  const { ref, inView } = useInView({
+    triggerOnce: true,
+    threshold: 0.1,
+  });
+  const performanceInfoList = useMemo(() => BENCHMARK_DATA[activeScene], [activeScene]);
 
   const [visibleSection, setVisibleSection] = useState("ColdStart");
 
@@ -167,7 +170,7 @@ export default function Benchmark() {
   }
   return (
     <>
-      <div ref={ref} className="flex">
+      <div ref={ref} className="flex relative z-10">
         <>
           <div
             className={`${styles.tabs} flex flex-col items-center my-4 z-1`}

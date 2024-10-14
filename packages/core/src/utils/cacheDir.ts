@@ -1,22 +1,4 @@
-import fs from 'fs';
-import path from 'node:path';
-
-import { PersistentCacheConfig } from '../types/binding.js';
-
-export function getCacheDir(
-  root: string,
-  persistentCache?: boolean | PersistentCacheConfig
-) {
-  let cacheDir = path.resolve(root, 'node_modules', '.farm', 'cache');
-
-  if (typeof persistentCache === 'object' && persistentCache.cacheDir) {
-    cacheDir = path.isAbsolute(persistentCache.cacheDir)
-      ? persistentCache.cacheDir
-      : path.resolve(root, persistentCache.cacheDir);
-  }
-
-  return cacheDir;
-}
+import fs from 'node:fs';
 
 export async function isCacheDirExists(dir: string): Promise<boolean> {
   try {

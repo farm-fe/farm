@@ -5,6 +5,7 @@ import { resolveConfig } from '../config/index.js';
 import { mergeConfig } from '../config/mergeConfig.js';
 import {
   FarmCliOptions,
+  ResolvedUserConfig,
   UserConfig,
   UserPreviewServerConfig
 } from '../config/types.js';
@@ -17,7 +18,7 @@ class PreviewServer extends httpServer {
   httpsOptions: ServerOptions;
   publicPath?: string;
   publicDir?: string;
-  resolvedUserConfig: UserConfig;
+  resolvedUserConfig: ResolvedUserConfig;
   logger: Logger;
   middlewares: connect.Server;
 
@@ -79,13 +80,13 @@ class PreviewServer extends httpServer {
     );
     // this.publicFiles
     this.middlewares = connect();
-    this.httpServer = this.previewOptions.middlewareMode
-      ? null
-      : await this.resolveHttpServer(
-          this.previewOptions as CommonServerOptions,
-          this.middlewares,
-          this.httpsOptions
-        );
+    // this.httpServer = this.previewOptions.middlewareMode
+    //   ? null
+    //   : await this.resolveHttpServer(
+    //       this.previewOptions as CommonServerOptions,
+    //       this.middlewares,
+    //       this.httpsOptions
+    //     );
   }
 
   async listen(): Promise<void> {
@@ -117,6 +118,7 @@ class PreviewServer extends httpServer {
   #resolvePreviewOptions() {
     this.previewOptions = mergeConfig(
       this.resolvedUserConfig.server,
+      // @ts-ignore
       this.resolvedUserConfig.preview
     );
 
@@ -137,8 +139,8 @@ class PreviewServer extends httpServer {
   async displayServerUrls() {
     this.resolvedUrls = await resolveServerUrls(
       this.httpServer,
-      this.previewOptions,
-      this.publicPath
+      this.resolvedUserConfig,
+      // this.publicPath
     );
 
     if (this.resolvedUrls) {

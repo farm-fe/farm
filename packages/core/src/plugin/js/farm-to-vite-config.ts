@@ -352,19 +352,19 @@ export function viteConfigToFarmConfig(
         >;
       } else {
         if (!farmConfig.compilation.resolve.alias) {
-          farmConfig.compilation.resolve.alias = {};
+          farmConfig.compilation.resolve.alias = [];
         }
 
         const farmRegexPrefix = '$__farm_regex:';
 
-        for (const { find, replacement } of config.resolve.alias) {
-          if (find instanceof RegExp) {
-            const key = farmRegexPrefix + find.source;
-            farmConfig.compilation.resolve.alias[key] = replacement;
-          } else {
-            farmConfig.compilation.resolve.alias[find] = replacement;
-          }
-        }
+        // for (const { find, replacement } of config.resolve.alias) {
+        //   if (find instanceof RegExp) {
+        //     const key = farmRegexPrefix + find.source;
+        //     farmConfig.compilation.resolve.alias[key] = replacement;
+        //   } else {
+        //     farmConfig.compilation.resolve.alias[find] = replacement;
+        //   }
+        // }
       }
     }
 

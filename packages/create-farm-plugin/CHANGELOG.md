@@ -1,5 +1,11 @@
 # create-farm-plugin
 
+## 0.1.16
+
+### Patch Changes
+
+- f1e9e2bf: fix js-plugin template config issue
+
 ## 0.1.15
 
 ### Patch Changes

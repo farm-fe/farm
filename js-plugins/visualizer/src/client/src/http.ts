@@ -13,7 +13,7 @@ export interface QueryParams {
 }
 
 const axiosInstance = axios.create({
-  timeout: 5000
+  timeout: 60000
 });
 
 axiosInstance.interceptors.response.use(

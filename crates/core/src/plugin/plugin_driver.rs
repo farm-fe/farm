@@ -523,6 +523,30 @@ impl PluginDriver {
   hook_first!(
     analyze_module_graph,
     Result<Option<ModuleGroupGraph>>,
+    |result: & Option<ModuleGroupGraph>,
+     plugin_name: String,
+     start_time: u128,
+     end_time: u128,
+     _param: &mut ModuleGraph,
+     context: &Arc<CompilationContext>,
+     hook_context: &PluginHookContext| {
+      if result.is_none() {
+        return;
+      }
+      context.record_manager.add_plugin_hook_stats(
+        CompilationPluginHookStats {
+          plugin_name: plugin_name.to_string(),
+          hook_name: "analyze_module_graph".to_string(),
+          hook_context: Some(hook_context.clone()),
+          module_id: "".into(),
+          input: "".to_string(),
+          output: serde_json::to_string(&result.as_ref().unwrap().print_graph()).unwrap(),
+          duration: end_time - start_time,
+          start_time,
+          end_time,
+        },
+      )
+    },
     param: &mut ModuleGraph,
     context: &Arc<CompilationContext>,
     _hook_context: &PluginHookContext

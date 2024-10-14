@@ -84,7 +84,9 @@ pub fn get_dynamic_resources_code(
   let mut visited_resources = HashMap::new();
 
   // inject dynamic resources
-  for (module_id, resources) in dynamic_resources_map {
+  let mut dynamic_resources_map_vec = dynamic_resources_map.iter().collect::<Vec<_>>();
+  dynamic_resources_map_vec.sort_by_key(|(module_id, _)| module_id.to_string());
+  for (module_id, resources) in dynamic_resources_map_vec {
     let mut dynamic_resources_index = vec![];
 
     for (resource_name, resource_type) in resources {

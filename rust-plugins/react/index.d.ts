@@ -21,8 +21,7 @@ export interface ReactConfig {
    */
   throwIfNamespace?: boolean;
   /**
-   * Toggles plugins that aid in development, such as @swc/plugin-transform-react-jsx-self
-   * and @swc/plugin-transform-react-jsx-source.
+   * Toggles debug props __self and __source on elements generated from JSX, which are used by development tooling such as React Developer Tools.
    *
    * Defaults to `false`,
    *
@@ -48,6 +47,11 @@ export interface ReactConfig {
    * Declares the module specifier to be used for importing the `jsx` and `jsxs` factory functions when using `runtime` 'automatic'
    */
   importSource?: string;
+
+  /**
+   * Inject absolute path for generated filename
+   */
+  useAbsolutePath?: boolean;
 }
 declare const binPath: (options?:ReactConfig)=>[string, ReactConfig];
 export default binPath;

@@ -1,6 +1,7 @@
 import { defineConfig } from "@farmfe/core";
 
 import react from "@farmfe/plugin-react";
+import path from "path";
 export default defineConfig({
   plugins: [
     react(),
@@ -9,12 +10,23 @@ export default defineConfig({
   ],
   compilation: {
     // persistentCache: false,
+    persistentCache: {
+      cacheDir: "node_modules/.adny",
+    },
     output: {
       // publicPath: "/aaa/",
     },
+    resolve: {
+      // alias: {
+      //   "@": path.resolve("src"),
+      // },
+      alias: [{ find: "@", replacement: path.resolve("src") }],
+    },
   },
-  timeUnit: "s",
-  server: {},
+  // timeUnit: "s",
+  server: {
+    port: 8854,
+  },
 });
 
 function myCustomPlugin() {
@@ -27,7 +39,6 @@ function myCustomPlugin() {
     },
   };
 }
-
 
 function compilerPlugin() {
   return {

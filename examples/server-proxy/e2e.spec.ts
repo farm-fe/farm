@@ -38,11 +38,22 @@ async function launchServer() {
       hello: 'world'
     });
   });
-  return new Promise((r) => {
-    server = app.listen(3000, () => {
-      console.log('server up');
-      r(null);
-    });
+
+  return new Promise((res,rej) => {
+    try {
+      let timer = setTimeout(() => {
+        rej('listen port 3000 timeout.');
+      }, 3000);
+
+      server = app.listen(3000, () => {
+        clearTimeout(timer);
+        console.log('server up');
+        res(null);
+      });
+
+    } catch (error) {
+      rej(error);
+    }
   });
 }
 

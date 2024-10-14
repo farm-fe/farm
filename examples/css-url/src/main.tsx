@@ -1,6 +1,8 @@
 import React from 'react';
 import './main.css';
 
+import('./dynamic.css');
+
 export function Main() {
   return (
     <>

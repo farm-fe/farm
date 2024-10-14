@@ -1,6 +1,6 @@
 import path, { isAbsolute } from 'node:path';
 import { isString } from '../plugin/js/utils.js';
-import { clearScreen, isArray, isObject } from '../utils/share.js';
+import { isArray, isObject } from '../utils/share.js';
 import { FarmCliOptions, UserConfig } from './types.js';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -59,6 +59,8 @@ export function mergeFarmCliConfig(
       'compilation',
       'envDir',
       'envPrefix',
+      'timeUnit',
+      'watch',
       'plugins',
       'publicDir',
       'server',
@@ -143,6 +145,11 @@ export function mergeFarmCliConfig(
       compilation: { sourcemap: options.sourcemap }
     });
   }
+  if (options.timeUnit) {
+    left = mergeConfig(left, {
+      timeUnit: options.timeUnit
+    });
+  }
 
   return mergeConfig(left, target);
 }
@@ -168,7 +175,6 @@ export function initialCliOptions(options: any): any {
   const compilation: UserConfig['compilation'] = {
     input: hasInput ? { ...compilationOptions.input } : {},
     output,
-    ...(watch && { watch }),
     ...(minify && { minify }),
     ...(sourcemap && { sourcemap }),
     ...(treeShaking && { treeShaking })
@@ -176,10 +182,12 @@ export function initialCliOptions(options: any): any {
 
   const defaultOptions: any = {
     compilation,
+    watch: !!watch,
     root: options.root,
     server: options.server,
-    clearScreen: options.clearScreen,
+    clearScreen: !!options.clearScreen,
     configFile: options.configFile,
+    timeUnit: options.timeUnit,
     ...(mode && { mode })
   };
 

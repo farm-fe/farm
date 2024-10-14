@@ -1,0 +1,28 @@
+{
+  "name": "@farmfe-examples/invalid-css-issue-1557",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "farm start",
+    "start": "farm start",
+    "build": "farm build",
+    "preview": "farm preview",
+    "clean": "farm clean"
+  },
+  "dependencies": {
+    "dhtmlx-gantt": "^8.0.9",
+    "react": "^17.0.2",
+    "react-dom": "^17.0.2",
+    "react-highlight": "^0.15.0",
+    "react-highlight-words": "^0.20.0"
+  },
+  "devDependencies": {
+    "@farmfe/cli": "^1.0.2",
+    "@farmfe/core": "^1.2.8",
+    "@farmfe/plugin-react": "^1.1.0",
+    "@types/react": "18",
+    "@types/react-dom": "18",
+    "core-js": "^3.36.1",
+    "react-refresh": "^0.14.0"
+  }
+}

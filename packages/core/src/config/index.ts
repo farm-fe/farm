@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import { createRequire } from 'node:module';
-import path, { resolve } from 'node:path';
+import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import fse from 'fs-extra';
 
@@ -21,13 +21,11 @@ import {
   Logger,
   clearScreen,
   colors,
-  getAliasEntries,
   isArray,
   isEmptyObject,
   isObject,
   isWindows,
-  normalizePath,
-  transformAliasWithVite
+  normalizePath
 } from '../utils/index.js';
 import { traceDependencies } from '../utils/trace-dependencies.js';
 import { __FARM_GLOBAL__ } from './_global.js';
@@ -58,7 +56,6 @@ import { normalizeCss } from './normalize-config/normalize-css.js';
 import { normalizeExternal } from './normalize-config/normalize-external.js';
 import { normalizeResolve } from './normalize-config/normalize-resolve.js';
 import type {
-  Alias,
   ConfigEnv,
   FarmCliOptions,
   NormalizedServerConfig,
@@ -129,7 +126,8 @@ export async function resolveConfig(
   const loadedUserConfig = await loadConfigFile(
     configFile,
     inlineOptions,
-    configEnv
+    configEnv,
+    defaultNodeEnv
   );
 
   let rawConfig: UserConfig = mergeFarmCliConfig(
@@ -166,15 +164,10 @@ export async function resolveConfig(
   const resolvedUserConfig = await resolveUserConfig(
     config,
     configFilePath,
-    compileMode,
-    logger
+    compileMode
   );
 
   resolvedUserConfig.logger = logger;
-
-  // TODO start watch options with browser and lib
-  // @ts-ignore
-  resolvedUserConfig.watch = true;
 
   // normalize server config first cause it may be used in normalizeUserCompilationFnConfig
   resolvedUserConfig.server = normalizeDevServerConfig(
@@ -194,21 +187,7 @@ export async function resolveConfig(
     inlineConfig
   });
 
-  // Temporarily dealing with alias objects and arrays in js will be unified in rust in the future.]
-  if (vitePlugins.length) {
-    resolvedUserConfig.compilation.resolve.alias = getAliasEntries(
-      resolvedUserConfig.compilation.resolve.alias
-    );
-  }
-
   await resolveConfigResolvedHook(resolvedUserConfig, sortFarmJsPlugins); // Fix: Await the Promise<void> and pass the resolved value to the function.
-
-  //TODO solve the problem of alias adaptation to vite we should resolve this in rust side
-  if (resolvedUserConfig.compilation?.resolve?.alias && vitePlugins.length) {
-    resolvedUserConfig.compilation.resolve.alias = transformAliasWithVite(
-      resolvedUserConfig.compilation.resolve.alias as unknown as Array<Alias>
-    );
-  }
 
   await handleLazyCompilation(
     resolvedUserConfig,
@@ -259,8 +238,7 @@ async function handleLazyCompilation(
  */
 export async function normalizeUserCompilationConfig(
   resolvedUserConfig: ResolvedUserConfig,
-  mode: CompilationMode = 'development',
-  logger: Logger = new Logger()
+  mode: CompilationMode = 'development'
 ): Promise<ResolvedCompilation> {
   const { compilation, root } = resolvedUserConfig;
 
@@ -273,7 +251,7 @@ export async function normalizeUserCompilationConfig(
   // if normalize default config, skip check input option
   const inputIndexConfig = await checkCompilationInputValue(
     resolvedUserConfig,
-    logger
+    resolvedUserConfig.logger
   );
 
   const resolvedCompilation: ResolvedCompilation = merge(
@@ -292,7 +270,7 @@ export async function normalizeUserCompilationConfig(
 
   resolvedCompilation.coreLibPath = bindingPath;
 
-  normalizeOutput(resolvedCompilation, isProduction, logger);
+  normalizeOutput(resolvedCompilation, isProduction, resolvedUserConfig.logger);
   normalizeExternal(resolvedUserConfig, resolvedCompilation);
 
   // eslint-disable-next-line @typescript-eslint/ban-ts-comment
@@ -464,7 +442,7 @@ export async function normalizeUserCompilationConfig(
   }
 
   if (resolvedCompilation.script?.plugins?.length) {
-    logger.info(
+    resolvedUserConfig.logger.info(
       `Swc plugins are configured, note that Farm uses ${colors.yellow(
         'swc_core v0.96'
       )}, please make sure the plugin is ${colors.green(
@@ -479,7 +457,7 @@ export async function normalizeUserCompilationConfig(
   // so, it only happens in development mode
   // https://github.com/farm-fe/farm/issues/962
   if (resolvedCompilation.treeShaking && resolvedCompilation.lazyCompilation) {
-    logger.error(
+    resolvedUserConfig.logger.error(
       'treeShaking option is not supported in lazyCompilation mode, lazyCompilation will be disabled.'
     );
     resolvedCompilation.lazyCompilation = false;
@@ -522,11 +500,7 @@ export async function normalizeUserCompilationConfig(
     }
 
   // normalize persistent cache at last
-  await normalizePersistentCache(
-    resolvedCompilation,
-    resolvedUserConfig,
-    logger
-  );
+  await normalizePersistentCache(resolvedCompilation, resolvedUserConfig);
 
   normalizeResolve(resolvedUserConfig, resolvedCompilation);
   normalizeCss(resolvedUserConfig, resolvedCompilation);
@@ -660,14 +634,13 @@ const formatToExt: Record<Format, string> = {
 export async function readConfigFile(
   inlineOptions: FarmCliOptions,
   configFilePath: string,
-  configEnv: any
-  // logger: Logger
+  configEnv: any,
+  mode: CompilationMode = 'development'
 ): Promise<UserConfig | undefined> {
   if (!fse.existsSync(configFilePath)) return;
 
   const format = getFormat(configFilePath);
 
-  // we need transform all type farm.config with __dirname and __filename
   const Compiler = (await import('../compiler/index.js')).Compiler;
 
   const outputPath = path.join(
@@ -686,7 +659,8 @@ export async function readConfigFile(
     configFilePath,
     format,
     outputPath,
-    fileName
+    fileName,
+    mode
   });
 
   const replaceDirnamePlugin = await import('farm-plugin-replace-dirname').then(
@@ -694,7 +668,7 @@ export async function readConfigFile(
   );
 
   const compiler = new Compiler({
-    config: normalizedConfig,
+    compilation: normalizedConfig,
     jsPlugins: [],
     rustPlugins: [[replaceDirnamePlugin, '{}']]
   });
@@ -762,8 +736,8 @@ export function normalizePublicDir(root: string, publicDir = 'public') {
 export async function loadConfigFile(
   configFile: string,
   inlineOptions: any,
-  configEnv: any
-  // logger: Logger
+  configEnv: any,
+  mode: CompilationMode = 'development'
 ): Promise<{ config: any; configFilePath: string } | undefined> {
   const { root = '.' } = inlineOptions;
   const configRootPath = path.resolve(root);
@@ -775,7 +749,12 @@ export async function loadConfigFile(
       configRootPath
     );
 
-    const config = await readConfigFile(inlineOptions, resolvedPath, configEnv);
+    const config = await readConfigFile(
+      inlineOptions,
+      resolvedPath,
+      configEnv,
+      mode
+    );
     return {
       config: config && parseUserConfig(config),
       configFilePath: resolvedPath
@@ -799,7 +778,7 @@ export async function loadConfigFile(
     // `Failed to load farm config file: ${errorMessage}. \n ${potentialSolution} \n ${error.stack}`
     // );
     throw new Error(
-      `Failed to load farm config file: ${errorMessage}. \n ${potentialSolution} \n ${error.stack}`
+      `Failed to load farm config file: ${errorMessage}. \n ${potentialSolution}`
       // `Failed to load farm config file: ${errorMessage}.`,
     );
   }
@@ -911,7 +890,7 @@ export async function resolveDefaultUserConfig(options: any) {
   const resolvedUserConfig: ResolvedUserConfig = await resolveUserConfig(
     defaultConfig,
     undefined,
-    'development'
+    defaultConfig.compilation.mode
   );
 
   const normalizedConfig = await normalizeUserCompilationConfig(
@@ -925,8 +904,7 @@ export async function resolveDefaultUserConfig(options: any) {
 export async function resolveUserConfig(
   userConfig: UserConfig,
   configFilePath?: string | undefined,
-  mode: 'development' | 'production' | string = 'development',
-  logger: Logger = new Logger()
+  mode: 'development' | 'production' | string = 'development'
 ): Promise<ResolvedUserConfig> {
   const resolvedUserConfig = {
     ...userConfig,
@@ -935,7 +913,7 @@ export async function resolveUserConfig(
 
   // set internal config
   if (configFilePath) {
-    const dependencies = await traceDependencies(configFilePath, logger);
+    const dependencies = await traceDependencies(configFilePath);
     resolvedUserConfig.configFileDependencies = dependencies.sort();
     resolvedUserConfig.configFilePath = configFilePath;
   }
@@ -983,8 +961,9 @@ export async function resolveUserConfig(
 }
 
 export function createDefaultConfig(options: any): UserConfig {
-  const { inlineOptions, format, outputPath, fileName, configFilePath } =
+  const { inlineOptions, mode, format, outputPath, fileName, configFilePath } =
     options;
+
   return {
     root: path.resolve(inlineOptions.root ?? '.'),
     compilation: {
@@ -997,6 +976,7 @@ export function createDefaultConfig(options: any): UserConfig {
         format,
         targetEnv: 'library-node'
       },
+      mode,
       external: [
         ...(process.env.FARM_CONFIG_FULL_BUNDLE
           ? []
@@ -1011,7 +991,6 @@ export function createDefaultConfig(options: any): UserConfig {
           }
         ]
       },
-      watch: false,
       sourcemap: false,
       treeShaking: false,
       minify: false,

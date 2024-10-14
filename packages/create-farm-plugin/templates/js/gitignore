@@ -195,3 +195,4 @@ Cargo.lock
 !.yarn/versions
 
 *.farm
+build

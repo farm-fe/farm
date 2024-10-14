@@ -1,5 +1,13 @@
 # @farmfe/js-plugin-postcss
 
+## 1.8.1
+
+### Patch Changes
+
+- 97408595: Fix postcss/tailwind postcss does not work on windows. fix #1777
+- Updated dependencies [97408595]
+  - @farmfe/core@1.3.25
+
 ## 1.8.0
 
 ### Patch Changes

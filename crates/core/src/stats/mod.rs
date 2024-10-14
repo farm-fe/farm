@@ -97,6 +97,17 @@ impl Stats {
   pub fn set_module_graph_stats(&self, module_graph: &ModuleGraph) {
     handle_compilation_stats!(self, |compilation_stats: &mut CompilationStats| {
       compilation_stats.set_module_graph_stats(module_graph);
+      compilation_stats.add_plugin_hook_stats(CompilationPluginHookStats {
+        plugin_name: "INTERNAL_COMPILER".to_string(),
+        hook_name: "build_end".to_string(),
+        module_id: "".into(),
+        hook_context: None,
+        input: "".to_string(),
+        output: serde_json::to_string(&compilation_stats.module_graph_stats).unwrap(),
+        duration: 0,
+        start_time: 0,
+        end_time: 0,
+      });
     })
   }
 

@@ -25,7 +25,7 @@ export function Main() {
       <h1>Farm + react</h1>
       <div className="card">
         <button onClick={() => setCount((count) => count + 1)}>
-          count is 2222222{count}
+          count is 2222222222222233422222{count}
         </button>
         <p>
           Edit <code>src/main.tsx</code> and save to test HMR

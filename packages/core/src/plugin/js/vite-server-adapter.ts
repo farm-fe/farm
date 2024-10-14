@@ -1,36 +1,42 @@
-// import { watch } from 'chokidar';
-import { FSWatcher } from 'chokidar';
-// import { Server } from '../../index.js';
-import { Server as httpServer } from '../../server/index.js';
-// import WsServer from '../../server/ws.js';
 import { CompilationContext, ViteModule } from '../type.js';
 import { throwIncompatibleError } from './utils.js';
 
 // TODO type error refactor vite adaptor
 export class ViteDevServerAdapter {
-  moduleGraph: ViteModuleGraphAdapter;
-  config: any;
-  pluginName: string;
-  watcher: FSWatcher;
-  middlewares: any;
-  ws: any;
-  httpServer: httpServer;
-
+  private _server: any;
+  private _config: any;
+  private _moduleGraphAdapter: any;
+  [key: string]: any;
+  [key: symbol]: any;
   constructor(pluginName: string, config: any, server: any) {
-    this.moduleGraph = createViteModuleGraphAdapter(pluginName);
-    this.config = config;
-    this.pluginName = pluginName;
-    // watcher is not used in Farm vite plugin for now
-    // it's only for compatibility
-    // this.watcher = watch(config.root);
+    this._server = server;
+    this._config = config;
+    this._moduleGraphAdapter = createViteModuleGraphAdapter(pluginName);
 
-    this.watcher = server.watcher.getInternalWatcher();
-
-    this.middlewares = server.middlewares;
-
-    this.ws = server.ws;
-
-    this.httpServer = server.httpServer;
+    return new Proxy(this, {
+      get: (_target, prop) => {
+        switch (prop) {
+          case 'moduleGraph':
+            return this._moduleGraphAdapter;
+          case 'watcher':
+            return this._server.watcher.getInternalWatcher();
+          case 'middlewares':
+            return this._server.middlewares;
+          case 'config':
+            return this._config;
+          default: {
+            const value = this._server[prop];
+            return typeof value === 'function'
+              ? value.bind(this._server)
+              : value;
+          }
+        }
+      },
+      set: (_target, prop, value) => {
+        this._server[prop] = value;
+        return true;
+      }
+    });
   }
 }
 
@@ -115,6 +121,9 @@ export function createViteDevServerAdapter(
           'prototype'
         ];
         const allowedKeys = [
+          'serverOptions',
+          'resolvedUrls',
+          'printUrls',
           'moduleGraph',
           'config',
           'watcher',
