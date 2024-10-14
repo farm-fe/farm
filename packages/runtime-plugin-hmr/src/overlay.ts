@@ -527,7 +527,7 @@ export class ErrorOverlay extends HTMLElement {
     return hljs.highlightAuto(code).value;
   }
 
-  renderMessages(messages: any[]) {
+  renderMessages(messages: any[], _link: any) {
     const messageContainer = this.root.querySelector('.message-container')!;
     messageContainer.innerHTML = '';
     if (typeof messages === 'string') {
