@@ -11,7 +11,7 @@ const FARM_BUNDLE_REFERENCE_SLOT_PREFIX: &str = "__FARM_BUNDLE_REFERENCE_SLOT__:
 
 // TODO: replace bundle reference slot
 fn with_bundle_reference_slot_name(bundle_id: &String) -> String {
-  format!("{}{}", FARM_BUNDLE_REFERENCE_SLOT_PREFIX, bundle_id)
+  format!("{FARM_BUNDLE_REFERENCE_SLOT_PREFIX}{bundle_id}")
 }
 
 ///

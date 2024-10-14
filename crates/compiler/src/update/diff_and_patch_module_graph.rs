@@ -47,7 +47,7 @@ impl DiffResult {
     // added_modules: g, h
 
     for (module_id, deps_diff_result) in &self.deps_changes {
-      println!("{:?} -> ", module_id);
+      println!("{module_id:?} -> ");
 
       println!(
         "  added: {:?}",
@@ -372,7 +372,7 @@ fn diff_module_deps(
     let mut children_added = vec![];
 
     if module_graph.has_module(&dep) {
-      panic!("The module({:?}) exists in previous module graph, this should never happen and there is a internal bug inside farm. Please report it via issues", dep);
+      panic!("The module({dep:?}) exists in previous module graph, this should never happen and there is a internal bug inside farm. Please report it via issues");
     }
 
     for child in children {

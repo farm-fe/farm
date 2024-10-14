@@ -99,7 +99,7 @@ impl PackageJsonLoader {
         let map: HashMap<String, Value> =
           from_str(&content).map_err(|e| CompilationError::LoadPackageJsonError {
             package_json_path: package_json_path.to_string_lossy().to_string(),
-            err_message: format!("{:?}", e),
+            err_message: format!("{e:?}"),
           })?;
         let map_string = |v: &Value| {
           if let Value::String(v) = v {
@@ -114,7 +114,7 @@ impl PackageJsonLoader {
         result.set_raw_map(from_str(&content).map_err(|e| {
           CompilationError::LoadPackageJsonError {
             package_json_path: package_json_path.to_string_lossy().to_string(),
-            err_message: format!("{:?}", e),
+            err_message: format!("{e:?}"),
           }
         })?);
         result.set_raw(content);

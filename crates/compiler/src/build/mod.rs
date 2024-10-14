@@ -197,7 +197,7 @@ impl Compiler {
 
     if !self.context.log_store.lock().warnings().is_empty() {
       for warning in self.context.log_store.lock().warnings() {
-        println!("[warn] {}", warning);
+        println!("[warn] {warning}");
       }
     }
 

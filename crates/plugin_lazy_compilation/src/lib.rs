@@ -172,7 +172,7 @@ impl Plugin for FarmPluginLazyCompilation {
           )
           .replace(
             "'FARM_MODULE_SYSTEM'",
-            &format!("{}.{}", farm_global_this, FARM_MODULE_SYSTEM),
+            &format!("{farm_global_this}.{FARM_MODULE_SYSTEM}"),
           );
 
         Ok(Some(farmfe_core::plugin::PluginLoadHookResult {
@@ -190,11 +190,10 @@ impl Plugin for FarmPluginLazyCompilation {
         let relative_source = relative(&dir, &resolved_path);
         let content = format!(
           r#"
-          import _default_import from "./{0}";
+          import _default_import from "./{relative_source}";
           export default _default_import;
-          export * from "./{0}";
-        "#,
-          relative_source
+          export * from "./{relative_source}";
+        "#
         );
         Ok(Some(PluginLoadHookResult {
           content,

@@ -29,7 +29,7 @@ fn tree_shake_test() {
     "tests/fixtures/tree_shake/**/index.ts",
     |file, crate_path| {
       let cwd = file.parent().unwrap();
-      println!("testing tree shake: {:?}", cwd);
+      println!("testing tree shake: {cwd:?}");
 
       let entry_name = "index".to_string();
       let compiler = create_compiler(
@@ -52,7 +52,7 @@ fn tree_shake_development() {
     |file, crate_path| {
       let cwd = file.parent().unwrap();
       let entry_name = "index".to_string();
-      println!("testing tree shake: {:?}", cwd);
+      println!("testing tree shake: {cwd:?}");
 
       let compiler = create_compiler_with_args(cwd.into(), crate_path, |mut config, plguin| {
         config.input = HashMap::from([(entry_name.clone(), "./index.ts".to_string())]);
@@ -73,7 +73,7 @@ fn tree_shake_html_entry() {
     "tests/fixtures/tree_shake/html_entry/**/index.html",
     |file, crate_path| {
       let cwd = file.parent().unwrap();
-      println!("testing tree shake: {:?}", cwd);
+      println!("testing tree shake: {cwd:?}");
 
       let entry_name = "index".to_string();
       let compiler = create_compiler(
@@ -153,7 +153,7 @@ fn tree_shake_changed_ast() {
     "tests/fixtures/tree_shake/changed_ast/entry.ts",
     |file, crate_path| {
       let cwd = file.parent().unwrap();
-      println!("testing tree shake: {:?}", cwd);
+      println!("testing tree shake: {cwd:?}");
 
       let entry_name = "index".to_string();
       let compiler = create_compiler_with_plugins(

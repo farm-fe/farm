@@ -45,9 +45,7 @@ fn test_handle_enforce_resource_pots() {
   let mut module_group_graph = module_group_graph_from_entries(
     &module_graph
       .entries
-      .clone()
-      .into_iter()
-      .map(|(entry, _)| entry)
+      .clone().into_keys()
       .collect(),
     &mut module_graph,
   );
@@ -173,9 +171,7 @@ fn test_handle_enforce_resource_pots_one_module_changed() {
   let mut module_group_graph = module_group_graph_from_entries(
     &module_graph
       .entries
-      .clone()
-      .into_iter()
-      .map(|(entry, _)| entry)
+      .clone().into_keys()
       .collect(),
     &mut module_graph,
   );

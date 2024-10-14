@@ -54,7 +54,7 @@ pub fn generate_module_pots(
     let page_size = modules.len() / new_module_pot_numbers;
 
     for i in 0..new_module_pot_numbers {
-      let new_module_pot_name = format!("{}-{}", module_pot_name, i);
+      let new_module_pot_name = format!("{module_pot_name}-{i}");
       let new_module_pot_id = ModulePot::gen_id(&new_module_pot_name, ty.clone(), immutable);
 
       let new_module_pot = module_pot_map

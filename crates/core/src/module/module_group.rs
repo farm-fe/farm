@@ -36,7 +36,7 @@ impl ModuleGroupGraph {
     let module_group_id = module_group.id.clone();
 
     if self.has(&module_group_id) {
-      panic!("module group already exists: {:?}", module_group_id);
+      panic!("module group already exists: {module_group_id:?}");
     }
 
     let node_index = self.g.add_node(module_group);

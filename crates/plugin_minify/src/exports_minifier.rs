@@ -211,7 +211,7 @@ export { long10 } from './dep2';
         codegen_module(&mut ast, EsVersion::latest(), cm, None, false, None).unwrap();
       let code = String::from_utf8(code_bytes).unwrap();
 
-      println!("{}", code);
+      println!("{code}");
 
       assert_eq!(
         code,

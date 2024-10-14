@@ -151,7 +151,7 @@ impl Compiler {
         .plugin_driver
         .write_plugin_cache(&self.context)
         .unwrap_or_else(|err| {
-          eprintln!("write plugin cache error: {:?}", err);
+          eprintln!("write plugin cache error: {err:?}");
         });
 
       if matches!(self.context.config.mode, Mode::Development) {

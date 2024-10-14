@@ -43,7 +43,7 @@ impl DepsAnalyzer {
   fn generate_virtual_id(&mut self, code: String, module_type: ModuleType) -> String {
     let id = self.html_id.to_string();
     let size = self.inline_deps_map.len();
-    let virtual_id = format!("{}{}_{}", HTML_INLINE_ID_PREFIX, id, size);
+    let virtual_id = format!("{HTML_INLINE_ID_PREFIX}{id}_{size}");
 
     self.inline_deps_map.insert(
       virtual_id.clone(),

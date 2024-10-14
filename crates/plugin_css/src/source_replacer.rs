@@ -6,7 +6,6 @@ use farmfe_core::{
   resource::{Resource, ResourceOrigin},
   swc_common::DUMMY_SP,
   swc_css_ast::{AtRulePrelude, ImportHref, Rule, Str, Stylesheet, Url, UrlValue},
-  swc_ecma_ast::Key,
 };
 use farmfe_toolkit::{
   resolve::path_start_with_alias::is_start_with_alias,

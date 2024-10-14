@@ -28,7 +28,7 @@ impl ToString for ResourceType {
     match *self {
       Self::Custom(ref s) => s.to_string(),
       Self::Asset(ref s) => s.to_string(),
-      _ => AsLowerCamelCase(format!("{:?}", self)).to_string(),
+      _ => AsLowerCamelCase(format!("{self:?}")).to_string(),
     }
   }
 }
