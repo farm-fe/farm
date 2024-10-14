@@ -71,7 +71,7 @@ mod test {
         replacement: cwd.to_string_lossy().to_string(),
       },
       AliasItem::Complex {
-        find: StringOrRegex::String("react$".to_string()),
+        find: StringOrRegex::Regex(Regex::new("react$").unwrap()),
         replacement: cwd.to_string_lossy().to_string(),
       },
       AliasItem::Complex {
