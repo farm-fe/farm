@@ -1,43 +1,92 @@
 // @ts-ignore
-import React from 'react';
+import Refresh from 'react-refresh';
 
-function isClassComponent(v: any): boolean {
-// class component can not be hot-updated, so skip it and find its parent
-  if(v && v.prototype instanceof React.Component) {
-    return true;
+type ModExport = Record<string, any>;
+
+// from: https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/src/refreshUtils.js
+
+// @ts-ignore
+export function validateRefreshBoundaryAndEnqueueUpdate(prevExports: ModExport, nextExports: ModExport) {
+  const ignoredExports = []
+  if (
+    predicateOnExport(
+      ignoredExports,
+      prevExports,
+      (key) => key in nextExports,
+    ) !== true
+  ) {
+    return 'Could not Fast Refresh (export removed)'
+  }
+  if (
+    predicateOnExport(
+      ignoredExports,
+      nextExports,
+      (key) => key in prevExports,
+    ) !== true
+  ) {
+    return 'Could not Fast Refresh (new export)'
   }
 
-  return false;
+  let hasExports = false
+  const allExportsAreComponentsOrUnchanged = predicateOnExport(
+    ignoredExports,
+    nextExports,
+    (key, value) => {
+      hasExports = true
+      if (Refresh.isLikelyComponentType(value)) return true
+      return prevExports[key] === nextExports[key]
+    },
+  )
+
+  if (hasExports && allExportsAreComponentsOrUnchanged === true) {
+    enqueueUpdate()
+  } else {
+    return `Could not Fast Refresh ("${allExportsAreComponentsOrUnchanged}" export is incompatible).`
+  }
 }
 
-export default function isReactRefreshBoundary(Refresh: any, moduleExports: any): boolean {
-
-  if (Refresh.isLikelyComponentType(moduleExports)) {
-    if(isClassComponent(moduleExports)) return false;
-    return true;
+function predicateOnExport(ignoredExports: string[], moduleExports: ModExport, predicate: (key: string, value: any) => boolean): string | true {
+  for (const key in moduleExports) {
+    if (key === '__esModule') continue
+    if (ignoredExports.includes(key)) continue
+    if (!predicate(key, moduleExports[key])) return key
   }
+  return true
+}
 
+function debounce<Args extends unknown[]>(func: (...args: Args) => void, wait: number, immediate?: boolean) {
+	var timeout: any;
+	return function() {
+		var context = this, args = arguments;
+		var later = function() {
+			timeout = null;
+			if (!immediate) func.apply(context, args);
+		};
+		var callNow = immediate && !timeout;
+		clearTimeout(timeout);
+		timeout = setTimeout(later, wait);
+		if (callNow) func.apply(context, args);
+	};
+};
+
+const _enqueueUpdate = () => {
+  Refresh.performReactRefresh()
+}
+
+export var registerExportsForReactRefresh = (moduleExports: ModExport, moduleID: string) => {
   if (moduleExports == null || typeof moduleExports !== 'object') {
     // Exit if we can't iterate over exports.
-    return false;
+    // (This is important for legacy environments.)
+    return;
   }
-
-  let hasExports = false;
-  let areAllExportsComponents = true;
 
   for (const key in moduleExports) {
-    hasExports = true;
-    if (key === '__esModule') {
-      continue;
-    }
-
     const exportValue = moduleExports[key];
-
     if(Refresh.isLikelyComponentType(exportValue)) {
-      if(isClassComponent(exportValue)) return false;
-    }else {
-      areAllExportsComponents = false;
+      const typeID = moduleID + ' exports ' + key;
+      Refresh.register(exportValue, typeID);
     }
   }
-  return hasExports && areAllExportsComponents;
 };
+
+export const enqueueUpdate = debounce(_enqueueUpdate, 30);

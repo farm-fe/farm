@@ -24,7 +24,7 @@ lazy_static! {
     prevRefreshReg = window.$RefreshReg$;
     prevRefreshSig = window.$RefreshSig$;
     window.$RefreshReg$ = (type, id) => {{
-      RefreshRuntime.register(type, {FARM_MODULE}.id + id);
+      RefreshRuntime.register(type, {FARM_MODULE}.id + " " + id);
     }};
     window.$RefreshSig$ = RefreshRuntime.createSignatureFunctionForTransform;
     "#
@@ -35,16 +35,19 @@ lazy_static! {
 const POST_CODE: &str = r#"
 window.$RefreshReg$ = prevRefreshReg;
 window.$RefreshSig$ = prevRefreshSig;
-
 if (import.meta.hot) {
-  import.meta.hot.accept(mod => {
-    if (!isReactRefreshBoundary(RefreshRuntime, mod)) {
-      import.meta.hot.invalidate(`Not all exports of ${module.id} are react components`);
-    }
-  });
-}
+    ReactRefreshUtil.registerExportsForReactRefresh(module.exports, module.id);
 
-RefreshRuntime.performReactRefresh();
+    import.meta.hot.accept(nextExport => {
+      const message = ReactRefreshUtil.validateRefreshBoundaryAndEnqueueUpdate(module.exports, nextExport);
+
+      if (message) {
+        import.meta.hot.invalidate(message);
+      }
+    });
+
+    ReactRefreshUtil.enqueueUpdate();
+}
 "#;
 
 fn inject_runtime_import(lib: &Library, ast: &mut SwcModule) {
@@ -71,9 +74,9 @@ fn inject_runtime_import(lib: &Library, ast: &mut SwcModule) {
 
   // inject react boundary detection
   let react_boundary_import =
-    format!("import isReactRefreshBoundary from '{IS_REACT_REFRESH_BOUNDARY}'");
+    format!("import * as ReactRefreshUtil from '{IS_REACT_REFRESH_BOUNDARY}'");
   let react_boundary_import_decl =
-    parse_import_decl("isReactRefreshBoundary", &react_boundary_import);
+    parse_import_decl("ReactRefreshUtil", &react_boundary_import);
 
   ast.body.insert(
     0,
@@ -112,6 +115,7 @@ fn inject_post_code(lib: &Library, ast: &mut SwcModule) {
   ast.body.extend(module.body);
 }
 
+// [react fast refresh](https://github.com/facebook/react/issues/16604#issuecomment-528663101)
 pub fn inject_react_refresh(lib: &Library, ast: &mut SwcModule) {
   inject_runtime_import(lib, ast);
   inject_pre_code(lib, ast);
