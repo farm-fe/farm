@@ -119,6 +119,7 @@
       "**/binding/**",
       "**/templates/**",
       "**/dist/**",
+      "**/docs/**",
       "**/node_modules/**",
       "**/*.config.js",
       "**/*.config.ts"
