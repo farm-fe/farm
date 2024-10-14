@@ -398,7 +398,7 @@ hue-6-2: #e6c07b
 const errorAlert = (
   message: string,
   description: string,
-  type: string
+  _type: string
 ) => /*html*/ `
     <div class="alert alert-error">
       <span class="alert-icon">
@@ -425,7 +425,7 @@ const warnAlert = (description: string, type = 'warn') => /*html*/ `
 `;
 
 const fileRE = /(?:[a-zA-Z]:\\|\/).*?:\d+:\d+/g;
-const codeframeRE = /^(?:>?\s*\d+\s+\|.*|\s+\|\s*\^.*)\r?\n/gm;
+// const codeframeRE = /^(?:>?\s*\d+\s+\|.*|\s+\|\s*\^.*)\r?\n/gm;
 
 // Allow `ErrorOverlay` to extend `HTMLElement` even in environments where
 // `HTMLElement` was not originally defined.
@@ -527,7 +527,7 @@ export class ErrorOverlay extends HTMLElement {
     return hljs.highlightAuto(code).value;
   }
 
-  renderMessages(messages: any[], links: boolean) {
+  renderMessages(messages: any[]) {
     const messageContainer = this.root.querySelector('.message-container')!;
     messageContainer.innerHTML = '';
     if (typeof messages === 'string') {
@@ -570,7 +570,7 @@ export class ErrorOverlay extends HTMLElement {
       return;
     }
 
-    messages.forEach((msg, index) => {
+    messages.forEach((msg) => {
       const messageElement = document.createElement('div');
       messageElement.className = 'error-message';
       msg = parseIfJSON(msg);
