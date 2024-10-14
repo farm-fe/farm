@@ -61,15 +61,24 @@ mod test {
   fn test() {
     let cwd = PathBuf::from("/root/src");
 
-    let alias = HashMap::from([
-      ("/@".to_string(), cwd.to_string_lossy().to_string()),
-      ("@".to_string(), cwd.to_string_lossy().to_string()),
-      ("react$".to_string(), cwd.to_string_lossy().to_string()),
-      (
-        "$__farm_regex:^/(utils)$".to_string(),
-        cwd.join("$1").to_string_lossy().to_string(),
-      ),
-    ]);
+    let alias: Vec<AliasItem> = vec![
+      AliasItem::Complex {
+        find: StringOrRegex::String("/@".to_string()),
+        replacement: cwd.to_string_lossy().to_string(),
+      },
+      AliasItem::Complex {
+        find: StringOrRegex::String("@".to_string()),
+        replacement: cwd.to_string_lossy().to_string(),
+      },
+      AliasItem::Complex {
+        find: StringOrRegex::String("react$".to_string()),
+        replacement: cwd.to_string_lossy().to_string(),
+      },
+      AliasItem::Complex {
+        find: StringOrRegex::Regex(Regex::new("^/(utils)$").unwrap()),
+        replacement: cwd.join("$1").to_string_lossy().to_string(),
+      },
+    ];
 
     assert_eq!(is_start_with_alias(&alias, "/@/img/logo.png"), true);
     assert_eq!(is_start_with_alias(&alias, "@/img/logo.png"), true);
