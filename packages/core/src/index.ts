@@ -28,6 +28,7 @@ import {
 import { handlerWatcher } from './watcher/index.js';
 
 import type { FarmCliOptions } from './config/types.js';
+import { PreviewServer } from './server/preview.js';
 
 export async function start(
   inlineConfig?: FarmCliOptions & UserConfig
@@ -100,7 +101,25 @@ export async function build(
 }
 
 // TODO preview method
-export async function preview(inlineConfig: FarmCliOptions & UserConfig = {}) {}
+export async function preview(
+  inlineConfig?: FarmCliOptions & UserConfig
+): Promise<void> {
+  inlineConfig = inlineConfig ?? {};
+  // setProcessEnv('production');
+
+  const previewServer = new PreviewServer(inlineConfig);
+  try {
+    await previewServer.createServer();
+
+    previewServer.listen();
+  } catch (error) {
+    previewServer.logger.error('Failed to start the preview server', {
+      exit: false,
+      error
+    });
+  }
+}
+// export async function preview(inlineConfig: FarmCliOptions & UserConfig = {}) {}
 
 export async function clean(
   rootPath: string,

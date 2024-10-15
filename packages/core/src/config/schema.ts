@@ -6,21 +6,6 @@ import { fromZodError } from 'zod-validation-error';
 
 import type { UserConfig } from './types.js';
 
-const TARGET_ENV = {
-  BROWSER: 'browser',
-  NODE: 'node',
-  NODE_LEGACY: 'node-legacy',
-  NODE_NEXT: 'node-next',
-  NODE16: 'node16',
-  BROWSER_LEGACY: 'browser-legacy',
-  BROWSER_ESNEXT: 'browser-esnext',
-  BROWSER_ES2015: 'browser-es2015',
-  BROWSER_ES2017: 'browser-es2017',
-  LIBRARY: 'library',
-  LIBRARY_BROWSER: 'library-browser',
-  LIBRARY_NODE: 'library-node'
-} as const;
-
 const baseRewriteSchema = z.union([
   z.record(z.string(), z.string()),
   z
@@ -29,8 +14,8 @@ const baseRewriteSchema = z.union([
     .returns(z.union([z.string(), z.promise(z.string())]))
 ]);
 
-const stringRewriteSchema = baseRewriteSchema;
-const functionRewriteSchema = baseRewriteSchema;
+// const stringRewriteSchema = baseRewriteSchema;
+// const functionRewriteSchema = baseRewriteSchema;
 
 const pathFilterSchema = z.union([
   z.string(),
@@ -51,7 +36,20 @@ const outputSchema = z
     publicPath: z.string().optional(),
     assetsFilename: z.string().optional(),
     targetEnv: z
-      .enum(Object.values(TARGET_ENV) as [string, ...string[]])
+      .enum([
+        'browser',
+        'node',
+        'node-legacy',
+        'node-next',
+        'node16',
+        'browser-legacy',
+        'browser-esnext',
+        'browser-es2015',
+        'browser-es2017',
+        'library',
+        'library-browser',
+        'library-node'
+      ])
       .optional(),
     format: z.enum(['cjs', 'esm']).optional()
   })
@@ -133,6 +131,22 @@ const serverSchema = z
   })
   .strict();
 
+const previewServerSchema = z.object({
+  host: z.union([z.string(), z.boolean()]).optional(),
+  port: z.number().positive().int().optional(),
+  strictPort: z.boolean().optional(),
+  open: z.boolean().optional(),
+  // cors: z.boolean().optional(),
+  headers: z.record(z.string()).optional(),
+  output: z.object({
+    path: z.string().optional(),
+    publicPath: z.string().optional()
+  }),
+  distDir: z.string().optional(),
+  // TODO any type
+  https: z.any().optional()
+});
+
 const aliasItemSchema = z.object({
   find: z.union([z.string(), z.instanceof(RegExp)]),
   replacement: z.string(),
@@ -168,7 +182,7 @@ const compilationConfigSchema = z
     externalNodeBuiltins: z
       .union([z.boolean(), z.array(z.string())])
       .optional(),
-    mode: z.string().optional(),
+    mode: z.enum(['development', 'production']).optional(),
     watch: z
       .union([
         z.boolean(),
@@ -405,6 +419,7 @@ const FarmConfigSchema = z
     mode: z.string().optional(),
     watch: z.boolean().optional(),
     server: serverSchema.optional(),
+    preview: previewServerSchema.optional(),
     // TODO ANY type
     customLogger: z.any().optional()
   })
