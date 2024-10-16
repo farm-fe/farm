@@ -36,9 +36,9 @@ pub fn parse_css_stylesheet(
   content = regex
     .replace_all(&content, "filter:\"$1.Microsoft.$2\"$3")
     .to_string();
-  // 3. replace invalid operator, eg: top: -8px/2 + 1 to top: "-8px/2 + 1" using regex. fix #1748
-  let regex = Regex::new(r#":\s*([^;{}]*?\d\s(?:\+|-|\*|/)\s\d[^;{}]*?)\s*(;|\})"#).unwrap();
-  content = regex.replace_all(&content, ":\"$1\"$2").to_string();
+  // // 3. replace invalid operator, eg: top: -8px/2 + 1 to top: "-8px/2 + 1" using regex. fix #1748
+  // let regex = Regex::new(r#":\s*([^;{}]*?\d\s+\s\d[^;{}]*?)\s*(;|\})"#).unwrap();
+  // content = regex.replace_all(&content, ":\"$1\"$2").to_string();
 
   let (cm, source_file) = create_swc_source_map(Source {
     path: PathBuf::from(id),
