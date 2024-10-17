@@ -1,6 +1,6 @@
 [package]
 name = "farmfe_plugin_partial_bundling"
-version = "0.0.11"
+version = "0.0.12"
 edition = "2021"
 authors = ["brightwu(吴明亮) <1521488775@qq.com>"]
 license = "MIT"
@@ -10,9 +10,9 @@ repository = "https://github.com/farm-fe/farm"
 documentation = "https://docs.rs/farmfe_plugin_partial_bundling"
 
 [dependencies]
-farmfe_core = { path = "../core", version = "0.6.4" }
-farmfe_toolkit = { path = "../toolkit", version = "0.0.13" }
-farmfe_testing_helpers = { path = "../testing_helpers", version = "0.0.13" }
+farmfe_core = { path = "../core", version = "0.7.0" }
+farmfe_toolkit = { path = "../toolkit", version = "0.0.14" }
+farmfe_testing_helpers = { path = "../testing_helpers", version = "0.0.14" }
 
 [features]
 profile = ["farmfe_core/profile"]
