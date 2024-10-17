@@ -996,7 +996,7 @@ dependencies = [
 
 [[package]]
 name = "create-farm"
-version = "0.1.2"
+version = "0.1.3"
 dependencies = [
  "anyhow",
  "clap",
@@ -1009,7 +1009,7 @@ dependencies = [
 
 [[package]]
 name = "create_farm_node"
-version = "0.1.2"
+version = "0.1.3"
 dependencies = [
  "create-farm",
  "napi",
@@ -1482,7 +1482,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6082b74cc322c69840d97a7d7cba3ee9ed34fa70536fb51a69824f36742960f5"
 dependencies = [
  "base64 0.22.1",
- "farmfe_utils 0.1.5 (registry+https://github.com/rust-lang/crates.io-index)",
+ "farmfe_utils 0.1.5",
  "parking_lot",
  "regex",
  "sourcemap",
@@ -1587,7 +1587,7 @@ checksum = "4443176a9f2c162692bd3d352d745ef9413eec5782a80d8fd6f8a1ac692a07f7"
 
 [[package]]
 name = "farmfe_bench"
-version = "0.0.1"
+version = "0.0.2"
 dependencies = [
  "criterion2",
  "farmfe_compiler",
@@ -1596,7 +1596,7 @@ dependencies = [
 
 [[package]]
 name = "farmfe_compiler"
-version = "0.0.11"
+version = "0.0.12"
 dependencies = [
  "farmfe_core",
  "farmfe_plugin_bundle",
@@ -1617,13 +1617,13 @@ dependencies = [
  "farmfe_testing",
  "farmfe_testing_helpers",
  "farmfe_toolkit",
- "farmfe_utils 0.1.5",
+ "farmfe_utils 0.1.6",
  "num_cpus",
 ]
 
 [[package]]
 name = "farmfe_core"
-version = "0.6.4"
+version = "0.7.0"
 dependencies = [
  "blake2",
  "bytecheck 0.7.0",
@@ -1631,7 +1631,7 @@ dependencies = [
  "downcast-rs",
  "enhanced-magic-string",
  "farmfe_macro_cache_item",
- "farmfe_utils 0.1.5",
+ "farmfe_utils 0.1.6",
  "globset",
  "heck 0.4.1",
  "hex",
@@ -1695,39 +1695,39 @@ dependencies = [
 
 [[package]]
 name = "farmfe_plugin_bundle"
-version = "0.0.5"
+version = "0.0.6"
 dependencies = [
  "farmfe_core",
  "farmfe_testing_helpers",
  "farmfe_toolkit",
- "farmfe_utils 0.1.5",
+ "farmfe_utils 0.1.6",
 ]
 
 [[package]]
 name = "farmfe_plugin_css"
-version = "0.0.13"
+version = "0.0.14"
 dependencies = [
  "farmfe_core",
  "farmfe_macro_cache_item",
  "farmfe_testing_helpers",
  "farmfe_toolkit",
- "farmfe_utils 0.1.5",
+ "farmfe_utils 0.1.6",
  "rkyv",
 ]
 
 [[package]]
 name = "farmfe_plugin_define"
-version = "0.0.11"
+version = "0.0.12"
 dependencies = [
  "farmfe_core",
  "farmfe_testing_helpers",
  "farmfe_toolkit",
- "farmfe_utils 0.1.5",
+ "farmfe_utils 0.1.6",
 ]
 
 [[package]]
 name = "farmfe_plugin_html"
-version = "0.0.11"
+version = "0.0.12"
 dependencies = [
  "farmfe_core",
  "farmfe_testing_helpers",
@@ -1737,7 +1737,7 @@ dependencies = [
 
 [[package]]
 name = "farmfe_plugin_json"
-version = "0.0.11"
+version = "0.0.12"
 dependencies = [
  "farmfe_core",
  "farmfe_testing_helpers",
@@ -1746,17 +1746,17 @@ dependencies = [
 
 [[package]]
 name = "farmfe_plugin_lazy_compilation"
-version = "0.0.11"
+version = "0.0.12"
 dependencies = [
  "farmfe_core",
  "farmfe_testing_helpers",
  "farmfe_toolkit",
- "farmfe_utils 0.1.5",
+ "farmfe_utils 0.1.6",
 ]
 
 [[package]]
 name = "farmfe_plugin_minify"
-version = "0.0.11"
+version = "0.0.12"
 dependencies = [
  "farmfe_core",
  "farmfe_testing_helpers",
@@ -1765,7 +1765,7 @@ dependencies = [
 
 [[package]]
 name = "farmfe_plugin_partial_bundling"
-version = "0.0.11"
+version = "0.0.12"
 dependencies = [
  "farmfe_core",
  "farmfe_testing_helpers",
@@ -1774,7 +1774,7 @@ dependencies = [
 
 [[package]]
 name = "farmfe_plugin_polyfill"
-version = "0.0.11"
+version = "0.0.12"
 dependencies = [
  "farmfe_core",
  "farmfe_testing_helpers",
@@ -1783,7 +1783,7 @@ dependencies = [
 
 [[package]]
 name = "farmfe_plugin_progress"
-version = "0.0.11"
+version = "0.0.12"
 dependencies = [
  "console",
  "farmfe_core",
@@ -1806,23 +1806,23 @@ dependencies = [
 
 [[package]]
 name = "farmfe_plugin_resolve"
-version = "0.0.11"
+version = "0.0.12"
 dependencies = [
  "farmfe_core",
  "farmfe_testing_helpers",
  "farmfe_toolkit",
- "farmfe_utils 0.1.5",
+ "farmfe_utils 0.1.6",
  "once_cell",
 ]
 
 [[package]]
 name = "farmfe_plugin_runtime"
-version = "0.0.11"
+version = "0.0.12"
 dependencies = [
  "farmfe_core",
  "farmfe_testing_helpers",
  "farmfe_toolkit",
- "farmfe_utils 0.1.5",
+ "farmfe_utils 0.1.6",
  "rkyv",
 ]
 
@@ -1836,20 +1836,20 @@ dependencies = [
  "farmfe_testing_helpers",
  "farmfe_toolkit",
  "farmfe_toolkit_plugin_types",
- "farmfe_utils 0.1.5",
+ "farmfe_utils 0.1.6",
  "sass-embedded",
  "serde",
 ]
 
 [[package]]
 name = "farmfe_plugin_script"
-version = "0.0.10"
+version = "0.0.11"
 dependencies = [
  "farmfe_core",
  "farmfe_swc_transformer_import_glob",
  "farmfe_testing_helpers",
  "farmfe_toolkit",
- "farmfe_utils 0.1.5",
+ "farmfe_utils 0.1.6",
  "once_cell",
  "swc_ecma_loader",
  "swc_plugin_proxy",
@@ -1859,35 +1859,35 @@ dependencies = [
 
 [[package]]
 name = "farmfe_plugin_static_assets"
-version = "0.0.11"
+version = "0.0.12"
 dependencies = [
  "base64 0.21.7",
  "farmfe_core",
  "farmfe_testing_helpers",
  "farmfe_toolkit",
- "farmfe_utils 0.1.5",
+ "farmfe_utils 0.1.6",
  "mime_guess",
  "rkyv",
 ]
 
 [[package]]
 name = "farmfe_plugin_tree_shake"
-version = "0.0.10"
-dependencies = [
- "farmfe_core",
- "farmfe_testing_helpers",
- "farmfe_toolkit",
- "farmfe_utils 0.1.5",
-]
-
-[[package]]
-name = "farmfe_swc_transformer_import_glob"
 version = "0.0.11"
 dependencies = [
  "farmfe_core",
  "farmfe_testing_helpers",
  "farmfe_toolkit",
- "farmfe_utils 0.1.5",
+ "farmfe_utils 0.1.6",
+]
+
+[[package]]
+name = "farmfe_swc_transformer_import_glob"
+version = "0.0.12"
+dependencies = [
+ "farmfe_core",
+ "farmfe_testing_helpers",
+ "farmfe_toolkit",
+ "farmfe_utils 0.1.6",
 ]
 
 [[package]]
@@ -1905,20 +1905,20 @@ dependencies = [
 
 [[package]]
 name = "farmfe_testing_helpers"
-version = "0.0.13"
+version = "0.0.14"
 dependencies = [
  "farmfe_core",
 ]
 
 [[package]]
 name = "farmfe_toolkit"
-version = "0.0.13"
+version = "0.0.14"
 dependencies = [
  "anyhow",
  "farmfe_core",
  "farmfe_testing_helpers",
  "farmfe_toolkit_plugin_types",
- "farmfe_utils 0.1.5",
+ "farmfe_utils 0.1.6",
  "lazy_static",
  "preset_env_base",
  "sourcemap",
@@ -1946,7 +1946,7 @@ dependencies = [
 
 [[package]]
 name = "farmfe_toolkit_plugin_types"
-version = "0.0.20"
+version = "0.0.21"
 dependencies = [
  "farmfe_core",
  "lazy_static",
@@ -1956,6 +1956,8 @@ dependencies = [
 [[package]]
 name = "farmfe_utils"
 version = "0.1.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d797c8fb2b5c357bd730dc119169e663f8ae7dfbc606696350c104e39324749d"
 dependencies = [
  "base64 0.21.7",
  "pathdiff",
@@ -1964,9 +1966,7 @@ dependencies = [
 
 [[package]]
 name = "farmfe_utils"
-version = "0.1.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d797c8fb2b5c357bd730dc119169e663f8ae7dfbc606696350c104e39324749d"
+version = "0.1.6"
 dependencies = [
  "base64 0.21.7",
  "pathdiff",
