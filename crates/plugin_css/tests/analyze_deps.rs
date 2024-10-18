@@ -1,7 +1,7 @@
 use std::{collections::HashMap, sync::Arc};
 
 use farmfe_core::{
-  config::{Config, ResolveConfig},
+  config::{AliasItem, Config, ResolveConfig, StringOrRegex},
   context::CompilationContext,
   module::{ModuleId, ModuleType},
   plugin::{
@@ -17,10 +17,16 @@ fn analyze_deps() {
   fixture!("tests/fixtures/analyze_deps/basic.css", |file, cwd| {
     let config = Config {
       resolve: Box::new(ResolveConfig {
-        alias: HashMap::from([
-          ("/@".to_string(), cwd.to_string_lossy().to_string()),
-          ("@".to_string(), cwd.to_string_lossy().to_string()),
-        ]),
+        alias: vec![
+          AliasItem::Complex {
+            find: StringOrRegex::String("/@".to_string()),
+            replacement: cwd.to_string_lossy().to_string(),
+          },
+          AliasItem::Complex {
+            find: StringOrRegex::String("@".to_string()),
+            replacement: cwd.to_string_lossy().to_string(),
+          },
+        ],
         ..Default::default()
       }),
       ..Default::default()

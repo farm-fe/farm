@@ -1,0 +1,118 @@
+import { PackageManagerTabs } from "../../src/theme/PackageManagerTabs";
+
+# React
+
+Create a `React` project based on `Farm`.
+
+`Farm` provides two approaches to support creating `React` projects: 
+- Use the `create-farm` scaffold to create a scaffold project
+- You can manually create a `React` project following the current documentation
+
+### Creating a React Project
+
+<PackageManagerTabs command="npm create farm@latest" />
+
+Select `React` template in `Select Framework`
+
+`Farm` requires the registration of the `@farmfe/plugin-react` plugin to support `React` projects.
+
+```javascript title="farm.config.ts"
+import { defineConfig } from '@farmfe/core';
+
+export default defineConfig({
+  plugins: ['@farmfe/plugin-react'],
+});
+```
+
+The `@farmfe/plugin-react` plugin is written in `Rust`, so you do not need to explicitly import it; you can register it by passing a string package name.
+
+### Integrating emotion
+You can support `emotion` by registering the `@swc/plugin-emotion` plugin.
+
+
+```javascript title="farm.config.ts"
+import { defineConfig } from '@farmfe/core';
+
+export default defineConfig({
+  compilation: {
+    script: {
+      plugins: [
+        {
+          name: '@swc/plugin-emotion',
+          options: {},
+          filters: {
+            moduleTypes: ['tsx'],
+          },
+        },
+      ],
+    },
+  },
+  plugins: [['@farmfe/plugin-react', { "importSource": "@emotion/react" }]],
+});
+
+```
+
+```javascript title="src/index.tsx"
+import { css } from '@emotion/react';
+
+const color = 'white';
+
+export function Main() {
+  return (
+    <div
+      onClick={() => setCount((c) => c + 1)}
+      css={css`
+        padding: 32px;
+        background-color: hotpink;
+        font-size: 24px;
+        border-radius: 4px;
+        &:hover {
+          color: ${color};
+        }
+      `}
+    >
+      {a}: {count}
+    </div>
+  );
+}
+```
+
+
+### Integrating svgr
+`SVGR` is a tool for transforming svgs into React components. Farm offers a Js plugin to support SVGR.
+
+```javascript title="farm.config.ts"
+import { defineConfig } from '@farmfe/core';
+import farmJsPluginSvgr from '@farmfe/js-plugin-svgr';
+
+export default defineConfig(async (env) => {
+  return {
+    plugins: [
+      [
+        '@farmfe/plugin-react',
+        {
+          refresh: process.env.NODE_ENV === 'development',
+          development: process.env.NODE_ENV === 'development'
+        }
+      ],
+      farmJsPluginSvgr()
+    ]
+  };
+});
+
+
+```
+
+If you want to start DevServer
+
+<PackageManagerTabs command="pnpm dev" />
+
+If you need to run the build production environment product command
+
+<PackageManagerTabs command="pnpm build" />
+
+If you need to preview your build product
+
+<PackageManagerTabs command="pnpm preview" />
+
+For more example details: [React Example](https://github.com/farm-fe/farm/tree/main/examples/react)

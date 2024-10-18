@@ -1,10 +1,11 @@
-import { Context, Next } from 'koa';
-export function hmrPing() {
-  return async (ctx: Context, next: Next) => {
-    if (ctx.get('accept') === 'text/x-farm-ping') {
-      ctx.status = 204;
+import type Connect from 'connect';
+
+export function hmrPingMiddleware(): Connect.NextHandleFunction {
+  return function handleHMRPingMiddleware(req, res, next) {
+    if (req.headers['accept'] === 'text/x-farm-ping') {
+      res.writeHead(204).end();
     } else {
-      await next();
+      next();
     }
   };
 }

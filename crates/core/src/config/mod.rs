@@ -1,6 +1,6 @@
-use std::collections::HashMap;
-
+use regex::Regex;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use swc_css_prefixer::options::Targets;
 
 use swc_ecma_parser::{EsSyntax as EsConfig, TsSyntax as TsConfig};
@@ -34,6 +34,35 @@ pub mod script;
 pub mod tree_shaking;
 
 pub use output::*;
+
+type ResolverFunction = Box<dyn Fn(String, String) -> Option<String>>;
+
+// #[derive(Debug, Clone, Serialize, Deserialize)]
+// pub struct ResolverObject {
+//   resolve: ResolverFunction,
+// }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum AliasItem {
+  // TODO keep hashmap for compatibility simple alias to string & string hashmap
+  // Simple(String),
+  Complex {
+    find: StringOrRegex,
+    replacement: String,
+    // TODO custom resolver
+    // #[serde(skip_serializing_if = "Option::is_none")]
+    // custom_resolver: Option<ResolverObject>,
+  },
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum StringOrRegex {
+  String(String),
+  #[serde(with = "serde_regex")]
+  Regex(Regex),
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", default)]
@@ -221,9 +250,58 @@ pub struct ScriptParserConfig {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(untagged)]
+pub enum AliasConfig {
+  // TODO keep hashmap for compatibility
+  Map(HashMap<String, String>),
+  Array(Vec<AliasItem>),
+}
+
+impl AliasConfig {
+  pub fn insert(&mut self, key: String, value: String) {
+    match self {
+      AliasConfig::Map(map) => {
+        map.insert(key, value);
+      }
+      AliasConfig::Array(array) => {
+        array.push(AliasItem::Complex {
+          find: StringOrRegex::String(key),
+          replacement: value,
+        });
+      }
+    }
+  }
+}
+
+impl Default for AliasConfig {
+  fn default() -> Self {
+    AliasConfig::Map(HashMap::new())
+  }
+}
+
+impl ResolveConfig {
+  pub fn format_alias(&mut self, alias_config: AliasConfig) {
+    match alias_config {
+      AliasConfig::Map(map) => {
+        self.alias = map
+          .into_iter()
+          .map(|(find, replacement)| AliasItem::Complex {
+            find: StringOrRegex::String(find),
+            replacement,
+          })
+          .collect();
+      }
+      AliasConfig::Array(array) => {
+        self.alias = array;
+      }
+    }
+  }
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase", default)]
 pub struct ResolveConfig {
-  pub alias: HashMap<String, String>,
+  pub alias: Vec<AliasItem>,
   pub main_fields: Vec<String>,
   pub main_files: Vec<String>,
   pub extensions: Vec<String>,
@@ -236,7 +314,7 @@ pub struct ResolveConfig {
 impl Default for ResolveConfig {
   fn default() -> Self {
     Self {
-      alias: HashMap::new(),
+      alias: vec![],
       main_fields: vec![
         String::from("browser"),
         String::from("module"),

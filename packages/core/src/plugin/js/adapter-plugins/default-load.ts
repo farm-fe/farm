@@ -12,10 +12,10 @@ import { VitePluginAdapter } from '../vite-plugin-adapter.js';
 
 export function defaultLoadPlugin(options: {
   filtersUnion: Set<string>;
-  logger: Logger;
   userConfig: UserConfig;
 }): JsPlugin {
-  const { filtersUnion, logger, userConfig } = options;
+  const logger = new Logger();
+  const { filtersUnion, userConfig } = options;
   const resolvedPaths = Array.from(filtersUnion).map(normalizeFilterPath);
 
   return {

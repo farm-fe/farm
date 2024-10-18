@@ -7,6 +7,7 @@ use dep_analyzer::DepAnalyzer;
 use farmfe_core::config::css::NameConversion;
 use farmfe_core::config::custom::get_config_css_modules_local_conversion;
 use farmfe_core::config::minify::MinifyOptions;
+use farmfe_core::config::AliasItem;
 use farmfe_core::module::CommentsMetaData;
 use farmfe_core::{
   config::{Config, CssPrefixerConfig, TargetEnv},
@@ -337,7 +338,6 @@ impl Plugin for FarmPluginCss {
               }
             }
           }
-
           export_names.push((
             self.locals_conversion.transform(&name),
             after_transform_classes,
@@ -821,7 +821,7 @@ pub fn source_replace(
   module_graph: &ModuleGraph,
   resources_map: &HashMap<String, Resource>,
   public_path: String,
-  alias: HashMap<String, String>,
+  alias: Vec<AliasItem>,
 ) {
   let mut source_replacer = SourceReplacer::new(
     module_id.clone(),
