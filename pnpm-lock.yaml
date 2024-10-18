@@ -324,7 +324,7 @@ importers:
     devDependencies:
       '@farmfe/cli':
         specifier: ^1.0.1
-        version: 1.0.4
+        version: link:../../packages/cli
       '@farmfe/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -424,7 +424,7 @@ importers:
     devDependencies:
       '@farmfe/cli':
         specifier: ^1.0.1
-        version: 1.0.4
+        version: link:../../packages/cli
       '@farmfe/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -1732,7 +1732,7 @@ importers:
     devDependencies:
       '@farmfe/cli':
         specifier: ^1.0.2
-        version: 1.0.4
+        version: link:../../packages/cli
       '@farmfe/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -4312,11 +4312,6 @@ packages:
     resolution: {integrity: sha512-2UEddEeSnpXVWp/uNrgym3mrb8lZ5+vXFbtmvXv5NiE32nQGw2MFZD52L5Z+FsxqHJ9vVrtl/X6pTIgkd0c8jA==}
     hasBin: true
 
-  '@farmfe/cli@1.0.4':
-    resolution: {integrity: sha512-bau/2P7DylHUDksUvbvJod/Ew4dl5ZICYVgTNn0EfrJM/ZuwLaV8LjmPo0pM4y1QOZmg/N3B9DwkXO89DrutYQ==}
-    engines: {node: '>= 16'}
-    hasBin: true
-
   '@farmfe/utils@0.0.1':
     resolution: {integrity: sha512-QLbgNrojcvxfumXA/H329XAXhoCahmeSH3JmaiwwJEGS2QAmWfgAJMegjwlt6OmArGVO4gSbJ7Xbmm1idZZs+g==}
 
@@ -4328,9 +4323,6 @@ packages:
 
   '@floating-ui/dom@1.5.3':
     resolution: {integrity: sha512-ClAbQnEqJAKCJOEbbLo5IUlZHkNszqhuxS4fHAVxRPXPya6Ysf2G8KypnYcOTpx6I8xcgF9bbHb6g/2KpbV8qA==}
-
-  '@floating-ui/dom@1.6.10':
-    resolution: {integrity: sha512-fskgCFv8J8OamCmyun8MfjB1Olfn+uZKjOKZ0vhYF3gRmEUXcGOjxWL8bBr7i4kIuPZ2KD2S3EUIOxnjC8kl2A==}
 
   '@floating-ui/dom@1.6.11':
     resolution: {integrity: sha512-qkMCxSR24v2vGkhYDo/UzxfJN3D4syqSjyuTFz6C7XcpU1pASPRieNI0Kj5VP3/503mOfYiGY891ugBX1GlABQ==}
@@ -8245,9 +8237,6 @@ packages:
 
   dayjs@1.11.10:
     resolution: {integrity: sha512-vjAczensTgRcqDERK0SR2XMwsF/tSvnvlv6VcF2GIhg6Sx4yOIt/irsr1RDJsKiIyBzJDpCoXiWWq28MqH2cnQ==}
-
-  dayjs@1.11.12:
-    resolution: {integrity: sha512-Rt2g+nTbLlDWZTwwrIXjy9MeiZmSDI375FvZs72ngxx8PDC6YXOeR3q5LAuPzjZQxhiWdRKac7RKV+YyQYfYIg==}
 
   dayjs@1.11.13:
     resolution: {integrity: sha512-oaMBel6gjolK862uaPQOVTA7q3TZhuSvuMQAAglQDOWYO9A91IrAOUJEyKVlqJlHE0vq5p5UXxzdPfMH/x6xNg==}
@@ -17700,13 +17689,6 @@ snapshots:
 
   '@esri/calcite-ui-icons@3.32.0': {}
 
-  '@farmfe/cli@1.0.4':
-    dependencies:
-      cac: 6.7.14
-      cross-spawn: 7.0.3
-      inquirer: 9.2.12
-      walkdir: 0.4.1
-
   '@farmfe/utils@0.0.1': {}
 
   '@floating-ui/core@1.5.0':
@@ -17722,11 +17704,6 @@ snapshots:
       '@floating-ui/core': 1.5.0
       '@floating-ui/utils': 0.1.6
 
-  '@floating-ui/dom@1.6.10':
-    dependencies:
-      '@floating-ui/core': 1.6.8
-      '@floating-ui/utils': 0.2.8
-
   '@floating-ui/dom@1.6.11':
     dependencies:
       '@floating-ui/core': 1.6.8
@@ -17734,7 +17711,7 @@ snapshots:
 
   '@floating-ui/react-dom@2.1.1(react-dom@18.2.0(react@18.2.0))(react@18.2.0)':
     dependencies:
-      '@floating-ui/dom': 1.6.10
+      '@floating-ui/dom': 1.6.11
       react: 18.2.0
       react-dom: 18.2.0(react@18.2.0)
 
@@ -21370,7 +21347,7 @@ snapshots:
       '@babel/runtime': 7.25.0
       '@types/js-cookie': 2.2.7
       ahooks-v3-count: 1.0.0
-      dayjs: 1.11.12
+      dayjs: 1.11.13
       intersection-observer: 0.12.2
       js-cookie: 2.2.1
       lodash: 4.17.21
@@ -23162,8 +23139,6 @@ snapshots:
       '@babel/runtime': 7.23.2
 
   dayjs@1.11.10: {}
-
-  dayjs@1.11.12: {}
 
   dayjs@1.11.13: {}
 
