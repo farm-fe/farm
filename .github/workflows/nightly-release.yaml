@@ -1,78 +1,78 @@
-name: Nightly Release
-on:
-  push:
-    branches:
-      - refactor/node
+# name: Nightly Release
+# on:
+#   push:
+#     branches:
+#       - refactor/node
 
-concurrency: ${{ github.workflow }}-${{ github.ref }}
+# concurrency: ${{ github.workflow }}-${{ github.ref }}
 
-jobs:
-  call-rust-build:
-    uses: ./.github/workflows/rust-build.yaml
+# jobs:
+#   call-rust-build:
+#     uses: ./.github/workflows/rust-build.yaml
 
-  nightly-release:
-    name: Nightly Release
-    needs: [call-rust-build]
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Repo
-        uses: actions/checkout@v3
+#   nightly-release:
+#     name: Nightly Release
+#     needs: [call-rust-build]
+#     runs-on: ubuntu-latest
+#     steps:
+#       - name: Checkout Repo
+#         uses: actions/checkout@v3
 
-      - name: Setup Node.js 18.x
-        uses: actions/setup-node@v3
-        with:
-          node-version: 18.x
+#       - name: Setup Node.js 18.x
+#         uses: actions/setup-node@v3
+#         with:
+#           node-version: 18.x
 
-      # batch download artifacts
-      - uses: actions/download-artifact@v4
-        with:
-          path: /tmp/artifacts
-      - name: Copy Farm Core Binary
-        run: cp /tmp/artifacts/${{ github.sha }}-linux-x64-gnu/* ./packages/core/binding
-      - name: Move Artifacts
-        run: |
-          for abi in linux-x64-gnu linux-x64-musl darwin-x64 win32-x64-msvc linux-arm64-musl linux-arm64-gnu darwin-arm64 win32-ia32-msvc win32-arm64-msvc
-          do
-            mv /tmp/artifacts/${{ github.sha }}-${abi}/* ./packages/core/npm/${abi}
-            mv /tmp/artifacts/${{ github.sha }}-${abi}-plugin-react/* ./rust-plugins/react/npm/${abi}
-            mv /tmp/artifacts/${{ github.sha }}-${abi}-plugin-sass/* ./rust-plugins/sass/npm/${abi}
-            mv /tmp/artifacts/${{ github.sha }}-${abi}-create-farm/* ./packages/create-farm/npm/${abi}
+#       # batch download artifacts
+#       - uses: actions/download-artifact@v4
+#         with:
+#           path: /tmp/artifacts
+#       - name: Copy Farm Core Binary
+#         run: cp /tmp/artifacts/${{ github.sha }}-linux-x64-gnu/* ./packages/core/binding
+#       - name: Move Artifacts
+#         run: |
+#           for abi in linux-x64-gnu linux-x64-musl darwin-x64 win32-x64-msvc linux-arm64-musl linux-arm64-gnu darwin-arm64 win32-ia32-msvc win32-arm64-msvc
+#           do
+#             mv /tmp/artifacts/${{ github.sha }}-${abi}/* ./packages/core/npm/${abi}
+#             mv /tmp/artifacts/${{ github.sha }}-${abi}-plugin-react/* ./rust-plugins/react/npm/${abi}
+#             mv /tmp/artifacts/${{ github.sha }}-${abi}-plugin-sass/* ./rust-plugins/sass/npm/${abi}
+#             mv /tmp/artifacts/${{ github.sha }}-${abi}-create-farm/* ./packages/create-farm/npm/${abi}
 
-            test -f ./packages/core/npm/${abi}/farm.${abi}.node
-            test -f ./packages/create-farm/npm/${abi}/create-farm.${abi}.node
-            test -f ./rust-plugins/react/npm/${abi}/index.farm
-            test -f ./rust-plugins/sass/npm/${abi}/index.farm
-          done
-          for abi in android-arm-eabi linux-arm-gnueabihf android-arm64
-          do
-            mv /tmp/artifacts/${{ github.sha }}-${abi}-create-farm/* ./packages/create-farm/npm/${abi}
-            test -f ./packages/create-farm/npm/${abi}/create-farm.${abi}.node
-          done
+#             test -f ./packages/core/npm/${abi}/farm.${abi}.node
+#             test -f ./packages/create-farm/npm/${abi}/create-farm.${abi}.node
+#             test -f ./rust-plugins/react/npm/${abi}/index.farm
+#             test -f ./rust-plugins/sass/npm/${abi}/index.farm
+#           done
+#           for abi in android-arm-eabi linux-arm-gnueabihf android-arm64
+#           do
+#             mv /tmp/artifacts/${{ github.sha }}-${abi}-create-farm/* ./packages/create-farm/npm/${abi}
+#             test -f ./packages/create-farm/npm/${abi}/create-farm.${abi}.node
+#           done
 
-      - name: Install Dependencies
-        run: npm install -g pnpm@9.4.0 && pnpm i --frozen-lockfile
-      - name: Build Plugin Tools
-        run: pnpm --filter @farmfe/plugin-tools run build
+#       - name: Install Dependencies
+#         run: npm install -g pnpm@9.4.0 && pnpm i --frozen-lockfile
+#       - name: Build Plugin Tools
+#         run: pnpm --filter @farmfe/plugin-tools run build
 
-      # - name: Set Nightly Version
-      #   run: |
-      #     NIGHTLY_VERSION="2.0.0-nightly.$(date +'%Y%m%d%H%M%S')"
-      #     pnpm version $NIGHTLY_VERSION --no-git-tag-version
+#       # - name: Set Nightly Version
+#       #   run: |
+#       #     NIGHTLY_VERSION="2.0.0-nightly.$(date +'%Y%m%d%H%M%S')"
+#       #     pnpm version $NIGHTLY_VERSION --no-git-tag-version
 
-      # - name: Publish Nightly to npm
-      #   env:
-      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      #     NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-      #   run: |
-      #     echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" > .npmrc
-      #     pnpm publish --tag nightly --no-git-checks
+#       # - name: Publish Nightly to npm
+#       #   env:
+#       #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#       #     NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+#       #   run: |
+#       #     echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" > .npmrc
+#       #     pnpm publish --tag nightly --no-git-checks
 
-      - name: Create Nightly Release Pull Request or Publish Nightly Version to npm
-        id: changesets
-        uses: changesets/action@v1
-        with:
-          version: pnpm run bump:nightly
-          publish: npm run release:nightly
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+#       - name: Create Nightly Release Pull Request or Publish Nightly Version to npm
+#         id: changesets
+#         uses: changesets/action@v1
+#         with:
+#           version: pnpm run bump:nightly
+#           publish: npm run release:nightly
+#         env:
+#           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
