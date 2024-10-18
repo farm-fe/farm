@@ -21,6 +21,7 @@ use crate::resource_pot_to_bundle::{
   modules_analyzer::module_analyzer::{ExportSpecifierInfo, ImportSpecifierInfo},
   polyfill::SimplePolyfill,
   uniq_name::BundleVariable,
+  ShareBundleOptions,
 };
 
 use super::{cjs::generate::CjsGenerate, esm::generate::EsmGenerate, util::create_merge_namespace};
@@ -187,7 +188,7 @@ pub fn generate_export_as_object_prop(
 
 /// generate bundle export
 pub fn generate_export_by_reference_export(
-  resource_pot_id: &str,
+  group_id: &str,
   should_reexport_raw: bool,
   bundle_variable: &BundleVariable,
   bundle_reference: &mut BundleReference,
@@ -195,11 +196,12 @@ pub fn generate_export_by_reference_export(
   context: &Arc<CompilationContext>,
   polyfill: &mut SimplePolyfill,
   is_already_polyfilled: &mut bool,
+  options: &ShareBundleOptions,
 ) -> Result<Vec<ModuleItem>> {
-  let mut patch_export_to_module = vec![];
+  let mut patch_export_to_module: Vec<ModuleItem> = vec![];
   if let Some(export) = bundle_reference.export.as_ref() {
     patch_export_to_module.extend(generate_export_as_module_export(
-      resource_pot_id,
+      group_id,
       should_reexport_raw,
       None,
       export,
@@ -208,6 +210,7 @@ pub fn generate_export_by_reference_export(
       context,
       polyfill,
       is_already_polyfilled,
+      options,
     )?);
   }
 
@@ -221,7 +224,7 @@ pub fn generate_export_by_reference_export(
     let export = &bundle_reference.external_export_map[source];
 
     patch_export_to_module.extend(generate_export_as_module_export(
-      resource_pot_id,
+      group_id,
       should_reexport_raw,
       Some(&source),
       export,
@@ -230,6 +233,7 @@ pub fn generate_export_by_reference_export(
       context,
       polyfill,
       is_already_polyfilled,
+      options,
     )?);
   }
 
@@ -246,6 +250,7 @@ pub fn generate_export_as_module_export(
   context: &Arc<CompilationContext>,
   polyfill: &mut SimplePolyfill,
   is_already_polyfilled: &mut bool,
+  options: &ShareBundleOptions,
 ) -> Result<Vec<ModuleItem>> {
   match (&export.module_system, context.config.output.format) {
     // hybrid dynamic es module cannot support, if hybrid, only export static export
@@ -255,6 +260,7 @@ pub fn generate_export_as_module_export(
       export,
       bundle_variable,
       module_analyzer_manager,
+      options,
     ),
 
     (_, ModuleFormat::CommonJs) => CjsGenerate::generate_export(
@@ -264,6 +270,7 @@ pub fn generate_export_as_module_export(
       module_analyzer_manager,
       polyfill,
       is_already_polyfilled,
+      options,
     ),
   }
 }
@@ -275,7 +282,8 @@ pub fn generate_bundle_import_by_bundle_reference(
   bundle_reference: &BundleReference,
   module_analyzer_manager: &ModuleAnalyzerManager,
   polyfill: &mut SimplePolyfill,
-  resource_pot_id: &str,
+  group_id: &str,
+  options: &ShareBundleOptions,
 ) -> Result<Vec<ModuleItem>> {
   // TODO: sort import by order
   match format {
@@ -283,7 +291,8 @@ pub fn generate_bundle_import_by_bundle_reference(
       bundle_variable,
       &bundle_reference.import_map,
       module_analyzer_manager,
-      resource_pot_id,
+      group_id,
+      options,
     ),
 
     ModuleFormat::CommonJs => CjsGenerate::generate_import(
@@ -291,7 +300,8 @@ pub fn generate_bundle_import_by_bundle_reference(
       &bundle_reference.import_map,
       module_analyzer_manager,
       polyfill,
-      resource_pot_id,
+      group_id,
+      options,
     ),
   }
 }

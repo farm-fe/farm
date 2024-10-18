@@ -20,6 +20,7 @@ use farmfe_core::{
   resource::resource_pot::{RenderedModule, ResourcePot},
   serialize,
 };
+use farmfe_plugin_bundle::resource_pot_to_bundle::{BundleGroup, ShareBundleOptions, SharedBundle};
 use farmfe_toolkit::common::MinifyBuilder;
 
 use farmfe_utils::hash::sha256;
@@ -72,6 +73,50 @@ pub fn resource_pot_to_runtime_object(
   // group modules in the same group that can perform scope hoisting
   let scope_hoisting_module_groups =
     build_scope_hoisted_module_groups(resource_pot, module_graph, context);
+
+  let mut share_bundle = SharedBundle::new(
+    scope_hoisting_module_groups
+      .iter()
+      .map(|scope_hoisting_module_group| BundleGroup {
+        id: scope_hoisting_module_group
+          .target_hoisted_module_id
+          .to_string(),
+        modules: scope_hoisting_module_group
+          .hoisted_module_ids
+          .iter()
+          .collect(),
+        entry_module: resource_pot.entry_module.clone().filter(|entry_module| {
+          scope_hoisting_module_group
+            .hoisted_module_ids
+            .contains(&entry_module)
+        }),
+        group_type: resource_pot.resource_pot_type.clone(),
+      })
+      .collect(),
+    module_graph,
+    context,
+    Some(ShareBundleOptions {
+      reference_slot: false,
+    }),
+  )?;
+
+  share_bundle.render()?;
+  println!("\n# scope hoisting module groups\n");
+  println!(
+    "\n---\nscope_hoisting_module_groups: {:#?}\n---\n",
+    scope_hoisting_module_groups
+  );
+
+  println!("\n## resource_pot: \"{}\"\n", resource_pot.id);
+  for module_group in &scope_hoisting_module_groups {
+    let result = share_bundle.codegen(&module_group.target_hoisted_module_id.to_string())?;
+
+    println!(
+      "---\nmodule_group_id: {}---\n\ncode:\n\n```js\n{}\n```\n\n",
+      module_group.target_hoisted_module_id.to_string(),
+      result.to_string()
+    );
+  }
 
   resource_pot
     .modules()

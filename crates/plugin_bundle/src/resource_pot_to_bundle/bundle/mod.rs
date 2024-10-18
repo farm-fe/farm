@@ -42,7 +42,7 @@ use super::{
   polyfill::SimplePolyfill,
   targets::generate::generate_namespace_by_reference_map,
   uniq_name::BundleVariable,
-  FARM_BUNDLE_POLYFILL_SLOT,
+  ShareBundleOptions, FARM_BUNDLE_POLYFILL_SLOT,
 };
 
 pub type ModuleMap = HashMap<ModuleId, ModuleAnalyzer>;
@@ -217,7 +217,7 @@ impl<'a> ModuleAnalyzerManager<'a> {
   pub fn polyfill_resource_pot(&self) -> Option<ResourcePotId> {
     self
       .module_analyzer(&ModuleId::from(FARM_BUNDLE_POLYFILL_SLOT))
-      .and_then(|m| Some(m.resource_pot_id.clone()))
+      .and_then(|m| Some(m.bundle_group_id.clone()))
   }
 
   pub fn extract_modules_statements(
@@ -249,7 +249,8 @@ impl<'a> ModuleAnalyzerManager<'a> {
       let mut new_bundle_variable =
         BundleVariable::branch(&index, &module_order_map, &module_order_index_set);
 
-      new_bundle_variable.set_namespace(module_analyzer.resource_pot_id.clone());
+      new_bundle_variable.set_namespace(module_analyzer.bundle_group_id.clone());
+
       farm_profile_scope!(format!(
         "extract module statement: {:?}",
         module_id.to_string()
@@ -333,8 +334,8 @@ impl<'a> ModuleAnalyzerManager<'a> {
   }
 
   #[inline]
-  pub fn resource_pot_id(&self, module_id: &ModuleId) -> Option<&ResourcePotId> {
-    self.module_map.get(module_id).map(|m| &m.resource_pot_id)
+  pub fn group_id(&self, module_id: &ModuleId) -> Option<&ResourcePotId> {
+    self.module_map.get(module_id).map(|m| &m.bundle_group_id)
   }
 
   #[inline]
@@ -388,7 +389,7 @@ impl<'a> ModuleAnalyzerManager<'a> {
 
   pub fn is_same_bundle(&self, a: &ModuleId, b: &ModuleId) -> bool {
     match (self.module_analyzer(a), self.module_analyzer(b)) {
-      (Some(a), Some(b)) => a.resource_pot_id == b.resource_pot_id,
+      (Some(a), Some(b)) => a.bundle_group_id == b.bundle_group_id,
       _ => false,
     }
   }
@@ -396,7 +397,7 @@ impl<'a> ModuleAnalyzerManager<'a> {
   pub fn is_same_bundle_by_bundle(&self, source: &ModuleId, name: &str) -> bool {
     self
       .module_analyzer(source)
-      .is_some_and(|m| m.resource_pot_id == name)
+      .is_some_and(|m| m.bundle_group_id == name)
   }
 
   #[inline]
@@ -511,6 +512,7 @@ impl<'a> ModuleAnalyzerManager<'a> {
     order_index_map: &HashMap<ModuleId, usize>,
     polyfill: &mut SimplePolyfill,
     external_config: &ExternalConfig,
+    options: &ShareBundleOptions,
   ) -> Result<()> {
     farm_profile_function!(format!(
       "patch module analyzer ast: {}",
@@ -529,6 +531,7 @@ impl<'a> ModuleAnalyzerManager<'a> {
       order_index_map,
       polyfill,
       external_config,
+      options,
     )
   }
 
@@ -717,6 +720,7 @@ impl<'a> ModuleAnalyzerManager<'a> {
     order_index_map: &HashMap<ModuleId, usize>,
     polyfill: &mut SimplePolyfill,
     external_config: &ExternalConfig,
+    options: &ShareBundleOptions,
   ) -> Result<()> {
     farm_profile_function!("");
 
@@ -800,6 +804,7 @@ impl<'a> ModuleAnalyzerManager<'a> {
           self,
           module_id,
           bundle_variable,
+          options,
         ));
 
         self.set_ast(module_id, ast);
@@ -838,7 +843,7 @@ impl<'a> ModuleAnalyzerManager<'a> {
     bundle_variable: &mut BundleVariable,
     order_index_map: &HashMap<ModuleId, usize>,
     context: &Arc<CompilationContext>,
-    order_resource_pot: &Vec<ResourcePotId>,
+    ordered_groups_id: &Vec<ResourcePotId>,
   ) {
     farm_profile_scope!("link module analyzer");
     let root = &context.config.root;
@@ -846,11 +851,11 @@ impl<'a> ModuleAnalyzerManager<'a> {
 
     ordered_module_ids.sort_by(|a, b| order_index_map[b].cmp(&order_index_map[a]));
 
-    for resource_pot_id in order_resource_pot {
+    for group_id in ordered_groups_id {
       self
         .module_global_uniq_name
-        .add_namespace(resource_pot_id, |v| {
-          bundle_variable.register_common_used_name(v, &resource_pot_id)
+        .add_namespace(group_id, |v| {
+          bundle_variable.register_common_used_name(v, &group_id)
         });
     }
 
@@ -868,7 +873,7 @@ impl<'a> ModuleAnalyzerManager<'a> {
         module_analyzer.module_id.to_string()
       ));
 
-      bundle_variable.set_namespace(module_analyzer.resource_pot_id.clone());
+      bundle_variable.set_namespace(module_analyzer.bundle_group_id.clone());
 
       // in this time, it import by cjs require
       if self.namespace_modules.contains(&module_analyzer.module_id)

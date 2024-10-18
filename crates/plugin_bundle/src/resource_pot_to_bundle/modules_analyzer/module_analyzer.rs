@@ -226,7 +226,7 @@ pub struct ModuleAnalyzer {
   pub cm: Arc<SourceMap>,
   pub ast: EcmaAstModule,
   pub module_id: ModuleId,
-  pub resource_pot_id: ResourcePotId,
+  pub bundle_group_id: ResourcePotId,
   pub export_names: Option<Arc<ReferenceMap>>,
   pub entry: bool,
   pub external: bool,
@@ -247,7 +247,7 @@ impl Debug for ModuleAnalyzer {
       .field("cm", &"[skip]")
       .field("ast", &self.ast)
       .field("module_id", &self.module_id)
-      .field("resource_pot_id", &self.resource_pot_id)
+      .field("bundle_group_id", &self.bundle_group_id)
       .field("export_names", &self.export_names)
       .field("entry", &self.entry)
       .field("external", &self.external)
@@ -265,7 +265,7 @@ impl ModuleAnalyzer {
   pub fn new(
     module: &Module,
     context: &Arc<CompilationContext>,
-    resource_pot_id: ResourcePotId,
+    group_id: ResourcePotId,
     is_entry: bool,
     is_dynamic: bool,
     is_runtime: bool,
@@ -290,7 +290,7 @@ impl ModuleAnalyzer {
       ast,
       module_id: module.id.clone(),
       export_names: None,
-      resource_pot_id,
+      bundle_group_id: group_id,
       external: module.external,
       entry: is_entry,
       is_dynamic,

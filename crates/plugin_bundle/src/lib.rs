@@ -16,8 +16,7 @@ use farmfe_core::{
   plugin::{
     Plugin, PluginAnalyzeDepsHookResultEntry, PluginFinalizeResourcesHookParams,
     PluginGenerateResourcesHookResult, PluginHookContext, PluginLoadHookParam,
-    PluginLoadHookResult, PluginProcessModuleHookParam, PluginResolveHookParam,
-    PluginResolveHookResult, ResolveKind,
+    PluginLoadHookResult, PluginResolveHookParam, PluginResolveHookResult, ResolveKind,
   },
   regex::Regex,
   relative_path::RelativePath,
@@ -28,7 +27,7 @@ use farmfe_core::{
 };
 use farmfe_toolkit::constant::RUNTIME_SUFFIX;
 use resource_pot_to_bundle::{
-  SharedBundle, FARM_BUNDLE_POLYFILL_SLOT, FARM_BUNDLE_REFERENCE_SLOT_PREFIX,
+  BundleGroup, SharedBundle, FARM_BUNDLE_POLYFILL_SLOT, FARM_BUNDLE_REFERENCE_SLOT_PREFIX,
 };
 
 pub mod resource_pot_to_bundle;
@@ -93,40 +92,12 @@ impl Plugin for FarmPluginBundle {
   ) -> farmfe_core::error::Result<Option<PluginLoadHookResult>> {
     if _param.resolved_path.starts_with(FARM_BUNDLE_POLYFILL_SLOT) {
       return Ok(Some(PluginLoadHookResult {
-        content: format!("export {{}}"),
+        // TODO: disable tree-shaking it
+        content: format!(r#";export {{}}"#),
         module_type: ModuleType::Js,
         source_map: None,
       }));
     }
-
-    Ok(None)
-  }
-
-  fn process_module(
-    &self,
-    param: &mut PluginProcessModuleHookParam,
-    context: &Arc<CompilationContext>,
-  ) -> farmfe_core::error::Result<Option<()>> {
-    // let module_graph = context.module_graph.read();
-
-    // if module_graph.entries.contains_key(param.module_id)
-    //   && param.module_type.is_script()
-    //   && !param.module_id.to_string().ends_with(RUNTIME_SUFFIX)
-    // {
-    //   let script = param.meta.as_script_mut();
-
-    //   script.ast.body.insert(
-    //     0,
-    //     ModuleItem::ModuleDecl(ModuleDecl::Import(ImportDecl {
-    //       span: DUMMY_SP,
-    //       specifiers: vec![],
-    //       src: Box::new(FARM_BUNDLE_POLYFILL_SLOT.into()),
-    //       type_only: false,
-    //       with: None,
-    //       phase: ImportPhase::Evaluation,
-    //     })),
-    //   );
-    // }
 
     Ok(None)
   }
@@ -168,9 +139,9 @@ impl Plugin for FarmPluginBundle {
         context.config.output.target_env.is_library()
           || matches!(item.resource_pot_type, ResourcePotType::Runtime)
       })
-      .map(|item| &**item)
+      .map(|item| BundleGroup::from(&**item))
       .collect::<Vec<_>>();
-    let mut shared_bundle = SharedBundle::new(r, &module_graph, context)?;
+    let mut shared_bundle = SharedBundle::new(r, &module_graph, context, None)?;
 
     shared_bundle.render()?;
 
@@ -305,7 +276,9 @@ impl Plugin for FarmPluginBundle {
           .expect("cannot find bundle reference, please ensure your resource cornet");
 
         let r1 = format!("/{}", resource_name);
+
         println!("resource pot id {} to {} ", resource_pot_id, r1);
+
         let relative_resource_path = RelativePath::new(&r1);
         content = content.replace(
           &item,

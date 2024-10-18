@@ -149,7 +149,7 @@ impl ExternalReferenceExport {
   }
 }
 
-// TODO: remove
+// TODO: remove it
 #[derive(Debug, PartialEq, Eq, Hash, Clone, PartialOrd, Ord)]
 pub enum ReferenceKind {
   Bundle(String),
@@ -161,17 +161,11 @@ impl ReferenceKind {
     matches!(self, ReferenceKind::Module(_))
   }
 
+  /// remove it
   pub fn to_module_id(&self) -> ModuleId {
     match self {
-      ReferenceKind::Bundle(name) => ModuleId::from(with_bundle_reference_slot_name(name)),
+      ReferenceKind::Bundle(name) => ModuleId::from(with_bundle_reference_slot_name(name, true)),
       ReferenceKind::Module(id) => id.clone(),
-    }
-  }
-
-  pub fn to_url(&self) -> String {
-    match self {
-      ReferenceKind::Bundle(name) => with_bundle_reference_slot_name(name),
-      ReferenceKind::Module(id) => id.to_string(),
     }
   }
 }
@@ -605,7 +599,7 @@ impl BundleReference {
     Ok(())
   }
 
-  // TODO: refactor ModuleItem
+  // TODO: refactor module relation analyze
   pub fn add_export_named(&mut self) {}
 
   pub fn add_reexport_named(&mut self) {}
@@ -627,6 +621,11 @@ impl BundleReference {
 
 #[derive(Debug, Default)]
 pub struct BundleReferenceManager {
+  /// why use [ResourcePotId] as key?
+  ///
+  /// because use [ResourcePotId] as key can zip same export or import at Bundle
+  ///
+  /// but there is one place to be careful that entry module/bundle, it should export raw named
   bundle_reference: HashMap<ResourcePotId, Rc<RefCell<CombineBundleReference>>>,
   bundle_reference1: HashMap<ModuleId, Rc<RefCell<BundleReference>>>,
 }
@@ -724,16 +723,13 @@ impl CombineBundleReference {
 
 impl BundleReferenceManager {
   // import compress
-  pub fn reference_mut(
-    &mut self,
-    resource_pot_id: &ResourcePotId,
-  ) -> Rc<RefCell<CombineBundleReference>> {
-    Rc::clone(if self.bundle_reference.contains_key(resource_pot_id) {
-      self.bundle_reference.get(resource_pot_id).unwrap()
+  pub fn reference_mut(&mut self, group_id: &ResourcePotId) -> Rc<RefCell<CombineBundleReference>> {
+    Rc::clone(if self.bundle_reference.contains_key(group_id) {
+      self.bundle_reference.get(group_id).unwrap()
     } else {
       self
         .bundle_reference
-        .entry(resource_pot_id.clone())
+        .entry(group_id.clone())
         .or_insert_with(|| Rc::new(RefCell::new(CombineBundleReference::default())))
     })
   }
@@ -743,8 +739,8 @@ impl BundleReferenceManager {
     module_id: &ModuleId,
     module_analyzer_manager: &ModuleAnalyzerManager,
   ) -> Rc<RefCell<CombineBundleReference>> {
-    let resource_pot_id = module_analyzer_manager.resource_pot_id(module_id).unwrap();
-    self.reference_mut(resource_pot_id)
+    let group_id = module_analyzer_manager.group_id(module_id).unwrap();
+    self.reference_mut(group_id)
   }
 
   pub fn reference1_mut(&mut self, module_id: &ModuleId) -> Rc<RefCell<BundleReference>> {

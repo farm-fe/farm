@@ -72,6 +72,9 @@ pub const FARM_BUNDLE_REFERENCE_SLOT_PREFIX: &str = "__FARM_BUNDLE_REFERENCE_SLO
 pub const FARM_BUNDLE_POLYFILL_SLOT: &str = "__FARM_BUNDLE_POLYFILL_SLOT__";
 
 // TODO: replace bundle reference slot
-pub fn with_bundle_reference_slot_name(bundle_id: &String) -> String {
-  format!("{}(({}))", FARM_BUNDLE_REFERENCE_SLOT_PREFIX, bundle_id)
+pub fn with_bundle_reference_slot_name(reference_id: &String, contain_slot: bool) -> String {
+  if !contain_slot {
+    return reference_id.clone();
+  }
+  format!("{}(({}))", FARM_BUNDLE_REFERENCE_SLOT_PREFIX, reference_id)
 }

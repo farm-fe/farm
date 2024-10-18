@@ -16,7 +16,7 @@ use farmfe_core::{
   error::{CompilationError, Result},
   farm_profile_function, farm_profile_scope,
   module::{module_graph::ModuleGraph, ModuleId, ModuleSystem},
-  resource::resource_pot::{ResourcePot, ResourcePotId, ResourcePotType},
+  resource::resource_pot::{ResourcePotId, ResourcePotType},
   swc_common::{comments::SingleThreadedComments, util::take::Take},
 };
 use farmfe_toolkit::{
@@ -27,10 +27,7 @@ use farmfe_toolkit::{
 };
 
 use crate::resource_pot_to_bundle::{
-  bundle::bundle_reference::{
-    CommonJsImportMap, ExternalReferenceExport, ExternalReferenceImport, ReferenceBuilder,
-    ReferenceKind,
-  },
+  bundle::bundle_reference::{CommonJsImportMap, ReferenceBuilder, ReferenceKind},
   common::OptionToResult,
   modules_analyzer::module_analyzer::{
     ExportSpecifierInfo, ImportSpecifierInfo, StmtAction, Variable,
@@ -41,7 +38,7 @@ use crate::resource_pot_to_bundle::{
     generate::{generate_bundle_import_by_bundle_reference, generate_export_by_reference_export},
   },
   uniq_name::{BundleVariable, FindModuleExportResult},
-  FARM_BUNDLE_POLYFILL_SLOT,
+  BundleGroup, ShareBundleOptions, FARM_BUNDLE_POLYFILL_SLOT,
 };
 
 use super::{
@@ -58,7 +55,7 @@ enum NamespaceExportType {
 }
 
 pub struct BundleAnalyzer<'a> {
-  pub resource_pot: &'a ResourcePot,
+  pub group: BundleGroup<'a>,
   pub ordered_modules: Vec<&'a ModuleId>,
   pub bundle_variable: Rc<RefCell<BundleVariable>>,
 
@@ -71,14 +68,14 @@ pub struct BundleAnalyzer<'a> {
 
 impl<'a> BundleAnalyzer<'a> {
   pub fn new(
-    resource_pot: &'a ResourcePot,
+    resource_pot: BundleGroup<'a>,
     module_graph: &'a ModuleGraph,
     context: &Arc<CompilationContext>,
     bundle_variable: Rc<RefCell<BundleVariable>>,
   ) -> Self {
     Self {
       bundle_variable,
-      resource_pot,
+      group: resource_pot,
       ordered_modules: vec![],
       module_graph,
       context: context.clone(),
@@ -88,17 +85,17 @@ impl<'a> BundleAnalyzer<'a> {
     }
   }
 
-  pub fn set_namespace(&mut self, resource_pot_id: &str) {
+  pub fn set_namespace(&mut self, group_id: &str) {
     self
       .bundle_variable
       .borrow_mut()
-      .set_namespace(resource_pot_id.to_string());
+      .set_namespace(group_id.to_string());
   }
 
   // step: 1 toposort fetch modules
   pub fn build_module_order(&mut self, order_index_map: &HashMap<ModuleId, usize>) {
     farm_profile_function!();
-    let mut resource_pot_modules = self.resource_pot.modules();
+    let mut resource_pot_modules = self.group.modules.clone();
 
     resource_pot_modules.sort_by(|a, b| {
       if !order_index_map.contains_key(a) || !order_index_map.contains_key(b) {
@@ -230,7 +227,7 @@ impl<'a> BundleAnalyzer<'a> {
     ));
 
     if let Some(module_analyzer) = module_analyzer_manager.module_analyzer(module_id) {
-      let resource_pot_id = module_analyzer.resource_pot_id.clone();
+      let group_id = module_analyzer.bundle_group_id.clone();
       let module_system = module_analyzer.module_system.clone();
       let is_entry = module_analyzer.entry;
 
@@ -240,11 +237,11 @@ impl<'a> BundleAnalyzer<'a> {
           importer.iter().any(|importer| {
             module_analyzer_manager
               .module_analyzer(importer)
-              .is_some_and(|i| i.resource_pot_id != resource_pot_id)
+              .is_some_and(|i| i.bundle_group_id != group_id)
           })
         });
 
-      let bundle_reference1 = bundle_reference_manager.reference_mut(&resource_pot_id);
+      let bundle_reference1 = bundle_reference_manager.reference_mut(&group_id);
       let mut bundle_reference_1 = bundle_reference1.borrow_mut();
       let bundle_reference1 = bundle_reference_1.fetch_mut(module_id, module_analyzer_manager);
       // let bundle_reference1 = bundle_reference_manager.reference1_mut(&module_analyzer.module_id);
@@ -290,7 +287,7 @@ impl<'a> BundleAnalyzer<'a> {
                   *ns,
                   &import.source,
                   module_analyzer_manager,
-                  resource_pot_id.clone(),
+                  group_id.clone(),
                   false,
                   true,
                 );
@@ -351,7 +348,7 @@ impl<'a> BundleAnalyzer<'a> {
 
                       let is_same_bundle = bundle_variable.is_same_bundle_by_root(
                         *ns,
-                        &resource_pot_id,
+                        &group_id,
                         module_analyzer_manager,
                       );
 
@@ -395,7 +392,7 @@ impl<'a> BundleAnalyzer<'a> {
                   imported,
                   &import.source,
                   module_analyzer_manager,
-                  resource_pot_id.clone(),
+                  group_id.clone(),
                   self.bundle_variable.borrow().name(imported) == "default",
                   false,
                 );
@@ -439,7 +436,7 @@ impl<'a> BundleAnalyzer<'a> {
                         bundle_variable.set_var_root(*local, index);
                         bundle_variable.is_same_bundle_by_root(
                           *local,
-                          &resource_pot_id,
+                          &group_id,
                           module_analyzer_manager,
                         )
                       };
@@ -499,7 +496,7 @@ impl<'a> BundleAnalyzer<'a> {
                   *default,
                   &import.source,
                   module_analyzer_manager,
-                  resource_pot_id.clone(),
+                  group_id.clone(),
                   true,
                   false,
                 );
@@ -553,7 +550,7 @@ impl<'a> BundleAnalyzer<'a> {
                         bundle_variable.set_var_root(*default, name);
                         bundle_variable.is_same_bundle_by_root(
                           *default,
-                          &resource_pot_id,
+                          &group_id,
                           module_analyzer_manager,
                         )
                       };
@@ -652,7 +649,7 @@ impl<'a> BundleAnalyzer<'a> {
                     variable.local(),
                     source,
                     module_analyzer_manager,
-                    resource_pot_id.clone(),
+                    group_id.clone(),
                     is_find_default,
                     false,
                   );
@@ -724,7 +721,7 @@ impl<'a> BundleAnalyzer<'a> {
                           bundle_variable.set_var_root(variable.local(), index);
                           bundle_variable.is_same_bundle_by_root(
                             index,
-                            &resource_pot_id,
+                            &group_id,
                             module_analyzer_manager,
                           )
                         };
@@ -847,7 +844,7 @@ impl<'a> BundleAnalyzer<'a> {
                   local_var,
                   source,
                   module_analyzer_manager,
-                  resource_pot_id.clone(),
+                  group_id.clone(),
                   false,
                   true,
                 );
@@ -921,7 +918,7 @@ impl<'a> BundleAnalyzer<'a> {
 
                         bundle_variable.is_same_bundle_by_root(
                           index,
-                          &resource_pot_id,
+                          &group_id,
                           module_analyzer_manager,
                         )
                       };
@@ -1022,159 +1019,8 @@ impl<'a> BundleAnalyzer<'a> {
     self.module_conflict_name(module_analyzer_manager);
 
     self.strip_module(module_analyzer_manager)?;
-
-    // self.link_module_relation(module_analyzer_manager, bundle_reference)
     Ok(())
   }
-
-  // pub fn link_defer_bundle_relation(
-  //   &mut self,
-  //   module_analyzer_manager: &mut ModuleAnalyzerManager,
-  //   bundle_reference: &mut BundleReferenceManager,
-  //   defer_bundle_data: BundleRelation,
-  // ) -> Result<()> {
-  //   let BundleRelation {
-  //     module_id,
-  //     resource_pot_id,
-  //     specify,
-  //     ..
-  //   } = defer_bundle_data;
-
-  //   let bundle_reference1 = bundle_reference.reference1_mut(&module_id);
-  //   let mut bundle_reference1: std::cell::RefMut<'_, BundleReference> =
-  //     bundle_reference1.borrow_mut();
-
-  //   for (specifier, target) in specify {
-  //     if let FindModuleExportResult::Bundle(index, target_id, _, _) = target {
-  //       let is_common_js = module_analyzer_manager.is_commonjs(&target_id);
-  //       match specifier {
-  //         ImportSpecifierInfo::Namespace(_) => {}
-  //         ImportSpecifierInfo::Named { local, imported } => {
-  //           let imported = imported.unwrap_or(local);
-  //           let mut bundle_variable = self.bundle_variable.borrow_mut();
-  //           let is_same_bundle = if is_common_js {
-  //             module_analyzer_manager.is_same_bundle(&module_id, &target_id)
-  //           } else {
-  //             bundle_variable.set_var_root(local, index);
-  //             bundle_variable.is_same_bundle_by_root(
-  //               local,
-  //               &resource_pot_id,
-  //               module_analyzer_manager,
-  //             )
-  //           };
-  //           let mut rename = index;
-
-  //           if !is_same_bundle {
-  //             if is_common_js {
-  //               bundle_reference1.add_import(
-  //                 &ImportSpecifierInfo::Named {
-  //                   local: module_analyzer_manager
-  //                     .module_global_uniq_name
-  //                     .commonjs_name_result(&target_id)?,
-  //                   imported: None,
-  //                 },
-  //                 target_id.clone().into(),
-  //                 &bundle_variable,
-  //               )?;
-  //             } else {
-  //               rename = bundle_reference1.add_import(
-  //                 &ImportSpecifierInfo::Named {
-  //                   local: index,
-  //                   imported: Some(imported),
-  //                 },
-  //                 bundle_variable
-  //                   .module_id_by_var_index(index)
-  //                   .unwrap()
-  //                   .into(),
-  //                 &bundle_variable,
-  //               )?;
-  //             }
-  //           }
-
-  //           if is_common_js {
-  //             bundle_reference1.add_declare_commonjs_import(
-  //               &ImportSpecifierInfo::Named {
-  //                 local,
-  //                 imported: None,
-  //               },
-  //               target_id.clone().into(),
-  //               &bundle_variable,
-  //             )?;
-  //           }
-
-  //           bundle_variable.set_uniq_name_for_cross_bundle(
-  //             rename,
-  //             local,
-  //             &target_id,
-  //             &module_id,
-  //             module_analyzer_manager,
-  //           );
-  //         }
-
-  //         ImportSpecifierInfo::Default(default) => {
-  //           let mut bundle_variable = self.bundle_variable.borrow_mut();
-  //           let is_commonjs = module_analyzer_manager.is_commonjs(&target_id);
-  //           let mut name = index;
-  //           if is_commonjs {
-  //             name = module_analyzer_manager
-  //               .module_global_uniq_name
-  //               .commonjs_name_result(&target_id)?;
-  //           } else {
-  //             if bundle_variable.name(index) == "default" {
-  //               name = module_analyzer_manager
-  //                 .module_global_uniq_name
-  //                 .default_name_result(&target_id)?;
-  //             }
-  //             bundle_variable.set_var_root(default, name);
-  //           }
-  //           let is_same_bundle = bundle_variable.is_same_bundle_by_root(
-  //             default,
-  //             &resource_pot_id,
-  //             module_analyzer_manager,
-  //           );
-
-  //           if !is_same_bundle {
-  //             if is_commonjs {
-  //               bundle_reference1.add_import(
-  //                 &ImportSpecifierInfo::Default(
-  //                   module_analyzer_manager
-  //                     .module_global_uniq_name
-  //                     .commonjs_name_result(&target_id)?,
-  //                 ),
-  //                 target_id.clone().into(),
-  //                 &bundle_variable,
-  //               )?;
-  //             } else {
-  //               bundle_reference1.add_import(
-  //                 &ImportSpecifierInfo::Default(default),
-  //                 target_id.clone().into(),
-  //                 &bundle_variable,
-  //               )?;
-  //             }
-  //           };
-  //           if is_commonjs {
-  //             bundle_reference1.add_declare_commonjs_import(
-  //               &ImportSpecifierInfo::Default(default),
-  //               target_id.clone().into(),
-  //               &bundle_variable,
-  //             )?;
-  //             bundle_variable.set_var_uniq_rename(default);
-  //           } else {
-  //             bundle_variable.set_uniq_name_for_cross_bundle(
-  //               name,
-  //               default,
-  //               &target_id,
-  //               &module_id,
-  //               module_analyzer_manager,
-  //             );
-  //           }
-  //         }
-  //       }
-  //     }
-  //   }
-
-  //   Ok(())
-  // }
 
   /// 3-4
   /// 1. strip or remove import/export
@@ -1184,6 +1030,7 @@ impl<'a> BundleAnalyzer<'a> {
     module_analyzer_manager: &mut ModuleAnalyzerManager,
     order_index_map: &HashMap<ModuleId, usize>,
     bundle_reference_manager: &mut BundleReferenceManager,
+    options: &ShareBundleOptions,
   ) -> Result<()> {
     farm_profile_function!("");
 
@@ -1194,12 +1041,7 @@ impl<'a> BundleAnalyzer<'a> {
     let mut patch_import_to_module = vec![];
     let mut patch_after_import_to_module = vec![];
 
-    // let mut commonjs_module_index = HashMap::<usize, CommonJsImportMap>::new();
-    // let mut reference_first_index = HashMap::new();
     let mut is_polyfilled_es_module_flag = false;
-    let mut total_bundle_reference = BundleReference::new();
-    let mut export_raw = BundleReference::new();
-
     let mut already_redeclare: HashSet<ReferenceKind> = HashSet::new();
 
     // sort by order
@@ -1223,6 +1065,7 @@ impl<'a> BundleAnalyzer<'a> {
         order_index_map,
         &mut self.polyfill,
         &external_config,
+        options,
       )?;
 
       if let Some(f) = bundle_reference.query_redeclare_both(&module_id) {
@@ -1238,64 +1081,11 @@ impl<'a> BundleAnalyzer<'a> {
 
         module_analyzer.ast.body.extend(result);
       }
-
-      // for (reference_kind, import) in &bundle_reference.redeclare_commonjs_import {
-      //   let first_index = reference_first_index
-      //     .entry(reference_kind.clone())
-      //     .or_insert(index);
-      //   let import_map = commonjs_module_index
-      //     .entry(*first_index)
-      //     .or_insert_with(CommonJsImportMap::new);
-
-      //   if let Some(v) = import_map.get_mut(reference_kind) {
-      //     v.extend(import);
-      //   } else {
-      //     let mut reference_import = ExternalReferenceImport::new();
-      //     reference_import.extend(&import);
-      //     import_map.insert(reference_kind.clone(), reference_import);
-      //   }
-      // }
-
-      // let target_group_bundle_reference = if module_analyzer_manager.is_entry(module_id) {
-      //   &mut export_raw
-      // } else {
-      //   &mut total_bundle_reference
-      // };
-
-      // if let Some(ref export) = bundle_reference.export {
-      //   if let Some(e) = target_group_bundle_reference.export.as_mut() {
-      //     e.extend(&export);
-      //   } else {
-      //     target_group_bundle_reference.export = Some(export.clone());
-      //   }
-      // }
-
-      // for (reference_kind, import) in &bundle_reference.external_export_map {
-      //   target_group_bundle_reference
-      //     .external_export_map
-      //     .entry(reference_kind.clone())
-      //     .or_insert_with(|| {
-      //       if let ReferenceKind::Module(module_id) = reference_kind {
-      //         ExternalReferenceExport::new(module_analyzer_manager.module_system(module_id))
-      //       } else {
-      //         unreachable!()
-      //       }
-      //     })
-      //     .extend(import);
-      // }
-
-      // for (reference_kind, import) in &bundle_reference.import_map {
-      //   total_bundle_reference
-      //     .import_map
-      //     .entry(reference_kind.clone())
-      //     .or_insert_with(|| ExternalReferenceImport::new())
-      //     .extend(import);
-      // }
     }
 
     let bundle_commonjs_declare_map: CommonJsImportMap = CommonJsImportMap::new();
 
-    let bundle_reference = bundle_reference_manager.reference_mut(&self.resource_pot.id);
+    let bundle_reference = bundle_reference_manager.reference_mut(&self.group.id);
     let mut bundle_reference = bundle_reference.borrow_mut();
 
     let mut map = bundle_reference.query_all_redeclare();
@@ -1311,39 +1101,6 @@ impl<'a> BundleAnalyzer<'a> {
       &mut self.polyfill,
     )?);
 
-    // for (index, mut import_map) in bundle_reference.bundle_reference1.redeclare_commonjs_import {
-    //   let module_id = self.ordered_modules[index];
-    //   // bundle_commonjs_declare_map.extend(import_map.clone());
-    //   // let bundle_reference = bundle_reference_manager.reference1_mut(&module_id);
-    //   // let mut bundle_reference = bundle_reference.borrow_mut();
-    //   let mut after_commonjs_redeclare = vec![];
-    //   let current_reference_kind: ReferenceKind = module_id.clone().into();
-    //   if let Some(current_reference_import) = import_map.remove(&current_reference_kind) {
-    //     let m = HashMap::from([(current_reference_kind, current_reference_import)]);
-
-    //     after_commonjs_redeclare = CjsModuleAnalyzer::redeclare_commonjs_export(
-    //       &self.bundle_variable.borrow(),
-    //       &m,
-    //       &module_analyzer_manager.module_global_uniq_name,
-    //       &mut self.polyfill,
-    //     )?;
-    //   }
-
-    //   let before_commonjs_redeclare = CjsModuleAnalyzer::redeclare_commonjs_export(
-    //     &self.bundle_variable.borrow(),
-    //     &import_map,
-    //     &module_analyzer_manager.module_global_uniq_name,
-    //     &mut self.polyfill,
-    //   )?;
-
-    //   let module_analyzer = module_analyzer_manager.module_analyzer_mut_unchecked(&module_id);
-
-    //   let body = module_analyzer.ast.body.take();
-
-    //   module_analyzer.ast.body =
-    //     [before_commonjs_redeclare, body, after_commonjs_redeclare].concat();
-    // }
-
     for module_id in &self.ordered_modules {
       module_analyzer_manager.patch_rename(
         module_id,
@@ -1353,14 +1110,11 @@ impl<'a> BundleAnalyzer<'a> {
       );
     }
 
-    let is_runtime_bundle = matches!(
-      self.resource_pot.resource_pot_type,
-      ResourcePotType::Runtime
-    );
+    let is_runtime_bundle = matches!(self.group.group_type, ResourcePotType::Runtime);
 
     if !is_runtime_bundle {
       patch_export_to_module.extend(generate_export_by_reference_export(
-        &self.resource_pot.id,
+        &self.group.id,
         true,
         &self.bundle_variable.borrow(),
         &mut bundle_reference.reexport_raw,
@@ -1368,10 +1122,11 @@ impl<'a> BundleAnalyzer<'a> {
         &self.context,
         &mut self.polyfill,
         &mut is_polyfilled_es_module_flag,
+        options,
       )?);
 
       patch_export_to_module.extend(generate_export_by_reference_export(
-        &self.resource_pot.id,
+        &self.group.id,
         false,
         &self.bundle_variable.borrow(),
         &mut bundle_reference.bundle_reference1,
@@ -1379,6 +1134,7 @@ impl<'a> BundleAnalyzer<'a> {
         &self.context,
         &mut self.polyfill,
         &mut is_polyfilled_es_module_flag,
+        options,
       )?);
     }
 
@@ -1409,7 +1165,8 @@ impl<'a> BundleAnalyzer<'a> {
       &bundle_reference.bundle_reference1,
       module_analyzer_manager,
       &mut self.polyfill,
-      &self.resource_pot.id,
+      &self.group.id,
+      options,
     )?);
 
     patch_import_to_module.extend(generate_bundle_import_by_bundle_reference(
@@ -1418,7 +1175,8 @@ impl<'a> BundleAnalyzer<'a> {
       &bundle_reference.reexport_raw,
       module_analyzer_manager,
       &mut self.polyfill,
-      &self.resource_pot.id,
+      &self.group.id,
+      options,
     )?);
 
     patch_import_to_module.extend(patch_after_import_to_module);
@@ -1461,6 +1219,7 @@ impl<'a> BundleAnalyzer<'a> {
   pub fn patch_polyfill_for_bundle(
     &mut self,
     module_analyzer_manager: &mut ModuleAnalyzerManager,
+    options: &ShareBundleOptions,
   ) -> Result<()> {
     if let Some(module_id) = self.ordered_modules.first() {
       let module_analyzer = module_analyzer_manager.module_analyzer_mut_unchecked(module_id);
@@ -1490,7 +1249,8 @@ impl<'a> BundleAnalyzer<'a> {
         &bundle_reference,
         &module_analyzer_manager,
         &mut self.polyfill,
-        &self.resource_pot.id,
+        &self.group.id,
+        options,
       )?;
 
       ast = stmts.into_iter().chain(ast.take()).collect();
@@ -1505,6 +1265,7 @@ impl<'a> BundleAnalyzer<'a> {
     &mut self,
     module_analyzer_manager: &mut ModuleAnalyzerManager,
     polyfill: SimplePolyfill,
+    options: &ShareBundleOptions,
   ) -> Result<()> {
     let module_id = ModuleId::from(FARM_BUNDLE_POLYFILL_SLOT);
     let module_analyzer = module_analyzer_manager
@@ -1530,10 +1291,10 @@ impl<'a> BundleAnalyzer<'a> {
       }
     }
 
-    let resource_pot_id = module_analyzer.resource_pot_id.clone();
+    let group_id = module_analyzer.bundle_group_id.clone();
 
     let stmts = generate_export_by_reference_export(
-      &resource_pot_id,
+      &group_id,
       false,
       &self.bundle_variable.borrow(),
       &mut bundle_reference,
@@ -1541,6 +1302,7 @@ impl<'a> BundleAnalyzer<'a> {
       &self.context,
       &mut SimplePolyfill::default(),
       &mut false,
+      options,
     )?;
 
     ast = ast.into_iter().chain(stmts).collect();
@@ -1650,10 +1412,7 @@ impl<'a> BundleAnalyzer<'a> {
 
     // in browser, should avoid naming pollution
     if matches!(self.context.config.output.target_env, TargetEnv::Browser)
-      && matches!(
-        self.resource_pot.resource_pot_type,
-        ResourcePotType::Runtime
-      )
+      && matches!(self.group.group_type, ResourcePotType::Runtime)
     {
       bundle.prepend("((function(){");
       bundle.append("})());", None);
@@ -1663,10 +1422,7 @@ impl<'a> BundleAnalyzer<'a> {
       && self
         .ordered_modules
         .contains(&&ModuleId::from(FARM_BUNDLE_POLYFILL_SLOT)))
-      || matches!(
-        self.resource_pot.resource_pot_type,
-        ResourcePotType::Runtime
-      );
+      || matches!(self.group.group_type, ResourcePotType::Runtime);
 
     if !self.polyfill.is_empty() && injectable_resource_pot {
       for item in self.polyfill.to_str() {

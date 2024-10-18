@@ -12,7 +12,7 @@ use farmfe_toolkit::swc_ecma_visit::{VisitMut, VisitMutWith};
 
 use crate::resource_pot_to_bundle::{
   bundle::ModuleAnalyzerManager, common::with_bundle_reference_slot_name,
-  modules_analyzer::module_analyzer::ModuleAnalyzer, uniq_name::BundleVariable,
+  modules_analyzer::module_analyzer::ModuleAnalyzer, uniq_name::BundleVariable, ShareBundleOptions,
 };
 
 ///
@@ -42,6 +42,7 @@ pub struct ReplaceDynamicVisit<'a, 'b> {
   module_manager: &'b ModuleAnalyzerManager<'b>,
   module_id: &'a ModuleId,
   bundle_variable: &'a BundleVariable,
+  options: &'a ShareBundleOptions,
 }
 
 impl<'a, 'b> ReplaceDynamicVisit<'a, 'b> {
@@ -132,9 +133,12 @@ impl<'a, 'b> ReplaceDynamicVisit<'a, 'b> {
       *arg = ExprOrSpread {
         spread: None,
         expr: Box::new(Expr::Lit(Lit::Str(
-          with_bundle_reference_slot_name(&module_analyzer.resource_pot_id)
-            .as_str()
-            .into(),
+          with_bundle_reference_slot_name(
+            &module_analyzer.bundle_group_id,
+            self.options.reference_slot,
+          )
+          .as_str()
+          .into(),
         ))),
       };
     }
@@ -271,10 +275,12 @@ pub fn replace_dynamic_import<'a, 'b>(
   module_analyzer_manager: &'b ModuleAnalyzerManager<'b>,
   module_id: &'a ModuleId,
   bundle_variable: &'a BundleVariable,
+  options: &'a ShareBundleOptions,
 ) -> ReplaceDynamicVisit<'a, 'b> {
   ReplaceDynamicVisit {
     module_manager: module_analyzer_manager,
     module_id,
     bundle_variable,
+    options,
   }
 }

@@ -129,7 +129,8 @@ impl BundleVariable {
     self.uniq_name_hash_map.get("default").unwrap()
   }
 
-  pub fn set_namespace(&mut self, namespace: String) {
+  // TODO: assess the necessity of its existence
+  pub fn set_namespace(&mut self, _namespace: String) {
     // if !self.uniq_name_hash_map.contains_key(&namespace) {
     //   self
     //     .uniq_name_hash_map
@@ -426,7 +427,7 @@ impl BundleVariable {
     index: usize,
     source: &ModuleId,
     module_analyzers: &ModuleAnalyzerManager,
-    resource_pot_id: ResourcePotId,
+    group_id: ResourcePotId,
     find_default: bool,
     find_namespace: bool,
   ) -> Option<FindModuleExportResult> {
@@ -444,13 +445,13 @@ impl BundleVariable {
 
       let reference_map = module_analyzer.export_names();
 
-      if module_analyzer.resource_pot_id != resource_pot_id {
+      if module_analyzer.bundle_group_id != group_id {
         if find_namespace || find_default || module_analyzers.is_commonjs(source) {
           let Some(res) = self.find_ident_by_index(
             index,
             source,
             module_analyzers,
-            module_analyzer.resource_pot_id.clone(),
+            module_analyzer.bundle_group_id.clone(),
             find_default,
             find_namespace,
           ) else {
@@ -462,7 +463,7 @@ impl BundleVariable {
             | FindModuleExportResult::External(i, target, _) => {
               let is_reexport = module_analyzers
                 .module_analyzer(&target)
-                .is_some_and(|m| m.resource_pot_id == module_analyzer.resource_pot_id);
+                .is_some_and(|m| m.bundle_group_id == module_analyzer.bundle_group_id);
 
               return Some(FindModuleExportResult::Bundle(
                 i,

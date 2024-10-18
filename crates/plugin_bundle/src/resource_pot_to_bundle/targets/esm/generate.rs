@@ -18,6 +18,7 @@ use crate::resource_pot_to_bundle::{
   },
   common::with_bundle_reference_slot_name,
   uniq_name::BundleVariable,
+  ShareBundleOptions,
 };
 
 pub struct EsmGenerate {}
@@ -29,6 +30,7 @@ impl EsmGenerate {
     export: &ExternalReferenceExport,
     bundle_variable: &BundleVariable,
     module_analyzer_manager: &ModuleAnalyzerManager,
+    options: &ShareBundleOptions,
   ) -> Result<Vec<ModuleItem>> {
     let mut stmts = vec![];
     let mut specifiers = vec![];
@@ -36,7 +38,10 @@ impl EsmGenerate {
     let source_url = source.map(|target_id| {
       if let ReferenceKind::Module(target_id) = target_id {
         if let Some(target_module_analyzer) = module_analyzer_manager.module_analyzer(target_id) {
-          return with_bundle_reference_slot_name(&target_module_analyzer.resource_pot_id);
+          return with_bundle_reference_slot_name(
+            &target_module_analyzer.bundle_group_id,
+            options.reference_slot,
+          );
         }
       }
 
@@ -130,6 +135,7 @@ impl EsmGenerate {
     import_map: &HashMap<ReferenceKind, ExternalReferenceImport>,
     module_analyzer_manager: &ModuleAnalyzerManager,
     resource_pot_name: &str,
+    options: &ShareBundleOptions,
   ) -> Result<Vec<ModuleItem>> {
     let mut stmts = vec![];
     let mut generate_import_specifies: HashMap<String, ImportItem> = HashMap::new();
@@ -152,8 +158,9 @@ impl EsmGenerate {
               with_bundle_reference_slot_name(
                 &module_analyzer_manager
                   .module_analyzer(m)
-                  .map(|m| m.resource_pot_id.clone())
+                  .map(|m| m.bundle_group_id.clone())
                   .unwrap(),
+                options.reference_slot,
               ),
             )
           }

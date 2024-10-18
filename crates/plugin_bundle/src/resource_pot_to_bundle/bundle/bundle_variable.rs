@@ -38,7 +38,7 @@ impl BundleVariable {
     } else {
       let m = module_analyzer_manager
         .module_analyzer(target_id)
-        .map(|i| i.resource_pot_id.to_string())
+        .map(|i| i.bundle_group_id.to_string())
         .unwrap();
       let prev_namespace = mem::replace(&mut self.namespace, m);
 
@@ -80,14 +80,14 @@ impl BundleVariable {
   pub fn is_same_bundle_by_root(
     &self,
     index: usize,
-    resource_pot_id: &str,
+    group_id: &str,
     module_analyzer_manager: &ModuleAnalyzerManager,
   ) -> bool {
     let root = self.var_or_root(index);
     self.module_id_by_var_index(root.index).is_some_and(|m| {
       module_analyzer_manager
-        .resource_pot_id(m)
-        .is_some_and(|r| r == &resource_pot_id)
+        .group_id(m)
+        .is_some_and(|r| r == &group_id)
     })
   }
 }
