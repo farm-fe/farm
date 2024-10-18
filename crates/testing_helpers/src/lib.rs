@@ -100,6 +100,7 @@ pub fn construct_test_module_graph() -> ModuleGraph {
     .unwrap();
 
   graph.entries = HashMap::from([("A".into(), "A".to_string()), ("B".into(), "B".to_string())]);
+  graph.update_execution_order_for_modules();
 
   graph
 }

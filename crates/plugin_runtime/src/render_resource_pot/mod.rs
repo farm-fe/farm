@@ -24,11 +24,12 @@ use farmfe_toolkit::common::MinifyBuilder;
 
 use farmfe_utils::hash::sha256;
 use render_module::RenderModuleOptions;
+use scope_hoisting::build_scope_hoisted_module_groups;
 
 use self::render_module::{render_module, RenderModuleResult};
 
 mod render_module;
-// mod farm_module_system;
+mod scope_hoisting;
 mod source_replacer;
 mod transform_async_module;
 mod transform_module_decls;
@@ -67,6 +68,10 @@ pub fn resource_pot_to_runtime_object(
   let is_enabled_minify = |module_id: &ModuleId| {
     minify_builder.is_enabled(&module_id.resolved_path(&context.config.root))
   };
+
+  // group modules in the same group that can perform scope hoisting
+  let scope_hoisting_module_groups =
+    build_scope_hoisted_module_groups(resource_pot, module_graph, context);
 
   resource_pot
     .modules()
