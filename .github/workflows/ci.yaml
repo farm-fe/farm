@@ -119,12 +119,12 @@ jobs:
       #     echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" > .npmrc
       #     pnpm publish --tag nightly --no-git-checks
 
-      - name: Create Nightly Release Pull Request or Publish Nightly Version to npm
-        id: changesets
-        uses: changesets/action@v1
-        with:
-          version: pnpm run bump:nightly
-          publish: npm run release:nightly
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+      # - name: Create Nightly Release Pull Request or Publish Nightly Version to npm
+      #   id: changesets
+      #   uses: changesets/action@v1
+      #   with:
+      #     version: pnpm run bump:nightly
+      #     publish: npm run release:nightly
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      #     NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
