@@ -25,21 +25,21 @@ export interface ScriptParseConfig {
 }
 
 export interface ScriptDecoratorsConfig {
-  legacyDecorator: boolean;
-  decoratorMetadata: boolean;
+  legacyDecorator?: boolean;
+  decoratorMetadata?: boolean;
   /**
    * The version of the decorator proposal to use. 2021-12 or 2022-03
    * @default 2021-12
    */
-  decoratorVersion: '2021-12' | '2022-03' | null;
+  decoratorVersion?: '2021-12' | '2022-03' | null;
   /**
    * @default []
    */
-  includes: string[];
+  includes?: string[];
   /**
    * @default ["node_modules/"]
    */
-  excludes: string[];
+  excludes?: string[];
 }
 
 /**
