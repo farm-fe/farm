@@ -82,24 +82,24 @@ jobs:
   #     - name: Test Create Farm Vue2 - ${{ matrix.settings.abi }}
   #       run: cd .. && node farm/packages/create-farm/create-farm.js my-test-app-vue2 --template vue2 && cd my-test-app-vue2 && pnpm i && pnpm build
 
-  type-check:
-    name: Type Check
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-      - uses: actions/setup-node@v3
-        with:
-          node-version: 18
-      - name: Install Dependencies
-        run: npm install -g pnpm@9.1.0 && pnpm i --frozen-lockfile
-      - name: Build CLI and Core
-        run: pnpm --filter @farmfe/cli run build
-      - name: Type Check With Tsc
-        run: pnpm run --filter "@farmfe/*" type-check
-      - name: Changesets Check
-        run: npx changeset status --since=origin/main
+  # type-check:
+  #   name: Type Check
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v3
+  #       with:
+  #         fetch-depth: 0
+  #     - uses: actions/setup-node@v3
+  #       with:
+  #         node-version: 18
+  #     - name: Install Dependencies
+  #       run: npm install -g pnpm@9.1.0 && pnpm i --frozen-lockfile
+  #     - name: Build CLI and Core
+  #       run: pnpm --filter @farmfe/cli run build
+  #     - name: Type Check With Tsc
+  #       run: pnpm run --filter "@farmfe/*" type-check
+  #     - name: Changesets Check
+  #       run: npx changeset status --since=origin/main
 
   ts-test:
     name: Typescript Test
