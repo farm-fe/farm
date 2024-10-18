@@ -2,7 +2,11 @@ import { execSync } from "child_process";
 import { buildCli, buildCoreCjs, buildJsPlugins } from "./build.mjs";
 
 // Generate nightly version number
-const nightlyVersion = `0.0.0-nightly.${Date.now()}`;
+const dateString =
+  new Date().getFullYear() +
+  String(new Date().getMonth() + 1).padStart(2, "0") +
+  String(new Date().getDate()).padStart(2, "0");
+const nightlyVersion = `2.0.0-nightly.${dateString}`;
 
 // Build node packages
 await buildCli();
@@ -13,7 +17,7 @@ await buildJsPlugins();
 execSync("npm config set access public", { stdio: "inherit" });
 
 // Update versions to nightly
-execSync(`npx changeset version --snapshot nightly`, { stdio: "inherit" });
+execSync(`npx changeset version --snapshot ${nightlyVersion}`, { stdio: "inherit" });
 
 // Publish nightly packages
 execSync("npx changeset publish --tag nightly", { stdio: "inherit" });

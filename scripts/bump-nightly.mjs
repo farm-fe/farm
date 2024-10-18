@@ -1,9 +1,13 @@
 import { execSync } from "child_process";
 
 // generate nightly version
-const nightlyVersion = `0.0.0-nightly.${Date.now()}`;
+const dateString =
+  new Date().getFullYear() +
+  String(new Date().getMonth() + 1).padStart(2, "0") +
+  String(new Date().getDate()).padStart(2, "0");
+const nightlyVersion = `2.0.0-nightly.${dateString}`;
 
-execSync(`npx changeset version --snapshot nightly`, { stdio: "inherit" });
+execSync(`npx changeset version --snapshot ${nightlyVersion}`, { stdio: "inherit" });
 
 execSync("pnpm install --no-frozen-lockfile", { stdio: "inherit" });
 
