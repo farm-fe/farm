@@ -50,7 +50,7 @@ jobs:
           done
 
       - name: Install Dependencies
-        run: npm install -g pnpm@9.1.0 && pnpm i --frozen-lockfile
+        run: npm install -g pnpm@9.4.0 && pnpm i --frozen-lockfile
       - name: Build Plugin Tools
         run: pnpm --filter @farmfe/plugin-tools run build
 
