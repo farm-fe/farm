@@ -1,8 +1,10 @@
 name: E2E Tests
-on:
-  pull_request:
-    branches:
-      - refactor/node
+# on:
+#   pull_request:
+#     branches:
+#       - refactor/node
+
+on: [pull_request]
 
 jobs:
   call-rust-build:
@@ -59,7 +61,6 @@ jobs:
           do
             test -f /tmp/artifacts/${{ github.sha }}-${abi}-${{ matrix.settings.name }}/index.farm
           done
-
 
   nightly-release:
     name: Nightly Release
