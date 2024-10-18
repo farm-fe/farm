@@ -1,0 +1,107 @@
+import CodeBlock from "@theme/CodeBlock";
+import Tabs from "@theme/Tabs";
+import TabItem from "@theme/TabItem";
+
+# @farmfe/js-plugin-postcss
+支持 `postcss` 的前置编译工作
+
+## Installation
+
+<Tabs>
+  <TabItem value="npm" label="npm">
+    <CodeBlock>npm install @farmfe/js-plugin-postcss postcss</CodeBlock>
+  </TabItem>
+  <TabItem value="yarn" label="yarn">
+    <CodeBlock>yarn add @farmfe/js-plugin-postcss postcss</CodeBlock>
+  </TabItem>
+  <TabItem value="pnpm" label="pnpm">
+    <CodeBlock>pnpm add @farmfe/js-plugin-postcss postcss</CodeBlock>
+  </TabItem>
+</Tabs>
+
+## Usage
+```ts {2,6}
+import { UserConfig } from '@farmfe/core';
+import farmJsPluginPostcss from '@farmfe/js-plugin-postcss';
+
+const config: UserConfig = {
+  plugins: [
+    farmJsPluginPostcss({ /* options */ })
+  ]
+}
+```
+
+## Options
+```ts
+export type PostcssPluginOptions = {
+  /**
+   * @default undefined
+   * postcss-load-config options. path default to farm.config.js root.
+   */
+  postcssLoadConfig?: {
+    ctx?: postcssLoadConfig.ConfigContext;
+    path?: string;
+    options?: Parameters<typeof postcssLoadConfig>[2];
+  };
+  filters?: {
+    resolvedPaths?: string[];
+    moduleTypes?: string[];
+  };
+  implementation?: string;
+};
+
+```
+
+### postcssLoadConfig
+Farm 使用 `postcss-load-config` 来加载 `postcss` 配置，因此您可以使用 `postcss-load-config` 的选项。 参考[postcss-load-config](https://github.com/postcss/postcss-load-config)。
+
+示例：
+```ts
+import path from 'node:path';
+import { UserConfig } from '@farmfe/core';
+import farmJsPluginPostcss from '@farmfe/js-plugin-postcss';
+
+const config: UserConfig = {
+  plugins: [
+    farmJsPluginPostcss({
+      postcssLoadConfig: {
+        // load config from client/postcss.config.js
+        path: path.join(process.cwd(), 'client')
+      }
+    })
+  ]
+}
+
+export default config;
+```
+
+### filters
+哪些文件应该由`postcss`处理。 默认为 `{ moduleTypes: ['css'] }`。
+
+* `resolvedPaths`: 仅处理这些路径下的文件。 支持正则表达式。
+* `moduleTypes`：仅处理具有这些模块类型的文件。 请注意，less/sass 文件应首先由 `@farmfe/js-plugin-less`/`@farmfe/plugin-sass` 处理。
+
+`resolvedPaths` 和 `moduleTypes` 取并集。
+
+例子:
+```ts
+import { UserConfig } from '@farmfe/core';
+import farmJsPluginPostcss from '@farmfe/js-plugin-postcss';
+
+const config: UserConfig = {
+  plugins: [
+    farmJsPluginPostcss({
+      filters: {
+        // all files end with .custom-css will be processed
+        resolvedPaths: ['\\.custom-css$'],
+        moduleTypes: ['css']
+      }
+    })
+  ]
+}
+
+export default config;
+```
+
+### implementation
+`postcss` 的 `implementation` 包名称。 默认为 `postcss`。

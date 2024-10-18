@@ -5,3 +5,4 @@ packages:
   - rust-plugins/*
   - js-plugins/*
   - bench/
+  - docs/

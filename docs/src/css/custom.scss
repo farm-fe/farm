@@ -1,0 +1,373 @@
+@use "./doc.siderbar";
+@use "./admonition";
+@use "./token.css";
+
+@tailwind components;
+@tailwind base;
+@tailwind utilities;
+/**
+ * Any CSS included here will be global. The classic template
+ * bundles Infima by default. Infima is a CSS framework designed to
+ * work well for content-centric websites.
+ */
+
+/* You can override the default Infima variables here. */
+:root {
+  --sans-serif: -apple-system, BlinkMacSystemFont, san-francisco, Avenir Next,
+    Segoe UI, Roboto, Noto Sans, Helvetica Neue;
+  --serif: Iowan Old Style, Apple Garamond, Baskerville, Times New Roman;
+  --monospaced: Menlo;
+  --border: rgb(3, 169, 244);
+  --code-block: #fff;
+  --g1: rgba(0, 0, 0, 0.2);
+  --g2: rgba(143, 26, 127, 0.2);
+  --g3: rgba(31, 31, 31, 0.2);
+  --ifm-color-primary: #8f1a7f;
+  --ifm-color-primary-dark: #6f1a5f;
+  --ifm-color-primary-text: #6f1a5f;
+  --ifm-color-primary-darker: #5f1a4f;
+  --ifm-color-primary-darkest: #4f1a3f;
+  --ifm-color-primary-light: #9f1a8f;
+  --ifm-color-primary-lighter: #af1a9f;
+  --ifm-color-primary-lightest: #bf1aaf;
+  --ifm-code-font-size: 95%;
+  --ifm-border-color: rgba(0, 0, 0, 0.05);
+  --ifm-background: rgba(0, 0, 0, 0.01);
+  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.1);
+  --ifm-announcementBar-height: 40px;
+  --ifm-primary-hue-saturation: 308 78%;
+  --ifm-primary-hue-saturation-light: 308 78%;
+  --accent: 113, 26, 95;
+  --accent-background-card-gradient: linear-gradient(
+    45deg,
+    rgb(var(--accent)),
+    #fda7df 10%,
+    var(--ifm-f-white) 40%
+  );
+  --ifm-footer-background-color: #181818;
+  --ifm-f-white: #ffffff;
+  --ifm-f-re-white: #181818;
+  --ifm-f-white-soft: #f8f8f8;
+  --ifm-f-white-soft2: #fff;
+  --ifm-f-white-mute: #f2f2f2;
+  --ifm-f-bg-soft: #f6f6f7;
+  --farm--border: rgba(86, 86, 86, 0.125);
+  --docsearch-searchbox-background: rgba(143, 26, 127, 0.7);
+  --max-layout-width: 1680px;
+  --ifm-navbar-link-hover-color: initial;
+  --ifm-navbar-padding-vertical: 0;
+  --ifm-navbar-item-padding-vertical: 0;
+  --ifm-color-soft: rgb(82 82 82 / var(--tw-text-opacity));
+
+  --ifm-font-family-base: -apple-system, BlinkMacSystemFont, Inter, Helvetica,
+    Arial, sans-serif, "Apple Color Emoji", "Segoe UI emoji";
+  --ifm-font-family-monospace: "SFMono-Regular", "Roboto Mono", Consolas,
+    "Liberation Mono", Menlo, Courier, monospace;
+
+  --ifm-menu-link-sublist-icon: url("data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAiIGhlaWdodD0iNiIgdmlld0JveD0iMCAwIDEwIDYiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxwYXRoIGQ9Ik04Ljk5OTg4IDVMNC45OTk4OCAxTDAuOTk5ODc4IDUiIHN0cm9rZT0iIzAzMDYwQiIgc3Ryb2tlLXdpZHRoPSIxLjUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgo8L3N2Zz4K");
+
+  --z-sidebar: 2000;
+  --z-backdrop: 1100;
+  --ifm-menu-color-background-active: #ff9ff330;
+  --ifm-menu-color-background: #ff9ff310;
+  --docusaurus-highlighted-code-line-bg: #ff9ff310;
+}
+
+[date-theme="light"] {
+  --code-block: #fff;
+  --ui-background: #fff;
+  --background: rgb(var(--ui-background) / var(--tw-bg-opacity));
+}
+
+/* For readability concerns, you should choose a lighter palette in dark mode. */
+[data-theme="dark"] {
+  --code-border-color: #fff;
+  --code-block: rgb(25, 25, 25);
+  --ui-background: #181818;
+  --background: rgb(var(--ui-background) / var(--tw-bg-opacity));
+  --ifm-color-soft: rgb(82 82 82 / var(--tw-text-opacity));
+  --ifm-f-bg-soft: #252529;
+  --ifm-background-color: #000 !important;
+  --ifm-color-primary: #fff;
+  --ifm-color-primary-text: #fff;
+  --ifm-color-primary-dark: #21af90;
+  --ifm-color-primary-darker: #1fa588;
+  --ifm-color-primary-darkest: #1a8870;
+  --ifm-color-primary-light: #29d5b0;
+  --ifm-color-primary-lighter: #32d8b4;
+  --ifm-color-primary-lightest: #4fddbf;
+  --ifm-menu-color-background-active: #ff9ff330;
+  --ifm-menu-color-background: #ff9ff340;
+  --ifm-background: rgba(0, 0, 0, 0.3);
+  --ifm-f-white: #c74040;
+  --ifm-f-re-white: #ffffff;
+  --ifm-f-white-soft: #222222;
+  --ifm-f-white-soft2: #111;
+  --ifm-f-white-mute: #282828;
+  --ifm-footer-background-color: #181818;
+  --farm--border: #fafafa20;
+  --docusaurus-highlighted-code-line-bg: rgba(143, 26, 127, 0.7);
+  --docsearch-primary-color: var(--ifm-color-primary-dark) !important;
+  --docsearch-searchbox-background: #3a3a3a !important;
+}
+
+.navbar__title {
+  color: #6f1a5f;
+  font-size: 1.5em;
+}
+
+.navbar__title:hover {
+  color: #bf1aaf;
+}
+
+.header-github-link:hover {
+  opacity: 0.6;
+}
+
+.header-github-link::before {
+  content: "";
+  width: 20px;
+  height: 20px;
+  display: flex;
+  background: url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12'/%3E%3C/svg%3E")
+    no-repeat;
+}
+
+[data-theme="dark"] .header-github-link::before {
+  background: url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath fill='white' d='M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12'/%3E%3C/svg%3E")
+    no-repeat;
+}
+.bg {
+  background-color: var(--ifm-f-white-soft);
+}
+
+.bg-re {
+  background-color: var(--ifm-f-re-white);
+}
+
+.color {
+  color: var(--ifm-f-white);
+}
+
+.token.color {
+  color: #c44cac;
+}
+
+.color-re {
+  color: var(--ifm-f-re-white);
+}
+
+.theme-back-to-top-button {
+  width: 50px !important;
+  height: 50px !important;
+}
+
+[class^="backToTopButton_"]::after {
+  mask: var(--ifm-menu-link-sublist-icon) 50% / 1.5rem 1.5rem no-repeat !important;
+  mask-size: 3rem 3rem !important;
+  -webkit-mask-size: 3rem 3rem !important;
+}
+.clean-btn::after {
+  mask: var(--ifm-menu-link-sublist-icon) 50% / 1.5rem 1.5rem no-repeat !important;
+  mask-size: 1.5rem 1.5rem !important;
+  -webkit-mask-size: 1.5rem 1.5rem !important;
+}
+
+div[class^="announcementBar_"] {
+  --site-announcement-bar-stripe-color1: hsl(
+    var(--ifm-primary-hue-saturation) 85%
+  );
+  --site-announcement-bar-stripe-color2: hsl(
+    var(--ifm-primary-hue-saturation) 95%
+  );
+
+  background: linear-gradient(
+    45deg,
+    #711a5f,
+    #c44cac 30%,
+    #9f1a8f 60%,
+    #fda7df 80%
+  );
+  font-weight: bold;
+  color: var(--c-white);
+  height: var(--ifm-announcementBar-height);
+
+  @media (max-width: 768px) {
+    height: calc(var(--ifm-announcementBar-height) + 12px);
+  }
+}
+
+.navbar__items .documate-button {
+  @media (max-width: 768px) {
+    display: none !important;
+  }
+}
+
+footer[class="footer"] {
+  background-color: var(--ifm-f-white-soft) !important;
+}
+
+.footer__link-item {
+  line-height: 3;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.navbar__link {
+  display: flex;
+  align-items: center;
+
+  @media (max-width: 768px) {
+    display: none !important;
+  }
+}
+
+.code-block-highlight-line {
+  background-color: var(--docusaurus-highlighted-code-line-bg);
+  display: block;
+  margin: 0 calc(-1 * var(--ifm-pre-padding));
+  padding: 0 var(--ifm-pre-padding);
+  border-left: 5px solid rgb(196, 76, 172);
+}
+
+a {
+  color: rgb(196, 76, 172);
+}
+
+@keyframes glowing {
+  0% {
+    background-position: 0 0;
+  }
+  50% {
+    background-position: 400% 0;
+  }
+  100% {
+    background-position: 0 0;
+  }
+}
+
+.DocSearch-Button {
+  width: 250px;
+  border-radius: 8px !important;
+}
+
+.dropdown > .navbar__link:after {
+  top: 4px;
+}
+
+.theme-admonition-warning {
+  color: var(--c-yellow-120);
+}
+
+.theme-admonition-danger {
+  color: var(--c-red-60);
+}
+
+.theme-doc-version-badge {
+  margin: 10px 0;
+}
+
+.navbar--fixed-top {
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+}
+
+@media screen and (min-width: 1140px) {
+  .navbar--fixed-top {
+    backdrop-filter: blur(8px); /* Apply the blur effect */
+    -webkit-backdrop-filter: blur(8px); /* Safari support */
+    background: transparent;
+  }
+}
+
+.font-sans {
+  font-family: ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji",
+    "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+}
+
+figure {
+  margin: 12px 12px;
+}
+
+body {
+  background: var(--background);
+}
+
+.package-manager-tab {
+  cursor: pointer;
+}
+
+.package-manager-name {
+  margin-left: 8px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.react-tabs__tab--selected .package-manager-tab {
+  background-color: rgba(0, 0, 0, 0.1);
+}
+
+.codeBlock-tab {
+  margin: 0 !important;
+  border-radius: none;
+  pre {
+    margin: 0;
+  }
+}
+
+.highlighted-line {
+  background-color: var(--ifm-menu-color-background-active);
+}
+
+html[data-theme="light"] {
+  --code-block: #fff;
+  --code-block-border: 1px solid #eee;
+}
+
+html[data-theme="dark"] {
+  --code-block: rgb(25, 25, 25);
+  --code-block-border: 1px solid #303030;
+  --code-block-select-color: #2e3440ff;
+}
+
+.border-package {
+  border: var(--code-block-border);
+}
+
+[data-theme="light"] .shiki.dark-plus {
+  display: none;
+}
+
+[data-theme="dark"] .shiki.light-plus {
+  display: none;
+}
+
+[class*="codeBlockContainer_"] {
+  margin-bottom: 0 !important;
+}
+
+[class*="codeBlockTitle_"] {
+  display: none;
+}
+
+[class*="codeBlock_"] {
+  background-color: var(--code-block) !important;
+}
+
+.shiki {
+  margin: 0;
+  border-radius: 0;
+}
+
+.file-icon {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  margin-right: 8px;
+  vertical-align: middle;
+}
+
+.file-icon svg {
+  width: 100%;
+  height: 100%;
+}

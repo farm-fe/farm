@@ -12,6 +12,8 @@ use farmfe_core::{
   context::CompilationContext,
   error::Result,
   farm_profile_function,
+  module::ModuleId,
+  parking_lot::Mutex,
   plugin::Plugin,
   rayon::{ThreadPool, ThreadPoolBuilder},
 };
@@ -24,10 +26,12 @@ pub mod build;
 pub mod generate;
 pub mod trace_module_graph;
 pub mod update;
+pub mod utils;
 
 pub struct Compiler {
   context: Arc<CompilationContext>,
   pub thread_pool: Arc<ThreadPool>,
+  pub last_fail_module_ids: Mutex<Vec<ModuleId>>,
 }
 
 impl Compiler {
@@ -93,6 +97,7 @@ impl Compiler {
           .build()
           .unwrap(),
       ),
+      last_fail_module_ids: Mutex::new(vec![]),
     })
   }
 
@@ -128,11 +133,12 @@ impl Compiler {
     }
 
     // triggering build stage
-    {
+    let res = {
       #[cfg(feature = "profile")]
       farmfe_core::puffin::profile_scope!("Build Stage");
-      self.build()?;
-    }
+      self.build()
+    };
+
     self.context.record_manager.set_build_end_time();
     {
       #[cfg(feature = "profile")]
@@ -166,7 +172,7 @@ impl Compiler {
 
     self.context.record_manager.set_end_time();
 
-    Ok(())
+    res
   }
 
   pub fn context(&self) -> &Arc<CompilationContext> {

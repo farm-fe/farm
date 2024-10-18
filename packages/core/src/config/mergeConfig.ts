@@ -1,7 +1,7 @@
 import path, { isAbsolute } from 'node:path';
 import { isString } from '../plugin/js/utils.js';
 import { isArray, isObject } from '../utils/share.js';
-import { FarmCLIOptions, UserConfig } from './types.js';
+import { FarmCliOptions, UserConfig } from './types.js';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function mergeConfig<T extends Record<string, any>>(
@@ -46,10 +46,12 @@ export function mergeConfig<T extends Record<string, any>>(
 }
 
 export function mergeFarmCliConfig(
-  cliOption: FarmCLIOptions & UserConfig,
-  target: UserConfig
+  cliOption: FarmCliOptions & UserConfig,
+  target: UserConfig,
+  mode?: 'development' | 'production'
 ): UserConfig {
   let left: UserConfig = {};
+  const options = initialCliOptions(cliOption);
 
   (
     [
@@ -57,15 +59,17 @@ export function mergeFarmCliConfig(
       'compilation',
       'envDir',
       'envPrefix',
+      'timeUnit',
+      'watch',
       'plugins',
       'publicDir',
       'server',
       'vitePlugins'
     ] satisfies (keyof UserConfig)[]
-  ).forEach((key) => {
-    const value = cliOption[key];
+  ).forEach((key: keyof (FarmCliOptions & UserConfig)) => {
+    const value = options[key];
     if (value || typeof value === 'boolean') {
-      left = mergeConfig(left, { [key]: cliOption[key] });
+      left = mergeConfig(left, { [key]: options[key] });
     }
   });
 
@@ -77,12 +81,12 @@ export function mergeFarmCliConfig(
       const cliRoot = cliOption.root;
 
       if (!isAbsolute(cliRoot)) {
-        target.root = path.resolve(process.cwd(), cliRoot);
+        target.root = path.resolve(cliRoot);
       } else {
         target.root = cliRoot;
       }
     } else {
-      target.root = process.cwd();
+      target.root = path.resolve('.');
     }
 
     if (configRootPath) {
@@ -90,60 +94,102 @@ export function mergeFarmCliConfig(
     }
 
     if (target.root && !isAbsolute(target.root)) {
-      const resolvedRoot = path.resolve(cliOption.configPath, target.root);
+      const resolvedRoot = path.resolve(cliOption.configFile, target.root);
       target.root = resolvedRoot;
     }
   }
 
-  if (isString(cliOption.host) || typeof cliOption.host === 'boolean') {
-    left = mergeConfig(left, { server: { host: cliOption.host } });
+  if (
+    isString(options.server?.host) ||
+    typeof options.server?.host === 'boolean'
+  ) {
+    left = mergeConfig(left, { server: { host: options.host } });
   }
 
-  if (typeof cliOption.minify === 'boolean') {
-    left = mergeConfig(left, { compilation: { minify: cliOption.minify } });
+  if (typeof options.compilation.minify === 'boolean') {
+    left = mergeConfig(left, { compilation: { minify: options.minify } });
   }
 
-  if (cliOption.outDir) {
+  if (options.compilation.output.outDir) {
     left = mergeConfig(left, {
-      compilation: { output: { path: cliOption.outDir } }
+      compilation: { output: { path: options.outDir } }
     });
   }
 
-  if (cliOption.port) {
+  if (options.server?.port) {
     left = mergeConfig(left, {
       server: {
-        port: cliOption.port
+        port: options.port
       }
     });
   }
 
-  if (cliOption.mode) {
+  if (options.mode) {
     left = mergeConfig(left, {
       compilation: {
-        mode: cliOption.mode as UserConfig['compilation']['mode']
+        mode: mode ?? (options.mode as UserConfig['compilation']['mode'])
       }
     });
   }
 
-  if (cliOption.https) {
+  if (options.server?.https) {
     left = mergeConfig(left, {
       server: {
-        https: cliOption.https
+        https: options.https
       }
     });
   }
 
-  if (cliOption.sourcemap) {
+  if (options.compilation?.sourcemap) {
     left = mergeConfig(left, {
-      compilation: { sourcemap: cliOption.sourcemap }
+      compilation: { sourcemap: options.sourcemap }
+    });
+  }
+  if (options.timeUnit) {
+    left = mergeConfig(left, {
+      timeUnit: options.timeUnit
     });
   }
 
   return mergeConfig(left, target);
 }
 
-export function initialCliOptions(options: FarmCLIOptions): FarmCLIOptions {
-  return {
-    ...options
+export function initialCliOptions(options: any): any {
+  const { mode, watch } = options;
+
+  const compilationOptions = options.compilation || {};
+  const { minify, sourcemap, treeShaking } = compilationOptions;
+  const { outDir, target, format } = compilationOptions.output || {};
+
+  const input = compilationOptions.input
+    ? Object.values(compilationOptions.input).filter(Boolean)
+    : [];
+  const hasInput = input.length > 0;
+
+  const output: UserConfig['compilation']['output'] = {
+    ...(outDir && { path: outDir }),
+    ...(target && { targetEnv: target }),
+    ...(format && { format })
   };
+
+  const compilation: UserConfig['compilation'] = {
+    input: hasInput ? { ...compilationOptions.input } : {},
+    output,
+    ...(minify && { minify }),
+    ...(sourcemap && { sourcemap }),
+    ...(treeShaking && { treeShaking })
+  };
+
+  const defaultOptions: any = {
+    compilation,
+    watch: !!watch,
+    root: options.root,
+    server: options.server,
+    clearScreen: !!options.clearScreen,
+    configFile: options.configFile,
+    timeUnit: options.timeUnit,
+    ...(mode && { mode })
+  };
+
+  return defaultOptions;
 }
