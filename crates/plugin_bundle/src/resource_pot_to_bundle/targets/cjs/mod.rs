@@ -98,6 +98,7 @@ impl CjsModuleAnalyzer {
     module_graph: &ModuleGraph,
   ) -> Vec<ModuleId> {
     farm_profile_function!("cjs module analyzer:analyzer modules");
+
     let mut collector = CjsCollector {
       unresolved_mark,
       top_level_mark,

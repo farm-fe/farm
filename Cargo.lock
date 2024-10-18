@@ -1820,6 +1820,7 @@ name = "farmfe_plugin_runtime"
 version = "0.0.11"
 dependencies = [
  "farmfe_core",
+ "farmfe_plugin_bundle",
  "farmfe_testing_helpers",
  "farmfe_toolkit",
  "farmfe_utils 0.1.5",

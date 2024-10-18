@@ -73,7 +73,7 @@ pub struct CJSReplace<'a> {
 impl<'a> CJSReplace<'a> {
   fn is_same_bundle(&self, a: &ModuleId, b: &ModuleId) -> bool {
     match (self.module_map.get(a), self.module_map.get(b)) {
-      (Some(a), Some(b)) => a.resource_pot_id == b.resource_pot_id,
+      (Some(a), Some(b)) => a.bundle_group_id == b.bundle_group_id,
       // maybe external
       (Some(_), None) | (None, Some(_)) => true,
       _ => false,

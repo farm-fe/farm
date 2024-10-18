@@ -21,6 +21,7 @@ use crate::resource_pot_to_bundle::{
   polyfill::SimplePolyfill,
   targets::util::{wrap_export_star, wrap_require_default, wrap_require_wildcard},
   uniq_name::BundleVariable,
+  ShareBundleOptions,
 };
 
 use super::util::create_esm_flag;
@@ -41,6 +42,7 @@ impl CjsGenerate {
     module_analyzer_manager: &ModuleAnalyzerManager,
     polyfill: &mut SimplePolyfill,
     is_already_polyfilled: &mut bool,
+    options: &ShareBundleOptions,
   ) -> Result<Vec<ModuleItem>> {
     let mut stmts = vec![];
 
@@ -183,7 +185,8 @@ impl CjsGenerate {
     import_map: &HashMap<ReferenceKind, ExternalReferenceImport>,
     module_analyzer_manager: &ModuleAnalyzerManager,
     polyfill: &mut SimplePolyfill,
-    resource_pot_id: &str,
+    group_id: &str,
+    options: &ShareBundleOptions,
   ) -> Result<Vec<ModuleItem>> {
     let mut stmts = vec![];
     let mut ordered_import = import_map.keys().collect::<Vec<_>>();
@@ -210,8 +213,9 @@ impl CjsGenerate {
             with_bundle_reference_slot_name(
               &module_analyzer_manager
                 .module_analyzer(m)
-                .map(|m| m.resource_pot_id.clone())
+                .map(|m| m.bundle_group_id.clone())
                 .unwrap(),
+              options.reference_slot,
             )
           },
         ),
@@ -236,10 +240,10 @@ impl CjsGenerate {
 
       let source_bundle_id = module_analyzer_manager
         .module_analyzer(module_id)
-        .map(|m| m.resource_pot_id.clone())
+        .map(|m| m.bundle_group_id.clone())
         // maybe external
-        .unwrap_or(resource_pot_id.to_string());
-      let is_same_bundle = source_bundle_id == resource_pot_id;
+        .unwrap_or(group_id.to_string());
+      let is_same_bundle = source_bundle_id == group_id;
 
       let namespace_name = bundle_variable.name(if !is_same_bundle {
         module_analyzer_manager
