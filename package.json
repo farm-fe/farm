@@ -26,13 +26,13 @@
     "test": "cross-env NODE_OPTIONS=--trace-exit vitest run"
   },
   "devDependencies": {
-    "@farmfe/core": "workspace:*",
-    "@farmfe/cli": "workspace:*",
     "@biomejs/biome": "1.8.3",
     "@changesets/cli": "^2.26.0",
     "@codspeed/vitest-plugin": "^3.1.1",
     "@commitlint/cli": "^17.0.3",
     "@commitlint/config-conventional": "^17.0.3",
+    "@farmfe/cli": "workspace:*",
+    "@farmfe/core": "workspace:*",
     "@types/node": "22.5.0",
     "@vitest/coverage-v8": "2.0.4",
     "cross-env": "^7.0.3",
@@ -41,6 +41,7 @@
     "husky": "^9.0.11",
     "lint-staged": "^13.0.3",
     "nanospinner": "^1.1.0",
+    "node-emoji": "^2.1.3",
     "playwright-chromium": "^1.42.1",
     "rimraf": "6.0.1",
     "rollup": "^3.29.4",
