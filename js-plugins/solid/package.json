@@ -39,7 +39,7 @@
     "solid-js": "^1.7.8"
   },
   "peerDependencies": {
-    "@farmfe/core": "workspace:^1.3.28"
+    "@farmfe/core": "workspace:^1.3.29"
   },
   "files": [
     "build"

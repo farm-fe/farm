@@ -1,5 +1,11 @@
 # @farmfe/core
 
+## 1.3.29
+
+### Patch Changes
+
+- 663dfeed: Revert change of replacing invalid css
+
 ## 1.3.28
 
 ### Patch Changes
