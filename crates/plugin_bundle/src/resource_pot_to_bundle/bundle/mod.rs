@@ -852,11 +852,9 @@ impl<'a> ModuleAnalyzerManager<'a> {
     ordered_module_ids.sort_by(|a, b| order_index_map[b].cmp(&order_index_map[a]));
 
     for group_id in ordered_groups_id {
-      self
-        .module_global_uniq_name
-        .add_namespace(group_id, |v| {
-          bundle_variable.register_common_used_name(v, &group_id)
-        });
+      self.module_global_uniq_name.add_namespace(group_id, |v| {
+        bundle_variable.register_common_used_name(v, &group_id)
+      });
     }
 
     for module_id in ordered_module_ids {

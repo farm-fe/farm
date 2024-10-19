@@ -11,7 +11,8 @@ export default defineConfig((env) => {
       },
       sourcemap: false,
       presetEnv: false,
-      // persistentCache: false,
+      concatenateModules: true,
+      persistentCache: false,
       resolve: {
         symlinks: true,
         alias: {
@@ -20,8 +21,9 @@ export default defineConfig((env) => {
           react: resolve(process.cwd(), './node_modules/react')
         }
       },
-      minify: false,
-      mode: 'development',
+      // minify: false,
+      sourcemap: false,
+      // mode: 'development',
       // persistentCache: false,
       output: {
         path: './build',

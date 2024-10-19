@@ -5,10 +5,12 @@ use std::{
 
 use farmfe_core::{
   context::CompilationContext,
-  enhanced_magic_string::magic_string::MagicString,
+  enhanced_magic_string::bundle::Bundle,
   module::{module_graph::ModuleGraph, ModuleId},
-  resource::resource_pot::ResourcePot,
+  resource::resource_pot::{ResourcePot, ResourcePotType},
 };
+
+use farmfe_plugin_bundle::resource_pot_to_bundle::{BundleGroup, ShareBundleOptions, SharedBundle};
 
 /// Note: Scope Hoisting is enabled only `config.concatenate_modules` is true. Otherwise, it A module is a [ScopeHoistedModuleGroup]
 ///
@@ -59,11 +61,26 @@ impl ScopeHoistedModuleGroup {
     &self,
     module_graph: &ModuleGraph,
     context: &Arc<CompilationContext>,
-  ) -> MagicString {
-    MagicString::new("", None)
-  }
+  ) -> farmfe_core::error::Result<Bundle> {
+    let bundle_id = self.target_hoisted_module_id.to_string();
 
-  fn collect_module_info(&self, module_graph: &ModuleGraph, context: &Arc<CompilationContext>) {}
+    let mut share_bundle = SharedBundle::new(
+      vec![BundleGroup {
+        id: bundle_id.clone(),
+        modules: self.hoisted_module_ids.iter().collect(),
+        entry_module: Some(self.target_hoisted_module_id.clone()),
+        group_type: ResourcePotType::Js,
+      }],
+      module_graph,
+      context,
+      Some(ShareBundleOptions {
+        reference_slot: false,
+      }),
+    )?;
+
+    share_bundle.render()?;
+    share_bundle.codegen(&bundle_id)
+  }
 }
 
 /// Handle the modules of a resource pot in topological order.
@@ -85,10 +102,10 @@ pub fn build_scope_hoisted_module_groups(
     );
     reverse_module_hoisted_group_map.insert(module_id.clone(), module_id.clone());
   }
-  println!(
-    "scope_hoisted_module_groups_map: {:?}",
-    scope_hoisted_module_groups_map
-  );
+  // println!(
+  //   "scope_hoisted_module_groups_map: {:?}",
+  //   scope_hoisted_module_groups_map
+  // );
   // Merge ScopeHoistedModuleGroup when concatenate_modules enabled
   if context.config.concatenate_modules {
     let mut scope_hoisted_module_groups = scope_hoisted_module_groups_map

@@ -47,6 +47,7 @@ pub struct RenderModuleResult {
 
 pub struct RenderModuleOptions<'a, F: Fn(&ModuleId) -> bool> {
   pub module: &'a Module,
+  pub hoisted_ast: Option<SwcModule>,
   pub module_graph: &'a ModuleGraph,
   pub is_enabled_minify: F,
   pub minify_builder: &'a MinifyBuilder,
@@ -59,13 +60,14 @@ pub fn render_module<'a, F: Fn(&ModuleId) -> bool>(
 ) -> farmfe_core::error::Result<RenderModuleResult> {
   let RenderModuleOptions {
     module,
+    hoisted_ast,
     module_graph,
     is_enabled_minify,
     minify_builder,
     is_async_module,
     context,
   } = options;
-  let mut cloned_module = module.meta.as_script().ast.clone();
+  let mut cloned_module = hoisted_ast.unwrap_or(module.meta.as_script().ast.clone());
   let (cm, _) = create_swc_source_map(Source {
     path: PathBuf::from(module.id.resolved_path_with_query(&context.config.root)),
     content: module.content.clone(),

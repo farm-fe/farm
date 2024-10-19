@@ -16,14 +16,14 @@ use farmfe_core::{
   error::{CompilationError, Result},
   module::{module_graph::ModuleGraph, ModuleId},
   parking_lot::Mutex,
+  plugin::PluginParseHookParam,
   rayon::iter::{IntoParallelIterator, ParallelIterator},
   resource::resource_pot::{RenderedModule, ResourcePot},
   serialize,
 };
-use farmfe_plugin_bundle::resource_pot_to_bundle::{BundleGroup, ShareBundleOptions, SharedBundle};
 use farmfe_toolkit::common::MinifyBuilder;
 
-use farmfe_utils::hash::sha256;
+use farmfe_utils::{hash::sha256, parse_query};
 use render_module::RenderModuleOptions;
 use scope_hoisting::build_scope_hoisted_module_groups;
 
@@ -71,60 +71,42 @@ pub fn resource_pot_to_runtime_object(
   };
 
   // group modules in the same group that can perform scope hoisting
-  // let scope_hoisting_module_groups =
-  //   build_scope_hoisted_module_groups(resource_pot, module_graph, context);
+  let scope_hoisting_module_groups =
+    build_scope_hoisted_module_groups(resource_pot, module_graph, context);
 
-  // let mut share_bundle = SharedBundle::new(
-  //   scope_hoisting_module_groups
-  //     .iter()
-  //     .map(|scope_hoisting_module_group| BundleGroup {
-  //       id: scope_hoisting_module_group
-  //         .target_hoisted_module_id
-  //         .to_string(),
-  //       modules: scope_hoisting_module_group
-  //         .hoisted_module_ids
-  //         .iter()
-  //         .collect(),
-  //       entry_module: resource_pot.entry_module.clone().filter(|entry_module| {
-  //         scope_hoisting_module_group
-  //           .hoisted_module_ids
-  //           .contains(&entry_module)
-  //       }),
-  //       group_type: resource_pot.resource_pot_type.clone(),
-  //     })
-  //     .collect(),
-  //   module_graph,
-  //   context,
-  //   Some(ShareBundleOptions {
-  //     reference_slot: false,
-  //   }),
-  // )?;
-
-  // share_bundle.render()?;
-  // println!("\n# scope hoisting module groups\n");
-  // println!(
-  //   "\n---\nscope_hoisting_module_groups: {:#?}\n---\n",
-  //   scope_hoisting_module_groups
-  // );
-
-  // println!("\n## resource_pot: \"{}\"\n", resource_pot.id);
-  // for module_group in &scope_hoisting_module_groups {
-  //   let result = share_bundle.codegen(&module_group.target_hoisted_module_id.to_string())?;
-
-  //   println!(
-  //     "---\nmodule_group_id: {}---\n\ncode:\n\n```js\n{}\n```\n\n",
-  //     module_group.target_hoisted_module_id.to_string(),
-  //     result.to_string()
-  //   );
-  // }
-
-  resource_pot
-    .modules()
+  scope_hoisting_module_groups
     .into_par_iter()
-    .try_for_each(|m_id| {
+    .try_for_each(|hoisted_group| {
       let module = module_graph
-        .module(m_id)
-        .unwrap_or_else(|| panic!("Module not found: {m_id:?}"));
+        .module(&hoisted_group.target_hoisted_module_id)
+        .unwrap_or_else(|| {
+          panic!(
+            "Module not found: {:?}",
+            &hoisted_group.target_hoisted_module_id
+          )
+        });
+
+      let hoisted_ast = if hoisted_group.hoisted_module_ids.len() > 1 {
+        let hoisted_code_bundle = hoisted_group.render(module_graph, context)?;
+        let code = hoisted_code_bundle.to_string();
+        let mut meta = context
+          .plugin_driver
+          .parse(
+            &PluginParseHookParam {
+              module_id: module.id.clone(),
+              resolved_path: module.id.resolved_path(&context.config.root),
+              query: parse_query(&module.id.query_string()),
+              module_type: module.module_type.clone(),
+              content: Arc::new(code),
+            },
+            context,
+            &Default::default(),
+          )?
+          .unwrap();
+        Some(meta.as_script_mut().take_ast())
+      } else {
+        None
+      };
 
       let mut cache_store_key = None;
 
@@ -132,12 +114,12 @@ pub fn resource_pot_to_runtime_object(
       if context.config.persistent_cache.enabled() {
         let content_hash = module.content_hash.clone();
         let store_key = CacheStoreKey {
-          name: m_id.to_string() + "-resource_pot_to_runtime_object",
+          name: module.id.to_string() + "-resource_pot_to_runtime_object",
           key: sha256(
             format!(
               "resource_pot_to_runtime_object_{}_{}_{}",
               content_hash,
-              m_id.to_string(),
+              module.id.to_string(),
               module.used_exports.join(",")
             )
             .as_bytes(),
@@ -165,13 +147,14 @@ pub fn resource_pot_to_runtime_object(
         }
       }
 
-      let is_async_module = async_modules.contains(m_id);
+      let is_async_module = async_modules.contains(&module.id);
       let RenderModuleResult {
         rendered_module,
         external_modules,
         source_map_chain,
       } = render_module(RenderModuleOptions {
         module,
+        hoisted_ast,
         module_graph,
         is_enabled_minify,
         minify_builder: &minify_builder,
@@ -183,7 +166,7 @@ pub fn resource_pot_to_runtime_object(
       // cache the code and sourcemap
       if context.config.persistent_cache.enabled() {
         let cache_rendered_script_module = CacheRenderedScriptModule::new(
-          m_id.clone(),
+          module.id.clone(),
           code.clone(),
           rendered_module.clone(),
           external_modules.clone(),
@@ -197,21 +180,21 @@ pub fn resource_pot_to_runtime_object(
           .expect("failed to write resource pot to runtime object cache");
       }
 
-      let mut module = MagicString::new(
+      let mut magic_string = MagicString::new(
         &code,
         Some(MagicStringOptions {
-          filename: Some(m_id.resolved_path_with_query(&context.config.root)),
+          filename: Some(module.id.resolved_path_with_query(&context.config.root)),
           source_map_chain,
           ..Default::default()
         }),
       );
 
-      module.prepend(&format!("{:?}:", m_id.id(context.config.mode.clone())));
-      module.append(",");
+      magic_string.prepend(&format!("{:?}:", module.id.id(context.config.mode.clone())));
+      magic_string.append(",");
 
       modules.lock().push(RenderedScriptModule {
-        id: m_id.clone(),
-        module,
+        id: module.id.clone(),
+        module: magic_string,
         rendered_module,
         external_modules,
       });
