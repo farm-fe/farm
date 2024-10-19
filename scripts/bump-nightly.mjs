@@ -14,6 +14,10 @@ execSync(`npx changeset version --snapshot nightly`, {
   stdio: "inherit",
 });
 
+execSync(`pnpm --filter "../packages/cli" --filter "../packages/core" version ${nightlyVersion} --no-git-tag-version`, {
+  stdio: "inherit",
+});
+
 execSync("pnpm install --no-frozen-lockfile", { stdio: "inherit" });
 
 console.log(`Nightly version bump completed. Version: ${nightlyVersion}`);
