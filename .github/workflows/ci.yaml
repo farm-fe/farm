@@ -106,10 +106,10 @@ jobs:
       - name: Build Plugin Tools
         run: pnpm --filter @farmfe/plugin-tools run build
 
-      - name: Set Nightly Version
+      - name: Set Nightly Version for CLI and Core
         run: |
           NIGHTLY_VERSION="2.0.0-nightly.$(date +'%Y%m%d%H%M%S')"
-          pnpm version $NIGHTLY_VERSION --no-git-tag-version
+          pnpm --filter "./packages/cli" --filter "./packages/core" version $NIGHTLY_VERSION --no-git-tag-version
 
       # - name: Publish Nightly to npm
       #   env:
