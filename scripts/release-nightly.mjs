@@ -19,12 +19,12 @@ await buildJsPlugins();
 // Set npm config to public access
 execSync("npm config set access public", { stdio: "inherit" });
 
-// Update versions to nightly
-execSync(`npx changeset version --snapshot ${nightlyVersion}`, {
-  stdio: "inherit",
-});
+// // Update versions to nightly
+// execSync(`npx changeset version --snapshot nightly`, {
+//   stdio: "inherit",
+// });
 
 // Publish nightly packages
-execSync(`npx changeset publish --tag ${nightlyVersion}`, { stdio: "inherit" });
+execSync(`npx changeset publish --tag nightly`, { stdio: "inherit" });
 
 console.log(`Nightly version ${nightlyVersion} published successfully.`);
