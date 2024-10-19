@@ -20,7 +20,7 @@ await buildJsPlugins();
 execSync("npm config set access public", { stdio: "inherit" });
 
 // Update versions to nightly
-execSync(`npx changeset version --snapshot nightly`, {
+execSync(`npx changeset version --snapshot nightly --no-snap-release`, {
   stdio: "inherit",
 });
 
