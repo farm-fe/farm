@@ -64,7 +64,7 @@
     "build:rs:profile": "cross-env FARM_PROFILE=1 npm run build:rs -- --features profile",
     "prepublishOnly": "napi prepublish -t npm && FARM_PUBLISH=true npm run build:cjs",
     "clean": "rimraf dist tsconfig.build.tsbuildinfo",
-    "version": "napi version",
+    "napi:version": "napi version",
     "artifacts": "napi artifacts",
     "type-check": "tsc -p tsconfig.build.json"
   },
