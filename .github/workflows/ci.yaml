@@ -106,10 +106,10 @@ jobs:
       - name: Build Plugin Tools
         run: pnpm --filter @farmfe/plugin-tools run build
 
-      # - name: Set Nightly Version
-      #   run: |
-      #     NIGHTLY_VERSION="2.0.0-nightly.$(date +'%Y%m%d%H%M%S')"
-      #     pnpm version $NIGHTLY_VERSION --no-git-tag-version
+      - name: Set Nightly Version
+        run: |
+          NIGHTLY_VERSION="2.0.0-nightly.$(date +'%Y%m%d%H%M%S')"
+          pnpm version $NIGHTLY_VERSION --no-git-tag-version
 
       # - name: Publish Nightly to npm
       #   env:
@@ -119,12 +119,12 @@ jobs:
       #     echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" > .npmrc
       #     pnpm publish --tag nightly --no-git-checks
 
-      # - name: Create Nightly Release Pull Request or Publish Nightly Version to npm
-      #   id: changesets
-      #   uses: changesets/action@v1
-      #   with:
-      #     version: pnpm run bump:nightly
-      #     publish: npm run release:nightly
-      #   env:
-      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      #     NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: Create Nightly Release Pull Request or Publish Nightly Version to npm
+        id: changesets
+        uses: changesets/action@v1
+        with:
+          version: pnpm run bump:nightly
+          publish: npm run release:nightly
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
