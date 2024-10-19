@@ -12,9 +12,7 @@ use farmfe_core::{
   module::{module_graph::ModuleGraph, ModuleId},
   plugin::ResolveKind,
   swc_common::{Mark, DUMMY_SP},
-  swc_ecma_ast::{
-    Bool, CallExpr, Callee, Expr, ExprOrSpread, Ident, Lit, MemberExpr, MemberProp, Number, Str,
-  },
+  swc_ecma_ast::{Bool, CallExpr, Callee, Expr, ExprOrSpread, Ident, Lit, Str},
 };
 use farmfe_toolkit::{
   script::{is_commonjs_require, is_dynamic_import},
