@@ -468,6 +468,7 @@ export interface Config {
     persistentCache?: boolean | PersistentCacheConfig;
     comments?: boolean | 'license';
     custom?: Record<string, any>;
+    concatenateModules?: boolean;
   };
   jsPlugins?: JsPlugin[];
   // [rustPluginFilePath, jsonStringifiedOptions]

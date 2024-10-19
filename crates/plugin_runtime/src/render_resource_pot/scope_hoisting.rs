@@ -85,7 +85,10 @@ pub fn build_scope_hoisted_module_groups(
     );
     reverse_module_hoisted_group_map.insert(module_id.clone(), module_id.clone());
   }
-
+  println!(
+    "scope_hoisted_module_groups_map: {:?}",
+    scope_hoisted_module_groups_map
+  );
   // Merge ScopeHoistedModuleGroup when concatenate_modules enabled
   if context.config.concatenate_modules {
     let mut scope_hoisted_module_groups = scope_hoisted_module_groups_map
@@ -103,6 +106,14 @@ pub fn build_scope_hoisted_module_groups(
       HashMap::new();
 
     for group in scope_hoisted_module_groups {
+      let module = module_graph
+        .module(&group.target_hoisted_module_id)
+        .unwrap();
+      // if this module is not an esm module, skip it
+      if !module.meta.as_script().is_esm() {
+        continue;
+      }
+
       let dependents = module_graph.dependents_ids(&group.target_hoisted_module_id);
       // there dependents of this module are not in this resource pot
       if dependents.iter().any(|id| !resource_pot.has_module(id)) {
@@ -121,6 +132,7 @@ pub fn build_scope_hoisted_module_groups(
         // if execution_order of dependents_hoisted_group_id is smaller than this module, means there is a cycle, skip it
         let dependents_hoisted_group_module =
           module_graph.module(&dependents_hoisted_group_id).unwrap();
+
         if dependents_hoisted_group_module.execution_order
           < module_graph
             .module(&group.target_hoisted_module_id)
