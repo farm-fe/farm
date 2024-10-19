@@ -149,7 +149,11 @@ impl SourceReplacer<'_> {
             && matches!(self.target_env, TargetEnv::Node)
           {
             // transform require("external") to globalThis.nodeRequire("external")
-            call_expr.callee = Callee::Expr(Box::new(Expr::Ident("_nodeRequire".into())));
+            call_expr.callee = Callee::Expr(Box::new(Expr::Member(MemberExpr {
+              span: DUMMY_SP,
+              obj: Box::new(Expr::Ident("global".into())),
+              prop: MemberProp::Ident("nodeRequire".into()),
+            })));
             return SourceReplaceResult::NotReplaced;
           }
 

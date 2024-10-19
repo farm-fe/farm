@@ -300,15 +300,29 @@ impl<'a> ModuleAnalyzerManager<'a> {
       .module_map
       .get(module_id)
       .map(|item| item.entry)
-      .unwrap_or(false)
+      .is_some_and(|v| v)
+      || self.module_graph.entries.contains_key(module_id)
   }
 
   pub fn module_system(&self, module_id: &ModuleId) -> ModuleSystem {
     self
       .module_map
       .get(module_id)
-      .map(|item| item.module_system.clone())
-      .unwrap()
+      .map(|item| Some(item.module_system.clone()))
+      .unwrap_or_else(|| {
+        self.module_graph.module(module_id).map(|m| {
+          let script = m.meta.as_script();
+
+          script.module_system.clone()
+        })
+      })
+      .expect(
+        format!(
+          "expect ModuleSystem of module \"{}\", but not found.",
+          module_id.to_string()
+        )
+        .as_str(),
+      )
   }
 
   pub fn is_hybrid_or_esm(&self, module_id: &ModuleId) -> bool {
