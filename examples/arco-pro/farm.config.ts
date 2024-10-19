@@ -9,7 +9,8 @@ export default defineConfig((env) => {
       input: {
         index: './index.html'
       },
-      // minify: false,
+      minify: false,
+      sourcemap: false,
       presetEnv: false,
       // persistentCache: false,
       resolve: {

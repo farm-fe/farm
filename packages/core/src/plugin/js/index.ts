@@ -1,7 +1,6 @@
 import { CompilationMode } from '../../config/env.js';
 import {
   type JsPlugin,
-  Logger,
   type UserConfig,
   normalizeDevServerConfig
 } from '../../index.js';
@@ -21,7 +20,6 @@ type VitePluginsType = VitePluginType[];
 export async function handleVitePlugins(
   vitePlugins: VitePluginsType,
   userConfig: UserConfig,
-  logger: Logger,
   mode: CompilationMode
 ): Promise<JsPlugin[]> {
   const jsPlugins: JsPlugin[] = [];
@@ -48,7 +46,7 @@ export async function handleVitePlugins(
       filters = f;
     }
     filters?.forEach((filter) => filtersUnion.add(filter));
-    processVitePlugin(vitePlugin, userConfig, filters, jsPlugins, logger, mode);
+    processVitePlugin(vitePlugin, userConfig, filters, jsPlugins, mode);
   }
 
   // if vitePlugins is not empty, append a load plugin to load file
@@ -57,7 +55,6 @@ export async function handleVitePlugins(
     jsPlugins.push(
       defaultLoadPlugin({
         filtersUnion,
-        logger,
         userConfig
       })
     );
@@ -73,7 +70,6 @@ export function processVitePlugin(
   userConfig: UserConfig,
   filters: string[],
   jsPlugins: JsPlugin[],
-  logger: Logger,
   mode: CompilationMode
 ) {
   const processPlugin = (plugin: any) => {
@@ -81,7 +77,6 @@ export function processVitePlugin(
       plugin as any,
       userConfig,
       filters,
-      logger,
       mode
     );
     convertPlugin(vitePluginAdapter);

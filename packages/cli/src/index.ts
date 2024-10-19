@@ -1,37 +1,47 @@
-import { readFileSync } from 'node:fs';
-
+import { VERSION as CORE_VERSION } from '@farmfe/core';
 import { cac } from 'cac';
-import { getOptionFromBuildOption } from './config.js';
+
 import {
+  VERSION,
   handleAsyncOperationErrors,
-  preventExperimentalWarning,
   resolveCliConfig,
   resolveCommandOptions,
   resolveCore
 } from './utils.js';
 
 import type {
-  FarmCLIBuildOptions,
-  FarmCLIPreviewOptions,
-  FarmCLIServerOptions,
-  GlobalFarmCLIOptions,
-  ICleanOptions
+  CleanOptions,
+  CliBuildOptions,
+  CliPreviewOptions,
+  CliServerOptions,
+  GlobalCliOptions
 } from './types.js';
-
-const { version } = JSON.parse(
-  readFileSync(new URL('../package.json', import.meta.url)).toString()
-);
 
 const cli = cac('farm');
 
 // common command
 cli
-  .option('-c, --config <file>', 'use specified config file')
-  .option('-m, --mode <mode>', 'set env mode')
-  .option('--base <path>', 'public base path')
-  .option('--clearScreen', 'allow/disable clear screen when logging', {
-    default: true
-  });
+  .option(
+    '-c, --config <file>',
+    '[string] use specified config file (default: farm.config.js / farm.config.ts / farm.config.mjs / farm.config.cjs / farm.config.mts / farm.config.cts)'
+  )
+  .option(
+    '-m, --mode <mode>',
+    '[string] set env mode, when use with development (default: /)'
+  )
+  .option('--base <path>', '[string] public base path')
+  .option('-d, --debug [feat]', `[string | boolean] show debug logs`)
+  .option(
+    '-t, --timeUnit <unit>',
+    '[string] time unit for time log (default: ms) optionals: ms, s'
+  )
+  .option(
+    '--clearScreen',
+    '[boolean] allow/disable clear screen when logging (default: true)',
+    {
+      default: true
+    }
+  );
 
 // dev command
 cli
@@ -41,33 +51,56 @@ cli
   )
   .alias('start')
   .alias('dev')
-  .option('-l, --lazy', 'lazyCompilation')
-  .option('--host <host>', 'specify host')
-  .option('--port <port>', 'specify port')
-  .option('--open', 'open browser on server start')
-  .option('--hmr', 'enable hot module replacement')
-  .option('--cors', 'enable cors')
-  .option('--strictPort', 'specified port is already in use, exit with error')
+  .option('-l, --lazy', '[boolean] lazyCompilation (default: true)')
+  .option('--host <host>', '[string] specify host')
+  .option('--port <port>', '[string] specify port')
+  .option('--open', '[boolean] open browser on server start')
+  .option('--hmr', '[boolean] enable hot module replacement')
+  .option('--cors', '[boolean] enable cors')
+  .option(
+    '--strictPort',
+    '[boolean] specified port is already in use, exit with error (default: true)'
+  )
+  .option('--target <target>', '[string] transpile targetEnv node, browser')
+  .option('--format <format>', '[string] transpile format esm, commonjs')
+  .option('--sourcemap', '[boolean] output source maps for build')
+  .option(
+    '--treeShaking',
+    '[boolean] Eliminate useless code without side effects'
+  )
+  .option('--minify', '[boolean] code compression at build time')
   .action(
     async (
-      rootPath: string,
-      options: FarmCLIServerOptions & GlobalFarmCLIOptions
+      root: string,
+      options: CliServerOptions & CliBuildOptions & GlobalCliOptions
     ) => {
-      const { root, configPath } = resolveCliConfig(rootPath, options);
       const resolveOptions = resolveCommandOptions(options);
 
       const defaultOptions = {
         root,
-        compilation: {
-          lazyCompilation: options.lazy
-        },
         server: resolveOptions,
         clearScreen: options.clearScreen,
-        configPath,
-        mode: options.mode
+        configFile: options.config,
+        mode: options.mode,
+        timeUnit: options.timeUnit,
+        compilation: {
+          lazyCompilation: options.lazy,
+          output: {
+            path: options?.outDir,
+            targetEnv: options?.target,
+            format: options?.format
+          },
+          input: {
+            index: options?.input
+          },
+          sourcemap: options.sourcemap,
+          minify: options.minify,
+          treeShaking: options.treeShaking
+        }
       };
 
       const { start } = await resolveCore();
+
       handleAsyncOperationErrors(
         start(defaultOptions),
         'Failed to start server'
@@ -78,83 +111,72 @@ cli
 // build command
 cli
   .command('build [root]', 'compile the project in production mode')
-  .option('-o, --outDir <dir>', 'output directory')
-  .option('-i, --input <file>', 'input file path')
-  .option('-w, --watch', 'watch file change')
-  .option('--target <target>', 'transpile targetEnv node, browser')
-  .option('--format <format>', 'transpile format esm, commonjs')
-  .option('--sourcemap', 'output source maps for build')
-  .option('--treeShaking', 'Eliminate useless code without side effects')
-  .option('--minify', 'code compression at build time')
-  .action(
-    async (
-      rootPath: string,
-      options: FarmCLIBuildOptions & GlobalFarmCLIOptions
-    ) => {
-      const { root, configPath } = resolveCliConfig(rootPath, options);
+  .option('-o, --outDir <dir>', '[string] output directory')
+  .option('-i, --input <file>', '[string] input file path')
+  .option('-w, --watch', '[boolean] watch file change and rebuild')
+  .option('--target <target>', '[string] transpile targetEnv node, browser')
+  .option('--format <format>', '[string] transpile format esm, commonjs')
+  .option('--sourcemap', '[boolean] output source maps for build')
+  .option(
+    '--treeShaking',
+    '[boolean] Eliminate useless code without side effects'
+  )
+  .option('--minify', '[boolean] code compression at build time')
+  .action(async (root: string, options: CliBuildOptions & GlobalCliOptions) => {
+    const defaultOptions = {
+      root,
+      configFile: options.config,
+      mode: options.mode,
+      watch: options.watch,
+      timeUnit: options.timeUnit,
+      compilation: {
+        output: {
+          path: options?.outDir,
+          targetEnv: options?.target,
+          format: options?.format
+        },
+        input: {
+          index: options?.input
+        },
+        sourcemap: options.sourcemap,
+        minify: options.minify,
+        treeShaking: options.treeShaking
+      }
+    };
+    const { build } = await resolveCore();
 
-      const defaultOptions = {
-        root,
-        configPath,
-        ...getOptionFromBuildOption(options)
-      };
-
-      const { build } = await resolveCore();
-      handleAsyncOperationErrors(build(defaultOptions), 'error during build');
-    }
-  );
-
-cli
-  .command('watch [root]', 'watch file change')
-  .option('-o, --outDir <dir>', 'output directory')
-  .option('-i, --input <file>', 'input file path')
-  .option('--target <target>', 'transpile targetEnv node, browser')
-  .option('--format <format>', 'transpile format esm, commonjs')
-  .option('--sourcemap', 'output source maps for build')
-  .option('--treeShaking', 'Eliminate useless code without side effects')
-  .option('--minify', 'code compression at build time')
-  .action(
-    async (
-      rootPath: string,
-      options: FarmCLIBuildOptions & GlobalFarmCLIOptions
-    ) => {
-      const { root, configPath } = resolveCliConfig(rootPath, options);
-
-      const defaultOptions = {
-        root,
-        configPath,
-        ...getOptionFromBuildOption(options)
-      };
-
-      const { watch } = await resolveCore();
-      handleAsyncOperationErrors(
-        watch(defaultOptions),
-        'error during watch project'
-      );
-    }
-  );
+    handleAsyncOperationErrors(build(defaultOptions), 'error during build');
+  });
 
 cli
   .command('preview [root]', 'compile the project in watch mode')
-  .option('--port <port>', 'specify port')
-  .option('--open', 'open browser on server preview start')
+  .option('--host [host]', `[string] specify hostname`)
+  .option('--port <port>', `[number] specify port`)
+  .option('--open', '[boolean] open browser on server preview start')
+  .option('--outDir <dir>', `[string] output directory (default: dist)`)
+  .option('--strictPort', `[boolean] exit if specified port is already in use`)
   .action(
-    async (
-      rootPath: string,
-      options: FarmCLIPreviewOptions & GlobalFarmCLIOptions
-    ) => {
-      const { root, configPath } = resolveCliConfig(rootPath, options);
-
-      const resolveOptions = resolveCommandOptions(options);
+    async (root: string, options: CliPreviewOptions & GlobalCliOptions) => {
       const defaultOptions = {
         root,
         mode: options.mode,
-        server: resolveOptions,
-        configPath,
-        port: options.port
+        preview: {
+          port: options.port,
+          strictPort: options?.strictPort,
+          host: options.host,
+          open: options.open
+        },
+        configFile: options.config,
+        port: options.port,
+        compilation: {
+          output: {
+            path: options.outDir
+          }
+        }
       };
 
       const { preview } = await resolveCore();
+
       handleAsyncOperationErrors(
         preview(defaultOptions),
         'Failed to start preview server'
@@ -168,37 +190,20 @@ cli
     '--recursive',
     'Recursively search for node_modules directories and clean them'
   )
-  .action(async (rootPath: string, options: ICleanOptions) => {
+  .action(async (rootPath: string, options: CleanOptions) => {
     const { root } = resolveCliConfig(rootPath, options);
+
     const { clean } = await resolveCore();
-
-    try {
-      await clean(root, options?.recursive);
-    } catch (e) {
-      const { Logger } = await import('@farmfe/core');
-      const logger = new Logger();
-      logger.error(`Failed to clean cache: \n ${e.stack}`);
-      process.exit(1);
-    }
+    handleAsyncOperationErrors(
+      clean(root, options?.recursive),
+      'Failed to clean cache'
+    );
   });
-
-// Listening for unknown command
-cli.on('command:*', async () => {
-  const { Logger } = await import('@farmfe/core');
-  const logger = new Logger();
-  logger.error(
-    'Unknown command place Run "farm --help" to see available commands'
-  );
-});
-
-// warning::: use mdn browser compatibility data with experimental warning in terminal so prevent experimental warning
-// we don't use it in `@farmfe/core` package because
-// we need to prevent it in cli package but we don't prevent it in core package
-// We only keep the original code environment.
-preventExperimentalWarning();
 
 cli.help();
 
-cli.version(version);
+cli.version(
+  `@farmfe/cli ${VERSION ?? 'unknown'} @farmfe/core ${CORE_VERSION ?? 'unknown'}`
+);
 
 cli.parse();

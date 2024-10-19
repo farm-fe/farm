@@ -3,7 +3,7 @@
     <logo />
     <img :src="farmLogo" alt="farm logo" style="width: 100px" />
     {{ res }}
-    <h3>Welcome to use TDesign！</h3>
+    <h3>Welcome to use </h3>
     <t-space>
       <t-button theme="primary">
         <add-icon slot="icon" />

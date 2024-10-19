@@ -77,13 +77,7 @@ export const version = JSON.parse(
 ).version;
 
 export function normalizePath(id: string): string {
-  return path.posix.normalize(id);
-}
-
-export function normalizeBasePath(basePath: string): string {
-  return path.posix.normalize(
-    isWindows ? basePath.replace(/\\/g, '/') : basePath
-  );
+  return path.posix.normalize(isWindows ? id.replace(/\\/g, '/') : id);
 }
 
 export function arraify<T>(target: T | T[]): T[] {
@@ -176,4 +170,26 @@ export function tryStatSync(file: string): fs.Stats | undefined {
   try {
     return fs.statSync(file, { throwIfNoEntry: false });
   } catch {}
+}
+
+export function formatExecutionTime(
+  time: number,
+  format: 'ms' | 's' = 'ms'
+): string {
+  switch (format) {
+    case 's':
+      return `${Math.floor(time) / 1000}s`;
+    case 'ms':
+    default:
+      return `${Math.floor(time)}ms`;
+  }
+}
+
+export function arrayEqual(a: any[], b: any[]): boolean {
+  if (a === b) return true;
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) {
+    if (a[i] !== b[i]) return false;
+  }
+  return true;
 }
