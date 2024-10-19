@@ -159,7 +159,8 @@ impl EsmGenerate {
                 &module_analyzer_manager
                   .module_analyzer(m)
                   .map(|m| m.bundle_group_id.clone())
-                  .unwrap(),
+                  // maybe using group
+                  .unwrap_or(m.to_string()),
                 options.reference_slot,
               ),
             )
