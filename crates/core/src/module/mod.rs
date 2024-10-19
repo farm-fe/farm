@@ -402,6 +402,18 @@ impl ScriptModuleMetaData {
   pub fn set_comments(&mut self, comments: CommentsMetaData) {
     self.comments = comments;
   }
+
+  pub fn is_cjs(&self) -> bool {
+    matches!(self.module_system, ModuleSystem::CommonJs)
+  }
+
+  pub fn is_esm(&self) -> bool {
+    matches!(self.module_system, ModuleSystem::EsModule)
+  }
+
+  pub fn is_hybrid(&self) -> bool {
+    matches!(self.module_system, ModuleSystem::Hybrid)
+  }
 }
 
 #[cache_item]

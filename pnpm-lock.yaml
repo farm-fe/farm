@@ -772,6 +772,37 @@ importers:
         specifier: workspace:*
         version: link:../../packages/core
 
+  examples/module-concatenation:
+    dependencies:
+      core-js:
+        specifier: ^3.30.1
+        version: 3.37.1
+      react:
+        specifier: '18'
+        version: 18.2.0
+      react-dom:
+        specifier: '18'
+        version: 18.2.0(react@18.2.0)
+    devDependencies:
+      '@farmfe/cli':
+        specifier: workspace:*
+        version: link:../../packages/cli
+      '@farmfe/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@farmfe/plugin-react':
+        specifier: workspace:*
+        version: link:../../rust-plugins/react
+      '@types/react':
+        specifier: '18'
+        version: 18.2.35
+      '@types/react-dom':
+        specifier: '18'
+        version: 18.2.14
+      react-refresh:
+        specifier: ^0.14.0
+        version: 0.14.2
+
   examples/multi-page-app:
     dependencies:
       clsx:
@@ -34914,6 +34945,8 @@ snapshots:
   follow-redirects@1.15.6(debug@4.3.6):
     optionalDependencies:
       debug: 4.3.6
+
+  font-awesome@4.7.0: {}
 
   font-awesome@4.7.0: {}
 

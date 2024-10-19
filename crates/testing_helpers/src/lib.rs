@@ -5,7 +5,7 @@ use farmfe_core::{
   module::{
     module_graph::{ModuleGraph, ModuleGraphEdgeDataItem},
     module_group::{ModuleGroup, ModuleGroupGraph},
-    Module,
+    Module, ModuleMetaData, ModuleType, ScriptModuleMetaData,
   },
   plugin::ResolveKind,
   relative_path::RelativePath,
@@ -51,7 +51,9 @@ pub fn construct_test_module_graph() -> ModuleGraph {
   let mut graph = ModuleGraph::new();
 
   for id in module_ids {
-    let m = Module::new(id);
+    let mut m = Module::new(id);
+    m.module_type = ModuleType::Js;
+    m.meta = Box::new(ModuleMetaData::Script(ScriptModuleMetaData::default()));
 
     graph.add_module(m);
   }
