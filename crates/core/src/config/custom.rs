@@ -28,8 +28,8 @@ pub fn get_config_external_record(config: &Config) -> ExternalConfig {
       return ExternalConfig::new();
     }
 
-    let external: HashMap<String, String> = serde_json::from_str(val)
-      .unwrap_or_else(|_| panic!("failed parse record external {val:?}"));
+    let external: HashMap<String, String> =
+      serde_json::from_str(val).unwrap_or_else(|_| panic!("failed parse record external {val:?}"));
 
     let mut external_config = ExternalConfig::new();
 

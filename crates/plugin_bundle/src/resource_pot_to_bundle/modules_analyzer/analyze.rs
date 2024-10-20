@@ -6,8 +6,8 @@ use farmfe_core::{
   module::{module_graph::ModuleGraph, ModuleId},
   swc_common::Mark,
   swc_ecma_ast::{
-    self, DefaultDecl, ExportDecl, Expr, Ident, ImportSpecifier, ModuleDecl,
-    ModuleExportName, ModuleItem,
+    self, DefaultDecl, ExportDecl, Expr, Ident, ImportSpecifier, ModuleDecl, ModuleExportName,
+    ModuleItem,
   },
 };
 use farmfe_toolkit::swc_ecma_visit::{Visit, VisitWith};
@@ -35,8 +35,7 @@ impl CollectUnresolvedIdent {
 
 impl Visit for CollectUnresolvedIdent {
   fn visit_ident(&mut self, n: &Ident) {
-    if n.span.ctxt.outer() == self.unresolved_mark || self.unresolved_ident.contains(n.sym.as_str())
-    {
+    if n.ctxt.outer() == self.unresolved_mark || self.unresolved_ident.contains(n.sym.as_str()) {
       self.unresolved_ident.insert(n.sym.to_string());
     }
   }
@@ -114,10 +113,7 @@ impl<'a> AnalyzeModuleItem<'a> {
   }
 
   fn register_var(&mut self, ident: &Ident, strict: bool) -> usize {
-    self._register_var.as_mut()(
-      ident,
-      strict || ident.span.ctxt.outer() != self.top_level_mark,
-    )
+    self._register_var.as_mut()(ident, strict || ident.ctxt.outer() != self.top_level_mark)
   }
 }
 

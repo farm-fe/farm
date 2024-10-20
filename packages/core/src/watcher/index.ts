@@ -170,6 +170,9 @@ export default class Watcher {
     // @ts-ignore
     const userWatchOptions = this.config.server.watch;
     const { ignored: ignoredList, ...otherOptions } = userWatchOptions ?? {};
+    const cacheDir = (
+      this.config.compilation.persistentCache as PersistentCacheConfig
+    ).cacheDir;
     const ignored: WatchOptions['ignored'] = [
       '**/.git/**',
       '**/node_modules/**',
@@ -177,12 +180,9 @@ export default class Watcher {
       glob.escapePath(
         path.resolve(this.config.root, this.config.compilation.output.path)
       ) + '/**',
-      glob.escapePath(
-        (this.config.compilation.persistentCache as PersistentCacheConfig)
-          .cacheDir
-      ) + '/**',
+      cacheDir ? glob.escapePath(cacheDir) + '/**' : undefined,
       ...arraify(ignoredList || [])
-    ];
+    ].filter(Boolean);
 
     this.resolvedWatchOptions = {
       ignored,

@@ -9,7 +9,6 @@ export default defineConfig((env) => {
       input: {
         index: './index.html'
       },
-      minify: false,
       sourcemap: false,
       presetEnv: false,
       // persistentCache: false,
@@ -29,9 +28,9 @@ export default defineConfig((env) => {
         filename: 'assets/[resourceName].[contentHash].[ext]',
         assetsFilename: 'static/[resourceName].[contentHash].[ext]'
       },
-      partialBundling: {
-        targetMinSize: 1024 * 2
-      },
+      // partialBundling: {
+      //   targetMinSize: 1024 * 2
+      // },
       progress: true
     },
     server: {

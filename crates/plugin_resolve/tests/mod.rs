@@ -3,7 +3,8 @@ use std::{collections::HashMap, sync::Arc};
 use farmfe_core::{
   config::{AliasItem, Config, ResolveConfig, StringOrRegex},
   context::CompilationContext,
-  plugin::ResolveKind, regex::Regex,
+  plugin::ResolveKind,
+  regex::Regex,
 };
 use farmfe_plugin_resolve::resolver::{ResolveOptions, Resolver};
 use farmfe_testing_helpers::fixture;

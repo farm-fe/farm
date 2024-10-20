@@ -42,10 +42,7 @@ fn test_generate_and_diff_resource_pots() {
 
   let updated_modules = vec!["F".into(), "E".into(), "B".into()];
   let mut module_group_graph = module_group_graph_from_entries(
-    &module_graph
-      .entries
-      .clone().into_keys()
-      .collect(),
+    &module_graph.entries.clone().into_keys().collect(),
     &mut module_graph,
   );
   let diff_result = diff_module_graph(updated_modules.clone(), &module_graph, &update_module_graph);
@@ -244,10 +241,7 @@ fn test_generate_and_diff_resource_pots_one_module_changed() {
     )
     .unwrap();
   let mut module_group_graph = module_group_graph_from_entries(
-    &module_graph
-      .entries
-      .clone().into_keys()
-      .collect(),
+    &module_graph.entries.clone().into_keys().collect(),
     &mut module_graph,
   );
   let updated_modules = vec!["I".into()];

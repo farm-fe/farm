@@ -80,13 +80,13 @@ impl PersistentCacheConfig {
         let mut keys: Vec<_> = cloned_obj.envs.keys().collect();
         keys.sort();
         let config_str = keys
-            .into_iter()
-            .map(|k| {
-                let v = cloned_obj.envs.get(k).unwrap();
-                format!("{k}={v}")
-            })
-            .collect::<Vec<_>>()
-            .join("&");
+          .into_iter()
+          .map(|k| {
+            let v = cloned_obj.envs.get(k).unwrap();
+            format!("{k}={v}")
+          })
+          .collect::<Vec<_>>()
+          .join("&");
         let config_hash = sha256(config_str.as_bytes(), 32);
 
         cloned_obj.build_dependencies.push(config_hash);

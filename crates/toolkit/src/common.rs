@@ -181,9 +181,7 @@ pub fn load_source_original_source_map(
   let mut map = None;
   // try load source map when load module content.
   if content.contains(source_map_comment_prefix) {
-    let base64_prefix = format!(
-      "{source_map_comment_prefix}=data:application/json;base64,"
-    );
+    let base64_prefix = format!("{source_map_comment_prefix}=data:application/json;base64,");
     // detect that the source map is inline or not
     let source_map = if content.contains(&base64_prefix) {
       // inline source map
