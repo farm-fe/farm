@@ -56,7 +56,7 @@ impl<'a, 'b> ReplaceDynamicVisit<'a, 'b> {
     matches!(expr.callee, Callee::Import(_))
   }
 
-  pub fn try_find_module(&self, source: &str) -> Option<FromType> {
+  fn try_find_module(&self, source: &str) -> Option<FromType> {
     if let Some(m) = self.module_manager.module_graph.get_dep_by_source_optional(
       self.module_id,
       source,
@@ -75,6 +75,7 @@ impl<'a, 'b> ReplaceDynamicVisit<'a, 'b> {
         .module_manager
         .module_graph
         .module(&m)
+        .filter(|m| !m.external)
         .map(FromType::Module);
 
       return v;
@@ -83,7 +84,7 @@ impl<'a, 'b> ReplaceDynamicVisit<'a, 'b> {
     None
   }
 
-  pub fn dynamic_import_source_str(&self, expr: &CallExpr) -> Option<FromType> {
+  fn dynamic_import_source_str(&self, expr: &CallExpr) -> Option<FromType> {
     let arg = &expr.args[0];
 
     if arg.spread.is_some() {
@@ -187,7 +188,7 @@ impl<'a, 'b> ReplaceDynamicVisit<'a, 'b> {
     *arg = ExprOrSpread {
       spread: None,
       // TODO: id hash
-      expr: Box::new(Expr::Lit(Lit::Str(module.id.to_string().into()))),
+      expr: Box::new(Expr::Lit(Lit::Str(self.options.format(&module.id).into()))),
     };
 
     None
@@ -210,20 +211,19 @@ impl<'a, 'b> ReplaceDynamicVisit<'a, 'b> {
     expr: &mut Expr,
     module_analyzer: &ModuleAnalyzer,
   ) {
-    let mut name: Option<usize> = None;
     let is_commonjs = module_analyzer.is_commonjs();
 
-    if is_commonjs {
-      name = self
+    let name = if is_commonjs {
+      self
         .module_manager
         .module_global_uniq_name
-        .commonjs_name(&module_analyzer.module_id);
+        .commonjs_name(&module_analyzer.module_id)
     } else {
-      name = self
+      self
         .module_manager
         .module_global_uniq_name
-        .namespace_name(&module_analyzer.module_id);
-    }
+        .namespace_name(&module_analyzer.module_id)
+    };
 
     if let Some(ns) = name {
       let namespace_name = self.bundle_variable.render_name(ns);

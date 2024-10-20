@@ -79,6 +79,7 @@ impl ScopeHoistedModuleGroup {
         ignore_external_polyfill: true,
         // should ignore
         format: ModuleFormat::EsModule,
+        hash_path: true,
         ..Default::default()
       }),
     )?;

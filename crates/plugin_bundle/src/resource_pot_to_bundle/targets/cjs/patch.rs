@@ -25,10 +25,7 @@ use farmfe_toolkit::{
 };
 
 use crate::resource_pot_to_bundle::{
-  bundle::{
-    bundle_reference::{BundleReference, BundleReferenceManager},
-    ModuleAnalyzerManager, ModuleGlobalUniqName,
-  },
+  bundle::{bundle_reference::BundleReference, ModuleAnalyzerManager, ModuleGlobalUniqName},
   modules_analyzer::module_analyzer::ModuleAnalyzer,
   polyfill::{Polyfill, SimplePolyfill},
   targets::util::wrap_commonjs,
@@ -36,7 +33,7 @@ use crate::resource_pot_to_bundle::{
   ShareBundleOptions,
 };
 
-use super::{util::CJSReplace, CjsModuleAnalyzer};
+use super::util::CJSReplace;
 
 pub struct CjsPatch {}
 

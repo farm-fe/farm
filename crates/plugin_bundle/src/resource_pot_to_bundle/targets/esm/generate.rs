@@ -37,12 +37,16 @@ impl EsmGenerate {
 
     let source_url = source.map(|target_id| {
       if let ReferenceKind::Module(target_id) = target_id {
-        if let Some(target_module_analyzer) = module_analyzer_manager.module_analyzer(target_id) {
-          return with_bundle_reference_slot_name(
+        return if let Some(target_module_analyzer) =
+          module_analyzer_manager.module_analyzer(target_id)
+        {
+          with_bundle_reference_slot_name(
             &target_module_analyzer.bundle_group_id,
             options.reference_slot,
-          );
-        }
+          )
+        } else {
+          options.format(target_id)
+        };
       }
 
       target_id.to_module_id().to_string()
@@ -160,7 +164,7 @@ impl EsmGenerate {
                   .group_id(m)
                   .map(|id| id.to_string())
                   // maybe using group
-                  .unwrap_or_else(|| m.to_string()),
+                  .unwrap_or_else(|| options.format(m)),
                 options.reference_slot,
               ),
             )
