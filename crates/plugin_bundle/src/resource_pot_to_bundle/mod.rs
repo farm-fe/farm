@@ -8,6 +8,7 @@ use std::{
 
 use bundle::bundle_reference::BundleReferenceManager;
 use farmfe_core::{
+  config::ModuleFormat,
   context::CompilationContext,
   enhanced_magic_string::bundle::Bundle,
   error::{CompilationError, MapCompletionError, Result},
@@ -76,18 +77,58 @@ mod polyfill;
 mod uniq_name;
 
 pub type BundleMap<'a> = HashMap<ResourcePotId, BundleAnalyzer<'a>>;
+///
+///
+/// ```js
+/// // farm.config.js
+/// {
+///   alias: {
+///     "react": "node_modules/react/index.js"
+///   }
+/// }
+/// ```
+///
+/// ```js
+/// // index.js
+/// import React from "react";
+/// ```
+///
+/// after ShareBundle import generate
+/// ```js
+/// import React from "node_modules/react/index.js";
+/// ```
+///
+/// but in non-full ShareBundle render, cannot find it
+///
 
 pub struct ShareBundleOptions {
   /// whether to use reference slot
-  /// `true`: `require("__FARM_BUNDLE_REFERENCE_SLOT__(({bundle_group_id}))")`
-  /// `false`: `require("{bundle_group_id}")`
+  ///
+  /// `true`:
+  /// ```js
+  /// require("__FARM_BUNDLE_REFERENCE_SLOT__(({bundle_group_id}))")
+  /// ```
+  ///
+  /// `false`:
+  /// ```js
+  /// require("{bundle_group_id}")
+  /// ```
   pub reference_slot: bool,
+
+  /// require("external")
+  pub ignore_external_polyfill: bool,
+
+  /// in non-full ShareBundle render, maybe not that transform by config.output.format
+  pub format: ModuleFormat,
 }
 
 impl Default for ShareBundleOptions {
   fn default() -> Self {
     Self {
       reference_slot: true,
+      ignore_external_polyfill: false,
+      // ignore_unknown_url_polyfill: false,
+      format: ModuleFormat::EsModule,
     }
   }
 }
@@ -336,13 +377,12 @@ impl<'a> SharedBundle<'a> {
       farm_profile_scope!(format!("render bundle: {}", group_id));
 
       let bundle_analyzer = self.bundle_map.get_mut(group_id).unwrap();
-      let bundle_group_id = bundle_analyzer.group.id.clone();
-      bundle_analyzer.set_namespace(&bundle_group_id);
+      bundle_analyzer.set_namespace(&group_id);
 
       bundle_analyzer.render(&mut self.module_analyzer_manager)?;
     }
 
-    for (module_id, _) in ordered_modules {
+    for (module_id, _) in &ordered_modules {
       farm_profile_scope!(format!("render module: {}", module_id));
 
       let Some(module_analyzer) = self.module_analyzer_manager.module_analyzer(module_id) else {
@@ -352,15 +392,17 @@ impl<'a> SharedBundle<'a> {
       let group_id = module_analyzer.bundle_group_id.clone();
 
       let bundle_analyzer = self.bundle_map.get_mut(&group_id).unwrap();
-      let bundle_group_id = bundle_analyzer.group.id.clone();
 
-      bundle_analyzer.set_namespace(&bundle_group_id);
+      bundle_analyzer.set_namespace(&group_id);
 
       bundle_analyzer.link_module_relation(
         module_id,
         &mut self.module_analyzer_manager,
         &mut self.bundle_reference,
+        &self.options,
       )?;
+
+      bundle_analyzer.module_conflict_name(&mut self.module_analyzer_manager);
     }
 
     Ok(())
@@ -389,15 +431,17 @@ impl<'a> SharedBundle<'a> {
     let mut polyfill = SimplePolyfill::new(vec![]);
 
     let polyfill_resource_pot = self.module_analyzer_manager.polyfill_resource_pot();
+
     for group_id in &self.ordered_groups_id {
       let bundle_analyzer = self.bundle_map.get_mut(group_id).unwrap();
 
-      if polyfill_resource_pot
-        .as_ref()
-        .is_some_and(|r| group_id != r)
-      {
-        bundle_analyzer
-          .patch_polyfill_for_bundle(&mut self.module_analyzer_manager, &self.options)?;
+      if let Some(ref polyfill_group_id) = polyfill_resource_pot {
+        if polyfill_group_id != group_id {
+          bundle_analyzer
+            .patch_polyfill_for_bundle(&mut self.module_analyzer_manager, &self.options)?;
+        }
+      } else {
+        bundle_analyzer.path_polyfill_inline(&mut self.module_analyzer_manager)?;
       }
 
       if matches!(bundle_analyzer.group.group_type, ResourcePotType::Js) {
@@ -405,12 +449,10 @@ impl<'a> SharedBundle<'a> {
       }
     }
 
-    let polyfill_bundle = self.bundle_map.values_mut().find(|item| {
-      let module_id = ModuleId::from(FARM_BUNDLE_POLYFILL_SLOT);
-      item.ordered_modules.contains(&&module_id)
-    });
-
-    if let Some(bundle_analyzer) = polyfill_bundle {
+    if let Some(bundle_analyzer) = polyfill_resource_pot
+      .map(|group_id| self.bundle_map.get_mut(&group_id))
+      .flatten()
+    {
       bundle_analyzer.patch_polyfill(&mut self.module_analyzer_manager, polyfill, &self.options)?;
     };
 

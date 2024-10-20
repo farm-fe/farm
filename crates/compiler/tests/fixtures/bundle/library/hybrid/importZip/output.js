@@ -37,7 +37,7 @@ export { __commonJs, _interop_require_default };
  // module_id: cjs.ts
 import { __commonJs, _interop_require_default } from "./farm_runtime.js";
 import { bundle2, bundle2Age, bundle2Name } from "./bundle1.js";
-import { readFile as readFile$1 } from "node:fs";
+import { readFile } from "node:fs";
 var cjs_cjs = __commonJs({
     "cjs.ts": (module, exports)=>{
         "use strict";
@@ -68,7 +68,7 @@ console.log({
         cjs: cjs,
         cjsName: cjsName
     },
-    readFile: readFile$1,
+    readFile: readFile,
     esm: {
         esm: esm,
         esmName: esmName
@@ -93,7 +93,7 @@ console.log({
         bundle2: bundle2,
         bundle2Age: bundle2Age
     },
-    readFile: readFile$1
+    readFile: readFile
 }, 'foo.ts');
 
 // module_id: index.ts

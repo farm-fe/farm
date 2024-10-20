@@ -1,8 +1,15 @@
 import { foo as defaultFoo } from './foo';
+import { ReactProvider } from './bundle2-foo';
 
 
 function loadFoo(foo = defaultFoo) {
-  return {}
+  return
+}
+
+const loadFooArrowExpr = () => {
+  return (foo: string) => {
+    console.log(foo, ReactProvider.Provider);
+  }
 }
 
 class LoadFoo {
