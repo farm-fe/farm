@@ -815,7 +815,7 @@ export class VitePluginAdapter implements JsPlugin {
     };
 
     return {
-      order: 1,
+      order: orderMap[order] ?? 1,
       executor: this.wrapExecutor(
         async (params: { htmlResource: Resource }, context) => {
           const { htmlResource } = params;
