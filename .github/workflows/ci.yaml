@@ -110,8 +110,6 @@ jobs:
         id: changesets
         uses: changesets/action@v1
         with:
-          base: 'v2-dev'
-          head: 'changeset-release/v2-dev'
           version: pnpm run bump:nightly
           publish: npm run release:nightly
         env:
