@@ -249,9 +249,7 @@ fn diff_and_patch_resource_pot_map(
             let resource_pot = resource_pot_map
               .remove_resource_pot(resource_pot)
               .unwrap_or_else(|| {
-                panic!(
-                  "The resource pot {resource_pot:?} should be in the resource pot map"
-                )
+                panic!("The resource pot {resource_pot:?} should be in the resource pot map")
               });
 
             // also remove the related resource

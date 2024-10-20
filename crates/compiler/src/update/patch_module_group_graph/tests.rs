@@ -182,10 +182,7 @@ fn test_patch_module_group_graph_3() {
 
   let updated_modules = vec!["F".into(), "E".into(), "B".into()];
   let mut module_group_graph = module_group_graph_from_entries(
-    &module_graph
-      .entries
-      .clone().into_keys()
-      .collect(),
+    &module_graph.entries.clone().into_keys().collect(),
     &mut module_graph,
   );
   let diff_result = diff_module_graph(updated_modules.clone(), &module_graph, &update_module_graph);
@@ -210,10 +207,7 @@ fn test_patch_module_group_graph_3() {
   );
 
   let update_module_group_graph = module_group_graph_from_entries(
-    &module_graph
-      .entries
-      .clone().into_keys()
-      .collect(),
+    &module_graph.entries.clone().into_keys().collect(),
     &mut module_graph,
   );
 
@@ -291,10 +285,7 @@ fn test_patch_module_group_graph_css_modules() {
 
   let start_points = vec!["D".into()];
   let mut module_group_graph = module_group_graph_from_entries(
-    &module_graph
-      .entries
-      .clone().into_keys()
-      .collect(),
+    &module_graph.entries.clone().into_keys().collect(),
     &mut module_graph,
   );
   let diff_result = diff_module_graph(start_points.clone(), &module_graph, &update_module_graph);
@@ -315,10 +306,7 @@ fn test_patch_module_group_graph_css_modules() {
   assert_eq!(affected_groups, HashSet::from(["D".into(), "B".into()]));
 
   let update_module_group_graph = module_group_graph_from_entries(
-    &module_graph
-      .entries
-      .clone().into_keys()
-      .collect(),
+    &module_graph.entries.clone().into_keys().collect(),
     &mut module_graph,
   );
 

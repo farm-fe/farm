@@ -35,13 +35,6 @@ pub mod tree_shaking;
 
 pub use output::*;
 
-type ResolverFunction = Box<dyn Fn(String, String) -> Option<String>>;
-
-// #[derive(Debug, Clone, Serialize, Deserialize)]
-// pub struct ResolverObject {
-//   resolve: ResolverFunction,
-// }
-
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum AliasItem {
@@ -50,9 +43,6 @@ pub enum AliasItem {
   Complex {
     find: StringOrRegex,
     replacement: String,
-    // TODO custom resolver
-    // #[serde(skip_serializing_if = "Option::is_none")]
-    // custom_resolver: Option<ResolverObject>,
   },
 }
 

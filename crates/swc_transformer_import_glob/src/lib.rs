@@ -22,7 +22,9 @@ use farmfe_core::config::AliasItem;
 use farmfe_core::config::StringOrRegex;
 use farmfe_core::regex;
 use farmfe_core::relative_path::RelativePath;
+use farmfe_core::swc_common::SyntaxContext;
 use farmfe_core::swc_common::DUMMY_SP;
+use farmfe_core::swc_ecma_ast::IdentName;
 use farmfe_core::swc_ecma_ast::{
   self, ArrayLit, ArrowExpr, BindingIdent, BlockStmtOrExpr, CallExpr, Callee, Expr, ExprOrSpread,
   Ident, Import, KeyValueProp, Lit, MemberExpr, MemberProp, MetaPropExpr, MetaPropKind,
@@ -77,6 +79,7 @@ pub fn transform_import_meta_glob(
                       local: farmfe_core::swc_ecma_ast::Ident::new(
                         format!("__glob__{index}_{glob_index}").into(),
                         DUMMY_SP,
+                        SyntaxContext::empty(),
                       ),
                     },
                   )],
@@ -140,9 +143,10 @@ fn create_eager_named_import(
           local: farmfe_core::swc_ecma_ast::Ident::new(
             format!("__glob__{index}_{glob_index}").into(),
             DUMMY_SP,
+            SyntaxContext::empty(),
           ),
           imported: Some(farmfe_core::swc_ecma_ast::ModuleExportName::Ident(
-            Ident::new(import.into(), DUMMY_SP),
+            Ident::new(import.into(), DUMMY_SP, SyntaxContext::empty()),
           )),
           is_type_only: false,
         },
@@ -173,6 +177,7 @@ fn create_eager_namespace_import(
           local: farmfe_core::swc_ecma_ast::Ident::new(
             format!("__glob__{index}_{glob_index}").into(),
             DUMMY_SP,
+            SyntaxContext::empty(),
           ),
         },
       )],
@@ -198,6 +203,7 @@ fn create_eager_default_import(index: usize, glob_index: usize, globed_source: &
           local: farmfe_core::swc_ecma_ast::Ident::new(
             format!("__glob__{index}_{glob_index}").into(),
             DUMMY_SP,
+            SyntaxContext::empty(),
           ),
         },
       )],
@@ -551,6 +557,7 @@ impl<'a> ImportGlobVisitor<'a> {
         Box::new(Expr::Ident(Ident::new(
           format!("__glob__{cur_index}_{entry_index}").into(),
           DUMMY_SP,
+          SyntaxContext::empty(),
         ))),
       ))
     } else {
@@ -583,6 +590,7 @@ impl<'a> ImportGlobVisitor<'a> {
         }))),
       }],
       type_args: None,
+      ctxt: SyntaxContext::empty(),
     }));
 
     if let Some(import) = import.as_ref() {
@@ -597,33 +605,40 @@ impl<'a> ImportGlobVisitor<'a> {
             callee: Callee::Expr(Box::new(Expr::Member(MemberExpr {
               span: DUMMY_SP,
               obj: import_call_expr,
-              prop: MemberProp::Ident(Ident::new("then".into(), DUMMY_SP)),
+              prop: MemberProp::Ident(IdentName::new("then".into(), DUMMY_SP)),
             }))),
             args: vec![ExprOrSpread {
               spread: None,
               expr: Box::new(Expr::Arrow(ArrowExpr {
                 span: DUMMY_SP,
                 params: vec![Pat::Ident(BindingIdent {
-                  id: Ident::new("m".into(), DUMMY_SP),
+                  id: Ident::new("m".into(), DUMMY_SP, SyntaxContext::empty()),
                   type_ann: None,
                 })],
                 body: Box::new(BlockStmtOrExpr::Expr(Box::new(Expr::Member(MemberExpr {
                   span: DUMMY_SP,
-                  obj: Box::new(Expr::Ident(Ident::new("m".into(), DUMMY_SP))),
-                  prop: MemberProp::Ident(Ident::new(import.as_str().into(), DUMMY_SP)),
+                  obj: Box::new(Expr::Ident(Ident::new(
+                    "m".into(),
+                    DUMMY_SP,
+                    SyntaxContext::empty(),
+                  ))),
+                  prop: MemberProp::Ident(IdentName::new(import.as_str().into(), DUMMY_SP)),
                 })))),
                 is_async: false,
                 is_generator: false,
                 type_params: None,
                 return_type: None,
+                ctxt: SyntaxContext::empty(),
               })),
             }],
             type_args: None,
+            ctxt: SyntaxContext::empty(),
           })))),
           is_async: false,
           is_generator: false,
           type_params: None,
           return_type: None,
+          ctxt: SyntaxContext::empty(),
         })),
       )
     } else {
@@ -637,6 +652,7 @@ impl<'a> ImportGlobVisitor<'a> {
           is_generator: false,
           type_params: None,
           return_type: None,
+          ctxt: SyntaxContext::empty(),
         })),
       )
     }
@@ -654,7 +670,7 @@ impl<'a> VisitMut for ImportGlobVisitor<'a> {
                 kind: MetaPropKind::ImportMeta,
                 ..
               }),
-            prop: MemberProp::Ident(Ident { sym, .. }),
+            prop: MemberProp::Ident(IdentName { sym, .. }),
             ..
           })),
         args,
@@ -711,6 +727,7 @@ impl<'a> VisitMut for ImportGlobVisitor<'a> {
                   Box::new(Expr::Ident(Ident::new(
                     format!("__glob__{cur_index}_{entry_index}").into(),
                     DUMMY_SP,
+                    SyntaxContext::empty(),
                   ))),
                 ));
               } else {
