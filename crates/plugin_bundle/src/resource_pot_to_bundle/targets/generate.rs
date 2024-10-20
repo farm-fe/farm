@@ -5,11 +5,11 @@ use farmfe_core::{
   context::CompilationContext,
   error::Result,
   module::{ModuleId, ModuleSystem},
-  swc_common::DUMMY_SP,
+  swc_common::{SyntaxContext, DUMMY_SP},
   swc_ecma_ast::{
-    self, ArrayLit, BindingIdent, Bool, CallExpr, Decl, Expr, ExprOrSpread, Ident, KeyValueProp,
-    ModuleItem, ObjectLit, Pat, Prop, PropName, PropOrSpread, Stmt, Str, VarDecl, VarDeclKind,
-    VarDeclarator,
+    self, ArrayLit, BindingIdent, Bool, CallExpr, Decl, Expr, ExprOrSpread, Ident, IdentName,
+    KeyValueProp, ModuleItem, ObjectLit, Pat, Prop, PropName, PropOrSpread, Stmt, Str, VarDecl,
+    VarDeclKind, VarDeclarator,
   },
 };
 
@@ -96,7 +96,7 @@ pub fn generate_namespace_by_reference_map(
 
   if module_analyzer_manager.is_hybrid_or_esm(module_id) {
     props.push(PropOrSpread::Prop(Box::new(Prop::KeyValue(KeyValueProp {
-      key: PropName::Ident(Ident::from("__esModule")),
+      key: PropName::Ident(IdentName::from("__esModule")),
       value: Box::new(Expr::Lit(swc_ecma_ast::Lit::Bool(Bool {
         span: DUMMY_SP,
         value: true,
@@ -142,6 +142,7 @@ pub fn generate_namespace_by_reference_map(
                     callee: swc_ecma_ast::Callee::Expr(Box::new(Expr::Ident(ident))),
                     args: vec![],
                     type_args: None,
+                    ctxt: SyntaxContext::empty(),
                   })),
                 })
               })
@@ -156,6 +157,7 @@ pub fn generate_namespace_by_reference_map(
         },
       ],
       type_args: None,
+      ctxt: SyntaxContext::empty(),
     })))
   };
 
@@ -166,12 +168,13 @@ pub fn generate_namespace_by_reference_map(
     decls: vec![VarDeclarator {
       span: DUMMY_SP,
       name: Pat::Ident(BindingIdent {
-        id: Ident::new(namespace.as_str().into(), DUMMY_SP),
+        id: Ident::new(namespace.as_str().into(), DUMMY_SP, SyntaxContext::empty()),
         type_ann: None,
       }),
       init: declare_init,
       definite: false,
     }],
+    ctxt: SyntaxContext::empty(),
   })))));
   Ok(patch_ast_items)
 }
