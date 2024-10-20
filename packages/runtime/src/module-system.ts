@@ -154,25 +154,37 @@ export class ModuleSystem {
     }
     // force reload resources
     if (force) {
-      this.reRegisterModules = true;
       this.clearCache(moduleId);
     }
     // loading all required resources, and return the exports of the entry module
     return Promise.all(
       resources.map((resource) => {
         if (force) {
+          const resourceLoaded = this.resourceLoader.isResourceLoaded(resource.path);
           this.resourceLoader.setLoadedResource(resource.path, false);
+
+          if (resourceLoaded) {
+            return this.resourceLoader.load({
+              ...resource,
+              // force reload the resource
+              path: `${resource.path}?t=${Date.now()}`
+            });
+          }
         }
         return this.resourceLoader.load(resource);
       }),
     )
       .then(() => {
+        // Do not require the module if all the resources are not js resources
+        if (resources.every(resource => resource.type !== 0)) {
+          return;
+        }
+
         if (!this.modules[moduleId]) {
           throw new Error(
             `Dynamic imported module "${moduleId}" is not registered.`,
           );
         }
-        this.reRegisterModules = false;
         const result = this.require(moduleId);
         // if the module is async, return the default export, the default export should be a promise
         if (result.__farm_async) {

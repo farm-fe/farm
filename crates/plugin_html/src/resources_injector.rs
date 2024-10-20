@@ -91,7 +91,7 @@ impl<'a> ResourcesInjector<'a> {
         &self.already_injected_resources,
       );
 
-      let script_element = create_element("script", None, vec![("src", &format!("/{}", name))]);
+      let script_element = create_element("script", None, vec![("src", &format!("/{name}"))]);
       element.children.push(Child::Element(script_element));
 
       if let Some(resource) = resource {
@@ -114,7 +114,7 @@ impl<'a> ResourcesInjector<'a> {
 
     let initial_resources_code = initial_resources
       .into_iter()
-      .map(|path| format!("'{}'", path))
+      .map(|path| format!("'{path}'"))
       .collect::<Vec<_>>()
       .join(",");
 
@@ -152,7 +152,7 @@ impl<'a> ResourcesInjector<'a> {
       element.children.push(Child::Element(create_element(
         "script",
         None,
-        vec![("src", &format!("/{}", name))],
+        vec![("src", &format!("/{name}"))],
       )));
 
       if let Some(resource) = resource {
@@ -242,7 +242,7 @@ impl<'a> ResourcesInjector<'a> {
     element.children.push(Child::Element(create_element(
       "script",
       None,
-      vec![("src", &format!("/{}", name))],
+      vec![("src", &format!("/{name}"))],
     )));
 
     if let Some(resource) = resource {

@@ -51,7 +51,7 @@ pub fn patch_module_group_graph(
         let module_group_ids = {
           let module = module_graph
             .module(module_id)
-            .unwrap_or_else(|| panic!("module {:?} not found", module_id));
+            .unwrap_or_else(|| panic!("module {module_id:?} not found"));
           module.module_groups.clone()
         };
 
@@ -95,7 +95,7 @@ pub fn patch_module_group_graph(
             for module_group_id in &previous_parent_groups {
               let current_module = module_graph
                 .module(&current_module_id)
-                .unwrap_or_else(|| panic!("module {:?} not found", current_module_id));
+                .unwrap_or_else(|| panic!("module {current_module_id:?} not found"));
 
               if current_module.module_groups.contains(module_group_id) {
                 continue;
@@ -164,7 +164,7 @@ pub fn patch_module_group_graph(
               } else {
                 let module = module_graph
                   .module(module_id)
-                  .unwrap_or_else(|| panic!("module {:?} not found", module_id));
+                  .unwrap_or_else(|| panic!("module {module_id:?} not found"));
                 module.module_groups.clone()
               }
             };

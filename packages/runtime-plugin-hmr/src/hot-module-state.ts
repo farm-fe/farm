@@ -102,7 +102,9 @@ export class HotModuleState {
 
 export function createHotContext(id: string, hmrClient: HmrClient) {
   if (hmrClient.registeredHotModulesMap.has(id)) {
-    return hmrClient.registeredHotModulesMap.get(id);
+    const hotModuleState = hmrClient.registeredHotModulesMap.get(id);
+    hotModuleState.acceptCallbacks = []; // clear the accept callbacks when hot reloading
+    return hotModuleState;
   }
 
   const state = new HotModuleState(id, hmrClient);

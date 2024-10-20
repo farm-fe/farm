@@ -1,14 +1,21 @@
 //! diff the module_graph and update_module_graph, analyze the changes and then patch the module_graph
 
-use std::collections::{HashMap, HashSet, VecDeque};
+use std::{
+  cmp::Ordering,
+  collections::{HashMap, HashSet, VecDeque},
+};
 
-use farmfe_core::module::{
-  module_graph::{ModuleGraph, ModuleGraphEdge},
-  Module, ModuleId,
+use farmfe_core::{
+  module::{
+    module_graph::{ModuleGraph, ModuleGraphEdge},
+    Module, ModuleId,
+  },
+  serde::Serialize,
 };
 
 /// the diff result of a module's dependencies
-#[derive(Debug, PartialEq, Eq, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone, Serialize)]
+#[serde(rename_all = "camelCase", crate = "farmfe_core::serde")]
 pub struct ModuleDepsDiffResult {
   /// added dependencies
   pub added: Vec<(ModuleId, ModuleGraphEdge)>,
@@ -19,12 +26,14 @@ pub struct ModuleDepsDiffResult {
 pub type ModuleDepsDiffResultMap = Vec<(ModuleId, ModuleDepsDiffResult)>;
 /// the diff result of a module, this records all related changes of the module graph
 /// for example, deeply added or removed dependencies also be recorded here
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Default, Clone, Serialize)]
+#[serde(rename_all = "camelCase", crate = "farmfe_core::serde")]
 pub struct DiffResult {
   pub deps_changes: ModuleDepsDiffResultMap,
   pub added_modules: HashSet<ModuleId>,
   pub removed_modules: HashSet<ModuleId>,
 }
+
 #[cfg(test)]
 impl DiffResult {
   pub fn readable_print(&self) {
@@ -38,7 +47,7 @@ impl DiffResult {
     // added_modules: g, h
 
     for (module_id, deps_diff_result) in &self.deps_changes {
-      println!("{:?} -> ", module_id);
+      println!("{module_id:?} -> ");
 
       println!(
         "  added: {:?}",
@@ -91,8 +100,26 @@ pub fn diff_module_graph(
     removed_modules: HashSet::new(),
   };
 
-  let (diff_result, added_modules, remove_modules) =
+  let (mut diff_result, added_modules, remove_modules) =
     diff_module_deps(&start_points, module_graph, update_module_graph);
+
+  // sort diff_result.deps_changes in topological order
+  diff_result.sort_by(|a, b| {
+    let a_module_id = &a.0;
+    let b_module_id = &b.0;
+
+    let a_module = update_module_graph.module(a_module_id);
+    let b_module = update_module_graph.module(b_module_id);
+
+    if a_module.is_none() || b_module.is_none() {
+      return Ordering::Equal;
+    }
+    // if a import b, then execution_order of a should be greater than b. so we need to sort them in reverse order
+    b_module
+      .unwrap()
+      .execution_order
+      .cmp(&a_module.unwrap().execution_order)
+  });
 
   res.deps_changes.extend(diff_result);
   res.added_modules.extend(added_modules);
@@ -345,7 +372,7 @@ fn diff_module_deps(
     let mut children_added = vec![];
 
     if module_graph.has_module(&dep) {
-      panic!("The module({:?}) exists in previous module graph, this should never happen and there is a internal bug inside farm. Please report it via issues", dep);
+      panic!("The module({dep:?}) exists in previous module graph, this should never happen and there is a internal bug inside farm. Please report it via issues");
     }
 
     for child in children {

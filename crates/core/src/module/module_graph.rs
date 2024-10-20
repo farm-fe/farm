@@ -140,7 +140,7 @@ impl ModuleGraph {
     let i = self
       .id_index_map
       .get(module_id)
-      .unwrap_or_else(|| panic!("module_id {:?} should in the module graph", module_id));
+      .unwrap_or_else(|| panic!("module_id {module_id:?} should in the module graph"));
     let mut edges = self
       .g
       .neighbors_directed(*i, EdgeDirection::Outgoing)
@@ -162,7 +162,7 @@ impl ModuleGraph {
     let i = self
       .id_index_map
       .get(module_id)
-      .unwrap_or_else(|| panic!("module_id {:?} should in the module graph", module_id));
+      .unwrap_or_else(|| panic!("module_id {module_id:?} should in the module graph"));
     let mut edges = self
       .g
       .neighbors_directed(*i, EdgeDirection::Outgoing)
@@ -288,7 +288,7 @@ impl ModuleGraph {
     let index = self
       .id_index_map
       .remove(module_id)
-      .unwrap_or_else(|| panic!("module_id {:?} should in the module graph", module_id));
+      .unwrap_or_else(|| panic!("module_id {module_id:?} should in the module graph"));
 
     if !module_id.query_string().is_empty() {
       if let Some(ids) = self
@@ -404,11 +404,11 @@ impl ModuleGraph {
     let from = self
       .id_index_map
       .get(from)
-      .unwrap_or_else(|| panic!("module_id {:?} should in the module graph", from));
+      .unwrap_or_else(|| panic!("module_id {from:?} should in the module graph"));
     let to = self
       .id_index_map
       .get(to)
-      .unwrap_or_else(|| panic!("module_id {:?} should in the module graph", to));
+      .unwrap_or_else(|| panic!("module_id {to:?} should in the module graph"));
 
     if let Some(edge_index) = self.g.find_edge(*from, *to) {
       self.g.edge_weight(edge_index)
@@ -432,7 +432,7 @@ impl ModuleGraph {
     let i = self
       .id_index_map
       .get(module_id)
-      .unwrap_or_else(|| panic!("module_id {:?} should in the module graph", module_id));
+      .unwrap_or_else(|| panic!("module_id {module_id:?} should in the module graph"));
     let mut edges = self
       .g
       .neighbors_directed(*i, EdgeDirection::Outgoing)
@@ -481,7 +481,7 @@ impl ModuleGraph {
     let i = self
       .id_index_map
       .get(module_id)
-      .unwrap_or_else(|| panic!("module_id {:?} should in the module graph", module_id));
+      .unwrap_or_else(|| panic!("module_id {module_id:?} should in the module graph"));
     let mut edges = self
       .g
       .neighbors_directed(*i, EdgeDirection::Incoming)
@@ -635,11 +635,11 @@ impl ModuleGraph {
     let i = self
       .id_index_map
       .remove(to)
-      .unwrap_or_else(|| panic!("module_id {:?} should in the module graph", to));
+      .unwrap_or_else(|| panic!("module_id {to:?} should in the module graph"));
     let edge_index = self
       .g
       .find_edge(*self.id_index_map.get(from).unwrap(), i)
-      .unwrap_or_else(|| panic!("edge {:?} -> {:?} should in the module graph", from, to));
+      .unwrap_or_else(|| panic!("edge {from:?} -> {to:?} should in the module graph"));
 
     let edge = self.g.remove_edge(edge_index).unwrap();
     let module = self.g.remove_node(i).unwrap();
@@ -715,7 +715,7 @@ mod tests {
           &from.into(),
           &to.into(),
           ModuleGraphEdgeDataItem {
-            source: format!("./{}", to),
+            source: format!("./{to}"),
             kind: ResolveKind::Import,
             order,
           },
@@ -729,7 +729,7 @@ mod tests {
           &from.into(),
           &to.into(),
           ModuleGraphEdgeDataItem {
-            source: format!("./{}", to),
+            source: format!("./{to}"),
             kind: ResolveKind::DynamicImport,
             order,
           },

@@ -44,7 +44,7 @@ fn setup_compiler() -> Compiler {
 }
 
 fn bench_compiler_compile(c: &mut Criterion) {
-  let mut compiler = setup_compiler();
+  let compiler = setup_compiler();
   c.bench_function("compiler_compile", |b| {
       b.iter(|| {
           black_box(compiler.compile().unwrap());

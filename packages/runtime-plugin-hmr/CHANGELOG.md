@@ -1,5 +1,11 @@
 # @farmfe/runtime-plugin-hmr
 
+## 3.5.7
+
+### Patch Changes
+
+- 3b6eb912: fix #1755 and support useAbsolutePath for plugin-react
+
 ## 3.5.6
 
 ### Patch Changes

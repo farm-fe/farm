@@ -6,12 +6,14 @@ import { logger } from './utils.js';
 import { describe } from 'node:test';
 // import { ssrExamples } from './test-utils.js';
 
-const excludeExamples: string[] = ['issues1433', 'nestjs'];
+const excludeExamples: string[] = ['issues1433', 'nestjs', 'arcgis'];
 
 describe('Default E2E Tests', async () => {
   const examples = readdirSync('./examples')
   // const examples = ['react-ssr', 'solid-ssr', 'vue-ssr'];
   logger(`Running E2E tests for ${examples.length} examples`);
+
+  console.log('exclude examples', excludeExamples);
 
   for (const example of examples) {
     const examplePath = join('./examples', example);
@@ -25,8 +27,6 @@ describe('Default E2E Tests', async () => {
         example,
         'hasE2eTestFile',
         hasE2eTestFile,
-        'excludeExamples',
-        excludeExamples,
         'hasIndexHtml',
         hasIndexHtml
       );

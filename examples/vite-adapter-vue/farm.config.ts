@@ -34,7 +34,6 @@ export default defineConfig({
       path: "build",
       publicPath: "/vue-public-path/",
     },
-    persistentCache: false,
     sourcemap: false,
   },
   plugins: [

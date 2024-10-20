@@ -12,7 +12,7 @@ fn minify_script_test() {
     "tests/fixtures/minify/script/**/index.ts",
     |file, crate_path| {
       let cwd = file.parent().unwrap();
-      println!("testing minify: {:?}", cwd);
+      println!("testing minify: {cwd:?}");
 
       let entry_name = "index".to_string();
       let compiler = create_compiler(
@@ -34,7 +34,7 @@ fn minify_css_test() {
     "tests/fixtures/minify/css/**/index.ts",
     |file, crate_path| {
       let cwd = file.parent().unwrap();
-      println!("testing minify: {:?}", cwd);
+      println!("testing minify: {cwd:?}");
 
       let entry_name = "index".to_string();
       let compiler = create_compiler(
@@ -56,7 +56,7 @@ fn minify_html_test() {
     "tests/fixtures/minify/html/**/index.html",
     |file, crate_path| {
       let cwd = file.parent().unwrap();
-      println!("testing minify: {:?}", cwd);
+      println!("testing minify: {cwd:?}");
 
       let entry_name = "index".to_string();
       let compiler = create_compiler(

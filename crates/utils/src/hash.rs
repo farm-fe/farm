@@ -8,7 +8,7 @@ pub fn sha256(bytes: &[u8], len: usize) -> String {
   // Note that calling `finalize()` consumes hasher
   let hash = hasher.finalize();
 
-  format!("{:x}", hash)[..len].to_string()
+  format!("{hash:x}")[..len].to_string()
 }
 
 pub fn base64_encode(bytes: &[u8]) -> String {

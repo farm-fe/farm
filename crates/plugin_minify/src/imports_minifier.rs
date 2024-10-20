@@ -71,14 +71,14 @@ impl<'a> ImportsMinifier<'a> {
     let mut used_ident = if *count == 0 {
       ident.to_string()
     } else {
-      format!("{}{}", ident, count)
+      format!("{ident}{count}")
     };
 
     let mut count = *count;
 
     while self.imported_ident_count_map.contains_key(&used_ident) {
       count += 1;
-      used_ident = format!("{}{}", ident, count);
+      used_ident = format!("{ident}{count}");
     }
 
     self.inc_imported_ident_count(used_ident.clone());
@@ -95,14 +95,14 @@ impl<'a> ImportsMinifier<'a> {
     let mut used_ident = if *count == 0 {
       ident.to_string()
     } else {
-      format!("{}{}", ident, count)
+      format!("{ident}{count}")
     };
 
     let mut count = *count;
 
     while self.exported_ident_count_map.contains_key(&used_ident) {
       count += 1;
-      used_ident = format!("{}{}", ident, count);
+      used_ident = format!("{ident}{count}");
     }
 
     self.inc_exported_ident_count(used_ident.clone());
@@ -717,7 +717,7 @@ export { hello1, hello2, default as world1 } from './dep';
         codegen_module(&mut ast, EsVersion::latest(), cm, None, false, None).unwrap();
       let code = String::from_utf8(code_bytes).unwrap();
 
-      println!("{}", code);
+      println!("{code}");
 
       assert_eq!(
         code,

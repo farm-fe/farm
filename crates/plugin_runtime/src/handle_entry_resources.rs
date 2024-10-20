@@ -181,16 +181,15 @@ fn get_export_info_code(
         ExportInfoOfEntryModule::Named { name, import_as } => {
           if let Some(import_as) = import_as {
             match context.config.output.format {
-              ModuleFormat::CommonJs => format!("module.exports.{} = entry.{};", import_as, name),
+              ModuleFormat::CommonJs => format!("module.exports.{import_as} = entry.{name};"),
               ModuleFormat::EsModule => format!(
-                "var {name}=entry.{name};export {{ {} as {} }};",
-                name, import_as
+                "var {name}=entry.{name};export {{ {name} as {import_as} }};"
               ),
             }
           } else {
             match context.config.output.format {
-              ModuleFormat::CommonJs => format!("module.exports.{} = entry.{};", name, name),
-              ModuleFormat::EsModule => format!("var {name}=entry.{name};export {{ {} }};", name),
+              ModuleFormat::CommonJs => format!("module.exports.{name} = entry.{name};"),
+              ModuleFormat::EsModule => format!("var {name}=entry.{name};export {{ {name} }};"),
             }
           }
         }
@@ -350,7 +349,7 @@ pub fn handle_entry_resources(
         r#"{farm_global_this}.{FARM_MODULE_SYSTEM}.setInitialLoadedResources([{initial_loaded_resources}]);"#,
         initial_loaded_resources = dep_resources
           .iter()
-          .map(|rn| format!("'{}'", rn))
+          .map(|rn| format!("'{rn}'"))
           .collect::<Vec<_>>()
           .join(",")
       );

@@ -176,9 +176,9 @@ impl Display for Template {
       Template::Preact => write!(f, "preact"),
       Template::Nestjs => write!(f, "nestjs"),
       Template::Tauri(None) => write!(f, "tauri"),
-      Template::Tauri(Some(sub_template)) => write!(f, "tauri-{}", sub_template),
+      Template::Tauri(Some(sub_template)) => write!(f, "tauri-{sub_template}"),
       Template::Electron(None) => write!(f, "electron"),
-      Template::Electron(Some(sub_template)) => write!(f, "electron-{}", sub_template),
+      Template::Electron(Some(sub_template)) => write!(f, "electron-{sub_template}"),
     }
   }
 }

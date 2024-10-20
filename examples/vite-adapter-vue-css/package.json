@@ -19,7 +19,7 @@
   "devDependencies": {
     "@farmfe/cli": "^1.0.2",
     "@farmfe/core": "^1.1.4",
-    "@farmfe/plugin-sass": "^1.0.5",
+    "@farmfe/plugin-sass": "workspace:*",
     "@vitejs/plugin-vue": "^5.0.4",
     "@vitejs/plugin-vue-jsx": "^3.1.0",
     "prettier": "^3.2.5"

@@ -28,7 +28,7 @@ pub struct CachedPackage {
 
 impl CachedPackage {
   pub fn gen_key(name: &str, version: &str) -> String {
-    format!("{}@{}", name, version)
+    format!("{name}@{version}")
   }
 
   pub fn key(&self) -> String {

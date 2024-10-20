@@ -68,6 +68,6 @@ mod tests {
     let value = json!("value");
     let value: BoolOrObj<String> = serde_json::from_value(value).unwrap();
     assert!(matches!(value, BoolOrObj::Obj(_)));
-    println!("{:?}", value);
+    println!("{value:?}");
   }
 }

@@ -21,9 +21,7 @@ export function createDateSourceMiddleware(compiler: Compiler) {
         res.end(JSON.stringify(result));
       };
 
-      if (pathname === '/__record/modules') {
-        handleRecordRequest(compiler.modules());
-      } else if (pathname === '/__record/farm_env_info') {
+      if (pathname === '/__record/farm_env_info') {
         const info = await getFarmEnvInfo();
         if (typeof info === 'object') {
           handleRecordRequest(info);

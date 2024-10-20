@@ -13,7 +13,7 @@ pub fn insert_runtime_plugins(content: String, context: &Arc<CompilationContext>
     .iter()
     .enumerate()
     .map(|(i, plugin_path)| {
-      let ident = format!("{}{}", PLUGIN_VAR_PREFIX, i);
+      let ident = format!("{PLUGIN_VAR_PREFIX}{i}");
       let import_stmt = format!(
         "import {} from '{}';",
         ident,

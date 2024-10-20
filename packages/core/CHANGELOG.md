@@ -1,5 +1,54 @@
 # @farmfe/core
 
+## 1.3.29
+
+### Patch Changes
+
+- 663dfeed: Revert change of replacing invalid css
+
+## 1.3.28
+
+### Patch Changes
+
+- e1f5c696: fix namespace import MemberProp name failed
+- a2a32f51: Fix invalid css syntax #1748 #1557
+- 04a124fe: Fix css dynamic loading runtime error #1551
+- 7d84234e: fix resolve env config node env error
+- Updated dependencies [04a124fe]
+  - @farmfe/runtime@0.12.7
+
+## 1.3.27
+
+### Patch Changes
+
+- Bump version
+- Updated dependencies
+  - @farmfe/runtime@0.12.6
+
+## 1.3.26
+
+### Patch Changes
+
+- 3b6eb912: fix #1755 and support useAbsolutePath for plugin-react
+- ed676f02: Fix #1755
+- Updated dependencies [3b6eb912]
+  - @farmfe/runtime-plugin-hmr@3.5.7
+
+## 1.3.25
+
+### Patch Changes
+
+- 97408595: Fix persistent cache panic when working with lazy compilation
+
+## 1.3.24
+
+### Patch Changes
+
+- 772381b0: Fix concurrent lazy compilation failed
+- 732c046d: Ignore non-utf8 error when getting file contents
+- Updated dependencies [772381b0]
+  - @farmfe/runtime@0.12.5
+
 ## 1.3.23
 
 ### Patch Changes

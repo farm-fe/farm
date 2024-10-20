@@ -9,7 +9,7 @@ use std::{
 use base64::engine::{general_purpose, Engine};
 use farmfe_core::{
   cache_item,
-  config::{Config, TargetEnv},
+  config::{Config},
   context::{CompilationContext, EmitFileParams},
   deserialize,
   module::ModuleType,
@@ -174,8 +174,7 @@ impl Plugin for FarmPluginStaticAssets {
         let mime_type_str = mime_type.to_string();
 
         let content = format!(
-          "export default \"data:{};base64,{}\"",
-          mime_type_str, file_base64
+          "export default \"data:{mime_type_str};base64,{file_base64}\""
         );
 
         return Ok(Some(farmfe_core::plugin::PluginTransformHookResult {
@@ -227,18 +226,17 @@ impl Plugin for FarmPluginStaticAssets {
         let assets_path = if !context.config.output.public_path.is_empty() {
           let normalized_public_path = context.config.output.public_path.trim_end_matches("/");
 
-          format!("{}/{}", normalized_public_path, resource_name)
+          format!("{normalized_public_path}/{resource_name}")
         } else {
-          format!("/{}", resource_name)
+          format!("/{resource_name}")
         };
 
         let content = if context.config.output.target_env.is_node() {
           format!(
-            "export default new URL(/* {} */{:?}, import.meta.url)",
-            FARM_IGNORE_ACTION_COMMENT, assets_path
+            "export default new URL(/* {FARM_IGNORE_ACTION_COMMENT} */{assets_path:?}, import.meta.url)"
           )
         } else {
-          format!("export default {:?};", assets_path)
+          format!("export default {assets_path:?};")
         };
 
         context.emit_file(EmitFileParams {

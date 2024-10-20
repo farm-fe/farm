@@ -353,7 +353,7 @@ fn handle_enforce_target_min_size(
 
           let final_resource_pot = resource_pot_map
             .get(final_resource_pot_id)
-            .unwrap_or_else(|| panic!("resource pot {:?} does not exist", final_resource_pot_id));
+            .unwrap_or_else(|| panic!("resource pot {final_resource_pot_id:?} does not exist"));
           (
             final_resource_pot.resource_pot_type.clone(),
             final_resource_pot.immutable,

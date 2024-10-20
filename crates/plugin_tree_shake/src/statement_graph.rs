@@ -215,7 +215,7 @@ impl ToString for UsedStatementIdent {
       UsedStatementIdent::Default => "default".to_string(),
       UsedStatementIdent::SwcIdent(id) => format!("{}{:?}", id.0, id.1),
       UsedStatementIdent::ExportAll => "*".to_string(),
-      UsedStatementIdent::InExportAll(id) => format!("*({})", id),
+      UsedStatementIdent::InExportAll(id) => format!("*({id})"),
     }
   }
 }

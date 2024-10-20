@@ -1,4 +1,4 @@
-import { test, expect } from 'vitest';
+import { test, expect, describe } from 'vitest';
 import { startProjectAndTest } from '../../e2e/vitestSetup';
 import { basename, dirname } from 'path';
 import { fileURLToPath } from 'url';
@@ -6,16 +6,16 @@ import { fileURLToPath } from 'url';
 const name = basename(import.meta.url);
 const projectPath = dirname(fileURLToPath(import.meta.url));
 
-test(`e2e tests - ${name}`, async () => {
+describe(`e2e tests - ${name}`, async () => {
   const runTest = (command?: 'start' | 'preview') =>
     startProjectAndTest(
       projectPath,
       async (page) => {
-        const button = await page.waitForSelector('.test-antd-button');
-
         const promise = page.waitForEvent('console', {
           predicate: (msg) => msg.text() === 'antd button clicked'
         });
+
+        const button = await page.waitForSelector('.test-antd-button');
 
         button.click();
         await promise;
@@ -23,6 +23,11 @@ test(`e2e tests - ${name}`, async () => {
       command
     );
 
-  await runTest();
-  await runTest('preview');
+  test(`exmaples ${name} run start`, async () => {
+    await runTest();
+  });
+
+  test(`exmaples ${name} run prevew`, async () => {
+    await runTest('preview');
+  });
 });

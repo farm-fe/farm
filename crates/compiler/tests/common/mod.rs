@@ -225,8 +225,8 @@ pub fn get_compiler_result(compiler: &Compiler, config: &AssertCompilerResultCon
         String::from_utf8_lossy(&resource.bytes),
       ),
       _ => (
-        format!("1{}", name),
-        format!("//{}:\n ", name),
+        format!("1{name}"),
+        format!("//{name}:\n "),
         String::from_utf8_lossy(&resource.bytes),
       ),
     })
@@ -236,7 +236,7 @@ pub fn get_compiler_result(compiler: &Compiler, config: &AssertCompilerResultCon
 
   let result_file_str = result
     .iter()
-    .map(|(_, name, content)| format!("{}{}", name, content))
+    .map(|(_, name, content)| format!("{name}{content}"))
     .collect::<Vec<String>>()
     .join("\n\n");
 

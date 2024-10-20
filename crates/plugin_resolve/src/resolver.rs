@@ -390,7 +390,7 @@ impl Resolver {
     } else {
       let append_extension = |file: &PathBuf, ext: &str| {
         let file_name = file.file_name().unwrap().to_string_lossy().to_string();
-        file.with_file_name(format!("{}.{}", file_name, ext))
+        file.with_file_name(format!("{file_name}.{ext}"))
       };
       let extensions = if let Some(ext) = &options.dynamic_extensions {
         ext
@@ -748,7 +748,7 @@ impl Resolver {
     if let Some(entry_point) = entry_point {
       let dir = package_json_info.dir();
       let entry_point = if !entry_point.starts_with("./") && !entry_point.starts_with("../") {
-        format!("./{}", entry_point)
+        format!("./{entry_point}")
       } else {
         entry_point
       };
