@@ -92,6 +92,6 @@ mod tests {
     )
     .unwrap();
 
-    println!("{:#?}", value);
+    println!("{value:#?}");
   }
 }

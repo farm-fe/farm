@@ -174,8 +174,7 @@ unsafe extern "C" fn call_js_cb<P: Serialize, T: DeserializeOwned + Debug + Send
     Err(e) => {
       sender
         .send(Err(CompilationError::NAPIError(format!(
-          "Invalid hook return, except object. {:?}",
-          e
+          "Invalid hook return, except object. {e:?}"
         ))))
         .unwrap();
       return;
@@ -198,8 +197,7 @@ unsafe extern "C" fn call_js_cb<P: Serialize, T: DeserializeOwned + Debug + Send
       .map(|r| Some(r))
       .map_err(|e| {
         CompilationError::NAPIError(format!(
-          "Invalid hook return, can not transform it to rust struct. {:?}",
-          e
+          "Invalid hook return, can not transform it to rust struct. {e:?}"
         ))
       });
 
@@ -370,8 +368,7 @@ unsafe extern "C" fn then_cb<T: DeserializeOwned>(
     .map(|r| Some(r))
     .map_err(|e| {
       CompilationError::NAPIError(format!(
-        "Invalid hook return, can not transform it to rust struct. {:?}",
-        e
+        "Invalid hook return, can not transform it to rust struct. {e:?}"
       ))
     });
 
@@ -418,7 +415,7 @@ unsafe extern "C" fn catch_cb<T: DeserializeOwned>(
       .get_named_property::<String>("stack")
       .unwrap();
 
-    format!("{}\n{}", message, stack)
+    format!("{message}\n{stack}")
   } else if is_string {
     // get the string value
     rejected_value

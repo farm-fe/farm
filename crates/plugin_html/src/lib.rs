@@ -164,13 +164,12 @@ impl Plugin for FarmPluginHtml {
         )
         .map_err(|e| CompilationError::TransformError {
           resolved_path: param.resolved_path.to_string(),
-          msg: format!("Load base html({}) fail. Error: {:?}", base, e),
+          msg: format!("Load base html({base}) fail. Error: {e:?}"),
         })?
         .ok_or(CompilationError::TransformError {
           resolved_path: param.resolved_path.to_string(),
           msg: format!(
-            "Load base html({}) fail: Base html file does not exist",
-            base
+            "Load base html({base}) fail: Base html file does not exist"
           ),
         })?;
 

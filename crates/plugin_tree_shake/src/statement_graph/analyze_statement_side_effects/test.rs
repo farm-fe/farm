@@ -94,7 +94,7 @@ fn write_top_level_var() {
       top_level_mark,
       &SingleThreadedComments::default(),
     );
-    println!("{:?}", side_effects);
+    println!("{side_effects:?}");
     assert!(matches!(
       side_effects,
       super::StatementSideEffects::WriteTopLevelVar(_)
@@ -157,7 +157,7 @@ fn access_global_var() {
       top_level_mark,
       &SingleThreadedComments::default(),
     );
-    println!("{:?}", side_effects);
+    println!("{side_effects:?}");
     assert!(matches!(
       side_effects,
       super::StatementSideEffects::WriteTopLevelVar(_)
@@ -297,7 +297,7 @@ comp();
     let item_2 = &module.body[1];
     let side_effects =
       super::analyze_statement_side_effects(item_2, unresolved_mark, top_level_mark, &comments);
-    println!("{:?}", side_effects);
+    println!("{side_effects:?}");
     assert!(matches!(
       side_effects,
       super::StatementSideEffects::NoSideEffects
@@ -306,7 +306,7 @@ comp();
     let item_3 = &module.body[2];
     let side_effects =
       super::analyze_statement_side_effects(item_3, unresolved_mark, top_level_mark, &comments);
-    println!("{:?}", side_effects);
+    println!("{side_effects:?}");
     assert!(matches!(
       side_effects,
       super::StatementSideEffects::UnclassifiedSelfExecuted
@@ -328,7 +328,7 @@ var _c;
     let item_2 = &module.body[1];
     let side_effects =
       super::analyze_statement_side_effects(item_2, unresolved_mark, top_level_mark, &comments);
-    println!("{:?}", side_effects);
+    println!("{side_effects:?}");
     assert!(matches!(
       side_effects,
       super::StatementSideEffects::NoSideEffects
@@ -337,7 +337,7 @@ var _c;
     let item_3 = &module.body[2];
     let side_effects =
       super::analyze_statement_side_effects(item_3, unresolved_mark, top_level_mark, &comments);
-    println!("{:?}", side_effects);
+    println!("{side_effects:?}");
     assert!(matches!(
       side_effects,
       super::StatementSideEffects::WriteTopLevelVar(_)
@@ -361,7 +361,7 @@ fn object_lit_assign() {
     let item_2 = &module.body[1];
     let side_effects =
       super::analyze_statement_side_effects(item_2, unresolved_mark, top_level_mark, &comments);
-    println!("{:?}", side_effects);
+    println!("{side_effects:?}");
     assert!(matches!(
       side_effects,
       super::StatementSideEffects::ReadTopLevelVar(_)
@@ -370,7 +370,7 @@ fn object_lit_assign() {
     let item_3 = &module.body[2];
     let side_effects =
       super::analyze_statement_side_effects(item_3, unresolved_mark, top_level_mark, &comments);
-    println!("{:?}", side_effects);
+    println!("{side_effects:?}");
     assert!(matches!(
       side_effects,
       super::StatementSideEffects::WriteTopLevelVar(_)

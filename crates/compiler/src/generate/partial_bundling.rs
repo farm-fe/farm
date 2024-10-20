@@ -229,9 +229,7 @@ mod tests {
     let module_group_graph = module_group_graph_from_entries(
       &module_graph
         .entries
-        .clone()
-        .into_iter()
-        .map(|(entry, _)| entry)
+        .clone().into_keys()
         .collect(),
       &mut module_graph,
     );
@@ -311,9 +309,7 @@ mod tests {
     let module_group_graph = module_group_graph_from_entries(
       &module_graph
         .entries
-        .clone()
-        .into_iter()
-        .map(|(entry, _)| entry)
+        .clone().into_keys()
         .collect(),
       &mut module_graph,
     );

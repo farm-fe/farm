@@ -74,7 +74,7 @@ pub fn resource_pot_to_runtime_object(
     .try_for_each(|m_id| {
       let module = module_graph
         .module(m_id)
-        .unwrap_or_else(|| panic!("Module not found: {:?}", m_id));
+        .unwrap_or_else(|| panic!("Module not found: {m_id:?}"));
 
       let mut cache_store_key = None;
 

@@ -3,7 +3,6 @@
 use std::{collections::HashMap, sync::Arc};
 
 use farmfe_core::{
-  config::TargetEnv,
   enhanced_magic_string::bundle::Bundle,
   parking_lot::Mutex,
   plugin::Plugin,

@@ -406,7 +406,7 @@ export * from './bar';
     assert_eq!(result[0].stmt_id, 0);
     assert_eq!(result[0].source, "./foo");
     assert_eq!(result[0].used_stmt_idents.as_partial().len(), 2);
-    println!("{:?}", result);
+    println!("{result:?}");
     assert!(result[0]
       .used_stmt_idents
       .contains(&UsedExportsIdent::SwcIdent("b".to_string())));

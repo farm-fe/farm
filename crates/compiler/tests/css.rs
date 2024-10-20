@@ -10,7 +10,7 @@ use crate::common::{assert_compiler_result, create_css_compiler};
 fn css_modules() {
   fixture!("tests/fixtures/css/modules/**/*.ts", |file, crate_path| {
     let cwd = file.parent().unwrap();
-    println!("cwd: {:?}", cwd);
+    println!("cwd: {cwd:?}");
 
     let entry_name = "index".to_string();
 

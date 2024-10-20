@@ -31,7 +31,7 @@ impl RustPluginAdapter {
   pub fn new(plugin_path: &String, config: &Config, options: String) -> Result<Self> {
     let (plugin, _lib) = unsafe {
       load_rust_plugin(plugin_path, config, options).map_err(|e| {
-        CompilationError::GenericError(format!("Load rust plugin {} failed. {:?}", plugin_path, e))
+        CompilationError::GenericError(format!("Load rust plugin {plugin_path} failed. {e:?}"))
       })?
     };
 

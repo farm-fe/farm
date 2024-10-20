@@ -1,6 +1,10 @@
 import { defineConfig } from '@farmfe/core';
+import react from '@farmfe/plugin-react';
 
-export default defineConfig(() => {
+export default defineConfig((env) => {
+  console.log(env);
+  console.log(process.env.NODE_ENV);
+  
   return {
     compilation: {
       sourcemap: true,
@@ -20,6 +24,8 @@ export default defineConfig(() => {
         },
       }
     },
-    plugins: ['@farmfe/plugin-react', '@farmfe/plugin-sass']
+    plugins: [react({
+      useAbsolutePath: true
+    }), '@farmfe/plugin-sass']
   };
 });

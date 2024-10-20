@@ -51,7 +51,7 @@ pub fn create_formatter<'a>(open: &'a str, close: &'a str, replace: Option<&'a s
       result.push_str(close);
       result
     } else {
-      format!("{}{}{}", open, string, close)
+      format!("{open}{string}{close}")
     }
   }
 }
@@ -68,13 +68,13 @@ pub fn replace_close(string: &str, close: &str, replace: &str, index: usize) -> 
       replace_close(&end[next_index..], close, replace, next_index)
     )
   } else {
-    format!("{}{}", start, replace)
+    format!("{start}{replace}")
   }
 }
 
 pub fn reset(s: &str) -> String {
   if is_color_enabled() {
-    format!("\x1b[0m{}", s)
+    format!("\x1b[0m{s}")
   } else {
     s.to_string()
   }
@@ -355,12 +355,12 @@ pub fn handle_brand_text(text: &str) {
       BRAND_GRADIENT_COLORS2,
     ],
   );
-  println!("{}", gradient_string);
+  println!("{gradient_string}");
 }
 
 pub fn brand_text(text: &str) -> String {
   let gradient_string = gradient_string(
-    &format!("\n{} \n", text),
+    &format!("\n{text} \n"),
     &[
       BRAND_GRADIENT_COLORS,
       interpolate_color(&BRAND_GRADIENT_COLORS, &BRAND_GRADIENT_COLORS2, 0.2),

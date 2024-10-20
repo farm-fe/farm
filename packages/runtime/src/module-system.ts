@@ -175,6 +175,11 @@ export class ModuleSystem {
       }),
     )
       .then(() => {
+        // Do not require the module if all the resources are not js resources
+        if (resources.every(resource => resource.type !== 0)) {
+          return;
+        }
+
         if (!this.modules[moduleId]) {
           throw new Error(
             `Dynamic imported module "${moduleId}" is not registered.`,

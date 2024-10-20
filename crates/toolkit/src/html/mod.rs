@@ -122,8 +122,8 @@ pub fn create_attribute(name: &str, value: Option<&str>) -> Attribute {
 
 pub fn get_farm_global_this(namespace: &str, target_env: &TargetEnv) -> String {
   if target_env.is_node() {
-    format!("global['{}']", namespace)
+    format!("global['{namespace}']")
   } else {
-    format!("window['{}']", namespace)
+    format!("window['{namespace}']")
   }
 }

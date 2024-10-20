@@ -44,9 +44,7 @@ fn test_generate_and_diff_resource_pots() {
   let mut module_group_graph = module_group_graph_from_entries(
     &module_graph
       .entries
-      .clone()
-      .into_iter()
-      .map(|(entry, _)| entry)
+      .clone().into_keys()
       .collect(),
     &mut module_graph,
   );
@@ -103,7 +101,7 @@ fn test_generate_and_diff_resource_pots() {
     &context,
   )
   .unwrap();
-  println!("{:?}", resource_pot_ids);
+  println!("{resource_pot_ids:?}");
   assert_eq!(
     resource_pot_ids,
     vec![String::from("test_custom(\"__farm_unknown\")")]
@@ -248,9 +246,7 @@ fn test_generate_and_diff_resource_pots_one_module_changed() {
   let mut module_group_graph = module_group_graph_from_entries(
     &module_graph
       .entries
-      .clone()
-      .into_iter()
-      .map(|(entry, _)| entry)
+      .clone().into_keys()
       .collect(),
     &mut module_graph,
   );

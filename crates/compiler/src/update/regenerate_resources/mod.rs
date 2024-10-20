@@ -221,7 +221,7 @@ pub fn regenerate_resources_for_affected_module_groups(
       .plugin_driver
       .write_plugin_cache(context)
       .unwrap_or_else(|err| {
-        eprintln!("write plugin cache error: {:?}", err);
+        eprintln!("write plugin cache error: {err:?}");
       });
 
     write_cache(context.clone());

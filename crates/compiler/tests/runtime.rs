@@ -19,7 +19,7 @@ fn test(file: String, crate_path: String) {
   let file_path_buf = PathBuf::from(file.clone());
   let create_path_buf = PathBuf::from(crate_path);
   let cwd = file_path_buf.parent().unwrap();
-  println!("testing test case: {:?}", cwd);
+  println!("testing test case: {cwd:?}");
 
   let entry_name = "index".to_string();
 

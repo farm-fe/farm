@@ -134,7 +134,7 @@ fn handle_enforce_resource_pots(
             get_resource_pot_id_for_enforce_resources(name, module_id, &module_graph)
           } else {
             let module = removed_modules.get(module_id).unwrap_or_else(|| {
-              panic!("can not find module {:?}", module_id);
+              panic!("can not find module {module_id:?}");
             });
             get_resource_pot_id_for_enforce_resources_by_removed_module(name, module)
           };
@@ -189,7 +189,7 @@ fn handle_enforce_resource_pots(
   // remove the resource pot if it's modules are empty
   for id in &affected_resource_pot_ids {
     let resource_pot = resource_pot_map.resource_pot_mut(id).unwrap_or_else(|| {
-      panic!("resource pot not found: {:?}", id);
+      panic!("resource pot not found: {id:?}");
     });
 
     if resource_pot.modules().is_empty() {
@@ -250,8 +250,7 @@ fn diff_and_patch_resource_pot_map(
               .remove_resource_pot(resource_pot)
               .unwrap_or_else(|| {
                 panic!(
-                  "The resource pot {:?} should be in the resource pot map",
-                  resource_pot
+                  "The resource pot {resource_pot:?} should be in the resource pot map"
                 )
               });
 

@@ -97,7 +97,7 @@ pub fn parse_stmt(
     .parse_stmt(top_level)
     .map_err(|e| CompilationError::ParseError {
       resolved_path: id.to_string(),
-      msg: format!("{:?}", e),
+      msg: format!("{e:?}"),
     })
 }
 

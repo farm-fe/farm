@@ -161,13 +161,13 @@ unsafe extern "C" fn resolve(env: napi_env, info: napi_callback_info) -> napi_va
     let resolved = ctx
       .plugin_driver
       .resolve(&param, &ctx, &hook_context)
-      .map_err(|e| Error::new(Status::GenericFailure, format!("{}", e)));
+      .map_err(|e| Error::new(Status::GenericFailure, format!("{e}")));
 
     match resolved {
       Ok(resolved) => promise.resolve(Box::new(move |e| e.to_js_value(&resolved))),
       Err(err) => promise.reject(Error::new(
         Status::GenericFailure,
-        format!("can not resolve {:?}: {:?}", param, err),
+        format!("can not resolve {param:?}: {err:?}"),
       )),
     }
   });

@@ -148,7 +148,7 @@ impl Plugin for FarmPluginCssResolve {
       };
       // try relative path first
       if !source.starts_with('.') {
-        if let Some(res) = resolve_css(format!("./{}", source)) {
+        if let Some(res) = resolve_css(format!("./{source}")) {
           return Ok(Some(res));
         }
       }
@@ -284,10 +284,7 @@ impl Plugin for FarmPluginCss {
           comments,
         } = parse_css_stylesheet(
           &css_modules_module_id.to_string(),
-          Arc::new(
-            // replace --: '' to --farm-empty: ''
-            param.content.replace("--:", "--farm-empty:"),
-          ),
+          Arc::new(param.content.clone()),
         )?;
 
         // js code for css modules
@@ -424,11 +421,9 @@ impl Plugin for FarmPluginCss {
           .remove(&param.module_id.to_string())
           .unwrap_or_else(|| panic!("ast not found {:?}", param.module_id.to_string()))
       } else {
-        let ParseCssModuleResult { ast, comments } = parse_css_stylesheet(
-          &param.module_id.to_string(),
-          // replace --: '' to --farm-empty: ''
-          Arc::new(param.content.replace("--:", "--farm-empty:")),
-        )?;
+        // swc_css_parser does not support
+        let ParseCssModuleResult { ast, comments } =
+          parse_css_stylesheet(&param.module_id.to_string(), param.content.clone())?;
 
         (ast, CommentsMetaData::from(comments))
       };
@@ -642,7 +637,7 @@ impl Plugin for FarmPluginCss {
           }),
         );
         bundle.add_source(magic_module, None).map_err(|e| {
-          CompilationError::GenericError(format!("failed to add source to bundle: {:?}", e))
+          CompilationError::GenericError(format!("failed to add source to bundle: {e:?}"))
         })?;
       }
 
@@ -657,7 +652,7 @@ impl Plugin for FarmPluginCss {
               ..Default::default()
             })
             .map_err(|e| {
-              CompilationError::GenericError(format!("failed to generate source map: {:?}", e))
+              CompilationError::GenericError(format!("failed to generate source map: {e:?}"))
             })?,
         )
         .map(|v| {
@@ -804,7 +799,7 @@ fn transform_css_module_indent_name(
   context: HashMap<String, &String>,
 ) -> String {
   context.iter().fold(indent_name, |acc, (key, value)| {
-    acc.replace(&format!("[{}]", key), value)
+    acc.replace(&format!("[{key}]"), value)
   })
 }
 

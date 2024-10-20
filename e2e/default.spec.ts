@@ -13,6 +13,8 @@ describe('Default E2E Tests', async () => {
   // const examples = ['react-ssr', 'solid-ssr', 'vue-ssr'];
   logger(`Running E2E tests for ${examples.length} examples`);
 
+  console.log('exclude examples', excludeExamples);
+
   for (const example of examples) {
     const examplePath = join('./examples', example);
     const hasE2eTestFile = existsSync(join(examplePath, 'e2e.spec.ts'));
@@ -25,8 +27,6 @@ describe('Default E2E Tests', async () => {
         example,
         'hasE2eTestFile',
         hasE2eTestFile,
-        'excludeExamples',
-        excludeExamples,
         'hasIndexHtml',
         hasIndexHtml
       );

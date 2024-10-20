@@ -276,7 +276,7 @@ impl From<ModuleType> for ResourcePotType {
 
 impl ToString for ResourcePotType {
   fn to_string(&self) -> String {
-    format!("{:?}", self).to_lowercase()
+    format!("{self:?}").to_lowercase()
   }
 }
 

@@ -47,7 +47,7 @@ pub fn init_plugin_module_cache_once(config: &farmfe_core::config::Config) {
       let path = if let FileName::Real(value) = resolved_path.filename {
         value
       } else {
-        panic!("Failed to resolve plugin path: {:?}", resolved_path);
+        panic!("Failed to resolve plugin path: {resolved_path:?}");
       };
 
       // store_bytes_from_path which swc uses will cause deadlock, so we read and cache the plugin module bytecode manually
