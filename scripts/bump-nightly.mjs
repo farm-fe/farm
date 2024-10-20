@@ -15,5 +15,3 @@ execSync(`npx changeset version --snapshot nightly`, {
 });
 
 execSync("pnpm install --no-frozen-lockfile", { stdio: "inherit" });
-
-console.log(`Nightly version bump completed. Version: ${nightlyVersion}`);

@@ -21,5 +21,3 @@ execSync("npm config set access public", { stdio: "inherit" });
 
 // Publish nightly packages
 execSync(`npx changeset publish --tag nightly`, { stdio: "inherit" });
-
-console.log(`Nightly version ${nightlyVersion} published successfully.`);

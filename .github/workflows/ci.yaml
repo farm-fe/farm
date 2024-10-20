@@ -106,20 +106,6 @@ jobs:
       - name: Build Plugin Tools
         run: pnpm --filter @farmfe/plugin-tools run build
 
-      - name: Set Nightly Version for CLI and Core
-        run: |
-          NIGHTLY_VERSION="2.0.0-nightly.$(date +'%Y%m%d%H%M%S')"
-          pnpm --filter "./packages/cli" version $NIGHTLY_VERSION --no-git-tag-version
-          pnpm --filter "./packages/core" version $NIGHTLY_VERSION --no-git-tag-version
-
-      # - name: Publish Nightly to npm
-      #   env:
-      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      #     NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-      #   run: |
-      #     echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" > .npmrc
-      #     pnpm publish --tag nightly --no-git-checks
-
       - name: Create Nightly Release Pull Request or Publish Nightly Version to npm
         id: changesets
         uses: changesets/action@v1
@@ -129,3 +115,16 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Comment PR
+        uses: actions/github-script@v6
+        if: success()
+        with:
+          github-token: ${{secrets.GITHUB_TOKEN}}
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '🎉 Nightly version has been published to npm!'
+            })
