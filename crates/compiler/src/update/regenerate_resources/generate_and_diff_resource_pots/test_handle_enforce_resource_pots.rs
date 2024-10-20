@@ -4,13 +4,10 @@ use std::sync::Arc;
 use farmfe_core::{
   config::{
     config_regex::ConfigRegex, partial_bundling::PartialBundlingEnforceResourceConfig, Config,
-  },
-  context::CompilationContext,
-  module::{
+  }, context::CompilationContext, farm_profile_function, module::{
     module_graph::{ModuleGraphEdge, ModuleGraphEdgeDataItem},
     Module,
-  },
-  plugin::{Plugin, PluginHookContext, ResolveKind},
+  }, plugin::{Plugin, PluginHookContext, ResolveKind}
 };
 use farmfe_plugin_partial_bundling::module_group_graph_from_entries;
 use farmfe_testing_helpers::{construct_test_module_graph, construct_test_module_graph_complex};
