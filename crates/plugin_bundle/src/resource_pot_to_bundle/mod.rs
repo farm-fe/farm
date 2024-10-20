@@ -8,7 +8,7 @@ use std::{
 
 use bundle::bundle_reference::BundleReferenceManager;
 use farmfe_core::{
-  config::ModuleFormat,
+  config::{Mode, ModuleFormat},
   context::CompilationContext,
   enhanced_magic_string::bundle::Bundle,
   error::{CompilationError, MapCompletionError, Result},
@@ -120,6 +120,11 @@ pub struct ShareBundleOptions {
 
   /// in non-full ShareBundle render, maybe not that transform by config.output.format
   pub format: ModuleFormat,
+  /// hash paths other than external
+  pub hash_path: bool,
+
+  /// inner fields
+  pub mode: Mode,
 }
 
 impl Default for ShareBundleOptions {
@@ -127,8 +132,19 @@ impl Default for ShareBundleOptions {
     Self {
       reference_slot: true,
       ignore_external_polyfill: false,
-      // ignore_unknown_url_polyfill: false,
+      hash_path: false,
       format: ModuleFormat::EsModule,
+      mode: Mode::Development,
+    }
+  }
+}
+
+impl ShareBundleOptions {
+  fn format(&self, module_id: &ModuleId) -> String {
+    if self.hash_path {
+      module_id.id(self.mode.clone())
+    } else {
+      module_id.to_string()
     }
   }
 }
@@ -182,6 +198,9 @@ impl<'a> SharedBundle<'a> {
     options: Option<ShareBundleOptions>,
   ) -> Result<Self> {
     farm_profile_function!("shared bundle initial");
+    let mut options = options.unwrap_or_default();
+    options.mode = context.config.mode.clone();
+
     let module_analyzer_map: Mutex<HashMap<ModuleId, ModuleAnalyzer>> = Mutex::new(HashMap::new());
     let mut bundle_map: HashMap<ResourcePotId, BundleAnalyzer> = HashMap::new();
 
@@ -272,7 +291,7 @@ impl<'a> SharedBundle<'a> {
       ordered_module_index: order_map,
       ordered_groups_id: ordered_bundle_group_ids,
       bundle_reference: bundle_reference_manager,
-      options: options.unwrap_or_default(),
+      options,
     })
   }
 
