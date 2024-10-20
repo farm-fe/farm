@@ -6,6 +6,11 @@ name: Nightly Release CI
 
 on: [pull_request]
 
+permissions:
+  contents: write
+  pull-requests: write
+  packages: write
+
 jobs:
   call-rust-build:
     uses: ./.github/workflows/rust-build.yaml
