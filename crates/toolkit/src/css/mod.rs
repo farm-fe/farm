@@ -32,7 +32,7 @@ pub fn parse_css_stylesheet(
   // 1. replace --: '' to --farm-empty: ''
   let mut content = orig_content.replace("--:", "--farm-empty:");
   // 2. replace filter: xxx.Microsoft.xxx to filter: "xxx.Microsoft.xxx" using regex. fix #1557
-  let regex = Regex::new(r#"filter:\s*(.*?)\.Microsoft\.(.*?)(;|\})"#).unwrap();
+  let regex = Regex::new(r#"filter:\s*([^'"]*?)\.Microsoft\.(.*?)(;|\})"#).unwrap();
   content = regex
     .replace_all(&content, "filter:\"$1.Microsoft.$2\"$3")
     .to_string();
