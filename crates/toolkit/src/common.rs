@@ -33,7 +33,7 @@ pub struct Source {
 /// create a swc source map from a source
 pub fn create_swc_source_map(source: Source) -> (Arc<SourceMap>, Arc<SourceFile>) {
   let cm = Arc::new(SourceMap::default());
-  let sf = cm.new_source_file_from(FileName::Real(source.path), source.content);
+  let sf = cm.new_source_file_from(Arc::new(FileName::Real(source.path)), source.content);
 
   (cm, sf)
 }
