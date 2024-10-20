@@ -218,8 +218,9 @@ impl<'a> BundleAnalyzer<'a> {
     module_id: &ModuleId,
     module_analyzer_manager: &mut ModuleAnalyzerManager,
     bundle_reference_manager: &mut BundleReferenceManager,
+    options: &ShareBundleOptions,
   ) -> Result<()> {
-    let is_format_to_commonjs = self.context.config.output.format == ModuleFormat::CommonJs;
+    let is_format_to_commonjs = matches!(options.format, ModuleFormat::CommonJs);
 
     farm_profile_scope!(format!(
       "bundle analyzer module relation: {}",
@@ -235,18 +236,22 @@ impl<'a> BundleAnalyzer<'a> {
         || module_analyzer.is_reference_by_another(|| {
           let importer = self.module_graph.dependents_ids(module_id);
           importer.iter().any(|importer| {
-            module_analyzer_manager
-              .module_analyzer(importer)
-              .is_some_and(|i| i.bundle_group_id != group_id)
+            if module_analyzer_manager.contain(importer) {
+              module_analyzer_manager
+                .module_analyzer(importer)
+                .is_some_and(|i| i.bundle_group_id != group_id)
+            } else {
+              // partial ShareBundle should reexport raw
+              true
+            }
           })
         });
 
       let bundle_reference1 = bundle_reference_manager.reference_mut(&group_id);
       let mut bundle_reference_1 = bundle_reference1.borrow_mut();
       let bundle_reference1 = bundle_reference_1.fetch_mut(module_id, module_analyzer_manager);
-      // let bundle_reference1 = bundle_reference_manager.reference1_mut(&module_analyzer.module_id);
-      // let bundle_reference1 = &mut bundle_reference1.borrow_mut();
 
+      // reexport as namespace
       if module_analyzer_manager
         .namespace_modules
         .contains(module_id)
@@ -425,7 +430,7 @@ impl<'a> BundleAnalyzer<'a> {
                       self
                         .bundle_variable
                         .borrow_mut()
-                        .set_uniq_name_both(imported, rename);
+                        .set_uniq_name_both(rename, *local);
                     }
 
                     FindModuleExportResult::Bundle(index, target_id, _, _) => {
@@ -634,7 +639,7 @@ impl<'a> BundleAnalyzer<'a> {
                   bundle_variable: &mut self.bundle_variable.borrow_mut(),
                   source,
                   module_system: module_system.clone(),
-                  config: &self.context.config,
+                  config: &options,
                   module_id: &module_id,
                 })?;
               }
@@ -701,6 +706,7 @@ impl<'a> BundleAnalyzer<'a> {
                           );
                         }
                       }
+
                       FindModuleExportResult::External(_, target_source, _) => {
                         if is_reference_by_another {
                           bundle_reference1.add_reference_export(
@@ -709,6 +715,15 @@ impl<'a> BundleAnalyzer<'a> {
                             module_system,
                           );
                           is_confirmed_import = true;
+                        } else {
+                          bundle_reference1.add_import(
+                            &ImportSpecifierInfo::Named {
+                              local: variable.export_as(),
+                              imported: Some(variable.export_from()),
+                            },
+                            target_source.into(),
+                            &self.bundle_variable.borrow_mut(),
+                          )?;
                         }
                       }
 
@@ -1016,8 +1031,6 @@ impl<'a> BundleAnalyzer<'a> {
 
   // 3. start process bundle
   pub fn render(&mut self, module_analyzer_manager: &mut ModuleAnalyzerManager) -> Result<()> {
-    self.module_conflict_name(module_analyzer_manager);
-
     self.strip_module(module_analyzer_manager)?;
     Ok(())
   }
@@ -1047,7 +1060,7 @@ impl<'a> BundleAnalyzer<'a> {
     // sort by order
     // 1. sort commonjs declaration to top
     // 2. commonjs import declaration should use after declaration or first module use
-    for (index, module_id) in self.ordered_modules.iter().enumerate() {
+    for module_id in self.ordered_modules.iter() {
       // let bundle_reference = bundle_reference_manager.reference1_mut(&module_id);
       // let mut bundle_reference = bundle_reference.borrow_mut();
       let bundle_reference =
@@ -1138,29 +1151,9 @@ impl<'a> BundleAnalyzer<'a> {
       )?);
     }
 
-    // for (should_reexport_raw, bundle_reference) in [
-    //   (false, &mut bundle_reference.reexport_raw),
-    //   (true, &mut bundle_reference.bundle_reference1),
-    // ] {
-    //   // runtime bundle cannot export
-    //   // 1. if import by other bundle or entry export, should reexport some variable
-    //   if !is_runtime_bundle {
-    //     patch_export_to_module.extend(generate_export_by_reference_export(
-    //       &self.resource_pot.id,
-    //       should_reexport_raw,
-    //       &self.bundle_variable.borrow(),
-    //       bundle_reference,
-    //       module_analyzer_manager,
-    //       &self.context,
-    //       &mut self.polyfill,
-    //       &mut is_polyfilled_es_module_flag,
-    //     )?);
-    //   }
-    // }
-
     // 2. maybe import external、other bundle, should generate import
     patch_import_to_module.extend(generate_bundle_import_by_bundle_reference(
-      &self.context.config.output.format,
+      &options.format,
       &self.bundle_variable.borrow(),
       &bundle_reference.bundle_reference1,
       module_analyzer_manager,
@@ -1170,7 +1163,7 @@ impl<'a> BundleAnalyzer<'a> {
     )?);
 
     patch_import_to_module.extend(generate_bundle_import_by_bundle_reference(
-      &self.context.config.output.format,
+      &options.format,
       &self.bundle_variable.borrow(),
       &bundle_reference.reexport_raw,
       module_analyzer_manager,
@@ -1244,7 +1237,7 @@ impl<'a> BundleAnalyzer<'a> {
       let mut ast = module_analyzer.ast.body.take();
 
       let stmts = generate_bundle_import_by_bundle_reference(
-        &self.context.config.output.format,
+        &options.format,
         &bundle_variable,
         &bundle_reference,
         &module_analyzer_manager,
@@ -1254,6 +1247,29 @@ impl<'a> BundleAnalyzer<'a> {
       )?;
 
       ast = stmts.into_iter().chain(ast.take()).collect();
+
+      module_analyzer_manager.set_ast_body(&module_id, ast);
+    }
+
+    Ok(())
+  }
+
+  // TODO: for partial ShareBundle
+  pub fn path_polyfill_inline(
+    &mut self,
+    module_analyzer_manager: &mut ModuleAnalyzerManager,
+  ) -> Result<()> {
+    if let Some(module_id) = self.ordered_modules.first() {
+      let module_analyzer = module_analyzer_manager.module_analyzer_mut_unchecked(module_id);
+
+      let mut ast = module_analyzer.ast.body.take();
+
+      ast = self
+        .polyfill
+        .to_ast()?
+        .into_iter()
+        .chain(ast.take())
+        .collect();
 
       module_analyzer_manager.set_ast_body(&module_id, ast);
     }

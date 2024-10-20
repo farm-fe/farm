@@ -27,7 +27,8 @@ use farmfe_core::{
 };
 use farmfe_toolkit::constant::RUNTIME_SUFFIX;
 use resource_pot_to_bundle::{
-  BundleGroup, SharedBundle, FARM_BUNDLE_POLYFILL_SLOT, FARM_BUNDLE_REFERENCE_SLOT_PREFIX,
+  BundleGroup, ShareBundleOptions, SharedBundle, FARM_BUNDLE_POLYFILL_SLOT,
+  FARM_BUNDLE_REFERENCE_SLOT_PREFIX,
 };
 
 pub mod resource_pot_to_bundle;
@@ -93,7 +94,7 @@ impl Plugin for FarmPluginBundle {
     if _param.resolved_path.starts_with(FARM_BUNDLE_POLYFILL_SLOT) {
       return Ok(Some(PluginLoadHookResult {
         // TODO: disable tree-shaking it
-        content: format!(r#";export {{}}"#),
+        content: format!(r#"export {{}}"#),
         module_type: ModuleType::Js,
         source_map: None,
       }));
@@ -141,7 +142,15 @@ impl Plugin for FarmPluginBundle {
       })
       .map(|item| BundleGroup::from(&**item))
       .collect::<Vec<_>>();
-    let mut shared_bundle = SharedBundle::new(r, &module_graph, context, None)?;
+    let mut shared_bundle = SharedBundle::new(
+      r,
+      &module_graph,
+      context,
+      Some(ShareBundleOptions {
+        format: context.config.output.format.clone(),
+        ..Default::default()
+      }),
+    )?;
 
     shared_bundle.render()?;
 

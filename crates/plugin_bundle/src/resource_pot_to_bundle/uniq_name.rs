@@ -153,6 +153,8 @@ impl BundleVariable {
   pub fn register_placeholder(&mut self, module_id: &ModuleId, ident: &Ident) -> usize {
     let index = self.register_var(module_id, ident, true);
 
+    self.uniq_name_mut().insert(ident.sym.as_str());
+
     self.var_mut_by_index(index).placeholder = true;
 
     index
@@ -528,6 +530,12 @@ impl BundleVariable {
           }
         }
       }
+    } else {
+      return Some(FindModuleExportResult::External(
+        index,
+        source.clone(),
+        false,
+      ));
     }
 
     None

@@ -1,7 +1,8 @@
 use std::mem;
 
 use farmfe_core::{
-  module::ModuleId,
+  module::{Module, ModuleId},
+  plugin::ResolveKind,
   swc_common::{SyntaxContext, DUMMY_SP},
   swc_ecma_ast::{
     BindingIdent, BlockStmt, CallExpr, Callee, Expr, ExprOrSpread, FnExpr, Function, Ident, Lit,
@@ -45,12 +46,44 @@ pub struct ReplaceDynamicVisit<'a, 'b> {
   options: &'a ShareBundleOptions,
 }
 
+enum FromType<'a> {
+  Module(&'a Module),
+  ModuleAnalyzer(&'a ModuleAnalyzer),
+}
+
 impl<'a, 'b> ReplaceDynamicVisit<'a, 'b> {
   pub fn is_matched_dynamic_import(&self, expr: &CallExpr) -> bool {
     matches!(expr.callee, Callee::Import(_))
   }
 
-  pub fn dynamic_import_source(&self, expr: &CallExpr) -> Option<&ModuleAnalyzer> {
+  pub fn try_find_module(&self, source: &str) -> Option<FromType> {
+    if let Some(m) = self.module_manager.module_graph.get_dep_by_source_optional(
+      self.module_id,
+      source,
+      Some(ResolveKind::DynamicImport),
+    ) {
+      let v = self
+        .module_manager
+        .module_analyzer(&m)
+        .map(FromType::ModuleAnalyzer);
+
+      if v.is_some() {
+        return v;
+      }
+
+      let v = self
+        .module_manager
+        .module_graph
+        .module(&m)
+        .map(FromType::Module);
+
+      return v;
+    }
+
+    None
+  }
+
+  pub fn dynamic_import_source_str(&self, expr: &CallExpr) -> Option<FromType> {
     let arg = &expr.args[0];
 
     if arg.spread.is_some() {
@@ -61,12 +94,10 @@ impl<'a, 'b> ReplaceDynamicVisit<'a, 'b> {
       return None;
     };
 
-    self
-      .module_manager
-      .module_analyzer_by_source(self.module_id, str.value.as_ref())
+    self.try_find_module(str.value.as_ref())
   }
 
-  pub fn replace_expr(
+  pub fn replace_expr_by_module_analyzer(
     &self,
     call_expr: &mut CallExpr,
     module_analyzer: &ModuleAnalyzer,
@@ -142,6 +173,22 @@ impl<'a, 'b> ReplaceDynamicVisit<'a, 'b> {
         ))),
       };
     }
+
+    None
+  }
+
+  pub fn replace_expr_by_module(
+    &self,
+    call_expr: &mut CallExpr,
+    module: &Module,
+  ) -> Option<Box<Expr>> {
+    let arg = &mut call_expr.args[0];
+
+    *arg = ExprOrSpread {
+      spread: None,
+      // TODO: id hash
+      expr: Box::new(Expr::Lit(Lit::Str(module.id.to_string().into()))),
+    };
 
     None
   }
@@ -249,17 +296,24 @@ impl<'a, 'b> VisitMut for ReplaceDynamicVisit<'a, 'b> {
 
     if let Expr::Call(ref mut call_expr) = n {
       if self.is_matched_dynamic_import(&call_expr) {
-        if let Some(module_analyzer) = self.dynamic_import_source(&call_expr) {
-          if let Some(expr) = self.replace_expr(call_expr, module_analyzer) {
-            visited = true;
-            *n = *expr;
-          }
+        if let Some(from_type) = self.dynamic_import_source_str(&call_expr) {
+          match from_type {
+            FromType::Module(module) => {
+              self.replace_expr_by_module(call_expr, module);
+            }
+            FromType::ModuleAnalyzer(module_analyzer) => {
+              if let Some(expr) = self.replace_expr_by_module_analyzer(call_expr, module_analyzer) {
+                visited = true;
+                *n = *expr;
+              }
 
-          if !self
-            .module_manager
-            .is_same_bundle(&self.module_id, &module_analyzer.module_id)
-          {
-            self.map_promise_name_for_other_bundle(n, module_analyzer);
+              if !self
+                .module_manager
+                .is_same_bundle(&self.module_id, &module_analyzer.module_id)
+              {
+                self.map_promise_name_for_other_bundle(n, module_analyzer);
+              }
+            }
           }
         }
       }

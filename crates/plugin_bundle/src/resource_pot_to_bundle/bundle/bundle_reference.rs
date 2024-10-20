@@ -9,10 +9,9 @@ use farmfe_core::{
 
 use crate::resource_pot_to_bundle::{
   common::with_bundle_reference_slot_name,
-  modules_analyzer::module_analyzer::{
-    self, ExportSpecifierInfo, ImportSpecifierInfo, ModuleAnalyzer,
-  },
+  modules_analyzer::module_analyzer::{ExportSpecifierInfo, ImportSpecifierInfo, ModuleAnalyzer},
   uniq_name::BundleVariable,
+  ShareBundleOptions,
 };
 
 use super::ModuleAnalyzerManager;
@@ -430,10 +429,7 @@ impl BundleReference {
     let is_commonjs = reference_builder
       .module_analyzer_manager
       .is_commonjs(reference_builder.source);
-    let is_format_to_cjs = matches!(
-      reference_builder.config.output.format,
-      ModuleFormat::CommonJs
-    );
+    let is_format_to_cjs = matches!(reference_builder.config.format, ModuleFormat::CommonJs);
     let redeclare_commonjs = !reference_builder.module_analyzer.entry
       || matches!(
         reference_builder.module_analyzer.module_type,
@@ -762,7 +758,7 @@ pub struct ReferenceBuilder<'a> {
   pub bundle_variable: &'a mut BundleVariable,
   pub source: &'a ModuleId,
   pub module_system: ModuleSystem,
-  pub config: &'a Config,
+  pub config: &'a ShareBundleOptions,
   pub module_id: &'a ModuleId,
 }
 

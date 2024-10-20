@@ -11,14 +11,13 @@ use farmfe_core::{
   context::CompilationContext,
   error::{CompilationError, MapCompletionError, Result},
   farm_profile_function, farm_profile_scope,
-  module::{module_graph::ModuleGraph, ModuleId, ModuleSystem},
-  plugin::ResolveKind,
+  module::{module_graph::ModuleGraph, ModuleId, ModuleMetaData, ModuleSystem},
   rayon::iter::{IntoParallelIterator, ParallelIterator},
   resource::resource_pot::ResourcePotId,
   swc_common::{util::take::Take, SyntaxContext, DUMMY_SP},
   swc_ecma_ast::{
     self, BindingIdent, CallExpr, ClassDecl, Decl, EmptyStmt, Expr, ExprStmt, FnDecl, Ident,
-    Module, ModuleDecl, ModuleItem, Stmt, VarDecl, VarDeclarator,
+    Module as ModuleAst, ModuleDecl, ModuleItem, Stmt, VarDecl, VarDeclarator,
   },
 };
 use farmfe_toolkit::{script::swc_try_with::try_with, swc_ecma_visit::VisitMutWith};
@@ -290,8 +289,18 @@ impl<'a> ModuleAnalyzerManager<'a> {
     self
       .module_map
       .get(module_id)
-      .map(|item| item.is_commonjs())
-      .unwrap_or(false)
+      .is_some_and(|item| item.is_commonjs())
+      || self.module_graph.module(module_id).is_some_and(|m| {
+        if matches!(m.meta.as_ref(), ModuleMetaData::Script(_)) {
+          let s = m.meta.as_script();
+          matches!(
+            s.module_system,
+            ModuleSystem::CommonJs | ModuleSystem::Hybrid
+          )
+        } else {
+          false
+        }
+      })
   }
 
   #[inline]
@@ -348,6 +357,11 @@ impl<'a> ModuleAnalyzerManager<'a> {
   }
 
   #[inline]
+  pub fn contain(&self, module_id: &ModuleId) -> bool {
+    self.module_map.contains_key(module_id)
+  }
+
+  #[inline]
   pub fn group_id(&self, module_id: &ModuleId) -> Option<&ResourcePotId> {
     self.module_map.get(module_id).map(|m| &m.bundle_group_id)
   }
@@ -381,24 +395,8 @@ impl<'a> ModuleAnalyzerManager<'a> {
   }
 
   #[inline]
-  pub fn set_ast(&mut self, module_id: &ModuleId, ast_body: Module) {
+  pub fn set_ast(&mut self, module_id: &ModuleId, ast_body: ModuleAst) {
     self.module_analyzer_mut_unchecked(module_id).ast = ast_body;
-  }
-
-  pub fn module_analyzer_by_source(
-    &self,
-    module_id: &ModuleId,
-    source: &str,
-  ) -> Option<&ModuleAnalyzer> {
-    if let Some(m) = self.module_graph.get_dep_by_source_optional(
-      module_id,
-      source,
-      Some(ResolveKind::DynamicImport),
-    ) {
-      return self.module_map.get(&m);
-    }
-
-    None
   }
 
   pub fn is_same_bundle(&self, a: &ModuleId, b: &ModuleId) -> bool {
@@ -690,25 +688,33 @@ impl<'a> ModuleAnalyzerManager<'a> {
         },
 
         StmtAction::StripCjsImport(index, import_execute_module) => {
-          replace_ast_item(*index);
+          let mut original = replace_ast_item(*index);
           if let Some(source) = import_execute_module {
             if !commonjs_import_executed.contains(source) {
-              ast.body[*index] = ModuleItem::Stmt(Stmt::Expr(ExprStmt {
-                span: DUMMY_SP,
-                expr: Box::new(Expr::Call(CallExpr {
-                  ctxt: SyntaxContext::empty(),
+              if self.contain(source) {
+                ast.body[*index] = ModuleItem::Stmt(Stmt::Expr(ExprStmt {
                   span: DUMMY_SP,
-                  callee: swc_ecma_ast::Callee::Expr(Box::new(Expr::Ident(
-                    bundle_variable
-                      .name(self.module_global_uniq_name.commonjs_name(source).unwrap())
-                      .as_str()
-                      .into(),
-                  ))),
-                  args: vec![],
-                  type_args: None,
-                })),
-              }));
-              commonjs_import_executed.insert(source.clone());
+                  expr: Box::new(Expr::Call(CallExpr {
+                    ctxt: SyntaxContext::empty(),
+                    span: DUMMY_SP,
+                    callee: swc_ecma_ast::Callee::Expr(Box::new(Expr::Ident(
+                      bundle_variable
+                        .name(self.module_global_uniq_name.commonjs_name(source).unwrap())
+                        .as_str()
+                        .into(),
+                    ))),
+                    args: vec![],
+                    type_args: None,
+                  })),
+                }));
+                commonjs_import_executed.insert(source.clone());
+              } else {
+                if let ModuleItem::ModuleDecl(ModuleDecl::Import(ref mut i)) = original {
+                  i.src = Box::new(source.to_string().into());
+                }
+
+                ast.body[*index] = original;
+              }
             }
           }
         }
@@ -803,6 +809,7 @@ impl<'a> ModuleAnalyzerManager<'a> {
             &self.module_graph,
             &self.module_global_uniq_name,
             &self.module_map,
+            options,
           );
         }
 

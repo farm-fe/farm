@@ -12,7 +12,9 @@ use farmfe_core::{
   module::{module_graph::ModuleGraph, ModuleId},
   plugin::ResolveKind,
   swc_common::{Mark, SyntaxContext, DUMMY_SP},
-  swc_ecma_ast::{Bool, CallExpr, Callee, Expr, ExprOrSpread, Ident, Lit, Str},
+  swc_ecma_ast::{
+    Bool, CallExpr, Callee, Expr, ExprOrSpread, Ident, Lit, MemberExpr, MemberProp, Str,
+  },
 };
 use farmfe_toolkit::{
   script::{is_commonjs_require, is_dynamic_import},
@@ -34,6 +36,7 @@ pub struct SourceReplacer<'a> {
   mode: Mode,
   pub external_modules: Vec<String>,
   target_env: TargetEnv,
+  is_strict_find_source: bool,
 }
 
 pub struct SourceReplacerOptions<'a> {
@@ -43,6 +46,7 @@ pub struct SourceReplacerOptions<'a> {
   pub module_id: ModuleId,
   pub mode: Mode,
   pub target_env: TargetEnv,
+  pub is_strict_find_source: bool,
 }
 
 impl<'a> SourceReplacer<'a> {
@@ -54,6 +58,7 @@ impl<'a> SourceReplacer<'a> {
       module_id,
       mode,
       target_env,
+      is_strict_find_source,
     } = options;
 
     Self {
@@ -64,6 +69,7 @@ impl<'a> SourceReplacer<'a> {
       mode,
       external_modules: vec![],
       target_env,
+      is_strict_find_source,
     }
   }
 }
@@ -134,13 +140,17 @@ impl SourceReplacer<'_> {
           ctxt: SyntaxContext::empty(),
         })));
 
-        let (id, resolve_kind) =
-          (self.find_real_module_meta_by_source(&source)).unwrap_or_else(|| {
+        let Some((id, resolve_kind)) = self.find_real_module_meta_by_source(&source) else {
+          if self.is_strict_find_source {
             panic!(
               "Cannot find module id for source {:?} from {:?}",
               source, self.module_id
             )
-          });
+          }
+
+          return SourceReplaceResult::NotReplaced;
+        };
+
         // only execute script module
         let dep_module = self.module_graph.module(&id).unwrap();
 
@@ -181,20 +191,33 @@ impl SourceReplacer<'_> {
       {
         let source = str.value.to_string();
 
-        let id = self.module_graph.get_dep_by_source(
+        if let Some(id) = self.module_graph.get_dep_by_source_optional(
           &self.module_id,
           &source,
           Some(ResolveKind::DynamicImport),
-        );
-        // only execute script module
-        let dep_module = self.module_graph.module(&id).unwrap();
+        ) {
+          // only execute script module
+          let dep_module = self.module_graph.module(&id).unwrap();
 
-        if dep_module.external {
-          self.external_modules.push(id.to_string());
+          if dep_module.external {
+            self.external_modules.push(id.to_string());
 
-          return SourceReplaceResult::NotReplaced;
+            return SourceReplaceResult::NotReplaced;
+          }
+
+          str.value = id.id(self.mode.clone()).into();
+          str.span = DUMMY_SP;
+          str.raw = None;
+        } else if self.is_strict_find_source {
+          panic!(
+            "cannot found {} of DynamicImport from {}",
+            source,
+            self.module_id.to_string()
+          );
         }
 
+        // in partial ShareBundle, `module source` already rewrite at DynamicImportReplacer stage
+        // so, even not found module by source, still replace `require`
         call_expr.callee = Callee::Expr(Box::new(Expr::Ident(Ident {
           span: DUMMY_SP,
           sym: FARM_DYNAMIC_REQUIRE.into(),
@@ -202,9 +225,6 @@ impl SourceReplacer<'_> {
           ctxt: SyntaxContext::empty(),
         })));
 
-        str.value = id.id(self.mode.clone()).into();
-        str.span = DUMMY_SP;
-        str.raw = None;
         return SourceReplaceResult::Replaced;
       }
     }

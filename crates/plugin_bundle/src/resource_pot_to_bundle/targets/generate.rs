@@ -188,12 +188,12 @@ pub fn generate_export_as_object_prop(
 
 /// generate bundle export
 pub fn generate_export_by_reference_export(
-  group_id: &str,
+  _group_id: &str,
   should_reexport_raw: bool,
   bundle_variable: &BundleVariable,
   bundle_reference: &mut BundleReference,
   module_analyzer_manager: &ModuleAnalyzerManager,
-  context: &Arc<CompilationContext>,
+  _context: &Arc<CompilationContext>,
   polyfill: &mut SimplePolyfill,
   is_already_polyfilled: &mut bool,
   options: &ShareBundleOptions,
@@ -201,13 +201,11 @@ pub fn generate_export_by_reference_export(
   let mut patch_export_to_module: Vec<ModuleItem> = vec![];
   if let Some(export) = bundle_reference.export.as_ref() {
     patch_export_to_module.extend(generate_export_as_module_export(
-      group_id,
       should_reexport_raw,
       None,
       export,
       bundle_variable,
       module_analyzer_manager,
-      context,
       polyfill,
       is_already_polyfilled,
       options,
@@ -224,13 +222,11 @@ pub fn generate_export_by_reference_export(
     let export = &bundle_reference.external_export_map[source];
 
     patch_export_to_module.extend(generate_export_as_module_export(
-      group_id,
       should_reexport_raw,
       Some(&source),
       export,
       bundle_variable,
       module_analyzer_manager,
-      context,
       polyfill,
       is_already_polyfilled,
       options,
@@ -241,18 +237,16 @@ pub fn generate_export_by_reference_export(
 }
 
 pub fn generate_export_as_module_export(
-  resource_pot_name: &str,
   should_reexport_raw: bool,
   source: Option<&ReferenceKind>,
   export: &ExternalReferenceExport,
   bundle_variable: &BundleVariable,
   module_analyzer_manager: &ModuleAnalyzerManager,
-  context: &Arc<CompilationContext>,
   polyfill: &mut SimplePolyfill,
   is_already_polyfilled: &mut bool,
   options: &ShareBundleOptions,
 ) -> Result<Vec<ModuleItem>> {
-  match (&export.module_system, context.config.output.format) {
+  match (&export.module_system, options.format) {
     // hybrid dynamic es module cannot support, if hybrid, only export static export
     (_, ModuleFormat::EsModule) => EsmGenerate::generate_export(
       should_reexport_raw,

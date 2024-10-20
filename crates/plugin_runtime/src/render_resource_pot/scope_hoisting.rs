@@ -4,6 +4,7 @@ use std::{
 };
 
 use farmfe_core::{
+  config::ModuleFormat,
   context::CompilationContext,
   enhanced_magic_string::bundle::Bundle,
   module::{module_graph::ModuleGraph, ModuleId},
@@ -75,6 +76,10 @@ impl ScopeHoistedModuleGroup {
       context,
       Some(ShareBundleOptions {
         reference_slot: false,
+        ignore_external_polyfill: true,
+        // should ignore
+        format: ModuleFormat::EsModule,
+        ..Default::default()
       }),
     )?;
 

@@ -4,12 +4,12 @@
 
 //index.js:
  // module_id: index.ts
-import { readFile as readFile$1, readFileSync as readFileSync$1 } from "node:fs";
+import { readFile as r1, readFileSync as r2 } from "node:fs";
 const readFile = 1;
 const readFileSync = 2;
 console.log({
     readFile: readFile,
     readFileSync: readFileSync,
-    r1: readFile$1,
-    r2: readFileSync$1
+    r1: r1,
+    r2: r2
 });

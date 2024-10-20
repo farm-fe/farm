@@ -149,7 +149,7 @@ impl EsmGenerate {
           if module_analyzer_manager.is_external(m) {
             (m.clone(), m.to_string())
           } else {
-            if !module_analyzer_manager.is_entry(m) {
+            if module_analyzer_manager.contain(m) && !module_analyzer_manager.is_entry(m) {
               is_import_uniq_name = true;
             }
 
@@ -157,10 +157,10 @@ impl EsmGenerate {
               m.clone(),
               with_bundle_reference_slot_name(
                 &module_analyzer_manager
-                  .module_analyzer(m)
-                  .map(|m| m.bundle_group_id.clone())
+                  .group_id(m)
+                  .map(|id| id.to_string())
                   // maybe using group
-                  .unwrap_or(m.to_string()),
+                  .unwrap_or_else(|| m.to_string()),
                 options.reference_slot,
               ),
             )
@@ -203,17 +203,6 @@ impl EsmGenerate {
         );
       }
 
-      if let Some(namespace) = import.namespace.as_ref() {
-        let namespace_name = bundle_variable.render_name(*namespace).as_str().into();
-        import_item.insert(
-          namespace_name,
-          ImportSpecifier::Namespace(ImportStarAsSpecifier {
-            span: DUMMY_SP,
-            local: bundle_variable.render_name(*namespace).as_str().into(),
-          }),
-        );
-      }
-
       if let Some(default) = import.default.as_ref() {
         let name = bundle_variable.render_name(*default);
         if import_item.contains_key(&name) {
@@ -237,28 +226,62 @@ impl EsmGenerate {
           },
         );
       }
+
+      if let Some(namespace) = import.namespace.as_ref() {
+        let namespace_name = bundle_variable.render_name(*namespace).as_str().into();
+        if import_item.is_empty() {}
+        import_item.insert(
+          namespace_name,
+          ImportSpecifier::Namespace(ImportStarAsSpecifier {
+            span: DUMMY_SP,
+            local: bundle_variable.render_name(*namespace).as_str().into(),
+          }),
+        );
+      }
     }
 
     for (url, import_item) in generate_import_specifies
       .into_iter()
       .sorted_by(|a, b| a.0.cmp(&b.0))
     {
-      stmts.push(ModuleItem::ModuleDecl(ModuleDecl::Import(ImportDecl {
-        span: DUMMY_SP,
-        specifiers: import_item
-          .into_iter()
-          .sorted_by(|a, b| a.0.cmp(&b.0))
-          .map(|item| item.1)
-          .collect::<Vec<_>>(),
-        src: Box::new(Str {
+      let partial_specifiers = import_item
+        .into_iter()
+        .sorted_by(|a, b| a.0.cmp(&b.0))
+        .fold([vec![], vec![]], |mut res, (_, specifier)| {
+          match specifier {
+            ImportSpecifier::Namespace(_) => {
+              res[1] = vec![specifier];
+            }
+
+            _ => res[0].push(specifier),
+          }
+
+          res
+        });
+
+      let mut partial_specifiers = partial_specifiers
+        .into_iter()
+        .filter(|v| !v.is_empty())
+        .collect::<Vec<_>>();
+
+      if partial_specifiers.is_empty() {
+        partial_specifiers.push(vec![]);
+      }
+
+      for item in partial_specifiers {
+        stmts.push(ModuleItem::ModuleDecl(ModuleDecl::Import(ImportDecl {
           span: DUMMY_SP,
-          value: url.into(),
-          raw: None,
-        }),
-        type_only: false,
-        with: None,
-        phase: farmfe_core::swc_ecma_ast::ImportPhase::Evaluation,
-      })));
+          specifiers: item,
+          src: Box::new(Str {
+            span: DUMMY_SP,
+            value: url.clone().into(),
+            raw: None,
+          }),
+          type_only: false,
+          with: None,
+          phase: farmfe_core::swc_ecma_ast::ImportPhase::Evaluation,
+        })));
+      }
     }
 
     Ok(stmts)

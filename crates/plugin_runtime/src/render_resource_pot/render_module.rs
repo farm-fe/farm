@@ -67,6 +67,7 @@ pub fn render_module<'a, F: Fn(&ModuleId) -> bool>(
     is_async_module,
     context,
   } = options;
+  let is_use_hoisted = hoisted_ast.is_some();
   let mut cloned_module = hoisted_ast.unwrap_or(module.meta.as_script().ast.clone());
   let (cm, _) = create_swc_source_map(Source {
     path: PathBuf::from(module.id.resolved_path_with_query(&context.config.root)),
@@ -126,6 +127,7 @@ pub fn render_module<'a, F: Fn(&ModuleId) -> bool>(
       module_id: module.id.clone(),
       mode: context.config.mode.clone(),
       target_env: context.config.output.target_env.clone(),
+      is_strict_find_source: !is_use_hoisted,
     });
     cloned_module.visit_mut_with(&mut source_replacer);
     cloned_module.visit_mut_with(&mut hygiene_with_config(HygieneConfig {

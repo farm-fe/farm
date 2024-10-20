@@ -177,15 +177,21 @@ impl CjsModuleAnalyzer {
       ReferenceKind::Module(m) => m,
     };
 
-    let cjs_name =
-      bundle_variable.render_name(module_global_uniq_name.commonjs_name(module_id).unwrap());
-
-    let cjs_caller = CallExpr {
-      ctxt: SyntaxContext::empty(),
-      span: DUMMY_SP,
-      callee: swc_ecma_ast::Callee::Expr(Box::new(Expr::Ident(cjs_name.as_str().into()))),
-      args: vec![],
-      type_args: None,
+    let (cjs_name, cjs_caller) = if let Some(m) = module_global_uniq_name.commonjs_name(module_id) {
+      let name = bundle_variable.render_name(m);
+      (
+        name.clone(),
+        Box::new(Expr::Call(CallExpr {
+          ctxt: SyntaxContext::empty(),
+          span: DUMMY_SP,
+          callee: swc_ecma_ast::Callee::Expr(Box::new(Expr::Ident(name.as_str().into()))),
+          args: vec![],
+          type_args: None,
+        })),
+      )
+    } else {
+      // TODO: confirm name
+      (module_id.to_string(), Box::new(Expr::Ident("123".into())))
     };
 
     if import_map.is_empty() {
@@ -193,7 +199,7 @@ impl CjsModuleAnalyzer {
         cjs_name,
         CommonJsDeclareResult::Execute(ModuleItem::Stmt(Stmt::Expr(ExprStmt {
           span: DUMMY_SP,
-          expr: Box::new(Expr::Call(cjs_caller)),
+          expr: cjs_caller,
         }))),
       )));
     }
@@ -209,7 +215,7 @@ impl CjsModuleAnalyzer {
         }),
         init: Some(Box::new(Expr::Member(MemberExpr {
           span: DUMMY_SP,
-          obj: wrap_require_default(Box::new(Expr::Call(cjs_caller.clone())), polyfill),
+          obj: wrap_require_default(cjs_caller.clone(), polyfill),
           prop: MemberProp::Ident("default".into()),
         }))),
         definite: false,
@@ -223,10 +229,7 @@ impl CjsModuleAnalyzer {
           id: Ident::from(bundle_variable.render_name(ns).as_str()),
           type_ann: None,
         }),
-        init: Some(wrap_require_wildcard(
-          Box::new(Expr::Call(cjs_caller.clone())),
-          polyfill,
-        )),
+        init: Some(wrap_require_wildcard(cjs_caller.clone(), polyfill)),
         definite: false,
       });
     }
@@ -236,7 +239,6 @@ impl CjsModuleAnalyzer {
       let require_name = bundle_variable.name(*named_index);
 
       let is_require_default = require_name == "default";
-      let init_expr = Box::new(Expr::Call(cjs_caller.clone()));
 
       decls.push(VarDeclarator {
         span: DUMMY_SP,
@@ -247,9 +249,9 @@ impl CjsModuleAnalyzer {
         init: Some(Box::new(Expr::Member(MemberExpr {
           span: DUMMY_SP,
           obj: if is_require_default {
-            wrap_require_default(init_expr, polyfill)
+            wrap_require_default(cjs_caller.clone(), polyfill)
           } else {
-            init_expr
+            cjs_caller.clone()
           },
           prop: swc_ecma_ast::MemberProp::Computed(ComputedPropName {
             span: DUMMY_SP,

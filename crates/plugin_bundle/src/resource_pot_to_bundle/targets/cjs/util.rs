@@ -18,7 +18,7 @@ use crate::resource_pot_to_bundle::{
   bundle::{bundle_reference::BundleReference, ModuleGlobalUniqName},
   modules_analyzer::module_analyzer::{ImportSpecifierInfo, ModuleAnalyzer},
   uniq_name::BundleVariable,
-  Polyfill, SimplePolyfill,
+  Polyfill, ShareBundleOptions, SimplePolyfill,
 };
 
 enum ReplaceType {
@@ -64,6 +64,7 @@ pub struct CJSReplace<'a> {
   pub module_global_uniq_name: &'a ModuleGlobalUniqName,
   pub bundle_variable: &'a BundleVariable,
   pub config: &'a Config,
+  pub options: &'a ShareBundleOptions,
   pub polyfill: &'a mut SimplePolyfill,
   pub external_config: &'a ExternalConfig,
   pub bundle_reference: &'a mut BundleReference,
@@ -110,9 +111,13 @@ impl<'a> VisitMut for CJSReplace<'a> {
               self.config.output.target_env.is_library() && self.config.output.target_env.is_node();
 
             if is_external {
+              if self.options.ignore_external_polyfill {
+                return;
+              }
+
               if is_library_node {
                 // node esm
-                if matches!(self.config.output.format, ModuleFormat::EsModule) {
+                if matches!(self.options.format, ModuleFormat::EsModule) {
                   self.polyfill.add(Polyfill::NodeEsmGlobalRequireHelper);
                   call_expr.callee = Callee::Expr(Box::new(Expr::Ident("_nodeRequire".into())));
                 }
@@ -186,24 +191,6 @@ impl<'a> VisitMut for CJSReplace<'a> {
 
                 replaced = ReplaceType::Ident(ns);
               }
-
-              // if let Some(commonjs_name) = self.module_global_uniq_name.commonjs_name(&id) {
-              //   *call_expr = CallExpr {
-              //     span: DUMMY_SP,
-              //     callee: Callee::Expr(Box::new(Expr::Ident(
-              //       self
-              //         .bundle_variable
-              //         .render_name(commonjs_name)
-              //         .as_str()
-              //         .into(),
-              //     ))),
-              //     args: vec![],
-              //     type_args: None,
-              //   };
-              //   replaced = ReplaceType::Call;
-              // } else if let Some(ns) = self.module_global_uniq_name.namespace_name(&id) {
-              //   replaced = ReplaceType::Ident(ns);
-              // }
             }
           }
         }

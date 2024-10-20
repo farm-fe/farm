@@ -33,6 +33,7 @@ use crate::resource_pot_to_bundle::{
   polyfill::{Polyfill, SimplePolyfill},
   targets::util::wrap_commonjs,
   uniq_name::BundleVariable,
+  ShareBundleOptions,
 };
 
 use super::{util::CJSReplace, CjsModuleAnalyzer};
@@ -204,6 +205,7 @@ impl CjsPatch {
     module_graph: &ModuleGraph,
     module_global_uniq_name: &ModuleGlobalUniqName,
     module_map: &HashMap<ModuleId, ModuleAnalyzer>,
+    options: &'a ShareBundleOptions,
   ) {
     let mut replacer: CJSReplace = CJSReplace {
       unresolved_mark: mark.0,
@@ -217,6 +219,7 @@ impl CjsPatch {
       module_graph,
       bundle_reference,
       module_map,
+      options,
     };
 
     ast.visit_mut_with(&mut replacer);

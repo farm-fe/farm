@@ -394,6 +394,8 @@ impl<'a> Visit for AnalyzeModuleItem<'a> {
     n.class.visit_with(self);
   }
 
+  // fn visit_arrow_expr(&mut self, n: &swc_ecma_ast::ArrowExpr) {}
+
   fn visit_ident(&mut self, n: &Ident) {
     if self.is_collect_ident {
       let index = self.register_placeholder(n);
@@ -405,6 +407,10 @@ impl<'a> Visit for AnalyzeModuleItem<'a> {
     match n {
       Pat::Assign(assign) => {
         self.with_collect_ident(true, |this| assign.left.visit_with(this));
+      }
+
+      Pat::Ident(ident) => {
+        self.with_collect_ident(true, |this| ident.visit_with(this));
       }
 
       _ => {
