@@ -1,4 +1,4 @@
-//foo-8bdf4c.txt:
+//foo-8bdf4c.txt?url:
  foo
 
 //index.js:
