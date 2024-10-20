@@ -2049,7 +2049,7 @@ importers:
         version: 3.4.15(typescript@5.6.3)
     devDependencies:
       '@farmfe/cli':
-        specifier: workspace:^1.0.0
+        specifier: workspace:*
         version: link:../../packages/cli
       '@farmfe/core':
         specifier: workspace:*
@@ -2077,7 +2077,7 @@ importers:
         version: 2.6.14
     devDependencies:
       '@farmfe/cli':
-        specifier: workspace:^1.0.0
+        specifier: workspace:*
         version: link:../../packages/cli
       '@farmfe/core':
         specifier: workspace:*
@@ -2111,7 +2111,7 @@ importers:
         version: 2.7.16
     devDependencies:
       '@farmfe/cli':
-        specifier: workspace:^1.0.0
+        specifier: workspace:*
         version: link:../../packages/cli
       '@farmfe/core':
         specifier: workspace:*
