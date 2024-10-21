@@ -48,6 +48,6 @@
     "@svgr/plugin-jsx": "^8.1.0"
   },
   "peerDependencies": {
-    "@farmfe/core": "workspace:^1.3.17"
+    "@farmfe/core": "workspace:*"
   }
 }
