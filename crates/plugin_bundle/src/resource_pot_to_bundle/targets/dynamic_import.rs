@@ -1,6 +1,6 @@
 use farmfe_core::{
   module::ModuleId,
-  swc_common::DUMMY_SP,
+  swc_common::{SyntaxContext, DUMMY_SP},
   swc_ecma_ast::{CallExpr, Callee, Expr, ExprOrSpread, Ident, Lit, MemberExpr, MemberProp},
 };
 use farmfe_toolkit::swc_ecma_visit::{VisitMut, VisitMutWith};
@@ -113,12 +113,14 @@ impl<'a> ReplaceDynamicVisit<'a> {
               callee: Callee::Expr(expr),
               args: vec![],
               type_args: None,
+              ctxt: SyntaxContext::empty(),
             }))
           } else {
             expr
           },
         }],
         type_args: None,
+        ctxt: SyntaxContext::empty(),
       })));
     } else {
       // other bundle

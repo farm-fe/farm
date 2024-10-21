@@ -1,0 +1,88 @@
+import CodeBlock from "@theme/CodeBlock";
+import Tabs from "@theme/Tabs";
+import TabItem from "@theme/TabItem";
+
+# @farmfe/js-plugin-svgr
+支持将 `SVG` 编译成 `React` 组建
+
+## Installation
+
+<Tabs>
+  <TabItem value="npm" label="npm">
+    <CodeBlock>npm install @farmfe/js-plugin-svgr</CodeBlock>
+  </TabItem>
+  <TabItem value="yarn" label="yarn">
+    <CodeBlock>yarn add @farmfe/js-plugin-svgr</CodeBlock>
+  </TabItem>
+  <TabItem value="pnpm" label="pnpm">
+    <CodeBlock>pnpm add @farmfe/js-plugin-svgr</CodeBlock>
+  </TabItem>
+</Tabs>
+
+## Usage
+```ts {2,6}
+import { UserConfig } from '@farmfe/core';
+import farmJsPluginSvgr from '@farmfe/js-plugin-svgr';
+
+const config: UserConfig = {
+  plugins: [
+    farmJsPluginSvgr({ /* options */ })
+  ]
+}
+```
+
+## Options
+```ts
+export interface FarmSvgrPluginOptions {
+  svgrOptions?: SvgrOptions;
+  filters?: {
+    resolvedPaths?: string[];
+  };
+}
+```
+
+### svgrOptions
+请参阅 [svgr 选项](https://react-svgr.com/docs/options/)。
+
+示例:
+```ts
+import path from 'node:path';
+import { UserConfig } from '@farmfe/core';
+import farmJsPluginSvgr from '@farmfe/js-plugin-svgr';
+
+const config: UserConfig = {
+  plugins: [
+    farmJsPluginSvgr({
+      svgrOptions: {
+        loadPaths: [path.resolve(process.cwd(), 'styles')]
+      }
+    })
+  ]
+}
+
+export default config;
+```
+
+### filters
+哪些文件应该由 `svgr` 处理。 默认为 `{resolvedPaths: ['\\.svg$'] }`。
+
+* `resolvedPaths`: 仅处理这些路径下的文件。 支持正则表达式。
+
+示例:
+```ts
+import { UserConfig } from '@farmfe/core';
+import farmJsPluginSvgr from '@farmfe/js-plugin-svgr';
+
+const config: UserConfig = {
+  plugins: [
+    farmJsPluginSvgr({
+      filters: {
+        // all files end with .custom-svg will be processed
+        resolvedPaths: ['\\.custom-svg$'],
+      }
+    })
+  ]
+}
+
+export default config;
+```

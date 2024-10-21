@@ -6,7 +6,7 @@ use std::{
 
 use farmfe_core::{
   common::PackageJsonInfo,
-  config::{Mode},
+  config::Mode,
   context::CompilationContext,
   farm_profile_function,
   plugin::ResolveKind,
@@ -125,9 +125,7 @@ fn exports(
     let name = match get_field_value_from_package_json_info(package_json_info, "name") {
       Some(n) => n,
       None => {
-        eprintln!(
-          "Missing \"name\" field in package.json {package_json_info:?}"
-        );
+        eprintln!("Missing \"name\" field in package.json {package_json_info:?}");
         return None;
       }
     };
@@ -167,9 +165,7 @@ fn imports(
     let name = match get_field_value_from_package_json_info(package_json_info, "name") {
       Some(n) => n,
       None => {
-        eprintln!(
-          "Missing \"name\" field in package.json {package_json_info:?}"
-        );
+        eprintln!("Missing \"name\" field in package.json {package_json_info:?}");
         return None;
       }
     };
@@ -267,9 +263,7 @@ fn loop_value(
 fn throws(name: &str, entry: &str, condition: Option<i32>) {
   let message = match condition {
     Some(cond) if cond != 0 => {
-      format!(
-        "No known conditions for \"{entry}\" specifier in \"{name}\" package"
-      )
+      format!("No known conditions for \"{entry}\" specifier in \"{name}\" package")
     }
     _ => {
       format!("Missing \"{entry}\" specifier in \"{name}\" package")

@@ -1,0 +1,50 @@
+{
+  "version.label": {
+    "message": "1.0.0",
+    "description": "当前文档版本"
+  },
+  "sidebar.tutorialSidebar.category.Features": {
+    "message": "编译能力",
+    "description": "Farm 的各项编译能力文档"
+  },
+  "sidebar.tutorialSidebar.category.Benchmarks": {
+    "message": "基准测试",
+    "description": "Farm 的各项编译能力以及其他框架基准测试的对比"
+  },
+  "sidebar.tutorialSidebar.category.Getting Started": {
+    "message": "快速开始",
+    "description": "Farm 的快速开始以及介绍"
+  },
+  "sidebar.tutorialSidebar.category.Tutorial": {
+    "message": "教程",
+    "description": "Farm 的教程文档"
+  },
+  "sidebar.tutorialSidebar.category.Advanced": {
+    "message": "高级用法",
+    "description": "Farm 的进阶用法介绍"
+  },
+  "sidebar.tutorialSidebar.category.Frameworks": {
+    "message": "框架模版",
+    "description": "Farm 的框架支持模版"
+  },
+  "sidebar.tutorialSidebar.category.Migration": {
+    "message": "迁移指南",
+    "description": "从其他构建工具迁移到Farm 的指南"
+  },
+  "sidebar.pluginSidebar.category.Writing Plugins": {
+    "message": "编写插件",
+    "description": "编写 Farm 插件"
+  },
+  "sidebar.pluginSidebar.category.Official Plugins": {
+    "message": "官方插件",
+    "description": "Farm 官方插件介绍"
+  },
+  "sidebar.pluginSidebar.category.Rust Plugins": {
+    "message": "Rust 插件",
+    "description": "Farm Rust 官方插件介绍"
+  },
+  "sidebar.pluginSidebar.category.Js Plugins": {
+    "message": "Js 插件",
+    "description": "Farm Js 官方插件介绍"
+  }
+}

@@ -1,0 +1,49 @@
+---
+source: crates/plugin_partial_bundling/src/merge_module_pots/test_boundaries.rs
+input_file: crates/plugin_partial_bundling/src/merge_module_pots/test_boundaries.rs
+---
+(
+    (
+        "immutable",
+        false,
+    ),
+    (
+        "modules",
+        [
+            ModuleId {
+                relative_path: "B",
+                query_string: "",
+            },
+            ModuleId {
+                relative_path: "E",
+                query_string: "",
+            },
+        ],
+    ),
+    (
+        "resource_pot_type",
+        Custom(
+            "__farm_unknown",
+        ),
+    ),
+    (
+        "name",
+        "B_2f5d_2f5d",
+    ),
+    (
+        "id",
+        "B_2f5d_2f5d",
+    ),
+    (
+        "entry",
+        None,
+    ),
+    (
+        "resources",
+        [],
+    ),
+    (
+        "module_groups",
+        [],
+    ),
+)

@@ -1,6 +1,5 @@
 use heck::{ToLowerCamelCase, ToSnakeCase, ToUpperCamelCase};
 use serde::{Deserialize, Serialize};
-
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub enum NameConversion {
   ///
@@ -24,7 +23,6 @@ pub enum NameConversion {
   /// ```
   #[serde(rename = "upperCamel")]
   UpperCamel,
-
   /// ```md
   /// "We carry a new world here, in our hearts."
   /// // =>
@@ -33,7 +31,6 @@ pub enum NameConversion {
   #[serde(rename = "snake")]
   Snake,
 }
-
 impl NameConversion {
   pub fn transform(&self, name: &str) -> String {
     match self {
