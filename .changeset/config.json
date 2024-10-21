@@ -7,7 +7,7 @@
   "access": "public",
   "baseBranch": "v2-dev",
   "updateInternalDependencies": "patch",
-  "ignore": [],
+  "ignore": ["@farmfe-examples/*", "farm-docs"],
   "snapshot": {
     "useCalculatedVersion": true
   }
