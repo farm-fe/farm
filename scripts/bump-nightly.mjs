@@ -10,7 +10,7 @@ const gitHash = execSync("git rev-parse --short HEAD").toString().trim();
 
 const nightlyVersion = `2.0.0-nightly.${dateString}.${gitHash}`;
 
-execSync(`npx changeset version --snapshot nightly`, {
+execSync(`npx changeset version --snapshot ${nightlyVersion}`, {
   stdio: "inherit",
 });
 
