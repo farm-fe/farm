@@ -1,6 +1,7 @@
 {
   "name": "@farmfe/js-plugin-vue",
   "version": "3.9.0",
+  "private": true,
   "description": "support vue sfc for farm.",
   "main": "./build/index.cjs",
   "module": "./dist/farm-vue-plugin.js",

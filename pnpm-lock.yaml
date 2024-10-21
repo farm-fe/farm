@@ -465,7 +465,7 @@ importers:
         version: 0.1.13
     devDependencies:
       '@farmfe/cli':
-        specifier: 0.0.0-nightly-20241021075722
+        specifier: workspace:*
         version: link:../../packages/cli
       '@farmfe/core':
         specifier: workspace:*
@@ -565,7 +565,7 @@ importers:
   examples/external:
     devDependencies:
       '@farmfe/cli':
-        specifier: 0.0.0-nightly-20241021075722
+        specifier: workspace:*
         version: link:../../packages/cli
       '@farmfe/core':
         specifier: workspace:*
@@ -611,7 +611,7 @@ importers:
   examples/import-meta:
     devDependencies:
       '@farmfe/cli':
-        specifier: 0.0.0-nightly-20241021075722
+        specifier: workspace:*
         version: link:../../packages/cli
       '@farmfe/core':
         specifier: workspace:*
@@ -636,7 +636,7 @@ importers:
         version: 0.20.0(react@17.0.2)
     devDependencies:
       '@farmfe/cli':
-        specifier: 0.0.0-nightly-20241021075722
+        specifier: workspace:*
         version: link:../../packages/cli
       '@farmfe/core':
         specifier: workspace:*
@@ -1207,13 +1207,13 @@ importers:
         version: 18.2.0(react@18.2.0)
     devDependencies:
       '@farmfe/cli':
-        specifier: 'workspace:'
+        specifier: workspace:*
         version: link:../../packages/cli
       '@farmfe/core':
         specifier: workspace:*
         version: link:../../packages/core
       '@farmfe/plugin-react':
-        specifier: 'workspace:'
+        specifier: workspace:*
         version: link:../../rust-plugins/react
       '@types/react':
         specifier: '18'
@@ -1871,7 +1871,7 @@ importers:
   examples/vite-adapter-svelte:
     devDependencies:
       '@farmfe/cli':
-        specifier: 0.0.0-nightly-20241021075722
+        specifier: workspace:*
         version: link:../../packages/cli
       '@farmfe/core':
         specifier: workspace:*
@@ -2018,7 +2018,7 @@ importers:
         version: 4.3.2(vue@3.4.27(typescript@5.6.3))
     devDependencies:
       '@farmfe/cli':
-        specifier: 0.0.0-nightly-20241021075722
+        specifier: workspace:*
         version: link:../../packages/cli
       '@farmfe/core':
         specifier: workspace:*

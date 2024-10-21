@@ -2,6 +2,7 @@
   "name": "@farmfe/js-plugin-solid",
   "version": "2.8.0",
   "description": "SolidJS support for Farm",
+  "private": true,
   "author": {
     "name": "J4ck W4n9",
     "email": "1163585385@qq.com"
