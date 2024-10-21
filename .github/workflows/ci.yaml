@@ -117,7 +117,7 @@ jobs:
         with:
           version: pnpm run bump:nightly
           publish: npm run release:nightly
-          baseBranch: v2-dev
+          branch: v2-dev
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
