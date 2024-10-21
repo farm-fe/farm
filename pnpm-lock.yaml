@@ -838,7 +838,7 @@ importers:
         version: 10.1.2(chokidar@3.6.0)(typescript@5.4.5)
       '@nestjs/testing':
         specifier: ^10.0.0
-        version: 10.3.10(@nestjs/common@10.3.10(reflect-metadata@0.2.2)(rxjs@7.8.1))(@nestjs/core@10.3.10(@nestjs/common@10.3.10(reflect-metadata@0.2.2)(rxjs@7.8.1))(@nestjs/platform-express@10.3.10)(encoding@0.1.13)(reflect-metadata@0.2.2)(rxjs@7.8.1))(@nestjs/platform-express@10.3.10(@nestjs/common@10.3.10(reflect-metadata@0.2.2)(rxjs@7.8.1))(@nestjs/core@10.3.10))
+        version: 10.3.10(@nestjs/common@10.3.10(reflect-metadata@0.2.2)(rxjs@7.8.1))(@nestjs/core@10.3.10)(@nestjs/platform-express@10.3.10)
       '@types/express':
         specifier: ^4.17.17
         version: 4.17.21
@@ -2313,7 +2313,7 @@ importers:
         version: 1.17.6(vite@5.2.8(@types/node@22.5.0)(less@4.2.0)(lightningcss@1.25.1)(sass@1.74.1)(terser@5.31.1))
       vite-plugin-vue-inspector:
         specifier: /Users/adny/vue/vite-plugin-vue-inspector/packages/core
-        version: link:../../../../vue/vite-plugin-vue-inspector/packages/core
+        version: link:../../../../../../adny/vue/vite-plugin-vue-inspector/packages/core
 
   examples/x-data-spreadsheet:
     dependencies:
@@ -25236,7 +25236,7 @@ snapshots:
     transitivePeerDependencies:
       - chokidar
 
-  '@nestjs/testing@10.3.10(@nestjs/common@10.3.10(reflect-metadata@0.2.2)(rxjs@7.8.1))(@nestjs/core@10.3.10(@nestjs/common@10.3.10(reflect-metadata@0.2.2)(rxjs@7.8.1))(@nestjs/platform-express@10.3.10)(encoding@0.1.13)(reflect-metadata@0.2.2)(rxjs@7.8.1))(@nestjs/platform-express@10.3.10(@nestjs/common@10.3.10(reflect-metadata@0.2.2)(rxjs@7.8.1))(@nestjs/core@10.3.10))':
+  '@nestjs/testing@10.3.10(@nestjs/common@10.3.10(reflect-metadata@0.2.2)(rxjs@7.8.1))(@nestjs/core@10.3.10)(@nestjs/platform-express@10.3.10)':
     dependencies:
       '@nestjs/common': 10.3.10(reflect-metadata@0.2.2)(rxjs@7.8.1)
       '@nestjs/core': 10.3.10(@nestjs/common@10.3.10(reflect-metadata@0.2.2)(rxjs@7.8.1))(@nestjs/platform-express@10.3.10)(encoding@0.1.13)(reflect-metadata@0.2.2)(rxjs@7.8.1)
