@@ -1,6 +1,6 @@
 <template>
   <div>
-    <img src="/logo.png" alt="">
+    <img src="/logo.png" alt="" />
     <test />
 
     <!-- <TinyButton type="primary" @click="btnClick">
@@ -9,13 +9,17 @@
     
     <test1 />
     <aboute />
-    <home/>
+    <home />
   </div>
   <router-view />
 </template>
 
 <script lang="ts" setup>
-// import { Button as TinyButton, Modal } from '@opentiny/vue'
+import test1 from "./components/test1.vue";
+import test from "./components/test.vue";
+import home from "./pages/index.vue";
+import aboute from "../deps/node_modules/my-ui/index.vue";
+import { Button as TinyButton, Modal } from '@opentiny/vue'
 
 // function btnClick() {
 //   Modal.alert({ message: '最大化显示', fullscreen: true })
@@ -26,7 +30,7 @@ import test from './components/test.vue';
 import home from './pages/index.vue';
 import aboute from '../deps/node_modules/my-ui/index.vue'
 
-import './test';
+import "./test";
 </script>
 
 <style lang="scss" scoped>

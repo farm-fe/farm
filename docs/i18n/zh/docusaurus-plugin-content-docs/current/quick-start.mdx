@@ -1,0 +1,89 @@
+---
+sidebar_position: 1
+---
+
+import { PackageManagerTabs } from "../../../../src/theme/PackageManagerTabs";
+
+# 快速开始
+
+:::note
+Farm 需要 **Node 16.18.0 及更高版本**。
+:::
+
+## 在线体验
+
+[![Edit Farm](https://codesandbox.io/static/img/play-codesandbox.svg)](https://codesandbox.io/p/github/ErKeLost/react/main)
+
+
+## 1. 创建一个 Farm 项目
+
+<PackageManagerTabs command="npm create farm@latest" />
+
+
+:::note{title="然后按照提示操作！"}
+您还可以通过附加命令行选项直接指定项目名称和要使用的模板：
+:::
+
+<PackageManagerTabs command="pnpm create farm my-react-app --template react" />
+
+
+## 2.启动项目
+
+选择您喜欢的包管理器，安装依赖项，然后启动项目。
+
+<PackageManagerTabs command="cd farm-project && pnpm i && pnpm start" />
+
+
+默认情况下，该项目将从`http://localhost:9000`启动。
+
+## 3. 配置项目
+
+该项目由项目根目录中的“farm.config.ts/js/mjs”文件进行配置。
+
+```ts title="farm.config.ts"
+import { defineConfig } from "@farmfe/core";
+
+export default defineConfig({
+  // 编译相关配置
+  compilation: {
+    input: {
+      // 可以配置相对或者绝对路径
+      index: "./index.html",
+    },
+    output: {
+      path: "./build",
+      publicPath: "/",
+    },
+    // ...
+  },
+  // Dev Server 相关配置
+  server: {
+    port: 9000,
+    // ...
+  },
+  // 插件配置
+  plugins: [],
+});
+```
+
+:::note
+配置详情请参阅 **[配置 Farm](/docs/config/configuring-farm)**。
+:::
+
+## 4. 构建项目
+将 Farm 项目构建为生产环境可用的静态文件：
+
+```bash
+npm run build
+```
+
+构建的产品默认降级为`ES2017`，并且产品将被压缩和Tree Shake。 如果您想在本地预览构建产品，可以执行`npm run Preview`或`npx farm Preview`。
+
+## 下一步
+
+- [为什么需要 Farm？](/docs/why-farm)
+- [特性](/docs/features/dev-server)
+- [配置参考](/docs/config/configuring-farm)
+- [插件](/docs/plugins/official-plugins/overview)
+---
+

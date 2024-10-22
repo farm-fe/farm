@@ -2,14 +2,14 @@ use std::{collections::HashMap, ffi::OsStr};
 
 use farmfe_core::{
   regex::Regex,
-  swc_common::{util::take::Take, Mark, DUMMY_SP},
+  swc_common::{util::take::Take, Mark, SyntaxContext, DUMMY_SP},
   swc_ecma_ast::{
     ArrowExpr, AssignExpr, AssignOp, AssignTarget, BindingIdent, BlockStmt, BlockStmtOrExpr,
     CallExpr, Callee, Class, ClassDecl, ClassExpr, Decl, ExportAll, ExportDecl, ExportDefaultDecl,
     ExportDefaultExpr, Expr, ExprOrSpread, ExprStmt, FnDecl, FnExpr, Function, Id, Ident,
-    ImportDecl, ImportSpecifier, KeyValueProp, Lit, MemberExpr, MemberProp, Module as SwcModule,
-    ModuleDecl, ModuleExportName, ModuleItem, NamedExport, Pat, Prop, ReturnStmt,
-    SimpleAssignTarget, Stmt, Str, VarDecl, VarDeclKind, VarDeclarator,
+    IdentName, ImportDecl, ImportSpecifier, KeyValueProp, Lit, MemberExpr, MemberProp,
+    Module as SwcModule, ModuleDecl, ModuleExportName, ModuleItem, NamedExport, Pat, Prop,
+    ReturnStmt, SimpleAssignTarget, Stmt, Str, VarDecl, VarDeclKind, VarDeclarator,
   },
 };
 use farmfe_toolkit::{
@@ -142,6 +142,7 @@ pub fn transform_module_decls(
             expr: Box::new(Expr::Ident(create_exports_ident(unresolved_mark))),
           }],
           type_args: None,
+          ctxt: SyntaxContext::default(),
         })),
       })),
     )
@@ -182,13 +183,13 @@ fn transform_import_decl(
           MemberExpr {
             span: DUMMY_SP,
             obj: Box::new(Expr::Ident(val_name_ident.clone())),
-            prop: MemberProp::Ident(imported_ident),
+            prop: MemberProp::Ident(IdentName::new(imported_ident.sym, imported_ident.span)),
           }
         } else {
           MemberExpr {
             span: DUMMY_SP,
             obj: Box::new(Expr::Ident(val_name_ident.clone())),
-            prop: MemberProp::Ident(Ident::new(specifier_ident.sym.clone(), DUMMY_SP)),
+            prop: MemberProp::Ident(IdentName::new(specifier_ident.sym.clone(), DUMMY_SP)),
           }
         };
         import_bindings_map.insert(specifier_ident.to_id(), Expr::Member(init));
@@ -456,7 +457,11 @@ fn transform_export_default_decl(
 ) -> ExportModuleItem {
   match default_decl.decl {
     farmfe_core::swc_ecma_ast::DefaultDecl::Class(class_decl) => {
-      let exported_ident = Ident::new(FARM_MODULE_SYSTEM_DEFAULT.into(), DUMMY_SP);
+      let exported_ident = Ident::new(
+        FARM_MODULE_SYSTEM_DEFAULT.into(),
+        DUMMY_SP,
+        SyntaxContext::empty(),
+      );
       return create_export_class_decl_stmts(
         class_decl.ident,
         exported_ident,
@@ -466,7 +471,11 @@ fn transform_export_default_decl(
       );
     }
     farmfe_core::swc_ecma_ast::DefaultDecl::Fn(fn_decl) => {
-      let exported_ident = Ident::new(FARM_MODULE_SYSTEM_DEFAULT.into(), DUMMY_SP);
+      let exported_ident = Ident::new(
+        FARM_MODULE_SYSTEM_DEFAULT.into(),
+        DUMMY_SP,
+        SyntaxContext::empty(),
+      );
       return create_export_fn_decl_stmts(
         fn_decl.ident,
         exported_ident,
@@ -485,7 +494,11 @@ fn transform_export_default_expr(
 ) -> Vec<ModuleItem> {
   let mut items = vec![];
   let exports_assign_left = create_exports_assign_left(
-    Ident::new(FARM_MODULE_SYSTEM_DEFAULT.into(), DUMMY_SP),
+    Ident::new(
+      FARM_MODULE_SYSTEM_DEFAULT.into(),
+      DUMMY_SP,
+      SyntaxContext::empty(),
+    ),
     unresolved_mark,
   );
   items.push(create_exports_assign_stmt(
@@ -516,6 +529,7 @@ fn transform_export_all(export_all: ExportAll, unresolved_mark: Mark) -> Vec<Mod
       },
     ],
     type_args: None,
+    ctxt: SyntaxContext::empty(),
   });
   items.push(ModuleItem::Stmt(Stmt::Expr(ExprStmt {
     span: DUMMY_SP,
@@ -554,6 +568,7 @@ fn create_var_decl_stmt(val_name_ident: Ident, init: Box<Expr>) -> ModuleItem {
       init: Some(init),
       definite: false,
     }],
+    ctxt: SyntaxContext::empty(),
   }))))
 }
 
@@ -562,13 +577,15 @@ fn create_require_call_expr(src: Str, unresolved_mark: Mark) -> Box<Expr> {
     span: DUMMY_SP,
     callee: Callee::Expr(Box::new(Expr::Ident(Ident::new(
       FARM_MODULE_SYSTEM_REQUIRE.into(),
-      DUMMY_SP.apply_mark(unresolved_mark),
+      DUMMY_SP,
+      SyntaxContext::empty().apply_mark(unresolved_mark),
     )))),
     args: vec![ExprOrSpread {
       spread: None,
       expr: Box::new(Expr::Lit(Lit::Str(src))),
     }],
     type_args: None,
+    ctxt: SyntaxContext::empty(),
   }))
 }
 
@@ -585,21 +602,26 @@ fn create_require_stmt(src: Str, unresolved_mark: Mark) -> (ModuleItem, Ident) {
 
 fn create_require_val_ident(src: &str) -> Ident {
   let val_name = get_name_from_src(src);
-  Ident::new(val_name.into(), DUMMY_SP.apply_mark(Mark::new()))
+  Ident::new(
+    val_name.into(),
+    DUMMY_SP,
+    SyntaxContext::empty().apply_mark(Mark::new()),
+  )
 }
 
 fn create_exports_assign_left(exported_ident: Ident, unresolved_mark: Mark) -> AssignTarget {
   AssignTarget::Simple(SimpleAssignTarget::Member(MemberExpr {
     span: DUMMY_SP,
     obj: Box::new(Expr::Ident(create_exports_ident(unresolved_mark))),
-    prop: MemberProp::Ident(exported_ident),
+    prop: MemberProp::Ident(IdentName::new(exported_ident.sym, exported_ident.span)),
   }))
 }
 
 fn create_exports_ident(unresolved_mark: Mark) -> Ident {
   Ident::new(
     FARM_MODULE_SYSTEM_EXPORTS.into(),
-    DUMMY_SP.apply_mark(unresolved_mark),
+    DUMMY_SP,
+    SyntaxContext::empty().apply_mark(unresolved_mark),
   )
 }
 
@@ -716,12 +738,13 @@ fn create_export_class_decl_stmts(
 }
 
 fn create_module_helper_callee(helper: &str, unresolved_mark: Mark) -> Callee {
-  let prop = Ident::new(helper.into(), DUMMY_SP);
+  let prop = IdentName::new(helper.into(), DUMMY_SP);
   Callee::Expr(Box::new(Expr::Member(MemberExpr {
     span: DUMMY_SP,
     obj: Box::new(Expr::Ident(Ident::new(
       FARM_MODULE_SYSTEM_MODULE.into(),
-      DUMMY_SP.apply_mark(unresolved_mark),
+      DUMMY_SP,
+      SyntaxContext::empty().apply_mark(unresolved_mark),
     ))),
     prop: MemberProp::Ident(prop),
   })))
@@ -758,6 +781,7 @@ fn create_module_helper_call_expr(
     callee,
     args,
     type_args: None,
+    ctxt: SyntaxContext::empty(),
   };
   call_expr
 }
@@ -786,14 +810,17 @@ fn create_define_export_property_ident_call_expr(
             span: DUMMY_SP,
             arg: Some(Box::new(Expr::Ident(Ident::new(
               local_ident.0,
-              DUMMY_SP.with_ctxt(local_ident.1),
+              DUMMY_SP,
+              local_ident.1,
             )))),
           })],
+          ctxt: SyntaxContext::empty(),
         }),
         is_generator: false,
         is_async: false,
         type_params: None,
         return_type: None,
+        ctxt: SyntaxContext::empty(),
       }),
     })
   } else {
@@ -802,12 +829,14 @@ fn create_define_export_property_ident_call_expr(
       params: vec![],
       body: Box::new(BlockStmtOrExpr::Expr(Box::new(Expr::Ident(Ident::new(
         local_ident.0,
-        DUMMY_SP.with_ctxt(local_ident.1),
+        DUMMY_SP,
+        local_ident.1,
       ))))),
       is_generator: false,
       is_async: false,
       return_type: None,
       type_params: None,
+      ctxt: SyntaxContext::empty(),
     })
   };
   // module.o(exports, ident, function(){return ident;})

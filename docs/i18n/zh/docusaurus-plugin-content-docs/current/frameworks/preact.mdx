@@ -1,0 +1,43 @@
+import { PackageManagerTabs } from "../../../../../src/theme/PackageManagerTabs";
+
+# Preact
+
+
+基于 `Farm` 创建一个 `Preact` 项目。
+
+`Farm` 提供两种方案来支持创建 `Preact` 项目: 
+- 使用 `create-farm` 脚手架创建脚手架项目
+- 你可以根据当前文档手动创建一个 `Preact` 项目
+
+### 创建 Preact 项目
+
+<PackageManagerTabs command="npm create farm@latest" />
+
+在 `Select Framework` 中选择 `Preact` 模版
+
+:::warning Preact
+对于 `Preact` 的支持, `Farm` 使用 `vite` 的 `preact` 插件
+:::
+
+```javascript title="farm.config.ts"
+import { defineConfig } from '@farmfe/core';
+import Preact from "vite-plugin-preact";
+
+export default defineConfig({
+  plugins: [Preact()],
+});
+```
+
+开发环境时运行
+
+<PackageManagerTabs command="npm run dev" />
+
+在生产环境下进行打包
+
+<PackageManagerTabs command="npm run build" />
+
+预览生产环境打包之后构建的产物
+
+<PackageManagerTabs command="npm run preview" />
+
+如若想查看示例详情: [Preact 示例](https://github.com/farm-fe/farm/tree/main/examples/preact)

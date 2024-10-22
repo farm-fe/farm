@@ -236,7 +236,7 @@ impl<'a> ResourcesInjector<'a> {
       Cow::Owned(finalize_code.into_bytes()),
       FARM_MODULE_SYSTEM_RESOURCE,
       &self.options.context,
-      &self.already_injected_resources
+      &self.already_injected_resources,
     );
     // inject script
     element.children.push(Child::Element(create_element(

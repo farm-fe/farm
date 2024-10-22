@@ -7,7 +7,6 @@
  * https://github.com/vitejs/vite/blob/main/LICENSE
  *
  */
-
 import fs from 'node:fs';
 import path from 'node:path';
 

@@ -1,19 +1,17 @@
-import { Compiler } from '../compiler/index.js';
 import { convertErrorMessage } from './error.js';
-import { Logger } from './logger.js';
 
 import * as fs from 'node:fs';
-import type { Config } from '../types/binding.js';
+import { createInlineCompiler } from '../compiler/index.js';
+import { ResolvedUserConfig } from '../config/types.js';
 
-function createTraceDepCompiler(entry: string, logger: Logger) {
+function createTraceDepCompiler(entry: string) {
   const config = getDefaultTraceDepCompilerConfig(entry);
-  config.config.progress = false;
-  return new Compiler(config, logger);
+
+  return createInlineCompiler(config);
 }
 
 export async function traceDependencies(
-  configFilePath: string,
-  logger: Logger
+  configFilePath: string
 ): Promise<string[]> {
   try {
     // maybe not find config from local
@@ -23,7 +21,7 @@ export async function traceDependencies(
       return [];
     }
 
-    const compiler = createTraceDepCompiler(configFilePath, logger);
+    const compiler = createTraceDepCompiler(configFilePath);
     const files = (await compiler.traceDependencies()) as string[];
     return files;
   } catch (error) {
@@ -32,9 +30,9 @@ export async function traceDependencies(
   }
 }
 
-function getDefaultTraceDepCompilerConfig(entry: string): Config {
+function getDefaultTraceDepCompilerConfig(entry: string): ResolvedUserConfig {
   return {
-    config: {
+    compilation: {
       input: {
         index: entry
       },
@@ -46,6 +44,7 @@ function getDefaultTraceDepCompilerConfig(entry: string): Config {
       presetEnv: false,
       persistentCache: false,
       minify: false,
+      progress: false,
       lazyCompilation: false
     },
     jsPlugins: [
