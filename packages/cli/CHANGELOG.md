@@ -1,5 +1,11 @@
 # @farmfe/cli
 
+## 2.0.0-nightly-20241022090550
+
+### Major Changes
+
+- e7920ed: remove peerdep
+
 ## 2.0.0-nightly-20241022041556
 
 ### Major Changes
