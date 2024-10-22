@@ -6,6 +6,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.12](https://github.com/farm-fe/farm/compare/farmfe_plugin_static_assets-v0.0.11...farmfe_plugin_static_assets-v0.0.12) - 2024-10-22
+
+### Added
+
+- add assets mode for asset path generate ([#1852](https://github.com/farm-fe/farm/pull/1852))
+
+### Other
+
+- simplify string formatting for readability ([#1828](https://github.com/farm-fe/farm/pull/1828))
+- remove `query_string` when `emit_file` to `resource_map` in `plugin_static_assets` ([#1746](https://github.com/farm-fe/farm/pull/1746))
+
 ## [0.0.11](https://github.com/farm-fe/farm/compare/farmfe_plugin_static_assets-v0.0.10...farmfe_plugin_static_assets-v0.0.11) - 2024-07-25
 
 ### Added

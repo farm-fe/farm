@@ -6,6 +6,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.12](https://github.com/farm-fe/farm/compare/farmfe_plugin_runtime-v0.0.11...farmfe_plugin_runtime-v0.0.12) - 2024-10-22
+
+### Fixed
+
+- [#1755](https://github.com/farm-fe/farm/pull/1755) ([#1814](https://github.com/farm-fe/farm/pull/1814))
+- globalThis undefined ([#1726](https://github.com/farm-fe/farm/pull/1726))
+- [#1672](https://github.com/farm-fe/farm/pull/1672) ([#1692](https://github.com/farm-fe/farm/pull/1692))
+- single bundle ([#1653](https://github.com/farm-fe/farm/pull/1653))
+
+### Other
+
+- simplify string formatting for readability ([#1828](https://github.com/farm-fe/farm/pull/1828))
+- *(refactor)* refactor stats and visualizer ([#1739](https://github.com/farm-fe/farm/pull/1739))
+
 ## [0.0.11](https://github.com/farm-fe/farm/compare/farmfe_plugin_runtime-v0.0.10...farmfe_plugin_runtime-v0.0.11) - 2024-07-25
 
 ### Added
