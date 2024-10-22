@@ -1,5 +1,11 @@
 # @farmfe/core
 
+## 2.0.0-nightly-20241022143924
+
+### Major Changes
+
+- 83838bd: remove lightCyan color utils
+
 ## 2.0.0-nightly-20241022124925
 
 ### Patch Changes
