@@ -6,7 +6,6 @@ use farmfe_toolkit::swc_ecma_visit::{Visit, VisitWith};
 use super::{defined_idents_collector::DefinedIdentsCollector, StatementGraphEdge, StatementId};
 
 pub struct AnalyzeUsedIdentsParams<'a> {
-  pub id: &'a StatementId,
   pub stmt: &'a ModuleItem,
   pub reverse_defined_idents_map: &'a HashMap<Id, StatementId>,
 }

@@ -4,37 +4,28 @@ import fse from 'fs-extra';
 import { stat } from 'node:fs/promises';
 import { isAbsolute, relative } from 'node:path';
 
-import { Compiler } from '../compiler/index.js';
-import { checkClearScreen } from '../config/index.js';
+import type { Resource } from '@farmfe/runtime/src/resource-loader.js';
+import { UserHmrConfig } from '../config/index.js';
 import type { JsUpdateResult } from '../types/binding.js';
-import {
-  Logger,
-  bold,
-  cyan,
-  getDynamicResources,
-  green
-} from '../utils/index.js';
-import { logError } from './error.js';
-import { Server } from './index.js';
+import { convertErrorMessage } from '../utils/error.js';
+import { bold, formatExecutionTime, green, lightCyan } from '../utils/index.js';
 import { WebSocketClient } from './ws.js';
 
 export class HmrEngine {
   private _updateQueue: string[] = [];
-  // private _updateResults: Map<string, { result: string; count: number }> =
+  // private _updateResults: Map<string, { result: string; count: number }>;
 
-  private _compiler: Compiler;
-  private _devServer: Server;
   private _onUpdates: ((result: JsUpdateResult) => void)[];
 
   private _lastModifiedTimestamp: Map<string, string>;
-
   constructor(
-    compiler: Compiler,
-    devServer: Server,
-    private _logger: Logger
+    // compiler: Compiler,
+    // devServer: HttpServer,
+    // config: UserConfig,
+    // ws: WebSocketServer,
+    // private _logger: Logger
+    private readonly app: any
   ) {
-    this._compiler = compiler;
-    this._devServer = devServer;
     // this._lastAttemptWasError = false;
     this._lastModifiedTimestamp = new Map();
   }
@@ -60,13 +51,13 @@ export class HmrEngine {
     let updatedFilesStr = queue
       .map((item) => {
         if (isAbsolute(item)) {
-          return relative(this._compiler.config.config.root, item);
+          return relative(this.app.compiler.config.root, item);
         } else {
-          const resolvedPath = this._compiler.transformModulePath(
-            this._compiler.config.config.root,
+          const resolvedPath = this.app.compiler.transformModulePath(
+            this.app.compiler.config.root,
             item
           );
-          return relative(this._compiler.config.config.root, resolvedPath);
+          return relative(this.app.compiler.config.root, resolvedPath);
         }
       })
       .join(', ');
@@ -75,75 +66,97 @@ export class HmrEngine {
         updatedFilesStr.slice(0, 100) + `...(${queue.length} files)`;
     }
 
-    try {
-      // we must add callback before update
-      this._compiler.onUpdateFinish(async () => {
-        // if there are more updates, recompile again
-        if (this._updateQueue.length > 0) {
-          await this.recompileAndSendResult();
+    // try {
+    // we must add callback before update
+    this.app.compiler.onUpdateFinish(async () => {
+      // if there are more updates, recompile again
+      if (this._updateQueue.length > 0) {
+        await this.recompileAndSendResult();
+      }
+      if (this.app.resolvedUserConfig?.server.writeToDisk) {
+        this.app.compiler.writeResourcesToDisk();
+      }
+    });
+
+    const start = performance.now();
+
+    const result = await this.app.compiler.update(queue);
+
+    this.app.logger.info(
+      `${bold(lightCyan(updatedFilesStr))} updated in ${bold(
+        green(
+          formatExecutionTime(
+            performance.now() - start,
+            this.app.resolvedUserConfig.timeUnit
+          )
+        )
+      )}`,
+      true
+    );
+
+    // clear update queue after update finished
+    this._updateQueue = this._updateQueue.filter(
+      (item) => !queue.includes(item)
+    );
+
+    let dynamicResourcesMap: Record<string, Resource[]> = null;
+
+    if (result.dynamicResourcesMap) {
+      for (const [key, value] of Object.entries(result.dynamicResourcesMap)) {
+        if (!dynamicResourcesMap) {
+          dynamicResourcesMap = {} as Record<string, Resource[]>;
         }
-        if (this._devServer?.config?.writeToDisk) {
-          this._compiler.writeResourcesToDisk();
-        }
-      });
 
-      checkClearScreen(this._compiler.config.config);
-      const start = Date.now();
-      const result = await this._compiler.update(queue);
-      this._logger.info(
-        `${bold(cyan(updatedFilesStr))} updated in ${bold(
-          green(`${Date.now() - start}ms`)
-        )}`
-      );
-
-      // clear update queue after update finished
-      this._updateQueue = this._updateQueue.filter(
-        (item) => !queue.includes(item)
-      );
-
-      const { dynamicResources, dynamicModuleResourcesMap } =
-        getDynamicResources(result.dynamicResourcesMap);
-
-      const {
-        added,
-        changed,
-        removed,
-        immutableModules,
-        mutableModules,
-        boundaries
-      } = result;
-      const resultStr = `{
+        // @ts-ignore
+        dynamicResourcesMap[key] = value.map((r) => ({
+          path: r[0],
+          type: r[1] as 'script' | 'link'
+        }));
+      }
+    }
+    const {
+      added,
+      changed,
+      removed,
+      immutableModules,
+      mutableModules,
+      boundaries
+    } = result;
+    const resultStr = `{
         added: [${formatHmrResult(added)}],
         changed: [${formatHmrResult(changed)}],
         removed: [${formatHmrResult(removed)}],
         immutableModules: ${JSON.stringify(immutableModules.trim())},
         mutableModules: ${JSON.stringify(mutableModules.trim())},
         boundaries: ${JSON.stringify(boundaries)},
-        dynamicResources: ${JSON.stringify(dynamicResources)},
-        dynamicModuleResourcesMap: ${JSON.stringify(dynamicModuleResourcesMap)}
+        dynamicResourcesMap: ${JSON.stringify(dynamicResourcesMap)}
       }`;
 
-      this.callUpdates(result);
+    this.callUpdates(result);
 
-      this._devServer.ws.clients.forEach((client: WebSocketClient) => {
-        client.rawSend(`
+    this.app.ws.wss.clients.forEach((client: WebSocketClient) => {
+      // @ts-ignore
+      client.send(`
         {
           type: 'farm-update',
           result: ${resultStr}
         }
       `);
-      });
-    } catch (err) {
-      checkClearScreen(this._compiler.config.config);
-      throw new Error(logError(err) as unknown as string);
-    }
+    });
+    // } catch (err) {
+    // checkClearScreen(this.app.compiler.config.config);
+    // this.app.logger.error(convertErrorMessage(err));
+
+    // }
   };
 
   async hmrUpdate(absPath: string | string[], force = false) {
     const paths = Array.isArray(absPath) ? absPath : [absPath];
-
     for (const path of paths) {
-      if (this._compiler.hasModule(path) && !this._updateQueue.includes(path)) {
+      if (
+        this.app.compiler.hasModule(path) &&
+        !this._updateQueue.includes(path)
+      ) {
         if (fse.existsSync(path)) {
           const lastModifiedTimestamp = this._lastModifiedTimestamp.get(path);
           const currentTimestamp = (await stat(path)).mtime.toISOString();
@@ -158,7 +171,7 @@ export class HmrEngine {
       }
     }
 
-    if (!this._compiler.compiling && this._updateQueue.length > 0) {
+    if (!this.app.compiler.compiling && this._updateQueue.length > 0) {
       try {
         await this.recompileAndSendResult();
       } catch (e) {
@@ -167,16 +180,24 @@ export class HmrEngine {
         const errorStr = `${JSON.stringify({
           message: serialization
         })}`;
-        this._devServer.ws.clients.forEach((client: WebSocketClient) => {
-          client.rawSend(`
+
+        this.app.ws.wss.clients.forEach((client: WebSocketClient) => {
+          // @ts-ignore
+          // client.rawSend(`
+          client.send(`
             {
               type: 'error',
               err: ${errorStr},
-              overlay: ${this._devServer.config.hmr.overlay}
+              overlay: ${
+                (this.app.resolvedUserConfig.server.hmr as UserHmrConfig)
+                  .overlay
+              }
             }
           `);
         });
-        this._logger.error(e);
+
+        this.app.logger.error(convertErrorMessage(e), true);
+        // throw new Error(`hmr update failed: ${e.stack}`);
       }
     }
   }

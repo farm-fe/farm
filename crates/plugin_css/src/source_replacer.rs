@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use farmfe_core::{
+  config::AliasItem,
   module::{module_graph::ModuleGraph, ModuleId},
   plugin::ResolveKind,
   resource::{Resource, ResourceOrigin},
@@ -19,7 +20,7 @@ pub struct SourceReplacer<'a> {
   module_graph: &'a ModuleGraph,
   resources_map: &'a HashMap<String, Resource>,
   public_path: String,
-  alias: HashMap<String, String>,
+  alias: Vec<AliasItem>,
 }
 
 impl<'a> SourceReplacer<'a> {
@@ -28,7 +29,7 @@ impl<'a> SourceReplacer<'a> {
     module_graph: &'a ModuleGraph,
     resources_map: &'a HashMap<String, Resource>,
     public_path: String,
-    alias: HashMap<String, String>,
+    alias: Vec<AliasItem>,
   ) -> Self {
     Self {
       module_id,

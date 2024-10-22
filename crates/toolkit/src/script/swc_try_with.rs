@@ -3,8 +3,8 @@ use std::sync::Arc;
 use farmfe_core::{
   context::CompilationContext,
   error::{CompilationError, Result},
-  swc_common::{errors::HANDLER, Globals, Mark, SourceMap, Span, SyntaxContext, GLOBALS},
-  swc_ecma_ast::Module,
+  swc_common::{errors::HANDLER, Globals, Mark, SourceMap, SyntaxContext, GLOBALS},
+  swc_ecma_ast::{Ident, Module},
 };
 use swc_ecma_transforms::helpers::{Helpers, HELPERS};
 use swc_ecma_transforms_base::resolver;
@@ -28,8 +28,8 @@ where
 pub struct ResetSpanVisitMut;
 
 impl VisitMut for ResetSpanVisitMut {
-  fn visit_mut_span(&mut self, span: &mut Span) {
-    span.ctxt = SyntaxContext::empty();
+  fn visit_mut_syntax_context(&mut self, ctxt: &mut farmfe_core::swc_common::SyntaxContext) {
+    *ctxt = SyntaxContext::empty();
   }
 }
 

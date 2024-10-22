@@ -1,10 +1,10 @@
 use farmfe_core::{
   config::FARM_REQUIRE,
-  swc_common::DUMMY_SP,
+  swc_common::{SyntaxContext, DUMMY_SP},
   swc_ecma_ast::{
     ArrayLit, ArrayPat, AwaitExpr, BindingIdent, CallExpr, Callee, Decl, Expr, ExprOrSpread,
-    ExprStmt, Ident, Lit, MemberExpr, MemberProp, Module, ModuleItem, Pat, Stmt, Str, VarDecl,
-    VarDeclKind, VarDeclarator,
+    ExprStmt, Ident, IdentName, Lit, MemberExpr, MemberProp, Module, ModuleItem, Pat, Stmt, Str,
+    VarDecl, VarDeclKind, VarDeclarator,
   },
 };
 use farmfe_toolkit::swc_ecma_visit::{VisitMut, VisitMutWith};
@@ -99,6 +99,7 @@ pub fn transform_async_module(ast: &mut Module) {
                     span: DUMMY_SP,
                     sym: rename_ident(id).into(),
                     optional: false,
+                    ctxt: SyntaxContext::empty(),
                   },
                   type_ann: None,
                 })
@@ -111,6 +112,7 @@ pub fn transform_async_module(ast: &mut Module) {
         init: Some(Box::new(create_promise_all(&await_all))),
         definite: false,
       }],
+      ctxt: SyntaxContext::empty(),
     })));
     ast.body.insert(0, ModuleItem::Stmt(await_all_stmt));
   }
@@ -128,11 +130,11 @@ fn create_promise_all(await_all: &Vec<(Option<String>, String)>) -> Expr {
           span: DUMMY_SP,
           sym: "Promise".into(),
           optional: false,
+          ctxt: SyntaxContext::empty(),
         })),
-        prop: MemberProp::Ident(Ident {
+        prop: MemberProp::Ident(IdentName {
           span: DUMMY_SP,
           sym: "all".into(),
-          optional: false,
         }),
       }))),
       args: vec![ExprOrSpread {
@@ -149,6 +151,7 @@ fn create_promise_all(await_all: &Vec<(Option<String>, String)>) -> Expr {
                   callee: Callee::Expr(Box::new(Expr::Ident(Ident::new(
                     FARM_REQUIRE.into(),
                     DUMMY_SP,
+                    SyntaxContext::empty(),
                   )))),
                   args: vec![ExprOrSpread {
                     spread: None,
@@ -159,6 +162,7 @@ fn create_promise_all(await_all: &Vec<(Option<String>, String)>) -> Expr {
                     }))),
                   }],
                   type_args: None,
+                  ctxt: SyntaxContext::empty(),
                 })),
               })
             })
@@ -166,6 +170,7 @@ fn create_promise_all(await_all: &Vec<(Option<String>, String)>) -> Expr {
         })),
       }],
       type_args: None,
+      ctxt: SyntaxContext::empty(),
     })),
   })
 }
@@ -190,7 +195,11 @@ impl VisitMut for FarmRequireVisitor {
   fn visit_mut_expr(&mut self, expr: &mut farmfe_core::swc_ecma_ast::Expr) {
     if let Some(id) = try_get_farm_require_id(expr) {
       self.requires.push(id);
-      *expr = Expr::Ident(Ident::new(rename_ident(&self.name).into(), DUMMY_SP));
+      *expr = Expr::Ident(Ident::new(
+        rename_ident(&self.name).into(),
+        DUMMY_SP,
+        SyntaxContext::empty(),
+      ));
     } else {
       expr.visit_mut_children_with(self);
     }

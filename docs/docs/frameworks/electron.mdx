@@ -1,0 +1,52 @@
+import { PackageManagerTabs } from "../../src/theme/PackageManagerTabs";
+
+# Electron
+
+Create a `Electron` project based on `Farm`.
+
+`Farm` provides two approaches to support creating `Electron` projects: 
+- Use the `create-farm` scaffold to create a scaffold project
+- You can manually create a `Electron` project following the current documentation
+
+### Creating a Electron Project
+
+<PackageManagerTabs command="npm create farm@latest" />
+
+
+Select `Electron` template in `Select Framework`
+
+After selecting `Electron`, you can continue to select all sub templates already supported by `Farm`
+
+```ts
+- React
+- Vue
+- Preact
+- Svelte
+- Solid
+```
+
+You can choose the framework you want to use to run on electron, farm wrote electron js plugin
+
+such as react template
+
+```ts
+import { defineConfig } from '@farmfe/core';
+import electron from '@farmfe/js-plugin-electron';
+
+export default defineConfig({
+  plugins: [
+    '@farmfe/plugin-react',
+    electron({
+      main: {
+        input: 'electron/main.ts',
+      },
+      preload: {
+        input: 'electron/preload.ts',
+      },
+    }),
+  ]
+});
+
+```
+
+For more example details: [Electron Example](https://github.com/farm-fe/farm/tree/main/examples/electron)

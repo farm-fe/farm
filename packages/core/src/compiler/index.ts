@@ -1,13 +1,16 @@
 import { existsSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
-import { Compiler as BindingCompiler } from '../../binding/index.js';
 
-import type { Resource } from '../index.js';
-import type { Config, JsUpdateResult } from '../types/binding.js';
-import { type ILogger, Logger } from '../utils/logger.js';
+import { Compiler as BindingCompiler } from '../../binding/index.js';
+import type {
+  ResolvedCompilation,
+  ResolvedUserConfig,
+  Resource
+} from '../index.js';
+import type { JsUpdateResult } from '../types/binding.js';
 
 export const VIRTUAL_FARM_DYNAMIC_IMPORT_SUFFIX =
-  '.farm_dynamic_import_virtual_module';
+  '.farm_dynamic_import_virtual_module' as const;
 
 /**
  * Cause the update process is async, we need to keep the update queue to make sure the update process is executed in order.
@@ -36,12 +39,17 @@ export class Compiler {
   private _onUpdateFinishQueue: (() => void | Promise<void>)[] = [];
 
   public compiling = false;
+  private _compileFinishPromise: Promise<void> | null = null;
+  private _resolveCompileFinish: (() => void) | null = null;
+  _isInitialCompile = true;
 
-  constructor(
-    public config: Config,
-    private logger: ILogger = new Logger()
-  ) {
-    this._bindingCompiler = new BindingCompiler(this.config);
+  constructor(public config: ResolvedUserConfig) {
+    this._bindingCompiler = new BindingCompiler({
+      // @ts-ignore
+      config: config.compilation,
+      jsPlugins: config.jsPlugins,
+      rustPlugins: config.rustPlugins
+    });
   }
 
   async traceDependencies() {
@@ -53,30 +61,32 @@ export class Compiler {
   }
 
   async compile() {
-    if (this.compiling) {
-      this.logger.error('Already compiling', {
-        exit: true
-      });
-    }
-
+    this.checkCompiling();
+    this._createCompileFinishPromise();
     this.compiling = true;
-    if (process.env.FARM_PROFILE) {
-      this._bindingCompiler.compileSync();
-    } else {
-      await this._bindingCompiler.compile();
+    try {
+      if (process.env.FARM_PROFILE) {
+        this._bindingCompiler.compileSync();
+      } else {
+        await this._bindingCompiler.compile();
+      }
+    } finally {
+      this.compiling = false;
+      this._resolveCompileFinishPromise();
+      this._isInitialCompile = false;
     }
-    this.compiling = false;
   }
 
   compileSync() {
-    if (this.compiling) {
-      this.logger.error('Already compiling', {
-        exit: true
-      });
-    }
+    this.checkCompiling();
+    this._createCompileFinishPromise();
     this.compiling = true;
     this._bindingCompiler.compileSync();
     this.compiling = false;
+    this._resolveCompileFinishPromise();
+    if (this._isInitialCompile) {
+      this._isInitialCompile = false;
+    }
   }
 
   async update(
@@ -154,35 +164,25 @@ export class Compiler {
 
   writeResourcesToDisk(): void {
     const resources = this.resources();
-    const configOutputPath = this.config.config.output.path;
-    const outputPath = path.isAbsolute(configOutputPath)
-      ? configOutputPath
-      : path.join(this.config.config.root, configOutputPath);
+    const outputPath = this.getOutputPath();
 
-    for (const [name, resource] of Object.entries(resources)) {
-      // remove query params and hash of name
-      const nameWithoutQuery = name.split('?')[0];
-      const nameWithoutHash = nameWithoutQuery.split('#')[0];
-
-      let filePath = path.join(outputPath, nameWithoutHash);
-      if (!existsSync(path.dirname(filePath))) {
-        mkdirSync(path.dirname(filePath), { recursive: true });
-      }
-
-      writeFileSync(filePath, resource);
-    }
+    Object.entries(resources).forEach(([name, resource]) => {
+      const filePath = path.join(outputPath, name.split(/[?#]/)[0]);
+      mkdirSync(path.dirname(filePath), { recursive: true });
+      writeFileSync(filePath, new Uint8Array(resource));
+    });
 
     this.callWriteResourcesHook();
   }
 
   callWriteResourcesHook() {
-    for (const jsPlugin of this.config.jsPlugins ?? []) {
+    for (const jsPlugin of this.config.jsPlugins) {
       jsPlugin.writeResources?.executor?.({
         resourcesMap: this._bindingCompiler.resourcesMap() as Record<
           string,
           Resource
         >,
-        config: this.config.config
+        config: this.config.compilation
       });
     }
   }
@@ -209,15 +209,7 @@ export class Compiler {
       p = p.slice(0, -VIRTUAL_FARM_DYNAMIC_IMPORT_SUFFIX.length);
     }
 
-    if (path.isAbsolute(p)) {
-      return p;
-    }
-
-    if (p.includes('?')) {
-      return path.join(root, p.split('?')[0]);
-    }
-
-    return path.join(root, p);
+    return path.isAbsolute(p) ? p : path.join(root, p.split('?')[0]);
   }
 
   onUpdateFinish(cb: () => void) {
@@ -225,12 +217,7 @@ export class Compiler {
   }
 
   outputPath() {
-    const { output, root } = this.config.config;
-    const configOutputPath = output.path;
-    const outputPath = path.isAbsolute(configOutputPath)
-      ? configOutputPath
-      : path.join(root, configOutputPath);
-    return outputPath;
+    return this.getOutputPath();
   }
 
   addExtraWatchFile(root: string, paths: string[]) {
@@ -240,4 +227,62 @@ export class Compiler {
   stats() {
     return this._bindingCompiler.stats();
   }
+
+  // wait for the compiler to finish compiling
+  async waitForInitialCompileFinish() {
+    if (this._isInitialCompile) {
+      await this.waitForCompileFinish();
+    }
+  }
+
+  async waitForCompileFinish() {
+    if (this.compiling && this._compileFinishPromise) {
+      await this._compileFinishPromise;
+    }
+  }
+
+  private _createCompileFinishPromise() {
+    this._compileFinishPromise = new Promise<void>((resolve) => {
+      this._resolveCompileFinish = resolve;
+    });
+  }
+
+  private _resolveCompileFinishPromise() {
+    if (this._resolveCompileFinish) {
+      this._resolveCompileFinish();
+      this._compileFinishPromise = null;
+      this._resolveCompileFinish = null;
+    }
+  }
+
+  private checkCompiling() {
+    if (this.compiling) {
+      this.config.logger.error('Already compiling', {
+        exit: true
+      });
+    }
+  }
+
+  private getOutputPath(): string {
+    const { output, root } = this.config.compilation;
+    const configOutputPath = output.path;
+    const outputPath = path.isAbsolute(configOutputPath)
+      ? configOutputPath
+      : path.join(root, configOutputPath);
+    return outputPath;
+  }
+}
+
+export function createCompiler(resolvedUserConfig: ResolvedUserConfig) {
+  return new Compiler(resolvedUserConfig);
+}
+
+export function createInlineCompiler(
+  config: ResolvedUserConfig,
+  options: ResolvedCompilation = {}
+) {
+  return new Compiler({
+    ...config,
+    compilation: { ...config.compilation, ...options }
+  });
 }

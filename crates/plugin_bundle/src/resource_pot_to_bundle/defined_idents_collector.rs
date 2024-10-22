@@ -3,7 +3,9 @@ use std::collections::{HashMap, HashSet};
 use farmfe_core::{
   swc_common::DUMMY_SP,
   swc_ecma_ast::{
-    AssignExpr, AssignOp, AssignTarget, BindingIdent, Expr, Id, KeyValuePatProp, KeyValueProp, MemberProp, ObjectPat, ObjectPatProp, Pat, Prop, PropName, PropOrSpread, SimpleAssignTarget
+    AssignExpr, AssignOp, AssignTarget, BindingIdent, Expr, Id, IdentName, KeyValuePatProp,
+    KeyValueProp, MemberProp, ObjectPat, ObjectPatProp, Pat, Prop, PropName, PropOrSpread,
+    SimpleAssignTarget,
   },
 };
 use farmfe_toolkit::{
@@ -98,10 +100,9 @@ impl<'a> VisitMut for RenameIdent<'a> {
       Prop::Shorthand(m) => {
         if let Some(new_name) = self.rename(m) {
           *n = Prop::KeyValue(farmfe_core::swc_ecma_ast::KeyValueProp {
-            key: farmfe_core::swc_ecma_ast::PropName::Ident(Ident {
+            key: farmfe_core::swc_ecma_ast::PropName::Ident(IdentName {
               span: DUMMY_SP,
               sym: m.sym.as_str().into(),
-              optional: false,
             }),
             value: Box::new(farmfe_core::swc_ecma_ast::Expr::Ident(
               new_name.as_str().into(),
@@ -123,10 +124,9 @@ impl<'a> VisitMut for RenameIdent<'a> {
         Prop::Shorthand(ident) => {
           if let Some(new_name) = self.rename(ident) {
             *p = Prop::KeyValue(KeyValueProp {
-              key: farmfe_core::swc_ecma_ast::PropName::Ident(Ident {
+              key: farmfe_core::swc_ecma_ast::PropName::Ident(IdentName {
                 span: DUMMY_SP,
                 sym: ident.sym.as_str().into(),
-                optional: false,
               }),
               value: Box::new(farmfe_core::swc_ecma_ast::Expr::Ident(
                 new_name.as_str().into(),

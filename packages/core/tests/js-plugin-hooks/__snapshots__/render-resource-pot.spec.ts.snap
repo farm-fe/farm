@@ -12,7 +12,7 @@ exports[`Js Plugin Execution - renderResourcePot 1`] = `
     "isEntry": true,
     "isImplicitEntry": false,
   },
-  "id": "index_eab4_js",
+  "id": "index_eab4",
   "map": null,
   "moduleIds": [
     "index.ts?foo=bar",
@@ -26,7 +26,7 @@ exports[`Js Plugin Execution - renderResourcePot 1`] = `
       "renderedMap": null,
     },
   },
-  "name": "index_eab4",
+  "name": "index",
   "resourcePotType": "js",
 }
 `;

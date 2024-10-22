@@ -1,0 +1,84 @@
+.progress-bar-container {
+  width: 50vw;
+  height: 35px;
+  border-radius: 4px;
+  padding: 2px 6px;
+  box-sizing: content-box;
+  border: 1px solid var(--farm--border);
+}
+
+.progress-bar-inner-container {
+  height: 25px;
+  background: #9f1a8f;
+  border-radius: 2px;
+}
+
+.progress-bar {
+  height: 100%;
+  background: linear-gradient(to right, rgb(192 38 211), #d2269e);
+  border-radius: 2px;
+}
+
+.font-mono {
+  font-family: Menlo, Monaco, Lucida Console, Liberation Mono, DejaVu Sans Mono,
+    Bitstream Vera Sans Mono, Courier New, monospace;
+}
+
+:global(.dark) {
+  .progress-bar-inner-container {
+    background: #fba;
+  }
+}
+
+@media (max-width: 768px) {
+  .progress-bar-container,
+  .progress-bar-inner-container {
+    height: 30px;
+  }
+}
+
+.main {
+  position: relative;
+  width: 200px;
+  height: 50px;
+  cursor: pointer;
+  border-radius: 5px;
+  border: 2px solid #272727;
+  overflow: hidden;
+}
+
+.fill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: hotpink;
+}
+
+.content {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #272727;
+}
+
+.container {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  justify-content: center;
+}
+
+.tabs {
+  display: flex;
+  justify-content: center;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}

@@ -6,14 +6,9 @@
     "declaration": false,
     "noUnusedLocals": false,
     "noUnusedParameters": false,
-    "module": "NodeNext"
   },
-  "exclude": [
-    "node_modules"
-  ],
-  "include": [
-    "src/**/*"
-  ],
+  "exclude": ["node_modules"],
+  "include": ["src/**/*"],
   "references": [
     {
       "path": "../core/tsconfig.build.json"

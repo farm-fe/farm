@@ -75,8 +75,7 @@ fn inject_runtime_import(lib: &Library, ast: &mut SwcModule) {
   // inject react boundary detection
   let react_boundary_import =
     format!("import * as ReactRefreshUtil from '{IS_REACT_REFRESH_BOUNDARY}'");
-  let react_boundary_import_decl =
-    parse_import_decl("ReactRefreshUtil", &react_boundary_import);
+  let react_boundary_import_decl = parse_import_decl("ReactRefreshUtil", &react_boundary_import);
 
   ast.body.insert(
     0,

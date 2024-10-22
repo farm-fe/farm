@@ -1,5 +1,33 @@
 # @farmfe/cli
 
+## 2.0.0-nightly-20241022090550
+
+### Major Changes
+
+- e7920ed: remove peerdep
+
+## 2.0.0-nightly-20241022041556
+
+### Major Changes
+
+- 6667953: update nightly cli
+
+### Patch Changes
+
+- Updated dependencies [24347c9]
+  - @farmfe/core@2.0.0-nightly-20241022041556
+
+## 2.0.0-nightly-20241022014521
+
+### Major Changes
+
+- a82a5b2: bump nightly version
+
+### Patch Changes
+
+- Updated dependencies [a82a5b2]
+  - @farmfe/core@2.0.0-nightly-20241022014521
+
 ## 1.0.4
 
 ### Patch Changes
