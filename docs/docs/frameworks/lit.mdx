@@ -1,0 +1,43 @@
+import { PackageManagerTabs } from "../../src/theme/PackageManagerTabs";
+
+# Lit
+
+Create a `Lit` project based on `Farm`.
+
+`Farm` provides two approaches to support creating `Lit` projects: 
+- Use the `create-farm` scaffold to create a scaffold project
+- You can manually create a `Lit` project following the current documentation
+
+### Creating a Lit Project
+
+<PackageManagerTabs command="npm create farm@latest" />
+
+
+Select `Lit` template in `Select Framework`
+
+If you use lit then we need to configure the decorator
+
+```javascript title="farm.config.ts"
+import { defineConfig } from '@farmfe/core';
+
+export default defineConfig({
+  compilation: {
+    presetEnv: false,
+    script: {
+      plugins: [],
+      target: 'es2022',
+      parser: {
+        tsConfig: {
+          decorators: true,
+          dts: false,
+          noEarlyErrors: false,
+          tsx: false
+        }
+      }
+    }
+  }
+});
+
+```
+
+For more example details: [React Example](https://github.com/farm-fe/farm/tree/main/examples/Lit)

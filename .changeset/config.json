@@ -5,7 +5,10 @@
   "fixed": [],
   "linked": [],
   "access": "public",
-  "baseBranch": "main",
+  "baseBranch": "v2-dev",
   "updateInternalDependencies": "patch",
-  "ignore": []
+  "ignore": ["@farmfe-examples/*", "farm-docs"],
+  "snapshot": {
+    "useCalculatedVersion": true
+  }
 }

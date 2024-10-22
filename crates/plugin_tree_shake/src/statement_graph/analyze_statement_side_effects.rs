@@ -177,7 +177,7 @@ impl<'a> Visit for SideEffectsAnalyzer<'a> {
       farmfe_core::swc_ecma_ast::PropOrSpread::Spread(s) => s.visit_with(self),
       farmfe_core::swc_ecma_ast::PropOrSpread::Prop(prop) => match &**prop {
         farmfe_core::swc_ecma_ast::Prop::Shorthand(ident) => {
-          if self.in_top_level || ident.span.ctxt.outer() == self.top_level_mark {
+          if self.in_top_level || ident.ctxt.outer() == self.top_level_mark {
             self
               .side_effects
               .merge_side_effects(StatementSideEffects::ReadTopLevelVar(HashSet::from([
@@ -232,16 +232,16 @@ impl<'a> Visit for SideEffectsAnalyzer<'a> {
         self
           .side_effects
           .merge_side_effects(if self.in_assign_left {
-            if ident.span.ctxt().outer() == self.unresolved_mark {
+            if ident.ctxt.outer() == self.unresolved_mark {
               StatementSideEffects::WriteOrCallGlobalVar
-            } else if self.in_top_level || ident.span.ctxt().outer() == self.top_level_mark {
+            } else if self.in_top_level || ident.ctxt.outer() == self.top_level_mark {
               StatementSideEffects::WriteTopLevelVar(HashSet::from([ident.to_id()]))
             } else {
               StatementSideEffects::NoSideEffects
             }
-          } else if self.in_call && ident.span.ctxt().outer() == self.unresolved_mark {
+          } else if self.in_call && ident.ctxt.outer() == self.unresolved_mark {
             StatementSideEffects::WriteOrCallGlobalVar
-          } else if self.in_top_level || ident.span.ctxt().outer() == self.top_level_mark {
+          } else if self.in_top_level || ident.ctxt.outer() == self.top_level_mark {
             StatementSideEffects::ReadTopLevelVar(HashSet::from([ident.to_id()]))
           } else {
             StatementSideEffects::NoSideEffects
@@ -255,13 +255,13 @@ impl<'a> Visit for SideEffectsAnalyzer<'a> {
             farmfe_core::swc_ecma_ast::SimpleAssignTarget::Ident(i) => {
               // for idents that are added by ast transform, the mark may not be top_level_mark
               // in this case, we treat it as top level as long as current assign expr is in top level
-              if self.in_top_level || i.id.span.ctxt.outer() == self.top_level_mark {
+              if self.in_top_level || i.id.ctxt.outer() == self.top_level_mark {
                 self
                   .side_effects
                   .merge_side_effects(StatementSideEffects::WriteTopLevelVar(HashSet::from([i
                     .id
                     .to_id()])));
-              } else if i.id.span.ctxt.outer() == self.unresolved_mark {
+              } else if i.id.ctxt.outer() == self.unresolved_mark {
                 self
                   .side_effects
                   .merge_side_effects(StatementSideEffects::WriteOrCallGlobalVar);

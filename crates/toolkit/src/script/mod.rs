@@ -4,7 +4,7 @@ use swc_ecma_codegen::{
   text_writer::{JsWriter, WriteJs},
   Emitter, Node,
 };
-use swc_ecma_parser::{lexer::Lexer, EsConfig, Parser, StringInput, Syntax, TsConfig};
+use swc_ecma_parser::{lexer::Lexer, EsSyntax, Parser, StringInput, Syntax, TsSyntax};
 
 use farmfe_core::{
   config::{comments::CommentsConfig, ScriptParserConfig},
@@ -17,8 +17,8 @@ use farmfe_core::{
     BytePos, FileName, LineCol, Mark, SourceMap,
   },
   swc_ecma_ast::{
-    CallExpr, Callee, EsVersion, Expr, Ident, Import, MemberProp, Module as SwcModule, ModuleItem,
-    Stmt,
+    CallExpr, Callee, EsVersion, Expr, Ident, IdentName, Import, MemberProp, Module as SwcModule,
+    ModuleItem, Stmt,
   },
 };
 use swc_ecma_visit::{Visit, VisitWith};
@@ -89,7 +89,10 @@ pub fn parse_stmt(
   cm: Arc<SourceMap>,
   top_level: bool,
 ) -> Result<Stmt> {
-  let source_file = cm.new_source_file(FileName::Real(PathBuf::from(id)), content.to_string());
+  let source_file = cm.new_source_file(
+    Arc::new(FileName::Real(PathBuf::from(id))),
+    content.to_string(),
+  );
   let input = StringInput::from(&*source_file);
   // TODO support parsing comments
   let mut parser = Parser::new(syntax, input, None);
@@ -163,21 +166,21 @@ pub fn syntax_from_module_type(
   config: ScriptParserConfig,
 ) -> Option<Syntax> {
   match module_type {
-    ModuleType::Js => Some(Syntax::Es(EsConfig {
+    ModuleType::Js => Some(Syntax::Es(EsSyntax {
       jsx: false,
       import_attributes: true,
       ..config.es_config
     })),
-    ModuleType::Jsx => Some(Syntax::Es(EsConfig {
+    ModuleType::Jsx => Some(Syntax::Es(EsSyntax {
       jsx: true,
       import_attributes: true,
       ..config.es_config
     })),
-    ModuleType::Ts => Some(Syntax::Typescript(TsConfig {
+    ModuleType::Ts => Some(Syntax::Typescript(TsSyntax {
       tsx: false,
       ..config.ts_config
     })),
-    ModuleType::Tsx => Some(Syntax::Typescript(TsConfig {
+    ModuleType::Tsx => Some(Syntax::Typescript(TsSyntax {
       tsx: true,
       ..config.ts_config
     })),
@@ -195,9 +198,8 @@ pub fn is_commonjs_require(
   top_level_mark: Mark,
   call_expr: &CallExpr,
 ) -> bool {
-  if let Callee::Expr(box Expr::Ident(Ident { span, sym, .. })) = &call_expr.callee {
-    sym == "require"
-      && (span.ctxt.outer() == unresolved_mark || span.ctxt.outer() == top_level_mark)
+  if let Callee::Expr(box Expr::Ident(Ident { ctxt, sym, .. })) = &call_expr.callee {
+    sym == "require" && (ctxt.outer() == unresolved_mark || ctxt.outer() == top_level_mark)
   } else {
     false
   }
@@ -259,14 +261,14 @@ impl Visit for ModuleSystemAnalyzer {
       return;
     }
 
-    if let box Expr::Ident(Ident { sym, span, .. }) = &n.obj {
-      if sym == "module" && span.ctxt.outer() == self.unresolved_mark {
-        if let MemberProp::Ident(Ident { sym, .. }) = &n.prop {
+    if let box Expr::Ident(Ident { sym, ctxt, .. }) = &n.obj {
+      if sym == "module" && ctxt.outer() == self.unresolved_mark {
+        if let MemberProp::Ident(IdentName { sym, .. }) = &n.prop {
           if sym == "exports" {
             self.contain_module_exports = true;
           }
         }
-      } else if sym == "exports" && span.ctxt.outer() == self.unresolved_mark {
+      } else if sym == "exports" && ctxt.outer() == self.unresolved_mark {
         self.contain_module_exports = true;
       } else {
         n.visit_children_with(self);
@@ -287,11 +289,7 @@ impl Visit for ModuleSystemAnalyzer {
   }
 }
 
-pub fn module_system_from_ast(
-  ast: &SwcModule,
-  module_system: ModuleSystem,
-  has_deps: bool,
-) -> ModuleSystem {
+pub fn module_system_from_ast(ast: &SwcModule, module_system: ModuleSystem) -> ModuleSystem {
   if module_system != ModuleSystem::Hybrid {
     // if the ast contains ModuleDecl, it's a esm module
     for item in ast.body.iter() {

@@ -9,7 +9,7 @@ use std::{
 use base64::engine::{general_purpose, Engine};
 use farmfe_core::{
   cache_item,
-  config::{Config},
+  config::Config,
   context::{CompilationContext, EmitFileParams},
   deserialize,
   module::ModuleType,
@@ -173,9 +173,7 @@ impl Plugin for FarmPluginStaticAssets {
         let mime_type = mime_guess::from_ext(ext).first_or_octet_stream();
         let mime_type_str = mime_type.to_string();
 
-        let content = format!(
-          "export default \"data:{mime_type_str};base64,{file_base64}\""
-        );
+        let content = format!("export default \"data:{mime_type_str};base64,{file_base64}\"");
 
         return Ok(Some(farmfe_core::plugin::PluginTransformHookResult {
           content,

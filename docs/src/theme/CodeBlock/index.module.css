@@ -1,0 +1,138 @@
+.shiki-wrapper {
+  margin: 1.5em 0;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  transition: box-shadow 0.3s ease;
+}
+
+.shiki-wrapper:hover {
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+}
+
+.code-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5em 1em;
+  border-bottom: var(--code-block-border);
+  background-color: var(--code-block);
+}
+
+.code-title {
+  font-weight: 600;
+  font-size: 0.9em;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  svg {
+    width: 22px;
+  }
+}
+
+.copy-button {
+  display: flex;
+  align-items: center;
+  background-color: transparent;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  font-size: 0.85em;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.copy-button:hover {
+  background-color: #e9ecef;
+  border-color: #adb5bd;
+}
+
+.copy-icon {
+  width: 1em;
+  height: 1em;
+  margin-right: 0.5em;
+  fill: currentColor;
+}
+
+.copy-button span {
+  transition: opacity 0.2s ease;
+}
+
+.copy-button:active span {
+  opacity: 0.6;
+}
+
+@keyframes popIn {
+  0% {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.copy-button svg {
+  animation: popIn 0.3s ease forwards;
+}
+
+.copy-button {
+  display: flex;
+  align-items: center;
+  background-color: transparent;
+  border: none;
+  border-radius: 4px;
+  padding: 0.5em 0em 0.5em 0.5em;
+  font-size: 0.85em;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  outline: none;
+}
+
+.copy-button:hover {
+  background-color: var(--ifm-color-emphasis-200);
+  /* border-color: var(--ifm-color-emphasis-400); */
+}
+
+.copy-button:focus {
+  /* box-shadow: 0 0 0 2px var(--ifm-color-primary-lightest); */
+}
+
+.copy-icon {
+  width: 1.5em;
+  height: 1.5em;
+  margin-right: 0.5em;
+  fill: currentColor;
+  transition: transform 0.2s ease;
+}
+
+.copy-button:hover .copy-icon {
+  transform: scale(1.1);
+}
+
+.copy-button span {
+  transition: opacity 0.2s ease;
+}
+
+.copy-button:active span {
+  opacity: 0.6;
+}
+
+@keyframes popIn {
+  0% {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.copy-button svg {
+  animation: popIn 0.3s ease forwards;
+}
+
+.copy-success {
+  color: var(--ifm-color-success);
+}

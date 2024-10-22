@@ -11,7 +11,7 @@ use farmfe_core::{
   config::{Mode, TargetEnv, FARM_DYNAMIC_REQUIRE, FARM_REQUIRE},
   module::{module_graph::ModuleGraph, ModuleId},
   plugin::ResolveKind,
-  swc_common::{Mark, DUMMY_SP},
+  swc_common::{Mark, SyntaxContext, DUMMY_SP},
   swc_ecma_ast::{
     Bool, CallExpr, Callee, Expr, ExprOrSpread, Ident, Lit, MemberExpr, MemberProp, Str,
   },
@@ -133,6 +133,7 @@ impl SourceReplacer<'_> {
           span: DUMMY_SP,
           sym: FARM_REQUIRE.into(),
           optional: false,
+          ctxt: SyntaxContext::empty(),
         })));
 
         let (id, resolve_kind) =
@@ -200,6 +201,7 @@ impl SourceReplacer<'_> {
           span: DUMMY_SP,
           sym: FARM_DYNAMIC_REQUIRE.into(),
           optional: false,
+          ctxt: SyntaxContext::empty(),
         })));
 
         str.value = id.id(self.mode.clone()).into();

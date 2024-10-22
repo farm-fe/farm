@@ -1,0 +1,54 @@
+---
+source: crates/compiler/src/generate/partial_bundling.rs
+input_file: crates/compiler/src/generate/partial_bundling.rs
+---
+(
+    (
+        "immutable",
+        false,
+    ),
+    (
+        "modules",
+        [
+            ModuleId {
+                relative_path: "D",
+                query_string: "",
+            },
+        ],
+    ),
+    (
+        "resource_pot_type",
+        Custom(
+            "__farm_unknown",
+        ),
+    ),
+    (
+        "name",
+        "B_3f39",
+    ),
+    (
+        "id",
+        "B_3f39",
+    ),
+    (
+        "entry",
+        None,
+    ),
+    (
+        "resources",
+        [],
+    ),
+    (
+        "module_groups",
+        [
+            ModuleId {
+                relative_path: "B",
+                query_string: "",
+            },
+            ModuleId {
+                relative_path: "D",
+                query_string: "",
+            },
+        ],
+    ),
+)
