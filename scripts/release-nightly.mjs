@@ -10,4 +10,6 @@ await buildJsPlugins();
 execSync("npm config set access public", { stdio: "inherit" });
 
 // Publish nightly packages
-execSync(`npx changeset publish --tag nightly`, { stdio: "inherit" });
+execSync(`npx changeset publish --no-git-tag --tag nightly`, {
+  stdio: "inherit",
+});
