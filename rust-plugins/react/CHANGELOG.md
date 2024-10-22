@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.0.0-nightly-20241022124925
+
+### Major Changes
+
+- 6a1038c: update nightly tag
+
 ## 1.2.4
 
 ### Patch Changes

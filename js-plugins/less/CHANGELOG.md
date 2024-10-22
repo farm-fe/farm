@@ -1,5 +1,11 @@
 # @farmfe/js-plugin-less
 
+## 2.0.0-nightly-20241022124925
+
+### Patch Changes
+
+- @farmfe/core@2.0.0-nightly-20241022124925
+
 ## 2.0.0-nightly-20241022041556
 
 ### Patch Changes

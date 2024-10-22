@@ -1,6 +1,6 @@
 {
   "name": "@farmfe/utils",
-  "version": "0.1.0",
+  "version": "1.0.0-nightly-20241022124925",
   "description": "farmfe utils",
   "main": "dist/index.js",
   "type": "module",
@@ -36,5 +36,7 @@
     "dev-server",
     "hmr"
   ],
-  "files": ["dist"]
+  "files": [
+    "dist"
+  ]
 }
