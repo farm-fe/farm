@@ -1,5 +1,11 @@
 # @farmfe/cli
 
+## 2.0.0-nightly-20241022101407
+
+### Major Changes
+
+- 46883f3: bump nightly version
+
 ## 2.0.0-nightly-20241022090550
 
 ### Major Changes
