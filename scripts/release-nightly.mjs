@@ -6,10 +6,15 @@ await buildCli();
 await buildCoreCjs();
 await buildJsPlugins();
 
-// Set npm config to public access
-execSync("npm config set access public", { stdio: "inherit" });
+try {
+  // Set npm config to public access
+  execSync("npm config set access public", { stdio: "inherit" });
 
-// Publish nightly packages
-execSync(`npx changeset publish --no-git-tag --tag nightly`, {
-  stdio: "inherit",
-});
+  // Publish nightly packages
+  execSync(`npx changeset publish --no-git-tag --tag nightly`, {
+    stdio: "inherit",
+  });
+} catch (error) {
+  console.error(error);
+  process.exit(1);
+}
