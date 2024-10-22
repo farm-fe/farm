@@ -642,7 +642,7 @@ importers:
         specifier: workspace:*
         version: link:../../packages/core
       '@farmfe/plugin-react':
-        specifier: ^1.1.0
+        specifier: 2.0.0-nightly-20241022124925
         version: link:../../rust-plugins/react
       '@types/react':
         specifier: '18'

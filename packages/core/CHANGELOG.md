@@ -1,5 +1,12 @@
 # @farmfe/core
 
+## 2.0.0-nightly-20241022124925
+
+### Patch Changes
+
+- Updated dependencies [6a1038c]
+  - @farmfe/utils@1.0.0-nightly-20241022124925
+
 ## 2.0.0-nightly-20241022041556
 
 ### Major Changes
