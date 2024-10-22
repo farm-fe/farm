@@ -40,8 +40,5 @@
   },
   "dependencies": {
     "cac": "^6.7.14"
-  },
-  "devDependencies": {
-    "@farmfe/core": "workspace:*"
   }
 }
