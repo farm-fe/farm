@@ -11,13 +11,17 @@ export default {
     output: {
       path: './dist',
       targetEnv: 'node',
-      format: 'cjs'
+      format: 'cjs',
+      publicPath: '/'
     },
     external: [...builtinModules.map((m) => `^${m}$`)],
     css: {
       prefixer: {
         targets: ['last 2 versions', 'Firefox ESR', '> 1%', 'ie >= 11']
       }
+    },
+    assets: {
+      mode: 'browser'
     }
   },
   plugins: [
