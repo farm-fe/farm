@@ -1,5 +1,12 @@
 # @farmfe/js-plugin-vue
 
+## 4.0.0-nightly-20241022041556
+
+### Patch Changes
+
+- Updated dependencies [24347c9]
+  - @farmfe/core@2.0.0-nightly-20241022041556
+
 ## 4.0.0-nightly-20241022014521
 
 ### Patch Changes

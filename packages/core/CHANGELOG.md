@@ -1,5 +1,11 @@
 # @farmfe/core
 
+## 2.0.0-nightly-20241022041556
+
+### Major Changes
+
+- 24347c9: update deps
+
 ## 2.0.0-nightly-20241022014521
 
 ### Major Changes
