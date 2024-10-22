@@ -1,6 +1,7 @@
 {
   "name": "@farmfe-examples/react-fast-refresh",
   "version": "1.0.0",
+  "private": true,
   "scripts": {
     "dev": "farm start",
     "start": "farm start",
