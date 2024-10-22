@@ -1,6 +1,5 @@
 import { CUSTOM_KEYS } from '../constants.js';
 import { ResolvedCompilation, UserConfig } from '../types.js';
-
 export function normalizeCss(
   config: UserConfig,
   resolvedCompilation: ResolvedCompilation
@@ -9,7 +8,6 @@ export function normalizeCss(
     normalizeCssModules(config, resolvedCompilation);
   }
 }
-
 function normalizeCssModules(
   config: UserConfig,
   resolvedCompilation: ResolvedCompilation

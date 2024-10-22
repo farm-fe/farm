@@ -337,7 +337,6 @@ impl StatementGraph {
       let deps =
         analyze_deps_by_used_idents::analyze_deps_by_used_idents(AnalyzeUsedIdentsParams {
           // 2.2 add edges to graph
-          id: &index,
           stmt: item,
           reverse_defined_idents_map: &reverse_defined_idents_map,
         });

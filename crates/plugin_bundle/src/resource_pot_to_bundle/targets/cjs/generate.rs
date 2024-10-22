@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use farmfe_core::{
   error::Result,
   module::{ModuleId, ModuleSystem},
-  swc_common::DUMMY_SP,
+  swc_common::{SyntaxContext, DUMMY_SP},
   swc_ecma_ast::{
     AssignExpr, AssignOp, AssignTarget, BindingIdent, CallExpr, Callee, Decl, Expr, ExprOrSpread,
     ExprStmt, KeyValueProp, Lit, MemberExpr, MemberProp, ModuleItem, ObjectLit, Pat, Prop,
@@ -164,6 +164,7 @@ impl CjsGenerate {
             },
           ],
           type_args: None,
+          ctxt: SyntaxContext::empty(),
         })),
       })));
     }
@@ -258,11 +259,13 @@ impl CjsGenerate {
                 expr: Box::new(Expr::Lit(Lit::Str(module_id.to_string().as_str().into()))),
               }],
               type_args: None,
+              ctxt: SyntaxContext::empty(),
             })),
             polyfill,
           )),
           definite: false,
         }],
+        ctxt: SyntaxContext::empty(),
       })))));
 
       let mut decls: Vec<VarDeclarator> = vec![];
@@ -310,6 +313,7 @@ impl CjsGenerate {
           kind: VarDeclKind::Var,
           declare: false,
           decls,
+          ctxt: SyntaxContext::empty(),
         })))));
       }
     }

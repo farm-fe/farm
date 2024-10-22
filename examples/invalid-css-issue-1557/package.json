@@ -17,8 +17,8 @@
     "react-highlight-words": "^0.20.0"
   },
   "devDependencies": {
-    "@farmfe/cli": "^1.0.2",
-    "@farmfe/core": "^1.2.8",
+    "@farmfe/cli": "workspace:*",
+    "@farmfe/core": "workspace:*",
     "@farmfe/plugin-react": "^1.1.0",
     "@types/react": "18",
     "@types/react-dom": "18",

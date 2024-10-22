@@ -49,9 +49,8 @@ export async function getCompiler(
 
   const compilationConfig = await normalizeUserCompilationConfig(
     resolvedUserConfig,
-    userConfig,
-    new Logger(),
-    'production'
+    'production',
+    new Logger()
   );
 
   return new Compiler({

@@ -1,0 +1,59 @@
+import CodeBlock from "@theme/CodeBlock";
+import Tabs from "@theme/Tabs";
+import TabItem from "@theme/TabItem";
+
+# @farmfe/plugin-virtual
+
+受 [@rollup/plugin-virtual](https://www.npmjs.com/package/@rollup/plugin-virtual) 启发
+
+一个为farm打造的rust插件，用于轻松使用虚拟模块
+
+## 安装
+
+<Tabs>
+  <TabItem value="npm" label="npm">
+    <CodeBlock>npm install @farmfe/plugin-virtual</CodeBlock>
+  </TabItem>
+  <TabItem value="yarn" label="yarn">
+    <CodeBlock>yarn add @farmfe/plugin-virtual</CodeBlock>
+  </TabItem>
+  <TabItem value="pnpm" label="pnpm">
+    <CodeBlock>pnpm add @farmfe/plugin-virtual</CodeBlock>
+  </TabItem>
+</Tabs>
+
+## 使用
+
+farm.config.ts
+
+```typescript
+import { defineConfig } from '@farmfe/core';
+
+export default defineConfig({
+  plugins: [
+    [
+      '@farmfe/plugin-virtual',
+      {
+        'virtual-module': 'export const a = 1',
+        'src/01.js': 'export const module01 = "virtual-module"',
+      },
+    ],
+  ],
+});
+```
+
+index.js
+
+```javascript
+import { a } from 'virtual-module';
+```
+
+src/02.js
+
+```javascript
+import { module01 } from './01.js';
+```
+
+这个 `@farmfe/plugin-virtual` 插件允许你定义虚拟模块，这些模块并不对应任何实际的文件系统中的文件，但可以像普通模块一样被导入和使用。这在模拟第三方库、环境变量或任何不便于直接放在文件系统中的数据时特别有用。
+
+通过在 `farm.config.ts` 配置文件中的 `plugins` 数组中注册插件并配置虚拟模块，你可以在项目中的任何地方通过指定的模块名来导入这些虚拟模块。在上面的例子中，定义了一个名为 `virtual-module` 的虚拟模块，它导出了一个常量 `a`，以及另一个名为 `src/01.js` 的虚拟模块，它导出了一个名为 `module01` 的变量。这些模块随后可以在项目中的任何地方被导入和使用，就像它们是实际存在于文件系统中的一样。

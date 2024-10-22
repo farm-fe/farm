@@ -1,0 +1,183 @@
+/**
+ * CSS files with the .module.css suffix will be treated as CSS modules
+ * and scoped locally.
+ */
+
+.heroBanner {
+  padding: 3rem 0;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.banner {
+  background: linear-gradient(45deg, rgb(113, 26, 95), #fda7df 70%);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+
+@media screen and (max-width: 996px) {
+  .heroBanner {
+    padding: 2rem;
+  }
+}
+
+.buttons {
+  display: flex;
+  align-items: center;
+  /* justify-content: center; */
+}
+
+.btn {
+  font-size: 1rem;
+  font-family: Open Sans;
+  font-weight: 600;
+  font-style: normal;
+  line-height: 1.5rem;
+  text-transform: none;
+  min-width: 130px;
+  border-radius: 8px;
+  border-width: 2px;
+  padding-left: 20px;
+  padding-right: 20px;
+  padding-top: 12px;
+  padding-bottom: 12px;
+}
+
+.farmButton {
+  height: 50px;
+  border: none;
+  outline: none;
+  color: #fff;
+  background: #111;
+  cursor: pointer;
+  position: relative;
+  z-index: 0;
+  border-radius: 10px;
+}
+
+.farmButton:before {
+  content: "";
+  background: linear-gradient(
+    45deg,
+    #7a00ff,
+    #9f1a8f,
+    #7a00ff,
+    #ff00c8,
+    #9f1a8f,
+    #7a00ff,
+    #ff00c8
+  );
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  background-size: 400%;
+  z-index: -1;
+  filter: blur(5px);
+  width: calc(100% + 4px);
+  height: calc(100% + 4px);
+  opacity: 1;
+  transition: opacity 0.5s ease-in-out;
+  border-radius: 10px;
+  animation: glowing 120s linear infinite;
+}
+
+.farmButton:after {
+  z-index: -1;
+  content: "";
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background: #111;
+  left: 0;
+  top: 0;
+  border-radius: 10px;
+}
+
+@keyframes glowing {
+  0% {
+    background-position: 0 0;
+  }
+  50% {
+    background-position: 400% 0;
+  }
+  100% {
+    background-position: 0 0;
+  }
+}
+
+.fKVWgc {
+  position: absolute;
+  inset: 0px;
+  mask-image: linear-gradient(black, transparent);
+}
+
+.farmButton2 {
+  height: 50px;
+  border: none;
+  outline: none;
+  color: #fff;
+  background: rgb(23, 23, 23);
+  cursor: pointer;
+  position: relative;
+  z-index: 0;
+  border-radius: 10px;
+}
+
+.farmButton2:before {
+  content: "";
+  background: linear-gradient(
+    45deg,
+    #ffaa40,
+    #9f1a8f,
+    #ffaa40,
+    #ff00c8,
+    #9f1a8f,
+    #7a00ff,
+    #ff00c8
+  );
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  background-size: 400%;
+  z-index: -1;
+  filter: blur(5px);
+  width: calc(100% + 4px);
+  height: calc(100% + 4px);
+  opacity: 1;
+  transition: opacity 0.2s ease-in-out;
+  border-radius: 10px;
+  animation: glowing 100s linear infinite;
+}
+
+.farmButton2:after {
+  z-index: -1;
+  content: "";
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background: #111;
+  left: 0;
+  top: 0;
+  border-radius: 10px;
+}
+
+@keyframes glowing {
+  0% {
+    background-position: 0 0;
+  }
+  30% {
+    background-position: 400% 0;
+  }
+  100% {
+    background-position: 0 0;
+  }
+}
+
+.gradientText {
+  background: linear-gradient(to bottom right, black, gray 40%, white);
+  -webkit-background-clip: text;
+  color: transparent;
+}

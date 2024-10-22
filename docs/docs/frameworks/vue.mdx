@@ -1,0 +1,54 @@
+import { PackageManagerTabs } from "../../src/theme/PackageManagerTabs";
+
+# Vue
+
+Create a `Vue` project based on `Farm`.
+
+`Farm` provides two approaches to support creating `Vue` projects: 
+- Use the `create-farm` scaffold to create a scaffold project
+- You can manually create a `Vue` project following the current documentation
+
+### Creating a Vue Project
+
+<PackageManagerTabs command="npm create farm@latest" />
+
+Select `Vue` template in `Select Framework`
+
+:::warning
+Currently, `Farm` uses `Vite` plugins for both `vue2` and `vue3` and `vue2.7` compilation. Also the development of Rust Vue plugin [fervid](https://github.com/phoenix-ru/fervid) is also underway.
+:::
+
+```javascript title="farm.config.ts"
+import { defineConfig } from '@farmfe/core';
+import Vue from '@vitejs/plugin-vue'
+
+export default defineConfig({
+  vitePlugins: [Vue()],
+});
+```
+
+### Integrating jsx
+
+```javascript title="farm.config.ts"
+import { defineConfig } from '@farmfe/core';
+import VueJsx from '@vitejs/plugin-vue-jsx'
+
+export default defineConfig({
+  vitePlugins: [VueJsx()],
+});
+```
+
+
+If you want to start DevServer
+
+<PackageManagerTabs command="pnpm dev" />
+
+If you need to run the build production environment product command
+
+<PackageManagerTabs command="pnpm build" />
+
+If you need to preview your build product
+
+<PackageManagerTabs command="pnpm preview" />
+
+For more example details: [Vue Example](https://github.com/farm-fe/farm/tree/main/examples/vite-adapter-vue)

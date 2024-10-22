@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::path::PathBuf;
 
 use farmfe_core::module::ModuleId;
@@ -25,4 +25,8 @@ pub fn hash_module_ids(module_ids: &HashSet<ModuleId>) -> String {
   let str = get_sorted_module_ids_str(module_ids);
 
   sha256(&str.into_bytes(), 4)
+}
+
+pub fn group_is_enforce(group_name: &str, groups_enforce_map: &HashMap<String, bool>) -> bool {
+  groups_enforce_map.get(group_name).cloned().unwrap_or(false)
 }

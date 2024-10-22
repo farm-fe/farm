@@ -4,7 +4,6 @@ import path from 'node:path';
 
 import { RustPlugin } from '../../plugin/index.js';
 import { Config } from '../../types/binding.js';
-import { Logger } from '../../utils/logger.js';
 import { traceDependencies } from '../../utils/trace-dependencies.js';
 import { isDisableCache } from '../env.js';
 import { ResolvedUserConfig } from '../index.js';
@@ -19,8 +18,7 @@ const defaultGlobalBuiltinCacheKeyStrategy = {
 
 export async function normalizePersistentCache(
   config: Config['config'],
-  resolvedUserConfig: ResolvedUserConfig,
-  logger: Logger
+  resolvedUserConfig: ResolvedUserConfig
 ) {
   if (isDisableCache()) {
     config.persistentCache = false;
@@ -28,6 +26,16 @@ export async function normalizePersistentCache(
 
   if (config?.persistentCache === false) {
     return;
+  }
+
+  if (
+    typeof config.persistentCache === 'object' &&
+    config.persistentCache.cacheDir
+  ) {
+    config.persistentCache.cacheDir = path.resolve(
+      config.root,
+      config.persistentCache.cacheDir
+    );
   }
 
   if (config.persistentCache === true || config.persistentCache == undefined) {
@@ -134,7 +142,7 @@ export async function normalizePersistentCache(
   ) {
     const files = resolvedUserConfig?.configFileDependencies?.length
       ? resolvedUserConfig.configFileDependencies
-      : await traceDependencies(resolvedUserConfig.configFilePath, logger);
+      : await traceDependencies(resolvedUserConfig.configFilePath);
 
     const packages = [];
 

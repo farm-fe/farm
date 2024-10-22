@@ -1,7 +1,7 @@
 use farmfe_core::{
   config::{external::ExternalConfig, Config, ModuleFormat},
   module::{module_graph::ModuleGraph, ModuleId},
-  swc_common::{Mark, DUMMY_SP},
+  swc_common::{Mark, SyntaxContext, DUMMY_SP},
   swc_ecma_ast::{CallExpr, Callee, Expr, ExprOrSpread, Lit, MemberExpr, MemberProp},
 };
 use farmfe_toolkit::{
@@ -127,6 +127,7 @@ impl<'a> VisitMut for CJSReplace<'a> {
                 ))),
                 args: vec![],
                 type_args: None,
+                ctxt: SyntaxContext::empty(),
               };
               replaced = ReplaceType::Call;
             } else if let Some(ns) = self.module_global_uniq_name.namespace_name(&id) {
