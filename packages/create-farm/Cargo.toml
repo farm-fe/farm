@@ -1,7 +1,7 @@
 [package]
 edition = "2021"
 name = "create_farm_node"
-version = "0.1.2"
+version = "0.1.3"
 authors = ["Erkelost"]
 license = "MIT"
 description = "Create Farm cli tool"
@@ -19,7 +19,7 @@ napi = { version = "2.15.2", default-features = false, features = [
   "serde-json",
 ] }
 napi-derive = "2.15.2"
-create-farm = { version = "0.1.2", path = "../../crates/create-farm-rs" }
+create-farm = { version = "0.1.3", path = "../../crates/create-farm-rs" }
 
 [build-dependencies]
 napi-build = "2.0.1"
