@@ -27,6 +27,8 @@ const gradientPurpleColor = [176, 106, 179];
 const gradientPinkColor = [198, 66, 110];
 const brandGradientColors = [255, 182, 193];
 const brandGradientColors2 = [128, 0, 128];
+const gradientOrangeColor = [255, 165, 0];
+const gradientGoldColor = [255, 215, 0];
 
 const argv = process.argv || [],
   env = process.env;
@@ -116,12 +118,16 @@ export const purple = enabled
 export const orange = enabled
   ? createFormatter('\x1b[38;2;255;137;54m', '\x1b[39m')
   : String;
+export const lightCyan = enabled
+  ? createFormatter('\x1b[38;2;180;240;240m', '\x1b[39m')
+  : String;
 export const cyan = enabled ? createFormatter('\x1b[36m', '\x1b[39m') : String;
 export const white = enabled ? createFormatter('\x1b[37m', '\x1b[39m') : String;
 
 export const bgBlack = enabled
   ? createFormatter('\x1b[40m', '\x1b[49m')
   : String;
+
 export const bgRed = enabled ? createFormatter('\x1b[41m', '\x1b[49m') : String;
 export const bgGreen = enabled
   ? createFormatter('\x1b[42m', '\x1b[49m')
@@ -175,17 +181,28 @@ export function interpolateColor(
 export const PersistentCacheBrand =
   brandColor('⚡️') +
   gradientString(`FULL EXTREME!`, [
+    // gradientPurpleColor,
+    // interpolateColor(gradientPurpleColor, gradientPinkColor, 0.1),
+    // interpolateColor(gradientPurpleColor, gradientPinkColor, 0.2),
+    // interpolateColor(gradientPurpleColor, gradientPinkColor, 0.3),
+    // interpolateColor(gradientPurpleColor, gradientPinkColor, 0.4),
+    // interpolateColor(gradientPurpleColor, gradientPinkColor, 0.5),
+    // interpolateColor(gradientPurpleColor, gradientPinkColor, 0.6),
+    // interpolateColor(gradientPurpleColor, gradientPinkColor, 0.7),
+    // interpolateColor(gradientPurpleColor, gradientPinkColor, 0.8),
+    // interpolateColor(gradientPurpleColor, gradientPinkColor, 0.9),
+    // gradientPinkColor
     gradientPurpleColor,
-    interpolateColor(gradientPurpleColor, gradientPinkColor, 0.1),
     interpolateColor(gradientPurpleColor, gradientPinkColor, 0.2),
-    interpolateColor(gradientPurpleColor, gradientPinkColor, 0.3),
     interpolateColor(gradientPurpleColor, gradientPinkColor, 0.4),
-    interpolateColor(gradientPurpleColor, gradientPinkColor, 0.5),
     interpolateColor(gradientPurpleColor, gradientPinkColor, 0.6),
-    interpolateColor(gradientPurpleColor, gradientPinkColor, 0.7),
     interpolateColor(gradientPurpleColor, gradientPinkColor, 0.8),
-    interpolateColor(gradientPurpleColor, gradientPinkColor, 0.9),
-    gradientPinkColor
+    gradientPinkColor,
+    interpolateColor(gradientPinkColor, gradientOrangeColor, 0.3),
+    interpolateColor(gradientPinkColor, gradientOrangeColor, 0.6),
+    gradientOrangeColor,
+    interpolateColor(gradientOrangeColor, gradientGoldColor, 0.5),
+    gradientGoldColor
   ]);
 
 export function handleBrandText(text: string) {

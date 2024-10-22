@@ -25,11 +25,7 @@ pub(crate) fn select<'t, T: Displayable>(
   Ok(items.get(selected))
 }
 
-pub(crate) fn input(
-  prompt: &str,
-  default: Option<&str>,
-  allow_empty: bool,
-) -> Result<String> {
+pub(crate) fn input(prompt: &str, default: Option<&str>, allow_empty: bool) -> Result<String> {
   let theme = ColorfulTheme::default();
   let mut builder = dialoguer::Input::with_theme(&theme)
     .with_prompt(prompt)

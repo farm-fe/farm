@@ -1,0 +1,55 @@
+import { PackageManagerTabs } from "../../../../../src/theme/PackageManagerTabs";
+
+# Lit
+
+基于 `Farm` 创建一个 `Lit` 项目。
+
+`Farm` 提供两种方案来支持创建 `Lit` 项目: 
+- 使用 `create-farm` 脚手架创建脚手架项目
+- 你可以根据当前文档手动创建一个 `Lit` 项目
+
+### 创建 Lit 项目
+
+<PackageManagerTabs command="npm create farm@latest" />
+
+
+在 `Select Framework` 中选择 `Lit` 模版
+
+在使用 lit 的情况下我们需要配置`装饰器`
+
+```javascript title="farm.config.ts"
+import { defineConfig } from '@farmfe/core';
+
+export default defineConfig({
+  compilation: {
+    presetEnv: false,
+    script: {
+      plugins: [],
+      target: 'es2022',
+      parser: {
+        tsConfig: {
+          decorators: true,
+          dts: false,
+          noEarlyErrors: false,
+          tsx: false
+        }
+      }
+    }
+  }
+});
+
+```
+
+开发环境时运行
+
+<PackageManagerTabs command="npm run dev" />
+
+在生产环境下进行打包
+
+<PackageManagerTabs command="npm run build" />
+
+预览生产环境打包之后构建的产物
+
+<PackageManagerTabs command="npm run preview" />
+
+如若想查看示例详情: [Lit 示例](https://github.com/farm-fe/farm/tree/main/examples/Lit)
