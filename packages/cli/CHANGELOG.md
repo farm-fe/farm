@@ -1,5 +1,16 @@
 # @farmfe/cli
 
+## 2.0.0-nightly-20241022041556
+
+### Major Changes
+
+- 6667953: update nightly cli
+
+### Patch Changes
+
+- Updated dependencies [24347c9]
+  - @farmfe/core@2.0.0-nightly-20241022041556
+
 ## 2.0.0-nightly-20241022014521
 
 ### Major Changes
