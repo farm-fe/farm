@@ -1,5 +1,11 @@
 # @farmfe/core
 
+## 1.3.30
+
+### Patch Changes
+
+- 36512446: add assets mode for asset path generate
+
 ## 1.3.29
 
 ### Patch Changes
