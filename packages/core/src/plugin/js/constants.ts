@@ -36,6 +36,7 @@ export const VITE_DEFAULT_ASSETS: string[] = [
   'pdf',
   'txt'
 ];
+
 // the name of the virtual module internal the adapter
 export const VITE_ADAPTER_VIRTUAL_MODULE: string = 'vite-adapter-virtual:';
 

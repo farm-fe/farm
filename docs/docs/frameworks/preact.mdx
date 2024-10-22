@@ -1,0 +1,42 @@
+import { PackageManagerTabs } from "../../src/theme/PackageManagerTabs";
+
+# Preact
+
+Create a `Preact` project based on `Farm`.
+
+`Farm` provides two approaches to support creating `Preact` projects: 
+- Use the `create-farm` scaffold to create a scaffold project
+- You can manually create a `Preact` project following the current documentation
+
+### Creating a Preact Project
+
+<PackageManagerTabs command="npm create farm@latest" />
+
+Select `Preact` template in `Select Framework`
+
+:::warning Preact
+For `Preact` support, `Farm` recommends using `Vite` plugins.
+:::
+
+```javascript title="farm.config.ts"
+import { defineConfig } from '@farmfe/core';
+import Preact from "vite-plugin-preact";
+
+export default defineConfig({
+  plugins: [Preact()],
+});
+```
+
+If you want to start DevServer
+
+<PackageManagerTabs command="pnpm dev" />
+
+If you need to run the build production environment product command
+
+<PackageManagerTabs command="pnpm build" />
+
+If you need to preview your build product
+
+<PackageManagerTabs command="pnpm preview" />
+
+For more example details: [Preact Example](https://github.com/farm-fe/farm/tree/main/examples/preact)

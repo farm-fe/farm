@@ -18,9 +18,13 @@ use std::collections::HashMap;
 use std::path::Component;
 use std::path::PathBuf;
 
+use farmfe_core::config::AliasItem;
+use farmfe_core::config::StringOrRegex;
 use farmfe_core::regex;
 use farmfe_core::relative_path::RelativePath;
+use farmfe_core::swc_common::SyntaxContext;
 use farmfe_core::swc_common::DUMMY_SP;
+use farmfe_core::swc_ecma_ast::IdentName;
 use farmfe_core::swc_ecma_ast::{
   self, ArrayLit, ArrowExpr, BindingIdent, BlockStmtOrExpr, CallExpr, Callee, Expr, ExprOrSpread,
   Ident, Import, KeyValueProp, Lit, MemberExpr, MemberProp, MetaPropExpr, MetaPropKind,
@@ -37,7 +41,7 @@ pub fn transform_import_meta_glob(
   ast: &mut SwcModule,
   root: String,
   cur_dir: String,
-  alias: &HashMap<String, String>,
+  alias: &Vec<AliasItem>,
 ) -> farmfe_core::error::Result<()> {
   let mut visitor = ImportGlobVisitor::new(cur_dir, root, alias);
   ast.visit_mut_with(&mut visitor);
@@ -75,6 +79,7 @@ pub fn transform_import_meta_glob(
                       local: farmfe_core::swc_ecma_ast::Ident::new(
                         format!("__glob__{index}_{glob_index}").into(),
                         DUMMY_SP,
+                        SyntaxContext::empty(),
                       ),
                     },
                   )],
@@ -138,9 +143,10 @@ fn create_eager_named_import(
           local: farmfe_core::swc_ecma_ast::Ident::new(
             format!("__glob__{index}_{glob_index}").into(),
             DUMMY_SP,
+            SyntaxContext::empty(),
           ),
           imported: Some(farmfe_core::swc_ecma_ast::ModuleExportName::Ident(
-            Ident::new(import.into(), DUMMY_SP),
+            Ident::new(import.into(), DUMMY_SP, SyntaxContext::empty()),
           )),
           is_type_only: false,
         },
@@ -171,6 +177,7 @@ fn create_eager_namespace_import(
           local: farmfe_core::swc_ecma_ast::Ident::new(
             format!("__glob__{index}_{glob_index}").into(),
             DUMMY_SP,
+            SyntaxContext::empty(),
           ),
         },
       )],
@@ -196,6 +203,7 @@ fn create_eager_default_import(index: usize, glob_index: usize, globed_source: &
           local: farmfe_core::swc_ecma_ast::Ident::new(
             format!("__glob__{index}_{glob_index}").into(),
             DUMMY_SP,
+            SyntaxContext::empty(),
           ),
         },
       )],
@@ -230,12 +238,12 @@ pub struct ImportGlobVisitor<'a> {
   import_globs: Vec<ImportMetaGlobInfo>,
   cur_dir: String,
   root: String,
-  alias: &'a HashMap<String, String>,
+  alias: &'a Vec<AliasItem>,
   pub errors: Vec<String>,
 }
 
 impl<'a> ImportGlobVisitor<'a> {
-  pub fn new(cur_dir: String, root: String, alias: &'a HashMap<String, String>) -> Self {
+  pub fn new(cur_dir: String, root: String, alias: &'a Vec<AliasItem>) -> Self {
     Self {
       import_globs: vec![],
       cur_dir,
@@ -283,48 +291,102 @@ impl<'a> ImportGlobVisitor<'a> {
     import_glob_info
   }
 
+  // fn try_alias(&self, source: &str) -> String {
+  //   let (source, negative) = if source.starts_with('!') {
+  //     (&source[1..], true)
+  //   } else {
+  //     (source, false)
+  //   };
+  //   let mut result = source.to_string();
+  //   // sort the alias by length, so that the longest alias will be matched first
+  //   let mut alias_list: Vec<_> = self.alias.keys().collect();
+  //   alias_list.sort_by(|a, b| b.len().cmp(&a.len()));
+
+  //   for alias in alias_list {
+  //     let replaced = self.alias.get(alias).unwrap();
+
+  //     // try regex alias first
+  //     if let Some(alias) = alias.strip_prefix(REGEX_PREFIX) {
+  //       let regex = regex::Regex::new(alias).unwrap();
+  //       if regex.is_match(source) {
+  //         let replaced = regex.replace(source, replaced.as_str()).to_string();
+  //         result = replaced;
+  //         break;
+  //       }
+  //     }
+
+  //     if alias.ends_with('$') && source == alias.trim_end_matches('$') {
+  //       result = replaced.to_string();
+  //       break;
+  //     } else if !alias.ends_with('$') && source.starts_with(alias) {
+  //       let source_left = RelativePath::new(source.trim_start_matches(alias));
+  //       let new_source = source_left.to_logical_path(replaced);
+
+  //       result = if new_source.is_absolute() {
+  //         format!(
+  //           "/{}",
+  //           relative(&self.root, &new_source.to_string_lossy().to_string())
+  //         )
+  //       } else {
+  //         new_source.to_string_lossy().to_string()
+  //       };
+  //       break;
+  //     }
+  //   }
+
+  //   if negative {
+  //     format!("!{}", result)
+  //   } else {
+  //     result
+  //   }
+  // }
+
   fn try_alias(&self, source: &str) -> String {
     let (source, negative) = if source.starts_with('!') {
       (&source[1..], true)
     } else {
       (source, false)
     };
-    let mut result = source.to_string();
-    // sort the alias by length, so that the longest alias will be matched first
-    let mut alias_list: Vec<_> = self.alias.keys().collect();
-    alias_list.sort_by(|a, b| b.len().cmp(&a.len()));
 
-    for alias in alias_list {
-      let replaced = self.alias.get(alias).unwrap();
+    let result = self
+      .alias
+      .iter()
+      .find_map(|alias_item| {
+        match alias_item {
+          AliasItem::Complex { find, replacement } => match find {
+            StringOrRegex::String(alias) => {
+              if let Some(regex_str) = alias.strip_prefix(REGEX_PREFIX) {
+                if let Ok(regex) = regex::Regex::new(regex_str) {
+                  if regex.is_match(source) {
+                    return Some(regex.replace(source, replacement.as_str()).to_string());
+                  }
+                }
+              } else if alias.ends_with('$') && source == alias.trim_end_matches('$') {
+                return Some(replacement.to_string());
+              } else if !alias.ends_with('$') && source.starts_with(alias) {
+                let source_left = RelativePath::new(source.trim_start_matches(alias));
+                let new_source = source_left.to_logical_path(replacement);
 
-      // try regex alias first
-      if let Some(alias) = alias.strip_prefix(REGEX_PREFIX) {
-        let regex = regex::Regex::new(alias).unwrap();
-        if regex.is_match(source) {
-          let replaced = regex.replace(source, replaced.as_str()).to_string();
-          result = replaced;
-          break;
+                return Some(if new_source.is_absolute() {
+                  format!(
+                    "/{}",
+                    relative(&self.root, &new_source.to_string_lossy().to_string())
+                  )
+                } else {
+                  new_source.to_string_lossy().to_string()
+                });
+              }
+            }
+            StringOrRegex::Regex(regex) => {
+              if regex.is_match(source) {
+                return Some(regex.replace(source, replacement.as_str()).to_string());
+              }
+            }
+          }, // AliasItem::Simple(_) => {}
         }
-      }
-
-      if alias.ends_with('$') && source == alias.trim_end_matches('$') {
-        result = replaced.to_string();
-        break;
-      } else if !alias.ends_with('$') && source.starts_with(alias) {
-        let source_left = RelativePath::new(source.trim_start_matches(alias));
-        let new_source = source_left.to_logical_path(replaced);
-
-        result = if new_source.is_absolute() {
-          format!(
-            "/{}",
-            relative(&self.root, &new_source.to_string_lossy().to_string())
-          )
-        } else {
-          new_source.to_string_lossy().to_string()
-        };
-        break;
-      }
-    }
+        None
+      })
+      .unwrap_or_else(|| source.to_string());
 
     if negative {
       format!("!{result}")
@@ -495,6 +557,7 @@ impl<'a> ImportGlobVisitor<'a> {
         Box::new(Expr::Ident(Ident::new(
           format!("__glob__{cur_index}_{entry_index}").into(),
           DUMMY_SP,
+          SyntaxContext::empty(),
         ))),
       ))
     } else {
@@ -527,6 +590,7 @@ impl<'a> ImportGlobVisitor<'a> {
         }))),
       }],
       type_args: None,
+      ctxt: SyntaxContext::empty(),
     }));
 
     if let Some(import) = import.as_ref() {
@@ -541,33 +605,40 @@ impl<'a> ImportGlobVisitor<'a> {
             callee: Callee::Expr(Box::new(Expr::Member(MemberExpr {
               span: DUMMY_SP,
               obj: import_call_expr,
-              prop: MemberProp::Ident(Ident::new("then".into(), DUMMY_SP)),
+              prop: MemberProp::Ident(IdentName::new("then".into(), DUMMY_SP)),
             }))),
             args: vec![ExprOrSpread {
               spread: None,
               expr: Box::new(Expr::Arrow(ArrowExpr {
                 span: DUMMY_SP,
                 params: vec![Pat::Ident(BindingIdent {
-                  id: Ident::new("m".into(), DUMMY_SP),
+                  id: Ident::new("m".into(), DUMMY_SP, SyntaxContext::empty()),
                   type_ann: None,
                 })],
                 body: Box::new(BlockStmtOrExpr::Expr(Box::new(Expr::Member(MemberExpr {
                   span: DUMMY_SP,
-                  obj: Box::new(Expr::Ident(Ident::new("m".into(), DUMMY_SP))),
-                  prop: MemberProp::Ident(Ident::new(import.as_str().into(), DUMMY_SP)),
+                  obj: Box::new(Expr::Ident(Ident::new(
+                    "m".into(),
+                    DUMMY_SP,
+                    SyntaxContext::empty(),
+                  ))),
+                  prop: MemberProp::Ident(IdentName::new(import.as_str().into(), DUMMY_SP)),
                 })))),
                 is_async: false,
                 is_generator: false,
                 type_params: None,
                 return_type: None,
+                ctxt: SyntaxContext::empty(),
               })),
             }],
             type_args: None,
+            ctxt: SyntaxContext::empty(),
           })))),
           is_async: false,
           is_generator: false,
           type_params: None,
           return_type: None,
+          ctxt: SyntaxContext::empty(),
         })),
       )
     } else {
@@ -581,6 +652,7 @@ impl<'a> ImportGlobVisitor<'a> {
           is_generator: false,
           type_params: None,
           return_type: None,
+          ctxt: SyntaxContext::empty(),
         })),
       )
     }
@@ -598,7 +670,7 @@ impl<'a> VisitMut for ImportGlobVisitor<'a> {
                 kind: MetaPropKind::ImportMeta,
                 ..
               }),
-            prop: MemberProp::Ident(Ident { sym, .. }),
+            prop: MemberProp::Ident(IdentName { sym, .. }),
             ..
           })),
         args,
@@ -655,6 +727,7 @@ impl<'a> VisitMut for ImportGlobVisitor<'a> {
                   Box::new(Expr::Ident(Ident::new(
                     format!("__glob__{cur_index}_{entry_index}").into(),
                     DUMMY_SP,
+                    SyntaxContext::empty(),
                   ))),
                 ));
               } else {

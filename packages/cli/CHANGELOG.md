@@ -1,5 +1,16 @@
 # @farmfe/cli
 
+## 2.0.0-nightly-20241022014521
+
+### Major Changes
+
+- a82a5b2: bump nightly version
+
+### Patch Changes
+
+- Updated dependencies [a82a5b2]
+  - @farmfe/core@2.0.0-nightly-20241022014521
+
 ## 1.0.4
 
 ### Patch Changes

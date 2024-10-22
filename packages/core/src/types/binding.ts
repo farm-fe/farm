@@ -176,7 +176,10 @@ export interface ResolveConfig {
   /**
    * Configure parsing alias. Alias is prefix replacement, for example /@/pages/index will be replaced by /root/src/pages/index. If you want an exact match, you can add $, for example stream$ will only replace stream, but not stream/xxx.
    */
-  alias?: Record<string, string>;
+  // TODO customResolver?: ResolverFunction | ResolverObject
+  alias?:
+    | Record<string, string>
+    | Array<{ find: string | RegExp; replacement: string }>;
   /**
    * When parsing dependencies under node_modules, the fields and order configured in mainFields will be parsed from package.json. For package.json
    * @default ["exports", "browser", "module", "main"]
@@ -370,6 +373,7 @@ export interface PartialBundlingConfig {
     test: string[];
     groupType?: 'mutable' | 'immutable';
     resourceType?: 'all' | 'initial' | 'async';
+    enforce?: boolean;
   }[];
   /**
    * Array to match the modules that should always be in the same bundles, ignore all other constraints.
@@ -405,7 +409,6 @@ export interface PresetEnvConfig {
 
 export interface Config {
   config?: {
-    clearScreen?: boolean;
     coreLibPath?: string;
     /**
      * Compilation entries

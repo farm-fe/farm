@@ -61,6 +61,11 @@ impl ResourcePot {
     format!("{}_{}", name, ty.to_string())
   }
 
+  pub fn set_resource_pot_id(&mut self, id: String) {
+    self.id.clone_from(&id);
+    self.info.id = id;
+  }
+
   pub fn add_module(&mut self, module_id: ModuleId) {
     self.modules.insert(module_id);
   }

@@ -125,6 +125,7 @@ fn tree_shake_changed_ast() {
           Default::default(),
           Default::default(),
           None as Option<NoopComments>,
+          unresolved_mark,
           top_level_mark,
         ));
         ast.visit_mut_with(&mut react::<NoopComments>(

@@ -1,7 +1,8 @@
 {
   "name": "@farmfe/js-plugin-solid",
-  "version": "2.8.0",
+  "version": "3.0.0-nightly-20241022014521",
   "description": "SolidJS support for Farm",
+  "private": true,
   "author": {
     "name": "J4ck W4n9",
     "email": "1163585385@qq.com"
@@ -34,14 +35,12 @@
     "solid-refresh": "^0.5.3"
   },
   "devDependencies": {
-    "@farmfe/cli": "workspace:*",
-    "@farmfe/core": "workspace:*",
     "@farmfe/js-plugin-dts": "workspace:*",
     "@types/babel__core": "^7.20.1",
     "solid-js": "^1.7.8"
   },
   "peerDependencies": {
-    "@farmfe/core": "workspace:^1.3.29"
+    "@farmfe/core": "workspace:*"
   },
   "files": [
     "build"

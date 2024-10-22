@@ -1,5 +1,5 @@
 use farmfe_core::{
-  swc_common::DUMMY_SP,
+  swc_common::{SyntaxContext, DUMMY_SP},
   swc_ecma_ast::{CallExpr, Callee, Expr, ExprOrSpread},
 };
 
@@ -14,6 +14,7 @@ pub fn wrap_require_default(expr: Box<Expr>, polyfill: &mut SimplePolyfill) -> B
     ))),
     args: vec![farmfe_core::swc_ecma_ast::ExprOrSpread { spread: None, expr }],
     type_args: None,
+    ctxt: SyntaxContext::empty(),
   }))
 }
 
@@ -26,6 +27,7 @@ pub fn wrap_require_wildcard(expr: Box<Expr>, polyfill: &mut SimplePolyfill) -> 
     ))),
     args: vec![farmfe_core::swc_ecma_ast::ExprOrSpread { spread: None, expr }],
     type_args: None,
+    ctxt: SyntaxContext::empty(),
   }))
 }
 
@@ -36,6 +38,7 @@ pub fn wrap_export_star(args: Vec<ExprOrSpread>, polyfill: &mut SimplePolyfill) 
     callee: Callee::Expr(Box::new(Expr::Ident("_export_star".into()))),
     args,
     type_args: None,
+    ctxt: SyntaxContext::empty(),
   }))
 }
 
@@ -46,5 +49,6 @@ pub fn wrap_commonjs(args: Vec<ExprOrSpread>, polyfill: &mut SimplePolyfill) -> 
     callee: Callee::Expr(Box::new(Expr::Ident(("__commonJs").into()))),
     args,
     type_args: None,
+    ctxt: SyntaxContext::empty(),
   }))
 }
