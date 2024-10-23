@@ -21,6 +21,7 @@ jobs:
               cd ../create-farm &&
               npm run build -- --target x86_64-unknown-linux-gnu &&
               cd ../../rust-plugins/react && npm run build -- --target x86_64-unknown-linux-gnu --abi linux-x64-gnu &&
+              cd ../replace-dirname && npm run build -- --target x86_64-unknown-linux-gnu --abi linux-x64-gnu &&
               apt install -y protobuf-compiler &&
               cd ../sass && npm run build -- --target x86_64-unknown-linux-gnu --abi linux-x64-gnu
 
@@ -36,6 +37,7 @@ jobs:
               cd ../create-farm &&
               npm run build -- --target x86_64-unknown-linux-musl &&
               cd ../../rust-plugins/react && npm run build -- --target x86_64-unknown-linux-musl --abi linux-x64-musl &&
+              cd ../replace-dirname && npm run build -- --target x86_64-unknown-linux-musl --abi linux-x64-musl &&
               apk add protobuf &&
               cd ../sass && npm run build -- --target x86_64-unknown-linux-musl --abi linux-x64-musl
 
@@ -60,6 +62,7 @@ jobs:
               cd packages/core && npm run build:rs -- --target i686-pc-windows-msvc --cargo-flags="--no-default-features"
               cd ../create-farm && npm run build -- --target i686-pc-windows-msvc
               cd ../../rust-plugins/react && npm run build -- --target i686-pc-windows-msvc --abi win32-ia32-msvc
+              cd ../replace-dirname && npm run build -- --target i686-pc-windows-msvc --abi win32-ia32-msvc
               cd ../sass && npm run build -- --target i686-pc-windows-msvc --abi win32-ia32-msvc
           - os: windows-latest
             abi: win32-arm64-msvc
@@ -71,6 +74,7 @@ jobs:
               cd packages/core && npm run build:rs -- --target aarch64-pc-windows-msvc --cargo-flags="--no-default-features"
               cd ../create-farm && npm run build -- --target aarch64-pc-windows-msvc
               cd ../../rust-plugins/react && npm run build -- --target aarch64-pc-windows-msvc --abi win32-arm64-msvc
+              cd ../replace-dirname && npm run build -- --target aarch64-pc-windows-msvc --abi win32-arm64-msvc
               cd ../sass && npm run build -- --target aarch64-pc-windows-msvc --abi win32-arm64-msvc
           # linux
           - os: ubuntu-latest
@@ -149,6 +153,7 @@ jobs:
           cd packages/core && npm run build:rs:publish -- ${{ matrix.settings.target && format('--target {0}', matrix.settings.target) || '' }} ${{ matrix.settings.zig && '--zig' || '' }} &&
           cd ../create-farm && npm run build -- ${{ matrix.settings.target && format('--target {0}', matrix.settings.target) || '' }} ${{ matrix.settings.zig && '--zig' || '' }} &&
           cd ../../rust-plugins/react && npm run build -- ${{ matrix.settings.target && format('--target {0}', matrix.settings.target) || '' }} ${{ matrix.settings.zig && '--zig' || '' }} --abi ${{ matrix.settings.abi }} &&
+          cd ../replace-dirname && npm run build -- ${{ matrix.settings.target && format('--target {0}', matrix.settings.target) || '' }} ${{ matrix.settings.zig && '--zig' || '' }} --abi ${{ matrix.settings.abi }} &&
           cd ../sass && npm run build -- ${{ matrix.settings.target && format('--target {0}', matrix.settings.target) || '' }} ${{ matrix.settings.zig && '--zig' || '' }} --abi ${{ matrix.settings.abi }}
         shell: bash
       - name: Build
@@ -175,6 +180,12 @@ jobs:
         with:
           name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-react
           path: rust-plugins/react/npm/${{ matrix.settings.abi }}/index.farm
+      - name: Upload Plugin Replace Dirname
+        if: ${{ !matrix.settings.cli_only }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-replace-dirname
+          path: rust-plugins/replace-dirname/npm/${{ matrix.settings.abi }}/index.farm
       - name: Upload Plugin Sass
         if: ${{ !matrix.settings.cli_only }}
         uses: actions/upload-artifact@v4
