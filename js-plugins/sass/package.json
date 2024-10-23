@@ -1,6 +1,6 @@
 {
   "name": "@farmfe/js-plugin-sass",
-  "version": "3.0.0-nightly-20241022143924",
+  "version": "3.0.0-nightly-20241023020505",
   "description": "support scss compile for farm.",
   "main": "./build/cjs/index.cjs",
   "types": "./build/cjs/index.d.ts",
