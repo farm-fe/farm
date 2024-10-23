@@ -3,9 +3,10 @@ import { cac } from 'cac';
 
 import {
   VERSION,
+  cleanGlobalCliOptions,
+  filterDuplicateOptions,
   handleAsyncOperationErrors,
   resolveCliConfig,
-  resolveCommandOptions,
   resolveCore
 } from './utils.js';
 
@@ -51,52 +52,25 @@ cli
   )
   .alias('start')
   .alias('dev')
-  .option('-l, --lazy', '[boolean] lazyCompilation (default: true)')
   .option('--host <host>', '[string] specify host')
   .option('--port <port>', '[string] specify port')
   .option('--open', '[boolean] open browser on server start')
-  .option('--hmr', '[boolean] enable hot module replacement')
   .option('--cors', '[boolean] enable cors')
   .option(
     '--strictPort',
     '[boolean] specified port is already in use, exit with error (default: true)'
   )
-  .option('--target <target>', '[string] transpile targetEnv node, browser')
-  .option('--format <format>', '[string] transpile format esm, commonjs')
-  .option('--sourcemap', '[boolean] output source maps for build')
-  .option(
-    '--treeShaking',
-    '[boolean] Eliminate useless code without side effects'
-  )
-  .option('--minify', '[boolean] code compression at build time')
   .action(
-    async (
-      root: string,
-      options: CliServerOptions & CliBuildOptions & GlobalCliOptions
-    ) => {
-      const resolveOptions = resolveCommandOptions(options);
+    async (root: string, options: CliServerOptions & GlobalCliOptions) => {
+      filterDuplicateOptions(options);
 
       const defaultOptions = {
         root,
-        server: resolveOptions,
+        server: cleanGlobalCliOptions(options),
         clearScreen: options.clearScreen,
         configFile: options.config,
         mode: options.mode,
-        timeUnit: options.timeUnit,
-        compilation: {
-          lazyCompilation: options.lazy,
-          output: {
-            path: options?.outDir,
-            targetEnv: options?.target,
-            format: options?.format
-          },
-          input: {
-            index: options?.input
-          },
-          sourcemap: options.sourcemap,
-          minify: options.minify,
-          treeShaking: options.treeShaking
-        }
+        timeUnit: options.timeUnit
       };
 
       const { start } = await resolveCore();
@@ -116,13 +90,17 @@ cli
   .option('-w, --watch', '[boolean] watch file change and rebuild')
   .option('--target <target>', '[string] transpile targetEnv node, browser')
   .option('--format <format>', '[string] transpile format esm, commonjs')
-  .option('--sourcemap', '[boolean] output source maps for build')
+  .option(
+    '--sourcemap [output]',
+    `[boolean | "inline" | "all" | "all-inline"] output source maps for build (default: true)`
+  )
   .option(
     '--treeShaking',
     '[boolean] Eliminate useless code without side effects'
   )
   .option('--minify', '[boolean] code compression at build time')
   .action(async (root: string, options: CliBuildOptions & GlobalCliOptions) => {
+    filterDuplicateOptions(options);
     const defaultOptions = {
       root,
       configFile: options.config,
@@ -157,6 +135,7 @@ cli
   .option('--strictPort', `[boolean] exit if specified port is already in use`)
   .action(
     async (root: string, options: CliPreviewOptions & GlobalCliOptions) => {
+      filterDuplicateOptions(options);
       const defaultOptions = {
         root,
         mode: options.mode,

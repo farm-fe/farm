@@ -49,42 +49,22 @@ export function filterDuplicateOptions<T>(options: T) {
     }
   }
 }
-/**
- * @param options The cli passes parameters
- * @returns Remove parameters that are not required
- */
-export function cleanOptions(
-  options: GlobalCliOptions & CliServerOptions & CliBuildOptions
-) {
-  const resolveOptions = { ...options };
 
+export function cleanGlobalCliOptions<Options extends GlobalCliOptions>(
+  options: Options
+): Omit<Options, keyof GlobalCliOptions> {
+  const resolveOptions = { ...options };
   delete resolveOptions['--'];
   delete resolveOptions.m;
   delete resolveOptions.c;
-  delete resolveOptions.w;
-  delete resolveOptions.l;
-  delete resolveOptions.lazy;
   delete resolveOptions.mode;
   delete resolveOptions.base;
   delete resolveOptions.config;
   delete resolveOptions.clearScreen;
+  delete resolveOptions.timeUnit;
 
   return resolveOptions;
 }
-
-/**
- *
- * @param options cli parameters
- * @returns resolve command options
- */
-export function resolveCommandOptions(
-  options: GlobalCliOptions & CliServerOptions
-): GlobalCliOptions & CliServerOptions {
-  const resolveOptions = { ...options };
-  filterDuplicateOptions(resolveOptions);
-  return cleanOptions(resolveOptions);
-}
-
 /**
  *
  * @param root root path
