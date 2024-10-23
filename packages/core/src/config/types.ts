@@ -89,9 +89,11 @@ export interface UserPreviewServerConfig {
   port?: number;
   /** Secure server options */
   https?: SecureServerOptions;
+  /** Specify where the dist directory is located. */
+  distDir?: string;
+
   // write static output file
   // output?: { path?: string; publicPath?: string };
-  distDir?: string;
   // middlewares?: DevServerMiddleware[];
   // middlewareMode?: boolean | string;
 }
