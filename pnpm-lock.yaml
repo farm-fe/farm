@@ -2611,13 +2611,13 @@ importers:
   packages/core:
     dependencies:
       '@farmfe/runtime':
-        specifier: workspace:0.12.7
+        specifier: workspace:1.0.0-nightly-20241023020505
         version: link:../runtime
       '@farmfe/runtime-plugin-hmr':
-        specifier: workspace:3.5.7
+        specifier: workspace:4.0.0-nightly-20241023020505
         version: link:../runtime-plugin-hmr
       '@farmfe/runtime-plugin-import-meta':
-        specifier: workspace:0.2.2
+        specifier: workspace:1.0.0-nightly-20241023020505
         version: link:../runtime-plugin-import-meta
       '@farmfe/utils':
         specifier: workspace:*
@@ -2794,7 +2794,7 @@ importers:
         version: 11.10.0
     devDependencies:
       '@farmfe/runtime':
-        specifier: workspace:^0.12.2
+        specifier: workspace:1.0.0-nightly-20241023020505
         version: link:../runtime
       shiki:
         specifier: ^1.17.7
@@ -2807,7 +2807,7 @@ importers:
         version: 3.30.1
     devDependencies:
       '@farmfe/runtime':
-        specifier: workspace:^0.12.0
+        specifier: workspace:1.0.0-nightly-20241023020505
         version: link:../runtime
 
   packages/utils: {}

@@ -1,12 +1,11 @@
 {
   "name": "@farmfe/runtime-plugin-hmr",
-  "version": "3.5.7",
+  "version": "4.0.0-nightly-20241023020505",
   "description": "Runtime hmr plugin of Farm",
   "author": {
     "name": "bright wu",
     "email": "1521488775@qq.com"
   },
-  
   "main": "src/index.ts",
   "keywords": [
     "farm",
@@ -25,7 +24,7 @@
     "type-check": "tsc -p tsconfig.json --noEmit"
   },
   "devDependencies": {
-    "@farmfe/runtime": "workspace:^0.12.2",
+    "@farmfe/runtime": "workspace:1.0.0-nightly-20241023020505",
     "shiki": "^1.17.7"
   },
   "dependencies": {
