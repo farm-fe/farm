@@ -1,4 +1,3 @@
-export * from './error.js';
 export * from './htmlFallback.js';
 export * from './lazyCompilation.js';
 export * from './notFound.js';

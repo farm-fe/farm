@@ -29,7 +29,6 @@ export async function resolveCore(): Promise<{
   clean: typeof clean;
 }> {
   try {
-    // @ts-ignore
     return import('@farmfe/core');
   } catch (err) {
     logger.error(
