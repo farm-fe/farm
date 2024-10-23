@@ -17,6 +17,7 @@ export const CUSTOM_KEYS = {
   resolve_dedupe: 'resolve.dedupe',
   css_locals_conversion: 'css.modules.locals_conversion',
   partial_bundling_groups_enforce: 'partial_bundling.groups.enforce'
+  assets_mode: 'assets.mode'
 };
 
 export const FARM_RUST_PLUGIN_FUNCTION_ENTRY = 'func.js';

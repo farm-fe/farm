@@ -52,6 +52,7 @@ import {
   FARM_DEFAULT_NAMESPACE
 } from './constants.js';
 import { mergeConfig, mergeFarmCliConfig } from './mergeConfig.js';
+import { normalizeAsset } from './normalize-config/normalize-asset.js';
 import { normalizeCss } from './normalize-config/normalize-css.js';
 import { normalizeExternal } from './normalize-config/normalize-external.js';
 import normalizePartialBundling from './normalize-config/normalize-partial-bundling.js';
@@ -502,7 +503,6 @@ export async function normalizeUserCompilationConfig(
 
   // normalize persistent cache at last
   await normalizePersistentCache(resolvedCompilation, resolvedUserConfig);
-
   normalizeResolve(resolvedUserConfig, resolvedCompilation);
   normalizeCss(resolvedUserConfig, resolvedCompilation);
   normalizePartialBundling(resolvedCompilation);

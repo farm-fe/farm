@@ -1,5 +1,6 @@
-import React from 'react';
-import { Routes, Route, Outlet, Link } from 'react-router-dom';
+import React from "react";
+import { Routes, Route, Outlet, Link } from "react-router-dom";
+import logo from "./logo.png";
 
 export default function App() {
   return (
@@ -11,6 +12,8 @@ export default function App() {
         already contains the HTML markup of the app that was sent from the
         server!
       </p>
+
+      <img style={{ width: 350, height: 100 }} src={logo} alt="logo" />
 
       <p>
         This is great for search engines that need to index this page. It's also

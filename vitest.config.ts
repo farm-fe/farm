@@ -10,6 +10,7 @@ export default defineConfig({
     environment: 'node',
     deps: {
       interopDefault: false
-    }
+    },
+    retry: 5
   }
 });
