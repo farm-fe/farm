@@ -1,10 +1,8 @@
 name: Nightly Release CI
-# on:
-#   pull_request:
-#     branches:
-#       - refactor/node
-
-on: [pull_request]
+on:
+  pull_request:
+    branches:
+      - v2-dev
 
 permissions:
   contents: write
