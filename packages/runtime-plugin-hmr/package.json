@@ -24,11 +24,10 @@
     "type-check": "tsc -p tsconfig.json --noEmit"
   },
   "devDependencies": {
-    "@farmfe/runtime": "workspace:1.0.0-nightly-20241023020505",
-    "highlight.js": "^11.10.0"
+    "@farmfe/runtime": "workspace:1.0.0-nightly-20241023020505"
   },
   "dependencies": {
     "core-js": "^3.30.1",
-    "shiki": "^1.7.0"
+    "highlight.js": "^11.10.0"
   }
 }
