@@ -3,8 +3,8 @@ import "./main.css";
 import reactLogo from "/react.svg";
 import FarmLogo from "./assets/logo.png";
 // import { a } from './a.js'
-import { Button } from 'antd'
-import { HappyProvider } from '@ant-design/happy-work-theme';
+// import { Button } from 'antd'
+// import { HappyProvider } from '@ant-design/happy-work-theme';
 export function Main() {
   const [count, setCount] = useState(0);
   // console.log(a);
@@ -19,12 +19,12 @@ export function Main() {
           <img src={reactLogo} className="logo react" alt="React logo" />
         </a>
       </div>
-      <HappyProvider>
+      {/* <HappyProvider>
         <Button type="primary">Primary Button</Button>
         <Button type="primary">Primary Button</Button>
         <Button type="primary">Primary Button</Button>
         <Button type="primary">Primary Button</Button>
-      </HappyProvider>
+      </HappyProvider> */}
       <h1>Farm + react</h1>
       <div className="card">
         <button onClick={() => setCount((count) => count + 1)}>
