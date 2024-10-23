@@ -89,7 +89,13 @@ export interface UserPreviewServerConfig {
   port?: number;
   /** Secure server options */
   https?: SecureServerOptions;
-  /** Specify where the dist directory is located. */
+  /**
+   * Specify where the dist directory is located.
+   * If not specified, farm will try to resolve
+   * the dist directory from `compilation.output.path`.
+   * If the path is relative, this will be relative to `root`.
+   * Defaults to `dist` if nothing specified.
+   */
   distDir?: string;
 
   // write static output file

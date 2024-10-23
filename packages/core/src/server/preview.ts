@@ -8,13 +8,12 @@ import {
 } from '../config/types.js';
 import { resolveServerUrls } from '../utils/http.js';
 import { printServerUrls } from '../utils/logger.js';
-import { CommonServerOptions, httpServer } from './http.js';
+import { httpServer } from './http.js';
 import { htmlFallbackMiddleware } from './middlewares/htmlFallback.js';
 import { publicMiddleware } from './middlewares/publicResource.js';
-import { resourceMiddleware } from './middlewares/resource.js';
 import { initPublicFiles } from './publicDir.js';
 
-export interface PreviewServerOptions extends CommonServerOptions {
+export interface PreviewServerOptions {
   headers: OutgoingHttpHeaders;
   host: string;
   port: number;
@@ -62,15 +61,8 @@ export class PreviewServer extends httpServer {
   }
 
   async #resolveOptions() {
-    const {
-      compilation: {
-        output: { publicPath },
-        assets: { publicDir }
-      },
-      preview,
-      server
-    } = this.resolvedUserConfig;
-    this.publicPath = publicPath;
+    const { preview, server } = this.resolvedUserConfig;
+    // this.publicPath = publicPath;
     // this.publicDir = publicDir;
     this.publicDir =
       '/home/fu050409/Desktop/Workspace/farm/examples/refactor-react/dist/';
