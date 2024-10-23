@@ -54,6 +54,7 @@ jobs:
         settings:
           - name: plugin-sass
           - name: plugin-react
+          - name: plugin-replace-dirname
     steps:
       - uses: actions/download-artifact@v4
         with:
@@ -90,12 +91,14 @@ jobs:
           do
             mv /tmp/artifacts/${{ github.sha }}-${abi}/* ./packages/core/npm/${abi}
             mv /tmp/artifacts/${{ github.sha }}-${abi}-plugin-react/* ./rust-plugins/react/npm/${abi}
+            mv /tmp/artifacts/${{ github.sha }}-${abi}-plugin-replace-dirname/* ./rust-plugins/replace-dirname/npm/${abi}
             mv /tmp/artifacts/${{ github.sha }}-${abi}-plugin-sass/* ./rust-plugins/sass/npm/${abi}
             mv /tmp/artifacts/${{ github.sha }}-${abi}-create-farm/* ./packages/create-farm/npm/${abi}
 
             test -f ./packages/core/npm/${abi}/farm.${abi}.node
             test -f ./packages/create-farm/npm/${abi}/create-farm.${abi}.node
             test -f ./rust-plugins/react/npm/${abi}/index.farm
+            test -f ./rust-plugins/replace-dirname/npm/${abi}/index.farm
             test -f ./rust-plugins/sass/npm/${abi}/index.farm
           done
           for abi in android-arm-eabi linux-arm-gnueabihf android-arm64

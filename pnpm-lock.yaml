@@ -2818,6 +2818,12 @@ importers:
         specifier: workspace:*
         version: link:../../packages/plugin-tools
 
+  rust-plugins/replace-dirname:
+    devDependencies:
+      '@farmfe/plugin-tools':
+        specifier: workspace:*
+        version: link:../../packages/plugin-tools
+
   rust-plugins/sass:
     optionalDependencies:
       sass-embedded-darwin-arm64:

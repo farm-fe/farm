@@ -1,0 +1,45 @@
+{
+  "name": "@farmfe/plugin-replace-dirname",
+  "version": "2.0.0-nightly-20241022124925",
+  "main": "index.js",
+  "types": "index.d.ts",
+  "type": "module",
+  "license": "MIT",
+  "engines": {
+    "node": ">=16"
+  },
+  "devDependencies": {
+    "@farmfe/plugin-tools": "workspace:*"
+  },
+  "napi": {
+    "name": "farm_plugin_replace_dirname",
+    "triples": {
+      "additional": [
+        "aarch64-apple-darwin",
+        "aarch64-unknown-linux-gnu",
+        "aarch64-unknown-linux-musl",
+        "x86_64-unknown-linux-musl",
+        "i686-pc-windows-msvc",
+        "aarch64-pc-windows-msvc"
+      ]
+    }
+  },
+  "exports": {
+    ".": {
+      "import": "./func.js",
+      "types": "./index.d.ts",
+      "default": "./index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "scripts": {
+    "build": "farm-plugin-tools build  --platform --cargo-name farmfe_plugin_replace_dirname -p farmfe_plugin_replace_dirname --release",
+    "build:publish": "cross-env CARGO_PROFILE_RELEASE_LTO=fat CARGO_PROFILE_RELEASE_STRIP=symbols CARGO_PROFILE_RELEASE_PANIC=abort CARGO_PROFILE_RELEASE_OPT_LEVEL=z farm-plugin-tools build --platform --cargo-name farmfe_plugin_replace_dirname -p farmfe_plugin_replace_dirname --release",
+    "prepublishOnly": "farm-plugin-tools prepublish"
+  },
+  "files": [
+    "index.js",
+    "index.d.ts",
+    "func.js"
+  ]
+}
