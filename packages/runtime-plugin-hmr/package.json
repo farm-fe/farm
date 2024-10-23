@@ -24,8 +24,7 @@
     "type-check": "tsc -p tsconfig.json --noEmit"
   },
   "devDependencies": {
-    "@farmfe/runtime": "workspace:1.0.0-nightly-20241023020505",
-    "shiki": "^1.17.7"
+    "@farmfe/runtime": "workspace:1.0.0-nightly-20241023020505"
   },
   "dependencies": {
     "core-js": "^3.30.1",
