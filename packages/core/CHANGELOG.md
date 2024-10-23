@@ -1,5 +1,30 @@
 # @farmfe/core
 
+## 2.0.0-nightly-20241022143924
+
+### Major Changes
+
+- 83838bd: remove lightCyan color utils
+
+## 2.0.0-nightly-20241022124925
+
+### Patch Changes
+
+- Updated dependencies [6a1038c]
+  - @farmfe/utils@1.0.0-nightly-20241022124925
+
+## 2.0.0-nightly-20241022041556
+
+### Major Changes
+
+- 24347c9: update deps
+
+## 2.0.0-nightly-20241022014521
+
+### Major Changes
+
+- a82a5b2: bump nightly version
+
 ## 1.3.29
 
 ### Patch Changes

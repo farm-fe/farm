@@ -1,0 +1,25 @@
+.teamMembers .container {
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+}
+
+@media (min-width: 375px) {
+  .teamMembers .container {
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  }
+}
+
+.banner {
+  background: linear-gradient(45deg, rgb(113, 26, 95), #fda7df 70%);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+
+.container {
+  width: 100%;
+  display: grid;
+  gap: 40px;
+  margin: 0 auto;
+  width: 100%;
+}

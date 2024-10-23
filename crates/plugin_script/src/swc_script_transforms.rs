@@ -31,6 +31,7 @@ pub fn strip_typescript(
 ) -> farmfe_core::error::Result<()> {
   try_with(cm.clone(), &context.meta.script.globals, || {
     let top_level_mark = Mark::from_u32(param.meta.as_script().top_level_mark);
+    let unresolved_mark = Mark::from_u32(param.meta.as_script().unresolved_mark);
     let ast = param.meta.as_script_mut().take_ast();
     let mut program = Program::Module(ast);
 
@@ -40,7 +41,11 @@ pub fn strip_typescript(
         // Do nothing, jsx should be handled by other plugins
       }
       farmfe_core::module::ModuleType::Ts => {
-        program.visit_mut_with(&mut typescript(default_config(), top_level_mark));
+        program.visit_mut_with(&mut typescript(
+          default_config(),
+          unresolved_mark,
+          top_level_mark,
+        ));
       }
       farmfe_core::module::ModuleType::Tsx => {
         let comments: SingleThreadedComments = param.meta.as_script().comments.clone().into();
@@ -50,9 +55,14 @@ pub fn strip_typescript(
           default_config(),
           TsxConfig::default(),
           comments,
+          unresolved_mark,
           top_level_mark,
         ));
-        program.visit_mut_with(&mut typescript(default_config(), top_level_mark));
+        program.visit_mut_with(&mut typescript(
+          default_config(),
+          unresolved_mark,
+          top_level_mark,
+        ));
       }
       _ => {}
     }

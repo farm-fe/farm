@@ -2,20 +2,41 @@ import { SecureServerOptions } from 'node:http2';
 import { Server } from '../index.js';
 
 import type { OutgoingHttpHeaders } from 'http';
-import type cors from '@koa/cors';
 import { WatchOptions } from 'chokidar';
-import type { Options } from 'http-proxy-middleware';
-import { Middleware } from 'koa';
 import type { RustPlugin } from '../plugin/rust/index.js';
 import type { JsPlugin } from '../plugin/type.js';
+import { HMRChannel } from '../server/hmr.js';
 import type { Config, CssConfig } from '../types/binding.js';
 import type { Logger } from '../utils/index.js';
 
-export interface ConfigEnv {
-  mode: string;
+// export interface HmrOptions {
+//   protocol?: string;
+//   host?: string;
+//   port?: number;
+//   clientPort?: number;
+//   path?: string;
+//   timeout?: number;
+//   overlay?: boolean;
+//   server?: Server;
+// }
+export interface HmrOptions {
+  protocol?: string;
+  host?: string;
+  port?: number;
+  clientPort?: number;
+  path?: string;
+  timeout?: number;
+  overlay?: boolean;
+  server?: Server;
+  /** @internal */
+  channels?: HMRChannel[];
 }
 
-export type ProxyOptions = Options;
+export interface ConfigEnv {
+  mode: string;
+  command: string;
+  isPreview: boolean;
+}
 
 export type UserConfigFnPromise = (env: ConfigEnv) => Promise<UserConfig>;
 export type UserConfigFn = (env: ConfigEnv) => UserConfig | Promise<UserConfig>;
@@ -36,14 +57,15 @@ export interface UserServerConfig {
   hostname?: { name: string; host: string | undefined };
   // http2?: boolean;
   hmr?: boolean | UserHmrConfig;
-  proxy?: Record<string, Options>;
+  proxy?: Record<string, any>;
   strictPort?: boolean;
   open?: boolean;
   host?: string | boolean;
-  cors?: boolean | cors.Options;
+  cors?: boolean | any;
   // whether to serve static assets in spa mode, default to true
   spa?: boolean;
   middlewares?: DevServerMiddleware[];
+  middlewareMode?: boolean | string;
   writeToDisk?: boolean;
 }
 
@@ -58,7 +80,7 @@ export interface UserPreviewServerConfig {
 
 export type NormalizedServerConfig = Required<
   Omit<UserServerConfig, 'hmr'> & {
-    hmr?: Required<UserHmrConfig>;
+    hmr?: UserHmrConfig;
   }
 >;
 
@@ -67,13 +89,9 @@ export interface NormalizedConfig {
   serverConfig?: NormalizedServerConfig;
 }
 
-export interface UserHmrConfig {
-  host?: string | boolean;
-  port?: number;
-  path?: string;
-  overlay?: boolean;
-  protocol?: string;
+export interface UserHmrConfig extends HmrOptions {
   watchOptions?: WatchOptions;
+  overlay?: boolean;
 }
 
 type InternalConfig = Config['config'] extends undefined
@@ -90,8 +108,10 @@ export interface UserConfig {
   root?: string;
   clearScreen?: boolean;
   envDir?: string;
+  watch?: boolean;
   envPrefix?: string | string[];
   publicDir?: string;
+  timeUnit?: 'ms' | 's';
   /** js plugin(which is a javascript object) and rust plugin(which is string refer to a .farm file or a package) */
   plugins?: (RustPlugin | JsPlugin | JsPlugin[] | undefined | null | false)[];
   /** vite plugins */
@@ -106,6 +126,13 @@ export interface UserConfig {
   /** config related to dev server */
   server?: UserServerConfig;
   /** Files under this dir will always be treated as static assets. serve it in dev, and copy it to output.path when build */
+  logger?: Logger;
+}
+
+interface ResolvedCss extends CssConfig {
+  modules?: CssConfig['modules'] & {
+    localsConversion?: never;
+  };
 }
 
 interface ResolvedCss extends CssConfig {
@@ -126,20 +153,26 @@ export interface ResolvedCompilation
 }
 
 export interface ResolvedUserConfig extends UserConfig {
+  // watch?: boolean;
+  // root?: string;
   env?: Record<string, any>;
   envDir?: string;
   envFiles?: string[];
   envPrefix?: string | string[];
   configFilePath?: string;
   envMode?: string;
+  timeUnit?: 'ms' | 's';
   configFileDependencies?: string[];
   compilation?: ResolvedCompilation;
   server?: NormalizedServerConfig;
   jsPlugins?: JsPlugin[];
   rustPlugins?: [string, string][];
+  inlineConfig?: FarmCliOptions;
+  logger?: Logger;
+  watch?: boolean;
 }
 
-export interface GlobalFarmCLIOptions {
+export interface GlobalCliOptions {
   '--'?: string[];
   c?: boolean | string;
   config?: string;
@@ -169,11 +202,13 @@ export interface FarmCLIPreviewOptions {
   host?: string | boolean;
 }
 
-export interface FarmCLIOptions
+export interface FarmCliOptions
   extends FarmCLIBuildOptions,
     FarmCLIPreviewOptions {
   logger?: Logger;
   config?: string;
+  configFile?: string;
+  // todo: check to delete
   configPath?: string;
   compilation?: Config['config'];
   mode?: string;
@@ -182,7 +217,7 @@ export interface FarmCLIOptions
   clearScreen?: boolean;
 }
 
-export type DevServerMiddleware = (context: Server) => Middleware | undefined;
+export type DevServerMiddleware = (context: Server) => any | undefined;
 
 export interface Alias {
   // TODO support RegExp

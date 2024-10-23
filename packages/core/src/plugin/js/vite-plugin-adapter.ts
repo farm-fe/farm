@@ -1,5 +1,4 @@
 import type { ResolvedUserConfig, UserConfig } from '../../config/types.js';
-import type { Server } from '../../server/index.js';
 import {
   CompilationContext,
   CompilationContextEmitFileParams,
@@ -53,7 +52,7 @@ import type {
 } from 'rollup';
 import { VIRTUAL_FARM_DYNAMIC_IMPORT_SUFFIX } from '../../compiler/index.js';
 import { CompilationMode } from '../../config/env.js';
-import { Logger } from '../../index.js';
+import { Logger, Server } from '../../index.js';
 import {
   Config,
   PluginLoadHookParam,
@@ -124,7 +123,6 @@ export class VitePluginAdapter implements JsPlugin {
     rawPlugin: Plugin,
     farmConfig: UserConfig,
     filters: string[],
-    logger: Logger,
     mode: CompilationMode
   ) {
     this.name = rawPlugin.name || `vite-plugin-adapted-${Date.now()}`;
@@ -138,7 +136,8 @@ export class VitePluginAdapter implements JsPlugin {
     this._rawPlugin = rawPlugin;
     this._farmConfig = farmConfig;
     this._viteConfig = farmUserConfigToViteConfig(farmConfig);
-    this._logger = logger;
+
+    this._logger = new Logger();
 
     this.filters = filters;
 
@@ -149,7 +148,6 @@ export class VitePluginAdapter implements JsPlugin {
       load: () => (this.load = this.viteLoadToFarmLoad()),
       transform: () => (this.transform = this.viteTransformToFarmTransform()),
       buildEnd: () => (this.buildEnd = this.viteBuildEndToFarmBuildEnd()),
-      // closeBundle: () => (this.finish = this.viteCloseBundleToFarmFinish()),
       handleHotUpdate: () =>
         (this.updateModules = this.viteHandleHotUpdateToFarmUpdateModules()),
       renderChunk: () =>
@@ -270,7 +268,7 @@ export class VitePluginAdapter implements JsPlugin {
     }
   }
 
-  async configureDevServer(devServer: Server) {
+  async configureServer(server: Server) {
     const hook = this.wrapRawPluginHook(
       'configureServer',
       this._rawPlugin.configureServer
@@ -279,24 +277,11 @@ export class VitePluginAdapter implements JsPlugin {
     this._viteDevServer = createViteDevServerAdapter(
       this.name,
       this._viteConfig,
-      devServer
+      server
     );
 
     if (hook) {
-      await hook(this._viteDevServer);
-      this._viteDevServer.middlewareCallbacks.forEach((cb) => {
-        devServer.app().use((ctx, koaNext) => {
-          return new Promise((resolve, reject) => {
-            // koaNext is async, but vite's next is sync, we need a adapter here
-            const next = (err: Error) => {
-              if (err) reject(err);
-              koaNext().then(resolve);
-            };
-
-            return cb(ctx.req, ctx.res, next);
-          });
-        });
-      });
+      return await hook(this._viteDevServer);
     }
   }
 

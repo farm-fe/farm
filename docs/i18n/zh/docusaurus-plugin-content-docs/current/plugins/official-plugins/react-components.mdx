@@ -1,0 +1,157 @@
+import CodeBlock from "@theme/CodeBlock";
+import Tabs from "@theme/Tabs";
+import TabItem from "@theme/TabItem";
+
+# @farmfe/plugin-react-components
+
+按需自动导入React组件。
+
+## 安装
+
+<Tabs>
+  <TabItem value="npm" label="npm">
+    <CodeBlock>npm install @farmfe/plugin-react-components</CodeBlock>
+  </TabItem>
+  <TabItem value="yarn" label="yarn">
+    <CodeBlock>yarn add @farmfe/plugin-react-components</CodeBlock>
+  </TabItem>
+  <TabItem value="pnpm" label="pnpm">
+    <CodeBlock>pnpm add @farmfe/plugin-react-components</CodeBlock>
+  </TabItem>
+</Tabs>
+
+## 使用
+`@farmfe/plugin-react-components` 是一个Rust插件，你只需要在 `farm.config.ts` 的 `plugins` 字段中配置其包名即可。
+```ts {4}
+import { UserConfig } from '@farmfe/core';
+
+const config: UserConfig = {
+  plugins: ['@farmfe/plugin-react-components', { /** 选项在此 */}]
+}
+```
+
+## 功能
+
+- 💚 支持React开箱即用。
+- ✨ 支持组件和指令。
+- 🏝 树摇（Tree-shaking），只注册你使用的组件。
+- 🪐 文件夹名称作为命名空间。
+- 🦾 完整的TypeScript支持。
+- 🌈 为流行的UI库提供[内置解析器](#从UI库中导入)。
+
+## 使用
+
+像往常一样在模板中使用组件，它将按需导入组件，不再需要`import`和`component registration`！如果你异步注册父组件（或懒加载路由），自动导入的组件会与其父组件一起进行代码拆分。
+
+它会自动将这个
+
+```tsx
+export function Main() {
+  return <HelloWorld msg="Hello React + Farm" />
+}
+```
+
+转换成这个
+
+```tsx
+import HelloWorld from './src/components/HelloWorld'
+
+export function Main() {
+  return <HelloWorld msg="Hello React + Farm" />
+}
+```
+
+> **注意**
+> 默认情况下，此插件会导入`src/components`路径中的组件。你可以使用`dirs`选项进行自定义。
+
+## TypeScript
+
+为自动导入的组件获得TypeScript支持。
+
+```ts
+Components({
+  dts: true, // 如果安装了`typescript`默认启用
+})
+```
+
+完成设置后，将自动生成一个`components.d.ts`文件，并自动更新类型定义。你可以选择是否将其提交到git。
+
+> **确保你也将`components.d.ts`添加到`tsconfig.json`的`include`中。**
+
+## 从UI库中导入
+
+我们为几个流行的UI库（如**Ant Design**、**Arco Design**和**Material UI**）提供了几个内置解析器，你可以通过以下方式启用它们：
+
+支持的解析器：
+
+- [Ant Design](https://ant.design/)
+- [Arco Design](https://arco.design/react/docs/start)
+- [Material UI](https://mui.com/)
+
+```ts
+// farm.config.js
+
+import { UserConfig } from '@farmfe/core';
+
+const config: UserConfig = {
+  plugins: ['@farmfe/plugin-react-components', {
+        local: true,
+        resolvers:[
+          {
+            module: "antd",
+            prefix: "Ant"
+          },
+          {
+            module:"@arco-design/web-react",
+            prefix: "Arco",
+            import_style: true // style/index.js
+          }
+        ]
+  }]
+}
+```
+
+## 配置
+
+以下显示了配置的默认值
+<strike>component</strike>
+```ts
+{
+  // 相对路径到搜索组件的目录。
+  dirs: ['src/components'],
+  
+  // 自定义组件的解析器。
+  resolvers: [],
+
+  /**
+   * 组件以绝对或相对路径引入。
+   *
+   * @default 绝对
+   */
+  import_mode: "Absolute"
+
+  /**
+   * 是否对本地组件有效
+   *
+   * @default true
+   */
+  local: true,
+
+  /**
+   * 导入样式`style/index.js`，也接受路径用于自定义路径(<Component>/**)与组件
+   *
+   * @default false
+   */
+  importStyle?: boolean | string 
+
+  // 生成全局声明的`components.d.ts`，
+  // 也接受自定义文件名的路径
+  // 默认：如果安装了typescript包则为`true`
+  dts: true,
+
+  // 转换目标（要插入自动导入的组件）的过滤器
+  // 注意，这不是关于包含/排除注册组件 - 使用`Regex`来做那个
+  include: ["src/components"],
+  exclude: ["node_modules"],
+}
+```

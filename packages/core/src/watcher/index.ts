@@ -1,159 +1,303 @@
-import { createRequire } from 'node:module';
-
-import { FSWatcher } from 'chokidar';
+import EventEmitter from 'node:events';
+import { existsSync } from 'node:fs';
+import path from 'node:path';
+import chokidar from 'chokidar';
+import type { FSWatcher, WatchOptions } from 'chokidar';
+import glob from 'fast-glob';
 
 import { Compiler } from '../compiler/index.js';
-import { Server } from '../server/index.js';
-import { Logger, compilerHandler } from '../utils/index.js';
+import { createInlineCompiler } from '../compiler/index.js';
+import { createDebugger } from '../utils/debug.js';
+import { convertErrorMessage } from '../utils/error.js';
+import { arraify, bold, green, normalizePath } from '../utils/index.js';
 
-import { existsSync } from 'node:fs';
 import type { ResolvedUserConfig } from '../config/index.js';
-import type { JsUpdateResult } from '../types/binding.js';
-import { createWatcher } from './create-watcher.js';
+import type {
+  JsUpdateResult,
+  PersistentCacheConfig
+} from '../types/binding.js';
 
-interface ImplFileWatcher {
-  watch(): Promise<void>;
-}
+export const debugWatcher = createDebugger('farm:watcher');
 
-export class FileWatcher implements ImplFileWatcher {
-  private _root: string;
-  private _watcher: FSWatcher;
-  private _close = false;
-  private _watchedFiles = new Set<string>();
+export default class Watcher {
+  private watchedFiles = new Set<string>();
+  resolvedWatchOptions: WatchOptions;
+  watcher: FSWatcher;
+  extraWatchedFiles: string[];
 
-  constructor(
-    public serverOrCompiler: Server | Compiler,
-    public options: ResolvedUserConfig,
-    private _logger: Logger
-  ) {
-    this._root = options.root;
+  constructor(public config: ResolvedUserConfig) {
+    this.resolveChokidarOptions();
   }
 
   getInternalWatcher() {
-    return this._watcher;
+    return this.watcher;
   }
 
   filterWatchFile(file: string, root: string): boolean {
-    const suffix = process.platform === 'win32' ? '\\' : '/';
-
+    const separator = process.platform === 'win32' ? '\\' : '/';
     return (
-      !file.startsWith(`${root}${suffix}`) &&
-      !file.includes(`node_modules${suffix}`) &&
+      !file.startsWith(`${root}${separator}`) &&
       !file.includes('\0') &&
       existsSync(file)
     );
   }
 
-  getExtraWatchedFiles() {
-    const compiler = this.getCompilerFromServerOrCompiler(
-      this.serverOrCompiler
-    );
-
-    return [
-      ...compiler.resolvedModulePaths(this._root),
+  getExtraWatchedFiles(compiler?: Compiler | null) {
+    this.extraWatchedFiles = [
+      ...compiler.resolvedModulePaths(this.config.root),
       ...compiler.resolvedWatchPaths()
-    ].filter((file) => this.filterWatchFile(file, this._root));
+    ].filter((file) => this.filterWatchFile(file, this.config.root));
+    return this.extraWatchedFiles;
   }
 
   watchExtraFiles() {
-    const files = this.getExtraWatchedFiles();
-
-    for (const file of files) {
-      if (!this._watchedFiles.has(file)) {
-        this._watcher.add(file);
-        this._watchedFiles.add(file);
+    this.extraWatchedFiles.forEach((file) => {
+      if (!this.watchedFiles.has(file)) {
+        this.watcher.add(file);
+        this.watchedFiles.add(file);
       }
-    }
+    });
   }
 
-  async watch() {
-    // Determine how to compile the project
-    const compiler = this.getCompilerFromServerOrCompiler(
-      this.serverOrCompiler
-    );
+  async watch() {}
 
-    const handlePathChange = async (path: string): Promise<void> => {
-      if (this._close) {
-        return;
-      }
+  // async watch() {
+  //   const compiler = this.getCompiler();
 
-      try {
-        if (this.serverOrCompiler instanceof Server) {
-          await this.serverOrCompiler.hmrEngine.hmrUpdate(path);
-        }
+  //   const handlePathChange = async (path: string) => {
+  //     if (this.close) return;
 
-        if (
-          this.serverOrCompiler instanceof Compiler &&
-          this.serverOrCompiler.hasModule(path)
-        ) {
-          compilerHandler(
-            async () => {
-              const result = await compiler.update([path], true);
-              handleUpdateFinish(result);
-              compiler.writeResourcesToDisk();
-            },
-            this.options,
-            this._logger,
-            { clear: true }
-          );
-        }
-      } catch (error) {
-        this._logger.error(error);
-      }
-    };
+  //     try {
+  //       if (this.compiler instanceof NewServer && this.compiler.getCompiler()) {
+  //         await this.compiler.hmrEngine.hmrUpdate(path);
+  //       }
 
-    const watchedFiles = this.getExtraWatchedFiles();
+  //       if (
+  //         this.compiler instanceof Compiler &&
+  //         this.compiler.hasModule(path)
+  //       ) {
+  //         await compilerHandler(
+  //           async () => {
+  //             const result = await compiler.update([path], true);
+  //             this.handleUpdateFinish(result, compiler);
+  //             compiler.writeResourcesToDisk();
+  //           },
+  //           this.config,
+  //           this.logger,
+  //           { clear: true }
+  //         );
+  //       }
+  //     } catch (error) {
+  //       this.logger.error(error);
+  //     }
+  //   };
 
-    const files = [this.options.root, ...watchedFiles];
-    this._watchedFiles = new Set(files);
-    this._watcher = createWatcher(this.options, files);
+  //   const filesToWatch = [this.config.root, ...this.getExtraWatchedFiles()];
+  //   this.watchedFiles = new Set(filesToWatch);
+  //   this.watcher ??= createWatcher(this.config, filesToWatch);
 
-    this._watcher.on('change', (path) => {
-      if (this._close) return;
-      handlePathChange(path);
+  //   this.watcher.on('change', (path) => {
+  //     if (this.close) return;
+  //     handlePathChange(path);
+  //   });
+
+  //   if (this.compiler instanceof NewServer) {
+  //     this.compiler.hmrEngine?.onUpdateFinish((result) =>
+  //       this.handleUpdateFinish(result, compiler)
+  //     );
+  //   }
+  // }
+
+  // async watchConfigs(callback: (files: string[]) => void) {
+  //   const filesToWatch = Array.from([
+  //     ...(this.config.envFiles ?? []),
+  //     ...(this.config.configFileDependencies ?? []),
+  //     ...(this.config.configFilePath ? [this.config.configFilePath] : [])
+  //   ]).filter((file) => file && existsSync(file));
+  //   const chokidarOptions = {
+  //     awaitWriteFinish:
+  //       process.platform === 'linux'
+  //         ? undefined
+  //         : {
+  //             stabilityThreshold: 10,
+  //             pollInterval: 80
+  //           }
+  //   };
+  //   this.watcher ??= createWatcher(this.config, filesToWatch, chokidarOptions);
+
+  //   this.watcher.on('change', (path) => {
+  //     if (this.close) return;
+  //     if (filesToWatch.includes(path)) {
+  //       callback([path]);
+  //     }
+  //   });
+  //   return this;
+  // }
+
+  // private handleUpdateFinish(updateResult: JsUpdateResult, compiler: Compiler) {
+  //   const addedFiles = [
+  //     ...updateResult.added,
+  //     ...updateResult.extraWatchResult.add
+  //   ].map((addedModule) =>
+  //     compiler.transformModulePath(this.config.root, addedModule)
+  //   );
+
+  //   const filteredAdded = addedFiles.filter((file) =>
+  //     this.filterWatchFile(file, this.config.root)
+  //   );
+
+  //   if (filteredAdded.length > 0) {
+  //     this.watcher.add(filteredAdded);
+  //   }
+  // }
+
+  async createWatcher() {
+    const compiler = await createInlineCompiler(this.config, {
+      progress: false
     });
+    // TODO type error here
+    // @ts-ignore
+    const enabledWatcher = this.config.watch !== null;
+    const files = [this.config.root, ...this.getExtraWatchedFiles(compiler)];
 
+    this.watcher = enabledWatcher
+      ? (chokidar.watch(files, this.resolvedWatchOptions) as FSWatcher)
+      : new NoopWatcher(this.resolvedWatchOptions);
+  }
+
+  resolveChokidarOptions() {
+    // TODO type error here
+    // @ts-ignore
+    const userWatchOptions = this.config.server.watch;
+    const { ignored: ignoredList, ...otherOptions } = userWatchOptions ?? {};
+    const cacheDir = (
+      this.config.compilation.persistentCache as PersistentCacheConfig
+    ).cacheDir;
+    const ignored: WatchOptions['ignored'] = [
+      '**/.git/**',
+      '**/node_modules/**',
+      '**/test-results/**', // Playwright
+      glob.escapePath(
+        path.resolve(this.config.root, this.config.compilation.output.path)
+      ) + '/**',
+      cacheDir ? glob.escapePath(cacheDir) + '/**' : undefined,
+      ...arraify(ignoredList || [])
+    ].filter(Boolean);
+
+    this.resolvedWatchOptions = {
+      ignored,
+      ignoreInitial: true,
+      ignorePermissionErrors: true,
+      awaitWriteFinish:
+        process.platform === 'linux'
+          ? undefined
+          : {
+              stabilityThreshold: 10,
+              pollInterval: 10
+            },
+      ...otherOptions
+    };
+  }
+
+  async close() {
+    if (this.watcher) {
+      debugWatcher?.('close watcher');
+      await this.watcher.close();
+      this.watcher = null;
+    }
+  }
+}
+
+class NoopWatcher extends EventEmitter implements FSWatcher {
+  constructor(public options: WatchOptions) {
+    super();
+  }
+
+  add() {
+    return this;
+  }
+
+  unwatch() {
+    return this;
+  }
+
+  getWatched() {
+    return {};
+  }
+
+  ref() {
+    return this;
+  }
+
+  unref() {
+    return this;
+  }
+
+  async close() {
+    // noop
+  }
+}
+
+export async function handlerWatcher(
+  resolvedUserConfig: ResolvedUserConfig,
+  compiler: Compiler
+) {
+  const watcher = new Watcher(resolvedUserConfig);
+  await watcher.createWatcher();
+  watcher.watcher.on('change', async (file: string | string[] | any) => {
+    file = normalizePath(file);
+    // TODO restart with node side v2.0 we may be think about this feature
+    // const shortFile = getShortName(file, resolvedUserConfig.root);
+    // const isConfigFile = resolvedUserConfig.configFilePath === file;
+    // const isConfigDependencyFile =
+    //   resolvedUserConfig.configFileDependencies.some((name) => file === name);
+    // const isEnvFile = resolvedUserConfig.envFiles.some((name) => file === name);
+    // if (isConfigFile || isConfigDependencyFile || isEnvFile) {
+    //   __FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__ = true;
+    //   resolvedUserConfig.logger.info(
+    //     `${bold(green(shortFile))} changed, Bundler Config is being reloaded`,
+    //     true
+    //   );
+    // TODO then rebuild node side
+    // }
     const handleUpdateFinish = (updateResult: JsUpdateResult) => {
       const added = [
         ...updateResult.added,
         ...updateResult.extraWatchResult.add
       ].map((addedModule) => {
         const resolvedPath = compiler.transformModulePath(
-          this._root,
+          resolvedUserConfig.root,
           addedModule
         );
         return resolvedPath;
       });
+
       const filteredAdded = added.filter((file) =>
-        this.filterWatchFile(file, this._root)
+        watcher.filterWatchFile(file, resolvedUserConfig.root)
       );
 
       if (filteredAdded.length > 0) {
-        this._watcher.add(filteredAdded);
+        watcher.watcher.add(filteredAdded);
       }
     };
 
-    if (this.serverOrCompiler instanceof Server) {
-      this.serverOrCompiler.hmrEngine?.onUpdateFinish(handleUpdateFinish);
+    try {
+      const start = performance.now();
+      const result = await compiler.update([file], true);
+      const elapsedTime = Math.floor(performance.now() - start);
+      resolvedUserConfig.logger.info(
+        `update completed in ${bold(
+          green(`${elapsedTime}ms`)
+        )} Resources emitted to ${bold(
+          green(resolvedUserConfig.compilation.output.path)
+        )}.`
+      );
+      handleUpdateFinish(result);
+      compiler.writeResourcesToDisk();
+    } catch (error) {
+      resolvedUserConfig.logger.error(
+        `Farm Update Error: ${convertErrorMessage(error)}`
+      );
     }
-  }
-
-  private getCompilerFromServerOrCompiler(
-    serverOrCompiler: Server | Compiler
-  ): Compiler {
-    return serverOrCompiler instanceof Server
-      ? serverOrCompiler.getCompiler()
-      : serverOrCompiler;
-  }
-
-  close() {
-    this._close = true;
-    this._watcher = null;
-    this.serverOrCompiler = null;
-  }
-}
-
-export function clearModuleCache(modulePath: string) {
-  const _require = createRequire(import.meta.url);
-  delete _require.cache[_require.resolve(modulePath)];
+  });
 }
