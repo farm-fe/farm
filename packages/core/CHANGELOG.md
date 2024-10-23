@@ -1,5 +1,28 @@
 # @farmfe/core
 
+## 2.0.0-nightly-20241023020505
+
+### Patch Changes
+
+- 3651244: add assets mode for asset path generate
+- Updated dependencies [cab79e8]
+  - @farmfe/runtime@1.0.0-nightly-20241023020505
+  - @farmfe/runtime-plugin-hmr@4.0.0-nightly-20241023020505
+  - @farmfe/runtime-plugin-import-meta@1.0.0-nightly-20241023020505
+
+## 2.0.0-nightly-20241022143924
+
+### Major Changes
+
+- 83838bd: remove lightCyan color utils
+
+## 2.0.0-nightly-20241022124925
+
+### Patch Changes
+
+- Updated dependencies [6a1038c]
+  - @farmfe/utils@1.0.0-nightly-20241022124925
+
 ## 2.0.0-nightly-20241022041556
 
 ### Major Changes

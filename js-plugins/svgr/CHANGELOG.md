@@ -1,5 +1,25 @@
 # @farmfe/js-plugin-svgr
 
+## 2.0.0-nightly-20241023020505
+
+### Patch Changes
+
+- Updated dependencies [3651244]
+  - @farmfe/core@2.0.0-nightly-20241023020505
+
+## 2.0.0-nightly-20241022143924
+
+### Patch Changes
+
+- Updated dependencies [83838bd]
+  - @farmfe/core@2.0.0-nightly-20241022143924
+
+## 2.0.0-nightly-20241022124925
+
+### Patch Changes
+
+- @farmfe/core@2.0.0-nightly-20241022124925
+
 ## 2.0.0-nightly-20241022041556
 
 ### Patch Changes

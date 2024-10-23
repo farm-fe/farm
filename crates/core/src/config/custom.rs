@@ -1,8 +1,11 @@
 use std::{collections::HashMap, sync::Arc};
 
+use serde::{de::DeserializeOwned, Deserialize};
+
 use crate::context::CompilationContext;
 
 use super::{
+  asset::AssetFormatMode,
   config_regex::ConfigRegex,
   css::NameConversion,
   external::{ExternalConfig, ExternalObject},
@@ -15,6 +18,7 @@ pub const CUSTOM_CONFIG_RESOLVE_DEDUPE: &str = "resolve.dedupe";
 pub const CUSTOM_CONFIG_CSS_MODULES_LOCAL_CONVERSION: &str = "css.modules.locals_conversion";
 pub const CUSTOM_CONFIG_PARTIAL_BUNDLING_GROUPS_ENFORCE_MAP: &str =
   "partial_bundling.groups.enforce";
+pub const CUSTOM_CONFIG_ASSETS_MODE: &str = "assets.mode";
 
 pub fn get_config_runtime_isolate(context: &Arc<CompilationContext>) -> bool {
   if let Some(val) = context.config.custom.get(CUSTOM_CONFIG_RUNTIME_ISOLATE) {
@@ -52,20 +56,24 @@ pub fn get_config_external_record(config: &Config) -> ExternalConfig {
 }
 
 pub fn get_config_resolve_dedupe(config: &Config) -> Vec<String> {
-  if let Some(val) = config.custom.get(CUSTOM_CONFIG_RESOLVE_DEDUPE) {
-    serde_json::from_str(val).unwrap_or_else(|_| vec![])
-  } else {
-    vec![]
-  }
+  get_field_or_default_from_custom(config, CUSTOM_CONFIG_RESOLVE_DEDUPE)
 }
 
 pub fn get_config_css_modules_local_conversion(config: &Config) -> NameConversion {
-  if let Some(val) = config
+  get_field_or_default_from_custom(config, CUSTOM_CONFIG_CSS_MODULES_LOCAL_CONVERSION)
+}
+
+pub fn get_config_assets_mode(config: &Config) -> Option<AssetFormatMode> {
+  get_field_or_default_from_custom(config, CUSTOM_CONFIG_ASSETS_MODE)
+}
+
+fn get_field_or_default_from_custom<T: Default + DeserializeOwned>(
+  config: &Config,
+  field: &str,
+) -> T {
+  config
     .custom
-    .get(CUSTOM_CONFIG_CSS_MODULES_LOCAL_CONVERSION)
-  {
-    serde_json::from_str(val).unwrap_or_default()
-  } else {
-    Default::default()
-  }
+    .get(field)
+    .map(|val| serde_json::from_str(val).unwrap_or_default())
+    .unwrap_or_default()
 }

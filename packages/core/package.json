@@ -1,6 +1,6 @@
 {
   "name": "@farmfe/core",
-  "version": "2.0.0-nightly-20241022041556",
+  "version": "2.0.0-nightly-20241023020505",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "type": "module",
@@ -83,9 +83,9 @@
     "react-refresh": "^0.14.0"
   },
   "dependencies": {
-    "@farmfe/runtime": "workspace:0.12.7",
-    "@farmfe/runtime-plugin-hmr": "workspace:3.5.7",
-    "@farmfe/runtime-plugin-import-meta": "workspace:0.2.2",
+    "@farmfe/runtime": "workspace:1.0.0-nightly-20241023020505",
+    "@farmfe/runtime-plugin-hmr": "workspace:4.0.0-nightly-20241023020505",
+    "@farmfe/runtime-plugin-import-meta": "workspace:1.0.0-nightly-20241023020505",
     "@farmfe/utils": "workspace:*",
     "@swc/helpers": "^0.5.0",
     "chokidar": "^3.5.3",

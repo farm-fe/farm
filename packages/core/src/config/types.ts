@@ -148,6 +148,7 @@ export interface ResolvedCompilation
   resolve?: {
     dedupe?: never;
   } & Config['config']['resolve'];
+  assets?: Omit<Config['config']['assets'], 'mode'>;
   css?: ResolvedCss;
 }
 
