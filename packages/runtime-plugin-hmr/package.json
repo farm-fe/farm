@@ -25,10 +25,10 @@
   },
   "devDependencies": {
     "@farmfe/runtime": "workspace:1.0.0-nightly-20241023020505",
-    "shiki": "^1.17.7"
+    "highlight.js": "^11.10.0"
   },
   "dependencies": {
     "core-js": "^3.30.1",
-    "highlight.js": "^11.10.0"
+    "shiki": "^1.7.0"
   }
 }
