@@ -6,7 +6,12 @@ import {
   ResolvedUserConfig,
   UserConfig
 } from '../config/types.js';
+import { resolveServerUrls } from '../utils/http.js';
+import { printServerUrls } from '../utils/logger.js';
 import { CommonServerOptions, httpServer } from './http.js';
+import { htmlFallbackMiddleware } from './middlewares/htmlFallback.js';
+import { publicMiddleware } from './middlewares/publicResource.js';
+import { resourceMiddleware } from './middlewares/resource.js';
 import { initPublicFiles } from './publicDir.js';
 
 export interface PreviewServerOptions extends CommonServerOptions {
@@ -20,6 +25,11 @@ export interface PreviewServerOptions extends CommonServerOptions {
 export class PreviewServer extends httpServer {
   resolvedUserConfig: ResolvedUserConfig;
   previewServerOptions: PreviewServerOptions;
+  httpsOptions: SecureServerOptions;
+
+  publicDir: string;
+  publicPath: string;
+  publicFiles: Set<string>;
 
   middlewares: connect.Server;
 
@@ -37,43 +47,59 @@ export class PreviewServer extends httpServer {
 
     this.logger = this.resolvedUserConfig.logger;
 
-    this.#resolveOptions();
+    await this.#resolveOptions();
 
-    const [httpsOptions, publicFiles] = await Promise.all([
-      this.resolveHttpsConfig(this.previewServerOptions.https),
-      await initPublicFiles(this.resolvedUserConfig)
-    ]);
     this.middlewares = connect();
     this.httpServer = this.previewServerOptions.middlewareMode
       ? null
       : await this.resolveHttpServer(
           this.previewServerOptions,
           this.middlewares,
-          httpsOptions
+          this.httpsOptions
         );
-    // this.resolveHttpServer();
+
+    this.#initializeMiddlewares();
   }
 
-  #resolveOptions() {
-    const headers =
-      this.resolvedUserConfig.preview?.headers ||
-      this.resolvedUserConfig.server?.headers;
-    const host =
-      typeof this.resolvedUserConfig.preview.host === 'string'
-        ? this.resolvedUserConfig.preview.host
-        : 'localhost';
-    const port = this.resolvedUserConfig.preview.port || 1911;
+  async #resolveOptions() {
+    const {
+      compilation: {
+        output: { publicPath },
+        assets: { publicDir }
+      },
+      preview,
+      server
+    } = this.resolvedUserConfig;
+    this.publicPath = publicPath;
+    // this.publicDir = publicDir;
+    this.publicDir =
+      '/home/fu050409/Desktop/Workspace/farm/examples/refactor-react/dist/';
+
+    const headers = preview?.headers || server?.headers;
+    const host = typeof preview.host === 'string' ? preview.host : 'localhost';
+    const port = preview?.port || 1911;
     // const middlewareMode = this.resolvedUserConfig.preview.middlewareMode || false;
-    const https =
-      this.resolvedUserConfig.preview?.https ||
-      this.resolvedUserConfig.server?.https;
+    const https = preview?.https || server?.https;
     this.previewServerOptions = {
       headers,
       host,
       port,
       https,
-      middlewareMode: true
+      middlewareMode: false
     };
+
+    [this.httpsOptions, this.publicFiles] = await Promise.all([
+      this.resolveHttpsConfig(this.previewServerOptions.https),
+      await initPublicFiles(this.resolvedUserConfig)
+    ]);
+  }
+
+  #initializeMiddlewares() {
+    // if ()
+    this.middlewares.use(publicMiddleware(this));
+    console.log(this.publicPath);
+
+    this.middlewares.use(htmlFallbackMiddleware(this));
   }
 
   async listen() {
@@ -91,6 +117,17 @@ export class PreviewServer extends httpServer {
         strictPort: true,
         host: this.previewServerOptions.host
       });
+
+      this.resolvedUrls = await resolveServerUrls(
+        this.httpServer,
+        this.resolvedUserConfig
+      );
+
+      printServerUrls(
+        this.resolvedUrls,
+        this.previewServerOptions.host,
+        this.logger
+      );
     } catch (error) {
       throw error;
     }

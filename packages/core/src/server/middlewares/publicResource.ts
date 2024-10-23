@@ -7,11 +7,16 @@ import {
 } from '../../utils/index.js';
 
 import type Connect from 'connect';
-import type { Server } from '../index.js';
+import { ResolvedUserConfig } from '../../config/types.js';
 
 // TODO: if url endsWith importQueryRE we need can check if it is a module then serve or not
 
-export function publicMiddleware(app: Server): Connect.NextHandleFunction {
+export function publicMiddleware(app: {
+  resolvedUserConfig: ResolvedUserConfig;
+  publicDir: string;
+  publicFiles?: Set<string>;
+  publicPath?: string;
+}): Connect.NextHandleFunction {
   const {
     resolvedUserConfig: config,
     publicDir,
@@ -19,7 +24,7 @@ export function publicMiddleware(app: Server): Connect.NextHandleFunction {
     publicPath
   } = app;
 
-  const headers = config.server.headers;
+  const headers = config.preview.headers;
   const serve = sirv(publicDir, {
     etag: true,
     setHeaders: (res, path) => {
