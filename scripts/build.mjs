@@ -23,7 +23,7 @@ const PKG_PLUGIN_TOOLS = resolve(CWD, './packages/plugin-tools');
 // Build plugin dts
 const PKG_DTS = resolve(CWD, './js-plugins/dts');
 
-// Build rust_plugin_react
+// Build rust_plugin
 const PKG_RUST_PLUGIN = resolve(CWD, './rust-plugins');
 
 // Build js_plugin_path
