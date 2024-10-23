@@ -4,7 +4,6 @@ import { SecureServerOptions } from 'node:http2';
 import { z } from 'zod';
 import { fromZodError } from 'zod-validation-error';
 
-import { ILogger } from '../utils/logger.js';
 import type { UserConfig } from './types.js';
 
 const TARGET_ENV = {
