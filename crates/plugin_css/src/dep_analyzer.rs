@@ -1,7 +1,9 @@
 use std::collections::HashMap;
 
 use farmfe_core::{
-  config::AliasItem, plugin::{PluginAnalyzeDepsHookResultEntry, ResolveKind}, swc_css_ast::{ImportHref, Url}
+  config::AliasItem,
+  plugin::{PluginAnalyzeDepsHookResultEntry, ResolveKind},
+  swc_css_ast::{ImportHref, Url},
 };
 use farmfe_toolkit::{resolve::path_start_with_alias::is_start_with_alias, swc_css_visit::Visit};
 

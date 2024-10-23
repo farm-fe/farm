@@ -373,6 +373,7 @@ export interface PartialBundlingConfig {
     test: string[];
     groupType?: 'mutable' | 'immutable';
     resourceType?: 'all' | 'initial' | 'async';
+    enforce?: boolean;
   }[];
   /**
    * Array to match the modules that should always be in the same bundles, ignore all other constraints.
@@ -436,6 +437,7 @@ export interface Config {
     assets?: {
       include?: string[];
       publicDir?: string;
+      mode?: 'node' | 'browser';
     };
     script?: ScriptConfig;
     css?: CssConfig;

@@ -1,5 +1,5 @@
 {
-  "name": "visualizer",
+  "name": "@farmfe-examples/visualizer",
   "version": "1.0.0",
   "type": "module",
   "private": true,

@@ -20,7 +20,7 @@
     "bump": "node scripts/bump.mjs",
     "bump:nightly": "node scripts/bump-nightly.mjs",
     "bump:create-farm": "node scripts/bump-create-farm-version.mjs",
-    "test:rs:update": "cross-env FARM_UPDATE_SNAPSHOTS=1 cargo test -p farmfe_compiler",
+    "test:rs:update": "cross-env FARM_UPDATE_SNAPSHOTS=1 INSTA_UPDATE=always cargo test -p farmfe_compiler",
     "ready": "node scripts/ready.mjs",
     "test-e2e": "vitest run -c vitest.config.e2e.ts",
     "prepare": "husky",
@@ -29,7 +29,7 @@
   },
   "devDependencies": {
     "@biomejs/biome": "1.8.3",
-    "@changesets/cli": "^2.26.0",
+    "@changesets/cli": "2.27.9",
     "@codspeed/vitest-plugin": "^3.1.1",
     "@commitlint/cli": "^17.0.3",
     "@commitlint/config-conventional": "^17.0.3",

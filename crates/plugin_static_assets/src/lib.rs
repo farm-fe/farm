@@ -9,7 +9,7 @@ use std::{
 use base64::engine::{general_purpose, Engine};
 use farmfe_core::{
   cache_item,
-  config::{Config},
+  config::{asset::AssetFormatMode, custom::get_config_assets_mode, Config},
   context::{CompilationContext, EmitFileParams},
   deserialize,
   module::ModuleType,
@@ -18,6 +18,7 @@ use farmfe_core::{
   resource::{Resource, ResourceOrigin, ResourceType},
   rkyv::Deserialize,
   serialize,
+  swc_common::sync::OnceCell,
 };
 use farmfe_toolkit::{
   fs::{read_file_raw, read_file_utf8, transform_output_filename},
@@ -42,11 +43,15 @@ fn is_asset_query(query: &Vec<(String, String)>) -> bool {
   query_map.contains_key("raw") || query_map.contains_key("inline") || query_map.contains_key("url")
 }
 
-pub struct FarmPluginStaticAssets {}
+pub struct FarmPluginStaticAssets {
+  asset_format_mode: OnceCell<AssetFormatMode>,
+}
 
 impl FarmPluginStaticAssets {
   pub fn new(_: &Config) -> Self {
-    Self {}
+    Self {
+      asset_format_mode: OnceCell::new(),
+    }
   }
 
   fn is_asset(&self, ext: &str, context: &Arc<CompilationContext>) -> bool {
@@ -173,9 +178,7 @@ impl Plugin for FarmPluginStaticAssets {
         let mime_type = mime_guess::from_ext(ext).first_or_octet_stream();
         let mime_type_str = mime_type.to_string();
 
-        let content = format!(
-          "export default \"data:{mime_type_str};base64,{file_base64}\""
-        );
+        let content = format!("export default \"data:{mime_type_str};base64,{file_base64}\"");
 
         return Ok(Some(farmfe_core::plugin::PluginTransformHookResult {
           content,
@@ -231,12 +234,23 @@ impl Plugin for FarmPluginStaticAssets {
           format!("/{resource_name}")
         };
 
-        let content = if context.config.output.target_env.is_node() {
-          format!(
-            "export default new URL(/* {FARM_IGNORE_ACTION_COMMENT} */{assets_path:?}, import.meta.url)"
-          )
-        } else {
-          format!("export default {assets_path:?};")
+        let mode = self.asset_format_mode.get_or_init(|| {
+          get_config_assets_mode(&context.config)
+            .unwrap_or_else(|| (context.config.output.target_env.clone().into()))
+        });
+
+        let content = match mode {
+          AssetFormatMode::Node => {
+            format!(
+              r#"
+    import {{ fileURLToPath }} from "node:url";
+    export default fileURLToPath(new URL(/* {FARM_IGNORE_ACTION_COMMENT} */{assets_path:?}, import.meta.url))
+                "#
+            )
+          }
+          AssetFormatMode::Browser => {
+            format!("export default {assets_path:?};")
+          }
         };
 
         context.emit_file(EmitFileParams {

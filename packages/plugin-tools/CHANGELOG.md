@@ -1,5 +1,12 @@
 # @farmfe/plugin-tools
 
+## 0.1.2-nightly-20241022124925
+
+### Patch Changes
+
+- Updated dependencies [6a1038c]
+  - @farmfe/utils@1.0.0-nightly-20241022124925
+
 ## 0.1.1
 
 ### Patch Changes

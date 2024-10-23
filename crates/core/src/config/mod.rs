@@ -18,6 +18,7 @@ pub const FARM_REQUIRE: &str = "farmRequire";
 pub const FARM_MODULE: &str = "module";
 pub const FARM_MODULE_EXPORT: &str = "exports";
 
+pub mod asset;
 pub mod bool_or_obj;
 pub mod comments;
 pub mod config_regex;
@@ -33,14 +34,9 @@ pub mod preset_env;
 pub mod script;
 pub mod tree_shaking;
 
+use asset::AssetsConfig;
+
 pub use output::*;
-
-type ResolverFunction = Box<dyn Fn(String, String) -> Option<String>>;
-
-// #[derive(Debug, Clone, Serialize, Deserialize)]
-// pub struct ResolverObject {
-//   resolve: ResolverFunction,
-// }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
@@ -50,9 +46,6 @@ pub enum AliasItem {
   Complex {
     find: StringOrRegex,
     replacement: String,
-    // TODO custom resolver
-    // #[serde(skip_serializing_if = "Option::is_none")]
-    // custom_resolver: Option<ResolverObject>,
   },
 }
 
@@ -370,14 +363,6 @@ impl Default for RuntimeConfig {
       namespace: String::from("__farm_default_namespace__"),
     }
   }
-}
-
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase", default)]
-pub struct AssetsConfig {
-  pub include: Vec<String>,
-  /// Used internally, this option will be not exposed to user.
-  pub public_dir: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

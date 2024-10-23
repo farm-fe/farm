@@ -212,7 +212,9 @@ const compilationConfigSchema = z
       .optional(),
     assets: z
       .object({
-        include: z.array(z.string()).optional()
+        include: z.array(z.string()).optional(),
+        publicDir: z.string().optional(),
+        mode: z.enum(['browser', 'node']).optional()
       })
       .strict()
       .optional(),
@@ -295,7 +297,8 @@ const compilationConfigSchema = z
               name: z.string(),
               test: z.array(z.string()),
               groupType: z.enum(['mutable', 'immutable']).optional(),
-              resourceType: z.enum(['all', 'initial', 'async']).optional()
+              resourceType: z.enum(['all', 'initial', 'async']).optional(),
+              enforce: z.boolean().optional()
             })
           )
           .optional(),
@@ -312,7 +315,8 @@ const compilationConfigSchema = z
         enforceTargetConcurrentRequests: z.boolean().optional(),
         enforceTargetMinSize: z.boolean().optional(),
         immutableModules: z.array(z.string()).optional(),
-        immutableModulesWeight: z.number().optional()
+        immutableModulesWeight: z.number().optional(),
+        enforce: z.boolean().optional()
       })
       .strict()
       .optional(),

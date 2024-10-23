@@ -8,7 +8,9 @@ use std::{
 
 use farmfe_core::{
   config::{
-    config_regex::ConfigRegex, external::ExternalConfig, partial_bundling::PartialBundlingEnforceResourceConfig, AliasItem, Config, ModuleFormat, StringOrRegex, TargetEnv, FARM_MODULE_SYSTEM,
+    config_regex::ConfigRegex, external::ExternalConfig,
+    partial_bundling::PartialBundlingEnforceResourceConfig, AliasItem, Config, ModuleFormat,
+    StringOrRegex, TargetEnv, FARM_MODULE_SYSTEM,
   },
   context::CompilationContext,
   enhanced_magic_string::types::{MappingsOptionHires, SourceMapOptions},

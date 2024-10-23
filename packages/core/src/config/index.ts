@@ -52,8 +52,10 @@ import {
   FARM_DEFAULT_NAMESPACE
 } from './constants.js';
 import { mergeConfig, mergeFarmCliConfig } from './mergeConfig.js';
+import { normalizeAsset } from './normalize-config/normalize-asset.js';
 import { normalizeCss } from './normalize-config/normalize-css.js';
 import { normalizeExternal } from './normalize-config/normalize-external.js';
+import normalizePartialBundling from './normalize-config/normalize-partial-bundling.js';
 import { normalizeResolve } from './normalize-config/normalize-resolve.js';
 import type {
   ConfigEnv,
@@ -501,9 +503,9 @@ export async function normalizeUserCompilationConfig(
 
   // normalize persistent cache at last
   await normalizePersistentCache(resolvedCompilation, resolvedUserConfig);
-
   normalizeResolve(resolvedUserConfig, resolvedCompilation);
   normalizeCss(resolvedUserConfig, resolvedCompilation);
+  normalizePartialBundling(resolvedCompilation);
   return resolvedCompilation;
 }
 
@@ -663,14 +665,15 @@ export async function readConfigFile(
     mode
   });
 
-  const replaceDirnamePlugin = await import('farm-plugin-replace-dirname').then(
-    (mod) => mod.default
-  );
+  // const replaceDirnamePlugin = await import('farm-plugin-replace-dirname').then(
+  //   (mod) => mod.default
+  // );
 
   const compiler = new Compiler({
     compilation: normalizedConfig,
     jsPlugins: [],
-    rustPlugins: [[replaceDirnamePlugin, '{}']]
+    // rustPlugins: [[replaceDirnamePlugin, '{}']]
+    rustPlugins: []
   });
 
   const FARM_PROFILE = process.env.FARM_PROFILE;
