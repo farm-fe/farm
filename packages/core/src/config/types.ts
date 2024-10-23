@@ -7,7 +7,7 @@ import type { RustPlugin } from '../plugin/rust/index.js';
 import type { JsPlugin } from '../plugin/type.js';
 import { HMRChannel } from '../server/hmr.js';
 import type { Config, CssConfig } from '../types/binding.js';
-import type { Logger } from '../utils/index.js';
+import type { ILogger, Logger } from '../utils/index.js';
 
 // export interface HmrOptions {
 //   protocol?: string;
@@ -69,13 +69,31 @@ export interface UserServerConfig {
   writeToDisk?: boolean;
 }
 
+/** Preview server configs */
 export interface UserPreviewServerConfig {
-  // write static output file
-  output?: { path?: string; publicPath?: string };
-  distDir?: string;
-  https?: SecureServerOptions;
-  port?: number;
+  /**
+   * HTTP headers to be sent with every response.
+   * Defaults to `server.headers` if not specified.
+   * Set to `false` to disable preview server headers.
+   */
+  headers?: OutgoingHttpHeaders | false | undefined;
+  /**
+   * Host to run the preview server on.
+   * Defaults to `localhost` if not specified.
+   */
   host?: string | boolean;
+  /**
+   * Port to run the preview server on.
+   * Defaults to `1911` if nothing specified.
+   */
+  port?: number;
+  /** Secure server options */
+  https?: SecureServerOptions;
+  // write static output file
+  // output?: { path?: string; publicPath?: string };
+  distDir?: string;
+  // middlewares?: DevServerMiddleware[];
+  // middlewareMode?: boolean | string;
 }
 
 export type NormalizedServerConfig = Required<
@@ -123,10 +141,12 @@ export interface UserConfig {
   )[];
   /** config related to compilation */
   compilation?: Pick<InternalConfig, AvailableUserConfigKeys>;
-  /** config related to dev server */
+  /** Config related to dev server */
   server?: UserServerConfig;
+  /** Config related to preview server */
+  preview?: UserPreviewServerConfig;
   /** Files under this dir will always be treated as static assets. serve it in dev, and copy it to output.path when build */
-  logger?: Logger;
+  logger?: ILogger;
 }
 
 interface ResolvedCss extends CssConfig {

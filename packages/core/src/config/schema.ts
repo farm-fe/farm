@@ -1,9 +1,10 @@
 import http from 'node:http';
-import { SecureServerOptions } from 'node:http2';
+import { OutgoingHttpHeaders, SecureServerOptions } from 'node:http2';
 
 import { z } from 'zod';
 import { fromZodError } from 'zod-validation-error';
 
+import { ILogger } from '../utils/logger.js';
 import type { UserConfig } from './types.js';
 
 const TARGET_ENV = {
@@ -130,6 +131,22 @@ const serverSchema = z
       .optional(),
     middlewares: z.array(z.any()).optional(),
     writeToDisk: z.boolean().optional()
+  })
+  .strict();
+
+const previewServerSchema = z
+  .object({
+    headers: z.union([z.custom<OutgoingHttpHeaders>(), z.boolean()]).optional(),
+    port: z.number().positive().int().optional(),
+    host: z
+      .union([
+        z.string().regex(/^\d{1,3}\.\d{1,3}$/),
+        z.literal('localhost'),
+        z.boolean()
+      ])
+      .optional(),
+    // open: z.boolean().optional(),
+    https: z.custom<SecureServerOptions>()
   })
   .strict();
 
@@ -405,8 +422,8 @@ const FarmConfigSchema = z
     mode: z.string().optional(),
     watch: z.boolean().optional(),
     server: serverSchema.optional(),
-    // TODO ANY type
-    customLogger: z.any().optional()
+    preview: previewServerSchema.optional(),
+    customLogger: z.custom<ILogger>().optional()
   })
   .strict();
 

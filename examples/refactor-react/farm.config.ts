@@ -27,6 +27,9 @@ export default defineConfig({
   server: {
     port: 8854,
   },
+  preview: {
+    port: 8855,
+  }
 });
 
 function myCustomPlugin() {
