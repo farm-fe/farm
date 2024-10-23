@@ -52,7 +52,9 @@ const outputSchema = z
     publicPath: z.string().optional(),
     assetsFilename: z.string().optional(),
     targetEnv: z
-      .custom<(typeof TARGET_ENV)[keyof typeof TARGET_ENV]>()
+      .custom<(typeof TARGET_ENV)[keyof typeof TARGET_ENV]>((val) => {
+        return Object.values(TARGET_ENV).includes(val);
+      })
       .optional(),
     format: z.enum(['cjs', 'esm']).optional()
   })
@@ -410,7 +412,8 @@ const FarmConfigSchema = z
     mode: z.string().optional(),
     watch: z.boolean().optional(),
     server: serverSchema.optional(),
-    customLogger: z.custom<ILogger>().optional()
+    // TODO ANY type
+    customLogger: z.any().optional()
   })
   .strict();
 
