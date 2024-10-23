@@ -16,7 +16,7 @@ export const CUSTOM_KEYS = {
   runtime_isolate: 'runtime.isolate',
   resolve_dedupe: 'resolve.dedupe',
   css_locals_conversion: 'css.modules.locals_conversion',
-  partial_bundling_groups_enforce: 'partial_bundling.groups.enforce'
+  partial_bundling_groups_enforce: 'partial_bundling.groups.enforce',
   assets_mode: 'assets.mode'
 };
 
