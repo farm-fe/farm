@@ -137,7 +137,6 @@ const serverSchema = z
 const previewServerSchema = z
   .object({
     headers: z.union([z.custom<OutgoingHttpHeaders>(), z.boolean()]).optional(),
-    port: z.number().positive().int().optional(),
     host: z
       .union([
         z.string().regex(/^\d{1,3}\.\d{1,3}$/),
@@ -145,8 +144,11 @@ const previewServerSchema = z
         z.boolean()
       ])
       .optional(),
-    // open: z.boolean().optional(),
-    https: z.custom<SecureServerOptions>()
+    port: z.number().positive().int().optional(),
+    https: z.custom<SecureServerOptions>(),
+    distDir: z.string().optional(),
+    open: z.boolean().optional(),
+    cors: z.boolean().optional()
   })
   .strict();
 

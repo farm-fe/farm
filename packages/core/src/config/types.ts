@@ -97,11 +97,12 @@ export interface UserPreviewServerConfig {
    * Defaults to `dist` if nothing specified.
    */
   distDir?: string;
-
-  // write static output file
-  // output?: { path?: string; publicPath?: string };
-  // middlewares?: DevServerMiddleware[];
-  // middlewareMode?: boolean | string;
+  /**
+   * Open the preview server in the default browser automatically.
+   */
+  open?: boolean;
+  /** Enable CORS for preview server. */
+  cors?: boolean;
 }
 
 export type NormalizedServerConfig = Required<
