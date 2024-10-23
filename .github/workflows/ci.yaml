@@ -1,6 +1,6 @@
 name: Nightly Release CI
 on:
-  pull_request:
+  push:
     branches:
       - v2-dev
 
