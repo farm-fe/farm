@@ -4,6 +4,7 @@ import { SecureServerOptions } from 'node:http2';
 import { z } from 'zod';
 import { fromZodError } from 'zod-validation-error';
 
+import { ILogger } from '../utils/logger.js';
 import type { UserConfig } from './types.js';
 
 const TARGET_ENV = {
@@ -50,9 +51,7 @@ const outputSchema = z
     path: z.string().optional(),
     publicPath: z.string().optional(),
     assetsFilename: z.string().optional(),
-    targetEnv: z
-      .enum(Object.values(TARGET_ENV) as [string, ...string[]])
-      .optional(),
+    targetEnv: z.custom<(typeof TARGET_ENV)[keyof typeof TARGET_ENV]>(),
     format: z.enum(['cjs', 'esm']).optional()
   })
   .strict()
@@ -409,8 +408,7 @@ const FarmConfigSchema = z
     mode: z.string().optional(),
     watch: z.boolean().optional(),
     server: serverSchema.optional(),
-    // TODO ANY type
-    customLogger: z.any().optional()
+    customLogger: z.custom<ILogger>().optional()
   })
   .strict();
 
