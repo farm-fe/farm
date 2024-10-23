@@ -51,7 +51,9 @@ const outputSchema = z
     path: z.string().optional(),
     publicPath: z.string().optional(),
     assetsFilename: z.string().optional(),
-    targetEnv: z.custom<(typeof TARGET_ENV)[keyof typeof TARGET_ENV]>(),
+    targetEnv: z
+      .custom<(typeof TARGET_ENV)[keyof typeof TARGET_ENV]>()
+      .optional(),
     format: z.enum(['cjs', 'esm']).optional()
   })
   .strict()
