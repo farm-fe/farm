@@ -6,20 +6,20 @@ import { fromZodError } from 'zod-validation-error';
 
 import type { UserConfig } from './types.js';
 
-const TARGET_ENV = {
-  BROWSER: 'browser',
-  NODE: 'node',
-  NODE_LEGACY: 'node-legacy',
-  NODE_NEXT: 'node-next',
-  NODE16: 'node16',
-  BROWSER_LEGACY: 'browser-legacy',
-  BROWSER_ESNEXT: 'browser-esnext',
-  BROWSER_ES2015: 'browser-es2015',
-  BROWSER_ES2017: 'browser-es2017',
-  LIBRARY: 'library',
-  LIBRARY_BROWSER: 'library-browser',
-  LIBRARY_NODE: 'library-node'
-} as const;
+enum TargetEnv {
+  BROWSER = 'browser',
+  NODE = 'node',
+  NODE_LEGACY = 'node-legacy',
+  NODE_NEXT = 'node-next',
+  NODE16 = 'node16',
+  BROWSER_LEGACY = 'browser-legacy',
+  BROWSER_ESNEXT = 'browser-esnext',
+  BROWSER_ES2015 = 'browser-es2015',
+  BROWSER_ES2017 = 'browser-es2017',
+  LIBRARY = 'library',
+  LIBRARY_BROWSER = 'library-browser',
+  LIBRARY_NODE = 'library-node'
+}
 
 const baseRewriteSchema = z.union([
   z.record(z.string(), z.string()),
@@ -50,9 +50,7 @@ const outputSchema = z
     path: z.string().optional(),
     publicPath: z.string().optional(),
     assetsFilename: z.string().optional(),
-    targetEnv: z
-      .enum(Object.values(TARGET_ENV) as [string, ...string[]])
-      .optional(),
+    targetEnv: z.nativeEnum(TargetEnv).optional(),
     format: z.enum(['cjs', 'esm']).optional()
   })
   .strict()
