@@ -22,10 +22,12 @@ export interface PreviewServerOptions {
   distDir: string;
   open: boolean | string;
   cors: boolean;
-
-  root: string;
 }
 
+/**
+ * Represents a Farm preview server.
+ * @class
+ */
 export class PreviewServer extends httpServer {
   resolvedUserConfig: ResolvedUserConfig;
   previewServerOptions: PreviewServerOptions;
@@ -34,11 +36,21 @@ export class PreviewServer extends httpServer {
   app: connect.Server;
   serve: RequestHandler;
 
+  /**
+   * Creates an instance of PreviewServer.
+   * @param {FarmCliOptions & UserConfig} inlineConfig - The inline configuration options.
+   */
   constructor(readonly inlineConfig: FarmCliOptions & UserConfig) {
     super();
   }
 
-  async createPreviewServer() {
+  /**
+   * Creates and initializes the preview server.
+   *
+   * @returns {Promise<void>} A promise that resolves when the server is ready.
+   * @throws {Error} If the server cannot be started.
+   */
+  async createPreviewServer(): Promise<void> {
     this.resolvedUserConfig = await resolveConfig(
       this.inlineConfig,
       'preview',
@@ -60,7 +72,13 @@ export class PreviewServer extends httpServer {
     this.app.use(this.serve);
   }
 
-  async #resolveOptions() {
+  /**
+   * Resolve preview server options
+   *
+   * @private
+   * @returns {Promise<void>}
+   */
+  async #resolveOptions(): Promise<void> {
     const {
       preview,
       server,
@@ -96,8 +114,7 @@ export class PreviewServer extends httpServer {
       https: preview?.https || server?.https,
       distDir,
       open: preview?.open || false,
-      cors: preview?.cors || false,
-      root
+      cors: preview?.cors || false
     };
 
     this.httpsOptions = await this.resolveHttpsConfig(
@@ -105,7 +122,13 @@ export class PreviewServer extends httpServer {
     );
   }
 
-  async listen() {
+  /**
+   * Start the preview server.
+   *
+   * @returns {Promise<void>}
+   * @throws {Error} If there's an error starting the server.
+   */
+  async listen(): Promise<void> {
     if (!this.httpServer) {
       this.logger.error(
         'HTTP server is not created yet, this is most likely a farm internal error.'
@@ -122,7 +145,8 @@ export class PreviewServer extends httpServer {
 
       this.resolvedUrls = await resolveServerUrls(
         this.httpServer,
-        this.resolvedUserConfig
+        this.resolvedUserConfig,
+        'preview'
       );
 
       printServerUrls(
@@ -133,5 +157,9 @@ export class PreviewServer extends httpServer {
     } catch (error) {
       throw error;
     }
+  }
+
+  async close() {
+    this.httpServer && this.httpServer.close();
   }
 }
