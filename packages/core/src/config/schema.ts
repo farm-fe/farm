@@ -102,7 +102,9 @@ const compilationConfigSchema = z
       .optional(),
     assets: z
       .object({
-        include: z.array(z.string()).optional()
+        include: z.array(z.string()).optional(),
+        publicDir: z.string().optional(),
+        mode: z.enum(['browser', 'node']).optional()
       })
       .strict()
       .optional(),
