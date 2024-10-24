@@ -152,6 +152,15 @@ export interface ResolvedCompilation
   css?: ResolvedCss;
 }
 
+/**
+ * spa: include SPA fallback middleware and configure sirv with `single: true` in preview
+ *
+ * mpa: only include non-SPA HTML middlewares
+ *
+ * custom: don't include HTML middlewares
+ */
+export type AppType = 'spa' | 'mpa' | 'custom';
+
 export interface ResolvedUserConfig extends UserConfig {
   // watch?: boolean;
   // root?: string;
@@ -161,6 +170,11 @@ export interface ResolvedUserConfig extends UserConfig {
   envPrefix?: string | string[];
   configFilePath?: string;
   envMode?: string;
+  // 移除这个属性 放到 logger 里
+  // @deprecated use logger instead
+  /**
+   * new Logger({timeUnit: 'ms'})
+   */
   timeUnit?: 'ms' | 's';
   configFileDependencies?: string[];
   compilation?: ResolvedCompilation;
@@ -170,6 +184,7 @@ export interface ResolvedUserConfig extends UserConfig {
   inlineConfig?: FarmCliOptions;
   logger?: Logger;
   watch?: boolean;
+  appType: AppType;
 }
 
 export interface GlobalCliOptions {
@@ -220,7 +235,7 @@ export interface FarmCliOptions
 export type DevServerMiddleware = (context: Server) => any | undefined;
 
 export interface Alias {
-  // TODO support RegExp
+  // TODO support RegExp 需要考虑 napi 传递性能问题
   find: string;
   replacement: string;
 }
