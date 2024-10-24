@@ -99,9 +99,13 @@ export interface UserPreviewServerConfig {
   distDir?: string;
   /**
    * Open the preview server in the default browser automatically.
+   * Defaults to `false` if not specified.
    */
   open?: boolean | string;
-  /** Enable CORS for preview server. */
+  /**
+   * Enable CORS for preview server.
+   * Defaults to `false` if not specified.
+   */
   cors?: boolean;
 }
 

@@ -1,4 +1,5 @@
 import { OutgoingHttpHeaders, SecureServerOptions } from 'node:http2';
+import path from 'node:path';
 import connect from 'connect';
 import { resolveConfig } from '../config/index.js';
 import {
@@ -19,6 +20,11 @@ export interface PreviewServerOptions extends UserPreviewServerConfig {
   host: string;
   port: number;
   https: SecureServerOptions;
+  distDir: string;
+  open: boolean | string;
+  cors: boolean;
+
+  root: string;
 }
 
 export class PreviewServer extends httpServer {
@@ -59,21 +65,30 @@ export class PreviewServer extends httpServer {
   }
 
   async #resolveOptions() {
-    const { preview, server } = this.resolvedUserConfig;
+    const {
+      preview,
+      server,
+      compilation: { root, output }
+    } = this.resolvedUserConfig;
+
     // this.publicPath = publicPath;
     // this.publicDir = publicDir;
     this.publicDir =
       '/home/fu050409/Desktop/Workspace/farm/examples/refactor-react/dist/';
 
-    const headers = preview?.headers || server?.headers;
-    const host = typeof preview.host === 'string' ? preview.host : 'localhost';
-    const port = preview?.port || 1911;
-    const https = preview?.https || server?.https;
+    const distDir =
+      preview?.distDir || path.isAbsolute(output?.path)
+        ? output?.path
+        : path.resolve(root, output?.path);
     this.previewServerOptions = {
-      headers,
-      host,
-      port,
-      https
+      headers: preview?.headers || server?.headers,
+      host: typeof preview.host === 'string' ? preview.host : 'localhost',
+      port: preview?.port || 1911,
+      https: preview?.https || server?.https,
+      distDir,
+      open: preview?.open || false,
+      cors: preview?.cors || false,
+      root
     };
 
     [this.httpsOptions, this.publicFiles] = await Promise.all([

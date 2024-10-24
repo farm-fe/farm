@@ -4,7 +4,7 @@
   "biome.enabled": true,
   "editor.defaultFormatter": "biomejs.biome",
   "[typescript]": {
-    "editor.defaultFormatter": "esbenp.prettier-vscode"
+    "editor.defaultFormatter": "biomejs.biome"
   },
   "[javascript]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"
