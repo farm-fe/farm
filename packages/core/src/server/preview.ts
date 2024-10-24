@@ -1,24 +1,23 @@
 import { OutgoingHttpHeaders, SecureServerOptions } from 'node:http2';
 import path from 'node:path';
 import connect from 'connect';
+import sirv, { RequestHandler } from 'sirv';
 import { resolveConfig } from '../config/index.js';
 import {
   FarmCliOptions,
   ResolvedUserConfig,
-  UserConfig,
-  UserPreviewServerConfig
+  UserConfig
 } from '../config/types.js';
 import { resolveServerUrls } from '../utils/http.js';
 import { printServerUrls } from '../utils/logger.js';
+import { knownJavascriptExtensionRE } from '../utils/url.js';
 import { httpServer } from './http.js';
-import { htmlFallbackMiddleware } from './middlewares/htmlFallback.js';
-import { publicMiddleware } from './middlewares/publicResource.js';
-import { initPublicFiles } from './publicDir.js';
 
-export interface PreviewServerOptions extends UserPreviewServerConfig {
+export interface PreviewServerOptions {
   headers: OutgoingHttpHeaders;
   host: string;
   port: number;
+  strictPort: boolean;
   https: SecureServerOptions;
   distDir: string;
   open: boolean | string;
@@ -32,11 +31,8 @@ export class PreviewServer extends httpServer {
   previewServerOptions: PreviewServerOptions;
   httpsOptions: SecureServerOptions;
 
-  publicDir: string;
-  publicPath: string;
-  publicFiles: Set<string>;
-
-  middlewares: connect.Server;
+  app: connect.Server;
+  serve: RequestHandler;
 
   constructor(readonly inlineConfig: FarmCliOptions & UserConfig) {
     super();
@@ -54,14 +50,14 @@ export class PreviewServer extends httpServer {
 
     await this.#resolveOptions();
 
-    this.middlewares = connect();
+    this.app = connect();
     this.httpServer = await this.resolveHttpServer(
       this.previewServerOptions,
-      this.middlewares,
+      this.app,
       this.httpsOptions
     );
 
-    this.#initializeMiddlewares();
+    this.app.use(this.serve);
   }
 
   async #resolveOptions() {
@@ -71,19 +67,32 @@ export class PreviewServer extends httpServer {
       compilation: { root, output }
     } = this.resolvedUserConfig;
 
-    // this.publicPath = publicPath;
-    // this.publicDir = publicDir;
-    this.publicDir =
-      '/home/fu050409/Desktop/Workspace/farm/examples/refactor-react/dist/';
-
     const distDir =
       preview?.distDir || path.isAbsolute(output?.path)
         ? output?.path
-        : path.resolve(root, output?.path);
+        : path.resolve(root, output?.path || 'dist');
+
+    const headers = preview?.headers || server?.headers;
+    this.serve = sirv(distDir, {
+      etag: true,
+      ignores: false,
+      setHeaders: (res, pathname) => {
+        if (knownJavascriptExtensionRE.test(pathname)) {
+          res.setHeader('Content-Type', 'text/javascript');
+        }
+        if (headers) {
+          for (const name in headers) {
+            res.setHeader(name, headers[name]);
+          }
+        }
+      }
+    });
+
     this.previewServerOptions = {
-      headers: preview?.headers || server?.headers,
+      headers,
       host: typeof preview.host === 'string' ? preview.host : 'localhost',
       port: preview?.port || 1911,
+      strictPort: preview?.strictPort || false,
       https: preview?.https || server?.https,
       distDir,
       open: preview?.open || false,
@@ -91,18 +100,9 @@ export class PreviewServer extends httpServer {
       root
     };
 
-    [this.httpsOptions, this.publicFiles] = await Promise.all([
-      this.resolveHttpsConfig(this.previewServerOptions.https),
-      await initPublicFiles(this.resolvedUserConfig)
-    ]);
-  }
-
-  #initializeMiddlewares() {
-    // if ()
-    this.middlewares.use(publicMiddleware(this));
-    console.log(this.publicPath);
-
-    this.middlewares.use(htmlFallbackMiddleware(this));
+    this.httpsOptions = await this.resolveHttpsConfig(
+      this.previewServerOptions.https
+    );
   }
 
   async listen() {
@@ -116,7 +116,6 @@ export class PreviewServer extends httpServer {
     try {
       await this.httpServerStart({
         port: this.previewServerOptions.port,
-        // TODO
         strictPort: true,
         host: this.previewServerOptions.host
       });

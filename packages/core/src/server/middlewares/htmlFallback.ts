@@ -3,12 +3,11 @@ import path from 'node:path';
 import { cleanUrl, commonFsUtils } from '../../utils/index.js';
 
 import type Connect from 'connect';
-import { ResolvedUserConfig } from '../../config/types.js';
 import type { Server } from '../index.js';
 
-export function htmlFallbackMiddleware(app: {
-  resolvedUserConfig: ResolvedUserConfig;
-}): Connect.NextHandleFunction {
+export function htmlFallbackMiddleware(
+  app: Server
+): Connect.NextHandleFunction {
   return async function htmlFallbackMiddleware(req, _res, next) {
     if (
       // Only accept GET or HEAD

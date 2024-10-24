@@ -85,8 +85,20 @@ export interface UserPreviewServerConfig {
   /**
    * Port to run the preview server on.
    * Defaults to `1911` if nothing specified.
+   *
+   * **NOTE**: If the port is already in use, the preview
+   * server will automatically try the next available port.
+   * If you want to use a specific port strictly, please
+   * set `strictPort` to `true`.
    */
   port?: number;
+  /**
+   * Use the specified port strictly.
+   *
+   * If the enabled, the preview server will throw an exception
+   * if failed to binding on specified port.
+   */
+  strictPort?: boolean;
   /** Secure server options */
   https?: SecureServerOptions;
   /**
