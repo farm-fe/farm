@@ -1,5 +1,12 @@
 # @farmfe/core
 
+## 2.0.0-nightly-20241024075304
+
+### Patch Changes
+
+- Updated dependencies [9a1b2b9]
+  - @farmfe/plugin-replace-dirname@1.0.0-nightly-20241024075304
+
 ## 2.0.0-nightly-20241023101523
 
 ### Major Changes

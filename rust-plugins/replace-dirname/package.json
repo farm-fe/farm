@@ -1,6 +1,6 @@
 {
   "name": "@farmfe/plugin-replace-dirname",
-  "version": "0.1.2",
+  "version": "1.0.0-nightly-20241024075304",
   "main": "index.js",
   "types": "index.d.ts",
   "type": "module",
