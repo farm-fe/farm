@@ -31,7 +31,7 @@ export default defineConfig({
     port: 8854,
   },
   preview: {
-    port: 8855,
+    port: 3691,
   }
 });
 
