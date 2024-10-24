@@ -1,5 +1,11 @@
 # @farmfe/core
 
+## 2.0.0-nightly-20241023101523
+
+### Major Changes
+
+- d7c5ffb: support node 16
+
 ## 2.0.0-nightly-20241023020505
 
 ### Patch Changes
