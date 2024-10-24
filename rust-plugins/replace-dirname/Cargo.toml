@@ -1,6 +1,6 @@
 [package]
 edition = "2021"
-name = "farm_plugin_replace_dirname"
+name = "farmfe_plugin_replace_dirname"
 version = "0.0.0"
 
 [lib]

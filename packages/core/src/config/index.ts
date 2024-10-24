@@ -665,15 +665,14 @@ export async function readConfigFile(
     mode
   });
 
-  // const replaceDirnamePlugin = await import('farm-plugin-replace-dirname').then(
-  //   (mod) => mod.default
-  // );
+  const replaceDirnamePlugin = await import(
+    '@farmfe/plugin-replace-dirname'
+  ).then((mod) => mod.default);
 
   const compiler = new Compiler({
     compilation: normalizedConfig,
     jsPlugins: [],
-    // rustPlugins: [[replaceDirnamePlugin, '{}']]
-    rustPlugins: []
+    rustPlugins: [[replaceDirnamePlugin, '{}']]
   });
 
   const FARM_PROFILE = process.env.FARM_PROFILE;
