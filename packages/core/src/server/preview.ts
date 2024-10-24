@@ -4,7 +4,8 @@ import { resolveConfig } from '../config/index.js';
 import {
   FarmCliOptions,
   ResolvedUserConfig,
-  UserConfig
+  UserConfig,
+  UserPreviewServerConfig
 } from '../config/types.js';
 import { resolveServerUrls } from '../utils/http.js';
 import { printServerUrls } from '../utils/logger.js';
@@ -13,12 +14,11 @@ import { htmlFallbackMiddleware } from './middlewares/htmlFallback.js';
 import { publicMiddleware } from './middlewares/publicResource.js';
 import { initPublicFiles } from './publicDir.js';
 
-export interface PreviewServerOptions {
+export interface PreviewServerOptions extends UserPreviewServerConfig {
   headers: OutgoingHttpHeaders;
   host: string;
   port: number;
   https: SecureServerOptions;
-  middlewareMode: boolean;
 }
 
 export class PreviewServer extends httpServer {
@@ -49,13 +49,11 @@ export class PreviewServer extends httpServer {
     await this.#resolveOptions();
 
     this.middlewares = connect();
-    this.httpServer = this.previewServerOptions.middlewareMode
-      ? null
-      : await this.resolveHttpServer(
-          this.previewServerOptions,
-          this.middlewares,
-          this.httpsOptions
-        );
+    this.httpServer = await this.resolveHttpServer(
+      this.previewServerOptions,
+      this.middlewares,
+      this.httpsOptions
+    );
 
     this.#initializeMiddlewares();
   }
@@ -70,14 +68,12 @@ export class PreviewServer extends httpServer {
     const headers = preview?.headers || server?.headers;
     const host = typeof preview.host === 'string' ? preview.host : 'localhost';
     const port = preview?.port || 1911;
-    // const middlewareMode = this.resolvedUserConfig.preview.middlewareMode || false;
     const https = preview?.https || server?.https;
     this.previewServerOptions = {
       headers,
       host,
       port,
-      https,
-      middlewareMode: false
+      https
     };
 
     [this.httpsOptions, this.publicFiles] = await Promise.all([
