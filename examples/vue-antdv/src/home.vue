@@ -1,7 +1,7 @@
 
 <template>
   <div class="tableau" ref="tableau" v-html="html"></div>
-  <button @click="exportFile">Export XLSX</button>
+  <button @click="exportFile">Export2222 XLSX</button>
 </template>
 
 <script setup lang="ts">

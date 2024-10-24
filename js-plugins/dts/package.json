@@ -32,8 +32,6 @@
     "typescript": "^5.4.5"
   },
   "devDependencies": {
-    "@farmfe/cli": "workspace:*",
-    "@farmfe/core": "workspace:*",
     "@types/fs-extra": "^11.0.1"
   },
   "files": [

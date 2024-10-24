@@ -1,14 +1,14 @@
-import type { ModuleSystem, Plugin } from '@farmfe/runtime';
+import type { ModuleSystem } from '@farmfe/runtime';
 
 const __global_this__ = typeof globalThis !== 'undefined' ? globalThis : window;
 
-export default (<Plugin>{
+export default {
   name: 'farm-runtime-import-meta',
   _moduleSystem: {} as ModuleSystem,
   bootstrap(system: ModuleSystem) {
     this._moduleSystem = system;
   },
-  moduleCreated(module) {
+  moduleCreated(module: any) {
     const publicPath = this._moduleSystem.publicPaths?.[0] || "";
     const isSSR = this._moduleSystem.targetEnv === "node";
     const { location } = __global_this__;
@@ -43,4 +43,4 @@ export default (<Plugin>{
       : module.resource_pot;
     module.meta.url = url;
   }
-});
+};

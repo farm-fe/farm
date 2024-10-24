@@ -182,9 +182,9 @@ fn get_export_info_code(
           if let Some(import_as) = import_as {
             match context.config.output.format {
               ModuleFormat::CommonJs => format!("module.exports.{import_as} = entry.{name};"),
-              ModuleFormat::EsModule => format!(
-                "var {name}=entry.{name};export {{ {name} as {import_as} }};"
-              ),
+              ModuleFormat::EsModule => {
+                format!("var {name}=entry.{name};export {{ {name} as {import_as} }};")
+              }
             }
           } else {
             match context.config.output.format {

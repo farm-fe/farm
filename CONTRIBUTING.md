@@ -21,13 +21,9 @@ Please feel free to open an issue using the [feature request template](https://g
 ## Pull Request Guidelines
 
 - Please adhere to the code style that you see around the location you are working on.
-  
 - Setup Your Development Environment.
-  
 - Checkout a topic branch from a base branch, e.g. `main` .
-  
 - Run `cargo test` and make sure that it passes.
-  
 - If you've changed some packages And prepare for an updated version, you should output `npx changeset` in the root directory. we should try our best to keep releasing the `patch version`. If there are no major changes, please choose to update the `patch version`.
 
 - When you are done with your work, verify that it works locally with `pnpm run ready`
@@ -46,7 +42,6 @@ Please feel free to open an issue using the [feature request template](https://g
   git branch --set-upstream-to=upstream/main main
 ```
 
-
 ## Development Environment Setup
 
 ### Dependencies
@@ -56,7 +51,6 @@ Please feel free to open an issue using the [feature request template](https://g
 - [Node.js](https://nodejs.org) **version 16+**
 
 - [Pnpm](https://pnpm.io) **version 8+**
-
 
 ### IDE
 
@@ -112,6 +106,12 @@ We also need to test two parts, a set of `Rust` tests and a set of `Node` tests.
 cargo test
 ```
 
+If you want to update snapshot, you can use `INSTA_UPDATE=always cargo test`
+
+```sh
+INSTA_UPDATE=always cargo test
+```
+
 ### Node Testing
 
 - Input `pnpm test` in the root directory to run all test cases based on `vitest`.
@@ -137,6 +137,5 @@ Farm is divided into two parts: the `JavaScript side` and the `Rust side`:
 
 - **the JavaScript side**:
   see code in the `packages` directory. contains core (dev server, file watcher, and compiler wrapper), CLI, runtime, and runtime plugins (module system, HMR).
-  
 - **the Rust side**:
   see code in the `crates` and `rust-plugins` directory. contains core (compilation context, plugin drivers, etc.), compiler (compile process, HMR update, etc.), and plugins.

@@ -85,6 +85,8 @@ export function farmUserConfigToViteConfig(config: UserConfig): ViteUserConfig {
     // TODO make it configurable
     cacheDir: 'node_modules/.farm/cache',
     envDir: config.envDir,
+    // @ts-ignore
+    env: config.env,
     assetsInclude: [
       ...VITE_DEFAULT_ASSETS,
       ...(config.compilation?.assets?.include ?? [])
@@ -232,6 +234,7 @@ export function proxyViteConfig(
         'css',
         'build',
         'logger',
+        'env',
         'cacheDir',
         'envDir',
         'assetsInclude',
@@ -349,19 +352,19 @@ export function viteConfigToFarmConfig(
         >;
       } else {
         if (!farmConfig.compilation.resolve.alias) {
-          farmConfig.compilation.resolve.alias = {};
+          farmConfig.compilation.resolve.alias = [];
         }
 
         const farmRegexPrefix = '$__farm_regex:';
 
-        for (const { find, replacement } of config.resolve.alias) {
-          if (find instanceof RegExp) {
-            const key = farmRegexPrefix + find.source;
-            farmConfig.compilation.resolve.alias[key] = replacement;
-          } else {
-            farmConfig.compilation.resolve.alias[find] = replacement;
-          }
-        }
+        // for (const { find, replacement } of config.resolve.alias) {
+        //   if (find instanceof RegExp) {
+        //     const key = farmRegexPrefix + find.source;
+        //     farmConfig.compilation.resolve.alias[key] = replacement;
+        //   } else {
+        //     farmConfig.compilation.resolve.alias[find] = replacement;
+        //   }
+        // }
       }
     }
 
@@ -374,6 +377,7 @@ export function viteConfigToFarmConfig(
 
   if (config.server) {
     farmConfig.server ??= {};
+    // @ts-ignore
     farmConfig.server.hmr = config.server.hmr;
     farmConfig.server.port = config.server.port;
 

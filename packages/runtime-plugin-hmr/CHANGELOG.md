@@ -1,5 +1,11 @@
 # @farmfe/runtime-plugin-hmr
 
+## 4.0.0-nightly-20241023020505
+
+### Major Changes
+
+- cab79e8: bump major version with runtime
+
 ## 3.5.7
 
 ### Patch Changes

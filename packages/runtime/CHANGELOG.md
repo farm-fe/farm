@@ -1,5 +1,11 @@
 # @farmfe/runtime
 
+## 1.0.0-nightly-20241023020505
+
+### Major Changes
+
+- cab79e8: bump major version with runtime
+
 ## 0.12.7
 
 ### Patch Changes

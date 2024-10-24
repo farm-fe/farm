@@ -5,7 +5,7 @@ use farmfe_core::{
   error::CompilationError,
   module::{module_graph::ModuleGraph, Module, ModuleId, ModuleSystem},
   resource::resource_pot::RenderedModule,
-  swc_common::{comments::SingleThreadedComments, util::take::Take, Mark},
+  swc_common::{comments::SingleThreadedComments, util::take::Take, Mark, SyntaxContext},
   swc_ecma_ast::{ArrowExpr, BlockStmtOrExpr, Expr, ExprStmt},
 };
 use farmfe_toolkit::{
@@ -141,7 +141,7 @@ pub fn render_module<'a, F: Fn(&ModuleId) -> bool>(
     }
     // swc code gen would emit a trailing `;` when is_target_legacy is false.
     // we can not deal with this situation for now, so we set is_target_legacy to true here, it will be fixed in the future.
-    wrap_function(&mut cloned_module, unresolved_mark, is_async_module, true);
+    wrap_function(&mut cloned_module, is_async_module, true);
 
     if minify_enabled {
       minify_js_module(
@@ -238,17 +238,12 @@ pub fn render_module<'a, F: Fn(&ModuleId) -> bool>(
 ///   exports.b = b;
 /// }
 /// ```
-fn wrap_function(
-  module: &mut SwcModule,
-  unresolved_mark: Mark,
-  is_async_module: bool,
-  is_target_legacy: bool,
-) {
+fn wrap_function(module: &mut SwcModule, is_async_module: bool, is_target_legacy: bool) {
   let body = module.body.take();
 
   let params = vec![
     Param {
-      span: DUMMY_SP.apply_mark(unresolved_mark),
+      span: DUMMY_SP,
       decorators: vec![],
       pat: farmfe_core::swc_ecma_ast::Pat::Ident(BindingIdent {
         id: FARM_MODULE.into(),
@@ -256,7 +251,7 @@ fn wrap_function(
       }),
     },
     Param {
-      span: DUMMY_SP.apply_mark(unresolved_mark),
+      span: DUMMY_SP,
       decorators: vec![],
       pat: farmfe_core::swc_ecma_ast::Pat::Ident(BindingIdent {
         id: FARM_MODULE_EXPORT.into(),
@@ -264,7 +259,7 @@ fn wrap_function(
       }),
     },
     Param {
-      span: DUMMY_SP.apply_mark(unresolved_mark),
+      span: DUMMY_SP,
       decorators: vec![],
       pat: farmfe_core::swc_ecma_ast::Pat::Ident(BindingIdent {
         id: FARM_REQUIRE.into(),
@@ -272,7 +267,7 @@ fn wrap_function(
       }),
     },
     Param {
-      span: DUMMY_SP.apply_mark(unresolved_mark),
+      span: DUMMY_SP,
       decorators: vec![],
       pat: farmfe_core::swc_ecma_ast::Pat::Ident(BindingIdent {
         id: FARM_DYNAMIC_REQUIRE.into(),
@@ -298,11 +293,13 @@ fn wrap_function(
         body: Box::new(BlockStmtOrExpr::BlockStmt(BlockStmt {
           span: DUMMY_SP,
           stmts,
+          ctxt: SyntaxContext::empty(),
         })),
         is_async: is_async_module,
         is_generator: false,
         type_params: None,
         return_type: None,
+        ctxt: SyntaxContext::empty(),
       })),
     }))
   } else {
@@ -312,15 +309,17 @@ fn wrap_function(
       function: Box::new(Function {
         params,
         decorators: vec![],
-        span: DUMMY_SP.apply_mark(unresolved_mark),
+        span: DUMMY_SP,
         body: Some(BlockStmt {
-          span: DUMMY_SP.apply_mark(unresolved_mark),
+          span: DUMMY_SP,
           stmts,
+          ctxt: SyntaxContext::empty(),
         }),
         is_generator: false,
         is_async: is_async_module,
         type_params: None,
         return_type: None,
+        ctxt: SyntaxContext::empty(),
       }),
     })))
   };

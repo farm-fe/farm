@@ -5,6 +5,7 @@ use std::{
   sync::Arc,
 };
 
+use farmfe_core::config::{AliasItem, StringOrRegex};
 use farmfe_core::regex;
 use farmfe_core::{
   common::PackageJsonInfo,
@@ -416,44 +417,100 @@ impl Resolver {
   ) -> Option<PluginResolveHookResult> {
     farm_profile_function!("try_alias".to_string());
     // sort the alias by length, so that the longest alias will be matched first
-    let mut alias_list: Vec<_> = context.config.resolve.alias.keys().collect();
-    alias_list.sort_by(|a, b| b.len().cmp(&a.len()));
 
-    for alias in alias_list {
-      let replaced = context.config.resolve.alias.get(alias).unwrap();
+    // let mut alias_list: Vec<_> = context.config.resolve.alias.keys().collect();
+    // alias_list.sort_by(|a, b| b.len().cmp(&a.len()));
+    // for alias in alias_list {
+    //   let replaced = context.config.resolve.alias.get(alias).unwrap();
+    //   let mut result = None;
+
+    //   // try regex alias first
+    //   if let Some(alias) = alias.strip_prefix(REGEX_PREFIX) {
+    //     let regex = regex::Regex::new(alias).unwrap();
+    //     if regex.is_match(source) {
+    //       let replaced = regex.replace(source, replaced.as_str()).to_string();
+    //       result = self.resolve(&replaced, base_dir.clone(), kind, options, context);
+    //     }
+    //   } else if alias.ends_with('$') && source == alias.trim_end_matches('$') {
+    //     result = self.resolve(replaced, base_dir.clone(), kind, options, context);
+    //   } else if !alias.ends_with('$') && source.starts_with(alias) {
+    //     // Add absolute path and values in node_modules package
+
+    //     let source_left = RelativePath::new(source.trim_start_matches(alias));
+    //     let new_source = source_left
+    //       .to_logical_path(replaced)
+    //       .to_string_lossy()
+    //       .to_string();
+    //     if Path::new(&new_source).is_absolute() && !Path::new(&new_source).is_relative() {
+    //       result = self.resolve(&new_source, base_dir.clone(), kind, options, context);
+    //     }
+    //     let (res, _) = self._try_node_modules_internal(
+    //       new_source.as_str(),
+    //       base_dir.clone(),
+    //       kind,
+    //       options,
+    //       context,
+    //     );
+    //     if let Some(resolve_result) = res {
+    //       let resolved_path = resolve_result.resolved_path;
+    //       result = self.resolve(&resolved_path, base_dir.clone(), kind, options, context);
+    //     }
+    //   }
+
+    //   if result.is_some() {
+    //     return result;
+    //   }
+    // }
+
+    for alias_item in &context.config.resolve.alias {
       let mut result = None;
 
-      // try regex alias first
-      if let Some(alias) = alias.strip_prefix(REGEX_PREFIX) {
-        let regex = regex::Regex::new(alias).unwrap();
-        if regex.is_match(source) {
-          let replaced = regex.replace(source, replaced.as_str()).to_string();
-          result = self.resolve(&replaced, base_dir.clone(), kind, options, context);
-        }
-      } else if alias.ends_with('$') && source == alias.trim_end_matches('$') {
-        result = self.resolve(replaced, base_dir.clone(), kind, options, context);
-      } else if !alias.ends_with('$') && source.starts_with(alias) {
-        // Add absolute path and values in node_modules package
+      match alias_item {
+        AliasItem::Complex { find, replacement } => match find {
+          StringOrRegex::Regex(regex) => {
+            if regex.is_match(source) {
+              let replaced = regex.replace(source, replacement.as_str()).to_string();
+              result = self.resolve(&replaced, base_dir.clone(), kind, options, context);
+            }
+          }
+          StringOrRegex::String(alias) => {
+            if let Some(regex_str) = alias.strip_prefix(REGEX_PREFIX) {
+              if let Ok(regex) = regex::Regex::new(regex_str) {
+                if regex.is_match(source) {
+                  let replaced = regex.replace(source, replacement.as_str()).to_string();
+                  result = self.resolve(&replaced, base_dir.clone(), kind, options, context);
+                }
+              }
+            } else if alias.ends_with('$') && source == alias.trim_end_matches('$') {
+              result = self.resolve(replacement, base_dir.clone(), kind, options, context);
+            } else if !alias.ends_with('$') && source.starts_with(alias) {
+              let source_left = RelativePath::new(source.trim_start_matches(alias));
+              let new_source = source_left
+                .to_logical_path(replacement)
+                .to_string_lossy()
+                .to_string();
 
-        let source_left = RelativePath::new(source.trim_start_matches(alias));
-        let new_source = source_left
-          .to_logical_path(replaced)
-          .to_string_lossy()
-          .to_string();
-        if Path::new(&new_source).is_absolute() && !Path::new(&new_source).is_relative() {
-          result = self.resolve(&new_source, base_dir.clone(), kind, options, context);
-        }
-        let (res, _) = self._try_node_modules_internal(
-          new_source.as_str(),
-          base_dir.clone(),
-          kind,
-          options,
-          context,
-        );
-        if let Some(resolve_result) = res {
-          let resolved_path = resolve_result.resolved_path;
-          result = self.resolve(&resolved_path, base_dir.clone(), kind, options, context);
-        }
+              if Path::new(&new_source).is_absolute() && !Path::new(&new_source).is_relative() {
+                result = self.resolve(&new_source, base_dir.clone(), kind, options, context);
+              }
+
+              if result.is_none() {
+                let (res, _) = self._try_node_modules_internal(
+                  new_source.as_str(),
+                  base_dir.clone(),
+                  kind,
+                  options,
+                  context,
+                );
+                if let Some(resolve_result) = res {
+                  let resolved_path = resolve_result.resolved_path;
+                  result = self.resolve(&resolved_path, base_dir.clone(), kind, options, context);
+                }
+              }
+            }
+          }
+        },
+        // AliasItem::Simple(_) => {}
       }
 
       if result.is_some() {

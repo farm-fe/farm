@@ -28,7 +28,7 @@ Please upgrade or downgrade the plugin or @farmfe/core to make the versions matc
   plugin core 0.4 -> @farmfe/core < 1.3.0
   plugin core 0.5 -> @farmfe/core >= 1.3.0
 
-If you are plugin author, please build your plugin with rust toolchain `nightly-2024-04-16`\n",
+If you are plugin author, please build your plugin with rust toolchain `nightly-2024-10-07`\n",
       VERSION, core_version, filename
     );
   }

@@ -56,68 +56,22 @@ function getIconFromKey(key) {
 }
 
 function getFlattenRoutes(routes) {
-  const res = []
-  // function travel(_routes) {
-  //   _routes.forEach((route) => {
-  //     if (route.key && !route.children) {
-  //       route.component = lazyload(() => import(`./pages/${route.key}`));
-  //       res.push(route);
-  //     } else if (isArray(route.children) && route.children.length) {
-  //       travel(route.children);
-  //     }
-  //   });
-  // }
-  // travel(routes);
-
-  // You may be very surprised why it is written this way, so am I...
+  const res = [];
+  // @ts-ignore
+  const mod = import.meta.glob("./pages/**/*.tsx");
   function travel(_routes) {
     _routes.forEach((route) => {
       if (route.key && !route.children) {
-        if (route.key.includes('dashboard/monitor')) {
-          route.component = lazyload(() => import('./pages/dashboard/monitor'))
-        } else if (route.key.includes('dashboard/workplace')) {
-          route.component = lazyload(() => import('./pages/dashboard/workplace'))
-        } else if (route.key.includes('exception/403')) {
-          route.component = lazyload(() => import('./pages/exception/403'))
-        } else if (route.key.includes('exception/404')) {
-          route.component = lazyload(() => import('./pages/exception/404'))
-        } else if (route.key.includes('exception/500')) {
-          route.component = lazyload(() => import('./pages/exception/500'))
-        } else if (route.key.includes('form/group')) {
-          route.component = lazyload(() => import('./pages/form/group'))
-        } else if (route.key.includes('form/step')) {
-          route.component = lazyload(() => import('./pages/form/step'))
-        } else if (route.key.includes('list/card')) {
-          route.component = lazyload(() => import('./pages/list/card'))
-        } else if (route.key.includes('list/search-table')) {
-          route.component = lazyload(() => import('./pages/list/search-table'))
-        } else if (route.key.includes('profile/basic')) {
-          route.component = lazyload(() => import('./pages/profile/basic'))
-        } else if (route.key.includes('result/error')) {
-          route.component = lazyload(() => import('./pages/result/error'))
-        } else if (route.key.includes('result/success')) {
-          route.component = lazyload(() => import('./pages/result/success'))
-        } else if (route.key.includes('user/info')) {
-          route.component = lazyload(() => import('./pages/user/info'))
-        } else if (route.key.includes('user/setting')) {
-          route.component = lazyload(() => import('./pages/user/setting'))
-        } else if (route.key.includes('visualization/data-analysis')) {
-          route.component = lazyload(() => import('./pages/visualization/data-analysis'))
-        } else if (route.key.includes('visualization/multi-dimension-data-analysis')) {
-          route.component = lazyload(() => import('./pages/visualization/multi-dimension-data-analysis'))
-        } else if (route.key.includes('welcome')) {
-          route.component = lazyload(() => import('./pages/welcome'))
-        } else if (route.key.includes('login')) {
-          route.component = lazyload(() => import('./pages/login'))
-        }
-        res.push(route)
+        route.component = lazyload(mod[`./pages/${route.key}/index.tsx`]);
+        res.push(route);
       } else if (isArray(route.children) && route.children.length) {
-        travel(route.children)
+        travel(route.children);
       }
-    })
+    });
   }
-  travel(routes)
-  return res
+
+  travel(routes);
+  return res;
 }
 
 function PageLayout() {

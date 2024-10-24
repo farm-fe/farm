@@ -1,0 +1,545 @@
+import CodeBlock from "@theme/CodeBlock";
+import Tabs from "@theme/Tabs";
+import TabItem from "@theme/TabItem";
+
+# 编写 Rust 插件
+
+用 Rust 写你的插件是一个推荐的方式，因为 Rust 插件比 JavaScript 插件**更快和富有表现力**。一个 Rust 插件应该是实现了 `farmfe_core::plugin::Plugin` trait 的 `struct`, 例如
+
+```rust
+#![deny(clippy::all)]
+
+use farmfe_core::{config::Config, plugin::Plugin};
+
+use farmfe_macro_plugin::farm_plugin;
+
+// define your rust plugins
+#[farm_plugin]
+pub struct FarmPluginExample {}
+
+impl FarmPluginExample {
+  // 一个 Rust 插件必须导出一个名称是 new 的函数 并且初始化的时候接受两个参数
+  fn new(config: &Config, options: String) -> Self {
+    Self {}
+  }
+}
+// 实现插件的 trait 来定义插件 hooks
+impl Plugin for FarmPluginExample {
+  fn name(&self) -> &str {
+    "FarmPluginExample"
+  }
+
+  // more hooks here
+}
+```
+
+Rust 插件注意事项：
+- `struct` 必须是 `pub` 并且需要有 `#[farm_plugin]` 属性
+- `struct` 必须实现 `Plugin` trait, 并且 `name` 方法必须要实现
+- `struct` 必须导出一个 `new` 的方法，在初始化的时候接受两个参数 第一个参数是 `&Config`, 第二个参数是 `String`。`new` 方法在插件加载的时候调用。 `Config` 是 farm 项目的配置 `String` 是插件的选项
+
+我们同时提供了 Rust 插件示例代码仓库：[farm-rust-plugin-example](https://github.com/farm-fe/rust-plugin-example)
+
+
+:::note
+本文章仅仅涵盖如何创建，开发和发布一个 Rust 插件，更多的细节参考 [插件 Hooks](/zh//docs/api/rust-plugin-api)
+:::
+
+## 约定
+
+对于特定的 Farm 插件
+
+- 一个 Farm 的 Rust 插件应该有一个 `farm-plugin-` 前缀的名称并且语义清晰
+- package.json 里面有 `farm-plugin-` 关键字
+
+
+如果你的插件仅仅适配特定框架，其名称应遵循以下前缀格式:
+
+- `farm-plugin-vue-`: 作为 Vue 插件前缀
+- `farm-plugin-react-`: 作为 React 插件前缀
+- `farm-plugin-svelte-`: 作为 Svelte 插件前缀
+- ...
+
+
+## 概念
+
+在开始编写 Rust 插件之前，你应该了解以下概念:
+
+* **module_type**：模块的类型，他可能是 `js`, `ts`, `css`, `sass`, `json` 等等。Farm 原生支持 `js/ts/jsx/tsx`, `css`, `html`, `json`, `static asserts(png, svg等等)`。`module_type` 会被 `load` 或者 `transform` 钩子返回
+* **resolved_path 和 module_id**：`resolved_path` 是一个模块的绝对路径，`module_id`是一个模块的唯一 id，通常是`模块对于项目根目录的相对路径` + `query`。例如 我们引用了一个模块 `import './a?query'` resolved_path 是 `/project/src/a.ts` module_id 是 `src/a.ts?query`
+* **context**: 所有的插件都会接受一个 `context` 参数，它有 Farm 项目的整个编译上下文，你可以从里面拿到 ModuleGraph，Module，Resources等等
+* **Resource and Resource Pot**：`Resource` 是输出出来的最终打包产物，` Resource Pot`是资源的抽象表示，类似于其他打包器的 `Chunk`。在 Farm 项目中，我们首先从 `ModuleGraph` 生成 `Resource Pots`, 渲染 `Resource Pots`，最终从 `Resource Pots` 生成 `Resource
+
+### 模块类型
+
+在 Farm 中，一切都被认为是“一等公民”，因此 Farm 设计 `module_type` 来标识模块类型，并在用不同的插件处理不同的模块类型
+`Module_type `由 `load` 钩子返回，并且可以由 `transform` 钩子转换。Farm 原生支持 `js/ts/jsx/tsx`、`css`、`html`、`json`、`static assets(png、svg等)`。对于这些模块类型，你可以直接在 `load` 或 `transform` hook 中返回。但是如果你想处理自定义模块类型，你需要实现其他钩子例如 `parse`， `render_resource_pot_modules`， `generate resources` 等来控制如何对自定义模块进行类型解析，渲染和生成资源。
+
+## 创建插件
+Farm 提供了官方模板来帮助你快速创建 Rust 插件:
+
+<>
+    <Tabs>
+      <TabItem value="pnpm" label="pnpm">
+          <CodeBlock>pnpm create farm-plugin</CodeBlock>
+              </TabItem>
+          <TabItem value="npm" label="npm">
+              <CodeBlock>npm create farm-plugin@latest</CodeBlock>
+              </TabItem>
+
+  <TabItem value="yarn" label="yarn">
+          <CodeBlock>yarn create farm-plugin</CodeBlock>
+              </TabItem>
+          </Tabs>
+</>
+
+然后按照提示创建插件
+
+或者直接运行以下命令创建插件:
+
+<Tabs>
+    <TabItem value="pnpm" label="pnpm">
+        <CodeBlock>pnpm create farm-plugin my-farm-plugin --type rust</CodeBlock>
+    </TabItem>
+    <TabItem value="npm" label="npm">
+        <CodeBlock>npm create my-farm-plugin --type rust</CodeBlock>
+    </TabItem>
+
+   <TabItem value="yarn" label="yarn">
+        <CodeBlock>yarn create my-farm-plugin --type rust</CodeBlock>
+    </TabItem>
+</Tabs>
+
+上面的命令会在当前目录中创建一个名为 `my-farm-plugin` 的js插件。`——type` 可以是 `rust` 或者 `js`
+
+## 插件项目结构
+
+一个插件项目结构如下：
+
+```plaintext
+my-farm-plugin
+├── .github
+│   └── workflows
+|       ├── release.yml
+|       ├── build.yml
+│       └── ci.yml
+├── Cargo.toml
+|── .gitignore
+├── npm
+│   ├── darwin-x64
+│   ├── linux-x64-gnu
+|   ├── win32-x64-msvc
+│   └── ...
+├── package.json
+├── src
+│   └── lib.rs
+└── rust-toolchain.toml
+```
+
+值得注意的文件和目录:
+
+- `src/lib.rs`: 插件的主要文件，你在这里定义你的插件
+- `Cargo.toml`: Rust 项目的清单
+- `package.json`: npm 项目清单
+- `npm`: 平台特定的二进制包所在的位置。在发布插件之前，这些包应该发布到 npm registry
+- `.github/workflows`: 用于在 github actions 中交叉构建和发布插件
+- `rust-toolchain.toml`: rust 工具链文件，它不应该 **被手动修改**，它应该始终使用 **与 farm core相同的版本**。
+
+Farm 提供了一个工具 (`@farmfe/plugin-tools`) 来帮助你构建和发布插件，参考 `package.json`:
+
+```json
+{
+  // ...
+  "scripts": {
+    // build your plugin for current platform
+    "build": "farm-plugin-tools build --platform --cargo-name my_farm_plugin -p my_farm_plugin --release",
+    // publish all platform packages under npm directory to npm registry
+    "prepublishOnly": "farm-plugin-tools prepublish"
+  },
+  // ...
+}
+```
+
+更多关于构建和发布的细节参考 [构建](#cross-build) 和 [发布](#publish)章节：
+
+
+## 开发插件
+
+为了在本地开发和测试你的插件 你首先依据你平台构建插件，运行：
+
+```bash
+pnpm build
+```
+
+然后你可以使用你构建好的插件，在 `frame.config.ts` 的 `plugins`添加你的插件：
+
+```javascript
+import { defineConfig } from '@farmfe/core';
+
+export default defineConfig({
+  plugins: [
+    'my-farm-plugin'
+  ]
+});
+```
+
+在你的 farm 项目中运行 `pnpm i` 并且运行 `farm start` 来运行你的带有你插件的 farm 项目
+当对插件进行更改时，应该重新构建插件并重启 farm 项目以查看更改。例如，在你的插件中添加 `load` 钩子:
+
+```rust {8-18} title="src/lib.rs"
+// ... ignore other code
+
+impl Plugin for FarmPluginExample {
+  fn name(&self) -> &str {
+    "FarmPluginExample"
+  }
+
+  fn load(
+    &self,
+    param: &farmfe_core::plugin::PluginLoadHookParam,
+    _context: &std::sync::Arc<farmfe_core::context::CompilationContext>,
+    _hook_context: &farmfe_core::plugin::PluginHookContext,
+  ) -> farmfe_core::error::Result<Option<farmfe_core::plugin::PluginLoadHookResult>> {
+    println!(
+      "load path: {:?}, id: {:?}",
+      param.resolved_path, param.module_id
+    );
+    Ok(None)
+  }
+}
+```
+
+然后用 `pnpm build` 重新构建你的插件，用 `farm start` 重新启动你的 farm 项目，你会看到 `load` 钩子在编译你的 farm 项目时被调用。
+
+:::note
+想了解更多关于插件 hooks , 参阅 [插件钩子](/zh/docs/api/rust-plugin-api).
+:::
+
+### 处理 ModuleType
+`module_type` 由 `load` hook 或 `transform` hook 返回。你在 `load` hook 中可以给 module 设置任意的 module type，该模块将由支持该模块类型的相应插件处理。
+对于原生支持的模块类型，你可以在 `load` 钩子中返回模块类型:
+
+```rust {8-18} title="src/lib.rs"
+// ... ignore other code
+
+impl Plugin for FarmPluginExample {
+  fn name(&self) -> &str {
+    "FarmPluginExample"
+  }
+
+  fn load(
+    &self,
+    param: &farmfe_core::plugin::PluginLoadHookParam,
+    _context: &std::sync::Arc<farmfe_core::context::CompilationContext>,
+    _hook_context: &farmfe_core::plugin::PluginHookContext,
+  ) -> farmfe_core::error::Result<Option<farmfe_core::plugin::PluginLoadHookResult>> {
+    // handle virtual module
+    if param.module_id.starts_with("virtual:my-css:css") {
+      // return module type and content
+      Ok(Some(farmfe_core::plugin::PluginLoadHookResult {
+        module_type: "css".to_string(),
+        content: ".red { color: red; }".to_string(),
+        ..Default::default()
+      }))
+    } else {
+      Ok(None)
+    }
+  }
+}
+```
+
+对于原生支持的模块类型，你应该使用 `transform` hook 将模块类型转换为原生支持的模块类型，否则你需要实现 `parse`、`renderResourcePot` hook 来处理你的自定义模块类型:
+
+```rust {8-18} title="src/lib.rs"
+// ... ignore other code
+
+impl Plugin for FarmPluginExample {
+  fn name(&self) -> &str {
+    "FarmPluginExample"
+  }
+
+  fn transform(
+    &self,
+    param: &farmfe_core::plugin::PluginTransformHookParam,
+    _context: &std::sync::Arc<farmfe_core::context::CompilationContext>,
+    _hook_context: &farmfe_core::plugin::PluginHookContext,
+  ) -> farmfe_core::error::Result<Option<farmfe_core::plugin::PluginTransformHookResult>> {
+    // module type guard is required
+    if matches!(param.module_type, ModuleType::Custom("sass")) {
+      // compile sass and transform the module type from sass to css
+      Ok(Some(farmfe_core::plugin::PluginTransformHookResult {
+        module_type: "css".to_string(),
+        content: compileSass(param.content),
+        ..Default::default()
+      }))
+    } else {
+      Ok(None)
+    }
+  }
+}
+```
+
+:::note
+模块类型保护，如 `matches!(module_type, ModuleType::Custom("sass"))` `transform` 钩子是必需的，因为所有模块类型都会调用 `transform` 钩子，并且你应该只在 `transform` hook 中处理你的自定义模块类型。`parse`和其他 hook 也是如此。
+:::
+
+或者实现 `parse`，`render_resource_pot_modules` 钩子来处理你的自定义模块类型 参考 farm 如何原生处理 css 插件如何处理 `css` 模块类型的 [farm-plugin-css](https://github.com/farm-fe/farm/blob/main/crates/plugin_html/src/lib.rs#L159)
+
+
+###  处理插件选项
+rust 插件选项可以在`farm.config.ts`中配置:
+
+```javascript
+import { defineConfig } from '@farmfe/core';
+
+export default defineConfig({
+  plugins: [
+    ['my-farm-plugin', {
+      // plugin options
+      myOption: 'myOption'
+    }]
+  ]
+});
+```
+
+该选项将被 json 序列化并传递给插件的`new`方法，你可以在`new`方法中处理该选项:
+
+```rust title="src/lib.rs"
+// ... ignore other code
+
+// define your rust plugin options
+#[derive(serde::Deserialize)]
+pub struct Options {
+  pub my_option: Option<String>,
+}
+
+impl FarmPluginExample {
+  fn new(config: &Config, options: String) -> Self {
+    // deserialize the options
+    let my_option: Options = serde_json::from_str(&options).unwrap();
+    // handle the options...
+    Self {}
+  }
+}
+```
+
+请注意，你应该将依赖 `serde` 和 `serde_json` 添加到你的`Cargo.toml`中。来支持反序列化:
+
+```toml
+[dependencies]
+# ... ignore other code
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+```
+
+:::note
+不能被 json 序列化选项不被支持。这意味着你只能使用字符串、数字、布尔值、数组、对象等类型。不支持`函数选项`。
+:::
+
+### 在插件里面使用 farm_core
+
+Farm 在 [`farmfe_core`](https://docs.rs/farmfe_core) crate 中暴露所有核心结构和工具函数。更多细节请参阅[`farmfe_core`](https://docs.rs/farmfe_core)文档。
+
+:::note
+如果你想在插件中使用 swc 中的 `Module`、`Program` 等结构，你应该使用由 farm_core 重新暴露的 `farmfe_core::swc_ast`。因为 farm_core 使用的 swc 版本可能与你在插件中使用的 swc 版本不同，并且 farm_core 使用的 swc 版本保证与 farm_core 兼容。
+:::
+
+### 警告
+
+#### 在插件中使用 SWC
+
+请注意，你的 rust 插件不应该使用任何与 SWC 相关的包，如`swc_common`、`swc_transforms`等。SWC 在进程中存储全局状态，当你在插件中使用 SWC 时，它可能会导致**死锁**。
+
+如果你想要修改你的 Farm 项目的AST，建议写[SWC Plugin](/zh/docs/using-plugins#using-swc plugins)。关于如何编写SWC插件，请参阅[编写SWC插件](https://swc.rs/docs/plugin/ecmascript/getting-started)。
+
+#### 选择 Rust 工具链
+
+因为 Farm 的 Rust 插件是一个动态链接库，你应该始终使用和 farm core 相同版本的 Rust 工具链。rust 工具链定义在` rust-toolchain.toml`中。它不应该**被手动修改**。
+并且应该始终使用 Rust 构建插件，因为Farm Core 不支持 FFI，也不承诺 ABI 稳定性以提供最佳性能。
+
+### 插件的兼容性
+
+Farm core 维护了一个向插件暴漏出来一个 API 版本。如果你遇到类似`Incompatible Rust Plugin: Current core's version…`，这意味着你的插件与当前 farm core版本不兼容。你应该更新你的插件到最新版本来解决这个问题。
+
+对于插件作者来说，你应该重新用最新的 farm core 版本构建和发布插件，来让你的插件与最新的 farm core版本兼容。
+
+:::note
+Farm 承诺与相同主版本的 AP I兼容，例如，如果你的插件兼容 Farm core 1.0.0，那么它也应该兼容 Farm core 1.1.0、1.2.0等，这意味着你的插件将始终适用于相同的 Farm 主版本。
+:::
+
+## 交叉构建
+一个 Farm Rust 插件是一个**特定于平台的动态链接库**，你应该为你想要支持的所有平台构建插件。
+Farm 提供了一个使用 github actions 构建插件的示例，请参阅[.github/workflows/build.yml](https://github.com/farm-fe/rust-plugin-example/blob/main/.github/workflows/build.yaml)
+
+默认情况下，farm rust 插件应该针对以下平台构建:
+- `linux-x64-gnu `
+- `linux-x64-musl`
+- `darwin-x64`
+- `win32-x64-msvc`
+- `linux-arm64-musl`
+- `linux-arm64-gnu`
+- `darwin-arm64`
+- `win32-ia32-msvc`
+- `win32-arm64-msvc`
+
+对于公开发布到 npm registry 的插件，建议发布支持上面所有平台的插件。对于私有 rust 插件，你可以为任何你想支持的平台构建插件。
+
+:::tip
+因为 rust 插件是一个纯动态链接库，如果您有关于如何为特定平台构建插件的问题，只需谷歌如何在 rust 中为该平台构建动态链接库。
+:::
+
+## 发布
+
+发布 Rust插件的有以下的步骤:
+1. 交叉构建动态链接库的 Rust 插件，详情请参阅[交叉构建](#cross-build)
+2. 将二进制文件复制到 npm 目录下，例如:复制到 `npm/linux-x64-gnu/index.farm`
+3. 在 npm 目录下发布平台特定的包，你可以使用`farm-plugin-tool prepublish`在 npm 目录下发布包
+4. 发布包本身
+
+参见示例[github actions publish workflow](https://github.com/farm-fe/rust-plugin-example/blob/main/.github/workflows/release.yml)
+
+## 例子
+
+我们将使用 `@farmfe/plugin-sass` 作为一个真正的 Rust 插件示例。这个插件将支持在你的项目中编译`.scss` 和 `.sass` 文件
+
+
+### 定义一个插件
+导出一个名为 `FarmPluginSass` 的 Rust struct
+
+```rust title="src/lib.rs"
+use farmfe_macro_plugin::farm_plugin;
+
+// 1. define a struct with #[farm_plugin] attribute
+#[farm_plugin]
+pub struct FarmPluginSass {
+  sass_options: String,
+  regex: Regex,
+}
+
+impl FarmPluginSass {
+  // 2. define a new method with 2 arguments
+  pub fn new(_config: &Config, options: String) -> Self {
+    Self {
+      sass_options: options,
+      regex: Regex::new(r#"\.(sass|scss)$"#).unwrap(),
+    }
+  }
+}
+```
+- struct 必须是`pub`并且必须有 `#[farm_plugin]` 属性。
+- 结构体必须导出一个`new`方法，该方法接受两个参数作为初始化参数，第一个参数是`&Config`，第二个参数是`String`。
+
+### 实现插件 Trait
+
+`Plugin` trait 用于定义可以挂接到 farm compiler 的 `hooks`
+
+```rust {21-30}
+use farmfe_core::plugin::Plugin;
+use farmfe_macro_plugin::farm_plugin;
+
+// 1. define a struct with #[farm_plugin] attribute
+#[farm_plugin]
+pub struct FarmPluginSass {
+  sass_options: String,
+  regex: Regex,
+}
+
+impl FarmPluginSass {
+  // 2. define a new method with 2 arguments
+  pub fn new(_config: &Config, options: String) -> Self {
+    Self {
+      sass_options: options,
+      regex: Regex::new(r#"\.(sass|scss)$"#).unwrap(),
+    }
+  }
+}
+// Implement Plugin Trait
+impl Plugin for FarmPluginSass {
+  fn name(&self) -> &str {
+    "FarmPluginSass"
+  }
+
+  // this plugin should be executed before internal plugins
+  fn priority(&self) -> i32 {
+    101
+  }
+}
+```
+### 加载 `.scss` 文件
+实现 `load` 钩子以支持加载` .scss` 文件
+
+```rust {14-32}
+// ignore other code ...
+
+// Implement Plugin Trait
+impl Plugin for FarmPluginSass {
+  fn name(&self) -> &str {
+    "FarmPluginSass"
+  }
+
+  // this plugin should be executed before internal plugins
+  fn priority(&self) -> i32 {
+    101
+  }
+
+  fn load(
+    &self,
+    param: &farmfe_core::plugin::PluginLoadHookParam,
+    _context: &std::sync::Arc<farmfe_core::context::CompilationContext>,
+    _hook_context: &farmfe_core::plugin::PluginHookContext,
+  ) -> farmfe_core::error::Result<Option<farmfe_core::plugin::PluginLoadHookResult>> {
+    if param.query.is_empty() && self.regex.is_match(param.resolved_path) {
+      let content = fs::read_file_utf8(param.resolved_path);
+
+      if let Ok(content) = content {
+        return Ok(Some(farmfe_core::plugin::PluginLoadHookResult {
+          content,
+          module_type: ModuleType::Custom(String::from("sass")),
+        }));
+      }
+    }
+
+    Ok(None)
+  }
+}
+```
+
+在 `load` 钩子中，我们只读取以`.scss` 或者 `.sass`结尾的文件,返回文件内容并将其 module_type 设置为`ModuleType::Custom(String::from("sass"))`。
+
+### 转化 `sass` 文件
+
+加载 `.scss` 文件之后，我们需要在 `transform` hook 中将其转换为 `css`，然后 Farm 将在接下来的过程中将其视为 css
+
+
+```rust
+// ignore other code ...
+fn transform(
+  &self,
+  param: &farmfe_core::plugin::PluginTransformHookParam,
+  context: &std::sync::Arc<farmfe_core::context::CompilationContext>,
+) -> farmfe_core::error::Result<Option<farmfe_core::plugin::PluginTransformHookResult>> {
+  // module type guard is neccessary
+  if param.module_type == ModuleType::Custom(String::from("sass")) {
+    // ... ignore other code
+
+    // parse options
+    const options = parse_options(&self.options, param.module_id);
+    // compile sass to css
+    let compile_result = compileSass(&param.content, options);
+
+    return Ok(Some(farmfe_core::plugin::PluginTransformHookResult {
+      content: compile_result.css,
+      source_map: compile_result.source_map,
+      // tell farm compiler that we have transformed this module to css
+      module_type: Some(farmfe_core::module::ModuleType::Css),
+      ignore_previous_source_map: false,
+    }));
+  }
+
+  Ok(None)
+}
+```
+
+:::tip
+这个例子只介绍了如何实现转换器。有关 Farm 支持的更多能力，请参阅[插件钩子](/zh/docs/api/rust-plugin-api)。
+:::

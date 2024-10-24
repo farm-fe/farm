@@ -1,67 +1,42 @@
-// import { watch } from 'chokidar';
-import { FSWatcher } from 'chokidar';
-import { Server } from '../../index.js';
-import { Server as httpServer } from '../../server/type.js';
-import WsServer from '../../server/ws.js';
 import { CompilationContext, ViteModule } from '../type.js';
 import { throwIncompatibleError } from './utils.js';
 
+// TODO type error refactor vite adaptor
 export class ViteDevServerAdapter {
-  moduleGraph: ViteModuleGraphAdapter;
-  config: any;
-  pluginName: string;
-  watcher: FSWatcher;
-  middlewares: any;
-  middlewareCallbacks: any[];
-  ws: WsServer;
-  httpServer: httpServer;
+  private _server: any;
+  private _config: any;
+  private _moduleGraphAdapter: any;
+  [key: string]: any;
+  [key: symbol]: any;
+  constructor(pluginName: string, config: any, server: any) {
+    this._server = server;
+    this._config = config;
+    this._moduleGraphAdapter = createViteModuleGraphAdapter(pluginName);
 
-  constructor(pluginName: string, config: any, server: Server) {
-    this.moduleGraph = createViteModuleGraphAdapter(pluginName);
-    this.config = config;
-    this.pluginName = pluginName;
-    // watcher is not used in Farm vite plugin for now
-    // it's only for compatibility
-    // this.watcher = watch(config.root);
-    this.watcher = server.watcher.getInternalWatcher();
-    this.middlewareCallbacks = [];
-    this.middlewares = new Proxy(
-      {
-        use: (...args: any[]) => {
-          if (
-            args.length === 2 &&
-            typeof args[0] === 'string' &&
-            typeof args[1] === 'function'
-          ) {
-            this.middlewareCallbacks.push((req: any, res: any, next: any) => {
-              const [url, cb] = args;
-              if (req.url.startsWith(url)) {
-                cb(req, res, next);
-              }
-            });
-          } else if (args.length === 1 && typeof args[0] === 'function') {
-            this.middlewareCallbacks.push(args[0]);
+    return new Proxy(this, {
+      get: (_target, prop) => {
+        switch (prop) {
+          case 'moduleGraph':
+            return this._moduleGraphAdapter;
+          case 'watcher':
+            return this._server.watcher.getInternalWatcher();
+          case 'middlewares':
+            return this._server.middlewares;
+          case 'config':
+            return this._config;
+          default: {
+            const value = this._server[prop];
+            return typeof value === 'function'
+              ? value.bind(this._server)
+              : value;
           }
         }
       },
-      {
-        get(target, key) {
-          if (key === 'use') {
-            return target[key as keyof typeof target];
-          }
-
-          throwIncompatibleError(
-            pluginName,
-            'viteDevServer.middlewares',
-            ['use'],
-            key
-          );
-        }
+      set: (_target, prop, value) => {
+        this._server[prop] = value;
+        return true;
       }
-    );
-
-    this.ws = server.ws;
-    this.httpServer = server.server;
+    });
   }
 }
 
@@ -134,7 +109,7 @@ function proxyViteModuleNode(
 export function createViteDevServerAdapter(
   pluginName: string,
   config: any,
-  server: Server
+  server: any
 ) {
   const proxy = new Proxy(
     new ViteDevServerAdapter(pluginName, config, server),
@@ -146,6 +121,9 @@ export function createViteDevServerAdapter(
           'prototype'
         ];
         const allowedKeys = [
+          'serverOptions',
+          'resolvedUrls',
+          'printUrls',
           'moduleGraph',
           'config',
           'watcher',

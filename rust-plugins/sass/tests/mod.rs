@@ -3,8 +3,8 @@ use std::{collections::HashMap, fs, io::Write, path::PathBuf, sync::Arc};
 use farmfe_compiler::Compiler;
 use farmfe_core::{
   config::{
-    bool_or_obj::BoolOrObj, preset_env::PresetEnvConfig, Config, ResolveConfig, RuntimeConfig,
-    SourcemapConfig,
+    bool_or_obj::BoolOrObj, preset_env::PresetEnvConfig, AliasItem, Config, ResolveConfig,
+    RuntimeConfig, SourcemapConfig, StringOrRegex,
   },
   context::CompilationContext,
   module::ModuleType,
@@ -87,10 +87,10 @@ fn test_with_compiler() {
       tree_shaking: Box::new(BoolOrObj::Bool(false)),
       progress: false,
       resolve: Box::new(ResolveConfig {
-        alias: std::collections::HashMap::from([(
-          "@".to_string(),
-          cwd.to_string_lossy().to_string(),
-        )]),
+        alias: vec![AliasItem::Complex {
+          find: StringOrRegex::String("@".to_string()),
+          replacement: cwd.to_string_lossy().to_string(),
+        }],
         ..Default::default()
       }),
       ..Default::default()

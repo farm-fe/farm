@@ -1,0 +1,46 @@
+import { PackageManagerTabs } from "../../src/theme/PackageManagerTabs";
+
+# Solid
+
+Create a `Solid` project based on `Farm`.
+
+`Farm` provides two approaches to support creating `Solid` projects: 
+- Use the `create-farm` scaffold to create a scaffold project
+- You can manually create a `Solid` project following the current documentation
+
+### Creating a Solid Project
+
+<PackageManagerTabs command="npm create farm@latest" />
+
+Select `Solid` template in `Select Framework`
+
+:::warning Solid
+For `Solid` support, `Farm` recommends using `Vite` plugins.
+:::
+
+```javascript title="farm.config.ts"
+import { defineConfig } from '@farmfe/core';
+import solid from 'vite-plugin-solid';
+
+export default defineConfig({
+  vitePlugins: [
+    () => ({
+      vitePlugin: solid(),
+      filters: ['\\.tsx$', '\\.jsx$']
+    })
+  ]
+});
+```
+If you want to start DevServer
+
+<PackageManagerTabs command="pnpm dev" />
+
+If you need to run the build production environment product command
+
+<PackageManagerTabs command="pnpm build" />
+
+If you need to preview your build product
+
+<PackageManagerTabs command="pnpm preview" />
+
+For more example details: [Solid Example](https://github.com/farm-fe/farm/tree/main/examples/vite-adapter-solid)

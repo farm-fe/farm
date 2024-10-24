@@ -99,7 +99,7 @@ impl UnresolvedIdentCollector {
 
 impl VisitMut for UnresolvedIdentCollector {
   fn visit_mut_ident(&mut self, n: &mut farmfe_core::swc_ecma_ast::Ident) {
-    if n.span.ctxt.outer() == self.unresolved_mark {
+    if n.ctxt.outer() == self.unresolved_mark {
       self.unresolved_idents.insert(n.sym.to_string());
     }
   }

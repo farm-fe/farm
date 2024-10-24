@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use farmfe_core::{
   farm_profile_function,
   module::{module_graph::ModuleGraph, ModuleId},
-  swc_common::{Mark, DUMMY_SP},
+  swc_common::{Mark, SyntaxContext, DUMMY_SP},
   swc_ecma_ast::{
     self, BindingIdent, CallExpr, ComputedPropName, Expr, ExprOrSpread, ExprStmt, Ident, Lit,
     MemberExpr, MemberProp, Module as EcmaAstModule, ModuleItem, Pat, Stmt, VarDecl, VarDeclarator,
@@ -129,6 +129,7 @@ impl CjsModuleAnalyzer {
       callee: swc_ecma_ast::Callee::Expr(Box::new(Expr::Ident(cjs_name.as_str().into()))),
       args: vec![],
       type_args: None,
+      ctxt: SyntaxContext::empty(),
     };
 
     if reference_import.is_empty() {
@@ -209,6 +210,7 @@ impl CjsModuleAnalyzer {
           kind: swc_ecma_ast::VarDeclKind::Var,
           declare: false,
           decls,
+          ctxt: SyntaxContext::empty(),
         }),
       ))));
     }

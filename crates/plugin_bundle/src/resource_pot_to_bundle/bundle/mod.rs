@@ -13,7 +13,7 @@ use farmfe_core::{
   module::{module_graph::ModuleGraph, ModuleId, ModuleSystem},
   plugin::ResolveKind,
   rayon::iter::{IntoParallelIterator, ParallelIterator},
-  swc_common::{util::take::Take, DUMMY_SP},
+  swc_common::{util::take::Take, SyntaxContext, DUMMY_SP},
   swc_ecma_ast::{
     self, BindingIdent, CallExpr, ClassDecl, Decl, EmptyStmt, Expr, ExprStmt, FnDecl, Ident,
     Module, ModuleDecl, ModuleItem, Stmt, VarDecl, VarDeclarator,
@@ -606,6 +606,7 @@ impl<'a> ModuleAnalyzerManager<'a> {
                               init: Some(export_default_decl.expr),
                               definite: false,
                             }],
+                            ctxt: SyntaxContext::empty()
                           }))));
                         },
                         _ => {}
@@ -623,7 +624,7 @@ impl<'a> ModuleAnalyzerManager<'a> {
                   if !commonjs_import_executed.contains(source) {
                     ast.body[*index] = ModuleItem::Stmt(Stmt::Expr(
                       ExprStmt { span: DUMMY_SP, expr: Box::new(Expr::Call(
-                        CallExpr { span: DUMMY_SP, callee: swc_ecma_ast::Callee::Expr(Box::new(Expr::Ident(bundle_variable.name(self.module_global_uniq_name.commonjs_name(source).unwrap()).as_str().into()))), args: vec![], type_args: None }
+                        CallExpr { span: DUMMY_SP, callee: swc_ecma_ast::Callee::Expr(Box::new(Expr::Ident(bundle_variable.name(self.module_global_uniq_name.commonjs_name(source).unwrap()).as_str().into()))), args: vec![], type_args: None, ctxt: SyntaxContext::empty() }
                       )) }
                     ));
                     commonjs_import_executed.insert(source.clone());
@@ -721,7 +722,7 @@ impl<'a> ModuleAnalyzerManager<'a> {
             bundle_variable,
             &context.config,
             polyfill,
-            external_config
+            external_config,
           )
         }
 

@@ -5,7 +5,7 @@ use farmfe_core::{
   context::CompilationContext,
   error::Result,
   module::{module_graph::ModuleGraph, ModuleId, ModuleSystem},
-  swc_common::{comments::SingleThreadedComments, util::take::Take, Mark, DUMMY_SP},
+  swc_common::{util::take::Take, Mark, SyntaxContext, DUMMY_SP},
   swc_ecma_ast::{
     ArrowExpr, BindingIdent, BlockStmt, BlockStmtOrExpr, Decl, EsVersion, Expr, ExprOrSpread,
     Ident, KeyValueProp, Module as EcmaAstModule, ModuleItem, ObjectLit, Pat, Prop, PropName,
@@ -70,11 +70,13 @@ impl CjsPatch {
             ModuleItem::Stmt(stmt) => stmt,
           })
           .collect(),
+        ctxt: SyntaxContext::empty(),
       })),
       is_async: false,
       is_generator: false,
       type_params: None,
       return_type: None,
+      ctxt: SyntaxContext::empty(),
     }));
 
     patch_ast_items.push(ModuleItem::Stmt(Stmt::Decl(Decl::Var(Box::new(VarDecl {
@@ -105,6 +107,7 @@ impl CjsPatch {
         )),
         definite: false,
       }],
+      ctxt: SyntaxContext::empty(),
     })))));
 
     Ok(patch_ast_items)
@@ -117,13 +120,14 @@ impl CjsPatch {
     unresolved_mark: Mark,
     es_version: EsVersion,
   ) {
-    let module = module_graph.module(module_id).unwrap();
+    // let module = module_graph.module(module_id).unwrap();
 
-    let comments = module.meta.as_script().comments.clone().into();
+    // let comments = module.meta.as_script().comments.clone().into();
 
     ast.visit_mut_with(&mut import_analyzer(ImportInterop::Swc, true));
 
-    ast.visit_mut_with(&mut common_js::<&SingleThreadedComments>(
+    ast.visit_mut_with(&mut common_js(
+      Default::default(),
       unresolved_mark,
       SwcConfig {
         ignore_dynamic: true,
@@ -131,7 +135,7 @@ impl CjsPatch {
         ..Default::default()
       },
       enable_available_feature_from_es_version(es_version),
-      Some(&comments),
+      // Some(&comments),
     ));
   }
 
@@ -213,7 +217,7 @@ impl CjsPatch {
       bundle_variable,
       config,
       polyfill,
-      external_config
+      external_config,
     };
 
     ast.visit_mut_with(&mut replacer);

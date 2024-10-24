@@ -1,0 +1,54 @@
+import { PackageManagerTabs } from "../../../../../src/theme/PackageManagerTabs";
+
+# Vue
+
+基于 `Farm` 创建一个 `Vue` 项目。
+
+`Farm` 提供两种方案来支持创建 `Vue` 项目: 
+- 使用 `create-farm` 脚手架创建脚手架项目
+- 你可以根据当前文档手动创建一个 `Vue` 项目
+
+### 创建 Vue 项目
+
+<PackageManagerTabs command="npm create farm@latest" />
+
+在 `Select Framework` 中选择 `Vue` 模版
+
+:::warning Vue
+目前 `Farm` 支持  `vue3`, `vue2`, `vue2.7`
+对于 `Vue` 插件 `Farm` 推荐使用 `Vite` 插件, 支持的三种 vue 版本需要安装对应的 `vite` 插件, 目前也正在进行原生插件 [fervid](https://github.com/phoenix-ru/fervid)的开发。
+:::
+
+```javascript title="farm.config.ts"
+import { defineConfig } from '@farmfe/core';
+import Vue from '@vite/plugin-vue'
+
+export default defineConfig({
+  plugins: [Vue()], // vue3 plugin
+});
+```
+
+### 集成 jsx
+
+```javascript title="farm.config.ts"
+import { defineConfig } from '@farmfe/core';
+import Vue from '@vite/plugin-vue-jsx'
+
+export default defineConfig({
+  plugins: [Vue()],
+});
+```
+
+开发环境时运行
+
+<PackageManagerTabs command="npm run dev" />
+
+在生产环境下进行打包
+
+<PackageManagerTabs command="npm run build" />
+
+预览生产环境打包之后构建的产物
+
+<PackageManagerTabs command="npm run preview" />
+
+如若想查看示例详情: [Vue 示例](https://github.com/farm-fe/farm/tree/main/examples/vite-adapter-vue)

@@ -16,8 +16,6 @@
     "vue-router": "^4.2.1"
   },
   "devDependencies": {
-    "@farmfe/cli": "workspace:*",
-    "@farmfe/core": "workspace:*",
     "@farmfe/js-plugin-less": "workspace:^",
     "@farmfe/js-plugin-postcss": "workspace:^",
     "@farmfe/js-plugin-sass": "workspace:^",

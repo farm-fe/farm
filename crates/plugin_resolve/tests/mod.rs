@@ -1,9 +1,10 @@
 use std::{collections::HashMap, sync::Arc};
 
 use farmfe_core::{
-  config::{Config, ResolveConfig},
+  config::{AliasItem, Config, ResolveConfig, StringOrRegex},
   context::CompilationContext,
   plugin::ResolveKind,
+  regex::Regex,
 };
 use farmfe_plugin_resolve::resolver::{ResolveOptions, Resolver};
 use farmfe_testing_helpers::fixture;
@@ -198,19 +199,24 @@ fn resolve_alias() {
       CompilationContext::new(
         Config {
           resolve: Box::new(ResolveConfig {
-            alias: HashMap::from([
-              ("@".to_string(), cwd.to_string_lossy().to_string()),
-              ("/@".to_string(), cwd.to_string_lossy().to_string()),
-              // long alias
-              (
-                "@/components".to_string(),
-                cwd.join("components").to_string_lossy().to_string(),
-              ),
-              (
-                "$__farm_regex:^/(utils)$".to_string(),
-                cwd.join("$1").to_string_lossy().to_string(),
-              ),
-            ]),
+            alias: vec![
+              AliasItem::Complex {
+                find: StringOrRegex::String("@".to_string()),
+                replacement: cwd.to_string_lossy().to_string(),
+              },
+              AliasItem::Complex {
+                find: StringOrRegex::String("/@".to_string()),
+                replacement: cwd.to_string_lossy().to_string(),
+              },
+              AliasItem::Complex {
+                find: StringOrRegex::String("@/components".to_string()),
+                replacement: cwd.join("components").to_string_lossy().to_string(),
+              },
+              AliasItem::Complex {
+                find: StringOrRegex::String("$__farm_regex:^/(utils)$".to_string()),
+                replacement: cwd.join("$1").to_string_lossy().to_string(),
+              },
+            ],
             ..Default::default()
           }),
           ..Default::default()
