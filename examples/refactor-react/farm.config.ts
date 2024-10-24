@@ -30,6 +30,9 @@ export default defineConfig({
   server: {
     port: 8854,
   },
+  preview: {
+    port: 3691,
+  }
 });
 
 function myCustomPlugin() {

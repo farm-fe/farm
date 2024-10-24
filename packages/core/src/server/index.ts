@@ -123,14 +123,13 @@ export class Server extends httpServer {
   closeHttpServerFn: () => Promise<void>;
   postConfigureServerHooks: ((() => void) | void)[] = [];
   logger: Logger;
+
   /**
    * Creates an instance of Server.
    * @param {FarmCliOptions & UserConfig} inlineConfig - The inline configuration options.
-   * @param {Logger} logger - The logger instance.
    */
   constructor(readonly inlineConfig: FarmCliOptions & UserConfig) {
     super();
-    this.logger = new Logger();
   }
 
   /**
@@ -162,7 +161,7 @@ export class Server extends httpServer {
 
       this.#resolveOptions();
 
-      this.compiler = await createCompiler(this.resolvedUserConfig);
+      this.compiler = createCompiler(this.resolvedUserConfig);
 
       for (const hook of getPluginHooks(
         this.resolvedUserConfig.jsPlugins,
@@ -429,49 +428,6 @@ export class Server extends httpServer {
       );
       // throw error;
     }
-  }
-
-  /**
-   * Starts the HTTP server.
-   * @protected
-   * @param {Object} serverOptions - The server options.
-   * @returns {Promise<number>} The port the server is listening on.
-   * @throws {Error} If the server fails to start.
-   */
-  protected async httpServerStart(serverOptions: {
-    port: number;
-    strictPort: boolean | undefined;
-    host: string | undefined;
-  }): Promise<number> {
-    if (!this.httpServer) {
-      throw new Error('httpServer is not initialized');
-    }
-
-    let { port, strictPort, host } = serverOptions;
-
-    return new Promise((resolve, reject) => {
-      const onError = (e: Error & { code?: string }) => {
-        if (e.code === 'EADDRINUSE') {
-          if (strictPort) {
-            this.httpServer.removeListener('error', onError);
-            reject(new Error(`Port ${port} is already in use`));
-          } else {
-            this.logger.warn(`Port ${port} is in use, trying another one...`);
-            this.httpServer.listen(++port, host);
-          }
-        } else {
-          this.httpServer.removeListener('error', onError);
-          reject(e);
-        }
-      };
-
-      this.httpServer.on('error', onError);
-
-      this.httpServer.listen(port, host, () => {
-        this.httpServer.removeListener('error', onError);
-        resolve(port);
-      });
-    });
   }
 
   /**

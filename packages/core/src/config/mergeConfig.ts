@@ -64,6 +64,7 @@ export function mergeFarmCliConfig(
       'plugins',
       'publicDir',
       'server',
+      'preview',
       'vitePlugins'
     ] satisfies (keyof UserConfig)[]
   ).forEach((key: keyof (FarmCliOptions & UserConfig)) => {
@@ -185,6 +186,7 @@ export function initialCliOptions(options: any): any {
     watch: !!watch,
     root: options.root,
     server: options.server,
+    preview: options.preview,
     clearScreen: !!options.clearScreen,
     configFile: options.configFile,
     timeUnit: options.timeUnit,

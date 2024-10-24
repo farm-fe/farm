@@ -39,7 +39,8 @@ export const wildcardHosts = new Set([
 
 export async function resolveServerUrls(
   server: Server,
-  config: ResolvedUserConfig
+  config: ResolvedUserConfig,
+  type: 'dev' | 'preview' = 'dev'
 ): Promise<ResolvedServerUrls> {
   const address = server.address();
   const isAddressInfo = (x: any): x is AddressInfo => x?.address;
@@ -47,7 +48,7 @@ export async function resolveServerUrls(
   if (!isAddressInfo(address)) {
     return { local: [], network: [] };
   }
-  const serverOptions = config.server;
+  const serverOptions = type == 'dev' ? config.server : config.preview;
   const local: string[] = [];
   const network: string[] = [];
   const hostname = await resolveHostname(serverOptions.host);
