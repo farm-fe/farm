@@ -120,20 +120,20 @@ export class PreviewServer extends httpServer {
       }
     });
 
+    this.httpsOptions = await this.resolveHttpsConfig(
+      this.previewServerOptions.https
+    );
+
     this.previewServerOptions = {
       headers,
       host: typeof preview.host === 'string' ? preview.host : 'localhost',
       port: preview?.port || 1911,
       strictPort: preview?.strictPort || false,
-      https: preview?.https || server?.https,
+      https: this.httpsOptions,
       distDir,
       open: preview?.open || false,
       cors: preview?.cors || false
     };
-
-    this.httpsOptions = await this.resolveHttpsConfig(
-      this.previewServerOptions.https
-    );
   }
 
   /**
