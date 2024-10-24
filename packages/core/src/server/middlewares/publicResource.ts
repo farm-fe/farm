@@ -7,16 +7,11 @@ import {
 } from '../../utils/index.js';
 
 import type Connect from 'connect';
-import { ResolvedUserConfig } from '../../config/types.js';
+import { Server } from '../index.js';
 
 // TODO: if url endsWith importQueryRE we need can check if it is a module then serve or not
 
-export function publicMiddleware(app: {
-  resolvedUserConfig: ResolvedUserConfig;
-  publicDir: string;
-  publicFiles?: Set<string>;
-  publicPath?: string;
-}): Connect.NextHandleFunction {
+export function publicMiddleware(app: Server): Connect.NextHandleFunction {
   const {
     resolvedUserConfig: config,
     publicDir,
