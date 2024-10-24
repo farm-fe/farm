@@ -7,7 +7,7 @@ import type { RustPlugin } from '../plugin/rust/index.js';
 import type { JsPlugin } from '../plugin/type.js';
 import { HMRChannel } from '../server/hmr.js';
 import type { Config, CssConfig } from '../types/binding.js';
-import type { ILogger, Logger } from '../utils/index.js';
+import type { Logger } from '../utils/index.js';
 
 // export interface HmrOptions {
 //   protocol?: string;
@@ -171,7 +171,7 @@ export interface UserConfig {
   /** Config related to preview server */
   preview?: UserPreviewServerConfig;
   /** Files under this dir will always be treated as static assets. serve it in dev, and copy it to output.path when build */
-  logger?: ILogger;
+  logger?: Logger;
 }
 
 interface ResolvedCss extends CssConfig {

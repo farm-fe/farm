@@ -4,7 +4,7 @@ import { OutgoingHttpHeaders, SecureServerOptions } from 'node:http2';
 import { z } from 'zod';
 import { fromZodError } from 'zod-validation-error';
 
-import { ILogger } from '../utils/logger.js';
+import { Logger } from '../utils/logger.js';
 import type { UserConfig } from './types.js';
 
 enum TargetEnv {
@@ -429,7 +429,7 @@ const FarmConfigSchema = z
     watch: z.boolean().optional(),
     server: serverSchema.optional(),
     preview: previewServerSchema.optional(),
-    customLogger: z.custom<ILogger>().optional()
+    customLogger: z.custom<Logger>((val) => val instanceof Logger).optional()
   })
   .strict();
 
