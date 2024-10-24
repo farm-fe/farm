@@ -121,7 +121,7 @@ export class PreviewServer extends httpServer {
     });
 
     this.httpsOptions = await this.resolveHttpsConfig(
-      this.previewServerOptions.https
+      preview?.https || server?.https
     );
 
     this.previewServerOptions = {

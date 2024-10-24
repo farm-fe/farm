@@ -162,7 +162,7 @@ cli
         mode: options.mode,
         preview: {
           port: options.port,
-          strictPort: options?.strictPort,
+          strictPort: options.strictPort,
           host: options.host,
           open: options.open
         },
