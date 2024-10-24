@@ -30,7 +30,7 @@ export interface CliBuildOptions {
   watch?: boolean;
   l?: boolean;
   lazy?: boolean;
-  sourcemap?: boolean;
+  sourcemap?: boolean | 'inline' | 'all' | 'all-inline';
   minify?: boolean;
   treeShaking?: boolean;
   format?: 'cjs' | 'esm';
