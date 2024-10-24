@@ -1,6 +1,6 @@
 {
   "name": "@farmfe/core",
-  "version": "2.0.0-nightly-20241023020505",
+  "version": "2.0.0-nightly-20241024075304",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "type": "module",
@@ -94,7 +94,7 @@
     "dotenv-expand": "^11.0.6",
     "execa": "8.0.0",
     "farm-browserslist-generator": "^1.0.5",
-    "farm-plugin-replace-dirname": "0.2.1",
+    "@farmfe/plugin-replace-dirname": "workspace:*",
     "fast-glob": "^3.3.2",
     "fs-extra": "^11.1.1",
     "is-plain-object": "^5.0.0",

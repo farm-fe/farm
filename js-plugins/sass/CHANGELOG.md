@@ -1,5 +1,18 @@
 # @farmfe/js-plugin-sass
 
+## 3.0.0-nightly-20241024075304
+
+### Patch Changes
+
+- @farmfe/core@2.0.0-nightly-20241024075304
+
+## 3.0.0-nightly-20241023101523
+
+### Patch Changes
+
+- Updated dependencies [d7c5ffb]
+  - @farmfe/core@2.0.0-nightly-20241023101523
+
 ## 3.0.0-nightly-20241023020505
 
 ### Patch Changes

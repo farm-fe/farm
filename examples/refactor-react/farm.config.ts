@@ -2,6 +2,9 @@ import { defineConfig } from "@farmfe/core";
 
 import react from "@farmfe/plugin-react";
 import path from "path";
+
+console.log(__dirname);
+
 export default defineConfig({
   plugins: [
     react(),

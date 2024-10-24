@@ -1,9 +1,13 @@
-export interface SassOptions {
+export interface IOptions {
   /**
-   * Add extra content to the head of each sass file, such as an @import '@/styles/variables.scss'; statement.
+   * The path to the root of the project
    */
-  additionalData?: string;
+  include?: string[];
+  /**
+   * exclude the path from the project
+   */
+  exclude?: string[];
 }
 
-declare const binPath: (options?: SassOptions) => [string, typeof options];
+const binPath: string;
 export default binPath;
