@@ -1,5 +1,11 @@
 # @farmfe/core
 
+## 2.0.0-nightly-20241024090954
+
+### Major Changes
+
+- f460eb1: bump core version fix spa reload not 404
+
 ## 2.0.0-nightly-20241024075304
 
 ### Patch Changes
