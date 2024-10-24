@@ -7,7 +7,7 @@ import {
 } from '../../utils/index.js';
 
 import type Connect from 'connect';
-import { Server } from '../index.js';
+import type { Server } from '../index.js';
 
 // TODO: if url endsWith importQueryRE we need can check if it is a module then serve or not
 
@@ -19,7 +19,7 @@ export function publicMiddleware(app: Server): Connect.NextHandleFunction {
     publicPath
   } = app;
 
-  const headers = config.preview.headers;
+  const headers = config.server.headers;
   const serve = sirv(publicDir, {
     etag: true,
     setHeaders: (res, path) => {
