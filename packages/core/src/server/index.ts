@@ -123,14 +123,13 @@ export class Server extends httpServer {
   closeHttpServerFn: () => Promise<void>;
   postConfigureServerHooks: ((() => void) | void)[] = [];
   logger: Logger;
+
   /**
    * Creates an instance of Server.
    * @param {FarmCliOptions & UserConfig} inlineConfig - The inline configuration options.
-   * @param {Logger} logger - The logger instance.
    */
   constructor(readonly inlineConfig: FarmCliOptions & UserConfig) {
     super();
-    this.logger = new Logger();
   }
 
   /**
@@ -162,7 +161,7 @@ export class Server extends httpServer {
 
       this.#resolveOptions();
 
-      this.compiler = await createCompiler(this.resolvedUserConfig);
+      this.compiler = createCompiler(this.resolvedUserConfig);
 
       for (const hook of getPluginHooks(
         this.resolvedUserConfig.jsPlugins,
