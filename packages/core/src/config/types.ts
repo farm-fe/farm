@@ -100,7 +100,7 @@ export interface UserPreviewServerConfig {
   /**
    * Open the preview server in the default browser automatically.
    */
-  open?: boolean;
+  open?: boolean | string;
   /** Enable CORS for preview server. */
   cors?: boolean;
 }
