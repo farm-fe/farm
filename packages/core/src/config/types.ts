@@ -118,7 +118,7 @@ export interface UserPreviewServerConfig {
    * Enable CORS for preview server.
    * Defaults to `false` if not specified.
    */
-  cors?: boolean;
+  cors?: boolean | any;
 }
 
 export type NormalizedServerConfig = Required<

@@ -143,10 +143,12 @@ const previewServerSchema = z
       ])
       .optional(),
     port: z.number().positive().int().optional(),
+    strictPort: z.boolean().optional(),
     https: z.custom<SecureServerOptions>(),
     distDir: z.string().optional(),
     open: z.boolean().optional(),
-    cors: z.boolean().optional()
+    // TODO: CORS types
+    cors: z.union([z.boolean(), z.any()]).optional()
   })
   .strict();
 

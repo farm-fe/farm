@@ -1,6 +1,7 @@
 import { OutgoingHttpHeaders, SecureServerOptions } from 'node:http2';
 import path from 'node:path';
 import connect from 'connect';
+import corsMiddleware from 'cors';
 import sirv, { RequestHandler } from 'sirv';
 import { resolveConfig } from '../config/index.js';
 import {
@@ -11,7 +12,8 @@ import {
 import { resolveServerUrls } from '../utils/http.js';
 import { printServerUrls } from '../utils/logger.js';
 import { knownJavascriptExtensionRE } from '../utils/url.js';
-import { httpServer } from './http.js';
+import { CorsOptions, httpServer } from './http.js';
+import { openBrowser } from './open.js';
 
 export interface PreviewServerOptions {
   headers: OutgoingHttpHeaders;
@@ -21,7 +23,7 @@ export interface PreviewServerOptions {
   https: SecureServerOptions;
   distDir: string;
   open: boolean | string;
-  cors: boolean;
+  cors: boolean | CorsOptions;
 }
 
 /**
@@ -69,6 +71,18 @@ export class PreviewServer extends httpServer {
       this.httpsOptions
     );
 
+    this.#initializeMiddlewares();
+  }
+
+  /**
+   * Initialize middlewares for the preview server.
+   * @private
+   */
+  #initializeMiddlewares() {
+    const cors = this.previewServerOptions.cors;
+    if (cors) {
+      this.app.use(corsMiddleware(typeof cors === 'boolean' ? {} : cors));
+    }
     this.app.use(this.serve);
   }
 
@@ -137,11 +151,7 @@ export class PreviewServer extends httpServer {
     }
 
     try {
-      await this.httpServerStart({
-        port: this.previewServerOptions.port,
-        strictPort: true,
-        host: this.previewServerOptions.host
-      });
+      await this.httpServerStart(this.previewServerOptions);
 
       this.resolvedUrls = await resolveServerUrls(
         this.httpServer,
@@ -154,12 +164,25 @@ export class PreviewServer extends httpServer {
         this.previewServerOptions.host,
         this.logger
       );
+
+      if (this.previewServerOptions.open) {
+        const url =
+          this.resolvedUrls?.local?.[0] ??
+          this.resolvedUrls?.network?.[0] ??
+          '';
+        openBrowser(url);
+      }
     } catch (error) {
       throw error;
     }
   }
 
-  async close() {
+  /**
+   * Close the preview server.
+   *
+   * @returns {void}
+   */
+  close(): void {
     this.httpServer && this.httpServer.close();
   }
 }
