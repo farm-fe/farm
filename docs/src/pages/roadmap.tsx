@@ -17,7 +17,8 @@ export default function Roadmap() {
             Farm has a detailed rfc design, click to view our rfc
           </p>
         </div>
-        <TimelineCpm />
+        coming soon
+        {/* <TimelineCpm /> */}
       </div>
     </Layout>
   );

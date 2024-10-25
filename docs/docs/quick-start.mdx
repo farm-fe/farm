@@ -7,6 +7,22 @@ import { PackageManagerTabs } from "@site/src/theme/PackageManagerTabs";
 # Quick Start
 
 
+:::warning Nightly Warning
+If you are using version 2.0.0-nightly, please note the following:
+
+- The Farm team is working hard on version 2.0. We have refactored the entire Node backend and added many practical features. Please check our RoadMap for future updates.
+
+- This is a nightly build version that may contain new features and fixes that haven't been fully tested. As a result, unstable behavior or unexpected errors may occur.
+
+- Since this version is in the development phase, features and APIs may change in future versions. Please regularly check the changelog for the latest information.
+
+- We recommend against using this version in production environments unless you are prepared to handle potential issues.
+
+If you encounter any problems, please feel free to create an Issue to provide feedback to us. Your feedback is crucial for improving Farm's functionality and stability.
+and we will continue to update the documentation in the coming days. Thank you for your understanding and support.
+:::
+
+
 :::warning
 Farm needs **Node 16.18.0 and above**.
 :::
@@ -18,6 +34,11 @@ Farm needs **Node 16.18.0 and above**.
 ## Create a Farm Project
 
 <PackageManagerTabs command="pnpm create farm@latest" />
+
+:::warning
+If you are using the nightly version, you need to install all Farm dependencies as nightly versions. We have provided nightly versions for all core packages and plugins. e.g:
+<PackageManagerTabs command="pnpm add @farmfe/{cli,core}@nightly" />
+:::
 
 :::note{title="Then follow the prompts!"}
 
