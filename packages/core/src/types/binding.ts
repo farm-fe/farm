@@ -434,6 +434,7 @@ export interface Config {
     assets?: {
       include?: string[];
       publicDir?: string;
+      mode?: 'node' | 'browser';
     };
     script?: ScriptConfig;
     css?: CssConfig;

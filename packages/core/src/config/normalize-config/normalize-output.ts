@@ -188,6 +188,10 @@ function tryGetDefaultPublicPath(
       return publicPath;
     }
 
+    if (publicPath) {
+      return publicPath;
+    }
+
     if (targetEnv === 'node' && isAbsolute(publicPath)) {
       // vitejs plugin maybe set absolute path, should transform to relative path
       const relativePath = './' + path.posix.normalize(publicPath).slice(1);

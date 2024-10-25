@@ -115,7 +115,7 @@ describe('normalizeOutput', () => {
     expect(resolvedConfig.output?.publicPath).toEqual('./');
   });
 
-  test('normalizeOutput with node targetEnv and absolute publicPath', () => {
+  test('normalizeOutput with node targetEnv and absolute publicPath shoud use user input publicPath', () => {
     const resolvedConfig: ResolvedCompilation = {
       output: {
         targetEnv: 'node',
@@ -125,6 +125,25 @@ describe('normalizeOutput', () => {
 
     normalizeOutput(resolvedConfig, true, new NoopLogger());
     expect(resolvedConfig.output.targetEnv).toEqual('node');
-    expect(resolvedConfig.output.publicPath).toEqual('./public/');
+    expect(resolvedConfig.output.publicPath).toEqual('/public/');
+  });
+
+  test('normalizeOutput with node targetEnv shoud use default publicPath by targetEnv', () => {
+    (
+      [
+        { targetEnv: 'node', expectPublic: './' },
+        { targetEnv: 'browser', expectPublic: '/' }
+      ] as const
+    ).forEach((item) => {
+      const resolvedConfig: ResolvedCompilation = {
+        output: {
+          targetEnv: item.targetEnv
+        }
+      };
+
+      normalizeOutput(resolvedConfig, true, new NoopLogger());
+      expect(resolvedConfig.output.targetEnv).toEqual(item.targetEnv);
+      expect(resolvedConfig.output.publicPath).toEqual(item.expectPublic);
+    });
   });
 });

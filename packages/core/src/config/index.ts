@@ -56,6 +56,7 @@ import {
   FARM_DEFAULT_NAMESPACE
 } from './constants.js';
 import { mergeConfig, mergeFarmCliConfig } from './mergeConfig.js';
+import { normalizeAsset } from './normalize-config/normalize-asset.js';
 import { normalizeCss } from './normalize-config/normalize-css.js';
 import { normalizeExternal } from './normalize-config/normalize-external.js';
 import { normalizeResolve } from './normalize-config/normalize-resolve.js';
@@ -560,6 +561,7 @@ export async function normalizeUserCompilationConfig(
 
   normalizeResolve(userConfig, resolvedCompilation);
   normalizeCss(userConfig, resolvedCompilation);
+  normalizeAsset(userConfig, resolvedCompilation);
 
   return resolvedCompilation;
 }
