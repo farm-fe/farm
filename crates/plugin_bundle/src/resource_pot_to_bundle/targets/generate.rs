@@ -18,10 +18,10 @@ use crate::resource_pot_to_bundle::{
     reference::{ReferenceExport, ReferenceMap},
     ModuleAnalyzerManager,
   },
-  modules_analyzer::module_analyzer::{ExportSpecifierInfo, ImportSpecifierInfo},
+  modules_analyzer::module_analyzer::ImportSpecifierInfo,
   polyfill::SimplePolyfill,
   uniq_name::BundleVariable,
-  ShareBundleOptions,
+  ShareBundleContext,
 };
 
 use super::{cjs::generate::CjsGenerate, esm::generate::EsmGenerate, util::create_merge_namespace};
@@ -45,17 +45,18 @@ pub fn generate_namespace_by_reference_map(
   let mut reexport_namespace: Vec<Ident> = vec![];
 
   {
-    generate_export_as_object_prop(&mut props, &map.export, bundle_variable);
+    generate_export_as_object_prop(&mut props, &map.export, bundle_variable, false);
   }
 
-  let mut module_ids = map.reexport_map.keys().collect::<Vec<_>>();
-
-  module_ids.sort_by_key(|a| &order_index_map[a]);
-
-  for module_id in module_ids {
+  for module_id in map
+    .reexport_map
+    .keys()
+    .sorted_by_key(|a| order_index_map[a])
+  {
     let reference_export = &map.reexport_map[module_id];
 
-    if module_analyzer_manager.is_external(module_id) {
+    if module_analyzer_manager.is_external(module_id) || !module_analyzer_manager.contain(module_id)
+    {
       if reference_export.is_empty() || reference_export.all {
         let ns_index = module_analyzer_manager
           .module_global_uniq_name
@@ -73,7 +74,7 @@ pub fn generate_namespace_by_reference_map(
       }
 
       // TODO: export import from external
-      generate_export_as_object_prop(&mut props, reference_export, bundle_variable);
+      generate_export_as_object_prop(&mut props, reference_export, bundle_variable, true);
     } else if module_analyzer_manager.is_commonjs(module_id) {
       if reference_export.is_empty() || reference_export.all {
         commonjs_fns.push(
@@ -90,7 +91,7 @@ pub fn generate_namespace_by_reference_map(
         continue;
       }
 
-      generate_export_as_object_prop(&mut props, reference_export, bundle_variable)
+      generate_export_as_object_prop(&mut props, reference_export, bundle_variable, false)
     }
   }
 
@@ -144,25 +145,35 @@ pub fn generate_export_as_object_prop(
   props: &mut Vec<PropOrSpread>,
   reference_export: &ReferenceExport,
   bundle_variable: &BundleVariable,
+  is_external: bool,
 ) {
   let mut exported_ordered_names = reference_export
     .named
-    .keys()
-    .map(|i| (bundle_variable.name(*i), i))
+    .iter()
+    .sorted_by_key(|(a, _)| bundle_variable.name(**a))
     .collect::<Vec<_>>();
 
   exported_ordered_names.sort_by(|(a, _), (b, _)| a.cmp(b));
 
-  for (exported_name, exported_index) in &exported_ordered_names {
-    let local = &reference_export.named[*exported_index];
+  for (export_as, export_local) in &exported_ordered_names {
+    let export_as_name = bundle_variable.name(**export_as);
+    let export_local_name = bundle_variable.render_name(**export_local);
 
-    let local_ident = bundle_variable.render_name(*local);
-
-    // maybe as short, but need legacy
-    props.push(PropOrSpread::Prop(Box::new(Prop::KeyValue(KeyValueProp {
-      key: PropName::Ident(exported_name.as_str().into()),
-      value: Box::new(Expr::Ident(Ident::from(local_ident.as_str()))),
-    }))));
+    props.push(PropOrSpread::Prop(Box::new(Prop::KeyValue(
+      if is_external {
+        KeyValueProp {
+          key: PropName::Ident((bundle_variable.name(**export_as).as_str()).into()),
+          value: Box::new(Expr::Ident(
+            bundle_variable.render_name(**export_as).as_str().into(),
+          )),
+        }
+      } else {
+        KeyValueProp {
+          key: PropName::Ident(export_as_name.as_str().into()),
+          value: Box::new(Expr::Ident(Ident::from(export_local_name.as_str()))),
+        }
+      },
+    ))));
   }
 
   if let Some(default) = reference_export.default {
@@ -196,7 +207,7 @@ pub fn generate_export_by_reference_export(
   _context: &Arc<CompilationContext>,
   polyfill: &mut SimplePolyfill,
   is_already_polyfilled: &mut bool,
-  options: &ShareBundleOptions,
+  options: &ShareBundleContext,
 ) -> Result<Vec<ModuleItem>> {
   let mut patch_export_to_module: Vec<ModuleItem> = vec![];
   if let Some(export) = bundle_reference.export.as_ref() {
@@ -244,9 +255,9 @@ pub fn generate_export_as_module_export(
   module_analyzer_manager: &ModuleAnalyzerManager,
   polyfill: &mut SimplePolyfill,
   is_already_polyfilled: &mut bool,
-  options: &ShareBundleOptions,
+  ctx: &ShareBundleContext,
 ) -> Result<Vec<ModuleItem>> {
-  match (&export.module_system, options.format) {
+  match (&export.module_system, ctx.options.format) {
     // hybrid dynamic es module cannot support, if hybrid, only export static export
     (_, ModuleFormat::EsModule) => EsmGenerate::generate_export(
       should_reexport_raw,
@@ -254,7 +265,7 @@ pub fn generate_export_as_module_export(
       export,
       bundle_variable,
       module_analyzer_manager,
-      options,
+      ctx,
     ),
 
     (_, ModuleFormat::CommonJs) => CjsGenerate::generate_export(
@@ -264,7 +275,7 @@ pub fn generate_export_as_module_export(
       module_analyzer_manager,
       polyfill,
       is_already_polyfilled,
-      options,
+      ctx,
     ),
   }
 }
@@ -277,7 +288,7 @@ pub fn generate_bundle_import_by_bundle_reference(
   module_analyzer_manager: &ModuleAnalyzerManager,
   polyfill: &mut SimplePolyfill,
   group_id: &str,
-  options: &ShareBundleOptions,
+  options: &ShareBundleContext,
 ) -> Result<Vec<ModuleItem>> {
   // TODO: sort import by order
   match format {

@@ -3,7 +3,7 @@
 
 
 //index.js:
- // module_id: reexport.ts
+ // module_id: default/reexport.ts
 class foo {
     constructor(){
         console.log(this.constructor === foo);
@@ -16,5 +16,5 @@ var reexport_ns = {
     __esModule: true
 };
 
-// module_id: index.ts
+// module_id: default/index.ts
 export { bar, foo as default };

@@ -33,7 +33,6 @@ mod render_module;
 mod scope_hoisting;
 mod source_replacer;
 mod transform_async_module;
-mod transform_module_decls;
 
 /// Merge all modules' ast in a [ResourcePot] to Farm's runtime [ObjectLit]. The [ObjectLit] looks like:
 /// ```js
@@ -86,9 +85,10 @@ pub fn resource_pot_to_runtime_object(
           )
         });
 
-      let hoisted_ast = if hoisted_group.hoisted_module_ids.len() > 1 {
+      let (hoisted_ast, comments) = if hoisted_group.hoisted_module_ids.len() > 1 {
         let hoisted_code_bundle = hoisted_group.render(module_graph, context)?;
         let code = hoisted_code_bundle.to_string();
+
         let mut meta = context
           .plugin_driver
           .parse(
@@ -103,9 +103,12 @@ pub fn resource_pot_to_runtime_object(
             &Default::default(),
           )?
           .unwrap();
-        Some(meta.as_script_mut().take_ast())
+        (
+          Some(meta.as_script_mut().take_ast()),
+          Some(meta.as_script_mut().take_comments().into()),
+        )
       } else {
-        None
+        (None, None)
       };
 
       let mut cache_store_key = None;
@@ -152,15 +155,18 @@ pub fn resource_pot_to_runtime_object(
         rendered_module,
         external_modules,
         source_map_chain,
-      } = render_module(RenderModuleOptions {
-        module,
-        hoisted_ast,
-        module_graph,
-        is_enabled_minify,
-        minify_builder: &minify_builder,
-        is_async_module,
-        context,
-      })?;
+      } = render_module(
+        RenderModuleOptions {
+          module,
+          hoisted_ast,
+          module_graph,
+          is_enabled_minify,
+          minify_builder: &minify_builder,
+          is_async_module,
+          context,
+        },
+        comments,
+      )?;
       let code = rendered_module.rendered_content.clone();
 
       // cache the code and sourcemap

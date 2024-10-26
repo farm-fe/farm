@@ -41,7 +41,7 @@ use super::{
   polyfill::SimplePolyfill,
   targets::generate::generate_namespace_by_reference_map,
   uniq_name::BundleVariable,
-  ShareBundleOptions, FARM_BUNDLE_POLYFILL_SLOT,
+  ShareBundleContext, ShareBundleOptions, FARM_BUNDLE_POLYFILL_SLOT,
 };
 
 pub type ModuleMap = HashMap<ModuleId, ModuleAnalyzer>;
@@ -458,7 +458,7 @@ impl<'a> ModuleAnalyzerManager<'a> {
     for export in exports_stmts {
       for specify in export.specifiers.iter() {
         if let Some(ref source) = export.source {
-          if self.is_external(source) {
+          if self.is_external(source) || !self.contain(source) {
             map.add_reference(source, specify);
             continue;
           }
@@ -524,7 +524,7 @@ impl<'a> ModuleAnalyzerManager<'a> {
     order_index_map: &HashMap<ModuleId, usize>,
     polyfill: &mut SimplePolyfill,
     external_config: &ExternalConfig,
-    options: &ShareBundleOptions,
+    options: &ShareBundleContext,
   ) -> Result<()> {
     farm_profile_function!(format!(
       "patch module analyzer ast: {}",
@@ -582,6 +582,7 @@ impl<'a> ModuleAnalyzerManager<'a> {
     module_id: &ModuleId,
     bundle_variable: &BundleVariable,
     commonjs_import_executed: &mut HashSet<ModuleId>,
+    ctx: &ShareBundleContext,
   ) {
     let module_analyzer = self.module_analyzer_mut_unchecked(module_id);
     let mut stmt_actions = module_analyzer
@@ -688,7 +689,7 @@ impl<'a> ModuleAnalyzerManager<'a> {
         },
 
         StmtAction::StripCjsImport(index, import_execute_module) => {
-          let mut original = replace_ast_item(*index);
+          replace_ast_item(*index);
           if let Some(source) = import_execute_module {
             if !commonjs_import_executed.contains(source) {
               if self.contain(source) {
@@ -708,12 +709,6 @@ impl<'a> ModuleAnalyzerManager<'a> {
                   })),
                 }));
                 commonjs_import_executed.insert(source.clone());
-              } else {
-                if let ModuleItem::ModuleDecl(ModuleDecl::Import(ref mut i)) = original {
-                  i.src = Box::new(source.to_string().into());
-                }
-
-                ast.body[*index] = original;
               }
             }
           }
@@ -740,7 +735,7 @@ impl<'a> ModuleAnalyzerManager<'a> {
     order_index_map: &HashMap<ModuleId, usize>,
     polyfill: &mut SimplePolyfill,
     external_config: &ExternalConfig,
-    options: &ShareBundleOptions,
+    ctx: &ShareBundleContext,
   ) -> Result<()> {
     farm_profile_function!("");
 
@@ -754,7 +749,7 @@ impl<'a> ModuleAnalyzerManager<'a> {
 
     try_with(cm, &context.meta.script.globals, || {
       // 1. strip/remove export/import
-      self.strip_module_decl(module_id, bundle_variable, commonjs_import_executed);
+      self.strip_module_decl(module_id, bundle_variable, commonjs_import_executed, ctx);
 
       let mut patch_asts = vec![];
 
@@ -780,6 +775,7 @@ impl<'a> ModuleAnalyzerManager<'a> {
         bundle_variable,
         bundle_reference,
         polyfill,
+        ctx,
       )
       .unwrap();
 
@@ -809,7 +805,7 @@ impl<'a> ModuleAnalyzerManager<'a> {
             &self.module_graph,
             &self.module_global_uniq_name,
             &self.module_map,
-            options,
+            ctx,
           );
         }
 
@@ -825,7 +821,7 @@ impl<'a> ModuleAnalyzerManager<'a> {
           self,
           module_id,
           bundle_variable,
-          options,
+          ctx,
         ));
 
         self.set_ast(module_id, ast);

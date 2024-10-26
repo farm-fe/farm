@@ -80,6 +80,7 @@ impl ScopeHoistedModuleGroup {
         // should ignore
         format: ModuleFormat::EsModule,
         hash_path: true,
+        concatenation_module: true,
         ..Default::default()
       }),
     )?;
@@ -139,7 +140,12 @@ pub fn build_scope_hoisted_module_groups(
 
       let dependents = module_graph.dependents_ids(&group.target_hoisted_module_id);
       // there dependents of this module are not in this resource pot
-      if dependents.iter().any(|id| !resource_pot.has_module(id)) {
+      if dependents.iter().any(|id| {
+        !resource_pot.has_module(id)
+          || !module_graph
+            .module(id)
+            .is_some_and(|m| m.meta.as_script().is_esm())
+      }) {
         continue;
       }
 

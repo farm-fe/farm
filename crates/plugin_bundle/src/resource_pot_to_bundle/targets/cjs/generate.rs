@@ -21,7 +21,7 @@ use crate::resource_pot_to_bundle::{
   polyfill::SimplePolyfill,
   targets::util::{wrap_export_star, wrap_require_default, wrap_require_wildcard},
   uniq_name::BundleVariable,
-  ShareBundleOptions,
+  ShareBundleContext,
 };
 
 use super::util::create_esm_flag;
@@ -42,7 +42,7 @@ impl CjsGenerate {
     module_analyzer_manager: &ModuleAnalyzerManager,
     polyfill: &mut SimplePolyfill,
     is_already_polyfilled: &mut bool,
-    options: &ShareBundleOptions,
+    ctx: &ShareBundleContext,
   ) -> Result<Vec<ModuleItem>> {
     let mut stmts = vec![];
 
@@ -134,6 +134,7 @@ impl CjsGenerate {
                 },
               ],
               polyfill,
+              ctx,
             ),
           })));
         }
@@ -186,7 +187,7 @@ impl CjsGenerate {
     module_analyzer_manager: &ModuleAnalyzerManager,
     polyfill: &mut SimplePolyfill,
     group_id: &str,
-    options: &ShareBundleOptions,
+    ctx: &ShareBundleContext,
   ) -> Result<Vec<ModuleItem>> {
     let mut stmts = vec![];
     let mut ordered_import = import_map.keys().collect::<Vec<_>>();
@@ -215,7 +216,7 @@ impl CjsGenerate {
                 .module_analyzer(m)
                 .map(|m| m.bundle_group_id.clone())
                 .unwrap(),
-              options.reference_slot,
+              ctx.options.reference_slot,
             )
           },
         ),
@@ -232,7 +233,7 @@ impl CjsGenerate {
 
       let try_wrap_require_default = |expr: Box<Expr>, polyfill: &mut SimplePolyfill| {
         if import.default.is_some() {
-          return wrap_require_default(expr, polyfill);
+          return wrap_require_default(expr, polyfill, ctx);
         }
 
         expr
@@ -354,6 +355,7 @@ impl CjsGenerate {
             })),
             polyfill,
             merged_import_generate.is_contain_namespace,
+            ctx,
           )),
           definite: false,
         }],
@@ -379,9 +381,10 @@ fn try_wrap_namespace(
   expr: Box<Expr>,
   polyfill: &mut SimplePolyfill,
   is_contain_namespace: bool,
+  ctx: &ShareBundleContext,
 ) -> Box<Expr> {
   if is_contain_namespace {
-    return wrap_require_wildcard(expr, polyfill);
+    return wrap_require_wildcard(expr, polyfill, ctx);
   }
 
   expr

@@ -15,10 +15,7 @@ use farmfe_toolkit::{
 };
 
 use crate::resource_pot_to_bundle::{
-  bundle::{bundle_reference::BundleReference, ModuleGlobalUniqName},
-  modules_analyzer::module_analyzer::{ImportSpecifierInfo, ModuleAnalyzer},
-  uniq_name::BundleVariable,
-  Polyfill, ShareBundleOptions, SimplePolyfill,
+  bundle::{bundle_reference::BundleReference, ModuleGlobalUniqName}, modules_analyzer::module_analyzer::{ImportSpecifierInfo, ModuleAnalyzer}, uniq_name::BundleVariable, Polyfill, ShareBundleContext, ShareBundleOptions, SimplePolyfill
 };
 
 enum ReplaceType {
@@ -64,7 +61,7 @@ pub struct CJSReplace<'a> {
   pub module_global_uniq_name: &'a ModuleGlobalUniqName,
   pub bundle_variable: &'a BundleVariable,
   pub config: &'a Config,
-  pub options: &'a ShareBundleOptions,
+  pub context: &'a ShareBundleContext,
   pub polyfill: &'a mut SimplePolyfill,
   pub external_config: &'a ExternalConfig,
   pub bundle_reference: &'a mut BundleReference,
@@ -111,13 +108,13 @@ impl<'a> VisitMut for CJSReplace<'a> {
               self.config.output.target_env.is_library() && self.config.output.target_env.is_node();
 
             if is_external {
-              if self.options.ignore_external_polyfill {
+              if self.context.options.ignore_external_polyfill {
                 return;
               }
 
               if is_library_node {
                 // node esm
-                if matches!(self.options.format, ModuleFormat::EsModule) {
+                if matches!(self.context.options.format, ModuleFormat::EsModule) {
                   self.polyfill.add(Polyfill::NodeEsmGlobalRequireHelper);
                   call_expr.callee = Callee::Expr(Box::new(Expr::Ident("_nodeRequire".into())));
                 }

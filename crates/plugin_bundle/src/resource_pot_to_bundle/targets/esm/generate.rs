@@ -18,7 +18,7 @@ use crate::resource_pot_to_bundle::{
   },
   common::with_bundle_reference_slot_name,
   uniq_name::BundleVariable,
-  ShareBundleOptions,
+  ShareBundleContext,
 };
 
 pub struct EsmGenerate {}
@@ -30,7 +30,7 @@ impl EsmGenerate {
     export: &ExternalReferenceExport,
     bundle_variable: &BundleVariable,
     module_analyzer_manager: &ModuleAnalyzerManager,
-    options: &ShareBundleOptions,
+    context: &ShareBundleContext,
   ) -> Result<Vec<ModuleItem>> {
     let mut stmts = vec![];
     let mut specifiers = vec![];
@@ -42,10 +42,10 @@ impl EsmGenerate {
         {
           with_bundle_reference_slot_name(
             &target_module_analyzer.bundle_group_id,
-            options.reference_slot,
+            context.options.reference_slot,
           )
         } else {
-          options.format(target_id)
+          context.format(target_id)
         };
       }
 
@@ -70,6 +70,7 @@ impl EsmGenerate {
       if uniq_sets.contains(&named_render_name) {
         continue;
       }
+
       uniq_sets.insert(named_render_name.clone());
 
       let exported_name = if !should_reexport_raw || named_render_name == exported_name {
@@ -139,7 +140,7 @@ impl EsmGenerate {
     import_map: &HashMap<ReferenceKind, ExternalReferenceImport>,
     module_analyzer_manager: &ModuleAnalyzerManager,
     resource_pot_name: &str,
-    options: &ShareBundleOptions,
+    options: &ShareBundleContext,
   ) -> Result<Vec<ModuleItem>> {
     let mut stmts = vec![];
     let mut generate_import_specifies: HashMap<String, ImportItem> = HashMap::new();
@@ -165,7 +166,7 @@ impl EsmGenerate {
                   .map(|id| id.to_string())
                   // maybe using group
                   .unwrap_or_else(|| options.format(m)),
-                options.reference_slot,
+                options.options.reference_slot,
               ),
             )
           }

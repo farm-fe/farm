@@ -16,6 +16,9 @@ export class Module {
   }
 
   o(to: any, to_k: string, get: () => any) {
+    if (Object.prototype.hasOwnProperty.call(to, to_k)) {
+      return;
+    }
     Object.defineProperty(to, to_k, {
       enumerable: true,
       get

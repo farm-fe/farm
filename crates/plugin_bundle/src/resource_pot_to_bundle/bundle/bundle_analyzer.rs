@@ -38,7 +38,7 @@ use crate::resource_pot_to_bundle::{
     generate::{generate_bundle_import_by_bundle_reference, generate_export_by_reference_export},
   },
   uniq_name::{BundleVariable, FindModuleExportResult},
-  BundleGroup, ShareBundleOptions, FARM_BUNDLE_POLYFILL_SLOT,
+  BundleGroup, ShareBundleContext, FARM_BUNDLE_POLYFILL_SLOT,
 };
 
 use super::{
@@ -62,7 +62,6 @@ pub struct BundleAnalyzer<'a> {
   module_graph: &'a ModuleGraph,
   context: Arc<CompilationContext>,
 
-  // pub bundle_reference: BundleReference,
   pub polyfill: SimplePolyfill,
 }
 
@@ -218,9 +217,9 @@ impl<'a> BundleAnalyzer<'a> {
     module_id: &ModuleId,
     module_analyzer_manager: &mut ModuleAnalyzerManager,
     bundle_reference_manager: &mut BundleReferenceManager,
-    options: &ShareBundleOptions,
+    options: &ShareBundleContext,
   ) -> Result<()> {
-    let is_format_to_commonjs = matches!(options.format, ModuleFormat::CommonJs);
+    let is_format_to_commonjs = matches!(options.options.format, ModuleFormat::CommonJs);
 
     farm_profile_scope!(format!(
       "bundle analyzer module relation: {}",
@@ -266,6 +265,7 @@ impl<'a> BundleAnalyzer<'a> {
       }
 
       let mut is_contain_export = false;
+
       for statement in &module_analyzer.statements {
         if let Some(import) = &statement.import {
           if import.specifiers.is_empty() {
@@ -420,12 +420,17 @@ impl<'a> BundleAnalyzer<'a> {
                         .set_uniq_name_both(index, *local);
                     }
 
-                    FindModuleExportResult::External(_, target, _) => {
-                      let rename = bundle_reference1.add_import(
-                        specify,
-                        target.into(),
-                        &self.bundle_variable.borrow(),
-                      )?;
+                    FindModuleExportResult::External(index, target, _) => {
+                      let mut rename = index;
+
+                      // not reexport external
+                      if target == import.source {
+                        rename = bundle_reference1.add_import(
+                          specify,
+                          target.into(),
+                          &self.bundle_variable.borrow(),
+                        )?;
+                      }
 
                       self
                         .bundle_variable
@@ -708,21 +713,29 @@ impl<'a> BundleAnalyzer<'a> {
                       }
 
                       FindModuleExportResult::External(_, target_source, _) => {
+                        let mut bundle_variable = self.bundle_variable.borrow_mut();
+                        is_confirmed_import = true;
                         if is_reference_by_another {
                           bundle_reference1.add_reference_export(
                             specify,
                             target_source.into(),
                             module_system,
                           );
-                          is_confirmed_import = true;
                         } else {
+                          let is_default = bundle_variable.is_default_key(variable.export_as());
+
+                          if is_default {
+                            bundle_variable
+                              .set_uniq_name_both(variable.export_from(), variable.export_as());
+                          }
+
                           bundle_reference1.add_import(
                             &ImportSpecifierInfo::Named {
                               local: variable.export_as(),
                               imported: Some(variable.export_from()),
                             },
                             target_source.into(),
-                            &self.bundle_variable.borrow_mut(),
+                            &bundle_variable,
                           )?;
                         }
                       }
@@ -811,8 +824,9 @@ impl<'a> BundleAnalyzer<'a> {
                     .default_name_result(module_id)
                 };
                 let mut bundle_variable = self.bundle_variable.borrow_mut();
+                let is_default_key = bundle_variable.is_default_key(*var);
 
-                if bundle_variable.name(*var) == "default" {
+                if is_default_key {
                   let default_name = default_name()?;
                   let rendered_name = bundle_variable.render_name(default_name);
 
@@ -1043,7 +1057,7 @@ impl<'a> BundleAnalyzer<'a> {
     module_analyzer_manager: &mut ModuleAnalyzerManager,
     order_index_map: &HashMap<ModuleId, usize>,
     bundle_reference_manager: &mut BundleReferenceManager,
-    options: &ShareBundleOptions,
+    ctx: &ShareBundleContext,
   ) -> Result<()> {
     farm_profile_function!("");
 
@@ -1078,7 +1092,7 @@ impl<'a> BundleAnalyzer<'a> {
         order_index_map,
         &mut self.polyfill,
         &external_config,
-        options,
+        ctx,
       )?;
 
       if let Some(f) = bundle_reference.query_redeclare_both(&module_id) {
@@ -1088,6 +1102,7 @@ impl<'a> BundleAnalyzer<'a> {
           &f.redeclare_commonjs_import,
           &module_analyzer_manager.module_global_uniq_name,
           &mut self.polyfill,
+          ctx,
         )?;
 
         let module_analyzer = module_analyzer_manager.module_analyzer_mut_unchecked(&module_id);
@@ -1112,6 +1127,7 @@ impl<'a> BundleAnalyzer<'a> {
       &map,
       &module_analyzer_manager.module_global_uniq_name,
       &mut self.polyfill,
+      ctx,
     )?);
 
     for module_id in &self.ordered_modules {
@@ -1135,7 +1151,7 @@ impl<'a> BundleAnalyzer<'a> {
         &self.context,
         &mut self.polyfill,
         &mut is_polyfilled_es_module_flag,
-        options,
+        ctx,
       )?);
 
       patch_export_to_module.extend(generate_export_by_reference_export(
@@ -1147,29 +1163,29 @@ impl<'a> BundleAnalyzer<'a> {
         &self.context,
         &mut self.polyfill,
         &mut is_polyfilled_es_module_flag,
-        options,
+        ctx,
       )?);
     }
 
     // 2. maybe import external、other bundle, should generate import
     patch_import_to_module.extend(generate_bundle_import_by_bundle_reference(
-      &options.format,
+      &ctx.options.format,
       &self.bundle_variable.borrow(),
       &bundle_reference.bundle_reference1,
       module_analyzer_manager,
       &mut self.polyfill,
       &self.group.id,
-      options,
+      ctx,
     )?);
 
     patch_import_to_module.extend(generate_bundle_import_by_bundle_reference(
-      &options.format,
+      &ctx.options.format,
       &self.bundle_variable.borrow(),
       &bundle_reference.reexport_raw,
       module_analyzer_manager,
       &mut self.polyfill,
       &self.group.id,
-      options,
+      ctx,
     )?);
 
     patch_import_to_module.extend(patch_after_import_to_module);
@@ -1212,7 +1228,7 @@ impl<'a> BundleAnalyzer<'a> {
   pub fn patch_polyfill_for_bundle(
     &mut self,
     module_analyzer_manager: &mut ModuleAnalyzerManager,
-    options: &ShareBundleOptions,
+    context: &ShareBundleContext,
   ) -> Result<()> {
     if let Some(module_id) = self.ordered_modules.first() {
       let module_analyzer = module_analyzer_manager.module_analyzer_mut_unchecked(module_id);
@@ -1237,13 +1253,13 @@ impl<'a> BundleAnalyzer<'a> {
       let mut ast = module_analyzer.ast.body.take();
 
       let stmts = generate_bundle_import_by_bundle_reference(
-        &options.format,
+        &context.options.format,
         &bundle_variable,
         &bundle_reference,
         &module_analyzer_manager,
         &mut self.polyfill,
         &self.group.id,
-        options,
+        context,
       )?;
 
       ast = stmts.into_iter().chain(ast.take()).collect();
@@ -1255,7 +1271,7 @@ impl<'a> BundleAnalyzer<'a> {
   }
 
   // TODO: for partial ShareBundle
-  pub fn path_polyfill_inline(
+  pub fn patch_polyfill_inline(
     &mut self,
     module_analyzer_manager: &mut ModuleAnalyzerManager,
   ) -> Result<()> {
@@ -1281,7 +1297,7 @@ impl<'a> BundleAnalyzer<'a> {
     &mut self,
     module_analyzer_manager: &mut ModuleAnalyzerManager,
     polyfill: SimplePolyfill,
-    options: &ShareBundleOptions,
+    context: &ShareBundleContext,
   ) -> Result<()> {
     let module_id = ModuleId::from(FARM_BUNDLE_POLYFILL_SLOT);
     let module_analyzer = module_analyzer_manager
@@ -1318,7 +1334,7 @@ impl<'a> BundleAnalyzer<'a> {
       &self.context,
       &mut SimplePolyfill::default(),
       &mut false,
-      options,
+      context,
     )?;
 
     ast = ast.into_iter().chain(stmts).collect();

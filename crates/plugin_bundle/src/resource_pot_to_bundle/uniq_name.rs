@@ -434,7 +434,7 @@ impl BundleVariable {
     find_namespace: bool,
   ) -> Option<FindModuleExportResult> {
     let var_ident = self.name(index);
-    if module_analyzers.is_external(source) {
+    if module_analyzers.is_external(source) || !module_analyzers.contain(source) {
       return Some(FindModuleExportResult::External(
         index,
         source.clone(),
@@ -503,7 +503,8 @@ impl BundleVariable {
         return reference_map
           .export
           .default
-          .or_else(|| reference_map.export.query(&"default".to_string(), self))
+          .or_else(|| reference_map.query_by_str("default", self))
+          // .or_else(|| reference_map.export.query(&"default".to_string(), self))
           .map(|i| FindModuleExportResult::Local(i, source.clone(), module_system));
       }
 
@@ -519,7 +520,7 @@ impl BundleVariable {
       // find from reference external or bundle
       for (module_id, export) in &reference_map.reexport_map {
         if let Some(d) = export.query(&var_ident, self) {
-          if module_analyzers.is_external(module_id) {
+          if module_analyzers.is_external(module_id) || !module_analyzers.contain(module_id) {
             return Some(FindModuleExportResult::External(d, module_id.clone(), true));
           } else {
             return Some(FindModuleExportResult::Local(

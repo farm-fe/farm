@@ -51,6 +51,7 @@ fn test(file: String, crate_path: String, f: Option<impl Fn(&mut Config)>) {
 
         config.external = vec![ConfigRegex::new("(^node:.*)"), ConfigRegex::new("^fs$")];
         config.output.target_env = TargetEnv::Custom("library-node".to_string());
+        config.resolve.auto_external_failed_resolve = true;
         // config.output.format = ModuleFormat::CommonJs;
 
         // TODO: multiple bundle
@@ -116,6 +117,9 @@ fn multiple_bundle_test(file: String, crate_path: String) {
 
 farmfe_testing::testing! {
   "tests/fixtures/bundle/**/index.ts",
+  // "tests/fixtures/bundle/library/reexport/use_external_reexport/**/index.ts",
+  // "tests/fixtures/bundle/library/reexport/reexport/**/index.ts",
+  // "tests/fixtures/bundle/library/reexport/reexport_hybrid_cjs/default/**/index.ts",
   multiple_bundle_test
 }
 // farmfe_testing::testing! {"tests/fixtures/runtime/bundle/cjs/export/entryExportStar/**/index.ts", test}

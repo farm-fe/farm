@@ -81,7 +81,7 @@ impl ReferenceExport {
     self.named.is_empty() && self.default.is_none() && !self.all && self.namespace.is_none()
   }
 
-  pub fn query(&self, export_from: &String, bundle_variable: &BundleVariable) -> Option<usize> {
+  pub fn query(&self, export_from: &str, bundle_variable: &BundleVariable) -> Option<usize> {
     if let Some(index) = self.namespace {
       if &bundle_variable.name(index) == export_from {
         return Some(index);
@@ -99,11 +99,11 @@ impl ReferenceExport {
 
   pub fn raw_query(
     &self,
-    export_from: &String,
+    export_from: &str,
     bundle_variable: &BundleVariable,
     find_default: bool,
   ) -> Option<usize> {
-    if find_default {
+    if find_default && self.default.is_some() {
       return self.default;
     }
 
@@ -186,9 +186,7 @@ impl ReferenceMap {
     }
   }
 
-  pub fn query(&self, index: usize, bundle_variable: &BundleVariable) -> Option<usize> {
-    let export_from = bundle_variable.name(index);
-
+  pub fn query_by_str(&self, export_from: &str, bundle_variable: &BundleVariable) -> Option<usize> {
     let find_default = export_from == "default";
 
     if let Some(r) = self
@@ -202,6 +200,12 @@ impl ReferenceMap {
         .values()
         .find_map(|item| item.query(&export_from, bundle_variable))
     }
+  }
+
+  pub fn query(&self, index: usize, bundle_variable: &BundleVariable) -> Option<usize> {
+    let export_from = bundle_variable.name(index);
+
+    self.query_by_str(&export_from, bundle_variable)
   }
 
   pub fn extends(&mut self, other: &ReferenceMap) {

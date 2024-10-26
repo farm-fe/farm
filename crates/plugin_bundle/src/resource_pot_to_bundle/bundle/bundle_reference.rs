@@ -11,7 +11,7 @@ use crate::resource_pot_to_bundle::{
   common::with_bundle_reference_slot_name,
   modules_analyzer::module_analyzer::{ExportSpecifierInfo, ImportSpecifierInfo, ModuleAnalyzer},
   uniq_name::BundleVariable,
-  ShareBundleOptions,
+  ShareBundleContext,
 };
 
 use super::ModuleAnalyzerManager;
@@ -423,13 +423,15 @@ impl BundleReference {
 
       Result::<()>::Ok(())
     };
-    let is_external = reference_builder
-      .module_analyzer_manager
-      .is_external(reference_builder.source);
+    let is_external = reference_builder.is_external(reference_builder.source);
+
     let is_commonjs = reference_builder
       .module_analyzer_manager
       .is_commonjs(reference_builder.source);
-    let is_format_to_cjs = matches!(reference_builder.config.format, ModuleFormat::CommonJs);
+    let is_format_to_cjs = matches!(
+      reference_builder.config.options.format,
+      ModuleFormat::CommonJs
+    );
     let redeclare_commonjs = !reference_builder.module_analyzer.entry
       || matches!(
         reference_builder.module_analyzer.module_type,
@@ -443,17 +445,17 @@ impl BundleReference {
       // _export_star(node_fs, module.exports);
 
       if is_format_to_cjs {
-        self.add_import(
-          &ImportSpecifierInfo::Namespace(
-            reference_builder
-              .module_analyzer_manager
-              .module_global_uniq_name
-              .namespace_name(reference_builder.source)
-              .unwrap(),
-          ),
-          reference_builder.source.clone().into(),
-          &reference_builder.bundle_variable,
-        )?;
+        if let Some(ns) = reference_builder
+          .module_analyzer_manager
+          .module_global_uniq_name
+          .namespace_name(reference_builder.source)
+        {
+          self.add_import(
+            &ImportSpecifierInfo::Namespace(ns),
+            reference_builder.source.clone().into(),
+            &reference_builder.bundle_variable,
+          )?;
+        }
       }
 
       self.add_reference_export(
@@ -476,27 +478,32 @@ impl BundleReference {
       // local export
       {
         // export named
-        for (from, export_as) in &export_names.export.named {
+        for (export_as, local) in &export_names.export.named {
+          let is_default_key = reference_builder.bundle_variable.is_default_key(*export_as);
+          // reference_builder.bundle_variable.name(from)
+
           self.add_local_export(
-            &ExportSpecifierInfo::Named((*from, Some(*export_as)).into()),
+            &if is_default_key {
+              ExportSpecifierInfo::Default((*local).into())
+            } else {
+              ExportSpecifierInfo::Named((*local, Some(*export_as)).into())
+            },
             export_type.clone(),
           );
 
           if is_commonjs {
-            let is_default_key = reference_builder.bundle_variable.is_default_key(*from);
-
             let imported = if is_default_key {
               reference_builder
                 .module_analyzer_manager
                 .module_global_uniq_name
                 .default_name_result(reference_builder.module_id.to_string())?
             } else {
-              *from
+              *export_as
             };
 
             self.add_declare_commonjs_import(
               &ImportSpecifierInfo::Named {
-                local: *export_as,
+                local: *local,
                 imported: Some(imported),
               },
               reference_builder.source.clone().into(),
@@ -538,8 +545,8 @@ impl BundleReference {
         }
       }
 
+      // reexport external | bundle
       {
-        // reexport external | bundle
         for (module_id, reference) in &export_names.reexport_map {
           let is_external_source = reference_builder.is_external(module_id);
           let is_commonjs_source = reference_builder.is_commonjs(module_id);
@@ -548,7 +555,7 @@ impl BundleReference {
             // export named
             for (from, export_as) in &reference.named {
               self.add_reference_export(
-                &ExportSpecifierInfo::Named((*from, Some(*export_as)).into()),
+                &ExportSpecifierInfo::Named((*export_as, Some(*from)).into()),
                 module_id.clone().into(),
                 export_type.clone(),
               );
@@ -758,13 +765,14 @@ pub struct ReferenceBuilder<'a> {
   pub bundle_variable: &'a mut BundleVariable,
   pub source: &'a ModuleId,
   pub module_system: ModuleSystem,
-  pub config: &'a ShareBundleOptions,
+  pub config: &'a ShareBundleContext,
   pub module_id: &'a ModuleId,
 }
 
 impl<'a> ReferenceBuilder<'a> {
   fn is_external(&self, module_id: &ModuleId) -> bool {
     self.module_analyzer_manager.is_external(module_id)
+      || !self.module_analyzer_manager.contain(module_id)
   }
 
   fn is_commonjs(&self, module_id: &ModuleId) -> bool {

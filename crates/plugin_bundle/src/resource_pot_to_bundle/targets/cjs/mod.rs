@@ -26,6 +26,7 @@ use crate::resource_pot_to_bundle::{
   polyfill::SimplePolyfill,
   targets::util::{wrap_require_default, wrap_require_wildcard},
   uniq_name::BundleVariable,
+  ShareBundleContext,
 };
 
 pub mod generate;
@@ -118,6 +119,7 @@ impl CjsModuleAnalyzer {
     import_map: &CommonJsImportMap,
     module_global_uniq_name: &ModuleGlobalUniqName,
     polyfill: &mut SimplePolyfill,
+    ctx: &ShareBundleContext,
   ) -> Result<Vec<ModuleItem>> {
     let mut result = vec![];
 
@@ -130,6 +132,7 @@ impl CjsModuleAnalyzer {
         (source, &import),
         module_global_uniq_name,
         polyfill,
+        ctx,
       )?
       else {
         continue;
@@ -171,6 +174,7 @@ impl CjsModuleAnalyzer {
     (source, import_map): (&ReferenceKind, &ExternalReferenceImport),
     module_global_uniq_name: &ModuleGlobalUniqName,
     polyfill: &mut SimplePolyfill,
+    ctx: &ShareBundleContext,
   ) -> Result<Option<(String, CommonJsDeclareResult)>> {
     let module_id = match source {
       ReferenceKind::Bundle(_) => return Ok(None),
@@ -190,8 +194,7 @@ impl CjsModuleAnalyzer {
         })),
       )
     } else {
-      // TODO: confirm name
-      (module_id.to_string(), Box::new(Expr::Ident("123".into())))
+      return Ok(None);
     };
 
     if import_map.is_empty() {
@@ -215,7 +218,7 @@ impl CjsModuleAnalyzer {
         }),
         init: Some(Box::new(Expr::Member(MemberExpr {
           span: DUMMY_SP,
-          obj: wrap_require_default(cjs_caller.clone(), polyfill),
+          obj: wrap_require_default(cjs_caller.clone(), polyfill, ctx),
           prop: MemberProp::Ident("default".into()),
         }))),
         definite: false,
@@ -229,7 +232,7 @@ impl CjsModuleAnalyzer {
           id: Ident::from(bundle_variable.render_name(ns).as_str()),
           type_ann: None,
         }),
-        init: Some(wrap_require_wildcard(cjs_caller.clone(), polyfill)),
+        init: Some(wrap_require_wildcard(cjs_caller.clone(), polyfill, ctx)),
         definite: false,
       });
     }
@@ -249,7 +252,7 @@ impl CjsModuleAnalyzer {
         init: Some(Box::new(Expr::Member(MemberExpr {
           span: DUMMY_SP,
           obj: if is_require_default {
-            wrap_require_default(cjs_caller.clone(), polyfill)
+            wrap_require_default(cjs_caller.clone(), polyfill, ctx)
           } else {
             cjs_caller.clone()
           },

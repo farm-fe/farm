@@ -259,18 +259,19 @@ impl<'a> Visit for AnalyzeModuleItem<'a> {
         for specifier in &export_named.specifiers {
           match specifier {
             swc_ecma_ast::ExportSpecifier::Named(named) => {
-              let local = match &named.orig {
+              let org = match &named.orig {
                 ModuleExportName::Ident(i) => i.clone(),
                 ModuleExportName::Str(_) => unimplemented!("exporting a string is not supported"),
               };
+              let exported = named.exported.as_ref().map(|i| match i {
+                ModuleExportName::Ident(i) => i.clone(),
+                ModuleExportName::Str(_) => unimplemented!("exporting a string is not supported"),
+              });
 
               specifiers.push(ExportSpecifierInfo::Named(
                 (
-                  self.register_var(&local, false),
-                  named.exported.as_ref().map(|i| match i {
-                    ModuleExportName::Ident(i) => self.register_var(i, false),
-                    _ => panic!("non-ident exported is not supported when tree shaking"),
-                  }),
+                  self.register_var(&org, false),
+                  exported.as_ref().map(|i| self.register_var(i, false)),
                 )
                   .into(),
               ));

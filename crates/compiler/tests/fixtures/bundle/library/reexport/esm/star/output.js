@@ -8,8 +8,8 @@ var foo_default = 'foo';
 const foo = 'foo';
 const bar = 'bar';
 var foo_ns = {
-    bar: bar,
     foo: foo,
+    bar: bar,
     "default": foo_default,
     __esModule: true
 };

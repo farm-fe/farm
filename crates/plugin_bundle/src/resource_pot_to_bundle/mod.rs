@@ -18,6 +18,7 @@ use farmfe_core::{
   resource::resource_pot::{ResourcePot, ResourcePotId, ResourcePotType},
   swc_ecma_ast::Id,
 };
+use farmfe_toolkit::itertools::Itertools;
 pub use polyfill::{Polyfill, SimplePolyfill};
 
 pub use crate::resource_pot_to_bundle::bundle::bundle_analyzer::BundleAnalyzer;
@@ -29,10 +30,12 @@ use self::{
 
 mod bundle;
 mod common;
+mod config;
 mod defined_idents_collector;
 mod modules_analyzer;
 mod targets;
 pub use common::{FARM_BUNDLE_POLYFILL_SLOT, FARM_BUNDLE_REFERENCE_SLOT_PREFIX};
+pub use config::*;
 
 #[derive(Debug, Default, PartialEq, Eq)]
 pub struct Var {
@@ -77,89 +80,17 @@ mod polyfill;
 mod uniq_name;
 
 pub type BundleMap<'a> = HashMap<ResourcePotId, BundleAnalyzer<'a>>;
-///
-///
-/// ```js
-/// // farm.config.js
-/// {
-///   alias: {
-///     "react": "node_modules/react/index.js"
-///   }
-/// }
-/// ```
-///
-/// ```js
-/// // index.js
-/// import React from "react";
-/// ```
-///
-/// after ShareBundle import generate
-/// ```js
-/// import React from "node_modules/react/index.js";
-/// ```
-///
-/// but in non-full ShareBundle render, cannot find it
-///
-
-pub struct ShareBundleOptions {
-  /// whether to use reference slot
-  ///
-  /// `true`:
-  /// ```js
-  /// require("__FARM_BUNDLE_REFERENCE_SLOT__(({bundle_group_id}))")
-  /// ```
-  ///
-  /// `false`:
-  /// ```js
-  /// require("{bundle_group_id}")
-  /// ```
-  pub reference_slot: bool,
-
-  /// require("external")
-  pub ignore_external_polyfill: bool,
-
-  /// in non-full ShareBundle render, maybe not that transform by config.output.format
-  pub format: ModuleFormat,
-  /// hash paths other than external
-  pub hash_path: bool,
-
-  /// inner fields
-  pub mode: Mode,
-}
-
-impl Default for ShareBundleOptions {
-  fn default() -> Self {
-    Self {
-      reference_slot: true,
-      ignore_external_polyfill: false,
-      hash_path: false,
-      format: ModuleFormat::EsModule,
-      mode: Mode::Development,
-    }
-  }
-}
-
-impl ShareBundleOptions {
-  fn format(&self, module_id: &ModuleId) -> String {
-    if self.hash_path {
-      module_id.id(self.mode.clone())
-    } else {
-      module_id.to_string()
-    }
-  }
-}
 
 pub struct SharedBundle<'a> {
   pub bundle_map: BundleMap<'a>,
   bundle_reference: BundleReferenceManager,
   module_analyzer_manager: ModuleAnalyzerManager<'a>,
   module_graph: &'a ModuleGraph,
-  context: &'a Arc<CompilationContext>,
   pub bundle_variables: Rc<RefCell<BundleVariable>>,
   // TODO: try use moduleId ref instead of clone
   ordered_module_index: Arc<HashMap<ModuleId, usize>>,
   ordered_groups_id: Vec<ResourcePotId>,
-  options: ShareBundleOptions,
+  context: ShareBundleContext,
 }
 
 // TODO: use ref instead of clone
@@ -198,8 +129,9 @@ impl<'a> SharedBundle<'a> {
     options: Option<ShareBundleOptions>,
   ) -> Result<Self> {
     farm_profile_function!("shared bundle initial");
-    let mut options = options.unwrap_or_default();
-    options.mode = context.config.mode.clone();
+    let options = options.unwrap_or_default();
+
+    let context = ShareBundleContext::new(options, &context);
 
     let module_analyzer_map: Mutex<HashMap<ModuleId, ModuleAnalyzer>> = Mutex::new(HashMap::new());
     let mut bundle_map: HashMap<ResourcePotId, BundleAnalyzer> = HashMap::new();
@@ -247,7 +179,7 @@ impl<'a> SharedBundle<'a> {
           // 1-2. analyze bundle module
           let module_analyzer = ModuleAnalyzer::new(
             module,
-            context,
+            &context.context,
             bundle_group.id.clone(),
             is_entry,
             is_dynamic,
@@ -266,7 +198,7 @@ impl<'a> SharedBundle<'a> {
       let mut bundle_analyzer = BundleAnalyzer::new(
         bundle_group,
         module_graph,
-        context,
+        &context.context,
         bundle_variables.clone(),
       );
 
@@ -291,7 +223,6 @@ impl<'a> SharedBundle<'a> {
       ordered_module_index: order_map,
       ordered_groups_id: ordered_bundle_group_ids,
       bundle_reference: bundle_reference_manager,
-      options,
     })
   }
 
@@ -315,7 +246,7 @@ impl<'a> SharedBundle<'a> {
 
       self.module_analyzer_manager.extract_modules_statements(
         &bundle.ordered_modules,
-        self.context,
+        &self.context.context,
         self.module_graph,
         &mut bundle.bundle_variable.borrow_mut(),
       )?;
@@ -365,7 +296,7 @@ impl<'a> SharedBundle<'a> {
     self.module_analyzer_manager.link(
       &mut self.bundle_variables.borrow_mut(),
       &self.ordered_module_index,
-      self.context,
+      &self.context.context,
       &self.ordered_groups_id,
     );
 
@@ -418,7 +349,7 @@ impl<'a> SharedBundle<'a> {
         module_id,
         &mut self.module_analyzer_manager,
         &mut self.bundle_reference,
-        &self.options,
+        &self.context,
       )?;
 
       bundle_analyzer.module_conflict_name(&mut self.module_analyzer_manager);
@@ -438,7 +369,7 @@ impl<'a> SharedBundle<'a> {
         &mut self.module_analyzer_manager,
         &self.ordered_module_index,
         &mut self.bundle_reference,
-        &self.options,
+        &self.context,
       )?;
     }
 
@@ -446,6 +377,10 @@ impl<'a> SharedBundle<'a> {
   }
 
   fn patch_polyfill(&mut self) -> Result<()> {
+    if self.context.options.concatenation_module {
+      return Ok(());
+    }
+
     // multiple bundle should merge polyfill to runtime or entry bundle, and reexport to other bundle
     let mut polyfill = SimplePolyfill::new(vec![]);
 
@@ -457,10 +392,10 @@ impl<'a> SharedBundle<'a> {
       if let Some(ref polyfill_group_id) = polyfill_resource_pot {
         if polyfill_group_id != group_id {
           bundle_analyzer
-            .patch_polyfill_for_bundle(&mut self.module_analyzer_manager, &self.options)?;
+            .patch_polyfill_for_bundle(&mut self.module_analyzer_manager, &self.context)?;
         }
       } else {
-        bundle_analyzer.path_polyfill_inline(&mut self.module_analyzer_manager)?;
+        bundle_analyzer.patch_polyfill_inline(&mut self.module_analyzer_manager)?;
       }
 
       if matches!(bundle_analyzer.group.group_type, ResourcePotType::Js) {
@@ -472,7 +407,7 @@ impl<'a> SharedBundle<'a> {
       .map(|group_id| self.bundle_map.get_mut(&group_id))
       .flatten()
     {
-      bundle_analyzer.patch_polyfill(&mut self.module_analyzer_manager, polyfill, &self.options)?;
+      bundle_analyzer.patch_polyfill(&mut self.module_analyzer_manager, polyfill, &self.context)?;
     };
 
     Ok(())
@@ -499,7 +434,10 @@ impl<'a> SharedBundle<'a> {
 
     let bundle = self.bundle_map.get_mut(group_id).unwrap();
 
-    let bundle = bundle.codegen(&mut self.module_analyzer_manager, &self.context.config)?;
+    let bundle = bundle.codegen(
+      &mut self.module_analyzer_manager,
+      &self.context.context.config,
+    )?;
 
     Ok(bundle)
   }
