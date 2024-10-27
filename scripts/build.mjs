@@ -27,7 +27,7 @@ const PKG_DTS = resolve(CWD, './js-plugins/dts');
 const PKG_RUST_PLUGIN = resolve(CWD, './rust-plugins');
 
 // Build js_plugin_path
-export const JS_PLUGINs_DIR = resolve(CWD, './js-plugins');
+export const JS_PLUGINS_DIR = resolve(CWD, './js-plugins');
 export const EXAMPLES_DIR = resolve(CWD, './examples');
 
 export const excludedJsPlugin = ['dts'];
@@ -119,18 +119,87 @@ export const buildDts = () =>
 // build rust plugins
 export const rustPlugins = () => batchBuildPlugins(PKG_RUST_PLUGIN);
 
-// build chain
 export const buildJsPlugins = async () => {
-  await execa(
-    DEFAULT_PACKAGE_MANAGER,
-    ['--filter', './js-plugins/**', 'build'],
-    {
-      cwd: CWD
-    }
-  );
+  const jsPluginDirs = fs.readdirSync(JS_PLUGINS_DIR).filter((file) => {
+    return (
+      fs.statSync(join(JS_PLUGINS_DIR, file)).isDirectory() &&
+      !excludedJsPlugin.includes(file)
+    );
+  });
+
+  const total = jsPluginDirs.length;
+  console.log('\n')
+  logger(`Found ${total} JS plugins to build \n`, { color: 'blue' });
+
+  for (const pluginDir of jsPluginDirs) {
+    const pluginPath = resolve(JS_PLUGINS_DIR, pluginDir);
+    await runTask(
+      `Built JS Plugin: ${pluginDir}`,
+      async () => {
+        const spinner = createSpinner(`Building ${pluginDir}`).start();
+        try {
+          if (!existsSync(join(pluginPath, 'package.json'))) {
+            spinner.warn({ text: `Skipping ${pluginDir}: No package.json found` });
+            return;
+          }
+
+          await execa(DEFAULT_PACKAGE_MANAGER, ['build'], {
+            cwd: pluginPath,
+            stdio: 'pipe',
+          });
+
+          spinner.success({ text: `Built JS plugin: ${pluginDir}` });
+        } catch (error) {
+          spinner.error({ text: `Failed to build JS plugin: ${pluginDir}` });
+          throw error;
+        }
+      },
+      'Building',
+      'Build'
+    );
+  }
 };
 
-export const buildRustPlugins = () => Promise.all(rustPlugins());
+export const buildRustPlugins = async () => {
+  const rustPluginDirs = fs.readdirSync(PKG_RUST_PLUGIN).filter((file) => {
+    return (
+      fs.statSync(join(PKG_RUST_PLUGIN, file)).isDirectory() &&
+      !excludedJsPlugin.includes(file)
+    );
+  });
+
+  const total = rustPluginDirs.length;
+  console.log('\n')
+  logger(`Found ${total} Rust plugins to build \n`, { color: 'blue' });
+
+  for (const pluginDir of rustPluginDirs) {
+    const pluginPath = resolve(PKG_RUST_PLUGIN, pluginDir);
+    await runTask(
+      `Built Rust plugin: ${pluginDir}`,
+      async () => {
+        const spinner = createSpinner(`Building ${pluginDir}`).start();
+        try {
+          if (!existsSync(join(pluginPath, 'Cargo.toml'))) {
+            spinner.warn({ text: `Skipping ${pluginDir}: No Cargo.toml found` });
+            return;
+          }
+
+          await execa('cargo', ['build', '--release'], {
+            cwd: pluginPath,
+            stdio: 'pipe', 
+          });
+          
+          spinner.success({ text: `Built Rust plugin: ${pluginDir}` });
+        } catch (error) {
+          spinner.error({ text: `Failed to build Rust plugin: ${pluginDir}` });
+          throw error;
+        }
+      },
+      'Building',
+      'Build'
+    );
+  }
+};
 
 export const copyArtifacts = () =>
   batchBuildPlugins(PKG_RUST_PLUGIN, 'copy-artifacts');
