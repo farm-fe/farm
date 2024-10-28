@@ -1,4 +1,5 @@
-import hljs from 'highlight.js';
+import Prism from 'prismjs';
+
 import {
   extractErrorMessage,
   parseIfJSON,
@@ -170,98 +171,7 @@ kbd {
   border-color: rgb(54, 57, 64);
   border-image: initial;
 }
-.message-container {
-}
-pre code.hljs {
-  display: block;
-  overflow-x: auto;
-  padding: 1em
-}
-code.hljs {
-  padding: 3px 5px
-}
-/*
 
-Atom One Dark by Daniel Gamage
-Original One Dark Syntax theme from https://github.com/atom/one-dark-syntax
-
-base:    #282c34
-mono-1:  #abb2bf
-mono-2:  #818896
-mono-3:  #5c6370
-hue-1:   #56b6c2
-hue-2:   #61aeee
-hue-3:   #c678dd
-hue-4:   #98c379
-hue-5:   #e06c75
-hue-5-2: #be5046
-hue-6:   #d19a66
-hue-6-2: #e6c07b
-
-*/
-.hljs {
-  color: #abb2bf;
-  background: #282c34
-}
-.hljs-comment,
-.hljs-quote {
-  color: #5c6370;
-  font-style: italic
-}
-.hljs-doctag,
-.hljs-keyword,
-.hljs-formula {
-  color: #c678dd
-}
-.hljs-section,
-.hljs-name,
-.hljs-selector-tag,
-.hljs-deletion,
-.hljs-subst {
-  color: #e06c75
-}
-.hljs-literal {
-  color: #56b6c2
-}
-.hljs-string,
-.hljs-regexp,
-.hljs-addition,
-.hljs-attribute,
-.hljs-meta .hljs-string {
-  color: #98c379
-}
-.hljs-attr,
-.hljs-variable,
-.hljs-template-variable,
-.hljs-type,
-.hljs-selector-class,
-.hljs-selector-attr,
-.hljs-selector-pseudo,
-.hljs-number {
-  color: #d19a66
-}
-.hljs-symbol,
-.hljs-bullet,
-.hljs-link,
-.hljs-meta,
-.hljs-selector-id,
-.hljs-title {
-  color: #61aeee
-}
-.hljs-built_in,
-.hljs-title.class_,
-.hljs-class .hljs-title {
-  color: #e6c07b
-}
-.hljs-emphasis {
-  font-style: italic
-}
-.hljs-strong {
-  font-weight: bold
-}
-.hljs-link {
-  text-decoration: underline
-}
 
 .code-block-wrapper {
   background-color: #282c34; /* Atom One Dark 背景色 */
@@ -379,6 +289,263 @@ hue-6-2: #e6c07b
 
 .file-info-left svg {
   margin-right: 8px;
+}
+
+code[class*="language-"],
+pre[class*="language-"] {
+  background: #282c34;
+  color: #abb2bf;
+  font-family: "Fira Code", Consolas, Monaco, "Andale Mono", "Ubuntu Mono", monospace;
+  direction: ltr;
+  text-align: left;
+  white-space: pre;
+  word-spacing: normal;
+  word-break: normal;
+  line-height: 1.5;
+  -moz-tab-size: 4;
+  -o-tab-size: 4;
+  tab-size: 4;
+  -webkit-hyphens: none;
+  -moz-hyphens: none;
+  -ms-hyphens: none;
+  hyphens: none;
+}
+
+/* 选择区域样式 */
+pre[class*="language-"]::-moz-selection,
+pre[class*="language-"] ::-moz-selection,
+code[class*="language-"]::-moz-selection,
+code[class*="language-"] ::-moz-selection {
+  background: #3e4451;
+  color: inherit;
+}
+
+pre[class*="language-"]::selection,
+pre[class*="language-"] ::selection,
+code[class*="language-"]::selection,
+code[class*="language-"] ::selection {
+  background: #3e4451;
+  color: inherit;
+}
+
+/* Code blocks */
+pre[class*="language-"] {
+  padding: 1em;
+  margin: 0.5em 0;
+  overflow: auto;
+  border-radius: 0.3em;
+}
+
+/* Inline code */
+:not(pre) > code[class*="language-"] {
+  padding: 0.2em 0.3em;
+  border-radius: 0.3em;
+  white-space: normal;
+}
+
+/* Token colors */
+.token.comment,
+.token.prolog,
+.token.cdata {
+  color: #5c6370;
+  font-style: italic;
+}
+
+.token.doctype,
+.token.punctuation {
+  color: #abb2bf;
+}
+
+.token.selector,
+.token.tag {
+  color: #e06c75;
+}
+
+.token.property,
+.token.boolean,
+.token.number,
+.token.constant,
+.token.symbol,
+.token.attr-name,
+.token.deleted {
+  color: #d19a66;
+}
+
+.token.string,
+.token.char,
+.token.attr-value,
+.token.builtin,
+.token.inserted {
+  color: #98c379;
+}
+
+.token.operator,
+.token.entity,
+.token.url,
+.language-css .token.string,
+.style .token.string {
+  color: #56b6c2;
+}
+
+.token.atrule,
+.token.keyword {
+  color: #c678dd;
+}
+
+.token.function {
+  color: #61afef;
+}
+
+.token.regex,
+.token.important,
+.token.variable {
+  color: #c678dd;
+}
+
+.token.important,
+.token.bold {
+  font-weight: bold;
+}
+
+.token.italic {
+  font-style: italic;
+}
+
+.token.entity {
+  cursor: help;
+}
+
+/* Language specific */
+.language-json .token.property {
+  color: #e06c75;
+}
+
+.language-markdown .token.title,
+.language-markdown .token.title .token.punctuation {
+  color: #61afef;
+  font-weight: bold;
+}
+
+.language-markdown .token.blockquote.punctuation {
+  color: #5c6370;
+}
+
+.language-markdown .token.code {
+  color: #98c379;
+}
+
+.language-markdown .token.hr.punctuation {
+  color: #56b6c2;
+}
+
+.language-markdown .token.url > .token.content {
+  color: #98c379;
+}
+
+.language-markdown .token.url-link {
+  color: #d19a66;
+}
+
+.language-markdown .token.list.punctuation {
+  color: #e06c75;
+}
+
+.language-markdown .token.table-header {
+  color: #abb2bf;
+}
+
+/* JSX */
+.language-jsx .token.jsx-tag {
+  color: #e06c75;
+}
+
+.language-jsx .token.jsx-expression {
+  color: #61afef;
+}
+
+/* TypeScript */
+.language-typescript .token.class-name {
+  color: #e5c07b;
+}
+
+.language-typescript .token.keyword {
+  color: #c678dd;
+}
+
+.code-block-wrapper {
+  position: relative;
+  padding: 1rem;
+  margin: 0 0 1rem;
+  background: #282c34;
+  border-radius: 0.5rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  overflow: hidden;
+}
+
+.code-block-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 1rem;
+  background: #21252b;
+  border-bottom: 1px solid #181a1f;
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 0.9em;
+  color: #9da5b4;
+}
+
+.line-number::before {
+  display: inline-block;
+  width: 1.2em;
+  text-align: right;
+  margin-right: 1em;
+  color: #4b5263;
+  content: attr(line);
+  user-select: none;
+}
+
+pre::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+pre::-webkit-scrollbar-track {
+  background: #282c34;
+  border-radius: 3px;
+}
+
+pre::-webkit-scrollbar-thumb {
+  background: #4b5263;
+  border-radius: 3px;
+}
+
+pre::-webkit-scrollbar-thumb:hover {
+  background: #5c6370;
+}
+
+::selection {
+  background: #3e4451;
+}
+
+.highlight-line {
+  background-color: #2c313a;
+  display: block;
+  margin: 0 -1em;
+  padding: 0 1em;
+}
+
+.error-line {
+  background-color: rgba(224, 108, 117, 0.1);
+  display: block;
+  margin: 0 -1em;
+  padding: 0 1em;
+}
+
+.warning-line {
+  background-color: rgba(209, 154, 102, 0.1);
+  display: block;
+  margin: 0 -1em;
+  padding: 0 1em;
 }
 
 </style>
@@ -521,10 +688,7 @@ export class ErrorOverlay extends HTMLElement {
   }
 
   highlightCode(code: string, language = 'javascript') {
-    if (language) {
-      return hljs.highlight(code, { language }).value;
-    }
-    return hljs.highlightAuto(code).value;
+    return Prism.highlight(code, Prism.languages[language], language);
   }
 
   renderMessages(messages: any[], _link: any) {
