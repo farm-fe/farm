@@ -1,5 +1,13 @@
 # @farmfe/core
 
+## 1.3.30
+
+### Patch Changes
+
+- 36512446: add assets mode for asset path generate
+- 2b9b2e3f: Fix async module detection wrong with cyclic dependencies
+- b3a7caf2: fix css url resolving issue
+
 ## 1.3.29
 
 ### Patch Changes
