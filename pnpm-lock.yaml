@@ -423,6 +423,9 @@ importers:
       core-js:
         specifier: ^3.30.1
         version: 3.36.1
+      font-awesome:
+        specifier: ^4.7.0
+        version: 4.7.0
       react:
         specifier: '18'
         version: 18.2.0
@@ -12525,6 +12528,10 @@ packages:
     peerDependenciesMeta:
       debug:
         optional: true
+
+  font-awesome@4.7.0:
+    resolution: {integrity: sha512-U6kGnykA/6bFmg1M/oT9EkFeIYv7JlX3bozwQJWiiLz6L0w3F5vBVPxHlwyX/vtNq1ckcpRKOB9f2Qal/VtFpg==}
+    engines: {node: '>=0.10.3'}
 
   for-each@0.3.3:
     resolution: {integrity: sha512-jqYfLp7mo9vIyQf8ykW2v7A+2N4QjeCeI5+Dz9XraiO1ign81wjiH7Fb9vSOWvQfNtmSa4H2RoQTrrXivdUZmw==}
@@ -34906,6 +34913,8 @@ snapshots:
   follow-redirects@1.15.6(debug@4.3.6):
     optionalDependencies:
       debug: 4.3.6
+
+  font-awesome@4.7.0: {}
 
   for-each@0.3.3:
     dependencies:
