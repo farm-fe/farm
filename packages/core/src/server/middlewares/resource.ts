@@ -28,10 +28,6 @@ export function resourceMiddleware(app: Server): Connect.NextHandleFunction {
     const url = cleanUrl(req.url);
 
     const { compiler, resolvedUserConfig: config, publicPath } = app;
-    // TODO resolve html but not input file html
-    // htmlFallbackMiddleware appends '.html' to URLs
-    // if (url?.endsWith('.html') && req.headers['sec-fetch-dest'] !== 'script') {
-    // }
 
     if (compiler._isInitialCompile) {
       await compiler.waitForInitialCompileFinish();
@@ -57,8 +53,6 @@ export function resourceMiddleware(app: Server): Connect.NextHandleFunction {
     }
 
     // publicPath
-    // 处理找不到资源的情况
-
     const { resourceWithoutPublicPath } = normalizePathByPublicPath(
       publicPath,
       url
@@ -88,29 +82,6 @@ export function resourceMiddleware(app: Server): Connect.NextHandleFunction {
       return;
     }
 
-    // TODO prepare add spa config or else
-    // if (config.spa !== false) {
-    //   let indexHtml = compiler.resources()["index.html"];
-
-    //   if (indexHtml) {
-    //     res.setHeader("Content-Type", "text/html");
-    //     res.end(indexHtml);
-    //     return;
-    //   }
-    // }
-    // // TODO redefine spa mpa
-    // let indexHtml = compiler.resources()['index.html'];
-
-    // if (indexHtml) {
-    //   res.setHeader('Content-Type', 'text/html');
-    //   res.end(indexHtml);
-    //   return;
-    // }
-
-    // 如果找不到任何匹配的资源，返回 404
-    // res.statusCode = 404;
-    // res.end('Not found');
-    // return;
     next();
   };
 }
