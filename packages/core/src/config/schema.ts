@@ -21,6 +21,20 @@ enum TargetEnv {
   LIBRARY_NODE = 'library-node'
 }
 
+enum ECMAVersion {
+  ES3 = 'es3',
+  ES5 = 'es5',
+  ES2015 = 'es2015',
+  ES2016 = 'es2016',
+  ES2017 = 'es2017',
+  ES2018 = 'es2018',
+  ES2019 = 'es2019',
+  ES2020 = 'es2020',
+  ES2021 = 'es2021',
+  ES2022 = 'es2022',
+  ESNext = 'esnext'
+}
+
 const baseRewriteSchema = z.union([
   z.record(z.string(), z.string()),
   z
@@ -28,9 +42,6 @@ const baseRewriteSchema = z.union([
     .args(z.string(), z.any())
     .returns(z.union([z.string(), z.promise(z.string())]))
 ]);
-
-const stringRewriteSchema = baseRewriteSchema;
-const functionRewriteSchema = baseRewriteSchema;
 
 const pathFilterSchema = z.union([
   z.string(),
@@ -40,8 +51,6 @@ const pathFilterSchema = z.union([
     .args(z.string(), z.instanceof(http.IncomingMessage))
     .returns(z.boolean())
 ]);
-
-const pathRewriteSchema = baseRewriteSchema;
 
 const outputSchema = z
   .object({
@@ -70,7 +79,27 @@ const serverSchema = z
     open: z.boolean().optional(),
     https: z.custom<SecureServerOptions>(),
     cors: z.boolean().optional(),
-    spa: z.boolean().optional(),
+    appType: z.enum(['spa', 'mpa', 'custom']).optional(),
+    // TODO Can watch be placed on the outermost layer?
+    watch: z
+      .union([
+        z.boolean(),
+        z.object({
+          // TODO watcher config schema
+          ignored: z.array(z.string()).optional(),
+          watchOptions: z
+            .object({
+              awaitWriteFinish: z.number().positive().int().optional()
+            })
+            .optional()
+        })
+      ])
+      .optional(),
+    // watch: z
+    //   .object({
+    //     awaitWriteFinish: z.number().positive().int().optional(),
+    //   })
+    //   .optional(),
     proxy: z
       .record(
         z
@@ -80,7 +109,7 @@ const serverSchema = z
             agent: z.any().optional(),
             secure: z.boolean().optional(),
             logs: z.any().optional(),
-            pathRewrite: pathRewriteSchema.optional(),
+            pathRewrite: baseRewriteSchema.optional(),
             pathFilter: pathFilterSchema.optional(),
             headers: z.record(z.string()).optional(),
             on: z
@@ -116,17 +145,13 @@ const serverSchema = z
             host: z.union([z.string().min(1), z.boolean()]).optional(),
             port: z.number().positive().int().optional(),
             path: z.string().optional(),
-            watchOptions: z
-              .object({
-                awaitWriteFinish: z.number().positive().int().optional()
-              })
-              .optional(),
             overlay: z.boolean().optional()
           })
           .strict()
       ])
       .optional(),
     middlewares: z.array(z.any()).optional(),
+    middlewareMode: z.boolean().optional(),
     writeToDisk: z.boolean().optional()
   })
   .strict();
@@ -134,6 +159,7 @@ const serverSchema = z
 const aliasItemSchema = z.object({
   find: z.union([z.string(), z.instanceof(RegExp)]),
   replacement: z.string(),
+  // TODO add customResolver schema
   customResolver: z
     .union([z.function(), z.object({ resolve: z.function() })])
     .optional()
@@ -167,20 +193,7 @@ const compilationConfigSchema = z
       .union([z.boolean(), z.array(z.string())])
       .optional(),
     mode: z.string().optional(),
-    watch: z
-      .union([
-        z.boolean(),
-        z.object({
-          // TODO watcher config schema
-          ignored: z.array(z.string()).optional(),
-          watchOptions: z
-            .object({
-              awaitWriteFinish: z.number().positive().int().optional()
-            })
-            .optional()
-        })
-      ])
-      .optional(),
+
     coreLibPath: z.string().optional(),
     runtime: z
       .object({
@@ -201,21 +214,7 @@ const compilationConfigSchema = z
       .optional(),
     script: z
       .object({
-        target: z
-          .enum([
-            'es3',
-            'es5',
-            'es2015',
-            'es2016',
-            'es2017',
-            'es2018',
-            'es2019',
-            'es2020',
-            'es2021',
-            'es2022',
-            'esnext'
-          ])
-          .optional(),
+        target: z.nativeEnum(ECMAVersion).optional(),
         parser: z
           .object({
             esConfig: z
