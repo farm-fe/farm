@@ -120,44 +120,51 @@ export const buildDts = () =>
 export const rustPlugins = () => batchBuildPlugins(PKG_RUST_PLUGIN);
 
 export const buildJsPlugins = async () => {
-  const jsPluginDirs = fs.readdirSync(JS_PLUGINS_DIR).filter((file) => {
-    return (
-      fs.statSync(join(JS_PLUGINS_DIR, file)).isDirectory() &&
-      !excludedJsPlugin.includes(file)
-    );
-  });
+  await execa(
+    DEFAULT_PACKAGE_MANAGER,
+    ['--filter', './js-plugins/**', 'build'],
+    {
+      cwd: CWD
+    }
+  );
+  // const jsPluginDirs = fs.readdirSync(JS_PLUGINS_DIR).filter((file) => {
+  //   return (
+  //     fs.statSync(join(JS_PLUGINS_DIR, file)).isDirectory() &&
+  //     !excludedJsPlugin.includes(file)
+  //   );
+  // });
 
-  const total = jsPluginDirs.length;
-  console.log('\n')
-  logger(`Found ${total} JS plugins to build \n`, { color: 'blue' });
+  // const total = jsPluginDirs.length;
+  // console.log('\n')
+  // logger(`Found ${total} JS plugins to build \n`, { color: 'blue' });
 
-  for (const pluginDir of jsPluginDirs) {
-    const pluginPath = resolve(JS_PLUGINS_DIR, pluginDir);
-    await runTask(
-      `Built JS Plugin: ${pluginDir}`,
-      async () => {
-        const spinner = createSpinner(`Building ${pluginDir}`).start();
-        try {
-          if (!existsSync(join(pluginPath, 'package.json'))) {
-            spinner.warn({ text: `Skipping ${pluginDir}: No package.json found` });
-            return;
-          }
+  // for (const pluginDir of jsPluginDirs) {
+  //   const pluginPath = resolve(JS_PLUGINS_DIR, pluginDir);
+  //   await runTask(
+  //     `Built JS Plugin: ${pluginDir}`,
+  //     async () => {
+  //       const spinner = createSpinner(`Building ${pluginDir}`).start();
+  //       try {
+  //         if (!existsSync(join(pluginPath, 'package.json'))) {
+  //           spinner.warn({ text: `Skipping ${pluginDir}: No package.json found` });
+  //           return;
+  //         }
 
-          await execa(DEFAULT_PACKAGE_MANAGER, ['build'], {
-            cwd: pluginPath,
-            stdio: 'pipe',
-          });
+  //         await execa(DEFAULT_PACKAGE_MANAGER, ['build'], {
+  //           cwd: pluginPath,
+  //           stdio: 'pipe',
+  //         });
 
-          spinner.success({ text: `Built JS plugin: ${pluginDir}` });
-        } catch (error) {
-          spinner.error({ text: `Failed to build JS plugin: ${pluginDir}` });
-          throw error;
-        }
-      },
-      'Building',
-      'Build'
-    );
-  }
+  //         spinner.success({ text: `Built JS plugin: ${pluginDir}` });
+  //       } catch (error) {
+  //         spinner.error({ text: `Failed to build JS plugin: ${pluginDir}` });
+  //         throw error;
+  //       }
+  //     },
+  //     'Building',
+  //     'Build'
+  //   );
+  // }
 };
 
 export const buildRustPlugins = async () => {

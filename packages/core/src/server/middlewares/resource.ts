@@ -98,18 +98,20 @@ export function resourceMiddleware(app: Server): Connect.NextHandleFunction {
     //     return;
     //   }
     // }
-    // TODO redefine spa mpa
-    let indexHtml = compiler.resources()['index.html'];
+    // // TODO redefine spa mpa
+    // let indexHtml = compiler.resources()['index.html'];
 
-    if (indexHtml) {
-      res.setHeader('Content-Type', 'text/html');
-      res.end(indexHtml);
-      return;
-    }
+    // if (indexHtml) {
+    //   res.setHeader('Content-Type', 'text/html');
+    //   res.end(indexHtml);
+    //   return;
+    // }
 
     // 如果找不到任何匹配的资源，返回 404
-    res.statusCode = 404;
-    res.end('Not found');
+    // res.statusCode = 404;
+    // res.end('Not found');
+    // return;
+    next();
   };
 }
 
