@@ -423,6 +423,9 @@ importers:
       core-js:
         specifier: ^3.30.1
         version: 3.36.1
+      font-awesome:
+        specifier: ^4.7.0
+        version: 4.7.0
       react:
         specifier: '18'
         version: 18.2.0
@@ -868,7 +871,7 @@ importers:
         version: 5.1.3(@types/eslint@8.56.10)(eslint-config-prettier@9.1.0(eslint@8.57.0))(eslint@8.57.0)(prettier@3.3.2)
       farmup:
         specifier: latest
-        version: 0.1.4
+        version: 0.1.5
       jest:
         specifier: ^29.5.0
         version: 29.7.0(@types/node@20.12.12)(babel-plugin-macros@3.1.0)(ts-node@10.9.1(@swc/core@1.7.26(@swc/helpers@0.5.3))(@types/node@20.12.12)(typescript@5.4.5))
@@ -2313,7 +2316,7 @@ importers:
         version: 1.17.6(vite@5.2.8(@types/node@22.5.0)(less@4.2.0)(lightningcss@1.25.1)(sass@1.74.1)(terser@5.31.1))
       vite-plugin-vue-inspector:
         specifier: /Users/adny/vue/vite-plugin-vue-inspector/packages/core
-        version: link:../../../../../../../Users/adny/vue/vite-plugin-vue-inspector/packages/core
+        version: link:../../../../vue/vite-plugin-vue-inspector/packages/core
 
   examples/x-data-spreadsheet:
     dependencies:
@@ -2789,9 +2792,9 @@ importers:
       core-js:
         specifier: ^3.30.1
         version: 3.33.2
-      highlight.js:
-        specifier: ^11.10.0
-        version: 11.10.0
+      prismjs:
+        specifier: ^1.29.0
+        version: 1.29.0
     devDependencies:
       '@farmfe/runtime':
         specifier: workspace:1.0.0-nightly-20241023020505
@@ -12280,8 +12283,8 @@ packages:
   farm-plugin-remove-console@0.1.8:
     resolution: {integrity: sha512-t/QH2N97w2/VM4tj/hmnceU/95yYeORR5BnlWP91PherULRFhTVctECcC0JI33Psvyk06uSW4BuKgBPtktM5+w==}
 
-  farmup@0.1.4:
-    resolution: {integrity: sha512-zOr66ynrL9F3WmfuhkwQ73wg1IBBdDAEAJBw3MuOfKRdpKzqyn2T5dVBvVqE4YAIF7GnDyBrw1f/V2Z94+9WNw==}
+  farmup@0.1.5:
+    resolution: {integrity: sha512-LiO7ejtsD8GfRL6OXVSx9Y9h8wFp1nEw/RWydQe+zLN9W7xmPXWngi5TjzndYuqADBQi/93qD0aaZ4TYkoabiA==}
     hasBin: true
 
   fast-deep-equal@3.1.3:
@@ -12525,6 +12528,10 @@ packages:
     peerDependenciesMeta:
       debug:
         optional: true
+
+  font-awesome@4.7.0:
+    resolution: {integrity: sha512-U6kGnykA/6bFmg1M/oT9EkFeIYv7JlX3bozwQJWiiLz6L0w3F5vBVPxHlwyX/vtNq1ckcpRKOB9f2Qal/VtFpg==}
+    engines: {node: '>=0.10.3'}
 
   for-each@0.3.3:
     resolution: {integrity: sha512-jqYfLp7mo9vIyQf8ykW2v7A+2N4QjeCeI5+Dz9XraiO1ign81wjiH7Fb9vSOWvQfNtmSa4H2RoQTrrXivdUZmw==}
@@ -34660,7 +34667,7 @@ snapshots:
       farm-plugin-remove-console-win32-ia32-msvc: 0.1.8
       farm-plugin-remove-console-win32-x64-msvc: 0.1.8
 
-  farmup@0.1.4:
+  farmup@0.1.5:
     dependencies:
       '@farmfe/core': link:packages/core
       tmp: 0.2.3
@@ -34906,6 +34913,8 @@ snapshots:
   follow-redirects@1.15.6(debug@4.3.6):
     optionalDependencies:
       debug: 4.3.6
+
+  font-awesome@4.7.0: {}
 
   for-each@0.3.3:
     dependencies:

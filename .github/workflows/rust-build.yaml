@@ -140,6 +140,8 @@ jobs:
           osx-version: '12.3'
       - uses: goto-bus-stop/setup-zig@v2
         if: ${{ matrix.settings.zig }}
+        with:
+          version: 0.14.0-dev.1983+6bf52b050
       - name: Build in docker
         uses: addnab/docker-run-action@v3
         if: ${{ matrix.settings.docker }}

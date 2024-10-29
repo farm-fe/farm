@@ -1,4 +1,4 @@
-//foo-276e63.txt:
+//foo-276e63.txt?url:
  foo
 
 //index.js:
