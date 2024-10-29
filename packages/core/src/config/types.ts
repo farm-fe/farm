@@ -63,7 +63,7 @@ export interface UserServerConfig {
   host?: string | boolean;
   cors?: boolean | any;
   // whether to serve static assets in spa mode, default to true
-  spa?: boolean;
+  appType?: 'spa' | 'mpa' | 'custom';
   middlewares?: DevServerMiddleware[];
   middlewareMode?: boolean | string;
   writeToDisk?: boolean;

@@ -92,6 +92,7 @@ export interface ServerOptions extends CommonServerOptions {
         server: http.Server;
       };
   origin?: string;
+  appType?: 'spa' | 'mpa' | 'custom';
 }
 
 type ServerConfig = CommonServerOptions & NormalizedServerConfig;
@@ -508,7 +509,7 @@ export class Server extends httpServer {
   #initializeMiddlewares() {
     this.middlewares.use(hmrPingMiddleware());
 
-    const { proxy, middlewareMode, cors } = this.serverOptions;
+    const { proxy, middlewareMode, cors, appType } = this.serverOptions;
 
     if (cors) {
       this.middlewares.use(
@@ -541,16 +542,17 @@ export class Server extends httpServer {
       this.middlewares.use(adaptorViteMiddleware(this));
     }
 
+    this.middlewares.use(resourceMiddleware(this));
+
     this.postConfigureServerHooks.reduce((_, fn) => {
       if (typeof fn === 'function') fn();
     }, null);
 
-    // TODO todo add appType 这块要判断 单页面还是 多页面 多 html 处理不一样
-    this.middlewares.use(htmlFallbackMiddleware(this));
+    if (appType === 'spa' || appType === 'mpa') {
+      this.middlewares.use(htmlFallbackMiddleware(this));
 
-    this.middlewares.use(resourceMiddleware(this));
-
-    this.middlewares.use(notFoundMiddleware());
+      this.middlewares.use(notFoundMiddleware());
+    }
   }
 
   /**
