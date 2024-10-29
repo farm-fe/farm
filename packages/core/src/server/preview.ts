@@ -58,7 +58,8 @@ export class PreviewServer extends httpServer {
       this.inlineConfig,
       'preview',
       'production',
-      'production'
+      'production',
+      true
     );
 
     this.logger = this.resolvedUserConfig.logger;
@@ -114,6 +115,7 @@ export class PreviewServer extends httpServer {
     const headers = preview?.headers || server?.headers;
     this.serve = sirv(distDir, {
       etag: true,
+      // dev: true,
       ignores: false,
       setHeaders: (res, pathname) => {
         if (knownJavascriptExtensionRE.test(pathname)) {
