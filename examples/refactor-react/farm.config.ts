@@ -12,6 +12,11 @@ export default defineConfig({
     compilerPlugin(),
   ],
   compilation: {
+    input: {
+      index: path.resolve(__dirname, "index.html"),
+      base: path.resolve(__dirname, 'base.html'),
+      about: path.resolve(__dirname, 'about.html'),
+    },
     // persistentCache: false,
     persistentCache: {
       cacheDir: "node_modules/.adny",
@@ -29,6 +34,7 @@ export default defineConfig({
   // timeUnit: "s",
   server: {
     port: 8854,
+    // appType: "mpa",
   },
 });
 
