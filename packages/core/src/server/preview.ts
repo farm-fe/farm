@@ -1,3 +1,4 @@
+import { existsSync } from 'node:fs';
 import { OutgoingHttpHeaders, SecureServerOptions } from 'node:http2';
 import path from 'node:path';
 import connect from 'connect';
@@ -103,6 +104,12 @@ export class PreviewServer extends httpServer {
       preview?.distDir || path.isAbsolute(output?.path)
         ? output?.path
         : path.resolve(root, output?.path || 'dist');
+
+    if (!existsSync(distDir)) {
+      throw new Error(
+        `Dist directory "${distDir}" does not exist. Do you mean "farm build"?`
+      );
+    }
 
     const headers = preview?.headers || server?.headers;
     this.serve = sirv(distDir, {

@@ -71,7 +71,7 @@ export async function build(
   const { persistentCache, output } = resolvedUserConfig.compilation;
 
   try {
-    const compiler = await createCompiler(resolvedUserConfig);
+    const compiler = createCompiler(resolvedUserConfig);
 
     for (const hook of getPluginHooks(
       resolvedUserConfig.jsPlugins,
