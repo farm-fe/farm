@@ -115,7 +115,8 @@ export class PreviewServer extends httpServer {
     const headers = preview?.headers || server?.headers;
     this.serve = sirv(distDir, {
       etag: true,
-      // dev: true,
+      dev: true,
+      single: this.resolvedUserConfig.server.appType === 'spa',
       ignores: false,
       setHeaders: (res, pathname) => {
         if (knownJavascriptExtensionRE.test(pathname)) {
