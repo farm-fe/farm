@@ -1,6 +1,6 @@
 {
   "name": "@farmfe/js-plugin-postcss",
-  "version": "2.0.0-nightly-20241024090954",
+  "version": "2.0.0-nightly-20241029095811",
   "description": "support postcss for farm.",
   "main": "./build/cjs/index.cjs",
   "types": "./build/cjs/index.d.ts",

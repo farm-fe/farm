@@ -1,5 +1,13 @@
 # @farmfe/core
 
+## 2.0.0-nightly-20241029095811
+
+### Patch Changes
+
+- b3a7caf: fix css url resolving issue
+- Updated dependencies [669e2b8]
+  - @farmfe/runtime-plugin-hmr@4.0.0-nightly-20241029095811
+
 ## 2.0.0-nightly-20241024090954
 
 ### Major Changes
