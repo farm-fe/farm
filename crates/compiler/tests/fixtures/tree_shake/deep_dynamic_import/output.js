@@ -92,10 +92,10 @@
 }
 ,
 "b5d64806":async function  (module, exports, farmRequire, farmDynamicRequire) {
+    module._m(exports);
     const [_f_main__f] = await Promise.all([
         farmRequire("7c4a34c2")
     ]);
-    module._m(exports);
     var _f_main = module.i(_f_main__f);
     console.log(module.f(_f_main));
 }
