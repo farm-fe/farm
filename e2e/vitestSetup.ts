@@ -6,7 +6,6 @@ import { execa } from 'execa';
 // export const browserLogs: string[] = [];
 // export const browserErrors: Error[] = [];
 export const concurrencyLimit = 50;
-export const pageMap = new Map<string, Page>();
 
 function getServerPort(): Promise<number> {
   return fetch('http://127.0.0.1:12306/port')
@@ -30,7 +29,7 @@ const visitPage = async (
 
   const browser = await chromium.connect(wsEndpoint);
   const page = await browser?.newPage();
-  page && pageMap.set(path, page);
+
   logger(`open the page: ${path} ${examplePath}`);
   try {
     page?.on('console', (msg) => {
