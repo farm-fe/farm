@@ -1,0 +1,6 @@
+{
+  "lazyCompilation": true,
+  "output": {
+    "targetEnv": "browser"
+  }
+}

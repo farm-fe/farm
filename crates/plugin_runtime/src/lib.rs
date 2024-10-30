@@ -36,13 +36,15 @@ use farmfe_toolkit::{
 use insert_runtime_plugins::insert_runtime_plugins;
 use render_resource_pot::*;
 
-pub const RUNTIME_SUFFIX: &str = ".farm-runtime";
+pub use farmfe_toolkit::script::constant::RUNTIME_SUFFIX;
 pub const ASYNC_MODULES: &str = "async_modules";
 
 mod find_async_modules;
 mod handle_entry_resources;
 mod insert_runtime_plugins;
 pub mod render_resource_pot;
+
+const PLUGIN_NAME: &str = "FarmPluginRuntime";
 /// FarmPluginRuntime is charge of:
 /// * resolving, parsing and generating a executable runtime code and inject the code into the entries.
 /// * merge module's ast and render the script module using farm runtime's specification, for example, wrap the module to something like `function(module, exports, require) { xxx }`, see [Farm Runtime RFC](https://github.com/farm-fe/rfcs/pull/1)
@@ -55,7 +57,7 @@ pub struct FarmPluginRuntime {}
 
 impl Plugin for FarmPluginRuntime {
   fn name(&self) -> &str {
-    "FarmPluginRuntime"
+    PLUGIN_NAME
   }
 
   fn config(&self, config: &mut Config) -> farmfe_core::error::Result<Option<()>> {
@@ -103,7 +105,7 @@ impl Plugin for FarmPluginRuntime {
     hook_context: &PluginHookContext,
   ) -> farmfe_core::error::Result<Option<PluginResolveHookResult>> {
     // avoid cyclic resolve
-    if matches!(&hook_context.caller, Some(c) if c == "FarmPluginRuntime") {
+    if hook_context.contain_caller(PLUGIN_NAME) {
       Ok(None)
     } else if param.source.ends_with(RUNTIME_SUFFIX) // if the source is a runtime module or its importer is a runtime module, then resolve it to the runtime module
       || (param.importer.is_some()
@@ -122,7 +124,7 @@ impl Plugin for FarmPluginRuntime {
         },
         context,
         &PluginHookContext {
-          caller: Some(String::from("FarmPluginRuntime")),
+          caller: hook_context.add_caller(PLUGIN_NAME),
           meta: HashMap::new(),
         },
       )?;
