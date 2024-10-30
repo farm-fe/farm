@@ -1,14 +1,15 @@
 import path from 'node:path';
 
-import { cleanUrl, commonFsUtils } from '../../utils/index.js';
+import { cleanUrl, commonFsUtils, removeSlash } from '../../utils/index.js';
 
 import type Connect from 'connect';
 import type { Server } from '../index.js';
+import { send } from '../send.js';
 
 export function htmlFallbackMiddleware(
   app: Server
 ): Connect.NextHandleFunction {
-  return async function htmlFallbackMiddleware(req, _res, next) {
+  return async function htmlFallbackMiddleware(req, res, next) {
     if (
       // Only accept GET or HEAD
       (req.method !== 'GET' && req.method !== 'HEAD') ||
@@ -25,35 +26,33 @@ export function htmlFallbackMiddleware(
       return next();
     }
     const url = cleanUrl(req.url);
-    const pathname = decodeURIComponent(url);
-    const { resolvedUserConfig: config } = app;
+    const pathname = removeSlash(decodeURIComponent(url));
+    const headers = app.resolvedUserConfig.server.headers;
+
     if (pathname.endsWith('.html')) {
-      const filePath = path.join(config.root, pathname);
-      if (commonFsUtils.existsSync(filePath)) {
-        req.url = url;
+      const html = app.compiler.resource(pathname);
+      if (html) {
+        send(req, res, html, pathname, { headers });
         return next();
       }
-    } else if (pathname[pathname.length - 1] === '/') {
-      const filePath = path.join(config.root, pathname, 'index.html');
-      if (commonFsUtils.existsSync(filePath)) {
-        const newUrl = url + 'index.html';
-        req.url = newUrl;
+    } else if (pathname === '') {
+      const html = app.compiler.resource('index.html');
+      if (html) {
+        send(req, res, html, pathname, { headers });
         return next();
       }
     } else {
-      //TODO mpa not compatible 如果是纯 html 的结果 html 需要可能判断一下 mpa 适配
-      const filePath = path.join(config.root, pathname + '.html');
-      if (commonFsUtils.existsSync(filePath)) {
-        const newUrl = url + '.html';
-        req.url = newUrl;
+      const html = app.compiler.resource(pathname + '.html');
+      if (html) {
+        send(req, res, html, pathname, { headers });
         return next();
       }
     }
+    if (app.serverOptions.appType === 'spa') {
+      const html = app.compiler.resource('index.html');
+      send(req, res, html, pathname, { headers });
+    }
 
-    // TODO htmlFallBack when spa
-    // if (config.appType === 'spa') {
-    // req.url = '/index.html';
-    // }
     next();
   };
 }
