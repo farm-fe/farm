@@ -1,5 +1,11 @@
 # @farmfe/core
 
+## 2.0.0-nightly-20241029121500
+
+### Major Changes
+
+- b327dd1: collect htmlFallbackMiddleware
+
 ## 2.0.0-nightly-20241029095811
 
 ### Patch Changes

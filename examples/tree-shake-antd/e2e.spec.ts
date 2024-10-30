@@ -18,7 +18,7 @@ describe(`e2e tests - ${name}`, async () => {
 
         const button = await page.waitForSelector('.test-antd-button');
 
-        button.click();
+        await button.click();
         await promise;
       },
       command
