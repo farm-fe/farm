@@ -1,5 +1,12 @@
 # @farmfe/core
 
+## 1.3.31
+
+### Patch Changes
+
+- c078cd35: fix #1499 wrong defaults of side effects of vite plugin adapter hook resolveId
+- c078cd35: Fix wrong esm introp helper order when using top level await
+
 ## 1.3.30
 
 ### Patch Changes
