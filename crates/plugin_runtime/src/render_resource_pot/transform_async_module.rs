@@ -32,6 +32,7 @@ use farmfe_toolkit::swc_ecma_visit::{VisitMut, VisitMutWith};
 pub fn transform_async_module(ast: &mut Module) {
   let mut await_all = vec![];
   let mut stmt_to_remove = vec![];
+  let mut first_require_index = usize::MAX;
 
   // 1. collect top level farmRequire pattern
   for (i, item) in ast.body.iter_mut().enumerate() {
@@ -51,7 +52,8 @@ pub fn transform_async_module(ast: &mut Module) {
                 let mut visitor = FarmRequireVisitor::new(name.clone());
                 expr.visit_mut_with(&mut visitor);
                 if visitor.requires.len() == 1 {
-                  await_all.push((Some(name), visitor.requires.remove(0)))
+                  await_all.push((Some(name), visitor.requires.remove(0)));
+                  first_require_index = first_require_index.min(i);
                 }
               }
             }
@@ -62,6 +64,7 @@ pub fn transform_async_module(ast: &mut Module) {
           if let Some(id) = try_get_farm_require_id(expr) {
             await_all.push((None, id));
             stmt_to_remove.push(i);
+            first_require_index = first_require_index.min(i);
           }
         }
         _ => { /* ignore other stmts */ }
@@ -112,7 +115,9 @@ pub fn transform_async_module(ast: &mut Module) {
         definite: false,
       }],
     })));
-    ast.body.insert(0, ModuleItem::Stmt(await_all_stmt));
+    ast
+      .body
+      .insert(first_require_index, ModuleItem::Stmt(await_all_stmt));
   }
 }
 
