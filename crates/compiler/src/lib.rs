@@ -79,6 +79,13 @@ impl Compiler {
 
     plugins.append(&mut plugin_adapters);
 
+    Self::new_without_internal_plugins(config, plugins)
+  }
+
+  pub fn new_without_internal_plugins(
+    config: Config,
+    mut plugins: Vec<Arc<dyn Plugin>>,
+  ) -> Result<Self> {
     // sort plugins by priority to make larger priority plugin run first
     plugins.sort_by_key(|b| std::cmp::Reverse(b.priority()));
 
