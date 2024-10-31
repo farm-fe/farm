@@ -65,7 +65,8 @@ export class ModuleSystem {
 
       // console.log(`[Farm] shouldSkip: ${shouldSkip} ${moduleId}`);
       if (!shouldSkip) {
-        return this.cache[moduleId].exports;
+        const cachedModule = this.cache[moduleId];
+        return cachedModule.initializer || cachedModule.exports;
       }
     }
 
@@ -116,18 +117,14 @@ export class ModuleSystem {
 
     // it's a async module, return the promise
     if (result && result instanceof Promise) {
-      // when there are cyclic dependencies, the module.exports may not be ready
-      // so we should set module.exports to the promise to make sure cache works
-      module.exports = result.then(() => {
+      module.initializer = result.then(() => {
         // call the module initialized hook
         this.pluginContainer.hookSerial("moduleInitialized", module);
+        module.initializer = undefined;
         // return the exports of the module
         return module.exports;
-      }).catch(err => {
-        console.error(`[Farm] Error loading async module "${moduleId}"`, err);
-        throw err;
       });
-      return module.exports;
+      return module.initializer;
     } else {
       // call the module initialized hook
       this.pluginContainer.hookSerial("moduleInitialized", module);
