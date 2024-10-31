@@ -541,8 +541,8 @@ export const DEFAULT_DEV_SERVER_OPTIONS: NormalizedServerConfig = {
   open: false,
   strictPort: false,
   cors: false,
-  spa: true,
   middlewares: [],
+  appType: 'spa',
   writeToDisk: false
 };
 

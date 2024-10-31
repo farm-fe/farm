@@ -424,7 +424,7 @@ export class VitePluginAdapter implements JsPlugin {
             return {
               resolvedPath: removeQuery(encodeStr(resolveIdResult)),
               query: customParseQueryString(resolveIdResult),
-              sideEffects: false,
+              sideEffects: true,
               external: false,
               meta: {}
             };
