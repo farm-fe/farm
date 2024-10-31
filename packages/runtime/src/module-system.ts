@@ -116,12 +116,18 @@ export class ModuleSystem {
 
     // it's a async module, return the promise
     if (result && result instanceof Promise) {
-      return result.then(() => {
+      // when there are cyclic dependencies, the module.exports may not be ready
+      // so we should set module.exports to the promise to make sure cache works
+      module.exports = result.then(() => {
         // call the module initialized hook
         this.pluginContainer.hookSerial("moduleInitialized", module);
         // return the exports of the module
         return module.exports;
+      }).catch(err => {
+        console.error(`[Farm] Error loading async module "${moduleId}"`, err);
+        throw err;
       });
+      return module.exports;
     } else {
       // call the module initialized hook
       this.pluginContainer.hookSerial("moduleInitialized", module);
