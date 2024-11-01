@@ -8,7 +8,7 @@ import { federation } from "@module-federation/vite";
 import { createHtmlPlugin } from "vite-plugin-html";
 import viteCompression from "vite-plugin-compression";
 import mkcert from "vite-plugin-mkcert";
-import Inspector from "unplugin-vue-inspector/vite";
+// import Inspector from "unplugin-vue-inspector/vite";
 import { aaa } from "./test.js";
 import UnoCSS from 'unocss/vite'
 import path from "path";
@@ -76,7 +76,7 @@ export default defineConfig({
     // imports: ["vue", VueRouterAutoImports],
     // }),
     vue(),
-    UnoCSS(),
+    // UnoCSS(),
     // federation({
     //   name: "remote",
     //   filename: "remoteEntry.js",
