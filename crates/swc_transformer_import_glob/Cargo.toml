@@ -1,6 +1,6 @@
 [package]
 name = "farmfe_swc_transformer_import_glob"
-version = "0.0.11"
+version = "0.0.12"
 edition = "2021"
 authors = ["brightwwu(吴明亮) <1521488775@qq.com>"]
 description = "farm swc tranformer for vite-style import.meta.glob"
@@ -10,7 +10,7 @@ repository = "https://github.com/farm-fe/farm"
 documentation = "https://docs.rs/farmfe_plugin_define"
 
 [dependencies]
-farmfe_core = { path = "../core", version = "0.6.4" }
-farmfe_toolkit = { path = "../toolkit", version = "0.0.13" }
-farmfe_utils = { path = "../utils", version = "0.1.5" }
-farmfe_testing_helpers = { path = "../testing_helpers", version = "0.0.13" }
+farmfe_core = { path = "../core", version = "0.7.0" }
+farmfe_toolkit = { path = "../toolkit", version = "0.0.14" }
+farmfe_utils = { path = "../utils", version = "0.1.6" }
+farmfe_testing_helpers = { path = "../testing_helpers", version = "0.0.14" }
