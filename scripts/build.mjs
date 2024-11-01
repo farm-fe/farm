@@ -194,7 +194,7 @@ export const buildRustPlugins = async () => {
             return;
           }
 
-          await execa("cargo", ["build", "--release"], {
+          await execa("npm", ["run", "build"], {
             cwd: pluginPath,
             // stdio: "pipe",
             stdio: "inherit",

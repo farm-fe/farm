@@ -25,7 +25,6 @@
     "vite-plugin-compression": "^0.5.1",
     "vite-plugin-html": "^3.2.2",
     "vite-plugin-inspect": "^0.8.7",
-    "vite-plugin-mkcert": "^1.17.6",
-    "vite-plugin-vue-inspector": "/Users/adny/vue/vite-plugin-vue-inspector/packages/core"
+    "vite-plugin-mkcert": "^1.17.6"
   }
 }
