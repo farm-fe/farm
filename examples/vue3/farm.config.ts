@@ -76,7 +76,7 @@ export default defineConfig({
     // imports: ["vue", VueRouterAutoImports],
     // }),
     vue(),
-    UnoCSS(),
+    // UnoCSS(),
     // federation({
     //   name: "remote",
     //   filename: "remoteEntry.js",
