@@ -54,12 +54,12 @@ export const buildExamples = async () => {
 export async function runTaskQueue() {
   // The sass plug-in uses protobuf, so you need to determine whether the user installs it or not.
   await installProtoBuf();
-  // await runTask('Cli', buildCli);
-  // await runTask('Core', buildCore);
-  // await runTask('PluginTools', buildPluginTools);
-  // await runTask('RustPlugins', buildRustPlugins);
+  await runTask("Cli", buildCli);
+  await runTask("Core", buildCore);
+  await runTask("PluginTools", buildPluginTools);
+  await runTask("RustPlugins", buildRustPlugins);
   await runTask("JsPlugins", buildJsPlugins);
-  // await runTask('Artifacts', copyArtifacts);
+  await runTask("Artifacts", copyArtifacts);
 }
 
 // install mac protobuf
@@ -129,7 +129,10 @@ export const buildJsPlugins = async () => {
 
   const total = jsPluginDirs.length;
   console.log("\n");
-  logger(`Found ${total} JS plugins to build \n`, { color: "blue" });
+  logger(`Found ${total} JS plugins to build \n`, {
+    color: "yellow",
+    title: "Javascript Info",
+  });
   await buildDts();
   for (const pluginDir of jsPluginDirs) {
     const pluginPath = resolve(JS_PLUGINS_DIR, pluginDir);
@@ -146,7 +149,8 @@ export const buildJsPlugins = async () => {
           }
           await execa(DEFAULT_PACKAGE_MANAGER, ["build"], {
             cwd: pluginPath,
-            stdio: "pipe",
+            // stdio: "pipe",
+            stdio: "inherit",
           });
 
           spinner.success({ text: `📦 Built JS plugin: ${pluginDir} ` });
@@ -171,14 +175,17 @@ export const buildRustPlugins = async () => {
 
   const total = rustPluginDirs.length;
   console.log("\n");
-  logger(`Found ${total} Rust plugins to build \n`, { color: "blue" });
+  logger(`Found ${total} Rust plugins to build \n`, {
+    color: "rust",
+    title: "Rust Info",
+  });
 
   for (const pluginDir of rustPluginDirs) {
     const pluginPath = resolve(PKG_RUST_PLUGIN, pluginDir);
     await runTask(
       `Built Rust plugin: ${pluginDir}`,
       async () => {
-        const spinner = createSpinner(`Building ${pluginDir}`).start();
+        const spinner = createSpinner(` Building ${pluginDir}`).start();
         try {
           if (!existsSync(join(pluginPath, "Cargo.toml"))) {
             spinner.warn({
@@ -187,12 +194,13 @@ export const buildRustPlugins = async () => {
             return;
           }
 
-          await execa("cargo", ["build", "--release"], {
+          await execa("npm", ["run", "build"], {
             cwd: pluginPath,
-            stdio: "pipe",
+            // stdio: "pipe",
+            stdio: "inherit",
           });
 
-          spinner.success({ text: `Built Rust plugin: ${pluginDir}` });
+          spinner.success({ text: `📦 Built Rust plugin: ${pluginDir}` });
         } catch (error) {
           spinner.error({ text: `Failed to build Rust plugin: ${pluginDir}` });
           throw error;

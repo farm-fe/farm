@@ -2314,9 +2314,6 @@ importers:
       vite-plugin-mkcert:
         specifier: ^1.17.6
         version: 1.17.6(vite@5.2.8(@types/node@22.5.0)(less@4.2.0)(lightningcss@1.25.1)(sass@1.74.1)(terser@5.31.1))
-      vite-plugin-vue-inspector:
-        specifier: /Users/adny/vue/vite-plugin-vue-inspector/packages/core
-        version: link:../../../../../../../Users/adny/vue/vite-plugin-vue-inspector/packages/core
 
   examples/x-data-spreadsheet:
     dependencies:
