@@ -422,6 +422,8 @@ export class Server extends httpServer {
         this.#openServerBrowser();
       }
 
+      // TODO display resolved urls with not modify server config like e.g port publicPath
+      // 是否展示 port 在终端修改的时候
       __FARM_GLOBAL__.__FARM_SHOW_DEV_SERVER_URL__ && this.printUrls();
     } catch (error) {
       this.resolvedUserConfig.logger.error(
