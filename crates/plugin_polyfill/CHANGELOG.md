@@ -6,6 +6,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.12](https://github.com/farm-fe/farm/compare/farmfe_plugin_polyfill-v0.0.11...farmfe_plugin_polyfill-v0.0.12) - 2024-10-31
+
+### Fixed
+
+- revert preset-env match & add enforce exclude ([#1752](https://github.com/farm-fe/farm/pull/1752))
+- preset_env plugin match and module system `analyze` ([#1751](https://github.com/farm-fe/farm/pull/1751))
+
 ## [0.0.11](https://github.com/farm-fe/farm/compare/farmfe_plugin_polyfill-v0.0.10...farmfe_plugin_polyfill-v0.0.11) - 2024-07-25
 
 ### Other

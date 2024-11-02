@@ -5,7 +5,7 @@ use farmfe_core::{
   module::{ModuleId, ModuleType},
   plugin::{Plugin, PluginHookContext, PluginLoadHookResult, PluginResolveHookParam, ResolveKind},
 };
-use farmfe_toolkit::html::get_farm_global_this;
+use farmfe_toolkit::{html::get_farm_global_this, script::constant::RUNTIME_SUFFIX};
 use farmfe_utils::{relative, stringify_query};
 
 pub const DYNAMIC_VIRTUAL_SUFFIX: &str = ".farm_dynamic_import_virtual_module";
@@ -19,9 +19,11 @@ impl FarmPluginLazyCompilation {
   }
 }
 
+const PLUGIN_NAME: &str = "FarmPluginLazyCompilation";
+
 impl Plugin for FarmPluginLazyCompilation {
   fn name(&self) -> &str {
-    "FarmPluginLazyCompilation"
+    PLUGIN_NAME
   }
 
   /// The lazy compilation plugin should take priority of all other plugins
@@ -35,10 +37,16 @@ impl Plugin for FarmPluginLazyCompilation {
     context: &std::sync::Arc<farmfe_core::context::CompilationContext>,
     hook_context: &PluginHookContext,
   ) -> farmfe_core::error::Result<Option<farmfe_core::plugin::PluginResolveHookResult>> {
-    if let Some(caller) = &hook_context.caller {
-      if caller == "FarmPluginLazyCompilation" {
-        return Ok(None);
-      }
+    if hook_context.contain_caller(PLUGIN_NAME)
+    // All runtime files will be merged into one resourcePot, even files introduced through `import()`
+    // Therefore, the asynchronous polyfill here is unnecessary
+      || param.source.ends_with(RUNTIME_SUFFIX)
+      || param
+        .importer
+        .as_ref()
+        .is_some_and(|i| i.to_string().ends_with(RUNTIME_SUFFIX))
+    {
+      return Ok(None);
     }
 
     // If importer is a dynamic virtual module, we should resolve the dependency using the original importer
@@ -52,7 +60,7 @@ impl Plugin for FarmPluginLazyCompilation {
           },
           context,
           &PluginHookContext {
-            caller: Some("FarmPluginLazyCompilation".to_string()),
+            caller: hook_context.add_caller(PLUGIN_NAME),
             ..hook_context.clone()
           },
         )? {
@@ -81,7 +89,7 @@ impl Plugin for FarmPluginLazyCompilation {
         },
         context,
         &PluginHookContext {
-          caller: Some("FarmPluginLazyCompilation".to_string()),
+          caller: hook_context.add_caller(PLUGIN_NAME),
           ..hook_context.clone()
         },
       )?;
@@ -118,7 +126,7 @@ impl Plugin for FarmPluginLazyCompilation {
         param,
         context,
         &PluginHookContext {
-          caller: Some("FarmPluginLazyCompilation".to_string()),
+          caller: hook_context.add_caller(PLUGIN_NAME),
           ..hook_context.clone()
         },
       )?;
@@ -143,12 +151,10 @@ impl Plugin for FarmPluginLazyCompilation {
     &self,
     param: &farmfe_core::plugin::PluginLoadHookParam,
     context: &std::sync::Arc<farmfe_core::context::CompilationContext>,
-    _hook_context: &farmfe_core::plugin::PluginHookContext,
+    hook_context: &farmfe_core::plugin::PluginHookContext,
   ) -> farmfe_core::error::Result<Option<farmfe_core::plugin::PluginLoadHookResult>> {
-    if let Some(caller) = &_hook_context.caller {
-      if caller == "FarmPluginLazyCompilation" {
-        return Ok(None);
-      }
+    if hook_context.contain_caller(PLUGIN_NAME) {
+      return Ok(None);
     }
 
     if param.resolved_path.ends_with(DYNAMIC_VIRTUAL_SUFFIX) {
