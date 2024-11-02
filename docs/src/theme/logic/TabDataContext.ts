@@ -12,5 +12,5 @@ export interface ITabDataContext {
 
 export const TabDataContext = createContext<ITabDataContext>({
   tabData: {},
-  setTabData: () => {},
+  setTabData: () => {}
 });
