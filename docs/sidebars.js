@@ -22,7 +22,16 @@ const sidebars = {
       type: "category",
       label: "Getting Started",
       collapsed: false,
-      items: ["why-farm", "quick-start", "using-plugins", 'contribution'],
+      items: [
+        "why-farm",
+        "quick-start",
+        "using-plugins",
+        {
+          type: "doc",
+          id: "contribution",
+          className: "sidebar-contribution-item",
+        },
+      ],
     },
     {
       type: "category",
@@ -77,7 +86,7 @@ const sidebars = {
         "advanced/tree-shake",
         "advanced/minification",
         "advanced/polyfill",
-        "advanced/persistent-cache"
+        "advanced/persistent-cache",
       ],
     },
     {
