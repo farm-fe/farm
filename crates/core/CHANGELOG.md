@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.0](https://github.com/farm-fe/farm/compare/farmfe_core-v0.6.4...farmfe_core-v0.7.0) - 2024-10-31
+
+### Added
+
+- *(plugins)* add primitives to support sub-compiler usage ([#1887](https://github.com/farm-fe/farm/pull/1887))
+- add assets mode for asset path generate ([#1852](https://github.com/farm-fe/farm/pull/1852))
+- *(css)* support css module name coversion ([#1784](https://github.com/farm-fe/farm/pull/1784))
+- support resolve dedupe ([#1762](https://github.com/farm-fe/farm/pull/1762))
+
+### Fixed
+
+- plugin circle call & dynamic import ([#1901](https://github.com/farm-fe/farm/pull/1901))
+- lazy compilation cache && postcss tailwind does not work on windows ([#1808](https://github.com/farm-fe/farm/pull/1808))
+- arcgis lazy compile fail ([#1750](https://github.com/farm-fe/farm/pull/1750))
+- preset_env plugin match and module system `analyze` ([#1751](https://github.com/farm-fe/farm/pull/1751))
+- globalThis undefined ([#1726](https://github.com/farm-fe/farm/pull/1726))
+- [#1672](https://github.com/farm-fe/farm/pull/1672) ([#1692](https://github.com/farm-fe/farm/pull/1692))
+- single bundle ([#1653](https://github.com/farm-fe/farm/pull/1653))
+
+### Other
+
+- revert change of replacing invalid css ([#1831](https://github.com/farm-fe/farm/pull/1831))
+- simplify string formatting for readability ([#1828](https://github.com/farm-fe/farm/pull/1828))
+- *(refactor)* refactor stats and visualizer ([#1739](https://github.com/farm-fe/farm/pull/1739))
+
 ## [0.6.4](https://github.com/farm-fe/farm/compare/farmfe_core-v0.6.3...farmfe_core-v0.6.4) - 2024-07-25
 
 ### Added

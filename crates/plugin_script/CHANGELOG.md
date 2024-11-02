@@ -6,6 +6,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.11](https://github.com/farm-fe/farm/compare/farmfe_plugin_script-v0.0.10...farmfe_plugin_script-v0.0.11) - 2024-10-31
+
+### Fixed
+
+- [#1672](https://github.com/farm-fe/farm/pull/1672) ([#1692](https://github.com/farm-fe/farm/pull/1692))
+- single bundle ([#1653](https://github.com/farm-fe/farm/pull/1653))
+
+### Other
+
+- simplify string formatting for readability ([#1828](https://github.com/farm-fe/farm/pull/1828))
+
 ## [0.0.10](https://github.com/farm-fe/farm/compare/farmfe_plugin_script-v0.0.9...farmfe_plugin_script-v0.0.10) - 2024-07-25
 
 ### Other
