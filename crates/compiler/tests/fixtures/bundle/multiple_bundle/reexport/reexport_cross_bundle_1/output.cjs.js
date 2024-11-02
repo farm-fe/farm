@@ -1,7 +1,7 @@
 //bundle1.js:
  // module_id: bundle2.ts
-var index_c86a_js_ns = require("./index.js");
-var default_default$1 = index_c86a_js_ns.default_default$1, foo_named = index_c86a_js_ns.foo_named, namespace_ns = index_c86a_js_ns.namespace_ns;
+var index_c86a_ns = require("./index.js");
+var default_default$1 = index_c86a_ns.default_default$1, foo_named = index_c86a_ns.foo_named, namespace_ns = index_c86a_ns.namespace_ns;
 console.log({
     bundle2_default: default_default$1,
     bundle2_namespace: namespace_ns,

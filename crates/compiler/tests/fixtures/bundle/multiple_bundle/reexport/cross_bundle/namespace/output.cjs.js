@@ -2,8 +2,8 @@
  // module_id: bundle2.ts
 var farm_runtime_js_ns = require("./farm_runtime.js");
 var _interop_require_wildcard = farm_runtime_js_ns._interop_require_wildcard;
-var index_1175_js_ns = require("./index.js");
-var d = index_1175_js_ns.d, namespace_cjs = index_1175_js_ns.namespace_cjs;
+var index_1175_ns = require("./index.js");
+var d = index_1175_ns.d, namespace_cjs = index_1175_ns.namespace_cjs;
 var ns = _interop_require_wildcard(namespace_cjs());
 module.exports.d = d;
 module.exports.ns = ns;

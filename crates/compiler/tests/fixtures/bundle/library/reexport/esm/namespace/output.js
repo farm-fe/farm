@@ -15,4 +15,6 @@ var foo_ns = {
 };
 
 // module_id: index.ts
+const foo$1 = 123;
+console.log(foo_ns.default, foo_ns.foo, foo$1);
 export { foo_ns as ns };
