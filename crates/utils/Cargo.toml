@@ -1,6 +1,6 @@
 [package]
 name = "farmfe_utils"
-version = "0.1.5"
+version = "0.1.6"
 edition = "2021"
 authors = ["brightwwu(吴明亮) <1521488775@qq.com>"]
 description = "farm utils"

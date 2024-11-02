@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.14](https://github.com/farm-fe/farm/compare/farmfe_testing_helpers-v0.0.13...farmfe_testing_helpers-v0.0.14) - 2024-10-31
+
+### Other
+
+- simplify string formatting for readability ([#1828](https://github.com/farm-fe/farm/pull/1828))
+
 ## [0.0.13](https://github.com/farm-fe/farm/compare/farmfe_testing_helpers-v0.0.12...farmfe_testing_helpers-v0.0.13) - 2024-07-25
 
 ### Other
