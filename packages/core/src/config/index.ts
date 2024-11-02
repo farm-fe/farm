@@ -147,8 +147,10 @@ export async function resolveConfig(
     rawConfig = mergeConfig(rawConfig, loadedUserConfig.config);
   }
 
-  const { jsPlugins, vitePlugins, rustPlugins, vitePluginAdapters } =
-    await resolvePlugins(rawConfig, compileMode);
+  const { jsPlugins, rustPlugins, vitePluginAdapters } = await resolvePlugins(
+    rawConfig,
+    compileMode
+  );
 
   const sortFarmJsPlugins = getSortedPlugins([
     ...jsPlugins,

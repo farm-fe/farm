@@ -91,6 +91,7 @@ export const installLinuxProtobuf = async () => {
 export const buildCore = () =>
   execa(DEFAULT_PACKAGE_MANAGER, ["build:rs"], {
     cwd: PKG_CORE,
+    stdio: "inherit",
   }).then(buildCoreCjs);
 
 export const buildCoreCjs = () =>

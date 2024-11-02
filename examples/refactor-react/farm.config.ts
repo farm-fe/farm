@@ -2,14 +2,37 @@ import { defineConfig } from "@farmfe/core";
 
 import react from "@farmfe/plugin-react";
 import path from "path";
+// load: {
+//   // filters: {
+//   //   resolvedPaths: ['\\.*$'] // filter files to improve performance
+//   // },
+//   async executor({ resolvedPath }) {
+//     console.log(resolvedPath);
+//   }
+// }
 
-console.log(__dirname);
+function custom() {
+  return {
+    name: "farm-test-plugin-name",
+
+    transform: {
+      filters: {
+        // moduleTypes: ['js'],
+      },
+      async executor(param, ctx) {
+        // console.log(param, "transform");
+      }
+    }
+  }
+}
+
 
 export default defineConfig({
   plugins: [
     react(),
     // myCustomPlugin(),
-    compilerPlugin(),
+    // compilerPlugin(),
+    custom()
   ],
   compilation: {
     input: {
@@ -17,10 +40,11 @@ export default defineConfig({
       base: path.resolve(__dirname, 'base.html'),
       about: path.resolve(__dirname, 'about.html'),
     },
-    // persistentCache: false,
-    persistentCache: {
-      cacheDir: "node_modules/.adny",
-    },
+    progress: false,
+    persistentCache: false,
+    // persistentCache: {
+    //   cacheDir: "node_modules/.adny",
+    // },
     output: {
       // publicPath: "/aaa/",
     },
@@ -57,3 +81,4 @@ function compilerPlugin() {
     },
   };
 }
+
