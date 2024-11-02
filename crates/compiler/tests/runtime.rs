@@ -53,6 +53,7 @@ fn test(file: String, crate_path: String) {
       }];
 
       if let Some(config_from_file) = config_from_file {
+        // TODO: macro
         if let Some(mode) = get_config_field(&config_from_file, &["mode"]) {
           config.mode = mode;
         }
@@ -63,6 +64,10 @@ fn test(file: String, crate_path: String) {
 
         if let Some(target_env) = get_config_field(&config_from_file, &["output", "targetEnv"]) {
           config.output.target_env = target_env;
+        }
+
+        if let Some(lazy_compilation) = get_config_field(&config_from_file, &["lazyCompilation"]) {
+          config.lazy_compilation = lazy_compilation;
         }
       }
 

@@ -6,6 +6,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.3](https://github.com/farm-fe/farm/compare/create-farm-v0.1.2...create-farm-v0.1.3) - 2024-10-31
+
+### Added
+
+- *(cli)* support re-prompt project name ([#1732](https://github.com/farm-fe/farm/pull/1732))
+
+### Other
+
+- simplify string formatting for readability ([#1828](https://github.com/farm-fe/farm/pull/1828))
+- *(create-farm)* update README for vanilla template ([#1724](https://github.com/farm-fe/farm/pull/1724))
+- *(create-farm)* rewrite `create-farm` ([#1700](https://github.com/farm-fe/farm/pull/1700))
+
 ## [0.1.2](https://github.com/farm-fe/farm/compare/create-farm-v0.1.1...create-farm-v0.1.2) - 2024-07-19
 
 ### Fixed

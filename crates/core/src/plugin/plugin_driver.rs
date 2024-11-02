@@ -26,7 +26,7 @@ use std::time::SystemTime;
 use std::time::UNIX_EPOCH;
 
 pub struct PluginDriver {
-  plugins: Vec<Arc<dyn Plugin>>,
+  pub plugins: Vec<Arc<dyn Plugin>>,
   record: bool,
 }
 
