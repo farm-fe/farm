@@ -263,7 +263,6 @@ export class Server extends httpServer {
         debugServer?.(`[config change] ${colors.dim(file)}`);
         try {
           await this.restartServer();
-          return;
         } catch (e) {
           this.resolvedUserConfig.logger.error(`restart server error ${e}`);
         }

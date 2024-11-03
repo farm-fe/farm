@@ -6,6 +6,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.12](https://github.com/farm-fe/farm/compare/farmfe_compiler-v0.0.11...farmfe_compiler-v0.0.12) - 2024-10-31
+
+### Added
+
+- *(plugins)* add primitives to support sub-compiler usage ([#1887](https://github.com/farm-fe/farm/pull/1887))
+
+### Fixed
+
+- plugin circle call & dynamic import ([#1901](https://github.com/farm-fe/farm/pull/1901))
+- wrong esm introp helper order when using top level await ([#1897](https://github.com/farm-fe/farm/pull/1897))
+- css resolving issue ([#1834](https://github.com/farm-fe/farm/pull/1834))
+- namespace import MemberProp name failed ([#1826](https://github.com/farm-fe/farm/pull/1826))
+- lazy compilation cache && postcss tailwind does not work on windows ([#1808](https://github.com/farm-fe/farm/pull/1808))
+- arcgis lazy compile fail ([#1750](https://github.com/farm-fe/farm/pull/1750))
+- html runtime inject failed when build multiple page ([#1760](https://github.com/farm-fe/farm/pull/1760))
+- globalThis undefined ([#1726](https://github.com/farm-fe/farm/pull/1726))
+- [#1672](https://github.com/farm-fe/farm/pull/1672) ([#1692](https://github.com/farm-fe/farm/pull/1692))
+- bundle import namespace name uniq ([#1696](https://github.com/farm-fe/farm/pull/1696))
+- single bundle ([#1653](https://github.com/farm-fe/farm/pull/1653))
+
+### Other
+
+- simplify string formatting for readability ([#1828](https://github.com/farm-fe/farm/pull/1828))
+- *(refactor)* refactor stats and visualizer ([#1739](https://github.com/farm-fe/farm/pull/1739))
+- remove `query_string` when `emit_file` to `resource_map` in `plugin_static_assets` ([#1746](https://github.com/farm-fe/farm/pull/1746))
+
 ## [0.0.11](https://github.com/farm-fe/farm/compare/farmfe_compiler-v0.0.10...farmfe_compiler-v0.0.11) - 2024-07-25
 
 ### Added

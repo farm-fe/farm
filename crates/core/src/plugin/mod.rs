@@ -350,6 +350,26 @@ pub struct PluginHookContext {
   pub meta: HashMap<String, String>,
 }
 
+impl PluginHookContext {
+  fn caller_format<T: AsRef<str>>(name: T) -> String {
+    format!("[{}]", name.as_ref())
+  }
+
+  pub fn add_caller<T: AsRef<str>>(&self, name: T) -> Option<String> {
+    match self.caller.as_ref() {
+      Some(c) => Some(format!("{}{}", c, Self::caller_format(name))),
+      None => Some(Self::caller_format(name)),
+    }
+  }
+  pub fn contain_caller<T: AsRef<str>>(&self, name: T) -> bool {
+    if let Some(ref s) = self.caller {
+      s.contains(&Self::caller_format(name))
+    } else {
+      false
+    }
+  }
+}
+
 /// Parameter of the resolve hook
 #[derive(Debug, Clone, Serialize, Deserialize, Hash, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
