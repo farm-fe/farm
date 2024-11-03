@@ -14,6 +14,7 @@ import { resolveServerUrls } from '../utils/http.js';
 import { printServerUrls } from '../utils/logger.js';
 import { knownJavascriptExtensionRE } from '../utils/url.js';
 import { CorsOptions, httpServer } from './http.js';
+import { notFoundMiddleware } from './middlewares/notFound.js';
 import { openBrowser } from './open.js';
 
 export interface PreviewServerOptions {
@@ -82,10 +83,15 @@ export class PreviewServer extends httpServer {
    */
   #initializeMiddlewares() {
     const cors = this.previewServerOptions.cors;
+    const appType = this.resolvedUserConfig.server.appType;
+
     if (cors) {
       this.app.use(corsMiddleware(typeof cors === 'boolean' ? {} : cors));
     }
     this.app.use(this.serve);
+    if (appType === 'spa' || appType === 'mpa') {
+      this.app.use(notFoundMiddleware());
+    }
   }
 
   /**
