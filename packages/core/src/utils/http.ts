@@ -143,10 +143,19 @@ function createServerUrl(
   return `${protocol}://${hostnameName}:${port}${publicPath}`;
 }
 
+export const setupSIGTERMListener = (callback: () => Promise<void>): void => {
+  process.on('SIGTERM', callback);
+  process.on('SIGINT', callback); // Some terminals send SIGINT instead of SIGTERM
+  if (process.env.CI !== 'true') {
+    process.stdin.on('end', callback);
+  }
+};
+
 export const teardownSIGTERMListener = (
   callback: () => Promise<void>
 ): void => {
   process.off('SIGTERM', callback);
+  process.off('SIGINT', callback);
   if (process.env.CI !== 'true') {
     process.stdin.off('end', callback);
   }

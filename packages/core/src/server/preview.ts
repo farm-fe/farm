@@ -1,5 +1,6 @@
 import { existsSync } from 'node:fs';
 import { OutgoingHttpHeaders, SecureServerOptions } from 'node:http2';
+import type * as net from 'node:net';
 import path from 'node:path';
 import connect from 'connect';
 import corsMiddleware from 'cors';
@@ -10,7 +11,11 @@ import {
   ResolvedUserConfig,
   UserConfig
 } from '../config/types.js';
-import { resolveServerUrls } from '../utils/http.js';
+import {
+  resolveServerUrls,
+  setupSIGTERMListener,
+  teardownSIGTERMListener
+} from '../utils/http.js';
 import { printServerUrls } from '../utils/logger.js';
 import { knownJavascriptExtensionRE } from '../utils/url.js';
 import { CorsOptions, httpServer } from './http.js';
@@ -39,6 +44,8 @@ export class PreviewServer extends httpServer {
 
   app: connect.Server;
   serve: RequestHandler;
+  closeHttpServerFn: () => Promise<void>;
+  terminateServerFn: () => Promise<void>;
 
   /**
    * Creates an instance of PreviewServer.
@@ -75,6 +82,16 @@ export class PreviewServer extends httpServer {
     );
 
     this.#initializeMiddlewares();
+
+    this.closeHttpServerFn = this.closeHttpServer();
+    this.terminateServerFn = async () => {
+      try {
+        await this.closeHttpServerFn();
+      } finally {
+        process.exit(0);
+      }
+    };
+    setupSIGTERMListener(this.terminateServerFn);
   }
 
   /**
@@ -193,12 +210,49 @@ export class PreviewServer extends httpServer {
     }
   }
 
+  closeHttpServer(): () => Promise<void> {
+    if (!this.httpServer) {
+      return () => Promise.resolve();
+    }
+
+    let hasListened = false;
+    const openSockets = new Set<net.Socket>();
+
+    this.httpServer.on('connection', (socket) => {
+      openSockets.add(socket);
+      socket.on('close', () => {
+        openSockets.delete(socket);
+      });
+    });
+
+    this.httpServer.once('listening', () => {
+      hasListened = true;
+    });
+
+    return () =>
+      new Promise<void>((resolve, reject) => {
+        openSockets.forEach((s) => s.destroy());
+        if (hasListened) {
+          this.httpServer.close((err) => {
+            if (err) {
+              reject(err);
+            } else {
+              resolve();
+            }
+          });
+        } else {
+          resolve();
+        }
+      });
+  }
+
   /**
    * Close the preview server.
    *
    * @returns {void}
    */
-  close(): void {
-    this.httpServer && this.httpServer.close();
+  async close(): Promise<void> {
+    teardownSIGTERMListener(this.terminateServerFn);
+    await this.closeHttpServerFn();
   }
 }
