@@ -25,10 +25,10 @@ import { Button as TinyButton, Modal } from '@opentiny/vue'
 //   Modal.alert({ message: '最大化显示', fullscreen: true })
 // }
 
-import test1 from './components/test1.vue';
-import test from './components/test.vue';
-import home from './pages/index.vue';
-import aboute from '../deps/node_modules/my-ui/index.vue'
+// import test1 from './components/test1.vue';
+// import test from './components/test.vue';
+// import home from './pages/index.vue';
+// import aboute from '../deps/node_modules/my-ui/index.vue'
 
 import "./test";
 </script>
