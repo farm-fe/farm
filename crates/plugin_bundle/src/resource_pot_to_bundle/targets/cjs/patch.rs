@@ -8,8 +8,8 @@ use farmfe_core::{
   swc_common::{util::take::Take, Mark, SyntaxContext, DUMMY_SP},
   swc_ecma_ast::{
     ArrowExpr, BindingIdent, BlockStmt, BlockStmtOrExpr, Decl, EsVersion, Expr, ExprOrSpread,
-    Ident, KeyValueProp, Module as EcmaAstModule, ModuleItem, ObjectLit, Pat, Prop, PropName,
-    PropOrSpread, Stmt, VarDecl, VarDeclKind, VarDeclarator,
+    Ident, KeyValueProp, Module as EcmaAstModule, ModuleItem, ObjectLit, Pat, Program, Prop,
+    PropName, PropOrSpread, Stmt, VarDecl, VarDeclKind, VarDeclarator,
   },
 };
 use farmfe_toolkit::{
@@ -123,10 +123,11 @@ impl CjsPatch {
     // let module = module_graph.module(module_id).unwrap();
 
     // let comments = module.meta.as_script().comments.clone().into();
+    let take_ast = std::mem::take(ast);
+    let mut program = Program::Module(take_ast);
+    program.mutate(&mut import_analyzer(ImportInterop::Swc, true));
 
-    ast.visit_mut_with(&mut import_analyzer(ImportInterop::Swc, true));
-
-    ast.visit_mut_with(&mut common_js(
+    program.mutate(&mut common_js(
       Default::default(),
       unresolved_mark,
       SwcConfig {
@@ -137,6 +138,8 @@ impl CjsPatch {
       enable_available_feature_from_es_version(es_version),
       // Some(&comments),
     ));
+    let take_ast = program.expect_module();
+    *ast = take_ast;
   }
 
   /// transform hybrid and commonjs module to esm
