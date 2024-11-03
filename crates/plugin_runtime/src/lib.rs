@@ -8,9 +8,10 @@ use std::{
 
 use farmfe_core::{
   config::{
-    config_regex::ConfigRegex, external::ExternalConfig,
-    partial_bundling::PartialBundlingEnforceResourceConfig, AliasItem, Config, ModuleFormat,
-    StringOrRegex, TargetEnv, FARM_MODULE_SYSTEM,
+    config_regex::ConfigRegex,
+    external::{self, ExternalConfig},
+    partial_bundling::PartialBundlingEnforceResourceConfig,
+    AliasItem, Config, ModuleFormat, StringOrRegex, TargetEnv, FARM_MODULE_SYSTEM,
   },
   context::CompilationContext,
   enhanced_magic_string::types::{MappingsOptionHires, SourceMapOptions},
@@ -280,11 +281,8 @@ impl Plugin for FarmPluginRuntime {
       let async_modules = async_modules.downcast_ref::<HashSet<ModuleId>>().unwrap();
       let module_graph = context.module_graph.read();
       let external_config = ExternalConfig::from(&*context.config);
-      let RenderedJsResourcePot {
-        mut bundle,
-        rendered_modules,
-        external_modules,
-      } = resource_pot_to_runtime_object(resource_pot, &module_graph, async_modules, context)?;
+      let (mut code, map, external_modules) =
+        resource_pot_to_runtime_object(resource_pot, &module_graph, async_modules, context)?;
 
       let mut external_modules_str = None;
 
@@ -292,6 +290,13 @@ impl Plugin for FarmPluginRuntime {
         &context.config.runtime.namespace,
         &context.config.output.target_env,
       );
+
+      let external_modules = external_modules
+        .into_iter()
+        .map(|id| id.to_string())
+        .collect::<HashSet<_>>();
+      let mut external_modules = external_modules.into_iter().collect::<Vec<_>>();
+      external_modules.sort();
 
       // inject global externals
       if !external_modules.is_empty() && context.config.output.target_env == TargetEnv::Node {
@@ -339,10 +344,10 @@ impl Plugin for FarmPluginRuntime {
 
         for source in external_modules {
           let replace_source = external_config
-            .find_match(&source)
-            .map(|v| v.source(&source))
+            .find_match(&source.to_string())
+            .map(|v| v.source(&source.to_string()))
             // it's maybe from plugin
-            .unwrap_or(source.clone());
+            .unwrap_or(source.to_string());
 
           let source_obj = format!("window['{replace_source}']||{{}}");
           external_objs.push(if context.config.output.format == ModuleFormat::EsModule {
@@ -359,59 +364,44 @@ impl Plugin for FarmPluginRuntime {
         external_modules_str = Some(prepend_str);
       }
 
-      let is_target_node_and_cjs = context.config.output.target_env == TargetEnv::Node
-        && context.config.output.format == ModuleFormat::CommonJs;
-
-      let str = format!(
-        r#"(function(_){{for(var r in _){{_[r].__farm_resource_pot__={};{farm_global_this}.{FARM_MODULE_SYSTEM}.register(r,_[r])}}}})("#,
-        if is_target_node_and_cjs {
-          "'file://'+__filename".to_string()
-        } else {
-          // TODO make it final output file name
-          format!("'{}'", resource_pot.name.to_string() + ".js")
-        },
-      );
-
-      bundle.prepend(&str);
-      bundle.append(");", None);
-
       if let Some(external_modules_str) = external_modules_str {
-        bundle.prepend(&external_modules_str);
+        code = external_modules_str + code.as_str();
       }
 
       return Ok(Some(ResourcePotMetaData {
-        rendered_modules,
-        rendered_content: Arc::new(bundle.to_string()),
-        rendered_map_chain: if context.config.sourcemap.enabled(resource_pot.immutable) {
-          let root = context.config.root.clone();
-          let map = bundle
-            .generate_map(SourceMapOptions {
-              include_content: Some(true),
-              remap_source: Some(Box::new(move |src| {
-                format!("/{}", farmfe_utils::relative(&root, src))
-              })),
-              hires: if context.config.minify.enabled() {
-                Some(MappingsOptionHires::Boundary)
-              } else {
-                None
-              },
-              ..Default::default()
-            })
-            .map_err(|_| CompilationError::GenerateSourceMapError {
-              id: resource_pot.id.to_string(),
-            })?;
-          let mut buf = vec![];
-          map
-            .to_writer(&mut buf)
-            .map_err(|e| CompilationError::RenderScriptModuleError {
-              id: resource_pot.id.to_string(),
-              source: Some(Box::new(e)),
-            })?;
+        rendered_modules: HashMap::new(),
+        rendered_content: Arc::new(code),
+        rendered_map_chain: map.map(|m| vec![m]).unwrap_or(vec![]),
+        // rendered_map_chain: if context.config.sourcemap.enabled(resource_pot.immutable) {
+        //   let root = context.config.root.clone();
+        //   let map = bundle
+        //     .generate_map(SourceMapOptions {
+        //       include_content: Some(true),
+        //       remap_source: Some(Box::new(move |src| {
+        //         format!("/{}", farmfe_utils::relative(&root, src))
+        //       })),
+        //       hires: if context.config.minify.enabled() {
+        //         Some(MappingsOptionHires::Boundary)
+        //       } else {
+        //         None
+        //       },
+        //       ..Default::default()
+        //     })
+        //     .map_err(|_| CompilationError::GenerateSourceMapError {
+        //       id: resource_pot.id.to_string(),
+        //     })?;
+        //   let mut buf = vec![];
+        //   map
+        //     .to_writer(&mut buf)
+        //     .map_err(|e| CompilationError::RenderScriptModuleError {
+        //       id: resource_pot.id.to_string(),
+        //       source: Some(Box::new(e)),
+        //     })?;
 
-          vec![Arc::new(String::from_utf8(buf).unwrap())]
-        } else {
-          vec![]
-        },
+        //   vec![Arc::new(String::from_utf8(buf).unwrap())]
+        // } else {
+        //   vec![]
+        // },
         ..Default::default()
       }));
     }

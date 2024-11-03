@@ -7,7 +7,7 @@ use farmfe_core::{
 use farmfe_toolkit::{
   fs::read_file_utf8,
   script::{
-    codegen_module, module_type_from_id, parse_module, syntax_from_module_type,
+    codegen_module, parse_module, utils::module_type_from_id, utils::syntax_from_module_type,
     CodeGenCommentsConfig, ParseScriptModuleResult,
   },
 };

@@ -1,10 +1,14 @@
-use std::{any::Any, path::Path, sync::Arc};
+use std::{
+  any::Any,
+  path::{Path, PathBuf},
+  sync::Arc,
+};
 
 use dashmap::DashMap;
 use parking_lot::{Mutex, RwLock};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use swc_common::Globals;
+use swc_common::{FileName, Globals, SourceFile, SourceMap};
 
 use crate::{
   cache::CacheManager,
@@ -207,13 +211,40 @@ impl Default for ContextMetaData {
 /// Shared script meta data used for [swc]
 pub struct ScriptContextMetaData {
   pub globals: Globals,
+  pub module_source_maps: DashMap<ModuleId, (Arc<SourceMap>, Arc<SourceFile>)>,
 }
 
 impl ScriptContextMetaData {
   pub fn new() -> Self {
     Self {
       globals: Globals::new(),
+      module_source_maps: DashMap::new(),
     }
+  }
+
+  /// create a swc source map from a source
+  pub fn create_swc_source_map(
+    &self,
+    module_id: &ModuleId,
+    content: Arc<String>,
+  ) -> (Arc<SourceMap>, Arc<SourceFile>) {
+    // if the source map already exists, return it
+    if let Some(value) = self.module_source_maps.get(module_id) {
+      return (value.0.clone(), value.1.clone());
+    }
+
+    let cm = Arc::new(SourceMap::default());
+    let sf = cm.new_source_file_from(
+      Arc::new(FileName::Real(PathBuf::from(module_id.to_string()))),
+      content,
+    );
+
+    // store the source map and source file
+    self
+      .module_source_maps
+      .insert(module_id.clone(), (cm.clone(), sf.clone()));
+
+    (cm, sf)
   }
 }
 

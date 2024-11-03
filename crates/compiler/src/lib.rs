@@ -140,10 +140,10 @@ impl Compiler {
     }
 
     // triggering build stage
-    let res = {
+    {
       #[cfg(feature = "profile")]
       farmfe_core::puffin::profile_scope!("Build Stage");
-      self.build()
+      self.build()?
     };
 
     self.context.record_manager.set_build_end_time();
@@ -179,7 +179,7 @@ impl Compiler {
 
     self.context.record_manager.set_end_time();
 
-    res
+    Ok(())
   }
 
   pub fn context(&self) -> &Arc<CompilationContext> {
