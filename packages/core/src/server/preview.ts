@@ -135,7 +135,7 @@ export class PreviewServer extends httpServer {
       );
     }
 
-    const headers = preview?.headers || server?.headers;
+    const headers = (preview?.headers ?? server?.headers) || {};
     this.serve = sirv(distDir, {
       etag: true,
       dev: true,
@@ -154,18 +154,18 @@ export class PreviewServer extends httpServer {
     });
 
     this.httpsOptions = await this.resolveHttpsConfig(
-      preview?.https || server?.https
+      preview?.https ?? server?.https
     );
 
     this.previewServerOptions = {
       headers,
       host: typeof preview.host === 'string' ? preview.host : 'localhost',
-      port: preview?.port || 1911,
-      strictPort: preview?.strictPort || false,
+      port: preview?.port ?? 1911,
+      strictPort: preview?.strictPort ?? false,
       https: this.httpsOptions,
       distDir,
-      open: preview?.open || false,
-      cors: preview?.cors || false
+      open: preview?.open ?? false,
+      cors: preview?.cors ?? false
     };
   }
 
