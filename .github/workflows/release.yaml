@@ -58,8 +58,9 @@ jobs:
         id: changesets
         uses: changesets/action@v1
         with:
-          version: ${{ github.ref == 'v2-dev' && 'pnpm run bump:nightly' || 'pnpm run bump' }}
-          publish: ${{ github.ref == 'v2-dev' && 'npm run release:nightly' || 'npm run release' }}
+          version: ${{ github.ref_name == 'v2-dev' && 'pnpm run bump:nightly' || 'pnpm run bump' }}
+          publish: ${{ github.ref_name == 'v2-dev' && 'npm run release:nightly' || 'npm run release' }}
+          branch: ${{ github.ref_name == 'v2-dev' && 'v2-dev' || 'main' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}

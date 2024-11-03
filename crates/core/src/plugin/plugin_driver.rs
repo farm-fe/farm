@@ -259,21 +259,18 @@ impl PluginDriver {
      param: &PluginResolveHookParam,
      context: &Arc<CompilationContext>,
      hook_context: &PluginHookContext| {
-      match result {
-        Some(resolve_result) => {
-          context.record_manager.add_plugin_hook_stats(CompilationPluginHookStats {
-            plugin_name: plugin_name.to_string(),
-            hook_name: "resolve".to_string(),
-            hook_context: Some(hook_context.clone()),
-            module_id: param.importer.clone().unwrap_or("root".into()),
-            input: serde_json::to_string(param).unwrap(),
-            output: serde_json::to_string(resolve_result).unwrap(),
-            duration: end_time - start_time,
-            start_time,
-            end_time
-          });
-        }
-        None => {}
+      if let Some(resolve_result) = result {
+        context.record_manager.add_plugin_hook_stats(CompilationPluginHookStats {
+          plugin_name: plugin_name.to_string(),
+          hook_name: "resolve".to_string(),
+          hook_context: Some(hook_context.clone()),
+          module_id: param.importer.clone().unwrap_or("root".into()),
+          input: serde_json::to_string(param).unwrap(),
+          output: serde_json::to_string(resolve_result).unwrap(),
+          duration: end_time - start_time,
+          start_time,
+          end_time
+        });
       }
     },
     param: &PluginResolveHookParam,
@@ -291,21 +288,18 @@ impl PluginDriver {
      param: &PluginLoadHookParam,
      context: &Arc<CompilationContext>,
      hook_context: &PluginHookContext| {
-      match result {
-        Some(load_result) => {
-          context.record_manager.add_plugin_hook_stats(CompilationPluginHookStats {
-            plugin_name: plugin_name.to_string(),
-            hook_name: "load".to_string(),
-            hook_context: Some(hook_context.clone()),
-            module_id: param.module_id.clone().into(),
-            input: serde_json::to_string(param).unwrap(),
-            output: serde_json::to_string(load_result).unwrap(),
-            duration: end_time - start_time,
-            start_time,
-            end_time
-          });
-        }
-        None => {}
+      if let Some(load_result) = result {
+        context.record_manager.add_plugin_hook_stats(CompilationPluginHookStats {
+          plugin_name: plugin_name.to_string(),
+          hook_name: "load".to_string(),
+          hook_context: Some(hook_context.clone()),
+          module_id: param.module_id.clone().into(),
+          input: serde_json::to_string(param).unwrap(),
+          output: serde_json::to_string(load_result).unwrap(),
+          duration: end_time - start_time,
+          start_time,
+          end_time
+        });
       }
     },
     param: &PluginLoadHookParam,
@@ -765,24 +759,21 @@ impl PluginDriver {
      resource_pot: &mut ResourcePot,
      context: &Arc<CompilationContext>,
      hook_context: &PluginHookContext| {
-      match result {
-        Some(resources) => {
-          context.record_manager.add_plugin_hook_stats(
-            CompilationPluginHookStats {
-              plugin_name: plugin_name.to_string(),
-              hook_name: "generate_resources".to_string(),
-              hook_context: Some(hook_context.clone()),
-              module_id: "".into(),
-              input: serde_json::to_string(resource_pot).unwrap(),
-              output: serde_json::to_string(resources).unwrap(),
-              duration: end_time - start_time,
-              start_time,
-              end_time,
-            },
-          );
-        }
-        None => {}
-      };
+      if let Some(resources) = result {
+        context.record_manager.add_plugin_hook_stats(
+          CompilationPluginHookStats {
+            plugin_name: plugin_name.to_string(),
+            hook_name: "generate_resources".to_string(),
+            hook_context: Some(hook_context.clone()),
+            module_id: "".into(),
+            input: serde_json::to_string(resource_pot).unwrap(),
+            output: serde_json::to_string(resources).unwrap(),
+            duration: end_time - start_time,
+            start_time,
+            end_time,
+          },
+        );
+      }
     },
     resource_pot: &mut ResourcePot,
     context: &Arc<CompilationContext>,

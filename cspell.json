@@ -302,7 +302,10 @@
     "ZERs",
     "Zjwg",
     "Zwram",
-    "zzse"
+    "zzse",
+    "Fira",
+    "atrule",
+    "metavars"
   ],
   "ignorePaths": [
     "pnpm-lock.yaml",
