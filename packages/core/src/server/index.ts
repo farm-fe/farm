@@ -18,7 +18,11 @@ import {
 } from '../plugin/index.js';
 import { isCacheDirExists } from '../utils/cacheDir.js';
 import { createDebugger } from '../utils/debug.js';
-import { resolveServerUrls, teardownSIGTERMListener } from '../utils/http.js';
+import {
+  resolveServerUrls,
+  setupSIGTERMListener,
+  teardownSIGTERMListener
+} from '../utils/http.js';
 import { Logger, bootstrap, printServerUrls } from '../utils/logger.js';
 import { initPublicFiles } from '../utils/publicDir.js';
 import { arrayEqual, isObject, normalizePath } from '../utils/share.js';
@@ -122,6 +126,7 @@ export class Server extends httpServer {
   root: string;
   resolvedUserConfig: ResolvedUserConfig;
   closeHttpServerFn: () => Promise<void>;
+  terminateServerFn: () => Promise<void>;
   postConfigureServerHooks: ((() => void) | void)[] = [];
   logger: Logger;
 
@@ -207,6 +212,11 @@ export class Server extends httpServer {
       // init middlewares
       this.#initializeMiddlewares();
 
+      this.terminateServerFn = async () => {
+        await this.close();
+        process.exit(0);
+      };
+      setupSIGTERMListener(this.terminateServerFn);
       if (!this.serverOptions.middlewareMode && this.httpServer) {
         this.httpServer.once('listening', () => {
           // update actual port since this may be different from initial value
@@ -606,7 +616,7 @@ export class Server extends httpServer {
    * @private
    * @returns {Promise<Set<string>>} A promise that resolves to a set of public file paths.
    */
-  async #handlePublicFiles() {
+  async #handlePublicFiles(): Promise<Set<string>> {
     const initPublicFilesPromise = initPublicFiles(this.resolvedUserConfig);
     return await initPublicFilesPromise;
   }
@@ -630,13 +640,6 @@ export class Server extends httpServer {
       );
       this.hmrEngine.hmrUpdate(normalizeParentFiles, true);
     });
-  }
-  async closeServerAndExit() {
-    try {
-      await this.httpServer.close();
-    } finally {
-      process.exit();
-    }
   }
 
   /**
@@ -686,7 +689,7 @@ export class Server extends httpServer {
 
   async close() {
     if (!this.serverOptions.middlewareMode) {
-      teardownSIGTERMListener(this.closeServerAndExit);
+      teardownSIGTERMListener(this.terminateServerFn);
     }
 
     await Promise.allSettled([this.ws.wss.close(), this.closeHttpServerFn()]);
