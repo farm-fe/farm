@@ -210,6 +210,11 @@ export class PreviewServer extends httpServer {
     }
   }
 
+  /**
+   * Close the HTTP server.
+   *
+   * @returns {() => Promise<void>} A function that can be called to close the server.
+   */
   closeHttpServer(): () => Promise<void> {
     if (!this.httpServer) {
       return () => Promise.resolve();
@@ -249,7 +254,7 @@ export class PreviewServer extends httpServer {
   /**
    * Close the preview server.
    *
-   * @returns {void}
+   * @returns {Promise<void>}
    */
   async close(): Promise<void> {
     teardownSIGTERMListener(this.terminateServerFn);

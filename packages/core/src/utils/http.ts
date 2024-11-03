@@ -143,6 +143,13 @@ function createServerUrl(
   return `${protocol}://${hostnameName}:${port}${publicPath}`;
 }
 
+/**
+ * Setup a listener for SIGTERM and SIGINT signals, and call the given callback
+ * function when either signal is received.
+ *
+ * @param callback - callback function to be called when SIGTERM is received
+ * @returns {void}
+ */
 export const setupSIGTERMListener = (callback: () => Promise<void>): void => {
   process.on('SIGTERM', callback);
   process.on('SIGINT', callback); // Handle user interrupt (Ctrl+C)
@@ -151,6 +158,11 @@ export const setupSIGTERMListener = (callback: () => Promise<void>): void => {
   }
 };
 
+/**
+ * Remove a listener for SIGTERM and SIGINT signals.
+ *
+ * @param callback - callback function to be removed when SIGTERM is received
+ */
 export const teardownSIGTERMListener = (
   callback: () => Promise<void>
 ): void => {
