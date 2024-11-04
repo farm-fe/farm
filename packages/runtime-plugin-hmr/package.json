@@ -24,7 +24,8 @@
     "type-check": "tsc -p tsconfig.json --noEmit"
   },
   "devDependencies": {
-    "@farmfe/runtime": "workspace:1.0.0-nightly-20241023020505"
+    "@farmfe/runtime": "workspace:1.0.0-nightly-20241023020505",
+    "@types/prismjs": "^1.26.5"
   },
   "dependencies": {
     "core-js": "^3.30.1",
