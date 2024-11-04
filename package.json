@@ -28,7 +28,7 @@
     "test": "echo 'fixme before merge to main'"
   },
   "devDependencies": {
-    "@biomejs/biome": "1.8.3",
+    "@biomejs/biome": "1.9.4",
     "@changesets/cli": "2.27.9",
     "@codspeed/vitest-plugin": "^3.1.1",
     "@commitlint/cli": "^17.0.3",
@@ -52,10 +52,7 @@
     "vitest": "2.0.4"
   },
   "lint-staged": {
-    "packages/**/*.ts": [
-      "npx biome check --no-errors-on-unmatched --files-ignore-unknown=true --write"
-    ],
-    "js-plugins/**/*.ts": [
+    "{packages,js-plugins,docs,scripts}/**/*.{ts,json,yaml,yml}": [
       "npx biome check --no-errors-on-unmatched --files-ignore-unknown=true --write"
     ]
   },
