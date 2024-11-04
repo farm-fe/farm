@@ -52,6 +52,12 @@ jobs:
           path: ./rust-plugins/react/npm/${{ matrix.settings.abi }}
 
       - uses: actions/download-artifact@v4
+        id: download-plugin-replace-dirname
+        with:
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-replace-dirname
+          path: ./rust-plugins/react/npm/${{ matrix.settings.abi }}
+
+      - uses: actions/download-artifact@v4
         id: download-create-farm-rust
         with:
           name: ${{ github.sha }}-${{ matrix.settings.abi }}
