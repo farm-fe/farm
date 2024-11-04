@@ -9,6 +9,7 @@ use farmfe_core::{
   plugin::Plugin,
   serde_json,
   swc_common::{comments::SingleThreadedComments, Mark},
+  swc_ecma_ast::Program,
 };
 use farmfe_toolkit::{
   common::{create_swc_source_map, Source},
@@ -17,7 +18,7 @@ use farmfe_toolkit::{
   swc_ecma_preset_env::{self, preset_env, Mode, Targets},
   swc_ecma_transforms::Assumptions,
   swc_ecma_transforms_base::{feature::FeatureFlag, helpers::inject_helpers},
-  swc_ecma_visit::{FoldWith, VisitMutWith},
+  swc_ecma_visit::VisitMutWith,
 };
 
 pub struct FarmPluginPolyfill {
@@ -120,11 +121,11 @@ impl Plugin for FarmPluginPolyfill {
     });
     try_with(cm, &context.meta.script.globals, || {
       let unresolved_mark = Mark::from_u32(param.meta.as_script().unresolved_mark);
-      let mut ast = param.meta.as_script_mut().take_ast();
+      let mut ast = Program::Module(param.meta.as_script_mut().take_ast());
 
       let mut feature_flag = FeatureFlag::empty();
       let comments: SingleThreadedComments = param.meta.as_script().comments.clone().into();
-      ast = ast.fold_with(&mut preset_env(
+      ast.mutate(&mut preset_env(
         unresolved_mark,
         Some(&comments),
         self.config.clone(),
@@ -133,7 +134,7 @@ impl Plugin for FarmPluginPolyfill {
       ));
       ast.visit_mut_with(&mut inject_helpers(unresolved_mark));
 
-      param.meta.as_script_mut().set_ast(ast);
+      param.meta.as_script_mut().set_ast(ast.expect_module());
     })?;
 
     Ok(Some(()))

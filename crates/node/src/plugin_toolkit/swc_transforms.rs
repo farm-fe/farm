@@ -3,7 +3,7 @@ use farmfe_core::{
   error::Result,
   serde_json,
   swc_common::{comments::NoopComments, Mark},
-  swc_ecma_ast,
+  swc_ecma_ast::{self, Program},
 };
 use farmfe_toolkit::{
   script::swc_try_with::try_with,
@@ -11,7 +11,6 @@ use farmfe_toolkit::{
     helpers::inject_helpers,
     react::{react, Options, RefreshOptions, Runtime},
   },
-  swc_ecma_visit::VisitMutWith,
 };
 use farmfe_toolkit_plugin_types::swc_transforms::FarmSwcTransformReactOptions;
 
@@ -53,7 +52,10 @@ pub fn farm_swc_transform_react(
   };
 
   try_with(options.cm.clone(), options.globals, || {
-    ast.visit_mut_with(&mut react(
+    let take_ast = std::mem::take(ast);
+    let mut program = Program::Module(take_ast);
+
+    program.mutate(&mut react(
       options.cm,
       Some(NoopComments),
       react_options,
@@ -62,7 +64,9 @@ pub fn farm_swc_transform_react(
     ));
 
     if options.inject_helpers {
-      ast.visit_mut_with(&mut inject_helpers(unresolved_mark));
+      program.mutate(&mut inject_helpers(unresolved_mark));
     }
+
+    *ast = program.expect_module();
   })
 }

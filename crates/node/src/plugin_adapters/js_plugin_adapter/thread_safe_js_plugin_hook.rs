@@ -276,7 +276,7 @@ pub fn retrieve_result_from_promise<T: DeserializeOwned>(
   value: napi_value,
 ) {
   let mut then_ret_promise = ptr::null_mut();
-  let then_c_string = unsafe { CStr::from_bytes_with_nul_unchecked(b"then\0") };
+  let then_c_string = c"then";
   let mut then_field = ptr::null_mut();
   unsafe { napi_get_named_property(env, value, then_c_string.as_ptr(), &mut then_field) };
   let mut then_callback = ptr::null_mut();
@@ -303,7 +303,7 @@ pub fn retrieve_result_from_promise<T: DeserializeOwned>(
   };
 
   // catch
-  let catch_c_string = unsafe { CStr::from_bytes_with_nul_unchecked(b"catch\0") };
+  let catch_c_string = c"catch";
   let mut catch_field = ptr::null_mut();
   unsafe {
     napi_get_named_property(
