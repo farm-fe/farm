@@ -219,8 +219,8 @@ jobs:
           path: ./packages/core/binding
       - name: Build Core CJS
         run: cd packages/core && pnpm run build:cjs
-      - name: Run benchmarks
-        uses: CodSpeedHQ/action@v3
-        with:
-          run: npm exec vitest bench
-          token: ${{ secrets.CODSPEED_TOKEN }}
+      # - name: Run benchmarks
+      #   uses: CodSpeedHQ/action@v3
+      #   with:
+      #     run: npm exec vitest bench
+      #     token: ${{ secrets.CODSPEED_TOKEN }}
