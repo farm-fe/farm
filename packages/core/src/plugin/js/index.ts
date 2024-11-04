@@ -11,7 +11,25 @@ import merge from '../../utils/merge.js';
 import { resolveAsyncPlugins } from '../index.js';
 import { cssPluginUnwrap, cssPluginWrap } from './adapter-plugins/css.js';
 import { defaultLoadPlugin } from './adapter-plugins/default-load.js';
-import { PluginSchemaRegistry } from './js-plugin-schema.js';
+import {
+  PluginSchemaRegistry,
+  createAugmentResourceHashSchema,
+  createBuildEndSchema,
+  createBuildStartSchema,
+  createFinalizeResourcesSchema,
+  createFinishSchema,
+  createLoadSchema,
+  createNameSchema,
+  createPluginCacheLoadedSchema,
+  createRenderResourcePotSchema,
+  createRenderStartSchema,
+  createResolveSchema,
+  createTransformHtmlSchema,
+  createTransformSchema,
+  createUpdateFinishedSchema,
+  createUpdateModulesSchema,
+  createWritePluginCacheSchema
+} from './js-plugin-schema.js';
 import { DEFAULT_FILTERS, normalizeFilterPath } from './utils.js';
 import { VitePluginAdapter } from './vite-plugin-adapter.js';
 
@@ -178,178 +196,40 @@ export function processVitePlugin(
 //   }
 // }
 
-const transformFilterSchema = z.object({
-  moduleTypes: z.array(z.string()).optional().default([]),
-  resolvedPaths: z.array(z.string()).optional().default([])
-});
-
-const createTransformSchema = (name: string) => {
-  return z
-    .object({
-      filters: transformFilterSchema
-        .refine(
-          (data) => {
-            return data.moduleTypes.length > 0 || data.resolvedPaths.length > 0;
-          },
-          {
-            message: `\n transform hook of plugin '${name}' must have at least one filter(like moduleTypes or resolvedPaths)`
-          }
-        )
-        .default({
-          moduleTypes: [],
-          resolvedPaths: []
-        }),
-      executor: z.function()
-    })
-    .transform((transform) => {
-      const { filters } = transform;
-      if (filters.resolvedPaths && filters.resolvedPaths.length > 0) {
-        filters.resolvedPaths = filters.resolvedPaths.map(normalizeFilterPath);
-      }
-      return { ...transform, filters };
-    });
-};
-
-const filterSchema = z.object({
-  moduleTypes: z.array(z.string()).optional().default([]),
-  resolvedPaths: z.array(z.string()).optional().default([]),
-  moduleIds: z.array(z.string()).optional().default([]),
-  resourcePotTypes: z.array(z.string()).optional().default([]),
-  importers: z
-    .array(z.string())
-    .optional()
-    .default([])
-    .transform((arr) => arr.map(normalizeFilterPath))
-});
-
-// const transformSchema = z.object({
-//   filters: filterSchema
-//     .refine(
-//       (data) => {
-//         return data.moduleTypes.length > 0 || data.resolvedPaths.length > 0
-//       },
-//       {
-//         message:
-//           'transform hook must have at least one filter (moduleTypes or resolvedPaths)',
-//       }
-//     )
-//     .default({
-//       moduleTypes: [],
-//       resolvedPaths: [],
-//     }),
-// }).transform((transform) => {
-//   if (transform.filters.resolvedPaths.length > 0) {
-//     transform.filters.resolvedPaths = transform.filters.resolvedPaths.map(normalizeFilterPath);
-//   }
-//   return transform;
-// });
-
-const renderResourcePotSchema = z
-  .object({
-    filters: filterSchema
-      .refine(
-        (data) => data.moduleIds.length > 0 || data.resourcePotTypes.length > 0,
-        {
-          message:
-            'renderResourcePot hook must have at least one filter (moduleIds or resourcePotTypes)'
-        }
-      )
-      .default({})
-  })
-  .transform((renderResourcePot) => {
-    if (renderResourcePot.filters.moduleIds.length > 0) {
-      renderResourcePot.filters.moduleIds =
-        renderResourcePot.filters.moduleIds.map(normalizeFilterPath);
-    }
-    return renderResourcePot;
-  });
-
-const augmentResourceHashSchema = z
-  .object({
-    filters: filterSchema
-      .refine(
-        (data) => data.moduleIds.length > 0 || data.resourcePotTypes.length > 0,
-        {
-          message:
-            'augmentResourceHash hook must have at least one filter (moduleIds or resourcePotTypes)'
-        }
-      )
-      .default({})
-  })
-  .transform((augmentResourceHash) => {
-    if (augmentResourceHash.filters.moduleIds.length > 0) {
-      augmentResourceHash.filters.moduleIds =
-        augmentResourceHash.filters.moduleIds.map(normalizeFilterPath);
-    }
-    return augmentResourceHash;
-  });
-
-const resolveSchema = z
-  .object({
-    filters: z
-      .object({
-        importers: z
-          .array(z.string())
-          .optional()
-          .transform((arr) => arr.map(normalizeFilterPath))
-      })
-      .optional()
-  })
-  .transform((resolve) => {
-    if (resolve.filters?.importers?.length) {
-      resolve.filters.importers =
-        resolve.filters.importers.map(normalizeFilterPath);
-    }
-    return resolve;
-  });
-
-const loadSchema = z
-  .object({
-    filters: z
-      .object({
-        resolvedPaths: z
-          .array(z.string())
-          .optional()
-          .transform((arr) => arr.map(normalizeFilterPath))
-      })
-      .optional()
-  })
-  .transform((load) => {
-    if (load.filters?.resolvedPaths?.length) {
-      load.filters.resolvedPaths =
-        load.filters.resolvedPaths.map(normalizeFilterPath);
-    }
-    return load;
-  });
-
 const schemaRegistry = new PluginSchemaRegistry();
 
-schemaRegistry.register('transform', createTransformSchema);
-// .register('renderResourcePot', createRenderResourcePotSchema)
-// .register('augmentResourceHash', createAugmentResourceHashSchema)
-// .register('resolve', createResolveSchema)
-// .register('load', createLoadSchema);
+schemaRegistry
+  .register('name', createNameSchema)
+  .register('buildStart', createBuildStartSchema)
+  .register('resolve', createResolveSchema)
+  .register('load', createLoadSchema)
+  .register('transform', createTransformSchema)
+  .register('buildEnd', createBuildEndSchema)
+  .register('renderStart', createRenderStartSchema)
+  .register('renderResourcePot', createRenderResourcePotSchema)
+  .register('augmentResourceHash', createAugmentResourceHashSchema)
+  .register('finalizeResources', createFinalizeResourcesSchema)
+  .register('transformHtml', createTransformHtmlSchema)
+  .register('writeResource', createFinalizeResourcesSchema)
+  .register('pluginCacheLoaded', createPluginCacheLoadedSchema)
+  .register('writePluginCache', createWritePluginCacheSchema)
+  .register('finish', createFinishSchema)
+  .register('updateFinished', createUpdateFinishedSchema)
+  .register('updateModules', createUpdateModulesSchema);
 
 export function convertPlugin(plugin: JsPlugin) {
-  const { name } = z.object({ name: z.string() }).parse(plugin);
-  // const pluginSchema = z.object({
-  //   name: z.string(),
-  //   transform: createTransformSchema(name).optional(),
-  //   renderResourcePot: renderResourcePotSchema.optional(),
-  //   augmentResourceHash: augmentResourceHashSchema.optional(),
-  //   resolve: resolveSchema.optional(),
-  //   load: loadSchema.optional(),
-  // });
   try {
-    const pluginSchema = schemaRegistry.createPluginSchema(name);
+    const pluginSchema = schemaRegistry.createPluginSchema(plugin?.name);
+
     const res = pluginSchema.parse(plugin);
     return res;
   } catch (err) {
     const validationError = fromZodError(err, {
       prefix: 'Failed to verify js plugin schema'
     });
+    const pluginName = plugin?.name || 'undefined';
     throw new Error(
-      `${validationError.toString()}. \n Please check '${name}' plugin passes these attributes correctly.`
+      `${validationError.toString()}. \n Please check '${pluginName}' plugin passes these attributes correctly.`
     );
   }
 }

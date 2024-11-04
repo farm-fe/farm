@@ -14,10 +14,21 @@ import path from "path";
 function custom() {
   return {
     name: "farm-test-plugin-name",
-
+    buildStart: {
+      executor() {
+        console.log("buildStart");
+      }
+    },
+    resolve: {
+      filters: {
+        importers: ['^.*$']
+      },
+      executor(param) {
+      }
+    },
     transform: {
       filters: {
-        // moduleTypes: ['js'],
+        moduleTypes: ['js'],
       },
       async executor(param, ctx) {
         // console.log(param, "transform");
