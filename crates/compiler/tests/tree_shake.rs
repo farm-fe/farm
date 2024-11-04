@@ -4,6 +4,7 @@ use farmfe_core::{
   module::ModuleType,
   plugin::Plugin,
   swc_common::{comments::NoopComments, Mark},
+  swc_ecma_ast::Program,
 };
 use farmfe_testing_helpers::fixture;
 use farmfe_toolkit::{
@@ -14,7 +15,6 @@ use farmfe_toolkit::{
     react::{react, Options},
     typescript::tsx,
   },
-  swc_ecma_visit::VisitMutWith,
 };
 
 use crate::common::{
@@ -119,8 +119,9 @@ fn tree_shake_changed_ast() {
         let top_level_mark = Mark::from_u32(param.meta.as_script_mut().top_level_mark);
         let unresolved_mark = Mark::from_u32(param.meta.as_script_mut().unresolved_mark);
 
-        let ast = &mut param.meta.as_script_mut().ast;
-        ast.visit_mut_with(&mut tsx(
+        let ast = param.meta.as_script_mut().take_ast();
+        let mut program = Program::Module(ast);
+        program.mutate(&mut tsx(
           cm.clone(),
           Default::default(),
           Default::default(),
@@ -128,7 +129,7 @@ fn tree_shake_changed_ast() {
           unresolved_mark,
           top_level_mark,
         ));
-        ast.visit_mut_with(&mut react::<NoopComments>(
+        program.mutate(&mut react::<NoopComments>(
           cm.clone(),
           None,
           Options {
@@ -139,7 +140,9 @@ fn tree_shake_changed_ast() {
           top_level_mark,
           unresolved_mark,
         ));
-        ast.visit_mut_with(&mut inject_helpers(unresolved_mark));
+        program.mutate(&mut inject_helpers(unresolved_mark));
+
+        param.meta.as_script_mut().set_ast(program.expect_module());
       })
       .unwrap();
 
