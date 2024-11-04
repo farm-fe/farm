@@ -1,13 +1,13 @@
-import React from "react";
-import clsx from "clsx";
 import Translate, { translate } from "@docusaurus/Translate";
-// import Image from "@theme/IdealImage";
-import Rocket from "@site/static/img/rocket.png";
-import Plug from "@site/static/img/plug.png";
-import FeaturePng from "@site/static/img/feature.png";
 import Box from "@site/static/img/box.png";
 import Compatibility from "@site/static/img/compatible.png";
 import Consistency from "@site/static/img/consistency.png";
+import FeaturePng from "@site/static/img/feature.png";
+import Plug from "@site/static/img/plug.png";
+// import Image from "@theme/IdealImage";
+import Rocket from "@site/static/img/rocket.png";
+import clsx from "clsx";
+import React from "react";
 import styles from "./styles.module.css";
 const FeatureList = [
   {
