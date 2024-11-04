@@ -12,8 +12,8 @@ export const useStorageValue = (key: string, defaultValue = null) => {
   });
 
   const setValue = useCallback(
-    value => {
-      setValueInternal(prev => {
+    (value) => {
+      setValueInternal((prev) => {
         const next = typeof value === 'function' ? value(prev) : value;
         if (next == null) {
           localStorage.removeItem(key);
@@ -23,7 +23,7 @@ export const useStorageValue = (key: string, defaultValue = null) => {
         return next;
       });
     },
-    [key],
+    [key]
   );
 
   useEffect(() => {
