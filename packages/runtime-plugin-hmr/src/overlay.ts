@@ -566,8 +566,6 @@ const warnAlert = (description: string) => /*html*/ `
     </div>
 `;
 
-const fileRE = /(?:[a-zA-Z]:\\|\/).*?:\d+:\d+/g;
-
 // Allow `ErrorOverlay` to extend `HTMLElement` even in environments where
 // `HTMLElement` was not originally defined.
 const { HTMLElement = class {} as typeof globalThis.HTMLElement } = globalThis;
