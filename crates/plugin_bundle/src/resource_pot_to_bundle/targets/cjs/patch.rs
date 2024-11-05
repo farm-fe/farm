@@ -7,8 +7,8 @@ use farmfe_core::{
   module::{module_graph::ModuleGraph, ModuleId, ModuleSystem},
   swc_common::{util::take::Take, Mark, SyntaxContext, DUMMY_SP},
   swc_ecma_ast::{
-    ArrowExpr, BindingIdent, BlockStmt, BlockStmtOrExpr, Decl, EsVersion, Expr, ExprOrSpread,
-    Ident, KeyValueProp, Module as EcmaAstModule, ModuleItem, ObjectLit, Pat, Program, Prop,
+    ArrowExpr, BindingIdent, BlockStmt, BlockStmtOrExpr, Decl, Expr, ExprOrSpread, Ident,
+    KeyValueProp, Module as EcmaAstModule, ModuleItem, ObjectLit, Pass, Pat, Program, Prop,
     PropName, PropOrSpread, Stmt, VarDecl, VarDeclKind, VarDeclarator,
   },
 };
@@ -32,7 +32,7 @@ use crate::resource_pot_to_bundle::{
   polyfill::{Polyfill, SimplePolyfill},
   targets::util::wrap_commonjs,
   uniq_name::BundleVariable,
-  ShareBundleContext, ShareBundleOptions,
+  ShareBundleContext,
 };
 
 use super::util::CJSReplace;
@@ -136,9 +136,10 @@ impl CjsPatch {
         },
       );
     } else {
-      ast.visit_mut_with(&mut import_analyzer(ImportInterop::Swc, true));
+      let mut program = Program::Module(ast.take());
+      import_analyzer(ImportInterop::Swc, true).process(&mut program);
 
-      ast.visit_mut_with(&mut common_js(
+      common_js(
         Resolver::Default,
         unresolved_mark,
         SwcConfig {
@@ -147,7 +148,13 @@ impl CjsPatch {
           ..Default::default()
         },
         enable_available_feature_from_es_version(context.config.script.target),
-      ));
+      )
+      .process(&mut program);
+
+      let Program::Module(module) = program else {
+        unreachable!("cannot found module from program")
+      };
+      *ast = module;
     }
   }
 
