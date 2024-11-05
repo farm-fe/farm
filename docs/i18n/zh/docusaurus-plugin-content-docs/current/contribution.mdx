@@ -8,7 +8,7 @@
 
 ## 错误报告
 
-目前 Farm 正在快速开发和迭代中, 在开发和使用中可能会遇到一些问题, 如果您遇到了一些我们不可预料的问题, 请提交 issues 用来报告错误问题, 通过新建一个 [issues](https://github.com/farm-fe/farm/issues/new/choose) 来报告您所遇到的问题。
+目前 Farm 正在快速开发和迭代中, 正在积极开发 2.0 版本我们会增加许多新功能以及加大生态兼容性以及各种目前问题的优化与更新 在开发和使用中可能会遇到一些问题, 如果您遇到了一些我们不可预料的问题, 请提交 issues 用来报告错误问题, 通过新建一个 [issues](https://github.com/farm-fe/farm/issues/new/choose) 来报告您所遇到的问题。
 
 ## 创建新特性
 
@@ -36,16 +36,27 @@
 
 - 保证您的 `main` 分支指向远程仓库, 并从分支上发出拉取请求, 请确保您的分支是基于 `main` 分支的, 并且运行:
 
+
+- adds a new remote repository named "upstream" that points to the original repository
 ```bash
   git remote add upstream https://github.com/farm-fe/farm.git
-  git fetch upstream
-  git branch --set-upstream-to=upstream/main main
 ```
 
+- retrieves all the branches and their respective commits from the upstream repository that you just configured
+```bash
+  git fetch upstream
+```
+
+- sets up tracking between your local main branch and the main branch of the upstream repository
+```bash
+  git branch --set-upstream-to=upstream/main main
+```
 
 ## 设置您的本地开发环境
 
 ### 依赖
+
+<img src="https://github.com/user-attachments/assets/f7ce7d67-542b-41c8-a432-205c9a01c33b" />
 
 - 安装 Rust 环境 [rustup](https://www.rust-lang.org/tools/install)。
 

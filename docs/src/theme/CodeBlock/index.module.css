@@ -136,3 +136,14 @@
 .copy-success {
   color: var(--ifm-color-success);
 }
+
+.hover-button {
+  position: relative;
+  button {
+    position: absolute;
+    margin: 16px;
+    right: 0;
+  }
+}
+
+

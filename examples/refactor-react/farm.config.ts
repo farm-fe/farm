@@ -33,7 +33,7 @@ export default defineConfig({
   },
   timeUnit: "s",
   server: {
-    port: 8854,
+    port: 6858,
     // appType: "mpa",
   },
 });
