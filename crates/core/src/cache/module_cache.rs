@@ -119,10 +119,10 @@ impl ModuleCacheManager {
       return module;
     }
 
-    return self
+    self
       .immutable_modules_store
       .get_cache_ref(key)
-      .expect("Cache broken, please remove node_modules/.farm and retry.");
+      .expect("Cache broken, please remove node_modules/.farm and retry.")
   }
 
   pub fn get_cache_mut_ref(&self, key: &ModuleId) -> RefMut<'_, ModuleId, CachedModule> {
@@ -130,10 +130,10 @@ impl ModuleCacheManager {
       return module;
     }
 
-    return self
+    self
       .immutable_modules_store
       .get_cache_mut_ref(key)
-      .expect("Cache broken, please remove node_modules/.farm and retry.");
+      .expect("Cache broken, please remove node_modules/.farm and retry.")
   }
 
   /// Write the cache map to the disk.

@@ -121,7 +121,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 18
-          cache: 'pnpm'
+          cache: "pnpm"
       - name: Install Dependencies
         run: pnpm i --frozen-lockfile
 
@@ -137,7 +137,7 @@ jobs:
         if: ${{ matrix.settings.osxcross }}
         # This builds executables & sets env variables for rust to consume.
         with:
-          osx-version: '12.3'
+          osx-version: "12.3"
       - uses: goto-bus-stop/setup-zig@v2
         if: ${{ matrix.settings.zig }}
         with:
