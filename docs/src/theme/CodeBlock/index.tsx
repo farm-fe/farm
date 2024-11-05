@@ -78,18 +78,30 @@ export default function CodeBlockWrapper(props: Props): JSX.Element {
       setTimeout(() => setCopied(false), 2000);
     });
   };
+  const hiddenCopy = language === 'bash' || language === 'shell';
   return (
     <>
       <div className={styles['shiki-wrapper']}>
-        <div className={styles['code-header']}>
-          {/* {fileName && <div className={styles['code-title']}>{fileName}
-          </div>} */}
+        {!hiddenCopy && <div className={styles['code-header']}>
           {fileName && (
             <div className={styles['code-title']}>
               {getFileIcon(fileName)}
               {fileName}
             </div>
           )}
+          {/* <button className={styles['copy-button']} onClick={copyCode}>
+            {copied ? (
+              <svg className={`${styles['copy-icon']} ${styles['copy-success']}`} viewBox="0 0 24 24">
+                <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" />
+              </svg>
+            ) : (
+              <svg className={styles['copy-icon']} viewBox="0 0 24 24">
+                <path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z" />
+              </svg>
+            )}
+          </button> */}
+        </div>}
+        <div className={styles['hover-button']}>
           <button className={styles['copy-button']} onClick={copyCode}>
             {copied ? (
               <svg className={`${styles['copy-icon']} ${styles['copy-success']}`} viewBox="0 0 24 24">
@@ -100,11 +112,9 @@ export default function CodeBlockWrapper(props: Props): JSX.Element {
                 <path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z" />
               </svg>
             )}
-            {/* <span>{copied ? 'Copy' : 'Copy'}</span> */}
           </button>
+          <div className={styles['code-content']} dangerouslySetInnerHTML={{ __html: highlightedCode }} />
         </div>
-        {/* <CodeBlock className={styles['code-content']} {...props} /> */}
-        <div className={styles['code-content']} dangerouslySetInnerHTML={{ __html: highlightedCode }} />
       </div>
     </>
   );
