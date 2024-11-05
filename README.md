@@ -23,7 +23,7 @@
     <img src="https://img.shields.io/npm/l/@farmfe/core?style=flat-square&colorA=ffe3f5&colorB=711a5f" alt="license" />
   </a>
   <a href="https://gurubase.io/g/farm">
-    <img src="https://img.shields.io/badge/Gurubase-Ask%20Farm%20Guru-006BFF" alt="Gurubase" />
+    <img src="https://img.shields.io/badge/Gurubase-Ask%20Farm%20Guru-711a5f?style=flat-square&labelColor=ffe3f5" alt="Gurubase" />
   </a>
   </p>
   <br/>
