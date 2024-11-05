@@ -237,8 +237,8 @@ impl<'a> BundleAnalyzer<'a> {
           importer.iter().any(|importer| {
             if module_analyzer_manager.contain(importer) {
               module_analyzer_manager
-                .module_analyzer(importer)
-                .is_some_and(|i| i.bundle_group_id != group_id)
+                .group_id(importer)
+                .is_some_and(|i| i != &group_id)
             } else {
               // partial ShareBundle should reexport raw
               true
@@ -618,15 +618,13 @@ impl<'a> BundleAnalyzer<'a> {
           }
 
           if module_analyzer.is_dynamic && is_reference_by_another {
-            bundle_reference1.add_local_export(
-              &ExportSpecifierInfo::Named(
-                (module_analyzer_manager
-                  .module_global_uniq_name
-                  .namespace_name_result((*module_id).clone())?)
-                .into(),
-              ),
-              module_system.clone(),
-            );
+            if let Some(x) = module_analyzer_manager
+              .module_global_uniq_name
+              .namespace_name(module_id)
+            {
+              bundle_reference1
+                .add_local_export(&ExportSpecifierInfo::Named(x.into()), module_system.clone());
+            }
           }
 
           for specify in &export.specifiers {

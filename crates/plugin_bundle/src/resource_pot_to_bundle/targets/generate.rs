@@ -7,7 +7,8 @@ use farmfe_core::{
   module::{ModuleId, ModuleSystem},
   swc_common::{SyntaxContext, DUMMY_SP},
   swc_ecma_ast::{
-    self, BindingIdent, Bool, Decl, Expr, Ident, IdentName, KeyValueProp, ModuleItem, ObjectLit, Pat, Prop, PropName, PropOrSpread, Stmt, Str, VarDecl, VarDeclKind, VarDeclarator
+    self, BindingIdent, Bool, Decl, Expr, Ident, IdentName, KeyValueProp, ModuleItem, ObjectLit,
+    Pat, Prop, PropName, PropOrSpread, Stmt, Str, VarDecl, VarDeclKind, VarDeclarator,
   },
 };
 use farmfe_toolkit::itertools::Itertools;
@@ -147,13 +148,11 @@ pub fn generate_export_as_object_prop(
   bundle_variable: &BundleVariable,
   is_external: bool,
 ) {
-  let mut exported_ordered_names = reference_export
+  let exported_ordered_names = reference_export
     .named
     .iter()
     .sorted_by_key(|(a, _)| bundle_variable.name(**a))
     .collect::<Vec<_>>();
-
-  exported_ordered_names.sort_by(|(a, _), (b, _)| a.cmp(b));
 
   for (export_as, export_local) in &exported_ordered_names {
     let export_as_name = bundle_variable.name(**export_as);

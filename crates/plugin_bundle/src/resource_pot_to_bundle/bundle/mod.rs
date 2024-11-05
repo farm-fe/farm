@@ -20,7 +20,7 @@ use farmfe_core::{
     Module as ModuleAst, ModuleDecl, ModuleItem, Stmt, VarDecl, VarDeclarator,
   },
 };
-use farmfe_toolkit::{script::swc_try_with::try_with, swc_ecma_visit::VisitMutWith};
+use farmfe_toolkit::{itertools::Itertools, script::swc_try_with::try_with, swc_ecma_visit::VisitMutWith};
 
 pub mod bundle_analyzer;
 pub mod bundle_reference;
@@ -864,9 +864,10 @@ impl<'a> ModuleAnalyzerManager<'a> {
   ) {
     farm_profile_scope!("link module analyzer");
     let root = &context.config.root;
-    let mut ordered_module_ids = order_index_map.keys().collect::<Vec<_>>();
-
-    ordered_module_ids.sort_by(|a, b| order_index_map[b].cmp(&order_index_map[a]));
+    let ordered_module_ids = order_index_map
+      .keys()
+      .sorted_by_key(|a| order_index_map[a])
+      .collect::<Vec<_>>();
 
     for group_id in ordered_groups_id {
       self.module_global_uniq_name.add_namespace(group_id, |v| {
@@ -893,7 +894,12 @@ impl<'a> ModuleAnalyzerManager<'a> {
       // in this time, it import by cjs require
       if self.namespace_modules.contains(&module_analyzer.module_id)
         || self.is_external(&module_analyzer.module_id)
-        || module_analyzer.is_dynamic
+        || (module_analyzer.is_dynamic
+          && self
+            .module_graph
+            .dependents_ids(&module_analyzer.module_id)
+            .iter()
+            .any(|importer| self.is_same_bundle(module_id, importer)))
       {
         self
           .module_global_uniq_name

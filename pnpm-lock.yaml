@@ -34948,8 +34948,6 @@ snapshots:
 
   font-awesome@4.7.0: {}
 
-  font-awesome@4.7.0: {}
-
   for-each@0.3.3:
     dependencies:
       is-callable: 1.2.7
