@@ -37,17 +37,17 @@
 - 保证您的 `main` 分支指向远程仓库, 并从分支上发出拉取请求, 请确保您的分支是基于 `main` 分支的, 并且运行:
 
 
-- adds a new remote repository named "upstream" that points to the original repository
+- 添加了 Farm 的 upstream 远程仓库
 ```bash
   git remote add upstream https://github.com/farm-fe/farm.git
 ```
 
-- retrieves all the branches and their respective commits from the upstream repository that you just configured
+- 从 upstream 远程仓库获取所有分支和它们的提交
 ```bash
   git fetch upstream
 ```
 
-- sets up tracking between your local main branch and the main branch of the upstream repository
+- 建立了你本地 main 分支与 upstream 仓库 main 分支之间的跟踪关系
 ```bash
   git branch --set-upstream-to=upstream/main main
 ```
