@@ -52,6 +52,12 @@ jobs:
           path: ./rust-plugins/react/npm/${{ matrix.settings.abi }}
 
       - uses: actions/download-artifact@v4
+        id: download-plugin-replace-dirname
+        with:
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-replace-dirname
+          path: ./rust-plugins/replace-dirname/npm/${{ matrix.settings.abi }}
+
+      - uses: actions/download-artifact@v4
         id: download-create-farm-rust
         with:
           name: ${{ github.sha }}-${{ matrix.settings.abi }}
@@ -219,8 +225,8 @@ jobs:
           path: ./packages/core/binding
       - name: Build Core CJS
         run: cd packages/core && pnpm run build:cjs
-      - name: Run benchmarks
-        uses: CodSpeedHQ/action@v3
-        with:
-          run: npm exec vitest bench
-          token: ${{ secrets.CODSPEED_TOKEN }}
+      # - name: Run benchmarks
+      #   uses: CodSpeedHQ/action@v3
+      #   with:
+      #     run: npm exec vitest bench
+      #     token: ${{ secrets.CODSPEED_TOKEN }}

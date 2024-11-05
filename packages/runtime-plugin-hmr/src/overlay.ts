@@ -7,8 +7,6 @@ import {
   stripAnsi
 } from './utils';
 
-const base = '/';
-
 // set :host styles to make playwright detect the element as visible
 const template = /*html*/ `
 <style>
@@ -130,8 +128,7 @@ code {
 
 kbd {
   line-height: 1.5;
-  font-family: ui-monospace, Menlo, Monaco, Consolas, 'Liberation Mono',
-    'Courier New', monospace;
+  font-family: ui-monospace, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
   font-size: 0.75rem;
   font-weight: 700;
   background-color: rgb(38, 40, 44);
@@ -141,8 +138,8 @@ kbd {
   border-width: 0.0625rem 0.0625rem 0.1875rem;
   border-style: solid;
   border-color: rgb(54, 57, 64);
-  border-image: initial;
 }
+
 .message-container {
   padding: 10px 10px;
 }
@@ -154,24 +151,6 @@ kbd {
   padding: 10px;
   margin: 10px 0;
 }
-
-
-
-kbd {
-  line-height: 1.5;
-  font-family: ui-monospace, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-  font-size: 0.75rem;
-  font-weight: 700;
-  background-color: rgb(38, 40, 44);
-  color: rgb(166, 167, 171);
-  padding: 0.15rem 0.3rem;
-  border-radius: 0.25rem;
-  border-width: 0.0625rem 0.0625rem 0.1875rem;
-  border-style: solid;
-  border-color: rgb(54, 57, 64);
-  border-image: initial;
-}
-
 
 .code-block-wrapper {
   background-color: #282c34; /* Atom One Dark 背景色 */
@@ -562,11 +541,7 @@ pre::-webkit-scrollbar-thumb:hover {
 </div>
 `;
 
-const errorAlert = (
-  message: string,
-  description: string,
-  _type: string
-) => /*html*/ `
+const errorAlert = (message: string, description: string) => /*html*/ `
     <div class="alert alert-error">
       <span class="alert-icon">
         <svg viewBox="64 64 896 896" focusable="false" data-icon="close-circle" width="1.2em" height="1.2em" fill="currentColor" aria-hidden="true">
@@ -580,19 +555,16 @@ const errorAlert = (
     </div>
 `;
 
-const warnAlert = (description: string, type = 'warn') => /*html*/ `
-    <div class="alert alert-${type}">
+const warnAlert = (description: string) => /*html*/ `
+    <div class="alert alert-warn">
       <span class="alert-icon">
-        ${getAlertIcon(type)}
+        ${getAlertIcon('warn')}
       </span>
       <div class="alert-content">
         <div class="alert-description">${description.replace(/\n/g, '<br>')}</div>
       </div>
     </div>
 `;
-
-const fileRE = /(?:[a-zA-Z]:\\|\/).*?:\d+:\d+/g;
-// const codeframeRE = /^(?:>?\s*\d+\s+\|.*|\s+\|\s*\^.*)\r?\n/gm;
 
 // Allow `ErrorOverlay` to extend `HTMLElement` even in environments where
 // `HTMLElement` was not originally defined.
@@ -625,66 +597,6 @@ export class ErrorOverlay extends HTMLElement {
     };
 
     document.addEventListener('keydown', this.closeOnEsc);
-  }
-
-  text(selector: string, text: string, linkFiles = false): void {
-    const el = this.root.querySelector(selector)!;
-    if (!linkFiles) {
-      el.textContent = text;
-    } else {
-      let curIndex = 0;
-      let match: RegExpExecArray | null;
-      fileRE.lastIndex = 0;
-      while ((match = fileRE.exec(text))) {
-        const { 0: file, index } = match;
-        if (index != null) {
-          const frag = text.slice(curIndex, index);
-          el.appendChild(document.createTextNode(frag));
-          const link = document.createElement('a');
-          link.textContent = file;
-          link.className = 'file-link';
-          link.onclick = () => {
-            fetch(
-              new URL(
-                `${base}__open-in-editor?file=${encodeURIComponent(file)}`,
-                // import.meta.url
-                window.location.href
-              )
-            );
-          };
-          el.appendChild(link);
-          curIndex += frag.length + file.length;
-        }
-      }
-    }
-  }
-
-  setMessageText(element: HTMLElement, text: string, linkFiles: boolean) {
-    if (!linkFiles) {
-      element.textContent = text;
-    } else {
-      element.innerHTML = '';
-      let lastIndex = 0;
-      text.replace(fileRE, (file, index) => {
-        if (index > lastIndex) {
-          element.appendChild(
-            document.createTextNode(text.substring(lastIndex, index))
-          );
-        }
-        const link = document.createElement('a');
-        link.textContent = file;
-        link.className = 'file-link';
-        link.onclick = () => {
-          fetch(`${base}__open-in-editor?file=${encodeURIComponent(file)}`);
-        };
-        element.appendChild(link);
-        lastIndex = index + file.length;
-        return file;
-      });
-      if (lastIndex < text.length) {
-        element.appendChild(document.createTextNode(text.substring(lastIndex)));
-      }
-    }
   }
 
   highlightCode(code: string, language = 'javascript') {
@@ -740,22 +652,16 @@ export class ErrorOverlay extends HTMLElement {
       msg = parseIfJSON(msg);
 
       if (msg.type) {
-        const TypeError = document.createElement('span');
-        TypeError.className = 'type-error';
-        TypeError.textContent = msg.type;
+        const typeError = document.createElement('span');
+        typeError.className = 'type-error';
+        typeError.textContent = msg.type;
         const TypeCodeError = document.createElement('div');
-        TypeCodeError.innerHTML = errorAlert(msg.type, msg.id, msg.type);
+        TypeCodeError.innerHTML = errorAlert(msg.type, msg.id);
         messageElement.appendChild(TypeCodeError);
       }
 
-      // if (msg.plugin) {
-      //   const pluginElement = document.createElement('span');
-      //   pluginElement.className = 'plugin';
-      //   pluginElement.textContent = `[plugin:${msg.plugin}] `;
-      //   messageElement.appendChild(pluginElement);
-      // }
-
       const messageBody = document.createElement('div');
+
       messageBody.className = 'message';
 
       const splitMessage = splitErrorMessage(msg);
@@ -879,13 +785,6 @@ export class ErrorOverlay extends HTMLElement {
         messageElement.appendChild(messageBody);
         messageContainer.appendChild(messageElement);
       }
-
-      // if (msg.stack) {
-      //   const stack = document.createElement('pre');
-      //   stack.className = 'stack';
-      //   this.setMessageText(stack, msg.stack, links);
-      //   messageElement.appendChild(stack);
-      // }
 
       if (msg.cause) {
         const causeElement = document.createElement('div');

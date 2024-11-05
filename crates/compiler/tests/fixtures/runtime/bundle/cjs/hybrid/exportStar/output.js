@@ -124,7 +124,7 @@ var cjsExportEsm_ts_cjs = __commonJs({
             }
         });
         _export_star(esmExport_ts_ns, exports);
-        var _esmExport2 = _interop_require_wildcard(esmExport2_ts_ns);
+        var _esmExport2 = /*#__PURE__*/ _interop_require_wildcard(esmExport2_ts_ns);
         module.exports.cjs_export_esm = 'shulan';
     }
 });
