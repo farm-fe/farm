@@ -80,7 +80,7 @@ function HomepageHeader() {
             </div>
           </Link>
           <Link
-            style={{ marginLeft: "20px", textDecoration: "none" }}
+            style={{ textDecoration: "none" }}
             to="/docs/why-farm"
           >
             <div
@@ -92,9 +92,21 @@ function HomepageHeader() {
               <Translate>Why Farm?</Translate>
             </div>
           </Link>
+          <Link to="/docs/contribution" style={{
+            textDecoration: "none"
+          }}>
+            <div
+              className={clsx(
+                styles.farmButton,
+                "flex w-36 sm:w-40 items-center justify-center font-bold",
+              )}
+            >
+              <Translate>Contribute</Translate>
+            </div>
+          </Link>
         </div>
       </div>
-    </header>
+    </header >
   );
 }
 

@@ -59,7 +59,6 @@ export function mergeFarmCliConfig(
       'compilation',
       'envDir',
       'envPrefix',
-      'timeUnit',
       'watch',
       'plugins',
       'publicDir',
@@ -145,11 +144,6 @@ export function mergeFarmCliConfig(
       compilation: { sourcemap: options.sourcemap }
     });
   }
-  if (options.timeUnit) {
-    left = mergeConfig(left, {
-      timeUnit: options.timeUnit
-    });
-  }
 
   return mergeConfig(left, target);
 }
@@ -187,7 +181,6 @@ export function initialCliOptions(options: any): any {
     server: options.server,
     clearScreen: !!options.clearScreen,
     configFile: options.configFile,
-    timeUnit: options.timeUnit,
     ...(mode && { mode })
   };
 

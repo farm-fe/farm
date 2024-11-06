@@ -31,10 +31,9 @@ export default defineConfig({
       alias: [{ find: "@", replacement: path.resolve("src") }],
     },
   },
-  timeUnit: "s",
   server: {
-    port: 8854,
-    // appType: "mpa",
+    port: 4878,
+    appType: "mpa",
   },
 });
 

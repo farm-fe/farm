@@ -32,10 +32,6 @@ cli
   .option('--base <path>', '[string] public base path')
   .option('-d, --debug [feat]', `[string | boolean] show debug logs`)
   .option(
-    '-t, --timeUnit <unit>',
-    '[string] time unit for time log (default: ms) optionals: ms, s'
-  )
-  .option(
     '--clearScreen',
     '[boolean] allow/disable clear screen when logging (default: true)',
     {
@@ -82,7 +78,6 @@ cli
         clearScreen: options.clearScreen,
         configFile: options.config,
         mode: options.mode,
-        timeUnit: options.timeUnit,
         compilation: {
           lazyCompilation: options.lazy,
           output: {
@@ -128,7 +123,6 @@ cli
       configFile: options.config,
       mode: options.mode,
       watch: options.watch,
-      timeUnit: options.timeUnit,
       compilation: {
         output: {
           path: options?.outDir,
