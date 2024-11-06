@@ -111,6 +111,7 @@ export interface UserConfig {
   watch?: boolean;
   envPrefix?: string | string[];
   publicDir?: string;
+  customLogger?: Logger;
   /** js plugin(which is a javascript object) and rust plugin(which is string refer to a .farm file or a package) */
   plugins?: (RustPlugin | JsPlugin | JsPlugin[] | undefined | null | false)[];
   /** vite plugins */

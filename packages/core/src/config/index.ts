@@ -125,6 +125,9 @@ export async function resolveConfig(
   // configPath may be file or directory
   const { configFile, configPath: initialConfigPath } = inlineOptions;
 
+  let configFilePath = initialConfigPath;
+
+  // TODO issues1 这里拿到的 config.root 不应该是undefined 我们可以给默认值
   const loadedUserConfig = await loadConfigFile(
     configFile,
     inlineOptions,
@@ -132,6 +135,7 @@ export async function resolveConfig(
     defaultNodeEnv
   );
 
+  // TODO issues4 这个方法是否有必要需要讨论 我们只考虑在最后拿到的 config 不存在 undefined 可以让rust 识别就ok
   let rawConfig: UserConfig = mergeFarmCliConfig(
     inlineOptions,
     {},
@@ -139,8 +143,6 @@ export async function resolveConfig(
   );
 
   const inlineConfig = rawConfig;
-
-  let configFilePath = initialConfigPath;
 
   if (loadedUserConfig) {
     configFilePath = loadedUserConfig.configFilePath;
@@ -152,6 +154,7 @@ export async function resolveConfig(
     compileMode
   );
 
+  // TODO issues2 如果我这时候push 了一个 插件在 resolveConfigHook 中
   const sortFarmJsPlugins = getSortedPlugins([
     ...jsPlugins,
     ...vitePluginAdapters,
@@ -159,10 +162,12 @@ export async function resolveConfig(
   ]);
 
   const config = await resolveConfigHook(rawConfig, sortFarmJsPlugins);
+
+  // TODO issues3 logger 放到方法内部 后续针对  compilation server logger 整合成一个方法
   // define logger when resolvedConfigHook
   const logger = new Logger({
-    customLogger: loadedUserConfig.config?.customLogger,
-    allowClearScreen: loadedUserConfig.config?.clearScreen
+    customLogger: config?.customLogger,
+    allowClearScreen: config?.clearScreen
   });
 
   const resolvedUserConfig = await resolveUserConfig(
@@ -171,19 +176,23 @@ export async function resolveConfig(
     compileMode
   );
 
+  // TODO 同3
   resolvedUserConfig.logger = logger;
 
+  // TODO 同3
   // normalize server config first cause it may be used in normalizeUserCompilationFnConfig
   resolvedUserConfig.server = normalizeDevServerConfig(
     resolvedUserConfig.server,
     compileMode
   );
 
+  // TODO 同3
   resolvedUserConfig.compilation = await normalizeUserCompilationConfig(
     resolvedUserConfig,
     mode as CompilationMode
   );
 
+  // TODO issues6 这个方法需要考虑是否需要整合到 resolveUserConfig 中 root 属性是否有必要在这里重新定义
   Object.assign(resolvedUserConfig, {
     root: resolvedUserConfig.compilation.root,
     jsPlugins: sortFarmJsPlugins,
@@ -193,6 +202,7 @@ export async function resolveConfig(
 
   await resolveConfigResolvedHook(resolvedUserConfig, sortFarmJsPlugins); // Fix: Await the Promise<void> and pass the resolved value to the function.
 
+  // TODO issues5 这个也要整合进去 没必要放在 resolveConfigResolvedHook 之后
   await handleLazyCompilation(
     resolvedUserConfig,
     command as keyof typeof COMMANDS
@@ -205,8 +215,6 @@ async function handleLazyCompilation(
   config: ResolvedUserConfig,
   command: keyof typeof COMMANDS
 ) {
-  console.log(command);
-
   const commandHandlers = {
     [COMMANDS.START]: async (config: ResolvedUserConfig) => {
       if (
