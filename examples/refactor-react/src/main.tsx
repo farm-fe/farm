@@ -8,7 +8,6 @@ import FarmLogo from "./assets/logo.png";
 export function Main() {
   const [count, setCount] = useState(0);
   // console.log(a);
-
   return (
     <>
       <div>

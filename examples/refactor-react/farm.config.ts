@@ -41,7 +41,11 @@ export default defineConfig((config) => {
       port: 6858,
       // appType: "mpa",
     },
-  }
+  },
+  server: {
+    port: 6858,
+    // appType: "mpa",
+  },
 });
 
 function myCustomPlugin() {
@@ -49,7 +53,7 @@ function myCustomPlugin() {
     name: "custom",
     updateModules: {
       executor(data: any) {
-        console.log(data, "更新的模块");
+        console.log(data);
       },
     },
   };

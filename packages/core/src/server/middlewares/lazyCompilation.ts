@@ -74,9 +74,8 @@ export function lazyCompilationMiddleware(
         cyan(pathsStr)
       )} in ${bold(
         green(
-          formatExecutionTime(
-            performance.now() - start,
-            resolvedUserConfig.timeUnit
+          resolvedUserConfig.logger.formatExecutionTime(
+            performance.now() - start
           )
         )
       )}.`

@@ -9,7 +9,7 @@ import {
 } from './color.js';
 import { ResolvedServerUrls } from './http.js';
 import { getShortName } from './path.js';
-import { clearScreen, formatExecutionTime, pad, version } from './share.js';
+import { clearScreen, pad, version } from './share.js';
 
 type LogLevelNames = 'trace' | 'debug' | 'info' | 'warn' | 'error';
 
@@ -38,6 +38,7 @@ interface LoggerOptions {
   allowClearScreen?: boolean;
   brandColor?: ColorFunction;
   exit?: boolean;
+  timeUnit?: 's' | 'ms';
 }
 
 const LOGGER_METHOD = {
@@ -63,12 +64,14 @@ export class Logger implements ILogger {
 
   private clear: () => void = () => {};
   private customLogger?: Logger;
+  private timeUnit: 's' | 'ms';
 
   constructor(
     {
       prefix = 'Farm',
       allowClearScreen = true,
       customLogger,
+      timeUnit = 'ms',
       brandColor
     }: LoggerOptions = {},
     private levelValues: Record<LogLevelNames, number> = {
@@ -91,6 +94,7 @@ export class Logger implements ILogger {
     };
     this.prefix = prefix;
     this.customLogger = customLogger;
+    this.timeUnit = timeUnit;
     this.brandPrefix();
   }
 
@@ -98,6 +102,14 @@ export class Logger implements ILogger {
     const formattedName = colors.bold(this.prefix);
     const formattedPrefix = colors.bold(`[ ${formattedName} ]`);
     this.prefix = color ? color(formattedPrefix) : formattedPrefix;
+  }
+
+  formatExecutionTime(duration: number): string {
+    if (this.timeUnit === 's') {
+      return `${(duration / 1000).toFixed(3)}s`;
+    } else {
+      return `${Math.floor(duration)}ms`;
+    }
   }
 
   private logMessage(
@@ -116,11 +128,29 @@ export class Logger implements ILogger {
         ? LOGGER_METHOD[level as keyof typeof LOGGER_METHOD]
         : 'log';
     if (this.levelValues[level] <= this.levelValues[level]) {
-      this.canClearScreen && clearScreen && this.clear();
+      if (this.canClearScreen && clearScreen) {
+        this.clear();
+      }
       const prefix = showBanner ? `${this.prefix} ` : '';
-      const prefixColor = this.colorMap[level];
-      const loggerMessage = color ? color(message as string) : message;
-      console[loggerMethod](prefixColor(prefix) + loggerMessage);
+      const prefixColored = this.colorMap[level](prefix);
+      let loggerMessage: string;
+
+      if (typeof message === 'string') {
+        const timeRegex = new RegExp(`\\{time:(\\d+(\\.\\d+)?)\\}`, 'g');
+        loggerMessage = message.replace(timeRegex, (_, durationStr) => {
+          const duration = parseFloat(durationStr);
+
+          return this.formatExecutionTime(duration);
+        });
+      } else {
+        loggerMessage = message.message;
+      }
+
+      if (color && typeof message === 'string') {
+        loggerMessage = color(loggerMessage);
+      }
+
+      console[loggerMethod](prefixColored + loggerMessage);
     }
   }
 
@@ -255,7 +285,7 @@ export function bootstrap(
     `${colors.bold(colors.green(` ✓`))}  ${colors.bold(
       'Compile in'
     )} ${colors.bold(
-      colors.green(formatExecutionTime(times, config.timeUnit))
+      colors.green(config.logger.formatExecutionTime(times))
     )} ${persistentCacheFlag}`,
     '\n'
   );

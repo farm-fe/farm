@@ -111,7 +111,6 @@ export interface UserConfig {
   watch?: boolean;
   envPrefix?: string | string[];
   publicDir?: string;
-  timeUnit?: 'ms' | 's';
   /** js plugin(which is a javascript object) and rust plugin(which is string refer to a .farm file or a package) */
   plugins?: (RustPlugin | JsPlugin | JsPlugin[] | undefined | null | false)[];
   /** vite plugins */
@@ -161,7 +160,6 @@ export interface ResolvedUserConfig extends UserConfig {
   envPrefix?: string | string[];
   configFilePath?: string;
   envMode?: string;
-  timeUnit?: 'ms' | 's';
   configFileDependencies?: string[];
   compilation?: ResolvedCompilation;
   server?: NormalizedServerConfig;
@@ -169,6 +167,7 @@ export interface ResolvedUserConfig extends UserConfig {
   rustPlugins?: [string, string][];
   inlineConfig?: FarmCliOptions;
   logger?: Logger;
+  mode?: string;
   watch?: boolean;
 }
 
