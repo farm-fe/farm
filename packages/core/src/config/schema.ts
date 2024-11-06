@@ -394,6 +394,7 @@ const compilationConfigSchema = z
 const FarmConfigSchema = z
   .object({
     root: z.string().optional(),
+    mode: z.string().optional(),
     clearScreen: z.boolean().optional(),
     configPath: z.string().optional(),
     envDir: z.string().optional(),
@@ -403,7 +404,6 @@ const FarmConfigSchema = z
     plugins: z.array(z.any()).optional(),
     vitePlugins: z.array(z.any()).optional(),
     compilation: compilationConfigSchema.optional(),
-    mode: z.string().optional(),
     watch: z.boolean().optional(),
     server: serverSchema.optional(),
     // TODO ANY type
