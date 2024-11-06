@@ -28,6 +28,7 @@ export function loadEnv(
   prefixes = arraify(prefixes);
   const env: Record<string, string> = {};
   const envFiles = getEnvFilesForMode(mode, envDir);
+
   const parsed = Object.fromEntries(
     envFiles.flatMap((filePath) => {
       if (!tryStatSync(filePath)?.isFile()) return [];
