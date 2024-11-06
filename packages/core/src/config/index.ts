@@ -224,6 +224,7 @@ async function handleLazyCompilation(
         await setLazyCompilationDefine(config);
       }
     },
+    // TODO 这个watch 方法需要在讨论 现在设计里没有 watch 这个方法了 build 的话也可以做 判断 config 里的 watch
     [COMMANDS.WATCH]: async (config: ResolvedUserConfig) => {
       if (config.compilation?.lazyCompilation) {
         await setLazyCompilationDefine(config);
