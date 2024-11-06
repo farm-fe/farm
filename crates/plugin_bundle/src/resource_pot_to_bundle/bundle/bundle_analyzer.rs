@@ -1444,21 +1444,9 @@ impl<'a> BundleAnalyzer<'a> {
     if matches!(self.context.config.output.target_env, TargetEnv::Browser)
       && matches!(self.group.group_type, ResourcePotType::Runtime)
     {
-      bundle.prepend("((function(){");
+      bundle.prepend(";((function(){");
       bundle.append("})());", None);
     };
-
-    let injectable_resource_pot = (config.output.target_env.is_library()
-      && self
-        .ordered_modules
-        .contains(&&ModuleId::from(FARM_BUNDLE_POLYFILL_SLOT)))
-      || matches!(self.group.group_type, ResourcePotType::Runtime);
-
-    if !self.polyfill.is_empty() && injectable_resource_pot {
-      for item in self.polyfill.to_str() {
-        bundle.prepend(&item);
-      }
-    }
 
     Ok(bundle)
   }

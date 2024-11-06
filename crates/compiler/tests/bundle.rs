@@ -13,10 +13,8 @@ use farmfe_core::config::Config;
 #[allow(dead_code)]
 #[cfg(test)]
 fn test(file: String, crate_path: String, f: Option<impl Fn(&mut Config)>) {
-  use common::{format_output_name, get_config_field, get_dir_config_files};
+  use common::{format_output_name, get_dir_config_files, try_merge_config_file};
   use farmfe_core::config::partial_bundling::PartialBundlingEnforceResourceConfig;
-
-  use crate::common::try_read_config_from_json;
 
   let file_path_buf = PathBuf::from(file.clone());
   let create_path_buf = PathBuf::from(crate_path);
@@ -29,10 +27,6 @@ fn test(file: String, crate_path: String, f: Option<impl Fn(&mut Config)>) {
   let runtime_entry = cwd.to_path_buf().join("runtime.ts");
 
   for (name, config_entry) in files {
-    // let config_entry = cwd.to_path_buf().join("config.json");
-
-    let config_from_file = try_read_config_from_json(config_entry);
-
     let compiler = create_compiler_with_args(
       cwd.to_path_buf(),
       create_path_buf.clone(),
@@ -60,19 +54,7 @@ fn test(file: String, crate_path: String, f: Option<impl Fn(&mut Config)>) {
           name: "index".to_string(),
         }];
 
-        if let Some(config_from_file) = config_from_file {
-          if let Some(mode) = get_config_field(&config_from_file, &["mode"]) {
-            config.mode = mode;
-          }
-
-          if let Some(format) = get_config_field(&config_from_file, &["output", "format"]) {
-            config.output.format = format;
-          }
-
-          if let Some(target_env) = get_config_field(&config_from_file, &["output", "targetEnv"]) {
-            config.output.target_env = target_env;
-          }
-        }
+        config = try_merge_config_file(config, config_entry);
 
         if let Some(f) = f.as_ref() {
           f(&mut config);
@@ -122,5 +104,3 @@ farmfe_testing::testing! {
   // "tests/fixtures/bundle/library/reexport/reexport_hybrid_cjs/default/**/index.ts",
   multiple_bundle_test
 }
-// farmfe_testing::testing! {"tests/fixtures/runtime/bundle/cjs/export/entryExportStar/**/index.ts", test}
-// farmfe_testing::testing! {"tests/fixtures/runtime/bundle/external/import/namespace/**/index.ts", test}

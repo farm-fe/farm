@@ -8,7 +8,6 @@ use std::{
 
 use bundle::bundle_reference::BundleReferenceManager;
 use farmfe_core::{
-  config::{Mode, ModuleFormat},
   context::CompilationContext,
   enhanced_magic_string::bundle::Bundle,
   error::{CompilationError, MapCompletionError, Result},
@@ -18,7 +17,6 @@ use farmfe_core::{
   resource::resource_pot::{ResourcePot, ResourcePotId, ResourcePotType},
   swc_ecma_ast::Id,
 };
-use farmfe_toolkit::itertools::Itertools;
 pub use polyfill::{Polyfill, SimplePolyfill};
 
 pub use crate::resource_pot_to_bundle::bundle::bundle_analyzer::BundleAnalyzer;

@@ -12,9 +12,7 @@ use crate::common::{
 #[allow(dead_code)]
 #[cfg(test)]
 fn test(file: String, crate_path: String) {
-  use common::{get_config_field, get_dir_config_files};
-
-  use crate::common::try_read_config_from_json;
+  use common::{format_output_name, get_dir_config_files, try_merge_config_file};
 
   let file_path_buf = PathBuf::from(file.clone());
   let create_path_buf = PathBuf::from(crate_path);
@@ -27,8 +25,6 @@ fn test(file: String, crate_path: String) {
 
   for (name, config_entry) in files {
     let runtime_entry = cwd.to_path_buf().join("runtime.ts");
-
-    let config_from_file = try_read_config_from_json(config_entry);
 
     let compiler = create_compiler_with_args(
       cwd.to_path_buf(),
@@ -48,32 +44,8 @@ fn test(file: String, crate_path: String) {
 
         config.external = vec![ConfigRegex::new("(^node:.*)"), ConfigRegex::new("^fs$")];
         config.output.target_env = TargetEnv::Node;
-        // config.output.format = ModuleFormat::CommonJs;
 
-        // TODO: multiple bundle
-        config.partial_bundling.enforce_resources = vec![PartialBundlingEnforceResourceConfig {
-          test: vec![ConfigRegex::new("^bundle2.*")],
-          name: "bundle2".to_string(),
-        }];
-
-        if let Some(config_from_file) = config_from_file {
-          if let Some(mode) = get_config_field(&config_from_file, &["mode"]) {
-            config.mode = mode;
-          }
-
-          if let Some(format) = get_config_field(&config_from_file, &["output", "format"]) {
-            config.output.format = format;
-          }
-
-          if let Some(target_env) = get_config_field(&config_from_file, &["output", "targetEnv"]) {
-            config.output.target_env = target_env;
-          }
-
-          if let Some(lazy_compilation) = get_config_field(&config_from_file, &["lazyCompilation"])
-          {
-            config.lazy_compilation = lazy_compilation;
-          }
-        }
+        config = try_merge_config_file(config, config_entry);
 
         (config, plugins)
       },
@@ -85,14 +57,7 @@ fn test(file: String, crate_path: String) {
       &compiler,
       AssertCompilerResultConfig {
         entry_name: Some(entry_name.clone()),
-        output_file: Some(format!(
-          "output{}.js",
-          if name.is_empty() {
-            "".to_string()
-          } else {
-            format!(".{}", name)
-          }
-        )),
+        output_file: Some(format_output_name(name)),
         ignore_emitted_field: false,
         ..Default::default()
       },

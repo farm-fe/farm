@@ -1,5 +1,5 @@
 ---
-source: crates/compiler/src/generate/partial_bundling.rs
+source: crates/compiler/src/update/regenerate_resources/generate_and_diff_resource_pots/test_generate_and_diff_resource_pots.rs
 input_file: crates/testing_helpers/src/lib.rs
 ---
 name: A_66be
@@ -15,10 +15,6 @@ entry: Some(
 module_groups: [
     ModuleId {
         relative_path: "A",
-        query_string: "",
-    },
-    ModuleId {
-        relative_path: "F",
         query_string: "",
     },
 ]
@@ -91,12 +87,37 @@ resources: []
 
 -------
 
-name: F_f67a
-id: F_f67a
+name: test
+id: test_custom("__farm_unknown")
+immutable: false
+resource_pot_type: Custom("__farm_unknown")
+entry: None
+module_groups: [
+    ModuleId {
+        relative_path: "B",
+        query_string: "",
+    },
+]
+modules: [
+    ModuleId {
+        relative_path: "H",
+        query_string: "",
+    },
+]
+resources: []
+
+-------
+
+name: test
+id: test_js
 immutable: false
 resource_pot_type: Js
 entry: None
 module_groups: [
+    ModuleId {
+        relative_path: "B",
+        query_string: "",
+    },
     ModuleId {
         relative_path: "F",
         query_string: "",

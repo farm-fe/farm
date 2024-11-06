@@ -46,13 +46,19 @@ impl FarmPluginBundle {
   }
 }
 
+impl FarmPluginBundle {
+  fn should_bundle(config: &Config) -> bool {
+    config.output.target_env.is_library()
+  }
+}
+
 impl Plugin for FarmPluginBundle {
   fn name(&self) -> &str {
     "farm-plugin-bundle"
   }
 
   fn config(&self, config: &mut Config) -> farmfe_core::error::Result<Option<()>> {
-    if config.output.target_env.is_library() {
+    if Self::should_bundle(&config) {
       // push it last
       config
         .partial_bundling
@@ -87,11 +93,11 @@ impl Plugin for FarmPluginBundle {
 
   fn load(
     &self,
-    _param: &PluginLoadHookParam,
+    param: &PluginLoadHookParam,
     _context: &Arc<CompilationContext>,
     _hook_context: &PluginHookContext,
   ) -> farmfe_core::error::Result<Option<PluginLoadHookResult>> {
-    if _param.resolved_path.starts_with(FARM_BUNDLE_POLYFILL_SLOT) {
+    if param.resolved_path.starts_with(FARM_BUNDLE_POLYFILL_SLOT) {
       return Ok(Some(PluginLoadHookResult {
         // TODO: disable tree-shaking it
         content: format!(r#"export {{}}"#),
@@ -110,7 +116,8 @@ impl Plugin for FarmPluginBundle {
   ) -> farmfe_core::error::Result<Option<()>> {
     let module_graph = context.module_graph.read();
 
-    if module_graph.entries.contains_key(&param.module.id)
+    if Self::should_bundle(&context.config)
+      && module_graph.entries.contains_key(&param.module.id)
       && param.module.module_type.is_script()
       && !param.module.id.to_string().ends_with(RUNTIME_SUFFIX)
     {
@@ -119,6 +126,7 @@ impl Plugin for FarmPluginBundle {
         kind: ResolveKind::Import,
       });
     }
+
     Ok(None)
   }
 

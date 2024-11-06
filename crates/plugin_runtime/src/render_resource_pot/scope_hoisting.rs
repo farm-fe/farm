@@ -16,7 +16,7 @@ use farmfe_plugin_bundle::resource_pot_to_bundle::{BundleGroup, ShareBundleOptio
 /// Note: Scope Hoisting is enabled only `config.concatenate_modules` is true. Otherwise, it A module is a [ScopeHoistedModuleGroup]
 ///
 /// The [ModuleId]s that can be hoisted into the same Module. For example:
-/// ```
+/// ```md
 ///         A    F
 ///        / \  /
 ///       B   C
@@ -226,7 +226,9 @@ mod tests {
 
   #[test]
   fn test_build_scope_hoisted_module_groups() {
-    let module_graph = construct_test_module_graph();
+    let mut module_graph = construct_test_module_graph();
+    module_graph.update_execution_order_for_modules();
+
     let mut resource_pot = ResourcePot::new("test".to_string(), ResourcePotType::Js);
 
     for module in module_graph.modules() {

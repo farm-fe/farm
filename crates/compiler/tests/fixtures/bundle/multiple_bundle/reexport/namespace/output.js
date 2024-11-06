@@ -3,8 +3,8 @@
 const ns_named = 'ns named';
 const ns_default = 'ns default';
 var bundle2_namespace_ns = {
-    ns_named: ns_named,
     ns_default: ns_default,
+    ns_named: ns_named,
     __esModule: true
 };
 
