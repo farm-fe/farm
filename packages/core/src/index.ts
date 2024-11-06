@@ -51,7 +51,7 @@ export async function build(
     'production',
     'production'
   );
-
+  const logger = resolvedUserConfig.logger;
   const { persistentCache, output } = resolvedUserConfig.compilation;
 
   try {
@@ -79,12 +79,10 @@ export async function build(
       resolvedUserConfig.configFilePath,
       resolvedUserConfig.root
     );
-    resolvedUserConfig.logger.info(
-      `Using config file at ${bold(green(shortFile))}`
-    );
-    resolvedUserConfig.logger.info(
+    logger.info(`Using config file at ${bold(green(shortFile))}`);
+    logger.info(
       `Build completed in ${bold(
-        green(`${elapsedTime}ms`)
+        green(`${logger.formatExecutionTime(elapsedTime)}`)
       )} ${persistentCacheText} Resources emitted to ${bold(
         green(output.path)
       )}.`
@@ -95,7 +93,7 @@ export async function build(
       handlerWatcher(resolvedUserConfig, compiler);
     }
   } catch (err) {
-    resolvedUserConfig.logger.error(`Failed to build: ${err}`, { exit: true });
+    logger.error(`Failed to build: ${err}`, { exit: true });
   }
 }
 

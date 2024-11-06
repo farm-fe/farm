@@ -242,6 +242,7 @@ export async function handlerWatcher(
   resolvedUserConfig: ResolvedUserConfig,
   compiler: Compiler
 ) {
+  const logger = resolvedUserConfig.logger;
   const watcher = new Watcher(resolvedUserConfig);
   await watcher.createWatcher();
   watcher.watcher.on('change', async (file: string | string[] | any) => {
@@ -285,9 +286,9 @@ export async function handlerWatcher(
       const start = performance.now();
       const result = await compiler.update([file], true);
       const elapsedTime = Math.floor(performance.now() - start);
-      resolvedUserConfig.logger.info(
+      logger.info(
         `update completed in ${bold(
-          green(`${elapsedTime}ms`)
+          green(`${logger.formatExecutionTime(elapsedTime)}ms`)
         )} Resources emitted to ${bold(
           green(resolvedUserConfig.compilation.output.path)
         )}.`
