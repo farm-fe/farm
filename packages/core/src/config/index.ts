@@ -147,8 +147,10 @@ export async function resolveConfig(
     rawConfig = mergeConfig(rawConfig, loadedUserConfig.config);
   }
 
-  const { jsPlugins, vitePlugins, rustPlugins, vitePluginAdapters } =
-    await resolvePlugins(rawConfig, compileMode);
+  const { jsPlugins, rustPlugins, vitePluginAdapters } = await resolvePlugins(
+    rawConfig,
+    compileMode
+  );
 
   const sortFarmJsPlugins = getSortedPlugins([
     ...jsPlugins,
@@ -203,18 +205,20 @@ async function handleLazyCompilation(
   config: ResolvedUserConfig,
   command: keyof typeof COMMANDS
 ) {
+  console.log(command);
+
   const commandHandlers = {
-    [COMMANDS.START]: async (cfg: ResolvedUserConfig) => {
+    [COMMANDS.START]: async (config: ResolvedUserConfig) => {
       if (
-        cfg.compilation.lazyCompilation &&
-        typeof cfg.server?.host === 'string'
+        config.compilation.lazyCompilation &&
+        typeof config.server?.host === 'string'
       ) {
-        await setLazyCompilationDefine(cfg);
+        await setLazyCompilationDefine(config);
       }
     },
-    [COMMANDS.WATCH]: async (cfg: ResolvedUserConfig) => {
-      if (cfg.compilation?.lazyCompilation) {
-        await setLazyCompilationDefine(cfg);
+    [COMMANDS.WATCH]: async (config: ResolvedUserConfig) => {
+      if (config.compilation?.lazyCompilation) {
+        await setLazyCompilationDefine(config);
       }
     }
   };
