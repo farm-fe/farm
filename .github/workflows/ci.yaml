@@ -189,6 +189,7 @@ jobs:
         settings:
           - name: plugin-sass
           - name: plugin-react
+          - name: plugin-replace-dirname
     steps:
       - uses: actions/download-artifact@v4
         with:
