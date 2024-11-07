@@ -460,6 +460,9 @@ importers:
 
   examples/decorators:
     dependencies:
+      '@swc/helpers':
+        specifier: ^0.5.0
+        version: 0.5.3
       core-js:
         specifier: ^3.33.3
         version: 3.33.3
@@ -902,7 +905,7 @@ importers:
         version: 5.1.3(@types/eslint@8.56.10)(eslint-config-prettier@9.1.0(eslint@8.57.0))(eslint@8.57.0)(prettier@3.3.2)
       farmup:
         specifier: latest
-        version: 0.1.2
+        version: 0.1.5
       jest:
         specifier: ^29.5.0
         version: 29.7.0(@types/node@20.12.12)(babel-plugin-macros@3.1.0)(ts-node@10.9.1(@swc/core@1.7.26(@swc/helpers@0.5.3))(@types/node@20.12.12)(typescript@5.4.5))
@@ -2096,7 +2099,7 @@ importers:
         version: 0.2.5(vue@2.6.14)
       tdesign-vue:
         specifier: latest
-        version: 1.10.0(vue@2.6.14)
+        version: 1.10.4(vue@2.6.14)
       vite-plugin-vue2-svg:
         specifier: ^0.4.0
         version: 0.4.0(ejs@3.1.10)(lodash@4.17.21)(vue-template-compiler@2.6.14(vue@2.6.14))
@@ -2130,7 +2133,7 @@ importers:
         version: 0.2.5(vue@2.7.16)
       tdesign-vue:
         specifier: latest
-        version: 1.10.0(vue@2.7.16)
+        version: 1.10.4(vue@2.7.16)
       vite-plugin-vue2-svg:
         specifier: ^0.4.0
         version: 0.4.0(ejs@3.1.10)(lodash@4.17.21)(vue-template-compiler@2.7.16(vue@2.7.16))
@@ -4700,7 +4703,7 @@ packages:
   '@css-render/vue3-ssr@0.15.14':
     resolution: {integrity: sha512-//8027GSbxE9n3QlD73xFY6z4ZbHbvrOVB7AO6hsmrEzGbg+h2A09HboUyDgu+xsmj7JnvJD39Irt+2D0+iV8g==}
     peerDependencies:
-      vue: 3.4.23
+      vue: ^3.0.11
 
   '@csstools/cascade-layer-name-parser@2.0.1':
     resolution: {integrity: sha512-G9ZYN5+yr/E6xYSiy1BwOEFP5p88ZtWo8sL4NztKBkRRAwRkzVGa70M+D+fYHugMID5jkLeNt5X9jYd5EaVuyg==}
@@ -12315,8 +12318,8 @@ packages:
   farm-plugin-remove-console@0.1.8:
     resolution: {integrity: sha512-t/QH2N97w2/VM4tj/hmnceU/95yYeORR5BnlWP91PherULRFhTVctECcC0JI33Psvyk06uSW4BuKgBPtktM5+w==}
 
-  farmup@0.1.2:
-    resolution: {integrity: sha512-mWdAVzyi3fnvL/ARNomH5jI8IahLAPuW9xg0BRSMO72qLrCI3w2hpOgmKfEiOJf742DRSvpH3Z3pcqAa32sLmw==}
+  farmup@0.1.5:
+    resolution: {integrity: sha512-LiO7ejtsD8GfRL6OXVSx9Y9h8wFp1nEw/RWydQe+zLN9W7xmPXWngi5TjzndYuqADBQi/93qD0aaZ4TYkoabiA==}
     hasBin: true
 
   fast-deep-equal@3.1.3:
@@ -18564,8 +18567,8 @@ packages:
     peerDependencies:
       vue: ^2.6.12
 
-  tdesign-vue@1.10.0:
-    resolution: {integrity: sha512-vhAkNCn/8+FQd3+DE91DzMBfvc38XK9ZHrwLYuKKyuVGE+BzRFOdWuvcNEdSCcJSalw3arK/h+aycsHqwGVQ8Q==}
+  tdesign-vue@1.10.4:
+    resolution: {integrity: sha512-ej4QgA/E9DsxlMzr1++pomREgpncniP1llMT2qGIkZ4vtpHJV3CjBIf6eDLtWTUWz3c8B5RM8lAqm2ZxSvGCEg==}
     peerDependencies:
       vue: ~2.6.10
 
@@ -34699,7 +34702,7 @@ snapshots:
       farm-plugin-remove-console-win32-ia32-msvc: 0.1.8
       farm-plugin-remove-console-win32-x64-msvc: 0.1.8
 
-  farmup@0.1.2:
+  farmup@0.1.5:
     dependencies:
       '@farmfe/core': link:packages/core
       tmp: 0.2.3
@@ -42350,7 +42353,7 @@ snapshots:
       classnames: 2.3.2
       vue: 2.7.16
 
-  tdesign-vue@1.10.0(vue@2.6.14):
+  tdesign-vue@1.10.4(vue@2.6.14):
     dependencies:
       '@babel/runtime': 7.23.2
       '@popperjs/core': 2.11.8
@@ -42372,7 +42375,7 @@ snapshots:
       validator: 13.11.0
       vue: 2.6.14
 
-  tdesign-vue@1.10.0(vue@2.7.16):
+  tdesign-vue@1.10.4(vue@2.7.16):
     dependencies:
       '@babel/runtime': 7.23.2
       '@popperjs/core': 2.11.8

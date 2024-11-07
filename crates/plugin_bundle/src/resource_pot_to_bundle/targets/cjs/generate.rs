@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use farmfe_core::{
   error::Result,
@@ -45,7 +45,6 @@ impl CjsGenerate {
     ctx: &ShareBundleContext,
   ) -> Result<Vec<ModuleItem>> {
     let mut stmts = vec![];
-
     let index_is_entry = |i: usize| {
       bundle_variable
         .module_id_by_var_index(i)
@@ -72,31 +71,33 @@ impl CjsGenerate {
       }))
     };
 
-    for exported in export
+    for (exported, local) in export
       .named
-      .keys()
-      .sorted_by_key(|a| bundle_variable.render_name(**a))
+      .iter()
+      .filter_map(|(exported, local)| {
+        if bundle_variable.var_by_index(*local).removed {
+          return None;
+        }
+
+        let should_reexport_uniq = index_is_entry(*local);
+
+        let named_render_name = bundle_variable.render_name(*local);
+        let exported_name = bundle_variable.name(*exported);
+
+        let exported_name = if should_reexport_uniq || named_render_name == exported_name {
+          None
+        } else {
+          Some(exported_name.as_str().into())
+        };
+
+        let exported_name = exported_name.unwrap_or(named_render_name.clone());
+
+        Some((exported_name, named_render_name))
+      })
+      .unique_by(|(a, _)| a.to_string())
+      .sorted_by_key(|(a, _)| a.to_string())
     {
-      let local = &export.named[exported];
-      if bundle_variable.var_by_index(*local).removed {
-        continue;
-      }
-
-      let should_reexport_uniq = index_is_entry(*local);
-
-      let named_render_name = bundle_variable.render_name(*local);
-      let exported_name = bundle_variable.name(*exported);
-
-      let exported_name = if should_reexport_uniq || named_render_name == exported_name {
-        None
-      } else {
-        Some(exported_name.as_str().into())
-      };
-
-      stmts.push(module_export(
-        exported_name.as_ref().unwrap_or(&named_render_name),
-        &named_render_name,
-      ));
+      stmts.push(module_export(&exported, &local));
     }
 
     if let Some(namespace) = export.namespace.as_ref() {
@@ -222,23 +223,6 @@ impl CjsGenerate {
         ),
       };
 
-      if import.named.is_empty() && import.namespace.is_none() && import.default.is_none() {
-        continue;
-      }
-
-      // import * as foo_ns from "foo";
-      // import foo from "foo";
-      // =>
-      // var foo_ns = _interop_require_wildcard(require("foo"));
-
-      let try_wrap_require_default = |expr: Box<Expr>, polyfill: &mut SimplePolyfill| {
-        if import.default.is_some() {
-          return wrap_require_default(expr, polyfill, ctx);
-        }
-
-        expr
-      };
-
       let source_bundle_id = module_analyzer_manager
         .module_analyzer(module_id)
         .map(|m| m.bundle_group_id.clone())
@@ -257,6 +241,32 @@ impl CjsGenerate {
           .namespace_name(module_id)
           .unwrap()
       });
+
+      let merged_import =
+        generate_import_specifies
+          .entry(url)
+          .or_insert_with(|| MergedImportGenerate {
+            specifies: vec![],
+            namespace_name: namespace_name.clone(),
+            is_contain_namespace: import.namespace.is_some(),
+          });
+
+      if import.named.is_empty() && import.namespace.is_none() && import.default.is_none() {
+        continue;
+      }
+
+      // import * as foo_ns from "foo";
+      // import foo from "foo";
+      // =>
+      // var foo_ns = _interop_require_wildcard(require("foo"));
+
+      let try_wrap_require_default = |expr: Box<Expr>, polyfill: &mut SimplePolyfill| {
+        if import.default.is_some() {
+          return wrap_require_default(expr, polyfill, ctx);
+        }
+
+        expr
+      };
 
       let mut decls: Vec<VarDeclarator> = vec![];
       let namespace_expr = Expr::Ident(namespace_name.as_str().into());
@@ -311,64 +321,71 @@ impl CjsGenerate {
         }
       }
 
-      if let Some(v) = generate_import_specifies.get_mut(&url) {
-        v.merge(MergedImportGenerate {
-          specifies: decls,
-          namespace_name,
-          is_contain_namespace: import.namespace.is_some(),
-        });
-      } else {
-        generate_import_specifies.insert(
-          url,
-          MergedImportGenerate {
-            specifies: decls,
-            namespace_name,
-            is_contain_namespace: import.namespace.is_some(),
-          },
-        );
-      }
+      merged_import.merge(MergedImportGenerate {
+        specifies: decls,
+        namespace_name,
+        is_contain_namespace: import.namespace.is_some(),
+      });
     }
 
-    for (url, merged_import_generate) in generate_import_specifies {
-      // if both namespace and default are imported, we need to import the namespace first
-      stmts.push(ModuleItem::Stmt(Stmt::Decl(Decl::Var(Box::new(VarDecl {
+    for (url, merged_import_generate) in generate_import_specifies
+      .into_iter()
+      .sorted_by_key(|(key, _)| key.to_string())
+    {
+      let execute_require = Box::new(Expr::Call(CallExpr {
         ctxt: SyntaxContext::empty(),
         span: DUMMY_SP,
-        kind: farmfe_core::swc_ecma_ast::VarDeclKind::Var,
-        declare: false,
-        decls: vec![VarDeclarator {
-          span: DUMMY_SP,
-          name: Pat::Ident(BindingIdent {
-            id: merged_import_generate.namespace_name.as_str().into(),
-            type_ann: None,
-          }),
-          init: Some(try_wrap_namespace(
-            Box::new(Expr::Call(CallExpr {
-              ctxt: SyntaxContext::empty(),
-              span: DUMMY_SP,
-              callee: Callee::Expr(Box::new(Expr::Ident("require".into()))),
-              args: vec![ExprOrSpread {
-                spread: None,
-                expr: Box::new(Expr::Lit(Lit::Str(url.as_str().into()))),
-              }],
-              type_args: None,
-            })),
-            polyfill,
-            merged_import_generate.is_contain_namespace,
-            ctx,
-          )),
-          definite: false,
+        callee: Callee::Expr(Box::new(Expr::Ident("require".into()))),
+        args: vec![ExprOrSpread {
+          spread: None,
+          expr: Box::new(Expr::Lit(Lit::Str(url.as_str().into()))),
         }],
-      })))));
+        type_args: None,
+      }));
 
-      if !merged_import_generate.specifies.is_empty() {
+      // import * as ns
+      // import { name }
+      if !merged_import_generate.specifies.is_empty() || merged_import_generate.is_contain_namespace
+      {
+        // if both namespace and default are imported, we need to import the namespace first
+        // const node_fs = require("node:fs")
+        // const readFile = node_fs.readFile;
         stmts.push(ModuleItem::Stmt(Stmt::Decl(Decl::Var(Box::new(VarDecl {
           ctxt: SyntaxContext::empty(),
           span: DUMMY_SP,
-          kind: VarDeclKind::Var,
+          kind: farmfe_core::swc_ecma_ast::VarDeclKind::Var,
           declare: false,
-          decls: merged_import_generate.specifies,
+          decls: vec![VarDeclarator {
+            span: DUMMY_SP,
+            name: Pat::Ident(BindingIdent {
+              id: merged_import_generate.namespace_name.as_str().into(),
+              type_ann: None,
+            }),
+            init: Some(try_wrap_namespace(
+              execute_require,
+              polyfill,
+              merged_import_generate.is_contain_namespace,
+              ctx,
+            )),
+            definite: false,
+          }],
         })))));
+
+        if !merged_import_generate.specifies.is_empty() {
+          stmts.push(ModuleItem::Stmt(Stmt::Decl(Decl::Var(Box::new(VarDecl {
+            ctxt: SyntaxContext::empty(),
+            span: DUMMY_SP,
+            kind: VarDeclKind::Var,
+            declare: false,
+            decls: merged_import_generate.specifies,
+          })))));
+        }
+      } else {
+        // import "node:fs"
+        stmts.push(ModuleItem::Stmt(Stmt::Expr(ExprStmt {
+          span: DUMMY_SP,
+          expr: execute_require,
+        })));
       }
     }
 

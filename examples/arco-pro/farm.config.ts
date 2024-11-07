@@ -22,7 +22,6 @@ export default defineConfig((env) => {
         }
       },
       // minify: false,
-      sourcemap: false,
       // mode: 'development',
       // persistentCache: false,
       output: {

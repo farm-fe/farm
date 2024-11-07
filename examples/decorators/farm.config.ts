@@ -24,7 +24,11 @@ export default defineConfig({
       targetEnv: 'library-node',
       entryFilename: '[entryName].mjs',
       filename: '[name].[hash].mjs',
+      format: 'esm'
     },
     treeShaking: false,
+    resolve: {
+      autoExternalFailedResolve: true,
+    }
   },
 });

@@ -269,14 +269,29 @@ impl<'a> BundleAnalyzer<'a> {
       for statement in &module_analyzer.statements {
         if let Some(import) = &statement.import {
           if import.specifiers.is_empty() {
-            let reference_kind = ReferenceKind::Module(import.source.clone());
-
             if module_analyzer_manager.is_same_bundle(module_id, &import.source) {
               continue;
             }
 
-            if module_analyzer_manager.is_commonjs(&import.source) {
-              bundle_reference1.execute_module_for_cjs(reference_kind);
+            let reference_kind = ReferenceKind::Module(import.source.clone());
+
+            // import 'module';
+            if module_analyzer_manager.is_commonjs(&import.source)
+              && !module_analyzer_manager.is_external(module_id)
+            {
+              if let Some(name) = module_analyzer_manager
+                .module_global_uniq_name
+                .commonjs_name(&import.source)
+              {
+                bundle_reference1.add_import(
+                  &ImportSpecifierInfo::Named {
+                    local: name,
+                    imported: None,
+                  },
+                  import.source.clone().into(),
+                  &self.bundle_variable.borrow_mut(),
+                )?;
+              }
             } else {
               bundle_reference1.add_execute_module(reference_kind);
             }
@@ -1450,12 +1465,4 @@ impl<'a> BundleAnalyzer<'a> {
 
     Ok(bundle)
   }
-}
-
-#[derive(Debug)]
-pub struct BundleRelation {
-  pub module_id: ModuleId,
-  pub resource_pot_id: ResourcePotId,
-  pub is_reference_by_another: bool,
-  pub specify: Vec<(ImportSpecifierInfo, FindModuleExportResult)>,
 }

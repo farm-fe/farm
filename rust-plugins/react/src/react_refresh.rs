@@ -32,37 +32,36 @@ lazy_static! {
   };
 }
 // polyfill like https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/src/refreshUtils.js
-
-
-/**
- *
- * ```js
- * Object.defineProperty(exports, "Foo", {
- *  get() {
- *    return Foo
- *  }
- * });
- *
- * Object.defineProperty(exports, "Bar", {
- *  get() {
- *    return Bar
- *  }
- * });
- *
- *
- *
- * // moduleA
- * const Foo = () => {}
- *
- * // ...
- * ReactRefreshUtil.registerExportsForReactRefresh(module.exports, module.id);
- * // Until here, `Bar` is still not initialized
- * // ...
- *
- * // moduleB
- * const Bar = () => {}
- * ```
-*/
+//
+//
+//
+// ```js
+// Object.defineProperty(exports, "Foo", {
+//  get() {
+//    return Foo
+//  }
+// });
+//
+// Object.defineProperty(exports, "Bar", {
+//  get() {
+//    return Bar
+//  }
+// });
+//
+//
+//
+// // moduleA
+// const Foo = () => {}
+//
+// // ...
+// ReactRefreshUtil.registerExportsForReactRefresh(module.exports, module.id);
+// // Until here, `Bar` is still not initialized
+// // ...
+//
+// // moduleB
+// const Bar = () => {}
+// ```
+//
 
 // When merging multiple modules, the exports will be promoted and contain side effects
 // so the getter cannot be triggered immediately when `registerExportsForReactRefresh`.
