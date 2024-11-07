@@ -403,7 +403,20 @@ const FarmConfigSchema = z
     vitePlugins: z.array(z.any()).optional(),
     compilation: compilationConfigSchema.optional(),
     mode: z.string().optional(),
-    watch: z.boolean().optional(),
+    watch: z
+      .union([
+        z.boolean(),
+        z.object({
+          // TODO watcher config schema
+          ignored: z.array(z.string()).optional(),
+          watchOptions: z
+            .object({
+              awaitWriteFinish: z.number().positive().int().optional()
+            })
+            .optional()
+        })
+      ])
+      .optional(),
     server: serverSchema.optional(),
     // TODO ANY type
     customLogger: z.any().optional()
