@@ -36,7 +36,8 @@ export async function start(
   const server = new Server(inlineConfig);
   try {
     await server.createServer();
-    server.listen();
+    await server.listen();
+    server.printUrls();
   } catch (error) {
     server.logger.error('Failed to start the server', { exit: false, error });
   }
