@@ -24,6 +24,9 @@ export default defineConfig({
     runtime: {
       isolate: true
     },
+    script: {
+      importNotUsedAsValues: 'remove',
+    },
     minify: false,
     mode: 'development',
     partialBundling: {
