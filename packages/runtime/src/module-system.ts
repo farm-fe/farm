@@ -147,7 +147,7 @@ export class ModuleSystem {
     return this.loadDynamicResources(moduleId);
   }
 
-  loadDynamicResources(moduleId: string, force = false): Promise<any> {
+  loadDynamicResourcesOnly(moduleId: string, force = false): Promise<any> {
     const resources = this.dynamicModuleResourcesMap[moduleId].map((index) => this.dynamicResources[index]);
 
     if (!resources || resources.length === 0) {
@@ -177,6 +177,12 @@ export class ModuleSystem {
         return this.resourceLoader.load(resource);
       }),
     )
+  }
+
+  loadDynamicResources(moduleId: string, force = false): Promise<any> {
+    const resources = this.dynamicModuleResourcesMap[moduleId].map((index) => this.dynamicResources[index]);
+  
+    return this.loadDynamicResourcesOnly(moduleId, force)
       .then(() => {
         // Do not require the module if all the resources are not js resources
         if (resources.every(resource => resource.type !== 0)) {

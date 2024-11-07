@@ -1,6 +1,16 @@
+import indexSync from './index-sync.js';
+
 // import { loadCompData } from "./components/comp1.js";
 // import dep1 from "./dep1.js";
 // import sync2 from "./sync2.js";
+
+const root = document.querySelector("#root");
+const div = document.createElement("div");
+div.innerHTML = `<div>
+indexSync: ${indexSync}
+</div>`;
+root.appendChild(div);
+
 import("./dynamic-entry.js");
 import("./dynamic-entry2.js");
 
