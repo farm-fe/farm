@@ -1,5 +1,4 @@
 import fs, { PathLike } from 'node:fs';
-import { WatchOptions } from 'chokidar';
 import connect from 'connect';
 import corsMiddleware from 'cors';
 

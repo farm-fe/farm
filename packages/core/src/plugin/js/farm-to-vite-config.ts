@@ -29,8 +29,6 @@ export function farmUserConfigToViteConfig(config: UserConfig): ViteUserConfig {
     publicDir: config.publicDir ?? 'public',
     mode: config.compilation?.mode,
     define: config.compilation?.define,
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-ignore ignore this error
     command: config.compilation?.mode === 'production' ? 'build' : 'serve',
     resolve: {
       alias: config.compilation?.resolve?.alias,

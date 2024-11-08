@@ -519,8 +519,7 @@ export const DEFAULT_HMR_OPTIONS: Required<HmrOptions> = {
   protocol: 'ws',
   clientPort: 9000,
   timeout: 0,
-  server: null,
-  channels: []
+  server: null
 };
 
 export const DEFAULT_DEV_SERVER_OPTIONS: NormalizedServerConfig = {

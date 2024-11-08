@@ -1,24 +1,14 @@
 import { SecureServerOptions } from 'node:http2';
+
 import { Server } from '../index.js';
 
 import type { OutgoingHttpHeaders } from 'http';
-import { WatchOptions } from 'chokidar';
+import type { WatchOptions } from 'chokidar';
 import type { RustPlugin } from '../plugin/rust/index.js';
 import type { JsPlugin } from '../plugin/type.js';
-import { HMRChannel } from '../server/hmr.js';
 import type { Config, CssConfig } from '../types/binding.js';
 import type { Logger } from '../utils/index.js';
 
-// export interface HmrOptions {
-//   protocol?: string;
-//   host?: string;
-//   port?: number;
-//   clientPort?: number;
-//   path?: string;
-//   timeout?: number;
-//   overlay?: boolean;
-//   server?: Server;
-// }
 export interface HmrOptions {
   protocol?: string;
   host?: string;
@@ -28,8 +18,6 @@ export interface HmrOptions {
   timeout?: number;
   overlay?: boolean;
   server?: Server;
-  /** @internal */
-  channels?: HMRChannel[];
 }
 
 export interface ConfigEnv {
