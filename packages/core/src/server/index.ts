@@ -84,7 +84,6 @@ export interface ServerOptions extends CommonServerOptions {
          */
         server: http.Server;
       };
-  origin?: string;
   appType?: 'spa' | 'mpa' | 'custom';
 }
 
