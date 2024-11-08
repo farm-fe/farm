@@ -56,7 +56,7 @@ export interface UserServerConfig {
   protocol?: 'http' | 'https';
   hostname?: { name: string; host: string | undefined };
   // http2?: boolean;
-  hmr?: boolean | UserHmrConfig;
+  hmr?: boolean | HmrOptions;
   proxy?: Record<string, any>;
   strictPort?: boolean;
   open?: boolean;
@@ -80,18 +80,13 @@ export interface UserPreviewServerConfig {
 
 export type NormalizedServerConfig = Required<
   Omit<UserServerConfig, 'hmr'> & {
-    hmr?: UserHmrConfig;
+    hmr?: HmrOptions;
   }
 >;
 
 export interface NormalizedConfig {
   compilationConfig: Config;
   serverConfig?: NormalizedServerConfig;
-}
-
-export interface UserHmrConfig extends HmrOptions {
-  watchOptions?: WatchOptions;
-  overlay?: boolean;
 }
 
 type InternalConfig = Config['config'] extends undefined
