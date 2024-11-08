@@ -7,9 +7,6 @@ import { config } from "process";
 console.log(__dirname);
 
 export default defineConfig((config) => {
-  console.log(config, "config");
-  console.log(loadEnv("development", process.cwd()), "loadEnv");
-  
   return {
     plugins: [
       react(),
@@ -36,16 +33,11 @@ export default defineConfig((config) => {
         alias: [{ find: "@", replacement: path.resolve("src") }],
       },
     },
-    timeUnit: "s",
     server: {
       port: 6858,
       // appType: "mpa",
     },
-  },
-  server: {
-    port: 4878,
-    appType: "mpa",
-  },
+  }
 });
 
 function myCustomPlugin() {

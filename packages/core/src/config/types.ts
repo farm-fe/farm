@@ -103,7 +103,7 @@ export interface UserConfig {
   root?: string;
   clearScreen?: boolean;
   envDir?: string;
-  watch?: boolean;
+  watch?: boolean | WatchOptions;
   envPrefix?: string | string[];
   publicDir?: string;
   /** js plugin(which is a javascript object) and rust plugin(which is string refer to a .farm file or a package) */
