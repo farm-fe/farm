@@ -99,7 +99,7 @@ const COMMANDS = {
  * @param configPath
  */
 export async function resolveConfig(
-  inlineOptions: FarmCliOptions & UserConfig,
+  inlineOptions: FarmCliOptions & UserConfig & any,
   command: 'start' | 'build' | 'watch' | 'preview',
   defaultMode: CompilationMode = 'development',
   defaultNodeEnv: CompilationMode = 'development',
