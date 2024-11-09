@@ -324,6 +324,8 @@ export class Server extends httpServer {
     } else {
       __FARM_GLOBAL__.__FARM_SHOW_DEV_SERVER_URL__ = false;
     }
+
+    newServer.printUrls();
   }
 
   /**
@@ -357,7 +359,6 @@ export class Server extends httpServer {
     }
     await this.watcher.close();
     await newServer.listen();
-    this.logger.info(bold(green('Server restarted successfully ✨ ✨')));
     return newServer;
   }
 
@@ -424,8 +425,6 @@ export class Server extends httpServer {
       if (open) {
         this.#openServerBrowser();
       }
-
-      __FARM_GLOBAL__.__FARM_SHOW_DEV_SERVER_URL__ && this.printUrls();
     } catch (error) {
       this.resolvedUserConfig.logger.error(
         `start farm dev server error: ${error} \n ${error.stack}`
@@ -740,6 +739,9 @@ export class Server extends httpServer {
   }
 
   printUrls() {
+    if (!__FARM_GLOBAL__.__FARM_SHOW_DEV_SERVER_URL__) {
+      return;
+    }
     if (this.resolvedUrls) {
       printServerUrls(
         this.resolvedUrls,
