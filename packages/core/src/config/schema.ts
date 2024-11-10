@@ -66,6 +66,26 @@ const outputSchema = z
   .strict()
   .optional();
 
+const previewServerSchema = z
+  .object({
+    headers: z.union([z.custom<OutgoingHttpHeaders>(), z.boolean()]).optional(),
+    host: z
+      .union([
+        z.string().regex(/^\d{1,3}\.\d{1,3}$/),
+        z.literal('localhost'),
+        z.boolean()
+      ])
+      .optional(),
+    port: z.number().positive().int().optional(),
+    strictPort: z.boolean().optional(),
+    https: z.custom<SecureServerOptions>(),
+    distDir: z.string().optional(),
+    open: z.boolean().optional(),
+    // TODO: CORS types
+    cors: z.union([z.boolean(), z.any()]).optional()
+  })
+  .strict();
+
 const serverSchema = z
   .object({
     headers: z.record(z.string()).optional(),
@@ -153,27 +173,8 @@ const serverSchema = z
       .optional(),
     middlewares: z.array(z.any()).optional(),
     middlewareMode: z.boolean().optional(),
-    writeToDisk: z.boolean().optional()
-  })
-  .strict();
-
-const previewServerSchema = z
-  .object({
-    headers: z.union([z.custom<OutgoingHttpHeaders>(), z.boolean()]).optional(),
-    host: z
-      .union([
-        z.string().regex(/^\d{1,3}\.\d{1,3}$/),
-        z.literal('localhost'),
-        z.boolean()
-      ])
-      .optional(),
-    port: z.number().positive().int().optional(),
-    strictPort: z.boolean().optional(),
-    https: z.custom<SecureServerOptions>(),
-    distDir: z.string().optional(),
-    open: z.boolean().optional(),
-    // TODO: CORS types
-    cors: z.union([z.boolean(), z.any()]).optional()
+    writeToDisk: z.boolean().optional(),
+    preview: previewServerSchema.optional()
   })
   .strict();
 
@@ -427,8 +428,7 @@ const FarmConfigSchema = z
     mode: z.string().optional(),
     watch: z.boolean().optional(),
     server: serverSchema.optional(),
-    preview: previewServerSchema.optional(),
-    customLogger: z.custom<Logger>((val) => val instanceof Logger).optional()
+    customLogger: z.instanceof(Logger).optional()
   })
   .strict();
 
