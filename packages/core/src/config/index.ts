@@ -556,7 +556,17 @@ export const DEFAULT_DEV_SERVER_OPTIONS: NormalizedServerConfig = {
   cors: false,
   middlewares: [],
   appType: 'spa',
-  writeToDisk: false
+  writeToDisk: false,
+  preview: {
+    host: 'localhost',
+    headers: {},
+    port: 1911,
+    strictPort: false,
+    https: undefined,
+    distDir: 'dist',
+    open: false,
+    cors: false
+  }
 };
 
 export const DEFAULT_COMPILATION_OPTIONS: Partial<ResolvedCompilation> = {
@@ -1086,7 +1096,7 @@ export function getFormat(configFilePath: string): Format {
     ? 'cjs'
     : process.env.FARM_CONFIG_FORMAT === 'esm'
       ? 'esm'
-      : formatFromExt[path.extname(configFilePath).slice(1)] ?? 'esm';
+      : (formatFromExt[path.extname(configFilePath).slice(1)] ?? 'esm');
 }
 
 export function getFilePath(outputPath: string, fileName: string): string {

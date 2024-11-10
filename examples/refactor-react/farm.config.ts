@@ -9,7 +9,7 @@ console.log(__dirname);
 export default defineConfig((config) => {
   console.log(config, "config");
   console.log(loadEnv("development", process.cwd()), "loadEnv");
-  
+
   return {
     plugins: [
       react(),
@@ -39,10 +39,10 @@ export default defineConfig((config) => {
     server: {
       port: 4855,
       appType: "mpa",
+      preview: {
+        port: 3691,
+      }
     },
-    preview: {
-      port: 3691,
-    }
   }
 });
 

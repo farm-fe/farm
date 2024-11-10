@@ -48,7 +48,7 @@ export async function resolveServerUrls(
   if (!isAddressInfo(address)) {
     return { local: [], network: [] };
   }
-  const serverOptions = type == 'dev' ? config.server : config.preview;
+  const serverOptions = type == 'dev' ? config.server : config.server.preview;
   const local: string[] = [];
   const network: string[] = [];
   const hostname = await resolveHostname(serverOptions.host);

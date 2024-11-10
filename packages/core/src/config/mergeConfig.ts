@@ -63,7 +63,6 @@ export function mergeFarmCliConfig(
       'plugins',
       'publicDir',
       'server',
-      'preview',
       'vitePlugins'
     ] satisfies (keyof UserConfig)[]
   ).forEach((key: keyof (FarmCliOptions & UserConfig)) => {

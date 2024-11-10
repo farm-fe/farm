@@ -67,6 +67,8 @@ export interface UserServerConfig {
   middlewares?: DevServerMiddleware[];
   middlewareMode?: boolean | string;
   writeToDisk?: boolean;
+  /** Preview server config */
+  preview?: UserPreviewServerConfig;
 }
 
 /** Preview server configs */
@@ -168,8 +170,6 @@ export interface UserConfig {
   compilation?: Pick<InternalConfig, AvailableUserConfigKeys>;
   /** Config related to dev server */
   server?: UserServerConfig;
-  /** Config related to preview server */
-  preview?: UserPreviewServerConfig;
   /** Files under this dir will always be treated as static assets. serve it in dev, and copy it to output.path when build */
   customLogger?: Logger;
 }

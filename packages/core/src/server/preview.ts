@@ -119,10 +119,10 @@ export class PreviewServer extends httpServer {
    */
   async #resolveOptions(): Promise<void> {
     const {
-      preview,
       server,
       compilation: { root, output }
     } = this.resolvedUserConfig;
+    const preview = server?.preview;
 
     const distDir =
       preview?.distDir || path.isAbsolute(output?.path)
