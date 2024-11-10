@@ -443,11 +443,11 @@ impl JsCompiler {
 
     let watch_graph = context.watch_graph.read();
 
-    return watch_graph
+    watch_graph
       .modules()
       .into_iter()
       .map(|id| id.resolved_path(&context.config.root))
-      .collect();
+      .collect()
   }
 
   #[napi]

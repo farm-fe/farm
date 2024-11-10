@@ -8,6 +8,14 @@
 
 ## 2.0.0-nightly-20241029095811
 
+## 1.3.32
+
+### Patch Changes
+
+- 3ae860bd: fix plugin circle call between Runtime & LazyCompilation, fix runtime & lazyCompilation conflict
+
+## 1.3.31
+
 ### Patch Changes
 
 - b3a7caf: fix css url resolving issue

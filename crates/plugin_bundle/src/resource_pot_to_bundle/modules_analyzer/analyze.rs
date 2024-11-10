@@ -7,7 +7,7 @@ use farmfe_core::{
   swc_common::Mark,
   swc_ecma_ast::{
     self, DefaultDecl, ExportDecl, Expr, Ident, ImportSpecifier, ModuleDecl, ModuleExportName,
-    ModuleItem,
+    ModuleItem, Pat,
   },
 };
 use farmfe_toolkit::swc_ecma_visit::{Visit, VisitWith};
@@ -41,7 +41,7 @@ impl Visit for CollectUnresolvedIdent {
   }
 }
 
-type RegisterVarHandle<'a> = Box<&'a mut dyn FnMut(&Ident, bool) -> usize>;
+type RegisterVarHandle<'a> = Box<&'a mut dyn FnMut(&Ident, bool, bool) -> usize>;
 
 struct AnalyzeModuleItem<'a> {
   id: StatementId,
@@ -52,11 +52,12 @@ struct AnalyzeModuleItem<'a> {
   module_graph: &'a ModuleGraph,
   _register_var: RegisterVarHandle<'a>,
   is_in_export: bool,
+  is_collect_ident: bool,
   top_level_mark: Mark,
 }
 
 impl<'a> AnalyzeModuleItem<'a> {
-  fn new<F: FnMut(&Ident, bool) -> usize>(
+  fn new<F: FnMut(&Ident, bool, bool) -> usize>(
     id: StatementId,
     module_graph: &'a ModuleGraph,
     module_id: &'a ModuleId,
@@ -73,6 +74,7 @@ impl<'a> AnalyzeModuleItem<'a> {
       _register_var: Box::new(register_var),
       is_in_export: false,
       top_level_mark,
+      is_collect_ident: false,
     }
   }
 
@@ -112,8 +114,25 @@ impl<'a> AnalyzeModuleItem<'a> {
     self.is_in_export = is_in_export;
   }
 
+  fn with_collect_ident<F: Fn(&mut Self)>(&mut self, v: bool, f: F) {
+    let is_collect_ident = self.is_collect_ident;
+    self.is_collect_ident = v;
+    f(self);
+    self.is_collect_ident = is_collect_ident;
+  }
+
+  fn is_strict(&self, ident: &Ident, default_strict: bool) -> bool {
+    default_strict || ident.ctxt.outer() != self.top_level_mark
+  }
+
   fn register_var(&mut self, ident: &Ident, strict: bool) -> usize {
-    self._register_var.as_mut()(ident, strict || ident.ctxt.outer() != self.top_level_mark)
+    let strict = self.is_strict(ident, strict);
+    self._register_var.as_mut()(ident, strict, false)
+  }
+
+  fn register_placeholder(&mut self, ident: &Ident) -> usize {
+    let strict = self.is_strict(ident, false);
+    self._register_var.as_mut()(ident, strict, true)
   }
 }
 
@@ -240,18 +259,19 @@ impl<'a> Visit for AnalyzeModuleItem<'a> {
         for specifier in &export_named.specifiers {
           match specifier {
             swc_ecma_ast::ExportSpecifier::Named(named) => {
-              let local = match &named.orig {
+              let org = match &named.orig {
                 ModuleExportName::Ident(i) => i.clone(),
                 ModuleExportName::Str(_) => unimplemented!("exporting a string is not supported"),
               };
+              let exported = named.exported.as_ref().map(|i| match i {
+                ModuleExportName::Ident(i) => i.clone(),
+                ModuleExportName::Str(_) => unimplemented!("exporting a string is not supported"),
+              });
 
               specifiers.push(ExportSpecifierInfo::Named(
                 (
-                  self.register_var(&local, false),
-                  named.exported.as_ref().map(|i| match i {
-                    ModuleExportName::Ident(i) => self.register_var(i, false),
-                    _ => panic!("non-ident exported is not supported when tree shaking"),
-                  }),
+                  self.register_var(&org, false),
+                  exported.as_ref().map(|i| self.register_var(i, false)),
                 )
                   .into(),
               ));
@@ -374,9 +394,34 @@ impl<'a> Visit for AnalyzeModuleItem<'a> {
 
     n.class.visit_with(self);
   }
+
+  // fn visit_arrow_expr(&mut self, n: &swc_ecma_ast::ArrowExpr) {}
+
+  fn visit_ident(&mut self, n: &Ident) {
+    if self.is_collect_ident {
+      let index = self.register_placeholder(n);
+      self.defined_idents.insert(index);
+    }
+  }
+
+  fn visit_pat(&mut self, n: &swc_ecma_ast::Pat) {
+    match n {
+      Pat::Assign(assign) => {
+        self.with_collect_ident(true, |this| assign.left.visit_with(this));
+      }
+
+      Pat::Ident(ident) => {
+        self.with_collect_ident(true, |this| ident.visit_with(this));
+      }
+
+      _ => {
+        n.visit_children_with(self);
+      }
+    }
+  }
 }
 
-pub fn analyze_imports_and_exports<F: FnMut(&Ident, bool) -> usize>(
+pub fn analyze_imports_and_exports<F: FnMut(&Ident, bool, bool) -> usize>(
   id: StatementId,
   stmt: &ModuleItem,
   module_id: &ModuleId,

@@ -17,7 +17,6 @@ use farmfe_toolkit::{
   common::PathFilter,
   swc_ecma_visit::{VisitMut, VisitMutWith},
 };
-use serde;
 
 #[farm_plugin]
 pub struct FarmPluginReplaceDirname {
@@ -57,7 +56,7 @@ impl Plugin for FarmPluginReplaceDirname {
     _: &Arc<CompilationContext>,
   ) -> Result<Option<()>, CompilationError> {
     let filter = PathFilter::new(&self.options.include, &self.options.exclude);
-    if !filter.execute(&param.module_id.relative_path()) {
+    if !filter.execute(param.module_id.relative_path()) {
       return Ok(None);
     }
 
@@ -81,7 +80,7 @@ pub fn replace_dirname_with_ast(ast: &mut Module, dir_path: &str, file_path: &st
     file_path: &'a str,
   }
 
-  impl<'a> VisitMut for ReplaceLibVisitor<'a> {
+  impl VisitMut for ReplaceLibVisitor<'_> {
     fn visit_mut_expr(&mut self, expr: &mut Expr) {
       match expr {
         Expr::Ident(ident) => match &*ident.sym {
@@ -106,7 +105,7 @@ pub fn replace_dirname_with_ast(ast: &mut Module, dir_path: &str, file_path: &st
             if meta_prop.kind == swc_ecma_ast::MetaPropKind::ImportMeta {
               if let MemberProp::Ident(ident) = &prop {
                 if ident.sym == "url" {
-                  if let Ok(file_path) = Url::from_file_path(&self.file_path) {
+                  if let Ok(file_path) = Url::from_file_path(self.file_path) {
                     *expr = Expr::Lit(Lit::Str(Str {
                       value: file_path.to_string().into(),
                       span: DUMMY_SP,

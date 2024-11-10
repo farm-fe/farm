@@ -152,10 +152,9 @@ export interface UserConfig {
   root?: string;
   clearScreen?: boolean;
   envDir?: string;
-  watch?: boolean;
+  watch?: boolean | WatchOptions;
   envPrefix?: string | string[];
   publicDir?: string;
-  timeUnit?: 'ms' | 's';
   /** js plugin(which is a javascript object) and rust plugin(which is string refer to a .farm file or a package) */
   plugins?: (RustPlugin | JsPlugin | JsPlugin[] | undefined | null | false)[];
   /** vite plugins */
@@ -172,7 +171,7 @@ export interface UserConfig {
   /** Config related to preview server */
   preview?: UserPreviewServerConfig;
   /** Files under this dir will always be treated as static assets. serve it in dev, and copy it to output.path when build */
-  logger?: Logger;
+  customLogger?: Logger;
 }
 
 interface ResolvedCss extends CssConfig {
@@ -199,15 +198,14 @@ export interface ResolvedCompilation
 }
 
 export interface ResolvedUserConfig extends UserConfig {
-  // watch?: boolean;
-  // root?: string;
+  root?: string;
+  mode?: string;
   env?: Record<string, any>;
   envDir?: string;
   envFiles?: string[];
   envPrefix?: string | string[];
   configFilePath?: string;
   envMode?: string;
-  timeUnit?: 'ms' | 's';
   configFileDependencies?: string[];
   compilation?: ResolvedCompilation;
   server?: NormalizedServerConfig;
@@ -215,7 +213,8 @@ export interface ResolvedUserConfig extends UserConfig {
   rustPlugins?: [string, string][];
   inlineConfig?: FarmCliOptions;
   logger?: Logger;
-  watch?: boolean;
+  customLogger?: Logger;
+  watch?: boolean | WatchOptions;
 }
 
 export interface GlobalCliOptions {
@@ -251,11 +250,8 @@ export interface FarmCLIPreviewOptions {
 export interface FarmCliOptions
   extends FarmCLIBuildOptions,
     FarmCLIPreviewOptions {
-  logger?: Logger;
   config?: string;
   configFile?: string;
-  // todo: check to delete
-  configPath?: string;
   compilation?: Config['config'];
   mode?: string;
   root?: string;
@@ -266,7 +262,6 @@ export interface FarmCliOptions
 export type DevServerMiddleware = (context: Server) => any | undefined;
 
 export interface Alias {
-  // TODO support RegExp
   find: string;
   replacement: string;
 }

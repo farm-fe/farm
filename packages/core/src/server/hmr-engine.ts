@@ -8,7 +8,7 @@ import type { Resource } from '@farmfe/runtime/src/resource-loader.js';
 import { UserHmrConfig } from '../config/index.js';
 import type { JsUpdateResult } from '../types/binding.js';
 import { convertErrorMessage } from '../utils/error.js';
-import { bold, cyan, formatExecutionTime, green } from '../utils/index.js';
+import { bold, cyan, green } from '../utils/index.js';
 import { WebSocketClient } from './ws.js';
 
 export class HmrEngine {
@@ -47,7 +47,7 @@ export class HmrEngine {
     if (queue.length === 0) {
       return;
     }
-
+    const logger = this.app.logger;
     let updatedFilesStr = queue
       .map((item) => {
         if (isAbsolute(item)) {
@@ -82,16 +82,8 @@ export class HmrEngine {
 
     const result = await this.app.compiler.update(queue);
 
-    this.app.logger.info(
-      `${bold(cyan(updatedFilesStr))} updated in ${bold(
-        green(
-          formatExecutionTime(
-            performance.now() - start,
-            this.app.resolvedUserConfig.timeUnit
-          )
-        )
-      )}`,
-      true
+    logger.info(
+      `${bold(cyan(updatedFilesStr))} updated in ${bold(green(logger.formatExecutionTime(performance.now() - start)))}`
     );
 
     // clear update queue after update finished

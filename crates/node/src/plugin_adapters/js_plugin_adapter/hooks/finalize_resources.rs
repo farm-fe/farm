@@ -21,7 +21,7 @@ pub struct JsPluginFinalizeResourcesHookParams {
   pub config: farmfe_core::config::Config,
 }
 
-impl<'a> From<&mut PluginFinalizeResourcesHookParams<'a>> for JsPluginFinalizeResourcesHookParams {
+impl From<&mut PluginFinalizeResourcesHookParams<'_>> for JsPluginFinalizeResourcesHookParams {
   fn from(value: &mut PluginFinalizeResourcesHookParams) -> Self {
     Self {
       resources_map: value.resources_map.clone(),
