@@ -106,6 +106,7 @@ export interface UserPreviewServerConfig {
    * If not specified, farm will try to resolve
    * the dist directory from `compilation.output.path`.
    * If the path is relative, this will be relative to `root`.
+   *
    * Defaults to `dist` if nothing specified.
    */
   distDir?: string;
