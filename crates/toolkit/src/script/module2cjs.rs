@@ -1,5 +1,9 @@
 use std::{collections::HashMap, ffi::OsStr};
 
+use crate::{
+  script::defined_idents_collector::DefinedIdentsCollector,
+  swc_ecma_visit::{noop_visit_mut_type, VisitMut, VisitMutWith, VisitWith},
+};
 use farmfe_core::{
   regex::Regex,
   swc_common::{util::take::Take, Mark, SyntaxContext, DUMMY_SP},
@@ -12,10 +16,162 @@ use farmfe_core::{
     ReturnStmt, SimpleAssignTarget, Stmt, Str, VarDecl, VarDeclKind, VarDeclarator,
   },
 };
-use farmfe_toolkit::{
-  script::defined_idents_collector::DefinedIdentsCollector,
-  swc_ecma_visit::{noop_visit_mut_type, VisitMut, VisitMutWith, VisitWith},
-};
+
+///
+/// only return fn name
+///
+pub trait RuntimeCalleeAllocator {
+  ///
+  /// ```js
+  /// Object.defineProperty(to, to_k, {
+  ///   enumerable: true,
+  ///   get
+  /// });
+  ///
+  /// ```
+  /// ```ts
+  /// #fn(target: object, to_k: string, get: () => any);
+  /// ```
+  ///
+  fn define_property_callee(&self) -> Box<Expr> {
+    unimplemented!()
+  }
+
+  ///
+  /// ```js
+  /// exports.xx = xx
+  /// ```
+  ///
+  /// ```ts
+  /// #fn(to: object, to_k: string, val: any)
+  /// ```
+  ///
+  fn cjs_export_named_callee(&self) -> Box<Expr> {
+    unimplemented!()
+  }
+
+  ///
+  /// ```js
+  /// Object.defineProperty(target, "__esModule", {
+  ///   value: true,
+  /// })
+  /// ```
+  ///
+  /// ```js
+  /// #fn(target: Object)
+  /// ```
+  ///
+  fn es_module_flag_callee(&self) -> Box<Expr> {
+    unimplemented!()
+  }
+
+  ///
+  /// ```js
+  /// `export * from`
+  /// ```
+  ///
+  /// ```ts
+  /// #fn(to: object, from: object)
+  /// ```
+  ///
+  fn export_star_callee(&self) -> Box<Expr> {
+    unimplemented!()
+  }
+
+  ///
+  /// ```js
+  /// `import default from`
+  /// ```
+  ///
+  /// ```ts
+  /// #fn(obj: object).default
+  /// ```
+  ///
+  fn import_default_callee(&self) -> Box<Expr> {
+    unimplemented!()
+  }
+
+  ///
+  /// ```js
+  /// `import * as ns from`
+  /// ```
+  ///
+  /// ```ts
+  /// #fn(obj: object, nodeInterop: any);
+  /// ```
+  ///
+  fn import_namespace_callee(&self) -> Box<Expr> {
+    unimplemented!()
+  }
+
+  ///
+  /// ```js
+  /// export { xx } from "helper"
+  /// ```
+  ///
+  /// ```ts
+  /// #fn(target: object, to_k: string, from_k: string);
+  /// ```
+  ///
+  fn esm_export_named_callee(&self) -> Box<Expr> {
+    unimplemented!()
+  }
+
+  /// xxx.default
+  fn interop_default(&self) -> Box<Expr> {
+    unimplemented!()
+  }
+}
+
+pub struct OriginalRuntimeCallee {
+  pub unresolved_mark: Mark,
+}
+
+fn create_module_member_expr(ident: &str, unresolved_mark: Mark) -> Expr {
+  Expr::Member(MemberExpr {
+    span: DUMMY_SP,
+    obj: Box::new(Expr::Ident(Ident::new(
+      FARM_MODULE_SYSTEM_MODULE.into(),
+      DUMMY_SP,
+      SyntaxContext::empty().apply_mark(unresolved_mark),
+    ))),
+    prop: MemberProp::Ident(ident.into()),
+  })
+}
+
+impl RuntimeCalleeAllocator for OriginalRuntimeCallee {
+  fn define_property_callee(&self) -> Box<Expr> {
+    Box::new(create_module_member_expr("o", self.unresolved_mark))
+  }
+
+  fn es_module_flag_callee(&self) -> Box<Expr> {
+    Box::new(create_module_member_expr("_m", self.unresolved_mark))
+  }
+
+  fn export_star_callee(&self) -> Box<Expr> {
+    Box::new(create_module_member_expr("_e", self.unresolved_mark))
+  }
+
+  fn esm_export_named_callee(&self) -> Box<Expr> {
+    Box::new(create_module_member_expr("_", self.unresolved_mark))
+  }
+
+  fn import_namespace_callee(&self) -> Box<Expr> {
+    Box::new(create_module_member_expr("w", self.unresolved_mark))
+  }
+
+  fn cjs_export_named_callee(&self) -> Box<Expr> {
+    Box::new(create_module_member_expr("d", self.unresolved_mark))
+  }
+
+  fn interop_default(&self) -> Box<Expr> {
+    Box::new(create_module_member_expr("f", self.unresolved_mark))
+  }
+
+  fn import_default_callee(&self) -> Box<Expr> {
+    Box::new(create_module_member_expr("i", self.unresolved_mark))
+  }
+}
 
 const FARM_MODULE_SYSTEM_MODULE: &str = "module";
 const FARM_MODULE_SYSTEM_REQUIRE: &str = "require";
@@ -61,9 +217,10 @@ pub struct TransformModuleDeclsOptions {
 /// module._e(exports, require("./d"));
 ///
 /// ```
-pub fn transform_module_decls(
+pub fn transform_module_decls<F: RuntimeCalleeAllocator>(
   ast: &mut SwcModule,
   unresolved_mark: Mark,
+  callee_allocator: &F,
   options: TransformModuleDeclsOptions,
 ) {
   let mut items = vec![];
@@ -83,22 +240,30 @@ pub fn transform_module_decls(
             import_items.extend(transform_import_decl(
               import_decl,
               unresolved_mark,
+              callee_allocator,
               &mut import_bindings_map,
             ));
           }
           ModuleDecl::ExportDecl(export_decl) => {
-            let export = transform_export_decl(export_decl, unresolved_mark, &options);
+            let export =
+              transform_export_decl(export_decl, callee_allocator, unresolved_mark, &options);
             items.extend(export.declare_items);
             export_items.extend(export.export_items);
           }
           ModuleDecl::ExportNamed(export_named) => {
-            let export = transform_export_named(export_named, unresolved_mark, &options);
+            let export =
+              transform_export_named(export_named, unresolved_mark, callee_allocator, &options);
 
             items.extend(export.declare_items);
             export_items.extend(export.export_items);
           }
           ModuleDecl::ExportDefaultDecl(default_decl) => {
-            let export = transform_export_default_decl(default_decl, unresolved_mark, &options);
+            let export = transform_export_default_decl(
+              default_decl,
+              callee_allocator,
+              unresolved_mark,
+              &options,
+            );
             items.extend(export.declare_items);
             export_items.extend(export.export_items);
           }
@@ -106,13 +271,18 @@ pub fn transform_module_decls(
             items.extend(transform_export_default_expr(export_expr, unresolved_mark));
           }
           ModuleDecl::ExportAll(export_all) => {
-            items.extend(transform_export_all(export_all, unresolved_mark));
+            items.extend(transform_export_all(
+              export_all,
+              callee_allocator,
+              unresolved_mark,
+            ));
           }
           ModuleDecl::TsImportEquals(_)
           | ModuleDecl::TsExportAssignment(_)
           | ModuleDecl::TsNamespaceExport(_) => unreachable!(),
         }
       }
+
       ModuleItem::Stmt(stmt) => items.push(ModuleItem::Stmt(stmt)),
     }
   }
@@ -136,7 +306,7 @@ pub fn transform_module_decls(
         span: DUMMY_SP,
         expr: Box::new(Expr::Call(CallExpr {
           span: DUMMY_SP,
-          callee: create_module_helper_callee("_m", unresolved_mark),
+          callee: Callee::Expr(callee_allocator.es_module_flag_callee()),
           args: vec![ExprOrSpread {
             spread: None,
             expr: Box::new(Expr::Ident(create_exports_ident(unresolved_mark))),
@@ -154,6 +324,7 @@ pub fn transform_module_decls(
 fn transform_import_decl(
   import_decl: ImportDecl,
   unresolved_mark: Mark,
+  callee_allocator: &dyn RuntimeCalleeAllocator,
   import_bindings_map: &mut HashMap<Id, Expr>,
 ) -> Vec<ModuleItem> {
   let mut items = vec![];
@@ -198,19 +369,18 @@ fn transform_import_decl(
         contains_default = true;
         // module.f(val_name_ident)
         let init = create_module_helper_call_expr(
-          "f",
+          callee_allocator.interop_default(),
           vec![ExprOrSpread {
             spread: None,
             expr: Box::new(Expr::Ident(val_name_ident.clone())),
           }],
-          unresolved_mark,
         );
 
         import_bindings_map.insert(specifier.local.to_id(), Expr::Call(init));
       }
       ImportSpecifier::Namespace(specifier) => {
         items.push(create_module_helper_item(
-          "w",
+          callee_allocator.import_namespace_callee(),
           val_name_ident.clone(),
           *import_decl.src.clone(),
           unresolved_mark,
@@ -225,14 +395,14 @@ fn transform_import_decl(
 
   if contains_named && contains_default {
     items.push(create_module_helper_item(
-      "w",
+      callee_allocator.import_namespace_callee(),
       val_name_ident.clone(),
       *import_decl.src.clone(),
       unresolved_mark,
     ));
   } else if contains_default {
     items.push(create_module_helper_item(
-      "i",
+      callee_allocator.import_default_callee(),
       val_name_ident.clone(),
       *import_decl.src.clone(),
       unresolved_mark,
@@ -250,6 +420,7 @@ fn transform_import_decl(
 
 fn transform_export_decl(
   export_decl: ExportDecl,
+  callee_allocator: &dyn RuntimeCalleeAllocator,
   unresolved_mark: Mark,
   options: &TransformModuleDeclsOptions,
 ) -> ExportModuleItem {
@@ -264,6 +435,7 @@ fn transform_export_decl(
         Some(class_decl.ident.clone()),
         class_decl.ident,
         class_decl.class,
+        callee_allocator,
         unresolved_mark,
         options.is_target_legacy,
       )
@@ -273,6 +445,7 @@ fn transform_export_decl(
         Some(fn_decl.ident.clone()),
         fn_decl.ident,
         fn_decl.function,
+        callee_allocator,
         unresolved_mark,
         options.is_target_legacy,
       )
@@ -293,6 +466,7 @@ fn transform_export_decl(
           let call_expr = create_define_export_property_ident_call_expr(
             None,
             ident,
+            callee_allocator,
             unresolved_mark,
             options.is_target_legacy,
           );
@@ -317,6 +491,7 @@ fn transform_export_decl(
 fn transform_export_named(
   named_export: NamedExport,
   unresolved_mark: Mark,
+  callee_allocator: &dyn RuntimeCalleeAllocator,
   options: &TransformModuleDeclsOptions,
 ) -> ExportModuleItem {
   let mut items = vec![];
@@ -335,13 +510,14 @@ fn transform_export_named(
         let call_expr = create_define_export_property_ident_call_expr(
           Some(ident.to_id()),
           ident.to_id(),
+          callee_allocator,
           unresolved_mark,
           options.is_target_legacy,
         );
         export_items.push(create_module_item_from_call_expr(call_expr));
         // var ident = module.w(require(src))
         items.push(create_module_helper_item(
-          "w",
+          callee_allocator.import_namespace_callee(),
           ident,
           *named_export.src.clone().unwrap(),
           unresolved_mark,
@@ -399,13 +575,15 @@ fn transform_export_named(
 
           cached_export_from_item = Some(export_from_ident);
           // module._(exports, exported_ident, export_from_ident, local_ident)
-          let call_expr = create_module_helper_call_expr("_", args, unresolved_mark);
+          let call_expr =
+            create_module_helper_call_expr(callee_allocator.esm_export_named_callee(), args);
 
           extra_items.push(create_module_item_from_call_expr(call_expr));
         } else {
           let call_expr = create_define_export_property_ident_call_expr(
             Some(exported_ident.to_id()),
             local_ident.to_id(),
+            callee_allocator,
             unresolved_mark,
             options.is_target_legacy,
           );
@@ -421,14 +599,14 @@ fn transform_export_named(
   if let Some(export_from_ident) = cached_export_from_item {
     if contains_named && contains_default {
       items.push(create_module_helper_item(
-        "w",
+        callee_allocator.import_namespace_callee(),
         export_from_ident.clone(),
         *named_export.src.clone().unwrap(),
         unresolved_mark,
       ));
     } else if contains_default {
       items.push(create_module_helper_item(
-        "i",
+        callee_allocator.import_default_callee(),
         export_from_ident.clone(),
         *named_export.src.clone().unwrap(),
         unresolved_mark,
@@ -452,6 +630,7 @@ fn transform_export_named(
 
 fn transform_export_default_decl(
   default_decl: ExportDefaultDecl,
+  callee_allocator: &dyn RuntimeCalleeAllocator,
   unresolved_mark: Mark,
   options: &TransformModuleDeclsOptions,
 ) -> ExportModuleItem {
@@ -466,6 +645,7 @@ fn transform_export_default_decl(
         class_decl.ident,
         exported_ident,
         class_decl.class,
+        callee_allocator,
         unresolved_mark,
         options.is_target_legacy,
       );
@@ -480,6 +660,7 @@ fn transform_export_default_decl(
         fn_decl.ident,
         exported_ident,
         fn_decl.function,
+        callee_allocator,
         unresolved_mark,
         options.is_target_legacy,
       );
@@ -488,11 +669,14 @@ fn transform_export_default_decl(
   }
 }
 
+// export default 'foo';
+// export default foo;
 fn transform_export_default_expr(
   export_expr: ExportDefaultExpr,
   unresolved_mark: Mark,
 ) -> Vec<ModuleItem> {
   let mut items = vec![];
+
   let exports_assign_left = create_exports_assign_left(
     Ident::new(
       FARM_MODULE_SYSTEM_DEFAULT.into(),
@@ -501,6 +685,7 @@ fn transform_export_default_expr(
     ),
     unresolved_mark,
   );
+
   items.push(create_exports_assign_stmt(
     exports_assign_left,
     *export_expr.expr,
@@ -508,13 +693,18 @@ fn transform_export_default_expr(
   items
 }
 
-fn transform_export_all(export_all: ExportAll, unresolved_mark: Mark) -> Vec<ModuleItem> {
+fn transform_export_all(
+  export_all: ExportAll,
+  callee_allocator: &dyn RuntimeCalleeAllocator,
+  unresolved_mark: Mark,
+) -> Vec<ModuleItem> {
   let mut items = vec![];
   let (require_item, val_name_ident) = create_require_stmt(*export_all.src, unresolved_mark);
   items.push(require_item);
 
   // module._e(exports, val_name_ident)
-  let callee = create_module_helper_callee("_e", unresolved_mark);
+  let callee = Callee::Expr(callee_allocator.export_star_callee());
+
   let call_expr = Expr::Call(CallExpr {
     span: DUMMY_SP,
     callee,
@@ -644,6 +834,7 @@ fn create_export_fn_decl_stmts(
   fn_ident: Option<Ident>,
   exports_ident: Ident,
   function: Box<Function>,
+  callee_allocator: &dyn RuntimeCalleeAllocator,
   unresolved_mark: Mark,
   is_target_legacy: bool,
 ) -> ExportModuleItem {
@@ -673,6 +864,7 @@ fn create_export_fn_decl_stmts(
     let call_expr = create_define_export_property_ident_call_expr(
       Some(exports_ident.to_id()),
       ident.to_id(),
+      callee_allocator,
       unresolved_mark,
       is_target_legacy,
     );
@@ -694,6 +886,7 @@ fn create_export_class_decl_stmts(
   class_ident: Option<Ident>,
   exports_ident: Ident,
   class: Box<Class>,
+  callee_allocator: &dyn RuntimeCalleeAllocator,
   unresolved_mark: Mark,
   is_target_legacy: bool,
 ) -> ExportModuleItem {
@@ -720,6 +913,7 @@ fn create_export_class_decl_stmts(
     let call_expr = create_define_export_property_ident_call_expr(
       Some(exports_ident.to_id()),
       ident.to_id(),
+      callee_allocator,
       unresolved_mark,
       is_target_legacy,
     );
@@ -737,21 +931,20 @@ fn create_export_class_decl_stmts(
   export
 }
 
-fn create_module_helper_callee(helper: &str, unresolved_mark: Mark) -> Callee {
-  let prop = IdentName::new(helper.into(), DUMMY_SP);
-  Callee::Expr(Box::new(Expr::Member(MemberExpr {
-    span: DUMMY_SP,
-    obj: Box::new(Expr::Ident(Ident::new(
-      FARM_MODULE_SYSTEM_MODULE.into(),
-      DUMMY_SP,
-      SyntaxContext::empty().apply_mark(unresolved_mark),
-    ))),
-    prop: MemberProp::Ident(prop),
-  })))
-}
+// fn create_module_helper_callee(helper: &str, unresolved_mark: Mark) -> Callee {
+//   let prop = Ident::new(helper.into(), DUMMY_SP);
+//   Callee::Expr(Box::new(Expr::Member(MemberExpr {
+//     span: DUMMY_SP,
+//     obj: Box::new(Expr::Ident(Ident::new(
+//       FARM_MODULE_SYSTEM_MODULE.into(),
+//       DUMMY_SP.apply_mark(unresolved_mark),
+//     ))),
+//     prop: MemberProp::Ident(prop),
+//   })))
+// }
 
 fn create_module_helper_item(
-  helper: &str,
+  helper: Box<Expr>,
   val_name_ident: Ident,
   src: Str,
   unresolved_mark: Mark,
@@ -765,17 +958,12 @@ fn create_module_helper_item(
     Box::new(Expr::Call(create_module_helper_call_expr(
       helper,
       vec![prop],
-      unresolved_mark,
     ))),
   )
 }
 
-fn create_module_helper_call_expr(
-  helper: &str,
-  args: Vec<ExprOrSpread>,
-  unresolved_mark: Mark,
-) -> CallExpr {
-  let callee = create_module_helper_callee(helper, unresolved_mark);
+fn create_module_helper_call_expr(helper: Box<Expr>, args: Vec<ExprOrSpread>) -> CallExpr {
+  let callee = Callee::Expr(helper);
   let call_expr = CallExpr {
     span: DUMMY_SP,
     callee,
@@ -789,6 +977,7 @@ fn create_module_helper_call_expr(
 fn create_define_export_property_ident_call_expr(
   exported_ident: Option<Id>,
   local_ident: Id,
+  callee_allocator: &dyn RuntimeCalleeAllocator,
   unresolved_mark: Mark,
   is_target_legacy: bool,
 ) -> CallExpr {
@@ -841,7 +1030,7 @@ fn create_define_export_property_ident_call_expr(
   };
   // module.o(exports, ident, function(){return ident;})
   create_module_helper_call_expr(
-    "o",
+    callee_allocator.define_property_callee(),
     vec![
       ExprOrSpread {
         spread: None,
@@ -860,7 +1049,6 @@ fn create_define_export_property_ident_call_expr(
         expr: Box::new(expr),
       },
     ],
-    unresolved_mark,
   )
 }
 
@@ -934,11 +1122,11 @@ impl VisitMut for ImportBindingsHandler {
 mod tests {
   use std::sync::Arc;
 
-  use farmfe_core::{swc_common::Globals, swc_ecma_ast::EsVersion, swc_ecma_parser::Syntax};
-  use farmfe_toolkit::{
+  use crate::{
     common::{create_swc_source_map, Source},
     script::{codegen_module, parse_module, swc_try_with::try_with},
   };
+  use farmfe_core::{swc_common::Globals, swc_ecma_ast::EsVersion, swc_ecma_parser::Syntax};
 
   use super::*;
 
@@ -991,9 +1179,14 @@ export * from './e';
     .ast;
 
     try_with(cm.clone(), &Globals::new(), || {
+      let callee_allocator = OriginalRuntimeCallee {
+        unresolved_mark: Mark::new(),
+      };
+
       transform_module_decls(
         &mut ast,
         Mark::new(),
+        &callee_allocator,
         TransformModuleDeclsOptions {
           is_target_legacy: true,
         },
@@ -1090,9 +1283,13 @@ export const f = 1, h = 2;
     .ast;
 
     try_with(cm.clone(), &Globals::new(), || {
+      let callee_allocator = OriginalRuntimeCallee {
+        unresolved_mark: Mark::new(),
+      };
       transform_module_decls(
         &mut ast,
         Mark::new(),
+        &callee_allocator,
         TransformModuleDeclsOptions {
           is_target_legacy: false,
         },

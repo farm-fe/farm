@@ -318,19 +318,23 @@ export class Server extends httpServer {
     const { port: prevPort, host: prevHost } = this.serverOptions;
     const prevUrls = this.resolvedUrls;
 
-    await this.restart();
-
-    const { port, host } = this.serverOptions;
+    const newServer = await this.restart();
+    const {
+      serverOptions: { port, host },
+      resolvedUrls
+    } = newServer;
 
     if (
       port !== prevPort ||
       host !== prevHost ||
-      this.hasUrlsChanged(prevUrls, this.resolvedUrls)
+      this.hasUrlsChanged(prevUrls, resolvedUrls)
     ) {
       __FARM_GLOBAL__.__FARM_SHOW_DEV_SERVER_URL__ = true;
     } else {
       __FARM_GLOBAL__.__FARM_SHOW_DEV_SERVER_URL__ = false;
     }
+
+    newServer.printUrls();
   }
 
   /**
@@ -364,7 +368,7 @@ export class Server extends httpServer {
     }
     await this.watcher.close();
     await newServer.listen();
-    this.logger.info(bold(green('Server restarted successfully ✨ ✨')));
+    return newServer;
   }
 
   /**
@@ -430,8 +434,6 @@ export class Server extends httpServer {
       if (open) {
         this.#openServerBrowser();
       }
-
-      __FARM_GLOBAL__.__FARM_SHOW_DEV_SERVER_URL__ && this.printUrls();
     } catch (error) {
       this.resolvedUserConfig.logger.error(
         `start farm dev server error: ${error} \n ${error.stack}`
@@ -696,6 +698,9 @@ export class Server extends httpServer {
   }
 
   printUrls() {
+    if (!__FARM_GLOBAL__.__FARM_SHOW_DEV_SERVER_URL__) {
+      return;
+    }
     if (this.resolvedUrls) {
       printServerUrls(
         this.resolvedUrls,

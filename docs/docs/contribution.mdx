@@ -2,7 +2,7 @@ import { PackageManagerTabs } from '../src/theme/PackageManagerTabs';
 
 # Contribution Guide
 
-Thank you for your interest in contributing to Farm!. Before submitting your contribution, please make sure to take a moment and read through the following guidelines.
+Thank you for your interest in contributing to Farm! Farm is currently actively developing version 2.0. We will be introducing numerous new features, expanding ecosystem compatibility, and implementing various optimizations and updates to address current issues. Before submitting your contribution, please make sure to take a moment and read through the following guidelines.
 
 ## Code of Conduct
 
@@ -36,15 +36,32 @@ Please feel free to open an issue using the [feature request template](https://g
 
 ## Setup
 
+### Branches
+
+- `main` -> Farm v1.x
+- `v2-dev` -> Farm v2.0.0-nightly
+
+---
+
 - Fork and clone the repo.
 
 - Create a branch for your PR with `git checkout -b your-branch-name`.
 
 - To keep `main` branch pointing to remote repository and make pull requests from branches on your fork. To do this, run:
 
+
+- adds a new remote repository named "upstream" that points to the original repository
 ```bash
   git remote add upstream https://github.com/farm-fe/farm.git
+```
+
+- retrieves all the branches and their respective commits from the upstream repository that you just configured
+```bash
   git fetch upstream
+```
+
+- sets up tracking between your local main branch and the main branch of the upstream repository
+```bash
   git branch --set-upstream-to=upstream/main main
 ```
 
@@ -52,6 +69,8 @@ Please feel free to open an issue using the [feature request template](https://g
 ## Development Environment Setup
 
 ### Dependencies
+
+<img src="https://github.com/user-attachments/assets/f7ce7d67-542b-41c8-a432-205c9a01c33b" />
 
 - Install Rust using [rustup](https://www.rust-lang.org/tools/install).
 
@@ -65,7 +84,7 @@ Please feel free to open an issue using the [feature request template](https://g
 We recommend that you use vscode for development and recommend two necessary plugins that you need to install
 
 - `rust-analyzer` support rust language
-- `biome` farm use biome to detect and format the code
+- `biome` farm use biome as lint and format the code
 
 You can install them in the extension
 
@@ -83,9 +102,9 @@ Farm development is very simple. You only need to execute `pnpm bootstrap` in th
 
 - use `pnpm bootstrap` to install dependencies and build core packages with series of initialization operations.
 
-- Work with examples (open a new terminal): `cd examples/react && pnpm start`, report an issue if the example does not start normally.
+- Work with examples (open a new terminal): `cd examples/refactor-react && pnpm start`, report an issue if the example does not start normally.
 
-- If `examples/react` project runs successfully, the development environment has been configured successfully
+- If `examples/refactor-react` project runs successfully, the development environment has been configured successfully
 
 - If you changed Rust code in `crates`, run `npm run build:rs` under `packages/core` again to get the latest binary.
 

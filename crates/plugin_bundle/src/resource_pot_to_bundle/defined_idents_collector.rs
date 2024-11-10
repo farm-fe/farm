@@ -1,11 +1,12 @@
-use std::collections::{HashMap, HashSet};
+use std::{
+  cell::RefCell,
+  collections::{HashMap, HashSet},
+};
 
 use farmfe_core::{
   swc_common::DUMMY_SP,
   swc_ecma_ast::{
-    AssignExpr, AssignOp, AssignTarget, BindingIdent, Expr, Id, IdentName, KeyValuePatProp,
-    KeyValueProp, MemberProp, ObjectPat, ObjectPatProp, Pat, Prop, PropName, PropOrSpread,
-    SimpleAssignTarget,
+    AssignExpr, AssignOp, AssignTarget, BindingIdent, Expr, Id, IdentName, KeyValuePatProp, KeyValueProp, MemberProp, ObjectPat, ObjectPatProp, Pat, Prop, PropName, PropOrSpread, SimpleAssignTarget
   },
 };
 use farmfe_toolkit::{
@@ -70,20 +71,39 @@ impl Visit for DefinedIdentsCollector {
 
 use farmfe_core::swc_ecma_ast::Ident;
 
-use super::Var;
+use super::{
+  bundle::ModuleAnalyzerManager, modules_analyzer::module_analyzer::VarRefKey,
+  uniq_name::BundleVariable,
+};
 
-#[derive(Debug, Default)]
+type RenameMap<'a> = HashMap<VarRefKey<'a>, usize>;
+
+// #[derive(Debug)]
 pub struct RenameIdent<'a> {
-  map: HashMap<&'a Id, &'a Var>,
+  map: RenameMap<'a>,
+  bundle_variable: &'a BundleVariable,
+  module_analyzer_manager: &'a ModuleAnalyzerManager<'a>,
 }
 
 impl<'a> RenameIdent<'a> {
-  pub fn new(map: HashMap<&'a Id, &'a Var>) -> Self {
-    Self { map }
+  pub fn new(
+    map: RenameMap<'a>,
+    bundle_variable: &'a BundleVariable,
+    module_analyzer_manager: &'a ModuleAnalyzerManager<'a>,
+  ) -> Self {
+    Self {
+      map,
+      bundle_variable,
+      module_analyzer_manager,
+    }
   }
 
   fn rename(&self, ident: &Ident) -> Option<String> {
-    self.map.get(&ident.to_id()).map(|var| var.render_name())
+    let r = RefCell::new(ident.to_id());
+    let v = self.map.get(&(r.borrow().into())).map(|var| {
+      return self.bundle_variable.render_name(*var);
+    });
+    v
   }
 }
 

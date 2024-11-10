@@ -72,6 +72,7 @@ import type {
 
 export * from './types.js';
 export * from './constants.js';
+export * from './env.js';
 
 export function defineFarmConfig(config: UserConfig): UserConfig;
 export function defineFarmConfig(
@@ -98,7 +99,7 @@ const COMMANDS = {
  * @param configPath
  */
 export async function resolveConfig(
-  inlineOptions: FarmCliOptions & UserConfig,
+  inlineOptions: FarmCliOptions & UserConfig & any,
   command: 'start' | 'build' | 'watch' | 'preview',
   defaultMode: CompilationMode = 'development',
   defaultNodeEnv: CompilationMode = 'development',
@@ -441,6 +442,17 @@ export async function normalizeUserCompilationConfig(
 
   if (resolvedCompilation.treeShaking === undefined) {
     resolvedCompilation.treeShaking ??= isProduction;
+  }
+
+  if (resolvedCompilation.concatenateModules === undefined) {
+    resolvedCompilation.concatenateModules ??= isProduction;
+  }
+
+  if (resolvedCompilation.concatenateModules && !isProduction) {
+    resolvedUserConfig.logger.warn(
+      'concatenateModules option is not supported with development mode, concatenateModules will be disabled'
+    );
+    resolvedCompilation.concatenateModules = false;
   }
 
   if (resolvedCompilation.script?.plugins?.length) {
