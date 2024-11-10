@@ -444,6 +444,17 @@ export async function normalizeUserCompilationConfig(
     resolvedCompilation.treeShaking ??= isProduction;
   }
 
+  if (resolvedCompilation.concatenateModules === undefined) {
+    resolvedCompilation.concatenateModules ??= isProduction;
+  }
+
+  if (resolvedCompilation.concatenateModules && !isProduction) {
+    resolvedUserConfig.logger.warn(
+      'concatenateModules option is not supported with development mode, concatenateModules will be disabled'
+    );
+    resolvedCompilation.concatenateModules = false;
+  }
+
   if (resolvedCompilation.script?.plugins?.length) {
     resolvedUserConfig.logger.info(
       `Swc plugins are configured, note that Farm uses ${colors.yellow(

@@ -400,7 +400,8 @@ const compilationConfigSchema = z
         .optional()
     ]),
     comments: z.union([z.boolean(), z.literal('license')]).optional(),
-    custom: z.record(z.string(), z.string()).optional()
+    custom: z.record(z.string(), z.string()).optional(),
+    concatenateModules: z.boolean().optional()
   })
   .strict();
 
