@@ -310,7 +310,7 @@ export class Server extends httpServer {
    * Restarts the server.
    * @returns {Promise<void>}
    */
-  async restartServer() {
+  async restartServer(): Promise<void> {
     if (this.serverOptions.middlewareMode) {
       await this.restart();
       return;

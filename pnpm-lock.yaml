@@ -2099,7 +2099,7 @@ importers:
         version: 0.2.5(vue@2.6.14)
       tdesign-vue:
         specifier: latest
-        version: 1.10.4(vue@2.6.14)
+        version: 1.10.5(vue@2.6.14)
       vite-plugin-vue2-svg:
         specifier: ^0.4.0
         version: 0.4.0(ejs@3.1.10)(lodash@4.17.21)(vue-template-compiler@2.6.14(vue@2.6.14))
@@ -2133,7 +2133,7 @@ importers:
         version: 0.2.5(vue@2.7.16)
       tdesign-vue:
         specifier: latest
-        version: 1.10.4(vue@2.7.16)
+        version: 1.10.5(vue@2.7.16)
       vite-plugin-vue2-svg:
         specifier: ^0.4.0
         version: 0.4.0(ejs@3.1.10)(lodash@4.17.21)(vue-template-compiler@2.7.16(vue@2.7.16))
@@ -2659,6 +2659,9 @@ importers:
       '@farmfe/utils':
         specifier: workspace:*
         version: link:../utils
+      '@polka/compression':
+        specifier: 1.0.0-next.25
+        version: 1.0.0-next.25
       '@swc/helpers':
         specifier: ^0.5.0
         version: 0.5.3
@@ -6971,6 +6974,10 @@ packages:
     resolution: {integrity: sha512-c83qWb22rNRuB0UaVCI0uRPNRr8Z0FWnEIvT47jiHAmOIUHbBOg5XvV7pM5x+rKn9HRpjxquDbXYSXr3fAKFcw==}
     engines: {node: '>=12'}
 
+  '@polka/compression@1.0.0-next.25':
+    resolution: {integrity: sha512-UlVkoSGRig87riHSn8QOxd2DzGhadRpNSj5Ukqj+Bt7WTE4Es+sE3ju3OYbe8SiV2OwA+8tDcSuHWUh5S3jCBQ==}
+    engines: {node: '>=6'}
+
   '@polka/url@1.0.0-next.23':
     resolution: {integrity: sha512-C16M+IYz0rgRhWZdCmK+h58JMv8vijAA61gmz2rspCSwKwzBebpdcsiUmwrtJRdphuY30i6BSLEOP8ppbNLyLg==}
 
@@ -9936,6 +9943,7 @@ packages:
 
   boolean@3.2.0:
     resolution: {integrity: sha512-d0II/GO9uf9lfUHH2BQsjxzRJZBdsjgsBiW4BvhWk/3qoKwQFjIDVN19PfX8F2D/r9PCMTtLWjYVCFrpeYUzsw==}
+    deprecated: Package no longer supported. Contact Support at https://www.npmjs.com/support for more info.
 
   bootstrap@5.3.3:
     resolution: {integrity: sha512-8HLCdWgyoMguSO9o+aH+iuZ+aht+mzW0u3HIMzVu7Srrpv7EBBxTnrFlSCskwdY1+EOFQSm7uMJhNQHkdPcmjg==}
@@ -18571,8 +18579,8 @@ packages:
     peerDependencies:
       vue: ^2.6.12
 
-  tdesign-vue@1.10.4:
-    resolution: {integrity: sha512-ej4QgA/E9DsxlMzr1++pomREgpncniP1llMT2qGIkZ4vtpHJV3CjBIf6eDLtWTUWz3c8B5RM8lAqm2ZxSvGCEg==}
+  tdesign-vue@1.10.5:
+    resolution: {integrity: sha512-D/833QpG7N0zH7lN7zhuegKJN0AVklAhrUKG7zmKcPrEZKaL7jjGz9lr6UOU/CJAEae0dij8YQtcscEIq3ugqw==}
     peerDependencies:
       vue: ~2.6.10
 
@@ -27636,6 +27644,8 @@ snapshots:
       '@pnpm/config.env-replace': 1.1.0
       '@pnpm/network.ca-file': 1.0.2
       config-chain: 1.1.13
+
+  '@polka/compression@1.0.0-next.25': {}
 
   '@polka/url@1.0.0-next.23': {}
 
@@ -42363,7 +42373,7 @@ snapshots:
       classnames: 2.3.2
       vue: 2.7.16
 
-  tdesign-vue@1.10.4(vue@2.6.14):
+  tdesign-vue@1.10.5(vue@2.6.14):
     dependencies:
       '@babel/runtime': 7.23.2
       '@popperjs/core': 2.11.8
@@ -42385,7 +42395,7 @@ snapshots:
       validator: 13.11.0
       vue: 2.6.14
 
-  tdesign-vue@1.10.4(vue@2.7.16):
+  tdesign-vue@1.10.5(vue@2.7.16):
     dependencies:
       '@babel/runtime': 7.23.2
       '@popperjs/core': 2.11.8

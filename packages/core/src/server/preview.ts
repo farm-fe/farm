@@ -2,6 +2,7 @@ import { existsSync } from 'node:fs';
 import { OutgoingHttpHeaders, SecureServerOptions } from 'node:http2';
 import type * as net from 'node:net';
 import path from 'node:path';
+import compression from '@polka/compression';
 import connect from 'connect';
 import corsMiddleware from 'cors';
 import sirv, { RequestHandler } from 'sirv';
@@ -102,10 +103,13 @@ export class PreviewServer extends httpServer {
     const cors = this.previewServerOptions.cors;
     const appType = this.resolvedUserConfig.server.appType;
 
-    if (cors) {
+    if (cors !== false) {
       this.app.use(corsMiddleware(typeof cors === 'boolean' ? {} : cors));
     }
+
+    this.app.use(compression());
     this.app.use(this.serve);
+
     if (appType === 'spa' || appType === 'mpa') {
       this.app.use(notFoundMiddleware());
     }
