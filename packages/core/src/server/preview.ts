@@ -128,10 +128,10 @@ export class PreviewServer extends httpServer {
     } = this.resolvedUserConfig;
     const preview = server?.preview;
 
-    const distDir =
-      preview?.distDir || path.isAbsolute(output?.path)
-        ? output?.path
-        : path.resolve(root, output?.path || 'dist');
+    const distPath = preview?.distDir || output?.path || 'dist';
+    const distDir = path.isAbsolute(distPath)
+      ? distPath
+      : path.resolve(root, distPath);
 
     if (!existsSync(distDir)) {
       throw new Error(
@@ -215,7 +215,7 @@ export class PreviewServer extends httpServer {
   }
 
   /**
-   * Close the HTTP server.
+   * Close the HTTP server gracefully.
    *
    * @returns {() => Promise<void>} A function that can be called to close the server.
    */

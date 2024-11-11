@@ -154,11 +154,14 @@ cli
       const defaultOptions = {
         root,
         mode: options.mode,
-        preview: {
-          port: options.port,
-          strictPort: options.strictPort,
-          host: options.host,
-          open: options.open
+        server: {
+          preview: {
+            host: options.host,
+            port: options.port,
+            open: options.open,
+            strictPort: options.strictPort,
+            distDir: options.outDir
+          }
         },
         configFile: options.config,
         port: options.port,

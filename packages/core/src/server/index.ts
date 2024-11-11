@@ -497,7 +497,7 @@ export class Server extends httpServer {
    * @private
    * @returns { void }
    */
-  #resolveOptions() {
+  #resolveOptions(): void {
     const {
       compilation: {
         output: { publicPath },
