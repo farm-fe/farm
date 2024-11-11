@@ -13,6 +13,7 @@ export default defineConfig({
         excludes: ['node_modules/'],
       }
     },
+    mode: 'development',
     presetEnv: false,
     minify: false,
     persistentCache: false,
@@ -20,9 +21,14 @@ export default defineConfig({
       main: 'src/broken.ts',
     },
     output: {
-      targetEnv: 'node',
+      targetEnv: 'library-node',
       entryFilename: '[entryName].mjs',
       filename: '[name].[hash].mjs',
+      format: 'esm'
     },
+    treeShaking: false,
+    resolve: {
+      autoExternalFailedResolve: true,
+    }
   },
 });

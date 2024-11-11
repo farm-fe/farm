@@ -131,6 +131,7 @@
     "instanceof",
     "Instantiator",
     "JDEL",
+    "itertools",
     "jfif",
     "JIDA",
     "jquery",

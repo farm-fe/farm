@@ -131,6 +131,11 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version: 18
+      - uses: actions/download-artifact@v4
+        id: download-plugin-replace-dirname
+        with:
+          name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-replace-dirname
+          path: ./rust-plugins/replace-dirname/npm/${{ matrix.settings.abi }}
       - name: Install Dependencies
         run: npm install -g pnpm@9.1.0 && pnpm i --frozen-lockfile
       - name: Build CLI and Core
@@ -189,6 +194,7 @@ jobs:
         settings:
           - name: plugin-sass
           - name: plugin-react
+          - name: plugin-replace-dirname
     steps:
       - uses: actions/download-artifact@v4
         with:
@@ -199,34 +205,3 @@ jobs:
           do
             test -f /tmp/artifacts/${{ github.sha }}-${abi}-${{ matrix.settings.name }}/index.farm
           done
-
-  benchmarks:
-    needs: [call-rust-build]
-    runs-on: ${{ matrix.settings.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        settings:
-          - os: ubuntu-latest
-            abi: linux-x64-gnu
-    steps:
-      - uses: "actions/checkout@v3"
-      - uses: actions/setup-node@v3
-        with:
-          node-version: 18
-      - name: Install Dependencies
-        run: npm install -g pnpm@9.1.0 && pnpm i --frozen-lockfile
-      - name: Build CLI and Core
-        run: pnpm --filter @farmfe/cli run build
-      - uses: actions/download-artifact@v4
-        id: download
-        with:
-          name: ${{ github.sha }}-${{ matrix.settings.abi }}
-          path: ./packages/core/binding
-      - name: Build Core CJS
-        run: cd packages/core && pnpm run build:cjs
-      # - name: Run benchmarks
-      #   uses: CodSpeedHQ/action@v3
-      #   with:
-      #     run: npm exec vitest bench
-      #     token: ${{ secrets.CODSPEED_TOKEN }}

@@ -194,8 +194,9 @@ impl Plugin for FarmPluginProgress {
 
     if *first_build {
       self.progress_bar.set_message(format!(
-        "generate resources for resource pot {}",
-        resource_pot.name
+        "generate resources for resource pot {} by {}",
+        resource_pot.name,
+        self.name()
       ));
       self.progress_bar.inc(1);
     }

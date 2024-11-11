@@ -51,3 +51,4 @@ swc_ecma_utils = "4.0.0"
 lazy_static = "1.4.0"
 sourcemap = "9.0.0"
 anyhow = { version = "1.0.90", features = ["backtrace"] }
+itertools = "0.13.0"

@@ -37,9 +37,11 @@ pub use anyhow;
 pub use farmfe_core::regex;
 pub use lazy_static;
 pub use sourcemap;
+pub use itertools;
 
 pub mod get_dynamic_resources_map;
 pub mod minify;
 
 // pluginutils
 pub mod pluginutils;
+pub mod constant;

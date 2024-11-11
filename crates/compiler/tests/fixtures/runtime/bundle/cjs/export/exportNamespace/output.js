@@ -1,21 +1,30 @@
 //index.js:
- import __farmNodeModule from 'node:module';global.nodeRequire = __farmNodeModule.createRequire(import.meta.url);global['__farm_default_namespace__'] = {__FARM_TARGET_ENV__: 'node'};function _interop_require_default(obj) {
-    return obj && obj.__esModule ? obj : {
-        default: obj
-    };
-}function _export_star(from, to) {
-    Object.keys(from).forEach(function(k) {
-        if (k !== "default" && !Object.prototype.hasOwnProperty.call(to, k)) {
-            Object.defineProperty(to, k, {
-                enumerable: true,
-                get: function() {
-                    return from[k];
-                }
-            });
+ import __farmNodeModule from 'node:module';global.nodeRequire = __farmNodeModule.createRequire(import.meta.url);global['__farm_default_namespace__'] = {__FARM_TARGET_ENV__: 'node'};function __commonJs(mod) {
+    var module;
+    return ()=>{
+        if (module) {
+            return module.exports;
         }
-    });
-    return from;
-}function _interop_require_wildcard(obj, nodeInterop) {
+        module = {
+            exports: {}
+        };
+        if (typeof mod === "function") {
+            mod(module, module.exports);
+        } else {
+            mod[Object.keys(mod)[0]](module, module.exports);
+        }
+        return module.exports;
+    };
+}
+function _getRequireWildcardCache(nodeInterop) {
+    if (typeof WeakMap !== "function") return null;
+    var cacheBabelInterop = new WeakMap();
+    var cacheNodeInterop = new WeakMap();
+    return (_getRequireWildcardCache = function(nodeInterop) {
+        return nodeInterop ? cacheNodeInterop : cacheBabelInterop;
+    })(nodeInterop);
+}
+function _interop_require_wildcard(obj, nodeInterop) {
     if (!nodeInterop && obj && obj.__esModule) return obj;
     if (obj === null || typeof obj !== "object" && typeof obj !== "function") return {
         default: obj
@@ -36,30 +45,8 @@
     newObj.default = obj;
     if (cache) cache.set(obj, newObj);
     return newObj;
-}function _getRequireWildcardCache(nodeInterop) {
-    if (typeof WeakMap !== "function") return null;
-    var cacheBabelInterop = new WeakMap();
-    var cacheNodeInterop = new WeakMap();
-    return (_getRequireWildcardCache = function(nodeInterop) {
-        return nodeInterop ? cacheNodeInterop : cacheBabelInterop;
-    })(nodeInterop);
-}function __commonJs(mod) {
-  var module;
-  return () => {
-    if (module) {
-      return module.exports;
-    }
-    module = {
-      exports: {},
-    };
-    if(typeof mod === "function") {
-      mod(module, module.exports);
-    }else {
-      mod[Object.keys(mod)[0]](module, module.exports);
-    }
-    return module.exports;
-  };
-}var dep_ts_cjs = __commonJs((module, exports)=>{
+}
+var dep_ts_cjs = __commonJs((module, exports)=>{
     module.exports.name = 'shulan';
     module.exports.age = 18;
     module.exports.default = 'default';

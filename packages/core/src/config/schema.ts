@@ -4,6 +4,8 @@ import { SecureServerOptions } from 'node:http2';
 import { z } from 'zod';
 import { fromZodError } from 'zod-validation-error';
 
+import { Logger } from '../utils/logger.js';
+
 import type { UserConfig } from './types.js';
 
 enum TargetEnv {
@@ -65,6 +67,37 @@ const outputSchema = z
   .strict()
   .optional();
 
+const WatchOptionsSchema = z.object({
+  persistent: z.boolean().optional(),
+  ignored: z
+    .union([
+      z.string(),
+      z.array(z.string()),
+      z.instanceof(RegExp),
+      z.array(z.instanceof(RegExp)),
+      z.function(z.tuple([z.string()]), z.boolean())
+    ])
+    .optional(),
+  ignoreInitial: z.boolean().optional(),
+  followSymlinks: z.boolean().optional(),
+  cwd: z.string().optional(),
+  useFsEvents: z.boolean().optional(),
+  disableGlobbing: z.boolean().optional(),
+  usePolling: z.boolean().optional(),
+  interval: z.number().positive().int().optional(),
+  binaryInterval: z.number().positive().int().optional(),
+  alwaysStat: z.boolean().optional(),
+  depth: z.number().positive().int().optional(),
+  awaitWriteFinish: z
+    .object({
+      stabilityThreshold: z.number().positive().int().optional(),
+      pollInterval: z.number().positive().int().optional()
+    })
+    .optional(),
+  atomic: z.union([z.boolean(), z.number().positive().int()]).optional(),
+  ignorePermissionErrors: z.boolean().optional()
+});
+
 const serverSchema = z
   .object({
     headers: z.record(z.string()).optional(),
@@ -80,26 +113,6 @@ const serverSchema = z
     https: z.custom<SecureServerOptions>(),
     cors: z.boolean().optional(),
     appType: z.enum(['spa', 'mpa', 'custom']).optional(),
-    // TODO Can watch be placed on the outermost layer?
-    watch: z
-      .union([
-        z.boolean(),
-        z.object({
-          // TODO watcher config schema
-          ignored: z.array(z.string()).optional(),
-          watchOptions: z
-            .object({
-              awaitWriteFinish: z.number().positive().int().optional()
-            })
-            .optional()
-        })
-      ])
-      .optional(),
-    // watch: z
-    //   .object({
-    //     awaitWriteFinish: z.number().positive().int().optional(),
-    //   })
-    //   .optional(),
     proxy: z
       .record(
         z
@@ -387,26 +400,26 @@ const compilationConfigSchema = z
         .optional()
     ]),
     comments: z.union([z.boolean(), z.literal('license')]).optional(),
-    custom: z.record(z.string(), z.string()).optional()
+    custom: z.record(z.string(), z.string()).optional(),
+    concatenateModules: z.boolean().optional()
   })
   .strict();
 
 const FarmConfigSchema = z
   .object({
     root: z.string().optional(),
-    clearScreen: z.boolean().optional(),
+    mode: z.string().optional(),
     configPath: z.string().optional(),
+    clearScreen: z.boolean().optional(),
+    customLogger: z.instanceof(Logger).optional(),
     envDir: z.string().optional(),
     envPrefix: z.union([z.string(), z.array(z.string())]).optional(),
     publicDir: z.string().optional(),
-    plugins: z.array(z.any()).optional(),
-    vitePlugins: z.array(z.any()).optional(),
+    watch: z.union([z.boolean(), WatchOptionsSchema]).optional(),
     compilation: compilationConfigSchema.optional(),
-    mode: z.string().optional(),
-    watch: z.boolean().optional(),
     server: serverSchema.optional(),
-    // TODO ANY type
-    customLogger: z.any().optional()
+    plugins: z.array(z.any()).optional(),
+    vitePlugins: z.array(z.any()).optional()
   })
   .strict();
 

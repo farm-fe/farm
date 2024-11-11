@@ -36,16 +36,12 @@ export default defineConfig((config) => {
         alias: [{ find: "@", replacement: path.resolve("src") }],
       },
     },
-    timeUnit: "s",
     server: {
-      port: 6858,
-      // appType: "mpa",
+      port: 4855,
+      appType: "mpa",
     },
-  },
-  server: {
-    port: 4878,
-    appType: "mpa",
-  },
+  }
+
 });
 
 function myCustomPlugin() {

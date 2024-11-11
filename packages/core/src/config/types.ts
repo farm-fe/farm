@@ -108,7 +108,7 @@ export interface UserConfig {
   root?: string;
   clearScreen?: boolean;
   envDir?: string;
-  watch?: boolean;
+  watch?: boolean | WatchOptions;
   envPrefix?: string | string[];
   publicDir?: string;
   customLogger?: Logger;
@@ -126,7 +126,7 @@ export interface UserConfig {
   /** config related to dev server */
   server?: UserServerConfig;
   /** Files under this dir will always be treated as static assets. serve it in dev, and copy it to output.path when build */
-  logger?: Logger;
+  customLogger?: Logger;
 }
 
 interface ResolvedCss extends CssConfig {
@@ -153,8 +153,8 @@ export interface ResolvedCompilation
 }
 
 export interface ResolvedUserConfig extends UserConfig {
-  // watch?: boolean;
-  // root?: string;
+  root?: string;
+  mode?: string;
   env?: Record<string, any>;
   envDir?: string;
   envFiles?: string[];
@@ -168,8 +168,8 @@ export interface ResolvedUserConfig extends UserConfig {
   rustPlugins?: [string, string][];
   inlineConfig?: FarmCliOptions;
   logger?: Logger;
-  mode?: string;
-  watch?: boolean;
+  customLogger?: Logger;
+  watch?: boolean | WatchOptions;
 }
 
 export interface GlobalCliOptions {
@@ -205,11 +205,8 @@ export interface FarmCLIPreviewOptions {
 export interface FarmCliOptions
   extends FarmCLIBuildOptions,
     FarmCLIPreviewOptions {
-  logger?: Logger;
   config?: string;
   configFile?: string;
-  // todo: check to delete
-  configPath?: string;
   compilation?: Config['config'];
   mode?: string;
   root?: string;
@@ -220,7 +217,6 @@ export interface FarmCliOptions
 export type DevServerMiddleware = (context: Server) => any | undefined;
 
 export interface Alias {
-  // TODO support RegExp
   find: string;
   replacement: string;
 }

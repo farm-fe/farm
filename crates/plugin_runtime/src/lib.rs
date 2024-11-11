@@ -219,7 +219,7 @@ impl Plugin for FarmPluginRuntime {
     context: &Arc<CompilationContext>,
   ) -> farmfe_core::error::Result<Option<()>> {
     // detect async module like top level await when module graph updated
-    // module graph updated is called when the module graph is updated
+    // module graph updated is called during compiler.update
     let mut async_modules = context.custom.get_mut(ASYNC_MODULES).unwrap();
     let async_modules = async_modules.downcast_mut::<HashSet<ModuleId>>().unwrap();
 

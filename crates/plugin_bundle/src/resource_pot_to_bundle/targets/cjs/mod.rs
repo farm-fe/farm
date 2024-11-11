@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use farmfe_core::{
+  error::Result,
   farm_profile_function,
   module::{module_graph::ModuleGraph, ModuleId},
   swc_common::{Mark, SyntaxContext, DUMMY_SP},
@@ -10,20 +11,22 @@ use farmfe_core::{
   },
 };
 use farmfe_toolkit::{
+  itertools::Itertools,
   script::is_commonjs_require,
   swc_ecma_visit::{Visit, VisitWith},
 };
 
 use crate::resource_pot_to_bundle::{
   bundle::{
-    bundle_external::{ExternalReferenceExport, ExternalReferenceImport, ReferenceKind},
+    bundle_reference::{
+      CommonJsImportMap, ExternalReferenceExport, ExternalReferenceImport, ReferenceKind,
+    },
     ModuleGlobalUniqName,
   },
-  polyfill::{
-    cjs::{wrap_require_default, wrap_require_wildcard},
-    SimplePolyfill,
-  },
+  polyfill::SimplePolyfill,
+  targets::util::{wrap_require_default, wrap_require_wildcard},
   uniq_name::BundleVariable,
+  ShareBundleContext,
 };
 
 pub mod generate;
@@ -96,6 +99,7 @@ impl CjsModuleAnalyzer {
     module_graph: &ModuleGraph,
   ) -> Vec<ModuleId> {
     farm_profile_function!("cjs module analyzer:analyzer modules");
+
     let mut collector = CjsCollector {
       unresolved_mark,
       top_level_mark,
@@ -111,36 +115,101 @@ impl CjsModuleAnalyzer {
 
   /** when use esm export commonjs module */
   pub fn redeclare_commonjs_export(
-    module_id: &ModuleId,
     bundle_variable: &BundleVariable,
+    import_map: &CommonJsImportMap,
     module_global_uniq_name: &ModuleGlobalUniqName,
-    reference_import: &ExternalReferenceImport,
     polyfill: &mut SimplePolyfill,
-  ) -> Vec<ModuleItem> {
+    ctx: &ShareBundleContext,
+  ) -> Result<Vec<ModuleItem>> {
     let mut result = vec![];
 
-    let cjs_name =
-      bundle_variable.render_name(module_global_uniq_name.commonjs_name(module_id).unwrap());
+    let mut generate_import_specifies: HashMap<String, CommonJsDeclareResult> = HashMap::new();
+
+    for source in import_map.keys().sorted() {
+      let import = &import_map[source];
+      let Some((name, r)) = Self::redeclare_commonjs_export_item(
+        bundle_variable,
+        (source, &import),
+        module_global_uniq_name,
+        polyfill,
+        ctx,
+      )?
+      else {
+        continue;
+      };
+
+      generate_import_specifies.insert(name, r);
+    }
+
+    let mut generate_import_ordered = generate_import_specifies
+      .keys()
+      .cloned()
+      .collect::<Vec<_>>();
+    generate_import_ordered.sort();
+
+    for name in generate_import_ordered {
+      let decls = generate_import_specifies.remove(&name).unwrap();
+
+      match decls {
+        CommonJsDeclareResult::VarDecl(decls) => result.push(ModuleItem::Stmt(Stmt::Decl(
+          swc_ecma_ast::Decl::Var(Box::new(VarDecl {
+            ctxt: SyntaxContext::empty(),
+            span: DUMMY_SP,
+            kind: swc_ecma_ast::VarDeclKind::Var,
+            declare: false,
+            decls: decls.clone(),
+          })),
+        ))),
+        CommonJsDeclareResult::Execute(expr) => {
+          result.push(expr);
+        }
+      }
+    }
+
+    Ok(result)
+  }
+
+  pub fn redeclare_commonjs_export_item(
+    bundle_variable: &BundleVariable,
+    (source, import_map): (&ReferenceKind, &ExternalReferenceImport),
+    module_global_uniq_name: &ModuleGlobalUniqName,
+    polyfill: &mut SimplePolyfill,
+    ctx: &ShareBundleContext,
+  ) -> Result<Option<(String, CommonJsDeclareResult)>> {
+    let module_id = match source {
+      ReferenceKind::Bundle(_) => return Ok(None),
+      ReferenceKind::Module(m) => m,
+    };
+
+    let (cjs_name, cjs_caller) = if let Some(m) = module_global_uniq_name.commonjs_name(module_id) {
+      let name = bundle_variable.render_name(m);
+      (
+        name.clone(),
+        Box::new(Expr::Call(CallExpr {
+          ctxt: SyntaxContext::empty(),
+          span: DUMMY_SP,
+          callee: swc_ecma_ast::Callee::Expr(Box::new(Expr::Ident(name.as_str().into()))),
+          args: vec![],
+          type_args: None,
+        })),
+      )
+    } else {
+      return Ok(None);
+    };
+
+    if import_map.is_empty() {
+      return Ok(Some((
+        cjs_name,
+        CommonJsDeclareResult::Execute(ModuleItem::Stmt(Stmt::Expr(ExprStmt {
+          span: DUMMY_SP,
+          expr: cjs_caller,
+        }))),
+      )));
+    }
 
     let mut decls = vec![];
 
-    let cjs_caller = CallExpr {
-      span: DUMMY_SP,
-      callee: swc_ecma_ast::Callee::Expr(Box::new(Expr::Ident(cjs_name.as_str().into()))),
-      args: vec![],
-      type_args: None,
-      ctxt: SyntaxContext::empty(),
-    };
-
-    if reference_import.is_empty() {
-      result.push(ModuleItem::Stmt(Stmt::Expr(ExprStmt {
-        span: DUMMY_SP,
-        expr: Box::new(Expr::Call(cjs_caller)),
-      })));
-      return result;
-    }
-
-    if let Some(default) = reference_import.default {
+    if let Some(default) = import_map.default {
       decls.push(VarDeclarator {
         span: DUMMY_SP,
         name: Pat::Ident(BindingIdent {
@@ -149,37 +218,30 @@ impl CjsModuleAnalyzer {
         }),
         init: Some(Box::new(Expr::Member(MemberExpr {
           span: DUMMY_SP,
-          obj: wrap_require_default(Box::new(Expr::Call(cjs_caller.clone())), polyfill),
+          obj: wrap_require_default(cjs_caller.clone(), polyfill, ctx),
           prop: MemberProp::Ident("default".into()),
         }))),
         definite: false,
       });
     }
 
-    if let Some(ns) = reference_import.namespace {
+    if let Some(ns) = import_map.namespace {
       decls.push(VarDeclarator {
         span: DUMMY_SP,
         name: Pat::Ident(BindingIdent {
           id: Ident::from(bundle_variable.render_name(ns).as_str()),
           type_ann: None,
         }),
-        init: Some(wrap_require_wildcard(
-          Box::new(Expr::Call(cjs_caller.clone())),
-          polyfill,
-        )),
+        init: Some(wrap_require_wildcard(cjs_caller.clone(), polyfill, ctx)),
         definite: false,
       });
     }
 
-    let mut ordered_keys = reference_import.named.keys().collect::<Vec<_>>();
-    ordered_keys.sort();
-
-    for imported in ordered_keys {
-      let named_index = &reference_import.named[imported];
+    for imported in import_map.named.keys().sorted() {
+      let named_index = &import_map.named[imported];
       let require_name = bundle_variable.name(*named_index);
 
       let is_require_default = require_name == "default";
-      let init_expr = Box::new(Expr::Call(cjs_caller.clone()));
 
       decls.push(VarDeclarator {
         span: DUMMY_SP,
@@ -190,9 +252,9 @@ impl CjsModuleAnalyzer {
         init: Some(Box::new(Expr::Member(MemberExpr {
           span: DUMMY_SP,
           obj: if is_require_default {
-            wrap_require_default(init_expr, polyfill)
+            wrap_require_default(cjs_caller.clone(), polyfill, ctx)
           } else {
-            init_expr
+            cjs_caller.clone()
           },
           prop: swc_ecma_ast::MemberProp::Computed(ComputedPropName {
             span: DUMMY_SP,
@@ -203,18 +265,44 @@ impl CjsModuleAnalyzer {
       });
     }
 
-    if !decls.is_empty() {
-      result.push(ModuleItem::Stmt(Stmt::Decl(swc_ecma_ast::Decl::Var(
-        Box::new(VarDecl {
+    Ok(Some((cjs_name, CommonJsDeclareResult::VarDecl(decls))))
+  }
+}
+
+#[derive(Debug)]
+pub enum CommonJsDeclareResult {
+  VarDecl(Vec<VarDeclarator>),
+  Execute(ModuleItem),
+}
+
+impl CommonJsDeclareResult {
+  fn merge(&mut self, other: CommonJsDeclareResult) {
+    match self {
+      CommonJsDeclareResult::VarDecl(ref mut decls) => {
+        if let CommonJsDeclareResult::VarDecl(other_decls) = other {
+          decls.extend(other_decls);
+        }
+      }
+      CommonJsDeclareResult::Execute(_) => {
+        if matches!(other, CommonJsDeclareResult::VarDecl(_)) {
+          *self = other;
+        }
+      }
+    }
+  }
+
+  pub fn to_module_item(self) -> ModuleItem {
+    match self {
+      CommonJsDeclareResult::VarDecl(decls) => {
+        ModuleItem::Stmt(Stmt::Decl(swc_ecma_ast::Decl::Var(Box::new(VarDecl {
+          ctxt: SyntaxContext::empty(),
           span: DUMMY_SP,
           kind: swc_ecma_ast::VarDeclKind::Var,
           declare: false,
-          decls,
-          ctxt: SyntaxContext::empty(),
-        }),
-      ))));
+          decls: decls.clone(),
+        }))))
+      }
+      CommonJsDeclareResult::Execute(expr) => expr,
     }
-
-    result
   }
 }
