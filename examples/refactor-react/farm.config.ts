@@ -34,8 +34,8 @@ export default defineConfig((config) => {
       },
     },
     server: {
-      port: 6858,
-      // appType: "mpa",
+      port: 4855,
+      appType: "mpa",
     },
   }
 });

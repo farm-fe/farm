@@ -16,22 +16,23 @@ use farmfe_core::{
   error::{CompilationError, Result},
   module::{module_graph::ModuleGraph, ModuleId},
   parking_lot::Mutex,
+  plugin::PluginParseHookParam,
   rayon::iter::{IntoParallelIterator, ParallelIterator},
   resource::resource_pot::{RenderedModule, ResourcePot},
   serialize,
 };
 use farmfe_toolkit::common::MinifyBuilder;
 
-use farmfe_utils::hash::sha256;
+use farmfe_utils::{hash::sha256, parse_query};
 use render_module::RenderModuleOptions;
+use scope_hoisting::build_scope_hoisted_module_groups;
 
 use self::render_module::{render_module, RenderModuleResult};
 
 mod render_module;
-// mod farm_module_system;
+mod scope_hoisting;
 mod source_replacer;
 mod transform_async_module;
-mod transform_module_decls;
 
 /// Merge all modules' ast in a [ResourcePot] to Farm's runtime [ObjectLit]. The [ObjectLit] looks like:
 /// ```js
@@ -68,13 +69,47 @@ pub fn resource_pot_to_runtime_object(
     minify_builder.is_enabled(&module_id.resolved_path(&context.config.root))
   };
 
-  resource_pot
-    .modules()
+  // group modules in the same group that can perform scope hoisting
+  let scope_hoisting_module_groups =
+    build_scope_hoisted_module_groups(resource_pot, module_graph, context);
+
+  scope_hoisting_module_groups
     .into_par_iter()
-    .try_for_each(|m_id| {
+    .try_for_each(|hoisted_group| {
       let module = module_graph
-        .module(m_id)
-        .unwrap_or_else(|| panic!("Module not found: {m_id:?}"));
+        .module(&hoisted_group.target_hoisted_module_id)
+        .unwrap_or_else(|| {
+          panic!(
+            "Module not found: {:?}",
+            &hoisted_group.target_hoisted_module_id
+          )
+        });
+
+      let (hoisted_ast, comments) = if hoisted_group.hoisted_module_ids.len() > 1 {
+        let hoisted_code_bundle = hoisted_group.render(module_graph, context)?;
+        let code = hoisted_code_bundle.to_string();
+
+        let mut meta = context
+          .plugin_driver
+          .parse(
+            &PluginParseHookParam {
+              module_id: module.id.clone(),
+              resolved_path: module.id.resolved_path(&context.config.root),
+              query: parse_query(&module.id.query_string()),
+              module_type: module.module_type.clone(),
+              content: Arc::new(code),
+            },
+            context,
+            &Default::default(),
+          )?
+          .unwrap();
+        (
+          Some(meta.as_script_mut().take_ast()),
+          Some(meta.as_script_mut().take_comments().into()),
+        )
+      } else {
+        (None, None)
+      };
 
       let mut cache_store_key = None;
 
@@ -82,12 +117,12 @@ pub fn resource_pot_to_runtime_object(
       if context.config.persistent_cache.enabled() {
         let content_hash = module.content_hash.clone();
         let store_key = CacheStoreKey {
-          name: m_id.to_string() + "-resource_pot_to_runtime_object",
+          name: module.id.to_string() + "-resource_pot_to_runtime_object",
           key: sha256(
             format!(
               "resource_pot_to_runtime_object_{}_{}_{}",
               content_hash,
-              m_id.to_string(),
+              module.id.to_string(),
               module.used_exports.join(",")
             )
             .as_bytes(),
@@ -115,25 +150,29 @@ pub fn resource_pot_to_runtime_object(
         }
       }
 
-      let is_async_module = async_modules.contains(m_id);
+      let is_async_module = async_modules.contains(&module.id);
       let RenderModuleResult {
         rendered_module,
         external_modules,
         source_map_chain,
-      } = render_module(RenderModuleOptions {
-        module,
-        module_graph,
-        is_enabled_minify,
-        minify_builder: &minify_builder,
-        is_async_module,
-        context,
-      })?;
+      } = render_module(
+        RenderModuleOptions {
+          module,
+          hoisted_ast,
+          module_graph,
+          is_enabled_minify,
+          minify_builder: &minify_builder,
+          is_async_module,
+          context,
+        },
+        comments,
+      )?;
       let code = rendered_module.rendered_content.clone();
 
       // cache the code and sourcemap
       if context.config.persistent_cache.enabled() {
         let cache_rendered_script_module = CacheRenderedScriptModule::new(
-          m_id.clone(),
+          module.id.clone(),
           code.clone(),
           rendered_module.clone(),
           external_modules.clone(),
@@ -147,21 +186,21 @@ pub fn resource_pot_to_runtime_object(
           .expect("failed to write resource pot to runtime object cache");
       }
 
-      let mut module = MagicString::new(
+      let mut magic_string = MagicString::new(
         &code,
         Some(MagicStringOptions {
-          filename: Some(m_id.resolved_path_with_query(&context.config.root)),
+          filename: Some(module.id.resolved_path_with_query(&context.config.root)),
           source_map_chain,
           ..Default::default()
         }),
       );
 
-      module.prepend(&format!("{:?}:", m_id.id(context.config.mode.clone())));
-      module.append(",");
+      magic_string.prepend(&format!("{:?}:", module.id.id(context.config.mode.clone())));
+      magic_string.append(",");
 
       modules.lock().push(RenderedScriptModule {
-        id: m_id.clone(),
-        module,
+        id: module.id.clone(),
+        module: magic_string,
         rendered_module,
         external_modules,
       });

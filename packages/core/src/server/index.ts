@@ -351,7 +351,6 @@ export class Server extends httpServer {
     }
     await this.watcher.close();
     await newServer.listen();
-    this.logger.info(bold(green('Server restarted successfully ✨ ✨')));
     return newServer;
   }
 
