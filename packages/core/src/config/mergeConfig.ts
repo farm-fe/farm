@@ -179,7 +179,6 @@ export function initialCliOptions(options: any): any {
     watch: !!watch,
     root: options.root,
     server: options.server,
-    preview: options.preview,
     clearScreen: !!options.clearScreen,
     configFile: options.configFile,
     ...(mode && { mode })
