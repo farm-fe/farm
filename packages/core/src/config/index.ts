@@ -561,7 +561,8 @@ export const DEFAULT_DEV_SERVER_OPTIONS: NormalizedServerConfig = {
 
 export const DEFAULT_COMPILATION_OPTIONS: Partial<ResolvedCompilation> = {
   output: {
-    path: './dist'
+    path: './dist',
+    copyPublicDir: true
   },
   sourcemap: true,
   resolve: {
