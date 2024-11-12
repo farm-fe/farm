@@ -1748,6 +1748,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "farmfe_plugin_dts"
+version = "0.0.0"
+dependencies = [
+ "farmfe_core",
+ "farmfe_macro_plugin",
+ "farmfe_toolkit",
+ "farmfe_toolkit_plugin_types",
+ "regex",
+ "serde",
+ "serde_json",
+ "url",
+]
+
+[[package]]
 name = "farmfe_plugin_html"
 version = "0.0.12"
 dependencies = [
