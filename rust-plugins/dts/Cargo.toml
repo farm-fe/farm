@@ -1,0 +1,17 @@
+[package]
+edition = "2021"
+name = "farmfe_plugin_dts"
+version = "0.0.0"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+farmfe_core = { version = "*", path = "../../crates/core" }
+farmfe_macro_plugin = { version = "*", path = "../../crates/macro_plugin" }
+farmfe_toolkit_plugin_types = { version = "*", path = "../../crates/toolkit_plugin_types" }
+farmfe_toolkit = { version = "*", path = "../../crates/toolkit" }
+regex = "1.7.3"
+serde = { version = "1.0", features = ["derive", "rc"] }
+serde_json = { version = "1.0", features = ["preserve_order"] }
+url = "2.3.1"
