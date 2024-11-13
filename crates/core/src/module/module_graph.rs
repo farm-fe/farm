@@ -664,6 +664,24 @@ impl ModuleGraph {
       .iter()
       .any(|(_, edge)| edge.is_dynamic())
   }
+
+  pub fn copy_to(&self, other: &mut Self, overwrite: bool) -> Result<()> {
+    let mut new_modules = Vec::<ModuleId>::new();
+    for module in self.modules() {
+      if overwrite || !other.has_module(&module.id) {
+        other.add_module(module.clone());
+        new_modules.push(module.id.clone());
+      }
+    }
+
+    for module_id in &new_modules {
+      for (dep, edge) in self.dependencies(module_id) {
+        other.add_edge(module_id, &dep, edge.clone())?;
+      }
+    }
+
+    Ok(())
+  }
 }
 
 impl Default for ModuleGraph {

@@ -19,6 +19,9 @@ const config: UserConfig = {
         '@/': path.join(process.cwd(), 'src')
       }
     },
+    script: {
+      importNotUsedAsValues: 'remove'
+    },
     partialBundling: {
       enforceResources: [
         {

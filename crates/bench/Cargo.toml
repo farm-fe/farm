@@ -1,6 +1,6 @@
 [package]
 name = "farmfe_bench"
-version = "0.0.1"
+version = "0.0.2"
 edition = "2021"
 authors = ["brightwu(吴明亮) <1521488775@qq.com>"]
 license = "MIT"
@@ -11,8 +11,8 @@ documentation = "https://docs.rs/farmfe_bench"
 
 [dependencies]
 criterion2 = { version = "0.11.0", default-features = false }
-farmfe_core = { path = "../core", version = "0.6.4" }
-farmfe_compiler = { path = "../compiler", version = "0.0.11" }
+farmfe_core = { path = "../core", version = "0.7.0" }
+farmfe_compiler = { path = "../compiler", version = "0.0.12" }
 
 [[bench]]
 name = "compiler_bench"

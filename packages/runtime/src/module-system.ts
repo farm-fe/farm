@@ -65,7 +65,8 @@ export class ModuleSystem {
 
       // console.log(`[Farm] shouldSkip: ${shouldSkip} ${moduleId}`);
       if (!shouldSkip) {
-        return this.cache[moduleId].exports;
+        const cachedModule = this.cache[moduleId];
+        return cachedModule.initializer || cachedModule.exports;
       }
     }
 
@@ -116,12 +117,14 @@ export class ModuleSystem {
 
     // it's a async module, return the promise
     if (result && result instanceof Promise) {
-      return result.then(() => {
+      module.initializer = result.then(() => {
         // call the module initialized hook
         this.pluginContainer.hookSerial("moduleInitialized", module);
+        module.initializer = undefined;
         // return the exports of the module
         return module.exports;
       });
+      return module.initializer;
     } else {
       // call the module initialized hook
       this.pluginContainer.hookSerial("moduleInitialized", module);
@@ -144,7 +147,7 @@ export class ModuleSystem {
     return this.loadDynamicResources(moduleId);
   }
 
-  loadDynamicResources(moduleId: string, force = false): Promise<any> {
+  loadDynamicResourcesOnly(moduleId: string, force = false): Promise<any> {
     const resources = this.dynamicModuleResourcesMap[moduleId].map((index) => this.dynamicResources[index]);
 
     if (!resources || resources.length === 0) {
@@ -174,6 +177,12 @@ export class ModuleSystem {
         return this.resourceLoader.load(resource);
       }),
     )
+  }
+
+  loadDynamicResources(moduleId: string, force = false): Promise<any> {
+    const resources = this.dynamicModuleResourcesMap[moduleId].map((index) => this.dynamicResources[index]);
+  
+    return this.loadDynamicResourcesOnly(moduleId, force)
       .then(() => {
         // Do not require the module if all the resources are not js resources
         if (resources.every(resource => resource.type !== 0)) {

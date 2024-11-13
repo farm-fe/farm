@@ -6,6 +6,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.12](https://github.com/farm-fe/farm/compare/farmfe_plugin_lazy_compilation-v0.0.11...farmfe_plugin_lazy_compilation-v0.0.12) - 2024-10-31
+
+### Fixed
+
+- plugin circle call & dynamic import ([#1901](https://github.com/farm-fe/farm/pull/1901))
+- arcgis lazy compile fail ([#1750](https://github.com/farm-fe/farm/pull/1750))
+- globalThis undefined ([#1726](https://github.com/farm-fe/farm/pull/1726))
+- [#1672](https://github.com/farm-fe/farm/pull/1672) ([#1692](https://github.com/farm-fe/farm/pull/1692))
+- lazy compile url ([#1671](https://github.com/farm-fe/farm/pull/1671))
+
+### Other
+
+- simplify string formatting for readability ([#1828](https://github.com/farm-fe/farm/pull/1828))
+
 ## [0.0.11](https://github.com/farm-fe/farm/compare/farmfe_plugin_lazy_compilation-v0.0.10...farmfe_plugin_lazy_compilation-v0.0.11) - 2024-07-25
 
 ### Other

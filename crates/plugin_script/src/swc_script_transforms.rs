@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use farmfe_core::{
-  config::script::DecoratorVersion,
+  config::script::{DecoratorVersion, ScriptConfig},
   context::CompilationContext,
   plugin::PluginProcessModuleHookParam,
   swc_common::{comments::SingleThreadedComments, Mark, SourceMap},
@@ -17,9 +17,15 @@ use farmfe_toolkit::{
   swc_ecma_visit::{FoldWith, VisitMutWith},
 };
 
-fn default_config() -> TsConfig {
+fn default_config(script: &ScriptConfig) -> TsConfig {
+  let import_not_used_as_values = if script.import_not_used_as_values == "remove" {
+    ImportsNotUsedAsValues::Remove
+  } else {
+    ImportsNotUsedAsValues::Preserve
+  };
   TsConfig {
-    import_not_used_as_values: ImportsNotUsedAsValues::Preserve,
+    // verbatim_module_syntax: script.verbatim_module_syntax,
+    import_not_used_as_values,
     ..Default::default()
   }
 }
@@ -40,19 +46,25 @@ pub fn strip_typescript(
         // Do nothing, jsx should be handled by other plugins
       }
       farmfe_core::module::ModuleType::Ts => {
-        program.visit_mut_with(&mut typescript(default_config(), top_level_mark));
+        program.visit_mut_with(&mut typescript(
+          default_config(&context.config.script),
+          top_level_mark,
+        ));
       }
       farmfe_core::module::ModuleType::Tsx => {
         let comments: SingleThreadedComments = param.meta.as_script().comments.clone().into();
         // TODO make it configurable
         program.visit_mut_with(&mut tsx(
           cm.clone(),
-          default_config(),
+          default_config(&context.config.script),
           TsxConfig::default(),
           comments,
           top_level_mark,
         ));
-        program.visit_mut_with(&mut typescript(default_config(), top_level_mark));
+        program.visit_mut_with(&mut typescript(
+          default_config(&context.config.script),
+          top_level_mark,
+        ));
       }
       _ => {}
     }

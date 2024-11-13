@@ -191,7 +191,8 @@
     "wasmer",
     "wechat",
     "xlink",
-    "Yuxi"
+    "Yuxi",
+    "Gurubase"
   ],
   "ignorePaths": [
     "pnpm-lock.yaml",

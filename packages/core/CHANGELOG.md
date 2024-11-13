@@ -1,5 +1,26 @@
 # @farmfe/core
 
+## 1.3.33
+
+### Patch Changes
+
+- 3b95eef4: Fix(runtime): invalid async module cache
+- Updated dependencies [3b95eef4]
+  - @farmfe/runtime@0.12.8
+
+## 1.3.32
+
+### Patch Changes
+
+- 3ae860bd: fix plugin circle call between Runtime & LazyCompilation, fix runtime & lazyCompilation conflict
+
+## 1.3.31
+
+### Patch Changes
+
+- c078cd35: fix #1499 wrong defaults of side effects of vite plugin adapter hook resolveId
+- c078cd35: Fix wrong esm introp helper order when using top level await
+
 ## 1.3.30
 
 ### Patch Changes

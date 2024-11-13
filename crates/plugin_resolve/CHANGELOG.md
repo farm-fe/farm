@@ -6,6 +6,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.12](https://github.com/farm-fe/farm/compare/farmfe_plugin_resolve-v0.0.11...farmfe_plugin_resolve-v0.0.12) - 2024-10-31
+
+### Added
+
+- support resolve dedupe ([#1762](https://github.com/farm-fe/farm/pull/1762))
+
+### Other
+
+- simplify string formatting for readability ([#1828](https://github.com/farm-fe/farm/pull/1828))
+
 ## [0.0.11](https://github.com/farm-fe/farm/compare/farmfe_plugin_resolve-v0.0.10...farmfe_plugin_resolve-v0.0.11) - 2024-07-25
 
 ### Added

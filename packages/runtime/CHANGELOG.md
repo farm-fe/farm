@@ -1,5 +1,11 @@
 # @farmfe/runtime
 
+## 0.12.8
+
+### Patch Changes
+
+- 3b95eef4: Fix(runtime): invalid async module cache
+
 ## 0.12.7
 
 ### Patch Changes
