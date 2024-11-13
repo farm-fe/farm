@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.0](https://github.com/farm-fe/farm/compare/farmfe_core-v0.7.0...farmfe_core-v0.8.0) - 2024-11-13
+
+### Fixed
+
+- *(runtime)* async cache ([#1902](https://github.com/farm-fe/farm/pull/1902))
+
 ## [0.7.0](https://github.com/farm-fe/farm/compare/farmfe_core-v0.6.4...farmfe_core-v0.7.0) - 2024-10-31
 
 ### Added
