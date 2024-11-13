@@ -166,10 +166,9 @@ export default class Watcher {
   }
 
   resolveChokidarOptions() {
-    // TODO type error here
-    // @ts-ignore
-    const userWatchOptions = this.config.server.watch;
-    const { ignored: ignoredList, ...otherOptions } = userWatchOptions ?? {};
+    const userWatchOptions = this.config.watch;
+    const { ignored: ignoredList, ...otherOptions } =
+      typeof userWatchOptions === 'object' ? userWatchOptions : {};
     const cacheDir = (
       this.config.compilation.persistentCache as PersistentCacheConfig
     ).cacheDir;

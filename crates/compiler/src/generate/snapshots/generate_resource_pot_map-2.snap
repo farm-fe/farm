@@ -1,59 +1,65 @@
 ---
 source: crates/compiler/src/generate/partial_bundling.rs
-input_file: crates/compiler/src/generate/partial_bundling.rs
+input_file: crates/testing_helpers/src/lib.rs
 ---
-(
-    (
-        "immutable",
-        false,
-    ),
-    (
-        "modules",
-        [
-            ModuleId {
-                relative_path: "B",
-                query_string: "",
-            },
-            ModuleId {
-                relative_path: "E",
-                query_string: "",
-            },
-        ],
-    ),
-    (
-        "resource_pot_type",
-        Custom(
-            "__farm_unknown",
-        ),
-    ),
-    (
-        "name",
-        "B_2f5d",
-    ),
-    (
-        "id",
-        "B_2f5d",
-    ),
-    (
-        "entry",
-        Some(
-            ModuleId {
-                relative_path: "B",
-                query_string: "",
-            },
-        ),
-    ),
-    (
-        "resources",
-        [],
-    ),
-    (
-        "module_groups",
-        [
-            ModuleId {
-                relative_path: "B",
-                query_string: "",
-            },
-        ],
-    ),
+name: A_66be
+id: A_66be
+immutable: false
+resource_pot_type: Js
+entry: Some(
+    ModuleId {
+        relative_path: "A",
+        query_string: "",
+    },
 )
+module_groups: [
+    ModuleId {
+        relative_path: "A",
+        query_string: "",
+    },
+    ModuleId {
+        relative_path: "F",
+        query_string: "",
+    },
+]
+modules: [
+    ModuleId {
+        relative_path: "A",
+        query_string: "",
+    },
+    ModuleId {
+        relative_path: "C",
+        query_string: "",
+    },
+]
+resources: []
+
+-------
+
+name: B_2f5d
+id: B_2f5d
+immutable: false
+resource_pot_type: Js
+entry: Some(
+    ModuleId {
+        relative_path: "B",
+        query_string: "",
+    },
+)
+module_groups: [
+    ModuleId {
+        relative_path: "B",
+        query_string: "",
+    },
+]
+modules: [
+    ModuleId {
+        relative_path: "B",
+        query_string: "",
+    },
+    ModuleId {
+        relative_path: "E",
+        query_string: "",
+    },
+]
+resources: []
