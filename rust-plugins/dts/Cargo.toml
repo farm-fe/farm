@@ -15,3 +15,7 @@ regex = "1.7.3"
 serde = { version = "1.0", features = ["derive", "rc"] }
 serde_json = { version = "1.0", features = ["preserve_order"] }
 url = "2.3.1"
+oxc_allocator = "0.36.0"
+oxc_parser = "0.36.0"
+oxc_span = "0.36.0"
+oxc_transformer = "0.36.0"
