@@ -10,18 +10,18 @@ pub struct Options {
 }
 
 #[farm_plugin]
-pub struct FarmPluginExample {}
+pub struct FarmPluginDts {}
 
-impl FarmPluginExample {
+impl FarmPluginDts {
   fn new(config: &Config, options: String) -> Self {
     let opts: Options = serde_json::from_str(&options).unwrap();
     Self {}
   }
 }
 
-impl Plugin for FarmPluginExample {
+impl Plugin for FarmPluginDts {
   fn name(&self) -> &str {
-    "FarmPluginExample"
+    "FarmPluginDts"
   }
 
   fn priority(&self) -> i32 {
@@ -34,7 +34,7 @@ impl Plugin for FarmPluginExample {
     _context: &std::sync::Arc<farmfe_core::context::CompilationContext>,
     _hook_context: &farmfe_core::plugin::PluginHookContext,
   ) -> farmfe_core::error::Result<Option<farmfe_core::plugin::PluginResolveHookResult>> {
-    println!("resolve {:?} from {:?}", param.source, param.importer);
+    // println!("resolve {:?} from {:?}", param.source, param.importer);
     Ok(None)
   }
 
@@ -44,10 +44,10 @@ impl Plugin for FarmPluginExample {
     _context: &std::sync::Arc<farmfe_core::context::CompilationContext>,
     _hook_context: &farmfe_core::plugin::PluginHookContext,
   ) -> farmfe_core::error::Result<Option<farmfe_core::plugin::PluginLoadHookResult>> {
-    println!(
-      "load path: {:?}, id: {:?}",
-      param.resolved_path, param.module_id
-    );
+    if param.resolved_path.ends_with(".farm-runtime") {
+      return Ok(None);
+    }
+    println!("load path: {:#?}", param);
     Ok(None)
   }
 }
