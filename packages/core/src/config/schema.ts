@@ -1,5 +1,5 @@
 import http from 'node:http';
-import { OutgoingHttpHeaders, SecureServerOptions } from 'node:http2';
+import type { OutgoingHttpHeaders, SecureServerOptions } from 'node:http2';
 
 import { z } from 'zod';
 import { fromZodError } from 'zod-validation-error';
