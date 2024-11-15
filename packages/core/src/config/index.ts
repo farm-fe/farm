@@ -565,7 +565,8 @@ export const DEFAULT_DEV_SERVER_OPTIONS: NormalizedServerConfig = {
     https: undefined,
     distDir: 'dist',
     open: false,
-    cors: false
+    cors: false,
+    proxy: undefined
   }
 };
 
