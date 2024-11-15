@@ -12,13 +12,15 @@ import {
   ResolvedUserConfig,
   UserConfig
 } from '../config/types.js';
+import { bold, brandColor, green } from '../utils/color.js';
 import {
   resolveServerUrls,
   setupSIGTERMListener,
   teardownSIGTERMListener
 } from '../utils/http.js';
 import { printServerUrls } from '../utils/logger.js';
-import { isObject } from '../utils/share.js';
+import { getShortName } from '../utils/path.js';
+import { isObject, version } from '../utils/share.js';
 import { knownJavascriptExtensionRE } from '../utils/url.js';
 import {
   type CommonServerOptions,
@@ -223,6 +225,14 @@ export class PreviewServer extends httpServer {
         this.resolvedUserConfig,
         'preview'
       );
+
+      const shortFile = getShortName(
+        this.resolvedUserConfig.configFilePath,
+        this.resolvedUserConfig.root
+      );
+      this.logger.info(`Using config file at ${bold(green(shortFile))}`);
+
+      console.log('\n', bold(brandColor(`${'ϟ'}  Farm  v${version}`)), '\n');
 
       printServerUrls(
         this.resolvedUrls,
