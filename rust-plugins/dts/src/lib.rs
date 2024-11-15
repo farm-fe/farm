@@ -1,28 +1,53 @@
 #![deny(clippy::all)]
-use farmfe_toolkit::swc_ecma_transforms::{helpers::inject_helpers, typescript::tsx};
-
 use farmfe_core::{
-  config::Config,
-  plugin::Plugin,
+  config::{config_regex::ConfigRegex, Config},
+  context::CompilationContext,
+  error::CompilationError,
+  plugin::{
+    Plugin, PluginAnalyzeDepsHookParam, PluginFinalizeModuleHookParam,
+    PluginGenerateResourcesHookResult, PluginHookContext, PluginLoadHookParam,
+    PluginLoadHookResult, PluginParseHookParam, PluginProcessModuleHookParam,
+  },
   swc_common::{comments::SingleThreadedComments, Mark},
   swc_ecma_ast::{Module as EcmaAstModule, ModuleItem},
   swc_ecma_parser::{lexer::Lexer, EsSyntax as EsConfig, Parser, StringInput, Syntax},
 };
+use farmfe_toolkit::swc_ecma_transforms::{helpers::inject_helpers, typescript::tsx};
+use farmfe_toolkit::{
+  common::PathFilter,
+  swc_ecma_visit::{VisitMut, VisitMutWith},
+};
+use std::{
+  path::{Path, PathBuf},
+  sync::Arc,
+};
 
 use farmfe_macro_plugin::farm_plugin;
 
-#[derive(serde::Deserialize)]
-pub struct DtsOptions {
-  pub my_option: Option<String>,
+#[farm_plugin]
+pub struct FarmPluginDts {
+  options: FarmPluginDtsOptions,
 }
 
-#[farm_plugin]
-pub struct FarmPluginDts {}
+#[derive(serde::Deserialize)]
+pub struct FarmPluginDtsOptions {
+  exclude: Vec<ConfigRegex>,
+  include: Vec<ConfigRegex>,
+}
+
+impl Default for FarmPluginDtsOptions {
+  fn default() -> Self {
+    Self {
+      exclude: vec![ConfigRegex::new("node_modules/")],
+      include: vec![],
+    }
+  }
+}
 
 impl FarmPluginDts {
-  fn new(config: &Config, options: String) -> Self {
-    let opts: DtsOptions = serde_json::from_str(&options).unwrap();
-    Self {}
+  fn new(_: &Config, options: String) -> Self {
+    let options: FarmPluginDtsOptions = serde_json::from_str(&options).unwrap_or_default();
+    Self { options }
   }
 }
 
@@ -79,5 +104,24 @@ impl Plugin for FarmPluginDts {
     println!("transform path: {:#?}", param);
 
     Ok(None)
+  }
+
+  fn process_module(
+    &self,
+    param: &mut PluginProcessModuleHookParam,
+    _: &Arc<CompilationContext>,
+  ) -> Result<Option<()>, CompilationError> {
+    let filter = PathFilter::new(&self.options.include, &self.options.exclude);
+    if param.module_id.relative_path().ends_with(".farm-runtime") {
+      return Ok(None);
+    }
+    if !filter.execute(param.module_id.relative_path())
+      && param.module_id.relative_path().ends_with(".farm-runtime")
+    {
+      return Ok(None);
+    }
+    println!("param.module_id: {:#?}", param.module_id.relative_path());
+    println!("param.content: {:#?}", param.content);
+    Ok(Some(()))
   }
 }
