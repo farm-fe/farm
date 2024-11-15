@@ -19,15 +19,15 @@ export default defineConfig((config) => {
     compilation: {
       input: {
         index: path.resolve(__dirname, "index.html"),
-        base: path.resolve(__dirname, 'base.html'),
-        about: path.resolve(__dirname, 'about.html'),
+        base: path.resolve(__dirname, "base.html"),
+        about: path.resolve(__dirname, "about.html"),
       },
       // persistentCache: false,
       persistentCache: {
         cacheDir: "node_modules/.adny",
       },
       output: {
-        // publicPath: "/aaa/",
+        publicPath: "/aaa/",
       },
       resolve: {
         // alias: {
@@ -38,12 +38,12 @@ export default defineConfig((config) => {
     },
     server: {
       port: 4855,
-      appType: "mpa",
+      appType: "spa",
       preview: {
         port: 3691,
-      }
+      },
     },
-  }
+  };
 });
 
 function myCustomPlugin() {

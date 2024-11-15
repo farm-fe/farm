@@ -21,6 +21,7 @@ import { printServerUrls } from '../utils/logger.js';
 import { knownJavascriptExtensionRE } from '../utils/url.js';
 import { CorsOptions, httpServer } from './http.js';
 import { notFoundMiddleware } from './middlewares/notFound.js';
+import { publicPathMiddleware } from './middlewares/publicPath.js';
 import { openBrowser } from './open.js';
 
 export interface PreviewServerOptions {
@@ -42,6 +43,8 @@ export class PreviewServer extends httpServer {
   resolvedUserConfig: ResolvedUserConfig;
   previewServerOptions: PreviewServerOptions;
   httpsOptions: SecureServerOptions;
+
+  publicPath: string;
 
   app: connect.Server;
   serve: RequestHandler;
@@ -100,7 +103,7 @@ export class PreviewServer extends httpServer {
    * @private
    */
   #initializeMiddlewares() {
-    const cors = this.previewServerOptions.cors;
+    const { cors } = this.previewServerOptions;
     const appType = this.resolvedUserConfig.server.appType;
 
     if (cors !== false) {
@@ -108,6 +111,11 @@ export class PreviewServer extends httpServer {
     }
 
     this.app.use(compression());
+
+    if (this.publicPath !== '/') {
+      this.app.use(publicPathMiddleware(this));
+    }
+
     this.app.use(this.serve);
 
     if (appType === 'spa' || appType === 'mpa') {
@@ -126,6 +134,8 @@ export class PreviewServer extends httpServer {
       server,
       compilation: { root, output }
     } = this.resolvedUserConfig;
+
+    this.publicPath = output.publicPath ?? '/';
     const preview = server?.preview;
 
     const distPath = preview?.distDir || output?.path || 'dist';
