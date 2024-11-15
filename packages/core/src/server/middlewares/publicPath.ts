@@ -10,10 +10,10 @@ const isDevServer = (app: DevServer | PreviewServer): app is DevServer =>
 export function publicPathMiddleware(
   app: DevServer | PreviewServer
 ): Connect.NextHandleFunction {
-  const isPreview = !isDevServer(app);
+  const isDev = isDevServer(app);
 
   const publicPath = app.publicPath;
-  const middlewareMode = isPreview ? false : app.serverOptions.middlewareMode;
+  const middlewareMode = isDev ? app.serverOptions.middlewareMode : false;
 
   return function handlePublicPathMiddleware(req, res, next) {
     // auto redirect to public path
