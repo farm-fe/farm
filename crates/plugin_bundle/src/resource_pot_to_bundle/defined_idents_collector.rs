@@ -3,7 +3,8 @@ use std::collections::{HashMap, HashSet};
 use farmfe_core::{
   swc_common::DUMMY_SP,
   swc_ecma_ast::{
-    AssignExpr, AssignOp, AssignTarget, BindingIdent, Expr, Id, KeyValuePatProp, KeyValueProp, MemberProp, ObjectPat, ObjectPatProp, Pat, Prop, PropName, PropOrSpread, SimpleAssignTarget
+    AssignExpr, AssignOp, AssignTarget, BindingIdent, Expr, Id, KeyValuePatProp, KeyValueProp,
+    MemberProp, ObjectPat, ObjectPatProp, Pat, Prop, PropName, PropOrSpread, SimpleAssignTarget,
   },
 };
 use farmfe_toolkit::{

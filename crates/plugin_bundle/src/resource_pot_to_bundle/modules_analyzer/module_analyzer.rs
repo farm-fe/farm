@@ -352,7 +352,14 @@ impl ModuleAnalyzer {
           &self.module_id,
           module_graph,
           self.mark.1,
-          &mut |ident, strict| bundle_variable.register_var(&self.module_id, ident, strict),
+          self.mark.0,
+          &mut |ident, strict, is_placeholder| {
+            if is_placeholder {
+              bundle_variable.register_placeholder(&self.module_id, ident)
+            } else {
+              bundle_variable.register_var(&self.module_id, ident, strict)
+            }
+          },
         )
         .unwrap();
 

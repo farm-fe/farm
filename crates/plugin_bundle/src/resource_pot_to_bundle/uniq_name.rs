@@ -239,6 +239,16 @@ impl BundleVariable {
     index.unwrap()
   }
 
+  pub fn register_placeholder(&mut self, module_id: &ModuleId, ident: &Ident) -> usize {
+    let index = self.register_var(module_id, ident, true);
+
+    self.uniq_name_mut().insert(ident.sym.as_str());
+
+    self.var_mut_by_index(index).placeholder = true;
+
+    index
+  }
+
   pub fn branch(&self) -> Self {
     Self {
       index: Arc::clone(&self.index),
@@ -292,13 +302,23 @@ impl BundleVariable {
 
   pub fn set_rename(&mut self, index: usize, rename: String) {
     let var = self.var_mut_by_index(index);
+    if var.placeholder {
+      return;
+    }
+
     if var.rename.is_none() {
       var.rename = Some(rename);
     }
   }
 
   pub fn set_rename_force(&mut self, index: usize, rename: String) {
-    self.var_mut_by_index(index).rename = Some(rename);
+    let var = self.var_mut_by_index(index);
+
+    if var.placeholder {
+      return;
+    }
+
+    var.rename = Some(rename);
   }
 
   pub fn rename(&self, index: usize) -> Option<&String> {
@@ -316,11 +336,8 @@ impl BundleVariable {
 
   pub fn render_name(&self, index: usize) -> String {
     let var = self.var_by_index(index);
-    if let Some(rename) = var.rename.as_ref() {
-      return rename.clone();
-    }
 
-    var.var.0.to_string()
+    var.render_name()
   }
 
   pub fn set_var_uniq_rename_string(&mut self, index: usize, var_ident: String) {

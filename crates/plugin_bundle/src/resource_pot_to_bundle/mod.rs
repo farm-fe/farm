@@ -35,7 +35,8 @@ mod targets;
 pub struct Var {
   var: Id,
   rename: Option<String>,
-  removed: bool,
+  // maybe global variable, function params name, only as the slot for UniqName
+  placeholder: bool,
 }
 
 impl Var {
@@ -47,10 +48,12 @@ impl Var {
   }
 
   pub fn render_name(&self) -> String {
-    if let Some(rename) = self.rename.as_ref() {
+    if !self.placeholder
+      && let Some(rename) = self.rename.as_ref()
+    {
       rename.clone()
     } else {
-      self.var.0.to_string()
+      self.origin_name()
     }
   }
 

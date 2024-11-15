@@ -1,4 +1,5 @@
 #![feature(box_patterns)]
+#![feature(let_chains)]
 
 use std::{collections::HashMap, sync::Arc};
 

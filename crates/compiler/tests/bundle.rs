@@ -24,7 +24,7 @@ fn test(file: String, crate_path: String) {
   let entry_name = "index".to_string();
 
   let runtime_entry = cwd.to_path_buf().join("runtime.ts");
-  let files = fs::read_dir(cwd)
+  let mut files = fs::read_dir(cwd)
     .unwrap()
     .filter_map(|item| item.map(|item| Some(item)).unwrap_or(None))
     .filter_map(|item| {
@@ -51,6 +51,10 @@ fn test(file: String, crate_path: String) {
     })
     .collect::<Vec<_>>();
 
+  if files.is_empty() {
+    files.push((cwd.join("config.json"), "".to_string()));
+  }
+
   for (config_entry, config_named) in files {
     let config_from_file = try_read_config_from_json(config_entry);
 
@@ -71,7 +75,7 @@ fn test(file: String, crate_path: String) {
         config.tree_shaking = Box::new(BoolOrObj::Bool(false));
 
         config.external = vec![ConfigRegex::new("(^node:.*)"), ConfigRegex::new("^fs$")];
-        config.output.target_env = TargetEnv::Node;
+        config.output.target_env = TargetEnv::Custom("library-browser".to_string());
         // config.output.format = ModuleFormat::CommonJs;
 
         // TODO: multiple bundle
