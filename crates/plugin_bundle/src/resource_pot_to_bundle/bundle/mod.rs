@@ -12,7 +12,7 @@ use farmfe_core::{
   farm_profile_function, farm_profile_scope,
   module::{module_graph::ModuleGraph, ModuleId, ModuleSystem},
   plugin::ResolveKind,
-  rayon::iter::{IntoParallelIterator, ParallelIterator},
+  rayon::iter::{IndexedParallelIterator, IntoParallelIterator, ParallelIterator},
   swc_common::{util::take::Take, DUMMY_SP},
   swc_ecma_ast::{
     self, BindingIdent, CallExpr, ClassDecl, Decl, EmptyStmt, Expr, ExprStmt, FnDecl, Ident,
@@ -188,6 +188,7 @@ impl<'a> ModuleAnalyzerManager<'a> {
     farm_profile_function!();
 
     let data = Mutex::new(vec![]);
+    // TODO: performance optimization
     let module_map = {
       mem::take(&mut self.module_map)
         .into_iter()
@@ -195,26 +196,32 @@ impl<'a> ModuleAnalyzerManager<'a> {
         .collect::<HashMap<ModuleId, Arc<RwLock<ModuleAnalyzer>>>>()
     };
 
-    modules.into_par_iter().try_for_each(|module_id| {
-      let mut module_analyzer = module_map
-        .get(module_id)
-        .map(|item| item.write().unwrap())
-        .unwrap();
-      let mut new_bundle_variable = bundle_variable.branch();
-      new_bundle_variable.set_namespace(module_analyzer.resource_pot_id.clone());
-      farm_profile_scope!(format!(
-        "extract module statement: {:?}",
-        module_id.to_string()
-      ));
+    modules
+      .into_par_iter()
+      .enumerate()
+      .try_for_each(|(index, module_id)| {
+        let mut module_analyzer = module_map
+          .get(module_id)
+          .map(|item| item.write().unwrap())
+          .unwrap();
+        let mut new_bundle_variable = bundle_variable.branch();
+        new_bundle_variable.set_namespace(module_analyzer.resource_pot_id.clone());
+        farm_profile_scope!(format!(
+          "extract module statement: {:?}",
+          module_id.to_string()
+        ));
 
-      module_analyzer.extract_statement(module_graph, context, &mut new_bundle_variable)?;
+        module_analyzer.extract_statement(module_graph, context, &mut new_bundle_variable)?;
 
-      data.lock().map_c_error()?.push((
-        module_analyzer.cjs_module_analyzer.require_modules.clone(),
-        new_bundle_variable,
-      ));
-      Ok::<(), CompilationError>(())
-    })?;
+        data.lock().map_c_error()?.push((
+          index,
+          (
+            module_analyzer.cjs_module_analyzer.require_modules.clone(),
+            new_bundle_variable,
+          ),
+        ));
+        Ok::<(), CompilationError>(())
+      })?;
 
     let mut map = HashMap::new();
 
@@ -227,7 +234,11 @@ impl<'a> ModuleAnalyzerManager<'a> {
 
     let _ = mem::replace(&mut self.module_map, map);
 
-    for (require_modules, inner_bundle_variable) in data.into_inner().map_c_error()? {
+    let mut values = data.into_inner().map_c_error()?;
+
+    values.sort_by_key(|(index, _)| *index);
+
+    for (_, (require_modules, inner_bundle_variable)) in values {
       self.namespace_modules.extend(require_modules);
 
       bundle_variable.merge(inner_bundle_variable);
@@ -721,7 +732,7 @@ impl<'a> ModuleAnalyzerManager<'a> {
             bundle_variable,
             &context.config,
             polyfill,
-            external_config
+            external_config,
           )
         }
 

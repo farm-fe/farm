@@ -46,5 +46,5 @@
 }console.log(hello);
 
 console.log(hello);
-const hello$2 = 123;
-console.log(hello$2);
+const hello$1 = 123;
+console.log(hello$1);
