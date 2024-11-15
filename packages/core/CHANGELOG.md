@@ -1,5 +1,11 @@
 # @farmfe/core
 
+## 1.3.34
+
+### Patch Changes
+
+- 8853c4aa: fix bundle global variable preserve
+
 ## 1.3.33
 
 ### Patch Changes
