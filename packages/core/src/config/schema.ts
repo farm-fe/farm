@@ -67,6 +67,42 @@ const outputSchema = z
   .strict()
   .optional();
 
+const proxySchema = z
+  .record(
+    z
+      .object({
+        target: z.string(),
+        changeOrigin: z.boolean().optional(),
+        agent: z.any().optional(),
+        secure: z.boolean().optional(),
+        logs: z.any().optional(),
+        pathRewrite: baseRewriteSchema.optional(),
+        pathFilter: pathFilterSchema.optional(),
+        headers: z.record(z.string()).optional(),
+        on: z
+          .object({
+            proxyReq: z
+              .function()
+              .args(z.any(), z.any(), z.any())
+              .returns(z.void())
+              .optional(),
+            proxyRes: z
+              .function()
+              .args(z.any(), z.any(), z.any())
+              .returns(z.void())
+              .optional(),
+            error: z
+              .function()
+              .args(z.instanceof(Error), z.any(), z.any())
+              .returns(z.void())
+              .optional()
+          })
+          .optional()
+      })
+      .passthrough()
+  )
+  .optional();
+
 const previewServerSchema = z
   .object({
     headers: z.union([z.custom<OutgoingHttpHeaders>(), z.boolean()]).optional(),
@@ -82,6 +118,7 @@ const previewServerSchema = z
     https: z.custom<SecureServerOptions>(),
     distDir: z.string().optional(),
     open: z.boolean().optional(),
+    proxy: proxySchema.optional(),
     // TODO: CORS types
     cors: z.union([z.boolean(), z.any()]).optional()
   })
@@ -133,41 +170,7 @@ const serverSchema = z
     https: z.custom<SecureServerOptions>(),
     cors: z.boolean().optional(),
     appType: z.enum(['spa', 'mpa', 'custom']).optional(),
-    proxy: z
-      .record(
-        z
-          .object({
-            target: z.string(),
-            changeOrigin: z.boolean().optional(),
-            agent: z.any().optional(),
-            secure: z.boolean().optional(),
-            logs: z.any().optional(),
-            pathRewrite: baseRewriteSchema.optional(),
-            pathFilter: pathFilterSchema.optional(),
-            headers: z.record(z.string()).optional(),
-            on: z
-              .object({
-                proxyReq: z
-                  .function()
-                  .args(z.any(), z.any(), z.any())
-                  .returns(z.void())
-                  .optional(),
-                proxyRes: z
-                  .function()
-                  .args(z.any(), z.any(), z.any())
-                  .returns(z.void())
-                  .optional(),
-                error: z
-                  .function()
-                  .args(z.instanceof(Error), z.any(), z.any())
-                  .returns(z.void())
-                  .optional()
-              })
-              .optional()
-          })
-          .passthrough()
-      )
-      .optional(),
+    proxy: proxySchema.optional(),
     strictPort: z.boolean().optional(),
     hmr: z
       .union([

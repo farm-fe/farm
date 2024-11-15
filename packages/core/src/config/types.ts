@@ -101,7 +101,11 @@ export interface UserPreviewServerConfig {
    * if failed to binding on specified port.
    */
   strictPort?: boolean;
-  /** Secure server options */
+  /**
+   * Secure server options
+   * Defaults to `server.https` if not specified.
+   * Set to `false` to disable https options.
+   */
   https?: SecureServerOptions;
   /**
    * Specify where the dist directory is located.
@@ -122,6 +126,12 @@ export interface UserPreviewServerConfig {
    * Defaults to `false` if not specified.
    */
   cors?: boolean | any;
+  /**
+   * Proxy options for preview server.
+   * Defaults to `server.proxy` if not specified.
+   * Set to `false` to disable proxy.
+   */
+  proxy?: Record<string, any>;
 }
 
 export type NormalizedServerConfig = Required<

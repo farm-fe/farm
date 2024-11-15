@@ -18,13 +18,20 @@ import {
   teardownSIGTERMListener
 } from '../utils/http.js';
 import { printServerUrls } from '../utils/logger.js';
+import { isObject } from '../utils/share.js';
 import { knownJavascriptExtensionRE } from '../utils/url.js';
-import { CorsOptions, httpServer } from './http.js';
+import {
+  type CommonServerOptions,
+  type CorsOptions,
+  httpServer
+} from './http.js';
+import type { HttpServer } from './index.js';
 import { notFoundMiddleware } from './middlewares/notFound.js';
+import { type ProxyOptions, proxyMiddleware } from './middlewares/proxy.js';
 import { publicPathMiddleware } from './middlewares/publicPath.js';
 import { openBrowser } from './open.js';
 
-export interface PreviewServerOptions {
+export interface PreviewServerOptions extends CommonServerOptions {
   headers: OutgoingHttpHeaders;
   host: string;
   port: number;
@@ -33,6 +40,7 @@ export interface PreviewServerOptions {
   distDir: string;
   open: boolean | string;
   cors: boolean | CorsOptions;
+  proxy: Record<string, string | ProxyOptions>;
 }
 
 /**
@@ -45,6 +53,7 @@ export class PreviewServer extends httpServer {
   httpsOptions: SecureServerOptions;
 
   publicPath: string;
+  httpServer: HttpServer;
 
   app: connect.Server;
   serve: RequestHandler;
@@ -103,11 +112,19 @@ export class PreviewServer extends httpServer {
    * @private
    */
   #initializeMiddlewares() {
-    const { cors } = this.previewServerOptions;
-    const appType = this.resolvedUserConfig.server.appType;
+    const { cors, proxy } = this.previewServerOptions;
+    const { appType, middlewareMode } = this.resolvedUserConfig.server;
 
     if (cors !== false) {
       this.app.use(corsMiddleware(typeof cors === 'boolean' ? {} : cors));
+    }
+
+    if (proxy) {
+      const middlewareServer =
+        isObject(middlewareMode) && 'server' in middlewareMode
+          ? middlewareMode.server
+          : this.httpServer;
+      this.app.use(proxyMiddleware(this, middlewareServer));
     }
 
     this.app.use(compression());
@@ -179,7 +196,8 @@ export class PreviewServer extends httpServer {
       https: this.httpsOptions,
       distDir,
       open: preview?.open ?? false,
-      cors: preview?.cors ?? false
+      cors: preview?.cors ?? false,
+      proxy: preview?.proxy ?? server?.proxy
     };
   }
 
