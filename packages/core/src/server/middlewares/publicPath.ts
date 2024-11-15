@@ -1,11 +1,8 @@
-import { cleanUrl, withTrailingSlash } from '../../utils/index.js';
+import { cleanUrl, isDevServer, withTrailingSlash } from '../../utils/index.js';
 
 import type Connect from 'connect';
 import { Server as DevServer } from '../index.js';
 import type { PreviewServer } from '../preview.js';
-
-const isDevServer = (app: DevServer | PreviewServer): app is DevServer =>
-  app instanceof DevServer;
 
 export function publicPathMiddleware(
   app: DevServer | PreviewServer
