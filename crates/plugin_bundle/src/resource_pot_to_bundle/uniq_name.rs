@@ -239,6 +239,16 @@ impl BundleVariable {
     index.unwrap()
   }
 
+  pub fn register_placeholder(&mut self, module_id: &ModuleId, ident: &Ident) -> usize {
+    let index = self.register_var(module_id, ident, true);
+
+    self.uniq_name_mut().insert(ident.sym.as_str());
+
+    self.var_mut_by_index(index).placeholder = true;
+
+    index
+  }
+
   pub fn branch(&self) -> Self {
     Self {
       index: Arc::clone(&self.index),
@@ -255,14 +265,26 @@ impl BundleVariable {
     self.used_names.extend(other.used_names);
 
     // when merge stage, uniq_name is all unresolved var, so we only record once
-    for (resource_pot, uniq_name) in other.uniq_name_hash_map {
-      if let Some(self_uniq_name) = self.uniq_name_hash_map.get_mut(&resource_pot) {
-        uniq_name.name_count_map.into_iter().for_each(|(name, _)| {
-          self_uniq_name.insert(&name);
-        });
-      } else {
-        self.uniq_name_hash_map.insert(resource_pot, uniq_name);
+    for (resource_pot, other_uniq_name) in other.uniq_name_hash_map {
+      if !self.uniq_name_hash_map.contains_key(&resource_pot) {
+        self
+          .uniq_name_hash_map
+          .insert(resource_pot.clone(), UniqName::new());
       }
+
+      let Some(uniq_name) = self.uniq_name_hash_map.get_mut(&resource_pot) else {
+        unreachable!()
+      };
+
+      other_uniq_name
+        .name_count_map
+        .into_iter()
+        .for_each(|(name, _)| {
+          if uniq_name.contain(&name) {
+            return;
+          }
+          uniq_name.insert(&name);
+        });
     }
   }
 
@@ -292,13 +314,23 @@ impl BundleVariable {
 
   pub fn set_rename(&mut self, index: usize, rename: String) {
     let var = self.var_mut_by_index(index);
+    if var.placeholder {
+      return;
+    }
+
     if var.rename.is_none() {
       var.rename = Some(rename);
     }
   }
 
   pub fn set_rename_force(&mut self, index: usize, rename: String) {
-    self.var_mut_by_index(index).rename = Some(rename);
+    let var = self.var_mut_by_index(index);
+
+    if var.placeholder {
+      return;
+    }
+
+    var.rename = Some(rename);
   }
 
   pub fn rename(&self, index: usize) -> Option<&String> {
@@ -316,11 +348,8 @@ impl BundleVariable {
 
   pub fn render_name(&self, index: usize) -> String {
     let var = self.var_by_index(index);
-    if let Some(rename) = var.rename.as_ref() {
-      return rename.clone();
-    }
 
-    var.var.0.to_string()
+    var.render_name()
   }
 
   pub fn set_var_uniq_rename_string(&mut self, index: usize, var_ident: String) {
