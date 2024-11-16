@@ -2,6 +2,7 @@ use std::{any::Any, path::Path, sync::Arc};
 
 use dashmap::DashMap;
 use parking_lot::{Mutex, RwLock};
+use rustc_hash::FxHashMap;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use swc_common::Globals;
@@ -32,7 +33,7 @@ pub struct CompilationContext {
   pub module_group_graph: Box<RwLock<ModuleGroupGraph>>,
   pub plugin_driver: Box<PluginDriver>,
   pub resource_pot_map: Box<RwLock<ResourcePotMap>>,
-  pub resources_map: Box<Mutex<HashMap<String, Resource>>>,
+  pub resources_map: Box<Mutex<FxHashMap<String, Resource>>>,
   pub cache_manager: Box<CacheManager>,
   pub meta: Box<ContextMetaData>,
   /// Record stats for the compilation, for example, compilation time, plugin hook time, etc.
@@ -51,7 +52,7 @@ impl CompilationContext {
       module_graph: Box::new(RwLock::new(ModuleGraph::new())),
       module_group_graph: Box::new(RwLock::new(ModuleGroupGraph::new())),
       resource_pot_map: Box::new(RwLock::new(ResourcePotMap::new())),
-      resources_map: Box::new(Mutex::new(HashMap::new())),
+      resources_map: Box::new(Mutex::new(FxHashMap::default())),
       plugin_driver: Box::new(Self::create_plugin_driver(plugins, config.record)),
       cache_manager: Box::new(CacheManager::new(
         &cache_dir,

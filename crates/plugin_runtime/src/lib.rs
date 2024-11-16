@@ -469,7 +469,7 @@ impl FarmPluginRuntime {
   pub(crate) fn get_async_modules<'a>(
     &'a self,
     context: &'a Arc<CompilationContext>,
-  ) -> farmfe_core::dashmap::mapref::one::Ref<'_, String, Box<dyn Any + Send + Sync>> {
+  ) -> farmfe_core::dashmap::mapref::one::Ref<'a, String, Box<dyn Any + Send + Sync>> {
     context.custom.get(ASYNC_MODULES).unwrap()
   }
 }

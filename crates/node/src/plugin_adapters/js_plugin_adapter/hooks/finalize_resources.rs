@@ -7,6 +7,7 @@ use farmfe_core::{
   resource::Resource,
   serde::{Deserialize, Serialize},
 };
+use rustc_hash::FxHashMap;
 
 use crate::plugin_adapters::js_plugin_adapter::thread_safe_js_plugin_hook::ThreadSafeJsPluginHook;
 
@@ -17,7 +18,7 @@ pub struct JsPluginFinalizeResourcesHook {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(crate = "farmfe_core::serde", rename_all = "camelCase")]
 pub struct JsPluginFinalizeResourcesHookParams {
-  pub resources_map: HashMap<String, Resource>,
+  pub resources_map: FxHashMap<String, Resource>,
   pub config: farmfe_core::config::Config,
 }
 

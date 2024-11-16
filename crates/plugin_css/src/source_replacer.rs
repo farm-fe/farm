@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use farmfe_core::{
   config::AliasItem,
   module::{module_graph::ModuleGraph, ModuleId},
@@ -12,13 +10,14 @@ use farmfe_toolkit::{
   resolve::path_start_with_alias::is_start_with_alias,
   swc_css_visit::{VisitMut, VisitMutWith},
 };
+use rustc_hash::FxHashMap;
 
 use crate::dep_analyzer::is_source_ignored;
 
 pub struct SourceReplacer<'a> {
   module_id: ModuleId,
   module_graph: &'a ModuleGraph,
-  resources_map: &'a HashMap<String, Resource>,
+  resources_map: &'a FxHashMap<String, Resource>,
   public_path: String,
   alias: Vec<AliasItem>,
 }
@@ -27,7 +26,7 @@ impl<'a> SourceReplacer<'a> {
   pub fn new(
     module_id: ModuleId,
     module_graph: &'a ModuleGraph,
-    resources_map: &'a HashMap<String, Resource>,
+    resources_map: &'a FxHashMap<String, Resource>,
     public_path: String,
     alias: Vec<AliasItem>,
   ) -> Self {

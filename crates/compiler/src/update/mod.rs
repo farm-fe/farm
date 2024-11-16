@@ -1,7 +1,4 @@
-use std::{
-  collections::{HashMap, HashSet},
-  sync::Arc,
-};
+use std::sync::Arc;
 
 use farmfe_core::{
   cache::module_cache::CachedModule,
@@ -16,7 +13,7 @@ use farmfe_core::{
 };
 
 use farmfe_toolkit::get_dynamic_resources_map::get_dynamic_resources_map;
-use rustc_hash::FxHashSet;
+use rustc_hash::{FxHashMap, FxHashSet};
 
 use crate::{
   build::{
@@ -107,7 +104,7 @@ impl Compiler {
 
   fn set_hmr_diff_stats(
     &self,
-    removed_modules: &HashMap<ModuleId, Module>,
+    removed_modules: &FxHashMap<ModuleId, Module>,
     affected_module_groups: &FxHashSet<ModuleGroupId>,
     diff_result: &DiffResult,
     start_points: &Vec<ModuleId>,
@@ -564,7 +561,7 @@ impl Compiler {
     FxHashSet<ModuleId>,
     Vec<ModuleId>,
     DiffResult,
-    HashMap<ModuleId, Module>,
+    FxHashMap<ModuleId, Module>,
   ) {
     let start_points: Vec<ModuleId> = paths
       .into_iter()
@@ -616,10 +613,10 @@ impl Compiler {
     previous_module_groups: FxHashSet<ModuleGroupId>,
     updated_module_ids: &Vec<ModuleId>,
     diff_result: DiffResult,
-    removed_modules: HashMap<ModuleId, Module>,
+    removed_modules: FxHashMap<ModuleId, Module>,
     callback: F,
     sync: bool,
-  ) -> Option<HashMap<ModuleId, Vec<(String, ResourceType)>>>
+  ) -> Option<FxHashMap<ModuleId, Vec<(String, ResourceType)>>>
   where
     F: FnOnce() + Send + Sync + 'static,
   {
@@ -648,7 +645,7 @@ impl Compiler {
       let resources_map = self.context.resources_map.lock();
       let module_graph = self.context.module_graph.read();
 
-      let mut dynamic_resources = HashMap::new();
+      let mut dynamic_resources = FxHashMap::default();
 
       for entry_id in module_graph.entries.keys() {
         dynamic_resources.extend(get_dynamic_resources_map(
@@ -780,5 +777,5 @@ struct PrintedDiffAndPatchContext {
   affected_module_groups: FxHashSet<ModuleGroupId>,
   start_points: Vec<ModuleId>,
   diff_result: DiffResult,
-  removed_modules: HashSet<ModuleId>,
+  removed_modules: FxHashSet<ModuleId>,
 }

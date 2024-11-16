@@ -4,8 +4,7 @@ use farmfe_core::{
   plugin::PluginHookContext,
   resource::resource_pot::{ResourcePot, ResourcePotId},
 };
-use rustc_hash::FxHashSet;
-use std::collections::{HashMap, HashSet};
+use rustc_hash::{FxHashMap, FxHashSet};
 use std::sync::Arc;
 
 use crate::{
@@ -28,7 +27,7 @@ pub fn generate_and_diff_resource_pots(
   module_groups: &FxHashSet<ModuleGroupId>,
   diff_result: &DiffResult,
   updated_module_ids: &Vec<ModuleId>,
-  removed_modules: &HashMap<ModuleId, Module>,
+  removed_modules: &FxHashMap<ModuleId, Module>,
   context: &Arc<CompilationContext>,
 ) -> farmfe_core::error::Result<Vec<ResourcePotId>> {
   let affected_modules = get_affected_modules(module_groups, context);
@@ -101,13 +100,13 @@ fn handle_enforce_resource_pots(
   affected_modules: &Vec<ModuleId>,
   diff_result: &DiffResult,
   updated_module_ids: &Vec<ModuleId>,
-  removed_modules: &HashMap<ModuleId, Module>,
+  removed_modules: &FxHashMap<ModuleId, Module>,
   context: &Arc<CompilationContext>,
 ) -> (Vec<ResourcePotId>, Vec<ModuleId>) {
   let module_graph = context.module_graph.read();
   let mut resource_pot_map = context.resource_pot_map.write();
-  let mut un_enforced_modules = HashSet::new();
-  let mut affected_resource_pot_ids = HashSet::new();
+  let mut un_enforced_modules = FxHashSet::default();
+  let mut affected_resource_pot_ids = FxHashSet::default();
 
   let is_module_external = |module_id: &ModuleId| {
     let module = if let Some(module) = removed_modules.get(module_id) {
@@ -119,7 +118,7 @@ fn handle_enforce_resource_pots(
     module.external
   };
 
-  let mut handle_changed_modules = |module_ids: &HashSet<ModuleId>, ty: ChangedModuleType| {
+  let mut handle_changed_modules = |module_ids: &FxHashSet<ModuleId>, ty: ChangedModuleType| {
     for module_id in module_ids {
       // ignore external module
       if is_module_external(module_id) {
@@ -160,7 +159,7 @@ fn handle_enforce_resource_pots(
     &updated_module_ids
       .clone()
       .into_iter()
-      .collect::<HashSet<_>>(),
+      .collect::<FxHashSet<_>>(),
     ChangedModuleType::Updated,
   );
   handle_changed_modules(&diff_result.added_modules, ChangedModuleType::Added);

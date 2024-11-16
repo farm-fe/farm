@@ -57,6 +57,7 @@ use farmfe_toolkit::{
 };
 use farmfe_utils::{parse_query, relative, stringify_query};
 use rkyv::Deserialize;
+use rustc_hash::FxHashMap;
 use source_replacer::SourceReplacer;
 
 pub const FARM_CSS_MODULES: &str = "farm_css_modules";
@@ -819,7 +820,7 @@ pub fn source_replace(
   stylesheet: &mut Stylesheet,
   module_id: &ModuleId,
   module_graph: &ModuleGraph,
-  resources_map: &HashMap<String, Resource>,
+  resources_map: &FxHashMap<String, Resource>,
   public_path: String,
   alias: Vec<AliasItem>,
 ) {

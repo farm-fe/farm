@@ -1,4 +1,4 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
 use std::sync::Arc;
 
 use farmfe_core::{
@@ -15,7 +15,7 @@ use farmfe_plugin_runtime::render_resource_pot::{
 use farmfe_plugin_runtime::ASYNC_MODULES;
 use farmfe_toolkit::hash::base64_encode;
 use farmfe_utils::relative;
-use rustc_hash::FxHashSet;
+use rustc_hash::{FxHashMap, FxHashSet};
 
 use crate::{
   generate::render_resource_pots::{
@@ -153,7 +153,7 @@ pub fn regenerate_resources_for_affected_module_groups(
   affected_module_groups: FxHashSet<ModuleGroupId>,
   diff_result: DiffResult,
   updated_module_ids: &Vec<ModuleId>,
-  removed_modules: &HashMap<ModuleId, Module>,
+  removed_modules: &FxHashMap<ModuleId, Module>,
   context: &Arc<CompilationContext>,
 ) -> farmfe_core::error::Result<()> {
   // if there are deps changes, update execution order

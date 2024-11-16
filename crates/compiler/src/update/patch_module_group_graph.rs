@@ -1,18 +1,18 @@
-use std::collections::{HashMap, HashSet, VecDeque};
+use std::collections::VecDeque;
 
 use farmfe_core::module::{
   module_graph::ModuleGraph,
   module_group::{ModuleGroup, ModuleGroupGraph},
   Module, ModuleId,
 };
-use rustc_hash::FxHashSet;
+use rustc_hash::{FxHashMap, FxHashSet};
 
 use super::diff_and_patch_module_graph::DiffResult;
 
 pub fn patch_module_group_graph(
   updated_module_ids: Vec<ModuleId>,
   diff_result: &DiffResult,
-  removed_modules: &HashMap<ModuleId, Module>,
+  removed_modules: &FxHashMap<ModuleId, Module>,
   module_graph: &mut ModuleGraph,
   module_group_graph: &mut ModuleGroupGraph,
 ) -> FxHashSet<ModuleId> {

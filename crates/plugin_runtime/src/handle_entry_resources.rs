@@ -23,6 +23,7 @@ use farmfe_toolkit::get_dynamic_resources_map::{
 use farmfe_toolkit::html::get_farm_global_this;
 use farmfe_toolkit::sourcemap::SourceMap;
 use farmfe_utils::transform_string_to_static_str;
+use rustc_hash::FxHashMap;
 
 const FARM_NODE_MODULE: &str = "__farmNodeModule";
 
@@ -220,7 +221,7 @@ fn get_entry_resource_and_dep_resources_name(
   entry: &ModuleId,
   module: &Module,
   module_group_graph: &ModuleGroupGraph,
-  resource_map: &HashMap<String, Resource>,
+  resource_map: &FxHashMap<String, Resource>,
   module_graph: &ModuleGraph,
   context: &Arc<CompilationContext>,
 ) -> EntryResourceAndDepResources {
@@ -287,7 +288,7 @@ fn get_entry_resource_and_dep_resources_name(
 }
 
 pub fn handle_entry_resources(
-  resources_map: &mut HashMap<String, Resource>,
+  resources_map: &mut FxHashMap<String, Resource>,
   context: &Arc<CompilationContext>,
   async_modules: &HashSet<ModuleId>,
 ) {
@@ -463,7 +464,7 @@ pub fn handle_entry_resources(
 }
 
 fn create_runtime_code(
-  resources_map: &HashMap<String, Resource>,
+  resources_map: &FxHashMap<String, Resource>,
   context: &Arc<CompilationContext>,
 ) -> String {
   let node_specific_code = if context.config.output.target_env.is_node() {

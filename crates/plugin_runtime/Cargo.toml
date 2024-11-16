@@ -16,6 +16,7 @@ farmfe_testing_helpers = { path = "../testing_helpers", version = "0.0.14" }
 farmfe_utils = { path = "../utils", version = "0.1.6" }
 farmfe_plugin_bundle = { path = "../plugin_bundle/" }
 rkyv = { version = "0.7.42" }
+rustc-hash = "2.0.0"
 
 [features]
 profile = ["farmfe_core/profile"]

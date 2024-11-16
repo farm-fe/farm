@@ -12,7 +12,6 @@ use farmfe_core::{
     preset_env::PresetEnvConfig, Config, CssConfig, Mode, RuntimeConfig, SourcemapConfig,
   },
   plugin::Plugin,
-  serde::de::DeserializeOwned,
   serde_json::{self, Value},
 };
 use farmfe_testing_helpers::is_update_snapshot_from_env;
