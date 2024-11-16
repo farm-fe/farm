@@ -1,6 +1,7 @@
 //! Cache store of the persistent cache, responsible for reading and writing the cache from the disk.
 use dashmap::{mapref::multiple::RefMulti, DashMap};
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
+use rustc_hash::FxHashMap;
 
 use std::{
   collections::HashMap,
@@ -143,7 +144,7 @@ impl CacheStore {
   }
 
   /// Write the cache map to the disk.
-  pub fn write_cache(&self, cache_map: HashMap<CacheStoreKey, Vec<u8>>) {
+  pub fn write_cache(&self, cache_map: FxHashMap<CacheStoreKey, Vec<u8>>) {
     let cache_file_dir = &self.cache_dir;
     if !cache_file_dir.exists() {
       std::fs::create_dir_all(cache_file_dir).unwrap();

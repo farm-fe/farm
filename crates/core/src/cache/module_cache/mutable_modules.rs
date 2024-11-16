@@ -4,6 +4,7 @@ use dashmap::DashMap;
 use farmfe_utils::hash::sha256;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use rkyv::Deserialize;
+use rustc_hash::FxHashMap;
 
 use crate::{
   cache::cache_store::{CacheStore, CacheStoreKey},
@@ -111,7 +112,7 @@ impl ModuleMemoryStore for MutableModulesMemoryStore {
   }
 
   fn write_cache(&self) {
-    let mut cache_map = HashMap::new();
+    let mut cache_map = FxHashMap::default();
 
     for entry in self.cached_modules.iter() {
       let module = entry.value();
@@ -125,7 +126,7 @@ impl ModuleMemoryStore for MutableModulesMemoryStore {
     let cache_map = cache_map
       .into_par_iter()
       .map(|(store_key, module)| (store_key, serialize!(&module)))
-      .collect::<HashMap<_, _>>();
+      .collect::<FxHashMap<_, _>>();
 
     self.store.write_cache(cache_map);
   }

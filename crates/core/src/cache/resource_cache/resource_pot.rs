@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use dashmap::DashMap;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use rkyv::Deserialize;
+use rustc_hash::FxHashMap;
 
 use crate::{
   cache::cache_store::{CacheStore, CacheStoreKey},
@@ -67,7 +68,7 @@ impl ResourceMemoryStore for ResourcePotMemoryStore {
   }
 
   fn write_cache(&self) {
-    let mut cache_map = HashMap::new();
+    let mut cache_map = FxHashMap::default();
 
     for entry in self.cached_resources.iter() {
       let store_key = CacheStoreKey {
@@ -83,7 +84,7 @@ impl ResourceMemoryStore for ResourcePotMemoryStore {
     let cache_map = cache_map
       .into_par_iter()
       .map(|(store_key, resource)| (store_key, serialize!(resource.value())))
-      .collect::<HashMap<_, _>>();
+      .collect::<FxHashMap<_, _>>();
 
     self.store.write_cache(cache_map);
   }
