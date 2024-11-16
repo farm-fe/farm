@@ -9,6 +9,7 @@ use farmfe_core::{
   },
   resource::{resource_pot_map::ResourcePotMap, Resource, ResourceType},
 };
+use rustc_hash::FxHashMap;
 
 pub fn get_dynamic_resources_map(
   module_group_graph: &ModuleGroupGraph,
@@ -81,7 +82,7 @@ pub fn get_dynamic_resources_code(
 ) -> (String, String) {
   let mut dynamic_resources_code_vec = vec![];
   let mut dynamic_resources = vec![];
-  let mut visited_resources = HashMap::new();
+  let mut visited_resources = FxHashMap::default();
 
   // inject dynamic resources
   let mut dynamic_resources_map_vec = dynamic_resources_map.iter().collect::<Vec<_>>();
