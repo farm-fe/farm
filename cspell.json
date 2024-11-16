@@ -130,8 +130,8 @@
     "insta",
     "instanceof",
     "Instantiator",
-    "JDEL",
     "itertools",
+    "JDEL",
     "jfif",
     "JIDA",
     "jquery",
@@ -154,6 +154,7 @@
     "Menlo",
     "Mergeable",
     "metastring",
+    "metavars",
     "mgfe",
     "middlewares",
     "minifier",
@@ -235,6 +236,7 @@
     "rsplit",
     "rspress",
     "Rucdk",
+    "rustc",
     "Rustup",
     "sabi",
     "safelisted",
@@ -307,10 +309,7 @@
     "ZERs",
     "Zjwg",
     "Zwram",
-    "zzse",
-    "Fira",
-    "atrule",
-    "metavars"
+    "zzse"
   ],
   "ignorePaths": [
     "pnpm-lock.yaml",
