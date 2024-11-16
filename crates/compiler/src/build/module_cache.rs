@@ -1,4 +1,4 @@
-use std::{collections::HashSet, path::PathBuf, sync::Arc, time::SystemTime};
+use std::{path::PathBuf, sync::Arc, time::SystemTime};
 
 use farmfe_core::{
   cache::module_cache::{CachedModule, CachedModuleDependency, CachedWatchDependency},
