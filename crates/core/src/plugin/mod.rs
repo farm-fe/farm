@@ -1,6 +1,7 @@
 use std::{any::Any, collections::HashMap, hash::Hash, sync::Arc};
 
 use farmfe_macro_cache_item::cache_item;
+use rustc_hash::FxHashMap;
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -525,10 +526,11 @@ pub struct UpdateResult {
   /// This code string should be returned to the client side as MIME type `application/javascript`
   pub immutable_resources: String,
   pub mutable_resources: String,
-  pub boundaries: HashMap<String, Vec<Vec<String>>>,
+  pub boundaries: FxHashMap<String, Vec<Vec<String>>>,
   pub dynamic_resources_map: Option<HashMap<ModuleId, Vec<(String, ResourceType)>>>,
   pub extra_watch_result: WatchDiffResult,
 }
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum UpdateType {
   // added a new module

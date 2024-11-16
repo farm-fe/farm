@@ -4,6 +4,7 @@ use farmfe_core::{
   plugin::PluginHookContext,
   resource::resource_pot::{ResourcePot, ResourcePotId},
 };
+use rustc_hash::FxHashSet;
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 
@@ -24,7 +25,7 @@ use crate::{
 ///    4.1 for existing resource pot only rerender it when it's modules are changed, added or removed.
 ///    4.2 alway render new resource pots and remove the old ones
 pub fn generate_and_diff_resource_pots(
-  module_groups: &HashSet<ModuleGroupId>,
+  module_groups: &FxHashSet<ModuleGroupId>,
   diff_result: &DiffResult,
   updated_module_ids: &Vec<ModuleId>,
   removed_modules: &HashMap<ModuleId, Module>,
@@ -71,14 +72,14 @@ pub fn generate_and_diff_resource_pots(
 }
 
 fn get_affected_modules(
-  module_groups: &HashSet<ModuleGroupId>,
+  module_groups: &FxHashSet<ModuleGroupId>,
   context: &Arc<CompilationContext>,
 ) -> Vec<ModuleId> {
   let module_group_graph = context.module_group_graph.read();
   // let mut enforce_resource_pots = HashSet::new();
   module_groups
     .iter()
-    .fold(HashSet::new(), |mut acc, module_group_id| {
+    .fold(FxHashSet::default(), |mut acc, module_group_id| {
       let module_group = module_group_graph.module_group(module_group_id).unwrap();
       acc.extend(module_group.modules().clone());
       acc

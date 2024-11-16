@@ -310,7 +310,7 @@ impl JsCompiler {
               .collect(),
             immutable_modules: res.immutable_resources,
             mutable_modules: res.mutable_resources,
-            boundaries: res.boundaries,
+            boundaries: res.boundaries.into_iter().collect(),
             dynamic_resources_map: res.dynamic_resources_map.map(|dynamic_resources_map| {
               dynamic_resources_map
                 .into_iter()

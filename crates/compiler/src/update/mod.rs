@@ -16,6 +16,7 @@ use farmfe_core::{
 };
 
 use farmfe_toolkit::get_dynamic_resources_map::get_dynamic_resources_map;
+use rustc_hash::FxHashSet;
 
 use crate::{
   build::{
@@ -107,7 +108,7 @@ impl Compiler {
   fn set_hmr_diff_stats(
     &self,
     removed_modules: &HashMap<ModuleId, Module>,
-    affected_module_groups: &HashSet<ModuleGroupId>,
+    affected_module_groups: &FxHashSet<ModuleGroupId>,
     diff_result: &DiffResult,
     start_points: &Vec<ModuleId>,
   ) {
@@ -154,7 +155,7 @@ impl Compiler {
     let (err_sender, err_receiver) = Self::create_thread_channel();
     let update_context = Arc::new(UpdateContext::new());
 
-    let mut old_watch_extra_resources: HashSet<ModuleId> = self
+    let mut old_watch_extra_resources: FxHashSet<ModuleId> = self
       .context
       .watch_graph
       .read()
@@ -251,7 +252,7 @@ impl Compiler {
         .module_groups()
         .into_iter()
         .map(|m| m.id.clone())
-        .collect::<HashSet<_>>()
+        .collect::<FxHashSet<_>>()
     };
 
     let (affected_module_groups, updated_module_ids, diff_result, removed_modules) =
@@ -285,7 +286,7 @@ impl Compiler {
     // after update_module, diff old_resource and new_resource
     {
       let watch_graph = self.context.watch_graph.read();
-      let module_ids: HashSet<&ModuleId> = watch_graph.modules().into_iter().collect();
+      let module_ids: FxHashSet<&ModuleId> = watch_graph.modules().into_iter().collect();
 
       let watch_diff_result = &mut update_result.extra_watch_result;
 
@@ -560,7 +561,7 @@ impl Compiler {
     paths: Vec<(String, UpdateType)>,
     update_context: &Arc<UpdateContext>,
   ) -> (
-    HashSet<ModuleId>,
+    FxHashSet<ModuleId>,
     Vec<ModuleId>,
     DiffResult,
     HashMap<ModuleId, Module>,
@@ -611,8 +612,8 @@ impl Compiler {
 
   fn regenerate_resources<F>(
     &self,
-    affected_module_groups: HashSet<ModuleGroupId>,
-    previous_module_groups: HashSet<ModuleGroupId>,
+    affected_module_groups: FxHashSet<ModuleGroupId>,
+    previous_module_groups: FxHashSet<ModuleGroupId>,
     updated_module_ids: &Vec<ModuleId>,
     diff_result: DiffResult,
     removed_modules: HashMap<ModuleId, Module>,
@@ -776,7 +777,7 @@ fn resolve_module(
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase", crate = "farmfe_core::serde")]
 struct PrintedDiffAndPatchContext {
-  affected_module_groups: HashSet<ModuleGroupId>,
+  affected_module_groups: FxHashSet<ModuleGroupId>,
   start_points: Vec<ModuleId>,
   diff_result: DiffResult,
   removed_modules: HashSet<ModuleId>,

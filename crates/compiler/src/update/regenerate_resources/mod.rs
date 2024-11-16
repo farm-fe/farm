@@ -15,6 +15,7 @@ use farmfe_plugin_runtime::render_resource_pot::{
 use farmfe_plugin_runtime::ASYNC_MODULES;
 use farmfe_toolkit::hash::base64_encode;
 use farmfe_utils::relative;
+use rustc_hash::FxHashSet;
 
 use crate::{
   generate::render_resource_pots::{
@@ -149,7 +150,7 @@ pub fn render_and_generate_update_resource(
 }
 
 pub fn regenerate_resources_for_affected_module_groups(
-  affected_module_groups: HashSet<ModuleGroupId>,
+  affected_module_groups: FxHashSet<ModuleGroupId>,
   diff_result: DiffResult,
   updated_module_ids: &Vec<ModuleId>,
   removed_modules: &HashMap<ModuleId, Module>,
@@ -231,7 +232,7 @@ pub fn regenerate_resources_for_affected_module_groups(
 }
 
 fn clear_resource_pot_of_modules_in_module_groups(
-  module_group_id: &HashSet<ModuleGroupId>,
+  module_group_id: &FxHashSet<ModuleGroupId>,
   context: &Arc<CompilationContext>,
 ) {
   for module_group_id in module_group_id {

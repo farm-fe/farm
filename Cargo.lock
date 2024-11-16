@@ -1715,6 +1715,7 @@ dependencies = [
  "notify",
  "puffin_egui",
  "regex",
+ "rustc-hash 2.0.0",
 ]
 
 [[package]]
