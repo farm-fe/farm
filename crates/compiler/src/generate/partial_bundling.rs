@@ -12,6 +12,7 @@ use farmfe_core::{
     resource_pot_map::ResourcePotMap,
   },
 };
+use rustc_hash::FxHashSet;
 
 pub fn partial_bundling(
   context: &Arc<CompilationContext>,
@@ -110,7 +111,7 @@ pub fn fill_necessary_fields_for_resource_pot(
   let mut module_group_graph = context.module_group_graph.write();
 
   for resource_pot in resources_pots {
-    let mut module_groups = HashSet::new();
+    let mut module_groups = FxHashSet::default();
     let mut entry_module = None;
 
     for module_id in resource_pot.modules() {
@@ -208,7 +209,6 @@ fn generate_enforce_resource_pots(
 
 #[cfg(test)]
 mod tests {
-  use std::collections::HashSet;
   use std::sync::Arc;
 
   use farmfe_core::{

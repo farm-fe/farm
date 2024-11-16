@@ -211,7 +211,7 @@ fn diff_and_patch_resource_pot_map(
   resources_pots: Vec<ResourcePot>,
   enforce_resource_pot_ids: &Vec<String>,
   context: &Arc<CompilationContext>,
-) -> HashSet<ResourcePotId> {
+) -> FxHashSet<ResourcePotId> {
   let resources_pots_ids = resources_pots
     .iter()
     .map(|rp| rp.id.clone())
@@ -221,10 +221,10 @@ fn diff_and_patch_resource_pot_map(
   let mut resource_pot_map = context.resource_pot_map.write();
   let mut module_group_graph = context.module_group_graph.write();
 
-  let mut new_resource_pot_ids = HashSet::new();
+  let mut new_resource_pot_ids = FxHashSet::default();
 
   for mut resource_pot in resources_pots {
-    let mut module_groups = HashSet::new();
+    let mut module_groups = FxHashSet::default();
 
     for module_id in resource_pot.modules() {
       let module = module_graph.module(module_id).unwrap();

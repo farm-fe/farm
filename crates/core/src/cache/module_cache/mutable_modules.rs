@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use dashmap::DashMap;
 use farmfe_utils::hash::sha256;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};

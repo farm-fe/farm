@@ -1,3 +1,4 @@
+use rustc_hash::FxHashSet;
 use serde::{Deserialize, Serialize};
 
 use std::collections::HashSet;
@@ -27,7 +28,7 @@ pub struct ResourcePot {
   /// This field should be filled in partial_bundling_hooks.
   /// the module groups that this [ResourcePot] belongs to.
   /// A [ResourcePot] can belong to multiple module groups.
-  pub module_groups: HashSet<ModuleGroupId>,
+  pub module_groups: FxHashSet<ModuleGroupId>,
   pub immutable: bool,
   pub info: Box<ResourcePotInfo>,
 }
@@ -52,7 +53,7 @@ impl ResourcePot {
       meta: ResourcePotMetaData::default(),
       entry_module: None,
       resources: HashSet::new(),
-      module_groups: HashSet::new(),
+      module_groups: FxHashSet::default(),
       immutable: false,
     }
   }

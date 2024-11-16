@@ -9,6 +9,7 @@ use farmfe_core::{
 };
 use farmfe_plugin_partial_bundling::module_group_graph_from_entries;
 use farmfe_testing_helpers::construct_test_module_graph;
+use rustc_hash::FxHashSet;
 
 use crate::update::diff_and_patch_module_graph::{diff_module_graph, patch_module_graph};
 
@@ -70,7 +71,7 @@ fn test_patch_module_group_graph_1() {
     &mut module_graph,
     &mut module_group_graph,
   );
-  assert_eq!(affected_groups, HashSet::from(["A".into(), "B".into()]));
+  assert_eq!(affected_groups, FxHashSet::from_iter(["A".into(), "B".into()]));
 
   let update_module_group_graph = module_group_graph_from_entries(&entries, &mut module_graph);
 
@@ -130,7 +131,7 @@ fn test_patch_module_group_graph_2() {
   );
   assert_eq!(
     affected_groups,
-    HashSet::from(["A".into(), "B".into(), "F".into()])
+    FxHashSet::from_iter(["A".into(), "B".into(), "F".into()])
   );
   let module_group_b = module_group_graph.module_group(&"B".into()).unwrap();
   assert_eq!(
@@ -203,7 +204,7 @@ fn test_patch_module_group_graph_3() {
   );
   assert_eq!(
     affected_groups,
-    HashSet::from(["A".into(), "B".into(), "F".into(), "D".into()])
+    FxHashSet::from_iter(["A".into(), "B".into(), "F".into(), "D".into()])
   );
 
   let update_module_group_graph = module_group_graph_from_entries(
@@ -303,7 +304,7 @@ fn test_patch_module_group_graph_css_modules() {
     &mut module_graph,
     &mut module_group_graph,
   );
-  assert_eq!(affected_groups, HashSet::from(["D".into(), "B".into()]));
+  assert_eq!(affected_groups, FxHashSet::from_iter(["D".into(), "B".into()]));
 
   let update_module_group_graph = module_group_graph_from_entries(
     &module_graph.entries.clone().into_keys().collect(),
@@ -348,7 +349,7 @@ fn test_patch_module_group_graph_add_and_remove() {
     &mut module_group_graph,
   );
 
-  assert_eq!(affected_groups, HashSet::from(["a".into()]));
+  assert_eq!(affected_groups, FxHashSet::from_iter(["a".into()]));
 
   let update_module_group_graph = module_group_graph_from_entries(&start_points, &mut module_graph);
 
@@ -394,7 +395,7 @@ fn test_patch_module_group_graph_remove_and_add() {
     &mut module_group_graph,
   );
 
-  assert_eq!(affected_groups, HashSet::from(["a".into()]));
+  assert_eq!(affected_groups, FxHashSet::from_iter(["a".into()]));
 
   let update_module_group_graph =
     module_group_graph_from_entries(&vec!["a".into()], &mut module_graph);
@@ -453,7 +454,7 @@ fn test_diff_module_deps_remove_and_add_complex() {
     &mut module_group_graph,
   );
 
-  assert_eq!(affected_groups, HashSet::from(["a".into()]));
+  assert_eq!(affected_groups, FxHashSet::from_iter(["a".into()]));
 
   let update_module_group_graph =
     module_group_graph_from_entries(&vec!["a".into()], &mut module_graph);

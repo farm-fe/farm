@@ -4,13 +4,17 @@ use std::sync::Arc;
 use farmfe_core::{
   config::{
     config_regex::ConfigRegex, partial_bundling::PartialBundlingEnforceResourceConfig, Config,
-  }, context::CompilationContext, farm_profile_function, module::{
+  },
+  context::CompilationContext,
+  module::{
     module_graph::{ModuleGraphEdge, ModuleGraphEdgeDataItem},
     Module, ModuleType,
-  }, plugin::{Plugin, PluginHookContext, ResolveKind}
+  },
+  plugin::{Plugin, PluginHookContext, ResolveKind},
 };
 use farmfe_plugin_partial_bundling::module_group_graph_from_entries;
 use farmfe_testing_helpers::{construct_test_module_graph, construct_test_module_graph_complex};
+use rustc_hash::FxHashSet;
 
 use crate::{
   generate::partial_bundling::generate_resource_pot_map,
@@ -67,7 +71,7 @@ fn test_handle_enforce_resource_pots() {
   );
   assert_eq!(
     affected_groups,
-    HashSet::from(["A".into(), "B".into(), "F".into(), "D".into()])
+    FxHashSet::from_iter(["A".into(), "B".into(), "F".into(), "D".into()])
   );
 
   let affected_modules = affected_groups
@@ -128,10 +132,7 @@ fn test_handle_enforce_resource_pots() {
     &context,
   );
 
-  assert_eq!(
-    enforce_resource_pots,
-    vec!["test_js".to_string()]
-  );
+  assert_eq!(enforce_resource_pots, vec!["test_js".to_string()]);
   un_enforce_resource_pots.sort();
   assert_eq!(
     un_enforce_resource_pots,
@@ -190,7 +191,7 @@ fn test_handle_enforce_resource_pots_one_module_changed() {
     &mut module_graph,
     &mut module_group_graph,
   );
-  assert_eq!(affected_groups, HashSet::from(["I".into()]));
+  assert_eq!(affected_groups, FxHashSet::from_iter(["I".into()]));
 
   let affected_modules = affected_groups
     .iter()

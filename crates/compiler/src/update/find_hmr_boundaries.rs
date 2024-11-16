@@ -1,10 +1,10 @@
-use std::{collections::HashSet, sync::Arc};
+use std::sync::Arc;
 
 use farmfe_core::{
   context::CompilationContext,
   module::{module_graph::ModuleGraph, ModuleId},
 };
-use rustc_hash::FxHashMap;
+use rustc_hash::{FxHashMap, FxHashSet};
 
 pub fn find_hmr_boundaries(
   update_module_ids: &Vec<ModuleId>,
@@ -15,7 +15,7 @@ pub fn find_hmr_boundaries(
 
   for id in update_module_ids {
     let mut stack = vec![id.clone()];
-    let mut visited = HashSet::new();
+    let mut visited = FxHashSet::default();
     let mut res = vec![];
     let all_path_accepted =
       find_hmr_accepted_recursively(id, &module_graph, &mut stack, &mut visited, &mut res);
@@ -44,7 +44,7 @@ fn find_hmr_accepted_recursively(
   id: &ModuleId,
   module_graph: &ModuleGraph,
   stack: &mut Vec<ModuleId>,
-  visited: &mut HashSet<ModuleId>,
+  visited: &mut FxHashSet<ModuleId>,
   res: &mut Vec<Vec<ModuleId>>,
 ) -> bool {
   let module = module_graph.module(id).unwrap();

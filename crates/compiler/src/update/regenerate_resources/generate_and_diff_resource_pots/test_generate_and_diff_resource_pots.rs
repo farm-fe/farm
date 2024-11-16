@@ -1,4 +1,3 @@
-use std::collections::HashSet;
 use std::sync::Arc;
 
 use farmfe_core::{
@@ -17,6 +16,7 @@ use farmfe_testing_helpers::{
   assert_debug_snapshot, assert_resource_pots, assert_sorted_iter_eq, construct_test_module_graph,
   construct_test_module_graph_complex,
 };
+use rustc_hash::FxHashSet;
 
 use crate::{
   generate::partial_bundling::generate_resource_pot_map,
@@ -66,7 +66,7 @@ fn test_generate_and_diff_resource_pots() {
   );
   assert_eq!(
     affected_groups,
-    HashSet::from(["A".into(), "B".into(), "F".into(), "D".into()])
+    FxHashSet::from_iter(["A".into(), "B".into(), "F".into(), "D".into()])
   );
 
   let mut config = Config::default();
@@ -194,7 +194,7 @@ fn test_generate_and_diff_resource_pots_one_module_changed() {
     &mut module_graph,
     &mut module_group_graph,
   );
-  assert_eq!(affected_groups, HashSet::from(["I".into()]));
+  assert_eq!(affected_groups, FxHashSet::from_iter(["I".into()]));
 
   let mut config = Config::default();
   config.partial_bundling.enforce_resources = vec![PartialBundlingEnforceResourceConfig {
