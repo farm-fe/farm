@@ -1,5 +1,12 @@
 # @farmfe/js-plugin-svgr
 
+## 2.0.0
+
+### Patch Changes
+
+- Updated dependencies [7d86847c]
+  - @farmfe/core@1.4.0
+
 ## 1.6.0
 
 ### Patch Changes
