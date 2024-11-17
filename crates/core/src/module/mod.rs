@@ -6,6 +6,7 @@ use blake2::{
   digest::{Update, VariableOutput},
   Blake2bVar,
 };
+use custom_meta_data::CustomMetaDataMap;
 use downcast_rs::{impl_downcast, Downcast};
 use farmfe_macro_cache_item::cache_item;
 use farmfe_utils::relative;
@@ -25,10 +26,11 @@ use swc_css_ast::Stylesheet;
 use swc_ecma_ast::Module as SwcModule;
 use swc_html_ast::Document;
 
-use crate::{config::Mode, resource::resource_pot::ResourcePotId};
+use crate::{config::Mode, resource::resource_pot::ResourcePotId, Cacheable};
 
 use self::module_group::ModuleGroupId;
 
+pub mod custom_meta_data;
 pub mod module_graph;
 pub mod module_group;
 pub mod watch_graph;
@@ -38,6 +40,7 @@ pub const VIRTUAL_MODULE_PREFIX: &str = "virtual:";
 /// A [Module] is a basic compilation unit
 /// The [Module] is created by plugins in the parse hook of build stage
 #[cache_item]
+#[derive(Clone)]
 pub struct Module {
   /// the id of this module, generated from the resolved id.
   pub id: ModuleId,
@@ -77,44 +80,12 @@ pub struct Module {
   pub package_version: String,
 
   // custom meta map
-  pub custom: HashMap<String, Box<dyn SerializeCustomModuleMetaData>>,
+  pub custom: CustomMetaDataMap,
 }
 
-impl Clone for Module {
-  fn clone(&self) -> Self {
-    let custom = if self.custom.is_empty() {
-      HashMap::new()
-    } else {
-      let mut custom = HashMap::new();
-      for (k, v) in self.custom.iter() {
-        let cloned_data = crate::serialize!(v);
-        let cloned_custom =
-          crate::deserialize!(&cloned_data, Box<dyn SerializeCustomModuleMetaData>);
-        custom.insert(k.clone(), cloned_custom);
-      }
-      custom
-    };
-
-    Self {
-      id: self.id.clone(),
-      module_type: self.module_type.clone(),
-      module_groups: self.module_groups.clone(),
-      resource_pot: self.resource_pot.clone(),
-      meta: self.meta.clone(),
-      side_effects: self.side_effects,
-      source_map_chain: self.source_map_chain.clone(),
-      external: self.external,
-      immutable: self.immutable,
-      execution_order: self.execution_order,
-      size: self.size,
-      content: self.content.clone(),
-      used_exports: self.used_exports.clone(),
-      last_update_timestamp: self.last_update_timestamp,
-      content_hash: self.content_hash.clone(),
-      package_name: self.package_name.clone(),
-      package_version: self.package_version.clone(),
-      custom,
-    }
+impl Default for Module {
+  fn default() -> Self {
+    Self::new(ModuleId::from(""))
   }
 }
 
@@ -123,7 +94,7 @@ impl Module {
     Self {
       id,
       module_type: ModuleType::Custom("__farm_unknown".to_string()),
-      meta: Box::new(ModuleMetaData::Custom(Box::new(EmptyModuleMetaData) as _)),
+      meta: Box::new(ModuleMetaData::Custom(CustomMetaDataMap::default())),
       module_groups: HashSet::new(),
       resource_pot: None,
       side_effects: true,
@@ -139,7 +110,7 @@ impl Module {
       content_hash: "".to_string(),
       package_name: "".to_string(),
       package_version: "".to_string(),
-      custom: HashMap::new(),
+      custom: CustomMetaDataMap::default(),
     }
   }
 }
@@ -151,7 +122,7 @@ pub enum ModuleMetaData {
   Script(ScriptModuleMetaData),
   Css(CssModuleMetaData),
   Html(HtmlModuleMetaData),
-  Custom(Box<dyn SerializeCustomModuleMetaData>),
+  Custom(CustomMetaDataMap),
 }
 
 impl ToString for ModuleMetaData {
@@ -172,10 +143,13 @@ impl Clone for ModuleMetaData {
       Self::Css(css) => Self::Css(css.clone()),
       Self::Html(html) => Self::Html(html.clone()),
       Self::Custom(custom) => {
-        let cloned_data = crate::serialize!(custom);
-        let cloned_custom =
-          crate::deserialize!(&cloned_data, Box<dyn SerializeCustomModuleMetaData>);
-        Self::Custom(cloned_custom)
+        let mut custom_new = HashMap::new();
+        for (k, v) in custom.iter() {
+          let cloned_data = v.serialize_bytes().unwrap();
+          let cloned_custom = v.deserialize_bytes(cloned_data).unwrap();
+          custom_new.insert(k.clone(), cloned_custom);
+        }
+        Self::Custom(CustomMetaDataMap::from(custom_new))
       }
     }
   }
@@ -230,40 +204,15 @@ impl ModuleMetaData {
     }
   }
 
-  pub fn as_custom_mut<T: SerializeCustomModuleMetaData + 'static>(&mut self) -> &mut T {
+  /// get custom meta data by key
+  pub fn get_custom_mut<T: Cacheable + Default>(&mut self, key: &str) -> &mut T {
     if let Self::Custom(custom) = self {
-      if let Some(c) = custom.downcast_mut::<T>() {
-        c
-      } else {
-        panic!("custom meta type is not serializable");
-      }
-    } else {
-      panic!("ModuleMetaData is not Custom")
-    }
-  }
-
-  pub fn as_custom<T: SerializeCustomModuleMetaData + 'static>(&self) -> &T {
-    if let Self::Custom(custom) = self {
-      if let Some(c) = custom.downcast_ref::<T>() {
-        c
-      } else {
-        panic!("custom meta type is not serializable");
-      }
+      custom.get_mut(key).unwrap()
     } else {
       panic!("ModuleMetaData is not Custom")
     }
   }
 }
-
-/// Trait that makes sure the trait object implements [rkyv::Serialize] and [rkyv::Deserialize]
-#[archive_dyn(deserialize)]
-pub trait CustomModuleMetaData: Any + Send + Sync + Downcast {}
-
-impl_downcast!(SerializeCustomModuleMetaData);
-
-/// initial empty custom data, plugins may replace this
-#[cache_item(CustomModuleMetaData)]
-pub struct EmptyModuleMetaData;
 
 #[cache_item]
 #[derive(Clone)]
@@ -329,7 +278,7 @@ pub struct ScriptModuleMetaData {
   pub hmr_self_accepted: bool,
   pub hmr_accepted_deps: HashSet<ModuleId>,
   pub comments: CommentsMetaData,
-  pub custom: HashMap<String, Box<dyn SerializeCustomModuleMetaData>>,
+  pub custom: CustomMetaDataMap,
 }
 
 impl Default for ScriptModuleMetaData {
@@ -358,9 +307,8 @@ impl Clone for ScriptModuleMetaData {
     } else {
       let mut custom = HashMap::new();
       for (k, v) in self.custom.iter() {
-        let cloned_data = crate::serialize!(v);
-        let cloned_custom =
-          crate::deserialize!(&cloned_data, Box<dyn SerializeCustomModuleMetaData>);
+        let cloned_data = v.serialize_bytes().unwrap();
+        let cloned_custom = v.deserialize_bytes(cloned_data).unwrap();
         custom.insert(k.clone(), cloned_custom);
       }
       custom
@@ -374,7 +322,7 @@ impl Clone for ScriptModuleMetaData {
       hmr_self_accepted: self.hmr_self_accepted,
       hmr_accepted_deps: self.hmr_accepted_deps.clone(),
       comments: self.comments.clone(),
-      custom,
+      custom: CustomMetaDataMap::from(custom),
     }
   }
 }
@@ -462,7 +410,7 @@ impl ModuleSystem {
 pub struct CssModuleMetaData {
   pub ast: Stylesheet,
   pub comments: CommentsMetaData,
-  pub custom: HashMap<String, Box<dyn SerializeCustomModuleMetaData>>,
+  pub custom: CustomMetaDataMap,
 }
 
 impl Clone for CssModuleMetaData {
@@ -472,9 +420,8 @@ impl Clone for CssModuleMetaData {
     } else {
       let mut custom = HashMap::new();
       for (k, v) in self.custom.iter() {
-        let cloned_data = crate::serialize!(v);
-        let cloned_custom =
-          crate::deserialize!(&cloned_data, Box<dyn SerializeCustomModuleMetaData>);
+        let cloned_data = v.serialize_bytes().unwrap();
+        let cloned_custom = v.deserialize_bytes(cloned_data).unwrap();
         custom.insert(k.clone(), cloned_custom);
       }
       custom
@@ -483,7 +430,7 @@ impl Clone for CssModuleMetaData {
     Self {
       ast: self.ast.clone(),
       comments: self.comments.clone(),
-      custom,
+      custom: CustomMetaDataMap::from(custom),
     }
   }
 }
@@ -507,7 +454,7 @@ impl CssModuleMetaData {
 #[cache_item]
 pub struct HtmlModuleMetaData {
   pub ast: Document,
-  pub custom: HashMap<String, Box<dyn SerializeCustomModuleMetaData>>,
+  pub custom: CustomMetaDataMap,
 }
 
 impl Clone for HtmlModuleMetaData {
@@ -517,9 +464,8 @@ impl Clone for HtmlModuleMetaData {
     } else {
       let mut custom = HashMap::new();
       for (k, v) in self.custom.iter() {
-        let cloned_data = crate::serialize!(v);
-        let cloned_custom =
-          crate::deserialize!(&cloned_data, Box<dyn SerializeCustomModuleMetaData>);
+        let cloned_data = v.serialize_bytes().unwrap();
+        let cloned_custom = v.deserialize_bytes(cloned_data).unwrap();
         custom.insert(k.clone(), cloned_custom);
       }
       custom
@@ -527,7 +473,7 @@ impl Clone for HtmlModuleMetaData {
 
     Self {
       ast: self.ast.clone(),
-      custom,
+      custom: CustomMetaDataMap::from(custom),
     }
   }
 }
@@ -771,16 +717,14 @@ impl serde::Serialize for ModuleId {
 
 #[cfg(test)]
 mod tests {
-  use crate::config::Mode;
+  use crate::{config::Mode, module::custom_meta_data::CustomMetaDataMap};
+  use downcast_rs::Downcast;
   use farmfe_macro_cache_item::cache_item;
   use rkyv_dyn::archive_dyn;
   use rkyv_typename::TypeName;
-  use std::collections::HashSet;
+  use std::collections::{HashMap, HashSet};
 
-  use super::{
-    CustomModuleMetaData, DeserializeCustomModuleMetaData, Module, ModuleId, ModuleMetaData,
-    ModuleSystem, ModuleType, SerializeCustomModuleMetaData,
-  };
+  use super::{Cacheable, Module, ModuleId, ModuleMetaData, ModuleSystem, ModuleType};
 
   #[test]
   fn module_type() {
@@ -876,7 +820,8 @@ mod tests {
   fn module_serialization() {
     let mut module = Module::new(ModuleId::new("/root/index.ts", "", "/root"));
 
-    #[cache_item(CustomModuleMetaData)]
+    #[cache_item]
+    #[derive(Default)]
     pub struct StructModuleData {
       ast: String,
       imports: Vec<String>,
@@ -884,17 +829,27 @@ mod tests {
 
     module.module_groups = HashSet::from([ModuleId::new("1", "", ""), ModuleId::new("2", "", "")]);
 
-    module.meta = Box::new(ModuleMetaData::Custom(Box::new(StructModuleData {
-      ast: String::from("ast"),
-      imports: vec![String::from("./index")],
-    }) as _));
+    module.meta = Box::new(ModuleMetaData::Custom(CustomMetaDataMap::from(
+      HashMap::from([(
+        "custom".to_string(),
+        Box::new(StructModuleData {
+          ast: "ast".to_string(),
+          imports: vec!["./index".to_string()],
+        }) as Box<dyn Cacheable>,
+      )]),
+    )));
 
-    let bytes = rkyv::to_bytes::<_, 256>(&module).unwrap();
+    // let mut v = Box::new(StructModuleData {
+    //   ast: String::from("ast"),
+    //   imports: vec![String::from("./index")],
+    // }) as Box<dyn Cacheable>;
 
-    let archived = unsafe { rkyv::archived_root::<Module>(&bytes[..]) };
-    let mut deserialized_module: Module = archived
-      .deserialize(&mut rkyv::de::deserializers::SharedDeserializeMap::new())
-      .unwrap();
+    // let value = v.as_any_mut().downcast_mut::<StructModuleData>().unwrap();
+    // let module = std::mem::take(value);
+
+    let bytes = module.serialize_bytes().unwrap();
+    let mut deserialized_module = module.deserialize_bytes(bytes).unwrap();
+    let deserialized_module = deserialized_module.downcast_mut::<Module>().unwrap();
 
     assert_eq!(
       deserialized_module.id.relative_path(),
@@ -904,7 +859,7 @@ mod tests {
     assert_eq!(
       deserialized_module
         .meta
-        .as_custom_mut::<StructModuleData>()
+        .get_custom_mut::<StructModuleData>("custom")
         .ast,
       "ast"
     );
@@ -912,7 +867,7 @@ mod tests {
     assert_eq!(
       deserialized_module
         .meta
-        .as_custom::<StructModuleData>()
+        .get_custom_mut::<StructModuleData>("custom")
         .imports,
       vec![String::from("./index")]
     );

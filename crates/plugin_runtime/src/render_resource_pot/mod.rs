@@ -21,9 +21,10 @@ use farmfe_core::{
   rayon::iter::{IntoParallelIterator, ParallelIterator},
   resource::resource_pot::{RenderedModule, ResourcePot},
   serialize,
-  swc_common::DUMMY_SP,
+  swc_common::{comments::SingleThreadedComments, SourceMap, DUMMY_SP},
   swc_ecma_ast::{
-    EsVersion, Expr, ExprOrSpread, KeyValueProp, Lit, ObjectLit, Prop, PropName, PropOrSpread,
+    EsVersion, Expr, ExprOrSpread, KeyValueProp, Lit, Module as SwcModule, ObjectLit, Prop,
+    PropName, PropOrSpread,
   },
   swc_ecma_parser::{EsSyntax, Syntax},
 };
@@ -34,44 +35,24 @@ use farmfe_toolkit::{
 };
 
 use farmfe_utils::{hash::sha256, parse_query};
+use merge_rendered_module::{wrap_resource_pot_ast, RenderResourcePotAstResult};
 use render_module::RenderModuleOptions;
-use render_resource_pot_ast::{render_resource_pot_ast, RenderResourcePotAstResult};
 use scope_hoisting::build_scope_hoisted_module_groups;
 
 use self::render_module::{render_module, RenderModuleResult};
 
+pub mod merge_rendered_module;
 mod render_module;
-mod render_resource_pot_ast;
 mod scope_hoisting;
 mod source_replacer;
 mod transform_async_module;
 
-/// Merge all modules' ast in a [ResourcePot] to Farm's runtime [ObjectLit]. The [ObjectLit] looks like:
-/// ```js
-/// {
-///   // commonjs or hybrid module system
-///   "a.js": function(module, exports, require) {
-///       const b = require('./b');
-///       console.log(b);
-///    },
-///    // esm module system
-///    "b.js": async function(module, exports, require) {
-///       const [c, d] = await Promise.all([
-///         require('./c'),
-///         require('./d')
-///       ]);
-///
-///       exports.c = c;
-///       exports.d = d;
-///    }
-/// }
-/// ```
-pub fn resource_pot_to_runtime_object(
+pub fn render_resource_pot_modules(
   resource_pot: &ResourcePot,
   module_graph: &ModuleGraph,
   async_modules: &HashSet<ModuleId>,
   context: &Arc<CompilationContext>,
-) -> Result<(String, Option<Arc<String>>, Vec<ModuleId>)> {
+) -> Result<Vec<RenderModuleResult>> {
   let modules = Mutex::new(vec![]);
 
   // let minify_builder =
@@ -226,21 +207,22 @@ pub fn resource_pot_to_runtime_object(
       .cmp(&b.module_id.id(context.config.mode.clone()))
   });
 
-  let RenderResourcePotAstResult {
-    rendered_resource_pot_ast,
-    mut external_modules,
-    merged_sourcemap,
-    merged_comments,
-  } = render_resource_pot_ast(modules, &resource_pot.id, context)?;
+  Ok(modules)
+}
 
-  // sort external modules by module id to make sure the order is stable
-  external_modules.sort();
-
+pub fn generate_code_and_sourcemap(
+  resource_pot: &ResourcePot,
+  module_graph: &ModuleGraph,
+  wrapped_resource_pot_ast: &SwcModule,
+  merged_sourcemap: Arc<SourceMap>,
+  merged_comments: SingleThreadedComments,
+  context: &Arc<CompilationContext>,
+) -> Result<(String, Option<String>)> {
   let sourcemap_enabled = context.config.sourcemap.enabled(resource_pot.immutable);
 
   let mut mappings = vec![];
   let code_bytes = codegen_module(
-    &rendered_resource_pot_ast,
+    &wrapped_resource_pot_ast,
     context.config.script.target.clone(),
     merged_sourcemap.clone(),
     if sourcemap_enabled {
@@ -272,63 +254,100 @@ pub fn resource_pot_to_runtime_object(
         id: resource_pot.id.to_string(),
         source: Some(Box::new(e)),
       })?;
-    let sourcemap = Arc::new(String::from_utf8(buf).unwrap());
+    let sourcemap = String::from_utf8(buf).unwrap();
 
     map = Some(sourcemap);
   }
 
   let code = String::from_utf8(code_bytes).unwrap();
 
-  Ok((code, map, external_modules))
+  Ok((code, map))
 }
 
-pub struct RenderedScriptModule {
-  pub id: ModuleId,
-  pub module: MagicString,
-  pub rendered_module: RenderedModule,
-  pub external_modules: Vec<String>,
+pub fn resource_pot_to_runtime_object(
+  resource_pot: &ResourcePot,
+  module_graph: &ModuleGraph,
+  async_modules: &HashSet<ModuleId>,
+  context: &Arc<CompilationContext>,
+) -> Result<(String, Option<Arc<String>>, Vec<ModuleId>)> {
+  let modules = render_resource_pot_modules(resource_pot, module_graph, async_modules, context)?;
+
+  let RenderResourcePotAstResult {
+    rendered_resource_pot_ast,
+    mut external_modules,
+    merged_sourcemap,
+    merged_comments,
+  } = merge_rendered_module::merge_rendered_module(modules, context);
+
+  let wrapped_resource_pot_ast = wrap_resource_pot_ast(
+    rendered_resource_pot_ast,
+    &resource_pot.id,
+    merged_sourcemap.clone(),
+    context,
+  );
+
+  // sort external modules by module id to make sure the order is stable
+  external_modules.sort();
+
+  let (code, map) = generate_code_and_sourcemap(
+    resource_pot,
+    module_graph,
+    &wrapped_resource_pot_ast,
+    merged_sourcemap,
+    merged_comments,
+    context,
+  )?;
+
+  Ok((code, map.map(|m| Arc::new(m)), external_modules))
 }
 
-pub struct RenderedJsResourcePot {
-  pub bundle: Bundle,
-  pub rendered_modules: HashMap<ModuleId, RenderedModule>,
-  pub external_modules: Vec<String>,
-}
+// pub struct RenderedScriptModule {
+//   pub id: ModuleId,
+//   pub module: MagicString,
+//   pub rendered_module: RenderedModule,
+//   pub external_modules: Vec<String>,
+// }
 
-#[cache_item]
-pub struct CacheRenderedScriptModule {
-  pub id: ModuleId,
-  pub code: Arc<String>,
-  pub rendered_module: RenderedModule,
-  pub external_modules: Vec<String>,
-  pub source_map_chain: Vec<Arc<String>>,
-}
+// pub struct RenderedJsResourcePot {
+//   pub bundle: Bundle,
+//   pub rendered_modules: HashMap<ModuleId, RenderedModule>,
+//   pub external_modules: Vec<String>,
+// }
 
-impl CacheRenderedScriptModule {
-  fn new(
-    id: ModuleId,
-    code: Arc<String>,
-    rendered_module: RenderedModule,
-    external_modules: Vec<String>,
-    source_map_chain: Vec<Arc<String>>,
-  ) -> Self {
-    Self {
-      id,
-      code,
-      rendered_module,
-      external_modules,
-      source_map_chain,
-    }
-  }
-  fn to_magic_string(&self, context: &Arc<CompilationContext>) -> MagicString {
-    let magic_string_option = MagicStringOptions {
-      filename: Some(self.id.resolved_path_with_query(&context.config.root)),
-      source_map_chain: self.source_map_chain.clone(),
-      ..Default::default()
-    };
-    let mut module = MagicString::new(&self.code, Some(magic_string_option));
-    module.prepend(&format!("{:?}:", self.id.id(context.config.mode.clone())));
-    module.append(",");
-    module
-  }
-}
+// #[cache_item]
+// pub struct CacheRenderedScriptModule {
+//   pub id: ModuleId,
+//   pub code: Arc<String>,
+//   pub rendered_module: RenderedModule,
+//   pub external_modules: Vec<String>,
+//   pub source_map_chain: Vec<Arc<String>>,
+// }
+
+// impl CacheRenderedScriptModule {
+//   fn new(
+//     id: ModuleId,
+//     code: Arc<String>,
+//     rendered_module: RenderedModule,
+//     external_modules: Vec<String>,
+//     source_map_chain: Vec<Arc<String>>,
+//   ) -> Self {
+//     Self {
+//       id,
+//       code,
+//       rendered_module,
+//       external_modules,
+//       source_map_chain,
+//     }
+//   }
+//   fn to_magic_string(&self, context: &Arc<CompilationContext>) -> MagicString {
+//     let magic_string_option = MagicStringOptions {
+//       filename: Some(self.id.resolved_path_with_query(&context.config.root)),
+//       source_map_chain: self.source_map_chain.clone(),
+//       ..Default::default()
+//     };
+//     let mut module = MagicString::new(&self.code, Some(magic_string_option));
+//     module.prepend(&format!("{:?}:", self.id.id(context.config.mode.clone())));
+//     module.append(",");
+//     module
+//   }
+// }

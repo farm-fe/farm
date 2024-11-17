@@ -43,7 +43,7 @@ mod utils;
 const BASE_HTML_CHILDREN_PLACEHOLDER: &str = "{{children}}";
 pub const UNRESOLVED_SLASH_MODULE: &str = "FARM_HTML_UNRESOLVED_SLASH_MODULE";
 
-#[cache_item]
+#[cache_item(farmfe_core)]
 struct CachedHtmlInlineModuleMap {
   map: HashMap<String, HtmlInlineModule>,
 }

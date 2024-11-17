@@ -25,18 +25,36 @@ use farmfe_toolkit::{
 use super::render_module::RenderModuleResult;
 
 pub struct RenderResourcePotAstResult {
-  pub rendered_resource_pot_ast: SwcModule,
+  pub rendered_resource_pot_ast: ObjectLit,
   pub external_modules: Vec<ModuleId>,
   pub merged_sourcemap: Arc<SourceMap>,
   pub merged_comments: SingleThreadedComments,
 }
 
-pub fn render_resource_pot_ast(
+/// Merge all modules' ast in a [ResourcePot] to Farm's runtime [ObjectLit]. The [ObjectLit] looks like:
+/// ```js
+/// {
+///   // commonjs or hybrid module system
+///   "a.js": function(module, exports, require) {
+///       const b = require('./b');
+///       console.log(b);
+///    },
+///    // esm module system
+///    "b.js": async function(module, exports, require) {
+///       const [c, d] = await Promise.all([
+///         require('./c'),
+///         require('./d')
+///       ]);
+///
+///       exports.c = c;
+///       exports.d = d;
+///    }
+/// }
+/// ```
+pub fn merge_rendered_module(
   mut render_module_results: Vec<RenderModuleResult>,
-  resource_pot_id: &ResourcePotId,
   context: &Arc<CompilationContext>,
-) -> farmfe_core::error::Result<RenderResourcePotAstResult> {
-  // if context.config.sourcemap.enabled(resource_pot.immutable) {
+) -> RenderResourcePotAstResult {
   let cm = merge_sourcemap(&mut render_module_results);
   let comments = merge_comments(&mut render_module_results, cm.clone());
 
@@ -61,6 +79,24 @@ pub fn render_resource_pot_ast(
       }))));
   }
 
+  RenderResourcePotAstResult {
+    rendered_resource_pot_ast,
+    external_modules: render_module_results
+      .into_iter()
+      .map(|item| item.external_modules)
+      .flatten()
+      .collect(),
+    merged_sourcemap: cm,
+    merged_comments: comments,
+  }
+}
+
+pub fn wrap_resource_pot_ast(
+  rendered_resource_pot_ast: ObjectLit,
+  resource_pot_id: &ResourcePotId,
+  cm: Arc<SourceMap>,
+  context: &Arc<CompilationContext>,
+) -> SwcModule {
   let mut stmt = parse_stmt(
     resource_pot_id,
     r#"(function (moduleSystem, modules) {
@@ -72,7 +108,8 @@ pub fn render_resource_pot_ast(
     Syntax::Es(EsSyntax::default()),
     cm.clone(),
     true,
-  )?;
+  )
+  .unwrap();
 
   let args = &mut stmt.as_mut_expr().unwrap().expr.as_mut_call().unwrap().args;
 
@@ -115,23 +152,14 @@ pub fn render_resource_pot_ast(
     expr: Box::new(Expr::Object(rendered_resource_pot_ast)),
   };
 
-  Ok(RenderResourcePotAstResult {
-    rendered_resource_pot_ast: SwcModule {
-      span: DUMMY_SP,
-      shebang: None,
-      body: vec![ModuleItem::Stmt(stmt)],
-    },
-    external_modules: render_module_results
-      .into_iter()
-      .map(|item| item.external_modules)
-      .flatten()
-      .collect(),
-    merged_sourcemap: cm,
-    merged_comments: comments,
-  })
+  SwcModule {
+    span: DUMMY_SP,
+    shebang: None,
+    body: vec![ModuleItem::Stmt(stmt)],
+  }
 }
 
-fn merge_sourcemap(render_module_results: &mut Vec<RenderModuleResult>) -> Arc<SourceMap> {
+pub fn merge_sourcemap(render_module_results: &mut Vec<RenderModuleResult>) -> Arc<SourceMap> {
   let new_cm = Arc::new(SourceMap::new(FilePathMapping::empty()));
   let mut start_poss = vec![];
 
@@ -168,7 +196,7 @@ impl VisitMut for SpanUpdater {
   }
 }
 
-fn merge_comments(
+pub fn merge_comments(
   render_module_results: &mut Vec<RenderModuleResult>,
   cm: Arc<SourceMap>,
 ) -> SingleThreadedComments {

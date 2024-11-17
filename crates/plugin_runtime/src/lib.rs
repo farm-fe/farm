@@ -27,6 +27,8 @@ use farmfe_core::{
     Resource, ResourceOrigin, ResourceType,
   },
   serde_json,
+  swc_common::DUMMY_SP,
+  swc_ecma_ast::{Expr, ExprStmt, Module as SwcModule, ModuleItem, Stmt},
 };
 use farmfe_toolkit::{
   fs::read_file_utf8,
@@ -34,7 +36,9 @@ use farmfe_toolkit::{
   script::{module_type_from_id, set_module_system_for_module_meta},
 };
 
+use farmfe_utils::hash::base64_encode;
 use insert_runtime_plugins::insert_runtime_plugins;
+use merge_rendered_module::RenderResourcePotAstResult;
 use render_resource_pot::*;
 
 pub use farmfe_toolkit::script::constant::RUNTIME_SUFFIX;
@@ -435,6 +439,69 @@ impl Plugin for FarmPluginRuntime {
     } else {
       Ok(None)
     }
+  }
+
+  fn render_update_resource_pot(
+    &self,
+    resource_pot: &ResourcePot,
+    context: &Arc<CompilationContext>,
+  ) -> farmfe_core::error::Result<Option<farmfe_core::plugin::PluginRenderResourcePotHookResult>>
+  {
+    println!(
+      "render update resource pot {} {}",
+      resource_pot.id,
+      resource_pot.resource_pot_type != ResourcePotType::Js || resource_pot.modules().is_empty()
+    );
+    // The hmr result should alway be a js resource
+    if resource_pot.resource_pot_type != ResourcePotType::Js || resource_pot.modules().is_empty() {
+      return Ok(None);
+    }
+
+    let async_modules = self.get_async_modules(context);
+    let async_modules = async_modules.downcast_ref::<HashSet<ModuleId>>().unwrap();
+    let module_graph = context.module_graph.read();
+    println!("start");
+    let modules = render_resource_pot_modules(resource_pot, &module_graph, async_modules, context)?;
+    println!("rendered modules");
+    let RenderResourcePotAstResult {
+      rendered_resource_pot_ast,
+      merged_comments,
+      merged_sourcemap,
+      external_modules,
+    } = merge_rendered_module::merge_rendered_module(modules, context);
+    println!("merged modules");
+    let (mut code, map) = generate_code_and_sourcemap(
+      resource_pot,
+      &module_graph,
+      &SwcModule {
+        shebang: None,
+        span: DUMMY_SP,
+        body: vec![ModuleItem::Stmt(Stmt::Expr(ExprStmt {
+          span: DUMMY_SP,
+          expr: Box::new(Expr::Object(rendered_resource_pot_ast)),
+        }))],
+      },
+      merged_sourcemap,
+      merged_comments,
+      context,
+    )?;
+    println!("generated code");
+
+    if let Some(map) = &map {
+      // inline source map
+      code = format!(
+        "{}\n//# sourceMappingURL=data:application/json;charset=utf-8;base64,{}",
+        code,
+        base64_encode(map.as_bytes())
+      );
+    }
+
+    Ok(Some(
+      farmfe_core::plugin::PluginRenderResourcePotHookResult {
+        content: code,
+        source_map: map,
+      },
+    ))
   }
 
   fn finalize_resources(

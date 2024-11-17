@@ -1,7 +1,7 @@
 use std::{any::Any, collections::HashMap, hash::Hash, sync::Arc};
 
 use farmfe_macro_cache_item::cache_item;
-use serde::{Deserialize, Serialize};
+use rkyv::Deserialize;
 
 use crate::{
   config::Config,
@@ -262,6 +262,16 @@ pub trait Plugin: Any + Send + Sync {
     Ok(None)
   }
 
+  /// Render the update resource pot
+  /// TODO: remove duplicate rendering of render_update_resource_pot and render_resource_pot
+  fn render_update_resource_pot(
+    &self,
+    _resource_pot: &ResourcePot,
+    _context: &Arc<CompilationContext>,
+  ) -> Result<Option<PluginRenderResourcePotHookResult>> {
+    Ok(None)
+  }
+
   /// Called when calling compiler.update(module_paths).
   /// This hook is called after all compilation work is done, including the resources regeneration and finalization.
   fn update_finished(&self, _context: &Arc<CompilationContext>) -> Result<Option<()>> {
@@ -341,7 +351,7 @@ impl From<ResolveKind> for String {
 }
 
 /// Plugin hook call context, designed for `first type` hook, used to provide info when call plugins from another plugin
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, Default)]
 pub struct PluginHookContext {
   /// if this hook is called by the compiler, its value is [None]
   /// if this hook is called by other plugins, its value is set by the caller plugins.
@@ -371,7 +381,7 @@ impl PluginHookContext {
 }
 
 /// Parameter of the resolve hook
-#[derive(Debug, Clone, Serialize, Deserialize, Hash, PartialEq, Eq)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, Hash, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct PluginResolveHookParam {
   /// the source would like to resolve, for example, './index'
@@ -382,7 +392,7 @@ pub struct PluginResolveHookParam {
   pub kind: ResolveKind,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, serde::Serialize, serde::Deserialize, Clone)]
 #[serde(rename_all = "camelCase", default)]
 pub struct PluginResolveHookResult {
   /// resolved path, normally a absolute file path.
@@ -412,7 +422,7 @@ impl Default for PluginResolveHookResult {
   }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PluginLoadHookParam<'a> {
   /// the module id string
@@ -425,7 +435,7 @@ pub struct PluginLoadHookParam<'a> {
   pub meta: HashMap<String, String>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PluginLoadHookResult {
   /// the source content of the module
@@ -437,7 +447,7 @@ pub struct PluginLoadHookResult {
   pub source_map: Option<String>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PluginTransformHookParam<'a> {
   /// the module id string
@@ -456,7 +466,7 @@ pub struct PluginTransformHookParam<'a> {
   pub source_map_chain: Vec<Arc<String>>,
 }
 
-#[derive(Debug, Default, Serialize, Deserialize)]
+#[derive(Debug, Default, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "camelCase", default)]
 pub struct PluginTransformHookResult {
   /// transformed source content, will be passed to next plugin.
@@ -469,7 +479,7 @@ pub struct PluginTransformHookResult {
   pub ignore_previous_source_map: bool,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
 pub struct PluginParseHookParam {
   /// module id
   pub module_id: ModuleId,
@@ -515,7 +525,7 @@ pub struct WatchDiffResult {
 }
 
 /// The output after the updating process
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "camelCase", default)]
 pub struct UpdateResult {
   pub added_module_ids: Vec<ModuleId>,
@@ -529,7 +539,7 @@ pub struct UpdateResult {
   pub dynamic_resources_map: Option<HashMap<ModuleId, Vec<(String, ResourceType)>>>,
   pub extra_watch_result: WatchDiffResult,
 }
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub enum UpdateType {
   // added a new module
   Added,
@@ -539,13 +549,13 @@ pub enum UpdateType {
   Removed,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "camelCase", default)]
 pub struct PluginUpdateModulesHookParams {
   pub paths: Vec<(String, UpdateType)>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "camelCase", default)]
 pub struct PluginModuleGraphUpdatedHookParams {
   pub added_modules_ids: Vec<ModuleId>,
@@ -553,21 +563,21 @@ pub struct PluginModuleGraphUpdatedHookParams {
   pub updated_modules_ids: Vec<ModuleId>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
 pub struct EmptyPluginHookParam {}
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
 pub struct EmptyPluginHookResult {}
 
 #[cache_item]
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PluginGenerateResourcesHookResult {
   pub resource: Resource,
   pub source_map: Option<Resource>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PluginRenderResourcePotHookParam {
   pub content: Arc<String>,
@@ -575,7 +585,7 @@ pub struct PluginRenderResourcePotHookParam {
   pub resource_pot_info: ResourcePotInfo,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
 pub struct PluginRenderResourcePotHookResult {
   pub content: String,
   pub source_map: Option<String>,

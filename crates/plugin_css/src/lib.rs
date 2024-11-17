@@ -163,7 +163,7 @@ impl Plugin for FarmPluginCssResolve {
   }
 }
 
-#[cache_item]
+#[cache_item(farmfe_core)]
 struct CssModulesCache {
   content_map: HashMap<String, String>,
   sourcemap_map: HashMap<String, String>,

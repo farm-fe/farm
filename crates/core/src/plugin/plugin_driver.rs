@@ -8,8 +8,8 @@ use super::{
   PluginGenerateResourcesHookResult, PluginHandleEntryResourceHookParams, PluginHookContext,
   PluginLoadHookParam, PluginLoadHookResult, PluginModuleGraphUpdatedHookParams,
   PluginParseHookParam, PluginProcessModuleHookParam, PluginRenderResourcePotHookParam,
-  PluginResolveHookParam, PluginResolveHookResult, PluginTransformHookParam,
-  PluginUpdateModulesHookParams,
+  PluginRenderResourcePotHookResult, PluginResolveHookParam, PluginResolveHookResult,
+  PluginTransformHookParam, PluginUpdateModulesHookParams,
 };
 use crate::{
   config::Config,
@@ -835,6 +835,13 @@ impl PluginDriver {
   hook_parallel!(
     module_graph_updated,
     param: &PluginModuleGraphUpdatedHookParams
+  );
+
+  hook_first!(
+    render_update_resource_pot,
+    Result<Option<PluginRenderResourcePotHookResult>>,
+    resource_pot: &ResourcePot,
+    context: &Arc<CompilationContext>
   );
 
   hook_parallel!(update_finished);
