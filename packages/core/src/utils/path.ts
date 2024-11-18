@@ -24,7 +24,7 @@ export function removeHashFromPath(path: string): string {
 
 export function getShortName(file: string, root: string): string {
   const result = file.startsWith(withTrailingSlash(root))
-    ? path.posix.relative(root, file)
+    ? path.relative(root, file)
     : file;
   return result;
 }
