@@ -33,7 +33,7 @@ export class ModuleSystem {
   private reRegisterModules: boolean;
   // available public paths, when loading resources, we will try each publicPath until it is available, this is so called `resource loading retry`
   publicPaths: string[];
-  dynamicResources: Resource[];
+  dynamicResources: Resource[] = [];
   // dynamic module entry and resources map
   dynamicModuleResourcesMap: Record<string, number[]>;
   // resources loader
@@ -97,7 +97,7 @@ export class ModuleSystem {
 
     // create a full new module instance and store it in cache to avoid cyclic initializing
     const module = new Module(moduleId, this.require.bind(this));
-    module.resource_pot = initializer.__farm_resource_pot__;
+    module.resource_pot = initializer.__farm_resource_pot__!;
     // call the module created hook
     this.pluginContainer.hookSerial("moduleCreated", module);
 
@@ -247,7 +247,7 @@ export class ModuleSystem {
       }/${this.modules[moduleId].__farm_resource_pot__}`;
       return url;
     } else {
-      return this.modules[moduleId].__farm_resource_pot__;
+      return this.modules[moduleId].__farm_resource_pot__!;
     }
   }
 
