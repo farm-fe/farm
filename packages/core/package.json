@@ -1,6 +1,6 @@
 {
   "name": "@farmfe/core",
-  "version": "1.4.0",
+  "version": "1.4.1",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "type": "module",
@@ -77,7 +77,7 @@
     "@types/ws": "^8.5.4"
   },
   "dependencies": {
-    "@farmfe/runtime": "workspace:0.12.8",
+    "@farmfe/runtime": "workspace:0.12.9",
     "@farmfe/runtime-plugin-hmr": "workspace:3.5.7",
     "@farmfe/runtime-plugin-import-meta": "workspace:0.2.2",
     "@farmfe/utils": "workspace:*",

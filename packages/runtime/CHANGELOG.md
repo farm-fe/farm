@@ -1,5 +1,11 @@
 # @farmfe/runtime
 
+## 0.12.9
+
+### Patch Changes
+
+- 829d0945: fix typecheck error
+
 ## 0.12.8
 
 ### Patch Changes
