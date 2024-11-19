@@ -4,7 +4,7 @@ import os from 'node:os';
 import path, { dirname } from 'node:path';
 import readline from 'node:readline';
 import { fileURLToPath } from 'node:url';
-import { Config } from '../types/binding.js';
+import { Config, OutputConfig } from '../types/binding.js';
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore import packageJson from '../../package.json';
 
@@ -176,4 +176,8 @@ export function tryStatSync(file: string): fs.Stats | undefined {
   try {
     return fs.statSync(file, { throwIfNoEntry: false });
   } catch {}
+}
+
+export function isNodeEnv(env: OutputConfig['targetEnv']): boolean {
+  return /^(node|library)(?!-browser)/.test(env);
 }
