@@ -2096,10 +2096,10 @@ importers:
     dependencies:
       tdesign-icons-vue:
         specifier: latest
-        version: 0.2.5(vue@2.6.14)
+        version: 0.3.2(vue@2.6.14)
       tdesign-vue:
         specifier: latest
-        version: 1.10.4(vue@2.6.14)
+        version: 1.10.5(vue@2.6.14)
       vite-plugin-vue2-svg:
         specifier: ^0.4.0
         version: 0.4.0(ejs@3.1.10)(lodash@4.17.21)(vue-template-compiler@2.6.14(vue@2.6.14))
@@ -2130,10 +2130,10 @@ importers:
     dependencies:
       tdesign-icons-vue:
         specifier: latest
-        version: 0.2.5(vue@2.7.16)
+        version: 0.3.2(vue@2.7.16)
       tdesign-vue:
         specifier: latest
-        version: 1.10.4(vue@2.7.16)
+        version: 1.10.5(vue@2.7.16)
       vite-plugin-vue2-svg:
         specifier: ^0.4.0
         version: 0.4.0(ejs@3.1.10)(lodash@4.17.21)(vue-template-compiler@2.7.16(vue@2.7.16))
@@ -2721,7 +2721,7 @@ importers:
         version: 3.0.12
       ws:
         specifier: ^8.14.2
-        version: 8.14.2(bufferutil@4.0.8)(utf-8-validate@6.0.3)
+        version: 8.14.2
       zod:
         specifier: ^3.23.8
         version: 3.23.8
@@ -18567,8 +18567,13 @@ packages:
     peerDependencies:
       vue: ^2.6.12
 
-  tdesign-vue@1.10.4:
-    resolution: {integrity: sha512-ej4QgA/E9DsxlMzr1++pomREgpncniP1llMT2qGIkZ4vtpHJV3CjBIf6eDLtWTUWz3c8B5RM8lAqm2ZxSvGCEg==}
+  tdesign-icons-vue@0.3.2:
+    resolution: {integrity: sha512-FW1hqOoIBjnPzTOcGvWidVrWvyf0wHafxt7eAciz62hLU/Ix8TZ1AtFcG3QOafT0vpFPaBcCMVNNXvE5PSzuIA==}
+    peerDependencies:
+      vue: ^2.6.12
+
+  tdesign-vue@1.10.5:
+    resolution: {integrity: sha512-D/833QpG7N0zH7lN7zhuegKJN0AVklAhrUKG7zmKcPrEZKaL7jjGz9lr6UOU/CJAEae0dij8YQtcscEIq3ugqw==}
     peerDependencies:
       vue: ~2.6.10
 
@@ -42353,7 +42358,19 @@ snapshots:
       classnames: 2.3.2
       vue: 2.7.16
 
-  tdesign-vue@1.10.4(vue@2.6.14):
+  tdesign-icons-vue@0.3.2(vue@2.6.14):
+    dependencies:
+      '@babel/runtime': 7.23.2
+      classnames: 2.3.2
+      vue: 2.6.14
+
+  tdesign-icons-vue@0.3.2(vue@2.7.16):
+    dependencies:
+      '@babel/runtime': 7.23.2
+      classnames: 2.3.2
+      vue: 2.7.16
+
+  tdesign-vue@1.10.5(vue@2.6.14):
     dependencies:
       '@babel/runtime': 7.23.2
       '@popperjs/core': 2.11.8
@@ -42375,7 +42392,7 @@ snapshots:
       validator: 13.11.0
       vue: 2.6.14
 
-  tdesign-vue@1.10.4(vue@2.7.16):
+  tdesign-vue@1.10.5(vue@2.7.16):
     dependencies:
       '@babel/runtime': 7.23.2
       '@popperjs/core': 2.11.8
@@ -44368,6 +44385,8 @@ snapshots:
   ws@7.5.10(bufferutil@4.0.8):
     optionalDependencies:
       bufferutil: 4.0.8
+
+  ws@8.14.2: {}
 
   ws@8.14.2(bufferutil@4.0.8)(utf-8-validate@6.0.3):
     optionalDependencies:

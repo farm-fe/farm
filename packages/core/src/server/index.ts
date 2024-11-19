@@ -98,7 +98,6 @@ export interface ServerOptions extends CommonServerOptions {
 type ServerConfig = CommonServerOptions & NormalizedServerConfig;
 
 export const debugServer = createDebugger('farm:server');
-
 export function noop() {
   // noop
 }
@@ -152,14 +151,15 @@ export class Server extends httpServer {
    */
   async createServer(): Promise<void> {
     try {
-      console.time('resolveConfig Start');
+      debugServer?.(`resolve user config start`);
       this.resolvedUserConfig = await resolveConfig(
         this.inlineConfig,
         'start',
         'development',
         'development'
       );
-      console.timeEnd('resolveConfig Start');
+      debugServer?.(`resolve user config end`);
+
       this.logger = this.resolvedUserConfig.logger;
 
       this.#resolveOptions();

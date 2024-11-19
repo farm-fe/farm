@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "farm start",
     "start": "farm start",
+    "start:debug": "farm start --debug",
     "build": "farm build",
     "preview": "farm preview",
     "clean": "farm clean"

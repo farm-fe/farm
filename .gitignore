@@ -114,3 +114,6 @@ build
 
 # docs
 .docusaurus
+
+# idea
+.idea
