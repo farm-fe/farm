@@ -56,6 +56,7 @@ import { normalizeExternal } from './normalize-config/normalize-external.js';
 import normalizePartialBundling from './normalize-config/normalize-partial-bundling.js';
 import { normalizeResolve } from './normalize-config/normalize-resolve.js';
 
+import { createJiti } from 'jiti';
 import type { OutputConfig } from '../types/binding.js';
 import type {
   ConfigEnv,
@@ -126,12 +127,14 @@ export async function resolveConfig(
   // configPath may be file or directory
   const { configFile, configPath: initialConfigPath } = inlineOptions;
 
+  console.time('loadConfigFile');
   const loadedUserConfig = await loadConfigFile(
     configFile,
     inlineOptions,
     configEnv,
     defaultNodeEnv
   );
+  console.timeEnd('loadConfigFile');
 
   let rawConfig: UserConfig = mergeFarmCliConfig(
     inlineOptions,
@@ -655,9 +658,9 @@ export async function readConfigFile(
   if (!fse.existsSync(configFilePath)) return;
 
   const format = getFormat(configFilePath);
-
+  console.time('dynamic import compiler');
   const Compiler = (await import('../compiler/index.js')).Compiler;
-
+  console.timeEnd('dynamic import compiler');
   const outputPath = path.join(
     path.dirname(configFilePath),
     'node_modules',
@@ -695,20 +698,26 @@ export async function readConfigFile(
   }
 
   try {
+    console.time('compiler compile ===>');
     await compiler.compile();
-
+    console.timeEnd('compiler compile ===>');
     if (FARM_PROFILE) {
       process.env.FARM_PROFILE = FARM_PROFILE;
     }
 
     compiler.writeResourcesToDisk();
-
     const filePath = getFilePath(outputPath, fileName);
 
     // Change to vm.module of node or loaders as far as it is stable
+    console.time('import user config ===>');
     const userConfig = (await import(filePath as string)).default;
+    // const jiti = createJiti(import.meta.url);
+    // const userConfig = (await jiti.import(filePath)).default;
+    console.timeEnd('import user config ===>');
+    // TODO: Check the dynamic import user config file time
     try {
       fs.unlink(filePath, () => void 0);
+
       // remove parent dir if empty
       const isEmpty = fs.readdirSync(outputPath).length === 0;
       if (isEmpty) {
@@ -770,12 +779,14 @@ export async function loadConfigFile(
       configRootPath
     );
 
+    console.time('read config file');
     const config = await readConfigFile(
       inlineOptions,
       resolvedPath,
       configEnv,
       mode
     );
+    console.timeEnd('read config file');
     return {
       config: config && parseUserConfig(config),
       configFilePath: resolvedPath

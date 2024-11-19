@@ -152,13 +152,14 @@ export class Server extends httpServer {
    */
   async createServer(): Promise<void> {
     try {
+      console.time('resolveConfig Start');
       this.resolvedUserConfig = await resolveConfig(
         this.inlineConfig,
         'start',
         'development',
         'development'
       );
-
+      console.timeEnd('resolveConfig Start');
       this.logger = this.resolvedUserConfig.logger;
 
       this.#resolveOptions();
