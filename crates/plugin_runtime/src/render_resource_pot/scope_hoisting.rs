@@ -260,11 +260,15 @@ mod tests {
       vec![
         super::ScopeHoistedModuleGroup {
           target_hoisted_module_id: "A".into(),
-          hoisted_module_ids: HashSet::from(["A".into(), "C".into(),]),
+          hoisted_module_ids: HashSet::from(["A".into()]),
         },
         super::ScopeHoistedModuleGroup {
           target_hoisted_module_id: "B".into(),
           hoisted_module_ids: HashSet::from(["B".into(), "E".into(), "G".into(),]),
+        },
+        super::ScopeHoistedModuleGroup {
+          target_hoisted_module_id: "C".into(),
+          hoisted_module_ids: HashSet::from(["C".into()]),
         },
         super::ScopeHoistedModuleGroup {
           target_hoisted_module_id: "D".into(),
