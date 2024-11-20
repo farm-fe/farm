@@ -262,6 +262,7 @@ impl<'a> SharedBundle<'a> {
     let mut reserved_word = SimplePolyfill::reserved_word();
 
     reserved_word.push("module".to_string());
+    reserved_word.push("default".to_string());
 
     if let Some(bundle_analyzer) = self
       .module_analyzer_manager

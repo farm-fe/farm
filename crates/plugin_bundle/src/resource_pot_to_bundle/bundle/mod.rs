@@ -5,7 +5,7 @@ use std::{
   sync::{Arc, Mutex, RwLock},
 };
 
-use bundle_reference::{BundleReference, CommonJsImportMap, ReferenceKind};
+use bundle_reference::{CombineBundleReference, CommonJsImportMap, ReferenceKind};
 use farmfe_core::{
   config::external::ExternalConfig,
   context::CompilationContext,
@@ -20,7 +20,9 @@ use farmfe_core::{
     Module as ModuleAst, ModuleDecl, ModuleItem, Stmt, VarDecl, VarDeclarator,
   },
 };
-use farmfe_toolkit::{itertools::Itertools, script::swc_try_with::try_with, swc_ecma_visit::VisitMutWith};
+use farmfe_toolkit::{
+  itertools::Itertools, script::swc_try_with::try_with, swc_ecma_visit::VisitMutWith,
+};
 
 pub mod bundle_analyzer;
 pub mod bundle_reference;
@@ -476,16 +478,23 @@ impl<'a> ModuleAnalyzerManager<'a> {
 
             ExportSpecifierInfo::Named(export) => {
               let export_map = self.build_export_names(source, bundle_variable);
-              if let Some(i) = export_map.query(export.export_from(), bundle_variable) {
-                // bundle_variable.set_var_root(export.export_as(), i);
 
+              if let Some(i) = export_map.query(export.export_from(), bundle_variable) {
                 map.add_local(&ExportSpecifierInfo::Named(
                   (i, Some(export.export_as())).into(),
                 ))
               };
             }
 
-            ExportSpecifierInfo::Default(_) | ExportSpecifierInfo::Namespace(_) => {
+            ExportSpecifierInfo::Default(default) => {
+              let export_map = self.build_export_names(source, bundle_variable);
+
+              if let Some(i) = export_map.query(*default, bundle_variable) {
+                map.add_local(&ExportSpecifierInfo::Default(i));
+              }
+            }
+
+            ExportSpecifierInfo::Namespace(_) => {
               map.add_local(specify);
             }
           }
@@ -519,7 +528,7 @@ impl<'a> ModuleAnalyzerManager<'a> {
     module_id: &ModuleId,
     context: &Arc<CompilationContext>,
     bundle_variable: &mut BundleVariable,
-    bundle_reference: &mut BundleReference,
+    bundle_reference: &mut CombineBundleReference,
     commonjs_import_executed: &mut HashSet<ModuleId>,
     order_index_map: &HashMap<ModuleId, usize>,
     polyfill: &mut SimplePolyfill,
@@ -552,7 +561,7 @@ impl<'a> ModuleAnalyzerManager<'a> {
     module_id: &ModuleId,
     namespace: Option<usize>,
     bundle_variable: &BundleVariable,
-    bundle_reference: &mut BundleReference,
+    bundle_reference: &mut CombineBundleReference,
     patch_asts: &mut Vec<ModuleItem>,
     order_index_map: &HashMap<ModuleId, usize>,
     polyfill: &mut SimplePolyfill,
@@ -730,7 +739,7 @@ impl<'a> ModuleAnalyzerManager<'a> {
     context: &Arc<CompilationContext>,
     bundle_variable: &mut BundleVariable,
     namespace: Option<usize>,
-    bundle_reference: &mut BundleReference,
+    bundle_reference: &mut CombineBundleReference,
     commonjs_import_executed: &mut HashSet<ModuleId>,
     order_index_map: &HashMap<ModuleId, usize>,
     polyfill: &mut SimplePolyfill,
@@ -773,7 +782,7 @@ impl<'a> ModuleAnalyzerManager<'a> {
         module_id,
         context,
         bundle_variable,
-        bundle_reference,
+        // bundle_reference,
         polyfill,
         ctx,
       )
@@ -855,6 +864,7 @@ impl<'a> ModuleAnalyzerManager<'a> {
     .unwrap();
   }
 
+  // more accurate generation
   pub fn link(
     &mut self,
     bundle_variable: &mut BundleVariable,
@@ -962,22 +972,42 @@ impl<'a> ModuleAnalyzerManager<'a> {
 
           for specify in &s.specifiers {
             match specify {
-              ExportSpecifierInfo::Default(n) => {
+              ExportSpecifierInfo::Default(_) => {
                 // TODO: only add default when it is export default expression e.g: export default 1 + 1
                 self
                   .module_global_uniq_name
                   .add_default(&module_analyzer.module_id, |s| {
-                    bundle_variable.register_used_name_by_module_id(&module_analyzer.module_id, s, root)
+                    bundle_variable.register_used_name_by_module_id(
+                      &module_analyzer.module_id,
+                      s,
+                      root,
+                    )
                   });
               }
 
-              ExportSpecifierInfo::Namespace(_) |
+              ExportSpecifierInfo::Namespace(_) => {
+                if let Some(source) = &s.source {
+                  if self.module_map.contains_key(source) {
+                    self.module_global_uniq_name.add_namespace(source, |s| {
+                      bundle_variable.register_used_name_by_module_id(source, s, root)
+                    });
+                  }
+                }
+              }
+
               // maybe used in namespace
               ExportSpecifierInfo::All(_) => {
                 if let Some(source) = &s.source {
-                  self
-                    .module_global_uniq_name
-                    .add_namespace(source, |s| bundle_variable.register_used_name_by_module_id(source, s, root));
+                  if self.is_commonjs(source) {
+                    self.module_global_uniq_name.add_namespace(source, |s| {
+                      bundle_variable.register_used_name_by_module_id(source, s, root)
+                    });
+                  }
+                }
+                if !module_analyzer.entry {
+                  self.module_global_uniq_name.add_namespace(module_id, |s| {
+                    bundle_variable.register_used_name_by_module_id(module_id, s, root)
+                  });
                 }
               }
               ExportSpecifierInfo::Named(var) => {
@@ -985,7 +1015,11 @@ impl<'a> ModuleAnalyzerManager<'a> {
                   self
                     .module_global_uniq_name
                     .add_default(&module_analyzer.module_id, |s| {
-                      bundle_variable.register_used_name_by_module_id(&module_analyzer.module_id, s, root)
+                      bundle_variable.register_used_name_by_module_id(
+                        &module_analyzer.module_id,
+                        s,
+                        root,
+                      )
                     });
                 }
               }

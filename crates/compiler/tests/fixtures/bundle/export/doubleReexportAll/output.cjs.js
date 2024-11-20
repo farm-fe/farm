@@ -1,5 +1,6 @@
-//index.js:
- global.nodeRequire = require;global['__farm_default_namespace__'] = {__FARM_TARGET_ENV__: 'node'};function __commonJs(mod) {
+//farm_runtime.js:
+ // module_id: __FARM_BUNDLE_POLYFILL_SLOT__
+function __commonJs(mod) {
     var module;
     return ()=>{
         if (module) {
@@ -46,27 +47,50 @@ function _interop_require_wildcard(obj, nodeInterop) {
     if (cache) cache.set(obj, newObj);
     return newObj;
 }
-var node_fs_ns = _interop_require_wildcard(require("node:fs.farm-runtime"));
-var cjsExport_ts_cjs = __commonJs((module, exports)=>{
-    "use strict";
-    Object.defineProperty(exports, "__esModule", {
-        value: true
-    });
-    Object.defineProperty(exports, "esmName", {
-        enumerable: true,
-        get: function() {
-            return esmName;
+function _export_star(from, to) {
+    Object.keys(from).forEach(function(k) {
+        if (k !== "default" && !Object.prototype.hasOwnProperty.call(to, k)) {
+            Object.defineProperty(to, k, {
+                enumerable: true,
+                get: function() {
+                    return from[k];
+                }
+            });
         }
     });
-    module.exports.name = "shulan";
-    module.exports.age = 18;
-    const esmName = 'esm-shulan';
+    return from;
+}
+module.exports.__commonJs = __commonJs;
+module.exports._export_star = _export_star;
+module.exports._interop_require_wildcard = _interop_require_wildcard;
+Object.defineProperty(exports, "__esModule", {
+    value: true
 });
-var cjsExport_ts_ns = _interop_require_wildcard(cjsExport_ts_cjs());
 
-const foo = "foo";
 
-const esmName = 'repeat-esm-shulan';
-global['__farm_default_namespace__'].__farm_module_system__.setPlugins([]);
-(function(_){for(var r in _){_[r].__farm_resource_pot__='file://'+__filename;global['__farm_default_namespace__'].__farm_module_system__.register(r,_[r])}})({"b5d64806":function  (module, exports, farmRequire, farmDynamicRequire) {}
-,});global['__farm_default_namespace__'].__farm_module_system__.setInitialLoadedResources([]);global['__farm_default_namespace__'].__farm_module_system__.setDynamicModuleResourcesMap([],{  });var farmModuleSystem = global['__farm_default_namespace__'].__farm_module_system__;farmModuleSystem.bootstrap();var entry = farmModuleSystem.require("b5d64806");
+//index.js:
+ // module_id: reexport.ts
+var farm_runtime_js_ns = require("./farm_runtime.js");
+var __commonJs = farm_runtime_js_ns.__commonJs, _export_star = farm_runtime_js_ns._export_star, _interop_require_wildcard = farm_runtime_js_ns._interop_require_wildcard;
+var reexport_cjs = __commonJs({
+    "reexport.ts": (module, exports)=>{
+        "use strict";
+        Object.defineProperty(exports, "__esModule", {
+            value: true
+        });
+        _export_star(require("node:fs"), exports);
+        _export_star(require("node:cluster"), exports);
+        const readFile = 123;
+        module.exports.name = 123;
+    }
+});
+var reexport_ns = _interop_require_wildcard(reexport_cjs()), Worker = reexport_cjs()["Worker"], readFile = reexport_cjs()["readFile"];
+
+// module_id: foo.ts
+
+// module_id: index.ts
+console.log({
+    readFile: readFile,
+    Worker: Worker
+});
+_export_star(reexport_ns, module.exports);

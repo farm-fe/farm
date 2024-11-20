@@ -162,11 +162,14 @@ pub fn build_scope_hoisted_module_groups(
         let dependents_hoisted_group_module =
           module_graph.module(&dependents_hoisted_group_id).unwrap();
 
-        if dependents_hoisted_group_module.execution_order
-          < module_graph
-            .module(&group.target_hoisted_module_id)
-            .unwrap()
-            .execution_order
+        if module_graph
+          .circle_record
+          .is_in_circle(&dependents_hoisted_group_id)
+          || dependents_hoisted_group_module.execution_order
+            < module_graph
+              .module(&group.target_hoisted_module_id)
+              .unwrap()
+              .execution_order
         {
           continue;
         }
