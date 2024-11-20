@@ -1,6 +1,6 @@
 {
   "name": "@farmfe/plugin-react",
-  "version": "1.2.5",
+  "version": "1.2.6",
   "main": "index.js",
   "types": "index.d.ts",
   "type": "module",
