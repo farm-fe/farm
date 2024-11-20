@@ -1,5 +1,12 @@
 # @farmfe/core
 
+## 1.4.1
+
+### Patch Changes
+
+- Updated dependencies [829d0945]
+  - @farmfe/runtime@0.12.9
+
 ## 1.4.0
 
 ### Minor Changes
