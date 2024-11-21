@@ -1,8 +1,8 @@
 use std::{collections::HashMap, path::PathBuf};
 
 use common::{
-  assert_compiler_result_with_config, create_compiler_with_args, get_config_field,
-  try_read_config_from_json, AssertCompilerResultConfig,
+  assert_compiler_result_with_config, create_compiler_with_args,
+  try_merge_config_file, AssertCompilerResultConfig,
 };
 
 mod common;
@@ -17,23 +17,11 @@ fn script_test(file: String, crate_path: String) {
 
   let config_entry = cwd.to_path_buf().join("config.json");
 
-  let config_from_file = try_read_config_from_json(config_entry);
-
   let compiler =
     create_compiler_with_args(cwd.to_path_buf(), create_path_buf, |mut config, plugins| {
-      config.input = HashMap::from_iter(vec![(entry_name.clone(), file)]);
+      config.input = HashMap::from_iter(vec![(entry_name.clone(), file.clone())]);
 
-      if let Some(config_form_file) = config_from_file {
-        if let Some(str) = get_config_field(&config_form_file, &["output", "publicPath"]) {
-          config.output.public_path = str;
-        }
-
-        if let Some(enable) =
-          get_config_field(&config_form_file, &["script", "nativeTopLevelAwait"])
-        {
-          config.script.native_top_level_await = enable;
-        }
-      }
+      config = try_merge_config_file(config, config_entry);
 
       (config, plugins)
     });

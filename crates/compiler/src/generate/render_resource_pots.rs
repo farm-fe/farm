@@ -84,8 +84,9 @@ pub fn render_resource_pots_and_generate_resources(
         &mut resource_pot_info,
       )?;
 
-      let r = &mut res.resource;
       let resource_pot_info: ResourcePotInfo = resource_pot_info.unwrap();
+      res.resource.info = Some(resource_pot_info);
+      let r = &mut res.resource;
 
       // ignore runtime resource
       if !matches!(r.resource_type, ResourceType::Runtime) {
@@ -149,7 +150,6 @@ pub fn render_resource_pots_and_generate_resources(
 
       resource_pot.add_resource(res.resource.name.clone());
 
-      res.resource.info = Some(resource_pot_info);
 
       resources.lock().push(res.resource);
       Ok::<(), CompilationError>(())

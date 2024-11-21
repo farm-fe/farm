@@ -1,15 +1,15 @@
-import React, { Suspense, useRef } from "react";
-import { Canvas, primitive, useLoader } from "@react-three/fiber";
-import * as THREE from "three";
-import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 import {
+  Environment,
   Loader,
-  useGLTF,
   OrbitControls,
   PerspectiveCamera,
-  Environment,
   Stars,
+  useGLTF,
 } from "@react-three/drei";
+import { Canvas, primitive, useLoader } from "@react-three/fiber";
+import React, { Suspense, useRef } from "react";
+import * as THREE from "three";
+import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 
 import "./index.css";
 

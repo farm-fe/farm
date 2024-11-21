@@ -6,8 +6,6 @@ import { pathToFileURL } from 'node:url';
 import fse from 'fs-extra';
 
 import { bindingPath } from '../../binding/index.js';
-import { OutputConfig } from '../types/binding.js';
-
 import { JsPlugin } from '../index.js';
 import {
   getSortedPlugins,
@@ -17,6 +15,7 @@ import {
   resolveConfigResolvedHook,
   resolveFarmPlugins
 } from '../plugin/index.js';
+
 import {
   Logger,
   clearScreen,
@@ -52,11 +51,12 @@ import {
   FARM_DEFAULT_NAMESPACE
 } from './constants.js';
 import { mergeConfig, mergeFarmCliConfig } from './mergeConfig.js';
-import { normalizeAsset } from './normalize-config/normalize-asset.js';
 import { normalizeCss } from './normalize-config/normalize-css.js';
 import { normalizeExternal } from './normalize-config/normalize-external.js';
 import normalizePartialBundling from './normalize-config/normalize-partial-bundling.js';
 import { normalizeResolve } from './normalize-config/normalize-resolve.js';
+
+import type { OutputConfig } from '../types/binding.js';
 import type {
   ConfigEnv,
   FarmCliOptions,
@@ -72,6 +72,7 @@ import type {
 
 export * from './types.js';
 export * from './constants.js';
+export * from './env.js';
 
 export function defineFarmConfig(config: UserConfig): UserConfig;
 export function defineFarmConfig(
@@ -98,7 +99,7 @@ const COMMANDS = {
  * @param configPath
  */
 export async function resolveConfig(
-  inlineOptions: FarmCliOptions & UserConfig,
+  inlineOptions: FarmCliOptions & UserConfig & any,
   command: 'start' | 'build' | 'watch' | 'preview',
   defaultMode: CompilationMode = 'development',
   defaultNodeEnv: CompilationMode = 'development',
@@ -445,13 +446,22 @@ export async function normalizeUserCompilationConfig(
     resolvedCompilation.treeShaking ??= isProduction;
   }
 
+  if (resolvedCompilation.concatenateModules === undefined) {
+    resolvedCompilation.concatenateModules ??= isProduction;
+  }
+
+  if (resolvedCompilation.concatenateModules && !isProduction) {
+    resolvedUserConfig.logger.warn(
+      'concatenateModules option is not supported with development mode, concatenateModules will be disabled'
+    );
+    resolvedCompilation.concatenateModules = false;
+  }
+
   if (resolvedCompilation.script?.plugins?.length) {
     resolvedUserConfig.logger.info(
       `Swc plugins are configured, note that Farm uses ${colors.yellow(
         'swc_core v0.96'
-      )}, please make sure the plugin is ${colors.green(
-        'compatible'
-      )} with swc_core ${colors.yellow(
+      )}, please make sure the plugin is ${colors.green('compatible')} with swc_core ${colors.yellow(
         'swc_core v0.96'
       )}. Otherwise, it may exit unexpectedly.`
     );
@@ -535,7 +545,10 @@ export const DEFAULT_DEV_SERVER_OPTIONS: NormalizedServerConfig = {
     9000,
   https: undefined,
   protocol: 'http',
-  hostname: { name: 'localhost', host: undefined },
+  hostname: {
+    name: 'localhost',
+    host: undefined
+  },
   host: true,
   proxy: undefined,
   hmr: DEFAULT_HMR_OPTIONS,
@@ -742,7 +755,13 @@ export async function loadConfigFile(
   inlineOptions: any,
   configEnv: any,
   mode: CompilationMode = 'development'
-): Promise<{ config: any; configFilePath: string } | undefined> {
+): Promise<
+  | {
+      config: any;
+      configFilePath: string;
+    }
+  | undefined
+> {
   const { root = '.' } = inlineOptions;
   const configRootPath = path.resolve(root);
   let resolvedPath: string | undefined;
@@ -797,7 +816,9 @@ export async function checkCompilationInputValue(
   const inputValue = Object.values(compilation?.input).filter(Boolean);
   const isTargetNode = targetEnv === 'node';
   const defaultHtmlPath = './index.html';
-  let inputIndexConfig: { index?: string } = { index: '' };
+  let inputIndexConfig: {
+    index?: string;
+  } = { index: '' };
   let errorMessage = '';
 
   // Check if input is specified
@@ -813,7 +834,9 @@ export async function checkCompilationInputValue(
         try {
           const resolvedPath = path.resolve(rootPath, entryFile);
           if (await checkFileExists(resolvedPath)) {
-            inputIndexConfig = { index: entryFile };
+            inputIndexConfig = {
+              index: entryFile
+            };
             break;
           }
         } catch (error) {
@@ -824,7 +847,9 @@ export async function checkCompilationInputValue(
       try {
         const resolvedHtmlPath = path.resolve(rootPath, defaultHtmlPath);
         if (await checkFileExists(resolvedHtmlPath)) {
-          inputIndexConfig = { index: defaultHtmlPath };
+          inputIndexConfig = {
+            index: defaultHtmlPath
+          };
         }
       } catch (error) {
         errorMessage = error.stack;
@@ -1063,7 +1088,7 @@ export function getFormat(configFilePath: string): Format {
     ? 'cjs'
     : process.env.FARM_CONFIG_FORMAT === 'esm'
       ? 'esm'
-      : formatFromExt[path.extname(configFilePath).slice(1)] ?? 'esm';
+      : (formatFromExt[path.extname(configFilePath).slice(1)] ?? 'esm');
 }
 
 export function getFilePath(outputPath: string, fileName: string): string {

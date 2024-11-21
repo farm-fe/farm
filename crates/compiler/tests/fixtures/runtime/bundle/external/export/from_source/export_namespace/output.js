@@ -1,21 +1,14 @@
 //index.js:
- global.nodeRequire = require;global['__farm_default_namespace__'] = {__FARM_TARGET_ENV__: 'node'};function _interop_require_default(obj) {
-    return obj && obj.__esModule ? obj : {
-        default: obj
-    };
-}function _export_star(from, to) {
-    Object.keys(from).forEach(function(k) {
-        if (k !== "default" && !Object.prototype.hasOwnProperty.call(to, k)) {
-            Object.defineProperty(to, k, {
-                enumerable: true,
-                get: function() {
-                    return from[k];
-                }
-            });
-        }
-    });
-    return from;
-}function _interop_require_wildcard(obj, nodeInterop) {
+ global.nodeRequire = require;global['__farm_default_namespace__'] = {__FARM_TARGET_ENV__: 'node'};// module_id: exportNamespace.ts.farm-runtime
+function _getRequireWildcardCache(nodeInterop) {
+    if (typeof WeakMap !== "function") return null;
+    var cacheBabelInterop = new WeakMap();
+    var cacheNodeInterop = new WeakMap();
+    return (_getRequireWildcardCache = function(nodeInterop) {
+        return nodeInterop ? cacheNodeInterop : cacheBabelInterop;
+    })(nodeInterop);
+}
+function _interop_require_wildcard(obj, nodeInterop) {
     if (!nodeInterop && obj && obj.__esModule) return obj;
     if (obj === null || typeof obj !== "object" && typeof obj !== "function") return {
         default: obj
@@ -36,14 +29,7 @@
     newObj.default = obj;
     if (cache) cache.set(obj, newObj);
     return newObj;
-}function _getRequireWildcardCache(nodeInterop) {
-    if (typeof WeakMap !== "function") return null;
-    var cacheBabelInterop = new WeakMap();
-    var cacheNodeInterop = new WeakMap();
-    return (_getRequireWildcardCache = function(nodeInterop) {
-        return nodeInterop ? cacheNodeInterop : cacheBabelInterop;
-    })(nodeInterop);
-}// module_id: exportNamespace.ts.farm-runtime
+}
 var node_fs_ns = _interop_require_wildcard(require("node:fs.farm-runtime"));
 console.log('export namespace');
 var exportNamespace_ts_ns = {
@@ -54,11 +40,6 @@ var exportNamespace_ts_ns = {
 // module_id: bundle2-dep.ts.farm-runtime
 const bundle2A = 'bundle2A';
 const bundle2B = 'bundle2B';
-var bundle2_dep_ts_ns = {
-    bundle2A: bundle2A,
-    bundle2B: bundle2B,
-    __esModule: true
-};
 
 // module_id: bundle2-index.ts.farm-runtime
 var bundle2_index_ts_ns = {

@@ -1,15 +1,7 @@
-import { defineConfig } from "@farmfe/core";
+import { defineConfig, loadEnv } from "@farmfe/core";
 
 import react from "@farmfe/plugin-react";
 import path from "path";
-// load: {
-//   // filters: {
-//   //   resolvedPaths: ['\\.*$'] // filter files to improve performance
-//   // },
-//   async executor({ resolvedPath }) {
-//     console.log(resolvedPath);
-//   }
-// }
 
 function custom() {
   return {
@@ -36,8 +28,6 @@ function custom() {
     }
   }
 }
-
-
 export default defineConfig({
   plugins: [
     react(),
@@ -59,18 +49,12 @@ export default defineConfig({
     output: {
       // publicPath: "/aaa/",
     },
-    resolve: {
-      // alias: {
-      //   "@": path.resolve("src"),
-      // },
-      alias: [{ find: "@", replacement: path.resolve("src") }],
+    server: {
+      port: 4855,
+      appType: "mpa",
     },
-  },
-  timeUnit: "s",
-  server: {
-    port: 8854,
-    // appType: "mpa",
-  },
+  }
+
 });
 
 function myCustomPlugin() {
@@ -78,7 +62,7 @@ function myCustomPlugin() {
     name: "custom",
     updateModules: {
       executor(data: any) {
-        console.log(data, "更新的模块");
+        console.log(data);
       },
     },
   };
