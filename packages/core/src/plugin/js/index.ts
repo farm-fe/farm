@@ -16,11 +16,14 @@ import {
   createAugmentResourceHashSchema,
   createBuildEndSchema,
   createBuildStartSchema,
+  createConfigResolvedSchema,
+  createConfigSchema,
   createFinalizeResourcesSchema,
   createFinishSchema,
   createLoadSchema,
   createNameSchema,
   createPluginCacheLoadedSchema,
+  createPrioritySchema,
   createRenderResourcePotSchema,
   createRenderStartSchema,
   createResolveSchema,
@@ -30,11 +33,11 @@ import {
   createUpdateModulesSchema,
   createWritePluginCacheSchema
 } from './js-plugin-schema.js';
-import { DEFAULT_FILTERS, normalizeFilterPath } from './utils.js';
+import { DEFAULT_FILTERS } from './utils.js';
 import { VitePluginAdapter } from './vite-plugin-adapter.js';
 
-// export * from './jsPluginAdapter.js';
 export { VitePluginAdapter } from './vite-plugin-adapter.js';
+export * from './js-plugin-schema.js';
 
 type VitePluginType = object | (() => { vitePlugin: any; filters: string[] });
 type VitePluginsType = VitePluginType[];
@@ -113,93 +116,13 @@ export function processVitePlugin(
   }
 }
 
-// export function convertPlugin(plugin: JsPlugin): void {
-//   console.log(plugin);
-
-//   if (
-//     plugin.transform &&
-//     !plugin.transform.filters?.moduleTypes &&
-//     !plugin.transform.filters?.resolvedPaths
-//   ) {
-//     throw Error(
-//       `transform hook of plugin ${plugin.name} must have at least one filter(like moduleTypes or resolvedPaths)`
-//     );
-//   }
-//   if (plugin.transform) {
-//     if (!plugin.transform.filters.moduleTypes) {
-//       plugin.transform.filters.moduleTypes = [];
-//     } else if (!plugin.transform.filters.resolvedPaths) {
-//       plugin.transform.filters.resolvedPaths = [];
-//     }
-//   }
-
-//   if (plugin.renderResourcePot) {
-//     plugin.renderResourcePot.filters ??= {};
-
-//     if (
-//       !plugin.renderResourcePot?.filters?.moduleIds &&
-//       !plugin.renderResourcePot?.filters?.resourcePotTypes
-//     ) {
-//       throw new Error(
-//         `renderResourcePot hook of plugin ${plugin.name} must have at least one filter(like moduleIds or resourcePotTypes)`
-//       );
-//     }
-
-//     if (!plugin.renderResourcePot.filters?.resourcePotTypes) {
-//       plugin.renderResourcePot.filters.resourcePotTypes = [];
-//     } else if (!plugin.renderResourcePot.filters?.moduleIds) {
-//       plugin.renderResourcePot.filters.moduleIds = [];
-//     }
-//   }
-
-//   if (plugin.augmentResourceHash) {
-//     plugin.augmentResourceHash.filters ??= {};
-
-//     if (
-//       !plugin.augmentResourceHash?.filters?.moduleIds &&
-//       !plugin.augmentResourceHash?.filters?.resourcePotTypes
-//     ) {
-//       throw new Error(
-//         `augmentResourceHash hook of plugin ${plugin.name} must have at least one filter(like moduleIds or resourcePotTypes)`
-//       );
-//     }
-
-//     if (!plugin.augmentResourceHash.filters?.resourcePotTypes) {
-//       plugin.augmentResourceHash.filters.resourcePotTypes = [];
-//     } else if (!plugin.augmentResourceHash.filters?.moduleIds) {
-//       plugin.augmentResourceHash.filters.moduleIds = [];
-//     }
-//   }
-
-//   if (plugin.resolve?.filters?.importers?.length) {
-//     plugin.resolve.filters.importers =
-//       plugin.resolve.filters.importers.map(normalizeFilterPath);
-//   }
-
-//   if (plugin.load?.filters?.resolvedPaths?.length) {
-//     plugin.load.filters.resolvedPaths =
-//       plugin.load.filters.resolvedPaths.map(normalizeFilterPath);
-//   }
-
-//   if (plugin.transform?.filters?.resolvedPaths?.length) {
-//     plugin.transform.filters.resolvedPaths =
-//       plugin.transform.filters.resolvedPaths.map(normalizeFilterPath);
-//   }
-//   if (plugin.augmentResourceHash?.filters?.moduleIds) {
-//     plugin.augmentResourceHash.filters.moduleIds =
-//       plugin.augmentResourceHash.filters.moduleIds.map(normalizeFilterPath);
-//   }
-
-//   if (plugin.renderResourcePot?.filters?.moduleIds) {
-//     plugin.renderResourcePot.filters.moduleIds =
-//       plugin.renderResourcePot.filters.moduleIds.map(normalizeFilterPath);
-//   }
-// }
-
 const schemaRegistry = new PluginSchemaRegistry();
 
 schemaRegistry
   .register('name', createNameSchema)
+  .register('priority', createPrioritySchema)
+  .register('config', createConfigSchema)
+  .register('configResolved', createConfigResolvedSchema)
   .register('buildStart', createBuildStartSchema)
   .register('resolve', createResolveSchema)
   .register('load', createLoadSchema)
@@ -222,6 +145,7 @@ export function convertPlugin(plugin: JsPlugin) {
     const pluginSchema = schemaRegistry.createPluginSchema(plugin?.name);
 
     const res = pluginSchema.parse(plugin);
+
     return res;
   } catch (err) {
     const validationError = fromZodError(err, {

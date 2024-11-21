@@ -3,8 +3,6 @@ import { z } from 'zod';
 
 import { normalizeFilterPath } from './utils.js';
 
-// TODO At present, we cannot implement complete function types. We will provide a basic version first
-
 const EmptyRecordSchema = z.record(z.string(), z.never());
 
 const CallbackSchema = z.function().args(EmptyRecordSchema).returns(z.void());
@@ -15,25 +13,24 @@ export const nameSchema = z.string().min(1);
 // priority schema
 export const prioritySchema = z.number().int().default(100).optional();
 
-// TODO At present, we cannot implement complete function types. We will provide a basic version first
 // config schema
-// export const configSchema = z.function().returns(
-//   z.union([
-//     z.void(),
-//     z.promise(z.void())
-//   ])
-// )
-//   .optional();
+export const configSchema = z
+  .function()
+  .args(z.record(z.string(), z.any()))
+  .returns(
+    z.union([
+      z.record(z.string(), z.any()),
+      z.promise(z.record(z.string(), z.any()))
+    ])
+  )
+  .optional();
 
-// TODO At present, we cannot implement complete function types. We will provide a basic version first
 // configResolved schema
-// export const configResolvedSchema = z.function().returns(
-//   z.union([
-//     z.void(),
-//     z.promise(z.void())
-//   ])
-// )
-//   .optional();
+export const configResolvedSchema = z
+  .function()
+  .args(z.record(z.string(), z.any()))
+  .returns(z.union([z.void(), z.promise(z.void())]))
+  .optional();
 
 export const loadFilterSchema = z.object({
   resolvedPaths: z.array(z.string()).optional().default([])
@@ -71,6 +68,75 @@ export const createNameSchema = (name: string) => {
         message: `\n 'name' of plugin '${name}' is required`
       }
     );
+};
+
+export const createPrioritySchema = (name: string) => {
+  return prioritySchema.refine(
+    () => {
+      return true;
+    },
+    {
+      message: `\n 'priority' of plugin '${name}' must be greater type of number`
+    }
+  );
+};
+
+export const createConfigSchema = (name: string) => {
+  return configSchema.superRefine((data, ctx) => {
+    if (typeof data !== 'function') {
+      ctx.addIssue({
+        code: z.ZodIssueCode.invalid_type,
+        expected: 'function',
+        received: typeof data,
+        message: `\n plugin '${name}' config hook must be a function:
+        - Function signature: (config: UserConfig) => UserConfig | Promise<UserConfig>
+        - Purpose: Modify or extend configuration
+        - Parameter: Receives current user configuration
+        - Returns: Modified configuration or its Promise`
+      });
+    } else {
+      const result = data({});
+      if (result === undefined) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `\n plugin '${name}' config hook must return a valid configuration object or a Promise thereof.`
+        });
+      }
+    }
+  });
+};
+
+export const createConfigResolvedSchema = (name: string) => {
+  return configResolvedSchema.superRefine((data, ctx) => {
+    if (typeof data !== 'function') {
+      ctx.addIssue({
+        code: z.ZodIssueCode.invalid_type,
+        expected: 'function',
+        received: typeof data,
+        message: `\n plugin '${name}' configResolved hook:
+        - Function signature: (config: ResolvedUserConfig) => void | Promise<void>
+        - Purpose: Handle the resolved configuration
+        - Parameter: Final resolved configuration object
+        - Returns: void or Promise<void>
+        - Note: This hook is called after all config hooks have been applied`
+      });
+    } else {
+      try {
+        const result = data({});
+        if (result !== undefined && !(result instanceof Promise)) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: `\n plugin '${name}' configResolved hook must return void or Promise<void>`
+          });
+        }
+      } catch (error) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `\n plugin '${name}' configResolved hook execution failed: ${error.message}`
+        });
+      }
+    }
+  });
 };
 
 export const createBuildStartSchema = (name: string) => {
@@ -172,10 +238,6 @@ export const createTransformSchema = (name: string) => {
 export const createRenderStartSchema = (name: string) => {
   return z
     .object({
-      // TODO type of Config['config']
-      // renderStart?: {
-      //   executor: Callback<Config['config'], void>;
-      // };
       executor: CallbackSchema
     })
     .refine(

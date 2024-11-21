@@ -33,7 +33,13 @@ function custom() {
       async executor(param, ctx) {
         // console.log(param, "transform");
       }
-    }
+    },
+    // renderStart: {
+    //   async executor() {
+    //     // update my plugin status
+    //     // console.log(1231231);
+    //   }
+    // }
   }
 }
 
