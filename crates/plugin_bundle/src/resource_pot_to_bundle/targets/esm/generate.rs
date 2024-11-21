@@ -60,9 +60,6 @@ impl EsmGenerate {
       .sorted_by_key(|a| bundle_variable.render_name(**a))
     {
       let local = &export.named[exported];
-      if bundle_variable.var_by_index(*local).removed {
-        continue;
-      }
 
       let named_render_name = bundle_variable.render_name(*local);
       let exported_name = bundle_variable.name(*exported);

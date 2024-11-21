@@ -53,7 +53,7 @@ export function farmUserConfigToViteConfig(config: UserConfig): ViteUserConfig {
       open: config.server?.open,
       watch:
         typeof config.server?.hmr === 'object'
-          ? (config.server.hmr?.watchOptions ?? {})
+          ? config.server.hmr?.watchOptions ?? {}
           : {}
       // other options are not supported in farm
     },
@@ -90,7 +90,8 @@ export function farmUserConfigToViteConfig(config: UserConfig): ViteUserConfig {
     assetsInclude: [
       ...VITE_DEFAULT_ASSETS,
       ...(config.compilation?.assets?.include ?? [])
-    ]
+    ],
+    experimental: {}
   };
 
   return viteConfig;

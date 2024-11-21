@@ -58,7 +58,9 @@ impl Plugin for FarmPluginReact {
   fn name(&self) -> &str {
     "FarmPluginReact"
   }
-
+  fn priority(&self) -> i32 {
+      99
+  }
   fn resolve(
     &self,
     param: &farmfe_core::plugin::PluginResolveHookParam,

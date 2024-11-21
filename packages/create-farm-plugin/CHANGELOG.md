@@ -1,5 +1,11 @@
 # create-farm-plugin
 
+## 0.1.17
+
+### Patch Changes
+
+- 7d86847c: Update rust plugin template. Fix #1931
+
 ## 0.1.16
 
 ### Patch Changes

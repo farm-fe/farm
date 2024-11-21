@@ -905,7 +905,7 @@ impl<'a> BundleAnalyzer<'a> {
 
               // export * as ns from 'person'
               ExportSpecifierInfo::Namespace(ns) => {
-                let bundle_variable = self.bundle_variable.borrow_mut();
+                let mut bundle_variable = self.bundle_variable.borrow_mut();
                 let source = export
                   .source
                   .as_ref()
