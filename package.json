@@ -22,13 +22,13 @@
     "bump:create-farm": "node scripts/bump-create-farm-version.mjs",
     "test:rs:update": "cross-env FARM_UPDATE_SNAPSHOTS=1 INSTA_UPDATE=always cargo test -p farmfe_compiler",
     "ready": "node scripts/ready.mjs",
-    "test-e2e": "vitest run -c vitest.config.e2e.ts",
+    "test-e2e": "vitest run -c vitest.config.e2e.ts arco-pro",
     "prepare": "husky",
     "clean": "node scripts/clean.mjs && rimraf node_modules **/*/node_modules",
     "test": "echo 'fixme before merge to main'"
   },
   "devDependencies": {
-    "@biomejs/biome": "1.8.3",
+    "@biomejs/biome": "1.9.4",
     "@changesets/cli": "2.27.9",
     "@codspeed/vitest-plugin": "^3.1.1",
     "@commitlint/cli": "^17.0.3",
@@ -52,10 +52,7 @@
     "vitest": "2.0.4"
   },
   "lint-staged": {
-    "packages/**/*.ts": [
-      "npx biome check --no-errors-on-unmatched --files-ignore-unknown=true --write"
-    ],
-    "js-plugins/**/*.ts": [
+    "{packages,js-plugins,docs,scripts}/**/*.{ts,json,yaml,yml}": [
       "npx biome check --no-errors-on-unmatched --files-ignore-unknown=true --write"
     ]
   },

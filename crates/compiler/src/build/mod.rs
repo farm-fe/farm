@@ -488,6 +488,14 @@ impl Compiler {
             return;
           }
 
+          if let ResolveKind::Entry(ref name) = resolve_param.kind {
+            context
+              .module_graph
+              .write()
+              .entries
+              .insert(module.id.clone(), name.to_string());
+          }
+
           match Self::build_module(
             resolve_module_id_result.resolve_result,
             &mut module,

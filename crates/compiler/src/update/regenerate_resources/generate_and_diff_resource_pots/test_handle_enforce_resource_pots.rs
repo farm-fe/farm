@@ -6,7 +6,7 @@ use farmfe_core::{
     config_regex::ConfigRegex, partial_bundling::PartialBundlingEnforceResourceConfig, Config,
   }, context::CompilationContext, farm_profile_function, module::{
     module_graph::{ModuleGraphEdge, ModuleGraphEdgeDataItem},
-    Module,
+    Module, ModuleType,
   }, plugin::{Plugin, PluginHookContext, ResolveKind}
 };
 use farmfe_plugin_partial_bundling::module_group_graph_from_entries;
@@ -30,7 +30,13 @@ fn test_handle_enforce_resource_pots() {
   update_module_graph
     .remove_edge(&"F".into(), &"A".into())
     .unwrap();
-  update_module_graph.add_module(Module::new("H".into()));
+  update_module_graph.add_module({
+    let mut m = Module::new("H".into());
+
+    m.module_type = ModuleType::Js;
+
+    m
+  });
   update_module_graph
     .add_edge(&"B".into(), &"H".into(), Default::default())
     .unwrap();
@@ -124,7 +130,7 @@ fn test_handle_enforce_resource_pots() {
 
   assert_eq!(
     enforce_resource_pots,
-    vec!["test_custom(\"__farm_unknown\")".to_string()]
+    vec!["test_js".to_string()]
   );
   un_enforce_resource_pots.sort();
   assert_eq!(

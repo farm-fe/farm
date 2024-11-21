@@ -234,9 +234,9 @@ mod tests {
     assert_eq!(
       HashSet::<String>::from_iter(module_group_buckets[0].buckets.clone().into_iter()),
       HashSet::from([
-        "__farm_unknown_false_B".to_string(),
-        "__farm_unknown_false_B_D".to_string(),
-        "__farm_unknown_false_B_D_F_G".to_string()
+        "js_false_B".to_string(),
+        "js_false_B_D".to_string(),
+        "js_false_B_D_F_G".to_string()
       ])
     );
 
@@ -246,8 +246,8 @@ mod tests {
     assert_eq!(
       HashSet::<String>::from_iter(module_group_buckets[1].buckets.clone().into_iter()),
       HashSet::from([
-        "__farm_unknown_false_G".to_string(),
-        "__farm_unknown_false_B_D_F_G".to_string()
+        "js_false_G".to_string(),
+        "js_false_B_D_F_G".to_string()
       ])
     );
 
@@ -256,7 +256,7 @@ mod tests {
     assert_eq!(module_group_buckets[2].buckets.len(), 1);
     assert_eq!(
       HashSet::<String>::from_iter(module_group_buckets[2].buckets.clone().into_iter()),
-      HashSet::from(["__farm_unknown_false_A_F".to_string()])
+      HashSet::from(["js_false_A_F".to_string()])
     );
 
     assert_eq!(module_group_buckets[3].module_group_id, "F".into());
@@ -265,9 +265,9 @@ mod tests {
     assert_eq!(
       HashSet::<String>::from_iter(module_group_buckets[3].buckets.clone().into_iter()),
       HashSet::from([
-        "__farm_unknown_false_F".to_string(),
-        "__farm_unknown_false_A_F".to_string(),
-        "__farm_unknown_false_B_D_F_G".to_string()
+        "js_false_F".to_string(),
+        "js_false_A_F".to_string(),
+        "js_false_B_D_F_G".to_string()
       ])
     );
 
@@ -277,8 +277,8 @@ mod tests {
     assert_eq!(
       HashSet::<String>::from_iter(module_group_buckets[4].buckets.clone().into_iter()),
       HashSet::from([
-        "__farm_unknown_false_B_D_F_G".to_string(),
-        "__farm_unknown_false_B_D".to_string()
+        "js_false_B_D_F_G".to_string(),
+        "js_false_B_D".to_string()
       ])
     );
   }

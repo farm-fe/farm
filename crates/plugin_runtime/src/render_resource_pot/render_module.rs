@@ -13,6 +13,7 @@ use farmfe_toolkit::{
   minify::minify_js_module,
   script::{
     codegen_module,
+    module2cjs::{transform_module_decls, OriginalRuntimeCallee, TransformModuleDeclsOptions},
     swc_try_with::{resolve_module_mark, try_with},
     CodeGenCommentsConfig,
   },
@@ -36,7 +37,6 @@ use farmfe_core::{
 use super::{
   source_replacer::{ExistingCommonJsRequireVisitor, SourceReplacer, SourceReplacerOptions},
   transform_async_module,
-  transform_module_decls::{transform_module_decls, TransformModuleDeclsOptions},
 };
 
 pub struct RenderModuleResult {
@@ -47,6 +47,7 @@ pub struct RenderModuleResult {
 
 pub struct RenderModuleOptions<'a, F: Fn(&ModuleId) -> bool> {
   pub module: &'a Module,
+  pub hoisted_ast: Option<SwcModule>,
   pub module_graph: &'a ModuleGraph,
   pub is_enabled_minify: F,
   pub minify_builder: &'a MinifyBuilder,
@@ -56,22 +57,25 @@ pub struct RenderModuleOptions<'a, F: Fn(&ModuleId) -> bool> {
 
 pub fn render_module<'a, F: Fn(&ModuleId) -> bool>(
   options: RenderModuleOptions<'a, F>,
+  comments: Option<SingleThreadedComments>,
 ) -> farmfe_core::error::Result<RenderModuleResult> {
   let RenderModuleOptions {
     module,
+    hoisted_ast,
     module_graph,
     is_enabled_minify,
     minify_builder,
     is_async_module,
     context,
   } = options;
-  let mut cloned_module = module.meta.as_script().ast.clone();
+  let is_use_hoisted = hoisted_ast.is_some();
+  let mut cloned_module = hoisted_ast.unwrap_or(module.meta.as_script().ast.clone());
   let (cm, _) = create_swc_source_map(Source {
     path: PathBuf::from(module.id.resolved_path_with_query(&context.config.root)),
     content: module.content.clone(),
   });
   let mut external_modules = vec![];
-  let comments: SingleThreadedComments = module.meta.as_script().comments.clone().into();
+  let comments: SingleThreadedComments = comments.unwrap_or_else(|| module.meta.as_script().comments.clone().into()) ;
   let minify_enabled = is_enabled_minify(&module.id);
 
   try_with(cm.clone(), &context.meta.script.globals, || {
@@ -110,6 +114,7 @@ pub fn render_module<'a, F: Fn(&ModuleId) -> bool>(
       transform_module_decls(
         &mut cloned_module,
         unresolved_mark,
+        &OriginalRuntimeCallee { unresolved_mark },
         TransformModuleDeclsOptions {
           is_target_legacy: context.config.script.is_target_legacy(),
         },
@@ -124,6 +129,7 @@ pub fn render_module<'a, F: Fn(&ModuleId) -> bool>(
       module_id: module.id.clone(),
       mode: context.config.mode.clone(),
       target_env: context.config.output.target_env.clone(),
+      is_strict_find_source: !is_use_hoisted,
     });
     cloned_module.visit_mut_with(&mut source_replacer);
     cloned_module.visit_mut_with(&mut hygiene_with_config(HygieneConfig {

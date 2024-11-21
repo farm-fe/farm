@@ -1,45 +1,65 @@
 ---
 source: crates/plugin_partial_bundling/src/merge_module_pots/test_boundaries.rs
-input_file: crates/plugin_partial_bundling/src/merge_module_pots/test_boundaries.rs
+input_file: crates/testing_helpers/src/lib.rs
 ---
-(
-    (
-        "immutable",
-        false,
-    ),
-    (
-        "modules",
-        [
-            ModuleId {
-                relative_path: "B",
-                query_string: "",
-            },
-        ],
-    ),
-    (
-        "resource_pot_type",
-        Custom(
-            "__farm_unknown",
-        ),
-    ),
-    (
-        "name",
-        "B_df7e",
-    ),
-    (
-        "id",
-        "B_df7e",
-    ),
-    (
-        "entry",
-        None,
-    ),
-    (
-        "resources",
-        [],
-    ),
-    (
-        "module_groups",
-        [],
-    ),
-)
+name: D_3f39
+id: B_3f39
+immutable: true
+resource_pot_type: Js
+entry: None
+module_groups: []
+modules: [
+    ModuleId {
+        relative_path: "D",
+        query_string: "",
+    },
+]
+resources: []
+
+-------
+
+name: H_44bd
+id: B_44bd
+immutable: true
+resource_pot_type: Js
+entry: None
+module_groups: []
+modules: [
+    ModuleId {
+        relative_path: "H",
+        query_string: "",
+    },
+]
+resources: []
+
+-------
+
+name: E_a9f5
+id: B_a9f5
+immutable: false
+resource_pot_type: Js
+entry: None
+module_groups: []
+modules: [
+    ModuleId {
+        relative_path: "E",
+        query_string: "",
+    },
+]
+resources: []
+
+-------
+
+name: B_df7e
+id: B_df7e
+immutable: false
+resource_pot_type: Js
+entry: None
+module_groups: []
+modules: [
+    ModuleId {
+        relative_path: "B",
+        query_string: "",
+    },
+]
+resources: []

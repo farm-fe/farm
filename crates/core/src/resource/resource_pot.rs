@@ -82,6 +82,10 @@ impl ResourcePot {
     std::mem::take(&mut self.meta)
   }
 
+  pub fn has_module(&self, module_id: &ModuleId) -> bool {
+    self.modules.contains(module_id)
+  }
+
   pub fn remove_module(&mut self, module_id: &ModuleId) {
     self.modules.remove(module_id);
   }
