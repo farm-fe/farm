@@ -1,5 +1,11 @@
 # @farmfe/core
 
+## 1.4.2
+
+### Patch Changes
+
+- 3085d644: judgement node environment with check input value
+
 ## 1.4.1
 
 ### Patch Changes

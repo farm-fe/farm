@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.2.6
+
+### Patch Changes
+
+- 35fb361c: fix: match swc priority
+
 ## 1.2.4
 
 ### Patch Changes
