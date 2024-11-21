@@ -23,6 +23,9 @@ const PKG_PLUGIN_TOOLS = resolve(CWD, "./packages/plugin-tools");
 // Build plugin dts
 const PKG_DTS = resolve(CWD, "./js-plugins/dts");
 
+// Build ReplaceDirnamePlugin
+const PKG_REPLACE_DIRNAME_PLUGIN = resolve(CWD, "./rust-plugins/replace-dirname");
+
 // Build rust_plugin_react
 const PKG_RUST_PLUGIN = resolve(CWD, "./rust-plugins");
 
@@ -106,7 +109,8 @@ export const installLinuxProtobuf = async () => {
 export const buildCore = () =>
   execa(DEFAULT_PACKAGE_MANAGER, ["build:rs"], {
     cwd: PKG_CORE,
-  }).then(buildCoreCjs);
+    stdio: "inherit",
+  }).then(buildReplaceDirnamePlugin).then(buildCoreCjs);
 
 export const buildCoreCjs = () =>
   execa(DEFAULT_PACKAGE_MANAGER, ["build:cjs"], {
@@ -129,6 +133,11 @@ export const buildPluginTools = () =>
 export const buildDts = () =>
   execa(DEFAULT_PACKAGE_MANAGER, ["build"], {
     cwd: PKG_DTS,
+  });
+
+export const buildReplaceDirnamePlugin = () =>
+  execa(DEFAULT_PACKAGE_MANAGER, ["build"], {
+    cwd: PKG_REPLACE_DIRNAME_PLUGIN,
   });
 
 // build rust plugins
@@ -187,15 +196,15 @@ export const buildRustPlugins = async () => {
       !excludedJsPlugin.includes(file)
     );
   });
-
-  const total = rustPluginDirs.length;
+  const filterPlugins = ["replace-dirname"];
+  const buildPlugins = rustPluginDirs.filter(item => !filterPlugins.includes(item))
+  const total = buildPlugins.length;
   console.log("\n");
   logger(`Found ${total} Rust plugins to build \n`, {
     color: "rust",
     title: "Rust Info",
   });
-
-  for (const pluginDir of rustPluginDirs) {
+  for (const pluginDir of buildPlugins) {
     const pluginPath = resolve(PKG_RUST_PLUGIN, pluginDir);
     await runTask(
       `Built Rust plugin: ${pluginDir}`,
