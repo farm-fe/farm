@@ -15,7 +15,7 @@ use farmfe_toolkit::{
 };
 
 use crate::resource_pot_to_bundle::{
-  bundle::{bundle_reference::BundleReference, ModuleGlobalUniqName}, modules_analyzer::module_analyzer::{ImportSpecifierInfo, ModuleAnalyzer}, uniq_name::BundleVariable, Polyfill, ShareBundleContext, ShareBundleOptions, SimplePolyfill
+  bundle::{bundle_reference::{BundleReference, CombineBundleReference}, ModuleGlobalUniqName}, modules_analyzer::module_analyzer::{ImportSpecifierInfo, ModuleAnalyzer}, uniq_name::BundleVariable, Polyfill, ShareBundleContext, ShareBundleOptions, SimplePolyfill
 };
 
 enum ReplaceType {
@@ -64,7 +64,7 @@ pub struct CJSReplace<'a> {
   pub context: &'a ShareBundleContext,
   pub polyfill: &'a mut SimplePolyfill,
   pub external_config: &'a ExternalConfig,
-  pub bundle_reference: &'a mut BundleReference,
+  pub bundle_reference: &'a mut CombineBundleReference,
   pub module_map: &'a HashMap<ModuleId, ModuleAnalyzer>,
 }
 

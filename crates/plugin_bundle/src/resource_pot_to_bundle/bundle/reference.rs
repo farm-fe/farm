@@ -1,9 +1,9 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, ops::Deref};
 
 use farmfe_core::module::{ModuleId, ModuleSystem};
 
 use crate::resource_pot_to_bundle::{
-  modules_analyzer::module_analyzer::ExportSpecifierInfo, uniq_name::BundleVariable,
+  modules_analyzer::module_analyzer::ExportSpecifierInfo, uniq_name::BundleVariable, Var,
 };
 
 #[derive(Debug, Clone, Default)]
@@ -82,9 +82,17 @@ impl ReferenceExport {
   }
 
   pub fn query(&self, export_from: &str, bundle_variable: &BundleVariable) -> Option<usize> {
-    if let Some(index) = self.namespace {
-      if &bundle_variable.name(index) == export_from {
-        return Some(index);
+    let is_find_default = export_from == "default";
+
+    if is_find_default && self.default.is_some() {
+      return self.default;
+    }
+
+    if !is_find_default {
+      if let Some(index) = self.namespace {
+        if bundle_variable.name(index) == export_from {
+          return Some(index);
+        }
       }
     }
 
@@ -108,7 +116,7 @@ impl ReferenceExport {
     }
 
     if let Some(index) = self.namespace {
-      if &bundle_variable.name(index) == export_from {
+      if &bundle_variable.name(index.into()) == export_from {
         return Some(index);
       }
     }
@@ -152,6 +160,7 @@ impl ReferenceMap {
     }
 
     let reference = self.reexport_map.get_mut(module_id).unwrap();
+
     reference.insert(export);
   }
 
@@ -184,6 +193,12 @@ impl ReferenceMap {
           is_reexport: true,
         })
     }
+  }
+
+  pub fn query_local(&self, export_from: &str, bundle_variable: &BundleVariable) -> Option<usize> {
+    self
+      .export
+      .raw_query(export_from, bundle_variable, export_from == "default")
   }
 
   pub fn query_by_str(&self, export_from: &str, bundle_variable: &BundleVariable) -> Option<usize> {
