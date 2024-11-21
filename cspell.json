@@ -309,7 +309,12 @@
     "ZERs",
     "Zjwg",
     "Zwram",
-    "zzse"
+    "zzse",
+    "Fira",
+    "atrule",
+    "metavars",
+    "Yuxi",
+    "Gurubase"
   ],
   "ignorePaths": [
     "pnpm-lock.yaml",

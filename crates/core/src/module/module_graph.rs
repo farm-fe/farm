@@ -102,6 +102,23 @@ impl ModuleGraphEdge {
   }
 }
 
+#[derive(Debug, Default)]
+pub struct CircleRecord {
+  sets: HashSet<ModuleId>,
+}
+
+impl CircleRecord {
+  pub fn new(circles: Vec<Vec<ModuleId>>) -> Self {
+    Self {
+      sets: circles.into_iter().flatten().collect(),
+    }
+  }
+
+  pub fn is_in_circle(&self, module_id: &ModuleId) -> bool {
+    self.sets.contains(module_id)
+  }
+}
+
 pub struct ModuleGraph {
   /// internal graph
   g: StableDiGraph<Module, ModuleGraphEdge>,
@@ -112,15 +129,17 @@ pub struct ModuleGraph {
   /// entry modules of this module graph.
   /// (Entry Module Id, Entry Name)
   pub entries: FxHashMap<ModuleId, String>,
+  pub circle_record: CircleRecord,
 }
 
 impl ModuleGraph {
   pub fn new() -> Self {
     Self {
       g: StableDiGraph::new(),
-      id_index_map: FxHashMap::default(),
-      file_module_ids_map: FxHashMap::default(),
-      entries: FxHashMap::default(),
+      id_index_map: FxHashMap::new(),
+      file_module_ids_map: FxHashMap::new(),
+      entries: FxHashMap::new(),
+      circle_record: CircleRecord::default(),
     }
   }
 
@@ -563,7 +582,7 @@ impl ModuleGraph {
   }
 
   pub fn update_execution_order_for_modules(&mut self) {
-    let (mut topo_sorted_modules, _) = self.toposort();
+    let (mut topo_sorted_modules, circles) = self.toposort();
 
     topo_sorted_modules.reverse();
 
@@ -574,6 +593,8 @@ impl ModuleGraph {
         let module = self.module_mut(module_id).unwrap();
         module.execution_order = order;
       });
+
+    self.circle_record = CircleRecord::new(circles);
   }
 
   pub fn internal_graph(&self) -> &StableDiGraph<Module, ModuleGraphEdge> {

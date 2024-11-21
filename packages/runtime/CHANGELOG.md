@@ -6,6 +6,18 @@
 
 - cab79e8: bump major version with runtime
 
+## 0.12.9
+
+### Patch Changes
+
+- 829d0945: fix typecheck error
+
+## 0.12.8
+
+### Patch Changes
+
+- 3b95eef4: Fix(runtime): invalid async module cache
+
 ## 0.12.7
 
 ### Patch Changes

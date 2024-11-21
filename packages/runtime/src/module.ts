@@ -2,7 +2,9 @@
 export class Module {
   id: string;
   exports: any;
-  resource_pot: string;
+  // initialize promise if this module is a async module
+  initializer: Promise<any> | undefined;
+  resource_pot: string = "";
   meta: Record<string, any>;
   require: (id: string) => any;
 
@@ -75,10 +77,12 @@ export class Module {
     if (cache && cache.has(obj)) return cache.get(obj);
 
     var newObj: any = { __proto__: null };
+    // @ts-ignore
     var hasPropertyDescriptor = Object.defineProperty && Object.getOwnPropertyDescriptor;
 
     for (var key in obj) {
         if (key !== "default" && Object.prototype.hasOwnProperty.call(obj, key)) {
+            // @ts-ignore
             var desc = hasPropertyDescriptor ? Object.getOwnPropertyDescriptor(obj, key) : null;
             if (desc && (desc.get || desc.set)) Object.defineProperty(newObj, key, desc);
             else newObj[key] = obj[key];

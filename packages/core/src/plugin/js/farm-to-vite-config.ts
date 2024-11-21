@@ -90,7 +90,8 @@ export function farmUserConfigToViteConfig(config: UserConfig): ViteUserConfig {
     assetsInclude: [
       ...VITE_DEFAULT_ASSETS,
       ...(config.compilation?.assets?.include ?? [])
-    ]
+    ],
+    experimental: {}
   };
 
   return viteConfig;

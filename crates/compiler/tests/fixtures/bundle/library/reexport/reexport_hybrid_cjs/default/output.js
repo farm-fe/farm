@@ -10,11 +10,6 @@ class foo {
     }
 }
 const bar = 'foo';
-var reexport_ns = {
-    bar: bar,
-    default: foo,
-    __esModule: true
-};
 
 // module_id: index.ts
 export { bar, foo as default };

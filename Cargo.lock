@@ -1513,7 +1513,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2eaf1f42f1728b66a856f46546be619f3ed6ad03ba4266314082be2b5e8c5316"
 dependencies = [
  "base64 0.22.1",
- "farmfe_utils 0.1.5",
+ "farmfe_utils 0.1.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "parking_lot",
  "regex",
  "sourcemap",
@@ -2002,9 +2002,7 @@ dependencies = [
 
 [[package]]
 name = "farmfe_utils"
-version = "0.1.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d797c8fb2b5c357bd730dc119169e663f8ae7dfbc606696350c104e39324749d"
+version = "0.1.6"
 dependencies = [
  "base64 0.21.7",
  "pathdiff",
@@ -2014,6 +2012,8 @@ dependencies = [
 [[package]]
 name = "farmfe_utils"
 version = "0.1.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ecf11fa27400ba9125fe9fde0f2b3a26c78140d721ee95c6a2dfb8c0fdb6d3d3"
 dependencies = [
  "base64 0.21.7",
  "pathdiff",
