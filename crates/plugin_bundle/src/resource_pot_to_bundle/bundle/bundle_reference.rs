@@ -222,27 +222,6 @@ pub type CommonJsImportMap = HashMap<ReferenceKind, ExternalReferenceImport>;
 
 #[derive(Debug, Default)]
 pub struct BundleReference {
-  /// import { xxx } from './external_bundle_module' | './other_bundle_module'
-  pub import_map: HashMap<ReferenceKind, ExternalReferenceImport>,
-
-  ///
-  /// ```ts
-  /// export { } from "./cjs_module";
-  /// export * as ns from "./cjs_module";
-  /// export { default } ns from "./cjs_module";
-  /// // =>
-  /// const cjs_module_cjs = cjs_module()["default"];
-  ///
-  /// {
-  ///   "cjs_module": {
-  ///     default: None,
-  ///     named: {}
-  ///   }
-  /// }
-  /// ```
-  ///
-  pub redeclare_commonjs_import: CommonJsImportMap,
-
   // pub declare_commonjs_export: HashMap<ReferenceKind, ExternalReferenceExport>,
   /// export xxx from './external_bundle_module'
   /// export * as ns from './external_bundle_module'
@@ -252,19 +231,13 @@ pub struct BundleReference {
   /// export default local
   pub export: Option<ExternalReferenceExport>,
 }
-
 impl BundleReference {
   pub fn new() -> Self {
     Self::default()
   }
+}
 
-  pub fn is_empty(&self) -> bool {
-    self.import_map.is_empty()
-      && self.redeclare_commonjs_import.is_empty()
-      && self.external_export_map.is_empty()
-      && self.export.is_none()
-  }
-
+impl CombineBundleReference {
   /// import "./cjs"
   pub fn execute_module_for_cjs(&mut self, import_kind: ReferenceKind) {
     self
@@ -280,12 +253,22 @@ impl BundleReference {
       .or_insert_with(ExternalReferenceImport::new);
   }
 
-  pub fn add_local_export(&mut self, specify: &ExportSpecifierInfo, module_system: ModuleSystem) {
-    if self.export.is_none() {
-      self.export = Some(ExternalReferenceExport::new(module_system));
+  pub fn add_local_export(
+    &mut self,
+    specify: &ExportSpecifierInfo,
+    module_system: ModuleSystem,
+    is_entry: bool,
+  ) {
+    let map = if is_entry {
+      &mut self.reexport_raw.export
+    } else {
+      &mut self.bundle_reference1.export
+    };
+    if map.is_none() {
+      *map = Some(ExternalReferenceExport::new(module_system));
     }
 
-    if let Some(ref mut export) = self.export {
+    if let Some(ref mut export) = map {
       export.insert(specify.clone())
     };
   }
@@ -295,19 +278,25 @@ impl BundleReference {
     specify: &ExportSpecifierInfo,
     source: ReferenceKind,
     module_system: ModuleSystem,
+    is_entry: bool,
   ) {
-    if self.external_export_map.contains_key(&source) {
-      let map = self.external_export_map.get_mut(&source).unwrap();
+    let external_export_map = if is_entry {
+      &mut self.reexport_raw.external_export_map
+    } else {
+      &mut self.bundle_reference1.external_export_map
+    };
+    if external_export_map.contains_key(&source) {
+      let map = external_export_map.get_mut(&source).unwrap();
       map.insert(specify.clone());
     } else {
       let mut map = ExternalReferenceExport::new(module_system);
       map.insert(specify.clone());
-      self.external_export_map.insert(source, map);
+      external_export_map.insert(source, map);
     }
   }
 
   pub fn change_to_hybrid_dynamic(&mut self, source: ReferenceKind) {
-    if let Some(map) = self.external_export_map.get_mut(&source) {
+    if let Some(map) = self.bundle_reference1.external_export_map.get_mut(&source) {
       map.module_system.merge(ModuleSystem::Hybrid);
     }
   }
@@ -390,6 +379,7 @@ impl BundleReference {
       &ExportSpecifierInfo::All(None),
       module_id.clone().into(),
       ModuleSystem::CommonJs,
+      false,
     );
 
     Result::<()>::Ok(())
@@ -400,29 +390,31 @@ impl BundleReference {
       return Ok(());
     }
 
-    let reexport_commonjs = |module_id: &ModuleId, bundle_reference: &mut BundleReference| {
-      bundle_reference.change_to_hybrid_dynamic(module_id.clone().into());
+    let reexport_commonjs =
+      |module_id: &ModuleId, bundle_reference: &mut CombineBundleReference| {
+        bundle_reference.change_to_hybrid_dynamic(module_id.clone().into());
 
-      bundle_reference.add_declare_commonjs_import(
-        &ImportSpecifierInfo::Namespace(
-          reference_builder
-            .module_analyzer_manager
-            .module_global_uniq_name
-            .namespace_name(module_id)
-            .unwrap(),
-        ),
-        module_id.clone().into(),
-        reference_builder.bundle_variable,
-      )?;
+        bundle_reference.add_declare_commonjs_import(
+          &ImportSpecifierInfo::Namespace(
+            reference_builder
+              .module_analyzer_manager
+              .module_global_uniq_name
+              .namespace_name(module_id)
+              .unwrap(),
+          ),
+          module_id.clone().into(),
+          reference_builder.bundle_variable,
+        )?;
 
-      bundle_reference.add_reference_export(
-        &ExportSpecifierInfo::All(None),
-        module_id.clone().into(),
-        ModuleSystem::CommonJs,
-      );
+        bundle_reference.add_reference_export(
+          &ExportSpecifierInfo::All(None),
+          module_id.clone().into(),
+          ModuleSystem::CommonJs,
+          reference_builder.is_entry,
+        );
 
-      Result::<()>::Ok(())
-    };
+        Result::<()>::Ok(())
+      };
     let is_external = reference_builder.is_external(reference_builder.source);
 
     let is_commonjs = reference_builder
@@ -432,11 +424,6 @@ impl BundleReference {
       reference_builder.config.options.format,
       ModuleFormat::CommonJs
     );
-    let redeclare_commonjs = !reference_builder.module_analyzer.entry
-      || matches!(
-        reference_builder.module_analyzer.module_type,
-        ModuleType::Runtime
-      );
 
     if is_external {
       // export * from "node:fs"
@@ -462,13 +449,17 @@ impl BundleReference {
         &ExportSpecifierInfo::All(None),
         reference_builder.source.clone().into(),
         reference_builder.module_system.clone(),
+        reference_builder.is_entry,
       );
-    } else if is_commonjs && redeclare_commonjs {
+    }
+    // will be format commonjs, esm cannot reexport fields, should export as many fields as possible
+    else if is_commonjs && is_format_to_cjs {
       reexport_commonjs(reference_builder.source, self)?;
     } else {
       let export_names = &*reference_builder
         .module_analyzer_manager
         .get_export_names(reference_builder.source);
+
       let export_type = export_names
         .export_type
         .merge(reference_builder.module_system.clone());
@@ -489,6 +480,7 @@ impl BundleReference {
               ExportSpecifierInfo::Named((*local, Some(*export_as)).into())
             },
             export_type.clone(),
+            reference_builder.is_entry,
           );
 
           if is_commonjs {
@@ -526,6 +518,7 @@ impl BundleReference {
               *item
             }),
             export_type.clone(),
+            reference_builder.is_entry,
           );
 
           if is_commonjs {
@@ -558,6 +551,7 @@ impl BundleReference {
                 &ExportSpecifierInfo::Named((*export_as, Some(*from)).into()),
                 module_id.clone().into(),
                 export_type.clone(),
+                reference_builder.is_entry,
               );
             }
 
@@ -567,6 +561,7 @@ impl BundleReference {
                 &ExportSpecifierInfo::Default(*item),
                 module_id.clone().into(),
                 export_type.clone(),
+                reference_builder.is_entry,
               );
             }
 
@@ -590,6 +585,7 @@ impl BundleReference {
                 &ExportSpecifierInfo::All(None),
                 module_id.clone().into(),
                 export_type.clone(),
+                reference_builder.is_entry,
               );
             }
           } else if is_commonjs_source {
@@ -630,17 +626,48 @@ pub struct BundleReferenceManager {
   ///
   /// but there is one place to be careful that entry module/bundle, it should export raw named
   bundle_reference: HashMap<ResourcePotId, Rc<RefCell<CombineBundleReference>>>,
-  bundle_reference1: HashMap<ModuleId, Rc<RefCell<BundleReference>>>,
+  // bundle_reference1: HashMap<ModuleId, Rc<RefCell<BundleReference>>>,
 }
 
 #[derive(Debug, Default)]
 pub struct CombineBundleReference {
   pub reexport_raw: BundleReference,
   pub bundle_reference1: BundleReference,
+
+  /// import { xxx } from './external_bundle_module' | './other_bundle_module'
+  pub import_map: HashMap<ReferenceKind, ExternalReferenceImport>,
+
+  ///
+  /// ```ts
+  /// export { } from "./cjs_module";
+  /// export * as ns from "./cjs_module";
+  /// export { default } ns from "./cjs_module";
+  /// // =>
+  /// const cjs_module_cjs = cjs_module()["default"];
+  ///
+  /// {
+  ///   "cjs_module": {
+  ///     default: None,
+  ///     named: {}
+  ///   }
+  /// }
+  /// ```
+  ///
+  pub redeclare_commonjs_import: CommonJsImportMap,
 }
+
+impl CombineBundleReference {}
 
 // TODO: improve logic
 impl CombineBundleReference {
+  pub fn new() -> Self {
+    Self {
+      reexport_raw: BundleReference::new(),
+      bundle_reference1: BundleReference::new(),
+      import_map: HashMap::default(),
+      redeclare_commonjs_import: HashMap::default(),
+    }
+  }
   pub fn fetch(
     &self,
     module_id: &ModuleId,
@@ -663,64 +690,6 @@ impl CombineBundleReference {
     } else {
       &mut self.bundle_reference1
     }
-  }
-
-  pub fn query_redeclare_both(&mut self, module_id: &ModuleId) -> Option<BundleReference> {
-    let mut bundle_reference = BundleReference::new();
-    let reference_kind: ReferenceKind = module_id.clone().into();
-
-    let mut is_empty = true;
-    for item in [
-      &self.bundle_reference1.redeclare_commonjs_import,
-      &self.reexport_raw.redeclare_commonjs_import,
-    ] {
-      if let Some(m) = item.get(&reference_kind) {
-        is_empty = false;
-        bundle_reference
-          .redeclare_commonjs_import
-          .entry(reference_kind.clone())
-          .or_insert_with(|| ExternalReferenceImport::new())
-          .extend(m);
-      };
-    }
-
-    // for item in [
-    //   &self.bundle_reference1.import_map,
-    //   &self.reexport_raw.import_map,
-    // ] {
-    //   if let Some(m) = item.get(&reference_kind) {
-    //     is_empty = false;
-    //     bundle_reference
-    //       .import_map
-    //       .entry(reference_kind.clone())
-    //       .or_insert_with(|| ExternalReferenceImport::new())
-    //       .extend(m);
-    //   }
-    // }
-
-    if is_empty {
-      None
-    } else {
-      Some(bundle_reference)
-    }
-  }
-
-  pub fn query_all_redeclare(&self) -> CommonJsImportMap {
-    let mut bundle_reference = CommonJsImportMap::new();
-
-    for map in [
-      &self.bundle_reference1.redeclare_commonjs_import,
-      &self.reexport_raw.redeclare_commonjs_import,
-    ] {
-      for (key, item) in map {
-        bundle_reference
-          .entry(key.clone())
-          .or_insert_with(|| ExternalReferenceImport::new())
-          .extend(item);
-      }
-    }
-
-    bundle_reference
   }
 }
 
@@ -746,16 +715,16 @@ impl BundleReferenceManager {
     self.reference_mut(group_id)
   }
 
-  pub fn reference1_mut(&mut self, module_id: &ModuleId) -> Rc<RefCell<BundleReference>> {
-    Rc::clone(if self.bundle_reference1.contains_key(module_id) {
-      self.bundle_reference1.get(module_id).unwrap()
-    } else {
-      self
-        .bundle_reference1
-        .entry(module_id.clone())
-        .or_insert_with(|| Rc::new(RefCell::new(BundleReference::new())))
-    })
-  }
+  // pub fn reference1_mut(&mut self, module_id: &ModuleId) -> Rc<RefCell<BundleReference>> {
+  //   Rc::clone(if self.bundle_reference1.contains_key(module_id) {
+  //     self.bundle_reference1.get(module_id).unwrap()
+  //   } else {
+  //     self
+  //       .bundle_reference1
+  //       .entry(module_id.clone())
+  //       .or_insert_with(|| Rc::new(RefCell::new(BundleReference::new())))
+  //   })
+  // }
 }
 
 pub struct ReferenceBuilder<'a> {
@@ -767,6 +736,7 @@ pub struct ReferenceBuilder<'a> {
   pub module_system: ModuleSystem,
   pub config: &'a ShareBundleContext,
   pub module_id: &'a ModuleId,
+  pub is_entry: bool,
 }
 
 impl<'a> ReferenceBuilder<'a> {

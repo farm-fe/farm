@@ -4,9 +4,11 @@
 
 //index.js:
  // module_id: foo.ts
-var foo_default = 'foo';
+import { readFile } from "node:fs";
 const foo = 'foo';
-const bar = 'bar';
+
+// module_id: reexport.ts
 
 // module_id: index.ts
-export { bar, foo, foo_default as default };
+export { foo as bar };
+export { readFile as rf } from "node:fs";

@@ -47,7 +47,6 @@ Object.defineProperty(exports, "__esModule", {
 var farm_runtime_js_ns = require("./farm_runtime.js");
 var _interop_require_default = farm_runtime_js_ns._interop_require_default, _interop_require_wildcard = farm_runtime_js_ns._interop_require_wildcard;
 var node_fs_ns = _interop_require_wildcard(require("node:fs"));
-var node_fs_ns = require("node:fs");
 var fs$1 = _interop_require_default(node_fs_ns).default;
 const fs = 'a.ts';
 console.log(fs);

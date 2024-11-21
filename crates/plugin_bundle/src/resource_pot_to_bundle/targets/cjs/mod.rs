@@ -193,6 +193,11 @@ impl CjsModuleAnalyzer {
           type_args: None,
         })),
       )
+    } else if let Some(m) = module_global_uniq_name.namespace_name(module_id) {
+      (
+        module_id.to_string(),
+        Box::new(Expr::Ident(bundle_variable.render_name(m).as_str().into())),
+      )
     } else {
       return Ok(None);
     };
