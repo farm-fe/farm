@@ -66,8 +66,10 @@ export class ResourceLoader {
     }/${resource.path}`;
 
     if (this._loadedResources[resource.path]) {
-      return;
+      return Promise.resolve();
+      // @ts-ignore
     } else if (this._loadingResources[resource.path]) {
+      // @ts-ignore
       return this._loadingResources[resource.path];
     }
 
@@ -115,6 +117,7 @@ export class ResourceLoader {
     promise
       .then(() => {
         this._loadedResources[resource.path] = true;
+        // @ts-ignore
         this._loadingResources[resource.path] = null;
       })
       .catch((e) => {
@@ -126,6 +129,7 @@ export class ResourceLoader {
         if (index < this.publicPaths.length) {
           return this._load(url, resource, index);
         } else {
+          // @ts-ignore
           this._loadingResources[resource.path] = null;
           throw new Error(
             `[Farm] Failed to load resource: "${resource.path}, type: ${resource.type}". ${e}`

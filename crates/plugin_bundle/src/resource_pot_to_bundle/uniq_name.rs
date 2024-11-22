@@ -228,14 +228,26 @@ impl BundleVariable {
     self.used_names.extend(other.used_names);
 
     // when merge stage, uniq_name is all unresolved var, so we only record once
-    for (resource_pot, uniq_name) in other.uniq_name_hash_map {
-      if let Some(self_uniq_name) = self.uniq_name_hash_map.get_mut(&resource_pot) {
-        uniq_name.name_count_map.into_iter().for_each(|(name, _)| {
-          self_uniq_name.insert(&name);
-        });
-      } else {
-        self.uniq_name_hash_map.insert(resource_pot, uniq_name);
+    for (resource_pot, other_uniq_name) in other.uniq_name_hash_map {
+      if !self.uniq_name_hash_map.contains_key(&resource_pot) {
+        self
+          .uniq_name_hash_map
+          .insert(resource_pot.clone(), UniqName::new());
       }
+
+      let Some(uniq_name) = self.uniq_name_hash_map.get_mut(&resource_pot) else {
+        unreachable!()
+      };
+
+      other_uniq_name
+        .name_count_map
+        .into_iter()
+        .for_each(|(name, _)| {
+          if uniq_name.contain(&name) {
+            return;
+          }
+          uniq_name.insert(&name);
+        });
     }
   }
 
@@ -360,8 +372,11 @@ impl BundleVariable {
     self.variables[&index].borrow_mut()
   }
 
-  pub fn set_rename(&self, index: usize, rename: String) {
+  pub fn set_rename(&mut self, index: usize, rename: String) {
     let mut var = self.var_mut_by_index(index);
+    if var.placeholder {
+      return;
+    }
 
     if var.rename.is_none() {
       var.rename = Some(rename);
@@ -369,7 +384,13 @@ impl BundleVariable {
   }
 
   pub fn set_rename_force(&mut self, index: usize, rename: String) {
-    self.var_mut_by_index(index).rename = Some(rename);
+    let mut var = self.var_mut_by_index(index);
+
+    if var.placeholder {
+      return;
+    }
+
+    var.rename = Some(rename);
   }
 
   pub fn rename(&self, index: usize) -> Option<Ref<String>> {

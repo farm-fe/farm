@@ -188,6 +188,7 @@ fn trace_and_mark_used_statements(
               stmt.id,
               stmt.import_info.as_ref().unwrap(),
               &HashSet::new(),
+              HashMap::new(),
             ));
           } else if matches!(kind, ResolveKind::ExportFrom) {
             traced_import_stmts.push(

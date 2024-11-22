@@ -63,7 +63,7 @@ impl Default for ScriptDecoratorsConfig {
   }
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, Default)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase", default)]
 pub struct ScriptConfig {
   pub target: EsVersion,
@@ -71,10 +71,24 @@ pub struct ScriptConfig {
   pub plugins: Vec<ScriptConfigPlugin>,
   pub decorators: ScriptDecoratorsConfig,
   pub native_top_level_await: bool,
+  pub import_not_used_as_values: String,
 }
 
 impl ScriptConfig {
   pub fn is_target_legacy(&self) -> bool {
     self.target == EsVersion::Es5 || self.target == EsVersion::Es3
+  }
+}
+
+impl Default for ScriptConfig {
+  fn default() -> Self {
+    Self {
+      target: Default::default(),
+      parser: Default::default(),
+      plugins: Default::default(),
+      decorators: Default::default(),
+      native_top_level_await: Default::default(),
+      import_not_used_as_values: "preserve".to_string(),
+    }
   }
 }

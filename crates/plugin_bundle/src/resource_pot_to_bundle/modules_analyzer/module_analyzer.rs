@@ -360,6 +360,7 @@ impl ModuleAnalyzer {
             &self.module_id,
             module_graph,
             self.mark.1,
+            self.mark.0,
             &mut |ident, strict, is_placeholder| {
               if is_placeholder {
                 bundle_variable.register_placeholder(&self.module_id, ident)

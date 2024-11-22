@@ -22,6 +22,7 @@ import {
   colors,
   isArray,
   isEmptyObject,
+  isNodeEnv,
   isObject,
   isWindows,
   normalizePath
@@ -640,7 +641,8 @@ const formatFromExt: Record<string, Format> = {
   cjs: 'cjs',
   mjs: 'esm',
   cts: 'cjs',
-  mts: 'esm'
+  mts: 'esm',
+  js: 'esm'
 };
 
 const formatToExt: Record<Format, string> = {

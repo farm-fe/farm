@@ -258,7 +258,7 @@ export interface ScriptConfig {
   /**
    * Configure the swc plugin array.
    */
-  plugins: {
+  plugins?: {
     /**
      * the package name of the swc plugin
      */
@@ -282,6 +282,12 @@ export interface ScriptConfig {
    * @default false
    */
   nativeTopLevelAwait?: boolean;
+  /**
+   * https://www.typescriptlang.org/tsconfig/#importsNotUsedAsValues
+   *
+   * @default true
+   */
+  importNotUsedAsValues?: 'remove' | 'preserve';
 }
 
 export interface CssConfig {
