@@ -73,8 +73,8 @@ export async function runTaskQueue() {
   // The sass plug-in uses protobuf, so you need to determine whether the user installs it or not.
   await installProtoBuf();
   await runTask("Cli", buildCli);
-  await runTask("Core", buildCore);
   await runTask("PluginTools", buildPluginTools);
+  await runTask("Core", buildCore);
   await runTask("RustPlugins", buildRustPlugins);
   await runTask("JsPlugins", buildJsPlugins);
   await runTask("Artifacts", copyArtifacts);
