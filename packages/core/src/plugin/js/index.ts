@@ -145,7 +145,6 @@ export function convertPlugin(plugin: JsPlugin) {
     const pluginSchema = schemaRegistry.createPluginSchema(plugin?.name);
 
     const res = pluginSchema.parse(plugin);
-
     return res;
   } catch (err) {
     const validationError = fromZodError(err, {

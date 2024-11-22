@@ -94,14 +94,6 @@ export const createConfigSchema = (name: string) => {
         - Parameter: Receives current user configuration
         - Returns: Modified configuration or its Promise`
       });
-    } else {
-      const result = data({});
-      if (result === undefined) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: `\n plugin '${name}' config hook must return a valid configuration object or a Promise thereof.`
-        });
-      }
     }
   });
 };
@@ -120,21 +112,6 @@ export const createConfigResolvedSchema = (name: string) => {
         - Returns: void or Promise<void>
         - Note: This hook is called after all config hooks have been applied`
       });
-    } else {
-      try {
-        const result = data({});
-        if (result !== undefined && !(result instanceof Promise)) {
-          ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            message: `\n plugin '${name}' configResolved hook must return void or Promise<void>`
-          });
-        }
-      } catch (error) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: `\n plugin '${name}' configResolved hook execution failed: ${error.message}`
-        });
-      }
     }
   });
 };
