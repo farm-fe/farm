@@ -17,7 +17,6 @@ describe('resolveUserConfig', () => {
       'development',
       new Logger()
     );
-    console.log(config.compilation.define);
 
     expect(config.compilation.define).toMatchSnapshot();
     expect(config.compilation.input).toEqual({

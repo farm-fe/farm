@@ -54,6 +54,7 @@ struct AnalyzeModuleItem<'a> {
   is_in_export: bool,
   is_collect_ident: bool,
   top_level_mark: Mark,
+  unresolved_mark: Mark,
 }
 
 impl<'a> AnalyzeModuleItem<'a> {
@@ -63,6 +64,7 @@ impl<'a> AnalyzeModuleItem<'a> {
     module_id: &'a ModuleId,
     register_var: &'a mut F,
     top_level_mark: Mark,
+    unresolved_mark: Mark,
   ) -> Self {
     Self {
       id,
@@ -75,6 +77,7 @@ impl<'a> AnalyzeModuleItem<'a> {
       is_in_export: false,
       top_level_mark,
       is_collect_ident: false,
+      unresolved_mark,
     }
   }
 
@@ -125,9 +128,17 @@ impl<'a> AnalyzeModuleItem<'a> {
     default_strict || ident.ctxt.outer() != self.top_level_mark
   }
 
+  fn is_global_ident(&self, ident: &Ident) -> bool {
+    return ident.ctxt.outer() == self.unresolved_mark;
+  }
+
   fn register_var(&mut self, ident: &Ident, strict: bool) -> usize {
-    let strict = self.is_strict(ident, strict);
-    self._register_var.as_mut()(ident, strict, false)
+    if self.is_global_ident(ident) {
+      return self.register_placeholder(ident);
+    }
+
+    let is_strict = self.is_strict(ident, strict);
+    self._register_var.as_mut()(ident, is_strict, false)
   }
 
   fn register_placeholder(&mut self, ident: &Ident) -> usize {
@@ -427,11 +438,19 @@ pub fn analyze_imports_and_exports<F: FnMut(&Ident, bool, bool) -> usize>(
   module_id: &ModuleId,
   module_graph: &ModuleGraph,
   top_level_mark: Mark,
+  unresolved_mark: Mark,
   register_var: &mut F,
 ) -> Result<Statement> {
   farm_profile_function!();
 
-  let mut m = AnalyzeModuleItem::new(id, module_graph, module_id, register_var, top_level_mark);
+  let mut m = AnalyzeModuleItem::new(
+    id,
+    module_graph,
+    module_id,
+    register_var,
+    top_level_mark,
+    unresolved_mark,
+  );
 
   stmt.visit_with(&mut m);
 

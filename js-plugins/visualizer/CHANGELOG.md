@@ -1,5 +1,11 @@
 # @farmfe/js-plugin-record-viewer
 
+## 1.1.3
+
+### Patch Changes
+
+- 7d86847c: Move client dependencies to devDependencies to avoid unnecessary dependencies
+
 ## 1.1.2
 
 ### Patch Changes

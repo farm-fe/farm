@@ -1,4 +1,5 @@
 import { defineConfig } from "@farmfe/core";
+import react from '@farmfe/plugin-react';
 
 export default defineConfig({
   compilation: {
@@ -8,5 +9,6 @@ export default defineConfig({
   },
   server: {
     writeToDisk: true,
-  }
+  },
+  plugins: [react()]
 })
