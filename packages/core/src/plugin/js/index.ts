@@ -9,6 +9,7 @@ import {
 } from '../../index.js';
 import merge from '../../utils/merge.js';
 import { resolveAsyncPlugins } from '../index.js';
+
 import { cssPluginUnwrap, cssPluginWrap } from './adapter-plugins/css.js';
 import { defaultLoadPlugin } from './adapter-plugins/default-load.js';
 import {
@@ -31,9 +32,11 @@ import {
   createTransformSchema,
   createUpdateFinishedSchema,
   createUpdateModulesSchema,
-  createWritePluginCacheSchema
+  createWritePluginCacheSchema,
+  createWriteResourcesSchema
 } from './js-plugin-schema.js';
-import { DEFAULT_FILTERS } from './utils.js';
+
+import { DEFAULT_FILTERS, normalizeFilterPath } from './utils.js';
 import { VitePluginAdapter } from './vite-plugin-adapter.js';
 
 export { VitePluginAdapter } from './vite-plugin-adapter.js';
@@ -133,7 +136,7 @@ schemaRegistry
   .register('augmentResourceHash', createAugmentResourceHashSchema)
   .register('finalizeResources', createFinalizeResourcesSchema)
   .register('transformHtml', createTransformHtmlSchema)
-  .register('writeResource', createFinalizeResourcesSchema)
+  .register('writeResource', createWriteResourcesSchema)
   .register('pluginCacheLoaded', createPluginCacheLoadedSchema)
   .register('writePluginCache', createWritePluginCacheSchema)
   .register('finish', createFinishSchema)
@@ -143,9 +146,7 @@ schemaRegistry
 export function convertPlugin(plugin: JsPlugin) {
   try {
     const pluginSchema = schemaRegistry.createPluginSchema(plugin?.name);
-
-    const res = pluginSchema.parse(plugin);
-    return res;
+    return pluginSchema.parse(plugin);
   } catch (err) {
     const validationError = fromZodError(err, {
       prefix: 'Failed to verify js plugin schema'

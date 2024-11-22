@@ -3,9 +3,16 @@ import { z } from 'zod';
 
 import { normalizeFilterPath } from './utils.js';
 
-const EmptyRecordSchema = z.record(z.string(), z.never());
+const EmptyRecordSchema = z.any();
 
-const CallbackSchema = z.function().args(EmptyRecordSchema).returns(z.void());
+const CallbackSchema = z
+  .function()
+  .args(EmptyRecordSchema)
+  .returns(z.union([z.void(), z.promise(z.void())]));
+
+const CallbackSchemaNotArgs = z
+  .function()
+  .returns(z.union([z.void(), z.promise(z.void())]));
 
 // name schema
 export const nameSchema = z.string().min(1);
@@ -32,29 +39,53 @@ export const configResolvedSchema = z
   .returns(z.union([z.void(), z.promise(z.void())]))
   .optional();
 
-export const loadFilterSchema = z.object({
-  resolvedPaths: z.array(z.string()).optional().default([])
-});
+export const loadFilterSchema = z
+  .object({
+    resolvedPaths: z.array(z.string()).optional().default([])
+  })
+  .transform((data) => ({
+    resolvedPaths: data.resolvedPaths ?? []
+  }));
 
-export const resolveFilterSchema = z.object({
-  importers: z.array(z.string()).optional().default([]),
-  sources: z.array(z.string()).optional().default([])
-});
+export const resolveFilterSchema = z
+  .object({
+    importers: z.array(z.string()).optional().default([]),
+    sources: z.array(z.string()).optional().default([])
+  })
+  .transform((data) => ({
+    importers: data.importers ?? [],
+    sources: data.sources ?? []
+  }));
 
-export const transformFilterSchema = z.object({
-  moduleTypes: z.array(z.string()).optional().default([]),
-  resolvedPaths: z.array(z.string()).optional().default([])
-});
+export const transformFilterSchema = z
+  .object({
+    moduleTypes: z.array(z.string()).optional().default([]),
+    resolvedPaths: z.array(z.string()).optional().default([])
+  })
+  .transform((data) => ({
+    moduleTypes: data.moduleTypes ?? [],
+    resolvedPaths: data.resolvedPaths ?? []
+  }));
 
-export const renderResourcePotSchema = z.object({
-  resourcePotTypes: z.array(z.string()).optional().default([]),
-  moduleIds: z.array(z.string()).optional().default([])
-});
+export const renderResourcePotSchema = z
+  .object({
+    resourcePotTypes: z.array(z.string()).optional().default([]),
+    moduleIds: z.array(z.string()).optional().default([])
+  })
+  .transform((data) => ({
+    resourcePotTypes: data.resourcePotTypes ?? [],
+    moduleIds: data.moduleIds ?? []
+  }));
 
-export const augmentResourceHashSchema = z.object({
-  resourcePotTypes: z.array(z.string()).optional().default([]),
-  moduleIds: z.array(z.string()).optional().default([])
-});
+export const augmentResourceHashSchema = z
+  .object({
+    resourcePotTypes: z.array(z.string()).optional().default([]),
+    moduleIds: z.array(z.string()).optional().default([])
+  })
+  .transform((data) => ({
+    resourcePotTypes: data.resourcePotTypes ?? [],
+    moduleIds: data.moduleIds ?? []
+  }));
 
 export const createNameSchema = (name: string) => {
   return z
@@ -259,7 +290,7 @@ export const createRenderResourcePotSchema = (name: string) => {
 
 export const createAugmentResourceHashSchema = (name: string) => {
   return z.object({
-    filter: augmentResourceHashSchema
+    filters: augmentResourceHashSchema
       .refine(
         (data) => {
           return data.resourcePotTypes.length > 0 || data.moduleIds.length > 0;
@@ -360,7 +391,7 @@ export const createWritePluginCacheSchema = (name: string) => {
 export const createFinishSchema = (name: string) => {
   return z
     .object({
-      executor: CallbackSchema
+      executor: CallbackSchemaNotArgs
     })
     .refine(
       (data) => {
@@ -376,7 +407,7 @@ export const createFinishSchema = (name: string) => {
 export const createUpdateFinishedSchema = (name: string) => {
   return z
     .object({
-      executor: CallbackSchema
+      executor: CallbackSchemaNotArgs
     })
     .refine(
       (data) => {
@@ -392,7 +423,7 @@ export const createUpdateFinishedSchema = (name: string) => {
 export const createUpdateModulesSchema = (name: string) => {
   return z
     .object({
-      executor: z.function()
+      executor: CallbackSchemaNotArgs
     })
     .refine(
       (data) => {
