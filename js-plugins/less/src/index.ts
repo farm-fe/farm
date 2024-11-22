@@ -65,7 +65,7 @@ export default function farmLessPlugin(
     },
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore it will be removed in the future
-    configDevServer() {
+    configureServer() {
       console.warn(
         '[@farmfe/js-plugin-less] Your plugin version is not compatible with the current farm version, please update @farmfe/core to the latest version, otherwise the plugin may not work properly.'
       );
