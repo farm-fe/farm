@@ -4,6 +4,10 @@ import { defineConfig } from '@farmfe/core';
  * @type {import('@farmfe/core').UserConfig}
  */
 export default defineConfig({
+  compilation: {
+    persistentCache: false,
+    sourcemap: false,
+  }
   // compilation: {
   //   input: {
   //     index: './src/index.js'
