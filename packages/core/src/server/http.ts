@@ -23,7 +23,7 @@ export interface CommonServerOptions {
   port?: number;
   strictPort?: boolean;
   host?: string | boolean;
-  https?: HttpsServerOptions | boolean;
+  https?: HttpsServerOptions;
   open?: boolean | string;
   proxy?: Record<string, string | ProxyOptions>;
   cors?: CorsOptions | boolean;

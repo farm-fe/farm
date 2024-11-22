@@ -3,6 +3,7 @@ import { SecureServerOptions } from 'node:http2';
 import { Server } from '../index.js';
 
 import type { OutgoingHttpHeaders } from 'http';
+import type { ServerOptions as HttpsServerOptions } from 'node:https';
 import type { WatchOptions } from 'chokidar';
 import type { RustPlugin } from '../plugin/rust/index.js';
 import type { JsPlugin } from '../plugin/type.js';
@@ -40,7 +41,7 @@ export type UserConfigExport =
 export interface UserServerConfig {
   headers?: OutgoingHttpHeaders | undefined;
   port?: number;
-  https?: SecureServerOptions;
+  https?: HttpsServerOptions;
   protocol?: 'http' | 'https';
   hostname?: { name: string; host: string | undefined };
   // http2?: boolean;
