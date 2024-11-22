@@ -19,6 +19,8 @@ import {
   createBuildStartSchema,
   createConfigResolvedSchema,
   createConfigSchema,
+  createConfigureCompilerSchema,
+  createConfigureServerSchema,
   createFinalizeResourcesSchema,
   createFinishSchema,
   createLoadSchema,
@@ -124,6 +126,8 @@ const schemaRegistry = new PluginSchemaRegistry();
 schemaRegistry
   .register('name', createNameSchema)
   .register('priority', createPrioritySchema)
+  .register('configureServer', createConfigureServerSchema)
+  .register('configureCompiler', createConfigureCompilerSchema)
   .register('config', createConfigSchema)
   .register('configResolved', createConfigResolvedSchema)
   .register('buildStart', createBuildStartSchema)

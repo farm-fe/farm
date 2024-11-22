@@ -39,6 +39,18 @@ export const configResolvedSchema = z
   .returns(z.union([z.void(), z.promise(z.void())]))
   .optional();
 
+export const configureServerSchema = z
+  .function()
+  .args(z.any())
+  .returns(z.union([z.void(), z.promise(z.void())]))
+  .optional();
+
+export const configureCompilerSchema = z
+  .function()
+  .args(z.any())
+  .returns(z.union([z.void(), z.promise(z.void())]))
+  .optional();
+
 export const loadFilterSchema = z
   .object({
     resolvedPaths: z.array(z.string()).optional().default([])
@@ -142,6 +154,40 @@ export const createConfigResolvedSchema = (name: string) => {
         - Parameter: Final resolved configuration object
         - Returns: void or Promise<void>
         - Note: This hook is called after all config hooks have been applied`
+      });
+    }
+  });
+};
+
+export const createConfigureServerSchema = (name: string) => {
+  return configureServerSchema.superRefine((data, ctx) => {
+    if (typeof data !== 'function') {
+      ctx.addIssue({
+        code: z.ZodIssueCode.invalid_type,
+        expected: 'function',
+        received: typeof data,
+        message: `\n plugin '${name}' configureServer hook:
+        - Function signature: (server: Server) => void | Promise<void>
+        - Purpose: Configure the server
+        - Parameter: Server instance
+        - Returns: void or Promise<void>`
+      });
+    }
+  });
+};
+
+export const createConfigureCompilerSchema = (name: string) => {
+  return configureCompilerSchema.superRefine((data, ctx) => {
+    if (typeof data !== 'function') {
+      ctx.addIssue({
+        code: z.ZodIssueCode.invalid_type,
+        expected: 'function',
+        received: typeof data,
+        message: `\n plugin '${name}' configureCompiler hook:
+        - Function signature: (compiler: Compiler) => void | Promise<void>
+        - Purpose: Configure the compiler
+        - Parameter: Compiler instance
+        - Returns: void or Promise<void>`
       });
     }
   });
