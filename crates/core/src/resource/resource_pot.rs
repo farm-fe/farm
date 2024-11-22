@@ -1,5 +1,3 @@
-use serde::{Deserialize, Serialize};
-
 use std::collections::HashSet;
 use std::{collections::HashMap, sync::Arc};
 
@@ -10,7 +8,7 @@ use crate::module::{module_group::ModuleGroupId, ModuleId, ModuleType};
 const DEFER_BUNDLE_MINIFY: &str = "DEFER_BUNDLE_MINIFY";
 
 #[cache_item]
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ResourcePot {
   pub id: ResourcePotId,
@@ -155,7 +153,7 @@ impl<'de> serde::Deserialize<'de> for ResourcePotType {
 }
 
 #[cache_item]
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ResourcePotInfo {
   pub id: ResourcePotId,
@@ -194,7 +192,7 @@ impl ResourcePotInfo {
 
 /// Info data which is not shared by core plugins should be stored in [ResourcePotInfo::Custom]
 #[cache_item]
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "camelCase", untagged)]
 pub enum ResourcePotInfoData {
   Script(JsResourcePotInfo),
@@ -234,7 +232,7 @@ impl ResourcePotInfoData {
 }
 
 #[cache_item]
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct JsResourcePotInfo {
   pub dynamic_imports: Vec<String>,
@@ -261,12 +259,12 @@ impl JsResourcePotInfo {
 }
 
 #[cache_item]
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CssResourcePotInfo {}
 
 #[cache_item]
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct HtmlResourcePotInfo {}
 
@@ -314,7 +312,7 @@ pub struct RenderedModule {
 }
 
 #[cache_item]
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ResourcePotMetaData {
   pub rendered_modules: HashMap<ModuleId, RenderedModule>,

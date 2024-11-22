@@ -217,7 +217,7 @@ pub fn should_ignore_source(source: &str) -> bool {
     || source.starts_with("data:")
 }
 
-#[cache_item]
+#[cache_item(farmfe_core)]
 #[derive(Debug, Clone)]
 pub struct HtmlInlineModule {
   pub html_id: ModuleId,

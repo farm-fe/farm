@@ -12,7 +12,7 @@ export default defineConfig((env) => {
       sourcemap: false,
       presetEnv: false,
       concatenateModules: true,
-      persistentCache: false,
+      // persistentCache: false,
       resolve: {
         symlinks: true,
         alias: {

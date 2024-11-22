@@ -1,4 +1,5 @@
 use std::{
+  collections::HashMap,
   path::{Path, PathBuf},
   sync::Arc,
 };
@@ -11,7 +12,9 @@ use farmfe_core::{
     minify::{MinifyMode, MinifyOptions},
     SourcemapConfig,
   },
-  enhanced_magic_string::collapse_sourcemap::collapse_sourcemap_chain,
+  enhanced_magic_string::collapse_sourcemap::{collapse_sourcemap_chain, read_source_content},
+  module::ModuleId,
+  rayon::iter::{IntoParallelRefIterator, ParallelIterator},
   relative_path::RelativePath,
   resource::{resource_pot::ResourcePot, Resource, ResourceOrigin, ResourceType},
   serde_json::Value,
@@ -28,6 +31,16 @@ use crate::hash::base64_encode;
 pub struct Source {
   pub path: PathBuf,
   pub content: Arc<String>,
+}
+
+/// get swc source map filename from module id.
+/// you can get module id from sourcemap filename too, by
+pub fn get_swc_sourcemap_filename(module_id: &ModuleId) -> FileName {
+  FileName::Real(PathBuf::from(module_id.to_string()))
+}
+
+pub fn get_module_id_from_sourcemap_filename(filename: &str) -> ModuleId {
+  filename.into()
 }
 
 /// create a swc source map from a source
@@ -105,6 +118,88 @@ pub fn build_source_map(
   mappings: &[(BytePos, LineCol)],
 ) -> sourcemap::SourceMap {
   cm.build_source_map_with_config(mappings, None, FarmSwcSourceMapConfig::default())
+}
+
+pub fn collapse_sourcemap(
+  sourcemap: sourcemap::SourceMap,
+  module_graph: &farmfe_core::module::module_graph::ModuleGraph,
+) -> sourcemap::SourceMap {
+  let mut builder = sourcemap::SourceMapBuilder::new(sourcemap.get_file());
+  let mut cached_sourcemap = HashMap::<ModuleId, Vec<sourcemap::SourceMap>>::new();
+
+  let mut add_token = |src_token: &sourcemap::Token,
+                       dst_token: &sourcemap::Token,
+                       dst_sourcemap: &sourcemap::SourceMap| {
+    let new_token = builder.add(
+      src_token.get_dst_line(),
+      src_token.get_dst_col(),
+      dst_token.get_src_line(),
+      dst_token.get_src_col(),
+      dst_token.get_source(),
+      dst_token.get_name(),
+      dst_token.is_range(),
+    );
+
+    if !builder.has_source_contents(new_token.src_id) {
+      if let Some(content) = read_source_content(dst_token.clone(), dst_sourcemap) {
+        builder.set_source_contents(new_token.src_id, Some(&content));
+      }
+    }
+  };
+
+  for token in sourcemap.tokens() {
+    if let Some(filename) = token.get_source() {
+      let module_id = get_module_id_from_sourcemap_filename(filename);
+      if !module_graph.has_module(&module_id) {
+        add_token(&token, &token, &sourcemap);
+        continue;
+      }
+
+      let module = module_graph
+        .module(&module_id)
+        .unwrap_or_else(|| panic!("module {} not found in module graph", module_id.to_string()));
+
+      if module.source_map_chain.is_empty() {
+        add_token(&token, &token, &sourcemap);
+        continue;
+      }
+
+      let sourcemap_chain = cached_sourcemap.entry(module_id).or_insert_with(|| {
+        let mut chain = module
+          .source_map_chain
+          .par_iter()
+          .map(|i| sourcemap::SourceMap::from_slice(i.as_bytes()).unwrap())
+          .collect::<Vec<sourcemap::SourceMap>>();
+        // reverse the chain to make the last one the original sourcemap
+        chain.reverse();
+        // filter out the empty sourcemap
+        chain = chain
+          .into_iter()
+          .filter(|map| map.get_token_count() > 0)
+          .collect();
+        chain
+      });
+
+      let mut dst_token = token.clone();
+      let mut dst_sourcemap = token.sourcemap();
+
+      // trace the token back to original source file
+      for orig_map in sourcemap_chain {
+        if let Some(orig_token) =
+          orig_map.lookup_token(dst_token.get_src_line(), dst_token.get_src_col())
+        {
+          dst_token = orig_token;
+          dst_sourcemap = orig_token.sourcemap();
+        }
+      }
+
+      add_token(&token, &dst_token, &dst_sourcemap);
+    } else {
+      add_token(&token, &token, &sourcemap);
+    }
+  }
+
+  builder.into_sourcemap()
 }
 
 pub struct FarmSwcSourceMapConfig {

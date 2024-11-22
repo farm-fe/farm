@@ -4,7 +4,7 @@ use farmfe_core::{
   context::CompilationContext,
   error::{CompilationError, Result},
   swc_common::{errors::HANDLER, Globals, Mark, SourceMap, SyntaxContext, GLOBALS},
-  swc_ecma_ast::{Ident, Module},
+  swc_ecma_ast::Module,
 };
 use swc_ecma_transforms::helpers::{Helpers, HELPERS};
 use swc_ecma_transforms_base::resolver;

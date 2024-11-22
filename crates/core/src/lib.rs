@@ -18,6 +18,7 @@ pub mod plugin;
 pub mod resource;
 pub mod stats;
 
+pub use cache::cacheable::*;
 pub use farmfe_macro_cache_item::cache_item;
 
 /// Version of this core crate, if the core data structures changed,
