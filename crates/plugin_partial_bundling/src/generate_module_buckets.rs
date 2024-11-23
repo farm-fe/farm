@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use farmfe_core::{
   config::partial_bundling::PartialBundlingGroupConfigResourceType,
   module::{
@@ -7,6 +5,7 @@ use farmfe_core::{
     module_group::{ModuleGroupGraph, ModuleGroupId},
     ModuleId,
   },
+  HashMap,
 };
 
 use crate::module_bucket::ModuleBucket;
@@ -53,7 +52,7 @@ pub fn generate_module_buckets_map(
   modules: &Vec<ModuleId>,
   module_graph: &ModuleGraph,
 ) -> HashMap<String, ModuleBucket> {
-  let mut module_buckets_map = HashMap::<String, ModuleBucket>::new();
+  let mut module_buckets_map = HashMap::<String, ModuleBucket>::default();
 
   for module_id in modules {
     let module = module_graph.module(module_id).unwrap();
@@ -81,7 +80,7 @@ pub fn group_module_buckets_by_module_group(
   module_group_graph: &ModuleGroupGraph,
   module_graph: &ModuleGraph,
 ) -> Vec<ModuleGroupBuckets> {
-  let mut module_group_buckets_map = HashMap::<ModuleGroupId, Vec<String>>::new();
+  let mut module_group_buckets_map = HashMap::<ModuleGroupId, Vec<String>>::default();
   let mut entries = module_graph
     .entries
     .iter()
@@ -163,55 +162,67 @@ mod tests {
     assert_eq!(module_buckets[0].modules().len(), 2);
     assert_eq!(
       module_buckets[0].modules(),
-      &HashSet::from(["A".into(), "C".into()])
+      &HashSet::from_iter(["A".into(), "C".into()])
     );
     assert_eq!(module_buckets[0].module_groups().len(), 2);
     assert_eq!(
       module_buckets[0].module_groups(),
-      &HashSet::from(["A".into(), "F".into()])
+      &HashSet::from_iter(["A".into(), "F".into()])
     );
 
     assert_eq!(module_buckets[1].modules().len(), 2);
     assert_eq!(
       module_buckets[1].modules(),
-      &HashSet::from(["B".into(), "E".into()])
+      &HashSet::from_iter(["B".into(), "E".into()])
     );
     assert_eq!(module_buckets[1].module_groups().len(), 1);
     assert_eq!(
       module_buckets[1].module_groups(),
-      &HashSet::from(["B".into()])
+      &HashSet::from_iter(["B".into()])
     );
 
     assert_eq!(module_buckets[2].modules().len(), 1);
-    assert_eq!(module_buckets[2].modules(), &HashSet::from(["D".into()]));
+    assert_eq!(
+      module_buckets[2].modules(),
+      &HashSet::from_iter(["D".into()])
+    );
     assert_eq!(module_buckets[2].module_groups().len(), 2);
     assert_eq!(
       module_buckets[2].module_groups(),
-      &HashSet::from(["B".into(), "D".into()])
+      &HashSet::from_iter(["B".into(), "D".into()])
     );
 
     assert_eq!(module_buckets[3].modules().len(), 1);
-    assert_eq!(module_buckets[3].modules(), &HashSet::from(["H".into()]));
+    assert_eq!(
+      module_buckets[3].modules(),
+      &HashSet::from_iter(["H".into()])
+    );
     assert_eq!(module_buckets[3].module_groups().len(), 4);
     assert_eq!(
       module_buckets[3].module_groups(),
-      &HashSet::from(["G".into(), "F".into(), "B".into(), "D".into()])
+      &HashSet::from_iter(["G".into(), "F".into(), "B".into(), "D".into()])
     );
 
     assert_eq!(module_buckets[4].modules().len(), 1);
-    assert_eq!(module_buckets[4].modules(), &HashSet::from(["F".into()]));
+    assert_eq!(
+      module_buckets[4].modules(),
+      &HashSet::from_iter(["F".into()])
+    );
     assert_eq!(module_buckets[4].module_groups().len(), 1);
     assert_eq!(
       module_buckets[4].module_groups(),
-      &HashSet::from(["F".into()])
+      &HashSet::from_iter(["F".into()])
     );
 
     assert_eq!(module_buckets[5].modules().len(), 1);
-    assert_eq!(module_buckets[5].modules(), &HashSet::from(["G".into()]));
+    assert_eq!(
+      module_buckets[5].modules(),
+      &HashSet::from_iter(["G".into()])
+    );
     assert_eq!(module_buckets[5].module_groups().len(), 1);
     assert_eq!(
       module_buckets[5].module_groups(),
-      &HashSet::from(["G".into()])
+      &HashSet::from_iter(["G".into()])
     );
   }
 
@@ -245,10 +256,7 @@ mod tests {
     assert_eq!(module_group_buckets[1].buckets.len(), 2);
     assert_eq!(
       HashSet::<String>::from_iter(module_group_buckets[1].buckets.clone().into_iter()),
-      HashSet::from([
-        "js_false_G".to_string(),
-        "js_false_B_D_F_G".to_string()
-      ])
+      HashSet::from(["js_false_G".to_string(), "js_false_B_D_F_G".to_string()])
     );
 
     assert_eq!(module_group_buckets[2].module_group_id, "A".into());
@@ -276,10 +284,7 @@ mod tests {
     assert_eq!(module_group_buckets[4].buckets.len(), 2);
     assert_eq!(
       HashSet::<String>::from_iter(module_group_buckets[4].buckets.clone().into_iter()),
-      HashSet::from([
-        "js_false_B_D_F_G".to_string(),
-        "js_false_B_D".to_string()
-      ])
+      HashSet::from(["js_false_B_D_F_G".to_string(), "js_false_B_D".to_string()])
     );
   }
 }

@@ -104,14 +104,14 @@ fn find_hmr_accepted_recursively(
 
 #[cfg(test)]
 mod tests {
-  use std::{collections::HashSet, sync::Arc};
+  use std::sync::Arc;
 
   use farmfe_core::{
     config::{Config, Mode},
     context::CompilationContext,
     module::{module_graph::ModuleGraph, ModuleMetaData, ModuleType, ScriptModuleMetaData},
     parking_lot::RwLock,
-    HashMap,
+    HashMap, HashSet,
   };
   use farmfe_testing_helpers::construct_test_module_graph;
 
@@ -203,14 +203,14 @@ mod tests {
     module_d.module_type = ModuleType::Js;
     module_d.meta = Box::new(ModuleMetaData::Script(ScriptModuleMetaData {
       hmr_self_accepted: false,
-      hmr_accepted_deps: HashSet::from(["F".into()]),
+      hmr_accepted_deps: HashSet::from_iter(["F".into()]),
       ..Default::default()
     }));
     let module_c = module_graph.module_mut(&"C".into()).unwrap();
     module_c.module_type = ModuleType::Js;
     module_c.meta = Box::new(ModuleMetaData::Script(ScriptModuleMetaData {
       hmr_self_accepted: false,
-      hmr_accepted_deps: HashSet::from(["F".into()]),
+      hmr_accepted_deps: HashSet::from_iter(["F".into()]),
       ..Default::default()
     }));
 
@@ -236,7 +236,7 @@ mod tests {
     module_d.module_type = ModuleType::Js;
     module_d.meta = Box::new(ModuleMetaData::Script(ScriptModuleMetaData {
       hmr_self_accepted: false,
-      hmr_accepted_deps: HashSet::from(["F".into()]),
+      hmr_accepted_deps: HashSet::from_iter(["F".into()]),
       ..Default::default()
     }));
 
@@ -261,7 +261,7 @@ mod tests {
     module_b.module_type = ModuleType::Js;
     module_b.meta = Box::new(ModuleMetaData::Script(ScriptModuleMetaData {
       hmr_self_accepted: false,
-      hmr_accepted_deps: HashSet::from(["E".into()]),
+      hmr_accepted_deps: HashSet::from_iter(["E".into()]),
       ..Default::default()
     }));
 

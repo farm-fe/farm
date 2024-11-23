@@ -1144,7 +1144,7 @@ impl<'a> BundleAnalyzer<'a> {
         ctx,
       )?;
 
-      let reference_kind = module_id.clone().into();
+      let reference_kind = (*module_id).into();
 
       let result = if let Some(map) = bundle_reference
         .redeclare_commonjs_import

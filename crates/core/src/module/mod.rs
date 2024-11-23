@@ -1,7 +1,6 @@
-use std::{
-  any::Any, cell::RefCell, collections::HashMap, hash::Hash, path::Path, rc::Rc, sync::Arc,
-};
+use std::{any::Any, cell::RefCell, hash::Hash, path::Path, rc::Rc, sync::Arc};
 
+use crate::{HashMap, HashSet};
 use blake2::{
   digest::{Update, VariableOutput},
   Blake2bVar,
@@ -14,7 +13,6 @@ use relative_path::RelativePath;
 use rkyv::Deserialize;
 use rkyv_dyn::archive_dyn;
 use rkyv_typename::TypeName;
-use std::collections::HashSet;
 use swc_common::{
   comments::{
     Comment, SingleThreadedComments, SingleThreadedCommentsMap, SingleThreadedCommentsMapInner,
@@ -83,9 +81,9 @@ pub struct Module {
 impl Clone for Module {
   fn clone(&self) -> Self {
     let custom = if self.custom.is_empty() {
-      HashMap::new()
+      HashMap::default()
     } else {
-      let mut custom = HashMap::new();
+      let mut custom = HashMap::default();
       for (k, v) in self.custom.iter() {
         let cloned_data = crate::serialize!(v);
         let cloned_custom =
@@ -124,7 +122,7 @@ impl Module {
       id,
       module_type: ModuleType::Custom("__farm_unknown".to_string()),
       meta: Box::new(ModuleMetaData::Custom(Box::new(EmptyModuleMetaData) as _)),
-      module_groups: HashSet::new(),
+      module_groups: HashSet::default(),
       resource_pot: None,
       side_effects: true,
       source_map_chain: vec![],
@@ -139,7 +137,7 @@ impl Module {
       content_hash: "".to_string(),
       package_name: "".to_string(),
       package_version: "".to_string(),
-      custom: HashMap::new(),
+      custom: HashMap::default(),
     }
   }
 }
@@ -354,9 +352,9 @@ impl Default for ScriptModuleMetaData {
 impl Clone for ScriptModuleMetaData {
   fn clone(&self) -> Self {
     let custom = if self.custom.is_empty() {
-      HashMap::new()
+      HashMap::default()
     } else {
-      let mut custom = HashMap::new();
+      let mut custom = HashMap::default();
       for (k, v) in self.custom.iter() {
         let cloned_data = crate::serialize!(v);
         let cloned_custom =
@@ -468,9 +466,9 @@ pub struct CssModuleMetaData {
 impl Clone for CssModuleMetaData {
   fn clone(&self) -> Self {
     let custom = if self.custom.is_empty() {
-      HashMap::new()
+      HashMap::default()
     } else {
-      let mut custom = HashMap::new();
+      let mut custom = HashMap::default();
       for (k, v) in self.custom.iter() {
         let cloned_data = crate::serialize!(v);
         let cloned_custom =
@@ -513,9 +511,9 @@ pub struct HtmlModuleMetaData {
 impl Clone for HtmlModuleMetaData {
   fn clone(&self) -> Self {
     let custom = if self.custom.is_empty() {
-      HashMap::new()
+      HashMap::default()
     } else {
-      let mut custom = HashMap::new();
+      let mut custom = HashMap::default();
       for (k, v) in self.custom.iter() {
         let cloned_data = crate::serialize!(v);
         let cloned_custom =
@@ -882,7 +880,8 @@ mod tests {
       imports: Vec<String>,
     }
 
-    module.module_groups = HashSet::from([ModuleId::new("1", "", ""), ModuleId::new("2", "", "")]);
+    module.module_groups =
+      HashSet::from_iter([ModuleId::new("1", "", ""), ModuleId::new("2", "", "")]);
 
     module.meta = Box::new(ModuleMetaData::Custom(Box::new(StructModuleData {
       ast: String::from("ast"),

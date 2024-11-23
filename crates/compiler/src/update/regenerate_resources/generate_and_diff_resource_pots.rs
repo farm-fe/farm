@@ -3,8 +3,8 @@ use farmfe_core::{
   module::{module_group::ModuleGroupId, Module, ModuleId},
   plugin::PluginHookContext,
   resource::resource_pot::{ResourcePot, ResourcePotId},
+  HashMap, HashSet,
 };
-use rustc_hash::{FxHashMap, FxHashSet};
 use std::sync::Arc;
 
 use crate::{
@@ -24,10 +24,10 @@ use crate::{
 ///    4.1 for existing resource pot only rerender it when it's modules are changed, added or removed.
 ///    4.2 alway render new resource pots and remove the old ones
 pub fn generate_and_diff_resource_pots(
-  module_groups: &FxHashSet<ModuleGroupId>,
+  module_groups: &HashSet<ModuleGroupId>,
   diff_result: &DiffResult,
   updated_module_ids: &Vec<ModuleId>,
-  removed_modules: &FxHashMap<ModuleId, Module>,
+  removed_modules: &HashMap<ModuleId, Module>,
   context: &Arc<CompilationContext>,
 ) -> farmfe_core::error::Result<Vec<ResourcePotId>> {
   let affected_modules = get_affected_modules(module_groups, context);
@@ -71,14 +71,14 @@ pub fn generate_and_diff_resource_pots(
 }
 
 fn get_affected_modules(
-  module_groups: &FxHashSet<ModuleGroupId>,
+  module_groups: &HashSet<ModuleGroupId>,
   context: &Arc<CompilationContext>,
 ) -> Vec<ModuleId> {
   let module_group_graph = context.module_group_graph.read();
   // let mut enforce_resource_pots = HashSet::new();
   module_groups
     .iter()
-    .fold(FxHashSet::default(), |mut acc, module_group_id| {
+    .fold(HashSet::default(), |mut acc, module_group_id| {
       let module_group = module_group_graph.module_group(module_group_id).unwrap();
       acc.extend(module_group.modules().clone());
       acc
@@ -100,13 +100,13 @@ fn handle_enforce_resource_pots(
   affected_modules: &Vec<ModuleId>,
   diff_result: &DiffResult,
   updated_module_ids: &Vec<ModuleId>,
-  removed_modules: &FxHashMap<ModuleId, Module>,
+  removed_modules: &HashMap<ModuleId, Module>,
   context: &Arc<CompilationContext>,
 ) -> (Vec<ResourcePotId>, Vec<ModuleId>) {
   let module_graph = context.module_graph.read();
   let mut resource_pot_map = context.resource_pot_map.write();
-  let mut un_enforced_modules = FxHashSet::default();
-  let mut affected_resource_pot_ids = FxHashSet::default();
+  let mut un_enforced_modules = HashSet::default();
+  let mut affected_resource_pot_ids = HashSet::default();
 
   let is_module_external = |module_id: &ModuleId| {
     let module = if let Some(module) = removed_modules.get(module_id) {
@@ -118,7 +118,7 @@ fn handle_enforce_resource_pots(
     module.external
   };
 
-  let mut handle_changed_modules = |module_ids: &FxHashSet<ModuleId>, ty: ChangedModuleType| {
+  let mut handle_changed_modules = |module_ids: &HashSet<ModuleId>, ty: ChangedModuleType| {
     for module_id in module_ids {
       // ignore external module
       if is_module_external(module_id) {
@@ -159,7 +159,7 @@ fn handle_enforce_resource_pots(
     &updated_module_ids
       .clone()
       .into_iter()
-      .collect::<FxHashSet<_>>(),
+      .collect::<HashSet<_>>(),
     ChangedModuleType::Updated,
   );
   handle_changed_modules(&diff_result.added_modules, ChangedModuleType::Added);
@@ -210,7 +210,7 @@ fn diff_and_patch_resource_pot_map(
   resources_pots: Vec<ResourcePot>,
   enforce_resource_pot_ids: &Vec<String>,
   context: &Arc<CompilationContext>,
-) -> FxHashSet<ResourcePotId> {
+) -> HashSet<ResourcePotId> {
   let resources_pots_ids = resources_pots
     .iter()
     .map(|rp| rp.id.clone())
@@ -220,10 +220,10 @@ fn diff_and_patch_resource_pot_map(
   let mut resource_pot_map = context.resource_pot_map.write();
   let mut module_group_graph = context.module_group_graph.write();
 
-  let mut new_resource_pot_ids = FxHashSet::default();
+  let mut new_resource_pot_ids = HashSet::default();
 
   for mut resource_pot in resources_pots {
-    let mut module_groups = FxHashSet::default();
+    let mut module_groups = HashSet::default();
 
     for module_id in resource_pot.modules() {
       let module = module_graph.module(module_id).unwrap();

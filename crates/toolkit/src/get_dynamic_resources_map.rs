@@ -6,16 +6,16 @@ use farmfe_core::{
     ModuleId,
   },
   resource::{resource_pot_map::ResourcePotMap, Resource, ResourceType},
+  HashMap,
 };
-use rustc_hash::FxHashMap;
 
 pub fn get_dynamic_resources_map(
   module_group_graph: &ModuleGroupGraph,
   module_group_id: &ModuleGroupId,
   resource_pot_map: &ResourcePotMap,
-  resources_map: &FxHashMap<String, Resource>,
+  resources_map: &HashMap<String, Resource>,
   module_graph: &ModuleGraph,
-) -> FxHashMap<ModuleId, Vec<(String, ResourceType)>> {
+) -> HashMap<ModuleId, Vec<(String, ResourceType)>> {
   let mut dep_module_groups = vec![];
 
   module_group_graph.bfs(&module_group_id, &mut |mg_id| {
@@ -24,7 +24,7 @@ pub fn get_dynamic_resources_map(
     }
   });
 
-  let mut dynamic_resources_map = FxHashMap::<ModuleId, Vec<(String, ResourceType)>>::default();
+  let mut dynamic_resources_map = HashMap::<ModuleId, Vec<(String, ResourceType)>>::default();
 
   for mg_id in dep_module_groups {
     let mg = module_group_graph.module_group(&mg_id).unwrap();
@@ -75,12 +75,12 @@ pub fn get_dynamic_resources_map(
 }
 
 pub fn get_dynamic_resources_code(
-  dynamic_resources_map: &FxHashMap<ModuleId, Vec<(String, ResourceType)>>,
+  dynamic_resources_map: &HashMap<ModuleId, Vec<(String, ResourceType)>>,
   mode: Mode,
 ) -> (String, String) {
   let mut dynamic_resources_code_vec = vec![];
   let mut dynamic_resources = vec![];
-  let mut visited_resources = FxHashMap::default();
+  let mut visited_resources = HashMap::default();
 
   // inject dynamic resources
   let mut dynamic_resources_map_vec = dynamic_resources_map.iter().collect::<Vec<_>>();

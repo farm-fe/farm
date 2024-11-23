@@ -1,4 +1,3 @@
-use std::collections::{HashMap, HashSet};
 use std::sync::RwLock;
 use std::{collections::VecDeque, sync::Arc};
 
@@ -13,6 +12,7 @@ use farmfe_core::{
   },
   plugin::{Plugin, PluginHookContext},
   resource::resource_pot::ResourcePot,
+  HashMap, HashSet,
 };
 use generate_module_buckets::{generate_module_buckets_map, group_module_buckets_by_module_group};
 use generate_resource_pots::generate_resource_pots;
@@ -109,7 +109,7 @@ impl Plugin for FarmPluginPartialBundling {
 impl FarmPluginPartialBundling {
   pub fn new(_: &Config) -> Self {
     Self {
-      partial_bundling_groups_enforce_map: RwLock::new(HashMap::new()),
+      partial_bundling_groups_enforce_map: RwLock::new(HashMap::default()),
     }
   }
 }
@@ -120,7 +120,7 @@ pub fn module_group_graph_from_entries(
 ) -> ModuleGroupGraph {
   let mut module_group_graph = ModuleGroupGraph::new();
   let mut edges = vec![];
-  let mut visited = HashSet::new();
+  let mut visited = HashSet::default();
 
   for entry in entries.clone() {
     if visited.contains(&entry) {
@@ -175,7 +175,7 @@ fn module_group_from_entry(
   entry: &ModuleId,
   graph: &mut ModuleGraph,
 ) -> (ModuleGroup, Vec<ModuleId>) {
-  let mut visited = HashSet::new();
+  let mut visited = HashSet::default();
   let mut module_group = ModuleGroup::new(entry.clone());
   let mut dynamic_entries = vec![];
 
@@ -281,30 +281,30 @@ mod tests {
     assert_eq!(module_group_a.id, "A".into());
     assert_eq!(
       module_group_a.modules(),
-      &HashSet::from(["A".into(), "C".into()])
+      &HashSet::from_iter(["A".into(), "C".into()])
     );
 
     let module_group_b = module_group_graph.module_group(&"B".into()).unwrap();
     assert_eq!(module_group_b.id, "B".into());
     assert_eq!(
       module_group_b.modules(),
-      &HashSet::from(["B".into(), "D".into(), "E".into()])
+      &HashSet::from_iter(["B".into(), "D".into(), "E".into()])
     );
 
     let module_group_d = module_group_graph.module_group(&"D".into()).unwrap();
     assert_eq!(module_group_d.id, "D".into());
-    assert_eq!(module_group_d.modules(), &HashSet::from(["D".into()]));
+    assert_eq!(module_group_d.modules(), &HashSet::from_iter(["D".into()]));
 
     let module_group_f = module_group_graph.module_group(&"F".into()).unwrap();
     assert_eq!(module_group_f.id, "F".into());
     assert_eq!(
       module_group_f.modules(),
-      &HashSet::from(["F".into(), "A".into(), "C".into()])
+      &HashSet::from_iter(["F".into(), "A".into(), "C".into()])
     );
 
     let module_group_g = module_group_graph.module_group(&"G".into()).unwrap();
     assert_eq!(module_group_g.id, "G".into());
-    assert_eq!(module_group_g.modules(), &HashSet::from(["G".into()]));
+    assert_eq!(module_group_g.modules(), &HashSet::from_iter(["G".into()]));
 
     let test_pairs = vec![(
       "A",
@@ -336,7 +336,7 @@ mod tests {
     assert_eq!(module_group.id, "A".into());
     assert_eq!(
       module_group.modules(),
-      &HashSet::from(["A".into(), "C".into()])
+      &HashSet::from_iter(["A".into(), "C".into()])
     );
     assert!(graph
       .module(&"A".into())

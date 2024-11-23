@@ -1,7 +1,6 @@
 //! Merge module pots to resource pots in the same ModuleGroup.
 //! See https://github.com/farm-fe/rfcs/blob/main/rfcs/003-partial-bundling/rfc.md#merge-module-pots-into-resource-pot
 
-use std::collections::{HashMap, HashSet};
 use std::{cmp::Ordering, usize};
 
 use farmfe_core::config::Config;
@@ -9,6 +8,7 @@ use farmfe_core::{
   module::{module_graph::ModuleGraph, module_group::ModuleGroupId, ModuleId, ModuleType},
   resource::resource_pot::{ResourcePot, ResourcePotType},
 };
+use farmfe_core::{HashMap, HashSet};
 
 use crate::{module_pot::ModulePot, utils::hash_module_ids};
 
@@ -23,7 +23,7 @@ impl ModuleGroupModulePots {
   pub fn new(module_group_id: ModuleGroupId) -> Self {
     Self {
       module_group_id,
-      module_pots: HashMap::new(),
+      module_pots: HashMap::default(),
     }
   }
 
@@ -180,7 +180,7 @@ pub fn merge_module_pots(
     is_with_hash,
   );
 
-  let mut resource_pots_size_mp = HashMap::new();
+  let mut resource_pots_size_mp = HashMap::default();
 
   if config.enforce_target_concurrent_requests || config.enforce_target_min_size {
     for resource_pot in &resource_pots {
@@ -224,7 +224,7 @@ fn merge_resource_pots_by_buckets(
   let mut final_resource_pots = vec![];
 
   for (_, module_pots) in module_pots_map {
-    let mut current_generation_map = HashMap::<(ModuleType, bool), CurrentGeneration>::new();
+    let mut current_generation_map = HashMap::<(ModuleType, bool), CurrentGeneration>::default();
     let mut resource_pots = vec![];
 
     if module_pots.is_empty() {
@@ -345,7 +345,8 @@ fn handle_enforce_target_min_size(
 
   small_resource_pots_to_merge.sort_by(|a, b| a.0.cmp(&b.0));
 
-  let mut merged_resource_pot_map = HashMap::<(ResourcePotType, bool), (usize, Vec<String>)>::new();
+  let mut merged_resource_pot_map =
+    HashMap::<(ResourcePotType, bool), (usize, Vec<String>)>::default();
 
   for (size, resource_pot_id) in small_resource_pots_to_merge {
     let resource_pot = resource_pot_map.get(&resource_pot_id).unwrap();
@@ -465,7 +466,7 @@ fn create_merged_resource_pot(
   resource_pot_map: &mut HashMap<String, ResourcePot>,
   is_with_hash: bool,
 ) -> ResourcePot {
-  let mut modules = HashSet::new();
+  let mut modules = HashSet::default();
 
   let mut name: Option<(String, bool)> = None;
   for resource_pot_id in merged_resource_pot_ids {
@@ -546,7 +547,7 @@ fn handle_enforce_target_concurrent_requests(
   });
 
   let len_to_merge = resource_pots.len() - target_concurrent_requests + 1;
-  let mut resource_pots_to_merge = HashMap::new();
+  let mut resource_pots_to_merge = HashMap::default();
 
   for i in 0..len_to_merge {
     let key = (

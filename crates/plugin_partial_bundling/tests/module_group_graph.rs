@@ -19,30 +19,30 @@ fn module_group_graph() {
   let module_a = module_graph.module(&"A".into()).unwrap();
   assert_eq!(
     module_a.module_groups,
-    HashSet::from(["A".into(), "F".into()])
+    HashSet::from_iter(["A".into(), "F".into()])
   );
   let module_b = module_graph.module(&"B".into()).unwrap();
-  assert_eq!(module_b.module_groups, HashSet::from(["B".into()]));
+  assert_eq!(module_b.module_groups, HashSet::from_iter(["B".into()]));
   let module_c = module_graph.module(&"C".into()).unwrap();
   assert_eq!(
     module_c.module_groups,
-    HashSet::from(["A".into(), "F".into()])
+    HashSet::from_iter(["A".into(), "F".into()])
   );
   let module_d = module_graph.module(&"D".into()).unwrap();
   assert_eq!(
     module_d.module_groups,
-    HashSet::from(["B".into(), "D".into()])
+    HashSet::from_iter(["B".into(), "D".into()])
   );
   let module_e = module_graph.module(&"E".into()).unwrap();
-  assert_eq!(module_e.module_groups, HashSet::from(["B".into()]));
+  assert_eq!(module_e.module_groups, HashSet::from_iter(["B".into()]));
   let module_f = module_graph.module(&"F".into()).unwrap();
-  assert_eq!(module_f.module_groups, HashSet::from(["F".into()]));
+  assert_eq!(module_f.module_groups, HashSet::from_iter(["F".into()]));
   let module_g = module_graph.module(&"G".into()).unwrap();
-  assert_eq!(module_g.module_groups, HashSet::from(["G".into()]));
+  assert_eq!(module_g.module_groups, HashSet::from_iter(["G".into()]));
   let module_h = module_graph.module(&"H".into()).unwrap();
   assert_eq!(
     module_h.module_groups,
-    HashSet::from(["G".into(), "F".into(), "B".into(), "D".into()])
+    HashSet::from_iter(["G".into(), "F".into(), "B".into(), "D".into()])
   );
 }
 
