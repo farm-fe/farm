@@ -1,4 +1,4 @@
-use std::{collections::HashMap, path::PathBuf, sync::Arc};
+use std::{path::PathBuf, sync::Arc};
 
 use farmfe_core::{
   config::{bool_or_obj::BoolOrObj, Config},
@@ -8,7 +8,7 @@ use farmfe_core::{
     Plugin, PluginAnalyzeDepsHookParam, PluginAnalyzeDepsHookResultEntry, PluginHookContext,
     PluginLoadHookParam, PluginParseHookParam, ResolveKind,
   },
-  resource::resource_pot::{ResourcePot, ResourcePotId, ResourcePotMetaData, ResourcePotType},
+  resource::resource_pot::{ResourcePot, ResourcePotId, ResourcePotMetaData, ResourcePotType}, HashMap,
 };
 use farmfe_testing_helpers::fixture;
 

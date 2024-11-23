@@ -1,6 +1,6 @@
 #![feature(box_patterns)]
 
-use std::{any::Any, collections::HashSet as StdHashSet, collections::VecDeque, sync::Arc};
+use std::{any::Any, collections::VecDeque, sync::Arc};
 
 use farmfe_core::{
   config::{

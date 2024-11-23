@@ -1,4 +1,4 @@
-use std::{collections::HashMap, sync::Arc};
+use std::sync::Arc;
 
 use farmfe_core::{
   config::Config,
@@ -7,7 +7,7 @@ use farmfe_core::{
   plugin::{
     Plugin, PluginFinalizeModuleHookParam, PluginHookContext, PluginLoadHookParam,
     PluginParseHookParam,
-  },
+  }, HashMap,
 };
 use farmfe_testing_helpers::fixture;
 

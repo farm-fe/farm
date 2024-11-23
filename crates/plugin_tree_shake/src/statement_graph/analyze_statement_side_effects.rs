@@ -1,11 +1,10 @@
-use std::collections::HashSet;
-
 use farmfe_core::{
   swc_common::{
     comments::{Comments, SingleThreadedComments},
     Mark, Spanned,
   },
   swc_ecma_ast::{Expr, ModuleItem},
+  HashSet,
 };
 use farmfe_toolkit::swc_ecma_visit::{Visit, VisitWith};
 

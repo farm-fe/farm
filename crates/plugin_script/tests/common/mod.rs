@@ -1,4 +1,4 @@
-use std::{collections::HashMap, path::PathBuf, sync::Arc};
+use std::{path::PathBuf, sync::Arc};
 
 use farmfe_core::{
   context::CompilationContext,
@@ -7,7 +7,7 @@ use farmfe_core::{
     Plugin, PluginAnalyzeDepsHookParam, PluginAnalyzeDepsHookResultEntry,
     PluginFinalizeModuleHookParam, PluginHookContext, PluginLoadHookParam, PluginParseHookParam,
     PluginProcessModuleHookParam,
-  },
+  }, HashMap,
 };
 
 pub fn build_module_deps(

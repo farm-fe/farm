@@ -232,13 +232,13 @@ fn module_group_from_entry(
 
 #[cfg(test)]
 mod tests {
-  use std::collections::HashSet;
-  use std::{collections::HashMap, sync::Arc};
+  use std::sync::Arc;
 
   use farmfe_core::{
     context::CompilationContext,
     parking_lot::RwLock,
     plugin::{Plugin, PluginHookContext},
+    HashMap, HashSet,
   };
   #[cfg(test)]
   use farmfe_testing_helpers::construct_test_module_graph;

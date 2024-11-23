@@ -38,14 +38,14 @@ pub fn find_async_modules(context: &Arc<CompilationContext>) -> HashSet<ModuleId
 
 #[cfg(test)]
 mod tests {
-  use std::{collections::HashSet, sync::Arc};
+  use std::sync::Arc;
 
   use farmfe_core::{
     context::CompilationContext,
     module::{ModuleMetaData, ModuleType, ScriptModuleMetaData},
     parking_lot::RwLock,
     swc_common::DUMMY_SP,
-    swc_ecma_ast::{AwaitExpr, Expr, ExprStmt, Lit, Module, ModuleItem, Stmt},
+    swc_ecma_ast::{AwaitExpr, Expr, ExprStmt, Lit, Module, ModuleItem, Stmt}, HashSet,
   };
   use farmfe_testing_helpers::construct_test_module_graph;
 

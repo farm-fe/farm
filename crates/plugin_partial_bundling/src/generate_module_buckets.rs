@@ -124,8 +124,8 @@ pub fn group_module_buckets_by_module_group(
 
 #[cfg(test)]
 mod tests {
+  use farmfe_core::HashSet;
   use farmfe_testing_helpers::construct_test_module_graph_complex;
-  use std::collections::HashSet;
 
   use crate::module_group_graph_from_entries;
 
@@ -244,7 +244,7 @@ mod tests {
     assert_eq!(module_group_buckets[0].buckets.len(), 3);
     assert_eq!(
       HashSet::<String>::from_iter(module_group_buckets[0].buckets.clone().into_iter()),
-      HashSet::from([
+      HashSet::from_iter([
         "js_false_B".to_string(),
         "js_false_B_D".to_string(),
         "js_false_B_D_F_G".to_string()
@@ -256,7 +256,7 @@ mod tests {
     assert_eq!(module_group_buckets[1].buckets.len(), 2);
     assert_eq!(
       HashSet::<String>::from_iter(module_group_buckets[1].buckets.clone().into_iter()),
-      HashSet::from(["js_false_G".to_string(), "js_false_B_D_F_G".to_string()])
+      HashSet::from_iter(["js_false_G".to_string(), "js_false_B_D_F_G".to_string()])
     );
 
     assert_eq!(module_group_buckets[2].module_group_id, "A".into());
@@ -264,7 +264,7 @@ mod tests {
     assert_eq!(module_group_buckets[2].buckets.len(), 1);
     assert_eq!(
       HashSet::<String>::from_iter(module_group_buckets[2].buckets.clone().into_iter()),
-      HashSet::from(["js_false_A_F".to_string()])
+      HashSet::from_iter(["js_false_A_F".to_string()])
     );
 
     assert_eq!(module_group_buckets[3].module_group_id, "F".into());
@@ -272,7 +272,7 @@ mod tests {
     assert_eq!(module_group_buckets[3].buckets.len(), 3);
     assert_eq!(
       HashSet::<String>::from_iter(module_group_buckets[3].buckets.clone().into_iter()),
-      HashSet::from([
+      HashSet::from_iter([
         "js_false_F".to_string(),
         "js_false_A_F".to_string(),
         "js_false_B_D_F_G".to_string()
@@ -284,7 +284,7 @@ mod tests {
     assert_eq!(module_group_buckets[4].buckets.len(), 2);
     assert_eq!(
       HashSet::<String>::from_iter(module_group_buckets[4].buckets.clone().into_iter()),
-      HashSet::from(["js_false_B_D_F_G".to_string(), "js_false_B_D".to_string()])
+      HashSet::from_iter(["js_false_B_D_F_G".to_string(), "js_false_B_D".to_string()])
     );
   }
 }
