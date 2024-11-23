@@ -14,6 +14,7 @@ export default defineConfig((env) => {
         cacheDir: "node_modules/adny/cache",
       },
       presetEnv: false,
+      minify: false,
       progress: false
       // output: {
       //   publicPath: '/dist/'

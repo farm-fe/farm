@@ -22,7 +22,7 @@ var index_js_cjs = __commonJs((module, exports)=>{
     window['__farm_default_namespace__'].__farm_module_system__.setPlugins([]);
 });
 index_js_cjs();
-})());window['__farm_default_namespace__'].__farm_module_system__.setExternalModules({"module": (window['module']||{}).default && !(window['module']||{}).__esModule ? {...(window['module']||{}),__esModule:true} : ({...window['module']||{}})});(function(_){for(var r in _){_[r].__farm_resource_pot__='index_7f1c.js';window['__farm_default_namespace__'].__farm_module_system__.register(r,_[r])}})({"052dab48":function  (module, exports, farmRequire, farmDynamicRequire) {
+})());window['__farm_default_namespace__'].__farm_module_system__.setExternalModules({"module": (window['module']||{}).default && !(window['module']||{}).__esModule ? {...(window['module']||{}),__esModule:true} : window['module']||{}});(function(_){for(var r in _){_[r].__farm_resource_pot__='index_7f1c.js';window['__farm_default_namespace__'].__farm_module_system__.register(r,_[r])}})({"052dab48":function  (module, exports, farmRequire, farmDynamicRequire) {
     module._m(exports);
     exports.default = {
         main: './main.tsx'

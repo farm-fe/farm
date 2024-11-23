@@ -27,7 +27,8 @@ index_js_cjs();
     var _f_b = module.w(farmRequire("f380ea31"));
     var A = _f_b;
     console.log(A.A);
-    console.log(A['B']);
+    const B = A['B'];
+    console.log(B);
 }
 ,
 "f380ea31":function  (module, exports, farmRequire, farmDynamicRequire) {
