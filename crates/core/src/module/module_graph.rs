@@ -1,8 +1,7 @@
 use std::cmp::Ordering;
 
+use crate::{HashMap, HashSet};
 use farmfe_macro_cache_item::cache_item;
-use rustc_hash::FxHashMap;
-use std::collections::HashSet;
 
 use petgraph::{
   graph::{DefaultIx, NodeIndex},
@@ -123,12 +122,12 @@ pub struct ModuleGraph {
   /// internal graph
   g: StableDiGraph<Module, ModuleGraphEdge>,
   /// to index module in the graph using [ModuleId]
-  id_index_map: FxHashMap<ModuleId, NodeIndex<DefaultIx>>,
+  id_index_map: HashMap<ModuleId, NodeIndex<DefaultIx>>,
   /// file path to module ids, e.g src/index.scss -> [src/index.scss, src/index.scss?raw]
-  file_module_ids_map: FxHashMap<ModuleId, Vec<ModuleId>>,
+  file_module_ids_map: HashMap<ModuleId, Vec<ModuleId>>,
   /// entry modules of this module graph.
   /// (Entry Module Id, Entry Name)
-  pub entries: FxHashMap<ModuleId, String>,
+  pub entries: HashMap<ModuleId, String>,
   pub circle_record: CircleRecord,
 }
 
@@ -136,9 +135,9 @@ impl ModuleGraph {
   pub fn new() -> Self {
     Self {
       g: StableDiGraph::new(),
-      id_index_map: FxHashMap::new(),
-      file_module_ids_map: FxHashMap::new(),
-      entries: FxHashMap::new(),
+      id_index_map: HashMap::default(),
+      file_module_ids_map: HashMap::default(),
+      entries: HashMap::default(),
       circle_record: CircleRecord::default(),
     }
   }
@@ -567,7 +566,7 @@ impl ModuleGraph {
     let mut entries = self.entries.iter().collect::<Vec<_>>();
     entries.sort();
 
-    let mut visited = HashSet::new();
+    let mut visited = HashSet::default();
 
     for (entry, _) in entries {
       let mut res = vec![];
@@ -634,7 +633,7 @@ impl ModuleGraph {
       }
     }
 
-    let mut visited = HashSet::new();
+    let mut visited = HashSet::default();
 
     for entry in entries {
       dfs(None, &entry, op, &mut visited, self);
@@ -714,7 +713,7 @@ impl Default for ModuleGraph {
 
 #[cfg(test)]
 mod tests {
-  use rustc_hash::FxHashMap;
+  use crate::HashMap;
 
   use crate::{
     module::{Module, ModuleId},
@@ -790,7 +789,7 @@ mod tests {
       .unwrap();
 
     graph.entries =
-      FxHashMap::from_iter([("A".into(), "A".to_string()), ("B".into(), "B".to_string())]);
+      HashMap::from_iter([("A".into(), "A".to_string()), ("B".into(), "B".to_string())]);
 
     graph
   }

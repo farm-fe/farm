@@ -7,8 +7,8 @@ use farmfe_core::{
   farm_profile_function,
   module::ModuleId,
   rayon::prelude::*,
+  HashMap, HashSet,
 };
-use rustc_hash::{FxHashMap, FxHashSet};
 
 pub fn get_timestamp_of_module(module_id: &ModuleId, root: &str) -> u128 {
   farm_profile_function!(format!("get_timestamp_of_module: {:?}", module_id));
@@ -157,7 +157,7 @@ pub fn try_get_module_cache_by_hash(
 pub fn set_module_graph_cache(module_ids: Vec<ModuleId>, context: &Arc<CompilationContext>) {
   farm_profile_function!("set_module_graph_cache".to_string());
   let module_graph = context.module_graph.read();
-  let mut cacheable_modules = FxHashSet::default();
+  let mut cacheable_modules = HashSet::default();
 
   let modules = module_ids
     .iter()
@@ -296,7 +296,7 @@ fn is_watch_dependencies_timestamp_changed(
     .watch_dependencies
     .iter()
     .map(|dep| (dep.dependency.clone(), dep.timestamp))
-    .collect::<FxHashMap<_, _>>();
+    .collect::<HashMap<_, _>>();
 
   for dep in &relation_dependencies {
     let resolved_path = PathBuf::from(dep.resolved_path(&context.config.root));
@@ -332,7 +332,7 @@ fn is_watch_dependencies_content_hash_changed(
     .watch_dependencies
     .iter()
     .map(|dep| (dep.dependency.clone(), dep.hash.clone()))
-    .collect::<FxHashMap<_, _>>();
+    .collect::<HashMap<_, _>>();
 
   for dep in relation_dependencies {
     let resolved_path = PathBuf::from(dep.resolved_path(&context.config.root));

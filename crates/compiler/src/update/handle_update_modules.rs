@@ -6,9 +6,9 @@ use farmfe_core::{
   plugin::{PluginUpdateModulesHookParams, UpdateResult, UpdateType},
   serde_json,
   stats::CompilationPluginHookStats,
+  HashMap,
 };
 use farmfe_utils::relative;
-use rustc_hash::FxHashMap;
 
 pub fn handle_update_modules(
   paths: Vec<(String, UpdateType)>,
@@ -97,7 +97,7 @@ pub fn handle_update_modules(
 
   // group the paths by same resolved_path
   let grouped_paths = paths.iter().fold(
-    FxHashMap::<String, Vec<String>>::default(),
+    HashMap::<String, Vec<String>>::default(),
     |mut acc, (path, _)| {
       let resolved_path = path.split('?').next().unwrap().to_string();
 

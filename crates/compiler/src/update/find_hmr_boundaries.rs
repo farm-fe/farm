@@ -3,25 +3,25 @@ use std::sync::Arc;
 use farmfe_core::{
   context::CompilationContext,
   module::{module_graph::ModuleGraph, ModuleId},
+  HashMap, HashSet,
 };
-use rustc_hash::{FxHashMap, FxHashSet};
 
 pub fn find_hmr_boundaries(
   update_module_ids: &Vec<ModuleId>,
   context: &Arc<CompilationContext>,
-) -> FxHashMap<String, Vec<Vec<String>>> {
-  let mut boundaries = FxHashMap::default();
+) -> HashMap<String, Vec<Vec<String>>> {
+  let mut boundaries = HashMap::default();
   let module_graph = context.module_graph.read();
 
   for id in update_module_ids {
     let mut stack = vec![id.clone()];
-    let mut visited = FxHashSet::default();
+    let mut visited = HashSet::default();
     let mut res = vec![];
     let all_path_accepted =
       find_hmr_accepted_recursively(id, &module_graph, &mut stack, &mut visited, &mut res);
     // if any of the path is not accepted, reload the whole page
     if !all_path_accepted {
-      return FxHashMap::default();
+      return HashMap::default();
     }
 
     boundaries.insert(
@@ -44,7 +44,7 @@ fn find_hmr_accepted_recursively(
   id: &ModuleId,
   module_graph: &ModuleGraph,
   stack: &mut Vec<ModuleId>,
-  visited: &mut FxHashSet<ModuleId>,
+  visited: &mut HashSet<ModuleId>,
   res: &mut Vec<Vec<ModuleId>>,
 ) -> bool {
   let module = module_graph.module(id).unwrap();
@@ -111,9 +111,9 @@ mod tests {
     context::CompilationContext,
     module::{module_graph::ModuleGraph, ModuleMetaData, ModuleType, ScriptModuleMetaData},
     parking_lot::RwLock,
+    HashMap,
   };
   use farmfe_testing_helpers::construct_test_module_graph;
-  use rustc_hash::FxHashMap;
 
   use super::find_hmr_boundaries;
 
@@ -144,7 +144,7 @@ mod tests {
     let context = create_context(module_graph);
     let boundaries = find_hmr_boundaries(&vec!["F".into()], &context);
 
-    assert_eq!(boundaries, FxHashMap::default());
+    assert_eq!(boundaries, HashMap::default());
   }
 
   #[test]
@@ -174,7 +174,7 @@ mod tests {
         vec![vec!["F".into(), "D".into()], vec!["F".into(), "C".into()]]
       )]
       .into_iter()
-      .collect::<FxHashMap<_, _>>()
+      .collect::<HashMap<_, _>>()
     );
   }
 
@@ -192,7 +192,7 @@ mod tests {
     let context = create_context(module_graph);
     let boundaries = find_hmr_boundaries(&vec!["F".into()], &context);
     // Be careful, the order of the paths may not be guaranteed. check the order if the test fails.
-    assert_eq!(boundaries, FxHashMap::default());
+    assert_eq!(boundaries, HashMap::default());
   }
 
   #[test]
@@ -224,7 +224,7 @@ mod tests {
         vec![vec!["F".into(), "D".into()], vec!["F".into(), "C".into()]]
       )]
       .into_iter()
-      .collect::<FxHashMap<_, _>>()
+      .collect::<HashMap<_, _>>()
     );
   }
 
@@ -250,7 +250,7 @@ mod tests {
     let context = create_context(module_graph);
     let boundaries = find_hmr_boundaries(&vec!["F".into()], &context);
     // Be careful, the order of the paths may not be guaranteed. check the order if the test fails.
-    assert_eq!(boundaries, FxHashMap::default());
+    assert_eq!(boundaries, HashMap::default());
   }
 
   #[test]
@@ -286,7 +286,7 @@ mod tests {
       boundaries,
       vec![("G".into(), vec![vec!["G".into(), "E".into(), "B".into()]])]
         .into_iter()
-        .collect::<FxHashMap<_, _>>()
+        .collect::<HashMap<_, _>>()
     );
   }
 }

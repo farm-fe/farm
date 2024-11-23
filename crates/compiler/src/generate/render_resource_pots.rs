@@ -12,12 +12,12 @@ use farmfe_core::{
     resource_pot::{ResourcePot, ResourcePotInfo},
     ResourceType,
   },
+  HashMap,
 };
 use farmfe_toolkit::{
   common::append_source_map_comment,
   fs::{transform_output_entry_filename, transform_output_filename},
 };
-use rustc_hash::FxHashMap;
 
 use crate::generate::resource_cache::{set_resource_cache, try_get_resource_cache};
 
@@ -151,7 +151,6 @@ pub fn render_resource_pots_and_generate_resources(
 
       resource_pot.add_resource(res.resource.name.clone());
 
-
       resources.lock().push(res.resource);
       Ok::<(), CompilationError>(())
     })?;
@@ -159,7 +158,7 @@ pub fn render_resource_pots_and_generate_resources(
   let mut resources_map: farmfe_core::parking_lot::lock_api::MutexGuard<
     '_,
     farmfe_core::parking_lot::RawMutex,
-    FxHashMap<String, farmfe_core::resource::Resource>,
+    HashMap<String, farmfe_core::resource::Resource>,
   > = context.resources_map.lock();
 
   for resource in resources.lock().drain(..) {

@@ -1,9 +1,6 @@
 //! diff the module_graph and update_module_graph, analyze the changes and then patch the module_graph
 
-use std::{
-  cmp::Ordering,
-  collections::{HashSet, VecDeque},
-};
+use std::{cmp::Ordering, collections::VecDeque};
 
 use farmfe_core::{
   module::{
@@ -11,8 +8,8 @@ use farmfe_core::{
     Module, ModuleId,
   },
   serde::Serialize,
+  HashMap, HashSet,
 };
-use rustc_hash::{FxHashMap, FxHashSet};
 
 /// the diff result of a module's dependencies
 #[derive(Debug, PartialEq, Eq, Clone, Serialize)]
@@ -31,8 +28,8 @@ pub type ModuleDepsDiffResultMap = Vec<(ModuleId, ModuleDepsDiffResult)>;
 #[serde(rename_all = "camelCase", crate = "farmfe_core::serde")]
 pub struct DiffResult {
   pub deps_changes: ModuleDepsDiffResultMap,
-  pub added_modules: FxHashSet<ModuleId>,
-  pub removed_modules: FxHashSet<ModuleId>,
+  pub added_modules: HashSet<ModuleId>,
+  pub removed_modules: HashSet<ModuleId>,
 }
 
 #[cfg(test)]
@@ -97,8 +94,8 @@ pub fn diff_module_graph(
 ) -> DiffResult {
   let mut res: DiffResult = DiffResult {
     deps_changes: vec![],
-    added_modules: FxHashSet::default(),
-    removed_modules: FxHashSet::default(),
+    added_modules: HashSet::default(),
+    removed_modules: HashSet::default(),
   };
 
   let (mut diff_result, added_modules, remove_modules) =
@@ -135,9 +132,9 @@ pub fn patch_module_graph(
   diff_result: &DiffResult,
   module_graph: &mut ModuleGraph,
   update_module_graph: &mut ModuleGraph,
-) -> FxHashMap<ModuleId, Module> {
-  let mut removed_modules = FxHashMap::default();
-  let mut added_edge_info = FxHashMap::<(ModuleId, ModuleId), ModuleGraphEdge>::default();
+) -> HashMap<ModuleId, Module> {
+  let mut removed_modules = HashMap::default();
+  let mut added_edge_info = HashMap::<(ModuleId, ModuleId), ModuleGraphEdge>::default();
 
   for (module_id, deps_diff_result) in diff_result.deps_changes.iter() {
     for (removed_dep, _) in &deps_diff_result.removed {
@@ -196,7 +193,7 @@ pub fn patch_module_graph(
 /// a(changed) -> b -> c
 ///   \-> d
 /// diff_result:
-/// (ModuleDepsDiffResult { added: [], removed: [] }, FxHashSet::default(), FxHashSet::default())
+/// (ModuleDepsDiffResult { added: [], removed: [] }, HashSet::default(), HashSet::default())
 ///
 /// 2. when the deps changed
 /// module_graph:
@@ -245,14 +242,14 @@ fn diff_module_deps(
   update_module_graph: &ModuleGraph,
 ) -> (
   ModuleDepsDiffResultMap,
-  FxHashSet<ModuleId>,
-  FxHashSet<ModuleId>,
+  HashSet<ModuleId>,
+  HashSet<ModuleId>,
 ) {
   // added_deps of to_id(the to node of the removed edge) -> from_id
-  let mut all_added_deps_reverse = FxHashMap::default();
+  let mut all_added_deps_reverse = HashMap::default();
   // removed_deps of to_id(the to node of the removed edge) -> from_id
-  let mut all_removed_deps_reverse = FxHashMap::default();
-  let mut added_modules = FxHashSet::default();
+  let mut all_removed_deps_reverse = HashMap::default();
+  let mut added_modules = HashSet::default();
 
   let mut diff_result = Vec::new();
 
@@ -292,7 +289,7 @@ fn diff_module_deps(
         for (added_dep, _) in &added_deps {
           all_added_deps_reverse
             .entry(added_dep.clone())
-            .or_insert_with(FxHashSet::default)
+            .or_insert_with(HashSet::default)
             .insert(module_id.clone());
 
           if !module_graph.has_module(added_dep) {
@@ -306,7 +303,7 @@ fn diff_module_deps(
         for (removed_dep, _) in &removed_deps {
           all_removed_deps_reverse
             .entry(removed_dep.clone())
-            .or_insert_with(FxHashSet::default)
+            .or_insert_with(HashSet::default)
             .insert(module_id.clone());
         }
         // all_removed_deps.insert(module_id.clone(), removed_deps.clone());
@@ -323,7 +320,7 @@ fn diff_module_deps(
   }
 
   if diff_result.is_empty() {
-    return (diff_result, FxHashSet::default(), FxHashSet::default());
+    return (diff_result, HashSet::default(), HashSet::default());
   }
 
   let all_removed_deps = all_removed_deps_reverse.keys().cloned();
@@ -354,13 +351,13 @@ fn diff_module_deps(
     })
     .collect::<Vec<_>>();
   removed_modules_vec.sort();
-  let mut removed_modules: FxHashSet<ModuleId> = removed_modules_vec.clone().into_iter().collect();
+  let mut removed_modules: HashSet<ModuleId> = removed_modules_vec.clone().into_iter().collect();
 
   // Find all added and removed children deeply of added and removed dependencies
   let mut added_modules_vec = added_modules.clone().into_iter().collect::<Vec<_>>();
   added_modules_vec.sort();
   let mut added_queue = VecDeque::from(added_modules_vec);
-  let mut added_visited = FxHashSet::default();
+  let mut added_visited = HashSet::default();
 
   while let Some(dep) = added_queue.pop_front() {
     if added_visited.contains(&dep) {
@@ -381,7 +378,7 @@ fn diff_module_deps(
       children_added.push((child.clone(), edge_info.clone()));
       all_added_deps_reverse
         .entry(child.clone())
-        .or_insert_with(FxHashSet::default)
+        .or_insert_with(HashSet::default)
         .insert(dep.clone());
 
       if !module_graph.has_module(&child) {
@@ -410,7 +407,7 @@ fn diff_module_deps(
   }
 
   let mut removed_queue = VecDeque::from(removed_modules_vec);
-  let mut removed_visited = HashSet::new();
+  let mut removed_visited = HashSet::default();
 
   while let Some(dep) = removed_queue.pop_front() {
     let children = module_graph.dependencies_ids(&dep);

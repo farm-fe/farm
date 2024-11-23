@@ -1,22 +1,22 @@
 use std::collections::VecDeque;
 
+use farmfe_core::{HashMap, HashSet};
 use farmfe_core::module::{
   module_graph::ModuleGraph,
   module_group::{ModuleGroup, ModuleGroupGraph},
   Module, ModuleId,
 };
-use rustc_hash::{FxHashMap, FxHashSet};
 
 use super::diff_and_patch_module_graph::DiffResult;
 
 pub fn patch_module_group_graph(
   updated_module_ids: Vec<ModuleId>,
   diff_result: &DiffResult,
-  removed_modules: &FxHashMap<ModuleId, Module>,
+  removed_modules: &HashMap<ModuleId, Module>,
   module_graph: &mut ModuleGraph,
   module_group_graph: &mut ModuleGroupGraph,
-) -> FxHashSet<ModuleId> {
-  let mut affected_module_groups = FxHashSet::default();
+) -> HashSet<ModuleId> {
+  let mut affected_module_groups = HashSet::default();
 
   for updated_module_id in &updated_module_ids {
     let module = module_graph.module(updated_module_id).unwrap();
@@ -81,7 +81,7 @@ pub fn patch_module_group_graph(
         } else {
           // also need to handle all of its non-dynamic children
           let mut queue = VecDeque::from([added_module_id.clone()]);
-          let mut visited = FxHashSet::default();
+          let mut visited = HashSet::default();
 
           while !queue.is_empty() {
             let current_module_id = queue.pop_front().unwrap();
@@ -191,7 +191,7 @@ pub fn patch_module_group_graph(
           }
         } else {
           let mut queue = VecDeque::from([removed_module_id.clone()]);
-          let mut visited = FxHashSet::default();
+          let mut visited = HashSet::default();
 
           while !queue.is_empty() {
             let current_module_id = queue.pop_front().unwrap();
@@ -298,7 +298,7 @@ pub fn patch_module_group_graph(
     .filter(|g_id| module_group_graph.has(g_id))
     .collect::<Vec<_>>();
 
-  let mut final_affected_module_groups = FxHashSet::default();
+  let mut final_affected_module_groups = HashSet::default();
   let mut queue = VecDeque::from(affected_module_groups);
   // makes sure that all module groups that are affected are included
   while !queue.is_empty() {
