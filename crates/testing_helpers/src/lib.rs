@@ -9,12 +9,12 @@ use farmfe_core::{
   plugin::ResolveKind,
   relative_path::RelativePath,
   wax::Glob,
+  HashMap,
 };
 
 pub mod assert;
 pub use insta;
 use insta::Settings;
-use rustc_hash::FxHashMap;
 
 pub struct InstaHelper {}
 
@@ -118,7 +118,7 @@ pub fn construct_test_module_graph() -> ModuleGraph {
     .unwrap();
 
   graph.entries =
-    FxHashMap::from_iter([("A".into(), "A".to_string()), ("B".into(), "B".to_string())]);
+    HashMap::from_iter([("A".into(), "A".to_string()), ("B".into(), "B".to_string())]);
 
   graph
 }

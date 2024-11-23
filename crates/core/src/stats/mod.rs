@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use parking_lot::RwLock;
 
 use crate::{
@@ -8,6 +6,7 @@ use crate::{
     ModuleId, ModuleType,
   },
   plugin::PluginHookContext,
+  HashMap,
 };
 
 pub struct Stats {

@@ -20,7 +20,7 @@ pub fn build_module_deps(
 
   let hook_context = PluginHookContext {
     caller: None,
-    meta: HashMap::new(),
+    meta: HashMap::default(),
   };
 
   let load_result = script_plugin
@@ -28,7 +28,7 @@ pub fn build_module_deps(
       &PluginLoadHookParam {
         resolved_path: &path.to_string_lossy(),
         query: vec![],
-        meta: HashMap::new(),
+        meta: HashMap::default(),
         module_id: path.to_string_lossy().to_string(),
       },
       &context,

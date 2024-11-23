@@ -1,6 +1,6 @@
 #![deny(clippy::all)]
 #![allow(clippy::result_large_err)]
-use std::{collections::HashMap, str::FromStr};
+use std::str::FromStr;
 
 use farmfe_core::{
   config::Config,
@@ -9,6 +9,7 @@ use farmfe_core::{
   plugin::{Plugin, PluginHookContext, PluginResolveHookParam, ResolveKind},
   relative_path::RelativePath,
   serde_json::{self, Value},
+  HashMap,
 };
 use farmfe_macro_plugin::farm_plugin;
 use farmfe_toolkit::{
@@ -107,29 +108,30 @@ fn resolve_importer(
   root_importer: &ModuleId,
   context: &Arc<CompilationContext>,
 ) -> Result<Option<String>, Exception> {
-  if let Ok(file_path) = PathBuf::from_str(&url) {
-    let try_prefix_list = ["_"];
-
-    let default_import_result =
-      resolve_importer_with_prefix(file_path.clone(), "", root_importer, context);
-
-    if matches!(default_import_result, Ok(Some(_))) {
-      return default_import_result;
-    }
-
-    for prefix in try_prefix_list {
-      let resolved_path =
-        resolve_importer_with_prefix(file_path.clone(), prefix, root_importer, context);
-
-      if matches!(resolved_path, Ok(Some(_))) {
-        return resolved_path;
-      }
-    }
-
-    return default_import_result;
+  let file_path = match PathBuf::from_str(&url) {
+    Ok(path) => path,
+    Err(_) => return Ok(None),
   };
 
-  Ok(None)
+  let try_prefix_list = ["_"];
+
+  let default_import_result =
+    resolve_importer_with_prefix(file_path.clone(), "", root_importer, context);
+
+  if matches!(default_import_result, Ok(Some(_))) {
+    return default_import_result;
+  }
+
+  for prefix in try_prefix_list {
+    let resolved_path =
+      resolve_importer_with_prefix(file_path.clone(), prefix, root_importer, context);
+
+    if matches!(resolved_path, Ok(Some(_))) {
+      return resolved_path;
+    }
+  }
+
+  return default_import_result;
 }
 
 impl ImporterCollection {
@@ -448,7 +450,7 @@ fn get_options(
     builder = builder.style(output_style);
   }
 
-  let mut additional_data = HashMap::new();
+  let mut additional_data = HashMap::default();
   // TODO support sourcemap for additionalData
   if let Some(additional_date) = options.get("additionalData") {
     additional_data.insert(

@@ -1,6 +1,5 @@
-use std::collections::HashMap;
-
 use farmfe_core::swc_ecma_ast::{Id, ModuleExportName, ModuleItem};
+use farmfe_core::HashMap;
 use farmfe_toolkit::swc_ecma_visit::{Visit, VisitWith};
 
 use super::{defined_idents_collector::DefinedIdentsCollector, StatementGraphEdge, StatementId};
@@ -13,7 +12,7 @@ pub struct AnalyzeUsedIdentsParams<'a> {
 pub fn analyze_deps_by_used_idents(
   params: AnalyzeUsedIdentsParams,
 ) -> HashMap<StatementId, StatementGraphEdge> {
-  let mut deps = HashMap::new();
+  let mut deps = HashMap::default();
 
   let AnalyzeUsedIdentsParams {
     stmt,

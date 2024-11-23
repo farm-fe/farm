@@ -1,10 +1,9 @@
-use std::collections::HashMap;
-
 use farmfe_core::{
   module::{module_graph::ModuleGraph, ModuleId},
   parking_lot::Mutex,
   rayon::iter::{IntoParallelIterator, ParallelIterator},
   swc_common::GLOBALS,
+  HashMap,
 };
 
 use crate::module::TreeShakeModule;
@@ -14,7 +13,7 @@ pub fn init_tree_shake_module_map(
   context: &std::sync::Arc<farmfe_core::context::CompilationContext>,
 ) -> HashMap<ModuleId, TreeShakeModule> {
   let tree_shake_modules_map =
-    Mutex::new(std::collections::HashMap::<ModuleId, TreeShakeModule>::new());
+    Mutex::new(HashMap::<ModuleId, TreeShakeModule>::default());
   module_graph
     .modules_mut()
     .into_par_iter()

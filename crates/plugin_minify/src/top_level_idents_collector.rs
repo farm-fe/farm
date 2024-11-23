@@ -1,6 +1,5 @@
-use std::collections::HashSet;
-
 use farmfe_core::swc_common::Mark;
+use farmfe_core::HashSet;
 use farmfe_toolkit::{
   script::defined_idents_collector::DefinedIdentsCollector,
   swc_ecma_visit::{VisitMut, VisitWith},
@@ -15,7 +14,7 @@ pub struct TopLevelIdentsCollector {
 impl TopLevelIdentsCollector {
   pub fn new() -> Self {
     Self {
-      top_level_idents: HashSet::new(),
+      top_level_idents: HashSet::default(),
     }
   }
 }
@@ -91,7 +90,7 @@ pub struct UnresolvedIdentCollector {
 impl UnresolvedIdentCollector {
   pub fn new(unresolved_mark: Mark) -> Self {
     Self {
-      unresolved_idents: HashSet::new(),
+      unresolved_idents: HashSet::default(),
       unresolved_mark,
     }
   }

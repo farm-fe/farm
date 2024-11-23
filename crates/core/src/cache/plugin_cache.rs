@@ -1,8 +1,7 @@
-use std::collections::HashMap;
-
 use dashmap::{mapref::one::Ref, DashMap};
 use farmfe_utils::hash::sha256;
-use rustc_hash::FxHashMap;
+
+use crate::HashMap;
 
 use crate::config::Mode;
 
@@ -69,7 +68,7 @@ impl PluginCacheManager {
           entry.value().clone(),
         )
       })
-      .collect::<FxHashMap<_, _>>();
+      .collect::<HashMap<_, _>>();
 
     if !cache.is_empty() {
       self.store.write_cache(cache);

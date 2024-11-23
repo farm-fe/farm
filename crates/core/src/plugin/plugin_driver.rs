@@ -905,7 +905,7 @@ pub struct PluginDriverTransformHookResult {
 
 #[cfg(test)]
 mod tests {
-  use std::collections::HashMap;
+  use crate::HashMap;
   use std::sync::Arc;
 
   use crate::{
@@ -940,7 +940,7 @@ mod tests {
               external: false,
               side_effects: false,
               query: vec![],
-              meta: HashMap::new(),
+              meta: HashMap::default(),
             }))
           } else {
             Ok(None)
@@ -969,7 +969,7 @@ mod tests {
     let context = Arc::new(CompilationContext::new(Config::default(), vec![]).unwrap());
     let hook_context = PluginHookContext {
       caller: None,
-      meta: HashMap::new(),
+      meta: HashMap::default(),
     };
 
     let resolved = plugin_driver

@@ -41,8 +41,8 @@ export interface JsTracedModule {
 export interface JsTracedModuleGraph {
   root: string
   modules: Array<JsTracedModule>
-  edges: Record<string, Array<string>>
-  reverseEdges: Record<string, Array<string>>
+  edges: StdHashMap
+  reverseEdges: StdHashMap
 }
 export interface JsUpdateResult {
   added: Array<string>
@@ -50,8 +50,8 @@ export interface JsUpdateResult {
   removed: Array<string>
   immutableModules: string
   mutableModules: string
-  boundaries: Record<string, Array<Array<string>>>
-  dynamicResourcesMap?: Record<string, Array<Array<string>>>
+  boundaries: StdHashMap
+  dynamicResourcesMap?: StdHashMap
   extraWatchResult: WatchDiffResult
 }
 export type JsCompiler = Compiler
@@ -68,8 +68,8 @@ export declare class Compiler {
   addWatchFiles(root: string, paths: Array<string>): void
   hasModule(resolvedPath: string): boolean
   getParentFiles(resolvedPath: string): Array<string>
-  resources(): Record<string, Buffer>
-  resourcesMap(): Record<string, unknown>
+  resources(): StdHashMap
+  resourcesMap(): StdHashMap
   watchModules(): Array<string>
   relativeModulePaths(): Array<string>
   resource(name: string): Buffer | null

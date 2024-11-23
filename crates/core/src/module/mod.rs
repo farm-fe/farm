@@ -770,10 +770,10 @@ impl serde::Serialize for ModuleId {
 #[cfg(test)]
 mod tests {
   use crate::config::Mode;
+  use crate::HashSet;
   use farmfe_macro_cache_item::cache_item;
   use rkyv_dyn::archive_dyn;
   use rkyv_typename::TypeName;
-  use std::collections::HashSet;
 
   use super::{
     CustomModuleMetaData, DeserializeCustomModuleMetaData, Module, ModuleId, ModuleMetaData,

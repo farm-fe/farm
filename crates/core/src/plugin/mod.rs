@@ -1,7 +1,6 @@
-use std::{any::Any, collections::HashMap, hash::Hash, sync::Arc};
+use std::{any::Any, hash::Hash, sync::Arc};
 
 use farmfe_macro_cache_item::cache_item;
-use rustc_hash::FxHashMap;
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -17,6 +16,7 @@ use crate::{
     Resource, ResourceType,
   },
   stats::Stats,
+  HashMap,
 };
 
 pub mod constants;
@@ -526,8 +526,8 @@ pub struct UpdateResult {
   /// This code string should be returned to the client side as MIME type `application/javascript`
   pub immutable_resources: String,
   pub mutable_resources: String,
-  pub boundaries: FxHashMap<String, Vec<Vec<String>>>,
-  pub dynamic_resources_map: Option<FxHashMap<ModuleId, Vec<(String, ResourceType)>>>,
+  pub boundaries: HashMap<String, Vec<Vec<String>>>,
+  pub dynamic_resources_map: Option<HashMap<ModuleId, Vec<(String, ResourceType)>>>,
   pub extra_watch_result: WatchDiffResult,
 }
 
@@ -589,7 +589,7 @@ pub struct PluginDriverRenderResourcePotHookResult {
 }
 
 pub struct PluginFinalizeResourcesHookParams<'a> {
-  pub resources_map: &'a mut FxHashMap<String, Resource>,
+  pub resources_map: &'a mut HashMap<String, Resource>,
   pub config: &'a Config,
 }
 

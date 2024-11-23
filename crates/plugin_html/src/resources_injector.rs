@@ -6,13 +6,13 @@ use farmfe_core::{
   module::ModuleId,
   resource::{Resource, ResourceType},
   swc_html_ast::{Child, Document, Element},
+  HashMap,
 };
 use farmfe_toolkit::{
   get_dynamic_resources_map::get_dynamic_resources_code,
   html::{create_element, get_farm_global_this},
   swc_html_visit::{VisitMut, VisitMutWith},
 };
-use rustc_hash::FxHashMap;
 
 use crate::utils::{
   create_farm_runtime_output_resource, is_link_css_or_code, is_script_resource,
@@ -34,7 +34,7 @@ pub struct ResourcesInjector<'a> {
   script_resources: Vec<String>,
   css_resources: Vec<String>,
   script_entries: Vec<String>,
-  dynamic_resources_map: FxHashMap<ModuleId, Vec<(String, ResourceType)>>,
+  dynamic_resources_map: HashMap<ModuleId, Vec<(String, ResourceType)>>,
   options: ResourcesInjectorOptions,
   farm_global_this: String,
   already_injected_resources: &'a mut Vec<String>,
@@ -50,7 +50,7 @@ impl<'a> ResourcesInjector<'a> {
     script_resources: Vec<String>,
     css_resources: Vec<String>,
     script_entries: Vec<String>,
-    dynamic_resources_map: FxHashMap<ModuleId, Vec<(String, ResourceType)>>,
+    dynamic_resources_map: HashMap<ModuleId, Vec<(String, ResourceType)>>,
     options: ResourcesInjectorOptions,
     already_injected_resources: &'a mut Vec<String>,
   ) -> Self {
@@ -75,7 +75,7 @@ impl<'a> ResourcesInjector<'a> {
   }
 
   // insert the runtime and other resources that need to be inject in the resource_map.
-  pub fn update_resource(self, resources_map: &mut FxHashMap<String, Resource>) {
+  pub fn update_resource(self, resources_map: &mut HashMap<String, Resource>) {
     for resource in self.additional_inject_resources {
       resources_map.insert(resource.name.clone(), resource.clone());
       self.already_injected_resources.push(resource.name);

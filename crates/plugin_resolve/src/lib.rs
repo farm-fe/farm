@@ -87,7 +87,7 @@ impl Plugin for FarmPluginResolve {
           external: true,
           side_effects: false,
           query,
-          meta: HashMap::new(),
+          meta: HashMap::default(),
         }));
       }
     }
@@ -133,7 +133,7 @@ impl Plugin for FarmPluginResolve {
         external: true,
         side_effects: false,
         query: vec![],
-        meta: HashMap::new(),
+        meta: HashMap::default(),
       });
     }
 

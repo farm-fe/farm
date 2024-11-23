@@ -1,5 +1,4 @@
-use std::collections::HashMap;
-
+use farmfe_core::HashMap;
 use farmfe_testing_helpers::fixture;
 
 mod common;
@@ -16,7 +15,7 @@ fn minify_script_test() {
 
       let entry_name = "index".to_string();
       let compiler = create_compiler(
-        HashMap::from([(entry_name.clone(), "./index.ts".to_string())]),
+        HashMap::from_iter([(entry_name.clone(), "./index.ts".to_string())]),
         cwd.to_path_buf(),
         crate_path,
         true,
@@ -38,7 +37,7 @@ fn minify_css_test() {
 
       let entry_name = "index".to_string();
       let compiler = create_compiler(
-        HashMap::from([(entry_name.clone(), "./index.ts".to_string())]),
+        HashMap::from_iter([(entry_name.clone(), "./index.ts".to_string())]),
         cwd.to_path_buf(),
         crate_path,
         true,
@@ -60,7 +59,7 @@ fn minify_html_test() {
 
       let entry_name = "index".to_string();
       let compiler = create_compiler(
-        HashMap::from([(entry_name.clone(), "./index.html".to_string())]),
+        HashMap::from_iter([(entry_name.clone(), "./index.html".to_string())]),
         cwd.to_path_buf(),
         crate_path,
         true,

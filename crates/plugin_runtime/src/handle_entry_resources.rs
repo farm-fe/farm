@@ -1,4 +1,3 @@
-use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 
 use farmfe_core::enhanced_magic_string::collapse_sourcemap::collapse_sourcemap_chain;
@@ -6,6 +5,8 @@ use farmfe_core::enhanced_magic_string::magic_string::MagicString;
 use farmfe_core::enhanced_magic_string::types::SourceMapOptions;
 use farmfe_core::plugin::ResolveKind;
 use farmfe_core::resource::ResourceOrigin;
+use farmfe_core::HashMap;
+use farmfe_core::HashSet;
 use farmfe_core::{
   config::{ModuleFormat, TargetEnv, FARM_MODULE_SYSTEM},
   context::CompilationContext,
@@ -23,7 +24,6 @@ use farmfe_toolkit::get_dynamic_resources_map::{
 use farmfe_toolkit::html::get_farm_global_this;
 use farmfe_toolkit::sourcemap::SourceMap;
 use farmfe_utils::transform_string_to_static_str;
-use rustc_hash::FxHashMap;
 
 const FARM_NODE_MODULE: &str = "__farmNodeModule";
 
@@ -168,7 +168,7 @@ fn get_export_info_code(
   module_graph: &ModuleGraph,
   context: &Arc<CompilationContext>,
 ) -> String {
-  let mut visited = HashSet::new();
+  let mut visited = HashSet::default();
   let export_info = get_export_info_of_entry_module(entry_module_id, module_graph, &mut visited);
 
   if !export_info.is_empty() {
@@ -221,7 +221,7 @@ fn get_entry_resource_and_dep_resources_name(
   entry: &ModuleId,
   module: &Module,
   module_group_graph: &ModuleGroupGraph,
-  resource_map: &FxHashMap<String, Resource>,
+  resource_map: &HashMap<String, Resource>,
   module_graph: &ModuleGraph,
   context: &Arc<CompilationContext>,
 ) -> EntryResourceAndDepResources {
@@ -288,7 +288,7 @@ fn get_entry_resource_and_dep_resources_name(
 }
 
 pub fn handle_entry_resources(
-  resources_map: &mut FxHashMap<String, Resource>,
+  resources_map: &mut HashMap<String, Resource>,
   context: &Arc<CompilationContext>,
   async_modules: &HashSet<ModuleId>,
 ) {
@@ -464,7 +464,7 @@ pub fn handle_entry_resources(
 }
 
 fn create_runtime_code(
-  resources_map: &FxHashMap<String, Resource>,
+  resources_map: &HashMap<String, Resource>,
   context: &Arc<CompilationContext>,
 ) -> String {
   let node_specific_code = if context.config.output.target_env.is_node() {

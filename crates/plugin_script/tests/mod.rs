@@ -24,13 +24,13 @@ fn load_parse_and_analyze_deps() {
       let id = file.to_string_lossy().to_string();
       let hook_context = PluginHookContext {
         caller: None,
-        meta: HashMap::new(),
+        meta: HashMap::default(),
       };
       let loaded = plugin_script.load(
         &PluginLoadHookParam {
           resolved_path: &id,
           query: vec![],
-          meta: HashMap::new(),
+          meta: HashMap::default(),
           module_id: id.clone(),
         },
         &context,

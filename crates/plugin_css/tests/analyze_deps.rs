@@ -1,4 +1,4 @@
-use std::{collections::HashMap, sync::Arc};
+use std::sync::Arc;
 
 use farmfe_core::{
   config::{AliasItem, Config, ResolveConfig, StringOrRegex},
@@ -8,6 +8,7 @@ use farmfe_core::{
     Plugin, PluginAnalyzeDepsHookParam, PluginAnalyzeDepsHookResultEntry, PluginHookContext,
     PluginLoadHookParam, PluginParseHookParam, ResolveKind,
   },
+  HashMap,
 };
 use farmfe_plugin_css::FarmPluginCss;
 use farmfe_testing_helpers::fixture;
@@ -38,7 +39,7 @@ fn analyze_deps() {
         &PluginLoadHookParam {
           resolved_path: &file.to_string_lossy(),
           query: vec![],
-          meta: HashMap::new(),
+          meta: HashMap::default(),
           module_id: file.to_string_lossy().to_string(),
         },
         &context,

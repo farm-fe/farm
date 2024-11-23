@@ -264,7 +264,7 @@ mod tests {
         &context,
         &PluginHookContext {
           caller: None,
-          meta: HashMap::new(),
+          meta: HashMap::default(),
         },
       )
       .unwrap()

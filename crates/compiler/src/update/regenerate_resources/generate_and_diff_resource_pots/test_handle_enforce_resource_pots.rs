@@ -1,4 +1,3 @@
-use std::collections::HashSet;
 use std::sync::Arc;
 
 use farmfe_core::{
@@ -11,10 +10,10 @@ use farmfe_core::{
     Module, ModuleType,
   },
   plugin::{Plugin, PluginHookContext, ResolveKind},
+  HashSet,
 };
 use farmfe_plugin_partial_bundling::module_group_graph_from_entries;
 use farmfe_testing_helpers::{construct_test_module_graph, construct_test_module_graph_complex};
-use rustc_hash::FxHashSet;
 
 use crate::{
   generate::partial_bundling::generate_resource_pot_map,
@@ -71,7 +70,7 @@ fn test_handle_enforce_resource_pots() {
   );
   assert_eq!(
     affected_groups,
-    FxHashSet::from_iter(["A".into(), "B".into(), "F".into(), "D".into()])
+    HashSet::from_iter(["A".into(), "B".into(), "F".into(), "D".into()])
   );
 
   let affected_modules = affected_groups
@@ -85,7 +84,7 @@ fn test_handle_enforce_resource_pots() {
     .collect::<Vec<_>>();
   assert_eq!(
     affected_modules.clone().into_iter().collect::<HashSet<_>>(),
-    HashSet::from([
+    HashSet::from_iter([
       "A".into(),
       "B".into(),
       "C".into(),
@@ -191,7 +190,7 @@ fn test_handle_enforce_resource_pots_one_module_changed() {
     &mut module_graph,
     &mut module_group_graph,
   );
-  assert_eq!(affected_groups, FxHashSet::from_iter(["I".into()]));
+  assert_eq!(affected_groups, HashSet::from_iter(["I".into()]));
 
   let affected_modules = affected_groups
     .iter()

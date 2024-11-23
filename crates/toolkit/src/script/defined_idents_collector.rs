@@ -1,10 +1,9 @@
-use std::collections::HashSet;
-
 use crate::{
   swc_ecma_utils::ident::IdentLike,
   swc_ecma_visit::{Visit, VisitWith},
 };
 use farmfe_core::swc_ecma_ast::{Id, ObjectPatProp, Pat};
+use farmfe_core::HashSet;
 
 pub struct DefinedIdentsCollector<'a> {
   pub defined_idents: HashSet<Id>,
@@ -15,17 +14,17 @@ pub struct DefinedIdentsCollector<'a> {
 impl<'a> DefinedIdentsCollector<'a> {
   pub fn new() -> Self {
     Self {
-      defined_idents: HashSet::new(),
+      defined_idents: HashSet::default(),
       assign_callback: None,
-      current_assign_left_idents: HashSet::new(),
+      current_assign_left_idents: HashSet::default(),
     }
   }
 
   pub fn from_callback(cb: Box<&'a mut dyn FnMut(Id, Id)>) -> Self {
     Self {
-      defined_idents: HashSet::new(),
+      defined_idents: HashSet::default(),
       assign_callback: Some(cb),
-      current_assign_left_idents: HashSet::new(),
+      current_assign_left_idents: HashSet::default(),
     }
   }
 }
