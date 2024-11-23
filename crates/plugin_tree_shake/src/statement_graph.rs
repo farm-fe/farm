@@ -531,11 +531,11 @@ impl StatementGraph {
         let stmt_used_defined_idents =
           self.get_stmt_used_defined_idents(&stmt_id, &used_defined_idents);
         if stmt_used_defined_idents.is_subset(&stmt.used_defined_idents) {
-          // extends used import all fields of the statement
-          if let Some(traced_used_import_statement) =
-            result.iter_mut().find(|i| i.stmt_id == stmt_id)
-          {
-            if let Some(import_info) = &stmt.import_info {
+          if let Some(import_info) = &stmt.import_info {
+            // extends used import all fields of the statement
+            if let Some(traced_used_import_statement) =
+              result.iter_mut().find(|i| i.stmt_id == stmt_id)
+            {
               let temp_traced_import = TracedUsedImportStatement::from_import_info_and_used_idents(
                 stmt_id,
                 import_info,
@@ -583,7 +583,12 @@ impl StatementGraph {
 
         let unhandled_used_dep_defined_idents = all_used_dep_defined_idents
           .into_iter()
-          .filter(|i| !dep_stmt.used_defined_idents.contains(i))
+          .filter(|i| {
+            !dep_stmt.used_defined_idents.contains(i)
+              // the import namespace ident should be handled in the next step to append more import all fields at line 539
+              // so we mark it as unhandled here
+              || edge.used_import_all_fields.contains_key(i)
+          })
           .collect::<HashSet<_>>();
 
         if !unhandled_used_dep_defined_idents.is_empty() {

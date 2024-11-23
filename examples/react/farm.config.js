@@ -8,8 +8,9 @@ export default defineConfig((env) => {
   return {
     compilation: {
       sourcemap: true,
-      // persistentCache: false,
+      persistentCache: false,
       presetEnv: false,
+      minify: false,
       progress: false
       // output: {
       //   publicPath: '/dist/'
