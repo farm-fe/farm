@@ -1641,7 +1641,6 @@ dependencies = [
  "farmfe_toolkit",
  "farmfe_utils 0.1.6",
  "num_cpus",
- "rustc-hash 2.0.0",
 ]
 
 [[package]]
@@ -1715,7 +1714,6 @@ dependencies = [
  "notify",
  "puffin_egui",
  "regex",
- "rustc-hash 2.0.0",
 ]
 
 [[package]]
@@ -1738,7 +1736,6 @@ dependencies = [
  "farmfe_toolkit",
  "farmfe_utils 0.1.6",
  "rkyv",
- "rustc-hash 2.0.0",
 ]
 
 [[package]]
@@ -1759,7 +1756,6 @@ dependencies = [
  "farmfe_testing_helpers",
  "farmfe_toolkit",
  "rkyv",
- "rustc-hash 2.0.0",
 ]
 
 [[package]]
@@ -1866,7 +1862,6 @@ dependencies = [
  "farmfe_toolkit",
  "farmfe_utils 0.1.6",
  "rkyv",
- "rustc-hash 2.0.0",
 ]
 
 [[package]]
@@ -1952,7 +1947,6 @@ version = "0.0.14"
 dependencies = [
  "farmfe_core",
  "insta",
- "rustc-hash 2.0.0",
 ]
 
 [[package]]
@@ -1967,7 +1961,6 @@ dependencies = [
  "itertools 0.13.0",
  "lazy_static",
  "preset_env_base",
- "rustc-hash 2.0.0",
  "sourcemap",
  "swc_atoms",
  "swc_css_codegen",

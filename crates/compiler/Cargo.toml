@@ -31,7 +31,6 @@ farmfe_plugin_define = { path = "../plugin_define", version = "0.0.12" }
 farmfe_plugin_bundle = { path = "../plugin_bundle", version = "0.0.6" }
 num_cpus = "1.16.0"
 farmfe_testing = { path = "../macro_testing", version = "0.0.2" }
-rustc-hash = "2.0.0"
 
 [features]
 profile = [

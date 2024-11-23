@@ -12,4 +12,3 @@ documentation = "https://docs.rs/farmfe_plugin_define"
 [dependencies]
 insta = "1.39.0"
 farmfe_core = { path = "../core", version = "0.7.0" }
-rustc-hash = "2.0.0"
