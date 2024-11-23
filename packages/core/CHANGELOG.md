@@ -1,5 +1,12 @@
 # @farmfe/core
 
+## 1.4.3
+
+### Patch Changes
+
+- c4ff67a2: Fix external alias #1957
+- c4ff67a2: Fix `import * as xx` tree shaking issue
+
 ## 1.4.2
 
 ### Patch Changes
