@@ -131,7 +131,7 @@ fn resolve_importer(
     }
   }
 
-  return default_import_result;
+  default_import_result
 }
 
 impl ImporterCollection {
