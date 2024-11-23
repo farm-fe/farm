@@ -2,39 +2,58 @@ import { defineConfig, loadEnv } from "@farmfe/core";
 
 import react from "@farmfe/plugin-react";
 import path from "path";
-import { config } from "process";
 
-console.log(__dirname);
-
-export default defineConfig((config) => {
-  console.log(config, "config");
-  console.log(loadEnv("development", process.cwd()), "loadEnv");
-  
+function custom() {
   return {
-    plugins: [
-      react(),
-      // myCustomPlugin(),
-      compilerPlugin(),
-    ],
-    compilation: {
-      input: {
-        index: path.resolve(__dirname, "index.html"),
-        base: path.resolve(__dirname, 'base.html'),
-        about: path.resolve(__dirname, 'about.html'),
+    name: "farm-test-plugin-name",
+    buildStart: {
+      executor() {
+        console.log("buildStart");
+      }
+    },
+    resolve: {
+      filters: {
+        importers: ['^.*$']
       },
-      // persistentCache: false,
-      persistentCache: {
-        cacheDir: "node_modules/.adny",
+      executor(param) {
+      }
+    },
+    transform: {
+      filters: {
+        moduleTypes: ['js'],
       },
-      output: {
-        // publicPath: "/aaa/",
-      },
-      resolve: {
-        // alias: {
-        //   "@": path.resolve("src"),
-        // },
-        alias: [{ find: "@", replacement: path.resolve("src") }],
-      },
+      async executor(param, ctx) {
+        // console.log(param, "transform");
+      }
+    },
+    // renderStart: {
+    //   async executor() {
+    //     // update my plugin status
+    //     // console.log(1231231);
+    //   }
+    // }
+  }
+}
+export default defineConfig({
+  plugins: [
+    react(),
+    // myCustomPlugin(),
+    // compilerPlugin(),
+    custom()
+  ],
+  compilation: {
+    input: {
+      index: path.resolve(__dirname, "index.html"),
+      base: path.resolve(__dirname, 'base.html'),
+      about: path.resolve(__dirname, 'about.html'),
+    },
+    progress: false,
+    persistentCache: false,
+    // persistentCache: {
+    //   cacheDir: "node_modules/.adny",
+    // },
+    output: {
+      // publicPath: "/aaa/",
     },
     server: {
       port: 4855,
@@ -63,3 +82,4 @@ function compilerPlugin() {
     },
   };
 }
+

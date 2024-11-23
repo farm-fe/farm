@@ -347,7 +347,7 @@ impl Plugin for FarmPluginRuntime {
 
           let source_obj = format!("window['{replace_source}']||{{}}");
           external_objs.push(if context.config.output.format == ModuleFormat::EsModule {
-            format!("{source:?}: ({source_obj}).default && !({source_obj}).__esModule ? {{...({source_obj}),__esModule:true}} : ({{...{source_obj}}})")
+            format!("{source:?}: ({source_obj}).default && !({source_obj}).__esModule ? {{...({source_obj}),__esModule:true}} : {source_obj}")
           } else {
             format!("{source:?}: {source_obj}")
           });
