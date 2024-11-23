@@ -1,7 +1,6 @@
 #![deny(clippy::all)]
 #![allow(clippy::redundant_allocation)]
 #![allow(clippy::blocks_in_conditions)]
-use std::collections::HashMap as StdHashMap;
 #[cfg(feature = "file_watcher")]
 use std::path::PathBuf;
 use std::{path::Path, sync::Arc};
@@ -17,6 +16,7 @@ use farmfe_core::{
   config::{Config, Mode},
   module::ModuleId,
   plugin::UpdateType,
+  HashMap,
 };
 
 #[cfg(feature = "file_watcher")]
@@ -60,8 +60,8 @@ pub struct JsTracedModule {
 pub struct JsTracedModuleGraph {
   pub root: String,
   pub modules: Vec<JsTracedModule>,
-  pub edges: StdHashMap<String, Vec<String>>,
-  pub reverse_edges: StdHashMap<String, Vec<String>>,
+  pub edges: HashMap<String, Vec<String>>,
+  pub reverse_edges: HashMap<String, Vec<String>>,
 }
 
 impl From<TracedModuleGraph> for JsTracedModuleGraph {
@@ -78,8 +78,8 @@ impl From<TracedModuleGraph> for JsTracedModuleGraph {
           package_version: m.package_version,
         })
         .collect(),
-      edges: t.edges.into_iter().collect(),
-      reverse_edges: t.reverse_edges.into_iter().collect(),
+      edges: t.edges,
+      reverse_edges: t.reverse_edges,
     }
   }
 }
@@ -91,8 +91,8 @@ pub struct JsUpdateResult {
   pub removed: Vec<String>,
   pub immutable_modules: String,
   pub mutable_modules: String,
-  pub boundaries: StdHashMap<String, Vec<Vec<String>>>,
-  pub dynamic_resources_map: Option<StdHashMap<String, Vec<Vec<String>>>>,
+  pub boundaries: HashMap<String, Vec<Vec<String>>>,
+  pub dynamic_resources_map: Option<HashMap<String, Vec<Vec<String>>>>,
   pub extra_watch_result: WatchDiffResult,
 }
 
@@ -311,7 +311,7 @@ impl JsCompiler {
               .collect(),
             immutable_modules: res.immutable_resources,
             mutable_modules: res.mutable_resources,
-            boundaries: res.boundaries.into_iter().collect(),
+            boundaries: res.boundaries,
             dynamic_resources_map: res.dynamic_resources_map.map(|dynamic_resources_map| {
               dynamic_resources_map
                 .into_iter()
@@ -409,11 +409,11 @@ impl JsCompiler {
   }
 
   #[napi]
-  pub fn resources(&self) -> StdHashMap<String, Buffer> {
+  pub fn resources(&self) -> HashMap<String, Buffer> {
     let context = self.compiler.context();
     let resources = context.resources_map.lock();
 
-    let mut result = StdHashMap::new();
+    let mut result = HashMap::default();
 
     for resource in resources.values() {
       // only write expose non-emitted resource
@@ -426,10 +426,10 @@ impl JsCompiler {
   }
 
   #[napi]
-  pub fn resources_map(&self, e: Env) -> StdHashMap<String, JsUnknown> {
+  pub fn resources_map(&self, e: Env) -> HashMap<String, JsUnknown> {
     let context = self.compiler.context();
     let resources = context.resources_map.lock();
-    let mut resources_map = StdHashMap::new();
+    let mut resources_map = HashMap::default();
 
     for (name, resource) in resources.iter() {
       resources_map.insert(name.clone(), e.to_js_value(resource).unwrap());
