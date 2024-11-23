@@ -217,7 +217,7 @@ impl Plugin for FarmPluginRuntime {
     // detect async module like top level await when module graph updated
     // module graph updated is called during compiler.update
     let mut async_modules = context.custom.get_mut(ASYNC_MODULES).unwrap();
-    let async_modules = async_modules.downcast_mut::<StdHashSet<ModuleId>>().unwrap();
+    let async_modules = async_modules.downcast_mut::<HashSet<ModuleId>>().unwrap();
 
     for remove in &param.removed_modules_ids {
       async_modules.remove(remove);
@@ -273,19 +273,14 @@ impl Plugin for FarmPluginRuntime {
       && matches!(resource_pot.resource_pot_type, ResourcePotType::Js)
     {
       let async_modules = self.get_async_modules(context);
-      let async_modules = async_modules
-        .downcast_ref::<StdHashSet<ModuleId>>()
-        .unwrap()
-        .into_iter()
-        .map(|id| id.clone())
-        .collect::<HashSet<_>>();
+      let async_modules = async_modules.downcast_ref::<HashSet<ModuleId>>().unwrap();
       let module_graph = context.module_graph.read();
       let external_config = ExternalConfig::from(&*context.config);
       let RenderedJsResourcePot {
         mut bundle,
         rendered_modules,
         external_modules,
-      } = resource_pot_to_runtime_object(resource_pot, &module_graph, &async_modules, context)?;
+      } = resource_pot_to_runtime_object(resource_pot, &module_graph, async_modules, context)?;
 
       let mut external_modules_str = None;
 
@@ -458,13 +453,8 @@ impl Plugin for FarmPluginRuntime {
     }
 
     let async_modules = self.get_async_modules(context);
-    let async_modules = async_modules
-      .downcast_ref::<StdHashSet<ModuleId>>()
-      .unwrap()
-      .into_iter()
-      .map(|id| id.clone())
-      .collect::<HashSet<_>>();
-    handle_entry_resources::handle_entry_resources(param.resources_map, context, &async_modules);
+    let async_modules = async_modules.downcast_ref::<HashSet<ModuleId>>().unwrap();
+    handle_entry_resources::handle_entry_resources(param.resources_map, context, async_modules);
 
     Ok(Some(()))
   }

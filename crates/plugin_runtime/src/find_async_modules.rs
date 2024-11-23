@@ -1,17 +1,15 @@
-use std::{
-  collections::{HashSet, VecDeque},
-  sync::Arc,
-};
+use std::{collections::VecDeque, sync::Arc};
 
 use farmfe_core::{
   context::CompilationContext,
   module::{ModuleId, ModuleMetaData},
+  HashSet,
 };
 use farmfe_toolkit::swc_ecma_utils::contains_top_level_await;
 
 pub fn find_async_modules(context: &Arc<CompilationContext>) -> HashSet<ModuleId> {
   let module_graph = context.module_graph.read();
-  let mut init_async_modules = HashSet::new();
+  let mut init_async_modules = HashSet::default();
 
   for module in module_graph.modules() {
     if let ModuleMetaData::Script(script_meta) = module.meta.as_ref() {
@@ -22,7 +20,7 @@ pub fn find_async_modules(context: &Arc<CompilationContext>) -> HashSet<ModuleId
   }
 
   let mut queue = VecDeque::from(init_async_modules.into_iter().collect::<Vec<_>>());
-  let mut async_modules = HashSet::new();
+  let mut async_modules = HashSet::default();
 
   while !queue.is_empty() {
     let module_id = queue.pop_front().unwrap();

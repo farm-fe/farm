@@ -63,7 +63,7 @@ impl CompilationContext {
       record_manager: Box::new(Stats::new()),
       log_store: Box::new(Mutex::new(LogStore::new())),
       resolve_cache: Box::new(Mutex::new(HashMap::default())),
-      custom: Box::new(DashMap::new()),
+      custom: Box::new(DashMap::default()),
     })
   }
 
