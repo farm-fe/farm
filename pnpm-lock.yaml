@@ -18571,11 +18571,6 @@ packages:
     peerDependencies:
       vue: ^2.6.12
 
-  tdesign-icons-vue@0.3.2:
-    resolution: {integrity: sha512-FW1hqOoIBjnPzTOcGvWidVrWvyf0wHafxt7eAciz62hLU/Ix8TZ1AtFcG3QOafT0vpFPaBcCMVNNXvE5PSzuIA==}
-    peerDependencies:
-      vue: ^2.6.12
-
   tdesign-vue@1.10.5:
     resolution: {integrity: sha512-D/833QpG7N0zH7lN7zhuegKJN0AVklAhrUKG7zmKcPrEZKaL7jjGz9lr6UOU/CJAEae0dij8YQtcscEIq3ugqw==}
     peerDependencies:
@@ -42424,18 +42419,6 @@ snapshots:
       vue: 2.6.14
 
   tdesign-icons-vue@0.2.5(vue@2.7.16):
-    dependencies:
-      '@babel/runtime': 7.23.2
-      classnames: 2.3.2
-      vue: 2.7.16
-
-  tdesign-icons-vue@0.3.2(vue@2.6.14):
-    dependencies:
-      '@babel/runtime': 7.23.2
-      classnames: 2.3.2
-      vue: 2.6.14
-
-  tdesign-icons-vue@0.3.2(vue@2.7.16):
     dependencies:
       '@babel/runtime': 7.23.2
       classnames: 2.3.2
