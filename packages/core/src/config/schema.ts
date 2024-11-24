@@ -291,7 +291,10 @@ const compilationConfigSchema = z
           })
           .optional(),
         plugins: z.array(z.any()).optional(),
-        nativeTopLevelAwait: z.boolean().optional()
+        nativeTopLevelAwait: z.boolean().optional(),
+        importNotUsedAsValues: z
+          .union([z.literal('remove'), z.literal('preserve')])
+          .optional()
       })
       .strict()
       .optional(),

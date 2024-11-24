@@ -25,7 +25,7 @@ export interface UserServerConfig {
   https?: SecureServerOptions;
   protocol?: 'http' | 'https';
   // http2?: boolean;
-  hmr?: boolean | UserHmrConfig;
+  hmr?: boolean | HmrOptions;
   proxy?: Record<string, ProxiesOptions>;
   strictPort?: boolean;
   open?: boolean;

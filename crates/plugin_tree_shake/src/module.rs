@@ -71,6 +71,18 @@ impl Default for UsedExports {
 }
 
 impl UsedExports {
+  pub fn extend(&mut self, other: UsedExports) {
+    match (self, other) {
+      (UsedExports::All, _) => {}
+      (self_value, UsedExports::All) => {
+        *self_value = UsedExports::All;
+      }
+      (UsedExports::Partial(self_used_exports), UsedExports::Partial(other_used_exports)) => {
+        self_used_exports.extend(other_used_exports);
+      }
+    }
+  }
+
   pub fn as_partial(&self) -> &HashSet<UsedExportsIdent> {
     match self {
       UsedExports::All => panic!("UsedExports is not Partial"),
@@ -291,7 +303,8 @@ impl TreeShakeModule {
       }
       UsedExports::Partial(idents) => {
         let mut used_idents = vec![];
-        // statement `import * as xxx from './xxx'` is marked as used, we need to mark all exported idents as used the same as UsedExports::All
+        // statement `import * as xxx from './xxx'` is marked as used, and the usage can not be statically determined, e.g. xxx[expr].
+        // so we need to mark all exported idents as used the same as UsedExports::All
         if idents.contains(&UsedExportsIdent::ImportAll) {
           // all export information needs to be collected
           return self.all_exports_to_statement_idents(true);

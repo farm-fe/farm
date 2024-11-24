@@ -1,24 +1,15 @@
 import { SecureServerOptions } from 'node:http2';
+
 import { Server } from '../index.js';
 
 import type { OutgoingHttpHeaders } from 'http';
-import { WatchOptions } from 'chokidar';
+import type { ServerOptions as HttpsServerOptions } from 'node:https';
+import type { WatchOptions } from 'chokidar';
 import type { RustPlugin } from '../plugin/rust/index.js';
 import type { JsPlugin } from '../plugin/type.js';
-import { HMRChannel } from '../server/hmr.js';
 import type { Config, CssConfig } from '../types/binding.js';
 import type { Logger } from '../utils/index.js';
 
-// export interface HmrOptions {
-//   protocol?: string;
-//   host?: string;
-//   port?: number;
-//   clientPort?: number;
-//   path?: string;
-//   timeout?: number;
-//   overlay?: boolean;
-//   server?: Server;
-// }
 export interface HmrOptions {
   protocol?: string;
   host?: string;
@@ -28,8 +19,6 @@ export interface HmrOptions {
   timeout?: number;
   overlay?: boolean;
   server?: Server;
-  /** @internal */
-  channels?: HMRChannel[];
 }
 
 export interface ConfigEnv {
@@ -52,11 +41,11 @@ export type UserConfigExport =
 export interface UserServerConfig {
   headers?: OutgoingHttpHeaders | undefined;
   port?: number;
-  https?: SecureServerOptions;
+  https?: HttpsServerOptions;
   protocol?: 'http' | 'https';
   hostname?: { name: string; host: string | undefined };
   // http2?: boolean;
-  hmr?: boolean | UserHmrConfig;
+  hmr?: boolean | HmrOptions;
   proxy?: Record<string, any>;
   strictPort?: boolean;
   open?: boolean;
@@ -136,18 +125,13 @@ export interface UserPreviewServerConfig {
 
 export type NormalizedServerConfig = Required<
   Omit<UserServerConfig, 'hmr'> & {
-    hmr?: UserHmrConfig;
+    hmr?: HmrOptions;
   }
 >;
 
 export interface NormalizedConfig {
   compilationConfig: Config;
   serverConfig?: NormalizedServerConfig;
-}
-
-export interface UserHmrConfig extends HmrOptions {
-  watchOptions?: WatchOptions;
-  overlay?: boolean;
 }
 
 type InternalConfig = Config['config'] extends undefined

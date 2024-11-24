@@ -1,13 +1,33 @@
 //index.js:
- import __farmNodeModule from 'node:module';global.nodeRequire = __farmNodeModule.createRequire(import.meta.url);global['__farm_default_namespace__'] = {__FARM_TARGET_ENV__: 'node'};import { readFileSync, readSync } from "node:fs.farm-runtime";
+ import __farmNodeModule from 'node:module';global.nodeRequire = __farmNodeModule.createRequire(import.meta.url);global['__farm_default_namespace__'] = {__FARM_TARGET_ENV__: 'node'};function _mergeNamespaces(n, m) {
+    m.forEach(function(e) {
+        e && typeof e !== 'string' && !Array.isArray(e) && Object.keys(e).forEach(function(k) {
+            if (k !== 'default' && !(k in n)) {
+                var d = Object.getOwnPropertyDescriptor(e, k);
+                Object.defineProperty(n, k, d.get ? d : {
+                    enumerable: true,
+                    get: function() {
+                        return e[k];
+                    }
+                });
+            }
+        });
+    });
+    return Object.freeze(n);
+}
+import { readFileSync, readSync } from "node:fs.farm-runtime";
+import * as node_fs_ns from "node:fs.farm-runtime";
+var exportNamed_ts_ns = _mergeNamespaces({
+    readFileSync: readFileSync,
+    readSync: readSync,
+    __esModule: true
+}, [
+    node_fs_ns
+]);
+var readFile = exportNamed_ts_ns["readFile"], writeFileSync = exportNamed_ts_ns["writeFileSync"];
 
 const bundle2A = 'bundle2A';
 const bundle2B = 'bundle2B';
-var bundle2_dep_ts_ns = {
-    bundle2A: bundle2A,
-    bundle2B: bundle2B,
-    __esModule: true
-};
 
 var bundle2_index_ts_ns = {
     bundle2A: bundle2A,
