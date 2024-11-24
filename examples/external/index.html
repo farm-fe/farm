@@ -7,7 +7,9 @@
     <title>Farm</title>
     <script>
       // @ts-ignore
-      window.$ = { default: 'jquery'};
+      window.$ = function() {
+        return 'jquery';
+      };
       // @ts-ignore
       window.ReactDom = { default: 'react-dom' };
 

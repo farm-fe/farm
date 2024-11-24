@@ -22,6 +22,7 @@ import {
   colors,
   isArray,
   isEmptyObject,
+  isNodeEnv,
   isObject,
   isWindows,
   normalizePath
@@ -148,8 +149,10 @@ export async function resolveConfig(
     rawConfig = mergeConfig(rawConfig, loadedUserConfig.config);
   }
 
-  const { jsPlugins, vitePlugins, rustPlugins, vitePluginAdapters } =
-    await resolvePlugins(rawConfig, compileMode);
+  const { jsPlugins, rustPlugins, vitePluginAdapters } = await resolvePlugins(
+    rawConfig,
+    compileMode
+  );
 
   const sortFarmJsPlugins = getSortedPlugins([
     ...jsPlugins,
@@ -638,7 +641,8 @@ const formatFromExt: Record<string, Format> = {
   cjs: 'cjs',
   mjs: 'esm',
   cts: 'cjs',
-  mts: 'esm'
+  mts: 'esm',
+  js: 'esm'
 };
 
 const formatToExt: Record<Format, string> = {

@@ -28,6 +28,12 @@ export default defineConfig({
       ...builtinModules.map((m) => `^node:${m}$`),
       ...builtinModules.map((m) => `^${m}$`)
     ],
+    runtime: {
+      isolate: true
+    },
+    script: {
+      importNotUsedAsValues: 'remove',
+    },
     minify: false,
     mode: 'development',
     persistentCache: false,

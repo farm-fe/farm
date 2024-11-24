@@ -89,6 +89,14 @@ pub fn resource_pot_to_runtime_object(
         let hoisted_code_bundle = hoisted_group.render(module_graph, context)?;
         let code = hoisted_code_bundle.to_string();
 
+        // println!(
+        //   "module_id: {}\nmodules: {:#?}\ncode: {}\n\nend module_id: {}",
+        //   hoisted_group.target_hoisted_module_id.to_string(),
+        //   hoisted_group.hoisted_module_ids,
+        //   code,
+        //   hoisted_group.target_hoisted_module_id.to_string(),
+        // );
+
         let mut meta = context
           .plugin_driver
           .parse(
@@ -101,7 +109,8 @@ pub fn resource_pot_to_runtime_object(
             },
             context,
             &Default::default(),
-          )?
+          )
+          .unwrap()
           .unwrap();
         (
           Some(meta.as_script_mut().take_ast()),
