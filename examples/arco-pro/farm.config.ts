@@ -6,23 +6,11 @@ import farmJsPluginSvgr from '@farmfe/js-plugin-svgr';
 export default defineConfig((env) => {
   return {
     compilation: {
-      input: {
-        index: './index.html'
-      },
-      // minify: false,
-      presetEnv: false,
-      // persistentCache: false,
       resolve: {
-        symlinks: true,
         alias: {
           '@': resolve(process.cwd(), './src'),
-          'react-dom': resolve(process.cwd(), './node_modules/react-dom'),
-          react: resolve(process.cwd(), './node_modules/react')
         }
       },
-      minify: false,
-      mode: 'development',
-      // persistentCache: false,
       output: {
         path: './build',
         filename: 'assets/[resourceName].[contentHash].[ext]',
@@ -31,11 +19,7 @@ export default defineConfig((env) => {
       partialBundling: {
         targetMinSize: 1024 * 2
       },
-      progress: true
-    },
-    server: {
-      cors: true,
-      port: 6290
+      progress: false
     },
     plugins: [
       [
@@ -45,8 +29,8 @@ export default defineConfig((env) => {
           development: env.mode === 'development'
         }
       ],
+      '@farmfe/plugin-svgr',
       farmJsPluginLess(),
-      farmJsPluginSvgr()
     ]
   };
 });

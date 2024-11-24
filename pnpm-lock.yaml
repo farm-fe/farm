@@ -195,6 +195,9 @@ importers:
       '@farmfe/plugin-react':
         specifier: workspace:*
         version: link:../../rust-plugins/react
+      '@farmfe/plugin-svgr':
+        specifier: ^0.0.1
+        version: 0.0.1
       core-js:
         specifier: ^3.30.1
         version: 3.33.2
@@ -699,7 +702,7 @@ importers:
         version: 10.1.2(chokidar@3.6.0)(typescript@5.4.5)
       '@nestjs/testing':
         specifier: ^10.0.0
-        version: 10.3.10(@nestjs/common@10.3.10(reflect-metadata@0.2.2)(rxjs@7.8.1))(@nestjs/core@10.3.10(@nestjs/common@10.3.10(reflect-metadata@0.2.2)(rxjs@7.8.1))(@nestjs/platform-express@10.3.10)(encoding@0.1.13)(reflect-metadata@0.2.2)(rxjs@7.8.1))(@nestjs/platform-express@10.3.10(@nestjs/common@10.3.10(reflect-metadata@0.2.2)(rxjs@7.8.1))(@nestjs/core@10.3.10))
+        version: 10.3.10(@nestjs/common@10.3.10(reflect-metadata@0.2.2)(rxjs@7.8.1))(@nestjs/core@10.3.10)(@nestjs/platform-express@10.3.10)
       '@types/express':
         specifier: ^4.17.17
         version: 4.17.21
@@ -729,7 +732,7 @@ importers:
         version: 5.1.3(@types/eslint@8.56.10)(eslint-config-prettier@9.1.0(eslint@8.57.0))(eslint@8.57.0)(prettier@3.3.2)
       farmup:
         specifier: latest
-        version: 0.1.0
+        version: 0.1.5
       jest:
         specifier: ^29.5.0
         version: 29.7.0(@types/node@20.12.12)(babel-plugin-macros@3.1.0)(ts-node@10.9.1(@types/node@20.12.12)(typescript@5.4.5))
@@ -856,7 +859,7 @@ importers:
         version: 6.0.0(postcss@8.4.31)
       tailwindcss:
         specifier: ^3.3.2
-        version: 3.3.5(ts-node@10.9.1(@types/node@20.14.12)(typescript@4.9.5))
+        version: 3.3.5(ts-node@10.9.1(@types/node@20.14.12)(typescript@5.4.5))
 
   examples/public-dir:
     dependencies:
@@ -1485,7 +1488,7 @@ importers:
         version: 0.14.0
       tailwindcss:
         specifier: ^3.3.2
-        version: 3.3.5(ts-node@10.9.1(@types/node@20.14.12)(typescript@4.9.5))
+        version: 3.3.5(ts-node@10.9.1(@types/node@20.14.12)(typescript@5.4.5))
 
   examples/target-env:
     dependencies:
@@ -1855,10 +1858,10 @@ importers:
     dependencies:
       tdesign-icons-vue:
         specifier: latest
-        version: 0.2.4(vue@2.6.14)
+        version: 0.3.2(vue@2.6.14)
       tdesign-vue:
         specifier: latest
-        version: 1.9.8(vue@2.6.14)
+        version: 1.10.5(vue@2.6.14)
       vite-plugin-vue2-svg:
         specifier: ^0.4.0
         version: 0.4.0(ejs@3.1.10)(lodash@4.17.21)(vue-template-compiler@2.6.14(vue@2.6.14))
@@ -1889,10 +1892,10 @@ importers:
     dependencies:
       tdesign-icons-vue:
         specifier: latest
-        version: 0.2.4(vue@2.7.16)
+        version: 0.3.2(vue@2.7.16)
       tdesign-vue:
         specifier: latest
-        version: 1.9.8(vue@2.7.16)
+        version: 1.10.5(vue@2.7.16)
       vite-plugin-vue2-svg:
         specifier: ^0.4.0
         version: 0.4.0(ejs@3.1.10)(lodash@4.17.21)(vue-template-compiler@2.7.16(vue@2.7.16))
@@ -2170,7 +2173,7 @@ importers:
         version: 16.0.1(postcss@8.4.31)
       postcss-load-config:
         specifier: ^4.0.1
-        version: 4.0.1(postcss@8.4.31)(ts-node@10.9.1(@types/node@20.14.12)(typescript@4.9.5))
+        version: 4.0.1(postcss@8.4.31)(ts-node@10.9.1(@types/node@20.14.12)(typescript@5.4.5))
       postcss-url:
         specifier: ^10.1.3
         version: 10.1.3(postcss@8.4.31)
@@ -3796,7 +3799,7 @@ packages:
   '@css-render/vue3-ssr@0.15.14':
     resolution: {integrity: sha512-//8027GSbxE9n3QlD73xFY6z4ZbHbvrOVB7AO6hsmrEzGbg+h2A09HboUyDgu+xsmj7JnvJD39Irt+2D0+iV8g==}
     peerDependencies:
-      vue: ^3.0.11
+      vue: 3.4.23
 
   '@csstools/postcss-cascade-layers@4.0.6':
     resolution: {integrity: sha512-Xt00qGAQyqAODFiFEJNkTpSUz5VfYqnDLECdlA/Vv17nl/OIV5QfTRHGAXrBGG5YcJyHpJ+GF9gF/RZvOQz4oA==}
@@ -4399,6 +4402,63 @@ packages:
   '@esri/calcite-ui-icons@3.31.0':
     resolution: {integrity: sha512-Ca3xVXU0LoxljEebuM9r3ss4tyXBfHROcxlFmbNwa2kDTVNSjUKCBgthgXnMD7akgguwwcL7zGnAp645SkJpow==}
     hasBin: true
+
+  '@farmfe/plugin-svgr-darwin-arm64@0.0.1':
+    resolution: {integrity: sha512-YgjOwKPI4zh4HG+92w0yHeVZfjAyUnpyMVIREJP/4npm0SU2riUS3T0l/TP/0HLZ6Mba0H3HFT7YNYfTTXSMAA==}
+    engines: {node: '>= 10'}
+    cpu: [arm64]
+    os: [darwin]
+
+  '@farmfe/plugin-svgr-darwin-x64@0.0.1':
+    resolution: {integrity: sha512-Mg+MTvJlkS5+0pPEGcFN25Gx9vJhMordmlxsfLeCz4iE+v/siRAZI5+VBFl6L+FWU0s0jUj4/xmR8gf9DYhJng==}
+    engines: {node: '>= 10'}
+    cpu: [x64]
+    os: [darwin]
+
+  '@farmfe/plugin-svgr-linux-arm64-gnu@0.0.1':
+    resolution: {integrity: sha512-wnTlEnNBxQbWBaLzeWVkZxzmLYAA5PPemVF6RIYnnoqCHDjtR+XYSEni0Cp/HGlQKEibgNDnAXa6y3NRrbE+XA==}
+    engines: {node: '>= 10'}
+    cpu: [arm64]
+    os: [linux]
+
+  '@farmfe/plugin-svgr-linux-arm64-musl@0.0.1':
+    resolution: {integrity: sha512-UgauXx2mVurqBoDpK03xsAub657WklbkO6RDwczNwOvTXOjw/GqhaB6JbEZe8dLOxqCJm6G7xiOgptGj/c5T9g==}
+    engines: {node: '>= 10'}
+    cpu: [arm64]
+    os: [linux]
+
+  '@farmfe/plugin-svgr-linux-x64-gnu@0.0.1':
+    resolution: {integrity: sha512-E03N1yrxA5gQQEuPAH8oM767UEG+B1wlg3dqe77HD6dGsqsoDlLKUgzdbmUt1uTeWSbRozYajGTgp2f/b3R6NQ==}
+    engines: {node: '>= 10'}
+    cpu: [x64]
+    os: [linux]
+
+  '@farmfe/plugin-svgr-linux-x64-musl@0.0.1':
+    resolution: {integrity: sha512-dAr0dyXgedW0YTIJEQ266j1ahCyV4/forwH15BTtWnv1VjCym+yhLvDHxGq5zVV+U0TBJtbWPeVh47zkvNYpFQ==}
+    engines: {node: '>= 10'}
+    cpu: [x64]
+    os: [linux]
+
+  '@farmfe/plugin-svgr-win32-arm64-msvc@0.0.1':
+    resolution: {integrity: sha512-S6fjA2ObhC/0c8j8kqbrBMi31gJYaIlNhN6vK7RUcUDWCyemFjgGWfKDX9xUpqXa+mIn03OpoKzbo+/2GwKA2w==}
+    engines: {node: '>= 10'}
+    cpu: [arm64]
+    os: [win32]
+
+  '@farmfe/plugin-svgr-win32-ia32-msvc@0.0.1':
+    resolution: {integrity: sha512-BcjU+W9yYwVU/+j8PK8UTwM2T3m4vOOHwPCvGw99jHscPPwl7iIfck6AKVNxCls8qaDHIQ3rOQT7ubPPfPLSRw==}
+    engines: {node: '>= 10'}
+    cpu: [ia32]
+    os: [win32]
+
+  '@farmfe/plugin-svgr-win32-x64-msvc@0.0.1':
+    resolution: {integrity: sha512-joTf8T31UOSwQ51y3ZRexfK826zRXALujw66yaUue2/Akk+o/TFxG5PpnsAWMMt9liUfVyu3s1qGqFOOkAw5Ag==}
+    engines: {node: '>= 10'}
+    cpu: [x64]
+    os: [win32]
+
+  '@farmfe/plugin-svgr@0.0.1':
+    resolution: {integrity: sha512-LVIkPZNyiOc7dgzN3yUuOPKA2wxBbb01sIb6WrcYOsLXD3Zk5SmbqW6uXI8qbRBvsB9kKMb4fTP5b84Y65xx3A==}
 
   '@farmfe/utils@0.0.1':
     resolution: {integrity: sha512-QLbgNrojcvxfumXA/H329XAXhoCahmeSH3JmaiwwJEGS2QAmWfgAJMegjwlt6OmArGVO4gSbJ7Xbmm1idZZs+g==}
@@ -9686,6 +9746,7 @@ packages:
   eslint@8.57.0:
     resolution: {integrity: sha512-dZ6+mexnaTIbSBZWgou51U6OmzIhYM2VcNdtiTtI7qPNZm35Akpr0f6vtw3w1Kmn5PYo+tZVfh13WrhpS6oLqQ==}
     engines: {node: ^12.22.0 || ^14.17.0 || >=16.0.0}
+    deprecated: This version is no longer supported. Please see https://eslint.org/version-support for other options.
     hasBin: true
 
   esm-env@1.1.4:
@@ -9958,8 +10019,8 @@ packages:
   farm-plugin-replace-dirname@0.2.1:
     resolution: {integrity: sha512-aJ4euQzxoq0sVu4AwXrNQflHJrSZdrdApGEyVRtN6KiCop3CHXnTg9ydlyCNXN2unQB283aNjojvCd5E/32KgA==}
 
-  farmup@0.1.0:
-    resolution: {integrity: sha512-+xQuuQFGmHZsy9p/vDDwKOepdD7id4/THKorHmzvX3AeescqFQGJenksyhZab3cMJMYSqfJ8vbr1RkLIKgs7mg==}
+  farmup@0.1.5:
+    resolution: {integrity: sha512-LiO7ejtsD8GfRL6OXVSx9Y9h8wFp1nEw/RWydQe+zLN9W7xmPXWngi5TjzndYuqADBQi/93qD0aaZ4TYkoabiA==}
     hasBin: true
 
   fast-check@3.23.1:
@@ -14672,8 +14733,13 @@ packages:
     peerDependencies:
       vue: ^2.6.12
 
-  tdesign-vue@1.9.8:
-    resolution: {integrity: sha512-8kdsbb/AChhpvopfMs9lAK9Uxy8jvxu+ZQk35MjRFuQlZ5PW2CdfctEnsnz7yUGlFBGOJB4+08KxhPi6xDkH6A==}
+  tdesign-icons-vue@0.3.2:
+    resolution: {integrity: sha512-FW1hqOoIBjnPzTOcGvWidVrWvyf0wHafxt7eAciz62hLU/Ix8TZ1AtFcG3QOafT0vpFPaBcCMVNNXvE5PSzuIA==}
+    peerDependencies:
+      vue: ^2.6.12
+
+  tdesign-vue@1.10.5:
+    resolution: {integrity: sha512-D/833QpG7N0zH7lN7zhuegKJN0AVklAhrUKG7zmKcPrEZKaL7jjGz9lr6UOU/CJAEae0dij8YQtcscEIq3ugqw==}
     peerDependencies:
       vue: ~2.6.10
 
@@ -16153,7 +16219,7 @@ snapshots:
       yjs: 13.6.18
       zustand: 4.5.5(@types/react@18.2.35)(immer@9.0.21)(react@18.2.0)
       zustand-middleware-yjs: 1.3.1(@types/react@18.2.35)(immer@9.0.21)(react@18.2.0)
-      zustand-utils: 1.3.2(react@18.2.0)(zustand@4.5.5(@types/react@18.2.35)(immer@9.0.21)(react@18.2.0))
+      zustand-utils: 1.3.2(react@18.2.0)(zustand@4.5.5(@types/react@18.2.35)(immer@10.0.3)(react@18.2.0))
     transitivePeerDependencies:
       - '@emotion/react'
       - '@types/react'
@@ -18620,6 +18686,45 @@ snapshots:
 
   '@esri/calcite-ui-icons@3.31.0': {}
 
+  '@farmfe/plugin-svgr-darwin-arm64@0.0.1':
+    optional: true
+
+  '@farmfe/plugin-svgr-darwin-x64@0.0.1':
+    optional: true
+
+  '@farmfe/plugin-svgr-linux-arm64-gnu@0.0.1':
+    optional: true
+
+  '@farmfe/plugin-svgr-linux-arm64-musl@0.0.1':
+    optional: true
+
+  '@farmfe/plugin-svgr-linux-x64-gnu@0.0.1':
+    optional: true
+
+  '@farmfe/plugin-svgr-linux-x64-musl@0.0.1':
+    optional: true
+
+  '@farmfe/plugin-svgr-win32-arm64-msvc@0.0.1':
+    optional: true
+
+  '@farmfe/plugin-svgr-win32-ia32-msvc@0.0.1':
+    optional: true
+
+  '@farmfe/plugin-svgr-win32-x64-msvc@0.0.1':
+    optional: true
+
+  '@farmfe/plugin-svgr@0.0.1':
+    optionalDependencies:
+      '@farmfe/plugin-svgr-darwin-arm64': 0.0.1
+      '@farmfe/plugin-svgr-darwin-x64': 0.0.1
+      '@farmfe/plugin-svgr-linux-arm64-gnu': 0.0.1
+      '@farmfe/plugin-svgr-linux-arm64-musl': 0.0.1
+      '@farmfe/plugin-svgr-linux-x64-gnu': 0.0.1
+      '@farmfe/plugin-svgr-linux-x64-musl': 0.0.1
+      '@farmfe/plugin-svgr-win32-arm64-msvc': 0.0.1
+      '@farmfe/plugin-svgr-win32-ia32-msvc': 0.0.1
+      '@farmfe/plugin-svgr-win32-x64-msvc': 0.0.1
+
   '@farmfe/utils@0.0.1': {}
 
   '@floating-ui/core@1.5.0':
@@ -19081,7 +19186,7 @@ snapshots:
     transitivePeerDependencies:
       - chokidar
 
-  '@nestjs/testing@10.3.10(@nestjs/common@10.3.10(reflect-metadata@0.2.2)(rxjs@7.8.1))(@nestjs/core@10.3.10(@nestjs/common@10.3.10(reflect-metadata@0.2.2)(rxjs@7.8.1))(@nestjs/platform-express@10.3.10)(encoding@0.1.13)(reflect-metadata@0.2.2)(rxjs@7.8.1))(@nestjs/platform-express@10.3.10(@nestjs/common@10.3.10(reflect-metadata@0.2.2)(rxjs@7.8.1))(@nestjs/core@10.3.10))':
+  '@nestjs/testing@10.3.10(@nestjs/common@10.3.10(reflect-metadata@0.2.2)(rxjs@7.8.1))(@nestjs/core@10.3.10)(@nestjs/platform-express@10.3.10)':
     dependencies:
       '@nestjs/common': 10.3.10(reflect-metadata@0.2.2)(rxjs@7.8.1)
       '@nestjs/core': 10.3.10(@nestjs/common@10.3.10(reflect-metadata@0.2.2)(rxjs@7.8.1))(@nestjs/platform-express@10.3.10)(encoding@0.1.13)(reflect-metadata@0.2.2)(rxjs@7.8.1)
@@ -27410,9 +27515,10 @@ snapshots:
       farm-plugin-replace-dirname-win32-ia32-msvc: 0.2.1
       farm-plugin-replace-dirname-win32-x64-msvc: 0.2.1
 
-  farmup@0.1.0:
+  farmup@0.1.5:
     dependencies:
       '@farmfe/core': link:packages/core
+      tmp: 0.2.3
 
   fast-check@3.23.1:
     dependencies:
@@ -30780,21 +30886,13 @@ snapshots:
       camelcase-css: 2.0.1
       postcss: 8.4.39
 
-  postcss-load-config@4.0.1(postcss@8.4.31)(ts-node@10.9.1(@types/node@20.14.12)(typescript@4.9.5)):
+  postcss-load-config@4.0.1(postcss@8.4.31)(ts-node@10.9.1(@types/node@20.14.12)(typescript@5.4.5)):
     dependencies:
       lilconfig: 2.1.0
       yaml: 2.3.4
     optionalDependencies:
       postcss: 8.4.31
-      ts-node: 10.9.1(@types/node@20.14.12)(typescript@4.9.5)
-
-  postcss-load-config@4.0.1(postcss@8.4.39)(ts-node@10.9.1(@types/node@20.14.12)(typescript@4.9.5)):
-    dependencies:
-      lilconfig: 2.1.0
-      yaml: 2.3.4
-    optionalDependencies:
-      postcss: 8.4.39
-      ts-node: 10.9.1(@types/node@20.14.12)(typescript@4.9.5)
+      ts-node: 10.9.1(@types/node@20.14.12)(typescript@5.4.5)
 
   postcss-load-config@4.0.1(postcss@8.4.39)(ts-node@10.9.1(@types/node@20.14.12)(typescript@5.4.5)):
     dependencies:
@@ -32844,33 +32942,6 @@ snapshots:
 
   tailwind-merge@1.14.0: {}
 
-  tailwindcss@3.3.5(ts-node@10.9.1(@types/node@20.14.12)(typescript@4.9.5)):
-    dependencies:
-      '@alloc/quick-lru': 5.2.0
-      arg: 5.0.2
-      chokidar: 3.5.3
-      didyoumean: 1.2.2
-      dlv: 1.1.3
-      fast-glob: 3.3.1
-      glob-parent: 6.0.2
-      is-glob: 4.0.3
-      jiti: 1.21.0
-      lilconfig: 2.1.0
-      micromatch: 4.0.5
-      normalize-path: 3.0.0
-      object-hash: 3.0.0
-      picocolors: 1.0.0
-      postcss: 8.4.39
-      postcss-import: 15.1.0(postcss@8.4.39)
-      postcss-js: 4.0.1(postcss@8.4.39)
-      postcss-load-config: 4.0.1(postcss@8.4.39)(ts-node@10.9.1(@types/node@20.14.12)(typescript@4.9.5))
-      postcss-nested: 6.0.1(postcss@8.4.39)
-      postcss-selector-parser: 6.0.13
-      resolve: 1.22.8
-      sucrase: 3.34.0
-    transitivePeerDependencies:
-      - ts-node
-
   tailwindcss@3.3.5(ts-node@10.9.1(@types/node@20.14.12)(typescript@5.4.5)):
     dependencies:
       '@alloc/quick-lru': 5.2.0
@@ -32940,7 +33011,19 @@ snapshots:
       classnames: 2.3.2
       vue: 2.7.16
 
-  tdesign-vue@1.9.8(vue@2.6.14):
+  tdesign-icons-vue@0.3.2(vue@2.6.14):
+    dependencies:
+      '@babel/runtime': 7.23.2
+      classnames: 2.3.2
+      vue: 2.6.14
+
+  tdesign-icons-vue@0.3.2(vue@2.7.16):
+    dependencies:
+      '@babel/runtime': 7.23.2
+      classnames: 2.3.2
+      vue: 2.7.16
+
+  tdesign-vue@1.10.5(vue@2.6.14):
     dependencies:
       '@babel/runtime': 7.23.2
       '@popperjs/core': 2.11.8
@@ -32962,7 +33045,7 @@ snapshots:
       validator: 13.11.0
       vue: 2.6.14
 
-  tdesign-vue@1.9.8(vue@2.7.16):
+  tdesign-vue@1.10.5(vue@2.7.16):
     dependencies:
       '@babel/runtime': 7.23.2
       '@popperjs/core': 2.11.8
@@ -33230,25 +33313,6 @@ snapshots:
       typescript: 5.4.5
       v8-compile-cache-lib: 3.0.1
       yn: 3.1.1
-
-  ts-node@10.9.1(@types/node@20.14.12)(typescript@4.9.5):
-    dependencies:
-      '@cspotcode/source-map-support': 0.8.1
-      '@tsconfig/node10': 1.0.9
-      '@tsconfig/node12': 1.0.11
-      '@tsconfig/node14': 1.0.3
-      '@tsconfig/node16': 1.0.4
-      '@types/node': 20.14.12
-      acorn: 8.12.0
-      acorn-walk: 8.3.2
-      arg: 4.1.3
-      create-require: 1.1.1
-      diff: 4.0.2
-      make-error: 1.3.6
-      typescript: 4.9.5
-      v8-compile-cache-lib: 3.0.1
-      yn: 3.1.1
-    optional: true
 
   ts-node@10.9.1(@types/node@20.14.12)(typescript@5.4.5):
     dependencies:
@@ -34641,13 +34705,6 @@ snapshots:
       fast-deep-equal: 3.1.3
       react: 18.2.0
       zustand: 4.5.5(@types/react@18.2.35)(immer@10.0.3)(react@18.2.0)
-
-  zustand-utils@1.3.2(react@18.2.0)(zustand@4.5.5(@types/react@18.2.35)(immer@9.0.21)(react@18.2.0)):
-    dependencies:
-      '@babel/runtime': 7.25.0
-      fast-deep-equal: 3.1.3
-      react: 18.2.0
-      zustand: 4.5.5(@types/react@18.2.35)(immer@9.0.21)(react@18.2.0)
 
   zustand@4.5.5(@types/react@18.2.35)(immer@10.0.3)(react@18.2.0):
     dependencies:
