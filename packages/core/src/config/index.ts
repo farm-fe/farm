@@ -61,13 +61,13 @@ import type { OutputConfig } from '../types/binding.js';
 import type {
   ConfigEnv,
   FarmCliOptions,
+  HmrOptions,
   NormalizedServerConfig,
   ResolvedCompilation,
   ResolvedUserConfig,
   UserConfig,
   UserConfigExport,
   UserConfigFnObject,
-  UserHmrConfig,
   UserServerConfig
 } from './types.js';
 
@@ -522,7 +522,7 @@ export async function normalizeUserCompilationConfig(
   return resolvedCompilation;
 }
 
-export const DEFAULT_HMR_OPTIONS: Required<UserHmrConfig> = {
+export const DEFAULT_HMR_OPTIONS: Required<HmrOptions> = {
   host: 'localhost',
   port:
     (process.env.FARM_DEFAULT_HMR_PORT &&
@@ -531,11 +531,9 @@ export const DEFAULT_HMR_OPTIONS: Required<UserHmrConfig> = {
   path: '/__hmr',
   overlay: true,
   protocol: 'ws',
-  watchOptions: {},
   clientPort: 9000,
   timeout: 0,
-  server: null,
-  channels: []
+  server: null
 };
 
 export const DEFAULT_DEV_SERVER_OPTIONS: NormalizedServerConfig = {

@@ -58,9 +58,9 @@ export default defineConfig({
     server: {
       port: 4855,
       appType: "mpa",
+      https: true
     },
   }
-
 });
 
 function myCustomPlugin() {
