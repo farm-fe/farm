@@ -6,7 +6,12 @@
 
 - b327dd1: collect htmlFallbackMiddleware
 
-## 2.0.0-nightly-20241029095811
+## 1.4.3
+
+### Patch Changes
+
+- c4ff67a2: Fix external alias #1957
+- c4ff67a2: Fix `import * as xx` tree shaking issue
 
 ## 1.4.2
 
