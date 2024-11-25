@@ -3,12 +3,15 @@ use std::collections::HashMap;
 use farmfe_core::{
   error::{CompilationError, Result},
   module::{ModuleId, ModuleSystem},
+  resource::resource_pot::ResourcePotType,
 };
 
 use crate::resource_pot_to_bundle::{
   modules_analyzer::module_analyzer::{ExportSpecifierInfo, ImportSpecifierInfo},
   uniq_name::BundleVariable,
 };
+
+use super::ModuleAnalyzerManager;
 
 #[derive(Debug)]
 pub struct ExternalReferenceImport {
@@ -127,6 +130,7 @@ impl ReferenceKind {
   }
 }
 
+#[allow(clippy::to_string_trait_impl)]
 impl ToString for ReferenceKind {
   fn to_string(&self) -> String {
     match self {
@@ -205,11 +209,12 @@ impl BundleReference {
     if self.external_export_map.contains_key(&source) {
       let map = self.external_export_map.get_mut(&source).unwrap();
       map.insert(specify.clone());
-    } else {
-      let mut map = ExternalReferenceExport::new(module_system);
-      map.insert(specify.clone());
-      self.external_export_map.insert(source, map);
+      return;
     }
+
+    let mut map = ExternalReferenceExport::new(module_system);
+    map.insert(specify.clone());
+    self.external_export_map.insert(source, map);
   }
 
   pub fn change_to_hybrid_dynamic(&mut self, source: ReferenceKind) {
@@ -276,4 +281,94 @@ impl BundleReference {
   pub fn import(&self, import_kind: &ReferenceKind) -> Option<&ExternalReferenceImport> {
     self.import_map.get(import_kind)
   }
+}
+
+///
+/// when export something from entry module, we need to reexport it to the bundle
+/// ```ts
+/// // entry module
+/// export const name = "foo";
+/// module.exports.age = 18;
+/// ```
+///
+/// output
+///
+/// ```js
+/// var index_cjs = __commonJs((module, exports)=>{
+///   // ...
+///   Object.defineProperty(exports, "name", {
+///       enumerable: true,
+///       get: function() {
+///           return name;
+///       }
+///   });
+///   const name = 'foo';
+///   module.exports.age = 18;
+/// });
+///
+/// // -------- esm --------
+/// var index_ns = _interop_require_wildcard(index_cjs()), name = index_cjs()["name"];
+/// export { name };
+/// export default index_ns;
+///
+/// // -------- cjs --------
+///
+/// var index_ns = _interop_require_wildcard(index_cjs()), name = index_cjs()["name"];
+/// module.exports.name = name;
+/// Object.defineProperty(exports, "__esModule", {
+///     value: true
+/// });
+/// _export_star(index_ns, module.exports);
+/// ```
+///
+///
+pub fn try_reexport_entry_module(
+  resource_pot_type: ResourcePotType,
+  bundle_reference: &mut BundleReference,
+  bundle_variable: &BundleVariable,
+  module_id: &ModuleId,
+  module_analyzer_manager: &ModuleAnalyzerManager,
+  is_format_to_commonjs: bool,
+  module_system: ModuleSystem,
+) -> Result<()> {
+  let reference_kind = ReferenceKind::Module((*module_id).clone());
+
+  if matches!(resource_pot_type, ResourcePotType::Runtime) {
+    bundle_reference.execute_module_for_cjs(reference_kind);
+    return Ok(());
+  }
+
+  // already export default in entry module
+  if bundle_reference
+    .export
+    .as_ref()
+    .is_some_and(|e| e.default.is_some())
+  {
+    return Ok(());
+  };
+
+  let Some(ns) = module_analyzer_manager
+    .module_global_uniq_name
+    .namespace_name(module_id)
+  else {
+    return Ok(());
+  };
+
+  bundle_reference.add_declare_commonjs_import(
+    &ImportSpecifierInfo::Namespace(ns),
+    reference_kind.clone(),
+    bundle_variable,
+  )?;
+
+  if is_format_to_commonjs {
+    bundle_reference.add_reference_export(
+      &ExportSpecifierInfo::All(None),
+      reference_kind.clone(),
+      module_system,
+    );
+  } else {
+    bundle_reference.add_local_export(&ExportSpecifierInfo::Default(ns), module_system);
+  }
+
+  Ok(())
 }

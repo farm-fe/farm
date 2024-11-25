@@ -39,6 +39,7 @@ impl CjsGenerate {
     bundle_variable: &BundleVariable,
     module_analyzer_manager: &ModuleAnalyzerManager,
     polyfill: &mut SimplePolyfill,
+    is_patch_esm_flag: &mut bool,
   ) -> Result<Vec<ModuleItem>> {
     let mut stmts = vec![];
     let mut ordered_keys = export.named.keys().collect::<Vec<_>>();
@@ -123,10 +124,13 @@ impl CjsGenerate {
       ));
     };
 
-    if matches!(
-      export.module_system,
-      ModuleSystem::EsModule | ModuleSystem::Hybrid
-    ) {
+    if !*is_patch_esm_flag
+      && matches!(
+        export.module_system,
+        ModuleSystem::EsModule | ModuleSystem::Hybrid
+      )
+    {
+      *is_patch_esm_flag = true;
       // Object.defineProperty(exports, '__esModule', {
       //   value: true,
       // });

@@ -27,7 +27,7 @@ use farmfe_toolkit::{
 };
 
 use crate::resource_pot_to_bundle::{
-  bundle::bundle_external::ReferenceKind,
+  bundle::bundle_external::{try_reexport_entry_module, ReferenceKind},
   common::OptionToResult,
   modules_analyzer::module_analyzer::{
     ExportSpecifierInfo, ImportSpecifierInfo, StmtAction, Variable,
@@ -230,7 +230,6 @@ impl<'a> BundleAnalyzer<'a> {
               .is_some_and(|i| i.resource_pot_id != resource_pot_id)
           })
         };
-        let mut is_contain_export = false;
 
         for statement in &module_analyzer.statements {
           if let Some(import) = &statement.import {
@@ -430,7 +429,6 @@ impl<'a> BundleAnalyzer<'a> {
           }
 
           if let Some(export) = &statement.export {
-            is_contain_export = true;
             if module_analyzer_manager.is_commonjs(module_id) && !is_reference_by_another {
               continue;
             }
@@ -863,14 +861,18 @@ impl<'a> BundleAnalyzer<'a> {
               }
             }
           }
+        }
 
-          if !is_contain_export
-            && module_analyzer_manager.is_commonjs(module_id)
-            && module_analyzer.entry
-          {
-            let reference_kind = ReferenceKind::Module((*module_id).clone());
-            self.bundle_reference.execute_module_for_cjs(reference_kind);
-          }
+        if module_analyzer_manager.is_commonjs(module_id) && module_analyzer.entry {
+          try_reexport_entry_module(
+            self.resource_pot.resource_pot_type.clone(),
+            &mut self.bundle_reference,
+            &self.bundle_variable.borrow(),
+            module_id,
+            module_analyzer_manager,
+            is_format_to_commonjs,
+            module_system,
+          )?;
         }
       }
     }

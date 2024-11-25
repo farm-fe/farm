@@ -86,6 +86,7 @@
     console.log('runtime/index.js');
     window['__farm_default_namespace__'].__farm_module_system__.setPlugins([]);
 });
+index_js_cjs();
 })());(function(_){for(var r in _){_[r].__farm_resource_pot__='index_dcdc.js';window['__farm_default_namespace__'].__farm_module_system__.register(r,_[r])}})({"b5d64806":function  (module, exports, farmRequire, farmDynamicRequire) {
     farmDynamicRequire("05ee5ec7").then((dep)=>{
         console.log(dep);
