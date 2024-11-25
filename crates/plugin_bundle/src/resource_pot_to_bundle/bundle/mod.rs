@@ -810,6 +810,14 @@ impl<'a> ModuleAnalyzerManager<'a> {
           .add_commonjs(&module_analyzer.module_id, |v| {
             bundle_variable.register_used_name_by_module_id(&module_analyzer.module_id, v, root)
           });
+
+        if module_analyzer.entry {
+          self
+            .module_global_uniq_name
+            .add_namespace(&module_analyzer.module_id, |v| {
+              bundle_variable.register_used_name_by_module_id(&module_analyzer.module_id, v, root)
+            });
+        }
       }
 
       if matches!(module_analyzer.module_system, ModuleSystem::CommonJs) {

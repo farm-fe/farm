@@ -26,7 +26,7 @@ fn test(file: String, crate_path: String) {
   let runtime_entry = cwd.to_path_buf().join("runtime.ts");
   let mut files = fs::read_dir(cwd)
     .unwrap()
-    .filter_map(|item| item.map(|item| Some(item)).unwrap_or(None))
+    .filter_map(|item| item.map(Some).unwrap_or(None))
     .filter_map(|item| {
       let filename = item
         .path()
@@ -40,9 +40,9 @@ fn test(file: String, crate_path: String) {
           item.path(),
           filename
             .trim_start_matches("config")
-            .trim_start_matches(".")
+            .trim_start_matches('.')
             .trim_end_matches("json")
-            .trim_end_matches(".")
+            .trim_end_matches('.')
             .to_string(),
         ))
       } else {
@@ -117,12 +117,10 @@ fn test(file: String, crate_path: String) {
             format!("{config_named}.")
           }
         )),
-        ..Default::default()
       },
     );
   }
 }
 
 farmfe_testing::testing! {"tests/fixtures/bundle/library/**/index.ts", test}
-// farmfe_testing::testing! {"tests/fixtures/runtime/bundle/cjs/export/entryExportStar/**/index.ts", test}
-// farmfe_testing::testing! {"tests/fixtures/runtime/bundle/external/import/namespace/**/index.ts", test}
+// farmfe_testing::testing! {"tests/fixtures/bundle/library/hybrid/esm_export_cjs/**/index.ts", test}

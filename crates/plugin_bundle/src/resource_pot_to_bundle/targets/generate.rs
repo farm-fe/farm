@@ -232,16 +232,17 @@ pub fn generate_export_by_reference_export(
   polyfill: &mut SimplePolyfill,
 ) -> Result<Vec<ModuleItem>> {
   let mut patch_export_to_module = vec![];
+  let mut is_patch_esm_flag = false;
 
   if let Some(export) = bundle_reference.export.as_ref() {
     patch_export_to_module.extend(generate_export_as_module_export(
-      resource_pot_id,
       None,
       export,
       bundle_variable,
       module_analyzer_manager,
       context,
       polyfill,
+      &mut is_patch_esm_flag,
     )?);
   }
 
@@ -256,13 +257,13 @@ pub fn generate_export_by_reference_export(
     let export = &bundle_reference.external_export_map[source];
 
     patch_export_to_module.extend(generate_export_as_module_export(
-      resource_pot_id,
       Some(&source.to_module_id()),
       export,
       bundle_variable,
       module_analyzer_manager,
       context,
       polyfill,
+      &mut is_patch_esm_flag
     )?);
   }
 
@@ -270,13 +271,13 @@ pub fn generate_export_by_reference_export(
 }
 
 pub fn generate_export_as_module_export(
-  _resource_pot_name: &str,
   source: Option<&ModuleId>,
   export: &ExternalReferenceExport,
   bundle_variable: &BundleVariable,
   module_analyzer_manager: &ModuleAnalyzerManager,
   context: &Arc<CompilationContext>,
   polyfill: &mut SimplePolyfill,
+  is_patch_esm_flag: &mut bool,
 ) -> Result<Vec<ModuleItem>> {
   let mut ordered_keys = export.named.keys().collect::<Vec<_>>();
 
@@ -294,6 +295,7 @@ pub fn generate_export_as_module_export(
       bundle_variable,
       module_analyzer_manager,
       polyfill,
+      is_patch_esm_flag
     ),
   }
 }
