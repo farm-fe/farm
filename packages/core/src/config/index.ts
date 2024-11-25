@@ -107,7 +107,6 @@ export async function resolveConfig(
   isPreview = false
 ): Promise<ResolvedUserConfig> {
   // TODO mode 这块还是不对 要区分 mode 和 build 还是 dev 环境
-  // TODO 在使用 vite 插件的时候 不要在开发环境使用 生产环境的mode vue 插件会导致 hmr 失效 记在文档里
   const compileMode = defaultMode;
 
   const mode = inlineOptions.mode || defaultMode;
