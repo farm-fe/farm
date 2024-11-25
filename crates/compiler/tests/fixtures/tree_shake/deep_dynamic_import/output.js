@@ -86,6 +86,7 @@
     console.log('runtime/index.js');
     window['__farm_default_namespace__'].__farm_module_system__.setPlugins([]);
 });
+index_js_cjs();
 })());(function(_){for(var r in _){_[r].__farm_resource_pot__='index_5d9b.js';window['__farm_default_namespace__'].__farm_module_system__.register(r,_[r])}})({"7c4a34c2":async function  (module, exports, farmRequire, farmDynamicRequire) {
     module._m(exports);
     exports.default = await farmDynamicRequire("05ee5ec7");

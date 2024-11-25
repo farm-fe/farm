@@ -303,7 +303,7 @@ pub struct StatementGraphEdge {
   /// console.log(a);
   /// ```
   /// The result should be:
-  /// ```
+  /// ```ignore
   /// [(a, [foo, bar, All])]
   /// ```
   pub used_import_all_fields: HashMap<Id, HashSet<UsedImportAllFields>>,

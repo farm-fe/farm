@@ -67,6 +67,7 @@ var index_js_cjs = __commonJs({
         window['__farm_default_namespace__'].__farm_module_system__.setPlugins([]);
     }
 });
+index_js_cjs();
 })());(function(_){for(var r in _){_[r].__farm_resource_pot__='index_4246.js';window['__farm_default_namespace__'].__farm_module_system__.register(r,_[r])}})({"index.ts":function  (module, exports, farmRequire, farmDynamicRequire) {
     module._m(exports);
     module.o(exports, "c", function() {

@@ -1,5 +1,5 @@
 //index.js:
- window['__farm_default_namespace__'] = {__FARM_TARGET_ENV__: 'browser'};function _interop_require_default(obj) {
+ function _interop_require_default(obj) {
     return obj && obj.__esModule ? obj : {
         default: obj
     };
@@ -59,35 +59,43 @@
     }
     return module.exports;
   };
-}((function(){var index_js_cjs = __commonJs((module, exports)=>{
+}var node_fs_ns = require("node:fs");
+var fs = _interop_require_default(node_fs_ns).default;
+var index_cjs = __commonJs((module, exports)=>{
     "use strict";
-    console.log('runtime/index.js');
-    window['__farm_default_namespace__'].__farm_module_system__.setPlugins([]);
-});
-index_js_cjs();
-})());(function(_){for(var r in _){_[r].__farm_resource_pot__='index_ecb7.js';window['__farm_default_namespace__'].__farm_module_system__.register(r,_[r])}})({"569704c1":function  (module, exports, farmRequire, farmDynamicRequire) {
-    module._m(exports);
-    (function() {
-        const iife_foo = 'iife-foo';
-    })();
-    var UrlType;
-    (function(UrlType) {
-        UrlType[UrlType['Empty'] = 1] = 'Empty';
-        UrlType[UrlType['Hash'] = 2] = 'Hash';
-        UrlType[UrlType['Query'] = 3] = 'Query';
-        UrlType[UrlType['RelativePath'] = 4] = 'RelativePath';
-        UrlType[UrlType['AbsolutePath'] = 5] = 'AbsolutePath';
-        UrlType[UrlType['SchemeRelative'] = 6] = 'SchemeRelative';
-        UrlType[UrlType['Absolute'] = 7] = 'Absolute';
-    })(UrlType || (UrlType = {}));
-    exports.default = function() {
-        console.log('foo');
+    Object.defineProperty(exports, "__esModule", {
+        value: true
+    });
+    function _export(target, all) {
+        for(var name in all)Object.defineProperty(target, name, {
+            enumerable: true,
+            get: all[name]
+        });
+    }
+    _export(exports, {
+        bar: function() {
+            return bar;
+        },
+        default: function() {
+            return _default;
+        },
+        foo: function() {
+            return foo;
+        }
+    });
+    const os = require('node:os');
+    console.log(fs.read, os.cpus);
+    var _default = {
+        read: fs.read,
+        c: 1
     };
-}
-,
-"b5d64806":function  (module, exports, farmRequire, farmDynamicRequire) {
-    module._m(exports);
-    var _f_a = module.i(farmRequire("569704c1"));
-    console.log(module.f(_f_a));
-}
-,});window['__farm_default_namespace__'].__farm_module_system__.setInitialLoadedResources([]);window['__farm_default_namespace__'].__farm_module_system__.setDynamicModuleResourcesMap([],{  });var farmModuleSystem = window['__farm_default_namespace__'].__farm_module_system__;farmModuleSystem.bootstrap();var entry = farmModuleSystem.require("b5d64806");
+    const foo = 'foo';
+    const bar = 'bar';
+});
+var index_default = _interop_require_default(index_cjs()).default, bar = index_cjs()["bar"], foo = index_cjs()["foo"];
+module.exports.bar = bar;
+module.exports.foo = foo;
+module.exports.default = index_default;
+Object.defineProperty(exports, "__esModule", {
+    value: true
+});

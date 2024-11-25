@@ -1,5 +1,6 @@
 //index.js:
- window['__farm_default_namespace__'] = {__FARM_TARGET_ENV__: 'browser'};function _interop_require_default(obj) {
+ import __farmNodeModule from 'module';
+global.nodeRequire = __farmNodeModule.createRequire(import.meta.url);function _interop_require_default(obj) {
     return obj && obj.__esModule ? obj : {
         default: obj
     };
@@ -59,35 +60,23 @@
     }
     return module.exports;
   };
-}((function(){var index_js_cjs = __commonJs((module, exports)=>{
+}import fs from "node:fs";
+var index_cjs = __commonJs((module, exports)=>{
     "use strict";
-    console.log('runtime/index.js');
-    window['__farm_default_namespace__'].__farm_module_system__.setPlugins([]);
+    Object.defineProperty(exports, "__esModule", {
+        value: true
+    });
+    Object.defineProperty(exports, "name", {
+        enumerable: true,
+        get: function() {
+            return name;
+        }
+    });
+    const os = global.nodeRequire('node:os');
+    console.log(fs.read, os.cpus);
+    const name = 'foo';
+    module.exports.age = 18;
 });
-index_js_cjs();
-})());(function(_){for(var r in _){_[r].__farm_resource_pot__='index_ecb7.js';window['__farm_default_namespace__'].__farm_module_system__.register(r,_[r])}})({"569704c1":function  (module, exports, farmRequire, farmDynamicRequire) {
-    module._m(exports);
-    (function() {
-        const iife_foo = 'iife-foo';
-    })();
-    var UrlType;
-    (function(UrlType) {
-        UrlType[UrlType['Empty'] = 1] = 'Empty';
-        UrlType[UrlType['Hash'] = 2] = 'Hash';
-        UrlType[UrlType['Query'] = 3] = 'Query';
-        UrlType[UrlType['RelativePath'] = 4] = 'RelativePath';
-        UrlType[UrlType['AbsolutePath'] = 5] = 'AbsolutePath';
-        UrlType[UrlType['SchemeRelative'] = 6] = 'SchemeRelative';
-        UrlType[UrlType['Absolute'] = 7] = 'Absolute';
-    })(UrlType || (UrlType = {}));
-    exports.default = function() {
-        console.log('foo');
-    };
-}
-,
-"b5d64806":function  (module, exports, farmRequire, farmDynamicRequire) {
-    module._m(exports);
-    var _f_a = module.i(farmRequire("569704c1"));
-    console.log(module.f(_f_a));
-}
-,});window['__farm_default_namespace__'].__farm_module_system__.setInitialLoadedResources([]);window['__farm_default_namespace__'].__farm_module_system__.setDynamicModuleResourcesMap([],{  });var farmModuleSystem = window['__farm_default_namespace__'].__farm_module_system__;farmModuleSystem.bootstrap();var entry = farmModuleSystem.require("b5d64806");
+var index_ns = _interop_require_wildcard(index_cjs()), name = index_cjs()["name"];
+export { name };
+export default index_ns;

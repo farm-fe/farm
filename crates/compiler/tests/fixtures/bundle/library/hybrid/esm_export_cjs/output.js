@@ -1,6 +1,5 @@
 //index.js:
- import __farmNodeModule from 'module';
-global.nodeRequire = __farmNodeModule.createRequire(import.meta.url);function _interop_require_default(obj) {
+ function _interop_require_default(obj) {
     return obj && obj.__esModule ? obj : {
         default: obj
     };
@@ -60,10 +59,11 @@ global.nodeRequire = __farmNodeModule.createRequire(import.meta.url);function _i
     }
     return module.exports;
   };
-}import fs from "node:fs";
-var index_cjs = __commonJs((module, exports)=>{
-    "use strict";
-    const os = global.nodeRequire('node:os');
-    console.log(fs.read, os.cpus);
+}var index_cjs = __commonJs((module, exports)=>{
+    module.exports = {
+        name: 'foo',
+        age: 18
+    };
 });
-index_cjs();
+var index_ns = _interop_require_wildcard(index_cjs());
+export default index_ns;
