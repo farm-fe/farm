@@ -137,7 +137,7 @@ jobs:
       - uses: goto-bus-stop/setup-zig@v2
         if: ${{ matrix.settings.zig }}
         with:
-          version: master
+          version: 0.14.0-dev.2287+70ad7dcd4
       - name: Build in docker
         uses: addnab/docker-run-action@v3
         if: ${{ matrix.settings.docker }}
