@@ -39,7 +39,8 @@ export const wildcardHosts = new Set([
 
 export async function resolveServerUrls(
   server: Server,
-  config: ResolvedUserConfig
+  config: ResolvedUserConfig,
+  type: 'dev' | 'preview' = 'dev'
 ): Promise<ResolvedServerUrls> {
   const address = server.address();
   const isAddressInfo = (x: any): x is AddressInfo => x?.address;
@@ -47,7 +48,7 @@ export async function resolveServerUrls(
   if (!isAddressInfo(address)) {
     return { local: [], network: [] };
   }
-  const serverOptions = config.server;
+  const serverOptions = type == 'dev' ? config.server : config.server.preview;
   const local: string[] = [];
   const network: string[] = [];
   const hostname = await resolveHostname(serverOptions.host);
@@ -142,10 +143,31 @@ function createServerUrl(
   return `${protocol}://${hostnameName}:${port}${publicPath}`;
 }
 
+/**
+ * Setup a listener for SIGTERM and SIGINT signals, and call the given callback
+ * function when either signal is received.
+ *
+ * @param callback - callback function to be called when SIGTERM is received
+ * @returns {void}
+ */
+export const setupSIGTERMListener = (callback: () => Promise<void>): void => {
+  process.on('SIGTERM', callback);
+  process.on('SIGINT', callback); // Handle user interrupt (Ctrl+C)
+  if (process.env.CI !== 'true') {
+    process.stdin.on('end', callback);
+  }
+};
+
+/**
+ * Remove a listener for SIGTERM and SIGINT signals.
+ *
+ * @param callback - callback function to be removed when SIGTERM is received
+ */
 export const teardownSIGTERMListener = (
   callback: () => Promise<void>
 ): void => {
   process.off('SIGTERM', callback);
+  process.off('SIGINT', callback);
   if (process.env.CI !== 'true') {
     process.stdin.off('end', callback);
   }
