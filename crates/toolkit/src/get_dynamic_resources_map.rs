@@ -105,9 +105,7 @@ pub fn get_dynamic_resources_code(
           dynamic_resources.push(format!(r#"{{ path: '{resource_name}', type: 1 }}"#));
         }
         _ => {
-          panic!(
-            "unsupported type ({resource_type:?}) when injecting dynamic resources"
-          )
+          panic!("unsupported type ({resource_type:?}) when injecting dynamic resources")
         }
       }
 

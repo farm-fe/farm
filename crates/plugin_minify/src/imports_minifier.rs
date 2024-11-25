@@ -3,12 +3,12 @@ use std::collections::HashMap;
 use farmfe_core::{
   module::{module_graph::ModuleGraph, ModuleId},
   plugin::ResolveKind,
-  swc_common::{Mark, DUMMY_SP},
+  swc_common::{Mark, SyntaxContext, DUMMY_SP},
   swc_ecma_ast::{
     BindingIdent, CallExpr, Callee, ExportNamedSpecifier, ExportSpecifier, Expr, ExprOrSpread,
-    ExprStmt, Id, Ident, KeyValuePatProp, KeyValueProp, Lit, MemberExpr, MemberProp, ModuleDecl,
-    ModuleExportName, ModuleItem, NamedExport, ObjectLit, Pat, Prop, PropName, PropOrSpread, Stmt,
-    Str,
+    ExprStmt, Id, Ident, IdentName, KeyValuePatProp, KeyValueProp, Lit, MemberExpr, MemberProp,
+    ModuleDecl, ModuleExportName, ModuleItem, NamedExport, ObjectLit, Pat, Prop, PropName,
+    PropOrSpread, Stmt, Str,
   },
 };
 use farmfe_toolkit::swc_ecma_visit::{VisitMut, VisitMutWith};
@@ -196,7 +196,11 @@ impl<'a> VisitMut for ImportsMinifier<'a> {
                           self.get_imported_ident_with_count(&orig_minified_export);
                         id_to_replace.insert(named.local.to_id(), minified_export.clone());
                         named.imported = Some(farmfe_core::swc_ecma_ast::ModuleExportName::Ident(
-                          Ident::new(orig_minified_export.as_str().into(), DUMMY_SP),
+                          Ident::new(
+                            orig_minified_export.as_str().into(),
+                            DUMMY_SP,
+                            SyntaxContext::empty(),
+                          ),
                         ));
                         named.local.sym = minified_export.as_str().into();
                       } else {
@@ -335,6 +339,7 @@ impl<'a> VisitMut for ImportsMinifier<'a> {
                           named.exported = Some(ModuleExportName::Ident(Ident::new(
                             minified_export.as_str().into(),
                             DUMMY_SP,
+                            SyntaxContext::empty(),
                           )));
                           current_minified_exports.insert(orig_str, minified_export);
                         } else {
@@ -381,10 +386,15 @@ impl<'a> VisitMut for ImportsMinifier<'a> {
         .map(|(from, to)| {
           ExportSpecifier::Named(ExportNamedSpecifier {
             span: DUMMY_SP,
-            orig: ModuleExportName::Ident(Ident::new(from.as_str().into(), DUMMY_SP)),
+            orig: ModuleExportName::Ident(Ident::new(
+              from.as_str().into(),
+              DUMMY_SP,
+              SyntaxContext::empty(),
+            )),
             exported: Some(ModuleExportName::Ident(Ident::new(
               to.as_str().into(),
               DUMMY_SP,
+              SyntaxContext::empty(),
             ))),
             is_type_only: false,
           })
@@ -449,9 +459,10 @@ impl<'a> VisitMut for ImportsMinifier<'a> {
               span: DUMMY_SP,
               obj: Box::new(Expr::Ident(Ident::new(
                 "module".into(),
-                DUMMY_SP.apply_mark(self.unresolved_mark),
+                DUMMY_SP,
+                SyntaxContext::empty().apply_mark(self.unresolved_mark),
               ))),
-              prop: MemberProp::Ident(Ident::new("p".into(), DUMMY_SP)),
+              prop: MemberProp::Ident(IdentName::new("p".into(), DUMMY_SP)),
             }))),
             args: vec![
               ExprOrSpread {
@@ -462,11 +473,13 @@ impl<'a> VisitMut for ImportsMinifier<'a> {
                 spread: None,
                 expr: Box::new(Expr::Ident(Ident::new(
                   star_ident.0,
-                  DUMMY_SP.with_ctxt(star_ident.1),
+                  DUMMY_SP,
+                  star_ident.1,
                 ))),
               },
             ],
             type_args: None,
+            ctxt: SyntaxContext::empty(),
           })),
         })),
       )
@@ -494,10 +507,11 @@ impl<'a> VisitMut for IdentReplacer {
           farmfe_core::swc_ecma_ast::Prop::Shorthand(s) => {
             if let Some(replaced) = self.id_to_replace.get(&s.to_id()) {
               *prop = Box::new(Prop::KeyValue(KeyValueProp {
-                key: PropName::Ident(s.clone()),
+                key: PropName::Ident(IdentName::new(s.sym.clone(), s.span)),
                 value: Box::new(Expr::Ident(Ident::new(
                   replaced.as_str().into(),
-                  DUMMY_SP.with_ctxt(s.span.ctxt()),
+                  DUMMY_SP,
+                  s.ctxt,
                 ))),
               }))
             }
@@ -537,12 +551,9 @@ impl<'a> VisitMut for IdentReplacer {
             value.visit_mut_with(self);
           } else if let Some(replaced) = self.id_to_replace.get(&a.key.id.to_id()) {
             *n = farmfe_core::swc_ecma_ast::ObjectPatProp::KeyValue(KeyValuePatProp {
-              key: PropName::Ident(a.key.id.clone()),
+              key: PropName::Ident(IdentName::new(a.key.id.sym.clone(), a.key.id.span)),
               value: Box::new(Pat::Ident(BindingIdent {
-                id: Ident::new(
-                  replaced.as_str().into(),
-                  DUMMY_SP.apply_mark(a.key.id.span.ctxt().outer()),
-                ),
+                id: Ident::new(replaced.as_str().into(), DUMMY_SP, a.key.id.ctxt),
                 type_ann: None,
               })),
             })

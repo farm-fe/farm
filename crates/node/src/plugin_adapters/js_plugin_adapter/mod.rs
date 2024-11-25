@@ -398,9 +398,7 @@ impl Plugin for JsPluginAdapter {
 
 pub fn get_named_property<T: FromNapiValue>(env: &Env, obj: &JsObject, field: &str) -> Result<T> {
   if obj.has_named_property(field).map_err(|e| {
-    CompilationError::NAPIError(format!(
-      "Get field {field} of config object failed. {e:?}"
-    ))
+    CompilationError::NAPIError(format!("Get field {field} of config object failed. {e:?}"))
   })? {
     unsafe {
       T::from_napi_value(
@@ -408,9 +406,7 @@ pub fn get_named_property<T: FromNapiValue>(env: &Env, obj: &JsObject, field: &s
         obj
           .get_named_property::<JsUnknown>(field)
           .map_err(|e| {
-            CompilationError::NAPIError(format!(
-              "Get field {field} of config object failed. {e:?}"
-            ))
+            CompilationError::NAPIError(format!("Get field {field} of config object failed. {e:?}"))
           })?
           .raw(),
       )

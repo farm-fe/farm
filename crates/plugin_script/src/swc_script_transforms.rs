@@ -14,7 +14,7 @@ use farmfe_toolkit::{
     typescript::{tsx, typescript, Config as TsConfig, ImportsNotUsedAsValues, TsxConfig},
   },
   swc_ecma_transforms_base::helpers::inject_helpers,
-  swc_ecma_visit::{FoldWith, VisitMutWith},
+  swc_ecma_visit::VisitMutWith,
 };
 
 fn default_config(script: &ScriptConfig) -> TsConfig {
@@ -37,6 +37,7 @@ pub fn strip_typescript(
 ) -> farmfe_core::error::Result<()> {
   try_with(cm.clone(), &context.meta.script.globals, || {
     let top_level_mark = Mark::from_u32(param.meta.as_script().top_level_mark);
+    let unresolved_mark = Mark::from_u32(param.meta.as_script().unresolved_mark);
     let ast = param.meta.as_script_mut().take_ast();
     let mut program = Program::Module(ast);
 
@@ -46,23 +47,26 @@ pub fn strip_typescript(
         // Do nothing, jsx should be handled by other plugins
       }
       farmfe_core::module::ModuleType::Ts => {
-        program.visit_mut_with(&mut typescript(
+        program.mutate(&mut typescript(
           default_config(&context.config.script),
+          unresolved_mark,
           top_level_mark,
         ));
       }
       farmfe_core::module::ModuleType::Tsx => {
         let comments: SingleThreadedComments = param.meta.as_script().comments.clone().into();
         // TODO make it configurable
-        program.visit_mut_with(&mut tsx(
+        program.mutate(&mut tsx(
           cm.clone(),
           default_config(&context.config.script),
           TsxConfig::default(),
           comments,
+          unresolved_mark,
           top_level_mark,
         ));
-        program.visit_mut_with(&mut typescript(
+        program.mutate(&mut typescript(
           default_config(&context.config.script),
+          unresolved_mark,
           top_level_mark,
         ));
       }
@@ -90,23 +94,23 @@ pub fn transform_decorators(
 
   if is_included || !is_excluded {
     try_with(cm.clone(), &context.meta.script.globals, || {
-      let mut ast = param.meta.as_script_mut().take_ast();
+      let mut ast = Program::Module(param.meta.as_script_mut().take_ast());
 
       match config.decorator_version.clone().unwrap_or_default() {
         DecoratorVersion::V202112 => {
-          ast = ast.fold_with(&mut decorators(decorators::Config {
+          ast.mutate(&mut decorators(decorators::Config {
             legacy: config.legacy_decorator,
             emit_metadata: config.decorator_metadata,
             ..Default::default()
           }));
         }
-        DecoratorVersion::V202203 => ast = ast.fold_with(&mut decorator_2022_03()),
+        DecoratorVersion::V202203 => ast.mutate(&mut decorator_2022_03()),
       }
 
       let unresolved_mark = Mark::from_u32(param.meta.as_script().unresolved_mark);
       ast.visit_mut_with(&mut inject_helpers(unresolved_mark));
 
-      param.meta.as_script_mut().set_ast(ast);
+      param.meta.as_script_mut().set_ast(ast.expect_module());
     })?;
   }
 

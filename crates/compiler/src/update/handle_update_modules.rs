@@ -11,6 +11,7 @@ use farmfe_utils::relative;
 
 pub fn handle_update_modules(
   paths: Vec<(String, UpdateType)>,
+  last_fail_module_ids: &[ModuleId],
   context: &Arc<CompilationContext>,
   update_result: &mut UpdateResult,
 ) -> farmfe_core::error::Result<Vec<(String, UpdateType)>> {
@@ -26,6 +27,8 @@ pub fn handle_update_modules(
     (vec![], 0)
   };
   let paths = resolve_watch_graph_paths(paths, context);
+  let paths = resolve_last_failed_module_paths(paths, last_fail_module_ids, context);
+
   if context.config.record {
     let end_time = std::time::SystemTime::now()
       .duration_since(std::time::UNIX_EPOCH)
@@ -181,6 +184,7 @@ pub fn handle_update_modules(
         end_time,
       })
   }
+
   Ok(result)
 }
 
@@ -230,4 +234,18 @@ fn resolve_watch_graph_paths(
       }
     })
     .collect()
+}
+
+fn resolve_last_failed_module_paths(
+  mut paths: Vec<(String, UpdateType)>,
+  last_fail_module_ids: &[ModuleId],
+  context: &Arc<CompilationContext>,
+) -> Vec<(String, UpdateType)> {
+  paths.extend(
+    last_fail_module_ids
+      .iter()
+      .map(|id| (id.resolved_path(&context.config.root), UpdateType::Updated)),
+  );
+
+  paths
 }

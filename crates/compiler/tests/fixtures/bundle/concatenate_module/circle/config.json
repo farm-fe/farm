@@ -1,0 +1,8 @@
+{
+  "concatenateModules": true,
+  "output": {
+    "targetEnv": "browser"
+  },
+  "comments": true,
+  "minify": false
+}

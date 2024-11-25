@@ -168,9 +168,7 @@ impl Plugin for FarmPluginHtml {
         })?
         .ok_or(CompilationError::TransformError {
           resolved_path: param.resolved_path.to_string(),
-          msg: format!(
-            "Load base html({base}) fail: Base html file does not exist"
-          ),
+          msg: format!("Load base html({base}) fail: Base html file does not exist"),
         })?;
 
       return Ok(Some(PluginTransformHookResult {

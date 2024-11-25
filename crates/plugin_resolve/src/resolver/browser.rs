@@ -39,9 +39,7 @@ pub fn try_browser_map(
   let browser_field = get_field_value_from_package_json_info(package_json_info, "browser");
   if let Some(Value::Object(obj)) = browser_field {
     for (key, value) in obj {
-      if key == sub_path
-        || key == format!("{sub_path}.js")
-        || key == format!("{sub_path}/index.js")
+      if key == sub_path || key == format!("{sub_path}.js") || key == format!("{sub_path}/index.js")
       {
         match value {
           Value::String(str) => return Some(BrowserMapResult::Str(str.clone())),

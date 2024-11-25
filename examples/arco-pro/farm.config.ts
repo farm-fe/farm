@@ -9,9 +9,10 @@ export default defineConfig((env) => {
       input: {
         index: './index.html'
       },
-      // minify: false,
+      sourcemap: false,
       presetEnv: false,
-      // persistentCache: false,
+      concatenateModules: true,
+      persistentCache: false,
       resolve: {
         symlinks: true,
         alias: {
@@ -20,8 +21,8 @@ export default defineConfig((env) => {
           react: resolve(process.cwd(), './node_modules/react')
         }
       },
-      minify: false,
-      mode: 'development',
+      // minify: false,
+      // mode: 'development',
       // persistentCache: false,
       output: {
         path: './build',
@@ -29,7 +30,18 @@ export default defineConfig((env) => {
         assetsFilename: 'static/[resourceName].[contentHash].[ext]'
       },
       partialBundling: {
-        targetMinSize: 1024 * 2
+        targetMinSize: 1024 * 2000,
+        groups: [
+          {
+            name: 'components',
+            test: ['src/components/.+'],
+            enforce: true,
+          },
+          {
+            name: 'xxxx',
+            test: ['src/pages/.+']
+          }
+        ]
       },
       progress: true
     },

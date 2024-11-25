@@ -1,0 +1,111 @@
+.features {
+  display: flex;
+  align-items: center;
+  padding: 2rem 0;
+  width: 100%;
+}
+
+.item {
+  width: 100%;
+  margin: 0 auto;
+}
+
+.card {
+  /* border: 3px solid #252529; */
+  border-radius: 10px;
+  padding: 0 0.5rem;
+  padding-top: 2rem;
+  position: relative;
+  /* background: var(--ifm-background) !important; */
+  background: var(--ifm-f-white-soft);
+  z-index: 0;
+  width: 100%;
+  background-image: radial-gradient(
+    rgba(255, 255, 255, 0.2) 8%,
+    transparent 8%
+  );
+  background-position: 0% 0%;
+  background-size: 5vmin 5vmin;
+  position: relative;
+  transition: background-position 350ms ease;
+  z-index: 2;
+  box-shadow: rgba(0, 0, 0, 0.16) 0px 1px 4px;
+}
+
+.backgroundImage {
+  background: linear-gradient(-45deg, #e67ac6 50%, #47caff 50%);
+  border-radius: 50%;
+  filter: blur(36px);
+}
+
+/*test card */
+.card-container {
+  cursor: pointer;
+  justify-content: center;
+  position: relative;
+}
+
+.card-container:hover::before {
+  content: "";
+  background: linear-gradient(
+    45deg,
+    #7a00ff,
+    #9f1a8f,
+    #7a00ff,
+    #ff00c8,
+    #9f1a8f,
+    #7a00ff,
+    #ff00c8
+  );
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  background-size: 400%;
+  z-index: -1000;
+  filter: blur(5px);
+  width: calc(100% + 4px);
+  height: calc(100% + 4px);
+  animation: glowing 16s linear infinite;
+  opacity: 1;
+  transition: opacity 0.3s ease-in-out;
+  border-radius: 10px;
+}
+
+.card-container:after {
+  z-index: -1;
+  content: "";
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background: var(--ifm-f-white-soft);
+  background-image: radial-gradient(
+    rgba(255, 255, 255, 0.2) 8%,
+    transparent 8%
+  );
+  background-position: 0% 0%;
+  background-size: 5vmin 5vmin;
+  /* position: relative; */
+  transition: background-position 350ms ease;
+  z-index: 100;
+  box-shadow: rgba(0, 0, 0, 0.16) 0px 1px 4px;
+  left: 0;
+  top: 0;
+  border-radius: 10px;
+}
+.card-container-content {
+  position: relative;
+  transition: background-position 350ms ease;
+  z-index: 1000;
+}
+
+@keyframes glowing {
+  0% {
+    background-position: 0 0;
+  }
+  50% {
+    background-position: 400% 0;
+  }
+  100% {
+    background-position: 0 0;
+  }
+}

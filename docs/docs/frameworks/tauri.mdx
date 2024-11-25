@@ -1,0 +1,40 @@
+import { PackageManagerTabs } from "../../src/theme/PackageManagerTabs";
+
+# Tauri
+
+Create a `Tauri` project based on `Farm`.
+
+`Farm` provides two approaches to support creating `Tauri` projects: 
+- Use the `create-farm` scaffold to create a scaffold project
+- You can manually create a `Tauri` project following the current documentation
+
+### Creating a Tauri Project
+
+<PackageManagerTabs command="npm create farm@latest" />
+
+
+Select `Tauri` template in `Select Framework`
+
+1. project name
+
+2. choose sub template
+
+In your terminal, cd into the new Tauri project folder.
+
+Update the file with the following content:
+
+```ts
+import { defineConfig } from '@farmfe/core';
+
+export default defineConfig({
+  plugins: ['@farmfe/plugin-react'],
+  server: {
+    port: 1420
+  }
+});
+
+```
+
+then run `pnpm tauri dev`
+
+For more example details: [React Example](https://github.com/farm-fe/farm/tree/main/examples/Tauri)

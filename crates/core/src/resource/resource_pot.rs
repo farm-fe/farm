@@ -61,6 +61,11 @@ impl ResourcePot {
     format!("{}_{}", name, ty.to_string())
   }
 
+  pub fn set_resource_pot_id(&mut self, id: String) {
+    self.id.clone_from(&id);
+    self.info.id = id;
+  }
+
   pub fn add_module(&mut self, module_id: ModuleId) {
     self.modules.insert(module_id);
   }
@@ -75,6 +80,10 @@ impl ResourcePot {
 
   pub fn take_meta(&mut self) -> ResourcePotMetaData {
     std::mem::take(&mut self.meta)
+  }
+
+  pub fn has_module(&self, module_id: &ModuleId) -> bool {
+    self.modules.contains(module_id)
   }
 
   pub fn remove_module(&mut self, module_id: &ModuleId) {

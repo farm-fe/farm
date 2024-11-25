@@ -5,15 +5,50 @@ use farmfe_core::{
   module::{
     module_graph::{ModuleGraph, ModuleGraphEdgeDataItem},
     module_group::{ModuleGroup, ModuleGroupGraph},
-    Module,
+    Module, ModuleMetaData, ModuleType, ScriptModuleMetaData,
   },
   plugin::ResolveKind,
   relative_path::RelativePath,
   wax::Glob,
 };
 
+pub mod assert;
+pub use insta;
+use insta::Settings;
+
+pub struct InstaHelper {}
+
+impl InstaHelper {
+  pub fn create_setting() -> Settings {
+    let mut setting = Settings::clone_current();
+    setting.set_sort_maps(true);
+    setting.set_omit_expression(true);
+    setting.set_input_file(file!());
+    setting.set_prepend_module_to_snapshot(false);
+    setting
+  }
+}
+
+#[macro_export]
+macro_rules! assert_debug_snapshot {
+  ($ex:expr) => {
+    farmfe_testing_helpers::InstaHelper::create_setting().bind(|| {
+      farmfe_testing_helpers::insta::assert_debug_snapshot!($ex)
+    });
+  };
+}
+
+#[macro_export]
+macro_rules! assert_snapshot {
+  ($ex:expr) => {
+    farmfe_testing_helpers::InstaHelper::create_setting().bind(|| {
+      farmfe_testing_helpers::insta::assert_snapshot!($ex)
+    });
+  };
+}
+
 pub fn is_update_snapshot_from_env() -> bool {
-  std::env::var("FARM_UPDATE_SNAPSHOTS").is_ok()
+  std::env::var("FARM_UPDATE_SNAPSHOTS").is_ok() || std::env::var("INSTA_UPDATE").is_ok()
 }
 
 /// construct a test module graph like below:
@@ -34,7 +69,9 @@ pub fn construct_test_module_graph() -> ModuleGraph {
   let mut graph = ModuleGraph::new();
 
   for id in module_ids {
-    let m = Module::new(id);
+    let mut m = Module::new(id);
+    m.module_type = ModuleType::Js;
+    m.meta = Box::new(ModuleMetaData::Script(ScriptModuleMetaData::default()));
 
     graph.add_module(m);
   }
@@ -159,7 +196,8 @@ pub fn construct_test_module_group_graph() -> ModuleGroupGraph {
 /// * others are static dependencies
 pub fn construct_test_module_graph_complex() -> ModuleGraph {
   let mut test_module_graph = construct_test_module_graph();
-  let module_h = Module::new("H".into());
+  let mut module_h = Module::new("H".into());
+  module_h.module_type = ModuleType::Js;
   test_module_graph.add_module(module_h);
 
   let static_edges = vec![("D", "H", 1), ("F", "H", 0), ("G", "H", 0)];

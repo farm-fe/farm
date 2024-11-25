@@ -23,7 +23,7 @@ export async function resolveFarmPlugins(config: UserConfig) {
 
   const jsPlugins: JsPlugin[] = [];
 
-  for (const plugin of plugins) {
+  for (let plugin of plugins) {
     if (!plugin) {
       continue;
     }
@@ -36,11 +36,13 @@ export async function resolveFarmPlugins(config: UserConfig) {
         await rustPluginResolver(plugin as string, config.root ?? process.cwd())
       );
     } else if (isObject(plugin)) {
-      convertPlugin(plugin as unknown as JsPlugin);
+      // @ts-ignore
+      plugin = convertPlugin(plugin as unknown as JsPlugin);
       jsPlugins.push(plugin as unknown as JsPlugin);
     } else if (isArray(plugin)) {
-      for (const pluginNestItem of plugin as JsPlugin[]) {
-        convertPlugin(pluginNestItem as JsPlugin);
+      for (let pluginNestItem of plugin as JsPlugin[]) {
+        // @ts-ignore
+        pluginNestItem = convertPlugin(pluginNestItem as JsPlugin);
         jsPlugins.push(pluginNestItem as JsPlugin);
       }
     } else {
@@ -141,9 +143,29 @@ export function getSortedPlugins(plugins: readonly JsPlugin[]): JsPlugin[] {
   return [...prePlugins, ...normalPlugins, ...postPlugins];
 }
 
-export function getSortedPluginHooks(
+export function getPluginHooks(
   plugins: JsPlugin[],
   hookName: keyof JsPlugin
 ): any {
   return plugins.map((p: JsPlugin) => p[hookName]).filter(Boolean);
+}
+
+export function getSortedPluginHooks(
+  plugins: JsPlugin[],
+  hookName: keyof JsPlugin
+): any {
+  plugins = getSortedPlugins(plugins);
+  return plugins.map((p: JsPlugin) => p[hookName]).filter(Boolean);
+}
+
+export function getSortedPluginHooksBindThis(
+  plugins: JsPlugin[],
+  hookName: keyof JsPlugin
+) {
+  plugins = getSortedPlugins(plugins);
+  return plugins
+    .map((p: JsPlugin) =>
+      typeof p[hookName] === 'function' ? p[hookName].bind(p) : p[hookName]
+    )
+    .filter(Boolean);
 }
