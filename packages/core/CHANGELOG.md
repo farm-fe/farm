@@ -1,5 +1,12 @@
 # @farmfe/core
 
+## 1.4.4
+
+### Patch Changes
+
+- 94451ae6: fix: disable inline scripts
+- b05a2c84: fix bundle export cjs entry file
+
 ## 1.4.3
 
 ### Patch Changes
