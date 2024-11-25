@@ -1,5 +1,4 @@
 import fs, { PathLike } from 'node:fs';
-import { WatchOptions } from 'chokidar';
 import connect from 'connect';
 import corsMiddleware from 'cors';
 
@@ -69,14 +68,8 @@ export interface ServerOptions extends CommonServerOptions {
   hmr?: HmrOptions | boolean;
   /**
    * Do not start the websocket connection.
-   * @experimental
    */
   ws?: false;
-  /**
-   * chokidar watch options or null to disable FS watching
-   * https://github.com/paulmillr/chokidar#api
-   */
-  watchOptions?: WatchOptions | undefined;
   /**
    * Create dev server to be used as a middleware in an existing server
    * @default false
@@ -91,7 +84,6 @@ export interface ServerOptions extends CommonServerOptions {
          */
         server: http.Server;
       };
-  origin?: string;
   appType?: 'spa' | 'mpa' | 'custom';
 }
 

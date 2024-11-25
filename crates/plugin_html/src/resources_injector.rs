@@ -106,7 +106,7 @@ impl<'a> ResourcesInjector<'a> {
     }
   }
 
-  fn inject_initial_loaded_resources(&self, element: &mut Element) {
+  fn inject_initial_loaded_resources(&mut self, element: &mut Element) {
     let mut initial_resources = vec![];
     initial_resources.extend(self.script_resources.clone());
     initial_resources.extend(self.css_resources.clone());
@@ -118,14 +118,33 @@ impl<'a> ResourcesInjector<'a> {
       .collect::<Vec<_>>()
       .join(",");
 
-    element.children.push(Child::Element(create_element(
-      "script",
-      Some(&format!(
-        r#"{}.{}.setInitialLoadedResources([{}]);"#,
-        self.farm_global_this, FARM_MODULE_SYSTEM, initial_resources_code
-      )),
-      vec![],
-    )));
+    let code = format!(
+      r#"{}.{}.setInitialLoadedResources([{}]);"#,
+      self.farm_global_this, FARM_MODULE_SYSTEM, initial_resources_code
+    );
+    if get_config_runtime_isolate(&self.options.context) {
+      let (name, resource) = create_farm_runtime_output_resource(
+        Cow::Owned(code.into_bytes()),
+        "initial_loaded_resources",
+        &self.options.context,
+        &self.already_injected_resources,
+      );
+      element.children.push(Child::Element(create_element(
+        "script",
+        None,
+        vec![("src", &format!("/{}", name))],
+      )));
+
+      if let Some(resource) = resource {
+        self.additional_inject_resources.push(resource);
+      }
+    } else {
+      element.children.push(Child::Element(create_element(
+        "script",
+        Some(&code),
+        vec![],
+      )));
+    }
   }
 
   fn inject_dynamic_resources_map(&mut self, element: &mut Element) {
@@ -167,7 +186,7 @@ impl<'a> ResourcesInjector<'a> {
     }
   }
 
-  fn inject_global_this(&self, element: &mut Element) {
+  fn inject_global_this(&mut self, element: &mut Element) {
     let code = format!(
       r#"
 {FARM_GLOBAL_THIS} = {{}};
@@ -177,11 +196,29 @@ impl<'a> ResourcesInjector<'a> {
       FARM_GLOBAL_THIS = self.farm_global_this,
     );
 
-    element.children.push(Child::Element(create_element(
-      "script",
-      Some(&code),
-      vec![],
-    )));
+    if get_config_runtime_isolate(&self.options.context) {
+      let (name, resource) = create_farm_runtime_output_resource(
+        Cow::Owned(code.into_bytes()),
+        "global_this",
+        &self.options.context,
+        &self.already_injected_resources,
+      );
+
+      element.children.push(Child::Element(create_element(
+        "script",
+        None,
+        vec![("src", &format!("/{name}"))],
+      )));
+      if let Some(resource) = resource {
+        self.additional_inject_resources.push(resource);
+      }
+    } else {
+      element.children.push(Child::Element(create_element(
+        "script",
+        Some(&code),
+        vec![],
+      )));
+    }
   }
 
   fn inject_other_entry_file(&self, element: &mut Element) {

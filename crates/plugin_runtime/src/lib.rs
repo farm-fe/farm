@@ -235,8 +235,11 @@ impl Plugin for FarmPluginRuntime {
 
       if module.module_type.is_script() {
         let ast = &module.meta.as_script().ast;
-
-        if farmfe_toolkit::swc_ecma_utils::contains_top_level_await(ast) {
+        let dependencies = module_graph.dependencies(module_id);
+        let is_deps_async = dependencies
+          .iter()
+          .any(|(dep, edge)| async_modules.contains(dep) && !edge.is_dynamic());
+        if is_deps_async || farmfe_toolkit::swc_ecma_utils::contains_top_level_await(ast) {
           added_async_modules.push(module_id.clone());
         }
       }
@@ -343,7 +346,7 @@ impl Plugin for FarmPluginRuntime {
 
           let source_obj = format!("window['{replace_source}']||{{}}");
           external_objs.push(if context.config.output.format == ModuleFormat::EsModule {
-            format!("{source:?}: ({source_obj}).default && !({source_obj}).__esModule ? {{...({source_obj}),__esModule:true}} : ({{...{source_obj}}})")
+            format!("{source:?}: ({source_obj}).default && !({source_obj}).__esModule ? {{...({source_obj}),__esModule:true}} : {source_obj}")
           } else {
             format!("{source:?}: {source_obj}")
           });

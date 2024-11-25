@@ -65,10 +65,6 @@ var cjsExport_ts_cjs = __commonJs((module, exports)=>{
 var cjsExport_ts_ns = _interop_require_wildcard(cjsExport_ts_cjs());
 
 const foo = "foo";
-var esmExport_ts_ns = {
-    foo: foo,
-    __esModule: true
-};
 
 const esmName = 'repeat-esm-shulan';
 global['__farm_default_namespace__'].__farm_module_system__.setPlugins([]);

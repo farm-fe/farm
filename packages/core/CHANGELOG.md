@@ -6,7 +6,99 @@
 
 - b327dd1: collect htmlFallbackMiddleware
 
-## 2.0.0-nightly-20241029095811
+## 1.4.3
+
+### Patch Changes
+
+- c4ff67a2: Fix external alias #1957
+- c4ff67a2: Fix `import * as xx` tree shaking issue
+
+## 1.4.2
+
+### Patch Changes
+
+- 3085d644: judgement node environment with check input value
+
+## 1.4.1
+
+### Patch Changes
+
+- Updated dependencies [829d0945]
+  - @farmfe/runtime@0.12.9
+
+## 1.4.0
+
+### Minor Changes
+
+- 7d86847c: Support tree shake `import * as ns from './xxx'`. `./xxx` can be tree-shaken if following rules are met:
+
+  - `ns` is used as member prop, example: `ns.a`
+  - `ns` is used as member literal computed, example: `ns['a']`
+
+  For example:
+
+  ```ts
+  // b.ts
+  export const a = 1;
+  export const b = 2;
+
+  // a.ts
+  import * as ns from "./b";
+
+  console.log(ns.a);
+  console.log(ns["a"]);
+  ```
+
+  After tree shaking, the result will be:
+
+  ```ts
+  // b.ts
+  export const a = 1; // a is preserved and b is removed.
+
+  // a.ts
+  import * as ns from "./b";
+  console.log(ns.a);
+  console.log(ns["a"]);
+  ```
+
+  But if `ns` is met rules above, then all the fields will be preserved, example:
+
+  ```ts
+  // b.ts
+  export const a = 1;
+  export const b = 2;
+
+  // a.ts
+  import * as ns from "./b";
+
+  console.log(ns);
+  ```
+
+  After tree shaking, the result will be:
+
+  ```ts
+  // b.ts
+  export const a = 1; // both a and b are preserved
+  export const b = 2;
+  // a.ts
+  import * as ns from "./b";
+  console.log(ns.a);
+  console.log(ns["a"]);
+  ```
+
+## 1.3.34
+
+### Patch Changes
+
+- 8853c4aa: fix bundle global variable preserve
+
+## 1.3.33
+
+### Patch Changes
+
+- 3b95eef4: Fix(runtime): invalid async module cache
+- Updated dependencies [3b95eef4]
+  - @farmfe/runtime@0.12.8
 
 ## 1.3.32
 

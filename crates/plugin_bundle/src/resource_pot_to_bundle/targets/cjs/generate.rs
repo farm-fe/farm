@@ -75,10 +75,6 @@ impl CjsGenerate {
       .named
       .iter()
       .filter_map(|(exported, local)| {
-        if bundle_variable.var_by_index(*local).removed {
-          return None;
-        }
-
         let should_reexport_uniq = index_is_entry(*local);
 
         let named_render_name = bundle_variable.render_name(*local);
