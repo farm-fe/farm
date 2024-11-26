@@ -151,8 +151,8 @@ function createServerUrl(
  * @returns {void}
  */
 export const setupSIGTERMListener = (callback: () => Promise<void>): void => {
-  process.on('SIGTERM', callback);
-  process.on('SIGINT', callback); // Handle user interrupt (Ctrl+C)
+  process.once('SIGTERM', callback);
+  process.once('SIGINT', callback); // Handle user interrupt (Ctrl+C)
   if (process.env.CI !== 'true') {
     process.stdin.on('end', callback);
   }
