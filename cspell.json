@@ -69,6 +69,7 @@
     "Cuph",
     "dashmap",
     "dedupe",
+    "deepin",
     "deepmerge",
     "demostration",
     "Denysov",
@@ -145,6 +146,7 @@
     "libloading",
     "linebpos",
     "linechpos",
+    "linuxmint",
     "loglevel",
     "lukastaegert",
     "maked",
@@ -186,6 +188,7 @@
     "Oudd",
     "outro",
     "Oyzy",
+    "pacman",
     "pageerror",
     "pargs",
     "pathdiff",
@@ -309,12 +312,7 @@
     "ZERs",
     "Zjwg",
     "Zwram",
-    "zzse",
-    "Fira",
-    "atrule",
-    "metavars",
-    "Yuxi",
-    "Gurubase"
+    "zzse"
   ],
   "ignorePaths": [
     "pnpm-lock.yaml",
