@@ -101,7 +101,7 @@ export const installLinuxProtobuf = async (spinner) => {
           cwd: CWD,
         },
       );
-    } catch (_) {
+    } catch {
       return Promise.reject(
         `not found "${DEFAULT_LINUX_PACKAGE_MANAGER}", if it's not your package manager, please install "protobuf" manually.`,
       );
@@ -117,7 +117,7 @@ export const installLinuxProtobuf = async (spinner) => {
         });
       } else {
         spinner.stop();
-        result = execa("sudo", ["pacman", "-Sy", "protobuf"], {
+        result = await execa("sudo", ["pacman", "-Sy", "protobuf"], {
           cwd: CWD,
           stdin: "inherit",
           stdout: "inherit",
@@ -126,14 +126,27 @@ export const installLinuxProtobuf = async (spinner) => {
         spinner.start();
       }
       return result;
-    } catch (err) {
-      console.log(err);
+    } catch {
       return Promise.reject(
         `not found "pacman", if it's not your package manager, please install "protobuf" manually.`,
       );
     }
   } else {
-    return Promise.reject(``);
+    spinner.warn({
+      text: `Unknown Linux distribution, trying to use "apt"...`,
+    });
+    try {
+      await execa("type", DEFAULT_LINUX_PACKAGE_MANAGER);
+      return execa(
+        DEFAULT_LINUX_PACKAGE_MANAGER,
+        ["install", "-y", "protobuf-compiler"],
+        {
+          cwd: CWD,
+        },
+      );
+    } catch {
+      return Promise.reject(``);
+    }
   }
 };
 
@@ -221,7 +234,6 @@ export const buildJsPlugins = async (spinner) => {
       spinner,
     );
   }
-  spinner.start();
 };
 
 export const buildRustPlugins = async (spinner) => {
@@ -364,12 +376,15 @@ export function isArchLinux() {
 }
 
 export function isDebianSeries() {
-  const distro = getLinuxDistribution();
+  const distro = getLinuxDistribution().toLowerCase();
   return (
     distro === "debian" ||
     distro === "ubuntu" ||
     distro === "linuxmint" ||
-    distro === "raspbian"
+    distro === "raspbian" ||
+    distro === "kali" ||
+    distro === "deepin" ||
+    distro === "pop"
   );
 }
 
@@ -393,14 +408,20 @@ export async function installProtoBuf() {
   const installFlag = await checkProtobuf();
   if (!installFlag) {
     logger(
-      "Due to the use of protoc in the project, we currently judge that you have not installed. we need to install protobuf locally to make the project start successfully. \n\n- For mac users, will be use your local `homebrew` tool for installation. (First, Make sure your computer has `homebrew` installed) \n- For linux users, we will use your local `apt` tool for installation. (First, Make sure your computer has `apt` installed) \n- For Windows users, because the protobuf plugin cannot be installed automatically, You need to install manually according to the prompts \n",
+      "Due to the use of protoc in the project, we currently judge that you have not installed. " +
+        "We need to install protobuf locally to make the project start successfully. \n\n" +
+        "- For MacOS users, will be use your local `homebrew` tool for installation. (First, Make sure your computer has `homebrew` installed) \n" +
+        "- For Debian-based Linux users, we will use your local `apt` tool for installation. (First, Make sure your computer has `apt` installed) \n" +
+        "- For Arch Linux users, we will use your local `pacman` tool for installation. (First, Make sure your computer has `pacman` installed) \n" +
+        "- For other Linux users, we will try to use your local `apt` tool for installation. (If exists) \n" +
+        "- For Windows users, because the protobuf plugin cannot be installed automatically, You need to install manually according to the prompts \n",
       { title: "FARM WARN", color: "yellow" },
     );
 
     if (isMac()) {
-      await runTask("Protobuf", installMacProtobuf, "Install", "Install");
+      await runTask("Protobuf", installMacProtobuf, "Installing", "Install");
     } else if (isLinux()) {
-      await runTask("Protobuf", installLinuxProtobuf, "Install", "Install");
+      await runTask("Protobuf", installLinuxProtobuf, "Installing", "Install");
     }
 
     if (isWindows()) {
