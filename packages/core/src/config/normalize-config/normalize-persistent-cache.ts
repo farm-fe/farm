@@ -8,6 +8,7 @@ import { traceDependencies } from '../../utils/trace-dependencies.js';
 import { isDisableCache } from '../env.js';
 import { ResolvedUserConfig } from '../index.js';
 
+const DEFAULT_CACHE_DIR = 'node_modules/.farm/cache';
 const defaultGlobalBuiltinCacheKeyStrategy = {
   define: true,
   buildDependencies: true,
@@ -28,15 +29,7 @@ export async function normalizePersistentCache(
     return;
   }
 
-  if (
-    typeof config.persistentCache === 'object' &&
-    config.persistentCache.cacheDir
-  ) {
-    config.persistentCache.cacheDir = path.resolve(
-      config.root,
-      config.persistentCache.cacheDir
-    );
-  }
+  // @ts-ignore
 
   if (config.persistentCache === true || config.persistentCache == undefined) {
     config.persistentCache = {
@@ -45,6 +38,12 @@ export async function normalizePersistentCache(
       envs: {}
     };
   }
+
+  config.persistentCache.cacheDir = path.resolve(
+    config.root,
+    //@ts-ignore
+    config.persistentCache.cacheDir || DEFAULT_CACHE_DIR
+  );
   // globalCacheKeyStrategy should not be passed to rust
   let { globalBuiltinCacheKeyStrategy } = config.persistentCache;
   delete config.persistentCache.globalBuiltinCacheKeyStrategy;
