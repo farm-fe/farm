@@ -24,7 +24,10 @@ const PKG_PLUGIN_TOOLS = resolve(CWD, "./packages/plugin-tools");
 const PKG_DTS = resolve(CWD, "./js-plugins/dts");
 
 // Build ReplaceDirnamePlugin
-const PKG_REPLACE_DIRNAME_PLUGIN = resolve(CWD, "./rust-plugins/replace-dirname");
+const PKG_REPLACE_DIRNAME_PLUGIN = resolve(
+  CWD,
+  "./rust-plugins/replace-dirname",
+);
 
 // Build rust_plugin_react
 const PKG_RUST_PLUGIN = resolve(CWD, "./rust-plugins");
@@ -87,22 +90,51 @@ export const installMacProtobuf = () =>
   });
 
 // install linux protobuf
-export const installLinuxProtobuf = async () => {
-  try {
-    await execa("type", DEFAULT_LINUX_PACKAGE_MANAGER);
-  } catch (_) {
-    return Promise.reject(
-      `not found "${DEFAULT_LINUX_PACKAGE_MANAGER}", if it's not your package manager, please install "protobuf" manually.`,
-    );
+export const installLinuxProtobuf = async (spinner) => {
+  if (isDebianSeries()) {
+    try {
+      await execa("type", DEFAULT_LINUX_PACKAGE_MANAGER);
+      return execa(
+        DEFAULT_LINUX_PACKAGE_MANAGER,
+        ["install", "-y", "protobuf-compiler"],
+        {
+          cwd: CWD,
+        },
+      );
+    } catch (_) {
+      return Promise.reject(
+        `not found "${DEFAULT_LINUX_PACKAGE_MANAGER}", if it's not your package manager, please install "protobuf" manually.`,
+      );
+    }
+  } else if (isArchLinux()) {
+    try {
+      await execa("which", ["pacman"]);
+      let result;
+      if (process.getuid() == 0) {
+        result = execa("pacman", ["-Sy", "protobuf"], {
+          cwd: CWD,
+          input: "y\n",
+        });
+      } else {
+        spinner.stop();
+        result = execa("sudo", ["pacman", "-Sy", "protobuf"], {
+          cwd: CWD,
+          stdin: "inherit",
+          stdout: "inherit",
+          stderr: "inherit",
+        });
+        spinner.start();
+      }
+      return result;
+    } catch (err) {
+      console.log(err);
+      return Promise.reject(
+        `not found "pacman", if it's not your package manager, please install "protobuf" manually.`,
+      );
+    }
+  } else {
+    return Promise.reject(``);
   }
-
-  return execa(
-    DEFAULT_LINUX_PACKAGE_MANAGER,
-    ["install", "-y", "protobuf-compiler"],
-    {
-      cwd: CWD,
-    },
-  );
 };
 
 // build core command
@@ -110,7 +142,9 @@ export const buildCore = () =>
   execa(DEFAULT_PACKAGE_MANAGER, ["build:rs"], {
     cwd: PKG_CORE,
     stdio: "inherit",
-  }).then(buildReplaceDirnamePlugin).then(buildCoreCjs);
+  })
+    .then(buildReplaceDirnamePlugin)
+    .then(buildCoreCjs);
 
 export const buildCoreCjs = () =>
   execa(DEFAULT_PACKAGE_MANAGER, ["build:cjs"], {
@@ -143,7 +177,7 @@ export const buildReplaceDirnamePlugin = () =>
 // build rust plugins
 export const rustPlugins = () => batchBuildPlugins(PKG_RUST_PLUGIN);
 
-export const buildJsPlugins = async () => {
+export const buildJsPlugins = async (spinner) => {
   const jsPluginDirs = fs.readdirSync(JS_PLUGINS_DIR).filter((file) => {
     return (
       fs.statSync(join(JS_PLUGINS_DIR, file)).isDirectory() &&
@@ -161,9 +195,8 @@ export const buildJsPlugins = async () => {
   for (const pluginDir of jsPluginDirs) {
     const pluginPath = resolve(JS_PLUGINS_DIR, pluginDir);
     await runTask(
-      `Built JS Plugin: ${pluginDir}`,
-      async () => {
-        const spinner = createSpinner(`Building ${pluginDir}`).start();
+      `Js plugin: ${pluginDir}`,
+      async (spinner) => {
         try {
           if (!existsSync(join(pluginPath, "package.json"))) {
             spinner.warn({
@@ -185,11 +218,13 @@ export const buildJsPlugins = async () => {
       },
       "Building",
       "Build",
+      spinner,
     );
   }
+  spinner.start();
 };
 
-export const buildRustPlugins = async () => {
+export const buildRustPlugins = async (spinner) => {
   const rustPluginDirs = fs.readdirSync(PKG_RUST_PLUGIN).filter((file) => {
     return (
       fs.statSync(join(PKG_RUST_PLUGIN, file)).isDirectory() &&
@@ -197,7 +232,9 @@ export const buildRustPlugins = async () => {
     );
   });
   const filterPlugins = ["replace-dirname"];
-  const buildPlugins = rustPluginDirs.filter(item => !filterPlugins.includes(item))
+  const buildPlugins = rustPluginDirs.filter(
+    (item) => !filterPlugins.includes(item),
+  );
   const total = buildPlugins.length;
   console.log("\n");
   logger(`Found ${total} Rust plugins to build \n`, {
@@ -207,9 +244,8 @@ export const buildRustPlugins = async () => {
   for (const pluginDir of buildPlugins) {
     const pluginPath = resolve(PKG_RUST_PLUGIN, pluginDir);
     await runTask(
-      `Built Rust plugin: ${pluginDir}`,
-      async () => {
-        const spinner = createSpinner(` Building ${pluginDir}`).start();
+      `Rust plugin: ${pluginDir}`,
+      async (spinner) => {
         try {
           if (!existsSync(join(pluginPath, "Cargo.toml"))) {
             spinner.warn({
@@ -232,11 +268,12 @@ export const buildRustPlugins = async () => {
       },
       "Building",
       "Build",
+      spinner,
     );
   }
 };
 
-export const copyArtifacts = () =>
+export const copyArtifacts = (_) =>
   batchBuildPlugins(PKG_RUST_PLUGIN, "copy-artifacts");
 
 export async function runTask(
@@ -244,10 +281,10 @@ export async function runTask(
   task,
   processText = "Building",
   finishedText = "Build",
+  spinner = createSpinner(),
 ) {
-  const spinner = createSpinner(`${processText} ${taskName}`).start();
   try {
-    await task();
+    await task(spinner.start({ text: `${processText} ${taskName}` }));
     spinner.success({ text: `✨ ✨ ${finishedText} ${taskName} completed! ` });
   } catch (e) {
     spinner.error({ text: `${finishedText} ${taskName} failed!` });
@@ -298,6 +335,42 @@ export function isLinux() {
 export function isWindows() {
   const platform = os.platform();
   return platform === "win32";
+}
+
+export function getLinuxDistribution() {
+  const data = fs.readFileSync("/etc/os-release", {
+    encoding: "utf8",
+  });
+
+  const config = {};
+  const lines = data.split("\n");
+
+  lines.forEach((line) => {
+    const trimmedLine = line.trim();
+    if (trimmedLine && !trimmedLine.startsWith("#")) {
+      const [key, value] = trimmedLine.split("=");
+      const cleanKey = key.trim();
+      const cleanValue = value.trim().replace(/"/g, "");
+
+      config[cleanKey] = cleanValue;
+    }
+  });
+
+  return config.ID;
+}
+
+export function isArchLinux() {
+  return getLinuxDistribution() === "arch";
+}
+
+export function isDebianSeries() {
+  const distro = getLinuxDistribution();
+  return (
+    distro === "debian" ||
+    distro === "ubuntu" ||
+    distro === "linuxmint" ||
+    distro === "raspbian"
+  );
 }
 
 export async function checkProtobuf() {
