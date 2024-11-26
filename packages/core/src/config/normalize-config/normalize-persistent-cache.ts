@@ -9,6 +9,7 @@ import { isDisableCache } from '../env.js';
 import { ResolvedUserConfig } from '../index.js';
 
 const DEFAULT_CACHE_DIR = 'node_modules/.farm/cache';
+const DEFAULT_PACKAGE_JSON = 'package.json';
 const defaultGlobalBuiltinCacheKeyStrategy = {
   define: true,
   buildDependencies: true,
@@ -29,8 +30,6 @@ export async function normalizePersistentCache(
     return;
   }
 
-  // @ts-ignore
-
   if (config.persistentCache === true || config.persistentCache == undefined) {
     config.persistentCache = {
       buildDependencies: [],
@@ -41,19 +40,14 @@ export async function normalizePersistentCache(
 
   config.persistentCache.cacheDir = path.resolve(
     config.root,
-    //@ts-ignore
     config.persistentCache.cacheDir || DEFAULT_CACHE_DIR
   );
   // globalCacheKeyStrategy should not be passed to rust
-  let { globalBuiltinCacheKeyStrategy } = config.persistentCache;
-  delete config.persistentCache.globalBuiltinCacheKeyStrategy;
-  if (!globalBuiltinCacheKeyStrategy) {
-    globalBuiltinCacheKeyStrategy = {};
-  }
-  globalBuiltinCacheKeyStrategy = {
+  const globalBuiltinCacheKeyStrategy = {
     ...defaultGlobalBuiltinCacheKeyStrategy,
-    ...globalBuiltinCacheKeyStrategy
+    ...(config.persistentCache?.globalBuiltinCacheKeyStrategy ?? {})
   };
+  delete config.persistentCache.globalBuiltinCacheKeyStrategy;
 
   if (globalBuiltinCacheKeyStrategy.env) {
     config.persistentCache.envs = {
@@ -83,10 +77,7 @@ export async function normalizePersistentCache(
   }
 
   // add type of package.json to envs
-  const packageJsonPath = path.join(
-    config.root ?? process.cwd(),
-    'package.json'
-  );
+  const packageJsonPath = path.join(config.root, DEFAULT_PACKAGE_JSON);
 
   if (globalBuiltinCacheKeyStrategy.packageJson) {
     if (existsSync(packageJsonPath)) {
