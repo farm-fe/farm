@@ -3,14 +3,14 @@ import { createRequire } from 'node:module';
 import path from 'node:path';
 
 import { RustPlugin } from '../../plugin/index.js';
-import { Config } from '../../types/binding.js';
+import { Config, GlobalBuiltinCacheKeyStrategy } from '../../types/binding.js';
 import { traceDependencies } from '../../utils/trace-dependencies.js';
 import { isDisableCache } from '../env.js';
 import { ResolvedUserConfig } from '../index.js';
 
 const DEFAULT_CACHE_DIR = 'node_modules/.farm/cache';
 const DEFAULT_PACKAGE_JSON = 'package.json';
-const defaultGlobalBuiltinCacheKeyStrategy = {
+const defaultGlobalBuiltinCacheKeyStrategy: GlobalBuiltinCacheKeyStrategy = {
   define: true,
   buildDependencies: true,
   lockfile: true,
