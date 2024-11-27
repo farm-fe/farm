@@ -1,6 +1,4 @@
-use std::collections::HashSet;
-
-use farmfe_core::{error::Result, farm_profile_scope, swc_ecma_ast::ModuleItem};
+use farmfe_core::{error::Result, farm_profile_scope, swc_ecma_ast::ModuleItem, HashSet};
 
 use super::common::parse_module_item;
 
@@ -300,7 +298,7 @@ pub struct SimplePolyfill {
 
 impl SimplePolyfill {
   pub fn new(polyfill: Vec<Polyfill>) -> Self {
-    let mut polyfills = HashSet::new();
+    let mut polyfills = HashSet::default();
 
     polyfills.extend(polyfill);
 

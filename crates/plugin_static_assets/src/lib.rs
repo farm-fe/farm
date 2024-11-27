@@ -1,7 +1,6 @@
 #![feature(path_file_prefix)]
 
 use std::{
-  collections::HashMap,
   path::{Path, PathBuf},
   sync::Arc,
 };
@@ -18,7 +17,7 @@ use farmfe_core::{
   resource::{Resource, ResourceOrigin, ResourceType},
   rkyv::Deserialize,
   serialize,
-  swc_common::sync::OnceCell,
+  swc_common::sync::OnceCell, HashMap,
 };
 use farmfe_toolkit::{
   fs::{read_file_raw, read_file_utf8, transform_output_filename},

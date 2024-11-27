@@ -1,5 +1,6 @@
-use std::collections::{HashMap, HashSet, VecDeque};
+use std::collections::VecDeque;
 
+use farmfe_core::{HashMap, HashSet};
 use farmfe_core::module::{
   module_graph::ModuleGraph,
   module_group::{ModuleGroup, ModuleGroupGraph},
@@ -15,7 +16,7 @@ pub fn patch_module_group_graph(
   module_graph: &mut ModuleGraph,
   module_group_graph: &mut ModuleGroupGraph,
 ) -> HashSet<ModuleId> {
-  let mut affected_module_groups = HashSet::new();
+  let mut affected_module_groups = HashSet::default();
 
   for updated_module_id in &updated_module_ids {
     let module = module_graph.module(updated_module_id).unwrap();
@@ -80,7 +81,7 @@ pub fn patch_module_group_graph(
         } else {
           // also need to handle all of its non-dynamic children
           let mut queue = VecDeque::from([added_module_id.clone()]);
-          let mut visited = HashSet::new();
+          let mut visited = HashSet::default();
 
           while !queue.is_empty() {
             let current_module_id = queue.pop_front().unwrap();
@@ -190,7 +191,7 @@ pub fn patch_module_group_graph(
           }
         } else {
           let mut queue = VecDeque::from([removed_module_id.clone()]);
-          let mut visited = HashSet::new();
+          let mut visited = HashSet::default();
 
           while !queue.is_empty() {
             let current_module_id = queue.pop_front().unwrap();
@@ -297,7 +298,7 @@ pub fn patch_module_group_graph(
     .filter(|g_id| module_group_graph.has(g_id))
     .collect::<Vec<_>>();
 
-  let mut final_affected_module_groups = HashSet::new();
+  let mut final_affected_module_groups = HashSet::default();
   let mut queue = VecDeque::from(affected_module_groups);
   // makes sure that all module groups that are affected are included
   while !queue.is_empty() {

@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use farmfe_core::{
   config::AliasItem,
   module::{module_graph::ModuleGraph, ModuleId},
@@ -7,6 +5,7 @@ use farmfe_core::{
   resource::{Resource, ResourceOrigin},
   swc_common::DUMMY_SP,
   swc_css_ast::{AtRulePrelude, ImportHref, Rule, Str, Stylesheet, Url, UrlValue},
+  HashMap,
 };
 use farmfe_toolkit::{
   resolve::path_start_with_alias::is_start_with_alias,

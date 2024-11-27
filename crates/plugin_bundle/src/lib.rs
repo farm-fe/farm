@@ -1,10 +1,7 @@
 #![feature(box_patterns)]
 #![feature(let_chains)]
 
-use std::{
-  collections::{HashMap, HashSet},
-  sync::Arc,
-};
+use std::sync::Arc;
 
 use farmfe_core::{
   config::{
@@ -25,6 +22,7 @@ use farmfe_core::{
     resource_pot::{ResourcePot, ResourcePotMetaData, ResourcePotType},
     ResourceType,
   },
+  HashMap, HashSet,
 };
 use farmfe_toolkit::constant::RUNTIME_SUFFIX;
 use resource_pot_to_bundle::{
@@ -200,7 +198,7 @@ impl Plugin for FarmPluginBundle {
   ) -> farmfe_core::error::Result<Option<ResourcePotMetaData>> {
     if matches!(resource_pot.resource_pot_type, ResourcePotType::Runtime) {
       return Ok(Some(ResourcePotMetaData {
-        rendered_modules: HashMap::new(),
+        rendered_modules: HashMap::default(),
         rendered_content: self.runtime_code.lock().clone(),
         rendered_map_chain: vec![],
         custom_data: resource_pot.meta.custom_data.clone(),
@@ -208,7 +206,7 @@ impl Plugin for FarmPluginBundle {
     } else if let Some(bundle) = self.bundle_map.lock().get(&resource_pot.id) {
       return Ok(Some(ResourcePotMetaData {
         // TODO
-        rendered_modules: HashMap::new(),
+        rendered_modules: HashMap::default(),
         rendered_content: Arc::new(bundle.to_string()),
         rendered_map_chain: vec![],
         custom_data: resource_pot.meta.custom_data.clone(),
@@ -242,7 +240,7 @@ impl Plugin for FarmPluginBundle {
       return Ok(None);
     }
 
-    let mut map = HashMap::new();
+    let mut map = HashMap::default();
 
     for (name, resource) in param.resources_map.iter() {
       if let Some(ref info) = resource.info {

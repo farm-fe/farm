@@ -1,10 +1,11 @@
-use std::{cell::RefCell, collections::HashMap, rc::Rc};
+use std::{cell::RefCell, rc::Rc};
 
 use farmfe_core::{
   config::{Config, ModuleFormat},
   error::{CompilationError, Result},
   module::{ModuleId, ModuleSystem, ModuleType},
   resource::resource_pot::ResourcePotId,
+  HashMap,
 };
 
 use crate::resource_pot_to_bundle::{
@@ -27,7 +28,7 @@ pub struct ExternalReferenceImport {
 impl ExternalReferenceImport {
   pub fn new() -> Self {
     Self {
-      named: HashMap::new(),
+      named: HashMap::default(),
       namespace: None,
       default: None,
       source: None,
@@ -98,7 +99,7 @@ pub struct ExternalReferenceExport {
 impl ExternalReferenceExport {
   pub fn new(module_system: ModuleSystem) -> Self {
     Self {
-      named: HashMap::new(),
+      named: HashMap::default(),
       default: None,
       all: (false, None),
       namespace: None,
@@ -218,7 +219,7 @@ impl From<&String> for ReferenceKind {
 /// }
 ///
 
-pub type CommonJsImportMap = HashMap<ReferenceKind, ExternalReferenceImport>;
+pub type CommonJsImportMap = farmfe_core::HashMap<ReferenceKind, ExternalReferenceImport>;
 
 #[derive(Debug, Default)]
 pub struct BundleReference {

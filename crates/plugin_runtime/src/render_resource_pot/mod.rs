@@ -1,7 +1,4 @@
-use std::{
-  collections::{HashMap, HashSet},
-  sync::Arc,
-};
+use std::sync::Arc;
 
 use farmfe_core::{
   cache::cache_store::CacheStoreKey,
@@ -19,7 +16,7 @@ use farmfe_core::{
   plugin::PluginParseHookParam,
   rayon::iter::{IntoParallelIterator, ParallelIterator},
   resource::resource_pot::{RenderedModule, ResourcePot},
-  serialize,
+  serialize, HashMap, HashSet,
 };
 use farmfe_toolkit::common::MinifyBuilder;
 
@@ -235,8 +232,8 @@ pub fn resource_pot_to_runtime_object(
     },
     ..Default::default()
   });
-  let mut rendered_modules = HashMap::new();
-  let mut external_modules_set = HashSet::new();
+  let mut rendered_modules = HashMap::default();
+  let mut external_modules_set = HashSet::default();
 
   for m in modules {
     bundle.add_source(m.module, None).unwrap();

@@ -3,7 +3,7 @@
 #![allow(clippy::blocks_in_conditions)]
 #[cfg(feature = "file_watcher")]
 use std::path::PathBuf;
-use std::{collections::HashMap, path::Path, sync::Arc};
+use std::{path::Path, sync::Arc};
 
 use farmfe_compiler::{trace_module_graph::TracedModuleGraph, Compiler};
 
@@ -16,6 +16,7 @@ use farmfe_core::{
   config::{Config, Mode},
   module::ModuleId,
   plugin::UpdateType,
+  HashMap,
 };
 
 #[cfg(feature = "file_watcher")]
@@ -412,7 +413,7 @@ impl JsCompiler {
     let context = self.compiler.context();
     let resources = context.resources_map.lock();
 
-    let mut result = HashMap::new();
+    let mut result = HashMap::default();
 
     for resource in resources.values() {
       // only write expose non-emitted resource
@@ -428,7 +429,7 @@ impl JsCompiler {
   pub fn resources_map(&self, e: Env) -> HashMap<String, JsUnknown> {
     let context = self.compiler.context();
     let resources = context.resources_map.lock();
-    let mut resources_map = HashMap::new();
+    let mut resources_map = HashMap::default();
 
     for (name, resource) in resources.iter() {
       resources_map.insert(name.clone(), e.to_js_value(resource).unwrap());

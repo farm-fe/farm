@@ -1,10 +1,4 @@
-use std::{
-  cell::RefCell,
-  cmp::Ordering,
-  collections::{HashMap, HashSet},
-  rc::Rc,
-  sync::Arc,
-};
+use std::{cell::RefCell, cmp::Ordering, rc::Rc, sync::Arc};
 
 use farmfe_core::{
   config::{external::ExternalConfig, Config, Mode, ModuleFormat, TargetEnv},
@@ -19,6 +13,7 @@ use farmfe_core::{
   plugin::ResolveKind,
   resource::resource_pot::ResourcePotType,
   swc_common::{comments::SingleThreadedComments, util::take::Take},
+  HashMap, HashSet,
 };
 use farmfe_toolkit::{
   common::build_source_map,
@@ -144,7 +139,7 @@ impl<'a> BundleAnalyzer<'a> {
     farm_profile_function!("");
     for module_id in &self.ordered_modules {
       farm_profile_scope!(format!("bundle strip module: {}", module_id.to_string()));
-      let mut stmt_action = HashSet::new();
+      let mut stmt_action = HashSet::default();
       if let Some(module_analyzer) = module_analyzer_manager.module_analyzer(module_id) {
         for statement in &module_analyzer.statements {
           // import
@@ -1110,7 +1105,7 @@ impl<'a> BundleAnalyzer<'a> {
   ) -> Result<()> {
     farm_profile_function!("");
 
-    let mut commonjs_import_executed: HashSet<ModuleId> = HashSet::new();
+    let mut commonjs_import_executed: HashSet<ModuleId> = HashSet::default();
     let external_config = ExternalConfig::from(self.context.config.as_ref());
 
     let mut patch_export_to_module = vec![];
@@ -1118,7 +1113,7 @@ impl<'a> BundleAnalyzer<'a> {
     let mut patch_after_import_to_module = vec![];
 
     let mut is_polyfilled_es_module_flag = false;
-    let mut already_redeclare: HashSet<ReferenceKind> = HashSet::new();
+    let mut already_redeclare: HashSet<ReferenceKind> = HashSet::default();
 
     // sort by order
     // 1. sort commonjs declaration to top
@@ -1144,14 +1139,14 @@ impl<'a> BundleAnalyzer<'a> {
         ctx,
       )?;
 
-      let reference_kind = module_id.clone().into();
+      let reference_kind = (*module_id).into();
 
       let result = if let Some(map) = bundle_reference
         .redeclare_commonjs_import
         .get(&reference_kind)
       {
         already_redeclare.insert(reference_kind.clone());
-        let map = HashMap::from([(reference_kind, map.clone())]);
+        let map = HashMap::from_iter([(reference_kind, map.clone())]);
         CjsModuleAnalyzer::redeclare_commonjs_export(
           &self.bundle_variable.borrow(),
           &map,
@@ -1168,7 +1163,7 @@ impl<'a> BundleAnalyzer<'a> {
       module_analyzer.ast.body.extend(result);
     }
 
-    let bundle_commonjs_declare_map: CommonJsImportMap = CommonJsImportMap::new();
+    let bundle_commonjs_declare_map: CommonJsImportMap = CommonJsImportMap::default();
 
     let bundle_reference = bundle_reference_manager.reference_mut(&self.group.id);
     let mut bundle_reference = bundle_reference.borrow_mut();
