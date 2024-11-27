@@ -271,8 +271,8 @@ export function bootstrap(
     const shortFile = getShortName(config.configFilePath, config.root);
     config.logger.info(`Using config file at ${bold(green(shortFile))}`, true);
   }
-  const usePersistentCache = config.compilation.persistentCache && hasCacheDir;
-  const persistentCacheFlag = usePersistentCache
+  const hasPersistentCache = config.compilation.persistentCache && hasCacheDir;
+  const persistentCacheFlag = hasPersistentCache
     ? colors.bold(PersistentCacheBrand)
     : '';
 
