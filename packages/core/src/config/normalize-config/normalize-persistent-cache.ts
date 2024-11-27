@@ -3,12 +3,14 @@ import { createRequire } from 'node:module';
 import path from 'node:path';
 
 import { RustPlugin } from '../../plugin/index.js';
-import { Config } from '../../types/binding.js';
+import { Config, GlobalBuiltinCacheKeyStrategy } from '../../types/binding.js';
 import { traceDependencies } from '../../utils/trace-dependencies.js';
 import { isDisableCache } from '../env.js';
 import { ResolvedUserConfig } from '../index.js';
 
-const defaultGlobalBuiltinCacheKeyStrategy = {
+const DEFAULT_CACHE_DIR = 'node_modules/.farm/cache';
+const DEFAULT_PACKAGE_JSON = 'package.json';
+const defaultGlobalBuiltinCacheKeyStrategy: GlobalBuiltinCacheKeyStrategy = {
   define: true,
   buildDependencies: true,
   lockfile: true,
@@ -28,16 +30,6 @@ export async function normalizePersistentCache(
     return;
   }
 
-  if (
-    typeof config.persistentCache === 'object' &&
-    config.persistentCache.cacheDir
-  ) {
-    config.persistentCache.cacheDir = path.resolve(
-      config.root,
-      config.persistentCache.cacheDir
-    );
-  }
-
   if (config.persistentCache === true || config.persistentCache == undefined) {
     config.persistentCache = {
       buildDependencies: [],
@@ -45,16 +37,17 @@ export async function normalizePersistentCache(
       envs: {}
     };
   }
+
+  config.persistentCache.cacheDir = path.resolve(
+    config.root,
+    config.persistentCache.cacheDir || DEFAULT_CACHE_DIR
+  );
   // globalCacheKeyStrategy should not be passed to rust
-  let { globalBuiltinCacheKeyStrategy } = config.persistentCache;
-  delete config.persistentCache.globalBuiltinCacheKeyStrategy;
-  if (!globalBuiltinCacheKeyStrategy) {
-    globalBuiltinCacheKeyStrategy = {};
-  }
-  globalBuiltinCacheKeyStrategy = {
+  const globalBuiltinCacheKeyStrategy = {
     ...defaultGlobalBuiltinCacheKeyStrategy,
-    ...globalBuiltinCacheKeyStrategy
+    ...(config.persistentCache?.globalBuiltinCacheKeyStrategy ?? {})
   };
+  delete config.persistentCache.globalBuiltinCacheKeyStrategy;
 
   if (globalBuiltinCacheKeyStrategy.env) {
     config.persistentCache.envs = {
@@ -84,10 +77,7 @@ export async function normalizePersistentCache(
   }
 
   // add type of package.json to envs
-  const packageJsonPath = path.join(
-    config.root ?? process.cwd(),
-    'package.json'
-  );
+  const packageJsonPath = path.join(config.root, DEFAULT_PACKAGE_JSON);
 
   if (globalBuiltinCacheKeyStrategy.packageJson) {
     if (existsSync(packageJsonPath)) {
