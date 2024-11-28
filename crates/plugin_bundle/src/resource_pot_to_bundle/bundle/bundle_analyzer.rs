@@ -867,10 +867,7 @@ impl<'a> BundleAnalyzer<'a> {
           try_reexport_entry_module(
             self.resource_pot.resource_pot_type.clone(),
             &mut self.bundle_reference,
-            &self.bundle_variable.borrow(),
             module_id,
-            module_analyzer_manager,
-            is_format_to_commonjs,
             module_system,
           )?;
         }

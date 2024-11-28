@@ -77,9 +77,9 @@ var index_cjs = __commonJs((module, exports)=>{
     const name = 'foo';
     module.exports.age = 18;
 });
-var index_ns = _interop_require_wildcard(index_cjs()), name = index_cjs()["name"];
+var name = index_cjs()["name"];
 module.exports.name = name;
 Object.defineProperty(exports, "__esModule", {
     value: true
 });
-_export_star(index_ns, module.exports);
+_export_star(index_cjs(), module.exports);

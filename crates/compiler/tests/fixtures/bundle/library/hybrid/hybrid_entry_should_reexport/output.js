@@ -77,6 +77,6 @@ var index_cjs = __commonJs((module, exports)=>{
     const name = 'foo';
     module.exports.age = 18;
 });
-var index_ns = _interop_require_wildcard(index_cjs()), name = index_cjs()["name"];
+var name = index_cjs()["name"];
 export { name };
-export default index_ns;
+export default index_cjs();
