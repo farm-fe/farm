@@ -325,10 +325,7 @@ impl BundleReference {
 pub fn try_reexport_entry_module(
   resource_pot_type: ResourcePotType,
   bundle_reference: &mut BundleReference,
-  bundle_variable: &BundleVariable,
   module_id: &ModuleId,
-  module_analyzer_manager: &ModuleAnalyzerManager,
-  is_format_to_commonjs: bool,
   module_system: ModuleSystem,
 ) -> Result<()> {
   let reference_kind = ReferenceKind::Module((*module_id).clone());
@@ -347,28 +344,11 @@ pub fn try_reexport_entry_module(
     return Ok(());
   };
 
-  let Some(ns) = module_analyzer_manager
-    .module_global_uniq_name
-    .namespace_name(module_id)
-  else {
-    return Ok(());
-  };
-
-  bundle_reference.add_declare_commonjs_import(
-    &ImportSpecifierInfo::Namespace(ns),
+  bundle_reference.add_reference_export(
+    &ExportSpecifierInfo::All(None),
     reference_kind.clone(),
-    bundle_variable,
-  )?;
-
-  if is_format_to_commonjs {
-    bundle_reference.add_reference_export(
-      &ExportSpecifierInfo::All(None),
-      reference_kind.clone(),
-      module_system,
-    );
-  } else {
-    bundle_reference.add_local_export(&ExportSpecifierInfo::Default(ns), module_system);
-  }
+    module_system,
+  );
 
   Ok(())
 }

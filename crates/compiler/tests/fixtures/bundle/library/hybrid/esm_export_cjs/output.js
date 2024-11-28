@@ -65,5 +65,4 @@
         age: 18
     };
 });
-var index_ns = _interop_require_wildcard(index_cjs());
-export default index_ns;
+export default index_cjs();
