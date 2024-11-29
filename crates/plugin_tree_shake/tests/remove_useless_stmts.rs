@@ -17,9 +17,7 @@ use farmfe_plugin_tree_shake::{
 };
 use farmfe_testing_helpers::fixture;
 use farmfe_toolkit::{
-  common::{create_swc_source_map, Source},
-  fs::read_file_utf8,
-  script::codegen_module,
+  fs::read_file_utf8, script::codegen_module, source_map::create_swc_source_map,
 };
 
 use crate::common::create_module_with_comments;
@@ -323,10 +321,7 @@ fn trace_loadable_esm() {
     remove_useless_stmts(&module_id, &mut module_graph, &tree_shake_module_map);
 
     fixture!("tests/fixtures/remove_useless_stmts/*.js", |file, _| {
-      let (cm, _) = create_swc_source_map(Source {
-        path: PathBuf::from("any"),
-        content: Arc::new(code.to_string()),
-      });
+      let (cm, _) = create_swc_source_map(&"any".into(), Arc::new(code.to_string()));
       let ast = &module_graph
         .module_mut(&module_id)
         .unwrap()
@@ -383,10 +378,7 @@ fn trace_complex_decl_stmt() {
 
     remove_useless_stmts(&module_id, &mut module_graph, &tree_shake_module_map);
 
-    let (cm, _) = create_swc_source_map(Source {
-      path: PathBuf::from("any"),
-      content: Arc::new(code.to_string()),
-    });
+    let (cm, _) = create_swc_source_map(&"any".into(), Arc::new(code.to_string()));
     let ast = &module_graph
       .module_mut(&module_id)
       .unwrap()

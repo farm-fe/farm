@@ -3,12 +3,11 @@ use std::sync::Arc;
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 
 use super::{
-  Plugin, PluginAnalyzeDepsHookParam, PluginDriverRenderResourcePotHookResult,
-  PluginFinalizeModuleHookParam, PluginFinalizeResourcesHookParams,
-  PluginGenerateResourcesHookResult, PluginHandleEntryResourceHookParams, PluginHookContext,
-  PluginLoadHookParam, PluginLoadHookResult, PluginModuleGraphUpdatedHookParams,
-  PluginParseHookParam, PluginProcessModuleHookParam, PluginRenderResourcePotHookParam,
-  PluginRenderResourcePotHookResult, PluginResolveHookParam, PluginResolveHookResult,
+  Plugin, PluginAnalyzeDepsHookParam, PluginFinalizeModuleHookParam,
+  PluginFinalizeResourcesHookParams, PluginGenerateResourcesHookResult,
+  PluginHandleEntryResourceHookParams, PluginHookContext, PluginLoadHookParam,
+  PluginLoadHookResult, PluginModuleGraphUpdatedHookParams, PluginParseHookParam,
+  PluginProcessModuleHookParam, PluginResolveHookParam, PluginResolveHookResult,
   PluginTransformHookParam, PluginUpdateModulesHookParams,
 };
 use crate::{
@@ -19,7 +18,7 @@ use crate::{
     module_graph::ModuleGraph, module_group::ModuleGroupGraph, Module, ModuleId, ModuleMetaData,
     ModuleType,
   },
-  resource::resource_pot::{ResourcePot, ResourcePotInfo, ResourcePotMetaData},
+  resource::{meta_data::ResourcePotMetaData, resource_pot::ResourcePot},
   stats::{CompilationModuleGraphStats, CompilationPluginHookStats, Stats},
 };
 use std::time::SystemTime;
@@ -228,7 +227,7 @@ impl PluginDriver {
             0
           };
           context
-            .record_manager
+            .stats
             .add_plugin_hook_stats(CompilationPluginHookStats {
               plugin_name: plugin.name().to_string(),
               hook_name: "plugin_cache_loaded".to_string(),
@@ -260,7 +259,7 @@ impl PluginDriver {
      context: &Arc<CompilationContext>,
      hook_context: &PluginHookContext| {
       if let Some(resolve_result) = result {
-        context.record_manager.add_plugin_hook_stats(CompilationPluginHookStats {
+        context.stats.add_plugin_hook_stats(CompilationPluginHookStats {
           plugin_name: plugin_name.to_string(),
           hook_name: "resolve".to_string(),
           hook_context: Some(hook_context.clone()),
@@ -289,7 +288,7 @@ impl PluginDriver {
      context: &Arc<CompilationContext>,
      hook_context: &PluginHookContext| {
       if let Some(load_result) = result {
-        context.record_manager.add_plugin_hook_stats(CompilationPluginHookStats {
+        context.stats.add_plugin_hook_stats(CompilationPluginHookStats {
           plugin_name: plugin_name.to_string(),
           hook_name: "load".to_string(),
           hook_context: Some(hook_context.clone()),
@@ -352,7 +351,7 @@ impl PluginDriver {
           let start_time = start_time.unwrap();
           let end_time = end_time.unwrap();
           context
-            .record_manager
+            .stats
             .add_plugin_hook_stats(CompilationPluginHookStats {
               plugin_name: plugin_name.to_string(),
               hook_name: "transform".to_string(),
@@ -397,7 +396,7 @@ impl PluginDriver {
      param: &PluginParseHookParam,
      context: &Arc<CompilationContext>,
      hook_context: &PluginHookContext| {
-      context.record_manager.add_plugin_hook_stats(
+      context.stats.add_plugin_hook_stats(
         CompilationPluginHookStats {
           plugin_name: plugin_name.to_string(),
           hook_name: "parse".to_string(),
@@ -429,7 +428,7 @@ impl PluginDriver {
      param: &PluginProcessModuleHookParam,
      context: &Arc<CompilationContext>| {
       context
-        .record_manager
+        .stats
         .add_plugin_hook_stats(CompilationPluginHookStats {
           plugin_name: plugin_name.to_string(),
           hook_name: "process_module".to_string(),
@@ -461,7 +460,7 @@ impl PluginDriver {
      param: &PluginAnalyzeDepsHookParam,
      context: &Arc<CompilationContext>| {
       context
-        .record_manager
+        .stats
         .add_plugin_hook_stats(CompilationPluginHookStats {
           plugin_name: plugin_name.to_string(),
           hook_name: "analyze_deps".to_string(),
@@ -499,7 +498,7 @@ impl PluginDriver {
      _: &mut ModuleGraph,
      context: &Arc<CompilationContext>| {
       context
-        .record_manager
+        .stats
         .add_plugin_hook_stats(CompilationPluginHookStats {
           plugin_name: plugin_name.to_string(),
           hook_name: "optimize_module_graph".to_string(),
@@ -527,7 +526,7 @@ impl PluginDriver {
       if result.is_none() {
         return;
       }
-      context.record_manager.add_plugin_hook_stats(
+      context.stats.add_plugin_hook_stats(
         CompilationPluginHookStats {
           plugin_name: plugin_name.to_string(),
           hook_name: "analyze_module_graph".to_string(),
@@ -559,7 +558,7 @@ impl PluginDriver {
       if result.is_none() {
         return;
       }
-      context.record_manager.add_plugin_hook_stats(
+      context.stats.add_plugin_hook_stats(
         CompilationPluginHookStats {
           plugin_name: plugin_name.to_string(),
           hook_name: "partial_bundling".to_string(),
@@ -595,7 +594,7 @@ impl PluginDriver {
      _resource_pots: &mut Vec<&mut ResourcePot>,
      context: &Arc<CompilationContext>| {
       context
-        .record_manager
+        .stats
         .add_plugin_hook_stats(CompilationPluginHookStats {
           plugin_name: plugin_name.to_string(),
           hook_name: "process_resource_pots".to_string(),
@@ -613,7 +612,7 @@ impl PluginDriver {
   hook_serial!(render_start, &Config);
 
   hook_first!(
-    render_resource_pot_modules,
+    render_resource_pot,
     Result<Option<ResourcePotMetaData>>,
     |result: &Option<ResourcePotMetaData>,
      plugin_name: String,
@@ -625,14 +624,14 @@ impl PluginDriver {
       if result.is_none() {
         return;
       }
-      context.record_manager.add_plugin_hook_stats(
+      context.stats.add_plugin_hook_stats(
         CompilationPluginHookStats {
           plugin_name: plugin_name.to_string(),
-          hook_name: "render_resource_pot_modules".to_string(),
+          hook_name: "render_resource_pot".to_string(),
           hook_context: Some(hook_context.clone()),
           module_id: "".into(),
-          input: serde_json::to_string(resource_pot).unwrap(),
-          output: serde_json::to_string(&result).unwrap(),
+          input: serde_json::to_string(&resource_pot).unwrap(),
+          output: "".to_string(),
           duration: end_time - start_time,
           start_time,
           end_time,
@@ -644,61 +643,9 @@ impl PluginDriver {
     _hook_context: &PluginHookContext
   );
 
-  pub fn render_resource_pot(
-    &self,
-    param: &mut PluginRenderResourcePotHookParam,
-    context: &Arc<CompilationContext>,
-  ) -> Result<PluginDriverRenderResourcePotHookResult> {
-    for plugin in &self.plugins {
-      let start_time = if context.config.record {
-        std::time::SystemTime::now()
-          .duration_since(std::time::UNIX_EPOCH)
-          .unwrap()
-          .as_millis()
-      } else {
-        0
-      };
-      // if the transform hook returns None, treat it as empty hook and ignore it
-      if let Some(plugin_result) = plugin.render_resource_pot(param, context)? {
-        if context.config.record {
-          let end_time = std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .unwrap()
-            .as_millis();
-          context
-            .record_manager
-            .add_plugin_hook_stats(CompilationPluginHookStats {
-              plugin_name: plugin.name().to_string(),
-              hook_name: "render_resource_pot".to_string(),
-              hook_context: None,
-              module_id: "".into(),
-              input: serde_json::to_string(param).unwrap(),
-              output: serde_json::to_string(&plugin_result).unwrap(),
-              duration: end_time - start_time,
-              start_time,
-              end_time,
-            })
-        }
-
-        param.content = Arc::new(plugin_result.content);
-
-        if let Some(source_map) = plugin_result.source_map {
-          param.source_map_chain.push(Arc::new(source_map));
-        }
-      }
-    }
-
-    let result = PluginDriverRenderResourcePotHookResult {
-      content: param.content.clone(),
-      source_map_chain: param.source_map_chain.clone(),
-    };
-
-    Ok(result)
-  }
-
   pub fn augment_resource_hash(
     &self,
-    render_pot_info: &ResourcePotInfo,
+    render_pot_info: &ResourcePot,
     context: &Arc<CompilationContext>,
   ) -> Result<Option<String>> {
     let mut result: Option<String> = None;
@@ -734,7 +681,7 @@ impl PluginDriver {
      _resource_pot: &mut ResourcePot,
      context: &Arc<CompilationContext>| {
       context
-        .record_manager
+        .stats
         .add_plugin_hook_stats(CompilationPluginHookStats {
           plugin_name: plugin_name.to_string(),
           hook_name: "optimize_resource_pot".to_string(),
@@ -760,7 +707,7 @@ impl PluginDriver {
      context: &Arc<CompilationContext>,
      hook_context: &PluginHookContext| {
       if let Some(resources) = result {
-        context.record_manager.add_plugin_hook_stats(
+        context.stats.add_plugin_hook_stats(
           CompilationPluginHookStats {
             plugin_name: plugin_name.to_string(),
             hook_name: "generate_resources".to_string(),
@@ -817,7 +764,7 @@ impl PluginDriver {
      _: &mut PluginUpdateModulesHookParams,
      context: &Arc<CompilationContext>| {
       context
-        .record_manager
+        .stats
         .add_plugin_hook_stats(CompilationPluginHookStats {
           plugin_name,
           hook_name: "update_modules".to_string(),
@@ -839,9 +786,10 @@ impl PluginDriver {
 
   hook_first!(
     render_update_resource_pot,
-    Result<Option<PluginRenderResourcePotHookResult>>,
+    Result<Option<ResourcePotMetaData>>,
     resource_pot: &ResourcePot,
-    context: &Arc<CompilationContext>
+    context: &Arc<CompilationContext>,
+    hook_context: &PluginHookContext
   );
 
   hook_parallel!(update_finished);
@@ -883,7 +831,7 @@ impl PluginDriver {
           };
 
           context
-            .record_manager
+            .stats
             .add_plugin_hook_stats(CompilationPluginHookStats {
               plugin_name: plugin.name().to_string(),
               hook_name: "write_plugin_cache".to_string(),

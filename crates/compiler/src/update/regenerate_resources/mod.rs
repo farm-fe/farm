@@ -68,9 +68,11 @@ pub fn render_and_generate_update_resource(
 
   let gen_resource_pot_code =
     |resource_pot: &mut ResourcePot| -> farmfe_core::error::Result<String> {
-      let res = context
-        .plugin_driver
-        .render_update_resource_pot(resource_pot, context)?;
+      let res = context.plugin_driver.render_update_resource_pot(
+        resource_pot,
+        context,
+        &Default::default(),
+      )?;
 
       res.map_or(Ok("{}".to_string()), |r| Ok(r.content))
     };
@@ -142,7 +144,7 @@ pub fn regenerate_resources_for_affected_module_groups(
 
   drop(module_graph);
 
-  // call process_resource_pot_map hook
+  // call process_resource_pots hook
   context
     .plugin_driver
     .process_resource_pots(&mut resource_pots, context)?;

@@ -18,7 +18,10 @@ use crate::{
     module_graph::ModuleGraph, module_group::ModuleGroupGraph, watch_graph::WatchGraph, ModuleId,
   },
   plugin::{plugin_driver::PluginDriver, Plugin, PluginResolveHookParam, PluginResolveHookResult},
-  resource::{resource_pot_map::ResourcePotMap, Resource, ResourceOrigin, ResourceType},
+  resource::{
+    resource_pot::ResourcePotId, resource_pot_map::ResourcePotMap, Resource, ResourceOrigin,
+    ResourceType,
+  },
   stats::Stats,
 };
 
@@ -26,7 +29,6 @@ use self::log_store::LogStore;
 
 pub mod log_store;
 pub(crate) const EMPTY_STR: &str = "";
-pub const IS_UPDATE: &str = "";
 
 /// Shared context through the whole compilation.
 pub struct CompilationContext {
@@ -40,7 +42,7 @@ pub struct CompilationContext {
   pub cache_manager: Box<CacheManager>,
   pub meta: Box<ContextMetaData>,
   /// Record stats for the compilation, for example, compilation time, plugin hook time, etc.
-  pub record_manager: Box<Stats>,
+  pub stats: Box<Stats>,
   pub log_store: Box<Mutex<LogStore>>,
   pub resolve_cache: Box<Mutex<HashMap<PluginResolveHookParam, PluginResolveHookResult>>>,
   pub custom: Box<DashMap<String, Box<dyn Any + Send + Sync>>>,
@@ -64,19 +66,11 @@ impl CompilationContext {
       )),
       config: Box::new(config),
       meta: Box::new(ContextMetaData::new()),
-      record_manager: Box::new(Stats::new()),
+      stats: Box::new(Stats::new()),
       log_store: Box::new(Mutex::new(LogStore::new())),
       resolve_cache: Box::new(Mutex::new(HashMap::new())),
       custom: Box::new(DashMap::new()),
     })
-  }
-
-  pub fn set_update(&self) {
-    self.custom.insert(IS_UPDATE.to_string(), Box::new(true));
-  }
-
-  pub fn is_update(&self) -> bool {
-    self.custom.contains_key(IS_UPDATE)
   }
 
   pub fn create_plugin_driver(plugins: Vec<Arc<dyn Plugin>>, record: bool) -> PluginDriver {
@@ -139,7 +133,7 @@ impl CompilationContext {
         emitted: false,
         resource_type: params.resource_type,
         origin: ResourceOrigin::Module(module_id),
-        info: None,
+        // info: None,
       },
     );
   }
@@ -208,10 +202,28 @@ impl Default for ContextMetaData {
   }
 }
 
+/// get swc source map filename from module id.
+/// you can get module id from sourcemap filename too, by
+pub fn get_swc_sourcemap_filename(module_id: &ModuleId) -> FileName {
+  FileName::Real(PathBuf::from(module_id.to_string()))
+}
+
+/// create a swc source map from a source
+pub fn create_swc_source_map(
+  id: &ModuleId,
+  content: Arc<String>,
+) -> (Arc<SourceMap>, Arc<SourceFile>) {
+  let cm = Arc::new(SourceMap::default());
+  let sf = cm.new_source_file_from(Arc::new(get_swc_sourcemap_filename(id)), content);
+
+  (cm, sf)
+}
+
 /// Shared script meta data used for [swc]
 pub struct ScriptContextMetaData {
   pub globals: Globals,
   pub module_source_maps: DashMap<ModuleId, (Arc<SourceMap>, Arc<SourceFile>)>,
+  pub resource_pot_source_maps: DashMap<ResourcePotId, Arc<SourceMap>>,
 }
 
 impl ScriptContextMetaData {
@@ -219,10 +231,12 @@ impl ScriptContextMetaData {
     Self {
       globals: Globals::new(),
       module_source_maps: DashMap::new(),
+      resource_pot_source_maps: DashMap::new(),
     }
   }
 
-  /// create a swc source map from a source
+  /// Create a swc source map from a source
+  /// Note if the source map already exists, return it without creating a new one
   pub fn create_swc_source_map(
     &self,
     module_id: &ModuleId,
@@ -233,11 +247,7 @@ impl ScriptContextMetaData {
       return (value.0.clone(), value.1.clone());
     }
 
-    let cm = Arc::new(SourceMap::default());
-    let sf = cm.new_source_file_from(
-      Arc::new(FileName::Real(PathBuf::from(module_id.to_string()))),
-      content,
-    );
+    let (cm, sf) = create_swc_source_map(module_id, content);
 
     // store the source map and source file
     self
@@ -245,6 +255,33 @@ impl ScriptContextMetaData {
       .insert(module_id.clone(), (cm.clone(), sf.clone()));
 
     (cm, sf)
+  }
+
+  pub fn merge_swc_source_map(
+    &self,
+    resource_pot_id: &ResourcePotId,
+    module_ids: Vec<&ModuleId>,
+    module_graph: &ModuleGraph,
+  ) -> Arc<SourceMap> {
+    if let Some(value) = self.resource_pot_source_maps.get(resource_pot_id) {
+      return value.clone();
+    }
+
+    let cm = Arc::new(SourceMap::default());
+
+    for module_id in module_ids {
+      let module = module_graph
+        .module(&module_id)
+        .unwrap_or_else(|| panic!("no module found for {:?}", module_id));
+      let (_, sf) = self.create_swc_source_map(module_id, module.content.clone());
+      cm.new_source_file_from(sf.name.clone(), sf.src.clone());
+    }
+
+    self
+      .resource_pot_source_maps
+      .insert(resource_pot_id.clone(), cm.clone());
+
+    cm
   }
 }
 

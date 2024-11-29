@@ -36,20 +36,22 @@ use farmfe_core::{
   swc_css_ast::Stylesheet,
 };
 use farmfe_macro_cache_item::cache_item;
-use farmfe_toolkit::common::{create_swc_source_map, load_source_original_source_map, PathFilter};
 use farmfe_toolkit::css::ParseCssModuleResult;
 use farmfe_toolkit::lazy_static::lazy_static;
 use farmfe_toolkit::minify::minify_css_module;
 use farmfe_toolkit::resolve::DYNAMIC_EXTENSION_PRIORITY;
 use farmfe_toolkit::script::swc_try_with::try_with;
+use farmfe_toolkit::source_map::{
+  create_swc_source_map, load_source_original_source_map, PathFilter,
+};
 use farmfe_toolkit::{
-  common::Source,
   css::{codegen_css_stylesheet, parse_css_stylesheet},
   fs::read_file_utf8,
   hash::sha256,
   regex::Regex,
   script::module_type_from_id,
-  sourcemap::SourceMap,
+  source_map::Source,
+  source_map::SourceMap,
   swc_atoms::JsWord,
   swc_css_modules::{compile, CssClassName, TransformConfig},
   swc_css_prefixer,

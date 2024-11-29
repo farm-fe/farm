@@ -24,7 +24,7 @@ pub fn farm_create_swc_source_map(
   content: Arc<String>,
 ) -> Result<(Arc<SourceMap>, Arc<SourceFile>)> {
   let (cm, source_file) =
-    farmfe_toolkit::common::create_swc_source_map(farmfe_toolkit::common::Source {
+    farmfe_toolkit::source_map::create_swc_source_map(farmfe_toolkit::source_map::Source {
       path: std::path::PathBuf::from(id),
       content,
     });

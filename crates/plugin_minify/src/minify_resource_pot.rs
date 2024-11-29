@@ -10,13 +10,13 @@ use farmfe_core::{
   swc_ecma_parser::Syntax,
 };
 use farmfe_toolkit::{
-  common::{build_source_map, create_swc_source_map, Source},
   css::{codegen_css_stylesheet, parse_css_stylesheet, ParseCssModuleResult},
   minify::config::NormalizedMinifyOptions,
   script::{
     codegen_module, parse_module, swc_try_with::try_with, CodeGenCommentsConfig,
     ParseScriptModuleResult,
   },
+  source_map::{build_source_map, create_swc_source_map, Source},
   swc_css_minifier::minify,
   swc_ecma_minifier::{optimize, option::ExtraOptions},
   swc_ecma_transforms::fixer,

@@ -8,7 +8,10 @@ use farmfe_core::{
     Plugin, PluginAnalyzeDepsHookParam, PluginAnalyzeDepsHookResultEntry, PluginHookContext,
     PluginLoadHookParam, PluginParseHookParam, ResolveKind,
   },
-  resource::resource_pot::{ResourcePot, ResourcePotId, ResourcePotMetaData, ResourcePotType},
+  resource::{
+    meta_data::ResourcePotMetaData,
+    resource_pot::{ResourcePot, ResourcePotId, ResourcePotType},
+  },
 };
 use farmfe_testing_helpers::fixture;
 
@@ -119,22 +122,22 @@ fn load_parse_and_analyze_deps() {
 
       let mut resource_pot = ResourcePot::new(ResourcePotId::from("index"), ResourcePotType::Js);
 
-      resource_pot.resource_pot_type = ResourcePotType::Js;
-      resource_pot.meta = ResourcePotMetaData {
-        rendered_modules: Default::default(),
-        rendered_content: Arc::new(
-          vec![
-            "import a from \"./a\";",
-            "import b from \"./b\";",
-            "export * from \"./c\";",
-            "export { d } from \"./d\";",
-            "console.log(a, b);",
-          ]
-          .join("\n"),
-        ),
-        rendered_map_chain: vec![],
-        ..Default::default()
-      };
+      // resource_pot.resource_pot_type = ResourcePotType::Js;
+      // resource_pot.meta = ResourcePotMetaData {
+      //   rendered_modules: Default::default(),
+      //   rendered_content: Arc::new(
+      //     vec![
+      //       "import a from \"./a\";",
+      //       "import b from \"./b\";",
+      //       "export * from \"./c\";",
+      //       "export { d } from \"./d\";",
+      //       "console.log(a, b);",
+      //     ]
+      //     .join("\n"),
+      //   ),
+      //   rendered_map_chain: vec![],
+      //   ..Default::default()
+      // };
 
       let resources = plugin_script
         .generate_resources(&mut resource_pot, &context, &hook_context)

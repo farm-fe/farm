@@ -14,8 +14,8 @@ use farmfe_core::{
   },
 };
 use farmfe_toolkit::{
-  common::append_source_map_comment,
   fs::{transform_output_entry_filename, transform_output_filename},
+  source_map::append_source_map_comment,
 };
 
 use crate::generate::resource_cache::{set_resource_cache, try_get_resource_cache};
@@ -150,7 +150,6 @@ pub fn render_resource_pots_and_generate_resources(
 
       resource_pot.add_resource(res.resource.name.clone());
 
-
       resources.lock().push(res.resource);
       Ok::<(), CompilationError>(())
     })?;
@@ -200,9 +199,10 @@ pub fn render_resource_pot_generate_resources(
       resource_pot_info: ResourcePotInfo::new(resource_pot),
     };
 
-    let result = context
-      .plugin_driver
-      .render_resource_pot(&mut param, context)?;
+    let result =
+      context
+        .plugin_driver
+        .render_resource_pot(&mut param, context, &Default::default())?;
 
     resource_pot.meta.rendered_content = result.content;
     resource_pot.meta.rendered_map_chain = result.source_map_chain;

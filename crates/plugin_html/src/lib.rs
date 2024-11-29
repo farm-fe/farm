@@ -25,8 +25,8 @@ use farmfe_core::{
     Resource, ResourceOrigin, ResourceType,
   },
 };
-use farmfe_toolkit::common::{create_swc_source_map, MinifyBuilder, Source};
 use farmfe_toolkit::minify::minify_html_module;
+use farmfe_toolkit::source_map::{create_swc_source_map, MinifyBuilder, Source};
 use farmfe_toolkit::{
   fs::read_file_utf8,
   get_dynamic_resources_map::get_dynamic_resources_map,

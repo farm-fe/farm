@@ -1,8 +1,6 @@
 use farmfe_macro_cache_item::cache_item;
 
-use crate::{
-  plugin::PluginGenerateResourcesHookResult, resource::resource_pot::ResourcePotMetaData,
-};
+use crate::{plugin::PluginGenerateResourcesHookResult, resource::meta_data::ResourcePotMetaData};
 
 #[cache_item]
 #[derive(Clone)]

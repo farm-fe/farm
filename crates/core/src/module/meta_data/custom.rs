@@ -1,13 +1,67 @@
 use crate::Cacheable;
 use dashmap::DashMap;
 use rkyv::*;
-use std::collections::{hash_map::Iter, HashMap};
+use std::{
+  collections::{hash_map::Iter, HashMap},
+  fmt::{Debug, Formatter},
+};
 
 #[derive(Default)]
 pub struct CustomMetaDataMap {
   map: HashMap<String, Box<dyn Cacheable>>,
   /// The bytes map is used to store the serialized data of the map above
   bytes_map: DashMap<String, Vec<u8>>,
+}
+
+impl Debug for CustomMetaDataMap {
+  fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+    f.debug_struct("CustomMetaDataMap")
+      .field(
+        "map_keys",
+        &self.map.iter().map(|item| item.0).collect::<Vec<&String>>() as _,
+      )
+      .field(
+        "bytes_map_keys",
+        &self
+          .bytes_map
+          .iter()
+          .map(|item| item.key().to_string())
+          .collect::<Vec<String>>() as _,
+      )
+      .finish()
+  }
+}
+
+impl serde::Serialize for CustomMetaDataMap {
+  fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+  where
+    S: serde::Serializer,
+  {
+    let mut map = HashMap::<String, Vec<u8>>::new();
+
+    for (k, v) in self.map.iter() {
+      let cloned_data = v.serialize_bytes().unwrap();
+      map.insert(k.clone(), cloned_data);
+    }
+
+    serde::Serialize::serialize(&map, serializer)
+  }
+}
+
+impl<'de> serde::Deserialize<'de> for CustomMetaDataMap {
+  fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+  where
+    D: serde::Deserializer<'de>,
+  {
+    let map: HashMap<String, Vec<u8>> = serde::Deserialize::deserialize(deserializer)?;
+    let mut res = CustomMetaDataMap {
+      map: HashMap::new(),
+      bytes_map: DashMap::new(),
+    };
+
+    res.bytes_map = map.into_iter().collect();
+    Ok(res)
+  }
 }
 
 impl CustomMetaDataMap {
@@ -33,6 +87,14 @@ impl CustomMetaDataMap {
     }
 
     self.map.get_mut(key).and_then(|v| v.downcast_mut::<T>())
+  }
+
+  pub fn insert<T: Cacheable>(&mut self, key: String, value: Box<T>) {
+    self.map.insert(key, value);
+  }
+
+  pub fn remove(&mut self, key: &str) {
+    self.map.remove(key);
   }
 }
 

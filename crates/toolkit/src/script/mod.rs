@@ -4,27 +4,33 @@ use swc_ecma_codegen::{
   text_writer::{JsWriter, WriteJs},
   Emitter, Node,
 };
-use swc_ecma_parser::{lexer::Lexer, Parser, StringInput, Syntax};
+use swc_ecma_parser::{
+  lexer::{input::SourceFileInput, Lexer},
+  Parser, StringInput, Syntax,
+};
 
 use farmfe_core::{
   config::comments::CommentsConfig,
   error::{CompilationError, Result},
+  module::ModuleId,
   swc_common::{
     comments::{Comments, SingleThreadedComments},
-    BytePos, FileName, LineCol, SourceMap,
+    BytePos, FileName, LineCol, SourceFile, SourceMap,
   },
   swc_ecma_ast::{EsVersion, Module as SwcModule, Stmt},
 };
 
+use swc_ecma_visit::VisitMutWith;
 use swc_error_reporters::handler::try_with_handler;
+use swc_try_with::ResetSpanVisitMut;
 
-use crate::common::{create_swc_source_map, minify_comments, Source};
+use crate::{minify::comments::minify_comments, source_map::create_swc_source_map};
 
 pub use farmfe_toolkit_plugin_types::swc_ast::ParseScriptModuleResult;
 
 pub mod constant;
-pub mod module2cjs;
 pub mod defined_idents_collector;
+pub mod module2cjs;
 pub mod module_system;
 pub mod swc_try_with;
 pub mod utils;
@@ -34,15 +40,13 @@ pub use utils::*;
 
 /// parse the content of a module to [SwcModule] ast.
 pub fn parse_module(
-  id: &str,
-  content: &str,
+  module_id: &ModuleId,
+  content: Arc<String>,
   syntax: Syntax,
   target: EsVersion,
+  cm: Option<(Arc<SourceMap>, Arc<SourceFile>)>,
 ) -> Result<ParseScriptModuleResult> {
-  let (cm, source_file) = create_swc_source_map(Source {
-    path: PathBuf::from(id),
-    content: Arc::new(content.to_string()),
-  });
+  let (cm, source_file) = cm.unwrap_or_else(|| create_swc_source_map(module_id, content));
 
   let input = StringInput::from(&*source_file);
   let comments = SingleThreadedComments::default();
@@ -68,7 +72,7 @@ pub fn parse_module(
     Err(anyhow::Error::msg("SyntaxError"))
   })
   .map_err(|e| CompilationError::ParseError {
-    resolved_path: id.to_string(),
+    resolved_path: module_id.to_string(),
     msg: if let Some(s) = e.downcast_ref::<String>() {
       eprintln!("recovered_errors: {}", s);
       s.to_string()
@@ -82,26 +86,19 @@ pub fn parse_module(
 }
 
 /// parse the content of a module to [SwcModule] ast.
-pub fn parse_stmt(
-  id: &str,
-  content: &str,
-  syntax: Syntax,
-  cm: Arc<SourceMap>,
-  top_level: bool,
-) -> Result<Stmt> {
-  let source_file = cm.new_source_file(
-    Arc::new(FileName::Real(PathBuf::from(id))),
-    content.to_string(),
-  );
-  let input = StringInput::from(&*source_file);
-  // TODO support parsing comments
-  let mut parser = Parser::new(syntax, input, None);
-  parser
+pub fn parse_stmt(id: &str, content: &str, top_level: bool) -> Result<Stmt> {
+  let (_, source_file) = create_swc_source_map(&id.into(), Arc::new(content.to_string()));
+  let input = SourceFileInput::from(&*source_file);
+  let mut parser = Parser::new(Syntax::Es(Default::default()), input, None);
+  let mut stmt = parser
     .parse_stmt(top_level)
     .map_err(|e| CompilationError::ParseError {
       resolved_path: id.to_string(),
       msg: format!("{e:?}"),
-    })
+    })?;
+
+  stmt.visit_mut_with(&mut ResetSpanVisitMut);
+  Ok(stmt)
 }
 
 pub struct CodeGenCommentsConfig<'a> {

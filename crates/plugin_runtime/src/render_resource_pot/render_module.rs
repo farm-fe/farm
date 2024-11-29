@@ -3,15 +3,15 @@ use std::{path::PathBuf, sync::Arc};
 use farmfe_core::{
   context::CompilationContext,
   error::CompilationError,
-  module::{module_graph::ModuleGraph, CommentsMetaData, Module, ModuleId, ModuleSystem},
-  resource::resource_pot::RenderedModule,
+  module::{
+    meta_data::script::CommentsMetaData, module_graph::ModuleGraph, Module, ModuleId, ModuleSystem,
+  },
   swc_common::{
     comments::SingleThreadedComments, util::take::Take, Mark, SourceMap, SyntaxContext,
   },
   swc_ecma_ast::{ArrowExpr, BlockStmtOrExpr, Expr, ExprStmt, FnExpr},
 };
 use farmfe_toolkit::{
-  common::{build_source_map, create_swc_source_map, MinifyBuilder, Source},
   minify::minify_js_module,
   script::{
     codegen_module,
@@ -19,6 +19,7 @@ use farmfe_toolkit::{
     swc_try_with::{resolve_module_mark, try_with},
     CodeGenCommentsConfig,
   },
+  source_map::{build_source_map, create_swc_source_map},
   swc_ecma_transforms::{
     fixer,
     hygiene::{hygiene_with_config, Config as HygieneConfig},
@@ -43,8 +44,7 @@ use super::{
 
 pub struct RenderModuleResult {
   pub module_id: ModuleId,
-  pub rendered_ast: Expr,
-  pub cm: Arc<SourceMap>,
+  pub rendered_ast: SwcModule,
   pub comments: CommentsMetaData,
   pub external_modules: Vec<ModuleId>,
 }
@@ -53,7 +53,6 @@ pub struct RenderModuleOptions<'a> {
   pub module: &'a Module,
   pub hoisted_ast: Option<SwcModule>,
   pub module_graph: &'a ModuleGraph,
-  pub is_async_module: bool,
   pub context: &'a Arc<CompilationContext>,
 }
 
@@ -65,16 +64,16 @@ pub fn render_module<'a>(
     module,
     hoisted_ast,
     module_graph,
-    is_async_module,
     context,
   } = options;
+  let is_async_module = module.meta.as_script().is_async;
   let is_use_hoisted = hoisted_ast.is_some();
   let mut cloned_module = hoisted_ast.unwrap_or(module.meta.as_script().ast.clone());
-  let (cm, _) = create_swc_source_map(Source {
-    // path: PathBuf::from(module.id.resolved_path_with_query(&context.config.root)),
-    path: PathBuf::from(module.id.to_string()),
-    content: module.content.clone(),
-  });
+  let (cm, _) = context
+    .meta
+    .script
+    .create_swc_source_map(&module.id, module.content.clone());
+
   let mut external_modules = vec![];
   let comments: SingleThreadedComments =
     comments.unwrap_or_else(|| module.meta.as_script().comments.clone().into());
@@ -226,9 +225,15 @@ pub fn render_module<'a>(
 
   Ok(RenderModuleResult {
     module_id: module.id.clone(),
-    cm,
     comments: comments.into(),
-    rendered_ast: func_expr,
+    rendered_ast: SwcModule {
+      span: DUMMY_SP,
+      shebang: None,
+      body: vec![ModuleItem::Stmt(Stmt::Expr(ExprStmt {
+        span: DUMMY_SP,
+        expr: Box::new(func_expr),
+      }))],
+    },
     external_modules,
   })
 }

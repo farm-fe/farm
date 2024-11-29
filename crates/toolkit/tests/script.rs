@@ -23,8 +23,14 @@ fn parse_and_codegen_module() {
     let module_type = module_type_from_id(&id).unwrap();
     let syntax = syntax_from_module_type(&module_type, Default::default()).unwrap();
     let cm = Arc::new(SourceMap::new(FilePathMapping::empty()));
-    let ParseScriptModuleResult { ast, comments } =
-      parse_module(&id, &content, syntax, Default::default()).unwrap();
+    let ParseScriptModuleResult { ast, comments } = parse_module(
+      &id.into(),
+      Arc::new(content),
+      syntax,
+      Default::default(),
+      None,
+    )
+    .unwrap();
 
     assert_eq!(ast.body.len(), 3);
 

@@ -21,8 +21,8 @@ use farmfe_core::{
   swc_common::{comments::SingleThreadedComments, util::take::Take},
 };
 use farmfe_toolkit::{
-  common::build_source_map,
   script::{codegen_module, swc_try_with::try_with, CodeGenCommentsConfig},
+  source_map::build_source_map,
   swc_ecma_transforms::fixer,
   swc_ecma_visit::VisitMutWith,
 };

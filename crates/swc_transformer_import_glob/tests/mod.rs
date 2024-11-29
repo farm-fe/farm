@@ -17,10 +17,11 @@ fn test_import_meta_glob() {
     let file_content = std::fs::read_to_string(&file).unwrap();
     let cm = Arc::new(SourceMap::default());
     let ParseScriptModuleResult { mut ast, .. } = parse_module(
-      file.to_string_lossy().to_string().as_str(),
-      &file_content,
+      &file.to_string_lossy().to_string().as_str().into(),
+      Arc::new(file_content),
       Syntax::Es(Default::default()),
       EsVersion::EsNext,
+      None,
     )
     .unwrap();
     let dir = file.parent().unwrap().to_str().unwrap();

@@ -1,36 +1,22 @@
-use std::{
-  any::Any, cell::RefCell, collections::HashMap, hash::Hash, path::Path, rc::Rc, sync::Arc,
-};
+use std::{hash::Hash, path::Path, sync::Arc};
 
 use blake2::{
   digest::{Update, VariableOutput},
   Blake2bVar,
 };
-use custom_meta_data::CustomMetaDataMap;
-use downcast_rs::{impl_downcast, Downcast};
 use farmfe_macro_cache_item::cache_item;
 use farmfe_utils::relative;
 use heck::AsLowerCamelCase;
+pub use meta_data::{custom::CustomMetaDataMap, script::ModuleSystem, ModuleMetaData};
 use relative_path::RelativePath;
 use rkyv::Deserialize;
-use rkyv_dyn::archive_dyn;
-use rkyv_typename::TypeName;
 use std::collections::HashSet;
-use swc_common::{
-  comments::{
-    Comment, SingleThreadedComments, SingleThreadedCommentsMap, SingleThreadedCommentsMapInner,
-  },
-  BytePos, DUMMY_SP,
-};
-use swc_css_ast::Stylesheet;
-use swc_ecma_ast::Module as SwcModule;
-use swc_html_ast::Document;
 
-use crate::{config::Mode, resource::resource_pot::ResourcePotId, Cacheable};
+use crate::{config::Mode, resource::resource_pot::ResourcePotId};
 
 use self::module_group::ModuleGroupId;
 
-pub mod custom_meta_data;
+pub mod meta_data;
 pub mod module_graph;
 pub mod module_group;
 pub mod watch_graph;
@@ -78,6 +64,8 @@ pub struct Module {
   pub package_name: String,
   /// package version of this module
   pub package_version: String,
+  /// whether this module is a entry module
+  pub is_entry: bool,
 
   // custom meta map
   pub custom: CustomMetaDataMap,
@@ -94,7 +82,7 @@ impl Module {
     Self {
       id,
       module_type: ModuleType::Custom("__farm_unknown".to_string()),
-      meta: Box::new(ModuleMetaData::Custom(CustomMetaDataMap::default())),
+      meta: Box::new(ModuleMetaData::default()),
       module_groups: HashSet::new(),
       resource_pot: None,
       side_effects: true,
@@ -110,370 +98,8 @@ impl Module {
       content_hash: "".to_string(),
       package_name: "".to_string(),
       package_version: "".to_string(),
+      is_entry: false,
       custom: CustomMetaDataMap::default(),
-    }
-  }
-}
-
-/// Module meta data shared by core plugins through the compilation
-/// Meta data which is not shared by core plugins should be stored in [ModuleMetaData::Custom]
-#[cache_item]
-pub enum ModuleMetaData {
-  Script(ScriptModuleMetaData),
-  Css(CssModuleMetaData),
-  Html(HtmlModuleMetaData),
-  Custom(CustomMetaDataMap),
-}
-
-impl ToString for ModuleMetaData {
-  fn to_string(&self) -> String {
-    match self {
-      Self::Script(_) => "script".to_string(),
-      Self::Css(_) => "css".to_string(),
-      Self::Html(_) => "html".to_string(),
-      Self::Custom(_) => "custom".to_string(),
-    }
-  }
-}
-
-impl Clone for ModuleMetaData {
-  fn clone(&self) -> Self {
-    match self {
-      Self::Script(script) => Self::Script(script.clone()),
-      Self::Css(css) => Self::Css(css.clone()),
-      Self::Html(html) => Self::Html(html.clone()),
-      Self::Custom(custom) => {
-        let mut custom_new = HashMap::new();
-        for (k, v) in custom.iter() {
-          let cloned_data = v.serialize_bytes().unwrap();
-          let cloned_custom = v.deserialize_bytes(cloned_data).unwrap();
-          custom_new.insert(k.clone(), cloned_custom);
-        }
-        Self::Custom(CustomMetaDataMap::from(custom_new))
-      }
-    }
-  }
-}
-
-impl ModuleMetaData {
-  pub fn as_script_mut(&mut self) -> &mut ScriptModuleMetaData {
-    if let Self::Script(script) = self {
-      script
-    } else {
-      panic!("ModuleMetaData is not Script")
-    }
-  }
-
-  pub fn as_script(&self) -> &ScriptModuleMetaData {
-    if let Self::Script(script) = self {
-      script
-    } else {
-      panic!("ModuleMetaData is not Script but {:?}", self.to_string())
-    }
-  }
-
-  pub fn as_css(&self) -> &CssModuleMetaData {
-    if let Self::Css(css) = self {
-      css
-    } else {
-      panic!("ModuleMetaData is not css")
-    }
-  }
-
-  pub fn as_css_mut(&mut self) -> &mut CssModuleMetaData {
-    if let Self::Css(css) = self {
-      css
-    } else {
-      panic!("ModuleMetaData is not css")
-    }
-  }
-
-  pub fn as_html(&self) -> &HtmlModuleMetaData {
-    if let Self::Html(html) = self {
-      html
-    } else {
-      panic!("ModuleMetaData is not html")
-    }
-  }
-
-  pub fn as_html_mut(&mut self) -> &mut HtmlModuleMetaData {
-    if let Self::Html(html) = self {
-      html
-    } else {
-      panic!("ModuleMetaData is not html")
-    }
-  }
-
-  /// get custom meta data by key
-  pub fn get_custom_mut<T: Cacheable + Default>(&mut self, key: &str) -> &mut T {
-    if let Self::Custom(custom) = self {
-      custom.get_mut(key).unwrap()
-    } else {
-      panic!("ModuleMetaData is not Custom")
-    }
-  }
-}
-
-#[cache_item]
-#[derive(Clone)]
-pub struct CommentsMetaDataItem {
-  pub byte_pos: BytePos,
-  pub comment: Vec<Comment>,
-}
-
-#[cache_item]
-#[derive(Clone, Default)]
-pub struct CommentsMetaData {
-  pub leading: Vec<CommentsMetaDataItem>,
-  pub trailing: Vec<CommentsMetaDataItem>,
-}
-
-impl From<SingleThreadedComments> for CommentsMetaData {
-  fn from(value: SingleThreadedComments) -> Self {
-    let (swc_leading_map, swc_trailing_map) = value.take_all();
-    let transform_comment_map = |map: SingleThreadedCommentsMap| {
-      map
-        .take()
-        .into_iter()
-        .map(|(byte_pos, comments)| CommentsMetaDataItem {
-          byte_pos,
-          comment: comments,
-        })
-        .collect::<Vec<CommentsMetaDataItem>>()
-    };
-
-    let leading = transform_comment_map(swc_leading_map);
-    let trailing = transform_comment_map(swc_trailing_map);
-
-    Self { leading, trailing }
-  }
-}
-
-impl From<CommentsMetaData> for SingleThreadedComments {
-  fn from(value: CommentsMetaData) -> Self {
-    let transform_comment_map = |comments: Vec<CommentsMetaDataItem>| {
-      Rc::new(RefCell::new(
-        comments
-          .into_iter()
-          .map(|item| (item.byte_pos, item.comment))
-          .collect::<SingleThreadedCommentsMapInner>(),
-      ))
-    };
-
-    let leading = transform_comment_map(value.leading);
-    let trailing = transform_comment_map(value.trailing);
-
-    SingleThreadedComments::from_leading_and_trailing(leading, trailing)
-  }
-}
-
-/// Script specific meta data, for example, [swc_ecma_ast::Module]
-#[cache_item]
-pub struct ScriptModuleMetaData {
-  pub ast: SwcModule,
-  pub top_level_mark: u32,
-  pub unresolved_mark: u32,
-  pub module_system: ModuleSystem,
-  /// true if this module calls `import.meta.hot.accept()` or `import.meta.hot.accept(mod => {})`
-  pub hmr_self_accepted: bool,
-  pub hmr_accepted_deps: HashSet<ModuleId>,
-  pub comments: CommentsMetaData,
-  pub custom: CustomMetaDataMap,
-}
-
-impl Default for ScriptModuleMetaData {
-  fn default() -> Self {
-    Self {
-      ast: SwcModule {
-        span: Default::default(),
-        body: Default::default(),
-        shebang: None,
-      },
-      top_level_mark: 0,
-      unresolved_mark: 0,
-      module_system: ModuleSystem::EsModule,
-      hmr_self_accepted: false,
-      hmr_accepted_deps: Default::default(),
-      comments: Default::default(),
-      custom: Default::default(),
-    }
-  }
-}
-
-impl Clone for ScriptModuleMetaData {
-  fn clone(&self) -> Self {
-    let custom = if self.custom.is_empty() {
-      HashMap::new()
-    } else {
-      let mut custom = HashMap::new();
-      for (k, v) in self.custom.iter() {
-        let cloned_data = v.serialize_bytes().unwrap();
-        let cloned_custom = v.deserialize_bytes(cloned_data).unwrap();
-        custom.insert(k.clone(), cloned_custom);
-      }
-      custom
-    };
-
-    Self {
-      ast: self.ast.clone(),
-      top_level_mark: self.top_level_mark,
-      unresolved_mark: self.unresolved_mark,
-      module_system: self.module_system.clone(),
-      hmr_self_accepted: self.hmr_self_accepted,
-      hmr_accepted_deps: self.hmr_accepted_deps.clone(),
-      comments: self.comments.clone(),
-      custom: CustomMetaDataMap::from(custom),
-    }
-  }
-}
-
-impl ScriptModuleMetaData {
-  pub fn take_ast(&mut self) -> SwcModule {
-    std::mem::replace(
-      &mut self.ast,
-      SwcModule {
-        span: Default::default(),
-        body: Default::default(),
-        shebang: None,
-      },
-    )
-  }
-
-  pub fn set_ast(&mut self, ast: SwcModule) {
-    self.ast = ast;
-  }
-
-  pub fn take_comments(&mut self) -> CommentsMetaData {
-    std::mem::take(&mut self.comments)
-  }
-
-  pub fn set_comments(&mut self, comments: CommentsMetaData) {
-    self.comments = comments;
-  }
-
-  pub fn is_cjs(&self) -> bool {
-    matches!(self.module_system, ModuleSystem::CommonJs)
-  }
-
-  pub fn is_esm(&self) -> bool {
-    matches!(self.module_system, ModuleSystem::EsModule)
-  }
-
-  pub fn is_hybrid(&self) -> bool {
-    matches!(self.module_system, ModuleSystem::Hybrid)
-  }
-}
-
-#[cache_item]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub enum ModuleSystem {
-  UnInitial,
-  EsModule,
-  CommonJs,
-  // Hybrid of commonjs and es-module
-  Hybrid,
-  Custom(String),
-}
-
-impl ModuleSystem {
-  pub fn merge(&self, module_system: ModuleSystem) -> ModuleSystem {
-    if matches!(module_system, ModuleSystem::UnInitial) {
-      return self.clone();
-    }
-
-    match self {
-      ModuleSystem::UnInitial => module_system,
-      ModuleSystem::EsModule => {
-        if matches!(module_system, ModuleSystem::CommonJs) {
-          ModuleSystem::Hybrid
-        } else {
-          module_system
-        }
-      }
-
-      ModuleSystem::CommonJs => {
-        if matches!(module_system, ModuleSystem::EsModule) {
-          ModuleSystem::Hybrid
-        } else {
-          module_system
-        }
-      }
-
-      ModuleSystem::Hybrid => ModuleSystem::Hybrid,
-
-      ModuleSystem::Custom(_) => module_system,
-    }
-  }
-}
-
-#[cache_item]
-pub struct CssModuleMetaData {
-  pub ast: Stylesheet,
-  pub comments: CommentsMetaData,
-  pub custom: CustomMetaDataMap,
-}
-
-impl Clone for CssModuleMetaData {
-  fn clone(&self) -> Self {
-    let custom = if self.custom.is_empty() {
-      HashMap::new()
-    } else {
-      let mut custom = HashMap::new();
-      for (k, v) in self.custom.iter() {
-        let cloned_data = v.serialize_bytes().unwrap();
-        let cloned_custom = v.deserialize_bytes(cloned_data).unwrap();
-        custom.insert(k.clone(), cloned_custom);
-      }
-      custom
-    };
-
-    Self {
-      ast: self.ast.clone(),
-      comments: self.comments.clone(),
-      custom: CustomMetaDataMap::from(custom),
-    }
-  }
-}
-
-impl CssModuleMetaData {
-  pub fn take_ast(&mut self) -> Stylesheet {
-    std::mem::replace(
-      &mut self.ast,
-      Stylesheet {
-        span: DUMMY_SP,
-        rules: vec![],
-      },
-    )
-  }
-
-  pub fn set_ast(&mut self, ast: Stylesheet) {
-    self.ast = ast;
-  }
-}
-
-#[cache_item]
-pub struct HtmlModuleMetaData {
-  pub ast: Document,
-  pub custom: CustomMetaDataMap,
-}
-
-impl Clone for HtmlModuleMetaData {
-  fn clone(&self) -> Self {
-    let custom = if self.custom.is_empty() {
-      HashMap::new()
-    } else {
-      let mut custom = HashMap::new();
-      for (k, v) in self.custom.iter() {
-        let cloned_data = v.serialize_bytes().unwrap();
-        let cloned_custom = v.deserialize_bytes(cloned_data).unwrap();
-        custom.insert(k.clone(), cloned_custom);
-      }
-      custom
-    };
-
-    Self {
-      ast: self.ast.clone(),
-      custom: CustomMetaDataMap::from(custom),
     }
   }
 }
@@ -717,14 +343,15 @@ impl serde::Serialize for ModuleId {
 
 #[cfg(test)]
 mod tests {
-  use crate::{config::Mode, module::custom_meta_data::CustomMetaDataMap};
-  use downcast_rs::Downcast;
+  use crate::{
+    config::Mode,
+    module::meta_data::{custom::CustomMetaDataMap, script::ModuleSystem},
+    Cacheable,
+  };
   use farmfe_macro_cache_item::cache_item;
-  use rkyv_dyn::archive_dyn;
-  use rkyv_typename::TypeName;
   use std::collections::{HashMap, HashSet};
 
-  use super::{Cacheable, Module, ModuleId, ModuleMetaData, ModuleSystem, ModuleType};
+  use super::{Module, ModuleId, ModuleMetaData, ModuleType};
 
   #[test]
   fn module_type() {

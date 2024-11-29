@@ -1,12 +1,12 @@
 #![feature(box_patterns)]
 
-pub mod common;
 pub mod css;
 pub mod fs;
 pub mod hash;
 pub mod html;
 pub mod resolve;
 pub mod script;
+pub mod source_map;
 
 // re-exports dependencies
 pub use preset_env_base;
@@ -35,13 +35,12 @@ pub use swc_atoms;
 
 pub use anyhow;
 pub use farmfe_core::regex;
+pub use itertools;
 pub use lazy_static;
 pub use sourcemap;
-pub use itertools;
 
 pub mod get_dynamic_resources_map;
 pub mod minify;
 
-// pluginutils
-pub mod pluginutils;
 pub mod constant;
+pub mod plugin_utils;

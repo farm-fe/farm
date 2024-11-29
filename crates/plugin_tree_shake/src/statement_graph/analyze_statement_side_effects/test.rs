@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use farmfe_core::{
   swc_common::{comments::SingleThreadedComments, Globals, Mark, GLOBALS},
   swc_ecma_ast::{EsVersion, Module},
@@ -12,10 +14,11 @@ pub fn parse_module_internal(code: &str) -> (Module, SingleThreadedComments, Mar
     ast: mut swc_module,
     comments,
   } = farmfe_toolkit::script::parse_module(
-    "any",
-    code,
+    &"any".into(),
+    Arc::new(code.to_string()),
     Syntax::Es(Default::default()),
     EsVersion::Es2022,
+    None,
   )
   .unwrap();
   let top_level_mark = Mark::new();

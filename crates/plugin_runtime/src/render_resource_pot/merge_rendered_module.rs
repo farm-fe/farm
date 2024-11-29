@@ -1,9 +1,9 @@
-use std::sync::Arc;
+use std::{collections::HashSet, sync::Arc};
 
 use farmfe_core::{
   config::FARM_MODULE_SYSTEM,
-  context::CompilationContext,
-  module::ModuleId,
+  context::{self, CompilationContext},
+  module::{module_graph::ModuleGraph, ModuleId},
   rayon::{iter::IntoParallelRefMutIterator, prelude::*},
   resource::resource_pot::ResourcePotId,
   swc_common::{
@@ -17,19 +17,13 @@ use farmfe_core::{
   swc_ecma_parser::{EsSyntax, Syntax},
 };
 use farmfe_toolkit::{
-  common::get_swc_sourcemap_filename,
   script::parse_stmt,
+  source_map::get_swc_sourcemap_filename,
+  swc_ecma_utils::StmtOrModuleItem,
   swc_ecma_visit::{VisitMut, VisitMutWith},
 };
 
 use super::render_module::RenderModuleResult;
-
-pub struct RenderResourcePotAstResult {
-  pub rendered_resource_pot_ast: ObjectLit,
-  pub external_modules: Vec<ModuleId>,
-  pub merged_sourcemap: Arc<SourceMap>,
-  pub merged_comments: SingleThreadedComments,
-}
 
 /// Merge all modules' ast in a [ResourcePot] to Farm's runtime [ObjectLit]. The [ObjectLit] looks like:
 /// ```js
@@ -51,12 +45,12 @@ pub struct RenderResourcePotAstResult {
 ///    }
 /// }
 /// ```
-pub fn merge_rendered_module(
-  mut render_module_results: Vec<RenderModuleResult>,
+pub(crate) fn merge_rendered_module(
+  render_module_results: &mut Vec<RenderModuleResult>,
   context: &Arc<CompilationContext>,
-) -> RenderResourcePotAstResult {
-  let cm = merge_sourcemap(&mut render_module_results);
-  let comments = merge_comments(&mut render_module_results, cm.clone());
+) -> ObjectLit {
+  // let cm = merge_sourcemap(&mut render_module_results, module_graph, context);
+  // let comments = merge_comments(&mut render_module_results, cm.clone());
 
   let mut rendered_resource_pot_ast = ObjectLit {
     span: DUMMY_SP,
@@ -68,33 +62,36 @@ pub fn merge_rendered_module(
     module_id,
     rendered_ast,
     ..
-  } in &mut render_module_results
+  } in render_module_results
   {
-    let expr = std::mem::take(rendered_ast);
+    let mut ast = std::mem::take(rendered_ast);
+    // panic if the first item is not a function expression
+    let expr = ast.body.remove(0).stmt().unwrap().expr().unwrap().expr;
     rendered_resource_pot_ast
       .props
       .push(PropOrSpread::Prop(Box::new(Prop::KeyValue(KeyValueProp {
         key: PropName::Str(module_id.id(context.config.mode.clone()).into()),
-        value: Box::new(expr),
+        value: expr,
       }))));
   }
 
-  RenderResourcePotAstResult {
-    rendered_resource_pot_ast,
-    external_modules: render_module_results
-      .into_iter()
-      .map(|item| item.external_modules)
-      .flatten()
-      .collect(),
-    merged_sourcemap: cm,
-    merged_comments: comments,
-  }
+  rendered_resource_pot_ast
+
+  // RenderResourcePotAstResult {
+  //   rendered_resource_pot_ast,
+  //   external_modules: render_module_results
+  //     .into_iter()
+  //     .map(|item| item.external_modules)
+  //     .flatten()
+  //     .collect(),
+  //   merged_sourcemap: cm,
+  //   merged_comments: comments,
+  // }
 }
 
-pub fn wrap_resource_pot_ast(
+pub(crate) fn wrap_resource_pot_ast(
   rendered_resource_pot_ast: ObjectLit,
   resource_pot_id: &ResourcePotId,
-  cm: Arc<SourceMap>,
   context: &Arc<CompilationContext>,
 ) -> SwcModule {
   let mut stmt = parse_stmt(
@@ -105,8 +102,6 @@ pub fn wrap_resource_pot_ast(
      moduleSystem.register(moduleId, module);
    }
  })("farm_module_system", "farm_object_lit");"#,
-    Syntax::Es(EsSyntax::default()),
-    cm.clone(),
     true,
   )
   .unwrap();
@@ -143,9 +138,7 @@ pub fn wrap_resource_pot_ast(
         }),
       })),
       prop: MemberProp::Ident(IdentName::new(FARM_MODULE_SYSTEM.into(), DUMMY_SP)),
-    })), // expr: Box::new(Expr::Lit(Lit::Str(
-         //   format!("{global_this}.{FARM_MODULE_SYSTEM}").into(),
-         // ))),
+    })),
   };
   args[1] = ExprOrSpread {
     spread: None,
@@ -159,28 +152,32 @@ pub fn wrap_resource_pot_ast(
   }
 }
 
-pub fn merge_sourcemap(render_module_results: &mut Vec<RenderModuleResult>) -> Arc<SourceMap> {
-  let new_cm = Arc::new(SourceMap::new(FilePathMapping::empty()));
-  let mut start_poss = vec![];
-
-  for RenderModuleResult { module_id, cm, .. } in render_module_results.iter() {
-    let filename = get_swc_sourcemap_filename(module_id);
-    let content = cm
-      .get_source_file(&filename)
-      .unwrap_or_else(|| panic!("no source file found for {:?}", module_id));
-    let source_file = new_cm.new_source_file_from(Arc::new(filename), content.src.clone());
-    start_poss.push(source_file.start_pos);
-  }
+pub fn merge_sourcemap(
+  resource_pot_id: &ResourcePotId,
+  render_module_results: &mut Vec<RenderModuleResult>,
+  module_graph: &ModuleGraph,
+  context: &Arc<CompilationContext>,
+) -> Arc<SourceMap> {
+  let module_ids = render_module_results
+    .iter()
+    .map(|item| &item.module_id)
+    .collect();
+  let new_cm = context
+    .meta
+    .script
+    .merge_swc_source_map(resource_pot_id, module_ids, module_graph);
 
   // update Span in parallel
-  render_module_results
-    .par_iter_mut()
-    .zip(start_poss.par_iter_mut())
-    .for_each(|(res, start_pos)| {
-      res.rendered_ast.visit_mut_with(&mut SpanUpdater {
-        start_pos: *start_pos,
-      });
-    });
+  render_module_results.par_iter_mut().for_each(|res| {
+    let filename = get_swc_sourcemap_filename(&res.module_id);
+    let source_file = new_cm
+      .get_source_file(&filename)
+      .unwrap_or_else(|| panic!("no source file found for {:?}", res.module_id));
+    let start_pos = source_file.start_pos;
+    res
+      .rendered_ast
+      .visit_mut_with(&mut SpanUpdater { start_pos });
+  });
 
   new_cm
 }

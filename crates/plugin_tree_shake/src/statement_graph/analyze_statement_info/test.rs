@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::{collections::HashSet, sync::Arc};
 
 use farmfe_core::{
   swc_ecma_ast::{Id, ModuleItem},
@@ -14,10 +14,11 @@ use super::analyze_statement_info;
 
 fn parse_module_item(stmt: &str) -> ModuleItem {
   let ParseScriptModuleResult { ast: module, .. } = parse_module(
-    "any",
-    stmt,
+    &"any".into(),
+    Arc::new(stmt.to_string()),
     Syntax::Es(Default::default()),
     farmfe_core::swc_ecma_ast::EsVersion::Es2015,
+    None,
   )
   .unwrap();
   module.body[0].clone()

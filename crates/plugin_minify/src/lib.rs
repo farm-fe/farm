@@ -20,21 +20,17 @@ use farmfe_core::{
   swc_common::Mark,
   swc_ecma_ast::Id,
 };
-use farmfe_toolkit::{
-  common::{create_swc_source_map, Source},
-  script::swc_try_with::try_with,
-  swc_ecma_visit::VisitMutWith,
-};
+use farmfe_toolkit::{script::swc_try_with::try_with, swc_ecma_visit::VisitMutWith};
 use ident_generator::MinifiedIdentsGenerator;
 use imports_minifier::{IdentReplacer, ImportsMinifier};
-use minify_resource_pot::{minify_css, minify_js};
 use top_level_idents_collector::{TopLevelIdentsCollector, UnresolvedIdentCollector};
 use util::is_module_contains_export;
 
 mod exports_minifier;
 mod ident_generator;
 mod imports_minifier;
-mod minify_resource_pot;
+// mod minify_resource_pot;
+mod mangle_exports;
 mod top_level_idents_collector;
 mod util;
 

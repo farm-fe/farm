@@ -9,7 +9,7 @@ use farmfe_core::{
 };
 use swc_ecma_visit::{Visit, VisitWith};
 
-use crate::common::{create_swc_source_map, Source};
+use crate::source_map::create_swc_source_map;
 
 pub use farmfe_toolkit_plugin_types::swc_ast::ParseScriptModuleResult;
 
@@ -122,18 +122,11 @@ pub fn set_module_system_for_module_meta(
     ModuleSystem::UnInitial
   };
 
-  // param.module.meta.as_script_mut().module_system = module_system.clone();
-
   let ast = &param.module.meta.as_script().ast;
 
   let mut module_system_from_ast: ModuleSystem = ModuleSystem::UnInitial;
   {
-    // try_with(param.module.meta.as_script().comments.into(), globals, op)
-
-    let (cm, _) = create_swc_source_map(Source {
-      path: PathBuf::from(&param.module.id.to_string()),
-      content: param.module.content.clone(),
-    });
+    let (cm, _) = create_swc_source_map(&param.module.id, param.module.content.clone());
 
     try_with(cm, &context.meta.script.globals, || {
       let unresolved_mark = Mark::from_u32(param.module.meta.as_script().unresolved_mark);

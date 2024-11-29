@@ -1669,6 +1669,7 @@ dependencies = [
  "serde",
  "serde_json",
  "serde_regex",
+ "swc_atoms",
  "swc_common",
  "swc_css_ast",
  "swc_css_prefixer",
@@ -1856,7 +1857,6 @@ name = "farmfe_plugin_runtime"
 version = "0.0.12"
 dependencies = [
  "farmfe_core",
- "farmfe_plugin_bundle",
  "farmfe_testing_helpers",
  "farmfe_toolkit",
  "farmfe_utils 0.1.6",

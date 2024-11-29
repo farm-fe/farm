@@ -17,8 +17,8 @@ use farmfe_core::{
   swc_ecma_ast::{Id, Module as EcmaAstModule},
 };
 use farmfe_toolkit::{
-  common::{create_swc_source_map, Source},
   script::swc_try_with::try_with,
+  source_map::{create_swc_source_map, Source},
   swc_ecma_visit::VisitWith,
 };
 

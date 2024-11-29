@@ -10,8 +10,8 @@ use farmfe_core::{
   swc_ecma_parser::{lexer::Lexer, EsSyntax as EsConfig, Parser, StringInput, Syntax},
 };
 use farmfe_toolkit::{
-  common::{create_swc_source_map, Source},
   script::swc_try_with::resolve_module_mark,
+  source_map::{create_swc_source_map, Source},
 };
 
 pub fn get_module_mark(

@@ -22,7 +22,8 @@ use farmfe_core::{
   regex::Regex,
   relative_path::RelativePath,
   resource::{
-    resource_pot::{ResourcePot, ResourcePotMetaData, ResourcePotType},
+    meta_data::ResourcePotMetaData,
+    resource_pot::{ResourcePot, ResourcePotType},
     ResourceType,
   },
 };
@@ -183,40 +184,49 @@ impl Plugin for FarmPluginBundle {
       }
     }
 
-    for resource_pot in resource_pots {
-      if defer_minify.contains(&resource_pot.id) {
-        resource_pot.defer_minify_as_resource_pot();
-      }
-    }
+    // for resource_pot in resource_pots {
+    //   if defer_minify.contains(&resource_pot.id) {
+    //     resource_pot.defer_minify_as_resource_pot();
+    //   }
+    // }
 
     Ok(None)
   }
 
-  fn render_resource_pot_modules(
+  fn render_resource_pot(
     &self,
-    resource_pot: &ResourcePot,
+    _resource_pot: &ResourcePot,
     _context: &Arc<CompilationContext>,
     _hook_context: &PluginHookContext,
   ) -> farmfe_core::error::Result<Option<ResourcePotMetaData>> {
-    if matches!(resource_pot.resource_pot_type, ResourcePotType::Runtime) {
-      return Ok(Some(ResourcePotMetaData {
-        rendered_modules: HashMap::new(),
-        rendered_content: self.runtime_code.lock().clone(),
-        rendered_map_chain: vec![],
-        custom_data: resource_pot.meta.custom_data.clone(),
-      }));
-    } else if let Some(bundle) = self.bundle_map.lock().get(&resource_pot.id) {
-      return Ok(Some(ResourcePotMetaData {
-        // TODO
-        rendered_modules: HashMap::new(),
-        rendered_content: Arc::new(bundle.to_string()),
-        rendered_map_chain: vec![],
-        custom_data: resource_pot.meta.custom_data.clone(),
-      }));
-    }
-
     Ok(None)
   }
+
+  // fn render_resource_pot_modules(
+  //   &self,
+  //   resource_pot: &ResourcePot,
+  //   _context: &Arc<CompilationContext>,
+  //   _hook_context: &PluginHookContext,
+  // ) -> farmfe_core::error::Result<Option<ResourcePotMetaData>> {
+  //   if matches!(resource_pot.resource_pot_type, ResourcePotType::Runtime) {
+  //     return Ok(Some(ResourcePotMetaData {
+  //       rendered_modules: HashMap::new(),
+  //       rendered_content: self.runtime_code.lock().clone(),
+  //       rendered_map_chain: vec![],
+  //       custom_data: resource_pot.meta.custom_data.clone(),
+  //     }));
+  //   } else if let Some(bundle) = self.bundle_map.lock().get(&resource_pot.id) {
+  //     return Ok(Some(ResourcePotMetaData {
+  //       // TODO
+  //       rendered_modules: HashMap::new(),
+  //       rendered_content: Arc::new(bundle.to_string()),
+  //       rendered_map_chain: vec![],
+  //       custom_data: resource_pot.meta.custom_data.clone(),
+  //     }));
+  //   }
+
+  //   Ok(None)
+  // }
 
   fn process_generated_resources(
     &self,

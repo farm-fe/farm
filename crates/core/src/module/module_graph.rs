@@ -526,7 +526,17 @@ impl ModuleGraph {
   /// sort the module graph topologically using post order dfs, note this topo sort also keeps the original import order.
   /// return (topologically sorted modules, cyclic modules stack)
   ///
-  /// **Unsupported Situation**: if the two entries shares the same dependencies but the import order is not the same, may cause one entry don't keep original import order, this may bring problems in css as css depends on the order.
+  /// **Unsupported Situation**: if the two input entries depend on the same dependencies but the import order is not the same, may cause one entry don't keep original import order, this may bring problems in css as css depends on the order.
+  /// for example:
+  /// ```js
+  /// // entry input a.js
+  /// import c from './c.js';
+  /// import d from './d.js';
+  ///
+  /// // entry input b.js
+  /// import d from './d.js';
+  /// import c from './c.js';
+  /// ```
   pub fn toposort(&self) -> (Vec<ModuleId>, Vec<Vec<ModuleId>>) {
     fn dfs(
       entry: &ModuleId,
@@ -605,38 +615,6 @@ impl ModuleGraph {
 
     while let Some(node_index) = dfs.next(&self.g) {
       op(&self.g[node_index].id);
-    }
-  }
-
-  pub fn dfs_breakable(
-    &self,
-    entries: Vec<ModuleId>,
-    op: &mut dyn FnMut(Option<&ModuleId>, &ModuleId) -> bool,
-  ) {
-    fn dfs(
-      parent: Option<&ModuleId>,
-      entry: &ModuleId,
-      op: &mut dyn FnMut(Option<&ModuleId>, &ModuleId) -> bool,
-      visited: &mut HashSet<ModuleId>,
-      graph: &ModuleGraph,
-    ) {
-      if !op(parent, entry) || visited.contains(entry) {
-        return;
-      }
-
-      visited.insert(entry.clone());
-
-      let deps = graph.dependencies(entry);
-
-      for (dep, _) in &deps {
-        dfs(Some(entry), dep, op, visited, graph)
-      }
-    }
-
-    let mut visited = HashSet::new();
-
-    for entry in entries {
-      dfs(None, &entry, op, &mut visited, self);
     }
   }
 

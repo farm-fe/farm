@@ -1,12 +1,13 @@
 use heck::AsLowerCamelCase;
 
 use farmfe_macro_cache_item::cache_item;
-use rkyv::with::Skip;
 
 use crate::module::ModuleId;
 
-use self::resource_pot::{ResourcePotId, ResourcePotInfo};
+use self::resource_pot::ResourcePotId;
 
+// pub mod ast;
+pub mod meta_data;
 pub mod resource_pot;
 pub mod resource_pot_map;
 
@@ -126,9 +127,8 @@ pub struct Resource {
   pub resource_type: ResourceType,
   /// the origin that this resource generated from
   pub origin: ResourceOrigin,
-
-  #[with(Skip)]
-  pub info: Option<ResourcePotInfo>,
+  // #[with(Skip)]
+  // pub info: Option<ResourcePotInfo>,
 }
 
 impl Default for Resource {
@@ -139,7 +139,7 @@ impl Default for Resource {
       emitted: false,
       resource_type: ResourceType::Custom("unknown".to_string()),
       origin: ResourceOrigin::Module("unknown".into()),
-      info: None,
+      // info: None,
     }
   }
 }

@@ -60,7 +60,7 @@ pub fn generate_and_diff_resource_pots(
   let mut new_resource_pot_ids =
     diff_and_patch_resource_pot_map(resources_pots, &enforce_resource_pot_ids, context);
 
-  // alway render affected resource pots resource pots
+  // alway render affected resource pots
   enforce_resource_pot_ids.into_iter().for_each(|id| {
     if !new_resource_pot_ids.contains(&id) {
       new_resource_pot_ids.insert(id);

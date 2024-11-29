@@ -190,32 +190,86 @@ pub struct TransformModuleDeclsOptions {
 /// Transform import statement to cjs require/exports. Farm doesn't use swc commonjs transformer because it's output is too large.
 /// Example, transform:
 /// ```js
-/// import { a, c as d } from "./a";
+/// import { a, c as d, default as de } from "./a";
 /// import * as b from "./b";
 /// import e from "./c";
 ///
+/// console.log(de);
+///
+/// export * from './c';
 /// export { a, d, b, e };
-/// export default 'hello';
-/// export const f = 1;
+/// export { a1, d1, b1, e1 as e2} from './d';
+/// export * as b2 from './d';
+///
+/// export const f = 1, h = 2;
 /// export function g() {}
-/// export * from "./d";
+/// export class i {}
+///
+/// export default 'hello';
+/// export default class j {}
+/// export default function k() {}
+///
+/// export * from './e';
 /// ```
 /// To:
 /// ```js
-/// var ra = require("./a");
-/// var b = require("./b");
-/// var re = require("./c");
-///
-/// exports.a = ra.a;
-/// exports.d = ra.c;
-/// exports.b = b;
-/// exports.e = re.default;
+/// module._m(exports);
+/// module.o(exports, "a", function() {
+///     return _f_a.a;
+/// });
+/// module.o(exports, "d", function() {
+///     return _f_a.c;
+/// });
+/// module.o(exports, "b", function() {
+///     return b;
+/// });
+/// module.o(exports, "e", function() {
+///     return module.f(_f_c);
+/// });
+/// module.o(exports, "b2", function() {
+///     return b2;
+/// });
+/// module.o(exports, "f", function() {
+///     return f;
+/// });
+/// module.o(exports, "h", function() {
+///     return h;
+/// });
+/// module.o(exports, "g", function() {
+///     return g;
+/// });
+/// module.o(exports, "i", function() {
+///     return i;
+/// });
+/// module.o(exports, "default", function() {
+///     return j;
+/// });
+/// module.o(exports, "default", function() {
+///     return k;
+/// });
+/// var _f_a = require("./a");
+/// var _f_b = module.w(require("./b"));
+/// var b = _f_b;
+/// var _f_c = module.i(require("./c"));
+/// console.log(_f_a.default);
+/// var _f_c = require('./c');
+/// module._e(exports, _f_c);
+/// var _f_d = require('./d');
+/// module._(exports, "a1", _f_d);
+/// module._(exports, "d1", _f_d);
+/// module._(exports, "b1", _f_d);
+/// module._(exports, "e2", _f_d, "e1");
+/// var b2 = module.w(require('./d'));
+/// var f = 1, h = 2;
+/// function g() {}
+/// class i {
+/// }
 /// exports.default = 'hello';
-/// exports.f = 1;
-/// exports.g = function g() {};
-///
-/// module._e(exports, require("./d"));
-///
+/// class j {
+/// }
+/// function k() {}
+/// var _f_e = require('./e');
+/// module._e(exports, _f_e);
 /// ```
 pub fn transform_module_decls<F: RuntimeCalleeAllocator>(
   ast: &mut SwcModule,
@@ -1123,10 +1177,12 @@ mod tests {
   use std::sync::Arc;
 
   use crate::{
-    common::{create_swc_source_map, Source},
     script::{codegen_module, parse_module, swc_try_with::try_with},
+    source_map::create_swc_source_map,
   };
-  use farmfe_core::{swc_common::Globals, swc_ecma_ast::EsVersion, swc_ecma_parser::Syntax};
+  use farmfe_core::{
+    module::ModuleId, swc_common::Globals, swc_ecma_ast::EsVersion, swc_ecma_parser::Syntax,
+  };
 
   use super::*;
 
@@ -1165,15 +1221,15 @@ export default function k() {}
 
 export * from './e';
     "#;
-    let (cm, _) = create_swc_source_map(Source {
-      path: std::path::PathBuf::from(path),
-      content: Arc::new(content.to_string()),
-    });
+    let id = ModuleId::from(path);
+    let content = Arc::new(content.to_string());
+    let (cm, _) = create_swc_source_map(&id, content.clone());
     let mut ast = parse_module(
-      path,
+      &id,
       content,
       Syntax::Es(Default::default()),
       EsVersion::latest(),
+      None,
     )
     .unwrap()
     .ast;
@@ -1269,15 +1325,15 @@ module._e(exports, _f_e);
     let content = r#"
 export const f = 1, h = 2;
     "#;
-    let (cm, _) = create_swc_source_map(Source {
-      path: std::path::PathBuf::from(path),
-      content: Arc::new(content.to_string()),
-    });
+    let id = ModuleId::from(path);
+    let content = Arc::new(content.to_string());
+    let (cm, _) = create_swc_source_map(&id, content.clone());
     let mut ast = parse_module(
-      path,
+      &id,
       content,
       Syntax::Es(Default::default()),
       EsVersion::latest(),
+      None,
     )
     .unwrap()
     .ast;

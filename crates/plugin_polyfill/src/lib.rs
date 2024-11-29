@@ -12,9 +12,9 @@ use farmfe_core::{
   swc_ecma_ast::Program,
 };
 use farmfe_toolkit::{
-  common::{create_swc_source_map, Source},
   preset_env_base::query::Query,
   script::swc_try_with::try_with,
+  source_map::{create_swc_source_map, Source},
   swc_ecma_preset_env::{self, preset_env, Mode, Targets},
   swc_ecma_transforms::Assumptions,
   swc_ecma_transforms_base::{feature::FeatureFlag, helpers::inject_helpers},
