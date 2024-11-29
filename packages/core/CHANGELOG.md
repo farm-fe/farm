@@ -1,5 +1,11 @@
 # @farmfe/core
 
+## 1.4.5
+
+### Patch Changes
+
+- 376fd9d4: fix cjs 2 esm entry omit default reexport
+
 ## 1.4.4
 
 ### Patch Changes
