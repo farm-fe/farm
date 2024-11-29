@@ -17,9 +17,7 @@ use farmfe_core::{
   swc_ecma_ast::{Id, Module as EcmaAstModule},
 };
 use farmfe_toolkit::{
-  script::swc_try_with::try_with,
-  source_map::{create_swc_source_map, Source},
-  swc_ecma_visit::VisitWith,
+  script::swc_try_with::try_with, source_map::create_swc_source_map, swc_ecma_visit::VisitWith,
 };
 
 use crate::resource_pot_to_bundle::{
@@ -274,10 +272,7 @@ impl ModuleAnalyzer {
     farm_profile_function!(format!("module analyzer {}", module.id.to_string()));
     let mut ast = module.meta.as_script().ast.clone();
 
-    let (cm, _) = create_swc_source_map(Source {
-      path: PathBuf::from(module.id.resolved_path_with_query(&context.config.root)),
-      content: module.content.clone(),
-    });
+    let (cm, _) = create_swc_source_map(&module.id, module.content.clone());
 
     let mut mark = None;
     try_with(cm.clone(), &context.meta.script.globals, || {

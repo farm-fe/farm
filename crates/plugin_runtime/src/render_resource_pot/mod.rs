@@ -72,27 +72,10 @@ pub fn render_resource_pot_modules(
         });
 
       let (hoisted_ast, comments) = if hoisted_group.hoisted_module_ids.len() > 1 {
-        let hoisted_code_bundle = hoisted_group.render(module_graph, context)?;
-        let code = hoisted_code_bundle.to_string();
-
-        let mut meta = context
-          .plugin_driver
-          .parse(
-            &PluginParseHookParam {
-              module_id: module.id.clone(),
-              resolved_path: module.id.resolved_path(&context.config.root),
-              query: parse_query(&module.id.query_string()),
-              module_type: module.module_type.clone(),
-              content: Arc::new(code),
-            },
-            context,
-            &Default::default(),
-          )
-          .unwrap()
-          .unwrap();
         (
-          Some(meta.as_script_mut().take_ast()),
-          Some(meta.as_script_mut().take_comments().into()),
+          Some(hoisted_group.render(module_graph, context)?),
+          // TODO: comments
+          None,
         )
       } else {
         (None, None)

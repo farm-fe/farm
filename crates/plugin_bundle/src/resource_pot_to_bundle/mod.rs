@@ -15,7 +15,7 @@ use farmfe_core::{
   module::{module_graph::ModuleGraph, ModuleId, ModuleType},
   rayon::iter::{IntoParallelIterator, ParallelIterator},
   resource::resource_pot::{ResourcePot, ResourcePotId, ResourcePotType},
-  swc_ecma_ast::Id,
+  swc_ecma_ast::{Id, Module},
 };
 pub use polyfill::{Polyfill, SimplePolyfill};
 
@@ -429,16 +429,11 @@ impl<'a> SharedBundle<'a> {
     Ok(())
   }
 
-  pub fn codegen(&mut self, group_id: &String) -> Result<Bundle> {
+  pub fn codegen(&mut self, group_id: &String) -> Result<Module> {
     farm_profile_function!("");
 
     let bundle = self.bundle_map.get_mut(group_id).unwrap();
 
-    let bundle = bundle.codegen(
-      &mut self.module_analyzer_manager,
-      &self.context.context.config,
-    )?;
-
-    Ok(bundle)
+    bundle.gen_ast(&mut self.module_analyzer_manager, &self.context.context.config)
   }
 }

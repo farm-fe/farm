@@ -8,7 +8,7 @@ use farmfe_core::{
   context::CompilationContext,
   enhanced_magic_string::bundle::Bundle,
   module::{module_graph::ModuleGraph, ModuleId},
-  resource::resource_pot::{ResourcePot, ResourcePotType},
+  resource::resource_pot::{ResourcePot, ResourcePotType}, swc_ecma_ast::Module,
 };
 
 use farmfe_plugin_bundle::resource_pot_to_bundle::{BundleGroup, ShareBundleOptions, SharedBundle};
@@ -62,7 +62,7 @@ impl ScopeHoistedModuleGroup {
     &self,
     module_graph: &ModuleGraph,
     context: &Arc<CompilationContext>,
-  ) -> farmfe_core::error::Result<Bundle> {
+  ) -> farmfe_core::error::Result<Module> {
     let bundle_id = self.target_hoisted_module_id.to_string();
 
     let mut share_bundle = SharedBundle::new(
