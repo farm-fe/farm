@@ -216,6 +216,11 @@ jobs:
         with:
           name: ${{ github.sha }}-${{ matrix.settings.abi }}
           path: ./packages/core/binding
+      - name: Build Runtime
+        run: |
+          cd packages/runtime && pnpm run build
+          cd ../runtime-plugin-hmr && pnpm run build
+          cd ../runtime-plugin-import-meta && pnpm run build
       - name: Build Core CJS
         run: cd packages/core && pnpm run build:cjs
       - name: Run benchmarks
