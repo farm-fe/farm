@@ -49,7 +49,6 @@ export class FarmRuntimePluginContainer {
       const hook = plugin[hookName];
 
       if (hook) {
-        // @ts-ignore
         // await hook.apply(plugin, args);
         hook.apply(plugin, args);
       }
@@ -67,7 +66,6 @@ export class FarmRuntimePluginContainer {
       const hook = plugin[hookName];
 
       if (hook) {
-        // @ts-ignore
         // const result = await hook.apply(plugin, args);
         const result = hook.apply(plugin, args);
 
