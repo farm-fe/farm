@@ -2,8 +2,8 @@ import {
   buildCli,
   buildCoreCjs,
   buildExamples,
-  buildRuntime,
-  buildJsPlugins
+  buildJsPlugins,
+  buildRuntime
 } from './build.mjs';
 
 console.log('Building CLI...');
