@@ -1,12 +1,12 @@
-import { Module } from "./module";
-import { type FarmRuntimePlugin, FarmRuntimePluginContainer } from "./plugin";
+import { Module } from "./module.js";
+import { type FarmRuntimePlugin, FarmRuntimePluginContainer } from "./plugin.js";
 import {
   type Resource,
   ResourceLoader,
   __global_this__,
   isBrowser,
   targetEnv,
-} from "./resource-loader";
+} from "./resource-loader.js";
 
 declare const nodeRequire: (id: string) => any;
 

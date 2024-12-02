@@ -1,6 +1,6 @@
-import { Module } from './module';
-import type { ModuleSystem } from './module-system';
-import type { Resource } from './resource-loader';
+import { Module } from './module.js';
+import type { ModuleSystem } from './module-system.js';
+import type { Resource } from './resource-loader.js';
 
 export interface ResourceLoadResult {
   success: boolean;

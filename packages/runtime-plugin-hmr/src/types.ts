@@ -1,4 +1,4 @@
-import type { Resource } from '@farmfe/runtime/src/resource-loader';
+import type { Resource } from '@farmfe/runtime';
 
 // export interface HmrUpdatePacket {
 //   id: string;

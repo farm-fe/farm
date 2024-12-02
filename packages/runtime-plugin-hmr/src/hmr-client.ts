@@ -1,8 +1,8 @@
 import type { ModuleSystem } from '@farmfe/runtime';
-import { HotModuleState } from './hot-module-state';
-import { logger } from './logger';
-import { ErrorOverlay, overlayId } from './overlay';
-import { HMRPayload, HmrUpdateResult, RawHmrUpdateResult } from './types';
+import { HotModuleState } from './hot-module-state.js';
+import { logger } from './logger.js';
+import { ErrorOverlay, overlayId } from './overlay.js';
+import { HMRPayload, HmrUpdateResult, RawHmrUpdateResult } from './types.js';
 
 // Inject during compile time
 const hmrPort = Number(FARM_HMR_PORT);
