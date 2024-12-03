@@ -124,25 +124,6 @@ export async function resolveHostname(
   return { host, name };
 }
 
-function getAddressHostnamePort(server: AddressInfo): {
-  host: string;
-  port: number;
-} {
-  const hostname = server.address || 'localhost';
-  const port = server.port;
-  return { host: hostname, port };
-}
-
-function createServerUrl(
-  protocol: string,
-  hostname: string,
-  port: number,
-  publicPath: string
-): string {
-  const hostnameName = hostname.includes(':') ? `[${hostname}]` : hostname;
-  return `${protocol}://${hostnameName}:${port}${publicPath}`;
-}
-
 /**
  * Setup a listener for SIGTERM and SIGINT signals, and call the given callback
  * function when either signal is received.
@@ -151,8 +132,8 @@ function createServerUrl(
  * @returns {void}
  */
 export const setupSIGTERMListener = (callback: () => Promise<void>): void => {
-  process.once('SIGTERM', callback);
-  process.once('SIGINT', callback); // Handle user interrupt (Ctrl+C)
+  process.on('SIGTERM', callback);
+  process.on('SIGINT', callback); // Handle user interrupt (Ctrl+C)
   if (process.env.CI !== 'true') {
     process.stdin.on('end', callback);
   }
