@@ -2443,8 +2443,8 @@ importers:
         specifier: ^7.1.1
         version: 7.2.0
       farm-browserslist-generator:
-        specifier: ^1.0.0
-        version: 1.0.0
+        specifier: 1.0.5
+        version: 1.0.5
       farm-plugin-replace-dirname:
         specifier: 0.2.1
         version: 0.2.1
@@ -2578,7 +2578,7 @@ importers:
         version: 3.33.2
     devDependencies:
       '@farmfe/runtime':
-        specifier: workspace:^0.12.2
+        specifier: workspace:*
         version: link:../runtime
 
   packages/runtime-plugin-import-meta:
@@ -2588,7 +2588,7 @@ importers:
         version: 3.30.1
     devDependencies:
       '@farmfe/runtime':
-        specifier: workspace:^0.12.0
+        specifier: workspace:*
         version: link:../runtime
 
   packages/utils: {}
@@ -3799,7 +3799,7 @@ packages:
   '@css-render/vue3-ssr@0.15.14':
     resolution: {integrity: sha512-//8027GSbxE9n3QlD73xFY6z4ZbHbvrOVB7AO6hsmrEzGbg+h2A09HboUyDgu+xsmj7JnvJD39Irt+2D0+iV8g==}
     peerDependencies:
-      vue: 3.4.23
+      vue: ^3.0.11
 
   '@csstools/postcss-cascade-layers@4.0.6':
     resolution: {integrity: sha512-Xt00qGAQyqAODFiFEJNkTpSUz5VfYqnDLECdlA/Vv17nl/OIV5QfTRHGAXrBGG5YcJyHpJ+GF9gF/RZvOQz4oA==}
@@ -8071,11 +8071,11 @@ packages:
   caniuse-lite@1.0.30001561:
     resolution: {integrity: sha512-NTt0DNoKe958Q0BE0j0c1V9jbUzhBxHIEJy7asmGrpE0yG63KTV7PLHPnK2E1O9RsQrQ081I3NLuXGS6zht3cw==}
 
-  caniuse-lite@1.0.30001600:
-    resolution: {integrity: sha512-+2S9/2JFhYmYaDpZvo0lKkfvuKIglrx68MwOBqMGHhQsNkLjB5xtc/TGoEPs+MxjSyN/72qer2g97nzR641mOQ==}
-
   caniuse-lite@1.0.30001633:
     resolution: {integrity: sha512-6sT0yf/z5jqf8tISAgpJDrmwOpLsrpnyCdD/lOZKvKkkJK4Dn0X5i7KF7THEZhOq+30bmhwBlNEaqPUiHiKtZg==}
+
+  caniuse-lite@1.0.30001684:
+    resolution: {integrity: sha512-G1LRwLIQjBQoyq0ZJGqGIJUXzJ8irpbjHLpVRXDvBEScFJ9b17sgK6vlx0GAJFE21okD7zXl08rRRUfq6HdoEQ==}
 
   ccount@2.0.1:
     resolution: {integrity: sha512-eyrF0jiFpY+3drT6383f1qhkbGsLSifNAjA61IUjZjmLCWjItY6LB9ft9YhoDgwfmclB2zhu51Lc7+95b8NRAg==}
@@ -9555,9 +9555,6 @@ packages:
   electron-to-chromium@1.4.576:
     resolution: {integrity: sha512-yXsZyXJfAqzWk1WKryr0Wl0MN2D47xodPvEEwlVePBnhU5E7raevLQR+E6b9JAD3GfL/7MbAL9ZtWQQPcLx7wA==}
 
-  electron-to-chromium@1.4.721:
-    resolution: {integrity: sha512-k1x2r6foI8iJOp+1qTxbbrrWMsOiHkzGBYwYigaq+apO1FSqtn44KTo3Sy69qt7CRr7149zTcsDvH7MUKsOuIQ==}
-
   electron-to-chromium@1.4.832:
     resolution: {integrity: sha512-cTen3SB0H2SGU7x467NRe1eVcQgcuS6jckKfWJHia2eo0cHIGOqHoAxevIYZD4eRHcWjkvFzo93bi3vJ9W+1lA==}
 
@@ -9683,10 +9680,6 @@ packages:
     resolution: {integrity: sha512-VVNz/9Sa0bs5SELtn3f7qhJCDPCF5oMEl5cO9/SSinpE9hbPVvxbd572HH5AKiP7WD8INO53GgfDDhRjkylHEg==}
     engines: {node: '>=18'}
     hasBin: true
-
-  escalade@3.1.1:
-    resolution: {integrity: sha512-k0er2gUkLf8O0zKJiAhmkTnJlTvINGv7ygDNPbeIsX/TJjGJZHuh9B2UxbsaEkmlEo9MfhrSzmhIlhRlI2GXnw==}
-    engines: {node: '>=6'}
 
   escalade@3.1.2:
     resolution: {integrity: sha512-ErCHMCae19vR8vQGe50xIsVomy19rg6gFu3+r3jkEO46suLMWBksvVyoGgQV+jOfl84ZSOSlmv6Gxa89PmTGmA==}
@@ -9901,8 +9894,8 @@ packages:
     resolution: {integrity: sha512-Wrk35e8ydCKDj/ArClo1VrPVmN8zph5V4AtHwIuHhvMXsKf73UT3BOD+azBIW+3wOJ4FhEH7zyaJCFvChjYvMA==}
     engines: {'0': node >=0.6.0}
 
-  farm-browserslist-generator@1.0.0:
-    resolution: {integrity: sha512-UGd1eWtSLOqxl0tlexRwpsy1JbHdO39iCDZKzdr7khBKYFXL5PDjjcyj1xelt5YUnLNB2vPAb8P+uD8IqRnBJQ==}
+  farm-browserslist-generator@1.0.5:
+    resolution: {integrity: sha512-igffWSQATGV2ZJEvDBIB9Q2QfVOr+vv/JTZaaNoYfW/nrCGZ58zyJ0kSkFQEvptGUWf6idECqj82ykli4Ueplw==}
     engines: {node: '>=16.15.1', npm: '>=7.0.0', pnpm: '>=3.2.0', yarn: '>=1.13'}
 
   farm-plugin-remove-console-darwin-arm64@0.1.8:
@@ -16471,7 +16464,7 @@ snapshots:
   '@babel/code-frame@7.24.2':
     dependencies:
       '@babel/highlight': 7.24.2
-      picocolors: 1.0.0
+      picocolors: 1.0.1
 
   '@babel/code-frame@7.24.7':
     dependencies:
@@ -16575,7 +16568,7 @@ snapshots:
     dependencies:
       '@babel/compat-data': 7.24.1
       '@babel/helper-validator-option': 7.23.5
-      browserslist: 4.23.0
+      browserslist: 4.23.1
       lru-cache: 5.1.1
       semver: 6.3.1
 
@@ -16583,7 +16576,7 @@ snapshots:
     dependencies:
       '@babel/compat-data': 7.24.1
       '@babel/helper-validator-option': 7.23.5
-      browserslist: 4.23.0
+      browserslist: 4.23.1
       lru-cache: 5.1.1
       semver: 6.3.1
 
@@ -25409,21 +25402,21 @@ snapshots:
 
   browserslist@4.22.1:
     dependencies:
-      caniuse-lite: 1.0.30001561
+      caniuse-lite: 1.0.30001633
       electron-to-chromium: 1.4.576
       node-releases: 2.0.13
       update-browserslist-db: 1.0.13(browserslist@4.22.1)
 
   browserslist@4.23.0:
     dependencies:
-      caniuse-lite: 1.0.30001600
-      electron-to-chromium: 1.4.721
+      caniuse-lite: 1.0.30001633
+      electron-to-chromium: 1.4.832
       node-releases: 2.0.14
-      update-browserslist-db: 1.0.13(browserslist@4.23.0)
+      update-browserslist-db: 1.1.0(browserslist@4.23.0)
 
   browserslist@4.23.1:
     dependencies:
-      caniuse-lite: 1.0.30001633
+      caniuse-lite: 1.0.30001684
       electron-to-chromium: 1.4.832
       node-releases: 2.0.14
       update-browserslist-db: 1.1.0(browserslist@4.23.1)
@@ -25594,9 +25587,9 @@ snapshots:
 
   caniuse-lite@1.0.30001561: {}
 
-  caniuse-lite@1.0.30001600: {}
-
   caniuse-lite@1.0.30001633: {}
+
+  caniuse-lite@1.0.30001684: {}
 
   ccount@2.0.1: {}
 
@@ -26040,7 +26033,7 @@ snapshots:
 
   core-js-compat@3.33.2:
     dependencies:
-      browserslist: 4.23.0
+      browserslist: 4.23.1
 
   core-js@2.6.12: {}
 
@@ -26842,8 +26835,6 @@ snapshots:
 
   electron-to-chromium@1.4.576: {}
 
-  electron-to-chromium@1.4.721: {}
-
   electron-to-chromium@1.4.832: {}
 
   electron-winstaller@5.3.1:
@@ -27074,8 +27065,6 @@ snapshots:
       '@esbuild/win32-arm64': 0.23.1
       '@esbuild/win32-ia32': 0.23.1
       '@esbuild/win32-x64': 0.23.1
-
-  escalade@3.1.1: {}
 
   escalade@3.1.2: {}
 
@@ -27416,14 +27405,14 @@ snapshots:
   extsprintf@1.4.1:
     optional: true
 
-  farm-browserslist-generator@1.0.0:
+  farm-browserslist-generator@1.0.5:
     dependencies:
       '@mdn/browser-compat-data': 5.5.7
       '@types/object-path': 0.11.4
       '@types/semver': 7.5.4
       '@types/ua-parser-js': 0.7.39
-      browserslist: 4.23.0
-      caniuse-lite: 1.0.30001633
+      browserslist: 4.23.1
+      caniuse-lite: 1.0.30001684
       isbot: 3.8.0
       object-path: 0.11.8
       semver: 7.5.4
@@ -30995,7 +30984,7 @@ snapshots:
   postcss@8.4.38:
     dependencies:
       nanoid: 3.3.7
-      picocolors: 1.0.0
+      picocolors: 1.0.1
       source-map-js: 1.2.0
 
   postcss@8.4.39:
@@ -33729,14 +33718,14 @@ snapshots:
   update-browserslist-db@1.0.13(browserslist@4.22.1):
     dependencies:
       browserslist: 4.22.1
-      escalade: 3.1.1
-      picocolors: 1.0.0
+      escalade: 3.1.2
+      picocolors: 1.0.1
 
-  update-browserslist-db@1.0.13(browserslist@4.23.0):
+  update-browserslist-db@1.1.0(browserslist@4.23.0):
     dependencies:
       browserslist: 4.23.0
-      escalade: 3.1.1
-      picocolors: 1.0.0
+      escalade: 3.1.2
+      picocolors: 1.0.1
 
   update-browserslist-db@1.1.0(browserslist@4.23.1):
     dependencies:
@@ -33859,7 +33848,7 @@ snapshots:
       cac: 6.7.14
       debug: 4.3.7
       pathe: 1.1.1
-      picocolors: 1.0.0
+      picocolors: 1.0.1
       vite: 5.2.8(@types/node@20.14.12)(less@4.2.0)(lightningcss@1.25.1)(sass@1.74.1)(terser@5.31.1)
     transitivePeerDependencies:
       - '@types/node'
@@ -34631,7 +34620,7 @@ snapshots:
   yargs@16.2.0:
     dependencies:
       cliui: 7.0.4
-      escalade: 3.1.1
+      escalade: 3.1.2
       get-caller-file: 2.0.5
       require-directory: 2.1.1
       string-width: 4.2.3
@@ -34642,7 +34631,7 @@ snapshots:
   yargs@17.7.2:
     dependencies:
       cliui: 8.0.1
-      escalade: 3.1.1
+      escalade: 3.1.2
       get-caller-file: 2.0.5
       require-directory: 2.1.1
       string-width: 4.2.3

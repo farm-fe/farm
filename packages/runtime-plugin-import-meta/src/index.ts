@@ -8,7 +8,7 @@ export default (<Plugin>{
   bootstrap(system: ModuleSystem) {
     this._moduleSystem = system;
   },
-  moduleCreated(module) {
+  moduleCreated(module: any) {
     const publicPath = this._moduleSystem.publicPaths?.[0] || "";
     const isSSR = this._moduleSystem.targetEnv === "node";
     const { location } = __global_this__;

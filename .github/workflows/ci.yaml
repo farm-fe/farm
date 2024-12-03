@@ -96,6 +96,8 @@ jobs:
         run: npm install -g pnpm@9.1.0 && pnpm i --frozen-lockfile
       - name: Build CLI and Core
         run: pnpm --filter @farmfe/cli run build
+      - name: Build Runtime
+        run: pnpm --filter @farmfe/runtime run build
       - name: Type Check With Tsc
         run: pnpm run --filter "@farmfe/*" type-check
       - name: Changesets Check
@@ -133,6 +135,11 @@ jobs:
         with:
           name: ${{ github.sha }}-${{ matrix.settings.abi }}
           path: ./packages/core/binding
+      - name: Build Runtime
+        run: |
+          pnpm --filter "@farmfe/runtime" build
+          pnpm --filter "@farmfe/runtime-plugin-hmr" build
+          pnpm --filter "@farmfe/runtime-plugin-import-meta" build
       - name: Build Core CJS
         run: cd packages/core && pnpm run build:cjs
       - name: Test - ${{ matrix.settings.abi }}
@@ -216,6 +223,11 @@ jobs:
         with:
           name: ${{ github.sha }}-${{ matrix.settings.abi }}
           path: ./packages/core/binding
+      - name: Build Runtime
+        run: |
+          pnpm --filter "@farmfe/runtime" build
+          pnpm --filter "@farmfe/runtime-plugin-hmr" build
+          pnpm --filter "@farmfe/runtime-plugin-import-meta" build
       - name: Build Core CJS
         run: cd packages/core && pnpm run build:cjs
       - name: Run benchmarks

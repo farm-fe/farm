@@ -6,7 +6,9 @@
     "name": "Ming07",
     "email": "q502489978@live.com"
   },
-  "main": "src/index.ts",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "type": "module",
   "keywords": [
     "farm",
     "farm runtime plugin",
@@ -19,13 +21,17 @@
     "url": "https://github.com/farm-fe/farm"
   },
   "scripts": {
-    "build": "tsc -p tsconfig.json --noEmit",
+    "prepublishOnly": "npm run build",
+    "build": "tsc -p tsconfig.build.json",
     "type-check": "tsc -p tsconfig.json --noEmit"
   },
   "devDependencies": {
-    "@farmfe/runtime": "workspace:^0.12.0"
+    "@farmfe/runtime": "workspace:*"
   },
   "dependencies": {
     "core-js": "^3.30.1"
-  }
+  },
+  "files": [
+    "dist"
+  ]
 }
