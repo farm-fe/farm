@@ -131,7 +131,9 @@ export async function resolveHostname(
  * @param callback - callback function to be called when SIGTERM is received
  * @returns {void}
  */
-export const setupSIGTERMListener = (callback: () => Promise<void>): void => {
+export const setupSIGTERMListener = (
+  callback: (signal?: 'SIGTERM', exitCode?: number) => Promise<void>
+): void => {
   process.on('SIGTERM', callback);
   process.on('SIGINT', callback); // Handle user interrupt (Ctrl+C)
   if (process.env.CI !== 'true') {
@@ -145,7 +147,7 @@ export const setupSIGTERMListener = (callback: () => Promise<void>): void => {
  * @param callback - callback function to be removed when SIGTERM is received
  */
 export const teardownSIGTERMListener = (
-  callback: () => Promise<void>
+  callback: Parameters<typeof setupSIGTERMListener>[0]
 ): void => {
   process.off('SIGTERM', callback);
   process.off('SIGINT', callback);
