@@ -1,6 +1,6 @@
 {
   "name": "@farmfe/runtime-plugin-import-meta",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "Runtime Import Meta plugin of Farm",
   "author": {
     "name": "Ming07",

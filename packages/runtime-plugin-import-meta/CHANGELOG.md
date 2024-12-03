@@ -1,5 +1,11 @@
 # @farmfe/runtime-plugin-import-meta
 
+## 0.2.3
+
+### Patch Changes
+
+- 249e9a2b: bundle runtime packages
+
 ## 0.2.2
 
 ### Patch Changes

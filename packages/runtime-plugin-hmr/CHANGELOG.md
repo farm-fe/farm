@@ -1,5 +1,11 @@
 # @farmfe/runtime-plugin-hmr
 
+## 3.5.8
+
+### Patch Changes
+
+- 249e9a2b: bundle runtime packages
+
 ## 3.5.7
 
 ### Patch Changes

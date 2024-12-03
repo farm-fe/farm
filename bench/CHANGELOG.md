@@ -1,5 +1,11 @@
 # bench
 
+## 1.0.30
+
+### Patch Changes
+
+- @farmfe/core@1.4.6
+
 ## 1.0.29
 
 ### Patch Changes
