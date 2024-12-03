@@ -1,5 +1,14 @@
 # @farmfe/core
 
+## 1.4.6
+
+### Patch Changes
+
+- Updated dependencies [249e9a2b]
+  - @farmfe/runtime-plugin-import-meta@0.2.3
+  - @farmfe/runtime-plugin-hmr@3.5.8
+  - @farmfe/runtime@0.12.10
+
 ## 1.4.5
 
 ### Patch Changes
