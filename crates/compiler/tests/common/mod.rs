@@ -1,5 +1,4 @@
 use std::{
-  collections::HashMap,
   fs,
   path::{Path, PathBuf},
   sync::Arc,
@@ -12,8 +11,8 @@ use farmfe_core::{
     preset_env::PresetEnvConfig, Config, CssConfig, Mode, RuntimeConfig, SourcemapConfig,
   },
   plugin::Plugin,
-  serde::de::DeserializeOwned,
   serde_json::{self, Value},
+  HashMap,
 };
 use farmfe_testing_helpers::is_update_snapshot_from_env;
 use farmfe_toolkit::fs::read_file_utf8;
@@ -83,7 +82,7 @@ pub fn create_css_compiler(
 #[allow(dead_code)]
 pub fn create_config(cwd: PathBuf, crate_path: PathBuf) -> Config {
   Config {
-    input: HashMap::new(),
+    input: HashMap::default(),
     root: cwd.to_string_lossy().to_string(),
     runtime: generate_runtime(crate_path),
     output: Default::default(),

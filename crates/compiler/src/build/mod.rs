@@ -1,5 +1,4 @@
 use std::{
-  collections::HashMap,
   path::PathBuf,
   sync::{
     mpsc::{channel, Receiver, Sender},
@@ -24,6 +23,7 @@ use farmfe_core::{
   },
   rayon::ThreadPool,
   serde_json::json,
+  HashMap,
 };
 
 use farmfe_plugin_lazy_compilation::DYNAMIC_VIRTUAL_SUFFIX;
@@ -248,7 +248,7 @@ impl Compiler {
 
     let hook_context = PluginHookContext {
       caller: None,
-      meta: HashMap::new(),
+      meta: HashMap::default(),
     };
     let resolve_kind = resolve_param.kind.clone();
     let mut resolve_result = match resolve(resolve_param, context, &hook_context) {
@@ -300,7 +300,7 @@ impl Compiler {
 
     let hook_context = PluginHookContext {
       caller: None,
-      meta: HashMap::new(),
+      meta: HashMap::default(),
     };
 
     // ================ Load Start ===============

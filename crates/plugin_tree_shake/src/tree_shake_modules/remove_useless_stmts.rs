@@ -1,11 +1,10 @@
-use std::collections::{HashMap, HashSet};
-
 use farmfe_core::{
   module::{module_graph::ModuleGraph, ModuleId, ModuleSystem},
   swc_ecma_ast::{
     self, Id, ImportDecl, ImportSpecifier, ModuleDecl, ModuleExportName, ModuleItem, Stmt,
   },
 };
+use farmfe_core::{HashMap, HashSet};
 use farmfe_toolkit::swc_ecma_visit::{VisitMut, VisitMutWith, VisitWith};
 
 use crate::{

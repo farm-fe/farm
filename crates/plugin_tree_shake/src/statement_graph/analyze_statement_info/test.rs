@@ -1,8 +1,7 @@
-use std::collections::HashSet;
-
 use farmfe_core::{
   swc_ecma_ast::{Id, ModuleItem},
   swc_ecma_parser::Syntax,
+  HashSet,
 };
 use farmfe_toolkit::script::{parse_module, ParseScriptModuleResult};
 

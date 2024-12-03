@@ -1,9 +1,8 @@
-use std::{collections::HashMap, ops::Deref};
-
 use farmfe_core::module::{ModuleId, ModuleSystem};
+use farmfe_core::HashMap;
 
 use crate::resource_pot_to_bundle::{
-  modules_analyzer::module_analyzer::ExportSpecifierInfo, uniq_name::BundleVariable, Var,
+  modules_analyzer::module_analyzer::ExportSpecifierInfo, uniq_name::BundleVariable,
 };
 
 #[derive(Debug, Clone, Default)]
@@ -17,7 +16,7 @@ pub struct ReferenceExport {
 impl ReferenceExport {
   pub fn new() -> Self {
     Self {
-      named: HashMap::new(),
+      named: HashMap::default(),
       default: None,
       all: false,
       namespace: None,

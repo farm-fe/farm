@@ -1,6 +1,5 @@
-use std::collections::HashSet;
-
 use farmfe_core::swc_common::{Globals, GLOBALS};
+use farmfe_core::HashSet;
 use farmfe_plugin_tree_shake::module::UsedExportsIdent;
 
 use farmfe_plugin_tree_shake::module::{TreeShakeModule, UsedExports};
@@ -28,7 +27,7 @@ export default 'default';
   let mut module = create_module_with_globals(code);
 
   let mut tree_shake_module = TreeShakeModule::new(&mut module);
-  tree_shake_module.pending_used_exports = UsedExports::Partial(HashSet::from([
+  tree_shake_module.pending_used_exports = UsedExports::Partial(HashSet::from_iter([
     UsedExportsIdent::SwcIdent("a".to_string()),
     UsedExportsIdent::SwcIdent("d".to_string()),
     UsedExportsIdent::SwcIdent("e".to_string()),
@@ -87,7 +86,9 @@ fn used_exports_idents_export_all() {
   // tree_shake_module.used_exports =
   //   UsedExports::Partial(HashMap::from([("index".into(), vec!["a".to_string()])]));
   tree_shake_module.pending_used_exports =
-    UsedExports::Partial(HashSet::from([UsedExportsIdent::SwcIdent("a".to_string())]));
+    UsedExports::Partial(HashSet::from_iter([UsedExportsIdent::SwcIdent(
+      "a".to_string(),
+    )]));
   // let result = tree_shake_module.used_exports_idents();
   let result = tree_shake_module.used_exports_to_statement_idents();
   assert_eq!(result.len(), 1);
@@ -104,7 +105,7 @@ export const b = 2;"#;
   let mut module = create_module_with_globals(code);
 
   let mut tree_shake_module = TreeShakeModule::new(&mut module);
-  tree_shake_module.pending_used_exports = UsedExports::Partial(HashSet::from([
+  tree_shake_module.pending_used_exports = UsedExports::Partial(HashSet::from_iter([
     UsedExportsIdent::SwcIdent("a".to_string()),
     UsedExportsIdent::SwcIdent("b".to_string()),
     UsedExportsIdent::SwcIdent("c".to_string()),
@@ -179,7 +180,7 @@ export const b = 2;"#;
   let mut module = create_module_with_globals(code);
 
   let mut tree_shake_module = TreeShakeModule::new(&mut module);
-  tree_shake_module.pending_used_exports = UsedExports::Partial(HashSet::from([
+  tree_shake_module.pending_used_exports = UsedExports::Partial(HashSet::from_iter([
     UsedExportsIdent::SwcIdent("a".to_string()),
     UsedExportsIdent::SwcIdent("b".to_string()),
     UsedExportsIdent::SwcIdent("c".to_string()),
@@ -233,7 +234,7 @@ export default 'default';
   GLOBALS.set(&globals, || {
     let (mut module, _) = create_module(code);
     let mut tree_shake_module = TreeShakeModule::new(&mut module);
-    tree_shake_module.pending_used_exports = UsedExports::Partial(HashSet::from([
+    tree_shake_module.pending_used_exports = UsedExports::Partial(HashSet::from_iter([
       UsedExportsIdent::Default,
       UsedExportsIdent::SwcIdent("j".to_string()),
       UsedExportsIdent::SwcIdent("d".to_string()),
@@ -292,7 +293,7 @@ export { a };
     let mut tree_shake_module = TreeShakeModule::new(&mut module);
     // tree_shake_module.used_exports =
     //   UsedExports::Partial(HashMap::from([("index.ts".into(), vec!["a".to_string()])]));
-    tree_shake_module.pending_used_exports = UsedExports::Partial(HashSet::from([
+    tree_shake_module.pending_used_exports = UsedExports::Partial(HashSet::from_iter([
       UsedExportsIdent::SwcIdent("a".to_string()),
       UsedExportsIdent::SwcIdent("foo".to_string()),
     ]));
@@ -340,7 +341,7 @@ export const b = 2;
   GLOBALS.set(&globals, || {
     let (mut module, _) = create_module(code);
     let mut tree_shake_module = TreeShakeModule::new(&mut module);
-    tree_shake_module.pending_used_exports = UsedExports::Partial(HashSet::from([
+    tree_shake_module.pending_used_exports = UsedExports::Partial(HashSet::from_iter([
       UsedExportsIdent::SwcIdent("a".to_string()),
       UsedExportsIdent::SwcIdent("b".to_string()),
       UsedExportsIdent::SwcIdent("c".to_string()),
@@ -396,7 +397,7 @@ export * from './bar';
     let (mut module, _) = create_module(code);
     let mut tree_shake_module = TreeShakeModule::new(&mut module);
 
-    tree_shake_module.pending_used_exports = UsedExports::Partial(HashSet::from([
+    tree_shake_module.pending_used_exports = UsedExports::Partial(HashSet::from_iter([
       UsedExportsIdent::SwcIdent("a".to_string()),
       UsedExportsIdent::SwcIdent("b".to_string()),
       UsedExportsIdent::SwcIdent("c".to_string()),

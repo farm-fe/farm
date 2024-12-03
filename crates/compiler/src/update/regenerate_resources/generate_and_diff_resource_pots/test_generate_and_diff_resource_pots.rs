@@ -1,4 +1,3 @@
-use std::collections::HashSet;
 use std::sync::Arc;
 
 use farmfe_core::{
@@ -11,6 +10,7 @@ use farmfe_core::{
     Module,
   },
   plugin::{Plugin, PluginHookContext, ResolveKind},
+  HashSet,
 };
 use farmfe_plugin_partial_bundling::module_group_graph_from_entries;
 use farmfe_testing_helpers::{
@@ -66,7 +66,7 @@ fn test_generate_and_diff_resource_pots() {
   );
   assert_eq!(
     affected_groups,
-    HashSet::from(["A".into(), "B".into(), "F".into(), "D".into()])
+    HashSet::from_iter(["A".into(), "B".into(), "F".into(), "D".into()])
   );
 
   let mut config = Config::default();
@@ -194,7 +194,7 @@ fn test_generate_and_diff_resource_pots_one_module_changed() {
     &mut module_graph,
     &mut module_group_graph,
   );
-  assert_eq!(affected_groups, HashSet::from(["I".into()]));
+  assert_eq!(affected_groups, HashSet::from_iter(["I".into()]));
 
   let mut config = Config::default();
   config.partial_bundling.enforce_resources = vec![PartialBundlingEnforceResourceConfig {

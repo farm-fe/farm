@@ -1,8 +1,9 @@
-use std::collections::{HashMap, HashSet, VecDeque};
+use std::collections::VecDeque;
 
 use farmfe_core::{
   module::{module_graph::ModuleGraph, ModuleId},
   plugin::ResolveKind,
+  HashMap, HashSet,
 };
 
 use crate::{
@@ -18,7 +19,7 @@ pub fn tree_shake_modules(
   tree_shake_modules_map: &mut HashMap<ModuleId, TreeShakeModule>,
 ) -> Vec<ModuleId> {
   let mut tree_shake_module_ids_queue = VecDeque::from(entry_module_ids);
-  let mut visited_modules: HashSet<ModuleId> = HashSet::new();
+  let mut visited_modules: HashSet<ModuleId> = HashSet::default();
 
   let set_dep_used_export_all =
     |dep_id: &ModuleId, tree_shake_modules_map: &mut HashMap<ModuleId, TreeShakeModule>| {
@@ -187,15 +188,15 @@ fn trace_and_mark_used_statements(
             traced_import_stmts.push(TracedUsedImportStatement::from_import_info_and_used_idents(
               stmt.id,
               stmt.import_info.as_ref().unwrap(),
-              &HashSet::new(),
-              HashMap::new(),
+              &HashSet::default(),
+              HashMap::default(),
             ));
           } else if matches!(kind, ResolveKind::ExportFrom) {
             traced_import_stmts.push(
               TracedUsedImportStatement::from_export_info_and_used_idents(
                 stmt.id,
                 stmt.export_info.as_ref().unwrap(),
-                &HashSet::new(),
+                &HashSet::default(),
               )
               .unwrap(),
             );

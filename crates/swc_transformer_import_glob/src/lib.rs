@@ -14,7 +14,6 @@
 //! ````
 #![feature(box_patterns)]
 
-use std::collections::HashMap;
 use std::path::Component;
 use std::path::PathBuf;
 
@@ -31,6 +30,7 @@ use farmfe_core::swc_ecma_ast::{
   Module as SwcModule, ModuleItem, ObjectLit, Pat, Prop, PropOrSpread,
 };
 use farmfe_core::wax::Glob;
+use farmfe_core::HashMap;
 
 use farmfe_toolkit::swc_ecma_visit::{VisitMut, VisitMutWith};
 use farmfe_utils::relative;
@@ -481,7 +481,7 @@ impl<'a> ImportGlobVisitor<'a> {
       }
     }
 
-    let mut filtered_paths = HashMap::new();
+    let mut filtered_paths = HashMap::default();
 
     for (negative, path) in paths {
       for (source, entry) in path {
@@ -805,7 +805,7 @@ fn get_string_literal(expr: &ExprOrSpread) -> Option<Vec<String>> {
 fn get_object_literal(expr: &ExprOrSpread) -> Option<HashMap<String, String>> {
   match &expr.expr {
     box Expr::Object(ObjectLit { props, .. }) => {
-      let mut result = HashMap::new();
+      let mut result = HashMap::default();
 
       for prop in props {
         match prop {

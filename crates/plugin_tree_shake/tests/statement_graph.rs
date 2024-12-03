@@ -1,11 +1,9 @@
-use std::{
-  cmp::Ordering,
-  collections::{HashMap, HashSet},
-};
+use std::cmp::Ordering;
 
 use farmfe_core::swc_common::{
   comments::SingleThreadedComments, Globals, Mark, SyntaxContext, GLOBALS,
 };
+use farmfe_core::{HashMap, HashSet};
 
 mod common;
 
@@ -350,11 +348,11 @@ export { a, b, c as d };"#;
       &SingleThreadedComments::default(),
     );
 
-    let traced_import_stmts = stmt_graph.trace_and_mark_used_statements(HashMap::from([
-      (5, HashSet::from([UsedStatementIdent::Default])),
+    let traced_import_stmts = stmt_graph.trace_and_mark_used_statements(HashMap::from_iter([
+      (5, HashSet::from_iter([UsedStatementIdent::Default])),
       (
         4,
-        HashSet::from([UsedStatementIdent::SwcIdent((
+        HashSet::from_iter([UsedStatementIdent::SwcIdent((
           "e".into(),
           SyntaxContext::from_u32(2),
         ))]),
@@ -435,9 +433,9 @@ export { a, b, c as d };"#;
       &SingleThreadedComments::default(),
     );
 
-    let traced_import_stmts = stmt_graph.trace_and_mark_used_statements(HashMap::from([(
+    let traced_import_stmts = stmt_graph.trace_and_mark_used_statements(HashMap::from_iter([(
       6,
-      HashSet::from([UsedStatementIdent::SwcIdent((
+      HashSet::from_iter([UsedStatementIdent::SwcIdent((
         "c".into(),
         SyntaxContext::from_u32(2),
       ))]),
@@ -542,9 +540,9 @@ export const {
       &SingleThreadedComments::default(),
     );
 
-    let traced_import_stmts = stmt_graph.trace_and_mark_used_statements(HashMap::from([(
+    let traced_import_stmts = stmt_graph.trace_and_mark_used_statements(HashMap::from_iter([(
       1,
-      HashSet::from([UsedStatementIdent::SwcIdent((
+      HashSet::from_iter([UsedStatementIdent::SwcIdent((
         "program".into(),
         SyntaxContext::from_u32(2),
       ))]),

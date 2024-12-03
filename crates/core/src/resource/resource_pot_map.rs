@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use crate::HashMap;
 
 use super::resource_pot::{ResourcePot, ResourcePotId};
 
@@ -9,7 +9,7 @@ pub struct ResourcePotMap {
 impl ResourcePotMap {
   pub fn new() -> Self {
     Self {
-      map: HashMap::new(),
+      map: HashMap::default(),
     }
   }
 

@@ -42,6 +42,11 @@ export default defineConfig({
     // compilerPlugin(),
     custom()
   ],
+  server: {
+    port: 4855,
+    appType: "mpa",
+    https: true
+  },
   compilation: {
     input: {
       index: path.resolve(__dirname, "index.html"),
@@ -49,7 +54,7 @@ export default defineConfig({
       about: path.resolve(__dirname, 'about.html'),
     },
     progress: false,
-    persistentCache: false,
+    // persistentCache: false,
     // persistentCache: {
     //   cacheDir: "node_modules/.adny",
     // },

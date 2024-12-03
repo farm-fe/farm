@@ -1,4 +1,3 @@
-use std::collections::{HashMap, HashSet};
 use std::path::PathBuf;
 
 use farmfe_core::config::Config;
@@ -6,6 +5,7 @@ use farmfe_core::{
   module::{module_graph::ModuleGraph, module_group::ModuleGroupId},
   resource::resource_pot::ResourcePot,
 };
+use farmfe_core::{HashMap, HashSet};
 
 use crate::{
   generate_module_buckets::ModuleGroupBuckets,
@@ -27,8 +27,8 @@ pub fn generate_resource_pots(
   groups_enforce_map: &HashMap<String, bool>,
 ) -> Vec<ResourcePot> {
   let mut resource_pots = vec![];
-  let mut handled_module_group_buckets = HashSet::new();
-  let mut used_resource_pot_names = HashSet::new();
+  let mut handled_module_group_buckets = HashSet::default();
+  let mut used_resource_pot_names = HashSet::default();
 
   for mut module_group_bucket in module_group_buckets {
     let module_group_id = module_group_bucket.module_group_id;
@@ -124,7 +124,7 @@ fn generate_resource_pot_name(
 #[cfg(test)]
 mod tests {
   use farmfe_core::module::{module_graph::ModuleGraph, module_group::ModuleGroupId, Module};
-  use std::collections::HashSet;
+  use farmfe_core::HashSet;
 
   use crate::generate_resource_pots::generate_resource_pot_name;
 
@@ -137,7 +137,7 @@ mod tests {
       .insert(module_a.id.clone(), "a".to_string());
     module_graph.add_module(module_a);
 
-    let mut used_resource_pot_names = HashSet::new();
+    let mut used_resource_pot_names = HashSet::default();
     assert_eq!(
       generate_resource_pot_name(
         "test/src/a.html".into(),

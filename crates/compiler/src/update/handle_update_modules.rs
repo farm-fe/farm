@@ -1,4 +1,4 @@
-use std::{collections::HashMap, sync::Arc};
+use std::sync::Arc;
 
 use farmfe_core::{
   context::CompilationContext,
@@ -6,6 +6,7 @@ use farmfe_core::{
   plugin::{PluginUpdateModulesHookParams, UpdateResult, UpdateType},
   serde_json,
   stats::CompilationPluginHookStats,
+  HashMap,
 };
 use farmfe_utils::relative;
 
@@ -96,7 +97,7 @@ pub fn handle_update_modules(
 
   // group the paths by same resolved_path
   let grouped_paths = paths.iter().fold(
-    HashMap::<String, Vec<String>>::new(),
+    HashMap::<String, Vec<String>>::default(),
     |mut acc, (path, _)| {
       let resolved_path = path.split('?').next().unwrap().to_string();
 

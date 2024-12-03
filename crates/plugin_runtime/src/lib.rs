@@ -1,10 +1,6 @@
 #![feature(box_patterns)]
 
-use std::{
-  any::Any,
-  collections::{HashMap, HashSet, VecDeque},
-  sync::Arc,
-};
+use std::{any::Any, collections::VecDeque, sync::Arc};
 
 use farmfe_core::{
   config::{
@@ -25,7 +21,7 @@ use farmfe_core::{
     resource_pot::{ResourcePot, ResourcePotMetaData, ResourcePotType},
     Resource, ResourceOrigin, ResourceType,
   },
-  serde_json,
+  serde_json, HashMap, HashSet,
 };
 use farmfe_toolkit::{
   fs::read_file_utf8,
@@ -125,7 +121,7 @@ impl Plugin for FarmPluginRuntime {
         context,
         &PluginHookContext {
           caller: hook_context.add_caller(PLUGIN_NAME),
-          meta: HashMap::new(),
+          meta: HashMap::default(),
         },
       )?;
 
@@ -472,7 +468,7 @@ impl FarmPluginRuntime {
   pub(crate) fn get_async_modules<'a>(
     &'a self,
     context: &'a Arc<CompilationContext>,
-  ) -> farmfe_core::dashmap::mapref::one::Ref<'_, String, Box<dyn Any + Send + Sync>> {
+  ) -> farmfe_core::dashmap::mapref::one::Ref<'a, String, Box<dyn Any + Send + Sync>> {
     context.custom.get(ASYNC_MODULES).unwrap()
   }
 }
