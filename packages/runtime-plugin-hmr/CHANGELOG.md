@@ -1,5 +1,11 @@
 # @farmfe/runtime-plugin-hmr
 
+## 3.5.9
+
+### Patch Changes
+
+- c6df3d2b: Fix server.hmr.protocol does not work
+
 ## 3.5.8
 
 ### Patch Changes
