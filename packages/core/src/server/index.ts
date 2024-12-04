@@ -694,7 +694,11 @@ export class Server extends httpServer {
       teardownSIGTERMListener(this.terminateServerFn);
     }
 
-    await Promise.allSettled([this.watcher.watcher.close(),this.ws.wss.close(), this.closeHttpServerFn()]);
+    await Promise.allSettled([
+      this.watcher.watcher.close(),
+      this.ws.wss.close(),
+      this.closeHttpServerFn()
+    ]);
     this.resolvedUrls = null;
   }
 
