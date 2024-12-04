@@ -6,6 +6,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.13](https://github.com/farm-fe/farm/compare/farmfe_compiler-v0.0.12...farmfe_compiler-v0.0.13) - 2024-12-04
+
+### Added
+
+- support tree shake import namespace ([#1942](https://github.com/farm-fe/farm/pull/1942))
+
+### Fixed
+
+- cjs2esm entry omit default reexport ([#1972](https://github.com/farm-fe/farm/pull/1972))
+- bundle export cjs entry file ([#1964](https://github.com/farm-fe/farm/pull/1964))
+- external alias [#1957](https://github.com/farm-fe/farm/pull/1957) ([#1959](https://github.com/farm-fe/farm/pull/1959))
+- bundle global variable preserve ([#1940](https://github.com/farm-fe/farm/pull/1940))
+
 ## [0.0.12](https://github.com/farm-fe/farm/compare/farmfe_compiler-v0.0.11...farmfe_compiler-v0.0.12) - 2024-10-31
 
 ### Added
