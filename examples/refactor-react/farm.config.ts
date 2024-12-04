@@ -13,7 +13,8 @@ function custom() {
     },
     resolve: {
       filters: {
-        importers: ['^.*$']
+        importers: ['^.*$'],
+        sources: ['.*'],
       },
       executor(param) {
       }
@@ -60,7 +61,12 @@ export default defineConfig({
     output: {
       // publicPath: "/aaa/",
     },
-  }
+  },
+  server: {
+    port: 4855,
+    appType: "mpa",
+    https: true
+  },
 });
 
 function myCustomPlugin() {

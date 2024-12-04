@@ -124,25 +124,6 @@ export async function resolveHostname(
   return { host, name };
 }
 
-function getAddressHostnamePort(server: AddressInfo): {
-  host: string;
-  port: number;
-} {
-  const hostname = server.address || 'localhost';
-  const port = server.port;
-  return { host: hostname, port };
-}
-
-function createServerUrl(
-  protocol: string,
-  hostname: string,
-  port: number,
-  publicPath: string
-): string {
-  const hostnameName = hostname.includes(':') ? `[${hostname}]` : hostname;
-  return `${protocol}://${hostnameName}:${port}${publicPath}`;
-}
-
 /**
  * Setup a listener for SIGTERM and SIGINT signals, and call the given callback
  * function when either signal is received.
@@ -150,7 +131,9 @@ function createServerUrl(
  * @param callback - callback function to be called when SIGTERM is received
  * @returns {void}
  */
-export const setupSIGTERMListener = (callback: () => Promise<void>): void => {
+export const setupSIGTERMListener = (
+  callback: (signal?: 'SIGTERM', exitCode?: number) => Promise<void>
+): void => {
   process.on('SIGTERM', callback);
   process.on('SIGINT', callback); // Handle user interrupt (Ctrl+C)
   if (process.env.CI !== 'true') {
@@ -164,7 +147,7 @@ export const setupSIGTERMListener = (callback: () => Promise<void>): void => {
  * @param callback - callback function to be removed when SIGTERM is received
  */
 export const teardownSIGTERMListener = (
-  callback: () => Promise<void>
+  callback: Parameters<typeof setupSIGTERMListener>[0]
 ): void => {
   process.off('SIGTERM', callback);
   process.off('SIGINT', callback);
