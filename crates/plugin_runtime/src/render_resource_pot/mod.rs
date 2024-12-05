@@ -21,7 +21,7 @@ use farmfe_core::{
   rayon::iter::{IntoParallelIterator, ParallelIterator},
   resource::resource_pot::ResourcePot,
   serialize,
-  swc_common::{comments::SingleThreadedComments, SourceMap, DUMMY_SP},
+  swc_common::{comments::SingleThreadedComments, util::take::Take, SourceMap, DUMMY_SP},
   swc_ecma_ast::{
     EsVersion, Expr, ExprOrSpread, KeyValueProp, Lit, Module as SwcModule, ObjectLit, Prop,
     PropName, PropOrSpread,
@@ -30,13 +30,16 @@ use farmfe_core::{
 };
 use farmfe_toolkit::{
   html::get_farm_global_this,
-  script::{codegen_module, parse_module, CodeGenCommentsConfig, ParseScriptModuleResult},
+  script::{
+    codegen_module, generator::RenderModuleResult, parse_module, CodeGenCommentsConfig,
+    ParseScriptModuleResult,
+  },
   source_map::{build_source_map, collapse_sourcemap},
 };
 
 use farmfe_utils::{hash::sha256, parse_query};
 use merge_rendered_module::wrap_resource_pot_ast;
-use render_module::{RenderModuleOptions, RenderModuleResult};
+use render_module::RenderModuleOptions;
 use scope_hoisting::build_scope_hoisted_module_groups;
 
 use self::render_module::render_module;
@@ -48,11 +51,13 @@ mod scope_hoisting;
 mod source_replacer;
 mod transform_async_module;
 
+type RenderResourcePotResult = (Vec<RenderModuleResult>, HashMap<ModuleId, Vec<ModuleId>>);
+
 pub fn render_resource_pot_modules(
   resource_pot: &ResourcePot,
   module_graph: &ModuleGraph,
   context: &Arc<CompilationContext>,
-) -> Result<Vec<RenderModuleResult>> {
+) -> Result<RenderResourcePotResult> {
   let modules = Mutex::new(vec![]);
 
   // group modules in the same group that can perform scope hoisting
@@ -71,38 +76,49 @@ pub fn render_resource_pot_modules(
           )
         });
 
-      let (hoisted_ast, comments) = if hoisted_group.hoisted_module_ids.len() > 1 {
-        (
-          Some(hoisted_group.render(module_graph, context)?),
-          // TODO: comments
-          None,
-        )
+      let mut hoisted_ast = if hoisted_group.hoisted_module_ids.len() > 1 {
+        Some(hoisted_group.render(module_graph, context)?)
       } else {
-        (None, None)
+        None
       };
 
-      let render_module_result = render_module(
-        RenderModuleOptions {
-          module,
-          module_graph,
-          hoisted_ast,
-          context,
-        },
-        comments,
-      )?;
+      let hoisted_modules = hoisted_ast
+        .as_mut()
+        .map(|item| item.rendered_modules.take());
 
-      modules.lock().push(render_module_result);
+      let render_module_result = render_module(RenderModuleOptions {
+        module,
+        module_graph,
+        hoisted_ast,
+        context,
+      })?;
+
+      modules.lock().push((render_module_result, hoisted_modules));
 
       Ok::<(), CompilationError>(())
     })?;
 
   // sort props by module id to make sure the order is stable
-  let mut modules = modules.into_inner();
+  let modules = modules.into_inner();
+
+  let (mut modules, hoisted_map) = modules.into_iter().fold(
+    (vec![], HashMap::new()),
+    |(mut modules, mut hoisted_map), (result, hosited_modules)| {
+      if let Some(hosited_modules) = hosited_modules {
+        hoisted_map.insert(result.module_id.clone(), hosited_modules);
+      }
+
+      modules.push(result);
+
+      (modules, hoisted_map)
+    },
+  );
+
   modules.sort_by(|a, b| {
     a.module_id
       .id(context.config.mode.clone())
       .cmp(&b.module_id.id(context.config.mode.clone()))
   });
 
-  Ok(modules)
+  Ok((modules, hoisted_map))
 }

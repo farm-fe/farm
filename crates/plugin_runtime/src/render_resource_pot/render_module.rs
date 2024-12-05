@@ -11,10 +11,12 @@ use farmfe_core::{
   },
   swc_ecma_ast::{ArrowExpr, BlockStmtOrExpr, Expr, ExprStmt, FnExpr},
 };
+use farmfe_plugin_bundle::resource_pot_to_bundle::GeneratorAstResult;
 use farmfe_toolkit::{
   minify::minify_js_module,
   script::{
     codegen_module,
+    generator::RenderModuleResult,
     module2cjs::{transform_module_decls, OriginalRuntimeCallee, TransformModuleDeclsOptions},
     swc_try_with::{resolve_module_mark, try_with},
     CodeGenCommentsConfig,
@@ -32,9 +34,7 @@ use farmfe_core::{
   config::{FARM_DYNAMIC_REQUIRE, FARM_MODULE, FARM_MODULE_EXPORT, FARM_REQUIRE},
 
   swc_common::DUMMY_SP,
-  swc_ecma_ast::{
-    BindingIdent, BlockStmt, FnDecl, Function, Module as SwcModule, ModuleItem, Param, Stmt,
-  }, // swc_ecma_ast::Function
+  swc_ecma_ast::{BindingIdent, BlockStmt, Function, Module as SwcModule, ModuleItem, Param, Stmt}, // swc_ecma_ast::Function
 };
 
 use super::{
@@ -42,23 +42,15 @@ use super::{
   transform_async_module,
 };
 
-pub struct RenderModuleResult {
-  pub module_id: ModuleId,
-  pub rendered_ast: SwcModule,
-  pub comments: CommentsMetaData,
-  pub external_modules: Vec<ModuleId>,
-}
-
 pub struct RenderModuleOptions<'a> {
   pub module: &'a Module,
-  pub hoisted_ast: Option<SwcModule>,
+  pub hoisted_ast: Option<GeneratorAstResult>,
   pub module_graph: &'a ModuleGraph,
   pub context: &'a Arc<CompilationContext>,
 }
 
-pub fn render_module<'a>(
-  options: RenderModuleOptions<'a>,
-  comments: Option<SingleThreadedComments>,
+pub fn render_module(
+  options: RenderModuleOptions,
 ) -> farmfe_core::error::Result<RenderModuleResult> {
   let RenderModuleOptions {
     module,
@@ -68,15 +60,20 @@ pub fn render_module<'a>(
   } = options;
   let is_async_module = module.meta.as_script().is_async;
   let is_use_hoisted = hoisted_ast.is_some();
-  let mut cloned_module = hoisted_ast.unwrap_or(module.meta.as_script().ast.clone());
+
+  let (mut cloned_module, comments) =
+    if let Some(GeneratorAstResult { ast, comments, .. }) = hoisted_ast {
+      (ast, SingleThreadedComments::from(comments))
+    } else {
+      let script = module.meta.as_script();
+      (script.ast.clone(), script.comments.clone().into())
+    };
   let (cm, _) = context
     .meta
     .script
     .create_swc_source_map(&module.id, module.content.clone());
 
   let mut external_modules = vec![];
-  let comments: SingleThreadedComments =
-    comments.unwrap_or_else(|| module.meta.as_script().comments.clone().into());
 
   let mut func_expr = Expr::default();
 

@@ -267,21 +267,56 @@ impl ScriptContextMetaData {
       return value.clone();
     }
 
-    let cm = Arc::new(SourceMap::default());
-
-    for module_id in module_ids {
-      let module = module_graph
-        .module(&module_id)
-        .unwrap_or_else(|| panic!("no module found for {:?}", module_id));
-      let (_, sf) = self.create_swc_source_map(module_id, module.content.clone());
-      cm.new_source_file_from(sf.name.clone(), sf.src.clone());
-    }
+    let cm = self.merge_modules_source_mpa(&module_ids, module_graph);
 
     self
       .resource_pot_source_maps
       .insert(resource_pot_id.clone(), cm.clone());
 
     cm
+  }
+
+  pub fn merge_modules_source_mpa(
+    &self,
+    module_ids: &Vec<&ModuleId>,
+    module_graph: &ModuleGraph,
+  ) -> Arc<SourceMap> {
+    let cm = Arc::new(SourceMap::default());
+
+    for module_id in module_ids {
+      let module = module_graph
+        .module(module_id)
+        .unwrap_or_else(|| panic!("no module found for {:?}", module_id));
+      let (_, sf) = self.create_swc_source_map(module_id, module.content.clone());
+      cm.new_source_file_from(sf.name.clone(), sf.src.clone());
+    }
+
+    cm
+  }
+
+  pub fn merge_nested_source_map(
+    &self,
+    resource_pot_id: &ResourcePotId,
+    module_ids: &Vec<&ModuleId>,
+    module_graph: &ModuleGraph,
+    nested_modules: &HashMap<ModuleId, Vec<ModuleId>>,
+  ) -> Arc<SourceMap> {
+    if let Some(cm) = self.resource_pot_source_maps.get(resource_pot_id) {
+      return cm.clone();
+    }
+
+    let items = module_ids
+      .iter()
+      .flat_map(|module_id| {
+        if let Some(modules) = nested_modules.get(module_id) {
+          modules.iter().collect::<Vec<_>>()
+        } else {
+          vec![*module_id]
+        }
+      })
+      .collect::<Vec<_>>();
+
+    self.merge_swc_source_map(resource_pot_id, items, module_graph)
   }
 }
 

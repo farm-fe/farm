@@ -30,7 +30,7 @@ use farmfe_core::{
 };
 use farmfe_toolkit::constant::RUNTIME_SUFFIX;
 use resource_pot_to_bundle::{
-  BundleGroup, ShareBundleOptions, SharedBundle, FARM_BUNDLE_POLYFILL_SLOT,
+  BundleGroup, GeneratorAstResult, ShareBundleOptions, SharedBundle, FARM_BUNDLE_POLYFILL_SLOT,
   FARM_BUNDLE_REFERENCE_SLOT_PREFIX,
 };
 
@@ -38,8 +38,8 @@ pub mod resource_pot_to_bundle;
 
 #[derive(Default)]
 pub struct FarmPluginBundle {
-  runtime_code: Mutex<Arc<Module>>,
-  bundle_map: Mutex<HashMap<String, Module>>,
+  runtime_code: Mutex<Option<GeneratorAstResult>>,
+  bundle_map: Mutex<HashMap<String, GeneratorAstResult>>,
   resource_pot_id_resource_map: Mutex<HashMap<String, String>>,
 }
 
@@ -103,7 +103,7 @@ impl Plugin for FarmPluginBundle {
     if param.resolved_path.starts_with(FARM_BUNDLE_POLYFILL_SLOT) {
       return Ok(Some(PluginLoadHookResult {
         // TODO: disable tree-shaking it
-        content: format!(r#"export {{}}"#),
+        content: r#"export {}"#.to_string(),
         module_type: ModuleType::Js,
         source_map: None,
       }));
@@ -138,7 +138,7 @@ impl Plugin for FarmPluginBundle {
     resource_pots: &mut Vec<&mut ResourcePot>,
     context: &Arc<CompilationContext>,
   ) -> farmfe_core::error::Result<Option<()>> {
-    if !self.runtime_code.lock().body.is_empty() {
+    if !self.runtime_code.lock().is_some() {
       return Ok(None);
     }
 
@@ -159,7 +159,7 @@ impl Plugin for FarmPluginBundle {
       &module_graph,
       context,
       Some(ShareBundleOptions {
-        format: context.config.output.format.clone(),
+        format: context.config.output.format,
         ..Default::default()
       }),
     )?;
@@ -176,7 +176,7 @@ impl Plugin for FarmPluginBundle {
         let module = shared_bundle.codegen(&resource_pot_id)?;
 
         if matches!(resource_pot.resource_pot_type, ResourcePotType::Runtime) {
-          *self.runtime_code.lock() = Arc::new(module);
+          *self.runtime_code.lock() = Some(module);
         } else {
           self.bundle_map.lock().insert(resource_pot_id, module);
         }
@@ -188,32 +188,27 @@ impl Plugin for FarmPluginBundle {
 
   fn render_resource_pot(
     &self,
-    _resource_pot: &ResourcePot,
-    _context: &Arc<CompilationContext>,
-    _hook_context: &PluginHookContext,
-  ) -> farmfe_core::error::Result<Option<ResourcePotMetaData>> {
-    Ok(None)
-  }
-
-  fn render_update_resource_pot(
-    &self,
     resource_pot: &ResourcePot,
     _context: &Arc<CompilationContext>,
     _hook_context: &PluginHookContext,
   ) -> farmfe_core::error::Result<Option<ResourcePotMetaData>> {
     if matches!(resource_pot.resource_pot_type, ResourcePotType::Runtime) {
-      return Ok(Some(ResourcePotMetaData::Js(JsResourcePotMetaData {
-        ast: Arc::into_inner(self.runtime_code.lock().clone()).unwrap(),
-        comments: Default::default(),
-        external_modules: Default::default(),
-        rendered_modules: Default::default(),
-      })));
+      if let Some(code) = self.runtime_code.lock().as_ref() {
+        return Ok(Some(ResourcePotMetaData::Js(JsResourcePotMetaData {
+          ast: code.ast.clone(),
+          comments: code.comments.clone(),
+          external_modules: Default::default(),
+          rendered_modules: Default::default(),
+        })));
+      }
+
+      return Ok(None);
     } else if let Some(bundle) = self.bundle_map.lock().remove(&resource_pot.id) {
       return Ok(Some(ResourcePotMetaData::Js(JsResourcePotMetaData {
-        ast: bundle,
-        comments: Default::default(),
+        ast: bundle.ast,
+        comments: bundle.comments,
         external_modules: Default::default(),
-        rendered_modules: Default::default(),
+        rendered_modules: bundle.rendered_modules,
       })));
     }
 
@@ -272,10 +267,9 @@ impl Plugin for FarmPluginBundle {
 
       let items = reg
         .captures_iter(&content)
-        .into_iter()
         .flat_map(|i| {
           i.iter()
-            .filter_map(|i| i)
+            .flatten()
             .map(|i| i.as_str().to_string())
             .collect::<Vec<_>>()
         })

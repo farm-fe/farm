@@ -34,12 +34,14 @@ use farmfe_core::{
 use farmfe_toolkit::{
   fs::read_file_utf8,
   html::get_farm_global_this,
-  script::{module_type_from_id, set_module_system_for_module_meta},
+  script::{
+    module_type_from_id, set_module_system_for_module_meta,
+    sourcemap::{merge_comments, merge_sourcemap},
+  },
 };
 
 use farmfe_utils::hash::base64_encode;
 use insert_runtime_plugins::insert_runtime_plugins;
-use merge_rendered_module::{merge_comments, merge_sourcemap};
 use render_resource_pot::{external::handle_external_modules, *};
 
 pub use farmfe_toolkit::script::constant::RUNTIME_SUFFIX;
@@ -297,15 +299,15 @@ impl Plugin for FarmPluginRuntime {
 
     let module_graph = context.module_graph.read();
 
-    let mut rendered_modules = render_resource_pot_modules(resource_pot, &module_graph, context)?;
+    let (mut rendered_modules, hoisted_map) =
+      render_resource_pot_modules(resource_pot, &module_graph, context)?;
     let merged_ast = merge_rendered_module::merge_rendered_module(&mut rendered_modules, context);
     let wrapped_resource_pot_ast =
       merge_rendered_module::wrap_resource_pot_ast(merged_ast, &resource_pot.id, context);
 
     let external_modules = rendered_modules
       .iter()
-      .map(|m| m.external_modules.iter().map(|e| e.to_string()))
-      .flatten()
+      .flat_map(|m| m.external_modules.iter().map(|e| e.to_string()))
       .collect::<HashSet<_>>();
 
     let wrapped_resource_pot_ast = handle_external_modules(
@@ -314,13 +316,16 @@ impl Plugin for FarmPluginRuntime {
       &external_modules,
       context,
     )?;
+
     let merged_sourcemap = merge_sourcemap(
       &resource_pot.id,
       &mut rendered_modules,
       &module_graph,
       context,
+      &hoisted_map,
     );
-    let comments = merge_comments(&mut rendered_modules, merged_sourcemap);
+
+    let comments = merge_comments(&mut rendered_modules, merged_sourcemap, &hoisted_map);
 
     Ok(Some(ResourcePotMetaData::Js(JsResourcePotMetaData {
       ast: wrapped_resource_pot_ast,
@@ -342,7 +347,8 @@ impl Plugin for FarmPluginRuntime {
     }
 
     let module_graph = context.module_graph.read();
-    let mut rendered_modules = render_resource_pot_modules(resource_pot, &module_graph, context)?;
+    let (mut rendered_modules, _) =
+      render_resource_pot_modules(resource_pot, &module_graph, context)?;
     let merged_ast = merge_rendered_module::merge_rendered_module(&mut rendered_modules, context);
 
     // println!("generated code");

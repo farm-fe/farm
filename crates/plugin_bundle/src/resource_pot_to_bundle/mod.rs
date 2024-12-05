@@ -35,6 +35,8 @@ mod targets;
 pub use common::{FARM_BUNDLE_POLYFILL_SLOT, FARM_BUNDLE_REFERENCE_SLOT_PREFIX};
 pub use config::*;
 
+pub use bundle::bundle_analyzer::GeneratorAstResult;
+
 #[derive(Debug, Default, PartialEq, Eq)]
 pub struct Var {
   var: Id,
@@ -429,11 +431,11 @@ impl<'a> SharedBundle<'a> {
     Ok(())
   }
 
-  pub fn codegen(&mut self, group_id: &String) -> Result<Module> {
+  pub fn codegen(&mut self, group_id: &String) -> Result<GeneratorAstResult> {
     farm_profile_function!("");
 
-    let bundle = self.bundle_map.get_mut(group_id).unwrap();
+    let bundle = self.bundle_map.remove(group_id).unwrap();
 
-    bundle.gen_ast(&mut self.module_analyzer_manager, &self.context.context.config)
+    bundle.gen_ast(&mut self.module_analyzer_manager)
   }
 }

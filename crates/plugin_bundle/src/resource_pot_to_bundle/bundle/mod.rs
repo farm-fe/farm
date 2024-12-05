@@ -29,6 +29,7 @@ pub mod bundle_analyzer;
 pub mod bundle_reference;
 pub mod bundle_variable;
 pub mod reference;
+
 use crate::resource_pot_to_bundle::targets::{
   cjs::patch::CjsPatch, dynamic_import::replace_dynamic_import,
 };
@@ -44,7 +45,7 @@ use super::{
   polyfill::SimplePolyfill,
   targets::generate::generate_namespace_by_reference_map,
   uniq_name::BundleVariable,
-  ShareBundleContext, ShareBundleOptions, FARM_BUNDLE_POLYFILL_SLOT,
+  ShareBundleContext, FARM_BUNDLE_POLYFILL_SLOT,
 };
 
 pub type ModuleMap = HashMap<ModuleId, ModuleAnalyzer>;
@@ -1054,8 +1055,8 @@ mod tests {
   use farmfe_core::{
     context::CompilationContext,
     module::{
-      module_graph::ModuleGraph, Module, ModuleId, ModuleMetaData, ModuleSystem, ModuleType,
-      ScriptModuleMetaData,
+      meta_data::script::ScriptModuleMetaData, module_graph::ModuleGraph, Module, ModuleId,
+      ModuleMetaData, ModuleSystem, ModuleType,
     },
     swc_common::{Globals, Mark, SourceMap, DUMMY_SP},
     swc_ecma_ast::{Ident, Module as EcmaAstModule},
@@ -1104,6 +1105,9 @@ mod tests {
           hmr_accepted_deps: HashSet::default(),
           comments: Default::default(),
           custom: Default::default(),
+          imports: vec![],
+          exports: vec![],
+          is_async: false,
         }));
       })
       .unwrap();

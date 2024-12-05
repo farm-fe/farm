@@ -32,8 +32,10 @@ pub mod constant;
 pub mod defined_idents_collector;
 pub mod module2cjs;
 pub mod module_system;
+pub mod sourcemap;
 pub mod swc_try_with;
 pub mod utils;
+pub mod generator;
 
 pub use module_system::*;
 pub use utils::*;

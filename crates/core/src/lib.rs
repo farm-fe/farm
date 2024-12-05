@@ -1,3 +1,4 @@
+#![feature(let_chains)]
 #![deny(clippy::all)]
 #![allow(clippy::ptr_arg)]
 #![feature(trivial_bounds)]

@@ -7,23 +7,28 @@ use std::{
 };
 
 use farmfe_core::{
-  config::{external::ExternalConfig, Config, Mode, ModuleFormat, TargetEnv},
-  context::CompilationContext,
-  enhanced_magic_string::{
-    bundle::{Bundle, BundleOptions},
-    magic_string::{MagicString, MagicStringOptions},
-  },
-  error::{CompilationError, Result},
+  config::{external::ExternalConfig, ModuleFormat},
+  context::{get_swc_sourcemap_filename, CompilationContext},
+  error::Result,
   farm_profile_function, farm_profile_scope,
-  module::{module_graph::ModuleGraph, ModuleId, ModuleSystem},
+  module::{
+    meta_data::script::CommentsMetaData, module_graph::ModuleGraph, ModuleId, ModuleSystem,
+  },
   plugin::ResolveKind,
+  rayon::iter::{IntoParallelIterator, IntoParallelRefIterator, ParallelBridge, ParallelIterator},
   resource::resource_pot::ResourcePotType,
-  swc_common::{comments::SingleThreadedComments, util::take::Take, DUMMY_SP},
+  swc_common::{
+    comments::{Comments, SingleThreadedComments},
+    util::take::Take,
+    SourceMap, DUMMY_SP,
+  },
   swc_ecma_ast::Module,
 };
 use farmfe_toolkit::{
-  script::{codegen_module, swc_try_with::try_with, CodeGenCommentsConfig},
-  source_map::build_source_map,
+  script::{
+    sourcemap::{merge_sourcemap, SpanUpdater},
+    swc_try_with::try_with,
+  },
   swc_ecma_transforms::fixer,
   swc_ecma_visit::VisitMutWith,
 };
@@ -54,6 +59,12 @@ enum NamespaceExportType {
   External,
   Bundle,
   Entry(ModuleId),
+}
+
+pub struct GeneratorAstResult {
+  pub ast: Module,
+  pub comments: CommentsMetaData,
+  pub rendered_modules: Vec<ModuleId>,
 }
 
 pub struct BundleAnalyzer<'a> {
@@ -1510,41 +1521,86 @@ impl<'a> BundleAnalyzer<'a> {
   // }
 
   pub fn gen_ast(
-    &mut self,
+    self,
     module_analyzer_manager: &mut ModuleAnalyzerManager,
-    config: &Config,
-  ) -> Result<Module> {
-    let mut bodys = vec![];
+  ) -> Result<GeneratorAstResult> {
+    let cm = self
+      .context
+      .meta
+      .script
+      .merge_modules_source_mpa(&self.ordered_modules, self.module_graph);
 
-    for module_id in self.ordered_modules.iter() {
-      let module = self
-        .module_graph
-        .module(module_id)
-        .unwrap_or_else(|| panic!("Module not found: {module_id:?}"));
-      let module_analyzer = module_analyzer_manager.module_analyzer_mut_unchecked(module_id);
+    let get_start_pos = |module_id: &ModuleId| {
+      let filename = get_swc_sourcemap_filename(module_id);
+      let Some(source_file) = cm.get_source_file(&filename) else {
+        panic!("no source file found for {:?}", module_id);
+      };
+      source_file.start_pos
+    };
 
-      let comments: SingleThreadedComments = module.meta.as_script().comments.clone().into();
+    let modules = self
+      .ordered_modules
+      .iter()
+      .map(|module_id| {
+        let Some(module) = self.module_graph.module(module_id) else {
+          panic!("Module not found: {module_id:?}")
+        };
+        let module_analyzer = module_analyzer_manager.module_analyzer_mut_unchecked(module_id);
 
-      try_with(
-        module_analyzer.cm.clone(),
-        &self.context.meta.script.globals,
-        || {
-          module_analyzer
-            .ast
-            .visit_mut_with(&mut fixer(Some(&comments)));
+        let comments = module.meta.as_script().comments.clone();
 
-          let ast = module_analyzer.ast.take();
+        let module = module_analyzer.ast.take();
 
-          bodys.extend(ast.body);
+        (module_id, (module, comments))
+      })
+      .par_bridge()
+      .map(|(module_id, (mut module, data))| {
+        module.visit_mut_with(&mut SpanUpdater {
+          start_pos: get_start_pos(module_id),
+        });
+
+        (module_id, module, data)
+      })
+      .collect::<Vec<_>>();
+
+    let (ast, comments) = modules.into_iter().fold(
+      (
+        Module {
+          span: DUMMY_SP,
+          body: vec![],
+          shebang: None,
         },
-      )
-      .unwrap();
-    }
+        SingleThreadedComments::default(),
+      ),
+      |(mut module, comments), (module_id, ast, data)| {
+        module.body.extend(ast.body);
 
-    Ok(Module {
-      span: DUMMY_SP,
-      body: bodys,
-      shebang: None,
+        let start_pos = get_start_pos(module_id);
+
+        for item in data.leading {
+          let byte_pos = start_pos + item.byte_pos;
+
+          for comment in item.comment {
+            comments.add_leading(byte_pos, comment);
+          }
+        }
+
+        for item in data.trailing {
+          let byte_pos = start_pos + item.byte_pos;
+
+          for comment in item.comment {
+            comments.add_trailing(byte_pos, comment);
+          }
+        }
+
+        (module, comments)
+      },
+    );
+
+    Ok(GeneratorAstResult {
+      ast,
+      comments: comments.into(),
+      rendered_modules: self.ordered_modules.into_iter().cloned().collect(),
     })
   }
 }
