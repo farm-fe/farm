@@ -107,7 +107,6 @@ export async function resolveConfig(
   isPreview = false
 ): Promise<ResolvedUserConfig> {
   // TODO mode 这块还是不对 要区分 mode 和 build 还是 dev 环境
-  // TODO 在使用 vite 插件的时候 不要在开发环境使用 生产环境的mode vue 插件会导致 hmr 失效 记在文档里
   const compileMode = defaultMode;
 
   const mode = inlineOptions.mode || defaultMode;
@@ -127,6 +126,9 @@ export async function resolveConfig(
   // configPath may be file or directory
   const { configFile, configPath: initialConfigPath } = inlineOptions;
 
+  let configFilePath = initialConfigPath;
+
+  // TODO issues1 这里拿到的 config.root 不应该是undefined 我们可以给默认值
   const loadedUserConfig = await loadConfigFile(
     configFile,
     inlineOptions,
@@ -134,6 +136,7 @@ export async function resolveConfig(
     defaultNodeEnv
   );
 
+  // TODO issues4 这个方法是否有必要需要讨论 我们只考虑在最后拿到的 config 不存在 undefined 可以让rust 识别就ok
   let rawConfig: UserConfig = mergeFarmCliConfig(
     inlineOptions,
     {},
@@ -141,8 +144,6 @@ export async function resolveConfig(
   );
 
   const inlineConfig = rawConfig;
-
-  let configFilePath = initialConfigPath;
 
   if (loadedUserConfig) {
     configFilePath = loadedUserConfig.configFilePath;
@@ -154,6 +155,7 @@ export async function resolveConfig(
     compileMode
   );
 
+  // TODO issues2 如果我这时候push 了一个 插件在 resolveConfigHook 中
   const sortFarmJsPlugins = getSortedPlugins([
     ...jsPlugins,
     ...vitePluginAdapters,
@@ -161,10 +163,12 @@ export async function resolveConfig(
   ]);
 
   const config = await resolveConfigHook(rawConfig, sortFarmJsPlugins);
+
+  // TODO issues3 logger 放到方法内部 后续针对  compilation server logger 整合成一个方法
   // define logger when resolvedConfigHook
   const logger = new Logger({
-    customLogger: loadedUserConfig.config?.customLogger,
-    allowClearScreen: loadedUserConfig.config?.clearScreen
+    customLogger: config?.customLogger,
+    allowClearScreen: config?.clearScreen
   });
 
   const resolvedUserConfig = await resolveUserConfig(
@@ -173,19 +177,23 @@ export async function resolveConfig(
     compileMode
   );
 
+  // TODO 同3
   resolvedUserConfig.logger = logger;
 
+  // TODO 同3
   // normalize server config first cause it may be used in normalizeUserCompilationFnConfig
   resolvedUserConfig.server = normalizeDevServerConfig(
     resolvedUserConfig.server,
     compileMode
   );
 
+  // TODO 同3
   resolvedUserConfig.compilation = await normalizeUserCompilationConfig(
     resolvedUserConfig,
     mode as CompilationMode
   );
 
+  // TODO issues6 这个方法需要考虑是否需要整合到 resolveUserConfig 中 root 属性是否有必要在这里重新定义
   Object.assign(resolvedUserConfig, {
     root: resolvedUserConfig.compilation.root,
     jsPlugins: sortFarmJsPlugins,
@@ -195,6 +203,7 @@ export async function resolveConfig(
 
   await resolveConfigResolvedHook(resolvedUserConfig, sortFarmJsPlugins); // Fix: Await the Promise<void> and pass the resolved value to the function.
 
+  // TODO issues5 这个也要整合进去 没必要放在 resolveConfigResolvedHook 之后
   await handleLazyCompilation(
     resolvedUserConfig,
     command as keyof typeof COMMANDS
@@ -208,17 +217,18 @@ async function handleLazyCompilation(
   command: keyof typeof COMMANDS
 ) {
   const commandHandlers = {
-    [COMMANDS.START]: async (cfg: ResolvedUserConfig) => {
+    [COMMANDS.START]: async (config: ResolvedUserConfig) => {
       if (
-        cfg.compilation.lazyCompilation &&
-        typeof cfg.server?.host === 'string'
+        config.compilation.lazyCompilation &&
+        typeof config.server?.host === 'string'
       ) {
-        await setLazyCompilationDefine(cfg);
+        await setLazyCompilationDefine(config);
       }
     },
-    [COMMANDS.WATCH]: async (cfg: ResolvedUserConfig) => {
-      if (cfg.compilation?.lazyCompilation) {
-        await setLazyCompilationDefine(cfg);
+    // TODO 这个watch 方法需要在讨论 现在设计里没有 watch 这个方法了 build 的话也可以做 判断 config 里的 watch
+    [COMMANDS.WATCH]: async (config: ResolvedUserConfig) => {
+      if (config.compilation?.lazyCompilation) {
+        await setLazyCompilationDefine(config);
       }
     }
   };

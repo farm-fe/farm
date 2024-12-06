@@ -3,50 +3,10 @@ import { defineConfig, loadEnv } from "@farmfe/core";
 import react from "@farmfe/plugin-react";
 import path from "path";
 
-function custom() {
-  return {
-    name: "farm-test-plugin-name",
-    buildStart: {
-      executor() {
-        console.log("buildStart");
-      }
-    },
-    resolve: {
-      filters: {
-        importers: ['^.*$'],
-        sources: ['.*'],
-      },
-      executor(param) {
-      }
-    },
-    transform: {
-      filters: {
-        moduleTypes: ['js'],
-      },
-      async executor(param, ctx) {
-        // console.log(param, "transform");
-      }
-    },
-    // renderStart: {
-    //   async executor() {
-    //     // update my plugin status
-    //     // console.log(1231231);
-    //   }
-    // }
-  }
-}
 export default defineConfig({
   plugins: [
     react(),
-    // myCustomPlugin(),
-    // compilerPlugin(),
-    custom()
   ],
-  server: {
-    port: 4855,
-    appType: "mpa",
-    https: true
-  },
   compilation: {
     input: {
       index: path.resolve(__dirname, "index.html"),
@@ -55,37 +15,7 @@ export default defineConfig({
     },
     progress: false,
     // persistentCache: false,
-    // persistentCache: {
-    //   cacheDir: "node_modules/.adny",
-    // },
     output: {
-      // publicPath: "/aaa/",
     },
-  },
-  server: {
-    port: 4855,
-    appType: "mpa",
-    https: true
   },
 });
-
-function myCustomPlugin() {
-  return {
-    name: "custom",
-    updateModules: {
-      executor(data: any) {
-        console.log(data);
-      },
-    },
-  };
-}
-
-function compilerPlugin() {
-  return {
-    name: "compiler",
-    configureCompiler(compiler: any) {
-      // console.log(compiler, "compiler")
-    },
-  };
-}
-
