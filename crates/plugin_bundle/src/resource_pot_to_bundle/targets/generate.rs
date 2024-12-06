@@ -1,4 +1,4 @@
-use std::{collections::HashMap, sync::Arc};
+use std::sync::Arc;
 
 use farmfe_core::{
   config::ModuleFormat,
@@ -10,12 +10,15 @@ use farmfe_core::{
     self, BindingIdent, Bool, Decl, Expr, Ident, IdentName, KeyValueProp, ModuleItem, ObjectLit,
     Pat, Prop, PropName, PropOrSpread, Stmt, Str, VarDecl, VarDeclKind, VarDeclarator,
   },
+  HashMap,
 };
 use farmfe_toolkit::itertools::Itertools;
 
 use crate::resource_pot_to_bundle::{
   bundle::{
-    bundle_reference::{BundleReference, ExternalReferenceExport, ReferenceKind},
+    bundle_reference::{
+      BundleReference, CombineBundleReference, ExternalReferenceExport, ReferenceKind,
+    },
     reference::{ReferenceExport, ReferenceMap},
     ModuleAnalyzerManager,
   },
@@ -32,7 +35,7 @@ pub fn generate_namespace_by_reference_map(
   module_id: &ModuleId,
   local: usize,
   bundle_variable: &BundleVariable,
-  bundle_reference: &mut BundleReference,
+  bundle_reference: &mut CombineBundleReference,
   map: &ReferenceMap,
   module_analyzer_manager: &ModuleAnalyzerManager,
   order_index_map: &HashMap<ModuleId, usize>,
@@ -59,19 +62,19 @@ pub fn generate_namespace_by_reference_map(
     if module_analyzer_manager.is_external(module_id) || !module_analyzer_manager.contain(module_id)
     {
       if reference_export.is_empty() || reference_export.all {
-        let ns_index = module_analyzer_manager
+        if let Some(ns_index) = module_analyzer_manager
           .module_global_uniq_name
           .namespace_name(module_id)
-          .unwrap();
+        {
+          bundle_reference.add_import(
+            &ImportSpecifierInfo::Namespace(ns_index),
+            module_id.clone().into(),
+            bundle_variable,
+          )?;
 
-        bundle_reference.add_import(
-          &ImportSpecifierInfo::Namespace(ns_index),
-          module_id.clone().into(),
-          bundle_variable,
-        )?;
-
-        reexport_namespace.push(bundle_variable.name(ns_index).as_str().into());
-        continue;
+          reexport_namespace.push(bundle_variable.name(ns_index).as_str().into());
+          continue;
+        };
       }
 
       // TODO: export import from external
@@ -283,7 +286,7 @@ pub fn generate_export_as_module_export(
 pub fn generate_bundle_import_by_bundle_reference(
   format: &ModuleFormat,
   bundle_variable: &BundleVariable,
-  bundle_reference: &BundleReference,
+  bundle_reference: &CombineBundleReference,
   module_analyzer_manager: &ModuleAnalyzerManager,
   polyfill: &mut SimplePolyfill,
   group_id: &str,

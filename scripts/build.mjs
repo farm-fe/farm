@@ -23,6 +23,12 @@ const PKG_PLUGIN_TOOLS = resolve(CWD, "./packages/plugin-tools");
 // Build plugin dts
 const PKG_DTS = resolve(CWD, "./js-plugins/dts");
 
+// Build ReplaceDirnamePlugin
+const PKG_REPLACE_DIRNAME_PLUGIN = resolve(
+  CWD,
+  "./rust-plugins/replace-dirname",
+);
+
 // Build rust_plugin_react
 const PKG_RUST_PLUGIN = resolve(CWD, "./rust-plugins");
 
@@ -70,8 +76,8 @@ export async function runTaskQueue() {
   // The sass plug-in uses protobuf, so you need to determine whether the user installs it or not.
   await installProtoBuf();
   await runTask("Cli", buildCli);
-  await runTask("Core", buildCore);
   await runTask("PluginTools", buildPluginTools);
+  await runTask("Core", buildCore);
   await runTask("RustPlugins", buildRustPlugins);
   await runTask("JsPlugins", buildJsPlugins);
   await runTask("Artifacts", copyArtifacts);
@@ -84,29 +90,74 @@ export const installMacProtobuf = () =>
   });
 
 // install linux protobuf
-export const installLinuxProtobuf = async () => {
-  try {
-    await execa("type", DEFAULT_LINUX_PACKAGE_MANAGER);
-  } catch (_) {
-    return Promise.reject(
-      `not found "${DEFAULT_LINUX_PACKAGE_MANAGER}", if it's not your package manager, please install "protobuf" manually.`,
-    );
+export const installLinuxProtobuf = async (spinner) => {
+  if (isDebianSeries()) {
+    try {
+      await execa("type", DEFAULT_LINUX_PACKAGE_MANAGER);
+      return execa(
+        DEFAULT_LINUX_PACKAGE_MANAGER,
+        ["install", "-y", "protobuf-compiler"],
+        {
+          cwd: CWD,
+        },
+      );
+    } catch {
+      return Promise.reject(
+        `not found "${DEFAULT_LINUX_PACKAGE_MANAGER}", if it's not your package manager, please install "protobuf" manually.`,
+      );
+    }
+  } else if (isArchLinux()) {
+    try {
+      await execa("which", ["pacman"]);
+      let result;
+      if (process.getuid() == 0) {
+        result = execa("pacman", ["-Sy", "protobuf"], {
+          cwd: CWD,
+          input: "y\n",
+        });
+      } else {
+        spinner.stop();
+        result = await execa("sudo", ["pacman", "-Sy", "protobuf"], {
+          cwd: CWD,
+          stdin: "inherit",
+          stdout: "inherit",
+          stderr: "inherit",
+        });
+        spinner.start();
+      }
+      return result;
+    } catch {
+      return Promise.reject(
+        `not found "pacman", if it's not your package manager, please install "protobuf" manually.`,
+      );
+    }
+  } else {
+    spinner.warn({
+      text: `Unknown Linux distribution, trying to use "apt"...`,
+    });
+    try {
+      await execa("type", DEFAULT_LINUX_PACKAGE_MANAGER);
+      return execa(
+        DEFAULT_LINUX_PACKAGE_MANAGER,
+        ["install", "-y", "protobuf-compiler"],
+        {
+          cwd: CWD,
+        },
+      );
+    } catch {
+      return Promise.reject(``);
+    }
   }
-
-  return execa(
-    DEFAULT_LINUX_PACKAGE_MANAGER,
-    ["install", "-y", "protobuf-compiler"],
-    {
-      cwd: CWD,
-    },
-  );
 };
 
 // build core command
 export const buildCore = () =>
   execa(DEFAULT_PACKAGE_MANAGER, ["build:rs"], {
     cwd: PKG_CORE,
-  }).then(buildCoreCjs);
+    stdio: "inherit",
+  })
+    .then(buildReplaceDirnamePlugin)
+    .then(buildCoreCjs);
 
 export const buildCoreCjs = () =>
   execa(DEFAULT_PACKAGE_MANAGER, ["build:cjs"], {
@@ -131,10 +182,15 @@ export const buildDts = () =>
     cwd: PKG_DTS,
   });
 
+export const buildReplaceDirnamePlugin = () =>
+  execa(DEFAULT_PACKAGE_MANAGER, ["build"], {
+    cwd: PKG_REPLACE_DIRNAME_PLUGIN,
+  });
+
 // build rust plugins
 export const rustPlugins = () => batchBuildPlugins(PKG_RUST_PLUGIN);
 
-export const buildJsPlugins = async () => {
+export const buildJsPlugins = async (spinner) => {
   const jsPluginDirs = fs.readdirSync(JS_PLUGINS_DIR).filter((file) => {
     return (
       fs.statSync(join(JS_PLUGINS_DIR, file)).isDirectory() &&
@@ -152,9 +208,8 @@ export const buildJsPlugins = async () => {
   for (const pluginDir of jsPluginDirs) {
     const pluginPath = resolve(JS_PLUGINS_DIR, pluginDir);
     await runTask(
-      `Built JS Plugin: ${pluginDir}`,
-      async () => {
-        const spinner = createSpinner(`Building ${pluginDir}`).start();
+      `Js plugin: ${pluginDir}`,
+      async (spinner) => {
         try {
           if (!existsSync(join(pluginPath, "package.json"))) {
             spinner.warn({
@@ -176,31 +231,33 @@ export const buildJsPlugins = async () => {
       },
       "Building",
       "Build",
+      spinner,
     );
   }
 };
 
-export const buildRustPlugins = async () => {
+export const buildRustPlugins = async (spinner) => {
   const rustPluginDirs = fs.readdirSync(PKG_RUST_PLUGIN).filter((file) => {
     return (
       fs.statSync(join(PKG_RUST_PLUGIN, file)).isDirectory() &&
       !excludedJsPlugin.includes(file)
     );
   });
-
-  const total = rustPluginDirs.length;
+  const filterPlugins = ["replace-dirname"];
+  const buildPlugins = rustPluginDirs.filter(
+    (item) => !filterPlugins.includes(item),
+  );
+  const total = buildPlugins.length;
   console.log("\n");
   logger(`Found ${total} Rust plugins to build \n`, {
     color: "rust",
     title: "Rust Info",
   });
-
-  for (const pluginDir of rustPluginDirs) {
+  for (const pluginDir of buildPlugins) {
     const pluginPath = resolve(PKG_RUST_PLUGIN, pluginDir);
     await runTask(
-      `Built Rust plugin: ${pluginDir}`,
-      async () => {
-        const spinner = createSpinner(` Building ${pluginDir}`).start();
+      `Rust plugin: ${pluginDir}`,
+      async (spinner) => {
         try {
           if (!existsSync(join(pluginPath, "Cargo.toml"))) {
             spinner.warn({
@@ -223,11 +280,12 @@ export const buildRustPlugins = async () => {
       },
       "Building",
       "Build",
+      spinner,
     );
   }
 };
 
-export const copyArtifacts = () =>
+export const copyArtifacts = (_) =>
   batchBuildPlugins(PKG_RUST_PLUGIN, "copy-artifacts");
 
 export async function runTask(
@@ -235,10 +293,10 @@ export async function runTask(
   task,
   processText = "Building",
   finishedText = "Build",
+  spinner = createSpinner(),
 ) {
-  const spinner = createSpinner(`${processText} ${taskName}`).start();
   try {
-    await task();
+    await task(spinner.start({ text: `${processText} ${taskName}` }));
     spinner.success({ text: `✨ ✨ ${finishedText} ${taskName} completed! ` });
   } catch (e) {
     spinner.error({ text: `${finishedText} ${taskName} failed!` });
@@ -291,6 +349,45 @@ export function isWindows() {
   return platform === "win32";
 }
 
+export function getLinuxDistribution() {
+  const data = fs.readFileSync("/etc/os-release", {
+    encoding: "utf8",
+  });
+
+  const config = {};
+  const lines = data.split("\n");
+
+  lines.forEach((line) => {
+    const trimmedLine = line.trim();
+    if (trimmedLine && !trimmedLine.startsWith("#")) {
+      const [key, value] = trimmedLine.split("=");
+      const cleanKey = key.trim();
+      const cleanValue = value.trim().replace(/"/g, "");
+
+      config[cleanKey] = cleanValue;
+    }
+  });
+
+  return config.ID;
+}
+
+export function isArchLinux() {
+  return getLinuxDistribution() === "arch";
+}
+
+export function isDebianSeries() {
+  const distro = getLinuxDistribution().toLowerCase();
+  return (
+    distro === "debian" ||
+    distro === "ubuntu" ||
+    distro === "linuxmint" ||
+    distro === "raspbian" ||
+    distro === "kali" ||
+    distro === "deepin" ||
+    distro === "pop"
+  );
+}
+
 export async function checkProtobuf() {
   const isWindowsFlag = isWindows();
   const isMacFlag = isMac();
@@ -311,14 +408,20 @@ export async function installProtoBuf() {
   const installFlag = await checkProtobuf();
   if (!installFlag) {
     logger(
-      "Due to the use of protoc in the project, we currently judge that you have not installed. we need to install protobuf locally to make the project start successfully. \n\n- For mac users, will be use your local `homebrew` tool for installation. (First, Make sure your computer has `homebrew` installed) \n- For linux users, we will use your local `apt` tool for installation. (First, Make sure your computer has `apt` installed) \n- For Windows users, because the protobuf plugin cannot be installed automatically, You need to install manually according to the prompts \n",
+      "Due to the use of protoc in the project, we currently judge that you have not installed. " +
+        "We need to install protobuf locally to make the project start successfully. \n\n" +
+        "- For MacOS users, will be use your local `homebrew` tool for installation. (First, Make sure your computer has `homebrew` installed) \n" +
+        "- For Debian-based Linux users, we will use your local `apt` tool for installation. (First, Make sure your computer has `apt` installed) \n" +
+        "- For Arch Linux users, we will use your local `pacman` tool for installation. (First, Make sure your computer has `pacman` installed) \n" +
+        "- For other Linux users, we will try to use your local `apt` tool for installation. (If exists) \n" +
+        "- For Windows users, because the protobuf plugin cannot be installed automatically, You need to install manually according to the prompts \n",
       { title: "FARM WARN", color: "yellow" },
     );
 
     if (isMac()) {
-      await runTask("Protobuf", installMacProtobuf, "Install", "Install");
+      await runTask("Protobuf", installMacProtobuf, "Installing", "Install");
     } else if (isLinux()) {
-      await runTask("Protobuf", installLinuxProtobuf, "Install", "Install");
+      await runTask("Protobuf", installLinuxProtobuf, "Installing", "Install");
     }
 
     if (isWindows()) {

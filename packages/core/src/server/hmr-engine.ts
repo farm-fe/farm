@@ -5,7 +5,7 @@ import { stat } from 'node:fs/promises';
 import { isAbsolute, relative } from 'node:path';
 
 import type { Resource } from '@farmfe/runtime/src/resource-loader.js';
-import { UserHmrConfig } from '../config/index.js';
+import { HmrOptions } from '../config/index.js';
 import type { JsUpdateResult } from '../types/binding.js';
 import { convertErrorMessage } from '../utils/error.js';
 import { bold, cyan, green } from '../utils/index.js';
@@ -181,8 +181,7 @@ export class HmrEngine {
               type: 'error',
               err: ${errorStr},
               overlay: ${
-                (this.app.resolvedUserConfig.server.hmr as UserHmrConfig)
-                  .overlay
+                (this.app.resolvedUserConfig.server.hmr as HmrOptions).overlay
               }
             }
           `);

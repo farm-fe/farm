@@ -1,5 +1,4 @@
 use std::collections::VecDeque;
-use std::collections::{HashMap, HashSet};
 
 use farmfe_core::petgraph::Direction;
 use farmfe_core::swc_common::comments::SingleThreadedComments;
@@ -9,14 +8,17 @@ use farmfe_core::{
   petgraph::{self, stable_graph::NodeIndex},
   swc_ecma_ast::{Module as SwcModule, ModuleItem},
 };
+use farmfe_core::{HashMap, HashSet};
 
 pub(crate) mod analyze_deps_by_used_idents;
 pub(crate) mod analyze_statement_info;
 pub(crate) mod analyze_statement_side_effects;
+pub(crate) mod analyze_used_import_all_fields;
 pub(crate) mod defined_idents_collector;
 pub(crate) mod traced_used_import;
 
 use analyze_statement_info::analyze_statement_info;
+use analyze_used_import_all_fields::{update_used_import_all_fields_of_edges, UsedImportAllFields};
 
 use self::analyze_deps_by_used_idents::AnalyzeUsedIdentsParams;
 use self::analyze_statement_info::AnalyzedStatementInfo;
@@ -226,10 +228,11 @@ pub struct Statement {
   pub import_info: Option<ImportInfo>,
   pub export_info: Option<ExportInfo>,
   pub defined_idents: HashSet<Id>,
-  /// used idents of defined idents, updated when trace the statement graph
-  pub used_defined_idents: HashSet<Id>,
   /// whether the statement has side effects, the side effect statement will be preserved
   pub side_effects: StatementSideEffects,
+
+  /// used idents of defined idents, updated when trace the statement graph
+  pub used_defined_idents: HashSet<Id>,
 }
 
 impl Statement {
@@ -260,7 +263,7 @@ impl Statement {
       import_info,
       export_info,
       defined_idents,
-      used_defined_idents: HashSet::new(),
+      used_defined_idents: HashSet::default(), // updated when trace the statement graph while tree shaking
       side_effects,
     }
   }
@@ -286,12 +289,24 @@ pub struct StatementGraphEdge {
   /// for (let i = 0; i < len; i++) {
   ///  console.log(a + i);
   /// }
-  /// ```ignore
-  /// The result should be:
   /// ```
+  /// The result should be:
+  /// ```ignore
   /// [a, len]
   /// ```
   pub used_idents: HashSet<Id>,
+  /// used fields of import star statement of the dependency statement, for example:
+  /// ```js
+  /// import * as a from 'a';
+  /// a.foo();
+  /// a['bar']();
+  /// console.log(a);
+  /// ```
+  /// The result should be:
+  /// ```ignore
+  /// [(a, [foo, bar, All])]
+  /// ```
+  pub used_import_all_fields: HashMap<Id, HashSet<UsedImportAllFields>>,
 }
 
 pub struct StatementGraph {
@@ -308,9 +323,9 @@ impl StatementGraph {
     comments: &SingleThreadedComments,
   ) -> Self {
     let mut g = petgraph::graph::Graph::new();
-    let mut id_index_map = HashMap::new();
+    let mut id_index_map = HashMap::default();
 
-    let mut reverse_defined_idents_map = HashMap::new();
+    let mut reverse_defined_idents_map = HashMap::default();
     // 1. analyze all defined idents of each statement
     for (index, item) in module.body.iter().enumerate() {
       let stmt = Statement::new(index, item, unresolved_mark, top_level_mark, comments);
@@ -329,7 +344,7 @@ impl StatementGraph {
     let mut graph = Self {
       g,
       id_index_map,
-      used_stmts: HashSet::new(),
+      used_stmts: HashSet::default(),
     };
 
     for (index, item) in module.body.iter().enumerate() {
@@ -340,6 +355,8 @@ impl StatementGraph {
           stmt: item,
           reverse_defined_idents_map: &reverse_defined_idents_map,
         });
+      // 2.3 update used_import_all_fields of deps
+      let deps = update_used_import_all_fields_of_edges(item, &graph, deps);
 
       for (dep_stmt_id, edge_weight) in deps {
         graph.add_edge(index, dep_stmt_id, edge_weight);
@@ -352,8 +369,8 @@ impl StatementGraph {
   pub fn empty() -> Self {
     Self {
       g: petgraph::graph::Graph::new(),
-      id_index_map: HashMap::new(),
-      used_stmts: HashSet::new(),
+      id_index_map: HashMap::default(),
+      used_stmts: HashSet::default(),
     }
   }
 
@@ -489,42 +506,46 @@ impl StatementGraph {
     }
 
     // 2. sort by statement id
-    let mut used_statements: Vec<_> = used_statements_map.into_iter().collect();
+    let mut used_statements: Vec<_> = used_statements_map
+      .into_iter()
+      .map(|(id, used_defined_idents)| {
+        (
+          id,
+          used_defined_idents,
+          HashMap::<Id, HashSet<UsedImportAllFields>>::default(),
+        )
+      })
+      .collect();
     used_statements.sort_by(|a, b| a.0.cmp(&b.0));
 
     let mut stmts = VecDeque::from(used_statements);
-    let mut visited = HashSet::new();
-    let mut result = vec![];
+    let mut visited = HashSet::default();
+    let mut result: Vec<TracedUsedImportStatement> = vec![];
 
     // 3. traverse the used statements in the statement graph
-    while let Some((stmt_id, used_defined_idents)) = stmts.pop_front() {
-      let get_stmt_used_defined_idents = |stmt: &Statement| {
-        used_defined_idents
-          .iter()
-          .filter_map(|i| match i {
-            UsedStatementIdent::SwcIdent(id) => Some(HashSet::from([id.clone()])),
-            UsedStatementIdent::Default => {
-              // add all defined idents to used defined idents if it's a default export
-              if let Some(export_info) = &stmt.export_info {
-                if export_info.contains_default_export() {
-                  // defined_idents should always be empty
-                  return Some(stmt.defined_idents.clone());
-                }
-              }
-
-              None
-            }
-            _ => None,
-          })
-          .flatten()
-          .collect::<HashSet<_>>()
-      };
-
+    while let Some((stmt_id, used_defined_idents, used_import_all_fields)) = stmts.pop_front() {
       if visited.contains(&stmt_id) {
         // if all used defined idents are visited, skip the statement
         let stmt = self.stmt(&stmt_id);
-        let stmt_used_defined_idents = get_stmt_used_defined_idents(stmt);
+        let stmt_used_defined_idents =
+          self.get_stmt_used_defined_idents(&stmt_id, &used_defined_idents);
         if stmt_used_defined_idents.is_subset(&stmt.used_defined_idents) {
+          if let Some(import_info) = &stmt.import_info {
+            // extends used import all fields of the statement
+            if let Some(traced_used_import_statement) =
+              result.iter_mut().find(|i| i.stmt_id == stmt_id)
+            {
+              let temp_traced_import = TracedUsedImportStatement::from_import_info_and_used_idents(
+                stmt_id,
+                import_info,
+                &used_defined_idents,
+                used_import_all_fields,
+              );
+              traced_used_import_statement
+                .used_stmt_idents
+                .extend(temp_traced_import.used_stmt_idents);
+            }
+          }
           continue;
         }
       } else {
@@ -534,8 +555,9 @@ impl StatementGraph {
       // 3.1 mark the statement as used
       self.mark_used_statements(stmt_id);
       // 3.2 update used defined idents of the statement
+      let stmt_used_defined_idents =
+        self.get_stmt_used_defined_idents(&stmt_id, &used_defined_idents);
       let stmt = self.stmt_mut(&stmt_id);
-      let stmt_used_defined_idents = get_stmt_used_defined_idents(stmt);
       stmt.used_defined_idents.extend(stmt_used_defined_idents);
 
       // 3.3 visit dependencies of the used statement
@@ -560,7 +582,12 @@ impl StatementGraph {
 
         let unhandled_used_dep_defined_idents = all_used_dep_defined_idents
           .into_iter()
-          .filter(|i| !dep_stmt.used_defined_idents.contains(i))
+          .filter(|i| {
+            !dep_stmt.used_defined_idents.contains(i)
+              // the import namespace ident should be handled in the next step to append more import all fields at line 539
+              // so we mark it as unhandled here
+              || edge.used_import_all_fields.contains_key(i)
+          })
           .collect::<HashSet<_>>();
 
         if !unhandled_used_dep_defined_idents.is_empty() {
@@ -570,18 +597,22 @@ impl StatementGraph {
               .into_iter()
               .map(UsedStatementIdent::SwcIdent)
               .collect(),
+            edge.used_import_all_fields.clone(),
           ));
         }
       }
 
       // 3.4 visit dependents of the used statement, handle write side effects here
-      for (dept_id, dept_used_idents) in self.trace_dependents_side_effects(stmt_id) {
+      for (dept_id, dept_used_idents, used_import_all_fields) in
+        self.trace_dependents_side_effects(stmt_id)
+      {
         stmts.push_back((
           dept_id,
           dept_used_idents
             .into_iter()
             .map(UsedStatementIdent::SwcIdent)
             .collect(),
+          used_import_all_fields,
         ));
       }
 
@@ -591,6 +622,7 @@ impl StatementGraph {
           stmt_id,
           import_info,
           &used_defined_idents,
+          used_import_all_fields,
         ));
       }
 
@@ -613,8 +645,18 @@ impl StatementGraph {
     &self,
     stmt_id: StatementId,
     visited: &mut HashSet<StatementId>,
-    stack: &mut Vec<(StatementId, HashSet<Id>)>,
-    result: &mut Vec<Vec<(StatementId, HashSet<Id>)>>,
+    stack: &mut Vec<(
+      StatementId,
+      HashSet<Id>,
+      HashMap<Id, HashSet<UsedImportAllFields>>,
+    )>,
+    result: &mut Vec<
+      Vec<(
+        StatementId,
+        HashSet<Id>,
+        HashMap<Id, HashSet<UsedImportAllFields>>,
+      )>,
+    >,
   ) {
     if visited.contains(&stmt_id) {
       return;
@@ -646,17 +688,21 @@ impl StatementGraph {
           let last_dependency = stack.last();
           let write_last_stack_defined_idents = last_dependency.map_or_else(
             || false,
-            |(_, used_defined_idents)| !used_defined_idents.is_disjoint(written_top_level_vars),
+            |(_, used_defined_idents, _)| !used_defined_idents.is_disjoint(written_top_level_vars),
           );
 
           if write_used_defined_idents || write_last_stack_defined_idents {
-            stack.push((dept_stmt.id, dept_stmt.defined_idents.clone()));
+            stack.push((
+              dept_stmt.id,
+              dept_stmt.defined_idents.clone(),
+              edge.used_import_all_fields.clone(),
+            ));
             result.push(stack.clone());
             stack.pop();
           }
         }
         StatementSideEffects::ReadTopLevelVar(read_top_level_vars) => {
-          let mut used_dept_defined_idents = HashSet::new();
+          let mut used_dept_defined_idents = HashSet::default();
 
           // only trace the statement that defined idents
           for dept_defined_ident in &dept_stmt.defined_idents {
@@ -668,7 +714,11 @@ impl StatementGraph {
           }
 
           if !used_dept_defined_idents.is_empty() {
-            stack.push((dept_stmt.id, used_dept_defined_idents));
+            stack.push((
+              dept_stmt.id,
+              used_dept_defined_idents,
+              edge.used_import_all_fields.clone(),
+            ));
             self.traverse_dependents_bfs(dept_stmt.id, visited, stack, result);
             stack.pop();
           }
@@ -685,18 +735,49 @@ impl StatementGraph {
   pub fn trace_dependents_side_effects(
     &self,
     stmt_id: StatementId,
-  ) -> Vec<(StatementId, HashSet<Id>)> {
+  ) -> Vec<(
+    StatementId,
+    HashSet<Id>,
+    HashMap<Id, HashSet<UsedImportAllFields>>,
+  )> {
     // we only trace the dependents side effects of the statement that has defined idents
     if self.stmt(&stmt_id).defined_idents.is_empty() {
       return vec![];
     }
 
     let mut result = vec![];
-    let mut visited = HashSet::new();
+    let mut visited = HashSet::default();
     let mut stack = vec![];
 
     self.traverse_dependents_bfs(stmt_id, &mut visited, &mut stack, &mut result);
 
     result.into_iter().flatten().collect()
+  }
+
+  pub fn get_stmt_used_defined_idents(
+    &self,
+    stmt_id: &StatementId,
+    used_defined_idents: &HashSet<UsedStatementIdent>,
+  ) -> HashSet<Id> {
+    used_defined_idents
+      .iter()
+      .filter_map(|i| match i {
+        UsedStatementIdent::SwcIdent(id) => Some(HashSet::from_iter([id.clone()])),
+        UsedStatementIdent::Default => {
+          let stmt = self.stmt(stmt_id);
+          // add all defined idents to used defined idents if it's a default export
+          if let Some(export_info) = &stmt.export_info {
+            if export_info.contains_default_export() {
+              // defined_idents should always be empty
+              return Some(stmt.defined_idents.clone());
+            }
+          }
+
+          None
+        }
+        _ => None,
+      })
+      .flatten()
+      .collect::<HashSet<_>>()
   }
 }

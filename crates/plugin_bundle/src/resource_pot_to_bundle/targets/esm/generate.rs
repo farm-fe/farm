@@ -1,5 +1,3 @@
-use std::collections::{HashMap, HashSet};
-
 use farmfe_core::{
   error::Result,
   swc_common::DUMMY_SP,
@@ -8,6 +6,7 @@ use farmfe_core::{
     ImportDefaultSpecifier, ImportNamedSpecifier, ImportSpecifier, ImportStarAsSpecifier,
     ModuleDecl, ModuleExportName, ModuleItem, NamedExport, Str,
   },
+  HashMap, HashSet,
 };
 use farmfe_toolkit::itertools::Itertools;
 
@@ -52,7 +51,7 @@ impl EsmGenerate {
       target_id.to_module_id().to_string()
     });
 
-    let mut uniq_sets = HashSet::new();
+    let mut uniq_sets = HashSet::default();
 
     for exported in export
       .named
@@ -60,9 +59,6 @@ impl EsmGenerate {
       .sorted_by_key(|a| bundle_variable.render_name(**a))
     {
       let local = &export.named[exported];
-      if bundle_variable.var_by_index(*local).removed {
-        continue;
-      }
 
       let named_render_name = bundle_variable.render_name(*local);
       let exported_name = bundle_variable.name(*exported);
@@ -143,7 +139,7 @@ impl EsmGenerate {
     options: &ShareBundleContext,
   ) -> Result<Vec<ModuleItem>> {
     let mut stmts = vec![];
-    let mut generate_import_specifies: HashMap<String, ImportItem> = HashMap::new();
+    let mut generate_import_specifies: HashMap<String, ImportItem> = HashMap::default();
 
     for source in import_map.keys().sorted() {
       let mut is_import_uniq_name = false;

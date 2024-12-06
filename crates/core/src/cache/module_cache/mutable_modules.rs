@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use dashmap::DashMap;
 use farmfe_utils::hash::sha256;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
@@ -10,7 +8,7 @@ use crate::{
   config::Mode,
   deserialize,
   module::ModuleId,
-  serialize,
+  serialize, HashMap,
 };
 
 use super::{module_memory_store::ModuleMemoryStore, CachedModule};
@@ -111,7 +109,7 @@ impl ModuleMemoryStore for MutableModulesMemoryStore {
   }
 
   fn write_cache(&self) {
-    let mut cache_map = HashMap::new();
+    let mut cache_map = HashMap::default();
 
     for entry in self.cached_modules.iter() {
       let module = entry.value();

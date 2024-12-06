@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use farmfe_core::{
   error::Result,
   farm_profile_function,
@@ -9,6 +7,7 @@ use farmfe_core::{
     self, BindingIdent, CallExpr, ComputedPropName, Expr, ExprOrSpread, ExprStmt, Ident, Lit,
     MemberExpr, MemberProp, Module as EcmaAstModule, ModuleItem, Pat, Stmt, VarDecl, VarDeclarator,
   },
+  HashMap,
 };
 use farmfe_toolkit::{
   itertools::Itertools,
@@ -123,7 +122,7 @@ impl CjsModuleAnalyzer {
   ) -> Result<Vec<ModuleItem>> {
     let mut result = vec![];
 
-    let mut generate_import_specifies: HashMap<String, CommonJsDeclareResult> = HashMap::new();
+    let mut generate_import_specifies: HashMap<String, CommonJsDeclareResult> = HashMap::default();
 
     for source in import_map.keys().sorted() {
       let import = &import_map[source];
@@ -192,6 +191,11 @@ impl CjsModuleAnalyzer {
           args: vec![],
           type_args: None,
         })),
+      )
+    } else if let Some(m) = module_global_uniq_name.namespace_name(module_id) {
+      (
+        module_id.to_string(),
+        Box::new(Expr::Ident(bundle_variable.render_name(m).as_str().into())),
       )
     } else {
       return Ok(None);

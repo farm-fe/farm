@@ -1,5 +1,3 @@
-use std::collections::{HashMap, HashSet};
-
 use farmfe_core::{
   error::Result,
   module::ModuleSystem,
@@ -9,6 +7,7 @@ use farmfe_core::{
     ExprStmt, Lit, MemberExpr, MemberProp, ModuleItem, Pat, SimpleAssignTarget, Stmt, VarDecl,
     VarDeclKind, VarDeclarator,
   },
+  HashMap, HashSet,
 };
 use farmfe_toolkit::itertools::Itertools;
 
@@ -75,10 +74,6 @@ impl CjsGenerate {
       .named
       .iter()
       .filter_map(|(exported, local)| {
-        if bundle_variable.var_by_index(*local).removed {
-          return None;
-        }
-
         let should_reexport_uniq = index_is_entry(*local);
 
         let named_render_name = bundle_variable.render_name(*local);
@@ -194,7 +189,7 @@ impl CjsGenerate {
     let mut ordered_import = import_map.keys().collect::<Vec<_>>();
     ordered_import.sort();
 
-    let mut generate_import_specifies: HashMap<String, MergedImportGenerate> = HashMap::new();
+    let mut generate_import_specifies: HashMap<String, MergedImportGenerate> = HashMap::default();
 
     for source in ordered_import {
       let import = &import_map[source];

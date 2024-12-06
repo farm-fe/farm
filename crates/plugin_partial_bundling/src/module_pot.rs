@@ -1,6 +1,5 @@
-use std::collections::HashSet;
-
 use farmfe_core::module::{ModuleId, ModuleType};
+use farmfe_core::HashSet;
 
 #[derive(Debug, Clone)]
 /// A ModulePot is a collection of modules in the same ModuleBucket that satisfy following rules:
@@ -29,7 +28,7 @@ impl ModulePot {
     Self {
       id,
       name,
-      modules: HashSet::new(),
+      modules: HashSet::default(),
       size: 0,
       module_type,
       immutable,

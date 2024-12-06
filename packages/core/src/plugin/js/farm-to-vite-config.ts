@@ -29,8 +29,6 @@ export function farmUserConfigToViteConfig(config: UserConfig): ViteUserConfig {
     publicDir: config.publicDir ?? 'public',
     mode: config.compilation?.mode,
     define: config.compilation?.define,
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-ignore ignore this error
     command: config.compilation?.mode === 'production' ? 'build' : 'serve',
     resolve: {
       alias: config.compilation?.resolve?.alias,
@@ -51,10 +49,7 @@ export function farmUserConfigToViteConfig(config: UserConfig): ViteUserConfig {
       https: config.server?.https,
       proxy: config.server?.proxy as any,
       open: config.server?.open,
-      watch:
-        typeof config.server?.hmr === 'object'
-          ? (config.server.hmr?.watchOptions ?? {})
-          : {}
+      watch: typeof config.watch === 'object' ? config.watch : {}
       // other options are not supported in farm
     },
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
@@ -90,7 +85,8 @@ export function farmUserConfigToViteConfig(config: UserConfig): ViteUserConfig {
     assetsInclude: [
       ...VITE_DEFAULT_ASSETS,
       ...(config.compilation?.assets?.include ?? [])
-    ]
+    ],
+    experimental: {}
   };
 
   return viteConfig;
@@ -389,10 +385,11 @@ export function viteConfigToFarmConfig(
         farmConfig.server.hmr = {
           ...(typeof origFarmConfig?.server?.hmr === 'object'
             ? origFarmConfig.server.hmr
-            : {}),
-          watchOptions: config.server.watch
+            : {})
         };
       }
+      // TODO think about vite has two watch options `server.watch` | `build.watch`
+      farmConfig.watch = config.server.watch;
     }
 
     if (typeof config.server.host === 'string') {

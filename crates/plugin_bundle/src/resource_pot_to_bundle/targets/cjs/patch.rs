@@ -1,4 +1,4 @@
-use std::{collections::HashMap, sync::Arc};
+use std::sync::Arc;
 
 use farmfe_core::{
   config::{external::ExternalConfig, Config, Mode},
@@ -11,6 +11,7 @@ use farmfe_core::{
     KeyValueProp, Module as EcmaAstModule, ModuleItem, ObjectLit, Pass, Pat, Program, Prop,
     PropName, PropOrSpread, Stmt, VarDecl, VarDeclKind, VarDeclarator,
   },
+  HashMap,
 };
 use farmfe_toolkit::{
   script::module2cjs::{self, TransformModuleDeclsOptions},
@@ -27,7 +28,7 @@ use farmfe_toolkit::{
 };
 
 use crate::resource_pot_to_bundle::{
-  bundle::{bundle_reference::BundleReference, ModuleAnalyzerManager, ModuleGlobalUniqName},
+  bundle::{bundle_reference::CombineBundleReference, ModuleAnalyzerManager, ModuleGlobalUniqName},
   modules_analyzer::module_analyzer::ModuleAnalyzer,
   polyfill::{Polyfill, SimplePolyfill},
   targets::util::wrap_commonjs,
@@ -164,7 +165,7 @@ impl CjsPatch {
     module_id: &ModuleId,
     context: &Arc<CompilationContext>,
     bundle_variable: &BundleVariable,
-    bundle_reference: &mut BundleReference,
+    // bundle_reference: &mut BundleReference,
     polyfill: &mut SimplePolyfill,
     options: &ShareBundleContext,
   ) -> Result<()> {
@@ -213,7 +214,7 @@ impl CjsPatch {
     config: &'a Config,
     polyfill: &'a mut SimplePolyfill,
     external_config: &'a ExternalConfig,
-    bundle_reference: &'a mut BundleReference,
+    bundle_reference: &'a mut CombineBundleReference,
     module_graph: &ModuleGraph,
     module_global_uniq_name: &ModuleGlobalUniqName,
     module_map: &HashMap<ModuleId, ModuleAnalyzer>,

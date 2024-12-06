@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use farmfe_core::{
   config::{external::ExternalConfig, Config, ModuleFormat},
   module::{module_graph::ModuleGraph, ModuleId},
@@ -8,6 +6,7 @@ use farmfe_core::{
     CallExpr, Callee, Expr, ExprOrSpread, ExprStmt, KeyValueProp, Lit, MemberExpr, MemberProp,
     ModuleItem, ObjectLit, Prop, PropName, PropOrSpread, Stmt,
   },
+  HashMap,
 };
 use farmfe_toolkit::{
   script::is_commonjs_require,
@@ -15,7 +14,10 @@ use farmfe_toolkit::{
 };
 
 use crate::resource_pot_to_bundle::{
-  bundle::{bundle_reference::BundleReference, ModuleGlobalUniqName}, modules_analyzer::module_analyzer::{ImportSpecifierInfo, ModuleAnalyzer}, uniq_name::BundleVariable, Polyfill, ShareBundleContext, ShareBundleOptions, SimplePolyfill
+  bundle::{bundle_reference::CombineBundleReference, ModuleGlobalUniqName},
+  modules_analyzer::module_analyzer::{ImportSpecifierInfo, ModuleAnalyzer},
+  uniq_name::BundleVariable,
+  Polyfill, ShareBundleContext, SimplePolyfill,
 };
 
 enum ReplaceType {
@@ -64,7 +66,7 @@ pub struct CJSReplace<'a> {
   pub context: &'a ShareBundleContext,
   pub polyfill: &'a mut SimplePolyfill,
   pub external_config: &'a ExternalConfig,
-  pub bundle_reference: &'a mut BundleReference,
+  pub bundle_reference: &'a mut CombineBundleReference,
   pub module_map: &'a HashMap<ModuleId, ModuleAnalyzer>,
 }
 

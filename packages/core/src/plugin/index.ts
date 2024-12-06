@@ -23,7 +23,7 @@ export async function resolveFarmPlugins(config: UserConfig) {
 
   const jsPlugins: JsPlugin[] = [];
 
-  for (const plugin of plugins) {
+  for (let plugin of plugins) {
     if (!plugin) {
       continue;
     }
@@ -36,11 +36,13 @@ export async function resolveFarmPlugins(config: UserConfig) {
         await rustPluginResolver(plugin as string, config.root ?? process.cwd())
       );
     } else if (isObject(plugin)) {
-      convertPlugin(plugin as unknown as JsPlugin);
+      // @ts-ignore
+      plugin = convertPlugin(plugin as unknown as JsPlugin);
       jsPlugins.push(plugin as unknown as JsPlugin);
     } else if (isArray(plugin)) {
-      for (const pluginNestItem of plugin as JsPlugin[]) {
-        convertPlugin(pluginNestItem as JsPlugin);
+      for (let pluginNestItem of plugin as JsPlugin[]) {
+        // @ts-ignore
+        pluginNestItem = convertPlugin(pluginNestItem as JsPlugin);
         jsPlugins.push(pluginNestItem as JsPlugin);
       }
     } else {

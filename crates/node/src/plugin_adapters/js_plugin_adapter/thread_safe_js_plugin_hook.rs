@@ -1,6 +1,6 @@
 #![allow(clippy::type_complexity)]
 use std::{
-  ffi::{c_void, CStr, CString},
+  ffi::{c_void, CString},
   fmt::Debug,
   ptr,
   sync::{

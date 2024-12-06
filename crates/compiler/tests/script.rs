@@ -1,8 +1,9 @@
-use std::{collections::HashMap, path::PathBuf};
+use farmfe_core::HashMap;
+use std::path::PathBuf;
 
 use common::{
-  assert_compiler_result_with_config, create_compiler_with_args,
-  try_merge_config_file, AssertCompilerResultConfig,
+  assert_compiler_result_with_config, create_compiler_with_args, try_merge_config_file,
+  AssertCompilerResultConfig,
 };
 
 mod common;

@@ -1,10 +1,6 @@
 #![feature(box_patterns)]
 
-use std::{
-  any::Any,
-  collections::{HashMap, HashSet, VecDeque},
-  sync::Arc,
-};
+use std::{any::Any, collections::VecDeque, sync::Arc};
 
 use farmfe_core::{
   config::{
@@ -25,7 +21,7 @@ use farmfe_core::{
     resource_pot::{ResourcePot, ResourcePotMetaData, ResourcePotType},
     Resource, ResourceOrigin, ResourceType,
   },
-  serde_json,
+  serde_json, HashMap, HashSet,
 };
 use farmfe_toolkit::{
   fs::read_file_utf8,
@@ -125,7 +121,7 @@ impl Plugin for FarmPluginRuntime {
         context,
         &PluginHookContext {
           caller: hook_context.add_caller(PLUGIN_NAME),
-          meta: HashMap::new(),
+          meta: HashMap::default(),
         },
       )?;
 
@@ -235,8 +231,11 @@ impl Plugin for FarmPluginRuntime {
 
       if module.module_type.is_script() {
         let ast = &module.meta.as_script().ast;
-
-        if farmfe_toolkit::swc_ecma_utils::contains_top_level_await(ast) {
+        let dependencies = module_graph.dependencies(module_id);
+        let is_deps_async = dependencies
+          .iter()
+          .any(|(dep, edge)| async_modules.contains(dep) && !edge.is_dynamic());
+        if is_deps_async || farmfe_toolkit::swc_ecma_utils::contains_top_level_await(ast) {
           added_async_modules.push(module_id.clone());
         }
       }
@@ -343,7 +342,7 @@ impl Plugin for FarmPluginRuntime {
 
           let source_obj = format!("window['{replace_source}']||{{}}");
           external_objs.push(if context.config.output.format == ModuleFormat::EsModule {
-            format!("{source:?}: ({source_obj}).default && !({source_obj}).__esModule ? {{...({source_obj}),__esModule:true}} : ({{...{source_obj}}})")
+            format!("{source:?}: ({source_obj}).default && !({source_obj}).__esModule ? {{...({source_obj}),__esModule:true}} : {source_obj}")
           } else {
             format!("{source:?}: {source_obj}")
           });
@@ -469,7 +468,7 @@ impl FarmPluginRuntime {
   pub(crate) fn get_async_modules<'a>(
     &'a self,
     context: &'a Arc<CompilationContext>,
-  ) -> farmfe_core::dashmap::mapref::one::Ref<'_, String, Box<dyn Any + Send + Sync>> {
+  ) -> farmfe_core::dashmap::mapref::one::Ref<'a, String, Box<dyn Any + Send + Sync>> {
     context.custom.get(ASYNC_MODULES).unwrap()
   }
 }

@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use std::path::PathBuf;
 
 use farmfe_core::{
@@ -10,6 +9,7 @@ use farmfe_core::{
   plugin::ResolveKind,
   relative_path::RelativePath,
   wax::Glob,
+  HashMap,
 };
 
 pub mod assert;
@@ -32,18 +32,16 @@ impl InstaHelper {
 #[macro_export]
 macro_rules! assert_debug_snapshot {
   ($ex:expr) => {
-    farmfe_testing_helpers::InstaHelper::create_setting().bind(|| {
-      farmfe_testing_helpers::insta::assert_debug_snapshot!($ex)
-    });
+    farmfe_testing_helpers::InstaHelper::create_setting()
+      .bind(|| farmfe_testing_helpers::insta::assert_debug_snapshot!($ex));
   };
 }
 
 #[macro_export]
 macro_rules! assert_snapshot {
   ($ex:expr) => {
-    farmfe_testing_helpers::InstaHelper::create_setting().bind(|| {
-      farmfe_testing_helpers::insta::assert_snapshot!($ex)
-    });
+    farmfe_testing_helpers::InstaHelper::create_setting()
+      .bind(|| farmfe_testing_helpers::insta::assert_snapshot!($ex));
   };
 }
 
@@ -119,7 +117,8 @@ pub fn construct_test_module_graph() -> ModuleGraph {
     )
     .unwrap();
 
-  graph.entries = HashMap::from([("A".into(), "A".to_string()), ("B".into(), "B".to_string())]);
+  graph.entries =
+    HashMap::from_iter([("A".into(), "A".to_string()), ("B".into(), "B".to_string())]);
 
   graph
 }

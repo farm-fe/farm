@@ -145,11 +145,15 @@ if (compilingModules.has(modulePath)) {
 
         for (const { modulePath, resolve, moduleId } of queue) {
           compilingModules.delete(modulePath);
-          promises.push(
-            FarmModuleSystem.loadDynamicResources(moduleId, true).then((mod) => {
-              resolve(mod);
-              compilingModules.delete(modulePath);
-          }));
+          const promise = FarmModuleSystem.loadDynamicResourcesOnly(moduleId, true);
+          // resolve the lazy compiling promise after the module is compiled instead of waiting for the module to be executed
+          // this is to avoid the case where the module is waiting for another lazy compiled module to be executed, causing a deadlock
+          promise.then(() => {
+            // resolve the lazy compiled module promise after the module is executed
+            const mod = FarmModuleSystem.require(moduleId);
+            resolve(mod);
+          });
+          promises.push(promise.then(() => compilingModules.delete(modulePath)));
         }
 
         return Promise.all(promises).then(() => {

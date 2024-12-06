@@ -1,11 +1,11 @@
-use std::collections::HashSet;
-
-use farmfe_core::plugin::ResolveKind;
+use farmfe_core::{plugin::ResolveKind, swc_ecma_ast::Id};
+use farmfe_core::{HashMap, HashSet};
 
 use crate::module::{UsedExports, UsedExportsIdent};
 
 use super::{
-  ExportInfo, ExportSpecifierInfo, ImportInfo, ImportSpecifierInfo, StatementId, UsedStatementIdent,
+  analyze_used_import_all_fields::UsedImportAllFields, ExportInfo, ExportSpecifierInfo, ImportInfo,
+  ImportSpecifierInfo, StatementId, UsedStatementIdent,
 };
 
 /// The result of tracing used import statements or export from statements
@@ -60,8 +60,9 @@ impl TracedUsedImportStatement {
     stmt_id: StatementId,
     import_info: &ImportInfo,
     used_defined_idents: &HashSet<UsedStatementIdent>,
+    mut used_import_all_fields: HashMap<Id, HashSet<UsedImportAllFields>>,
   ) -> Self {
-    let mut used_stmt_idents = HashSet::new();
+    let mut used_stmt_idents = HashSet::default();
     // for import, we only care about swc ident
     let used_defined_idents = used_defined_idents
       .iter()
@@ -75,7 +76,29 @@ impl TracedUsedImportStatement {
       match specifier {
         ImportSpecifierInfo::Namespace(id) => {
           if used_defined_idents.contains(id) {
-            used_stmt_idents.insert(UsedExportsIdent::ImportAll);
+            // `import * as foo from './foo'` can be optimized when following conditions are met:
+            // 1. xxx is used only by xxx.aa or xxx.['aa']
+            if let Some(used_import_all_fields) = used_import_all_fields.remove(id) {
+              // the conditions are met, so we can optimize it by setting used_stmt_idents to UsedExportsIdent::SwcIdent
+              if !used_import_all_fields.contains(&UsedImportAllFields::All) {
+                for used_import_all_field in used_import_all_fields {
+                  match used_import_all_field {
+                    UsedImportAllFields::All => unreachable!(),
+                    UsedImportAllFields::Ident(field) => {
+                      used_stmt_idents.insert(UsedExportsIdent::SwcIdent(field));
+                    }
+                    UsedImportAllFields::LiteralComputed(field) => {
+                      used_stmt_idents.insert(UsedExportsIdent::SwcIdent(field));
+                    }
+                  }
+                }
+              } else {
+                // the conditions are not met, so we should not optimize it
+                used_stmt_idents.insert(UsedExportsIdent::ImportAll);
+              }
+            } else {
+              used_stmt_idents.insert(UsedExportsIdent::ImportAll);
+            }
           }
         }
         ImportSpecifierInfo::Named { local, imported } => {
@@ -113,7 +136,7 @@ impl TracedUsedImportStatement {
     used_defined_idents: &HashSet<UsedStatementIdent>,
   ) -> Option<Self> {
     if let Some(source) = &export_info.source {
-      let mut used_stmt_idents = HashSet::new();
+      let mut used_stmt_idents = HashSet::default();
 
       for specifier in &export_info.specifiers {
         match specifier {

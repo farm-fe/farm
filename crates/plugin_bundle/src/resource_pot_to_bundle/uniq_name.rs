@@ -1,7 +1,6 @@
 use std::{
   borrow::Cow,
   cell::{Ref, RefCell, RefMut},
-  collections::{HashMap, HashSet},
   path::PathBuf,
   str::FromStr,
   sync::{
@@ -16,9 +15,8 @@ use farmfe_core::{
   resource::resource_pot::ResourcePotId,
   swc_ecma_ast::Ident,
 };
+use farmfe_core::{HashMap, HashSet};
 use farmfe_toolkit::fs::normalize_file_name_as_variable;
-
-use crate::resource_pot_to_bundle::bundle::reference::ReferenceQueryResult;
 
 use super::{
   bundle::{bundle_reference::ReferenceKind, ModuleAnalyzerManager},
@@ -33,7 +31,7 @@ pub struct UniqName {
 impl UniqName {
   pub fn new() -> Self {
     Self {
-      name_count_map: HashMap::new(),
+      name_count_map: HashMap::default(),
     }
   }
 
@@ -196,7 +194,7 @@ impl BundleVariable {
 
       map.insert(var_ident, create_index());
     } else {
-      let mut map = HashMap::new();
+      let mut map = HashMap::default();
       map.insert(var_ident, create_index());
       self.module_defined_vars.insert(module_id.clone(), map);
     }
@@ -228,14 +226,26 @@ impl BundleVariable {
     self.used_names.extend(other.used_names);
 
     // when merge stage, uniq_name is all unresolved var, so we only record once
-    for (resource_pot, uniq_name) in other.uniq_name_hash_map {
-      if let Some(self_uniq_name) = self.uniq_name_hash_map.get_mut(&resource_pot) {
-        uniq_name.name_count_map.into_iter().for_each(|(name, _)| {
-          self_uniq_name.insert(&name);
-        });
-      } else {
-        self.uniq_name_hash_map.insert(resource_pot, uniq_name);
+    for (resource_pot, other_uniq_name) in other.uniq_name_hash_map {
+      if !self.uniq_name_hash_map.contains_key(&resource_pot) {
+        self
+          .uniq_name_hash_map
+          .insert(resource_pot.clone(), UniqName::new());
       }
+
+      let Some(uniq_name) = self.uniq_name_hash_map.get_mut(&resource_pot) else {
+        unreachable!()
+      };
+
+      other_uniq_name
+        .name_count_map
+        .into_iter()
+        .for_each(|(name, _)| {
+          if uniq_name.contain(&name) {
+            return;
+          }
+          uniq_name.insert(&name);
+        });
     }
   }
 
@@ -360,8 +370,11 @@ impl BundleVariable {
     self.variables[&index].borrow_mut()
   }
 
-  pub fn set_rename(&self, index: usize, rename: String) {
+  pub fn set_rename(&mut self, index: usize, rename: String) {
     let mut var = self.var_mut_by_index(index);
+    if var.placeholder {
+      return;
+    }
 
     if var.rename.is_none() {
       var.rename = Some(rename);
@@ -369,7 +382,13 @@ impl BundleVariable {
   }
 
   pub fn set_rename_force(&mut self, index: usize, rename: String) {
-    self.var_mut_by_index(index).rename = Some(rename);
+    let mut var = self.var_mut_by_index(index);
+
+    if var.placeholder {
+      return;
+    }
+
+    var.rename = Some(rename);
   }
 
   pub fn rename(&self, index: usize) -> Option<Ref<String>> {
@@ -461,7 +480,11 @@ impl BundleVariable {
           };
 
           match res {
-            FindModuleExportResult::Local(i, target, _)
+            FindModuleExportResult::Local {
+              index: i,
+              source: target,
+              ..
+            }
             | FindModuleExportResult::External(i, target, _) => {
               let is_reexport = module_analyzers
                 .module_analyzer(&target)
@@ -478,58 +501,73 @@ impl BundleVariable {
           }
         }
 
-        if let Some(ReferenceQueryResult { index, is_reexport }) =
-          reference_map.query_by_var_str_and_meta(&var_ident, self)
-        {
+        if let Some(index) = reference_map.query_by_str(&var_ident, self) {
           return Some(FindModuleExportResult::Bundle(
             index,
             module_analyzer.module_id.clone(),
             // support cjs
             module_system,
-            is_reexport,
+            false,
           ));
         }
       }
 
       if find_namespace || module_analyzers.is_commonjs(source) {
-        return Some(FindModuleExportResult::Local(
+        return Some(FindModuleExportResult::Local {
           index,
-          source.clone(),
+          source: source.clone(),
           module_system,
-        ));
+          dynamic_reference: false,
+        });
       }
 
-      if find_default {
-        return reference_map
-          .export
-          .default
-          .or_else(|| reference_map.query_by_str("default", self))
-          // .or_else(|| reference_map.export.query(&"default".to_string(), self))
-          .map(|i| FindModuleExportResult::Local(i, source.clone(), module_system));
-      }
+      let try_query_ident = |ident: &str, module_system: ModuleSystem| {
+        // find from local
+        if let Some(d) = reference_map.export.query(&ident, self) {
+          return Some(FindModuleExportResult::Local {
+            index: d,
+            source: source.clone(),
+            module_system,
+            dynamic_reference: false,
+          });
+        }
 
-      // find from local
-      if let Some(d) = reference_map.export.query(&var_ident, self) {
-        return Some(FindModuleExportResult::Local(
-          d,
-          source.clone(),
-          module_system,
-        ));
-      }
-
-      // find from reference external or bundle
-      for (module_id, export) in &reference_map.reexport_map {
-        if let Some(d) = export.query(&var_ident, self) {
-          if module_analyzers.is_external(module_id) || !module_analyzers.contain(module_id) {
-            return Some(FindModuleExportResult::External(d, module_id.clone(), true));
-          } else {
-            return Some(FindModuleExportResult::Local(
-              d,
-              module_id.clone(),
-              module_system,
-            ));
+        // find from reference external or bundle
+        for (module_id, export) in &reference_map.reexport_map {
+          if let Some(d) = export.query(&ident, self) {
+            if module_analyzers.is_external(module_id) || !module_analyzers.contain(module_id) {
+              return Some(FindModuleExportResult::External(d, module_id.clone(), true));
+            } else {
+              return Some(FindModuleExportResult::Local {
+                index: d,
+                source: module_id.clone(),
+                module_system,
+                dynamic_reference: false,
+              });
+            }
           }
         }
+
+        None
+      };
+
+      if find_default {
+        return try_query_ident("default", module_system);
+      }
+
+      let v = try_query_ident(&var_ident, module_system.clone());
+
+      if v.is_some() {
+        return v;
+      }
+
+      if reference_map.reexport_map.iter().any(|(_, i)| i.all) {
+        return Some(FindModuleExportResult::Local {
+          index,
+          source: source.clone(),
+          module_system,
+          dynamic_reference: true,
+        });
       }
     } else {
       return Some(FindModuleExportResult::External(
@@ -545,7 +583,12 @@ impl BundleVariable {
 
 #[derive(Debug)]
 pub enum FindModuleExportResult {
-  Local(usize, ModuleId, ModuleSystem),
+  Local {
+    index: usize,
+    source: ModuleId,
+    module_system: ModuleSystem,
+    dynamic_reference: bool,
+  },
   External(usize, ModuleId, bool),
   Bundle(usize, ModuleId, ModuleSystem, bool),
 }
@@ -553,7 +596,7 @@ pub enum FindModuleExportResult {
 impl FindModuleExportResult {
   pub fn is_common_js(&self) -> bool {
     match self {
-      FindModuleExportResult::Local(_, _, module_system)
+      FindModuleExportResult::Local { module_system, .. }
       | FindModuleExportResult::Bundle(_, _, module_system, _) => {
         matches!(module_system, ModuleSystem::CommonJs | ModuleSystem::Hybrid)
       }
@@ -564,7 +607,7 @@ impl FindModuleExportResult {
 
   pub fn module_system(&self) -> Option<ModuleSystem> {
     match self {
-      FindModuleExportResult::Local(_, _, module_system)
+      FindModuleExportResult::Local { module_system, .. }
       | FindModuleExportResult::Bundle(_, _, module_system, _) => Some(module_system.clone()),
       FindModuleExportResult::External(_, _, _) => None,
     }
@@ -572,7 +615,10 @@ impl FindModuleExportResult {
 
   pub fn target_source(&self) -> ReferenceKind {
     match self {
-      FindModuleExportResult::Local(_, target_source, _) => target_source.clone().into(),
+      FindModuleExportResult::Local {
+        source: target_source,
+        ..
+      } => target_source.clone().into(),
       FindModuleExportResult::External(_, target_source, _) => target_source.clone().into(),
       FindModuleExportResult::Bundle(_, target_bundle, _, _) => target_bundle.clone().into(),
     }
@@ -580,7 +626,7 @@ impl FindModuleExportResult {
 
   pub fn is_reexport(&self) -> bool {
     match self {
-      FindModuleExportResult::Local(_, _, _) => false,
+      FindModuleExportResult::Local { .. } => false,
       FindModuleExportResult::External(_, _, reexport) => *reexport,
       FindModuleExportResult::Bundle(_, _, _, reexport) => *reexport,
     }
@@ -589,7 +635,7 @@ impl FindModuleExportResult {
 
 #[cfg(test)]
 mod tests {
-  use std::{collections::HashMap, sync::Arc};
+  use std::sync::Arc;
 
   use farmfe_core::{
     config::Config,
@@ -600,6 +646,7 @@ mod tests {
       Module, ModuleId, ScriptModuleMetaData,
     },
     resource::resource_pot::ResourcePotId,
+    HashMap,
   };
 
   use crate::resource_pot_to_bundle::{
@@ -672,7 +719,7 @@ mod tests {
       },
     ));
 
-    let mut module_analyzer_map = HashMap::new();
+    let mut module_analyzer_map = HashMap::default();
 
     let mut b_module_analyzer = ModuleAnalyzer::new(
       &b_module,
@@ -780,7 +827,7 @@ mod tests {
       },
     ));
 
-    let mut module_analyzer_map = HashMap::new();
+    let mut module_analyzer_map = HashMap::default();
 
     let mut index_module_analyzer = ModuleAnalyzer::new(
       &index_module,

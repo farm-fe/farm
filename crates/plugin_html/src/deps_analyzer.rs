@@ -1,10 +1,9 @@
-use std::collections::HashMap;
-
 use farmfe_core::{
   cache_item,
   module::{ModuleId, ModuleType},
   plugin::{PluginAnalyzeDepsHookResultEntry, ResolveKind},
   swc_html_ast::{Child, Document, Element},
+  HashMap,
 };
 use farmfe_toolkit::swc_html_visit::{Visit, VisitWith};
 
@@ -22,7 +21,7 @@ impl DepsAnalyzer {
     Self {
       deps: None,
       html_id,
-      inline_deps_map: HashMap::new(),
+      inline_deps_map: HashMap::default(),
     }
   }
 
@@ -122,7 +121,7 @@ fn get_script_src_or_code(
 
     if let Some(src_attr) = src_attr {
       if let Some(value) = &src_attr.value {
-        let value = value.to_string();
+        let value = value.trim().to_string();
         // the dependencies of html should be relative path and should not start with http or /
         if should_ignore_source(&value) {
           return None;
@@ -181,7 +180,7 @@ fn get_href_link_or_code(analyzer: Option<&mut DepsAnalyzer>, element: &Element)
 
     if let Some(src_attr) = src_attr {
       if let Some(value) = &src_attr.value {
-        let value = value.to_string();
+        let value = value.trim().to_string();
         // the dependencies of html should be relative path and should not start with http or /
         if should_ignore_source(&value) {
           return None;

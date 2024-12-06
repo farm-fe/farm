@@ -1,11 +1,4 @@
-use std::{
-  cell::Ref,
-  collections::{HashMap, HashSet},
-  fmt::Debug,
-  hash::Hash,
-  path::PathBuf,
-  sync::Arc,
-};
+use std::{cell::Ref, fmt::Debug, hash::Hash, path::PathBuf, sync::Arc};
 
 use farmfe_core::{
   context::CompilationContext,
@@ -15,6 +8,7 @@ use farmfe_core::{
   resource::resource_pot::ResourcePotId,
   swc_common::{sync::OnceCell, Mark, SourceMap},
   swc_ecma_ast::{Id, Module as EcmaAstModule},
+  HashMap, HashSet,
 };
 use farmfe_toolkit::{
   common::{create_swc_source_map, Source},
@@ -232,6 +226,7 @@ pub struct ModuleAnalyzer {
   pub external: bool,
   pub is_dynamic: bool,
   pub is_runtime: bool,
+  pub is_should_dynamic_reexport: bool,
   pub cjs_module_analyzer: CjsModuleAnalyzer,
   pub mark: (Mark, Mark),
   pub module_system: ModuleSystem,
@@ -285,7 +280,7 @@ impl ModuleAnalyzer {
 
     Ok(Self {
       statements: vec![],
-      statement_actions: HashSet::new(),
+      statement_actions: HashSet::default(),
       cm,
       ast,
       module_id: module.id.clone(),
@@ -293,6 +288,7 @@ impl ModuleAnalyzer {
       bundle_group_id: group_id,
       external: module.external,
       entry: is_entry,
+      is_should_dynamic_reexport: false,
       is_dynamic,
       is_runtime,
       cjs_module_analyzer: CjsModuleAnalyzer::new(),
@@ -345,30 +341,55 @@ impl ModuleAnalyzer {
   ) -> Result<()> {
     farm_profile_function!("");
     try_with(self.cm.clone(), &context.meta.script.globals, || {
-      for (statement_id, stmt) in self.ast.body.iter().enumerate() {
-        let statement = analyze::analyze_imports_and_exports(
-          statement_id,
-          stmt,
-          &self.module_id,
-          module_graph,
-          self.mark.1,
-          &mut |ident, strict, is_placeholder| {
-            if is_placeholder {
-              bundle_variable.register_placeholder(&self.module_id, ident)
-            } else {
-              bundle_variable.register_var(&self.module_id, ident, strict)
+      let mut is_should_dynamic_reexport = false;
+      self
+        .ast
+        .body
+        .iter()
+        .enumerate()
+        .for_each(|(statement_id, stmt)| {
+          let statement = analyze::analyze_imports_and_exports(
+            statement_id,
+            stmt,
+            &self.module_id,
+            module_graph,
+            self.mark.1,
+            self.mark.0,
+            &mut |ident, strict, is_placeholder| {
+              if is_placeholder {
+                bundle_variable.register_placeholder(&self.module_id, ident)
+              } else {
+                bundle_variable.register_var(&self.module_id, ident, strict)
+              }
+            },
+          )
+          .unwrap();
+
+          if statement.export.is_none()
+            && statement.import.is_none()
+            && statement.defined.is_empty()
+          {
+            return;
+          }
+
+          if let Some(ExportInfo {
+            source, specifiers, ..
+          }) = statement.export.as_ref()
+          {
+            if source
+              .as_ref()
+              .is_some_and(|m| module_graph.module(m).is_some_and(|m| m.external))
+              && specifiers.iter().any(|specify| match specify {
+                ExportSpecifierInfo::All(_) => true,
+                _ => false,
+              })
+            {
+              is_should_dynamic_reexport = true;
             }
-          },
-        )
-        .unwrap();
+          }
 
-        if statement.export.is_none() && statement.import.is_none() && statement.defined.is_empty()
-        {
-          continue;
-        }
-
-        self.statements.push(statement);
-      }
+          self.statements.push(statement);
+        });
 
       // unresolved is write to global, so, we need to avoid having the same declaration as unresolved ident in the bundle
       self.collect_unresolved_ident(bundle_variable);
@@ -394,7 +415,7 @@ impl ModuleAnalyzer {
   }
 
   pub fn variables(&self) -> HashSet<usize> {
-    let mut variables = HashSet::new();
+    let mut variables = HashSet::default();
 
     for statement in &self.statements {
       for defined in &statement.defined {

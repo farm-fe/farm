@@ -1,4 +1,4 @@
-use std::{any::Any, collections::HashMap, hash::Hash, sync::Arc};
+use std::{any::Any, hash::Hash, sync::Arc};
 
 use farmfe_macro_cache_item::cache_item;
 use serde::{Deserialize, Serialize};
@@ -16,6 +16,7 @@ use crate::{
     Resource, ResourceType,
   },
   stats::Stats,
+  HashMap,
 };
 
 pub mod constants;
@@ -529,6 +530,7 @@ pub struct UpdateResult {
   pub dynamic_resources_map: Option<HashMap<ModuleId, Vec<(String, ResourceType)>>>,
   pub extra_watch_result: WatchDiffResult,
 }
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum UpdateType {
   // added a new module

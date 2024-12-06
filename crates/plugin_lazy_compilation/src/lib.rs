@@ -1,9 +1,8 @@
-use std::collections::HashMap;
-
 use farmfe_core::{
   config::{external::ExternalConfig, Config, FARM_MODULE_SYSTEM},
   module::{ModuleId, ModuleType},
   plugin::{Plugin, PluginHookContext, PluginLoadHookResult, PluginResolveHookParam, ResolveKind},
+  HashMap,
 };
 use farmfe_toolkit::{html::get_farm_global_this, script::constant::RUNTIME_SUFFIX};
 use farmfe_utils::{relative, stringify_query};
@@ -72,7 +71,7 @@ impl Plugin for FarmPluginLazyCompilation {
             external: false,
             side_effects: false,
             query: vec![],
-            meta: HashMap::new(),
+            meta: HashMap::default(),
           }));
         }
       }
@@ -109,7 +108,7 @@ impl Plugin for FarmPluginLazyCompilation {
           external: false,
           side_effects: false,
           query: vec![],
-          meta: HashMap::from([(ORIGINAL_RESOLVED_PATH.to_string(), resolved_path)]),
+          meta: HashMap::from_iter([(ORIGINAL_RESOLVED_PATH.to_string(), resolved_path)]),
         }));
       }
     }

@@ -5,7 +5,6 @@ import { WebSocketServer as WebSocketServerRaw_ } from 'ws';
 
 import { ILogger, Logger } from '../utils/logger.js';
 import { isObject } from '../utils/share.js';
-import { HMRChannel } from './hmr.js';
 import { ServerOptions } from './index.js';
 
 import type { IncomingMessage, Server } from 'node:http';
@@ -24,7 +23,7 @@ import {
 const WS_CONNECTED_MESSAGE = JSON.stringify({ type: 'connected' });
 const WS_CUSTOM_EVENT_TYPE = 'custom';
 
-export interface WebSocketServer extends HMRChannel {
+export interface WebSocketServer {
   /**
    * Listen on port and host
    */

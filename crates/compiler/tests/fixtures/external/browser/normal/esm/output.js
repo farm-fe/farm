@@ -22,7 +22,7 @@ var index_js_cjs = __commonJs((module, exports)=>{
     window['__farm_default_namespace__'].__farm_module_system__.setPlugins([]);
 });
 index_js_cjs();
-})());window['__farm_default_namespace__'].__farm_module_system__.setExternalModules({"jquery": (window['jquery']||{}).default && !(window['jquery']||{}).__esModule ? {...(window['jquery']||{}),__esModule:true} : ({...window['jquery']||{}})});(function(_){for(var r in _){_[r].__farm_resource_pot__='index_dcdc.js';window['__farm_default_namespace__'].__farm_module_system__.register(r,_[r])}})({"b5d64806":function  (module, exports, farmRequire, farmDynamicRequire) {
+})());window['__farm_default_namespace__'].__farm_module_system__.setExternalModules({"jquery": (window['jquery']||{}).default && !(window['jquery']||{}).__esModule ? {...(window['jquery']||{}),__esModule:true} : window['jquery']||{}});(function(_){for(var r in _){_[r].__farm_resource_pot__='index_dcdc.js';window['__farm_default_namespace__'].__farm_module_system__.register(r,_[r])}})({"b5d64806":function  (module, exports, farmRequire, farmDynamicRequire) {
     module._m(exports);
     var _f_jquery = module.i(farmRequire('jquery'));
     console.log(module.f(_f_jquery).find);

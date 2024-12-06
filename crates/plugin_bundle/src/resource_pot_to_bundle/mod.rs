@@ -1,6 +1,5 @@
 use std::{
   cell::RefCell,
-  collections::HashMap,
   hash::Hash,
   rc::Rc,
   sync::{Arc, Mutex},
@@ -16,6 +15,7 @@ use farmfe_core::{
   rayon::iter::{IntoParallelIterator, ParallelIterator},
   resource::resource_pot::{ResourcePot, ResourcePotId, ResourcePotType},
   swc_ecma_ast::Id,
+  HashMap,
 };
 pub use polyfill::{Polyfill, SimplePolyfill};
 
@@ -39,11 +39,10 @@ pub use config::*;
 pub struct Var {
   var: Id,
   rename: Option<String>,
-  removed: bool,
   root: Option<usize>,
   module_id: Option<usize>,
   index: usize,
-  // only for uniq name
+  // maybe global variable, function params name, only as the slot for UniqName
   placeholder: bool,
 }
 
@@ -56,10 +55,12 @@ impl Var {
   }
 
   pub fn render_name(&self) -> String {
-    if let Some(rename) = self.rename.as_ref() {
+    if !self.placeholder
+      && let Some(rename) = self.rename.as_ref()
+    {
       rename.clone()
     } else {
-      self.var.0.to_string()
+      self.origin_name()
     }
   }
 
@@ -131,8 +132,8 @@ impl<'a> SharedBundle<'a> {
 
     let context = ShareBundleContext::new(options, &context);
 
-    let module_analyzer_map: Mutex<HashMap<ModuleId, ModuleAnalyzer>> = Mutex::new(HashMap::new());
-    let mut bundle_map: HashMap<ResourcePotId, BundleAnalyzer> = HashMap::new();
+    let module_analyzer_map: Mutex<HashMap<ModuleId, ModuleAnalyzer>> = Mutex::new(HashMap::default());
+    let mut bundle_map: HashMap<ResourcePotId, BundleAnalyzer> = HashMap::default();
 
     let bundle_variables = Rc::new(RefCell::new(BundleVariable::new()));
 
@@ -262,6 +263,7 @@ impl<'a> SharedBundle<'a> {
     let mut reserved_word = SimplePolyfill::reserved_word();
 
     reserved_word.push("module".to_string());
+    reserved_word.push("default".to_string());
 
     if let Some(bundle_analyzer) = self
       .module_analyzer_manager
