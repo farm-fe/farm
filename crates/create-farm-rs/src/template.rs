@@ -45,12 +45,12 @@ impl ElectronSubTemplate {
 impl Displayable for ElectronSubTemplate {
   fn display_text(&self) -> &'static str {
     match self {
-      ElectronSubTemplate::React => "\x1b[36mReact - (https://reactjs.org/)\x1b[39m",
-      ElectronSubTemplate::Vue => "\x1b[32mVue - (https://vuejs.org/)\x1b[39m",
-      ElectronSubTemplate::Svelte => "\x1b[38;2;255;137;54mSvelte - (https://svelte.dev/)\x1b[39m",
-      ElectronSubTemplate::Vanilla => "\x1b[33mVanilla\x1b[39m",
-      ElectronSubTemplate::Solid => "\x1b[38;2;68;206;246mSolid - (https://solidjs.com/)\x1b[39m",
-      ElectronSubTemplate::Preact => "\x1b[36mPreact - (https://preactjs.com/)\x1b[36m",
+      ElectronSubTemplate::React => "\x1b[36mReact - (https://reactjs.org/)\x1b[0m",
+      ElectronSubTemplate::Vue => "\x1b[32mVue - (https://vuejs.org/)\x1b[0m",
+      ElectronSubTemplate::Svelte => "\x1b[38;2;255;137;54mSvelte - (https://svelte.dev/)\x1b[0m",
+      ElectronSubTemplate::Vanilla => "\x1b[33mVanilla\x1b[0m",
+      ElectronSubTemplate::Solid => "\x1b[38;2;68;206;246mSolid - (https://solidjs.com/)\x1b[0m",
+      ElectronSubTemplate::Preact => "\x1b[36mPreact - (https://preactjs.com/)\x1b[0m",
     }
   }
 }
@@ -106,12 +106,12 @@ impl TauriSubTemplate {
 impl Displayable for TauriSubTemplate {
   fn display_text(&self) -> &'static str {
     match self {
-      TauriSubTemplate::React => "\x1b[36mReact - (https://react.dev/)\x1b[39m",
-      TauriSubTemplate::Vue => "\x1b[32mVue - (https://vuejs.org/)\x1b[39m",
-      TauriSubTemplate::Svelte => "\x1b[38;2;255;137;54mSvelte - (https://svelte.dev/)\x1b[39m",
-      TauriSubTemplate::Vanilla => "\x1b[33mVanilla\x1b[39m",
-      TauriSubTemplate::Solid => "\x1b[38;2;68;206;246mSolid - (https://solidjs.com/)\x1b[39m",
-      TauriSubTemplate::Preact => "\x1b[36mPreact - (https://preactjs.com/)\x1b[36m",
+      TauriSubTemplate::React => "\x1b[36mReact - (https://react.dev/)\x1b[0m",
+      TauriSubTemplate::Vue => "\x1b[32mVue - (https://vuejs.org/)\x1b[0m",
+      TauriSubTemplate::Svelte => "\x1b[38;2;255;137;54mSvelte - (https://svelte.dev/)\x1b[0m",
+      TauriSubTemplate::Vanilla => "\x1b[33mVanilla\x1b[0m",
+      TauriSubTemplate::Solid => "\x1b[38;2;68;206;246mSolid - (https://solidjs.com/)\x1b[0m",
+      TauriSubTemplate::Preact => "\x1b[36mPreact - (https://preactjs.com/)\x1b[0m",
     }
   }
 }
@@ -214,35 +214,35 @@ impl FromStr for Template {
 impl Displayable for Template {
   fn display_text(&self) -> &'static str {
     match self {
-      Template::Vanilla => "\x1b[33mVanilla\x1b[39m",
-      Template::React => "\x1b[36mReact - (https://react.dev/)\x1b[39m",
-      Template::Vue3 => "\x1b[32mVue3 - (https://vuejs.org/)\x1b[39m",
-      Template::Vue2 => "\x1b[32mVue2 - (https://v2.vuejs.org/)\x1b[39m",
-      Template::Solid => "\x1b[38;2;68;206;246mSolid - (https://solidjs.com/)\x1b[39m",
-      Template::Svelte => "\x1b[38;2;255;137;54mSvelte - (https://svelte.dev/)\x1b[39m",
-      Template::Lit => "\x1b[33mLit - (https://lit.dev/)\x1b[39m",
-      Template::Preact => "\x1b[36mPreact - (https://preactjs.com/)\x1b[36m",
-      Template::Tauri(None) => "\x1b[38;2;255;137;54mTauri - (https://tauri.app/)\x1b[39m",
+      Template::Vanilla => "\x1b[33mVanilla\x1b[0m",
+      Template::React => "\x1b[36mReact - (https://react.dev/)\x1b[0m",
+      Template::Vue3 => "\x1b[32mVue3 - (https://vuejs.org/)\x1b[0m",
+      Template::Vue2 => "\x1b[32mVue2 - (https://v2.vuejs.org/)\x1b[0m",
+      Template::Solid => "\x1b[38;2;68;206;246mSolid - (https://solidjs.com/)\x1b[0m",
+      Template::Svelte => "\x1b[38;2;255;137;54mSvelte - (https://svelte.dev/)\x1b[0m",
+      Template::Lit => "\x1b[33mLit - (https://lit.dev/)\x1b[0m",
+      Template::Preact => "\x1b[36mPreact - (https://preactjs.com/)\x1b[0m",
+      Template::Tauri(None) => "\x1b[38;2;255;137;54mTauri - (https://tauri.app/)\x1b[0m",
       Template::Tauri(Some(sub_template)) => match sub_template {
-        TauriSubTemplate::React => "\x1b[38;2;255;215;0mTauri with React\x1b[39m",
-        TauriSubTemplate::Vue => "\x1b[38;2;255;215;0mTauri with Vue\x1b[39m",
-        TauriSubTemplate::Vanilla => "\x1b[38;2;255;215;0mTauri with Vanilla\x1b[39m",
-        TauriSubTemplate::Svelte => "\x1b[38;2;255;215;0mTauri with Svelte\x1b[39m",
-        TauriSubTemplate::Solid => "\x1b[38;2;255;215;0mTauri with Solid\x1b[39m",
-        TauriSubTemplate::Preact => "\x1b[38;2;255;215;0mTauri with Preact\x1b[39m",
+        TauriSubTemplate::React => "\x1b[38;2;255;215;0mTauri with React\x1b[0m",
+        TauriSubTemplate::Vue => "\x1b[38;2;255;215;0mTauri with Vue\x1b[0m",
+        TauriSubTemplate::Vanilla => "\x1b[38;2;255;215;0mTauri with Vanilla\x1b[0m",
+        TauriSubTemplate::Svelte => "\x1b[38;2;255;215;0mTauri with Svelte\x1b[0m",
+        TauriSubTemplate::Solid => "\x1b[38;2;255;215;0mTauri with Solid\x1b[0m",
+        TauriSubTemplate::Preact => "\x1b[38;2;255;215;0mTauri with Preact\x1b[0m",
       },
       Template::Electron(None) => {
-        "\x1b[38;2;255;215;0mElectron - (https://www.electronjs.org/)\x1b[39m"
+        "\x1b[38;2;255;215;0mElectron - (https://www.electronjs.org/)\x1b[0m"
       }
       Template::Electron(Some(sub_template)) => match sub_template {
-        ElectronSubTemplate::React => "\x1b[38;2;255;215;0mElectron with React\x1b[39m",
-        ElectronSubTemplate::Vue => "\x1b[38;2;255;215;0mElectron with Vue\x1b[39m",
-        ElectronSubTemplate::Vanilla => "\x1b[38;2;255;215;0mElectron with Vanilla\x1b[39m",
-        ElectronSubTemplate::Svelte => "\x1b[38;2;255;215;0mElectron with Svelte\x1b[39m",
-        ElectronSubTemplate::Solid => "\x1b[38;2;255;215;0mElectron with Solid\x1b[39m",
-        ElectronSubTemplate::Preact => "\x1b[38;2;255;215;0mElectron with Preact\x1b[39m",
+        ElectronSubTemplate::React => "\x1b[38;2;255;215;0mElectron with React\x1b[0m",
+        ElectronSubTemplate::Vue => "\x1b[38;2;255;215;0mElectron with Vue\x1b[0m",
+        ElectronSubTemplate::Vanilla => "\x1b[38;2;255;215;0mElectron with Vanilla\x1b[0m",
+        ElectronSubTemplate::Svelte => "\x1b[38;2;255;215;0mElectron with Svelte\x1b[0m",
+        ElectronSubTemplate::Solid => "\x1b[38;2;255;215;0mElectron with Solid\x1b[0m",
+        ElectronSubTemplate::Preact => "\x1b[38;2;255;215;0mElectron with Preact\x1b[0m",
       },
-      Template::Nestjs => "\x1b[38;2;255;102;102mNestJS - (https://nestjs.com/)\x1b[39m",
+      Template::Nestjs => "\x1b[31mNestJS - (https://nestjs.com/)\x1b[0m",
     }
   }
 }
@@ -391,34 +391,34 @@ where
   if type_id == TypeId::of::<ElectronSubTemplate>() {
     let electron_template: &ElectronSubTemplate = unsafe { transmute(template) };
     match electron_template {
-      &ElectronSubTemplate::React => write!(f, "\x1b[36mReact - (https://react.dev/)\x1b[39m"),
-      &ElectronSubTemplate::Vue => write!(f, "\x1b[32mVue3 - (https://vuejs.org/)\x1b[39m"),
+      &ElectronSubTemplate::React => write!(f, "\x1b[36mReact - (https://react.dev/)\x1b[0m"),
+      &ElectronSubTemplate::Vue => write!(f, "\x1b[32mVue3 - (https://vuejs.org/)\x1b[0m"),
       &ElectronSubTemplate::Svelte => write!(
         f,
-        "\x1b[38;2;255;137;54mSvelte - (https://svelte.dev/)\x1b[39m"
+        "\x1b[38;2;255;137;54mSvelte - (https://svelte.dev/)\x1b[0m"
       ),
-      &ElectronSubTemplate::Vanilla => write!(f, "\x1b[33mVanilla\x1b[39m"),
+      &ElectronSubTemplate::Vanilla => write!(f, "\x1b[33mVanilla\x1b[0m"),
       &ElectronSubTemplate::Solid => write!(
         f,
-        "\x1b[38;2;68;206;246mSolid - (https://solidjs.com/)\x1b[39m"
+        "\x1b[38;2;68;206;246mSolid - (https://solidjs.com/)\x1b[0m"
       ),
-      &ElectronSubTemplate::Preact => write!(f, "\x1b[36mPreact - (https://preactjs.com/)\x1b[36m"),
+      &ElectronSubTemplate::Preact => write!(f, "\x1b[36mPreact - (https://preactjs.com/)\x1b[0m"),
     }
   } else if type_id == TypeId::of::<TauriSubTemplate>() {
     let tauri_template: &TauriSubTemplate = unsafe { transmute(template) };
     match tauri_template {
-      &TauriSubTemplate::React => write!(f, "\x1b[36mReact - (https://react.dev/)\x1b[39m"),
-      &TauriSubTemplate::Vue => write!(f, "\x1b[32mVue3 - (https://vuejs.org/)\x1b[39m"),
+      &TauriSubTemplate::React => write!(f, "\x1b[36mReact - (https://react.dev/)\x1b[0m"),
+      &TauriSubTemplate::Vue => write!(f, "\x1b[32mVue3 - (https://vuejs.org/)\x1b[0m"),
       &TauriSubTemplate::Svelte => write!(
         f,
-        "\x1b[38;2;255;137;54mSvelte - (https://svelte.dev/)\x1b[39m"
+        "\x1b[38;2;255;137;54mSvelte - (https://svelte.dev/)\x1b[0m"
       ),
-      &TauriSubTemplate::Vanilla => write!(f, "\x1b[33mVanilla\x1b[39m"),
+      &TauriSubTemplate::Vanilla => write!(f, "\x1b[33mVanilla\x1b[0m"),
       &TauriSubTemplate::Solid => write!(
         f,
-        "\x1b[38;2;68;206;246mSolid - (https://solidjs.com/)\x1b[39m"
+        "\x1b[38;2;68;206;246mSolid - (https://solidjs.com/)\x1b[0m"
       ),
-      &TauriSubTemplate::Preact => write!(f, "\x1b[36mPreact - (https://preactjs.com/)\x1b[36m"),
+      &TauriSubTemplate::Preact => write!(f, "\x1b[36mPreact - (https://preactjs.com/)\x1b[0m"),
     }
   } else {
     Err(std::fmt::Error)
