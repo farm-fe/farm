@@ -1,5 +1,4 @@
 use std::collections::VecDeque;
-use std::collections::{HashMap, HashSet};
 
 use farmfe_core::petgraph::Direction;
 use farmfe_core::swc_common::comments::SingleThreadedComments;
@@ -9,6 +8,7 @@ use farmfe_core::{
   petgraph::{self, stable_graph::NodeIndex},
   swc_ecma_ast::{Module as SwcModule, ModuleItem},
 };
+use farmfe_core::{HashMap, HashSet};
 
 pub(crate) mod analyze_deps_by_used_idents;
 pub(crate) mod analyze_statement_info;
@@ -263,7 +263,7 @@ impl Statement {
       import_info,
       export_info,
       defined_idents,
-      used_defined_idents: HashSet::new(), // updated when trace the statement graph while tree shaking
+      used_defined_idents: HashSet::default(), // updated when trace the statement graph while tree shaking
       side_effects,
     }
   }
@@ -323,9 +323,9 @@ impl StatementGraph {
     comments: &SingleThreadedComments,
   ) -> Self {
     let mut g = petgraph::graph::Graph::new();
-    let mut id_index_map = HashMap::new();
+    let mut id_index_map = HashMap::default();
 
-    let mut reverse_defined_idents_map = HashMap::new();
+    let mut reverse_defined_idents_map = HashMap::default();
     // 1. analyze all defined idents of each statement
     for (index, item) in module.body.iter().enumerate() {
       let stmt = Statement::new(index, item, unresolved_mark, top_level_mark, comments);
@@ -344,7 +344,7 @@ impl StatementGraph {
     let mut graph = Self {
       g,
       id_index_map,
-      used_stmts: HashSet::new(),
+      used_stmts: HashSet::default(),
     };
 
     for (index, item) in module.body.iter().enumerate() {
@@ -369,8 +369,8 @@ impl StatementGraph {
   pub fn empty() -> Self {
     Self {
       g: petgraph::graph::Graph::new(),
-      id_index_map: HashMap::new(),
-      used_stmts: HashSet::new(),
+      id_index_map: HashMap::default(),
+      used_stmts: HashSet::default(),
     }
   }
 
@@ -512,14 +512,14 @@ impl StatementGraph {
         (
           id,
           used_defined_idents,
-          HashMap::<Id, HashSet<UsedImportAllFields>>::new(),
+          HashMap::<Id, HashSet<UsedImportAllFields>>::default(),
         )
       })
       .collect();
     used_statements.sort_by(|a, b| a.0.cmp(&b.0));
 
     let mut stmts = VecDeque::from(used_statements);
-    let mut visited = HashSet::new();
+    let mut visited = HashSet::default();
     let mut result: Vec<TracedUsedImportStatement> = vec![];
 
     // 3. traverse the used statements in the statement graph
@@ -702,7 +702,7 @@ impl StatementGraph {
           }
         }
         StatementSideEffects::ReadTopLevelVar(read_top_level_vars) => {
-          let mut used_dept_defined_idents = HashSet::new();
+          let mut used_dept_defined_idents = HashSet::default();
 
           // only trace the statement that defined idents
           for dept_defined_ident in &dept_stmt.defined_idents {
@@ -746,7 +746,7 @@ impl StatementGraph {
     }
 
     let mut result = vec![];
-    let mut visited = HashSet::new();
+    let mut visited = HashSet::default();
     let mut stack = vec![];
 
     self.traverse_dependents_bfs(stmt_id, &mut visited, &mut stack, &mut result);
@@ -762,7 +762,7 @@ impl StatementGraph {
     used_defined_idents
       .iter()
       .filter_map(|i| match i {
-        UsedStatementIdent::SwcIdent(id) => Some(HashSet::from([id.clone()])),
+        UsedStatementIdent::SwcIdent(id) => Some(HashSet::from_iter([id.clone()])),
         UsedStatementIdent::Default => {
           let stmt = self.stmt(stmt_id);
           // add all defined idents to used defined idents if it's a default export

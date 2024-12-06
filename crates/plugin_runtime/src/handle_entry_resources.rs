@@ -1,4 +1,3 @@
-use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 
 use farmfe_core::enhanced_magic_string::collapse_sourcemap::collapse_sourcemap_chain;
@@ -6,6 +5,8 @@ use farmfe_core::enhanced_magic_string::magic_string::MagicString;
 use farmfe_core::enhanced_magic_string::types::SourceMapOptions;
 use farmfe_core::plugin::ResolveKind;
 use farmfe_core::resource::ResourceOrigin;
+use farmfe_core::HashMap;
+use farmfe_core::HashSet;
 use farmfe_core::{
   config::{ModuleFormat, TargetEnv, FARM_MODULE_SYSTEM},
   context::CompilationContext,
@@ -167,7 +168,7 @@ fn get_export_info_code(
   module_graph: &ModuleGraph,
   context: &Arc<CompilationContext>,
 ) -> String {
-  let mut visited = HashSet::new();
+  let mut visited = HashSet::default();
   let export_info = get_export_info_of_entry_module(entry_module_id, module_graph, &mut visited);
 
   if !export_info.is_empty() {

@@ -1,7 +1,7 @@
 use std::cmp::Ordering;
 
+use crate::{HashMap, HashSet};
 use farmfe_macro_cache_item::cache_item;
-use std::collections::{HashMap, HashSet};
 
 use petgraph::{
   graph::{DefaultIx, NodeIndex},
@@ -135,9 +135,9 @@ impl ModuleGraph {
   pub fn new() -> Self {
     Self {
       g: StableDiGraph::new(),
-      id_index_map: HashMap::new(),
-      file_module_ids_map: HashMap::new(),
-      entries: HashMap::new(),
+      id_index_map: HashMap::default(),
+      file_module_ids_map: HashMap::default(),
+      entries: HashMap::default(),
       circle_record: CircleRecord::default(),
     }
   }
@@ -566,7 +566,7 @@ impl ModuleGraph {
     let mut entries = self.entries.iter().collect::<Vec<_>>();
     entries.sort();
 
-    let mut visited = HashSet::new();
+    let mut visited = HashSet::default();
 
     for (entry, _) in entries {
       let mut res = vec![];
@@ -633,7 +633,7 @@ impl ModuleGraph {
       }
     }
 
-    let mut visited = HashSet::new();
+    let mut visited = HashSet::default();
 
     for entry in entries {
       dfs(None, &entry, op, &mut visited, self);
@@ -713,7 +713,7 @@ impl Default for ModuleGraph {
 
 #[cfg(test)]
 mod tests {
-  use std::collections::HashMap;
+  use crate::HashMap;
 
   use crate::{
     module::{Module, ModuleId},
@@ -788,7 +788,8 @@ mod tests {
       )
       .unwrap();
 
-    graph.entries = HashMap::from([("A".into(), "A".to_string()), ("B".into(), "B".to_string())]);
+    graph.entries =
+      HashMap::from_iter([("A".into(), "A".to_string()), ("B".into(), "B".to_string())]);
 
     graph
   }

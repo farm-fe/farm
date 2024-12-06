@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use dashmap::DashMap;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use rkyv::Deserialize;
@@ -7,7 +5,7 @@ use rkyv::Deserialize;
 use crate::{
   cache::cache_store::{CacheStore, CacheStoreKey},
   config::Mode,
-  deserialize, serialize,
+  deserialize, serialize, HashMap,
 };
 
 use super::resource_memory_store::{CachedResourcePot, ResourceMemoryStore};
@@ -67,7 +65,7 @@ impl ResourceMemoryStore for ResourcePotMemoryStore {
   }
 
   fn write_cache(&self) {
-    let mut cache_map = HashMap::new();
+    let mut cache_map = HashMap::default();
 
     for entry in self.cached_resources.iter() {
       let store_key = CacheStoreKey {

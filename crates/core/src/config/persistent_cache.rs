@@ -1,9 +1,11 @@
-use std::{collections::HashMap, path::PathBuf};
+use std::path::PathBuf;
 
 use farmfe_utils::hash::sha256;
 use relative_path::RelativePath;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+
+use crate::HashMap;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(untagged)]
@@ -49,7 +51,7 @@ impl PersistentCacheConfig {
       },
       // build dependencies are set by node side
       build_dependencies: vec![],
-      envs: HashMap::new(),
+      envs: HashMap::default(),
     })
   }
 

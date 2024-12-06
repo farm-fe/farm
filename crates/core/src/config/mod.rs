@@ -1,6 +1,5 @@
 use regex::Regex;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 use swc_css_prefixer::options::Targets;
 
 use swc_ecma_parser::{EsSyntax as EsConfig, TsSyntax as TsConfig};
@@ -9,6 +8,8 @@ use self::{
   bool_or_obj::BoolOrObj, comments::CommentsConfig, config_regex::ConfigRegex, html::HtmlConfig,
   partial_bundling::PartialBundlingConfig, preset_env::PresetEnvConfig, script::ScriptConfig,
 };
+
+use crate::HashMap;
 
 pub const FARM_MODULE_SYSTEM: &str = "__farm_module_system__";
 // transformed from dynamic import, e.g `import('./xxx')`
@@ -100,12 +101,12 @@ impl Default for Config {
       .to_string();
 
     Self {
-      input: HashMap::from([("index".to_string(), "./index.html".to_string())]),
+      input: HashMap::from_iter([("index".to_string(), "./index.html".to_string())]),
       root: root.clone(),
       output: Default::default(),
       mode: Mode::Development,
       resolve: Default::default(),
-      define: HashMap::new(),
+      define: HashMap::default(),
       external: Default::default(),
       runtime: Default::default(),
       script: Default::default(),
@@ -268,7 +269,7 @@ impl AliasConfig {
 
 impl Default for AliasConfig {
   fn default() -> Self {
-    AliasConfig::Map(HashMap::new())
+    AliasConfig::Map(HashMap::default())
   }
 }
 

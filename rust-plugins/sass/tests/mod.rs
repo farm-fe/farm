@@ -1,4 +1,4 @@
-use std::{collections::HashMap, fs, io::Write, path::PathBuf, sync::Arc};
+use std::{fs, io::Write, path::PathBuf, sync::Arc};
 
 use farmfe_compiler::Compiler;
 use farmfe_core::{
@@ -9,6 +9,7 @@ use farmfe_core::{
   context::CompilationContext,
   module::ModuleType,
   plugin::{Plugin, PluginTransformHookParam},
+  HashMap,
 };
 use farmfe_plugin_sass::FarmPluginSass;
 use farmfe_testing_helpers::{fixture, is_update_snapshot_from_env};
@@ -19,7 +20,7 @@ fn test() {
   fixture!("tests/fixtures/index.scss", |file, _cwd| {
     let resolved_path = file.to_string_lossy().to_string();
     let config = Config {
-      input: HashMap::from([("button".to_string(), resolved_path.clone())]),
+      input: HashMap::from_iter([("button".to_string(), resolved_path.clone())]),
       ..Default::default()
     };
     let plugin = Arc::new(FarmPluginSass::new(
@@ -41,7 +42,7 @@ fn test() {
           content,
           module_type: ModuleType::Custom(String::from("sass")),
           query: vec![],
-          meta: HashMap::from([]),
+          meta: HashMap::from_iter([]),
           module_id: resolved_path.clone(),
           source_map_chain: vec![],
         },
@@ -74,7 +75,7 @@ fn test_with_compiler() {
       .to_string_lossy()
       .to_string();
     let config = Config {
-      input: HashMap::from([("index".to_string(), resolved_path.clone())]),
+      input: HashMap::from_iter([("index".to_string(), resolved_path.clone())]),
       root: cwd.to_string_lossy().to_string(),
       runtime: Box::new(RuntimeConfig {
         path: runtime_path,

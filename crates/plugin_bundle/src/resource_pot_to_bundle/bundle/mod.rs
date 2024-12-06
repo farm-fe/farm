@@ -1,5 +1,4 @@
 use std::{
-  collections::{HashMap, HashSet},
   fmt::Debug,
   mem::{self, replace},
   sync::{Arc, Mutex, RwLock},
@@ -12,7 +11,6 @@ use farmfe_core::{
   error::{CompilationError, MapCompletionError, Result},
   farm_profile_function, farm_profile_scope,
   module::{module_graph::ModuleGraph, ModuleId, ModuleMetaData, ModuleSystem},
-  plugin::ResolveKind,
   rayon::iter::{IndexedParallelIterator, IntoParallelIterator, ParallelIterator},
   resource::resource_pot::ResourcePotId,
   swc_common::{util::take::Take, SyntaxContext, DUMMY_SP},
@@ -20,6 +18,7 @@ use farmfe_core::{
     self, BindingIdent, CallExpr, ClassDecl, Decl, EmptyStmt, Expr, ExprStmt, FnDecl, Ident,
     Module as ModuleAst, ModuleDecl, ModuleItem, Stmt, VarDecl, VarDeclarator,
   },
+  HashMap, HashSet,
 };
 use farmfe_toolkit::{
   itertools::Itertools, script::swc_try_with::try_with, swc_ecma_visit::VisitMutWith,
@@ -210,7 +209,7 @@ impl<'a> ModuleAnalyzerManager<'a> {
   pub fn new(module_map: HashMap<ModuleId, ModuleAnalyzer>, module_graph: &'a ModuleGraph) -> Self {
     Self {
       module_map,
-      namespace_modules: HashSet::new(),
+      namespace_modules: HashSet::default(),
       module_global_uniq_name: ModuleGlobalUniqName::new(),
       module_graph,
     }
@@ -274,7 +273,7 @@ impl<'a> ModuleAnalyzerManager<'a> {
         Ok::<(), CompilationError>(())
       })?;
 
-    let mut map = HashMap::new();
+    let mut map = HashMap::default();
 
     for (key, val) in module_map {
       map.insert(
@@ -1046,10 +1045,7 @@ impl<'a> ModuleAnalyzerManager<'a> {
 
 #[cfg(test)]
 mod tests {
-  use std::{
-    collections::{HashMap, HashSet},
-    sync::Arc,
-  };
+  use std::sync::Arc;
 
   use farmfe_core::{
     context::CompilationContext,
@@ -1059,6 +1055,7 @@ mod tests {
     },
     swc_common::{Globals, Mark, SourceMap, DUMMY_SP},
     swc_ecma_ast::{Ident, Module as EcmaAstModule},
+    HashMap, HashSet,
   };
   use farmfe_toolkit::script::swc_try_with::try_with;
 
@@ -1073,7 +1070,7 @@ mod tests {
 
   #[test]
   fn test() {
-    let mut map = HashMap::new();
+    let mut map = HashMap::default();
 
     let module_index_id: ModuleId = "index".into();
     let module_a_id: ModuleId = "moduleA".into();

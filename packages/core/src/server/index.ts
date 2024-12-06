@@ -17,7 +17,11 @@ import {
 } from '../plugin/index.js';
 import { isCacheDirExists } from '../utils/cacheDir.js';
 import { createDebugger } from '../utils/debug.js';
-import { resolveServerUrls, teardownSIGTERMListener } from '../utils/http.js';
+import {
+  resolveServerUrls,
+  setupSIGTERMListener,
+  teardownSIGTERMListener
+} from '../utils/http.js';
 import { Logger, bootstrap, printServerUrls } from '../utils/logger.js';
 import { initPublicFiles } from '../utils/publicDir.js';
 import { arrayEqual, isObject, normalizePath } from '../utils/share.js';
@@ -114,16 +118,16 @@ export class Server extends httpServer {
   root: string;
   resolvedUserConfig: ResolvedUserConfig;
   closeHttpServerFn: () => Promise<void>;
+  terminateServerFn: (_: unknown, exitCode?: number) => Promise<void>;
   postConfigureServerHooks: ((() => void) | void)[] = [];
   logger: Logger;
+
   /**
    * Creates an instance of Server.
    * @param {FarmCliOptions & UserConfig} inlineConfig - The inline configuration options.
-   * @param {Logger} logger - The logger instance.
    */
   constructor(readonly inlineConfig: FarmCliOptions & UserConfig) {
     super();
-    this.logger = new Logger();
   }
 
   /**
@@ -155,7 +159,7 @@ export class Server extends httpServer {
 
       this.#resolveOptions();
 
-      this.compiler = await createCompiler(this.resolvedUserConfig);
+      this.compiler = createCompiler(this.resolvedUserConfig);
 
       for (const hook of getPluginHooks(
         this.resolvedUserConfig.jsPlugins,
@@ -199,6 +203,19 @@ export class Server extends httpServer {
 
       // init middlewares
       this.#initializeMiddlewares();
+
+      this.terminateServerFn = async (_: unknown, exitCode?: number) => {
+        try {
+          await this.close();
+        } finally {
+          process.exitCode ??= exitCode ? 128 + exitCode : undefined;
+          process.exit();
+        }
+      };
+
+      if (!this.serverOptions.middlewareMode) {
+        setupSIGTERMListener(this.terminateServerFn);
+      }
 
       if (!this.serverOptions.middlewareMode && this.httpServer) {
         this.httpServer.once('listening', () => {
@@ -293,7 +310,7 @@ export class Server extends httpServer {
    * Restarts the server.
    * @returns {Promise<void>}
    */
-  async restartServer() {
+  async restartServer(): Promise<void> {
     if (this.serverOptions.middlewareMode) {
       await this.restart();
       return;
@@ -426,49 +443,6 @@ export class Server extends httpServer {
   }
 
   /**
-   * Starts the HTTP server.
-   * @protected
-   * @param {Object} serverOptions - The server options.
-   * @returns {Promise<number>} The port the server is listening on.
-   * @throws {Error} If the server fails to start.
-   */
-  protected async httpServerStart(serverOptions: {
-    port: number;
-    strictPort: boolean | undefined;
-    host: string | undefined;
-  }): Promise<number> {
-    if (!this.httpServer) {
-      throw new Error('httpServer is not initialized');
-    }
-
-    let { port, strictPort, host } = serverOptions;
-
-    return new Promise((resolve, reject) => {
-      const onError = (e: Error & { code?: string }) => {
-        if (e.code === 'EADDRINUSE') {
-          if (strictPort) {
-            this.httpServer.removeListener('error', onError);
-            reject(new Error(`Port ${port} is already in use`));
-          } else {
-            this.logger.warn(`Port ${port} is in use, trying another one...`);
-            this.httpServer.listen(++port, host);
-          }
-        } else {
-          this.httpServer.removeListener('error', onError);
-          reject(e);
-        }
-      };
-
-      this.httpServer.on('error', onError);
-
-      this.httpServer.listen(port, host, () => {
-        this.httpServer.removeListener('error', onError);
-        resolve(port);
-      });
-    });
-  }
-
-  /**
    * Get current compiler instance in the server
    * @returns { CompilerType } return current compiler, may be compiler or undefined
    */
@@ -523,7 +497,7 @@ export class Server extends httpServer {
    * @private
    * @returns { void }
    */
-  #resolveOptions() {
+  #resolveOptions(): void {
     const {
       compilation: {
         output: { publicPath },
@@ -644,7 +618,7 @@ export class Server extends httpServer {
    * @private
    * @returns {Promise<Set<string>>} A promise that resolves to a set of public file paths.
    */
-  async #handlePublicFiles() {
+  async #handlePublicFiles(): Promise<Set<string>> {
     const initPublicFilesPromise = initPublicFiles(this.resolvedUserConfig);
     return await initPublicFilesPromise;
   }
@@ -668,13 +642,6 @@ export class Server extends httpServer {
       );
       this.hmrEngine.hmrUpdate(normalizeParentFiles, true);
     });
-  }
-  async closeServerAndExit() {
-    try {
-      await this.httpServer.close();
-    } finally {
-      process.exit();
-    }
   }
 
   /**
@@ -724,10 +691,15 @@ export class Server extends httpServer {
 
   async close() {
     if (!this.serverOptions.middlewareMode) {
-      teardownSIGTERMListener(this.closeServerAndExit);
+      teardownSIGTERMListener(this.terminateServerFn);
     }
 
-    await Promise.allSettled([this.ws.wss.close(), this.closeHttpServerFn()]);
+    await Promise.allSettled([
+      this.watcher.watcher.close(),
+      this.ws.wss.close(),
+      this.closeHttpServerFn()
+    ]);
+    this.resolvedUrls = null;
   }
 
   printUrls() {

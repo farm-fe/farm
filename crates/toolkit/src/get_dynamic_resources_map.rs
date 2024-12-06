@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use farmfe_core::{
   config::Mode,
   module::{
@@ -8,6 +6,7 @@ use farmfe_core::{
     ModuleId,
   },
   resource::{resource_pot_map::ResourcePotMap, Resource, ResourceType},
+  HashMap,
 };
 
 pub fn get_dynamic_resources_map(
@@ -25,7 +24,7 @@ pub fn get_dynamic_resources_map(
     }
   });
 
-  let mut dynamic_resources_map = HashMap::<ModuleId, Vec<(String, ResourceType)>>::new();
+  let mut dynamic_resources_map = HashMap::<ModuleId, Vec<(String, ResourceType)>>::default();
 
   for mg_id in dep_module_groups {
     let mg = module_group_graph.module_group(&mg_id).unwrap();
@@ -81,7 +80,7 @@ pub fn get_dynamic_resources_code(
 ) -> (String, String) {
   let mut dynamic_resources_code_vec = vec![];
   let mut dynamic_resources = vec![];
-  let mut visited_resources = HashMap::new();
+  let mut visited_resources = HashMap::default();
 
   // inject dynamic resources
   let mut dynamic_resources_map_vec = dynamic_resources_map.iter().collect::<Vec<_>>();

@@ -567,7 +567,18 @@ export const DEFAULT_DEV_SERVER_OPTIONS: NormalizedServerConfig = {
   cors: false,
   middlewares: [],
   appType: 'spa',
-  writeToDisk: false
+  writeToDisk: false,
+  preview: {
+    host: 'localhost',
+    headers: {},
+    port: 1911,
+    strictPort: false,
+    https: undefined,
+    distDir: 'dist',
+    open: false,
+    cors: false,
+    proxy: undefined
+  }
 };
 
 export const DEFAULT_COMPILATION_OPTIONS: Partial<ResolvedCompilation> = {

@@ -1,4 +1,3 @@
-use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 
 use farmfe_core::{
@@ -7,6 +6,7 @@ use farmfe_core::{
   error::CompilationError,
   module::{module_group::ModuleGroupId, Module, ModuleId},
   resource::resource_pot::{ResourcePot, ResourcePotMetaData, ResourcePotType},
+  HashMap, HashSet,
 };
 
 use farmfe_plugin_runtime::render_resource_pot::{

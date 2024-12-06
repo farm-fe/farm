@@ -1,8 +1,9 @@
-use std::{collections::HashMap, sync::Arc};
+use std::sync::Arc;
 
-use serde::{de::DeserializeOwned, Deserialize};
+use serde::de::DeserializeOwned;
 
 use crate::context::CompilationContext;
+use crate::HashMap;
 
 use super::{
   asset::AssetFormatMode,

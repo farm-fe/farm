@@ -1,4 +1,4 @@
-use std::{collections::HashMap, sync::Arc};
+use std::sync::Arc;
 
 use farmfe_core::{
   config::ModuleFormat,
@@ -10,6 +10,7 @@ use farmfe_core::{
     self, BindingIdent, Bool, Decl, Expr, Ident, IdentName, KeyValueProp, ModuleItem, ObjectLit,
     Pat, Prop, PropName, PropOrSpread, Stmt, Str, VarDecl, VarDeclKind, VarDeclarator,
   },
+  HashMap,
 };
 use farmfe_toolkit::itertools::Itertools;
 
