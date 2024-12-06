@@ -1,0 +1,6 @@
+{
+  "output": {
+    "format": "cjs",
+    "targetEnv": "node"
+  }
+}

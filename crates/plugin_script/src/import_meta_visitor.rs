@@ -212,6 +212,5 @@ impl VisitMut for ImportMetaURLVisitor {
 }
 
 pub fn replace_import_meta_url(ast: &mut farmfe_core::swc_ecma_ast::Module) {
-  let mut visitor = ImportMetaURLVisitor {};
-  ast.visit_mut_with(&mut visitor);
+  ast.visit_mut_with(&mut ImportMetaURLVisitor {});
 }

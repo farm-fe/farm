@@ -293,8 +293,10 @@ impl Plugin for FarmPluginRuntime {
         &context.config.output.target_env,
       );
 
+      let target_env = context.config.output.target_env.clone();
+
       // inject global externals
-      if !external_modules.is_empty() && context.config.output.target_env == TargetEnv::Node {
+      if !external_modules.is_empty() && target_env == TargetEnv::Node {
         let mut import_strings = vec![];
         let mut source_to_names = vec![];
 
@@ -332,9 +334,7 @@ impl Plugin for FarmPluginRuntime {
         ));
 
         external_modules_str = Some(prepend_str);
-      } else if !external_modules.is_empty()
-        && context.config.output.target_env == TargetEnv::Browser
-      {
+      } else if !external_modules.is_empty() && target_env == TargetEnv::Browser {
         let mut external_objs = Vec::new();
 
         for source in external_modules {
@@ -359,17 +359,18 @@ impl Plugin for FarmPluginRuntime {
         external_modules_str = Some(prepend_str);
       }
 
-      let is_target_node_and_cjs = context.config.output.target_env == TargetEnv::Node
-        && context.config.output.format == ModuleFormat::CommonJs;
-
       let str = format!(
-        r#"(function(_){{for(var r in _){{_[r].__farm_resource_pot__={};{farm_global_this}.{FARM_MODULE_SYSTEM}.register(r,_[r])}}}})("#,
-        if is_target_node_and_cjs {
-          "'file://'+__filename".to_string()
-        } else {
-          // TODO make it final output file name
-          format!("'{}'", resource_pot.name.to_string() + ".js")
-        },
+        r#"(function(_){{var filename = ((function(){{{}}})());for(var r in _){{_[r].__farm_resource_pot__=filename;{farm_global_this}.{FARM_MODULE_SYSTEM}.register(r,_[r])}}}})("#,
+        match (target_env, context.config.output.format) {
+          (TargetEnv::Node | TargetEnv::Custom(_) | TargetEnv::Library, ModuleFormat::EsModule) =>
+            "return import.meta.url".to_string(),
+          _ => {
+            format!(
+              r#"var _documentCurrentScript = typeof document !== "undefined" ? document.currentScript : null;return typeof document === "undefined" ? require("url").pathToFileURL(__filename).href : _documentCurrentScript && _documentCurrentScript.src || new URL("{}.js", document.baseURI).href"#,
+              resource_pot.name
+            )
+          }
+        }
       );
 
       bundle.prepend(&str);

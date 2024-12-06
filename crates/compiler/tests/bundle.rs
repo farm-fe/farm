@@ -9,12 +9,8 @@ use crate::common::{
 #[allow(dead_code)]
 #[cfg(test)]
 fn test(file: String, crate_path: String) {
-  use std::fs;
-
-  use common::get_config_field;
+  use common::{format_output_name, get_dir_config_files, try_merge_config_file};
   use farmfe_core::config::partial_bundling::PartialBundlingEnforceResourceConfig;
-
-  use crate::common::try_read_config_from_json;
 
   let file_path_buf = PathBuf::from(file.clone());
   let create_path_buf = PathBuf::from(crate_path);
@@ -24,40 +20,9 @@ fn test(file: String, crate_path: String) {
   let entry_name = "index".to_string();
 
   let runtime_entry = cwd.to_path_buf().join("runtime.ts");
-  let mut files = fs::read_dir(cwd)
-    .unwrap()
-    .filter_map(|item| item.map(Some).unwrap_or(None))
-    .filter_map(|item| {
-      let filename = item
-        .path()
-        .file_name()
-        .unwrap_or_default()
-        .to_string_lossy()
-        .to_string();
+  let files = get_dir_config_files(cwd);
 
-      if filename.starts_with("config") || filename.ends_with(".json") {
-        Some((
-          item.path(),
-          filename
-            .trim_start_matches("config")
-            .trim_start_matches('.')
-            .trim_end_matches("json")
-            .trim_end_matches('.')
-            .to_string(),
-        ))
-      } else {
-        None
-      }
-    })
-    .collect::<Vec<_>>();
-
-  if files.is_empty() {
-    files.push((cwd.join("config.json"), "".to_string()));
-  }
-
-  for (config_entry, config_named) in files {
-    let config_from_file = try_read_config_from_json(config_entry);
-
+  for (name, config_entry) in files {
     let compiler = create_compiler_with_args(
       cwd.to_path_buf(),
       create_path_buf.clone(),
@@ -84,19 +49,7 @@ fn test(file: String, crate_path: String) {
           name: "index".to_string(),
         }];
 
-        if let Some(config_from_file) = config_from_file {
-          if let Some(mode) = get_config_field(&config_from_file, &["mode"]) {
-            config.mode = mode;
-          }
-
-          if let Some(format) = get_config_field(&config_from_file, &["output", "format"]) {
-            config.output.format = format;
-          }
-
-          if let Some(target_env) = get_config_field(&config_from_file, &["output", "targetEnv"]) {
-            config.output.target_env = target_env;
-          }
-        }
+        config = try_merge_config_file(config, config_entry);
 
         (config, plugins)
       },
@@ -109,18 +62,10 @@ fn test(file: String, crate_path: String) {
       AssertCompilerResultConfig {
         entry_name: Some(entry_name.clone()),
         ignore_emitted_field: false,
-        output_file: Some(format!(
-          "output.{}js",
-          if config_named.is_empty() {
-            "".into()
-          } else {
-            format!("{config_named}.")
-          }
-        )),
+        output_file: Some(format_output_name(name)),
       },
     );
   }
 }
 
 farmfe_testing::testing! {"tests/fixtures/bundle/library/**/index.ts", test}
-// farmfe_testing::testing! {"tests/fixtures/bundle/library/hybrid/esm_export_cjs/**/index.ts", test}

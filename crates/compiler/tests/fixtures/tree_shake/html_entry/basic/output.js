@@ -83,7 +83,7 @@ index_js_cjs();
 <script src="/index_564c.js" data-farm-resource="true"></script><script>window['__farm_default_namespace__'].__farm_module_system__.setInitialLoadedResources(['index_564c.js']);</script><script>window['__farm_default_namespace__'].__farm_module_system__.setDynamicModuleResourcesMap([],{  });</script><script>window['__farm_default_namespace__'].__farm_module_system__.setPublicPaths(['/']);</script><script>window['__farm_default_namespace__'].__farm_module_system__.bootstrap();</script><script>window['__farm_default_namespace__'].__farm_module_system__.require("7c4a34c2")</script></body></html>
 
 //index_564c.js:
- (function(_){for(var r in _){_[r].__farm_resource_pot__='index_564c.js';window['__farm_default_namespace__'].__farm_module_system__.register(r,_[r])}})({"7c4a34c2":function  (module, exports, farmRequire, farmDynamicRequire) {
+ (function(_){var filename = ((function(){var _documentCurrentScript = typeof document !== "undefined" ? document.currentScript : null;return typeof document === "undefined" ? require("url").pathToFileURL(__filename).href : _documentCurrentScript && _documentCurrentScript.src || new URL("index_564c.js", document.baseURI).href})());for(var r in _){_[r].__farm_resource_pot__=filename;window['__farm_default_namespace__'].__farm_module_system__.register(r,_[r])}})({"7c4a34c2":function  (module, exports, farmRequire, farmDynamicRequire) {
     console.log('1111');
 }
 ,});
