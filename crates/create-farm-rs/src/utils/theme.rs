@@ -61,7 +61,7 @@ impl Default for ColorfulTheme {
       values_style: Style::new().for_stderr().green(),
       active_item_style: Style::new().for_stderr().cyan(),
       inactive_item_style: Style::new().for_stderr(),
-      active_item_prefix: style("❯".to_string()).for_stderr().green(),
+      active_item_prefix: style("❯".to_string()).for_stderr().cyan(),
       inactive_item_prefix: style(" ".to_string()).for_stderr(),
       checked_item_prefix: style("✔".to_string()).for_stderr().green(),
       unchecked_item_prefix: style("✔".to_string()).for_stderr().black(),
@@ -264,17 +264,28 @@ impl Theme for ColorfulTheme {
     if active {
       write!(
         f,
-        "{} {}{}",
+        "{} {}",
         self.active_item_prefix,
-        self.active_item_style.apply_to(text),
-        self.hint_style.apply_to(desc),
+        self.active_item_style.apply_to(&format!("{}{}", 
+          text.trim(),
+          if !desc.is_empty() {
+            format!(" - {}", desc.trim())
+          } else {
+            String::new()
+          }
+        ))
       )
     } else {
       write!(
         f,
-        "{} {}",
+        "{} {}{}",
         self.inactive_item_prefix,
-        self.inactive_item_style.apply_to(text),
+        self.inactive_item_style.apply_to(text.trim()),
+        if !desc.is_empty() {
+          format!(" - {}", self.hint_style.apply_to(desc.trim()))
+        } else {
+          String::new()
+        }
       )
     }
   }
