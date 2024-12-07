@@ -44,7 +44,6 @@
 
 
 ## 设置您的本地开发环境
-git branch --set-upstream-to=upstream/main main
 ### 依赖
 
 - 安装 Rust 环境 [rustup](https://www.rust-lang.org/tools/install)。
