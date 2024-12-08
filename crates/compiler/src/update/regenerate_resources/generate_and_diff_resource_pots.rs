@@ -60,7 +60,7 @@ pub fn generate_and_diff_resource_pots(
   let mut new_resource_pot_ids =
     diff_and_patch_resource_pot_map(resources_pots, &enforce_resource_pot_ids, context);
 
-  // alway render affected resource pots resource pots
+  // alway render affected resource pots
   enforce_resource_pot_ids.into_iter().for_each(|id| {
     if !new_resource_pot_ids.contains(&id) {
       new_resource_pot_ids.insert(id);
@@ -249,9 +249,7 @@ fn diff_and_patch_resource_pot_map(
             let resource_pot = resource_pot_map
               .remove_resource_pot(resource_pot)
               .unwrap_or_else(|| {
-                panic!(
-                  "The resource pot {resource_pot:?} should be in the resource pot map"
-                )
+                panic!("The resource pot {resource_pot:?} should be in the resource pot map")
               });
 
             // also remove the related resource

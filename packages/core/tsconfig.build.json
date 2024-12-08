@@ -10,6 +10,15 @@
   "references": [
     {
       "path": "../utils/tsconfig.json"
+    },
+    {
+      "path": "../runtime/tsconfig.build.json"
+    },
+    {
+      "path": "../runtime-plugin-hmr/tsconfig.build.json"
+    },
+    {
+      "path": "../runtime-plugin-import-meta/tsconfig.build.json"
     }
   ]
 }

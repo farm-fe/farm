@@ -3,7 +3,10 @@ use swc_ecma_ast::EsVersion;
 
 use super::ScriptParserConfig;
 
-use crate::{config::ConfigRegex, module::ModuleType};
+use crate::{
+  config::ConfigRegex,
+  module::{ModuleId, ModuleType},
+};
 
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]
 #[serde(rename_all = "camelCase", default)]
@@ -63,7 +66,7 @@ impl Default for ScriptDecoratorsConfig {
   }
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, Default)]
 #[serde(rename_all = "camelCase", default)]
 pub struct ScriptConfig {
   pub target: EsVersion,
@@ -71,7 +74,7 @@ pub struct ScriptConfig {
   pub plugins: Vec<ScriptConfigPlugin>,
   pub decorators: ScriptDecoratorsConfig,
   pub native_top_level_await: bool,
-  pub import_not_used_as_values: String,
+  pub import_not_used_as_values: ImportNotUsedAsValues,
 }
 
 impl ScriptConfig {
@@ -80,15 +83,58 @@ impl ScriptConfig {
   }
 }
 
-impl Default for ScriptConfig {
-  fn default() -> Self {
-    Self {
-      target: Default::default(),
-      parser: Default::default(),
-      plugins: Default::default(),
-      decorators: Default::default(),
-      native_top_level_await: Default::default(),
-      import_not_used_as_values: "preserve".to_string(),
+#[derive(Debug, Serialize, Deserialize, Clone, Default)]
+#[serde(rename_all = "camelCase")]
+pub enum ImportNotUsedAsValues {
+  #[serde(rename = "remove")]
+  #[default]
+  Remove,
+  #[serde(rename = "preserve")]
+  Preserve,
+  #[serde(untagged)]
+  Rule(ImportNotUsedAsValuesRule),
+}
+
+impl ImportNotUsedAsValues {
+  pub fn is_preserved(&self, module_id: &ModuleId) -> bool {
+    match self {
+      ImportNotUsedAsValues::Remove => false,
+      ImportNotUsedAsValues::Preserve => true,
+      ImportNotUsedAsValues::Rule(rule) => rule
+        .preserve
+        .iter()
+        .any(|regex| regex.is_match(&module_id.to_string())),
     }
+  }
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, Default)]
+#[serde(rename_all = "camelCase", default)]
+pub struct ImportNotUsedAsValuesRule {
+  pub preserve: Vec<ConfigRegex>,
+}
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+  #[test]
+  fn test_script_import_not_used_as_values() {
+    let script_config: &str = r#"
+    {
+      "importNotUsedAsValues": {
+        "preserve": [
+          "node_modules/test$"
+        ]
+      }
+    }
+    "#;
+
+    let script_config: ScriptConfig = serde_json::from_str(script_config).unwrap();
+    assert!(script_config
+      .import_not_used_as_values
+      .is_preserved(&ModuleId::from("node_modules/test")));
+    assert!(!script_config
+      .import_not_used_as_values
+      .is_preserved(&ModuleId::from("node_modules/test1")));
   }
 }
