@@ -249,7 +249,9 @@ impl Compiler {
     self.set_module_group_graph_stats();
 
     // update cache
-    set_updated_modules_cache(&updated_module_ids, &diff_result, &self.context);
+    if self.context.config.persistent_cache.enabled() {
+      set_updated_modules_cache(&updated_module_ids, &diff_result, &self.context);
+    }
 
     // call module graph updated hook
     self.context.plugin_driver.module_graph_updated(

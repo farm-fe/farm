@@ -282,9 +282,18 @@ export interface ScriptConfig {
   /**
    * https://www.typescriptlang.org/tsconfig/#importsNotUsedAsValues
    *
-   * @default true
+   * @default "remove"
    */
-  importNotUsedAsValues?: 'remove' | 'preserve';
+  importNotUsedAsValues?:
+    | 'remove'
+    | 'preserve'
+    | {
+        /**
+         * modules that match any of this regex string array would treated as 'preserve'
+         * otherwise, it would be 'remove'
+         */
+        preserve?: string[];
+      };
 }
 
 export interface CssConfig {
