@@ -1,6 +1,6 @@
 {
   "name": "@farmfe/js-plugin-vue",
-  "version": "4.0.0",
+  "version": "3.11.0",
   "description": "support vue sfc for farm.",
   "main": "./build/index.cjs",
   "module": "./dist/farm-vue-plugin.js",
