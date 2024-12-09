@@ -1,5 +1,11 @@
 # @farmfe/core
 
+## 1.5.1
+
+### Patch Changes
+
+- 80b13ce6: new import meta url runtime & merge electron preload output files
+
 ## 1.5.0
 
 ### Minor Changes
