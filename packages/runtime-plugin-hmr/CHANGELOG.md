@@ -1,5 +1,11 @@
 # @farmfe/runtime-plugin-hmr
 
+## 3.5.10
+
+### Patch Changes
+
+- e63b163a: Fix mixed hmr ws protocol when proxy online host to localhost
+
 ## 3.5.9
 
 ### Patch Changes

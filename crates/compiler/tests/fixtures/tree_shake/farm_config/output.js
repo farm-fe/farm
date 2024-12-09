@@ -65,7 +65,7 @@
     window['__farm_default_namespace__'].__farm_module_system__.setPlugins([]);
 });
 index_js_cjs();
-})());window['__farm_default_namespace__'].__farm_module_system__.setExternalModules({"module": (window['module']||{}).default && !(window['module']||{}).__esModule ? {...(window['module']||{}),__esModule:true} : window['module']||{}});(function(_){for(var r in _){_[r].__farm_resource_pot__='index_7f1c.js';window['__farm_default_namespace__'].__farm_module_system__.register(r,_[r])}})({"052dab48":function  (module, exports, farmRequire, farmDynamicRequire) {
+})());window['__farm_default_namespace__'].__farm_module_system__.setExternalModules({"module": (window['module']||{}).default && !(window['module']||{}).__esModule ? {...(window['module']||{}),__esModule:true} : window['module']||{}});(function(_){var filename = ((function(){var _documentCurrentScript = typeof document !== "undefined" ? document.currentScript : null;return typeof document === "undefined" ? require("url").pathToFileURL(__filename).href : _documentCurrentScript && _documentCurrentScript.src || new URL("index_7f1c.js", document.baseURI).href})());for(var r in _){_[r].__farm_resource_pot__=filename;window['__farm_default_namespace__'].__farm_module_system__.register(r,_[r])}})({"052dab48":function  (module, exports, farmRequire, farmDynamicRequire) {
     module._m(exports);
     exports.default = {
         main: './main.tsx'
