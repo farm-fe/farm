@@ -11,6 +11,7 @@
 - e63b163a: Fix vue lazy compilation transform error when persistent cache enabled
 - e63b163a: Fix mixed hmr ws protocol when proxy online host to localhost
 - e63b163a: Fix module_group_graph panic which is caused by inconsistent module.module_groups when persistent cache is enabled
+- 80b13ce6: new import meta url runtime & merge electron preload output files
 - Updated dependencies [e63b163a]
   - @farmfe/runtime-plugin-hmr@3.5.10
 

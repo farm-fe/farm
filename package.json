@@ -30,7 +30,7 @@
     "@codspeed/vitest-plugin": "^3.1.1",
     "@commitlint/cli": "^17.0.3",
     "@commitlint/config-conventional": "^17.0.3",
-    "@types/node": "20.14.12",
+    "@types/node": "^18.19.67",
     "@vitest/coverage-v8": "2.0.4",
     "cross-env": "^7.0.3",
     "cspell": "^6.2.2",
