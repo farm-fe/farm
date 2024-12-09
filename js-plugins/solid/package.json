@@ -1,6 +1,6 @@
 {
   "name": "@farmfe/js-plugin-solid",
-  "version": "2.9.0",
+  "version": "3.0.0",
   "description": "SolidJS support for Farm",
   "author": {
     "name": "J4ck W4n9",
@@ -41,7 +41,7 @@
     "solid-js": "^1.7.8"
   },
   "peerDependencies": {
-    "@farmfe/core": "workspace:^1.4.7"
+    "@farmfe/core": "workspace:^1.5.0"
   },
   "files": [
     "build"
