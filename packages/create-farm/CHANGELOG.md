@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.0.16
+
+### Patch Changes
+
+- 92cfb1bb: Better support and compatibility for ansi color output
+
 ## 0.0.15
 
 ### Patch Changes
