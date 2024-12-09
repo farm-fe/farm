@@ -32,8 +32,21 @@ impl MutableModulesMemoryStore {
   }
 
   fn gen_cache_store_key(&self, module: &crate::module::Module) -> CacheStoreKey {
+    // Fix vue cache timestamp validation. Tools like vue may generate virtual modules which id is ends with .vue?vue,
+    // if the original module is changed, but the virtual module's content hash is not changed, in this cache, the cache should be invalidated.
+    let timestamp = if module.id.query_string().is_empty() {
+      0
+    } else {
+      module.last_update_timestamp
+    };
     let hash_key = sha256(
-      format!("{}{}", module.content_hash, module.id.to_string()).as_bytes(),
+      format!(
+        "{}{}{}",
+        module.content_hash,
+        module.id.to_string(),
+        timestamp
+      )
+      .as_bytes(),
       32,
     );
     CacheStoreKey {

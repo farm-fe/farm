@@ -323,7 +323,10 @@ impl Compiler {
     if let Some(cached_module) =
       try_get_module_cache_by_hash(&module.id, &module.content_hash, context)?
     {
+      // should not overwrite the timestamp of current resolved module
+      let last_update_timestamp = module.last_update_timestamp;
       *module = cached_module.module;
+      module.last_update_timestamp = last_update_timestamp;
       return Ok(CachedModule::dep_sources(cached_module.dependencies));
     }
 
