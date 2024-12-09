@@ -8,6 +8,8 @@
     "src/**/*.spec.ts"
   ],
   "compilerOptions": {
-    "outDir": "dist"
+    "rootDir": "src",
+    "outDir": "dist",
+    "composite": true
   }
 }

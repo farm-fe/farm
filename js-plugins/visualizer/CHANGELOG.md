@@ -1,5 +1,11 @@
 # @farmfe/js-plugin-record-viewer
 
+## 1.1.4
+
+### Patch Changes
+
+- e63b163a: Fix module list overflow
+
 ## 1.1.3
 
 ### Patch Changes

@@ -1,5 +1,19 @@
 # @farmfe/core
 
+## 1.5.0
+
+### Minor Changes
+
+- e63b163a: Support object style `script.importNotUsedAsValues` and reset the default value to `remove`
+
+### Patch Changes
+
+- e63b163a: Fix vue lazy compilation transform error when persistent cache enabled
+- e63b163a: Fix mixed hmr ws protocol when proxy online host to localhost
+- e63b163a: Fix module_group_graph panic which is caused by inconsistent module.module_groups when persistent cache is enabled
+- Updated dependencies [e63b163a]
+  - @farmfe/runtime-plugin-hmr@3.5.10
+
 ## 1.4.7
 
 ### Patch Changes
