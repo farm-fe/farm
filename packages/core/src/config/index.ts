@@ -575,7 +575,7 @@ export const DEFAULT_HMR_OPTIONS: Required<UserHmrConfig> = {
     undefined,
   path: '/__hmr',
   overlay: true,
-  protocol: 'ws',
+  protocol: '',
   watchOptions: {}
 };
 
