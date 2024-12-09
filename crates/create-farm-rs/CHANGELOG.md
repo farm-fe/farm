@@ -6,6 +6,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.4](https://github.com/farm-fe/farm/compare/create-farm-v0.1.3...create-farm-v0.1.4) - 2024-12-09
+
+### Fixed
+
+- normalize @types/node version (#1990)
+- *(create-farm)* fix terminal color display (#1986)
+
 ## [0.1.3](https://github.com/farm-fe/farm/compare/create-farm-v0.1.2...create-farm-v0.1.3) - 2024-10-31
 
 ### Added
