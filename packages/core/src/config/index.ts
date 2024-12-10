@@ -208,7 +208,9 @@ async function handleResolveConfig(
 
   resolvedUserConfig.logger = logger;
 
-  // // normalize srver config first cause it may be used in normalizeUserCompilationFnConfig
+  // farm handles server attributes in resolveConfig.
+  // On the one hand, farm can be used in node and server needs
+  // to be enabled. Lazy loading mode is enabled in node environment.
   resolvedUserConfig.server = normalizeDevServerConfig(
     resolvedUserConfig.server,
     compileMode
@@ -1099,20 +1101,6 @@ export async function resolveConfigFilePath(
     return await getConfigFilePath(configRootPath);
   }
 }
-
-// export async function handleServerPortConflict(
-//   resolvedUserConfig: ResolvedUserConfig,
-//   logger: Logger,
-//   mode?: CompilationMode
-// ) {
-//   // check port availability: auto increment the port if a conflict occurs
-
-//   try {
-//     mode !== 'production' &&
-//       (await Server.resolvePortConflict(resolvedUserConfig.server, logger));
-//     // eslint-disable-next-line no-empty
-//   } catch {}
-// }
 
 export function checkClearScreen(
   inlineConfig: FarmCliOptions | ResolvedUserConfig
