@@ -6,7 +6,9 @@
     "name": "bright wu",
     "email": "1521488775@qq.com"
   },
-  "main": "src/index.ts",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "type": "module",
   "keywords": [
     "farm",
     "farm runtime plugin",
@@ -19,14 +21,18 @@
     "url": "https://github.com/farm-fe/farm"
   },
   "scripts": {
-    "build": "tsc -p tsconfig.build.json --noEmit",
+    "build": "tsc -p tsconfig.build.json",
+    "prepublishOnly": "npm run build",
     "type-check": "tsc -p tsconfig.json --noEmit"
   },
   "devDependencies": {
-    "@types/node": "22.3.0",
-    "typescript": "5.5.4"
+    "typescript": "5.5.4",
+    "@types/node": "^18.19.67"
   },
   "dependencies": {
     "core-js": "^3.30.1"
-  }
+  },
+  "files": [
+    "dist"
+  ]
 }

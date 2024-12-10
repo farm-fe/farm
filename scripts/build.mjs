@@ -17,6 +17,18 @@ const PKG_CORE = resolve(CWD, "./packages/core");
 // Build cli
 const PKG_CLI = resolve(CWD, "./packages/cli");
 
+const PKG_RUNTIME = resolve(CWD, './packages/runtime');
+
+const PKG_RUNTIME_PLUGIN_HMR = resolve(
+  CWD,
+  './packages/runtime-plugin-hmr'
+);
+
+const PKG_RUNTIME_PLUGIN_IMPORT_META = resolve(
+  CWD,
+  './packages/runtime-plugin-import-meta'
+);
+
 // Build plugin-tools
 const PKG_PLUGIN_TOOLS = resolve(CWD, "./packages/plugin-tools");
 
@@ -75,12 +87,13 @@ export const buildExamples = async () => {
 export async function runTaskQueue() {
   // The sass plug-in uses protobuf, so you need to determine whether the user installs it or not.
   await installProtoBuf();
-  await runTask("Cli", buildCli);
-  await runTask("PluginTools", buildPluginTools);
-  await runTask("Core", buildCore);
-  await runTask("RustPlugins", buildRustPlugins);
-  await runTask("JsPlugins", buildJsPlugins);
-  await runTask("Artifacts", copyArtifacts);
+  await runTask('Cli', buildCli);
+  await runTask('Runtime', buildRuntime);
+  await runTask('Core', buildCore);
+  await runTask('PluginTools', buildPluginTools);
+  await runTask('RustPlugins', buildRustPlugins);
+  await runTask('JsPlugins', buildJsPlugins);
+  await runTask('Artifacts', copyArtifacts);
 }
 
 // install mac protobuf
@@ -169,6 +182,20 @@ export const buildCli = () =>
   execa(DEFAULT_PACKAGE_MANAGER, ["build"], {
     cwd: PKG_CLI,
   });
+
+export const buildRuntime = async () => {
+  await execa(DEFAULT_PACKAGE_MANAGER, ['build'], {
+    cwd: PKG_RUNTIME
+  })
+  return Promise.all([
+    execa(DEFAULT_PACKAGE_MANAGER, ['build'], {
+      cwd: PKG_RUNTIME_PLUGIN_HMR
+    }),
+    execa(DEFAULT_PACKAGE_MANAGER, ['build'], {
+      cwd: PKG_RUNTIME_PLUGIN_IMPORT_META
+    })
+  ])
+}
 
 // build farm-plugin-tools
 export const buildPluginTools = () =>

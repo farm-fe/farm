@@ -842,6 +842,28 @@ impl PluginDriver {
   hook_first!(
     handle_persistent_cached_module,
     Result<Option<bool>>,
+    |result: &Option<bool>,
+     plugin_name: String,
+     start_time: u128,
+     end_time: u128,
+     module: &Module,
+     context: &Arc<CompilationContext>| {
+      if let Some(res) = result {
+        context.record_manager.add_plugin_hook_stats(
+          CompilationPluginHookStats {
+            plugin_name: plugin_name.to_string(),
+            hook_name: "handle_persistent_cached_module".to_string(),
+            hook_context: None,
+            module_id: "".into(),
+            input: serde_json::to_string(&vec![module.id.to_string(), module.module_type.to_string()]).unwrap(),
+            output: serde_json::to_string(res).unwrap(),
+            duration: end_time - start_time,
+            start_time,
+            end_time,
+          },
+        );
+      };
+    },
     module: &Module,
     context: &Arc<CompilationContext>
   );

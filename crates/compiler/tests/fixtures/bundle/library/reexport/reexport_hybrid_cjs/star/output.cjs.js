@@ -104,4 +104,4 @@ var foo_cjs = __commonJs({
 var foo_ns = _interop_require_wildcard(foo_cjs());
 
 // module_id: index.ts
-_export_star(foo_ns, module.exports);
+_export_star(foo_cjs(), module.exports);

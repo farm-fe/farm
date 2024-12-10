@@ -1,3 +1,5 @@
+#![allow(clippy::needless_update)]
+
 use std::{
   fs,
   path::{Path, PathBuf},
@@ -80,38 +82,6 @@ pub fn create_css_compiler(
 }
 
 #[allow(dead_code)]
-pub fn create_config(cwd: PathBuf, crate_path: PathBuf) -> Config {
-  Config {
-    input: HashMap::default(),
-    root: cwd.to_string_lossy().to_string(),
-    runtime: generate_runtime(crate_path),
-    output: Default::default(),
-    mode: Mode::Production,
-    external: Default::default(),
-    sourcemap: Box::new(SourcemapConfig::Bool(false)),
-    lazy_compilation: false,
-    progress: false,
-    minify: Box::new(BoolOrObj::Bool(false)),
-    preset_env: Box::new(PresetEnvConfig::Bool(false)),
-    persistent_cache: Box::new(PersistentCacheConfig::Bool(false)),
-    ..Default::default()
-  }
-}
-
-#[allow(dead_code)]
-pub fn try_read_config_from_json(path: PathBuf) -> Option<Value> {
-  if !path.exists() {
-    return None;
-  }
-
-  let Ok(content) = read_file_utf8(path.to_string_lossy().to_string().as_str()) else {
-    return None;
-  };
-
-  farmfe_core::serde_json::from_str(&content).unwrap()
-}
-
-#[allow(dead_code)]
 pub fn merge_config(v1: Value, v2: Value) -> Value {
   match (v1, v2) {
     (Value::Array(mut a1), Value::Array(a2)) => {
@@ -150,7 +120,39 @@ pub fn try_merge_config_file(origin: Config, file: PathBuf) -> Config {
     return serde_json::from_value(origin).unwrap();
   }
 
-  return origin;
+  origin
+}
+
+#[allow(dead_code)]
+pub fn create_config(cwd: PathBuf, crate_path: PathBuf) -> Config {
+  Config {
+    input: HashMap::default(),
+    root: cwd.to_string_lossy().to_string(),
+    runtime: generate_runtime(crate_path),
+    output: Default::default(),
+    mode: Mode::Production,
+    external: Default::default(),
+    sourcemap: Box::new(SourcemapConfig::Bool(false)),
+    lazy_compilation: false,
+    progress: false,
+    minify: Box::new(BoolOrObj::Bool(false)),
+    preset_env: Box::new(PresetEnvConfig::Bool(false)),
+    persistent_cache: Box::new(PersistentCacheConfig::Bool(false)),
+    ..Default::default()
+  }
+}
+
+#[allow(dead_code)]
+pub fn try_read_config_from_json(path: PathBuf) -> Option<Value> {
+  if !path.exists() {
+    return None;
+  }
+
+  let Ok(content) = read_file_utf8(path.to_string_lossy().to_string().as_str()) else {
+    return None;
+  };
+
+  farmfe_core::serde_json::from_str(&content).unwrap()
 }
 
 #[allow(dead_code)]
@@ -357,7 +359,7 @@ pub fn assert_compiler_result(compiler: &Compiler, entry_name: Option<&String>) 
 #[allow(dead_code)]
 pub fn get_dir_config_files(cwd: &Path) -> Vec<(String, PathBuf)> {
   // println!("fs::read_dir(cwd): {:#?}", fs::read(format!("{}/", cwd.to_string_lossy().to_string())));
-  let mut files = fs::read_dir(cwd.to_path_buf())
+  let mut files = fs::read_dir(cwd)
     .map(|item| {
       item
         .into_iter()
@@ -376,9 +378,9 @@ pub fn get_dir_config_files(cwd: &Path) -> Vec<(String, PathBuf)> {
 
           (
             m.trim_start_matches("config")
-              .trim_start_matches(".")
+              .trim_start_matches('.')
               .trim_end_matches("json")
-              .trim_end_matches(".")
+              .trim_end_matches('.')
               .to_string(),
             v,
           )
@@ -401,4 +403,95 @@ pub fn format_output_name(name: String) -> String {
   }
 
   format!("output.{}.js", name)
+}
+
+#[allow(dead_code)]
+pub struct TestBuilderOptions {
+  pub cwd: PathBuf,
+  pub file: String,
+  pub plugins: Vec<Arc<dyn Plugin>>,
+  pub config: Option<Config>,
+  pub entry_name: String,
+  pub crate_path: PathBuf,
+}
+
+impl TestBuilderOptions {
+  #[allow(dead_code)]
+  pub fn new(file: String, crate_path: PathBuf) -> Self {
+    let filename = PathBuf::from(&file);
+    let cwd = filename.parent().unwrap();
+    Self {
+      cwd: cwd.to_path_buf(),
+      file,
+      plugins: vec![],
+      config: None,
+      crate_path,
+      entry_name: "index".to_string(),
+    }
+  }
+
+  #[allow(dead_code)]
+  pub fn with_plugins(mut self, plugins: Vec<Arc<dyn Plugin>>) -> Self {
+    self.plugins = plugins;
+    self
+  }
+
+  #[allow(dead_code)]
+  pub fn with_config(mut self, config: Config) -> Self {
+    self.config = Some(config);
+    self
+  }
+}
+
+#[allow(dead_code)]
+pub fn test_builder(options: TestBuilderOptions) {
+  let TestBuilderOptions {
+    cwd,
+    plugins: _plugins,
+    config: _config,
+    entry_name,
+    crate_path,
+    file,
+  } = options;
+
+  let files = get_dir_config_files(cwd.as_path());
+
+  for (name, config_entry) in files {
+    let compiler = create_compiler_with_args(
+      cwd.clone(),
+      crate_path.clone(),
+      |mut config, mut plugins| {
+        config.input = HashMap::from_iter([(entry_name.clone(), file.clone())]);
+
+        if let Some(_config) = _config.clone() {
+          let v1 = serde_json::to_value(config).expect("cannot convert config to value");
+          let v2 = serde_json::to_value(_config).expect("cannot convert config to value");
+
+          let v = merge_config(v1, v2);
+
+          config = serde_json::from_value(v).expect("cannot convert value to config");
+        }
+
+        config = try_merge_config_file(config, config_entry);
+
+        for plugin in _plugins.clone() {
+          plugins.push(plugin);
+        }
+
+        (config, plugins)
+      },
+    );
+
+    compiler.compile().unwrap();
+
+    assert_compiler_result_with_config(
+      &compiler,
+      AssertCompilerResultConfig {
+        entry_name: Some(entry_name.clone()),
+        output_file: Some(format_output_name(name)),
+        ignore_emitted_field: false,
+        ..Default::default()
+      },
+    );
+  }
 }

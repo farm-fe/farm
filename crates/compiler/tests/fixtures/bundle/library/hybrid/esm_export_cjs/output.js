@@ -17,23 +17,19 @@ function __commonJs(mod) {
         return module.exports;
     };
 }
-import __farmNodeModule from 'module';
-var __nodeRequireInstance = __farmNodeModule.createRequire(import.meta.url);
-function _nodeRequire() {
-    return __nodeRequireInstance.apply(null, arguments);
-}
-export { __commonJs, _nodeRequire };
+export { __commonJs };
 
 
 //index.js:
  // module_id: index.ts
-import { __commonJs, _nodeRequire } from "./farm_runtime.js";
-import fs from "node:fs";
+import { __commonJs } from "./farm_runtime.js";
 var index_cjs = __commonJs({
     "index.ts": (module, exports)=>{
         "use strict";
-        const os = _nodeRequire('node:os');
-        console.log(fs.read, os.cpus);
+        module.exports = {
+            name: 'foo',
+            age: 18
+        };
     }
 });
-index_cjs();
+export default index_cjs();

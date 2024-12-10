@@ -1,5 +1,11 @@
 # @farmfe/js-plugin-electron
 
+## 1.0.2
+
+### Patch Changes
+
+- 80b13ce6: new import meta url runtime & merge electron preload output files
+
 ## 1.0.1
 
 ### Patch Changes
