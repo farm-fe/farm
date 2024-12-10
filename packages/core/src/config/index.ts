@@ -8,7 +8,7 @@ import fse from 'fs-extra';
 import { bindingPath } from '../../binding/index.js';
 import { JsPlugin } from '../index.js';
 import {
-  RustPlugin,
+  type RustPlugin,
   getSortedPlugins,
   handleVitePlugins,
   resolveAsyncPlugins,
@@ -68,7 +68,8 @@ import type {
   UserConfig,
   UserConfigExport,
   UserConfigFnObject,
-  UserServerConfig
+  UserServerConfig,
+  commandType
 } from './types.js';
 
 export * from './types.js';
@@ -101,7 +102,7 @@ const COMMANDS = {
  */
 export async function resolveConfig(
   inlineOptions: FarmCliOptions & UserConfig,
-  command: 'start' | 'build' | 'watch' | 'preview',
+  command: commandType,
   defaultMode: CompilationMode = 'development',
   defaultNodeEnv: CompilationMode = 'development',
   isPreview = false
@@ -192,7 +193,7 @@ async function handleResolveConfig(
   sortFarmJsPlugins: JsPlugin[],
   rustPlugins: RustPlugin[],
   transformInlineConfig: UserConfig,
-  command: 'start' | 'build' | 'preview' | 'watch'
+  command: commandType
 ): Promise<ResolvedUserConfig> {
   // define logger when resolvedConfigHook
   const logger = new Logger({

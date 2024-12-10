@@ -23,9 +23,11 @@ export interface HmrOptions {
 
 export interface ConfigEnv {
   mode: string;
-  command: string;
+  command: commandType;
   isPreview: boolean;
 }
+
+export type commandType = 'start' | 'dev' | 'build' | 'watch' | 'preview';
 
 export type UserConfigFnPromise = (env: ConfigEnv) => Promise<UserConfig>;
 export type UserConfigFn = (env: ConfigEnv) => UserConfig | Promise<UserConfig>;

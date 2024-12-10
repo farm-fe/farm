@@ -13,7 +13,7 @@ function custom() {
     },
     config(config) {
       config.plugins.push({
-        name: "我是奥特曼"
+        name: "test-add-plugin"
       })
       return config
     },
