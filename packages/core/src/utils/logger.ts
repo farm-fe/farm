@@ -127,7 +127,10 @@ export class Logger implements ILogger {
       level in LOGGER_METHOD
         ? LOGGER_METHOD[level as keyof typeof LOGGER_METHOD]
         : 'log';
-    if (this.levelValues[level] <= this.levelValues[level]) {
+    const minLevel = process.env.LOG_LEVEL || 'info';
+    if (
+      this.levelValues[level] >= this.levelValues[minLevel as LogLevelNames]
+    ) {
       if (this.canClearScreen && clearScreen) {
         this.clear();
       }
@@ -145,10 +148,7 @@ export class Logger implements ILogger {
       } else {
         loggerMessage = message.message;
       }
-
-      if (color && typeof message === 'string') {
-        loggerMessage = color(loggerMessage);
-      }
+      loggerMessage = color ? color(loggerMessage) : loggerMessage;
 
       console[loggerMethod](prefixColored + loggerMessage);
     }
@@ -196,7 +196,6 @@ export class Logger implements ILogger {
     if (causeError) {
       error.message += `\nCaused by: ${causeError.stack ?? causeError}`;
     }
-
     this.logMessage('error', error, colors.red, clearScreen);
   }
 

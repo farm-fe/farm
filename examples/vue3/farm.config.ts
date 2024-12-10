@@ -16,7 +16,7 @@ import path from "path";
 const logger = new Logger({});
 const compressionMiddleware = () => {
   return {
-    name: "compression",
+    name: "compression,
     configureServer(server) {
       // console.log("server", server.middlewares);
       const _printUrls = server.printUrls.bind(server);
@@ -88,7 +88,7 @@ export default defineConfig({
     // Inspector({
     //   enabled: true,
     // }),
-    // compressionMiddleware(),
+    compressionMiddleware(),
     myCustomPlugin(),
     // createHtmlPlugin({
     //   minify: true,

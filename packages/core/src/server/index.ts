@@ -128,6 +128,7 @@ export class Server extends httpServer {
    */
   constructor(readonly inlineConfig: FarmCliOptions & UserConfig) {
     super();
+    this.logger = new Logger();
   }
 
   /**

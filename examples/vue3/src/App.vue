@@ -25,7 +25,7 @@ window.onbeforeunload = function () {
   <div>
     <a href="https://farmfe.org/" target="_blank">
       <img src="./assets/logo.png" class="logo" alt="Farm logo" /> </a
-    >ww222222222222222
+    >ww22222222222222222223333332312312afasdasd
     <a href="https://vuejs.org/" target="_blank">
       <img src="./assets/vue.svg" class="logo vue" alt="Vue logo" />
     </a>

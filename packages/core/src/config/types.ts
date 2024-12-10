@@ -151,6 +151,7 @@ export interface UserConfig {
   watch?: boolean | WatchOptions;
   envPrefix?: string | string[];
   publicDir?: string;
+  customLogger?: Logger;
   /** js plugin(which is a javascript object) and rust plugin(which is string refer to a .farm file or a package) */
   plugins?: (RustPlugin | JsPlugin | JsPlugin[] | undefined | null | false)[];
   /** vite plugins */
@@ -165,7 +166,6 @@ export interface UserConfig {
   /** Config related to dev server */
   server?: UserServerConfig;
   /** Files under this dir will always be treated as static assets. serve it in dev, and copy it to output.path when build */
-  customLogger?: Logger;
 }
 
 interface ResolvedCss extends CssConfig {

@@ -105,6 +105,7 @@ export async function build(
       )}.`
     );
     compiler.writeResourcesToDisk();
+
     await copyPublicDirectory(resolvedUserConfig);
     if (resolvedUserConfig.watch) {
       handlerWatcher(resolvedUserConfig, compiler);
