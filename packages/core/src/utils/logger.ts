@@ -148,8 +148,7 @@ export class Logger implements ILogger {
       } else {
         loggerMessage = message.message;
       }
-
-      loggerMessage = color(loggerMessage);
+      loggerMessage = color ? color(loggerMessage) : loggerMessage;
 
       console[loggerMethod](prefixColored + loggerMessage);
     }
@@ -197,7 +196,6 @@ export class Logger implements ILogger {
     if (causeError) {
       error.message += `\nCaused by: ${causeError.stack ?? causeError}`;
     }
-
     this.logMessage('error', error, colors.red, clearScreen);
   }
 

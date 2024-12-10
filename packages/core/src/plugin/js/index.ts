@@ -103,14 +103,17 @@ export function processVitePlugin(
   mode: CompilationMode
 ) {
   const processPlugin = (plugin: any) => {
-    let vitePluginAdapter = new VitePluginAdapter(
+    const vitePluginAdapter = new VitePluginAdapter(
       plugin as any,
       userConfig,
       filters,
       mode
     );
+
+    // TODO this place avoid vitePluginAdapter to convertPlugin because vitePluginAdapter is not a validate farm plugin some options not added
     // @ts-ignore
-    vitePluginAdapter = convertPlugin(vitePluginAdapter);
+    convertPluginVite(vitePluginAdapter);
+
     jsPlugins.push(vitePluginAdapter);
   };
 
@@ -159,5 +162,86 @@ export function convertPlugin(plugin: JsPlugin) {
     throw new Error(
       `${validationError.toString()}. \n Please check '${pluginName}' plugin passes these attributes correctly.`
     );
+  }
+}
+
+export function convertPluginVite(plugin: JsPlugin): void {
+  if (
+    plugin.transform &&
+    !plugin.transform.filters?.moduleTypes &&
+    !plugin.transform.filters?.resolvedPaths
+  ) {
+    throw new Error(
+      `transform hook of plugin ${plugin.name} must have at least one filter(like moduleTypes or resolvedPaths)`
+    );
+  }
+  if (plugin.transform) {
+    if (!plugin.transform.filters.moduleTypes) {
+      plugin.transform.filters.moduleTypes = [];
+    } else if (!plugin.transform.filters.resolvedPaths) {
+      plugin.transform.filters.resolvedPaths = [];
+    }
+  }
+
+  if (plugin.renderResourcePot) {
+    plugin.renderResourcePot.filters ??= {};
+
+    if (
+      !plugin.renderResourcePot?.filters?.moduleIds &&
+      !plugin.renderResourcePot?.filters?.resourcePotTypes
+    ) {
+      throw new Error(
+        `renderResourcePot hook of plugin ${plugin.name} must have at least one filter(like moduleIds or resourcePotTypes)`
+      );
+    }
+
+    if (!plugin.renderResourcePot.filters?.resourcePotTypes) {
+      plugin.renderResourcePot.filters.resourcePotTypes = [];
+    } else if (!plugin.renderResourcePot.filters?.moduleIds) {
+      plugin.renderResourcePot.filters.moduleIds = [];
+    }
+  }
+
+  if (plugin.augmentResourceHash) {
+    plugin.augmentResourceHash.filters ??= {};
+
+    if (
+      !plugin.augmentResourceHash?.filters?.moduleIds &&
+      !plugin.augmentResourceHash?.filters?.resourcePotTypes
+    ) {
+      throw new Error(
+        `augmentResourceHash hook of plugin ${plugin.name} must have at least one filter(like moduleIds or resourcePotTypes)`
+      );
+    }
+
+    if (!plugin.augmentResourceHash.filters?.resourcePotTypes) {
+      plugin.augmentResourceHash.filters.resourcePotTypes = [];
+    } else if (!plugin.augmentResourceHash.filters?.moduleIds) {
+      plugin.augmentResourceHash.filters.moduleIds = [];
+    }
+  }
+
+  if (plugin.resolve?.filters?.importers?.length) {
+    plugin.resolve.filters.importers =
+      plugin.resolve.filters.importers.map(normalizeFilterPath);
+  }
+
+  if (plugin.load?.filters?.resolvedPaths?.length) {
+    plugin.load.filters.resolvedPaths =
+      plugin.load.filters.resolvedPaths.map(normalizeFilterPath);
+  }
+
+  if (plugin.transform?.filters?.resolvedPaths?.length) {
+    plugin.transform.filters.resolvedPaths =
+      plugin.transform.filters.resolvedPaths.map(normalizeFilterPath);
+  }
+  if (plugin.augmentResourceHash?.filters?.moduleIds) {
+    plugin.augmentResourceHash.filters.moduleIds =
+      plugin.augmentResourceHash.filters.moduleIds.map(normalizeFilterPath);
+  }
+
+  if (plugin.renderResourcePot?.filters?.moduleIds) {
+    plugin.renderResourcePot.filters.moduleIds =
+      plugin.renderResourcePot.filters.moduleIds.map(normalizeFilterPath);
   }
 }

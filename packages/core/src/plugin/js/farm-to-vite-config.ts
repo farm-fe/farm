@@ -388,8 +388,8 @@ export function viteConfigToFarmConfig(
             : {})
         };
       }
-      // TODO think about vite has two watch options `server.watch` | `build.watch`
-      farmConfig.watch = config.server.watch;
+      // TODO think about vite has two watch options `server.watch` | `build.watch` only build watch
+      // farmConfig.watch = config.server.watch;
     }
 
     if (typeof config.server.host === 'string') {

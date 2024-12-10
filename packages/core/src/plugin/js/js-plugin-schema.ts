@@ -506,6 +506,6 @@ export class PluginSchemaRegistry {
       .object({
         ...schemaShape
       })
-      .strict();
+      .passthrough();
   }
 }
