@@ -8,6 +8,7 @@ import fse from 'fs-extra';
 import { bindingPath } from '../../binding/index.js';
 import { JsPlugin } from '../index.js';
 import {
+  RustPlugin,
   getSortedPlugins,
   handleVitePlugins,
   resolveAsyncPlugins,
@@ -22,7 +23,6 @@ import {
   colors,
   isArray,
   isEmptyObject,
-  isNodeEnv,
   isObject,
   isWindows,
   normalizePath
@@ -100,14 +100,12 @@ const COMMANDS = {
  * @param configPath
  */
 export async function resolveConfig(
-  inlineOptions: FarmCliOptions & UserConfig & any,
+  inlineOptions: FarmCliOptions & UserConfig,
   command: 'start' | 'build' | 'watch' | 'preview',
   defaultMode: CompilationMode = 'development',
   defaultNodeEnv: CompilationMode = 'development',
   isPreview = false
 ): Promise<ResolvedUserConfig> {
-  // TODO mode 这块还是不对 要区分 mode 和 build 还是 dev 环境
-  // TODO 在使用 vite 插件的时候 不要在开发环境使用 生产环境的mode vue 插件会导致 hmr 失效 记在文档里
   const compileMode = defaultMode;
 
   const mode = inlineOptions.mode || defaultMode;
@@ -124,43 +122,78 @@ export async function resolveConfig(
     isPreview
   };
 
-  // configPath may be file or directory
-  const { configFile, configPath: initialConfigPath } = inlineOptions;
+  let configFilePath;
 
   const loadedUserConfig = await loadConfigFile(
-    configFile,
     inlineOptions,
     configEnv,
     defaultNodeEnv
   );
 
-  let rawConfig: UserConfig = mergeFarmCliConfig(
+  let userConfig: UserConfig = mergeFarmCliConfig(
     inlineOptions,
     {},
     compileMode
   );
 
-  const inlineConfig = rawConfig;
-
-  let configFilePath = initialConfigPath;
+  const transformInlineConfig = userConfig;
 
   if (loadedUserConfig) {
     configFilePath = loadedUserConfig.configFilePath;
-    rawConfig = mergeConfig(rawConfig, loadedUserConfig.config);
+    userConfig = mergeConfig(userConfig, loadedUserConfig.config);
   }
 
-  const { jsPlugins, rustPlugins, vitePluginAdapters } = await resolvePlugins(
-    rawConfig,
+  const { jsPlugins, vitePluginAdapters } = await resolvePlugins(
+    userConfig,
     compileMode
   );
-
   const sortFarmJsPlugins = getSortedPlugins([
     ...jsPlugins,
+    ...vitePluginAdapters
+  ]);
+
+  const config = await resolveConfigHook(userConfig, sortFarmJsPlugins);
+  // may be user push plugin when config hooks
+  const allPlugins = await resolvePlugins(config, compileMode);
+  const farmJsPlugins = getSortedPlugins([
+    ...allPlugins.jsPlugins,
     ...vitePluginAdapters,
     externalAdapter()
   ]);
 
-  const config = await resolveConfigHook(rawConfig, sortFarmJsPlugins);
+  const resolvedUserConfig = await handleResolveConfig(
+    mode,
+    compileMode,
+    configFilePath,
+    loadedUserConfig,
+    config,
+    farmJsPlugins,
+    allPlugins.rustPlugins,
+    transformInlineConfig,
+    command
+  );
+
+  await resolveConfigResolvedHook(resolvedUserConfig, sortFarmJsPlugins); // Fix: Await the Promise<void> and pass the resolved value to the function.
+
+  return resolvedUserConfig;
+}
+
+async function handleResolveConfig(
+  mode: string,
+  compileMode: CompilationMode,
+  configFilePath: string,
+  loadedUserConfig:
+    | {
+        config: UserConfig;
+        configFilePath: string;
+      }
+    | undefined,
+  config: UserConfig,
+  sortFarmJsPlugins: JsPlugin[],
+  rustPlugins: RustPlugin[],
+  transformInlineConfig: UserConfig,
+  command: 'start' | 'build' | 'preview' | 'watch'
+): Promise<ResolvedUserConfig> {
   // define logger when resolvedConfigHook
   const logger = new Logger({
     customLogger: loadedUserConfig.config?.customLogger,
@@ -175,7 +208,7 @@ export async function resolveConfig(
 
   resolvedUserConfig.logger = logger;
 
-  // normalize server config first cause it may be used in normalizeUserCompilationFnConfig
+  // // normalize srver config first cause it may be used in normalizeUserCompilationFnConfig
   resolvedUserConfig.server = normalizeDevServerConfig(
     resolvedUserConfig.server,
     compileMode
@@ -190,10 +223,8 @@ export async function resolveConfig(
     root: resolvedUserConfig.compilation.root,
     jsPlugins: sortFarmJsPlugins,
     rustPlugins: rustPlugins,
-    inlineConfig
+    transformInlineConfig
   });
-
-  await resolveConfigResolvedHook(resolvedUserConfig, sortFarmJsPlugins); // Fix: Await the Promise<void> and pass the resolved value to the function.
 
   await handleLazyCompilation(
     resolvedUserConfig,
@@ -208,17 +239,18 @@ async function handleLazyCompilation(
   command: keyof typeof COMMANDS
 ) {
   const commandHandlers = {
-    [COMMANDS.START]: async (cfg: ResolvedUserConfig) => {
+    [COMMANDS.START]: async (config: ResolvedUserConfig) => {
       if (
-        cfg.compilation.lazyCompilation &&
-        typeof cfg.server?.host === 'string'
+        config.compilation.lazyCompilation &&
+        typeof config.server?.host === 'string'
       ) {
-        await setLazyCompilationDefine(cfg);
+        await setLazyCompilationDefine(config);
       }
     },
-    [COMMANDS.WATCH]: async (cfg: ResolvedUserConfig) => {
-      if (cfg.compilation?.lazyCompilation) {
-        await setLazyCompilationDefine(cfg);
+    // TODO 这个watch 方法需要在讨论 现在设计里没有 watch 这个方法了 build 的话也可以做 判断 config 里的 watch
+    [COMMANDS.WATCH]: async (config: ResolvedUserConfig) => {
+      if (config.compilation?.lazyCompilation) {
+        await setLazyCompilationDefine(config);
       }
     }
   };
@@ -662,7 +694,7 @@ const formatToExt: Record<Format, string> = {
 export async function readConfigFile(
   inlineOptions: FarmCliOptions,
   configFilePath: string,
-  configEnv: any,
+  configEnv: ConfigEnv,
   mode: CompilationMode = 'development'
 ): Promise<UserConfig | undefined> {
   if (!fse.existsSync(configFilePath)) return;
@@ -762,36 +794,35 @@ export function normalizePublicDir(root: string, publicDir = 'public') {
  * @returns loaded config and config file path
  */
 export async function loadConfigFile(
-  configFile: string,
-  inlineOptions: any,
-  configEnv: any,
+  inlineOptions: FarmCliOptions & UserConfig,
+  configEnv: ConfigEnv,
   mode: CompilationMode = 'development'
 ): Promise<
   | {
-      config: any;
+      config: UserConfig;
       configFilePath: string;
     }
   | undefined
 > {
   const { root = '.' } = inlineOptions;
   const configRootPath = path.resolve(root);
-  let resolvedPath: string | undefined;
+  let resolvedConfigFilePath: string | undefined;
   try {
-    resolvedPath = await resolveConfigFilePath(
-      configFile,
+    resolvedConfigFilePath = await resolveConfigFilePath(
+      inlineOptions.configFile,
       root,
       configRootPath
     );
 
     const config = await readConfigFile(
       inlineOptions,
-      resolvedPath,
+      resolvedConfigFilePath,
       configEnv,
       mode
     );
     return {
       config: config && parseUserConfig(config),
-      configFilePath: resolvedPath
+      configFilePath: resolvedConfigFilePath
     };
   } catch (error) {
     // In this place, the original use of throw caused emit to the outermost catch
