@@ -46,7 +46,8 @@ export const RESERVED_OBJECT_PROPERTIES: string[] = [
   'then',
   'length',
   'constructor',
-  'prototype'
+  'prototype',
+  'stack'
 ];
 
 export const EXTERNAL_KEYS: string[] = [

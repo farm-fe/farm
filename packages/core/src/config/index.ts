@@ -106,7 +106,6 @@ export async function resolveConfig(
   defaultNodeEnv: CompilationMode = 'development',
   isPreview = false
 ): Promise<ResolvedUserConfig> {
-  // TODO mode 这块还是不对 要区分 mode 和 build 还是 dev 环境
   const compileMode = defaultMode;
 
   const mode = inlineOptions.mode || defaultMode;

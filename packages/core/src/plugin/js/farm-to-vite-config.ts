@@ -1,3 +1,4 @@
+import { WatchOptions } from 'chokidar';
 import type { UserConfig as ViteUserConfig } from 'vite';
 import type { UserConfig } from '../../config/types.js';
 import { Logger } from '../../index.js';
@@ -350,17 +351,6 @@ export function viteConfigToFarmConfig(
         if (!farmConfig.compilation.resolve.alias) {
           farmConfig.compilation.resolve.alias = [];
         }
-
-        const farmRegexPrefix = '$__farm_regex:';
-
-        // for (const { find, replacement } of config.resolve.alias) {
-        //   if (find instanceof RegExp) {
-        //     const key = farmRegexPrefix + find.source;
-        //     farmConfig.compilation.resolve.alias[key] = replacement;
-        //   } else {
-        //     farmConfig.compilation.resolve.alias[find] = replacement;
-        //   }
-        // }
       }
     }
 
@@ -388,8 +378,9 @@ export function viteConfigToFarmConfig(
             : {})
         };
       }
-      // TODO think about vite has two watch options `server.watch` | `build.watch` only build watch
-      // farmConfig.watch = config.server.watch;
+      if (config.mode === 'development') {
+        farmConfig.watch = config.server.watch;
+      }
     }
 
     if (typeof config.server.host === 'string') {
@@ -406,6 +397,9 @@ export function viteConfigToFarmConfig(
   }
 
   if (config.build) {
+    if (config.mode === 'production') {
+      farmConfig.watch = config.build.watch as WatchOptions;
+    }
     farmConfig.compilation.output ??= {};
     farmConfig.compilation.output.path = config.build.outDir;
 
