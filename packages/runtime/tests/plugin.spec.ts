@@ -1,6 +1,6 @@
 import { test, expect } from 'vitest';
-import { Module } from '../src/module';
-import { FarmRuntimePluginContainer } from '../src/plugin';
+import { Module } from '../src/module.js';
+import { FarmRuntimePluginContainer } from '../src/plugin.js';
 
 test('plugin creation', () => {
   const pluginContainer = new FarmRuntimePluginContainer([]);

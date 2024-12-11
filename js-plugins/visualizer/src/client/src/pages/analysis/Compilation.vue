@@ -14,7 +14,7 @@
                   {{ item.entries.join(',') }}
                 </div>
               </Popover>
-              <div class="flex items-center mt-2">
+              <div class="flex items-center mt-2 flex-wrap">
                 <Tag color="green">{{ item.isFirstCompilation ? 'Initial Compilation' : 'HMR' }}</Tag>
                 <Tag color="blue">{{ item.duration }}ms</Tag>
                 <Tag color="yellow">{{ new Date(item.startTime).toLocaleString() }}</Tag>
@@ -40,13 +40,13 @@
             <Button class="ml-2" @click="clearAllSelection">Clear All Selection</Button>
           </div>
 
-          <Tabs v-model:active-key="activeKey">
+          <Tabs v-model:active-key="activeKey" @change="clearAllSelection">
             <Tabs.TabPane v-for="hook in allSupportedHooks" :key="hook" :tab="hook">
               <div class="flex justify-between mb-2 items-start">
                 <Card class="w-[300px]" v-if="getModules(hook).length">
                   <InputSearch placeholder="Input and Search Module" @change="val => searchModule(hook, [val.target.value])" />
                   
-                  <List class="max-h-[600px] mt-2">
+                  <List class="max-h-[600px] mt-2 overflow-scroll">
                     <List.Item :key="module" v-for="module in modules" :class="['cursor-pointer', '!pl-1', '!pr-1', {
                       'bg-gray-200 border-gray-300': module === currentSelectedModule
                     }]" @click="() => currentSelectedModule = module">

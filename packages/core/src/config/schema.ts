@@ -293,7 +293,13 @@ const compilationConfigSchema = z
         plugins: z.array(z.any()).optional(),
         nativeTopLevelAwait: z.boolean().optional(),
         importNotUsedAsValues: z
-          .union([z.literal('remove'), z.literal('preserve')])
+          .union([
+            z.literal('remove'),
+            z.literal('preserve'),
+            z.object({
+              preserve: z.array(z.string()).optional()
+            })
+          ])
           .optional()
       })
       .strict()

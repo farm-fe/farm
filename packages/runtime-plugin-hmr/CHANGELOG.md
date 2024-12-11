@@ -12,6 +12,24 @@
 
 - cab79e8: bump major version with runtime
 
+## 3.5.10
+
+### Patch Changes
+
+- e63b163a: Fix mixed hmr ws protocol when proxy online host to localhost
+
+## 3.5.9
+
+### Patch Changes
+
+- c6df3d2b: Fix server.hmr.protocol does not work
+
+## 3.5.8
+
+### Patch Changes
+
+- 249e9a2b: bundle runtime packages
+
 ## 3.5.7
 
 ### Patch Changes

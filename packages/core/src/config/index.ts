@@ -530,10 +530,10 @@ export const DEFAULT_HMR_OPTIONS: Required<HmrOptions> = {
     undefined,
   path: '/__hmr',
   overlay: true,
-  protocol: 'ws',
   clientPort: 9000,
   timeout: 0,
-  server: null
+  server: null,
+  protocol: ''
 };
 
 export const DEFAULT_DEV_SERVER_OPTIONS: NormalizedServerConfig = {

@@ -6,6 +6,12 @@
 
 - cab79e8: bump major version with runtime
 
+## 0.12.10
+
+### Patch Changes
+
+- 249e9a2b: bundle runtime packages
+
 ## 0.12.9
 
 ### Patch Changes

@@ -1,8 +1,8 @@
 /**
  * HMR client as a Farm Runtime Plugin
  */
-import { HmrClient } from './hmr-client';
-import { createHotContext } from './hot-module-state';
+import { HmrClient } from './hmr-client.js';
+import { createHotContext } from './hot-module-state.js';
 
 let hmrClient: HmrClient;
 

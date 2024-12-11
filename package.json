@@ -35,7 +35,7 @@
     "@commitlint/config-conventional": "^17.0.3",
     "@farmfe/cli": "workspace:*",
     "@farmfe/core": "workspace:*",
-    "@types/node": "22.5.0",
+    "@types/node": "^18.19.67",
     "@vitest/coverage-v8": "2.0.4",
     "cross-env": "^7.0.3",
     "cspell": "8.14.2",

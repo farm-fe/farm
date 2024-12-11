@@ -5,7 +5,7 @@ import {
   parseIfJSON,
   splitErrorMessage,
   stripAnsi
-} from './utils';
+} from './utils.js';
 
 // set :host styles to make playwright detect the element as visible
 const template = /*html*/ `

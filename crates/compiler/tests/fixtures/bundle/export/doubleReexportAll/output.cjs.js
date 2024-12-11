@@ -93,4 +93,4 @@ console.log({
     readFile: readFile,
     Worker: Worker
 });
-_export_star(reexport_ns, module.exports);
+_export_star(reexport_cjs(), module.exports);
