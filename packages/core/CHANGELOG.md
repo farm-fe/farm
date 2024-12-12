@@ -6,6 +6,51 @@
 
 - b327dd1: collect htmlFallbackMiddleware
 
+## 1.5.0
+
+### Minor Changes
+
+- e63b163a: Support object style `script.importNotUsedAsValues` and reset the default value to `remove`
+
+### Patch Changes
+
+- e63b163a: Fix vue lazy compilation transform error when persistent cache enabled
+- e63b163a: Fix mixed hmr ws protocol when proxy online host to localhost
+- e63b163a: Fix module_group_graph panic which is caused by inconsistent module.module_groups when persistent cache is enabled
+- 80b13ce6: new import meta url runtime & merge electron preload output files
+- Updated dependencies [e63b163a]
+  - @farmfe/runtime-plugin-hmr@3.5.10
+
+## 1.4.7
+
+### Patch Changes
+
+- c6df3d2b: Fix server.hmr.protocol does not work
+- Updated dependencies [c6df3d2b]
+  - @farmfe/runtime-plugin-hmr@3.5.9
+
+## 1.4.6
+
+### Patch Changes
+
+- Updated dependencies [249e9a2b]
+  - @farmfe/runtime-plugin-import-meta@0.2.3
+  - @farmfe/runtime-plugin-hmr@3.5.8
+  - @farmfe/runtime@0.12.10
+
+## 1.4.5
+
+### Patch Changes
+
+- 376fd9d4: fix cjs 2 esm entry omit default reexport
+
+## 1.4.4
+
+### Patch Changes
+
+- 94451ae6: fix: disable inline scripts
+- b05a2c84: fix bundle export cjs entry file
+
 ## 1.4.3
 
 ### Patch Changes

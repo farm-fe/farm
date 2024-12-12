@@ -25,7 +25,7 @@ var index_js_cjs = __commonJs({
     }
 });
 index_js_cjs();
-})());(function(_){for(var r in _){_[r].__farm_resource_pot__='index_b752.js';window['__farm_default_namespace__'].__farm_module_system__.register(r,_[r])}})({"index.ts":function  (module, exports, farmRequire, farmDynamicRequire) {
+})());(function(_){var filename = ((function(){var _documentCurrentScript = typeof document !== "undefined" ? document.currentScript : null;return typeof document === "undefined" ? require("url").pathToFileURL(__filename).href : _documentCurrentScript && _documentCurrentScript.src || new URL("index_b752.js", document.baseURI).href})());for(var r in _){_[r].__farm_resource_pot__=filename;window['__farm_default_namespace__'].__farm_module_system__.register(r,_[r])}})({"index.ts":function  (module, exports, farmRequire, farmDynamicRequire) {
     module._m(exports);
     var _f_xxx = farmRequire("xxx");
     console.log(_f_xxx.default);

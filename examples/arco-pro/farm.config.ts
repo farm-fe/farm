@@ -1,7 +1,6 @@
 import { resolve } from 'node:path';
 import { defineConfig } from '@farmfe/core';
 import farmJsPluginLess from '@farmfe/js-plugin-less';
-import farmJsPluginSvgr from '@farmfe/js-plugin-svgr';
 
 export default defineConfig((env) => {
   return {
@@ -12,7 +11,8 @@ export default defineConfig((env) => {
       sourcemap: false,
       presetEnv: false,
       concatenateModules: true,
-      // persistentCache: false,
+      persistentCache: false,
+      lazyCompilation: false,
       resolve: {
         symlinks: true,
         alias: {
@@ -43,11 +43,7 @@ export default defineConfig((env) => {
           }
         ]
       },
-      progress: true
-    },
-    server: {
-      cors: true,
-      port: 6290
+      progress: false
     },
     plugins: [
       [
@@ -57,8 +53,8 @@ export default defineConfig((env) => {
           development: env.mode === 'development'
         }
       ],
+      '@farmfe/plugin-svgr',
       farmJsPluginLess(),
-      farmJsPluginSvgr()
     ]
   };
 });

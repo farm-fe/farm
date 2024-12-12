@@ -23,7 +23,7 @@ const app = createApp(App);
 
 app.component(SvgIcon.name, SvgIcon)
 const router = createRouter({
-  history: createWebHistory(),
+  history: createWebHistory('/vue-public-path/'),
   routes
 });
 

@@ -9,7 +9,7 @@ use farmfe_core::{
   },
   error::{CompilationError, Result},
   farm_profile_function, farm_profile_scope,
-  module::{module_graph::ModuleGraph, ModuleId, ModuleSystem},
+  module::{module_graph::ModuleGraph, ModuleId},
   plugin::ResolveKind,
   resource::resource_pot::ResourcePotType,
   swc_common::{comments::SingleThreadedComments, util::take::Take},
@@ -23,7 +23,9 @@ use farmfe_toolkit::{
 };
 
 use crate::resource_pot_to_bundle::{
-  bundle::bundle_reference::{CommonJsImportMap, ReferenceBuilder, ReferenceKind},
+  bundle::bundle_reference::{
+    try_reexport_entry_module, CommonJsImportMap, ReferenceBuilder, ReferenceKind,
+  },
   common::OptionToResult,
   modules_analyzer::module_analyzer::{
     ExportSpecifierInfo, ImportSpecifierInfo, StmtAction, Variable,
@@ -261,8 +263,6 @@ impl<'a> BundleAnalyzer<'a> {
           is_entry,
         );
       }
-
-      let mut is_contain_export = false;
 
       for statement in &module_analyzer.statements {
         if let Some(import) = &statement.import {
@@ -632,7 +632,6 @@ impl<'a> BundleAnalyzer<'a> {
         }
 
         if let Some(export) = &statement.export {
-          is_contain_export = true;
           if module_analyzer_manager.is_commonjs(module_id) && !is_reference_by_another {
             continue;
           }
@@ -1065,19 +1064,25 @@ impl<'a> BundleAnalyzer<'a> {
         }
       }
 
-      if !is_contain_export && module_analyzer_manager.is_commonjs(module_id) {
+      if module_analyzer_manager.is_commonjs(module_id) {
         if module_analyzer.entry {
-          let reference_kind = ReferenceKind::Module((*module_id).clone());
-          bundle_reference1.execute_module_for_cjs(reference_kind);
-        } else if is_reference_by_another {
+          try_reexport_entry_module(
+            self.group.group_type.clone(),
+            &mut bundle_reference1,
+            module_id,
+            module_system.clone(),
+            is_entry,
+          )?;
+        }
+        // fix multiple bundle reexport
+        else if is_reference_by_another
+          && let Some(ns) = module_analyzer_manager
+            .module_global_uniq_name
+            .commonjs_name(module_id)
+        {
           bundle_reference1.add_local_export(
-            &ExportSpecifierInfo::Named(
-              module_analyzer_manager
-                .module_global_uniq_name
-                .commonjs_name_result(module_id)?
-                .into(),
-            ),
-            ModuleSystem::CommonJs,
+            &ExportSpecifierInfo::Named(ns.into()),
+            module_system,
             is_entry,
           );
         }

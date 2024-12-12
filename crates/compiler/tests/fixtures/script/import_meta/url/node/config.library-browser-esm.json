@@ -1,0 +1,6 @@
+{
+  "output": {
+    "format": "esm",
+    "targetEnv": "library-browser"
+  }
+}
