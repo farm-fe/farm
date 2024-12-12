@@ -437,7 +437,7 @@ export class Server extends httpServer {
       }
     } catch (error) {
       this.resolvedUserConfig.logger.error(
-        `start farm dev server error: ${error} \n ${error.stack}`
+        `Start DevServer Error: ${error} \n ${error.stack}`
       );
       // throw error;
     }
