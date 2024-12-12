@@ -1,0 +1,198 @@
+import CodeBlock from "@theme/CodeBlock";
+import Tabs from "@theme/Tabs";
+import TabItem from "@theme/TabItem";
+
+# 编写 JavaScript 插件
+
+一个 JavaScript 插件只是一个定义了一系列 hooks 的纯 JavaScript 对象:
+
+```js
+// farm.config.ts
+import { defineConfig } from "@farmfe/core";
+
+export default defineConfig({
+  // ...
+  plugins: [
+    // 一个插件对象
+    {
+      name: "my-resolve-plugin",
+      priority: 1000, // 插件的优先级越高越早执行 通常的优先级是 100
+      resolve: {
+        filters: {
+          // 仅仅符合下面的条件才会执行 hook
+          sources: ["\\./index.ts"], // 正则表达式的数组
+          importers: ["None"],
+        },
+        executor: async (param) => {
+          // hook 执行器
+          console.log(param); // 解析 param
+          // 返回最终的结果
+          return {
+            resolvedPath: "virtual:my-module",
+            query: {},
+            sideEffects: false,
+            external: false,
+          };
+        },
+      },
+    },
+    // Load、transform和 resolve 类似, 引用他们的类型
+  ],
+});
+```
+
+如果你想向插件传递参数，可以使用闭包
+
+```ts
+// my-resolve-plugin.ts
+export function myResolvePlugin(options: Options) {
+  const { xx } = options;
+
+  return {
+    name: "my-resolve-plugin",
+    resolve: {
+      // ...
+    },
+  };
+}
+
+// farm.config.ts
+import { defineConfig } from "@farmfe/core";
+import { myResolvePlugin } from "./myResolvePlugin.ts";
+
+export default defineConfig({
+  // ...
+  plugins: [myResolvePlugin({ xx: "xx" })],
+});
+```
+:::note
+* 参考 [创建插件](#create-plugin)，可以根据官方模版快速写一个新的插件
+* 本文档仅介绍如何创建、开发和发布一个 JavaScript 插件，有关插件 hook 的更多细节，请参阅[Javascript 插件 Hooks](/zh/docs/api/js-plugin-api)
+:::
+
+## 约定
+
+对于特定的 Farm JavaScript 插件
+
+- 一个 Farm 的 JavaScript 插件应该有一个 `farm-plugin-` 前缀的名称并且语义清晰
+- package.json 里面有 `farm-plugin-` 关键字
+
+
+如果你的 JavaScript 插件仅仅适配特定框架，其名称应遵循以下前缀格式:
+
+- `farm-plugin-vue-`: 作为 Vue 插件前缀
+- `farm-plugin-react-`: 作为 React 插件前缀
+- `farm-plugin-svelte-`: 作为 Svelte 插件前缀
+- ...
+
+## 概念
+在开始编写 JavaScript 插件之前，你应该了解以下概念:
+
+* **filters**： 由于 JavaScript 插件运行要比 Rust 插件慢得多，你的 JavaScript 插件应该显式的设置 filter 来避免不必要的 hook 调用。 举个例子，你应该设置 `transform.filters.moduleTypes = ['js']` 来确保你的 JavaScript 插件 transform 钩子仅仅在 `.js/mjs/cjs` 文件执行
+* **module_type**：模块的类型，他可能是 `js`, `ts`, `css`, `sass`, `json` 等等。Farm 原生支持 `js/ts/jsx/tsx`, `css`, `html`, `json`, `static asserts(png, svg等等)`。`module_type` 会被 `load` 或者 `transform` 钩子返回
+* **resolved_path 和 module_id**：`resolved_path` 是一个模块的绝对路径，`module_id`是一个模块的唯一 id，通常是`模块对于项目根目录的相对路径` + `query`。例如 我们引用了一个模块 `import './a?query'` resolved_path 是 `/project/src/a.ts` module_id 是 `src/a.ts?query`
+* **context**: 所有的插件都会接受一个 `context` 参数，它有 Farm 项目的整个编译上下文，你可以从里面拿到 ModuleGraph，Module，Resources等等
+* **Resource and Resource Pot**：`Resource` 是输出出来的最终打包产物，` Resource Pot`是资源的抽象表示，类似于其他打包器的 `Chunk`。在 Farm 项目中，我们首先从 `ModuleGraph` 生成 `Resource Pots`, 渲染 `Resource Pots`，最终从 `Resource Pots` 生成 `Resource`
+
+
+### Filters
+
+由于 `JavaScript插件` 比 `Rust插件` 慢得多，Farm 使用 `filters` 来控制 JavaScript 插件钩子的执行。为了提高性能，只有匹配当前的 `filters` ，插件钩子才会执行。`filters` 对于一些常用的钩子是必需的，例如`resolve`， `load`， `transform`等。
+例如，如果你想转换 css 文件，你可以使用`transform.filters. moduletypes = ['css']`来确保 JavaScript 插件的 transform 钩子只对`.css`文件运行:
+
+```ts
+const myCssPlugin = {
+  name: "my-css-plugin",
+  transform: {
+    filters: {
+      // Only execute the hook when following conditions satisfied
+      // resolvedPaths: ["\\./index.ts"], // a regex array to match the resolvedPaths
+      moduleTypes: ["css"],
+    },
+    executor: async (param) => {
+      // transform css
+    },
+  },
+};
+```
+
+### Module Type
+在 Farm 中，一切都被认为是“一等公民”，因此 Farm 设计 `module_type` 来标识模块类型，并在用不同的插件处理不同的模块类型
+`Module_type `由 `load` 钩子返回，并且可以由 `transform` 钩子转换。Farm 原生支持 `js/ts/jsx/tsx`、`css`、`html`、`json`、`static assets(png、svg等)`。对于这些模块类型，你可以直接在 `load` 或 `transform` hook 中返回。但是如果你想处理自定义模块类型，你需要实现其他钩子例如 `parse`， `render_resource_pot_modules`， `generate resources` 等来控制如何对自定义模块进行类型解析，渲染和生成资源。
+
+## 创建插件
+
+Farm 提供了官方模板来帮助你快速创建 JavaScript 插件:
+<Tabs>
+    <TabItem value="pnpm" label="pnpm">
+      <CodeBlock>pnpm create farm-plugin</CodeBlock>
+    </TabItem>
+    <TabItem value="npm" label="npm">
+      <CodeBlock>npm create farm-plugin@latest</CodeBlock>
+    </TabItem>
+    <TabItem value="yarn" label="yarn">
+      <CodeBlock>yarn create farm-plugin</CodeBlock>
+    </TabItem>
+</Tabs>
+
+
+然后按照提示创建插件
+
+或者直接运行以下命令创建插件:
+<Tabs>
+  <TabItem value="pnpm" label="pnpm">
+    <CodeBlock>pnpm create farm-plugin my-farm-plugin --type js</CodeBlock>
+  </TabItem>
+  <TabItem value="npm" label="npm">
+    <CodeBlock>npm create my-farm-plugin --type js</CodeBlock>
+  </TabItem>
+  <TabItem value="yarn" label="yarn">
+      <CodeBlock>yarn create my-farm-plugin --type js</CodeBlock>
+  </TabItem>
+</Tabs>
+
+上面的命令会在当前目录中创建一个名为 `my-farm-plugin` 的js插件。`——type` 可以是 `rust` 或者 `js`
+
+## 开发一个插件
+
+创建插件后，就可以开始开发插件了。这个插件只是一个定义了一系列 hooks 的纯 JavaScript 对象:
+
+```ts
+// import { readFileSync } from 'node:fs';
+import type { JsPlugin } from '@farmfe/core';
+
+interface Options {
+  /* Your options here */
+}
+
+export default function farmPlugin(options: Options): JsPlugin {
+  return {
+    name: '<FARM-JS-PLUGIN-NPM-NAME>',
+    /* Your plugin hooks here: */
+
+    // transform: {
+    //   filters: {
+    //     moduleTypes: ['js']
+    //   },
+    //   async executor(params) {
+    //     const { content } = params;
+    //     return {
+    //       content,
+    //       moduleType: 'js'
+    //     };
+    //   }
+    // },
+    // finish: {
+    //   executor() {}
+    // }
+  };
+}
+```
+:::tip
+有关插件钩子的更多细节, 参阅[Javascript 插件 Hooks](/zh/docs/api/js-plugin-api).
+:::
+
+运行 `npm Run dev` 来编译插件开启监听。运行 `npm Run build` 来构建插件
+
+## 发布插件
+JavaScript 插件是一个普通的 npm 包，你可以通过运行 `npm publish` 将其发布到 npm registry。

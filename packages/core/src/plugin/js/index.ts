@@ -1,19 +1,48 @@
+import { z } from 'zod';
+
+import { fromZodError } from 'zod-validation-error';
 import { CompilationMode } from '../../config/env.js';
 import {
   type JsPlugin,
-  Logger,
   type UserConfig,
   normalizeDevServerConfig
 } from '../../index.js';
 import merge from '../../utils/merge.js';
 import { resolveAsyncPlugins } from '../index.js';
+
 import { cssPluginUnwrap, cssPluginWrap } from './adapter-plugins/css.js';
 import { defaultLoadPlugin } from './adapter-plugins/default-load.js';
+import {
+  PluginSchemaRegistry,
+  createAugmentResourceHashSchema,
+  createBuildEndSchema,
+  createBuildStartSchema,
+  createConfigResolvedSchema,
+  createConfigSchema,
+  createConfigureCompilerSchema,
+  createConfigureServerSchema,
+  createFinalizeResourcesSchema,
+  createFinishSchema,
+  createLoadSchema,
+  createNameSchema,
+  createPluginCacheLoadedSchema,
+  createPrioritySchema,
+  createRenderResourcePotSchema,
+  createRenderStartSchema,
+  createResolveSchema,
+  createTransformHtmlSchema,
+  createTransformSchema,
+  createUpdateFinishedSchema,
+  createUpdateModulesSchema,
+  createWritePluginCacheSchema,
+  createWriteResourcesSchema
+} from './js-plugin-schema.js';
+
 import { DEFAULT_FILTERS, normalizeFilterPath } from './utils.js';
 import { VitePluginAdapter } from './vite-plugin-adapter.js';
 
-// export * from './jsPluginAdapter.js';
 export { VitePluginAdapter } from './vite-plugin-adapter.js';
+export * from './js-plugin-schema.js';
 
 type VitePluginType = object | (() => { vitePlugin: any; filters: string[] });
 type VitePluginsType = VitePluginType[];
@@ -21,7 +50,6 @@ type VitePluginsType = VitePluginType[];
 export async function handleVitePlugins(
   vitePlugins: VitePluginsType,
   userConfig: UserConfig,
-  logger: Logger,
   mode: CompilationMode
 ): Promise<JsPlugin[]> {
   const jsPlugins: JsPlugin[] = [];
@@ -48,7 +76,7 @@ export async function handleVitePlugins(
       filters = f;
     }
     filters?.forEach((filter) => filtersUnion.add(filter));
-    processVitePlugin(vitePlugin, userConfig, filters, jsPlugins, logger, mode);
+    processVitePlugin(vitePlugin, userConfig, filters, jsPlugins, mode);
   }
 
   // if vitePlugins is not empty, append a load plugin to load file
@@ -57,7 +85,6 @@ export async function handleVitePlugins(
     jsPlugins.push(
       defaultLoadPlugin({
         filtersUnion,
-        logger,
         userConfig
       })
     );
@@ -73,7 +100,6 @@ export function processVitePlugin(
   userConfig: UserConfig,
   filters: string[],
   jsPlugins: JsPlugin[],
-  logger: Logger,
   mode: CompilationMode
 ) {
   const processPlugin = (plugin: any) => {
@@ -81,10 +107,10 @@ export function processVitePlugin(
       plugin as any,
       userConfig,
       filters,
-      logger,
       mode
     );
-    convertPlugin(vitePluginAdapter);
+    // @ts-ignore
+    convertPluginVite(vitePluginAdapter);
     jsPlugins.push(vitePluginAdapter);
   };
 
@@ -95,7 +121,48 @@ export function processVitePlugin(
   }
 }
 
-export function convertPlugin(plugin: JsPlugin): void {
+const schemaRegistry = new PluginSchemaRegistry();
+
+schemaRegistry
+  .register('name', createNameSchema)
+  .register('priority', createPrioritySchema)
+  .register('configureServer', createConfigureServerSchema)
+  .register('configureCompiler', createConfigureCompilerSchema)
+  .register('config', createConfigSchema)
+  .register('configResolved', createConfigResolvedSchema)
+  .register('buildStart', createBuildStartSchema)
+  .register('resolve', createResolveSchema)
+  .register('load', createLoadSchema)
+  .register('transform', createTransformSchema)
+  .register('buildEnd', createBuildEndSchema)
+  .register('renderStart', createRenderStartSchema)
+  .register('renderResourcePot', createRenderResourcePotSchema)
+  .register('augmentResourceHash', createAugmentResourceHashSchema)
+  .register('finalizeResources', createFinalizeResourcesSchema)
+  .register('transformHtml', createTransformHtmlSchema)
+  .register('writeResource', createWriteResourcesSchema)
+  .register('pluginCacheLoaded', createPluginCacheLoadedSchema)
+  .register('writePluginCache', createWritePluginCacheSchema)
+  .register('finish', createFinishSchema)
+  .register('updateFinished', createUpdateFinishedSchema)
+  .register('updateModules', createUpdateModulesSchema);
+
+export function convertPlugin(plugin: JsPlugin) {
+  try {
+    const pluginSchema = schemaRegistry.createPluginSchema(plugin?.name);
+    return pluginSchema.parse(plugin);
+  } catch (err) {
+    const validationError = fromZodError(err, {
+      prefix: 'Failed to verify js plugin schema'
+    });
+    const pluginName = plugin?.name || 'undefined';
+    throw new Error(
+      `${validationError.toString()}. \n Please check '${pluginName}' plugin passes these attributes correctly.`
+    );
+  }
+}
+
+export function convertPluginVite(plugin: JsPlugin): void {
   if (
     plugin.transform &&
     !plugin.transform.filters?.moduleTypes &&

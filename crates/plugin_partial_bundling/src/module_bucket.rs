@@ -1,6 +1,7 @@
-use std::collections::HashSet;
-
-use farmfe_core::module::{Module, ModuleId, ModuleType};
+use farmfe_core::{
+  module::{Module, ModuleId, ModuleType},
+  HashSet,
+};
 
 /// A ModuleBucket is a collection of modules whose module_groups field is equal.
 /// For example, if there are two ModuleGroups A and B. if module c is in ModuleGroup A and ModuleGroup B, module d is only in ModuleGroup A, then c and d are in the different ModuleBucket.
@@ -27,7 +28,7 @@ impl ModuleBucket {
     // The fields will be filled later when add modules to this ModuleBucket.
     Self {
       id,
-      modules: HashSet::from([module.id.clone()]),
+      modules: HashSet::from_iter([module.id.clone()]),
       module_groups: module.module_groups.clone(),
       size: module.size,
       module_type: module.module_type.clone(),

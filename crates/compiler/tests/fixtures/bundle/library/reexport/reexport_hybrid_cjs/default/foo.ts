@@ -1,2 +1,3 @@
 module.exports.cjs = true;
-export default 'foo';
+var a = 'foo';
+export default a;

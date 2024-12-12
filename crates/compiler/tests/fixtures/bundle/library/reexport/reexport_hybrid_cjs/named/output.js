@@ -1,87 +1,54 @@
-//index.js:
- function _interop_require_default(obj) {
-    return obj && obj.__esModule ? obj : {
-        default: obj
+//farm_runtime.js:
+ // module_id: __FARM_BUNDLE_POLYFILL_SLOT__
+function __commonJs(mod) {
+    var module;
+    return ()=>{
+        if (module) {
+            return module.exports;
+        }
+        module = {
+            exports: {}
+        };
+        if (typeof mod === "function") {
+            mod(module, module.exports);
+        } else {
+            mod[Object.keys(mod)[0]](module, module.exports);
+        }
+        return module.exports;
     };
-}function _export_star(from, to) {
-    Object.keys(from).forEach(function(k) {
-        if (k !== "default" && !Object.prototype.hasOwnProperty.call(to, k)) {
-            Object.defineProperty(to, k, {
+}
+export { __commonJs };
+
+
+//index.js:
+ // module_id: foo.ts
+import { __commonJs } from "./farm_runtime.js";
+var foo_cjs = __commonJs({
+    "foo.ts": (module, exports)=>{
+        "use strict";
+        Object.defineProperty(exports, "__esModule", {
+            value: true
+        });
+        function _export(target, all) {
+            for(var name in all)Object.defineProperty(target, name, {
                 enumerable: true,
-                get: function() {
-                    return from[k];
-                }
+                get: all[name]
             });
         }
-    });
-    return from;
-}function _interop_require_wildcard(obj, nodeInterop) {
-    if (!nodeInterop && obj && obj.__esModule) return obj;
-    if (obj === null || typeof obj !== "object" && typeof obj !== "function") return {
-        default: obj
-    };
-    var cache = _getRequireWildcardCache(nodeInterop);
-    if (cache && cache.has(obj)) return cache.get(obj);
-    var newObj = {
-        __proto__: null
-    };
-    var hasPropertyDescriptor = Object.defineProperty && Object.getOwnPropertyDescriptor;
-    for(var key in obj){
-        if (key !== "default" && Object.prototype.hasOwnProperty.call(obj, key)) {
-            var desc = hasPropertyDescriptor ? Object.getOwnPropertyDescriptor(obj, key) : null;
-            if (desc && (desc.get || desc.set)) Object.defineProperty(newObj, key, desc);
-            else newObj[key] = obj[key];
-        }
-    }
-    newObj.default = obj;
-    if (cache) cache.set(obj, newObj);
-    return newObj;
-}function _getRequireWildcardCache(nodeInterop) {
-    if (typeof WeakMap !== "function") return null;
-    var cacheBabelInterop = new WeakMap();
-    var cacheNodeInterop = new WeakMap();
-    return (_getRequireWildcardCache = function(nodeInterop) {
-        return nodeInterop ? cacheNodeInterop : cacheBabelInterop;
-    })(nodeInterop);
-}function __commonJs(mod) {
-  var module;
-  return () => {
-    if (module) {
-      return module.exports;
-    }
-    module = {
-      exports: {},
-    };
-    if(typeof mod === "function") {
-      mod(module, module.exports);
-    }else {
-      mod[Object.keys(mod)[0]](module, module.exports);
-    }
-    return module.exports;
-  };
-}var foo_cjs = __commonJs((module, exports)=>{
-    "use strict";
-    Object.defineProperty(exports, "__esModule", {
-        value: true
-    });
-    function _export(target, all) {
-        for(var name in all)Object.defineProperty(target, name, {
-            enumerable: true,
-            get: all[name]
+        _export(exports, {
+            bar: function() {
+                return bar;
+            },
+            foo: function() {
+                return foo;
+            }
         });
+        const foo = 'foo';
+        const bar = 'bar';
+        module.exports.cjs = true;
     }
-    _export(exports, {
-        bar: function() {
-            return bar;
-        },
-        foo: function() {
-            return foo;
-        }
-    });
-    const foo = 'foo';
-    const bar = 'bar';
-    module.exports.cjs = true;
 });
 var bar = foo_cjs()["bar"], foo = foo_cjs()["foo"];
 
+// module_id: index.ts
 export { bar, foo };

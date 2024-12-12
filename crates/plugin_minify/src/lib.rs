@@ -1,8 +1,4 @@
-use std::{
-  collections::{HashMap, HashSet},
-  path::PathBuf,
-  sync::Arc,
-};
+use std::{path::PathBuf, sync::Arc};
 
 use exports_minifier::ExportsMinifier;
 use farmfe_core::{
@@ -19,6 +15,7 @@ use farmfe_core::{
   resource::resource_pot::{ResourcePot, ResourcePotType},
   swc_common::Mark,
   swc_ecma_ast::Id,
+  HashMap, HashSet,
 };
 use farmfe_toolkit::{
   common::{create_swc_source_map, Source},
@@ -83,9 +80,9 @@ impl Plugin for FarmPluginMinify {
     }
 
     // 1. rename all the exports of a module
-    let mut minified_module_exports_map = HashMap::new();
+    let mut minified_module_exports_map = HashMap::default();
     let ident_generator_map: Mutex<HashMap<ModuleId, MinifiedIdentsGenerator>> =
-      Mutex::new(HashMap::new());
+      Mutex::new(HashMap::default());
 
     module_graph
       .modules_mut()
@@ -142,7 +139,7 @@ impl Plugin for FarmPluginMinify {
 
     // modules that are required by cjs will always not be minified
     // TODO handle skipped module ids the same as module_graph.entries
-    let mut skipped_module_ids = HashSet::new();
+    let mut skipped_module_ids = HashSet::default();
 
     // Handle conflicting export * from. e.g:
     // ```
@@ -196,7 +193,7 @@ impl Plugin for FarmPluginMinify {
     // reverse to make the module graph traverse from bottom to top
     sorted_module_ids.reverse();
 
-    let mut id_to_replace: HashMap<ModuleId, HashMap<Id, String>> = HashMap::new();
+    let mut id_to_replace: HashMap<ModuleId, HashMap<Id, String>> = HashMap::default();
 
     for module_id in &sorted_module_ids {
       if !module_graph
@@ -213,7 +210,7 @@ impl Plugin for FarmPluginMinify {
 
       let dep_used_idents = deps
         .into_iter()
-        .fold(HashSet::<String>::new(), |mut acc, dep| {
+        .fold(HashSet::<String>::default(), |mut acc, dep| {
           if let Some(ident_generator) = ident_generator_map.get(&dep) {
             acc.extend(ident_generator.used_idents().clone());
           }

@@ -1,4 +1,4 @@
-use std::{collections::HashMap, sync::Arc};
+use std::sync::Arc;
 
 use farmfe_core::{
   context::CompilationContext,
@@ -6,6 +6,7 @@ use farmfe_core::{
   plugin::PluginFinalizeResourcesHookParams,
   resource::Resource,
   serde::{Deserialize, Serialize},
+  HashMap,
 };
 
 use crate::plugin_adapters::js_plugin_adapter::thread_safe_js_plugin_hook::ThreadSafeJsPluginHook;
@@ -21,7 +22,7 @@ pub struct JsPluginFinalizeResourcesHookParams {
   pub config: farmfe_core::config::Config,
 }
 
-impl<'a> From<&mut PluginFinalizeResourcesHookParams<'a>> for JsPluginFinalizeResourcesHookParams {
+impl From<&mut PluginFinalizeResourcesHookParams<'_>> for JsPluginFinalizeResourcesHookParams {
   fn from(value: &mut PluginFinalizeResourcesHookParams) -> Self {
     Self {
       resources_map: value.resources_map.clone(),

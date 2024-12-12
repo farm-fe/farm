@@ -1,11 +1,11 @@
-use std::collections::HashMap;
-
 use farmfe_core::{
+  config::AliasItem,
   module::{module_graph::ModuleGraph, ModuleId},
   plugin::ResolveKind,
   resource::{Resource, ResourceOrigin},
   swc_common::DUMMY_SP,
   swc_css_ast::{AtRulePrelude, ImportHref, Rule, Str, Stylesheet, Url, UrlValue},
+  HashMap,
 };
 use farmfe_toolkit::{
   resolve::path_start_with_alias::is_start_with_alias,
@@ -19,7 +19,7 @@ pub struct SourceReplacer<'a> {
   module_graph: &'a ModuleGraph,
   resources_map: &'a HashMap<String, Resource>,
   public_path: String,
-  alias: HashMap<String, String>,
+  alias: Vec<AliasItem>,
 }
 
 impl<'a> SourceReplacer<'a> {
@@ -28,7 +28,7 @@ impl<'a> SourceReplacer<'a> {
     module_graph: &'a ModuleGraph,
     resources_map: &'a HashMap<String, Resource>,
     public_path: String,
-    alias: HashMap<String, String>,
+    alias: Vec<AliasItem>,
   ) -> Self {
     Self {
       module_id,

@@ -16,6 +16,7 @@
     "@farmfe/cli": "workspace:*",
     "@farmfe/core": "workspace:*",
     "@vitejs/plugin-vue": "^5.1.1",
+    "compression": "^1.7.4",
     "core-js": "^3.37.1",
     "naive-ui": "^2.39.0"
   }

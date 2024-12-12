@@ -1,7 +1,6 @@
 #![allow(clippy::needless_update)]
 
 use std::{
-  collections::HashMap,
   fs,
   path::{Path, PathBuf},
   sync::Arc,
@@ -14,8 +13,8 @@ use farmfe_core::{
     preset_env::PresetEnvConfig, Config, CssConfig, Mode, RuntimeConfig, SourcemapConfig,
   },
   plugin::Plugin,
-  serde::de::DeserializeOwned,
   serde_json::{self, Value},
+  HashMap,
 };
 use farmfe_testing_helpers::is_update_snapshot_from_env;
 use farmfe_toolkit::fs::read_file_utf8;
@@ -127,7 +126,7 @@ pub fn try_merge_config_file(origin: Config, file: PathBuf) -> Config {
 #[allow(dead_code)]
 pub fn create_config(cwd: PathBuf, crate_path: PathBuf) -> Config {
   Config {
-    input: HashMap::new(),
+    input: HashMap::default(),
     root: cwd.to_string_lossy().to_string(),
     runtime: generate_runtime(crate_path),
     output: Default::default(),
@@ -358,21 +357,6 @@ pub fn assert_compiler_result(compiler: &Compiler, entry_name: Option<&String>) 
 }
 
 #[allow(dead_code)]
-#[deprecated]
-pub fn get_config_field<T: DeserializeOwned>(value: &Value, keys: &[&str]) -> Option<T> {
-  let mut v: &Value = value;
-
-  for key in keys.iter() {
-    v = v.get(key)?;
-  }
-
-  Some(
-    serde_json::from_value(v.clone())
-      .unwrap_or_else(|_| panic!("{} type is not correct", keys.join("."))),
-  )
-}
-
-#[allow(dead_code)]
 pub fn get_dir_config_files(cwd: &Path) -> Vec<(String, PathBuf)> {
   // println!("fs::read_dir(cwd): {:#?}", fs::read(format!("{}/", cwd.to_string_lossy().to_string())));
   let mut files = fs::read_dir(cwd)
@@ -477,7 +461,7 @@ pub fn test_builder(options: TestBuilderOptions) {
       cwd.clone(),
       crate_path.clone(),
       |mut config, mut plugins| {
-        config.input = HashMap::from([(entry_name.clone(), file.clone())]);
+        config.input = HashMap::from_iter([(entry_name.clone(), file.clone())]);
 
         if let Some(_config) = _config.clone() {
           let v1 = serde_json::to_value(config).expect("cannot convert config to value");

@@ -26,7 +26,7 @@ SOFTWARE.
 
 import path from 'node:path';
 import fse from 'fs-extra';
-import { normalizeBasePath } from './share.js';
+import { normalizePath } from './share.js';
 
 const nonEscapedDoubleQuoteRe = /(?<!\\)(")/g;
 
@@ -85,7 +85,7 @@ export async function rebaseUrls(
 
     const absolute = (await resolver(url, file)) || path.resolve(fileDir, url);
     const relative = path.relative(rootDir, absolute);
-    return normalizeBasePath(relative);
+    return normalizePath(relative);
   };
 
   // fix css imports in less such as `@import "foo.css"`

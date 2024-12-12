@@ -1,49 +1,5 @@
 //index.js:
- import __farmNodeModule from 'node:module';global.nodeRequire = __farmNodeModule.createRequire(import.meta.url);global['__farm_default_namespace__'] = {__FARM_TARGET_ENV__: 'node'};function _interop_require_default(obj) {
-    return obj && obj.__esModule ? obj : {
-        default: obj
-    };
-}function _export_star(from, to) {
-    Object.keys(from).forEach(function(k) {
-        if (k !== "default" && !Object.prototype.hasOwnProperty.call(to, k)) {
-            Object.defineProperty(to, k, {
-                enumerable: true,
-                get: function() {
-                    return from[k];
-                }
-            });
-        }
-    });
-    return from;
-}function _interop_require_wildcard(obj, nodeInterop) {
-    if (!nodeInterop && obj && obj.__esModule) return obj;
-    if (obj === null || typeof obj !== "object" && typeof obj !== "function") return {
-        default: obj
-    };
-    var cache = _getRequireWildcardCache(nodeInterop);
-    if (cache && cache.has(obj)) return cache.get(obj);
-    var newObj = {
-        __proto__: null
-    };
-    var hasPropertyDescriptor = Object.defineProperty && Object.getOwnPropertyDescriptor;
-    for(var key in obj){
-        if (key !== "default" && Object.prototype.hasOwnProperty.call(obj, key)) {
-            var desc = hasPropertyDescriptor ? Object.getOwnPropertyDescriptor(obj, key) : null;
-            if (desc && (desc.get || desc.set)) Object.defineProperty(newObj, key, desc);
-            else newObj[key] = obj[key];
-        }
-    }
-    newObj.default = obj;
-    if (cache) cache.set(obj, newObj);
-    return newObj;
-}function _getRequireWildcardCache(nodeInterop) {
-    if (typeof WeakMap !== "function") return null;
-    var cacheBabelInterop = new WeakMap();
-    var cacheNodeInterop = new WeakMap();
-    return (_getRequireWildcardCache = function(nodeInterop) {
-        return nodeInterop ? cacheNodeInterop : cacheBabelInterop;
-    })(nodeInterop);
-}var __assign = this && this.__assign || function() {
+ import __farmNodeModule from 'node:module';global.nodeRequire = __farmNodeModule.createRequire(import.meta.url);global['__farm_default_namespace__'] = {__FARM_TARGET_ENV__: 'node'};var __assign = this && this.__assign || function() {
     __assign = Object.assign || function(t) {
         for(var s, i = 1, n = arguments.length; i < n; i++){
             s = arguments[i];
@@ -53,15 +9,15 @@
     };
     return __assign.apply(this, arguments);
 };
-function mergeProps$1(componentProps, defaultProps, globalComponentConfig) {
+function mergeProps(componentProps, defaultProps, globalComponentConfig) {
     var _defaultProps = __assign(__assign({}, defaultProps), globalComponentConfig);
-    var props = __assign({}, componentProps);
+    var props$1 = __assign({}, componentProps);
     for(var propName in _defaultProps){
-        if (props[propName] === undefined) {
-            props[propName] = _defaultProps[propName];
+        if (props$1[propName] === undefined) {
+            props$1[propName] = _defaultProps[propName];
         }
     }
-    return props;
+    return props$1;
 }
 
 var Trigger = function(_super) {
@@ -70,8 +26,8 @@ var Trigger = function(_super) {
         var _this = _super.call(this, props, context) || this;
         _this.getMergedProps = function(baseProps) {
             var componentConfig = _this.context.componentConfig;
-            var props$1 = mergeProps$1(baseProps || _this.props, defaultProps, componentConfig === null || componentConfig === void 0 ? void 0 : componentConfig.Trigger);
-            return props$1;
+            var props$3 = mergeProps(baseProps || _this.props, defaultProps, componentConfig === null || componentConfig === void 0 ? void 0 : componentConfig.Trigger);
+            return props$3;
         };
         return _this;
     }
@@ -86,59 +42,59 @@ var Trigger = function(_super) {
         if (!popup) {
             return null;
         }
-        var mergeProps = {};
+        var mergeProps$1 = {};
         var popupEventProps = {
             onMouseDown: this.onPopupMouseDown
         };
         if (this.isHoverTrigger() && !disabled) {
-            mergeProps.onMouseEnter = this.onMouseEnter;
-            mergeProps.onMouseLeave = this.onMouseLeave;
+            mergeProps$1.onMouseEnter = this.onMouseEnter;
+            mergeProps$1.onMouseLeave = this.onMouseLeave;
             if (alignPoint) {
-                mergeProps.onMouseMove = this.onMouseMove;
+                mergeProps$1.onMouseMove = this.onMouseMove;
             }
             if (!this.isPopupHoverHide()) {
                 popupEventProps.onMouseEnter = this.onPopupMouseEnter;
                 popupEventProps.onMouseLeave = this.onPopupMouseLeave;
             }
         } else {
-            mergeProps.onMouseEnter = this.triggerOriginEvent('onMouseEnter');
-            mergeProps.onMouseLeave = this.triggerOriginEvent('onMouseLeave');
+            mergeProps$1.onMouseEnter = this.triggerOriginEvent('onMouseEnter');
+            mergeProps$1.onMouseLeave = this.triggerOriginEvent('onMouseLeave');
         }
         if (this.isContextMenuTrigger() && !disabled) {
-            mergeProps.onContextMenu = this.onContextMenu;
-            mergeProps.onClick = this.hideContextMenu;
+            mergeProps$1.onContextMenu = this.onContextMenu;
+            mergeProps$1.onClick = this.hideContextMenu;
         } else {
-            mergeProps.onContextMenu = this.triggerOriginEvent('onContextMenu');
+            mergeProps$1.onContextMenu = this.triggerOriginEvent('onContextMenu');
         }
         if (this.isClickTrigger() && !disabled) {
-            mergeProps.onClick = this.onClick;
+            mergeProps$1.onClick = this.onClick;
         } else {
-            mergeProps.onClick = mergeProps.onClick || this.triggerOriginEvent('onClick');
+            mergeProps$1.onClick = mergeProps$1.onClick || this.triggerOriginEvent('onClick');
         }
         if (this.isFocusTrigger() && !disabled) {
-            mergeProps.onFocus = this.onFocus;
+            mergeProps$1.onFocus = this.onFocus;
             if (this.isBlurToHide()) {
-                mergeProps.onBlur = this.onBlur;
+                mergeProps$1.onBlur = this.onBlur;
             }
         } else {
-            mergeProps.onFocus = this.triggerOriginEvent('onFocus');
-            mergeProps.onBlur = this.triggerOriginEvent('onBlur');
+            mergeProps$1.onFocus = this.triggerOriginEvent('onFocus');
+            mergeProps$1.onBlur = this.triggerOriginEvent('onBlur');
         }
         if (!disabled) {
-            mergeProps.onKeyDown = this.onKeyDown;
+            mergeProps$1.onKeyDown = this.onKeyDown;
         } else {
-            mergeProps.onKeyDown = this.triggerOriginEvent('onKeyDown');
+            mergeProps$1.onKeyDown = this.triggerOriginEvent('onKeyDown');
         }
         var child = this.getChild();
         var popupChildren = React.Children.only(popup());
         if (child.props.className) {
-            mergeProps.className = child.props.className;
+            mergeProps$1.className = child.props.className;
         }
         if (childrenPrefix && popupVisible) {
-            mergeProps.className = mergeProps.className ? mergeProps.className + " " + childrenPrefix + "-open" : childrenPrefix + "-open";
+            mergeProps$1.className = mergeProps$1.className ? mergeProps$1.className + " " + childrenPrefix + "-open" : childrenPrefix + "-open";
         }
         if (this.isFocusTrigger()) {
-            mergeProps.tabIndex = disabled ? -1 : 0;
+            mergeProps$1.tabIndex = disabled ? -1 : 0;
         }
     };
     return Trigger$1;

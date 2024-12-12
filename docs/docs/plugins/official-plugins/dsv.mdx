@@ -1,0 +1,54 @@
+import { PackageManagerTabs } from "../../../src/theme/PackageManagerTabs";
+
+# @farmfe/plugin-dsv
+
+🍣 A Farm plugin which converts `.csv` and `.tsv` files into JavaScript modules.
+
+## Requirements
+
+This plugin requires an [LTS](https://github.com/nodejs/Release) Node version (v18.0.0+) and Farm v1.0.0+.
+
+## Installation
+
+<PackageManagerTabs command="pnpm add @farmfe/plugin-dsv" />
+
+## Usage
+
+Create a `farm.config.js` [configuration file](https://www.farmfe.org/docs/config/configuring-farm) and import the plugin:
+
+```js
+import { defineConfig } from '@farmfe/core';
+import dsv from '@farmfe/plugin-dsv';
+
+export default defineConfig({
+  plugins: [
+    [
+      dsv()
+    ]
+  ],
+});
+```
+
+## Practical Example
+
+Suppose that you have a CSV (or TSV!) file which contains some information on delicious fruits:
+
+```csv
+type,count
+apples,7
+pears,4
+bananas,5
+```
+
+And suppose you'd like to import that CSV as an `Array` within some part of your code. After adding the plugin (as shown above), you may `import` (or `require`) the CSV file directly. The import will provide an `Array` of `Objects` representing rows from the CSV file:
+
+```js
+import fruit from './fruit.csv';
+
+console.log(fruit);
+// [
+//   { type: 'apples', count: '7' },
+//   { type: 'pears', count: '4' },
+//   { type: 'bananas', count: '5' }
+// ]
+```

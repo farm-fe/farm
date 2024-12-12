@@ -29,6 +29,7 @@ export function createFarmJsPluginBuildConfig(plugins, options = {}) {
           }
         ]
       },
+      progress: false,
       minify: false,
       sourcemap: false,
       presetEnv: false,

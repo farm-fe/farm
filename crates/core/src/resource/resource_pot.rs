@@ -1,11 +1,11 @@
 use serde::{Deserialize, Serialize};
 
-use std::collections::HashSet;
-use std::{collections::HashMap, sync::Arc};
+use std::sync::Arc;
 
 use farmfe_macro_cache_item::cache_item;
 
 use crate::module::{module_group::ModuleGroupId, ModuleId, ModuleType};
+use crate::{HashMap, HashSet};
 
 const DEFER_BUNDLE_MINIFY: &str = "DEFER_BUNDLE_MINIFY";
 
@@ -42,23 +42,28 @@ impl ResourcePot {
         resource_pot_type: ty.clone(),
         module_ids: vec![],
         map: None,
-        modules: HashMap::new(),
+        modules: HashMap::default(),
         data: ResourcePotInfoData::Custom("{}".to_string()),
-        custom: HashMap::new(),
+        custom: HashMap::default(),
       }),
       name,
       resource_pot_type: ty,
-      modules: HashSet::new(),
+      modules: HashSet::default(),
       meta: ResourcePotMetaData::default(),
       entry_module: None,
-      resources: HashSet::new(),
-      module_groups: HashSet::new(),
+      resources: HashSet::default(),
+      module_groups: HashSet::default(),
       immutable: false,
     }
   }
 
   pub fn gen_id(name: &str, ty: ResourcePotType) -> String {
     format!("{}_{}", name, ty.to_string())
+  }
+
+  pub fn set_resource_pot_id(&mut self, id: String) {
+    self.id.clone_from(&id);
+    self.info.id = id;
   }
 
   pub fn add_module(&mut self, module_id: ModuleId) {
@@ -75,6 +80,10 @@ impl ResourcePot {
 
   pub fn take_meta(&mut self) -> ResourcePotMetaData {
     std::mem::take(&mut self.meta)
+  }
+
+  pub fn has_module(&self, module_id: &ModuleId) -> bool {
+    self.modules.contains(module_id)
   }
 
   pub fn remove_module(&mut self, module_id: &ModuleId) {
@@ -178,7 +187,7 @@ impl ResourcePotInfo {
       map: None,
       modules: resource_pot.meta.rendered_modules.clone(),
       data,
-      custom: HashMap::new(),
+      custom: HashMap::default(),
     }
   }
 }
@@ -240,10 +249,10 @@ pub struct JsResourcePotInfo {
 impl JsResourcePotInfo {
   pub fn new(resource_pot: &ResourcePot) -> Self {
     Self {
-      dynamic_imports: vec![],           // TODO
-      exports: vec![],                   // TODO
-      imports: vec![],                   // TODO
-      imported_bindings: HashMap::new(), // TODO
+      dynamic_imports: vec![],               // TODO
+      exports: vec![],                       // TODO
+      imports: vec![],                       // TODO
+      imported_bindings: HashMap::default(), // TODO
       is_dynamic_entry: false,
       is_entry: resource_pot.entry_module.is_some(),
       is_implicit_entry: false, // TODO
@@ -317,10 +326,10 @@ pub struct ResourcePotMetaData {
 impl Default for ResourcePotMetaData {
   fn default() -> Self {
     Self {
-      rendered_modules: HashMap::new(),
+      rendered_modules: HashMap::default(),
       rendered_content: Arc::new(String::new()),
       rendered_map_chain: vec![],
-      custom_data: HashMap::new(),
+      custom_data: HashMap::default(),
     }
   }
 }

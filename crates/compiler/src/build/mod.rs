@@ -1,5 +1,4 @@
 use std::{
-  collections::HashMap,
   path::PathBuf,
   sync::{
     mpsc::{channel, Receiver, Sender},
@@ -24,6 +23,7 @@ use farmfe_core::{
   },
   rayon::ThreadPool,
   serde_json::json,
+  HashMap,
 };
 
 use farmfe_plugin_lazy_compilation::DYNAMIC_VIRTUAL_SUFFIX;
@@ -35,6 +35,7 @@ use crate::{
     analyze_deps::analyze_deps, finalize_module::finalize_module, load::load, parse::parse,
     resolve::resolve, transform::transform,
   },
+  utils::get_module_ids_from_compilation_errors,
   Compiler,
 };
 
@@ -115,6 +116,17 @@ impl Compiler {
     }
   }
 
+  pub fn set_last_fail_module_ids(&self, errors: &[CompilationError]) {
+    let mut last_fail_module_ids = self.last_fail_module_ids.lock();
+    last_fail_module_ids.clear();
+
+    for id in get_module_ids_from_compilation_errors(errors) {
+      if !last_fail_module_ids.contains(&id) {
+        last_fail_module_ids.push(id);
+      }
+    }
+  }
+
   pub(crate) fn build(&self) -> Result<()> {
     self.context.plugin_driver.build_start(&self.context)?;
 
@@ -145,11 +157,16 @@ impl Compiler {
     }
 
     self.handle_global_log(&mut errors);
+    let mut res = Ok(());
+
     if !errors.is_empty() {
       // set stats if stats is enabled
       self.context.record_manager.set_build_end_time();
       self.context.record_manager.set_end_time();
       self.set_module_graph_stats();
+
+      // set last failed module ids
+      self.set_last_fail_module_ids(&errors);
 
       let mut error_messages = vec![];
       for error in errors {
@@ -159,7 +176,9 @@ impl Compiler {
         .iter()
         .map(|e| e.to_string())
         .collect::<Vec<_>>());
-      return Err(CompilationError::GenericError(errors_json.to_string()));
+      res = Err(CompilationError::GenericError(errors_json.to_string()));
+    } else {
+      self.set_last_fail_module_ids(&[]);
     }
 
     // set module graph cache
@@ -186,8 +205,10 @@ impl Compiler {
 
     {
       farm_profile_scope!("call build_end hook".to_string());
-      self.context.plugin_driver.build_end(&self.context)
+      self.context.plugin_driver.build_end(&self.context)?;
     }
+
+    res
   }
 
   pub(crate) fn handle_global_log(&self, errors: &mut Vec<CompilationError>) {
@@ -227,7 +248,7 @@ impl Compiler {
 
     let hook_context = PluginHookContext {
       caller: None,
-      meta: HashMap::new(),
+      meta: HashMap::default(),
     };
     let resolve_kind = resolve_param.kind.clone();
     let mut resolve_result = match resolve(resolve_param, context, &hook_context) {
@@ -279,7 +300,7 @@ impl Compiler {
 
     let hook_context = PluginHookContext {
       caller: None,
-      meta: HashMap::new(),
+      meta: HashMap::default(),
     };
 
     // ================ Load Start ===============
@@ -468,6 +489,14 @@ impl Compiler {
             Self::add_module(module, &resolve_param.kind, &context);
             Self::add_edge(&resolve_param, module_id, order, &context);
             return;
+          }
+
+          if let ResolveKind::Entry(ref name) = resolve_param.kind {
+            context
+              .module_graph
+              .write()
+              .entries
+              .insert(module.id.clone(), name.to_string());
           }
 
           match Self::build_module(

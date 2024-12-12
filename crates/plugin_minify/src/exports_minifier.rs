@@ -1,6 +1,5 @@
-use std::collections::HashMap;
-
 use farmfe_core::swc_ecma_ast::{Id, Module, ModuleDecl, ModuleExportName, ModuleItem};
+use farmfe_core::HashMap;
 use farmfe_toolkit::{
   script::defined_idents_collector::DefinedIdentsCollector,
   swc_ecma_visit::{VisitMut, VisitWith},
@@ -18,8 +17,8 @@ pub struct ExportsMinifier<'a> {
 impl<'a> ExportsMinifier<'a> {
   pub fn new(ident_generator: &'a mut MinifiedIdentsGenerator) -> Self {
     Self {
-      minified_exports_map: HashMap::new(),
-      ident_to_replace: HashMap::new(),
+      minified_exports_map: HashMap::default(),
+      ident_to_replace: HashMap::default(),
       ident_generator,
     }
   }
@@ -130,9 +129,11 @@ impl<'a> VisitMut for ExportsMinifier<'a> {
 
 #[cfg(test)]
 mod tests {
-  use std::{collections::HashSet, sync::Arc};
+  use std::sync::Arc;
 
-  use farmfe_core::{swc_common::Globals, swc_ecma_ast::EsVersion, swc_ecma_parser::Syntax};
+  use farmfe_core::{
+    swc_common::Globals, swc_ecma_ast::EsVersion, swc_ecma_parser::Syntax, HashSet,
+  };
   use farmfe_toolkit::{
     common::{create_swc_source_map, Source},
     script::{codegen_module, parse_module, swc_try_with::try_with},
@@ -184,7 +185,7 @@ export { long10 } from './dep2';
 
     assert_eq!(
       top_level_idents_collector.top_level_idents,
-      HashSet::from([
+      HashSet::from_iter([
         "a".to_string(),
         "b".to_string(),
         "c".to_string(),
@@ -239,7 +240,7 @@ export { long10 } from './dep2';
 
       assert_eq!(
         export_minifier.minified_exports_map,
-        HashMap::from([
+        HashMap::from_iter([
           ("long1".to_string(), "d".to_string(),),
           ("long3".to_string(), "g".to_string(),),
           ("long4".to_string(), "h".to_string(),),

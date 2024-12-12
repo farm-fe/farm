@@ -1,0 +1,42 @@
+import { PackageManagerTabs } from "../../../../../src/theme/PackageManagerTabs";
+
+# Solid
+
+基于 `Farm` 创建一个 `Solid` 项目。
+
+`Farm` 提供两种方案来支持创建 `Solid` 项目: 
+- 使用 `create-farm` 脚手架创建脚手架项目
+- 你可以根据当前文档手动创建一个 `Solid` 项目
+
+### 创建 Solid 项目
+
+<PackageManagerTabs command="npm create farm@latest" />
+
+在 `Select Framework` 中选择 `Solid` 模版
+
+:::warning Solid
+对于 `Solid` 的支持, `Farm` 推荐使用 `Vite` 插件。
+:::
+
+```javascript title="farm.config.ts"
+import { defineConfig } from '@farmfe/core';
+import Solid from "vite-plugin-solid";
+
+export default defineConfig({
+  plugins: [Solid()],
+});
+```
+
+开发环境时运行
+
+<PackageManagerTabs command="npm run dev" />
+
+在生产环境下进行打包
+
+<PackageManagerTabs command="npm run build" />
+
+预览生产环境打包之后构建的产物
+
+<PackageManagerTabs command="npm run preview" />
+
+如若想查看示例详情: [Solid 示例](https://github.com/farm-fe/farm/tree/main/examples/vite-adapter-solid)

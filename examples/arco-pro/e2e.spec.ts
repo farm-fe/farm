@@ -74,11 +74,12 @@ describe(`e2e tests - ${name}`, async () => {
       command
     );
 
-    test('exmaples arco-pro run start', async () => {
-      await runTest();
-    })
+  test('exmaples arco-pro run start', async () => {
+    await runTest();
+  })
 
-    test('exampels arco-pro run preview', async () => {
-      await runTest('preview');
-    })
+  // TODO uncomment this when new preview server is ready
+  // test('exampels arco-pro run preview', async () => {
+  //   await runTest('preview');
+  // })
 });

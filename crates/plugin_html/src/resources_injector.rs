@@ -1,4 +1,4 @@
-use std::{borrow::Cow, collections::HashMap, rc::Rc, sync::Arc};
+use std::{borrow::Cow, rc::Rc, sync::Arc};
 
 use farmfe_core::{
   config::{custom::get_config_runtime_isolate, Mode, FARM_MODULE_SYSTEM},
@@ -6,6 +6,7 @@ use farmfe_core::{
   module::ModuleId,
   resource::{Resource, ResourceType},
   swc_html_ast::{Child, Document, Element},
+  HashMap,
 };
 use farmfe_toolkit::{
   get_dynamic_resources_map::get_dynamic_resources_code,

@@ -7,7 +7,7 @@ import { Logger } from '../../utils/logger.js';
 import {
   FARM_TARGET_BROWSER_ENVS,
   mapTargetEnvValue,
-  normalizeBasePath
+  normalizePath
 } from '../../utils/share.js';
 import { ResolvedCompilation } from '../types.js';
 
@@ -266,7 +266,7 @@ export function getValidPublicPath(publicPath = '/'): string {
   if (publicPath.startsWith('/')) {
     validPublicPath = publicPath;
   } else if (publicPath.startsWith('.')) {
-    validPublicPath = normalizeBasePath(path.join('/', publicPath));
+    validPublicPath = normalizePath(path.join('/', publicPath));
   }
 
   return validPublicPath;

@@ -1,4 +1,3 @@
-use std::collections::HashSet;
 use std::sync::Arc;
 
 use farmfe_core::{
@@ -8,9 +7,10 @@ use farmfe_core::{
   context::CompilationContext,
   module::{
     module_graph::{ModuleGraphEdge, ModuleGraphEdgeDataItem},
-    Module,
+    Module, ModuleType,
   },
   plugin::{Plugin, PluginHookContext, ResolveKind},
+  HashSet,
 };
 use farmfe_plugin_partial_bundling::module_group_graph_from_entries;
 use farmfe_testing_helpers::{construct_test_module_graph, construct_test_module_graph_complex};
@@ -33,7 +33,13 @@ fn test_handle_enforce_resource_pots() {
   update_module_graph
     .remove_edge(&"F".into(), &"A".into())
     .unwrap();
-  update_module_graph.add_module(Module::new("H".into()));
+  update_module_graph.add_module({
+    let mut m = Module::new("H".into());
+
+    m.module_type = ModuleType::Js;
+
+    m
+  });
   update_module_graph
     .add_edge(&"B".into(), &"H".into(), Default::default())
     .unwrap();
@@ -43,10 +49,7 @@ fn test_handle_enforce_resource_pots() {
 
   let updated_modules = vec!["F".into(), "E".into(), "B".into()];
   let mut module_group_graph = module_group_graph_from_entries(
-    &module_graph
-      .entries
-      .clone().into_keys()
-      .collect(),
+    &module_graph.entries.clone().into_keys().collect(),
     &mut module_graph,
   );
   let diff_result = diff_module_graph(updated_modules.clone(), &module_graph, &update_module_graph);
@@ -67,7 +70,7 @@ fn test_handle_enforce_resource_pots() {
   );
   assert_eq!(
     affected_groups,
-    HashSet::from(["A".into(), "B".into(), "F".into(), "D".into()])
+    HashSet::from_iter(["A".into(), "B".into(), "F".into(), "D".into()])
   );
 
   let affected_modules = affected_groups
@@ -81,7 +84,7 @@ fn test_handle_enforce_resource_pots() {
     .collect::<Vec<_>>();
   assert_eq!(
     affected_modules.clone().into_iter().collect::<HashSet<_>>(),
-    HashSet::from([
+    HashSet::from_iter([
       "A".into(),
       "B".into(),
       "C".into(),
@@ -128,10 +131,7 @@ fn test_handle_enforce_resource_pots() {
     &context,
   );
 
-  assert_eq!(
-    enforce_resource_pots,
-    vec!["test_custom(\"__farm_unknown\")".to_string()]
-  );
+  assert_eq!(enforce_resource_pots, vec!["test_js".to_string()]);
   un_enforce_resource_pots.sort();
   assert_eq!(
     un_enforce_resource_pots,
@@ -169,10 +169,7 @@ fn test_handle_enforce_resource_pots_one_module_changed() {
     )
     .unwrap();
   let mut module_group_graph = module_group_graph_from_entries(
-    &module_graph
-      .entries
-      .clone().into_keys()
-      .collect(),
+    &module_graph.entries.clone().into_keys().collect(),
     &mut module_graph,
   );
   let updated_modules = vec!["I".into()];
@@ -193,7 +190,7 @@ fn test_handle_enforce_resource_pots_one_module_changed() {
     &mut module_graph,
     &mut module_group_graph,
   );
-  assert_eq!(affected_groups, HashSet::from(["I".into()]));
+  assert_eq!(affected_groups, HashSet::from_iter(["I".into()]));
 
   let affected_modules = affected_groups
     .iter()
