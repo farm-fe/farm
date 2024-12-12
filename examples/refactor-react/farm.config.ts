@@ -8,8 +8,14 @@ function custom() {
     name: "farm-test-plugin-name",
     buildStart: {
       executor() {
-        console.log("buildStart");
+        // console.log("buildStart");
       }
+    },
+    config(config) {
+      config.plugins.push({
+        name: "test-add-plugin"
+      })
+      return config
     },
     resolve: {
       filters: {
