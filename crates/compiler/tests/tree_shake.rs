@@ -1,10 +1,11 @@
-use std::{collections::HashMap, path::PathBuf, sync::Arc};
+use std::{path::PathBuf, sync::Arc};
 
 use farmfe_core::{
   module::ModuleType,
   plugin::Plugin,
   swc_common::{comments::NoopComments, Mark},
   swc_ecma_ast::Program,
+  HashMap,
 };
 use farmfe_testing_helpers::fixture;
 use farmfe_toolkit::{
@@ -33,7 +34,7 @@ fn tree_shake_test() {
 
       let entry_name = "index".to_string();
       let compiler = create_compiler(
-        HashMap::from([(entry_name.clone(), "./index.ts".to_string())]),
+        HashMap::from_iter([(entry_name.clone(), "./index.ts".to_string())]),
         cwd.to_path_buf(),
         crate_path,
         false,
@@ -55,7 +56,7 @@ fn tree_shake_development() {
       println!("testing tree shake: {cwd:?}");
 
       let compiler = create_compiler_with_args(cwd.into(), crate_path, |mut config, plguin| {
-        config.input = HashMap::from([(entry_name.clone(), "./index.ts".to_string())]);
+        config.input = HashMap::from_iter([(entry_name.clone(), "./index.ts".to_string())]);
         config.mode = farmfe_core::config::Mode::Development;
         (config, plguin)
       });
@@ -77,7 +78,7 @@ fn tree_shake_html_entry() {
 
       let entry_name = "index".to_string();
       let compiler = create_compiler(
-        HashMap::from([(entry_name, "./index.html".to_string())]),
+        HashMap::from_iter([(entry_name, "./index.html".to_string())]),
         cwd.to_path_buf(),
         crate_path,
         false,
@@ -158,7 +159,7 @@ fn tree_shake_changed_ast() {
 
       let entry_name = "index".to_string();
       let compiler = create_compiler_with_plugins(
-        HashMap::from([(entry_name.clone(), "./entry.ts".to_string())]),
+        HashMap::from_iter([(entry_name.clone(), "./entry.ts".to_string())]),
         cwd.to_path_buf(),
         crate_path,
         false,

@@ -1,13 +1,13 @@
-use std::{
-  cell::RefCell,
-  collections::{HashMap, HashSet},
-};
+use std::cell::RefCell;
 
 use farmfe_core::{
   swc_common::DUMMY_SP,
   swc_ecma_ast::{
-    AssignExpr, AssignOp, AssignTarget, BindingIdent, Expr, Id, IdentName, KeyValuePatProp, KeyValueProp, MemberProp, ObjectPat, ObjectPatProp, Pat, Prop, PropName, PropOrSpread, SimpleAssignTarget
+    AssignExpr, AssignOp, AssignTarget, BindingIdent, Expr, Id, IdentName, KeyValuePatProp,
+    KeyValueProp, MemberProp, ObjectPat, ObjectPatProp, Pat, Prop, PropName, PropOrSpread,
+    SimpleAssignTarget,
   },
+  HashMap, HashSet,
 };
 use farmfe_toolkit::{
   swc_atoms::Atom,
@@ -21,7 +21,7 @@ pub struct DefinedIdentsCollector {
 impl DefinedIdentsCollector {
   pub fn new() -> Self {
     Self {
-      defined_idents: HashSet::new(),
+      defined_idents: HashSet::default(),
     }
   }
 }
@@ -76,7 +76,7 @@ use super::{
   uniq_name::BundleVariable,
 };
 
-type RenameMap<'a> = HashMap<VarRefKey<'a>, usize>;
+type RenameMap<'a> = farmfe_core::HashMap<VarRefKey<'a>, usize>;
 
 // #[derive(Debug)]
 pub struct RenameIdent<'a> {

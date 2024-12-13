@@ -1,11 +1,4 @@
-use std::{
-  cell::Ref,
-  collections::{HashMap, HashSet},
-  fmt::Debug,
-  hash::Hash,
-  path::PathBuf,
-  sync::Arc,
-};
+use std::{cell::Ref, fmt::Debug, hash::Hash, path::PathBuf, sync::Arc};
 
 use farmfe_core::{
   context::CompilationContext,
@@ -15,6 +8,7 @@ use farmfe_core::{
   resource::resource_pot::ResourcePotId,
   swc_common::{sync::OnceCell, Mark, SourceMap},
   swc_ecma_ast::{Id, Module as EcmaAstModule},
+  HashMap, HashSet,
 };
 use farmfe_toolkit::{
   script::swc_try_with::try_with, source_map::create_swc_source_map, swc_ecma_visit::VisitWith,
@@ -281,7 +275,7 @@ impl ModuleAnalyzer {
 
     Ok(Self {
       statements: vec![],
-      statement_actions: HashSet::new(),
+      statement_actions: HashSet::default(),
       cm,
       ast,
       module_id: module.id.clone(),
@@ -416,7 +410,7 @@ impl ModuleAnalyzer {
   }
 
   pub fn variables(&self) -> HashSet<usize> {
-    let mut variables = HashSet::new();
+    let mut variables = HashSet::default();
 
     for statement in &self.statements {
       for defined in &statement.defined {

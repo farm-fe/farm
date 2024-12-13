@@ -1,8 +1,4 @@
-use std::{
-  collections::{HashMap, HashSet},
-  path::PathBuf,
-  sync::Arc,
-};
+use std::{path::PathBuf, sync::Arc};
 
 use common::create_module;
 use farmfe_core::{
@@ -11,6 +7,7 @@ use farmfe_core::{
   swc_common::{Globals, GLOBALS},
   swc_ecma_ast::EsVersion,
 };
+use farmfe_core::{HashMap, HashSet};
 use farmfe_plugin_tree_shake::{
   module::{TreeShakeModule, UsedExports, UsedExportsIdent},
   tree_shake_modules::remove_useless_stmts::remove_useless_stmts,
@@ -50,7 +47,7 @@ export default 'default';
   GLOBALS.set(&globals, || {
     let (mut module, cm) = create_module(code);
     let mut tree_shake_module = TreeShakeModule::new(&mut module);
-    tree_shake_module.pending_used_exports = UsedExports::Partial(HashSet::from([
+    tree_shake_module.pending_used_exports = UsedExports::Partial(HashSet::from_iter([
       UsedExportsIdent::Default,
       UsedExportsIdent::SwcIdent("j".to_string()),
       UsedExportsIdent::SwcIdent("d".to_string()),
@@ -61,7 +58,7 @@ export default 'default';
 
     let module_id = module.id.clone();
     let mut module_graph = ModuleGraph::new();
-    let mut tree_shake_module_map = HashMap::from([(module.id.clone(), tree_shake_module)]);
+    let mut tree_shake_module_map = HashMap::from_iter([(module.id.clone(), tree_shake_module)]);
     module_graph.add_module(module);
     let mut module_src_bar = create_module("").0;
     module_src_bar.id = "src/bar".into();
@@ -130,7 +127,7 @@ export * from './src/foo';
     //   "index.ts".into(),
     //   vec!["a".to_string(), "c".to_string(), "d".to_string()],
     // )]));
-    tree_shake_module.pending_used_exports = UsedExports::Partial(HashSet::from([
+    tree_shake_module.pending_used_exports = UsedExports::Partial(HashSet::from_iter([
       UsedExportsIdent::SwcIdent("a".to_string()),
       UsedExportsIdent::SwcIdent("c".to_string()),
       UsedExportsIdent::SwcIdent("d".to_string()),
@@ -139,7 +136,7 @@ export * from './src/foo';
 
     let module_id = module.id.clone();
     let mut module_graph = ModuleGraph::new();
-    let tree_shake_module_map = HashMap::from([(module.id.clone(), tree_shake_module)]);
+    let tree_shake_module_map = HashMap::from_iter([(module.id.clone(), tree_shake_module)]);
     module_graph.add_module(module);
 
     remove_useless_stmts(&module_id, &mut module_graph, &tree_shake_module_map);
@@ -171,7 +168,7 @@ export * from './src/bar';
   GLOBALS.set(&globals, || {
     let (mut module, cm) = create_module(code);
     let mut tree_shake_module = TreeShakeModule::new(&mut module);
-    tree_shake_module.pending_used_exports = UsedExports::Partial(HashSet::from([
+    tree_shake_module.pending_used_exports = UsedExports::Partial(HashSet::from_iter([
       UsedExportsIdent::SwcIdent("c".to_string()),
       UsedExportsIdent::SwcIdent("d".to_string()),
     ]));
@@ -179,7 +176,7 @@ export * from './src/bar';
 
     let module_id = module.id.clone();
     let mut module_graph = ModuleGraph::new();
-    let mut tree_shake_module_map = HashMap::from([(module.id.clone(), tree_shake_module)]);
+    let mut tree_shake_module_map = HashMap::from_iter([(module.id.clone(), tree_shake_module)]);
     module_graph.add_module(module);
     let mut module_foo = create_module("").0;
     module_foo.id = "src/foo".into();
@@ -257,7 +254,7 @@ fn remove_useless_stmts_nested_defined_idents() {
 
     let module_id = module.id.clone();
     let mut module_graph = ModuleGraph::new();
-    let tree_shake_module_map = HashMap::from([(module.id.clone(), tree_shake_module)]);
+    let tree_shake_module_map = HashMap::from_iter([(module.id.clone(), tree_shake_module)]);
     module_graph.add_module(module);
 
     remove_useless_stmts(&module_id, &mut module_graph, &tree_shake_module_map);
@@ -310,12 +307,12 @@ fn trace_loadable_esm() {
     let mut module = create_module_with_comments(code);
     let mut tree_shake_module = TreeShakeModule::new(&mut module);
     tree_shake_module.pending_used_exports =
-      UsedExports::Partial(HashSet::from([UsedExportsIdent::Default]));
+      UsedExports::Partial(HashSet::from_iter([UsedExportsIdent::Default]));
     tree_shake_module.trace_and_mark_used_statements();
 
     let module_id = module.id.clone();
     let mut module_graph = ModuleGraph::new();
-    let tree_shake_module_map = HashMap::from([(module.id.clone(), tree_shake_module)]);
+    let tree_shake_module_map = HashMap::from_iter([(module.id.clone(), tree_shake_module)]);
     module_graph.add_module(module);
 
     remove_useless_stmts(&module_id, &mut module_graph, &tree_shake_module_map);
@@ -368,12 +365,12 @@ fn trace_complex_decl_stmt() {
     let mut module = create_module_with_comments(code);
     let mut tree_shake_module = TreeShakeModule::new(&mut module);
     tree_shake_module.pending_used_exports =
-      UsedExports::Partial(HashSet::from([UsedExportsIdent::Default]));
+      UsedExports::Partial(HashSet::from_iter([UsedExportsIdent::Default]));
     tree_shake_module.trace_and_mark_used_statements();
 
     let module_id = module.id.clone();
     let mut module_graph = ModuleGraph::new();
-    let tree_shake_module_map = HashMap::from([(module.id.clone(), tree_shake_module)]);
+    let tree_shake_module_map = HashMap::from_iter([(module.id.clone(), tree_shake_module)]);
     module_graph.add_module(module);
 
     remove_useless_stmts(&module_id, &mut module_graph, &tree_shake_module_map);

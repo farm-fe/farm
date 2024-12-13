@@ -1,4 +1,4 @@
-use std::{collections::HashSet, sync::Arc};
+use std::sync::Arc;
 
 use farmfe_core::{
   config::FARM_MODULE,
@@ -10,6 +10,7 @@ use farmfe_core::{
     CallExpr, Callee, Expr, ExprOrSpread, Ident, IdentName, Lit, MemberExpr, MemberProp,
     MetaPropKind, NewExpr, Str,
   },
+  HashSet,
 };
 use farmfe_toolkit::swc_ecma_visit::{VisitMut, VisitMutWith};
 use farmfe_utils::stringify_query;
@@ -59,7 +60,7 @@ impl HmrAcceptedVisitor {
   pub fn new(module_id: ModuleId, context: Arc<CompilationContext>) -> Self {
     Self {
       is_hmr_self_accepted: false,
-      hmr_accepted_deps: HashSet::new(),
+      hmr_accepted_deps: HashSet::default(),
       module_id,
       context,
     }
@@ -217,6 +218,5 @@ impl VisitMut for ImportMetaURLVisitor {
 }
 
 pub fn replace_import_meta_url(ast: &mut farmfe_core::swc_ecma_ast::Module) {
-  let mut visitor = ImportMetaURLVisitor {};
-  ast.visit_mut_with(&mut visitor);
+  ast.visit_mut_with(&mut ImportMetaURLVisitor {});
 }

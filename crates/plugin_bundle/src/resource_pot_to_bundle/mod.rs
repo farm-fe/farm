@@ -1,6 +1,5 @@
 use std::{
   cell::RefCell,
-  collections::HashMap,
   hash::Hash,
   rc::Rc,
   sync::{Arc, Mutex},
@@ -134,8 +133,9 @@ impl<'a> SharedBundle<'a> {
 
     let context = ShareBundleContext::new(options, &context);
 
-    let module_analyzer_map: Mutex<HashMap<ModuleId, ModuleAnalyzer>> = Mutex::new(HashMap::new());
-    let mut bundle_map: HashMap<ResourcePotId, BundleAnalyzer> = HashMap::new();
+    let module_analyzer_map: Mutex<HashMap<ModuleId, ModuleAnalyzer>> =
+      Mutex::new(HashMap::default());
+    let mut bundle_map: HashMap<ResourcePotId, BundleAnalyzer> = HashMap::default();
 
     let bundle_variables = Rc::new(RefCell::new(BundleVariable::new()));
 

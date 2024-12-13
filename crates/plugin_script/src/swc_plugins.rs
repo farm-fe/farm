@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use std::{path::PathBuf, sync::Arc};
 
 use farmfe_core::{
@@ -10,6 +9,7 @@ use farmfe_core::{
   plugin::PluginProcessModuleHookParam,
   swc_common::{self, plugin::metadata::TransformPluginMetadataContext, FileName, Mark},
   swc_ecma_ast::{Module as SwcModule, Program, Script},
+  HashMap,
 };
 use farmfe_toolkit::anyhow::{self, Context};
 use farmfe_toolkit::swc_ecma_visit::{noop_fold_type, Fold, FoldWith};

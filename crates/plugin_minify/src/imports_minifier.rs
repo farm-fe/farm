@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use farmfe_core::{
   module::{module_graph::ModuleGraph, ModuleId},
   plugin::ResolveKind,
@@ -10,6 +8,7 @@ use farmfe_core::{
     ModuleDecl, ModuleExportName, ModuleItem, NamedExport, ObjectLit, Pat, Prop, PropName,
     PropOrSpread, Stmt, Str,
   },
+  HashMap,
 };
 use farmfe_toolkit::swc_ecma_visit::{VisitMut, VisitMutWith};
 
@@ -35,7 +34,7 @@ impl<'a> ImportsMinifier<'a> {
     ident_generator: &'a mut MinifiedIdentsGenerator,
     unresolved_mark: Mark,
   ) -> Self {
-    let mut exported_ident_count_map = HashMap::new();
+    let mut exported_ident_count_map = HashMap::default();
 
     if let Some(current_minified_exports_map) = minified_module_exports_map.get(module_id) {
       for (_, minified_ident) in current_minified_exports_map {
@@ -43,7 +42,7 @@ impl<'a> ImportsMinifier<'a> {
       }
     }
 
-    let mut imported_ident_count_map = HashMap::new();
+    let mut imported_ident_count_map = HashMap::default();
     // used idents mean the idents that are used in the current module, they should not be used to avoid ident decl conflict
     for ident in ident_generator.used_idents() {
       imported_ident_count_map.insert(ident.to_string(), 1);
@@ -55,7 +54,7 @@ impl<'a> ImportsMinifier<'a> {
       module_graph,
       ident_generator,
       unresolved_mark,
-      id_to_replace_map: HashMap::new(),
+      id_to_replace_map: HashMap::default(),
 
       imported_ident_count_map,
       exported_ident_count_map,
@@ -113,10 +112,10 @@ impl<'a> ImportsMinifier<'a> {
 
 impl<'a> VisitMut for ImportsMinifier<'a> {
   fn visit_mut_module(&mut self, n: &mut farmfe_core::swc_ecma_ast::Module) {
-    let mut id_to_replace = HashMap::new();
+    let mut id_to_replace = HashMap::default();
 
-    let mut renamed_re_exports = HashMap::<String, HashMap<String, String>>::new();
-    let mut reverted_import_export_star = HashMap::<ModuleId, (usize, Id)>::new();
+    let mut renamed_re_exports = HashMap::<String, HashMap<String, String>>::default();
+    let mut reverted_import_export_star = HashMap::<ModuleId, (usize, Id)>::default();
 
     // visit all import/export from/export * from statement and minify the imported ident
     for (index, item) in n.body.iter_mut().enumerate() {
@@ -246,7 +245,7 @@ impl<'a> VisitMut for ImportsMinifier<'a> {
               .cloned();
 
             if let Some(dep_minified_exports) = dep_minified_exports {
-              let mut filtered_dep_minified_exports = HashMap::new();
+              let mut filtered_dep_minified_exports = HashMap::default();
 
               for (export, minified) in dep_minified_exports {
                 if self.exported_ident_count_map.contains_key(&minified) {
@@ -301,7 +300,7 @@ impl<'a> VisitMut for ImportsMinifier<'a> {
                       Some(ResolveKind::ExportFrom),
                     );
 
-                    let mut current_minified_exports = HashMap::new();
+                    let mut current_minified_exports = HashMap::default();
 
                     if let Some(dep_minified_exports) =
                       self.minified_module_exports_map.get(&dep_module_id)
@@ -573,7 +572,7 @@ impl<'a> VisitMut for IdentReplacer {
 
 #[cfg(test)]
 mod tests {
-  use std::{collections::HashMap, sync::Arc};
+  use std::sync::Arc;
 
   use farmfe_core::{
     module::{
@@ -584,6 +583,7 @@ mod tests {
     swc_common::{Globals, Mark},
     swc_ecma_ast::EsVersion,
     swc_ecma_parser::Syntax,
+    HashMap,
   };
   use farmfe_toolkit::{
     script::{codegen_module, parse_module, swc_try_with::try_with},
@@ -690,10 +690,10 @@ export { hello1, hello2, default as world1 } from './dep';
         .unwrap();
       (module_id, module_graph)
     };
-    let mut minified_module_exports_map = HashMap::from([
+    let mut minified_module_exports_map = HashMap::from_iter([
       (
         ModuleId::from("dep"),
-        HashMap::from([
+        HashMap::from_iter([
           ("hello1".to_string(), "aa".to_string()),
           ("hello2".to_string(), "bb".to_string()),
           ("hello3".to_string(), "cc".to_string()),
@@ -701,11 +701,11 @@ export { hello1, hello2, default as world1 } from './dep';
       ),
       (
         ModuleId::from("dep1"),
-        HashMap::from([("world".to_string(), "dd".to_string())]),
+        HashMap::from_iter([("world".to_string(), "dd".to_string())]),
       ),
       (
         ModuleId::from("dep2"),
-        HashMap::from([
+        HashMap::from_iter([
           ("foo".to_string(), "aa".to_string()),
           ("zoo".to_string(), "bb".to_string()),
           ("bar".to_string(), "cc".to_string()),
@@ -755,7 +755,7 @@ export { aa, bb, default as f } from './dep';
 
     assert_eq!(
       minified_exports_map,
-      &HashMap::from([
+      &HashMap::from_iter([
         ("world".to_string(), "dd".to_string(),),
         ("world1".to_string(), "f".to_string(),),
         ("hello1".to_string(), "aa".to_string(),),

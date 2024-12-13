@@ -57,11 +57,11 @@ impl ResourcePot {
       id: Self::gen_id(&name, ty.clone()),
       name,
       resource_pot_type: ty,
-      modules: HashSet::new(),
+      modules: HashSet::default(),
       meta: ResourcePotMetaData::default(),
       entry_module: None,
-      resources: HashSet::new(),
-      module_groups: HashSet::new(),
+      resources: HashSet::default(),
+      module_groups: HashSet::default(),
       immutable: false,
     }
   }

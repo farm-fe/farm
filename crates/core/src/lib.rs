@@ -51,6 +51,11 @@ pub use swc_ecma_parser;
 pub use swc_html_ast;
 pub use wax;
 
+// re-export common type alias
+pub type HashMap<K, V> = rustc_hash::FxHashMap<K, V>;
+pub type HashSet<K> = rustc_hash::FxHashSet<K>;
+pub type DashMap<K, V> = dashmap::DashMap<K, V, rustc_hash::FxBuildHasher>;
+
 #[macro_export]
 macro_rules! farm_profile_scope {
   ($s:expr) => {

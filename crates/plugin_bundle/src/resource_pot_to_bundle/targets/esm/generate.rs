@@ -1,13 +1,13 @@
-use std::collections::{HashMap, HashSet};
-
 use farmfe_core::{
   error::Result,
-  swc_common::DUMMY_SP,
+  swc_common::{SyntaxContext, DUMMY_SP},
   swc_ecma_ast::{
-    ExportAll, ExportNamedSpecifier, ExportNamespaceSpecifier, ExportSpecifier, ImportDecl,
-    ImportDefaultSpecifier, ImportNamedSpecifier, ImportSpecifier, ImportStarAsSpecifier,
-    ModuleDecl, ModuleExportName, ModuleItem, NamedExport, Str,
+    CallExpr, Callee, ExportAll, ExportDefaultExpr, ExportDefaultSpecifier, ExportNamedSpecifier,
+    ExportNamespaceSpecifier, ExportSpecifier, Expr, ImportDecl, ImportDefaultSpecifier,
+    ImportNamedSpecifier, ImportSpecifier, ImportStarAsSpecifier, ModuleDecl, ModuleExportName,
+    ModuleItem, NamedExport, Str,
   },
+  HashMap, HashSet,
 };
 use farmfe_toolkit::itertools::Itertools;
 
@@ -52,7 +52,7 @@ impl EsmGenerate {
       target_id.to_module_id().to_string()
     });
 
-    let mut uniq_sets = HashSet::new();
+    let mut uniq_sets = HashSet::default();
 
     for exported in export
       .named
@@ -95,14 +95,37 @@ impl EsmGenerate {
       ));
     }
 
-    if let Some(ReferenceKind::Module(source)) = source {
-      if export.all.0 && !module_analyzer_manager.is_commonjs(source) {
+    if let Some(ReferenceKind::Module(source)) = source
+      && export.all.0
+    {
+      let is_commons = module_analyzer_manager.is_commonjs(source);
+
+      if !is_commons {
         stmts.push(ModuleItem::ModuleDecl(ModuleDecl::ExportAll(ExportAll {
           span: DUMMY_SP,
           src: Box::new(source_url.as_ref().unwrap().as_str().into()),
           type_only: false,
           with: None,
         })));
+      } else if is_commons && module_analyzer_manager.is_entry(source) {
+        let ns = module_analyzer_manager
+          .module_global_uniq_name
+          .commonjs_name(source)
+          .map(|i| bundle_variable.render_name(i))
+          .unwrap();
+
+        stmts.push(ModuleItem::ModuleDecl(ModuleDecl::ExportDefaultExpr(
+          ExportDefaultExpr {
+            span: DUMMY_SP,
+            expr: Box::new(Expr::Call(CallExpr {
+              ctxt: SyntaxContext::empty(),
+              span: DUMMY_SP,
+              callee: Callee::Expr(Box::new(Expr::Ident(ns.as_str().into()))),
+              args: vec![],
+              type_args: None,
+            })),
+          },
+        )));
       }
     }
 
@@ -140,7 +163,7 @@ impl EsmGenerate {
     options: &ShareBundleContext,
   ) -> Result<Vec<ModuleItem>> {
     let mut stmts = vec![];
-    let mut generate_import_specifies: HashMap<String, ImportItem> = HashMap::new();
+    let mut generate_import_specifies: HashMap<String, ImportItem> = HashMap::default();
 
     for source in import_map.keys().sorted() {
       let mut is_import_uniq_name = false;

@@ -1,11 +1,9 @@
 //! Cache store of the persistent cache, responsible for reading and writing the cache from the disk.
+use crate::HashMap;
 use dashmap::{mapref::multiple::RefMulti, DashMap};
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 
-use std::{
-  collections::HashMap,
-  path::{Path, PathBuf},
-};
+use std::path::{Path, PathBuf};
 
 use crate::config::Mode;
 

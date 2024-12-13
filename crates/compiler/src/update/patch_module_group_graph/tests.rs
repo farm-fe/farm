@@ -1,11 +1,10 @@
-use std::collections::HashSet;
-
 use farmfe_core::{
   module::{
     module_graph::{ModuleGraph, ModuleGraphEdge, ModuleGraphEdgeDataItem},
     Module,
   },
   plugin::ResolveKind,
+  HashSet,
 };
 use farmfe_plugin_partial_bundling::module_group_graph_from_entries;
 use farmfe_testing_helpers::construct_test_module_graph;
@@ -70,7 +69,10 @@ fn test_patch_module_group_graph_1() {
     &mut module_graph,
     &mut module_group_graph,
   );
-  assert_eq!(affected_groups, HashSet::from(["A".into(), "B".into()]));
+  assert_eq!(
+    affected_groups,
+    HashSet::from_iter(["A".into(), "B".into()])
+  );
 
   let update_module_group_graph = module_group_graph_from_entries(&entries, &mut module_graph);
 
@@ -78,15 +80,15 @@ fn test_patch_module_group_graph_1() {
 
   // makes sure that module_groups field of each module is correct
   let module_a = module_graph.module(&"A".into()).unwrap();
-  assert_eq!(module_a.module_groups, HashSet::from(["A".into()]));
+  assert_eq!(module_a.module_groups, HashSet::from_iter(["A".into()]));
   let module_b = module_graph.module(&"B".into()).unwrap();
-  assert_eq!(module_b.module_groups, HashSet::from(["B".into()]));
+  assert_eq!(module_b.module_groups, HashSet::from_iter(["B".into()]));
   let module_c = module_graph.module(&"C".into()).unwrap();
-  assert_eq!(module_c.module_groups, HashSet::from(["A".into()]));
+  assert_eq!(module_c.module_groups, HashSet::from_iter(["A".into()]));
   let module_d = module_graph.module(&"D".into()).unwrap();
-  assert_eq!(module_d.module_groups, HashSet::from(["B".into()]));
+  assert_eq!(module_d.module_groups, HashSet::from_iter(["B".into()]));
   let module_e = module_graph.module(&"E".into()).unwrap();
-  assert_eq!(module_e.module_groups, HashSet::from(["B".into()]));
+  assert_eq!(module_e.module_groups, HashSet::from_iter(["B".into()]));
 }
 
 #[test]
@@ -130,12 +132,12 @@ fn test_patch_module_group_graph_2() {
   );
   assert_eq!(
     affected_groups,
-    HashSet::from(["A".into(), "B".into(), "F".into()])
+    HashSet::from_iter(["A".into(), "B".into(), "F".into()])
   );
   let module_group_b = module_group_graph.module_group(&"B".into()).unwrap();
   assert_eq!(
     module_group_b.modules(),
-    &HashSet::from(["B".into(), "H".into(), "F".into(), "C".into(), "A".into()])
+    &HashSet::from_iter(["B".into(), "H".into(), "F".into(), "C".into(), "A".into()])
   );
 
   let update_module_group_graph = module_group_graph_from_entries(&start_points, &mut module_graph);
@@ -146,22 +148,22 @@ fn test_patch_module_group_graph_2() {
   let module_a = module_graph.module(&"A".into()).unwrap();
   assert_eq!(
     module_a.module_groups,
-    HashSet::from(["A".into(), "F".into(), "B".into()])
+    HashSet::from_iter(["A".into(), "F".into(), "B".into()])
   );
   let module_b = module_graph.module(&"B".into()).unwrap();
-  assert_eq!(module_b.module_groups, HashSet::from(["B".into()]));
+  assert_eq!(module_b.module_groups, HashSet::from_iter(["B".into()]));
   let module_c = module_graph.module(&"C".into()).unwrap();
   assert_eq!(
     module_c.module_groups,
-    HashSet::from(["A".into(), "F".into(), "B".into()])
+    HashSet::from_iter(["A".into(), "F".into(), "B".into()])
   );
   let module_f = module_graph.module(&"F".into()).unwrap();
   assert_eq!(
     module_f.module_groups,
-    HashSet::from(["B".into(), "F".into()])
+    HashSet::from_iter(["B".into(), "F".into()])
   );
   let module_h = module_graph.module(&"H".into()).unwrap();
-  assert_eq!(module_h.module_groups, HashSet::from(["B".into()]));
+  assert_eq!(module_h.module_groups, HashSet::from_iter(["B".into()]));
 }
 
 #[test]
@@ -203,7 +205,7 @@ fn test_patch_module_group_graph_3() {
   );
   assert_eq!(
     affected_groups,
-    HashSet::from(["A".into(), "B".into(), "F".into(), "D".into()])
+    HashSet::from_iter(["A".into(), "B".into(), "F".into(), "D".into()])
   );
 
   let update_module_group_graph = module_group_graph_from_entries(
@@ -215,25 +217,25 @@ fn test_patch_module_group_graph_3() {
 
   // makes sure that module_groups field of each module is correct
   let module_a = module_graph.module(&"A".into()).unwrap();
-  assert_eq!(module_a.module_groups, HashSet::from(["A".into()]));
+  assert_eq!(module_a.module_groups, HashSet::from_iter(["A".into()]));
   let module_b = module_graph.module(&"B".into()).unwrap();
-  assert_eq!(module_b.module_groups, HashSet::from(["B".into()]));
+  assert_eq!(module_b.module_groups, HashSet::from_iter(["B".into()]));
   let module_c = module_graph.module(&"C".into()).unwrap();
-  assert_eq!(module_c.module_groups, HashSet::from(["A".into()]));
+  assert_eq!(module_c.module_groups, HashSet::from_iter(["A".into()]));
   let module_d = module_graph.module(&"D".into()).unwrap();
   assert_eq!(
     module_d.module_groups,
-    HashSet::from(["B".into(), "D".into()])
+    HashSet::from_iter(["B".into(), "D".into()])
   );
   let module_e = module_graph.module(&"E".into()).unwrap();
-  assert_eq!(module_e.module_groups, HashSet::from(["B".into()]));
+  assert_eq!(module_e.module_groups, HashSet::from_iter(["B".into()]));
   let module_f = module_graph.module(&"F".into()).unwrap();
   assert_eq!(
     module_f.module_groups,
-    HashSet::from(["F".into(), "B".into()])
+    HashSet::from_iter(["F".into(), "B".into()])
   );
   let module_h = module_graph.module(&"H".into()).unwrap();
-  assert_eq!(module_h.module_groups, HashSet::from(["B".into()]));
+  assert_eq!(module_h.module_groups, HashSet::from_iter(["B".into()]));
 }
 
 fn get_edge_info(kind: ResolveKind) -> ModuleGraphEdge {
@@ -303,7 +305,10 @@ fn test_patch_module_group_graph_css_modules() {
     &mut module_graph,
     &mut module_group_graph,
   );
-  assert_eq!(affected_groups, HashSet::from(["D".into(), "B".into()]));
+  assert_eq!(
+    affected_groups,
+    HashSet::from_iter(["D".into(), "B".into()])
+  );
 
   let update_module_group_graph = module_group_graph_from_entries(
     &module_graph.entries.clone().into_keys().collect(),
@@ -348,7 +353,7 @@ fn test_patch_module_group_graph_add_and_remove() {
     &mut module_group_graph,
   );
 
-  assert_eq!(affected_groups, HashSet::from(["a".into()]));
+  assert_eq!(affected_groups, HashSet::from_iter(["a".into()]));
 
   let update_module_group_graph = module_group_graph_from_entries(&start_points, &mut module_graph);
 
@@ -356,7 +361,7 @@ fn test_patch_module_group_graph_add_and_remove() {
 
   // makes sure that module_groups field of each module is correct
   for module in module_graph.modules() {
-    assert_eq!(module.module_groups, HashSet::from(["a".into()]));
+    assert_eq!(module.module_groups, HashSet::from_iter(["a".into()]));
   }
 }
 
@@ -394,7 +399,7 @@ fn test_patch_module_group_graph_remove_and_add() {
     &mut module_group_graph,
   );
 
-  assert_eq!(affected_groups, HashSet::from(["a".into()]));
+  assert_eq!(affected_groups, HashSet::from_iter(["a".into()]));
 
   let update_module_group_graph =
     module_group_graph_from_entries(&vec!["a".into()], &mut module_graph);
@@ -403,7 +408,7 @@ fn test_patch_module_group_graph_remove_and_add() {
 
   // makes sure that module_groups field of each module is correct
   for module in module_graph.modules() {
-    assert_eq!(module.module_groups, HashSet::from(["a".into()]));
+    assert_eq!(module.module_groups, HashSet::from_iter(["a".into()]));
   }
 }
 
@@ -453,7 +458,7 @@ fn test_diff_module_deps_remove_and_add_complex() {
     &mut module_group_graph,
   );
 
-  assert_eq!(affected_groups, HashSet::from(["a".into()]));
+  assert_eq!(affected_groups, HashSet::from_iter(["a".into()]));
 
   let update_module_group_graph =
     module_group_graph_from_entries(&vec!["a".into()], &mut module_graph);
@@ -462,6 +467,6 @@ fn test_diff_module_deps_remove_and_add_complex() {
 
   // makes sure that module_groups field of each module is correct
   for module in module_graph.modules() {
-    assert_eq!(module.module_groups, HashSet::from(["a".into()]));
+    assert_eq!(module.module_groups, HashSet::from_iter(["a".into()]));
   }
 }

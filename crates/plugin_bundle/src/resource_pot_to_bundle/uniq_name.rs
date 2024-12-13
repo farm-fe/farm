@@ -1,7 +1,6 @@
 use std::{
   borrow::Cow,
   cell::{Ref, RefCell, RefMut},
-  collections::{HashMap, HashSet},
   path::PathBuf,
   str::FromStr,
   sync::{
@@ -16,9 +15,8 @@ use farmfe_core::{
   resource::resource_pot::ResourcePotId,
   swc_ecma_ast::Ident,
 };
+use farmfe_core::{HashMap, HashSet};
 use farmfe_toolkit::fs::normalize_file_name_as_variable;
-
-use crate::resource_pot_to_bundle::bundle::reference::ReferenceQueryResult;
 
 use super::{
   bundle::{bundle_reference::ReferenceKind, ModuleAnalyzerManager},
@@ -33,7 +31,7 @@ pub struct UniqName {
 impl UniqName {
   pub fn new() -> Self {
     Self {
-      name_count_map: HashMap::new(),
+      name_count_map: HashMap::default(),
     }
   }
 
@@ -196,7 +194,7 @@ impl BundleVariable {
 
       map.insert(var_ident, create_index());
     } else {
-      let mut map = HashMap::new();
+      let mut map = HashMap::default();
       map.insert(var_ident, create_index());
       self.module_defined_vars.insert(module_id.clone(), map);
     }
@@ -637,7 +635,7 @@ impl FindModuleExportResult {
 
 #[cfg(test)]
 mod tests {
-  use std::{collections::HashMap, sync::Arc};
+  use std::sync::Arc;
 
   use farmfe_core::{
     config::Config,
@@ -649,6 +647,7 @@ mod tests {
       Module, ModuleId, ModuleMetaData,
     },
     resource::resource_pot::ResourcePotId,
+    HashMap,
   };
 
   use crate::resource_pot_to_bundle::{
@@ -715,7 +714,7 @@ mod tests {
       Default::default(),
     ));
 
-    let mut module_analyzer_map = HashMap::new();
+    let mut module_analyzer_map = HashMap::default();
 
     let mut b_module_analyzer = ModuleAnalyzer::new(
       &b_module,
@@ -823,7 +822,7 @@ mod tests {
       },
     ));
 
-    let mut module_analyzer_map = HashMap::new();
+    let mut module_analyzer_map = HashMap::default();
 
     let mut index_module_analyzer = ModuleAnalyzer::new(
       &index_module,

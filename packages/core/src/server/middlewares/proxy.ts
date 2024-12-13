@@ -1,6 +1,6 @@
 import httpProxy from 'http-proxy';
 import { ResolvedUserConfig } from '../../config/types.js';
-import { colors } from '../../utils/index.js';
+import { colors, isDevServer } from '../../utils/index.js';
 
 import type * as http from 'node:http';
 import type * as net from 'node:net';
@@ -8,6 +8,8 @@ import type Server from 'http-proxy';
 
 import type Connect from 'connect';
 import type { Server as DevServer, HttpServer } from '../index.js';
+import { PreviewServer } from '../preview.js';
+
 export interface ProxyOptions extends httpProxy.ServerOptions {
   rewrite?: (path: string) => string;
   configure?: (proxy: httpProxy, options: ProxyOptions) => void;
@@ -20,10 +22,13 @@ export interface ProxyOptions extends httpProxy.ServerOptions {
 }
 
 export function proxyMiddleware(
-  app: DevServer,
+  app: DevServer | PreviewServer,
   middlewareServer: HttpServer | unknown
 ): Connect.NextHandleFunction {
-  const { serverOptions, resolvedUserConfig } = app;
+  const isDev = isDevServer(app);
+
+  const { resolvedUserConfig } = app;
+  const serverOptions = isDev ? app.serverOptions : app.previewServerOptions;
 
   const proxies: Record<string, [Server, ProxyOptions]> = {};
   Object.keys(serverOptions.proxy).forEach((context) => {

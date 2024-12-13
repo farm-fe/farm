@@ -22,7 +22,7 @@ var index_js_cjs = __commonJs((module, exports)=>{
     global['__farm_default_namespace__'].__farm_module_system__.setPlugins([]);
 });
 index_js_cjs();
-var __farm_external_module_jquery = require("jquery");global['__farm_default_namespace__'].__farm_module_system__.setExternalModules({"jquery": __farm_external_module_jquery});(function(_){for(var r in _){_[r].__farm_resource_pot__='file://'+__filename;global['__farm_default_namespace__'].__farm_module_system__.register(r,_[r])}})({"b5d64806":function  (module, exports, farmRequire, farmDynamicRequire) {
+var __farm_external_module_jquery = require("jquery");global['__farm_default_namespace__'].__farm_module_system__.setExternalModules({"jquery": __farm_external_module_jquery});(function(_){var filename = ((function(){var _documentCurrentScript = typeof document !== "undefined" ? document.currentScript : null;return typeof document === "undefined" ? require("url").pathToFileURL(__filename).href : _documentCurrentScript && _documentCurrentScript.src || new URL("index_dcdc.js", document.baseURI).href})());for(var r in _){_[r].__farm_resource_pot__=filename;global['__farm_default_namespace__'].__farm_module_system__.register(r,_[r])}})({"b5d64806":function  (module, exports, farmRequire, farmDynamicRequire) {
     module._m(exports);
     var _f_jquery = module.i(farmRequire('jquery'));
     console.log(module.f(_f_jquery).find);

@@ -23,6 +23,7 @@ use crate::{
     ResourceType,
   },
   stats::Stats,
+  HashMap,
 };
 
 use self::log_store::LogStore;
@@ -57,7 +58,7 @@ impl CompilationContext {
       module_graph: Box::new(RwLock::new(ModuleGraph::new())),
       module_group_graph: Box::new(RwLock::new(ModuleGroupGraph::new())),
       resource_pot_map: Box::new(RwLock::new(ResourcePotMap::new())),
-      resources_map: Box::new(Mutex::new(HashMap::new())),
+      resources_map: Box::new(Mutex::new(HashMap::default())),
       plugin_driver: Box::new(Self::create_plugin_driver(plugins, config.record)),
       cache_manager: Box::new(CacheManager::new(
         &cache_dir,
@@ -68,8 +69,8 @@ impl CompilationContext {
       meta: Box::new(ContextMetaData::new()),
       stats: Box::new(Stats::new()),
       log_store: Box::new(Mutex::new(LogStore::new())),
-      resolve_cache: Box::new(Mutex::new(HashMap::new())),
-      custom: Box::new(DashMap::new()),
+      resolve_cache: Box::new(Mutex::new(HashMap::default())),
+      custom: Box::new(DashMap::default()),
     })
   }
 

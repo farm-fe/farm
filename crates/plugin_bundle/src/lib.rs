@@ -1,10 +1,7 @@
 #![feature(box_patterns)]
 #![feature(let_chains)]
 
-use std::{
-  collections::{HashMap, HashSet},
-  sync::Arc,
-};
+use std::sync::Arc;
 
 use farmfe_core::{
   config::{
@@ -239,7 +236,7 @@ impl Plugin for FarmPluginBundle {
       return Ok(None);
     }
 
-    let mut map = HashMap::new();
+    let mut map = HashMap::default();
 
     for (name, resource) in param.resources_map.iter() {
       if let ResourceOrigin::ResourcePot(id) = &resource.origin {

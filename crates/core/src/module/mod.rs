@@ -1,5 +1,6 @@
 use std::{hash::Hash, path::Path, sync::Arc};
 
+use crate::{HashMap, HashSet};
 use blake2::{
   digest::{Update, VariableOutput},
   Blake2bVar,
@@ -83,7 +84,7 @@ impl Module {
       id,
       module_type: ModuleType::Custom("__farm_unknown".to_string()),
       meta: Box::new(ModuleMetaData::default()),
-      module_groups: HashSet::new(),
+      module_groups: HashSet::default(),
       resource_pot: None,
       side_effects: true,
       source_map_chain: vec![],
@@ -454,7 +455,8 @@ mod tests {
       imports: Vec<String>,
     }
 
-    module.module_groups = HashSet::from([ModuleId::new("1", "", ""), ModuleId::new("2", "", "")]);
+    module.module_groups =
+      HashSet::from_iter([ModuleId::new("1", "", ""), ModuleId::new("2", "", "")]);
 
     module.meta = Box::new(ModuleMetaData::Custom(CustomMetaDataMap::from(
       HashMap::from([(

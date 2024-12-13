@@ -56,6 +56,7 @@ puffin = { version = "0.19.1", features = [
 ], optional = true }
 regex = "1.7.3"
 enhanced-magic-string = { version = "0.1.0" }
+rustc-hash = "2.0.0"
 
 [features]
 profile = ["dep:puffin"]

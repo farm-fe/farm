@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use dashmap::DashMap;
 use farmfe_utils::hash::sha256;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
@@ -10,7 +8,7 @@ use crate::{
   config::Mode,
   deserialize,
   module::ModuleId,
-  serialize,
+  serialize, HashMap,
 };
 
 use super::{module_memory_store::ModuleMemoryStore, CachedModule};
@@ -32,8 +30,21 @@ impl MutableModulesMemoryStore {
   }
 
   fn gen_cache_store_key(&self, module: &crate::module::Module) -> CacheStoreKey {
+    // Fix vue cache timestamp validation. Tools like vue may generate virtual modules which id is ends with .vue?vue,
+    // if the original module is changed, but the virtual module's content hash is not changed, in this cache, the cache should be invalidated.
+    let timestamp = if module.id.query_string().is_empty() {
+      0
+    } else {
+      module.last_update_timestamp
+    };
     let hash_key = sha256(
-      format!("{}{}", module.content_hash, module.id.to_string()).as_bytes(),
+      format!(
+        "{}{}{}",
+        module.content_hash,
+        module.id.to_string(),
+        timestamp
+      )
+      .as_bytes(),
       32,
     );
     CacheStoreKey {
@@ -111,7 +122,7 @@ impl ModuleMemoryStore for MutableModulesMemoryStore {
   }
 
   fn write_cache(&self) {
-    let mut cache_map = HashMap::new();
+    let mut cache_map = HashMap::default();
 
     for entry in self.cached_modules.iter() {
       let module = entry.value();

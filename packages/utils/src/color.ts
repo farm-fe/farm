@@ -181,17 +181,6 @@ export function interpolateColor(
 export const PersistentCacheBrand =
   brandColor('⚡️') +
   gradientString(`FULL EXTREME!`, [
-    // gradientPurpleColor,
-    // interpolateColor(gradientPurpleColor, gradientPinkColor, 0.1),
-    // interpolateColor(gradientPurpleColor, gradientPinkColor, 0.2),
-    // interpolateColor(gradientPurpleColor, gradientPinkColor, 0.3),
-    // interpolateColor(gradientPurpleColor, gradientPinkColor, 0.4),
-    // interpolateColor(gradientPurpleColor, gradientPinkColor, 0.5),
-    // interpolateColor(gradientPurpleColor, gradientPinkColor, 0.6),
-    // interpolateColor(gradientPurpleColor, gradientPinkColor, 0.7),
-    // interpolateColor(gradientPurpleColor, gradientPinkColor, 0.8),
-    // interpolateColor(gradientPurpleColor, gradientPinkColor, 0.9),
-    // gradientPinkColor
     gradientPurpleColor,
     interpolateColor(gradientPurpleColor, gradientPinkColor, 0.2),
     interpolateColor(gradientPurpleColor, gradientPinkColor, 0.4),

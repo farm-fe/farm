@@ -1,8 +1,7 @@
-use std::collections::{HashMap, HashSet};
-
 use farmfe_core::{
   config::{partial_bundling::PartialBundlingConfig, Config},
   module::{module_graph::ModuleGraph, Module, ModuleId},
+  HashMap, HashSet,
 };
 
 use crate::{
@@ -17,7 +16,7 @@ pub fn generate_module_pots(
   groups_enforce_map: &HashMap<String, bool>,
 ) -> Vec<ModulePot> {
   let partial_bundling = &config.partial_bundling;
-  let mut module_pot_map = HashMap::<String, ModulePot>::new();
+  let mut module_pot_map = HashMap::<String, ModulePot>::default();
 
   for module_id in modules {
     let module = module_graph.module(module_id).unwrap();
@@ -164,9 +163,9 @@ mod tests {
       Config,
     },
     module::{module_graph::ModuleGraph, Module, ModuleType},
+    HashSet,
   };
   use farmfe_testing_helpers::{assert_debug_snapshot, fixture};
-  use std::collections::HashSet;
   use std::mem;
 
   use crate::{generate_module_buckets::ResourceType, generate_module_pots::generate_module_pots};
@@ -188,7 +187,7 @@ mod tests {
   fn test_generate_module_pots_package() {
     fixture!(
       "tests/fixtures/generate_module_pots/basic/index.ts",
-      |_, cwd| {
+      |_, _cwd| {
         let mut module_graph = ModuleGraph::new();
         let mut module_index =
           Module::new("tests/fixtures/generate_module_pots/basic/index.ts".into());

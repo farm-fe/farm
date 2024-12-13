@@ -123,11 +123,11 @@ export class Logger implements ILogger {
       this.customLogger.logMessage(level, message, color, clearScreen);
       return;
     }
-    const loggerMethod =
-      level in LOGGER_METHOD
-        ? LOGGER_METHOD[level as keyof typeof LOGGER_METHOD]
-        : 'log';
-    if (this.levelValues[level] <= this.levelValues[level]) {
+
+    const minLevel = process.env.LOG_LEVEL || 'info';
+    if (
+      this.levelValues[level] >= this.levelValues[minLevel as LogLevelNames]
+    ) {
       if (this.canClearScreen && clearScreen) {
         this.clear();
       }
@@ -145,12 +145,9 @@ export class Logger implements ILogger {
       } else {
         loggerMessage = message.message;
       }
+      loggerMessage = color ? color(loggerMessage) : loggerMessage;
 
-      if (color && typeof message === 'string') {
-        loggerMessage = color(loggerMessage);
-      }
-
-      console[loggerMethod](prefixColored + loggerMessage);
+      console.log(prefixColored + loggerMessage);
     }
   }
 
@@ -271,8 +268,8 @@ export function bootstrap(
     const shortFile = getShortName(config.configFilePath, config.root);
     config.logger.info(`Using config file at ${bold(green(shortFile))}`, true);
   }
-  const usePersistentCache = config.compilation.persistentCache && hasCacheDir;
-  const persistentCacheFlag = usePersistentCache
+  const hasPersistentCache = config.compilation.persistentCache && hasCacheDir;
+  const persistentCacheFlag = hasPersistentCache
     ? colors.bold(PersistentCacheBrand)
     : '';
 

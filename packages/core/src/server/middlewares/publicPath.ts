@@ -1,10 +1,17 @@
-import { cleanUrl, withTrailingSlash } from '../../utils/index.js';
+import { cleanUrl, isDevServer, withTrailingSlash } from '../../utils/index.js';
 
 import type Connect from 'connect';
-import type { Server } from '../index.js';
+import { Server as DevServer } from '../index.js';
+import type { PreviewServer } from '../preview.js';
 
-export function publicPathMiddleware(app: Server): Connect.NextHandleFunction {
-  const { publicPath, serverOptions } = app;
+export function publicPathMiddleware(
+  app: DevServer | PreviewServer
+): Connect.NextHandleFunction {
+  const isDev = isDevServer(app);
+
+  const publicPath = app.publicPath;
+  const middlewareMode = isDev ? app.serverOptions.middlewareMode : false;
+
   return function handlePublicPathMiddleware(req, res, next) {
     // auto redirect to public path
     const url = cleanUrl(req.url);
@@ -14,7 +21,7 @@ export function publicPathMiddleware(app: Server): Connect.NextHandleFunction {
       return next();
     }
 
-    if (serverOptions.middlewareMode) {
+    if (middlewareMode) {
       return next();
     }
 

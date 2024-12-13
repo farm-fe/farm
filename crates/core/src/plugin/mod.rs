@@ -1,4 +1,4 @@
-use std::{any::Any, collections::HashMap, hash::Hash, sync::Arc};
+use std::{any::Any, hash::Hash, sync::Arc};
 
 use farmfe_macro_cache_item::cache_item;
 use rkyv::Deserialize;
@@ -13,6 +13,7 @@ use crate::{
   },
   resource::{meta_data::ResourcePotMetaData, resource_pot::ResourcePot, Resource, ResourceType},
   stats::Stats,
+  HashMap,
 };
 
 pub mod constants;

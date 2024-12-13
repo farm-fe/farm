@@ -285,9 +285,18 @@ export interface ScriptConfig {
   /**
    * https://www.typescriptlang.org/tsconfig/#importsNotUsedAsValues
    *
-   * @default true
+   * @default "remove"
    */
-  importNotUsedAsValues?: 'remove' | 'preserve';
+  importNotUsedAsValues?:
+    | 'remove'
+    | 'preserve'
+    | {
+        /**
+         * modules that match any of this regex string array would treated as 'preserve'
+         * otherwise, it would be 'remove'
+         */
+        preserve?: string[];
+      };
 }
 
 export interface CssConfig {
@@ -323,6 +332,19 @@ export interface CssConfig {
   _viteCssOptions?: any;
 }
 
+export interface GlobalBuiltinCacheKeyStrategy {
+  /** @default true */
+  define?: boolean;
+  /** @default true */
+  buildDependencies?: boolean;
+  /** @default true */
+  lockfile?: boolean;
+  /** @default true */
+  packageJson?: boolean;
+  /** @default true */
+  env?: boolean;
+}
+
 export interface PersistentCacheConfig {
   namespace?: string;
   cacheDir?: string;
@@ -341,18 +363,7 @@ export interface PersistentCacheConfig {
    *  lockfile: false
    * }
    */
-  globalBuiltinCacheKeyStrategy?: {
-    /** @default true */
-    define?: boolean;
-    /** @default true */
-    buildDependencies?: boolean;
-    /** @default true */
-    lockfile?: boolean;
-    /** @default true */
-    packageJson?: boolean;
-    /** @default true */
-    env?: boolean;
-  };
+  globalBuiltinCacheKeyStrategy?: GlobalBuiltinCacheKeyStrategy;
 }
 
 export interface PartialBundlingConfig {

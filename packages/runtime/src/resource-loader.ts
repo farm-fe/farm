@@ -1,7 +1,7 @@
 // using native ability to load resources if target env is node.
 
-import type { ModuleSystem } from './module-system';
-import type { ResourceLoadResult } from './plugin';
+import type { ModuleSystem } from './module-system.js';
+import type { ResourceLoadResult } from './plugin.js';
 
 export interface Resource {
   path: string;

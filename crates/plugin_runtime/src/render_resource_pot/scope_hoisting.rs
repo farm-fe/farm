@@ -1,7 +1,4 @@
-use std::{
-  collections::{HashMap, HashSet},
-  sync::Arc,
-};
+use std::sync::Arc;
 
 use farmfe_core::{
   config::ModuleFormat,
@@ -39,7 +36,7 @@ pub struct ScopeHoistedModuleGroup {
 impl ScopeHoistedModuleGroup {
   pub fn new(target_hoisted_module_id: ModuleId) -> Self {
     Self {
-      hoisted_module_ids: HashSet::from([target_hoisted_module_id.clone()]),
+      hoisted_module_ids: HashSet::from_iter([target_hoisted_module_id.clone()]),
       target_hoisted_module_id,
     }
   }
@@ -102,8 +99,8 @@ pub fn build_scope_hoisted_module_groups(
   module_graph: &ModuleGraph,
   context: &Arc<CompilationContext>,
 ) -> Vec<ScopeHoistedModuleGroup> {
-  let mut scope_hoisted_module_groups_map = HashMap::new();
-  let mut reverse_module_hoisted_group_map = HashMap::new();
+  let mut scope_hoisted_module_groups_map = HashMap::default();
+  let mut reverse_module_hoisted_group_map = HashMap::default();
 
   for module_id in resource_pot.modules() {
     scope_hoisted_module_groups_map.insert(
@@ -130,7 +127,7 @@ pub fn build_scope_hoisted_module_groups(
     });
 
     let mut merged_scope_hoisted_module_groups_map: HashMap<ModuleId, HashSet<ModuleId>> =
-      HashMap::new();
+      HashMap::default();
 
     for group in scope_hoisted_module_groups {
       let module = module_graph
@@ -194,7 +191,7 @@ pub fn build_scope_hoisted_module_groups(
     for (target_hoisted_module_id, hoisted_module_ids) in
       merged_scope_hoisted_module_groups_map.into_iter()
     {
-      let mut all_hoisted_module_ids = HashSet::new();
+      let mut all_hoisted_module_ids = HashSet::default();
 
       for hoisted_module_id in hoisted_module_ids {
         let hoisted_module_group = scope_hoisted_module_groups_map
@@ -221,12 +218,11 @@ pub fn build_scope_hoisted_module_groups(
 
 #[cfg(test)]
 mod tests {
-  use std::collections::HashSet;
-
   use farmfe_core::{
     config::Config,
     context::CompilationContext,
     resource::resource_pot::{ResourcePot, ResourcePotType},
+    HashSet,
   };
   use farmfe_testing_helpers::construct_test_module_graph;
 
@@ -263,23 +259,23 @@ mod tests {
       vec![
         super::ScopeHoistedModuleGroup {
           target_hoisted_module_id: "A".into(),
-          hoisted_module_ids: HashSet::from(["A".into()]),
+          hoisted_module_ids: HashSet::from_iter(["A".into()]),
         },
         super::ScopeHoistedModuleGroup {
           target_hoisted_module_id: "B".into(),
-          hoisted_module_ids: HashSet::from(["B".into(), "E".into(), "G".into(),]),
+          hoisted_module_ids: HashSet::from_iter(["B".into(), "E".into(), "G".into(),]),
         },
         super::ScopeHoistedModuleGroup {
           target_hoisted_module_id: "C".into(),
-          hoisted_module_ids: HashSet::from(["C".into()]),
+          hoisted_module_ids: HashSet::from_iter(["C".into()]),
         },
         super::ScopeHoistedModuleGroup {
           target_hoisted_module_id: "D".into(),
-          hoisted_module_ids: HashSet::from(["D".into(),]),
+          hoisted_module_ids: HashSet::from_iter(["D".into(),]),
         },
         super::ScopeHoistedModuleGroup {
           target_hoisted_module_id: "F".into(),
-          hoisted_module_ids: HashSet::from(["F".into(),]),
+          hoisted_module_ids: HashSet::from_iter(["F".into(),]),
         },
       ]
     );

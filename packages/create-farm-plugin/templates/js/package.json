@@ -27,7 +27,7 @@
     "@farmfe/cli": "^1.0.1",
     "@farmfe/core": "^1.1.1",
     "@farmfe/js-plugin-dts": "^0.5.1",
-    "@types/node": "^20.11.16",
+    "@types/node": "^18.19.67",
     "cross-env": "^7.0.3"
   },
   "files": [

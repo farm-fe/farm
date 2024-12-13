@@ -1,5 +1,3 @@
-use std::collections::HashSet;
-
 use farmfe_core::{
   error::{CompilationError, Result},
   farm_profile_function,
@@ -9,6 +7,7 @@ use farmfe_core::{
     self, DefaultDecl, ExportDecl, Expr, Ident, ImportSpecifier, ModuleDecl, ModuleExportName,
     ModuleItem, Pat,
   },
+  HashSet,
 };
 use farmfe_toolkit::swc_ecma_visit::{Visit, VisitWith};
 
@@ -27,7 +26,7 @@ pub struct CollectUnresolvedIdent {
 impl CollectUnresolvedIdent {
   pub fn new(unresolved_mark: Mark) -> Self {
     CollectUnresolvedIdent {
-      unresolved_ident: HashSet::new(),
+      unresolved_ident: HashSet::default(),
       unresolved_mark,
     }
   }
@@ -70,7 +69,7 @@ impl<'a> AnalyzeModuleItem<'a> {
       id,
       import: None,
       export: None,
-      defined_idents: HashSet::new(),
+      defined_idents: HashSet::default(),
       module_id,
       module_graph,
       _register_var: Box::new(register_var),

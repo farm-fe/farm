@@ -1,6 +1,5 @@
-use std::collections::HashMap;
-
 use farmfe_core::module::{module_graph::ModuleGraph, ModuleId, ModuleSystem};
+use farmfe_core::HashMap;
 
 use crate::module::{TreeShakeModule, UsedExports};
 

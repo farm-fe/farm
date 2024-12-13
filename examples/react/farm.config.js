@@ -1,10 +1,10 @@
-import { defineConfig } from '@farmfe/core';
-import react from '@farmfe/plugin-react';
+import { defineConfig } from "@farmfe/core";
+import react from "@farmfe/plugin-react";
 
 export default defineConfig((env) => {
   console.log(env);
   console.log(process.env.NODE_ENV);
-  
+
   return {
     compilation: {
       sourcemap: true,
@@ -15,22 +15,28 @@ export default defineConfig((env) => {
       },
       presetEnv: false,
       minify: false,
-      progress: false
+      progress: false,
       // output: {
       //   publicPath: '/dist/'
       // },
+      runtime: {
+        isolate: true,
+      },
     },
     server: {
       port: 4000,
       proxy: {
-        '^/(api|login|register|messages)': {
-          target: 'https://petstore.swagger.io/v2',
-          ws: true
+        "^/(api|login|register|messages)": {
+          target: "https://petstore.swagger.io/v2",
+          ws: true,
         },
-      }
+      },
     },
-    plugins: [react({
-      useAbsolutePath: true
-    }), '@farmfe/plugin-sass']
+    plugins: [
+      react({
+        useAbsolutePath: true,
+      }),
+      "@farmfe/plugin-sass",
+    ],
   };
 });

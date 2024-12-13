@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use std::path::PathBuf;
 
 use farmfe_core::{
@@ -11,6 +10,7 @@ use farmfe_core::{
   plugin::ResolveKind,
   relative_path::RelativePath,
   wax::Glob,
+  HashMap,
 };
 
 pub mod assert;
@@ -118,7 +118,8 @@ pub fn construct_test_module_graph() -> ModuleGraph {
     )
     .unwrap();
 
-  graph.entries = HashMap::from([("A".into(), "A".to_string()), ("B".into(), "B".to_string())]);
+  graph.entries =
+    HashMap::from_iter([("A".into(), "A".to_string()), ("B".into(), "B".to_string())]);
 
   graph
 }

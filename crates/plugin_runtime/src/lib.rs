@@ -1,10 +1,6 @@
 #![feature(box_patterns)]
 
-use std::{
-  any::Any,
-  collections::{HashMap, HashSet, VecDeque},
-  sync::Arc,
-};
+use std::{any::Any, collections::VecDeque, sync::Arc};
 
 use farmfe_core::{
   config::{
@@ -132,7 +128,7 @@ impl Plugin for FarmPluginRuntime {
         context,
         &PluginHookContext {
           caller: hook_context.add_caller(PLUGIN_NAME),
-          meta: HashMap::new(),
+          meta: HashMap::default(),
         },
       )?;
 

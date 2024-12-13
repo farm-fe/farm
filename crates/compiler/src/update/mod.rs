@@ -1,7 +1,4 @@
-use std::{
-  collections::{HashMap, HashSet},
-  sync::Arc,
-};
+use std::sync::Arc;
 
 use farmfe_core::{
   cache::module_cache::CachedModule,
@@ -13,6 +10,7 @@ use farmfe_core::{
   serde::Serialize,
   serde_json::{self, json},
   stats::CompilationPluginHookStats,
+  HashMap, HashSet,
 };
 
 use farmfe_toolkit::get_dynamic_resources_map::get_dynamic_resources_map;
@@ -260,7 +258,9 @@ impl Compiler {
     self.set_module_group_graph_stats();
 
     // update cache
-    set_updated_modules_cache(&updated_module_ids, &diff_result, &self.context);
+    if self.context.config.persistent_cache.enabled() {
+      set_updated_modules_cache(&updated_module_ids, &diff_result, &self.context);
+    }
 
     // call module graph updated hook
     self.context.plugin_driver.module_graph_updated(
@@ -647,7 +647,7 @@ impl Compiler {
       let resources_map = self.context.resources_map.lock();
       let module_graph = self.context.module_graph.read();
 
-      let mut dynamic_resources = HashMap::new();
+      let mut dynamic_resources = HashMap::default();
 
       for entry_id in module_graph.entries.keys() {
         dynamic_resources.extend(get_dynamic_resources_map(

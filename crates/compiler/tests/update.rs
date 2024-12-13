@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use std::fs::File;
 use std::io::{Read, Write};
 use std::path::PathBuf;
@@ -11,6 +10,7 @@ use farmfe_core::config::persistent_cache::PersistentCacheConfig;
 use farmfe_core::config::TargetEnv;
 use farmfe_core::config::{preset_env::PresetEnvConfig, Config, Mode, SourcemapConfig};
 use farmfe_core::plugin::UpdateType;
+use farmfe_core::HashMap;
 use farmfe_testing_helpers::{fixture, is_update_snapshot_from_env};
 
 mod common;
@@ -112,7 +112,7 @@ fn update_without_dependencies_change() {
     |file, crate_path| {
       let cwd = file.parent().unwrap().to_path_buf();
       let compiler = create_update_compiler(
-        HashMap::from([("index".to_string(), "./index.html".to_string())]),
+        HashMap::from_iter([("index".to_string(), "./index.html".to_string())]),
         cwd.clone(),
         crate_path,
         false,
@@ -146,7 +146,7 @@ fn update_without_dependencies_change_css() {
     |file, crate_path| {
       let cwd = file.parent().unwrap().to_path_buf();
       let compiler = create_update_compiler(
-        HashMap::from([("index".to_string(), "./index.html".to_string())]),
+        HashMap::from_iter([("index".to_string(), "./index.html".to_string())]),
         cwd.clone(),
         crate_path,
         false,
@@ -195,7 +195,7 @@ fn update_with_dependencies_change_css_modules() {
     |file, crate_path| {
       let cwd = file.parent().unwrap().to_path_buf();
       let compiler = create_update_compiler(
-        HashMap::from([("index".to_string(), "./index.html".to_string())]),
+        HashMap::from_iter([("index".to_string(), "./index.html".to_string())]),
         cwd.clone(),
         crate_path,
         false,
@@ -303,7 +303,7 @@ fn update_css_and_css_raw() {
   fixture!("tests/fixtures/update/raw/index.ts", |file, crate_path| {
     let cwd = file.parent().unwrap().to_path_buf();
     let compiler = create_update_compiler(
-      HashMap::from([("index".to_string(), "./index.ts".to_string())]),
+      HashMap::from_iter([("index".to_string(), "./index.ts".to_string())]),
       cwd.clone(),
       crate_path,
       false,
@@ -346,7 +346,7 @@ fn update_lazy_compilation() {
     |file, crate_path| {
       let cwd = file.parent().unwrap().to_path_buf();
       let compiler = create_lazy_update_compiler(
-        HashMap::from([("index".to_string(), "./index.ts".to_string())]),
+        HashMap::from_iter([("index".to_string(), "./index.ts".to_string())]),
         cwd.clone(),
         crate_path,
         false,
@@ -383,7 +383,7 @@ fn update_lazy_compilation_node() {
     |file, crate_path| {
       let cwd = file.parent().unwrap().to_path_buf();
       let compiler = create_lazy_update_compiler(
-        HashMap::from([("index".to_string(), "./index.ts".to_string())]),
+        HashMap::from_iter([("index".to_string(), "./index.ts".to_string())]),
         cwd.clone(),
         crate_path,
         false,

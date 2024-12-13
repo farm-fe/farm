@@ -1,4 +1,4 @@
-use std::{collections::HashMap, ffi::OsStr};
+use std::ffi::OsStr;
 
 use crate::{
   script::defined_idents_collector::DefinedIdentsCollector,
@@ -15,6 +15,7 @@ use farmfe_core::{
     Module as SwcModule, ModuleDecl, ModuleExportName, ModuleItem, NamedExport, Pat, Prop,
     ReturnStmt, SimpleAssignTarget, Stmt, Str, VarDecl, VarDeclKind, VarDeclarator,
   },
+  HashMap,
 };
 
 ///
@@ -281,7 +282,7 @@ pub fn transform_module_decls<F: RuntimeCalleeAllocator>(
   // all import items should be placed at the top of the module
   let mut import_items = vec![];
   let mut export_items = vec![];
-  let mut import_bindings_map = HashMap::new();
+  let mut import_bindings_map = HashMap::default();
   let mut is_es_module = false;
 
   for item in ast.body.take() {

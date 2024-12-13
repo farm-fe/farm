@@ -1,6 +1,5 @@
-use std::collections::{HashMap, HashSet};
-
 use farmfe_core::swc_ecma_ast::{Expr, Id, Lit, ModuleItem};
+use farmfe_core::{HashMap, HashSet};
 use farmfe_toolkit::swc_ecma_visit::{Visit, VisitWith};
 
 use super::{ImportSpecifierInfo, StatementGraph, StatementGraphEdge, StatementId};
@@ -66,7 +65,7 @@ impl<'a> UsedImportAllCollector<'a> {
   pub fn new(namespace_ident: &'a Id) -> Self {
     Self {
       namespace_ident,
-      used_import_all_fields: HashSet::new(),
+      used_import_all_fields: HashSet::default(),
     }
   }
 }
