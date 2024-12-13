@@ -1,6 +1,5 @@
-use std::collections::{HashMap, HashSet};
-
 use farmfe_core::{plugin::ResolveKind, swc_ecma_ast::Id};
+use farmfe_core::{HashMap, HashSet};
 
 use crate::module::{UsedExports, UsedExportsIdent};
 
@@ -63,7 +62,7 @@ impl TracedUsedImportStatement {
     used_defined_idents: &HashSet<UsedStatementIdent>,
     mut used_import_all_fields: HashMap<Id, HashSet<UsedImportAllFields>>,
   ) -> Self {
-    let mut used_stmt_idents = HashSet::new();
+    let mut used_stmt_idents = HashSet::default();
     // for import, we only care about swc ident
     let used_defined_idents = used_defined_idents
       .iter()
@@ -137,7 +136,7 @@ impl TracedUsedImportStatement {
     used_defined_idents: &HashSet<UsedStatementIdent>,
   ) -> Option<Self> {
     if let Some(source) = &export_info.source {
-      let mut used_stmt_idents = HashSet::new();
+      let mut used_stmt_idents = HashSet::default();
 
       for specifier in &export_info.specifiers {
         match specifier {

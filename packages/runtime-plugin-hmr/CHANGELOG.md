@@ -1,5 +1,17 @@
 # @farmfe/runtime-plugin-hmr
 
+## 4.0.0-nightly-20241029095811
+
+### Major Changes
+
+- 669e2b8: use prismjs instead of highlightjs improve performance
+
+## 4.0.0-nightly-20241023020505
+
+### Major Changes
+
+- cab79e8: bump major version with runtime
+
 ## 3.5.10
 
 ### Patch Changes

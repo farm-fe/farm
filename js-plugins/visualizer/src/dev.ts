@@ -17,7 +17,7 @@ export default function farmRecorderPlugin(): JsPlugin {
       config.compilation = { ...config.compilation, record: true };
       return config;
     },
-    configureDevServer(server) {
+    configureServer(server) {
       const middlewares = [records] as DevServerMiddleware[];
       server.applyMiddlewares(middlewares);
     }

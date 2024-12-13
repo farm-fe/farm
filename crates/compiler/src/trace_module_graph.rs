@@ -1,6 +1,5 @@
-use std::collections::HashMap;
-
 use farmfe_core::serde::{Deserialize, Serialize};
+use farmfe_core::HashMap;
 
 use crate::Compiler;
 
@@ -27,8 +26,8 @@ impl TracedModuleGraph {
     Self {
       root,
       modules: vec![],
-      edges: HashMap::new(),
-      reverse_edges: HashMap::new(),
+      edges: HashMap::default(),
+      reverse_edges: HashMap::default(),
     }
   }
 

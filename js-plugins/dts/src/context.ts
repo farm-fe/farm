@@ -37,7 +37,7 @@ export default class Context {
       clearPureImport: true,
       insertTypesEntry: false,
       noEmitOnError: false,
-      skipDiagnostics: false,
+      skipDiagnostics: true,
       copyDtsFiles: false,
       afterDiagnostic: () => ({})
     };
@@ -238,7 +238,7 @@ export default class Context {
     if (!this.options.skipDiagnostics) {
       const diagnostics = this.project.getPreEmitDiagnostics();
       if (diagnostics?.length) {
-        this.logger.warn(
+        this.logger.error(
           this.project.formatDiagnosticsWithColorAndContext(diagnostics)
         );
       }

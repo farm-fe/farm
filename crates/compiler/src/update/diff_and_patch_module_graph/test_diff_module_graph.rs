@@ -1,11 +1,10 @@
-use std::collections::HashSet;
-
 use farmfe_core::{
   module::{
     module_graph::{ModuleGraph, ModuleGraphEdge, ModuleGraphEdgeDataItem},
     Module,
   },
   plugin::ResolveKind,
+  HashSet,
 };
 use farmfe_testing_helpers::construct_test_module_graph;
 
@@ -84,10 +83,10 @@ fn test_diff_module_graph_complex_2() {
   let removed_modules = diff_result.removed_modules;
   let diff_result = diff_result.deps_changes;
 
-  assert_eq!(added_modules, HashSet::from(["H".into()]));
+  assert_eq!(added_modules, HashSet::from_iter(["H".into()]));
   assert_eq!(
     removed_modules,
-    HashSet::from(["D".into(), "E".into(), "G".into()])
+    HashSet::from_iter(["D".into(), "E".into(), "G".into()])
   );
 
   assert_eq!(
@@ -218,7 +217,7 @@ fn test_diff_module_graph_complex_3() {
     &module_graph,
     &update_module_graph,
   );
-  assert_eq!(diff_result.added_modules, HashSet::from(["H".into()]));
+  assert_eq!(diff_result.added_modules, HashSet::from_iter(["H".into()]));
   assert!(diff_result.removed_modules.is_empty());
   assert_eq!(
     diff_result.deps_changes,
@@ -344,8 +343,8 @@ fn test_diff_module_graph_complex_5() {
 
   let diff_result = super::diff_module_graph(vec!["D".into()], &module_graph, &update_module_graph);
 
-  assert_eq!(diff_result.added_modules, HashSet::from(["H".into()]));
-  assert_eq!(diff_result.removed_modules, HashSet::from([]));
+  assert_eq!(diff_result.added_modules, HashSet::from_iter(["H".into()]));
+  assert_eq!(diff_result.removed_modules, HashSet::from_iter([]));
   assert_eq!(
     diff_result.deps_changes,
     Vec::from([

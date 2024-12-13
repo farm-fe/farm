@@ -13,7 +13,6 @@ pub mod utils;
 /// All cache related operation are charged by [CacheManager]
 /// Note: that you should use CacheManager::new to create a new instance so that the cache can be read from disk.
 /// It would do nothing if you create a new instance by CacheManager::default().
-
 pub struct CacheManager {
   pub module_cache: module_cache::ModuleCacheManager,
   pub resource_cache: resource_cache::ResourceCacheManager,

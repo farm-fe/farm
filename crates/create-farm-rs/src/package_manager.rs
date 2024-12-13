@@ -72,7 +72,7 @@ impl PackageManager {
         Template::Preact,
         Template::Nestjs,
         Template::Tauri(None),
-        Template::Electron(None)
+        Template::Electron(None),
       ],
     }
   }

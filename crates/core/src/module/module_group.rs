@@ -1,5 +1,3 @@
-use std::collections::{HashMap, HashSet};
-
 use petgraph::{
   stable_graph::{DefaultIx, NodeIndex, StableDiGraph},
   visit::{Bfs, Dfs, DfsPostOrder, EdgeRef, IntoEdgeReferences},
@@ -7,6 +5,7 @@ use petgraph::{
 use serde::{Deserialize, Serialize};
 
 use crate::resource::{resource_pot::ResourcePotId, resource_pot_map::ResourcePotMap};
+use crate::{HashMap, HashSet};
 
 use super::{module_graph::ModuleGraph, ModuleId};
 
@@ -23,7 +22,7 @@ impl ModuleGroupGraph {
   pub fn new() -> Self {
     Self {
       g: StableDiGraph::new(),
-      id_index_map: HashMap::new(),
+      id_index_map: HashMap::default(),
     }
   }
 
@@ -185,7 +184,7 @@ impl ModuleGroupGraph {
 
   pub fn toposort(&self, entries: Vec<ModuleGroupId>) -> Vec<ModuleGroupId> {
     let mut sorted = Vec::new();
-    let mut visited = HashSet::new();
+    let mut visited = HashSet::default();
 
     for entry in entries {
       self.dfs_post_order(&entry, &mut |id| {
@@ -285,9 +284,9 @@ pub struct ModuleGroup {
 impl ModuleGroup {
   pub fn new(id: ModuleGroupId) -> Self {
     Self {
-      modules: HashSet::from([id.clone()]),
+      modules: HashSet::from_iter([id.clone()]),
       id,
-      resource_pots: HashSet::new(),
+      resource_pots: HashSet::default(),
     }
   }
 
@@ -320,7 +319,7 @@ impl ModuleGroup {
     module_graph: &ModuleGraph,
     resource_pot_map: &ResourcePotMap,
   ) -> Vec<ResourcePotId> {
-    let mut resource_pots_order_map = HashMap::<String, usize>::new();
+    let mut resource_pots_order_map = HashMap::<String, usize>::default();
     let mut sorted_resource_pots = self.resource_pots().iter().cloned().collect::<Vec<_>>();
 
     sorted_resource_pots.iter().for_each(|rp| {

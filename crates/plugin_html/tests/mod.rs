@@ -1,4 +1,4 @@
-use std::{collections::HashMap, sync::Arc};
+use std::sync::Arc;
 
 use farmfe_core::{
   context::CompilationContext,
@@ -7,6 +7,7 @@ use farmfe_core::{
     Plugin, PluginAnalyzeDepsHookParam, PluginAnalyzeDepsHookResultEntry, PluginHookContext,
     PluginLoadHookParam, PluginParseHookParam, ResolveKind,
   },
+  HashMap,
 };
 use farmfe_plugin_html::FarmPluginHtml;
 use farmfe_testing_helpers::fixture;
@@ -17,7 +18,7 @@ fn html_build_stage() {
     let context = Arc::new(CompilationContext::new(Default::default(), vec![]).unwrap());
     let hook_context = PluginHookContext {
       caller: None,
-      meta: HashMap::new(),
+      meta: HashMap::default(),
     };
     let html_plugin = FarmPluginHtml::new(&Default::default());
 
@@ -26,7 +27,7 @@ fn html_build_stage() {
         &PluginLoadHookParam {
           resolved_path: file.to_str().unwrap(),
           query: vec![],
-          meta: HashMap::new(),
+          meta: HashMap::default(),
           module_id: file.to_string_lossy().to_string(),
         },
         &context,

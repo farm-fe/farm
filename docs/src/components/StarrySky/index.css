@@ -1,0 +1,39 @@
+@import url("https://rsms.me/inter/inter.css");
+
+canvas {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+}
+
+h1 {
+  inherit: unset;
+}
+
+.layer {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  /* background: linear-gradient(
+    0deg,
+    rgba(63, 12, 88, 0.25) 0%,
+    transparent 100%
+  ); */
+  pointer-events: none;
+}
+
+span.header {
+  font-weight: 700;
+  position: absolute;
+  display: inline-block;
+  width: 500px;
+  transform: translate3d(0, -50%, 0);
+  font-size: 9em;
+  line-height: 0.9em;
+  pointer-events: none;
+  top: 350px;
+  left: 50px;
+}

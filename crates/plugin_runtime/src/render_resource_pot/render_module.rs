@@ -5,7 +5,7 @@ use farmfe_core::{
   error::CompilationError,
   module::{module_graph::ModuleGraph, Module, ModuleId, ModuleSystem},
   resource::resource_pot::RenderedModule,
-  swc_common::{comments::SingleThreadedComments, util::take::Take, Mark},
+  swc_common::{comments::SingleThreadedComments, util::take::Take, Mark, SyntaxContext},
   swc_ecma_ast::{ArrowExpr, BlockStmtOrExpr, Expr, ExprStmt},
 };
 use farmfe_toolkit::{
@@ -13,6 +13,7 @@ use farmfe_toolkit::{
   minify::minify_js_module,
   script::{
     codegen_module,
+    module2cjs::{transform_module_decls, OriginalRuntimeCallee, TransformModuleDeclsOptions},
     swc_try_with::{resolve_module_mark, try_with},
     CodeGenCommentsConfig,
   },
@@ -36,7 +37,6 @@ use farmfe_core::{
 use super::{
   source_replacer::{ExistingCommonJsRequireVisitor, SourceReplacer, SourceReplacerOptions},
   transform_async_module,
-  transform_module_decls::{transform_module_decls, TransformModuleDeclsOptions},
 };
 
 pub struct RenderModuleResult {
@@ -47,6 +47,7 @@ pub struct RenderModuleResult {
 
 pub struct RenderModuleOptions<'a, F: Fn(&ModuleId) -> bool> {
   pub module: &'a Module,
+  pub hoisted_ast: Option<SwcModule>,
   pub module_graph: &'a ModuleGraph,
   pub is_enabled_minify: F,
   pub minify_builder: &'a MinifyBuilder,
@@ -56,22 +57,25 @@ pub struct RenderModuleOptions<'a, F: Fn(&ModuleId) -> bool> {
 
 pub fn render_module<'a, F: Fn(&ModuleId) -> bool>(
   options: RenderModuleOptions<'a, F>,
+  comments: Option<SingleThreadedComments>,
 ) -> farmfe_core::error::Result<RenderModuleResult> {
   let RenderModuleOptions {
     module,
+    hoisted_ast,
     module_graph,
     is_enabled_minify,
     minify_builder,
     is_async_module,
     context,
   } = options;
-  let mut cloned_module = module.meta.as_script().ast.clone();
+  let is_use_hoisted = hoisted_ast.is_some();
+  let mut cloned_module = hoisted_ast.unwrap_or(module.meta.as_script().ast.clone());
   let (cm, _) = create_swc_source_map(Source {
     path: PathBuf::from(module.id.resolved_path_with_query(&context.config.root)),
     content: module.content.clone(),
   });
   let mut external_modules = vec![];
-  let comments: SingleThreadedComments = module.meta.as_script().comments.clone().into();
+  let comments: SingleThreadedComments = comments.unwrap_or_else(|| module.meta.as_script().comments.clone().into()) ;
   let minify_enabled = is_enabled_minify(&module.id);
 
   try_with(cm.clone(), &context.meta.script.globals, || {
@@ -110,6 +114,7 @@ pub fn render_module<'a, F: Fn(&ModuleId) -> bool>(
       transform_module_decls(
         &mut cloned_module,
         unresolved_mark,
+        &OriginalRuntimeCallee { unresolved_mark },
         TransformModuleDeclsOptions {
           is_target_legacy: context.config.script.is_target_legacy(),
         },
@@ -124,6 +129,7 @@ pub fn render_module<'a, F: Fn(&ModuleId) -> bool>(
       module_id: module.id.clone(),
       mode: context.config.mode.clone(),
       target_env: context.config.output.target_env.clone(),
+      is_strict_find_source: !is_use_hoisted,
     });
     cloned_module.visit_mut_with(&mut source_replacer);
     cloned_module.visit_mut_with(&mut hygiene_with_config(HygieneConfig {
@@ -141,7 +147,7 @@ pub fn render_module<'a, F: Fn(&ModuleId) -> bool>(
     }
     // swc code gen would emit a trailing `;` when is_target_legacy is false.
     // we can not deal with this situation for now, so we set is_target_legacy to true here, it will be fixed in the future.
-    wrap_function(&mut cloned_module, unresolved_mark, is_async_module, true);
+    wrap_function(&mut cloned_module, is_async_module, true);
 
     if minify_enabled {
       minify_js_module(
@@ -238,17 +244,12 @@ pub fn render_module<'a, F: Fn(&ModuleId) -> bool>(
 ///   exports.b = b;
 /// }
 /// ```
-fn wrap_function(
-  module: &mut SwcModule,
-  unresolved_mark: Mark,
-  is_async_module: bool,
-  is_target_legacy: bool,
-) {
+fn wrap_function(module: &mut SwcModule, is_async_module: bool, is_target_legacy: bool) {
   let body = module.body.take();
 
   let params = vec![
     Param {
-      span: DUMMY_SP.apply_mark(unresolved_mark),
+      span: DUMMY_SP,
       decorators: vec![],
       pat: farmfe_core::swc_ecma_ast::Pat::Ident(BindingIdent {
         id: FARM_MODULE.into(),
@@ -256,7 +257,7 @@ fn wrap_function(
       }),
     },
     Param {
-      span: DUMMY_SP.apply_mark(unresolved_mark),
+      span: DUMMY_SP,
       decorators: vec![],
       pat: farmfe_core::swc_ecma_ast::Pat::Ident(BindingIdent {
         id: FARM_MODULE_EXPORT.into(),
@@ -264,7 +265,7 @@ fn wrap_function(
       }),
     },
     Param {
-      span: DUMMY_SP.apply_mark(unresolved_mark),
+      span: DUMMY_SP,
       decorators: vec![],
       pat: farmfe_core::swc_ecma_ast::Pat::Ident(BindingIdent {
         id: FARM_REQUIRE.into(),
@@ -272,7 +273,7 @@ fn wrap_function(
       }),
     },
     Param {
-      span: DUMMY_SP.apply_mark(unresolved_mark),
+      span: DUMMY_SP,
       decorators: vec![],
       pat: farmfe_core::swc_ecma_ast::Pat::Ident(BindingIdent {
         id: FARM_DYNAMIC_REQUIRE.into(),
@@ -298,11 +299,13 @@ fn wrap_function(
         body: Box::new(BlockStmtOrExpr::BlockStmt(BlockStmt {
           span: DUMMY_SP,
           stmts,
+          ctxt: SyntaxContext::empty(),
         })),
         is_async: is_async_module,
         is_generator: false,
         type_params: None,
         return_type: None,
+        ctxt: SyntaxContext::empty(),
       })),
     }))
   } else {
@@ -312,15 +315,17 @@ fn wrap_function(
       function: Box::new(Function {
         params,
         decorators: vec![],
-        span: DUMMY_SP.apply_mark(unresolved_mark),
+        span: DUMMY_SP,
         body: Some(BlockStmt {
-          span: DUMMY_SP.apply_mark(unresolved_mark),
+          span: DUMMY_SP,
           stmts,
+          ctxt: SyntaxContext::empty(),
         }),
         is_generator: false,
         is_async: is_async_module,
         type_params: None,
         return_type: None,
+        ctxt: SyntaxContext::empty(),
       }),
     })))
   };

@@ -3,7 +3,6 @@ use std::{any::Any, path::Path, sync::Arc};
 use dashmap::DashMap;
 use parking_lot::{Mutex, RwLock};
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 use swc_common::Globals;
 
 use crate::{
@@ -16,6 +15,7 @@ use crate::{
   plugin::{plugin_driver::PluginDriver, Plugin, PluginResolveHookParam, PluginResolveHookResult},
   resource::{resource_pot_map::ResourcePotMap, Resource, ResourceOrigin, ResourceType},
   stats::Stats,
+  HashMap,
 };
 
 use self::log_store::LogStore;
@@ -51,7 +51,7 @@ impl CompilationContext {
       module_graph: Box::new(RwLock::new(ModuleGraph::new())),
       module_group_graph: Box::new(RwLock::new(ModuleGroupGraph::new())),
       resource_pot_map: Box::new(RwLock::new(ResourcePotMap::new())),
-      resources_map: Box::new(Mutex::new(HashMap::new())),
+      resources_map: Box::new(Mutex::new(HashMap::default())),
       plugin_driver: Box::new(Self::create_plugin_driver(plugins, config.record)),
       cache_manager: Box::new(CacheManager::new(
         &cache_dir,
@@ -62,8 +62,8 @@ impl CompilationContext {
       meta: Box::new(ContextMetaData::new()),
       record_manager: Box::new(Stats::new()),
       log_store: Box::new(Mutex::new(LogStore::new())),
-      resolve_cache: Box::new(Mutex::new(HashMap::new())),
-      custom: Box::new(DashMap::new()),
+      resolve_cache: Box::new(Mutex::new(HashMap::default())),
+      custom: Box::new(DashMap::default()),
     })
   }
 

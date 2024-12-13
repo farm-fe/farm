@@ -1,3 +1,4 @@
+import { WatchOptions } from 'chokidar';
 import type { UserConfig as ViteUserConfig } from 'vite';
 import type { UserConfig } from '../../config/types.js';
 import { Logger } from '../../index.js';
@@ -29,8 +30,6 @@ export function farmUserConfigToViteConfig(config: UserConfig): ViteUserConfig {
     publicDir: config.publicDir ?? 'public',
     mode: config.compilation?.mode,
     define: config.compilation?.define,
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-ignore ignore this error
     command: config.compilation?.mode === 'production' ? 'build' : 'serve',
     resolve: {
       alias: config.compilation?.resolve?.alias,
@@ -51,10 +50,7 @@ export function farmUserConfigToViteConfig(config: UserConfig): ViteUserConfig {
       https: config.server?.https,
       proxy: config.server?.proxy as any,
       open: config.server?.open,
-      watch:
-        typeof config.server?.hmr === 'object'
-          ? config.server.hmr?.watchOptions ?? {}
-          : {}
+      watch: typeof config.watch === 'object' ? config.watch : {}
       // other options are not supported in farm
     },
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
@@ -85,6 +81,8 @@ export function farmUserConfigToViteConfig(config: UserConfig): ViteUserConfig {
     // TODO make it configurable
     cacheDir: 'node_modules/.farm/cache',
     envDir: config.envDir,
+    // @ts-ignore
+    env: config.env,
     assetsInclude: [
       ...VITE_DEFAULT_ASSETS,
       ...(config.compilation?.assets?.include ?? [])
@@ -233,6 +231,7 @@ export function proxyViteConfig(
         'css',
         'build',
         'logger',
+        'env',
         'cacheDir',
         'envDir',
         'assetsInclude',
@@ -350,19 +349,19 @@ export function viteConfigToFarmConfig(
         >;
       } else {
         if (!farmConfig.compilation.resolve.alias) {
-          farmConfig.compilation.resolve.alias = {};
+          farmConfig.compilation.resolve.alias = [];
         }
 
         const farmRegexPrefix = '$__farm_regex:';
 
-        for (const { find, replacement } of config.resolve.alias) {
-          if (find instanceof RegExp) {
-            const key = farmRegexPrefix + find.source;
-            farmConfig.compilation.resolve.alias[key] = replacement;
-          } else {
-            farmConfig.compilation.resolve.alias[find] = replacement;
-          }
-        }
+        // for (const { find, replacement } of config.resolve.alias) {
+        //   if (find instanceof RegExp) {
+        //     const key = farmRegexPrefix + find.source;
+        //     farmConfig.compilation.resolve.alias[key] = replacement;
+        //   } else {
+        //     farmConfig.compilation.resolve.alias[find] = replacement;
+        //   }
+        // }
       }
     }
 
@@ -375,6 +374,7 @@ export function viteConfigToFarmConfig(
 
   if (config.server) {
     farmConfig.server ??= {};
+    // @ts-ignore
     farmConfig.server.hmr = config.server.hmr;
     farmConfig.server.port = config.server.port;
 
@@ -386,9 +386,12 @@ export function viteConfigToFarmConfig(
         farmConfig.server.hmr = {
           ...(typeof origFarmConfig?.server?.hmr === 'object'
             ? origFarmConfig.server.hmr
-            : {}),
-          watchOptions: config.server.watch
+            : {})
         };
+      }
+      // TODO think about vite has two watch options `server.watch` | `build.watch`
+      if (config.mode === 'development') {
+        farmConfig.watch = config.server.watch;
       }
     }
 
@@ -406,6 +409,9 @@ export function viteConfigToFarmConfig(
   }
 
   if (config.build) {
+    if (config.mode === 'production') {
+      farmConfig.watch = config.build.watch as WatchOptions;
+    }
     farmConfig.compilation.output ??= {};
     farmConfig.compilation.output.path = config.build.outDir;
 

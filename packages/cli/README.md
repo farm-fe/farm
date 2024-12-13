@@ -8,20 +8,26 @@
 pnpm add @farmfe/cli -D
 ```
 
-start your farm project:
+start your farm project in development mode:
 
 ```sh
-farm start
+farm dev
 ```
 
-build:
+build your farm project in production mode:
 
 ```sh
 farm build
 ```
 
-preview:
+preview your farm project in production mode:
 
 ```sh
 farm preview
+```
+
+clean your farm persistent cache:
+
+```sh
+farm clean
 ```

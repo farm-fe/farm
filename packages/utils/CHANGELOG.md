@@ -1,5 +1,11 @@
 # @farmfe/utils
 
+## 1.0.0-nightly-20241022124925
+
+### Major Changes
+
+- 6a1038c: update nightly tag
+
 ## 0.1.0
 
 ### Minor Changes

@@ -1,6 +1,5 @@
-use std::collections::HashSet;
-
 use farmfe_core::swc_ecma_ast::{self, Id, ModuleExportName, ModuleItem};
+use farmfe_core::HashSet;
 use farmfe_toolkit::swc_ecma_visit::VisitWith;
 
 use super::{
@@ -15,7 +14,7 @@ pub struct AnalyzedStatementInfo {
 }
 
 pub fn analyze_statement_info(id: &StatementId, stmt: &ModuleItem) -> AnalyzedStatementInfo {
-  let mut defined_idents = HashSet::new();
+  let mut defined_idents = HashSet::default();
   let mut import_info = None;
   let mut export_info = None;
 

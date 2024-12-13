@@ -1,11 +1,10 @@
-use std::collections::{HashMap, HashSet};
-
 use farmfe_core::{
   module::{
     module_graph::{ModuleGraph, ModuleGraphEdge, ModuleGraphEdgeDataItem},
     Module,
   },
   plugin::ResolveKind,
+  HashMap, HashSet,
 };
 use farmfe_testing_helpers::construct_test_module_graph;
 
@@ -35,7 +34,7 @@ pub fn create_basic_graph() -> ModuleGraph {
   module_graph
     .add_edge(&"b".into(), &"c".into(), ModuleGraphEdge::default())
     .unwrap();
-  module_graph.entries = HashMap::from([("a".into(), "a".to_string())]);
+  module_graph.entries = HashMap::from_iter([("a".into(), "a".to_string())]);
 
   module_graph
 }
@@ -103,8 +102,11 @@ fn test_diff_module_deps_2() {
 
   let (diff_result, added_modules, removed_modules) =
     super::diff_module_deps(&vec!["a".into()], &module_graph, &update_module_graph);
-  assert_eq!(added_modules, HashSet::from(["f".into()]));
-  assert_eq!(removed_modules, HashSet::from(["b".into(), "c".into()]));
+  assert_eq!(added_modules, HashSet::from_iter(["f".into()]));
+  assert_eq!(
+    removed_modules,
+    HashSet::from_iter(["b".into(), "c".into()])
+  );
 
   assert_eq!(
     diff_result,
@@ -155,7 +157,7 @@ fn test_diff_module_deps_3() {
 
   let (diff_result, added_modules, removed_modules) =
     super::diff_module_deps(&vec!["a".into()], &module_graph, &update_module_graph);
-  assert_eq!(added_modules, HashSet::from(["d".into()]));
+  assert_eq!(added_modules, HashSet::from_iter(["d".into()]));
   assert!(removed_modules.is_empty());
 
   assert_eq!(
@@ -210,7 +212,7 @@ fn test_diff_module_deps_4() {
   let (diff_result, added_modules, removed_modules) =
     super::diff_module_deps(&vec!["a".into()], &module_graph, &update_module_graph);
   assert!(added_modules.is_empty());
-  assert_eq!(removed_modules, HashSet::from(["d".into()]));
+  assert_eq!(removed_modules, HashSet::from_iter(["d".into()]));
 
   assert_eq!(
     diff_result,
@@ -286,8 +288,11 @@ fn test_diff_module_deps_complex_2() {
 
   let (diff_result, added_modules, removed_modules) =
     super::diff_module_deps(&vec!["B".into()], &module_graph, &update_module_graph);
-  assert_eq!(added_modules, HashSet::from(["H".into()]));
-  assert_eq!(removed_modules, HashSet::from(["E".into(), "G".into()]));
+  assert_eq!(added_modules, HashSet::from_iter(["H".into()]));
+  assert_eq!(
+    removed_modules,
+    HashSet::from_iter(["E".into(), "G".into()])
+  );
 
   assert_eq!(
     diff_result,
@@ -359,7 +364,7 @@ fn test_diff_module_deps_complex_3() {
 
   let (diff_result, added_modules, removed_modules) =
     super::diff_module_deps(&vec!["F".into()], &module_graph, &update_module_graph);
-  assert_eq!(added_modules, HashSet::from(["H".into()]));
+  assert_eq!(added_modules, HashSet::from_iter(["H".into()]));
   assert!(removed_modules.is_empty());
   assert_eq!(
     diff_result,
@@ -407,7 +412,7 @@ fn test_diff_module_deps_complex_4() {
   let (diff_result, added_modules, removed_modules) =
     super::diff_module_deps(&vec!["E".into()], &module_graph, &update_module_graph);
   assert!(added_modules.is_empty());
-  assert_eq!(removed_modules, HashSet::from(["G".into()]));
+  assert_eq!(removed_modules, HashSet::from_iter(["G".into()]));
   assert_eq!(
     diff_result,
     Vec::from([(
@@ -446,8 +451,8 @@ fn test_diff_module_deps_add_and_remove() {
 
   let (diff_result, added_modules, removed_modules) =
     super::diff_module_deps(&vec!["a".into()], &module_graph, &update_module_graph);
-  assert_eq!(added_modules, HashSet::from(["e".into()]));
-  assert_eq!(removed_modules, HashSet::from([]));
+  assert_eq!(added_modules, HashSet::from_iter(["e".into()]));
+  assert_eq!(removed_modules, HashSet::from_iter([]));
   assert_eq!(
     diff_result,
     Vec::from([
@@ -486,8 +491,8 @@ fn test_diff_module_deps_remove_and_add() {
 
   let (diff_result, added_modules, removed_modules) =
     super::diff_module_deps(&vec!["a".into()], &module_graph, &update_module_graph);
-  assert_eq!(removed_modules, HashSet::from(["e".into()]));
-  assert_eq!(added_modules, HashSet::from([]));
+  assert_eq!(removed_modules, HashSet::from_iter(["e".into()]));
+  assert_eq!(added_modules, HashSet::from_iter([]));
   assert_eq!(
     diff_result,
     Vec::from([
@@ -532,8 +537,11 @@ fn test_diff_module_deps_remove_and_add_complex() {
     &module_graph,
     &update_module_graph,
   );
-  assert_eq!(added_modules, HashSet::from(["e".into(), "c".into()]));
-  assert_eq!(removed_modules, HashSet::from([]));
+  assert_eq!(
+    added_modules,
+    HashSet::from_iter(["e".into(), "c".into()])
+  );
+  assert_eq!(removed_modules, HashSet::from_iter([]));
   assert_eq!(
     diff_result,
     Vec::from([

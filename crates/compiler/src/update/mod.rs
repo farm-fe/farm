@@ -1,7 +1,4 @@
-use std::{
-  collections::{HashMap, HashSet},
-  sync::Arc,
-};
+use std::sync::Arc;
 
 use farmfe_core::{
   cache::module_cache::CachedModule,
@@ -13,6 +10,7 @@ use farmfe_core::{
   serde::Serialize,
   serde_json::{self, json},
   stats::CompilationPluginHookStats,
+  HashMap, HashSet,
 };
 
 use farmfe_toolkit::get_dynamic_resources_map::get_dynamic_resources_map;
@@ -165,7 +163,15 @@ impl Compiler {
 
     let mut update_result = UpdateResult::default();
     self.context.clear_log_store();
-    let paths = handle_update_modules(paths, &self.context, &mut update_result)?;
+
+    let last_failed_module_ids = self.last_fail_module_ids.lock();
+    let paths = handle_update_modules(
+      paths,
+      &last_failed_module_ids,
+      &self.context,
+      &mut update_result,
+    )?;
+    drop(last_failed_module_ids);
 
     for (path, update_type) in paths.clone() {
       match update_type {
@@ -219,6 +225,7 @@ impl Compiler {
       self.context.record_manager.set_build_end_time();
       self.context.record_manager.set_end_time();
       self.set_update_module_graph_stats(&update_context);
+      self.set_last_fail_module_ids(&errors);
 
       let mut error_messages = vec![];
       for error in errors {
@@ -229,6 +236,8 @@ impl Compiler {
         .map(|e| e.to_string())
         .collect::<Vec<_>>());
       return Err(CompilationError::GenericError(errors_json.to_string()));
+    } else {
+      self.set_last_fail_module_ids(&[]);
     }
 
     self.context.record_manager.set_build_end_time();
@@ -638,7 +647,7 @@ impl Compiler {
       let resources_map = self.context.resources_map.lock();
       let module_graph = self.context.module_graph.read();
 
-      let mut dynamic_resources = HashMap::new();
+      let mut dynamic_resources = HashMap::default();
 
       for entry_id in module_graph.entries.keys() {
         dynamic_resources.extend(get_dynamic_resources_map(

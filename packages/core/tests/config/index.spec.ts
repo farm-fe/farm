@@ -48,11 +48,8 @@ describe('mergeFarmCliConfig', () => {
   describe('normalizeUserCompilationConfig', () => {
     test('with default', async () => {
       let config = await normalizeUserCompilationConfig(
-        {},
-        {},
-        new NoopLogger(),
-        'development',
-        true
+        { logger: new NoopLogger() },
+        'development'
       );
 
       expect(config.input).toEqual({});
@@ -60,30 +57,42 @@ describe('mergeFarmCliConfig', () => {
 
     test('normalizeUserCompilationConfig without default and userConfig.compilation.input', async () => {
       expect(async () => {
-        await normalizeUserCompilationConfig(
-          {},
-          {},
-          new NoopLogger(),
-          'development',
-          false
-        );
+        await normalizeUserCompilationConfig({}, 'development');
       }).rejects.toThrowError();
 
       let config = await normalizeUserCompilationConfig(
-        {},
         {
+          logger: new NoopLogger(),
           compilation: {
             input: {
               index: 'index.ts'
             }
           }
         },
-        new NoopLogger(),
-        'development',
-        false
+        'development'
       );
 
       expect(config.input).toEqual({ index: 'index.ts' });
+    });
+
+    test('concatenateModule should conflict by mode', async () => {
+      let config = await normalizeUserCompilationConfig(
+        {
+          compilation: { concatenateModules: true }
+        },
+        'development'
+      );
+
+      expect(config.concatenateModules).toBeFalsy();
+
+      config = await normalizeUserCompilationConfig(
+        {
+          compilation: { concatenateModules: true }
+        },
+        'production'
+      );
+
+      expect(config.concatenateModules).toBeTruthy();
     });
   });
 });

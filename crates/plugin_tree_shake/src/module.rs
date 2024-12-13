@@ -1,11 +1,9 @@
-use std::{
-  collections::{HashMap, HashSet},
-  mem,
-};
+use std::mem;
 
 use farmfe_core::{
   module::{Module, ModuleId, ModuleSystem},
   swc_common::{comments::SingleThreadedComments, Mark},
+  HashMap, HashSet,
 };
 
 use crate::statement_graph::{
@@ -237,12 +235,12 @@ impl TreeShakeModule {
   pub fn trace_and_mark_used_statements(&mut self) -> Vec<TracedUsedImportStatement> {
     // 1. get used exports
     let used_exports_idents = self.used_exports_to_statement_idents();
-    let mut stmt_used_idents_map = HashMap::new();
+    let mut stmt_used_idents_map = HashMap::default();
 
     for (used_ident, stmt_id) in used_exports_idents {
       let used_idents = stmt_used_idents_map
         .entry(stmt_id)
-        .or_insert(HashSet::new());
+        .or_insert(HashSet::default());
       used_idents.insert(used_ident);
     }
 

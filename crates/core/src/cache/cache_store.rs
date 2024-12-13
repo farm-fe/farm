@@ -1,15 +1,13 @@
 //! Cache store of the persistent cache, responsible for reading and writing the cache from the disk.
+use crate::HashMap;
 use dashmap::{mapref::multiple::RefMulti, DashMap};
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 
-use std::{
-  collections::HashMap,
-  path::{Path, PathBuf},
-};
+use std::path::{Path, PathBuf};
 
 use crate::config::Mode;
 
-const FARM_CACHE_VERSION: &str = "0.4.10";
+const FARM_CACHE_VERSION: &str = "0.6.0";
 const FARM_CACHE_MANIFEST_FILE: &str = "farm-cache.json";
 
 // TODO make CacheStore a trait and implement DiskCacheStore or RemoteCacheStore or more.
