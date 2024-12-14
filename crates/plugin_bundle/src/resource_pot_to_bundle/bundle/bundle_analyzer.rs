@@ -17,6 +17,7 @@ use farmfe_core::{
     SourceMap, DUMMY_SP,
   },
   swc_ecma_ast::Module,
+  HashMap, HashSet,
 };
 use farmfe_toolkit::{
   script::{

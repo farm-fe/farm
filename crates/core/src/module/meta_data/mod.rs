@@ -47,7 +47,7 @@ impl Clone for ModuleMetaData {
       Self::Css(css) => Self::Css(css.clone()),
       Self::Html(html) => Self::Html(html.clone()),
       Self::Custom(custom) => {
-        let mut custom_new = HashMap::new();
+        let mut custom_new = HashMap::default();
         for (k, v) in custom.iter() {
           let cloned_data = v.serialize_bytes().unwrap();
           let cloned_custom = v.deserialize_bytes(cloned_data).unwrap();

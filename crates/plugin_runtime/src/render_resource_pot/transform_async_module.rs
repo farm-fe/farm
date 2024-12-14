@@ -249,7 +249,7 @@ mod tests {
       Arc::new(code.to_string()),
       Syntax::Es(Default::default()),
       EsVersion::EsNext,
-      None,
+      // None,
     )
     .unwrap()
     .ast

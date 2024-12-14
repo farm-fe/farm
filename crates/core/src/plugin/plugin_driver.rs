@@ -784,14 +784,6 @@ impl PluginDriver {
     param: &PluginModuleGraphUpdatedHookParams
   );
 
-  hook_first!(
-    render_update_resource_pot,
-    Result<Option<ResourcePotMetaData>>,
-    resource_pot: &ResourcePot,
-    context: &Arc<CompilationContext>,
-    hook_context: &PluginHookContext
-  );
-
   hook_parallel!(update_finished);
 
   hook_first!(
@@ -804,7 +796,7 @@ impl PluginDriver {
      module: &Module,
      context: &Arc<CompilationContext>| {
       if let Some(res) = result {
-        context.record_manager.add_plugin_hook_stats(
+        context.stats.add_plugin_hook_stats(
           CompilationPluginHookStats {
             plugin_name: plugin_name.to_string(),
             hook_name: "handle_persistent_cached_module".to_string(),

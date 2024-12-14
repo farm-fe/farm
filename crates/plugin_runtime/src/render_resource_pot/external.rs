@@ -1,4 +1,3 @@
-use std::collections::HashSet;
 use std::sync::Arc;
 
 use farmfe_core::config::external::ExternalConfig;
@@ -9,6 +8,7 @@ use farmfe_core::resource::resource_pot::ResourcePotId;
 use farmfe_core::swc_ecma_ast::EsVersion;
 use farmfe_core::swc_ecma_ast::Module as SwcModule;
 use farmfe_core::swc_ecma_parser::Syntax;
+use farmfe_core::HashSet;
 use farmfe_toolkit::html::get_farm_global_this;
 use farmfe_toolkit::script::parse_module;
 use farmfe_toolkit::script::swc_try_with::ResetSpanVisitMut;
@@ -88,7 +88,7 @@ fn handle_node_external_modules(
     Arc::new(prepend_str),
     Syntax::Es(Default::default()),
     EsVersion::Es5,
-    None,
+    // None,
   )?;
   prepend_ast.ast.visit_mut_with(&mut ResetSpanVisitMut);
 
@@ -135,7 +135,7 @@ fn handle_browser_external_modules(
     Arc::new(prepend_str),
     Syntax::Es(Default::default()),
     EsVersion::Es5,
-    None,
+    // None,
   )?;
   prepend_ast.ast.visit_mut_with(&mut ResetSpanVisitMut);
 

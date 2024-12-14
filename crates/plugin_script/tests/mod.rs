@@ -12,6 +12,7 @@ use farmfe_core::{
     meta_data::ResourcePotMetaData,
     resource_pot::{ResourcePot, ResourcePotId, ResourcePotType},
   },
+  HashMap,
 };
 use farmfe_testing_helpers::fixture;
 

@@ -1,4 +1,4 @@
-use std::{collections::HashMap, sync::Arc};
+use std::sync::Arc;
 
 use farmfe_core::{
   context::{get_swc_sourcemap_filename, CompilationContext},
@@ -9,6 +9,7 @@ use farmfe_core::{
     comments::{Comments, SingleThreadedComments},
     BytePos, SourceMap,
   },
+  HashMap,
 };
 use swc_ecma_visit::{VisitMut, VisitMutWith};
 

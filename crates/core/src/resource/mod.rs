@@ -1,6 +1,7 @@
 use heck::AsLowerCamelCase;
 
 use farmfe_macro_cache_item::cache_item;
+use resource_pot::ResourcePotType;
 
 use crate::module::ModuleId;
 

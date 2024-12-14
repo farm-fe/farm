@@ -47,6 +47,13 @@ impl ResourcePotMetaData {
     }
   }
 
+  pub fn as_html_mut(&mut self) -> &mut HtmlResourcePotMetaData {
+    match self {
+      Self::Html(info) => info,
+      _ => panic!("ResourcePotInfo is not ResourcePotInfo::Html"),
+    }
+  }
+
   /// get custom meta data by key
   pub fn get_custom_mut<T: Cacheable + Default>(&mut self, key: &str) -> &mut T {
     if let Self::Custom(custom) = self {

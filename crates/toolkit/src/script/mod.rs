@@ -30,12 +30,12 @@ pub use farmfe_toolkit_plugin_types::swc_ast::ParseScriptModuleResult;
 
 pub mod constant;
 pub mod defined_idents_collector;
+pub mod generator;
 pub mod module2cjs;
 pub mod module_system;
 pub mod sourcemap;
 pub mod swc_try_with;
 pub mod utils;
-pub mod generator;
 
 pub use module_system::*;
 pub use utils::*;
@@ -46,9 +46,10 @@ pub fn parse_module(
   content: Arc<String>,
   syntax: Syntax,
   target: EsVersion,
-  cm: Option<(Arc<SourceMap>, Arc<SourceFile>)>,
+  // cm: Option<(Arc<SourceMap>, Arc<SourceFile>)>,
 ) -> Result<ParseScriptModuleResult> {
-  let (cm, source_file) = cm.unwrap_or_else(|| create_swc_source_map(module_id, content));
+  // let (cm, source_file) = cm.unwrap_or_else(|| create_swc_source_map(module_id, content));
+  let (cm, source_file) = create_swc_source_map(module_id, content);
 
   let input = StringInput::from(&*source_file);
   let comments = SingleThreadedComments::default();

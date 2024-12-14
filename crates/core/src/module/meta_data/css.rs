@@ -1,8 +1,8 @@
-use std::collections::HashMap;
-
 use farmfe_macro_cache_item::cache_item;
 use swc_common::DUMMY_SP;
 use swc_css_ast::Stylesheet;
+
+use crate::HashMap;
 
 use super::{custom::CustomMetaDataMap, script::CommentsMetaData};
 
@@ -16,9 +16,9 @@ pub struct CssModuleMetaData {
 impl Clone for CssModuleMetaData {
   fn clone(&self) -> Self {
     let custom = if self.custom.is_empty() {
-      HashMap::new()
+      HashMap::default()
     } else {
-      let mut custom = HashMap::new();
+      let mut custom = HashMap::default();
       for (k, v) in self.custom.iter() {
         let cloned_data = v.serialize_bytes().unwrap();
         let cloned_custom = v.deserialize_bytes(cloned_data).unwrap();

@@ -23,7 +23,7 @@ use farmfe_core::{
   },
   resource::{
     meta_data::{js::JsResourcePotMetaData, ResourcePotMetaData},
-    resource_pot::ResourcePot,
+    resource_pot::{ResourcePot, ResourcePotType},
     Resource, ResourceOrigin, ResourceType,
   },
   swc_common::{comments::SingleThreadedComments, Mark, SourceMap, GLOBALS},
@@ -115,12 +115,12 @@ impl Plugin for FarmPluginScript {
         param.content.clone(),
         syntax,
         EsVersion::EsNext,
-        Some(
-          context
-            .meta
-            .script
-            .create_swc_source_map(&param.module_id, param.content.clone()),
-        ),
+        // Some(
+        //   context
+        //     .meta
+        //     .script
+        //     .create_swc_source_map(&param.module_id, param.content.clone()),
+        // ),
       )?;
 
       GLOBALS.set(&context.meta.script.globals, || {
@@ -333,7 +333,14 @@ impl Plugin for FarmPluginScript {
       };
 
       Ok(Some(PluginGenerateResourcesHookResult {
-        resource: create_resource(code, ResourceType::Js),
+        resource: create_resource(
+          code,
+          if resource_pot.resource_pot_type == ResourcePotType::Runtime {
+            ResourceType::Runtime
+          } else {
+            ResourceType::Js
+          },
+        ),
         source_map: map.map(|content| {
           create_resource(
             content,

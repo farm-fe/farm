@@ -7,7 +7,6 @@ use std::{
 use dashmap::DashMap;
 use parking_lot::{Mutex, RwLock};
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 use swc_common::{FileName, Globals, SourceFile, SourceMap};
 
 use crate::{

@@ -4,14 +4,9 @@ use farmfe_core::{
   context::CompilationContext,
   error::{CompilationError, Result},
   parking_lot::Mutex,
-  plugin::{
-    PluginGenerateResourcesHookResult, PluginHookContext, PluginRenderResourcePotHookParam,
-  },
+  plugin::{PluginGenerateResourcesHookResult, PluginHookContext},
   rayon::prelude::{IntoParallelIterator, ParallelIterator},
-  resource::{
-    resource_pot::{ResourcePot, ResourcePotInfo},
-    ResourceType,
-  },
+  resource::{resource_pot::ResourcePot, ResourceType},
   HashMap,
 };
 use farmfe_toolkit::{
@@ -38,7 +33,7 @@ pub fn render_resource_pots_and_generate_resources(
     let cached_resource_pot = try_get_resource_cache(resource_pot, context)?;
 
     if let Some(cached_resource_pot) = cached_resource_pot {
-      let rendered_resource_pot_info = ResourcePotInfo::new(resource_pot);
+      // let rendered_resource_pot_info = ResourcePotInfo::new(resource_pot);
 
       let mut cached_resource = cached_resource_pot.resources;
       let cached_meta = cached_resource_pot.meta;
@@ -46,7 +41,7 @@ pub fn render_resource_pots_and_generate_resources(
       resource_pot.meta = cached_meta;
       resource_pot.add_resource(cached_resource.resource.name.clone());
 
-      cached_resource.resource.info = Some(rendered_resource_pot_info);
+      // cached_resource.resource.info = Some(rendered_resource_pot_info);
 
       resources.lock().push(cached_resource.resource);
 
@@ -76,17 +71,17 @@ pub fn render_resource_pots_and_generate_resources(
       #[cfg(feature = "profile")]
       farmfe_core::puffin::profile_scope!(id);
 
-      let mut resource_pot_info: Option<ResourcePotInfo> = None;
+      // let mut resource_pot_info: Option<ResourcePotInfo> = None;
       let (mut res, augment_resource_hash) = render_resource_pot_generate_resources(
         resource_pot,
         context,
         hook_context,
-        false,
-        &mut resource_pot_info,
+        // false,
+        // &mut resource_pot_info,
       )?;
 
-      let resource_pot_info: ResourcePotInfo = resource_pot_info.unwrap();
-      res.resource.info = Some(resource_pot_info);
+      // let resource_pot_info: ResourcePotInfo = resource_pot_info.unwrap();
+      // res.resource.info = Some(resource_pot_info);
       let r = &mut res.resource;
 
       // ignore runtime resource
@@ -172,12 +167,11 @@ pub fn render_resource_pot_generate_resources(
   resource_pot: &mut ResourcePot,
   context: &Arc<CompilationContext>,
   hook_context: &PluginHookContext,
-  skip_render: bool,
-  chunk_resource_info: &mut Option<ResourcePotInfo>,
+  // chunk_resource_info: &mut Option<ResourcePotInfo>,
 ) -> Result<(PluginGenerateResourcesHookResult, Option<String>)> {
   let mut augment_resource_hash = None;
 
-  if !skip_render {
+  {
     #[cfg(feature = "profile")]
     let id = farmfe_utils::transform_string_to_static_str(format!(
       "Render resource pot {:?}",
@@ -185,34 +179,38 @@ pub fn render_resource_pot_generate_resources(
     ));
     #[cfg(feature = "profile")]
     farmfe_core::puffin::profile_scope!(id);
+    println!(
+      "render_resource_pot id {} {:?}",
+      resource_pot.id, resource_pot.resource_pot_type
+    );
     let meta = context
       .plugin_driver
-      .render_resource_pot_modules(resource_pot, context, hook_context)?
+      .render_resource_pot(resource_pot, context, hook_context)?
       .ok_or(CompilationError::PluginHookResultCheckError {
-        hook_name: format!("render_resource_pot_modules({:?})", resource_pot.id),
+        hook_name: format!("render_resource_pot({:?})", resource_pot.id),
       })?;
 
     resource_pot.meta = meta;
 
-    let mut param = PluginRenderResourcePotHookParam {
-      content: resource_pot.meta.rendered_content.clone(),
-      source_map_chain: resource_pot.meta.rendered_map_chain.clone(),
-      resource_pot_info: ResourcePotInfo::new(resource_pot),
-    };
+    // let mut param = PluginRenderResourcePotHookParam {
+    //   content: resource_pot.meta.rendered_content.clone(),
+    //   source_map_chain: resource_pot.meta.rendered_map_chain.clone(),
+    //   resource_pot_info: ResourcePotInfo::new(resource_pot),
+    // };
 
-    let result =
-      context
-        .plugin_driver
-        .render_resource_pot(&mut param, context, &Default::default())?;
+    // let result =
+    //   context
+    //     .plugin_driver
+    //     .render_resource_pot(&mut param, context, &Default::default())?;
 
-    resource_pot.meta.rendered_content = result.content;
-    resource_pot.meta.rendered_map_chain = result.source_map_chain;
+    // resource_pot.meta.rendered_content = result.content;
+    // resource_pot.meta.rendered_map_chain = result.source_map_chain;
 
     augment_resource_hash = context
       .plugin_driver
-      .augment_resource_hash(&param.resource_pot_info, context)?;
+      .augment_resource_hash(&resource_pot, context)?;
 
-    *chunk_resource_info = Some(param.resource_pot_info);
+    // *chunk_resource_info = Some(param.resource_pot_info);
   }
 
   {

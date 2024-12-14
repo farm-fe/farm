@@ -21,7 +21,7 @@ fn test_import_meta_glob() {
       Arc::new(file_content),
       Syntax::Es(Default::default()),
       EsVersion::EsNext,
-      None,
+      // None,
     )
     .unwrap();
     let dir = file.parent().unwrap().to_str().unwrap();

@@ -1,8 +1,4 @@
-use std::{
-  cell::RefCell,
-  collections::{HashMap, HashSet},
-  rc::Rc,
-};
+use std::{cell::RefCell, rc::Rc};
 
 use farmfe_macro_cache_item::cache_item;
 use swc_common::{
@@ -14,6 +10,7 @@ use swc_common::{
 use swc_ecma_ast::{Id, ImportSpecifier, Module as SwcModule, ModuleExportName};
 
 use crate::module::ModuleId;
+use crate::{HashMap, HashSet};
 
 use super::custom::CustomMetaDataMap;
 
@@ -55,9 +52,9 @@ impl Default for ScriptModuleMetaData {
 impl Clone for ScriptModuleMetaData {
   fn clone(&self) -> Self {
     let custom = if self.custom.is_empty() {
-      HashMap::new()
+      HashMap::default()
     } else {
-      let mut custom = HashMap::new();
+      let mut custom = HashMap::default();
       for (k, v) in self.custom.iter() {
         let cloned_data = v.serialize_bytes().unwrap();
         let cloned_custom = v.deserialize_bytes(cloned_data).unwrap();
@@ -76,7 +73,7 @@ impl Clone for ScriptModuleMetaData {
       comments: self.comments.clone(),
       imports: self.imports.clone(),
       exports: self.exports.clone(),
-      is_async:false,
+      is_async: false,
       custom: CustomMetaDataMap::from(custom),
     }
   }

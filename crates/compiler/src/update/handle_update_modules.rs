@@ -36,7 +36,7 @@ pub fn handle_update_modules(
       .unwrap()
       .as_millis();
     context
-      .record_manager
+      .stats
       .add_plugin_hook_stats(CompilationPluginHookStats {
         plugin_name: "InternalWatchGraphPlugin".to_string(),
         hook_name: "update_modules".to_string(),
@@ -168,7 +168,7 @@ pub fn handle_update_modules(
       .unwrap()
       .as_millis();
     context
-      .record_manager
+      .stats
       .add_plugin_hook_stats(CompilationPluginHookStats {
         plugin_name: "InternalUpdateModulesPlugin".to_string(),
         hook_name: "update_modules".to_string(),

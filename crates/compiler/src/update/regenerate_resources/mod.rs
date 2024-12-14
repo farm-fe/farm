@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use farmfe_core::plugin::PluginHookContext;
 use farmfe_core::{
   context::CompilationContext,
   enhanced_magic_string::types::SourceMapOptions,
@@ -7,7 +8,10 @@ use farmfe_core::{
   module::{module_group::ModuleGroupId, Module, ModuleId},
   resource::resource_pot::{ResourcePot, ResourcePotType},
 };
+use farmfe_core::{HashMap, HashSet};
+use farmfe_utils::hash::base64_encode;
 
+use crate::generate::render_resource_pots::render_resource_pot_generate_resources;
 use crate::{
   generate::render_resource_pots::render_resource_pots_and_generate_resources, write_cache,
 };
@@ -67,13 +71,35 @@ pub fn render_and_generate_update_resource(
 
   let gen_resource_pot_code =
     |resource_pot: &mut ResourcePot| -> farmfe_core::error::Result<String> {
-      let res = context.plugin_driver.render_update_resource_pot(
+      let hook_context = PluginHookContext::default();
+      let res = context
+        .plugin_driver
+        .render_resource_pot(resource_pot, context, &hook_context)?
+        .ok_or(CompilationError::GenerateResourcesError {
+          name: resource_pot.id.clone(),
+          ty: resource_pot.resource_pot_type.clone(),
+          source: None,
+        })?;
+      resource_pot.meta = res;
+      let (mut update_resources, _) = render_resource_pot_generate_resources(
         resource_pot,
         context,
         &Default::default(),
+        // false,
       )?;
 
-      res.map_or(Ok("{}".to_string()), |r| Ok(r.content))
+      if let Some(map) = update_resources.source_map {
+        // inline source map
+        update_resources.resource.bytes.append(
+          &mut format!(
+            "\n//# sourceMappingURL=data:application/json;charset=utf-8;base64,{}",
+            base64_encode(&map.bytes)
+          )
+          .into_bytes(),
+        );
+      }
+
+      Ok(String::from_utf8(update_resources.resource.bytes).unwrap())
     };
 
   let immutable_update_resource = gen_resource_pot_code(&mut immutable_update_resource_pot)?;

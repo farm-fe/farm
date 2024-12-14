@@ -1,13 +1,11 @@
-use std::collections::{HashMap, HashSet};
-
 use farmfe_macro_cache_item::cache_item;
 
 use serde::ser::SerializeStruct;
-use swc_css_ast::Stylesheet;
-use swc_ecma_ast::Module as SwcModule;
-use swc_html_ast::Document;
 
-use crate::module::{module_group::ModuleGroupId, CustomMetaDataMap, ModuleId, ModuleType};
+use crate::{
+  module::{module_group::ModuleGroupId, ModuleId, ModuleType},
+  HashSet,
+};
 
 use super::meta_data::ResourcePotMetaData;
 

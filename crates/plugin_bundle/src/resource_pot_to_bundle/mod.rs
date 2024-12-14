@@ -15,6 +15,7 @@ use farmfe_core::{
   rayon::iter::{IntoParallelIterator, ParallelIterator},
   resource::resource_pot::{ResourcePot, ResourcePotId, ResourcePotType},
   swc_ecma_ast::{Id, Module},
+  HashMap,
 };
 pub use polyfill::{Polyfill, SimplePolyfill};
 

@@ -28,7 +28,7 @@ fn parse_and_codegen_module() {
       Arc::new(content),
       syntax,
       Default::default(),
-      None,
+      // None,
     )
     .unwrap();
 

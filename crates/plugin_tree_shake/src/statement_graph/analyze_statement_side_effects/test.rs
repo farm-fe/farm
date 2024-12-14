@@ -18,7 +18,7 @@ pub fn parse_module_internal(code: &str) -> (Module, SingleThreadedComments, Mar
     Arc::new(code.to_string()),
     Syntax::Es(Default::default()),
     EsVersion::Es2022,
-    None,
+    // None,
   )
   .unwrap();
   let top_level_mark = Mark::new();

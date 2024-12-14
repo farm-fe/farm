@@ -1,6 +1,6 @@
 use std::{hash::Hash, path::Path, sync::Arc};
 
-use crate::{HashMap, HashSet};
+use crate::HashSet;
 use blake2::{
   digest::{Update, VariableOutput},
   Blake2bVar,
@@ -11,7 +11,6 @@ use heck::AsLowerCamelCase;
 pub use meta_data::{custom::CustomMetaDataMap, script::ModuleSystem, ModuleMetaData};
 use relative_path::RelativePath;
 use rkyv::Deserialize;
-use std::collections::HashSet;
 
 use crate::{config::Mode, resource::resource_pot::ResourcePotId};
 
@@ -350,9 +349,9 @@ mod tests {
     Cacheable,
   };
   use farmfe_macro_cache_item::cache_item;
-  use std::collections::{HashMap, HashSet};
 
   use super::{Module, ModuleId, ModuleMetaData, ModuleType};
+  use crate::{HashMap, HashSet};
 
   #[test]
   fn module_type() {
@@ -459,7 +458,7 @@ mod tests {
       HashSet::from_iter([ModuleId::new("1", "", ""), ModuleId::new("2", "", "")]);
 
     module.meta = Box::new(ModuleMetaData::Custom(CustomMetaDataMap::from(
-      HashMap::from([(
+      HashMap::from_iter([(
         "custom".to_string(),
         Box::new(StructModuleData {
           ast: "ast".to_string(),

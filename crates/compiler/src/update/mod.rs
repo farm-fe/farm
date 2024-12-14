@@ -73,11 +73,11 @@ impl Compiler {
       let update_module_graph = update_context.module_graph.read();
       self
         .context
-        .record_manager
+        .stats
         .set_module_graph_stats(&update_module_graph);
       self
         .context
-        .record_manager
+        .stats
         .set_entries(update_module_graph.entries.keys().cloned().collect())
     }
   }
@@ -87,7 +87,7 @@ impl Compiler {
       let module_group_graph = self.context.module_group_graph.read();
       self
         .context
-        .record_manager
+        .stats
         .add_plugin_hook_stats(CompilationPluginHookStats {
           plugin_name: "HmrUpdate".to_string(),
           hook_name: "analyze_module_graph".to_string(),
@@ -113,7 +113,7 @@ impl Compiler {
     if self.context.config.record {
       self
         .context
-        .record_manager
+        .stats
         .add_plugin_hook_stats(CompilationPluginHookStats {
           plugin_name: "HmrUpdate".to_string(),
           hook_name: "diffAndPatchContext".to_string(),
@@ -144,11 +144,11 @@ impl Compiler {
   where
     F: FnOnce() + Send + Sync + 'static,
   {
-    self.context.record_manager.add_hmr_compilation_stats();
-    self.context.record_manager.set_start_time();
+    self.context.stats.add_hmr_compilation_stats();
+    self.context.stats.set_start_time();
 
     // mark the compilation as update
-    self.context.set_update();
+    // self.context.set_update();
     let (err_sender, err_receiver) = Self::create_thread_channel();
     let update_context = Arc::new(UpdateContext::new());
 
@@ -222,8 +222,8 @@ impl Compiler {
     self.handle_global_log(&mut errors);
 
     if !errors.is_empty() {
-      self.context.record_manager.set_build_end_time();
-      self.context.record_manager.set_end_time();
+      self.context.stats.set_build_end_time();
+      self.context.stats.set_end_time();
       self.set_update_module_graph_stats(&update_context);
       self.set_last_fail_module_ids(&errors);
 
@@ -240,7 +240,7 @@ impl Compiler {
       self.set_last_fail_module_ids(&[]);
     }
 
-    self.context.record_manager.set_build_end_time();
+    self.context.stats.set_build_end_time();
     self.set_update_module_graph_stats(&update_context);
 
     let previous_module_groups = {
@@ -666,7 +666,7 @@ impl Compiler {
         .plugin_driver
         .update_finished(&self.context)
         .unwrap();
-      self.context.record_manager.set_end_time();
+      self.context.stats.set_end_time();
     } else {
       std::thread::spawn(move || {
         if let Err(e) = regenerate_resources_for_affected_module_groups(
@@ -686,7 +686,7 @@ impl Compiler {
           .plugin_driver
           .update_finished(&cloned_context)
           .unwrap();
-        cloned_context.record_manager.set_end_time();
+        cloned_context.stats.set_end_time();
       });
     }
 

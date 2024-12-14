@@ -24,6 +24,7 @@ use farmfe_core::{
     ResourceOrigin, ResourceType,
   },
   swc_ecma_ast::Module,
+  HashMap, HashSet,
 };
 use farmfe_toolkit::constant::RUNTIME_SUFFIX;
 use resource_pot_to_bundle::{
@@ -135,7 +136,12 @@ impl Plugin for FarmPluginBundle {
     resource_pots: &mut Vec<&mut ResourcePot>,
     context: &Arc<CompilationContext>,
   ) -> farmfe_core::error::Result<Option<()>> {
-    if !self.runtime_code.lock().is_some() {
+    println!(
+      "process_resource_pots {} {}",
+      self.runtime_code.lock().is_some(),
+      resource_pots.len()
+    );
+    if self.runtime_code.lock().is_some() {
       return Ok(None);
     }
 
@@ -163,11 +169,18 @@ impl Plugin for FarmPluginBundle {
 
     shared_bundle.render()?;
 
+    println!("process_resource_pots {}", resource_pots.len(),);
+
     for resource_pot in resource_pots.iter() {
+      println!(
+        "bundle resource pot id {} {:?}",
+        resource_pot.id, resource_pot.resource_pot_type
+      );
       if matches!(resource_pot.resource_pot_type, ResourcePotType::Runtime)
         || (context.config.output.target_env.is_library()
           && matches!(resource_pot.resource_pot_type, ResourcePotType::Js))
       {
+        println!("bundle resource pot id {}", resource_pot.id);
         let resource_pot_id = resource_pot.id.clone();
 
         let module = shared_bundle.codegen(&resource_pot_id)?;
@@ -189,6 +202,11 @@ impl Plugin for FarmPluginBundle {
     _context: &Arc<CompilationContext>,
     _hook_context: &PluginHookContext,
   ) -> farmfe_core::error::Result<Option<ResourcePotMetaData>> {
+    println!(
+      "render_resource_pot id {} {}",
+      resource_pot.id,
+      self.runtime_code.lock().is_some()
+    );
     if matches!(resource_pot.resource_pot_type, ResourcePotType::Runtime) {
       if let Some(code) = self.runtime_code.lock().as_ref() {
         return Ok(Some(ResourcePotMetaData::Js(JsResourcePotMetaData {

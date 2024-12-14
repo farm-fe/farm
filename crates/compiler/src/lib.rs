@@ -37,9 +37,16 @@ pub struct Compiler {
 impl Compiler {
   /// The params are [farmfe_core::config::Config] and dynamic load rust plugins and js plugins [farmfe_core::plugin::Plugin]
   pub fn new(config: Config, mut plugin_adapters: Vec<Arc<dyn Plugin>>) -> Result<Self> {
+    // let render_plugin: Arc<dyn Plugin> = if config.output.target_env.is_library() {
+    //   Arc::new(farmfe_plugin_bundle::FarmPluginBundle::new()) as _
+    // } else {
+    //   Arc::new(farmfe_plugin_runtime::FarmPluginRuntime::new(&config)) as _
+    // };
+
     let mut plugins = vec![
-      Arc::new(farmfe_plugin_runtime::FarmPluginRuntime::new(&config)) as _,
+      // render_plugin,
       Arc::new(farmfe_plugin_bundle::FarmPluginBundle::new()) as _,
+      Arc::new(farmfe_plugin_runtime::FarmPluginRuntime::new(&config)) as _,
       // register internal core plugins
       Arc::new(farmfe_plugin_script::FarmPluginScript::new(&config)) as _,
       Arc::new(farmfe_plugin_partial_bundling::FarmPluginPartialBundling::new(&config)) as _,
@@ -131,7 +138,7 @@ impl Compiler {
 
   /// Compile the project using the configuration
   pub fn compile(&self) -> Result<()> {
-    self.context.record_manager.set_start_time();
+    self.context.stats.set_start_time();
     if self.context.config.persistent_cache.enabled() {
       self
         .context
@@ -146,7 +153,7 @@ impl Compiler {
       self.build()?
     };
 
-    self.context.record_manager.set_build_end_time();
+    self.context.stats.set_build_end_time();
     {
       #[cfg(feature = "profile")]
       farmfe_core::puffin::profile_scope!("Generate Stage");
@@ -156,7 +163,7 @@ impl Compiler {
     self
       .context
       .plugin_driver
-      .finish(&self.context.record_manager, &self.context)?;
+      .finish(&self.context.stats, &self.context)?;
 
     if self.context.config.persistent_cache.enabled() {
       self
@@ -177,7 +184,7 @@ impl Compiler {
       }
     }
 
-    self.context.record_manager.set_end_time();
+    self.context.stats.set_end_time();
 
     Ok(())
   }

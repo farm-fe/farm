@@ -1,8 +1,4 @@
-use std::{
-  collections::{HashMap, HashSet},
-  path::PathBuf,
-  sync::Arc,
-};
+use std::sync::Arc;
 
 use farmfe_core::{
   cache::cache_store::CacheStoreKey,
@@ -27,6 +23,7 @@ use farmfe_core::{
     PropName, PropOrSpread,
   },
   swc_ecma_parser::{EsSyntax, Syntax},
+  HashMap,
 };
 use farmfe_toolkit::{
   html::get_farm_global_this,
@@ -102,7 +99,7 @@ pub fn render_resource_pot_modules(
   let modules = modules.into_inner();
 
   let (mut modules, hoisted_map) = modules.into_iter().fold(
-    (vec![], HashMap::new()),
+    (vec![], HashMap::default()),
     |(mut modules, mut hoisted_map), (result, hosited_modules)| {
       if let Some(hosited_modules) = hosited_modules {
         hoisted_map.insert(result.module_id.clone(), hosited_modules);

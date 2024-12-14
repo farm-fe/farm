@@ -1,8 +1,8 @@
-use crate::Cacheable;
+use crate::{Cacheable, HashMap};
 use dashmap::DashMap;
 use rkyv::*;
 use std::{
-  collections::{hash_map::Iter, HashMap},
+  collections::hash_map::Iter,
   fmt::{Debug, Formatter},
 };
 
@@ -37,7 +37,7 @@ impl serde::Serialize for CustomMetaDataMap {
   where
     S: serde::Serializer,
   {
-    let mut map = HashMap::<String, Vec<u8>>::new();
+    let mut map = HashMap::<String, Vec<u8>>::default();
 
     for (k, v) in self.map.iter() {
       let cloned_data = v.serialize_bytes().unwrap();
@@ -55,7 +55,7 @@ impl<'de> serde::Deserialize<'de> for CustomMetaDataMap {
   {
     let map: HashMap<String, Vec<u8>> = serde::Deserialize::deserialize(deserializer)?;
     let mut res = CustomMetaDataMap {
-      map: HashMap::new(),
+      map: HashMap::default(),
       bytes_map: DashMap::new(),
     };
 
@@ -67,7 +67,7 @@ impl<'de> serde::Deserialize<'de> for CustomMetaDataMap {
 impl CustomMetaDataMap {
   pub fn new() -> Self {
     Self {
-      map: HashMap::new(),
+      map: HashMap::default(),
       bytes_map: DashMap::new(),
     }
   }
@@ -110,9 +110,9 @@ impl From<HashMap<String, Box<dyn Cacheable>>> for CustomMetaDataMap {
 impl Clone for CustomMetaDataMap {
   fn clone(&self) -> Self {
     let custom = if self.map.is_empty() {
-      HashMap::new()
+      HashMap::default()
     } else {
-      let mut custom = HashMap::new();
+      let mut custom = HashMap::default();
       for (k, v) in self.map.iter() {
         let cloned_data = v.serialize_bytes().unwrap();
         let cloned_custom = v.deserialize_bytes(cloned_data).unwrap();
@@ -136,7 +136,7 @@ impl<__D: Fallible + ?Sized> Deserialize<CustomMetaDataMap, __D> for Archived<Cu
   ) -> ::core::result::Result<CustomMetaDataMap, __D::Error> {
     let map = Deserialize::<HashMap<String, Vec<u8>>, __D>::deserialize(&self.map, deserializer)?;
     let mut res = CustomMetaDataMap {
-      map: HashMap::new(),
+      map: HashMap::default(),
       bytes_map: DashMap::new(),
     };
 
@@ -151,7 +151,7 @@ where
 {
   #[inline]
   fn serialize(&self, serializer: &mut __S) -> ::core::result::Result<Self::Resolver, __S::Error> {
-    let mut map = HashMap::<String, Vec<u8>>::new();
+    let mut map = HashMap::<String, Vec<u8>>::default();
 
     for (k, v) in self.map.iter() {
       let cloned_data = v.serialize_bytes().unwrap();
@@ -190,7 +190,7 @@ impl Archive for CustomMetaDataMap {
         (fo.cast::<u8>().offset_from(out.cast::<u8>()) as usize, fo)
       }
     };
-    let mut map = HashMap::<String, Vec<u8>>::new();
+    let mut map = HashMap::<String, Vec<u8>>::default();
     let mut keys = vec![];
 
     for item in self.bytes_map.iter() {

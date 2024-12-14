@@ -20,7 +20,7 @@ pub fn parse_module_with_comments(code: &str) -> (SwcModule, SingleThreadedComme
     Arc::new(code.to_string()),
     Syntax::Es(Default::default()),
     EsVersion::Es2022,
-    None,
+    // None,
   )
   .unwrap();
   let top_level_mark = Mark::new();
@@ -41,7 +41,7 @@ pub fn parse_module(code: &str) -> (SwcModule, Arc<SourceMap>) {
     Arc::new(code.to_string()),
     Syntax::Es(Default::default()),
     EsVersion::Es2022,
-    None,
+    // None,
   )
   .unwrap();
   let top_level_mark = Mark::new();

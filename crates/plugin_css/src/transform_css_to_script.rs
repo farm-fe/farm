@@ -147,7 +147,7 @@ pub fn transform_css_to_script_modules(
           css_code.clone(),
           Syntax::default(),
           EsVersion::default(),
-          None,
+          // None,
         )
         .unwrap();
         let top_level_mark = Mark::new();

@@ -105,14 +105,11 @@ impl Compiler {
   fn set_module_graph_stats(&self) {
     if self.context.config.record {
       let module_graph = self.context.module_graph.read();
+      self.context.stats.set_module_graph_stats(&module_graph);
       self
         .context
-        .record_manager
-        .set_module_graph_stats(&module_graph);
-      self
-        .context
-        .record_manager
-        .set_entries(module_graph.entries.keys().cloned().collect())
+        .stats
+        .set_entries(module_graph.entries.keys().cloned().collect());
     }
   }
 
@@ -161,8 +158,8 @@ impl Compiler {
 
     if !errors.is_empty() {
       // set stats if stats is enabled
-      self.context.record_manager.set_build_end_time();
-      self.context.record_manager.set_end_time();
+      self.context.stats.set_build_end_time();
+      self.context.stats.set_end_time();
       self.set_module_graph_stats();
 
       // set last failed module ids

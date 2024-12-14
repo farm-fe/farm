@@ -26,6 +26,7 @@ use farmfe_core::{
   serde_json,
   swc_common::DUMMY_SP,
   swc_ecma_ast::{Expr, ExprStmt, Module as SwcModule, ModuleItem, Stmt},
+  HashMap, HashSet,
 };
 use farmfe_toolkit::{
   fs::read_file_utf8,
@@ -64,6 +65,7 @@ impl Plugin for FarmPluginRuntime {
   }
 
   fn config(&self, config: &mut Config) -> farmfe_core::error::Result<Option<()>> {
+    println!("config runtime");
     if config.output.target_env.is_library() {
       return Ok(None);
     }
@@ -257,7 +259,7 @@ impl Plugin for FarmPluginRuntime {
     }
 
     let mut queue = VecDeque::from(added_async_modules.into_iter().collect::<Vec<_>>());
-    let mut async_modules = HashSet::new();
+    let mut async_modules = HashSet::default();
 
     while !queue.is_empty() {
       let module_id = queue.pop_front().unwrap();
@@ -328,52 +330,6 @@ impl Plugin for FarmPluginRuntime {
       external_modules,
       rendered_modules: rendered_modules.into_iter().map(|m| m.module_id).collect(),
       comments: comments.into(),
-    })))
-  }
-
-  fn render_update_resource_pot(
-    &self,
-    resource_pot: &ResourcePot,
-    context: &Arc<CompilationContext>,
-    _hook_context: &PluginHookContext,
-  ) -> farmfe_core::error::Result<Option<ResourcePotMetaData>> {
-    // The hmr result should alway be a js resource
-    if resource_pot.resource_pot_type != ResourcePotType::Js || resource_pot.modules().is_empty() {
-      return Ok(None);
-    }
-
-    let module_graph = context.module_graph.read();
-    let (mut rendered_modules, _) =
-      render_resource_pot_modules(resource_pot, &module_graph, context)?;
-    let merged_ast = merge_rendered_module::merge_rendered_module(&mut rendered_modules, context);
-
-    // println!("generated code");
-
-    // if let Some(map) = &map {
-    //   // inline source map
-    //   code = format!(
-    //     "{}\n//# sourceMappingURL=data:application/json;charset=utf-8;base64,{}",
-    //     code,
-    //     base64_encode(map.as_bytes())
-    //   );
-    // }
-
-    Ok(Some(ResourcePotMetaData::Js(JsResourcePotMetaData {
-      ast: SwcModule {
-        body: vec![ModuleItem::Stmt(Stmt::Expr(ExprStmt {
-          span: DUMMY_SP,
-          expr: Box::new(Expr::Object(merged_ast)),
-        }))],
-        shebang: None,
-        span: DUMMY_SP,
-      },
-      external_modules: rendered_modules
-        .iter()
-        .map(|m| m.external_modules.iter().map(|e| e.to_string()))
-        .flatten()
-        .collect(),
-      rendered_modules: rendered_modules.into_iter().map(|m| m.module_id).collect(),
-      comments: Default::default(),
     })))
   }
 

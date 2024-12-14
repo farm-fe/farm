@@ -109,7 +109,10 @@ mod tests {
   use farmfe_core::{
     config::{Config, Mode},
     context::CompilationContext,
-    module::{module_graph::ModuleGraph, ModuleMetaData, ModuleType, ScriptModuleMetaData},
+    module::{
+      meta_data::script::ScriptModuleMetaData, module_graph::ModuleGraph, ModuleMetaData,
+      ModuleType,
+    },
     parking_lot::RwLock,
     HashMap, HashSet,
   };

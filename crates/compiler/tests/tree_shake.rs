@@ -10,7 +10,7 @@ use farmfe_core::{
 use farmfe_testing_helpers::fixture;
 use farmfe_toolkit::{
   script::swc_try_with::try_with,
-  source_map::{create_swc_source_map, Source},
+  source_map::create_swc_source_map,
   swc_ecma_transforms::{
     helpers::inject_helpers,
     react::{react, Options},

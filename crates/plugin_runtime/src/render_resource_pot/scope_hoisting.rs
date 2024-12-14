@@ -7,6 +7,7 @@ use farmfe_core::{
   module::{module_graph::ModuleGraph, ModuleId},
   resource::resource_pot::{ResourcePot, ResourcePotType},
   swc_ecma_ast::Module,
+  HashMap, HashSet,
 };
 
 use farmfe_plugin_bundle::resource_pot_to_bundle::{

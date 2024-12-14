@@ -268,17 +268,6 @@ pub trait Plugin: Any + Send + Sync {
     Ok(None)
   }
 
-  /// Render the update resource pot
-  /// TODO: remove duplicate rendering of render_update_resource_pot and render_resource_pot
-  fn render_update_resource_pot(
-    &self,
-    _resource_pot: &ResourcePot,
-    _context: &Arc<CompilationContext>,
-    _hook_context: &PluginHookContext,
-  ) -> Result<Option<ResourcePotMetaData>> {
-    Ok(None)
-  }
-
   /// Called when calling compiler.update(module_paths).
   /// This hook is called after all compilation work is done, including the resources regeneration and finalization.
   fn update_finished(&self, _context: &Arc<CompilationContext>) -> Result<Option<()>> {

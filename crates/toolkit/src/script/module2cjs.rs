@@ -1230,7 +1230,7 @@ export * from './e';
       content,
       Syntax::Es(Default::default()),
       EsVersion::latest(),
-      None,
+      // None,
     )
     .unwrap()
     .ast;
@@ -1334,7 +1334,7 @@ export const f = 1, h = 2;
       content,
       Syntax::Es(Default::default()),
       EsVersion::latest(),
-      None,
+      // None,
     )
     .unwrap()
     .ast;
