@@ -5,9 +5,12 @@ import FarmLogo from "./assets/logo.png";
 // import { a } from './a.js'
 // import { Button } from 'antd'
 // import { HappyProvider } from '@ant-design/happy-work-theme';
+console.log(import.meta.env);
+
 export function Main() {
   const [count, setCount] = useState(0);
   // console.log(a);
+  
   return (
     <>
       <div>
