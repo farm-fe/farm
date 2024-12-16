@@ -1,8 +1,4 @@
-use std::{
-  collections::{BTreeMap, HashSet},
-  str::FromStr,
-  sync::Arc,
-};
+use std::{collections::BTreeMap, str::FromStr, sync::Arc};
 
 use farmfe_core::{
   common::PackageJsonInfo,
@@ -13,6 +9,7 @@ use farmfe_core::{
   rayon::iter::{IntoParallelRefIterator, ParallelIterator},
   regex,
   serde_json::Value,
+  HashSet,
 };
 
 use super::utils::get_field_value_from_package_json_info;
@@ -242,7 +239,7 @@ fn loop_value(
       Some(vec![s])
     }
     Value::Array(values) => {
-      let arr_result = result.clone().unwrap_or_else(HashSet::new);
+      let arr_result = result.clone().unwrap_or_else(HashSet::default);
       values
         .par_iter()
         .find_map_first(|item| loop_value(item.clone(), conditions, &mut Some(arr_result.clone())))

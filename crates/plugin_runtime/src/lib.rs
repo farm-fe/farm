@@ -1,10 +1,6 @@
 #![feature(box_patterns)]
 
-use std::{
-  any::Any,
-  collections::{HashMap, HashSet, VecDeque},
-  sync::Arc,
-};
+use std::{any::Any, collections::VecDeque, sync::Arc};
 
 use farmfe_core::{
   config::{
@@ -25,7 +21,7 @@ use farmfe_core::{
     resource_pot::{ResourcePot, ResourcePotMetaData, ResourcePotType},
     Resource, ResourceOrigin, ResourceType,
   },
-  serde_json,
+  serde_json, HashMap, HashSet,
 };
 use farmfe_toolkit::{
   fs::read_file_utf8,
@@ -125,7 +121,7 @@ impl Plugin for FarmPluginRuntime {
         context,
         &PluginHookContext {
           caller: hook_context.add_caller(PLUGIN_NAME),
-          meta: HashMap::new(),
+          meta: HashMap::default(),
         },
       )?;
 
@@ -293,8 +289,10 @@ impl Plugin for FarmPluginRuntime {
         &context.config.output.target_env,
       );
 
+      let target_env = context.config.output.target_env.clone();
+
       // inject global externals
-      if !external_modules.is_empty() && context.config.output.target_env == TargetEnv::Node {
+      if !external_modules.is_empty() && target_env == TargetEnv::Node {
         let mut import_strings = vec![];
         let mut source_to_names = vec![];
 
@@ -332,9 +330,7 @@ impl Plugin for FarmPluginRuntime {
         ));
 
         external_modules_str = Some(prepend_str);
-      } else if !external_modules.is_empty()
-        && context.config.output.target_env == TargetEnv::Browser
-      {
+      } else if !external_modules.is_empty() && target_env == TargetEnv::Browser {
         let mut external_objs = Vec::new();
 
         for source in external_modules {
@@ -359,17 +355,18 @@ impl Plugin for FarmPluginRuntime {
         external_modules_str = Some(prepend_str);
       }
 
-      let is_target_node_and_cjs = context.config.output.target_env == TargetEnv::Node
-        && context.config.output.format == ModuleFormat::CommonJs;
-
       let str = format!(
-        r#"(function(_){{for(var r in _){{_[r].__farm_resource_pot__={};{farm_global_this}.{FARM_MODULE_SYSTEM}.register(r,_[r])}}}})("#,
-        if is_target_node_and_cjs {
-          "'file://'+__filename".to_string()
-        } else {
-          // TODO make it final output file name
-          format!("'{}'", resource_pot.name.to_string() + ".js")
-        },
+        r#"(function(_){{var filename = ((function(){{{}}})());for(var r in _){{_[r].__farm_resource_pot__=filename;{farm_global_this}.{FARM_MODULE_SYSTEM}.register(r,_[r])}}}})("#,
+        match (target_env, context.config.output.format) {
+          (TargetEnv::Node | TargetEnv::Custom(_) | TargetEnv::Library, ModuleFormat::EsModule) =>
+            "return import.meta.url".to_string(),
+          _ => {
+            format!(
+              r#"var _documentCurrentScript = typeof document !== "undefined" ? document.currentScript : null;return typeof document === "undefined" ? require("url").pathToFileURL(__filename).href : _documentCurrentScript && _documentCurrentScript.src || new URL("{}.js", document.baseURI).href"#,
+              resource_pot.name
+            )
+          }
+        }
       );
 
       bundle.prepend(&str);
@@ -472,7 +469,7 @@ impl FarmPluginRuntime {
   pub(crate) fn get_async_modules<'a>(
     &'a self,
     context: &'a Arc<CompilationContext>,
-  ) -> farmfe_core::dashmap::mapref::one::Ref<'_, String, Box<dyn Any + Send + Sync>> {
+  ) -> farmfe_core::dashmap::mapref::one::Ref<'a, String, Box<dyn Any + Send + Sync>> {
     context.custom.get(ASYNC_MODULES).unwrap()
   }
 }

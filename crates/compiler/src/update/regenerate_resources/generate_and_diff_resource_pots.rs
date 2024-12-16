@@ -3,8 +3,8 @@ use farmfe_core::{
   module::{module_group::ModuleGroupId, Module, ModuleId},
   plugin::PluginHookContext,
   resource::resource_pot::{ResourcePot, ResourcePotId},
+  HashMap, HashSet,
 };
-use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 
 use crate::{
@@ -60,7 +60,7 @@ pub fn generate_and_diff_resource_pots(
   let mut new_resource_pot_ids =
     diff_and_patch_resource_pot_map(resources_pots, &enforce_resource_pot_ids, context);
 
-  // alway render affected resource pots resource pots
+  // alway render affected resource pots
   enforce_resource_pot_ids.into_iter().for_each(|id| {
     if !new_resource_pot_ids.contains(&id) {
       new_resource_pot_ids.insert(id);
@@ -78,7 +78,7 @@ fn get_affected_modules(
   // let mut enforce_resource_pots = HashSet::new();
   module_groups
     .iter()
-    .fold(HashSet::new(), |mut acc, module_group_id| {
+    .fold(HashSet::default(), |mut acc, module_group_id| {
       let module_group = module_group_graph.module_group(module_group_id).unwrap();
       acc.extend(module_group.modules().clone());
       acc
@@ -105,8 +105,8 @@ fn handle_enforce_resource_pots(
 ) -> (Vec<ResourcePotId>, Vec<ModuleId>) {
   let module_graph = context.module_graph.read();
   let mut resource_pot_map = context.resource_pot_map.write();
-  let mut un_enforced_modules = HashSet::new();
-  let mut affected_resource_pot_ids = HashSet::new();
+  let mut un_enforced_modules = HashSet::default();
+  let mut affected_resource_pot_ids = HashSet::default();
 
   let is_module_external = |module_id: &ModuleId| {
     let module = if let Some(module) = removed_modules.get(module_id) {
@@ -220,10 +220,10 @@ fn diff_and_patch_resource_pot_map(
   let mut resource_pot_map = context.resource_pot_map.write();
   let mut module_group_graph = context.module_group_graph.write();
 
-  let mut new_resource_pot_ids = HashSet::new();
+  let mut new_resource_pot_ids = HashSet::default();
 
   for mut resource_pot in resources_pots {
-    let mut module_groups = HashSet::new();
+    let mut module_groups = HashSet::default();
 
     for module_id in resource_pot.modules() {
       let module = module_graph.module(module_id).unwrap();

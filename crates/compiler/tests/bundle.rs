@@ -1,9 +1,11 @@
-use std::{collections::HashMap, path::PathBuf};
+use std::path::PathBuf;
 
 use farmfe_core::config::{
   bool_or_obj::BoolOrObj, config_regex::ConfigRegex,
   partial_bundling::PartialBundlingEnforceResourceConfig, Mode, TargetEnv,
 };
+use farmfe_core::HashMap;
+
 mod common;
 use crate::common::{
   assert_compiler_result_with_config, create_compiler_with_args, AssertCompilerResultConfig,

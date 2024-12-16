@@ -1,4 +1,4 @@
-use std::{collections::HashMap, sync::Arc};
+use std::sync::Arc;
 
 use farmfe_core::{
   config::ModuleFormat,
@@ -10,6 +10,7 @@ use farmfe_core::{
     self, BindingIdent, Bool, Decl, Expr, Ident, IdentName, KeyValueProp, ModuleItem, ObjectLit,
     Pat, Prop, PropName, PropOrSpread, Stmt, Str, VarDecl, VarDeclKind, VarDeclarator,
   },
+  HashMap,
 };
 use farmfe_toolkit::itertools::Itertools;
 
@@ -210,7 +211,8 @@ pub fn generate_export_by_reference_export(
   is_already_polyfilled: &mut bool,
   options: &ShareBundleContext,
 ) -> Result<Vec<ModuleItem>> {
-  let mut patch_export_to_module: Vec<ModuleItem> = vec![];
+  let mut patch_export_to_module = vec![];
+
   if let Some(export) = bundle_reference.export.as_ref() {
     patch_export_to_module.extend(generate_export_as_module_export(
       should_reexport_raw,

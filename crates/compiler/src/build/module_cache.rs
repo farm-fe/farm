@@ -1,9 +1,4 @@
-use std::{
-  collections::{HashMap, HashSet},
-  path::PathBuf,
-  sync::Arc,
-  time::SystemTime,
-};
+use std::{path::PathBuf, sync::Arc, time::SystemTime};
 
 use farmfe_core::{
   cache::module_cache::{CachedModule, CachedModuleDependency, CachedWatchDependency},
@@ -12,6 +7,7 @@ use farmfe_core::{
   farm_profile_function,
   module::ModuleId,
   rayon::prelude::*,
+  HashMap, HashSet,
 };
 
 pub fn get_timestamp_of_module(module_id: &ModuleId, root: &str) -> u128 {
@@ -161,7 +157,7 @@ pub fn try_get_module_cache_by_hash(
 pub fn set_module_graph_cache(module_ids: Vec<ModuleId>, context: &Arc<CompilationContext>) {
   farm_profile_function!("set_module_graph_cache".to_string());
   let module_graph = context.module_graph.read();
-  let mut cacheable_modules = HashSet::new();
+  let mut cacheable_modules = HashSet::default();
 
   let modules = module_ids
     .iter()
@@ -170,8 +166,16 @@ pub fn set_module_graph_cache(module_ids: Vec<ModuleId>, context: &Arc<Compilati
     .collect::<Vec<_>>();
 
   for module in &modules {
-    // if the module has already in the cache and not changed, skip it.
-    if !context.cache_manager.module_cache.is_cache_changed(module) {
+    // skip cache unchanged modules if following conditions are met:
+    // 1. There is no query string in the module id when timestamp enabled
+    // 2. if the module has already in the cache and the cache hash not changed
+    // Note: For condition 1, here is the case: `index.vue` imports virtual modules like `index.vue?vue&setup&lang.tsx`,
+    // when content of `index.vue` is changed, the content hash of `index.vue?vue&setup&lang.tsx` may not be changed,
+    // but the cached timestamp of `index.vue?vue&setup&lang.tsx` should be updated to make sure the cache is always up-to-date.
+    // otherwise, cache of `index.vue` is used but cache of `index.vue?vue&setup&lang.tsx` is not used, which would cause a bug like transform error.
+    if (!context.config.persistent_cache.timestamp_enabled() || module.id.query_string().is_empty())
+      && !context.cache_manager.module_cache.is_cache_changed(module)
+    {
       continue;
     }
 
@@ -259,9 +263,16 @@ pub fn handle_cached_modules(
     context,
   )?;
 
+  // clear module groups and resource pot as it will be re-resolved later
+  cached_module.module.module_groups.clear();
+  cached_module.module.resource_pot = None;
+  cached_module.module.used_exports.clear();
+
+  // TODO: return of resolve hook should be treated as part of the cache key
   Ok(())
 }
 
+/// recreate the watch graph for the cached module
 fn handle_relation_roots(
   cached_module_id: &ModuleId,
   watch_dependencies: &Vec<CachedWatchDependency>,

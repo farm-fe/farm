@@ -1701,6 +1701,7 @@ dependencies = [
  "rkyv",
  "rkyv_dyn",
  "rkyv_typename",
+ "rustc-hash 2.0.0",
  "serde",
  "serde_json",
  "serde_regex",

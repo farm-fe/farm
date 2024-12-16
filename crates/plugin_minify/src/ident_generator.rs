@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use farmfe_core::HashSet;
 
 const RESERVED_KEYWORDS: [&str; 60] = [
   "break",
@@ -140,13 +140,13 @@ mod tests {
 
     let mut minified_idents_generator = MinifiedIdentsGenerator {
       current_index: 26 * 3,
-      top_level_idents: HashSet::new(),
+      top_level_idents: HashSet::default(),
     };
     assert_eq!(&minified_idents_generator.next(), "ca");
     assert_eq!(&minified_idents_generator.next(), "cb");
 
     let mut minified_idents_generator =
-      MinifiedIdentsGenerator::new(HashSet::from(["a".to_string()]));
+      MinifiedIdentsGenerator::new(HashSet::from_iter(["a".to_string()]));
     assert_eq!(&minified_idents_generator.generate(), "b");
   }
 }

@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use farmfe_core::{
   config::AliasItem,
   plugin::{PluginAnalyzeDepsHookResultEntry, ResolveKind},

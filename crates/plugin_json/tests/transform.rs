@@ -1,10 +1,11 @@
-use std::{collections::HashMap, path::Path, sync::Arc};
+use std::{path::Path, sync::Arc};
 
 use farmfe_core::{
   config::Config,
   context::CompilationContext,
   module::ModuleType,
   plugin::{Plugin, PluginHookContext, PluginLoadHookParam, PluginTransformHookParam},
+  HashMap,
 };
 use farmfe_testing_helpers::fixture;
 
@@ -20,12 +21,12 @@ fn generate_transform_fn(
   let param = PluginLoadHookParam {
     resolved_path: &id,
     query: vec![],
-    meta: HashMap::new(),
+    meta: HashMap::default(),
     module_id: id.clone(),
   };
   let hook_context = PluginHookContext {
     caller: None,
-    meta: HashMap::new(),
+    meta: HashMap::default(),
   };
 
   let loaded = json_plugin
@@ -39,7 +40,7 @@ fn generate_transform_fn(
     module_type: loaded.module_type,
     resolved_path: &id,
     query: vec![],
-    meta: HashMap::new(),
+    meta: HashMap::default(),
     source_map_chain: vec![],
   };
 

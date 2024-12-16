@@ -1,11 +1,10 @@
-use std::collections::HashMap;
 use std::{
   path::{Path, PathBuf},
   str::FromStr,
   sync::Arc,
 };
 
-use farmfe_core::config::{AliasItem, StringOrRegex};
+use farmfe_core::{config::{AliasItem, StringOrRegex}, HashMap};
 use farmfe_core::regex;
 use farmfe_core::{
   common::PackageJsonInfo,
@@ -61,7 +60,7 @@ const HIGHEST_PRIORITY_FIELD: &str = "exports";
 impl Resolver {
   pub fn new() -> Self {
     Self {
-      resolve_cache: Mutex::new(HashMap::new()),
+      resolve_cache: Mutex::new(HashMap::default()),
     }
   }
 

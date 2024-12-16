@@ -1,18 +1,16 @@
 import type { ModuleSystem } from '@farmfe/runtime';
-import { HotModuleState } from './hot-module-state';
-import { logger } from './logger';
-import { ErrorOverlay, overlayId } from './overlay';
-import { HMRPayload, HmrUpdateResult, RawHmrUpdateResult } from './types';
+import { HotModuleState } from './hot-module-state.js';
+import { logger } from './logger.js';
+import { ErrorOverlay, overlayId } from './overlay.js';
+import { HMRPayload, HmrUpdateResult, RawHmrUpdateResult } from './types.js';
 
 // Inject during compile time
-const hmrPort = Number(FARM_HMR_PORT);
+const usingClientHost = typeof FARM_HMR_HOST === 'boolean'; // using client host/port by default
+const hmrPort = usingClientHost ? window.location.port : Number(FARM_HMR_PORT);
+const hmrHost = usingClientHost ? window.location.hostname : FARM_HMR_HOST;
 
-const hmrHost =
-  typeof FARM_HMR_HOST === 'boolean'
-    ? window.location.hostname || 'localhost'
-    : FARM_HMR_HOST || 'localhost';
-
-const socketProtocol = location.protocol === 'https:' ? 'wss' : 'ws';
+const socketProtocol =
+  FARM_HMR_PROTOCOL || (location.protocol === 'https:' ? 'wss' : 'ws');
 const socketHostUrl = `${hmrHost}:${hmrPort}${FARM_HMR_PATH}`;
 
 export class HmrClient {

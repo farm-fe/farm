@@ -22,7 +22,7 @@ var index_js_cjs = __commonJs((module, exports)=>{
     global['__farm_default_namespace__'].__farm_module_system__.setPlugins([]);
 });
 index_js_cjs();
-import * as __farm_external_module_jquery from "jquery";global['__farm_default_namespace__'].__farm_module_system__.setExternalModules({"jquery": __farm_external_module_jquery && __farm_external_module_jquery.default && !__farm_external_module_jquery.__esModule ? {...__farm_external_module_jquery,__esModule:true} : {...__farm_external_module_jquery}});(function(_){for(var r in _){_[r].__farm_resource_pot__='index_dcdc.js';global['__farm_default_namespace__'].__farm_module_system__.register(r,_[r])}})({"b5d64806":function  (module, exports, farmRequire, farmDynamicRequire) {
+import * as __farm_external_module_jquery from "jquery";global['__farm_default_namespace__'].__farm_module_system__.setExternalModules({"jquery": __farm_external_module_jquery && __farm_external_module_jquery.default && !__farm_external_module_jquery.__esModule ? {...__farm_external_module_jquery,__esModule:true} : {...__farm_external_module_jquery}});(function(_){var filename = ((function(){return import.meta.url})());for(var r in _){_[r].__farm_resource_pot__=filename;global['__farm_default_namespace__'].__farm_module_system__.register(r,_[r])}})({"b5d64806":function  (module, exports, farmRequire, farmDynamicRequire) {
     module._m(exports);
     var _f_jquery = module.i(farmRequire('jquery'));
     console.log({

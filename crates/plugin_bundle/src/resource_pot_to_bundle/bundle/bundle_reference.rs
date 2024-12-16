@@ -1,10 +1,11 @@
-use std::{cell::RefCell, collections::HashMap, rc::Rc};
+use std::{cell::RefCell, rc::Rc};
 
 use farmfe_core::{
-  config::{Config, ModuleFormat},
+  config::ModuleFormat,
   error::{CompilationError, Result},
-  module::{ModuleId, ModuleSystem, ModuleType},
-  resource::resource_pot::ResourcePotId,
+  module::{ModuleId, ModuleSystem},
+  resource::resource_pot::{ResourcePotId, ResourcePotType},
+  HashMap,
 };
 
 use crate::resource_pot_to_bundle::{
@@ -27,7 +28,7 @@ pub struct ExternalReferenceImport {
 impl ExternalReferenceImport {
   pub fn new() -> Self {
     Self {
-      named: HashMap::new(),
+      named: HashMap::default(),
       namespace: None,
       default: None,
       source: None,
@@ -98,7 +99,7 @@ pub struct ExternalReferenceExport {
 impl ExternalReferenceExport {
   pub fn new(module_system: ModuleSystem) -> Self {
     Self {
-      named: HashMap::new(),
+      named: HashMap::default(),
       default: None,
       all: (false, None),
       namespace: None,
@@ -218,7 +219,7 @@ impl From<&String> for ReferenceKind {
 /// }
 ///
 
-pub type CommonJsImportMap = HashMap<ReferenceKind, ExternalReferenceImport>;
+pub type CommonJsImportMap = farmfe_core::HashMap<ReferenceKind, ExternalReferenceImport>;
 
 #[derive(Debug, Default)]
 pub struct BundleReference {
@@ -779,4 +780,77 @@ impl<'a> ReferenceBuilder<'a> {
       export_as
     }
   }
+}
+
+///
+/// when export something from entry module, we need to reexport it to the bundle
+/// ```ts
+/// // entry module
+/// export const name = "foo";
+/// module.exports.age = 18;
+/// ```
+///
+/// output
+///
+/// ```js
+/// var index_cjs = __commonJs((module, exports)=>{
+///   // ...
+///   Object.defineProperty(exports, "name", {
+///       enumerable: true,
+///       get: function() {
+///           return name;
+///       }
+///   });
+///   const name = 'foo';
+///   module.exports.age = 18;
+/// });
+///
+/// // -------- esm --------
+/// var index_ns = _interop_require_wildcard(index_cjs()), name = index_cjs()["name"];
+/// export { name };
+/// export default index_ns;
+///
+/// // -------- cjs --------
+///
+/// var index_ns = _interop_require_wildcard(index_cjs()), name = index_cjs()["name"];
+/// module.exports.name = name;
+/// Object.defineProperty(exports, "__esModule", {
+///     value: true
+/// });
+/// _export_star(index_ns, module.exports);
+/// ```
+///
+///
+pub fn try_reexport_entry_module(
+  resource_pot_type: ResourcePotType,
+  bundle_reference: &mut CombineBundleReference,
+  module_id: &ModuleId,
+  module_system: ModuleSystem,
+  is_entry: bool,
+) -> Result<()> {
+  let reference_kind = ReferenceKind::Module((*module_id).clone());
+
+  if matches!(resource_pot_type, ResourcePotType::Runtime) {
+    bundle_reference.execute_module_for_cjs(reference_kind);
+    return Ok(());
+  }
+
+  // already export default in entry module
+  if bundle_reference
+    .reexport_raw
+    .export
+    .as_ref()
+    .is_some_and(|e| e.default.is_some())
+  {
+    return Ok(());
+  };
+
+  bundle_reference.add_reference_export(
+    &ExportSpecifierInfo::All(None),
+    reference_kind.clone(),
+    module_system,
+    is_entry,
+  );
+
+  Ok(())
 }

@@ -1,6 +1,5 @@
-use std::collections::HashMap;
-
 use farmfe_core::module::{Module, ModuleId, ModuleType};
+use farmfe_core::HashMap;
 use napi::{
   bindgen_prelude::FromNapiValue,
   sys::{napi_callback_info, napi_env, napi_value},
@@ -14,7 +13,7 @@ use crate::plugin_adapters::js_plugin_adapter::context::{
 pub const VITE_GET_MODULES_BY_FILE: &str = "viteGetModulesByFile";
 
 pub fn create_vite_module(id: String, m: &Module, root: &str) -> HashMap<String, String> {
-  HashMap::from([
+  HashMap::from_iter([
     ("url".to_string(), id.clone()),
     ("id".to_string(), id),
     ("file".to_string(), m.id.resolved_path(root)),

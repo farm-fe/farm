@@ -251,37 +251,31 @@ impl Plugin for FarmPluginScript {
     // set param.module.meta.module_system
     set_module_system_for_module_meta(param, context);
 
-    let is_replace_import_meta_url = context.config.output.target_env.is_library()
-      && matches!(context.config.output.format, ModuleFormat::CommonJs);
+    let target_env = context.config.output.target_env.clone();
+    let format = context.config.output.format;
 
-    if is_replace_import_meta_url {
-      let ast = &mut param.module.meta.as_script_mut().ast;
-      replace_import_meta_url(ast)
+    let is_library = target_env.is_library();
+
+    if is_library && matches!(format, ModuleFormat::CommonJs) {
+      replace_import_meta_url(&mut param.module.meta.as_script_mut().ast)
     };
 
     // find and replace `import.meta.xxx` to `module.meta.xxx` and detect hmr_accepted
     // skip transform import.meta when targetEnv is node
-    if !context.config.output.target_env.is_library()
-      && (matches!(context.config.output.target_env, TargetEnv::Browser)
-        || matches!(context.config.output.format, ModuleFormat::CommonJs))
-    {
+    if !is_library && (target_env.is_browser() || matches!(format, ModuleFormat::CommonJs)) {
       // transform `import.meta.xxx` to `module.meta.xxx`
       let ast = &mut param.module.meta.as_script_mut().ast;
       let mut import_meta_v = ImportMetaVisitor::new();
       ast.visit_mut_with(&mut import_meta_v);
     }
 
-    if matches!(context.config.output.target_env, TargetEnv::Browser) {
+    if matches!(target_env, TargetEnv::Browser) {
       let ast = &mut param.module.meta.as_script_mut().ast;
       let mut hmr_accepted_v =
         import_meta_visitor::HmrAcceptedVisitor::new(param.module.id.clone(), context.clone());
       ast.visit_mut_with(&mut hmr_accepted_v);
       param.module.meta.as_script_mut().hmr_self_accepted = hmr_accepted_v.is_hmr_self_accepted;
-      param.module.meta.as_script_mut().hmr_accepted_deps = hmr_accepted_v
-        .hmr_accepted_deps
-        .into_iter()
-        .map(|dep| dep.into())
-        .collect();
+      param.module.meta.as_script_mut().hmr_accepted_deps = hmr_accepted_v.hmr_accepted_deps;
     }
 
     Ok(None)

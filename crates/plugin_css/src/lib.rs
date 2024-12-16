@@ -1,6 +1,5 @@
 #![feature(box_patterns)]
 
-use std::collections::HashMap;
 use std::{path::PathBuf, sync::Arc};
 
 use dep_analyzer::DepAnalyzer;
@@ -9,6 +8,7 @@ use farmfe_core::config::custom::get_config_css_modules_local_conversion;
 use farmfe_core::config::minify::MinifyOptions;
 use farmfe_core::config::AliasItem;
 use farmfe_core::module::CommentsMetaData;
+use farmfe_core::HashMap;
 use farmfe_core::{
   config::{Config, CssPrefixerConfig, TargetEnv},
   context::CompilationContext,
@@ -136,7 +136,7 @@ impl Plugin for FarmPluginCssResolve {
           context,
           &PluginHookContext {
             caller: Some("FarmPluginCss".to_string()),
-            meta: HashMap::from([(
+            meta: HashMap::from_iter([(
               DYNAMIC_EXTENSION_PRIORITY.to_string(),
               serde_json::to_string(&extensions).unwrap(),
             )]),
@@ -317,7 +317,7 @@ impl Plugin for FarmPluginCss {
           .insert(cache_id, param.content.clone());
 
         // for composes dynamic import (eg: composes: action from "./action.css")
-        let mut dynamic_import_of_composes = HashMap::new();
+        let mut dynamic_import_of_composes = HashMap::default();
         let mut export_names = Vec::new();
 
         for (name, classes) in stylesheet.renamed.iter() {
@@ -548,7 +548,7 @@ impl Plugin for FarmPluginCss {
       };
 
       let mut modules = vec![];
-      let mut module_execution_order = HashMap::new();
+      let mut module_execution_order = HashMap::default();
 
       for module_id in resource_pot.modules() {
         let module = module_graph.module(module_id).unwrap();

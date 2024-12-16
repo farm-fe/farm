@@ -1,5 +1,5 @@
 import http from 'node:http';
-import { SecureServerOptions } from 'node:http2';
+import type { OutgoingHttpHeaders, SecureServerOptions } from 'node:http2';
 
 import { z } from 'zod';
 import { fromZodError } from 'zod-validation-error';
@@ -67,6 +67,63 @@ const outputSchema = z
   .strict()
   .optional();
 
+const proxySchema = z
+  .record(
+    z
+      .object({
+        target: z.string(),
+        changeOrigin: z.boolean().optional(),
+        agent: z.any().optional(),
+        secure: z.boolean().optional(),
+        logs: z.any().optional(),
+        pathRewrite: baseRewriteSchema.optional(),
+        pathFilter: pathFilterSchema.optional(),
+        headers: z.record(z.string()).optional(),
+        on: z
+          .object({
+            proxyReq: z
+              .function()
+              .args(z.any(), z.any(), z.any())
+              .returns(z.void())
+              .optional(),
+            proxyRes: z
+              .function()
+              .args(z.any(), z.any(), z.any())
+              .returns(z.void())
+              .optional(),
+            error: z
+              .function()
+              .args(z.instanceof(Error), z.any(), z.any())
+              .returns(z.void())
+              .optional()
+          })
+          .optional()
+      })
+      .passthrough()
+  )
+  .optional();
+
+const previewServerSchema = z
+  .object({
+    headers: z.union([z.custom<OutgoingHttpHeaders>(), z.boolean()]).optional(),
+    host: z
+      .union([
+        z.string().regex(/^\d{1,3}\.\d{1,3}$/),
+        z.literal('localhost'),
+        z.boolean()
+      ])
+      .optional(),
+    port: z.number().positive().int().optional(),
+    strictPort: z.boolean().optional(),
+    https: z.custom<SecureServerOptions>(),
+    distDir: z.string().optional(),
+    open: z.boolean().optional(),
+    proxy: proxySchema,
+    // TODO: CORS types
+    cors: z.union([z.boolean(), z.any()]).optional()
+  })
+  .strict();
+
 const WatchOptionsSchema = z.object({
   persistent: z.boolean().optional(),
   ignored: z
@@ -113,41 +170,7 @@ const serverSchema = z
     https: z.custom<SecureServerOptions>(),
     cors: z.boolean().optional(),
     appType: z.enum(['spa', 'mpa', 'custom']).optional(),
-    proxy: z
-      .record(
-        z
-          .object({
-            target: z.string(),
-            changeOrigin: z.boolean().optional(),
-            agent: z.any().optional(),
-            secure: z.boolean().optional(),
-            logs: z.any().optional(),
-            pathRewrite: baseRewriteSchema.optional(),
-            pathFilter: pathFilterSchema.optional(),
-            headers: z.record(z.string()).optional(),
-            on: z
-              .object({
-                proxyReq: z
-                  .function()
-                  .args(z.any(), z.any(), z.any())
-                  .returns(z.void())
-                  .optional(),
-                proxyRes: z
-                  .function()
-                  .args(z.any(), z.any(), z.any())
-                  .returns(z.void())
-                  .optional(),
-                error: z
-                  .function()
-                  .args(z.instanceof(Error), z.any(), z.any())
-                  .returns(z.void())
-                  .optional()
-              })
-              .optional()
-          })
-          .passthrough()
-      )
-      .optional(),
+    proxy: proxySchema,
     strictPort: z.boolean().optional(),
     hmr: z
       .union([
@@ -165,7 +188,8 @@ const serverSchema = z
       .optional(),
     middlewares: z.array(z.any()).optional(),
     middlewareMode: z.boolean().optional(),
-    writeToDisk: z.boolean().optional()
+    writeToDisk: z.boolean().optional(),
+    preview: previewServerSchema.optional()
   })
   .strict();
 
@@ -269,7 +293,13 @@ const compilationConfigSchema = z
         plugins: z.array(z.any()).optional(),
         nativeTopLevelAwait: z.boolean().optional(),
         importNotUsedAsValues: z
-          .union([z.literal('remove'), z.literal('preserve')])
+          .union([
+            z.literal('remove'),
+            z.literal('preserve'),
+            z.object({
+              preserve: z.array(z.string()).optional()
+            })
+          ])
           .optional()
       })
       .strict()

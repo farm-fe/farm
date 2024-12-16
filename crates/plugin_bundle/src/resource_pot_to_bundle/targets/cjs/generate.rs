@@ -1,5 +1,3 @@
-use std::collections::{HashMap, HashSet};
-
 use farmfe_core::{
   error::Result,
   module::ModuleSystem,
@@ -9,6 +7,7 @@ use farmfe_core::{
     ExprStmt, Lit, MemberExpr, MemberProp, ModuleItem, Pat, SimpleAssignTarget, Stmt, VarDecl,
     VarDeclKind, VarDeclarator,
   },
+  HashMap, HashSet,
 };
 use farmfe_toolkit::itertools::Itertools;
 
@@ -102,42 +101,60 @@ impl CjsGenerate {
       stmts.push(module_export(&exported_name, &named_render_name));
     }
 
-    if let Some(ReferenceKind::Module(source)) = source {
-      if export.all.0 {
-        let is_external = module_analyzer_manager.is_external(source);
-        let is_commonjs = module_analyzer_manager.is_commonjs(source);
-        if is_external || is_commonjs {
-          let ns = module_analyzer_manager
+    if let Some(ReferenceKind::Module(source)) = source
+      && export.all.0
+    {
+      let is_external = module_analyzer_manager.is_external(source);
+      let is_commonjs = module_analyzer_manager.is_commonjs(source);
+      if is_external || is_commonjs {
+        let ns = if is_external {
+          module_analyzer_manager
             .module_global_uniq_name
             .namespace_name(source)
-            .to_result("export to cjs cannot find variable")?;
-          let render_name = bundle_variable.render_name(ns);
+            .to_result("export to cjs cannot find variable")?
+        } else {
+          module_analyzer_manager
+            .module_global_uniq_name
+            .commonjs_name(source)
+            .to_result("export to cjs cannot find variable")?
+        };
 
-          stmts.push(ModuleItem::Stmt(Stmt::Expr(ExprStmt {
+        let render_name = bundle_variable.render_name(ns);
+
+        let arg1_expr = if is_external {
+          Expr::Ident(render_name.as_str().into())
+        } else {
+          Expr::Call(CallExpr {
+            ctxt: SyntaxContext::empty(),
             span: DUMMY_SP,
-            expr: wrap_export_star(
-              vec![
-                ExprOrSpread {
-                  spread: None,
-                  expr: Box::new(Expr::Ident(render_name.as_str().into())),
-                },
-                ExprOrSpread {
-                  spread: None,
-                  expr: Box::new(Expr::Member(MemberExpr {
-                    span: DUMMY_SP,
-                    obj: Box::new(Expr::Ident("module".into())),
-                    prop: MemberProp::Ident("exports".into()),
-                  })),
-                },
-              ],
-              polyfill,
-              ctx,
-            ),
-          })));
-        }
-      }
+            callee: Callee::Expr(Box::new(Expr::Ident(render_name.as_str().into()))),
+            args: vec![],
+            type_args: None,
+          })
+        };
 
-      // TODO: add esModule by export type
+        stmts.push(ModuleItem::Stmt(Stmt::Expr(ExprStmt {
+          span: DUMMY_SP,
+          expr: wrap_export_star(
+            vec![
+              ExprOrSpread {
+                spread: None,
+                expr: Box::new(arg1_expr),
+              },
+              ExprOrSpread {
+                spread: None,
+                expr: Box::new(Expr::Member(MemberExpr {
+                  span: DUMMY_SP,
+                  obj: Box::new(Expr::Ident("module".into())),
+                  prop: MemberProp::Ident("exports".into()),
+                })),
+              },
+            ],
+            polyfill,
+            ctx,
+          ),
+        })));
+      }
     }
 
     if let Some(default) = export.default.as_ref() {
@@ -190,7 +207,7 @@ impl CjsGenerate {
     let mut ordered_import = import_map.keys().collect::<Vec<_>>();
     ordered_import.sort();
 
-    let mut generate_import_specifies: HashMap<String, MergedImportGenerate> = HashMap::new();
+    let mut generate_import_specifies: HashMap<String, MergedImportGenerate> = HashMap::default();
 
     for source in ordered_import {
       let import = &import_map[source];
