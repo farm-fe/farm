@@ -1,5 +1,5 @@
 ---
-"@farmfe/core": patch
+"@farmfe/core": minor
 ---
 
 js plugin supports process module hook
