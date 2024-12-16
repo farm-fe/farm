@@ -58,10 +58,7 @@ export async function handleVitePlugins(
   if (vitePlugins.length) {
     userConfig = merge({}, userConfig, {
       compilation: userConfig.compilation,
-      server: normalizeDevServerConfig(
-        userConfig.server,
-        userConfig.compilation?.mode ?? mode
-      )
+      server: normalizeDevServerConfig(userConfig)
     });
   }
   const flatVitePlugins = await resolveAsyncPlugins(vitePlugins);
