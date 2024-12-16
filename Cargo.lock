@@ -1778,6 +1778,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "farmfe_plugin_lightningcss"
+version = "0.0.1"
+dependencies = [
+ "farmfe_core",
+ "farmfe_macro_cache_item",
+ "farmfe_testing_helpers",
+ "farmfe_toolkit",
+ "farmfe_utils 0.1.6",
+ "rkyv",
+]
+
+[[package]]
 name = "farmfe_plugin_minify"
 version = "0.0.12"
 dependencies = [
