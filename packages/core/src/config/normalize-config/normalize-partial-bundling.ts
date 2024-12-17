@@ -1,7 +1,8 @@
 import { CUSTOM_KEYS } from '../constants.js';
-import { ResolvedCompilation } from '../types.js';
 
-export default function normalizePartialBundling(
+import type { ResolvedCompilation } from '../types.js';
+
+export function normalizePartialBundling(
   resolvedCompilation: ResolvedCompilation
 ) {
   const partialBundlingItemEnforceMap: Record<string, boolean> = {};
