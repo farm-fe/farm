@@ -13,45 +13,15 @@ export default defineConfig((env) => {
       concatenateModules: true,
       // persistentCache: false,
       resolve: {
-        symlinks: true,
         alias: {
           '@': resolve(process.cwd(), './src'),
           'react-dom': resolve(process.cwd(), './node_modules/react-dom'),
           react: resolve(process.cwd(), './node_modules/react')
         }
       },
-      // minify: false,
-      // mode: 'development',
-      // persistentCache: false,
-      output: {
-        path: './build',
-        filename: 'assets/[resourceName].[contentHash].[ext]',
-        assetsFilename: 'static/[resourceName].[contentHash].[ext]'
-      },
-      partialBundling: {
-        targetMinSize: 1024 * 2000,
-        groups: [
-          {
-            name: 'components',
-            test: ['src/components/.+'],
-            enforce: true,
-          },
-          {
-            name: 'xxxx',
-            test: ['src/pages/.+']
-          }
-        ]
-      },
-      progress: false
     },
     plugins: [
-      [
-        '@farmfe/plugin-react',
-        {
-          refresh: env.mode === 'development',
-          development: env.mode === 'development'
-        }
-      ],
+      '@farmfe/plugin-react',
       '@farmfe/plugin-svgr',
       farmJsPluginLess(),
     ]

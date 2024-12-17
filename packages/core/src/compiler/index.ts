@@ -2,6 +2,7 @@ import { existsSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 
 import { Compiler as BindingCompiler } from '../../binding/index.js';
+
 import type {
   ResolvedCompilation,
   ResolvedUserConfig,

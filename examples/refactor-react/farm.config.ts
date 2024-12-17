@@ -8,8 +8,14 @@ function custom() {
     name: "farm-test-plugin-name",
     buildStart: {
       executor() {
-        console.log("buildStart");
+        // console.log("buildStart");
       }
+    },
+    config(config) {
+      config.plugins.push({
+        name: "test-add-plugin"
+      })
+      return config
     },
     resolve: {
       filters: {
@@ -42,11 +48,6 @@ export default defineConfig({
     // compilerPlugin(),
     custom()
   ],
-  server: {
-    port: 4855,
-    appType: "mpa",
-    https: true
-  },
   compilation: {
     input: {
       index: path.resolve(__dirname, "index.html"),
@@ -65,7 +66,6 @@ export default defineConfig({
   server: {
     port: 4855,
     appType: "mpa",
-    https: true
   },
 });
 
