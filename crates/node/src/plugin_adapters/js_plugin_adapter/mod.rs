@@ -23,6 +23,7 @@ use self::hooks::{
   finish::JsPluginFinishHook,
   load::JsPluginLoadHook,
   plugin_cache_loaded::JsPluginPluginCacheLoadedHook,
+  process_module::JsPluginProcessModuleHook,
   render_resource_pot::JsPluginRenderResourcePotHook,
   render_start::JsPluginRenderStartHook,
   resolve::JsPluginResolveHook,
@@ -58,6 +59,7 @@ pub struct JsPluginAdapter {
   js_finalize_resources_hook: Option<JsPluginFinalizeResourcesHook>,
   js_transform_html_hook: Option<JsPluginTransformHtmlHook>,
   js_update_finished_hook: Option<JsPluginUpdateFinishedHook>,
+  js_process_module_hook: Option<JsPluginProcessModuleHook>,
 }
 
 impl JsPluginAdapter {
@@ -93,6 +95,8 @@ impl JsPluginAdapter {
       get_named_property::<JsObject>(env, &js_plugin_object, "transformHtml").ok();
     let update_finished_obj =
       get_named_property::<JsObject>(env, &js_plugin_object, "updateFinished").ok();
+    let process_module_obj =
+      get_named_property::<JsObject>(env, &js_plugin_object, "processModule").ok();
 
     Ok(Self {
       name,
@@ -120,6 +124,8 @@ impl JsPluginAdapter {
         .map(|obj| JsPluginTransformHtmlHook::new(env, obj)),
       js_update_finished_hook: update_finished_obj
         .map(|obj| JsPluginUpdateFinishedHook::new(env, obj)),
+      js_process_module_hook: process_module_obj
+        .map(|obj| JsPluginProcessModuleHook::new(env, obj)),
     })
   }
 
@@ -241,6 +247,18 @@ impl Plugin for JsPluginAdapter {
     } else {
       Ok(None)
     }
+  }
+
+  fn process_module(
+    &self,
+    param: &mut farmfe_core::plugin::PluginProcessModuleHookParam,
+    context: &Arc<CompilationContext>,
+  ) -> Result<Option<()>> {
+    if let Some(ref js_process_module_hook) = self.js_process_module_hook {
+      return js_process_module_hook.call(param, context.clone());
+    }
+
+    Ok(None)
   }
 
   fn build_end(&self, context: &Arc<CompilationContext>) -> Result<Option<()>> {
@@ -397,10 +415,9 @@ impl Plugin for JsPluginAdapter {
 }
 
 pub fn get_named_property<T: FromNapiValue>(env: &Env, obj: &JsObject, field: &str) -> Result<T> {
+  // TODO: maybe can prompt for the name of the plugin
   if obj.has_named_property(field).map_err(|e| {
-    CompilationError::NAPIError(format!(
-      "Get field {field} of config object failed. {e:?}"
-    ))
+    CompilationError::NAPIError(format!("Get field {field} of config object failed. {e:?}"))
   })? {
     unsafe {
       T::from_napi_value(
@@ -408,9 +425,7 @@ pub fn get_named_property<T: FromNapiValue>(env: &Env, obj: &JsObject, field: &s
         obj
           .get_named_property::<JsUnknown>(field)
           .map_err(|e| {
-            CompilationError::NAPIError(format!(
-              "Get field {field} of config object failed. {e:?}"
-            ))
+            CompilationError::NAPIError(format!("Get field {field} of config object failed. {e:?}"))
           })?
           .raw(),
       )
