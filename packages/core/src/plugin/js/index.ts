@@ -113,6 +113,12 @@ export function convertPlugin(plugin: JsPlugin): void {
     }
   }
 
+  if (plugin.processModule) {
+    plugin.processModule.filters ??= {};
+    plugin.processModule.filters.moduleTypes ??= [];
+    plugin.processModule.filters.resolvedPaths ??= [];
+  }
+
   if (plugin.renderResourcePot) {
     plugin.renderResourcePot.filters ??= {};
 

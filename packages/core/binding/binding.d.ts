@@ -28,6 +28,10 @@ export const enum JsPluginTransformHtmlHookOrder {
   Normal = 1,
   Post = 2
 }
+export interface JsPluginProcessModuleHookFilters {
+  moduleTypes: Array<string>
+  resolvedPaths: Array<string>
+}
 export interface WatchDiffResult {
   add: Array<string>
   remove: Array<string>

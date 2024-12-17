@@ -1,4 +1,4 @@
-import { test, expect } from 'vitest';
+import { test } from 'vitest';
 import { watchProjectAndTest } from '../../e2e/vitestSetup.js';
 import { basename, dirname } from 'path';
 import { fileURLToPath } from 'url';
@@ -23,6 +23,7 @@ test(`e2e tests - ${name}`, async () => {
       },
       command
     );
+
   // preview build
   await runTest('preview');
   await runTest('watch');
