@@ -78,4 +78,5 @@ export declare class Compiler {
   relativeModulePaths(): Array<string>
   resource(name: string): Buffer | null
   stats(): string
+  invalidateModule(moduleId: string): void
 }

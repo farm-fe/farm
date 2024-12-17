@@ -240,4 +240,8 @@ export class Compiler {
   stats() {
     return this._bindingCompiler.stats();
   }
+
+  invalidateModule(moduleId: string) {
+    this._bindingCompiler.invalidateModule(moduleId);
+  }
 }
