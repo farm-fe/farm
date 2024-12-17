@@ -171,16 +171,43 @@ impl ModuleMemoryStore for ImmutableModulesMemoryStore {
 
   fn write_cache(&self) {
     let mut packages = HashMap::new();
+    let mut pending_remove_modules = HashSet::new();
+    let mut maybe_remove_package = HashSet::new();
 
     for item in self.cached_modules.iter() {
       let module = item.value();
+
       let package_key =
         CachedPackage::gen_key(&module.module.package_name, &module.module.package_version);
+
+      if module.is_expired {
+        pending_remove_modules.insert(item.key().clone());
+        maybe_remove_package.insert(package_key);
+        continue;
+      }
 
       let package = packages.entry(package_key.clone()).or_insert_with(Vec::new);
 
       package.push(item.key().clone());
       self.manifest.insert(item.key().clone(), package_key);
+    }
+
+    for key in pending_remove_modules {
+      self.cached_modules.remove(&key);
+      self.manifest.remove(&key);
+      self.manifest_reversed.iter_mut().for_each(|mut item| {
+        if item.value_mut().contains(&key) {
+          item.value_mut().remove(&key);
+        }
+      })
+    }
+
+    for package in maybe_remove_package {
+      if packages.contains_key(&package) {
+        return;
+      }
+
+      self.store.remove_cache(&package);
     }
 
     let manifest = self

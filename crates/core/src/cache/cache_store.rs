@@ -174,6 +174,19 @@ impl CacheStore {
 
     None
   }
+
+  pub fn remove_cache(&self, name: &str) {
+    if !self.manifest.contains_key(name) {
+      return;
+    }
+
+    let (_, cache_key) = self.manifest.remove(name).unwrap();
+    let cache_file = self.cache_dir.join(cache_key);
+
+    if cache_file.exists() && cache_file.is_file() {
+      std::fs::remove_file(cache_file).ok();
+    }
+  }
 }
 
 /// Cache key of the store, it's a pair of (name, cache_key), a name should only be related to one cache key.

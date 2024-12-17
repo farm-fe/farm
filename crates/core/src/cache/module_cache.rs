@@ -42,6 +42,13 @@ pub struct CachedModule {
   pub module: Module,
   pub dependencies: Vec<CachedModuleDependency>,
   pub watch_dependencies: Vec<CachedWatchDependency>,
+  ///
+  /// `default`: false
+  ///
+  /// true: it makes the cache expire.
+  ///
+  /// when writing to the cache next time, it will be cleared from memory.
+  ///
   pub is_expired: bool,
 }
 

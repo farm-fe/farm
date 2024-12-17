@@ -22,7 +22,7 @@ pub struct MutableModulesMemoryStore {
   /// ModuleId -> Cached Module
   cached_modules: DashMap<ModuleId, CachedModule>,
 }
-
+// TODO: cache unit test
 impl MutableModulesMemoryStore {
   pub fn new(cache_dir_str: &str, namespace: &str, mode: Mode) -> Self {
     Self {
@@ -121,9 +121,14 @@ impl ModuleMemoryStore for MutableModulesMemoryStore {
 
   fn write_cache(&self) {
     let mut cache_map = HashMap::new();
-
+    let mut pending_removed_modules = vec![];
     for entry in self.cached_modules.iter() {
       let module = entry.value();
+      if module.is_expired {
+        pending_removed_modules.push(module.module.id.clone());
+        continue;
+      }
+
       let store_key = self.gen_cache_store_key(&module.module);
 
       if self.store.is_cache_changed(&store_key) {
@@ -137,6 +142,11 @@ impl ModuleMemoryStore for MutableModulesMemoryStore {
       .collect::<HashMap<_, _>>();
 
     self.store.write_cache(cache_map);
+
+    for module_id in pending_removed_modules {
+      self.cached_modules.remove(&module_id);
+      self.store.remove_cache(&module_id.to_string());
+    }
   }
 
   fn invalidate_cache(&self, key: &ModuleId) {
