@@ -1,3 +1,5 @@
+export * from './preview.js';
+
 import fs, { PathLike } from 'node:fs';
 import connect from 'connect';
 import corsMiddleware from 'cors';

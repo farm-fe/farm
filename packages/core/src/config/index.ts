@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import { createRequire } from 'node:module';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
+
 import fse from 'fs-extra';
 
 import { bindingPath } from '../../binding/index.js';
@@ -49,12 +50,15 @@ import merge from '../utils/merge.js';
 import {
   CUSTOM_KEYS,
   DEFAULT_CONFIG_NAMES,
+  ENV_DEVELOPMENT,
+  ENV_PRODUCTION,
   FARM_DEFAULT_NAMESPACE
 } from './constants.js';
 import { mergeConfig, mergeFarmCliConfig } from './mergeConfig.js';
+
 import { normalizeCss } from './normalize-config/normalize-css.js';
 import { normalizeExternal } from './normalize-config/normalize-external.js';
-import normalizePartialBundling from './normalize-config/normalize-partial-bundling.js';
+import { normalizePartialBundling } from './normalize-config/normalize-partial-bundling.js';
 import { normalizeResolve } from './normalize-config/normalize-resolve.js';
 
 import type { OutputConfig } from '../types/binding.js';
@@ -289,8 +293,8 @@ export async function normalizeUserCompilationConfig(
     compilation
   );
 
-  const isProduction = mode === 'production';
-  const isDevelopment = mode === 'development';
+  const isProduction = mode === ENV_PRODUCTION;
+  const isDevelopment = mode === ENV_DEVELOPMENT;
   resolvedCompilation.mode = resolvedCompilation.mode ?? mode;
 
   resolvedCompilation.coreLibPath = bindingPath;
@@ -342,52 +346,32 @@ export async function normalizeUserCompilationConfig(
 
   const require = createRequire(import.meta.url);
   const hmrClientPluginPath = require.resolve('@farmfe/runtime-plugin-hmr');
-  const ImportMetaPluginPath = require.resolve(
+  const importMetaPluginPath = require.resolve(
     '@farmfe/runtime-plugin-import-meta'
   );
 
-  if (!resolvedCompilation.runtime) {
-    resolvedCompilation.runtime = {
-      path: require.resolve('@farmfe/runtime'),
-      plugins: []
-    };
-  }
+  resolvedCompilation.runtime = {
+    path:
+      resolvedCompilation.runtime?.path ?? require.resolve('@farmfe/runtime'),
+    swcHelpersPath:
+      resolvedCompilation.runtime?.swcHelpersPath ??
+      path.dirname(require.resolve('@swc/helpers/package.json')),
+    plugins: resolvedCompilation.runtime?.plugins ?? [],
+    namespace: resolvedCompilation.runtime?.namespace
+  };
 
-  if (!resolvedCompilation.runtime.path) {
-    resolvedCompilation.runtime.path = require.resolve('@farmfe/runtime');
-  }
-
-  if (!resolvedCompilation.runtime.swcHelpersPath) {
-    resolvedCompilation.runtime.swcHelpersPath = path.dirname(
-      require.resolve('@swc/helpers/package.json')
-    );
-  }
-
-  if (!resolvedCompilation.runtime.plugins) {
-    resolvedCompilation.runtime.plugins = [];
-  } else {
-    const resolvePluginPath = (plugin: any) => {
+  resolvedCompilation.runtime.plugins = resolvedCompilation.runtime.plugins.map(
+    (plugin) => {
       if (path.isAbsolute(plugin)) return plugin;
       return plugin.startsWith('.')
         ? path.resolve(resolvedRootPath, plugin)
         : require.resolve(plugin);
-    };
-    // make sure all plugin paths are absolute
-    resolvedCompilation.runtime.plugins =
-      resolvedCompilation.runtime.plugins.map(resolvePluginPath);
-  }
-  // set namespace to package.json name field's hash
-  if (!resolvedCompilation.runtime.namespace) {
-    // read package.json name field
-    const packageJsonPath = path.resolve(resolvedRootPath, 'package.json');
-    const packageJsonExists = fse.existsSync(packageJsonPath);
-    const namespaceName = packageJsonExists
-      ? JSON.parse(fse.readFileSync(packageJsonPath, 'utf-8')).name ||
-        FARM_DEFAULT_NAMESPACE
-      : FARM_DEFAULT_NAMESPACE;
+    }
+  );
 
+  if (!resolvedCompilation.runtime.namespace) {
     resolvedCompilation.runtime.namespace = createHash('md5')
-      .update(namespaceName)
+      .update(getNamespaceName(resolvedRootPath))
       .digest('hex');
   }
 
@@ -440,9 +424,9 @@ export async function normalizeUserCompilationConfig(
 
   if (
     isArray(resolvedCompilation.runtime.plugins) &&
-    !resolvedCompilation.runtime.plugins.includes(ImportMetaPluginPath)
+    !resolvedCompilation.runtime.plugins.includes(importMetaPluginPath)
   ) {
-    resolvedCompilation.runtime.plugins.push(ImportMetaPluginPath);
+    resolvedCompilation.runtime.plugins.push(importMetaPluginPath);
   }
 
   // we should not deep merge compilation.input
@@ -818,7 +802,7 @@ export async function loadConfigFile(
     const errorMessage = convertErrorMessage(error);
     const stackTrace =
       error.code === 'GenericFailure' ? '' : `\n${error.stack}`;
-    if (inlineOptions.mode === 'production') {
+    if (inlineOptions.mode === ENV_PRODUCTION) {
       throw new Error(
         `Failed to load farm config file: ${errorMessage} \n${stackTrace}`
       );
@@ -951,7 +935,7 @@ export async function resolveDefaultUserConfig(options: any) {
 
   const normalizedConfig = await normalizeUserCompilationConfig(
     resolvedUserConfig,
-    'development'
+    options.mode
   );
 
   return normalizedConfig;
@@ -999,8 +983,8 @@ export async function resolveUserConfig(
     // TODO publicPath rewrite to BASE_URL
     BASE_URL: userConfig.compilation.output.publicPath ?? '/',
     mode: userConfig.mode,
-    DEV: userConfig.compilation.mode === 'development',
-    PROD: userConfig.compilation.mode === 'production'
+    DEV: userConfig.compilation.mode === ENV_DEVELOPMENT,
+    PROD: userConfig.compilation.mode === ENV_PRODUCTION
   };
 
   resolvedUserConfig.publicDir = normalizePublicDir(
@@ -1115,4 +1099,13 @@ async function setLazyCompilationDefine(
       resolvedUserConfig.server.protocol || 'http'
     }://${hostname.host || 'localhost'}:${resolvedUserConfig.server.port}`
   };
+}
+
+function getNamespaceName(rootPath: string) {
+  const packageJsonPath = path.resolve(rootPath, 'package.json');
+  if (fse.existsSync(packageJsonPath)) {
+    const { name } = JSON.parse(fse.readFileSync(packageJsonPath, 'utf-8'));
+    return name || FARM_DEFAULT_NAMESPACE;
+  }
+  return FARM_DEFAULT_NAMESPACE;
 }

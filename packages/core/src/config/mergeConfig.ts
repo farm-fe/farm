@@ -1,4 +1,5 @@
 import path, { isAbsolute } from 'node:path';
+
 import { isString } from '../plugin/js/utils.js';
 import { isArray, isObject } from '../utils/share.js';
 import { CompilationMode } from './env.js';

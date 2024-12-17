@@ -1,6 +1,7 @@
 import EventEmitter from 'node:events';
 import { existsSync } from 'node:fs';
 import path from 'node:path';
+
 import chokidar from 'chokidar';
 import type { FSWatcher, WatchOptions } from 'chokidar';
 import glob from 'fast-glob';
