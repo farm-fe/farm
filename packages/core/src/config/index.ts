@@ -68,7 +68,6 @@ import type {
   UserConfig,
   UserConfigExport,
   UserConfigFnObject,
-  UserServerConfig,
   commandType
 } from './types.js';
 
@@ -107,8 +106,6 @@ export async function resolveConfig(
   defaultNodeEnv: CompilationMode = 'development',
   isPreview = false
 ): Promise<ResolvedUserConfig> {
-  const compileMode = defaultMode;
-
   const mode = inlineOptions.mode || defaultMode;
   const isNodeEnvSet = !!process.env.NODE_ENV;
   inlineOptions.mode = mode;
@@ -134,7 +131,7 @@ export async function resolveConfig(
   let userConfig: UserConfig = mergeFarmCliConfig(
     inlineOptions,
     {},
-    compileMode
+    defaultMode
   );
 
   const transformInlineConfig = userConfig;
@@ -146,7 +143,7 @@ export async function resolveConfig(
 
   const { jsPlugins, vitePluginAdapters } = await resolvePlugins(
     userConfig,
-    compileMode
+    defaultMode
   );
   const sortFarmJsPlugins = getSortedPlugins([
     ...jsPlugins,
@@ -155,7 +152,7 @@ export async function resolveConfig(
 
   const config = await resolveConfigHook(userConfig, sortFarmJsPlugins);
   // may be user push plugin when config hooks
-  const allPlugins = await resolvePlugins(config, compileMode);
+  const allPlugins = await resolvePlugins(config, defaultMode);
   const farmJsPlugins = getSortedPlugins([
     ...allPlugins.jsPlugins,
     ...vitePluginAdapters,
@@ -163,8 +160,6 @@ export async function resolveConfig(
   ]);
 
   const resolvedUserConfig = await handleResolveConfig(
-    mode,
-    compileMode,
     configFilePath,
     loadedUserConfig,
     config,
@@ -180,8 +175,6 @@ export async function resolveConfig(
 }
 
 async function handleResolveConfig(
-  mode: string,
-  compileMode: CompilationMode,
   configFilePath: string,
   loadedUserConfig:
     | {
@@ -201,26 +194,17 @@ async function handleResolveConfig(
     allowClearScreen: loadedUserConfig.config?.clearScreen
   });
 
-  const resolvedUserConfig = await resolveUserConfig(
-    config,
-    configFilePath,
-    compileMode
-  );
+  const resolvedUserConfig = await resolveUserConfig(config, configFilePath);
 
   resolvedUserConfig.logger = logger;
 
   // farm handles server attributes in resolveConfig.
   // On the one hand, farm can be used in node and server needs
   // to be enabled. Lazy loading mode is enabled in node environment.
-  resolvedUserConfig.server = normalizeDevServerConfig(
-    resolvedUserConfig.server,
-    compileMode
-  );
+  resolvedUserConfig.server = normalizeDevServerConfig(resolvedUserConfig);
 
-  resolvedUserConfig.compilation = await normalizeUserCompilationConfig(
-    resolvedUserConfig,
-    mode as CompilationMode
-  );
+  resolvedUserConfig.compilation =
+    await normalizeUserCompilationConfig(resolvedUserConfig);
 
   Object.assign(resolvedUserConfig, {
     root: resolvedUserConfig.compilation.root,
@@ -648,13 +632,12 @@ function tryHttpsAsFileRead(value: unknown): string | Buffer | unknown {
 }
 
 export function normalizeDevServerConfig(
-  options: UserServerConfig | undefined,
-  mode: string
+  userConfig: UserConfig | undefined
 ): NormalizedServerConfig {
-  const { host, port, hmr: hmrConfig, https } = options || {};
-  const isProductionMode = mode === 'production';
+  const serverOptions = userConfig?.server;
+  const { host, port, hmr: hmrConfig, https } = serverOptions || {};
   const hmr =
-    isProductionMode || hmrConfig === false
+    hmrConfig === false
       ? false
       : merge(
           {},
@@ -666,15 +649,15 @@ export function normalizeDevServerConfig(
           hmrConfig === true ? {} : hmrConfig
         );
 
-  return merge({}, DEFAULT_DEV_SERVER_OPTIONS, options, {
+  return merge({}, DEFAULT_DEV_SERVER_OPTIONS, serverOptions, {
     hmr,
     https: https
       ? {
           ...https,
-          ca: tryHttpsAsFileRead(options.https.ca),
-          cert: tryHttpsAsFileRead(options.https.cert),
-          key: tryHttpsAsFileRead(options.https.key),
-          pfx: tryHttpsAsFileRead(options.https.pfx)
+          ca: tryHttpsAsFileRead(serverOptions.https.ca),
+          cert: tryHttpsAsFileRead(serverOptions.https.cert),
+          key: tryHttpsAsFileRead(serverOptions.https.key),
+          pfx: tryHttpsAsFileRead(serverOptions.https.pfx)
         }
       : undefined
   }) as NormalizedServerConfig;
@@ -963,8 +946,7 @@ export async function resolveDefaultUserConfig(options: any) {
 
   const resolvedUserConfig: ResolvedUserConfig = await resolveUserConfig(
     defaultConfig,
-    undefined,
-    defaultConfig.compilation.mode
+    undefined
   );
 
   const normalizedConfig = await normalizeUserCompilationConfig(
@@ -977,12 +959,11 @@ export async function resolveDefaultUserConfig(options: any) {
 
 export async function resolveUserConfig(
   userConfig: UserConfig,
-  configFilePath?: string | undefined,
-  mode: 'development' | 'production' | string = 'development'
+  configFilePath?: string | undefined
 ): Promise<ResolvedUserConfig> {
   const resolvedUserConfig = {
     ...userConfig,
-    envMode: mode
+    envMode: userConfig.mode
   } as ResolvedUserConfig;
 
   // set internal config
@@ -1017,19 +998,15 @@ export async function resolveUserConfig(
     NODE_ENV: userConfig.compilation.mode,
     // TODO publicPath rewrite to BASE_URL
     BASE_URL: userConfig.compilation.output.publicPath ?? '/',
-    mode,
-    DEV: mode === 'development',
-    PROD: mode === 'production'
+    mode: userConfig.mode,
+    DEV: userConfig.compilation.mode === 'development',
+    PROD: userConfig.compilation.mode === 'production'
   };
 
   resolvedUserConfig.publicDir = normalizePublicDir(
     resolvedRootPath,
     userConfig.publicDir
   );
-
-  // TODO type error
-  // @ts-ignore
-  // resolveUserConfig.logger = logger;
 
   return resolvedUserConfig;
 }

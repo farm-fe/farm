@@ -1,6 +1,7 @@
 import path, { isAbsolute } from 'node:path';
 import { isString } from '../plugin/js/utils.js';
 import { isArray, isObject } from '../utils/share.js';
+import { CompilationMode } from './env.js';
 import { FarmCliOptions, UserConfig } from './types.js';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -48,7 +49,7 @@ export function mergeConfig<T extends Record<string, any>>(
 export function mergeFarmCliConfig(
   cliOption: FarmCliOptions & UserConfig,
   target: UserConfig,
-  mode?: 'development' | 'production'
+  mode: CompilationMode
 ): UserConfig {
   let left: UserConfig = {};
   const options = initialCliOptions(cliOption);
@@ -56,6 +57,7 @@ export function mergeFarmCliConfig(
   (
     [
       'clearScreen',
+      'mode',
       'compilation',
       'envDir',
       'envPrefix',
@@ -115,18 +117,18 @@ export function mergeFarmCliConfig(
     });
   }
 
-  if (options.server?.port) {
-    left = mergeConfig(left, {
-      server: {
-        port: options.port
-      }
-    });
-  }
-
   if (options.mode) {
     left = mergeConfig(left, {
       compilation: {
         mode: mode ?? (options.mode as UserConfig['compilation']['mode'])
+      }
+    });
+  }
+
+  if (options.server?.port) {
+    left = mergeConfig(left, {
+      server: {
+        port: options.port
       }
     });
   }

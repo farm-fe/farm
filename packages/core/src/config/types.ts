@@ -149,6 +149,7 @@ export interface UserConfig {
   /** current root of this project, default to current working directory */
   root?: string;
   clearScreen?: boolean;
+  mode?: string;
   envDir?: string;
   watch?: boolean | WatchOptions;
   envPrefix?: string | string[];
@@ -218,7 +219,7 @@ export interface GlobalCliOptions {
   c?: boolean | string;
   config?: string;
   m?: string;
-  mode?: 'development' | 'production';
+  mode?: string;
 }
 
 export interface FarmCLIServerOptions {
