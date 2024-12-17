@@ -165,6 +165,11 @@ export interface OutputConfig {
    * clean output.path automatically or not
    */
   clean?: boolean;
+  /**
+   * copy public directory to output.path or not
+   * Boolean @default true
+   */
+  copyPublicDir?: boolean;
 }
 
 export interface ResolveConfig {
