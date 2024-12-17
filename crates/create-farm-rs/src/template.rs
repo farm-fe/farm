@@ -153,6 +153,7 @@ pub enum Template {
   Solid,
   Preact,
   Nestjs,
+  Tauri2(Option<TauriSubTemplate>),
   Tauri(Option<TauriSubTemplate>),
   Electron(Option<ElectronSubTemplate>),
 }
@@ -175,6 +176,8 @@ impl Display for Template {
       Template::Solid => write!(f, "solid"),
       Template::Preact => write!(f, "preact"),
       Template::Nestjs => write!(f, "nestjs"),
+      Template::Tauri2(None) => write!(f, "tauri2"),
+      Template::Tauri2(Some(sub_template)) => write!(f, "tauri2-{sub_template}"),
       Template::Tauri(None) => write!(f, "tauri"),
       Template::Tauri(Some(sub_template)) => write!(f, "tauri-{sub_template}"),
       Template::Electron(None) => write!(f, "electron"),
@@ -197,6 +200,7 @@ impl FromStr for Template {
       "solid" => Ok(Template::Solid),
       "preact" => Ok(Template::Preact),
       "nestjs" => Ok(Template::Nestjs),
+      "tauri2" => Ok(Template::Tauri2(None)),
       "tauri" => Ok(Template::Tauri(None)),
       "electron" => Ok(Template::Electron(None)),
       _ => Err(format!(
@@ -222,7 +226,16 @@ impl Displayable for Template {
       Template::Svelte => "\x1b[38;2;255;137;54mSvelte - (https://svelte.dev/)\x1b[0m",
       Template::Lit => "\x1b[33mLit - (https://lit.dev/)\x1b[0m",
       Template::Preact => "\x1b[36mPreact - (https://preactjs.com/)\x1b[0m",
+      Template::Tauri2(None) => "\x1b[38;2;255;137;54mTauri2 - (https://tauri.app/)\x1b[0m",
       Template::Tauri(None) => "\x1b[38;2;255;137;54mTauri - (https://tauri.app/)\x1b[0m",
+      Template::Tauri2(Some(sub_template)) => match sub_template {
+        TauriSubTemplate::React => "\x1b[38;2;255;215;0mTauri2 with React\x1b[0m",
+        TauriSubTemplate::Vue => "\x1b[38;2;255;215;0mTauri2 with Vue\x1b[0m",
+        TauriSubTemplate::Vanilla => "\x1b[38;2;255;215;0mTauri2 with Vanilla\x1b[0m",
+        TauriSubTemplate::Svelte => "\x1b[38;2;255;215;0mTauri2 with Svelte\x1b[0m",
+        TauriSubTemplate::Solid => "\x1b[38;2;255;215;0mTauri2 with Solid\x1b[0m",
+        TauriSubTemplate::Preact => "\x1b[38;2;255;215;0mTauri2 with Preact\x1b[0m",
+      },
       Template::Tauri(Some(sub_template)) => match sub_template {
         TauriSubTemplate::React => "\x1b[38;2;255;215;0mTauri with React\x1b[0m",
         TauriSubTemplate::Vue => "\x1b[38;2;255;215;0mTauri with Vue\x1b[0m",
@@ -258,6 +271,7 @@ impl<'a> Template {
     Template::Solid,
     Template::Preact,
     Template::Nestjs,
+    Template::Tauri2(None),
     Template::Tauri(None),
     Template::Electron(None),
   ];
@@ -357,6 +371,8 @@ impl<'a> Template {
       };
 
     let current_template_name = match self {
+      Template::Tauri2(None) => "tauri2".to_string(),
+      Template::Tauri2(Some(sub_template)) => format!("tauri2/{}", sub_template.to_simple_string()),
       Template::Tauri(None) => "tauri".to_string(),
       Template::Tauri(Some(sub_template)) => format!("tauri/{}", sub_template.to_simple_string()),
       Template::Electron(None) => "electron".to_string(),
