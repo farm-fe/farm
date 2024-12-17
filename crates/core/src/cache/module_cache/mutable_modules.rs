@@ -58,11 +58,7 @@ impl MutableModulesMemoryStore {
 
 impl ModuleMemoryStore for MutableModulesMemoryStore {
   fn has_cache(&self, key: &ModuleId) -> bool {
-    if self.cached_modules.contains_key(key) {
-      return true;
-    }
-
-    self.store.has_cache(&key.to_string())
+    self.get_cache_ref(key).is_some_and(|m| !m.is_expired)
   }
 
   fn set_cache(&self, key: ModuleId, module: CachedModule) {
@@ -144,7 +140,9 @@ impl ModuleMemoryStore for MutableModulesMemoryStore {
   }
 
   fn invalidate_cache(&self, key: &ModuleId) {
-    self.cached_modules.remove(key);
+    if let Some(mut m) = self.get_cache_mut_ref(key) {
+      m.is_expired = true;
+    };
   }
 
   fn is_cache_changed(&self, module: &crate::module::Module) -> bool {

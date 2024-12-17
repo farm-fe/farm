@@ -42,6 +42,7 @@ pub struct CachedModule {
   pub module: Module,
   pub dependencies: Vec<CachedModuleDependency>,
   pub watch_dependencies: Vec<CachedWatchDependency>,
+  pub is_expired: bool,
 }
 
 impl CachedModule {

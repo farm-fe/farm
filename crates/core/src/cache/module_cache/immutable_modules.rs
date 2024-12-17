@@ -104,15 +104,7 @@ impl ImmutableModulesMemoryStore {
 
 impl ModuleMemoryStore for ImmutableModulesMemoryStore {
   fn has_cache(&self, key: &crate::module::ModuleId) -> bool {
-    if self.cached_modules.contains_key(key) {
-      return true;
-    }
-
-    if let Some(package_key) = self.manifest.get(key) {
-      return self.store.has_cache(package_key.value());
-    }
-
-    false
+    self.get_cache_ref(key).is_some_and(|m| !m.is_expired)
   }
 
   fn set_cache(&self, key: crate::module::ModuleId, module: super::CachedModule) {
@@ -283,13 +275,9 @@ impl ModuleMemoryStore for ImmutableModulesMemoryStore {
   }
 
   fn invalidate_cache(&self, key: &ModuleId) {
-    self.cached_modules.remove(key);
-    self.manifest.remove(key);
-    self.manifest_reversed.iter_mut().for_each(|mut item| {
-      if item.value_mut().contains(key) {
-        item.value_mut().remove(key);
-      }
-    })
+    if let Some(mut m) = self.get_cache_mut_ref(key) {
+      m.is_expired = true;
+    }
   }
 
   fn is_cache_changed(&self, module: &crate::module::Module) -> bool {

@@ -234,6 +234,7 @@ pub fn set_module_graph_cache(module_ids: Vec<ModuleId>, context: &Arc<Compilati
             }
           })
           .collect(),
+        is_expired: false,
       };
 
       context
