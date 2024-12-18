@@ -477,6 +477,8 @@ impl PluginDriver {
 
   hook_serial!(finalize_module, &mut PluginFinalizeModuleHookParam);
 
+  hook_serial!(freeze_module, &ModuleId);
+
   hook_parallel!(build_end);
 
   hook_parallel!(generate_start);

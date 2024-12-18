@@ -315,21 +315,21 @@ impl Plugin for FarmPluginRuntime {
       context,
     )?;
 
-    let merged_sourcemap = merge_sourcemap(
-      &resource_pot.id,
-      &mut rendered_modules,
-      &module_graph,
-      context,
-      &hoisted_map,
-    );
+    // let merged_sourcemap = merge_sourcemap(
+    //   &resource_pot.id,
+    //   &mut rendered_modules,
+    //   &module_graph,
+    //   context,
+    //   &hoisted_map,
+    // );
 
-    let comments = merge_comments(&mut rendered_modules, merged_sourcemap, &hoisted_map);
+    // let comments = merge_comments(&mut rendered_modules, merged_sourcemap, &hoisted_map);
 
     Ok(Some(ResourcePotMetaData::Js(JsResourcePotMetaData {
       ast: wrapped_resource_pot_ast,
       external_modules,
       rendered_modules: rendered_modules.into_iter().map(|m| m.module_id).collect(),
-      comments: comments.into(),
+      // comments: comments.into(),
     })))
   }
 

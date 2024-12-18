@@ -112,7 +112,7 @@ pub trait Plugin: Any + Send + Sync {
   /// Example: Analyze the module, for example, analyze import/export statements, top level and unresolved identifiers
   fn freeze_module(
     &self,
-    _module: &mut Module,
+    _param: &ModuleId,
     _context: &Arc<CompilationContext>,
   ) -> Result<Option<Module>> {
     Ok(None)
@@ -474,31 +474,6 @@ pub struct PluginGenerateResourcesHookResult {
   pub resource: Resource,
   pub source_map: Option<Resource>,
 }
-
-// pub struct PluginAnalyzeResourcePotHookParam<'a> {
-//   pub resource_pot_id: &'a ResourcePotId,
-//   pub resource_pot_type: &'a ResourcePotType,
-//   pub meta: &'a mut ResourcePotMetaData,
-// }
-
-// #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-// #[serde(rename_all = "camelCase")]
-// pub struct PluginRenderResourcePotHookParam {
-//   pub content: Arc<String>,
-//   pub source_map_chain: Vec<Arc<String>>,
-//   // pub resource_pot_info: ResourcePotInfo,
-// }
-
-// #[derive(Debug, serde::Serialize, serde::Deserialize)]
-// pub struct PluginRenderResourcePotHookResult {
-//   pub content: String,
-//   pub source_map: Option<String>,
-// }
-
-// pub struct PluginDriverRenderResourcePotHookResult {
-//   pub content: Arc<String>,
-//   pub source_map_chain: Vec<Arc<String>>,
-// }
 
 pub struct PluginFinalizeResourcesHookParams<'a> {
   pub resources_map: &'a mut HashMap<String, Resource>,

@@ -1110,8 +1110,9 @@ mod tests {
           hmr_accepted_deps: HashSet::default(),
           comments: Default::default(),
           custom: Default::default(),
-          imports: vec![],
-          exports: vec![],
+          top_level_idents: Default::default(),
+          unresolved_idents: Default::default(),
+          statements: vec![],
           is_async: false,
         }));
       })

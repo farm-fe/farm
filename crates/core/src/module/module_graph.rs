@@ -590,7 +590,7 @@ impl ModuleGraph {
     (result, cyclic)
   }
 
-  pub fn update_execution_order_for_modules(&mut self) {
+  pub fn update_execution_order_for_modules(&mut self) -> Vec<ModuleId> {
     let (mut topo_sorted_modules, circles) = self.toposort();
 
     topo_sorted_modules.reverse();
@@ -604,6 +604,8 @@ impl ModuleGraph {
       });
 
     self.circle_record = CircleRecord::new(circles);
+
+    topo_sorted_modules
   }
 
   pub fn internal_graph(&self) -> &StableDiGraph<Module, ModuleGraphEdge> {

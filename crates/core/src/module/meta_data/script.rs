@@ -7,12 +7,16 @@ use swc_common::{
   },
   BytePos,
 };
-use swc_ecma_ast::{Id, ImportSpecifier, Module as SwcModule, ModuleExportName};
+use swc_ecma_ast::Module as SwcModule;
 
 use crate::module::ModuleId;
 use crate::{HashMap, HashSet};
 
 use super::custom::CustomMetaDataMap;
+
+use statement::{Statement, SwcId};
+
+pub mod statement;
 
 /// Script specific meta data, for example, [swc_ecma_ast::Module]
 #[cache_item]
@@ -25,8 +29,9 @@ pub struct ScriptModuleMetaData {
   pub hmr_self_accepted: bool,
   pub hmr_accepted_deps: HashSet<ModuleId>,
   pub comments: CommentsMetaData,
-  pub imports: Vec<ImportInfo>,
-  pub exports: Vec<ExportInfo>,
+  pub statements: Vec<Statement>,
+  pub top_level_idents: HashSet<SwcId>,
+  pub unresolved_idents: HashSet<SwcId>,
   pub is_async: bool,
   pub custom: CustomMetaDataMap,
 }
@@ -41,8 +46,9 @@ impl Default for ScriptModuleMetaData {
       hmr_self_accepted: false,
       hmr_accepted_deps: Default::default(),
       comments: Default::default(),
-      imports: Default::default(),
-      exports: Default::default(),
+      statements: vec![],
+      top_level_idents: Default::default(),
+      unresolved_idents: Default::default(),
       is_async: false,
       custom: Default::default(),
     }
@@ -71,8 +77,9 @@ impl Clone for ScriptModuleMetaData {
       hmr_self_accepted: self.hmr_self_accepted,
       hmr_accepted_deps: self.hmr_accepted_deps.clone(),
       comments: self.comments.clone(),
-      imports: self.imports.clone(),
-      exports: self.exports.clone(),
+      statements: self.statements.clone(),
+      top_level_idents: self.top_level_idents.clone(),
+      unresolved_idents: self.unresolved_idents.clone(),
       is_async: false,
       custom: CustomMetaDataMap::from(custom),
     }
@@ -208,99 +215,5 @@ impl ModuleSystem {
 
       ModuleSystem::Custom(_) => module_system,
     }
-  }
-}
-
-#[cache_item]
-#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct SwcId {
-  pub sym: swc_atoms::Atom,
-  pub ctxt: swc_common::SyntaxContext,
-}
-
-impl From<Id> for SwcId {
-  fn from(value: Id) -> Self {
-    Self {
-      sym: value.0,
-      ctxt: value.1,
-    }
-  }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
-#[cache_item]
-#[serde(rename_all = "camelCase")]
-pub enum ImportSpecifierInfo {
-  Namespace(SwcId),
-  Named {
-    local: SwcId,
-    imported: Option<SwcId>,
-  },
-  Default(SwcId),
-}
-
-impl From<&ImportSpecifier> for ImportSpecifierInfo {
-  fn from(value: &ImportSpecifier) -> Self {
-    match value {
-      ImportSpecifier::Named(named) => ImportSpecifierInfo::Named {
-        local: named.local.to_id().into(),
-        imported: named.imported.as_ref().map(|i| match i {
-          ModuleExportName::Ident(i) => i.to_id().into(),
-          _ => panic!("non-ident imported is not supported when tree shaking"),
-        }),
-      },
-      ImportSpecifier::Default(default) => {
-        ImportSpecifierInfo::Default(default.local.to_id().into())
-      }
-      ImportSpecifier::Namespace(ns) => ImportSpecifierInfo::Namespace(ns.local.to_id().into()),
-    }
-  }
-}
-
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-#[cache_item]
-#[serde(rename_all = "camelCase")]
-pub struct ImportInfo {
-  pub source: String,
-  pub specifiers: Vec<ImportSpecifierInfo>,
-  /// index of the import statement in the module's body
-  pub stmt_idx: usize,
-}
-
-/// collect all exports and gathering them into a simpler structure
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-#[cache_item]
-#[serde(rename_all = "camelCase")]
-pub enum ExportSpecifierInfo {
-  /// export * from 'foo';
-  All,
-  /// export { foo, bar, default as zoo } from 'foo';
-  Named {
-    local: SwcId,
-    exported: Option<SwcId>,
-  },
-  /// export default xxx;
-  Default,
-  /// export * as foo from 'foo';
-  Namespace(SwcId),
-}
-
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-#[cache_item]
-#[serde(rename_all = "camelCase")]
-pub struct ExportInfo {
-  pub source: Option<String>,
-  pub specifiers: Vec<ExportSpecifierInfo>,
-  /// index of the import statement in the module's body
-  pub stmt_idx: usize,
-}
-
-impl ExportInfo {
-  pub fn contains_default_export(&self) -> bool {
-    self
-      .specifiers
-      .iter()
-      .any(|s| matches!(s, ExportSpecifierInfo::Default))
   }
 }

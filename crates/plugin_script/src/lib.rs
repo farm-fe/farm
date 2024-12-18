@@ -143,8 +143,12 @@ impl Plugin for FarmPluginScript {
           hmr_accepted_deps: Default::default(),
           comments: CommentsMetaData::from(comments),
           custom: Default::default(),
-          imports: vec![],
-          exports: vec![],
+          statements: vec![],
+          top_level_idents: Default::default(),
+          unresolved_idents: Default::default(),
+          // imports: vec![],
+          // exports: vec![],
+          // defined_idents: vec![],
           is_async: false,
         };
 
@@ -301,11 +305,21 @@ impl Plugin for FarmPluginScript {
   ) -> farmfe_core::error::Result<Option<PluginGenerateResourcesHookResult>> {
     if let ResourcePotMetaData::Js(JsResourcePotMetaData {
       ast: wrapped_resource_pot_ast,
-      comments: merged_comments,
+      // comments: merged_comments,
       rendered_modules,
       ..
     }) = resource_pot.meta.clone()
     {
+      // let merged_sourcemap = merge_sourcemap(
+      //   &resource_pot.id,
+      //   &mut rendered_modules,
+      //   &module_graph,
+      //   context,
+      //   &hoisted_map,
+      // );
+
+      // let comments = merge_comments(&mut rendered_modules, merged_sourcemap, &hoisted_map);
+
       let module_graph = context.module_graph.read();
       let merged_sourcemap = context.meta.script.merge_swc_source_map(
         &resource_pot.id,
@@ -317,7 +331,8 @@ impl Plugin for FarmPluginScript {
         &module_graph,
         &wrapped_resource_pot_ast,
         merged_sourcemap,
-        merged_comments.into(),
+        // TODO merged_comments.into(),
+        Default::default(),
         context,
       )?;
 

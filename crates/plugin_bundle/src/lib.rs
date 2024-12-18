@@ -211,7 +211,7 @@ impl Plugin for FarmPluginBundle {
       if let Some(code) = self.runtime_code.lock().as_ref() {
         return Ok(Some(ResourcePotMetaData::Js(JsResourcePotMetaData {
           ast: code.ast.clone(),
-          comments: code.comments.clone(),
+          // comments: code.comments.clone(),
           external_modules: Default::default(),
           rendered_modules: Default::default(),
         })));
@@ -221,7 +221,7 @@ impl Plugin for FarmPluginBundle {
     } else if let Some(bundle) = self.bundle_map.lock().remove(&resource_pot.id) {
       return Ok(Some(ResourcePotMetaData::Js(JsResourcePotMetaData {
         ast: bundle.ast,
-        comments: bundle.comments,
+        // comments: bundle.comments,
         external_modules: Default::default(),
         rendered_modules: bundle.rendered_modules,
       })));

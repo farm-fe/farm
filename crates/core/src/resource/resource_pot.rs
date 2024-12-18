@@ -15,7 +15,7 @@ pub struct ResourcePot {
   pub id: ResourcePotId,
   pub name: String,
   pub resource_pot_type: ResourcePotType,
-  modules: HashSet<ModuleId>,
+  pub modules: HashSet<ModuleId>,
   pub meta: ResourcePotMetaData,
   /// [None] if this [ResourcePot] does not contain entry module.
   /// [Some(entry_id)] otherwise
