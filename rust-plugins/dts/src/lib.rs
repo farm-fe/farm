@@ -8,14 +8,17 @@ use farmfe_core::{
     PluginGenerateResourcesHookResult, PluginHookContext, PluginLoadHookParam,
     PluginLoadHookResult, PluginParseHookParam, PluginProcessModuleHookParam,
   },
-  swc_common::{comments::SingleThreadedComments, Mark},
-  swc_ecma_ast::{Module as EcmaAstModule, ModuleItem},
-  swc_ecma_parser::{lexer::Lexer, EsSyntax as EsConfig, Parser, StringInput, Syntax},
+  swc_common::syntax_pos::FileName,
+  swc_common::{comments::SingleThreadedComments, BytePos, Mark},
+  swc_ecma_ast::{Module as EcmaAstModule, ModuleItem, Program},
+  swc_ecma_parser::{lexer::Lexer, EsSyntax as EsConfig, JscTarget, Parser, StringInput, Syntax},
 };
 use farmfe_toolkit::swc_ecma_transforms::{helpers::inject_helpers, typescript::tsx};
 use farmfe_toolkit::{
   common::PathFilter,
+  swc_ecma_codegen::{to_code_with_comments, Node},
   swc_ecma_visit::{VisitMut, VisitMutWith},
+  swc_typescript::fast_dts::FastDts,
 };
 use std::{
   path::{Path, PathBuf},
@@ -60,52 +63,6 @@ impl Plugin for FarmPluginDts {
     101
   }
 
-  fn resolve(
-    &self,
-    param: &farmfe_core::plugin::PluginResolveHookParam,
-    _context: &std::sync::Arc<farmfe_core::context::CompilationContext>,
-    _hook_context: &farmfe_core::plugin::PluginHookContext,
-  ) -> farmfe_core::error::Result<Option<farmfe_core::plugin::PluginResolveHookResult>> {
-    // println!("resolve {:?} from {:?}", param.source, param.importer);
-    Ok(None)
-  }
-
-  fn load(
-    &self,
-    param: &farmfe_core::plugin::PluginLoadHookParam,
-    _context: &std::sync::Arc<farmfe_core::context::CompilationContext>,
-    _hook_context: &farmfe_core::plugin::PluginHookContext,
-  ) -> farmfe_core::error::Result<Option<farmfe_core::plugin::PluginLoadHookResult>> {
-    if param.resolved_path.ends_with(".farm-runtime") {
-      return Ok(None);
-    }
-    // println!("load path: {:#?}", param);
-    Ok(None)
-  }
-
-  fn transform(
-    &self,
-    param: &farmfe_core::plugin::PluginTransformHookParam,
-    context: &std::sync::Arc<farmfe_core::context::CompilationContext>,
-  ) -> farmfe_core::error::Result<Option<farmfe_core::plugin::PluginTransformHookResult>> {
-    // module type guard is neccessary
-    // return Ok(Some(farmfe_core::plugin::PluginTransformHookResult {
-    //   content: compile_result.css,
-    //   source_map: compile_result.source_map,
-    //   // tell farm compiler that we have transformed this module to css
-    //   module_type: Some(farmfe_core::module::ModuleType::Css),
-    //   ignore_previous_source_map: false,
-    // }));
-    if param.resolved_path.ends_with(".farm-runtime") {
-      return Ok(None);
-    }
-    // let transform_options = oxc_transformer::TransformOptions::default();
-    // println!("transform_options : {:#?}", transform_options);
-    println!("transform path: {:#?}", param);
-
-    Ok(None)
-  }
-
   fn process_module(
     &self,
     param: &mut PluginProcessModuleHookParam,
@@ -120,8 +77,21 @@ impl Plugin for FarmPluginDts {
     {
       return Ok(None);
     }
-    println!("param.module_id: {:#?}", param.module_id.relative_path());
-    println!("param.content: {:#?}", param.content);
+    let ast: &mut EcmaAstModule = &mut param.meta.as_script_mut().ast;
+    let comments = SingleThreadedComments::default();
+    let fm = Arc::new(FileName::Real(param.module_id.relative_path().into()));
+    let mut checker = FastDts::new(fm.clone());
+    let mut program = Program::Module(ast.clone());
+
+    let issues = checker.transform(&mut program);
+    for issue in issues {
+      let range = issue.range();
+      println!("DTS Issue: {:?}", issue.to_string());
+    }
+
+    let dts_code = to_code_with_comments(Some(&comments), &program);
+    println!("Generated DTS: {:?}", dts_code);
+
     Ok(Some(()))
   }
 }
