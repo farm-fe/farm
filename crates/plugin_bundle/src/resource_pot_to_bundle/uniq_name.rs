@@ -642,8 +642,9 @@ mod tests {
     context::CompilationContext,
     error::Result,
     module::{
+      meta_data::script::ScriptModuleMetaData,
       module_graph::{self, ModuleGraph},
-      Module, ModuleId, ScriptModuleMetaData,
+      Module, ModuleId, ModuleMetaData,
     },
     resource::resource_pot::ResourcePotId,
     HashMap,
@@ -706,17 +707,11 @@ mod tests {
     let resource_pot_id: ResourcePotId = "index".into();
     let mut b_module = Module::new(b_module_id.clone());
 
-    b_module.meta = Box::new(farmfe_core::module::ModuleMetaData::Script(
-      ScriptModuleMetaData {
-        ..Default::default()
-      },
-    ));
+    b_module.meta = Box::new(ModuleMetaData::Script(Default::default()));
     let mut external_module = Module::new(external_module_id.clone());
     external_module.external = true;
     external_module.meta = Box::new(farmfe_core::module::ModuleMetaData::Script(
-      ScriptModuleMetaData {
-        ..Default::default()
-      },
+      Default::default(),
     ));
 
     let mut module_analyzer_map = HashMap::default();

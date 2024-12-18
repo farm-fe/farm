@@ -14,7 +14,7 @@ use farmfe_core::{
   module::{module_graph::ModuleGraph, ModuleId, ModuleType},
   rayon::iter::{IntoParallelIterator, ParallelIterator},
   resource::resource_pot::{ResourcePot, ResourcePotId, ResourcePotType},
-  swc_ecma_ast::Id,
+  swc_ecma_ast::{Id, Module},
   HashMap,
 };
 pub use polyfill::{Polyfill, SimplePolyfill};
@@ -34,6 +34,8 @@ mod modules_analyzer;
 mod targets;
 pub use common::{FARM_BUNDLE_POLYFILL_SLOT, FARM_BUNDLE_REFERENCE_SLOT_PREFIX};
 pub use config::*;
+
+pub use bundle::bundle_analyzer::GeneratorAstResult;
 
 #[derive(Debug, Default, PartialEq, Eq)]
 pub struct Var {
@@ -132,7 +134,8 @@ impl<'a> SharedBundle<'a> {
 
     let context = ShareBundleContext::new(options, &context);
 
-    let module_analyzer_map: Mutex<HashMap<ModuleId, ModuleAnalyzer>> = Mutex::new(HashMap::default());
+    let module_analyzer_map: Mutex<HashMap<ModuleId, ModuleAnalyzer>> =
+      Mutex::new(HashMap::default());
     let mut bundle_map: HashMap<ResourcePotId, BundleAnalyzer> = HashMap::default();
 
     let bundle_variables = Rc::new(RefCell::new(BundleVariable::new()));
@@ -429,16 +432,11 @@ impl<'a> SharedBundle<'a> {
     Ok(())
   }
 
-  pub fn codegen(&mut self, group_id: &String) -> Result<Bundle> {
+  pub fn codegen(&mut self, group_id: &String) -> Result<GeneratorAstResult> {
     farm_profile_function!("");
 
-    let bundle = self.bundle_map.get_mut(group_id).unwrap();
+    let bundle = self.bundle_map.remove(group_id).unwrap();
 
-    let bundle = bundle.codegen(
-      &mut self.module_analyzer_manager,
-      &self.context.context.config,
-    )?;
-
-    Ok(bundle)
+    bundle.gen_ast(&mut self.module_analyzer_manager)
   }
 }

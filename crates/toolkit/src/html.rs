@@ -16,14 +16,11 @@ use swc_html_parser::{
   parser::{Parser, ParserConfig},
 };
 
-use crate::common::{create_swc_source_map, Source};
+use crate::source_map::create_swc_source_map;
 
 /// Parse html content to swc_html_ast's [Document], present the ast of HTML.
 pub fn parse_html_document(id: &str, content: Arc<String>) -> farmfe_core::error::Result<Document> {
-  let (cm, source_file) = create_swc_source_map(Source {
-    path: PathBuf::from(id),
-    content,
-  });
+  let (cm, source_file) = create_swc_source_map(&id.into(), content);
   let html_lexer = Lexer::new(SourceFileInput::from(&*source_file));
   let mut parser = Parser::new(
     html_lexer,

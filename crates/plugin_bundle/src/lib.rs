@@ -19,14 +19,16 @@ use farmfe_core::{
   regex::Regex,
   relative_path::RelativePath,
   resource::{
-    resource_pot::{ResourcePot, ResourcePotMetaData, ResourcePotType},
-    ResourceType,
+    meta_data::{js::JsResourcePotMetaData, ResourcePotMetaData},
+    resource_pot::{ResourcePot, ResourcePotType},
+    ResourceOrigin, ResourceType,
   },
+  swc_ecma_ast::Module,
   HashMap, HashSet,
 };
 use farmfe_toolkit::constant::RUNTIME_SUFFIX;
 use resource_pot_to_bundle::{
-  BundleGroup, ShareBundleOptions, SharedBundle, FARM_BUNDLE_POLYFILL_SLOT,
+  BundleGroup, GeneratorAstResult, ShareBundleOptions, SharedBundle, FARM_BUNDLE_POLYFILL_SLOT,
   FARM_BUNDLE_REFERENCE_SLOT_PREFIX,
 };
 
@@ -34,8 +36,8 @@ pub mod resource_pot_to_bundle;
 
 #[derive(Default)]
 pub struct FarmPluginBundle {
-  runtime_code: Mutex<Arc<String>>,
-  bundle_map: Mutex<HashMap<String, Bundle>>,
+  runtime_code: Mutex<Option<GeneratorAstResult>>,
+  bundle_map: Mutex<HashMap<String, GeneratorAstResult>>,
   resource_pot_id_resource_map: Mutex<HashMap<String, String>>,
 }
 
@@ -99,7 +101,7 @@ impl Plugin for FarmPluginBundle {
     if param.resolved_path.starts_with(FARM_BUNDLE_POLYFILL_SLOT) {
       return Ok(Some(PluginLoadHookResult {
         // TODO: disable tree-shaking it
-        content: format!(r#"export {{}}"#),
+        content: r#"export {}"#.to_string(),
         module_type: ModuleType::Js,
         source_map: None,
       }));
@@ -134,9 +136,15 @@ impl Plugin for FarmPluginBundle {
     resource_pots: &mut Vec<&mut ResourcePot>,
     context: &Arc<CompilationContext>,
   ) -> farmfe_core::error::Result<Option<()>> {
-    if !self.runtime_code.lock().is_empty() {
+    println!(
+      "process_resource_pots {} {}",
+      self.runtime_code.lock().is_some(),
+      resource_pots.len()
+    );
+    if self.runtime_code.lock().is_some() {
       return Ok(None);
     }
+
     let module_graph = context.module_graph.read();
 
     resource_pots.sort_by_key(|item| item.id.clone());
@@ -154,63 +162,69 @@ impl Plugin for FarmPluginBundle {
       &module_graph,
       context,
       Some(ShareBundleOptions {
-        format: context.config.output.format.clone(),
+        format: context.config.output.format,
         ..Default::default()
       }),
     )?;
 
     shared_bundle.render()?;
 
-    let mut defer_minify = vec![];
+    println!("process_resource_pots {}", resource_pots.len(),);
+
     for resource_pot in resource_pots.iter() {
+      println!(
+        "bundle resource pot id {} {:?}",
+        resource_pot.id, resource_pot.resource_pot_type
+      );
       if matches!(resource_pot.resource_pot_type, ResourcePotType::Runtime)
         || (context.config.output.target_env.is_library()
           && matches!(resource_pot.resource_pot_type, ResourcePotType::Js))
       {
+        println!("bundle resource pot id {}", resource_pot.id);
         let resource_pot_id = resource_pot.id.clone();
 
-        let bundle = shared_bundle.codegen(&resource_pot_id)?;
-
-        defer_minify.push(resource_pot_id.clone());
+        let module = shared_bundle.codegen(&resource_pot_id)?;
 
         if matches!(resource_pot.resource_pot_type, ResourcePotType::Runtime) {
-          *self.runtime_code.lock() = Arc::new(bundle.to_string());
+          *self.runtime_code.lock() = Some(module);
         } else {
-          self.bundle_map.lock().insert(resource_pot_id, bundle);
+          self.bundle_map.lock().insert(resource_pot_id, module);
         }
-      }
-    }
-
-    for resource_pot in resource_pots {
-      if defer_minify.contains(&resource_pot.id) {
-        resource_pot.defer_minify_as_resource_pot();
       }
     }
 
     Ok(None)
   }
 
-  fn render_resource_pot_modules(
+  fn render_resource_pot(
     &self,
     resource_pot: &ResourcePot,
     _context: &Arc<CompilationContext>,
     _hook_context: &PluginHookContext,
   ) -> farmfe_core::error::Result<Option<ResourcePotMetaData>> {
+    println!(
+      "render_resource_pot id {} {}",
+      resource_pot.id,
+      self.runtime_code.lock().is_some()
+    );
     if matches!(resource_pot.resource_pot_type, ResourcePotType::Runtime) {
-      return Ok(Some(ResourcePotMetaData {
-        rendered_modules: HashMap::default(),
-        rendered_content: self.runtime_code.lock().clone(),
-        rendered_map_chain: vec![],
-        custom_data: resource_pot.meta.custom_data.clone(),
-      }));
-    } else if let Some(bundle) = self.bundle_map.lock().get(&resource_pot.id) {
-      return Ok(Some(ResourcePotMetaData {
-        // TODO
-        rendered_modules: HashMap::default(),
-        rendered_content: Arc::new(bundle.to_string()),
-        rendered_map_chain: vec![],
-        custom_data: resource_pot.meta.custom_data.clone(),
-      }));
+      if let Some(code) = self.runtime_code.lock().as_ref() {
+        return Ok(Some(ResourcePotMetaData::Js(JsResourcePotMetaData {
+          ast: code.ast.clone(),
+          // comments: code.comments.clone(),
+          external_modules: Default::default(),
+          rendered_modules: Default::default(),
+        })));
+      }
+
+      return Ok(None);
+    } else if let Some(bundle) = self.bundle_map.lock().remove(&resource_pot.id) {
+      return Ok(Some(ResourcePotMetaData::Js(JsResourcePotMetaData {
+        ast: bundle.ast,
+        // comments: bundle.comments,
+        external_modules: Default::default(),
+        rendered_modules: bundle.rendered_modules,
+      })));
     }
 
     Ok(None)
@@ -221,11 +235,11 @@ impl Plugin for FarmPluginBundle {
     resources: &mut PluginGenerateResourcesHookResult,
     _context: &Arc<CompilationContext>,
   ) -> farmfe_core::error::Result<Option<()>> {
-    if let Some(resource_pot_id) = resources.resource.info.as_ref().map(|i| i.id.clone()) {
+    if let ResourceOrigin::ResourcePot(ref resource_pot_id) = resources.resource.origin {
       self
         .resource_pot_id_resource_map
         .lock()
-        .insert(resource_pot_id, resources.resource.name.clone());
+        .insert(resource_pot_id.to_string(), resources.resource.name.clone());
     }
 
     Ok(None)
@@ -243,8 +257,8 @@ impl Plugin for FarmPluginBundle {
     let mut map = HashMap::default();
 
     for (name, resource) in param.resources_map.iter() {
-      if let Some(ref info) = resource.info {
-        map.insert(info.id.clone(), name.clone());
+      if let ResourceOrigin::ResourcePot(id) = &resource.origin {
+        map.insert(id.clone(), name.clone());
       }
     }
 
@@ -268,10 +282,9 @@ impl Plugin for FarmPluginBundle {
 
       let items = reg
         .captures_iter(&content)
-        .into_iter()
         .flat_map(|i| {
           i.iter()
-            .filter_map(|i| i)
+            .flatten()
             .map(|i| i.as_str().to_string())
             .collect::<Vec<_>>()
         })

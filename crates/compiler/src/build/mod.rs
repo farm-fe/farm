@@ -21,7 +21,10 @@ use farmfe_core::{
     PluginHookContext, PluginLoadHookParam, PluginParseHookParam, PluginProcessModuleHookParam,
     PluginResolveHookParam, PluginResolveHookResult, PluginTransformHookParam, ResolveKind,
   },
-  rayon::ThreadPool,
+  rayon::{
+    iter::{IntoParallelRefIterator, ParallelIterator},
+    ThreadPool,
+  },
   serde_json::json,
   HashMap,
 };
@@ -105,14 +108,11 @@ impl Compiler {
   fn set_module_graph_stats(&self) {
     if self.context.config.record {
       let module_graph = self.context.module_graph.read();
+      self.context.stats.set_module_graph_stats(&module_graph);
       self
         .context
-        .record_manager
-        .set_module_graph_stats(&module_graph);
-      self
-        .context
-        .record_manager
-        .set_entries(module_graph.entries.keys().cloned().collect())
+        .stats
+        .set_entries(module_graph.entries.keys().cloned().collect());
     }
   }
 
@@ -161,8 +161,8 @@ impl Compiler {
 
     if !errors.is_empty() {
       // set stats if stats is enabled
-      self.context.record_manager.set_build_end_time();
-      self.context.record_manager.set_end_time();
+      self.context.stats.set_build_end_time();
+      self.context.stats.set_end_time();
       self.set_module_graph_stats();
 
       // set last failed module ids
@@ -181,28 +181,29 @@ impl Compiler {
       self.set_last_fail_module_ids(&[]);
     }
 
+    // Topo sort the module graph
+    let mut module_graph = self.context.module_graph.write();
+    let module_ids = module_graph.update_execution_order_for_modules();
+    drop(module_graph);
+
+    {
+      farm_profile_scope!("call freeze_module hook".to_string());
+      module_ids.par_iter().for_each(|module_id| {
+        self
+          .context
+          .plugin_driver
+          .freeze_module(module_id, &self.context);
+      });
+    }
+
     // set module graph cache
     if self.context.config.persistent_cache.enabled() {
-      let module_ids = self
-        .context
-        .module_graph
-        .read()
-        .modules()
-        .into_iter()
-        .map(|m| m.id.clone())
-        .collect();
       // set new module cache
       set_module_graph_cache(module_ids, &self.context);
     }
 
-    // Topo sort the module graph
-    let mut module_graph = self.context.module_graph.write();
-    module_graph.update_execution_order_for_modules();
-    drop(module_graph);
-
     // set stats if stats is enabled
     self.set_module_graph_stats();
-
     {
       farm_profile_scope!("call build_end hook".to_string());
       self.context.plugin_driver.build_end(&self.context)?;

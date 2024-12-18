@@ -3,7 +3,7 @@ use std::sync::Arc;
 use farmfe_core::{
   context::CompilationContext,
   error::{CompilationError, Result},
-  swc_common::{errors::HANDLER, Globals, Mark, SourceMap, SyntaxContext, GLOBALS},
+  swc_common::{errors::HANDLER, Globals, Mark, SourceMap, SyntaxContext, DUMMY_SP, GLOBALS},
   swc_ecma_ast::Module,
 };
 use swc_ecma_transforms::helpers::{Helpers, HELPERS};
@@ -25,9 +25,9 @@ where
     .map_err(|e| CompilationError::GenericError(e.to_string()))
 }
 
-pub struct ResetSpanVisitMut;
+pub struct ResetSyntaxContextVisitMut;
 
-impl VisitMut for ResetSpanVisitMut {
+impl VisitMut for ResetSyntaxContextVisitMut {
   fn visit_mut_syntax_context(&mut self, ctxt: &mut farmfe_core::swc_common::SyntaxContext) {
     *ctxt = SyntaxContext::empty();
   }
@@ -40,7 +40,7 @@ pub fn resolve_module_mark(
 ) -> (Mark, Mark) {
   GLOBALS.set(&context.meta.script.globals, || {
     // clear ctxt
-    ast.visit_mut_with(&mut ResetSpanVisitMut);
+    ast.visit_mut_with(&mut ResetSyntaxContextVisitMut);
 
     let unresolved_mark = Mark::new();
     let top_level_mark = Mark::new();
@@ -53,4 +53,12 @@ pub fn resolve_module_mark(
 
     (unresolved_mark, top_level_mark)
   })
+}
+
+pub struct ResetSpanVisitMut;
+
+impl VisitMut for ResetSpanVisitMut {
+  fn visit_mut_span(&mut self, span: &mut farmfe_core::swc_common::Span) {
+    *span = DUMMY_SP;
+  }
 }

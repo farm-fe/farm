@@ -474,7 +474,7 @@ impl JsCompiler {
   #[napi]
   pub fn stats(&self) -> String {
     let context = self.compiler.context();
-    context.record_manager.to_string()
+    context.stats.to_string()
   }
 }
 

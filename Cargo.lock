@@ -1670,6 +1670,7 @@ dependencies = [
  "serde",
  "serde_json",
  "serde_regex",
+ "swc_atoms",
  "swc_common",
  "swc_css_ast",
  "swc_css_prefixer",
