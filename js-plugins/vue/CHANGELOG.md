@@ -1,5 +1,13 @@
 # @farmfe/js-plugin-vue
 
+## 3.12.0
+
+### Patch Changes
+
+- Updated dependencies [b235a919]
+- Updated dependencies [6b849123]
+  - @farmfe/core@1.6.0
+
 ## 3.11.0
 
 ### Patch Changes

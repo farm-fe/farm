@@ -1,5 +1,15 @@
 # @farmfe/core
 
+## 1.6.0
+
+### Minor Changes
+
+- 6b849123: js plugin supports process module hook
+
+### Patch Changes
+
+- b235a919: feat: support invalidateModule
+
 ## 1.5.0
 
 ### Minor Changes
