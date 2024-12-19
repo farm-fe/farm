@@ -1,6 +1,6 @@
 # @farmfe/js-plugin-less
 
-## 2.0.0
+## 1.12.0
 
 ### Patch Changes
 

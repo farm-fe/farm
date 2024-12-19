@@ -1,6 +1,6 @@
 # @farmfe/js-plugin-solid
 
-## 3.0.0
+## 2.11.0
 
 ### Patch Changes
 
