@@ -22,9 +22,9 @@ import {
   Logger,
   clearScreen,
   colors,
-  determineEnvironment,
   isArray,
   isEmptyObject,
+  isNodeEnv,
   isObject,
   isWindows,
   normalizePath
@@ -392,9 +392,9 @@ export async function normalizeUserCompilationConfig(
   resolvedCompilation.mode ??= mode;
 
   setProcessEnv(resolvedCompilation.mode);
-  const targetEnv = determineEnvironment(resolvedCompilation.output.targetEnv);
+  const isNode = isNodeEnv(resolvedCompilation.output.targetEnv);
   if (
-    targetEnv !== 'node' &&
+    !isNode &&
     isArray(resolvedCompilation.runtime.plugins) &&
     resolvedUserConfig.server?.hmr &&
     !resolvedCompilation.runtime.plugins.includes(hmrClientPluginPath)
@@ -824,7 +824,7 @@ export async function checkCompilationInputValue(
   const { compilation } = userConfig;
   const targetEnv = compilation?.output?.targetEnv;
   const inputValue = Object.values(compilation?.input).filter(Boolean);
-  const isTargetNode = determineEnvironment(targetEnv) === 'node';
+  const isTargetNode = isNodeEnv(targetEnv);
   const defaultHtmlPath = './index.html';
   let inputIndexConfig: {
     index?: string;

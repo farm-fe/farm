@@ -196,13 +196,3 @@ export function arrayEqual(a: any[], b: any[]): boolean {
 export function isNodeEnv(env: OutputConfig['targetEnv']): boolean {
   return /^(node|library)(?!-browser)/.test(env);
 }
-
-export function determineEnvironment(targetEnv: string): 'node' | 'browser' {
-  if (
-    FARM_TARGET_LIBRARY_ENVS.includes(targetEnv) ||
-    FARM_TARGET_NODE_ENVS.includes(targetEnv)
-  ) {
-    return 'node';
-  }
-  return 'browser';
-}
