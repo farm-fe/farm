@@ -103,7 +103,7 @@ export class Compiler {
     });
 
     // if there is already a update process, we need to wait for it to finish
-    if (this.compiling && !ignoreCompilingCheck) {
+    if (this.isCompilingAndCheckIgnored(ignoreCompilingCheck)) {
       this._updateQueue.push({ paths, resolve });
       return promise;
     }
@@ -141,6 +141,10 @@ export class Compiler {
       this.compiling = false;
       throw e;
     }
+  }
+
+  private isCompilingAndCheckIgnored(ignoreCompilingCheck: boolean): boolean {
+    return this.compiling && !ignoreCompilingCheck;
   }
 
   hasModule(resolvedPath: string): boolean {

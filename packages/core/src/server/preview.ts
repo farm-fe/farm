@@ -126,7 +126,7 @@ export class PreviewServer extends httpServer {
         isObject(middlewareMode) && 'server' in middlewareMode
           ? middlewareMode.server
           : this.httpServer;
-      this.app.use(proxyMiddleware(this, middlewareServer));
+      this.app.use(proxyMiddleware(this, middlewareServer as HttpServer));
     }
 
     this.app.use(compression());

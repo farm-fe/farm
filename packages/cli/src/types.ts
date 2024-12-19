@@ -4,20 +4,24 @@ export interface GlobalCliOptions {
   config?: string;
   base?: string;
   m?: string;
-  mode?: 'development' | 'production' | string;
+  mode?: string;
   clearScreen?: boolean;
+}
+
+interface BaseServerOptions {
+  host?: string;
+  port?: number;
+  open?: boolean;
+  cors?: boolean;
+  strictPort?: boolean;
 }
 
 export interface CleanOptions {
   recursive?: boolean;
 }
 
-export interface CliServerOptions {
-  port?: number;
-  open?: boolean;
+export interface CliServerOptions extends BaseServerOptions {
   hmr?: boolean;
-  cors?: boolean;
-  strictPort?: boolean;
 }
 
 export interface CliBuildOptions {
@@ -48,10 +52,6 @@ export interface CliBuildOptions {
     | 'library-node';
 }
 
-export interface CliPreviewOptions {
-  host?: string | boolean;
-  port?: number;
-  open?: boolean | string;
+export interface CliPreviewOptions extends BaseServerOptions {
   outDir?: string;
-  strictPort?: boolean;
 }

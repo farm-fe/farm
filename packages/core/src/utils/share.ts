@@ -32,7 +32,6 @@ export const FARM_TARGET_LIBRARY_ENVS = [
   'library-browser'
 ];
 
-/* eslint-disable @typescript-eslint/no-use-before-define */
 export function isObject(value: unknown): value is Record<string, unknown> {
   return Object.prototype.toString.call(value) === '[object Object]';
 }
