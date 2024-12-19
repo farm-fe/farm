@@ -22,6 +22,7 @@ import {
   Logger,
   clearScreen,
   colors,
+  determineEnvironment,
   isArray,
   isEmptyObject,
   isObject,
@@ -61,10 +62,12 @@ import { normalizeExternal } from './normalize-config/normalize-external.js';
 import { normalizePartialBundling } from './normalize-config/normalize-partial-bundling.js';
 import { normalizeResolve } from './normalize-config/normalize-resolve.js';
 
-import type { OutputConfig } from '../types/binding.js';
 import type {
   ConfigEnv,
+  DefaultOptionsType,
+  EnvResult,
   FarmCliOptions,
+  Format,
   HmrOptions,
   NormalizedServerConfig,
   ResolvedCompilation,
@@ -90,6 +93,8 @@ export function defineFarmConfig(config: UserConfigExport): UserConfigExport;
 export function defineFarmConfig(config: UserConfigExport): UserConfigExport {
   return config;
 }
+
+type UserConfigPromise = Promise<UserConfig | undefined>;
 
 const COMMANDS = {
   START: 'start',
@@ -337,11 +342,14 @@ export async function normalizeUserCompilationConfig(
     // for node target, we should not define process.env.NODE_ENV
     resolvedCompilation.output?.targetEnv === 'node'
       ? {}
-      : Object.keys(resolvedUserConfig.env || {}).reduce((env: any, key) => {
-          env[`$__farm_regex:(global(This)?\\.)?process\\.env\\.${key}`] =
-            JSON.stringify(resolvedUserConfig.env[key]);
-          return env;
-        }, {})
+      : Object.keys(resolvedUserConfig.env || {}).reduce<EnvResult>(
+          (env, key) => {
+            env[`$__farm_regex:(global(This)?\\.)?process\\.env\\.${key}`] =
+              JSON.stringify(resolvedUserConfig.env[key]);
+            return env;
+          },
+          {} as EnvResult
+        )
   );
 
   const require = createRequire(import.meta.url);
@@ -384,16 +392,9 @@ export async function normalizeUserCompilationConfig(
   resolvedCompilation.mode ??= mode;
 
   setProcessEnv(resolvedCompilation.mode);
-
-  // TODO add targetEnv `lib-browser` and `lib-node` support
-  const is_entry_html =
-    !resolvedCompilation.input ||
-    Object.values(resolvedCompilation.input).some(
-      (value) => value && value.endsWith('.html')
-    );
-
+  const targetEnv = determineEnvironment(resolvedCompilation.output.targetEnv);
   if (
-    resolvedCompilation.output.targetEnv !== 'node' &&
+    targetEnv !== 'node' &&
     isArray(resolvedCompilation.runtime.plugins) &&
     resolvedUserConfig.server?.hmr &&
     !resolvedCompilation.runtime.plugins.includes(hmrClientPluginPath)
@@ -551,7 +552,7 @@ export const DEFAULT_DEV_SERVER_OPTIONS: NormalizedServerConfig = {
     name: 'localhost',
     host: undefined
   },
-  host: true,
+  host: 'localhost',
   proxy: undefined,
   hmr: DEFAULT_HMR_OPTIONS,
   middlewareMode: false,
@@ -597,8 +598,6 @@ export const DEFAULT_COMPILATION_OPTIONS: Partial<ResolvedCompilation> = {
     ]
   }
 };
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 
 function tryHttpsAsFileRead(value: unknown): string | Buffer | unknown {
   if (typeof value === 'string') {
@@ -647,7 +646,6 @@ export function normalizeDevServerConfig(
   }) as NormalizedServerConfig;
 }
 
-type Format = Exclude<OutputConfig['format'], undefined>;
 const formatFromExt: Record<string, Format> = {
   cjs: 'cjs',
   mjs: 'esm',
@@ -666,7 +664,7 @@ export async function readConfigFile(
   configFilePath: string,
   configEnv: ConfigEnv,
   mode: CompilationMode = 'development'
-): Promise<UserConfig | undefined> {
+): UserConfigPromise {
   if (!fse.existsSync(configFilePath)) return;
 
   const format = getFormat(configFilePath);
@@ -826,7 +824,7 @@ export async function checkCompilationInputValue(
   const { compilation } = userConfig;
   const targetEnv = compilation?.output?.targetEnv;
   const inputValue = Object.values(compilation?.input).filter(Boolean);
-  const isTargetNode = targetEnv === 'node';
+  const isTargetNode = determineEnvironment(targetEnv) === 'node';
   const defaultHtmlPath = './index.html';
   let inputIndexConfig: {
     index?: string;
@@ -874,7 +872,6 @@ export async function checkCompilationInputValue(
         `Build failed due to errors: Can not resolve ${
           isTargetNode ? 'index.js or index.ts' : 'index.html'
         }  from ${userConfig.root}. \n${errorMessage}`
-        // { exit: true }
       );
     }
   }
@@ -925,7 +922,7 @@ export async function resolvePlugins(
   };
 }
 
-export async function resolveDefaultUserConfig(options: any) {
+export async function resolveDefaultUserConfig(options: DefaultOptionsType) {
   const defaultConfig: UserConfig = createDefaultConfig(options);
 
   const resolvedUserConfig: ResolvedUserConfig = await resolveUserConfig(
@@ -995,7 +992,7 @@ export async function resolveUserConfig(
   return resolvedUserConfig;
 }
 
-export function createDefaultConfig(options: any): UserConfig {
+export function createDefaultConfig(options: DefaultOptionsType): UserConfig {
   const { inlineOptions, mode, format, outputPath, fileName, configFilePath } =
     options;
 

@@ -32,7 +32,6 @@ export const FARM_TARGET_LIBRARY_ENVS = [
   'library-browser'
 ];
 
-/* eslint-disable @typescript-eslint/no-use-before-define */
 export function isObject(value: unknown): value is Record<string, unknown> {
   return Object.prototype.toString.call(value) === '[object Object]';
 }
@@ -196,4 +195,14 @@ export function arrayEqual(a: any[], b: any[]): boolean {
 
 export function isNodeEnv(env: OutputConfig['targetEnv']): boolean {
   return /^(node|library)(?!-browser)/.test(env);
+}
+
+export function determineEnvironment(targetEnv: string): 'node' | 'browser' {
+  if (
+    FARM_TARGET_LIBRARY_ENVS.includes(targetEnv) ||
+    FARM_TARGET_NODE_ENVS.includes(targetEnv)
+  ) {
+    return 'node';
+  }
+  return 'browser';
 }

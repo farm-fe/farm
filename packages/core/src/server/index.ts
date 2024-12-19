@@ -533,11 +533,13 @@ export class Server extends httpServer {
 
     if (proxy) {
       const middlewareServer =
-        isObject(middlewareMode) && 'server' in middlewareMode
+        (isObject(middlewareMode) && 'server' in middlewareMode
           ? middlewareMode.server
-          : this.httpServer;
+          : null) || this.httpServer;
 
-      this.middlewares.use(proxyMiddleware(this, middlewareServer));
+      this.middlewares.use(
+        proxyMiddleware(this, middlewareServer as HttpServer)
+      );
     }
 
     if (this.publicPath !== '/') {
