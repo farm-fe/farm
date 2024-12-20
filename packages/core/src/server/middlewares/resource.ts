@@ -1,6 +1,6 @@
-import mime from 'mime';
-
 import path from 'node:path/posix';
+
+import mime from 'mime';
 
 import { Compiler } from '../../compiler/index.js';
 import {
@@ -66,7 +66,6 @@ export function resourceMiddleware(app: Server): Connect.NextHandleFunction {
       (!extension && req.headers.accept?.includes('text/html'));
 
     if (!isHtmlRequest) {
-      // 对于非 HTML 请求，尝试在根目录查找资源
       const rootResource = compiler.resource(
         path.basename(resourceWithoutPublicPath)
       );
@@ -76,7 +75,6 @@ export function resourceMiddleware(app: Server): Connect.NextHandleFunction {
         });
         return;
       }
-      // 如果在根目录也找不到，返回 404
       res.statusCode = 404;
       res.end('Not found');
       return;
