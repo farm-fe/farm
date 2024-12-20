@@ -1,6 +1,6 @@
 import httpProxy from 'http-proxy';
 import { ResolvedUserConfig } from '../../config/types.js';
-import { colors, isDevServer } from '../../utils/index.js';
+import { isDevServer } from '../../utils/index.js';
 
 import type * as http from 'node:http';
 import type * as net from 'node:net';
@@ -23,10 +23,9 @@ export interface ProxyOptions extends httpProxy.ServerOptions {
 
 export function proxyMiddleware(
   app: DevServer | PreviewServer,
-  middlewareServer: HttpServer | unknown
+  middlewareServer: HttpServer
 ): Connect.NextHandleFunction {
   const isDev = isDevServer(app);
-
   const { resolvedUserConfig } = app;
   const serverOptions = isDev ? app.serverOptions : app.previewServerOptions;
 
@@ -50,15 +49,14 @@ export function proxyMiddleware(
       // originalRes can be falsy if the proxy itself errored
       const res = originalRes as http.ServerResponse | net.Socket | undefined;
       if (!res) {
-        console.log(
-          `${colors.red(`http proxy error: ${err.message}`)}\n${err.stack}`
+        resolvedUserConfig.logger.error(
+          `http proxy error: ${err.message} \n ${err.stack}`
         );
       } else if ('req' in res) {
-        // console.log(
-        //   `${colors.red(`http proxy error: ${originalRes.req.url}`)}\n${
-        //     err.stack
-        //   }`,
-        // );
+        resolvedUserConfig.logger.error(
+          // @ts-ignore
+          `http proxy error: ${originalRes.req.url}\n${err.stack}`
+        );
 
         if (!res.headersSent && !res.writableEnded) {
           res
@@ -68,7 +66,7 @@ export function proxyMiddleware(
             .end();
         }
       } else {
-        console.log(`${colors.red(`ws proxy error:`)}\n${err.stack}`);
+        resolvedUserConfig.logger.error(`ws proxy error:\n ${err.stack}`);
         res.end();
       }
     });
@@ -77,7 +75,9 @@ export function proxyMiddleware(
       rewriteOriginHeader(proxyReq, options, resolvedUserConfig);
 
       socket.on('error', (err) => {
-        console.log(`${colors.red(`ws proxy socket error:`)}\n${err.stack}`);
+        resolvedUserConfig.logger.error(
+          `ws proxy socket error: \n ${err.stack}`
+        );
       });
     });
 
@@ -95,8 +95,8 @@ export function proxyMiddleware(
     proxies[context] = [proxy, { ...opts }];
   });
 
-  if (app.httpServer) {
-    app.httpServer.on('upgrade', (req: any, socket: any, head: any) => {
+  if (middlewareServer) {
+    middlewareServer.on('upgrade', (req, socket: any, head) => {
       const url = req.url;
       for (const context in proxies) {
         if (doesProxyContextMatchUrl(context, url)) {
@@ -106,6 +106,16 @@ export function proxyMiddleware(
             opts.target?.toString().startsWith('ws:') ||
             opts.target?.toString().startsWith('wss:')
           ) {
+            if (opts.bypass) {
+              const bypassResult = opts.bypass(req, undefined, opts);
+              if (typeof bypassResult === 'string') {
+                req.url = bypassResult;
+                return;
+              } else if (bypassResult === false) {
+                socket.end('HTTP/1.1 404 Not Found\r\n\r\n', '');
+                return;
+              }
+            }
             if (opts.rewrite) {
               req.url = opts.rewrite(url);
             }
@@ -154,24 +164,24 @@ function rewriteOriginHeader(
   // requests. It is common for WebSocket servers to check the Origin
   // header, so if rewriteWsOrigin is true we change the Origin to match
   // the target URL.
-  if (options.rewriteWsOrigin) {
-    const { target } = options;
+  if (!options.rewriteWsOrigin) return;
 
-    if (proxyReq.headersSent) {
-      console.warn(
-        'Unable to rewrite Origin header as headers are already sent.'
-      );
-      return;
-    }
+  const { target } = options;
 
-    if (proxyReq.getHeader('origin') && target) {
-      const changedOrigin =
-        typeof target === 'object'
-          ? `${target.protocol}//${target.host}`
-          : target;
+  if (proxyReq.headersSent) {
+    config.logger.warn(
+      'Unable to rewrite Origin header as headers are already sent.'
+    );
+    return;
+  }
 
-      proxyReq.setHeader('origin', changedOrigin);
-    }
+  if (proxyReq.getHeader('origin') && target) {
+    const changedOrigin =
+      typeof target === 'object'
+        ? `${target.protocol}//${target.host}`
+        : target;
+
+    proxyReq.setHeader('origin', changedOrigin);
   }
 }
 

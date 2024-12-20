@@ -1,13 +1,13 @@
 import { SecureServerOptions } from 'node:http2';
 
-import { Server } from '../index.js';
+import { CompilationMode, Server } from '../index.js';
 
 import type { OutgoingHttpHeaders } from 'http';
 import type { ServerOptions as HttpsServerOptions } from 'node:https';
 import type { WatchOptions } from 'chokidar';
 import type { RustPlugin } from '../plugin/rust/index.js';
 import type { JsPlugin } from '../plugin/type.js';
-import type { Config, CssConfig } from '../types/binding.js';
+import type { Config, CssConfig, OutputConfig } from '../types/binding.js';
 import type { Logger } from '../utils/index.js';
 
 export interface HmrOptions {
@@ -262,3 +262,18 @@ export interface Alias {
   find: string;
   replacement: string;
 }
+export type Format = Exclude<OutputConfig['format'], undefined>;
+
+export type DefaultOptionsType = {
+  inlineOptions?: FarmCliOptions;
+  configFilePath?: string;
+  format?: Format;
+  outputPath?: string;
+  fileName?: string;
+  mode?: CompilationMode;
+};
+
+export type EnvResult = Record<
+  `$__farm_regex:(global(This)?\\.)?process\\.env\\.${string}`,
+  string
+>;
