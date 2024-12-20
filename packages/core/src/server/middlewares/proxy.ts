@@ -28,6 +28,7 @@ export function proxyMiddleware(
 ): Connect.NextHandleFunction {
   const isDev = isDevServer(app);
   const { resolvedUserConfig } = app;
+  // TODO 不再 middleware 里判断任何  跟环境有关的东西，保证单一性
   const serverOptions = isDev ? app.serverOptions : app.previewServerOptions;
 
   const proxies: Record<string, [Server, ProxyOptions]> = {};

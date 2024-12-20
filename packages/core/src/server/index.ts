@@ -532,6 +532,7 @@ export class Server extends httpServer {
     }
 
     if (proxy) {
+      // TODO 抽出去 放到 app 里 middlewareServer 作为class 变量
       const middlewareServer =
         (isObject(middlewareMode) && 'server' in middlewareMode
           ? middlewareMode.server
