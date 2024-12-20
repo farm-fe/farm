@@ -30,7 +30,6 @@ pub mod utils;
 
 pub struct Compiler {
   context: Arc<CompilationContext>,
-  pub thread_pool: Arc<ThreadPool>,
   pub last_fail_module_ids: Mutex<Vec<ModuleId>>,
 }
 
@@ -105,12 +104,6 @@ impl Compiler {
 
     Ok(Self {
       context: Arc::new(context),
-      thread_pool: Arc::new(
-        ThreadPoolBuilder::new()
-          .num_threads(num_cpus::get())
-          .build()
-          .unwrap(),
-      ),
       last_fail_module_ids: Mutex::new(vec![]),
     })
   }

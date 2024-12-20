@@ -146,6 +146,49 @@ impl ModuleType {
     matches!(self, ModuleType::Ts) || matches!(self, ModuleType::Tsx)
   }
 
+  pub fn to_custom_css(&self, scope: &str) -> Option<ModuleType> {
+    if self.is_css() && !matches!(self, Self::Custom(_)) {
+      return Some(ModuleType::Custom(format!("farm_css:{}", scope)));
+    }
+
+    None
+  }
+
+  pub fn to_custom_script(&self, scope: &str) -> Option<ModuleType> {
+    if self.is_script() && !matches!(self, Self::Custom(_)) {
+      return Some(ModuleType::Custom(format!("farm_script:{}", scope)));
+    }
+
+    None
+  }
+
+  pub fn to_custom(&self, scope: &str) -> ModuleType {
+    if let Some(css) = self.to_custom_css(scope) {
+      return css;
+    }
+
+    if let Some(script) = self.to_custom_script(scope) {
+      return script;
+    }
+
+    panic!(
+      "Unsupported module type: {:?} when calling ModuleType::to_custom",
+      self
+    );
+  }
+
+  pub fn is_css(&self) -> bool {
+    let mut m = matches!(self, ModuleType::Css);
+
+    if !m {
+      if let ModuleType::Custom(s) = self {
+        m = s.starts_with("farm_css:");
+      }
+    }
+
+    m
+  }
+
   pub fn is_script(&self) -> bool {
     let mut m = matches!(
       self,

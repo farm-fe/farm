@@ -1,4 +1,4 @@
-use std::{any::Any, hash::Hash, sync::Arc};
+use std::{any::Any, sync::Arc};
 
 use farmfe_macro_cache_item::cache_item;
 use rkyv::Deserialize;
@@ -112,13 +112,23 @@ pub trait Plugin: Any + Send + Sync {
   /// Example: Analyze the module, for example, analyze import/export statements, top level and unresolved identifiers
   fn freeze_module(
     &self,
-    _param: &ModuleId,
+    _module: &mut Module,
     _context: &Arc<CompilationContext>,
-  ) -> Result<Option<Module>> {
+  ) -> Result<Option<()>> {
     Ok(None)
   }
 
   /// The module graph should be constructed and finalized here
+  /// You can modify the module graph here, for example, add or remove modules/edges
+  fn module_graph_build_end(
+    &self,
+    _module_graph: &mut ModuleGraph,
+    _context: &Arc<CompilationContext>,
+  ) -> Result<Option<()>> {
+    Ok(None)
+  }
+
+  /// All modules are resolved and the module graph is finalized
   fn build_end(&self, _context: &Arc<CompilationContext>) -> Result<Option<()>> {
     Ok(None)
   }

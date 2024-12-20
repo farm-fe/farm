@@ -1640,7 +1640,6 @@ dependencies = [
  "farmfe_testing_helpers",
  "farmfe_toolkit",
  "farmfe_utils 0.1.6",
- "num_cpus",
 ]
 
 [[package]]
@@ -1656,6 +1655,7 @@ dependencies = [
  "globset",
  "heck 0.5.0",
  "hex",
+ "num_cpus",
  "parking_lot",
  "petgraph",
  "ptr_meta",

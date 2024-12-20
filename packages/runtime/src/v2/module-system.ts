@@ -1,7 +1,11 @@
 import type { Module } from "./module.js";
+import type { FarmRuntimePluginContainer  } from "./plugin.js";
 
 // Injected during compile time
 declare const __FARM_ENABLE_RUNTIME_PLUGIN__: boolean;
+
+// Following variables will be injected as `import { xxx } from "xxxx"` during compile time in need
+declare const pluginContainer: FarmRuntimePluginContainer;
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 type ModuleInitializationFunction = (

@@ -170,7 +170,7 @@ impl JsCompiler {
       e.create_deferred::<Vec<String>, Box<dyn FnOnce(Env) -> napi::Result<Vec<String>>>>()?;
 
     let compiler = self.compiler.clone();
-    self.compiler.thread_pool.spawn(move || {
+    self.compiler.context().thread_pool.spawn(move || {
       match compiler
         .trace_dependencies()
         .map_err(|e| napi::Error::new(Status::GenericFailure, format!("{e}")))
@@ -193,7 +193,7 @@ impl JsCompiler {
       e.create_deferred::<JsTracedModuleGraph, Box<dyn FnOnce(Env) -> napi::Result<JsTracedModuleGraph>>>()?;
 
     let compiler = self.compiler.clone();
-    self.compiler.thread_pool.spawn(move || {
+    self.compiler.context().thread_pool.spawn(move || {
       match compiler
         .trace_module_graph()
         .map_err(|e| napi::Error::new(Status::GenericFailure, format!("{e}")))
@@ -217,7 +217,7 @@ impl JsCompiler {
       e.create_deferred::<JsUndefined, Box<dyn FnOnce(Env) -> napi::Result<JsUndefined>>>()?;
 
     let compiler = self.compiler.clone();
-    self.compiler.thread_pool.spawn(move || {
+    self.compiler.context().thread_pool.spawn(move || {
       match compiler
         .compile()
         .map_err(|e| napi::Error::new(Status::GenericFailure, format!("{e}")))
@@ -277,7 +277,7 @@ impl JsCompiler {
       e.create_deferred::<JsUpdateResult, Box<dyn FnOnce(Env) -> napi::Result<JsUpdateResult>>>()?;
 
     let compiler = self.compiler.clone();
-    self.compiler.thread_pool.spawn(move || {
+    self.compiler.context().thread_pool.spawn(move || {
       match compiler
         .update(
           paths

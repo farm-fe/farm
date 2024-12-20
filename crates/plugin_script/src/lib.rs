@@ -267,6 +267,8 @@ impl Plugin for FarmPluginScript {
     // set param.module.meta.module_system
     set_module_system_for_module_meta(param, context);
 
+    // TODO collect statements / top level idents / unresolved idents
+
     let target_env = context.config.output.target_env.clone();
     let format = context.config.output.format;
 

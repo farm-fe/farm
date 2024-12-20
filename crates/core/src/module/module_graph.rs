@@ -380,7 +380,7 @@ impl ModuleGraph {
     Ok(())
   }
 
-  pub fn remove_edge(&mut self, from: &ModuleId, to: &ModuleId) -> Result<()> {
+  pub fn remove_edge(&mut self, from: &ModuleId, to: &ModuleId) -> Result<Option<ModuleGraphEdge>> {
     let from_index = self.id_index_map.get(from).ok_or_else(|| {
       CompilationError::GenericError(format!(
         r#"from node "{}" does not exist in the module graph when remove edge"#,
@@ -403,9 +403,9 @@ impl ModuleGraph {
       ))
     })?;
 
-    self.g.remove_edge(edge);
+    let edge = self.g.remove_edge(edge);
 
-    Ok(())
+    Ok(edge)
   }
 
   pub fn has_edge(&self, from: &ModuleId, to: &ModuleId) -> bool {

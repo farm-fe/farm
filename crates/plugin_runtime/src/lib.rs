@@ -12,7 +12,7 @@ use farmfe_core::{
   context::CompilationContext,
   enhanced_magic_string::types::{MappingsOptionHires, SourceMapOptions},
   error::CompilationError,
-  module::{ModuleId, ModuleType},
+  module::{Module, ModuleId, ModuleType},
   plugin::{
     Plugin, PluginFinalizeResourcesHookParams, PluginGenerateResourcesHookResult,
     PluginHookContext, PluginLoadHookParam, PluginLoadHookResult, PluginResolveHookParam,
@@ -52,9 +52,6 @@ const PLUGIN_NAME: &str = "FarmPluginRuntime";
 /// FarmPluginRuntime is charge of:
 /// * resolving, parsing and generating a executable runtime code and inject the code into the entries.
 /// * merge module's ast and render the script module using farm runtime's specification, for example, wrap the module to something like `function(module, exports, require) { xxx }`, see [Farm Runtime RFC](https://github.com/farm-fe/rfcs/pull/1)
-///
-/// The runtime supports html entry and script(js/jsx/ts/tsx) entry, when entry is html, the runtime will be injected as a inline <script /> tag in the <head /> tag;
-/// when entry is script, the runtime will be injected into the entry module's head, makes sure the runtime execute before all other code.
 ///
 /// All runtime module (including the runtime core and its plugins) will be suffixed as `.farm-runtime` to distinguish with normal script modules.
 pub struct FarmPluginRuntime {}
@@ -103,71 +100,71 @@ impl Plugin for FarmPluginRuntime {
     Ok(Some(()))
   }
 
-  fn resolve(
-    &self,
-    param: &PluginResolveHookParam,
-    context: &Arc<CompilationContext>,
-    hook_context: &PluginHookContext,
-  ) -> farmfe_core::error::Result<Option<PluginResolveHookResult>> {
-    // avoid cyclic resolve
-    if hook_context.contain_caller(PLUGIN_NAME) {
-      Ok(None)
-    } else if param.source.ends_with(RUNTIME_SUFFIX) // if the source is a runtime module or its importer is a runtime module, then resolve it to the runtime module
-      || (param.importer.is_some()
-        && param
-          .importer
-          .as_ref()
-          .unwrap()
-          .relative_path()
-          .ends_with(RUNTIME_SUFFIX))
-    {
-      let ori_source = param.source.replace(RUNTIME_SUFFIX, "");
-      let resolve_result = context.plugin_driver.resolve(
-        &PluginResolveHookParam {
-          source: ori_source,
-          ..param.clone()
-        },
-        context,
-        &PluginHookContext {
-          caller: hook_context.add_caller(PLUGIN_NAME),
-          meta: HashMap::default(),
-        },
-      )?;
+  // fn resolve(
+  //   &self,
+  //   param: &PluginResolveHookParam,
+  //   context: &Arc<CompilationContext>,
+  //   hook_context: &PluginHookContext,
+  // ) -> farmfe_core::error::Result<Option<PluginResolveHookResult>> {
+  //   // avoid cyclic resolve
+  //   if hook_context.contain_caller(PLUGIN_NAME) {
+  //     Ok(None)
+  //   } else if param.source.ends_with(RUNTIME_SUFFIX) // if the source is a runtime module or its importer is a runtime module, then resolve it to the runtime module
+  //     || (param.importer.is_some()
+  //       && param
+  //         .importer
+  //         .as_ref()
+  //         .unwrap()
+  //         .relative_path()
+  //         .ends_with(RUNTIME_SUFFIX))
+  //   {
+  //     let ori_source = param.source.replace(RUNTIME_SUFFIX, "");
+  //     let resolve_result = context.plugin_driver.resolve(
+  //       &PluginResolveHookParam {
+  //         source: ori_source,
+  //         ..param.clone()
+  //       },
+  //       context,
+  //       &PluginHookContext {
+  //         caller: hook_context.add_caller(PLUGIN_NAME),
+  //         meta: HashMap::default(),
+  //       },
+  //     )?;
 
-      if let Some(mut res) = resolve_result {
-        res.resolved_path = format!("{}{}", res.resolved_path, RUNTIME_SUFFIX);
-        Ok(Some(res))
-      } else {
-        Ok(None)
-      }
-    } else {
-      Ok(None)
-    }
-  }
+  //     if let Some(mut res) = resolve_result {
+  //       res.resolved_path = format!("{}{}", res.resolved_path, RUNTIME_SUFFIX);
+  //       Ok(Some(res))
+  //     } else {
+  //       Ok(None)
+  //     }
+  //   } else {
+  //     Ok(None)
+  //   }
+  // }
 
-  fn load(
-    &self,
-    param: &PluginLoadHookParam,
-    _context: &Arc<CompilationContext>,
-    _hook_context: &PluginHookContext,
-  ) -> farmfe_core::error::Result<Option<PluginLoadHookResult>> {
-    if param.resolved_path.ends_with(RUNTIME_SUFFIX) {
-      let real_file_path = param.resolved_path.replace(RUNTIME_SUFFIX, "");
-      let content = read_file_utf8(&real_file_path)?;
+  // fn load(
+  //   &self,
+  //   param: &PluginLoadHookParam,
+  //   _context: &Arc<CompilationContext>,
+  //   _hook_context: &PluginHookContext,
+  // ) -> farmfe_core::error::Result<Option<PluginLoadHookResult>> {
+  //   if param.resolved_path.ends_with(RUNTIME_SUFFIX) {
+  //     let real_file_path = param.resolved_path.replace(RUNTIME_SUFFIX, "");
+  //     let content = read_file_utf8(&real_file_path)?;
 
-      if let Some(module_type) = module_type_from_id(&real_file_path) {
-        Ok(Some(PluginLoadHookResult {
-          content,
-          module_type,
-          source_map: None,
-        }))
-      } else {
-        panic!("unknown module type for {real_file_path}");
-      }
-    } else {
-      Ok(None)
-    }
-  }
+  //     if let Some(module_type) = module_type_from_id(&real_file_path) {
+  //       Ok(Some(PluginLoadHookResult {
+  //         content,
+  //         module_type,
+  //         source_map: None,
+  //       }))
+  //     } else {
+  //       panic!("unknown module type for {real_file_path}");
+  //     }
+  //   } else {
+  //     Ok(None)
+  //   }
+  // }
 
   fn transform(
     &self,
@@ -202,6 +199,18 @@ impl Plugin for FarmPluginRuntime {
     } else {
       Ok(None)
     }
+  }
+
+  fn freeze_module(
+    &self,
+    _param: &mut Module,
+    _context: &Arc<CompilationContext>,
+  ) -> farmfe_core::error::Result<Option<()>> {
+    // The goal of rendering runtime code is to make sure the runtime is as small as possible.
+    // So we need to collect all the runtime related information in finalize_module hook,
+    // and use these information to append more runtime abilities in freeze_module hook.
+    // for example, if a module uses dynamic import, we will append import '@farmfe/runtime/modules/dynamic-import' to the runtime entry module.
+    Ok(None)
   }
 
   fn generate_start(
