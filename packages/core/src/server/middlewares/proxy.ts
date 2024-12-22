@@ -1,13 +1,13 @@
 import httpProxy from 'http-proxy';
 
 import { ResolvedUserConfig } from '../../config/types.js';
-import { isDevServer } from '../../utils/index.js';
 
 import type * as http from 'node:http';
 import type * as net from 'node:net';
 import type Server from 'http-proxy';
 
 import type Connect from 'connect';
+import { CommonServerOptions } from '../http.js';
 import type { Server as DevServer, HttpServer } from '../index.js';
 import { PreviewServer } from '../preview.js';
 
@@ -24,16 +24,14 @@ export interface ProxyOptions extends httpProxy.ServerOptions {
 
 export function proxyMiddleware(
   app: DevServer | PreviewServer,
-  middlewareServer: HttpServer
+  middlewareServer: HttpServer,
+  config: NonNullable<CommonServerOptions['proxy']>
 ): Connect.NextHandleFunction {
-  const isDev = isDevServer(app);
   const { resolvedUserConfig } = app;
-  // TODO 不再 middleware 里判断任何  跟环境有关的东西，保证单一性 所有 middleware 都如此
-  const serverOptions = isDev ? app.serverOptions : app.previewServerOptions;
 
   const proxies: Record<string, [Server, ProxyOptions]> = {};
-  Object.keys(serverOptions.proxy).forEach((context) => {
-    let opts = serverOptions.proxy[context];
+  Object.keys(config).forEach((context) => {
+    let opts = config[context];
     if (!opts) {
       return;
     }

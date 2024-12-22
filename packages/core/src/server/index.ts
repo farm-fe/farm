@@ -29,7 +29,6 @@ import { initPublicFiles } from '../utils/publicDir.js';
 import { arrayEqual, isObject, normalizePath } from '../utils/share.js';
 
 import {
-  adaptorViteMiddleware,
   hmrPingMiddleware,
   htmlFallbackMiddleware,
   lazyCompilationMiddleware,
@@ -37,7 +36,8 @@ import {
   proxyMiddleware,
   publicMiddleware,
   publicPathMiddleware,
-  resourceMiddleware
+  resourceMiddleware,
+  staticMiddleware
 } from './middlewares/index.js';
 
 import type * as http from 'node:http';
@@ -532,19 +532,20 @@ export class Server extends httpServer {
     }
 
     if (proxy) {
-      // TODO 抽出去 放到 app 里 middlewareServer 作为class 变量
       const middlewareServer =
         (isObject(middlewareMode) && 'server' in middlewareMode
           ? middlewareMode.server
           : null) || this.httpServer;
 
       this.middlewares.use(
-        proxyMiddleware(this, middlewareServer as HttpServer)
+        proxyMiddleware(this, middlewareServer as HttpServer, proxy)
       );
     }
 
     if (this.publicPath !== '/') {
-      this.middlewares.use(publicPathMiddleware(this));
+      this.middlewares.use(
+        publicPathMiddleware(this, this.serverOptions.middlewareMode)
+      );
     }
 
     if (fs.existsSync(this.publicDir as PathLike)) {
@@ -555,9 +556,7 @@ export class Server extends httpServer {
       this.middlewares.use(lazyCompilationMiddleware(this));
     }
 
-    if (this.resolvedUserConfig.vitePlugins?.length) {
-      this.middlewares.use(adaptorViteMiddleware(this));
-    }
+    this.middlewares.use(staticMiddleware(this));
 
     this.middlewares.use(resourceMiddleware(this));
 
@@ -567,7 +566,6 @@ export class Server extends httpServer {
 
     if (appType === 'spa' || appType === 'mpa') {
       this.middlewares.use(htmlFallbackMiddleware(this));
-
       this.middlewares.use(notFoundMiddleware());
     }
   }

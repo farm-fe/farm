@@ -26,7 +26,6 @@ export function resourceMiddleware(app: Server): Connect.NextHandleFunction {
       return next();
     }
     const url = cleanUrl(req.url);
-
     const { compiler, resolvedUserConfig: config, publicPath } = app;
 
     if (compiler._isInitialCompile) {
@@ -39,7 +38,7 @@ export function resourceMiddleware(app: Server): Connect.NextHandleFunction {
       }
     }
 
-    const resourceResult: any = findResource(req, res, compiler, publicPath);
+    const resourceResult = findResource(req, res, compiler, publicPath);
 
     if (resourceResult === true) {
       return next();

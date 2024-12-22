@@ -56,7 +56,7 @@ export interface UserServerConfig {
   // whether to serve static assets in spa mode, default to true
   appType?: 'spa' | 'mpa' | 'custom';
   middlewares?: DevServerMiddleware[];
-  middlewareMode?: boolean | string;
+  middlewareMode?: boolean;
   writeToDisk?: boolean;
   /** Preview server config */
   preview?: UserPreviewServerConfig;
