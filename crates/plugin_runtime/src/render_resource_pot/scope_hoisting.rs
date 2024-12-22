@@ -6,10 +6,13 @@ use farmfe_core::{
   enhanced_magic_string::bundle::Bundle,
   module::{module_graph::ModuleGraph, ModuleId},
   resource::resource_pot::{ResourcePot, ResourcePotType},
+  swc_ecma_ast::Module,
   HashMap, HashSet,
 };
 
-use farmfe_plugin_bundle::resource_pot_to_bundle::{BundleGroup, ShareBundleOptions, SharedBundle};
+use farmfe_plugin_bundle::resource_pot_to_bundle::{
+  BundleGroup, GeneratorAstResult, ShareBundleOptions, SharedBundle,
+};
 
 /// Note: Scope Hoisting is enabled only `config.concatenate_modules` is true. Otherwise, it A module is a [ScopeHoistedModuleGroup]
 ///
@@ -60,7 +63,7 @@ impl ScopeHoistedModuleGroup {
     &self,
     module_graph: &ModuleGraph,
     context: &Arc<CompilationContext>,
-  ) -> farmfe_core::error::Result<Bundle> {
+  ) -> farmfe_core::error::Result<GeneratorAstResult> {
     let bundle_id = self.target_hoisted_module_id.to_string();
 
     let mut share_bundle = SharedBundle::new(

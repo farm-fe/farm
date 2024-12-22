@@ -6,6 +6,7 @@ use std::{
   },
 };
 
+use dynamic_input::handle_dynamic_input;
 use farmfe_core::{
   cache::module_cache::CachedModule,
   context::CompilationContext,
@@ -21,7 +22,10 @@ use farmfe_core::{
     PluginHookContext, PluginLoadHookParam, PluginParseHookParam, PluginProcessModuleHookParam,
     PluginResolveHookParam, PluginResolveHookResult, PluginTransformHookParam, ResolveKind,
   },
-  rayon::ThreadPool,
+  rayon::{
+    iter::{IntoParallelIterator, ParallelIterator},
+    ThreadPool,
+  },
   serde_json::json,
   HashMap,
 };
@@ -56,6 +60,7 @@ macro_rules! call_and_catch_error {
 }
 
 pub(crate) mod analyze_deps;
+pub(crate) mod dynamic_input;
 pub(crate) mod finalize_module;
 pub(crate) mod load;
 pub(crate) mod module_cache;
@@ -105,14 +110,11 @@ impl Compiler {
   fn set_module_graph_stats(&self) {
     if self.context.config.record {
       let module_graph = self.context.module_graph.read();
+      self.context.stats.set_module_graph_stats(&module_graph);
       self
         .context
-        .record_manager
-        .set_module_graph_stats(&module_graph);
-      self
-        .context
-        .record_manager
-        .set_entries(module_graph.entries.keys().cloned().collect())
+        .stats
+        .set_entries(module_graph.entries.keys().cloned().collect());
     }
   }
 
@@ -134,7 +136,7 @@ impl Compiler {
 
     for (order, (name, source)) in self.context.config.input.iter().enumerate() {
       let params = BuildModuleGraphThreadedParams {
-        thread_pool: self.thread_pool.clone(),
+        thread_pool: self.context.thread_pool.clone(),
         resolve_param: PluginResolveHookParam {
           source: source.clone(),
           importer: None,
@@ -161,8 +163,8 @@ impl Compiler {
 
     if !errors.is_empty() {
       // set stats if stats is enabled
-      self.context.record_manager.set_build_end_time();
-      self.context.record_manager.set_end_time();
+      self.context.stats.set_build_end_time();
+      self.context.stats.set_end_time();
       self.set_module_graph_stats();
 
       // set last failed module ids
@@ -181,27 +183,45 @@ impl Compiler {
       self.set_last_fail_module_ids(&[]);
     }
 
+    // Topo sort the module graph
+    let mut module_graph = self.context.module_graph.write();
+    let module_ids = module_graph.update_execution_order_for_modules();
+
+    {
+      farm_profile_scope!("call freeze_module hook".to_string());
+      module_graph
+        .modules_mut()
+        .into_par_iter()
+        .try_for_each(|module| {
+          self
+            .context
+            .plugin_driver
+            .freeze_module(module, &self.context)
+        })?;
+    }
+
+    drop(module_graph);
+
     // set module graph cache
     if self.context.config.persistent_cache.enabled() {
-      let module_ids = self
-        .context
-        .module_graph
-        .read()
-        .modules()
-        .into_iter()
-        .map(|m| m.id.clone())
-        .collect();
       // set new module cache
       set_module_graph_cache(module_ids, &self.context);
     }
 
-    // Topo sort the module graph
-    let mut module_graph = self.context.module_graph.write();
-    module_graph.update_execution_order_for_modules();
-    drop(module_graph);
-
     // set stats if stats is enabled
     self.set_module_graph_stats();
+
+    {
+      farm_profile_scope!("call module_graph_build_end hook".to_string());
+      let mut module_graph = self.context.module_graph.write();
+      // cloned scoped dynamic input modules
+      handle_dynamic_input(&mut module_graph, &self.context);
+
+      self
+        .context
+        .plugin_driver
+        .module_graph_build_end(&mut module_graph, &self.context)?;
+    }
 
     {
       farm_profile_scope!("call build_end hook".to_string());
@@ -542,6 +562,24 @@ impl Compiler {
     Self::add_module(module, &resolve_param.kind, &context);
     // add edge to the graph
     Self::add_edge(&resolve_param, module_id.clone(), order, &context);
+
+    // handle dynamic input
+    for input_name in context.get_unhandled_dynamic_input() {
+      let dynamic_input = context.dynamic_input.get(&input_name).unwrap();
+      let params = BuildModuleGraphThreadedParams {
+        thread_pool: thread_pool.clone(),
+        resolve_param: PluginResolveHookParam {
+          source: dynamic_input.source.clone(),
+          importer: None,
+          kind: ResolveKind::Entry(input_name),
+        },
+        context: context.clone(),
+        err_sender: err_sender.clone(),
+        order: 0, // the order of dynamic input is always 0
+        cached_dependency: None,
+      };
+      Self::build_module_graph_threaded(params);
+    }
 
     // resolving dependencies recursively in the thread pool
     for (order, (dep, cached_dependency)) in deps.into_iter().enumerate() {

@@ -47,6 +47,7 @@ swc_common = { version = "3.0.0", features = [
 swc_css_ast = { version = "3.0.0", features = ["rkyv-impl"] }
 swc_css_prefixer = { version = "3.0.0" }
 swc_html_ast = { version = "3.0.0", features = ["rkyv-impl"] }
+swc_atoms = { version = "2.0.0" }
 heck = "0.5.0"
 puffin = { version = "0.19.1", features = [
   "packing",
@@ -56,6 +57,7 @@ puffin = { version = "0.19.1", features = [
 regex = "1.7.3"
 enhanced-magic-string = { version = "0.1.0" }
 rustc-hash = "2.0.0"
+num_cpus = "1.16.0"
 
 [features]
 profile = ["dep:puffin"]

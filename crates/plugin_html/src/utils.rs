@@ -96,7 +96,7 @@ pub fn create_farm_runtime_output_resource(
       emitted: false,
       resource_type: ResourceType::Js,
       origin: ResourceOrigin::ResourcePot(name),
-      info: None,
+      // info: None,
     }),
   )
 }

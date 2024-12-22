@@ -1,11 +1,11 @@
-pub mod augment_resource_hash;
+// pub mod augment_resource_hash;
 pub mod build_end;
 pub mod build_start;
 pub mod finalize_resources;
 pub mod finish;
 pub mod load;
 pub mod plugin_cache_loaded;
-pub mod render_resource_pot;
+// pub mod render_resource_pot;
 pub mod render_start;
 pub mod resolve;
 pub mod transform;

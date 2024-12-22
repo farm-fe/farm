@@ -17,8 +17,8 @@ use farmfe_toolkit::get_dynamic_resources_map::get_dynamic_resources_map;
 
 use crate::{
   build::{
-    module_cache::handle_cached_modules, BuildModuleGraphThreadedParams, HandleDependenciesParams,
-    ResolvedModuleInfo,
+    dynamic_input::handle_dynamic_input, module_cache::handle_cached_modules,
+    BuildModuleGraphThreadedParams, HandleDependenciesParams, ResolvedModuleInfo,
   },
   generate::finalize_resources::finalize_resources,
   Compiler,
@@ -73,11 +73,11 @@ impl Compiler {
       let update_module_graph = update_context.module_graph.read();
       self
         .context
-        .record_manager
+        .stats
         .set_module_graph_stats(&update_module_graph);
       self
         .context
-        .record_manager
+        .stats
         .set_entries(update_module_graph.entries.keys().cloned().collect())
     }
   }
@@ -87,7 +87,7 @@ impl Compiler {
       let module_group_graph = self.context.module_group_graph.read();
       self
         .context
-        .record_manager
+        .stats
         .add_plugin_hook_stats(CompilationPluginHookStats {
           plugin_name: "HmrUpdate".to_string(),
           hook_name: "analyze_module_graph".to_string(),
@@ -113,7 +113,7 @@ impl Compiler {
     if self.context.config.record {
       self
         .context
-        .record_manager
+        .stats
         .add_plugin_hook_stats(CompilationPluginHookStats {
           plugin_name: "HmrUpdate".to_string(),
           hook_name: "diffAndPatchContext".to_string(),
@@ -138,17 +138,17 @@ impl Compiler {
     &self,
     paths: Vec<(String, UpdateType)>,
     callback: F,
-    sync: bool,
+    mut sync: bool,
     generate_update_resource: bool,
   ) -> Result<UpdateResult>
   where
     F: FnOnce() + Send + Sync + 'static,
   {
-    self.context.record_manager.add_hmr_compilation_stats();
-    self.context.record_manager.set_start_time();
+    self.context.stats.add_hmr_compilation_stats();
+    self.context.stats.set_start_time();
 
     // mark the compilation as update
-    self.context.set_update();
+    // self.context.set_update();
     let (err_sender, err_receiver) = Self::create_thread_channel();
     let update_context = Arc::new(UpdateContext::new());
 
@@ -193,7 +193,7 @@ impl Compiler {
               resolve_param,
               context: self.context.clone(),
               err_sender: err_sender.clone(),
-              thread_pool: self.thread_pool.clone(),
+              thread_pool: self.context.thread_pool.clone(),
               order: 0,
               cached_dependency: None,
             },
@@ -222,8 +222,8 @@ impl Compiler {
     self.handle_global_log(&mut errors);
 
     if !errors.is_empty() {
-      self.context.record_manager.set_build_end_time();
-      self.context.record_manager.set_end_time();
+      self.context.stats.set_build_end_time();
+      self.context.stats.set_end_time();
       self.set_update_module_graph_stats(&update_context);
       self.set_last_fail_module_ids(&errors);
 
@@ -240,7 +240,7 @@ impl Compiler {
       self.set_last_fail_module_ids(&[]);
     }
 
-    self.context.record_manager.set_build_end_time();
+    self.context.stats.set_build_end_time();
     self.set_update_module_graph_stats(&update_context);
 
     let previous_module_groups = {
@@ -260,6 +260,12 @@ impl Compiler {
     // update cache
     if self.context.config.persistent_cache.enabled() {
       set_updated_modules_cache(&updated_module_ids, &diff_result, &self.context);
+    }
+
+    {
+      let mut module_graph = self.context.module_graph.write();
+      // cloned scoped dynamic input modules
+      sync = sync || handle_dynamic_input(&mut module_graph, &self.context);
     }
 
     // call module graph updated hook
@@ -489,6 +495,28 @@ impl Compiler {
     Self::add_module_to_update_module_graph(&update_context, &resolve_param.kind, module);
     Self::add_edge_to_update_module_graph(&update_context, &resolve_param, &module_id, order);
 
+    // handle dynamic input
+    for input_name in context.get_unhandled_dynamic_input() {
+      let dynamic_input = context.dynamic_input.get(&input_name).unwrap();
+      let params = BuildUpdateModuleGraphThreadedParams {
+        build_module_graph_threaded_params: BuildModuleGraphThreadedParams {
+          thread_pool: thread_pool.clone(),
+          resolve_param: PluginResolveHookParam {
+            source: dynamic_input.source.clone(),
+            importer: None,
+            kind: ResolveKind::Entry(input_name),
+          },
+          context: context.clone(),
+          err_sender: err_sender.clone(),
+          order: 0, // the order of dynamic input is always 0
+          cached_dependency: None,
+        },
+        order: None,
+        update_context: update_context.clone(),
+      };
+      Self::update_module_graph_threaded(params);
+    }
+
     for (order, (dep, cached_dependency)) in deps.into_iter().enumerate() {
       let params = BuildUpdateModuleGraphThreadedParams {
         build_module_graph_threaded_params: BuildModuleGraphThreadedParams {
@@ -666,7 +694,7 @@ impl Compiler {
         .plugin_driver
         .update_finished(&self.context)
         .unwrap();
-      self.context.record_manager.set_end_time();
+      self.context.stats.set_end_time();
     } else {
       std::thread::spawn(move || {
         if let Err(e) = regenerate_resources_for_affected_module_groups(
@@ -686,7 +714,7 @@ impl Compiler {
           .plugin_driver
           .update_finished(&cloned_context)
           .unwrap();
-        cloned_context.record_manager.set_end_time();
+        cloned_context.stats.set_end_time();
       });
     }
 

@@ -743,7 +743,7 @@ export async function readConfigFile(
 
     return config;
   } finally {
-    fse.unlink(getFilePath(outputPath, fileName)).catch(() => {});
+    // fse.unlink(getFilePath(outputPath, fileName)).catch(() => {});
   }
 }
 
@@ -807,13 +807,13 @@ export async function loadConfigFile(
     }
     const potentialSolution =
       'Potential solutions: \n1. Try set `FARM_CONFIG_FORMAT=cjs`(default to esm)\n2. Try set `FARM_CONFIG_FULL_BUNDLE=1`';
-    // throw new Error(
-    // `Failed to load farm config file: ${errorMessage}. \n ${potentialSolution} \n ${error.stack}`
-    // );
     throw new Error(
-      `Failed to load farm config file: ${errorMessage}. \n ${potentialSolution}`
-      // `Failed to load farm config file: ${errorMessage}.`,
+      `Failed to load farm config file: ${errorMessage}. \n ${potentialSolution} \n ${error.stack}`
     );
+    // throw new Error(
+    //   `Failed to load farm config file: ${errorMessage}. \n ${potentialSolution}`
+    //   // `Failed to load farm config file: ${errorMessage}.`,
+    // );
   }
 }
 

@@ -2,9 +2,10 @@ use std::path::PathBuf;
 
 use farmfe_core::{
   module::{
+    meta_data::script::ScriptModuleMetaData,
     module_graph::{ModuleGraph, ModuleGraphEdgeDataItem},
     module_group::{ModuleGroup, ModuleGroupGraph},
-    Module, ModuleMetaData, ModuleType, ScriptModuleMetaData,
+    Module, ModuleMetaData, ModuleType,
   },
   plugin::ResolveKind,
   relative_path::RelativePath,
