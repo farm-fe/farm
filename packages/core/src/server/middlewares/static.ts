@@ -17,7 +17,7 @@ import {
 } from '../../utils/index.js';
 import { stripQueryAndHash, withTrailingSlash } from '../../utils/path.js';
 
-import { OutgoingHttpHeaders, ServerResponse } from 'node:http';
+import { OutgoingHttpHeaders } from 'node:http';
 import type Connect from 'connect';
 import sirv, { Options } from 'sirv';
 import type { Server } from '../index.js';

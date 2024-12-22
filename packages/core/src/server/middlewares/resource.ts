@@ -43,6 +43,7 @@ export function resourceMiddleware(app: Server): Connect.NextHandleFunction {
     if (resourceResult === true) {
       return next();
     }
+
     // TODO if write to dist should be use sirv middleware
     if (resourceResult) {
       // need judge if resource is a deps node_modules set cache-control to 1 year
