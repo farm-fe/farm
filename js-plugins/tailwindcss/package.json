@@ -20,13 +20,13 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "@tailwindcss/node": "4.0.0-alpha.24",
-    "@tailwindcss/oxide": "4.0.0-alpha.24",
+    "@farmfe/core": "workspace:^",
+    "@tailwindcss/node": "4.0.0-beta.8",
+    "@tailwindcss/oxide": "4.0.0-beta.8",
     "lightningcss": "^1.27.0",
     "postcss": "^8.4.47",
     "postcss-import": "^16.0.1",
-    "tailwindcss": "4.0.0-alpha.24",
-    "@farmfe/core": "workspace:^"
+    "tailwindcss": "4.0.0-beta.8"
   },
   "devDependencies": {
     "@farmfe/js-plugin-dts": "workspace:^",

@@ -345,7 +345,7 @@ class Root {
       });
 
       this.scanner = new Scanner({
-        sources: this.compiler.globs.map(({ origin, pattern }) => ({
+        sources: this.compiler.globs.map(({ base: origin, pattern }) => ({
           // Ensure the glob is relative to the input CSS file or the config
           // file where it is specified.
           base: origin
