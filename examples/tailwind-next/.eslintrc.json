@@ -1,0 +1,8 @@
+{
+  "root": true,
+  "extends": "../../.eslintrc.base.json",
+  "parserOptions": {
+    "project": ["./examples/tailwind/tsconfig.json"]
+  },
+  "rules": {}
+}
