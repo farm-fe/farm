@@ -2,9 +2,9 @@ use std::sync::Arc;
 
 use farmfe_core::config::css::NameConversion;
 use farmfe_core::config::custom::get_config_css_modules_local_conversion;
+use farmfe_core::enhanced_magic_string::collapse_sourcemap::{collapse_sourcemap_chain, CollapseSourcemapOptions};
 use farmfe_core::module::{ModuleId, ModuleType};
 use farmfe_core::plugin::{PluginLoadHookResult, PluginTransformHookResult};
-use farmfe_core::HashMap;
 use farmfe_core::{
   config::Config, context::CompilationContext, deserialize, parking_lot::Mutex, plugin::Plugin,
 };
@@ -14,11 +14,16 @@ use farmfe_toolkit::fs::read_file_utf8;
 use farmfe_toolkit::lazy_static::lazy_static;
 use farmfe_toolkit::regex::Regex;
 use farmfe_toolkit::script::module_type_from_id;
-use farmfe_utils::stringify_query;
-use lightningcss::stylesheet::StyleSheet;
+use farmfe_utils::{relative, stringify_query};
+use lightningcss::css_modules::{CssModuleExports, CssModuleReference};
+use lightningcss::stylesheet::{ParserOptions, StyleSheet};
 use rkyv::Deserialize;
 mod parse;
+use lightningcss::bundler::{Bundler, FileProvider};
+use std::path::Path;
 pub const FARM_CSS_MODULES: &str = "farm_lightning_css_modules";
+use farmfe_toolkit::sourcemap::SourceMap;
+use std::collections::HashMap;
 
 lazy_static! {
   pub static ref FARM_CSS_MODULES_SUFFIX: Regex =
@@ -35,6 +40,23 @@ fn is_farm_css_modules_type(module_type: &ModuleType) -> bool {
   }
 
   false
+}
+
+fn flatten_exports(exports: &CssModuleExports) -> HashMap<String, String> {
+  let mut res = HashMap::new();
+  for (name, export) in exports {
+    let mut classes = export.name.clone();
+    for composes in &export.composes {
+      classes.push(' ');
+      classes.push_str(match composes {
+        CssModuleReference::Local { name } => name,
+        CssModuleReference::Global { name } => name,
+        _ => unreachable!(),
+      })
+    }
+    res.insert(name.clone(), classes);
+  }
+  res
 }
 
 #[cache_item]
@@ -142,24 +164,25 @@ impl Plugin for FarmPluginLightningCss {
       let css_modules_module_id =
         ModuleId::new(param.resolved_path, &query_string, &context.config.root);
 
-      let mut dynamic_import_of_composes:HashMap<String, String> = HashMap::default();
+      let dynamic_import_of_composes: HashMap<String, String> = HashMap::default();
 
-      let ast = StyleSheet::parse(&param.content, Default::default()).unwrap();
+      let fs = FileProvider::new();
+      let mut bundler = Bundler::new(
+        &fs,
+        None,
+        ParserOptions {
+          ..Default::default()
+        },
+      );
+
+      let ast = bundler.bundle(Path::new(&param.resolved_path)).unwrap();
       let stylesheet = ast.to_css(Default::default()).unwrap();
 
-      let mut export_names = Vec::new();
+      let mut export_names = HashMap::new();
 
       if let Some(exports) = stylesheet.exports {
-        for export in exports {
-          let (name, exports) = export;
-          export_names.push((
-            self.locals_conversion.transform(&name),
-            exports.name.clone(),
-          ));
-        }
+        export_names = flatten_exports(&exports);
       }
-
-      export_names.sort_by_key(|e| e.0.to_string());
 
       let code = format!(
         r#"
@@ -176,11 +199,39 @@ impl Plugin for FarmPluginLightningCss {
           })
           .join(";\n"),
         export_names
-          .iter()
-          .map(|(name, classes)| format!("\"{}\": `{}`", name, classes.trim()))
-          .collect::<Vec<String>>()
-          .join(",")
+          .keys()
+          .fold(Vec::new(), |mut acc, name| {
+            acc.push(format!("{}: {}", name, export_names.get(name).unwrap()));
+            acc
+          })
+          .join(",\n")
       );
+
+      if !param.source_map_chain.is_empty() {
+        let source_map_chain = param
+          .source_map_chain
+          .iter()
+          .map(|s| SourceMap::from_slice(s.as_bytes()).expect("failed to parse sourcemap"))
+          .collect::<Vec<_>>();
+
+        let root = context.config.root.clone();
+        let collapsed_sourcemap = collapse_sourcemap_chain(
+          source_map_chain,
+          CollapseSourcemapOptions {
+            remap_source: Some(Box::new(move |src| format!("/{}", relative(&root, src)))),
+            ..Default::default()
+          },
+        );
+        let mut buf = vec![];
+        collapsed_sourcemap
+          .to_writer(&mut buf)
+          .expect("failed to write sourcemap");
+        let map = String::from_utf8(buf).unwrap();
+        self
+          .sourcemap_map
+          .lock()
+          .insert(css_modules_module_id.to_string(), map);
+      }
 
       return Ok(Some(PluginTransformHookResult {
         content: code,
