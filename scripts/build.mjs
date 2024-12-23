@@ -89,8 +89,8 @@ export async function runTaskQueue() {
   await installProtoBuf();
   await runTask('Cli', buildCli);
   await runTask('Runtime', buildRuntime);
-  await runTask('Core', buildCore);
   await runTask('PluginTools', buildPluginTools);
+  await runTask('Core', buildCore);
   await runTask('RustPlugins', buildRustPlugins);
   await runTask('JsPlugins', buildJsPlugins);
   await runTask('Artifacts', copyArtifacts);
