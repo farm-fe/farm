@@ -11,6 +11,7 @@ pub mod script;
 // re-exports dependencies
 pub use preset_env_base;
 pub use swc_ecma_codegen;
+pub use swc_typescript;
 pub use swc_ecma_minifier;
 pub use swc_ecma_parser;
 pub use swc_ecma_preset_env;
