@@ -2160,7 +2160,7 @@ importers:
         version: 0.3.2(vue@2.6.14)
       tdesign-vue:
         specifier: latest
-        version: 1.10.6(vue@2.6.14)
+        version: 1.10.7(vue@2.6.14)
       vite-plugin-vue2-svg:
         specifier: ^0.4.0
         version: 0.4.0(ejs@3.1.10)(lodash@4.17.21)(vue-template-compiler@2.6.14(vue@2.6.14))
@@ -2194,7 +2194,7 @@ importers:
         version: 0.3.2(vue@2.7.16)
       tdesign-vue:
         specifier: latest
-        version: 1.10.6(vue@2.7.16)
+        version: 1.10.7(vue@2.7.16)
       vite-plugin-vue2-svg:
         specifier: ^0.4.0
         version: 0.4.0(ejs@3.1.10)(lodash@4.17.21)(vue-template-compiler@2.7.16(vue@2.7.16))
@@ -2839,6 +2839,9 @@ importers:
       '@types/debug':
         specifier: ^4.1.12
         version: 4.1.12
+      '@types/escape-html':
+        specifier: ^1.0.4
+        version: 1.0.4
       '@types/etag':
         specifier: ^1.8.3
         version: 1.8.3
@@ -2857,6 +2860,9 @@ importers:
       '@types/ws':
         specifier: ^8.5.8
         version: 8.5.8
+      escape-html:
+        specifier: ^1.0.3
+        version: 1.0.3
       react-refresh:
         specifier: ^0.14.0
         version: 0.14.2
@@ -8675,6 +8681,9 @@ packages:
 
   '@types/envinfo@7.8.3':
     resolution: {integrity: sha512-qzV1XMjmzgmndci6L5HlzExf4w9A5jQPNpW/t4sSljErKbS8y6231ToHO9ir2Xjf+2zG1C540+Wmh0zpUsGu0A==}
+
+  '@types/escape-html@1.0.4':
+    resolution: {integrity: sha512-qZ72SFTgUAZ5a7Tj6kf2SHLetiH5S6f8G5frB2SPQ3EyF02kxdyBFf4Tz4banE3xCgGnKgWLt//a6VuYHKYJTg==}
 
   '@types/eslint-scope@3.7.7':
     resolution: {integrity: sha512-MzMFlSLBqNF2gcHWO0G1vP/YQyfvrxZ0bF+u7mzUdZ1/xK4A4sru+nraZz5i3iEIk1l1uyicaDVTB4QbbEkAYg==}
@@ -18994,8 +19003,8 @@ packages:
     peerDependencies:
       vue: ^2.6.12
 
-  tdesign-vue@1.10.6:
-    resolution: {integrity: sha512-ChRQW+xzBnE5/c3fAduQ4EPwE+xlXDz2DQhrkSMMVCl2gCy17qRgKlcb8m94HS/KOjecOHSMuqI+lvKL3IgUIA==}
+  tdesign-vue@1.10.7:
+    resolution: {integrity: sha512-TEZyQsv+mvZteJEpWGZjmbDavfA3UQ/SAofoFl8VUm0WzUSJkMH07tuVHO2zeAkbWB1qV2mk03IhVRj+urMu5A==}
     peerDependencies:
       vue: ~2.6.10
 
@@ -30278,6 +30287,8 @@ snapshots:
 
   '@types/envinfo@7.8.3': {}
 
+  '@types/escape-html@1.0.4': {}
+
   '@types/eslint-scope@3.7.7':
     dependencies:
       '@types/eslint': 8.56.10
@@ -37910,7 +37921,7 @@ snapshots:
 
   lower-case@2.0.2:
     dependencies:
-      tslib: 2.6.3
+      tslib: 2.8.1
 
   lowercase-keys@2.0.0: {}
 
@@ -43138,7 +43149,7 @@ snapshots:
       classnames: 2.3.2
       vue: 2.7.16
 
-  tdesign-vue@1.10.6(vue@2.6.14):
+  tdesign-vue@1.10.7(vue@2.6.14):
     dependencies:
       '@babel/runtime': 7.23.2
       '@popperjs/core': 2.11.8
@@ -43160,7 +43171,7 @@ snapshots:
       validator: 13.11.0
       vue: 2.6.14
 
-  tdesign-vue@1.10.6(vue@2.7.16):
+  tdesign-vue@1.10.7(vue@2.7.16):
     dependencies:
       '@babel/runtime': 7.23.2
       '@popperjs/core': 2.11.8

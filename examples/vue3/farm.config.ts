@@ -89,7 +89,7 @@ export default defineConfig({
     //   enabled: true,
     // }),
     // compressionMiddleware(),
-    myCustomPlugin(),
+    // myCustomPlugin(),
     // createHtmlPlugin({
     //   minify: true,
     //   /**
