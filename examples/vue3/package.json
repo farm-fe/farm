@@ -13,6 +13,7 @@
     "@module-federation/vite": "^1.1.1",
     "unplugin-auto-import": "^0.16.7",
     "unplugin-vue-router": "^0.7.0",
+    "unplugin-vue": "/Users/adny/typescript/unplugin-vue",
     "vue": "^3.4.0",
     "vue-router": "^4.4.3"
   },
