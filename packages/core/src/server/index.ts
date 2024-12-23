@@ -91,6 +91,10 @@ export interface ServerOptions extends CommonServerOptions {
         server: http.Server;
       };
   appType?: 'spa' | 'mpa' | 'custom';
+  /**
+   * Origin for the generated asset URLs.
+   */
+  origin?: string;
 }
 
 type ServerConfig = CommonServerOptions & NormalizedServerConfig;
