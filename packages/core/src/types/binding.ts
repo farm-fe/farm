@@ -1,30 +1,25 @@
 /// reexport generate binding, compiles a type reference
 export * from '../../binding/binding.js';
 
-export type ModuleType =
-  | 'ts'
-  | 'js'
-  | 'jsx'
-  | 'tsx'
-  | 'css'
-  | 'html'
-  | 'asset'
-  | string;
+export type ModuleType = LiteralUnion<
+  'ts' | 'js' | 'jsx' | 'tsx' | 'css' | 'html' | 'asset'
+>;
 
 export type ResolveKind =
   | { entry: string }
-  | 'import'
-  | 'dynamicImport'
-  | 'require'
-  | 'cssAtImport'
-  | 'cssUrl'
-  | 'scriptSrc'
-  | 'linkHref'
-  | 'hmrUpdate'
-  | string;
+  | LiteralUnion<
+      | 'import'
+      | 'dynamicImport'
+      | 'require'
+      | 'cssAtImport'
+      | 'cssUrl'
+      | 'scriptSrc'
+      | 'linkHref'
+      | 'hmrUpdate'
+    >;
 
 import type { WatchOptions } from 'chokidar';
-import { JsPlugin } from '../plugin/type.js';
+import type { JsPlugin, LiteralUnion } from '../plugin/type.js';
 import {
   JsMinifyOptions,
   ScriptDecoratorsConfig,

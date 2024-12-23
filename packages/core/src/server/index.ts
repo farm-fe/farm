@@ -1,3 +1,5 @@
+export * from './preview.js';
+
 import fs, { PathLike } from 'node:fs';
 import connect from 'connect';
 import corsMiddleware from 'cors';
@@ -27,7 +29,6 @@ import { initPublicFiles } from '../utils/publicDir.js';
 import { arrayEqual, isObject, normalizePath } from '../utils/share.js';
 
 import {
-  adaptorViteMiddleware,
   hmrPingMiddleware,
   htmlFallbackMiddleware,
   lazyCompilationMiddleware,
@@ -35,7 +36,8 @@ import {
   proxyMiddleware,
   publicMiddleware,
   publicPathMiddleware,
-  resourceMiddleware
+  resourceMiddleware,
+  staticMiddleware
 } from './middlewares/index.js';
 
 import type * as http from 'node:http';
@@ -531,15 +533,19 @@ export class Server extends httpServer {
 
     if (proxy) {
       const middlewareServer =
-        isObject(middlewareMode) && 'server' in middlewareMode
+        (isObject(middlewareMode) && 'server' in middlewareMode
           ? middlewareMode.server
-          : this.httpServer;
+          : null) || this.httpServer;
 
-      this.middlewares.use(proxyMiddleware(this, middlewareServer));
+      this.middlewares.use(
+        proxyMiddleware(this, middlewareServer as HttpServer, proxy)
+      );
     }
 
     if (this.publicPath !== '/') {
-      this.middlewares.use(publicPathMiddleware(this));
+      this.middlewares.use(
+        publicPathMiddleware(this, this.serverOptions.middlewareMode)
+      );
     }
 
     if (fs.existsSync(this.publicDir as PathLike)) {
@@ -550,9 +556,7 @@ export class Server extends httpServer {
       this.middlewares.use(lazyCompilationMiddleware(this));
     }
 
-    if (this.resolvedUserConfig.vitePlugins?.length) {
-      this.middlewares.use(adaptorViteMiddleware(this));
-    }
+    this.middlewares.use(staticMiddleware(this));
 
     this.middlewares.use(resourceMiddleware(this));
 
@@ -562,7 +566,6 @@ export class Server extends httpServer {
 
     if (appType === 'spa' || appType === 'mpa') {
       this.middlewares.use(htmlFallbackMiddleware(this));
-
       this.middlewares.use(notFoundMiddleware());
     }
   }

@@ -1,6 +1,4 @@
-import path from 'node:path';
-
-import { cleanUrl, commonFsUtils, removeSlash } from '../../utils/index.js';
+import { cleanUrl, removeSlash } from '../../utils/index.js';
 
 import type Connect from 'connect';
 import type { Server } from '../index.js';

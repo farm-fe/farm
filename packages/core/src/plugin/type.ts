@@ -1,6 +1,8 @@
 import { Compiler, ResolvedUserConfig, Server, UserConfig } from '../index.js';
+
 import {
   Config,
+  ModuleType,
   PluginLoadHookParam,
   PluginLoadHookResult,
   PluginResolveHookParam,
@@ -11,7 +13,7 @@ import {
 
 // https://stackoverflow.com/questions/61047551/typescript-union-of-string-and-string-literals
 // eslint-disable-next-line @typescript-eslint/ban-types
-type LiteralUnion<T extends string> = T | (string & {});
+export type LiteralUnion<T extends string> = T | (string & {});
 
 type ResourcePotType = LiteralUnion<
   'runtime' | 'js' | 'css' | 'html' | 'asset'
@@ -128,6 +130,21 @@ type Callback<P, R> = (
 ) => Promise<R | null | undefined> | R | null | undefined;
 type JsPluginHook<F, P, R> = { filters: F; executor: Callback<P, R> };
 
+export interface PluginProcessModuleParams {
+  moduleId: string;
+  moduleType: ModuleType;
+  content: string;
+}
+
+export interface PluginProcessModuleResult {
+  content: string;
+}
+
+type NormalizeFilterParams = {
+  moduleTypes?: ModuleType[];
+  resolvedPaths?: string[];
+};
+
 export interface JsPlugin {
   name: string;
   priority?: number;
@@ -169,6 +186,12 @@ export interface JsPlugin {
     { resolvedPaths?: string[]; moduleTypes?: string[] },
     PluginTransformHookParam,
     PluginTransformHookResult
+  >;
+
+  processModule?: JsPluginHook<
+    NormalizeFilterParams,
+    PluginProcessModuleParams,
+    PluginProcessModuleResult
   >;
 
   buildEnd?: { executor: Callback<Record<string, never>, void> };

@@ -3,6 +3,7 @@ import visualizer from "@farmfe/js-plugin-visualizer";
 
 export default defineConfig((env) => ({
   compilation: {
+    // lazyCompilation: false,
     // persistentCache: false,
     minify: env.mode === 'production' ? {
       exclude: [

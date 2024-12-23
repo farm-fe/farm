@@ -1,15 +1,14 @@
 import path, { isAbsolute } from 'node:path';
+
 import { isString } from '../plugin/js/utils.js';
 import { isArray, isObject } from '../utils/share.js';
 import { CompilationMode } from './env.js';
 import { FarmCliOptions, UserConfig } from './types.js';
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function mergeConfig<T extends Record<string, any>>(
   userConfig: T,
   target: T
 ): T {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const result: Record<string, any> = { ...userConfig };
   for (const key of Object.keys(target)) {
     const left = result[key];
@@ -111,7 +110,7 @@ export function mergeFarmCliConfig(
     left = mergeConfig(left, { compilation: { minify: options.minify } });
   }
 
-  if (options.compilation.output.outDir) {
+  if (options.compilation.output.path) {
     left = mergeConfig(left, {
       compilation: { output: { path: options.outDir } }
     });
@@ -150,12 +149,14 @@ export function mergeFarmCliConfig(
   return mergeConfig(left, target);
 }
 
-export function initialCliOptions(options: any): any {
+export function initialCliOptions(
+  options: FarmCliOptions & UserConfig
+): FarmCliOptions & UserConfig {
   const { mode, watch } = options;
 
   const compilationOptions = options.compilation || {};
   const { minify, sourcemap, treeShaking } = compilationOptions;
-  const { outDir, target, format } = compilationOptions.output || {};
+  const { path, targetEnv, format } = compilationOptions.output || {};
 
   const input = compilationOptions.input
     ? Object.values(compilationOptions.input).filter(Boolean)
@@ -163,8 +164,8 @@ export function initialCliOptions(options: any): any {
   const hasInput = input.length > 0;
 
   const output: UserConfig['compilation']['output'] = {
-    ...(outDir && { path: outDir }),
-    ...(target && { targetEnv: target }),
+    ...(path && { path }),
+    ...(targetEnv && { targetEnv }),
     ...(format && { format })
   };
 
@@ -176,7 +177,7 @@ export function initialCliOptions(options: any): any {
     ...(treeShaking && { treeShaking })
   };
 
-  const defaultOptions: any = {
+  const defaultOptions = {
     compilation,
     watch: !!watch,
     root: options.root,

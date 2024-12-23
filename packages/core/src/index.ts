@@ -6,16 +6,13 @@ export * from './utils/index.js';
 
 export { defineFarmConfig as defineConfig } from './config/index.js';
 
-export type { Compiler as BindingCompiler } from './types/binding.js';
-
 import fs from 'node:fs/promises';
 
 import { createCompiler } from './compiler/index.js';
 import { __FARM_GLOBAL__ } from './config/_global.js';
 import { UserConfig, resolveConfig } from './config/index.js';
 import { getPluginHooks } from './plugin/index.js';
-import { Server } from './server/index.js';
-import { PersistentCacheConfig } from './types/binding.js';
+import { PreviewServer, Server } from './server/index.js';
 import {
   PersistentCacheBrand,
   bold,
@@ -28,7 +25,8 @@ import {
 import { handlerWatcher } from './watcher/index.js';
 
 import type { FarmCliOptions } from './config/types.js';
-import { PreviewServer } from './server/preview.js';
+export type { Compiler as BindingCompiler } from './types/binding.js';
+import type { PersistentCacheConfig } from './types/binding.js';
 
 export async function start(
   inlineConfig?: FarmCliOptions & UserConfig
@@ -68,23 +66,27 @@ export async function build(
     'production',
     'production'
   );
-  const logger = resolvedUserConfig.logger;
-  const { persistentCache, output } = resolvedUserConfig.compilation;
+  const {
+    compilation: { persistentCache, output },
+    configFilePath,
+    root,
+    logger,
+    jsPlugins,
+    watch
+  } = resolvedUserConfig;
 
   try {
-    const compiler = createCompiler(resolvedUserConfig);
+    const shortFile = getShortName(configFilePath, root);
+    logger.info(`Using config file at ${bold(green(shortFile))}`);
 
-    for (const hook of getPluginHooks(
-      resolvedUserConfig.jsPlugins,
-      'configureCompiler'
-    )) {
+    const compiler = createCompiler(resolvedUserConfig);
+    for (const hook of getPluginHooks(jsPlugins, 'configureCompiler')) {
       await hook?.(compiler);
     }
 
     if (output?.clean) {
       compiler.removeOutputPathDir();
     }
-
     const startTime = performance.now();
     await compiler.compile();
     const elapsedTime = Math.floor(performance.now() - startTime);
@@ -92,11 +94,6 @@ export async function build(
       ? bold(PersistentCacheBrand)
       : '';
 
-    const shortFile = getShortName(
-      resolvedUserConfig.configFilePath,
-      resolvedUserConfig.root
-    );
-    logger.info(`Using config file at ${bold(green(shortFile))}`);
     logger.info(
       `Build completed in ${bold(
         green(`${logger.formatExecutionTime(elapsedTime)}`)
@@ -106,7 +103,7 @@ export async function build(
     );
     compiler.writeResourcesToDisk();
     await copyPublicDirectory(resolvedUserConfig);
-    if (resolvedUserConfig.watch) {
+    if (watch) {
       handlerWatcher(resolvedUserConfig, compiler);
     }
   } catch (err) {
@@ -116,7 +113,7 @@ export async function build(
 
 export async function clean(
   rootPath: string,
-  recursive?: boolean | undefined
+  recursive = false
 ): Promise<void> {
   const resolvedUserConfig = await resolveConfig(
     {},

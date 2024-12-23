@@ -7,7 +7,6 @@ import {
   VIRTUAL_FARM_DYNAMIC_IMPORT_SUFFIX,
   bold,
   cyan,
-  formatExecutionTime,
   getDynamicResources,
   green
 } from '../../index.js';
@@ -63,9 +62,7 @@ export function lazyCompilationMiddleware(
       return next();
     }
 
-    // TODO 取的对象不对 writeToDisk
-    // if (isNodeEnvironment || resolvedUserConfig.writeToDisk) {
-    if (isNodeEnvironment) {
+    if (isNodeEnvironment || resolvedUserConfig.server.writeToDisk) {
       compiler.writeResourcesToDisk();
     }
 

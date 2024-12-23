@@ -2,6 +2,7 @@ import { existsSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 
 import { Compiler as BindingCompiler } from '../../binding/index.js';
+
 import type {
   ResolvedCompilation,
   ResolvedUserConfig,
@@ -102,7 +103,7 @@ export class Compiler {
     });
 
     // if there is already a update process, we need to wait for it to finish
-    if (this.compiling && !ignoreCompilingCheck) {
+    if (this.isCompilingAndCheckIgnored(ignoreCompilingCheck)) {
       this._updateQueue.push({ paths, resolve });
       return promise;
     }
@@ -140,6 +141,10 @@ export class Compiler {
       this.compiling = false;
       throw e;
     }
+  }
+
+  private isCompilingAndCheckIgnored(ignoreCompilingCheck: boolean): boolean {
+    return this.compiling && !ignoreCompilingCheck;
   }
 
   hasModule(resolvedPath: string): boolean {
@@ -270,6 +275,10 @@ export class Compiler {
       ? configOutputPath
       : path.join(root, configOutputPath);
     return outputPath;
+  }
+
+  invalidateModule(moduleId: string) {
+    this._bindingCompiler.invalidateModule(moduleId);
   }
 }
 

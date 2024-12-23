@@ -1,6 +1,7 @@
+import path, { isAbsolute } from 'node:path';
+
 import { browsersWithSupportForFeatures } from 'farm-browserslist-generator';
 
-import path, { isAbsolute } from 'node:path';
 import { Config } from '../../types/binding.js';
 import { urlRegex } from '../../utils/http.js';
 import { Logger } from '../../utils/logger.js';
