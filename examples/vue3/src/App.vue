@@ -29,8 +29,7 @@ fetch("https://wallhaven.fun/api/wallhaven/w/yx6e9l").then((res) => res.json());
       <img src="./assets/vue.svg" class="logo vue" alt="Vue logo" />
     </a>
     <div>
-      <img width="500" src="/aaa.jpg" alt="">
-
+    <img width="500" src="/aaa.jpg" alt="">
     </div>
   </div>
   <HelloWorld msg="Farm + Vue" />

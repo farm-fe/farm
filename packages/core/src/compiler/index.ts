@@ -276,6 +276,10 @@ export class Compiler {
       : path.join(root, configOutputPath);
     return outputPath;
   }
+
+  invalidateModule(moduleId: string) {
+    this._bindingCompiler.invalidateModule(moduleId);
+  }
 }
 
 export function createCompiler(resolvedUserConfig: ResolvedUserConfig) {
