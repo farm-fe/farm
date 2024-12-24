@@ -6,6 +6,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.14](https://github.com/farm-fe/farm/compare/farmfe_compiler-v0.0.13...farmfe_compiler-v0.0.14) - 2024-12-24
+
+### Added
+
+- support invalidate module (#2005)
+
+### Fixed
+
+- namespace fallback when use literal computed (#2022)
+
 ## [0.0.13](https://github.com/farm-fe/farm/compare/farmfe_compiler-v0.0.12...farmfe_compiler-v0.0.13) - 2024-12-09
 
 ### Added
