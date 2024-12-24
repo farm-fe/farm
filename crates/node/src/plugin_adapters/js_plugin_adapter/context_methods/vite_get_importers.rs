@@ -1,8 +1,7 @@
-use std::collections::HashMap;
-
 use farmfe_core::{
   module::{ModuleId, ModuleType},
   relative_path::RelativePath,
+  HashMap,
 };
 use napi::{
   bindgen_prelude::FromNapiValue,
@@ -35,7 +34,7 @@ pub unsafe extern "C" fn vite_get_importers(env: napi_env, info: napi_callback_i
         .to_logical_path(&ctx.config.root)
         .to_string_lossy()
         .to_string();
-      HashMap::from([
+      HashMap::from_iter([
         ("url".to_string(), id.clone()),
         ("id".to_string(), id),
         ("file".to_string(), m.id.resolved_path(&ctx.config.root)),

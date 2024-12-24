@@ -1,4 +1,5 @@
 import { Compiler, ResolvedUserConfig, Server, UserConfig } from '../index.js';
+
 import {
   Config,
   ModuleType,
@@ -157,7 +158,7 @@ export interface JsPlugin {
    * @param server
    * @returns
    */
-  configureDevServer?: (server: Server) => void | Promise<void>;
+  configureServer?: (server: Server) => void | Promise<void>;
   /**
    * @param compiler
    * @returns

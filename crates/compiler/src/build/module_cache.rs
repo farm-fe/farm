@@ -1,9 +1,4 @@
-use std::{
-  collections::{HashMap, HashSet},
-  path::PathBuf,
-  sync::Arc,
-  time::SystemTime,
-};
+use std::{path::PathBuf, sync::Arc, time::SystemTime};
 
 use farmfe_core::{
   cache::module_cache::{CachedModule, CachedModuleDependency, CachedWatchDependency},
@@ -12,6 +7,7 @@ use farmfe_core::{
   farm_profile_function,
   module::ModuleId,
   rayon::prelude::*,
+  HashMap, HashSet,
 };
 
 pub fn get_timestamp_of_module(module_id: &ModuleId, root: &str) -> u128 {
@@ -161,7 +157,7 @@ pub fn try_get_module_cache_by_hash(
 pub fn set_module_graph_cache(module_ids: Vec<ModuleId>, context: &Arc<CompilationContext>) {
   farm_profile_function!("set_module_graph_cache".to_string());
   let module_graph = context.module_graph.read();
-  let mut cacheable_modules = HashSet::new();
+  let mut cacheable_modules = HashSet::default();
 
   let modules = module_ids
     .iter()

@@ -1,15 +1,16 @@
-use std::{collections::HashSet, sync::Arc};
+use std::sync::Arc;
 
 use farmfe_core::{
   config::FARM_MODULE,
   context::CompilationContext,
   module::ModuleId,
   plugin::{PluginResolveHookParam, ResolveKind},
-  swc_common::DUMMY_SP,
+  swc_common::{SyntaxContext, DUMMY_SP},
   swc_ecma_ast::{
-    CallExpr, Callee, Expr, ExprOrSpread, Ident, Lit, MemberExpr, MemberProp, MetaPropKind,
-    NewExpr, Str,
+    CallExpr, Callee, Expr, ExprOrSpread, Ident, IdentName, Lit, MemberExpr, MemberProp,
+    MetaPropKind, NewExpr, Str,
   },
+  HashSet,
 };
 use farmfe_toolkit::swc_ecma_visit::{VisitMut, VisitMutWith};
 use farmfe_utils::stringify_query;
@@ -31,8 +32,12 @@ impl VisitMut for ImportMetaVisitor {
           // check if it's hmr accepted
           *expr = Expr::Member(MemberExpr {
             span: DUMMY_SP,
-            obj: Box::new(Expr::Ident(Ident::new(FARM_MODULE.into(), DUMMY_SP))),
-            prop: MemberProp::Ident(Ident::new("meta".into(), DUMMY_SP)),
+            obj: Box::new(Expr::Ident(Ident::new(
+              FARM_MODULE.into(),
+              DUMMY_SP,
+              SyntaxContext::empty(),
+            ))),
+            prop: MemberProp::Ident(IdentName::new("meta".into(), DUMMY_SP)),
           });
         }
       }
@@ -55,7 +60,7 @@ impl HmrAcceptedVisitor {
   pub fn new(module_id: ModuleId, context: Arc<CompilationContext>) -> Self {
     Self {
       is_hmr_self_accepted: false,
-      hmr_accepted_deps: HashSet::new(),
+      hmr_accepted_deps: HashSet::default(),
       module_id,
       context,
     }
@@ -73,13 +78,13 @@ impl VisitMut for HmrAcceptedVisitor {
               obj:
                 box Expr::Member(MemberExpr {
                   obj: box Expr::Ident(Ident { sym: module, .. }),
-                  prop: MemberProp::Ident(Ident { sym: meta, .. }),
+                  prop: MemberProp::Ident(IdentName { sym: meta, .. }),
                   ..
                 }),
-              prop: MemberProp::Ident(Ident { sym: hot, .. }),
+              prop: MemberProp::Ident(IdentName { sym: hot, .. }),
               ..
             }),
-          prop: MemberProp::Ident(Ident { sym: accept, .. }),
+          prop: MemberProp::Ident(IdentName { sym: accept, .. }),
           ..
         })),
       args,
@@ -189,6 +194,7 @@ impl ImportMetaURLVisitor {
                   },
                 ]),
                 type_args: None,
+                ctxt: SyntaxContext::empty(),
               })),
               prop: MemberProp::Ident("href".into()),
             });

@@ -1,4 +1,3 @@
-use std::collections::HashSet;
 use std::sync::Arc;
 
 use farmfe_compiler::{DYNAMIC_VIRTUAL_SUFFIX, FARM_CSS_MODULES_SUFFIX, RUNTIME_SUFFIX};
@@ -12,6 +11,7 @@ use farmfe_core::{
     PluginTransformHookParam, PluginTransformHookResult, UpdateType, DEFAULT_PRIORITY,
   },
   resource::{Resource, ResourceOrigin, ResourceType},
+  HashSet,
 };
 use napi::{bindgen_prelude::FromNapiValue, Env, JsObject, JsUnknown, NapiRaw};
 

@@ -1,7 +1,6 @@
 import { resolve } from 'node:path';
 import { defineConfig } from '@farmfe/core';
 import farmJsPluginLess from '@farmfe/js-plugin-less';
-import farmJsPluginSvgr from '@farmfe/js-plugin-svgr';
 
 export default defineConfig((env) => {
   return {
@@ -9,26 +8,13 @@ export default defineConfig((env) => {
       resolve: {
         alias: {
           '@': resolve(process.cwd(), './src'),
+          'react-dom': resolve(process.cwd(), './node_modules/react-dom'),
+          react: resolve(process.cwd(), './node_modules/react')
         }
       },
-      output: {
-        path: './build',
-        filename: 'assets/[resourceName].[contentHash].[ext]',
-        assetsFilename: 'static/[resourceName].[contentHash].[ext]'
-      },
-      partialBundling: {
-        targetMinSize: 1024 * 2
-      },
-      progress: false
     },
     plugins: [
-      [
-        '@farmfe/plugin-react',
-        {
-          refresh: env.mode === 'development',
-          development: env.mode === 'development'
-        }
-      ],
+      '@farmfe/plugin-react',
       '@farmfe/plugin-svgr',
       farmJsPluginLess(),
     ]

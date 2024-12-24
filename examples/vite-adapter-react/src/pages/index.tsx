@@ -4,7 +4,7 @@ import FarmLogo from '../assets/logo.png';
 import reactLogo from '../assets/react.svg';
 import './main.css';
 
- export default function () {
+export default function () {
   const [count, setCount] = useState(0);
   const go = useNavigate();
 
@@ -17,7 +17,7 @@ import './main.css';
         <a href="https://react.dev" target="_blank" rel="noreferrer">
           <img src={reactLogo} className="logo react" alt="React logo" />
         </a>
-      </div>
+      </div>12312123
       <h1>Farm + React</h1>
       <div className="card">
         <button onClick={() => setCount((count) => count + 1)}>count is {count}</button>

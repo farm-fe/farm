@@ -1,12 +1,11 @@
-use std::mem;
-use std::rc::Rc;
-use std::sync::Arc;
-use std::{collections::HashMap, path::PathBuf};
+use std::path::PathBuf;
+use std::{mem, rc::Rc, sync::Arc};
 
 use absolute_path_handler::AbsolutePathHandler;
 use deps_analyzer::{DepsAnalyzer, HtmlInlineModule, HTML_INLINE_ID_PREFIX};
 // use farmfe_core::config::minify::MinifyOptions;
 use farmfe_core::parking_lot::Mutex;
+use farmfe_core::HashMap;
 use farmfe_core::{cache_item, deserialize, serialize};
 use farmfe_core::{
   config::Config,
@@ -156,7 +155,7 @@ impl Plugin for FarmPluginHtml {
               .to_str()
               .unwrap(),
             query: vec![],
-            meta: std::collections::HashMap::new(),
+            meta: HashMap::default(),
             module_id: param.module_id.clone(),
           },
           context,
@@ -251,7 +250,7 @@ impl Plugin for FarmPluginHtml {
       let code = Arc::new(codegen_html_document(&html_module_document, false));
 
       Ok(Some(ResourcePotMetaData {
-        rendered_modules: std::collections::HashMap::from([(
+        rendered_modules: HashMap::from_iter([(
           modules[0].clone(),
           RenderedModule {
             id: modules[0].clone(),
@@ -330,7 +329,7 @@ impl Plugin for FarmPluginHtml {
 impl FarmPluginHtml {
   pub fn new(_: &Config) -> Self {
     Self {
-      inline_module_map: Mutex::new(HashMap::new()),
+      inline_module_map: Mutex::new(HashMap::default()),
     }
   }
 }
@@ -378,7 +377,7 @@ impl Plugin for FarmPluginTransformHtml {
       })
       .collect::<Vec<_>>();
 
-    let mut resources_to_inject = HashMap::new();
+    let mut resources_to_inject = HashMap::default();
 
     for (html_entry_id, _) in &html_entries_ids {
       let module_group_id = html_entry_id.clone();

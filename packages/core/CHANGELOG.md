@@ -1,5 +1,10 @@
 # @farmfe/core
 
+## 2.0.0-nightly-20241029121500
+
+### Major Changes
+
+- b327dd1: collect htmlFallbackMiddleware
 ## 1.6.0
 
 ### Minor Changes
@@ -159,16 +164,63 @@
 
 ### Patch Changes
 
-- c078cd35: fix #1499 wrong defaults of side effects of vite plugin adapter hook resolveId
-- c078cd35: Fix wrong esm introp helper order when using top level await
+- b3a7caf: fix css url resolving issue
+- Updated dependencies [669e2b8]
+  - @farmfe/runtime-plugin-hmr@4.0.0-nightly-20241029095811
 
-## 1.3.30
+## 2.0.0-nightly-20241024090954
+
+### Major Changes
+
+- f460eb1: bump core version fix spa reload not 404
+
+## 2.0.0-nightly-20241024075304
 
 ### Patch Changes
 
-- 36512446: add assets mode for asset path generate
-- 2b9b2e3f: Fix async module detection wrong with cyclic dependencies
-- b3a7caf2: fix css url resolving issue
+- Updated dependencies [9a1b2b9]
+  - @farmfe/plugin-replace-dirname@1.0.0-nightly-20241024075304
+
+## 2.0.0-nightly-20241023101523
+
+### Major Changes
+
+- d7c5ffb: support node 16
+
+## 2.0.0-nightly-20241023020505
+
+### Patch Changes
+
+- 3651244: add assets mode for asset path generate
+- Updated dependencies [cab79e8]
+  - @farmfe/runtime@1.0.0-nightly-20241023020505
+  - @farmfe/runtime-plugin-hmr@4.0.0-nightly-20241023020505
+  - @farmfe/runtime-plugin-import-meta@1.0.0-nightly-20241023020505
+
+## 2.0.0-nightly-20241022143924
+
+### Major Changes
+
+- 83838bd: remove lightCyan color utils
+
+## 2.0.0-nightly-20241022124925
+
+### Patch Changes
+
+- Updated dependencies [6a1038c]
+  - @farmfe/utils@1.0.0-nightly-20241022124925
+
+## 2.0.0-nightly-20241022041556
+
+### Major Changes
+
+- 24347c9: update deps
+
+## 2.0.0-nightly-20241022014521
+
+### Major Changes
+
+- a82a5b2: bump nightly version
 
 ## 1.3.29
 

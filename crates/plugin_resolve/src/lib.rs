@@ -1,8 +1,4 @@
-use std::{
-  collections::{HashMap, HashSet},
-  path::Path,
-  sync::Arc,
-};
+use std::{path::Path, sync::Arc};
 
 use farmfe_core::{
   config::{custom::get_config_resolve_dedupe, external::ExternalConfig, Config},
@@ -12,7 +8,7 @@ use farmfe_core::{
   plugin::{
     Plugin, PluginHookContext, PluginResolveHookParam, PluginResolveHookResult, ResolveKind,
   },
-  serde_json,
+  serde_json, HashMap, HashSet,
 };
 
 use farmfe_toolkit::resolve::DYNAMIC_EXTENSION_PRIORITY;
@@ -87,7 +83,7 @@ impl Plugin for FarmPluginResolve {
           external: true,
           side_effects: false,
           query,
-          meta: HashMap::new(),
+          meta: HashMap::default(),
         }));
       }
     }
@@ -133,7 +129,7 @@ impl Plugin for FarmPluginResolve {
         external: true,
         side_effects: false,
         query: vec![],
-        meta: HashMap::new(),
+        meta: HashMap::default(),
       });
     }
 

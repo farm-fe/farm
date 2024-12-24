@@ -1,11 +1,11 @@
-use std::collections::{HashMap, HashSet};
 use std::path::PathBuf;
 
+use farmfe_core::config::Config;
 use farmfe_core::{
-  config::partial_bundling::PartialBundlingConfig,
   module::{module_graph::ModuleGraph, module_group::ModuleGroupId},
   resource::resource_pot::ResourcePot,
 };
+use farmfe_core::{HashMap, HashSet};
 
 use crate::{
   generate_module_buckets::ModuleGroupBuckets,
@@ -23,11 +23,12 @@ pub fn generate_resource_pots(
   module_group_buckets: Vec<ModuleGroupBuckets>,
   mut module_buckets_map: HashMap<String, ModuleBucket>,
   module_graph: &ModuleGraph,
-  config: &PartialBundlingConfig,
+  config: &Config,
+  groups_enforce_map: &HashMap<String, bool>,
 ) -> Vec<ResourcePot> {
   let mut resource_pots = vec![];
-  let mut handled_module_group_buckets = HashSet::new();
-  let mut used_resource_pot_names = HashSet::new();
+  let mut handled_module_group_buckets = HashSet::default();
+  let mut used_resource_pot_names = HashSet::default();
 
   for mut module_group_bucket in module_group_buckets {
     let module_group_id = module_group_bucket.module_group_id;
@@ -55,6 +56,7 @@ pub fn generate_resource_pots(
         module_graph,
         config,
         module_group_bucket.resource_type.clone(),
+        groups_enforce_map,
       );
 
       module_group_module_pots.add_module_pots(module_bucket_id.clone(), module_pots);
@@ -122,7 +124,7 @@ fn generate_resource_pot_name(
 #[cfg(test)]
 mod tests {
   use farmfe_core::module::{module_graph::ModuleGraph, module_group::ModuleGroupId, Module};
-  use std::collections::HashSet;
+  use farmfe_core::HashSet;
 
   use crate::generate_resource_pots::generate_resource_pot_name;
 
@@ -135,7 +137,7 @@ mod tests {
       .insert(module_a.id.clone(), "a".to_string());
     module_graph.add_module(module_a);
 
-    let mut used_resource_pot_names = HashSet::new();
+    let mut used_resource_pot_names = HashSet::default();
     assert_eq!(
       generate_resource_pot_name(
         "test/src/a.html".into(),
