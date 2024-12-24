@@ -91,6 +91,10 @@ export interface ServerOptions extends CommonServerOptions {
         server: http.Server;
       };
   appType?: 'spa' | 'mpa' | 'custom';
+  /**
+   * Origin for the generated asset URLs.
+   */
+  origin?: string;
 }
 
 type ServerConfig = CommonServerOptions & NormalizedServerConfig;
@@ -244,11 +248,11 @@ export class Server extends httpServer {
 
     await this.watcher.createWatcher();
 
-    this.watcher.watcher.on('add', async (file: string) => {
+    this.watcher.on('add', async (file: string) => {
       // TODO pluginContainer hooks
     });
 
-    this.watcher.watcher.on('unlink', async (file: string) => {
+    this.watcher.on('unlink', async (file: string) => {
       const parentFiles = this.compiler.getParentFiles(file);
       const normalizeParentFiles = parentFiles.map((file) =>
         normalizePath(file)
@@ -256,7 +260,7 @@ export class Server extends httpServer {
       this.hmrEngine.hmrUpdate(normalizeParentFiles, true);
     });
 
-    this.watcher.watcher.on('change', async (file: string) => {
+    this.watcher.on('change', async (file: string) => {
       file = normalizePath(file);
       const shortFile = getShortName(file, this.resolvedUserConfig.root);
       const isConfigFile = this.resolvedUserConfig.configFilePath === file;
@@ -302,7 +306,7 @@ export class Server extends httpServer {
       );
 
       if (filteredAdded.length > 0) {
-        this.watcher.watcher.add(filteredAdded);
+        this.watcher.add(filteredAdded);
       }
     };
 
@@ -511,7 +515,14 @@ export class Server extends httpServer {
     } = this.resolvedUserConfig;
     this.publicPath = publicPath;
     this.publicDir = publicDir;
-
+    if (server.origin?.endsWith('/')) {
+      server.origin = server.origin.slice(0, -1);
+      this.resolvedUserConfig.logger.warn(
+        `${colors.bold('(!)')} server.origin should not end with "/". Using "${
+          server.origin
+        }" instead.`
+      );
+    }
     this.serverOptions = server as CommonServerOptions & NormalizedServerConfig;
     this.root = root;
   }
@@ -699,7 +710,7 @@ export class Server extends httpServer {
     }
 
     await Promise.allSettled([
-      this.watcher.watcher.close(),
+      this.watcher.close(),
       this.ws.wss.close(),
       this.closeHttpServerFn()
     ]);

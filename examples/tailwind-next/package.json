@@ -1,0 +1,28 @@
+{
+  "name": "@farmfe-examples/tailwind-next",
+  "version": "0.0.2",
+  "private": true,
+  "dependencies": {
+    "@farmfe/js-plugin-tailwindcss": "workspace:^",
+    "clsx": "^1.2.1",
+    "core-js": "^3.30.1",
+    "react": "18",
+    "react-dom": "18"
+  },
+  "devDependencies": {
+    "@farmfe/cli": "workspace:*",
+    "@farmfe/core": "workspace:*",
+    "@farmfe/js-plugin-postcss": "workspace:*",
+    "@farmfe/plugin-react": "workspace:*",
+    "@types/react": "18",
+    "@types/react-dom": "18",
+    "autoprefixer": "^10.4.14",
+    "react-refresh": "^0.14.0",
+    "tailwindcss": "4.0.0-alpha.26"
+  },
+  "scripts": {
+    "start": "farm start",
+    "build": "farm build",
+    "preview": "farm preview"
+  }
+}

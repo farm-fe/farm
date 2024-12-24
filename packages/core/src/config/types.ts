@@ -44,6 +44,7 @@ export interface UserServerConfig {
   headers?: OutgoingHttpHeaders | undefined;
   port?: number;
   https?: HttpsServerOptions;
+  origin?: string;
   protocol?: 'http' | 'https';
   hostname?: { name: string; host: string | undefined };
   // http2?: boolean;
