@@ -114,7 +114,7 @@ function resolveFarmConfig(
   opts.farm.compilation.output.path ??= 'dist-electron';
   opts.farm.compilation.output.targetEnv ??= 'node16';
   opts.farm.compilation.external ??= [];
-  opts.farm.compilation.external.push('electron');
+  opts.farm.compilation.external.push('^electron$');
   opts.farm.compilation.watch ??= isDev;
   opts.farm.compilation.partialBundling ??= {};
   opts.farm.compilation.partialBundling.enforceResources ??= [];
