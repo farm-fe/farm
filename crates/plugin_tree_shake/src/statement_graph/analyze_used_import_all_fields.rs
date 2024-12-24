@@ -19,18 +19,16 @@ pub fn update_used_import_all_fields_of_edges(
         .iter()
         .find(|i| matches!(i, ImportSpecifierInfo::Namespace(_)));
 
-      if let Some(import_all_specifier) = import_all_specifier {
-        if let ImportSpecifierInfo::Namespace(ns) = import_all_specifier {
-          let mut used_import_all_fields_collector = UsedImportAllCollector::new(ns);
-          module_item.visit_with(&mut used_import_all_fields_collector);
-          let used_import_all_fields = used_import_all_fields_collector.used_import_all_fields;
+      if let Some(ImportSpecifierInfo::Namespace(ns)) = import_all_specifier {
+        let mut used_import_all_fields_collector = UsedImportAllCollector::new(ns);
+        module_item.visit_with(&mut used_import_all_fields_collector);
+        let used_import_all_fields = used_import_all_fields_collector.used_import_all_fields;
 
-          edge_weight
-            .used_import_all_fields
-            .entry(ns.clone())
-            .and_modify(|e| e.extend(used_import_all_fields.clone()))
-            .or_insert(used_import_all_fields);
-        }
+        edge_weight
+          .used_import_all_fields
+          .entry(ns.clone())
+          .and_modify(|e| e.extend(used_import_all_fields.clone()))
+          .or_insert(used_import_all_fields);
       }
     }
   }
@@ -90,10 +88,13 @@ impl Visit for UsedImportAllCollector<'_> {
               ));
           }
           farmfe_core::swc_ecma_ast::MemberProp::Computed(computed_prop_name) => {
+            // if it is not a string literal, then the read value is dynamic and degrades to using all fields.
             if let Expr::Lit(Lit::Str(str)) = &*computed_prop_name.expr {
               self
                 .used_import_all_fields
                 .insert(UsedImportAllFields::LiteralComputed(str.value.to_string()));
+            } else {
+              self.used_import_all_fields.insert(UsedImportAllFields::All);
             }
           }
         }
