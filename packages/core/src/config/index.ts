@@ -562,6 +562,7 @@ export const DEFAULT_DEV_SERVER_OPTIONS: NormalizedServerConfig = {
   middlewares: [],
   appType: 'spa',
   writeToDisk: false,
+  origin: '',
   preview: {
     host: 'localhost',
     headers: {},

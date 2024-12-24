@@ -515,7 +515,16 @@ export class Server extends httpServer {
     } = this.resolvedUserConfig;
     this.publicPath = publicPath;
     this.publicDir = publicDir;
-
+    if (server.origin?.endsWith('/')) {
+      server.origin = server.origin.slice(0, -1);
+      this.resolvedUserConfig.logger.warn(
+        colors.yellow(
+          `${colors.bold('(!)')} server.origin should not end with "/". Using "${
+            server.origin
+          }" instead.`
+        )
+      );
+    }
     this.serverOptions = server as CommonServerOptions & NormalizedServerConfig;
     this.root = root;
   }
