@@ -1,13 +1,17 @@
 import { defineConfig } from "@farmfe/core";
-import Vue from "unplugin-vue/farm";
-// import Vue from "unplugin-vue/vite";
+// import Vue from "unplugin-vue/farm";
+import Vue from "unplugin-vue/vite";
 import fs from 'fs'
 
 export default defineConfig({
-  plugins: [Vue(),base()],
-  // vitePlugins: [Vue()],
+  // plugins: [Vue(),base()],
+  vitePlugins: [Vue()],
   compilation: {
-    progress:false
+    progress:false,
+    persistentCache: false,
+  },
+  server: {
+    origin: "http://localhost:5425"
   }
 });
 

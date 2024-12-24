@@ -119,7 +119,6 @@ const previewServerSchema = z
     distDir: z.string().optional(),
     open: z.boolean().optional(),
     proxy: proxySchema,
-    // TODO: CORS types
     cors: z.union([z.boolean(), z.any()]).optional()
   })
   .strict();
@@ -172,6 +171,7 @@ const serverSchema = z
     appType: z.enum(['spa', 'mpa', 'custom']).optional(),
     proxy: proxySchema,
     strictPort: z.boolean().optional(),
+    origin: z.string().optional(),
     hmr: z
       .union([
         z.boolean(),
