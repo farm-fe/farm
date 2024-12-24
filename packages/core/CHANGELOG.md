@@ -1,5 +1,11 @@
 # @farmfe/core
 
+## 1.6.1
+
+### Patch Changes
+
+- 9e9e94e2: fix namespace fallback when use literal computed
+
 ## 1.6.0
 
 ### Minor Changes
