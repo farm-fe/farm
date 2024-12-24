@@ -91,6 +91,10 @@ export interface ServerOptions extends CommonServerOptions {
         server: http.Server;
       };
   appType?: 'spa' | 'mpa' | 'custom';
+  /**
+   * Origin for the generated asset URLs.
+   */
+  origin?: string;
 }
 
 type ServerConfig = CommonServerOptions & NormalizedServerConfig;
@@ -511,7 +515,14 @@ export class Server extends httpServer {
     } = this.resolvedUserConfig;
     this.publicPath = publicPath;
     this.publicDir = publicDir;
-
+    if (server.origin?.endsWith('/')) {
+      server.origin = server.origin.slice(0, -1);
+      this.resolvedUserConfig.logger.warn(
+        `${colors.bold('(!)')} server.origin should not end with "/". Using "${
+          server.origin
+        }" instead.`
+      );
+    }
     this.serverOptions = server as CommonServerOptions & NormalizedServerConfig;
     this.root = root;
   }
