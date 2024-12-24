@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.13](https://github.com/farm-fe/farm/compare/farmfe_plugin_runtime-v0.0.12...farmfe_plugin_runtime-v0.0.13) - 2024-12-09
+
+### Fixed
+
+- new import meta url runtime & merge electron preload output files (#1984)
+- external alias #1957 (#1959)
+- *(runtime)* async cache (#1902)
+
 ## [0.0.12](https://github.com/farm-fe/farm/compare/farmfe_plugin_runtime-v0.0.11...farmfe_plugin_runtime-v0.0.12) - 2024-10-31
 
 ### Fixed
