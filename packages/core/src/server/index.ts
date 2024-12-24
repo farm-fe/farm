@@ -244,11 +244,11 @@ export class Server extends httpServer {
 
     await this.watcher.createWatcher();
 
-    this.watcher.watcher.on('add', async (file: string) => {
+    this.watcher.on('add', async (file: string) => {
       // TODO pluginContainer hooks
     });
 
-    this.watcher.watcher.on('unlink', async (file: string) => {
+    this.watcher.on('unlink', async (file: string) => {
       const parentFiles = this.compiler.getParentFiles(file);
       const normalizeParentFiles = parentFiles.map((file) =>
         normalizePath(file)
@@ -256,7 +256,7 @@ export class Server extends httpServer {
       this.hmrEngine.hmrUpdate(normalizeParentFiles, true);
     });
 
-    this.watcher.watcher.on('change', async (file: string) => {
+    this.watcher.on('change', async (file: string) => {
       file = normalizePath(file);
       const shortFile = getShortName(file, this.resolvedUserConfig.root);
       const isConfigFile = this.resolvedUserConfig.configFilePath === file;
@@ -302,7 +302,7 @@ export class Server extends httpServer {
       );
 
       if (filteredAdded.length > 0) {
-        this.watcher.watcher.add(filteredAdded);
+        this.watcher.add(filteredAdded);
       }
     };
 
@@ -699,7 +699,7 @@ export class Server extends httpServer {
     }
 
     await Promise.allSettled([
-      this.watcher.watcher.close(),
+      this.watcher.close(),
       this.ws.wss.close(),
       this.closeHttpServerFn()
     ]);
