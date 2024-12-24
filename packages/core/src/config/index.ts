@@ -219,6 +219,8 @@ async function handleResolveConfig(
     root: resolvedUserConfig.compilation.root,
     jsPlugins: sortFarmJsPlugins,
     rustPlugins: rustPlugins,
+    command,
+    isProduction: resolvedUserConfig.compilation.mode === ENV_PRODUCTION,
     transformInlineConfig
   });
 
