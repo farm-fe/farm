@@ -2,8 +2,11 @@ use std::sync::Arc;
 
 use farmfe_core::config::css::NameConversion;
 use farmfe_core::config::custom::get_config_css_modules_local_conversion;
-use farmfe_core::enhanced_magic_string::collapse_sourcemap::{collapse_sourcemap_chain, CollapseSourcemapOptions};
-use farmfe_core::module::{ModuleId, ModuleType};
+use farmfe_core::enhanced_magic_string::collapse_sourcemap::{
+  collapse_sourcemap_chain, CollapseSourcemapOptions,
+};
+use farmfe_core::module::CustomModuleMetaData;
+use farmfe_core::module::{ModuleId, ModuleMetaData, ModuleType};
 use farmfe_core::plugin::{PluginLoadHookResult, PluginTransformHookResult};
 use farmfe_core::{
   config::Config, context::CompilationContext, deserialize, parking_lot::Mutex, plugin::Plugin,
@@ -17,12 +20,15 @@ use farmfe_toolkit::script::module_type_from_id;
 use farmfe_utils::{relative, stringify_query};
 use lightningcss::css_modules::{CssModuleExports, CssModuleReference};
 use lightningcss::stylesheet::{ParserOptions, StyleSheet};
-use rkyv::Deserialize;
+use rkyv::{Deserialize, Archive};
 mod parse;
 use lightningcss::bundler::{Bundler, FileProvider};
 use std::path::Path;
 pub const FARM_CSS_MODULES: &str = "farm_lightning_css_modules";
+use downcast_rs::{impl_downcast, Downcast};
 use farmfe_toolkit::sourcemap::SourceMap;
+use lightningcss::traits::IntoOwned;
+use std::any::Any;
 use std::collections::HashMap;
 
 lazy_static! {
@@ -42,6 +48,11 @@ fn is_farm_css_modules_type(module_type: &ModuleType) -> bool {
   false
 }
 
+#[cache_item]
+struct LightingCssModuleMetaData {
+  pub ast: StyleSheet<'static, 'static>,
+}
+
 fn flatten_exports(exports: &CssModuleExports) -> HashMap<String, String> {
   let mut res = HashMap::new();
   for (name, export) in exports {
@@ -59,6 +70,16 @@ fn flatten_exports(exports: &CssModuleExports) -> HashMap<String, String> {
   res
 }
 
+fn to_static(
+  stylesheet: StyleSheet,
+  options: ParserOptions<'static, 'static>,
+) -> StyleSheet<'static, 'static> {
+  let sources = stylesheet.sources.clone();
+  let rules = stylesheet.rules.clone().into_owned();
+
+  StyleSheet::new(sources, rules, options)
+}
+
 #[cache_item]
 struct LightningCssModulesCache {
   content_map: HashMap<String, String>,
@@ -70,6 +91,7 @@ pub struct FarmPluginLightningCss {
   content_map: Mutex<HashMap<String, String>>,
   sourcemap_map: Mutex<HashMap<String, String>>,
   locals_conversion: NameConversion,
+  ast_map: Mutex<HashMap<String, StyleSheet<'static, 'static>>>,
 }
 
 impl Plugin for FarmPluginLightningCss {
@@ -164,6 +186,8 @@ impl Plugin for FarmPluginLightningCss {
       let css_modules_module_id =
         ModuleId::new(param.resolved_path, &query_string, &context.config.root);
 
+      let cache_id = css_modules_module_id.to_string();
+
       let dynamic_import_of_composes: HashMap<String, String> = HashMap::default();
 
       let fs = FileProvider::new();
@@ -177,6 +201,8 @@ impl Plugin for FarmPluginLightningCss {
 
       let ast = bundler.bundle(Path::new(&param.resolved_path)).unwrap();
       let stylesheet = ast.to_css(Default::default()).unwrap();
+      let long_ast = to_static(ast, Default::default());
+      self.ast_map.lock().insert(cache_id, long_ast);
 
       let mut export_names = HashMap::new();
 
@@ -243,6 +269,260 @@ impl Plugin for FarmPluginLightningCss {
 
     Ok(None)
   }
+
+  fn parse(
+    &self,
+    param: &farmfe_core::plugin::PluginParseHookParam,
+    _context: &Arc<CompilationContext>,
+    _hook_context: &farmfe_core::plugin::PluginHookContext,
+  ) -> farmfe_core::error::Result<Option<farmfe_core::module::ModuleMetaData>> {
+    if matches!(param.module_type, ModuleType::Css) {
+      let stylesheet = if is_farm_css_modules(&param.module_id.to_string()) {
+        self
+          .ast_map
+          .lock()
+          .remove(&param.module_id.to_string())
+          .unwrap_or_else(|| panic!("ast not found {:?}", param.module_id.to_string()))
+      } else {
+        let fs = FileProvider::new();
+        let mut bundler = Bundler::new(
+          &fs,
+          None,
+          ParserOptions {
+            ..Default::default()
+          },
+        );
+
+        let ast = bundler.bundle(Path::new(&param.resolved_path)).unwrap();
+        let stylesheet = ast.to_css(Default::default()).unwrap();
+        stylesheet
+      };
+
+      let meta = ModuleMetaData::Custom(Box::new(LightingCssModuleMetaData { ast: stylesheet }));
+      return Ok(Some(meta));
+    } else {
+      Ok(None)
+    }
+  }
+  fn config(&self, _config: &mut Config) -> farmfe_core::error::Result<Option<()>> {
+    Ok(None)
+  }
+  fn build_start(
+    &self,
+    _context: &Arc<CompilationContext>,
+  ) -> farmfe_core::error::Result<Option<()>> {
+    Ok(None)
+  }
+  fn resolve(
+    &self,
+    _param: &farmfe_core::plugin::PluginResolveHookParam,
+    _context: &Arc<CompilationContext>,
+    _hook_context: &farmfe_core::plugin::PluginHookContext,
+  ) -> farmfe_core::error::Result<Option<farmfe_core::plugin::PluginResolveHookResult>> {
+    Ok(None)
+  }
+
+  fn process_module(
+    &self,
+    _param: &mut farmfe_core::plugin::PluginProcessModuleHookParam,
+    _context: &Arc<CompilationContext>,
+  ) -> farmfe_core::error::Result<Option<()>> {
+    Ok(None)
+  }
+
+  fn analyze_deps(
+    &self,
+    _param: &mut farmfe_core::plugin::PluginAnalyzeDepsHookParam,
+    _context: &Arc<CompilationContext>,
+  ) -> farmfe_core::error::Result<Option<()>> {
+    Ok(None)
+  }
+
+  fn finalize_module(
+    &self,
+    _param: &mut farmfe_core::plugin::PluginFinalizeModuleHookParam,
+    _context: &Arc<CompilationContext>,
+  ) -> farmfe_core::error::Result<Option<()>> {
+    Ok(None)
+  }
+
+  fn build_end(
+    &self,
+    _context: &Arc<CompilationContext>,
+  ) -> farmfe_core::error::Result<Option<()>> {
+    Ok(None)
+  }
+
+  fn generate_start(
+    &self,
+    _context: &Arc<CompilationContext>,
+  ) -> farmfe_core::error::Result<Option<()>> {
+    Ok(None)
+  }
+
+  fn optimize_module_graph(
+    &self,
+    _module_graph: &mut farmfe_core::module::module_graph::ModuleGraph,
+    _context: &Arc<CompilationContext>,
+  ) -> farmfe_core::error::Result<Option<()>> {
+    Ok(None)
+  }
+
+  fn analyze_module_graph(
+    &self,
+    _module_graph: &mut farmfe_core::module::module_graph::ModuleGraph,
+    _context: &Arc<CompilationContext>,
+    _hook_context: &farmfe_core::plugin::PluginHookContext,
+  ) -> farmfe_core::error::Result<Option<farmfe_core::module::module_group::ModuleGroupGraph>> {
+    Ok(None)
+  }
+
+  fn partial_bundling(
+    &self,
+    _modules: &Vec<ModuleId>,
+    _context: &Arc<CompilationContext>,
+    _hook_context: &farmfe_core::plugin::PluginHookContext,
+  ) -> farmfe_core::error::Result<Option<Vec<farmfe_core::resource::resource_pot::ResourcePot>>> {
+    Ok(None)
+  }
+
+  fn process_resource_pots(
+    &self,
+    _resource_pots: &mut Vec<&mut farmfe_core::resource::resource_pot::ResourcePot>,
+    _context: &Arc<CompilationContext>,
+  ) -> farmfe_core::error::Result<Option<()>> {
+    Ok(None)
+  }
+
+  fn render_start(
+    &self,
+    _config: &Config,
+    _context: &Arc<CompilationContext>,
+  ) -> farmfe_core::error::Result<Option<()>> {
+    Ok(None)
+  }
+
+  fn render_resource_pot_modules(
+    &self,
+    _resource_pot: &farmfe_core::resource::resource_pot::ResourcePot,
+    _context: &Arc<CompilationContext>,
+    _hook_context: &farmfe_core::plugin::PluginHookContext,
+  ) -> farmfe_core::error::Result<Option<farmfe_core::resource::resource_pot::ResourcePotMetaData>>
+  {
+    Ok(None)
+  }
+
+  fn render_resource_pot(
+    &self,
+    _resource_pot: &farmfe_core::plugin::PluginRenderResourcePotHookParam,
+    _context: &Arc<CompilationContext>,
+  ) -> farmfe_core::error::Result<Option<farmfe_core::plugin::PluginRenderResourcePotHookResult>>
+  {
+    Ok(None)
+  }
+
+  fn augment_resource_hash(
+    &self,
+    _render_pot_info: &farmfe_core::resource::resource_pot::ResourcePotInfo,
+    _context: &Arc<CompilationContext>,
+  ) -> farmfe_core::error::Result<Option<String>> {
+    Ok(None)
+  }
+
+  fn optimize_resource_pot(
+    &self,
+    _resource: &mut farmfe_core::resource::resource_pot::ResourcePot,
+    _context: &Arc<CompilationContext>,
+  ) -> farmfe_core::error::Result<Option<()>> {
+    Ok(None)
+  }
+
+  fn generate_resources(
+    &self,
+    _resource_pot: &mut farmfe_core::resource::resource_pot::ResourcePot,
+    _context: &Arc<CompilationContext>,
+    _hook_context: &farmfe_core::plugin::PluginHookContext,
+  ) -> farmfe_core::error::Result<Option<farmfe_core::plugin::PluginGenerateResourcesHookResult>>
+  {
+    Ok(None)
+  }
+
+  fn process_generated_resources(
+    &self,
+    _resources: &mut farmfe_core::plugin::PluginGenerateResourcesHookResult,
+    _context: &Arc<CompilationContext>,
+  ) -> farmfe_core::error::Result<Option<()>> {
+    Ok(None)
+  }
+
+  fn handle_entry_resource(
+    &self,
+    _resource: &mut farmfe_core::plugin::PluginHandleEntryResourceHookParams,
+    _context: &Arc<CompilationContext>,
+  ) -> farmfe_core::error::Result<Option<()>> {
+    Ok(None)
+  }
+
+  fn finalize_resources(
+    &self,
+    _param: &mut farmfe_core::plugin::PluginFinalizeResourcesHookParams,
+    _context: &Arc<CompilationContext>,
+  ) -> farmfe_core::error::Result<Option<()>> {
+    Ok(None)
+  }
+
+  fn generate_end(
+    &self,
+    _context: &Arc<CompilationContext>,
+  ) -> farmfe_core::error::Result<Option<()>> {
+    Ok(None)
+  }
+
+  fn finish(
+    &self,
+    _stat: &farmfe_core::stats::Stats,
+    _context: &Arc<CompilationContext>,
+  ) -> farmfe_core::error::Result<Option<()>> {
+    Ok(None)
+  }
+
+  fn update_modules(
+    &self,
+    _params: &mut farmfe_core::plugin::PluginUpdateModulesHookParams,
+    _context: &Arc<CompilationContext>,
+  ) -> farmfe_core::error::Result<Option<()>> {
+    Ok(None)
+  }
+
+  fn module_graph_updated(
+    &self,
+    _param: &farmfe_core::plugin::PluginModuleGraphUpdatedHookParams,
+    _context: &Arc<CompilationContext>,
+  ) -> farmfe_core::error::Result<Option<()>> {
+    Ok(None)
+  }
+
+  fn update_finished(
+    &self,
+    _context: &Arc<CompilationContext>,
+  ) -> farmfe_core::error::Result<Option<()>> {
+    Ok(None)
+  }
+
+  fn handle_persistent_cached_module(
+    &self,
+    _module: &farmfe_core::module::Module,
+    _context: &Arc<CompilationContext>,
+  ) -> farmfe_core::error::Result<Option<bool>> {
+    Ok(None)
+  }
+
+  fn write_plugin_cache(
+    &self,
+    _context: &Arc<CompilationContext>,
+  ) -> farmfe_core::error::Result<Option<Vec<u8>>> {
+    Ok(None)
+  }
 }
 
 impl FarmPluginLightningCss {
@@ -263,6 +543,7 @@ impl FarmPluginLightningCss {
       content_map: Mutex::new(Default::default()),
       sourcemap_map: Mutex::new(Default::default()),
       locals_conversion: get_config_css_modules_local_conversion(config),
+      ast_map: Mutex::new(Default::default()),
     }
   }
 
