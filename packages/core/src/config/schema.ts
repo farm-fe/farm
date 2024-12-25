@@ -171,7 +171,6 @@ const serverSchema = z
     appType: z.enum(['spa', 'mpa', 'custom']).optional(),
     proxy: proxySchema,
     strictPort: z.boolean().optional(),
-    origin: z.string().optional(),
     hmr: z
       .union([
         z.boolean(),
@@ -189,6 +188,7 @@ const serverSchema = z
     middlewares: z.array(z.any()).optional(),
     middlewareMode: z.boolean().optional(),
     writeToDisk: z.boolean().optional(),
+    origin: z.string().optional(),
     preview: previewServerSchema.optional()
   })
   .strict();
