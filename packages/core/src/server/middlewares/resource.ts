@@ -26,7 +26,7 @@ export function resourceMiddleware(app: Server): Connect.NextHandleFunction {
       return next();
     }
     const url = cleanUrl(req.url);
-    const { compiler, resolvedUserConfig: config, publicPath } = app;
+    const { compiler, config, publicPath } = app;
 
     if (compiler._isInitialCompile) {
       await compiler.waitForInitialCompileFinish();

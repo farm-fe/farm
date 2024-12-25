@@ -23,12 +23,12 @@ import sirv, { Options } from 'sirv';
 import type { Server } from '../index.js';
 
 export function staticMiddleware(app: Server): Connect.NextHandleFunction {
-  const { resolvedUserConfig, compiler } = app;
+  const { config, compiler } = app;
   const root = compiler.config.root;
   const serve = sirv(
     root,
     sirvOptions({
-      getHeaders: () => resolvedUserConfig.server.headers
+      getHeaders: () => config.server.headers
     })
   );
   return function handleStaticMiddleware(req, res, next) {
@@ -61,7 +61,7 @@ export function staticMiddleware(app: Server): Connect.NextHandleFunction {
 }
 
 export function publicMiddleware(app: Server): Connect.NextHandleFunction {
-  const { resolvedUserConfig: config, publicDir, publicFiles } = app;
+  const { config: config, publicDir, publicFiles } = app;
   const serve = sirv(
     publicDir,
     sirvOptions({

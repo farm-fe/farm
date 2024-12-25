@@ -25,7 +25,7 @@ export function htmlFallbackMiddleware(
     }
     const url = cleanUrl(req.url);
     const pathname = removeSlash(decodeURIComponent(url));
-    const headers = app.resolvedUserConfig.server.headers;
+    const headers = app.config.server.headers;
 
     if (pathname.endsWith('.html')) {
       const html = app.compiler.resource(pathname);
