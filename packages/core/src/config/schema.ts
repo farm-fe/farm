@@ -189,6 +189,7 @@ const serverSchema = z
     middlewares: z.array(z.any()).optional(),
     middlewareMode: z.boolean().optional(),
     writeToDisk: z.boolean().optional(),
+    origin: z.string().optional(),
     preview: previewServerSchema.optional()
   })
   .strict();
