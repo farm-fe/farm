@@ -11,7 +11,7 @@ export default defineConfig({
     persistentCache: false,
   },
   server: {
-    origin: "http://localhost:5425"
+    origin: "http://localhost:9000"
   }
 });
 
