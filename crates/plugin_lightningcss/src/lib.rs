@@ -8,6 +8,8 @@ use farmfe_core::enhanced_magic_string::collapse_sourcemap::{
 use farmfe_core::module::CustomModuleMetaData;
 use farmfe_core::module::{ModuleId, ModuleMetaData, ModuleType};
 use farmfe_core::plugin::{PluginLoadHookResult, PluginTransformHookResult};
+use farmfe_core::serde::Serialize;
+use farmfe_core::serde_json;
 use farmfe_core::{
   config::Config, context::CompilationContext, deserialize, parking_lot::Mutex, plugin::Plugin,
 };
@@ -20,16 +22,25 @@ use farmfe_toolkit::script::module_type_from_id;
 use farmfe_utils::{relative, stringify_query};
 use lightningcss::css_modules::{CssModuleExports, CssModuleReference};
 use lightningcss::stylesheet::{ParserOptions, StyleSheet};
-use rkyv::{Deserialize, Archive};
+use rkyv::{Archive, Deserialize};
 mod parse;
 use lightningcss::bundler::{Bundler, FileProvider};
 use std::path::Path;
 pub const FARM_CSS_MODULES: &str = "farm_lightning_css_modules";
-use downcast_rs::{impl_downcast, Downcast};
 use farmfe_toolkit::sourcemap::SourceMap;
 use lightningcss::traits::IntoOwned;
-use std::any::Any;
+use rkyv_dyn::archive_dyn;
 use std::collections::HashMap;
+
+fn to_static(
+  stylesheet: StyleSheet,
+  options: ParserOptions<'static, 'static>,
+) -> StyleSheet<'static, 'static> {
+  let sources = stylesheet.sources.clone();
+  let rules = stylesheet.rules.clone().into_owned();
+
+  StyleSheet::new(sources, rules, options)
+}
 
 lazy_static! {
   pub static ref FARM_CSS_MODULES_SUFFIX: Regex =
@@ -50,7 +61,15 @@ fn is_farm_css_modules_type(module_type: &ModuleType) -> bool {
 
 #[cache_item]
 struct LightingCssModuleMetaData {
-  pub ast: StyleSheet<'static, 'static>,
+  pub ast: String,
+}
+
+impl Clone for LightingCssModuleMetaData {
+  fn clone(&self) -> Self {
+    Self {
+      ast: self.ast.clone(),
+    }
+  }
 }
 
 fn flatten_exports(exports: &CssModuleExports) -> HashMap<String, String> {
@@ -70,16 +89,6 @@ fn flatten_exports(exports: &CssModuleExports) -> HashMap<String, String> {
   res
 }
 
-fn to_static(
-  stylesheet: StyleSheet,
-  options: ParserOptions<'static, 'static>,
-) -> StyleSheet<'static, 'static> {
-  let sources = stylesheet.sources.clone();
-  let rules = stylesheet.rules.clone().into_owned();
-
-  StyleSheet::new(sources, rules, options)
-}
-
 #[cache_item]
 struct LightningCssModulesCache {
   content_map: HashMap<String, String>,
@@ -91,7 +100,7 @@ pub struct FarmPluginLightningCss {
   content_map: Mutex<HashMap<String, String>>,
   sourcemap_map: Mutex<HashMap<String, String>>,
   locals_conversion: NameConversion,
-  ast_map: Mutex<HashMap<String, StyleSheet<'static, 'static>>>,
+  ast_map: Mutex<HashMap<String, String>>,
 }
 
 impl Plugin for FarmPluginLightningCss {
@@ -201,8 +210,7 @@ impl Plugin for FarmPluginLightningCss {
 
       let ast = bundler.bundle(Path::new(&param.resolved_path)).unwrap();
       let stylesheet = ast.to_css(Default::default()).unwrap();
-      let long_ast = to_static(ast, Default::default());
-      self.ast_map.lock().insert(cache_id, long_ast);
+      self.ast_map.lock().insert(cache_id, serde_json::to_string(&ast).unwrap());
 
       let mut export_names = HashMap::new();
 
@@ -278,11 +286,14 @@ impl Plugin for FarmPluginLightningCss {
   ) -> farmfe_core::error::Result<Option<farmfe_core::module::ModuleMetaData>> {
     if matches!(param.module_type, ModuleType::Css) {
       let stylesheet = if is_farm_css_modules(&param.module_id.to_string()) {
-        self
+        let cached_ast_str = self
           .ast_map
           .lock()
           .remove(&param.module_id.to_string())
-          .unwrap_or_else(|| panic!("ast not found {:?}", param.module_id.to_string()))
+          .unwrap_or_else(|| panic!("ast not found {:?}", param.module_id.to_string()));
+
+        let ast: StyleSheet = serde_json::from_str(&cached_ast_str).unwrap();
+        ast
       } else {
         let fs = FileProvider::new();
         let mut bundler = Bundler::new(
@@ -294,11 +305,12 @@ impl Plugin for FarmPluginLightningCss {
         );
 
         let ast = bundler.bundle(Path::new(&param.resolved_path)).unwrap();
-        let stylesheet = ast.to_css(Default::default()).unwrap();
-        stylesheet
+        ast
       };
 
-      let meta = ModuleMetaData::Custom(Box::new(LightingCssModuleMetaData { ast: stylesheet }));
+      let ast_str = serde_json::to_string(&stylesheet).unwrap();
+
+      let meta = ModuleMetaData::Custom(Box::new(LightingCssModuleMetaData { ast: ast_str }) as _);
       return Ok(Some(meta));
     } else {
       Ok(None)
