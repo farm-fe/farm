@@ -91,6 +91,10 @@ export interface ServerOptions extends CommonServerOptions {
         server: http.Server;
       };
   appType?: 'spa' | 'mpa' | 'custom';
+  /**
+   * Origin for the generated asset URLs.
+   */
+  origin?: string;
 }
 
 type ServerConfig = CommonServerOptions & NormalizedServerConfig;
@@ -118,7 +122,7 @@ export class Server extends httpServer {
   middlewares: connect.Server;
   compiler: CompilerType;
   root: string;
-  resolvedUserConfig: ResolvedUserConfig;
+  config: ResolvedUserConfig;
   closeHttpServerFn: () => Promise<void>;
   terminateServerFn: (_: unknown, exitCode?: number) => Promise<void>;
   postConfigureServerHooks: ((() => void) | void)[] = [];
@@ -151,21 +155,21 @@ export class Server extends httpServer {
    */
   async createServer(): Promise<void> {
     try {
-      this.resolvedUserConfig = await resolveConfig(
+      this.config = await resolveConfig(
         this.inlineConfig,
         'start',
         'development',
         'development'
       );
 
-      this.logger = this.resolvedUserConfig.logger;
+      this.logger = this.config.logger;
 
       this.#resolveOptions();
 
-      this.compiler = createCompiler(this.resolvedUserConfig);
+      this.compiler = createCompiler(this.config);
 
       for (const hook of getPluginHooks(
-        this.resolvedUserConfig.jsPlugins,
+        this.config.jsPlugins,
         'configureCompiler'
       )) {
         await hook?.(this.compiler);
@@ -240,15 +244,15 @@ export class Server extends httpServer {
    * create watcher
    */
   async #createWatcher() {
-    this.watcher = new Watcher(this.resolvedUserConfig);
+    this.watcher = new Watcher(this.config);
 
     await this.watcher.createWatcher();
 
-    this.watcher.watcher.on('add', async (file: string) => {
+    this.watcher.on('add', async (file: string) => {
       // TODO pluginContainer hooks
     });
 
-    this.watcher.watcher.on('unlink', async (file: string) => {
+    this.watcher.on('unlink', async (file: string) => {
       const parentFiles = this.compiler.getParentFiles(file);
       const normalizeParentFiles = parentFiles.map((file) =>
         normalizePath(file)
@@ -256,17 +260,14 @@ export class Server extends httpServer {
       this.hmrEngine.hmrUpdate(normalizeParentFiles, true);
     });
 
-    this.watcher.watcher.on('change', async (file: string) => {
+    this.watcher.on('change', async (file: string) => {
       file = normalizePath(file);
-      const shortFile = getShortName(file, this.resolvedUserConfig.root);
-      const isConfigFile = this.resolvedUserConfig.configFilePath === file;
-      const isConfigDependencyFile =
-        this.resolvedUserConfig.configFileDependencies.some(
-          (name) => file === name
-        );
-      const isEnvFile = this.resolvedUserConfig.envFiles.some(
+      const shortFile = getShortName(file, this.config.root);
+      const isConfigFile = this.config.configFilePath === file;
+      const isConfigDependencyFile = this.config.configFileDependencies.some(
         (name) => file === name
       );
+      const isEnvFile = this.config.envFiles.some((name) => file === name);
       if (isConfigFile || isConfigDependencyFile || isEnvFile) {
         __FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__ = true;
         this.logger.info(
@@ -277,13 +278,13 @@ export class Server extends httpServer {
         try {
           await this.restartServer();
         } catch (e) {
-          this.resolvedUserConfig.logger.error(`restart server error ${e}`);
+          this.config.logger.error(`restart server error ${e}`);
         }
       }
       try {
         this.hmrEngine.hmrUpdate(file);
       } catch (error) {
-        this.resolvedUserConfig.logger.error(`Farm Hmr Update Error: ${error}`);
+        this.config.logger.error(`Farm Hmr Update Error: ${error}`);
       }
     });
     const handleUpdateFinish = (updateResult: JsUpdateResult) => {
@@ -302,7 +303,7 @@ export class Server extends httpServer {
       );
 
       if (filteredAdded.length > 0) {
-        this.watcher.watcher.add(filteredAdded);
+        this.watcher.add(filteredAdded);
       }
     };
 
@@ -421,13 +422,9 @@ export class Server extends httpServer {
         host: hostname.host
       });
 
-      this.resolvedUserConfig.compilation.define.FARM_HMR_PORT =
-        serverPort.toString();
+      this.config.compilation.define.FARM_HMR_PORT = serverPort.toString();
 
-      this.resolvedUrls = await resolveServerUrls(
-        this.httpServer,
-        this.resolvedUserConfig
-      );
+      this.resolvedUrls = await resolveServerUrls(this.httpServer, this.config);
       // compile the project and start the dev server
       await this.#startCompile();
 
@@ -438,7 +435,7 @@ export class Server extends httpServer {
         this.#openServerBrowser();
       }
     } catch (error) {
-      this.resolvedUserConfig.logger.error(
+      this.config.logger.error(
         `Start DevServer Error: ${error} \n ${error.stack}`
       );
       // throw error;
@@ -482,7 +479,7 @@ export class Server extends httpServer {
         return true;
       }
     });
-    const { jsPlugins } = this.resolvedUserConfig;
+    const { jsPlugins } = this.config;
 
     for (const hook of getSortedPluginHooksBindThis(
       jsPlugins,
@@ -508,10 +505,17 @@ export class Server extends httpServer {
       },
       root,
       server
-    } = this.resolvedUserConfig;
+    } = this.config;
     this.publicPath = publicPath;
     this.publicDir = publicDir;
-
+    if (server.origin?.endsWith('/')) {
+      server.origin = server.origin.slice(0, -1);
+      this.config.logger.warn(
+        `${colors.bold('(!)')} server.origin should not end with "/". Using "${
+          server.origin
+        }" instead.`
+      );
+    }
     this.serverOptions = server as CommonServerOptions & NormalizedServerConfig;
     this.root = root;
   }
@@ -552,7 +556,7 @@ export class Server extends httpServer {
       this.middlewares.use(publicMiddleware(this));
     }
 
-    if (this.resolvedUserConfig.compilation.lazyCompilation) {
+    if (this.config.compilation.lazyCompilation) {
       this.middlewares.use(lazyCompilationMiddleware(this));
     }
 
@@ -579,11 +583,11 @@ export class Server extends httpServer {
   async #compile(): Promise<void> {
     try {
       await this.compiler.compile();
-      await (this.resolvedUserConfig.server.writeToDisk
+      await (this.config.server.writeToDisk
         ? this.compiler.writeResourcesToDisk()
         : this.compiler.callWriteResourcesHook());
     } catch (err) {
-      this.resolvedUserConfig.logger.error(
+      this.config.logger.error(
         `Compilation failed: ${convertErrorMessage(err)}`
       );
       // throw err;
@@ -623,7 +627,7 @@ export class Server extends httpServer {
    * @returns {Promise<Set<string>>} A promise that resolves to a set of public file paths.
    */
   async #handlePublicFiles(): Promise<Set<string>> {
-    const initPublicFilesPromise = initPublicFiles(this.resolvedUserConfig);
+    const initPublicFilesPromise = initPublicFiles(this.config);
     return await initPublicFilesPromise;
   }
 
@@ -637,9 +641,7 @@ export class Server extends httpServer {
 
     this.ws.wss.on('vite:invalidate', ({ path, message }: any) => {
       // find hmr boundary starting from the parent of the file
-      this.resolvedUserConfig.logger.info(
-        `HMR invalidate: ${path}. ${message ?? ''} `
-      );
+      this.config.logger.info(`HMR invalidate: ${path}. ${message ?? ''} `);
       const parentFiles = this.compiler.getParentFiles(path);
       const normalizeParentFiles = parentFiles.map((file) =>
         normalizePath(file)
@@ -699,7 +701,7 @@ export class Server extends httpServer {
     }
 
     await Promise.allSettled([
-      this.watcher.watcher.close(),
+      this.watcher.close(),
       this.ws.wss.close(),
       this.closeHttpServerFn()
     ]);
@@ -714,7 +716,7 @@ export class Server extends httpServer {
       printServerUrls(
         this.resolvedUrls,
         this.serverOptions.host,
-        this.resolvedUserConfig.logger
+        this.config.logger
       );
     } else if (this.serverOptions.middlewareMode) {
       throw new Error('cannot print server URLs in middleware mode.');

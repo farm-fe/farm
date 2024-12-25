@@ -18,6 +18,7 @@ export default defineConfig({
     resolve: {
       dedupe: ["tailwindcss"],
     },
+    persistentCache: false,
   },
   server: {
     hmr: true,

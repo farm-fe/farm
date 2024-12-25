@@ -119,7 +119,6 @@ const previewServerSchema = z
     distDir: z.string().optional(),
     open: z.boolean().optional(),
     proxy: proxySchema,
-    // TODO: CORS types
     cors: z.union([z.boolean(), z.any()]).optional()
   })
   .strict();
@@ -189,6 +188,7 @@ const serverSchema = z
     middlewares: z.array(z.any()).optional(),
     middlewareMode: z.boolean().optional(),
     writeToDisk: z.boolean().optional(),
+    origin: z.string().optional(),
     preview: previewServerSchema.optional()
   })
   .strict();

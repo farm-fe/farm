@@ -50,7 +50,7 @@ export interface PreviewServerOptions extends CommonServerOptions {
  * @class
  */
 export class PreviewServer extends httpServer {
-  resolvedUserConfig: ResolvedUserConfig;
+  config: ResolvedUserConfig;
   previewServerOptions: PreviewServerOptions;
   httpsOptions: SecureServerOptions;
 
@@ -77,7 +77,7 @@ export class PreviewServer extends httpServer {
    * @throws {Error} If the server cannot be started.
    */
   async createPreviewServer(): Promise<void> {
-    this.resolvedUserConfig = await resolveConfig(
+    this.config = await resolveConfig(
       this.inlineConfig,
       'preview',
       'production',
@@ -85,7 +85,7 @@ export class PreviewServer extends httpServer {
       true
     );
 
-    this.logger = this.resolvedUserConfig.logger;
+    this.logger = this.config.logger;
 
     await this.#resolveOptions();
 
@@ -115,7 +115,7 @@ export class PreviewServer extends httpServer {
    */
   #initializeMiddlewares() {
     const { cors, proxy } = this.previewServerOptions;
-    const { appType, middlewareMode } = this.resolvedUserConfig.server;
+    const { appType, middlewareMode } = this.config.server;
 
     if (cors !== false) {
       this.app.use(corsMiddleware(typeof cors === 'boolean' ? {} : cors));
@@ -154,7 +154,7 @@ export class PreviewServer extends httpServer {
     const {
       server,
       compilation: { root, output }
-    } = this.resolvedUserConfig;
+    } = this.config;
 
     this.publicPath = output.publicPath ?? '/';
     const preview = server?.preview;
@@ -174,7 +174,7 @@ export class PreviewServer extends httpServer {
     this.serve = sirv(distDir, {
       etag: true,
       dev: true,
-      single: this.resolvedUserConfig.server.appType === 'spa',
+      single: this.config.server.appType === 'spa',
       ignores: false,
       setHeaders: (res, pathname) => {
         if (knownJavascriptExtensionRE.test(pathname)) {
@@ -224,13 +224,13 @@ export class PreviewServer extends httpServer {
 
       this.resolvedUrls = await resolveServerUrls(
         this.httpServer,
-        this.resolvedUserConfig,
+        this.config,
         'preview'
       );
 
       const shortFile = getShortName(
-        this.resolvedUserConfig.configFilePath,
-        this.resolvedUserConfig.root
+        this.config.configFilePath,
+        this.config.root
       );
       this.logger.info(`Using config file at ${bold(green(shortFile))}`);
 

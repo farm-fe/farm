@@ -2372,6 +2372,9 @@ importers:
       unplugin-auto-import:
         specifier: ^0.16.7
         version: 0.16.7(@vueuse/core@9.13.0(vue@3.4.35(typescript@5.6.3)))(rollup@4.14.1)
+      unplugin-vue:
+        specifier: /Users/adny/typescript/unplugin-vue
+        version: link:../../../../typescript/unplugin-vue
       unplugin-vue-router:
         specifier: ^0.7.0
         version: 0.7.0(rollup@4.14.1)(vue-router@4.4.5(vue@3.4.35(typescript@5.6.3)))(vue@3.4.35(typescript@5.6.3))
@@ -21039,7 +21042,7 @@ snapshots:
     dependencies:
       '@antv/util': 2.0.17
       gl-matrix: 3.4.3
-      tslib: 2.6.3
+      tslib: 2.8.1
 
   '@antv/matrix-util@3.1.0-beta.3':
     dependencies:
@@ -39268,7 +39271,7 @@ snapshots:
   no-case@3.0.4:
     dependencies:
       lower-case: 2.0.2
-      tslib: 2.6.3
+      tslib: 2.8.1
 
   node-abi@3.62.0:
     dependencies:
@@ -39695,7 +39698,7 @@ snapshots:
   pascal-case@3.1.2:
     dependencies:
       no-case: 3.0.4
-      tslib: 2.6.3
+      tslib: 2.8.1
 
   pascalcase@0.1.1: {}
 
