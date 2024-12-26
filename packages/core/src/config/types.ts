@@ -294,5 +294,6 @@ export interface ModuleContext {
   timestamp: number;
   type: string;
   modules: ModuleNode[];
+  paths: string[];
   read: (file: string) => string | Promise<string>;
 }

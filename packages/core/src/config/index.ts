@@ -1134,6 +1134,7 @@ function wrapPluginUpdateModules(plugin: JsPlugin): JsPlugin {
         file: filename,
         timestamp: Date.now(),
         type,
+        paths,
         modules: (mods ?? []).map(
           (m) =>
             ({
