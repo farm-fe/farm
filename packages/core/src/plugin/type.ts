@@ -1,4 +1,10 @@
-import { Compiler, ResolvedUserConfig, Server, UserConfig } from '../index.js';
+import {
+  Compiler,
+  ModuleContext,
+  ResolvedUserConfig,
+  Server,
+  UserConfig
+} from '../index.js';
 
 import {
   Config,
@@ -249,10 +255,7 @@ export interface JsPlugin {
   updateFinished?: { executor: Callback<Record<string, never>, void> };
 
   updateModules?: {
-    executor: Callback<
-      { paths: [string, string][] },
-      string[] | undefined | null | void
-    >;
+    executor: Callback<ModuleContext, string[] | undefined | null | void>;
   };
 }
 
