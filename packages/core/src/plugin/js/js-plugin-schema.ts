@@ -14,6 +14,18 @@ const CallbackSchemaNotArgs = z
   .function()
   .returns(z.union([z.void(), z.promise(z.void())]));
 
+const updateModulesCallbackSchema = z
+  .function()
+  .returns(
+    z.union([
+      z.array(z.any()),
+      z.promise(z.array(z.any())),
+      z.void(),
+      z.promise(z.void())
+    ])
+  )
+  .optional();
+
 // name schema
 export const nameSchema = z.string().min(1);
 
@@ -469,7 +481,7 @@ export const createUpdateFinishedSchema = (name: string) => {
 export const createUpdateModulesSchema = (name: string) => {
   return z
     .object({
-      executor: CallbackSchemaNotArgs
+      executor: updateModulesCallbackSchema
     })
     .refine(
       (data) => {

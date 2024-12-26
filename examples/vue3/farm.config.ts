@@ -31,11 +31,6 @@ function base() {
           };
         },
       },
-      // updateModules: {
-      //   executor(ctx) {
-      //     console.log(ctx);
-      //   }
-      // }
   };
 }
 

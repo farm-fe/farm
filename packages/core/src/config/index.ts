@@ -62,6 +62,8 @@ import { normalizeExternal } from './normalize-config/normalize-external.js';
 import { normalizePartialBundling } from './normalize-config/normalize-partial-bundling.js';
 import { normalizeResolve } from './normalize-config/normalize-resolve.js';
 
+import { readFile } from 'node:fs/promises';
+import { ViteModuleGraphAdapter } from '../plugin/js/vite-server-adapter.js';
 import type {
   ConfigEnv,
   DefaultOptionsType,
@@ -1111,43 +1113,36 @@ function getNamespaceName(rootPath: string) {
   return FARM_DEFAULT_NAMESPACE;
 }
 
-interface ExtendedUpdateModulesResult {
-  originalResult: string[]; // 原始的返回值
-  additionalContext: {
-    timestamp: number;
-    moduleType: string;
-    meta: Record<string, any>;
-  };
-}
+function wrapPluginUpdateModules(plugin: JsPlugin): JsPlugin {
+  if (!plugin.updateModules?.executor) {
+    return plugin;
+  }
+  const originalExecutor = plugin.updateModules.executor;
+  const moduleGraph = new ViteModuleGraphAdapter(plugin.name);
 
-function wrapPluginUpdateModules(plugin: any) {
-  if (plugin.updateModules?.executor) {
-    const originalExecutor = plugin.updateModules.executor;
+  plugin.updateModules.executor = async (ctx: any) => {
+    for (const [file, _] of ctx.paths) {
+      // const mods = moduleGraph?.getModulesByFile(file) as unknown as any[] ?? [];
+      const mods: any = [];
 
-    plugin.updateModules.executor = async (ctx: any) => {
-      const enhancedCtx = {
-        ...ctx,
-        moduleInfo: {
-          oldModule: {
-            path: ctx.paths[0]?.[0] || ''
-            // content: await getFileContent(ctx.paths[0]?.[0]),
-            // type: getFileType(ctx.paths[0]?.[0])
-          },
-          newModule: {
-            path: ctx.paths[0]?.[1] || ''
-            // content: await getFileContent(ctx.paths[0]?.[1]),
-            // type: getFileType(ctx.paths[0]?.[1])
-          }
-        },
+      const filename = normalizePath(file);
+      const ctx: any = {
+        file: filename,
         timestamp: Date.now(),
-        meta: {
-          pluginName: plugin.name,
-          updateType: 'hmr'
+        modules: [
+          {
+            type: 'js',
+            url: '/Users/adny/rust/farm/examples/vue3/src/App.vue?vue&type=style&index=0&scoped=7a7a37b1&lang.css',
+            file: '/Users/adny/rust/farm/examples/vue3/src/App.vue',
+            id: '/Users/adny/rust/farm/examples/vue3/src/App.vue?vue&type=style&index=0&scoped=7a7a37b1&lang.css'
+          }
+        ],
+        read: function (): string | Promise<string> {
+          return readFile(file, 'utf-8');
         }
       };
-
-      return originalExecutor.call(plugin, enhancedCtx);
-    };
-  }
+      return originalExecutor.call(plugin, ctx);
+    }
+  };
   return plugin;
 }

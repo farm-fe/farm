@@ -624,6 +624,7 @@ export class VitePluginAdapter implements JsPlugin {
             const mods = moduleGraph.getModulesByFile(
               file
             ) as unknown as ModuleNode[];
+
             const filename = normalizePath(file);
             const ctx: HmrContext = {
               file: filename,
