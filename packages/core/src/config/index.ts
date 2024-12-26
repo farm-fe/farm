@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto';
 import fs from 'node:fs';
+import { readFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -45,6 +46,7 @@ import { normalizePersistentCache } from './normalize-config/normalize-persisten
 import { parseUserConfig } from './schema.js';
 
 import { externalAdapter } from '../plugin/js/external-adapter.js';
+import { ViteModuleGraphAdapter } from '../plugin/js/vite-server-adapter.js';
 import { convertErrorMessage } from '../utils/error.js';
 import { resolveHostname } from '../utils/http.js';
 import merge from '../utils/merge.js';
@@ -62,8 +64,6 @@ import { normalizeExternal } from './normalize-config/normalize-external.js';
 import { normalizePartialBundling } from './normalize-config/normalize-partial-bundling.js';
 import { normalizeResolve } from './normalize-config/normalize-resolve.js';
 
-import { readFile } from 'node:fs/promises';
-import { ViteModuleGraphAdapter } from '../plugin/js/vite-server-adapter.js';
 import type {
   ConfigEnv,
   DefaultOptionsType,

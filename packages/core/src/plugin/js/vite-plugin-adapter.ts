@@ -616,8 +616,6 @@ export class VitePluginAdapter implements JsPlugin {
             this._moduleGraph = moduleGraph;
           }
 
-          console.log(ctx);
-
           moduleGraph.context = ctx;
 
           const result = [];
