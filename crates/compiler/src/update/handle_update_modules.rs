@@ -203,7 +203,6 @@ fn resolve_watch_graph_paths(
     .into_iter()
     .flat_map(|(path, update_type)| {
       let id = ModuleId::new(&path, "", &context.config.root);
-
       if watch_graph.has_module(&id) {
         let r: Vec<(String, UpdateType)> = watch_graph
           .relation_roots(&id)
@@ -216,7 +215,7 @@ fn resolve_watch_graph_paths(
           })
           .collect();
 
-        if module_graph.has_module(&ModuleId::new(path.as_str(), "", &context.config.root)) {
+        if module_graph.has_module(&id) {
           return [r, vec![(path, update_type)]].concat();
         };
 
