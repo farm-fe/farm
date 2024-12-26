@@ -1,11 +1,12 @@
 import { defineConfig } from "@farmfe/core";
-import Vue from "unplugin-vue/farm";
+// import Vue from "unplugin-vue/farm";
 // import Vue from "unplugin-vue/vite";
+import Vue from "@vitejs/plugin-vue";
 import fs from 'fs'
 
 export default defineConfig({
-  plugins: [Vue(),base()],
-  // vitePlugins: [Vue()],
+  // plugins: [Vue(),base()],
+  vitePlugins: [Vue()],
   compilation: {
     progress:false,
     persistentCache: false,

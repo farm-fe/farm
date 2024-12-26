@@ -71,6 +71,8 @@ import type {
   FarmCliOptions,
   Format,
   HmrOptions,
+  ModuleContext,
+  ModuleNode,
   NormalizedServerConfig,
   ResolvedCompilation,
   ResolvedUserConfig,
@@ -1120,13 +1122,15 @@ function wrapPluginUpdateModules(plugin: JsPlugin): JsPlugin {
   const originalExecutor = plugin.updateModules.executor;
   const moduleGraph = new ViteModuleGraphAdapter(plugin.name);
 
-  plugin.updateModules.executor = async ({ paths }: any, ctx) => {
+  plugin.updateModules.executor = async ({ paths }, ctx) => {
     moduleGraph.context = ctx;
     for (const [file, type] of paths) {
-      const mods = moduleGraph.getModulesByFile(file) as unknown as any[];
+      const mods = moduleGraph.getModulesByFile(
+        file
+      ) as unknown as ModuleNode[];
 
       const filename = normalizePath(file);
-      const newContext: any = {
+      const moduleContext: ModuleContext = {
         file: filename,
         timestamp: Date.now(),
         type,
@@ -1136,13 +1140,13 @@ function wrapPluginUpdateModules(plugin: JsPlugin): JsPlugin {
               ...m,
               id: normalizePath(m.id),
               file: normalizePath(m.file)
-            }) as any
+            }) as ModuleNode
         ),
         read: function (): string | Promise<string> {
           return readFile(file, 'utf-8');
         }
       };
-      return originalExecutor.call(plugin, newContext);
+      return originalExecutor.call(plugin, moduleContext);
     }
   };
   return plugin;

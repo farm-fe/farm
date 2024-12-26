@@ -278,3 +278,21 @@ export type EnvResult = Record<
   `$__farm_regex:(global(This)?\\.)?process\\.env\\.${string}`,
   string
 >;
+
+export interface ModuleNode {
+  url: string;
+  /**
+   * Resolved file system path + query
+   */
+  id: string | null;
+  file: string | null;
+  type: 'js' | 'css';
+}
+
+export interface ModuleContext {
+  file: string;
+  timestamp: number;
+  type: string;
+  modules: ModuleNode[];
+  read: (file: string) => string | Promise<string>;
+}
