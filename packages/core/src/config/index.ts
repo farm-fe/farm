@@ -909,8 +909,9 @@ export async function resolvePlugins(
 ) {
   const { jsPlugins: rawJsPlugins, rustPlugins } =
     await resolveFarmPlugins(userConfig);
-  const jsPlugins = await resolveAndFilterAsyncPlugins(rawJsPlugins);
-
+  const jsPlugins = (await resolveAndFilterAsyncPlugins(rawJsPlugins)).map(
+    wrapPluginUpdateModules
+  );
   const vitePlugins = (userConfig?.vitePlugins ?? []).filter(Boolean);
 
   const vitePluginAdapters = vitePlugins.length
@@ -1108,4 +1109,45 @@ function getNamespaceName(rootPath: string) {
     return name || FARM_DEFAULT_NAMESPACE;
   }
   return FARM_DEFAULT_NAMESPACE;
+}
+
+interface ExtendedUpdateModulesResult {
+  originalResult: string[]; // 原始的返回值
+  additionalContext: {
+    timestamp: number;
+    moduleType: string;
+    meta: Record<string, any>;
+  };
+}
+
+function wrapPluginUpdateModules(plugin: any) {
+  if (plugin.updateModules?.executor) {
+    const originalExecutor = plugin.updateModules.executor;
+
+    plugin.updateModules.executor = async (ctx: any) => {
+      const enhancedCtx = {
+        ...ctx,
+        moduleInfo: {
+          oldModule: {
+            path: ctx.paths[0]?.[0] || ''
+            // content: await getFileContent(ctx.paths[0]?.[0]),
+            // type: getFileType(ctx.paths[0]?.[0])
+          },
+          newModule: {
+            path: ctx.paths[0]?.[1] || ''
+            // content: await getFileContent(ctx.paths[0]?.[1]),
+            // type: getFileType(ctx.paths[0]?.[1])
+          }
+        },
+        timestamp: Date.now(),
+        meta: {
+          pluginName: plugin.name,
+          updateType: 'hmr'
+        }
+      };
+
+      return originalExecutor.call(plugin, enhancedCtx);
+    };
+  }
+  return plugin;
 }

@@ -641,7 +641,6 @@ export class VitePluginAdapter implements JsPlugin {
               },
               server: this._viteDevServer as unknown as ViteDevServer
             };
-            console.log(ctx.modules);
 
             const updateMods: ModuleNode[] = await hook?.(ctx);
 
