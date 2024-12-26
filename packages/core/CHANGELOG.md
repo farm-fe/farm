@@ -1,5 +1,11 @@
 # @farmfe/core
 
+## 1.6.2
+
+### Patch Changes
+
+- 43e0ea06: do not clean up then watch graph monitoring module
+
 ## 1.6.1
 
 ### Patch Changes
