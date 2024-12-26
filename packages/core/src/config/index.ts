@@ -1120,28 +1120,29 @@ function wrapPluginUpdateModules(plugin: JsPlugin): JsPlugin {
   const originalExecutor = plugin.updateModules.executor;
   const moduleGraph = new ViteModuleGraphAdapter(plugin.name);
 
-  plugin.updateModules.executor = async (ctx: any) => {
-    for (const [file, _] of ctx.paths) {
-      // const mods = moduleGraph?.getModulesByFile(file) as unknown as any[] ?? [];
-      const mods: any = [];
+  plugin.updateModules.executor = async ({ paths }: any, ctx) => {
+    moduleGraph.context = ctx;
+    for (const [file, type] of paths) {
+      const mods = moduleGraph.getModulesByFile(file) as unknown as any[];
 
       const filename = normalizePath(file);
-      const ctx: any = {
+      const newContext: any = {
         file: filename,
         timestamp: Date.now(),
-        modules: [
-          {
-            type: 'js',
-            url: '/Users/adny/rust/farm/examples/vue3/src/App.vue?vue&type=style&index=0&scoped=7a7a37b1&lang.css',
-            file: '/Users/adny/rust/farm/examples/vue3/src/App.vue',
-            id: '/Users/adny/rust/farm/examples/vue3/src/App.vue?vue&type=style&index=0&scoped=7a7a37b1&lang.css'
-          }
-        ],
+        type,
+        modules: (mods ?? []).map(
+          (m) =>
+            ({
+              ...m,
+              id: normalizePath(m.id),
+              file: normalizePath(m.file)
+            }) as any
+        ),
         read: function (): string | Promise<string> {
           return readFile(file, 'utf-8');
         }
       };
-      return originalExecutor.call(plugin, ctx);
+      return originalExecutor.call(plugin, newContext);
     }
   };
   return plugin;
