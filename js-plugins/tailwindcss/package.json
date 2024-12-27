@@ -7,7 +7,7 @@
   "types": "./dist/index.d.ts",
   "scripts": {
     "build": "npx farm build",
-    "watch": "npx farm watch"
+    "dev": "npx farm watch"
   },
   "keywords": [
     "farm",
