@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto';
 import fs from 'node:fs';
+import { readFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -45,6 +46,7 @@ import { normalizePersistentCache } from './normalize-config/normalize-persisten
 import { parseUserConfig } from './schema.js';
 
 import { externalAdapter } from '../plugin/js/external-adapter.js';
+import { ViteModuleGraphAdapter } from '../plugin/js/vite-server-adapter.js';
 import { convertErrorMessage } from '../utils/error.js';
 import { resolveHostname } from '../utils/http.js';
 import merge from '../utils/merge.js';
@@ -69,6 +71,8 @@ import type {
   FarmCliOptions,
   Format,
   HmrOptions,
+  ModuleContext,
+  ModuleNode,
   NormalizedServerConfig,
   ResolvedCompilation,
   ResolvedUserConfig,
@@ -909,8 +913,9 @@ export async function resolvePlugins(
 ) {
   const { jsPlugins: rawJsPlugins, rustPlugins } =
     await resolveFarmPlugins(userConfig);
-  const jsPlugins = await resolveAndFilterAsyncPlugins(rawJsPlugins);
-
+  const jsPlugins = (await resolveAndFilterAsyncPlugins(rawJsPlugins)).map(
+    wrapPluginUpdateModules
+  );
   const vitePlugins = (userConfig?.vitePlugins ?? []).filter(Boolean);
 
   const vitePluginAdapters = vitePlugins.length
@@ -1108,4 +1113,42 @@ function getNamespaceName(rootPath: string) {
     return name || FARM_DEFAULT_NAMESPACE;
   }
   return FARM_DEFAULT_NAMESPACE;
+}
+
+function wrapPluginUpdateModules(plugin: JsPlugin): JsPlugin {
+  if (!plugin.updateModules?.executor) {
+    return plugin;
+  }
+  const originalExecutor = plugin.updateModules.executor;
+  const moduleGraph = new ViteModuleGraphAdapter(plugin.name);
+
+  plugin.updateModules.executor = async ({ paths }, ctx) => {
+    moduleGraph.context = ctx;
+    for (const [file, type] of paths) {
+      const mods = moduleGraph.getModulesByFile(
+        file
+      ) as unknown as ModuleNode[];
+
+      const filename = normalizePath(file);
+      const moduleContext: ModuleContext = {
+        file: filename,
+        timestamp: Date.now(),
+        type,
+        paths,
+        modules: (mods ?? []).map(
+          (m) =>
+            ({
+              ...m,
+              id: normalizePath(m.id),
+              file: normalizePath(m.file)
+            }) as ModuleNode
+        ),
+        read: function (): string | Promise<string> {
+          return readFile(file, 'utf-8');
+        }
+      };
+      return originalExecutor.call(plugin, moduleContext);
+    }
+  };
+  return plugin;
 }

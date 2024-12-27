@@ -1,6 +1,7 @@
 import { defineConfig } from "@farmfe/core";
 // import Vue from "unplugin-vue/farm";
-import Vue from "unplugin-vue/vite";
+// import Vue from "unplugin-vue/vite";
+import Vue from "@vitejs/plugin-vue";
 import fs from 'fs'
 
 export default defineConfig({

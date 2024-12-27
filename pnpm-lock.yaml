@@ -2372,9 +2372,6 @@ importers:
       unplugin-auto-import:
         specifier: ^0.16.7
         version: 0.16.7(@vueuse/core@9.13.0(vue@3.4.35(typescript@5.6.3)))(rollup@4.14.1)
-      unplugin-vue:
-        specifier: /Users/adny/typescript/unplugin-vue
-        version: link:../../../../typescript/unplugin-vue
       unplugin-vue-router:
         specifier: ^0.7.0
         version: 0.7.0(rollup@4.14.1)(vue-router@4.4.5(vue@3.4.35(typescript@5.6.3)))(vue@3.4.35(typescript@5.6.3))
