@@ -14,6 +14,7 @@ use farmfe_core::{
 };
 
 use farmfe_toolkit::get_dynamic_resources_map::get_dynamic_resources_map;
+use finalize_module_graph::finalize_updated_module_graph;
 
 use crate::{
   build::{
@@ -37,6 +38,7 @@ use self::{
 };
 
 mod diff_and_patch_module_graph;
+mod finalize_module_graph;
 mod find_hmr_boundaries;
 mod handle_update_modules;
 mod module_cache;
@@ -262,21 +264,13 @@ impl Compiler {
       set_updated_modules_cache(&updated_module_ids, &diff_result, &self.context);
     }
 
-    {
-      let mut module_graph = self.context.module_graph.write();
-      // cloned scoped dynamic input modules
-      sync = sync || handle_dynamic_input(&mut module_graph, &self.context);
-    }
-
-    // call module graph updated hook
-    self.context.plugin_driver.module_graph_updated(
-      &farmfe_core::plugin::PluginModuleGraphUpdatedHookParams {
-        added_modules_ids: diff_result.added_modules.clone().into_iter().collect(),
-        removed_modules_ids: removed_modules.clone().into_keys().collect(),
-        updated_modules_ids: updated_module_ids.clone(),
-      },
-      &self.context,
-    )?;
+    sync = sync
+      || finalize_updated_module_graph(
+        &updated_module_ids,
+        removed_modules.iter().map(|(id, _)| id.clone()).collect(),
+        &diff_result,
+        &self.context,
+      )?;
 
     let dynamic_resources_map = self.regenerate_resources(
       affected_module_groups,

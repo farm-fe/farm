@@ -153,7 +153,7 @@ impl From<ModuleType> for ResourcePotType {
       ModuleType::Css => Self::Css,
       ModuleType::Html => Self::Html,
       ModuleType::Asset => Self::Asset,
-      ModuleType::Runtime => Self::Runtime,
+      // ModuleType::Runtime => Self::Runtime,
       ModuleType::Custom(c) => Self::Custom(c),
     }
   }

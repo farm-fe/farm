@@ -526,6 +526,7 @@ fn create_farm_runtime_resource(runtime_code: &str, context: &Arc<CompilationCon
     // this resource should be Js instead of Runtime because it may cause duplicated runtime code when HMR if it's Runtime
     resource_type: ResourceType::Js,
     origin: ResourceOrigin::ResourcePot(name),
+    should_transform_output_filename: true,
     // info: None,
   }
 }

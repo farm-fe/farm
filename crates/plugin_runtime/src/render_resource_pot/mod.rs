@@ -15,7 +15,7 @@ use farmfe_core::{
   parking_lot::Mutex,
   plugin::PluginParseHookParam,
   rayon::iter::{IntoParallelIterator, ParallelIterator},
-  resource::resource_pot::ResourcePot,
+  resource::{meta_data::js::RenderModuleResult, resource_pot::ResourcePot},
   serialize,
   swc_common::{comments::SingleThreadedComments, util::take::Take, SourceMap, DUMMY_SP},
   swc_ecma_ast::{
@@ -27,10 +27,7 @@ use farmfe_core::{
 };
 use farmfe_toolkit::{
   html::get_farm_global_this,
-  script::{
-    codegen_module, generator::RenderModuleResult, parse_module, CodeGenCommentsConfig,
-    ParseScriptModuleResult,
-  },
+  script::{codegen_module, parse_module, CodeGenCommentsConfig, ParseScriptModuleResult},
   source_map::{build_source_map, collapse_sourcemap},
 };
 
@@ -73,24 +70,27 @@ pub fn render_resource_pot_modules(
           )
         });
 
-      let mut hoisted_ast = if hoisted_group.hoisted_module_ids.len() > 1 {
-        Some(hoisted_group.render(module_graph, context)?)
-      } else {
-        None
-      };
+      // let mut hoisted_ast = if hoisted_group.hoisted_module_ids.len() > 1 {
+      //   Some(hoisted_group.render(module_graph, context)?)
+      // } else {
+      //   None
+      // };
 
-      let hoisted_modules = hoisted_ast
-        .as_mut()
-        .map(|item| item.rendered_modules.take());
+      // let hoisted_modules = hoisted_ast
+      //   .as_mut()
+      //   .map(|item| item.rendered_modules.take());
 
       let render_module_result = render_module(RenderModuleOptions {
         module,
         module_graph,
-        hoisted_ast,
+        // hoisted_ast,
         context,
       })?;
 
-      modules.lock().push((render_module_result, hoisted_modules));
+      // modules.lock().push((render_module_result, hoisted_modules));
+      modules
+        .lock()
+        .push((render_module_result, Vec::<ModuleId>::new()));
 
       Ok::<(), CompilationError>(())
     })?;
@@ -101,9 +101,9 @@ pub fn render_resource_pot_modules(
   let (mut modules, hoisted_map) = modules.into_iter().fold(
     (vec![], HashMap::default()),
     |(mut modules, mut hoisted_map), (result, hosited_modules)| {
-      if let Some(hosited_modules) = hosited_modules {
-        hoisted_map.insert(result.module_id.clone(), hosited_modules);
-      }
+      // if let Some(hosited_modules) = hosited_modules {
+      //   hoisted_map.insert(result.module_id.clone(), hosited_modules);
+      // }
 
       modules.push(result);
 

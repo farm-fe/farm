@@ -4,7 +4,7 @@ use farmfe_core::{
   plugin::{Plugin, PluginHookContext, PluginLoadHookResult, PluginResolveHookParam, ResolveKind},
   HashMap,
 };
-use farmfe_toolkit::{html::get_farm_global_this, script::constant::RUNTIME_SUFFIX};
+use farmfe_toolkit::html::get_farm_global_this;
 use farmfe_utils::{relative, stringify_query};
 
 pub const DYNAMIC_VIRTUAL_SUFFIX: &str = ".farm_dynamic_import_virtual_module";
@@ -37,13 +37,13 @@ impl Plugin for FarmPluginLazyCompilation {
     hook_context: &PluginHookContext,
   ) -> farmfe_core::error::Result<Option<farmfe_core::plugin::PluginResolveHookResult>> {
     if hook_context.contain_caller(PLUGIN_NAME)
-    // All runtime files will be merged into one resourcePot, even files introduced through `import()`
-    // Therefore, the asynchronous polyfill here is unnecessary
-      || param.source.ends_with(RUNTIME_SUFFIX)
-      || param
-        .importer
-        .as_ref()
-        .is_some_and(|i| i.to_string().ends_with(RUNTIME_SUFFIX))
+    // // All runtime files will be merged into one resourcePot, even files introduced through `import()`
+    // // Therefore, the asynchronous polyfill here is unnecessary
+    //   || param.source.ends_with(RUNTIME_SUFFIX)
+    //   || param
+    //     .importer
+    //     .as_ref()
+    //     .is_some_and(|i| i.to_string().ends_with(RUNTIME_SUFFIX))
     {
       return Ok(None);
     }

@@ -30,7 +30,6 @@ pub use farmfe_toolkit_plugin_types::swc_ast::ParseScriptModuleResult;
 
 pub mod constant;
 pub mod defined_idents_collector;
-pub mod generator;
 pub mod module2cjs;
 pub mod module_system;
 pub mod sourcemap;

@@ -6,17 +6,17 @@ use farmfe_core::{
   module::{
     meta_data::script::CommentsMetaData, module_graph::ModuleGraph, Module, ModuleId, ModuleSystem,
   },
+  resource::meta_data::js::RenderModuleResult,
   swc_common::{
     comments::SingleThreadedComments, util::take::Take, Mark, SourceMap, SyntaxContext,
   },
   swc_ecma_ast::{ArrowExpr, BlockStmtOrExpr, Expr, ExprStmt, FnExpr},
 };
-use farmfe_plugin_bundle::resource_pot_to_bundle::GeneratorAstResult;
+// use farmfe_plugin_bundle::resource_pot_to_bundle::GeneratorAstResult;
 use farmfe_toolkit::{
   minify::minify_js_module,
   script::{
     codegen_module,
-    generator::RenderModuleResult,
     module2cjs::{transform_module_decls, OriginalRuntimeCallee, TransformModuleDeclsOptions},
     swc_try_with::{resolve_module_mark, try_with},
     CodeGenCommentsConfig,
@@ -44,7 +44,7 @@ use super::{
 
 pub struct RenderModuleOptions<'a> {
   pub module: &'a Module,
-  pub hoisted_ast: Option<GeneratorAstResult>,
+  // pub hoisted_ast: Option<GeneratorAstResult>,
   pub module_graph: &'a ModuleGraph,
   pub context: &'a Arc<CompilationContext>,
 }
@@ -54,23 +54,26 @@ pub fn render_module(
 ) -> farmfe_core::error::Result<RenderModuleResult> {
   let RenderModuleOptions {
     module,
-    hoisted_ast,
+    // hoisted_ast,
     module_graph,
     context,
   } = options;
   let is_async_module = module.meta.as_script().is_async;
-  let is_use_hoisted = hoisted_ast.is_some();
+  // let is_use_hoisted = hoisted_ast.is_some();
 
-  let (mut cloned_module, comments) =
-    if let Some(GeneratorAstResult { ast, comments, .. }) = hoisted_ast {
-      (ast, SingleThreadedComments::from(comments))
-    } else {
-      let script = module.meta.as_script();
-      (script.ast.clone(), script.comments.clone().into())
-    };
+  // let (mut cloned_module, comments) =
+  //   if let Some(GeneratorAstResult { ast, comments, .. }) = hoisted_ast {
+  //     (ast, SingleThreadedComments::from(comments))
+  //   } else {
+  //     let script = module.meta.as_script();
+  //     (script.ast.clone(), script.comments.clone().into())
+  //   };
+  let (mut cloned_module, comments): (SwcModule, SingleThreadedComments) = {
+    let script = module.meta.as_script();
+    (script.ast.clone(), script.comments.clone().into())
+  };
   let (cm, _) = context
     .meta
-    .script
     .create_swc_source_map(&module.id, module.content.clone());
 
   let mut external_modules = vec![];
@@ -128,7 +131,8 @@ pub fn render_module(
       module_id: module.id.clone(),
       mode: context.config.mode.clone(),
       target_env: context.config.output.target_env.clone(),
-      is_strict_find_source: !is_use_hoisted,
+      // is_strict_find_source: !is_use_hoisted,
+      is_strict_find_source: false,
     });
     cloned_module.visit_mut_with(&mut source_replacer);
     cloned_module.visit_mut_with(&mut hygiene_with_config(HygieneConfig {

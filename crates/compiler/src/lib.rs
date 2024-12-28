@@ -15,12 +15,11 @@ use farmfe_core::{
   module::ModuleId,
   parking_lot::Mutex,
   plugin::Plugin,
-  rayon::{ThreadPool, ThreadPoolBuilder},
 };
 
 pub use farmfe_plugin_css::FARM_CSS_MODULES_SUFFIX;
 pub use farmfe_plugin_lazy_compilation::DYNAMIC_VIRTUAL_SUFFIX;
-pub use farmfe_plugin_runtime::RUNTIME_SUFFIX;
+pub use farmfe_plugin_runtime::RUNTIME_INPUT_SCOPE;
 
 pub mod build;
 pub mod generate;
@@ -36,18 +35,20 @@ pub struct Compiler {
 impl Compiler {
   /// The params are [farmfe_core::config::Config] and dynamic load rust plugins and js plugins [farmfe_core::plugin::Plugin]
   pub fn new(config: Config, mut plugin_adapters: Vec<Arc<dyn Plugin>>) -> Result<Self> {
-    // let render_plugin: Arc<dyn Plugin> = if config.output.target_env.is_library() {
-    //   Arc::new(farmfe_plugin_bundle::FarmPluginBundle::new()) as _
-    // } else {
-    //   Arc::new(farmfe_plugin_runtime::FarmPluginRuntime::new(&config)) as _
-    // };
+    let render_plugin: Arc<dyn Plugin> = if config.output.target_env.is_library() {
+      Arc::new(farmfe_plugin_bundle::FarmPluginBundle::new()) as _
+    } else {
+      Arc::new(farmfe_plugin_runtime::FarmPluginRuntime::new(&config)) as _
+    };
 
     let mut plugins = vec![
-      // render_plugin,
-      Arc::new(farmfe_plugin_bundle::FarmPluginBundle::new()) as _,
-      Arc::new(farmfe_plugin_runtime::FarmPluginRuntime::new(&config)) as _,
+      // Arc::new(farmfe_plugin_bundle::FarmPluginBundle::new()) as _,
+      // Arc::new(farmfe_plugin_runtime::FarmPluginRuntime::new(&config)) as _,
       // register internal core plugins
       Arc::new(farmfe_plugin_script::FarmPluginScript::new(&config)) as _,
+      // the render plugin must be executed after PluginScript,
+      // cause render plugins need information collected in finalize_module hook of PluginScript
+      render_plugin,
       Arc::new(farmfe_plugin_partial_bundling::FarmPluginPartialBundling::new(&config)) as _,
       Arc::new(farmfe_plugin_html::FarmPluginHtml::new(&config)) as _,
       Arc::new(farmfe_plugin_html::FarmPluginTransformHtml::new(&config)) as _,

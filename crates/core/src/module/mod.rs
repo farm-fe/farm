@@ -117,7 +117,7 @@ pub enum ModuleType {
   Css,
   Html,
   Asset,
-  Runtime,
+  // Runtime,
   // custom module type from using by custom plugins
   Custom(String),
 }
@@ -226,7 +226,7 @@ impl<T: AsRef<str>> From<T> for ModuleType {
       "css" => Self::Css,
       "html" => Self::Html,
       "asset" => Self::Asset,
-      "runtime" => Self::Runtime,
+      // "runtime" => Self::Runtime,
       custom => Self::Custom(custom.to_string()),
     }
   }

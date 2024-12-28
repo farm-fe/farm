@@ -5,7 +5,7 @@ use farmfe_core::{
   context::{self, CompilationContext},
   module::{module_graph::ModuleGraph, ModuleId},
   rayon::{iter::IntoParallelRefMutIterator, prelude::*},
-  resource::resource_pot::ResourcePotId,
+  resource::{meta_data::js::RenderModuleResult, resource_pot::ResourcePotId},
   swc_common::{
     comments::{Comments, SingleThreadedComments},
     BytePos, FilePathMapping, SourceMap, SyntaxContext, DUMMY_SP,
@@ -17,7 +17,7 @@ use farmfe_core::{
   swc_ecma_parser::{EsSyntax, Syntax},
 };
 use farmfe_toolkit::{
-  script::{generator::RenderModuleResult, parse_stmt},
+  script::parse_stmt,
   source_map::get_swc_sourcemap_filename,
   swc_ecma_utils::StmtOrModuleItem,
   swc_ecma_visit::{VisitMut, VisitMutWith},
@@ -74,17 +74,6 @@ pub(crate) fn merge_rendered_module(
   }
 
   rendered_resource_pot_ast
-
-  // RenderResourcePotAstResult {
-  //   rendered_resource_pot_ast,
-  //   external_modules: render_module_results
-  //     .into_iter()
-  //     .map(|item| item.external_modules)
-  //     .flatten()
-  //     .collect(),
-  //   merged_sourcemap: cm,
-  //   merged_comments: comments,
-  // }
 }
 
 pub(crate) fn wrap_resource_pot_ast(
@@ -97,7 +86,7 @@ pub(crate) fn wrap_resource_pot_ast(
     r#"(function (moduleSystem, modules) {
    for (var moduleId in modules) {
      var module = modules[moduleId];
-     moduleSystem.register(moduleId, module);
+     moduleSystem.r(moduleId, module);
    }
  })("farm_module_system", "farm_object_lit");"#,
     true,
@@ -106,17 +95,13 @@ pub(crate) fn wrap_resource_pot_ast(
 
   let args = &mut stmt.as_mut_expr().unwrap().expr.as_mut_call().unwrap().args;
 
-  // let global_this = get_farm_global_this(
-  //   &context.config.runtime.namespace,
-  //   &context.config.output.target_env,
-  // );
   let global_this = if context.config.output.target_env.is_node() {
     "global"
   } else {
     "window"
   };
 
-  // window['hash'].__farm_module_system__;
+  // window['hash'].m;
   args[0] = ExprOrSpread {
     spread: None,
     expr: Box::new(Expr::Member(MemberExpr {

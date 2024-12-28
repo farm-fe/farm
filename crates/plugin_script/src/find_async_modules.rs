@@ -37,6 +37,62 @@ pub fn find_async_modules(context: &Arc<CompilationContext>) -> HashSet<ModuleId
   async_modules
 }
 
+pub fn update_async_modules(
+  param: &farmfe_core::plugin::PluginModuleGraphUpdatedHookParams,
+  context: &Arc<CompilationContext>,
+) {
+  // detect async module like top level await when module graph updated
+  // module graph updated is called during compiler.update
+  let module_graph = context.module_graph.read();
+  let mut added_async_modules = vec![];
+  // find added modules that contains top level await
+  let mut analyze_top_level_await = |module_id: &ModuleId| {
+    let module = module_graph.module(module_id).unwrap();
+
+    if module.module_type.is_script() {
+      let is_async = module.meta.as_script().is_async;
+      let dependencies = module_graph.dependencies(module_id);
+      let is_deps_async = dependencies.iter().any(|(dep_id, edge)| {
+        let dep = module_graph.module(dep_id).unwrap();
+        dep.meta.as_script().is_async && !edge.is_dynamic()
+      });
+      if is_deps_async || is_async {
+        added_async_modules.push(module_id.clone());
+      }
+    }
+  };
+  for added in &param.added_modules_ids {
+    analyze_top_level_await(added);
+  }
+  for updated in &param.updated_modules_ids {
+    analyze_top_level_await(updated);
+  }
+
+  let mut queue = VecDeque::from(added_async_modules.into_iter().collect::<Vec<_>>());
+  let mut async_modules = HashSet::default();
+
+  while !queue.is_empty() {
+    let module_id = queue.pop_front().unwrap();
+    async_modules.insert(module_id.clone());
+
+    for (dept, edge) in module_graph.dependents(&module_id) {
+      if !async_modules.contains(&dept) && !edge.is_dynamic() {
+        queue.push_back(dept);
+      }
+    }
+  }
+
+  drop(module_graph);
+
+  // update async modules
+  let mut module_graph = context.module_graph.write();
+
+  for module_id in async_modules {
+    let module = module_graph.module_mut(&module_id).unwrap();
+    module.meta.as_script_mut().is_async = true;
+  }
+}
+
 #[cfg(test)]
 mod tests {
   use std::sync::Arc;
@@ -46,7 +102,8 @@ mod tests {
     module::{meta_data::script::ScriptModuleMetaData, ModuleMetaData, ModuleType},
     parking_lot::RwLock,
     swc_common::DUMMY_SP,
-    swc_ecma_ast::{AwaitExpr, Expr, ExprStmt, Lit, Module, ModuleItem, Stmt}, HashSet,
+    swc_ecma_ast::{AwaitExpr, Expr, ExprStmt, Lit, Module, ModuleItem, Stmt},
+    HashSet,
   };
   use farmfe_testing_helpers::construct_test_module_graph;
 

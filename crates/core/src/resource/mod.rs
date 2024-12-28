@@ -125,11 +125,11 @@ pub struct Resource {
   pub bytes: Vec<u8>,
   /// whether this resource emitted, true means this resource will not present in the final production
   pub emitted: bool,
+  /// should transform the resource's name based output.filename or output.entryFileName
+  pub should_transform_output_filename: bool,
   pub resource_type: ResourceType,
   /// the origin that this resource generated from
   pub origin: ResourceOrigin,
-  // #[with(Skip)]
-  // pub info: Option<ResourcePotInfo>,
 }
 
 impl Default for Resource {
@@ -138,6 +138,7 @@ impl Default for Resource {
       name: "unknown".to_string(),
       bytes: vec![],
       emitted: false,
+      should_transform_output_filename: true,
       resource_type: ResourceType::Custom("unknown".to_string()),
       origin: ResourceOrigin::Module("unknown".into()),
       // info: None,

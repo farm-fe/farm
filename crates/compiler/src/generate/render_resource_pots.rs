@@ -4,7 +4,7 @@ use farmfe_core::{
   context::CompilationContext,
   error::{CompilationError, Result},
   parking_lot::Mutex,
-  plugin::{PluginGenerateResourcesHookResult, PluginHookContext},
+  plugin::{GeneratedResource, PluginGenerateResourcesHookResult, PluginHookContext},
   rayon::prelude::{IntoParallelIterator, ParallelIterator},
   resource::{resource_pot::ResourcePot, ResourceType},
   HashMap,
@@ -33,22 +33,23 @@ pub fn render_resource_pots_and_generate_resources(
     let cached_resource_pot = try_get_resource_cache(resource_pot, context)?;
 
     if let Some(cached_resource_pot) = cached_resource_pot {
-      // let rendered_resource_pot_info = ResourcePotInfo::new(resource_pot);
-
       let mut cached_resource = cached_resource_pot.resources;
       let cached_meta = cached_resource_pot.meta;
 
       resource_pot.meta = cached_meta;
-      resource_pot.add_resource(cached_resource.resource.name.clone());
 
-      // cached_resource.resource.info = Some(rendered_resource_pot_info);
+      for cached_resource in &cached_resource.resources {
+        resource_pot.add_resource(cached_resource.resource.name.clone());
+      }
 
-      resources.lock().push(cached_resource.resource);
+      for cached_resource in cached_resource.resources {
+        resources.lock().push(cached_resource.resource);
 
-      if let Some(map) = cached_resource.source_map {
-        resource_pot.add_resource(map.name.clone());
+        if let Some(map) = cached_resource.source_map {
+          resource_pot.add_resource(map.name.clone());
 
-        resources.lock().push(map);
+          resources.lock().push(map);
+        }
       }
     } else {
       resource_pots_need_render.push(resource_pot);
@@ -72,81 +73,83 @@ pub fn render_resource_pots_and_generate_resources(
       farmfe_core::puffin::profile_scope!(id);
 
       // let mut resource_pot_info: Option<ResourcePotInfo> = None;
-      let (mut res, augment_resource_hash) = render_resource_pot_generate_resources(
-        resource_pot,
-        context,
-        hook_context,
-        // false,
-        // &mut resource_pot_info,
-      )?;
+      let (mut generated_resources, augment_resource_hash) =
+        render_resource_pot_generate_resources(resource_pot, context, hook_context)?;
 
-      // let resource_pot_info: ResourcePotInfo = resource_pot_info.unwrap();
-      // res.resource.info = Some(resource_pot_info);
-      let r = &mut res.resource;
+      let mut cached_result: PluginGenerateResourcesHookResult =
+        PluginGenerateResourcesHookResult { resources: vec![] };
+      let augment_resource_hash = augment_resource_hash.unwrap_or_default();
+      let augment_resource_hash_bytes = augment_resource_hash.as_bytes();
 
-      // ignore runtime resource
-      if !matches!(r.resource_type, ResourceType::Runtime) {
-        let content_with_extra_content_hash = &[
-          &r.bytes,
-          augment_resource_hash.unwrap_or_default().as_bytes(),
-        ]
-        .concat();
-        if let Some(name) = resource_pot.entry_module.as_ref() {
-          let entry_name = entries.get(name).unwrap();
-          r.name = transform_output_entry_filename(
-            context.config.output.entry_filename.clone(),
-            resource_pot.id.to_string().as_str(),
-            entry_name,
-            content_with_extra_content_hash,
-            &r.resource_type.to_ext(),
-          );
-        } else {
-          r.name = transform_output_filename(
-            context.config.output.filename.clone(),
-            &r.name,
-            content_with_extra_content_hash,
-            &r.resource_type.to_ext(),
-          );
+      for res in &mut generated_resources.resources {
+        let r = &mut res.resource;
+
+        // ignore runtime resource
+        if r.should_transform_output_filename {
+          let content_with_extra_content_hash = &[&r.bytes, augment_resource_hash_bytes].concat();
+          if let Some(name) = resource_pot.entry_module.as_ref() {
+            let entry_name = entries.get(name).unwrap();
+            r.name = transform_output_entry_filename(
+              context.config.output.entry_filename.clone(),
+              resource_pot.id.to_string().as_str(),
+              entry_name,
+              content_with_extra_content_hash,
+              &r.resource_type.to_ext(),
+            );
+          } else {
+            r.name = transform_output_filename(
+              context.config.output.filename.clone(),
+              &r.name,
+              content_with_extra_content_hash,
+              &r.resource_type.to_ext(),
+            );
+          }
         }
       }
 
       // process generated resources after rendering
       context
         .plugin_driver
-        .process_generated_resources(&mut res, context)?;
+        .process_generated_resources(&mut generated_resources, context)?;
 
-      let mut cached_result: PluginGenerateResourcesHookResult =
-        PluginGenerateResourcesHookResult {
+      for mut res in generated_resources.resources {
+        let mut cached_resource = GeneratedResource {
           resource: Default::default(),
           source_map: None,
         };
-      // if source map is generated, we need to update the resource name and the content of the resource
-      // to make sure the source map can be found.
-      if let Some(mut source_map) = res.source_map {
-        source_map.name = format!(
-          "{}.{}",
-          res.resource.name,
-          source_map.resource_type.to_ext()
-        );
-        append_source_map_comment(&mut res.resource, &source_map, &context.config.sourcemap);
+        // if source map is generated, we need to update the resource name and the content of the resource
+        // to make sure the source map can be found.
+        if let Some(mut source_map) = res.source_map {
+          source_map.name = format!(
+            "{}.{}",
+            res.resource.name,
+            source_map.resource_type.to_ext()
+          );
+          append_source_map_comment(&mut res.resource, &source_map, &context.config.sourcemap);
 
-        if context.config.persistent_cache.enabled() {
-          cached_result.source_map = Some(source_map.clone());
+          if context.config.persistent_cache.enabled() {
+            cached_resource.source_map = Some(source_map.clone());
+          }
+
+          resource_pot.add_resource(source_map.name.clone());
+
+          resources.lock().push(source_map);
         }
 
-        resource_pot.add_resource(source_map.name.clone());
+        if context.config.persistent_cache.enabled() {
+          cached_resource.resource = res.resource.clone();
+          cached_result.resources.push(cached_resource);
+        }
 
-        resources.lock().push(source_map);
+        resource_pot.add_resource(res.resource.name.clone());
+
+        resources.lock().push(res.resource);
       }
 
-      if context.config.persistent_cache.enabled() {
-        cached_result.resource = res.resource.clone();
-        set_resource_cache(resource_pot, &cached_result, context);
+      if cached_result.resources.len() > 0 {
+        set_resource_cache(resource_pot, cached_result, context);
       }
 
-      resource_pot.add_resource(res.resource.name.clone());
-
-      resources.lock().push(res.resource);
       Ok::<(), CompilationError>(())
     })?;
 

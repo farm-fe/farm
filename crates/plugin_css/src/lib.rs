@@ -9,6 +9,7 @@ use farmfe_core::config::minify::MinifyOptions;
 use farmfe_core::config::AliasItem;
 use farmfe_core::module::meta_data::css::CssModuleMetaData;
 use farmfe_core::module::meta_data::script::CommentsMetaData;
+use farmfe_core::plugin::GeneratedResource;
 use farmfe_core::resource::meta_data::css::CssResourcePotMetaData;
 use farmfe_core::resource::meta_data::ResourcePotMetaData;
 use farmfe_core::swc_common::DUMMY_SP;
@@ -706,6 +707,7 @@ impl Plugin for FarmPluginCss {
         name: resource_pot.name.to_string(),
         bytes: css_code.into_bytes(),
         emitted: false,
+        should_transform_output_filename: true,
         resource_type: ResourceType::Css,
         origin: ResourceOrigin::ResourcePot(resource_pot.id.clone()),
         // info: None,
@@ -741,8 +743,10 @@ impl Plugin for FarmPluginCss {
       // }
 
       Ok(Some(PluginGenerateResourcesHookResult {
-        resource,
-        source_map,
+        resources: vec![GeneratedResource {
+          resource,
+          source_map,
+        }],
       }))
     } else {
       Ok(None)

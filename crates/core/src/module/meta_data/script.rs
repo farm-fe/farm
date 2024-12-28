@@ -1,6 +1,7 @@
 use std::{cell::RefCell, rc::Rc};
 
 use farmfe_macro_cache_item::cache_item;
+use feature_flag::FeatureFlag;
 use swc_common::{
   comments::{
     Comment, SingleThreadedComments, SingleThreadedCommentsMap, SingleThreadedCommentsMapInner,
@@ -16,6 +17,7 @@ use super::custom::CustomMetaDataMap;
 
 use statement::{Statement, SwcId};
 
+pub mod feature_flag;
 pub mod statement;
 
 /// Script specific meta data, for example, [swc_ecma_ast::Module]
@@ -33,6 +35,7 @@ pub struct ScriptModuleMetaData {
   pub top_level_idents: HashSet<SwcId>,
   pub unresolved_idents: HashSet<SwcId>,
   pub is_async: bool,
+  pub feature_flags: HashSet<FeatureFlag>,
   pub custom: CustomMetaDataMap,
 }
 
@@ -50,6 +53,7 @@ impl Default for ScriptModuleMetaData {
       top_level_idents: Default::default(),
       unresolved_idents: Default::default(),
       is_async: false,
+      feature_flags: Default::default(),
       custom: Default::default(),
     }
   }
@@ -81,6 +85,7 @@ impl Clone for ScriptModuleMetaData {
       top_level_idents: self.top_level_idents.clone(),
       unresolved_idents: self.unresolved_idents.clone(),
       is_async: false,
+      feature_flags: self.feature_flags.clone(),
       custom: CustomMetaDataMap::from(custom),
     }
   }

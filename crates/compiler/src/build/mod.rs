@@ -6,7 +6,6 @@ use std::{
   },
 };
 
-use dynamic_input::handle_dynamic_input;
 use farmfe_core::{
   cache::module_cache::CachedModule,
   context::CompilationContext,
@@ -22,10 +21,7 @@ use farmfe_core::{
     PluginHookContext, PluginLoadHookParam, PluginParseHookParam, PluginProcessModuleHookParam,
     PluginResolveHookParam, PluginResolveHookResult, PluginTransformHookParam, ResolveKind,
   },
-  rayon::{
-    iter::{IntoParallelIterator, ParallelIterator},
-    ThreadPool,
-  },
+  rayon::ThreadPool,
   serde_json::json,
   HashMap,
 };
@@ -33,6 +29,7 @@ use farmfe_core::{
 use farmfe_plugin_lazy_compilation::DYNAMIC_VIRTUAL_SUFFIX;
 use farmfe_toolkit::resolve::load_package_json;
 use farmfe_utils::stringify_query;
+use finalize_module_graph::finalize_module_graph;
 
 use crate::{
   build::{
@@ -62,6 +59,7 @@ macro_rules! call_and_catch_error {
 pub(crate) mod analyze_deps;
 pub(crate) mod dynamic_input;
 pub(crate) mod finalize_module;
+pub(crate) mod finalize_module_graph;
 pub(crate) mod load;
 pub(crate) mod module_cache;
 pub(crate) mod parse;
@@ -133,7 +131,6 @@ impl Compiler {
     self.context.plugin_driver.build_start(&self.context)?;
 
     let (err_sender, err_receiver) = Self::create_thread_channel();
-
     for (order, (name, source)) in self.context.config.input.iter().enumerate() {
       let params = BuildModuleGraphThreadedParams {
         thread_pool: self.context.thread_pool.clone(),
@@ -183,24 +180,14 @@ impl Compiler {
       self.set_last_fail_module_ids(&[]);
     }
 
-    // Topo sort the module graph
-    let mut module_graph = self.context.module_graph.write();
-    let module_ids = module_graph.update_execution_order_for_modules();
-
-    {
-      farm_profile_scope!("call freeze_module hook".to_string());
+    let module_ids = {
+      let module_graph = self.context.module_graph.read();
       module_graph
-        .modules_mut()
-        .into_par_iter()
-        .try_for_each(|module| {
-          self
-            .context
-            .plugin_driver
-            .freeze_module(module, &self.context)
-        })?;
-    }
-
-    drop(module_graph);
+        .modules()
+        .iter()
+        .map(|m| m.id.clone())
+        .collect::<Vec<_>>()
+    };
 
     // set module graph cache
     if self.context.config.persistent_cache.enabled() {
@@ -208,20 +195,10 @@ impl Compiler {
       set_module_graph_cache(module_ids, &self.context);
     }
 
+    finalize_module_graph(&self.context)?;
+
     // set stats if stats is enabled
     self.set_module_graph_stats();
-
-    {
-      farm_profile_scope!("call module_graph_build_end hook".to_string());
-      let mut module_graph = self.context.module_graph.write();
-      // cloned scoped dynamic input modules
-      handle_dynamic_input(&mut module_graph, &self.context);
-
-      self
-        .context
-        .plugin_driver
-        .module_graph_build_end(&mut module_graph, &self.context)?;
-    }
 
     {
       farm_profile_scope!("call build_end hook".to_string());

@@ -40,6 +40,7 @@ impl Default for ReplaceDirnameOptions {
 
 impl FarmPluginReplaceDirname {
   fn new(_: &Config, options: String) -> Self {
+    println!("FarmPluginReplaceDirname {}", options);
     let options: ReplaceDirnameOptions = serde_json::from_str(&options).unwrap_or_default();
     Self { options }
   }
@@ -59,6 +60,7 @@ impl Plugin for FarmPluginReplaceDirname {
     if !filter.execute(param.module_id.relative_path()) {
       return Ok(None);
     }
+    println!("process_module {}", param.module_id.to_string());
 
     let file_path = env::current_dir()
       .unwrap()

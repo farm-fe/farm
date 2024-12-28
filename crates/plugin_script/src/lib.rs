@@ -2,6 +2,7 @@
 #![feature(path_file_prefix)]
 
 use std::{
+  collections::VecDeque,
   path::{Path, PathBuf},
   sync::Arc,
 };
@@ -14,10 +15,10 @@ use farmfe_core::{
   module::{
     meta_data::script::{CommentsMetaData, ScriptModuleMetaData},
     module_graph::ModuleGraph,
-    ModuleMetaData, ModuleSystem, ModuleType, VIRTUAL_MODULE_PREFIX,
+    ModuleId, ModuleMetaData, ModuleSystem, ModuleType, VIRTUAL_MODULE_PREFIX,
   },
   plugin::{
-    Plugin, PluginAnalyzeDepsHookParam, PluginFinalizeModuleHookParam,
+    GeneratedResource, Plugin, PluginAnalyzeDepsHookParam, PluginFinalizeModuleHookParam,
     PluginGenerateResourcesHookResult, PluginHookContext, PluginLoadHookParam,
     PluginLoadHookResult, PluginParseHookParam, PluginProcessModuleHookParam,
   },
@@ -28,6 +29,7 @@ use farmfe_core::{
   },
   swc_common::{comments::SingleThreadedComments, Mark, SourceMap, GLOBALS},
   swc_ecma_ast::{EsVersion, Module as SwcModule},
+  HashSet,
 };
 use farmfe_swc_transformer_import_glob::transform_import_meta_glob;
 use farmfe_toolkit::{
@@ -44,11 +46,15 @@ use farmfe_toolkit::{
   swc_ecma_visit::VisitMutWith,
 };
 
+use features_analyzer::FeaturesAnalyzer;
+use find_async_modules::update_async_modules;
 use import_meta_visitor::{replace_import_meta_url, ImportMetaVisitor};
 #[cfg(feature = "swc_plugin")]
 use swc_plugins::{init_plugin_module_cache_once, transform_by_swc_plugins};
 
 mod deps_analyzer;
+mod features_analyzer;
+mod find_async_modules;
 mod import_meta_visitor;
 #[cfg(feature = "swc_plugin")]
 mod swc_plugins;
@@ -146,6 +152,7 @@ impl Plugin for FarmPluginScript {
           statements: vec![],
           top_level_idents: Default::default(),
           unresolved_idents: Default::default(),
+          feature_flags: Default::default(),
           // imports: vec![],
           // exports: vec![],
           // defined_idents: vec![],
@@ -170,7 +177,6 @@ impl Plugin for FarmPluginScript {
 
     let (cm, _) = context
       .meta
-      .script
       .create_swc_source_map(&param.module_id, param.content.clone());
 
     // transform decorators if needed
@@ -262,12 +268,14 @@ impl Plugin for FarmPluginScript {
       return Ok(None);
     }
     // all jsx, js, ts, tsx modules should be transformed to js module for now
-    // cause the partial bundling is not support other module type yet
     param.module.module_type = ModuleType::Js;
     // set param.module.meta.module_system
     set_module_system_for_module_meta(param, context);
 
     // TODO collect statements / top level idents / unresolved idents
+    // analyze features used
+    let features_analyzer = FeaturesAnalyzer::new(param.deps, &param.module.meta.as_script().ast);
+    param.module.meta.as_script_mut().feature_flags = features_analyzer.analyze();
 
     let target_env = context.config.output.target_env.clone();
     let format = context.config.output.format;
@@ -299,6 +307,33 @@ impl Plugin for FarmPluginScript {
     Ok(None)
   }
 
+  fn generate_start(
+    &self,
+    context: &Arc<CompilationContext>,
+  ) -> farmfe_core::error::Result<Option<()>> {
+    println!("generate start");
+    let async_modules = find_async_modules::find_async_modules(context);
+    println!("find async modules");
+    let mut module_graph = context.module_graph.write();
+    println!("write module graph");
+    for module_id in async_modules {
+      let module = module_graph.module_mut(&module_id).unwrap();
+      module.meta.as_script_mut().is_async = true;
+    }
+
+    Ok(Some(()))
+  }
+
+  fn module_graph_updated(
+    &self,
+    param: &farmfe_core::plugin::PluginModuleGraphUpdatedHookParams,
+    context: &Arc<CompilationContext>,
+  ) -> farmfe_core::error::Result<Option<()>> {
+    update_async_modules(param, context);
+
+    Ok(Some(()))
+  }
+
   fn generate_resources(
     &self,
     resource_pot: &mut ResourcePot,
@@ -307,23 +342,13 @@ impl Plugin for FarmPluginScript {
   ) -> farmfe_core::error::Result<Option<PluginGenerateResourcesHookResult>> {
     if let ResourcePotMetaData::Js(JsResourcePotMetaData {
       ast: wrapped_resource_pot_ast,
-      // comments: merged_comments,
+      comments: merged_comments,
       rendered_modules,
       ..
     }) = resource_pot.meta.clone()
     {
-      // let merged_sourcemap = merge_sourcemap(
-      //   &resource_pot.id,
-      //   &mut rendered_modules,
-      //   &module_graph,
-      //   context,
-      //   &hoisted_map,
-      // );
-
-      // let comments = merge_comments(&mut rendered_modules, merged_sourcemap, &hoisted_map);
-
       let module_graph = context.module_graph.read();
-      let merged_sourcemap = context.meta.script.merge_swc_source_map(
+      let merged_sourcemap = context.meta.merge_swc_source_map(
         &resource_pot.id,
         rendered_modules.iter().collect(),
         &module_graph,
@@ -333,8 +358,7 @@ impl Plugin for FarmPluginScript {
         &module_graph,
         &wrapped_resource_pot_ast,
         merged_sourcemap,
-        // TODO merged_comments.into(),
-        Default::default(),
+        merged_comments.into(),
         context,
       )?;
 
@@ -343,6 +367,7 @@ impl Plugin for FarmPluginScript {
           name: resource_pot.id.to_string(),
           bytes: content.into_bytes(),
           emitted: false,
+          should_transform_output_filename: true,
           resource_type: ty,
           origin: ResourceOrigin::ResourcePot(resource_pot.id.clone()),
           // info: None,
@@ -350,20 +375,15 @@ impl Plugin for FarmPluginScript {
       };
 
       Ok(Some(PluginGenerateResourcesHookResult {
-        resource: create_resource(
-          code,
-          if resource_pot.resource_pot_type == ResourcePotType::Runtime {
-            ResourceType::Runtime
-          } else {
-            ResourceType::Js
-          },
-        ),
-        source_map: map.map(|content| {
-          create_resource(
-            content,
-            ResourceType::SourceMap(resource_pot.id.to_string()),
-          )
-        }),
+        resources: vec![GeneratedResource {
+          resource: create_resource(code, ResourceType::Js),
+          source_map: map.map(|content| {
+            create_resource(
+              content,
+              ResourceType::SourceMap(resource_pot.id.to_string()),
+            )
+          }),
+        }],
       }))
     } else {
       return Ok(None);

@@ -5,6 +5,7 @@ use deps_analyzer::{DepsAnalyzer, HtmlInlineModule, HTML_INLINE_ID_PREFIX};
 use farmfe_core::module::meta_data::html::HtmlModuleMetaData;
 // use farmfe_core::config::minify::MinifyOptions;
 use farmfe_core::parking_lot::Mutex;
+use farmfe_core::plugin::GeneratedResource;
 use farmfe_core::resource::meta_data::html::HtmlResourcePotMetaData;
 use farmfe_core::resource::meta_data::ResourcePotMetaData;
 use farmfe_core::{cache_item, deserialize, serialize, HashMap};
@@ -266,15 +267,17 @@ impl Plugin for FarmPluginHtml {
   ) -> farmfe_core::error::Result<Option<PluginGenerateResourcesHookResult>> {
     if matches!(resource_pot.resource_pot_type, ResourcePotType::Html) {
       Ok(Some(PluginGenerateResourcesHookResult {
-        resource: Resource {
-          name: resource_pot.id.to_string(),
-          bytes: vec![],
-          emitted: false,
-          resource_type: ResourceType::Html,
-          origin: ResourceOrigin::ResourcePot(resource_pot.id.clone()),
-          // info: None,
-        },
-        source_map: None,
+        resources: vec![GeneratedResource {
+          resource: Resource {
+            name: resource_pot.id.to_string(),
+            bytes: vec![],
+            emitted: false,
+            resource_type: ResourceType::Html,
+            origin: ResourceOrigin::ResourcePot(resource_pot.id.clone()),
+            should_transform_output_filename: true,
+          },
+          source_map: None,
+        }],
       }))
     } else {
       Ok(None)

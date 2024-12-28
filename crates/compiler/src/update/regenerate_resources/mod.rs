@@ -22,6 +22,7 @@ mod generate_and_diff_resource_pots;
 
 use generate_and_diff_resource_pots::generate_and_diff_resource_pots;
 
+/// This function only works when targetEnv is browser
 pub fn render_and_generate_update_resource(
   updated_module_ids: &Vec<ModuleId>,
   diff_result: &DiffResult,
@@ -81,12 +82,13 @@ pub fn render_and_generate_update_resource(
           source: None,
         })?;
       resource_pot.meta = res;
-      let (mut update_resources, _) = render_resource_pot_generate_resources(
+      let (mut updated_result, _) = render_resource_pot_generate_resources(
         resource_pot,
         context,
         &Default::default(),
         // false,
       )?;
+      let mut update_resources = updated_result.resources.remove(0);
 
       if let Some(map) = update_resources.source_map {
         // inline source map

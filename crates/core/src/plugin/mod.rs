@@ -107,7 +107,7 @@ pub trait Plugin: Any + Send + Sync {
     Ok(None)
   }
 
-  /// Freeze the module after all deep dependencies are resolved
+  /// Freeze the module after module graph is built
   /// You can modify the module here, but after this hook, the module should be immutable
   /// Example: Analyze the module, for example, analyze import/export statements, top level and unresolved identifiers
   fn freeze_module(
@@ -480,9 +480,17 @@ pub struct EmptyPluginHookResult {}
 #[cache_item]
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct PluginGenerateResourcesHookResult {
+pub struct GeneratedResource {
   pub resource: Resource,
   pub source_map: Option<Resource>,
+}
+
+#[cache_item]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PluginGenerateResourcesHookResult {
+  /// A resource pot can generate multiple resources, for example: generating cjs/esm at the same time
+  pub resources: Vec<GeneratedResource>,
 }
 
 pub struct PluginFinalizeResourcesHookParams<'a> {

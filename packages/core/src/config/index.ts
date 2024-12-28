@@ -333,10 +333,10 @@ export async function normalizeUserCompilationConfig(
   resolvedCompilation.define = Object.assign(
     {
       // skip self define
-      ['FARM' + '_PROCESS_ENV']: resolvedUserConfig.env,
-      FARM_RUNTIME_TARGET_ENV: JSON.stringify(
-        resolvedCompilation.output?.targetEnv
-      )
+      ['FARM' + '_PROCESS_ENV']: resolvedUserConfig.env
+      // FARM_RUNTIME_TARGET_ENV: JSON.stringify(
+      //   resolvedCompilation.output?.targetEnv
+      // )
     },
     resolvedCompilation?.define,
     // for node target, we should not define process.env.NODE_ENV
@@ -360,7 +360,8 @@ export async function normalizeUserCompilationConfig(
 
   resolvedCompilation.runtime = {
     path:
-      resolvedCompilation.runtime?.path ?? require.resolve('@farmfe/runtime'),
+      resolvedCompilation.runtime?.path ??
+      path.dirname(require.resolve('@farmfe/runtime/package.json')),
     swcHelpersPath:
       resolvedCompilation.runtime?.swcHelpersPath ??
       path.dirname(require.resolve('@swc/helpers/package.json')),
@@ -699,6 +700,7 @@ export async function readConfigFile(
     compilation: normalizedConfig,
     jsPlugins: [],
     rustPlugins: [[replaceDirnamePlugin, '{}']]
+    // rustPlugins: []
   });
 
   const FARM_PROFILE = process.env.FARM_PROFILE;
@@ -1005,8 +1007,8 @@ export function createDefaultConfig(options: DefaultOptionsType): UserConfig {
       output: {
         entryFilename: '[entryName]',
         path: outputPath,
-        format,
-        targetEnv: 'library-node'
+        format
+        // targetEnv: 'library-node'
       },
       mode,
       external: [

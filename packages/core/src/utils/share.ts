@@ -177,7 +177,7 @@ export function mapTargetEnvValue(config: Config['config']) {
       return;
     }
 
-    config.output.targetEnv = 'library-browser';
+    config.output.targetEnv = 'library';
   }
 }
 

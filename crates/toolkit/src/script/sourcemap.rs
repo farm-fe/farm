@@ -4,7 +4,7 @@ use farmfe_core::{
   context::{get_swc_sourcemap_filename, CompilationContext},
   module::{module_graph::ModuleGraph, ModuleId},
   rayon::iter::{IntoParallelRefMutIterator, ParallelIterator},
-  resource::resource_pot::ResourcePotId,
+  resource::{meta_data::js::RenderModuleResult, resource_pot::ResourcePotId},
   swc_common::{
     comments::{Comments, SingleThreadedComments},
     BytePos, SourceMap,
@@ -12,8 +12,6 @@ use farmfe_core::{
   HashMap,
 };
 use swc_ecma_visit::{VisitMut, VisitMutWith};
-
-use super::generator::RenderModuleResult;
 
 #[inline]
 fn try_get_module_id_from_hoisted_map<'a>(
@@ -80,12 +78,10 @@ pub fn merge_sourcemap(
     .iter()
     .map(|item| &item.module_id)
     .collect();
-  let new_cm = context.meta.script.merge_nested_source_map(
-    resource_pot_id,
-    &module_ids,
-    module_graph,
-    hoisted_map,
-  );
+  let new_cm =
+    context
+      .meta
+      .merge_nested_source_map(resource_pot_id, &module_ids, module_graph, hoisted_map);
 
   // update Span in parallel
   render_module_results.par_iter_mut().for_each(|res| {

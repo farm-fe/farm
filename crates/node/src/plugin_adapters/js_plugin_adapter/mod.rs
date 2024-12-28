@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use farmfe_compiler::{DYNAMIC_VIRTUAL_SUFFIX, FARM_CSS_MODULES_SUFFIX, RUNTIME_SUFFIX};
+use farmfe_compiler::{DYNAMIC_VIRTUAL_SUFFIX, FARM_CSS_MODULES_SUFFIX, RUNTIME_INPUT_SCOPE};
 use farmfe_core::{
   context::CompilationContext,
   error::{CompilationError, Result},
@@ -25,7 +25,6 @@ use self::hooks::{
   plugin_cache_loaded::JsPluginPluginCacheLoadedHook,
   // render_resource_pot::JsPluginRenderResourcePotHook,
   process_module::JsPluginProcessModuleHook,
-  render_resource_pot::JsPluginRenderResourcePotHook,
   render_start::JsPluginRenderStartHook,
   resolve::JsPluginResolveHook,
   transform::JsPluginTransformHook,
@@ -133,7 +132,7 @@ impl JsPluginAdapter {
   pub fn is_internal_virtual_module(&self, path: &str) -> bool {
     path.ends_with(DYNAMIC_VIRTUAL_SUFFIX)
       || FARM_CSS_MODULES_SUFFIX.is_match(path)
-      || path.ends_with(RUNTIME_SUFFIX)
+      || path.ends_with(RUNTIME_INPUT_SCOPE)
   }
 }
 

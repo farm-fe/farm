@@ -143,6 +143,7 @@ impl CompilationContext {
         name: params.name,
         bytes: params.content,
         emitted: false,
+        should_transform_output_filename: true,
         resource_type: params.resource_type,
         origin: ResourceOrigin::Module(module_id),
         // info: None,
@@ -202,7 +203,7 @@ impl CompilationContext {
       .iter()
       .filter_map(|item| {
         let input = item.value();
-        if input.is_built {
+        if input.get_is_built() {
           None
         } else {
           Some(input.name.clone())
@@ -212,7 +213,7 @@ impl CompilationContext {
 
     for input_name in &input_names {
       if let Some(mut input) = self.dynamic_input.get_mut(input_name) {
-        input.is_built = true;
+        input.set_is_built();
       }
     }
 
@@ -233,6 +234,10 @@ pub struct ContextMetaData {
   pub script: ScriptContextMetaData,
   pub css: CssContextMetaData,
   pub html: HtmlContextMetaData,
+  // shared swc sourcemap cache
+  pub module_source_maps: DashMap<ModuleId, (Arc<SourceMap>, Arc<SourceFile>)>,
+  pub resource_pot_source_maps: DashMap<ResourcePotId, Arc<SourceMap>>,
+
   // custom meta map
   pub custom: DashMap<String, Box<dyn Any + Send + Sync>>,
 }
@@ -243,47 +248,9 @@ impl ContextMetaData {
       script: ScriptContextMetaData::new(),
       css: CssContextMetaData::new(),
       html: HtmlContextMetaData::new(),
-      custom: DashMap::new(),
-    }
-  }
-}
-
-impl Default for ContextMetaData {
-  fn default() -> Self {
-    Self::new()
-  }
-}
-
-/// get swc source map filename from module id.
-/// you can get module id from sourcemap filename too, by
-pub fn get_swc_sourcemap_filename(module_id: &ModuleId) -> FileName {
-  FileName::Real(PathBuf::from(module_id.to_string()))
-}
-
-/// create a swc source map from a source
-pub fn create_swc_source_map(
-  id: &ModuleId,
-  content: Arc<String>,
-) -> (Arc<SourceMap>, Arc<SourceFile>) {
-  let cm = Arc::new(SourceMap::default());
-  let sf = cm.new_source_file_from(Arc::new(get_swc_sourcemap_filename(id)), content);
-
-  (cm, sf)
-}
-
-/// Shared script meta data used for [swc]
-pub struct ScriptContextMetaData {
-  pub globals: Globals,
-  pub module_source_maps: DashMap<ModuleId, (Arc<SourceMap>, Arc<SourceFile>)>,
-  pub resource_pot_source_maps: DashMap<ResourcePotId, Arc<SourceMap>>,
-}
-
-impl ScriptContextMetaData {
-  pub fn new() -> Self {
-    Self {
-      globals: Globals::new(),
       module_source_maps: DashMap::new(),
       resource_pot_source_maps: DashMap::new(),
+      custom: DashMap::new(),
     }
   }
 
@@ -372,6 +339,42 @@ impl ScriptContextMetaData {
   }
 }
 
+impl Default for ContextMetaData {
+  fn default() -> Self {
+    Self::new()
+  }
+}
+
+/// get swc source map filename from module id.
+/// you can get module id from sourcemap filename too, by
+pub fn get_swc_sourcemap_filename(module_id: &ModuleId) -> FileName {
+  FileName::Real(PathBuf::from(module_id.to_string()))
+}
+
+/// create a swc source map from a source
+pub fn create_swc_source_map(
+  id: &ModuleId,
+  content: Arc<String>,
+) -> (Arc<SourceMap>, Arc<SourceFile>) {
+  let cm = Arc::new(SourceMap::default());
+  let sf = cm.new_source_file_from(Arc::new(get_swc_sourcemap_filename(id)), content);
+
+  (cm, sf)
+}
+
+/// Shared script meta data used for [swc]
+pub struct ScriptContextMetaData {
+  pub globals: Globals,
+}
+
+impl ScriptContextMetaData {
+  pub fn new() -> Self {
+    Self {
+      globals: Globals::new(),
+    }
+  }
+}
+
 impl Default for ScriptContextMetaData {
   fn default() -> Self {
     Self::new()
@@ -433,7 +436,27 @@ pub struct DynamicCompilationInput {
   /// Default to false
   pub allow_duplicate: bool,
   /// Set to true when a dynamic input starts building in compilation
-  pub is_built: bool,
+  is_built: bool,
+}
+
+impl DynamicCompilationInput {
+  pub fn new(name: String, source: String, scope: Option<String>, allow_duplicate: bool) -> Self {
+    Self {
+      name,
+      source,
+      scope,
+      allow_duplicate,
+      is_built: false,
+    }
+  }
+
+  pub fn get_is_built(&self) -> bool {
+    self.is_built
+  }
+
+  pub fn set_is_built(&mut self) {
+    self.is_built = true;
+  }
 }
 
 #[cfg(test)]

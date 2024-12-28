@@ -6,6 +6,7 @@ use farmfe_core::{
   HashSet,
 };
 
+/// Copy module deeply starting from module_id, suffixed the copied module with scope
 fn copy_module_deeply(module_id: ModuleId, scope: &str, module_graph: &mut ModuleGraph) -> bool {
   let mut queue = VecDeque::from(vec![module_id]);
   let mut visited = HashSet::default();
@@ -23,34 +24,44 @@ fn copy_module_deeply(module_id: ModuleId, scope: &str, module_graph: &mut Modul
       let scoped_id: ModuleId =
         format!("{}.{}{}", dep.relative_path(), scope, dep.query_string()).into();
       // if the module is already renamed, then skip
-      if module_graph.has_edge(&module_id, &dep) {
+      if module_graph.has_edge(&module_id, &scoped_id) {
         continue;
       }
 
       copied = true;
 
-      if module_graph.dependents_ids(&dep).len() > 1 {
-        // clone the module and rename it
-        let mut cloned_module = module_graph.module(&dep).unwrap().clone();
-        if !cloned_module.module_type.is_script() || !cloned_module.module_type.is_css() {
+      let (mut module, edge) = if module_graph.dependents_ids(&dep).len() > 1 {
+        let mut module = module_graph.module(&dep).unwrap();
+        if !module.module_type.is_script() || !module.module_type.is_css() {
           continue;
         }
         let edge = module_graph.remove_edge(&module_id, &dep).unwrap();
 
-        if let Some(edge) = edge {
-          cloned_module.id = scoped_id.clone();
-          cloned_module.module_type = cloned_module.module_type.to_custom(scope);
-          module_graph.add_module(cloned_module);
-          module_graph.add_edge(&module_id, &scoped_id, edge).unwrap();
-        }
+        (None, edge)
       } else {
-        // rename the module
-        let module = module_graph.module_mut(&dep).unwrap();
+        let edge = module_graph.remove_edge(&module_id, &dep).unwrap();
+        let module = module_graph.remove_module(&module_id);
         if !module.module_type.is_script() || !module.module_type.is_css() {
           continue;
         }
-        module.id = scoped_id;
-        module.module_type = module.module_type.to_custom(scope);
+
+        (Some(module), edge)
+      };
+
+      // the scoped module is already existed, clone the edge
+      if module_graph.has_module(&scoped_id) {
+        module_graph
+          .add_edge(&module_id, &scoped_id, edge.unwrap())
+          .unwrap();
+      } else {
+        // clone the module if needed and rename it
+        let mut cloned_module = module.unwrap_or(module_graph.module(&dep).unwrap().clone());
+        cloned_module.id = scoped_id.clone();
+        cloned_module.module_type = cloned_module.module_type.to_custom(scope);
+        module_graph.add_module(cloned_module);
+        module_graph
+          .add_edge(&module_id, &scoped_id, edge.unwrap())
+          .unwrap();
       }
 
       queue.push_back(dep);
