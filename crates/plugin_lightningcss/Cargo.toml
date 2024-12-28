@@ -1,0 +1,29 @@
+[package]
+name = "farmfe_plugin_lightningcss"
+version = "0.0.1"
+edition = "2021"
+authors = ["madinah <maidang@felixwliu.cn>"]
+license = "MIT"
+description = "Lightningcss plugin of farm."
+homepage = "https://farmfe.org"
+repository = "https://github.com/farm-fe/farm"
+documentation = "https://docs.rs/farmfe_plugin_css"
+
+[dependencies]
+farmfe_core = { path = "../core", version = "*" }
+farmfe_toolkit = { path = "../toolkit", version = "*" }
+farmfe_utils = { path = "../utils", version = "*" }
+farmfe_macro_cache_item = { path = "../macro_cache_item", version = "*" }
+rkyv = { version = "0.7.42" }
+lightningcss = { version = "1.0.0-alpha.61", features = [
+  "sourcemap",
+  "browserslist",
+  "visitor",
+  "into_owned",
+  "serde",
+] }
+downcast-rs = { version = "1.2" }
+rkyv_dyn = "0.7.42"
+
+[dev-dependencies]
+farmfe_testing_helpers = { path = "../testing_helpers", version = "*" }
