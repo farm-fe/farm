@@ -7,9 +7,10 @@ use farmfe_core::enhanced_magic_string::collapse_sourcemap::{
 };
 use farmfe_core::module::CustomModuleMetaData;
 use farmfe_core::module::{ModuleId, ModuleMetaData, ModuleType};
-use farmfe_core::plugin::{PluginLoadHookResult, PluginTransformHookResult};
+use farmfe_core::plugin::{PluginLoadHookResult, PluginTransformHookResult, ResolveKind};
 use farmfe_core::serde::Serialize;
 use farmfe_core::serde_json;
+use farmfe_core::swc_common::plugin::diagnostics::PluginCorePkgDiagnosticsResolver;
 use farmfe_core::{
   config::Config, context::CompilationContext, deserialize, parking_lot::Mutex, plugin::Plugin,
 };
@@ -18,19 +19,29 @@ use farmfe_toolkit::common::load_source_original_source_map;
 use farmfe_toolkit::fs::read_file_utf8;
 use farmfe_toolkit::lazy_static::lazy_static;
 use farmfe_toolkit::regex::Regex;
+use farmfe_toolkit::resolve::path_start_with_alias::is_start_with_alias;
 use farmfe_toolkit::script::module_type_from_id;
 use farmfe_utils::{relative, stringify_query};
 use lightningcss::css_modules::{CssModuleExports, CssModuleReference};
-use lightningcss::stylesheet::{ParserOptions, StyleSheet};
-use rkyv::{Archive, Deserialize};
+use lightningcss::printer::PrinterOptions;
+use lightningcss::rules::CssRule;
+use lightningcss::stylesheet::{MinifyOptions, ParserOptions, StyleSheet};
+use lightningcss::targets::{Features, Targets};
+use lightningcss::values::url::Url;
+use lightningcss::visit_types;
+use lightningcss::visitor::{Visit, VisitTypes, Visitor};
+use rkyv::Deserialize;
 mod parse;
 use lightningcss::bundler::{Bundler, FileProvider};
 use std::path::Path;
 pub const FARM_CSS_MODULES: &str = "farm_lightning_css_modules";
 use farmfe_toolkit::sourcemap::SourceMap;
-use lightningcss::traits::IntoOwned;
-use rkyv_dyn::archive_dyn;
+use lightningcss::traits::{IntoOwned, ToCss};
 use std::collections::HashMap;
+mod dep_analyzer;
+
+use farmfe_core::config::AliasItem;
+use farmfe_core::plugin::PluginAnalyzeDepsHookResultEntry;
 
 fn to_static(
   stylesheet: StyleSheet,
@@ -57,6 +68,53 @@ fn is_farm_css_modules_type(module_type: &ModuleType) -> bool {
   }
 
   false
+}
+
+pub fn is_source_ignored(source: &str) -> bool {
+  source.starts_with("http://")
+    || source.starts_with("https://")
+    || source.starts_with("/")
+    || source.starts_with("data:")
+    || source.starts_with('#')
+}
+struct DepVisitor {
+  pub deps: Vec<PluginAnalyzeDepsHookResultEntry>,
+  alias: Vec<AliasItem>,
+}
+
+impl DepVisitor {
+  pub fn new(alias: Vec<AliasItem>) -> Self {
+    Self {
+      deps: vec![],
+      alias,
+    }
+  }
+
+  fn insert_dep(&mut self, dep: PluginAnalyzeDepsHookResultEntry) -> bool {
+    // ignore http and /
+    if is_source_ignored(&dep.source) && !is_start_with_alias(&self.alias, &dep.source) {
+      return false;
+    }
+
+    self.deps.push(dep);
+    true
+  }
+}
+
+impl<'i> Visitor<'i> for DepVisitor {
+  type Error = Infallible;
+
+  fn visit_types(&self) -> VisitTypes {
+    visit_types!(URLS | LENGTHS)
+  }
+
+  fn visit_url(&mut self, url: &mut Url<'i>) -> Result<(), Self::Error> {
+    self.insert_dep(PluginAnalyzeDepsHookResultEntry {
+      source: url.url.to_string(),
+      kind: ResolveKind::CssUrl,
+    });
+    Ok(())
+  }
 }
 
 #[cache_item]
@@ -155,7 +213,7 @@ impl Plugin for FarmPluginLightningCss {
 
     if let Some(module_type) = module_type {
       if matches!(module_type, ModuleType::Css) {
-        let content = read_file_utf8((param.resolved_path))?;
+        let content = read_file_utf8(param.resolved_path)?;
 
         let map =
           load_source_original_source_map(&content, param.resolved_path, "/*# sourceMappingURL");
@@ -210,7 +268,10 @@ impl Plugin for FarmPluginLightningCss {
 
       let ast = bundler.bundle(Path::new(&param.resolved_path)).unwrap();
       let stylesheet = ast.to_css(Default::default()).unwrap();
-      self.ast_map.lock().insert(cache_id, serde_json::to_string(&ast).unwrap());
+      self
+        .ast_map
+        .lock()
+        .insert(cache_id, serde_json::to_string(&ast).unwrap());
 
       let mut export_names = HashMap::new();
 
@@ -336,17 +397,64 @@ impl Plugin for FarmPluginLightningCss {
 
   fn process_module(
     &self,
-    _param: &mut farmfe_core::plugin::PluginProcessModuleHookParam,
-    _context: &Arc<CompilationContext>,
+    param: &mut farmfe_core::plugin::PluginProcessModuleHookParam,
+    context: &Arc<CompilationContext>,
   ) -> farmfe_core::error::Result<Option<()>> {
-    Ok(None)
+    let enable_prefix = context.config.css.prefixer.is_some();
+    let mut css_stylesheet = match &mut param.meta {
+      ModuleMetaData::Custom(meta) => {
+        let meta = meta.downcast_ref::<LightingCssModuleMetaData>().unwrap();
+        let ast: StyleSheet = serde_json::from_str(&meta.ast).unwrap();
+        ast
+      }
+      _ => return Ok(None),
+    };
+
+    if enable_prefix {
+      // TODO prefix css
+      css_stylesheet
+        .minify(MinifyOptions {
+          targets: Targets {
+            include: Features::VendorPrefixes,
+            ..Default::default()
+          },
+          ..Default::default()
+        })
+        .unwrap();
+
+      let css_str = serde_json::to_string(&css_stylesheet).unwrap();
+      param.meta =
+        ModuleMetaData::Custom(Box::new(LightingCssModuleMetaData { ast: css_str }) as _);
+      return Ok(None);
+    }
+
+    return Ok(None);
   }
 
   fn analyze_deps(
     &self,
-    _param: &mut farmfe_core::plugin::PluginAnalyzeDepsHookParam,
-    _context: &Arc<CompilationContext>,
+    param: &mut farmfe_core::plugin::PluginAnalyzeDepsHookParam,
+    context: &Arc<CompilationContext>,
   ) -> farmfe_core::error::Result<Option<()>> {
+    if param.module.module_type == ModuleType::Css {
+      let meta: &mut String = param.module.meta.as_custom_mut().downcast_mut();
+      let ast: StyleSheet = serde_json::from_str(&meta.ast).unwrap();
+
+      let mut dep_analyzer = DepVisitor::new(context.config.resolve.alias.clone());
+      ast.visit(&mut dep_analyzer);
+      let rules = ast.rules;
+
+      for rule in rules.0.iter() {
+        if let CssRule::Import(import) = rule {
+          let url = import.url;
+          dep_analyzer.insert_dep(PluginAnalyzeDepsHookResultEntry {
+            source: url.to_string(),
+            kind: ResolveKind::CssAtImport,
+          });
+        }
+      }
+      param.deps.extend(dep_analyzer.deps);
+    }
     Ok(None)
   }
 
