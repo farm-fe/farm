@@ -33,9 +33,11 @@ import {
   htmlFallbackMiddleware,
   lazyCompilationMiddleware,
   notFoundMiddleware,
+  outputFilesMiddleware,
   proxyMiddleware,
   publicMiddleware,
   publicPathMiddleware,
+  resourceDiskMiddleware,
   resourceMiddleware,
   staticMiddleware
 } from './middlewares/index.js';
@@ -562,7 +564,14 @@ export class Server extends httpServer {
 
     this.middlewares.use(staticMiddleware(this));
 
-    this.middlewares.use(resourceMiddleware(this));
+    // Check dev resource tree in `_output_files` url
+    this.middlewares.use(outputFilesMiddleware(this));
+
+    if (this.config.server.writeToDisk) {
+      this.middlewares.use(resourceDiskMiddleware(this));
+    } else {
+      this.middlewares.use(resourceMiddleware(this));
+    }
 
     this.postConfigureServerHooks.reduce((_, fn) => {
       if (typeof fn === 'function') fn();

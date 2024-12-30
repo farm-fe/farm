@@ -52,11 +52,11 @@ export function staticMiddleware(app: Server): Connect.NextHandleFunction {
     const filePath = fsPathFromUrl(fileUrl);
 
     // TODO FS.allow FS.deny server.fs.allow server.fs.deny
-
-    if (!existsSync(filePath) || !statSync(filePath).isFile()) {
+    if (existsSync(filePath) && statSync(filePath).isFile()) {
+      serve(req, res, next);
+    } else {
       next();
     }
-    serve(req, res, next);
   };
 }
 
@@ -79,8 +79,8 @@ export function publicMiddleware(app: Server): Connect.NextHandleFunction {
   };
 
   return async function farmHandlerPublicMiddleware(
-    req: any,
-    res: any,
+    req,
+    res,
     next: () => void
   ) {
     if (
@@ -95,7 +95,7 @@ export function publicMiddleware(app: Server): Connect.NextHandleFunction {
 
 const knownJavascriptExtensionRE = /\.[tj]sx?$/;
 
-const sirvOptions = ({
+export const sirvOptions = ({
   getHeaders
 }: {
   getHeaders: () => OutgoingHttpHeaders | undefined;
