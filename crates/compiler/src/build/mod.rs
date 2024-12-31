@@ -29,6 +29,7 @@ use farmfe_core::{
 use farmfe_plugin_lazy_compilation::DYNAMIC_VIRTUAL_SUFFIX;
 use farmfe_toolkit::resolve::load_package_json;
 use farmfe_utils::stringify_query;
+use finalize_module_graph::finalize_module_graph;
 
 use crate::{
   build::{
@@ -56,7 +57,9 @@ macro_rules! call_and_catch_error {
 }
 
 pub(crate) mod analyze_deps;
+// pub(crate) mod dynamic_input;
 pub(crate) mod finalize_module;
+pub(crate) mod finalize_module_graph;
 pub(crate) mod load;
 pub(crate) mod module_cache;
 pub(crate) mod parse;
@@ -105,14 +108,11 @@ impl Compiler {
   fn set_module_graph_stats(&self) {
     if self.context.config.record {
       let module_graph = self.context.module_graph.read();
+      self.context.stats.set_module_graph_stats(&module_graph);
       self
         .context
-        .record_manager
-        .set_module_graph_stats(&module_graph);
-      self
-        .context
-        .record_manager
-        .set_entries(module_graph.entries.keys().cloned().collect())
+        .stats
+        .set_entries(module_graph.entries.keys().cloned().collect());
     }
   }
 
@@ -131,10 +131,9 @@ impl Compiler {
     self.context.plugin_driver.build_start(&self.context)?;
 
     let (err_sender, err_receiver) = Self::create_thread_channel();
-
     for (order, (name, source)) in self.context.config.input.iter().enumerate() {
       let params = BuildModuleGraphThreadedParams {
-        thread_pool: self.thread_pool.clone(),
+        thread_pool: self.context.thread_pool.clone(),
         resolve_param: PluginResolveHookParam {
           source: source.clone(),
           importer: None,
@@ -161,8 +160,8 @@ impl Compiler {
 
     if !errors.is_empty() {
       // set stats if stats is enabled
-      self.context.record_manager.set_build_end_time();
-      self.context.record_manager.set_end_time();
+      self.context.stats.set_build_end_time();
+      self.context.stats.set_end_time();
       self.set_module_graph_stats();
 
       // set last failed module ids
@@ -181,24 +180,22 @@ impl Compiler {
       self.set_last_fail_module_ids(&[]);
     }
 
+    let module_ids = {
+      let module_graph = self.context.module_graph.read();
+      module_graph
+        .modules()
+        .iter()
+        .map(|m| m.id.clone())
+        .collect::<Vec<_>>()
+    };
+
     // set module graph cache
     if self.context.config.persistent_cache.enabled() {
-      let module_ids = self
-        .context
-        .module_graph
-        .read()
-        .modules()
-        .into_iter()
-        .map(|m| m.id.clone())
-        .collect();
       // set new module cache
       set_module_graph_cache(module_ids, &self.context);
     }
 
-    // Topo sort the module graph
-    let mut module_graph = self.context.module_graph.write();
-    module_graph.update_execution_order_for_modules();
-    drop(module_graph);
+    finalize_module_graph(&self.context)?;
 
     // set stats if stats is enabled
     self.set_module_graph_stats();
@@ -414,11 +411,11 @@ impl Compiler {
     module.package_version = package_info.version.unwrap_or("0.0.0".to_string());
 
     // ================ Analyze Deps Start ===============
-    let analyze_deps_result = call_and_catch_error!(analyze_deps, module, context);
+    let mut analyze_deps_result = call_and_catch_error!(analyze_deps, module, context);
     // ================ Analyze Deps End ===============
 
     // ================ Finalize Module Start ===============
-    call_and_catch_error!(finalize_module, module, &analyze_deps_result, context);
+    call_and_catch_error!(finalize_module, module, &mut analyze_deps_result, context);
     // ================ Finalize Module End ===============
 
     Ok(analyze_deps_result)
@@ -583,13 +580,19 @@ impl Compiler {
   }
 
   /// add a module to the module graph, if the module already exists, update it
-  pub(crate) fn add_module(module: Module, kind: &ResolveKind, context: &CompilationContext) {
+  pub(crate) fn add_module(mut module: Module, kind: &ResolveKind, context: &CompilationContext) {
     let mut module_graph = context.module_graph.write();
 
     // mark entry module
     if let ResolveKind::Entry(name) = kind {
+      module.is_entry = true;
       module_graph
         .entries
+        .insert(module.id.clone(), name.to_string());
+    } else if let ResolveKind::DynamicEntry { name, .. } = kind {
+      module.is_dynamic_entry;
+      module_graph
+        .dynamic_entries
         .insert(module.id.clone(), name.to_string());
     }
 

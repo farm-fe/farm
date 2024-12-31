@@ -4,10 +4,12 @@ use farmfe_core::{
     Module,
   },
   plugin::ResolveKind,
-  HashSet,
+  HashMap, HashSet,
 };
-use farmfe_plugin_partial_bundling::module_group_graph_from_entries;
-use farmfe_testing_helpers::construct_test_module_graph;
+use farmfe_plugin_partial_bundling::{
+  module_group_graph_from_entries, module_group_graph_from_module_graph,
+};
+use farmfe_testing_helpers::{construct_test_module_graph, construct_test_module_graph_complex};
 
 use crate::update::diff_and_patch_module_graph::{diff_module_graph, patch_module_graph};
 
@@ -469,4 +471,108 @@ fn test_diff_module_deps_remove_and_add_complex() {
   for module in module_graph.modules() {
     assert_eq!(module.module_groups, HashSet::from_iter(["a".into()]));
   }
+}
+
+#[test]
+fn test_patch_module_group_graph_dynamic_entry_complex() {
+  let mut module_graph = construct_test_module_graph_complex();
+  module_graph.dynamic_entries =
+    HashMap::from_iter([("D".into(), "D".to_string()), ("G".into(), "G".to_string())]);
+  module_graph
+    .update_edge(
+      &"A".into(),
+      &"D".into(),
+      ModuleGraphEdge::new(vec![ModuleGraphEdgeDataItem {
+        kind: ResolveKind::DynamicEntry {
+          name: "AD".to_string(),
+          output_filename: None,
+        },
+        ..Default::default()
+      }]),
+    )
+    .unwrap();
+  module_graph
+    .update_edge(
+      &"E".into(),
+      &"G".into(),
+      ModuleGraphEdge::new(vec![ModuleGraphEdgeDataItem {
+        kind: ResolveKind::DynamicEntry {
+          name: "EG".to_string(),
+          output_filename: None,
+        },
+        ..Default::default()
+      }]),
+    )
+    .unwrap();
+  let mut update_module_graph = construct_test_module_graph_complex();
+  update_module_graph.add_module(Module::new("I".into()));
+  update_module_graph
+    .add_edge(
+      &"E".into(),
+      &"I".into(),
+      ModuleGraphEdge::new(vec![ModuleGraphEdgeDataItem {
+        kind: ResolveKind::DynamicEntry {
+          name: "EI".to_string(),
+          output_filename: None,
+        },
+        ..Default::default()
+      }]),
+    )
+    .unwrap();
+  update_module_graph
+    .add_edge(
+      &"I".into(),
+      &"H".into(),
+      ModuleGraphEdge::new(vec![ModuleGraphEdgeDataItem {
+        kind: ResolveKind::DynamicEntry {
+          name: "IH".to_string(),
+          output_filename: None,
+        },
+        ..Default::default()
+      }]),
+    )
+    .unwrap();
+  update_module_graph.remove_module(&"F".into());
+  update_module_graph.remove_module(&"G".into());
+  update_module_graph.remove_module(&"B".into());
+  update_module_graph.remove_module(&"D".into());
+
+  let mut module_group_graph = module_group_graph_from_module_graph(&mut module_graph);
+
+  let start_points = vec!["A".into(), "E".into()];
+  let diff_result = diff_module_graph(start_points.clone(), &module_graph, &update_module_graph);
+  let removed_modules = patch_module_graph(
+    start_points.clone(),
+    &diff_result,
+    &mut module_graph,
+    &mut update_module_graph,
+  );
+
+  let affected_groups = patch_module_group_graph(
+    start_points.clone(),
+    &diff_result,
+    &removed_modules,
+    &mut module_graph,
+    &mut module_group_graph,
+  );
+  assert_eq!(
+    affected_groups,
+    HashSet::from_iter(["A".into(), "B".into()])
+  );
+
+  let update_module_group_graph = module_group_graph_from_module_graph(&mut module_graph);
+
+  assert_eq!(module_group_graph, update_module_group_graph);
+
+  // makes sure that module_groups field of each module is correct
+  let module_a = module_graph.module(&"A".into()).unwrap();
+  assert_eq!(module_a.module_groups, HashSet::from_iter(["A".into()]));
+  let module_b = module_graph.module(&"B".into()).unwrap();
+  assert_eq!(module_b.module_groups, HashSet::from_iter(["B".into()]));
+  let module_c = module_graph.module(&"C".into()).unwrap();
+  assert_eq!(module_c.module_groups, HashSet::from_iter(["A".into()]));
+  let module_d = module_graph.module(&"D".into()).unwrap();
+  assert_eq!(module_d.module_groups, HashSet::from_iter(["B".into()]));
+  let module_e = module_graph.module(&"E".into()).unwrap();
+  assert_eq!(module_e.module_groups, HashSet::from_iter(["B".into()]));
 }

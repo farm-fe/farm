@@ -15,9 +15,10 @@ pub unsafe fn load_rust_plugin<P: AsRef<OsStr> + std::fmt::Display>(
   options: String,
 ) -> Result<(Arc<dyn Plugin>, Library), Error> {
   type PluginCreate = unsafe fn(config: &Config, options: String) -> Arc<dyn Plugin>;
+  println!("try load rust plugin {}", filename);
 
-  let lib = Library::new(filename.as_ref())?;
-
+  let lib = Library::new(filename.as_ref()).unwrap();
+  println!("lib created {}", filename);
   let core_version_fn: Symbol<unsafe fn() -> String> = lib.get(b"_core_version")?;
   let core_version = core_version_fn();
 
@@ -35,6 +36,6 @@ If you are plugin author, please build your plugin with rust toolchain `nightly-
 
   let constructor: Symbol<PluginCreate> = lib.get(b"_plugin_create")?;
   let plugin = constructor(config, options);
-
+  println!("plugin {} loaded", plugin.name());
   Ok((plugin, lib))
 }

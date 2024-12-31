@@ -37,8 +37,8 @@ pub fn get_dynamic_resources_map(
         )
       });
 
-      if dynamic_resources_map.contains_key(&mg_id) {
-        let resources = dynamic_resources_map.get_mut(&mg_id).unwrap();
+      if dynamic_resources_map.contains_key(&mg.entry_module_id) {
+        let resources = dynamic_resources_map.get_mut(&mg.entry_module_id).unwrap();
 
         for r in rp.resources() {
           let resource = resources_map.get(r).unwrap();
@@ -66,7 +66,7 @@ pub fn get_dynamic_resources_map(
           resources.push((resource.name.clone(), resource.resource_type.clone()));
         }
 
-        dynamic_resources_map.insert(mg_id.clone(), resources);
+        dynamic_resources_map.insert(mg.entry_module_id.clone(), resources);
       }
     }
   }

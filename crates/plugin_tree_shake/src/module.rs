@@ -128,6 +128,7 @@ impl UsedExports {
   }
 }
 
+// TODO cache tree shake module
 pub struct TreeShakeModule {
   pub module_id: ModuleId,
   pub side_effects: bool,

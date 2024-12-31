@@ -47,9 +47,7 @@ export interface CliBuildOptions {
     | 'browser-es2015'
     | 'browser-es2017'
     | 'browser-esnext'
-    | 'library'
-    | 'library-browser'
-    | 'library-node';
+    | 'library';
 }
 
 export interface CliPreviewOptions extends BaseServerOptions {

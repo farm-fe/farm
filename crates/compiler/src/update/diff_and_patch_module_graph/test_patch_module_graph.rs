@@ -159,7 +159,7 @@ fn test_patch_module_graph_2() {
   let edge_info = module_graph
     .edge_info(&changed_module_id, &"b".into())
     .unwrap();
-  assert!(edge_info.is_dynamic());
+  assert!(edge_info.is_dynamic_import());
 }
 
 // TODO update these complex 1 2 3 tests

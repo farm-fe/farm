@@ -99,8 +99,8 @@ fn convert_code_to_metadata(params: &mut PluginProcessModuleHookParam, code: Str
   match params.meta {
     ModuleMetaData::Script(script_module_meta_data) => {
       let ParseScriptModuleResult { ast, comments } = parse_module(
-        &filename,
-        &code,
+        params.module_id,
+        Arc::new(code.clone()),
         // TODO: config should from config or process_module custom config
         match params.module_type {
           ModuleType::Js | ModuleType::Ts => Syntax::Es(Default::default()),

@@ -3,6 +3,8 @@ use std::sync::Arc;
 use farmfe_core::enhanced_magic_string::collapse_sourcemap::collapse_sourcemap_chain;
 use farmfe_core::enhanced_magic_string::magic_string::MagicString;
 use farmfe_core::enhanced_magic_string::types::SourceMapOptions;
+use farmfe_core::module::module_group::ModuleGroupId;
+use farmfe_core::module::module_group::ModuleGroupType;
 use farmfe_core::plugin::ResolveKind;
 use farmfe_core::resource::ResourceOrigin;
 use farmfe_core::HashMap;
@@ -16,12 +18,12 @@ use farmfe_core::{
   resource::{Resource, ResourceType},
   swc_ecma_ast::{self, Decl, ModuleDecl, ModuleItem, Pat},
 };
-use farmfe_toolkit::common::{append_source_map_comment, generate_source_map_resource};
 use farmfe_toolkit::fs::transform_output_entry_filename;
 use farmfe_toolkit::get_dynamic_resources_map::{
   get_dynamic_resources_code, get_dynamic_resources_map,
 };
 use farmfe_toolkit::html::get_farm_global_this;
+use farmfe_toolkit::source_map::append_source_map_comment;
 use farmfe_toolkit::sourcemap::SourceMap;
 use farmfe_utils::transform_string_to_static_str;
 
@@ -227,7 +229,7 @@ fn get_entry_resource_and_dep_resources_name(
 ) -> EntryResourceAndDepResources {
   let mut result = EntryResourceAndDepResources::default();
 
-  let module_group_id = entry.clone();
+  let module_group_id = ModuleGroupId::new(&entry, &ModuleGroupType::Entry);
   let module_group = module_group_graph
     .module_group(&module_group_id)
     .expect("module group is not found");
@@ -250,14 +252,11 @@ fn get_entry_resource_and_dep_resources_name(
 
         if matches!(resource.resource_type, ResourceType::Js) {
           result.entry_js_resource_name = resource.name.clone();
+          result.entry_js_resource_code = String::from_utf8(resource.bytes.clone()).unwrap().into();
         } else if matches!(resource.resource_type, ResourceType::SourceMap(_)) {
           result.entry_js_resource_source_map_name = resource.name.clone();
+          result.entry_js_resource_source_map = Some(resource.clone());
         }
-      }
-      result.entry_js_resource_code = resource_pot.meta.rendered_content.clone();
-
-      if !resource_pot.meta.rendered_map_chain.is_empty() {
-        result.entry_js_resource_source_map = Some(generate_source_map_resource(resource_pot));
       }
     } else {
       for resource_id in resource_pot.resources() {
@@ -274,7 +273,7 @@ fn get_entry_resource_and_dep_resources_name(
 
   let dynamic_resources_map = get_dynamic_resources_map(
     module_group_graph,
-    entry,
+    &module_group_id,
     &resource_pot_map,
     resource_map,
     module_graph,
@@ -290,7 +289,6 @@ fn get_entry_resource_and_dep_resources_name(
 pub fn handle_entry_resources(
   resources_map: &mut HashMap<String, Resource>,
   context: &Arc<CompilationContext>,
-  async_modules: &HashSet<ModuleId>,
 ) {
   let module_graph = context.module_graph.read();
   let module_group_graph = context.module_group_graph.read();
@@ -363,7 +361,7 @@ pub fn handle_entry_resources(
       };
 
       let top_level_await_entry =
-        if context.config.script.native_top_level_await && async_modules.contains(entry) {
+        if context.config.script.native_top_level_await && module.meta.as_script().is_async {
           "await "
         } else {
           ""
@@ -530,6 +528,7 @@ fn create_farm_runtime_resource(runtime_code: &str, context: &Arc<CompilationCon
     // this resource should be Js instead of Runtime because it may cause duplicated runtime code when HMR if it's Runtime
     resource_type: ResourceType::Js,
     origin: ResourceOrigin::ResourcePot(name),
-    info: None,
+    should_transform_output_filename: true,
+    // info: None,
   }
 }

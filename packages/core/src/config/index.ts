@@ -339,10 +339,10 @@ export async function normalizeUserCompilationConfig(
   resolvedCompilation.define = Object.assign(
     {
       // skip self define
-      ['FARM' + '_PROCESS_ENV']: resolvedUserConfig.env,
-      FARM_RUNTIME_TARGET_ENV: JSON.stringify(
-        resolvedCompilation.output?.targetEnv
-      )
+      ['FARM' + '_PROCESS_ENV']: resolvedUserConfig.env
+      // FARM_RUNTIME_TARGET_ENV: JSON.stringify(
+      //   resolvedCompilation.output?.targetEnv
+      // )
     },
     resolvedCompilation?.define,
     // for node target, we should not define process.env.NODE_ENV
@@ -366,7 +366,8 @@ export async function normalizeUserCompilationConfig(
 
   resolvedCompilation.runtime = {
     path:
-      resolvedCompilation.runtime?.path ?? require.resolve('@farmfe/runtime'),
+      resolvedCompilation.runtime?.path ??
+      path.dirname(require.resolve('@farmfe/runtime/package.json')),
     swcHelpersPath:
       resolvedCompilation.runtime?.swcHelpersPath ??
       path.dirname(require.resolve('@swc/helpers/package.json')),
@@ -706,6 +707,7 @@ export async function readConfigFile(
     compilation: normalizedConfig,
     jsPlugins: [],
     rustPlugins: [[replaceDirnamePlugin, '{}']]
+    // rustPlugins: []
   });
 
   const FARM_PROFILE = process.env.FARM_PROFILE;
@@ -750,7 +752,7 @@ export async function readConfigFile(
 
     return config;
   } finally {
-    fse.unlink(getFilePath(outputPath, fileName)).catch(() => {});
+    // fse.unlink(getFilePath(outputPath, fileName)).catch(() => {});
   }
 }
 
@@ -814,13 +816,13 @@ export async function loadConfigFile(
     }
     const potentialSolution =
       'Potential solutions: \n1. Try set `FARM_CONFIG_FORMAT=cjs`(default to esm)\n2. Try set `FARM_CONFIG_FULL_BUNDLE=1`';
-    // throw new Error(
-    // `Failed to load farm config file: ${errorMessage}. \n ${potentialSolution} \n ${error.stack}`
-    // );
     throw new Error(
-      `Failed to load farm config file: ${errorMessage}. \n ${potentialSolution}`
-      // `Failed to load farm config file: ${errorMessage}.`,
+      `Failed to load farm config file: ${errorMessage}. \n ${potentialSolution} \n ${error.stack}`
     );
+    // throw new Error(
+    //   `Failed to load farm config file: ${errorMessage}. \n ${potentialSolution}`
+    //   // `Failed to load farm config file: ${errorMessage}.`,
+    // );
   }
 }
 
@@ -1013,8 +1015,8 @@ export function createDefaultConfig(options: DefaultOptionsType): UserConfig {
       output: {
         entryFilename: '[entryName]',
         path: outputPath,
-        format,
-        targetEnv: 'library-node'
+        format
+        // targetEnv: 'library-node'
       },
       mode,
       external: [

@@ -2,6 +2,7 @@ use std::{path::PathBuf, sync::Arc};
 
 use farmfe_core::{
   error::CompilationError,
+  module::ModuleId,
   regex::Regex,
   swc_common::{comments::SingleThreadedComments, input::SourceFileInput},
   swc_css_ast::Stylesheet,
@@ -16,7 +17,7 @@ use swc_css_parser::{
 };
 use swc_error_reporters::handler::try_with_handler;
 
-use crate::common::{build_source_map, create_swc_source_map, Source};
+use crate::source_map::{build_source_map, create_swc_source_map};
 
 pub struct ParseCssModuleResult {
   pub ast: Stylesheet,
@@ -40,10 +41,7 @@ pub fn parse_css_stylesheet(
   // let regex = Regex::new(r#":\s*([^;{}]*?\d\s+\s\d[^;{}]*?)\s*(;|\})"#).unwrap();
   // content = regex.replace_all(&content, ":\"$1\"$2").to_string();
 
-  let (cm, source_file) = create_swc_source_map(Source {
-    path: PathBuf::from(id),
-    content: Arc::new(content),
-  });
+  let (cm, source_file) = create_swc_source_map(&id.into(), Arc::new(content));
 
   let config = ParserConfig {
     allow_wrong_line_comments: true,
@@ -96,7 +94,7 @@ pub fn parse_css_stylesheet(
 /// generate css code from [Stylesheet], return css code and source map
 pub fn codegen_css_stylesheet(
   stylesheet: &Stylesheet,
-  source: Option<Source>,
+  source: Option<(&ModuleId, Arc<String>)>,
   minify: bool,
 ) -> (String, Option<String>) {
   let mut css_code = String::new();
@@ -114,8 +112,8 @@ pub fn codegen_css_stylesheet(
 
   gen.emit(stylesheet).unwrap();
 
-  if let Some(source) = source {
-    let (cm, _) = create_swc_source_map(source);
+  if let Some((id, source)) = source {
+    let (cm, _) = create_swc_source_map(id, source);
     let map = build_source_map(cm, &mappings);
     let mut src_map = vec![];
     map.to_writer(&mut src_map).unwrap();

@@ -11,7 +11,7 @@ use self::{
 
 use crate::HashMap;
 
-pub const FARM_MODULE_SYSTEM: &str = "__farm_module_system__";
+pub const FARM_MODULE_SYSTEM: &str = "m";
 // transformed from dynamic import, e.g `import('./xxx')`
 pub const FARM_DYNAMIC_REQUIRE: &str = "farmDynamicRequire";
 // transformed from static import, e.g `import xxx from './xxx'`
@@ -149,18 +149,15 @@ pub enum TargetEnv {
 
 impl TargetEnv {
   pub fn is_browser(&self) -> bool {
-    matches!(self, TargetEnv::Browser | TargetEnv::Library)
-      || matches!(self, TargetEnv::Custom(custom) if custom == "library-browser")
+    matches!(self, TargetEnv::Browser)
   }
 
   pub fn is_node(&self) -> bool {
     matches!(self, TargetEnv::Node)
-      || matches!(self, TargetEnv::Custom(custom) if custom == "library-node")
   }
 
   pub fn is_library(&self) -> bool {
     matches!(self, TargetEnv::Library)
-      || matches!(self, TargetEnv::Custom(custom) if custom == "library-browser" || custom == "library-node")
   }
 }
 
@@ -173,12 +170,22 @@ pub enum ModuleFormat {
   CommonJs,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
 pub enum Mode {
   #[serde(rename = "development")]
   Development,
   #[serde(rename = "production")]
   Production,
+}
+
+impl Mode {
+  pub fn is_dev(&self) -> bool {
+    matches!(self, Mode::Development)
+  }
+
+  pub fn is_prod(&self) -> bool {
+    matches!(self, Mode::Production)
+  }
 }
 
 impl Default for Mode {

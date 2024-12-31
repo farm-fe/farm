@@ -1,26 +1,19 @@
 use std::sync::Arc;
 
+use farmfe_core::plugin::PluginHookContext;
 use farmfe_core::{
   context::CompilationContext,
   enhanced_magic_string::types::SourceMapOptions,
   error::CompilationError,
   module::{module_group::ModuleGroupId, Module, ModuleId},
-  resource::resource_pot::{ResourcePot, ResourcePotMetaData, ResourcePotType},
-  HashMap, HashSet,
+  resource::resource_pot::{ResourcePot, ResourcePotType},
 };
+use farmfe_core::{HashMap, HashSet};
+use farmfe_utils::hash::base64_encode;
 
-use farmfe_plugin_runtime::render_resource_pot::{
-  resource_pot_to_runtime_object, RenderedJsResourcePot,
-};
-use farmfe_plugin_runtime::ASYNC_MODULES;
-use farmfe_toolkit::hash::base64_encode;
-use farmfe_utils::relative;
-
+use crate::generate::render_resource_pots::render_resource_pot_generate_resources;
 use crate::{
-  generate::render_resource_pots::{
-    render_resource_pot_generate_resources, render_resource_pots_and_generate_resources,
-  },
-  write_cache,
+  generate::render_resource_pots::render_resource_pots_and_generate_resources, write_cache,
 };
 
 use super::diff_and_patch_module_graph::DiffResult;
@@ -29,6 +22,7 @@ mod generate_and_diff_resource_pots;
 
 use generate_and_diff_resource_pots::generate_and_diff_resource_pots;
 
+/// This function only works when targetEnv is browser
 pub fn render_and_generate_update_resource(
   updated_module_ids: &Vec<ModuleId>,
   diff_result: &DiffResult,
@@ -78,68 +72,36 @@ pub fn render_and_generate_update_resource(
 
   let gen_resource_pot_code =
     |resource_pot: &mut ResourcePot| -> farmfe_core::error::Result<String> {
-      let async_modules = context.custom.get(ASYNC_MODULES).unwrap();
-      let async_modules = async_modules.downcast_ref::<HashSet<ModuleId>>().unwrap();
-      if !resource_pot.modules().is_empty() {
-        let RenderedJsResourcePot {
-          mut bundle,
-          rendered_modules,
-          ..
-        } = resource_pot_to_runtime_object(resource_pot, &module_graph, async_modules, context)?;
-        bundle.prepend("(");
-        bundle.append(")", None);
+      let hook_context = PluginHookContext::default();
+      let res = context
+        .plugin_driver
+        .render_resource_pot(resource_pot, context, &hook_context)?
+        .ok_or(CompilationError::GenerateResourcesError {
+          name: resource_pot.id.clone(),
+          ty: resource_pot.resource_pot_type.clone(),
+          source: None,
+        })?;
+      resource_pot.meta = res;
+      let (mut updated_result, _) = render_resource_pot_generate_resources(
+        resource_pot,
+        context,
+        &Default::default(),
+        // false,
+      )?;
+      let mut update_resources = updated_result.resources.remove(0);
 
-        let mut rendered_map_chain = vec![];
-
-        if context.config.sourcemap.enabled(resource_pot.immutable) {
-          let root = context.config.root.clone();
-          let map = bundle
-            .generate_map(SourceMapOptions {
-              include_content: Some(true),
-              remap_source: Some(Box::new(move |src| format!("/{}", relative(&root, src)))),
-              ..Default::default()
-            })
-            .map_err(|_| CompilationError::GenerateSourceMapError {
-              id: resource_pot.id.clone(),
-            })?;
-
-          let mut buf = vec![];
-          map.to_writer(&mut buf).expect("failed to write sourcemap");
-          rendered_map_chain.push(Arc::new(String::from_utf8(buf).unwrap()));
-        }
-        // The hmr result should alway be a js resource
-        resource_pot.meta = ResourcePotMetaData {
-          rendered_modules,
-          rendered_content: Arc::new(bundle.to_string()),
-          rendered_map_chain,
-          ..Default::default()
-        };
-
-        let (mut update_resources, _) = render_resource_pot_generate_resources(
-          resource_pot,
-          context,
-          &Default::default(),
-          true,
-          &mut None,
-        )?;
-
-        if let Some(map) = update_resources.source_map {
-          // inline source map
-          update_resources.resource.bytes.append(
-            &mut format!(
-              "\n//# sourceMappingURL=data:application/json;charset=utf-8;base64,{}",
-              base64_encode(&map.bytes)
-            )
-            .into_bytes(),
-          );
-        }
-
-        let code = String::from_utf8(update_resources.resource.bytes).unwrap();
-
-        return Ok(code);
+      if let Some(map) = update_resources.source_map {
+        // inline source map
+        update_resources.resource.bytes.append(
+          &mut format!(
+            "\n//# sourceMappingURL=data:application/json;charset=utf-8;base64,{}",
+            base64_encode(&map.bytes)
+          )
+          .into_bytes(),
+        );
       }
 
-      Ok("{}".to_string())
+      Ok(String::from_utf8(update_resources.resource.bytes).unwrap())
     };
 
   let immutable_update_resource = gen_resource_pot_code(&mut immutable_update_resource_pot)?;
@@ -209,7 +171,7 @@ pub fn regenerate_resources_for_affected_module_groups(
 
   drop(module_graph);
 
-  // call process_resource_pot_map hook
+  // call process_resource_pots hook
   context
     .plugin_driver
     .process_resource_pots(&mut resource_pots, context)?;

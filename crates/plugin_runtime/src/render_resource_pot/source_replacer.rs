@@ -34,7 +34,7 @@ pub struct SourceReplacer<'a> {
   module_graph: &'a ModuleGraph,
   module_id: ModuleId,
   mode: Mode,
-  pub external_modules: Vec<String>,
+  pub external_modules: Vec<ModuleId>,
   target_env: TargetEnv,
   is_strict_find_source: bool,
 }
@@ -143,7 +143,7 @@ impl SourceReplacer<'_> {
         let Some((id, resolve_kind)) = self.find_real_module_meta_by_source(&source) else {
           if self.is_strict_find_source {
             panic!(
-              "Cannot find module id for source {:?} from {:?}",
+              "Cannot find module id for source {:?} from {:?}.",
               source, self.module_id
             )
           }
@@ -167,7 +167,7 @@ impl SourceReplacer<'_> {
             return SourceReplaceResult::NotReplaced;
           }
 
-          self.external_modules.push(id.to_string());
+          self.external_modules.push(id.clone());
 
           return SourceReplaceResult::NotReplaced;
         }
@@ -200,7 +200,7 @@ impl SourceReplacer<'_> {
           let dep_module = self.module_graph.module(&id).unwrap();
 
           if dep_module.external {
-            self.external_modules.push(id.to_string());
+            self.external_modules.push(id);
 
             return SourceReplaceResult::NotReplaced;
           }

@@ -15,12 +15,11 @@ use farmfe_core::{
   module::ModuleId,
   parking_lot::Mutex,
   plugin::Plugin,
-  rayon::{ThreadPool, ThreadPoolBuilder},
 };
 
 pub use farmfe_plugin_css::FARM_CSS_MODULES_SUFFIX;
 pub use farmfe_plugin_lazy_compilation::DYNAMIC_VIRTUAL_SUFFIX;
-pub use farmfe_plugin_runtime::RUNTIME_SUFFIX;
+pub use farmfe_plugin_runtime::RUNTIME_INPUT_SCOPE;
 
 pub mod build;
 pub mod generate;
@@ -30,18 +29,26 @@ pub mod utils;
 
 pub struct Compiler {
   context: Arc<CompilationContext>,
-  pub thread_pool: Arc<ThreadPool>,
   pub last_fail_module_ids: Mutex<Vec<ModuleId>>,
 }
 
 impl Compiler {
   /// The params are [farmfe_core::config::Config] and dynamic load rust plugins and js plugins [farmfe_core::plugin::Plugin]
   pub fn new(config: Config, mut plugin_adapters: Vec<Arc<dyn Plugin>>) -> Result<Self> {
+    let render_plugin: Arc<dyn Plugin> = if config.output.target_env.is_library() {
+      Arc::new(farmfe_plugin_bundle::FarmPluginBundle::new()) as _
+    } else {
+      Arc::new(farmfe_plugin_runtime::FarmPluginRuntime::new(&config)) as _
+    };
+
     let mut plugins = vec![
-      Arc::new(farmfe_plugin_runtime::FarmPluginRuntime::new(&config)) as _,
-      Arc::new(farmfe_plugin_bundle::FarmPluginBundle::new()) as _,
+      // Arc::new(farmfe_plugin_bundle::FarmPluginBundle::new()) as _,
+      // Arc::new(farmfe_plugin_runtime::FarmPluginRuntime::new(&config)) as _,
       // register internal core plugins
       Arc::new(farmfe_plugin_script::FarmPluginScript::new(&config)) as _,
+      // the render plugin must be executed after PluginScript,
+      // cause render plugins need information collected in finalize_module hook of PluginScript
+      render_plugin,
       Arc::new(farmfe_plugin_partial_bundling::FarmPluginPartialBundling::new(&config)) as _,
       Arc::new(farmfe_plugin_html::FarmPluginHtml::new(&config)) as _,
       Arc::new(farmfe_plugin_html::FarmPluginTransformHtml::new(&config)) as _,
@@ -98,12 +105,6 @@ impl Compiler {
 
     Ok(Self {
       context: Arc::new(context),
-      thread_pool: Arc::new(
-        ThreadPoolBuilder::new()
-          .num_threads(num_cpus::get())
-          .build()
-          .unwrap(),
-      ),
       last_fail_module_ids: Mutex::new(vec![]),
     })
   }
@@ -131,7 +132,7 @@ impl Compiler {
 
   /// Compile the project using the configuration
   pub fn compile(&self) -> Result<()> {
-    self.context.record_manager.set_start_time();
+    self.context.stats.set_start_time();
     if self.context.config.persistent_cache.enabled() {
       self
         .context
@@ -140,13 +141,13 @@ impl Compiler {
     }
 
     // triggering build stage
-    let res = {
+    {
       #[cfg(feature = "profile")]
       farmfe_core::puffin::profile_scope!("Build Stage");
-      self.build()
+      self.build()?
     };
 
-    self.context.record_manager.set_build_end_time();
+    self.context.stats.set_build_end_time();
     {
       #[cfg(feature = "profile")]
       farmfe_core::puffin::profile_scope!("Generate Stage");
@@ -156,7 +157,7 @@ impl Compiler {
     self
       .context
       .plugin_driver
-      .finish(&self.context.record_manager, &self.context)?;
+      .finish(&self.context.stats, &self.context)?;
 
     if self.context.config.persistent_cache.enabled() {
       self
@@ -177,9 +178,9 @@ impl Compiler {
       }
     }
 
-    self.context.record_manager.set_end_time();
+    self.context.stats.set_end_time();
 
-    res
+    Ok(())
   }
 
   pub fn context(&self) -> &Arc<CompilationContext> {
