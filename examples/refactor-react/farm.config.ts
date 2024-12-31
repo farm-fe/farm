@@ -60,7 +60,7 @@ export default defineConfig({
     //   cacheDir: "node_modules/.adny",
     // },
     output: {
-      // publicPath: "/aaa/",
+      publicPath: "/aaa/",
     },
   },
   server: {

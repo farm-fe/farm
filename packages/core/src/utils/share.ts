@@ -5,6 +5,7 @@ import path, { dirname } from 'node:path';
 import readline from 'node:readline';
 import { fileURLToPath } from 'node:url';
 import { Config, OutputConfig } from '../types/binding.js';
+import { cleanUrl } from './url.js';
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore import packageJson from '../../package.json';
 
@@ -32,7 +33,6 @@ export const FARM_TARGET_LIBRARY_ENVS = [
   'library-browser'
 ];
 
-/* eslint-disable @typescript-eslint/no-use-before-define */
 export function isObject(value: unknown): value is Record<string, unknown> {
   return Object.prototype.toString.call(value) === '[object Object]';
 }
@@ -76,8 +76,23 @@ export const version = JSON.parse(
   fs.readFileSync(path.resolve(__dirname, '../../package.json')).toString()
 ).version;
 
+export const VOLUME_RE = /^[A-Z]:/i;
+
+export const FS_PREFIX = `/@fs/`;
+
 export function normalizePath(id: string): string {
   return path.posix.normalize(isWindows ? id.replace(/\\/g, '/') : id);
+}
+
+export function fsPathFromId(id: string): string {
+  const fsPath = normalizePath(
+    id.startsWith(FS_PREFIX) ? id.slice(FS_PREFIX.length) : id
+  );
+  return fsPath[0] === '/' || VOLUME_RE.test(fsPath) ? fsPath : `/${fsPath}`;
+}
+
+export function fsPathFromUrl(url: string): string {
+  return fsPathFromId(cleanUrl(url));
 }
 
 export function arraify<T>(target: T | T[]): T[] {

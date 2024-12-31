@@ -73,7 +73,7 @@ export class HmrEngine {
       if (this._updateQueue.length > 0) {
         await this.recompileAndSendResult();
       }
-      if (this.app.resolvedUserConfig?.server.writeToDisk) {
+      if (this.app.config?.server.writeToDisk) {
         this.app.compiler.writeResourcesToDisk();
       }
     });
@@ -180,9 +180,7 @@ export class HmrEngine {
             {
               type: 'error',
               err: ${errorStr},
-              overlay: ${
-                (this.app.resolvedUserConfig.server.hmr as HmrOptions).overlay
-              }
+              overlay: ${(this.app.config.server.hmr as HmrOptions).overlay}
             }
           `);
         });

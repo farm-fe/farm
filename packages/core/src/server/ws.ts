@@ -115,7 +115,7 @@ export class WsServer {
    */
   constructor(private readonly app: any) {
     this.logger = app.logger ?? new Logger();
-    this.serverConfig = app.resolvedUserConfig.server as ServerOptions;
+    this.serverConfig = app.config.server as ServerOptions;
     this.createWebSocketServer();
   }
 

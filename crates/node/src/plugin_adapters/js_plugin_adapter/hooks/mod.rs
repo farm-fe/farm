@@ -13,3 +13,4 @@ pub mod transform_html;
 pub mod update_finished;
 pub mod update_modules;
 pub mod write_plugin_cache;
+pub mod process_module;

@@ -1,6 +1,5 @@
-import module from 'node:module';
-
 import { existsSync, readFileSync } from 'node:fs';
+import module from 'node:module';
 import path from 'node:path';
 
 import { Config } from '../../types/binding.js';

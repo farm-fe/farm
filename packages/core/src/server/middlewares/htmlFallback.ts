@@ -1,6 +1,4 @@
-import path from 'node:path';
-
-import { cleanUrl, commonFsUtils, removeSlash } from '../../utils/index.js';
+import { cleanUrl, removeSlash } from '../../utils/index.js';
 
 import type Connect from 'connect';
 import type { Server } from '../index.js';
@@ -27,7 +25,7 @@ export function htmlFallbackMiddleware(
     }
     const url = cleanUrl(req.url);
     const pathname = removeSlash(decodeURIComponent(url));
-    const headers = app.resolvedUserConfig.server.headers;
+    const headers = app.config.server.headers;
 
     if (pathname.endsWith('.html')) {
       const html = app.compiler.resource(pathname);

@@ -7,7 +7,6 @@ import {
   VIRTUAL_FARM_DYNAMIC_IMPORT_SUFFIX,
   bold,
   cyan,
-  formatExecutionTime,
   getDynamicResources,
   green
 } from '../../index.js';
@@ -21,7 +20,7 @@ export function lazyCompilationMiddleware(
   app: Server
 ): Connect.NextHandleFunction {
   return async function handleLazyCompilationMiddleware(req, res, next) {
-    const { resolvedUserConfig, compiler } = app;
+    const { config, compiler } = app;
 
     if (!req.url.startsWith(DEFAULT_LAZY_COMPILATION_PATH)) {
       return await next();
@@ -45,7 +44,7 @@ export function lazyCompilationMiddleware(
       })
       .join(', ');
 
-    resolvedUserConfig.logger.info(
+    config.logger.info(
       `${bold(green('✨Lazy compiling'))} ${bold(cyan(pathsStr))}`,
       true
     );
@@ -63,21 +62,15 @@ export function lazyCompilationMiddleware(
       return next();
     }
 
-    // TODO 取的对象不对 writeToDisk
-    // if (isNodeEnvironment || resolvedUserConfig.writeToDisk) {
-    if (isNodeEnvironment) {
+    if (isNodeEnvironment || config.server.writeToDisk) {
       compiler.writeResourcesToDisk();
     }
 
-    resolvedUserConfig.logger.info(
+    config.logger.info(
       `${bold(green(`✓ Lazy compilation done`))} ${bold(
         cyan(pathsStr)
       )} in ${bold(
-        green(
-          resolvedUserConfig.logger.formatExecutionTime(
-            performance.now() - start
-          )
-        )
+        green(config.logger.formatExecutionTime(performance.now() - start))
       )}.`
     );
 

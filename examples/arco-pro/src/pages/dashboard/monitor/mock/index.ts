@@ -9,7 +9,7 @@ setupMock({
 					{
 						"id|+1": 1,
 						username: "用户7352772",
-						content: "马上就开始了，好激动！",
+						content: "马上就开始了，好激动！13213222",
 						time: "13:09:12",
 						"isCollect|2": true
 					}

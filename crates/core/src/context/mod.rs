@@ -164,6 +164,10 @@ impl CompilationContext {
     resolve_cache.insert(param, result);
   }
 
+  pub fn invalidate_module(&self, module_id: &ModuleId) {
+    self.cache_manager.module_cache.invalidate_cache(module_id);
+  }
+
   pub fn clear_log_store(&self) {
     let mut log_store = self.log_store.lock();
     log_store.clear();

@@ -15,3 +15,7 @@ export function removeImportQuery(url: string): string {
 export const knownJavascriptExtensionRE = /\.[tj]sx?$/;
 
 export const urlRE = /(\?|&)url(?:&|$)/;
+
+export function removeLeadingSlash(str: string): string {
+  return str[0] === '/' ? str.slice(1) : str;
+}

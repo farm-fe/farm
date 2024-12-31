@@ -624,6 +624,7 @@ export class VitePluginAdapter implements JsPlugin {
             const mods = moduleGraph.getModulesByFile(
               file
             ) as unknown as ModuleNode[];
+
             const filename = normalizePath(file);
             const ctx: HmrContext = {
               file: filename,
@@ -641,6 +642,7 @@ export class VitePluginAdapter implements JsPlugin {
               },
               server: this._viteDevServer as unknown as ViteDevServer
             };
+
             const updateMods: ModuleNode[] = await hook?.(ctx);
 
             if (updateMods) {

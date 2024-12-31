@@ -103,15 +103,7 @@ impl ImmutableModulesMemoryStore {
 
 impl ModuleMemoryStore for ImmutableModulesMemoryStore {
   fn has_cache(&self, key: &crate::module::ModuleId) -> bool {
-    if self.cached_modules.contains_key(key) {
-      return true;
-    }
-
-    if let Some(package_key) = self.manifest.get(key) {
-      return self.store.has_cache(package_key.value());
-    }
-
-    false
+    self.get_cache_ref(key).is_some_and(|m| !m.is_expired)
   }
 
   fn set_cache(&self, key: crate::module::ModuleId, module: super::CachedModule) {
@@ -178,16 +170,43 @@ impl ModuleMemoryStore for ImmutableModulesMemoryStore {
 
   fn write_cache(&self) {
     let mut packages = HashMap::default();
+    let mut pending_remove_modules = HashSet::default();
+    let mut maybe_remove_package = HashSet::default();
 
     for item in self.cached_modules.iter() {
       let module = item.value();
+
       let package_key =
         CachedPackage::gen_key(&module.module.package_name, &module.module.package_version);
+
+      if module.is_expired {
+        pending_remove_modules.insert(item.key().clone());
+        maybe_remove_package.insert(package_key);
+        continue;
+      }
 
       let package = packages.entry(package_key.clone()).or_insert_with(Vec::new);
 
       package.push(item.key().clone());
       self.manifest.insert(item.key().clone(), package_key);
+    }
+
+    for key in pending_remove_modules {
+      self.cached_modules.remove(&key);
+      self.manifest.remove(&key);
+      self.manifest_reversed.iter_mut().for_each(|mut item| {
+        if item.value_mut().contains(&key) {
+          item.value_mut().remove(&key);
+        }
+      })
+    }
+
+    for package in maybe_remove_package {
+      if packages.contains_key(&package) {
+        return;
+      }
+
+      self.store.remove_cache(&package);
     }
 
     let manifest = self
@@ -282,13 +301,9 @@ impl ModuleMemoryStore for ImmutableModulesMemoryStore {
   }
 
   fn invalidate_cache(&self, key: &ModuleId) {
-    self.cached_modules.remove(key);
-    self.manifest.remove(key);
-    self.manifest_reversed.iter_mut().for_each(|mut item| {
-      if item.value_mut().contains(key) {
-        item.value_mut().remove(key);
-      }
-    })
+    if let Some(mut m) = self.get_cache_mut_ref(key) {
+      m.is_expired = true;
+    }
   }
 
   fn is_cache_changed(&self, module: &crate::module::Module) -> bool {

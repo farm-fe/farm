@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { isAbsolute, resolve } from 'node:path';
+
 import { Logger } from '@farmfe/core';
 
 import type { build, clean, preview, start } from '@farmfe/core';

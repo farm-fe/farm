@@ -111,7 +111,7 @@ See [Contributing Guide](https://github.com/farm-fe/farm/blob/main/CONTRIBUTING.
 
 - Wechat group
 
-<br><img src="https://github.com/user-attachments/assets/a72d401e-706b-4283-aa2f-1502b11c64d2" width="30%" />
+<br><img src="https://github.com/user-attachments/assets/7fabf743-7932-429d-a444-8f24489c79de" width="30%" />
 
 - QQ group
 
