@@ -33,16 +33,16 @@ pub fn render_resource_pots_and_generate_resources(
     let cached_resource_pot = try_get_resource_cache(resource_pot, context)?;
 
     if let Some(cached_resource_pot) = cached_resource_pot {
-      let mut cached_resource = cached_resource_pot.resources;
+      let cached_resources = cached_resource_pot.resources;
       let cached_meta = cached_resource_pot.meta;
 
       resource_pot.meta = cached_meta;
 
-      for cached_resource in &cached_resource.resources {
+      for cached_resource in &cached_resources.resources {
         resource_pot.add_resource(cached_resource.resource.name.clone());
       }
 
-      for cached_resource in cached_resource.resources {
+      for cached_resource in cached_resources.resources {
         resources.lock().push(cached_resource.resource);
 
         if let Some(map) = cached_resource.source_map {

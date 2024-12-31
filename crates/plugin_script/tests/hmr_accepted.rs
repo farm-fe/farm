@@ -7,7 +7,8 @@ use farmfe_core::{
   plugin::{
     Plugin, PluginFinalizeModuleHookParam, PluginHookContext, PluginLoadHookParam,
     PluginParseHookParam,
-  }, HashMap,
+  },
+  HashMap,
 };
 use farmfe_testing_helpers::fixture;
 
@@ -62,7 +63,7 @@ fn hmr_accepted() {
       .finalize_module(
         &mut PluginFinalizeModuleHookParam {
           module: &mut module,
-          deps: &vec![],
+          deps: &mut vec![],
         },
         &context,
       )

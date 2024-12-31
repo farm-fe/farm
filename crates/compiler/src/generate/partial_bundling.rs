@@ -73,7 +73,15 @@ pub fn generate_resource_pot_map(
 pub fn get_enforce_resource_name_for_module(
   module_id: &ModuleId,
   enforce_resources: &Vec<PartialBundlingEnforceResourceConfig>,
+  module_graph: &ModuleGraph,
 ) -> Option<String> {
+  // if the module is scoped by dynamic inputs, all modules in the scope should be in the same resource pot
+  let module = module_graph.module(module_id).unwrap();
+
+  if let Some(scope) = &module.scope {
+    return Some(scope.clone());
+  }
+
   for enforce_resource_config in enforce_resources {
     if enforce_resource_config
       .test
@@ -179,6 +187,7 @@ fn generate_enforce_resource_pots(
       if let Some(name) = get_enforce_resource_name_for_module(
         module_id,
         &context.config.partial_bundling.enforce_resources,
+        &module_graph,
       ) {
         let (resource_pot_type, resource_pot_name, resource_pot_id) =
           get_resource_pot_id_for_enforce_resources(name.clone(), module_id, &module_graph);

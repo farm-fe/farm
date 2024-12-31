@@ -64,12 +64,20 @@ impl ModuleGraphEdge {
   }
 
   // true if all of the edge data items are dynamic
-  pub fn is_dynamic(&self) -> bool {
+  pub fn is_dynamic_import(&self) -> bool {
     if self.0.is_empty() {
       return false;
     }
 
-    self.0.iter().all(|item| item.kind.is_dynamic())
+    self.0.iter().all(|item| item.kind.is_dynamic_import())
+  }
+
+  pub fn is_dynamic_entry(&self) -> bool {
+    if self.0.is_empty() {
+      return false;
+    }
+
+    self.0.iter().any(|item| item.kind.is_dynamic_entry())
   }
 
   pub fn contains_export_from(&self) -> bool {
@@ -88,12 +96,12 @@ impl ModuleGraphEdge {
     self.0.iter().any(|item| item.kind.is_require())
   }
 
-  pub fn contains_dynamic(&self) -> bool {
+  pub fn contains_dynamic_import(&self) -> bool {
     if self.0.is_empty() {
       return false;
     }
 
-    self.0.iter().any(|item| item.kind.is_dynamic())
+    self.0.iter().any(|item| item.kind.is_dynamic_import())
   }
 
   pub fn is_empty(&self) -> bool {
@@ -128,6 +136,7 @@ pub struct ModuleGraph {
   /// entry modules of this module graph.
   /// (Entry Module Id, Entry Name)
   pub entries: HashMap<ModuleId, String>,
+  pub dynamic_entries: HashMap<ModuleId, String>,
   pub circle_record: CircleRecord,
 }
 
@@ -138,6 +147,7 @@ impl ModuleGraph {
       id_index_map: HashMap::default(),
       file_module_ids_map: HashMap::default(),
       entries: HashMap::default(),
+      dynamic_entries: HashMap::default(),
       circle_record: CircleRecord::default(),
     }
   }
@@ -659,11 +669,11 @@ impl ModuleGraph {
     self.g[*i] = module;
   }
 
-  pub fn is_dynamic(&self, module_id: &ModuleId) -> bool {
+  pub fn is_dynamic_import(&self, module_id: &ModuleId) -> bool {
     self
       .dependents(module_id)
       .iter()
-      .any(|(_, edge)| edge.is_dynamic())
+      .any(|(_, edge)| edge.is_dynamic_import())
   }
 
   pub fn copy_to(&self, other: &mut Self, overwrite: bool) -> Result<()> {

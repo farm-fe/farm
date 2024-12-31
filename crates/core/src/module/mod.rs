@@ -66,6 +66,10 @@ pub struct Module {
   pub package_version: String,
   /// whether this module is a entry module
   pub is_entry: bool,
+  /// whether this module is a dynamic entry module
+  pub is_dynamic_entry: bool,
+  /// whether this module is scoped by dynamic inputs, all modules in the same dynamic input scope should be in the same resource pot
+  pub scope: Option<String>,
 
   // custom meta map
   pub custom: CustomMetaDataMap,
@@ -99,6 +103,8 @@ impl Module {
       package_name: "".to_string(),
       package_version: "".to_string(),
       is_entry: false,
+      is_dynamic_entry: false,
+      scope: None,
       custom: CustomMetaDataMap::default(),
     }
   }
@@ -388,7 +394,10 @@ impl serde::Serialize for ModuleId {
 mod tests {
   use crate::{
     config::Mode,
-    module::meta_data::{custom::CustomMetaDataMap, script::ModuleSystem},
+    module::{
+      meta_data::{custom::CustomMetaDataMap, script::ModuleSystem},
+      module_group::{ModuleGroupId, ModuleGroupType},
+    },
     Cacheable,
   };
   use farmfe_macro_cache_item::cache_item;
@@ -497,8 +506,10 @@ mod tests {
       imports: Vec<String>,
     }
 
-    module.module_groups =
-      HashSet::from_iter([ModuleId::new("1", "", ""), ModuleId::new("2", "", "")]);
+    module.module_groups = HashSet::from_iter([
+      ModuleGroupId::new(&"1".into(), &ModuleGroupType::Entry),
+      ModuleGroupId::new(&"2".into(), &ModuleGroupType::Entry),
+    ]);
 
     module.meta = Box::new(ModuleMetaData::Custom(CustomMetaDataMap::from(
       HashMap::from_iter([(
@@ -545,10 +556,10 @@ mod tests {
 
     assert!(deserialized_module
       .module_groups
-      .contains(&ModuleId::new("1", "", "")));
+      .contains(&ModuleGroupId::new(&"1".into(), &ModuleGroupType::Entry)));
     assert!(deserialized_module
       .module_groups
-      .contains(&ModuleId::new("2", "", "")));
+      .contains(&ModuleGroupId::new(&"2".into(), &ModuleGroupType::Entry)));
   }
 
   #[test]

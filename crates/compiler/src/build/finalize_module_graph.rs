@@ -6,13 +6,10 @@ use farmfe_core::{
   rayon::iter::{IntoParallelIterator, ParallelIterator},
 };
 
-use crate::build::dynamic_input::handle_dynamic_input;
-
 /// Finalize module graph when module graph is built:
-/// 1. update execution order or module graph
-/// 2. call freeze module hook
-/// 3. handle dynamic input
-/// 4. call module_graph_build_end hook
+/// 1. call freeze module hook
+/// 2. call module_graph_build_end hook
+/// 3. update execution order or module graph
 pub fn finalize_module_graph(context: &Arc<CompilationContext>) -> farmfe_core::error::Result<()> {
   // Topo sort the module graph
   let mut module_graph = context.module_graph.write();
@@ -30,9 +27,6 @@ pub fn finalize_module_graph(context: &Arc<CompilationContext>) -> farmfe_core::
     context
       .plugin_driver
       .module_graph_build_end(&mut module_graph, context)?;
-
-    // clone scoped dynamic input modules
-    handle_dynamic_input(&mut module_graph, context);
   }
 
   // update execution order when the module graph is freezed in build stage

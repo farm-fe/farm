@@ -138,7 +138,6 @@ macro_rules! hook_parallel {
         .plugins
         .par_iter()
         .try_for_each(|plugin| {
-          println!("call plugin {}", plugin.name());
           let ret = plugin.$func_name(context).map(|_| ());
           return ret;
         })

@@ -57,7 +57,7 @@ macro_rules! call_and_catch_error {
 }
 
 pub(crate) mod analyze_deps;
-pub(crate) mod dynamic_input;
+// pub(crate) mod dynamic_input;
 pub(crate) mod finalize_module;
 pub(crate) mod finalize_module_graph;
 pub(crate) mod load;
@@ -411,11 +411,11 @@ impl Compiler {
     module.package_version = package_info.version.unwrap_or("0.0.0".to_string());
 
     // ================ Analyze Deps Start ===============
-    let analyze_deps_result = call_and_catch_error!(analyze_deps, module, context);
+    let mut analyze_deps_result = call_and_catch_error!(analyze_deps, module, context);
     // ================ Analyze Deps End ===============
 
     // ================ Finalize Module Start ===============
-    call_and_catch_error!(finalize_module, module, &analyze_deps_result, context);
+    call_and_catch_error!(finalize_module, module, &mut analyze_deps_result, context);
     // ================ Finalize Module End ===============
 
     Ok(analyze_deps_result)
@@ -540,24 +540,6 @@ impl Compiler {
     // add edge to the graph
     Self::add_edge(&resolve_param, module_id.clone(), order, &context);
 
-    // handle dynamic input
-    for input_name in context.get_unhandled_dynamic_input() {
-      let dynamic_input = context.dynamic_input.get(&input_name).unwrap();
-      let params = BuildModuleGraphThreadedParams {
-        thread_pool: thread_pool.clone(),
-        resolve_param: PluginResolveHookParam {
-          source: dynamic_input.source.clone(),
-          importer: None,
-          kind: ResolveKind::Entry(input_name),
-        },
-        context: context.clone(),
-        err_sender: err_sender.clone(),
-        order: 0, // the order of dynamic input is always 0
-        cached_dependency: None,
-      };
-      Self::build_module_graph_threaded(params);
-    }
-
     // resolving dependencies recursively in the thread pool
     for (order, (dep, cached_dependency)) in deps.into_iter().enumerate() {
       let params = BuildModuleGraphThreadedParams {
@@ -598,13 +580,19 @@ impl Compiler {
   }
 
   /// add a module to the module graph, if the module already exists, update it
-  pub(crate) fn add_module(module: Module, kind: &ResolveKind, context: &CompilationContext) {
+  pub(crate) fn add_module(mut module: Module, kind: &ResolveKind, context: &CompilationContext) {
     let mut module_graph = context.module_graph.write();
 
     // mark entry module
     if let ResolveKind::Entry(name) = kind {
+      module.is_entry = true;
       module_graph
         .entries
+        .insert(module.id.clone(), name.to_string());
+    } else if let ResolveKind::DynamicEntry { name, .. } = kind {
+      module.is_dynamic_entry;
+      module_graph
+        .dynamic_entries
         .insert(module.id.clone(), name.to_string());
     }
 

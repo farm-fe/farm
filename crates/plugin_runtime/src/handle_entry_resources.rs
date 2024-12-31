@@ -3,6 +3,8 @@ use std::sync::Arc;
 use farmfe_core::enhanced_magic_string::collapse_sourcemap::collapse_sourcemap_chain;
 use farmfe_core::enhanced_magic_string::magic_string::MagicString;
 use farmfe_core::enhanced_magic_string::types::SourceMapOptions;
+use farmfe_core::module::module_group::ModuleGroupId;
+use farmfe_core::module::module_group::ModuleGroupType;
 use farmfe_core::plugin::ResolveKind;
 use farmfe_core::resource::ResourceOrigin;
 use farmfe_core::HashMap;
@@ -227,7 +229,7 @@ fn get_entry_resource_and_dep_resources_name(
 ) -> EntryResourceAndDepResources {
   let mut result = EntryResourceAndDepResources::default();
 
-  let module_group_id = entry.clone();
+  let module_group_id = ModuleGroupId::new(&entry, &ModuleGroupType::Entry);
   let module_group = module_group_graph
     .module_group(&module_group_id)
     .expect("module group is not found");
@@ -271,7 +273,7 @@ fn get_entry_resource_and_dep_resources_name(
 
   let dynamic_resources_map = get_dynamic_resources_map(
     module_group_graph,
-    entry,
+    &module_group_id,
     &resource_pot_map,
     resource_map,
     module_graph,

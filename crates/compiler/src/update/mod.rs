@@ -18,8 +18,8 @@ use finalize_module_graph::finalize_updated_module_graph;
 
 use crate::{
   build::{
-    dynamic_input::handle_dynamic_input, module_cache::handle_cached_modules,
-    BuildModuleGraphThreadedParams, HandleDependenciesParams, ResolvedModuleInfo,
+    module_cache::handle_cached_modules, BuildModuleGraphThreadedParams, HandleDependenciesParams,
+    ResolvedModuleInfo,
   },
   generate::finalize_resources::finalize_resources,
   Compiler,
@@ -140,7 +140,7 @@ impl Compiler {
     &self,
     paths: Vec<(String, UpdateType)>,
     callback: F,
-    mut sync: bool,
+    sync: bool,
     generate_update_resource: bool,
   ) -> Result<UpdateResult>
   where
@@ -264,13 +264,12 @@ impl Compiler {
       set_updated_modules_cache(&updated_module_ids, &diff_result, &self.context);
     }
 
-    sync = sync
-      || finalize_updated_module_graph(
-        &updated_module_ids,
-        removed_modules.iter().map(|(id, _)| id.clone()).collect(),
-        &diff_result,
-        &self.context,
-      )?;
+    finalize_updated_module_graph(
+      &updated_module_ids,
+      removed_modules.iter().map(|(id, _)| id.clone()).collect(),
+      &diff_result,
+      &self.context,
+    )?;
 
     let dynamic_resources_map = self.regenerate_resources(
       affected_module_groups,
@@ -488,28 +487,6 @@ impl Compiler {
     let immutable = module.immutable;
     Self::add_module_to_update_module_graph(&update_context, &resolve_param.kind, module);
     Self::add_edge_to_update_module_graph(&update_context, &resolve_param, &module_id, order);
-
-    // handle dynamic input
-    for input_name in context.get_unhandled_dynamic_input() {
-      let dynamic_input = context.dynamic_input.get(&input_name).unwrap();
-      let params = BuildUpdateModuleGraphThreadedParams {
-        build_module_graph_threaded_params: BuildModuleGraphThreadedParams {
-          thread_pool: thread_pool.clone(),
-          resolve_param: PluginResolveHookParam {
-            source: dynamic_input.source.clone(),
-            importer: None,
-            kind: ResolveKind::Entry(input_name),
-          },
-          context: context.clone(),
-          err_sender: err_sender.clone(),
-          order: 0, // the order of dynamic input is always 0
-          cached_dependency: None,
-        },
-        order: None,
-        update_context: update_context.clone(),
-      };
-      Self::update_module_graph_threaded(params);
-    }
 
     for (order, (dep, cached_dependency)) in deps.into_iter().enumerate() {
       let params = BuildUpdateModuleGraphThreadedParams {

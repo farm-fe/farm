@@ -42,9 +42,6 @@ pub struct CompilationContext {
   pub resources_map: Box<Mutex<HashMap<String, Resource>>>,
   pub cache_manager: Box<CacheManager>,
   pub thread_pool: Arc<ThreadPool>,
-  /// Dynamic added input in plugins, it will be treated as normal input in the next compilation
-  /// Note it only works in hooks before the freeze_module hook
-  pub dynamic_input: Box<DashMap<String, DynamicCompilationInput>>,
   pub meta: Box<ContextMetaData>,
   /// Record stats for the compilation, for example, compilation time, plugin hook time, etc.
   pub stats: Box<Stats>,
@@ -76,7 +73,6 @@ impl CompilationContext {
           .unwrap(),
       ),
       config: Box::new(config),
-      dynamic_input: Box::new(DashMap::default()),
       meta: Box::new(ContextMetaData::new()),
       stats: Box::new(Stats::new()),
       log_store: Box::new(Mutex::new(LogStore::new())),
@@ -182,42 +178,6 @@ impl CompilationContext {
   pub fn clear_log_store(&self) {
     let mut log_store = self.log_store.lock();
     log_store.clear();
-  }
-
-  /// Add dynamic input to the compilation context during the compilation
-  /// It's useful when you want to add input during the compilation
-  /// The dynamic input is same as normal input configured in the config
-  pub fn add_dynamic_input(&self, input: DynamicCompilationInput) {
-    if !input.allow_duplicate && self.dynamic_input.contains_key(&input.name) {
-      return;
-    }
-
-    self.dynamic_input.insert(input.name.clone(), input);
-  }
-
-  /// Get all dynamic input that is not built yet
-  /// And set them as built
-  pub fn get_unhandled_dynamic_input(&self) -> Vec<String> {
-    let input_names = self
-      .dynamic_input
-      .iter()
-      .filter_map(|item| {
-        let input = item.value();
-        if input.get_is_built() {
-          None
-        } else {
-          Some(input.name.clone())
-        }
-      })
-      .collect();
-
-    for input_name in &input_names {
-      if let Some(mut input) = self.dynamic_input.get_mut(input_name) {
-        input.set_is_built();
-      }
-    }
-
-    input_names
   }
 }
 
@@ -424,39 +384,6 @@ pub struct EmitFileParams {
   pub name: String,
   pub content: Vec<u8>,
   pub resource_type: ResourceType,
-}
-
-pub struct DynamicCompilationInput {
-  pub name: String,
-  pub source: String,
-  /// If you want all deep dependencies of the dynamic input to be bundled separately, set it to a unique value
-  /// For example, if you set scope to ".farm_worker_js", then all resolved module will be suffixed with ".farm_worker_js"  
-  pub scope: Option<String>,
-  /// True if you want to allow duplicate dynamic input, otherwise when same dynamic input is added, it will be ignored
-  /// Default to false
-  pub allow_duplicate: bool,
-  /// Set to true when a dynamic input starts building in compilation
-  is_built: bool,
-}
-
-impl DynamicCompilationInput {
-  pub fn new(name: String, source: String, scope: Option<String>, allow_duplicate: bool) -> Self {
-    Self {
-      name,
-      source,
-      scope,
-      allow_duplicate,
-      is_built: false,
-    }
-  }
-
-  pub fn get_is_built(&self) -> bool {
-    self.is_built
-  }
-
-  pub fn set_is_built(&mut self) {
-    self.is_built = true;
-  }
 }
 
 #[cfg(test)]

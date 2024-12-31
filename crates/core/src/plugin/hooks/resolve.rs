@@ -9,6 +9,13 @@ use crate::HashMap;
 pub enum ResolveKind {
   /// entry input in the config
   Entry(String),
+  /// dynamic entry input, which will always be bundled as a separate resource
+  /// all deep dependencies of a dynamic entry will be merged into a special module group
+  DynamicEntry {
+    name: String,
+    /// the same as config.output.filename, default to config.output.filename
+    output_filename: Option<String>,
+  },
   /// static import, e.g. `import a from './a'`
   #[default]
   Import,
@@ -35,9 +42,13 @@ pub enum ResolveKind {
 impl ResolveKind {
   /// dynamic if self is [ResolveKind::DynamicImport] or [ResolveKind::Custom("dynamic:xxx")] (dynamic means the module is loaded dynamically, for example, fetch from network)
   /// used when analyzing module groups
-  pub fn is_dynamic(&self) -> bool {
+  pub fn is_dynamic_import(&self) -> bool {
     matches!(self, ResolveKind::DynamicImport)
       || matches!(self, ResolveKind::Custom(c) if c.starts_with("dynamic:"))
+  }
+
+  pub fn is_dynamic_entry(&self) -> bool {
+    matches!(self, ResolveKind::DynamicEntry { .. })
   }
 
   pub fn is_export_from(&self) -> bool {

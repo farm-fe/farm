@@ -7,21 +7,15 @@ use farmfe_core::{
   rayon::iter::{IntoParallelIterator, ParallelIterator},
 };
 
-use crate::build::dynamic_input::handle_dynamic_input;
-
 use super::diff_and_patch_module_graph::DiffResult;
 
-/// Finalize module graph when module graph is built:
-/// 1. update execution order or module graph
-/// 2. call freeze module hook
-/// 3. handle dynamic input
-/// 4. call module_graph_build_end hook
+/// Finalize module graph when updated module graph is built
 pub fn finalize_updated_module_graph(
   updated_modules: &Vec<ModuleId>,
   removed_module_ids: Vec<ModuleId>,
   diff_result: &DiffResult,
   context: &Arc<CompilationContext>,
-) -> farmfe_core::error::Result<bool> {
+) -> farmfe_core::error::Result<()> {
   // Topo sort the module graph
   let mut module_graph = context.module_graph.write();
 
@@ -47,8 +41,5 @@ pub fn finalize_updated_module_graph(
     context,
   )?;
 
-  // clone scoped dynamic input modules
-  let sync = handle_dynamic_input(&mut module_graph, context);
-
-  Ok(sync)
+  Ok(())
 }

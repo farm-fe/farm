@@ -9,7 +9,7 @@ use farmfe_core::{
     partial_bundling::PartialBundlingEnforceResourceConfig,
     AliasItem, Config, ModuleFormat, StringOrRegex, TargetEnv, FARM_MODULE_SYSTEM,
   },
-  context::{CompilationContext, DynamicCompilationInput},
+  context::CompilationContext,
   enhanced_magic_string::types::{MappingsOptionHires, SourceMapOptions},
   error::CompilationError,
   module::{meta_data::script::feature_flag::FeatureFlag, Module, ModuleId, ModuleType},
@@ -131,10 +131,8 @@ impl Plugin for FarmPluginRuntime {
   ) -> farmfe_core::error::Result<Option<PluginLoadHookResult>> {
     // load farm runtime entry as a empty module, it will be filled later in freeze_module hook
     if param.resolved_path == RUNTIME_PACKAGE {
-      let import_module_system = format!("import '{RUNTIME_PACKAGE}/src/module-system'");
-
       return Ok(Some(PluginLoadHookResult {
-        content: insert_runtime_plugins(&import_module_system, context),
+        content: insert_runtime_plugins("", context),
         module_type: ModuleType::Js,
         source_map: None,
       }));
@@ -152,13 +150,14 @@ impl Plugin for FarmPluginRuntime {
       return Ok(None);
     }
 
-    let add_runtime_dynamic_input = |name: &str| {
-      context.add_dynamic_input(DynamicCompilationInput::new(
-        format!("{RUNTIME_INPUT_SCOPE}_{}", name.replace("-", "_")),
-        format!("@farmfe/runtime/src/modules/{name}"),
-        Some(RUNTIME_INPUT_SCOPE.to_string()),
-        false,
-      ));
+    let mut add_runtime_dynamic_input = |name: &str| {
+      param.deps.push(PluginAnalyzeDepsHookResultEntry {
+        source: format!("@farmfe/runtime/src/modules/{name}"),
+        kind: ResolveKind::DynamicEntry {
+          name: format!("{RUNTIME_INPUT_SCOPE}_{}", name.replace("-", "_")),
+          output_filename: None,
+        },
+      });
     };
 
     // The goal of rendering runtime code is to make sure the runtime is as small as possible.
@@ -173,6 +172,9 @@ impl Plugin for FarmPluginRuntime {
     if feature_flags.contains(&FeatureFlag::ModuleDecl) {
       add_runtime_dynamic_input("module-system-helper");
     }
+
+    // module system is always required
+    add_runtime_dynamic_input("module-system");
 
     if context.config.mode.is_dev() {
       add_runtime_dynamic_input("module-helper");

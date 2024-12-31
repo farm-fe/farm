@@ -423,7 +423,7 @@ pub struct PluginAnalyzeDepsHookResultEntry {
 
 pub struct PluginFinalizeModuleHookParam<'a> {
   pub module: &'a mut Module,
-  pub deps: &'a Vec<PluginAnalyzeDepsHookResultEntry>,
+  pub deps: &'a mut Vec<PluginAnalyzeDepsHookResultEntry>,
 }
 
 #[derive(Default, Debug, serde::Serialize, serde::Deserialize, Clone)]

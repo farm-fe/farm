@@ -28,7 +28,7 @@ pub fn find_async_modules(context: &Arc<CompilationContext>) -> HashSet<ModuleId
     async_modules.insert(module_id.clone());
 
     for (dept, edge) in module_graph.dependents(&module_id) {
-      if !async_modules.contains(&dept) && !edge.is_dynamic() {
+      if !async_modules.contains(&dept) && !edge.is_dynamic_import() && !edge.is_dynamic_entry() {
         queue.push_back(dept);
       }
     }
@@ -54,7 +54,7 @@ pub fn update_async_modules(
       let dependencies = module_graph.dependencies(module_id);
       let is_deps_async = dependencies.iter().any(|(dep_id, edge)| {
         let dep = module_graph.module(dep_id).unwrap();
-        dep.meta.as_script().is_async && !edge.is_dynamic()
+        dep.meta.as_script().is_async && !edge.is_dynamic_import() && !edge.is_dynamic_entry()
       });
       if is_deps_async || is_async {
         added_async_modules.push(module_id.clone());
@@ -76,7 +76,7 @@ pub fn update_async_modules(
     async_modules.insert(module_id.clone());
 
     for (dept, edge) in module_graph.dependents(&module_id) {
-      if !async_modules.contains(&dept) && !edge.is_dynamic() {
+      if !async_modules.contains(&dept) && !edge.is_dynamic_import() && !edge.is_dynamic_entry() {
         queue.push_back(dept);
       }
     }
