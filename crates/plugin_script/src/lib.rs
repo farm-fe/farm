@@ -183,25 +183,10 @@ impl Plugin for FarmPluginScript {
       let script = param.meta.as_script_mut();
       let comments: SingleThreadedComments = script.take_comments().into();
       let ast = &mut script.ast;
-      let resolved_path = param.module_id.resolved_path(&context.config.root);
-      let cur_dir = if resolved_path.starts_with(VIRTUAL_MODULE_PREFIX) {
-        context.config.root.clone()
-      } else {
-        Path::new(&resolved_path)
-          .parent()
-          .unwrap()
-          .to_string_lossy()
-          .to_string()
-      };
 
       transform_url_with_import_meta_url(ast, &comments);
 
-      transform_import_meta_glob(
-        ast,
-        context.config.root.clone(),
-        cur_dir,
-        &context.config.resolve.alias,
-      )?;
+      transform_import_meta_glob(ast, context.config.root.clone(), param.module_id, context)?;
       script.set_comments(comments.into())
     }
 

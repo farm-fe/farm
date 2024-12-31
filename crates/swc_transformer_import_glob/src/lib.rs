@@ -16,11 +16,20 @@
 
 use std::collections::HashMap;
 use std::path::Component;
+use std::path::Path;
 use std::path::PathBuf;
+use std::sync::Arc;
 
+use farmfe_core::context::CompilationContext;
+use farmfe_core::module::ModuleId;
+use farmfe_core::module::VIRTUAL_MODULE_PREFIX;
+use farmfe_core::plugin::PluginResolveHookParam;
+use farmfe_core::plugin::PluginResolveHookResult;
+use farmfe_core::plugin::ResolveKind;
 use farmfe_core::regex;
 use farmfe_core::relative_path::RelativePath;
 use farmfe_core::swc_common::DUMMY_SP;
+use farmfe_core::swc_ecma_ast::Tpl;
 use farmfe_core::swc_ecma_ast::{
   self, ArrayLit, ArrowExpr, BindingIdent, BlockStmtOrExpr, CallExpr, Callee, Expr, ExprOrSpread,
   Ident, Import, KeyValueProp, Lit, MemberExpr, MemberProp, MetaPropExpr, MetaPropKind,
@@ -36,13 +45,13 @@ const REGEX_PREFIX: &str = "$__farm_regex:";
 pub fn transform_import_meta_glob(
   ast: &mut SwcModule,
   root: String,
-  cur_dir: String,
-  alias: &HashMap<String, String>,
+  importer: &ModuleId,
+  context: &Arc<CompilationContext>,
 ) -> farmfe_core::error::Result<()> {
-  let mut visitor = ImportGlobVisitor::new(cur_dir, root, alias);
+  let mut visitor = ImportGlobVisitor::new(importer, root, context);
   ast.visit_mut_with(&mut visitor);
 
-  if visitor.errors.len() > 0 {
+  if !visitor.errors.is_empty() {
     return Err(farmfe_core::error::CompilationError::GenericError(
       visitor.errors.join("\n"),
     ));
@@ -229,23 +238,37 @@ pub struct ImportMetaGlobInfo {
 pub struct ImportGlobVisitor<'a> {
   import_globs: Vec<ImportMetaGlobInfo>,
   cur_dir: String,
+  importer: &'a ModuleId,
   root: String,
-  alias: &'a HashMap<String, String>,
+  // alias: &'a HashMap<String, String>,
+  context: &'a Arc<CompilationContext>,
   pub errors: Vec<String>,
 }
 
 impl<'a> ImportGlobVisitor<'a> {
-  pub fn new(cur_dir: String, root: String, alias: &'a HashMap<String, String>) -> Self {
+  pub fn new(importer: &'a ModuleId, root: String, context: &'a Arc<CompilationContext>) -> Self {
+    let resolved_path = importer.resolved_path(&context.config.root);
+    let cur_dir = if resolved_path.starts_with(VIRTUAL_MODULE_PREFIX) {
+      context.config.root.clone()
+    } else {
+      Path::new(&resolved_path)
+        .parent()
+        .unwrap()
+        .to_string_lossy()
+        .to_string()
+    };
+
     Self {
       import_globs: vec![],
       cur_dir,
+      importer,
       root,
       errors: vec![],
-      alias,
+      context,
     }
   }
 
-  fn create_import_glob_info(sources: Vec<String>, args: &Vec<ExprOrSpread>) -> ImportMetaGlobInfo {
+  fn create_import_glob_info(sources: Vec<String>, args: &[ExprOrSpread]) -> ImportMetaGlobInfo {
     let mut import_glob_info = ImportMetaGlobInfo {
       sources,
       eager: false,
@@ -258,23 +281,19 @@ impl<'a> ImportGlobVisitor<'a> {
     // get arguments from args[1]
     if args.len() > 1 {
       if let Some(mut options) = get_object_literal(&args[1]) {
-        if options.contains_key("as") {
-          import_glob_info.glob_import_as = Some(options.remove("as").unwrap());
+        if let Some(_as) = options.remove("as") {
+          import_glob_info.glob_import_as = Some(_as);
         }
-        if options.contains_key("eager") {
-          let eager = if options.remove("eager").unwrap() == "true".to_string() {
-            true
-          } else {
-            false
-          };
-          import_glob_info.eager = eager;
+
+        if let Some(eager) = options.remove("eager") {
+          import_glob_info.eager = eager == "true";
         }
-        if options.contains_key("import") {
-          let import = options.remove("import").unwrap();
+
+        if let Some(import) = options.remove("import") {
           import_glob_info.import = Some(import);
         }
-        if options.contains_key("query") {
-          let query = options.remove("query").unwrap();
+
+        if let Some(query) = options.remove("query") {
           import_glob_info.query = Some(query);
         }
       }
@@ -284,24 +303,34 @@ impl<'a> ImportGlobVisitor<'a> {
   }
 
   fn try_alias(&self, source: &str) -> String {
-    let (source, negative) = if source.starts_with('!') {
-      (&source[1..], true)
-    } else {
-      (source, false)
-    };
+    let alias_map = &self.context.config.resolve.alias;
+
+    let (mut source, negative) = source
+      .strip_prefix('!')
+      .map(|suffix| (suffix.to_string(), true))
+      .unwrap_or_else(|| (source.to_string(), false));
+
+    // the package conversion priority should be higher than alias
+    if !(source.starts_with("./") || source.starts_with("../") || source.starts_with('/')) {
+      if let Some(result) = self.resolve(&source) {
+        source = result.resolved_path;
+      }
+    }
+
     let mut result = source.to_string();
     // sort the alias by length, so that the longest alias will be matched first
-    let mut alias_list: Vec<_> = self.alias.keys().collect();
-    alias_list.sort_by(|a, b| b.len().cmp(&a.len()));
+    let mut alias_list: Vec<_> = alias_map.keys().collect();
+
+    alias_list.sort_by_key(|b| std::cmp::Reverse(b.len()));
 
     for alias in alias_list {
-      let replaced = self.alias.get(alias).unwrap();
+      let replaced = alias_map.get(alias).unwrap();
 
       // try regex alias first
       if let Some(alias) = alias.strip_prefix(REGEX_PREFIX) {
         let regex = regex::Regex::new(alias).unwrap();
-        if regex.is_match(source) {
-          let replaced = regex.replace(source, replaced.as_str()).to_string();
+        if regex.is_match(&source) {
+          let replaced = regex.replace(&source, replaced.as_str()).to_string();
           result = replaced;
           break;
         }
@@ -315,10 +344,7 @@ impl<'a> ImportGlobVisitor<'a> {
         let new_source = source_left.to_logical_path(replaced);
 
         result = if new_source.is_absolute() {
-          format!(
-            "/{}",
-            relative(&self.root, &new_source.to_string_lossy().to_string())
-          )
+          format!("/{}", relative(&self.root, &new_source.to_string_lossy()))
         } else {
           new_source.to_string_lossy().to_string()
         };
@@ -333,63 +359,64 @@ impl<'a> ImportGlobVisitor<'a> {
     }
   }
 
+  fn resolve(&self, param: &str) -> Option<PluginResolveHookResult> {
+    self
+      .context
+      .plugin_driver
+      .resolve(
+        &PluginResolveHookParam {
+          source: param.to_string(),
+          importer: Some(self.importer.clone()),
+          kind: ResolveKind::Import,
+        },
+        self.context,
+        &Default::default(),
+      )
+      .ok()
+      .flatten()
+  }
+
   /// Glob the sources and filter negative sources, return globs relative paths
   fn glob_and_filter_sources(&mut self, sources: &Vec<String>) -> HashMap<String, String> {
     let mut paths = vec![];
 
     for source in sources {
-      let mut negative = false;
+      let negative = source.starts_with('!');
 
-      let source = if source.starts_with("!") {
-        negative = true;
-        &source[1..]
-      } else {
-        &source[..]
-      };
+      let source = if negative { &source[1..] } else { &source[..] };
+      let mut root = self.root.clone();
 
-      let source = if !source.starts_with('.') && !source.starts_with('/') {
-        format!("./{source}")
-      } else {
-        source.to_string()
-      };
-
-      // relative to root when source starts with '/'.
-      // and alias
-      let rel_path = if source.starts_with('/') {
-        let abs_path = RelativePath::new(&source[1..]).to_logical_path(&self.root);
-        relative(&self.cur_dir, &abs_path.to_string_lossy())
-      } else {
-        source.clone()
-      };
-      let rel_source = relative(
-        &self.root,
-        &RelativePath::new(&rel_path)
-          .to_logical_path(&self.cur_dir)
-          .to_string_lossy(),
-      );
-      // wax::Glob does not support ../, so we need to convert it to relative path
-      let (root, rel_source) = if rel_source.starts_with("../") {
-        let mut root_path = PathBuf::from(&self.root);
-        let rel_source_path = PathBuf::from(&rel_source);
+      let rel_source = if source.starts_with('/') {
+        relative(&self.root, source)
+      } else if source.starts_with("../") {
+        let mut root_path = PathBuf::from(&root);
+        let rel_source_path = PathBuf::from(&source);
 
         for comp in rel_source_path.components() {
-          match comp {
-            Component::ParentDir => {
-              root_path.pop();
-            }
-            _ => {}
+          if matches!(comp, Component::ParentDir) {
+            root_path.pop();
+          } else {
+            break;
           }
         }
 
-        (
-          root_path.to_string_lossy().to_string(),
-          rel_source.replace("../", ""),
-        )
+        root = root_path.to_string_lossy().to_string();
+        source.replace("../", "")
+      } else if let Some(suffix) = source.strip_prefix("./") {
+        let abs_path = RelativePath::new(&suffix).to_logical_path(&self.cur_dir);
+        relative(&self.cur_dir, &abs_path.to_string_lossy())
+      } else if source.starts_with("**") {
+        source.to_string()
       } else {
-        (self.root.clone(), rel_source.clone())
+        let Some(result) = self.resolve(source) else {
+          panic!("Error when glob {source:?}, please ensure the source exists");
+        };
+
+        relative(&self.cur_dir, &result.resolved_path)
       };
 
       let glob = Glob::new(&rel_source);
+
       match glob {
         Ok(glob) => {
           let p = glob
@@ -402,12 +429,7 @@ impl<'a> ImportGlobVisitor<'a> {
                 p.as_ref().is_ok_and(|f| !f.path().is_dir())
               }
             })
-            .map(|p| {
-              (
-                source.clone(),
-                p.map(|p| p.path().to_string_lossy().to_string()),
-              )
-            })
+            .map(|p| (source, p.map(|p| p.path().to_string_lossy().to_string())))
             .collect::<Vec<_>>();
           paths.push((negative, p));
         }
@@ -604,97 +626,88 @@ impl<'a> VisitMut for ImportGlobVisitor<'a> {
         args,
         ..
       }) => {
-        if *sym == *"glob" && !args.is_empty() {
-          if let Some(original_sources) = get_string_literal(&args[0]) {
-            let mut sources = vec![];
-
-            for source in original_sources {
-              let source = self.try_alias(&source);
-
-              if !source.starts_with('.')
-                && !source.starts_with('/')
-                && !source.starts_with('!')
-                && !source.starts_with('*')
-              {
-                self
-                  .errors
-                  .push(format!("Error when glob {source}: source must be relative path. e.g. './dir/*.js' or '/dir/*.js'(relative to root) or '!/dir/*.js'(exclude) or '!**/bar.js'(exclude) or '**/*.js'(relative to current dir)"));
-                return;
-              }
-
-              sources.push(source);
-            }
-
-            let cur_index = self.import_globs.len();
-            let mut import_glob_info = Self::create_import_glob_info(sources, args);
-            // search source using glob
-            let sources = &import_glob_info.sources;
-            let filtered_paths = self.glob_and_filter_sources(sources);
-            let mut filtered_paths = filtered_paths.into_iter().collect::<Vec<_>>();
-            filtered_paths.sort();
-
-            let mut props = vec![];
-
-            for (entry_index, (relative_file, source)) in filtered_paths.into_iter().enumerate() {
-              // deal with as
-              if let Some(glob_import_as) = &import_glob_info.glob_import_as {
-                if let Some(prop) = self.deal_with_import_as(
-                  glob_import_as,
-                  &relative_file,
-                  &source,
-                  cur_index,
-                  entry_index,
-                  sources,
-                ) {
-                  props.push(prop);
-                }
-              } else if import_glob_info.eager {
-                // add "./dir/foo.js": __glob__0_0
-                props.push((
-                  source.clone(),
-                  Box::new(Expr::Ident(Ident::new(
-                    format!("__glob__{cur_index}_{entry_index}").into(),
-                    DUMMY_SP,
-                  ))),
-                ));
-              } else {
-                // add "./dir/foo.js": () => import('./dir/foo.js')
-                let (rel_file, source) = if let Some(query) = &import_glob_info.query {
-                  (
-                    format!("{relative_file}?{query}"),
-                    format!("{source}?{query}"),
-                  )
-                } else {
-                  (relative_file.clone(), source.clone())
-                };
-
-                props.push(self.deal_with_non_eager(&rel_file, &source, &import_glob_info.import));
-              }
-
-              import_glob_info.globed_sources.push(relative_file);
-            }
-
-            // props to object literal
-            let mut object_lit_props = vec![];
-            for (key, value) in props {
-              object_lit_props.push(PropOrSpread::Prop(Box::new(Prop::KeyValue(KeyValueProp {
-                key: swc_ecma_ast::PropName::Str(swc_ecma_ast::Str {
-                  span: DUMMY_SP,
-                  value: key.into(),
-                  raw: None,
-                }),
-                value,
-              }))));
-            }
-            // replace expr with object literal
-            *expr = Expr::Object(ObjectLit {
-              span: DUMMY_SP,
-              props: object_lit_props,
-            });
-
-            self.import_globs.push(import_glob_info);
-          }
+        if *sym != *"glob" || args.is_empty() {
+          return;
         }
+
+        let Some(sources) = get_string_literal(&args[0]) else {
+          return;
+        };
+
+        let sources = sources
+          .into_iter()
+          .map(|source| self.try_alias(&source))
+          .collect();
+
+        let cur_index = self.import_globs.len();
+        let mut import_glob_info = Self::create_import_glob_info(sources, args);
+
+        // search source using glob
+        let sources = &import_glob_info.sources;
+        let filtered_paths = self.glob_and_filter_sources(sources);
+        let mut filtered_paths = filtered_paths.into_iter().collect::<Vec<_>>();
+        filtered_paths.sort();
+
+        let mut props = vec![];
+
+        for (entry_index, (relative_file, source)) in filtered_paths.into_iter().enumerate() {
+          // deal with as
+          if let Some(glob_import_as) = &import_glob_info.glob_import_as {
+            if let Some(prop) = self.deal_with_import_as(
+              glob_import_as,
+              &relative_file,
+              &source,
+              cur_index,
+              entry_index,
+              sources,
+            ) {
+              props.push(prop);
+            }
+          } else if import_glob_info.eager {
+            // add "./dir/foo.js": __glob__0_0
+            props.push((
+              source.clone(),
+              Box::new(Expr::Ident(Ident::new(
+                format!("__glob__{cur_index}_{entry_index}").into(),
+                DUMMY_SP,
+              ))),
+            ));
+          } else {
+            // add "./dir/foo.js": () => import('./dir/foo.js')
+            let (rel_file, source) = if let Some(query) = &import_glob_info.query {
+              (
+                format!("{relative_file}?{query}"),
+                format!("{source}?{query}"),
+              )
+            } else {
+              (relative_file.clone(), source.clone())
+            };
+
+            props.push(self.deal_with_non_eager(&rel_file, &source, &import_glob_info.import));
+          }
+
+          import_glob_info.globed_sources.push(relative_file);
+        }
+
+        // props to object literal
+        let mut object_lit_props = vec![];
+        for (key, value) in props {
+          object_lit_props.push(PropOrSpread::Prop(Box::new(Prop::KeyValue(KeyValueProp {
+            key: swc_ecma_ast::PropName::Str(swc_ecma_ast::Str {
+              span: DUMMY_SP,
+              value: key.into(),
+              raw: None,
+            }),
+            value,
+          }))));
+        }
+        // replace expr with object literal
+        *expr = Expr::Object(ObjectLit {
+          span: DUMMY_SP,
+          props: object_lit_props,
+        });
+
+        self.import_globs.push(import_glob_info);
       }
       _ => {
         expr.visit_mut_children_with(self);
@@ -709,21 +722,32 @@ fn get_string_literal(expr: &ExprOrSpread) -> Option<Vec<String>> {
     box Expr::Array(ArrayLit { elems, .. }) => {
       let mut result = vec![];
 
-      for elem in elems {
-        if let Some(ExprOrSpread {
+      for elem in elems.iter().flatten() {
+        if let ExprOrSpread {
           spread: None,
           expr: box Expr::Lit(Lit::Str(str)),
-        }) = elem
+        } = elem
         {
           result.push(str.value.to_string());
         }
       }
 
-      if !result.is_empty() {
-        Some(result)
-      } else {
-        None
+      if result.is_empty() {
+        return None;
       }
+
+      Some(result)
+    }
+    box Expr::Tpl(Tpl { exprs, quasis, .. }) => {
+      if !exprs.is_empty() {
+        return None;
+      }
+
+      Some(vec![quasis
+        .iter()
+        .map(|item| item.raw.to_string())
+        .collect::<Vec<_>>()
+        .join("")])
     }
     _ => None,
   }
