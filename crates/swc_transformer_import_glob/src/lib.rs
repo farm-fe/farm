@@ -379,9 +379,8 @@ impl<'a> ImportGlobVisitor<'a> {
       .flatten()
   }
 
-  fn find_rel_source(&self, source: &str) -> (String, String, String) {
+  fn find_rel_source(&self, source: &str) -> (String, String) {
     let mut root = self.root.clone();
-    let mut original_source = source.to_string();
 
     #[allow(clippy::manual_strip)]
     let rel_source = if source.starts_with('/') {
@@ -437,14 +436,10 @@ impl<'a> ImportGlobVisitor<'a> {
         panic!("Error when glob {source:?}, please ensure the source exists");
       };
 
-      let v = relative(&self.cur_dir, &result);
-
-      original_source = result;
-
-      v
+      relative(&self.cur_dir, &result)
     };
 
-    (root, rel_source, original_source)
+    (root, rel_source)
   }
 
   /// Glob the sources and filter negative sources, return globs relative paths
@@ -455,9 +450,12 @@ impl<'a> ImportGlobVisitor<'a> {
       let negative = source.starts_with('!');
 
       let source = if negative { &source[1..] } else { &source[..] };
-      let (root, rel_source, source) = self.find_rel_source(source);
+      let (root, rel_source) = self.find_rel_source(source);
+
+      println!("source: {source}\nroot: {root}\nrel_source: {rel_source}");
 
       let glob = Glob::new(&rel_source);
+
 
       match glob {
         Ok(glob) => {
@@ -919,11 +917,11 @@ mod tests {
     let importer = ModuleId::new("src/index.js", "", &context.config.root);
     let visitor = create_visitor(&importer, &context);
 
-    let (_, s1, _) = visitor.find_rel_source("/root1/root2/src/foo.js");
+    let (_, s1) = visitor.find_rel_source("/root1/root2/src/foo.js");
 
     assert_eq!(s1, "src/foo.js");
 
-    let (_, s1, _) = visitor.find_rel_source("/src/foo.js");
+    let (_, s1) = visitor.find_rel_source("/src/foo.js");
 
     assert_eq!(s1, "src/foo.js");
   }
@@ -934,11 +932,11 @@ mod tests {
     let importer = ModuleId::new("src/components/welcome/index.tsx", "", &context.config.root);
     let visitor = create_visitor(&importer, &context);
 
-    let (_, s1, _) = visitor.find_rel_source("../../../assets/*.js");
+    let (_, s1) = visitor.find_rel_source("../../../assets/*.js");
 
     assert_eq!(s1, format!("assets/*.js"));
 
-    let (_, s1, _) = visitor.find_rel_source("./src/foo.js");
+    let (_, s1) = visitor.find_rel_source("./src/foo.js");
 
     assert_eq!(s1, "src/foo.js");
   }
