@@ -243,13 +243,14 @@ pub struct ImportGlobVisitor<'a> {
   // alias: &'a HashMap<String, String>,
   context: &'a Arc<CompilationContext>,
   pub errors: Vec<String>,
+  resolved_cache: HashMap<String, String>,
 }
 
 impl<'a> ImportGlobVisitor<'a> {
   pub fn new(importer: &'a ModuleId, root: String, context: &'a Arc<CompilationContext>) -> Self {
-    let resolved_path = importer.resolved_path(&context.config.root);
+    let resolved_path = importer.resolved_path(&root);
     let cur_dir = if resolved_path.starts_with(VIRTUAL_MODULE_PREFIX) {
-      context.config.root.clone()
+      root.clone()
     } else {
       Path::new(&resolved_path)
         .parent()
@@ -265,6 +266,7 @@ impl<'a> ImportGlobVisitor<'a> {
       root,
       errors: vec![],
       context,
+      resolved_cache: HashMap::new(),
     }
   }
 
@@ -302,10 +304,10 @@ impl<'a> ImportGlobVisitor<'a> {
     import_glob_info
   }
 
-  fn try_alias(&self, source: &str) -> String {
+  fn try_alias(&mut self, source: &str) -> String {
     let alias_map = &self.context.config.resolve.alias;
 
-    let (mut source, negative) = source
+    let (source, negative) = source
       .strip_prefix('!')
       .map(|suffix| (suffix.to_string(), true))
       .unwrap_or_else(|| (source.to_string(), false));
@@ -313,7 +315,8 @@ impl<'a> ImportGlobVisitor<'a> {
     // the package conversion priority should be higher than alias
     if !(source.starts_with("./") || source.starts_with("../") || source.starts_with('/')) {
       if let Some(result) = self.resolve(&source) {
-        source = result.resolved_path;
+        self.resolved_cache.insert(source.clone(), result.resolved_path);
+        return source.to_string();
       }
     }
 
@@ -376,8 +379,9 @@ impl<'a> ImportGlobVisitor<'a> {
       .flatten()
   }
 
-  fn find_rel_source(&self, source: &str) -> (String, String) {
+  fn find_rel_source(&self, source: &str) -> (String, String, String) {
     let mut root = self.root.clone();
+    let mut original_source = source.to_string();
 
     #[allow(clippy::manual_strip)]
     let rel_source = if source.starts_with('/') {
@@ -399,34 +403,48 @@ impl<'a> ImportGlobVisitor<'a> {
         .to_logical_path(&self.cur_dir)
         .to_string_lossy()
         .to_string();
-      let source = relative(&self.root, &source);
-      let mut root_path = PathBuf::from(&root);
-      let rel_source_path = PathBuf::from(&source);
+      let mut source = relative(&self.root, &source);
 
-      for comp in rel_source_path.components() {
-        if matches!(comp, Component::ParentDir) {
-          root_path.pop();
-        } else {
-          break;
+      if source.starts_with("../") {
+        let mut root_path = PathBuf::from(&root);
+        let rel_source_path = PathBuf::from(&source);
+
+        for comp in rel_source_path.components() {
+          if matches!(comp, Component::ParentDir) {
+            root_path.pop();
+          } else {
+            break;
+          }
         }
+
+        root = root_path.to_string_lossy().to_string();
+        source = source.replace("../", "");
       }
 
-      root = root_path.to_string_lossy().to_string();
-      source.replace("../", "")
+      source
     } else if let Some(suffix) = source.strip_prefix("./") {
       let abs_path = RelativePath::new(&suffix).to_logical_path(&self.cur_dir);
       relative(&self.cur_dir, &abs_path.to_string_lossy())
     } else if source.starts_with("**") {
       source.to_string()
     } else {
-      let Some(result) = self.resolve(source) else {
+      let Some(result) = self
+        .resolved_cache
+        .get(source)
+        .map(|v| v.to_string())
+        .or_else(|| self.resolve(source).map(|v| v.resolved_path))
+      else {
         panic!("Error when glob {source:?}, please ensure the source exists");
       };
 
-      relative(&self.cur_dir, &result.resolved_path)
+      let v = relative(&self.cur_dir, &result);
+
+      original_source = result;
+
+      v
     };
 
-    (root, rel_source)
+    (root, rel_source, original_source)
   }
 
   /// Glob the sources and filter negative sources, return globs relative paths
@@ -437,7 +455,7 @@ impl<'a> ImportGlobVisitor<'a> {
       let negative = source.starts_with('!');
 
       let source = if negative { &source[1..] } else { &source[..] };
-      let (root, rel_source) = self.find_rel_source(source);
+      let (root, rel_source, source) = self.find_rel_source(source);
 
       let glob = Glob::new(&rel_source);
 
@@ -453,7 +471,12 @@ impl<'a> ImportGlobVisitor<'a> {
                 p.as_ref().is_ok_and(|f| !f.path().is_dir())
               }
             })
-            .map(|p| (source, p.map(|p| p.path().to_string_lossy().to_string())))
+            .map(|p| {
+              (
+                source.clone(),
+                p.map(|p| p.path().to_string_lossy().to_string()),
+              )
+            })
             .collect::<Vec<_>>();
           paths.push((negative, p));
         }
@@ -846,8 +869,8 @@ fn get_object_literal(expr: &ExprOrSpread) -> Option<HashMap<String, String>> {
               _ => None,
             };
 
-            if k.is_some() && v.is_some() {
-              result.insert(k.unwrap(), v.unwrap());
+            if let (Some(k), Some(v)) = (k, v) {
+              result.insert(k, v);
             }
           }
           _ => {}
@@ -896,11 +919,11 @@ mod tests {
     let importer = ModuleId::new("src/index.js", "", &context.config.root);
     let visitor = create_visitor(&importer, &context);
 
-    let (_, s1) = visitor.find_rel_source("/root1/root2/src/foo.js");
+    let (_, s1, _) = visitor.find_rel_source("/root1/root2/src/foo.js");
 
     assert_eq!(s1, "src/foo.js");
 
-    let (_, s1) = visitor.find_rel_source("/src/foo.js");
+    let (_, s1, _) = visitor.find_rel_source("/src/foo.js");
 
     assert_eq!(s1, "src/foo.js");
   }
@@ -911,11 +934,11 @@ mod tests {
     let importer = ModuleId::new("src/components/welcome/index.tsx", "", &context.config.root);
     let visitor = create_visitor(&importer, &context);
 
-    let (_, s1) = visitor.find_rel_source("../../../assets/*.js");
+    let (_, s1, _) = visitor.find_rel_source("../../../assets/*.js");
 
     assert_eq!(s1, format!("assets/*.js"));
 
-    let (_, s1) = visitor.find_rel_source("./src/foo.js");
+    let (_, s1, _) = visitor.find_rel_source("./src/foo.js");
 
     assert_eq!(s1, "src/foo.js");
   }
