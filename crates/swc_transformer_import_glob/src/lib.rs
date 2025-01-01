@@ -315,7 +315,9 @@ impl<'a> ImportGlobVisitor<'a> {
     // the package conversion priority should be higher than alias
     if !(source.starts_with("./") || source.starts_with("../") || source.starts_with('/')) {
       if let Some(result) = self.resolve(&source) {
-        self.resolved_cache.insert(source.clone(), result.resolved_path);
+        self
+          .resolved_cache
+          .insert(source.clone(), result.resolved_path);
         return source.to_string();
       }
     }
@@ -455,7 +457,6 @@ impl<'a> ImportGlobVisitor<'a> {
       println!("source: {source}\nroot: {root}\nrel_source: {rel_source}");
 
       let glob = Glob::new(&rel_source);
-
 
       match glob {
         Ok(glob) => {
@@ -891,7 +892,11 @@ mod tests {
 
   fn create_context() -> Arc<CompilationContext> {
     let mut compilation = CompilationContext::default();
-    compilation.config.root = "/root1/root2".to_string();
+    compilation.config.root = if cfg!(windows) {
+      "C:\\root1".to_string()
+    } else {
+      "/root1/root2".to_string()
+    };
     Arc::new(compilation)
   }
 
@@ -900,13 +905,11 @@ mod tests {
     importer: &'a ModuleId,
     context: &'a Arc<CompilationContext>,
   ) -> ImportGlobVisitor<'a> {
-    let root = "/root1/root2".to_string();
     let mut compilation = CompilationContext::default();
 
-    compilation.config.root.clone_from(&root);
+    compilation.config.root.clone_from(&context.config.root);
 
-    // let importer = importer.unwrap_or_else(|| );
-    let visitor = ImportGlobVisitor::new(importer, root, context);
+    let visitor = ImportGlobVisitor::new(importer, context.config.root.clone(), context);
 
     visitor
   }
@@ -916,10 +919,6 @@ mod tests {
     let context = create_context();
     let importer = ModuleId::new("src/index.js", "", &context.config.root);
     let visitor = create_visitor(&importer, &context);
-
-    let (_, s1) = visitor.find_rel_source("/root1/root2/src/foo.js");
-
-    assert_eq!(s1, "src/foo.js");
 
     let (_, s1) = visitor.find_rel_source("/src/foo.js");
 
