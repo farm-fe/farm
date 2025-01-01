@@ -376,6 +376,59 @@ impl<'a> ImportGlobVisitor<'a> {
       .flatten()
   }
 
+  fn find_rel_source(&self, source: &str) -> (String, String) {
+    let mut root = self.root.clone();
+
+    #[allow(clippy::manual_strip)]
+    let rel_source = if source.starts_with('/') {
+      // There are two possibilities
+      // 1. source is an absolute path with root, e.g: /root/src/foo.js,
+      // 2. source is an absolute path without root, e.g: /src/foo.js
+      // After comparing with root
+      // 1-result: /src/foo.js
+      // 2-result: result: ../src/foo.js
+      // If it is a 2-result, we need to treat it as a path relative to the root.
+      let res = relative(&self.root, source);
+      if res.starts_with("../") {
+        relative(&self.root, &source[1..])
+      } else {
+        res
+      }
+    } else if source.starts_with("../") {
+      let source = RelativePath::new(source)
+        .to_logical_path(&self.cur_dir)
+        .to_string_lossy()
+        .to_string();
+      let source = relative(&self.root, &source);
+      let mut root_path = PathBuf::from(&root);
+      let rel_source_path = PathBuf::from(&source);
+
+      for comp in rel_source_path.components() {
+        if matches!(comp, Component::ParentDir) {
+          root_path.pop();
+        } else {
+          break;
+        }
+      }
+
+      root = root_path.to_string_lossy().to_string();
+      source.replace("../", "")
+    } else if let Some(suffix) = source.strip_prefix("./") {
+      let abs_path = RelativePath::new(&suffix).to_logical_path(&self.cur_dir);
+      relative(&self.cur_dir, &abs_path.to_string_lossy())
+    } else if source.starts_with("**") {
+      source.to_string()
+    } else {
+      let Some(result) = self.resolve(source) else {
+        panic!("Error when glob {source:?}, please ensure the source exists");
+      };
+
+      relative(&self.cur_dir, &result.resolved_path)
+    };
+
+    (root, rel_source)
+  }
+
   /// Glob the sources and filter negative sources, return globs relative paths
   fn glob_and_filter_sources(&mut self, sources: &Vec<String>) -> HashMap<String, String> {
     let mut paths = vec![];
@@ -384,36 +437,7 @@ impl<'a> ImportGlobVisitor<'a> {
       let negative = source.starts_with('!');
 
       let source = if negative { &source[1..] } else { &source[..] };
-      let mut root = self.root.clone();
-
-      let rel_source = if source.starts_with('/') {
-        relative(&self.root, source)
-      } else if source.starts_with("../") {
-        let mut root_path = PathBuf::from(&root);
-        let rel_source_path = PathBuf::from(&source);
-
-        for comp in rel_source_path.components() {
-          if matches!(comp, Component::ParentDir) {
-            root_path.pop();
-          } else {
-            break;
-          }
-        }
-
-        root = root_path.to_string_lossy().to_string();
-        source.replace("../", "")
-      } else if let Some(suffix) = source.strip_prefix("./") {
-        let abs_path = RelativePath::new(&suffix).to_logical_path(&self.cur_dir);
-        relative(&self.cur_dir, &abs_path.to_string_lossy())
-      } else if source.starts_with("**") {
-        source.to_string()
-      } else {
-        let Some(result) = self.resolve(source) else {
-          panic!("Error when glob {source:?}, please ensure the source exists");
-        };
-
-        relative(&self.cur_dir, &result.resolved_path)
-      };
+      let (root, rel_source) = self.find_rel_source(source);
 
       let glob = Glob::new(&rel_source);
 
@@ -837,5 +861,62 @@ fn get_object_literal(expr: &ExprOrSpread) -> Option<HashMap<String, String>> {
       }
     }
     _ => None,
+  }
+}
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  fn create_context() -> Arc<CompilationContext> {
+    let mut compilation = CompilationContext::default();
+    compilation.config.root = "/root1/root2".to_string();
+    Arc::new(compilation)
+  }
+
+  #[inline]
+  fn create_visitor<'a>(
+    importer: &'a ModuleId,
+    context: &'a Arc<CompilationContext>,
+  ) -> ImportGlobVisitor<'a> {
+    let root = "/root1/root2".to_string();
+    let mut compilation = CompilationContext::default();
+
+    compilation.config.root.clone_from(&root);
+
+    // let importer = importer.unwrap_or_else(|| );
+    let visitor = ImportGlobVisitor::new(importer, root, context);
+
+    visitor
+  }
+
+  #[test]
+  fn find_rel_source_absolute_path() {
+    let context = create_context();
+    let importer = ModuleId::new("src/index.js", "", &context.config.root);
+    let visitor = create_visitor(&importer, &context);
+
+    let (_, s1) = visitor.find_rel_source("/root1/root2/src/foo.js");
+
+    assert_eq!(s1, "src/foo.js");
+
+    let (_, s1) = visitor.find_rel_source("/src/foo.js");
+
+    assert_eq!(s1, "src/foo.js");
+  }
+
+  #[test]
+  fn find_rel_source_relative_path() {
+    let context = create_context();
+    let importer = ModuleId::new("src/components/welcome/index.tsx", "", &context.config.root);
+    let visitor = create_visitor(&importer, &context);
+
+    let (_, s1) = visitor.find_rel_source("../../../assets/*.js");
+
+    assert_eq!(s1, format!("assets/*.js"));
+
+    let (_, s1) = visitor.find_rel_source("./src/foo.js");
+
+    assert_eq!(s1, "src/foo.js");
   }
 }
