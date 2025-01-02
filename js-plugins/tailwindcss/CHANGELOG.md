@@ -1,5 +1,13 @@
 # @farmfe/js-plugin-tailwindcss
 
+## 0.0.4
+
+### Patch Changes
+
+- ee014937: use configResolve instead of config hooks
+- Updated dependencies [0ad977b6]
+  - @farmfe/core@1.6.3
+
 ## 0.0.3
 
 ### Patch Changes

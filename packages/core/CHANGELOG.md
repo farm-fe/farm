@@ -1,5 +1,11 @@
 # @farmfe/core
 
+## 1.6.3
+
+### Patch Changes
+
+- 0ad977b6: import meta glob search package
+
 ## 1.6.2
 
 ### Patch Changes

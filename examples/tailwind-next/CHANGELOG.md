@@ -1,5 +1,12 @@
 # @farmfe-examples/tailwind-next
 
+## 0.0.5
+
+### Patch Changes
+
+- Updated dependencies [ee014937]
+  - @farmfe/js-plugin-tailwindcss@0.0.4
+
 ## 0.0.4
 
 ### Patch Changes
