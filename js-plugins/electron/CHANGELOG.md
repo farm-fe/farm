@@ -1,5 +1,11 @@
 # @farmfe/js-plugin-electron
 
+## 1.0.3
+
+### Patch Changes
+
+- 3d5506a1: fix: dependencies unintentionally marked as external
+
 ## 1.0.2
 
 ### Patch Changes
