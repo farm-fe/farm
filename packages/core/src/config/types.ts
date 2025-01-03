@@ -27,7 +27,7 @@ export interface ConfigEnv {
   isPreview: boolean;
 }
 
-export type commandType = 'start' | 'dev' | 'build' | 'watch' | 'preview';
+export type commandType = 'dev' | 'build' | 'watch' | 'preview';
 
 export type UserConfigFnPromise = (env: ConfigEnv) => Promise<UserConfig>;
 export type UserConfigFn = (env: ConfigEnv) => UserConfig | Promise<UserConfig>;
@@ -198,6 +198,7 @@ export interface ResolvedCompilation
 export interface ResolvedUserConfig extends UserConfig {
   root?: string;
   mode?: string;
+  command?: commandType;
   env?: Record<string, any>;
   envDir?: string;
   envFiles?: string[];
