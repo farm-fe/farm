@@ -1,6 +1,6 @@
 [package]
 name = "farmfe_swc_transformer_import_glob"
-version = "0.0.14"
+version = "0.0.15"
 edition = "2021"
 authors = ["brightwwu(吴明亮) <1521488775@qq.com>"]
 description = "farm swc tranformer for vite-style import.meta.glob"
