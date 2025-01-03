@@ -82,7 +82,11 @@ export class ViteModuleGraphAdapter {
   }
 }
 
-function proxyViteModuleNode(
+export function createModuleGraph(pluginName: string) {
+  return new ViteModuleGraphAdapter(pluginName);
+}
+
+export function proxyViteModuleNode(
   node: ViteModule,
   pluginName: string,
   context: CompilationContext

@@ -107,7 +107,9 @@ export class Compiler {
       this._updateQueue.push({ paths, resolve });
       return promise;
     }
+
     this.compiling = true;
+
     try {
       const res = await this._bindingCompiler.update(
         paths,

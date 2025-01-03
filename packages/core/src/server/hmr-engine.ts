@@ -135,6 +135,7 @@ export class HmrEngine {
         }
       `);
     });
+    // TODO optimize this part
     // } catch (err) {
     // checkClearScreen(this.app.compiler.config.config);
     // this.app.logger.error(convertErrorMessage(err));
