@@ -297,3 +297,8 @@ export interface ModuleContext {
   paths: string[];
   read: (file: string) => string | Promise<string>;
 }
+
+export interface ConfigResult {
+  config: UserConfig;
+  configFilePath: string;
+}

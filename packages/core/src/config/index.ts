@@ -1,6 +1,5 @@
 import { createHash } from 'node:crypto';
 import fs from 'node:fs';
-import { readFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -12,11 +11,11 @@ import { JsPlugin } from '../index.js';
 import {
   type RustPlugin,
   getSortedPlugins,
-  handleVitePlugins,
   resolveAsyncPlugins,
   resolveConfigHook,
   resolveConfigResolvedHook,
-  resolveFarmPlugins
+  resolveFarmPlugins,
+  resolveVitePlugins
 } from '../plugin/index.js';
 
 import {
@@ -46,7 +45,6 @@ import { normalizePersistentCache } from './normalize-config/normalize-persisten
 import { parseUserConfig } from './schema.js';
 
 import { externalAdapter } from '../plugin/js/external-adapter.js';
-import { ViteModuleGraphAdapter } from '../plugin/js/vite-server-adapter.js';
 import { convertErrorMessage } from '../utils/error.js';
 import { resolveHostname } from '../utils/http.js';
 import merge from '../utils/merge.js';
@@ -64,15 +62,15 @@ import { normalizeExternal } from './normalize-config/normalize-external.js';
 import { normalizePartialBundling } from './normalize-config/normalize-partial-bundling.js';
 import { normalizeResolve } from './normalize-config/normalize-resolve.js';
 
+import { wrapPluginUpdateModules } from '../plugin/js/utils.js';
 import type {
   ConfigEnv,
+  ConfigResult,
   DefaultOptionsType,
   EnvResult,
   FarmCliOptions,
   Format,
   HmrOptions,
-  ModuleContext,
-  ModuleNode,
   NormalizedServerConfig,
   ResolvedCompilation,
   ResolvedUserConfig,
@@ -283,16 +281,12 @@ export async function normalizeUserCompilationConfig(
   const { compilation, root } = resolvedUserConfig;
 
   // resolve root path
-
   const resolvedRootPath = normalizePath(root);
 
   resolvedUserConfig.root = resolvedRootPath;
 
   // if normalize default config, skip check input option
-  const inputIndexConfig = await checkCompilationInputValue(
-    resolvedUserConfig,
-    resolvedUserConfig.logger
-  );
+  const inputIndexConfig = await checkCompilationInputValue(resolvedUserConfig);
 
   const resolvedCompilation: ResolvedCompilation = merge(
     {},
@@ -772,19 +766,13 @@ export async function loadConfigFile(
   inlineOptions: FarmCliOptions & UserConfig,
   configEnv: ConfigEnv,
   mode: CompilationMode = 'development'
-): Promise<
-  | {
-      config: UserConfig;
-      configFilePath: string;
-    }
-  | undefined
-> {
-  const { root = '.' } = inlineOptions;
+): Promise<ConfigResult | undefined> {
+  const { root = '.', configFile } = inlineOptions;
   const configRootPath = path.resolve(root);
   let resolvedConfigFilePath: string | undefined;
   try {
     resolvedConfigFilePath = await resolveConfigFilePath(
-      inlineOptions.configFile,
+      configFile,
       root,
       configRootPath
     );
@@ -825,8 +813,7 @@ export async function loadConfigFile(
 }
 
 export async function checkCompilationInputValue(
-  userConfig: UserConfig,
-  logger: Logger
+  userConfig: ResolvedUserConfig
 ) {
   const { compilation } = userConfig;
   const targetEnv = compilation?.output?.targetEnv;
@@ -875,7 +862,7 @@ export async function checkCompilationInputValue(
 
     // If no index file is found, throw an error
     if (!inputIndexConfig.index) {
-      logger.error(
+      userConfig.logger.error(
         `Build failed due to errors: Can not resolve ${
           isTargetNode ? 'index.js or index.ts' : 'index.html'
         }  from ${userConfig.root}. \n${errorMessage}`
@@ -911,23 +898,19 @@ export async function resolvePlugins(
   userConfig: UserConfig,
   mode: CompilationMode
 ) {
-  const { jsPlugins: rawJsPlugins, rustPlugins } =
-    await resolveFarmPlugins(userConfig);
-  const jsPlugins = (await resolveAndFilterAsyncPlugins(rawJsPlugins)).map(
-    wrapPluginUpdateModules
-  );
-  const vitePlugins = (userConfig?.vitePlugins ?? []).filter(Boolean);
+  const [farmPlugins, vitePluginAdapters] = await Promise.all([
+    resolveFarmPlugins(userConfig),
+    resolveVitePlugins(userConfig, mode)
+  ]);
 
-  const vitePluginAdapters = vitePlugins.length
-    ? await handleVitePlugins(vitePlugins, userConfig, mode)
-    : [];
-
-  return {
-    jsPlugins,
-    vitePlugins,
-    rustPlugins,
+  const resolvePluginsResult = {
+    jsPlugins: farmPlugins.jsPlugins.map(wrapPluginUpdateModules),
+    vitePlugins: (userConfig?.vitePlugins ?? []).filter(Boolean),
+    rustPlugins: farmPlugins.rustPlugins,
     vitePluginAdapters
   };
+
+  return resolvePluginsResult;
 }
 
 export async function resolveDefaultUserConfig(options: DefaultOptionsType) {
@@ -985,7 +968,6 @@ export async function resolveUserConfig(
   resolvedUserConfig.env = {
     ...userEnv,
     NODE_ENV: userConfig.compilation.mode,
-    // TODO publicPath rewrite to BASE_URL
     BASE_URL: userConfig.compilation.output.publicPath ?? '/',
     mode: userConfig.mode,
     DEV: userConfig.compilation.mode === ENV_DEVELOPMENT,
@@ -1069,17 +1051,6 @@ export async function resolveConfigFilePath(
   }
 }
 
-export function checkClearScreen(
-  inlineConfig: FarmCliOptions | ResolvedUserConfig
-) {
-  if (
-    inlineConfig?.clearScreen &&
-    !__FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__
-  ) {
-    clearScreen();
-  }
-}
-
 export function getFormat(configFilePath: string): Format {
   return process.env.FARM_CONFIG_FORMAT === 'cjs'
     ? 'cjs'
@@ -1113,42 +1084,4 @@ function getNamespaceName(rootPath: string) {
     return name || FARM_DEFAULT_NAMESPACE;
   }
   return FARM_DEFAULT_NAMESPACE;
-}
-
-function wrapPluginUpdateModules(plugin: JsPlugin): JsPlugin {
-  if (!plugin.updateModules?.executor) {
-    return plugin;
-  }
-  const originalExecutor = plugin.updateModules.executor;
-  const moduleGraph = new ViteModuleGraphAdapter(plugin.name);
-
-  plugin.updateModules.executor = async ({ paths }, ctx) => {
-    moduleGraph.context = ctx;
-    for (const [file, type] of paths) {
-      const mods = moduleGraph.getModulesByFile(
-        file
-      ) as unknown as ModuleNode[];
-
-      const filename = normalizePath(file);
-      const moduleContext: ModuleContext = {
-        file: filename,
-        timestamp: Date.now(),
-        type,
-        paths,
-        modules: (mods ?? []).map(
-          (m) =>
-            ({
-              ...m,
-              id: normalizePath(m.id),
-              file: normalizePath(m.file)
-            }) as ModuleNode
-        ),
-        read: function (): string | Promise<string> {
-          return readFile(file, 'utf-8');
-        }
-      };
-      return originalExecutor.call(plugin, moduleContext);
-    }
-  };
-  return plugin;
 }
