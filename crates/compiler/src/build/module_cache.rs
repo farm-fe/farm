@@ -266,7 +266,7 @@ pub fn handle_cached_modules(
 
   // clear module groups and resource pot as it will be re-resolved later
   cached_module.module.module_groups.clear();
-  cached_module.module.resource_pot = None;
+  cached_module.module.resource_pots = Default::default();
   cached_module.module.used_exports.clear();
 
   // TODO: return of resolve hook should be treated as part of the cache key

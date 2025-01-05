@@ -111,13 +111,15 @@ fn module_group_from_entry(
   let deps = graph
     .dependencies(entry)
     .into_iter()
-    .map(|(k, v)| (k, v.is_dynamic_import()))
+    .map(|(k, v)| (k, v.is_dynamic_import(), v.is_dynamic_entry()))
     .collect::<Vec<_>>();
 
-  for (dep, is_dynamic) in deps {
-    if is_dynamic {
-      dynamic_entries.push(dep);
-    } else {
+  for (dep, is_dynamic_import, is_dynamic_entry) in deps {
+    if is_dynamic_import {
+      if !dynamic_entries.contains(&dep) {
+        dynamic_entries.push(dep);
+      }
+    } else if !is_dynamic_entry {
       // visited all dep and its dependencies using BFS
       let mut queue = VecDeque::new();
       queue.push_back(dep.clone());
@@ -139,8 +141,10 @@ fn module_group_from_entry(
 
         for (dep, edge) in graph.dependencies(&head) {
           if edge.is_dynamic_import() {
-            dynamic_entries.push(dep);
-          } else {
+            if !dynamic_entries.contains(&dep) {
+              dynamic_entries.push(dep);
+            }
+          } else if !edge.is_dynamic_entry() {
             queue.push_back(dep);
           }
         }
@@ -174,7 +178,7 @@ pub fn module_groups_from_dynamic_entries(
       group.add_module(head.clone());
       module_graph
         .module_mut(&head)
-        .unwrap()
+        .unwrap_or_else(|| panic!("module {:?} not found", head))
         .module_groups
         .insert(group.id.clone());
 
@@ -195,13 +199,13 @@ mod tests {
     context::CompilationContext,
     module::module_group::{ModuleGroupId, ModuleGroupType},
     parking_lot::RwLock,
-    plugin::{Plugin, PluginHookContext},
+    plugin::{Plugin, PluginHookContext, ResolveKind},
     HashMap, HashSet,
   };
   #[cfg(test)]
   use farmfe_testing_helpers::construct_test_module_graph;
   use farmfe_testing_helpers::{
-    construct_test_module_graph_complex, construct_test_module_group_graph,
+    assert_debug_snapshot, construct_test_module_graph_complex, construct_test_module_group_graph,
   };
 
   use crate::FarmPluginPartialBundling;
@@ -369,5 +373,30 @@ mod tests {
           .contains(&mg.id));
       }
     }
+  }
+
+  #[test]
+  fn module_group_graph_from_module_graph() {
+    let mut graph = construct_test_module_graph_complex();
+    // update A -> D to dynamic entry
+    graph
+      .update_edge(
+        &"A".into(),
+        &"D".into(),
+        farmfe_core::module::module_graph::ModuleGraphEdge::new(vec![
+          farmfe_core::module::module_graph::ModuleGraphEdgeDataItem {
+            kind: ResolveKind::DynamicEntry {
+              name: "AD".to_string(),
+              output_filename: None,
+            },
+            ..Default::default()
+          },
+        ]),
+      )
+      .unwrap();
+    graph.dynamic_entries = HashMap::from_iter([("D".into(), "D".to_string())]);
+
+    let module_group_graph = crate::module_group_graph_from_module_graph(&mut graph);
+    assert_debug_snapshot!(module_group_graph);
   }
 }

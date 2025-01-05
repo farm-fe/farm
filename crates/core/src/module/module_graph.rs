@@ -32,7 +32,7 @@ pub struct ModuleGraphEdgeDataItem {
   pub order: usize,
 }
 
-#[derive(Debug, Default, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 #[cache_item]
 pub struct ModuleGraphEdge(pub(crate) Vec<ModuleGraphEdgeDataItem>);
 
@@ -63,7 +63,7 @@ impl ModuleGraphEdge {
     self.0.push(item);
   }
 
-  // true if all of the edge data items are dynamic
+  /// true if all of the edge data items are dynamic import
   pub fn is_dynamic_import(&self) -> bool {
     if self.0.is_empty() {
       return false;
@@ -72,12 +72,25 @@ impl ModuleGraphEdge {
     self.0.iter().all(|item| item.kind.is_dynamic_import())
   }
 
+  /// true if all of the edge data items are dynamic entry
   pub fn is_dynamic_entry(&self) -> bool {
     if self.0.is_empty() {
       return false;
     }
 
-    self.0.iter().any(|item| item.kind.is_dynamic_entry())
+    self.0.iter().all(|item| item.kind.is_dynamic_entry())
+  }
+
+  /// true if all of the edge data items are not dynamic entry or dynamic import
+  pub fn is_static(&self) -> bool {
+    if self.0.is_empty() {
+      return false;
+    }
+
+    self
+      .0
+      .iter()
+      .all(|item| !item.kind.is_dynamic_entry() && !item.kind.is_dynamic_import())
   }
 
   pub fn contains_export_from(&self) -> bool {
@@ -104,8 +117,33 @@ impl ModuleGraphEdge {
     self.0.iter().any(|item| item.kind.is_dynamic_import())
   }
 
+  pub fn contains_dynamic_entry(&self) -> bool {
+    if self.0.is_empty() {
+      return false;
+    }
+
+    self.0.iter().any(|item| item.kind.is_dynamic_entry())
+  }
+
+  pub fn contains_static(&self) -> bool {
+    if self.0.is_empty() {
+      return false;
+    }
+
+    self
+      .0
+      .iter()
+      .any(|item| !item.kind.is_dynamic_entry() && !item.kind.is_dynamic_import())
+  }
+
   pub fn is_empty(&self) -> bool {
     self.0.is_empty()
+  }
+}
+
+impl Default for ModuleGraphEdge {
+  fn default() -> Self {
+    Self::new(vec![ModuleGraphEdgeDataItem::default()])
   }
 }
 

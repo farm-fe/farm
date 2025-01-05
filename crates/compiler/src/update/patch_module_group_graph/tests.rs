@@ -200,7 +200,7 @@ fn test_patch_module_group_graph_2() {
 fn test_patch_module_group_graph_3() {
   let mut module_graph = construct_test_module_graph();
   let mut update_module_graph = construct_test_module_graph();
-  update_module_graph.remove_module(&"G".into());
+  update_module_graph.remove_module(&"C".into());
   update_module_graph
     .remove_edge(&"F".into(), &"A".into())
     .unwrap();
@@ -546,128 +546,265 @@ fn test_diff_module_deps_remove_and_add_complex() {
   }
 }
 
-// #[test]
-// fn test_patch_module_group_graph_dynamic_entry_complex() {
-//   let mut module_graph = construct_test_module_graph_complex();
-//   module_graph.dynamic_entries =
-//     HashMap::from_iter([("D".into(), "D".to_string()), ("G".into(), "G".to_string())]);
-//   module_graph
-//     .update_edge(
-//       &"A".into(),
-//       &"D".into(),
-//       ModuleGraphEdge::new(vec![ModuleGraphEdgeDataItem {
-//         kind: ResolveKind::DynamicEntry {
-//           name: "AD".to_string(),
-//           output_filename: None,
-//         },
-//         ..Default::default()
-//       }]),
-//     )
-//     .unwrap();
-//   module_graph
-//     .update_edge(
-//       &"E".into(),
-//       &"G".into(),
-//       ModuleGraphEdge::new(vec![ModuleGraphEdgeDataItem {
-//         kind: ResolveKind::DynamicEntry {
-//           name: "EG".to_string(),
-//           output_filename: None,
-//         },
-//         ..Default::default()
-//       }]),
-//     )
-//     .unwrap();
-//   let mut update_module_graph = construct_test_module_graph_complex();
-//   update_module_graph.add_module(Module::new("I".into()));
-//   update_module_graph
-//     .add_edge(
-//       &"E".into(),
-//       &"I".into(),
-//       ModuleGraphEdge::new(vec![ModuleGraphEdgeDataItem {
-//         kind: ResolveKind::DynamicEntry {
-//           name: "EI".to_string(),
-//           output_filename: None,
-//         },
-//         ..Default::default()
-//       }]),
-//     )
-//     .unwrap();
-//   update_module_graph
-//     .add_edge(
-//       &"I".into(),
-//       &"H".into(),
-//       ModuleGraphEdge::new(vec![ModuleGraphEdgeDataItem {
-//         kind: ResolveKind::DynamicEntry {
-//           name: "IH".to_string(),
-//           output_filename: None,
-//         },
-//         ..Default::default()
-//       }]),
-//     )
-//     .unwrap();
-//   update_module_graph.remove_module(&"F".into());
-//   update_module_graph.remove_module(&"G".into());
-//   update_module_graph.remove_module(&"B".into());
-//   update_module_graph.remove_module(&"D".into());
+#[test]
+fn test_patch_module_group_graph_remove_normal_edge() {
+  let mut module_graph = construct_test_module_graph_complex();
+  let module_i = Module::new("I".into());
+  module_graph.add_module(module_i);
+  module_graph
+    .add_edge(&"D".into(), &"I".into(), Default::default())
+    .unwrap();
+  let mut update_module_graph = construct_test_module_graph_complex();
+  update_module_graph.remove_module(&"F".into());
+  update_module_graph.remove_module(&"G".into());
+  update_module_graph.remove_module(&"A".into());
+  update_module_graph.remove_module(&"C".into());
+  update_module_graph.remove_module(&"D".into());
+  update_module_graph.remove_module(&"H".into());
 
-//   let mut module_group_graph = module_group_graph_from_module_graph(&mut module_graph);
+  let entries = vec!["A".into(), "B".into()];
+  let start_points = vec!["B".into()];
+  let mut module_group_graph = module_group_graph_from_entries(&entries, &mut module_graph);
 
-//   let start_points = vec!["A".into(), "E".into()];
-//   let diff_result = diff_module_graph(start_points.clone(), &module_graph, &update_module_graph);
-//   let removed_modules = patch_module_graph(
-//     start_points.clone(),
-//     &diff_result,
-//     &mut module_graph,
-//     &mut update_module_graph,
-//   );
+  let diff_result = diff_module_graph(start_points.clone(), &module_graph, &update_module_graph);
+  let removed_modules = patch_module_graph(
+    start_points.clone(),
+    &diff_result,
+    &mut module_graph,
+    &mut update_module_graph,
+  );
 
-//   let affected_groups = patch_module_group_graph(
-//     start_points.clone(),
-//     &diff_result,
-//     &removed_modules,
-//     &mut module_graph,
-//     &mut module_group_graph,
-//   );
+  let affected_groups = patch_module_group_graph(
+    start_points.clone(),
+    &diff_result,
+    &removed_modules,
+    &mut module_graph,
+    &mut module_group_graph,
+  );
 
-//   let group_id_a = ModuleGroupId::new(&"A".into(), &ModuleGroupType::Entry);
-//   let group_id_b = ModuleGroupId::new(&"B".into(), &ModuleGroupType::Entry);
+  let group_id_a = ModuleGroupId::new(&"A".into(), &ModuleGroupType::Entry);
+  let group_id_d = ModuleGroupId::new(&"D".into(), &ModuleGroupType::DynamicImport);
+  let group_id_g = ModuleGroupId::new(&"G".into(), &ModuleGroupType::DynamicImport);
+  let group_id_f = ModuleGroupId::new(&"F".into(), &ModuleGroupType::DynamicImport);
+  let group_id_b = ModuleGroupId::new(&"B".into(), &ModuleGroupType::Entry);
 
-//   assert_eq!(
-//     affected_groups,
-//     HashSet::from_iter([group_id_a.clone(), group_id_b.clone()])
-//   );
+  assert_eq!(
+    affected_groups,
+    HashSet::from_iter([
+      group_id_d.clone(),
+      group_id_b.clone(),
+      group_id_g.clone(),
+      group_id_a.clone(),
+      group_id_f.clone()
+    ])
+  );
 
-//   let update_module_group_graph = module_group_graph_from_module_graph(&mut module_graph);
+  let update_module_group_graph = module_group_graph_from_entries(&entries, &mut module_graph);
 
-//   let group_id_a = ModuleGroupId::new(&"A".into(), &ModuleGroupType::Entry);
-//   let group_id_b = ModuleGroupId::new(&"B".into(), &ModuleGroupType::Entry);
+  assert_eq!(module_group_graph, update_module_group_graph);
 
-//   assert_eq!(module_group_graph, update_module_group_graph);
+  // makes sure that module_groups field of each module is correct
+  let module_a = module_graph.module(&"A".into()).unwrap();
+  assert_eq!(
+    module_a.module_groups,
+    HashSet::from_iter([group_id_a.clone(), group_id_f.clone()])
+  );
+  let module_b = module_graph.module(&"B".into()).unwrap();
+  assert_eq!(
+    module_b.module_groups,
+    HashSet::from_iter([group_id_b.clone()])
+  );
+  let module_c = module_graph.module(&"C".into()).unwrap();
+  assert_eq!(
+    module_c.module_groups,
+    HashSet::from_iter([group_id_a, group_id_f.clone()])
+  );
+  let module_d = module_graph.module(&"D".into()).unwrap();
+  assert_eq!(
+    module_d.module_groups,
+    HashSet::from_iter([group_id_d.clone()])
+  );
+  let module_e = module_graph.module(&"E".into()).unwrap();
+  assert_eq!(
+    module_e.module_groups,
+    HashSet::from_iter([group_id_b.clone()])
+  );
+  let module_h = module_graph.module(&"H".into()).unwrap();
+  assert_eq!(
+    module_h.module_groups,
+    HashSet::from_iter([group_id_d.clone(), group_id_f.clone(), group_id_g.clone()])
+  );
+  let module_i = module_graph.module(&"I".into()).unwrap();
+  assert_eq!(
+    module_i.module_groups,
+    HashSet::from_iter([group_id_d.clone()])
+  );
+}
 
-//   // makes sure that module_groups field of each module is correct
-//   let module_a = module_graph.module(&"A".into()).unwrap();
-//   assert_eq!(
-//     module_a.module_groups,
-//     HashSet::from_iter([group_id_a.clone()])
-//   );
-//   let module_b = module_graph.module(&"B".into()).unwrap();
-//   assert_eq!(
-//     module_b.module_groups,
-//     HashSet::from_iter([group_id_b.clone()])
-//   );
-//   let module_c = module_graph.module(&"C".into()).unwrap();
-//   assert_eq!(
-//     module_c.module_groups,
-//     HashSet::from_iter([group_id_a.clone()])
-//   );
-//   let module_d = module_graph.module(&"D".into()).unwrap();
-//   assert_eq!(
-//     module_d.module_groups,
-//     HashSet::from_iter([group_id_b.clone()])
-//   );
-//   let module_e = module_graph.module(&"E".into()).unwrap();
-//   assert_eq!(
-//     module_e.module_groups,
-//     HashSet::from_iter([group_id_b.clone()])
-//   );
-// }
+#[test]
+fn test_patch_module_group_graph_remove_dynamic_import_edge() {
+  let mut module_graph = construct_test_module_graph_complex();
+  let module_i = Module::new("I".into());
+  module_graph.add_module(module_i);
+  module_graph
+    .add_edge(&"D".into(), &"I".into(), Default::default())
+    .unwrap();
+  let mut update_module_graph = construct_test_module_graph_complex();
+  update_module_graph.remove_module(&"F".into());
+  update_module_graph.remove_module(&"G".into());
+  update_module_graph.remove_module(&"B".into());
+  update_module_graph.remove_module(&"E".into());
+  update_module_graph.remove_module(&"D".into());
+  update_module_graph.remove_module(&"H".into());
+
+  let entries = vec!["A".into(), "B".into()];
+  let start_points = vec!["A".into()];
+  let mut module_group_graph = module_group_graph_from_entries(&entries, &mut module_graph);
+
+  let diff_result = diff_module_graph(start_points.clone(), &module_graph, &update_module_graph);
+  let removed_modules = patch_module_graph(
+    start_points.clone(),
+    &diff_result,
+    &mut module_graph,
+    &mut update_module_graph,
+  );
+
+  let affected_groups = patch_module_group_graph(
+    start_points.clone(),
+    &diff_result,
+    &removed_modules,
+    &mut module_graph,
+    &mut module_group_graph,
+  );
+
+  let group_id_a = ModuleGroupId::new(&"A".into(), &ModuleGroupType::Entry);
+  // let group_id_d = ModuleGroupId::new(&"D".into(), &ModuleGroupType::DynamicImport);
+  let group_id_g = ModuleGroupId::new(&"G".into(), &ModuleGroupType::DynamicImport);
+  let group_id_f = ModuleGroupId::new(&"F".into(), &ModuleGroupType::DynamicImport);
+  let group_id_b = ModuleGroupId::new(&"B".into(), &ModuleGroupType::Entry);
+
+  assert_eq!(
+    affected_groups,
+    HashSet::from_iter([
+      // group_id_d.clone(),
+      group_id_b.clone(),
+      group_id_g.clone(),
+      group_id_a.clone(),
+      group_id_f.clone()
+    ])
+  );
+
+  let update_module_group_graph = module_group_graph_from_entries(&entries, &mut module_graph);
+
+  assert_eq!(module_group_graph, update_module_group_graph);
+
+  // makes sure that module_groups field of each module is correct
+  let module_a = module_graph.module(&"A".into()).unwrap();
+  assert_eq!(
+    module_a.module_groups,
+    HashSet::from_iter([group_id_a.clone(), group_id_f.clone()])
+  );
+  let module_b = module_graph.module(&"B".into()).unwrap();
+  assert_eq!(
+    module_b.module_groups,
+    HashSet::from_iter([group_id_b.clone()])
+  );
+  let module_c = module_graph.module(&"C".into()).unwrap();
+  assert_eq!(
+    module_c.module_groups,
+    HashSet::from_iter([group_id_a, group_id_f.clone()])
+  );
+  let module_d = module_graph.module(&"D".into()).unwrap();
+  assert_eq!(
+    module_d.module_groups,
+    HashSet::from_iter([group_id_b.clone()])
+  );
+  let module_e = module_graph.module(&"E".into()).unwrap();
+  assert_eq!(
+    module_e.module_groups,
+    HashSet::from_iter([group_id_b.clone()])
+  );
+  let module_h = module_graph.module(&"H".into()).unwrap();
+  assert_eq!(
+    module_h.module_groups,
+    HashSet::from_iter([group_id_b.clone(), group_id_f.clone(), group_id_g.clone()])
+  );
+  let module_i = module_graph.module(&"I".into()).unwrap();
+  assert_eq!(
+    module_i.module_groups,
+    HashSet::from_iter([group_id_b.clone()])
+  );
+}
+
+#[test]
+fn test_patch_module_group_graph_update_dynamic_import_edge() {
+  let mut module_graph = construct_test_module_graph_complex();
+  // make E -> G non-dynamic import, then in update_module_graph make it dynamic import
+  module_graph
+    .update_edge(
+      &"E".into(),
+      &"G".into(),
+      ModuleGraphEdge::new(vec![ModuleGraphEdgeDataItem {
+        kind: ResolveKind::Import,
+        ..Default::default()
+      }]),
+    )
+    .unwrap();
+  let mut update_module_graph = construct_test_module_graph_complex();
+  update_module_graph
+    .update_edge(
+      &"B".into(),
+      &"D".into(),
+      ModuleGraphEdge::new(vec![ModuleGraphEdgeDataItem {
+        kind: ResolveKind::DynamicImport,
+        ..Default::default()
+      }]),
+    )
+    .unwrap();
+  update_module_graph.remove_module(&"F".into());
+  update_module_graph.remove_module(&"A".into());
+  update_module_graph.remove_module(&"C".into());
+  update_module_graph.remove_module(&"H".into());
+  update_module_graph.entries =
+    HashMap::from_iter([("B".into(), "B".to_string()), ("E".into(), "E".to_string())]);
+  update_module_graph.update_execution_order_for_modules();
+
+  let mut module_group_graph = module_group_graph_from_module_graph(&mut module_graph);
+  let start_points = vec!["B".into(), "E".into()];
+  let diff_result = diff_module_graph(start_points.clone(), &module_graph, &update_module_graph);
+  let removed_modules = patch_module_graph(
+    start_points.clone(),
+    &diff_result,
+    &mut module_graph,
+    &mut update_module_graph,
+  );
+
+  let affected_groups = patch_module_group_graph(
+    start_points,
+    &diff_result,
+    &removed_modules,
+    &mut module_graph,
+    &mut module_group_graph,
+  );
+
+  let group_id_a = ModuleGroupId::new(&"A".into(), &ModuleGroupType::Entry);
+  let group_id_b = ModuleGroupId::new(&"B".into(), &ModuleGroupType::Entry);
+  let group_id_f = ModuleGroupId::new(&"F".into(), &ModuleGroupType::DynamicImport);
+  let group_id_g = ModuleGroupId::new(&"G".into(), &ModuleGroupType::DynamicImport);
+  let group_id_d = ModuleGroupId::new(&"D".into(), &ModuleGroupType::DynamicImport);
+
+  assert_eq!(
+    affected_groups,
+    HashSet::from_iter([
+      group_id_a.clone(),
+      group_id_b.clone(),
+      group_id_f.clone(),
+      group_id_g.clone(),
+      group_id_d.clone()
+    ])
+  );
+
+  let update_module_group_graph = module_group_graph_from_module_graph(&mut module_graph);
+
+  assert_eq!(module_group_graph, update_module_group_graph);
+}

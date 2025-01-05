@@ -34,8 +34,8 @@ pub struct Module {
   pub module_type: ModuleType,
   /// the module groups this module belongs to, used to construct [crate::module::module_group::ModuleGroupGraph]
   pub module_groups: HashSet<ModuleGroupId>,
-  /// the resource pot this module belongs to
-  pub resource_pot: Option<ResourcePotId>,
+  /// the resource pot this module belongs to. A module may belongs multiple resource pots.
+  pub resource_pots: HashSet<ResourcePotId>,
   /// the meta data of this module custom by plugins
   pub meta: Box<ModuleMetaData>,
   /// whether this module has side_effects
@@ -86,7 +86,7 @@ impl Module {
       module_type: ModuleType::Custom("__farm_unknown".to_string()),
       meta: Box::new(ModuleMetaData::default()),
       module_groups: HashSet::default(),
-      resource_pot: None,
+      resource_pots: Default::default(),
       side_effects: true,
       source_map_chain: vec![],
       external: false,

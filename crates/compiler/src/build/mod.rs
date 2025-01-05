@@ -590,7 +590,7 @@ impl Compiler {
         .entries
         .insert(module.id.clone(), name.to_string());
     } else if let ResolveKind::DynamicEntry { name, .. } = kind {
-      module.is_dynamic_entry;
+      module.is_dynamic_entry = true;
       module_graph
         .dynamic_entries
         .insert(module.id.clone(), name.to_string());

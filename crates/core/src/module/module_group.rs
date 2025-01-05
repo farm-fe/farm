@@ -264,6 +264,16 @@ impl PartialEq for ModuleGroupGraph {
       .collect::<Vec<_>>();
     other_edges.sort();
 
+    // println!("self_module_groups: {:#?}", self_module_groups);
+    // println!("other_module_groups: {:#?}", other_module_groups);
+    // println!("self_edges: {:#?}", self_edges);
+    // println!("other_edges: {:#?}", other_edges);
+    // println!(
+    //   "self_module_groups == other_module_groups: {}",
+    //   self_module_groups == other_module_groups
+    // );
+    // println!("self_edges == other_edges: {}", self_edges == other_edges);
+
     self_module_groups == other_module_groups && self_edges == other_edges
   }
 }

@@ -3,7 +3,6 @@ use std::sync::Arc;
 use farmfe_core::plugin::PluginHookContext;
 use farmfe_core::{
   context::CompilationContext,
-  enhanced_magic_string::types::SourceMapOptions,
   error::CompilationError,
   module::{module_group::ModuleGroupId, Module, ModuleId},
   resource::resource_pot::{ResourcePot, ResourcePotType},
@@ -146,21 +145,22 @@ pub fn regenerate_resources_for_affected_module_groups(
 
   for updated_module_id in updated_module_ids {
     let module = module_graph.module(updated_module_id).unwrap();
-    let resource_pot_id = module.resource_pot.as_ref().unwrap();
 
-    if !affected_resource_pots_ids.contains(resource_pot_id) {
-      affected_resource_pots_ids.push(resource_pot_id.clone());
+    for resource_pot_id in &module.resource_pots {
+      if !affected_resource_pots_ids.contains(resource_pot_id) {
+        affected_resource_pots_ids.push(resource_pot_id.clone());
+      }
+
+      // also remove the related resources, the resources will be regenerated later
+      let mut resource_maps = context.resources_map.lock();
+      let resource_pot = resource_pot_map.resource_pot_mut(resource_pot_id).unwrap();
+
+      for resource in resource_pot.resources() {
+        resource_maps.remove(resource);
+      }
+
+      resource_pot.clear_resources();
     }
-
-    // also remove the related resources, the resources will be regenerated later
-    let mut resource_maps = context.resources_map.lock();
-    let resource_pot = resource_pot_map.resource_pot_mut(resource_pot_id).unwrap();
-
-    for resource in resource_pot.resources() {
-      resource_maps.remove(resource);
-    }
-
-    resource_pot.clear_resources();
   }
 
   let mut resource_pots = resource_pot_map
@@ -203,7 +203,7 @@ fn clear_resource_pot_of_modules_in_module_groups(
 
     for module_id in module_group.modules() {
       let module = module_graph.module_mut(module_id).unwrap();
-      module.resource_pot = None;
+      module.resource_pots = Default::default();
     }
   }
 }
