@@ -128,7 +128,6 @@ fn handle_enforce_resource_pots(
       if let Some(name) = get_enforce_resource_name_for_module(
         module_id,
         &context.config.partial_bundling.enforce_resources,
-        &module_graph,
       ) {
         let (resource_pot_type, resource_pot_name, resource_pot_id) =
           if ty != ChangedModuleType::Removed {
@@ -175,7 +174,6 @@ fn handle_enforce_resource_pots(
     if let Some(name) = get_enforce_resource_name_for_module(
       module_id,
       &context.config.partial_bundling.enforce_resources,
-      &module_graph,
     ) {
       let (_, _, resource_pot_id) =
         get_resource_pot_id_for_enforce_resources(name, module_id, &module_graph);

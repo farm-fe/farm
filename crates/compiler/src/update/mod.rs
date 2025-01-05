@@ -4,7 +4,11 @@ use farmfe_core::{
   cache::module_cache::CachedModule,
   context::CompilationContext,
   error::CompilationError,
-  module::{module_graph::ModuleGraphEdgeDataItem, module_group::ModuleGroupId, Module, ModuleId},
+  module::{
+    module_graph::ModuleGraphEdgeDataItem,
+    module_group::{ModuleGroupId, ModuleGroupType},
+    Module, ModuleId,
+  },
   plugin::{PluginResolveHookParam, ResolveKind, UpdateResult, UpdateType},
   resource::ResourceType,
   serde::Serialize,
@@ -559,7 +563,7 @@ impl Compiler {
     paths: Vec<(String, UpdateType)>,
     update_context: &Arc<UpdateContext>,
   ) -> (
-    HashSet<ModuleId>,
+    HashSet<ModuleGroupId>,
     Vec<ModuleId>,
     DiffResult,
     HashMap<ModuleId, Module>,
@@ -651,7 +655,7 @@ impl Compiler {
       for entry_id in module_graph.entries.keys() {
         dynamic_resources.extend(get_dynamic_resources_map(
           &module_group_graph,
-          entry_id,
+          &ModuleGroupId::new(entry_id, &ModuleGroupType::Entry),
           &resource_pot_map,
           &resources_map,
           &module_graph,

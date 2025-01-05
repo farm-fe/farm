@@ -7,6 +7,7 @@ use farmfe_core::{
   context::CompilationContext,
   module::{
     module_graph::{ModuleGraphEdge, ModuleGraphEdgeDataItem},
+    module_group::{ModuleGroupId, ModuleGroupType},
     Module,
   },
   plugin::{Plugin, PluginHookContext, ResolveKind},
@@ -64,9 +65,15 @@ fn test_generate_and_diff_resource_pots() {
     &mut module_graph,
     &mut module_group_graph,
   );
+
+  let group_id_a = ModuleGroupId::new(&"A".into(), &ModuleGroupType::Entry);
+  let group_id_b = ModuleGroupId::new(&"B".into(), &ModuleGroupType::Entry);
+  let group_id_d = ModuleGroupId::new(&"D".into(), &ModuleGroupType::DynamicImport);
+  let group_id_f = ModuleGroupId::new(&"F".into(), &ModuleGroupType::DynamicImport);
+
   assert_eq!(
     affected_groups,
-    HashSet::from_iter(["A".into(), "B".into(), "F".into(), "D".into()])
+    HashSet::from_iter([group_id_a, group_id_b, group_id_f, group_id_d])
   );
 
   let mut config = Config::default();
@@ -104,15 +111,20 @@ fn test_generate_and_diff_resource_pots() {
   resource_pot_ids.sort();
   assert_debug_snapshot!(resource_pot_ids);
 
+  let group_id_a = ModuleGroupId::new(&"A".into(), &ModuleGroupType::Entry);
+  let group_id_b = ModuleGroupId::new(&"B".into(), &ModuleGroupType::Entry);
+  let group_id_d = ModuleGroupId::new(&"D".into(), &ModuleGroupType::DynamicImport);
+  let group_id_f = ModuleGroupId::new(&"F".into(), &ModuleGroupType::DynamicImport);
+
   let module_group_graph = context.module_group_graph.read();
 
-  let module_group_a = module_group_graph.module_group(&"A".into()).unwrap();
+  let module_group_a = module_group_graph.module_group(&group_id_a).unwrap();
   assert_sorted_iter_eq!(module_group_a.resource_pots());
-  let module_group_b = module_group_graph.module_group(&"B".into()).unwrap();
+  let module_group_b = module_group_graph.module_group(&group_id_b).unwrap();
   assert_sorted_iter_eq!(module_group_b.resource_pots());
-  let module_group_d = module_group_graph.module_group(&"D".into()).unwrap();
+  let module_group_d = module_group_graph.module_group(&group_id_d).unwrap();
   assert_sorted_iter_eq!(module_group_d.resource_pots());
-  let module_group_f = module_group_graph.module_group(&"F".into()).unwrap();
+  let module_group_f = module_group_graph.module_group(&group_id_f).unwrap();
   assert_sorted_iter_eq!(module_group_f.resource_pots());
 
   let module_graph = context.module_graph.read();
@@ -194,7 +206,10 @@ fn test_generate_and_diff_resource_pots_one_module_changed() {
     &mut module_graph,
     &mut module_group_graph,
   );
-  assert_eq!(affected_groups, HashSet::from_iter(["I".into()]));
+
+  let group_id_i = ModuleGroupId::new(&"I".into(), &ModuleGroupType::DynamicImport);
+
+  assert_eq!(affected_groups, HashSet::from_iter([group_id_i]));
 
   let mut config = Config::default();
   config.partial_bundling.enforce_resources = vec![PartialBundlingEnforceResourceConfig {

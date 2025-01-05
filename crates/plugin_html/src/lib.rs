@@ -3,6 +3,7 @@ use std::{mem, rc::Rc, sync::Arc};
 use absolute_path_handler::AbsolutePathHandler;
 use deps_analyzer::{DepsAnalyzer, HtmlInlineModule, HTML_INLINE_ID_PREFIX};
 use farmfe_core::module::meta_data::html::HtmlModuleMetaData;
+use farmfe_core::module::module_group::{ModuleGroupId, ModuleGroupType};
 // use farmfe_core::config::minify::MinifyOptions;
 use farmfe_core::parking_lot::Mutex;
 use farmfe_core::plugin::GeneratedResource;
@@ -372,7 +373,7 @@ impl Plugin for FarmPluginTransformHtml {
     let mut resources_to_inject = HashMap::default();
 
     for (html_entry_id, _) in &html_entries_ids {
-      let module_group_id = html_entry_id.clone();
+      let module_group_id = ModuleGroupId::new(html_entry_id, &ModuleGroupType::Entry);
 
       let resource_pot_map = context.resource_pot_map.read();
       let module_group_graph = context.module_group_graph.read();

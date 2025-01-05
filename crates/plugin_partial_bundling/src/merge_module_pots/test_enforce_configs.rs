@@ -1,4 +1,7 @@
-use farmfe_core::config::{partial_bundling::PartialBundlingConfig, Config};
+use farmfe_core::{
+  config::{partial_bundling::PartialBundlingConfig, Config},
+  module::module_group::{ModuleGroupId, ModuleGroupType},
+};
 use farmfe_testing_helpers::{assert_resource_pots, construct_test_module_graph_complex};
 
 use super::{common::create_test_module_pot, merge_module_pots, ModuleGroupModulePots};
@@ -6,7 +9,8 @@ use super::{common::create_test_module_pot, merge_module_pots, ModuleGroupModule
 #[test]
 fn test_enforce_configs_min_size() {
   let mut module_graph = construct_test_module_graph_complex();
-  let mut module_group_module_pots = ModuleGroupModulePots::new("B".into());
+  let mut module_group_module_pots =
+    ModuleGroupModulePots::new(ModuleGroupId::new(&"B".into(), &ModuleGroupType::Entry));
 
   let size = 10 * 1024;
   let module_bucket_b = create_test_module_pot(&mut module_graph, &"B".into(), "B", size, false);
@@ -43,7 +47,8 @@ fn test_enforce_configs_min_size() {
 #[test]
 fn test_enforce_configs_concurrent_requests() {
   let mut module_graph = construct_test_module_graph_complex();
-  let mut module_group_module_pots = ModuleGroupModulePots::new("B".into());
+  let mut module_group_module_pots =
+    ModuleGroupModulePots::new(ModuleGroupId::new(&"B".into(), &ModuleGroupType::Entry));
 
   let size = 10 * 1024;
   let module_bucket_b = create_test_module_pot(&mut module_graph, &"B".into(), "B", size, false);

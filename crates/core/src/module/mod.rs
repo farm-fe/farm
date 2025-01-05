@@ -68,8 +68,6 @@ pub struct Module {
   pub is_entry: bool,
   /// whether this module is a dynamic entry module
   pub is_dynamic_entry: bool,
-  /// whether this module is scoped by dynamic inputs, all modules in the same dynamic input scope should be in the same resource pot
-  pub scope: Option<String>,
 
   // custom meta map
   pub custom: CustomMetaDataMap,
@@ -104,7 +102,6 @@ impl Module {
       package_version: "".to_string(),
       is_entry: false,
       is_dynamic_entry: false,
-      scope: None,
       custom: CustomMetaDataMap::default(),
     }
   }

@@ -13,10 +13,9 @@ entry: Some(
     },
 )
 module_groups: [
-    ModuleId {
-        relative_path: "A",
-        query_string: "",
-    },
+    ModuleGroupId(
+        "A_Entry",
+    ),
 ]
 modules: [
     ModuleId {

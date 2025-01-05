@@ -4,7 +4,11 @@ use farmfe_core::{
   config::partial_bundling::PartialBundlingEnforceResourceConfig,
   context::CompilationContext,
   error::CompilationError,
-  module::{module_graph::ModuleGraph, module_group::ModuleGroupGraph, Module, ModuleId},
+  module::{
+    module_graph::ModuleGraph,
+    module_group::{ModuleGroupGraph, ModuleGroupType},
+    Module, ModuleId,
+  },
   plugin::PluginHookContext,
   resource::{
     resource_pot::{ResourcePot, ResourcePotType},
@@ -55,10 +59,13 @@ pub fn generate_resource_pot_map(
   hook_context: &PluginHookContext,
 ) -> farmfe_core::error::Result<ResourcePotMap> {
   let (enforce_resource_pots, modules) = generate_enforce_resource_pots(context);
+  let dynamic_resource_pots = generate_dynamic_entry_resource_pots(context);
 
   let mut resources_pots = call_partial_bundling_hook(&modules, context, hook_context)?;
   // extends enforce resource pots
   resources_pots.extend(enforce_resource_pots);
+  resources_pots.extend(dynamic_resource_pots);
+
   fill_necessary_fields_for_resource_pot(resources_pots.iter_mut().collect(), context);
 
   let mut resource_pot_map = ResourcePotMap::new();
@@ -73,15 +80,7 @@ pub fn generate_resource_pot_map(
 pub fn get_enforce_resource_name_for_module(
   module_id: &ModuleId,
   enforce_resources: &Vec<PartialBundlingEnforceResourceConfig>,
-  module_graph: &ModuleGraph,
 ) -> Option<String> {
-  // if the module is scoped by dynamic inputs, all modules in the scope should be in the same resource pot
-  let module = module_graph.module(module_id).unwrap();
-
-  if let Some(scope) = &module.scope {
-    return Some(scope.clone());
-  }
-
   for enforce_resource_config in enforce_resources {
     if enforce_resource_config
       .test
@@ -187,7 +186,6 @@ fn generate_enforce_resource_pots(
       if let Some(name) = get_enforce_resource_name_for_module(
         module_id,
         &context.config.partial_bundling.enforce_resources,
-        &module_graph,
       ) {
         let (resource_pot_type, resource_pot_name, resource_pot_id) =
           get_resource_pot_id_for_enforce_resources(name.clone(), module_id, &module_graph);
@@ -213,6 +211,37 @@ fn generate_enforce_resource_pots(
   modules.sort();
 
   (enforce_resource_pot_map.take_resource_pots(), modules)
+}
+
+fn generate_dynamic_entry_resource_pots(context: &Arc<CompilationContext>) -> Vec<ResourcePot> {
+  let module_graph = context.module_graph.read();
+  let module_group_graph = context.module_group_graph.read();
+  let mut resource_pots = vec![];
+
+  for module_group in module_group_graph
+    .module_groups()
+    .into_iter()
+    .filter(|m| matches!(m.module_group_type, ModuleGroupType::DynamicEntry))
+  {
+    if let Some(name) = module_graph
+      .dynamic_entries
+      .get(&module_group.entry_module_id)
+    {
+      let entry_module = module_graph.module(&module_group.entry_module_id).unwrap();
+      let mut resource_pot = ResourcePot::new(
+        name.to_string(),
+        ResourcePotType::from(entry_module.module_type.clone()),
+      );
+
+      for module_id in module_group.modules() {
+        resource_pot.add_module(module_id.clone());
+      }
+
+      resource_pots.push(resource_pot);
+    }
+  }
+
+  resource_pots
 }
 
 #[cfg(test)]

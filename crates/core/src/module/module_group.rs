@@ -302,11 +302,11 @@ pub struct ModuleGroup {
 }
 
 impl ModuleGroup {
-  pub fn new(id: ModuleId, ty: ModuleGroupType) -> Self {
+  pub fn new(module_id: ModuleId, ty: ModuleGroupType) -> Self {
     Self {
-      id: ModuleGroupId::new(&id, &ty),
-      modules: HashSet::from_iter([id.clone()]),
-      entry_module_id: id,
+      id: ModuleGroupId::new(&module_id, &ty),
+      modules: HashSet::from_iter([module_id.clone()]),
+      entry_module_id: module_id,
       module_group_type: ty,
       resource_pots: HashSet::default(),
     }

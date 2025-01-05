@@ -169,12 +169,7 @@ pub fn construct_test_module_group_graph() -> ModuleGroupGraph {
   module_group_graph.add_module_group(module_group_g);
 
   let edges = vec![
-    // ("A", "F"),
-    // ("D", "F"),
-    // ("B", "F"),
-    // ("B", "G"),
-    // ("F", "D"),
-    // ("F", "F"),
+    (module_group_a_id.clone(), module_group_d_id.clone()),
     (module_group_a_id.clone(), module_group_f_id.clone()),
     (module_group_d_id.clone(), module_group_f_id.clone()),
     (module_group_b_id.clone(), module_group_f_id.clone()),
@@ -271,7 +266,7 @@ pub fn construct_test_module_group_graph_complex() -> ModuleGroupGraph {
 
   let module_group_g = module_group_graph
     .module_group_mut(&ModuleGroupId::new(
-      &"F".into(),
+      &"G".into(),
       &ModuleGroupType::DynamicImport,
     ))
     .unwrap();

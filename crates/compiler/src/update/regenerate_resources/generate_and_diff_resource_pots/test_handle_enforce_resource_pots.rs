@@ -7,6 +7,7 @@ use farmfe_core::{
   context::CompilationContext,
   module::{
     module_graph::{ModuleGraphEdge, ModuleGraphEdgeDataItem},
+    module_group::{ModuleGroupId, ModuleGroupType},
     Module, ModuleType,
   },
   plugin::{Plugin, PluginHookContext, ResolveKind},
@@ -68,9 +69,15 @@ fn test_handle_enforce_resource_pots() {
     &mut module_graph,
     &mut module_group_graph,
   );
+
+  let group_id_a = ModuleGroupId::new(&"A".into(), &ModuleGroupType::Entry);
+  let group_id_b = ModuleGroupId::new(&"B".into(), &ModuleGroupType::Entry);
+  let group_id_d = ModuleGroupId::new(&"D".into(), &ModuleGroupType::DynamicImport);
+  let group_id_f = ModuleGroupId::new(&"F".into(), &ModuleGroupType::DynamicImport);
+
   assert_eq!(
     affected_groups,
-    HashSet::from_iter(["A".into(), "B".into(), "F".into(), "D".into()])
+    HashSet::from_iter([group_id_a, group_id_b, group_id_f, group_id_d])
   );
 
   let affected_modules = affected_groups
@@ -190,7 +197,10 @@ fn test_handle_enforce_resource_pots_one_module_changed() {
     &mut module_graph,
     &mut module_group_graph,
   );
-  assert_eq!(affected_groups, HashSet::from_iter(["I".into()]));
+
+  let group_id_i = ModuleGroupId::new(&"I".into(), &ModuleGroupType::DynamicImport);
+
+  assert_eq!(affected_groups, HashSet::from_iter([group_id_i]));
 
   let affected_modules = affected_groups
     .iter()

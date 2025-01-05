@@ -13,10 +13,9 @@ entry: Some(
     },
 )
 module_groups: [
-    ModuleId {
-        relative_path: "A",
-        query_string: "",
-    },
+    ModuleGroupId(
+        "A_Entry",
+    ),
 ]
 modules: [
     ModuleId {
@@ -43,10 +42,9 @@ entry: Some(
     },
 )
 module_groups: [
-    ModuleId {
-        relative_path: "B",
-        query_string: "",
-    },
+    ModuleGroupId(
+        "B_Entry",
+    ),
 ]
 modules: [
     ModuleId {
@@ -68,14 +66,12 @@ immutable: false
 resource_pot_type: Js
 entry: None
 module_groups: [
-    ModuleId {
-        relative_path: "B",
-        query_string: "",
-    },
-    ModuleId {
-        relative_path: "D",
-        query_string: "",
-    },
+    ModuleGroupId(
+        "B_Entry",
+    ),
+    ModuleGroupId(
+        "D_DynamicImport",
+    ),
 ]
 modules: [
     ModuleId {
@@ -93,10 +89,9 @@ immutable: false
 resource_pot_type: Custom("__farm_unknown")
 entry: None
 module_groups: [
-    ModuleId {
-        relative_path: "B",
-        query_string: "",
-    },
+    ModuleGroupId(
+        "B_Entry",
+    ),
 ]
 modules: [
     ModuleId {

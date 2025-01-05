@@ -256,19 +256,20 @@ mod tests {
     assert_eq!(module_group_buckets.len(), 5);
 
     let group_id_a = ModuleGroupId::new(&"A".into(), &ModuleGroupType::Entry);
+    let group_id_b = ModuleGroupId::new(&"B".into(), &ModuleGroupType::Entry);
     let group_id_d = ModuleGroupId::new(&"D".into(), &ModuleGroupType::DynamicImport);
     let group_id_f = ModuleGroupId::new(&"F".into(), &ModuleGroupType::DynamicImport);
     let group_id_g = ModuleGroupId::new(&"G".into(), &ModuleGroupType::DynamicImport);
 
-    assert_eq!(module_group_buckets[0].module_group_id, group_id_a);
+    assert_eq!(module_group_buckets[0].module_group_id, group_id_b);
     assert_eq!(module_group_buckets[0].resource_type, ResourceType::Initial);
     assert_eq!(module_group_buckets[0].buckets.len(), 3);
     assert_eq!(
       HashSet::<String>::from_iter(module_group_buckets[0].buckets.clone().into_iter()),
       HashSet::from_iter([
-        "js_false_B".to_string(),
-        "js_false_B_D".to_string(),
-        "js_false_B_D_F_G".to_string()
+        "js_false_B_Entry".to_string(),
+        "js_false_B_Entry_D_DynamicImport".to_string(),
+        "js_false_B_Entry_D_DynamicImport_F_DynamicImport_G_DynamicImport".to_string()
       ])
     );
 
@@ -277,7 +278,10 @@ mod tests {
     assert_eq!(module_group_buckets[1].buckets.len(), 2);
     assert_eq!(
       HashSet::<String>::from_iter(module_group_buckets[1].buckets.clone().into_iter()),
-      HashSet::from_iter(["js_false_G".to_string(), "js_false_B_D_F_G".to_string()])
+      HashSet::from_iter([
+        "js_false_G_DynamicImport".to_string(),
+        "js_false_B_Entry_D_DynamicImport_F_DynamicImport_G_DynamicImport".to_string()
+      ])
     );
 
     assert_eq!(module_group_buckets[2].module_group_id, group_id_a);
@@ -285,7 +289,7 @@ mod tests {
     assert_eq!(module_group_buckets[2].buckets.len(), 1);
     assert_eq!(
       HashSet::<String>::from_iter(module_group_buckets[2].buckets.clone().into_iter()),
-      HashSet::from_iter(["js_false_A_F".to_string()])
+      HashSet::from_iter(["js_false_A_Entry_F_DynamicImport".to_string()])
     );
 
     assert_eq!(module_group_buckets[3].module_group_id, group_id_f);
@@ -294,9 +298,9 @@ mod tests {
     assert_eq!(
       HashSet::<String>::from_iter(module_group_buckets[3].buckets.clone().into_iter()),
       HashSet::from_iter([
-        "js_false_F".to_string(),
-        "js_false_A_F".to_string(),
-        "js_false_B_D_F_G".to_string()
+        "js_false_F_DynamicImport".to_string(),
+        "js_false_A_Entry_F_DynamicImport".to_string(),
+        "js_false_B_Entry_D_DynamicImport_F_DynamicImport_G_DynamicImport".to_string()
       ])
     );
 
@@ -305,7 +309,10 @@ mod tests {
     assert_eq!(module_group_buckets[4].buckets.len(), 2);
     assert_eq!(
       HashSet::<String>::from_iter(module_group_buckets[4].buckets.clone().into_iter()),
-      HashSet::from_iter(["js_false_B_D_F_G".to_string(), "js_false_B_D".to_string()])
+      HashSet::from_iter([
+        "js_false_B_Entry_D_DynamicImport_F_DynamicImport_G_DynamicImport".to_string(),
+        "js_false_B_Entry_D_DynamicImport".to_string()
+      ])
     );
   }
 }
