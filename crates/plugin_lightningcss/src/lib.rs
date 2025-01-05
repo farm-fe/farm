@@ -31,17 +31,18 @@ use lightningcss::values::url::Url;
 use lightningcss::visit_types;
 use lightningcss::visitor::{Visit, VisitTypes, Visitor};
 use rkyv::Deserialize;
-mod parse;
 use lightningcss::bundler::{Bundler, FileProvider};
 use std::path::Path;
 pub const FARM_CSS_MODULES: &str = "farm_lightning_css_modules";
 use farmfe_toolkit::sourcemap::SourceMap;
 use lightningcss::traits::{IntoOwned, ToCss};
 use std::collections::HashMap;
-mod dep_analyzer;
 
-use farmfe_core::config::AliasItem;
+use farmfe_core::config::{AliasItem, TargetEnv};
 use farmfe_core::plugin::PluginAnalyzeDepsHookResultEntry;
+
+mod transform_css_to_script;
+mod source_replacer;
 
 fn to_static(
   stylesheet: StyleSheet,
@@ -466,10 +467,24 @@ impl Plugin for FarmPluginLightningCss {
     Ok(None)
   }
 
-  fn build_end(
-    &self,
-    _context: &Arc<CompilationContext>,
-  ) -> farmfe_core::error::Result<Option<()>> {
+  fn build_end(&self, context: &Arc<CompilationContext>) -> farmfe_core::error::Result<Option<()>> {
+    if !matches!(context.config.mode, farmfe_core::config::Mode::Development)
+      || !matches!(context.config.output.target_env, TargetEnv::Browser)
+    {
+      return Ok(None);
+    }
+    let css_modules = context.module_graph.write().modules().into_iter()
+    .filter_map(|m| {
+      if matches!(m.module_type, ModuleType::Css) {
+        Some(m.id.clone())
+      } else {
+        None
+      }
+    })
+    .collect::<Vec<ModuleId>>();
+
+    transform_css_to_script::transform_css_to_script_modules(css_modules, context)?;
+
     Ok(None)
   }
 
