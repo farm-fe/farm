@@ -43,6 +43,7 @@ import { VitePluginAdapter } from './vite-plugin-adapter.js';
 
 export { VitePluginAdapter } from './vite-plugin-adapter.js';
 export * from './js-plugin-schema.js';
+export * from './utils.js';
 
 type VitePluginType = object | (() => { vitePlugin: any; filters: string[] });
 type VitePluginsType = VitePluginType[];

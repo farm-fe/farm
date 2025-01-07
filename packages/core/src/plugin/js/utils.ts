@@ -1,4 +1,3 @@
-import path from 'node:path';
 import * as querystring from 'node:querystring';
 import fse from 'fs-extra';
 import type {
@@ -16,6 +15,7 @@ import { VITE_ADAPTER_VIRTUAL_MODULE } from './constants.js';
 import { readFile } from 'node:fs/promises';
 import { ModuleContext, ModuleNode } from '../../config/types.js';
 import type { Config } from '../../types/binding.js';
+import { normalizePath } from '../../utils/share.js';
 import type {
   JsPlugin,
   JsResourcePotInfoData,
@@ -52,14 +52,6 @@ export function convertWatchEventChange(
 
 export function getContentValue(content: any): string {
   return encodeStr(typeof content === 'string' ? content : content!.code);
-}
-
-export function isString(variable: unknown): variable is string {
-  return typeof variable === 'string';
-}
-
-export function isObject(variable: unknown): variable is object {
-  return typeof variable === 'object' && variable !== null;
 }
 
 export function customParseQueryString(url: string | null) {
@@ -150,13 +142,6 @@ export function normalizeAdapterVirtualModule(id: string) {
   if (isStartsWithSlash(path) && !fse.pathExistsSync(path))
     return addAdapterVirtualModuleFlag(id);
   return id;
-}
-
-// normalize path for windows the same as Vite
-export function normalizePath(p: string): string {
-  return path.posix.normalize(
-    process.platform === 'win32' ? p.replace(/\\/g, '/') : p
-  );
 }
 
 export const removeQuery = (path: string) => {

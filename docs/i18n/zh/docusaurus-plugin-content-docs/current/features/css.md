@@ -11,7 +11,6 @@ import './index.css';
 Farm 默认支持 css modules，以 `.module.css|less|scss|sass` 结尾的模块默认将被视为 `Css Modules`。
 
 ```tsx title="comp.tsx"
-// ...
 import styles from './index.module.css'
 
 export function Comp() {

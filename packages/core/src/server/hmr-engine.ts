@@ -1,5 +1,4 @@
 import fse from 'fs-extra';
-// queue all updates and compile them one by one
 
 import { stat } from 'node:fs/promises';
 import { isAbsolute, relative } from 'node:path';
@@ -13,20 +12,11 @@ import { WebSocketClient } from './ws.js';
 
 export class HmrEngine {
   private _updateQueue: string[] = [];
-  // private _updateResults: Map<string, { result: string; count: number }>;
 
   private _onUpdates: ((result: JsUpdateResult) => void)[];
 
   private _lastModifiedTimestamp: Map<string, string>;
-  constructor(
-    // compiler: Compiler,
-    // devServer: HttpServer,
-    // config: UserConfig,
-    // ws: WebSocketServer,
-    // private _logger: Logger
-    private readonly app: any
-  ) {
-    // this._lastAttemptWasError = false;
+  constructor(private readonly app: any) {
     this._lastModifiedTimestamp = new Map();
   }
 
@@ -127,7 +117,6 @@ export class HmrEngine {
     this.callUpdates(result);
 
     this.app.ws.wss.clients.forEach((client: WebSocketClient) => {
-      // @ts-ignore
       client.send(`
         {
           type: 'farm-update',
