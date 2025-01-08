@@ -84,11 +84,3 @@ export function logError(err: Error, throwErrorFlag = true) {
   }
   return errorMessage;
 }
-
-// TODO server logger e.g: DevServer.logger.error(msg);
-
-//   server.ws.send({
-//     type: 'error',
-//     err: prepareError(err)
-//   });
-// }
