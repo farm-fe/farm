@@ -15,8 +15,7 @@ use farmfe_utils::is_skip_action_by_comment;
 fn normalized_glob_pattern(pattern: String) -> String {
   let mut pattern_builder: Vec<String> = vec![];
   let path_split = pattern
-    .split("/")
-    .into_iter()
+    .split('/')
     .filter(|str| str != &"")
     .collect::<Vec<_>>();
 
@@ -32,7 +31,7 @@ fn normalized_glob_pattern(pattern: String) -> String {
       match ch {
         '*' => {
           // x* push * => x*
-          if file_pattern.ends_with("*") && file_pattern.len() > 1 {
+          if file_pattern.ends_with('*') && file_pattern.len() > 1 {
             continue;
           }
 
@@ -62,11 +61,11 @@ fn normalized_glob_pattern(pattern: String) -> String {
     pattern_builder.push(file_pattern);
   }
 
-  if pattern.starts_with("/") {
+  if pattern.starts_with('/') {
     pattern_builder.insert(0, "".to_string());
   }
 
-  return pattern_builder.join("/");
+  pattern_builder.join("/")
 }
 
 // transform `new URL("url", import.meta.url)` to `new URL(import.meta.glob('url', { eager: true, import: 'default', query: 'url' }), import.meta.url)`
@@ -95,128 +94,127 @@ impl<'a> ImportMetaURLVisitor<'a> {
   fn transform_url(&self, node: &mut Expr) -> Option<()> {
     let mut is_replace = false;
 
-    match node {
-      Expr::New(new) => {
-        if let box Expr::Ident(ident) = &new.callee {
-          if ident.sym != "URL" {
-            return None;
-          }
+    let Expr::New(new) = node else { return None };
 
-          if !new.args.as_ref().is_some_and(|a| {
-            a.len() == 2
-              && matches!(a[0].expr.as_ref(), Expr::Lit(_) | Expr::Tpl(_))
-              && ImportMetaURLVisitor::is_import_meta_url(&a[1].expr)
-          }) {
-            return None;
-          }
+    let box Expr::Ident(ident) = &new.callee else {
+      return None;
+    };
 
-          if let Some(args) = &mut new.args {
-            let url = {
-              // skip transform when contain skip comment
-              if self
-                .comments
-                .get_leading(args[0].span_lo())
-                .is_some_and(|c| {
-                  c.iter()
-                    .any(|item| is_skip_action_by_comment(&item.text.as_str()))
-                })
-              {
-                return None;
-              };
+    if ident.sym != "URL" {
+      return None;
+    }
 
-              match &args[0].expr {
-                box Expr::Lit(Lit::Str(str)) => str.value.to_string(),
-                box Expr::Tpl(tpl) => {
-                  let mut pattern_builder = String::new();
-                  // maybe quasis is continuous
-                  let mut index = 0;
+    if !new.args.as_ref().is_some_and(|a| {
+      a.len() == 2
+        && matches!(a[0].expr.as_ref(), Expr::Lit(_) | Expr::Tpl(_))
+        && ImportMetaURLVisitor::is_import_meta_url(&a[1].expr)
+    }) {
+      return None;
+    }
 
-                  for item in tpl.quasis.iter() {
-                    if index >= tpl.exprs.len() {
-                      if item.raw.is_empty() {
-                        continue;
-                      }
+    if let Some(args) = &mut new.args {
+      let url = {
+        // skip transform when contain skip comment
+        if self
+          .comments
+          .get_leading(args[0].span_lo())
+          .is_some_and(|c| {
+            c.iter()
+              .any(|item| is_skip_action_by_comment(item.text.as_str()))
+          })
+        {
+          return None;
+        };
 
-                      pattern_builder.push_str(&item.raw);
-                    } else {
-                      for exp in tpl.exprs.iter().skip(index) {
-                        if item.span_hi() < exp.span_lo() {
-                          pattern_builder.push_str(&item.raw);
-                          break;
-                        }
-                      }
+        match &args[0].expr {
+          box Expr::Lit(Lit::Str(str)) => str.value.to_string(),
+          box Expr::Tpl(tpl) => {
+            let mut pattern_builder = String::new();
+            // maybe quasis is continuous
+            let mut index = 0;
 
-                      pattern_builder.push_str(&"**");
-                      index += 1;
-                    }
-                  }
-
-                  pattern_builder = normalized_glob_pattern(pattern_builder);
-
-                  pattern_builder
+            for item in tpl.quasis.iter() {
+              if index >= tpl.exprs.len() {
+                if item.raw.is_empty() {
+                  continue;
                 }
-                _ => return None,
+
+                pattern_builder.push_str(&item.raw);
+              } else {
+                for exp in tpl.exprs.iter().skip(index) {
+                  if item.span_hi() < exp.span_lo() {
+                    pattern_builder.push_str(&item.raw);
+                    break;
+                  }
+                }
+
+                pattern_builder.push_str("**");
+                index += 1;
               }
-            };
-
-            if url.is_empty() || url.starts_with('/') {
-              return None;
             }
 
-            is_replace = true;
+            pattern_builder = normalized_glob_pattern(pattern_builder);
 
-            args[0] = ExprOrSpread {
-              spread: None,
-              expr: Box::new(Expr::Member(MemberExpr {
-                span: DUMMY_SP,
-                obj: Box::new(Expr::Call(CallExpr {
-                  span: DUMMY_SP,
-                  callee: Callee::Expr(Box::new(Expr::Member(MemberExpr {
-                    span: DUMMY_SP,
-                    obj: Box::new(Expr::MetaProp(MetaPropExpr {
-                      span: DUMMY_SP,
-                      kind: MetaPropKind::ImportMeta,
-                    })),
-                    prop: MemberProp::Ident("glob".into()),
-                  }))),
-                  args: vec![
-                    ExprOrSpread {
-                      spread: None,
-                      expr: Box::new(Expr::Lit(Lit::Str(url.into()))),
-                    },
-                    ExprOrSpread {
-                      spread: None,
-                      expr: Box::new(Expr::Object(ObjectLit {
-                        span: DUMMY_SP,
-                        props: vec![
-                          PropOrSpread::Prop(Box::new(Prop::KeyValue(KeyValueProp {
-                            key: PropName::Ident("eager".into()),
-                            value: Box::new(Expr::Lit(Lit::Bool(true.into()))),
-                          }))),
-                          PropOrSpread::Prop(Box::new(Prop::KeyValue(KeyValueProp {
-                            key: PropName::Ident("import".into()),
-                            value: Box::new(Expr::Lit(Lit::Str("default".into()))),
-                          }))),
-                          PropOrSpread::Prop(Box::new(Prop::KeyValue(KeyValueProp {
-                            key: PropName::Ident("query".into()),
-                            value: Box::new(Expr::Lit(Lit::Str("url".into()))),
-                          }))),
-                        ],
-                      })),
-                    },
-                  ],
-                  type_args: None,
-                })),
-                prop: MemberProp::Computed(ComputedPropName {
-                  span: DUMMY_SP,
-                  expr: args[0].expr.take(),
-                }),
-              })),
-            }
+            pattern_builder
           }
+          _ => return None,
         }
+      };
+
+      if url.is_empty() || url.starts_with('/') {
+        return None;
       }
-      _ => {}
+
+      is_replace = true;
+
+      args[0] = ExprOrSpread {
+        spread: None,
+        expr: Box::new(Expr::Member(MemberExpr {
+          span: DUMMY_SP,
+          obj: Box::new(Expr::Call(CallExpr {
+            span: DUMMY_SP,
+            callee: Callee::Expr(Box::new(Expr::Member(MemberExpr {
+              span: DUMMY_SP,
+              obj: Box::new(Expr::MetaProp(MetaPropExpr {
+                span: DUMMY_SP,
+                kind: MetaPropKind::ImportMeta,
+              })),
+              prop: MemberProp::Ident("glob".into()),
+            }))),
+            args: vec![
+              ExprOrSpread {
+                spread: None,
+                expr: Box::new(Expr::Lit(Lit::Str(url.into()))),
+              },
+              ExprOrSpread {
+                spread: None,
+                expr: Box::new(Expr::Object(ObjectLit {
+                  span: DUMMY_SP,
+                  props: vec![
+                    PropOrSpread::Prop(Box::new(Prop::KeyValue(KeyValueProp {
+                      key: PropName::Ident("eager".into()),
+                      value: Box::new(Expr::Lit(Lit::Bool(true.into()))),
+                    }))),
+                    PropOrSpread::Prop(Box::new(Prop::KeyValue(KeyValueProp {
+                      key: PropName::Ident("import".into()),
+                      value: Box::new(Expr::Lit(Lit::Str("default".into()))),
+                    }))),
+                    PropOrSpread::Prop(Box::new(Prop::KeyValue(KeyValueProp {
+                      key: PropName::Ident("query".into()),
+                      value: Box::new(Expr::Lit(Lit::Str("url".into()))),
+                    }))),
+                  ],
+                })),
+              },
+            ],
+            type_args: None,
+          })),
+          prop: MemberProp::Computed(ComputedPropName {
+            span: DUMMY_SP,
+            expr: args[0].expr.take(),
+          }),
+        })),
+      }
     }
 
     if is_replace {
