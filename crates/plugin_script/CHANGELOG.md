@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.15](https://github.com/farm-fe/farm/compare/farmfe_plugin_script-v0.0.14...farmfe_plugin_script-v0.0.15) - 2025-01-09
+
+### Fixed
+
+- import meta glob path failed (#2049)
+
 ## [0.0.14](https://github.com/farm-fe/farm/compare/farmfe_plugin_script-v0.0.13...farmfe_plugin_script-v0.0.14) - 2025-01-03
 
 ### Fixed

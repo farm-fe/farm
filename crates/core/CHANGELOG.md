@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.3](https://github.com/farm-fe/farm/compare/farmfe_core-v0.7.2...farmfe_core-v0.7.3) - 2025-01-09
+
+### Fixed
+
+- module with query cannot update when watch file update (#2046)
+
 ## [0.7.2](https://github.com/farm-fe/farm/compare/farmfe_core-v0.7.1...farmfe_core-v0.7.2) - 2024-12-24
 
 ### Added

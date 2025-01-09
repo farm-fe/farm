@@ -71,12 +71,18 @@
 ### Patch Changes
 
 - 068c3ea5: support more frameworks electron, tauri, nestjs
-  All notable changes to this project will be documented in this file.
+All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [0.1.5](https://github.com/farm-fe/farm/compare/create_farm_node-v0.1.4...create_farm_node-v0.1.5) - 2025-01-09
+
+### Other
+
+- Version Packages ([#2045](https://github.com/farm-fe/farm/pull/2045))
 
 ## [0.1.4](https://github.com/farm-fe/farm/compare/create_farm_node-v0.1.3...create_farm_node-v0.1.4) - 2024-12-09
 
