@@ -1,5 +1,12 @@
 # @farmfe/core
 
+## 1.6.4
+
+### Patch Changes
+
+- 35bdd7f5: fix module with query cannot update when watch file update
+- 84ab2c75: fix import meta glob path
+
 ## 1.6.3
 
 ### Patch Changes
