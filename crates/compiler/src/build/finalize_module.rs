@@ -7,6 +7,7 @@ use farmfe_core::{
   plugin::{PluginAnalyzeDepsHookResultEntry, PluginFinalizeModuleHookParam},
 };
 
+
 pub fn finalize_module(
   module: &mut Module,
   deps: &Vec<PluginAnalyzeDepsHookResultEntry>,
