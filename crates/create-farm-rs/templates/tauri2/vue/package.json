@@ -1,0 +1,26 @@
+{
+  "name": "<FARM-TEMPLATE-NAME>",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "farm",
+    "build": "vue-tsc --noEmit && farm build",
+    "preview": "farm preview",
+    "tauri": "tauri"
+  },
+  "dependencies": {
+    "@tauri-apps/api": "^2.1.1",
+    "@tauri-apps/plugin-shell": "^2.2.0",
+    "vue": "^3.5.13"
+  },
+  "devDependencies": {
+    "@farmfe/cli": "^1.0.4",
+    "@farmfe/core": "^1.6.3",
+    "@tauri-apps/cli": "^2.1.0",
+    "@vitejs/plugin-vue": "^5.2.1",
+    "core-js": "^3.39.0",
+    "typescript": "^5.7.2",
+    "vue-tsc": "^2.2.0"
+  }
+}

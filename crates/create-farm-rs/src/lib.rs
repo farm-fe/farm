@@ -124,6 +124,21 @@ where
 
           Template::Tauri(Some(*sub_template))
         }
+        Template::Tauri2(None) => {
+          let sub_templates = vec![
+            TauriSubTemplate::React,
+            TauriSubTemplate::Vue,
+            TauriSubTemplate::Svelte,
+            TauriSubTemplate::Vanilla,
+            TauriSubTemplate::Solid,
+            TauriSubTemplate::Preact,
+          ];
+
+          let sub_template =
+            prompts::select("Select a Tauri2 template:", &sub_templates, Some(0))?.unwrap();
+
+          Template::Tauri2(Some(*sub_template))
+        }
         Template::Electron(None) => {
           let sub_templates = vec![
             ElectronSubTemplate::React,
@@ -162,7 +177,7 @@ where
     }
     clean_dir(&target_dir)?;
   } else {
-    let _ = fs::create_dir_all(&target_dir);
+    fs::create_dir_all(&target_dir)?;
   }
 
   // Render the template
