@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.17](https://github.com/farm-fe/farm/compare/farmfe_toolkit-v0.0.16...farmfe_toolkit-v0.0.17) - 2025-01-09
+
+### Other
+
+- updated the following local packages: farmfe_core
+
 ## [0.0.16](https://github.com/farm-fe/farm/compare/farmfe_toolkit-v0.0.15...farmfe_toolkit-v0.0.16) - 2024-12-24
 
 ### Other
