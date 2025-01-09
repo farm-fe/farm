@@ -440,7 +440,7 @@ impl JsCompiler {
   }
 
   #[napi]
-  pub fn write_resources_to_disk(&self, output_path: String) -> () {
+  pub fn write_resources_to_disk(&self, output_path: String) {
     let context = self.compiler.context();
     let resources = context.resources_map.lock();
 
