@@ -445,7 +445,7 @@ impl JsCompiler {
     let resources = context.resources_map.lock();
 
     resources.par_iter().for_each(|(name, resource)| {
-      let path = Path::new(&output_path).join(name.split(|c| c == '?' || c == '#').next().unwrap());
+      let path = Path::new(&output_path).join(name.split(['?', '#']).next().unwrap());
       let dir = path.parent().unwrap();
       if !dir.exists() {
         std::fs::create_dir_all(dir).unwrap();
