@@ -19,6 +19,7 @@ use farmfe_core::{
     Plugin, PluginAnalyzeDepsHookParam, PluginFinalizeModuleHookParam,
     PluginGenerateResourcesHookResult, PluginHookContext, PluginLoadHookParam,
     PluginLoadHookResult, PluginParseHookParam, PluginProcessModuleHookParam,
+    PluginResolveHookParam, ResolveKind,
   },
   resource::{
     resource_pot::{ResourcePot, ResourcePotType},
@@ -27,7 +28,9 @@ use farmfe_core::{
   swc_common::{comments::SingleThreadedComments, Mark, GLOBALS},
   swc_ecma_ast::EsVersion,
 };
-use farmfe_swc_transformer_import_glob::transform_import_meta_glob;
+use farmfe_swc_transformer_import_glob::{
+  transform_import_meta_glob, ImportMetaGlobResolver, ImportMetaGlobResolverParams,
+};
 use farmfe_toolkit::{
   common::{
     create_swc_source_map, generate_source_map_resource, load_source_original_source_map, Source,
@@ -186,7 +189,27 @@ impl Plugin for FarmPluginScript {
 
       transform_url_with_import_meta_url(ast, &comments);
 
-      transform_import_meta_glob(ast, context.config.root.clone(), param.module_id, context)?;
+      let resolved_path = param.module_id.resolved_path(&context.config.root);
+      let cur_dir = if resolved_path.starts_with(VIRTUAL_MODULE_PREFIX) {
+        context.config.root.clone()
+      } else {
+        Path::new(&resolved_path)
+          .parent()
+          .unwrap()
+          .to_string_lossy()
+          .to_string()
+      };
+
+      transform_import_meta_glob(
+        ast,
+        context.config.root.clone(),
+        param.module_id,
+        cur_dir,
+        &context.config.resolve.alias,
+        ImportMetaGlobResolverImpl {
+          context: context.clone(),
+        },
+      )?;
       script.set_comments(comments.into())
     }
 
@@ -308,5 +331,29 @@ impl FarmPluginScript {
     #[cfg(feature = "swc_plugin")]
     init_plugin_module_cache_once(_config);
     Self {}
+  }
+}
+
+struct ImportMetaGlobResolverImpl {
+  context: Arc<CompilationContext>,
+}
+
+impl ImportMetaGlobResolver for ImportMetaGlobResolverImpl {
+  fn resolve(&self, params: ImportMetaGlobResolverParams) -> Option<String> {
+    self
+      .context
+      .plugin_driver
+      .resolve(
+        &PluginResolveHookParam {
+          source: params.source,
+          importer: Some(params.importer),
+          kind: ResolveKind::Import,
+        },
+        &self.context,
+        &Default::default(),
+      )
+      .ok()
+      .flatten()
+      .map(|v| v.resolved_path)
   }
 }
