@@ -71,6 +71,7 @@ impl PackageManager {
         Template::Lit,
         Template::Preact,
         Template::Nestjs,
+        Template::Tauri2(None),
         Template::Tauri(None),
         Template::Electron(None)
       ],
