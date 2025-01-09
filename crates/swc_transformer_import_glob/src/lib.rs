@@ -18,14 +18,9 @@ use std::collections::HashMap;
 use std::path::Component;
 use std::path::Path;
 use std::path::PathBuf;
-use std::sync::Arc;
 
-use farmfe_core::context::CompilationContext;
 use farmfe_core::module::ModuleId;
 use farmfe_core::module::VIRTUAL_MODULE_PREFIX;
-use farmfe_core::plugin::PluginResolveHookParam;
-use farmfe_core::plugin::PluginResolveHookResult;
-use farmfe_core::plugin::ResolveKind;
 use farmfe_core::regex;
 use farmfe_core::relative_path::RelativePath;
 use farmfe_core::swc_common::DUMMY_SP;
@@ -42,13 +37,27 @@ use farmfe_utils::relative;
 
 const REGEX_PREFIX: &str = "$__farm_regex:";
 
-pub fn transform_import_meta_glob(
+pub struct ImportMetaGlobResolverParams {
+  pub importer: ModuleId,
+  pub source: String,
+}
+
+pub trait ImportMetaGlobResolver {
+  fn resolve(&self, params: ImportMetaGlobResolverParams) -> Option<String>;
+}
+
+type AliasMap = HashMap<String, String>;
+
+pub fn transform_import_meta_glob<R: ImportMetaGlobResolver>(
   ast: &mut SwcModule,
   root: String,
   importer: &ModuleId,
-  context: &Arc<CompilationContext>,
+  cur_dir: String,
+  alias: &AliasMap,
+  resolver: R,
 ) -> farmfe_core::error::Result<()> {
-  let mut visitor = ImportGlobVisitor::new(importer, root, context);
+  let mut visitor: ImportGlobVisitor<'_, _> =
+    ImportGlobVisitor::new(importer, root, cur_dir, alias, resolver);
   ast.visit_mut_with(&mut visitor);
 
   if !visitor.errors.is_empty() {
@@ -235,37 +244,33 @@ pub struct ImportMetaGlobInfo {
   pub query: Option<String>,
 }
 
-pub struct ImportGlobVisitor<'a> {
+pub struct ImportGlobVisitor<'a, R> {
   import_globs: Vec<ImportMetaGlobInfo>,
   cur_dir: String,
   importer: &'a ModuleId,
   root: String,
-  // alias: &'a HashMap<String, String>,
-  context: &'a Arc<CompilationContext>,
+  alias: &'a HashMap<String, String>,
   pub errors: Vec<String>,
   resolved_cache: HashMap<String, String>,
+  resolver: R,
 }
 
-impl<'a> ImportGlobVisitor<'a> {
-  pub fn new(importer: &'a ModuleId, root: String, context: &'a Arc<CompilationContext>) -> Self {
-    let resolved_path = importer.resolved_path(&root);
-    let cur_dir = if resolved_path.starts_with(VIRTUAL_MODULE_PREFIX) {
-      root.clone()
-    } else {
-      Path::new(&resolved_path)
-        .parent()
-        .unwrap()
-        .to_string_lossy()
-        .to_string()
-    };
-
+impl<'a, R: ImportMetaGlobResolver> ImportGlobVisitor<'a, R> {
+  pub fn new(
+    importer: &'a ModuleId,
+    root: String,
+    cur_dir: String,
+    alias: &'a AliasMap,
+    resolver: R,
+  ) -> Self {
     Self {
       import_globs: vec![],
       cur_dir,
       importer,
       root,
       errors: vec![],
-      context,
+      alias,
+      resolver,
       resolved_cache: HashMap::new(),
     }
   }
@@ -305,7 +310,7 @@ impl<'a> ImportGlobVisitor<'a> {
   }
 
   fn try_alias(&mut self, source: &str) -> String {
-    let alias_map = &self.context.config.resolve.alias;
+    let alias_map = &self.alias;
 
     let (source, negative) = source
       .strip_prefix('!')
@@ -315,9 +320,7 @@ impl<'a> ImportGlobVisitor<'a> {
     // the package conversion priority should be higher than alias
     if !(source.starts_with("./") || source.starts_with("../") || source.starts_with('/')) {
       if let Some(result) = self.resolve(&source) {
-        self
-          .resolved_cache
-          .insert(source.clone(), result.resolved_path);
+        self.resolved_cache.insert(source.clone(), result);
         return source.to_string();
       }
     }
@@ -364,24 +367,14 @@ impl<'a> ImportGlobVisitor<'a> {
     }
   }
 
-  fn resolve(&self, param: &str) -> Option<PluginResolveHookResult> {
-    self
-      .context
-      .plugin_driver
-      .resolve(
-        &PluginResolveHookParam {
-          source: param.to_string(),
-          importer: Some(self.importer.clone()),
-          kind: ResolveKind::Import,
-        },
-        self.context,
-        &Default::default(),
-      )
-      .ok()
-      .flatten()
+  fn resolve(&self, param: &str) -> Option<String> {
+    self.resolver.resolve(ImportMetaGlobResolverParams {
+      importer: self.importer.clone(),
+      source: param.to_string(),
+    })
   }
 
-  fn find_rel_source(&self, source: &str) -> (String, String) {
+  pub fn find_rel_source(&self, source: &str) -> (String, String) {
     let mut root = self.root.clone();
 
     #[allow(clippy::manual_strip)]
@@ -425,7 +418,7 @@ impl<'a> ImportGlobVisitor<'a> {
       source
     } else if let Some(suffix) = source.strip_prefix("./") {
       let abs_path = RelativePath::new(&suffix).to_logical_path(&self.cur_dir);
-      relative(&self.cur_dir, &abs_path.to_string_lossy())
+      relative(&self.root, &abs_path.to_string_lossy())
     } else if source.starts_with("**") {
       source.to_string()
     } else {
@@ -433,12 +426,12 @@ impl<'a> ImportGlobVisitor<'a> {
         .resolved_cache
         .get(source)
         .map(|v| v.to_string())
-        .or_else(|| self.resolve(source).map(|v| v.resolved_path))
+        .or_else(|| self.resolve(source))
       else {
         panic!("Error when glob {source:?}, please ensure the source exists");
       };
 
-      relative(&self.cur_dir, &result)
+      relative(&self.root, &result)
     };
 
     (root, rel_source)
@@ -453,8 +446,6 @@ impl<'a> ImportGlobVisitor<'a> {
 
       let source = if negative { &source[1..] } else { &source[..] };
       let (root, rel_source) = self.find_rel_source(source);
-
-      println!("source: {source}\nroot: {root}\nrel_source: {rel_source}");
 
       let glob = Glob::new(&rel_source);
 
@@ -655,7 +646,7 @@ impl<'a> ImportGlobVisitor<'a> {
   }
 }
 
-impl<'a> VisitMut for ImportGlobVisitor<'a> {
+impl<'a, R: ImportMetaGlobResolver> VisitMut for ImportGlobVisitor<'a, R> {
   fn visit_mut_expr(&mut self, expr: &mut Expr) {
     match expr {
       Expr::Call(CallExpr {
@@ -883,60 +874,5 @@ fn get_object_literal(expr: &ExprOrSpread) -> Option<HashMap<String, String>> {
       }
     }
     _ => None,
-  }
-}
-
-#[cfg(test)]
-mod tests {
-  use super::*;
-
-  fn create_context() -> Arc<CompilationContext> {
-    let mut compilation = CompilationContext::default();
-    compilation.config.root = if cfg!(windows) {
-      "C:\\root1".to_string()
-    } else {
-      "/root1/root2".to_string()
-    };
-    Arc::new(compilation)
-  }
-
-  #[inline]
-  fn create_visitor<'a>(
-    importer: &'a ModuleId,
-    context: &'a Arc<CompilationContext>,
-  ) -> ImportGlobVisitor<'a> {
-    let mut compilation = CompilationContext::default();
-
-    compilation.config.root.clone_from(&context.config.root);
-
-    let visitor = ImportGlobVisitor::new(importer, context.config.root.clone(), context);
-
-    visitor
-  }
-
-  #[test]
-  fn find_rel_source_absolute_path() {
-    let context = create_context();
-    let importer = ModuleId::new("src/index.js", "", &context.config.root);
-    let visitor = create_visitor(&importer, &context);
-
-    let (_, s1) = visitor.find_rel_source("/src/foo.js");
-
-    assert_eq!(s1, "src/foo.js");
-  }
-
-  #[test]
-  fn find_rel_source_relative_path() {
-    let context = create_context();
-    let importer = ModuleId::new("src/components/welcome/index.tsx", "", &context.config.root);
-    let visitor = create_visitor(&importer, &context);
-
-    let (_, s1) = visitor.find_rel_source("../../../assets/*.js");
-
-    assert_eq!(s1, format!("assets/*.js"));
-
-    let (_, s1) = visitor.find_rel_source("./src/foo.js");
-
-    assert_eq!(s1, "src/foo.js");
   }
 }
