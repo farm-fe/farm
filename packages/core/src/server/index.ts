@@ -255,6 +255,9 @@ export class Server extends httpServer {
     });
 
     this.watcher.on('unlink', async (file: string) => {
+      // Fix #2035, skip if the file is irrelevant
+      if (!this.compiler.hasModule(file)) return;
+
       const parentFiles = this.compiler.getParentFiles(file);
       const normalizeParentFiles = parentFiles.map((file) =>
         normalizePath(file)
