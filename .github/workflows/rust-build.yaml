@@ -1,6 +1,10 @@
 name: Building Rust Binding And Upload Artifacts
 on: workflow_call
 
+concurrency:
+  group: build-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
     name: Build and Upload Artifacts - ${{ matrix.settings.abi }}

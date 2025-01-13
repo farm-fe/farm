@@ -4,6 +4,10 @@ on:
     branches:
       - main
 
+concurrency:
+  group: test-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   cargo-check:
     name: Check
