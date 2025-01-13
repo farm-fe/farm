@@ -1621,12 +1621,12 @@ name = "farmfe_compiler"
 version = "0.0.13"
 dependencies = [
  "farmfe_core",
- "farmfe_plugin_bundle",
  "farmfe_plugin_css",
  "farmfe_plugin_define",
  "farmfe_plugin_html",
  "farmfe_plugin_json",
  "farmfe_plugin_lazy_compilation",
+ "farmfe_plugin_library",
  "farmfe_plugin_minify",
  "farmfe_plugin_partial_bundling",
  "farmfe_plugin_polyfill",
@@ -1773,6 +1773,17 @@ name = "farmfe_plugin_lazy_compilation"
 version = "0.0.13"
 dependencies = [
  "farmfe_core",
+ "farmfe_testing_helpers",
+ "farmfe_toolkit",
+ "farmfe_utils 0.1.6",
+]
+
+[[package]]
+name = "farmfe_plugin_library"
+version = "0.0.1"
+dependencies = [
+ "farmfe_core",
+ "farmfe_plugin_bundle",
  "farmfe_testing_helpers",
  "farmfe_toolkit",
  "farmfe_utils 0.1.6",

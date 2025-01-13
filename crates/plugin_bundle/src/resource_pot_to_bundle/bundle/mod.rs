@@ -1113,6 +1113,7 @@ mod tests {
           top_level_idents: Default::default(),
           unresolved_idents: Default::default(),
           statements: vec![],
+          feature_flags: Default::default(),
           is_async: false,
         }));
       })

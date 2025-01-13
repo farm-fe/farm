@@ -87,12 +87,20 @@ fn get_affected_modules(
   context: &Arc<CompilationContext>,
 ) -> Vec<ModuleId> {
   let module_group_graph = context.module_group_graph.read();
-  // let mut enforce_resource_pots = HashSet::new();
+
   module_groups
     .iter()
     .fold(HashSet::default(), |mut acc, module_group_id| {
       let module_group = module_group_graph.module_group(module_group_id).unwrap();
-      acc.extend(module_group.modules().clone());
+
+      // ignore dynamic entry module group
+      if !matches!(
+        module_group.module_group_type,
+        ModuleGroupType::DynamicEntry
+      ) {
+        acc.extend(module_group.modules().clone());
+      }
+
       acc
     })
     .into_iter()

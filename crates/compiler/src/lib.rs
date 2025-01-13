@@ -36,7 +36,7 @@ impl Compiler {
   /// The params are [farmfe_core::config::Config] and dynamic load rust plugins and js plugins [farmfe_core::plugin::Plugin]
   pub fn new(config: Config, mut plugin_adapters: Vec<Arc<dyn Plugin>>) -> Result<Self> {
     let render_plugin: Arc<dyn Plugin> = if config.output.target_env.is_library() {
-      Arc::new(farmfe_plugin_bundle::FarmPluginBundle::new()) as _
+      Arc::new(farmfe_plugin_library::FarmPluginLibrary::new(&config)) as _
     } else {
       Arc::new(farmfe_plugin_runtime::FarmPluginRuntime::new(&config)) as _
     };

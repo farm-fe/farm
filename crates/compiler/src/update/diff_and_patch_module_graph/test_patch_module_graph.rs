@@ -429,6 +429,7 @@ fn test_patch_module_graph_add_remove_dynamic_entry() {
         kind: ResolveKind::DynamicEntry {
           name: "AD".to_string(),
           output_filename: None,
+          no_importer: false,
         },
         ..Default::default()
       }]),
@@ -454,6 +455,7 @@ fn test_patch_module_graph_add_remove_dynamic_entry() {
         kind: ResolveKind::DynamicEntry {
           name: "BH".to_string(),
           output_filename: None,
+          no_importer: false,
         },
         ..Default::default()
       }]),

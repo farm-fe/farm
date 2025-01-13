@@ -1,7 +1,6 @@
 #![feature(box_patterns)]
 #![feature(let_chains)]
 
-pub mod concatenate_modules;
 pub mod css;
 pub mod fs;
 pub mod hash;

@@ -311,11 +311,9 @@ impl Plugin for FarmPluginScript {
     &self,
     context: &Arc<CompilationContext>,
   ) -> farmfe_core::error::Result<Option<()>> {
-    println!("generate start");
     let async_modules = find_async_modules::find_async_modules(context);
-    println!("find async modules");
     let mut module_graph = context.module_graph.write();
-    println!("write module graph");
+
     for module_id in async_modules {
       let module = module_graph.module_mut(&module_id).unwrap();
       module.meta.as_script_mut().is_async = true;
@@ -341,7 +339,7 @@ impl Plugin for FarmPluginScript {
     _hook_context: &PluginHookContext,
   ) -> farmfe_core::error::Result<Option<PluginGenerateResourcesHookResult>> {
     if let ResourcePotMetaData::Js(JsResourcePotMetaData {
-      ast: wrapped_resource_pot_ast,
+      ast,
       comments: merged_comments,
       rendered_modules,
       ..
@@ -356,7 +354,7 @@ impl Plugin for FarmPluginScript {
       let (code, map) = generate_code_and_sourcemap(
         resource_pot,
         &module_graph,
-        &wrapped_resource_pot_ast,
+        &ast,
         merged_sourcemap,
         merged_comments.into(),
         context,

@@ -142,7 +142,7 @@ pub fn fill_necessary_fields_for_resource_pot(
 
       if module_graph.entries.contains_key(module_id) {
         if entry_module.is_some() {
-          panic!("a resource pot can only have one entry module, but both {:?} and {:?} are entry modules", entry_module.unwrap(), module_id);
+          panic!("a resource pot({}) can only have one entry module, but both {:?} and {:?} are entry modules", resource_pot.id, entry_module.unwrap(), module_id);
         }
         entry_module = Some(module_id.clone());
       }
@@ -192,6 +192,11 @@ fn generate_enforce_resource_pots(
 
   // generate enforce resource pots first
   for g in module_group_graph.module_groups() {
+    // skip dynamic entry module group
+    if matches!(g.module_group_type, ModuleGroupType::DynamicEntry) {
+      continue;
+    }
+
     for module_id in g.modules() {
       // ignore external module
       if module_graph.module(module_id).unwrap().external {

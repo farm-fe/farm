@@ -184,11 +184,16 @@ impl SwcId {
 #[cache_item]
 #[serde(rename_all = "camelCase")]
 pub enum ImportSpecifierInfo {
+  /// import * as foo from 'foo';
   Namespace(SwcId),
+  /// import { foo, bar as zoo } from 'foo';
   Named {
+    /// foo or zoo in `import { foo, bar as zoo } from 'foo';`
     local: SwcId,
+    /// bar in `import { foo, bar as zoo } from 'foo';`
     imported: Option<SwcId>,
   },
+  /// import foo from 'foo';
   Default(SwcId),
 }
 

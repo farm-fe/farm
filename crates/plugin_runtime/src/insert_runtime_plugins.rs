@@ -5,7 +5,7 @@ use farmfe_toolkit::html::get_farm_global_this;
 
 const PLUGIN_VAR_PREFIX: &str = "__farm_plugin__";
 
-pub fn insert_runtime_plugins(content: &str, context: &Arc<CompilationContext>) -> String {
+pub fn insert_runtime_plugins(context: &Arc<CompilationContext>) -> String {
   let plugins = context
     .config
     .runtime
@@ -26,6 +26,11 @@ pub fn insert_runtime_plugins(content: &str, context: &Arc<CompilationContext>) 
       (ident, import_stmt)
     })
     .collect::<Vec<_>>();
+
+  if plugins.is_empty() {
+    return "".to_string();
+  }
+
   let idents = plugins
     .iter()
     .map(|(ident, _)| ident.as_str())
@@ -47,5 +52,5 @@ pub fn insert_runtime_plugins(content: &str, context: &Arc<CompilationContext>) 
     idents.join(",")
   );
 
-  format!("{}\n{}\n{}", imports.join("\n"), content, plugins_call)
+  format!("{}\n{}", imports.join("\n"), plugins_call)
 }

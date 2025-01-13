@@ -170,13 +170,13 @@ impl<'a> SharedBundle<'a> {
       (&bundle_group.modules)
         .into_par_iter()
         .try_for_each(|module_id| {
-          let is_dynamic = module_graph.is_dynamic(module_id);
+          let is_dynamic = module_graph.is_dynamic_import(module_id);
           let is_entry = bundle_group
             .entry_module
             .as_ref()
             .is_some_and(|item| item == *module_id);
           let module = module_graph.module(module_id).unwrap();
-          let is_runtime = matches!(module.module_type, ModuleType::Runtime);
+          // let is_runtime = matches!(module.module_type, ModuleType::Runtime);
 
           // 1-2. analyze bundle module
           let module_analyzer = ModuleAnalyzer::new(
@@ -185,7 +185,8 @@ impl<'a> SharedBundle<'a> {
             bundle_group.id.clone(),
             is_entry,
             is_dynamic,
-            is_runtime,
+            // is_runtime,
+            false,
           )?;
 
           module_analyzer_map

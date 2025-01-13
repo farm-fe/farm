@@ -480,20 +480,30 @@ impl Compiler {
           resolve_module_id_result,
         }) => {
           farm_profile_scope!(format!("new module {:?}", module.id));
+
           if resolve_module_id_result.resolve_result.external {
             // insert external module to the graph
             let module_id = module.id.clone();
-            Self::add_module(module, &resolve_param.kind, &context);
+            Self::add_module(module, &context);
             Self::add_edge(&resolve_param, module_id, order, &context);
             return;
           }
 
+          // mark entry module first after resolving
           if let ResolveKind::Entry(ref name) = resolve_param.kind {
             context
               .module_graph
               .write()
               .entries
               .insert(module.id.clone(), name.to_string());
+            module.is_entry = true;
+          } else if let ResolveKind::DynamicEntry { .. } = resolve_param.kind {
+            context
+              .module_graph
+              .write()
+              .dynamic_entries
+              .insert(module.id.clone(), resolve_param.source.clone());
+            module.is_dynamic_entry = true;
           }
 
           match Self::build_module(
@@ -525,7 +535,7 @@ impl Compiler {
   fn handle_dependencies(params: HandleDependenciesParams) {
     let HandleDependenciesParams {
       module,
-      resolve_param,
+      mut resolve_param,
       order,
       deps,
       thread_pool,
@@ -534,9 +544,16 @@ impl Compiler {
     } = params;
 
     let module_id = module.id.clone();
+    // dynamic entry modules may reset importer module, reset importer here
+    if let ResolveKind::DynamicEntry { no_importer, .. } = &resolve_param.kind {
+      if *no_importer {
+        resolve_param.importer = None
+      }
+    }
+
     let immutable = module.immutable;
     // add module to the graph
-    Self::add_module(module, &resolve_param.kind, &context);
+    Self::add_module(module, &context);
     // add edge to the graph
     Self::add_edge(&resolve_param, module_id.clone(), order, &context);
 
@@ -580,21 +597,8 @@ impl Compiler {
   }
 
   /// add a module to the module graph, if the module already exists, update it
-  pub(crate) fn add_module(mut module: Module, kind: &ResolveKind, context: &CompilationContext) {
+  pub(crate) fn add_module(module: Module, context: &CompilationContext) {
     let mut module_graph = context.module_graph.write();
-
-    // mark entry module
-    if let ResolveKind::Entry(name) = kind {
-      module.is_entry = true;
-      module_graph
-        .entries
-        .insert(module.id.clone(), name.to_string());
-    } else if let ResolveKind::DynamicEntry { name, .. } = kind {
-      module.is_dynamic_entry = true;
-      module_graph
-        .dynamic_entries
-        .insert(module.id.clone(), name.to_string());
-    }
 
     // check if the module already exists
     if module_graph.has_module(&module.id) {

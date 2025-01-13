@@ -54,6 +54,7 @@ fn test_generate_and_diff_resource_pots() {
         kind: ResolveKind::DynamicEntry {
           name: "EI".to_string(),
           output_filename: None,
+          no_importer: false,
         },
         ..Default::default()
       }]),

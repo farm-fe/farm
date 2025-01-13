@@ -221,4 +221,8 @@ impl ModuleSystem {
       ModuleSystem::Custom(_) => module_system,
     }
   }
+
+  pub fn contains_commonjs(&self) -> bool {
+    matches!(self, ModuleSystem::CommonJs | ModuleSystem::Hybrid)
+  }
 }

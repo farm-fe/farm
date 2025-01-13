@@ -26,6 +26,7 @@ pub fn render_resource_pots_and_generate_resources(
 
   let resources = Mutex::new(vec![]);
   let entries = context.module_graph.read().entries.clone();
+  let dynamic_entries = context.module_graph.read().dynamic_entries.clone();
 
   let mut resource_pots_need_render = vec![];
 
@@ -88,7 +89,11 @@ pub fn render_resource_pots_and_generate_resources(
         if r.should_transform_output_filename {
           let content_with_extra_content_hash = &[&r.bytes, augment_resource_hash_bytes].concat();
           if let Some(name) = resource_pot.entry_module.as_ref() {
-            let entry_name = entries.get(name).unwrap();
+            let entry_name = entries
+              .get(name)
+              .or_else(|| dynamic_entries.get(name))
+              .unwrap();
+
             r.name = transform_output_entry_filename(
               context.config.output.entry_filename.clone(),
               resource_pot.id.to_string().as_str(),

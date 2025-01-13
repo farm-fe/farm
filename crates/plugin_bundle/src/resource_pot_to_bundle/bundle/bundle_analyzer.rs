@@ -1527,7 +1527,6 @@ impl<'a> BundleAnalyzer<'a> {
     let cm = self
       .context
       .meta
-      .script
       .merge_modules_source_mpa(&self.ordered_modules, self.module_graph);
 
     let get_start_pos = |module_id: &ModuleId| {

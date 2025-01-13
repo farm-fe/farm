@@ -15,7 +15,7 @@ use farmfe_core::{
   module::{meta_data::script::feature_flag::FeatureFlag, Module, ModuleId, ModuleType},
   parking_lot::Mutex,
   plugin::{
-    Plugin, PluginAnalyzeDepsHookResultEntry, PluginFinalizeResourcesHookParams,
+    GeneratedResource, Plugin, PluginAnalyzeDepsHookResultEntry, PluginFinalizeResourcesHookParams,
     PluginGenerateResourcesHookResult, PluginHookContext, PluginLoadHookParam,
     PluginLoadHookResult, PluginResolveHookParam, PluginResolveHookResult,
     PluginTransformHookResult, ResolveKind,
@@ -30,6 +30,7 @@ use farmfe_core::{
   swc_ecma_ast::{Expr, ExprStmt, Module as SwcModule, ModuleItem, Stmt},
   HashMap, HashSet,
 };
+use farmfe_plugin_bundle::resource_pot_to_bundle::{BundleGroup, ShareBundleOptions, SharedBundle};
 use farmfe_toolkit::{
   fs::read_file_utf8,
   html::get_farm_global_this,
@@ -59,7 +60,9 @@ pub const RUNTIME_PACKAGE: &str = "@farmfe/runtime";
 /// * merge module's ast and render the script module using farm runtime's specification, for example, wrap the module to something like `function(module, exports, require) { xxx }`, see [Farm Runtime RFC](https://github.com/farm-fe/rfcs/pull/1)
 ///
 /// All runtime module (including the runtime core and its plugins) will be suffixed as `.farm-runtime` to distinguish with normal script modules.
-pub struct FarmPluginRuntime {}
+pub struct FarmPluginRuntime {
+  added_runtime_modules: Mutex<HashSet<String>>,
+}
 
 impl Plugin for FarmPluginRuntime {
   fn name(&self) -> &str {
@@ -67,27 +70,12 @@ impl Plugin for FarmPluginRuntime {
   }
 
   fn config(&self, config: &mut Config) -> farmfe_core::error::Result<Option<()>> {
-    // runtime package entry file
-    if !config.runtime.path.is_empty() {
-      config
-        .input
-        .insert(RUNTIME_INPUT_SCOPE.to_string(), RUNTIME_PACKAGE.to_string());
-    }
-
     if !config.runtime.swc_helpers_path.is_empty() {
       config.resolve.alias.push(AliasItem::Complex {
         find: StringOrRegex::String("@swc/helpers".to_string()),
         replacement: config.runtime.swc_helpers_path.clone(),
       });
     }
-
-    // config.partial_bundling.enforce_resources.insert(
-    //   0,
-    //   PartialBundlingEnforceResourceConfig {
-    //     name: RUNTIME_INPUT_SCOPE.to_string(),
-    //     test: vec![ConfigRegex::new(&format!(".+{RUNTIME_INPUT_SCOPE}"))],
-    //   },
-    // );
 
     config.define.insert(
       "'<@__farm_global_this__@>'".to_string(),
@@ -112,6 +100,12 @@ impl Plugin for FarmPluginRuntime {
         ..Default::default()
       }));
     } else if param.source.starts_with(RUNTIME_PACKAGE) {
+      if context.config.runtime.path.is_empty() {
+        return Err(CompilationError::GenericError(
+          "config.runtime.path is not set, please set or remove config.runtime.path in farm.config.ts. normally you should not set config.runtime.path manually".to_string(),
+        ));
+      }
+
       let rest_str = param.source.replace(RUNTIME_PACKAGE, "");
 
       return Ok(Some(PluginResolveHookResult {
@@ -132,7 +126,7 @@ impl Plugin for FarmPluginRuntime {
     // load farm runtime entry as a empty module, it will be filled later in freeze_module hook
     if param.resolved_path == RUNTIME_PACKAGE {
       return Ok(Some(PluginLoadHookResult {
-        content: insert_runtime_plugins("", context),
+        content: insert_runtime_plugins(context),
         module_type: ModuleType::Js,
         source_map: None,
       }));
@@ -150,38 +144,57 @@ impl Plugin for FarmPluginRuntime {
       return Ok(None);
     }
 
-    let mut add_runtime_dynamic_input = |name: &str| {
+    let mut add_runtime_dynamic_input = |name: &str, dir: &str| {
+      // add runtime module to the dynamic input if it's not added
+      let mut added_runtime_modules = self.added_runtime_modules.lock();
+
+      if added_runtime_modules.contains(name) {
+        return;
+      }
+
+      let suffix = if name == "index" {
+        "".to_string()
+      } else {
+        format!("/src/{dir}{name}")
+      };
+
       param.deps.push(PluginAnalyzeDepsHookResultEntry {
-        source: format!("@farmfe/runtime/src/modules/{name}"),
+        source: format!("{RUNTIME_PACKAGE}{suffix}"),
         kind: ResolveKind::DynamicEntry {
           name: format!("{RUNTIME_INPUT_SCOPE}_{}", name.replace("-", "_")),
           output_filename: None,
+          no_importer: true,
         },
       });
+
+      added_runtime_modules.insert(name.to_string());
     };
+
+    // add runtime package entry file for the first entry module
+    add_runtime_dynamic_input("index", "");
 
     // The goal of rendering runtime code is to make sure the runtime is as small as possible.
     // So we need to collect all the runtime related information in finalize_module hook,
-    // for example, if a module uses dynamic import, we will append import '@farmfe/runtime/modules/dynamic-import' to the runtime entry module.
+    // for example, if a module uses dynamic import, we will append import '@farmfe/runtime/src/modules/dynamic-import' to the runtime entry module.
     let feature_flags = &param.module.meta.as_script().feature_flags;
 
     if feature_flags.contains(&FeatureFlag::DefaultImport) {
-      add_runtime_dynamic_input("dynamic-import");
+      add_runtime_dynamic_input("dynamic-import", "modules/");
     }
 
     if feature_flags.contains(&FeatureFlag::ModuleDecl) {
-      add_runtime_dynamic_input("module-system-helper");
+      add_runtime_dynamic_input("module-system-helper", "modules/");
     }
 
     // module system is always required
-    add_runtime_dynamic_input("module-system");
+    add_runtime_dynamic_input("module-system", "");
 
     if context.config.mode.is_dev() {
-      add_runtime_dynamic_input("module-helper");
+      add_runtime_dynamic_input("module-helper", "modules/");
     }
 
     if context.config.runtime.plugins.len() > 0 {
-      add_runtime_dynamic_input("plugin");
+      add_runtime_dynamic_input("plugin", "modules/");
     }
 
     Ok(Some(()))
@@ -196,12 +209,45 @@ impl Plugin for FarmPluginRuntime {
     Ok(Some(()))
   }
 
+  fn process_resource_pots(
+    &self,
+    resource_pots: &mut Vec<&mut ResourcePot>,
+    _context: &Arc<CompilationContext>,
+  ) -> farmfe_core::error::Result<Option<()>> {
+    // find runtime resource pot and set the resource pot type to Runtime
+    for resource_pot in resource_pots {
+      if resource_pot.name.starts_with(RUNTIME_INPUT_SCOPE) {
+        resource_pot.resource_pot_type = ResourcePotType::Runtime;
+      }
+    }
+
+    Ok(Some(()))
+  }
+
   fn render_resource_pot(
     &self,
     resource_pot: &ResourcePot,
     context: &Arc<CompilationContext>,
     _hook_context: &PluginHookContext,
   ) -> farmfe_core::error::Result<Option<ResourcePotMetaData>> {
+    // render runtime resource pot
+    if matches!(resource_pot.resource_pot_type, ResourcePotType::Runtime) {
+      let module_graph = context.module_graph.read();
+      let bundle_group = BundleGroup::from(resource_pot);
+      let bundle_group_id = bundle_group.id.clone();
+      // concatenate all runtime modules, all runtime modules should be esm only
+      let mut bundle = SharedBundle::new(vec![bundle_group], &module_graph, context, None)?;
+      bundle.render()?;
+
+      let result = bundle.codegen(&bundle_group_id)?;
+      return Ok(Some(ResourcePotMetaData::Js(JsResourcePotMetaData {
+        ast: result.ast,
+        external_modules: Default::default(),
+        rendered_modules: result.rendered_modules,
+        comments: result.comments,
+      })));
+    }
+
     if resource_pot.resource_pot_type != ResourcePotType::Js {
       return Ok(None);
     }
@@ -245,6 +291,15 @@ impl Plugin for FarmPluginRuntime {
     })))
   }
 
+  // fn handle_entry_resource(
+  //   &self,
+  //   _resource: &mut farmfe_core::plugin::PluginHandleEntryResourceHookParams,
+  //   _context: &Arc<CompilationContext>,
+  // ) -> farmfe_core::error::Result<Option<()>> {
+  //   // TODO handle runtime resource for entry
+  //   Ok(None)
+  // }
+
   fn finalize_resources(
     &self,
     param: &mut PluginFinalizeResourcesHookParams,
@@ -262,6 +317,8 @@ impl Plugin for FarmPluginRuntime {
 
 impl FarmPluginRuntime {
   pub fn new(_: &Config) -> Self {
-    Self {}
+    Self {
+      added_runtime_modules: Mutex::new(HashSet::default()),
+    }
   }
 }

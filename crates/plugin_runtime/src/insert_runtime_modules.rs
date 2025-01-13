@@ -53,6 +53,8 @@ fn insert_dynamic_input_import(
       }]),
     )
     .unwrap();
+
+  module_graph.dynamic_entries.remove(&dynamic_entry);
 }
 
 /// Example:

@@ -499,7 +499,8 @@ pub struct PluginFinalizeResourcesHookParams<'a> {
 }
 
 pub struct PluginHandleEntryResourceHookParams<'a> {
-  pub resource: &'a mut Resource,
+  pub resource: Resource,
+  pub resource_source_map: Option<Resource>,
   pub module_graph: &'a ModuleGraph,
   pub module_group_graph: &'a ModuleGroupGraph,
   pub entry_module_id: &'a ModuleId,

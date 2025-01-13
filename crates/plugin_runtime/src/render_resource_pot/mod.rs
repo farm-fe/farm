@@ -70,20 +70,20 @@ pub fn render_resource_pot_modules(
           )
         });
 
-      // let mut hoisted_ast = if hoisted_group.hoisted_module_ids.len() > 1 {
-      //   Some(hoisted_group.render(module_graph, context)?)
-      // } else {
-      //   None
-      // };
+      let mut hoisted_ast = if hoisted_group.hoisted_module_ids.len() > 1 {
+        Some(hoisted_group.concatenate_modules(module_graph, context)?)
+      } else {
+        None
+      };
 
-      // let hoisted_modules = hoisted_ast
-      //   .as_mut()
-      //   .map(|item| item.rendered_modules.take());
+      let hoisted_modules = hoisted_ast
+        .as_mut()
+        .map(|item| item.rendered_modules.take());
 
       let render_module_result = render_module(RenderModuleOptions {
         module,
         module_graph,
-        // hoisted_ast,
+        hoisted_ast,
         context,
       })?;
 
