@@ -1,6 +1,6 @@
 [package]
 name = "farmfe_plugin_resolve"
-version = "0.0.15"
+version = "0.0.16"
 edition = "2021"
 authors = ["brightwu(吴明亮) <1521488775@qq.com>"]
 license = "MIT"

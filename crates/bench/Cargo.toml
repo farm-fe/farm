@@ -12,7 +12,7 @@ documentation = "https://docs.rs/farmfe_bench"
 [dependencies]
 criterion2 = { version = "0.11.0", default-features = false }
 farmfe_core = { path = "../core", version = "0.7.3" }
-farmfe_compiler = { path = "../compiler", version = "0.0.16" }
+farmfe_compiler = { path = "../compiler", version = "0.0.17" }
 
 [[bench]]
 name = "compiler_bench"
