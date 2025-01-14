@@ -106,11 +106,8 @@ pub fn replace_dirname_with_ast(ast: &mut Module, dir_path: &str, file_path: &st
             self.visit_mut_expr(&mut arg.expr);
           }
 
-          match &mut call_expr.callee {
-            Callee::Expr(expr) => {
-              self.visit_mut_expr(expr);
-            }
-            _ => {}
+          if let Callee::Expr(expr) = &mut call_expr.callee {
+            self.visit_mut_expr(expr);
           }
         }
 
