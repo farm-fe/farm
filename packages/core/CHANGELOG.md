@@ -1,5 +1,11 @@
 # @farmfe/core
 
+## 1.6.5
+
+### Patch Changes
+
+- 2423ee65: Fix query strings in external imports are duplicated
+
 ## 1.6.4
 
 ### Patch Changes
