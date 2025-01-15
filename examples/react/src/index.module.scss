@@ -1,0 +1,11 @@
+@import './variables.scss';
+
+:global {
+  body {
+    background-color: $primaryColor;
+  }  
+}
+
+.main {
+  display: block;
+}

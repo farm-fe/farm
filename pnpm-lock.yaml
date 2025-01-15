@@ -705,7 +705,7 @@ importers:
         version: 10.1.2(chokidar@3.6.0)(typescript@5.4.5)
       '@nestjs/testing':
         specifier: ^10.0.0
-        version: 10.3.10(@nestjs/common@10.3.10(reflect-metadata@0.2.2)(rxjs@7.8.1))(@nestjs/core@10.3.10)(@nestjs/platform-express@10.3.10)
+        version: 10.3.10(@nestjs/common@10.3.10(reflect-metadata@0.2.2)(rxjs@7.8.1))(@nestjs/core@10.3.10(@nestjs/common@10.3.10(reflect-metadata@0.2.2)(rxjs@7.8.1))(@nestjs/platform-express@10.3.10)(encoding@0.1.13)(reflect-metadata@0.2.2)(rxjs@7.8.1))(@nestjs/platform-express@10.3.10(@nestjs/common@10.3.10(reflect-metadata@0.2.2)(rxjs@7.8.1))(@nestjs/core@10.3.10))
       '@types/express':
         specifier: ^4.17.17
         version: 4.17.21
@@ -862,7 +862,7 @@ importers:
         version: 6.0.0(postcss@8.4.31)
       tailwindcss:
         specifier: ^3.3.2
-        version: 3.3.5(ts-node@10.9.1(@types/node@20.14.12)(typescript@5.4.5))
+        version: 3.3.5(ts-node@10.9.1(@types/node@18.19.67)(typescript@4.9.5))
 
   examples/public-dir:
     dependencies:
@@ -1491,7 +1491,7 @@ importers:
         version: 0.14.0
       tailwindcss:
         specifier: ^3.3.2
-        version: 3.3.5(ts-node@10.9.1(@types/node@20.14.12)(typescript@5.4.5))
+        version: 3.3.5(ts-node@10.9.1(@types/node@18.19.67)(typescript@4.9.5))
 
   examples/tailwind-next:
     dependencies:
@@ -1741,7 +1741,7 @@ importers:
     dependencies:
       vite-tsconfig-paths:
         specifier: ^4.3.1
-        version: 4.3.1(typescript@5.4.5)(vite@5.2.8(@types/node@20.14.12)(less@4.2.0)(lightningcss@1.27.0)(sass@1.74.1)(terser@5.31.1))
+        version: 4.3.1(typescript@5.4.5)(vite@5.2.8(@types/node@18.19.67)(less@4.2.0)(lightningcss@1.27.0)(sass@1.74.1)(terser@5.31.1))
     devDependencies:
       '@farmfe/cli':
         specifier: workspace:*
@@ -1767,6 +1767,9 @@ importers:
       ant-design-vue:
         specifier: '3'
         version: 3.2.20(vue@3.3.7(typescript@5.4.5))
+      argon2-browser:
+        specifier: ^1.18.0
+        version: 1.18.0
       axios:
         specifier: ^1.4.0
         version: 1.6.0
@@ -1782,6 +1785,9 @@ importers:
       element-plus:
         specifier: ^2.4.1
         version: 2.4.2(@vue/composition-api@1.7.2(vue@3.3.7(typescript@5.4.5)))(vue@3.3.7(typescript@5.4.5))
+      lodash-es:
+        specifier: ^4.17.21
+        version: 4.17.21
       prettier:
         specifier: ^3.3.2
         version: 3.3.2
@@ -1819,6 +1825,9 @@ importers:
       '@types/bcryptjs':
         specifier: ^2.4.5
         version: 2.4.5
+      '@types/lodash-es':
+        specifier: ^4.17.12
+        version: 4.17.12
       '@unocss/postcss':
         specifier: ^0.62.2
         version: 0.62.2(postcss@8.4.32)
@@ -2222,7 +2231,7 @@ importers:
         version: 16.0.1(postcss@8.4.31)
       postcss-load-config:
         specifier: ^4.0.1
-        version: 4.0.1(postcss@8.4.31)(ts-node@10.9.1(@types/node@20.14.12)(typescript@5.4.5))
+        version: 4.0.1(postcss@8.4.31)(ts-node@10.9.1(@types/node@18.19.67)(typescript@4.9.5))
       postcss-url:
         specifier: ^10.1.3
         version: 10.1.3(postcss@8.4.31)
@@ -7769,6 +7778,9 @@ packages:
 
   arg@5.0.2:
     resolution: {integrity: sha512-PYjyFOLKQ9y57JvQ6QLo8dAgNqswh8M1RMJYdQduT6xbWSgK36P/Z/v+p888pM69jMMfS8Xd8F6I1kQ/I9HUGg==}
+
+  argon2-browser@1.18.0:
+    resolution: {integrity: sha512-ImVAGIItnFnvET1exhsQB7apRztcoC5TnlSqernMJDUjbc/DLq3UEYeXFrLPrlaIl8cVfwnXb6wX2KpFf2zxHw==}
 
   argparse@1.0.10:
     resolution: {integrity: sha512-o5Roy6tNG4SL/FOkCAN6RzjiakZS25RLYFrcMttJqbdd8BWrnA+fGz57iN5Pb06pvBGvl5gQ0B48dJlslXvoTg==}
@@ -16448,7 +16460,7 @@ snapshots:
       yjs: 13.6.18
       zustand: 4.5.5(@types/react@18.2.35)(immer@9.0.21)(react@18.2.0)
       zustand-middleware-yjs: 1.3.1(@types/react@18.2.35)(immer@9.0.21)(react@18.2.0)
-      zustand-utils: 1.3.2(react@18.2.0)(zustand@4.5.5(@types/react@18.2.35)(immer@10.0.3)(react@18.2.0))
+      zustand-utils: 1.3.2(react@18.2.0)(zustand@4.5.5(@types/react@18.2.35)(immer@9.0.21)(react@18.2.0))
     transitivePeerDependencies:
       - '@emotion/react'
       - '@types/react'
@@ -19415,7 +19427,7 @@ snapshots:
     transitivePeerDependencies:
       - chokidar
 
-  '@nestjs/testing@10.3.10(@nestjs/common@10.3.10(reflect-metadata@0.2.2)(rxjs@7.8.1))(@nestjs/core@10.3.10)(@nestjs/platform-express@10.3.10)':
+  '@nestjs/testing@10.3.10(@nestjs/common@10.3.10(reflect-metadata@0.2.2)(rxjs@7.8.1))(@nestjs/core@10.3.10(@nestjs/common@10.3.10(reflect-metadata@0.2.2)(rxjs@7.8.1))(@nestjs/platform-express@10.3.10)(encoding@0.1.13)(reflect-metadata@0.2.2)(rxjs@7.8.1))(@nestjs/platform-express@10.3.10(@nestjs/common@10.3.10(reflect-metadata@0.2.2)(rxjs@7.8.1))(@nestjs/core@10.3.10))':
     dependencies:
       '@nestjs/common': 10.3.10(reflect-metadata@0.2.2)(rxjs@7.8.1)
       '@nestjs/core': 10.3.10(@nestjs/common@10.3.10(reflect-metadata@0.2.2)(rxjs@7.8.1))(@nestjs/platform-express@10.3.10)(encoding@0.1.13)(reflect-metadata@0.2.2)(rxjs@7.8.1)
@@ -25210,6 +25222,8 @@ snapshots:
   arg@4.1.3: {}
 
   arg@5.0.2: {}
+
+  argon2-browser@1.18.0: {}
 
   argparse@1.0.10:
     dependencies:
@@ -31192,13 +31206,21 @@ snapshots:
       camelcase-css: 2.0.1
       postcss: 8.4.47
 
-  postcss-load-config@4.0.1(postcss@8.4.31)(ts-node@10.9.1(@types/node@20.14.12)(typescript@5.4.5)):
+  postcss-load-config@4.0.1(postcss@8.4.31)(ts-node@10.9.1(@types/node@18.19.67)(typescript@4.9.5)):
     dependencies:
       lilconfig: 2.1.0
       yaml: 2.3.4
     optionalDependencies:
       postcss: 8.4.31
-      ts-node: 10.9.1(@types/node@20.14.12)(typescript@5.4.5)
+      ts-node: 10.9.1(@types/node@18.19.67)(typescript@4.9.5)
+
+  postcss-load-config@4.0.1(postcss@8.4.47)(ts-node@10.9.1(@types/node@18.19.67)(typescript@4.9.5)):
+    dependencies:
+      lilconfig: 2.1.0
+      yaml: 2.3.4
+    optionalDependencies:
+      postcss: 8.4.47
+      ts-node: 10.9.1(@types/node@18.19.67)(typescript@4.9.5)
 
   postcss-load-config@4.0.1(postcss@8.4.47)(ts-node@10.9.1(@types/node@20.14.12)(typescript@5.4.5)):
     dependencies:
@@ -33255,6 +33277,33 @@ snapshots:
 
   tailwind-merge@1.14.0: {}
 
+  tailwindcss@3.3.5(ts-node@10.9.1(@types/node@18.19.67)(typescript@4.9.5)):
+    dependencies:
+      '@alloc/quick-lru': 5.2.0
+      arg: 5.0.2
+      chokidar: 3.5.3
+      didyoumean: 1.2.2
+      dlv: 1.1.3
+      fast-glob: 3.3.1
+      glob-parent: 6.0.2
+      is-glob: 4.0.3
+      jiti: 1.21.0
+      lilconfig: 2.1.0
+      micromatch: 4.0.5
+      normalize-path: 3.0.0
+      object-hash: 3.0.0
+      picocolors: 1.0.0
+      postcss: 8.4.47
+      postcss-import: 15.1.0(postcss@8.4.47)
+      postcss-js: 4.0.1(postcss@8.4.47)
+      postcss-load-config: 4.0.1(postcss@8.4.47)(ts-node@10.9.1(@types/node@18.19.67)(typescript@4.9.5))
+      postcss-nested: 6.0.1(postcss@8.4.47)
+      postcss-selector-parser: 6.0.13
+      resolve: 1.22.8
+      sucrase: 3.34.0
+    transitivePeerDependencies:
+      - ts-node
+
   tailwindcss@3.3.5(ts-node@10.9.1(@types/node@20.14.12)(typescript@5.4.5)):
     dependencies:
       '@alloc/quick-lru': 5.2.0
@@ -33600,6 +33649,25 @@ snapshots:
     dependencies:
       '@ts-morph/common': 0.24.0
       code-block-writer: 13.0.1
+
+  ts-node@10.9.1(@types/node@18.19.67)(typescript@4.9.5):
+    dependencies:
+      '@cspotcode/source-map-support': 0.8.1
+      '@tsconfig/node10': 1.0.9
+      '@tsconfig/node12': 1.0.11
+      '@tsconfig/node14': 1.0.3
+      '@tsconfig/node16': 1.0.4
+      '@types/node': 18.19.67
+      acorn: 8.12.0
+      acorn-walk: 8.3.2
+      arg: 4.1.3
+      create-require: 1.1.1
+      diff: 4.0.2
+      make-error: 1.3.6
+      typescript: 4.9.5
+      v8-compile-cache-lib: 3.0.1
+      yn: 3.1.1
+    optional: true
 
   ts-node@10.9.1(@types/node@18.19.67)(typescript@5.4.5):
     dependencies:
@@ -34439,13 +34507,13 @@ snapshots:
       svgo: 3.2.0
       vue: 3.3.7(typescript@5.4.5)
 
-  vite-tsconfig-paths@4.3.1(typescript@5.4.5)(vite@5.2.8(@types/node@20.14.12)(less@4.2.0)(lightningcss@1.27.0)(sass@1.74.1)(terser@5.31.1)):
+  vite-tsconfig-paths@4.3.1(typescript@5.4.5)(vite@5.2.8(@types/node@18.19.67)(less@4.2.0)(lightningcss@1.27.0)(sass@1.74.1)(terser@5.31.1)):
     dependencies:
       debug: 4.3.4
       globrex: 0.1.2
       tsconfck: 3.0.1(typescript@5.4.5)
     optionalDependencies:
-      vite: 5.2.8(@types/node@20.14.12)(less@4.2.0)(lightningcss@1.27.0)(sass@1.74.1)(terser@5.31.1)
+      vite: 5.2.8(@types/node@18.19.67)(less@4.2.0)(lightningcss@1.27.0)(sass@1.74.1)(terser@5.31.1)
     transitivePeerDependencies:
       - supports-color
       - typescript
@@ -35023,6 +35091,13 @@ snapshots:
       fast-deep-equal: 3.1.3
       react: 18.2.0
       zustand: 4.5.5(@types/react@18.2.35)(immer@10.0.3)(react@18.2.0)
+
+  zustand-utils@1.3.2(react@18.2.0)(zustand@4.5.5(@types/react@18.2.35)(immer@9.0.21)(react@18.2.0)):
+    dependencies:
+      '@babel/runtime': 7.25.0
+      fast-deep-equal: 3.1.3
+      react: 18.2.0
+      zustand: 4.5.5(@types/react@18.2.35)(immer@9.0.21)(react@18.2.0)
 
   zustand@4.5.5(@types/react@18.2.35)(immer@10.0.3)(react@18.2.0):
     dependencies:

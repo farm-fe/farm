@@ -305,9 +305,8 @@ fn is_watch_dependencies_timestamp_changed(
     "is_watch_dependencies_timestamp_changed: {:?}",
     cached_module.module.id
   ));
-  let module_id = cached_module.module.id.clean_id();
   let watch_graph = context.watch_graph.read();
-  let relation_dependencies = watch_graph.relation_dependencies(&module_id);
+  let relation_dependencies = watch_graph.relation_dependencies(&cached_module.module.id);
 
   if relation_dependencies.is_empty() {
     return false;
@@ -342,9 +341,8 @@ fn is_watch_dependencies_content_hash_changed(
     "is_watch_dependencies_content_hash_changed: {:?}",
     cached_module.module.id
   ));
-  let module_id = cached_module.module.id.clean_id();
   let watch_graph = context.watch_graph.read();
-  let relation_dependencies = watch_graph.relation_dependencies(&module_id);
+  let relation_dependencies = watch_graph.relation_dependencies(&cached_module.module.id);
 
   if relation_dependencies.is_empty() {
     return false;
