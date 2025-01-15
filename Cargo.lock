@@ -996,7 +996,7 @@ dependencies = [
 
 [[package]]
 name = "create-farm"
-version = "0.1.5"
+version = "0.1.6"
 dependencies = [
  "anyhow",
  "clap",
@@ -1596,7 +1596,7 @@ dependencies = [
 
 [[package]]
 name = "farmfe_compiler"
-version = "0.0.16"
+version = "0.0.17"
 dependencies = [
  "farmfe_core",
  "farmfe_plugin_bundle",
@@ -1806,7 +1806,7 @@ dependencies = [
 
 [[package]]
 name = "farmfe_plugin_resolve"
-version = "0.0.15"
+version = "0.0.16"
 dependencies = [
  "farmfe_core",
  "farmfe_testing_helpers",

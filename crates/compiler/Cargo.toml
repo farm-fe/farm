@@ -1,6 +1,6 @@
 [package]
 name = "farmfe_compiler"
-version = "0.0.16"
+version = "0.0.17"
 edition = "2021"
 authors = ["brightwu(吴明亮) <1521488775@qq.com>"]
 license = "MIT"
@@ -12,7 +12,7 @@ documentation = "https://docs.rs/farmfe_compiler"
 [dependencies]
 farmfe_core = { path = "../core", version = "0.7.3" }
 farmfe_plugin_partial_bundling = { path = "../plugin_partial_bundling", version = "0.0.15" }
-farmfe_plugin_resolve = { path = "../plugin_resolve", version = "0.0.15" }
+farmfe_plugin_resolve = { path = "../plugin_resolve", version = "0.0.16" }
 farmfe_plugin_script = { path = "../plugin_script", version = "0.0.15" }
 farmfe_plugin_runtime = { path = "../plugin_runtime", version = "0.0.15" }
 farmfe_plugin_html = { path = "../plugin_html", version = "0.0.15" }
