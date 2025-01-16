@@ -712,14 +712,6 @@ impl ModuleId {
 
     (p.to_string(), query.to_string())
   }
-
-  // path without query
-  pub fn clean_id(&self) -> ModuleId {
-    Self {
-      relative_path: self.relative_path.clone(),
-      query_string: "".to_string(),
-    }
-  }
 }
 
 impl From<&str> for ModuleId {

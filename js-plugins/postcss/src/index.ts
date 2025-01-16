@@ -139,10 +139,7 @@ export default function farmPostcssPlugin(
           if (process.env.NODE_ENV === 'development') {
             for (const message of messages) {
               if (message.type === 'dependency') {
-                context.addWatchFile(
-                  param.resolvedPath,
-                  message.file as string
-                );
+                context.addWatchFile(param.moduleId, message.file as string);
               } else if (message.type === 'dir-dependency') {
                 const { dir, glob: globPattern = '**' } = message;
                 // https://github.com/postcss/postcss/blob/main/docs/guidelines/runner.md#3-dependencies
@@ -152,7 +149,7 @@ export default function farmPostcssPlugin(
                 });
                 for (const file of files) {
                   context.addWatchFile(
-                    param.resolvedPath,
+                    param.moduleId,
                     path.isAbsolute(file) ? file : path.join(dir, file)
                   );
                 }
