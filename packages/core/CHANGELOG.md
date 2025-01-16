@@ -1,5 +1,11 @@
 # @farmfe/core
 
+## 1.6.6
+
+### Patch Changes
+
+- 0163299e: Fix persistent cache panic when using addFileWatchFile with query #2067
+
 ## 1.6.5
 
 ### Patch Changes

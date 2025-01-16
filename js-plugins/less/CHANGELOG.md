@@ -1,5 +1,13 @@
 # @farmfe/js-plugin-less
 
+## 1.12.1
+
+### Patch Changes
+
+- 0163299e: Fix persistent cache panic when using addFileWatchFile with query #2067
+- Updated dependencies [0163299e]
+  - @farmfe/core@1.6.6
+
 ## 1.12.0
 
 ### Patch Changes
