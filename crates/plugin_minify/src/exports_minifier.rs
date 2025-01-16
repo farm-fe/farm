@@ -135,8 +135,8 @@ mod tests {
     swc_common::Globals, swc_ecma_ast::EsVersion, swc_ecma_parser::Syntax, HashSet,
   };
   use farmfe_toolkit::{
-    common::{create_swc_source_map, Source},
     script::{codegen_module, parse_module, swc_try_with::try_with},
+    source_map::{create_swc_source_map, Source},
     swc_ecma_visit::VisitMutWith,
   };
 

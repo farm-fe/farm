@@ -5,6 +5,13 @@ import farmJsPluginLess from "@farmfe/js-plugin-less";
 export default defineConfig((env) => {
   return {
     compilation: {
+      input: {
+        index: './index.html'
+      },
+      sourcemap: false,
+      presetEnv: false,
+      concatenateModules: true,
+      // persistentCache: false,
       resolve: {
         alias: {
           "@": resolve(process.cwd(), "./src"),

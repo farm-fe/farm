@@ -32,7 +32,6 @@ pub fn generate_runtime(crate_path: PathBuf) -> Box<RuntimeConfig> {
     .join("fixtures")
     .join("_internal")
     .join("runtime")
-    .join("index.js")
     .to_string_lossy()
     .to_string();
 

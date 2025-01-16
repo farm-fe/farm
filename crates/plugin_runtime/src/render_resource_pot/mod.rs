@@ -3,7 +3,7 @@ use std::sync::Arc;
 use farmfe_core::{
   cache::cache_store::CacheStoreKey,
   cache_item,
-  config::minify::MinifyMode,
+  config::{minify::MinifyMode, FARM_MODULE_SYSTEM},
   context::CompilationContext,
   deserialize,
   enhanced_magic_string::{
@@ -15,56 +15,44 @@ use farmfe_core::{
   parking_lot::Mutex,
   plugin::PluginParseHookParam,
   rayon::iter::{IntoParallelIterator, ParallelIterator},
-  resource::resource_pot::{RenderedModule, ResourcePot},
-  serialize, HashMap, HashSet,
+  resource::{meta_data::js::RenderModuleResult, resource_pot::ResourcePot},
+  serialize,
+  swc_common::{comments::SingleThreadedComments, util::take::Take, SourceMap, DUMMY_SP},
+  swc_ecma_ast::{
+    EsVersion, Expr, ExprOrSpread, KeyValueProp, Lit, Module as SwcModule, ObjectLit, Prop,
+    PropName, PropOrSpread,
+  },
+  swc_ecma_parser::{EsSyntax, Syntax},
+  HashMap,
 };
-use farmfe_toolkit::common::MinifyBuilder;
+use farmfe_toolkit::{
+  html::get_farm_global_this,
+  script::{codegen_module, parse_module, CodeGenCommentsConfig, ParseScriptModuleResult},
+  source_map::{build_source_map, collapse_sourcemap},
+};
 
 use farmfe_utils::{hash::sha256, parse_query};
+use merge_rendered_module::wrap_resource_pot_ast;
 use render_module::RenderModuleOptions;
 use scope_hoisting::build_scope_hoisted_module_groups;
 
-use self::render_module::{render_module, RenderModuleResult};
+use self::render_module::render_module;
 
+pub(crate) mod external;
+pub(crate) mod merge_rendered_module;
 mod render_module;
 mod scope_hoisting;
 mod source_replacer;
 mod transform_async_module;
 
-/// Merge all modules' ast in a [ResourcePot] to Farm's runtime [ObjectLit]. The [ObjectLit] looks like:
-/// ```js
-/// {
-///   // commonjs or hybrid module system
-///   "a.js": function(module, exports, require) {
-///       const b = require('./b');
-///       console.log(b);
-///    },
-///    // esm module system
-///    "b.js": async function(module, exports, require) {
-///       const [c, d] = await Promise.all([
-///         require('./c'),
-///         require('./d')
-///       ]);
-///
-///       exports.c = c;
-///       exports.d = d;
-///    }
-/// }
-/// ```
-pub fn resource_pot_to_runtime_object(
+type RenderResourcePotResult = (Vec<RenderModuleResult>, HashMap<ModuleId, Vec<ModuleId>>);
+
+pub fn render_resource_pot_modules(
   resource_pot: &ResourcePot,
   module_graph: &ModuleGraph,
-  async_modules: &HashSet<ModuleId>,
   context: &Arc<CompilationContext>,
-) -> Result<RenderedJsResourcePot> {
+) -> Result<RenderResourcePotResult> {
   let modules = Mutex::new(vec![]);
-
-  let minify_builder =
-    MinifyBuilder::create_builder(&context.config.minify, Some(MinifyMode::Module));
-
-  let is_enabled_minify = |module_id: &ModuleId| {
-    minify_builder.is_enabled(&module_id.resolved_path(&context.config.root))
-  };
 
   // group modules in the same group that can perform scope hoisting
   let scope_hoisting_module_groups =
@@ -82,225 +70,52 @@ pub fn resource_pot_to_runtime_object(
           )
         });
 
-      let (hoisted_ast, comments) = if hoisted_group.hoisted_module_ids.len() > 1 {
-        let hoisted_code_bundle = hoisted_group.render(module_graph, context)?;
-        let code = hoisted_code_bundle.to_string();
-
-        // println!(
-        //   "module_id: {}\nmodules: {:#?}\ncode: {}\n\nend module_id: {}",
-        //   hoisted_group.target_hoisted_module_id.to_string(),
-        //   hoisted_group.hoisted_module_ids,
-        //   code,
-        //   hoisted_group.target_hoisted_module_id.to_string(),
-        // );
-
-        let mut meta = context
-          .plugin_driver
-          .parse(
-            &PluginParseHookParam {
-              module_id: module.id.clone(),
-              resolved_path: module.id.resolved_path(&context.config.root),
-              query: parse_query(&module.id.query_string()),
-              module_type: module.module_type.clone(),
-              content: Arc::new(code),
-            },
-            context,
-            &Default::default(),
-          )
-          .unwrap()
-          .unwrap();
-        (
-          Some(meta.as_script_mut().take_ast()),
-          Some(meta.as_script_mut().take_comments().into()),
-        )
+      let mut hoisted_ast = if hoisted_group.hoisted_module_ids.len() > 1 {
+        Some(hoisted_group.concatenate_modules(module_graph, context)?)
       } else {
-        (None, None)
+        None
       };
 
-      let mut cache_store_key = None;
+      let hoisted_modules = hoisted_ast
+        .as_mut()
+        .map(|item| item.rendered_modules.take());
 
-      // enable persistent cache
-      if context.config.persistent_cache.enabled() {
-        let content_hash = module.content_hash.clone();
-        let store_key = CacheStoreKey {
-          name: module.id.to_string() + "-resource_pot_to_runtime_object",
-          key: sha256(
-            format!(
-              "resource_pot_to_runtime_object_{}_{}_{}",
-              content_hash,
-              module.id.to_string(),
-              module.used_exports.join(",")
-            )
-            .as_bytes(),
-            32,
-          ),
-        };
-        cache_store_key = Some(store_key.clone());
+      let render_module_result = render_module(RenderModuleOptions {
+        module,
+        module_graph,
+        hoisted_ast,
+        context,
+      })?;
 
-        // determine whether the cache exists,and store_key not change
-        if context.cache_manager.custom.has_cache(&store_key.name)
-          && !context.cache_manager.custom.is_cache_changed(&store_key)
-        {
-          if let Some(cache) = context.cache_manager.custom.read_cache(&store_key.name) {
-            let cached_rendered_script_module = deserialize!(&cache, CacheRenderedScriptModule);
-            let module = cached_rendered_script_module.to_magic_string(&context);
-
-            modules.lock().push(RenderedScriptModule {
-              module,
-              id: cached_rendered_script_module.id,
-              rendered_module: cached_rendered_script_module.rendered_module,
-              external_modules: cached_rendered_script_module.external_modules,
-            });
-            return Ok(());
-          }
-        }
-      }
-
-      let is_async_module = async_modules.contains(&module.id);
-      let RenderModuleResult {
-        rendered_module,
-        external_modules,
-        source_map_chain,
-      } = render_module(
-        RenderModuleOptions {
-          module,
-          hoisted_ast,
-          module_graph,
-          is_enabled_minify,
-          minify_builder: &minify_builder,
-          is_async_module,
-          context,
-        },
-        comments,
-      )?;
-      let code = rendered_module.rendered_content.clone();
-
-      // cache the code and sourcemap
-      if context.config.persistent_cache.enabled() {
-        let cache_rendered_script_module = CacheRenderedScriptModule::new(
-          module.id.clone(),
-          code.clone(),
-          rendered_module.clone(),
-          external_modules.clone(),
-          source_map_chain.clone(),
-        );
-        let bytes = serialize!(&cache_rendered_script_module);
-        context
-          .cache_manager
-          .custom
-          .write_single_cache(cache_store_key.unwrap(), bytes)
-          .expect("failed to write resource pot to runtime object cache");
-      }
-
-      let mut magic_string = MagicString::new(
-        &code,
-        Some(MagicStringOptions {
-          filename: Some(module.id.resolved_path_with_query(&context.config.root)),
-          source_map_chain,
-          ..Default::default()
-        }),
-      );
-
-      magic_string.prepend(&format!("{:?}:", module.id.id(context.config.mode.clone())));
-      magic_string.append(",");
-
-      modules.lock().push(RenderedScriptModule {
-        id: module.id.clone(),
-        module: magic_string,
-        rendered_module,
-        external_modules,
-      });
+      // modules.lock().push((render_module_result, hoisted_modules));
+      modules
+        .lock()
+        .push((render_module_result, Vec::<ModuleId>::new()));
 
       Ok::<(), CompilationError>(())
     })?;
 
   // sort props by module id to make sure the order is stable
-  let mut modules = modules.into_inner();
-  modules.sort_by(|a, b| {
-    a.id
-      .id(context.config.mode.clone())
-      .cmp(&b.id.id(context.config.mode.clone()))
-  });
-  // insert props to the object lit
+  let modules = modules.into_inner();
 
-  let mut bundle = Bundle::new(BundleOptions {
-    trace_source_map_chain: Some(true),
-    separator: if context.config.minify.enabled() {
-      Some('\0')
-    } else {
-      None
+  let (mut modules, hoisted_map) = modules.into_iter().fold(
+    (vec![], HashMap::default()),
+    |(mut modules, mut hoisted_map), (result, hosited_modules)| {
+      // if let Some(hosited_modules) = hosited_modules {
+      //   hoisted_map.insert(result.module_id.clone(), hosited_modules);
+      // }
+
+      modules.push(result);
+
+      (modules, hoisted_map)
     },
-    ..Default::default()
+  );
+
+  modules.sort_by(|a, b| {
+    a.module_id
+      .id(context.config.mode.clone())
+      .cmp(&b.module_id.id(context.config.mode.clone()))
   });
-  let mut rendered_modules = HashMap::default();
-  let mut external_modules_set = HashSet::default();
 
-  for m in modules {
-    bundle.add_source(m.module, None).unwrap();
-    rendered_modules.insert(m.id, m.rendered_module);
-    external_modules_set.extend(m.external_modules);
-  }
-
-  let mut external_modules = external_modules_set.into_iter().collect::<Vec<_>>();
-  external_modules.sort();
-
-  bundle.prepend("{");
-  bundle.append("}", None);
-
-  Ok(RenderedJsResourcePot {
-    bundle,
-    rendered_modules,
-    external_modules,
-  })
-}
-
-pub struct RenderedScriptModule {
-  pub id: ModuleId,
-  pub module: MagicString,
-  pub rendered_module: RenderedModule,
-  pub external_modules: Vec<String>,
-}
-
-pub struct RenderedJsResourcePot {
-  pub bundle: Bundle,
-  pub rendered_modules: HashMap<ModuleId, RenderedModule>,
-  pub external_modules: Vec<String>,
-}
-
-#[cache_item]
-pub struct CacheRenderedScriptModule {
-  pub id: ModuleId,
-  pub code: Arc<String>,
-  pub rendered_module: RenderedModule,
-  pub external_modules: Vec<String>,
-  pub source_map_chain: Vec<Arc<String>>,
-}
-
-impl CacheRenderedScriptModule {
-  fn new(
-    id: ModuleId,
-    code: Arc<String>,
-    rendered_module: RenderedModule,
-    external_modules: Vec<String>,
-    source_map_chain: Vec<Arc<String>>,
-  ) -> Self {
-    Self {
-      id,
-      code,
-      rendered_module,
-      external_modules,
-      source_map_chain,
-    }
-  }
-  fn to_magic_string(&self, context: &Arc<CompilationContext>) -> MagicString {
-    let magic_string_option = MagicStringOptions {
-      filename: Some(self.id.resolved_path_with_query(&context.config.root)),
-      source_map_chain: self.source_map_chain.clone(),
-      ..Default::default()
-    };
-    let mut module = MagicString::new(&self.code, Some(magic_string_option));
-    module.prepend(&format!("{:?}:", self.id.id(context.config.mode.clone())));
-    module.append(",");
-    module
-  }
+  Ok((modules, hoisted_map))
 }

@@ -5,6 +5,7 @@ use crate::config::Mode;
 use self::{cache_store::CacheStore, plugin_cache::PluginCacheManager};
 
 pub mod cache_store;
+pub mod cacheable;
 pub mod module_cache;
 pub mod plugin_cache;
 pub mod resource_cache;

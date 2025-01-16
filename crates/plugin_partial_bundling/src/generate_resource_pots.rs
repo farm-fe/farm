@@ -1,6 +1,7 @@
 use std::path::PathBuf;
 
 use farmfe_core::config::Config;
+use farmfe_core::module::module_group::ModuleGroupGraph;
 use farmfe_core::{
   module::{module_graph::ModuleGraph, module_group::ModuleGroupId},
   resource::resource_pot::ResourcePot,
@@ -23,6 +24,7 @@ pub fn generate_resource_pots(
   module_group_buckets: Vec<ModuleGroupBuckets>,
   mut module_buckets_map: HashMap<String, ModuleBucket>,
   module_graph: &ModuleGraph,
+  module_group_graph: &ModuleGroupGraph,
   config: &Config,
   groups_enforce_map: &HashMap<String, bool>,
 ) -> Vec<ResourcePot> {
@@ -36,6 +38,7 @@ pub fn generate_resource_pots(
       module_group_id.clone(),
       &used_resource_pot_names,
       &module_graph,
+      &module_group_graph,
     );
     used_resource_pot_names.insert(base_resource_pot_name.clone());
 
@@ -92,8 +95,10 @@ fn generate_resource_pot_name(
   module_group_id: ModuleGroupId,
   used_resource_pot_names: &HashSet<String>,
   module_graph: &ModuleGraph,
+  module_group_graph: &ModuleGroupGraph,
 ) -> String {
-  if let Some(name) = module_graph.entries.get(&module_group_id) {
+  let module_group = module_group_graph.module_group(&module_group_id).unwrap();
+  if let Some(name) = module_graph.entries.get(&module_group.entry_module_id) {
     return name.clone();
   }
 
@@ -123,6 +128,7 @@ fn generate_resource_pot_name(
 
 #[cfg(test)]
 mod tests {
+  use farmfe_core::module::module_group::{self, ModuleGroup, ModuleGroupGraph, ModuleGroupType};
   use farmfe_core::module::{module_graph::ModuleGraph, module_group::ModuleGroupId, Module};
   use farmfe_core::HashSet;
 
@@ -135,34 +141,57 @@ mod tests {
     module_graph
       .entries
       .insert(module_a.id.clone(), "a".to_string());
+    let mut module_group_graph = ModuleGroupGraph::new();
+    let module_group = ModuleGroup::new(module_a.id.clone(), ModuleGroupType::Entry);
+    let group_id = module_group.id.clone();
+    module_group_graph.add_module_group(module_group);
     module_graph.add_module(module_a);
 
     let mut used_resource_pot_names = HashSet::default();
     assert_eq!(
       generate_resource_pot_name(
-        "test/src/a.html".into(),
+        group_id,
         &used_resource_pot_names,
-        &module_graph
+        &module_graph,
+        &module_group_graph
       ),
       "a"
     );
 
-    let group_id: ModuleGroupId = "test/src/api.ts".into();
+    // let group_id: ModuleGroupId = "test/src/api.ts".into();
+    let module_group = ModuleGroup::new("test/src/api.ts".into(), ModuleGroupType::Entry);
+    let group_id = module_group.id.clone();
+    module_group_graph.add_module_group(module_group);
     assert_eq!(
-      generate_resource_pot_name(group_id.clone(), &used_resource_pot_names, &module_graph),
+      generate_resource_pot_name(
+        group_id.clone(),
+        &used_resource_pot_names,
+        &module_graph,
+        &module_group_graph
+      ),
       "api"
     );
 
     used_resource_pot_names.insert("api".to_string());
     assert_eq!(
-      generate_resource_pot_name(group_id.clone(), &used_resource_pot_names, &module_graph),
+      generate_resource_pot_name(
+        group_id.clone(),
+        &used_resource_pot_names,
+        &module_graph,
+        &module_group_graph
+      ),
       "src_api"
     );
 
     used_resource_pot_names.insert("src_api".to_string());
     used_resource_pot_names.insert("test_src_api".to_string());
     assert_eq!(
-      generate_resource_pot_name(group_id, &used_resource_pot_names, &module_graph),
+      generate_resource_pot_name(
+        group_id,
+        &used_resource_pot_names,
+        &module_graph,
+        &module_group_graph
+      ),
       "test_src_api"
     );
   }

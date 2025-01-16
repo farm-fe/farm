@@ -1,11 +1,11 @@
 use std::sync::Arc;
 
-use farmfe_core::{config::FARM_MODULE_SYSTEM, context::CompilationContext};
+use farmfe_core::context::CompilationContext;
 use farmfe_toolkit::html::get_farm_global_this;
 
 const PLUGIN_VAR_PREFIX: &str = "__farm_plugin__";
 
-pub fn insert_runtime_plugins(content: String, context: &Arc<CompilationContext>) -> String {
+pub fn insert_runtime_plugins(context: &Arc<CompilationContext>) -> String {
   let plugins = context
     .config
     .runtime
@@ -26,6 +26,11 @@ pub fn insert_runtime_plugins(content: String, context: &Arc<CompilationContext>
       (ident, import_stmt)
     })
     .collect::<Vec<_>>();
+
+  if plugins.is_empty() {
+    return "".to_string();
+  }
+
   let idents = plugins
     .iter()
     .map(|(ident, _)| ident.as_str())
@@ -41,11 +46,11 @@ pub fn insert_runtime_plugins(content: String, context: &Arc<CompilationContext>
   );
   // FARM_GLOBAL_THIS.FARM_MODULE_SYSTEM.setPlugins([PLUGIN_VAR_PREFIX0, PLUGIN_VAR_PREFIX1, ...])
   let plugins_call = format!(
-    "{}.{}.setPlugins([{}]);",
+    // setPlugins
+    "{}.p.p([{}]);",
     farm_global_this,
-    FARM_MODULE_SYSTEM,
-    idents.join(", ")
+    idents.join(",")
   );
 
-  format!("{}\n{}\n{}", imports.join("\n"), content, plugins_call,)
+  format!("{}\n{}", imports.join("\n"), plugins_call)
 }

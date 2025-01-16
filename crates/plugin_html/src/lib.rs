@@ -1,17 +1,20 @@
-use std::path::PathBuf;
 use std::{mem, rc::Rc, sync::Arc};
 
 use absolute_path_handler::AbsolutePathHandler;
 use deps_analyzer::{DepsAnalyzer, HtmlInlineModule, HTML_INLINE_ID_PREFIX};
+use farmfe_core::module::meta_data::html::HtmlModuleMetaData;
+use farmfe_core::module::module_group::{ModuleGroupId, ModuleGroupType};
 // use farmfe_core::config::minify::MinifyOptions;
 use farmfe_core::parking_lot::Mutex;
-use farmfe_core::HashMap;
-use farmfe_core::{cache_item, deserialize, serialize};
+use farmfe_core::plugin::GeneratedResource;
+use farmfe_core::resource::meta_data::html::HtmlResourcePotMetaData;
+use farmfe_core::resource::meta_data::ResourcePotMetaData;
+use farmfe_core::{cache_item, deserialize, serialize, HashMap};
 use farmfe_core::{
   config::Config,
   context::CompilationContext,
   error::CompilationError,
-  module::{HtmlModuleMetaData, ModuleId, ModuleMetaData, ModuleType},
+  module::{ModuleId, ModuleMetaData, ModuleType},
   plugin::{
     Plugin, PluginAnalyzeDepsHookParam, PluginFinalizeResourcesHookParams,
     PluginGenerateResourcesHookResult, PluginHookContext, PluginLoadHookParam,
@@ -20,12 +23,12 @@ use farmfe_core::{
   },
   relative_path::RelativePath,
   resource::{
-    resource_pot::{RenderedModule, ResourcePot, ResourcePotMetaData, ResourcePotType},
+    resource_pot::{ResourcePot, ResourcePotType},
     Resource, ResourceOrigin, ResourceType,
   },
 };
-use farmfe_toolkit::common::{create_swc_source_map, MinifyBuilder, Source};
 use farmfe_toolkit::minify::minify_html_module;
+use farmfe_toolkit::source_map::create_swc_source_map;
 use farmfe_toolkit::{
   fs::read_file_utf8,
   get_dynamic_resources_map::get_dynamic_resources_map,
@@ -42,7 +45,7 @@ mod utils;
 const BASE_HTML_CHILDREN_PLACEHOLDER: &str = "{{children}}";
 pub const UNRESOLVED_SLASH_MODULE: &str = "FARM_HTML_UNRESOLVED_SLASH_MODULE";
 
-#[cache_item]
+#[cache_item(farmfe_core)]
 struct CachedHtmlInlineModuleMap {
   map: HashMap<String, HtmlInlineModule>,
 }
@@ -227,10 +230,10 @@ impl Plugin for FarmPluginHtml {
     }
   }
 
-  fn render_resource_pot_modules(
+  fn render_resource_pot(
     &self,
     resource_pot: &ResourcePot,
-    context: &std::sync::Arc<CompilationContext>,
+    context: &Arc<CompilationContext>,
     _hook_context: &PluginHookContext,
   ) -> farmfe_core::error::Result<Option<ResourcePotMetaData>> {
     if matches!(resource_pot.resource_pot_type, ResourcePotType::Html) {
@@ -247,26 +250,14 @@ impl Plugin for FarmPluginHtml {
       let html_module = module_graph.module(modules[0]).unwrap();
       let html_module_document = html_module.meta.as_html().ast.clone();
 
-      let code = Arc::new(codegen_html_document(&html_module_document, false));
-
-      Ok(Some(ResourcePotMetaData {
-        rendered_modules: HashMap::from_iter([(
-          modules[0].clone(),
-          RenderedModule {
-            id: modules[0].clone(),
-            rendered_content: code.clone(),
-            rendered_map: None,
-            rendered_length: html_module.size,
-            original_length: code.len(),
-          },
-        )]),
-        rendered_content: code,
-        rendered_map_chain: vec![],
-        ..Default::default()
-      }))
-    } else {
-      Ok(None)
+      return Ok(Some(ResourcePotMetaData::Html(HtmlResourcePotMetaData {
+        ast: html_module_document,
+        custom: Default::default(),
+      })));
+      // let code = Arc::new(codegen_html_document(&html_module_document, false));
     }
+
+    Ok(None)
   }
 
   fn generate_resources(
@@ -277,15 +268,17 @@ impl Plugin for FarmPluginHtml {
   ) -> farmfe_core::error::Result<Option<PluginGenerateResourcesHookResult>> {
     if matches!(resource_pot.resource_pot_type, ResourcePotType::Html) {
       Ok(Some(PluginGenerateResourcesHookResult {
-        resource: Resource {
-          name: resource_pot.id.to_string(),
-          bytes: vec![],
-          emitted: false,
-          resource_type: ResourceType::Html,
-          origin: ResourceOrigin::ResourcePot(resource_pot.id.clone()),
-          info: None,
-        },
-        source_map: None,
+        resources: vec![GeneratedResource {
+          resource: Resource {
+            name: resource_pot.id.to_string(),
+            bytes: vec![],
+            emitted: false,
+            resource_type: ResourceType::Html,
+            origin: ResourceOrigin::ResourcePot(resource_pot.id.clone()),
+            should_transform_output_filename: true,
+          },
+          source_map: None,
+        }],
       }))
     } else {
       Ok(None)
@@ -335,7 +328,7 @@ impl FarmPluginHtml {
 }
 
 pub struct FarmPluginTransformHtml {
-  minify_config: MinifyBuilder,
+  // minify_config: MinifyBuilder,
 }
 
 impl Plugin for FarmPluginTransformHtml {
@@ -380,7 +373,7 @@ impl Plugin for FarmPluginTransformHtml {
     let mut resources_to_inject = HashMap::default();
 
     for (html_entry_id, _) in &html_entries_ids {
-      let module_group_id = html_entry_id.clone();
+      let module_group_id = ModuleGroupId::new(html_entry_id, &ModuleGroupType::Entry);
 
       let resource_pot_map = context.resource_pot_map.read();
       let module_group_graph = context.module_group_graph.read();
@@ -487,20 +480,20 @@ impl Plugin for FarmPluginTransformHtml {
       let resource_pot = resource_pot_map
         .resource_pot_mut(html_resource.origin.as_resource_pot())
         .unwrap();
-      let mut html_ast =
-        parse_html_document(&resource_pot.id, resource_pot.meta.rendered_content.clone())?;
-
-      resources_injector.inject(&mut html_ast);
+      // let mut html_ast =
+      //   parse_html_document(&resource_pot.id, resource_pot.meta.rendered_content.clone())?;
+      let html_ast = &mut resource_pot.meta.as_html_mut().ast;
+      resources_injector.inject(html_ast);
 
       // set publicPath prefix
       let mut absolute_path_handler = AbsolutePathHandler {
         public_path: context.config.output.public_path.clone(),
       };
-      absolute_path_handler.add_public_path_prefix(&mut html_ast);
+      absolute_path_handler.add_public_path_prefix(html_ast);
 
       let code = codegen_html_document(
-        &html_ast,
-        self.minify_config.is_enabled(&html_resource.name),
+        html_ast, // self.minify_config.is_enabled(&html_resource.name),
+        false,
       );
       html_resource.bytes = code.bytes().collect();
 
@@ -514,19 +507,19 @@ impl Plugin for FarmPluginTransformHtml {
 impl FarmPluginTransformHtml {
   pub fn new(config: &Config) -> Self {
     Self {
-      minify_config: MinifyBuilder::create_builder(&config.minify, None),
+      // minify_config: MinifyBuilder::create_builder(&config.minify, None),
     }
   }
 }
 
 pub struct FarmPluginMinifyHtml {
-  minify_config: MinifyBuilder,
+  // minify_config: MinifyBuilder,
 }
 
 impl FarmPluginMinifyHtml {
   pub fn new(config: &Config) -> Self {
     Self {
-      minify_config: MinifyBuilder::create_builder(&config.minify, None),
+      // minify_config: MinifyBuilder::create_builder(&config.minify, None),
     }
   }
 }
@@ -547,9 +540,9 @@ impl Plugin for FarmPluginMinifyHtml {
   ) -> farmfe_core::error::Result<Option<()>> {
     for resource in params.resources_map.values_mut() {
       if matches!(resource.resource_type, ResourceType::Html) {
-        if !self.minify_config.is_enabled(&resource.name) {
-          continue;
-        }
+        // if !self.minify_config.is_enabled(&resource.name) {
+        //   continue;
+        // }
 
         let bytes = mem::take(&mut resource.bytes);
         let html_code = Arc::new(String::from_utf8(bytes).unwrap());
@@ -572,10 +565,11 @@ impl Plugin for FarmPluginMinifyHtml {
           }
         };
 
-        let (cm, _) = create_swc_source_map(Source {
-          path: PathBuf::from(&resource.name),
-          content: html_code.clone(),
-        });
+        // let (cm, _) = create_swc_source_map(Source {
+        //   path: PathBuf::from(&resource.name),
+        //   content: html_code.clone(),
+        // });
+        let (cm, _) = create_swc_source_map(&resource.name.as_str().into(), html_code.clone());
 
         try_with(cm, &context.meta.html.globals, || {
           minify_html_module(&mut html_ast);

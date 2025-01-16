@@ -3,8 +3,50 @@ source: crates/compiler/src/update/regenerate_resources/generate_and_diff_resour
 input_file: crates/testing_helpers/src/lib.rs
 ---
 [
-    "B_2f5d",
-    "B_3f39",
-    "test_custom(\"__farm_unknown\")",
-    "test_js",
+    ModuleResourcePotSnapshotItem {
+        id: ModuleId {
+            relative_path: "B",
+            query_string: "",
+        },
+        resource_pots: {
+            "B_2f5d",
+        },
+    },
+    ModuleResourcePotSnapshotItem {
+        id: ModuleId {
+            relative_path: "E",
+            query_string: "",
+        },
+        resource_pots: {
+            "B_2f5d",
+        },
+    },
+    ModuleResourcePotSnapshotItem {
+        id: ModuleId {
+            relative_path: "F",
+            query_string: "",
+        },
+        resource_pots: {
+            "EI_custom(\"__farm_unknown\")",
+            "test_js",
+        },
+    },
+    ModuleResourcePotSnapshotItem {
+        id: ModuleId {
+            relative_path: "H",
+            query_string: "",
+        },
+        resource_pots: {
+            "test_custom(\"__farm_unknown\")",
+        },
+    },
+    ModuleResourcePotSnapshotItem {
+        id: ModuleId {
+            relative_path: "I",
+            query_string: "",
+        },
+        resource_pots: {
+            "EI_custom(\"__farm_unknown\")",
+        },
+    },
 ]

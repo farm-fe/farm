@@ -7,7 +7,8 @@ use farmfe_core::{
     Plugin, PluginAnalyzeDepsHookParam, PluginAnalyzeDepsHookResultEntry,
     PluginFinalizeModuleHookParam, PluginHookContext, PluginLoadHookParam, PluginParseHookParam,
     PluginProcessModuleHookParam,
-  }, HashMap,
+  },
+  HashMap,
 };
 
 pub fn build_module_deps(
@@ -81,13 +82,13 @@ pub fn build_module_deps(
     .analyze_deps(&mut analyze_deps_param, &context)
     .unwrap();
 
-  let deps = analyze_deps_param.deps;
+  let mut deps = analyze_deps_param.deps;
 
   script_plugin
     .finalize_module(
       &mut PluginFinalizeModuleHookParam {
         module: &mut module,
-        deps: &deps,
+        deps: &mut deps,
       },
       &context,
     )

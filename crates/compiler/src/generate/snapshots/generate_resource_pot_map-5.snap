@@ -13,14 +13,12 @@ entry: Some(
     },
 )
 module_groups: [
-    ModuleId {
-        relative_path: "A",
-        query_string: "",
-    },
-    ModuleId {
-        relative_path: "F",
-        query_string: "",
-    },
+    ModuleGroupId(
+        "A_Entry",
+    ),
+    ModuleGroupId(
+        "F_DynamicImport",
+    ),
 ]
 modules: [
     ModuleId {
@@ -47,10 +45,9 @@ entry: Some(
     },
 )
 module_groups: [
-    ModuleId {
-        relative_path: "B",
-        query_string: "",
-    },
+    ModuleGroupId(
+        "B_Entry",
+    ),
 ]
 modules: [
     ModuleId {
@@ -72,14 +69,12 @@ immutable: false
 resource_pot_type: Js
 entry: None
 module_groups: [
-    ModuleId {
-        relative_path: "B",
-        query_string: "",
-    },
-    ModuleId {
-        relative_path: "D",
-        query_string: "",
-    },
+    ModuleGroupId(
+        "B_Entry",
+    ),
+    ModuleGroupId(
+        "D_DynamicImport",
+    ),
 ]
 modules: [
     ModuleId {
@@ -91,16 +86,15 @@ resources: []
 
 -------
 
-name: G_333e
-id: G_333e
+name: G_DynamicImport_333e
+id: G_DynamicImport_333e
 immutable: false
 resource_pot_type: Js
 entry: None
 module_groups: [
-    ModuleId {
-        relative_path: "G",
-        query_string: "",
-    },
+    ModuleGroupId(
+        "G_DynamicImport",
+    ),
 ]
 modules: [
     ModuleId {
@@ -118,22 +112,18 @@ immutable: false
 resource_pot_type: Js
 entry: None
 module_groups: [
-    ModuleId {
-        relative_path: "B",
-        query_string: "",
-    },
-    ModuleId {
-        relative_path: "D",
-        query_string: "",
-    },
-    ModuleId {
-        relative_path: "F",
-        query_string: "",
-    },
-    ModuleId {
-        relative_path: "G",
-        query_string: "",
-    },
+    ModuleGroupId(
+        "B_Entry",
+    ),
+    ModuleGroupId(
+        "D_DynamicImport",
+    ),
+    ModuleGroupId(
+        "F_DynamicImport",
+    ),
+    ModuleGroupId(
+        "G_DynamicImport",
+    ),
 ]
 modules: [
     ModuleId {

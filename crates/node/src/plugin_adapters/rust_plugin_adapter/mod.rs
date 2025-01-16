@@ -11,7 +11,7 @@ use farmfe_core::{
     PluginResolveHookParam, PluginResolveHookResult, PluginTransformHookParam,
     PluginTransformHookResult,
   },
-  resource::resource_pot::ResourcePot,
+  resource::{meta_data::ResourcePotMetaData, resource_pot::ResourcePot},
 };
 
 use libloading::Library;
@@ -160,28 +160,20 @@ impl Plugin for RustPluginAdapter {
     self.plugin.render_start(config, context)
   }
 
-  fn render_resource_pot_modules(
+  fn render_resource_pot(
     &self,
     resource_pot: &ResourcePot,
     context: &Arc<CompilationContext>,
     hook_context: &PluginHookContext,
-  ) -> Result<Option<farmfe_core::resource::resource_pot::ResourcePotMetaData>> {
+  ) -> Result<Option<ResourcePotMetaData>> {
     self
       .plugin
-      .render_resource_pot_modules(resource_pot, context, hook_context)
-  }
-
-  fn render_resource_pot(
-    &self,
-    resource_pot: &farmfe_core::plugin::PluginRenderResourcePotHookParam,
-    context: &Arc<CompilationContext>,
-  ) -> Result<Option<farmfe_core::plugin::PluginRenderResourcePotHookResult>> {
-    self.plugin.render_resource_pot(resource_pot, context)
+      .render_resource_pot(resource_pot, context, hook_context)
   }
 
   fn augment_resource_hash(
     &self,
-    render_pot_info: &farmfe_core::resource::resource_pot::ResourcePotInfo,
+    render_pot_info: &ResourcePot,
     context: &Arc<CompilationContext>,
   ) -> Result<Option<String>> {
     self.plugin.augment_resource_hash(render_pot_info, context)

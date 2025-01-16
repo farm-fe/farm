@@ -13,14 +13,12 @@ entry: Some(
     },
 )
 module_groups: [
-    ModuleId {
-        relative_path: "A",
-        query_string: "",
-    },
-    ModuleId {
-        relative_path: "F",
-        query_string: "",
-    },
+    ModuleGroupId(
+        "A_Entry",
+    ),
+    ModuleGroupId(
+        "F_DynamicImport",
+    ),
 ]
 modules: [
     ModuleId {
