@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.4](https://github.com/farm-fe/farm/compare/farmfe_core-v0.7.3...farmfe_core-v0.7.4) - 2025-01-16
+
+### Fixed
+
+- persistent cache panic when using addFileWatchFile with query #2067 (#2068)
+
 ## [0.7.3](https://github.com/farm-fe/farm/compare/farmfe_core-v0.7.2...farmfe_core-v0.7.3) - 2025-01-09
 
 ### Fixed
