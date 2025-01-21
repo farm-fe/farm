@@ -28,9 +28,9 @@ export const FARM_TARGET_BROWSER_ENVS = [
 ];
 
 export const FARM_TARGET_LIBRARY_ENVS = [
-  'library',
-  'library-node',
-  'library-browser'
+  'library'
+  // 'library-node',
+  // 'library-browser'
 ];
 
 export function isObject(value: unknown): value is Record<string, unknown> {

@@ -1,19 +1,20 @@
 use std::ffi::OsStr;
 
 use crate::{
-  script::defined_idents_collector::DefinedIdentsCollector,
+  script::idents_collector::DefinedIdentsCollector,
   swc_ecma_visit::{noop_visit_mut_type, VisitMut, VisitMutWith, VisitWith},
 };
 use farmfe_core::{
+  module::meta_data::script::statement::SwcId,
   regex::Regex,
   swc_common::{util::take::Take, Mark, SyntaxContext, DUMMY_SP},
   swc_ecma_ast::{
     ArrowExpr, AssignExpr, AssignOp, AssignTarget, BindingIdent, BlockStmt, BlockStmtOrExpr,
     CallExpr, Callee, Class, ClassDecl, ClassExpr, Decl, ExportAll, ExportDecl, ExportDefaultDecl,
-    ExportDefaultExpr, Expr, ExprOrSpread, ExprStmt, FnDecl, FnExpr, Function, Id, Ident,
-    IdentName, ImportDecl, ImportSpecifier, KeyValueProp, Lit, MemberExpr, MemberProp,
-    Module as SwcModule, ModuleDecl, ModuleExportName, ModuleItem, NamedExport, Pat, Prop,
-    ReturnStmt, SimpleAssignTarget, Stmt, Str, VarDecl, VarDeclKind, VarDeclarator,
+    ExportDefaultExpr, Expr, ExprOrSpread, ExprStmt, FnDecl, FnExpr, Function, Ident, IdentName,
+    ImportDecl, ImportSpecifier, KeyValueProp, Lit, MemberExpr, MemberProp, Module as SwcModule,
+    ModuleDecl, ModuleExportName, ModuleItem, NamedExport, Pat, Prop, ReturnStmt,
+    SimpleAssignTarget, Stmt, Str, VarDecl, VarDeclKind, VarDeclarator,
   },
   HashMap,
 };
@@ -380,7 +381,7 @@ fn transform_import_decl(
   import_decl: ImportDecl,
   unresolved_mark: Mark,
   callee_allocator: &dyn RuntimeCalleeAllocator,
-  import_bindings_map: &mut HashMap<Id, Expr>,
+  import_bindings_map: &mut HashMap<SwcId, Expr>,
 ) -> Vec<ModuleItem> {
   let mut items = vec![];
 
@@ -418,7 +419,7 @@ fn transform_import_decl(
             prop: MemberProp::Ident(IdentName::new(specifier_ident.sym.clone(), DUMMY_SP)),
           }
         };
-        import_bindings_map.insert(specifier_ident.to_id(), Expr::Member(init));
+        import_bindings_map.insert(specifier_ident.to_id().into(), Expr::Member(init));
       }
       ImportSpecifier::Default(specifier) => {
         contains_default = true;
@@ -431,7 +432,7 @@ fn transform_import_decl(
           }],
         );
 
-        import_bindings_map.insert(specifier.local.to_id(), Expr::Call(init));
+        import_bindings_map.insert(specifier.local.to_id().into(), Expr::Call(init));
       }
       ImportSpecifier::Namespace(specifier) => {
         items.push(create_module_helper_item(
@@ -563,8 +564,8 @@ fn transform_export_named(
         let ident = get_ident_from_module_export_name(specifier.name);
         // module.o(exports, ident, () => ident)
         let call_expr = create_define_export_property_ident_call_expr(
-          Some(ident.to_id()),
-          ident.to_id(),
+          Some(ident.to_id().into()),
+          ident.to_id().into(),
           callee_allocator,
           unresolved_mark,
           options.is_target_legacy,
@@ -636,8 +637,8 @@ fn transform_export_named(
           extra_items.push(create_module_item_from_call_expr(call_expr));
         } else {
           let call_expr = create_define_export_property_ident_call_expr(
-            Some(exported_ident.to_id()),
-            local_ident.to_id(),
+            Some(exported_ident.to_id().into()),
+            local_ident.to_id().into(),
             callee_allocator,
             unresolved_mark,
             options.is_target_legacy,
@@ -917,8 +918,8 @@ fn create_export_fn_decl_stmts(
   // 2. create exports assign item
   if let Expr::Ident(ident) = exports_assign_right {
     let call_expr = create_define_export_property_ident_call_expr(
-      Some(exports_ident.to_id()),
-      ident.to_id(),
+      Some(exports_ident.to_id().into()),
+      ident.to_id().into(),
       callee_allocator,
       unresolved_mark,
       is_target_legacy,
@@ -966,8 +967,8 @@ fn create_export_class_decl_stmts(
   // 2. create exports assign item
   if let Expr::Ident(ident) = exports_assign_right {
     let call_expr = create_define_export_property_ident_call_expr(
-      Some(exports_ident.to_id()),
-      ident.to_id(),
+      Some(exports_ident.to_id().into()),
+      ident.to_id().into(),
       callee_allocator,
       unresolved_mark,
       is_target_legacy,
@@ -1030,8 +1031,8 @@ fn create_module_helper_call_expr(helper: Box<Expr>, args: Vec<ExprOrSpread>) ->
 }
 
 fn create_define_export_property_ident_call_expr(
-  exported_ident: Option<Id>,
-  local_ident: Id,
+  exported_ident: Option<SwcId>,
+  local_ident: SwcId,
   callee_allocator: &dyn RuntimeCalleeAllocator,
   unresolved_mark: Mark,
   is_target_legacy: bool,
@@ -1053,9 +1054,9 @@ fn create_define_export_property_ident_call_expr(
           stmts: vec![Stmt::Return(ReturnStmt {
             span: DUMMY_SP,
             arg: Some(Box::new(Expr::Ident(Ident::new(
-              local_ident.0,
+              local_ident.sym.clone(),
               DUMMY_SP,
-              local_ident.1,
+              local_ident.ctxt(),
             )))),
           })],
           ctxt: SyntaxContext::empty(),
@@ -1072,9 +1073,9 @@ fn create_define_export_property_ident_call_expr(
       span: DUMMY_SP,
       params: vec![],
       body: Box::new(BlockStmtOrExpr::Expr(Box::new(Expr::Ident(Ident::new(
-        local_ident.0,
+        local_ident.sym.clone(),
         DUMMY_SP,
-        local_ident.1,
+        local_ident.ctxt(),
       ))))),
       is_generator: false,
       is_async: false,
@@ -1095,7 +1096,7 @@ fn create_define_export_property_ident_call_expr(
         spread: None,
         expr: Box::new(Expr::Lit(Lit::Str(Str {
           span: DUMMY_SP,
-          value: exported_ident.0.clone(),
+          value: exported_ident.sym.clone(),
           raw: None,
         }))),
       },
@@ -1122,11 +1123,11 @@ fn get_ident_from_module_export_name(name: ModuleExportName) -> Ident {
 }
 
 struct ImportBindingsHandler {
-  import_bindings_map: HashMap<Id, Expr>,
+  import_bindings_map: HashMap<SwcId, Expr>,
 }
 
 impl ImportBindingsHandler {
-  pub fn new(import_bindings_map: HashMap<Id, Expr>) -> Self {
+  pub fn new(import_bindings_map: HashMap<SwcId, Expr>) -> Self {
     Self {
       import_bindings_map,
     }
@@ -1149,7 +1150,7 @@ impl VisitMut for ImportBindingsHandler {
   /// ```
   fn visit_mut_prop(&mut self, n: &mut Prop) {
     if let Prop::Shorthand(shorthand) = n {
-      if let Some(expr) = self.import_bindings_map.get(&shorthand.to_id()) {
+      if let Some(expr) = self.import_bindings_map.get(&shorthand.to_id().into()) {
         *n = KeyValueProp {
           key: shorthand.take().into(),
           value: Box::new(expr.clone()),
@@ -1164,7 +1165,7 @@ impl VisitMut for ImportBindingsHandler {
   fn visit_mut_expr(&mut self, n: &mut Expr) {
     if let Expr::Ident(ident) = n {
       let id = ident.to_id();
-      if let Some(member_expr) = self.import_bindings_map.get(&id) {
+      if let Some(member_expr) = self.import_bindings_map.get(&id.into()) {
         *n = member_expr.clone();
       }
     } else {

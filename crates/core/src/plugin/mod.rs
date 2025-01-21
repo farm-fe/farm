@@ -1,6 +1,7 @@
 use std::{any::Any, sync::Arc};
 
 use farmfe_macro_cache_item::cache_item;
+use hooks::freeze_module::PluginFreezeModuleHookParam;
 use rkyv::Deserialize;
 
 use crate::{
@@ -107,12 +108,12 @@ pub trait Plugin: Any + Send + Sync {
     Ok(None)
   }
 
-  /// Freeze the module after module graph is built
-  /// You can modify the module here, but after this hook, the module should be immutable
+  /// Freeze the module after module graph is built. You can modify the module here, but after this hook, module level transformation should not be performed any more.
+  /// Note that the module still can be updated when optimizing module graph, we use this hook as a end of module level transformation, not all level transformation.
   /// Example: Analyze the module, for example, analyze import/export statements, top level and unresolved identifiers
   fn freeze_module(
     &self,
-    _module: &mut Module,
+    _param: &mut PluginFreezeModuleHookParam,
     _context: &Arc<CompilationContext>,
   ) -> Result<Option<()>> {
     Ok(None)
@@ -120,6 +121,7 @@ pub trait Plugin: Any + Send + Sync {
 
   /// The module graph should be constructed and finalized here
   /// You can modify the module graph here, for example, add or remove modules/edges
+  /// If module's ast is updated in this hook, fields on module.meta should update manually too
   fn module_graph_build_end(
     &self,
     _module_graph: &mut ModuleGraph,
@@ -137,7 +139,7 @@ pub trait Plugin: Any + Send + Sync {
     Ok(None)
   }
 
-  /// Some optimization of the module graph should be performed here, for example, tree shaking, scope hoisting
+  /// Some optimization of the module graph should be performed here, for example, tree shaking
   fn optimize_module_graph(
     &self,
     _module_graph: &mut ModuleGraph,

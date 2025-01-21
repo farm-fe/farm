@@ -1,14 +1,15 @@
-use crate::{
-  swc_ecma_utils::ident::IdentLike,
-  swc_ecma_visit::{Visit, VisitWith},
-};
-use farmfe_core::swc_ecma_ast::{Id, ObjectPatProp, Pat};
+use crate::swc_ecma_visit::{Visit, VisitWith};
+use farmfe_core::swc_common::Mark;
 use farmfe_core::HashSet;
+use farmfe_core::{
+  module::meta_data::script::statement::SwcId,
+  swc_ecma_ast::{ObjectPatProp, Pat},
+};
 
 pub struct DefinedIdentsCollector<'a> {
-  pub defined_idents: HashSet<Id>,
-  assign_callback: Option<Box<&'a mut dyn FnMut(Id, Id)>>,
-  current_assign_left_idents: HashSet<Id>,
+  pub defined_idents: HashSet<SwcId>,
+  assign_callback: Option<Box<&'a mut dyn FnMut(SwcId, SwcId)>>,
+  current_assign_left_idents: HashSet<SwcId>,
 }
 
 impl<'a> DefinedIdentsCollector<'a> {
@@ -20,7 +21,7 @@ impl<'a> DefinedIdentsCollector<'a> {
     }
   }
 
-  pub fn from_callback(cb: Box<&'a mut dyn FnMut(Id, Id)>) -> Self {
+  pub fn from_callback(cb: Box<&'a mut dyn FnMut(SwcId, SwcId)>) -> Self {
     Self {
       defined_idents: HashSet::default(),
       assign_callback: Some(cb),
@@ -33,7 +34,7 @@ impl<'a> Visit for DefinedIdentsCollector<'a> {
   fn visit_ident(&mut self, n: &farmfe_core::swc_ecma_ast::Ident) {
     if let Some(callback) = &mut self.assign_callback {
       for ident in &self.current_assign_left_idents {
-        callback(ident.to_id(), n.to_id());
+        callback(ident.clone(), n.to_id().into());
       }
     }
   }
@@ -41,7 +42,7 @@ impl<'a> Visit for DefinedIdentsCollector<'a> {
   fn visit_pat(&mut self, pat: &Pat) {
     match pat {
       Pat::Ident(bi) => {
-        self.defined_idents.insert(bi.id.to_id());
+        self.defined_idents.insert(bi.id.to_id().into());
       }
       Pat::Array(array_pat) => {
         for elem in array_pat.elems.iter().flatten() {
@@ -58,7 +59,7 @@ impl<'a> Visit for DefinedIdentsCollector<'a> {
               self.visit_pat(&kv_prop.value);
             }
             ObjectPatProp::Assign(assign_prop) => {
-              self.defined_idents.insert(assign_prop.key.to_id());
+              self.defined_idents.insert(assign_prop.key.to_id().into());
             }
             ObjectPatProp::Rest(rest_prop) => {
               self.visit_pat(&rest_prop.arg);
@@ -79,6 +80,28 @@ impl<'a> Visit for DefinedIdentsCollector<'a> {
       }
       Pat::Invalid(_) => {}
       Pat::Expr(_) => {}
+    }
+  }
+}
+
+pub struct UnresolvedIdentCollector {
+  pub unresolved_idents: HashSet<SwcId>,
+  unresolved_mark: Mark,
+}
+
+impl UnresolvedIdentCollector {
+  pub fn new(unresolved_mark: Mark) -> Self {
+    Self {
+      unresolved_idents: HashSet::default(),
+      unresolved_mark,
+    }
+  }
+}
+
+impl Visit for UnresolvedIdentCollector {
+  fn visit_ident(&mut self, n: &farmfe_core::swc_ecma_ast::Ident) {
+    if n.ctxt.outer() == self.unresolved_mark {
+      self.unresolved_idents.insert(n.to_id().into());
     }
   }
 }

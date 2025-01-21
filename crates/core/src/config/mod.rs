@@ -140,7 +140,6 @@ pub enum TargetEnv {
   Browser,
   #[serde(rename = "node")]
   Node,
-  /// [TargetEnv::Library] is alias of [TargetEnv::Custom("library-browser")]
   #[serde(rename = "library")]
   Library,
   #[serde(untagged)]
@@ -462,21 +461,6 @@ mod tests {
     assert!(!env.is_library());
 
     let env = TargetEnv::Library;
-    assert!(env.is_library());
-    assert!(!env.is_node());
-    assert!(env.is_browser());
-
-    let env = TargetEnv::Custom("library-browser".to_string());
-    assert!(env.is_library());
-    assert!(!env.is_node());
-    assert!(env.is_browser());
-
-    let env = TargetEnv::Custom("library-node".to_string());
-    assert!(env.is_library());
-    assert!(env.is_node());
-    assert!(!env.is_browser());
-
-    let env: TargetEnv = serde_json::from_str("\"library-browser\"").expect("failed to parse");
     assert!(env.is_library());
     assert!(!env.is_node());
     assert!(env.is_browser());

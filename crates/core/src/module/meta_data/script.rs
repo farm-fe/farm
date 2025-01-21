@@ -36,6 +36,12 @@ pub struct ScriptModuleMetaData {
   pub unresolved_idents: HashSet<SwcId>,
   pub is_async: bool,
   pub feature_flags: HashSet<FeatureFlag>,
+  /// real export ident map, for example:
+  /// export { m as bar }
+  /// export { foo as default } from './module';
+  /// =>
+  /// Map<String, SwcId> { bar -> m#1, default -> foo#1 }
+  pub export_ident_map: HashMap<String, SwcId>,
   pub custom: CustomMetaDataMap,
 }
 
@@ -54,6 +60,7 @@ impl Default for ScriptModuleMetaData {
       unresolved_idents: Default::default(),
       is_async: false,
       feature_flags: Default::default(),
+      export_ident_map: Default::default(),
       custom: Default::default(),
     }
   }
@@ -84,8 +91,9 @@ impl Clone for ScriptModuleMetaData {
       statements: self.statements.clone(),
       top_level_idents: self.top_level_idents.clone(),
       unresolved_idents: self.unresolved_idents.clone(),
-      is_async: false,
+      is_async: self.is_async,
       feature_flags: self.feature_flags.clone(),
+      export_ident_map: self.export_ident_map.clone(),
       custom: CustomMetaDataMap::from(custom),
     }
   }

@@ -29,7 +29,9 @@ use farmfe_core::{
 use farmfe_plugin_lazy_compilation::DYNAMIC_VIRTUAL_SUFFIX;
 use farmfe_toolkit::resolve::load_package_json;
 use farmfe_utils::stringify_query;
-use finalize_module_graph::finalize_module_graph;
+use finalize_module_graph::{
+  cache_module_graph, finalize_module_graph, freeze_module_of_module_graph,
+};
 
 use crate::{
   build::{
@@ -42,7 +44,7 @@ use crate::{
 
 use self::module_cache::{
   get_content_hash_of_module, get_timestamp_of_module, handle_cached_modules,
-  set_module_graph_cache, try_get_module_cache_by_hash, try_get_module_cache_by_timestamp,
+  try_get_module_cache_by_hash, try_get_module_cache_by_timestamp,
 };
 
 macro_rules! call_and_catch_error {
@@ -180,19 +182,10 @@ impl Compiler {
       self.set_last_fail_module_ids(&[]);
     }
 
-    let module_ids = {
-      let module_graph = self.context.module_graph.read();
-      module_graph
-        .modules()
-        .iter()
-        .map(|m| m.id.clone())
-        .collect::<Vec<_>>()
-    };
+    freeze_module_of_module_graph(&self.context)?;
 
-    // set module graph cache
     if self.context.config.persistent_cache.enabled() {
-      // set new module cache
-      set_module_graph_cache(module_ids, &self.context);
+      cache_module_graph(&self.context);
     }
 
     finalize_module_graph(&self.context)?;

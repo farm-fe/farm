@@ -1,15 +1,18 @@
 use farmfe_core::{
-  module::{module_graph::ModuleGraph, ModuleId, ModuleSystem},
+  module::{
+    meta_data::script::statement::SwcId, module_graph::ModuleGraph, ModuleId, ModuleSystem,
+  },
   swc_ecma_ast::{
-    self, Id, ImportDecl, ImportSpecifier, ModuleDecl, ModuleExportName, ModuleItem, Stmt,
+    self, ImportDecl, ImportSpecifier, ModuleDecl, ModuleExportName, ModuleItem, Stmt,
   },
 };
 use farmfe_core::{HashMap, HashSet};
-use farmfe_toolkit::swc_ecma_visit::{VisitMut, VisitMutWith, VisitWith};
-
-use crate::{
-  module::TreeShakeModule, statement_graph::defined_idents_collector::DefinedIdentsCollector,
+use farmfe_toolkit::{
+  script::idents_collector::DefinedIdentsCollector,
+  swc_ecma_visit::{VisitMut, VisitMutWith, VisitWith},
 };
+
+use crate::module::TreeShakeModule;
 
 pub fn remove_useless_stmts(
   tree_shake_module_id: &ModuleId,
@@ -20,6 +23,8 @@ pub fn remove_useless_stmts(
     "remove_useless_stmts {:?}",
     tree_shake_module_id.to_string()
   ));
+
+  // TODO update statements in module_graph
 
   let tree_shake_module = tree_shake_modules_map.get(tree_shake_module_id).unwrap();
   // if the module is not esm, we should keep all the statements
@@ -67,7 +72,7 @@ pub fn remove_useless_stmts(
 }
 
 struct UselessSpecifierRemover<'a> {
-  used_defined_idents: &'a HashSet<Id>,
+  used_defined_idents: &'a HashSet<SwcId>,
 }
 
 impl<'a> VisitMut for UselessSpecifierRemover<'a> {
@@ -81,7 +86,7 @@ impl<'a> VisitMut for UselessSpecifierRemover<'a> {
         ImportSpecifier::Namespace(ns) => ns.local.to_id(),
       };
 
-      if !self.used_defined_idents.contains(&id) {
+      if !self.used_defined_idents.contains(&id.into()) {
         specifiers_to_remove.push(index);
       }
     }
@@ -114,7 +119,7 @@ impl<'a> VisitMut for UselessSpecifierRemover<'a> {
         farmfe_core::swc_ecma_ast::ExportSpecifier::Default(default) => default.exported.to_id(),
       };
 
-      if !self.used_defined_idents.contains(&id) {
+      if !self.used_defined_idents.contains(&id.into()) {
         specifiers_to_remove.push(index);
       }
     }

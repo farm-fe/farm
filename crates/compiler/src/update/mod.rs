@@ -18,7 +18,9 @@ use farmfe_core::{
 };
 
 use farmfe_toolkit::get_dynamic_resources_map::get_dynamic_resources_map;
-use finalize_module_graph::finalize_updated_module_graph;
+use finalize_module_graph::{
+  finalize_updated_module_graph, freeze_module_of_affected_module_graph,
+};
 
 use crate::{
   build::{
@@ -262,6 +264,8 @@ impl Compiler {
       self.diff_and_patch_context(paths, &update_context);
     // record graph patch result
     self.set_module_group_graph_stats();
+
+    freeze_module_of_affected_module_graph(&updated_module_ids, &diff_result, &self.context)?;
 
     // update cache
     if self.context.config.persistent_cache.enabled() {

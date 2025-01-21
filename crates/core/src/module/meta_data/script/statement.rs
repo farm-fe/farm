@@ -1,5 +1,5 @@
 use farmfe_macro_cache_item::cache_item;
-use swc_ecma_ast::{Id, ImportSpecifier, ModuleExportName};
+use swc_ecma_ast::{Id, Ident, ImportSpecifier, ModuleExportName};
 
 use crate::HashSet;
 
@@ -12,41 +12,24 @@ pub struct Statement {
   pub import_info: Option<ImportInfo>,
   pub export_info: Option<ExportInfo>,
   pub defined_idents: HashSet<SwcId>,
-  /// whether the statement has side effects, the side effect statement will be preserved
-  pub side_effects: StatementSideEffects,
-
-  /// used idents of defined idents, updated when trace the statement graph
+  /// Only set in plugin_tree_shake. Used idents of defined idents, updated when trace the statement graph
   pub used_defined_idents: HashSet<SwcId>,
+  /// Only set in plugin_tree_shake. Whether the statement has side effects, the side effect statement will be preserved
+  pub side_effects: StatementSideEffects,
 }
 
 impl Statement {
   pub fn new(
     id: StatementId,
-    // stmt: &ModuleItem,
-    // unresolved_mark: Mark,
-    // top_level_mark: Mark,
-    // comments: &SingleThreadedComments,
+    export_info: Option<ExportInfo>,
+    import_info: Option<ImportInfo>,
+    defined_idents: HashSet<SwcId>,
   ) -> Self {
-    // // 1. analyze all import, export and defined idents of the ModuleItem
-    // let AnalyzedStatementInfo {
-    //   import_info,
-    //   export_info,
-    //   defined_idents,
-    // } = analyze_statement_info(&id, stmt);
-
-    // // 2. analyze side effects of the ModuleItem
-    // let side_effects = analyze_statement_side_effects::analyze_statement_side_effects(
-    //   stmt,
-    //   unresolved_mark,
-    //   top_level_mark,
-    //   comments,
-    // );
-
     Self {
       id,
-      import_info: None,
-      export_info: None,
-      defined_idents: HashSet::default(),
+      import_info,
+      export_info,
+      defined_idents,
       used_defined_idents: HashSet::default(), // updated when trace the statement graph while tree shaking
       side_effects: StatementSideEffects::NoSideEffects,
     }
@@ -158,7 +141,9 @@ impl StatementSideEffects {
 }
 
 #[cache_item]
-#[derive(Debug, Clone, Hash, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[derive(
+  Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord, serde::Serialize, serde::Deserialize,
+)]
 #[archive_attr(derive(Hash, Eq, PartialEq))]
 pub struct SwcId {
   pub sym: swc_atoms::Atom,
@@ -170,6 +155,15 @@ impl From<Id> for SwcId {
     Self {
       sym: value.0,
       ctxt: value.1.as_u32(),
+    }
+  }
+}
+
+impl From<Ident> for SwcId {
+  fn from(value: Ident) -> Self {
+    Self {
+      sym: value.sym,
+      ctxt: value.ctxt.as_u32(),
     }
   }
 }
@@ -222,7 +216,7 @@ pub struct ImportInfo {
   pub source: String,
   pub specifiers: Vec<ImportSpecifierInfo>,
   /// index of the import statement in the module's body
-  pub stmt_idx: usize,
+  pub stmt_id: StatementId,
 }
 
 /// collect all exports and gathering them into a simpler structure
@@ -250,7 +244,7 @@ pub struct ExportInfo {
   pub source: Option<String>,
   pub specifiers: Vec<ExportSpecifierInfo>,
   /// index of the import statement in the module's body
-  pub stmt_idx: usize,
+  pub stmt_id: StatementId,
 }
 
 impl ExportInfo {

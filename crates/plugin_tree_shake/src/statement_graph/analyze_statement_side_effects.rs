@@ -180,7 +180,7 @@ impl<'a> Visit for SideEffectsAnalyzer<'a> {
             self
               .side_effects
               .merge_side_effects(StatementSideEffects::ReadTopLevelVar(HashSet::from_iter([
-                ident.to_id(),
+                ident.to_id().into(),
               ])));
           }
         }
@@ -234,14 +234,14 @@ impl<'a> Visit for SideEffectsAnalyzer<'a> {
             if ident.ctxt.outer() == self.unresolved_mark {
               StatementSideEffects::WriteOrCallGlobalVar
             } else if self.in_top_level || ident.ctxt.outer() == self.top_level_mark {
-              StatementSideEffects::WriteTopLevelVar(HashSet::from_iter([ident.to_id()]))
+              StatementSideEffects::WriteTopLevelVar(HashSet::from_iter([ident.to_id().into()]))
             } else {
               StatementSideEffects::NoSideEffects
             }
           } else if self.in_call && ident.ctxt.outer() == self.unresolved_mark {
             StatementSideEffects::WriteOrCallGlobalVar
           } else if self.in_top_level || ident.ctxt.outer() == self.top_level_mark {
-            StatementSideEffects::ReadTopLevelVar(HashSet::from_iter([ident.to_id()]))
+            StatementSideEffects::ReadTopLevelVar(HashSet::from_iter([ident.to_id().into()]))
           } else {
             StatementSideEffects::NoSideEffects
           });
@@ -258,7 +258,7 @@ impl<'a> Visit for SideEffectsAnalyzer<'a> {
                 self
                   .side_effects
                   .merge_side_effects(StatementSideEffects::WriteTopLevelVar(HashSet::from_iter(
-                    [i.id.to_id()],
+                    [i.id.to_id().into()],
                   )));
               } else if i.id.ctxt.outer() == self.unresolved_mark {
                 self

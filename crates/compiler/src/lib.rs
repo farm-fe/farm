@@ -45,10 +45,11 @@ impl Compiler {
       // Arc::new(farmfe_plugin_bundle::FarmPluginBundle::new()) as _,
       // Arc::new(farmfe_plugin_runtime::FarmPluginRuntime::new(&config)) as _,
       // register internal core plugins
-      Arc::new(farmfe_plugin_script::FarmPluginScript::new(&config)) as _,
-      // the render plugin must be executed after PluginScript,
-      // cause render plugins need information collected in finalize_module hook of PluginScript
       render_plugin,
+      Arc::new(farmfe_plugin_script::FarmPluginScript::new(&config)) as _,
+      Arc::new(farmfe_plugin_script_meta::FarmPluginScriptMeta::new(
+        &config,
+      )) as _,
       Arc::new(farmfe_plugin_partial_bundling::FarmPluginPartialBundling::new(&config)) as _,
       Arc::new(farmfe_plugin_html::FarmPluginHtml::new(&config)) as _,
       Arc::new(farmfe_plugin_html::FarmPluginTransformHtml::new(&config)) as _,

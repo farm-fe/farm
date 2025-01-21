@@ -1,13 +1,12 @@
 use std::{collections::HashSet, sync::Arc};
 
-use farmfe_core::{
-  swc_ecma_ast::{Id, ModuleItem},
-  swc_ecma_parser::Syntax,
+use crate::script::{
+  analyze_statement::statement_info::AnalyzedStatementInfo, parse_module, ParseScriptModuleResult,
 };
-use farmfe_toolkit::script::{parse_module, ParseScriptModuleResult};
-
-use crate::statement_graph::{
-  analyze_statement_info::AnalyzedStatementInfo, ExportSpecifierInfo, ImportSpecifierInfo,
+use farmfe_core::{
+  module::meta_data::script::statement::{ExportSpecifierInfo, ImportSpecifierInfo, SwcId},
+  swc_ecma_ast::ModuleItem,
+  swc_ecma_parser::Syntax,
 };
 
 use super::analyze_statement_info;
@@ -24,8 +23,8 @@ fn parse_module_item(stmt: &str) -> ModuleItem {
   module.body[0].clone()
 }
 
-fn print_id(id: &Id) -> String {
-  format!("{}{:?}", id.0, id.1)
+fn print_id(id: &SwcId) -> String {
+  format!("{}{:?}", id.sym, id.ctxt())
 }
 
 #[test]
@@ -108,7 +107,7 @@ fn import_named() {
   assert_eq!(defined_idents.len(), 3);
   let defined_idents_str = defined_idents
     .into_iter()
-    .map(|ident| print_id(&ident))
+    .map(|ident| print_id(&ident.into()))
     .collect::<HashSet<_>>();
   assert!(defined_idents_str.contains(&"a#0".to_string()));
   assert!(defined_idents_str.contains(&"b#0".to_string()));

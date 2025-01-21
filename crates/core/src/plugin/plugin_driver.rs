@@ -3,12 +3,12 @@ use std::sync::Arc;
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 
 use super::{
-  Plugin, PluginAnalyzeDepsHookParam, PluginFinalizeModuleHookParam,
-  PluginFinalizeResourcesHookParams, PluginGenerateResourcesHookResult,
-  PluginHandleEntryResourceHookParams, PluginHookContext, PluginLoadHookParam,
-  PluginLoadHookResult, PluginModuleGraphUpdatedHookParams, PluginParseHookParam,
-  PluginProcessModuleHookParam, PluginResolveHookParam, PluginResolveHookResult,
-  PluginTransformHookParam, PluginUpdateModulesHookParams,
+  hooks::freeze_module::PluginFreezeModuleHookParam, Plugin, PluginAnalyzeDepsHookParam,
+  PluginFinalizeModuleHookParam, PluginFinalizeResourcesHookParams,
+  PluginGenerateResourcesHookResult, PluginHandleEntryResourceHookParams, PluginHookContext,
+  PluginLoadHookParam, PluginLoadHookResult, PluginModuleGraphUpdatedHookParams,
+  PluginParseHookParam, PluginProcessModuleHookParam, PluginResolveHookParam,
+  PluginResolveHookResult, PluginTransformHookParam, PluginUpdateModulesHookParams,
 };
 use crate::{
   config::Config,
@@ -477,7 +477,7 @@ impl PluginDriver {
 
   hook_serial!(finalize_module, &mut PluginFinalizeModuleHookParam);
 
-  hook_serial!(freeze_module, &mut Module);
+  hook_serial!(freeze_module, &mut PluginFreezeModuleHookParam);
 
   hook_serial!(module_graph_build_end, &mut ModuleGraph);
 

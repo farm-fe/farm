@@ -745,7 +745,7 @@ export async function readConfigFile(
 
     return config;
   } finally {
-    // fse.unlink(getFilePath(outputPath, fileName)).catch(() => {});
+    fse.unlink(getFilePath(outputPath, fileName)).catch(() => {});
   }
 }
 
@@ -1007,8 +1007,8 @@ export function createDefaultConfig(options: DefaultOptionsType): UserConfig {
       output: {
         entryFilename: '[entryName]',
         path: outputPath,
-        format
-        // targetEnv: 'library-node'
+        format,
+        targetEnv: 'library'
       },
       mode,
       external: [

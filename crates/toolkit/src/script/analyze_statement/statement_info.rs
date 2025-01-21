@@ -1,16 +1,16 @@
-use farmfe_core::swc_ecma_ast::{self, Id, ModuleExportName, ModuleItem};
-use farmfe_core::HashSet;
-use farmfe_toolkit::swc_ecma_visit::VisitWith;
-
-use super::{
-  defined_idents_collector::DefinedIdentsCollector, ExportInfo, ExportSpecifierInfo, ImportInfo,
-  ImportSpecifierInfo, StatementId,
+use crate::swc_ecma_visit::VisitWith;
+use farmfe_core::module::meta_data::script::statement::{
+  ExportInfo, ExportSpecifierInfo, ImportInfo, ImportSpecifierInfo, StatementId, SwcId,
 };
+use farmfe_core::swc_ecma_ast::{self, ModuleExportName, ModuleItem};
+use farmfe_core::HashSet;
+
+use crate::script::idents_collector::DefinedIdentsCollector;
 
 pub struct AnalyzedStatementInfo {
   pub import_info: Option<ImportInfo>,
   pub export_info: Option<ExportInfo>,
-  pub defined_idents: HashSet<Id>,
+  pub defined_idents: HashSet<SwcId>,
 }
 
 pub fn analyze_statement_info(id: &StatementId, stmt: &ModuleItem) -> AnalyzedStatementInfo {
@@ -27,22 +27,22 @@ pub fn analyze_statement_info(id: &StatementId, stmt: &ModuleItem) -> AnalyzedSt
         for specifier in &import_decl.specifiers {
           match specifier {
             swc_ecma_ast::ImportSpecifier::Namespace(ns) => {
-              specifiers.push(ImportSpecifierInfo::Namespace(ns.local.to_id()));
-              defined_idents.insert(ns.local.to_id());
+              specifiers.push(ImportSpecifierInfo::Namespace(ns.local.to_id().into()));
+              defined_idents.insert(ns.local.to_id().into());
             }
             swc_ecma_ast::ImportSpecifier::Named(named) => {
               specifiers.push(ImportSpecifierInfo::Named {
-                local: named.local.to_id(),
+                local: named.local.to_id().into(),
                 imported: named.imported.as_ref().map(|i| match i {
-                  ModuleExportName::Ident(i) => i.to_id(),
+                  ModuleExportName::Ident(i) => i.to_id().into(),
                   _ => panic!("non-ident imported is not supported when tree shaking"),
                 }),
               });
-              defined_idents.insert(named.local.to_id());
+              defined_idents.insert(named.local.to_id().into());
             }
             swc_ecma_ast::ImportSpecifier::Default(default) => {
-              specifiers.push(ImportSpecifierInfo::Default(default.local.to_id()));
-              defined_idents.insert(default.local.to_id());
+              specifiers.push(ImportSpecifierInfo::Default(default.local.to_id().into()));
+              defined_idents.insert(default.local.to_id().into());
             }
           }
         }
@@ -65,23 +65,23 @@ pub fn analyze_statement_info(id: &StatementId, stmt: &ModuleItem) -> AnalyzedSt
           export_info = Some(ExportInfo {
             source: None,
             specifiers: vec![ExportSpecifierInfo::Named {
-              local: class_decl.ident.to_id(),
+              local: class_decl.ident.to_id().into(),
               exported: None,
             }],
             stmt_id: *id,
           });
-          defined_idents.insert(class_decl.ident.to_id());
+          defined_idents.insert(class_decl.ident.to_id().into());
         }
         swc_ecma_ast::Decl::Fn(fn_decl) => {
           export_info = Some(ExportInfo {
             source: None,
             specifiers: vec![ExportSpecifierInfo::Named {
-              local: fn_decl.ident.to_id(),
+              local: fn_decl.ident.to_id().into(),
               exported: None,
             }],
             stmt_id: *id,
           });
-          defined_idents.insert(fn_decl.ident.to_id());
+          defined_idents.insert(fn_decl.ident.to_id().into());
         }
         swc_ecma_ast::Decl::Var(var_decl) => {
           let mut specifiers = vec![];
@@ -92,7 +92,7 @@ pub fn analyze_statement_info(id: &StatementId, stmt: &ModuleItem) -> AnalyzedSt
 
             for defined_ident in defined_idents_collector.defined_idents {
               specifiers.push(ExportSpecifierInfo::Named {
-                local: defined_ident.clone(),
+                local: defined_ident.clone().into(),
                 exported: None,
               });
               defined_idents.insert(defined_ident);
@@ -118,12 +118,12 @@ pub fn analyze_statement_info(id: &StatementId, stmt: &ModuleItem) -> AnalyzedSt
         match &export_default_decl.decl {
           swc_ecma_ast::DefaultDecl::Class(class_expr) => {
             if let Some(ident) = &class_expr.ident {
-              defined_idents.insert(ident.to_id());
+              defined_idents.insert(ident.to_id().into());
             }
           }
           swc_ecma_ast::DefaultDecl::Fn(fn_decl) => {
             if let Some(ident) = &fn_decl.ident {
-              defined_idents.insert(ident.to_id());
+              defined_idents.insert(ident.to_id().into());
             }
           }
           _ => unreachable!(
@@ -154,12 +154,15 @@ pub fn analyze_statement_info(id: &StatementId, stmt: &ModuleItem) -> AnalyzedSt
               });
 
               if let Some(exported) = &exported {
-                defined_idents.insert(exported.clone());
+                defined_idents.insert(exported.clone().into());
               } else {
-                defined_idents.insert(local.clone());
+                defined_idents.insert(local.clone().into());
               }
 
-              specifiers.push(ExportSpecifierInfo::Named { local, exported });
+              specifiers.push(ExportSpecifierInfo::Named {
+                local: local.into(),
+                exported: exported.map(|e| e.into()),
+              });
             }
             swc_ecma_ast::ExportSpecifier::Default(_) => {
               unreachable!("ExportSpecifier::Default is not valid esm syntax")
@@ -169,8 +172,8 @@ pub fn analyze_statement_info(id: &StatementId, stmt: &ModuleItem) -> AnalyzedSt
                 ModuleExportName::Ident(ident) => ident.to_id(),
                 ModuleExportName::Str(_) => unreachable!("exporting a string is not supported"),
               };
-              defined_idents.insert(ident.clone());
-              specifiers.push(ExportSpecifierInfo::Namespace(ident));
+              defined_idents.insert(ident.clone().into());
+              specifiers.push(ExportSpecifierInfo::Namespace(ident.into()));
             }
           }
         }
@@ -186,10 +189,10 @@ pub fn analyze_statement_info(id: &StatementId, stmt: &ModuleItem) -> AnalyzedSt
     ModuleItem::Stmt(stmt) => match stmt {
       swc_ecma_ast::Stmt::Decl(decl) => match decl {
         swc_ecma_ast::Decl::Class(class_decl) => {
-          defined_idents.insert(class_decl.ident.to_id());
+          defined_idents.insert(class_decl.ident.to_id().into());
         }
         swc_ecma_ast::Decl::Fn(fn_decl) => {
-          defined_idents.insert(fn_decl.ident.to_id());
+          defined_idents.insert(fn_decl.ident.to_id().into());
         }
         swc_ecma_ast::Decl::Var(var_decl) => {
           for v_decl in &var_decl.decls {
@@ -213,7 +216,7 @@ pub fn analyze_statement_info(id: &StatementId, stmt: &ModuleItem) -> AnalyzedSt
   AnalyzedStatementInfo {
     import_info,
     export_info,
-    defined_idents,
+    defined_idents: defined_idents.into_iter().map(|i| i.into()).collect(),
   }
 }
 

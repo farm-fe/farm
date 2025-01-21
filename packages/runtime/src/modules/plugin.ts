@@ -85,6 +85,6 @@ const pluginContainer: FarmRuntimePluginContainer = {
   b: hookPluginsBail
 }
 
-// Injected when runtime starts execution
-declare const __farm_global_this__: any;
-__farm_global_this__.p = pluginContainer;
+export function initModuleSystem(moduleSystem: ModuleSystem) {
+  moduleSystem.p = pluginContainer;
+}

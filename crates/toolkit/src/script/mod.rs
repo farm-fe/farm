@@ -28,9 +28,10 @@ use crate::{minify::comments::minify_comments, source_map::create_swc_source_map
 
 pub use farmfe_toolkit_plugin_types::swc_ast::ParseScriptModuleResult;
 
+pub mod analyze_statement;
 pub mod concatenate_modules;
 pub mod constant;
-pub mod defined_idents_collector;
+pub mod idents_collector;
 pub mod module2cjs;
 pub mod module_system;
 pub mod sourcemap;

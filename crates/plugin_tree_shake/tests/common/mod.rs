@@ -1,9 +1,12 @@
 use std::sync::Arc;
 
 use farmfe_core::{
-  module::{meta_data::script::ScriptModuleMetaData, Module, ModuleMetaData},
+  module::{
+    meta_data::script::{statement::SwcId, ScriptModuleMetaData},
+    Module, ModuleMetaData,
+  },
   swc_common::{comments::SingleThreadedComments, Globals, Mark, SourceMap, GLOBALS},
-  swc_ecma_ast::{EsVersion, Id, Module as SwcModule},
+  swc_ecma_ast::{EsVersion, Module as SwcModule},
   swc_ecma_parser::Syntax,
 };
 use farmfe_toolkit::{
@@ -108,6 +111,6 @@ pub fn create_module_with_globals(code: &str) -> Module {
   })
 }
 
-pub fn print_id(id: &Id) -> String {
-  format!("{}{:?}", id.0, id.1)
+pub fn print_id(id: &SwcId) -> String {
+  format!("{}{:?}", id.sym, id.ctxt())
 }

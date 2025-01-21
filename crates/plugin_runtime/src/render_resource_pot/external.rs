@@ -27,7 +27,7 @@ pub fn handle_external_modules(
   let mut external_modules = external_modules.iter().collect::<Vec<_>>();
   external_modules.sort();
 
-  // library-node and library-browser won't be handled here, they will be handled in plugin_library
+  // library won't be handled here, they will be handled in plugin_library
   if context.config.output.target_env.is_node() {
     handle_node_external_modules(resource_pot_id, resource_pot_ast, external_modules, context)
   } else {

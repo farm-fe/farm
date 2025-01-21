@@ -17,22 +17,18 @@ pub(crate) mod resource_cache;
 impl Compiler {
   /// the generate stage
   pub(crate) fn generate(&self) -> Result<()> {
-    println!("generate_start");
     self.context.plugin_driver.generate_start(&self.context)?;
-    println!("generate_start end");
     let hook_context = PluginHookContext {
       caller: None,
       meta: HashMap::default(),
     };
 
-    println!("optimize_module_graph");
     self.optimize_module_graph()?;
 
-    println!("partial_bundling");
     partial_bundling(&self.context, &hook_context)?;
-    println!("process_resource_pot_map");
+
     self.process_resource_pot_map()?;
-    println!("render");
+
     self.render_and_generate_resources(&hook_context)?;
 
     finalize_resources(&self.context)?;

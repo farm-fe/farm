@@ -1115,6 +1115,7 @@ mod tests {
           statements: vec![],
           feature_flags: Default::default(),
           is_async: false,
+          export_ident_map: Default::default(),
         }));
       })
       .unwrap();

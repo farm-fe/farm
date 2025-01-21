@@ -17,7 +17,7 @@ pub struct ResourcePot {
   pub resource_pot_type: ResourcePotType,
   pub modules: HashSet<ModuleId>,
   pub meta: ResourcePotMetaData,
-  /// [None] if this [ResourcePot] does not contain entry module.
+  /// [None] if this [ResourcePot] does not contain entry module defined in config.input.
   /// [Some(entry_id)] otherwise
   pub entry_module: Option<ModuleId>,
   /// the resources generated in this [ResourcePot]

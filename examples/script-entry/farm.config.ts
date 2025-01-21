@@ -19,7 +19,7 @@ export default defineConfig({
     output: {
       path: 'dist/esm',
       entryFilename: '[entryName].mjs',
-      targetEnv: 'library-node',
+      targetEnv: 'library',
       format: 'esm'
     },
     presetEnv: false,

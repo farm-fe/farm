@@ -1,11 +1,7 @@
 #![feature(box_patterns)]
 #![feature(path_file_prefix)]
 
-use std::{
-  collections::VecDeque,
-  path::{Path, PathBuf},
-  sync::Arc,
-};
+use std::{path::Path, sync::Arc};
 
 use deps_analyzer::DepsAnalyzer;
 use farmfe_core::{
@@ -15,7 +11,7 @@ use farmfe_core::{
   module::{
     meta_data::script::{CommentsMetaData, ScriptModuleMetaData},
     module_graph::ModuleGraph,
-    ModuleId, ModuleMetaData, ModuleSystem, ModuleType, VIRTUAL_MODULE_PREFIX,
+    ModuleMetaData, ModuleSystem, ModuleType, VIRTUAL_MODULE_PREFIX,
   },
   plugin::{
     GeneratedResource, Plugin, PluginAnalyzeDepsHookParam, PluginFinalizeModuleHookParam,
@@ -24,12 +20,11 @@ use farmfe_core::{
   },
   resource::{
     meta_data::{js::JsResourcePotMetaData, ResourcePotMetaData},
-    resource_pot::{ResourcePot, ResourcePotType},
+    resource_pot::ResourcePot,
     Resource, ResourceOrigin, ResourceType,
   },
   swc_common::{comments::SingleThreadedComments, Mark, SourceMap, GLOBALS},
   swc_ecma_ast::{EsVersion, Module as SwcModule},
-  HashSet,
 };
 use farmfe_swc_transformer_import_glob::transform_import_meta_glob;
 use farmfe_toolkit::{
@@ -39,21 +34,17 @@ use farmfe_toolkit::{
     swc_try_with::try_with, syntax_from_module_type, CodeGenCommentsConfig,
     ParseScriptModuleResult,
   },
-  source_map::{
-    build_source_map, collapse_sourcemap, create_swc_source_map, load_source_original_source_map,
-  },
+  source_map::{build_source_map, collapse_sourcemap, load_source_original_source_map},
   swc_ecma_transforms::resolver,
   swc_ecma_visit::VisitMutWith,
 };
 
-use features_analyzer::FeaturesAnalyzer;
 use find_async_modules::update_async_modules;
 use import_meta_visitor::{replace_import_meta_url, ImportMetaVisitor};
 #[cfg(feature = "swc_plugin")]
 use swc_plugins::{init_plugin_module_cache_once, transform_by_swc_plugins};
 
 mod deps_analyzer;
-mod features_analyzer;
 mod find_async_modules;
 mod import_meta_visitor;
 #[cfg(feature = "swc_plugin")]
@@ -153,9 +144,7 @@ impl Plugin for FarmPluginScript {
           top_level_idents: Default::default(),
           unresolved_idents: Default::default(),
           feature_flags: Default::default(),
-          // imports: vec![],
-          // exports: vec![],
-          // defined_idents: vec![],
+          export_ident_map: Default::default(),
           is_async: false,
         };
 
@@ -272,11 +261,7 @@ impl Plugin for FarmPluginScript {
     // set param.module.meta.module_system
     set_module_system_for_module_meta(param, context);
 
-    // TODO collect statements / top level idents / unresolved idents
-    // analyze features used
-    let features_analyzer = FeaturesAnalyzer::new(param.deps, &param.module.meta.as_script().ast);
-    param.module.meta.as_script_mut().feature_flags = features_analyzer.analyze();
-
+    // TODO: optimize code here
     let target_env = context.config.output.target_env.clone();
     let format = context.config.output.format;
 
@@ -304,7 +289,7 @@ impl Plugin for FarmPluginScript {
       param.module.meta.as_script_mut().hmr_accepted_deps = hmr_accepted_v.hmr_accepted_deps;
     }
 
-    Ok(None)
+    Ok(Some(()))
   }
 
   fn generate_start(

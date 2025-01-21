@@ -5,7 +5,7 @@
  */
 // using native ability to load resources if target env is node.
 
-import { getModuleSystem, getPluginContainer } from '../utils.js';
+import type { ModuleSystem } from '../module-system.js';
 import type { ResourceLoadResult } from './plugin.js';
 
 export interface Resource {
@@ -29,12 +29,18 @@ const loadingResources: Record<string, Promise<void> | null> = {};
 // available public paths, when loading resources, we will try each publicPath until it is available, this is so called `resource loading retry`
 const publicPaths: string[] = [];
 
-// set global properties
-__farm_global_this__.d = dynamicImport;
+let moduleSystem: ModuleSystem;
 
-function dynamicImport(id: string): Promise<any> {
-  const moduleSystem = getModuleSystem();
-  
+// append properties in module system
+export function initModuleSystem(ms: ModuleSystem) {
+  moduleSystem = ms;
+  moduleSystem.d = dynamicImport;
+  moduleSystem.sp = setPublicPaths;
+  moduleSystem.si = setInitialLoadedResources;
+  moduleSystem.l = loadDynamicResourcesOnly;
+}
+
+function dynamicImport(id: string): Promise<any> {  
   if (moduleSystem.m()[id]) {
     const exports = moduleSystem.r(id);
 
@@ -50,7 +56,6 @@ function dynamicImport(id: string): Promise<any> {
 
 function loadDynamicResources(id: string, force = false): Promise<any> {
   const resources = dynamicModuleResourcesMap[id].map((index) => dynamicResources[index]);
-  const moduleSystem = getModuleSystem();
 
   return loadDynamicResourcesOnly(id, force)
     .then(() => {
@@ -89,7 +94,7 @@ function loadDynamicResourcesOnly(id: string, force = false): Promise<any> {
   }
   // force reload resources
   if (force) {
-    getModuleSystem().a(id);
+    moduleSystem.a(id);
   }
   // loading all required resources, and return the exports of the entry module
   return Promise.all(
@@ -124,7 +129,7 @@ function load(resource: Resource): Promise<void> {
   }
 
   if (__FARM_ENABLE_RUNTIME_PLUGIN__) {
-    const result = getPluginContainer().b(
+    const result = moduleSystem.p.b(
       'loadResource',
       resource
     );
@@ -149,7 +154,7 @@ function load(resource: Resource): Promise<void> {
 
 function loadResourceNode(resource: Resource) {
   if (__FARM_ENABLE_RUNTIME_PLUGIN__) {
-    const result = getPluginContainer().b(
+    const result = moduleSystem.p.b(
       'loadResource',
       resource
     );
@@ -256,4 +261,17 @@ function setLoadedResource(path: string, loaded = true) {
 
 function isResourceLoaded(path: string) {
   return loadedResources[path];
+}
+
+// The public paths are injected during compile time
+function setPublicPaths(p: string[]): void {
+  for (const key in p) {
+    publicPaths[key] = p[key]
+  }
+}
+
+function setInitialLoadedResources(resources: string[]) {
+  for (const resource of resources) {
+    setLoadedResource(resource);
+  }
 }

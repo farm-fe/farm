@@ -112,6 +112,22 @@ impl Plugin for RustPluginAdapter {
     self.plugin.analyze_deps(param, context)
   }
 
+  fn freeze_module(
+    &self,
+    param: &mut farmfe_core::plugin::hooks::freeze_module::PluginFreezeModuleHookParam,
+    context: &Arc<CompilationContext>,
+  ) -> Result<Option<()>> {
+    self.plugin.freeze_module(param, context)
+  }
+
+  fn module_graph_build_end(
+    &self,
+    module_graph: &mut ModuleGraph,
+    context: &Arc<CompilationContext>,
+  ) -> Result<Option<()>> {
+    self.plugin.module_graph_build_end(module_graph, context)
+  }
+
   fn build_end(&self, context: &Arc<CompilationContext>) -> Result<Option<()>> {
     self.plugin.build_end(context)
   }

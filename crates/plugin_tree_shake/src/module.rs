@@ -2,7 +2,7 @@ use std::mem;
 
 use farmfe_core::{
   module::{Module, ModuleId, ModuleSystem},
-  swc_common::{comments::SingleThreadedComments, Mark},
+  swc_common::comments::SingleThreadedComments,
   HashMap, HashSet,
 };
 
@@ -154,11 +154,9 @@ impl TreeShakeModule {
     // 1. generate statement graph
     let comments_meta = module.meta.as_script_mut().take_comments();
     let ast = &module.meta.as_script().ast;
-    let unresolved_mark = Mark::from_u32(module.meta.as_script().unresolved_mark);
-    let top_level_mark = Mark::from_u32(module.meta.as_script().top_level_mark);
     let comments = SingleThreadedComments::from(comments_meta);
     let stmt_graph = if module_system == ModuleSystem::EsModule {
-      StatementGraph::new(ast, unresolved_mark, top_level_mark, &comments)
+      StatementGraph::new(module, ast, &comments)
     } else {
       StatementGraph::empty()
     };
@@ -327,9 +325,9 @@ impl TreeShakeModule {
                   local
                 };
 
-                ident.is_ident_matched(exported_ident.0.as_str())
+                ident.is_ident_matched(exported_ident.sym.as_str())
               }
-              ExportSpecifierInfo::Namespace(ns) => ident.is_ident_matched(ns.0.as_str()),
+              ExportSpecifierInfo::Namespace(ns) => ident.is_ident_matched(ns.sym.as_str()),
               ExportSpecifierInfo::All => {
                 /* Deal with All later */
                 if let Some(export_all_stmt_id) = &mut export_all_stmt_ids {
@@ -352,13 +350,13 @@ impl TreeShakeModule {
                 }
                 ExportSpecifierInfo::Named { local, exported } => {
                   if let Some(exported) = exported {
-                    if ident.is_ident_matched(exported.0.as_str()) {
+                    if ident.is_ident_matched(exported.sym.as_str()) {
                       used_idents.push((
                         UsedStatementIdent::SwcIdent(local.clone()),
                         export_info.stmt_id,
                       ));
                     }
-                  } else if ident.is_ident_matched(local.0.as_str()) {
+                  } else if ident.is_ident_matched(local.sym.as_str()) {
                     used_idents.push((
                       UsedStatementIdent::SwcIdent(local.clone()),
                       export_info.stmt_id,
@@ -366,7 +364,7 @@ impl TreeShakeModule {
                   }
                 }
                 ExportSpecifierInfo::Namespace(ns) => {
-                  if ident.is_ident_matched(ns.0.as_str()) {
+                  if ident.is_ident_matched(ns.sym.as_str()) {
                     used_idents.push((
                       UsedStatementIdent::SwcIdent(ns.clone()),
                       export_info.stmt_id,

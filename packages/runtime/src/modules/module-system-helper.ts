@@ -1,14 +1,22 @@
-import type { ModuleInitialization } from "../module-system.js";
-import { getModuleSystem } from "../utils.js";
+import type { ModuleInitialization, ModuleSystem } from "../module-system.js";
+
+let moduleSystem: ModuleSystem;
+
+export function initModuleSystem(ms: ModuleSystem) {
+  moduleSystem = ms;
+  moduleSystem.u = updateModule;
+  moduleSystem.e = deleteModule;
+  moduleSystem.a = clearCache;
+}
 
 function updateModule(moduleId: string, init: ModuleInitialization): void {
-  const modules = getModuleSystem().m();
+  const modules = moduleSystem.m();
   modules[moduleId] = init;
   clearCache(moduleId);
 }
 
 function deleteModule(moduleId: string): boolean {
-  const modules = getModuleSystem().m();
+  const modules = moduleSystem.m();
   if (modules[moduleId]) {
     clearCache(moduleId);
     delete modules[moduleId];
@@ -19,7 +27,7 @@ function deleteModule(moduleId: string): boolean {
 }
 
 function clearCache(moduleId: string): boolean {
-  const cache = getModuleSystem().c();
+  const cache = moduleSystem.c();
   if (cache[moduleId]) {
     delete cache[moduleId];
     return true;
@@ -27,8 +35,3 @@ function clearCache(moduleId: string): boolean {
     return false;
   }
 }
-
-const moduleSystem = getModuleSystem();
-moduleSystem.u = updateModule;
-moduleSystem.e = deleteModule;
-moduleSystem.a = clearCache;
