@@ -72,10 +72,8 @@ impl Plugin for FarmPluginReplaceDirname {
     let dir_path: &str = Path::new(&file_path)
       .parent()
       .map_or("", |p| p.to_str().unwrap_or(""));
-    // println!("Processing module: {:#?}", file_path);
 
     let ast = &mut param.meta.as_script_mut().ast;
-    // println!("Processing module: {:#?}", ast);
 
     replace_dirname_with_ast(ast, dir_path, file_path.to_str().unwrap());
     Ok(Some(()))
