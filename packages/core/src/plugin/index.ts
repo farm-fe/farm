@@ -1,13 +1,27 @@
-import { isArray, isObject } from '../utils/index.js';
-import { convertPlugin } from './js/index.js';
-import { rustPluginResolver } from './rust/index.js';
-
-import { ResolvedUserConfig, type UserConfig } from '../config/index.js';
-import merge from '../utils/merge.js';
-import type { JsPlugin } from './type.js';
-
 export * from './js/index.js';
 export * from './rust/index.js';
+
+import {
+  CompilationMode,
+  ResolvedUserConfig,
+  type UserConfig
+} from '../config/index.js';
+import { isArray, isObject } from '../utils/index.js';
+import merge from '../utils/merge.js';
+import { convertPlugin, handleVitePlugins } from './js/index.js';
+import { rustPluginResolver } from './rust/index.js';
+
+import type { JsPlugin } from './type.js';
+
+export async function resolveVitePlugins(
+  config: UserConfig,
+  mode: CompilationMode
+) {
+  const plugins = config?.vitePlugins?.filter(Boolean) ?? [];
+  if (!plugins.length) return [];
+
+  return handleVitePlugins(plugins, config, mode);
+}
 
 export async function resolveFarmPlugins(config: UserConfig) {
   const plugins = config.plugins ?? [];

@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import { createRequire } from 'node:module';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
+
 import fse from 'fs-extra';
 
 import { bindingPath } from '../../binding/index.js';
@@ -10,11 +11,11 @@ import { JsPlugin } from '../index.js';
 import {
   type RustPlugin,
   getSortedPlugins,
-  handleVitePlugins,
   resolveAsyncPlugins,
   resolveConfigHook,
   resolveConfigResolvedHook,
-  resolveFarmPlugins
+  resolveFarmPlugins,
+  resolveVitePlugins
 } from '../plugin/index.js';
 
 import {
@@ -23,6 +24,7 @@ import {
   colors,
   isArray,
   isEmptyObject,
+  isNodeEnv,
   isObject,
   isWindows,
   normalizePath
@@ -49,18 +51,25 @@ import merge from '../utils/merge.js';
 import {
   CUSTOM_KEYS,
   DEFAULT_CONFIG_NAMES,
+  ENV_DEVELOPMENT,
+  ENV_PRODUCTION,
   FARM_DEFAULT_NAMESPACE
 } from './constants.js';
 import { mergeConfig, mergeFarmCliConfig } from './mergeConfig.js';
+
 import { normalizeCss } from './normalize-config/normalize-css.js';
 import { normalizeExternal } from './normalize-config/normalize-external.js';
-import normalizePartialBundling from './normalize-config/normalize-partial-bundling.js';
+import { normalizePartialBundling } from './normalize-config/normalize-partial-bundling.js';
 import { normalizeResolve } from './normalize-config/normalize-resolve.js';
 
-import type { OutputConfig } from '../types/binding.js';
+import { wrapPluginUpdateModules } from '../plugin/js/utils.js';
 import type {
   ConfigEnv,
+  ConfigResult,
+  DefaultOptionsType,
+  EnvResult,
   FarmCliOptions,
+  Format,
   HmrOptions,
   NormalizedServerConfig,
   ResolvedCompilation,
@@ -86,6 +95,8 @@ export function defineFarmConfig(config: UserConfigExport): UserConfigExport;
 export function defineFarmConfig(config: UserConfigExport): UserConfigExport {
   return config;
 }
+
+type UserConfigPromise = Promise<UserConfig | undefined>;
 
 const COMMANDS = {
   START: 'start',
@@ -210,6 +221,8 @@ async function handleResolveConfig(
     root: resolvedUserConfig.compilation.root,
     jsPlugins: sortFarmJsPlugins,
     rustPlugins: rustPlugins,
+    command,
+    isProduction: resolvedUserConfig.compilation.mode === ENV_PRODUCTION,
     transformInlineConfig
   });
 
@@ -268,16 +281,12 @@ export async function normalizeUserCompilationConfig(
   const { compilation, root } = resolvedUserConfig;
 
   // resolve root path
-
   const resolvedRootPath = normalizePath(root);
 
   resolvedUserConfig.root = resolvedRootPath;
 
   // if normalize default config, skip check input option
-  const inputIndexConfig = await checkCompilationInputValue(
-    resolvedUserConfig,
-    resolvedUserConfig.logger
-  );
+  const inputIndexConfig = await checkCompilationInputValue(resolvedUserConfig);
 
   const resolvedCompilation: ResolvedCompilation = merge(
     {},
@@ -289,8 +298,8 @@ export async function normalizeUserCompilationConfig(
     compilation
   );
 
-  const isProduction = mode === 'production';
-  const isDevelopment = mode === 'development';
+  const isProduction = mode === ENV_PRODUCTION;
+  const isDevelopment = mode === ENV_DEVELOPMENT;
   resolvedCompilation.mode = resolvedCompilation.mode ?? mode;
 
   resolvedCompilation.coreLibPath = bindingPath;
@@ -333,61 +342,44 @@ export async function normalizeUserCompilationConfig(
     // for node target, we should not define process.env.NODE_ENV
     resolvedCompilation.output?.targetEnv === 'node'
       ? {}
-      : Object.keys(resolvedUserConfig.env || {}).reduce((env: any, key) => {
-          env[`$__farm_regex:(global(This)?\\.)?process\\.env\\.${key}`] =
-            JSON.stringify(resolvedUserConfig.env[key]);
-          return env;
-        }, {})
+      : Object.keys(resolvedUserConfig.env || {}).reduce<EnvResult>(
+          (env, key) => {
+            env[`$__farm_regex:(global(This)?\\.)?process\\.env\\.${key}`] =
+              JSON.stringify(resolvedUserConfig.env[key]);
+            return env;
+          },
+          {} as EnvResult
+        )
   );
 
   const require = createRequire(import.meta.url);
   const hmrClientPluginPath = require.resolve('@farmfe/runtime-plugin-hmr');
-  const ImportMetaPluginPath = require.resolve(
+  const importMetaPluginPath = require.resolve(
     '@farmfe/runtime-plugin-import-meta'
   );
 
-  if (!resolvedCompilation.runtime) {
-    resolvedCompilation.runtime = {
-      path: require.resolve('@farmfe/runtime'),
-      plugins: []
-    };
-  }
+  resolvedCompilation.runtime = {
+    path:
+      resolvedCompilation.runtime?.path ?? require.resolve('@farmfe/runtime'),
+    swcHelpersPath:
+      resolvedCompilation.runtime?.swcHelpersPath ??
+      path.dirname(require.resolve('@swc/helpers/package.json')),
+    plugins: resolvedCompilation.runtime?.plugins ?? [],
+    namespace: resolvedCompilation.runtime?.namespace
+  };
 
-  if (!resolvedCompilation.runtime.path) {
-    resolvedCompilation.runtime.path = require.resolve('@farmfe/runtime');
-  }
-
-  if (!resolvedCompilation.runtime.swcHelpersPath) {
-    resolvedCompilation.runtime.swcHelpersPath = path.dirname(
-      require.resolve('@swc/helpers/package.json')
-    );
-  }
-
-  if (!resolvedCompilation.runtime.plugins) {
-    resolvedCompilation.runtime.plugins = [];
-  } else {
-    const resolvePluginPath = (plugin: any) => {
+  resolvedCompilation.runtime.plugins = resolvedCompilation.runtime.plugins.map(
+    (plugin) => {
       if (path.isAbsolute(plugin)) return plugin;
       return plugin.startsWith('.')
         ? path.resolve(resolvedRootPath, plugin)
         : require.resolve(plugin);
-    };
-    // make sure all plugin paths are absolute
-    resolvedCompilation.runtime.plugins =
-      resolvedCompilation.runtime.plugins.map(resolvePluginPath);
-  }
-  // set namespace to package.json name field's hash
-  if (!resolvedCompilation.runtime.namespace) {
-    // read package.json name field
-    const packageJsonPath = path.resolve(resolvedRootPath, 'package.json');
-    const packageJsonExists = fse.existsSync(packageJsonPath);
-    const namespaceName = packageJsonExists
-      ? JSON.parse(fse.readFileSync(packageJsonPath, 'utf-8')).name ||
-        FARM_DEFAULT_NAMESPACE
-      : FARM_DEFAULT_NAMESPACE;
+    }
+  );
 
+  if (!resolvedCompilation.runtime.namespace) {
     resolvedCompilation.runtime.namespace = createHash('md5')
-      .update(namespaceName)
+      .update(getNamespaceName(resolvedRootPath))
       .digest('hex');
   }
 
@@ -400,16 +392,9 @@ export async function normalizeUserCompilationConfig(
   resolvedCompilation.mode ??= mode;
 
   setProcessEnv(resolvedCompilation.mode);
-
-  // TODO add targetEnv `lib-browser` and `lib-node` support
-  const is_entry_html =
-    !resolvedCompilation.input ||
-    Object.values(resolvedCompilation.input).some(
-      (value) => value && value.endsWith('.html')
-    );
-
+  const isNode = isNodeEnv(resolvedCompilation.output.targetEnv);
   if (
-    resolvedCompilation.output.targetEnv !== 'node' &&
+    !isNode &&
     isArray(resolvedCompilation.runtime.plugins) &&
     resolvedUserConfig.server?.hmr &&
     !resolvedCompilation.runtime.plugins.includes(hmrClientPluginPath)
@@ -440,9 +425,9 @@ export async function normalizeUserCompilationConfig(
 
   if (
     isArray(resolvedCompilation.runtime.plugins) &&
-    !resolvedCompilation.runtime.plugins.includes(ImportMetaPluginPath)
+    !resolvedCompilation.runtime.plugins.includes(importMetaPluginPath)
   ) {
-    resolvedCompilation.runtime.plugins.push(ImportMetaPluginPath);
+    resolvedCompilation.runtime.plugins.push(importMetaPluginPath);
   }
 
   // we should not deep merge compilation.input
@@ -567,7 +552,7 @@ export const DEFAULT_DEV_SERVER_OPTIONS: NormalizedServerConfig = {
     name: 'localhost',
     host: undefined
   },
-  host: true,
+  host: 'localhost',
   proxy: undefined,
   hmr: DEFAULT_HMR_OPTIONS,
   middlewareMode: false,
@@ -577,6 +562,7 @@ export const DEFAULT_DEV_SERVER_OPTIONS: NormalizedServerConfig = {
   middlewares: [],
   appType: 'spa',
   writeToDisk: false,
+  origin: '',
   preview: {
     host: 'localhost',
     headers: {},
@@ -613,8 +599,6 @@ export const DEFAULT_COMPILATION_OPTIONS: Partial<ResolvedCompilation> = {
     ]
   }
 };
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 
 function tryHttpsAsFileRead(value: unknown): string | Buffer | unknown {
   if (typeof value === 'string') {
@@ -663,7 +647,6 @@ export function normalizeDevServerConfig(
   }) as NormalizedServerConfig;
 }
 
-type Format = Exclude<OutputConfig['format'], undefined>;
 const formatFromExt: Record<string, Format> = {
   cjs: 'cjs',
   mjs: 'esm',
@@ -682,7 +665,7 @@ export async function readConfigFile(
   configFilePath: string,
   configEnv: ConfigEnv,
   mode: CompilationMode = 'development'
-): Promise<UserConfig | undefined> {
+): UserConfigPromise {
   if (!fse.existsSync(configFilePath)) return;
 
   const format = getFormat(configFilePath);
@@ -783,19 +766,13 @@ export async function loadConfigFile(
   inlineOptions: FarmCliOptions & UserConfig,
   configEnv: ConfigEnv,
   mode: CompilationMode = 'development'
-): Promise<
-  | {
-      config: UserConfig;
-      configFilePath: string;
-    }
-  | undefined
-> {
-  const { root = '.' } = inlineOptions;
+): Promise<ConfigResult | undefined> {
+  const { root = '.', configFile } = inlineOptions;
   const configRootPath = path.resolve(root);
   let resolvedConfigFilePath: string | undefined;
   try {
     resolvedConfigFilePath = await resolveConfigFilePath(
-      inlineOptions.configFile,
+      configFile,
       root,
       configRootPath
     );
@@ -818,7 +795,7 @@ export async function loadConfigFile(
     const errorMessage = convertErrorMessage(error);
     const stackTrace =
       error.code === 'GenericFailure' ? '' : `\n${error.stack}`;
-    if (inlineOptions.mode === 'production') {
+    if (inlineOptions.mode === ENV_PRODUCTION) {
       throw new Error(
         `Failed to load farm config file: ${errorMessage} \n${stackTrace}`
       );
@@ -836,13 +813,12 @@ export async function loadConfigFile(
 }
 
 export async function checkCompilationInputValue(
-  userConfig: UserConfig,
-  logger: Logger
+  userConfig: ResolvedUserConfig
 ) {
   const { compilation } = userConfig;
   const targetEnv = compilation?.output?.targetEnv;
   const inputValue = Object.values(compilation?.input).filter(Boolean);
-  const isTargetNode = targetEnv === 'node';
+  const isTargetNode = isNodeEnv(targetEnv);
   const defaultHtmlPath = './index.html';
   let inputIndexConfig: {
     index?: string;
@@ -886,11 +862,10 @@ export async function checkCompilationInputValue(
 
     // If no index file is found, throw an error
     if (!inputIndexConfig.index) {
-      logger.error(
+      userConfig.logger.error(
         `Build failed due to errors: Can not resolve ${
           isTargetNode ? 'index.js or index.ts' : 'index.html'
         }  from ${userConfig.root}. \n${errorMessage}`
-        // { exit: true }
       );
     }
   }
@@ -923,25 +898,22 @@ export async function resolvePlugins(
   userConfig: UserConfig,
   mode: CompilationMode
 ) {
-  const { jsPlugins: rawJsPlugins, rustPlugins } =
-    await resolveFarmPlugins(userConfig);
-  const jsPlugins = await resolveAndFilterAsyncPlugins(rawJsPlugins);
+  const [farmPlugins, vitePluginAdapters] = await Promise.all([
+    resolveFarmPlugins(userConfig),
+    resolveVitePlugins(userConfig, mode)
+  ]);
 
-  const vitePlugins = (userConfig?.vitePlugins ?? []).filter(Boolean);
-
-  const vitePluginAdapters = vitePlugins.length
-    ? await handleVitePlugins(vitePlugins, userConfig, mode)
-    : [];
-
-  return {
-    jsPlugins,
-    vitePlugins,
-    rustPlugins,
+  const resolvePluginsResult = {
+    jsPlugins: farmPlugins.jsPlugins.map(wrapPluginUpdateModules),
+    vitePlugins: (userConfig?.vitePlugins ?? []).filter(Boolean),
+    rustPlugins: farmPlugins.rustPlugins,
     vitePluginAdapters
   };
+
+  return resolvePluginsResult;
 }
 
-export async function resolveDefaultUserConfig(options: any) {
+export async function resolveDefaultUserConfig(options: DefaultOptionsType) {
   const defaultConfig: UserConfig = createDefaultConfig(options);
 
   const resolvedUserConfig: ResolvedUserConfig = await resolveUserConfig(
@@ -951,7 +923,7 @@ export async function resolveDefaultUserConfig(options: any) {
 
   const normalizedConfig = await normalizeUserCompilationConfig(
     resolvedUserConfig,
-    'development'
+    options.mode
   );
 
   return normalizedConfig;
@@ -996,11 +968,10 @@ export async function resolveUserConfig(
   resolvedUserConfig.env = {
     ...userEnv,
     NODE_ENV: userConfig.compilation.mode,
-    // TODO publicPath rewrite to BASE_URL
     BASE_URL: userConfig.compilation.output.publicPath ?? '/',
     mode: userConfig.mode,
-    DEV: userConfig.compilation.mode === 'development',
-    PROD: userConfig.compilation.mode === 'production'
+    DEV: userConfig.compilation.mode === ENV_DEVELOPMENT,
+    PROD: userConfig.compilation.mode === ENV_PRODUCTION
   };
 
   resolvedUserConfig.publicDir = normalizePublicDir(
@@ -1011,7 +982,7 @@ export async function resolveUserConfig(
   return resolvedUserConfig;
 }
 
-export function createDefaultConfig(options: any): UserConfig {
+export function createDefaultConfig(options: DefaultOptionsType): UserConfig {
   const { inlineOptions, mode, format, outputPath, fileName, configFilePath } =
     options;
 
@@ -1080,23 +1051,12 @@ export async function resolveConfigFilePath(
   }
 }
 
-export function checkClearScreen(
-  inlineConfig: FarmCliOptions | ResolvedUserConfig
-) {
-  if (
-    inlineConfig?.clearScreen &&
-    !__FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__
-  ) {
-    clearScreen();
-  }
-}
-
 export function getFormat(configFilePath: string): Format {
   return process.env.FARM_CONFIG_FORMAT === 'cjs'
     ? 'cjs'
     : process.env.FARM_CONFIG_FORMAT === 'esm'
       ? 'esm'
-      : (formatFromExt[path.extname(configFilePath).slice(1)] ?? 'esm');
+      : formatFromExt[path.extname(configFilePath).slice(1)] ?? 'esm';
 }
 
 export function getFilePath(outputPath: string, fileName: string): string {
@@ -1115,4 +1075,13 @@ async function setLazyCompilationDefine(
       resolvedUserConfig.server.protocol || 'http'
     }://${hostname.host || 'localhost'}:${resolvedUserConfig.server.port}`
   };
+}
+
+function getNamespaceName(rootPath: string) {
+  const packageJsonPath = path.resolve(rootPath, 'package.json');
+  if (fse.existsSync(packageJsonPath)) {
+    const { name } = JSON.parse(fse.readFileSync(packageJsonPath, 'utf-8'));
+    return name || FARM_DEFAULT_NAMESPACE;
+  }
+  return FARM_DEFAULT_NAMESPACE;
 }

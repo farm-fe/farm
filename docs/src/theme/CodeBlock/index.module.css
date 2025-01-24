@@ -14,7 +14,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0.5em 1em;
+  padding: 0.3em 1em;
   border-bottom: var(--code-block-border);
   background-color: var(--code-block);
 }
@@ -24,7 +24,7 @@
   font-size: 0.9em;
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 10px;
   svg {
     width: 22px;
   }
@@ -44,13 +44,6 @@
 .copy-button:hover {
   background-color: #e9ecef;
   border-color: #adb5bd;
-}
-
-.copy-icon {
-  width: 1em;
-  height: 1em;
-  margin-right: 0.5em;
-  fill: currentColor;
 }
 
 .copy-button span {
@@ -99,8 +92,8 @@
 }
 
 .copy-icon {
-  width: 1.5em;
-  height: 1.5em;
+  width: 1.2em;
+  height: 1.2em;
   margin-right: 0.5em;
   fill: currentColor;
   transition: transform 0.2s ease;

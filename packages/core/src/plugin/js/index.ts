@@ -43,6 +43,7 @@ import { VitePluginAdapter } from './vite-plugin-adapter.js';
 
 export { VitePluginAdapter } from './vite-plugin-adapter.js';
 export * from './js-plugin-schema.js';
+export * from './utils.js';
 
 type VitePluginType = object | (() => { vitePlugin: any; filters: string[] });
 type VitePluginsType = VitePluginType[];
@@ -175,6 +176,12 @@ export function convertPluginVite(plugin: JsPlugin): void {
     } else if (!plugin.transform.filters.resolvedPaths) {
       plugin.transform.filters.resolvedPaths = [];
     }
+  }
+
+  if (plugin.processModule) {
+    plugin.processModule.filters ??= {};
+    plugin.processModule.filters.moduleTypes ??= [];
+    plugin.processModule.filters.resolvedPaths ??= [];
   }
 
   if (plugin.renderResourcePot) {

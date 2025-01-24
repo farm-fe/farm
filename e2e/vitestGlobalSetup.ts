@@ -2,30 +2,19 @@ import type { GlobalSetupContext } from 'vitest/node';
 import { chromium } from 'playwright-chromium';
 import type { BrowserServer } from 'playwright-chromium';
 import { createServer, Server } from 'http';
+import getPort from 'get-port';
 
 let browserServer: BrowserServer | undefined;
 let client: Server | undefined;
-
-let port = 23000;
-
-function addPort() {
-  return (port += 10);
-}
-
-function setPort(_port: number) {
-  return (port = _port);
-}
-
-setPort(9100);
 
 export async function setup({ provide }: GlobalSetupContext): Promise<void> {
   browserServer = await chromium.launchServer({
     headless: true
   });
 
-  client = createServer((req, res) => {
+  client = createServer(async (req, res) => {
     if (req.url.startsWith('/port')) {
-      res.end(addPort().toString());
+      res.end((await getPort()).toString());
       return;
     }
     // not found path

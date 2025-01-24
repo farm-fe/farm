@@ -1,13 +1,13 @@
 import { SecureServerOptions } from 'node:http2';
 
-import { Server } from '../index.js';
+import { CompilationMode, Server } from '../index.js';
 
 import type { OutgoingHttpHeaders } from 'http';
 import type { ServerOptions as HttpsServerOptions } from 'node:https';
 import type { WatchOptions } from 'chokidar';
 import type { RustPlugin } from '../plugin/rust/index.js';
 import type { JsPlugin } from '../plugin/type.js';
-import type { Config, CssConfig } from '../types/binding.js';
+import type { Config, CssConfig, OutputConfig } from '../types/binding.js';
 import type { Logger } from '../utils/index.js';
 
 export interface HmrOptions {
@@ -27,7 +27,7 @@ export interface ConfigEnv {
   isPreview: boolean;
 }
 
-export type commandType = 'start' | 'dev' | 'build' | 'watch' | 'preview';
+export type commandType = 'dev' | 'build' | 'watch' | 'preview';
 
 export type UserConfigFnPromise = (env: ConfigEnv) => Promise<UserConfig>;
 export type UserConfigFn = (env: ConfigEnv) => UserConfig | Promise<UserConfig>;
@@ -44,6 +44,7 @@ export interface UserServerConfig {
   headers?: OutgoingHttpHeaders | undefined;
   port?: number;
   https?: HttpsServerOptions;
+  origin?: string;
   protocol?: 'http' | 'https';
   hostname?: { name: string; host: string | undefined };
   // http2?: boolean;
@@ -56,7 +57,7 @@ export interface UserServerConfig {
   // whether to serve static assets in spa mode, default to true
   appType?: 'spa' | 'mpa' | 'custom';
   middlewares?: DevServerMiddleware[];
-  middlewareMode?: boolean | string;
+  middlewareMode?: boolean;
   writeToDisk?: boolean;
   /** Preview server config */
   preview?: UserPreviewServerConfig;
@@ -197,6 +198,7 @@ export interface ResolvedCompilation
 export interface ResolvedUserConfig extends UserConfig {
   root?: string;
   mode?: string;
+  command?: commandType;
   env?: Record<string, any>;
   envDir?: string;
   envFiles?: string[];
@@ -261,4 +263,43 @@ export type DevServerMiddleware = (context: Server) => any | undefined;
 export interface Alias {
   find: string;
   replacement: string;
+}
+export type Format = Exclude<OutputConfig['format'], undefined>;
+
+export type DefaultOptionsType = {
+  inlineOptions?: FarmCliOptions;
+  configFilePath?: string;
+  format?: Format;
+  outputPath?: string;
+  fileName?: string;
+  mode?: CompilationMode;
+};
+
+export type EnvResult = Record<
+  `$__farm_regex:(global(This)?\\.)?process\\.env\\.${string}`,
+  string
+>;
+
+export interface ModuleNode {
+  url: string;
+  /**
+   * Resolved file system path + query
+   */
+  id: string | null;
+  file: string | null;
+  type: 'js' | 'css';
+}
+
+export interface ModuleContext {
+  file: string;
+  timestamp: number;
+  type: string;
+  modules: ModuleNode[];
+  paths: string[];
+  read: (file: string) => string | Promise<string>;
+}
+
+export interface ConfigResult {
+  config: UserConfig;
+  configFilePath: string;
 }

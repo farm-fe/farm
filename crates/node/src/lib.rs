@@ -476,6 +476,18 @@ impl JsCompiler {
     let context = self.compiler.context();
     context.record_manager.to_string()
   }
+
+  #[napi]
+  pub fn invalidate_module(&self, module_id: String) {
+    invalidate_module(self, module_id);
+  }
+}
+
+fn invalidate_module(js_compiler: &JsCompiler, module_id: String) {
+  let context = js_compiler.compiler.context();
+  let module_id = ModuleId::new(&module_id, "", &context.config.root);
+
+  context.invalidate_module(&module_id);
 }
 
 #[cfg(feature = "file_watcher")]
