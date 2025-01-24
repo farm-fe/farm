@@ -80,8 +80,7 @@ impl Plugin for FarmPluginDts {
     let ast = &mut param.meta.as_script_mut().ast;
     let comments = SingleThreadedComments::default();
 
-    // 克隆 AST
-    let mut module = ast.clone();
+    let mut module: EcmaAstModule = ast.clone();
     let filename = Arc::new(FileName::Real(
       param.module_id.relative_path().to_string().into(),
     ));
@@ -90,18 +89,16 @@ impl Plugin for FarmPluginDts {
 
     let mut checker = FastDts::new(filename);
     let issues = checker.transform(&mut module);
-    // 生成 d.ts 代码
     for issue in issues {
       let range = issue.range();
       // println!("DTS Issue: {:?}", issue.to_string());
     }
     let dts_code = to_code_with_comments(Some(&comments), &module);
-    println!("dts_code: {:?}", start.elapsed());
+    // println!("cost_time: {:?}", start.elapsed());
     *self.total_dts_time.lock().unwrap() += start.elapsed();
-    // println!("Original AST: {:#?}", ast); // 打印原始 AST
-    // println!("Transformed AST: {:#?}", module); // 打印转换后的 AST
-    // println!("DTS Code: {}", dts_code); // 打印生成的代码
-
+    // println!("Original AST: {:#?}", ast);
+    // println!("Transformed AST: {:#?}", module);
+    // println!("DTS Code: {}", dts_code);
     Ok(Some(()))
   }
 
@@ -112,7 +109,7 @@ impl Plugin for FarmPluginDts {
   ) -> Result<Option<()>, CompilationError> {
     let total_time = *self.total_dts_time.lock().unwrap();
     println!(
-      "Total DTS generation time: {:?} ms",
+      "\x1b[1m\x1b[35m[ Farm ]\x1b[0m Dts Plugin Build completed in: \x1b[1m\x1b[32m{:.2}ms\x1b[0m",
       total_time.as_secs_f64() * 1000.0
     );
     Ok(None)
