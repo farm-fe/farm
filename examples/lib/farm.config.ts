@@ -1,5 +1,5 @@
 import { defineConfig } from '@farmfe/core';
-
+import farmDtsPlugin from '@farmfe/js-plugin-dts';
 export default defineConfig({
   compilation: {
     presetEnv: false,
@@ -9,5 +9,10 @@ export default defineConfig({
     },
     persistentCache: false
   },
+  // plugins: [
+  //   farmDtsPlugin({
+  //     tsConfigPath: './tsconfig.json'
+  //   })
+  // ]
   plugins: ['@farmfe/plugin-dts']
 });

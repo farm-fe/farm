@@ -1711,6 +1711,7 @@ dependencies = [
  "swc_ecma_ast 3.0.0",
  "swc_ecma_parser",
  "swc_html_ast",
+ "swc_typescript 3.0.0",
  "thiserror",
  "wax",
 ]
@@ -2035,7 +2036,7 @@ dependencies = [
  "swc_html_minifier",
  "swc_html_parser",
  "swc_html_visit",
- "swc_typescript",
+ "swc_typescript 4.0.0",
 ]
 
 [[package]]
@@ -6378,6 +6379,18 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.87",
+]
+
+[[package]]
+name = "swc_typescript"
+version = "3.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b70dfbda2233c81ecd0da521c6b2e1b318a7f57dc0e8186b7157ed5576db1e02"
+dependencies = [
+ "swc_atoms",
+ "swc_common 3.0.0",
+ "swc_ecma_ast 3.0.0",
+ "thiserror",
 ]
 
 [[package]]

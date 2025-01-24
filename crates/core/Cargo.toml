@@ -38,6 +38,7 @@ wax = { version = "0.6", default-features = false, features = [
 ] }
 globset = { version = "0.4.14" }
 swc_ecma_ast = { version = "3.0.0", features = ["rkyv-impl", "serde-impl"] }
+swc_typescript = { version = "3.0.0" }
 swc_ecma_parser = { version = "4.0.0" }
 swc_common = { version = "3.0.0", features = [
   "concurrent",

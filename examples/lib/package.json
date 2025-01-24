@@ -10,6 +10,7 @@
   "devDependencies": {
     "@farmfe/cli": "workspace:*",
     "typescript": "^5.4.3",
+    "@farmfe/js-plugin-dts": "workspace:*",
     "@farmfe/plugin-dts": "workspace:*"
   }
 }
