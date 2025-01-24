@@ -16,7 +16,7 @@ use swc_html_parser::{
   parser::{Parser, ParserConfig},
 };
 
-use crate::source_map::create_swc_source_map;
+use crate::sourcemap::create_swc_source_map;
 
 /// Parse html content to swc_html_ast's [Document], present the ast of HTML.
 pub fn parse_html_document(id: &str, content: Arc<String>) -> farmfe_core::error::Result<Document> {

@@ -11,7 +11,7 @@ use farmfe_core::{
   HashMap, HashSet,
 };
 use farmfe_toolkit::{
-  script::swc_try_with::try_with, source_map::create_swc_source_map, swc_ecma_visit::VisitWith,
+  script::swc_try_with::try_with, sourcemap::create_swc_source_map, swc_ecma_visit::VisitWith,
 };
 
 use crate::resource_pot_to_bundle::{

@@ -92,6 +92,7 @@ impl Plugin for FarmPluginScriptMeta {
     Ok(Some(()))
   }
 
+  /// Must be executed after tree shake
   fn optimize_module_graph(
     &self,
     module_graph: &mut farmfe_core::module::module_graph::ModuleGraph,

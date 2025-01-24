@@ -987,18 +987,6 @@ fn create_export_class_decl_stmts(
   export
 }
 
-// fn create_module_helper_callee(helper: &str, unresolved_mark: Mark) -> Callee {
-//   let prop = Ident::new(helper.into(), DUMMY_SP);
-//   Callee::Expr(Box::new(Expr::Member(MemberExpr {
-//     span: DUMMY_SP,
-//     obj: Box::new(Expr::Ident(Ident::new(
-//       FARM_MODULE_SYSTEM_MODULE.into(),
-//       DUMMY_SP.apply_mark(unresolved_mark),
-//     ))),
-//     prop: MemberProp::Ident(prop),
-//   })))
-// }
-
 fn create_module_helper_item(
   helper: Box<Expr>,
   val_name_ident: Ident,
@@ -1180,7 +1168,7 @@ mod tests {
 
   use crate::{
     script::{codegen_module, parse_module, swc_try_with::try_with},
-    source_map::create_swc_source_map,
+    sourcemap::create_swc_source_map,
   };
   use farmfe_core::{
     module::ModuleId, swc_common::Globals, swc_ecma_ast::EsVersion, swc_ecma_parser::Syntax,

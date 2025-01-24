@@ -23,7 +23,7 @@ pub fn farm_create_swc_source_map(
   id: &str,
   content: Arc<String>,
 ) -> Result<(Arc<SourceMap>, Arc<SourceFile>)> {
-  let (cm, source_file) = farmfe_toolkit::source_map::create_swc_source_map(&id.into(), content);
+  let (cm, source_file) = farmfe_toolkit::sourcemap::create_swc_source_map(&id.into(), content);
 
   Ok((cm, source_file))
 }

@@ -95,7 +95,7 @@ if (__FARM_ENABLE_EXTERNAL_MODULES__) {
       moduleSystem.em[key]= externalModules[key];
     }
   }
-  __farm_global_this__.__farm_module_system = moduleSystem;
+  __farm_global_this__.m = moduleSystem;
 }
 
 export function farmRequire(id: string): any {

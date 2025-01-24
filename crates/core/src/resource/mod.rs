@@ -2,7 +2,7 @@ use heck::AsLowerCamelCase;
 
 use farmfe_macro_cache_item::cache_item;
 
-use crate::module::ModuleId;
+use crate::{module::ModuleId, HashMap};
 
 use self::resource_pot::ResourcePotId;
 
@@ -129,6 +129,10 @@ pub struct Resource {
   pub resource_type: ResourceType,
   /// the origin that this resource generated from
   pub origin: ResourceOrigin,
+  /// custom meta data for this resource, it's only used for save context in rust side and should not be passed to js
+  /// for example: save resource code before update
+  #[serde(skip)]
+  pub meta: HashMap<String, String>,
 }
 
 impl Default for Resource {
@@ -140,7 +144,7 @@ impl Default for Resource {
       should_transform_output_filename: true,
       resource_type: ResourceType::Custom("unknown".to_string()),
       origin: ResourceOrigin::Module("unknown".into()),
-      // info: None,
+      meta: HashMap::default(),
     }
   }
 }

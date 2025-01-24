@@ -31,7 +31,7 @@ impl Plugin for FarmPluginLibrary {
     "FarmPluginLibrary"
   }
 
-  // TODO: add a hook collect resource pot info before render resource pot
+  // TODO: add a hook collect resource pot import/export info before render resource pot
 
   fn render_resource_pot(
     &self,
@@ -55,41 +55,7 @@ impl Plugin for FarmPluginLibrary {
     // handle import/export between resource pots
     if let Some(entry) = &resource_pot.entry_module {
       let entry_module = module_graph.module(entry).unwrap();
-      // add export statement from export_ident_map
-      let export_ident_map = &entry_module.meta.as_script().export_ident_map;
-      let mut export_idents = export_ident_map
-        .iter()
-        .map(|(k, v)| (k.clone(), v.clone()))
-        .collect::<Vec<_>>();
-      export_idents.sort_by_key(|a| a.0.clone());
-
-      let mut specifiers = vec![];
-
-      for (name, id) in export_idents {
-        // skip internal namespace
-        if name == EXPORT_NAMESPACE {
-          continue;
-        }
-
-        specifiers.push(ExportSpecifier::Named(ExportNamedSpecifier {
-          span: DUMMY_SP,
-          orig: ModuleExportName::Ident(Ident::new(id.sym.clone(), DUMMY_SP, id.ctxt())),
-          exported: Some(ModuleExportName::Ident(Ident::new(
-            name.as_str().into(),
-            DUMMY_SP,
-            SyntaxContext::empty(),
-          ))),
-          is_type_only: false,
-        }));
-      }
-
-      let export_item = ModuleItem::ModuleDecl(ModuleDecl::ExportNamed(NamedExport {
-        span: DUMMY_SP,
-        specifiers,
-        src: None,
-        type_only: false,
-        with: None,
-      }));
+      let export_item = entry_module.meta.as_script().get_export_module_item();
 
       ast.body.push(export_item);
     }

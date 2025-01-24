@@ -3,7 +3,7 @@ use std::sync::Arc;
 use farmfe_core::{
   context::CompilationContext,
   module::ModuleId,
-  plugin::{PluginUpdateModulesHookParams, UpdateResult, UpdateType},
+  plugin::{PluginUpdateModulesHookParam, UpdateResult, UpdateType},
   serde_json,
   stats::CompilationPluginHookStats,
   HashMap,
@@ -49,7 +49,7 @@ pub fn handle_update_modules(
         end_time,
       })
   }
-  let mut plugin_update_modules_hook_params = PluginUpdateModulesHookParams { paths };
+  let mut plugin_update_modules_hook_params = PluginUpdateModulesHookParam { paths };
 
   context
     .plugin_driver

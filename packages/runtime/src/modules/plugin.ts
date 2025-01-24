@@ -85,6 +85,13 @@ const pluginContainer: FarmRuntimePluginContainer = {
   b: hookPluginsBail
 }
 
+
+function bootstrap(): void {
+  pluginContainer.s("bootstrap", this);
+}
+
+
 export function initModuleSystem(moduleSystem: ModuleSystem) {
   moduleSystem.p = pluginContainer;
+  moduleSystem.b = bootstrap;
 }

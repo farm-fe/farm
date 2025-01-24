@@ -28,6 +28,8 @@ pub struct ResourcePot {
   /// A [ResourcePot] can belong to multiple module groups.
   pub module_groups: HashSet<ModuleGroupId>,
   pub immutable: bool,
+  /// True if this resource pot is generated from dynamic entry
+  pub is_dynamic_entry: bool,
 }
 
 impl serde::Serialize for ResourcePot {
@@ -61,6 +63,7 @@ impl ResourcePot {
       resources: HashSet::default(),
       module_groups: HashSet::default(),
       immutable: false,
+      is_dynamic_entry: false,
     }
   }
 

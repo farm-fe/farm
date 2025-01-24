@@ -22,7 +22,7 @@ use farmfe_toolkit::{
   css::codegen_css_stylesheet,
   hash::base64_encode,
   script::{parse_module, swc_try_with::try_with, ParseScriptModuleResult},
-  source_map::create_swc_source_map,
+  sourcemap::create_swc_source_map,
   sourcemap::SourceMap,
   swc_ecma_transforms_base::resolver,
   swc_ecma_visit::VisitMutWith,

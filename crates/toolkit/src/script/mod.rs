@@ -15,16 +15,16 @@ use farmfe_core::{
   module::ModuleId,
   swc_common::{
     comments::{Comments, SingleThreadedComments},
-    BytePos, FileName, LineCol, SourceFile, SourceMap,
+    BytePos, FileName, LineCol, SourceFile, SourceMap, DUMMY_SP,
   },
-  swc_ecma_ast::{EsVersion, Module as SwcModule, Stmt},
+  swc_ecma_ast::{EsVersion, Module as SwcModule, ModuleItem, Stmt},
 };
 
 use swc_ecma_visit::VisitMutWith;
 use swc_error_reporters::handler::try_with_handler;
 use swc_try_with::ResetSpanVisitMut;
 
-use crate::{minify::comments::minify_comments, source_map::create_swc_source_map};
+use crate::{minify::comments::minify_comments, sourcemap::create_swc_source_map};
 
 pub use farmfe_toolkit_plugin_types::swc_ast::ParseScriptModuleResult;
 

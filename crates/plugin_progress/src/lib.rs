@@ -63,7 +63,7 @@ impl Plugin for FarmPluginProgress {
 
   fn update_modules(
     &self,
-    _params: &mut farmfe_core::plugin::PluginUpdateModulesHookParams,
+    _params: &mut farmfe_core::plugin::PluginUpdateModulesHookParam,
     _context: &Arc<CompilationContext>,
   ) -> Result<Option<()>> {
     self.progress_bar.reset();
@@ -111,7 +111,7 @@ impl Plugin for FarmPluginProgress {
 
   fn module_graph_updated(
     &self,
-    _param: &farmfe_core::plugin::PluginModuleGraphUpdatedHookParams,
+    _param: &farmfe_core::plugin::PluginModuleGraphUpdatedHookParam,
     _context: &Arc<CompilationContext>,
   ) -> Result<Option<()>> {
     let first_build = self.first_build.lock();
@@ -195,7 +195,7 @@ impl Plugin for FarmPluginProgress {
 
   fn finalize_resources(
     &self,
-    _param: &mut farmfe_core::plugin::PluginFinalizeResourcesHookParams,
+    _param: &mut farmfe_core::plugin::PluginFinalizeResourcesHookParam,
     _context: &Arc<CompilationContext>,
   ) -> Result<Option<()>> {
     let first_build = self.first_build.lock();

@@ -14,7 +14,7 @@ use farmfe_plugin_tree_shake::{
 };
 use farmfe_testing_helpers::fixture;
 use farmfe_toolkit::{
-  fs::read_file_utf8, script::codegen_module, source_map::create_swc_source_map,
+  fs::read_file_utf8, script::codegen_module, sourcemap::create_swc_source_map,
 };
 
 use crate::common::create_module_with_comments;

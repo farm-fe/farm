@@ -9,9 +9,6 @@ use farmfe_core::{
   swc_ecma_ast::Module,
   HashMap, HashSet,
 };
-use farmfe_plugin_bundle::resource_pot_to_bundle::{
-  BundleGroup, GeneratorAstResult, ShareBundleOptions, SharedBundle,
-};
 
 // use farmfe_plugin_bundle::resource_pot_to_bundle::{
 //   BundleGroup, GeneratorAstResult, ShareBundleOptions, SharedBundle,
@@ -49,46 +46,46 @@ impl ScopeHoistedModuleGroup {
     self.hoisted_module_ids.extend(hoisted_module_ids);
   }
 
-  /// concatenate the [ScopeHoistedModuleGroup] into a single ast. For example:
-  /// ```js
-  ///  const xxx = farmDynamicRequire('./xxx');
-  ///  const module_D = 'D'; // hoisted code of module D
-  ///  const module_C = 'C'; // hoisted code of module C
-  ///  const module_B = 'B'; // hoisted code of module B
-  ///  console.log(module_D, module_C, module_B, xxx); // code of module A
-  ///
-  ///  module.o(exports, 'b', module_B);
-  /// ```
-  pub fn concatenate_modules(
-    &self,
-    module_graph: &ModuleGraph,
-    context: &Arc<CompilationContext>,
-  ) -> farmfe_core::error::Result<GeneratorAstResult> {
-    let bundle_id = self.target_hoisted_module_id.to_string();
+  // /// concatenate the [ScopeHoistedModuleGroup] into a single ast. For example:
+  // /// ```js
+  // ///  const xxx = farmDynamicRequire('./xxx');
+  // ///  const module_D = 'D'; // hoisted code of module D
+  // ///  const module_C = 'C'; // hoisted code of module C
+  // ///  const module_B = 'B'; // hoisted code of module B
+  // ///  console.log(module_D, module_C, module_B, xxx); // code of module A
+  // ///
+  // ///  module.o(exports, 'b', module_B);
+  // /// ```
+  // pub fn concatenate_modules(
+  //   &self,
+  //   module_graph: &ModuleGraph,
+  //   context: &Arc<CompilationContext>,
+  // ) -> farmfe_core::error::Result<GeneratorAstResult> {
+  //   let bundle_id = self.target_hoisted_module_id.to_string();
 
-    let mut share_bundle = SharedBundle::new(
-      vec![BundleGroup {
-        id: bundle_id.clone(),
-        modules: self.hoisted_module_ids.iter().collect(),
-        entry_module: Some(self.target_hoisted_module_id.clone()),
-        group_type: ResourcePotType::Js,
-      }],
-      module_graph,
-      context,
-      Some(ShareBundleOptions {
-        reference_slot: false,
-        ignore_external_polyfill: true,
-        // should ignore
-        format: ModuleFormat::EsModule,
-        hash_path: true,
-        concatenation_module: true,
-        ..Default::default()
-      }),
-    )?;
+  //   let mut share_bundle = SharedBundle::new(
+  //     vec![BundleGroup {
+  //       id: bundle_id.clone(),
+  //       modules: self.hoisted_module_ids.iter().collect(),
+  //       entry_module: Some(self.target_hoisted_module_id.clone()),
+  //       group_type: ResourcePotType::Js,
+  //     }],
+  //     module_graph,
+  //     context,
+  //     Some(ShareBundleOptions {
+  //       reference_slot: false,
+  //       ignore_external_polyfill: true,
+  //       // should ignore
+  //       format: ModuleFormat::EsModule,
+  //       hash_path: true,
+  //       concatenation_module: true,
+  //       ..Default::default()
+  //     }),
+  //   )?;
 
-    share_bundle.render()?;
-    share_bundle.codegen(&bundle_id)
-  }
+  //   share_bundle.render()?;
+  //   share_bundle.codegen(&bundle_id)
+  // }
 }
 
 /// Handle the modules of a resource pot in topological order.
@@ -110,10 +107,7 @@ pub fn build_scope_hoisted_module_groups(
     );
     reverse_module_hoisted_group_map.insert(module_id.clone(), module_id.clone());
   }
-  // println!(
-  //   "scope_hoisted_module_groups_map: {:?}",
-  //   scope_hoisted_module_groups_map
-  // );
+
   // Merge ScopeHoistedModuleGroup when concatenate_modules enabled
   if context.config.concatenate_modules {
     let mut scope_hoisted_module_groups = scope_hoisted_module_groups_map

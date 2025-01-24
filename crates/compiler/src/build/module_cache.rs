@@ -351,6 +351,7 @@ fn is_watch_dependencies_content_hash_changed(
     .collect::<HashMap<_, _>>();
 
   for dep in relation_dependencies {
+    // TODO using context.load first for virtual modules, then read file string if context.load returns None
     let resolved_path = PathBuf::from(dep.resolved_path(&context.config.root));
     let cached_hash = cached_dep_hash_map.get(dep);
 

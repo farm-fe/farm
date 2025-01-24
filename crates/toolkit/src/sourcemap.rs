@@ -21,24 +21,27 @@ use farmfe_core::{
   swc_common::{
     comments::{Comment, CommentKind, SingleThreadedComments},
     source_map::SourceMapGenConfig,
-    BytePos, FileName, LineCol, SourceFile, SourceMap,
+    BytePos, FileName, LineCol, SourceFile, SourceMap as SwcSourceMap,
   },
 };
-use farmfe_utils::hash::base64_decode;
 
 use crate::hash::base64_encode;
+use farmfe_utils::hash::base64_decode;
 
 pub use farmfe_core::context::{create_swc_source_map, get_swc_sourcemap_filename};
+// reexport sourcemap crate
+pub use sourcemap::*;
 
 pub fn get_module_id_from_sourcemap_filename(filename: &str) -> ModuleId {
   filename.into()
 }
 
-pub fn append_source_map_comment(
-  resource: &mut Resource,
-  map: &Resource,
-  config: &SourcemapConfig,
-) {
+/// Whether a line is a sourcemap comment line
+pub fn is_sourcemap_comment_line(line: &str) -> bool {
+  line.starts_with("//# sourceMappingURL=") || line.starts_with("/*# sourceMappingURL=")
+}
+
+pub fn append_sourcemap_comment(resource: &mut Resource, map: &Resource, config: &SourcemapConfig) {
   let source_map_str = match &resource.resource_type {
     ResourceType::Js => "\n//# sourceMappingURL=",
     ResourceType::Css => "\n/*# sourceMappingURL=",
@@ -73,8 +76,8 @@ pub fn append_source_map_comment(
   resource.bytes.append(&mut source_map_comment.into_bytes());
 }
 
-pub fn build_source_map(
-  cm: Arc<SourceMap>,
+pub fn build_sourcemap(
+  cm: Arc<SwcSourceMap>,
   mappings: &[(BytePos, LineCol)],
 ) -> sourcemap::SourceMap {
   cm.build_source_map_with_config(mappings, None, FarmSwcSourceMapConfig::default())
@@ -196,7 +199,7 @@ impl SourceMapGenConfig for FarmSwcSourceMapConfig {
   }
 }
 
-pub fn load_source_original_source_map(
+pub fn load_source_original_sourcemap(
   content: &str,
   resolved_path: &str,
   source_map_comment_prefix: &str,

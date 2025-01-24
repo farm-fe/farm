@@ -17,7 +17,7 @@ use farmfe_core::{
   HashMap, HashSet,
 };
 
-use farmfe_toolkit::get_dynamic_resources_map::get_dynamic_resources_map;
+use farmfe_toolkit::resources::get_dynamic_resources_map;
 use finalize_module_graph::{
   finalize_updated_module_graph, freeze_module_of_affected_module_graph,
 };

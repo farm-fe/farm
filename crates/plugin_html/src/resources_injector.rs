@@ -9,8 +9,8 @@ use farmfe_core::{
   HashMap,
 };
 use farmfe_toolkit::{
-  get_dynamic_resources_map::get_dynamic_resources_code,
   html::{create_element, get_farm_global_this},
+  resources::get_dynamic_resources_code,
   swc_html_visit::{VisitMut, VisitMutWith},
 };
 

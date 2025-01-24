@@ -10,8 +10,8 @@ use farmfe_core::{
   swc_ecma_parser::Syntax,
 };
 use farmfe_toolkit::{
-  script::ParseScriptModuleResult, source_map::create_swc_source_map,
-  swc_ecma_transforms::resolver, swc_ecma_visit::VisitMutWith,
+  script::ParseScriptModuleResult, sourcemap::create_swc_source_map, swc_ecma_transforms::resolver,
+  swc_ecma_visit::VisitMutWith,
 };
 
 pub fn parse_module_with_comments(code: &str) -> (SwcModule, SingleThreadedComments, Mark, Mark) {

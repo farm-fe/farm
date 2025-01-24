@@ -47,10 +47,10 @@ use farmfe_toolkit::lazy_static::lazy_static;
 use farmfe_toolkit::minify::minify_css_module;
 use farmfe_toolkit::resolve::DYNAMIC_EXTENSION_PRIORITY;
 use farmfe_toolkit::script::swc_try_with::try_with;
-use farmfe_toolkit::source_map::{
-  create_swc_source_map, load_source_original_source_map, PathFilter,
-};
 use farmfe_toolkit::sourcemap::SourceMap;
+use farmfe_toolkit::sourcemap::{
+  create_swc_source_map, load_source_original_sourcemap, PathFilter,
+};
 use farmfe_toolkit::{
   css::{codegen_css_stylesheet, parse_css_stylesheet},
   fs::read_file_utf8,
@@ -251,7 +251,7 @@ impl Plugin for FarmPluginCss {
         let content = read_file_utf8(param.resolved_path)?;
 
         let map =
-          load_source_original_source_map(&content, param.resolved_path, "/*# sourceMappingURL");
+          load_source_original_sourcemap(&content, param.resolved_path, "/*# sourceMappingURL");
 
         return Ok(Some(PluginLoadHookResult {
           content,
@@ -520,7 +520,7 @@ impl Plugin for FarmPluginCss {
 
   fn module_graph_updated(
     &self,
-    param: &farmfe_core::plugin::PluginModuleGraphUpdatedHookParams,
+    param: &farmfe_core::plugin::PluginModuleGraphUpdatedHookParam,
     context: &Arc<CompilationContext>,
   ) -> farmfe_core::error::Result<Option<()>> {
     let mut module_ids = param.updated_modules_ids.clone();
@@ -710,7 +710,7 @@ impl Plugin for FarmPluginCss {
         should_transform_output_filename: true,
         resource_type: ResourceType::Css,
         origin: ResourceOrigin::ResourcePot(resource_pot.id.clone()),
-        // info: None,
+        meta: Default::default(),
       };
       let mut source_map = None;
 

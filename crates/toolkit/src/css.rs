@@ -17,7 +17,7 @@ use swc_css_parser::{
 };
 use swc_error_reporters::handler::try_with_handler;
 
-use crate::source_map::{build_source_map, create_swc_source_map};
+use crate::sourcemap::{build_sourcemap, create_swc_source_map};
 
 pub struct ParseCssModuleResult {
   pub ast: Stylesheet,
@@ -114,7 +114,7 @@ pub fn codegen_css_stylesheet(
 
   if let Some((id, source)) = source {
     let (cm, _) = create_swc_source_map(id, source);
-    let map = build_source_map(cm, &mappings);
+    let map = build_sourcemap(cm, &mappings);
     let mut src_map = vec![];
     map.to_writer(&mut src_map).unwrap();
 

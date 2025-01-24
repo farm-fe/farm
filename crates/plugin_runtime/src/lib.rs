@@ -15,7 +15,7 @@ use farmfe_core::{
   module::{meta_data::script::feature_flag::FeatureFlag, Module, ModuleId, ModuleType},
   parking_lot::Mutex,
   plugin::{
-    GeneratedResource, Plugin, PluginAnalyzeDepsHookResultEntry, PluginFinalizeResourcesHookParams,
+    GeneratedResource, Plugin, PluginAnalyzeDepsHookResultEntry, PluginFinalizeResourcesHookParam,
     PluginGenerateResourcesHookResult, PluginHookContext, PluginLoadHookParam,
     PluginLoadHookResult, PluginResolveHookParam, PluginResolveHookResult,
     PluginTransformHookResult, ResolveKind,
@@ -30,7 +30,7 @@ use farmfe_core::{
   swc_ecma_ast::{Expr, ExprStmt, Module as SwcModule, ModuleItem, Stmt},
   HashMap, HashSet,
 };
-use farmfe_plugin_bundle::resource_pot_to_bundle::{BundleGroup, ShareBundleOptions, SharedBundle};
+
 use farmfe_toolkit::{
   fs::read_file_utf8,
   html::get_farm_global_this,
@@ -42,6 +42,7 @@ use farmfe_toolkit::{
 };
 
 use farmfe_utils::hash::base64_encode;
+use handle_entry_resources::handle_entry_resources;
 use insert_runtime_modules::insert_runtime_modules;
 use insert_runtime_plugins::insert_runtime_plugins;
 use render_resource_pot::{external::handle_external_modules, *};
@@ -152,6 +153,9 @@ impl Plugin for FarmPluginRuntime {
         return;
       }
 
+      added_runtime_modules.insert(name.to_string());
+      drop(added_runtime_modules);
+
       let suffix = if name == "index" {
         "".to_string()
       } else {
@@ -166,8 +170,6 @@ impl Plugin for FarmPluginRuntime {
           no_importer: true,
         },
       });
-
-      added_runtime_modules.insert(name.to_string());
     };
 
     // add runtime package entry file for the first entry module
@@ -178,7 +180,7 @@ impl Plugin for FarmPluginRuntime {
     // for example, if a module uses dynamic import, we will append import '@farmfe/runtime/src/modules/dynamic-import' to the runtime entry module.
     let feature_flags = &param.module.meta.as_script().feature_flags;
 
-    if feature_flags.contains(&FeatureFlag::DefaultImport) {
+    if feature_flags.contains(&FeatureFlag::DynamicImport) {
       add_runtime_dynamic_input("dynamic-import", "modules/");
     }
 
@@ -230,24 +232,6 @@ impl Plugin for FarmPluginRuntime {
     context: &Arc<CompilationContext>,
     _hook_context: &PluginHookContext,
   ) -> farmfe_core::error::Result<Option<ResourcePotMetaData>> {
-    // render runtime resource pot
-    if matches!(resource_pot.resource_pot_type, ResourcePotType::Runtime) {
-      let module_graph = context.module_graph.read();
-      let bundle_group = BundleGroup::from(resource_pot);
-      let bundle_group_id = bundle_group.id.clone();
-      // concatenate all runtime modules, all runtime modules should be esm only
-      let mut bundle = SharedBundle::new(vec![bundle_group], &module_graph, context, None)?;
-      bundle.render()?;
-
-      let result = bundle.codegen(&bundle_group_id)?;
-      return Ok(Some(ResourcePotMetaData::Js(JsResourcePotMetaData {
-        ast: result.ast,
-        external_modules: Default::default(),
-        rendered_modules: result.rendered_modules,
-        comments: result.comments,
-      })));
-    }
-
     if resource_pot.resource_pot_type != ResourcePotType::Js {
       return Ok(None);
     }
@@ -291,27 +275,51 @@ impl Plugin for FarmPluginRuntime {
     })))
   }
 
-  // fn handle_entry_resource(
-  //   &self,
-  //   _resource: &mut farmfe_core::plugin::PluginHandleEntryResourceHookParams,
-  //   _context: &Arc<CompilationContext>,
-  // ) -> farmfe_core::error::Result<Option<()>> {
-  //   // TODO handle runtime resource for entry
-  //   Ok(None)
-  // }
-
-  fn finalize_resources(
+  /// Generate runtime resources
+  fn generate_resources(
     &self,
-    param: &mut PluginFinalizeResourcesHookParams,
+    resource_pot: &mut ResourcePot,
     context: &Arc<CompilationContext>,
-  ) -> farmfe_core::error::Result<Option<()>> {
-    if context.config.output.target_env.is_library() {
+    hook_context: &PluginHookContext,
+  ) -> farmfe_core::error::Result<Option<PluginGenerateResourcesHookResult>> {
+    if hook_context.contain_caller(self.name())
+      || resource_pot.resource_pot_type != ResourcePotType::Runtime
+    {
       return Ok(None);
     }
 
-    handle_entry_resources::handle_entry_resources(param.resources_map, context);
+    let res = context
+      .plugin_driver
+      .generate_resources(
+        resource_pot,
+        context,
+        &PluginHookContext {
+          caller: hook_context.add_caller(self.name()),
+          meta: hook_context.meta.clone(),
+        },
+      )?
+      .map(|mut res| {
+        for resource in &mut res.resources {
+          resource.resource.resource_type = ResourceType::Runtime;
+          // do not emit a
+          resource.resource.emitted = true;
+          // ignore source map for runtime
+          resource.source_map = None;
+        }
+        res
+      });
 
-    Ok(Some(()))
+    Ok(res)
+  }
+
+  fn handle_entry_resource(
+    &self,
+    params: &mut farmfe_core::plugin::PluginHandleEntryResourceHookParam,
+    context: &Arc<CompilationContext>,
+  ) -> farmfe_core::error::Result<Option<()>> {
+    handle_entry_resources(params, context);
+
+    Ok(None)
   }
 }
 

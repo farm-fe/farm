@@ -4,11 +4,11 @@ use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 
 use super::{
   hooks::freeze_module::PluginFreezeModuleHookParam, Plugin, PluginAnalyzeDepsHookParam,
-  PluginFinalizeModuleHookParam, PluginFinalizeResourcesHookParams,
-  PluginGenerateResourcesHookResult, PluginHandleEntryResourceHookParams, PluginHookContext,
-  PluginLoadHookParam, PluginLoadHookResult, PluginModuleGraphUpdatedHookParams,
+  PluginFinalizeModuleHookParam, PluginFinalizeResourcesHookParam,
+  PluginGenerateResourcesHookResult, PluginHandleEntryResourceHookParam, PluginHookContext,
+  PluginLoadHookParam, PluginLoadHookResult, PluginModuleGraphUpdatedHookParam,
   PluginParseHookParam, PluginProcessModuleHookParam, PluginResolveHookParam,
-  PluginResolveHookResult, PluginTransformHookParam, PluginUpdateModulesHookParams,
+  PluginResolveHookResult, PluginTransformHookParam, PluginUpdateModulesHookParam,
 };
 use crate::{
   config::Config,
@@ -738,10 +738,10 @@ impl PluginDriver {
 
   hook_serial!(
     handle_entry_resource,
-    &mut PluginHandleEntryResourceHookParams
+    &mut PluginHandleEntryResourceHookParam
   );
 
-  hook_serial!(finalize_resources, &mut PluginFinalizeResourcesHookParams);
+  hook_serial!(finalize_resources, &mut PluginFinalizeResourcesHookParam);
 
   hook_parallel!(generate_end);
 
@@ -753,11 +753,11 @@ impl PluginDriver {
 
   hook_serial!(
     update_modules,
-    &mut PluginUpdateModulesHookParams,
-    |before_params: &mut PluginUpdateModulesHookParams| {
+    &mut PluginUpdateModulesHookParam,
+    |before_params: &mut PluginUpdateModulesHookParam| {
       serde_json::to_string(&before_params).unwrap()
     },
-    |after_params: &mut PluginUpdateModulesHookParams| {
+    |after_params: &mut PluginUpdateModulesHookParam| {
       serde_json::to_string(&after_params).unwrap()
     },
     |plugin_name: String,
@@ -765,7 +765,7 @@ impl PluginDriver {
      end_time: u128,
      input: String,
      output: String,
-     _: &mut PluginUpdateModulesHookParams,
+     _: &mut PluginUpdateModulesHookParam,
      context: &Arc<CompilationContext>| {
       context
         .stats
@@ -785,7 +785,7 @@ impl PluginDriver {
 
   hook_parallel!(
     module_graph_updated,
-    param: &PluginModuleGraphUpdatedHookParams
+    param: &PluginModuleGraphUpdatedHookParam
   );
 
   hook_parallel!(update_finished);

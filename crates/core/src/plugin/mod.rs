@@ -1,18 +1,13 @@
 use std::{any::Any, sync::Arc};
 
-use farmfe_macro_cache_item::cache_item;
-use hooks::freeze_module::PluginFreezeModuleHookParam;
-use rkyv::Deserialize;
-
 use crate::{
   config::Config,
   context::CompilationContext,
   error::Result,
   module::{
     module_graph::ModuleGraph, module_group::ModuleGroupGraph, Module, ModuleId, ModuleMetaData,
-    ModuleType,
   },
-  resource::{meta_data::ResourcePotMetaData, resource_pot::ResourcePot, Resource, ResourceType},
+  resource::{meta_data::ResourcePotMetaData, resource_pot::ResourcePot},
   stats::Stats,
   HashMap,
 };
@@ -21,7 +16,21 @@ pub mod constants;
 pub mod hooks;
 pub mod plugin_driver;
 
-pub use hooks::resolve::{PluginResolveHookParam, PluginResolveHookResult, ResolveKind};
+pub use hooks::{
+  analyze_deps::{PluginAnalyzeDepsHookParam, PluginAnalyzeDepsHookResultEntry},
+  finalize_module::PluginFinalizeModuleHookParam,
+  finalize_resources::PluginFinalizeResourcesHookParam,
+  freeze_module::PluginFreezeModuleHookParam,
+  generate_resources::{GeneratedResource, PluginGenerateResourcesHookResult},
+  handle_entry_resource::PluginHandleEntryResourceHookParam,
+  load::{PluginLoadHookParam, PluginLoadHookResult},
+  module_graph_updated::PluginModuleGraphUpdatedHookParam,
+  parse::PluginParseHookParam,
+  process_module::PluginProcessModuleHookParam,
+  resolve::{PluginResolveHookParam, PluginResolveHookResult, ResolveKind},
+  transform::{PluginTransformHookParam, PluginTransformHookResult},
+  update_modules::{PluginUpdateModulesHookParam, UpdateResult, UpdateType},
+};
 
 pub const DEFAULT_PRIORITY: i32 = 100;
 
@@ -236,7 +245,7 @@ pub trait Plugin: Any + Send + Sync {
   /// For example, insert the generated resources into html
   fn handle_entry_resource(
     &self,
-    _resource: &mut PluginHandleEntryResourceHookParams,
+    _resource: &mut PluginHandleEntryResourceHookParam,
     _context: &Arc<CompilationContext>,
   ) -> Result<Option<()>> {
     Ok(None)
@@ -246,7 +255,7 @@ pub trait Plugin: Any + Send + Sync {
   /// or insert the generated resources into html
   fn finalize_resources(
     &self,
-    _param: &mut PluginFinalizeResourcesHookParams,
+    _param: &mut PluginFinalizeResourcesHookParam,
     _context: &Arc<CompilationContext>,
   ) -> Result<Option<()>> {
     Ok(None)
@@ -264,7 +273,7 @@ pub trait Plugin: Any + Send + Sync {
   /// Useful to do some operations like clearing previous state or ignore some files when performing HMR
   fn update_modules(
     &self,
-    _params: &mut PluginUpdateModulesHookParams,
+    _params: &mut PluginUpdateModulesHookParam,
     _context: &Arc<CompilationContext>,
   ) -> Result<Option<()>> {
     Ok(None)
@@ -274,7 +283,7 @@ pub trait Plugin: Any + Send + Sync {
   /// Useful to do some operations like modifying the module graph
   fn module_graph_updated(
     &self,
-    _param: &PluginModuleGraphUpdatedHookParams,
+    _param: &PluginModuleGraphUpdatedHookParam,
     _context: &Arc<CompilationContext>,
   ) -> Result<Option<()>> {
     Ok(None)
@@ -330,180 +339,8 @@ impl PluginHookContext {
   }
 }
 
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct PluginLoadHookParam<'a> {
-  /// the module id string
-  pub module_id: String,
-  /// the resolved path from resolve hook
-  pub resolved_path: &'a str,
-  /// the query map
-  pub query: Vec<(String, String)>,
-  /// the meta data passed between plugins and hooks
-  pub meta: HashMap<String, String>,
-}
-
-#[derive(Debug, serde::Serialize, serde::Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct PluginLoadHookResult {
-  /// the source content of the module
-  pub content: String,
-  /// the type of the module, for example [ModuleType::Js] stands for a normal javascript file,
-  /// usually end with `.js` extension
-  pub module_type: ModuleType,
-  /// source map of the module
-  pub source_map: Option<String>,
-}
-
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct PluginTransformHookParam<'a> {
-  /// the module id string
-  pub module_id: String,
-  /// source content after load or transformed result of previous plugin
-  pub content: String,
-  /// module type after load
-  pub module_type: ModuleType,
-  /// resolved path from resolve hook
-  pub resolved_path: &'a str,
-  /// query from resolve hook
-  pub query: Vec<(String, String)>,
-  /// the meta data passed between plugins and hooks
-  pub meta: HashMap<String, String>,
-  /// source map chain of previous plugins
-  pub source_map_chain: Vec<Arc<String>>,
-}
-
-#[derive(Debug, Default, serde::Serialize, serde::Deserialize)]
-#[serde(rename_all = "camelCase", default)]
-pub struct PluginTransformHookResult {
-  /// transformed source content, will be passed to next plugin.
-  pub content: String,
-  /// you can change the module type after transform.
-  pub module_type: Option<ModuleType>,
-  /// transformed source map, all plugins' transformed source map will be stored as a source map chain.
-  pub source_map: Option<String>,
-  /// if true, the previous source map chain will be ignored, and the source map chain will be reset to [source_map] returned by this plugin.
-  pub ignore_previous_source_map: bool,
-}
-
-#[derive(Debug, serde::Serialize, serde::Deserialize)]
-pub struct PluginParseHookParam {
-  /// module id
-  pub module_id: ModuleId,
-  /// resolved path
-  pub resolved_path: String,
-  /// resolved query
-  pub query: Vec<(String, String)>,
-  pub module_type: ModuleType,
-  /// source content(after transform)
-  pub content: Arc<String>,
-}
-
-pub struct PluginProcessModuleHookParam<'a> {
-  pub module_id: &'a ModuleId,
-  pub module_type: &'a ModuleType,
-  pub content: Arc<String>,
-  pub meta: &'a mut ModuleMetaData,
-}
-
-pub type PluginAnalyzeModuleHookParam<'a> = PluginProcessModuleHookParam<'a>;
-
-#[derive(Clone)]
-pub struct PluginAnalyzeDepsHookParam<'a> {
-  pub module: &'a Module,
-  /// analyzed deps from previous plugins, you can push new entries to it for your plugin.
-  pub deps: Vec<PluginAnalyzeDepsHookResultEntry>,
-}
-
-#[derive(Debug, PartialEq, Eq, Clone, serde::Serialize, serde::Deserialize)]
-#[cache_item]
-pub struct PluginAnalyzeDepsHookResultEntry {
-  pub source: String,
-  pub kind: ResolveKind,
-}
-
-pub struct PluginFinalizeModuleHookParam<'a> {
-  pub module: &'a mut Module,
-  pub deps: &'a mut Vec<PluginAnalyzeDepsHookResultEntry>,
-}
-
-#[derive(Default, Debug, serde::Serialize, serde::Deserialize, Clone)]
-pub struct WatchDiffResult {
-  pub add: Vec<String>,
-  pub remove: Vec<String>,
-}
-
-/// The output after the updating process
-#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize)]
-#[serde(rename_all = "camelCase", default)]
-pub struct UpdateResult {
-  pub added_module_ids: Vec<ModuleId>,
-  pub updated_module_ids: Vec<ModuleId>,
-  pub removed_module_ids: Vec<ModuleId>,
-  /// Javascript module map string, the key is the module id, the value is the module function
-  /// This code string should be returned to the client side as MIME type `application/javascript`
-  pub immutable_resources: String,
-  pub mutable_resources: String,
-  pub boundaries: HashMap<String, Vec<Vec<String>>>,
-  pub dynamic_resources_map: Option<HashMap<ModuleId, Vec<(String, ResourceType)>>>,
-  pub extra_watch_result: WatchDiffResult,
-}
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-pub enum UpdateType {
-  // added a new module
-  Added,
-  // updated a module
-  Updated,
-  // removed a module
-  Removed,
-}
-
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-#[serde(rename_all = "camelCase", default)]
-pub struct PluginUpdateModulesHookParams {
-  pub paths: Vec<(String, UpdateType)>,
-}
-
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-#[serde(rename_all = "camelCase", default)]
-pub struct PluginModuleGraphUpdatedHookParams {
-  pub added_modules_ids: Vec<ModuleId>,
-  pub removed_modules_ids: Vec<ModuleId>,
-  pub updated_modules_ids: Vec<ModuleId>,
-}
-
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 pub struct EmptyPluginHookParam {}
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 pub struct EmptyPluginHookResult {}
-
-#[cache_item]
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct GeneratedResource {
-  pub resource: Resource,
-  pub source_map: Option<Resource>,
-}
-
-#[cache_item]
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct PluginGenerateResourcesHookResult {
-  /// A resource pot can generate multiple resources, for example: generating cjs/esm at the same time
-  pub resources: Vec<GeneratedResource>,
-}
-
-pub struct PluginFinalizeResourcesHookParams<'a> {
-  pub resources_map: &'a mut HashMap<String, Resource>,
-  pub config: &'a Config,
-}
-
-pub struct PluginHandleEntryResourceHookParams<'a> {
-  pub resource: Resource,
-  pub resource_source_map: Option<Resource>,
-  pub module_graph: &'a ModuleGraph,
-  pub module_group_graph: &'a ModuleGroupGraph,
-  pub entry_module_id: &'a ModuleId,
-}

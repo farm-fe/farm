@@ -38,7 +38,7 @@ pub fn find_async_modules(context: &Arc<CompilationContext>) -> HashSet<ModuleId
 }
 
 pub fn update_async_modules(
-  param: &farmfe_core::plugin::PluginModuleGraphUpdatedHookParams,
+  param: &farmfe_core::plugin::PluginModuleGraphUpdatedHookParam,
   context: &Arc<CompilationContext>,
 ) {
   // detect async module like top level await when module graph updated

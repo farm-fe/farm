@@ -34,7 +34,7 @@ use farmfe_toolkit::{
     swc_try_with::try_with, syntax_from_module_type, CodeGenCommentsConfig,
     ParseScriptModuleResult,
   },
-  source_map::{build_source_map, collapse_sourcemap, load_source_original_source_map},
+  sourcemap::{build_sourcemap, collapse_sourcemap, load_source_original_sourcemap},
   swc_ecma_transforms::resolver,
   swc_ecma_visit::VisitMutWith,
 };
@@ -80,7 +80,7 @@ impl Plugin for FarmPluginScript {
         let content = read_file_utf8(param.resolved_path)?;
 
         let map =
-          load_source_original_source_map(&content, param.resolved_path, "//# sourceMappingURL");
+          load_source_original_sourcemap(&content, param.resolved_path, "//# sourceMappingURL");
 
         Ok(Some(PluginLoadHookResult {
           content,
@@ -309,7 +309,7 @@ impl Plugin for FarmPluginScript {
 
   fn module_graph_updated(
     &self,
-    param: &farmfe_core::plugin::PluginModuleGraphUpdatedHookParams,
+    param: &farmfe_core::plugin::PluginModuleGraphUpdatedHookParam,
     context: &Arc<CompilationContext>,
   ) -> farmfe_core::error::Result<Option<()>> {
     update_async_modules(param, context);
@@ -345,16 +345,14 @@ impl Plugin for FarmPluginScript {
         context,
       )?;
 
-      let create_resource = |content: String, ty: ResourceType| {
-        Resource {
-          name: resource_pot.id.to_string(),
-          bytes: content.into_bytes(),
-          emitted: false,
-          should_transform_output_filename: true,
-          resource_type: ty,
-          origin: ResourceOrigin::ResourcePot(resource_pot.id.clone()),
-          // info: None,
-        }
+      let create_resource = |content: String, ty: ResourceType| Resource {
+        name: resource_pot.id.to_string(),
+        bytes: content.into_bytes(),
+        emitted: false,
+        should_transform_output_filename: true,
+        resource_type: ty,
+        origin: ResourceOrigin::ResourcePot(resource_pot.id.clone()),
+        meta: Default::default(),
       };
 
       Ok(Some(PluginGenerateResourcesHookResult {
@@ -416,7 +414,7 @@ pub fn generate_code_and_sourcemap(
 
   let mut map = None;
   if sourcemap_enabled {
-    let sourcemap = build_source_map(merged_sourcemap, &mappings);
+    let sourcemap = build_sourcemap(merged_sourcemap, &mappings);
     // trace sourcemap chain of each module
     let sourcemap = collapse_sourcemap(sourcemap, module_graph);
     let mut buf = vec![];

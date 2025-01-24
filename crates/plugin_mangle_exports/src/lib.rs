@@ -1,21 +1,8 @@
-use farmfe_core::{
-  config::Config,
-  module::meta_data::script::statement::Statement,
-  plugin::{hooks::freeze_module::PluginFreezeModuleHookParam, Plugin},
-  swc_common::Mark,
-};
-use farmfe_toolkit::{
-  script::{
-    analyze_statement::{analyze_statement_info, AnalyzedStatementInfo},
-    concatenate_modules::expand_exports_of_module_graph,
-    idents_collector::UnresolvedIdentCollector,
-    swc_try_with::try_with,
-  },
-  swc_ecma_visit::VisitWith,
-};
-use features_analyzer::FeaturesAnalyzer;
+use farmfe_core::{config::Config, plugin::Plugin};
 
 pub struct FarmPluginMangleExports {}
+
+mod ident_generator;
 
 impl FarmPluginMangleExports {
   pub fn new(_: &Config) -> Self {
@@ -38,8 +25,6 @@ impl Plugin for FarmPluginMangleExports {
     module_graph: &mut farmfe_core::module::module_graph::ModuleGraph,
     context: &std::sync::Arc<farmfe_core::context::CompilationContext>,
   ) -> farmfe_core::error::Result<Option<()>> {
-    expand_exports_of_module_graph(module_graph, context);
-
     Ok(Some(()))
   }
 }

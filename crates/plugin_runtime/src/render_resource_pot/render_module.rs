@@ -10,9 +10,9 @@ use farmfe_core::{
   swc_common::{
     comments::SingleThreadedComments, util::take::Take, Mark, SourceMap, SyntaxContext,
   },
-  swc_ecma_ast::{ArrowExpr, BlockStmtOrExpr, Expr, ExprStmt, FnExpr},
+  swc_ecma_ast::{ArrowExpr, BlockStmtOrExpr, EsVersion, Expr, ExprStmt, FnExpr},
 };
-use farmfe_plugin_bundle::resource_pot_to_bundle::GeneratorAstResult;
+
 // use farmfe_plugin_bundle::resource_pot_to_bundle::GeneratorAstResult;
 use farmfe_toolkit::{
   minify::minify_js_module,
@@ -22,7 +22,7 @@ use farmfe_toolkit::{
     swc_try_with::{resolve_module_mark, try_with},
     CodeGenCommentsConfig,
   },
-  source_map::{build_source_map, create_swc_source_map},
+  sourcemap::{build_sourcemap, create_swc_source_map},
   swc_ecma_transforms::{
     fixer,
     hygiene::{hygiene_with_config, Config as HygieneConfig},
@@ -45,7 +45,7 @@ use super::{
 
 pub struct RenderModuleOptions<'a> {
   pub module: &'a Module,
-  pub hoisted_ast: Option<GeneratorAstResult>,
+  // pub hoisted_ast: Option<GeneratorAstResult>,
   pub module_graph: &'a ModuleGraph,
   pub context: &'a Arc<CompilationContext>,
 }
@@ -55,24 +55,24 @@ pub fn render_module(
 ) -> farmfe_core::error::Result<RenderModuleResult> {
   let RenderModuleOptions {
     module,
-    hoisted_ast,
+    // hoisted_ast,
     module_graph,
     context,
   } = options;
   let is_async_module = module.meta.as_script().is_async;
-  let is_use_hoisted = hoisted_ast.is_some();
+  // let is_use_hoisted = hoisted_ast.is_some();
 
-  let (mut cloned_module, comments) =
-    if let Some(GeneratorAstResult { ast, comments, .. }) = hoisted_ast {
-      (ast, SingleThreadedComments::from(comments))
-    } else {
-      let script = module.meta.as_script();
-      (script.ast.clone(), script.comments.clone().into())
-    };
-  // let (mut cloned_module, comments): (SwcModule, SingleThreadedComments) = {
-  //   let script = module.meta.as_script();
-  //   (script.ast.clone(), script.comments.clone().into())
-  // };
+  // let (mut cloned_module, comments) =
+  //   if let Some(GeneratorAstResult { ast, comments, .. }) = hoisted_ast {
+  //     (ast, SingleThreadedComments::from(comments))
+  //   } else {
+  //     let script = module.meta.as_script();
+  //     (script.ast.clone(), script.comments.clone().into())
+  //   };
+  let (mut cloned_module, comments): (SwcModule, SingleThreadedComments) = {
+    let script = module.meta.as_script();
+    (script.ast.clone(), script.comments.clone().into())
+  };
   let (cm, _) = context
     .meta
     .create_swc_source_map(&module.id, module.content.clone());
@@ -132,8 +132,8 @@ pub fn render_module(
       module_id: module.id.clone(),
       mode: context.config.mode.clone(),
       target_env: context.config.output.target_env.clone(),
-      is_strict_find_source: !is_use_hoisted,
-      // is_strict_find_source: false,
+      // is_strict_find_source: !is_use_hoisted,
+      is_strict_find_source: false,
     });
     cloned_module.visit_mut_with(&mut source_replacer);
     cloned_module.visit_mut_with(&mut hygiene_with_config(HygieneConfig {
@@ -151,79 +151,17 @@ pub fn render_module(
     }
     // swc code gen would emit a trailing `;` when is_target_legacy is false.
     // we can not deal with this situation for now, so we set is_target_legacy to true here, it will be fixed in the future.
-    let mut expr = wrap_function(cloned_module, is_async_module, true);
-
-    // if minify_enabled {
-    //   minify_js_module(
-    //     &mut cloned_module,
-    //     cm.clone(),
-    //     &comments,
-    //     unresolved_mark,
-    //     top_level_mark,
-    //     minify_builder.minify_options.as_ref().unwrap(),
-    //   );
-    // }
+    let mut expr = wrap_function(
+      cloned_module,
+      is_async_module,
+      context.config.script.target == EsVersion::Es5,
+    );
 
     expr.visit_mut_with(&mut fixer(Some(&comments)));
     func_expr = expr;
 
     external_modules = source_replacer.external_modules;
   })?;
-
-  // // remove shebang
-  // cloned_module.shebang = None;
-
-  // let sourcemap_enabled = context.config.sourcemap.enabled(module.immutable);
-  // // wrap module function
-  // // let wrapped_module = wrap_module_ast(cloned_module);
-  // let mut mappings = vec![];
-  // let code_bytes = codegen_module(
-  //   &cloned_module,
-  //   context.config.script.target.clone(),
-  //   cm.clone(),
-  //   if sourcemap_enabled {
-  //     Some(&mut mappings)
-  //   } else {
-  //     None
-  //   },
-  //   context.config.minify.enabled(),
-  //   Some(CodeGenCommentsConfig {
-  //     comments: &comments,
-  //     // preserve all comments when generate module code.
-  //     config: &context.config.comments,
-  //   }),
-  // )
-  // .map_err(|e| CompilationError::RenderScriptModuleError {
-  //   id: module.id.to_string(),
-  //   source: Some(Box::new(e)),
-  // })?;
-
-  // let code = Arc::new(String::from_utf8(code_bytes).unwrap());
-
-  // let mut rendered_module = RenderedModule {
-  //   id: module.id.clone(),
-  //   rendered_content: code.clone(),
-  //   rendered_map: None,
-  //   rendered_length: code.len(),
-  //   original_length: module.content.len(),
-  // };
-  // let mut source_map_chain = vec![];
-
-  // if sourcemap_enabled {
-  //   let sourcemap = build_source_map(cm, &mappings);
-  //   let mut buf = vec![];
-  //   sourcemap
-  //     .to_writer(&mut buf)
-  //     .map_err(|e| CompilationError::RenderScriptModuleError {
-  //       id: module.id.to_string(),
-  //       source: Some(Box::new(e)),
-  //     })?;
-  //   let map = Arc::new(String::from_utf8(buf).unwrap());
-  //   rendered_module.rendered_map = Some(map.clone());
-
-  //   source_map_chain = module.source_map_chain.clone();
-  //   source_map_chain.push(map);
-  // }
 
   Ok(RenderModuleResult {
     module_id: module.id.clone(),

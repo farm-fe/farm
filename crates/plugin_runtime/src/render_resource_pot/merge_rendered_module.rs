@@ -18,7 +18,7 @@ use farmfe_core::{
 };
 use farmfe_toolkit::{
   script::parse_stmt,
-  source_map::get_swc_sourcemap_filename,
+  sourcemap::get_swc_sourcemap_filename,
   swc_ecma_utils::StmtOrModuleItem,
   swc_ecma_visit::{VisitMut, VisitMutWith},
 };

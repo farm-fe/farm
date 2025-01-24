@@ -268,6 +268,7 @@ pub fn dynamic_entry_module_group_to_resource_pot(
     );
     resource_pot.entry_module = Some(module_group.entry_module_id.clone());
     resource_pot.module_groups = HashSet::from_iter([module_group.id.clone()]);
+    resource_pot.is_dynamic_entry = true;
 
     for module_id in module_group.modules() {
       resource_pot.add_module(module_id.clone());

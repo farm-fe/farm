@@ -97,7 +97,7 @@ pub fn create_farm_runtime_output_resource(
       resource_type: ResourceType::Js,
       origin: ResourceOrigin::ResourcePot(name),
       should_transform_output_filename: true,
-      // info: None,
+      meta: Default::default(),
     }),
   )
 }

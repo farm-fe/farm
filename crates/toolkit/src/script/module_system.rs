@@ -9,7 +9,7 @@ use farmfe_core::{
 };
 use swc_ecma_visit::{Visit, VisitWith};
 
-use crate::source_map::create_swc_source_map;
+use crate::sourcemap::create_swc_source_map;
 
 pub use farmfe_toolkit_plugin_types::swc_ast::ParseScriptModuleResult;
 

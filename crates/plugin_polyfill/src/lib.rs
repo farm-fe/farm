@@ -14,7 +14,7 @@ use farmfe_core::{
 use farmfe_toolkit::{
   preset_env_base::query::Query,
   script::swc_try_with::try_with,
-  source_map::create_swc_source_map,
+  sourcemap::create_swc_source_map,
   swc_ecma_preset_env::{self, preset_env, Mode, Targets},
   swc_ecma_transforms::Assumptions,
   swc_ecma_transforms_base::{feature::FeatureFlag, helpers::inject_helpers},

@@ -142,7 +142,7 @@ impl CompilationContext {
         should_transform_output_filename: true,
         resource_type: params.resource_type,
         origin: ResourceOrigin::Module(module_id),
-        // info: None,
+        meta: Default::default(),
       },
     );
   }

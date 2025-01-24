@@ -18,9 +18,6 @@ export interface Resource {
 declare const __FARM_RUNTIME_TARGET_ENV__: 'browser' | 'node';
 declare const __FARM_ENABLE_RUNTIME_PLUGIN__: boolean;
 
-// Injected when runtime starts execution
-declare const __farm_global_this__: any;
-
 const dynamicResources: Resource[] = [];
 // dynamic module entry and resources map
 const dynamicModuleResourcesMap: Record<string, number[]> = {};
@@ -117,7 +114,7 @@ function loadDynamicResourcesOnly(id: string, force = false): Promise<any> {
 }
 
 function load(resource: Resource): Promise<void> {
-  if (__FARM_RUNTIME_TARGET_ENV__ !== 'browser') {
+  if (__FARM_RUNTIME_TARGET_ENV__ === 'node') {
     return loadResourceNode(resource); 
   }
 

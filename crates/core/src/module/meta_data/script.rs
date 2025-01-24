@@ -6,9 +6,12 @@ use swc_common::{
   comments::{
     Comment, SingleThreadedComments, SingleThreadedCommentsMap, SingleThreadedCommentsMapInner,
   },
-  BytePos,
+  BytePos, SyntaxContext, DUMMY_SP,
 };
-use swc_ecma_ast::Module as SwcModule;
+use swc_ecma_ast::{
+  ExportNamedSpecifier, ExportSpecifier, Ident, Module as SwcModule, ModuleDecl, ModuleExportName,
+  ModuleItem, NamedExport,
+};
 
 use crate::module::ModuleId;
 use crate::{HashMap, HashSet};
@@ -19,6 +22,8 @@ use statement::{Statement, SwcId};
 
 pub mod feature_flag;
 pub mod statement;
+
+pub const EXPORT_NAMESPACE: &str = "namespace_farm_internal_";
 
 /// Script specific meta data, for example, [swc_ecma_ast::Module]
 #[cache_item]
@@ -133,6 +138,45 @@ impl ScriptModuleMetaData {
 
   pub fn is_hybrid(&self) -> bool {
     matches!(self.module_system, ModuleSystem::Hybrid)
+  }
+
+  pub fn get_export_idents(&self) -> Vec<(String, SwcId)> {
+    let mut export_idents = self
+      .export_ident_map
+      .iter()
+      .filter(|(k, _)| *k != EXPORT_NAMESPACE)
+      .map(|(k, v)| (k.clone(), v.clone()))
+      .collect::<Vec<_>>();
+    export_idents.sort_by_key(|a| a.0.clone());
+
+    export_idents
+  }
+
+  pub fn get_export_module_item(&self) -> ModuleItem {
+    // add export statement from export_ident_map
+    let export_idents = self.get_export_idents();
+    let mut specifiers = vec![];
+
+    for (name, id) in export_idents {
+      specifiers.push(ExportSpecifier::Named(ExportNamedSpecifier {
+        span: DUMMY_SP,
+        orig: ModuleExportName::Ident(Ident::new(id.sym.clone(), DUMMY_SP, id.ctxt())),
+        exported: Some(ModuleExportName::Ident(Ident::new(
+          name.as_str().into(),
+          DUMMY_SP,
+          SyntaxContext::empty(),
+        ))),
+        is_type_only: false,
+      }));
+    }
+
+    ModuleItem::ModuleDecl(ModuleDecl::ExportNamed(NamedExport {
+      span: DUMMY_SP,
+      specifiers,
+      src: None,
+      type_only: false,
+      with: None,
+    }))
   }
 }
 

@@ -1,2 +1,13 @@
+pub mod analyze_deps;
+pub mod finalize_module;
+pub mod finalize_resources;
 pub mod freeze_module;
+pub mod generate_resources;
+pub mod handle_entry_resource;
+pub mod load;
+pub mod module_graph_updated;
+pub mod parse;
+pub mod process_module;
 pub mod resolve;
+pub mod transform;
+pub mod update_modules;

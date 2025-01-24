@@ -6,12 +6,12 @@ use farmfe_core::{
   parking_lot::Mutex,
   plugin::{GeneratedResource, PluginGenerateResourcesHookResult, PluginHookContext},
   rayon::prelude::{IntoParallelIterator, ParallelIterator},
-  resource::{resource_pot::ResourcePot, ResourceType},
+  resource::resource_pot::ResourcePot,
   HashMap,
 };
 use farmfe_toolkit::{
   fs::{transform_output_entry_filename, transform_output_filename},
-  source_map::append_source_map_comment,
+  sourcemap::append_sourcemap_comment,
 };
 
 use crate::generate::resource_cache::{set_resource_cache, try_get_resource_cache};
@@ -130,7 +130,7 @@ pub fn render_resource_pots_and_generate_resources(
             res.resource.name,
             source_map.resource_type.to_ext()
           );
-          append_source_map_comment(&mut res.resource, &source_map, &context.config.sourcemap);
+          append_sourcemap_comment(&mut res.resource, &source_map, &context.config.sourcemap);
 
           if context.config.persistent_cache.enabled() {
             cached_resource.source_map = Some(source_map.clone());
@@ -187,10 +187,7 @@ pub fn render_resource_pot_generate_resources(
     ));
     #[cfg(feature = "profile")]
     farmfe_core::puffin::profile_scope!(id);
-    println!(
-      "render_resource_pot id {} {:?}",
-      resource_pot.id, resource_pot.resource_pot_type
-    );
+
     let meta = context
       .plugin_driver
       .render_resource_pot(resource_pot, context, hook_context)?
@@ -200,25 +197,11 @@ pub fn render_resource_pot_generate_resources(
 
     resource_pot.meta = meta;
 
-    // let mut param = PluginRenderResourcePotHookParam {
-    //   content: resource_pot.meta.rendered_content.clone(),
-    //   source_map_chain: resource_pot.meta.rendered_map_chain.clone(),
-    //   resource_pot_info: ResourcePotInfo::new(resource_pot),
-    // };
-
-    // let result =
-    //   context
-    //     .plugin_driver
-    //     .render_resource_pot(&mut param, context, &Default::default())?;
-
-    // resource_pot.meta.rendered_content = result.content;
-    // resource_pot.meta.rendered_map_chain = result.source_map_chain;
-
     augment_resource_hash = context
       .plugin_driver
       .augment_resource_hash(&resource_pot, context)?;
 
-    // *chunk_resource_info = Some(param.resource_pot_info);
+    // TODO augment resource hash
   }
 
   {

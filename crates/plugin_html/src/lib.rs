@@ -16,7 +16,7 @@ use farmfe_core::{
   error::CompilationError,
   module::{ModuleId, ModuleMetaData, ModuleType},
   plugin::{
-    Plugin, PluginAnalyzeDepsHookParam, PluginFinalizeResourcesHookParams,
+    Plugin, PluginAnalyzeDepsHookParam, PluginFinalizeResourcesHookParam,
     PluginGenerateResourcesHookResult, PluginHookContext, PluginLoadHookParam,
     PluginLoadHookResult, PluginParseHookParam, PluginResolveHookParam, PluginResolveHookResult,
     PluginTransformHookResult, ResolveKind,
@@ -28,11 +28,11 @@ use farmfe_core::{
   },
 };
 use farmfe_toolkit::minify::minify_html_module;
-use farmfe_toolkit::source_map::create_swc_source_map;
+use farmfe_toolkit::sourcemap::create_swc_source_map;
 use farmfe_toolkit::{
   fs::read_file_utf8,
-  get_dynamic_resources_map::get_dynamic_resources_map,
   html::{codegen_html_document, parse_html_document},
+  resources::get_dynamic_resources_map,
   script::{module_type_from_id, swc_try_with::try_with},
 };
 use resources_injector::{ResourcesInjector, ResourcesInjectorOptions};
@@ -276,6 +276,7 @@ impl Plugin for FarmPluginHtml {
             resource_type: ResourceType::Html,
             origin: ResourceOrigin::ResourcePot(resource_pot.id.clone()),
             should_transform_output_filename: true,
+            meta: Default::default(),
           },
           source_map: None,
         }],
@@ -342,7 +343,7 @@ impl Plugin for FarmPluginTransformHtml {
 
   fn finalize_resources(
     &self,
-    params: &mut PluginFinalizeResourcesHookParams,
+    params: &mut PluginFinalizeResourcesHookParam,
     context: &std::sync::Arc<CompilationContext>,
   ) -> farmfe_core::error::Result<Option<()>> {
     // 1. inject runtime as inline <script>
@@ -535,7 +536,7 @@ impl Plugin for FarmPluginMinifyHtml {
 
   fn finalize_resources(
     &self,
-    params: &mut PluginFinalizeResourcesHookParams,
+    params: &mut PluginFinalizeResourcesHookParam,
     context: &Arc<CompilationContext>,
   ) -> farmfe_core::error::Result<Option<()>> {
     for resource in params.resources_map.values_mut() {

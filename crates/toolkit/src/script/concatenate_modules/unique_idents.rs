@@ -1,3 +1,4 @@
+pub use farmfe_core::module::meta_data::script::EXPORT_NAMESPACE;
 use farmfe_core::{
   module::{meta_data::script::statement::SwcId, module_graph::ModuleGraph, ModuleId},
   swc_ecma_ast::Ident,
@@ -6,7 +7,6 @@ use farmfe_core::{
 use swc_ecma_visit::VisitMut;
 
 pub const EXPORT_DEFAULT: &str = "default";
-pub const EXPORT_NAMESPACE: &str = "namespace_farm_internal_";
 
 struct TopLevelIdents {
   idents: HashMap<String, usize>,

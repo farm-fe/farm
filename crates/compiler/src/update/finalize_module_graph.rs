@@ -21,7 +21,7 @@ pub fn finalize_updated_module_graph(
 ) -> farmfe_core::error::Result<()> {
   // call module graph updated hook
   context.plugin_driver.module_graph_updated(
-    &farmfe_core::plugin::PluginModuleGraphUpdatedHookParams {
+    &farmfe_core::plugin::PluginModuleGraphUpdatedHookParam {
       added_modules_ids: diff_result.added_modules.clone().into_iter().collect(),
       removed_modules_ids: removed_module_ids,
       updated_modules_ids: updated_modules.clone(),

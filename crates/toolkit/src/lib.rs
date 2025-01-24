@@ -1,13 +1,17 @@
 #![feature(box_patterns)]
 #![feature(let_chains)]
 
+pub mod constant;
 pub mod css;
 pub mod fs;
 pub mod hash;
 pub mod html;
+pub mod minify;
+pub mod plugin_utils;
 pub mod resolve;
+pub mod resources;
 pub mod script;
-pub mod source_map;
+pub mod sourcemap;
 
 // re-exports dependencies
 pub use preset_env_base;
@@ -38,10 +42,3 @@ pub use anyhow;
 pub use farmfe_core::regex;
 pub use itertools;
 pub use lazy_static;
-pub use sourcemap;
-
-pub mod get_dynamic_resources_map;
-pub mod minify;
-
-pub mod constant;
-pub mod plugin_utils;

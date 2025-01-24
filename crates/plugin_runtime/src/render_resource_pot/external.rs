@@ -39,7 +39,7 @@ pub fn handle_external_modules(
 /// ```js
 /// import * as fs from 'fs';
 /// import * as path from 'path';
-/// global['__farm_default_namespace__'].se({"fs": fs, "path": path});
+/// global['__farm_default_namespace__'].m.se({"fs": fs, "path": path});
 /// ```
 fn handle_node_external_modules(
   resource_pot_id: &ResourcePotId,
@@ -74,7 +74,7 @@ fn handle_node_external_modules(
 
   let mut prepend_str = import_strings.join("\n");
   prepend_str.push_str(&format!(
-    "{farm_global_this}.se({{{}}});",
+    "{farm_global_this}.m.se({{{}}});",
     source_to_names
       .into_iter()
       .map(|(name, source)| format!("{source:?}: {name}"))
@@ -98,7 +98,7 @@ fn handle_node_external_modules(
 
 /// For browser external modules, we need to read the external modules from the window object. e.g
 /// ```js
-/// global['__farm_default_namespace__'].se({"fs": window['fs'], "path": window['path']});
+/// global['__farm_default_namespace__'].m.se({"fs": window['fs'], "path": window['path']});
 /// ```
 fn handle_browser_external_modules(
   resource_pot_id: &ResourcePotId,
@@ -124,7 +124,7 @@ fn handle_browser_external_modules(
     external_objs.push(format!("{source:?}: {source_obj}"));
   }
 
-  let prepend_str = format!("{farm_global_this}.se({{{}}});", external_objs.join(","));
+  let prepend_str = format!("{farm_global_this}.m.se({{{}}});", external_objs.join(","));
 
   let mut prepend_ast = parse_module(
     &resource_pot_id.as_str().into(),

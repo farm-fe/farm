@@ -12,7 +12,7 @@ use farmfe_core::{
   module::ModuleType,
   parking_lot::Mutex,
   plugin::{
-    Plugin, PluginAnalyzeDepsHookResultEntry, PluginFinalizeResourcesHookParams,
+    Plugin, PluginAnalyzeDepsHookResultEntry, PluginFinalizeResourcesHookParam,
     PluginGenerateResourcesHookResult, PluginHookContext, PluginLoadHookParam,
     PluginLoadHookResult, PluginResolveHookParam, PluginResolveHookResult, ResolveKind,
   },
