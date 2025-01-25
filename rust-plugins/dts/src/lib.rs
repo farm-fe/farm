@@ -95,7 +95,6 @@ impl Plugin for FarmPluginDts {
     let mut checker = FastDts::new(filename.clone());
     module.visit_mut_with(&mut ImportVariableRemover);
     let issues = checker.transform(&mut module);
-
     for issue in issues {
       let _range = issue.range();
     }
@@ -158,28 +157,33 @@ impl VisitMut for ImportPathRewriter {
     for item in items.iter_mut() {
       if let ModuleItem::ModuleDecl(ModuleDecl::Import(import)) = item {
         let src = &mut import.src;
-        if src.value.starts_with('.') {
+
+        if src.value.starts_with("./") || src.value.starts_with("../") {
           let import_path = PathBuf::from(&*src.value);
           let source_dir = self.source_path.parent().unwrap_or_else(|| Path::new(""));
 
-          let full_path = source_dir.join(&import_path);
-
-          let new_path = if full_path.to_string_lossy().ends_with(".ts") {
-            full_path.with_extension("d.ts")
-          } else if full_path.to_string_lossy().ends_with(".tsx") {
-            PathBuf::from(full_path.to_string_lossy().replace(".tsx", ".d.ts"))
+          let base_path = if let Some(stem) = import_path.file_stem() {
+            PathBuf::from(stem)
           } else {
-            PathBuf::from(format!("{}.d.ts", full_path.to_string_lossy()))
+            import_path.clone()
           };
+
+          let full_path = source_dir.join(&base_path);
+          let new_path = PathBuf::from(format!("{}.d.ts", full_path.to_string_lossy()));
 
           if let Some(rel_path) = pathdiff::diff_paths(&new_path, source_dir) {
             let new_value = rel_path.to_string_lossy().replace('\\', "/");
-
-            src.value = if !new_value.ends_with(".d.ts") {
-              format!("{}.d.ts", new_value).into()
+            let final_value = if !new_value.ends_with(".d.ts") {
+              format!(
+                "./{}.d.ts",
+                new_value.trim_end_matches(".ts").trim_end_matches(".tsx")
+              )
             } else {
-              new_value.into()
+              format!("./{}", new_value)
             };
+
+            src.value = final_value.clone().into();
+            src.raw = Some(format!("'{}'", final_value).into());
           }
         }
       }

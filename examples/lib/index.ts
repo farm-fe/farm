@@ -1,5 +1,5 @@
-import { name as names } from './test';
-import type { base } from './test';
+import { name as names } from './test.ts';
+import type { base } from './test.ts';
 export const a: number = 1;
 
 // 我是奥特曼
