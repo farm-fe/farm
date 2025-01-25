@@ -15,3 +15,5 @@ export const name: Name = {
   phone: '123',
   email: '123',
 }
+
+export type base = string;

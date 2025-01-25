@@ -9,10 +9,10 @@ export default defineConfig({
     },
     persistentCache: false
   },
-  plugins: [
-    farmDtsPlugin({
-      tsConfigPath: './tsconfig.json'
-    })
-  ]
-  // plugins: ['@farmfe/plugin-dts']
+  // plugins: [
+    // farmDtsPlugin({
+      // tsConfigPath: './tsconfig.json'
+    // })
+  // ]
+  plugins: ['@farmfe/plugin-dts']
 });
