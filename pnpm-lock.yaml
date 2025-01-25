@@ -2636,6 +2636,9 @@ importers:
       '@farmfe/js-plugin-dts':
         specifier: workspace:^
         version: link:../dts
+      '@farmfe/plugin-dts':
+        specifier: workspace:^
+        version: link:../../rust-plugins/dts
       '@types/postcss-import':
         specifier: ^14.0.3
         version: 14.0.3
