@@ -1,12 +1,12 @@
 #![deny(clippy::all)]
 use farmfe_core::{
-  config::{config_regex::ConfigRegex, Config},
+  config::{config_regex::ConfigRegex,ResolveConfig, Config},
   context::{CompilationContext, EmitFileParams},
   error::CompilationError,
   plugin::{
     Plugin, PluginAnalyzeDepsHookParam, PluginFinalizeModuleHookParam,
     PluginGenerateResourcesHookResult, PluginHookContext, PluginLoadHookParam,
-    PluginLoadHookResult, PluginParseHookParam, PluginProcessModuleHookParam,
+    PluginLoadHookResult, PluginParseHookParam, PluginProcessModuleHookParam, ResolveKind,
   },
   resource::{Resource, ResourceOrigin, ResourceType},
   stats::Stats,
@@ -15,6 +15,8 @@ use farmfe_core::{
   swc_ecma_parser::{lexer::Lexer, EsSyntax as EsConfig, JscTarget, Parser, StringInput, Syntax},
   swc_typescript::fast_dts::FastDts,
 };
+use farmfe_plugin_resolve::resolver::{ResolveOptions, Resolver};
+
 use farmfe_toolkit::{
   common::PathFilter,
   swc_ecma_codegen::{to_code, Node},
@@ -87,6 +89,8 @@ impl Plugin for FarmPluginDts {
 
     module.visit_mut_with(&mut ImportPathRewriter {
       source_path: PathBuf::from(path),
+      config: (*context.config).clone(),
+      resolver: Resolver::new(),
     });
     let filename: Arc<FileName> = Arc::new(FileName::Real(
       param.module_id.relative_path().to_string().into(),
@@ -150,41 +154,70 @@ impl VisitMut for ImportVariableRemover {
 
 struct ImportPathRewriter {
   source_path: PathBuf,
+  config: Config,
+  resolver: Resolver,
 }
+
+// TODO 生成后缀 
+// 主要依据：根据 Rollup 的 outputOptions.entryFileNames 配置
+// 如果输出是 .js -> 生成 .d.ts
+// 如果输出是 .cjs -> 生成 .d.cts
+// 如果输出是 .mjs -> 生成 .d.mts
+
+
+// {
+//   output: {
+//     entryFileNames: '[name].cjs'  // 将生成 .d.cts
+//     // 或
+//     entryFileNames: '[name].mjs'  // 将生成 .d.mts
+//     // 或
+//     entryFileNames: '[name].js'   // 将生成 .d.ts
+//   }
+// }
+
+// 然后这个先不跟 format 走吧 format 未来可能会有问题 还是跟 entryFileNames 走吧
+
+
+// TODO emit_file baseDir
+// extraOutdir
+// 默认全放在根目录 
+
+// 如果设置了 extraOutdir 则需要根据 extraOutdir 来生成后缀
 
 impl VisitMut for ImportPathRewriter {
   fn visit_mut_module_items(&mut self, items: &mut Vec<ModuleItem>) {
     for item in items.iter_mut() {
       if let ModuleItem::ModuleDecl(ModuleDecl::Import(import)) = item {
         let src = &mut import.src;
-
-        if src.value.starts_with("./") || src.value.starts_with("../") {
-          let import_path = PathBuf::from(&*src.value);
-          let source_dir = self.source_path.parent().unwrap_or_else(|| Path::new(""));
-
-          let base_path = if let Some(stem) = import_path.file_stem() {
-            PathBuf::from(stem)
-          } else {
-            import_path.clone()
-          };
-
-          let full_path = source_dir.join(&base_path);
-          let new_path = PathBuf::from(format!("{}.d.ts", full_path.to_string_lossy()));
-
-          if let Some(rel_path) = pathdiff::diff_paths(&new_path, source_dir) {
-            let new_value = rel_path.to_string_lossy().replace('\\', "/");
-            let final_value = if !new_value.ends_with(".d.ts") {
-              format!(
-                "./{}.d.ts",
-                new_value.trim_end_matches(".ts").trim_end_matches(".tsx")
-              )
-            } else {
-              format!("./{}", new_value)
-            };
-
-            src.value = final_value.clone().into();
-            src.raw = Some(format!("'{}'", final_value).into());
-          }
+        let alias_context = 
+          CompilationContext::new(
+              Config {
+                  resolve: Box::new(ResolveConfig {
+                      alias: self.config.resolve.alias.clone(), 
+                      ..Default::default()
+                  }),
+                  ..Default::default()
+              },
+          vec![],
+        )
+        .unwrap();
+        let resolved = self.resolver.resolve(
+          src.value.as_str(),
+          PathBuf::from(self.config.root.clone()),
+          &ResolveKind::Import,
+          &ResolveOptions::default(),
+          &Arc::new(alias_context),
+        );
+        if let Some(resolved_path) = resolved {
+          let path = PathBuf::from(resolved_path.resolved_path);
+          
+          let base_path = path.with_extension("");
+          let final_value = base_path
+            .with_extension("d.ts")
+            .to_string_lossy()
+            .to_string();
+          src.value = final_value.clone().into();
+          src.raw = Some(format!("'{}'", final_value).into());
         }
       }
     }

@@ -16,3 +16,4 @@ serde = { version = "1.0", features = ["derive", "rc"] }
 serde_json = { version = "1.0", features = ["preserve_order"] }
 url = "2.3.1"
 pathdiff = "0.2"
+farmfe_plugin_resolve = { version = "*", path = "../../crates/plugin_resolve" }

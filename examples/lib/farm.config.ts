@@ -1,5 +1,6 @@
 import { defineConfig } from '@farmfe/core';
 import farmDtsPlugin from '@farmfe/js-plugin-dts';
+import path from 'node:path';
 export default defineConfig({
   compilation: {
     presetEnv: false,
@@ -7,7 +8,12 @@ export default defineConfig({
     input: {
       index: "./index.ts"
     },
-    persistentCache: false
+    persistentCache: false,
+    resolve: {
+      alias: {
+        "@": path.resolve("./src")
+      }
+    }
   },
   // plugins: [
     // farmDtsPlugin({
