@@ -2498,9 +2498,6 @@ importers:
       '@farmfe/js-plugin-dts':
         specifier: workspace:^
         version: link:../dts
-      '@farmfe/plugin-dts':
-        specifier: workspace:*
-        version: link:../../rust-plugins/dts
       '@types/less':
         specifier: ^3.0.3
         version: 3.0.5

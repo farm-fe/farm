@@ -25,7 +25,6 @@ farmfe_testing_helpers = { path = "../testing_helpers", version = "0.0.15" }
 swc_ecma_parser = { version = "4.0.0" }
 swc_ecma_visit = { version = "3.0.0" }
 swc_ecma_codegen = { version = "3.0.0" }
-swc_typescript = { version = "4.0.0" }
 swc_ecma_transforms = { version = "4.0.0", features = [
   "module",
   "typescript",

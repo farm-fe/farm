@@ -42,7 +42,6 @@
     "@farmfe/cli": "workspace:*",
     "@farmfe/core": "workspace:*",
     "@farmfe/js-plugin-dts": "workspace:^",
-    "@farmfe/plugin-dts": "workspace:*",
     "@types/less": "^3.0.3",
     "less": "^4.1.3"
   },
