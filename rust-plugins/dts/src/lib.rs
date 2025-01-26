@@ -1,6 +1,6 @@
 #![deny(clippy::all)]
 use farmfe_core::{
-  config::{config_regex::ConfigRegex,ResolveConfig, Config},
+  config::{config_regex::ConfigRegex, Config, ResolveConfig},
   context::{CompilationContext, EmitFileParams},
   error::CompilationError,
   plugin::{
@@ -13,7 +13,6 @@ use farmfe_core::{
   swc_common::{comments::SingleThreadedComments, BytePos, FileName, Mark},
   swc_ecma_ast::{ImportDecl, Module as EcmaAstModule, ModuleDecl, ModuleItem, Program},
   swc_ecma_parser::{lexer::Lexer, EsSyntax as EsConfig, JscTarget, Parser, StringInput, Syntax},
-  swc_typescript::fast_dts::FastDts,
 };
 use farmfe_plugin_resolve::resolver::{ResolveOptions, Resolver};
 
@@ -22,6 +21,7 @@ use farmfe_toolkit::{
   swc_ecma_codegen::{to_code, Node},
   swc_ecma_transforms::{helpers::inject_helpers, typescript},
   swc_ecma_visit::{VisitMut, VisitMutWith},
+  swc_typescript::fast_dts::FastDts,
 };
 use std::time::Duration;
 use std::{
@@ -158,12 +158,11 @@ struct ImportPathRewriter {
   resolver: Resolver,
 }
 
-// TODO 生成后缀 
+// TODO 生成后缀
 // 主要依据：根据 Rollup 的 outputOptions.entryFileNames 配置
 // 如果输出是 .js -> 生成 .d.ts
 // 如果输出是 .cjs -> 生成 .d.cts
 // 如果输出是 .mjs -> 生成 .d.mts
-
 
 // {
 //   output: {
@@ -177,10 +176,9 @@ struct ImportPathRewriter {
 
 // 然后这个先不跟 format 走吧 format 未来可能会有问题 还是跟 entryFileNames 走吧
 
-
 // TODO emit_file baseDir
 // extraOutdir
-// 默认全放在根目录 
+// 默认全放在根目录
 
 // 如果设置了 extraOutdir 则需要根据 extraOutdir 来生成后缀
 
@@ -189,15 +187,14 @@ impl VisitMut for ImportPathRewriter {
     for item in items.iter_mut() {
       if let ModuleItem::ModuleDecl(ModuleDecl::Import(import)) = item {
         let src = &mut import.src;
-        let alias_context = 
-          CompilationContext::new(
-              Config {
-                  resolve: Box::new(ResolveConfig {
-                      alias: self.config.resolve.alias.clone(), 
-                      ..Default::default()
-                  }),
-                  ..Default::default()
-              },
+        let alias_context = CompilationContext::new(
+          Config {
+            resolve: Box::new(ResolveConfig {
+              alias: self.config.resolve.alias.clone(),
+              ..Default::default()
+            }),
+            ..Default::default()
+          },
           vec![],
         )
         .unwrap();
@@ -210,7 +207,7 @@ impl VisitMut for ImportPathRewriter {
         );
         if let Some(resolved_path) = resolved {
           let path = PathBuf::from(resolved_path.resolved_path);
-          
+
           let base_path = path.with_extension("");
           let final_value = base_path
             .with_extension("d.ts")

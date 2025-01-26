@@ -1676,7 +1676,6 @@ dependencies = [
  "swc_ecma_ast",
  "swc_ecma_parser",
  "swc_html_ast",
- "swc_typescript",
  "thiserror",
  "wax",
 ]
@@ -1999,6 +1998,7 @@ dependencies = [
  "swc_html_minifier",
  "swc_html_parser",
  "swc_html_visit",
+ "swc_typescript",
 ]
 
 [[package]]
