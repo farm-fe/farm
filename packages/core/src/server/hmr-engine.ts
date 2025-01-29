@@ -73,7 +73,7 @@ export class HmrEngine {
     const result = await this.app.compiler.update(queue);
 
     logger.info(
-      `${bold(cyan(updatedFilesStr))} updated in ${bold(green(logger.formatExecutionTime(performance.now() - start)))}`
+      `${bold(cyan(updatedFilesStr))} updated in ${bold(green(logger.formatTime(performance.now() - start)))}`
     );
 
     // clear update queue after update finished

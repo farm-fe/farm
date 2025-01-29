@@ -97,7 +97,7 @@ export async function build(
 
     logger.info(
       `Build completed in ${bold(
-        green(`${logger.formatExecutionTime(elapsedTime)}`)
+        green(`${logger.formatTime(elapsedTime)}`)
       )} ${persistentCacheText} Resources emitted to ${bold(
         green(output.path)
       )}.`

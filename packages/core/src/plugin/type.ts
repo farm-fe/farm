@@ -1,5 +1,6 @@
 import {
   Compiler,
+  ConfigEnv,
   ModuleContext,
   ResolvedUserConfig,
   Server,
@@ -155,7 +156,10 @@ export interface JsPlugin {
   name: string;
   priority?: number;
 
-  config?: (config: UserConfig) => UserConfig | Promise<UserConfig>;
+  config?: (
+    config: UserConfig,
+    configEnv: ConfigEnv
+  ) => UserConfig | Promise<UserConfig>;
 
   configResolved?: (config: ResolvedUserConfig) => void | Promise<void>;
 
