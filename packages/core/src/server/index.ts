@@ -430,6 +430,7 @@ export class Server extends httpServer {
       this.config.compilation.define.FARM_HMR_PORT = serverPort.toString();
 
       this.resolvedUrls = await resolveServerUrls(this.httpServer, this.config);
+
       // compile the project and start the dev server
       await this.#startCompile();
 
