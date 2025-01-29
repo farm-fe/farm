@@ -238,6 +238,7 @@ export class Server extends httpServer {
       // this.logger.error(
       //   `Failed to create farm server: ${error}`
       // );
+      // TODO refactor format error
       throw error;
     }
   }
