@@ -187,10 +187,7 @@ export function tryStatSync(file: string): fs.Stats | undefined {
   } catch {}
 }
 
-export function formatExecutionTime(
-  time: number,
-  format: 'ms' | 's' = 'ms'
-): string {
+export function formatTime(time: number, format: 'ms' | 's' = 'ms'): string {
   switch (format) {
     case 's':
       return `${Math.floor(time) / 1000}s`;

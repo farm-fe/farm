@@ -20,7 +20,6 @@ import {
 
 import {
   Logger,
-  clearScreen,
   colors,
   isArray,
   isEmptyObject,
@@ -161,7 +160,12 @@ export async function resolveConfig(
     ...vitePluginAdapters
   ]);
 
-  const config = await resolveConfigHook(userConfig, sortFarmJsPlugins);
+  const config = await resolveConfigHook(
+    userConfig,
+    configEnv,
+    sortFarmJsPlugins
+  );
+
   // may be user push plugin when config hooks
   const allPlugins = await resolvePlugins(config, defaultMode);
   const farmJsPlugins = getSortedPlugins([

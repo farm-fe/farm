@@ -229,7 +229,7 @@ export async function handlerWatcher(
       const elapsedTime = Math.floor(performance.now() - start);
       logger.info(
         `update completed in ${bold(
-          green(`${logger.formatExecutionTime(elapsedTime)}ms`)
+          green(`${logger.formatTime(elapsedTime)}`)
         )} Resources emitted to ${bold(
           green(resolvedUserConfig.compilation.output.path)
         )}.`

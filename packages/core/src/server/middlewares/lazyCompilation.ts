@@ -70,7 +70,7 @@ export function lazyCompilationMiddleware(
       `${bold(green(`✓ Lazy compilation done`))} ${bold(
         cyan(pathsStr)
       )} in ${bold(
-        green(config.logger.formatExecutionTime(performance.now() - start))
+        green(config.logger.formatTime(performance.now() - start))
       )}.`
     );
 

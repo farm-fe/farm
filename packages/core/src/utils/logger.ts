@@ -104,7 +104,7 @@ export class Logger implements ILogger {
     this.prefix = color ? color(formattedPrefix) : formattedPrefix;
   }
 
-  formatExecutionTime(duration: number): string {
+  formatTime(duration: number): string {
     if (this.timeUnit === 's') {
       return `${(duration / 1000).toFixed(3)}s`;
     } else {
@@ -140,7 +140,7 @@ export class Logger implements ILogger {
         loggerMessage = message.replace(timeRegex, (_, durationStr) => {
           const duration = parseFloat(durationStr);
 
-          return this.formatExecutionTime(duration);
+          return this.formatTime(duration);
         });
       } else {
         loggerMessage = message.message;
@@ -260,7 +260,7 @@ export function bootstrapLogger(options?: LoggerOptions): Logger {
 }
 
 export function bootstrap(
-  times: number,
+  time: number,
   config: ResolvedUserConfig,
   hasCacheDir: boolean
 ): void {
@@ -282,7 +282,7 @@ export function bootstrap(
     `${colors.bold(colors.green(` ✓`))}  ${colors.bold(
       'Compile in'
     )} ${colors.bold(
-      colors.green(config.logger.formatExecutionTime(times))
+      colors.green(config.logger.formatTime(time))
     )} ${persistentCacheFlag}`,
     '\n'
   );
