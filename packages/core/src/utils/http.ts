@@ -56,43 +56,30 @@ export async function resolveServerUrls(
   const port = address.port;
   const base = config.compilation.output.publicPath;
 
-  if (hostname.host !== undefined && !wildcardHosts.has(hostname.host)) {
-    let hostnameName = hostname.name;
-    // ipv6 host
-    if (hostnameName.includes(':')) {
-      hostnameName = `[${hostnameName}]`;
-    }
-    const address = `${protocol}://${hostnameName}:${port}${base}`;
-    if (loopbackHosts.has(hostname.host)) {
-      local.push(address);
-    } else {
-      network.push(address);
-    }
-  } else {
-    Object.values(os.networkInterfaces())
-      .flatMap((nInterface) => nInterface ?? [])
-      .filter(
-        (detail) =>
-          detail &&
-          detail.address &&
-          (detail.family === 'IPv4' ||
-            // @ts-expect-error Node 18.0 - 18.3 returns number
-            detail.family === 4)
-      )
-      .forEach((detail) => {
-        let host = detail.address.replace('127.0.0.1', hostname.name);
-        // ipv6 host
-        if (host.includes(':')) {
-          host = `[${host}]`;
-        }
-        const url = `${protocol}://${host}:${port}${base}`;
-        if (detail.address.includes('127.0.0.1')) {
-          local.push(url);
-        } else {
-          network.push(url);
-        }
-      });
-  }
+  // print all network interfaces networkInterfaces() by default
+  Object.values(os.networkInterfaces())
+    .flatMap((nInterface) => nInterface ?? [])
+    .filter(
+      (detail) =>
+        detail &&
+        detail.address &&
+        (detail.family === 'IPv4' ||
+          // @ts-expect-error Node 18.0 - 18.3 returns number
+          detail.family === 4)
+    )
+    .forEach((detail) => {
+      let host = detail.address.replace('127.0.0.1', hostname.name);
+      // ipv6 host
+      if (host.includes(':')) {
+        host = `[${host}]`;
+      }
+      const url = `${protocol}://${host}:${port}${base}`;
+      if (detail.address.includes('127.0.0.1')) {
+        local.push(url);
+      } else {
+        network.push(url);
+      }
+    });
   return { local, network };
 }
 
@@ -114,7 +101,6 @@ export async function resolveHostname(
   let name = host === undefined || wildcardHosts.has(host) ? 'localhost' : host;
 
   if (host === 'localhost') {
-    // See #8647 for more details.
     const localhostAddr = await getLocalhostAddressIfDiffersFromDNS();
     if (localhostAddr) {
       name = localhostAddr;

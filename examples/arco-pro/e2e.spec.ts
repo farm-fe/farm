@@ -38,16 +38,17 @@ describe(`e2e tests - ${name}`, async () => {
 
         // browser HMR should work
         if (command === 'start') {
-          const filePath = fileURLToPath(
-            path.join(
-              path.dirname(import.meta.url),
-              'src',
-              'pages',
-              'dashboard',
-              'workplace',
-              'docs.tsx'
-            )
+          const __filename = fileURLToPath(import.meta.url);
+          const __dirname = path.dirname(__filename);
+          const filePath = path.join(
+            __dirname,
+            'src',
+            'pages',
+            'dashboard',
+            'workplace',
+            'docs.tsx'
           );
+
           const content = readFileSync(filePath, 'utf-8');
           writeFileSync(
             filePath,
