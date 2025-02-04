@@ -527,7 +527,7 @@ mod tests {
     // let module = std::mem::take(value);
 
     let bytes = module.serialize_bytes().unwrap();
-    let mut deserialized_module = module.deserialize_bytes(bytes).unwrap();
+    let mut deserialized_module = Module::deserialize_bytes(bytes).unwrap();
     let deserialized_module = deserialized_module.downcast_mut::<Module>().unwrap();
 
     assert_eq!(

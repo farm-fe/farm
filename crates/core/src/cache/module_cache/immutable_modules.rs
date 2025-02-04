@@ -6,7 +6,7 @@ use rkyv::Deserialize;
 
 use crate::{
   cache::{
-    cache_store::{CacheStore, CacheStoreKey},
+    store::{constant::CacheStoreTrait, CacheStore, CacheStoreKey},
     utils::cache_panic,
   },
   config::Mode,

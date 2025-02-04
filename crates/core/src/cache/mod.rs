@@ -1,14 +1,15 @@
 use parking_lot::Mutex;
+use store::{constant::CacheStoreTrait, CacheStore, CacheStoreKey};
 
-use crate::config::Mode;
+use crate::{config::Mode, error::Result, Cacheable};
 
-use self::{cache_store::CacheStore, plugin_cache::PluginCacheManager};
+use self::plugin_cache::PluginCacheManager;
 
-pub mod cache_store;
 pub mod cacheable;
 pub mod module_cache;
 pub mod plugin_cache;
 pub mod resource_cache;
+pub mod store;
 pub mod utils;
 
 /// All cache related operation are charged by [CacheManager]
@@ -67,5 +68,29 @@ impl CacheManager {
       );
     });
     *lock = false;
+  }
+
+  pub fn write<V: Cacheable>(&self, name: &str, value: V) -> Result<()> {
+    let bytes = value.serialize_bytes().unwrap();
+    self
+      .custom
+      .write_single_cache(
+        CacheStoreKey {
+          name: name.to_string(),
+          key: "default".to_string(),
+        },
+        bytes,
+      )
+      .unwrap();
+
+    Ok(())
+  }
+
+  pub fn read<V: Cacheable>(&self, name: &str) -> Result<Option<Box<V>>> {
+    let bytes = self.custom.read_cache(name).unwrap();
+
+    let v = V::deserialize_bytes(bytes).unwrap();
+
+    Ok(v.downcast::<V>().ok())
   }
 }

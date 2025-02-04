@@ -4,7 +4,7 @@ use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use rkyv::Deserialize;
 
 use crate::{
-  cache::cache_store::{CacheStore, CacheStoreKey},
+  cache::store::{constant::CacheStoreTrait, CacheStore, CacheStoreKey},
   config::Mode,
   deserialize,
   module::ModuleId,

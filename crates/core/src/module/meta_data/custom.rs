@@ -80,16 +80,16 @@ impl CustomMetaDataMap {
     self.map.iter()
   }
 
-  pub fn get_mut<T: Cacheable + Default>(&mut self, key: &str) -> Option<&mut T> {
+  pub fn get_mut<T: Cacheable>(&mut self, key: &str) -> Option<&mut T> {
     if let Some((_, bytes)) = self.bytes_map.remove(key) {
-      let value = T::deserialize_bytes(&T::default(), bytes).unwrap();
+      let value = T::deserialize_bytes(bytes).unwrap();
       self.map.insert(key.to_string(), value);
     }
 
     self.map.get_mut(key).and_then(|v| v.downcast_mut::<T>())
   }
 
-  pub fn insert<T: Cacheable>(&mut self, key: String, value: Box<T>) {
+  pub fn insert(&mut self, key: String, value: Box<dyn Cacheable>) {
     self.map.insert(key, value);
   }
 
@@ -109,20 +109,15 @@ impl From<HashMap<String, Box<dyn Cacheable>>> for CustomMetaDataMap {
 
 impl Clone for CustomMetaDataMap {
   fn clone(&self) -> Self {
-    let custom = if self.map.is_empty() {
-      HashMap::default()
-    } else {
-      let mut custom = HashMap::default();
-      for (k, v) in self.map.iter() {
-        let cloned_data = v.serialize_bytes().unwrap();
-        let cloned_custom = v.deserialize_bytes(cloned_data).unwrap();
-        custom.insert(k.clone(), cloned_custom);
-      }
-      custom
-    };
+    let bytes_maps = self.bytes_map.clone();
+
+    for (k, v) in self.map.iter() {
+      let cloned_data = v.serialize_bytes().unwrap();
+      bytes_maps.insert(k.clone(), cloned_data);
+    }
 
     Self {
-      map: custom,
+      map: Default::default(),
       bytes_map: self.bytes_map.clone(),
     }
   }

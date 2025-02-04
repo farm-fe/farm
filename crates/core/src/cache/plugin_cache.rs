@@ -5,7 +5,7 @@ use crate::HashMap;
 
 use crate::config::Mode;
 
-use super::cache_store::{CacheStore, CacheStoreKey};
+use super::store::{constant::CacheStoreTrait, CacheStore, CacheStoreKey};
 
 #[derive(Default)]
 pub struct PluginCacheManager {

@@ -46,20 +46,30 @@ impl Clone for ModuleMetaData {
       Self::Script(script) => Self::Script(script.clone()),
       Self::Css(css) => Self::Css(css.clone()),
       Self::Html(html) => Self::Html(html.clone()),
-      Self::Custom(custom) => {
-        let mut custom_new = HashMap::default();
-        for (k, v) in custom.iter() {
-          let cloned_data = v.serialize_bytes().unwrap();
-          let cloned_custom = v.deserialize_bytes(cloned_data).unwrap();
-          custom_new.insert(k.clone(), cloned_custom);
-        }
-        Self::Custom(CustomMetaDataMap::from(custom_new))
-      }
+      Self::Custom(custom) => Self::Custom(custom.clone()),
     }
   }
 }
 
 impl ModuleMetaData {
+  pub fn write<K: ToString, V>(&mut self, name: K, v: V)
+  where
+    V: Cacheable,
+  {
+    let map = match self {
+      ModuleMetaData::Script(script_module_meta_data) => &mut script_module_meta_data.custom,
+      ModuleMetaData::Css(css_module_meta_data) => &mut css_module_meta_data.custom,
+      ModuleMetaData::Html(html_module_meta_data) => &mut html_module_meta_data.custom,
+      ModuleMetaData::Custom(custom_meta_data_map) => custom_meta_data_map,
+    };
+
+    let data = v.serialize_bytes().unwrap();
+
+    let item = V::deserialize_bytes(data).unwrap();
+
+    map.insert(name.to_string(), item);
+  }
+
   pub fn as_script_mut(&mut self) -> &mut ScriptModuleMetaData {
     if let Self::Script(script) = self {
       script

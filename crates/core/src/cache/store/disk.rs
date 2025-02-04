@@ -1,14 +1,14 @@
-//! Cache store of the persistent cache, responsible for reading and writing the cache from the disk.
-use crate::HashMap;
+use std::path::{Path, PathBuf};
+
 use dashmap::{mapref::multiple::RefMulti, DashMap};
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 
-use std::path::{Path, PathBuf};
-
-use crate::config::Mode;
-
-const FARM_CACHE_VERSION: &str = "0.6.1";
-const FARM_CACHE_MANIFEST_FILE: &str = "farm-cache.json";
+use super::{
+  constant::{CacheStoreTrait, FARM_CACHE_MANIFEST_FILE, FARM_CACHE_VERSION},
+  error::CacheError,
+  CacheStoreKey,
+};
+use crate::{config::Mode, HashMap};
 
 // TODO make CacheStore a trait and implement DiskCacheStore or RemoteCacheStore or more.
 #[derive(Default)]
@@ -66,17 +66,19 @@ impl CacheStore {
       manifest,
     }
   }
+}
 
-  pub fn has_cache(&self, name: &str) -> bool {
+impl CacheStoreTrait for CacheStore {
+  fn has_cache(&self, name: &str) -> bool {
     self.manifest.contains_key(name)
   }
 
-  pub fn get_store_keys(&self) -> Vec<RefMulti<String, String>> {
+  fn get_store_keys(&self) -> Vec<RefMulti<String, String>> {
     self.manifest.iter().collect()
   }
 
   /// return true if the cache changed or it's a cache item
-  pub fn is_cache_changed(&self, store_key: &CacheStoreKey) -> bool {
+  fn is_cache_changed(&self, store_key: &CacheStoreKey) -> bool {
     if let Some(guard) = self.manifest.get(&store_key.name) {
       if guard.value() == &store_key.key {
         // the cache is not changed
@@ -87,11 +89,7 @@ impl CacheStore {
     true
   }
 
-  pub fn write_single_cache(
-    &self,
-    store_key: CacheStoreKey,
-    bytes: Vec<u8>,
-  ) -> std::io::Result<()> {
+  fn write_single_cache(&self, store_key: CacheStoreKey, bytes: Vec<u8>) -> Result<(), CacheError> {
     let cache_file_dir = &self.cache_dir;
 
     if !cache_file_dir.exists() {
@@ -125,7 +123,7 @@ impl CacheStore {
     Ok(())
   }
 
-  pub fn write_manifest(&self) {
+  fn write_manifest(&self) {
     let manifest = self.manifest.clone().into_iter().collect::<HashMap<_, _>>();
 
     if !self.cache_dir.exists() {
@@ -141,7 +139,7 @@ impl CacheStore {
   }
 
   /// Write the cache map to the disk.
-  pub fn write_cache(&self, cache_map: HashMap<CacheStoreKey, Vec<u8>>) {
+  fn write_cache(&self, cache_map: HashMap<CacheStoreKey, Vec<u8>>) {
     let cache_file_dir = &self.cache_dir;
     if !cache_file_dir.exists() {
       std::fs::create_dir_all(cache_file_dir).unwrap();
@@ -151,19 +149,22 @@ impl CacheStore {
       .into_par_iter()
       .try_for_each(|(store_key, bytes)| {
         self.write_single_cache(store_key, bytes)?;
-        Ok::<(), std::io::Error>(())
+        Ok::<(), CacheError>(())
       })
       .unwrap();
 
     self.write_manifest();
   }
 
-  pub fn read_cache(&self, name: &str) -> Option<Vec<u8>> {
-    if !self.manifest.contains_key(name) {
+  fn read_cache(&self, name: &str) -> Option<Vec<u8>> {
+    let Some(cache_key) = self
+      .manifest
+      .get(name)
+      .as_ref()
+      .map(|v: &dashmap::mapref::one::Ref<'_, String, String>| v.value().clone())
+    else {
       return None;
-    }
-
-    let cache_key = self.manifest.get(name).unwrap().value().clone();
+    };
     let cache_file = self.cache_dir.join(cache_key);
 
     if cache_file.exists() && cache_file.is_file() {
@@ -173,24 +174,15 @@ impl CacheStore {
     None
   }
 
-  pub fn remove_cache(&self, name: &str) {
-    if !self.manifest.contains_key(name) {
+  fn remove_cache(&self, name: &str) {
+    let Some((_, cache_key)) = self.manifest.remove(name) else {
       return;
-    }
+    };
 
-    let (_, cache_key) = self.manifest.remove(name).unwrap();
     let cache_file = self.cache_dir.join(cache_key);
 
     if cache_file.exists() && cache_file.is_file() {
       std::fs::remove_file(cache_file).ok();
     }
   }
-}
-
-/// Cache key of the store, it's a pair of (name, cache_key), a name should only be related to one cache key.
-/// Previous cache will be cleared if the related cache key changed for a name
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct CacheStoreKey {
-  pub name: String,
-  pub key: String,
 }

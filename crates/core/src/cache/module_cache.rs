@@ -1,10 +1,11 @@
 use dashmap::mapref::one::{Ref, RefMut};
 
 use farmfe_macro_cache_item::cache_item;
+use module_metadata::ModuleMetadataStore;
 
 use crate::config::Mode;
 use crate::module::module_graph::ModuleGraphEdge;
-use crate::module::{Module, ModuleId};
+use crate::module::{CustomMetaDataMap, Module, ModuleId};
 use crate::plugin::PluginAnalyzeDepsHookResultEntry;
 
 use immutable_modules::ImmutableModulesMemoryStore;
@@ -13,12 +14,14 @@ use mutable_modules::MutableModulesMemoryStore;
 
 pub mod immutable_modules;
 pub mod module_memory_store;
+mod module_metadata;
 pub mod mutable_modules;
 
 pub struct ModuleCacheManager {
   /// Store is responsible for how to read and load cache from disk.
   pub mutable_modules_store: MutableModulesMemoryStore,
   pub immutable_modules_store: ImmutableModulesMemoryStore,
+  pub module_metadata: ModuleMetadataStore,
 }
 
 #[cache_item]
@@ -50,6 +53,7 @@ pub struct CachedModule {
   /// when writing to the cache next time, it will be cleared from memory.
   ///
   pub is_expired: bool,
+  custom: CustomMetaDataMap,
 }
 
 impl CachedModule {
@@ -86,8 +90,9 @@ impl CachedModule {
 impl ModuleCacheManager {
   pub fn new(cache_dir_str: &str, namespace: &str, mode: Mode) -> Self {
     Self {
-      mutable_modules_store: MutableModulesMemoryStore::new(cache_dir_str, namespace, mode.clone()),
+      mutable_modules_store: MutableModulesMemoryStore::new(cache_dir_str, namespace, mode),
       immutable_modules_store: ImmutableModulesMemoryStore::new(cache_dir_str, namespace, mode),
+      module_metadata: ModuleMetadataStore::new(cache_dir_str, namespace, mode),
     }
   }
 
@@ -162,6 +167,7 @@ impl ModuleCacheManager {
   pub fn invalidate_cache(&self, key: &ModuleId) {
     self.mutable_modules_store.invalidate_cache(key);
     self.immutable_modules_store.invalidate_cache(key);
+    self.module_metadata.invalidate(key);
   }
 
   pub fn cache_outdated(&self, key: &ModuleId) -> bool {

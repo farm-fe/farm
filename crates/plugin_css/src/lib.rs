@@ -313,10 +313,6 @@ impl Plugin for FarmPluginCss {
           cache_id.clone(),
           (css_stylesheet, CommentsMetaData::from(comments)),
         );
-        self
-          .content_map
-          .lock()
-          .insert(cache_id, param.content.clone());
 
         // for composes dynamic import (eg: composes: action from "./action.css")
         let mut dynamic_import_of_composes = HashMap::default();
@@ -388,11 +384,13 @@ impl Plugin for FarmPluginCss {
           collapsed_sourcemap
             .to_writer(&mut buf)
             .expect("failed to write sourcemap");
-          let map = String::from_utf8(buf).unwrap();
-          self
-            .sourcemap_map
-            .lock()
-            .insert(css_modules_module_id.to_string(), map);
+          // context.cache_manager.write
+
+          // let mut module_graph = context.module_graph.write();
+          // let module = module_graph.module_mut(&css_modules_module_id).unwrap();
+
+          // module.meta.write("content", param.content.clone());
+          // module.meta.write("sourcemap", map);
         }
 
         Ok(Some(PluginTransformHookResult {
