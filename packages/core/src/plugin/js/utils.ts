@@ -481,6 +481,7 @@ export function wrapPluginUpdateModules(plugin: JsPlugin): JsPlugin {
 
   plugin.updateModules.executor = async ({ paths }, ctx) => {
     moduleGraph.context = ctx;
+    // TODO order with sort by updateModules hooks priority
     for (const [file, type] of paths) {
       const mods = moduleGraph.getModulesByFile(
         file
@@ -504,6 +505,7 @@ export function wrapPluginUpdateModules(plugin: JsPlugin): JsPlugin {
           return readFile(file, 'utf-8');
         }
       };
+
       return originalExecutor.call(plugin, moduleContext);
     }
   };
