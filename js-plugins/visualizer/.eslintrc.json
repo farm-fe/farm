@@ -1,6 +1,5 @@
 {
   "root": true,
-  "extends": "../../.eslintrc.base.json",
   "parserOptions": {
     "project": ["./js-plugins/record-viewer/tsconfig.json"]
   }

@@ -1,5 +1,5 @@
 import { defineConfig } from "@farmfe/core";
-// import viewer from "@farmfe/js-plugin-visualizer";
+import viewer from "@farmfe/js-plugin-visualizer";
 import react from "@farmfe/plugin-react";
 import compression from "compression";
 const myPlugin = () => ({
@@ -14,7 +14,7 @@ const myPlugin = () => ({
 });
 
 export default defineConfig({
-  plugins: [react(), myPlugin()],
+  plugins: [react(),viewer()],
   compilation: {
     output: {
       // publicPath: "/aaa/",

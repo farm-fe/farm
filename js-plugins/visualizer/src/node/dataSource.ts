@@ -1,12 +1,15 @@
-import http from 'node:http';
+import http, { IncomingMessage } from 'node:http';
 import { Compiler } from '@farmfe/core';
+import { NextHandleFunction } from 'connect';
 import { getFarmEnvInfo } from './utils/envinfo';
 
-export function createDateSourceMiddleware(compiler: Compiler) {
+export function createDateSourceMiddleware(
+  compiler: Compiler
+): NextHandleFunction {
   return async (
-    req: http.IncomingMessage,
+    req: IncomingMessage,
     res: http.ServerResponse,
-    next: () => Promise<any>
+    next: Function
   ) => {
     const url = req.url as string;
     const { pathname, searchParams } = new URL(
@@ -40,10 +43,10 @@ export function createDateSourceMiddleware(compiler: Compiler) {
         const stats = compiler.stats();
         handleRecordRequest(stats);
       } else {
-        await next();
+        next();
       }
     } else {
-      await next();
+      next();
     }
   };
 }

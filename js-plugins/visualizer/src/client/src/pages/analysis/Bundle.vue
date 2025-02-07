@@ -59,6 +59,7 @@ export default defineComponent({
       language: 'javascript'
     });
     getResourcesMap().then((rawData) => {
+      console.log('rawData', rawData);
       resourcePots.value = Object.values(rawData);
     });
     const treeData = computed(() => {

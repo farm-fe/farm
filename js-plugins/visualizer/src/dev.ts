@@ -1,12 +1,10 @@
-import { DevServerMiddleware, JsPlugin, Server } from '@farmfe/core';
-import { Context, Middleware } from 'koa';
+import { JsPlugin, Server } from '@farmfe/core';
+import { NextHandleFunction } from 'connect';
 import { createDateSourceMiddleware } from './node/dataSource';
 
-export function records(devServer: Server): Middleware {
+export function records(devServer: Server): NextHandleFunction {
   const compiler = devServer.getCompiler();
-  return async (ctx: Context, next: () => Promise<any>) => {
-    return createDateSourceMiddleware(compiler)(ctx.req, ctx.res, next);
-  };
+  return createDateSourceMiddleware(compiler);
 }
 
 export default function farmRecorderPlugin(): JsPlugin {
@@ -18,8 +16,11 @@ export default function farmRecorderPlugin(): JsPlugin {
       return config;
     },
     configureServer(server) {
-      const middlewares = [records] as DevServerMiddleware[];
-      server.applyMiddlewares(middlewares);
+      const middlewares = [records(server)];
+      console.log(middlewares);
+      for (const middleware of middlewares) {
+        server.middlewares.use(middleware);
+      }
     }
   };
 }
