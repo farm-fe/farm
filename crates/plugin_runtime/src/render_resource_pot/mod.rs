@@ -3,7 +3,6 @@ use std::sync::Arc;
 use farmfe_core::{
   cache::cache_store::CacheStoreKey,
   cache_item,
-  config::{minify::MinifyMode, FARM_MODULE_SYSTEM},
   context::CompilationContext,
   deserialize,
   enhanced_magic_string::{

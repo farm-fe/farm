@@ -15,9 +15,6 @@ pub enum ResolveKind {
     name: String,
     /// the same as config.output.filename, default to config.output.filename
     output_filename: Option<String>,
-    /// disable importer of the dynamic entry. for example if b.ts is a dynamic entry return by a.ts, then a.ts is the importer of b.ts by default,
-    /// if you want a isolate dynamic entry, you can set this field to true
-    no_importer: bool,
   },
   /// static import, e.g. `import a from './a'`
   #[default]
@@ -38,7 +35,7 @@ pub enum ResolveKind {
   LinkHref,
   /// Hmr update
   HmrUpdate,
-  /// Custom ResolveKind, e.g. `const worker = new Worker(new Url("worker.js"))` of a web worker
+  /// Custom ResolveKind
   Custom(String),
 }
 

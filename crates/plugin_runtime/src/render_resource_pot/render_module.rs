@@ -82,17 +82,10 @@ pub fn render_module(
   let mut func_expr = Expr::default();
 
   try_with(cm.clone(), &context.meta.script.globals, || {
-    let (unresolved_mark, top_level_mark) = if module.meta.as_script().unresolved_mark == 0
-      && module.meta.as_script().top_level_mark == 0
-    {
-      resolve_module_mark(
-        &mut cloned_module,
-        module.module_type.is_typescript(),
-        context,
-      )
-    } else {
+    let (unresolved_mark, top_level_mark) = {
       let unresolved_mark = Mark::from_u32(module.meta.as_script().unresolved_mark);
       let top_level_mark = Mark::from_u32(module.meta.as_script().top_level_mark);
+
       (unresolved_mark, top_level_mark)
     };
 
@@ -104,6 +97,8 @@ pub fn render_module(
       cloned_module.visit_mut_with(&mut ExistingCommonJsRequireVisitor::new(
         unresolved_mark,
         top_level_mark,
+        module_graph,
+        module.id.clone(),
       ));
     }
 

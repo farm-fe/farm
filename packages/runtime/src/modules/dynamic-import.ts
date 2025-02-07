@@ -18,9 +18,9 @@ export interface Resource {
 declare const __FARM_RUNTIME_TARGET_ENV__: 'browser' | 'node';
 declare const __FARM_ENABLE_RUNTIME_PLUGIN__: boolean;
 
-const dynamicResources: Resource[] = [];
+let dynamicResources: Resource[] = [];
 // dynamic module entry and resources map
-const dynamicModuleResourcesMap: Record<string, number[]> = {};
+let dynamicModuleResourcesMap: Record<string, number[]> = {};
 const loadedResources: Record<string, boolean> = {};
 const loadingResources: Record<string, Promise<void> | null> = {};
 // available public paths, when loading resources, we will try each publicPath until it is available, this is so called `resource loading retry`
@@ -34,6 +34,7 @@ export function initModuleSystem(ms: ModuleSystem) {
   moduleSystem.d = dynamicImport;
   moduleSystem.sp = setPublicPaths;
   moduleSystem.si = setInitialLoadedResources;
+  moduleSystem.sd = setDynamicModuleResourcesMap;
   moduleSystem.l = loadDynamicResourcesOnly;
 }
 
@@ -116,37 +117,37 @@ function loadDynamicResourcesOnly(id: string, force = false): Promise<any> {
 function load(resource: Resource): Promise<void> {
   if (__FARM_RUNTIME_TARGET_ENV__ === 'node') {
     return loadResourceNode(resource); 
-  }
-
-  if (loadedResources[resource.path]) {
-    // Skip inject Promise polyfill for runtime
-    return Promise.resolve();
-  } else if (loadingResources[resource.path]) {
-    return loadingResources[resource.path];
-  }
-
-  if (__FARM_ENABLE_RUNTIME_PLUGIN__) {
-    const result = moduleSystem.p.b(
-      'loadResource',
-      resource
-    );
-  
-    if (result) {
-      return result.then((res: ResourceLoadResult) => {
-        if (res.success) {
-          setLoadedResource(resource.path);
-        } else if (res.retryWithDefaultResourceLoader) {
-          return loadResource(resource, 0);
-        } else {
-          throw new Error(
-            `[Farm] Failed to load resource: "${resource.path}, type: ${resource.type}". Original Error: ${res.err}`
-          );
-        }
-      });
+  } else {
+    if (loadedResources[resource.path]) {
+      // Skip inject Promise polyfill for runtime
+      return Promise.resolve();
+    } else if (loadingResources[resource.path]) {
+      return loadingResources[resource.path];
     }
-  }
   
-  return loadResource(resource, 0);
+    if (__FARM_ENABLE_RUNTIME_PLUGIN__) {
+      const result = moduleSystem.p.b(
+        'loadResource',
+        resource
+      );
+    
+      if (result) {
+        return result.then((res: ResourceLoadResult) => {
+          if (res.success) {
+            setLoadedResource(resource.path);
+          } else if (res.retryWithDefaultResourceLoader) {
+            return loadResource(resource, 0);
+          } else {
+            throw new Error(
+              `[Farm] Failed to load resource: "${resource.path}, type: ${resource.type}". Original Error: ${res.err}`
+            );
+          }
+        });
+      }
+    }
+    
+    return loadResource(resource, 0);
+  }
 }
 
 function loadResourceNode(resource: Resource) {
@@ -272,3 +273,13 @@ function setInitialLoadedResources(resources: string[]) {
     setLoadedResource(resource);
   }
 }
+
+  // These two methods are used to support dynamic module loading, the dynamic module info is collected by the compiler and injected during compile time
+  // This method can also be called during runtime to add new dynamic modules
+function  setDynamicModuleResourcesMap(
+    dr: Resource[],
+    dmp: Record<string, number[]>,
+  ): void {
+    dynamicResources = dr;
+    dynamicModuleResourcesMap = dmp;
+  }

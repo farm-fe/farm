@@ -529,7 +529,7 @@ impl Compiler {
   fn handle_dependencies(params: HandleDependenciesParams) {
     let HandleDependenciesParams {
       module,
-      mut resolve_param,
+      resolve_param,
       order,
       deps,
       thread_pool,
@@ -538,13 +538,6 @@ impl Compiler {
     } = params;
 
     let module_id = module.id.clone();
-    // dynamic entry modules may reset importer module, reset importer here
-    if let ResolveKind::DynamicEntry { no_importer, .. } = &resolve_param.kind {
-      if *no_importer {
-        resolve_param.importer = None
-      }
-    }
-
     let immutable = module.immutable;
     // add module to the graph
     Self::add_module(module, &context);

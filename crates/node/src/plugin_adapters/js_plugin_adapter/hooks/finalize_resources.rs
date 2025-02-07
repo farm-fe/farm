@@ -3,7 +3,7 @@ use std::sync::Arc;
 use farmfe_core::{
   context::CompilationContext,
   error::Result,
-  plugin::PluginFinalizeResourcesHookParams,
+  plugin::PluginFinalizeResourcesHookParam,
   resource::Resource,
   serde::{Deserialize, Serialize},
   HashMap,
@@ -22,8 +22,8 @@ pub struct JsPluginFinalizeResourcesHookParams {
   pub config: farmfe_core::config::Config,
 }
 
-impl From<&mut PluginFinalizeResourcesHookParams<'_>> for JsPluginFinalizeResourcesHookParams {
-  fn from(value: &mut PluginFinalizeResourcesHookParams) -> Self {
+impl From<&mut PluginFinalizeResourcesHookParam<'_>> for JsPluginFinalizeResourcesHookParams {
+  fn from(value: &mut PluginFinalizeResourcesHookParam) -> Self {
     Self {
       resources_map: value.resources_map.clone(),
       config: value.config.clone(),

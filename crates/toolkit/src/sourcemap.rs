@@ -6,11 +6,8 @@ use std::{
 
 use farmfe_core::{
   config::{
-    bool_or_obj::BoolOrObj,
-    comments::CommentsConfig,
-    config_regex::ConfigRegex,
-    minify::{MinifyMode, MinifyOptions},
-    SourcemapConfig,
+    bool_or_obj::BoolOrObj, comments::CommentsConfig, config_regex::ConfigRegex,
+    minify::MinifyOptions, SourcemapConfig,
   },
   enhanced_magic_string::collapse_sourcemap::{collapse_sourcemap_chain, read_source_content},
   module::ModuleId,

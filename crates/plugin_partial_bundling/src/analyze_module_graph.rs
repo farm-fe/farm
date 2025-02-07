@@ -388,7 +388,6 @@ mod tests {
             kind: ResolveKind::DynamicEntry {
               name: "AD".to_string(),
               output_filename: None,
-              no_importer: true,
             },
             ..Default::default()
           },

@@ -24,6 +24,7 @@ const PREVIOUS_ENTRY_RESOURCE_SOURCEMAP_CODE: &str = "PREVIOUS_ENTRY_RESOURCE_CO
 ///
 /// if single bundle file emitted
 /// ```js
+/// global['xxx'] = { FARM_TARGET_ENV: 'node' };
 /// (function(){
 ///   // runtime code ...
 /// })();
@@ -87,7 +88,7 @@ pub fn handle_entry_resources(
       ModuleFormat::CommonJs => format!("require(\"./{}\");", params.runtime_resource_name),
     }
   } else {
-    format!("(function(){{{}}}()", params.runtime_code.to_string())
+    format!("(function(){{{}}}());", params.runtime_code.to_string())
   };
 
   // 2. import 'dep' or require('dep'), return empty string if dep_resources is empty
@@ -106,7 +107,7 @@ pub fn handle_entry_resources(
   let entry_resource_code = create_entry_resource_code(&mut params.resource);
 
   // 5. export code
-  let export_info_code = create_export_info_code(entry_module);
+  let export_info_code = create_export_info_code(entry_module, &context.config.output.format);
 
   let mut entry_bundle = MagicString::new(&entry_resource_code, None);
 
@@ -176,7 +177,7 @@ fn create_load_dep_resources_code(
 /// var __farm_entry_default = __farm_entry__.default;
 /// export { __farm_entry_default as default };
 /// ```
-fn create_export_info_code(entry_module: &Module) -> String {
+fn create_export_info_code(entry_module: &Module, format: &ModuleFormat) -> String {
   let export_idents = entry_module.meta.as_script().get_export_idents();
   let mut decls = vec![];
   let mut exports = vec![];
@@ -185,10 +186,39 @@ fn create_export_info_code(entry_module: &Module) -> String {
     decls.push(format!(
       "var __farm_entry_{exported}__=__farm_entry__.{exported};"
     ));
-    exports.push(format!("__farm_entry_{exported}__:{exported}"));
+    exports.push((format!("__farm_entry_{exported}__"), exported));
   }
 
-  format!("{}export {{{}}}", decls.join(""), exports.join(","))
+  if !exports.is_empty() {
+    match format {
+      ModuleFormat::EsModule => {
+        let exported_fields = exports
+          .into_iter()
+          .map(|(value, exported)| format!("{value} as {exported}"))
+          .collect::<Vec<_>>();
+
+        format!(
+          "{}export {{{}}};",
+          decls.join(""),
+          exported_fields.join(",")
+        )
+      }
+      ModuleFormat::CommonJs => {
+        let exported_fields = exports
+          .into_iter()
+          .map(|(value, exported)| format!("{exported}:{value}"))
+          .collect::<Vec<_>>();
+
+        format!(
+          "{}module.exports = {{{}}};",
+          decls.join(""),
+          exported_fields.join(",")
+        )
+      }
+    }
+  } else {
+    "".to_string()
+  }
 }
 
 /// create
@@ -209,20 +239,26 @@ fn create_call_entry_module_code(
     &context.config.runtime.namespace,
     &context.config.output.target_env,
   );
+  // do not set initial loaded resources if there is no dynamic resources(which is a empty array)
+  let is_dynamic_empty = dynamic_resources == "[]";
 
   // setInitialLoadedResources and setDynamicModuleResourcesMap
-  let module_system = format!("var _m = {farm_global_this}.{FARM_MODULE_SYSTEM};");
-  let set_initial_loaded_resources_code = format!(
-    r#"_m.si([{initial_loaded_resources}]);"#,
-    initial_loaded_resources = dep_resources
-      .iter()
-      .map(|rn| format!("'{rn}'"))
-      .collect::<Vec<_>>()
-      .join(",")
-  );
+  let module_system = format!("var __farm_ms__ = {farm_global_this}.{FARM_MODULE_SYSTEM};");
+  let set_initial_loaded_resources_code = if !is_dynamic_empty {
+    format!(
+      r#"__farm_ms__.si([{initial_loaded_resources}]);"#,
+      initial_loaded_resources = dep_resources
+        .iter()
+        .map(|rn| format!("'{rn}'"))
+        .collect::<Vec<_>>()
+        .join(",")
+    )
+  } else {
+    "".to_string()
+  };
 
-  let set_dynamic_resources_map_code = if !dynamic_resources.is_empty() {
-    format!(r#"_m.sd({dynamic_resources},{dynamic_module_resources_map});"#,)
+  let set_dynamic_resources_map_code = if !is_dynamic_empty {
+    format!(r#"__farm_ms__.sd({dynamic_resources},{dynamic_module_resources_map});"#,)
   } else {
     "".to_string()
   };
@@ -235,7 +271,7 @@ fn create_call_entry_module_code(
     };
 
   format!(
-    r#"{module_system}{set_initial_loaded_resources_code}{set_dynamic_resources_map_code}_m.b();var __farm_entry__={}_m.r("{}");"#,
+    r#"{module_system}{set_initial_loaded_resources_code}{set_dynamic_resources_map_code}__farm_ms__.b();var __farm_entry__={}__farm_ms__.r("{}");"#,
     top_level_await_entry,
     entry_module.id.id(context.config.mode.clone()),
   )

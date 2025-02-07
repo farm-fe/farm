@@ -27,7 +27,6 @@ fn test_patch_module_group_graph_dynamic_entry_complex() {
         kind: ResolveKind::DynamicEntry {
           name: "AD".to_string(),
           output_filename: None,
-          no_importer: false,
         },
         ..Default::default()
       }]),
@@ -44,7 +43,6 @@ fn test_patch_module_group_graph_dynamic_entry_complex() {
         kind: ResolveKind::DynamicEntry {
           name: "EI".to_string(),
           output_filename: None,
-          no_importer: false,
         },
         ..Default::default()
       }]),
@@ -172,7 +170,6 @@ fn test_patch_module_group_graph_dynamic_entry_update_dynamic_entry() {
         kind: ResolveKind::DynamicEntry {
           name: "AD".to_string(),
           output_filename: None,
-          no_importer: false,
         },
         ..Default::default()
       }]),

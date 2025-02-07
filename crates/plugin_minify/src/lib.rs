@@ -1,10 +1,7 @@
 use std::{path::PathBuf, sync::Arc};
 
 use farmfe_core::{
-  config::{
-    minify::{MinifyMode, MinifyOptions},
-    Config,
-  },
+  config::{minify::MinifyOptions, Config},
   context::CompilationContext,
   error::Result,
   module::ModuleId,

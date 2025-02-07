@@ -192,7 +192,10 @@ pub fn render_resource_pot_generate_resources(
       .plugin_driver
       .render_resource_pot(resource_pot, context, hook_context)?
       .ok_or(CompilationError::PluginHookResultCheckError {
-        hook_name: format!("render_resource_pot({:?})", resource_pot.id),
+        hook_name: format!(
+          "render_resource_pot(name:{}, type:{:?})",
+          resource_pot.id, resource_pot.resource_pot_type
+        ),
       })?;
 
     resource_pot.meta = meta;

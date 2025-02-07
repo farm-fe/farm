@@ -1,4 +1,4 @@
-use std::{path::PathBuf, sync::Arc};
+use std::sync::Arc;
 
 use farmfe_core::{
   context::CompilationContext,
@@ -15,7 +15,7 @@ pub use farmfe_toolkit_plugin_types::swc_ast::ParseScriptModuleResult;
 
 use crate::script::swc_try_with::try_with;
 
-pub fn module_system_from_deps(deps: Vec<ResolveKind>) -> ModuleSystem {
+fn module_system_from_deps(deps: Vec<ResolveKind>) -> ModuleSystem {
   let mut module_system = ModuleSystem::Custom(String::from("unknown"));
 
   for resolve_kind in deps {

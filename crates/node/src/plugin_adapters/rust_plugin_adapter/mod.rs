@@ -6,8 +6,8 @@ use farmfe_core::{
   error::{CompilationError, Result},
   module::{module_graph::ModuleGraph, ModuleId, ModuleMetaData},
   plugin::{
-    Plugin, PluginFinalizeResourcesHookParams, PluginGenerateResourcesHookResult,
-    PluginHookContext, PluginLoadHookParam, PluginLoadHookResult, PluginProcessModuleHookParam,
+    Plugin, PluginFinalizeResourcesHookParam, PluginGenerateResourcesHookResult, PluginHookContext,
+    PluginLoadHookParam, PluginLoadHookResult, PluginProcessModuleHookParam,
     PluginResolveHookParam, PluginResolveHookResult, PluginTransformHookParam,
     PluginTransformHookResult,
   },
@@ -224,7 +224,7 @@ impl Plugin for RustPluginAdapter {
 
   fn handle_entry_resource(
     &self,
-    resource: &mut farmfe_core::plugin::PluginHandleEntryResourceHookParams,
+    resource: &mut farmfe_core::plugin::PluginHandleEntryResourceHookParam,
     context: &Arc<CompilationContext>,
   ) -> Result<Option<()>> {
     self.plugin.handle_entry_resource(resource, context)
@@ -232,7 +232,7 @@ impl Plugin for RustPluginAdapter {
 
   fn finalize_resources(
     &self,
-    param: &mut PluginFinalizeResourcesHookParams,
+    param: &mut PluginFinalizeResourcesHookParam,
     context: &Arc<CompilationContext>,
   ) -> Result<Option<()>> {
     self.plugin.finalize_resources(param, context)
@@ -268,7 +268,7 @@ impl Plugin for RustPluginAdapter {
 
   fn update_modules(
     &self,
-    params: &mut farmfe_core::plugin::PluginUpdateModulesHookParams,
+    params: &mut farmfe_core::plugin::PluginUpdateModulesHookParam,
     context: &Arc<CompilationContext>,
   ) -> Result<Option<()>> {
     self.plugin.update_modules(params, context)
@@ -276,7 +276,7 @@ impl Plugin for RustPluginAdapter {
 
   fn module_graph_updated(
     &self,
-    param: &farmfe_core::plugin::PluginModuleGraphUpdatedHookParams,
+    param: &farmfe_core::plugin::PluginModuleGraphUpdatedHookParam,
     context: &Arc<CompilationContext>,
   ) -> Result<Option<()>> {
     self.plugin.module_graph_updated(param, context)

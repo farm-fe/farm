@@ -1,6 +1,5 @@
 use std::sync::Arc;
 
-pub use expand_exports::expand_exports_of_module_graph;
 use farmfe_core::{
   context::CompilationContext,
   module::{module_graph::ModuleGraph, ModuleId, ModuleSystem},
@@ -16,10 +15,9 @@ use utils::create_var_namespace_item;
 
 use super::swc_try_with::try_with;
 
-mod expand_exports;
 mod strip_module_decl;
 mod unique_idents;
-mod utils;
+pub(crate) mod utils;
 
 pub struct ConcatenateModulesAstResult {
   /// The concatenated AST of the modules

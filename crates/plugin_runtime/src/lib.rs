@@ -36,6 +36,7 @@ use farmfe_toolkit::{
   html::get_farm_global_this,
   itertools::Itertools,
   script::{
+    concatenate_modules::concatenate_modules_ast,
     module_type_from_id, set_module_system_for_module_meta,
     sourcemap::{merge_comments, merge_sourcemap},
   },
@@ -43,13 +44,13 @@ use farmfe_toolkit::{
 
 use farmfe_utils::hash::base64_encode;
 use handle_entry_resources::handle_entry_resources;
-use insert_runtime_modules::insert_runtime_modules;
-use insert_runtime_plugins::insert_runtime_plugins;
+use handle_runtime_modules::{insert_runtime_modules, remove_unused_runtime_features};
+use handle_runtime_plugins::insert_runtime_plugins;
 use render_resource_pot::{external::handle_external_modules, *};
 
 mod handle_entry_resources;
-mod insert_runtime_modules;
-mod insert_runtime_plugins;
+mod handle_runtime_modules;
+mod handle_runtime_plugins;
 pub mod render_resource_pot;
 
 const PLUGIN_NAME: &str = "FarmPluginRuntime";
@@ -79,7 +80,7 @@ impl Plugin for FarmPluginRuntime {
     }
 
     config.define.insert(
-      "'<@__farm_global_this__@>'".to_string(),
+      "$__farm_global_this__$".to_string(),
       serde_json::Value::String(format!(
         "{}",
         get_farm_global_this(&config.runtime.namespace, &config.output.target_env)
@@ -167,13 +168,14 @@ impl Plugin for FarmPluginRuntime {
         kind: ResolveKind::DynamicEntry {
           name: format!("{RUNTIME_INPUT_SCOPE}_{}", name.replace("-", "_")),
           output_filename: None,
-          no_importer: true,
         },
       });
     };
 
     // add runtime package entry file for the first entry module
     add_runtime_dynamic_input("index", "");
+    // module system is always required
+    add_runtime_dynamic_input("module-system", "");
 
     // The goal of rendering runtime code is to make sure the runtime is as small as possible.
     // So we need to collect all the runtime related information in finalize_module hook,
@@ -184,15 +186,14 @@ impl Plugin for FarmPluginRuntime {
       add_runtime_dynamic_input("dynamic-import", "modules/");
     }
 
-    if feature_flags.contains(&FeatureFlag::ModuleDecl) {
-      add_runtime_dynamic_input("module-system-helper", "modules/");
+    if feature_flags.contains(&FeatureFlag::ImportStatement)
+      || feature_flags.contains(&FeatureFlag::ExportStatement)
+    {
+      add_runtime_dynamic_input("module-helper", "modules/");
     }
 
-    // module system is always required
-    add_runtime_dynamic_input("module-system", "");
-
     if context.config.mode.is_dev() {
-      add_runtime_dynamic_input("module-helper", "modules/");
+      add_runtime_dynamic_input("module-system-helper", "modules/");
     }
 
     if context.config.runtime.plugins.len() > 0 {
@@ -207,7 +208,13 @@ impl Plugin for FarmPluginRuntime {
     module_graph: &mut farmfe_core::module::module_graph::ModuleGraph,
     context: &Arc<CompilationContext>,
   ) -> farmfe_core::error::Result<Option<()>> {
+    // remove unused runtime features that controlled by feature guard like `if (__FARM_TARGET_ENV__)`
+    // note that this must be called before insert_runtime_modules cause insert_runtime_modules will remove dynamic entries
+    remove_unused_runtime_features(module_graph, context);
+
+    // find all runtime dynamic entries and insert them into runtime entry module
     insert_runtime_modules(module_graph, context);
+
     Ok(Some(()))
   }
 
@@ -232,6 +239,22 @@ impl Plugin for FarmPluginRuntime {
     context: &Arc<CompilationContext>,
     _hook_context: &PluginHookContext,
   ) -> farmfe_core::error::Result<Option<ResourcePotMetaData>> {
+    // render runtime resource pot
+    if resource_pot.resource_pot_type == ResourcePotType::Runtime {
+      let module_graph = context.module_graph.read();
+      let runtime_ast = concatenate_modules_ast(&resource_pot.modules, &module_graph, context)
+        .map_err(|err| {
+          CompilationError::GenericError(format!("failed to concatenate runtime modules: {}", err))
+        })?;
+      return Ok(Some(ResourcePotMetaData::Js(JsResourcePotMetaData {
+        ast: runtime_ast.ast,
+        external_modules: runtime_ast.external_modules,
+        rendered_modules: runtime_ast.module_ids,
+        comments: Default::default(),
+      })));
+    }
+
+    // render normal script resource pot
     if resource_pot.resource_pot_type != ResourcePotType::Js {
       return Ok(None);
     }

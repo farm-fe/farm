@@ -12,6 +12,8 @@ pub struct Statement {
   pub import_info: Option<ImportInfo>,
   pub export_info: Option<ExportInfo>,
   pub defined_idents: HashSet<SwcId>,
+  pub top_level_await: bool,
+
   /// Only set in plugin_tree_shake. Used idents of defined idents, updated when trace the statement graph
   pub used_defined_idents: HashSet<SwcId>,
   /// Only set in plugin_tree_shake. Whether the statement has side effects, the side effect statement will be preserved
@@ -24,12 +26,14 @@ impl Statement {
     export_info: Option<ExportInfo>,
     import_info: Option<ImportInfo>,
     defined_idents: HashSet<SwcId>,
+    top_level_await: bool,
   ) -> Self {
     Self {
       id,
       import_info,
       export_info,
       defined_idents,
+      top_level_await,
       used_defined_idents: HashSet::default(), // updated when trace the statement graph while tree shaking
       side_effects: StatementSideEffects::NoSideEffects,
     }

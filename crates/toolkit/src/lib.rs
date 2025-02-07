@@ -10,6 +10,7 @@ pub mod minify;
 pub mod plugin_utils;
 pub mod resolve;
 pub mod resources;
+pub mod runtime;
 pub mod script;
 pub mod sourcemap;
 

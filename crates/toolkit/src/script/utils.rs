@@ -9,6 +9,9 @@ use farmfe_core::{
   swc_ecma_ast::{CallExpr, Callee, Expr, Ident, Import},
 };
 
+pub use super::concatenate_modules::utils::{
+  create_export_default_ident, create_export_namespace_ident,
+};
 pub use farmfe_toolkit_plugin_types::swc_ast::ParseScriptModuleResult;
 
 /// Get [ModuleType] from the resolved id's extension, return [ModuleType::Custom(ext)] if the extension is not internally supported.

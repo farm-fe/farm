@@ -7,6 +7,8 @@ declare const __FARM_ENABLE_RUNTIME_PLUGIN__: boolean;
 declare const __FARM_ENABLE_TOP_LEVEL_AWAIT__: boolean;
 declare const __FARM_ENABLE_EXTERNAL_MODULES__: boolean; // always true if target env is not library
 
+declare let $__farm_global_this__$: any;
+
 export interface Module {
   id: string;
   exports?: any;
@@ -66,11 +68,18 @@ export interface ModuleSystem {
   b(): void
 }
 
+// init `window['xxxx] = {}`
+const __farm_global_this__: any = $__farm_global_this__$ = {};
+
 // It will be removed if __FARM_RUNTIME_TARGET_ENV__ is not browser when building runtime 
 if (__FARM_RUNTIME_TARGET_ENV__ === 'browser') {
   // polyfill require when running in browser
   const __global_this__: any = typeof window !== 'undefined' ? window : {};
-  __global_this__.require ||= require;
+  __global_this__.require ||= farmRequire;
+}
+if (__FARM_RUNTIME_TARGET_ENV__ === 'node') {
+  const __global_this__: any = typeof global !== 'undefined' ? global : {};
+  __global_this__.require ||= farmRequire;
 }
 
 // all modules registered
@@ -78,7 +87,7 @@ const modules: Record<string, ModuleInitialization> = {};
 // module cache after module initialized
 const cache: Record<string, Module> = {};
 
-const moduleSystem = {
+export const moduleSystem = {
   r: farmRequire,
   g: farmRegister,
   m: () => modules,
@@ -86,13 +95,18 @@ const moduleSystem = {
 } as ModuleSystem;
 
 if (__FARM_ENABLE_EXTERNAL_MODULES__) {
-  const __farm_global_this__: any = '<@__farm_global_this__@>';
   // externalModules
   moduleSystem.em = {}
   // The external modules are injected during compile time.
   moduleSystem.se = function setExternalModules(externalModules: Record<string, any>): void {
     for (const key in externalModules) {
-      moduleSystem.em[key]= externalModules[key];
+      let em = externalModules[key];
+      // add a __esModule flag to the module if the module has default export
+      if (em && em.default && !em.__esModule) {
+        em = Object.assign({}, em, { __esModule: true });  
+      }
+
+      moduleSystem.em[key]= em;
     }
   }
   __farm_global_this__.m = moduleSystem;
@@ -126,8 +140,6 @@ export function farmRequire(id: string): any {
         return moduleSystem.em[id];
       }
     }
-   
-    console.debug(`[Farm] Module "${id}" is not registered`);
 
     if (__FARM_ENABLE_RUNTIME_PLUGIN__) {
       const res = moduleSystem.p.b("moduleNotFound", id);
@@ -137,6 +149,8 @@ export function farmRequire(id: string): any {
       }
     }
 
+    console.debug(`[Farm] Module "${id}" is not registered`);
+
     // return a empty module if the module is not registered
     return {};
   }
@@ -144,7 +158,11 @@ export function farmRequire(id: string): any {
   // create a full new module instance and store it in cache to avoid cyclic initializing
   const module = cache[id] = {
     id,
-    require: (moduleId: string) => require(moduleId)
+    meta: {
+      env: {}
+    },
+    exports: {},
+    require: (moduleId: string) => farmRequire(moduleId)
   } as Module;
 
   if (__FARM_ENABLE_RUNTIME_PLUGIN__) {
@@ -158,7 +176,7 @@ export function farmRequire(id: string): any {
   const result = initializer(
     module,
     module.exports,
-    require,
+    farmRequire,
     moduleSystem.d,
   );
 
@@ -197,5 +215,5 @@ export function farmRegister(id: string, module: ModuleInitialization, reRegiste
   }
 
   modules[id] = module;
-  return () => require(id);
+  return () => farmRequire(id);
 }

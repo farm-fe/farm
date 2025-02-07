@@ -6,7 +6,7 @@ use farmfe_core::{
   error::{CompilationError, Result},
   module::ModuleType,
   plugin::{
-    EmptyPluginHookParam, Plugin, PluginFinalizeResourcesHookParams, PluginHookContext,
+    EmptyPluginHookParam, Plugin, PluginFinalizeResourcesHookParam, PluginHookContext,
     PluginLoadHookParam, PluginLoadHookResult, PluginResolveHookParam, PluginResolveHookResult,
     PluginTransformHookParam, PluginTransformHookResult, UpdateType, DEFAULT_PRIORITY,
   },
@@ -272,7 +272,7 @@ impl Plugin for JsPluginAdapter {
 
   fn update_modules(
     &self,
-    params: &mut farmfe_core::plugin::PluginUpdateModulesHookParams,
+    params: &mut farmfe_core::plugin::PluginUpdateModulesHookParam,
     context: &Arc<CompilationContext>,
   ) -> Result<Option<()>> {
     if let Some(js_update_modules_hook) = &self.js_update_modules_hook {
@@ -372,7 +372,7 @@ impl Plugin for JsPluginAdapter {
 
   fn finalize_resources(
     &self,
-    params: &mut PluginFinalizeResourcesHookParams,
+    params: &mut PluginFinalizeResourcesHookParam,
     context: &Arc<CompilationContext>,
   ) -> Result<Option<()>> {
     if let Some(js_finalize_resources_hook) = &self.js_finalize_resources_hook {

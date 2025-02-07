@@ -3,7 +3,10 @@ use std::sync::Arc;
 use farmfe_core::{
   context::CompilationContext,
   module::{
-    meta_data::script::statement::{ExportSpecifierInfo, ImportSpecifierInfo, SwcId},
+    meta_data::script::{
+      statement::{ExportSpecifierInfo, ImportSpecifierInfo, SwcId},
+      EXPORT_DEFAULT,
+    },
     module_graph::ModuleGraph,
     ModuleId,
   },
@@ -12,11 +15,9 @@ use farmfe_core::{
   HashMap, HashSet,
 };
 
-use crate::script::swc_try_with::try_with;
-
-use super::{
-  unique_idents::{EXPORT_DEFAULT, EXPORT_NAMESPACE},
-  utils::{create_export_default_ident, create_export_namespace_ident},
+use farmfe_toolkit::script::{
+  concatenate_modules::EXPORT_NAMESPACE, create_export_default_ident,
+  create_export_namespace_ident, swc_try_with::try_with,
 };
 
 /// expand the export_ident_map of each module of the module graph

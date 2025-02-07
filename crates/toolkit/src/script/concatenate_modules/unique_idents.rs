@@ -1,12 +1,10 @@
-pub use farmfe_core::module::meta_data::script::EXPORT_NAMESPACE;
+pub use farmfe_core::module::meta_data::script::{EXPORT_DEFAULT, EXPORT_NAMESPACE};
 use farmfe_core::{
   module::{meta_data::script::statement::SwcId, module_graph::ModuleGraph, ModuleId},
   swc_ecma_ast::Ident,
   HashMap,
 };
 use swc_ecma_visit::VisitMut;
-
-pub const EXPORT_DEFAULT: &str = "default";
 
 struct TopLevelIdents {
   idents: HashMap<String, usize>,

@@ -50,8 +50,9 @@ pub(super) fn cache_module_graph(context: &Arc<CompilationContext>) {
 pub(super) fn freeze_module_of_module_graph(
   context: &Arc<CompilationContext>,
 ) -> farmfe_core::error::Result<()> {
-  let mut module_graph = context.module_graph.write();
   farm_profile_function!("call freeze_module hook".to_string());
+  let mut module_graph = context.module_graph.write();
+
   let module_ids = module_graph.modules().into_iter().map(|m| m.id.clone());
 
   let mut resolved_deps_map = get_resolved_deps_of_modules(module_ids.collect(), &module_graph);

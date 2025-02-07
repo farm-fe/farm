@@ -9,6 +9,7 @@ use farmfe_core::{
   rayon::prelude::*,
   HashMap, HashSet,
 };
+use farmfe_toolkit::script::swc_try_with::resolve_module_mark;
 
 pub fn get_timestamp_of_module(module_id: &ModuleId, root: &str) -> u128 {
   farm_profile_function!(format!("get_timestamp_of_module: {:?}", module_id));
@@ -248,9 +249,15 @@ pub fn handle_cached_modules(
   // using swc resolver
   match &mut cached_module.module.meta {
     box farmfe_core::module::ModuleMetaData::Script(script) => {
-      // reset the mark to prevent the mark from being reused, it will be re-resolved later
-      script.top_level_mark = 0;
-      script.unresolved_mark = 0;
+      // reset the mark to prevent the mark from being reused
+      let (unresolved_mark, top_level_mark) = resolve_module_mark(
+        &mut script.ast,
+        cached_module.module.module_type.is_typescript(),
+        context,
+      );
+
+      script.top_level_mark = unresolved_mark.as_u32();
+      script.unresolved_mark = top_level_mark.as_u32();
     }
     box farmfe_core::module::ModuleMetaData::Css(_)
     | box farmfe_core::module::ModuleMetaData::Html(_) => { /* do nothing */ }

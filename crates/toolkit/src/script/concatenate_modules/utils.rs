@@ -11,22 +11,6 @@ use farmfe_core::{
 
 use super::unique_idents::{TopLevelIdentsRenameHandler, EXPORT_DEFAULT, EXPORT_NAMESPACE};
 
-pub fn create_export_default_ident(module_id: &ModuleId, top_level_mark: Mark) -> Ident {
-  Ident::new(
-    format!("{}_{}", get_filename(module_id), EXPORT_DEFAULT).into(),
-    DUMMY_SP,
-    SyntaxContext::empty().apply_mark(top_level_mark),
-  )
-}
-
-pub fn create_export_namespace_ident(module_id: &ModuleId, top_level_mark: Mark) -> Ident {
-  Ident::new(
-    format!("{}_{}", get_filename(module_id), EXPORT_NAMESPACE).into(),
-    DUMMY_SP,
-    SyntaxContext::empty().apply_mark(top_level_mark),
-  )
-}
-
 /// export default '123' => var module_default = '123';
 pub fn create_export_default_expr_item(expr: Box<Expr>, default_ident: Ident) -> ModuleItem {
   ModuleItem::Stmt(Stmt::Decl(Decl::Var(Box::new(VarDecl {
@@ -116,9 +100,27 @@ pub fn create_var_namespace_item(
   }))))
 }
 
-fn get_filename(module_id: &ModuleId) -> String {
+/// Get the filename from the module id. Replace all non-alphanumeric characters with `_`.
+/// For example, `/root/a/b/c.js` will be `c_js` and `a.js` will be `a_js`.
+pub fn get_filename(module_id: &ModuleId) -> String {
   Regex::new("[^0-9a-zA-Z]")
     .unwrap()
     .replace_all(module_id.relative_path().split("/").last().unwrap(), "_")
     .to_string()
+}
+
+pub fn create_export_default_ident(module_id: &ModuleId, top_level_mark: Mark) -> Ident {
+  Ident::new(
+    format!("{}_{}", get_filename(module_id), EXPORT_DEFAULT).into(),
+    DUMMY_SP,
+    SyntaxContext::empty().apply_mark(top_level_mark),
+  )
+}
+
+pub fn create_export_namespace_ident(module_id: &ModuleId, top_level_mark: Mark) -> Ident {
+  Ident::new(
+    format!("{}_{}", get_filename(module_id), EXPORT_NAMESPACE).into(),
+    DUMMY_SP,
+    SyntaxContext::empty().apply_mark(top_level_mark),
+  )
 }

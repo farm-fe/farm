@@ -1,8 +1,10 @@
+use minify::MinifyOptions;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use swc_css_prefixer::options::Targets;
 
 use swc_ecma_parser::{EsSyntax as EsConfig, TsSyntax as TsConfig};
+use tree_shaking::TreeShakingConfig;
 
 use self::{
   bool_or_obj::BoolOrObj, comments::CommentsConfig, config_regex::ConfigRegex, html::HtmlConfig,
@@ -77,8 +79,8 @@ pub struct Config {
   pub partial_bundling: Box<PartialBundlingConfig>,
   pub lazy_compilation: bool,
   pub core_lib_path: Option<String>,
-  pub tree_shaking: Box<BoolOrObj<serde_json::Value>>,
-  pub minify: Box<BoolOrObj<serde_json::Value>>,
+  pub tree_shaking: Box<BoolOrObj<TreeShakingConfig>>,
+  pub minify: Box<BoolOrObj<MinifyOptions>>,
   pub preset_env: Box<PresetEnvConfig>,
   /// whether to record the compilation flow stats, default is false.
   pub record: bool,
@@ -157,6 +159,17 @@ impl TargetEnv {
 
   pub fn is_library(&self) -> bool {
     matches!(self, TargetEnv::Library)
+  }
+}
+
+impl ToString for TargetEnv {
+  fn to_string(&self) -> String {
+    match self {
+      TargetEnv::Browser => "browser".to_string(),
+      TargetEnv::Node => "node".to_string(),
+      TargetEnv::Library => "library".to_string(),
+      TargetEnv::Custom(s) => s.clone(),
+    }
   }
 }
 

@@ -166,16 +166,17 @@ pub fn get_initial_resources(
       )
     });
 
-    initial_resources.extend(
-      rp.resources()
-        .into_iter()
-        .filter_map(|r| {
-          resources_map
-            .get(r)
-            .map(|resource| is_resource_supported(resource))
-        })
-        .map(|r| r.to_string()),
-    );
+    let filtered_resources = rp
+      .resources()
+      .into_iter()
+      .filter_map(|r| {
+        resources_map
+          .get(r)
+          .filter(|resource| is_resource_supported(resource))
+      })
+      .map(|resource| resource.name.to_string());
+
+    initial_resources.extend(filtered_resources);
   }
 
   result.initial_resources = initial_resources;

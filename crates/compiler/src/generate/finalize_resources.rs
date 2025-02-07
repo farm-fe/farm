@@ -142,9 +142,9 @@ fn handle_entry_resource(
     let resource = resources_map.get_mut(&params.resource.name).unwrap();
     *resource = params.resource;
 
-    if let Some(resource) = std::mem::take(&mut params.resource_sourcemap) {
-      let resource = resources_map.get_mut(&resource.name).unwrap();
-      *resource = resource.clone();
+    if let Some(sourcemap_resource) = std::mem::take(&mut params.resource_sourcemap) {
+      let resource = resources_map.get_mut(&sourcemap_resource.name).unwrap();
+      *resource = sourcemap_resource;
     }
   }
 

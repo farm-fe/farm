@@ -1,5 +1,4 @@
 import { createHash } from 'node:crypto';
-import fs from 'node:fs';
 import { createRequire } from 'node:module';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -723,11 +722,11 @@ export async function readConfigFile(
     // Change to vm.module of node or loaders as far as it is stable
     const userConfig = (await import(filePath as string)).default;
     try {
-      fs.unlink(filePath, () => void 0);
+      await fse.unlink(filePath);
       // remove parent dir if empty
-      const isEmpty = fs.readdirSync(outputPath).length === 0;
+      const isEmpty = (await fse.readdir(outputPath)).length === 0;
       if (isEmpty) {
-        fs.rmSync(outputPath);
+        fse.rmSync(outputPath);
       }
     } catch {
       /** do nothing */
@@ -745,7 +744,7 @@ export async function readConfigFile(
 
     return config;
   } finally {
-    fse.unlink(getFilePath(outputPath, fileName)).catch(() => {});
+    await fse.unlink(getFilePath(outputPath, fileName)).catch(() => {});
   }
 }
 
@@ -1008,7 +1007,7 @@ export function createDefaultConfig(options: DefaultOptionsType): UserConfig {
         entryFilename: '[entryName]',
         path: outputPath,
         format,
-        targetEnv: 'library'
+        targetEnv: 'node'
       },
       mode,
       external: [

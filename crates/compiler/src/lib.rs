@@ -42,14 +42,11 @@ impl Compiler {
     };
 
     let mut plugins = vec![
-      // Arc::new(farmfe_plugin_bundle::FarmPluginBundle::new()) as _,
-      // Arc::new(farmfe_plugin_runtime::FarmPluginRuntime::new(&config)) as _,
+      // script meta features plugin should be executed before render plugin
+      Arc::new(farmfe_plugin_script_meta::FarmPluginScriptMetaFeatures::new(&config)) as _,
       // register internal core plugins
       render_plugin,
       Arc::new(farmfe_plugin_script::FarmPluginScript::new(&config)) as _,
-      Arc::new(farmfe_plugin_script_meta::FarmPluginScriptMeta::new(
-        &config,
-      )) as _,
       Arc::new(farmfe_plugin_partial_bundling::FarmPluginPartialBundling::new(&config)) as _,
       Arc::new(farmfe_plugin_html::FarmPluginHtml::new(&config)) as _,
       Arc::new(farmfe_plugin_html::FarmPluginTransformHtml::new(&config)) as _,
@@ -77,9 +74,26 @@ impl Compiler {
       plugins.push(Arc::new(farmfe_plugin_tree_shake::FarmPluginTreeShake::new(&config)) as _);
     }
 
+    // script meta exports plugin should be executed after tree shake and before mangle exports
+    plugins.push(
+      Arc::new(farmfe_plugin_script_meta::FarmPluginScriptMetaExports::new(
+        &config,
+      )) as _,
+    );
+
     if config.minify.enabled() {
       plugins.push(Arc::new(farmfe_plugin_minify::FarmPluginMinify::new(&config)) as _);
       plugins.push(Arc::new(farmfe_plugin_html::FarmPluginMinifyHtml::new(&config)) as _);
+
+      if let Some(options) = config.minify.as_obj() {
+        if options.mangle_exports {
+          plugins.push(
+            Arc::new(farmfe_plugin_mangle_exports::FarmPluginMangleExports::new(
+              &config,
+            )) as _,
+          );
+        }
+      }
     }
 
     if config.preset_env.enabled() {

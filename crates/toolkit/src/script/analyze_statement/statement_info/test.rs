@@ -35,6 +35,7 @@ fn import_default() {
     import_info,
     export_info,
     defined_idents,
+    ..
   } = analyze_statement_info(&0, &stmt);
 
   assert!(import_info.is_some());
@@ -67,6 +68,7 @@ fn import_named() {
     import_info,
     export_info,
     defined_idents,
+    ..
   } = analyze_statement_info(&0, &stmt);
 
   assert!(import_info.is_some());
@@ -122,6 +124,7 @@ fn import_namespace() {
     import_info,
     export_info,
     defined_idents,
+    ..
   } = analyze_statement_info(&0, &stmt);
 
   assert!(import_info.is_some());
@@ -149,14 +152,16 @@ fn import_namespace() {
 
 #[test]
 fn export_default_expr() {
-  let stmt = parse_module_item(r#"export default a"#);
+  let stmt = parse_module_item(r#"export default await a"#);
 
   let AnalyzedStatementInfo {
     import_info,
     export_info,
     defined_idents,
+    top_level_await,
   } = analyze_statement_info(&0, &stmt);
 
+  assert!(top_level_await);
   assert!(import_info.is_none());
   assert!(export_info.is_some());
   let export_info = export_info.unwrap();
@@ -178,6 +183,7 @@ fn export_default_decl() {
     import_info,
     export_info,
     defined_idents,
+    ..
   } = analyze_statement_info(&0, &stmt);
 
   assert!(import_info.is_none());
@@ -208,6 +214,7 @@ fn export_decl() {
     import_info,
     export_info,
     defined_idents,
+    ..
   } = analyze_statement_info(&0, &stmt);
 
   assert!(import_info.is_none());
@@ -243,6 +250,7 @@ fn export_all() {
     import_info,
     export_info,
     defined_idents,
+    ..
   } = analyze_statement_info(&0, &stmt);
 
   assert!(import_info.is_none());
@@ -267,6 +275,7 @@ fn export_named_from() {
     import_info,
     export_info,
     defined_idents,
+    ..
   } = analyze_statement_info(&0, &stmt);
 
   assert!(import_info.is_none());
@@ -326,6 +335,7 @@ fn export_named() {
     import_info,
     export_info,
     defined_idents,
+    ..
   } = analyze_statement_info(&0, &stmt);
 
   assert!(import_info.is_none());
@@ -389,6 +399,7 @@ fn export_namespace() {
     import_info,
     export_info,
     defined_idents,
+    ..
   } = analyze_statement_info(&0, &stmt);
 
   assert!(import_info.is_none());
@@ -425,6 +436,7 @@ fn func_decl() {
     import_info,
     export_info,
     defined_idents,
+    ..
   } = analyze_statement_info(&0, &stmt);
 
   assert!(import_info.is_none());
@@ -452,6 +464,7 @@ fn bar_decl() {
     import_info,
     export_info,
     defined_idents,
+    ..
   } = analyze_statement_info(&0, &stmt);
 
   assert!(import_info.is_none());
@@ -473,6 +486,7 @@ fn for_stmt() {
     import_info,
     export_info,
     defined_idents,
+    ..
   } = analyze_statement_info(&0, &stmt);
 
   assert!(import_info.is_none());
@@ -489,6 +503,7 @@ fn empty_specifier_import() {
     import_info,
     export_info,
     defined_idents,
+    ..
   } = analyze_statement_info(&0, &stmt);
 
   assert!(import_info.is_some());
@@ -509,6 +524,7 @@ fn var_decl_pat() {
     import_info,
     export_info,
     defined_idents,
+    ..
   } = analyze_statement_info(&0, &stmt);
 
   assert!(import_info.is_none());
@@ -536,6 +552,7 @@ fn export_var_decl_pat() {
     import_info,
     export_info,
     defined_idents,
+    ..
   } = analyze_statement_info(&0, &stmt);
 
   assert!(import_info.is_none());

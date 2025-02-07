@@ -5,7 +5,6 @@ use farmfe_core::{
   module::{ModuleId, ModuleMetaData},
   HashSet,
 };
-// use farmfe_toolkit::swc_ecma_utils::contains_top_level_await;
 
 pub fn find_async_modules(context: &Arc<CompilationContext>) -> HashSet<ModuleId> {
   let module_graph = context.module_graph.read();
@@ -13,7 +12,6 @@ pub fn find_async_modules(context: &Arc<CompilationContext>) -> HashSet<ModuleId
 
   for module in module_graph.modules() {
     if let ModuleMetaData::Script(script_meta) = module.meta.as_ref() {
-      // if contains_top_level_await(&script_meta.ast) {
       if script_meta.is_async {
         init_async_modules.insert(module.id.clone());
       }

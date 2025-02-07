@@ -622,6 +622,7 @@ impl ModuleGraph {
 
     // sort entries to make sure it is stable
     let mut entries = self.entries.iter().collect::<Vec<_>>();
+    entries.extend(self.dynamic_entries.iter());
     entries.sort();
 
     let mut visited = HashSet::default();

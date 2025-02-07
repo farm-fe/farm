@@ -5,6 +5,7 @@ use crate::{
   swc_ecma_visit::{noop_visit_mut_type, VisitMut, VisitMutWith, VisitWith},
 };
 use farmfe_core::{
+  config::FARM_REQUIRE,
   module::meta_data::script::statement::SwcId,
   regex::Regex,
   swc_common::{util::take::Take, Mark, SyntaxContext, DUMMY_SP},
@@ -129,13 +130,13 @@ pub struct OriginalRuntimeCallee {
   pub unresolved_mark: Mark,
 }
 
-fn create_module_member_expr(ident: &str, unresolved_mark: Mark) -> Expr {
+fn create_module_member_expr(ident: &str) -> Expr {
   Expr::Member(MemberExpr {
     span: DUMMY_SP,
     obj: Box::new(Expr::Ident(Ident::new(
-      FARM_MODULE_SYSTEM_MODULE.into(),
+      FARM_REQUIRE.into(),
       DUMMY_SP,
-      SyntaxContext::empty().apply_mark(unresolved_mark),
+      SyntaxContext::empty(),
     ))),
     prop: MemberProp::Ident(ident.into()),
   })
@@ -143,39 +144,38 @@ fn create_module_member_expr(ident: &str, unresolved_mark: Mark) -> Expr {
 
 impl RuntimeCalleeAllocator for OriginalRuntimeCallee {
   fn define_property_callee(&self) -> Box<Expr> {
-    Box::new(create_module_member_expr("o", self.unresolved_mark))
+    Box::new(create_module_member_expr("o"))
   }
 
   fn es_module_flag_callee(&self) -> Box<Expr> {
-    Box::new(create_module_member_expr("_m", self.unresolved_mark))
+    Box::new(create_module_member_expr("_m"))
   }
 
   fn export_star_callee(&self) -> Box<Expr> {
-    Box::new(create_module_member_expr("_e", self.unresolved_mark))
+    Box::new(create_module_member_expr("_e"))
   }
 
   fn esm_export_named_callee(&self) -> Box<Expr> {
-    Box::new(create_module_member_expr("_", self.unresolved_mark))
+    Box::new(create_module_member_expr("_"))
   }
 
   fn import_namespace_callee(&self) -> Box<Expr> {
-    Box::new(create_module_member_expr("w", self.unresolved_mark))
+    Box::new(create_module_member_expr("w"))
   }
 
   fn cjs_export_named_callee(&self) -> Box<Expr> {
-    Box::new(create_module_member_expr("d", self.unresolved_mark))
+    Box::new(create_module_member_expr("d"))
   }
 
   fn interop_default(&self) -> Box<Expr> {
-    Box::new(create_module_member_expr("f", self.unresolved_mark))
+    Box::new(create_module_member_expr("f"))
   }
 
   fn import_default_callee(&self) -> Box<Expr> {
-    Box::new(create_module_member_expr("i", self.unresolved_mark))
+    Box::new(create_module_member_expr("i"))
   }
 }
 
-const FARM_MODULE_SYSTEM_MODULE: &str = "module";
 const FARM_MODULE_SYSTEM_REQUIRE: &str = "require";
 const FARM_MODULE_SYSTEM_DEFAULT: &str = "default";
 const FARM_MODULE_SYSTEM_EXPORTS: &str = "exports";

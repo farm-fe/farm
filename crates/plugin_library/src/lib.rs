@@ -55,9 +55,12 @@ impl Plugin for FarmPluginLibrary {
     // handle import/export between resource pots
     if let Some(entry) = &resource_pot.entry_module {
       let entry_module = module_graph.module(entry).unwrap();
-      let export_item = entry_module.meta.as_script().get_export_module_item();
+      let script_meta = entry_module.meta.as_script();
 
-      ast.body.push(export_item);
+      if !script_meta.export_ident_map.is_empty() {
+        let export_item = script_meta.get_export_module_item();
+        ast.body.push(export_item);
+      }
     }
 
     // TODO find exports in this resource pot

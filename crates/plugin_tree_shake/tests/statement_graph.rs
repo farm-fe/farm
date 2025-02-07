@@ -29,8 +29,9 @@ fn create_test_statement_graph(code: &str) -> StatementGraph {
         export_info,
         import_info,
         defined_idents,
+        top_level_await,
       } = analyze_statement_info(&i, item);
-      Statement::new(i, export_info, import_info, defined_idents)
+      Statement::new(i, export_info, import_info, defined_idents, top_level_await)
     })
     .collect::<Vec<_>>();
 

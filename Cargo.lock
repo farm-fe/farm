@@ -1627,6 +1627,7 @@ dependencies = [
  "farmfe_plugin_json",
  "farmfe_plugin_lazy_compilation",
  "farmfe_plugin_library",
+ "farmfe_plugin_mangle_exports",
  "farmfe_plugin_minify",
  "farmfe_plugin_partial_bundling",
  "farmfe_plugin_polyfill",
@@ -1791,6 +1792,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "farmfe_plugin_mangle_exports"
+version = "0.0.1"
+dependencies = [
+ "farmfe_core",
+ "farmfe_testing_helpers",
+ "farmfe_toolkit",
+ "farmfe_utils 0.1.6",
+]
+
+[[package]]
 name = "farmfe_plugin_minify"
 version = "0.0.13"
 dependencies = [
@@ -1905,16 +1916,6 @@ dependencies = [
  "swc_plugin_proxy",
  "swc_plugin_runner",
  "tokio",
-]
-
-[[package]]
-name = "farmfe_plugin_script_mangle_exports"
-version = "0.0.1"
-dependencies = [
- "farmfe_core",
- "farmfe_testing_helpers",
- "farmfe_toolkit",
- "farmfe_utils 0.1.6",
 ]
 
 [[package]]

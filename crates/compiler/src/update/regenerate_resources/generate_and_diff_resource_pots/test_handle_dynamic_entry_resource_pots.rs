@@ -46,7 +46,6 @@ fn test_handle_dynamic_entry_resource_pots() {
         kind: farmfe_core::plugin::ResolveKind::DynamicEntry {
           name: "BH".to_string(),
           output_filename: None,
-          no_importer: false,
         },
         ..Default::default()
       }]),

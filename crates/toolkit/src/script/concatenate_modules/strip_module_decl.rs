@@ -305,7 +305,7 @@ fn rename_imported_ident(
   let export_ident = source_module_script_meta
     .export_ident_map
     .get(export_str)
-    .unwrap();
+    .unwrap_or_else(|| panic!("export ident {export_str} not found"));
   // get the renamed ident if export_ident is renamed
   let final_ident = rename_handler
     .get_renamed_ident(export_ident)

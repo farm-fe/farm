@@ -86,7 +86,7 @@ pub(crate) fn wrap_resource_pot_ast(
     r#"(function (moduleSystem, modules) {
    for (var moduleId in modules) {
      var module = modules[moduleId];
-     moduleSystem.r(moduleId, module);
+     moduleSystem.g(moduleId, module);
    }
  })("farm_module_system", "farm_object_lit");"#,
     true,

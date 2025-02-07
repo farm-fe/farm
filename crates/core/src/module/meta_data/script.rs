@@ -24,6 +24,7 @@ pub mod feature_flag;
 pub mod statement;
 
 pub const EXPORT_NAMESPACE: &str = "namespace_farm_internal_";
+pub const EXPORT_DEFAULT: &str = "default";
 
 /// Script specific meta data, for example, [swc_ecma_ast::Module]
 #[cache_item]

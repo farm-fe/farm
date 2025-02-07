@@ -11,10 +11,8 @@ use farmfe_core::{
   config::{Mode, TargetEnv, FARM_DYNAMIC_REQUIRE, FARM_REQUIRE},
   module::{module_graph::ModuleGraph, ModuleId},
   plugin::ResolveKind,
-  swc_common::{Mark, SyntaxContext, DUMMY_SP},
-  swc_ecma_ast::{
-    Bool, CallExpr, Callee, Expr, ExprOrSpread, Ident, Lit, MemberExpr, MemberProp, Str,
-  },
+  swc_common::{util::take::Take, Mark, SyntaxContext, DUMMY_SP},
+  swc_ecma_ast::{CallExpr, Callee, Expr, ExprOrSpread, Ident, Lit, MemberExpr, MemberProp, Str},
 };
 use farmfe_toolkit::{
   script::{is_commonjs_require, is_dynamic_import},
@@ -119,8 +117,7 @@ impl SourceReplacer<'_> {
   }
 
   fn replace_source_with_id(&mut self, call_expr: &mut CallExpr) -> SourceReplaceResult {
-    // not require('./xxx') or require('./xxx', true)
-    if call_expr.args.len() < 1 && call_expr.args.len() > 2 {
+    if call_expr.args.len() != 1 {
       call_expr.visit_mut_children_with(self);
       return SourceReplaceResult::NotReplaced;
     }
@@ -153,7 +150,7 @@ impl SourceReplacer<'_> {
 
         // only execute script module
         let dep_module = self.module_graph.module(&id).unwrap();
-
+        // TODO remove this
         if dep_module.external {
           if matches!(resolve_kind, ResolveKind::Require)
             && matches!(self.target_env, TargetEnv::Node)
@@ -234,36 +231,78 @@ impl SourceReplacer<'_> {
   }
 }
 
-/// replace require('./xxx') to require('./xxx', true)
-pub struct ExistingCommonJsRequireVisitor {
+/// replace require('./xxx') to farmRequire.i(require('./xxx'))
+pub struct ExistingCommonJsRequireVisitor<'a> {
   unresolved_mark: Mark,
   top_level_mark: Mark,
+  module_graph: &'a ModuleGraph,
+  module_id: ModuleId,
 }
 
-impl ExistingCommonJsRequireVisitor {
-  pub fn new(unresolved_mark: Mark, top_level_mark: Mark) -> Self {
+impl<'a> ExistingCommonJsRequireVisitor<'a> {
+  pub fn new(
+    unresolved_mark: Mark,
+    top_level_mark: Mark,
+    module_graph: &'a ModuleGraph,
+    module_id: ModuleId,
+  ) -> Self {
     Self {
       unresolved_mark,
       top_level_mark,
+      module_graph,
+      module_id,
     }
   }
 }
 
-impl VisitMut for ExistingCommonJsRequireVisitor {
+impl<'a> VisitMut for ExistingCommonJsRequireVisitor<'a> {
   fn visit_mut_call_expr(&mut self, call_expr: &mut CallExpr) {
     if call_expr.args.len() != 1 {
       call_expr.visit_mut_children_with(self);
       return;
     }
 
+    // replace require('./xxx') to farmRequire.i(require('./xxx'))
     if is_commonjs_require(self.unresolved_mark, self.top_level_mark, &*call_expr) {
-      call_expr.args.push(ExprOrSpread {
+      if let ExprOrSpread {
         spread: None,
-        expr: Box::new(Expr::Lit(Lit::Bool(Bool {
-          span: DUMMY_SP,
-          value: true,
-        }))),
-      });
+        expr: box Expr::Lit(Lit::Str(str)),
+      } = &mut call_expr.args[0]
+      {
+        let source = str.value.to_string();
+
+        if let Some(id) =
+          self
+            .module_graph
+            .get_dep_by_source_optional(&self.module_id, &source, None)
+        {
+          let source_module = self.module_graph.module(&id).unwrap();
+
+          if source_module.module_type.is_script() && source_module.external {
+            let expr_take = call_expr.take();
+
+            *call_expr = CallExpr {
+              span: DUMMY_SP,
+              callee: Callee::Expr(Box::new(Expr::Member(MemberExpr {
+                span: DUMMY_SP,
+                obj: Box::new(Expr::Ident(Ident {
+                  span: DUMMY_SP,
+                  sym: FARM_REQUIRE.into(),
+                  optional: false,
+                  ctxt: SyntaxContext::empty(),
+                })),
+                prop: MemberProp::Ident("i".into()),
+              }))),
+              args: vec![ExprOrSpread {
+                spread: None,
+                expr: Box::new(Expr::Call(expr_take)),
+              }],
+              type_args: None,
+              ctxt: SyntaxContext::empty(),
+            };
+          }
+        }
+      }
     }
   }
 }

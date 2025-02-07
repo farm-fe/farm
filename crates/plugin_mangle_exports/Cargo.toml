@@ -1,5 +1,5 @@
 [package]
-name = "farmfe_plugin_script_mangle_exports"
+name = "farmfe_plugin_mangle_exports"
 version = "0.0.1"
 edition = "2021"
 authors = ["brightwu(吴明亮) <1521488775@qq.com>"]

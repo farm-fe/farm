@@ -47,7 +47,7 @@ pub fn insert_runtime_plugins(context: &Arc<CompilationContext>) -> String {
   // FARM_GLOBAL_THIS.FARM_MODULE_SYSTEM.setPlugins([PLUGIN_VAR_PREFIX0, PLUGIN_VAR_PREFIX1, ...])
   let plugins_call = format!(
     // setPlugins
-    "{}.p.p([{}]);",
+    "{}.m.p.p([{}]);",
     farm_global_this,
     idents.join(",")
   );
