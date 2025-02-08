@@ -73,10 +73,8 @@ pub fn parse_module(
   .map_err(|e| CompilationError::ParseError {
     resolved_path: id.to_string(),
     msg: if let Some(s) = e.downcast_ref::<String>() {
-      eprintln!("recovered_errors: {}", s);
       s.to_string()
     } else if let Some(s) = e.downcast_ref::<&str>() {
-      eprintln!("recovered_errors: {}", s);
       s.to_string()
     } else {
       "failed to handle with unknown panic message".to_string()
