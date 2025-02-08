@@ -45,3 +45,7 @@ pub fn finalize_resources(context: &Arc<CompilationContext>) -> farmfe_core::err
 
   Ok(())
 }
+
+// TODO handleGenerateResourceWrite
+// TODO writeResourceToDisk (napi)
+// TODO prepareOutDir
