@@ -3,6 +3,7 @@ export * from './rust/index.js';
 
 import {
   CompilationMode,
+  ConfigEnv,
   ResolvedUserConfig,
   type UserConfig
 } from '../config/index.js';
@@ -91,6 +92,7 @@ export async function resolveAsyncPlugins<T>(arr: T[]): Promise<T[]> {
 
 export async function resolveConfigHook(
   config: UserConfig,
+  configEnv: ConfigEnv,
   plugins: JsPlugin[]
 ): Promise<UserConfig> {
   let conf = config;
@@ -107,7 +109,7 @@ export async function resolveConfigHook(
 
   for (const p of uniqueVitePlugins.values()) {
     if (p.config) {
-      const res = await p.config(conf);
+      const res = await p.config(conf, configEnv);
 
       if (res) {
         conf = merge(conf, res);

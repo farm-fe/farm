@@ -18,8 +18,8 @@ const updateModulesCallbackSchema = z
   .function()
   .returns(
     z.union([
-      z.array(z.any()),
-      z.promise(z.array(z.any())),
+      z.array(z.any()).optional(),
+      z.promise(z.array(z.any()).optional()),
       z.void(),
       z.promise(z.void())
     ])

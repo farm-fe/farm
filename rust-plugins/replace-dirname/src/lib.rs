@@ -5,6 +5,7 @@ use farmfe_core::{
   config::{config_regex::ConfigRegex, Config},
   context::CompilationContext,
   error::CompilationError,
+  module::ModuleMetaData,
   plugin::{Plugin, PluginProcessModuleHookParam},
   swc_common::DUMMY_SP,
   swc_ecma_ast::{self, Callee, Expr, Lit, MemberExpr, MemberProp, MetaPropKind, Module, Str},
@@ -60,6 +61,10 @@ impl Plugin for FarmPluginReplaceDirname {
       return Ok(None);
     }
 
+    if !matches!(param.meta, ModuleMetaData::Script(_)) {
+      return Ok(None);
+    }
+
     let file_path = env::current_dir()
       .unwrap()
       .join(param.module_id.relative_path());
@@ -69,6 +74,7 @@ impl Plugin for FarmPluginReplaceDirname {
       .map_or("", |p| p.to_str().unwrap_or(""));
 
     let ast = &mut param.meta.as_script_mut().ast;
+
     replace_dirname_with_ast(ast, dir_path, file_path.to_str().unwrap());
     Ok(Some(()))
   }
