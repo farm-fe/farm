@@ -191,7 +191,9 @@ export class Logger implements ILogger {
     }
 
     if (causeError) {
-      error.message += `\nCaused by: ${causeError.stack ?? causeError}`;
+      // TODO 是否需要优化 stack 栈的打印处理机制 是否打印栈机制
+      // 可以作为 生产环境 或者 pnpm dev --stack
+      error.message += `${causeError}`;
     }
 
     this.logMessage('error', error, colors.red, clearScreen);

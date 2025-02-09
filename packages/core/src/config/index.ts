@@ -205,8 +205,8 @@ async function handleResolveConfig(
 ): Promise<ResolvedUserConfig> {
   // define logger when resolvedConfigHook
   const logger = new Logger({
-    customLogger: loadedUserConfig.config?.customLogger,
-    allowClearScreen: loadedUserConfig.config?.clearScreen
+    customLogger: loadedUserConfig?.config?.customLogger,
+    allowClearScreen: loadedUserConfig?.config?.clearScreen
   });
 
   const resolvedUserConfig = await resolveUserConfig(config, configFilePath);
@@ -375,7 +375,7 @@ export async function normalizeUserCompilationConfig(
   resolvedCompilation.runtime.plugins = resolvedCompilation.runtime.plugins.map(
     (plugin) => {
       if (path.isAbsolute(plugin)) return plugin;
-      return plugin.startsWith('.')
+      return plugin?.startsWith('.')
         ? path.resolve(resolvedRootPath, plugin)
         : require.resolve(plugin);
     }
@@ -441,7 +441,7 @@ export async function normalizeUserCompilationConfig(
 
     for (const [key, value] of Object.entries(compilation.input)) {
       if (!value && (value ?? true)) continue;
-      if (!path.isAbsolute(value) && !value.startsWith('./')) {
+      if (!path.isAbsolute(value) && !value?.startsWith('./')) {
         input[key] = `./${value}`;
       } else {
         input[key] = value;
@@ -809,8 +809,18 @@ export async function loadConfigFile(
     // throw new Error(
     // `Failed to load farm config file: ${errorMessage}. \n ${potentialSolution} \n ${error.stack}`
     // );
+    // throw new Error(
+    //   `Failed to load farm config file: ${errorMessage}. \n ${potentialSolution}`
+    //   // `Failed to load farm config file: ${errorMessage}.`,
+    // );
+
+    // throw new Error(
+    //   `Failed to load farm config file: ${errorMessage}`
+    //   // `Failed to load farm config file: ${errorMessage}.`,
+    // );
+
     throw new Error(
-      `Failed to load farm config file: ${errorMessage}. \n ${potentialSolution}`
+      `Failed to load farm config file: ${errorMessage}`
       // `Failed to load farm config file: ${errorMessage}.`,
     );
   }

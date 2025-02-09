@@ -39,7 +39,8 @@ export async function start(
     await server.listen();
     server.printUrls();
   } catch (error) {
-    server.logger.error('Failed to start the server', { exit: false, error });
+    // server.logger.error('Failed to start the server', { error });
+    server.logger.error(error);
   }
 }
 

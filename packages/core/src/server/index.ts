@@ -215,8 +215,11 @@ export class Server extends httpServer {
 
       this.terminateServerFn = async (_: unknown, exitCode?: number) => {
         try {
+          console.log('走这里么');
+
           await this.close();
         } finally {
+          // TODO 如果一开始抛出错误导致 error 浏览器 resource 会被卡住 应该是 middleware 被卡住了
           process.exitCode ??= exitCode ? 128 + exitCode : undefined;
           process.exit();
         }
@@ -283,7 +286,7 @@ export class Server extends httpServer {
         try {
           await this.restartServer();
         } catch (e) {
-          this.config.logger.error(`restart server error ${e}`);
+          // this.config.logger.error(`restart server error ${e}`);
         }
       }
       try {
@@ -372,7 +375,7 @@ export class Server extends httpServer {
       newServer = new Server(this.inlineConfig);
       await newServer.createServer();
     } catch (error) {
-      this.logger.error(`Failed to restart server :\n ${error}`);
+      this.logger.error(error);
       return;
     }
     await this.watcher.close();
