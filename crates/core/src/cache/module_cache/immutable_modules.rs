@@ -1,3 +1,5 @@
+use std::rc::Rc;
+
 use dashmap::DashMap;
 use farmfe_macro_cache_item::cache_item;
 use farmfe_utils::hash::sha256;
@@ -6,10 +8,12 @@ use rkyv::Deserialize;
 
 use crate::{
   cache::{
-    store::{constant::CacheStoreTrait, CacheStore, CacheStoreKey},
+    store::{
+      constant::{CacheStoreFactory, CacheStoreTrait},
+      CacheStoreKey,
+    },
     utils::cache_panic,
   },
-  config::Mode,
   module::ModuleId,
   HashMap, HashSet,
 };
@@ -39,7 +43,7 @@ impl CachedPackage {
 pub struct ImmutableModulesMemoryStore {
   cache_dir: String,
   /// low level cache store
-  store: CacheStore,
+  store: Box<dyn CacheStoreTrait>,
   /// ModuleId -> Cached Module
   cached_modules: DashMap<ModuleId, CachedModule>,
   /// moduleId -> PackageKey
@@ -48,9 +52,8 @@ pub struct ImmutableModulesMemoryStore {
 }
 
 impl ImmutableModulesMemoryStore {
-  pub fn new(cache_dir_str: &str, namespace: &str, mode: Mode) -> Self {
-    let store = CacheStore::new(cache_dir_str, namespace, mode, "immutable-modules");
-
+  pub fn new(cache_dir_str: &str, store_factory: Rc<Box<dyn CacheStoreFactory>>) -> Self {
+    let store = store_factory.create_cache_store("immutable-module");
     let manifest_bytes = store.read_cache(MANIFEST_KEY).unwrap_or_default();
     let manifest: HashMap<String, String> =
       serde_json::from_slice(&manifest_bytes).unwrap_or_default();

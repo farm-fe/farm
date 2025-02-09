@@ -64,7 +64,7 @@ impl CompilationContext {
       cache_manager: Box::new(CacheManager::new(
         &cache_dir,
         &namespace,
-        config.mode.clone(),
+        config.mode,
       )),
       thread_pool: Arc::new(
         ThreadPoolBuilder::new()

@@ -1,5 +1,11 @@
+use std::rc::Rc;
+
+use farmfe_utils::hash::sha256;
 use parking_lot::Mutex;
-use store::{constant::CacheStoreTrait, CacheStore, CacheStoreKey};
+use store::{
+  constant::{CacheStoreFactory, CacheStoreTrait},
+  CacheStoreKey, DiskCacheFactory,
+};
 
 use crate::{config::Mode, error::Result, Cacheable};
 
@@ -19,26 +25,28 @@ pub struct CacheManager {
   pub module_cache: module_cache::ModuleCacheManager,
   pub resource_cache: resource_cache::ResourceCacheManager,
   pub plugin_cache: PluginCacheManager,
-  pub lazy_compile_store: CacheStore,
+  pub lazy_compile_store: Box<dyn CacheStoreTrait>,
   /// cache store for custom caches
-  pub custom: CacheStore,
+  pub custom: Box<dyn CacheStoreTrait>,
   /// lock for cache manager
   pub lock: Mutex<bool>,
 }
 
 impl CacheManager {
   pub fn new(cache_dir: &str, namespace: &str, mode: Mode) -> Self {
-    let module_cache = module_cache::ModuleCacheManager::new(cache_dir, namespace, mode.clone());
-    let resource_cache =
-      resource_cache::ResourceCacheManager::new(cache_dir, namespace, mode.clone());
+    let store_factory: Rc<Box<dyn CacheStoreFactory>> =
+      Rc::new(Box::new(DiskCacheFactory::new(cache_dir, namespace, mode)));
+
+    let module_cache = module_cache::ModuleCacheManager::new(cache_dir, store_factory.clone());
+    let resource_cache = resource_cache::ResourceCacheManager::new(store_factory.clone());
 
     Self {
       module_cache,
       resource_cache,
       // plugin cache is not initialized here. it will be initialized when compile starts.
-      plugin_cache: PluginCacheManager::new(cache_dir, namespace, mode.clone()),
-      custom: CacheStore::new(cache_dir, namespace, mode.clone(), "custom"),
-      lazy_compile_store: CacheStore::new(cache_dir, namespace, mode, "lazy-compilation"),
+      plugin_cache: PluginCacheManager::new(store_factory.clone()),
+      custom: store_factory.create_cache_store("custom"),
+      lazy_compile_store: store_factory.create_cache_store("lazy-compilation"),
       lock: Mutex::new(false),
     }
   }
@@ -77,7 +85,7 @@ impl CacheManager {
       .write_single_cache(
         CacheStoreKey {
           name: name.to_string(),
-          key: "default".to_string(),
+          key: sha256(&bytes, 8),
         },
         bytes,
       )

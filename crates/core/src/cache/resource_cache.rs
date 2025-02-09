@@ -1,7 +1,9 @@
-use crate::config::Mode;
+use std::rc::Rc;
 
 use self::resource_memory_store::{CachedResourcePot, ResourceMemoryStore};
 use self::resource_pot::ResourcePotMemoryStore;
+
+use super::store::constant::CacheStoreFactory;
 
 pub mod resource_memory_store;
 pub mod resource_pot;
@@ -11,9 +13,9 @@ pub struct ResourceCacheManager {
 }
 
 impl ResourceCacheManager {
-  pub fn new(cache_dir_str: &str, namespace: &str, mode: Mode) -> Self {
+  pub fn new(store_factory: Rc<Box<dyn CacheStoreFactory>>) -> Self {
     Self {
-      resource_pot_store: ResourcePotMemoryStore::new(cache_dir_str, namespace, mode),
+      resource_pot_store: ResourcePotMemoryStore::new(store_factory),
     }
   }
 

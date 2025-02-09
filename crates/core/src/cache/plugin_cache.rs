@@ -1,21 +1,20 @@
+use std::rc::Rc;
+
 use dashmap::{mapref::one::Ref, DashMap};
 use farmfe_utils::hash::sha256;
 
 use crate::HashMap;
 
-use crate::config::Mode;
+use super::store::constant::{CacheStoreFactory, CacheStoreTrait};
 
-use super::store::{constant::CacheStoreTrait, CacheStore, CacheStoreKey};
-
-#[derive(Default)]
 pub struct PluginCacheManager {
-  store: CacheStore,
+  store: Box<dyn CacheStoreTrait>,
   cache: DashMap<String, Vec<u8>>,
 }
 
 impl PluginCacheManager {
-  pub fn new(cache_dir: &str, namespace: &str, mode: Mode) -> Self {
-    let store = CacheStore::new(cache_dir, namespace, mode, "plugin");
+  pub fn new(store_factory: Rc<Box<dyn CacheStoreFactory>>) -> Self {
+    let store = store_factory.create_cache_store("plugin");
     Self {
       store,
       cache: DashMap::new(),
@@ -37,9 +36,7 @@ impl PluginCacheManager {
       return self.cache.get(&plugin_name);
     }
 
-    let cache = self
-      .store
-      .read_cache(&self.normalize_plugin_name(&plugin_name));
+    let cache = self.store.read_cache(&plugin_name);
 
     if let Some(cache) = cache {
       self.cache.insert(plugin_name.clone(), cache);
@@ -61,10 +58,7 @@ impl PluginCacheManager {
       .iter()
       .map(|entry| {
         (
-          CacheStoreKey {
-            name: entry.key().clone(),
-            key: sha256(entry.value(), 32),
-          },
+          (entry.key().clone(), sha256(entry.value(), 32)).into(),
           entry.value().clone(),
         )
       })

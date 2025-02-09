@@ -1,10 +1,13 @@
 use std::path::{Path, PathBuf};
 
-use dashmap::{mapref::multiple::RefMulti, DashMap};
+use dashmap::{
+  mapref::{multiple::RefMulti, one::Ref},
+  DashMap,
+};
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 
 use super::{
-  constant::{CacheStoreTrait, FARM_CACHE_MANIFEST_FILE, FARM_CACHE_VERSION},
+  constant::{CacheStoreFactory, CacheStoreTrait, FARM_CACHE_MANIFEST_FILE, FARM_CACHE_VERSION},
   error::CacheError,
   CacheStoreKey,
 };
@@ -157,14 +160,11 @@ impl CacheStoreTrait for CacheStore {
   }
 
   fn read_cache(&self, name: &str) -> Option<Vec<u8>> {
-    let Some(cache_key) = self
+    let cache_key = self
       .manifest
       .get(name)
       .as_ref()
-      .map(|v: &dashmap::mapref::one::Ref<'_, String, String>| v.value().clone())
-    else {
-      return None;
-    };
+      .map(|v: &Ref<'_, String, String>| v.value().clone())?;
     let cache_file = self.cache_dir.join(cache_key);
 
     if cache_file.exists() && cache_file.is_file() {
@@ -184,5 +184,32 @@ impl CacheStoreTrait for CacheStore {
     if cache_file.exists() && cache_file.is_file() {
       std::fs::remove_file(cache_file).ok();
     }
+  }
+}
+
+pub struct DiskCacheFactory {
+  cache_dir: String,
+  namespace: String,
+  mode: Mode,
+}
+
+impl DiskCacheFactory {
+  pub fn new(cache_dir: &str, namespace: &str, mode: Mode) -> Self {
+    Self {
+      cache_dir: cache_dir.to_string(),
+      namespace: namespace.to_string(),
+      mode,
+    }
+  }
+}
+
+impl CacheStoreFactory for DiskCacheFactory {
+  fn create_cache_store(&self, name: &str) -> Box<dyn CacheStoreTrait> {
+    Box::new(CacheStore::new(
+      &self.cache_dir,
+      &self.namespace,
+      self.mode,
+      name,
+    ))
   }
 }

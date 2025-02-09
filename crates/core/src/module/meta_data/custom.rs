@@ -89,6 +89,10 @@ impl CustomMetaDataMap {
     self.map.get_mut(key).and_then(|v| v.downcast_mut::<T>())
   }
 
+  pub fn get_ref<T: Cacheable>(&self, key: &str) -> Option<&T> {
+    self.map.get(key).and_then(|v| v.downcast_ref::<T>())
+  }
+
   pub fn insert(&mut self, key: String, value: Box<dyn Cacheable>) {
     self.map.insert(key, value);
   }

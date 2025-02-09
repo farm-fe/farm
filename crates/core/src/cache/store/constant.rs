@@ -4,7 +4,7 @@ use crate::HashMap;
 
 use super::{error::CacheError, CacheStoreKey};
 
-pub trait CacheStoreTrait {
+pub trait CacheStoreTrait: Send + Sync {
   fn has_cache(&self, name: &str) -> bool;
   fn get_store_keys(&self) -> Vec<RefMulti<String, String>>;
   fn is_cache_changed(&self, store_key: &CacheStoreKey) -> bool;
@@ -17,3 +17,7 @@ pub trait CacheStoreTrait {
 
 pub const FARM_CACHE_VERSION: &str = "0.6.1";
 pub const FARM_CACHE_MANIFEST_FILE: &str = "farm-cache.json";
+
+pub trait CacheStoreFactory {
+  fn create_cache_store(&self, name: &str) -> Box<dyn CacheStoreTrait>;
+}

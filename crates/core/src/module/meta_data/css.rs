@@ -2,8 +2,6 @@ use farmfe_macro_cache_item::cache_item;
 use swc_common::DUMMY_SP;
 use swc_css_ast::Stylesheet;
 
-use crate::{Cacheable, HashMap};
-
 use super::{custom::CustomMetaDataMap, script::CommentsMetaData};
 
 #[cache_item]

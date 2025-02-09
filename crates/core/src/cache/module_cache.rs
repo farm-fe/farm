@@ -1,16 +1,20 @@
-use dashmap::mapref::one::{Ref, RefMut};
+use std::rc::Rc;
+
+use dashmap::mapref::one::{MappedRef, Ref, RefMut};
 
 use farmfe_macro_cache_item::cache_item;
 use module_metadata::ModuleMetadataStore;
 
-use crate::config::Mode;
 use crate::module::module_graph::ModuleGraphEdge;
 use crate::module::{CustomMetaDataMap, Module, ModuleId};
 use crate::plugin::PluginAnalyzeDepsHookResultEntry;
+use crate::Cacheable;
 
 use immutable_modules::ImmutableModulesMemoryStore;
 use module_memory_store::ModuleMemoryStore;
 use mutable_modules::MutableModulesMemoryStore;
+
+use super::store::constant::CacheStoreFactory;
 
 pub mod immutable_modules;
 pub mod module_memory_store;
@@ -53,7 +57,6 @@ pub struct CachedModule {
   /// when writing to the cache next time, it will be cleared from memory.
   ///
   pub is_expired: bool,
-  custom: CustomMetaDataMap,
 }
 
 impl CachedModule {
@@ -88,11 +91,11 @@ impl CachedModule {
 }
 
 impl ModuleCacheManager {
-  pub fn new(cache_dir_str: &str, namespace: &str, mode: Mode) -> Self {
+  pub fn new(cache_dir_str: &str, store: Rc<Box<dyn CacheStoreFactory>>) -> Self {
     Self {
-      mutable_modules_store: MutableModulesMemoryStore::new(cache_dir_str, namespace, mode),
-      immutable_modules_store: ImmutableModulesMemoryStore::new(cache_dir_str, namespace, mode),
-      module_metadata: ModuleMetadataStore::new(cache_dir_str, namespace, mode),
+      mutable_modules_store: MutableModulesMemoryStore::new(store.clone()),
+      immutable_modules_store: ImmutableModulesMemoryStore::new(cache_dir_str, store.clone()),
+      module_metadata: ModuleMetadataStore::new(store.clone()),
     }
   }
 
@@ -167,11 +170,50 @@ impl ModuleCacheManager {
   pub fn invalidate_cache(&self, key: &ModuleId) {
     self.mutable_modules_store.invalidate_cache(key);
     self.immutable_modules_store.invalidate_cache(key);
-    self.module_metadata.invalidate(key);
+    self.module_metadata.invalidate(&key.to_string());
   }
 
   pub fn cache_outdated(&self, key: &ModuleId) -> bool {
     self.mutable_modules_store.cache_outdated(key)
       || self.immutable_modules_store.cache_outdated(key)
+  }
+
+  pub fn write_metadata<V: Cacheable>(&self, key: String, name: String, metadata: V) {
+    self
+      .module_metadata
+      .write_metadata(key, name, Box::new(metadata));
+  }
+
+  pub fn read_metadata_ref<V: Cacheable>(
+    &self,
+    key: &str,
+    name: &str,
+  ) -> Option<MappedRef<'_, String, CustomMetaDataMap, V>> {
+    self.module_metadata.read_ref(key, name)
+  }
+
+  pub fn metadata(&self, key: &str) -> CachedMetadataRef {
+    CachedMetadataRef::new(self.module_metadata.read_mut_or_entry(key))
+  }
+}
+
+pub struct CachedMetadataRef<'a> {
+  value: RefMut<'a, String, CustomMetaDataMap>,
+}
+
+impl<'a> CachedMetadataRef<'a> {
+  pub fn new(v: RefMut<'a, String, CustomMetaDataMap>) -> Self {
+    Self { value: v }
+  }
+
+  pub fn read<V: Cacheable, N: AsRef<str>>(&mut self, name: N) -> Option<&mut V> {
+    self.value.value_mut().get_mut::<V>(name.as_ref())
+  }
+
+  pub fn write<V: Cacheable, N: ToString>(&mut self, name: N, metadata: V) {
+    self
+      .value
+      .value_mut()
+      .insert(name.to_string(), Box::new(metadata));
   }
 }

@@ -3,7 +3,7 @@
 pub mod constant;
 mod disk;
 mod error;
-mod memory;
+pub mod memory;
 
 pub use disk::*;
 
@@ -13,4 +13,13 @@ pub use disk::*;
 pub struct CacheStoreKey {
   pub name: String,
   pub key: String,
+}
+
+impl<A1: ToString, A2: ToString> From<(A1, A2)> for CacheStoreKey {
+  fn from((name, key): (A1, A2)) -> Self {
+    Self {
+      name: name.to_string(),
+      key: key.to_string(),
+    }
+  }
 }

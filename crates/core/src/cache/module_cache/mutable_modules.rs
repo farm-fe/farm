@@ -1,11 +1,15 @@
+use std::rc::Rc;
+
 use dashmap::DashMap;
 use farmfe_utils::hash::sha256;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use rkyv::Deserialize;
 
 use crate::{
-  cache::store::{constant::CacheStoreTrait, CacheStore, CacheStoreKey},
-  config::Mode,
+  cache::store::{
+    constant::{CacheStoreFactory, CacheStoreTrait},
+    CacheStoreKey,
+  },
   deserialize,
   module::ModuleId,
   serialize, HashMap,
@@ -16,15 +20,15 @@ use super::{module_memory_store::ModuleMemoryStore, CachedModule};
 /// In memory store for mutable modules
 pub struct MutableModulesMemoryStore {
   /// low level cache store
-  store: CacheStore,
+  store: Box<dyn CacheStoreTrait>,
   /// ModuleId -> Cached Module
   cached_modules: DashMap<ModuleId, CachedModule>,
 }
 // TODO: cache unit test
 impl MutableModulesMemoryStore {
-  pub fn new(cache_dir_str: &str, namespace: &str, mode: Mode) -> Self {
+  pub fn new(store: Rc<Box<dyn CacheStoreFactory>>) -> Self {
     Self {
-      store: CacheStore::new(cache_dir_str, namespace, mode, "mutable-modules"),
+      store: store.create_cache_store("mutable-module"),
       cached_modules: DashMap::new(),
     }
   }

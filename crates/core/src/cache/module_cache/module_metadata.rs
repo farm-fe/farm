@@ -1,60 +1,92 @@
+use std::rc::Rc;
+
 use dashmap::{
-  mapref::one::{Ref, RefMut},
+  mapref::one::{MappedRef, RefMut},
   DashMap,
 };
+use farmfe_utils::hash::sha256;
 use rkyv::Deserialize;
 
 use crate::{
-  cache::store::{constant::CacheStoreTrait, CacheStore, CacheStoreKey},
-  config::Mode,
+  cache::store::{
+    constant::{CacheStoreFactory, CacheStoreTrait},
+    CacheStoreKey,
+  },
   deserialize,
-  error::Result,
-  module::{CustomMetaDataMap, ModuleId},
+  module::CustomMetaDataMap,
   serialize, Cacheable, HashMap,
 };
 
 pub struct ModuleMetadataStore {
-  pub store: CacheStore,
-  module_metadata: DashMap<ModuleId, CustomMetaDataMap>,
+  pub store: Box<dyn CacheStoreTrait>,
+  module_metadata: DashMap<String, CustomMetaDataMap>,
 }
 
 impl ModuleMetadataStore {
-  pub fn new(cache_dir_str: &str, namespace: &str, mode: Mode) -> Self {
+  pub fn new(store_factory: Rc<Box<dyn CacheStoreFactory>>) -> Self {
+    let store = store_factory.create_cache_store("module-metadata");
     Self {
-      store: CacheStore::new(cache_dir_str, namespace, mode, "module-metadata"),
+      store,
       module_metadata: DashMap::default(),
     }
   }
 
-  fn metadata_from_store(&self, key: &ModuleId) -> Result<Option<()>> {
-    let Some(cache) = self.store.read_cache(key.to_string().as_str()) else {
-      return Ok(None);
-    };
+  fn metadata_from_store(&self, key: &str) -> Option<()> {
+    if self.module_metadata.contains_key(key) {
+      return None;
+    }
+
+    let cache = self.store.read_cache(key.to_string().as_str())?;
 
     let metadata_item = deserialize!(&cache, CustomMetaDataMap);
 
-    self.module_metadata.insert(key.clone(), metadata_item);
+    self.module_metadata.insert(key.to_string(), metadata_item);
 
-    Ok(None)
+    None
   }
 
-  pub fn read_mut(&self, key: &ModuleId) -> Option<RefMut<ModuleId, CustomMetaDataMap>> {
-    if !self.module_metadata.contains_key(key) {
-      self.metadata_from_store(key);
-    };
+  pub fn read_mut(&self, key: &str) -> Option<RefMut<String, CustomMetaDataMap>> {
+    self.metadata_from_store(key);
 
     self.module_metadata.get_mut(key)
   }
 
-  pub fn read_ref(&self, key: &ModuleId) -> Option<Ref<ModuleId, CustomMetaDataMap>> {
+  pub fn read_mut_or_entry(&self, key: &str) -> RefMut<String, CustomMetaDataMap> {
+    self.metadata_from_store(key);
+
     if !self.module_metadata.contains_key(key) {
-      self.metadata_from_store(key);
+      self
+        .module_metadata
+        .insert(key.to_string(), CustomMetaDataMap::default());
     }
 
-    self.module_metadata.get(key)
+    self.module_metadata.get_mut(key).unwrap()
   }
 
-  pub fn write_metadata(&self, key: ModuleId, name: String, metadata: Box<dyn Cacheable>) {
+  pub fn read_ref<V: Cacheable>(
+    &self,
+    key: &str,
+    name: &str,
+  ) -> Option<MappedRef<'_, String, CustomMetaDataMap, V>> {
+    self.metadata_from_store(key);
+
+    Some(
+      self
+        .module_metadata
+        .get(key)?
+        .map(|v| v.get_ref::<V>(name.as_ref()).unwrap()),
+    )
+  }
+
+  pub fn write_metadata(&self, key: String, name: String, metadata: Box<dyn Cacheable>) {
+    self.metadata_from_store(&key);
+
+    if !self.module_metadata.contains_key(&key) {
+      self
+        .module_metadata
+        .insert(key.clone(), CustomMetaDataMap::default());
+    }
+
     let Some(mut namespace) = self.read_mut(&key) else {
       return;
     };
@@ -71,7 +103,7 @@ impl ModuleMetadataStore {
       map.insert(
         CacheStoreKey {
           key: key.to_string(),
-          name: key.to_string(),
+          name: sha256(&value, 8),
         },
         value,
       );
@@ -79,8 +111,45 @@ impl ModuleMetadataStore {
     self.store.write_cache(map);
   }
 
-  pub fn invalidate(&self, key: &ModuleId) {
+  pub fn invalidate(&self, key: &str) {
     self.module_metadata.remove(key);
     self.store.remove_cache(key.to_string().as_str());
+  }
+}
+
+#[cfg(test)]
+mod tests {
+  use crate::{cache::store::memory::MemoryCacheFactory, CacheableContainer};
+
+  use super::*;
+
+  #[test]
+  fn t1() {
+    let store_factory: Rc<Box<dyn CacheStoreFactory>> =
+      Rc::new(Box::new(MemoryCacheFactory::new()));
+    let store = ModuleMetadataStore::new(store_factory);
+
+    let module1_id = "module1".to_string();
+    let cached_value = "hello world".to_string();
+    store.write_metadata(
+      module1_id.clone(),
+      "content".to_string(),
+      Box::new(CacheableContainer::from(cached_value.clone())),
+    );
+
+    store.write_cache();
+
+    let v = store
+      .read_ref::<CacheableContainer<String>>(&module1_id, "content")
+      .map(|v| v.value().clone().take())
+      .unwrap();
+
+    assert_eq!(v, cached_value.clone());
+
+    store.invalidate(&module1_id);
+
+    let v = store.read_ref::<CacheableContainer<String>>(&module1_id, "content");
+
+    assert!(v.is_none());
   }
 }

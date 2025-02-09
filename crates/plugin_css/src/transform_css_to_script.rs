@@ -2,7 +2,7 @@ use rkyv::Deserialize;
 use std::sync::Arc;
 
 use farmfe_core::{
-  cache::store::{constant::CacheStoreTrait, CacheStoreKey},
+  cache::store::CacheStoreKey,
   context::CompilationContext,
   deserialize,
   enhanced_magic_string::collapse_sourcemap::{collapse_sourcemap_chain, CollapseSourcemapOptions},

@@ -17,7 +17,8 @@ use farmfe_core::{
   resource::{Resource, ResourceOrigin, ResourceType},
   rkyv::Deserialize,
   serialize,
-  swc_common::sync::OnceCell, HashMap,
+  swc_common::sync::OnceCell,
+  HashMap,
 };
 use farmfe_toolkit::{
   fs::{read_file_raw, read_file_utf8, transform_output_filename},
