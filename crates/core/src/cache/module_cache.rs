@@ -162,7 +162,12 @@ impl ModuleCacheManager {
     thread_pool.install(|| {
       rayon::join(
         || self.mutable_modules_store.write_cache(),
-        || self.immutable_modules_store.write_cache(),
+        || {
+          rayon::join(
+            || self.immutable_modules_store.write_cache(),
+            || self.module_metadata.write_cache(),
+          )
+        },
       );
     });
   }
