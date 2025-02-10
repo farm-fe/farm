@@ -1,8 +1,10 @@
+use minify::MinifyOptions;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use swc_css_prefixer::options::Targets;
 
 use swc_ecma_parser::{EsSyntax as EsConfig, TsSyntax as TsConfig};
+use tree_shaking::TreeShakingConfig;
 
 use self::{
   bool_or_obj::BoolOrObj, comments::CommentsConfig, config_regex::ConfigRegex, html::HtmlConfig,
@@ -11,7 +13,7 @@ use self::{
 
 use crate::HashMap;
 
-pub const FARM_MODULE_SYSTEM: &str = "__farm_module_system__";
+pub const FARM_MODULE_SYSTEM: &str = "m";
 // transformed from dynamic import, e.g `import('./xxx')`
 pub const FARM_DYNAMIC_REQUIRE: &str = "farmDynamicRequire";
 // transformed from static import, e.g `import xxx from './xxx'`
@@ -77,8 +79,8 @@ pub struct Config {
   pub partial_bundling: Box<PartialBundlingConfig>,
   pub lazy_compilation: bool,
   pub core_lib_path: Option<String>,
-  pub tree_shaking: Box<BoolOrObj<serde_json::Value>>,
-  pub minify: Box<BoolOrObj<serde_json::Value>>,
+  pub tree_shaking: Box<BoolOrObj<TreeShakingConfig>>,
+  pub minify: Box<BoolOrObj<MinifyOptions>>,
   pub preset_env: Box<PresetEnvConfig>,
   /// whether to record the compilation flow stats, default is false.
   pub record: bool,
@@ -140,7 +142,6 @@ pub enum TargetEnv {
   Browser,
   #[serde(rename = "node")]
   Node,
-  /// [TargetEnv::Library] is alias of [TargetEnv::Custom("library-browser")]
   #[serde(rename = "library")]
   Library,
   #[serde(untagged)]
@@ -149,18 +150,26 @@ pub enum TargetEnv {
 
 impl TargetEnv {
   pub fn is_browser(&self) -> bool {
-    matches!(self, TargetEnv::Browser | TargetEnv::Library)
-      || matches!(self, TargetEnv::Custom(custom) if custom == "library-browser")
+    matches!(self, TargetEnv::Browser)
   }
 
   pub fn is_node(&self) -> bool {
     matches!(self, TargetEnv::Node)
-      || matches!(self, TargetEnv::Custom(custom) if custom == "library-node")
   }
 
   pub fn is_library(&self) -> bool {
     matches!(self, TargetEnv::Library)
-      || matches!(self, TargetEnv::Custom(custom) if custom == "library-browser" || custom == "library-node")
+  }
+}
+
+impl ToString for TargetEnv {
+  fn to_string(&self) -> String {
+    match self {
+      TargetEnv::Browser => "browser".to_string(),
+      TargetEnv::Node => "node".to_string(),
+      TargetEnv::Library => "library".to_string(),
+      TargetEnv::Custom(s) => s.clone(),
+    }
   }
 }
 
@@ -173,12 +182,22 @@ pub enum ModuleFormat {
   CommonJs,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
 pub enum Mode {
   #[serde(rename = "development")]
   Development,
   #[serde(rename = "production")]
   Production,
+}
+
+impl Mode {
+  pub fn is_dev(&self) -> bool {
+    matches!(self, Mode::Development)
+  }
+
+  pub fn is_prod(&self) -> bool {
+    matches!(self, Mode::Production)
+  }
 }
 
 impl Default for Mode {
@@ -413,6 +432,13 @@ impl SourcemapConfig {
       Self::AllInline => true,
     }
   }
+
+  pub fn is_false(&self) -> bool {
+    match self {
+      Self::Bool(b) => !*b,
+      _ => false,
+    }
+  }
 }
 
 mod tests {
@@ -455,21 +481,6 @@ mod tests {
     assert!(!env.is_library());
 
     let env = TargetEnv::Library;
-    assert!(env.is_library());
-    assert!(!env.is_node());
-    assert!(env.is_browser());
-
-    let env = TargetEnv::Custom("library-browser".to_string());
-    assert!(env.is_library());
-    assert!(!env.is_node());
-    assert!(env.is_browser());
-
-    let env = TargetEnv::Custom("library-node".to_string());
-    assert!(env.is_library());
-    assert!(env.is_node());
-    assert!(!env.is_browser());
-
-    let env: TargetEnv = serde_json::from_str("\"library-browser\"").expect("failed to parse");
     assert!(env.is_library());
     assert!(!env.is_node());
     assert!(env.is_browser());

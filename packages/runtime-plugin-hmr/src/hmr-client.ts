@@ -98,16 +98,16 @@ export class HmrClient {
         await prune(hotContext.data);
       }
 
-      moduleSystem.delete(id);
+      moduleSystem.d(id);
       this.registeredHotModulesMap.delete(id);
     }
 
-    for (const id of result.added) {
-      moduleSystem.register(id, result.modules[id]);
-    }
+    // for (const id of result.added) {
+    //   moduleSystem.g(id, result.modules[id]);
+    // }
 
     for (const id of result.changed) {
-      moduleSystem.update(id, result.modules[id]);
+      // moduleSystem.u(id, result.modules[id]);
       if (!result.boundaries[id]) {
         // do not found boundary module, reload the window
         location.reload();
@@ -115,7 +115,7 @@ export class HmrClient {
     }
 
     if (result.dynamicResources && result) {
-      moduleSystem.setDynamicModuleResourcesMap(
+      moduleSystem.sd(
         result.dynamicResources,
         result.dynamicModuleResourcesMap
       );
@@ -125,7 +125,7 @@ export class HmrClient {
       for (const chain of chains) {
         // clear the cache of the boundary module and its dependencies
         for (const id of chain) {
-          moduleSystem.clearCache(id);
+          moduleSystem.a(id);
         }
 
         try {
@@ -163,7 +163,7 @@ export class HmrClient {
               const disposer = this.disposeMap.get(acceptedId);
               if (disposer) await disposer(acceptHotContext.data);
 
-              const acceptedExports = moduleSystem.require(acceptedId);
+              const acceptedExports = moduleSystem.r(acceptedId);
 
               for (const { deps, fn } of acceptedCallbacks) {
                 fn(
@@ -247,18 +247,16 @@ export class HmrClient {
 
   handleFarmUpdate(result: RawHmrUpdateResult) {
     hasErrorOverlay() && clearOverlay();
-    const immutableModules = new Function(
-      `return ${result.immutableModules}`
-    )();
-    const mutableModules = new Function(`return ${result.mutableModules}`)();
-    const modules = { ...immutableModules, ...mutableModules };
+    new Function(`${result.immutableModules}`)();
+    new Function(`${result.mutableModules}`)();
+    // const modules = { ...immutableModules, ...mutableModules };
     this.applyHotUpdates(
       {
         added: result.added,
         changed: result.changed,
         removed: result.removed,
         boundaries: result.boundaries,
-        modules,
+        // modules,
         dynamicResources: result.dynamicResources,
         dynamicModuleResourcesMap: result.dynamicModuleResourcesMap
       },

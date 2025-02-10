@@ -145,6 +145,7 @@ export interface PluginProcessModuleParams {
 
 export interface PluginProcessModuleResult {
   content: string;
+  sourceMap?: string;
 }
 
 type NormalizeFilterParams = {

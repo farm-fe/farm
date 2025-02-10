@@ -1,5 +1,5 @@
 use rkyv::Deserialize;
-use std::{path::PathBuf, sync::Arc};
+use std::sync::Arc;
 
 use farmfe_core::{
   cache::cache_store::CacheStoreKey,
@@ -7,7 +7,8 @@ use farmfe_core::{
   deserialize,
   enhanced_magic_string::collapse_sourcemap::{collapse_sourcemap_chain, CollapseSourcemapOptions},
   module::{
-    CommentsMetaData, ModuleId, ModuleMetaData, ModuleSystem, ModuleType, ScriptModuleMetaData,
+    meta_data::script::{CommentsMetaData, ScriptModuleMetaData},
+    ModuleId, ModuleMetaData, ModuleSystem, ModuleType,
   },
   plugin::ResolveKind,
   rayon::prelude::*,
@@ -18,7 +19,6 @@ use farmfe_core::{
   swc_ecma_parser::Syntax,
 };
 use farmfe_toolkit::{
-  common::{create_swc_source_map, Source},
   css::codegen_css_stylesheet,
   hash::base64_encode,
   script::{parse_module, swc_try_with::try_with, ParseScriptModuleResult},
@@ -94,15 +94,12 @@ pub fn transform_css_to_script_modules(
       let m = module_graph.module(&module_id).unwrap();
       let (css_code, mut src_map) = codegen_css_stylesheet(
         &stylesheet,
+        context.config.minify.enabled(),
         if context.config.sourcemap.enabled(m.immutable) {
-          Some(Source {
-            path: PathBuf::from(module_id.resolved_path_with_query(&context.config.root)),
-            content: m.content.clone(),
-          })
+          Some(context.meta.get_module_source_map(&module_id))
         } else {
           None
         },
-        context.config.minify.enabled(),
       );
       let mut source_map_chain = m.source_map_chain.clone();
       drop(module_graph);
@@ -133,10 +130,7 @@ pub fn transform_css_to_script_modules(
 
       let css_code = wrapper_style_load(&css_code, module_id.to_string(), &css_deps, src_map);
       let css_code = Arc::new(css_code);
-      let (cm, _) = create_swc_source_map(Source {
-        path: PathBuf::from(module_id.to_string()),
-        content: css_code.clone(),
-      });
+
       {
         context
           .module_graph
@@ -146,14 +140,22 @@ pub fn transform_css_to_script_modules(
           .content = css_code.clone();
       }
 
-      try_with(cm.clone(), &context.meta.script.globals, || {
-        let ParseScriptModuleResult { mut ast, comments } = parse_module(
-          &module_id.to_string(),
-          &css_code,
-          Syntax::default(),
-          EsVersion::default(),
-        )
-        .unwrap();
+      let ParseScriptModuleResult {
+        mut ast,
+        comments,
+        source_map,
+      } = parse_module(
+        &module_id,
+        css_code.clone(),
+        Syntax::default(),
+        EsVersion::default(),
+      )
+      .unwrap();
+      context
+        .meta
+        .set_module_source_map(&module_id, source_map.clone());
+
+      try_with(source_map, &context.meta.script.globals, || {
         let top_level_mark = Mark::new();
         let unresolved_mark = Mark::new();
 
@@ -171,6 +173,7 @@ pub fn transform_css_to_script_modules(
           hmr_accepted_deps: Default::default(),
           comments: CommentsMetaData::from(comments),
           custom: Default::default(),
+          ..Default::default()
         }));
 
         module.module_type = ModuleType::Js;

@@ -12,9 +12,9 @@ use farmfe_core::{
   swc_ecma_ast::Program,
 };
 use farmfe_toolkit::{
-  common::{create_swc_source_map, Source},
   preset_env_base::query::Query,
   script::swc_try_with::try_with,
+  sourcemap::create_swc_source_map,
   swc_ecma_preset_env::{self, preset_env, Mode, Targets},
   swc_ecma_transforms::Assumptions,
   swc_ecma_transforms_base::{feature::FeatureFlag, helpers::inject_helpers},
@@ -115,10 +115,7 @@ impl Plugin for FarmPluginPolyfill {
       return Ok(None);
     }
 
-    let (cm, _) = create_swc_source_map(Source {
-      path: PathBuf::from(&param.module_id.to_string()),
-      content: param.content.clone(),
-    });
+    let (cm, _) = create_swc_source_map(param.module_id, param.content.clone());
     try_with(cm, &context.meta.script.globals, || {
       let unresolved_mark = Mark::from_u32(param.meta.as_script().unresolved_mark);
       let mut ast = Program::Module(param.meta.as_script_mut().take_ast());

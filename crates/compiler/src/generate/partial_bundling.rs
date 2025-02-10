@@ -4,7 +4,11 @@ use farmfe_core::{
   config::partial_bundling::PartialBundlingEnforceResourceConfig,
   context::CompilationContext,
   error::CompilationError,
-  module::{module_graph::ModuleGraph, module_group::ModuleGroupGraph, Module, ModuleId},
+  module::{
+    module_graph::ModuleGraph,
+    module_group::{ModuleGroup, ModuleGroupGraph, ModuleGroupType},
+    Module, ModuleId,
+  },
   plugin::PluginHookContext,
   resource::{
     resource_pot::{ResourcePot, ResourcePotType},
@@ -55,11 +59,15 @@ pub fn generate_resource_pot_map(
   hook_context: &PluginHookContext,
 ) -> farmfe_core::error::Result<ResourcePotMap> {
   let (enforce_resource_pots, modules) = generate_enforce_resource_pots(context);
+  let dynamic_entry_resource_pots = generate_dynamic_entry_resource_pots(context);
 
   let mut resources_pots = call_partial_bundling_hook(&modules, context, hook_context)?;
   // extends enforce resource pots
   resources_pots.extend(enforce_resource_pots);
+
   fill_necessary_fields_for_resource_pot(resources_pots.iter_mut().collect(), context);
+  // the neccessary fields are filled when generating dynamic entry resource pots, so we push them after calling fill_necessary_fields_for_resource_pot
+  resources_pots.extend(dynamic_entry_resource_pots);
 
   let mut resource_pot_map = ResourcePotMap::new();
 
@@ -115,12 +123,26 @@ pub fn fill_necessary_fields_for_resource_pot(
 
     for module_id in resource_pot.modules() {
       let module = module_graph.module_mut(module_id).unwrap();
-      module.resource_pot = Some(resource_pot.id.clone());
-      module_groups.extend(module.module_groups.clone());
+      module.resource_pots.insert(resource_pot.id.clone());
+      module_groups.extend(
+        module
+          .module_groups
+          .iter()
+          .filter(|mg| {
+            // ignore dynamic entry module group when filling necessary fields
+            // for dynamic entry resource pots the necessary fields are filled when generating dynamic entry resource pots
+            let module_group = module_group_graph.module_group(mg).unwrap();
+            !matches!(
+              module_group.module_group_type,
+              ModuleGroupType::DynamicEntry
+            )
+          })
+          .cloned(),
+      );
 
       if module_graph.entries.contains_key(module_id) {
         if entry_module.is_some() {
-          panic!("a resource pot can only have one entry module, but both {:?} and {:?} are entry modules", entry_module.unwrap(), module_id);
+          panic!("a resource pot({}) can only have one entry module, but both {:?} and {:?} are entry modules", resource_pot.id, entry_module.unwrap(), module_id);
         }
         entry_module = Some(module_id.clone());
       }
@@ -170,6 +192,11 @@ fn generate_enforce_resource_pots(
 
   // generate enforce resource pots first
   for g in module_group_graph.module_groups() {
+    // skip dynamic entry module group
+    if matches!(g.module_group_type, ModuleGroupType::DynamicEntry) {
+      continue;
+    }
+
     for module_id in g.modules() {
       // ignore external module
       if module_graph.module(module_id).unwrap().external {
@@ -204,6 +231,58 @@ fn generate_enforce_resource_pots(
   modules.sort();
 
   (enforce_resource_pot_map.take_resource_pots(), modules)
+}
+
+fn generate_dynamic_entry_resource_pots(context: &Arc<CompilationContext>) -> Vec<ResourcePot> {
+  let mut module_graph = context.module_graph.write();
+  let mut module_group_graph = context.module_group_graph.write();
+  let mut resource_pots = vec![];
+
+  for module_group in module_group_graph
+    .module_groups_mut()
+    .into_iter()
+    .filter(|m| matches!(m.module_group_type, ModuleGroupType::DynamicEntry))
+  {
+    if let Some(resource_pot) =
+      dynamic_entry_module_group_to_resource_pot(&mut module_graph, module_group)
+    {
+      resource_pots.push(resource_pot);
+    }
+  }
+
+  resource_pots
+}
+
+pub fn dynamic_entry_module_group_to_resource_pot(
+  module_graph: &mut ModuleGraph,
+  module_group: &mut ModuleGroup,
+) -> Option<ResourcePot> {
+  if let Some(name) = module_graph
+    .dynamic_entries
+    .get(&module_group.entry_module_id)
+  {
+    let entry_module = module_graph.module(&module_group.entry_module_id).unwrap();
+    let mut resource_pot = ResourcePot::new(
+      name.to_string(),
+      ResourcePotType::from(entry_module.module_type.clone()),
+    );
+    resource_pot.entry_module = Some(module_group.entry_module_id.clone());
+    resource_pot.module_groups = HashSet::from_iter([module_group.id.clone()]);
+    resource_pot.is_dynamic_entry = true;
+
+    for module_id in module_group.modules() {
+      resource_pot.add_module(module_id.clone());
+
+      let module = module_graph.module_mut(module_id).unwrap();
+      module.resource_pots.insert(resource_pot.id.clone());
+    }
+
+    module_group.add_resource_pot(resource_pot.id.clone());
+
+    return Some(resource_pot);
+  }
+
+  None
 }
 
 #[cfg(test)]

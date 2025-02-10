@@ -135,22 +135,22 @@ if (compilingModules.has(modulePath)) {
         const result: RawLazyCompileResult = module.default || module;
 
         if (result.dynamicResources && result.dynamicModuleResourcesMap) {
-          FarmModuleSystem.setDynamicModuleResourcesMap(
+          FarmModuleSystem.sd(
             result.dynamicResources,
             result.dynamicModuleResourcesMap
           );
         }
-        FarmModuleSystem.reRegisterModules = true;
+        FarmModuleSystem._rg = true; // reRegisterModules = true
         const promises: Promise<any>[] = [];
 
         for (const { modulePath, resolve, moduleId } of queue) {
           compilingModules.delete(modulePath);
-          const promise = FarmModuleSystem.loadDynamicResourcesOnly(moduleId, true);
+          const promise = FarmModuleSystem.l(moduleId, true);
           // resolve the lazy compiling promise after the module is compiled instead of waiting for the module to be executed
           // this is to avoid the case where the module is waiting for another lazy compiled module to be executed, causing a deadlock
           promise.then(() => {
             // resolve the lazy compiled module promise after the module is executed
-            const mod = FarmModuleSystem.require(moduleId);
+            const mod = FarmModuleSystem.r(moduleId);
             resolve(mod);
           });
           promises.push(promise.then(() => compilingModules.delete(modulePath)));
@@ -161,7 +161,7 @@ if (compilingModules.has(modulePath)) {
             return compileModules();
           } else {
             endLazyCompiling();
-            FarmModuleSystem.reRegisterModules = false;
+            FarmModuleSystem._rg = false;
           }
         });
       });

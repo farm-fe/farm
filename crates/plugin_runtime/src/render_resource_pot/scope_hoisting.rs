@@ -1,15 +1,15 @@
 use std::sync::Arc;
 
 use farmfe_core::{
-  config::ModuleFormat,
   context::CompilationContext,
-  enhanced_magic_string::bundle::Bundle,
+  error::CompilationError,
   module::{module_graph::ModuleGraph, ModuleId},
-  resource::resource_pot::{ResourcePot, ResourcePotType},
+  resource::resource_pot::ResourcePot,
   HashMap, HashSet,
 };
-
-use farmfe_plugin_bundle::resource_pot_to_bundle::{BundleGroup, ShareBundleOptions, SharedBundle};
+use farmfe_toolkit::script::concatenate_modules::{
+  concatenate_modules_ast, ConcatenateModulesAstResult,
+};
 
 /// Note: Scope Hoisting is enabled only `config.concatenate_modules` is true. Otherwise, it A module is a [ScopeHoistedModuleGroup]
 ///
@@ -27,7 +27,7 @@ use farmfe_plugin_bundle::resource_pot_to_bundle::{BundleGroup, ShareBundleOptio
 pub struct ScopeHoistedModuleGroup {
   /// The [ModuleId] that other modules hoisted to, it's the entry of this [ScopeHoistedModuleGroup].
   pub target_hoisted_module_id: ModuleId,
-  /// The [ModuleId]s that this [ScopeHoistedModuleGroup] hoisted to. Include the [target_hoisted_module_id].
+  /// The [ModuleId]s that this [ScopeHoistedModuleGroup] hoisted to. Include [self.target_hoisted_module_id].
   pub hoisted_module_ids: HashSet<ModuleId>,
 }
 
@@ -43,48 +43,34 @@ impl ScopeHoistedModuleGroup {
     self.hoisted_module_ids.extend(hoisted_module_ids);
   }
 
-  /// Render this [ScopeHoistedModuleGroup] to a Farm runtime module. For example:
+  /// concatenate the [ScopeHoistedModuleGroup] into a single ast. For example:
   /// ```js
-  /// function(module, exports, farmRequire, farmDynamicRequire) {
-  ///   const xxx = farmDynamicRequire('./xxx');
+  ///  const xxx = farmDynamicRequire('./xxx');
+  ///  const module_D = 'D'; // hoisted code of module D
+  ///  const module_C = 'C'; // hoisted code of module C
+  ///  const module_B = 'B'; // hoisted code of module B
+  ///  console.log(module_D, module_C, module_B, xxx); // code of module A
   ///
-  ///   const module_D = 'D'; // hoisted code of module D
-  ///   const module_C = 'C'; // hoisted code of module C
-  ///   const module_B = 'B'; // hoisted code of module B
-  ///   console.log(module_D, module_C, module_B, xxx); // code of module A
-  ///
-  ///   module.o(exports, 'b', module_B);
-  /// }
+  ///  module.o(exports, 'b', module_B);
   /// ```
-  pub fn render(
+  pub fn scope_hoist(
     &self,
     module_graph: &ModuleGraph,
     context: &Arc<CompilationContext>,
-  ) -> farmfe_core::error::Result<Bundle> {
-    let bundle_id = self.target_hoisted_module_id.to_string();
+  ) -> farmfe_core::error::Result<ConcatenateModulesAstResult> {
+    let mut result = concatenate_modules_ast(&self.hoisted_module_ids, module_graph, context)
+      .map_err(|e| CompilationError::GenericError(format!("Scope hoist failed: {}", e)))?;
 
-    let mut share_bundle = SharedBundle::new(
-      vec![BundleGroup {
-        id: bundle_id.clone(),
-        modules: self.hoisted_module_ids.iter().collect(),
-        entry_module: Some(self.target_hoisted_module_id.clone()),
-        group_type: ResourcePotType::Js,
-      }],
-      module_graph,
-      context,
-      Some(ShareBundleOptions {
-        reference_slot: false,
-        ignore_external_polyfill: true,
-        // should ignore
-        format: ModuleFormat::EsModule,
-        hash_path: true,
-        concatenation_module: true,
-        ..Default::default()
-      }),
-    )?;
+    // append export statements
+    let module = module_graph.module(&self.target_hoisted_module_id).unwrap();
+    let script_meta = module.meta.as_script();
 
-    share_bundle.render()?;
-    share_bundle.codegen(&bundle_id)
+    if !script_meta.export_ident_map.is_empty() {
+      let export_item = script_meta.get_export_module_item();
+      result.ast.body.push(export_item);
+    }
+
+    Ok(result)
   }
 }
 
@@ -107,10 +93,7 @@ pub fn build_scope_hoisted_module_groups(
     );
     reverse_module_hoisted_group_map.insert(module_id.clone(), module_id.clone());
   }
-  // println!(
-  //   "scope_hoisted_module_groups_map: {:?}",
-  //   scope_hoisted_module_groups_map
-  // );
+
   // Merge ScopeHoistedModuleGroup when concatenate_modules enabled
   if context.config.concatenate_modules {
     let mut scope_hoisted_module_groups = scope_hoisted_module_groups_map

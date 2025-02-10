@@ -14,6 +14,7 @@ use swc_ecma_transforms::{fixer::paren_remover, resolver};
 use swc_ecma_visit::VisitMutWith;
 use swc_html_minifier::minify_document;
 
+pub mod comments;
 pub mod config;
 
 pub fn minify_js_module(

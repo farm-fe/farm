@@ -1,6 +1,8 @@
 use std::sync::Arc;
 
-use farmfe_core::{context::CompilationContext, plugin::PluginUpdateModulesHookParams};
+use farmfe_core::{
+  context::CompilationContext, plugin::hooks::update_modules::PluginUpdateModulesHookParam,
+};
 
 use crate::plugin_adapters::js_plugin_adapter::thread_safe_js_plugin_hook::ThreadSafeJsPluginHook;
 
@@ -15,17 +17,17 @@ impl JsPluginUpdateModulesHook {
       .expect("executor should be checked in js side");
 
     Self {
-      tsfn: ThreadSafeJsPluginHook::new::<PluginUpdateModulesHookParams, Vec<String>>(env, func),
+      tsfn: ThreadSafeJsPluginHook::new::<PluginUpdateModulesHookParam, Vec<String>>(env, func),
     }
   }
 
   pub fn call(
     &self,
-    param: PluginUpdateModulesHookParams,
+    param: PluginUpdateModulesHookParam,
     ctx: Arc<CompilationContext>,
   ) -> farmfe_core::error::Result<Option<Vec<String>>> {
     self
       .tsfn
-      .call::<PluginUpdateModulesHookParams, Vec<String>>(param, ctx, None)
+      .call::<PluginUpdateModulesHookParam, Vec<String>>(param, ctx, None)
   }
 }

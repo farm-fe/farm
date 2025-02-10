@@ -15,7 +15,7 @@ use url::Url;
 
 use farmfe_macro_plugin::farm_plugin;
 use farmfe_toolkit::{
-  common::PathFilter,
+  sourcemap::PathFilter,
   swc_ecma_visit::{VisitMut, VisitMutWith},
 };
 

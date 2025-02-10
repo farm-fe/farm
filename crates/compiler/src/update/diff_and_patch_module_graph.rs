@@ -7,6 +7,7 @@ use farmfe_core::{
     module_graph::{ModuleGraph, ModuleGraphEdge},
     Module, ModuleId,
   },
+  plugin::ResolveKind,
   serde::Serialize,
   HashMap, HashSet,
 };
@@ -137,8 +138,19 @@ pub fn patch_module_graph(
   let mut added_edge_info = HashMap::<(ModuleId, ModuleId), ModuleGraphEdge>::default();
 
   for (module_id, deps_diff_result) in diff_result.deps_changes.iter() {
-    for (removed_dep, _) in &deps_diff_result.removed {
+    for (removed_dep, edge_info) in &deps_diff_result.removed {
       module_graph.remove_edge(module_id, removed_dep).unwrap();
+
+      if edge_info.contains_dynamic_entry() {
+        let dependents = module_graph.dependents(removed_dep);
+
+        if dependents
+          .into_iter()
+          .all(|(_, edge_info)| !edge_info.contains_dynamic_entry())
+        {
+          module_graph.dynamic_entries.remove(removed_dep);
+        }
+      }
     }
 
     for (added_dep, _) in &deps_diff_result.added {
@@ -157,6 +169,16 @@ pub fn patch_module_graph(
   }
 
   for ((from, to), edge_info) in added_edge_info {
+    if edge_info.contains_dynamic_entry() {
+      let name = edge_info.items().iter().find_map(|item| match &item.kind {
+        ResolveKind::DynamicEntry { name, .. } => Some(name.clone()),
+        _ => None,
+      });
+      module_graph
+        .dynamic_entries
+        .insert(to.clone(), name.unwrap());
+    }
+
     module_graph.add_edge(&from, &to, edge_info).unwrap();
   }
 
@@ -172,7 +194,7 @@ pub fn patch_module_graph(
       let mut m = update_module_graph.take_module(&updated);
       let previous_module = module_graph.module(&updated).unwrap();
       m.module_groups = previous_module.module_groups.clone();
-      m.resource_pot = previous_module.resource_pot.clone();
+      m.resource_pots = previous_module.resource_pots.clone();
       m
     };
 

@@ -2,9 +2,10 @@ use std::path::PathBuf;
 
 use farmfe_core::{
   module::{
+    meta_data::script::ScriptModuleMetaData,
     module_graph::{ModuleGraph, ModuleGraphEdgeDataItem},
-    module_group::{ModuleGroup, ModuleGroupGraph},
-    Module, ModuleMetaData, ModuleType, ScriptModuleMetaData,
+    module_group::{ModuleGroup, ModuleGroupGraph, ModuleGroupId, ModuleGroupType},
+    Module, ModuleMetaData, ModuleType,
   },
   plugin::ResolveKind,
   relative_path::RelativePath,
@@ -137,43 +138,48 @@ pub fn construct_test_module_graph() -> ModuleGraph {
 pub fn construct_test_module_group_graph() -> ModuleGroupGraph {
   let mut module_group_graph = ModuleGroupGraph::new();
 
-  let mut module_group_a = ModuleGroup::new("A".into());
+  let mut module_group_a = ModuleGroup::new("A".into(), ModuleGroupType::Entry);
+  let module_group_a_id = module_group_a.id.clone();
   module_group_a.add_module("A".into());
   module_group_a.add_module("C".into());
   module_group_graph.add_module_group(module_group_a);
 
-  let mut module_group_b = ModuleGroup::new("B".into());
+  let mut module_group_b = ModuleGroup::new("B".into(), ModuleGroupType::Entry);
+  let module_group_b_id = module_group_b.id.clone();
   module_group_b.add_module("B".into());
   module_group_b.add_module("D".into());
   module_group_b.add_module("E".into());
   module_group_graph.add_module_group(module_group_b);
 
-  let mut module_group_d = ModuleGroup::new("D".into());
+  let mut module_group_d = ModuleGroup::new("D".into(), ModuleGroupType::DynamicImport);
+  let module_group_d_id = module_group_d.id.clone();
   module_group_d.add_module("D".into());
   module_group_graph.add_module_group(module_group_d);
 
-  let mut module_group_c = ModuleGroup::new("F".into());
-  module_group_c.add_module("F".into());
-  module_group_c.add_module("A".into());
-  module_group_c.add_module("C".into());
-  module_group_graph.add_module_group(module_group_c);
+  let mut module_group_f = ModuleGroup::new("F".into(), ModuleGroupType::DynamicImport);
+  let module_group_f_id = module_group_f.id.clone();
+  module_group_f.add_module("F".into());
+  module_group_f.add_module("A".into());
+  module_group_f.add_module("C".into());
+  module_group_graph.add_module_group(module_group_f);
 
-  let mut module_group_e = ModuleGroup::new("G".into());
-  module_group_e.add_module("G".into());
-  module_group_graph.add_module_group(module_group_e);
+  let mut module_group_g = ModuleGroup::new("G".into(), ModuleGroupType::DynamicImport);
+  let module_group_g_id = module_group_g.id.clone();
+  module_group_g.add_module("G".into());
+  module_group_graph.add_module_group(module_group_g);
 
   let edges = vec![
-    ("A", "D"),
-    ("A", "F"),
-    ("D", "F"),
-    ("B", "F"),
-    ("B", "G"),
-    ("F", "D"),
-    ("F", "F"),
+    (module_group_a_id.clone(), module_group_d_id.clone()),
+    (module_group_a_id.clone(), module_group_f_id.clone()),
+    (module_group_d_id.clone(), module_group_f_id.clone()),
+    (module_group_b_id.clone(), module_group_f_id.clone()),
+    (module_group_b_id.clone(), module_group_g_id.clone()),
+    (module_group_f_id.clone(), module_group_d_id.clone()),
+    (module_group_f_id.clone(), module_group_f_id.clone()),
   ];
 
   for (from, to) in edges {
-    module_group_graph.add_edge(&from.into(), &to.into());
+    module_group_graph.add_edge(&from, &to);
   }
 
   module_group_graph
@@ -237,16 +243,33 @@ pub fn construct_test_module_graph_complex() -> ModuleGraph {
 pub fn construct_test_module_group_graph_complex() -> ModuleGroupGraph {
   let mut module_group_graph = construct_test_module_group_graph();
 
-  let module_group_b = module_group_graph.module_group_mut(&"B".into()).unwrap();
+  let module_group_b = module_group_graph
+    .module_group_mut(&ModuleGroupId::new(&"B".into(), &ModuleGroupType::Entry))
+    .unwrap();
   module_group_b.add_module("H".into());
 
-  let module_group_d = module_group_graph.module_group_mut(&"D".into()).unwrap();
+  let module_group_d = module_group_graph
+    .module_group_mut(&ModuleGroupId::new(
+      &"D".into(),
+      &ModuleGroupType::DynamicImport,
+    ))
+    .unwrap();
   module_group_d.add_module("H".into());
 
-  let module_group_f = module_group_graph.module_group_mut(&"F".into()).unwrap();
+  let module_group_f = module_group_graph
+    .module_group_mut(&ModuleGroupId::new(
+      &"F".into(),
+      &ModuleGroupType::DynamicImport,
+    ))
+    .unwrap();
   module_group_f.add_module("H".into());
 
-  let module_group_g = module_group_graph.module_group_mut(&"G".into()).unwrap();
+  let module_group_g = module_group_graph
+    .module_group_mut(&ModuleGroupId::new(
+      &"G".into(),
+      &ModuleGroupType::DynamicImport,
+    ))
+    .unwrap();
   module_group_g.add_module("H".into());
 
   module_group_graph

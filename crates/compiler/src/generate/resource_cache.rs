@@ -75,7 +75,7 @@ pub fn try_get_resource_cache(
 
 pub fn set_resource_cache(
   resource_pot: &ResourcePot,
-  resource: &PluginGenerateResourcesHookResult,
+  resource: PluginGenerateResourcesHookResult,
   context: &Arc<CompilationContext>,
 ) {
   let cache_key = get_resource_cache_key(resource_pot, context);
@@ -83,7 +83,7 @@ pub fn set_resource_cache(
   context.cache_manager.resource_cache.set_cache(
     &resource_pot.id,
     CachedResourcePot {
-      resources: resource.clone(),
+      resources: resource,
       meta: resource_pot.meta.clone(),
       hash: cache_key,
     },

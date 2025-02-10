@@ -313,7 +313,7 @@ impl Plugin for FarmPluginStaticAssets {
   }
 }
 
-#[cache_item]
+#[cache_item(farmfe_core)]
 struct CachedStaticAssets {
   list: Vec<Resource>,
 }

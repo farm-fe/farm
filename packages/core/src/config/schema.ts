@@ -18,9 +18,9 @@ enum TargetEnv {
   BROWSER_ESNEXT = 'browser-esnext',
   BROWSER_ES2015 = 'browser-es2015',
   BROWSER_ES2017 = 'browser-es2017',
-  LIBRARY = 'library',
-  LIBRARY_BROWSER = 'library-browser',
-  LIBRARY_NODE = 'library-node'
+  LIBRARY = 'library'
+  // LIBRARY_BROWSER = 'library-browser',
+  // LIBRARY_NODE = 'library-node'
 }
 
 enum ECMAVersion {

@@ -1,12 +1,12 @@
 use std::sync::Arc;
 
-use farmfe_compiler::{DYNAMIC_VIRTUAL_SUFFIX, FARM_CSS_MODULES_SUFFIX, RUNTIME_SUFFIX};
+use farmfe_compiler::{DYNAMIC_VIRTUAL_SUFFIX, FARM_CSS_MODULES_SUFFIX, RUNTIME_INPUT_SCOPE};
 use farmfe_core::{
   context::CompilationContext,
   error::{CompilationError, Result},
   module::ModuleType,
   plugin::{
-    EmptyPluginHookParam, Plugin, PluginFinalizeResourcesHookParams, PluginHookContext,
+    EmptyPluginHookParam, Plugin, PluginFinalizeResourcesHookParam, PluginHookContext,
     PluginLoadHookParam, PluginLoadHookResult, PluginResolveHookParam, PluginResolveHookResult,
     PluginTransformHookParam, PluginTransformHookResult, UpdateType, DEFAULT_PRIORITY,
   },
@@ -16,15 +16,15 @@ use farmfe_core::{
 use napi::{bindgen_prelude::FromNapiValue, Env, JsObject, JsUnknown, NapiRaw};
 
 use self::hooks::{
-  augment_resource_hash::JsPluginAugmentResourceHashHook,
+  // augment_resource_hash::JsPluginAugmentResourceHashHook,
   build_end::JsPluginBuildEndHook,
   build_start::JsPluginBuildStartHook,
   finalize_resources::JsPluginFinalizeResourcesHook,
   finish::JsPluginFinishHook,
   load::JsPluginLoadHook,
   plugin_cache_loaded::JsPluginPluginCacheLoadedHook,
+  // render_resource_pot::JsPluginRenderResourcePotHook,
   process_module::JsPluginProcessModuleHook,
-  render_resource_pot::JsPluginRenderResourcePotHook,
   render_start::JsPluginRenderStartHook,
   resolve::JsPluginResolveHook,
   transform::JsPluginTransformHook,
@@ -53,9 +53,9 @@ pub struct JsPluginAdapter {
   js_update_modules_hook: Option<JsPluginUpdateModulesHook>,
   js_plugin_cache_loaded: Option<JsPluginPluginCacheLoadedHook>,
   js_write_plugin_cache: Option<JsPluginWritePluginCacheHook>,
-  js_render_resource_pot_hook: Option<JsPluginRenderResourcePotHook>,
+  // js_render_resource_pot_hook: Option<JsPluginRenderResourcePotHook>,
   js_render_start_hook: Option<JsPluginRenderStartHook>,
-  js_augment_resource_hash_hook: Option<JsPluginAugmentResourceHashHook>,
+  // js_augment_resource_hash_hook: Option<JsPluginAugmentResourceHashHook>,
   js_finalize_resources_hook: Option<JsPluginFinalizeResourcesHook>,
   js_transform_html_hook: Option<JsPluginTransformHtmlHook>,
   js_update_finished_hook: Option<JsPluginUpdateFinishedHook>,
@@ -113,11 +113,11 @@ impl JsPluginAdapter {
         .map(|obj| JsPluginPluginCacheLoadedHook::new(env, obj)),
       js_write_plugin_cache: write_plugin_cache_obj
         .map(|obj| JsPluginWritePluginCacheHook::new(env, obj)),
-      js_render_resource_pot_hook: render_resource_pot_obj
-        .map(|obj| JsPluginRenderResourcePotHook::new(env, obj)),
+      // js_render_resource_pot_hook: render_resource_pot_obj
+      //   .map(|obj| JsPluginRenderResourcePotHook::new(env, obj)),
       js_render_start_hook: render_start_obj.map(|obj| JsPluginRenderStartHook::new(env, obj)),
-      js_augment_resource_hash_hook: augment_resource_hash_obj
-        .map(|obj| JsPluginAugmentResourceHashHook::new(env, obj)),
+      // js_augment_resource_hash_hook: augment_resource_hash_obj
+      //   .map(|obj| JsPluginAugmentResourceHashHook::new(env, obj)),
       js_finalize_resources_hook: finalize_resources_obj
         .map(|obj| JsPluginFinalizeResourcesHook::new(env, obj)),
       js_transform_html_hook: transform_html_obj
@@ -132,7 +132,7 @@ impl JsPluginAdapter {
   pub fn is_internal_virtual_module(&self, path: &str) -> bool {
     path.ends_with(DYNAMIC_VIRTUAL_SUFFIX)
       || FARM_CSS_MODULES_SUFFIX.is_match(path)
-      || path.ends_with(RUNTIME_SUFFIX)
+      || path.ends_with(RUNTIME_INPUT_SCOPE)
   }
 }
 
@@ -272,7 +272,7 @@ impl Plugin for JsPluginAdapter {
 
   fn update_modules(
     &self,
-    params: &mut farmfe_core::plugin::PluginUpdateModulesHookParams,
+    params: &mut farmfe_core::plugin::PluginUpdateModulesHookParam,
     context: &Arc<CompilationContext>,
   ) -> Result<Option<()>> {
     if let Some(js_update_modules_hook) = &self.js_update_modules_hook {
@@ -333,17 +333,17 @@ impl Plugin for JsPluginAdapter {
     }
   }
 
-  fn render_resource_pot(
-    &self,
-    param: &farmfe_core::plugin::PluginRenderResourcePotHookParam,
-    context: &Arc<CompilationContext>,
-  ) -> Result<Option<farmfe_core::plugin::PluginRenderResourcePotHookResult>> {
-    if let Some(js_plugin_render_resource_pot) = &self.js_render_resource_pot_hook {
-      js_plugin_render_resource_pot.call(param.clone(), context.clone())
-    } else {
-      Ok(None)
-    }
-  }
+  // fn render_resource_pot(
+  //   &self,
+  //   param: &farmfe_core::plugin::PluginRenderResourcePotHookParam,
+  //   context: &Arc<CompilationContext>,
+  // ) -> Result<Option<farmfe_core::plugin::PluginRenderResourcePotHookResult>> {
+  //   if let Some(js_plugin_render_resource_pot) = &self.js_render_resource_pot_hook {
+  //     js_plugin_render_resource_pot.call(param.clone(), context.clone())
+  //   } else {
+  //     Ok(None)
+  //   }
+  // }
 
   fn render_start(
     &self,
@@ -358,21 +358,21 @@ impl Plugin for JsPluginAdapter {
     }
   }
 
-  fn augment_resource_hash(
-    &self,
-    render_pot_info: &farmfe_core::resource::resource_pot::ResourcePotInfo,
-    context: &Arc<CompilationContext>,
-  ) -> Result<Option<String>> {
-    if let Some(js_augment_resource_hash_hook) = &self.js_augment_resource_hash_hook {
-      js_augment_resource_hash_hook.call(render_pot_info.clone(), context.clone())
-    } else {
-      Ok(None)
-    }
-  }
+  // fn augment_resource_hash(
+  //   &self,
+  //   render_pot_info: &farmfe_core::resource::resource_pot::ResourcePotInfo,
+  //   context: &Arc<CompilationContext>,
+  // ) -> Result<Option<String>> {
+  //   if let Some(js_augment_resource_hash_hook) = &self.js_augment_resource_hash_hook {
+  //     js_augment_resource_hash_hook.call(render_pot_info.clone(), context.clone())
+  //   } else {
+  //     Ok(None)
+  //   }
+  // }
 
   fn finalize_resources(
     &self,
-    params: &mut PluginFinalizeResourcesHookParams,
+    params: &mut PluginFinalizeResourcesHookParam,
     context: &Arc<CompilationContext>,
   ) -> Result<Option<()>> {
     if let Some(js_finalize_resources_hook) = &self.js_finalize_resources_hook {

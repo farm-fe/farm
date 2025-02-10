@@ -1,15 +1,16 @@
 use std::sync::Arc;
 
 use farmfe_core::{
-  module::{Module, ModuleMetaData, ScriptModuleMetaData},
+  module::{
+    meta_data::script::{statement::SwcId, ScriptModuleMetaData},
+    Module, ModuleMetaData,
+  },
   swc_common::{comments::SingleThreadedComments, Globals, Mark, SourceMap, GLOBALS},
-  swc_ecma_ast::{EsVersion, Id, Module as SwcModule},
+  swc_ecma_ast::{EsVersion, Module as SwcModule},
   swc_ecma_parser::Syntax,
 };
 use farmfe_toolkit::{
-  common::{create_swc_source_map, Source},
-  script::ParseScriptModuleResult,
-  swc_ecma_transforms::resolver,
+  script::ParseScriptModuleResult, sourcemap::create_swc_source_map, swc_ecma_transforms::resolver,
   swc_ecma_visit::VisitMutWith,
 };
 
@@ -17,11 +18,13 @@ pub fn parse_module_with_comments(code: &str) -> (SwcModule, SingleThreadedComme
   let ParseScriptModuleResult {
     ast: mut swc_module,
     comments,
+    ..
   } = farmfe_toolkit::script::parse_module(
-    "any",
-    code,
+    &"any".into(),
+    Arc::new(code.to_string()),
     Syntax::Es(Default::default()),
     EsVersion::Es2022,
+    // None,
   )
   .unwrap();
   let top_level_mark = Mark::new();
@@ -33,18 +36,16 @@ pub fn parse_module_with_comments(code: &str) -> (SwcModule, SingleThreadedComme
 }
 
 pub fn parse_module(code: &str) -> (SwcModule, Arc<SourceMap>) {
-  let (cm, _) = create_swc_source_map(Source {
-    path: "any".into(),
-    content: Arc::new(code.to_string()),
-  });
+  let (cm, _) = create_swc_source_map(&"any".into(), Arc::new(code.to_string()));
   let ParseScriptModuleResult {
     ast: mut swc_module,
     ..
   } = farmfe_toolkit::script::parse_module(
-    "any",
-    code,
+    &"any".into(),
+    Arc::new(code.to_string()),
     Syntax::Es(Default::default()),
     EsVersion::Es2022,
+    // None,
   )
   .unwrap();
   let top_level_mark = Mark::new();
@@ -68,6 +69,7 @@ pub fn create_module_with_comments(code: &str) -> Module {
     hmr_accepted_deps: Default::default(),
     comments: comments.into(),
     custom: Default::default(),
+    ..Default::default()
   }));
   module
 }
@@ -85,6 +87,7 @@ pub fn create_module(code: &str) -> (Module, Arc<SourceMap>) {
     hmr_accepted_deps: Default::default(),
     comments: Default::default(),
     custom: Default::default(),
+    ..Default::default()
   }));
   (module, cm)
 }
@@ -103,11 +106,12 @@ pub fn create_module_with_globals(code: &str) -> Module {
       hmr_accepted_deps: Default::default(),
       comments: Default::default(),
       custom: Default::default(),
+      ..Default::default()
     }));
     module
   })
 }
 
-pub fn print_id(id: &Id) -> String {
-  format!("{}{:?}", id.0, id.1)
+pub fn print_id(id: &SwcId) -> String {
+  format!("{}{:?}", id.sym, id.ctxt())
 }
