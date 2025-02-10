@@ -2,11 +2,12 @@ import { defineConfig } from '@farmfe/core';
 import farmPostcssPlugin from '@farmfe/js-plugin-postcss';
 import vitejsPluginVue from '@vitejs/plugin-vue';
 import record from '../dev';
+import { visualizer } from '../server';
 
 export default defineConfig((env) => ({
   plugins: [
     farmPostcssPlugin(),
-    ...(env.mode === 'development' ? [record()] : [])
+    ...(env.mode === 'development' ? [record(), visualizer()] : [visualizer()])
   ],
   vitePlugins: [vitejsPluginVue()],
   compilation: {

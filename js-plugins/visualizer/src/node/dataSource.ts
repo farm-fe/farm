@@ -37,7 +37,7 @@ export function createDateSourceMiddleware(
         const resource_map = compiler.resourcesMap();
         handleRecordRequest(resource_map);
       } else if (pathname === '/__record/resource') {
-        const resource = compiler.resource(id);
+        const resource = compiler.resource(id).toString();
         handleRecordRequest(resource);
       } else if (pathname === '/__record/stats') {
         const stats = compiler.stats();

@@ -17,7 +17,6 @@ export default function farmRecorderPlugin(): JsPlugin {
     },
     configureServer(server) {
       const middlewares = [records(server)];
-      console.log(middlewares);
       for (const middleware of middlewares) {
         server.middlewares.use(middleware);
       }

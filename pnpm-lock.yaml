@@ -2712,6 +2712,9 @@ importers:
       tailwindcss:
         specifier: ^3.3.2
         version: 3.4.13(ts-node@10.9.1(@swc/core@1.7.26(@swc/helpers@0.5.3))(@types/node@20.14.12)(typescript@5.6.3))
+      vite-bundle-analyzer:
+        specifier: ^0.17.0
+        version: 0.17.0
       vue:
         specifier: ^3.3.4
         version: 3.4.35(typescript@5.6.3)
@@ -19817,6 +19820,10 @@ packages:
 
   vfile@6.0.3:
     resolution: {integrity: sha512-KzIbH/9tXat2u30jf+smMwFCsno4wHVdNmzFyL+T/L3UGqqk6JKfVqOFOZEpZSHADH1k40ab6NUIXZq422ov3Q==}
+
+  vite-bundle-analyzer@0.17.0:
+    resolution: {integrity: sha512-pSQng2NuhPo13hdSFcjW/Kjq8hmdfzCkJhWvAP5g98WbqZvy1k3Z+cpDxD9oxdNqOHHQFnEAIHR/MY6El1NnHA==}
+    hasBin: true
 
   vite-node@1.4.0:
     resolution: {integrity: sha512-VZDAseqjrHgNd4Kh8icYHWzTKSCZMhia7GyHfhtzLW33fZlG9SwsB6CEhgyVOWkJfJ2pFLrp/Gj1FSfAiqH9Lw==}
@@ -44043,6 +44050,8 @@ snapshots:
     dependencies:
       '@types/unist': 3.0.2
       vfile-message: 4.0.2
+
+  vite-bundle-analyzer@0.17.0: {}
 
   vite-node@1.4.0(@types/node@20.14.12)(less@4.2.0)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1):
     dependencies:

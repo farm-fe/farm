@@ -4,6 +4,7 @@
   "biome.enabled": true,
   "editor.formatOnSave": true,
   "editor.defaultFormatter": "biomejs.biome",
+  "eslint.enable": false,
   "[typescript]": {
     "editor.defaultFormatter": "biomejs.biome"
   },
