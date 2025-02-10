@@ -27,7 +27,7 @@ export function proxyMiddleware(
   middlewareServer: HttpServer,
   config: NonNullable<CommonServerOptions['proxy']>
 ): Connect.NextHandleFunction {
-  const { resolvedUserConfig } = app;
+  const { config: resolvedUserConfig } = app;
 
   const proxies: Record<string, [Server, ProxyOptions]> = {};
   Object.keys(config).forEach((context) => {

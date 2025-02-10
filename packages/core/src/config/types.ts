@@ -27,7 +27,7 @@ export interface ConfigEnv {
   isPreview: boolean;
 }
 
-export type commandType = 'start' | 'dev' | 'build' | 'watch' | 'preview';
+export type commandType = 'dev' | 'build' | 'watch' | 'preview';
 
 export type UserConfigFnPromise = (env: ConfigEnv) => Promise<UserConfig>;
 export type UserConfigFn = (env: ConfigEnv) => UserConfig | Promise<UserConfig>;
@@ -44,6 +44,7 @@ export interface UserServerConfig {
   headers?: OutgoingHttpHeaders | undefined;
   port?: number;
   https?: HttpsServerOptions;
+  origin?: string;
   protocol?: 'http' | 'https';
   hostname?: { name: string; host: string | undefined };
   // http2?: boolean;
@@ -197,6 +198,7 @@ export interface ResolvedCompilation
 export interface ResolvedUserConfig extends UserConfig {
   root?: string;
   mode?: string;
+  command?: commandType;
   env?: Record<string, any>;
   envDir?: string;
   envFiles?: string[];
@@ -277,3 +279,27 @@ export type EnvResult = Record<
   `$__farm_regex:(global(This)?\\.)?process\\.env\\.${string}`,
   string
 >;
+
+export interface ModuleNode {
+  url: string;
+  /**
+   * Resolved file system path + query
+   */
+  id: string | null;
+  file: string | null;
+  type: 'js' | 'css';
+}
+
+export interface ModuleContext {
+  file: string;
+  timestamp: number;
+  type: string;
+  modules: ModuleNode[];
+  paths: string[];
+  read: (file: string) => string | Promise<string>;
+}
+
+export interface ConfigResult {
+  config: UserConfig;
+  configFilePath: string;
+}

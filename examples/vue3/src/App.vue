@@ -1,23 +1,5 @@
 <script setup lang="ts">
-import HelloWorld from "@/components/HelloWorld.vue";
-// console.log(import.meta.env);
-import { bbb } from "./indexa.ts";
-
-bbb();
-fetch("https://wallhaven.fun/api/wallhaven/w/yx6e9l").then((res) => res.json());
-// .then((data) => console.log(data))
-// .catch((err) => console.error(err));+
-
-// window.onbeforeunload = function () {
-//   fetch("http://localhost:3000", { method: "post" });
-//   navigator.sendBeacon(
-//     "http://localhost:3000",
-//     JSON.stringify({ key: "value" })
-//   );
-// };
-
-// const aa = ref(92922299)
-// console.log(aa.value);
+import HelloWorld from "./components/HelloWorld.vue";
 
 </script>
 
@@ -28,10 +10,6 @@ fetch("https://wallhaven.fun/api/wallhaven/w/yx6e9l").then((res) => res.json());
     <a href="https://vuejs.org/" target="_blank">
       <img src="./assets/vue.svg" class="logo vue" alt="Vue logo" />
     </a>
-    <div>
-      <img width="500" src="/aaa.jpg" alt="">
-
-    </div>
   </div>
   <HelloWorld msg="Farm + Vue" />
 </template>

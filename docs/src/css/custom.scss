@@ -360,11 +360,10 @@ html[data-theme="dark"] {
 }
 
 .file-icon {
-  display: inline-block;
   width: 16px;
   height: 16px;
-  margin-right: 8px;
-  vertical-align: middle;
+  display: flex;
+  align-items: center;
 }
 
 .file-icon svg {

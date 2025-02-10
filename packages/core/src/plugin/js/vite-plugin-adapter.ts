@@ -19,11 +19,8 @@ import {
   formatLoadModuleType,
   formatTransformModuleType,
   getContentValue,
-  isObject,
   isStartsWithSlash,
-  isString,
   normalizeAdapterVirtualModule,
-  normalizePath,
   removeQuery,
   revertNormalizePath,
   transformFarmConfigToRollupNormalizedOutputOptions,
@@ -52,7 +49,13 @@ import type {
 } from 'rollup';
 import { VIRTUAL_FARM_DYNAMIC_IMPORT_SUFFIX } from '../../compiler/index.js';
 import { CompilationMode } from '../../config/env.js';
-import { Logger, Server } from '../../index.js';
+import {
+  Logger,
+  Server,
+  isObject,
+  isString,
+  normalizePath
+} from '../../index.js';
 import {
   Config,
   PluginLoadHookParam,
@@ -430,7 +433,7 @@ export class VitePluginAdapter implements JsPlugin {
             };
           } else if (isObject(resolveIdResult)) {
             const resolveId = normalizeAdapterVirtualModule(
-              resolveIdResult?.id
+              resolveIdResult?.id as any
             );
             return {
               resolvedPath: removeQuery(encodeStr(resolveId)),
@@ -438,7 +441,7 @@ export class VitePluginAdapter implements JsPlugin {
               sideEffects: Boolean(resolveIdResult?.moduleSideEffects),
               // TODO support relative and absolute external
               external: Boolean(resolveIdResult?.external),
-              meta: resolveIdResult.meta ?? {}
+              meta: resolveIdResult.meta ?? ({} as any)
             };
           }
 
@@ -624,6 +627,7 @@ export class VitePluginAdapter implements JsPlugin {
             const mods = moduleGraph.getModulesByFile(
               file
             ) as unknown as ModuleNode[];
+
             const filename = normalizePath(file);
             const ctx: HmrContext = {
               file: filename,
@@ -641,6 +645,7 @@ export class VitePluginAdapter implements JsPlugin {
               },
               server: this._viteDevServer as unknown as ViteDevServer
             };
+
             const updateMods: ModuleNode[] = await hook?.(ctx);
 
             if (updateMods) {
