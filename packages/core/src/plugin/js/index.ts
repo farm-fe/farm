@@ -138,7 +138,7 @@ schemaRegistry
   .register('augmentResourceHash', createAugmentResourceHashSchema)
   .register('finalizeResources', createFinalizeResourcesSchema)
   .register('transformHtml', createTransformHtmlSchema)
-  .register('writeResource', createWriteResourcesSchema)
+  .register('writeResources', createWriteResourcesSchema)
   .register('pluginCacheLoaded', createPluginCacheLoadedSchema)
   .register('writePluginCache', createWritePluginCacheSchema)
   .register('finish', createFinishSchema)
