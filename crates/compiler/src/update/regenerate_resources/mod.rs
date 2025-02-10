@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use farmfe_core::config::FARM_MODULE_SYSTEM;
 use farmfe_core::plugin::PluginHookContext;
 use farmfe_core::{
   context::CompilationContext,
@@ -8,6 +9,7 @@ use farmfe_core::{
   resource::resource_pot::{ResourcePot, ResourcePotType},
 };
 use farmfe_core::{HashMap, HashSet};
+use farmfe_toolkit::html::get_farm_global_this;
 use farmfe_utils::hash::base64_encode;
 
 use crate::generate::render_resource_pots::render_resource_pot_generate_resources;
@@ -81,12 +83,8 @@ pub fn render_and_generate_update_resource(
           source: None,
         })?;
       resource_pot.meta = res;
-      let (mut updated_result, _) = render_resource_pot_generate_resources(
-        resource_pot,
-        context,
-        &Default::default(),
-        // false,
-      )?;
+      let (mut updated_result, _) =
+        render_resource_pot_generate_resources(resource_pot, context, &Default::default())?;
       let mut update_resources = updated_result.resources.remove(0);
 
       if let Some(map) = update_resources.source_map {
@@ -100,7 +98,13 @@ pub fn render_and_generate_update_resource(
         );
       }
 
-      Ok(String::from_utf8(update_resources.resource.bytes).unwrap())
+      let code = String::from_utf8(update_resources.resource.bytes).unwrap();
+      let global_this = get_farm_global_this(
+        &context.config.runtime.namespace,
+        &context.config.output.target_env,
+      );
+      // force re-register the affected modules when hmr
+      Ok(format!("{global_this}.{FARM_MODULE_SYSTEM}._rg=true;{code};{global_this}.{FARM_MODULE_SYSTEM}._rg=false;"))
     };
 
   let immutable_update_resource = gen_resource_pot_code(&mut immutable_update_resource_pot)?;

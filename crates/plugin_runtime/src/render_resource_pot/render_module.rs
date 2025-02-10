@@ -1,28 +1,23 @@
-use std::{path::PathBuf, sync::Arc};
+use std::sync::Arc;
 
 use farmfe_core::{
   context::CompilationContext,
-  error::CompilationError,
   module::{
-    meta_data::script::CommentsMetaData, module_graph::ModuleGraph, Module, ModuleId, ModuleSystem,
+    meta_data::script::CommentsMetaData, module_graph::ModuleGraph, ModuleId, ModuleSystem,
   },
   resource::meta_data::js::RenderModuleResult,
   swc_common::{
     comments::SingleThreadedComments, util::take::Take, Mark, SourceMap, SyntaxContext,
   },
   swc_ecma_ast::{ArrowExpr, BlockStmtOrExpr, EsVersion, Expr, ExprStmt, FnExpr},
+  HashMap,
 };
 
-// use farmfe_plugin_bundle::resource_pot_to_bundle::GeneratorAstResult;
 use farmfe_toolkit::{
-  minify::minify_js_module,
   script::{
-    codegen_module,
     module2cjs::{transform_module_decls, OriginalRuntimeCallee, TransformModuleDeclsOptions},
-    swc_try_with::{resolve_module_mark, try_with},
-    CodeGenCommentsConfig,
+    swc_try_with::try_with,
   },
-  sourcemap::{build_sourcemap, create_swc_source_map},
   swc_ecma_transforms::{
     fixer,
     hygiene::{hygiene_with_config, Config as HygieneConfig},
@@ -44,9 +39,12 @@ use super::{
 };
 
 pub struct RenderModuleOptions<'a> {
-  pub module: &'a Module,
-  // pub hoisted_ast: Option<GeneratorAstResult>,
+  pub module_id: ModuleId,
+  pub ast: SwcModule,
+  pub comments: CommentsMetaData,
+  pub hoisted_sourcemap: Arc<SourceMap>,
   pub module_graph: &'a ModuleGraph,
+  pub hoisted_external_modules: HashMap<(String, farmfe_core::plugin::ResolveKind), ModuleId>,
   pub context: &'a Arc<CompilationContext>,
 }
 
@@ -54,28 +52,17 @@ pub fn render_module(
   options: RenderModuleOptions,
 ) -> farmfe_core::error::Result<RenderModuleResult> {
   let RenderModuleOptions {
-    module,
-    // hoisted_ast,
+    module_id,
+    ast: mut cloned_module,
+    hoisted_sourcemap: cm,
+    comments,
     module_graph,
+    hoisted_external_modules,
     context,
   } = options;
-  let is_async_module = module.meta.as_script().is_async;
-  // let is_use_hoisted = hoisted_ast.is_some();
-
-  // let (mut cloned_module, comments) =
-  //   if let Some(GeneratorAstResult { ast, comments, .. }) = hoisted_ast {
-  //     (ast, SingleThreadedComments::from(comments))
-  //   } else {
-  //     let script = module.meta.as_script();
-  //     (script.ast.clone(), script.comments.clone().into())
-  //   };
-  let (mut cloned_module, comments): (SwcModule, SingleThreadedComments) = {
-    let script = module.meta.as_script();
-    (script.ast.clone(), script.comments.clone().into())
-  };
-  let (cm, _) = context
-    .meta
-    .create_swc_source_map(&module.id, module.content.clone());
+  let comments = SingleThreadedComments::from(comments);
+  let module_script_meta = module_graph.module(&module_id).unwrap().meta.as_script();
+  let is_async_module = module_script_meta.is_async;
 
   let mut external_modules = vec![];
 
@@ -83,22 +70,22 @@ pub fn render_module(
 
   try_with(cm.clone(), &context.meta.script.globals, || {
     let (unresolved_mark, top_level_mark) = {
-      let unresolved_mark = Mark::from_u32(module.meta.as_script().unresolved_mark);
-      let top_level_mark = Mark::from_u32(module.meta.as_script().top_level_mark);
+      let unresolved_mark = Mark::from_u32(module_script_meta.unresolved_mark);
+      let top_level_mark = Mark::from_u32(module_script_meta.top_level_mark);
 
       (unresolved_mark, top_level_mark)
     };
 
     // replace commonjs require('./xxx') to require('./xxx', true)
     if matches!(
-      module.meta.as_script().module_system,
+      module_script_meta.module_system,
       ModuleSystem::CommonJs | ModuleSystem::Hybrid
     ) {
       cloned_module.visit_mut_with(&mut ExistingCommonJsRequireVisitor::new(
         unresolved_mark,
         top_level_mark,
         module_graph,
-        module.id.clone(),
+        module_id.clone(),
       ));
     }
 
@@ -106,7 +93,7 @@ pub fn render_module(
 
     // ESM to commonjs, then commonjs to farm's runtime module systems
     if matches!(
-      module.meta.as_script().module_system,
+      module_script_meta.module_system,
       ModuleSystem::EsModule | ModuleSystem::Hybrid
     ) {
       transform_module_decls(
@@ -124,11 +111,9 @@ pub fn render_module(
       unresolved_mark,
       top_level_mark,
       module_graph,
-      module_id: module.id.clone(),
+      module_id: module_id.clone(),
+      hoisted_external_modules,
       mode: context.config.mode.clone(),
-      target_env: context.config.output.target_env.clone(),
-      // is_strict_find_source: !is_use_hoisted,
-      is_strict_find_source: false,
     });
     cloned_module.visit_mut_with(&mut source_replacer);
     cloned_module.visit_mut_with(&mut hygiene_with_config(HygieneConfig {
@@ -136,11 +121,7 @@ pub fn render_module(
       ..Default::default()
     }));
 
-    if matches!(
-      module.meta.as_script().module_system,
-      ModuleSystem::EsModule
-    ) && is_async_module
-    {
+    if matches!(module_script_meta.module_system, ModuleSystem::EsModule) && is_async_module {
       // transform async module to meet the requirements of farm runtime
       transform_async_module::transform_async_module(&mut cloned_module);
     }
@@ -159,8 +140,9 @@ pub fn render_module(
   })?;
 
   Ok(RenderModuleResult {
-    module_id: module.id.clone(),
+    module_id: module_id.clone(),
     comments: comments.into(),
+    hoisted_module_ids: vec![],
     rendered_ast: SwcModule {
       span: DUMMY_SP,
       shebang: None,

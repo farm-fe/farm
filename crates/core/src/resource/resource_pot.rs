@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use farmfe_macro_cache_item::cache_item;
 
 use serde::ser::SerializeStruct;
@@ -20,6 +22,7 @@ pub struct ResourcePot {
   /// [None] if this [ResourcePot] does not contain entry module defined in config.input.
   /// [Some(entry_id)] otherwise
   pub entry_module: Option<ModuleId>,
+  pub source_map_chain: Vec<Arc<String>>,
   /// the resources generated in this [ResourcePot]
   resources: HashSet<String>,
 
@@ -59,6 +62,7 @@ impl ResourcePot {
       resource_pot_type: ty,
       modules: HashSet::default(),
       meta: ResourcePotMetaData::default(),
+      source_map_chain: vec![],
       entry_module: None,
       resources: HashSet::default(),
       module_groups: HashSet::default(),

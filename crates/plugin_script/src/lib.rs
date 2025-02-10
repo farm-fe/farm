@@ -7,6 +7,7 @@ use deps_analyzer::DepsAnalyzer;
 use farmfe_core::{
   config::{Config, ModuleFormat, TargetEnv},
   context::CompilationContext,
+  enhanced_magic_string::collapse_sourcemap::{collapse_sourcemap_chain, CollapseSourcemapOptions},
   error::{CompilationError, Result},
   module::{
     meta_data::script::{CommentsMetaData, ScriptModuleMetaData},
@@ -34,18 +35,19 @@ use farmfe_toolkit::{
     swc_try_with::try_with, syntax_from_module_type, CodeGenCommentsConfig,
     ParseScriptModuleResult,
   },
-  sourcemap::{build_sourcemap, collapse_sourcemap, load_source_original_sourcemap},
+  sourcemap::{
+    build_sourcemap, load_source_original_sourcemap, trace_module_sourcemap,
+    SourceMap as JsonSourceMap,
+  },
   swc_ecma_transforms::resolver,
   swc_ecma_visit::VisitMutWith,
 };
 
-use find_async_modules::update_async_modules;
 use import_meta_visitor::{replace_import_meta_url, ImportMetaVisitor};
 #[cfg(feature = "swc_plugin")]
 use swc_plugins::{init_plugin_module_cache_once, transform_by_swc_plugins};
 
 mod deps_analyzer;
-mod find_async_modules;
 mod import_meta_visitor;
 #[cfg(feature = "swc_plugin")]
 mod swc_plugins;
@@ -107,18 +109,17 @@ impl Plugin for FarmPluginScript {
       let ParseScriptModuleResult {
         ast: mut swc_module,
         comments,
+        source_map,
       } = parse_module(
         &param.module_id,
         param.content.clone(),
         syntax,
         EsVersion::EsNext,
-        // Some(
-        //   context
-        //     .meta
-        //     .script
-        //     .create_swc_source_map(&param.module_id, param.content.clone()),
-        // ),
       )?;
+
+      context
+        .meta
+        .set_module_source_map(&param.module_id, source_map);
 
       GLOBALS.set(&context.meta.script.globals, || {
         let top_level_mark = Mark::new();
@@ -164,9 +165,7 @@ impl Plugin for FarmPluginScript {
       return Ok(None);
     }
 
-    let (cm, _) = context
-      .meta
-      .create_swc_source_map(&param.module_id, param.content.clone());
+    let cm = context.meta.get_module_source_map(&param.module_id);
 
     // transform decorators if needed
     // this transform should be done before strip typescript cause it may need to access the type information
@@ -292,31 +291,6 @@ impl Plugin for FarmPluginScript {
     Ok(Some(()))
   }
 
-  fn generate_start(
-    &self,
-    context: &Arc<CompilationContext>,
-  ) -> farmfe_core::error::Result<Option<()>> {
-    let async_modules = find_async_modules::find_async_modules(context);
-    let mut module_graph = context.module_graph.write();
-
-    for module_id in async_modules {
-      let module = module_graph.module_mut(&module_id).unwrap();
-      module.meta.as_script_mut().is_async = true;
-    }
-
-    Ok(Some(()))
-  }
-
-  fn module_graph_updated(
-    &self,
-    param: &farmfe_core::plugin::PluginModuleGraphUpdatedHookParam,
-    context: &Arc<CompilationContext>,
-  ) -> farmfe_core::error::Result<Option<()>> {
-    update_async_modules(param, context);
-
-    Ok(Some(()))
-  }
-
   fn generate_resources(
     &self,
     resource_pot: &mut ResourcePot,
@@ -326,16 +300,11 @@ impl Plugin for FarmPluginScript {
     if let ResourcePotMetaData::Js(JsResourcePotMetaData {
       ast,
       comments: merged_comments,
-      rendered_modules,
       ..
     }) = resource_pot.meta.clone()
     {
       let module_graph = context.module_graph.read();
-      let merged_sourcemap = context.meta.merge_swc_source_map(
-        &resource_pot.id,
-        rendered_modules.iter().collect(),
-        &module_graph,
-      );
+      let merged_sourcemap = context.meta.get_resource_pot_source_map(&resource_pot.id);
       let (code, map) = generate_code_and_sourcemap(
         resource_pot,
         &module_graph,
@@ -416,7 +385,23 @@ pub fn generate_code_and_sourcemap(
   if sourcemap_enabled {
     let sourcemap = build_sourcemap(merged_sourcemap, &mappings);
     // trace sourcemap chain of each module
-    let sourcemap = collapse_sourcemap(sourcemap, module_graph);
+    let sourcemap = trace_module_sourcemap(sourcemap, module_graph);
+
+    let mut chain = resource_pot
+      .source_map_chain
+      .iter()
+      .map(|s| JsonSourceMap::from_slice(s.as_bytes()).unwrap())
+      .collect::<Vec<_>>();
+    chain.push(sourcemap);
+    // collapse sourcemap chain
+    let sourcemap = collapse_sourcemap_chain(
+      chain,
+      CollapseSourcemapOptions {
+        inline_content: true,
+        remap_source: None,
+      },
+    );
+
     let mut buf = vec![];
     sourcemap
       .to_writer(&mut buf)

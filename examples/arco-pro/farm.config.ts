@@ -1,6 +1,7 @@
 import { resolve } from 'node:path';
 import { defineConfig } from '@farmfe/core';
 import farmJsPluginLess from '@farmfe/js-plugin-less';
+import svgr from '@farmfe/js-plugin-svgr';
 
 export default defineConfig((env) => {
   return {
@@ -8,10 +9,10 @@ export default defineConfig((env) => {
       input: {
         index: './index.html'
       },
-      sourcemap: false,
+      sourcemap: true,
       presetEnv: false,
       concatenateModules: true,
-      // persistentCache: false,
+      persistentCache: false,
       resolve: {
         alias: {
           '@': resolve(process.cwd(), './src'),
@@ -22,7 +23,8 @@ export default defineConfig((env) => {
     },
     plugins: [
       '@farmfe/plugin-react',
-      '@farmfe/plugin-svgr',
+      // '@farmfe/plugin-svgr',
+      svgr(),
       farmJsPluginLess(),
     ]
   };

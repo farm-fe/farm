@@ -120,7 +120,7 @@ pub struct InitialResources {
   pub entry_resource_name: String,
   pub entry_resource_sourcemap_name: Option<String>,
   /// Initial resources name, including entry_resource_name
-  pub initial_resources: Vec<String>,
+  pub initial_resources: Vec<(String, ResourceType)>,
 }
 
 pub fn get_initial_resources(
@@ -144,10 +144,10 @@ pub fn get_initial_resources(
       // get resource from resources_map
       let resource = resources_map.get(resource_name).unwrap();
 
-      if let ResourceType::Js = &resource.resource_type {
-        result.entry_resource_name = resource_name.clone();
-      } else if let ResourceType::SourceMap(_) = &resource.resource_type {
+      if let ResourceType::SourceMap(_) = &resource.resource_type {
         result.entry_resource_sourcemap_name = Some(resource_name.clone());
+      } else {
+        result.entry_resource_name = resource_name.clone();
       }
     }
   }
@@ -174,7 +174,7 @@ pub fn get_initial_resources(
           .get(r)
           .filter(|resource| is_resource_supported(resource))
       })
-      .map(|resource| resource.name.to_string());
+      .map(|resource| (resource.name.to_string(), resource.resource_type.clone()));
 
     initial_resources.extend(filtered_resources);
   }

@@ -1,4 +1,4 @@
-use std::{path::PathBuf, sync::Arc};
+use std::sync::Arc;
 
 use swc_ecma_codegen::{
   text_writer::{JsWriter, WriteJs},
@@ -15,9 +15,9 @@ use farmfe_core::{
   module::ModuleId,
   swc_common::{
     comments::{Comments, SingleThreadedComments},
-    BytePos, FileName, LineCol, SourceFile, SourceMap, DUMMY_SP,
+    BytePos, LineCol, SourceMap,
   },
-  swc_ecma_ast::{EsVersion, Module as SwcModule, ModuleItem, Stmt},
+  swc_ecma_ast::{EsVersion, Module as SwcModule, Stmt},
 };
 
 use swc_ecma_visit::VisitMutWith;
@@ -47,9 +47,7 @@ pub fn parse_module(
   content: Arc<String>,
   syntax: Syntax,
   target: EsVersion,
-  // cm: Option<(Arc<SourceMap>, Arc<SourceFile>)>,
 ) -> Result<ParseScriptModuleResult> {
-  // let (cm, source_file) = cm.unwrap_or_else(|| create_swc_source_map(module_id, content));
   let (cm, source_file) = create_swc_source_map(module_id, content);
 
   let input = StringInput::from(&*source_file);
@@ -65,7 +63,11 @@ pub fn parse_module(
       recovered_errors.push(err);
     }
     Ok(m) => {
-      return Ok(ParseScriptModuleResult { ast: m, comments });
+      return Ok(ParseScriptModuleResult {
+        ast: m,
+        comments,
+        source_map: cm,
+      });
     }
   }
   try_with_handler(cm, Default::default(), |handler| {

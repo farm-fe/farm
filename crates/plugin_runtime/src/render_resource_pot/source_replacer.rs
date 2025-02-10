@@ -8,11 +8,12 @@
 //! ```
 
 use farmfe_core::{
-  config::{Mode, TargetEnv, FARM_DYNAMIC_REQUIRE, FARM_REQUIRE},
+  config::{Mode, FARM_DYNAMIC_REQUIRE, FARM_REQUIRE},
   module::{module_graph::ModuleGraph, ModuleId},
   plugin::ResolveKind,
   swc_common::{util::take::Take, Mark, SyntaxContext, DUMMY_SP},
   swc_ecma_ast::{CallExpr, Callee, Expr, ExprOrSpread, Ident, Lit, MemberExpr, MemberProp, Str},
+  HashMap,
 };
 use farmfe_toolkit::{
   script::{is_commonjs_require, is_dynamic_import},
@@ -32,9 +33,9 @@ pub struct SourceReplacer<'a> {
   module_graph: &'a ModuleGraph,
   module_id: ModuleId,
   mode: Mode,
+  hoisted_external_modules: HashMap<(String, farmfe_core::plugin::ResolveKind), ModuleId>,
+
   pub external_modules: Vec<ModuleId>,
-  target_env: TargetEnv,
-  is_strict_find_source: bool,
 }
 
 pub struct SourceReplacerOptions<'a> {
@@ -43,8 +44,7 @@ pub struct SourceReplacerOptions<'a> {
   pub module_graph: &'a ModuleGraph,
   pub module_id: ModuleId,
   pub mode: Mode,
-  pub target_env: TargetEnv,
-  pub is_strict_find_source: bool,
+  pub hoisted_external_modules: HashMap<(String, farmfe_core::plugin::ResolveKind), ModuleId>,
 }
 
 impl<'a> SourceReplacer<'a> {
@@ -55,8 +55,7 @@ impl<'a> SourceReplacer<'a> {
       module_graph,
       module_id,
       mode,
-      target_env,
-      is_strict_find_source,
+      hoisted_external_modules,
     } = options;
 
     Self {
@@ -65,9 +64,8 @@ impl<'a> SourceReplacer<'a> {
       module_graph,
       module_id,
       mode,
+      hoisted_external_modules,
       external_modules: vec![],
-      target_env,
-      is_strict_find_source,
     }
   }
 }
@@ -96,7 +94,7 @@ enum SourceReplaceResult {
 }
 
 impl SourceReplacer<'_> {
-  fn find_real_module_meta_by_source(&self, source: &str) -> Option<(ModuleId, ResolveKind)> {
+  fn find_real_module_meta_by_source(&self, source: &str) -> Option<ModuleId> {
     let mut id = None;
     // treat non dynamic import as the same
     for kind in [
@@ -104,12 +102,17 @@ impl SourceReplacer<'_> {
       ResolveKind::ExportFrom,
       ResolveKind::Require,
     ] {
-      if let Some(dep_id) =
-        self
-          .module_graph
-          .get_dep_by_source_optional(&self.module_id, &source, Some(kind.clone()))
+      if let Some(dep_id) = self
+        .module_graph
+        .get_dep_by_source_optional(&self.module_id, &source, Some(kind.clone()))
+        .or(
+          self
+            .hoisted_external_modules
+            .get(&(source.to_string(), kind.clone()))
+            .cloned(),
+        )
       {
-        id = Some((dep_id, kind));
+        id = Some(dep_id);
         break;
       }
     }
@@ -137,33 +140,17 @@ impl SourceReplacer<'_> {
           ctxt: SyntaxContext::empty(),
         })));
 
-        let Some((id, resolve_kind)) = self.find_real_module_meta_by_source(&source) else {
-          if self.is_strict_find_source {
-            panic!(
-              "Cannot find module id for source {:?} from {:?}.",
-              source, self.module_id
-            )
-          }
-
-          return SourceReplaceResult::NotReplaced;
+        let Some(id) = self.find_real_module_meta_by_source(&source) else {
+          panic!(
+            "Cannot find module id for source {:?} from {:?}.",
+            source, self.module_id
+          )
         };
 
         // only execute script module
         let dep_module = self.module_graph.module(&id).unwrap();
-        // TODO remove this
-        if dep_module.external {
-          if matches!(resolve_kind, ResolveKind::Require)
-            && matches!(self.target_env, TargetEnv::Node)
-          {
-            // transform require("external") to globalThis.nodeRequire("external")
-            call_expr.callee = Callee::Expr(Box::new(Expr::Member(MemberExpr {
-              span: DUMMY_SP,
-              obj: Box::new(Expr::Ident("global".into())),
-              prop: MemberProp::Ident("nodeRequire".into()),
-            })));
-            return SourceReplaceResult::NotReplaced;
-          }
 
+        if dep_module.external {
           self.external_modules.push(id.clone());
 
           return SourceReplaceResult::NotReplaced;
@@ -205,7 +192,7 @@ impl SourceReplacer<'_> {
           str.value = id.id(self.mode.clone()).into();
           str.span = DUMMY_SP;
           str.raw = None;
-        } else if self.is_strict_find_source {
+        } else {
           panic!(
             "cannot found {} of DynamicImport from {}",
             source,

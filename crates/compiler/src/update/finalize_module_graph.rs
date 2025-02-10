@@ -1,14 +1,13 @@
 use std::sync::Arc;
 
 use farmfe_core::{
-  context::CompilationContext,
-  farm_profile_function,
-  module::ModuleId,
+  context::CompilationContext, farm_profile_function, module::ModuleId,
   plugin::hooks::freeze_module::PluginFreezeModuleHookParam,
-  rayon::iter::{IntoParallelIterator, ParallelIterator},
 };
 
-use crate::build::finalize_module_graph::{call_freeze_module_hook, get_resolved_deps_of_modules};
+use crate::build::finalize_module_graph::{
+  call_freeze_module_with_params, get_resolved_deps_of_modules, update_modules_resolved_deps,
+};
 
 use super::diff_and_patch_module_graph::DiffResult;
 
@@ -60,7 +59,9 @@ pub(super) fn freeze_module_of_affected_module_graph(
     })
     .collect::<Vec<_>>();
 
-  hook_params
-    .into_par_iter()
-    .try_for_each(|mut param| call_freeze_module_hook(&mut param, context))
+  let module_resolved_deps = call_freeze_module_with_params(hook_params, context)?;
+
+  update_modules_resolved_deps(module_resolved_deps, &mut module_graph);
+
+  Ok(())
 }

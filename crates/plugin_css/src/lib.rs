@@ -1,11 +1,10 @@
 #![feature(box_patterns)]
 
-use std::{path::PathBuf, sync::Arc};
+use std::sync::Arc;
 
 use dep_analyzer::DepAnalyzer;
 use farmfe_core::config::css::NameConversion;
 use farmfe_core::config::custom::get_config_css_modules_local_conversion;
-use farmfe_core::config::minify::MinifyOptions;
 use farmfe_core::config::AliasItem;
 use farmfe_core::module::meta_data::css::CssModuleMetaData;
 use farmfe_core::module::meta_data::script::CommentsMetaData;
@@ -14,17 +13,11 @@ use farmfe_core::resource::meta_data::css::CssResourcePotMetaData;
 use farmfe_core::resource::meta_data::ResourcePotMetaData;
 use farmfe_core::swc_common::DUMMY_SP;
 use farmfe_core::HashMap;
-// use farmfe_core::module::CommentsMetaData;
 use farmfe_core::{
   config::{Config, CssPrefixerConfig, TargetEnv},
   context::CompilationContext,
   deserialize,
-  enhanced_magic_string::{
-    bundle::{Bundle, BundleOptions},
-    collapse_sourcemap::{collapse_sourcemap_chain, CollapseSourcemapOptions},
-    magic_string::{MagicString, MagicStringOptions},
-    types::SourceMapOptions,
-  },
+  enhanced_magic_string::collapse_sourcemap::{collapse_sourcemap_chain, CollapseSourcemapOptions},
   error::CompilationError,
   module::{module_graph::ModuleGraph, ModuleId, ModuleMetaData, ModuleType},
   parking_lot::Mutex,
@@ -42,23 +35,19 @@ use farmfe_core::{
   swc_css_ast::Stylesheet,
 };
 use farmfe_macro_cache_item::cache_item;
-use farmfe_toolkit::css::ParseCssModuleResult;
+use farmfe_toolkit::css::{merge_css_sourcemap, ParseCssModuleResult};
 use farmfe_toolkit::lazy_static::lazy_static;
-use farmfe_toolkit::minify::minify_css_module;
 use farmfe_toolkit::resolve::DYNAMIC_EXTENSION_PRIORITY;
 use farmfe_toolkit::script::swc_try_with::try_with;
-use farmfe_toolkit::sourcemap::SourceMap;
-use farmfe_toolkit::sourcemap::{
-  create_swc_source_map, load_source_original_sourcemap, PathFilter,
-};
+use farmfe_toolkit::sourcemap::load_source_original_sourcemap;
+use farmfe_toolkit::sourcemap::{trace_module_sourcemap, SourceMap};
 use farmfe_toolkit::{
   css::{codegen_css_stylesheet, parse_css_stylesheet},
   fs::read_file_utf8,
   hash::sha256,
   regex::Regex,
   script::module_type_from_id,
-  // source_map::Source,
-  // source_map::SourceMap,
+  sourcemap::SourceMap as JsonSourceMap,
   swc_atoms::JsWord,
   swc_css_modules::{compile, CssClassName, TransformConfig},
   swc_css_prefixer,
@@ -292,10 +281,14 @@ impl Plugin for FarmPluginCss {
         let ParseCssModuleResult {
           ast: mut css_stylesheet,
           comments,
+          source_map,
         } = parse_css_stylesheet(
           &css_modules_module_id.to_string(),
           Arc::new(param.content.clone()),
         )?;
+        context
+          .meta
+          .set_module_source_map(&css_modules_module_id, source_map);
 
         // js code for css modules
         // next, get ident from ast and export through JS
@@ -419,7 +412,7 @@ impl Plugin for FarmPluginCss {
   fn parse(
     &self,
     param: &PluginParseHookParam,
-    _context: &Arc<CompilationContext>,
+    context: &Arc<CompilationContext>,
     _hook_context: &PluginHookContext,
   ) -> farmfe_core::error::Result<Option<ModuleMetaData>> {
     if matches!(param.module_type, ModuleType::Css) {
@@ -431,8 +424,14 @@ impl Plugin for FarmPluginCss {
           .unwrap_or_else(|| panic!("ast not found {:?}", param.module_id.to_string()))
       } else {
         // swc_css_parser does not support
-        let ParseCssModuleResult { ast, comments } =
-          parse_css_stylesheet(&param.module_id.to_string(), param.content.clone())?;
+        let ParseCssModuleResult {
+          ast,
+          comments,
+          source_map,
+        } = parse_css_stylesheet(&param.module_id.to_string(), param.content.clone())?;
+        context
+          .meta
+          .set_module_source_map(&param.module_id, source_map);
 
         (ast, CommentsMetaData::from(comments))
       };
@@ -539,23 +538,6 @@ impl Plugin for FarmPluginCss {
     if matches!(resource_pot.resource_pot_type, ResourcePotType::Css) {
       let module_graph = context.module_graph.read();
 
-      // let minify_options = context
-      //   .config
-      //   .minify
-      //   .clone()
-      //   .map(MinifyOptions::from)
-      //   .unwrap_or_default();
-      // let filter = PathFilter::new(&minify_options.include, &minify_options.exclude);
-      // let source_map_enabled = context.config.sourcemap.enabled(resource_pot.immutable);
-      // let minify_enabled = matches!(
-      //   minify_options.mode,
-      //   farmfe_core::config::minify::MinifyMode::Module
-      // ) && context.config.minify.enabled();
-
-      // let is_minify_enabled = |module_id: &ModuleId| {
-      //   minify_enabled && filter.execute(&module_id.resolved_path(&context.config.root))
-      // };
-
       let mut modules = vec![];
       let mut module_execution_order = HashMap::default();
 
@@ -565,14 +547,12 @@ impl Plugin for FarmPluginCss {
         modules.push(module);
       }
 
-      // modules.sort_by_key(|module| module.execution_order);
       let resources_map = context.resources_map.lock();
 
       let rendered_modules = Mutex::new(Vec::with_capacity(modules.len()));
       modules.into_par_iter().try_for_each(|module| {
-        let (cm, _) = create_swc_source_map(&module.id, module.content.clone());
+        let cm = context.meta.get_module_source_map(&module.id);
         let mut css_stylesheet = module.meta.as_css().ast.clone();
-        // let minify_enabled = is_minify_enabled(&module.id);
 
         try_with(cm, &context.meta.css.globals, || {
           source_replace(
@@ -583,36 +563,11 @@ impl Plugin for FarmPluginCss {
             context.config.output.public_path.clone(),
             context.config.resolve.alias.clone(),
           );
-
-          // if minify_enabled {
-          //   minify_css_module(&mut css_stylesheet);
-          // }
         })?;
 
         rendered_modules
           .lock()
           .push((module.id.clone(), css_stylesheet));
-
-        // let (css_code, src_map) = codegen_css_stylesheet(
-        //   &css_stylesheet,
-        //   if source_map_enabled {
-        //     Some(Source {
-        //       path: PathBuf::from(&module.id.resolved_path_with_query(&context.config.root)),
-        //       content: module.content.clone(),
-        //     })
-        //   } else {
-        //     None
-        //   },
-        //   context.config.minify.enabled(),
-        // );
-
-        // rendered_modules.lock().push(RenderedModule {
-        //   id: module.id.clone(),
-        //   rendered_length: css_code.len(),
-        //   original_length: module.size,
-        //   rendered_content: Arc::new(css_code),
-        //   rendered_map: src_map.map(Arc::new),
-        // });
 
         Ok::<(), CompilationError>(())
       })?;
@@ -621,65 +576,19 @@ impl Plugin for FarmPluginCss {
 
       rendered_modules.sort_by_key(|module| module_execution_order[&module.0]);
 
-      // let mut bundle = Bundle::new(BundleOptions {
-      //   trace_source_map_chain: Some(true),
-      //   ..Default::default()
-      // });
-
       let mut stylesheet = Stylesheet {
         span: DUMMY_SP,
         rules: vec![],
       };
 
+      let source_map = merge_css_sourcemap(&mut rendered_modules, context);
+      context
+        .meta
+        .set_resource_pot_source_map(&resource_pot.id, source_map);
+
       for (_, rendered_module_ast) in rendered_modules {
-        // let mut source_map_chain = vec![];
-
-        // if source_map_enabled {
-        //   let module = module_graph.module(&rendered.0).unwrap();
-        //   source_map_chain = module.source_map_chain.clone();
-
-        //   if let Some(map) = &rendered.1 {
-        //     source_map_chain.push(map.clone());
-        //   }
-        // }
-
-        // let magic_module = MagicString::new(
-        //   rendered.rendered_content.as_str(),
-        //   Some(MagicStringOptions {
-        //     source_map_chain,
-        //     filename: Some(rendered.id.resolved_path_with_query(&context.config.root)),
-        //     ..Default::default()
-        //   }),
-        // );
-        // bundle.add_source(magic_module, None).map_err(|e| {
-        //   CompilationError::GenericError(format!("failed to add source to bundle: {e:?}"))
-        // })?;
-
         stylesheet.rules.extend(rendered_module_ast.rules);
       }
-
-      // let rendered_content = Arc::new(bundle.to_string());
-      // let rendered_map = if source_map_enabled {
-      //   let root = context.config.root.clone();
-      //   Some(
-      //     bundle
-      //       .generate_map(SourceMapOptions {
-      //         include_content: Some(true),
-      //         remap_source: Some(Box::new(move |src| format!("/{}", relative(&root, src)))),
-      //         ..Default::default()
-      //       })
-      //       .map_err(|e| {
-      //         CompilationError::GenericError(format!("failed to generate source map: {e:?}"))
-      //       })?,
-      //   )
-      //   .map(|v| {
-      //     let mut buf = vec![];
-      //     v.to_writer(&mut buf).unwrap();
-      //     Arc::new(String::from_utf8(buf).unwrap())
-      //   })
-      // } else {
-      //   None
-      // };
 
       Ok(Some(ResourcePotMetaData::Css(CssResourcePotMetaData {
         ast: stylesheet,
@@ -700,8 +609,15 @@ impl Plugin for FarmPluginCss {
       let css_stylesheet = &resource_pot.meta.as_css().ast;
       let source_map_enabled = context.config.sourcemap.enabled(resource_pot.immutable);
 
-      let (css_code, src_map) =
-        codegen_css_stylesheet(css_stylesheet, None, context.config.minify.enabled());
+      let (css_code, src_map) = codegen_css_stylesheet(
+        css_stylesheet,
+        context.config.minify.enabled(),
+        if source_map_enabled {
+          Some(context.meta.get_resource_pot_source_map(&resource_pot.id))
+        } else {
+          None
+        },
+      );
 
       let resource = Resource {
         name: resource_pot.name.to_string(),
@@ -714,33 +630,46 @@ impl Plugin for FarmPluginCss {
       };
       let mut source_map = None;
 
-      // if context.config.sourcemap.enabled(resource_pot.immutable) {
-      //   // css_code.push_str(format!("\n/*# sourceMappingURL={} */", sourcemap_filename).as_str());
-      //   if !resource_pot.meta.rendered_map_chain.is_empty() {
-      //     let collapsed_sourcemap = collapse_sourcemap_chain(
-      //       resource_pot
-      //         .meta
-      //         .rendered_map_chain
-      //         .iter()
-      //         .map(|m| SourceMap::from_slice(m.as_bytes()).unwrap())
-      //         .collect(),
-      //       Default::default(),
-      //     );
-      //     let mut buf = vec![];
-      //     collapsed_sourcemap
-      //       .to_writer(&mut buf)
-      //       .expect("failed to write sourcemap");
-      //     let resource_type = ResourceType::SourceMap(resource_pot.id.to_string());
-      //     source_map = Some(Resource {
-      //       name: format!("{}.{}", resource_pot.name, resource_type.to_ext()),
-      //       bytes: buf,
-      //       emitted: false,
-      //       resource_type,
-      //       origin: ResourceOrigin::ResourcePot(resource_pot.id.clone()),
-      //       info: None,
-      //     });
-      //   }
-      // }
+      if let Some(src_map) = src_map {
+        let module_graph = context.module_graph.read();
+        let sourcemap = SourceMap::from_slice(src_map.as_bytes()).unwrap();
+        // trace sourcemap chain of each module
+        let sourcemap = trace_module_sourcemap(sourcemap, &module_graph);
+
+        let mut chain = resource_pot
+          .source_map_chain
+          .iter()
+          .map(|s| JsonSourceMap::from_slice(s.as_bytes()).unwrap())
+          .collect::<Vec<_>>();
+        chain.push(sourcemap);
+        // collapse sourcemap chain
+        let sourcemap = collapse_sourcemap_chain(
+          chain,
+          CollapseSourcemapOptions {
+            inline_content: true,
+            remap_source: None,
+          },
+        );
+
+        let mut buf = vec![];
+        sourcemap
+          .to_writer(&mut buf)
+          .map_err(|e| CompilationError::RenderScriptModuleError {
+            id: resource_pot.id.to_string(),
+            source: Some(Box::new(e)),
+          })?;
+        let sourcemap = String::from_utf8(buf).unwrap();
+        let ty = ResourceType::SourceMap(resource_pot.id.to_string());
+        source_map = Some(Resource {
+          name: format!("{}.{}", resource_pot.name, ty.to_ext()),
+          bytes: sourcemap.into_bytes(),
+          emitted: false,
+          should_transform_output_filename: true,
+          resource_type: ty,
+          origin: ResourceOrigin::ResourcePot(resource_pot.id.clone()),
+          meta: Default::default(),
+        });
+      }
 
       Ok(Some(PluginGenerateResourcesHookResult {
         resources: vec![GeneratedResource {

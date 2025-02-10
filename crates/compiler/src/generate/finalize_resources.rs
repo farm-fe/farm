@@ -90,6 +90,7 @@ fn handle_entry_resource(
     runtime_code: &runtime_code,
     runtime_resource_name: &runtime_resource_name,
     emit_runtime: false,
+    additional_inject_resources: Default::default(),
   };
 
   for (entry_module_id, _) in &module_graph.entries {
@@ -107,7 +108,14 @@ fn handle_entry_resource(
       resources_map,
     );
 
-    let entry_resource = resources_map.get_mut(&entry_resource_name).unwrap();
+    let entry_resource = resources_map
+      .get_mut(&entry_resource_name)
+      .unwrap_or_else(|| {
+        panic!(
+          "entry resource {:?} not found in resources_map. Entry module id: {:?}",
+          entry_resource_name, entry_module_id
+        )
+      });
     params.resource = std::mem::take(entry_resource);
 
     if let Some(entry_resource_sourcemap_name) = entry_resource_sourcemap_name {
@@ -151,6 +159,10 @@ fn handle_entry_resource(
   if params.emit_runtime {
     let runtime_resource = resources_map.get_mut(&runtime_resource_name).unwrap();
     runtime_resource.emitted = false;
+  }
+
+  for (name, resource) in params.additional_inject_resources {
+    resources_map.insert(name, resource);
   }
 
   Ok(())

@@ -36,15 +36,7 @@ impl Plugin for FarmPluginLazyCompilation {
     context: &std::sync::Arc<farmfe_core::context::CompilationContext>,
     hook_context: &PluginHookContext,
   ) -> farmfe_core::error::Result<Option<farmfe_core::plugin::PluginResolveHookResult>> {
-    if hook_context.contain_caller(PLUGIN_NAME)
-    // // All runtime files will be merged into one resourcePot, even files introduced through `import()`
-    // // Therefore, the asynchronous polyfill here is unnecessary
-    //   || param.source.ends_with(RUNTIME_SUFFIX)
-    //   || param
-    //     .importer
-    //     .as_ref()
-    //     .is_some_and(|i| i.to_string().ends_with(RUNTIME_SUFFIX))
-    {
+    if hook_context.contain_caller(PLUGIN_NAME) {
       return Ok(None);
     }
 

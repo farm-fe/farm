@@ -65,7 +65,8 @@ pub fn build_module_deps(
     module_id: &module.id,
     module_type: &module.module_type,
     meta: &mut parse_result,
-    content: Arc::new(load_result.content),
+    content: &mut Arc::new(load_result.content),
+    source_map_chain: &mut vec![],
   };
   script_plugin
     .process_module(&mut process_module_param, &context)

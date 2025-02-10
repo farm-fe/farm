@@ -2,12 +2,15 @@ use farmfe_core::{
   module::{
     meta_data::script::{
       statement::{ExportSpecifierInfo, ImportSpecifierInfo, Statement, StatementId, SwcId},
-      ScriptModuleMetaData,
+      CommentsMetaData, ScriptModuleMetaData,
     },
     module_graph::ModuleGraph,
     Module, ModuleId,
   },
-  swc_common::{Mark, DUMMY_SP},
+  swc_common::{
+    comments::{Comment, CommentKind, Comments, SingleThreadedComments},
+    BytePos, Mark, DUMMY_SP,
+  },
   swc_ecma_ast::{EmptyStmt, Expr, ExprStmt, Module as SwcModule, ModuleDecl, ModuleItem, Stmt},
   HashSet,
 };
@@ -21,6 +24,7 @@ use super::{
 pub struct StripModuleDeclResult {
   /// the ast that removed the import/export statements
   pub ast: SwcModule,
+  pub comments: CommentsMetaData,
   /// the preserved import or export from statements
   pub preserved_module_decls: Vec<(ModuleItem, ModuleId)>,
 }
@@ -34,8 +38,21 @@ pub fn strip_module_decl(
   let module = module_graph.module(module_id).unwrap();
   let script_meta = module.meta.as_script();
 
+  let comments = script_meta.comments.clone();
+  let swc_comments: SingleThreadedComments = comments.into();
+  // prepend filename comment
+  swc_comments.add_leading(
+    BytePos::DUMMY,
+    Comment {
+      kind: CommentKind::Line,
+      span: DUMMY_SP,
+      text: module_id.to_string().into(),
+    },
+  );
+
   let mut result = StripModuleDeclResult {
     ast: script_meta.ast.clone(),
+    comments: swc_comments.into(),
     preserved_module_decls: vec![],
   };
 

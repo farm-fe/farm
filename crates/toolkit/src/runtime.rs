@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use farmfe_core::{
-  config::TargetEnv,
+  config::{Mode, TargetEnv},
   context::CompilationContext,
   module::meta_data::script::feature_flag::{
     FeatureFlag, FARM_ENABLE_EXPORT_ALL_HELPER, FARM_ENABLE_EXPORT_HELPER,
@@ -114,6 +114,11 @@ fn init_bool_features<'a>(
   feature_flags: &'a HashSet<FeatureFlag>,
   context: &Arc<CompilationContext>,
 ) -> HashSet<&'a str> {
+  // enable all features in development mode
+  if matches!(context.config.mode, Mode::Development) {
+    return FULL_RUNTIME_FEATURES.clone();
+  }
+
   let mut bool_features = HashSet::default();
 
   if context.config.runtime.plugins.len() > 0 {

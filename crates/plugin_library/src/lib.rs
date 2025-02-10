@@ -6,15 +6,9 @@ use farmfe_core::{
     meta_data::{js::JsResourcePotMetaData, ResourcePotMetaData},
     resource_pot::ResourcePotType,
   },
-  swc_common::{SyntaxContext, DUMMY_SP},
-  swc_ecma_ast::{
-    ExportNamedSpecifier, ExportSpecifier, Ident, ModuleDecl, ModuleExportName, ModuleItem,
-    NamedExport,
-  },
 };
-use farmfe_toolkit::script::{
-  concatenate_modules::{concatenate_modules_ast, ConcatenateModulesAstResult, EXPORT_NAMESPACE},
-  sourcemap::merge_comments,
+use farmfe_toolkit::script::concatenate_modules::{
+  concatenate_modules_ast, ConcatenateModulesAstResult,
 };
 
 #[derive(Default)]
@@ -49,8 +43,14 @@ impl Plugin for FarmPluginLibrary {
       mut ast,
       module_ids,
       external_modules,
+      source_map,
+      comments,
     } = concatenate_modules_ast(&resource_pot.modules, &module_graph, context)
       .map_err(|e| CompilationError::GenericError(e.to_string()))?;
+
+    context
+      .meta
+      .set_resource_pot_source_map(&resource_pot.id, source_map);
 
     // handle import/export between resource pots
     if let Some(entry) = &resource_pot.entry_module {
@@ -67,9 +67,12 @@ impl Plugin for FarmPluginLibrary {
 
     Ok(Some(ResourcePotMetaData::Js(JsResourcePotMetaData {
       ast,
-      external_modules,
+      external_modules: external_modules
+        .into_iter()
+        .map(|(_, id)| id.to_string())
+        .collect(),
       rendered_modules: module_ids,
-      comments: Default::default(), // TODO: merge comments
+      comments,
     })))
   }
 }

@@ -783,10 +783,7 @@ impl PluginDriver {
     }
   );
 
-  hook_parallel!(
-    module_graph_updated,
-    param: &PluginModuleGraphUpdatedHookParam
-  );
+  hook_serial!(module_graph_updated, &PluginModuleGraphUpdatedHookParam);
 
   hook_parallel!(update_finished);
 

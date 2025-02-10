@@ -1,10 +1,12 @@
-use std::{path::PathBuf, sync::Arc};
+use std::sync::Arc;
 
 use farmfe_core::{
+  context::{get_swc_sourcemap_filename, CompilationContext},
   error::CompilationError,
   module::ModuleId,
+  rayon::iter::{IntoParallelRefMutIterator, ParallelIterator},
   regex::Regex,
-  swc_common::{comments::SingleThreadedComments, input::SourceFileInput},
+  swc_common::{comments::SingleThreadedComments, input::SourceFileInput, BytePos, SourceMap},
   swc_css_ast::Stylesheet,
 };
 use swc_css_codegen::{
@@ -15,6 +17,7 @@ use swc_css_parser::{
   lexer::Lexer,
   parser::{Parser, ParserConfig},
 };
+use swc_css_visit::{VisitMut, VisitMutWith};
 use swc_error_reporters::handler::try_with_handler;
 
 use crate::sourcemap::{build_sourcemap, create_swc_source_map};
@@ -22,6 +25,7 @@ use crate::sourcemap::{build_sourcemap, create_swc_source_map};
 pub struct ParseCssModuleResult {
   pub ast: Stylesheet,
   pub comments: SingleThreadedComments,
+  pub source_map: Arc<SourceMap>,
 }
 
 /// parse the input css file content to [Stylesheet]
@@ -67,7 +71,11 @@ pub fn parse_css_stylesheet(
         recovered_errors.push(err);
       }
       Ok(m) => {
-        return Ok(ParseCssModuleResult { ast: m, comments });
+        return Ok(ParseCssModuleResult {
+          ast: m,
+          comments,
+          source_map: cm,
+        });
       }
     }
   }
@@ -94,14 +102,14 @@ pub fn parse_css_stylesheet(
 /// generate css code from [Stylesheet], return css code and source map
 pub fn codegen_css_stylesheet(
   stylesheet: &Stylesheet,
-  source: Option<(&ModuleId, Arc<String>)>,
   minify: bool,
+  cm: Option<Arc<SourceMap>>,
 ) -> (String, Option<String>) {
   let mut css_code = String::new();
   let mut mappings = Vec::new();
   let css_writer = BasicCssWriter::new(
     &mut css_code,
-    if source.is_some() {
+    if cm.is_some() {
       Some(&mut mappings)
     } else {
       None
@@ -112,8 +120,7 @@ pub fn codegen_css_stylesheet(
 
   gen.emit(stylesheet).unwrap();
 
-  if let Some((id, source)) = source {
-    let (cm, _) = create_swc_source_map(id, source);
+  if let Some(cm) = cm {
     let map = build_sourcemap(cm, &mappings);
     let mut src_map = vec![];
     map.to_writer(&mut src_map).unwrap();
@@ -121,5 +128,43 @@ pub fn codegen_css_stylesheet(
     (css_code, Some(String::from_utf8(src_map).unwrap()))
   } else {
     (css_code, None)
+  }
+}
+
+pub fn merge_css_sourcemap(
+  module_asts: &mut Vec<(ModuleId, Stylesheet)>,
+  context: &Arc<CompilationContext>,
+) -> Arc<SourceMap> {
+  let module_ids: Vec<_> = module_asts.iter().map(|item| &item.0).collect();
+  let new_cm = Arc::new(SourceMap::default());
+
+  for module_id in module_ids {
+    let cm = context.meta.get_module_source_map(module_id);
+    cm.files().iter().for_each(|source_file| {
+      new_cm.new_source_file_from(source_file.name.clone(), source_file.src.clone());
+    });
+  }
+
+  // update Span in parallel
+  module_asts.par_iter_mut().for_each(|(module_id, ast)| {
+    let filename = get_swc_sourcemap_filename(module_id);
+    let source_file = new_cm
+      .get_source_file(&filename)
+      .unwrap_or_else(|| panic!("no source file found for {:?}", module_id));
+    let start_pos = source_file.start_pos;
+    ast.visit_mut_with(&mut SpanUpdater { start_pos });
+  });
+
+  new_cm
+}
+
+struct SpanUpdater {
+  pub start_pos: BytePos,
+}
+
+impl VisitMut for SpanUpdater {
+  fn visit_mut_span(&mut self, node: &mut farmfe_core::swc_common::Span) {
+    node.lo = self.start_pos + node.lo;
+    node.hi = self.start_pos + node.hi;
   }
 }

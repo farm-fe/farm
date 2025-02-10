@@ -16,7 +16,6 @@ use farmfe_toolkit::{
 
 pub fn analyze_unresolved_idents(
   module_id: &ModuleId,
-  module_content: Arc<String>,
   meta: &ScriptModuleMetaData,
   context: &Arc<CompilationContext>,
 ) -> HashSet<SwcId> {
@@ -25,9 +24,7 @@ pub fn analyze_unresolved_idents(
 
   // fill unresolved_idents
   let mut unresolved_ident_collector = UnresolvedIdentCollector::new(unresolved_mark);
-  let (cm, _) = context
-    .meta
-    .create_swc_source_map(module_id, module_content);
+  let cm = context.meta.get_module_source_map(module_id);
   try_with(cm, &context.meta.script.globals, || {
     meta.ast.visit_with(&mut unresolved_ident_collector);
   })

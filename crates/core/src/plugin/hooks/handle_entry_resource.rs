@@ -1,6 +1,7 @@
 use crate::{
   module::{module_graph::ModuleGraph, module_group::ModuleGroupGraph, ModuleId},
-  resource::{resource_pot_map::ResourcePotMap, Resource},
+  resource::{resource_pot_map::ResourcePotMap, Resource, ResourceType},
+  HashMap,
 };
 
 pub struct PluginHandleEntryResourceHookParam<'a> {
@@ -13,7 +14,7 @@ pub struct PluginHandleEntryResourceHookParam<'a> {
   pub entry_module_id: &'a ModuleId,
 
   /// Initial resources including entry resource
-  pub initial_resources: Vec<String>,
+  pub initial_resources: Vec<(String, ResourceType)>,
   pub dynamic_resources: String,
   pub dynamic_module_resources_map: String,
 
@@ -21,4 +22,6 @@ pub struct PluginHandleEntryResourceHookParam<'a> {
   pub runtime_resource_name: &'a str,
   /// Set it to true if runtime needs to be emitted as a separate
   pub emit_runtime: bool,
+
+  pub additional_inject_resources: HashMap<String, Resource>,
 }

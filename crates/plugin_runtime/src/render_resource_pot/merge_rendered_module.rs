@@ -1,27 +1,17 @@
-use std::{collections::HashSet, sync::Arc};
+use std::sync::Arc;
 
 use farmfe_core::{
   config::FARM_MODULE_SYSTEM,
-  context::{self, CompilationContext},
-  module::{module_graph::ModuleGraph, ModuleId},
-  rayon::{iter::IntoParallelRefMutIterator, prelude::*},
-  resource::{meta_data::js::RenderModuleResult, resource_pot::ResourcePotId},
-  swc_common::{
-    comments::{Comments, SingleThreadedComments},
-    BytePos, FilePathMapping, SourceMap, SyntaxContext, DUMMY_SP,
-  },
+  context::CompilationContext,
+  module::ModuleId,
+  resource::resource_pot::ResourcePotId,
+  swc_common::{SyntaxContext, DUMMY_SP},
   swc_ecma_ast::{
     ComputedPropName, Expr, ExprOrSpread, Ident, IdentName, KeyValueProp, Lit, MemberExpr,
     MemberProp, Module as SwcModule, ModuleItem, ObjectLit, Prop, PropName, PropOrSpread,
   },
-  swc_ecma_parser::{EsSyntax, Syntax},
 };
-use farmfe_toolkit::{
-  script::parse_stmt,
-  sourcemap::get_swc_sourcemap_filename,
-  swc_ecma_utils::StmtOrModuleItem,
-  swc_ecma_visit::{VisitMut, VisitMutWith},
-};
+use farmfe_toolkit::script::parse_stmt;
 
 /// Merge all modules' ast in a [ResourcePot] to Farm's runtime [ObjectLit]. The [ObjectLit] looks like:
 /// ```js
@@ -44,24 +34,16 @@ use farmfe_toolkit::{
 /// }
 /// ```
 pub(crate) fn merge_rendered_module(
-  render_module_results: &mut Vec<RenderModuleResult>,
+  module_asts: &mut Vec<(ModuleId, SwcModule)>,
   context: &Arc<CompilationContext>,
 ) -> ObjectLit {
-  // let cm = merge_sourcemap(&mut render_module_results, module_graph, context);
-  // let comments = merge_comments(&mut render_module_results, cm.clone());
-
   let mut rendered_resource_pot_ast = ObjectLit {
     span: DUMMY_SP,
     props: vec![],
   };
 
   // insert props to the object lit
-  for RenderModuleResult {
-    module_id,
-    rendered_ast,
-    ..
-  } in render_module_results
-  {
+  for (module_id, rendered_ast) in module_asts {
     let mut ast = std::mem::take(rendered_ast);
     // panic if the first item is not a function expression
     let expr = ast.body.remove(0).stmt().unwrap().expr().unwrap().expr;

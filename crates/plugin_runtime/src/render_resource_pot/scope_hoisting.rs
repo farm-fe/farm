@@ -1,18 +1,15 @@
 use std::sync::Arc;
 
 use farmfe_core::{
-  config::ModuleFormat,
   context::CompilationContext,
-  enhanced_magic_string::bundle::Bundle,
+  error::CompilationError,
   module::{module_graph::ModuleGraph, ModuleId},
-  resource::resource_pot::{ResourcePot, ResourcePotType},
-  swc_ecma_ast::Module,
+  resource::resource_pot::ResourcePot,
   HashMap, HashSet,
 };
-
-// use farmfe_plugin_bundle::resource_pot_to_bundle::{
-//   BundleGroup, GeneratorAstResult, ShareBundleOptions, SharedBundle,
-// };
+use farmfe_toolkit::script::concatenate_modules::{
+  concatenate_modules_ast, ConcatenateModulesAstResult,
+};
 
 /// Note: Scope Hoisting is enabled only `config.concatenate_modules` is true. Otherwise, it A module is a [ScopeHoistedModuleGroup]
 ///
@@ -30,7 +27,7 @@ use farmfe_core::{
 pub struct ScopeHoistedModuleGroup {
   /// The [ModuleId] that other modules hoisted to, it's the entry of this [ScopeHoistedModuleGroup].
   pub target_hoisted_module_id: ModuleId,
-  /// The [ModuleId]s that this [ScopeHoistedModuleGroup] hoisted to. Include the [target_hoisted_module_id].
+  /// The [ModuleId]s that this [ScopeHoistedModuleGroup] hoisted to. Include [self.target_hoisted_module_id].
   pub hoisted_module_ids: HashSet<ModuleId>,
 }
 
@@ -46,46 +43,35 @@ impl ScopeHoistedModuleGroup {
     self.hoisted_module_ids.extend(hoisted_module_ids);
   }
 
-  // /// concatenate the [ScopeHoistedModuleGroup] into a single ast. For example:
-  // /// ```js
-  // ///  const xxx = farmDynamicRequire('./xxx');
-  // ///  const module_D = 'D'; // hoisted code of module D
-  // ///  const module_C = 'C'; // hoisted code of module C
-  // ///  const module_B = 'B'; // hoisted code of module B
-  // ///  console.log(module_D, module_C, module_B, xxx); // code of module A
-  // ///
-  // ///  module.o(exports, 'b', module_B);
-  // /// ```
-  // pub fn concatenate_modules(
-  //   &self,
-  //   module_graph: &ModuleGraph,
-  //   context: &Arc<CompilationContext>,
-  // ) -> farmfe_core::error::Result<GeneratorAstResult> {
-  //   let bundle_id = self.target_hoisted_module_id.to_string();
+  /// concatenate the [ScopeHoistedModuleGroup] into a single ast. For example:
+  /// ```js
+  ///  const xxx = farmDynamicRequire('./xxx');
+  ///  const module_D = 'D'; // hoisted code of module D
+  ///  const module_C = 'C'; // hoisted code of module C
+  ///  const module_B = 'B'; // hoisted code of module B
+  ///  console.log(module_D, module_C, module_B, xxx); // code of module A
+  ///
+  ///  module.o(exports, 'b', module_B);
+  /// ```
+  pub fn scope_hoist(
+    &self,
+    module_graph: &ModuleGraph,
+    context: &Arc<CompilationContext>,
+  ) -> farmfe_core::error::Result<ConcatenateModulesAstResult> {
+    let mut result = concatenate_modules_ast(&self.hoisted_module_ids, module_graph, context)
+      .map_err(|e| CompilationError::GenericError(format!("Scope hoist failed: {}", e)))?;
 
-  //   let mut share_bundle = SharedBundle::new(
-  //     vec![BundleGroup {
-  //       id: bundle_id.clone(),
-  //       modules: self.hoisted_module_ids.iter().collect(),
-  //       entry_module: Some(self.target_hoisted_module_id.clone()),
-  //       group_type: ResourcePotType::Js,
-  //     }],
-  //     module_graph,
-  //     context,
-  //     Some(ShareBundleOptions {
-  //       reference_slot: false,
-  //       ignore_external_polyfill: true,
-  //       // should ignore
-  //       format: ModuleFormat::EsModule,
-  //       hash_path: true,
-  //       concatenation_module: true,
-  //       ..Default::default()
-  //     }),
-  //   )?;
+    // append export statements
+    let module = module_graph.module(&self.target_hoisted_module_id).unwrap();
+    let script_meta = module.meta.as_script();
 
-  //   share_bundle.render()?;
-  //   share_bundle.codegen(&bundle_id)
-  // }
+    if !script_meta.export_ident_map.is_empty() {
+      let export_item = script_meta.get_export_module_item();
+      result.ast.body.push(export_item);
+    }
+
+    Ok(result)
+  }
 }
 
 /// Handle the modules of a resource pot in topological order.

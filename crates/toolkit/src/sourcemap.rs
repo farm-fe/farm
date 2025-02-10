@@ -5,20 +5,14 @@ use std::{
 };
 
 use farmfe_core::{
-  config::{
-    bool_or_obj::BoolOrObj, comments::CommentsConfig, config_regex::ConfigRegex,
-    minify::MinifyOptions, SourcemapConfig,
-  },
-  enhanced_magic_string::collapse_sourcemap::{collapse_sourcemap_chain, read_source_content},
+  config::{config_regex::ConfigRegex, SourcemapConfig},
+  enhanced_magic_string::collapse_sourcemap::read_source_content,
   module::ModuleId,
   rayon::iter::{IntoParallelRefIterator, ParallelIterator},
   relative_path::RelativePath,
-  resource::{resource_pot::ResourcePot, Resource, ResourceOrigin, ResourceType},
-  serde_json::Value,
+  resource::{Resource, ResourceType},
   swc_common::{
-    comments::{Comment, CommentKind, SingleThreadedComments},
-    source_map::SourceMapGenConfig,
-    BytePos, FileName, LineCol, SourceFile, SourceMap as SwcSourceMap,
+    source_map::SourceMapGenConfig, BytePos, FileName, LineCol, SourceMap as SwcSourceMap,
   },
 };
 
@@ -80,7 +74,9 @@ pub fn build_sourcemap(
   cm.build_source_map_with_config(mappings, None, FarmSwcSourceMapConfig::default())
 }
 
-pub fn collapse_sourcemap(
+/// Trace the final bundled sourcemap to original module sourcemap
+/// So that the source map of the final bundle can be traced back to the original source file
+pub fn trace_module_sourcemap(
   sourcemap: sourcemap::SourceMap,
   module_graph: &farmfe_core::module::module_graph::ModuleGraph,
 ) -> sourcemap::SourceMap {
@@ -253,107 +249,3 @@ impl<'a> PathFilter<'a> {
       && (self.exclude.is_empty() || !self.exclude.iter().any(|regex| regex.is_match(path)))
   }
 }
-
-// pub struct MinifyBuilder {
-//   pub minify_options: Option<MinifyOptions>,
-//   expect_mode: Option<MinifyMode>,
-// }
-
-// impl MinifyBuilder {
-//   fn is_match(&self, path: &str) -> bool {
-//     if let Some(ref minify_options) = self.minify_options {
-//       return PathFilter::new(&minify_options.include, &minify_options.exclude).execute(path);
-//     }
-
-//     false
-//   }
-
-//   fn is_match_mode(&self) -> bool {
-//     if let Some(expect_mode) = &self.expect_mode {
-//       return if let Some(ref minify_options) = self.minify_options {
-//         expect_mode == &minify_options.mode
-//       } else {
-//         false
-//       };
-//     }
-//     return true;
-//   }
-
-//   pub fn is_enabled(&self, path: &str) -> bool {
-//     return self.is_match_mode() && self.is_match(path);
-//   }
-
-//   pub fn create_builder(minify: &BoolOrObj<Value>, mode: Option<MinifyMode>) -> MinifyBuilder {
-//     let minify_options = Option::<MinifyOptions>::from(minify);
-
-//     MinifyBuilder {
-//       minify_options,
-//       expect_mode: mode,
-//     }
-//   }
-// }
-
-// #[cfg(test)]
-// mod tests {
-
-//   mod minify_builder {
-//     use super::super::MinifyBuilder;
-//     use farmfe_core::{
-//       config::{bool_or_obj::BoolOrObj, minify::MinifyMode},
-//       serde_json::json,
-//     };
-
-//     #[test]
-//     fn create_builder() {
-//       let builder = MinifyBuilder::create_builder(&BoolOrObj::Bool(false), None);
-//       assert!(builder.minify_options.is_none());
-//       assert!(!builder.is_enabled("index.html"));
-
-//       let builder = MinifyBuilder::create_builder(&BoolOrObj::Bool(true), None);
-//       assert!(builder.minify_options.is_some());
-//       assert!(builder.is_enabled("index.html"));
-//     }
-
-//     #[test]
-//     fn minify_exclude() {
-//       let builder = MinifyBuilder::create_builder(
-//         &BoolOrObj::Obj(json!({
-//           "exclude": ["\\.html$"],
-//         })),
-//         None,
-//       );
-
-//       assert!(builder.minify_options.is_some());
-//       assert!(!builder.is_enabled("index.html"));
-//     }
-
-//     #[test]
-//     fn minify_include() {
-//       let builder = MinifyBuilder::create_builder(
-//         &BoolOrObj::Obj(json!({
-//           "include": ["\\.html$"],
-//         })),
-//         None,
-//       );
-
-//       assert!(builder.is_enabled("index.html"));
-//       assert!(!builder.is_enabled("index.html1"));
-//       assert!(!builder.is_enabled("index.js"));
-//     }
-
-//     #[test]
-//     fn filter_by_mode() {
-//       let builder = MinifyBuilder::create_builder(
-//         &BoolOrObj::Obj(json!({
-//           "mode": "minify-resource-pot",
-//           "include": [".*"]
-//         })),
-//         Some(MinifyMode::Module),
-//       );
-
-//       assert!(!builder.is_enabled("index.html"));
-//       assert!(!builder.is_enabled("index.html1"));
-//       assert!(!builder.is_enabled("index.js"));
-//     }
-//   }
-// }

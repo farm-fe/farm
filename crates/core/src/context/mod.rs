@@ -190,15 +190,18 @@ impl Default for CompilationContext {
 /// Shared meta info for the core and core plugins, for example, shared swc [SourceMap]
 /// The **custom** field can be used for custom plugins to store shared meta data across compilation
 pub struct ContextMetaData {
-  // shared meta by core plugins
+  /// shared meta by plugins
   pub script: ScriptContextMetaData,
   pub css: CssContextMetaData,
   pub html: HtmlContextMetaData,
-  // shared swc sourcemap cache
-  pub module_source_maps: DashMap<ModuleId, (Arc<SourceMap>, Arc<SourceFile>)>,
+  /// shared swc sourcemap cache for module
+  pub module_source_maps: DashMap<ModuleId, Arc<SourceMap>>,
+  /// shared swc sourcemap cache for hoisted modules
+  pub hoisted_modules_source_maps: DashMap<ModuleId, Arc<SourceMap>>,
+  /// shared swc sourcemap cache for resource pot
   pub resource_pot_source_maps: DashMap<ResourcePotId, Arc<SourceMap>>,
 
-  // custom meta map
+  /// custom meta map
   pub custom: DashMap<String, Box<dyn Any + Send + Sync>>,
 }
 
@@ -209,93 +212,55 @@ impl ContextMetaData {
       css: CssContextMetaData::new(),
       html: HtmlContextMetaData::new(),
       module_source_maps: DashMap::new(),
+      hoisted_modules_source_maps: DashMap::new(),
       resource_pot_source_maps: DashMap::new(),
       custom: DashMap::new(),
     }
   }
 
-  /// Create a swc source map from a source
-  /// Note if the source map already exists, return it without creating a new one
-  pub fn create_swc_source_map(
-    &self,
-    module_id: &ModuleId,
-    content: Arc<String>,
-  ) -> (Arc<SourceMap>, Arc<SourceFile>) {
-    // if the source map already exists, return it
-    if let Some(value) = self.module_source_maps.get(module_id) {
-      return (value.0.clone(), value.1.clone());
-    }
-
-    let (cm, sf) = create_swc_source_map(module_id, content);
-
-    // store the source map and source file
+  /// get swc source map from module id
+  pub fn get_module_source_map(&self, module_id: &ModuleId) -> Arc<SourceMap> {
     self
       .module_source_maps
-      .insert(module_id.clone(), (cm.clone(), sf.clone()));
-
-    (cm, sf)
+      .get(module_id)
+      .map(|value| value.clone())
+      .unwrap_or_else(|| panic!("no source map found for module {:?}", module_id))
   }
 
-  pub fn merge_swc_source_map(
-    &self,
-    resource_pot_id: &ResourcePotId,
-    module_ids: Vec<&ModuleId>,
-    module_graph: &ModuleGraph,
-  ) -> Arc<SourceMap> {
-    if let Some(value) = self.resource_pot_source_maps.get(resource_pot_id) {
-      return value.clone();
-    }
+  /// set swc source map for module id
+  /// this should be called after every time the module is parsed and updated to the module graph
+  pub fn set_module_source_map(&self, module_id: &ModuleId, cm: Arc<SourceMap>) {
+    self.module_source_maps.insert(module_id.clone(), cm);
+  }
 
-    let cm = self.merge_modules_source_mpa(&module_ids, module_graph);
+  pub fn get_hoisted_modules_source_map(&self, module_id: &ModuleId) -> Arc<SourceMap> {
+    self
+      .hoisted_modules_source_maps
+      .get(module_id)
+      .map(|value| value.clone())
+      .unwrap()
+  }
 
+  pub fn set_hoisted_modules_source_map(&self, module_id: &ModuleId, cm: Arc<SourceMap>) {
+    self
+      .hoisted_modules_source_maps
+      .insert(module_id.clone(), cm);
+  }
+
+  pub fn get_resource_pot_source_map(&self, resource_pot_id: &ResourcePotId) -> Arc<SourceMap> {
     self
       .resource_pot_source_maps
-      .insert(resource_pot_id.clone(), cm.clone());
-
-    cm
+      .get(resource_pot_id)
+      .map(|value| value.clone())
+      .unwrap_or_else(|| panic!("no source map found for resource pot {:?}", resource_pot_id))
   }
 
-  pub fn merge_modules_source_mpa(
-    &self,
-    module_ids: &Vec<&ModuleId>,
-    module_graph: &ModuleGraph,
-  ) -> Arc<SourceMap> {
-    let cm = Arc::new(SourceMap::default());
-
-    for module_id in module_ids {
-      let module = module_graph
-        .module(module_id)
-        .unwrap_or_else(|| panic!("no module found for {:?}", module_id));
-      let (_, sf) = self.create_swc_source_map(module_id, module.content.clone());
-      cm.new_source_file_from(sf.name.clone(), sf.src.clone());
-    }
-
-    cm
-  }
-
-  pub fn merge_nested_source_map(
-    &self,
-    resource_pot_id: &ResourcePotId,
-    module_ids: &Vec<&ModuleId>,
-    module_graph: &ModuleGraph,
-    nested_modules: &HashMap<ModuleId, Vec<ModuleId>>,
-  ) -> Arc<SourceMap> {
-    if let Some(cm) = self.resource_pot_source_maps.get(resource_pot_id) {
-      return cm.clone();
-    }
-
-    let items = module_ids
-      .iter()
-      .flat_map(|module_id| {
-        if let Some(modules) = nested_modules.get(module_id) {
-          modules.iter().collect::<Vec<_>>()
-        } else {
-          vec![*module_id]
-        }
-      })
-      .collect::<Vec<_>>();
-
-    self.merge_swc_source_map(resource_pot_id, items, module_graph)
+  /// set swc source map for resource pot
+  /// this should be called after every time the resource pot is parsed and updated to the resource pot map
+  pub fn set_resource_pot_source_map(&self, resource_pot_id: &ResourcePotId, cm: Arc<SourceMap>) {
+    self
+      .resource_pot_source_maps
+      .insert(resource_pot_id.clone(), cm);
   }
 }
 

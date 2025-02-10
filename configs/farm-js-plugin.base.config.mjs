@@ -34,6 +34,7 @@ export function createFarmJsPluginBuildConfig(plugins, options = {}) {
       sourcemap: false,
       presetEnv: false,
       persistentCache: false,
+      lazyCompilation: false,
       // persistentCache: {
       //   envs: {
       //     FARM_FORMAT: format

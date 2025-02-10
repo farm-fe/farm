@@ -341,6 +341,7 @@ impl Compiler {
     update_result.mutable_resources = mutable_resources;
     update_result.boundaries = boundaries;
     update_result.dynamic_resources_map = dynamic_resources_map;
+
     Ok(update_result)
   }
 

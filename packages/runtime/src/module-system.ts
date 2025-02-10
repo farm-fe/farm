@@ -29,6 +29,8 @@ type ModuleInitializationFunction = (
 export type ModuleInitialization = ModuleInitializationFunction;
 
 export interface ModuleSystem {
+  // reRegisterModules
+  _rg: boolean;
   // pluginContainer
   p: FarmRuntimePluginContainer;
   // externalModules
@@ -205,9 +207,8 @@ export function farmRequire(id: string): any {
   return module.exports;
 }
 
-// TODO set reRegisterModules when calling register 
-export function farmRegister(id: string, module: ModuleInitialization, reRegisterModules: boolean): () => any {
-  if (modules[id] && !reRegisterModules) {
+export function farmRegister(id: string, module: ModuleInitialization): () => any {
+  if (modules[id] && !moduleSystem._rg) {
     console.warn(
       `Module "${id}" has registered! It should not be registered twice`,
     );

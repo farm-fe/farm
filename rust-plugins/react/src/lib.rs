@@ -59,7 +59,7 @@ impl Plugin for FarmPluginReact {
     "FarmPluginReact"
   }
   fn priority(&self) -> i32 {
-      99
+    99
   }
   fn resolve(
     &self,

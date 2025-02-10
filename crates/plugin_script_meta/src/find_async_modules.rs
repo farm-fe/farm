@@ -2,12 +2,11 @@ use std::{collections::VecDeque, sync::Arc};
 
 use farmfe_core::{
   context::CompilationContext,
-  module::{ModuleId, ModuleMetaData},
+  module::{module_graph::ModuleGraph, ModuleId, ModuleMetaData},
   HashSet,
 };
 
-pub fn find_async_modules(context: &Arc<CompilationContext>) -> HashSet<ModuleId> {
-  let module_graph = context.module_graph.read();
+pub fn find_async_modules(module_graph: &ModuleGraph) -> HashSet<ModuleId> {
   let mut init_async_modules = HashSet::default();
 
   for module in module_graph.modules() {
@@ -93,12 +92,8 @@ pub fn update_async_modules(
 
 #[cfg(test)]
 mod tests {
-  use std::sync::Arc;
-
   use farmfe_core::{
-    context::CompilationContext,
     module::{meta_data::script::ScriptModuleMetaData, ModuleMetaData, ModuleType},
-    parking_lot::RwLock,
     swc_common::DUMMY_SP,
     swc_ecma_ast::{AwaitExpr, Expr, ExprStmt, Lit, Module, ModuleItem, Stmt},
     HashSet,
@@ -130,10 +125,7 @@ mod tests {
       shebang: None,
     };
 
-    let mut context = CompilationContext::new(Default::default(), vec![]).unwrap();
-    context.module_graph = Box::new(RwLock::new(module_graph));
-
-    let async_modules = super::find_async_modules(&Arc::new(context));
+    let async_modules = super::find_async_modules(&module_graph);
     println!("{:#?}", async_modules);
     assert_eq!(
       async_modules,

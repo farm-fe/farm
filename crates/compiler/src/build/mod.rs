@@ -357,7 +357,7 @@ impl Compiler {
   fn build_module_after_transform(
     resolve_result: PluginResolveHookResult,
     load_module_type: ModuleType,
-    transform_result: PluginDriverTransformHookResult,
+    mut transform_result: PluginDriverTransformHookResult,
     module: &mut Module,
     context: &Arc<CompilationContext>,
     hook_context: &PluginHookContext,
@@ -379,8 +379,9 @@ impl Compiler {
       &mut PluginProcessModuleHookParam {
         module_id: &parse_param.module_id,
         module_type: &parse_param.module_type,
-        content: module.content.clone(),
+        content: &mut module.content,
         meta: &mut module_meta,
+        source_map_chain: &mut transform_result.source_map_chain,
       },
       context,
     ) {

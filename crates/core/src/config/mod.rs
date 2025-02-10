@@ -432,6 +432,13 @@ impl SourcemapConfig {
       Self::AllInline => true,
     }
   }
+
+  pub fn is_false(&self) -> bool {
+    match self {
+      Self::Bool(b) => !*b,
+      _ => false,
+    }
+  }
 }
 
 mod tests {

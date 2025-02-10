@@ -8,7 +8,7 @@ use farmfe_core::{
     ModuleId,
   },
   plugin::hooks::freeze_module::PluginFreezeModuleHookParam,
-  rayon::iter::{IntoParallelIterator, ParallelIterator},
+  rayon::iter::{IntoParallelRefMutIterator, ParallelIterator},
   HashMap,
 };
 
@@ -69,9 +69,11 @@ pub(super) fn freeze_module_of_module_graph(
     })
     .collect::<Vec<_>>();
 
-  hook_params
-    .into_par_iter()
-    .try_for_each(|mut param| call_freeze_module_hook(&mut param, context))
+  let module_resolved_deps = call_freeze_module_with_params(hook_params, context)?;
+
+  update_modules_resolved_deps(module_resolved_deps, &mut module_graph);
+
+  Ok(())
 }
 
 pub fn get_resolved_deps_of_modules(
@@ -109,4 +111,35 @@ pub fn call_freeze_module_hook(
   }
 
   Ok(())
+}
+
+pub fn call_freeze_module_with_params(
+  mut hook_params: Vec<PluginFreezeModuleHookParam>,
+  context: &Arc<CompilationContext>,
+) -> farmfe_core::error::Result<Vec<(ModuleId, Vec<(ModuleId, ModuleGraphEdge)>)>> {
+  hook_params
+    .par_iter_mut()
+    .try_for_each(|param| call_freeze_module_hook(param, context))?;
+
+  Ok(
+    hook_params
+      .into_iter()
+      .map(|param| (param.module.id.clone(), param.resolved_deps))
+      .collect::<Vec<_>>(),
+  )
+}
+
+pub fn update_modules_resolved_deps(
+  module_resolved_deps: Vec<(ModuleId, Vec<(ModuleId, ModuleGraphEdge)>)>,
+  module_graph: &mut ModuleGraph,
+) {
+  for (module_id, resolved_deps) in module_resolved_deps {
+    for (dep_id, edge) in resolved_deps {
+      if module_graph.has_edge(&module_id, &dep_id) {
+        module_graph.update_edge(&module_id, &dep_id, edge).unwrap();
+      } else {
+        module_graph.add_edge(&module_id, &dep_id, edge).unwrap();
+      }
+    }
+  }
 }

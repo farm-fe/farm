@@ -394,6 +394,7 @@ export async function normalizeUserCompilationConfig(
   setProcessEnv(resolvedCompilation.mode);
   const isNode = isNodeEnv(resolvedCompilation.output.targetEnv);
   if (
+    !isProduction &&
     !isNode &&
     isArray(resolvedCompilation.runtime.plugins) &&
     resolvedUserConfig.server?.hmr &&

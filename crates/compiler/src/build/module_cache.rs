@@ -2,7 +2,7 @@ use std::{path::PathBuf, sync::Arc, time::SystemTime};
 
 use farmfe_core::{
   cache::module_cache::{CachedModule, CachedModuleDependency, CachedWatchDependency},
-  context::CompilationContext,
+  context::{create_swc_source_map, CompilationContext},
   dashmap::DashMap,
   farm_profile_function,
   module::ModuleId,
@@ -246,6 +246,15 @@ pub fn handle_cached_modules(
   cached_module: &mut CachedModule,
   context: &Arc<CompilationContext>,
 ) -> farmfe_core::error::Result<()> {
+  // create a new sourcemap for the cached module cause the sourcemap of swc is not cacheable
+  let (source_map, _) = create_swc_source_map(
+    &cached_module.module.id,
+    cached_module.module.content.clone(),
+  );
+  context
+    .meta
+    .set_module_source_map(&cached_module.module.id, source_map);
+
   // using swc resolver
   match &mut cached_module.module.meta {
     box farmfe_core::module::ModuleMetaData::Script(script) => {

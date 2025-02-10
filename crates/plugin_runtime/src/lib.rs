@@ -1,48 +1,34 @@
 #![feature(box_patterns)]
 
-use std::{any::Any, collections::VecDeque, sync::Arc};
+use std::sync::Arc;
 
 use farmfe_core::{
-  config::{
-    config_regex::ConfigRegex,
-    external::{self, ExternalConfig},
-    partial_bundling::PartialBundlingEnforceResourceConfig,
-    AliasItem, Config, ModuleFormat, StringOrRegex, TargetEnv, FARM_MODULE_SYSTEM,
-  },
+  config::{AliasItem, Config, StringOrRegex},
   context::CompilationContext,
-  enhanced_magic_string::types::{MappingsOptionHires, SourceMapOptions},
   error::CompilationError,
-  module::{meta_data::script::feature_flag::FeatureFlag, Module, ModuleId, ModuleType},
+  module::{meta_data::script::feature_flag::FeatureFlag, ModuleType},
   parking_lot::Mutex,
   plugin::{
-    GeneratedResource, Plugin, PluginAnalyzeDepsHookResultEntry, PluginFinalizeResourcesHookParam,
-    PluginGenerateResourcesHookResult, PluginHookContext, PluginLoadHookParam,
-    PluginLoadHookResult, PluginResolveHookParam, PluginResolveHookResult,
-    PluginTransformHookResult, ResolveKind,
+    Plugin, PluginAnalyzeDepsHookResultEntry, PluginGenerateResourcesHookResult, PluginHookContext,
+    PluginLoadHookParam, PluginLoadHookResult, PluginResolveHookParam, PluginResolveHookResult,
+    ResolveKind,
   },
   resource::{
     meta_data::{js::JsResourcePotMetaData, ResourcePotMetaData},
     resource_pot::{ResourcePot, ResourcePotType},
-    Resource, ResourceOrigin, ResourceType,
+    ResourceType,
   },
-  serde_json,
-  swc_common::DUMMY_SP,
-  swc_ecma_ast::{Expr, ExprStmt, Module as SwcModule, ModuleItem, Stmt},
-  HashMap, HashSet,
+  serde_json, HashSet,
 };
 
 use farmfe_toolkit::{
-  fs::read_file_utf8,
   html::get_farm_global_this,
-  itertools::Itertools,
   script::{
     concatenate_modules::concatenate_modules_ast,
-    module_type_from_id, set_module_system_for_module_meta,
     sourcemap::{merge_comments, merge_sourcemap},
   },
 };
 
-use farmfe_utils::hash::base64_encode;
 use handle_entry_resources::handle_entry_resources;
 use handle_runtime_modules::{insert_runtime_modules, remove_unused_runtime_features};
 use handle_runtime_plugins::insert_runtime_plugins;
@@ -242,15 +228,24 @@ impl Plugin for FarmPluginRuntime {
     // render runtime resource pot
     if resource_pot.resource_pot_type == ResourcePotType::Runtime {
       let module_graph = context.module_graph.read();
-      let runtime_ast = concatenate_modules_ast(&resource_pot.modules, &module_graph, context)
-        .map_err(|err| {
+      let result =
+        concatenate_modules_ast(&resource_pot.modules, &module_graph, context).map_err(|err| {
           CompilationError::GenericError(format!("failed to concatenate runtime modules: {}", err))
         })?;
+
+      context
+        .meta
+        .set_resource_pot_source_map(&resource_pot.id, result.source_map);
+
       return Ok(Some(ResourcePotMetaData::Js(JsResourcePotMetaData {
-        ast: runtime_ast.ast,
-        external_modules: runtime_ast.external_modules,
-        rendered_modules: runtime_ast.module_ids,
-        comments: Default::default(),
+        ast: result.ast,
+        external_modules: result
+          .external_modules
+          .into_iter()
+          .map(|(_, id)| id.to_string())
+          .collect(),
+        rendered_modules: result.module_ids,
+        comments: result.comments,
       })));
     }
 
@@ -261,27 +256,40 @@ impl Plugin for FarmPluginRuntime {
 
     let module_graph = context.module_graph.read();
 
-    let (mut rendered_modules, hoisted_map) =
+    let (rendered_modules, source_maps) =
       render_resource_pot_modules(resource_pot, &module_graph, context)?;
 
-    let merged_sourcemap = merge_sourcemap(
-      &resource_pot.id,
-      &mut rendered_modules,
-      &module_graph,
-      context,
-      &hoisted_map,
-    );
+    let mut external_modules = HashSet::default();
+    let mut module_asts = vec![];
+    let mut comments = vec![];
+    let mut sorted_modules = vec![];
 
-    let comments = merge_comments(&mut rendered_modules, merged_sourcemap, &hoisted_map);
+    for rendered_module in rendered_modules {
+      external_modules.extend(
+        rendered_module
+          .external_modules
+          .into_iter()
+          .map(|e| e.to_string()),
+      );
+      module_asts.push((
+        rendered_module.module_id.clone(),
+        rendered_module.rendered_ast,
+      ));
+      comments.push((rendered_module.module_id, rendered_module.comments));
+      sorted_modules.extend(rendered_module.hoisted_module_ids);
+    }
 
-    let merged_ast = merge_rendered_module::merge_rendered_module(&mut rendered_modules, context);
+    let merged_sourcemap = merge_sourcemap(&mut module_asts, source_maps, context);
+    // update the source map for the resource pot in the global meta so that it can be used in the next step
+    context
+      .meta
+      .set_resource_pot_source_map(&resource_pot.id, merged_sourcemap.clone());
+
+    let comments = merge_comments(&mut comments, merged_sourcemap);
+
+    let merged_ast = merge_rendered_module::merge_rendered_module(&mut module_asts, context);
     let wrapped_resource_pot_ast =
       merge_rendered_module::wrap_resource_pot_ast(merged_ast, &resource_pot.id, context);
-
-    let external_modules = rendered_modules
-      .iter()
-      .flat_map(|m| m.external_modules.iter().map(|e| e.to_string()))
-      .collect::<HashSet<_>>();
 
     let wrapped_resource_pot_ast = handle_external_modules(
       &resource_pot.id,
@@ -293,7 +301,7 @@ impl Plugin for FarmPluginRuntime {
     Ok(Some(ResourcePotMetaData::Js(JsResourcePotMetaData {
       ast: wrapped_resource_pot_ast,
       external_modules,
-      rendered_modules: rendered_modules.into_iter().map(|m| m.module_id).collect(),
+      rendered_modules: sorted_modules,
       comments: comments.into(),
     })))
   }

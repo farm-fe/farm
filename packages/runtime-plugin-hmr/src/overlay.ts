@@ -1,4 +1,5 @@
-import Prism from 'prismjs';
+// import Prism from 'prismjs'; // all runtime code should use pure esm
+import 'prismjs';
 
 import {
   extractErrorMessage,
@@ -600,7 +601,11 @@ export class ErrorOverlay extends HTMLElement {
   }
 
   highlightCode(code: string, language = 'javascript') {
-    return Prism.highlight(code, Prism.languages[language], language);
+    return window.Prism.highlight(
+      code,
+      window.Prism.languages[language],
+      language
+    );
   }
 
   renderMessages(messages: any[], _link: any) {

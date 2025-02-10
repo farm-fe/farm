@@ -11,6 +11,7 @@ use crate::{
 pub struct RenderModuleResult {
   pub module_id: ModuleId,
   pub rendered_ast: SwcModule,
+  pub hoisted_module_ids: Vec<ModuleId>,
   pub comments: CommentsMetaData,
   pub external_modules: Vec<ModuleId>,
 }

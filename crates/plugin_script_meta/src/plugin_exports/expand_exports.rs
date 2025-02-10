@@ -32,9 +32,7 @@ pub fn expand_exports_of_module_graph(
 
   for module in modules {
     if module.module_type.is_script() {
-      let (cm, _) = context
-        .meta
-        .create_swc_source_map(&module.id, module.content.clone());
+      let cm = context.meta.get_module_source_map(&module.id);
 
       try_with(cm, &context.meta.script.globals, || {
         expand_module_exports_dfs(&module.id, module_graph, &mut expand_context);
@@ -63,7 +61,7 @@ fn expand_module_exports_dfs(
 ) {
   let module = module_graph.module(module_id).unwrap();
   // skip
-  if expand_context.is_visited(module_id) || module.external {
+  if module.external || !module.module_type.is_script() || expand_context.is_visited(module_id) {
     return;
   }
 

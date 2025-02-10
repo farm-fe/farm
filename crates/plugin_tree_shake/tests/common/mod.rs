@@ -18,6 +18,7 @@ pub fn parse_module_with_comments(code: &str) -> (SwcModule, SingleThreadedComme
   let ParseScriptModuleResult {
     ast: mut swc_module,
     comments,
+    ..
   } = farmfe_toolkit::script::parse_module(
     &"any".into(),
     Arc::new(code.to_string()),

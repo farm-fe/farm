@@ -1785,7 +1785,6 @@ name = "farmfe_plugin_library"
 version = "0.0.1"
 dependencies = [
  "farmfe_core",
- "farmfe_plugin_bundle",
  "farmfe_testing_helpers",
  "farmfe_toolkit",
  "farmfe_utils 0.1.6",

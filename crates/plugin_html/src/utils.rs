@@ -71,8 +71,7 @@ pub fn create_farm_runtime_output_resource(
   bytes: Cow<[u8]>,
   resource_name: &str,
   context: &Arc<CompilationContext>,
-  already_inject_resources: &Vec<String>,
-) -> (String, Option<Resource>) {
+) -> Resource {
   let name = transform_output_filename(
     context.config.output.filename.clone(),
     resource_name,
@@ -84,20 +83,13 @@ pub fn create_farm_runtime_output_resource(
           // },
   );
 
-  if already_inject_resources.contains(&name) {
-    return (name, None);
+  Resource {
+    name: name.clone(),
+    bytes: bytes.to_owned().into(),
+    emitted: false,
+    resource_type: ResourceType::Js,
+    origin: ResourceOrigin::ResourcePot(name),
+    should_transform_output_filename: true,
+    meta: Default::default(),
   }
-
-  (
-    name.clone(),
-    Some(Resource {
-      name: name.clone(),
-      bytes: bytes.to_owned().into(),
-      emitted: false,
-      resource_type: ResourceType::Js,
-      origin: ResourceOrigin::ResourcePot(name),
-      should_transform_output_filename: true,
-      meta: Default::default(),
-    }),
-  )
 }

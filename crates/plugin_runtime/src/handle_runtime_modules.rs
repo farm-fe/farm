@@ -157,9 +157,7 @@ pub fn insert_runtime_modules(module_graph: &mut ModuleGraph, context: &Arc<Comp
 
   let (cm, top_level_mark) = {
     let entry_module = module_graph.module(&entry_module_id).unwrap();
-    let (cm, _) = context
-      .meta
-      .create_swc_source_map(&entry_module_id, entry_module.content.clone());
+    let cm = context.meta.get_module_source_map(&entry_module_id);
     let top_level_mark = Mark::from_u32(entry_module.meta.as_script().top_level_mark);
 
     (cm, top_level_mark)
@@ -255,9 +253,7 @@ pub fn remove_unused_runtime_features(
       let meta = module.meta.as_script_mut();
       // init runtime feature guard remover
       let mut remover = RuntimeFeatureGuardRemover::new(&all_features_flags, context);
-      let (cm, _) = context
-        .meta
-        .create_swc_source_map(&module_id, module.content.clone());
+      let cm = context.meta.get_module_source_map(&module_id);
 
       try_with(cm, &context.meta.script.globals, || {
         meta.ast.visit_mut_with(&mut remover);

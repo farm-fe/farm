@@ -74,7 +74,8 @@ pub fn handle_entry_resources(
   let dep_resources = &params
     .initial_resources
     .iter()
-    .filter(|res| res.as_str() != params.resource.name.as_str())
+    .filter(|res| res.0.as_str() != params.resource.name.as_str())
+    .map(|res| &res.0)
     .cloned()
     .collect::<Vec<_>>();
 
