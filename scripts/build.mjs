@@ -17,16 +17,13 @@ const PKG_CORE = resolve(CWD, "./packages/core");
 // Build cli
 const PKG_CLI = resolve(CWD, "./packages/cli");
 
-const PKG_RUNTIME = resolve(CWD, './packages/runtime');
+const PKG_RUNTIME = resolve(CWD, "./packages/runtime");
 
-const PKG_RUNTIME_PLUGIN_HMR = resolve(
-  CWD,
-  './packages/runtime-plugin-hmr'
-);
+const PKG_RUNTIME_PLUGIN_HMR = resolve(CWD, "./packages/runtime-plugin-hmr");
 
 const PKG_RUNTIME_PLUGIN_IMPORT_META = resolve(
   CWD,
-  './packages/runtime-plugin-import-meta'
+  "./packages/runtime-plugin-import-meta",
 );
 
 // Build plugin-tools
@@ -62,6 +59,18 @@ const skipExamples = [
   "vanilla-extract",
 ];
 
+export const installDependencies = async () =>
+  execa(DEFAULT_PACKAGE_MANAGER, ["install"], {
+    cwd: CWD,
+    stdio: "inherit",
+  });
+
+export const executeStartProject = async () =>
+  execa(DEFAULT_PACKAGE_MANAGER, ["start"], {
+    cwd: CWD,
+    stdio: "inherit",
+  });
+
 export const buildExamples = async () => {
   const examples = fs.readdirSync("./examples");
   console.log("Building", examples.length, "examples...");
@@ -87,13 +96,13 @@ export const buildExamples = async () => {
 export async function runTaskQueue() {
   // The sass plug-in uses protobuf, so you need to determine whether the user installs it or not.
   await installProtoBuf();
-  await runTask('Cli', buildCli);
-  await runTask('Runtime', buildRuntime);
-  await runTask('PluginTools', buildPluginTools);
-  await runTask('Core', buildCore);
-  await runTask('RustPlugins', buildRustPlugins);
-  await runTask('JsPlugins', buildJsPlugins);
-  await runTask('Artifacts', copyArtifacts);
+  await runTask("Cli", buildCli);
+  await runTask("Runtime", buildRuntime);
+  await runTask("PluginTools", buildPluginTools);
+  await runTask("Core", buildCore);
+  await runTask("RustPlugins", buildRustPlugins);
+  await runTask("JsPlugins", buildJsPlugins);
+  await runTask("Artifacts", copyArtifacts);
 }
 
 // install mac protobuf
@@ -184,18 +193,18 @@ export const buildCli = () =>
   });
 
 export const buildRuntime = async () => {
-  await execa(DEFAULT_PACKAGE_MANAGER, ['build'], {
-    cwd: PKG_RUNTIME
-  })
+  await execa(DEFAULT_PACKAGE_MANAGER, ["build"], {
+    cwd: PKG_RUNTIME,
+  });
   return Promise.all([
-    execa(DEFAULT_PACKAGE_MANAGER, ['build'], {
-      cwd: PKG_RUNTIME_PLUGIN_HMR
+    execa(DEFAULT_PACKAGE_MANAGER, ["build"], {
+      cwd: PKG_RUNTIME_PLUGIN_HMR,
     }),
-    execa(DEFAULT_PACKAGE_MANAGER, ['build'], {
-      cwd: PKG_RUNTIME_PLUGIN_IMPORT_META
-    })
-  ])
-}
+    execa(DEFAULT_PACKAGE_MANAGER, ["build"], {
+      cwd: PKG_RUNTIME_PLUGIN_IMPORT_META,
+    }),
+  ]);
+};
 
 // build farm-plugin-tools
 export const buildPluginTools = () =>
@@ -264,16 +273,16 @@ export const buildJsPlugins = async (spinner) => {
 };
 
 export const buildRustPlugins = async (spinner) => {
-  const rustPluginDirs = fs.readdirSync(PKG_RUST_PLUGIN).filter((file) => {
-    return (
-      fs.statSync(join(PKG_RUST_PLUGIN, file)).isDirectory() &&
-      !excludedJsPlugin.includes(file)
-    );
-  });
   const filterPlugins = ["replace-dirname"];
+
+  const rustPluginDirs = fs.readdirSync(PKG_RUST_PLUGIN).filter((file) => {
+    return fs.statSync(join(PKG_RUST_PLUGIN, file)).isDirectory();
+  });
+
   const buildPlugins = rustPluginDirs.filter(
     (item) => !filterPlugins.includes(item),
   );
+
   const total = buildPlugins.length;
   console.log("\n");
   logger(`Found ${total} Rust plugins to build \n`, {
