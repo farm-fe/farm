@@ -10,7 +10,6 @@ export function handleErrorSync(
   }
 }
 
-// eslint-disable-next-line @typescript-eslint/no-empty-function
 function noop() {}
 
 export function parseIfJSON(str: string): any {
@@ -44,7 +43,7 @@ export function prepareError(err: Error & { potentialSolution?: string }) {
 }
 
 export function stripAnsi(str: string) {
-  // eslint-disable-next-line no-control-regex
+  //  no-control-regex
   return str.replace(/\x1b\[[0-9;]*m/g, '');
 }
 

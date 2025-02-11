@@ -26,7 +26,6 @@ export default function clipboard(text) {
 	try {
 		success = window.document.execCommand("copy");
 	} catch (err) {
-		// eslint-disable-next-line
 		console.log("error", err);
 	}
 

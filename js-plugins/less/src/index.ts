@@ -35,7 +35,6 @@ export default function farmLessPlugin(
     options?.implementation
   );
 
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
   // @ts-ignore TODO fix it
   const cwd = () => farmConfig.root ?? process.cwd();
 
@@ -63,7 +62,6 @@ export default function farmLessPlugin(
         ...preprocessorOptions
       };
     },
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore it will be removed in the future
     configureServer() {
       console.warn(

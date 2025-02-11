@@ -1,8 +1,0 @@
-{
-  "root": true,
-  "extends": "../../.eslintrc.base.json",
-  "parserOptions": {
-    "project": ["./examples/tree-shake-antd/tsconfig.json"]
-  },
-  "rules": {}
-}

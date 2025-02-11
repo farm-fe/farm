@@ -1,8 +1,0 @@
-{
-  "root": true,
-  "extends": "../../.eslintrc.base.json",
-  "parserOptions": {
-    "project": ["./examples/node-server/tsconfig.json"]
-  },
-  "rules": {}
-}
