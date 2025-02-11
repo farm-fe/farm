@@ -105,7 +105,9 @@ mod tests {
     let mut module_graph = construct_test_module_graph();
     module_graph.modules_mut().into_iter().for_each(|module| {
       module.module_type = ModuleType::Js;
-      module.meta = Box::new(ModuleMetaData::Script(ScriptModuleMetaData::default()));
+      module.meta = Box::new(ModuleMetaData::Script(Box::new(
+        ScriptModuleMetaData::default(),
+      )));
       module.meta.as_script_mut().ast = Module {
         body: vec![],
         span: DUMMY_SP,

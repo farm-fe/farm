@@ -60,7 +60,7 @@ pub fn parse_module(code: &str) -> (SwcModule, Arc<SourceMap>) {
 pub fn create_module_with_comments(code: &str) -> Module {
   let mut module = Module::new("used_exports_idents_test".into());
   let (ast, comments, unresolved_mark, top_level_mark) = parse_module_with_comments(code);
-  module.meta = Box::new(ModuleMetaData::Script(ScriptModuleMetaData {
+  module.meta = Box::new(ModuleMetaData::Script(Box::new(ScriptModuleMetaData {
     ast,
     top_level_mark: top_level_mark.as_u32(),
     unresolved_mark: unresolved_mark.as_u32(),
@@ -70,7 +70,7 @@ pub fn create_module_with_comments(code: &str) -> Module {
     comments: comments.into(),
     custom: Default::default(),
     ..Default::default()
-  }));
+  })));
   module
 }
 
@@ -78,7 +78,7 @@ pub fn create_module_with_comments(code: &str) -> Module {
 pub fn create_module(code: &str) -> (Module, Arc<SourceMap>) {
   let mut module = Module::new("used_exports_idents_test".into());
   let (ast, cm) = parse_module(code);
-  module.meta = Box::new(ModuleMetaData::Script(ScriptModuleMetaData {
+  module.meta = Box::new(ModuleMetaData::Script(Box::new(ScriptModuleMetaData {
     ast,
     top_level_mark: 0,
     unresolved_mark: 0,
@@ -88,7 +88,7 @@ pub fn create_module(code: &str) -> (Module, Arc<SourceMap>) {
     comments: Default::default(),
     custom: Default::default(),
     ..Default::default()
-  }));
+  })));
   (module, cm)
 }
 
@@ -97,7 +97,7 @@ pub fn create_module_with_globals(code: &str) -> Module {
   GLOBALS.set(&Globals::new(), || {
     let mut module = Module::new("used_exports_idents_test".into());
     let (ast, _) = parse_module(code);
-    module.meta = Box::new(ModuleMetaData::Script(ScriptModuleMetaData {
+    module.meta = Box::new(ModuleMetaData::Script(Box::new(ScriptModuleMetaData {
       ast,
       top_level_mark: 0,
       unresolved_mark: 0,
@@ -107,7 +107,7 @@ pub fn create_module_with_globals(code: &str) -> Module {
       comments: Default::default(),
       custom: Default::default(),
       ..Default::default()
-    }));
+    })));
     module
   })
 }
