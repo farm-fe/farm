@@ -15,7 +15,7 @@ pub fn get_resource_cache_key(
   let module_graph = context.module_graph.read();
   let mut code = resource_pot.id.to_string();
 
-  for module_id in &resource_pot.modules() {
+  for module_id in resource_pot.modules() {
     let module = module_graph
       .module(module_id)
       .unwrap_or_else(|| panic!("module not found: {:?}", module_id.to_string()));

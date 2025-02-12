@@ -503,7 +503,7 @@ impl StatementGraph {
 
           // only trace the statement that defined idents
           for dept_defined_ident in &dept_stmt.defined_idents {
-            if let Some(dept_used_cur_idents) = edge.used_idents_map.get(&dept_defined_ident) {
+            if let Some(dept_used_cur_idents) = edge.used_idents_map.get(dept_defined_ident) {
               if !dept_used_cur_idents.is_disjoint(read_top_level_vars) {
                 used_dept_defined_idents.insert(dept_defined_ident.clone());
               }

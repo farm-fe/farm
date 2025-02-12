@@ -3,7 +3,7 @@ use std::sync::Arc;
 use farmfe_core::{
   context::CompilationContext,
   module::{
-    meta_data::script::CommentsMetaData, module_graph::ModuleGraph, ModuleId, ModuleSystem,
+    meta_data::script::CommentsMetaData, module_graph::ModuleGraph, ModuleId,
   },
   plugin::ResolveKind,
   rayon::iter::{IntoParallelRefMutIterator, ParallelIterator},

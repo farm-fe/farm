@@ -1,5 +1,3 @@
-use std::path::PathBuf;
-
 use farmfe_core::{
   config::{
     config_regex::ConfigRegex,

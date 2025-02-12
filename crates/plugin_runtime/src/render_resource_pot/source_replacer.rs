@@ -158,7 +158,7 @@ impl SourceReplacer<'_> {
 
         if dep_module.module_type.is_script() {
           // println!("replace {:?} to {:?}", value, id.id(self.mode.clone()));
-          str.value = id.id(self.mode.clone()).into();
+          str.value = id.id(self.mode).into();
           str.span = DUMMY_SP;
           str.raw = None;
           return SourceReplaceResult::Replaced;
@@ -242,7 +242,7 @@ impl<'a> ExistingCommonJsRequireVisitor<'a> {
   }
 }
 
-impl<'a> VisitMut for ExistingCommonJsRequireVisitor<'a> {
+impl VisitMut for ExistingCommonJsRequireVisitor<'_> {
   fn visit_mut_call_expr(&mut self, call_expr: &mut CallExpr) {
     if call_expr.args.len() != 1 {
       call_expr.visit_mut_children_with(self);

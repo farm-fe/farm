@@ -75,7 +75,7 @@ struct UselessSpecifierRemover<'a> {
   used_defined_idents: &'a HashSet<SwcId>,
 }
 
-impl<'a> VisitMut for UselessSpecifierRemover<'a> {
+impl VisitMut for UselessSpecifierRemover<'_> {
   fn visit_mut_import_decl(&mut self, import_decl: &mut ImportDecl) {
     let mut specifiers_to_remove = vec![];
 

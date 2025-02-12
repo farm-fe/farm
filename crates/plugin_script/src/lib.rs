@@ -56,8 +56,11 @@ mod transform_import_meta_url;
 
 use transform_import_meta_url::transform_url_with_import_meta_url;
 
-/// ScriptPlugin is used to support compiling js/ts/jsx/tsx/... files, support loading, parse, analyze dependencies and code generation.
-/// Note that we do not do transforms here, the transforms (e.g. strip types, jsx...) are handled in a separate plugin (farmfe_plugin_swc_transforms).
+/// ScriptPlugin is used to support compiling js/ts/jsx/tsx/... files,
+/// support loading, parse, analyze dependencies and code generation.
+///
+/// Note that we do not do transforms here, the transforms (e.g. strip types, jsx...)
+/// are handled in a separate plugin (farmfe_plugin_swc_transforms).
 pub struct FarmPluginScript {}
 
 impl Plugin for FarmPluginScript {
@@ -165,7 +168,7 @@ impl Plugin for FarmPluginScript {
       return Ok(None);
     }
 
-    let cm = context.meta.get_module_source_map(&param.module_id);
+    let cm = context.meta.get_module_source_map(param.module_id);
 
     // transform decorators if needed
     // this transform should be done before strip typescript cause it may need to access the type information

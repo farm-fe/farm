@@ -16,8 +16,7 @@ use farmfe_utils::is_skip_action_by_comment;
 fn normalized_glob_pattern(pattern: String) -> String {
   let mut pattern_builder: Vec<String> = vec![];
   let path_split = pattern
-    .split("/")
-    .into_iter()
+    .split('/')
     .filter(|str| str != &"")
     .collect::<Vec<_>>();
 
@@ -67,7 +66,7 @@ fn normalized_glob_pattern(pattern: String) -> String {
     pattern_builder.insert(0, "".to_string());
   }
 
-  return pattern_builder.join("/");
+  pattern_builder.join("/")
 }
 
 // transform `new URL("url", import.meta.url)` to `new URL(import.meta.glob('url', { eager: true, import: 'default', query: 'url' }), import.meta.url)`
@@ -119,7 +118,7 @@ impl<'a> ImportMetaURLVisitor<'a> {
                 .get_leading(args[0].span_lo())
                 .is_some_and(|c| {
                   c.iter()
-                    .any(|item| is_skip_action_by_comment(&item.text.as_str()))
+                    .any(|item| is_skip_action_by_comment(item.text.as_str()))
                 })
               {
                 return None;
@@ -147,7 +146,7 @@ impl<'a> ImportMetaURLVisitor<'a> {
                         }
                       }
 
-                      pattern_builder.push_str(&"**");
+                      pattern_builder.push_str("**");
                       index += 1;
                     }
                   }
@@ -229,7 +228,7 @@ impl<'a> ImportMetaURLVisitor<'a> {
   }
 }
 
-impl<'a> VisitMut for ImportMetaURLVisitor<'a> {
+impl VisitMut for ImportMetaURLVisitor<'_> {
   fn visit_mut_expr(&mut self, node: &mut Expr) {
     if self.transform_url(node).is_none() {
       node.visit_mut_children_with(self);

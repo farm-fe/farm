@@ -1,19 +1,11 @@
-use std::{path::PathBuf, sync::Arc};
+use std::sync::Arc;
 
 use farmfe_core::{
   config::{minify::MinifyOptions, Config},
   context::CompilationContext,
-  error::Result,
-  module::ModuleId,
-  parking_lot::Mutex,
   plugin::Plugin,
-  rayon::iter::{IntoParallelIterator, ParallelIterator},
-  resource::resource_pot::{ResourcePot, ResourcePotType},
-  swc_common::Mark,
-  swc_ecma_ast::Id,
-  HashMap, HashSet,
+  resource::resource_pot::ResourcePot,
 };
-use farmfe_toolkit::{script::swc_try_with::try_with, swc_ecma_visit::VisitMutWith};
 
 // use ident_generator::MinifiedIdentsGenerator;
 // use imports_minifier::{IdentReplacer, ImportsMinifier};

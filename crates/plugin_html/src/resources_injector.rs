@@ -74,7 +74,7 @@ impl<'a> ResourcesInjector<'a> {
   fn inject_runtime_resources(&mut self, element: &mut Element) {
     element.children.push(Child::Element(create_element(
       "script",
-      Some(&self.runtime_code),
+      Some(self.runtime_code),
       vec![],
     )));
   }
@@ -195,7 +195,7 @@ impl<'a> ResourcesInjector<'a> {
   }
 }
 
-impl<'a> VisitMut for ResourcesInjector<'a> {
+impl VisitMut for ResourcesInjector<'_> {
   fn visit_mut_element(&mut self, element: &mut Element) {
     if element.tag_name.to_string() == "head" || element.tag_name.to_string() == "body" {
       let mut children_to_remove = vec![];

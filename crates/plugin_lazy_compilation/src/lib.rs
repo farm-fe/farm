@@ -164,7 +164,7 @@ impl Plugin for FarmPluginLazyCompilation {
               &stringify_query(&param.query),
               &context.config.root,
             )
-            .id(context.config.mode.clone())
+            .id(context.config.mode)
             .replace('\\', r"\\"),
           )
           .replace(
