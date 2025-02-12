@@ -103,11 +103,8 @@ impl UsedExports {
   }
 
   pub fn set_export_all(&mut self) {
-    match self {
-      UsedExports::Partial(_) => {
-        *self = UsedExports::All;
-      }
-      _ => {}
+    if let UsedExports::Partial(_) = self {
+      *self = UsedExports::All;
     }
   }
 

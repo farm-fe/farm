@@ -100,8 +100,8 @@ pub fn render_resource_pot_modules(
 
   modules.sort_by(|a, b| {
     a.module_id
-      .id(context.config.mode.clone())
-      .cmp(&b.module_id.id(context.config.mode.clone()))
+      .id(context.config.mode)
+      .cmp(&b.module_id.id(context.config.mode))
   });
 
   Ok((modules, source_maps))

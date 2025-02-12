@@ -31,7 +31,7 @@ impl FarmPluginMinify {
       minify_options: config
         .minify
         .clone()
-        .map(|val| MinifyOptions::from(val))
+        .map(MinifyOptions::from)
         .unwrap_or_default(),
     }
   }

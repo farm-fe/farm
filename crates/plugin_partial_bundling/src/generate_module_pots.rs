@@ -93,10 +93,7 @@ pub fn generate_module_pots(
     }
   }
 
-  let mut module_pots = module_pot_map
-    .into_iter()
-    .map(|(_, module_pot)| module_pot)
-    .collect::<Vec<_>>();
+  let mut module_pots = module_pot_map.into_values().collect::<Vec<_>>();
 
   module_pots.sort_by_key(|m| m.execution_order);
 

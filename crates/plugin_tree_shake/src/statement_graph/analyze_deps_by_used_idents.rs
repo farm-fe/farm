@@ -208,7 +208,6 @@ impl Visit for UsedIdentsVisitor<'_> {
             let defined_idents = defined_idents_collector
               .defined_idents
               .into_iter()
-              .map(|e| e.into())
               .collect::<Vec<_>>();
 
             self.with_ident(defined_idents, |v| {

@@ -339,7 +339,7 @@ impl Plugin for FarmPluginScript {
         }],
       }))
     } else {
-      return Ok(None);
+      Ok(None)
     }
   }
 }
@@ -364,8 +364,8 @@ pub fn generate_code_and_sourcemap(
 
   let mut mappings = vec![];
   let code_bytes = codegen_module(
-    &wrapped_resource_pot_ast,
-    context.config.script.target.clone(),
+    wrapped_resource_pot_ast,
+    context.config.script.target,
     merged_sourcemap.clone(),
     if sourcemap_enabled {
       Some(&mut mappings)

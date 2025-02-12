@@ -28,7 +28,7 @@ impl DepsAnalyzer {
   pub fn analyze_deps(&mut self, document: &Document) -> Vec<PluginAnalyzeDepsHookResultEntry> {
     document.visit_with(self);
 
-    self.deps.take().unwrap_or(vec![])
+    self.deps.take().unwrap_or_default()
   }
 
   fn insert_dep(&mut self, dep: PluginAnalyzeDepsHookResultEntry) {
@@ -77,12 +77,9 @@ impl Visit for DepsAnalyzer {
 }
 
 pub fn get_script_type_module_code(element: &Element) -> Option<String> {
-  if element.tag_name.to_string() == "script" {
+  if element.tag_name == "script" {
     // check if it's a module script
-    let src_attr = element
-      .attributes
-      .iter()
-      .find(|&attr| attr.name.to_string() == "type");
+    let src_attr = element.attributes.iter().find(|&attr| attr.name == "type");
 
     let mut is_module = false;
 
@@ -114,10 +111,7 @@ fn get_script_src_or_code(
   element: &Element,
 ) -> Option<String> {
   if element.tag_name.to_string() == "script" {
-    let src_attr = element
-      .attributes
-      .iter()
-      .find(|&attr| attr.name.to_string() == "src");
+    let src_attr = element.attributes.iter().find(|&attr| attr.name == "src");
 
     if let Some(src_attr) = src_attr {
       if let Some(value) = &src_attr.value {
@@ -154,7 +148,7 @@ pub fn is_link_css(element: &Element) -> bool {
     && element
       .attributes
       .iter()
-      .any(|attr| attr.name.to_string() == "rel" && attr.value.as_deref() == Some("stylesheet"))
+      .any(|attr| attr.name == "rel" && attr.value.as_deref() == Some("stylesheet"))
 }
 
 pub fn get_link_css_code(element: &Element) -> Option<String> {
@@ -173,10 +167,7 @@ pub fn get_link_css_code(element: &Element) -> Option<String> {
 
 fn get_href_link_or_code(analyzer: Option<&mut DepsAnalyzer>, element: &Element) -> Option<String> {
   if is_link_css(element) {
-    let src_attr = element
-      .attributes
-      .iter()
-      .find(|&attr| attr.name.to_string() == "href");
+    let src_attr = element.attributes.iter().find(|&attr| attr.name == "href");
 
     if let Some(src_attr) = src_attr {
       if let Some(value) = &src_attr.value {

@@ -25,12 +25,12 @@ pub fn find_hmr_boundaries(
     }
 
     boundaries.insert(
-      id.id(context.config.mode.clone()),
+      id.id(context.config.mode),
       res
         .into_iter()
         .map(|v| {
           v.into_iter()
-            .map(|id| id.id(context.config.mode.clone()))
+            .map(|id| id.id(context.config.mode))
             .collect()
         })
         .collect(),

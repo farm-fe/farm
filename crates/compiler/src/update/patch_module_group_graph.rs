@@ -169,16 +169,16 @@ fn remove_dynamic_module_group(
   // means this module is no longer imported by any dynamic import, and its module group should be removed,
   // as well as all modules inside this module group
   let module_group = module_group_graph
-    .module_group_mut(&removed_group_id)
+    .module_group_mut(removed_group_id)
     .unwrap_or_else(|| panic!("module group {removed_group_id:?} not found"));
 
   module_group.modules().iter().for_each(|module_id| {
     let module = module_graph.module_mut(module_id).unwrap();
-    module.module_groups.remove(&removed_group_id);
+    module.module_groups.remove(removed_group_id);
     affected_module_groups.extend(module.module_groups.clone());
   });
   // do not need to remove the edge cause it will be removed automatically when the module is removed
-  module_group_graph.remove_module_group(&removed_group_id);
+  module_group_graph.remove_module_group(removed_group_id);
 }
 
 /// Patch the module group graph when a dynamic import is added

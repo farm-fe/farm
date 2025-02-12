@@ -11,7 +11,8 @@ use farmfe_core::{
 use std::collections::VecDeque;
 
 pub fn module_group_graph_from_module_graph(module_graph: &mut ModuleGraph) -> ModuleGroupGraph {
-  let get_entries = |entries: &HashMap<ModuleId, String>| entries.clone().into_keys().collect();
+  let get_entries =
+    |entries: &HashMap<ModuleId, String>| entries.clone().into_keys().collect::<Vec<_>>();
 
   let mut module_group_graph =
     module_group_graph_from_entries(&get_entries(&module_graph.entries), module_graph);
@@ -26,14 +27,14 @@ pub fn module_group_graph_from_module_graph(module_graph: &mut ModuleGraph) -> M
 }
 
 pub fn module_group_graph_from_entries(
-  entries: &Vec<ModuleId>,
+  entries: &[ModuleId],
   module_graph: &mut ModuleGraph,
 ) -> ModuleGroupGraph {
   let mut module_group_graph = ModuleGroupGraph::new();
   let mut edges = vec![];
   let mut visited = HashSet::default();
 
-  for entry in entries.clone() {
+  for entry in entries.iter().cloned() {
     if visited.contains(&entry) {
       continue;
     }

@@ -19,7 +19,7 @@ pub fn get_dynamic_resources_map(
 ) -> HashMap<ModuleId, Vec<(String, ResourceType)>> {
   let mut dep_module_groups = vec![];
 
-  module_group_graph.bfs(&module_group_id, &mut |mg_id| {
+  module_group_graph.bfs(module_group_id, &mut |mg_id| {
     if mg_id != module_group_id {
       dep_module_groups.push(mg_id.clone());
     }
@@ -31,12 +31,9 @@ pub fn get_dynamic_resources_map(
     let mg = module_group_graph.module_group(&mg_id).unwrap();
 
     for rp_id in &mg.sorted_resource_pots(module_graph, resource_pot_map) {
-      let rp = resource_pot_map.resource_pot(rp_id).unwrap_or_else(|| {
-        panic!(
-          "Resource pot {} not found in resource pot map",
-          rp_id.to_string()
-        )
-      });
+      let rp = resource_pot_map
+        .resource_pot(rp_id)
+        .unwrap_or_else(|| panic!("Resource pot {} not found in resource pot map", rp_id));
 
       let resources = dynamic_resources_map
         .entry(mg.entry_module_id.clone())

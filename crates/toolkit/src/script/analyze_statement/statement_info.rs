@@ -95,7 +95,7 @@ pub fn analyze_statement_info(id: &StatementId, stmt: &ModuleItem) -> AnalyzedSt
 
             for defined_ident in defined_idents_collector.defined_idents {
               specifiers.push(ExportSpecifierInfo::Named {
-                local: defined_ident.clone().into(),
+                local: defined_ident.clone(),
                 exported: None,
               });
               defined_idents.insert(defined_ident);

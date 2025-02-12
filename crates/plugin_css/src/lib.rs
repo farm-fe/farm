@@ -341,7 +341,7 @@ impl Plugin for FarmPluginCss {
             }
           }
           export_names.push((
-            self.locals_conversion.transform(&name),
+            self.locals_conversion.transform(name),
             after_transform_classes,
           ));
         }

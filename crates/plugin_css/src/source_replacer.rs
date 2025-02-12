@@ -40,7 +40,7 @@ impl<'a> SourceReplacer<'a> {
   }
 }
 
-impl<'a> VisitMut for SourceReplacer<'a> {
+impl VisitMut for SourceReplacer<'_> {
   fn visit_mut_url(&mut self, url: &mut Url) {
     if let Some(name) = &url.name.raw {
       if name == "url" {

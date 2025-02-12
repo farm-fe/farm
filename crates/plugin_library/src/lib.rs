@@ -68,8 +68,8 @@ impl Plugin for FarmPluginLibrary {
     Ok(Some(ResourcePotMetaData::Js(JsResourcePotMetaData {
       ast,
       external_modules: external_modules
-        .into_iter()
-        .map(|(_, id)| id.to_string())
+        .into_values()
+        .map(|id| id.to_string())
         .collect(),
       rendered_modules: module_ids,
       comments,

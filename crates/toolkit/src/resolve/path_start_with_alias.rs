@@ -22,7 +22,7 @@ const REGEX_PREFIX: &str = "$__farm_regex:";
 // })
 // }
 
-pub fn is_start_with_alias(alias_vec: &Vec<AliasItem>, path: &str) -> bool {
+pub fn is_start_with_alias(alias_vec: &[AliasItem], path: &str) -> bool {
   alias_vec.iter().any(|alias_item| {
     match alias_item {
       AliasItem::Complex {

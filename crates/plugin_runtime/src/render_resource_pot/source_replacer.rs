@@ -70,7 +70,7 @@ impl<'a> SourceReplacer<'a> {
   }
 }
 
-impl<'a> VisitMut for SourceReplacer<'a> {
+impl VisitMut for SourceReplacer<'_> {
   fn visit_mut_expr(&mut self, expr: &mut Expr) {
     if let Expr::Call(call_expr) = expr {
       if let SourceReplaceResult::NotScriptModule = self.replace_source_with_id(call_expr) {
@@ -104,7 +104,7 @@ impl SourceReplacer<'_> {
     ] {
       if let Some(dep_id) = self
         .module_graph
-        .get_dep_by_source_optional(&self.module_id, &source, Some(kind.clone()))
+        .get_dep_by_source_optional(&self.module_id, source, Some(kind.clone()))
         .or(
           self
             .hoisted_external_modules
@@ -189,7 +189,7 @@ impl SourceReplacer<'_> {
             return SourceReplaceResult::NotReplaced;
           }
 
-          str.value = id.id(self.mode.clone()).into();
+          str.value = id.id(self.mode).into();
           str.span = DUMMY_SP;
           str.raw = None;
         } else {

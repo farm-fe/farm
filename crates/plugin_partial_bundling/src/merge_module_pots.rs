@@ -1,7 +1,7 @@
 //! Merge module pots to resource pots in the same ModuleGroup.
 //! See https://github.com/farm-fe/rfcs/blob/main/rfcs/003-partial-bundling/rfc.md#merge-module-pots-into-resource-pot
 
-use std::{cmp::Ordering, usize};
+use std::cmp::Ordering;
 
 use farmfe_core::config::Config;
 use farmfe_core::{
@@ -86,8 +86,7 @@ impl<'a> CurrentGeneration<'a> {
     self
       .module_pots
       .iter()
-      .map(|module_pot| module_pot.modules())
-      .flatten()
+      .flat_map(|module_pot| module_pot.modules())
       .cloned()
       .collect()
   }
@@ -223,7 +222,7 @@ fn merge_resource_pots_by_buckets(
 ) -> Vec<ResourcePot> {
   let mut final_resource_pots = vec![];
 
-  for (_, module_pots) in module_pots_map {
+  for module_pots in module_pots_map.values() {
     let mut current_generation_map = HashMap::<(ModuleType, bool), CurrentGeneration>::default();
     let mut resource_pots = vec![];
 
@@ -390,11 +389,7 @@ fn handle_enforce_target_min_size(
     }
   }
 
-  let mut final_resource_pot_ids = resource_pot_map
-    .iter()
-    .map(|(id, _)| id)
-    .cloned()
-    .collect::<Vec<_>>();
+  let mut final_resource_pot_ids = resource_pot_map.keys().cloned().collect::<Vec<_>>();
   final_resource_pot_ids.sort();
 
   // merge resource pots left into the first matched resource pot
@@ -606,10 +601,7 @@ fn handle_enforce_target_concurrent_requests(
     }
   }
 
-  let mut resource_pots = resource_pot_map
-    .into_iter()
-    .map(|(_, v)| v)
-    .collect::<Vec<_>>();
+  let mut resource_pots = resource_pot_map.into_values().collect::<Vec<_>>();
   resource_pots.sort_by(|a, b| a.id.cmp(&b.id));
 
   resource_pots

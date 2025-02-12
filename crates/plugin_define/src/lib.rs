@@ -93,12 +93,10 @@ impl Plugin for FarmPluginDefine {
           } else {
             content = regex.replace_all(&content, &value).to_string();
           }
+        } else if content.is_empty() {
+          content = param.content.replace(key, &value);
         } else {
-          if content.is_empty() {
-            content = param.content.replace(key, &value);
-          } else {
-            content = content.replace(key, &value);
-          }
+          content = content.replace(key, &value);
         };
       }
 

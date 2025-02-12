@@ -368,7 +368,7 @@ impl Plugin for FarmPluginTransformHtml {
         let dep_module = module_graph.module(&dep.0).unwrap();
 
         if dep_module.module_type.is_script() {
-          Some(dep.0.id(context.config.mode.clone()))
+          Some(dep.0.id(context.config.mode))
         } else {
           None
         }
@@ -391,7 +391,7 @@ impl Plugin for FarmPluginTransformHtml {
       },
     );
 
-    let html_module = module_graph.module(&current_html_id).unwrap();
+    let html_module = module_graph.module(current_html_id).unwrap();
     let mut html_ast = html_module.meta.as_html().ast.clone();
     resources_injector.inject(&mut html_ast);
 
@@ -463,7 +463,7 @@ impl Plugin for FarmPluginMinifyHtml {
           Err(err) => {
             let farm_debug_html_minify = "FARM_DEBUG_HTML_MINIFY";
 
-            if let Ok(_) = std::env::var(farm_debug_html_minify) {
+            if std::env::var(farm_debug_html_minify).is_ok() {
               println!(
                 "Can not minify html {} due to html syntax error: {}",
                 resource.name, err

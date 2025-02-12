@@ -249,7 +249,7 @@ impl VisitMut for ResourcesInjector<'_> {
           ],
         )));
       }
-    } else if element.tag_name.to_string() == "body" {
+    } else if element.tag_name == "body" {
       for script in &self.script_resources {
         element.children.push(Child::Element(create_element(
           "script",

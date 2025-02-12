@@ -37,8 +37,8 @@ pub fn generate_resource_pots(
     let base_resource_pot_name = generate_resource_pot_name(
       module_group_id.clone(),
       &used_resource_pot_names,
-      &module_graph,
-      &module_group_graph,
+      module_graph,
+      module_group_graph,
     );
     used_resource_pot_names.insert(base_resource_pot_name.clone());
 
@@ -55,7 +55,7 @@ pub fn generate_resource_pots(
       let module_bucket = module_buckets_map.get_mut(&module_bucket_id).unwrap();
 
       let module_pots: Vec<ModulePot> = generate_module_pots(
-        &module_bucket.modules(),
+        module_bucket.modules(),
         module_graph,
         config,
         module_group_bucket.resource_type.clone(),
@@ -123,7 +123,7 @@ fn generate_resource_pot_name(
     }
   }
 
-  return name;
+  name
 }
 
 #[cfg(test)]

@@ -253,7 +253,7 @@ impl<'a> ImportGlobVisitor<'a> {
     }
   }
 
-  fn create_import_glob_info(sources: Vec<String>, args: &Vec<ExprOrSpread>) -> ImportMetaGlobInfo {
+  fn create_import_glob_info(sources: Vec<String>, args: &[ExprOrSpread]) -> ImportMetaGlobInfo {
     let mut import_glob_info = ImportMetaGlobInfo {
       sources,
       eager: false,
@@ -270,7 +270,7 @@ impl<'a> ImportGlobVisitor<'a> {
           import_glob_info.glob_import_as = Some(options.remove("as").unwrap());
         }
         if options.contains_key("eager") {
-          let eager = if options.remove("eager").unwrap() == "true".to_string() {
+          let eager = if options.remove("eager").unwrap() == "true" {
             true
           } else {
             false
@@ -370,7 +370,7 @@ impl<'a> ImportGlobVisitor<'a> {
                 return Some(if new_source.is_absolute() {
                   format!(
                     "/{}",
-                    relative(&self.root, &new_source.to_string_lossy().to_string())
+                    relative(&self.root, new_source.to_string_lossy().as_ref())
                   )
                 } else {
                   new_source.to_string_lossy().to_string()
@@ -435,11 +435,8 @@ impl<'a> ImportGlobVisitor<'a> {
         let rel_source_path = PathBuf::from(&rel_source);
 
         for comp in rel_source_path.components() {
-          match comp {
-            Component::ParentDir => {
+          if comp == Component::ParentDir {
               root_path.pop();
-            }
-            _ => {}
           }
         }
 
@@ -659,7 +656,7 @@ impl<'a> ImportGlobVisitor<'a> {
   }
 }
 
-impl<'a> VisitMut for ImportGlobVisitor<'a> {
+impl VisitMut for ImportGlobVisitor<'_> {
   fn visit_mut_expr(&mut self, expr: &mut Expr) {
     match expr {
       Expr::Call(CallExpr {

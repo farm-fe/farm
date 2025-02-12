@@ -113,7 +113,7 @@ pub fn render_module(
       module_graph,
       module_id: module_id.clone(),
       hoisted_external_modules,
-      mode: context.config.mode.clone(),
+      mode: context.config.mode,
     });
     cloned_module.visit_mut_with(&mut source_replacer);
     cloned_module.visit_mut_with(&mut hygiene_with_config(HygieneConfig {

@@ -55,11 +55,11 @@ pub fn is_link_css_or_code(
 }
 
 pub fn is_script_resource(element: &Element) -> bool {
-  if element.tag_name.to_string() == "script" {
+  if element.tag_name == "script" {
     let src_attr = element
       .attributes
       .iter()
-      .find(|&attr| attr.name.to_string() == FARM_RESOURCE);
+      .find(|&attr| attr.name == FARM_RESOURCE);
 
     return src_attr.is_some();
   }
@@ -85,7 +85,7 @@ pub fn create_farm_runtime_output_resource(
 
   Resource {
     name: name.clone(),
-    bytes: bytes.to_owned().into(),
+    bytes: bytes.into_owned().into(),
     emitted: false,
     resource_type: ResourceType::Js,
     origin: ResourceOrigin::ResourcePot(name),
