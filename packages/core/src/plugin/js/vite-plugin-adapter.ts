@@ -826,7 +826,6 @@ export class VitePluginAdapter implements JsPlugin {
           const { htmlResource } = params;
           const hook = this.wrapRawPluginHook(
             'transformIndexHtml',
-            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
             // @ts-ignore ignore type error
             this._rawPlugin.transformIndexHtml,
             context

@@ -303,7 +303,6 @@ interface ResolvedCss extends CssConfig {
   };
 }
 
-// eslint-disable-next-line @typescript-eslint/no-empty-interface
 export interface ResolvedCompilation
   extends Exclude<Config['config'], undefined> {
   external?: string[];

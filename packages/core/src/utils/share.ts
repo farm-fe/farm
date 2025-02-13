@@ -1,12 +1,10 @@
 import fs from 'node:fs';
-/* eslint-disable no-prototype-builtins */
 import os from 'node:os';
 import path, { dirname } from 'node:path';
 import readline from 'node:readline';
 import { fileURLToPath } from 'node:url';
 import { Config, OutputConfig } from '../types/binding.js';
 import { cleanUrl } from './url.js';
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore import packageJson from '../../package.json';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
