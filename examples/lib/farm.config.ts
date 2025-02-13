@@ -20,5 +20,25 @@ export default defineConfig({
       // tsConfigPath: './tsconfig.json'
     // })
   // ]
-  plugins: ['@farmfe/plugin-dts']
+  plugins: [test()]
 });
+function test() {
+  return {
+    name: "test",
+    freezeModule: {
+      filters: {
+        // 改为具体的模块类型而不是正则 ".*"
+        moduleTypes: ["ts"],
+        resolvedPaths: ['.*']
+      },
+      async executor(param) {
+        if (param.moduleId.endsWith('.ts')) {
+          console.log(param.content);
+          return {
+            content: param.content,
+          };
+        }
+      },
+    }
+  };
+}

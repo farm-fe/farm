@@ -24,6 +24,10 @@ export interface JsPluginProcessModuleHookFilters {
   moduleTypes: Array<string>
   resolvedPaths: Array<string>
 }
+export interface JsPluginFreezeModuleHookFilters {
+  moduleTypes: Array<string>
+  resolvedPaths: Array<string>
+}
 export interface WatchDiffResult {
   add: Array<string>
   remove: Array<string>

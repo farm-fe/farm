@@ -17,6 +17,6 @@ pub fn finalize_module(
 
   let mut param = PluginFinalizeModuleHookParam { module, deps };
   context.plugin_driver.finalize_module(&mut param, context)?;
-
+  
   Ok(())
 }

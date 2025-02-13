@@ -1,0 +1,16 @@
+import type { ModuleSystem } from "../module-system.js";
+declare const __FARM_ENABLE_EXPORT_HELPER__: boolean;
+declare const __FARM_ENABLE_EXPORT_ALL_HELPER__: boolean;
+declare const __FARM_ENABLE_IMPORT_ALL_HELPER__: boolean;
+declare const __FARM_IMPORT_EXPORT_FROM_HELPER__: boolean;
+declare const __FARM_ENABLE_IMPORT_DEFAULT_HELPER__: boolean;
+export declare function initModuleSystem(ms: ModuleSystem);
+declare function exportByDefineProperty(to: any, to_k: string, get: () => any);
+declare function defineExport(to: any, to_k: string, val: any);
+export declare function defineExportEsModule(to: any);
+export declare function defineExportStar(to: any, from: any);
+export declare function interopRequireDefault(obj: any);
+declare function getRequireWildcardCache(nodeInterop: any);
+export declare function interopRequireWildcard(obj: any, nodeInterop: any);
+declare function defineExportFrom(to: any, to_k: string, from: any, from_k: string);
+declare function importDefault(v: any);
