@@ -47,6 +47,10 @@ impl<'a> FeaturesAnalyzer<'a> {
           if matches!(sp, ImportSpecifierInfo::Default(_)) {
             feature_flags.insert(FeatureFlag::ImportDefault);
           }
+
+          if matches!(sp, ImportSpecifierInfo::Named { .. }) {
+            feature_flags.insert(FeatureFlag::ImportNamed);
+          }
         }
       }
 

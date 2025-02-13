@@ -51,7 +51,10 @@ pub fn update_async_modules(
       let dependencies = module_graph.dependencies(module_id);
       let is_deps_async = dependencies.iter().any(|(dep_id, edge)| {
         let dep = module_graph.module(dep_id).unwrap();
-        dep.meta.as_script().is_async && !edge.is_dynamic_import() && !edge.is_dynamic_entry()
+        dep.module_type.is_script()
+          && dep.meta.as_script().is_async
+          && !edge.is_dynamic_import()
+          && !edge.is_dynamic_entry()
       });
       if is_deps_async || is_async {
         added_async_modules.push(module_id.clone());
