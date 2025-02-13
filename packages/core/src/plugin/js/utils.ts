@@ -335,13 +335,11 @@ export function transformRollupResource2FarmResource(
   }
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const notSupport: (method: string) => (...args: any[]) => any =
   (method) => () => {
     console.warn(`${method} not support`);
   };
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const noop: (...args: any) => any = () => void 0;
 
 function transformFarmFormatToRollupFormat(

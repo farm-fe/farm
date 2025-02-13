@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 // ISC License
 
 // Copyright (c) 2021 Alexey Raspopov, Kostiantyn Denysov, Anton Verinov

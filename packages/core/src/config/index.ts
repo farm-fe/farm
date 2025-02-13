@@ -310,7 +310,6 @@ export async function normalizeUserCompilationConfig(
   normalizeOutput(resolvedCompilation, isProduction, resolvedUserConfig.logger);
   normalizeExternal(resolvedUserConfig, resolvedCompilation);
 
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
   // @ts-ignore do not check type for this internal option
   if (!resolvedCompilation.assets?.publicDir) {
     resolvedCompilation.assets ??= {};
@@ -320,11 +319,9 @@ export async function normalizeUserCompilationConfig(
       : path.join(resolvedCompilation.root, 'public');
 
     if (path.isAbsolute(userPublicDir)) {
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-ignore do not check type for this internal option
       resolvedCompilation.assets.publicDir = userPublicDir;
     } else {
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-ignore do not check type for this internal option
       resolvedCompilation.assets.publicDir = path.join(
         resolvedCompilation.root,

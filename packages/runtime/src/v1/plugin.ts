@@ -30,7 +30,6 @@ export interface FarmRuntimePlugin {
   ) => Promise<ResourceLoadResult>;
 }
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
 export class FarmRuntimePluginContainer {
   plugins: FarmRuntimePlugin[] = [];
 

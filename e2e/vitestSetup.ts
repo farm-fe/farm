@@ -20,7 +20,6 @@ const visitPage = async (
   command: string
 ) => {
   if (!path) return;
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
   // @ts-ignore
   const wsEndpoint = inject('wsEndpoint');
   if (!wsEndpoint) {
