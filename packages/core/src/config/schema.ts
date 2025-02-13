@@ -160,11 +160,6 @@ const serverSchema = z
     port: z.number().positive().int().optional(),
     https: z.custom<SecureServerOptions>(),
     origin: z.string().optional(),
-    protocol: z.enum(['http', 'https']).optional(),
-    hostname: z.object({
-      name: z.string(),
-      host: z.string().optional()
-    }),
     hmr: z
       .union([
         z.boolean(),
