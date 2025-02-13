@@ -59,6 +59,7 @@ impl<'a> UsedIdentsVisitor<'a> {
     self.current_defined_ident = pre;
   }
 
+  #[allow(clippy::wrong_self_convention)]
   pub fn into_scope(&mut self, f: impl FnOnce(&mut Self)) {
     let pre = self.in_top_level;
     self.in_top_level = false;
@@ -202,7 +203,7 @@ impl Visit for UsedIdentsVisitor<'_> {
               }
             };
             let mut defined_idents_collector =
-              DefinedIdentsCollector::from_callback(Box::new(&mut cb));
+              DefinedIdentsCollector::from_callback(&mut cb);
             decl.name.visit_with(&mut defined_idents_collector);
 
             let defined_idents = defined_idents_collector

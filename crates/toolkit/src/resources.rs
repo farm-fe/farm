@@ -94,7 +94,7 @@ pub fn get_dynamic_resources_code(
       visited_resources.insert(key, dynamic_resources.len() - 1);
     }
 
-    let id = module_id.id(mode.clone()).replace(r"\", r"\\");
+    let id = module_id.id(mode).replace(r"\", r"\\");
     dynamic_resources_code_vec.push((id, dynamic_resources_index.join(",")));
   }
 
@@ -153,15 +153,12 @@ pub fn get_initial_resources(
 
   let module_group_id = ModuleGroupId::new(entry_module_id, &ModuleGroupType::Entry);
   let module_group = module_group_graph.module_group(&module_group_id).unwrap();
-  let sorted_resource_pots = module_group.sorted_resource_pots(&module_graph, &resource_pot_map);
+  let sorted_resource_pots = module_group.sorted_resource_pots(module_graph, resource_pot_map);
 
   for rp_id in &sorted_resource_pots {
-    let rp = resource_pot_map.resource_pot(rp_id).unwrap_or_else(|| {
-      panic!(
-        "Resource pot {} not found in resource pot map",
-        rp_id.to_string()
-      )
-    });
+    let rp = resource_pot_map
+      .resource_pot(rp_id)
+      .unwrap_or_else(|| panic!("Resource pot {} not found in resource pot map", rp_id));
 
     let filtered_resources = rp
       .resources()

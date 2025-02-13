@@ -120,16 +120,14 @@ fn generate_module_pot_meta(
       .test
       .iter()
       .any(|c| c.is_match(&module.id.to_string()))
+      && (group_config.group_type.is_match(module.immutable))
+      && (resource_type.is_match(group_config.resource_type.clone()))
     {
-      if (group_config.group_type.is_match(module.immutable))
-        && (resource_type.is_match(group_config.resource_type.clone()))
-      {
-        return ModulePotMeta {
-          name: Some(group_config.name.clone()),
-          id: group_config.name.clone(),
-          enforce: group_is_enforce(&group_config.name, groups_enforce_map),
-        };
-      }
+      return ModulePotMeta {
+        name: Some(group_config.name.clone()),
+        id: group_config.name.clone(),
+        enforce: group_is_enforce(&group_config.name, groups_enforce_map),
+      };
     }
   }
 

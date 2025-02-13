@@ -85,7 +85,7 @@ pub fn create_farm_runtime_output_resource(
 
   Resource {
     name: name.clone(),
-    bytes: bytes.into_owned().into(),
+    bytes: bytes.into_owned(),
     emitted: false,
     resource_type: ResourceType::Js,
     origin: ResourceOrigin::ResourcePot(name),

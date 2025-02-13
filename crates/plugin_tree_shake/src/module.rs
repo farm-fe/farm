@@ -1,4 +1,4 @@
-use std::mem;
+use std::{fmt::Display, mem};
 
 use farmfe_core::{
   module::{Module, ModuleId, ModuleSystem},
@@ -45,13 +45,13 @@ impl UsedExportsIdent {
   }
 }
 
-impl ToString for UsedExportsIdent {
-  fn to_string(&self) -> String {
+impl Display for UsedExportsIdent {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     match self {
-      UsedExportsIdent::SwcIdent(ident) => ident.to_string(),
-      UsedExportsIdent::Default => "default".to_string(),
-      UsedExportsIdent::ExportAll => "*".to_string(),
-      UsedExportsIdent::ImportAll => "import_*_as".to_string(),
+      UsedExportsIdent::SwcIdent(ident) => write!(f, "{}", ident),
+      UsedExportsIdent::Default => write!(f, "default"),
+      UsedExportsIdent::ExportAll => write!(f, "*"),
+      UsedExportsIdent::ImportAll => write!(f, "import_*_as"),
     }
   }
 }

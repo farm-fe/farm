@@ -8,13 +8,12 @@ use std::{
 use bundle::bundle_reference::BundleReferenceManager;
 use farmfe_core::{
   context::CompilationContext,
-  enhanced_magic_string::bundle::Bundle,
   error::{CompilationError, MapCompletionError, Result},
   farm_profile_function, farm_profile_scope,
-  module::{module_graph::ModuleGraph, ModuleId, ModuleType},
+  module::{module_graph::ModuleGraph, ModuleId},
   rayon::iter::{IntoParallelIterator, ParallelIterator},
   resource::resource_pot::{ResourcePot, ResourcePotId, ResourcePotType},
-  swc_ecma_ast::{Id, Module},
+  swc_ecma_ast::Id,
   HashMap,
 };
 pub use polyfill::{Polyfill, SimplePolyfill};

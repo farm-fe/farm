@@ -544,13 +544,13 @@ fn handle_enforce_target_concurrent_requests(
   let len_to_merge = resource_pots.len() - target_concurrent_requests + 1;
   let mut resource_pots_to_merge = HashMap::default();
 
-  for i in 0..len_to_merge {
+  for resource_pot in resource_pots.iter().take(len_to_merge) {
     let key = (
-      resource_pots[i].resource_pot_type.clone(),
-      resource_pots[i].immutable,
+      resource_pot.resource_pot_type.clone(),
+      resource_pot.immutable,
     );
     let value = resource_pots_to_merge.entry(key).or_insert(vec![]);
-    value.push(resource_pots[i].id.clone());
+    value.push(resource_pot.id.clone());
   }
 
   let resource_pot_ids = resource_pots

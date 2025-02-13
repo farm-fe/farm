@@ -1,5 +1,3 @@
-use std::{cell::RefCell, rc::Rc};
-
 use farmfe_core::{
   swc_common::{SyntaxContext, DUMMY_SP},
   swc_ecma_ast::{ArrayLit, CallExpr, Callee, Expr, ExprOrSpread, Ident, ObjectLit, PropOrSpread},

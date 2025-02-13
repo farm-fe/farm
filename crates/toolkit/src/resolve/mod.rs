@@ -56,9 +56,13 @@ pub fn default_package_json() -> PackageJsonInfo {
     Some("0.0.0".to_string()),
   )
 }
-
-/// Try follow symlinks from the specified path, if any ancestor of the path is symlinked, it will be redirected to the real path.
-/// For example, the path is `/root/react/index.js` while `/root/react` is symlinked to `/root/store/react`, then the result should be `/root/store/react/index.js`.
+/// Follow symlinks from the specified path.
+///
+/// Try follow symlinks from the specified path, if any ancestor of the path is symlinked,
+/// it will be redirected to the real path.
+///
+/// For example, the path is `/root/react/index.js` while `/root/react` is symlinked to
+/// `/root/store/react`, then the result should be `/root/store/react/index.js`.
 pub fn follow_symlinks(path: PathBuf) -> PathBuf {
   SYMLINKS_ANALYZER.follow_symlinks(path)
 }

@@ -92,8 +92,8 @@ pub fn concatenate_modules_ast(
   // merge comments, sourcemaps and preserved_module_decls back to strip_module_results
   let stripped_results = comments
     .into_iter()
-    .zip(sourcemaps.into_iter())
-    .zip(preserved_module_decls.into_iter())
+    .zip(sourcemaps)
+    .zip(preserved_module_decls)
     .map(|(((_, comments), (_, ast)), decls)| StripModuleDeclResult {
       comments,
       ast,

@@ -3,29 +3,23 @@ use farmfe_core::{
   config::{config_regex::ConfigRegex, Config, ResolveConfig},
   context::{CompilationContext, EmitFileParams},
   error::CompilationError,
-  plugin::{
-    Plugin, PluginAnalyzeDepsHookParam, PluginFinalizeModuleHookParam,
-    PluginGenerateResourcesHookResult, PluginHookContext, PluginLoadHookParam,
-    PluginLoadHookResult, PluginParseHookParam, PluginProcessModuleHookParam, ResolveKind,
-  },
-  resource::{Resource, ResourceOrigin, ResourceType},
+  plugin::{Plugin, PluginProcessModuleHookParam, ResolveKind},
+  resource::ResourceType,
   stats::Stats,
-  swc_common::{comments::SingleThreadedComments, BytePos, FileName, Mark},
-  swc_ecma_ast::{ImportDecl, Module as EcmaAstModule, ModuleDecl, ModuleItem, Program},
-  swc_ecma_parser::{lexer::Lexer, EsSyntax as EsConfig, JscTarget, Parser, StringInput, Syntax},
+  swc_common::FileName,
+  swc_ecma_ast::{ImportDecl, Module as EcmaAstModule, ModuleDecl, ModuleItem},
 };
 use farmfe_plugin_resolve::resolver::{ResolveOptions, Resolver};
 
 use farmfe_toolkit::{
   sourcemap::PathFilter,
-  swc_ecma_codegen::{to_code, Node},
-  swc_ecma_transforms::{helpers::inject_helpers, typescript},
+  swc_ecma_codegen::to_code,
   swc_ecma_visit::{VisitMut, VisitMutWith},
   swc_typescript::fast_dts::FastDts,
 };
 use std::time::Duration;
 use std::{
-  path::{Path, PathBuf},
+  path::PathBuf,
   sync::{Arc, Mutex},
 };
 

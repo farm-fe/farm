@@ -110,7 +110,7 @@ fn get_script_src_or_code(
   analyzer: Option<&mut DepsAnalyzer>,
   element: &Element,
 ) -> Option<String> {
-  if element.tag_name.to_string() == "script" {
+  if element.tag_name == "script" {
     let src_attr = element.attributes.iter().find(|&attr| attr.name == "src");
 
     if let Some(src_attr) = src_attr {
@@ -144,7 +144,7 @@ pub fn get_script_src_value(element: &Element) -> Option<String> {
 }
 
 pub fn is_link_css(element: &Element) -> bool {
-  element.tag_name.to_string() == "link"
+  element.tag_name == "link"
     && element
       .attributes
       .iter()

@@ -7,7 +7,7 @@ use farmfe_core::{
     ExprStmt, Lit, MemberExpr, MemberProp, ModuleItem, Pat, SimpleAssignTarget, Stmt, VarDecl,
     VarDeclKind, VarDeclarator,
   },
-  HashMap, HashSet,
+  HashMap,
 };
 use farmfe_toolkit::itertools::Itertools;
 

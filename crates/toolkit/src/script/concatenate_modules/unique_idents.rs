@@ -85,7 +85,7 @@ impl<'a> RenameVisitor<'a> {
   }
 }
 
-impl<'a> VisitMut for RenameVisitor<'a> {
+impl VisitMut for RenameVisitor<'_> {
   fn visit_mut_ident(&mut self, n: &mut Ident) {
     if let Some(renamed_ident) = self.rename_handler.get_renamed_ident(&n.to_id().into()) {
       n.ctxt = renamed_ident.ctxt();
@@ -95,7 +95,7 @@ impl<'a> VisitMut for RenameVisitor<'a> {
 }
 
 pub fn init_rename_handler(
-  sorted_modules: &Vec<ModuleId>,
+  sorted_modules: &[ModuleId],
   module_graph: &ModuleGraph,
 ) -> TopLevelIdentsRenameHandler {
   let mut top_level_idents = TopLevelIdents::new();

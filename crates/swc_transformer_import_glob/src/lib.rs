@@ -46,7 +46,7 @@ pub fn transform_import_meta_glob(
   let mut visitor = ImportGlobVisitor::new(cur_dir, root, alias);
   ast.visit_mut_with(&mut visitor);
 
-  if visitor.errors.len() > 0 {
+  if !visitor.errors.is_empty() {
     return Err(farmfe_core::error::CompilationError::GenericError(
       visitor.errors.join("\n"),
     ));
@@ -270,11 +270,7 @@ impl<'a> ImportGlobVisitor<'a> {
           import_glob_info.glob_import_as = Some(options.remove("as").unwrap());
         }
         if options.contains_key("eager") {
-          let eager = if options.remove("eager").unwrap() == "true" {
-            true
-          } else {
-            false
-          };
+          let eager = options.remove("eager").unwrap() == "true";
           import_glob_info.eager = eager;
         }
         if options.contains_key("import") {
@@ -342,8 +338,8 @@ impl<'a> ImportGlobVisitor<'a> {
   // }
 
   fn try_alias(&self, source: &str) -> String {
-    let (source, negative) = if source.starts_with('!') {
-      (&source[1..], true)
+    let (source, negative) = if let Some(stripped_source) = source.strip_prefix('!') {
+      (stripped_source, true)
     } else {
       (source, false)
     };
@@ -402,9 +398,9 @@ impl<'a> ImportGlobVisitor<'a> {
     for source in sources {
       let mut negative = false;
 
-      let source = if source.starts_with("!") {
+      let source = if let Some(stripped_source) = source.strip_prefix('!') {
         negative = true;
-        &source[1..]
+        stripped_source
       } else {
         &source[..]
       };
@@ -417,8 +413,8 @@ impl<'a> ImportGlobVisitor<'a> {
 
       // relative to root when source starts with '/'.
       // and alias
-      let rel_path = if source.starts_with('/') {
-        let abs_path = RelativePath::new(&source[1..]).to_logical_path(&self.root);
+      let rel_path = if let Some(stripped_source) = source.strip_prefix('/') {
+        let abs_path = RelativePath::new(stripped_source).to_logical_path(&self.root);
         relative(&self.cur_dir, &abs_path.to_string_lossy())
       } else {
         source.clone()
@@ -436,7 +432,7 @@ impl<'a> ImportGlobVisitor<'a> {
 
         for comp in rel_source_path.components() {
           if comp == Component::ParentDir {
-              root_path.pop();
+            root_path.pop();
           }
         }
 
@@ -777,20 +773,20 @@ fn get_string_literal(expr: &ExprOrSpread) -> Option<Vec<String>> {
   match &expr.expr {
     box Expr::Lit(Lit::Str(str)) => Some(vec![str.value.to_string()]),
     box Expr::Array(ArrayLit { elems, .. }) => {
-      let mut result = vec![];
+      let results = elems
+        .iter()
+        .flatten()
+        .filter_map(|elem| match elem {
+          ExprOrSpread {
+            spread: None,
+            expr: box Expr::Lit(Lit::Str(str)),
+          } => Some(str.value.to_string()),
+          _ => None,
+        })
+        .collect::<Vec<_>>();
 
-      for elem in elems {
-        if let Some(ExprOrSpread {
-          spread: None,
-          expr: box Expr::Lit(Lit::Str(str)),
-        }) = elem
-        {
-          result.push(str.value.to_string());
-        }
-      }
-
-      if !result.is_empty() {
-        Some(result)
+      if !results.is_empty() {
+        Some(results)
       } else {
         None
       }
@@ -868,8 +864,8 @@ fn get_object_literal(expr: &ExprOrSpread) -> Option<HashMap<String, String>> {
               _ => None,
             };
 
-            if k.is_some() && v.is_some() {
-              result.insert(k.unwrap(), v.unwrap());
+            if let (Some(k), Some(v)) = (k, v) {
+              result.insert(k, v);
             }
           }
           _ => {}

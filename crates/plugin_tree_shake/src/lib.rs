@@ -28,14 +28,14 @@ impl Plugin for FarmPluginTreeShake {
     "FarmPluginTreeShake"
   }
 
-  /// tree shake useless modules and code, steps:
-  /// 1. topo sort the module_graph
-  /// 2. generate tree_shake_modules based on the topo sorted modules
-  /// 3. traverse the tree_shake_modules
-  ///   3.1 mark entry modules as side_effects
-  ///   3.2 if module is commonjs, mark all imported modules as [UsedExports::All]
-  ///   3.3 else if module is esm and the module has side effects, add imported identifiers to [UsedExports::Partial] of the imported modules
-  ///   3.4 else if module is esm and the module has no side effects, analyze the used statement based on the statement graph
+  /// Tree shake useless modules and code, following these steps:
+  /// 1. Perform a topological sort on the `module_graph`.
+  /// 2. Generate `tree_shake_modules` based on the topologically sorted modules.
+  /// 3. Traverse the `tree_shake_modules`:
+  ///    3.1 Mark entry modules as having side effects.
+  ///    3.2 If a module is CommonJS, mark all imported modules as [UsedExports::All].
+  ///    3.3 If a module is ESM and has side effects, add imported identifiers to [UsedExports::Partial] of the imported modules.
+  ///    3.4 If a module is ESM and has no side effects, analyze the used statements based on the statement graph.
   fn optimize_module_graph(
     &self,
     module_graph: &mut farmfe_core::module::module_graph::ModuleGraph,

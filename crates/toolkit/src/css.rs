@@ -65,7 +65,7 @@ pub fn parse_css_stylesheet(
   let parse_result = parser.parse_all();
   let mut recovered_errors = parser.take_errors();
 
-  if recovered_errors.len() == 0 {
+  if recovered_errors.is_empty() {
     match parse_result {
       Err(err) => {
         recovered_errors.push(err);

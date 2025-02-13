@@ -225,7 +225,7 @@ pub fn analyze_statement_info(id: &StatementId, stmt: &ModuleItem) -> AnalyzedSt
   AnalyzedStatementInfo {
     import_info,
     export_info,
-    defined_idents: defined_idents.into_iter().map(|i| i.into()).collect(),
+    defined_idents: defined_idents.into_iter().collect(),
     top_level_await,
   }
 }

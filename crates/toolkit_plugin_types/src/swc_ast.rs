@@ -13,6 +13,11 @@ pub struct ParseScriptModuleResult {
   pub source_map: Arc<SourceMap>,
 }
 
+type FarmSwcParseModule =
+  unsafe fn(&str, &str, Syntax, EsVersion) -> Result<ParseScriptModuleResult>;
+type FarmCreateSwcSourceMap =
+  unsafe fn(&str, Arc<String>) -> Result<(Arc<SourceMap>, Arc<SourceFile>)>;
+
 #[no_mangle]
 pub fn parse_module(
   lib: &libloading::Library,
@@ -22,9 +27,8 @@ pub fn parse_module(
   target: EsVersion,
 ) -> Result<ParseScriptModuleResult> {
   unsafe {
-    let farm_swc_parse_module: libloading::Symbol<
-      unsafe fn(&str, &str, Syntax, EsVersion) -> Result<ParseScriptModuleResult>,
-    > = lib.get(b"farm_swc_parse_module").unwrap();
+    let farm_swc_parse_module: libloading::Symbol<FarmSwcParseModule> =
+      lib.get(b"farm_swc_parse_module").unwrap();
 
     farm_swc_parse_module(file_name, src, syntax, target)
   }
@@ -37,9 +41,8 @@ pub fn create_swc_source_map(
   content: Arc<String>,
 ) -> Result<(Arc<SourceMap>, Arc<SourceFile>)> {
   unsafe {
-    let farm_create_swc_source_map: libloading::Symbol<
-      unsafe fn(&str, Arc<String>) -> Result<(Arc<SourceMap>, Arc<SourceFile>)>,
-    > = lib.get(b"farm_create_swc_source_map").unwrap();
+    let farm_create_swc_source_map: libloading::Symbol<FarmCreateSwcSourceMap> =
+      lib.get(b"farm_create_swc_source_map").unwrap();
 
     farm_create_swc_source_map(file_name, content)
   }

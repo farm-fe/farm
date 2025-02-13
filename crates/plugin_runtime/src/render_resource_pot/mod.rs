@@ -23,11 +23,12 @@ mod scope_hoisting;
 mod source_replacer;
 mod transform_async_module;
 
+type ResourcePotModules = (Vec<RenderModuleResult>, HashMap<ModuleId, Arc<SourceMap>>);
 pub fn render_resource_pot_modules(
   resource_pot: &ResourcePot,
   module_graph: &ModuleGraph,
   context: &Arc<CompilationContext>,
-) -> Result<(Vec<RenderModuleResult>, HashMap<ModuleId, Arc<SourceMap>>)> {
+) -> Result<ResourcePotModules> {
   let modules = Mutex::new(vec![]);
 
   // group modules in the same group that can perform scope hoisting

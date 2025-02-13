@@ -5,7 +5,7 @@ use farmfe_core::{
 
 const REGEX_PREFIX: &str = "$__farm_regex:";
 
-/// Determine whether the path conforms to the configuration of alias.
+// /// Determine whether the path conforms to the configuration of alias.
 // pub fn is_start_with_alias(alias_map: &Vec<AliasItem>, path: &str) -> bool {
 // let mut aliases: Vec<&str> = alias_map.keys().map(|k| k.as_str()).collect();
 // aliases.sort_by(|a, b| b.len().cmp(&a.len()));

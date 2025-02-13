@@ -1,4 +1,5 @@
 use std::collections::VecDeque;
+use std::fmt::Display;
 
 pub use farmfe_core::module::meta_data::script::statement::{
   ExportInfo, ExportSpecifierInfo, ImportInfo, ImportSpecifierInfo, StatementId,
@@ -26,9 +27,13 @@ use analyze_used_import_all_fields::{update_used_import_all_fields_of_edges, Use
 use self::analyze_deps_by_used_idents::AnalyzeUsedIdentsParams;
 use self::traced_used_import::TracedUsedImportStatement;
 
-/// UsedStatementIdent is used to represent the used idents of a statement, including import/export and normal statement
-/// For normal statement and import statement, it should always be SwcIdent
-/// For export statement, it should be Default, SwcIdent, ExportAll, InExportAll
+/// Used statement ident.
+///
+/// `UsedStatementIdent` is used to represent the used idents of a statement, including
+/// import/export and normal statement.
+///
+/// For normal statement and import statement, it should always be `SwcIdent`.
+/// For export statement, it should be `Default`, `SwcIdent`, `ExportAll`, `InExportAll`.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum UsedStatementIdent {
   // Means the default export of the statement is used
@@ -49,13 +54,13 @@ impl UsedStatementIdent {
   }
 }
 
-impl ToString for UsedStatementIdent {
-  fn to_string(&self) -> String {
+impl Display for UsedStatementIdent {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     match self {
-      UsedStatementIdent::Default => "default".to_string(),
-      UsedStatementIdent::SwcIdent(id) => format!("{}{:?}", id.sym, id.ctxt()),
-      UsedStatementIdent::ExportAll => "*".to_string(),
-      UsedStatementIdent::InExportAll(id) => format!("*({id})"),
+      UsedStatementIdent::Default => write!(f, "default"),
+      UsedStatementIdent::SwcIdent(id) => write!(f, "{}{:?}", id.sym, id.ctxt()),
+      UsedStatementIdent::ExportAll => write!(f, "*"),
+      UsedStatementIdent::InExportAll(id) => write!(f, "*({})", id),
     }
   }
 }
@@ -106,6 +111,11 @@ pub struct StatementGraph {
   used_stmts: HashSet<StatementId>,
 }
 
+type TraverseDependentsBfsStack = Vec<(
+  StatementId,
+  HashSet<SwcId>,
+  HashMap<SwcId, HashSet<UsedImportAllFields>>,
+)>;
 impl StatementGraph {
   pub fn new(module: &Module, ast: &SwcModule, comments: &SingleThreadedComments) -> Self {
     let mut g = petgraph::graph::Graph::new();
@@ -442,18 +452,8 @@ impl StatementGraph {
     &self,
     stmt_id: StatementId,
     visited: &mut HashSet<StatementId>,
-    stack: &mut Vec<(
-      StatementId,
-      HashSet<SwcId>,
-      HashMap<SwcId, HashSet<UsedImportAllFields>>,
-    )>,
-    result: &mut Vec<
-      Vec<(
-        StatementId,
-        HashSet<SwcId>,
-        HashMap<SwcId, HashSet<UsedImportAllFields>>,
-      )>,
-    >,
+    stack: &mut TraverseDependentsBfsStack,
+    result: &mut Vec<TraverseDependentsBfsStack>,
   ) {
     if visited.contains(&stmt_id) {
       return;
@@ -529,14 +529,7 @@ impl StatementGraph {
     }
   }
 
-  pub fn trace_dependents_side_effects(
-    &self,
-    stmt_id: StatementId,
-  ) -> Vec<(
-    StatementId,
-    HashSet<SwcId>,
-    HashMap<SwcId, HashSet<UsedImportAllFields>>,
-  )> {
+  pub fn trace_dependents_side_effects(&self, stmt_id: StatementId) -> TraverseDependentsBfsStack {
     // we only trace the dependents side effects of the statement that has defined idents
     if self.stmt(&stmt_id).defined_idents.is_empty() {
       return vec![];

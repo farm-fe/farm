@@ -1,4 +1,4 @@
-use std::{collections::BTreeMap, str::FromStr, sync::Arc};
+use std::{collections::BTreeMap, fmt::Display, str::FromStr, sync::Arc};
 
 use farmfe_core::{
   common::PackageJsonInfo,
@@ -45,18 +45,18 @@ impl FromStr for Condition {
   }
 }
 
-impl ToString for &Condition {
-  fn to_string(&self) -> String {
+impl Display for &Condition {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     match self {
-      Condition::Default => "default".to_string(),
-      Condition::Require => "require".to_string(),
-      Condition::Import => "import".to_string(),
-      Condition::Browser => "browser".to_string(),
-      Condition::Node => "node".to_string(),
-      Condition::Development => "development".to_string(),
-      Condition::Production => "production".to_string(),
-      Condition::Module => "module".to_string(),
-      Condition::Custom(c) => c.to_string(),
+      Condition::Default => write!(f, "default"),
+      Condition::Require => write!(f, "require"),
+      Condition::Import => write!(f, "import"),
+      Condition::Browser => write!(f, "browser"),
+      Condition::Node => write!(f, "node"),
+      Condition::Development => write!(f, "development"),
+      Condition::Production => write!(f, "production"),
+      Condition::Module => write!(f, "module"),
+      Condition::Custom(c) => write!(f, "{}", c),
     }
   }
 }
@@ -220,7 +220,7 @@ fn injects(items: &mut [String], value: &str) -> Option<Vec<String>> {
     }
   }
 
-  items.to_owned().into_iter().map(Some).collect()
+  items.iter().cloned().map(Some).collect()
 }
 
 fn loop_value(

@@ -142,11 +142,11 @@ impl VisitMut for HmrAcceptedVisitor {
           } = &mut args[0]
           {
             // array literal
-            for expr in arr.elems.iter_mut() {
-              if let Some(ExprOrSpread {
+            for expr in arr.elems.iter_mut().flatten() {
+              if let ExprOrSpread {
                 expr: box Expr::Lit(Lit::Str(s)),
                 ..
-              }) = expr
+              } = expr
               {
                 resolve_and_replace_deps(s);
               }

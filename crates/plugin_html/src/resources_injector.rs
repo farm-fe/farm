@@ -40,6 +40,7 @@ pub const FARM_RUNTIME_INJECT_RESOURCE: &str = "farm_runtime_resource";
 pub const FARM_MODULE_SYSTEM_BOOTSTRAP: &str = "farm_module_system_bootstrap";
 
 impl<'a> ResourcesInjector<'a> {
+  #[allow(clippy::too_many_arguments)]
   pub fn new(
     additional_inject_resources: Vec<Resource>,
     runtime_code: &'a str,
@@ -197,7 +198,7 @@ impl<'a> ResourcesInjector<'a> {
 
 impl VisitMut for ResourcesInjector<'_> {
   fn visit_mut_element(&mut self, element: &mut Element) {
-    if element.tag_name.to_string() == "head" || element.tag_name.to_string() == "body" {
+    if element.tag_name == "head" || element.tag_name == "body" {
       let mut children_to_remove = vec![];
 
       // remove all non-http existing <href /> and <script /> first
@@ -223,7 +224,7 @@ impl VisitMut for ResourcesInjector<'_> {
       });
     }
 
-    if element.tag_name.to_string() == "head" {
+    if element.tag_name == "head" {
       if get_config_runtime_isolate(&self.options.context) {
         let runtime_resource_code = format!("{}{}", self.get_global_this_code(), self.runtime_code);
         self.inject_additional_resource(
