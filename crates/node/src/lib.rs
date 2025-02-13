@@ -445,6 +445,10 @@ impl JsCompiler {
     let resources = context.resources_map.lock();
 
     resources.par_iter().for_each(|(name, resource)| {
+      if resource.emitted {
+        return;
+      }
+
       let path = Path::new(&output_path).join(name.split(['?', '#']).next().unwrap());
       let dir = path.parent().unwrap();
       if !dir.exists() {
