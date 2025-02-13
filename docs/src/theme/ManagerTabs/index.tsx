@@ -161,7 +161,6 @@ export const Tabs: ForwardRefExoticComponent<TabsProps> = forwardRef(
               {tabValues.map((item, index) => {
                 return (
                   <div
-                    // eslint-disable-next-line react/no-array-index-key
                     key={index}
                     className={`${styles['tab']} ${currentIndex === index
                       ? styles['selected']
