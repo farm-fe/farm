@@ -18,13 +18,13 @@ pub fn get_resource_cache_key(
   for module_id in resource_pot.modules() {
     let module = module_graph
       .module(module_id)
-      .unwrap_or_else(|| panic!("module not found: {:?}", module_id.to_string()));
+      .unwrap_or_else(|| panic!("module not found: {:?}", module_id));
 
     // make sure cache is correct when tree shaking is enabled
     code.push_str(&module.content_hash);
 
     if context.cache_manager.module_cache.cache_outdated(module_id) {
-      code.push_str(&format!("[cache_outdated+{}]", module.id.to_string()));
+      code.push_str(&format!("[cache_outdated+{}]", module.id));
     }
 
     // if tree shaking is not enabled, we don't need to cache used_exports

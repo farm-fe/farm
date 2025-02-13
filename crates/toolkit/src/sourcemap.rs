@@ -113,7 +113,7 @@ pub fn trace_module_sourcemap(
 
       let module = module_graph
         .module(&module_id)
-        .unwrap_or_else(|| panic!("module {} not found in module graph", module_id.to_string()));
+        .unwrap_or_else(|| panic!("module {} not found in module graph", module_id));
 
       if module.source_map_chain.is_empty() {
         add_token(&token, &token, &sourcemap);

@@ -118,8 +118,7 @@ fn expand_module_exports_dfs(
                 // TODO: warning
                 println!(
                   "[Farm Warning] export {} of module {} not found",
-                  local.sym,
-                  source_module_id.to_string()
+                  local.sym, source_module_id
                 );
               }
             } else {

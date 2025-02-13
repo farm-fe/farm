@@ -56,8 +56,7 @@ pub fn transform_css_to_script_modules(
           key: sha256(
             format!(
               "transform_css_to_script_modules_{}_{}",
-              content_hash,
-              module_id.to_string()
+              content_hash, module_id
             )
             .as_bytes(),
             32,

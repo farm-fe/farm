@@ -195,8 +195,7 @@ impl SourceReplacer<'_> {
         } else {
           panic!(
             "cannot found {} of DynamicImport from {}",
-            source,
-            self.module_id.to_string()
+            source, self.module_id
           );
         }
 

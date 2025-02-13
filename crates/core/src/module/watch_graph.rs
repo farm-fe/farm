@@ -60,14 +60,14 @@ impl WatchGraph {
     let from_index = self.id_index_map.get(from).ok_or_else(|| {
       CompilationError::GenericError(format!(
         r#"from node "{}" does not exist in the module graph when add edge"#,
-        from.to_string()
+        from
       ))
     })?;
 
     let to_index = self.id_index_map.get(to).ok_or_else(|| {
       CompilationError::GenericError(format!(
         r#"to node "{}" does not exist in the module graph when add edge"#,
-        to.to_string()
+        to
       ))
     })?;
     //         a                          h               c

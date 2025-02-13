@@ -100,10 +100,9 @@ impl Plugin for FarmPluginProgress {
     self.increment_module_count();
     let count = self.get_module_count();
     let module = &module.id;
-    self.progress_bar.set_message(format!(
-      "load cached module({count}) {}",
-      module.to_string()
-    ));
+    self
+      .progress_bar
+      .set_message(format!("load cached module({count}) {}", module));
     self.progress_bar.inc(1);
 
     Ok(None)
