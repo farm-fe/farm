@@ -5,7 +5,6 @@
  * Copyright (c) 2019-present, Yuxi (Evan) You and Vite contributors
  */
 
-/* eslint-disable @typescript-eslint/triple-slash-reference */
 /// <reference path="./types/import-meta.d.ts" />
 
 // CSS modules

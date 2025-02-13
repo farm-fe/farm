@@ -19,7 +19,6 @@ import {
 } from '../types/binding.js';
 
 // https://stackoverflow.com/questions/61047551/typescript-union-of-string-and-string-literals
-// eslint-disable-next-line @typescript-eslint/ban-types
 export type LiteralUnion<T extends string> = T | (string & {});
 
 type ResourcePotType = LiteralUnion<
