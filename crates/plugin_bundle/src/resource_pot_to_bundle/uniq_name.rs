@@ -810,17 +810,17 @@ mod tests {
 
     let mut index_module = Module::new(index_module_id.clone());
 
-    index_module.meta = Box::new(farmfe_core::module::ModuleMetaData::Script(
+    index_module.meta = Box::new(farmfe_core::module::ModuleMetaData::Script(Box::new(
       ScriptModuleMetaData {
         ..Default::default()
       },
-    ));
+    )));
     let mut bundle_module = Module::new(bundle_module_id.clone());
-    bundle_module.meta = Box::new(farmfe_core::module::ModuleMetaData::Script(
+    bundle_module.meta = Box::new(farmfe_core::module::ModuleMetaData::Script(Box::new(
       ScriptModuleMetaData {
         ..Default::default()
       },
-    ));
+    )));
 
     let mut module_analyzer_map = HashMap::default();
 

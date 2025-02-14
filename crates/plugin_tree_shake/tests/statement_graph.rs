@@ -35,12 +35,12 @@ fn create_test_statement_graph(code: &str) -> StatementGraph {
     })
     .collect::<Vec<_>>();
 
-  module.meta = Box::new(ModuleMetaData::Script(ScriptModuleMetaData {
+  module.meta = Box::new(ModuleMetaData::Script(Box::new(ScriptModuleMetaData {
     statements,
     unresolved_mark: unresolved_mark.as_u32(),
     top_level_mark: top_level_mark.as_u32(),
     ..Default::default()
-  }));
+  })));
   StatementGraph::new(&module, &ast, &comment)
 }
 
