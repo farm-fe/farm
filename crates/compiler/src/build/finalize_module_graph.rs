@@ -113,10 +113,12 @@ pub fn call_freeze_module_hook(
   Ok(())
 }
 
+pub type ModuleResolvedDeps = Vec<(ModuleId, Vec<(ModuleId, ModuleGraphEdge)>)>;
+
 pub fn call_freeze_module_with_params(
   mut hook_params: Vec<PluginFreezeModuleHookParam>,
   context: &Arc<CompilationContext>,
-) -> farmfe_core::error::Result<Vec<(ModuleId, Vec<(ModuleId, ModuleGraphEdge)>)>> {
+) -> farmfe_core::error::Result<ModuleResolvedDeps> {
   hook_params
     .par_iter_mut()
     .try_for_each(|param| call_freeze_module_hook(param, context))?;

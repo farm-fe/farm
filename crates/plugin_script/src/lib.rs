@@ -149,7 +149,7 @@ impl Plugin for FarmPluginScript {
           is_async: false,
         };
 
-        Ok(Some(ModuleMetaData::Script(meta)))
+        Ok(Some(ModuleMetaData::Script(Box::new(meta))))
       })
     } else {
       Ok(None)

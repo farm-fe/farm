@@ -93,7 +93,7 @@ fn handle_entry_resource(
     additional_inject_resources: Default::default(),
   };
 
-  for (entry_module_id, _) in &module_graph.entries {
+  for entry_module_id in module_graph.entries.keys() {
     params.entry_module_id = entry_module_id;
 
     let InitialResources {
@@ -136,8 +136,11 @@ fn handle_entry_resource(
       resources_map,
       &module_graph,
     );
-    let (dynamic_resources, dynamic_module_resources_map) =
-      get_dynamic_resources_code(&dynamic_resources_map, context.config.mode.clone());
+    let (dynamic_resources, dynamic_module_resources_map) = if !dynamic_resources_map.is_empty() {
+      get_dynamic_resources_code(&dynamic_resources_map, context.config.mode)
+    } else {
+      ("".to_string(), "".to_string())
+    };
 
     params.dynamic_resources = dynamic_resources;
     params.dynamic_module_resources_map = dynamic_module_resources_map;

@@ -241,7 +241,7 @@ fn create_call_entry_module_code(
     &context.config.output.target_env,
   );
   // do not set initial loaded resources if there is no dynamic resources(which is a empty array)
-  let is_dynamic_empty = dynamic_resources == "[]";
+  let is_dynamic_empty = dynamic_resources.is_empty();
 
   // setInitialLoadedResources and setDynamicModuleResourcesMap
   let module_system = format!("var __farm_ms__ = {farm_global_this}.{FARM_MODULE_SYSTEM};");

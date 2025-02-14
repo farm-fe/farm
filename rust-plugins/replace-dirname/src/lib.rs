@@ -8,14 +8,14 @@ use farmfe_core::{
   module::ModuleMetaData,
   plugin::{Plugin, PluginProcessModuleHookParam},
   swc_common::DUMMY_SP,
-  swc_ecma_ast::{self, Callee, Expr, Lit, MemberExpr, MemberProp, MetaPropKind, Module, Str},
+  swc_ecma_ast::{Callee, Expr, Lit, MemberExpr, MemberProp, MetaPropKind, Module, Str},
 };
 use std::{env, path::Path, sync::Arc};
 use url::Url;
 
 use farmfe_macro_plugin::farm_plugin;
 use farmfe_toolkit::{
-  sourcemap::PathFilter,
+  plugin_utils::path_filter::PathFilter,
   swc_ecma_visit::{VisitMut, VisitMutWith},
 };
 

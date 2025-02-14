@@ -27,16 +27,15 @@ pub struct CacheManager {
 
 impl CacheManager {
   pub fn new(cache_dir: &str, namespace: &str, mode: Mode) -> Self {
-    let module_cache = module_cache::ModuleCacheManager::new(cache_dir, namespace, mode.clone());
-    let resource_cache =
-      resource_cache::ResourceCacheManager::new(cache_dir, namespace, mode.clone());
+    let module_cache = module_cache::ModuleCacheManager::new(cache_dir, namespace, mode);
+    let resource_cache = resource_cache::ResourceCacheManager::new(cache_dir, namespace, mode);
 
     Self {
       module_cache,
       resource_cache,
       // plugin cache is not initialized here. it will be initialized when compile starts.
-      plugin_cache: PluginCacheManager::new(cache_dir, namespace, mode.clone()),
-      custom: CacheStore::new(cache_dir, namespace, mode.clone(), "custom"),
+      plugin_cache: PluginCacheManager::new(cache_dir, namespace, mode),
+      custom: CacheStore::new(cache_dir, namespace, mode, "custom"),
       lazy_compile_store: CacheStore::new(cache_dir, namespace, mode, "lazy-compilation"),
       lock: Mutex::new(false),
     }
