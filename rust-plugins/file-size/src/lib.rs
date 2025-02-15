@@ -123,26 +123,34 @@ impl Plugin for FarmfePluginFileSize {
       format!("{:<45} {:>12} {:>12}", "File", "Size", "Gzipped").bold()
     );
 
-    let mut files: Vec<_> = resources_map
+    let files: Vec<_> = resources_map
       .iter()
       .filter(|(_, resource)| !resource.emitted)
+      .map(|(name, resource)| (name.to_string(), resource.bytes.to_vec()))
       .collect();
 
-    files.sort_by(|a, b| a.0.cmp(b.0));
+    let files_with_size: Vec<_> = files
+      .par_iter()
+      .map(|(name, bytes)| {
+        let size = bytes.len();
+        let gzip_size = self.calculate_gzip_size(bytes);
+        (name.clone(), size, gzip_size)
+      })
+      .collect();
+
+    let mut files_with_size = files_with_size;
+    files_with_size.sort_by(|a, b| a.0.cmp(&b.0));
 
     let mut total_size = 0;
     let mut total_gzip_size = 0;
 
-    for (name, resource) in files {
-      let size = resource.bytes.len();
-      let gzip_size = self.calculate_gzip_size(&resource.bytes);
-
+    for (name, size, gzip_size) in files_with_size {
       total_size += size;
       total_gzip_size += gzip_size;
 
       println!(
-        "{:<45} {:>12} {:>12}",
-        self.format_path_and_name(output_config.path.as_str(), &name, size),
+        "{:<45}  {:>12}  {:>12}",
+        self.format_path_and_name(&context.config.output.path, &name, size),
         self.format_size(size),
         self.format_gzip_size(gzip_size)
       );
