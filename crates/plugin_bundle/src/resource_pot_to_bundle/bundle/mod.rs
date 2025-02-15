@@ -28,6 +28,7 @@ pub mod bundle_analyzer;
 pub mod bundle_reference;
 pub mod bundle_variable;
 pub mod reference;
+
 use crate::resource_pot_to_bundle::targets::{
   cjs::patch::CjsPatch, dynamic_import::replace_dynamic_import,
 };
@@ -43,7 +44,7 @@ use super::{
   polyfill::SimplePolyfill,
   targets::generate::generate_namespace_by_reference_map,
   uniq_name::BundleVariable,
-  ShareBundleContext, ShareBundleOptions, FARM_BUNDLE_POLYFILL_SLOT,
+  ShareBundleContext, FARM_BUNDLE_POLYFILL_SLOT,
 };
 
 pub type ModuleMap = HashMap<ModuleId, ModuleAnalyzer>;
@@ -1058,8 +1059,8 @@ mod tests {
   use farmfe_core::{
     context::CompilationContext,
     module::{
-      module_graph::ModuleGraph, Module, ModuleId, ModuleMetaData, ModuleSystem, ModuleType,
-      ScriptModuleMetaData,
+      meta_data::script::ScriptModuleMetaData, module_graph::ModuleGraph, Module, ModuleId,
+      ModuleMetaData, ModuleSystem, ModuleType,
     },
     swc_common::{Globals, Mark, SourceMap, DUMMY_SP},
     swc_ecma_ast::{Ident, Module as EcmaAstModule},
@@ -1096,7 +1097,7 @@ mod tests {
       let mut module = Module::new(module_id.clone());
       try_with(cm.clone(), &globals, || {
         module.module_type = ModuleType::Js;
-        module.meta = Box::new(ModuleMetaData::Script(ScriptModuleMetaData {
+        module.meta = Box::new(ModuleMetaData::Script(Box::new(ScriptModuleMetaData {
           ast: EcmaAstModule {
             span: DUMMY_SP,
             body: vec![],
@@ -1109,7 +1110,13 @@ mod tests {
           hmr_accepted_deps: HashSet::default(),
           comments: Default::default(),
           custom: Default::default(),
-        }));
+          top_level_idents: Default::default(),
+          unresolved_idents: Default::default(),
+          statements: vec![],
+          feature_flags: Default::default(),
+          is_async: false,
+          export_ident_map: Default::default(),
+        })));
       })
       .unwrap();
 

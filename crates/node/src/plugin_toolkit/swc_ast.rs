@@ -15,7 +15,7 @@ pub fn farm_swc_parse_module(
   syntax: Syntax,
   target: EsVersion,
 ) -> Result<ParseScriptModuleResult> {
-  parse_module(id, content, syntax, target)
+  parse_module(&id.into(), Arc::new(content.to_string()), syntax, target)
 }
 
 #[no_mangle]
@@ -23,10 +23,7 @@ pub fn farm_create_swc_source_map(
   id: &str,
   content: Arc<String>,
 ) -> Result<(Arc<SourceMap>, Arc<SourceFile>)> {
-  let (cm, source_file) =
-    farmfe_toolkit::common::create_swc_source_map(farmfe_toolkit::common::Source {
-      path: std::path::PathBuf::from(id),
-      content,
-    });
+  let (cm, source_file) = farmfe_toolkit::sourcemap::create_swc_source_map(&id.into(), content);
+
   Ok((cm, source_file))
 }

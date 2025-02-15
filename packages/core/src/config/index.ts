@@ -1,5 +1,4 @@
 import { createHash } from 'node:crypto';
-import fs from 'node:fs';
 import { createRequire } from 'node:module';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -311,7 +310,6 @@ export async function normalizeUserCompilationConfig(
   normalizeOutput(resolvedCompilation, isProduction, resolvedUserConfig.logger);
   normalizeExternal(resolvedUserConfig, resolvedCompilation);
 
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
   // @ts-ignore do not check type for this internal option
   if (!resolvedCompilation.assets?.publicDir) {
     resolvedCompilation.assets ??= {};
@@ -321,11 +319,9 @@ export async function normalizeUserCompilationConfig(
       : path.join(resolvedCompilation.root, 'public');
 
     if (path.isAbsolute(userPublicDir)) {
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-ignore do not check type for this internal option
       resolvedCompilation.assets.publicDir = userPublicDir;
     } else {
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-ignore do not check type for this internal option
       resolvedCompilation.assets.publicDir = path.join(
         resolvedCompilation.root,
@@ -337,10 +333,10 @@ export async function normalizeUserCompilationConfig(
   resolvedCompilation.define = Object.assign(
     {
       // skip self define
-      ['FARM' + '_PROCESS_ENV']: resolvedUserConfig.env,
-      FARM_RUNTIME_TARGET_ENV: JSON.stringify(
-        resolvedCompilation.output?.targetEnv
-      )
+      ['FARM' + '_PROCESS_ENV']: resolvedUserConfig.env
+      // FARM_RUNTIME_TARGET_ENV: JSON.stringify(
+      //   resolvedCompilation.output?.targetEnv
+      // )
     },
     resolvedCompilation?.define,
     // for node target, we should not define process.env.NODE_ENV
@@ -364,7 +360,8 @@ export async function normalizeUserCompilationConfig(
 
   resolvedCompilation.runtime = {
     path:
-      resolvedCompilation.runtime?.path ?? require.resolve('@farmfe/runtime'),
+      resolvedCompilation.runtime?.path ??
+      path.dirname(require.resolve('@farmfe/runtime/package.json')),
     swcHelpersPath:
       resolvedCompilation.runtime?.swcHelpersPath ??
       path.dirname(require.resolve('@swc/helpers/package.json')),
@@ -398,6 +395,7 @@ export async function normalizeUserCompilationConfig(
   setProcessEnv(resolvedCompilation.mode);
   const isNode = isNodeEnv(resolvedCompilation.output.targetEnv);
   if (
+    !isProduction &&
     !isNode &&
     isArray(resolvedCompilation.runtime.plugins) &&
     resolvedUserConfig.server?.hmr &&
@@ -704,6 +702,7 @@ export async function readConfigFile(
     compilation: normalizedConfig,
     jsPlugins: [],
     rustPlugins: [[replaceDirnamePlugin, '{}']]
+    // rustPlugins: []
   });
 
   const FARM_PROFILE = process.env.FARM_PROFILE;
@@ -726,11 +725,11 @@ export async function readConfigFile(
     // Change to vm.module of node or loaders as far as it is stable
     const userConfig = (await import(filePath as string)).default;
     try {
-      fs.unlink(filePath, () => void 0);
+      await fse.unlink(filePath);
       // remove parent dir if empty
-      const isEmpty = fs.readdirSync(outputPath).length === 0;
+      const isEmpty = (await fse.readdir(outputPath)).length === 0;
       if (isEmpty) {
-        fs.rmSync(outputPath);
+        fse.rmSync(outputPath);
       }
     } catch {
       /** do nothing */
@@ -748,7 +747,7 @@ export async function readConfigFile(
 
     return config;
   } finally {
-    fse.unlink(getFilePath(outputPath, fileName)).catch(() => {});
+    await fse.unlink(getFilePath(outputPath, fileName)).catch(() => {});
   }
 }
 
@@ -806,13 +805,13 @@ export async function loadConfigFile(
     }
     const potentialSolution =
       'Potential solutions: \n1. Try set `FARM_CONFIG_FORMAT=cjs`(default to esm)\n2. Try set `FARM_CONFIG_FULL_BUNDLE=1`';
-    // throw new Error(
-    // `Failed to load farm config file: ${errorMessage}. \n ${potentialSolution} \n ${error.stack}`
-    // );
     throw new Error(
-      `Failed to load farm config file: ${errorMessage}. \n ${potentialSolution}`
-      // `Failed to load farm config file: ${errorMessage}.`,
+      `Failed to load farm config file: ${errorMessage}. \n ${potentialSolution} \n ${error.stack}`
     );
+    // throw new Error(
+    //   `Failed to load farm config file: ${errorMessage}. \n ${potentialSolution}`
+    //   // `Failed to load farm config file: ${errorMessage}.`,
+    // );
   }
 }
 
@@ -1000,7 +999,7 @@ export function createDefaultConfig(options: DefaultOptionsType): UserConfig {
         entryFilename: '[entryName]',
         path: outputPath,
         format,
-        targetEnv: 'library-node'
+        targetEnv: 'node'
       },
       mode,
       external: [

@@ -1,5 +1,5 @@
 use farmfe_core::{
-  module::{Module, ModuleId, ModuleType},
+  module::{module_group::ModuleGroupId, Module, ModuleId, ModuleType},
   HashSet,
 };
 
@@ -20,7 +20,7 @@ pub struct ModuleBucket {
   /// The modules whose ModuleGroups is the same.
   modules: HashSet<ModuleId>,
   /// The ModuleGroups
-  module_groups: HashSet<ModuleId>,
+  module_groups: HashSet<ModuleGroupId>,
 }
 
 impl ModuleBucket {
@@ -60,7 +60,7 @@ impl ModuleBucket {
     &self.modules
   }
 
-  pub fn module_groups(&self) -> &HashSet<ModuleId> {
+  pub fn module_groups(&self) -> &HashSet<ModuleGroupId> {
     &self.module_groups
   }
 

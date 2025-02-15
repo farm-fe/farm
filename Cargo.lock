@@ -1364,7 +1364,7 @@ version = "0.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "330c60081dcc4c72131f8eb70510f1ac07223e5d4163db481a04a0befcffa412"
 dependencies = [
- "libloading 0.8.1",
+ "libloading 0.7.4",
 ]
 
 [[package]]
@@ -1621,12 +1621,13 @@ name = "farmfe_compiler"
 version = "0.0.13"
 dependencies = [
  "farmfe_core",
- "farmfe_plugin_bundle",
  "farmfe_plugin_css",
  "farmfe_plugin_define",
  "farmfe_plugin_html",
  "farmfe_plugin_json",
  "farmfe_plugin_lazy_compilation",
+ "farmfe_plugin_library",
+ "farmfe_plugin_mangle_exports",
  "farmfe_plugin_minify",
  "farmfe_plugin_partial_bundling",
  "farmfe_plugin_polyfill",
@@ -1634,13 +1635,13 @@ dependencies = [
  "farmfe_plugin_resolve",
  "farmfe_plugin_runtime",
  "farmfe_plugin_script",
+ "farmfe_plugin_script_meta",
  "farmfe_plugin_static_assets",
  "farmfe_plugin_tree_shake",
  "farmfe_testing",
  "farmfe_testing_helpers",
  "farmfe_toolkit",
  "farmfe_utils 0.1.6",
- "num_cpus",
 ]
 
 [[package]]
@@ -1656,6 +1657,7 @@ dependencies = [
  "globset",
  "heck 0.5.0",
  "hex",
+ "num_cpus",
  "parking_lot",
  "petgraph",
  "ptr_meta",
@@ -1670,6 +1672,7 @@ dependencies = [
  "serde",
  "serde_json",
  "serde_regex",
+ "swc_atoms",
  "swc_common",
  "swc_css_ast",
  "swc_css_prefixer",
@@ -1707,7 +1710,7 @@ dependencies = [
  "farmfe_core",
  "farmfe_toolkit",
  "farmfe_toolkit_plugin_types",
- "libloading 0.7.4",
+ "libloading 0.8.6",
  "napi",
  "napi-build",
  "napi-derive",
@@ -1786,6 +1789,26 @@ dependencies = [
 [[package]]
 name = "farmfe_plugin_lazy_compilation"
 version = "0.0.13"
+dependencies = [
+ "farmfe_core",
+ "farmfe_testing_helpers",
+ "farmfe_toolkit",
+ "farmfe_utils 0.1.6",
+]
+
+[[package]]
+name = "farmfe_plugin_library"
+version = "0.0.1"
+dependencies = [
+ "farmfe_core",
+ "farmfe_testing_helpers",
+ "farmfe_toolkit",
+ "farmfe_utils 0.1.6",
+]
+
+[[package]]
+name = "farmfe_plugin_mangle_exports"
+version = "0.0.1"
 dependencies = [
  "farmfe_core",
  "farmfe_testing_helpers",
@@ -1873,7 +1896,6 @@ name = "farmfe_plugin_runtime"
 version = "0.0.13"
 dependencies = [
  "farmfe_core",
- "farmfe_plugin_bundle",
  "farmfe_testing_helpers",
  "farmfe_toolkit",
  "farmfe_utils 0.1.6",
@@ -1909,6 +1931,16 @@ dependencies = [
  "swc_plugin_proxy",
  "swc_plugin_runner",
  "tokio",
+]
+
+[[package]]
+name = "farmfe_plugin_script_meta"
+version = "0.0.1"
+dependencies = [
+ "farmfe_core",
+ "farmfe_testing_helpers",
+ "farmfe_toolkit",
+ "farmfe_utils 0.1.6",
 ]
 
 [[package]]
@@ -2993,12 +3025,12 @@ dependencies = [
 
 [[package]]
 name = "libloading"
-version = "0.8.1"
+version = "0.8.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c571b676ddfc9a8c12f1f3d3085a7b163966a8fd8098a90640953ce5f6170161"
+checksum = "fc2f4eb4bc735547cfed7c0a4922cbd04a4655978c09b54f1f7b228750664c34"
 dependencies = [
  "cfg-if",
- "windows-sys 0.48.0",
+ "windows-targets 0.52.6",
 ]
 
 [[package]]
@@ -3312,7 +3344,7 @@ version = "2.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "427802e8ec3a734331fec1035594a210ce1ff4dc5bc1950530920ab717964ea3"
 dependencies = [
- "libloading 0.8.1",
+ "libloading 0.8.6",
 ]
 
 [[package]]

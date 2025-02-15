@@ -9,8 +9,8 @@ use farmfe_core::{
 };
 use farmfe_testing_helpers::fixture;
 use farmfe_toolkit::{
-  common::{create_swc_source_map, Source},
   script::swc_try_with::try_with,
+  sourcemap::create_swc_source_map,
   swc_ecma_transforms::{
     helpers::inject_helpers,
     react::{react, Options},
@@ -112,10 +112,7 @@ fn tree_shake_changed_ast() {
         return Ok(None);
       }
 
-      let (cm, _) = create_swc_source_map(Source {
-        path: PathBuf::from(&param.module_id.to_string()),
-        content: param.content.clone(),
-      });
+      let (cm, _) = create_swc_source_map(&param.module_id, param.content.clone());
       try_with(cm.clone(), &context.meta.script.globals, || {
         let top_level_mark = Mark::from_u32(param.meta.as_script_mut().top_level_mark);
         let unresolved_mark = Mark::from_u32(param.meta.as_script_mut().unresolved_mark);

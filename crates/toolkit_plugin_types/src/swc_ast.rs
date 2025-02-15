@@ -10,6 +10,7 @@ use farmfe_core::{
 pub struct ParseScriptModuleResult {
   pub ast: SwcModule,
   pub comments: SingleThreadedComments,
+  pub source_map: Arc<SourceMap>,
 }
 
 #[no_mangle]

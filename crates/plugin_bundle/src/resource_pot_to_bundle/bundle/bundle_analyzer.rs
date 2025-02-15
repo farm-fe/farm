@@ -1,23 +1,26 @@
 use std::{cell::RefCell, cmp::Ordering, rc::Rc, sync::Arc};
 
 use farmfe_core::{
-  config::{external::ExternalConfig, Config, Mode, ModuleFormat, TargetEnv},
-  context::CompilationContext,
-  enhanced_magic_string::{
-    bundle::{Bundle, BundleOptions},
-    magic_string::{MagicString, MagicStringOptions},
-  },
-  error::{CompilationError, Result},
+  config::{external::ExternalConfig, ModuleFormat},
+  context::{get_swc_sourcemap_filename, CompilationContext},
+  error::Result,
   farm_profile_function, farm_profile_scope,
-  module::{module_graph::ModuleGraph, ModuleId},
+  module::{
+    meta_data::script::CommentsMetaData, module_graph::ModuleGraph, ModuleId, ModuleSystem,
+  },
   plugin::ResolveKind,
+  rayon::iter::{IntoParallelIterator, IntoParallelRefIterator, ParallelBridge, ParallelIterator},
   resource::resource_pot::ResourcePotType,
-  swc_common::{comments::SingleThreadedComments, util::take::Take},
+  swc_common::{
+    comments::{Comments, SingleThreadedComments},
+    util::take::Take,
+    SourceMap, DUMMY_SP,
+  },
+  swc_ecma_ast::Module,
   HashMap, HashSet,
 };
 use farmfe_toolkit::{
-  common::build_source_map,
-  script::{codegen_module, swc_try_with::try_with, CodeGenCommentsConfig},
+  script::{sourcemap::merge_sourcemap, swc_try_with::try_with},
   swc_ecma_transforms::fixer,
   swc_ecma_visit::VisitMutWith,
 };
@@ -50,6 +53,12 @@ enum NamespaceExportType {
   External,
   Bundle,
   Entry(ModuleId),
+}
+
+pub struct GeneratorAstResult {
+  pub ast: Module,
+  pub comments: CommentsMetaData,
+  pub rendered_modules: Vec<ModuleId>,
 }
 
 pub struct BundleAnalyzer<'a> {
@@ -1404,111 +1413,191 @@ impl<'a> BundleAnalyzer<'a> {
   }
 
   // step: 4 generate bundle code
-  pub fn codegen(
-    &mut self,
+  // pub fn codegen(
+  //   &mut self,
+  //   module_analyzer_manager: &mut ModuleAnalyzerManager,
+  //   config: &Config,
+  // ) -> Result<Bundle> {
+  //   let mut bundle = Bundle::new(BundleOptions {
+  //     separator: Some('\n'),
+  //     intro: None,
+  //     trace_source_map_chain: Some(false),
+  //   });
+
+  //   for module_id in &self.ordered_modules {
+  //     let module = self
+  //       .module_graph
+  //       .module(module_id)
+  //       .unwrap_or_else(|| panic!("Module not found: {module_id:?}"));
+  //     let module_analyzer = module_analyzer_manager.module_analyzer_mut_unchecked(module_id);
+
+  //     let comments: SingleThreadedComments = module.meta.as_script().comments.clone().into();
+
+  //     let sourcemap_enabled = self.context.config.sourcemap.enabled(module.immutable);
+
+  //     try_with(
+  //       module_analyzer.cm.clone(),
+  //       &self.context.meta.script.globals,
+  //       || {
+  //         module_analyzer
+  //           .ast
+  //           .visit_mut_with(&mut fixer(Some(&comments)));
+  //       },
+  //     )?;
+
+  //     let mut mappings = vec![];
+  //     let code_bytes = codegen_module(
+  //       &module_analyzer.ast,
+  //       self.context.config.script.target,
+  //       module_analyzer.cm.clone(),
+  //       if sourcemap_enabled {
+  //         Some(&mut mappings)
+  //       } else {
+  //         None
+  //       },
+  //       false,
+  //       Some(CodeGenCommentsConfig {
+  //         comments: &comments,
+  //         config: &self.context.config.comments,
+  //       }),
+  //     )
+  //     .map_err(|err| CompilationError::RenderScriptModuleError {
+  //       id: module_analyzer.module_id.to_string(),
+  //       source: Some(Box::new(err)),
+  //     })?;
+
+  //     let code = String::from_utf8(code_bytes).map_err(|err| {
+  //       CompilationError::GenericError(format!(
+  //         "failed to convert code bytes to string, origin error: {err}"
+  //       ))
+  //     })?;
+
+  //     let mut source_map_chain = vec![];
+
+  //     if sourcemap_enabled {
+  //       let sourcemap = build_source_map(module_analyzer.cm.clone(), &mappings);
+  //       let mut buf = vec![];
+  //       sourcemap
+  //         .to_writer(&mut buf)
+  //         .map_err(|e| CompilationError::RenderScriptModuleError {
+  //           id: module_id.to_string(),
+  //           source: Some(Box::new(e)),
+  //         })?;
+  //       let map = Arc::new(String::from_utf8(buf).unwrap());
+
+  //       source_map_chain.clone_from(&module.source_map_chain);
+  //       source_map_chain.push(map);
+  //     }
+
+  //     let mut module = MagicString::new(
+  //       &code,
+  //       Some(MagicStringOptions {
+  //         filename: Some(module_id.resolved_path_with_query(&self.context.config.root)),
+  //         source_map_chain,
+  //         ..Default::default()
+  //       }),
+  //     );
+
+  //     if matches!(self.context.config.mode, Mode::Development) {
+  //       // debug info
+  //       module.prepend(&format!("// module_id: {}\n", module_id.to_string()));
+  //     }
+
+  //     bundle.add_source(module, None).unwrap();
+  //   }
+
+  //   // in browser, should avoid naming pollution
+  //   if matches!(self.context.config.output.target_env, TargetEnv::Browser)
+  //     && matches!(self.group.group_type, ResourcePotType::Runtime)
+  //   {
+  //     bundle.prepend(";((function(){");
+  //     bundle.append("})());", None);
+  //   };
+
+  //   Ok(bundle)
+  // }
+
+  pub fn gen_ast(
+    self,
     module_analyzer_manager: &mut ModuleAnalyzerManager,
-    config: &Config,
-  ) -> Result<Bundle> {
-    let mut bundle = Bundle::new(BundleOptions {
-      separator: Some('\n'),
-      intro: None,
-      trace_source_map_chain: Some(false),
-    });
+  ) -> Result<GeneratorAstResult> {
+    // let cm = self
+    //   .context
+    //   .meta
+    //   .merge_modules_source_mpa(&self.ordered_modules, self.module_graph);
+    let cm = Arc::new(SourceMap::default());
 
-    let mut ordered_modules = self.ordered_modules.clone();
-
-    ordered_modules.sort_by_key(|v| module_analyzer_manager.is_commonjs(v));
-
-    for module_id in &self.ordered_modules {
-      let module = self
-        .module_graph
-        .module(module_id)
-        .unwrap_or_else(|| panic!("Module not found: {module_id:?}"));
-      let module_analyzer = module_analyzer_manager.module_analyzer_mut_unchecked(module_id);
-
-      let comments: SingleThreadedComments = module.meta.as_script().comments.clone().into();
-
-      let sourcemap_enabled = self.context.config.sourcemap.enabled(module.immutable);
-
-      try_with(
-        module_analyzer.cm.clone(),
-        &self.context.meta.script.globals,
-        || {
-          module_analyzer
-            .ast
-            .visit_mut_with(&mut fixer(Some(&comments)));
-        },
-      )?;
-
-      let mut mappings = vec![];
-      let code_bytes = codegen_module(
-        &module_analyzer.ast,
-        self.context.config.script.target,
-        module_analyzer.cm.clone(),
-        if sourcemap_enabled {
-          Some(&mut mappings)
-        } else {
-          None
-        },
-        false,
-        Some(CodeGenCommentsConfig {
-          comments: &comments,
-          config: &self.context.config.comments,
-        }),
-      )
-      .map_err(|err| CompilationError::RenderScriptModuleError {
-        id: module_analyzer.module_id.to_string(),
-        source: Some(Box::new(err)),
-      })?;
-
-      let code = String::from_utf8(code_bytes).map_err(|err| {
-        CompilationError::GenericError(format!(
-          "failed to convert code bytes to string, origin error: {err}"
-        ))
-      })?;
-
-      let mut source_map_chain = vec![];
-
-      if sourcemap_enabled {
-        let sourcemap = build_source_map(module_analyzer.cm.clone(), &mappings);
-        let mut buf = vec![];
-        sourcemap
-          .to_writer(&mut buf)
-          .map_err(|e| CompilationError::RenderScriptModuleError {
-            id: module_id.to_string(),
-            source: Some(Box::new(e)),
-          })?;
-        let map = Arc::new(String::from_utf8(buf).unwrap());
-
-        source_map_chain.clone_from(&module.source_map_chain);
-        source_map_chain.push(map);
-      }
-
-      let mut module = MagicString::new(
-        &code,
-        Some(MagicStringOptions {
-          filename: Some(module_id.resolved_path_with_query(&self.context.config.root)),
-          source_map_chain,
-          ..Default::default()
-        }),
-      );
-
-      if matches!(self.context.config.mode, Mode::Development) {
-        // debug info
-        module.prepend(&format!("// module_id: {}\n", module_id.to_string()));
-      }
-
-      bundle.add_source(module, None).unwrap();
-    }
-
-    // in browser, should avoid naming pollution
-    if matches!(self.context.config.output.target_env, TargetEnv::Browser)
-      && matches!(self.group.group_type, ResourcePotType::Runtime)
-    {
-      bundle.prepend(";((function(){");
-      bundle.append("})());", None);
+    let get_start_pos = |module_id: &ModuleId| {
+      let filename = get_swc_sourcemap_filename(module_id);
+      let Some(source_file) = cm.get_source_file(&filename) else {
+        panic!("no source file found for {:?}", module_id);
+      };
+      source_file.start_pos
     };
 
-    Ok(bundle)
+    let modules = self
+      .ordered_modules
+      .iter()
+      .map(|module_id| {
+        let Some(module) = self.module_graph.module(module_id) else {
+          panic!("Module not found: {module_id:?}")
+        };
+        let module_analyzer = module_analyzer_manager.module_analyzer_mut_unchecked(module_id);
+
+        let comments = module.meta.as_script().comments.clone();
+
+        let module = module_analyzer.ast.take();
+
+        (module_id, (module, comments))
+      })
+      .par_bridge()
+      .map(|(module_id, (mut module, data))| {
+        // module.visit_mut_with(&mut SpanUpdater {
+        //   start_pos: get_start_pos(module_id),
+        // });
+
+        (module_id, module, data)
+      })
+      .collect::<Vec<_>>();
+
+    let (ast, comments) = modules.into_iter().fold(
+      (
+        Module {
+          span: DUMMY_SP,
+          body: vec![],
+          shebang: None,
+        },
+        SingleThreadedComments::default(),
+      ),
+      |(mut module, comments), (module_id, ast, data)| {
+        module.body.extend(ast.body);
+
+        let start_pos = get_start_pos(module_id);
+
+        for item in data.leading {
+          let byte_pos = start_pos + item.byte_pos;
+
+          for comment in item.comment {
+            comments.add_leading(byte_pos, comment);
+          }
+        }
+
+        for item in data.trailing {
+          let byte_pos = start_pos + item.byte_pos;
+
+          for comment in item.comment {
+            comments.add_trailing(byte_pos, comment);
+          }
+        }
+
+        (module, comments)
+      },
+    );
+
+    Ok(GeneratorAstResult {
+      ast,
+      comments: comments.into(),
+      rendered_modules: self.ordered_modules.into_iter().cloned().collect(),
+    })
   }
 }

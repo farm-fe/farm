@@ -9,7 +9,7 @@ use farmfe_core::{
 
 pub fn finalize_module(
   module: &mut Module,
-  deps: &Vec<PluginAnalyzeDepsHookResultEntry>,
+  deps: &mut Vec<PluginAnalyzeDepsHookResultEntry>,
   context: &Arc<CompilationContext>,
 ) -> Result<()> {
   #[cfg(feature = "profile")]

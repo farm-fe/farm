@@ -7,7 +7,7 @@ import { builtinModules } from 'module';
 export default defineConfig({
   compilation: {
     // multiple bundle recommend config
-    treeShaking: false,
+    // treeShaking: false,
     partialBundling: {
       targetConcurrentRequests: Number.MAX_SAFE_INTEGER,
       targetMinSize: 1,
@@ -19,7 +19,7 @@ export default defineConfig({
     output: {
       path: 'dist/esm',
       entryFilename: '[entryName].mjs',
-      targetEnv: 'library-node',
+      targetEnv: 'node',
       format: 'esm'
     },
     presetEnv: false,
@@ -35,7 +35,7 @@ export default defineConfig({
       importNotUsedAsValues: 'remove',
     },
     minify: false,
-    mode: 'development',
+    // mode: 'development',
     persistentCache: false,
     lazyCompilation: false
   },

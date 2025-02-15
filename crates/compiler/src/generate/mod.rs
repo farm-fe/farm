@@ -18,7 +18,6 @@ impl Compiler {
   /// the generate stage
   pub(crate) fn generate(&self) -> Result<()> {
     self.context.plugin_driver.generate_start(&self.context)?;
-
     let hook_context = PluginHookContext {
       caller: None,
       meta: HashMap::default(),

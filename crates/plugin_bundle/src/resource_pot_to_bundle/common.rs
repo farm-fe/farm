@@ -9,10 +9,7 @@ use farmfe_core::{
   swc_ecma_ast::{Module as EcmaAstModule, ModuleItem},
   swc_ecma_parser::{lexer::Lexer, EsSyntax as EsConfig, Parser, StringInput, Syntax},
 };
-use farmfe_toolkit::{
-  common::{create_swc_source_map, Source},
-  script::swc_try_with::resolve_module_mark,
-};
+use farmfe_toolkit::{script::swc_try_with::resolve_module_mark, sourcemap::create_swc_source_map};
 
 pub fn get_module_mark(
   module: &Module,
@@ -30,10 +27,7 @@ pub fn get_module_mark(
 }
 
 pub fn parse_module_item(string: &str) -> Result<Vec<ModuleItem>> {
-  let (_, source_file) = create_swc_source_map(Source {
-    path: PathBuf::from("unknown"),
-    content: Arc::new(string.to_string()),
-  });
+  let (_, source_file) = create_swc_source_map(&"unknown".into(), Arc::new(string.to_string()));
 
   let input = StringInput::from(&*source_file);
   let comments = SingleThreadedComments::default();

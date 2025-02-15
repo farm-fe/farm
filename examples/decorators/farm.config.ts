@@ -21,7 +21,7 @@ export default defineConfig({
       main: 'src/broken.ts',
     },
     output: {
-      targetEnv: 'library-node',
+      targetEnv: 'library',
       entryFilename: '[entryName].mjs',
       filename: '[name].[hash].mjs',
       format: 'esm'

@@ -7,9 +7,11 @@ use farmfe_core::{
   context::CompilationContext,
   module::{
     module_graph::{ModuleGraphEdge, ModuleGraphEdgeDataItem},
-    Module,
+    module_group::{ModuleGroupId, ModuleGroupType},
+    Module, ModuleId,
   },
   plugin::{Plugin, PluginHookContext, ResolveKind},
+  resource::resource_pot::ResourcePotId,
   HashSet,
 };
 use farmfe_plugin_partial_bundling::module_group_graph_from_entries;
@@ -43,6 +45,24 @@ fn test_generate_and_diff_resource_pots() {
     .add_edge(&"H".into(), &"F".into(), Default::default())
     .unwrap();
 
+  update_module_graph.add_module(Module::new("I".into()));
+  update_module_graph
+    .add_edge(
+      &"E".into(),
+      &"I".into(),
+      ModuleGraphEdge::new(vec![ModuleGraphEdgeDataItem {
+        kind: ResolveKind::DynamicEntry {
+          name: "EI".to_string(),
+          output_filename: None,
+        },
+        ..Default::default()
+      }]),
+    )
+    .unwrap();
+  update_module_graph
+    .update_edge(&"I".into(), &"F".into(), Default::default())
+    .unwrap();
+
   let updated_modules = vec!["F".into(), "E".into(), "B".into()];
   let mut module_group_graph = module_group_graph_from_entries(
     &module_graph.entries.clone().into_keys().collect(),
@@ -64,9 +84,22 @@ fn test_generate_and_diff_resource_pots() {
     &mut module_graph,
     &mut module_group_graph,
   );
+
+  let group_id_a = ModuleGroupId::new(&"A".into(), &ModuleGroupType::Entry);
+  let group_id_b = ModuleGroupId::new(&"B".into(), &ModuleGroupType::Entry);
+  let group_id_d = ModuleGroupId::new(&"D".into(), &ModuleGroupType::DynamicImport);
+  let group_id_f = ModuleGroupId::new(&"F".into(), &ModuleGroupType::DynamicImport);
+  let group_id_i = ModuleGroupId::new(&"I".into(), &ModuleGroupType::DynamicEntry);
+
   assert_eq!(
     affected_groups,
-    HashSet::from_iter(["A".into(), "B".into(), "F".into(), "D".into()])
+    HashSet::from_iter([
+      group_id_a.clone(),
+      group_id_b.clone(),
+      group_id_f.clone(),
+      group_id_d.clone(),
+      group_id_i.clone()
+    ])
   );
 
   let mut config = Config::default();
@@ -104,27 +137,97 @@ fn test_generate_and_diff_resource_pots() {
   resource_pot_ids.sort();
   assert_debug_snapshot!(resource_pot_ids);
 
-  let module_group_graph = context.module_group_graph.read();
+  #[derive(Clone, Debug, PartialEq, Eq)]
+  struct GroupResourcePotsSnapshotItem {
+    pub id: ModuleGroupId,
+    pub resource_pots: HashSet<ResourcePotId>,
+  }
 
-  let module_group_a = module_group_graph.module_group(&"A".into()).unwrap();
-  assert_sorted_iter_eq!(module_group_a.resource_pots());
-  let module_group_b = module_group_graph.module_group(&"B".into()).unwrap();
-  assert_sorted_iter_eq!(module_group_b.resource_pots());
-  let module_group_d = module_group_graph.module_group(&"D".into()).unwrap();
-  assert_sorted_iter_eq!(module_group_d.resource_pots());
-  let module_group_f = module_group_graph.module_group(&"F".into()).unwrap();
-  assert_sorted_iter_eq!(module_group_f.resource_pots());
+  impl PartialOrd for GroupResourcePotsSnapshotItem {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+      self.id.partial_cmp(&other.id)
+    }
+  }
+  impl Ord for GroupResourcePotsSnapshotItem {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+      self.id.cmp(&other.id)
+    }
+  }
+
+  let module_group_graph = context.module_group_graph.read();
+  let mut group_resource_pots = vec![];
+  let module_group_a = module_group_graph.module_group(&group_id_a).unwrap();
+  group_resource_pots.push(GroupResourcePotsSnapshotItem {
+    id: module_group_a.id.clone(),
+    resource_pots: module_group_a.resource_pots().clone(),
+  });
+  let module_group_b = module_group_graph.module_group(&group_id_b).unwrap();
+  group_resource_pots.push(GroupResourcePotsSnapshotItem {
+    id: module_group_b.id.clone(),
+    resource_pots: module_group_b.resource_pots().clone(),
+  });
+  let module_group_d = module_group_graph.module_group(&group_id_d).unwrap();
+  group_resource_pots.push(GroupResourcePotsSnapshotItem {
+    id: module_group_d.id.clone(),
+    resource_pots: module_group_d.resource_pots().clone(),
+  });
+  let module_group_f = module_group_graph.module_group(&group_id_f).unwrap();
+  group_resource_pots.push(GroupResourcePotsSnapshotItem {
+    id: module_group_f.id.clone(),
+    resource_pots: module_group_f.resource_pots().clone(),
+  });
+  let module_group_i = module_group_graph.module_group(&group_id_i).unwrap();
+  group_resource_pots.push(GroupResourcePotsSnapshotItem {
+    id: module_group_i.id.clone(),
+    resource_pots: module_group_i.resource_pots().clone(),
+  });
+  assert_sorted_iter_eq!(group_resource_pots);
+
+  #[derive(Clone, Debug, PartialEq, Eq)]
+  struct ModuleResourcePotSnapshotItem {
+    pub id: ModuleId,
+    pub resource_pots: HashSet<ResourcePotId>,
+  }
+  impl PartialOrd for ModuleResourcePotSnapshotItem {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+      self.id.partial_cmp(&other.id)
+    }
+  }
+  impl Ord for ModuleResourcePotSnapshotItem {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+      self.id.cmp(&other.id)
+    }
+  }
 
   let module_graph = context.module_graph.read();
+  let mut module_resource_pots = vec![];
   // F, E, B, H
   let module_f = module_graph.module(&"F".into()).unwrap();
-  assert_debug_snapshot!(module_f.resource_pot.as_ref().unwrap());
+  module_resource_pots.push(ModuleResourcePotSnapshotItem {
+    id: module_f.id.clone(),
+    resource_pots: module_f.resource_pots.clone(),
+  });
   let module_e = module_graph.module(&"E".into()).unwrap();
-  assert_debug_snapshot!(module_e.resource_pot.as_ref().unwrap());
+  module_resource_pots.push(ModuleResourcePotSnapshotItem {
+    id: module_e.id.clone(),
+    resource_pots: module_e.resource_pots.clone(),
+  });
   let module_b = module_graph.module(&"B".into()).unwrap();
-  assert_debug_snapshot!(module_b.resource_pot.as_ref().unwrap());
+  module_resource_pots.push(ModuleResourcePotSnapshotItem {
+    id: module_b.id.clone(),
+    resource_pots: module_b.resource_pots.clone(),
+  });
   let module_h = module_graph.module(&"H".into()).unwrap();
-  assert_debug_snapshot!(module_h.resource_pot.as_ref().unwrap());
+  module_resource_pots.push(ModuleResourcePotSnapshotItem {
+    id: module_h.id.clone(),
+    resource_pots: module_h.resource_pots.clone(),
+  });
+  let module_i = module_graph.module(&"I".into()).unwrap();
+  module_resource_pots.push(ModuleResourcePotSnapshotItem {
+    id: module_i.id.clone(),
+    resource_pots: module_i.resource_pots.clone(),
+  });
+  assert_sorted_iter_eq!(module_resource_pots);
 
   let resource_pot_map = context.resource_pot_map.read();
   println!(
@@ -194,7 +297,10 @@ fn test_generate_and_diff_resource_pots_one_module_changed() {
     &mut module_graph,
     &mut module_group_graph,
   );
-  assert_eq!(affected_groups, HashSet::from_iter(["I".into()]));
+
+  let group_id_i = ModuleGroupId::new(&"I".into(), &ModuleGroupType::DynamicImport);
+
+  assert_eq!(affected_groups, HashSet::from_iter([group_id_i]));
 
   let mut config = Config::default();
   config.partial_bundling.enforce_resources = vec![PartialBundlingEnforceResourceConfig {

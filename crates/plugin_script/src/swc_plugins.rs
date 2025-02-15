@@ -11,11 +11,8 @@ use farmfe_core::{
   swc_ecma_ast::{Module as SwcModule, Program, Script},
   HashMap,
 };
+use farmfe_toolkit::anyhow::{self, Context};
 use farmfe_toolkit::swc_ecma_visit::{noop_fold_type, Fold, FoldWith};
-use farmfe_toolkit::{
-  anyhow::{self, Context},
-  common::{create_swc_source_map, Source},
-};
 use once_cell::sync::Lazy;
 use swc_ecma_loader::{
   resolve::Resolve,
@@ -94,10 +91,7 @@ pub fn transform_by_swc_plugins(
     None,
   ));
   let unresolved_mark = Mark::from_u32(param.meta.as_script().unresolved_mark);
-  let (cm, _) = create_swc_source_map(Source {
-    path: PathBuf::from(&param.module_id.to_string()),
-    content: param.content.clone(),
-  });
+  let cm = context.meta.get_module_source_map(&param.module_id);
   let comments = param.meta.as_script().comments.clone().into();
   let mut plugin_transforms = swc_plugins(
     Some(plugins_should_execute),

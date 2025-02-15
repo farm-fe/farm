@@ -1,12 +1,14 @@
-use farmfe_core::swc_ecma_ast::{Id, ModuleExportName, ModuleItem};
+use farmfe_core::module::meta_data::script::statement::SwcId;
+use farmfe_core::swc_ecma_ast::{ModuleExportName, ModuleItem};
 use farmfe_core::HashMap;
+use farmfe_toolkit::script::idents_collector::DefinedIdentsCollector;
 use farmfe_toolkit::swc_ecma_visit::{Visit, VisitWith};
 
-use super::{defined_idents_collector::DefinedIdentsCollector, StatementGraphEdge, StatementId};
+use super::{StatementGraphEdge, StatementId};
 
 pub struct AnalyzeUsedIdentsParams<'a> {
   pub stmt: &'a ModuleItem,
-  pub reverse_defined_idents_map: &'a HashMap<Id, StatementId>,
+  pub reverse_defined_idents_map: &'a HashMap<SwcId, StatementId>,
 }
 
 pub fn analyze_deps_by_used_idents(
@@ -28,15 +30,15 @@ pub fn analyze_deps_by_used_idents(
 
 struct UsedIdentsVisitor<'a> {
   deps: &'a mut HashMap<StatementId, StatementGraphEdge>,
-  reverse_defined_idents_map: &'a HashMap<Id, StatementId>,
-  current_defined_ident: Option<Vec<Id>>,
+  reverse_defined_idents_map: &'a HashMap<SwcId, StatementId>,
+  current_defined_ident: Option<Vec<SwcId>>,
   in_top_level: bool,
 }
 
 impl<'a> UsedIdentsVisitor<'a> {
   pub fn new(
     deps: &'a mut HashMap<StatementId, StatementGraphEdge>,
-    reverse_defined_idents_map: &'a HashMap<Id, StatementId>,
+    reverse_defined_idents_map: &'a HashMap<SwcId, StatementId>,
   ) -> Self {
     Self {
       deps,
@@ -46,7 +48,7 @@ impl<'a> UsedIdentsVisitor<'a> {
     }
   }
 
-  pub fn with_ident(&mut self, idents: Vec<Id>, f: impl FnOnce(&mut Self)) {
+  pub fn with_ident(&mut self, idents: Vec<SwcId>, f: impl FnOnce(&mut Self)) {
     if self.current_defined_ident.is_some() {
       f(self);
       return;
@@ -64,7 +66,7 @@ impl<'a> UsedIdentsVisitor<'a> {
     self.in_top_level = pre;
   }
 
-  pub fn handled_used_ident(&mut self, stmt_id: &StatementId, ident: Id) {
+  pub fn handled_used_ident(&mut self, stmt_id: &StatementId, ident: SwcId) {
     let edge = self.deps.entry(*stmt_id).or_default();
 
     if let Some(current_defined_idents) = &self.current_defined_ident {
@@ -110,7 +112,7 @@ impl Visit for UsedIdentsVisitor<'_> {
               ModuleExportName::Ident(ident) => ident,
               _ => panic!("unexpected named export orig"),
             };
-            self.current_defined_ident = Some(vec![ident.to_id()]);
+            self.current_defined_ident = Some(vec![ident.to_id().into()]);
             self.visit_ident(ident);
             self.current_defined_ident = None;
           }
@@ -139,7 +141,7 @@ impl Visit for UsedIdentsVisitor<'_> {
     match n {
       farmfe_core::swc_ecma_ast::DefaultDecl::Class(class_expr) => {
         if let Some(ident) = &class_expr.ident {
-          self.with_ident(vec![ident.to_id()], |v| {
+          self.with_ident(vec![ident.to_id().into()], |v| {
             class_expr.class.visit_with(v);
           });
         } else {
@@ -148,7 +150,7 @@ impl Visit for UsedIdentsVisitor<'_> {
       }
       farmfe_core::swc_ecma_ast::DefaultDecl::Fn(fn_expr) => {
         if let Some(ident) = &fn_expr.ident {
-          self.with_ident(vec![ident.to_id()], |v| {
+          self.with_ident(vec![ident.to_id().into()], |v| {
             fn_expr.function.visit_with(v);
           });
         } else {
@@ -180,7 +182,7 @@ impl Visit for UsedIdentsVisitor<'_> {
 
     match n {
       farmfe_core::swc_ecma_ast::Decl::Fn(n) => {
-        self.with_ident(vec![n.ident.to_id()], |v| {
+        self.with_ident(vec![n.ident.to_id().into()], |v| {
           v.in_top_level = false;
           n.function.visit_with(v);
           v.in_top_level = true;
@@ -206,6 +208,7 @@ impl Visit for UsedIdentsVisitor<'_> {
             let defined_idents = defined_idents_collector
               .defined_idents
               .into_iter()
+              .map(|e| e.into())
               .collect::<Vec<_>>();
 
             self.with_ident(defined_idents, |v| {
@@ -215,7 +218,7 @@ impl Visit for UsedIdentsVisitor<'_> {
         }
       }
       farmfe_core::swc_ecma_ast::Decl::Class(n) => {
-        self.with_ident(vec![n.ident.to_id()], |v| {
+        self.with_ident(vec![n.ident.to_id().into()], |v| {
           v.in_top_level = false;
           n.class.visit_with(v);
           v.in_top_level = true;
@@ -226,7 +229,7 @@ impl Visit for UsedIdentsVisitor<'_> {
   }
 
   fn visit_ident(&mut self, n: &farmfe_core::swc_ecma_ast::Ident) {
-    let ident = n.to_id();
+    let ident = n.to_id().into();
 
     if let Some(stmt_id) = self.reverse_defined_idents_map.get(&ident) {
       self.handled_used_ident(stmt_id, ident)

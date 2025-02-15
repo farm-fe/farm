@@ -32,7 +32,6 @@ pub fn generate_runtime(crate_path: PathBuf) -> Box<RuntimeConfig> {
     .join("fixtures")
     .join("_internal")
     .join("runtime")
-    .join("index.js")
     .to_string_lossy()
     .to_string();
 
@@ -341,7 +340,13 @@ pub fn assert_compiler_result_with_config(compiler: &Compiler, config: AssertCom
       assert_eq!(expected.trim(), result.trim()); // ignore whitespace
     }
 
-    assert_eq!(expected_lines.len(), result_lines.len());
+    assert_eq!(
+      expected_lines.len(),
+      result_lines.len(),
+      "expect: \n{} result: \n{}",
+      expected_result,
+      result
+    );
   }
 }
 

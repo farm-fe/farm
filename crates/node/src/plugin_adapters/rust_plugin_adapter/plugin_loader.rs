@@ -16,8 +16,7 @@ pub unsafe fn load_rust_plugin<P: AsRef<OsStr> + std::fmt::Display>(
 ) -> Result<(Arc<dyn Plugin>, Library), Error> {
   type PluginCreate = unsafe fn(config: &Config, options: String) -> Arc<dyn Plugin>;
 
-  let lib = Library::new(filename.as_ref())?;
-
+  let lib = Library::new(filename.as_ref()).unwrap();
   let core_version_fn: Symbol<unsafe fn() -> String> = lib.get(b"_core_version")?;
   let core_version = core_version_fn();
 

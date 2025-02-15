@@ -1,5 +1,10 @@
 use farmfe_core::{
-  config::Config, context::CompilationContext, error::Result, parking_lot::Mutex, plugin::Plugin,
+  config::Config,
+  context::CompilationContext,
+  error::Result,
+  parking_lot::Mutex,
+  plugin::Plugin,
+  resource::{meta_data::ResourcePotMetaData, resource_pot::ResourcePot},
 };
 use indicatif::{ProgressBar, ProgressStyle};
 use std::{sync::Arc, time::Duration};
@@ -58,7 +63,7 @@ impl Plugin for FarmPluginProgress {
 
   fn update_modules(
     &self,
-    _params: &mut farmfe_core::plugin::PluginUpdateModulesHookParams,
+    _params: &mut farmfe_core::plugin::PluginUpdateModulesHookParam,
     _context: &Arc<CompilationContext>,
   ) -> Result<Option<()>> {
     self.progress_bar.reset();
@@ -106,7 +111,7 @@ impl Plugin for FarmPluginProgress {
 
   fn module_graph_updated(
     &self,
-    _param: &farmfe_core::plugin::PluginModuleGraphUpdatedHookParams,
+    _param: &farmfe_core::plugin::PluginModuleGraphUpdatedHookParam,
     _context: &Arc<CompilationContext>,
   ) -> Result<Option<()>> {
     let first_build = self.first_build.lock();
@@ -133,34 +138,18 @@ impl Plugin for FarmPluginProgress {
     Ok(None)
   }
 
-  fn render_resource_pot_modules(
+  fn render_resource_pot(
     &self,
-    resource_pot: &farmfe_core::resource::resource_pot::ResourcePot,
+    resource_pot: &ResourcePot,
     _context: &Arc<CompilationContext>,
     _hook_context: &farmfe_core::plugin::PluginHookContext,
-  ) -> Result<Option<farmfe_core::resource::resource_pot::ResourcePotMetaData>> {
+  ) -> Result<Option<ResourcePotMetaData>> {
     let first_build = self.first_build.lock();
 
     if *first_build {
       self
         .progress_bar
-        .set_message(format!("render resource pot modules {}", resource_pot.name));
-      self.progress_bar.inc(1);
-    }
-
-    Ok(None)
-  }
-
-  fn render_resource_pot(
-    &self,
-    param: &farmfe_core::plugin::PluginRenderResourcePotHookParam,
-    _context: &Arc<CompilationContext>,
-  ) -> Result<Option<farmfe_core::plugin::PluginRenderResourcePotHookResult>> {
-    let first_build = self.first_build.lock();
-
-    if *first_build {
-      let name: &String = &param.resource_pot_info.name.clone();
-      self.progress_bar.set_message(format!("render {name}"));
+        .set_message(format!("render {}", resource_pot.name));
       self.progress_bar.inc(1);
     }
 
@@ -206,7 +195,7 @@ impl Plugin for FarmPluginProgress {
 
   fn finalize_resources(
     &self,
-    _param: &mut farmfe_core::plugin::PluginFinalizeResourcesHookParams,
+    _param: &mut farmfe_core::plugin::PluginFinalizeResourcesHookParam,
     _context: &Arc<CompilationContext>,
   ) -> Result<Option<()>> {
     let first_build = self.first_build.lock();

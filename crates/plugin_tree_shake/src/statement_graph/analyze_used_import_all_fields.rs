@@ -1,4 +1,5 @@
-use farmfe_core::swc_ecma_ast::{Expr, Id, Lit, ModuleItem};
+use farmfe_core::module::meta_data::script::statement::SwcId;
+use farmfe_core::swc_ecma_ast::{Expr, Lit, ModuleItem};
 use farmfe_core::{HashMap, HashSet};
 use farmfe_toolkit::swc_ecma_visit::{Visit, VisitWith};
 
@@ -57,12 +58,12 @@ pub enum UsedImportAllFields {
 }
 
 pub struct UsedImportAllCollector<'a> {
-  namespace_ident: &'a Id,
+  namespace_ident: &'a SwcId,
   pub used_import_all_fields: HashSet<UsedImportAllFields>,
 }
 
 impl<'a> UsedImportAllCollector<'a> {
-  pub fn new(namespace_ident: &'a Id) -> Self {
+  pub fn new(namespace_ident: &'a SwcId) -> Self {
     Self {
       namespace_ident,
       used_import_all_fields: HashSet::default(),
@@ -74,7 +75,8 @@ impl Visit for UsedImportAllCollector<'_> {
   fn visit_member_expr(&mut self, n: &farmfe_core::swc_ecma_ast::MemberExpr) {
     // if obj is namespace_ident, then add the member to used_import_all_fields
     if let Expr::Ident(ident) = &*n.obj {
-      if ident.to_id() == *self.namespace_ident {
+      let id: SwcId = ident.to_id().into();
+      if id == *self.namespace_ident {
         match &n.prop {
           farmfe_core::swc_ecma_ast::MemberProp::Ident(ident) => {
             self
@@ -106,7 +108,8 @@ impl Visit for UsedImportAllCollector<'_> {
 
   /// If the ident is not used as member expr, then it should be treated as All
   fn visit_ident(&mut self, n: &farmfe_core::swc_ecma_ast::Ident) {
-    if n.to_id() == *self.namespace_ident {
+    let id: SwcId = n.to_id().into();
+    if id == *self.namespace_ident {
       self.used_import_all_fields.insert(UsedImportAllFields::All);
     }
   }

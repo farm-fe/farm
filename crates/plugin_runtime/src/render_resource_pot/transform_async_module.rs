@@ -245,10 +245,11 @@ mod tests {
 
   fn parse(code: &str) -> Module {
     parse_module(
-      "id",
-      code,
+      &"id".into(),
+      Arc::new(code.to_string()),
       Syntax::Es(Default::default()),
       EsVersion::EsNext,
+      // None,
     )
     .unwrap()
     .ast

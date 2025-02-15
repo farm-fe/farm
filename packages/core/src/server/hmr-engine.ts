@@ -3,7 +3,7 @@ import fse from 'fs-extra';
 import { stat } from 'node:fs/promises';
 import { isAbsolute, relative } from 'node:path';
 
-import type { Resource } from '@farmfe/runtime/src/resource-loader.js';
+import type { Resource } from '@farmfe/runtime';
 import { HmrOptions } from '../config/index.js';
 import type { JsUpdateResult } from '../types/binding.js';
 import { convertErrorMessage } from '../utils/error.js';
@@ -157,7 +157,6 @@ export class HmrEngine {
       try {
         await this.recompileAndSendResult();
       } catch (e) {
-        // eslint-disable-next-line no-control-regex
         const serialization = e.message.replace(/\x1b\[[0-9;]*m/g, '');
         const errorStr = `${JSON.stringify({
           message: serialization

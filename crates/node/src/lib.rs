@@ -12,6 +12,7 @@ pub mod plugin_toolkit;
 #[cfg(feature = "profile")]
 pub mod profile_gui;
 
+use farmfe_core::rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use farmfe_core::{
   config::{Config, Mode},
   module::ModuleId,
@@ -170,7 +171,7 @@ impl JsCompiler {
       e.create_deferred::<Vec<String>, Box<dyn FnOnce(Env) -> napi::Result<Vec<String>>>>()?;
 
     let compiler = self.compiler.clone();
-    self.compiler.thread_pool.spawn(move || {
+    self.compiler.context().thread_pool.spawn(move || {
       match compiler
         .trace_dependencies()
         .map_err(|e| napi::Error::new(Status::GenericFailure, format!("{e}")))
@@ -193,7 +194,7 @@ impl JsCompiler {
       e.create_deferred::<JsTracedModuleGraph, Box<dyn FnOnce(Env) -> napi::Result<JsTracedModuleGraph>>>()?;
 
     let compiler = self.compiler.clone();
-    self.compiler.thread_pool.spawn(move || {
+    self.compiler.context().thread_pool.spawn(move || {
       match compiler
         .trace_module_graph()
         .map_err(|e| napi::Error::new(Status::GenericFailure, format!("{e}")))
@@ -211,13 +212,13 @@ impl JsCompiler {
   }
 
   /// async compile, return promise
-  #[napi]
+  #[napi(ts_return_type = "Promise<JsUpdateResult>")]
   pub fn compile(&self, e: Env) -> napi::Result<JsObject> {
     let (promise, result) =
       e.create_deferred::<JsUndefined, Box<dyn FnOnce(Env) -> napi::Result<JsUndefined>>>()?;
 
     let compiler = self.compiler.clone();
-    self.compiler.thread_pool.spawn(move || {
+    self.compiler.context().thread_pool.spawn(move || {
       match compiler
         .compile()
         .map_err(|e| napi::Error::new(Status::GenericFailure, format!("{e}")))
@@ -277,7 +278,7 @@ impl JsCompiler {
       e.create_deferred::<JsUpdateResult, Box<dyn FnOnce(Env) -> napi::Result<JsUpdateResult>>>()?;
 
     let compiler = self.compiler.clone();
-    self.compiler.thread_pool.spawn(move || {
+    self.compiler.context().thread_pool.spawn(move || {
       match compiler
         .update(
           paths
@@ -439,6 +440,25 @@ impl JsCompiler {
   }
 
   #[napi]
+  pub fn write_resources_to_disk(&self, output_path: String) {
+    let context = self.compiler.context();
+    let resources = context.resources_map.lock();
+
+    resources.par_iter().for_each(|(name, resource)| {
+      if resource.emitted {
+        return;
+      }
+
+      let path = Path::new(&output_path).join(name.split(['?', '#']).next().unwrap());
+      let dir = path.parent().unwrap();
+      if !dir.exists() {
+        std::fs::create_dir_all(dir).unwrap();
+      };
+      std::fs::write(path, resource.bytes.clone()).unwrap();
+    });
+  }
+
+  #[napi]
   pub fn watch_modules(&self) -> Vec<String> {
     let context = self.compiler.context();
 
@@ -474,7 +494,7 @@ impl JsCompiler {
   #[napi]
   pub fn stats(&self) -> String {
     let context = self.compiler.context();
-    context.record_manager.to_string()
+    context.stats.to_string()
   }
 
   #[napi]
