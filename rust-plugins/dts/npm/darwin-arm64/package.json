@@ -1,5 +1,5 @@
 {
-  "name": "@farmfe/plugin-replace-dirname-darwin-arm64",
+  "name": "@farmfe/plugin-dts-darwin-arm64",
   "version": "0.0.0",
   "os": [
     "darwin"

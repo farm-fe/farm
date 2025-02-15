@@ -26,6 +26,7 @@ pub mod generate;
 pub mod trace_module_graph;
 pub mod update;
 pub mod utils;
+pub mod write;
 
 pub struct Compiler {
   context: Arc<CompilationContext>,
@@ -170,6 +171,12 @@ impl Compiler {
       #[cfg(feature = "profile")]
       farmfe_core::puffin::profile_scope!("Generate Stage");
       self.generate()?;
+    }
+
+    {
+      #[cfg(feature = "profile")]
+      farmfe_core::puffin::profile_scope!("Write Stage");
+      self.write()?;
     }
 
     self

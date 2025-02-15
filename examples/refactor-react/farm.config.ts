@@ -1,7 +1,6 @@
 import { defineConfig, loadEnv } from "@farmfe/core";
 import path from 'node:path'
 import react from "@farmfe/plugin-react";
-console.log(path.resolve(__dirname, 'src/CustomResolved.vue').replaceAll('\\', '/'));
 
 export default defineConfig({
   plugins: [
@@ -14,6 +13,7 @@ export default defineConfig({
       about: path.resolve(__dirname, 'about.html'),
     },
     progress: false,
+    // persistentCache: false,
     output: {
       publicPath: "/aaa/",
     },
