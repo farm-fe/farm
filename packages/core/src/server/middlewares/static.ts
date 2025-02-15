@@ -23,12 +23,12 @@ import sirv, { Options } from 'sirv';
 import type { Server } from '../index.js';
 
 export function staticMiddleware(app: Server): Connect.NextHandleFunction {
-  const { resolvedUserConfig, compiler } = app;
+  const { config, compiler } = app;
   const root = compiler.config.root;
   const serve = sirv(
     root,
     sirvOptions({
-      getHeaders: () => resolvedUserConfig.server.headers
+      getHeaders: () => config.server.headers
     })
   );
   return function handleStaticMiddleware(req, res, next) {
@@ -52,16 +52,16 @@ export function staticMiddleware(app: Server): Connect.NextHandleFunction {
     const filePath = fsPathFromUrl(fileUrl);
 
     // TODO FS.allow FS.deny server.fs.allow server.fs.deny
-
-    if (!existsSync(filePath) || !statSync(filePath).isFile()) {
+    if (existsSync(filePath) && statSync(filePath).isFile()) {
+      serve(req, res, next);
+    } else {
       next();
     }
-    serve(req, res, next);
   };
 }
 
 export function publicMiddleware(app: Server): Connect.NextHandleFunction {
-  const { resolvedUserConfig: config, publicDir, publicFiles } = app;
+  const { config: config, publicDir, publicFiles } = app;
   const serve = sirv(
     publicDir,
     sirvOptions({
@@ -79,8 +79,8 @@ export function publicMiddleware(app: Server): Connect.NextHandleFunction {
   };
 
   return async function farmHandlerPublicMiddleware(
-    req: any,
-    res: any,
+    req,
+    res,
     next: () => void
   ) {
     if (
@@ -95,7 +95,7 @@ export function publicMiddleware(app: Server): Connect.NextHandleFunction {
 
 const knownJavascriptExtensionRE = /\.[tj]sx?$/;
 
-const sirvOptions = ({
+export const sirvOptions = ({
   getHeaders
 }: {
   getHeaders: () => OutgoingHttpHeaders | undefined;

@@ -17,9 +17,9 @@ pub mod script;
 #[allow(clippy::large_enum_variant)]
 #[derive(Clone)]
 pub enum ModuleMetaData {
-  Script(ScriptModuleMetaData),
-  Css(CssModuleMetaData),
-  Html(HtmlModuleMetaData),
+  Script(Box<ScriptModuleMetaData>),
+  Css(Box<CssModuleMetaData>),
+  Html(Box<HtmlModuleMetaData>),
   Custom(CustomMetaDataMap),
 }
 

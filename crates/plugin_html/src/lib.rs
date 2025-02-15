@@ -27,7 +27,8 @@ use farmfe_core::{
   },
 };
 use farmfe_toolkit::minify::minify_html_module;
-use farmfe_toolkit::sourcemap::{create_swc_source_map, PathFilter};
+use farmfe_toolkit::plugin_utils::path_filter::PathFilter;
+use farmfe_toolkit::sourcemap::create_swc_source_map;
 use farmfe_toolkit::{
   fs::read_file_utf8,
   html::{codegen_html_document, parse_html_document},
@@ -198,10 +199,10 @@ impl Plugin for FarmPluginHtml {
       let html_document =
         parse_html_document(module_id.to_string().as_str(), param.content.clone())?;
 
-      let meta = ModuleMetaData::Html(HtmlModuleMetaData {
+      let meta = ModuleMetaData::Html(Box::new(HtmlModuleMetaData {
         ast: html_document,
         custom: Default::default(),
-      });
+      }));
 
       Ok(Some(meta))
     } else {

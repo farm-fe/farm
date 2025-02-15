@@ -10,7 +10,6 @@ import {
 
 declare const nodeRequire: (id: string) => any;
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
 type ModuleInitializationFunction = (
   module: Module,
   exports: any,
@@ -18,7 +17,6 @@ type ModuleInitializationFunction = (
   __farm_dynamic_require__: (moduleId: string) => any,
 ) => void | Promise<void>;
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
 export type ModuleInitialization = ModuleInitializationFunction & {
   __farm_resource_pot__?: string;
 };
@@ -181,7 +179,7 @@ export class ModuleSystem {
 
   loadDynamicResources(moduleId: string, force = false): Promise<any> {
     const resources = this.dynamicModuleResourcesMap[moduleId].map((index) => this.dynamicResources[index]);
-  
+
     return this.loadDynamicResourcesOnly(moduleId, force)
       .then(() => {
         // Do not require the module if all the resources are not js resources

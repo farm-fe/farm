@@ -6,6 +6,10 @@ import { createSpinner } from "nanospinner";
 
 import { logger } from "./logger.mjs";
 
+// Display verbose output
+const isVerbose =
+  process.argv.includes("--verbose") || process.argv.includes("-v");
+
 export const DEFAULT_PACKAGE_MANAGER = "pnpm";
 const DEFAULT_HOMEBREW_PACKAGE_MANAGER = "brew";
 const DEFAULT_LINUX_PACKAGE_MANAGER = "apt";
@@ -17,16 +21,13 @@ const PKG_CORE = resolve(CWD, "./packages/core");
 // Build cli
 const PKG_CLI = resolve(CWD, "./packages/cli");
 
-const PKG_RUNTIME = resolve(CWD, './packages/runtime');
+const PKG_RUNTIME = resolve(CWD, "./packages/runtime");
 
-const PKG_RUNTIME_PLUGIN_HMR = resolve(
-  CWD,
-  './packages/runtime-plugin-hmr'
-);
+const PKG_RUNTIME_PLUGIN_HMR = resolve(CWD, "./packages/runtime-plugin-hmr");
 
 const PKG_RUNTIME_PLUGIN_IMPORT_META = resolve(
   CWD,
-  './packages/runtime-plugin-import-meta'
+  "./packages/runtime-plugin-import-meta",
 );
 
 // Build plugin-tools
@@ -62,6 +63,24 @@ const skipExamples = [
   "vanilla-extract",
 ];
 
+export const installDependencies = async () =>
+  runTask(
+    "dependencies",
+    async () =>
+      await execa(DEFAULT_PACKAGE_MANAGER, ["install"], {
+        cwd: CWD,
+        stdio: isVerbose ? "inherit" : "ignore",
+      }),
+    "Installing",
+    "Install",
+  );
+
+export const executeStartProject = async () =>
+  execa(DEFAULT_PACKAGE_MANAGER, ["start"], {
+    cwd: CWD,
+    stdio: "inherit",
+  });
+
 export const buildExamples = async () => {
   const examples = fs.readdirSync("./examples");
   console.log("Building", examples.length, "examples...");
@@ -87,13 +106,13 @@ export const buildExamples = async () => {
 export async function runTaskQueue() {
   // The sass plug-in uses protobuf, so you need to determine whether the user installs it or not.
   await installProtoBuf();
-  await runTask('Cli', buildCli);
-  await runTask('Runtime', buildRuntime);
-  await runTask('PluginTools', buildPluginTools);
-  await runTask('Core', buildCore);
-  await runTask('RustPlugins', buildRustPlugins);
-  await runTask('JsPlugins', buildJsPlugins);
-  await runTask('Artifacts', copyArtifacts);
+  await runTask("Cli", buildCli);
+  await runTask("Runtime", buildRuntime);
+  await runTask("PluginTools", buildPluginTools);
+  await runTask("Core", buildCore);
+  await runTask("RustPlugins", buildRustPlugins);
+  await runTask("JsPlugins", buildJsPlugins);
+  await runTask("Artifacts", copyArtifacts);
 }
 
 // install mac protobuf
@@ -167,7 +186,7 @@ export const installLinuxProtobuf = async (spinner) => {
 export const buildCore = () =>
   execa(DEFAULT_PACKAGE_MANAGER, ["build:rs"], {
     cwd: PKG_CORE,
-    stdio: "inherit",
+    stdio: isVerbose ? "inherit" : "ignore",
   })
     .then(buildReplaceDirnamePlugin)
     .then(buildCoreCjs);
@@ -184,18 +203,18 @@ export const buildCli = () =>
   });
 
 export const buildRuntime = async () => {
-  await execa(DEFAULT_PACKAGE_MANAGER, ['build'], {
-    cwd: PKG_RUNTIME
-  })
+  await execa(DEFAULT_PACKAGE_MANAGER, ["build"], {
+    cwd: PKG_RUNTIME,
+  });
   return Promise.all([
-    execa(DEFAULT_PACKAGE_MANAGER, ['build'], {
-      cwd: PKG_RUNTIME_PLUGIN_HMR
+    execa(DEFAULT_PACKAGE_MANAGER, ["build"], {
+      cwd: PKG_RUNTIME_PLUGIN_HMR,
     }),
-    execa(DEFAULT_PACKAGE_MANAGER, ['build'], {
-      cwd: PKG_RUNTIME_PLUGIN_IMPORT_META
-    })
-  ])
-}
+    execa(DEFAULT_PACKAGE_MANAGER, ["build"], {
+      cwd: PKG_RUNTIME_PLUGIN_IMPORT_META,
+    }),
+  ]);
+};
 
 // build farm-plugin-tools
 export const buildPluginTools = () =>
@@ -246,11 +265,12 @@ export const buildJsPlugins = async (spinner) => {
           }
           await execa(DEFAULT_PACKAGE_MANAGER, ["build"], {
             cwd: pluginPath,
-            // stdio: "pipe",
-            stdio: "inherit",
+            stdio: isVerbose ? "inherit" : "ignore",
           });
 
-          spinner.success({ text: `📦 Built JS plugin: ${pluginDir} ` });
+          spinner.success({
+            text: `📦 JS plugin \x1b[32m${pluginDir}\x1b[0m built successfully.`,
+          });
         } catch (error) {
           spinner.error({ text: `Failed to build JS plugin: ${pluginDir}` });
           throw error;
@@ -259,21 +279,22 @@ export const buildJsPlugins = async (spinner) => {
       "Building",
       "Build",
       spinner,
+      false,
     );
   }
 };
 
 export const buildRustPlugins = async (spinner) => {
-  const rustPluginDirs = fs.readdirSync(PKG_RUST_PLUGIN).filter((file) => {
-    return (
-      fs.statSync(join(PKG_RUST_PLUGIN, file)).isDirectory() &&
-      !excludedJsPlugin.includes(file)
-    );
-  });
   const filterPlugins = ["replace-dirname"];
+
+  const rustPluginDirs = fs.readdirSync(PKG_RUST_PLUGIN).filter((file) => {
+    return fs.statSync(join(PKG_RUST_PLUGIN, file)).isDirectory();
+  });
+
   const buildPlugins = rustPluginDirs.filter(
     (item) => !filterPlugins.includes(item),
   );
+
   const total = buildPlugins.length;
   console.log("\n");
   logger(`Found ${total} Rust plugins to build \n`, {
@@ -295,11 +316,12 @@ export const buildRustPlugins = async (spinner) => {
 
           await execa("npm", ["run", "build"], {
             cwd: pluginPath,
-            // stdio: "pipe",
-            stdio: "inherit",
+            stdio: isVerbose ? "inherit" : "ignore",
           });
 
-          spinner.success({ text: `📦 Built Rust plugin: ${pluginDir}` });
+          spinner.success({
+            text: `📦 Rust plugin \x1b[32m${pluginDir}\x1b[0m compiled successfully.`,
+          });
         } catch (error) {
           spinner.error({ text: `Failed to build Rust plugin: ${pluginDir}` });
           throw error;
@@ -308,6 +330,7 @@ export const buildRustPlugins = async (spinner) => {
       "Building",
       "Build",
       spinner,
+      false,
     );
   }
 };
@@ -321,10 +344,15 @@ export async function runTask(
   processText = "Building",
   finishedText = "Build",
   spinner = createSpinner(),
+  showSuccess = true,
 ) {
   try {
     await task(spinner.start({ text: `${processText} ${taskName}` }));
-    spinner.success({ text: `✨ ✨ ${finishedText} ${taskName} completed! ` });
+    showSuccess
+      ? spinner.success({
+          text: `✨ ✨ ${finishedText} ${taskName} completed! `,
+        })
+      : spinner.reset();
   } catch (e) {
     spinner.error({ text: `${finishedText} ${taskName} failed!` });
     console.error(e.toString());

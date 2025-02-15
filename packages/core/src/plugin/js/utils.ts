@@ -1,4 +1,3 @@
-import path from 'node:path';
 import * as querystring from 'node:querystring';
 import fse from 'fs-extra';
 import type {
@@ -13,12 +12,17 @@ import type {
 
 import { VITE_ADAPTER_VIRTUAL_MODULE } from './constants.js';
 
+import { readFile } from 'node:fs/promises';
+import { ModuleContext, ModuleNode } from '../../config/types.js';
 import type { Config } from '../../types/binding.js';
+import { normalizePath } from '../../utils/share.js';
 import type {
+  JsPlugin,
   JsResourcePotInfoData,
   Resource,
   ResourcePotInfo
 } from '../type.js';
+import { createModuleGraph } from './vite-server-adapter.js';
 
 export type WatchChangeEvents = 'create' | 'update' | 'delete';
 
@@ -48,14 +52,6 @@ export function convertWatchEventChange(
 
 export function getContentValue(content: any): string {
   return encodeStr(typeof content === 'string' ? content : content!.code);
-}
-
-export function isString(variable: unknown): variable is string {
-  return typeof variable === 'string';
-}
-
-export function isObject(variable: unknown): variable is object {
-  return typeof variable === 'object' && variable !== null;
 }
 
 export function customParseQueryString(url: string | null) {
@@ -146,13 +142,6 @@ export function normalizeAdapterVirtualModule(id: string) {
   if (isStartsWithSlash(path) && !fse.pathExistsSync(path))
     return addAdapterVirtualModuleFlag(id);
   return id;
-}
-
-// normalize path for windows the same as Vite
-export function normalizePath(p: string): string {
-  return path.posix.normalize(
-    process.platform === 'win32' ? p.replace(/\\/g, '/') : p
-  );
 }
 
 export const removeQuery = (path: string) => {
@@ -346,13 +335,11 @@ export function transformRollupResource2FarmResource(
   }
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const notSupport: (method: string) => (...args: any[]) => any =
   (method) => () => {
     console.warn(`${method} not support`);
   };
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const noop: (...args: any) => any = () => void 0;
 
 function transformFarmFormatToRollupFormat(
@@ -479,6 +466,46 @@ export function normalizeFilterPath(path: string): string {
   return path;
 }
 
-function compatibleWin32Path(path: string): string {
+export function compatibleWin32Path(path: string): string {
   return path.replaceAll('/', '\\\\');
+}
+
+export function wrapPluginUpdateModules(plugin: JsPlugin): JsPlugin {
+  if (!plugin.updateModules?.executor) {
+    return plugin;
+  }
+  const originalExecutor = plugin.updateModules.executor;
+  const moduleGraph = createModuleGraph(plugin.name);
+
+  plugin.updateModules.executor = async ({ paths }, ctx) => {
+    moduleGraph.context = ctx;
+    // TODO order with sort by updateModules hooks priority
+    for (const [file, type] of paths) {
+      const mods = moduleGraph.getModulesByFile(
+        file
+      ) as unknown as ModuleNode[];
+
+      const filename = normalizePath(file);
+      const moduleContext: ModuleContext = {
+        file: filename,
+        timestamp: Date.now(),
+        type,
+        paths,
+        modules: (mods ?? []).map(
+          (m) =>
+            ({
+              ...m,
+              id: normalizePath(m.id),
+              file: normalizePath(m.file)
+            }) as ModuleNode
+        ),
+        read: function (): string | Promise<string> {
+          return readFile(file, 'utf-8');
+        }
+      };
+
+      return originalExecutor.call(plugin, moduleContext);
+    }
+  };
+  return plugin;
 }

@@ -164,7 +164,7 @@ pub fn transform_css_to_script_modules(
         let mut module_graph = context.module_graph.write();
         let module = module_graph.module_mut(&module_id).unwrap();
 
-        module.meta = Box::new(ModuleMetaData::Script(ScriptModuleMetaData {
+        module.meta = Box::new(ModuleMetaData::Script(Box::new(ScriptModuleMetaData {
           ast,
           top_level_mark: top_level_mark.as_u32(),
           unresolved_mark: unresolved_mark.as_u32(),
@@ -174,7 +174,7 @@ pub fn transform_css_to_script_modules(
           comments: CommentsMetaData::from(comments),
           custom: Default::default(),
           ..Default::default()
-        }));
+        })));
 
         module.module_type = ModuleType::Js;
 

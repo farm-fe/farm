@@ -15,10 +15,9 @@ export default defineConfig((env) => {
       persistentCache: false,
       resolve: {
         alias: {
-          '@': resolve(process.cwd(), './src'),
-          'react-dom': resolve(process.cwd(), './node_modules/react-dom'),
-          react: resolve(process.cwd(), './node_modules/react')
-        }
+          "@": resolve(process.cwd(), "./src"),
+        },
+        dedupe: ["react", "react-dom"],
       },
     },
     plugins: [
@@ -26,6 +25,6 @@ export default defineConfig((env) => {
       // '@farmfe/plugin-svgr',
       svgr(),
       farmJsPluginLess(),
-    ]
+    ],
   };
 });

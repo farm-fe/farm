@@ -1,4 +1,11 @@
-import { Compiler, ResolvedUserConfig, Server, UserConfig } from '../index.js';
+import {
+  Compiler,
+  ConfigEnv,
+  ModuleContext,
+  ResolvedUserConfig,
+  Server,
+  UserConfig
+} from '../index.js';
 
 import {
   Config,
@@ -12,7 +19,6 @@ import {
 } from '../types/binding.js';
 
 // https://stackoverflow.com/questions/61047551/typescript-union-of-string-and-string-literals
-// eslint-disable-next-line @typescript-eslint/ban-types
 export type LiteralUnion<T extends string> = T | (string & {});
 
 type ResourcePotType = LiteralUnion<
@@ -150,7 +156,10 @@ export interface JsPlugin {
   name: string;
   priority?: number;
 
-  config?: (config: UserConfig) => UserConfig | Promise<UserConfig>;
+  config?: (
+    config: UserConfig,
+    configEnv: ConfigEnv
+  ) => UserConfig | Promise<UserConfig>;
 
   configResolved?: (config: ResolvedUserConfig) => void | Promise<void>;
 
@@ -250,10 +259,7 @@ export interface JsPlugin {
   updateFinished?: { executor: Callback<Record<string, never>, void> };
 
   updateModules?: {
-    executor: Callback<
-      { paths: [string, string][] },
-      string[] | undefined | null | void
-    >;
+    executor: Callback<ModuleContext, string[] | undefined | null | void>;
   };
 }
 

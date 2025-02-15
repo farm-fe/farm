@@ -1,26 +1,12 @@
-import type { UserConfig } from "@farmfe/core";
-// import farmPostcssPlugin from '@farmfe/js-plugin-postcss';
+import { defineConfig } from "@farmfe/core";
 import tailwind from "@farmfe/js-plugin-tailwindcss";
-
-function defineConfig(config: UserConfig) {
-  return config;
-}
 
 export default defineConfig({
   compilation: {
-    input: {
-      index: "./index.html",
-    },
-    output: {
-      path: "./build",
-    },
-    sourcemap: false,
-    resolve: {
-      dedupe: ["tailwindcss"],
-    },
+    persistentCache: false,
   },
   server: {
-    hmr: true,
+    writeToDisk: true,
   },
   plugins: [
     "@farmfe/plugin-react",

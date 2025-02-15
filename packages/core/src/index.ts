@@ -2,6 +2,7 @@ export * from './compiler/index.js';
 export * from './config/index.js';
 export * from './server/index.js';
 export * from './plugin/type.js';
+export * from './plugin/index.js';
 export * from './utils/index.js';
 
 export { defineFarmConfig as defineConfig } from './config/index.js';
@@ -96,7 +97,7 @@ export async function build(
 
     logger.info(
       `Build completed in ${bold(
-        green(`${logger.formatExecutionTime(elapsedTime)}`)
+        green(`${logger.formatTime(elapsedTime)}`)
       )} ${persistentCacheText} Resources emitted to ${bold(
         green(output.path)
       )}.`

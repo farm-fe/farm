@@ -101,7 +101,7 @@ export default function tailwindcss(): JsPlugin[] {
           // }
         };
       },
-      configureDevServer(server) {
+      configureServer(server) {
         servers.push(server);
       },
       transformHtml: {

@@ -43,6 +43,7 @@ import { VitePluginAdapter } from './vite-plugin-adapter.js';
 
 export { VitePluginAdapter } from './vite-plugin-adapter.js';
 export * from './js-plugin-schema.js';
+export * from './utils.js';
 
 type VitePluginType = object | (() => { vitePlugin: any; filters: string[] });
 type VitePluginsType = VitePluginType[];
@@ -137,7 +138,7 @@ schemaRegistry
   .register('augmentResourceHash', createAugmentResourceHashSchema)
   .register('finalizeResources', createFinalizeResourcesSchema)
   .register('transformHtml', createTransformHtmlSchema)
-  .register('writeResource', createWriteResourcesSchema)
+  .register('writeResources', createWriteResourcesSchema)
   .register('pluginCacheLoaded', createPluginCacheLoadedSchema)
   .register('writePluginCache', createWritePluginCacheSchema)
   .register('finish', createFinishSchema)

@@ -1,7 +1,6 @@
 import path, { isAbsolute } from 'node:path';
 
-import { isString } from '../plugin/js/utils.js';
-import { isArray, isObject } from '../utils/share.js';
+import { isArray, isObject, isString } from '../utils/share.js';
 import { CompilationMode } from './env.js';
 import { FarmCliOptions, UserConfig } from './types.js';
 

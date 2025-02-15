@@ -1,6 +1,7 @@
 import path from 'node:path/posix';
 
 import mime from 'mime';
+import sirv from 'sirv';
 
 import { Compiler } from '../../compiler/index.js';
 import {
@@ -10,7 +11,9 @@ import {
 } from '../../utils/index.js';
 import { normalizePathByPublicPath } from '../publicDir.js';
 import { send } from '../send.js';
+import { sirvOptions } from './static.js';
 
+import type { IncomingMessage, ServerResponse } from 'http';
 import type Connect from 'connect';
 import type { Server } from '../index.js';
 
@@ -26,7 +29,7 @@ export function resourceMiddleware(app: Server): Connect.NextHandleFunction {
       return next();
     }
     const url = cleanUrl(req.url);
-    const { compiler, resolvedUserConfig: config, publicPath } = app;
+    const { compiler, config, publicPath } = app;
 
     if (compiler._isInitialCompile) {
       await compiler.waitForInitialCompileFinish();
@@ -38,13 +41,12 @@ export function resourceMiddleware(app: Server): Connect.NextHandleFunction {
       }
     }
 
-    const resourceResult = findResource(req, res, compiler, publicPath);
+    const resourceResult = findResource(req, compiler, publicPath);
 
     if (resourceResult === true) {
       return next();
     }
 
-    // TODO if write to dist should be use sirv middleware
     if (resourceResult) {
       // need judge if resource is a deps node_modules set cache-control to 1 year
       const headers = config.server.headers;
@@ -84,25 +86,37 @@ export function resourceMiddleware(app: Server): Connect.NextHandleFunction {
   };
 }
 
-function findResource(
-  req: any,
-  res: any,
+export function resourceDiskMiddleware(
+  app: Server
+): Connect.NextHandleFunction {
+  return async function generateResourceDiskMiddleware(req, res, next) {
+    if (res.writableEnded) {
+      return next();
+    }
+    const { config, compiler } = app;
+    const root = path.resolve(
+      compiler.config.root,
+      config.compilation.output.path
+    );
+
+    const serve = sirv(
+      root,
+      sirvOptions({
+        getHeaders: () => config.server.headers
+      })
+    );
+    serve(req, res, next);
+  };
+}
+
+export function findResource(
+  req: IncomingMessage,
   compiler: Compiler,
   publicPath: string
 ): true | undefined | RealResourcePath {
-  const url = req.url && cleanUrl(req.url);
-  // output_files
-  if (url === '_output_files') {
-    const files = Object.keys(compiler.resources()).sort();
-    const fileTree = generateFileTree(files);
-    res.type = '.html';
-    res.body = generateFileTreeHtml(fileTree);
-    return true;
-  }
-
   const { resourceWithoutPublicPath } = normalizePathByPublicPath(
     publicPath,
-    url
+    req.url
   );
 
   const resource = compiler.resource(resourceWithoutPublicPath);
@@ -111,7 +125,36 @@ function findResource(
     return {
       resource,
       resourcePath: resourceWithoutPublicPath,
-      rawPath: url
+      rawPath: req.url
     };
   }
+}
+
+export function outputFilesMiddleware(app: Server): Connect.NextHandleFunction {
+  const { compiler } = app;
+
+  return function handleOutputFiles(req, res, next) {
+    if (res.writableEnded) {
+      return next();
+    }
+
+    if (req.url !== '/_output_files') {
+      return next();
+    }
+
+    try {
+      const files = Object.keys(compiler.resources()).sort();
+
+      const fileTree = generateFileTree(files);
+
+      res.setHeader('Content-Type', 'text/html');
+      const html = generateFileTreeHtml(fileTree);
+      res.write(html);
+      res.end();
+    } catch (error) {
+      if (!res.writableEnded) {
+        next(error);
+      }
+    }
+  };
 }

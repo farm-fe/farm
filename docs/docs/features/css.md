@@ -11,7 +11,6 @@ Then farm will auto enable HMR for css module, and generating bundled resources 
 Farm support css modules out of box, the modules end with `.module.css|less|scss|sass` will be treated as css modules by default.
 
 ```tsx title="comp.tsx"
-// ...
 import styles from './index.module.css'
 
 export function Comp() {

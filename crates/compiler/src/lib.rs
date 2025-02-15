@@ -8,7 +8,14 @@
 use std::sync::Arc;
 
 use farmfe_core::{
-  cache::store::constant::CacheStoreTrait, config::{Config, Mode}, context::CompilationContext, error::Result, farm_profile_function, module::ModuleId, parking_lot::Mutex, plugin::Plugin
+  cache::store::constant::CacheStoreTrait,
+  config::{Config, Mode},
+  context::CompilationContext,
+  error::Result,
+  farm_profile_function,
+  module::ModuleId,
+  parking_lot::Mutex,
+  plugin::Plugin,
 };
 
 pub use farmfe_plugin_css::FARM_CSS_MODULES_SUFFIX;
@@ -156,7 +163,7 @@ impl Compiler {
     {
       #[cfg(feature = "profile")]
       farmfe_core::puffin::profile_scope!("Build Stage");
-      self.build()?
+      self.build()?;
     };
 
     self.context.stats.set_build_end_time();

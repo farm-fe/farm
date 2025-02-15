@@ -1,12 +1,10 @@
 import fs from 'node:fs';
-/* eslint-disable no-prototype-builtins */
 import os from 'node:os';
 import path, { dirname } from 'node:path';
 import readline from 'node:readline';
 import { fileURLToPath } from 'node:url';
 import { Config, OutputConfig } from '../types/binding.js';
 import { cleanUrl } from './url.js';
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore import packageJson from '../../package.json';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -187,10 +185,7 @@ export function tryStatSync(file: string): fs.Stats | undefined {
   } catch {}
 }
 
-export function formatExecutionTime(
-  time: number,
-  format: 'ms' | 's' = 'ms'
-): string {
+export function formatTime(time: number, format: 'ms' | 's' = 'ms'): string {
   switch (format) {
     case 's':
       return `${Math.floor(time) / 1000}s`;

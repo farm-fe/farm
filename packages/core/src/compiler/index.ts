@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, rmSync } from 'node:fs';
 import path from 'node:path';
 
 import { Compiler as BindingCompiler } from '../../binding/index.js';
@@ -46,7 +46,6 @@ export class Compiler {
 
   constructor(public config: ResolvedUserConfig) {
     this._bindingCompiler = new BindingCompiler({
-      // @ts-ignore
       config: config.compilation,
       jsPlugins: config.jsPlugins,
       rustPlugins: config.rustPlugins
@@ -107,7 +106,9 @@ export class Compiler {
       this._updateQueue.push({ paths, resolve });
       return promise;
     }
+
     this.compiling = true;
+
     try {
       const res = await this._bindingCompiler.update(
         paths,
@@ -167,16 +168,14 @@ export class Compiler {
     return this._bindingCompiler.resourcesMap() as Record<string, Resource>;
   }
 
+  /**
+   * Writes the compiled resources to disk and calls the write resources hook.
+   */
   writeResourcesToDisk(): void {
-    const resources = this.resources();
     const outputPath = this.getOutputPath();
-
-    Object.entries(resources).forEach(([name, resource]) => {
-      const filePath = path.join(outputPath, name.split(/[?#]/)[0]);
-      mkdirSync(path.dirname(filePath), { recursive: true });
-      writeFileSync(filePath, new Uint8Array(resource));
-    });
-
+    // Write the resources to disk using the binding compiler
+    this._bindingCompiler.writeResourcesToDisk(outputPath);
+    // Call the write resources hook to allow plugins to perform additional actions
     this.callWriteResourcesHook();
   }
 

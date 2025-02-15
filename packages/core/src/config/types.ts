@@ -27,7 +27,7 @@ export interface ConfigEnv {
   isPreview: boolean;
 }
 
-export type commandType = 'start' | 'dev' | 'build' | 'watch' | 'preview';
+export type commandType = 'dev' | 'build' | 'watch' | 'preview';
 
 export type UserConfigFnPromise = (env: ConfigEnv) => Promise<UserConfig>;
 export type UserConfigFn = (env: ConfigEnv) => UserConfig | Promise<UserConfig>;
@@ -40,25 +40,92 @@ export type UserConfigExport =
   | UserConfigFnPromise
   | UserConfigFn;
 
+/**
+ * Interface for user server configuration, defining various
+ * configuration options for the server.
+ */
 export interface UserServerConfig {
+  /**
+   * HTTP headers to be sent with every response.
+   */
   headers?: OutgoingHttpHeaders | undefined;
+  /**
+   * The port number the server will listen on.
+   */
   port?: number;
+  /**
+   * Configuration options for the HTTPS server.
+   */
   https?: HttpsServerOptions;
+  /**
+   * The origin address of the server.
+   */
+  origin?: string;
+  /**
+   * The protocol used by the server, with optional values
+   * of 'http' or 'https'.
+   *
+   * @default 'http'
+   */
   protocol?: 'http' | 'https';
+  /**
+   * Hostname configuration, including the name and host address.
+   */
   hostname?: { name: string; host: string | undefined };
   // http2?: boolean;
+  /**
+   * Configuration options for Hot Module Replacement (HMR),
+   * which can be a boolean or a detailed configuration object.
+   */
   hmr?: boolean | HmrOptions;
+  /**
+   * Proxy configuration for the server, in key-value pair format.
+   */
   proxy?: Record<string, any>;
+  /**
+   * Whether to strictly use the specified port. If the port is
+   * occupied, an exception will be thrown when this option is set
+   * to `true`.
+   *
+   * @default false
+   */
   strictPort?: boolean;
+  /**
+   * Whether to automatically open the server in the default browser.
+   */
   open?: boolean;
+  /**
+   * The host address the server listens on.
+   */
   host?: string | boolean;
+  /**
+   * Whether to enable CORS (Cross-Origin Resource Sharing),
+   * which can be a boolean or detailed configuration.
+   */
   cors?: boolean | any;
-  // whether to serve static assets in spa mode, default to true
+  /**
+   * Application type, with optional values of 'spa'
+   * (Single Page Application), 'mpa' (Multi-Page Application),
+   * or 'custom' (Custom).
+   *
+   * @default 'spa'
+   */
   appType?: 'spa' | 'mpa' | 'custom';
+  /**
+   * Array of middleware for the development server.
+   */
   middlewares?: DevServerMiddleware[];
+  /**
+   * Whether to run the server in middleware mode.
+   */
   middlewareMode?: boolean;
+  /**
+   * Whether to write the bundled files to disk.
+   */
   writeToDisk?: boolean;
-  /** Preview server config */
+  /**
+   * Configuration options for the preview server.
+   */
   preview?: UserPreviewServerConfig;
 }
 
@@ -66,23 +133,26 @@ export interface UserServerConfig {
 export interface UserPreviewServerConfig {
   /**
    * HTTP headers to be sent with every response.
-   * Defaults to `server.headers` if not specified.
    * Set to `false` to disable preview server headers.
+   *
+   * @default server.headers
    */
   headers?: OutgoingHttpHeaders | false | undefined;
   /**
    * Host to run the preview server on.
-   * Defaults to `localhost` if not specified.
+   *
+   * @default 'localhost'
    */
   host?: string | boolean;
   /**
    * Port to run the preview server on.
-   * Defaults to `1911` if nothing specified.
    *
    * **NOTE**: If the port is already in use, the preview
    * server will automatically try the next available port.
    * If you want to use a specific port strictly, please
    * set `strictPort` to `true`.
+   *
+   * @default 1911
    */
   port?: number;
   /**
@@ -90,12 +160,16 @@ export interface UserPreviewServerConfig {
    *
    * If the enabled, the preview server will throw an exception
    * if failed to binding on specified port.
+   *
+   * @default false
    */
   strictPort?: boolean;
   /**
-   * Secure server options
-   * Defaults to `server.https` if not specified.
+   * Secure server options.
+   *
    * Set to `false` to disable https options.
+   *
+   * @default server.https
    */
   https?: SecureServerOptions;
   /**
@@ -104,23 +178,26 @@ export interface UserPreviewServerConfig {
    * the dist directory from `compilation.output.path`.
    * If the path is relative, this will be relative to `root`.
    *
-   * Defaults to `dist` if nothing specified.
+   * @default 'dist'
    */
   distDir?: string;
   /**
    * Open the preview server in the default browser automatically.
-   * Defaults to `false` if not specified.
+   *
+   * @default false
    */
   open?: boolean | string;
   /**
    * Enable CORS for preview server.
-   * Defaults to `false` if not specified.
+   *
+   * @default false
    */
   cors?: boolean | any;
   /**
    * Proxy options for preview server.
-   * Defaults to `server.proxy` if not specified.
    * Set to `false` to disable proxy.
+   *
+   * @default server.proxy
    */
   proxy?: Record<string, any>;
 }
@@ -145,29 +222,72 @@ type AvailableUserConfigKeys = Exclude<
   'configFilePath' | 'env' | 'coreLibPath' | 'root'
 >;
 
+/**
+ * Interface for user configuration, defining various configuration options for the project.
+ */
 export interface UserConfig {
-  /** current root of this project, default to current working directory */
+  /**
+   * The root directory of the current project, defaulting to the current working directory.
+   *
+   * @default cwd
+   */
   root?: string;
+  /**
+   * Whether to clear the screen when starting.
+   *
+   * @default false
+   */
   clearScreen?: boolean;
+  /**
+   * The mode of the project, such as 'development' or 'production'.
+   */
   mode?: string;
+  /**
+   * The directory where the environment variable files are located.
+   */
   envDir?: string;
+  /**
+   * Whether to enable file watching, or the configuration options for watching.
+   */
   watch?: boolean | WatchOptions;
+  /**
+   * The prefix for environment variables, which can be a single string or an array of strings.
+   *
+   * @default 'FARM_'
+   */
   envPrefix?: string | string[];
+  /**
+   * The public directory, where files under this dir will always be treated as static assets.
+   * Static assets will be served in development server, directly copied to the output directory.
+   *
+   * @default 'public'
+   */
   publicDir?: string;
-  /** js plugin(which is a javascript object) and rust plugin(which is string refer to a .farm file or a package) */
+  /**
+   * List of farm plugins, supporting JavaScript plugins, Rust plugins, or arrays of plugins.
+   * You can pass null, undefined, or false to disable plugins.
+   */
   plugins?: (RustPlugin | JsPlugin | JsPlugin[] | undefined | null | false)[];
-  /** vite plugins */
+  /**
+   * List of Vite compatible plugins.
+   */
   vitePlugins?: (
     | null
     | undefined
     | object
     | (() => { vitePlugin: any; filters: string[] })
   )[];
-  /** config related to compilation */
+  /**
+   * Configuration related to compilation.
+   */
   compilation?: Pick<InternalConfig, AvailableUserConfigKeys>;
-  /** Config related to dev server */
+  /**
+   * Configuration related to the server.
+   */
   server?: UserServerConfig;
-  /** Files under this dir will always be treated as static assets. serve it in dev, and copy it to output.path when build */
+  /**
+   * Custom logger instance.
+   */
   customLogger?: Logger;
 }
 
@@ -183,7 +303,6 @@ interface ResolvedCss extends CssConfig {
   };
 }
 
-// eslint-disable-next-line @typescript-eslint/no-empty-interface
 export interface ResolvedCompilation
   extends Exclude<Config['config'], undefined> {
   external?: string[];
@@ -197,6 +316,7 @@ export interface ResolvedCompilation
 export interface ResolvedUserConfig extends UserConfig {
   root?: string;
   mode?: string;
+  command?: commandType;
   env?: Record<string, any>;
   envDir?: string;
   envFiles?: string[];
@@ -277,3 +397,27 @@ export type EnvResult = Record<
   `$__farm_regex:(global(This)?\\.)?process\\.env\\.${string}`,
   string
 >;
+
+export interface ModuleNode {
+  url: string;
+  /**
+   * Resolved file system path + query
+   */
+  id: string | null;
+  file: string | null;
+  type: 'js' | 'css';
+}
+
+export interface ModuleContext {
+  file: string;
+  timestamp: number;
+  type: string;
+  modules: ModuleNode[];
+  paths: string[];
+  read: (file: string) => string | Promise<string>;
+}
+
+export interface ConfigResult {
+  config: UserConfig;
+  configFilePath: string;
+}

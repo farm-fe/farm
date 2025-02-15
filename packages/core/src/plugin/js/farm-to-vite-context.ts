@@ -2,8 +2,9 @@ import { Logger } from '../../utils/logger.js';
 
 import type { PluginContext } from 'rollup';
 import type { UserConfig } from '../../config/types.js';
+import { normalizePath } from '../../utils/share.js';
 import type { CompilationContext } from '../type.js';
-import { normalizePath, revertNormalizePath } from './utils.js';
+import { revertNormalizePath } from './utils.js';
 
 const contextCache = new Map<string, PluginContext>();
 
@@ -187,7 +188,6 @@ export function farmContextToViteContext(
       has: cacheError
     },
     moduleIds: new Set<string>()[Symbol.iterator](),
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore Vite specific property
     getCombinedSourcemap() {
       logger.warn(

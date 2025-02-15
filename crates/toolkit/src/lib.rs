@@ -24,6 +24,7 @@ pub use swc_ecma_transforms;
 pub use swc_ecma_transforms_base;
 pub use swc_ecma_utils;
 pub use swc_ecma_visit;
+pub use swc_typescript;
 
 pub use swc_css_codegen;
 pub use swc_css_minifier;

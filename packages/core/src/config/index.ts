@@ -10,16 +10,15 @@ import { JsPlugin } from '../index.js';
 import {
   type RustPlugin,
   getSortedPlugins,
-  handleVitePlugins,
   resolveAsyncPlugins,
   resolveConfigHook,
   resolveConfigResolvedHook,
-  resolveFarmPlugins
+  resolveFarmPlugins,
+  resolveVitePlugins
 } from '../plugin/index.js';
 
 import {
   Logger,
-  clearScreen,
   colors,
   isArray,
   isEmptyObject,
@@ -61,8 +60,10 @@ import { normalizeExternal } from './normalize-config/normalize-external.js';
 import { normalizePartialBundling } from './normalize-config/normalize-partial-bundling.js';
 import { normalizeResolve } from './normalize-config/normalize-resolve.js';
 
+import { wrapPluginUpdateModules } from '../plugin/js/utils.js';
 import type {
   ConfigEnv,
+  ConfigResult,
   DefaultOptionsType,
   EnvResult,
   FarmCliOptions,
@@ -158,7 +159,12 @@ export async function resolveConfig(
     ...vitePluginAdapters
   ]);
 
-  const config = await resolveConfigHook(userConfig, sortFarmJsPlugins);
+  const config = await resolveConfigHook(
+    userConfig,
+    configEnv,
+    sortFarmJsPlugins
+  );
+
   // may be user push plugin when config hooks
   const allPlugins = await resolvePlugins(config, defaultMode);
   const farmJsPlugins = getSortedPlugins([
@@ -218,6 +224,8 @@ async function handleResolveConfig(
     root: resolvedUserConfig.compilation.root,
     jsPlugins: sortFarmJsPlugins,
     rustPlugins: rustPlugins,
+    command,
+    isProduction: resolvedUserConfig.compilation.mode === ENV_PRODUCTION,
     transformInlineConfig
   });
 
@@ -276,16 +284,12 @@ export async function normalizeUserCompilationConfig(
   const { compilation, root } = resolvedUserConfig;
 
   // resolve root path
-
   const resolvedRootPath = normalizePath(root);
 
   resolvedUserConfig.root = resolvedRootPath;
 
   // if normalize default config, skip check input option
-  const inputIndexConfig = await checkCompilationInputValue(
-    resolvedUserConfig,
-    resolvedUserConfig.logger
-  );
+  const inputIndexConfig = await checkCompilationInputValue(resolvedUserConfig);
 
   const resolvedCompilation: ResolvedCompilation = merge(
     {},
@@ -306,7 +310,6 @@ export async function normalizeUserCompilationConfig(
   normalizeOutput(resolvedCompilation, isProduction, resolvedUserConfig.logger);
   normalizeExternal(resolvedUserConfig, resolvedCompilation);
 
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
   // @ts-ignore do not check type for this internal option
   if (!resolvedCompilation.assets?.publicDir) {
     resolvedCompilation.assets ??= {};
@@ -316,11 +319,9 @@ export async function normalizeUserCompilationConfig(
       : path.join(resolvedCompilation.root, 'public');
 
     if (path.isAbsolute(userPublicDir)) {
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-ignore do not check type for this internal option
       resolvedCompilation.assets.publicDir = userPublicDir;
     } else {
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-ignore do not check type for this internal option
       resolvedCompilation.assets.publicDir = path.join(
         resolvedCompilation.root,
@@ -563,6 +564,7 @@ export const DEFAULT_DEV_SERVER_OPTIONS: NormalizedServerConfig = {
   middlewares: [],
   appType: 'spa',
   writeToDisk: false,
+  origin: '',
   preview: {
     host: 'localhost',
     headers: {},
@@ -767,19 +769,13 @@ export async function loadConfigFile(
   inlineOptions: FarmCliOptions & UserConfig,
   configEnv: ConfigEnv,
   mode: CompilationMode = 'development'
-): Promise<
-  | {
-      config: UserConfig;
-      configFilePath: string;
-    }
-  | undefined
-> {
-  const { root = '.' } = inlineOptions;
+): Promise<ConfigResult | undefined> {
+  const { root = '.', configFile } = inlineOptions;
   const configRootPath = path.resolve(root);
   let resolvedConfigFilePath: string | undefined;
   try {
     resolvedConfigFilePath = await resolveConfigFilePath(
-      inlineOptions.configFile,
+      configFile,
       root,
       configRootPath
     );
@@ -820,8 +816,7 @@ export async function loadConfigFile(
 }
 
 export async function checkCompilationInputValue(
-  userConfig: UserConfig,
-  logger: Logger
+  userConfig: ResolvedUserConfig
 ) {
   const { compilation } = userConfig;
   const targetEnv = compilation?.output?.targetEnv;
@@ -870,7 +865,7 @@ export async function checkCompilationInputValue(
 
     // If no index file is found, throw an error
     if (!inputIndexConfig.index) {
-      logger.error(
+      userConfig.logger.error(
         `Build failed due to errors: Can not resolve ${
           isTargetNode ? 'index.js or index.ts' : 'index.html'
         }  from ${userConfig.root}. \n${errorMessage}`
@@ -906,22 +901,19 @@ export async function resolvePlugins(
   userConfig: UserConfig,
   mode: CompilationMode
 ) {
-  const { jsPlugins: rawJsPlugins, rustPlugins } =
-    await resolveFarmPlugins(userConfig);
-  const jsPlugins = await resolveAndFilterAsyncPlugins(rawJsPlugins);
+  const [farmPlugins, vitePluginAdapters] = await Promise.all([
+    resolveFarmPlugins(userConfig),
+    resolveVitePlugins(userConfig, mode)
+  ]);
 
-  const vitePlugins = (userConfig?.vitePlugins ?? []).filter(Boolean);
-
-  const vitePluginAdapters = vitePlugins.length
-    ? await handleVitePlugins(vitePlugins, userConfig, mode)
-    : [];
-
-  return {
-    jsPlugins,
-    vitePlugins,
-    rustPlugins,
+  const resolvePluginsResult = {
+    jsPlugins: farmPlugins.jsPlugins.map(wrapPluginUpdateModules),
+    vitePlugins: (userConfig?.vitePlugins ?? []).filter(Boolean),
+    rustPlugins: farmPlugins.rustPlugins,
     vitePluginAdapters
   };
+
+  return resolvePluginsResult;
 }
 
 export async function resolveDefaultUserConfig(options: DefaultOptionsType) {
@@ -979,7 +971,6 @@ export async function resolveUserConfig(
   resolvedUserConfig.env = {
     ...userEnv,
     NODE_ENV: userConfig.compilation.mode,
-    // TODO publicPath rewrite to BASE_URL
     BASE_URL: userConfig.compilation.output.publicPath ?? '/',
     mode: userConfig.mode,
     DEV: userConfig.compilation.mode === ENV_DEVELOPMENT,
@@ -1063,23 +1054,12 @@ export async function resolveConfigFilePath(
   }
 }
 
-export function checkClearScreen(
-  inlineConfig: FarmCliOptions | ResolvedUserConfig
-) {
-  if (
-    inlineConfig?.clearScreen &&
-    !__FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__
-  ) {
-    clearScreen();
-  }
-}
-
 export function getFormat(configFilePath: string): Format {
   return process.env.FARM_CONFIG_FORMAT === 'cjs'
     ? 'cjs'
     : process.env.FARM_CONFIG_FORMAT === 'esm'
       ? 'esm'
-      : (formatFromExt[path.extname(configFilePath).slice(1)] ?? 'esm');
+      : formatFromExt[path.extname(configFilePath).slice(1)] ?? 'esm';
 }
 
 export function getFilePath(outputPath: string, fileName: string): string {

@@ -20,7 +20,7 @@ export function lazyCompilationMiddleware(
   app: Server
 ): Connect.NextHandleFunction {
   return async function handleLazyCompilationMiddleware(req, res, next) {
-    const { resolvedUserConfig, compiler } = app;
+    const { config, compiler } = app;
 
     if (!req.url.startsWith(DEFAULT_LAZY_COMPILATION_PATH)) {
       return await next();
@@ -44,7 +44,7 @@ export function lazyCompilationMiddleware(
       })
       .join(', ');
 
-    resolvedUserConfig.logger.info(
+    config.logger.info(
       `${bold(green('✨Lazy compiling'))} ${bold(cyan(pathsStr))}`,
       true
     );
@@ -62,19 +62,15 @@ export function lazyCompilationMiddleware(
       return next();
     }
 
-    if (isNodeEnvironment || resolvedUserConfig.server.writeToDisk) {
+    if (isNodeEnvironment || config.server.writeToDisk) {
       compiler.writeResourcesToDisk();
     }
 
-    resolvedUserConfig.logger.info(
+    config.logger.info(
       `${bold(green(`✓ Lazy compilation done`))} ${bold(
         cyan(pathsStr)
       )} in ${bold(
-        green(
-          resolvedUserConfig.logger.formatExecutionTime(
-            performance.now() - start
-          )
-        )
+        green(config.logger.formatTime(performance.now() - start))
       )}.`
     );
 

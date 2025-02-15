@@ -1,5 +1,4 @@
 import fse from 'fs-extra';
-// queue all updates and compile them one by one
 
 import { stat } from 'node:fs/promises';
 import { isAbsolute, relative } from 'node:path';
@@ -13,20 +12,11 @@ import { WebSocketClient } from './ws.js';
 
 export class HmrEngine {
   private _updateQueue: string[] = [];
-  // private _updateResults: Map<string, { result: string; count: number }>;
 
   private _onUpdates: ((result: JsUpdateResult) => void)[];
 
   private _lastModifiedTimestamp: Map<string, string>;
-  constructor(
-    // compiler: Compiler,
-    // devServer: HttpServer,
-    // config: UserConfig,
-    // ws: WebSocketServer,
-    // private _logger: Logger
-    private readonly app: any
-  ) {
-    // this._lastAttemptWasError = false;
+  constructor(private readonly app: any) {
     this._lastModifiedTimestamp = new Map();
   }
 
@@ -73,7 +63,7 @@ export class HmrEngine {
       if (this._updateQueue.length > 0) {
         await this.recompileAndSendResult();
       }
-      if (this.app.resolvedUserConfig?.server.writeToDisk) {
+      if (this.app.config?.server.writeToDisk) {
         this.app.compiler.writeResourcesToDisk();
       }
     });
@@ -83,7 +73,7 @@ export class HmrEngine {
     const result = await this.app.compiler.update(queue);
 
     logger.info(
-      `${bold(cyan(updatedFilesStr))} updated in ${bold(green(logger.formatExecutionTime(performance.now() - start)))}`
+      `${bold(cyan(updatedFilesStr))} updated in ${bold(green(logger.formatTime(performance.now() - start)))}`
     );
 
     // clear update queue after update finished
@@ -127,7 +117,6 @@ export class HmrEngine {
     this.callUpdates(result);
 
     this.app.ws.wss.clients.forEach((client: WebSocketClient) => {
-      // @ts-ignore
       client.send(`
         {
           type: 'farm-update',
@@ -135,6 +124,7 @@ export class HmrEngine {
         }
       `);
     });
+    // TODO optimize this part
     // } catch (err) {
     // checkClearScreen(this.app.compiler.config.config);
     // this.app.logger.error(convertErrorMessage(err));
@@ -167,7 +157,6 @@ export class HmrEngine {
       try {
         await this.recompileAndSendResult();
       } catch (e) {
-        // eslint-disable-next-line no-control-regex
         const serialization = e.message.replace(/\x1b\[[0-9;]*m/g, '');
         const errorStr = `${JSON.stringify({
           message: serialization
@@ -180,9 +169,7 @@ export class HmrEngine {
             {
               type: 'error',
               err: ${errorStr},
-              overlay: ${
-                (this.app.resolvedUserConfig.server.hmr as HmrOptions).overlay
-              }
+              overlay: ${(this.app.config.server.hmr as HmrOptions).overlay}
             }
           `);
         });

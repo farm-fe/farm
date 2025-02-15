@@ -35,12 +35,12 @@ fn create_test_statement_graph(code: &str) -> StatementGraph {
     })
     .collect::<Vec<_>>();
 
-  module.meta = Box::new(ModuleMetaData::Script(ScriptModuleMetaData {
+  module.meta = Box::new(ModuleMetaData::Script(Box::new(ScriptModuleMetaData {
     statements,
     unresolved_mark: unresolved_mark.as_u32(),
     top_level_mark: top_level_mark.as_u32(),
     ..Default::default()
-  }));
+  })));
   StatementGraph::new(&module, &ast, &comment)
 }
 
@@ -261,7 +261,7 @@ fn construct_statement_graph_complex_1() {
   function getRequiredChunkKey(namespace) {
     return "" + namespace + LOADABLE_REQUIRED_CHUNKS_KEY;
   }
-  
+
   var sharedInternals = /*#__PURE__*/Object.freeze({
     __proto__: null,
     getRequiredChunkKey: getRequiredChunkKey,

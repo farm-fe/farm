@@ -5,16 +5,17 @@ use farmfe_core::{
   config::{config_regex::ConfigRegex, Config},
   context::CompilationContext,
   error::CompilationError,
+  module::ModuleMetaData,
   plugin::{Plugin, PluginProcessModuleHookParam},
   swc_common::DUMMY_SP,
-  swc_ecma_ast::{self, Expr, Lit, MemberExpr, MemberProp, Module, Str},
+  swc_ecma_ast::{Callee, Expr, Lit, MemberExpr, MemberProp, MetaPropKind, Module, Str},
 };
 use std::{env, path::Path, sync::Arc};
 use url::Url;
 
 use farmfe_macro_plugin::farm_plugin;
 use farmfe_toolkit::{
-  sourcemap::PathFilter,
+  plugin_utils::path_filter::PathFilter,
   swc_ecma_visit::{VisitMut, VisitMutWith},
 };
 
@@ -60,6 +61,10 @@ impl Plugin for FarmPluginReplaceDirname {
       return Ok(None);
     }
 
+    if !matches!(param.meta, ModuleMetaData::Script(_)) {
+      return Ok(None);
+    }
+
     let file_path = env::current_dir()
       .unwrap()
       .join(param.module_id.relative_path());
@@ -69,6 +74,7 @@ impl Plugin for FarmPluginReplaceDirname {
       .map_or("", |p| p.to_str().unwrap_or(""));
 
     let ast = &mut param.meta.as_script_mut().ast;
+
     replace_dirname_with_ast(ast, dir_path, file_path.to_str().unwrap());
     Ok(Some(()))
   }
@@ -100,9 +106,22 @@ pub fn replace_dirname_with_ast(ast: &mut Module, dir_path: &str, file_path: &st
           }
           _ => {}
         },
+
+        Expr::Call(call_expr) => {
+          for arg in &mut call_expr.args {
+            self.visit_mut_expr(&mut arg.expr);
+          }
+
+          if let Callee::Expr(expr) = &mut call_expr.callee {
+            self.visit_mut_expr(expr);
+          }
+        }
+
         Expr::Member(MemberExpr { obj, prop, .. }) => {
+          // #2062
+          self.visit_mut_expr(obj);
           if let Expr::MetaProp(meta_prop) = &**obj {
-            if meta_prop.kind == swc_ecma_ast::MetaPropKind::ImportMeta {
+            if meta_prop.kind == MetaPropKind::ImportMeta {
               if let MemberProp::Ident(ident) = &prop {
                 if ident.sym == "url" {
                   if let Ok(file_path) = Url::from_file_path(self.file_path) {

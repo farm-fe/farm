@@ -408,11 +408,11 @@ impl Plugin for FarmPluginCss {
         (ast, CommentsMetaData::from(comments))
       };
 
-      let meta = ModuleMetaData::Css(CssModuleMetaData {
+      let meta = ModuleMetaData::Css(Box::new(CssModuleMetaData {
         ast: css_stylesheet,
         comments,
         custom: Default::default(),
-      });
+      }));
 
       Ok(Some(meta))
     } else {
