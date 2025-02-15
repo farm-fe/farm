@@ -150,6 +150,13 @@ export async function resolveConfig(
     userConfig = mergeConfig(userConfig, loadedUserConfig.config);
   }
 
+  if (command === 'build') {
+    const fileSizePlugin = await import('@farmfe/plugin-file-size').then(
+      (mod) => mod.default
+    );
+    userConfig.plugins.push(fileSizePlugin());
+  }
+
   const { jsPlugins, vitePluginAdapters } = await resolvePlugins(
     userConfig,
     defaultMode
@@ -164,7 +171,6 @@ export async function resolveConfig(
     configEnv,
     sortFarmJsPlugins
   );
-
   // may be user push plugin when config hooks
   const allPlugins = await resolvePlugins(config, defaultMode);
   const farmJsPlugins = getSortedPlugins([
@@ -702,7 +708,6 @@ export async function readConfigFile(
     compilation: normalizedConfig,
     jsPlugins: [],
     rustPlugins: [[replaceDirnamePlugin, '{}']]
-    // rustPlugins: []
   });
 
   const FARM_PROFILE = process.env.FARM_PROFILE;

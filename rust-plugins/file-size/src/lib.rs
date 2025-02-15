@@ -1,224 +1,162 @@
 #![deny(clippy::all)]
-use farmfe_core::{
-  config::{config_regex::ConfigRegex, Config, ResolveConfig},
-  context::{CompilationContext, EmitFileParams},
-  error::CompilationError,
-  plugin::{
-    Plugin, PluginAnalyzeDepsHookParam, PluginFinalizeModuleHookParam,
-    PluginGenerateResourcesHookResult, PluginHookContext, PluginLoadHookParam,
-    PluginLoadHookResult, PluginParseHookParam, PluginProcessModuleHookParam, ResolveKind,
-  },
-  resource::{Resource, ResourceOrigin, ResourceType},
-  stats::Stats,
-  swc_common::{comments::SingleThreadedComments, BytePos, FileName, Mark},
-  swc_ecma_ast::{ImportDecl, Module as EcmaAstModule, ModuleDecl, ModuleItem, Program},
-  swc_ecma_parser::{lexer::Lexer, EsSyntax as EsConfig, JscTarget, Parser, StringInput, Syntax},
-};
-use farmfe_plugin_resolve::resolver::{ResolveOptions, Resolver};
 
-use farmfe_toolkit::{
-  plugin_utils::path_filter::PathFilter,
-  swc_ecma_codegen::{to_code, Node},
-  swc_ecma_transforms::{helpers::inject_helpers, typescript},
-  swc_ecma_visit::{VisitMut, VisitMutWith},
-  swc_typescript::fast_dts::FastDts,
-};
-use std::time::Duration;
-use std::{
-  path::{Path, PathBuf},
-  sync::{Arc, Mutex},
+use colored::*;
+use farmfe_core::rayon::iter::{IntoParallelRefIterator, ParallelIterator};
+use farmfe_core::{
+  config::Config, context::CompilationContext, error::CompilationError, plugin::Plugin,
+  stats::Stats,
 };
 
 use farmfe_macro_plugin::farm_plugin;
-
+use flate2::write::GzEncoder;
+use flate2::Compression;
+use std::io::Write;
+use std::path::Path;
+use std::sync::Arc;
+use unicode_width::UnicodeWidthStr;
 #[farm_plugin]
-pub struct FarmPluginDts {
-  options: FarmPluginDtsOptions,
-  total_dts_time: Mutex<Duration>,
-}
+pub struct FarmfePluginFileSize {}
 
-#[derive(serde::Deserialize)]
-pub struct FarmPluginDtsOptions {
-  exclude: Vec<ConfigRegex>,
-  include: Vec<ConfigRegex>,
-}
+impl FarmfePluginFileSize {
+  fn new(config: &Config, options: String) -> Self {
+    Self {}
+  }
 
-impl Default for FarmPluginDtsOptions {
-  fn default() -> Self {
-    Self {
-      exclude: vec![ConfigRegex::new("node_modules/")],
-      include: vec![ConfigRegex::new(".(ts|tsx)$")],
+  fn calculate_gzip_size(&self, content: &[u8]) -> usize {
+    let mut encoder = GzEncoder::new(Vec::new(), Compression::default());
+    encoder.write_all(content).unwrap();
+    encoder.finish().unwrap().len()
+  }
+
+  fn format_size(&self, size: usize) -> ColoredString {
+    let size_str = if size < 1024 {
+      format!("{} B", size)
+    } else if size < 1024 * 1024 {
+      format!("{:.1} KB", size as f64 / 1024.0)
+    } else {
+      format!("{:.1} MB", size as f64 / (1024.0 * 1024.0))
+    };
+
+    if size > 300 * 1024 {
+      size_str.red().bold()
+    } else if size > 100 * 1024 {
+      size_str.yellow().bold()
+    } else {
+      size_str.green()
     }
+  }
+
+  fn get_size_color(&self, size: usize, text: &str) -> ColoredString {
+    if size > 300 * 1024 {
+      // > 300KB
+      text.red().bold()
+    } else if size > 100 * 1024 {
+      // > 100KB
+      text.yellow().bold()
+    } else {
+      text.green()
+    }
+  }
+
+  fn format_gzip_size(&self, size: usize) -> ColoredString {
+    let size_str = if size < 1024 {
+      format!("{} B", size)
+    } else if size < 1024 * 1024 {
+      format!("{:.1} KB", size as f64 / 1024.0)
+    } else {
+      format!("{:.1} MB", size as f64 / (1024.0 * 1024.0))
+    };
+
+    size_str.normal().dimmed()
+  }
+
+  fn format_path_and_name(&self, path: &str, name: &str, size: usize) -> String {
+    let normalized_path = Path::new(path)
+      .components()
+      .filter_map(|comp| match comp {
+        std::path::Component::Normal(s) => s.to_str(),
+        _ => None,
+      })
+      .collect::<Vec<_>>()
+      .join("/");
+    let full_path = format!("{}/{}", normalized_path, name);
+    let display_width = UnicodeWidthStr::width(full_path.as_str());
+
+    // 添加必要的空格来对齐
+    let padding = if display_width < 45 {
+      " ".repeat(45 - display_width)
+    } else {
+      String::new()
+    };
+
+    format!(
+      "{}{}{}{}",
+      normalized_path.dimmed(),
+      "/".dimmed(),
+      self.get_size_color(size, name),
+      padding
+    )
   }
 }
 
-impl FarmPluginDts {
-  fn new(_: &Config, options: String) -> Self {
-    let options: FarmPluginDtsOptions = serde_json::from_str(&options).unwrap_or_default();
-    Self {
-      options,
-      total_dts_time: Mutex::new(Duration::from_secs(0)),
-    }
-  }
-}
-
-impl Plugin for FarmPluginDts {
+impl Plugin for FarmfePluginFileSize {
   fn name(&self) -> &str {
-    "FarmPluginDts"
+    "FarmfePluginFileSize"
   }
 
   fn priority(&self) -> i32 {
-    101
-  }
-
-  fn process_module(
-    &self,
-    param: &mut PluginProcessModuleHookParam,
-    context: &Arc<CompilationContext>,
-  ) -> Result<Option<()>, CompilationError> {
-    let filter = PathFilter::new(&self.options.include, &self.options.exclude);
-    if !filter.execute(param.module_id.relative_path()) {
-      return Ok(None);
-    }
-    let path = param.module_id.relative_path();
-    let start = std::time::Instant::now();
-
-    let ast = &mut param.meta.as_script_mut().ast;
-
-    let mut module: EcmaAstModule = ast.clone();
-
-    module.visit_mut_with(&mut ImportPathRewriter {
-      source_path: PathBuf::from(path),
-      config: (*context.config).clone(),
-      resolver: Resolver::new(),
-    });
-    let filename: Arc<FileName> = Arc::new(FileName::Real(
-      param.module_id.relative_path().to_string().into(),
-    ));
-
-    let mut checker = FastDts::new(filename.clone());
-    module.visit_mut_with(&mut ImportVariableRemover);
-    let issues = checker.transform(&mut module);
-    for issue in issues {
-      let _range = issue.range();
-    }
-
-    let dts_path = if path.ends_with(".tsx") {
-      path.replace(".tsx", ".d.ts")
-    } else {
-      path.replace(".ts", ".d.ts")
-    };
-
-    let dts_code = to_code(&module);
-    *self.total_dts_time.lock().unwrap() += start.elapsed();
-
-    context.emit_file(EmitFileParams {
-      resolved_path: param.module_id.to_string(),
-      name: dts_path,
-      content: dts_code.as_bytes().to_vec(),
-      resource_type: ResourceType::Custom("d.ts".to_string()),
-    });
-    Ok(Some(()))
+    999
   }
 
   fn finish(
     &self,
     _stat: &Stats,
-    _context: &Arc<CompilationContext>,
+    context: &Arc<CompilationContext>,
   ) -> Result<Option<()>, CompilationError> {
-    let total_time = *self.total_dts_time.lock().unwrap();
+    let resources_map = context.resources_map.lock();
+    let output_config = context.config.output.clone();
+    println!("\n{}", "Output files:".bold());
+    println!();
+
     println!(
-      "\x1b[1m\x1b[38;2;113;26;95m[ Farm ]\x1b[39m\x1b[0m Dts Plugin Build completed in: \x1b[1m\x1b[32m{:.2}ms\x1b[0m",
-      total_time.as_secs_f64() * 1000.0
+      "{}",
+      format!("{:<45} {:>12} {:>12}", "File", "Size", "Gzipped").bold()
     );
-    Ok(None)
-  }
-}
 
-struct ImportVariableRemover;
+    let mut files: Vec<_> = resources_map
+      .iter()
+      .filter(|(_, resource)| !resource.emitted)
+      .collect();
 
-impl VisitMut for ImportVariableRemover {
-  fn visit_mut_module_items(&mut self, items: &mut Vec<ModuleItem>) {
-    items.retain(|item| {
-      !matches!(
-        item,
-        ModuleItem::ModuleDecl(ModuleDecl::Import(ImportDecl {
-          type_only: false,
-          ..
-        }))
-      )
-    });
-    items.visit_mut_children_with(self);
-  }
-}
+    files.sort_by(|a, b| a.0.cmp(b.0));
 
-struct ImportPathRewriter {
-  source_path: PathBuf,
-  config: Config,
-  resolver: Resolver,
-}
+    let mut total_size = 0;
+    let mut total_gzip_size = 0;
 
-// TODO 生成后缀
-// 主要依据：根据 Rollup 的 outputOptions.entryFileNames 配置
-// 如果输出是 .js -> 生成 .d.ts
-// 如果输出是 .cjs -> 生成 .d.cts
-// 如果输出是 .mjs -> 生成 .d.mts
+    for (name, resource) in files {
+      let size = resource.bytes.len();
+      let gzip_size = self.calculate_gzip_size(&resource.bytes);
 
-// {
-//   output: {
-//     entryFileNames: '[name].cjs'  // 将生成 .d.cts
-//     // 或
-//     entryFileNames: '[name].mjs'  // 将生成 .d.mts
-//     // 或
-//     entryFileNames: '[name].js'   // 将生成 .d.ts
-//   }
-// }
+      total_size += size;
+      total_gzip_size += gzip_size;
 
-// 然后这个先不跟 format 走吧 format 未来可能会有问题 还是跟 entryFileNames 走吧
-
-// TODO emit_file baseDir
-// extraOutdir
-// 默认全放在根目录
-
-// 如果设置了 extraOutdir 则需要根据 extraOutdir 来生成后缀
-
-impl VisitMut for ImportPathRewriter {
-  fn visit_mut_module_items(&mut self, items: &mut Vec<ModuleItem>) {
-    for item in items.iter_mut() {
-      if let ModuleItem::ModuleDecl(ModuleDecl::Import(import)) = item {
-        let src = &mut import.src;
-        let alias_context = CompilationContext::new(
-          Config {
-            resolve: Box::new(ResolveConfig {
-              alias: self.config.resolve.alias.clone(),
-              ..Default::default()
-            }),
-            ..Default::default()
-          },
-          vec![],
-        )
-        .unwrap();
-        let resolved = self.resolver.resolve(
-          src.value.as_str(),
-          PathBuf::from(self.config.root.clone()),
-          &ResolveKind::Import,
-          &ResolveOptions::default(),
-          &Arc::new(alias_context),
-        );
-        if let Some(resolved_path) = resolved {
-          let path = PathBuf::from(resolved_path.resolved_path);
-
-          let base_path = path.with_extension("");
-          let final_value = base_path
-            .with_extension("d.ts")
-            .to_string_lossy()
-            .to_string();
-          src.value = final_value.clone().into();
-          src.raw = Some(format!("'{}'", final_value).into());
-        }
-      }
+      println!(
+        "{:<45} {:>12} {:>12}",
+        self.format_path_and_name(output_config.path.as_str(), &name, size),
+        self.format_size(size),
+        self.format_gzip_size(gzip_size)
+      );
     }
 
-    items.visit_mut_children_with(self);
+    println!("\n{}", "Total:".bold());
+    println!("  {} {}", "Size:".bold(), self.format_size(total_size));
+    println!(
+      "  {} {}",
+      "Gzipped:".bold(),
+      self.format_gzip_size(total_gzip_size)
+    );
+    println!();
+
+    Ok(None)
   }
 }

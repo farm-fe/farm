@@ -1,5 +1,5 @@
 {
-  "name": "@farmfe/plugin-replace-dirname-win32-x64-msvc",
+  "name": "@farmfe/plugin-file-size-win32-x64-msvc",
   "version": "0.0.0",
   "os": [
     "win32"

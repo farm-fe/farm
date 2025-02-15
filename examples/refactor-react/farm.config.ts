@@ -13,9 +13,20 @@ export default defineConfig({
       about: path.resolve(__dirname, 'about.html'),
     },
     progress: false,
-    // persistentCache: false,
+    persistentCache: false,
+    sourcemap: false,
     output: {
       publicPath: "/aaa/",
+      filename: '[ext]/[name]-[hash].[ext]',
+      assetsFilename: 'assets/[name]-[hash].[ext]',
+    },
+    partialBundling: {
+      // groups: [
+      //   {
+      //     name: "vendor-react",
+      //     test: ["node_modules/"],
+      //   },
+      // ],
     },
   },
 });

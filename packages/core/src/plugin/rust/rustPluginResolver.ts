@@ -47,7 +47,6 @@ export async function rustPluginResolver(
     } else {
       pluginPath = await import(pluginPath).then((m) => m.default);
     }
-    // console.log(pluginPath);
 
     // Calling the plugin as a function
     if (typeof pluginPath === 'function') {
