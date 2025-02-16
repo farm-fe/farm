@@ -167,11 +167,6 @@ impl Compiler {
     output_dir: &Path,
   ) -> Result<()> {
     // temporary use try_for_each to avoid panic and ok return instead of Result
-    // Ok(large_files.par_iter().try_for_each(|&(name, resource)| {
-    //   let path = output_dir.join(name.split(['?', '#']).next().unwrap());
-    //   self.write_file(&path, &resource.bytes)
-    // }))
-
     large_files.par_iter().for_each(|&(name, resource)| {
       let path = output_dir.join(name.split(['?', '#']).next().unwrap());
       self.write_file(&path, &resource.bytes);
@@ -198,46 +193,5 @@ impl Compiler {
     let mut writer = BufWriter::new(file);
     writer.write_all(content).unwrap();
     writer.flush().unwrap();
-  }
-
-  // TODO print_resources_info move to plugins
-  fn print_resources_info(&self, resources_map: &HashMap<String, Resource>) {
-    let mut total_size = 0;
-    let mut output = String::new();
-
-    let mut files: Vec<_> = resources_map
-      .iter()
-      .filter(|(_, resource)| !resource.emitted)
-      .collect();
-
-    files.sort_by(|a, b| a.0.cmp(b.0));
-
-    for (name, resource) in files {
-      let size = resource.bytes.len();
-      total_size += size;
-
-      let size_str = if size < 1024 {
-        format!("{}B", size)
-      } else if size < 1024 * 1024 {
-        format!("{:.2}KB", size as f64 / 1024.0)
-      } else {
-        format!("{:.2}MB", size as f64 / (1024.0 * 1024.0))
-      };
-
-      // 使用 format! 替代 writeln!
-      output.push_str(&format!("  {} ({})\n", name, size_str));
-    }
-
-    let total_size_str = if total_size < 1024 {
-      format!("{}B", total_size)
-    } else if total_size < 1024 * 1024 {
-      format!("{:.2}KB", total_size as f64 / 1024.0)
-    } else {
-      format!("{:.2}MB", total_size as f64 / (1024.0 * 1024.0))
-    };
-
-    println!("\nOutput files:");
-    print!("{}", output);
-    println!("\nTotal size: {}", total_size_str);
   }
 }
