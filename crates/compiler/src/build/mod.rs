@@ -159,7 +159,6 @@ impl Compiler {
     }
 
     self.handle_global_log(&mut errors);
-    let mut res = Ok(());
 
     if !errors.is_empty() {
       // set stats if stats is enabled
@@ -178,7 +177,7 @@ impl Compiler {
         .iter()
         .map(|e| e.to_string())
         .collect::<Vec<_>>());
-      res = Err(CompilationError::GenericError(errors_json.to_string()));
+      return Err(CompilationError::GenericError(errors_json.to_string()));
     } else {
       self.set_last_fail_module_ids(&[]);
     }
@@ -199,7 +198,7 @@ impl Compiler {
       self.context.plugin_driver.build_end(&self.context)?;
     }
 
-    res
+    Ok(())
   }
 
   pub(crate) fn handle_global_log(&self, errors: &mut Vec<CompilationError>) {

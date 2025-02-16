@@ -25,7 +25,9 @@ pub fn analyze_unresolved_idents(
   // fill unresolved_idents
   let mut unresolved_ident_collector = UnresolvedIdentCollector::new(unresolved_mark);
   let cm = context.meta.get_module_source_map(module_id);
-  try_with(cm, &context.meta.script.globals, || {
+  let globals = context.meta.get_globals(module_id);
+
+  try_with(cm, globals.value(), || {
     meta.ast.visit_with(&mut unresolved_ident_collector);
   })
   .unwrap();

@@ -279,16 +279,6 @@ impl Compiler {
       &self.context,
     )?;
 
-    let dynamic_resources_map = self.regenerate_resources(
-      affected_module_groups,
-      previous_module_groups,
-      &updated_module_ids,
-      diff_result.clone(),
-      removed_modules,
-      callback,
-      sync,
-    );
-
     // after update_module, diff old_resource and new_resource
     {
       let watch_graph = self.context.watch_graph.read();
@@ -329,6 +319,16 @@ impl Compiler {
 
     // find the boundaries.
     let boundaries = find_hmr_boundaries::find_hmr_boundaries(&updated_module_ids, &self.context);
+
+    let dynamic_resources_map = self.regenerate_resources(
+      affected_module_groups,
+      previous_module_groups,
+      &updated_module_ids,
+      diff_result.clone(),
+      removed_modules,
+      callback,
+      sync,
+    );
 
     update_result
       .added_module_ids

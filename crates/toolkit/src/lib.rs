@@ -41,6 +41,6 @@ pub use swc_html_visit;
 pub use swc_atoms;
 
 pub use anyhow;
+pub use farmfe_core::lazy_static;
 pub use farmfe_core::regex;
 pub use itertools;
-pub use lazy_static;

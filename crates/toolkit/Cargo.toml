@@ -20,7 +20,6 @@ documentation = "https://docs.rs/farmfe_toolkit"
 [dependencies]
 farmfe_core = { path = "../core", version = "0.7.1" }
 farmfe_utils = { path = "../utils", version = "0.1.6" }
-farmfe_toolkit_plugin_types = { path = "../toolkit_plugin_types", version = "0.0.22" }
 farmfe_testing_helpers = { path = "../testing_helpers", version = "0.0.15" }
 swc_ecma_parser = { version = "4.0.0" }
 swc_ecma_visit = { version = "3.0.0" }
@@ -49,7 +48,6 @@ swc_atoms = { version = "2.0.0" }
 swc_ecma_transforms_base = "4.0.1"
 swc_ecma_minifier = "4.0.0"
 swc_ecma_utils = "4.0.0"
-lazy_static = "1.4.0"
 sourcemap = "9.0.0"
 anyhow = { version = "1.0.90", features = ["backtrace"] }
 itertools = "0.13.0"

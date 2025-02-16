@@ -1,18 +1,23 @@
-use std::path::PathBuf;
+use std::{path::PathBuf, sync::Arc};
 
 use swc_ecma_parser::{EsSyntax, Syntax, TsSyntax};
 
 use farmfe_core::{
   config::ScriptParserConfig,
   module::ModuleType,
-  swc_common::Mark,
-  swc_ecma_ast::{CallExpr, Callee, Expr, Ident, Import},
+  swc_common::{comments::SingleThreadedComments, Mark, SourceMap},
+  swc_ecma_ast::{CallExpr, Callee, Expr, Ident, Import, Module as SwcModule},
 };
 
 pub use super::concatenate_modules::utils::{
   create_export_default_ident, create_export_namespace_ident,
 };
-pub use farmfe_toolkit_plugin_types::swc_ast::ParseScriptModuleResult;
+
+pub struct ParseScriptModuleResult {
+  pub ast: SwcModule,
+  pub comments: SingleThreadedComments,
+  pub source_map: Arc<SourceMap>,
+}
 
 /// Get [ModuleType] from the resolved id's extension, return [ModuleType::Custom(ext)] if the extension is not internally supported.
 /// Panic if the id do not has a extension.

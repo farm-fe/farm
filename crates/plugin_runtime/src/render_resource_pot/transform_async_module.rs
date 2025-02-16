@@ -9,7 +9,7 @@ use farmfe_core::{
 };
 use farmfe_toolkit::swc_ecma_visit::{VisitMut, VisitMutWith};
 
-/// Transform asy module to meet the requirements of farm runtime
+/// Transform async module to meet the requirements of farm runtime
 /// Example, transform:
 /// ```js
 /// const _interop_require_default = farmRequire("@swc/helpers/_/_interop_require_default");

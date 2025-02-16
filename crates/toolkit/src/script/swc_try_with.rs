@@ -1,7 +1,6 @@
 use std::sync::Arc;
 
 use farmfe_core::{
-  context::CompilationContext,
   error::{CompilationError, Result},
   swc_common::{errors::HANDLER, Globals, Mark, SourceMap, SyntaxContext, DUMMY_SP, GLOBALS},
   swc_ecma_ast::Module,
@@ -36,23 +35,25 @@ impl VisitMut for ResetSyntaxContextVisitMut {
 pub fn resolve_module_mark(
   ast: &mut Module,
   is_typescript: bool,
-  context: &Arc<CompilationContext>,
+  globals: &Globals,
 ) -> (Mark, Mark) {
-  GLOBALS.set(&context.meta.script.globals, || {
-    // clear ctxt
-    ast.visit_mut_with(&mut ResetSyntaxContextVisitMut);
+  GLOBALS.set(globals, || call_swc_resolver(ast, is_typescript))
+}
 
-    let unresolved_mark = Mark::new();
-    let top_level_mark = Mark::new();
+fn call_swc_resolver(ast: &mut Module, is_typescript: bool) -> (Mark, Mark) {
+  // clear ctxt
+  ast.visit_mut_with(&mut ResetSyntaxContextVisitMut);
 
-    ast.visit_mut_with(&mut resolver(
-      unresolved_mark,
-      top_level_mark,
-      is_typescript,
-    ));
+  let unresolved_mark = Mark::new();
+  let top_level_mark = Mark::new();
 
-    (unresolved_mark, top_level_mark)
-  })
+  ast.visit_mut_with(&mut resolver(
+    unresolved_mark,
+    top_level_mark,
+    is_typescript,
+  ));
+
+  (unresolved_mark, top_level_mark)
 }
 
 pub struct ResetSpanVisitMut;
