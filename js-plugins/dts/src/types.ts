@@ -93,4 +93,9 @@ export interface DtsPluginOptions {
    * @default []
    */
   aliasesExclude?: (string | RegExp)[];
+
+  filters?: {
+    resolvedPaths?: string[];
+    moduleTypes?: string[];
+  };
 }

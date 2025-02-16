@@ -45,7 +45,8 @@ export default function farmDtsPlugin(options?: DtsPluginOptions): JsPlugin {
     },
     transform: {
       filters: {
-        moduleTypes: ['dts']
+        moduleTypes: ['dts'],
+        resolvedPaths: options.filters?.resolvedPaths ?? ['.*']
       },
       async executor(params) {
         const { resolvedPath, content } = params;
