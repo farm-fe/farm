@@ -1,18 +1,22 @@
-use std::path::{Path, PathBuf};
-
-use dashmap::{
-  mapref::{multiple::RefMulti, one::Ref},
-  DashMap,
+use std::{
+  path::{Path, PathBuf},
+  sync::{Arc, RwLock},
 };
-use rayon::iter::{IntoParallelIterator, ParallelIterator};
+
+use dashmap::DashMap;
+use farmfe_utils::hash::sha256;
+use rayon::iter::{IntoParallelIterator, ParallelBridge, ParallelIterator};
+use rkyv::Deserialize;
 
 use super::{
   constant::{CacheStoreFactory, CacheStoreTrait, FARM_CACHE_MANIFEST_FILE, FARM_CACHE_VERSION},
   error::CacheError,
+  namespace::NamespaceStore,
   CacheStoreKey,
 };
-use crate::{config::Mode, HashMap};
+use crate::{config::Mode, deserialize, serialize, HashMap, HashSet};
 
+type CombineCacheData = HashMap<CacheStoreKey, Vec<u8>>;
 // TODO make CacheStore a trait and implement DiskCacheStore or RemoteCacheStore or more.
 #[derive(Default)]
 pub struct CacheStore {
@@ -20,10 +24,12 @@ pub struct CacheStore {
   /// name -> cache key manifest of this store.
   /// it will be stored in a separate file
   manifest: DashMap<String, String>,
+  data: DashMap<String, Vec<u8>>,
+  lock: RwLock<HashSet<PathBuf>>,
 }
 
 impl CacheStore {
-  pub fn new(cache_dir_str: &str, namespace: &str, mode: Mode, name: &str) -> Self {
+  pub fn new(cache_dir_str: &str, namespace: &str, mode: Mode) -> Self {
     let mut cache_dir = Path::new(cache_dir_str).to_path_buf();
     let last = cache_dir
       .file_name()
@@ -44,22 +50,13 @@ impl CacheStore {
       cache_dir.push("production");
     }
 
-    if !name.is_empty() {
-      cache_dir.push(name);
-    }
-
     let manifest_file_path = cache_dir.join(FARM_CACHE_MANIFEST_FILE);
 
     let manifest = if manifest_file_path.exists() && manifest_file_path.is_file() {
       let content = std::fs::read_to_string(manifest_file_path).unwrap();
       let map = serde_json::from_str::<HashMap<String, String>>(&content).unwrap();
-      let dashmap = DashMap::new();
 
-      for (k, v) in map {
-        dashmap.insert(k, v);
-      }
-
-      dashmap
+      map.into_iter().collect()
     } else {
       DashMap::new()
     };
@@ -67,17 +64,147 @@ impl CacheStore {
     Self {
       cache_dir,
       manifest,
+      ..Default::default()
     }
+  }
+
+  fn hash_index_from_name(&self, name: &str) -> u8 {
+    sha256(name.as_bytes(), 32)
+      .chars()
+      .fold(0u8, |r, i| (r + i as u8) % 16)
+  }
+
+  fn real_cache_path(&self, name: &str) -> PathBuf {
+    let index = self.hash_index_from_name(name);
+
+    let cache_file_dir = &self.cache_dir;
+    cache_file_dir.join(format!("cache-{}", index))
+  }
+
+  fn restore_cache(&self, name: &str) {
+    let cache_path = self.real_cache_path(name);
+
+    if !(cache_path.exists() && cache_path.is_file()) {
+      return;
+    }
+
+    if let Ok(map) = self.lock.read() {
+      if map.contains(&cache_path) {
+        return;
+      }
+    }
+
+    if let Ok(mut map) = self.lock.write() {
+      let data = std::fs::read(cache_path.clone()).unwrap();
+
+      let value = deserialize!(&data, CombineCacheData);
+
+      for (key, value) in value {
+        if self.data.contains_key(&key.key) {
+          continue;
+        }
+        self.insert_cache(&key.name, &key.key, value);
+      }
+
+      map.insert(cache_path.clone());
+
+      drop(map)
+    }
+
+    // drop(lock)
+  }
+
+  fn try_read_content(&self, name: &str) -> Option<Vec<u8>> {
+    let manifest_item = self.manifest.get(name)?;
+
+    if !self.data.contains_key(manifest_item.value()) {
+      drop(manifest_item);
+      self.restore_cache(name);
+    }
+
+    let manifest_item = self.manifest.get(name)?;
+
+    self
+      .data
+      .get(manifest_item.value())
+      .map(|v| v.value().clone())
+  }
+
+  fn write_content_to_disk(&self, cache_dir_str: PathBuf, data: Vec<u8>) {
+    if let Some(parent) = cache_dir_str.parent() {
+      if !parent.exists() {
+        std::fs::create_dir_all(parent).unwrap();
+      }
+    }
+
+    std::fs::write(cache_dir_str, data).unwrap();
+  }
+
+  fn write_disk(&self) {
+    let cache_dir = &self.cache_dir;
+
+    if !cache_dir.exists() {
+      std::fs::create_dir_all(cache_dir).unwrap();
+    }
+
+    self
+      .manifest
+      .iter()
+      .par_bridge()
+      .fold(
+        || HashMap::<PathBuf, CombineCacheData>::default(),
+        |mut combine_datas, item| {
+          let name = item.key();
+          let key = item.value();
+
+          let Some(value) = self.try_read_content(name) else {
+            return combine_datas;
+          };
+
+          let cache_file_path = self.real_cache_path(name);
+
+          combine_datas
+            .entry(cache_file_path)
+            .or_default()
+            .insert((name.to_string(), key.to_string()).into(), value);
+
+          return combine_datas;
+        },
+      )
+      .reduce(
+        || HashMap::default(),
+        |mut a, b| {
+          for (store_key, map) in b {
+            a.entry(store_key).or_default().extend(map);
+          }
+
+          a
+        },
+      )
+      .into_par_iter()
+      .for_each(|(cache_file_path, datas)| {
+        let data = serialize!(&datas);
+        self.write_content_to_disk(cache_file_path, data);
+      });
+  }
+
+  fn _remove_cache(&self, name: &str) {
+    let Some((_, cache_key)) = self.manifest.remove(name) else {
+      return;
+    };
+
+    self.data.remove(&cache_key);
+  }
+
+  fn insert_cache(&self, name: &str, key: &str, data: Vec<u8>) {
+    self.manifest.insert(name.to_string(), key.to_string());
+    self.data.insert(key.to_string(), data);
   }
 }
 
 impl CacheStoreTrait for CacheStore {
   fn has_cache(&self, name: &str) -> bool {
     self.manifest.contains_key(name)
-  }
-
-  fn get_store_keys(&self) -> Vec<RefMulti<String, String>> {
-    self.manifest.iter().collect()
   }
 
   /// return true if the cache changed or it's a cache item
@@ -93,34 +220,8 @@ impl CacheStoreTrait for CacheStore {
   }
 
   fn write_single_cache(&self, store_key: CacheStoreKey, bytes: Vec<u8>) -> Result<(), CacheError> {
-    let cache_file_dir = &self.cache_dir;
-
-    if !cache_file_dir.exists() {
-      std::fs::create_dir_all(cache_file_dir).unwrap();
-    }
-
     if self.is_cache_changed(&store_key) {
-      if let Some(guard) = self.manifest.get(&store_key.name) {
-        let cache_file_path = cache_file_dir.join(guard.value());
-
-        if cache_file_path.exists() && cache_file_path.is_file() {
-          std::fs::remove_file(cache_file_path).ok();
-        }
-      }
-
-      self
-        .manifest
-        .insert(store_key.name.clone(), store_key.key.clone());
-      let cache_file_path = cache_file_dir.join(store_key.key);
-      std::fs::write(&cache_file_path, bytes).map_err(|e| {
-        std::io::Error::new(
-          e.kind(),
-          format!(
-            "Failed to write cache file: {} {:?}, error: {:?}",
-            store_key.name, cache_file_path, e
-          ),
-        )
-      })?;
+      self.insert_cache(&store_key.name, &store_key.key, bytes);
     }
 
     Ok(())
@@ -143,73 +244,40 @@ impl CacheStoreTrait for CacheStore {
 
   /// Write the cache map to the disk.
   fn write_cache(&self, cache_map: HashMap<CacheStoreKey, Vec<u8>>) {
-    let cache_file_dir = &self.cache_dir;
-    if !cache_file_dir.exists() {
-      std::fs::create_dir_all(cache_file_dir).unwrap();
-    }
-
-    cache_map
-      .into_par_iter()
-      .try_for_each(|(store_key, bytes)| {
-        self.write_single_cache(store_key, bytes)?;
-        Ok::<(), CacheError>(())
-      })
-      .unwrap();
-
-    self.write_manifest();
+    cache_map.into_par_iter().for_each(|(store_key, bytes)| {
+      self.write_single_cache(store_key, bytes).unwrap();
+    });
   }
 
   fn read_cache(&self, name: &str) -> Option<Vec<u8>> {
-    let cache_key = self
-      .manifest
-      .get(name)
-      .as_ref()
-      .map(|v: &Ref<'_, String, String>| v.value().clone())?;
-    let cache_file = self.cache_dir.join(cache_key);
-
-    if cache_file.exists() && cache_file.is_file() {
-      return Some(std::fs::read(cache_file).unwrap());
-    }
-
-    None
+    self.try_read_content(name)
   }
 
   fn remove_cache(&self, name: &str) {
-    let Some((_, cache_key)) = self.manifest.remove(name) else {
-      return;
-    };
+    self._remove_cache(name);
+  }
 
-    let cache_file = self.cache_dir.join(cache_key);
-
-    if cache_file.exists() && cache_file.is_file() {
-      std::fs::remove_file(cache_file).ok();
-    }
+  fn shotdown(&self) {
+    self.write_disk();
+    self.write_manifest();
   }
 }
 
 pub struct DiskCacheFactory {
-  cache_dir: String,
-  namespace: String,
-  mode: Mode,
+  store: Arc<Box<dyn CacheStoreTrait>>,
 }
 
 impl DiskCacheFactory {
   pub fn new(cache_dir: &str, namespace: &str, mode: Mode) -> Self {
-    Self {
-      cache_dir: cache_dir.to_string(),
-      namespace: namespace.to_string(),
-      mode,
-    }
+    let store: Arc<Box<dyn CacheStoreTrait>> =
+      Arc::new(Box::new(CacheStore::new(cache_dir, namespace, mode)));
+
+    Self { store }
   }
 }
 
 impl CacheStoreFactory for DiskCacheFactory {
   fn create_cache_store(&self, name: &str) -> Box<dyn CacheStoreTrait> {
-    Box::new(CacheStore::new(
-      &self.cache_dir,
-      &self.namespace,
-      self.mode,
-      name,
-    ))
+    Box::new(NamespaceStore::new(self.store.clone(), name.to_string()))
   }
 }

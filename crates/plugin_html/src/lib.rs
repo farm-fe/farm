@@ -8,7 +8,7 @@ use farmfe_core::parking_lot::Mutex;
 use farmfe_core::plugin::GeneratedResource;
 use farmfe_core::resource::meta_data::html::HtmlResourcePotMetaData;
 use farmfe_core::resource::meta_data::ResourcePotMetaData;
-use farmfe_core::{cache_item, deserialize, serialize, HashMap};
+use farmfe_core::{cache_item, HashMap};
 use farmfe_core::{
   config::Config,
   context::CompilationContext,
@@ -49,11 +49,58 @@ struct CachedHtmlInlineModuleMap {
   map: HashMap<String, HtmlInlineModule>,
 }
 
-pub struct FarmPluginHtml {}
+pub struct FarmPluginHtml {
+  inline_module_map: Mutex<HashMap<String, HtmlInlineModule>>,
+}
 
 impl Plugin for FarmPluginHtml {
   fn name(&self) -> &str {
     "FarmPluginHtml"
+  }
+
+  fn build_start(
+    &self,
+    context: &Arc<CompilationContext>,
+  ) -> farmfe_core::error::Result<Option<()>> {
+    if context.cache_manager.cachable {
+      if let Some(v) = context
+        .cache_manager
+        .plugin_cache
+        .read_cache_item::<CachedHtmlInlineModuleMap>(self.name())
+      {
+        let mut inline_module_map = self.inline_module_map.lock();
+        inline_module_map.extend(v.map);
+      };
+    }
+
+    Ok(None)
+  }
+
+  fn finish(
+    &self,
+    _stat: &farmfe_core::stats::Stats,
+    context: &Arc<CompilationContext>,
+  ) -> farmfe_core::error::Result<Option<()>> {
+    if context.cache_manager.cachable {
+      let module_graph = context.module_graph.read();
+
+      context.cache_manager.plugin_cache.write_cache_item(
+        self.name(),
+        CachedHtmlInlineModuleMap {
+          map: self
+            .inline_module_map
+            .lock()
+            .iter()
+            .filter(|(k, v)| {
+              module_graph.has_module(&k.as_str().into()) && module_graph.has_module(&v.html_id)
+            })
+            .map(|(k, v)| (k.clone(), v.clone()))
+            .collect(),
+        },
+      );
+    }
+
+    Ok(None)
   }
 
   fn resolve(
@@ -105,16 +152,12 @@ impl Plugin for FarmPluginHtml {
   fn load(
     &self,
     param: &PluginLoadHookParam,
-    context: &std::sync::Arc<CompilationContext>,
+    _context: &std::sync::Arc<CompilationContext>,
     _hook_context: &PluginHookContext,
   ) -> farmfe_core::error::Result<Option<PluginLoadHookResult>> {
     if param.resolved_path.starts_with(HTML_INLINE_ID_PREFIX) {
-      if let Some(v) = context
-        .cache_manager
-        .module_cache
-        .read_metadata_ref::<HtmlInlineModule>(param.resolved_path, "inline_html_module")
-      {
-        let inline_module = v.value();
+      let inline_module_map = self.inline_module_map.lock();
+      if let Some(inline_module) = inline_module_map.get(param.resolved_path) {
         return Ok(Some(PluginLoadHookResult {
           content: inline_module.code.clone(),
           module_type: inline_module.module_type.clone(),
@@ -213,7 +256,7 @@ impl Plugin for FarmPluginHtml {
   fn analyze_deps(
     &self,
     param: &mut PluginAnalyzeDepsHookParam,
-    context: &std::sync::Arc<CompilationContext>,
+    _context: &std::sync::Arc<CompilationContext>,
   ) -> farmfe_core::error::Result<Option<()>> {
     if matches!(param.module.module_type, ModuleType::Html) {
       let document = &param.module.meta.as_html().ast;
@@ -221,13 +264,10 @@ impl Plugin for FarmPluginHtml {
 
       param.deps.extend(deps_analyzer.analyze_deps(document));
 
-      for (item, value) in deps_analyzer.inline_deps_map {
-        context.cache_manager.module_cache.write_metadata(
-          item,
-          "inline_html_module".to_string(),
-          value,
-        );
-      }
+      self
+        .inline_module_map
+        .lock()
+        .extend(deps_analyzer.inline_deps_map);
 
       Ok(Some(()))
     } else {
@@ -321,7 +361,9 @@ impl Plugin for FarmPluginHtml {
 
 impl FarmPluginHtml {
   pub fn new(_: &Config) -> Self {
-    Self {}
+    Self {
+      inline_module_map: Mutex::new(HashMap::default()),
+    }
   }
 }
 

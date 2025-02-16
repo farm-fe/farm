@@ -89,6 +89,19 @@ impl CustomMetaDataMap {
     self.map.get_mut(key).and_then(|v| v.downcast_mut::<T>())
   }
 
+  pub fn get_cache<T: Cacheable>(&mut self, key: &str) -> Option<Box<T>> {
+    self
+      .bytes_map
+      .get(key)
+      .map(|v| {
+        let bytes = v.clone();
+        let value = T::deserialize_bytes(bytes).unwrap();
+
+        value.downcast::<T>().ok()
+      })
+      .flatten()
+  }
+
   pub fn get_ref<T: Cacheable>(&self, key: &str) -> Option<&T> {
     self.map.get(key).and_then(|v| v.downcast_ref::<T>())
   }

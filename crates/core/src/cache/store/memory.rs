@@ -1,8 +1,15 @@
-use dashmap::{mapref::multiple::RefMulti, DashMap};
+use std::sync::Arc;
+
+use dashmap::DashMap;
 
 use crate::HashMap;
 
-use super::{constant::{CacheStoreFactory, CacheStoreTrait}, error::CacheError, CacheStoreKey};
+use super::{
+  constant::{CacheStoreFactory, CacheStoreTrait},
+  error::CacheError,
+  namespace::NamespaceStore,
+  CacheStoreKey,
+};
 
 #[derive(Default)]
 pub struct MemoryCacheStore {
@@ -21,10 +28,6 @@ impl CacheStoreTrait for MemoryCacheStore {
     self.manifest.contains_key(name)
   }
 
-  fn get_store_keys(&self) -> Vec<RefMulti<String, String>> {
-    self.manifest.iter().collect()
-  }
-
   fn is_cache_changed(&self, store_key: &CacheStoreKey) -> bool {
     if let Some(guard) = self.manifest.get(&store_key.name) {
       if guard.value() == &store_key.key {
@@ -37,10 +40,8 @@ impl CacheStoreTrait for MemoryCacheStore {
 
   fn write_single_cache(&self, store_key: CacheStoreKey, bytes: Vec<u8>) -> Result<(), CacheError> {
     if self.is_cache_changed(&store_key) {
-      self
-        .manifest
-        .insert(store_key.name.clone(), store_key.key.clone());
-      self.cache.insert(store_key.key.clone(), bytes);
+      self.manifest.insert(store_key.name, store_key.key.clone());
+      self.cache.insert(store_key.key, bytes);
     }
 
     Ok(())
@@ -68,19 +69,21 @@ impl CacheStoreTrait for MemoryCacheStore {
   }
 }
 
-#[derive(Default)]
-pub struct MemoryCacheFactory {}
+pub struct MemoryCacheFactory {
+  store: Arc<Box<dyn CacheStoreTrait>>,
+}
 
 impl MemoryCacheFactory {
   pub fn new() -> Self {
-    Default::default()
+    Self {
+      store: Arc::new(Box::new(MemoryCacheStore::new())),
+    }
   }
 }
 
-// TODO: namespace by name for memory
 impl CacheStoreFactory for MemoryCacheFactory {
-  fn create_cache_store(&self, _name: &str) -> Box<dyn CacheStoreTrait> {
-    Box::new(MemoryCacheStore::new())
+  fn create_cache_store(&self, name: &str) -> Box<dyn CacheStoreTrait> {
+    Box::new(NamespaceStore::new(self.store.clone(), name.to_string()))
   }
 }
 

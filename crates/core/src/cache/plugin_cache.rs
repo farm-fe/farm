@@ -3,7 +3,7 @@ use std::rc::Rc;
 use dashmap::{mapref::one::Ref, DashMap};
 use farmfe_utils::hash::sha256;
 
-use crate::HashMap;
+use crate::{Cacheable, HashMap};
 
 use super::store::constant::{CacheStoreFactory, CacheStoreTrait};
 
@@ -50,6 +50,22 @@ impl PluginCacheManager {
     self
       .cache
       .insert(self.normalize_plugin_name(plugin_name), cache);
+  }
+
+  pub fn write_cache_item<V: Cacheable>(&self, plugin_name: &str, cache: V) {
+    self.cache.insert(
+      self.normalize_plugin_name(plugin_name),
+      cache.serialize_bytes().unwrap(),
+    );
+  }
+
+  pub fn read_cache_item<V: Cacheable>(&self, plugin_name: &str) -> Option<Box<V>> {
+    let cache = self.read_cache(plugin_name)?;
+
+    V::deserialize_bytes(cache.value().clone())
+      .map(|v| v.downcast::<V>().ok())
+      .ok()
+      .flatten()
   }
 
   pub fn write_cache_to_disk(&self) {

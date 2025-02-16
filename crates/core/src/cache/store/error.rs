@@ -1,3 +1,5 @@
+use crate::error::CompilationError;
+
 #[derive(Debug)]
 pub enum CacheError {
   IoError(std::io::Error),

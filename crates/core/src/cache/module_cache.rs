@@ -211,8 +211,13 @@ impl<'a> CachedMetadataRef<'a> {
     Self { value: v }
   }
 
-  pub fn read<V: Cacheable, N: AsRef<str>>(&mut self, name: N) -> Option<&mut V> {
-    self.value.value_mut().get_mut::<V>(name.as_ref())
+  pub fn read<V: Cacheable>(&mut self, name: &str) -> Option<&mut V> {
+    self.value.value_mut().get_mut::<V>(name)
+  }
+
+  /// Get some data that does not need to be stored in memory after serialization
+  pub fn get_cache<V: Cacheable>(&mut self, name: &str) -> Option<Box<V>> {
+    self.value.value_mut().get_cache::<V>(name)
   }
 
   pub fn write<V: Cacheable, N: ToString>(&mut self, name: N, metadata: V) {

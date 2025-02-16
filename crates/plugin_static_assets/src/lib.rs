@@ -268,31 +268,44 @@ impl Plugin for FarmPluginStaticAssets {
     Ok(None)
   }
 
-  fn plugin_cache_loaded(
+  fn build_start(
     &self,
-    cache: &Vec<u8>,
     context: &Arc<CompilationContext>,
   ) -> farmfe_core::error::Result<Option<()>> {
-    let cached_static_assets = deserialize!(cache, CachedStaticAssets);
-
-    for asset in cached_static_assets.list {
-      if let ResourceOrigin::Module(m) = asset.origin {
-        context.emit_file(EmitFileParams {
-          resolved_path: m.to_string(),
-          name: asset.name,
-          content: asset.bytes,
-          resource_type: asset.resource_type,
-        });
-      }
+    if !context.cache_manager.cachable {
+      return Ok(None);
     }
 
-    Ok(Some(()))
+    let mut metadata = context
+      .cache_manager
+      .module_cache
+      .metadata(cache_asset_name().as_str());
+
+    if let Some(resources) = metadata.get_cache::<CachedStaticAssets>("lists") {
+      for asset in resources.list {
+        if let ResourceOrigin::Module(m) = asset.origin {
+          context.emit_file(EmitFileParams {
+            resolved_path: m.to_string(),
+            name: asset.name,
+            content: asset.bytes,
+            resource_type: asset.resource_type,
+          });
+        }
+      }
+    };
+
+    Ok(None)
   }
 
-  fn write_plugin_cache(
+  fn finish(
     &self,
+    _stat: &farmfe_core::stats::Stats,
     context: &Arc<CompilationContext>,
-  ) -> farmfe_core::error::Result<Option<Vec<u8>>> {
+  ) -> farmfe_core::error::Result<Option<()>> {
+    if !context.cache_manager.cachable {
+      return Ok(None);
+    }
+
     let mut list = vec![];
     let resources_map = context.resources_map.lock();
 
@@ -305,16 +318,23 @@ impl Plugin for FarmPluginStaticAssets {
     }
 
     if !list.is_empty() {
-      let cached_static_assets = CachedStaticAssets { list };
-
-      Ok(Some(serialize!(&cached_static_assets)))
-    } else {
-      Ok(None)
+      context.cache_manager.module_cache.write_metadata(
+        cache_asset_name(),
+        "lists".to_string(),
+        CachedStaticAssets { list },
+      );
     }
+
+    Ok(None)
   }
 }
 
+fn cache_asset_name() -> String {
+  format!("{}:assets", PLUGIN_NAME)
+}
+
 #[cache_item(farmfe_core)]
+#[derive(Clone)]
 struct CachedStaticAssets {
   list: Vec<Resource>,
 }

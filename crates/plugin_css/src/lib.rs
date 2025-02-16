@@ -12,7 +12,7 @@ use farmfe_core::plugin::GeneratedResource;
 use farmfe_core::resource::meta_data::css::CssResourcePotMetaData;
 use farmfe_core::resource::meta_data::ResourcePotMetaData;
 use farmfe_core::swc_common::DUMMY_SP;
-use farmfe_core::{Cacheable, CacheableContainer, HashMap};
+use farmfe_core::{Cacheable, HashMap};
 // use farmfe_core::module::CommentsMetaData;
 use farmfe_core::{
   config::{Config, CssPrefixerConfig, TargetEnv},
@@ -162,9 +162,17 @@ impl Plugin for FarmPluginCssResolve {
   }
 }
 
+#[cache_item(farmfe_core)]
+struct CssModulesCache {
+  content_map: HashMap<String, String>,
+  sourcemap_map: HashMap<String, String>,
+}
+
 pub struct FarmPluginCss {
   css_modules_paths: Vec<Regex>,
   ast_map: Mutex<HashMap<String, (Stylesheet, CommentsMetaData)>>,
+  content_map: Mutex<HashMap<String, String>>,
+  sourcemap_map: Mutex<HashMap<String, String>>,
   locals_conversion: NameConversion,
 }
 
@@ -185,18 +193,58 @@ impl Plugin for FarmPluginCss {
     -99
   }
 
+  fn build_start(
+    &self,
+    context: &Arc<CompilationContext>,
+  ) -> farmfe_core::error::Result<Option<()>> {
+    if context.cache_manager.cachable {
+      if let Some(cache) = context
+        .cache_manager
+        .plugin_cache
+        .read_cache_item::<CssModulesCache>(self.name())
+      {
+        self.content_map.lock().extend(cache.content_map);
+        self.sourcemap_map.lock().extend(cache.sourcemap_map);
+      };
+    }
+    Ok(Some(()))
+  }
+
+  fn finish(
+    &self,
+    _stat: &farmfe_core::stats::Stats,
+    context: &Arc<CompilationContext>,
+  ) -> farmfe_core::error::Result<Option<()>> {
+    if context.cache_manager.cachable {
+      let content_map = self.content_map.lock().clone();
+      let sourcemap_map = self.sourcemap_map.lock().clone();
+
+      context.cache_manager.plugin_cache.write_cache_item(
+        self.name(),
+        CssModulesCache {
+          content_map,
+          sourcemap_map,
+        },
+      );
+    }
+
+    Ok(None)
+  }
+
   fn load(
     &self,
     param: &PluginLoadHookParam,
-    context: &Arc<CompilationContext>,
+    _context: &Arc<CompilationContext>,
     _hook_context: &PluginHookContext,
   ) -> farmfe_core::error::Result<Option<PluginLoadHookResult>> {
     if is_farm_css_modules(&param.module_id) {
       return Ok(Some(PluginLoadHookResult {
         content: self
-          .read_content::<CacheableContainer<String>>(context, &param.module_id, "content")
-          .expect("cannot found css module content from content map")
-          .take(),
+          .content_map
+          .lock()
+          .get(&param.module_id)
+          .cloned()
+          .unwrap(),
         module_type: ModuleType::Custom(FARM_CSS_MODULES.to_string()),
         source_map: None,
       }));
@@ -231,9 +279,7 @@ impl Plugin for FarmPluginCss {
       return Ok(Some(PluginTransformHookResult {
         content: param.content.clone(),
         module_type: Some(ModuleType::Css),
-        source_map: self
-          .read_content::<CacheableContainer<String>>(context, &param.module_id, "map")
-          .map(|v| v.take()),
+        source_map: self.sourcemap_map.lock().get(&param.module_id).cloned(),
         ignore_previous_source_map: false,
       }));
     }
@@ -285,12 +331,10 @@ impl Plugin for FarmPluginCss {
           (css_stylesheet, CommentsMetaData::from(comments)),
         );
 
-        self.write_content(
-          context,
-          &cache_id,
-          "content",
-          CacheableContainer::from(param.content.clone()),
-        );
+        self
+          .content_map
+          .lock()
+          .insert(cache_id.clone(), param.content.clone());
 
         // for composes dynamic import (eg: composes: action from "./action.css")
         let mut dynamic_import_of_composes = HashMap::default();
@@ -363,8 +407,10 @@ impl Plugin for FarmPluginCss {
             .to_writer(&mut buf)
             .expect("failed to write sourcemap");
 
-          let map = String::from_utf8(buf).unwrap();
-          self.write_content(context, &cache_id, "map", CacheableContainer::from(map));
+          self
+            .sourcemap_map
+            .lock()
+            .insert(cache_id.clone(), String::from_utf8(buf).unwrap());
         }
 
         Ok(Some(PluginTransformHookResult {
@@ -656,32 +702,34 @@ impl Plugin for FarmPluginCss {
 }
 
 impl FarmPluginCss {
-  fn read_content<V: Cacheable + Clone>(
-    &self,
-    context: &CompilationContext,
-    module_id: &str,
-    name: &str,
-  ) -> Option<V> {
-    context
-      .cache_manager
-      .module_cache
-      .read_metadata_ref::<V>(module_id, name)
-      .map(|v| v.value().clone())
-  }
+  // fn read_content<V: Cacheable + Clone>(
+  //   &self,
+  //   context: &CompilationContext,
+  //   module_id: &str,
+  //   name: &str,
+  // ) -> Option<V> {
+  //   if !context.cache_manager.cachable {
+  //     return None;
+  //   }
+  // }
 
-  fn write_content<T: Cacheable>(
-    &self,
-    context: &CompilationContext,
-    module_id: &str,
-    name: &str,
-    content: T,
-  ) {
-    context.cache_manager.module_cache.write_metadata(
-      module_id.to_string(),
-      name.to_string(),
-      content,
-    );
-  }
+  // fn write_content<T: Cacheable, F: FnOnce() -> T>(
+  //   &self,
+  //   context: &CompilationContext,
+  //   module_id: &str,
+  //   name: &str,
+  //   f: F,
+  // ) {
+  //   if !context.cache_manager.cachable {
+  //     return;
+  //   }
+
+  //   context
+  //     .cache_manager
+  //     .module_cache
+  //     .write_metadata(module_id.to_string(), name.to_string(), f());
+  // }
+
   pub fn new(config: &Config) -> Self {
     Self {
       css_modules_paths: config
@@ -698,6 +746,8 @@ impl FarmPluginCss {
         .unwrap_or_default(),
       ast_map: Mutex::new(Default::default()),
       locals_conversion: get_config_css_modules_local_conversion(config),
+      content_map: Mutex::new(Default::default()),
+      sourcemap_map: Mutex::new(Default::default()),
     }
   }
 

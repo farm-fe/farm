@@ -119,7 +119,7 @@ impl ModuleMetadataStore {
 
 #[cfg(test)]
 mod tests {
-  use crate::{cache::store::memory::MemoryCacheFactory, CacheableContainer};
+  use crate::cache::store::memory::MemoryCacheFactory;
 
   use super::*;
 
@@ -134,21 +134,21 @@ mod tests {
     store.write_metadata(
       module1_id.clone(),
       "content".to_string(),
-      Box::new(CacheableContainer::from(cached_value.clone())),
+      Box::new(cached_value.clone()),
     );
 
     store.write_cache();
 
     let v = store
-      .read_ref::<CacheableContainer<String>>(&module1_id, "content")
-      .map(|v| v.value().clone().take())
+      .read_ref::<String>(&module1_id, "content")
+      .map(|v| v.value().clone())
       .unwrap();
 
     assert_eq!(v, cached_value.clone());
 
     store.invalidate(&module1_id);
 
-    let v = store.read_ref::<CacheableContainer<String>>(&module1_id, "content");
+    let v = store.read_ref::<String>(&module1_id, "content");
 
     assert!(v.is_none());
   }
