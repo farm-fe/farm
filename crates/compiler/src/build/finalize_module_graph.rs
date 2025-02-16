@@ -70,6 +70,7 @@ pub(super) fn freeze_module_of_module_graph(
     .collect::<Vec<_>>();
 
   let module_resolved_deps = call_freeze_module_with_params(hook_params, context)?;
+
   update_modules_resolved_deps(module_resolved_deps, &mut module_graph);
 
   Ok(())
