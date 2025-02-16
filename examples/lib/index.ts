@@ -6,3 +6,5 @@ import type { UserInfo } from '@/test2.ts';
 export function b<T extends strin2222g>(name: string, userInfo: UserInfo): T {
   return name + names + '1232223' as T;
 }
+
+console.log(b<string>('123', { name: '123' }))

@@ -30,15 +30,14 @@ function test() {
     name: "test",
     freezeModule: {
       filters: {
-        // 改为具体的模块类型而不是正则 ".*"
         moduleTypes: ["ts"],
         resolvedPaths: ['.*']
       },
       async executor(param) {
-        if (param.moduleId.endsWith('.ts')) {
+        if (param.moduleId.endsWith('index.ts')) {
           console.log(param.content);
           return {
-            content: param.content,
+            content: "export const a = 1;console.log(a)",
           };
         }
       },
