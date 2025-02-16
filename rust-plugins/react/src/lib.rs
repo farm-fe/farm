@@ -145,7 +145,7 @@ impl Plugin for FarmPluginReact {
           inject_helpers: true,
           cm,
           globals: &context.meta.script.globals,
-          mode: context.config.mode.clone(),
+          mode: context.config.mode,
           options: self.options.clone(),
         },
       )?;

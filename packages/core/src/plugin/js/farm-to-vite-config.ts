@@ -41,7 +41,6 @@ export function farmUserConfigToViteConfig(config: UserConfig): ViteUserConfig {
     },
     plugins: vitePlugins,
     server: {
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-ignore ignore error
       hmr: config.server?.hmr,
       port: config.server?.port,
@@ -53,7 +52,6 @@ export function farmUserConfigToViteConfig(config: UserConfig): ViteUserConfig {
       watch: typeof config.watch === 'object' ? config.watch : {}
       // other options are not supported in farm
     },
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore ignore this error
     isProduction: config.compilation?.mode === 'production',
     css: config.compilation?.css?._viteCssOptions ?? {},
@@ -434,7 +432,6 @@ export function viteConfigToFarmConfig(
         const keys = ['assetFileNames', 'entryFilename', 'filename'];
 
         for (const k of keys) {
-          /* eslint-disable @typescript-eslint/ban-ts-comment */
           // @ts-ignore type is correct
           farmConfig.compilation.output[k] =
             // @ts-ignore type is correct

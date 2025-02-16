@@ -162,7 +162,7 @@ impl Compiler {
     {
       #[cfg(feature = "profile")]
       farmfe_core::puffin::profile_scope!("Build Stage");
-      self.build()?
+      self.build()?;
     };
 
     self.context.stats.set_build_end_time();

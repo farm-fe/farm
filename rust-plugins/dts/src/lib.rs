@@ -17,7 +17,7 @@ use farmfe_core::{
 use farmfe_plugin_resolve::resolver::{ResolveOptions, Resolver};
 
 use farmfe_toolkit::{
-  sourcemap::PathFilter,
+  plugin_utils::path_filter::PathFilter,
   swc_ecma_codegen::{to_code, Node},
   swc_ecma_transforms::{helpers::inject_helpers, typescript},
   swc_ecma_visit::{VisitMut, VisitMutWith},

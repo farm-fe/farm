@@ -51,7 +51,10 @@ pub fn update_async_modules(
       let dependencies = module_graph.dependencies(module_id);
       let is_deps_async = dependencies.iter().any(|(dep_id, edge)| {
         let dep = module_graph.module(dep_id).unwrap();
-        dep.meta.as_script().is_async && !edge.is_dynamic_import() && !edge.is_dynamic_entry()
+        dep.module_type.is_script()
+          && dep.meta.as_script().is_async
+          && !edge.is_dynamic_import()
+          && !edge.is_dynamic_entry()
       });
       if is_deps_async || is_async {
         added_async_modules.push(module_id.clone());
@@ -105,7 +108,9 @@ mod tests {
     let mut module_graph = construct_test_module_graph();
     module_graph.modules_mut().into_iter().for_each(|module| {
       module.module_type = ModuleType::Js;
-      module.meta = Box::new(ModuleMetaData::Script(ScriptModuleMetaData::default()));
+      module.meta = Box::new(ModuleMetaData::Script(Box::new(
+        ScriptModuleMetaData::default(),
+      )));
       module.meta.as_script_mut().ast = Module {
         body: vec![],
         span: DUMMY_SP,

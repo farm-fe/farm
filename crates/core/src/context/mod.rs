@@ -61,11 +61,7 @@ impl CompilationContext {
       resource_pot_map: Box::new(RwLock::new(ResourcePotMap::new())),
       resources_map: Box::new(Mutex::new(HashMap::default())),
       plugin_driver: Box::new(Self::create_plugin_driver(plugins, config.record)),
-      cache_manager: Box::new(CacheManager::new(
-        &cache_dir,
-        &namespace,
-        config.mode.clone(),
-      )),
+      cache_manager: Box::new(CacheManager::new(&cache_dir, &namespace, config.mode)),
       thread_pool: Arc::new(
         ThreadPoolBuilder::new()
           .num_threads(num_cpus::get())

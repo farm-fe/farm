@@ -86,7 +86,7 @@ impl CachedModule {
 impl ModuleCacheManager {
   pub fn new(cache_dir_str: &str, namespace: &str, mode: Mode) -> Self {
     Self {
-      mutable_modules_store: MutableModulesMemoryStore::new(cache_dir_str, namespace, mode.clone()),
+      mutable_modules_store: MutableModulesMemoryStore::new(cache_dir_str, namespace, mode),
       immutable_modules_store: ImmutableModulesMemoryStore::new(cache_dir_str, namespace, mode),
     }
   }
