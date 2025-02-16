@@ -59,9 +59,6 @@ pub fn finalize_resources(context: &Arc<CompilationContext>) -> farmfe_core::err
   Ok(())
 }
 
-// TODO handleGenerateResourceWrite
-// TODO writeResourceToDisk (napi)
-// TODO prepareOutDir
 fn handle_entry_resource(
   resources_map: &mut HashMap<String, Resource>,
   context: &Arc<CompilationContext>,

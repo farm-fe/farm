@@ -16,6 +16,17 @@ const SMALL_FILE_THRESHOLD: usize = 8192;
 // TODO use error::{CompilationError} we need refactor Error mod
 impl Compiler {
   pub(crate) fn write(&self) -> Result<()> {
+    // TODO add writeBundle write hooks plugin_driver
+    self.write_resources_to_disk()?;
+    self
+      .context
+      .plugin_driver
+      .finish(&self.context.stats, &self.context)?;
+
+    Ok(())
+  }
+
+  pub fn write_resources_to_disk(&self) -> Result<()> {
     #[cfg(feature = "profile")]
     farmfe_core::puffin::profile_function!();
 
@@ -35,13 +46,6 @@ impl Compiler {
     }
 
     self.copy_public_dir(output_dir);
-
-    // TODO add writeBundle write hooks plugin_driver
-
-    self
-      .context
-      .plugin_driver
-      .finish(&self.context.stats, &self.context)?;
 
     Ok(())
   }
