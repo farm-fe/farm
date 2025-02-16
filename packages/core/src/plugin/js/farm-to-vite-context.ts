@@ -188,7 +188,6 @@ export function farmContextToViteContext(
       has: cacheError
     },
     moduleIds: new Set<string>()[Symbol.iterator](),
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore Vite specific property
     getCombinedSourcemap() {
       logger.warn(

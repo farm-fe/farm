@@ -151,7 +151,7 @@ pub fn render_resource_pots_and_generate_resources(
         resources.lock().push(res.resource);
       }
 
-      if cached_result.resources.len() > 0 {
+      if !cached_result.resources.is_empty() {
         set_resource_cache(resource_pot, cached_result, context);
       }
 
@@ -202,7 +202,7 @@ pub fn render_resource_pot_generate_resources(
 
     augment_resource_hash = context
       .plugin_driver
-      .augment_resource_hash(&resource_pot, context)?;
+      .augment_resource_hash(resource_pot, context)?;
 
     // TODO augment resource hash
   }

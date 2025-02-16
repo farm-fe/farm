@@ -129,6 +129,13 @@ fn init_bool_features<'a>(
     bool_features.insert(FARM_ENABLE_EXTERNAL_MODULES);
   }
 
+  // special case for import all helper, if both import default and import named are enabled, import all is enabled
+  if feature_flags.contains(&FeatureFlag::ImportDefault)
+    && feature_flags.contains(&FeatureFlag::ImportNamed)
+  {
+    bool_features.insert(FARM_ENABLE_IMPORT_ALL_HELPER);
+  }
+
   let feature_names = feature_flags
     .iter()
     .map(|flag| flag.as_str())

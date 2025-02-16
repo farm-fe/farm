@@ -274,7 +274,7 @@ impl Compiler {
 
     finalize_updated_module_graph(
       &updated_module_ids,
-      removed_modules.iter().map(|(id, _)| id.clone()).collect(),
+      removed_modules.keys().cloned().collect(),
       &diff_result,
       &self.context,
     )?;
