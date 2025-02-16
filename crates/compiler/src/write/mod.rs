@@ -19,21 +19,29 @@ impl Compiler {
     #[cfg(feature = "profile")]
     farmfe_core::puffin::profile_function!();
 
-    let resources_map = self.context.resources_map.lock();
     let output_dir = Path::new(&self.context.config.output.path);
 
-    // self.print_resources_info(&resources_map);
+    {
+      let resources_map = self.context.resources_map.lock();
 
-    // create output directories for all resources
-    self.create_output_directories(&resources_map, output_dir);
+      // create output directories for all resources
+      self.create_output_directories(&resources_map, output_dir);
 
-    let (small_files, large_files) = self.split_resources(&resources_map);
+      let (small_files, large_files) = self.split_resources(&resources_map);
 
-    self.write_large_files(&large_files, output_dir);
+      self.write_large_files(&large_files, output_dir);
 
-    self.write_small_files(&small_files, output_dir);
+      self.write_small_files(&small_files, output_dir);
+    }
 
     self.copy_public_dir(output_dir);
+
+    // TODO add writeBundle write hooks plugin_driver
+
+    self
+      .context
+      .plugin_driver
+      .finish(&self.context.stats, &self.context)?;
 
     Ok(())
   }
