@@ -5,7 +5,7 @@ use std::{
 };
 
 use farmfe_core::{
-  config::{config_regex::ConfigRegex, SourcemapConfig},
+  config::SourcemapConfig,
   enhanced_magic_string::collapse_sourcemap::read_source_content,
   module::ModuleId,
   rayon::iter::{IntoParallelRefIterator, ParallelIterator},
@@ -17,7 +17,7 @@ use farmfe_core::{
 };
 
 use crate::hash::base64_encode;
-use farmfe_utils::hash::base64_decode;
+use farmfe_utils::{hash::base64_decode, relative};
 
 pub use farmfe_core::context::{create_swc_source_map, get_swc_sourcemap_filename};
 // reexport sourcemap crate
@@ -79,6 +79,7 @@ pub fn build_sourcemap(
 pub fn trace_module_sourcemap(
   sourcemap: sourcemap::SourceMap,
   module_graph: &farmfe_core::module::module_graph::ModuleGraph,
+  root: &str,
 ) -> sourcemap::SourceMap {
   let mut builder = sourcemap::SourceMapBuilder::new(sourcemap.get_file());
   let mut cached_sourcemap = HashMap::<ModuleId, Vec<sourcemap::SourceMap>>::new();
@@ -91,15 +92,20 @@ pub fn trace_module_sourcemap(
       src_token.get_dst_col(),
       dst_token.get_src_line(),
       dst_token.get_src_col(),
-      dst_token.get_source(),
+      // replace absolute source path with relative path
+      dst_token.get_source().map(|source| {
+        if Path::new(source).is_absolute() {
+          Box::leak(relative(root, source).into_boxed_str())
+        } else {
+          source
+        }
+      }),
       dst_token.get_name(),
       dst_token.is_range(),
     );
 
-    if !builder.has_source_contents(new_token.src_id) {
-      if let Some(content) = read_source_content(dst_token.clone(), dst_sourcemap) {
-        builder.set_source_contents(new_token.src_id, Some(&content));
-      }
+    if let Some(content) = read_source_content(dst_token.clone(), dst_sourcemap) {
+      builder.set_source_contents(new_token.src_id, Some(&content));
     }
   };
 

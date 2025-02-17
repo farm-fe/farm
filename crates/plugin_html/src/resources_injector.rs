@@ -74,7 +74,7 @@ impl<'a> ResourcesInjector<'a> {
   fn inject_runtime_resources(&mut self, element: &mut Element) {
     element.children.push(Child::Element(create_element(
       "script",
-      Some(&self.runtime_code),
+      Some(&format!("(function(){{{}}})();", self.runtime_code)),
       vec![],
     )));
   }

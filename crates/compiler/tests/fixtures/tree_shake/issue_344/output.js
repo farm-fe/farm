@@ -1,75 +1,62 @@
 //index.js:
- window['__farm_default_namespace__'] = {__FARM_TARGET_ENV__: 'browser'};;((function(){function __commonJs(mod) {
-    var module;
-    return ()=>{
-        if (module) {
-            return module.exports;
-        }
-        module = {
-            exports: {}
+ (function(){const moduleSystem = {};
+function initModuleSystem() {
+    console.log('module-helper.ts');
+}
+initModuleSystem(moduleSystem);
+}());(function(moduleSystem, modules) {
+    for(var moduleId in modules){
+        var module = modules[moduleId];
+        moduleSystem.g(moduleId, module);
+    }
+})(window["__farm_default_namespace__"].m, {
+    "4ef5be87": function(module, exports, farmRequire, farmDynamicRequire) {
+        module.exports = {
+            program: function() {}
         };
-        if (typeof mod === "function") {
-            mod(module, module.exports);
-        } else {
-            mod[Object.keys(mod)[0]](module, module.exports);
-        }
-        return module.exports;
-    };
-}
-var index_js_cjs = __commonJs((module, exports)=>{
-    "use strict";
-    console.log('runtime/index.js');
-    window['__farm_default_namespace__'].__farm_module_system__.setPlugins([]);
+    },
+    "abc9a879": function(module, exports, farmRequire, farmDynamicRequire) {
+        farmRequire._m(exports);
+        farmRequire.o(exports, "Argument", function() {
+            return Argument;
+        });
+        farmRequire.o(exports, "Command", function() {
+            return Command;
+        });
+        farmRequire.o(exports, "CommanderError", function() {
+            return CommanderError;
+        });
+        farmRequire.o(exports, "Help", function() {
+            return Help;
+        });
+        farmRequire.o(exports, "InvalidArgumentError", function() {
+            return InvalidArgumentError;
+        });
+        farmRequire.o(exports, "InvalidOptionArgumentError", function() {
+            return InvalidOptionArgumentError;
+        });
+        farmRequire.o(exports, "Option", function() {
+            return Option;
+        });
+        farmRequire.o(exports, "createArgument", function() {
+            return createArgument;
+        });
+        farmRequire.o(exports, "createCommand", function() {
+            return createCommand;
+        });
+        farmRequire.o(exports, "createOption", function() {
+            return createOption;
+        });
+        farmRequire.o(exports, "program", function() {
+            return program;
+        });
+        var _f_command = farmRequire.i(farmRequire("4ef5be87"));
+        var { program, createCommand, createArgument, createOption, CommanderError, InvalidArgumentError, InvalidOptionArgumentError, Command, Argument, Option, Help } = farmRequire.f(_f_command);
+    },
+    "b5d64806": function(module, exports, farmRequire, farmDynamicRequire) {
+        farmRequire._m(exports);
+        var _f_esm = farmRequire("abc9a879");
+        _f_esm.program();
+    }
 });
-index_js_cjs();
-})());(function(_){var filename = ((function(){var _documentCurrentScript = typeof document !== "undefined" ? document.currentScript : null;return typeof document === "undefined" ? require("url").pathToFileURL(__filename).href : _documentCurrentScript && _documentCurrentScript.src || new URL("index_51e4.js", document.baseURI).href})());for(var r in _){_[r].__farm_resource_pot__=filename;window['__farm_default_namespace__'].__farm_module_system__.register(r,_[r])}})({"4ef5be87":function  (module, exports, farmRequire, farmDynamicRequire) {
-    module.exports = {
-        program: function() {}
-    };
-}
-,
-"abc9a879":function  (module, exports, farmRequire, farmDynamicRequire) {
-    module._m(exports);
-    module.o(exports, "Argument", function() {
-        return Argument;
-    });
-    module.o(exports, "Command", function() {
-        return Command;
-    });
-    module.o(exports, "CommanderError", function() {
-        return CommanderError;
-    });
-    module.o(exports, "Help", function() {
-        return Help;
-    });
-    module.o(exports, "InvalidArgumentError", function() {
-        return InvalidArgumentError;
-    });
-    module.o(exports, "InvalidOptionArgumentError", function() {
-        return InvalidOptionArgumentError;
-    });
-    module.o(exports, "Option", function() {
-        return Option;
-    });
-    module.o(exports, "createArgument", function() {
-        return createArgument;
-    });
-    module.o(exports, "createCommand", function() {
-        return createCommand;
-    });
-    module.o(exports, "createOption", function() {
-        return createOption;
-    });
-    module.o(exports, "program", function() {
-        return program;
-    });
-    var _f_command = module.i(farmRequire("4ef5be87"));
-    var { program, createCommand, createArgument, createOption, CommanderError, InvalidArgumentError, InvalidOptionArgumentError, Command, Argument, Option, Help } = module.f(_f_command);
-}
-,
-"b5d64806":function  (module, exports, farmRequire, farmDynamicRequire) {
-    module._m(exports);
-    var _f_esm = farmRequire("abc9a879");
-    _f_esm.program();
-}
-,});window['__farm_default_namespace__'].__farm_module_system__.setInitialLoadedResources([]);window['__farm_default_namespace__'].__farm_module_system__.setDynamicModuleResourcesMap([],{  });var farmModuleSystem = window['__farm_default_namespace__'].__farm_module_system__;farmModuleSystem.bootstrap();var entry = farmModuleSystem.require("b5d64806");
+var __farm_ms__ = window['__farm_default_namespace__'].m;__farm_ms__.b();var __farm_entry__=__farm_ms__.r("b5d64806");

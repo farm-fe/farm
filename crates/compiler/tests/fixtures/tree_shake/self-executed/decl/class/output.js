@@ -1,58 +1,46 @@
 //index.js:
- window['__farm_default_namespace__'] = {__FARM_TARGET_ENV__: 'browser'};;((function(){function __commonJs(mod) {
-    var module;
-    return ()=>{
-        if (module) {
-            return module.exports;
+ (function(){const moduleSystem = {};
+function initModuleSystem() {
+    console.log('module-helper.ts');
+}
+initModuleSystem(moduleSystem);
+}());(function(moduleSystem, modules) {
+    for(var moduleId in modules){
+        var module = modules[moduleId];
+        moduleSystem.g(moduleId, module);
+    }
+})(window["__farm_default_namespace__"].m, {
+    "05ee5ec7": function(module, exports, farmRequire, farmDynamicRequire) {
+        farmRequire._m(exports);
+        farmRequire.o(exports, "Foo", function() {
+            return Foo;
+        });
+        class Foo {
         }
-        module = {
-            exports: {}
+        Foo.create = function() {
+            return new Validate();
         };
-        if (typeof mod === "function") {
-            mod(module, module.exports);
-        } else {
-            mod[Object.keys(mod)[0]](module, module.exports);
+        class Validate {
+            constructor(obj, options){
+                this.obj = obj;
+                this.options = options;
+                this.globalConfig = BValidate.globalConfig;
+            }
         }
-        return module.exports;
-    };
-}
-var index_js_cjs = __commonJs((module, exports)=>{
-    "use strict";
-    console.log('runtime/index.js');
-    window['__farm_default_namespace__'].__farm_module_system__.setPlugins([]);
+        var BValidate = function(obj, options) {
+            return new Validate(obj, Object.assign({
+                field: 'value'
+            }, options));
+        };
+        BValidate.globalConfig = {};
+        BValidate.setGlobalConfig = function(options) {
+            BValidate.globalConfig = options || {};
+        };
+    },
+    "b5d64806": function(module, exports, farmRequire, farmDynamicRequire) {
+        farmRequire._m(exports);
+        var _f_dep = farmRequire("05ee5ec7");
+        console.log(_f_dep.Foo);
+    }
 });
-index_js_cjs();
-})());(function(_){var filename = ((function(){var _documentCurrentScript = typeof document !== "undefined" ? document.currentScript : null;return typeof document === "undefined" ? require("url").pathToFileURL(__filename).href : _documentCurrentScript && _documentCurrentScript.src || new URL("index_ddf1.js", document.baseURI).href})());for(var r in _){_[r].__farm_resource_pot__=filename;window['__farm_default_namespace__'].__farm_module_system__.register(r,_[r])}})({"05ee5ec7":function  (module, exports, farmRequire, farmDynamicRequire) {
-    module._m(exports);
-    module.o(exports, "Foo", function() {
-        return Foo;
-    });
-    class Foo {
-    }
-    Foo.create = function() {
-        return new Validate();
-    };
-    class Validate {
-        constructor(obj, options){
-            this.obj = obj;
-            this.options = options;
-            this.globalConfig = BValidate.globalConfig;
-        }
-    }
-    var BValidate = function(obj, options) {
-        return new Validate(obj, Object.assign({
-            field: 'value'
-        }, options));
-    };
-    BValidate.globalConfig = {};
-    BValidate.setGlobalConfig = function(options) {
-        BValidate.globalConfig = options || {};
-    };
-}
-,
-"b5d64806":function  (module, exports, farmRequire, farmDynamicRequire) {
-    module._m(exports);
-    var _f_dep = farmRequire("05ee5ec7");
-    console.log(_f_dep.Foo);
-}
-,});window['__farm_default_namespace__'].__farm_module_system__.setInitialLoadedResources([]);window['__farm_default_namespace__'].__farm_module_system__.setDynamicModuleResourcesMap([],{  });var farmModuleSystem = window['__farm_default_namespace__'].__farm_module_system__;farmModuleSystem.bootstrap();var entry = farmModuleSystem.require("b5d64806");
+var __farm_ms__ = window['__farm_default_namespace__'].m;__farm_ms__.b();var __farm_entry__=__farm_ms__.r("b5d64806");

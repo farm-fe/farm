@@ -725,7 +725,7 @@ export async function readConfigFile(
     // Change to vm.module of node or loaders as far as it is stable
     const userConfig = (await import(filePath as string)).default;
     try {
-      await fse.unlink(filePath);
+      // await fse.unlink(filePath);
       // remove parent dir if empty
       const isEmpty = (await fse.readdir(outputPath)).length === 0;
       if (isEmpty) {
@@ -747,7 +747,7 @@ export async function readConfigFile(
 
     return config;
   } finally {
-    await fse.unlink(getFilePath(outputPath, fileName)).catch(() => {});
+    // await fse.unlink(getFilePath(outputPath, fileName)).catch(() => {});
   }
 }
 
@@ -1059,7 +1059,7 @@ export function getFormat(configFilePath: string): Format {
     ? 'cjs'
     : process.env.FARM_CONFIG_FORMAT === 'esm'
       ? 'esm'
-      : formatFromExt[path.extname(configFilePath).slice(1)] ?? 'esm';
+      : (formatFromExt[path.extname(configFilePath).slice(1)] ?? 'esm');
 }
 
 export function getFilePath(outputPath: string, fileName: string): string {

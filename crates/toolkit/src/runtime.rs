@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use farmfe_core::lazy_static::lazy_static;
 use farmfe_core::{
   config::{Mode, TargetEnv},
   context::CompilationContext,
@@ -12,7 +13,6 @@ use farmfe_core::{
   swc_ecma_ast::{BinaryOp, EmptyStmt, Expr, Ident, Lit, Stmt, Str},
   HashMap, HashSet,
 };
-use lazy_static::lazy_static;
 use swc_ecma_visit::{VisitMut, VisitMutWith};
 
 pub const FARM_RUNTIME_TARGET_ENV: &str = "__FARM_RUNTIME_TARGET_ENV__";

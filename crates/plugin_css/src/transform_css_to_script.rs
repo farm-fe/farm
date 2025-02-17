@@ -10,10 +10,10 @@ use farmfe_core::{
     meta_data::script::{CommentsMetaData, ScriptModuleMetaData},
     ModuleId, ModuleMetaData, ModuleSystem, ModuleType,
   },
-  plugin::ResolveKind,
+  plugin::{PluginFinalizeModuleHookParam, ResolveKind},
   rayon::prelude::*,
   serialize,
-  swc_common::Mark,
+  swc_common::{Globals, Mark},
   swc_css_ast::Stylesheet,
   swc_ecma_ast::EsVersion,
   swc_ecma_parser::Syntax,
@@ -21,7 +21,11 @@ use farmfe_core::{
 use farmfe_toolkit::{
   css::codegen_css_stylesheet,
   hash::base64_encode,
-  script::{parse_module, swc_try_with::try_with, ParseScriptModuleResult},
+  script::{
+    parse_module,
+    swc_try_with::{resolve_module_mark, try_with},
+    ParseScriptModuleResult,
+  },
   sourcemap::SourceMap,
   swc_ecma_transforms_base::resolver,
   swc_ecma_visit::VisitMutWith,
@@ -69,17 +73,30 @@ pub fn transform_css_to_script_modules(
           && !cache_manager.custom.is_cache_changed(&store_key)
         {
           let cache = cache_manager.custom.read_cache(&store_key.name).unwrap();
-          let meta = deserialize!(&cache, Box<ModuleMetaData>);
+          let mut meta = deserialize!(&cache, Box<ModuleMetaData>);
+          let script_meta = meta.as_script_mut();
+
+          // clear previous mark when using cache
+          context.meta.set_globals(&module_id, Globals::new());
+          let (unresolved_mark, top_level_mark) = resolve_module_mark(
+            &mut script_meta.ast,
+            false,
+            context.meta.get_globals(&module_id).value(),
+          );
+
+          script_meta.unresolved_mark = unresolved_mark.as_u32();
+          script_meta.top_level_mark = top_level_mark.as_u32();
+
           let mut module_graph = context.module_graph.write();
           let module = module_graph.module_mut(&module_id).unwrap();
+
           module.meta = meta;
-          // clear previous mark when using cache
-          module.meta.as_script_mut().top_level_mark = 0;
-          module.meta.as_script_mut().unresolved_mark = 0;
           module.module_type = ModuleType::Js;
+
           drop(module_graph);
           // update css dependency kind to ResolveKind:Import
           transform_css_deps(&module_id, context);
+
           return Ok(());
         }
 
@@ -154,40 +171,59 @@ pub fn transform_css_to_script_modules(
       context
         .meta
         .set_module_source_map(&module_id, source_map.clone());
+      context.meta.set_globals(&module_id, Globals::new());
 
-      try_with(source_map, &context.meta.script.globals, || {
-        let top_level_mark = Mark::new();
-        let unresolved_mark = Mark::new();
+      try_with(
+        source_map,
+        context.meta.get_globals(&module_id).value(),
+        || {
+          let top_level_mark = Mark::new();
+          let unresolved_mark = Mark::new();
 
-        ast.visit_mut_with(&mut resolver(unresolved_mark, top_level_mark, false));
+          ast.visit_mut_with(&mut resolver(unresolved_mark, top_level_mark, false));
 
-        let mut module_graph = context.module_graph.write();
-        let module = module_graph.module_mut(&module_id).unwrap();
+          let mut module_graph = context.module_graph.write();
+          let module = module_graph.module_mut(&module_id).unwrap();
 
-        module.meta = Box::new(ModuleMetaData::Script(Box::new(ScriptModuleMetaData {
-          ast,
-          top_level_mark: top_level_mark.as_u32(),
-          unresolved_mark: unresolved_mark.as_u32(),
-          module_system: ModuleSystem::EsModule,
-          hmr_self_accepted: true,
-          hmr_accepted_deps: Default::default(),
-          comments: CommentsMetaData::from(comments),
-          custom: Default::default(),
-          ..Default::default()
-        })));
+          module.meta = Box::new(ModuleMetaData::Script(Box::new(ScriptModuleMetaData {
+            ast,
+            top_level_mark: top_level_mark.as_u32(),
+            unresolved_mark: unresolved_mark.as_u32(),
+            module_system: ModuleSystem::EsModule,
+            hmr_self_accepted: true,
+            hmr_accepted_deps: Default::default(),
+            comments: CommentsMetaData::from(comments),
+            custom: Default::default(),
+            ..Default::default()
+          })));
 
-        module.module_type = ModuleType::Js;
+          module.module_type = ModuleType::Js;
 
-        if context.config.persistent_cache.enabled() {
-          let store_key = cache_store_key.unwrap();
-          let bytes = serialize!(&module.meta);
+          // call finalize_module to update meta
           context
-            .cache_manager
-            .custom
-            .write_single_cache(store_key, bytes)
-            .expect("failed to write css transform cache");
-        }
-      })
+            .plugin_driver
+            .finalize_module(
+              &mut PluginFinalizeModuleHookParam {
+                module,
+                deps: &mut vec![],
+              },
+              context,
+            )
+            .unwrap();
+
+          if context.config.persistent_cache.enabled() {
+            let store_key = cache_store_key.unwrap();
+            let bytes = serialize!(&module.meta);
+            context
+              .cache_manager
+              .custom
+              .write_single_cache(store_key, bytes)
+              .expect("failed to write css transform cache");
+          }
+        },
+      )?;
+
+      Ok(())
     })
 }
 

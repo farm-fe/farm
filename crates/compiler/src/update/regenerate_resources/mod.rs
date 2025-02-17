@@ -1,6 +1,11 @@
 use std::sync::Arc;
 
 use farmfe_core::config::FARM_MODULE_SYSTEM;
+use farmfe_core::enhanced_magic_string::collapse_sourcemap::{
+  collapse_sourcemap_chain, CollapseSourcemapOptions,
+};
+use farmfe_core::enhanced_magic_string::magic_string::MagicString;
+use farmfe_core::enhanced_magic_string::types::SourceMapOptions;
 use farmfe_core::plugin::PluginHookContext;
 use farmfe_core::{
   context::CompilationContext,
@@ -10,6 +15,7 @@ use farmfe_core::{
 };
 use farmfe_core::{HashMap, HashSet};
 use farmfe_toolkit::html::get_farm_global_this;
+use farmfe_toolkit::sourcemap::SourceMap;
 use farmfe_utils::hash::base64_encode;
 
 use crate::generate::render_resource_pots::render_resource_pot_generate_resources;
@@ -85,26 +91,51 @@ pub fn render_and_generate_update_resource(
       resource_pot.meta = res;
       let (mut updated_result, _) =
         render_resource_pot_generate_resources(resource_pot, context, &Default::default())?;
-      let mut update_resources = updated_result.resources.remove(0);
+      let update_resources = updated_result.resources.remove(0);
 
-      if let Some(map) = update_resources.source_map {
-        // inline source map
-        update_resources.resource.bytes.append(
-          &mut format!(
-            "\n//# sourceMappingURL=data:application/json;charset=utf-8;base64,{}",
-            base64_encode(&map.bytes)
-          )
-          .into_bytes(),
-        );
-      }
+      let sourcemap = update_resources
+        .source_map
+        .map(|map| SourceMap::from_slice(&map.bytes).unwrap());
 
       let code = String::from_utf8(update_resources.resource.bytes).unwrap();
       let global_this = get_farm_global_this(
         &context.config.runtime.namespace,
         &context.config.output.target_env,
       );
+      let mut magic_string = MagicString::new(&code, None);
+
       // force re-register the affected modules when hmr
-      Ok(format!("{global_this}.{FARM_MODULE_SYSTEM}._rg=true;{code};{global_this}.{FARM_MODULE_SYSTEM}._rg=false;"))
+      magic_string.prepend(&format!("{global_this}.{FARM_MODULE_SYSTEM}._rg=true;"));
+      magic_string.append(&format!("{global_this}.{FARM_MODULE_SYSTEM}._rg=false;"));
+
+      let code = magic_string.to_string();
+
+      let map = if let Some(sourcemap) = sourcemap {
+        // the updated code will be executed in the browser using new Function(code), so we need to
+        // add extra (function anonymous() {})() to wrap the code to make sure the sourcemap works as expected
+        magic_string.prepend("(function anonymous(\n) {\n");
+        magic_string.append("\n})");
+
+        let map = magic_string
+          .generate_map(SourceMapOptions::default())
+          .unwrap();
+        let sourcemap =
+          collapse_sourcemap_chain(vec![sourcemap, map], CollapseSourcemapOptions::default());
+
+        let mut buf = vec![];
+        sourcemap.to_writer(&mut buf).unwrap();
+        let map_code = String::from_utf8(buf).unwrap();
+
+        // inline source map
+        format!(
+          "\n//# sourceMappingURL=data:application/json;charset=utf-8;base64,{}",
+          base64_encode(map_code.as_bytes())
+        )
+      } else {
+        "".to_string()
+      };
+
+      Ok(format!("{}{}", code, map))
     };
 
   let immutable_update_resource = gen_resource_pot_code(&mut immutable_update_resource_pot)?;
@@ -200,9 +231,10 @@ fn clear_resource_pot_of_modules_in_module_groups(
   module_group_id: &HashSet<ModuleGroupId>,
   context: &Arc<CompilationContext>,
 ) {
+  let mut module_graph = context.module_graph.write();
+  let module_group_graph = context.module_group_graph.read();
+
   for module_group_id in module_group_id {
-    let mut module_graph = context.module_graph.write();
-    let module_group_graph = context.module_group_graph.read();
     let module_group = module_group_graph.module_group(module_group_id).unwrap();
 
     for module_id in module_group.modules() {
