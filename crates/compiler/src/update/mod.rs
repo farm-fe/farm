@@ -264,7 +264,6 @@ impl Compiler {
       self.diff_and_patch_context(paths, &update_context);
     // record graph patch result
     self.set_module_group_graph_stats();
-
     freeze_module_of_affected_module_graph(&updated_module_ids, &diff_result, &self.context)?;
 
     // update cache
