@@ -93,13 +93,12 @@ impl CustomMetaDataMap {
     self
       .bytes_map
       .get(key)
-      .map(|v| {
+      .and_then(|v| {
         let bytes = v.clone();
         let value = T::deserialize_bytes(bytes).unwrap();
 
         value.downcast::<T>().ok()
       })
-      .flatten()
   }
 
   pub fn get_ref<T: Cacheable>(&self, key: &str) -> Option<&T> {

@@ -196,7 +196,7 @@ impl Plugin for FarmPluginCss {
     &self,
     context: &Arc<CompilationContext>,
   ) -> farmfe_core::error::Result<Option<()>> {
-    if context.cache_manager.cachable {
+    if context.cache_manager.enable {
       if let Some(cache) = context
         .cache_manager
         .plugin_cache
@@ -214,7 +214,7 @@ impl Plugin for FarmPluginCss {
     _stat: &farmfe_core::stats::Stats,
     context: &Arc<CompilationContext>,
   ) -> farmfe_core::error::Result<Option<()>> {
-    if context.cache_manager.cachable {
+    if context.cache_manager.enable {
       let content_map = self.content_map.lock().clone();
       let sourcemap_map = self.sourcemap_map.lock().clone();
 
@@ -708,34 +708,6 @@ impl Plugin for FarmPluginCss {
 }
 
 impl FarmPluginCss {
-  // fn read_content<V: Cacheable + Clone>(
-  //   &self,
-  //   context: &CompilationContext,
-  //   module_id: &str,
-  //   name: &str,
-  // ) -> Option<V> {
-  //   if !context.cache_manager.cachable {
-  //     return None;
-  //   }
-  // }
-
-  // fn write_content<T: Cacheable, F: FnOnce() -> T>(
-  //   &self,
-  //   context: &CompilationContext,
-  //   module_id: &str,
-  //   name: &str,
-  //   f: F,
-  // ) {
-  //   if !context.cache_manager.cachable {
-  //     return;
-  //   }
-
-  //   context
-  //     .cache_manager
-  //     .module_cache
-  //     .write_metadata(module_id.to_string(), name.to_string(), f());
-  // }
-
   pub fn new(config: &Config) -> Self {
     Self {
       css_modules_paths: config

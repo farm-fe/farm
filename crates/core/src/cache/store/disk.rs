@@ -152,27 +152,27 @@ impl CacheStore {
       .iter()
       .par_bridge()
       .fold(
-        || HashMap::<PathBuf, CombineCacheData>::default(),
-        |mut combine_datas, item| {
+        HashMap::<PathBuf, CombineCacheData>::default,
+        |mut combine_data, item| {
           let name = item.key();
           let key = item.value();
 
           let Some(value) = self.try_read_content(name) else {
-            return combine_datas;
+            return combine_data;
           };
 
           let cache_file_path = self.real_cache_path(name);
 
-          combine_datas
+          combine_data
             .entry(cache_file_path)
             .or_default()
             .insert((name.to_string(), key.to_string()).into(), value);
 
-          return combine_datas;
+          combine_data
         },
       )
       .reduce(
-        || HashMap::default(),
+        HashMap::default,
         |mut a, b| {
           for (store_key, map) in b {
             a.entry(store_key).or_default().extend(map);
@@ -182,8 +182,8 @@ impl CacheStore {
         },
       )
       .into_par_iter()
-      .for_each(|(cache_file_path, datas)| {
-        let data = serialize!(&datas);
+      .for_each(|(cache_file_path, data)| {
+        let data = serialize!(&data);
         self.write_content_to_disk(cache_file_path, data);
       });
   }
@@ -257,7 +257,7 @@ impl CacheStoreTrait for CacheStore {
     self._remove_cache(name);
   }
 
-  fn shotdown(&self) {
+  fn shutdown(&self) {
     self.write_disk();
     self.write_manifest();
   }

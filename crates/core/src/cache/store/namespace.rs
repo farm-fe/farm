@@ -67,8 +67,8 @@ impl CacheStoreTrait for NamespaceStore {
     self.store.remove_cache(self.format_name(name).as_str())
   }
 
-  fn shotdown(&self) {
-    self.store.shotdown();
+  fn shutdown(&self) {
+    self.store.shutdown();
   }
 }
 

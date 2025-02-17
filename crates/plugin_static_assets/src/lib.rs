@@ -272,7 +272,7 @@ impl Plugin for FarmPluginStaticAssets {
     &self,
     context: &Arc<CompilationContext>,
   ) -> farmfe_core::error::Result<Option<()>> {
-    if !context.cache_manager.cachable {
+    if !context.cache_manager.enable {
       return Ok(None);
     }
 
@@ -302,7 +302,7 @@ impl Plugin for FarmPluginStaticAssets {
     _stat: &farmfe_core::stats::Stats,
     context: &Arc<CompilationContext>,
   ) -> farmfe_core::error::Result<Option<()>> {
-    if !context.cache_manager.cachable {
+    if !context.cache_manager.enable {
       return Ok(None);
     }
 

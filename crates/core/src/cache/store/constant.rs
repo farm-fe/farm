@@ -11,7 +11,7 @@ pub trait CacheStoreTrait: Send + Sync {
   fn write_cache(&self, cache_map: HashMap<CacheStoreKey, Vec<u8>>) {}
   fn read_cache(&self, name: &str) -> Option<Vec<u8>>;
   fn remove_cache(&self, name: &str);
-  fn shotdown(&self) {}
+  fn shutdown(&self) {}
 }
 
 pub const FARM_CACHE_VERSION: &str = "0.6.1";

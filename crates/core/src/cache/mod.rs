@@ -30,7 +30,7 @@ pub struct CacheManager {
   pub custom: Box<dyn CacheStoreTrait>,
   /// lock for cache manager
   pub lock: Mutex<bool>,
-  pub cachable: bool,
+  pub enable: bool,
   _store: Box<dyn CacheStoreTrait>,
 }
 
@@ -50,26 +50,26 @@ impl CacheManager {
       custom: store_factory.create_cache_store("custom"),
       lazy_compile_store: store_factory.create_cache_store("lazy-compilation"),
       lock: Mutex::new(false),
-      cachable: false,
+      enable: false,
       _store: store_factory.create_cache_store("_"),
     }
   }
 
   pub fn showdown(&self) {
-    if !self.cachable {
+    if !self.enable {
       return;
     }
-    self._store.shotdown();
+    self._store.shutdown();
   }
 
-  pub fn set_cachable(mut self, cachable: bool) -> Self {
-    self.cachable = cachable;
+  pub fn cache_enable(mut self, enable: bool) -> Self {
+    self.enable = enable;
 
     self
   }
 
   pub fn write_cache(&self) {
-    if !self.cachable {
+    if !self.enable {
       return;
     }
     // discard write if cannot get lock

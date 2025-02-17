@@ -12,7 +12,7 @@ pub trait Cacheable: std::any::Any + Send + Sync + Downcast {
 
 impl_downcast!(Cacheable);
 
-macro_rules! impl_impritive_cacheable {
+macro_rules! impl_primitive_cacheable {
     ($($t:ty),*) => {
         $(
             impl Cacheable for $t {
@@ -35,7 +35,7 @@ macro_rules! impl_impritive_cacheable {
     () => {};
 }
 
-impl_impritive_cacheable!(i8, i16, i32, i64, u8, u16, u32, u64, f32, f64, bool, char, String);
+impl_primitive_cacheable!(i8, i16, i32, i64, u8, u16, u32, u64, f32, f64, bool, char, String);
 
 #[cfg(test)]
 mod tests {

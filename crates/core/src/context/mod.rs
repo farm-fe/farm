@@ -68,7 +68,7 @@ impl CompilationContext {
       plugin_driver: Box::new(Self::create_plugin_driver(plugins, config.record)),
       cache_manager: Box::new(
         CacheManager::new(&cache_dir, &namespace, config.mode)
-          .set_cachable(config.persistent_cache.enabled()),
+          .cache_enable(config.persistent_cache.enabled()),
       ),
       thread_pool: Arc::new(
         ThreadPoolBuilder::new()

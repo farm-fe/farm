@@ -73,11 +73,17 @@ pub struct MemoryCacheFactory {
   store: Arc<Box<dyn CacheStoreTrait>>,
 }
 
-impl MemoryCacheFactory {
-  pub fn new() -> Self {
+impl Default for MemoryCacheFactory {
+  fn default() -> Self {
     Self {
       store: Arc::new(Box::new(MemoryCacheStore::new())),
     }
+  }
+}
+
+impl MemoryCacheFactory {
+  pub fn new() -> Self {
+    Default::default()
   }
 }
 
