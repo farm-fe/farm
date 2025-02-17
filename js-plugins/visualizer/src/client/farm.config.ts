@@ -1,18 +1,13 @@
 import { defineConfig } from '@farmfe/core';
-import farmPostcssPlugin from '@farmfe/js-plugin-postcss';
-import vitejsPluginVue from '@vitejs/plugin-vue';
-import record from '../dev';
+import Pages from 'vite-plugin-pages';
+import { visualizer } from '../server';
 
-export default defineConfig((env) => ({
-  plugins: [
-    farmPostcssPlugin(),
-    ...(env.mode === 'development' ? [record()] : [])
-  ],
-  vitePlugins: [vitejsPluginVue()],
-  compilation: {
-    output: {
-      path: '../../build/client'
-    },
-    external: ['@farmfe/core']
-  }
-}));
+export default defineConfig({
+  plugins: ['@farmfe/plugin-react', visualizer()],
+  vitePlugins: [
+    Pages({
+      resolver: 'react',
+      dirs: 'pages'
+    })
+  ]
+});

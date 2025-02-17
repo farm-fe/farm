@@ -1,4 +1,14 @@
-import { Resource } from '@farmfe/core';
+/// <reference types="vite-plugin-pages/client-react" />
+import { Suspense } from 'react';
+import { useRoutes } from 'react-router-dom';
+import routes from '~react-pages';
+
+export function App() {
+  return <Suspense fallback={<p>Loading...</p>}>{useRoutes(routes)}</Suspense>;
+}
+
+/**
+ * import { Resource } from '@farmfe/core';
 import { Module } from '@farmfe/core/binding/binding';
 import type { FarmEnvInfo } from '../../../node/utils/envinfo';
 import { http } from '../http';
@@ -24,3 +34,4 @@ export function getResource(id: string): Promise<string> {
 export function getPluginStats(): Promise<string> {
   return http.get('/__record/stats');
 }
+ */
