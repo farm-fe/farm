@@ -113,7 +113,8 @@ fn tree_shake_changed_ast() {
       }
 
       let (cm, _) = create_swc_source_map(&param.module_id, param.content.clone());
-      try_with(cm.clone(), &context.meta.script.globals, || {
+      let globals = context.meta.get_globals(&param.module_id);
+      try_with(cm.clone(), globals.value(), || {
         let top_level_mark = Mark::from_u32(param.meta.as_script_mut().top_level_mark);
         let unresolved_mark = Mark::from_u32(param.meta.as_script_mut().unresolved_mark);
 

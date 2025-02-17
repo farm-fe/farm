@@ -33,9 +33,7 @@ var e_js_namespace_farm_internal_ = {
 };
 var d_js_default = 3;
 var d_js_namespace_farm_internal_ = {
-    get "default" () {
-        return d_js_default;
-    },
+    "default": d_js_default,
     "e": e
 };
 var bar = "bar" + 2;
@@ -61,6 +59,14 @@ var a_js_namespace_farm_internal_ = {
     get "foo" () {
         return foo;
     },
-    "ns": e_js_namespace_farm_internal_
+    get "ns" () {
+        return e_js_namespace_farm_internal_;
+    }
 };
 console.log(Object.entries(a_js_namespace_farm_internal_), Object.entries(b_js_namespace_farm_internal_));
+export { a_js_namespace_farm_internal_ as a, foo as foo };
+export { d_js_default as baz };
+export { bar as bar };
+export { f as f, f_local as f_renamed };
+export { e_js_namespace_farm_internal_ as ns };
+export { b_js_namespace_farm_internal_ as b };

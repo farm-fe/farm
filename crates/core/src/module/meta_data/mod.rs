@@ -64,7 +64,7 @@ impl ModuleMetaData {
     if let Self::Script(script) = self {
       script
     } else {
-      panic!("ModuleMetaData is not Script")
+      panic!("ModuleMetaData is not Script but {:?}", self.to_string())
     }
   }
 

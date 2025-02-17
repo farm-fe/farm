@@ -8,6 +8,7 @@ use farmfe_core::parking_lot::Mutex;
 use farmfe_core::plugin::GeneratedResource;
 use farmfe_core::resource::meta_data::html::HtmlResourcePotMetaData;
 use farmfe_core::resource::meta_data::ResourcePotMetaData;
+use farmfe_core::swc_common::Globals;
 use farmfe_core::{cache_item, deserialize, serialize, HashMap};
 use farmfe_core::{
   config::Config,
@@ -479,8 +480,8 @@ impl Plugin for FarmPluginMinifyHtml {
         };
 
         let (cm, _) = create_swc_source_map(&resource.name.as_str().into(), html_code.clone());
-
-        try_with(cm, &context.meta.html.globals, || {
+        let globals = Globals::new();
+        try_with(cm, &globals, || {
           minify_html_module(&mut html_ast);
         })?;
 

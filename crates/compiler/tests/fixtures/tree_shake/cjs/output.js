@@ -1,47 +1,34 @@
 //index.js:
- window['__farm_default_namespace__'] = {__FARM_TARGET_ENV__: 'browser'};;((function(){function __commonJs(mod) {
-    var module;
-    return ()=>{
-        if (module) {
-            return module.exports;
-        }
-        module = {
-            exports: {}
-        };
-        if (typeof mod === "function") {
-            mod(module, module.exports);
-        } else {
-            mod[Object.keys(mod)[0]](module, module.exports);
-        }
-        return module.exports;
-    };
+ (function(){const moduleSystem = {};
+function initModuleSystem() {
+    console.log('module-helper.ts');
 }
-var index_js_cjs = __commonJs((module, exports)=>{
-    "use strict";
-    console.log('runtime/index.js');
-    window['__farm_default_namespace__'].__farm_module_system__.setPlugins([]);
-});
-index_js_cjs();
-})());(function(_){var filename = ((function(){var _documentCurrentScript = typeof document !== "undefined" ? document.currentScript : null;return typeof document === "undefined" ? require("url").pathToFileURL(__filename).href : _documentCurrentScript && _documentCurrentScript.src || new URL("index_6889.js", document.baseURI).href})());for(var r in _){_[r].__farm_resource_pot__=filename;window['__farm_default_namespace__'].__farm_module_system__.register(r,_[r])}})({"3da733a3":function  (module, exports, farmRequire, farmDynamicRequire) {
-    module.exports = function() {
-        return 'b';
-    };
-}
-,
-"a3823798":function  (module, exports, farmRequire, farmDynamicRequire) {
-    const b = farmRequire("3da733a3", true);
-    function a() {
-        return b();
+initModuleSystem(moduleSystem);
+}());(function(moduleSystem, modules) {
+    for(var moduleId in modules){
+        var module = modules[moduleId];
+        moduleSystem.g(moduleId, module);
     }
-    module.exports = {
-        a,
-        b
-    };
-}
-,
-"b5d64806":function  (module, exports, farmRequire, farmDynamicRequire) {
-    module._m(exports);
-    var _f_cjs_1 = module.i(farmRequire("a3823798"));
-    console.log(module.f(_f_cjs_1));
-}
-,});window['__farm_default_namespace__'].__farm_module_system__.setInitialLoadedResources([]);window['__farm_default_namespace__'].__farm_module_system__.setDynamicModuleResourcesMap([],{  });var farmModuleSystem = window['__farm_default_namespace__'].__farm_module_system__;farmModuleSystem.bootstrap();var entry = farmModuleSystem.require("b5d64806");
+})(window["__farm_default_namespace__"].m, {
+    "3da733a3": function(module, exports, farmRequire, farmDynamicRequire) {
+        module.exports = function() {
+            return 'b';
+        };
+    },
+    "a3823798": function(module, exports, farmRequire, farmDynamicRequire) {
+        const b = farmRequire("3da733a3");
+        function a() {
+            return b();
+        }
+        module.exports = {
+            a,
+            b
+        };
+    },
+    "b5d64806": function(module, exports, farmRequire, farmDynamicRequire) {
+        farmRequire._m(exports);
+        var _f_cjs_1 = farmRequire.i(farmRequire("a3823798"));
+        console.log(farmRequire.f(_f_cjs_1));
+    }
+});
+var __farm_ms__ = window['__farm_default_namespace__'].m;__farm_ms__.b();var __farm_entry__=__farm_ms__.r("b5d64806");

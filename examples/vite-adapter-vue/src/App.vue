@@ -43,6 +43,7 @@ import 'element-plus/theme-chalk/src/tab-pane.scss'
 import './test';
 
 const activeName = ref('test')
+console.log(activeName)
 </script>
 
 <style lang="scss" scoped>

@@ -1,10 +1,12 @@
+use std::sync::Arc;
+
 use farmfe_core::{
   config::Mode,
-  error::Result,
   serde_json,
-  swc_common::{comments::NoopComments, Mark},
+  swc_common::{comments::SingleThreadedComments, Globals, Mark, SourceMap},
   swc_ecma_ast::{self, Program},
 };
+
 use farmfe_toolkit::{
   script::swc_try_with::try_with,
   swc_ecma_transforms::{
@@ -12,13 +14,22 @@ use farmfe_toolkit::{
     react::{react, Options, RefreshOptions, Runtime},
   },
 };
-use farmfe_toolkit_plugin_types::swc_transforms::FarmSwcTransformReactOptions;
 
-#[no_mangle]
+pub struct FarmSwcTransformReactOptions<'a> {
+  pub top_level_mark: u32,
+  pub unresolved_mark: u32,
+  pub inject_helpers: bool,
+  pub mode: Mode,
+  pub cm: Arc<SourceMap>,
+  pub comments: SingleThreadedComments,
+  pub globals: &'a Globals,
+  pub options: String,
+}
+
 pub fn farm_swc_transform_react(
   ast: &mut swc_ecma_ast::Module,
   options: FarmSwcTransformReactOptions,
-) -> Result<()> {
+) -> farmfe_core::error::Result<()> {
   let is_dev = matches!(options.mode, Mode::Development);
   let top_level_mark = Mark::from_u32(options.top_level_mark);
   let unresolved_mark = Mark::from_u32(options.unresolved_mark);
@@ -57,7 +68,7 @@ pub fn farm_swc_transform_react(
 
     program.mutate(&mut react(
       options.cm,
-      Some(NoopComments),
+      Some(options.comments),
       react_options,
       top_level_mark,
       unresolved_mark,
