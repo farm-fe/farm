@@ -7,7 +7,7 @@ use farmfe_core::{
   parking_lot::Mutex,
   rayon::iter::{IntoParallelIterator, ParallelIterator},
   resource::{meta_data::js::RenderModuleResult, resource_pot::ResourcePot},
-  swc_common::SourceMap,
+  swc_common::{Mark, SourceMap},
   HashMap,
 };
 
@@ -46,36 +46,50 @@ pub fn render_resource_pot_modules(
           )
         });
 
-      let (ast, comments, hoisted_sourcemap, module_ids, hoisted_external_modules) =
-        if hoisted_group.hoisted_module_ids.len() > 1 {
-          let result = hoisted_group.scope_hoist(module_graph, context)?;
-          (
-            result.ast,
-            result.comments,
-            result.source_map,
-            result.module_ids,
-            result.external_modules,
-          )
-        } else {
-          let meta = module.meta.as_script();
-          (
-            meta.ast.clone(),
-            meta.comments.clone(),
-            context.meta.get_module_source_map(&module.id),
-            vec![module.id.clone()],
-            HashMap::default(),
-          )
-        };
+      let mut merged_globals = None;
+      let original_globals = context.meta.get_globals(&module.id);
 
-      let mut render_module_result = render_module(RenderModuleOptions {
-        module_id: module.id.clone(),
-        ast,
-        comments,
-        hoisted_sourcemap: hoisted_sourcemap.clone(),
-        hoisted_external_modules,
-        module_graph,
-        context,
-      })?;
+      let (render_module_options, module_ids) = if hoisted_group.hoisted_module_ids.len() > 1 {
+        let result = hoisted_group.scope_hoist(module_graph, context)?;
+        merged_globals = Some(result.globals);
+        (
+          RenderModuleOptions {
+            module_id: module.id.clone(),
+            ast: result.ast,
+            comments: result.comments,
+            hoisted_sourcemap: result.source_map,
+            hoisted_external_modules: result.external_modules,
+            globals: merged_globals.as_ref().unwrap(),
+            unresolved_mark: result.unresolved_mark,
+            top_level_mark: result.top_level_mark,
+            module_graph,
+            context,
+          },
+          result.module_ids,
+        )
+      } else {
+        let meta = module.meta.as_script();
+        (
+          RenderModuleOptions {
+            module_id: module.id.clone(),
+            ast: meta.ast.clone(),
+            comments: meta.comments.clone(),
+            hoisted_sourcemap: context.meta.get_module_source_map(&module.id),
+            hoisted_external_modules: Default::default(),
+            globals: original_globals.value(),
+            unresolved_mark: Mark::from_u32(meta.unresolved_mark),
+            top_level_mark: Mark::from_u32(meta.top_level_mark),
+            module_graph,
+            context,
+          },
+          vec![module.id.clone()],
+        )
+      };
+
+      let hoisted_sourcemap = render_module_options.hoisted_sourcemap.clone();
+
+      let mut render_module_result = render_module(render_module_options)?;
+
       render_module_result.hoisted_module_ids = module_ids;
 
       modules

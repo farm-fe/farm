@@ -24,3 +24,7 @@ import * as a from "./a.js";
 import * as b from "./b.js";
 
 console.log(Object.entries(a), Object.entries(b));
+
+export { a, b }
+
+export * from './a.js';

@@ -58,17 +58,13 @@ impl ScopeHoistedModuleGroup {
     module_graph: &ModuleGraph,
     context: &Arc<CompilationContext>,
   ) -> farmfe_core::error::Result<ConcatenateModulesAstResult> {
-    let mut result = concatenate_modules_ast(&self.hoisted_module_ids, module_graph, context)
-      .map_err(|e| CompilationError::GenericError(format!("Scope hoist failed: {}", e)))?;
-
-    // append export statements
-    let module = module_graph.module(&self.target_hoisted_module_id).unwrap();
-    let script_meta = module.meta.as_script();
-
-    if !script_meta.export_ident_map.is_empty() {
-      let export_item = script_meta.get_export_module_item();
-      result.ast.body.push(export_item);
-    }
+    let result = concatenate_modules_ast(
+      &self.target_hoisted_module_id,
+      &self.hoisted_module_ids,
+      module_graph,
+      context,
+    )
+    .map_err(|e| CompilationError::GenericError(format!("Scope hoist failed: {}", e)))?;
 
     Ok(result)
   }
