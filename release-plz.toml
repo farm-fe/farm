@@ -7,6 +7,10 @@ name = "farmfe_node"
 release = false
 
 [[package]]
+name = "farmfe_plugin_dts"
+release = false
+
+[[package]]
 name = "farmfe_plugin_sass"
 release = false
 

@@ -118,23 +118,28 @@ pub fn tree_shake_modules(
     }
   }
 
-  // 2. remove statements that should is not used
+  let mut modules_to_remove = vec![];
+
+  // 2. remove statements that is not used
   for tree_shake_module_id in &visited_modules {
     if tree_shake_modules_map.contains_key(tree_shake_module_id) {
-      remove_useless_stmts::remove_useless_stmts(
+      modules_to_remove.extend(remove_useless_stmts::remove_useless_stmts(
         tree_shake_module_id,
         module_graph,
         tree_shake_modules_map,
-      );
+      ));
     }
   }
 
-  module_graph
-    .modules()
-    .into_iter()
-    .map(|m| m.id.clone())
-    .filter(|m_id| !visited_modules.contains(m_id))
-    .collect()
+  modules_to_remove.extend(
+    module_graph
+      .modules()
+      .into_iter()
+      .map(|m| m.id.clone())
+      .filter(|m_id| !visited_modules.contains(m_id)),
+  );
+
+  modules_to_remove
 }
 
 fn trace_and_mark_used_statements(

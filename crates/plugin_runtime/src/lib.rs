@@ -13,6 +13,7 @@ use farmfe_core::{
     PluginLoadHookParam, PluginLoadHookResult, PluginResolveHookParam, PluginResolveHookResult,
     ResolveKind,
   },
+  relative_path::RelativePath,
   resource::{
     meta_data::{js::JsResourcePotMetaData, ResourcePotMetaData},
     resource_pot::{ResourcePot, ResourcePotType},
@@ -22,10 +23,11 @@ use farmfe_core::{
 };
 
 use farmfe_toolkit::{
+  fs::read_file_utf8,
   html::get_farm_global_this,
   script::{
     concatenate_modules::concatenate_modules_ast,
-    sourcemap::{merge_comments, merge_sourcemap},
+    merge_swc_globals::{merge_comments, merge_sourcemap},
   },
 };
 
@@ -82,22 +84,15 @@ impl Plugin for FarmPluginRuntime {
     context: &Arc<CompilationContext>,
     _hook_context: &PluginHookContext,
   ) -> farmfe_core::error::Result<Option<PluginResolveHookResult>> {
-    if param.source == RUNTIME_PACKAGE {
-      return Ok(Some(PluginResolveHookResult {
-        resolved_path: RUNTIME_PACKAGE.to_string(),
-        ..Default::default()
-      }));
-    } else if param.source.starts_with(RUNTIME_PACKAGE) {
+    if param.source.starts_with(RUNTIME_PACKAGE) {
       if context.config.runtime.path.is_empty() {
         return Err(CompilationError::GenericError(
           "config.runtime.path is not set, please set or remove config.runtime.path in farm.config.ts. normally you should not set config.runtime.path manually".to_string(),
         ));
       }
 
-      let rest_str = param.source.replace(RUNTIME_PACKAGE, "");
-
       return Ok(Some(PluginResolveHookResult {
-        resolved_path: format!("{}{}.ts", context.config.runtime.path, rest_str),
+        resolved_path: param.source.to_string(),
         ..Default::default()
       }));
     }
@@ -118,6 +113,20 @@ impl Plugin for FarmPluginRuntime {
         module_type: ModuleType::Js,
         source_map: None,
       }));
+    } else if param.resolved_path.starts_with(RUNTIME_PACKAGE) {
+      let rest_str = param.resolved_path.replace(RUNTIME_PACKAGE, "") + ".ts";
+      let relative_path = RelativePath::new(&rest_str);
+      let resolved_path = relative_path
+        .to_logical_path(&context.config.runtime.path)
+        .to_string_lossy()
+        .to_string();
+      let code = read_file_utf8(&resolved_path)?;
+
+      return Ok(Some(PluginLoadHookResult {
+        content: code,
+        module_type: ModuleType::Ts,
+        source_map: None,
+      }));
     }
 
     Ok(None)
@@ -128,7 +137,9 @@ impl Plugin for FarmPluginRuntime {
     param: &mut farmfe_core::plugin::PluginFinalizeModuleHookParam,
     context: &Arc<CompilationContext>,
   ) -> farmfe_core::error::Result<Option<()>> {
-    if !param.module.module_type.is_script() {
+    if !param.module.module_type.is_script()
+      || param.module.id.to_string().starts_with(RUNTIME_PACKAGE)
+    {
       return Ok(None);
     }
 
@@ -228,10 +239,15 @@ impl Plugin for FarmPluginRuntime {
     // render runtime resource pot
     if resource_pot.resource_pot_type == ResourcePotType::Runtime {
       let module_graph = context.module_graph.read();
-      let result =
-        concatenate_modules_ast(&resource_pot.modules, &module_graph, context).map_err(|err| {
-          CompilationError::GenericError(format!("failed to concatenate runtime modules: {}", err))
-        })?;
+      let result = concatenate_modules_ast(
+        resource_pot.entry_module.as_ref().unwrap(),
+        &resource_pot.modules,
+        &module_graph,
+        context,
+      )
+      .map_err(|err| {
+        CompilationError::GenericError(format!("failed to concatenate runtime modules: {}", err))
+      })?;
 
       context
         .meta

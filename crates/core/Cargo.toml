@@ -58,6 +58,7 @@ regex = "1.7.3"
 enhanced-magic-string = { version = "0.1.0" }
 rustc-hash = "2.0.0"
 num_cpus = "1.16.0"
+lazy_static = "1.4.0"
 
 [features]
 profile = ["dep:puffin"]

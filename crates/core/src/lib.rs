@@ -32,6 +32,7 @@ pub const VERSION: &str = "0.5.0";
 pub use dashmap;
 pub use enhanced_magic_string;
 pub use heck;
+pub use lazy_static;
 pub use parking_lot;
 pub use petgraph;
 #[cfg(feature = "profile")]

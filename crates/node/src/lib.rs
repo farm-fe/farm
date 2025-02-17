@@ -8,7 +8,6 @@ use std::{path::Path, sync::Arc};
 use farmfe_compiler::{trace_module_graph::TracedModuleGraph, Compiler};
 
 pub mod plugin_adapters;
-pub mod plugin_toolkit;
 #[cfg(feature = "profile")]
 pub mod profile_gui;
 
@@ -37,8 +36,6 @@ use notify::{
   EventKind, RecommendedWatcher, Watcher,
 };
 use plugin_adapters::{js_plugin_adapter::JsPluginAdapter, rust_plugin_adapter::RustPluginAdapter};
-
-// pub use farmfe_toolkit_plugin;
 
 #[macro_use]
 extern crate napi_derive;
