@@ -56,7 +56,7 @@ export default function farmPostcssPlugin(
 
     transform: {
       filters: {
-        resolvedPaths: options.filters?.resolvedPaths ?? ['.*'],
+        resolvedPaths: options.filters?.resolvedPaths,
         moduleTypes: options.filters?.moduleTypes ?? ['css']
       },
       async executor(param, context) {

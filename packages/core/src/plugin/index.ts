@@ -19,7 +19,6 @@ export async function resolveVitePlugins(
   mode: CompilationMode
 ) {
   const plugins = config?.vitePlugins?.filter(Boolean) ?? [];
-
   if (!plugins.length) return [];
 
   return handleVitePlugins(plugins, config, mode);

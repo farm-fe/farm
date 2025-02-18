@@ -23,24 +23,4 @@ export default defineConfig({
       // tsConfigPath: './tsconfig.json'
     // })
   // ]
-  plugins: [test()]
 });
-function test() {
-  return {
-    name: "test",
-    freezeModule: {
-      filters: {
-        moduleTypes: ["ts"],
-        resolvedPaths: ['.*']
-      },
-      async executor(param) {
-        if (param.moduleId.endsWith('index.ts')) {
-          console.log(param.content);
-          return {
-            content: "export const a = 1;console.log(a)",
-          };
-        }
-      },
-    }
-  };
-}
