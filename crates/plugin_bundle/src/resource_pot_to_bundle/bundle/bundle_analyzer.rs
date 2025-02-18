@@ -20,7 +20,7 @@ use farmfe_core::{
   HashMap, HashSet,
 };
 use farmfe_toolkit::{
-  script::{sourcemap::merge_sourcemap, swc_try_with::try_with},
+  script::{merge_swc_globals::merge_sourcemap, swc_try_with::try_with},
   swc_ecma_transforms::fixer,
   swc_ecma_visit::VisitMutWith,
 };

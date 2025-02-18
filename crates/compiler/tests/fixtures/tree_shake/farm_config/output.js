@@ -1,54 +1,44 @@
 //index.js:
- window['__farm_default_namespace__'] = {__FARM_TARGET_ENV__: 'browser'};;((function(){function __commonJs(mod) {
-    var module;
-    return ()=>{
-        if (module) {
-            return module.exports;
-        }
-        module = {
-            exports: {}
-        };
-        if (typeof mod === "function") {
-            mod(module, module.exports);
-        } else {
-            mod[Object.keys(mod)[0]](module, module.exports);
-        }
-        return module.exports;
-    };
+ (function(){const moduleSystem = {};
+function initModuleSystem() {
+    console.log('module-helper.ts');
 }
-var index_js_cjs = __commonJs((module, exports)=>{
-    "use strict";
-    console.log('runtime/index.js');
-    window['__farm_default_namespace__'].__farm_module_system__.setPlugins([]);
+initModuleSystem(moduleSystem);
+}());window['__farm_default_namespace__'].m.se({
+    "module": window['module'] || {}
 });
-index_js_cjs();
-})());window['__farm_default_namespace__'].__farm_module_system__.setExternalModules({"module": (window['module']||{}).default && !(window['module']||{}).__esModule ? {...(window['module']||{}),__esModule:true} : window['module']||{}});(function(_){var filename = ((function(){var _documentCurrentScript = typeof document !== "undefined" ? document.currentScript : null;return typeof document === "undefined" ? require("url").pathToFileURL(__filename).href : _documentCurrentScript && _documentCurrentScript.src || new URL("index_7f1c.js", document.baseURI).href})());for(var r in _){_[r].__farm_resource_pot__=filename;window['__farm_default_namespace__'].__farm_module_system__.register(r,_[r])}})({"052dab48":function  (module, exports, farmRequire, farmDynamicRequire) {
-    module._m(exports);
-    exports.default = {
-        main: './main.tsx'
-    };
-}
-,
-"b5d64806":function  (module, exports, farmRequire, farmDynamicRequire) {
-    module._m(exports);
-    var _f_module = farmRequire('module');
-    var _f_config = farmRequire("edceee38");
-    var _f_util = module.i(farmRequire("052dab48"));
-    exports.default = _f_config.defineFarmConfig({
-        compilation: {
-            input: module.f(_f_util),
-            external: _f_module.builtinModules
-        }
-    });
-}
-,
-"edceee38":function  (module, exports, farmRequire, farmDynamicRequire) {
-    module._m(exports);
-    module.o(exports, "defineFarmConfig", function() {
-        return defineFarmConfig;
-    });
-    function defineFarmConfig(userConfig) {
-        return userConfig;
+(function(moduleSystem, modules) {
+    for(var moduleId in modules){
+        var module = modules[moduleId];
+        moduleSystem.g(moduleId, module);
     }
-}
-,});window['__farm_default_namespace__'].__farm_module_system__.setInitialLoadedResources([]);window['__farm_default_namespace__'].__farm_module_system__.setDynamicModuleResourcesMap([],{  });var farmModuleSystem = window['__farm_default_namespace__'].__farm_module_system__;farmModuleSystem.bootstrap();var entry = farmModuleSystem.require("b5d64806");export default entry.default || entry;
+})(window["__farm_default_namespace__"].m, {
+    "052dab48": function(module, exports, farmRequire, farmDynamicRequire) {
+        farmRequire._m(exports);
+        exports.default = {
+            main: './main.tsx'
+        };
+    },
+    "b5d64806": function(module, exports, farmRequire, farmDynamicRequire) {
+        farmRequire._m(exports);
+        var _f_module = farmRequire('module');
+        var _f_config = farmRequire("edceee38");
+        var _f_util = farmRequire.i(farmRequire("052dab48"));
+        exports.default = _f_config.defineFarmConfig({
+            compilation: {
+                input: farmRequire.f(_f_util),
+                external: _f_module.builtinModules
+            }
+        });
+    },
+    "edceee38": function(module, exports, farmRequire, farmDynamicRequire) {
+        farmRequire._m(exports);
+        farmRequire.o(exports, "defineFarmConfig", function() {
+            return defineFarmConfig;
+        });
+        function defineFarmConfig(userConfig) {
+            return userConfig;
+        }
+    }
+});
+var __farm_ms__ = window['__farm_default_namespace__'].m;__farm_ms__.b();var __farm_entry__=__farm_ms__.r("b5d64806");var __farm_entry_default__=__farm_entry__.default;export {__farm_entry_default__ as default};

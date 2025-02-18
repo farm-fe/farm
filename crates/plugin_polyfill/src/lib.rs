@@ -1,5 +1,3 @@
-use std::path::PathBuf;
-
 use farmfe_core::{
   config::{
     config_regex::ConfigRegex,
@@ -116,7 +114,8 @@ impl Plugin for FarmPluginPolyfill {
     }
 
     let (cm, _) = create_swc_source_map(param.module_id, param.content.clone());
-    try_with(cm, &context.meta.script.globals, || {
+    let globals = context.meta.get_globals(&param.module_id);
+    try_with(cm, globals.value(), || {
       let unresolved_mark = Mark::from_u32(param.meta.as_script().unresolved_mark);
       let mut ast = Program::Module(param.meta.as_script_mut().take_ast());
 

@@ -11,8 +11,6 @@ use swc_ecma_visit::{Visit, VisitWith};
 
 use crate::sourcemap::create_swc_source_map;
 
-pub use farmfe_toolkit_plugin_types::swc_ast::ParseScriptModuleResult;
-
 use crate::script::swc_try_with::try_with;
 
 fn module_system_from_deps(deps: Vec<ResolveKind>) -> ModuleSystem {
@@ -128,24 +126,28 @@ pub fn set_module_system_for_module_meta(
   {
     let (cm, _) = create_swc_source_map(&param.module.id, param.module.content.clone());
 
-    try_with(cm, &context.meta.script.globals, || {
-      let unresolved_mark = Mark::from_u32(param.module.meta.as_script().unresolved_mark);
-      let mut analyzer = ModuleSystemAnalyzer {
-        unresolved_mark,
-        contain_module_exports: false,
-        contain_esm: false,
-      };
+    try_with(
+      cm,
+      context.meta.get_globals(&param.module.id).value(),
+      || {
+        let unresolved_mark = Mark::from_u32(param.module.meta.as_script().unresolved_mark);
+        let mut analyzer = ModuleSystemAnalyzer {
+          unresolved_mark,
+          contain_module_exports: false,
+          contain_esm: false,
+        };
 
-      ast.visit_with(&mut analyzer);
+        ast.visit_with(&mut analyzer);
 
-      if analyzer.contain_module_exports {
-        module_system_from_ast = module_system_from_ast.merge(ModuleSystem::CommonJs);
-      }
+        if analyzer.contain_module_exports {
+          module_system_from_ast = module_system_from_ast.merge(ModuleSystem::CommonJs);
+        }
 
-      if analyzer.contain_esm {
-        module_system_from_ast = module_system_from_ast.merge(ModuleSystem::EsModule);
-      }
-    })
+        if analyzer.contain_esm {
+          module_system_from_ast = module_system_from_ast.merge(ModuleSystem::EsModule);
+        }
+      },
+    )
     .unwrap();
   }
 

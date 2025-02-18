@@ -4,9 +4,10 @@ use std::{
   sync::Arc,
 };
 
-use dashmap::DashMap;
+use dashmap::{mapref::one::Ref, DashMap};
 use parking_lot::{Mutex, RwLock};
 use rayon::{ThreadPool, ThreadPoolBuilder};
+use regex::Regex;
 use serde::{Deserialize, Serialize};
 use swc_common::{FileName, Globals, SourceFile, SourceMap};
 
@@ -30,6 +31,10 @@ use self::log_store::LogStore;
 
 pub mod log_store;
 pub(crate) const EMPTY_STR: &str = "";
+
+lazy_static::lazy_static! {
+  pub static ref REPLACE_FILENAME_REGEX: Regex = Regex::new(r"[^a-zA-Z0-9._/\\]").unwrap();
+}
 
 /// Shared context through the whole compilation.
 pub struct CompilationContext {
@@ -190,12 +195,16 @@ pub struct ContextMetaData {
   pub script: ScriptContextMetaData,
   pub css: CssContextMetaData,
   pub html: HtmlContextMetaData,
+
   /// shared swc sourcemap cache for module
   pub module_source_maps: DashMap<ModuleId, Arc<SourceMap>>,
   /// shared swc sourcemap cache for hoisted modules
   pub hoisted_modules_source_maps: DashMap<ModuleId, Arc<SourceMap>>,
   /// shared swc sourcemap cache for resource pot
   pub resource_pot_source_maps: DashMap<ResourcePotId, Arc<SourceMap>>,
+
+  /// Globals map for each module
+  globals_map: DashMap<ModuleId, Globals>,
 
   /// custom meta map
   pub custom: DashMap<String, Box<dyn Any + Send + Sync>>,
@@ -210,6 +219,7 @@ impl ContextMetaData {
       module_source_maps: DashMap::new(),
       hoisted_modules_source_maps: DashMap::new(),
       resource_pot_source_maps: DashMap::new(),
+      globals_map: DashMap::new(),
       custom: DashMap::new(),
     }
   }
@@ -258,6 +268,19 @@ impl ContextMetaData {
       .resource_pot_source_maps
       .insert(resource_pot_id.clone(), cm);
   }
+
+  pub fn set_globals(&self, module_id: &ModuleId, globals: Globals) {
+    self.globals_map.insert(module_id.clone(), globals);
+  }
+
+  pub fn get_globals(&self, module_id: &ModuleId) -> Ref<ModuleId, Globals> {
+    let globals = self
+      .globals_map
+      .get(module_id)
+      .unwrap_or_else(|| panic!("no globals found for module {:?}", module_id));
+
+    globals
+  }
 }
 
 impl Default for ContextMetaData {
@@ -269,6 +292,9 @@ impl Default for ContextMetaData {
 /// get swc source map filename from module id.
 /// you can get module id from sourcemap filename too, by
 pub fn get_swc_sourcemap_filename(module_id: &ModuleId) -> FileName {
+  // replace all invalid characters to _ to make sure the filename is valid
+  let module_id = module_id.to_string();
+  let module_id = REPLACE_FILENAME_REGEX.replace_all(&module_id, "_");
   FileName::Real(PathBuf::from(module_id.to_string()))
 }
 
@@ -284,15 +310,11 @@ pub fn create_swc_source_map(
 }
 
 /// Shared script meta data used for [swc]
-pub struct ScriptContextMetaData {
-  pub globals: Globals,
-}
+pub struct ScriptContextMetaData {}
 
 impl ScriptContextMetaData {
   pub fn new() -> Self {
-    Self {
-      globals: Globals::new(),
-    }
+    Self {}
   }
 }
 
@@ -302,15 +324,11 @@ impl Default for ScriptContextMetaData {
   }
 }
 
-pub struct CssContextMetaData {
-  pub globals: Globals,
-}
+pub struct CssContextMetaData {}
 
 impl CssContextMetaData {
   pub fn new() -> Self {
-    Self {
-      globals: Globals::new(),
-    }
+    Self {}
   }
 }
 
@@ -320,15 +338,11 @@ impl Default for CssContextMetaData {
   }
 }
 
-pub struct HtmlContextMetaData {
-  pub globals: Globals,
-}
+pub struct HtmlContextMetaData {}
 
 impl HtmlContextMetaData {
   pub fn new() -> Self {
-    Self {
-      globals: Globals::new(),
-    }
+    Self {}
   }
 }
 

@@ -6,12 +6,9 @@ use swc_common::{
   comments::{
     Comment, SingleThreadedComments, SingleThreadedCommentsMap, SingleThreadedCommentsMapInner,
   },
-  BytePos, SyntaxContext, DUMMY_SP,
+  BytePos,
 };
-use swc_ecma_ast::{
-  ExportNamedSpecifier, ExportSpecifier, Ident, Module as SwcModule, ModuleDecl, ModuleExportName,
-  ModuleItem, NamedExport,
-};
+use swc_ecma_ast::Module as SwcModule;
 
 use crate::module::ModuleId;
 use crate::{HashMap, HashSet};
@@ -25,6 +22,13 @@ pub mod statement;
 
 pub const EXPORT_NAMESPACE: &str = "namespace_farm_internal_";
 pub const EXPORT_DEFAULT: &str = "default";
+
+#[cache_item]
+#[derive(Debug, Clone, Hash, PartialEq, Eq)]
+pub struct ModuleExportIdent {
+  pub module_id: ModuleId,
+  pub ident: SwcId,
+}
 
 /// Script specific meta data, for example, [swc_ecma_ast::Module]
 #[cache_item]
@@ -46,8 +50,8 @@ pub struct ScriptModuleMetaData {
   /// export { m as bar }
   /// export { foo as default } from './module';
   /// =>
-  /// Map<String, SwcId> { bar -> m#1, default -> foo#1 }
-  pub export_ident_map: HashMap<String, SwcId>,
+  /// Map<String, SwcId> { bar -> m#1, default -> foo#1 where foo#1 is defined in './module' }
+  pub export_ident_map: HashMap<String, ModuleExportIdent>,
   pub custom: CustomMetaDataMap,
 }
 
@@ -141,7 +145,7 @@ impl ScriptModuleMetaData {
     matches!(self.module_system, ModuleSystem::Hybrid)
   }
 
-  pub fn get_export_idents(&self) -> Vec<(String, SwcId)> {
+  pub fn get_export_idents(&self) -> Vec<(String, ModuleExportIdent)> {
     let mut export_idents = self
       .export_ident_map
       .iter()
@@ -151,33 +155,6 @@ impl ScriptModuleMetaData {
     export_idents.sort_by_key(|a| a.0.clone());
 
     export_idents
-  }
-
-  pub fn get_export_module_item(&self) -> ModuleItem {
-    // add export statement from export_ident_map
-    let export_idents = self.get_export_idents();
-    let mut specifiers = vec![];
-
-    for (name, id) in export_idents {
-      specifiers.push(ExportSpecifier::Named(ExportNamedSpecifier {
-        span: DUMMY_SP,
-        orig: ModuleExportName::Ident(Ident::new(id.sym.clone(), DUMMY_SP, id.ctxt())),
-        exported: Some(ModuleExportName::Ident(Ident::new(
-          name.as_str().into(),
-          DUMMY_SP,
-          SyntaxContext::empty(),
-        ))),
-        is_type_only: false,
-      }));
-    }
-
-    ModuleItem::ModuleDecl(ModuleDecl::ExportNamed(NamedExport {
-      span: DUMMY_SP,
-      specifiers,
-      src: None,
-      type_only: false,
-      with: None,
-    }))
   }
 }
 

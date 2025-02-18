@@ -1,10 +1,10 @@
 pub use farmfe_core::module::meta_data::script::{EXPORT_DEFAULT, EXPORT_NAMESPACE};
 use farmfe_core::{
   module::{meta_data::script::statement::SwcId, module_graph::ModuleGraph, ModuleId},
-  swc_ecma_ast::Ident,
+  swc_ecma_ast::{ExportSpecifier, Ident},
   HashMap,
 };
-use swc_ecma_visit::VisitMut;
+use swc_ecma_visit::{VisitMut, VisitMutWith};
 
 struct TopLevelIdents {
   idents: HashMap<String, usize>,
@@ -42,52 +42,76 @@ impl TopLevelIdents {
 }
 
 pub struct TopLevelIdentsRenameHandler {
-  rename_map: HashMap<SwcId, SwcId>,
+  module_rename_map: HashMap<ModuleId, HashMap<SwcId, SwcId>>,
   top_level_idents: TopLevelIdents,
 }
 
 impl TopLevelIdentsRenameHandler {
   fn new(top_level_idents: TopLevelIdents) -> Self {
     Self {
-      rename_map: HashMap::default(),
+      module_rename_map: HashMap::default(),
       top_level_idents,
     }
   }
 
-  pub fn rename_ident(&mut self, from: SwcId, to: SwcId) {
-    self.rename_map.insert(from, to);
+  pub fn rename_ident(&mut self, module_id: ModuleId, from: SwcId, to: SwcId) {
+    self
+      .module_rename_map
+      .entry(module_id)
+      .or_insert_with(HashMap::default)
+      .insert(from, to);
   }
 
-  pub fn get_renamed_ident(&self, ident: &SwcId) -> Option<SwcId> {
-    self.rename_map.get(ident).cloned()
+  pub fn get_renamed_ident(&self, module_id: &ModuleId, ident: &SwcId) -> Option<SwcId> {
+    self
+      .module_rename_map
+      .get(module_id)
+      .and_then(|map| map.get(ident))
+      .cloned()
   }
 
   /// rename the imported ident if there are conflicts
-  pub fn rename_ident_if_conflict(&mut self, ident: &SwcId) {
+  pub fn rename_ident_if_conflict(&mut self, module_id: &ModuleId, ident: &SwcId) {
     self.top_level_idents.add_ident(ident.sym.to_string());
     let unique_ident = self.top_level_idents.get_unique_ident(ident.sym.as_str());
 
     if unique_ident != *ident.sym {
       let mut cloned = ident.clone();
       cloned.sym = unique_ident.into();
-      self.rename_ident(ident.clone(), cloned);
+      self.rename_ident(module_id.clone(), ident.clone(), cloned);
     }
   }
 }
 
 pub struct RenameVisitor<'a> {
+  module_id: &'a ModuleId,
   rename_handler: &'a TopLevelIdentsRenameHandler,
 }
 
 impl<'a> RenameVisitor<'a> {
-  pub fn new(rename_handler: &'a TopLevelIdentsRenameHandler) -> Self {
-    Self { rename_handler }
+  pub fn new(module_id: &'a ModuleId, rename_handler: &'a TopLevelIdentsRenameHandler) -> Self {
+    Self {
+      module_id,
+      rename_handler,
+    }
   }
 }
 
 impl<'a> VisitMut for RenameVisitor<'a> {
+  fn visit_mut_export_specifier(&mut self, sp: &mut ExportSpecifier) {
+    if let ExportSpecifier::Named(named) = sp {
+      // do not rename exported ident
+      named.orig.visit_mut_children_with(self);
+    } else {
+      sp.visit_mut_children_with(self);
+    }
+  }
+
   fn visit_mut_ident(&mut self, n: &mut Ident) {
-    if let Some(renamed_ident) = self.rename_handler.get_renamed_ident(&n.to_id().into()) {
+    if let Some(renamed_ident) = self
+      .rename_handler
+      .get_renamed_ident(self.module_id, &n.to_id().into())
+    {
       n.ctxt = renamed_ident.ctxt();
       n.sym = renamed_ident.sym;
     }
@@ -129,7 +153,7 @@ pub fn init_rename_handler(
       }
 
       statement.defined_idents.iter().for_each(|ident| {
-        rename_handler.rename_ident_if_conflict(ident);
+        rename_handler.rename_ident_if_conflict(module_id, ident);
       });
     }
   });
