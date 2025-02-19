@@ -21,7 +21,7 @@ importers:
         version: 2.27.9
       '@codspeed/vitest-plugin':
         specifier: ^3.1.1
-        version: 3.1.1(vite@5.2.8(@types/node@18.19.67)(less@4.2.0)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1))(vitest@2.0.4(@types/node@18.19.67)(less@4.2.0)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1))
+        version: 3.1.1(vite@5.2.8(@types/node@18.19.67)(less@4.2.2)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1))(vitest@2.0.4(@types/node@18.19.67)(less@4.2.2)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1))
       '@commitlint/cli':
         specifier: ^17.0.3
         version: 17.8.1(@swc/core@1.7.26(@swc/helpers@0.5.3))
@@ -39,7 +39,7 @@ importers:
         version: 18.19.67
       '@vitest/coverage-v8':
         specifier: 2.0.4
-        version: 2.0.4(vitest@2.0.4(@types/node@18.19.67)(less@4.2.0)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1))
+        version: 2.0.4(vitest@2.0.4(@types/node@18.19.67)(less@4.2.2)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1))
       cross-env:
         specifier: ^7.0.3
         version: 7.0.3
@@ -78,10 +78,10 @@ importers:
         version: 5.6.3
       vite:
         specifier: ^5.2.6
-        version: 5.2.8(@types/node@18.19.67)(less@4.2.0)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1)
+        version: 5.2.8(@types/node@18.19.67)(less@4.2.2)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1)
       vitest:
         specifier: 2.0.4
-        version: 2.0.4(@types/node@18.19.67)(less@4.2.0)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1)
+        version: 2.0.4(@types/node@18.19.67)(less@4.2.2)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1)
 
   bench:
     dependencies:
@@ -1339,7 +1339,7 @@ importers:
         version: 0.14.0
       vite-plugin-pages:
         specifier: ^0.32.0
-        version: 0.32.0(@vue/compiler-sfc@3.4.35)(vite@5.2.8(@types/node@20.14.12)(less@4.2.0)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1))
+        version: 0.32.0(@vue/compiler-sfc@3.4.35)(vite@5.2.8(@types/node@20.14.12)(less@4.2.2)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1))
 
   examples/react-sass-js:
     dependencies:
@@ -1663,7 +1663,7 @@ importers:
         version: 0.5.3(solid-js@1.8.5)
       vite-plugin-solid:
         specifier: ^2.7.0
-        version: 2.7.2(solid-js@1.8.5)(vite@5.2.8(@types/node@20.14.12)(less@4.2.0)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1))
+        version: 2.7.2(solid-js@1.8.5)(vite@5.2.8(@types/node@20.14.12)(less@4.2.2)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1))
 
   examples/static-assets:
     dependencies:
@@ -1870,7 +1870,7 @@ importers:
         version: 1.15.3(babel-plugin-macros@3.1.0)
       '@vanilla-extract/vite-plugin':
         specifier: ^4.0.13
-        version: 4.0.13(@types/node@20.14.12)(babel-plugin-macros@3.1.0)(less@4.2.0)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1)(vite@5.2.8(@types/node@20.14.12)(less@4.2.0)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1))
+        version: 4.0.13(@types/node@20.14.12)(babel-plugin-macros@3.1.0)(less@4.2.2)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1)(vite@5.2.8(@types/node@20.14.12)(less@4.2.2)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1))
     devDependencies:
       '@farmfe/cli':
         specifier: workspace:*
@@ -1883,7 +1883,7 @@ importers:
         version: 5.4.5
       vite:
         specifier: ^5.2.6
-        version: 5.2.8(@types/node@20.14.12)(less@4.2.0)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1)
+        version: 5.2.8(@types/node@20.14.12)(less@4.2.2)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1)
 
   examples/visualizer:
     dependencies:
@@ -1963,7 +1963,7 @@ importers:
         version: 0.14.0
       vite-plugin-pages:
         specifier: ^0.32.0
-        version: 0.32.0(@vue/compiler-sfc@3.4.35)(vite@5.2.8(@types/node@20.14.12)(less@4.2.0)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1))
+        version: 0.32.0(@vue/compiler-sfc@3.4.35)(vite@5.2.8(@types/node@20.14.12)(less@4.2.2)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1))
 
   examples/vite-adapter-solid:
     dependencies:
@@ -1988,7 +1988,7 @@ importers:
         version: 5.2.2
       vite-plugin-solid:
         specifier: ^2.7.0
-        version: 2.7.2(solid-js@1.8.5)(vite@5.2.8(@types/node@20.14.12)(less@4.2.0)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1))
+        version: 2.7.2(solid-js@1.8.5)(vite@5.2.8(@types/node@20.14.12)(less@4.2.2)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1))
 
   examples/vite-adapter-svelte:
     devDependencies:
@@ -2000,7 +2000,7 @@ importers:
         version: link:../../packages/core
       '@sveltejs/vite-plugin-svelte':
         specifier: ^4
-        version: 4.0.1(svelte@5.2.1)(vite@5.2.8(@types/node@20.14.12)(less@4.2.0)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1))
+        version: 4.0.1(svelte@5.2.1)(vite@5.2.8(@types/node@20.14.12)(less@4.2.2)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1))
       '@tsconfig/svelte':
         specifier: ^5.0.2
         version: 5.0.2
@@ -2021,7 +2021,7 @@ importers:
     dependencies:
       vite-tsconfig-paths:
         specifier: ^4.3.1
-        version: 4.3.1(typescript@5.6.3)(vite@5.2.8(@types/node@20.14.12)(less@4.2.0)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1))
+        version: 4.3.1(typescript@5.6.3)(vite@5.2.8(@types/node@20.14.12)(less@4.2.2)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1))
     devDependencies:
       '@farmfe/cli':
         specifier: workspace:*
@@ -2098,10 +2098,10 @@ importers:
         version: 0.62.2(postcss@8.4.32)
       '@vitejs/plugin-vue':
         specifier: 5.1.4
-        version: 5.1.4(vite@5.2.8(@types/node@20.14.12)(less@4.2.0)(lightningcss@1.28.2)(sass@1.69.5)(terser@5.31.1))(vue@3.3.7(typescript@5.6.3))
+        version: 5.1.4(vite@5.2.8(@types/node@20.14.12)(less@4.2.2)(lightningcss@1.28.2)(sass@1.69.5)(terser@5.31.1))(vue@3.3.7(typescript@5.6.3))
       '@vitejs/plugin-vue-jsx':
         specifier: ^3.1.0
-        version: 3.1.0(vite@5.2.8(@types/node@20.14.12)(less@4.2.0)(lightningcss@1.28.2)(sass@1.69.5)(terser@5.31.1))(vue@3.3.7(typescript@5.6.3))
+        version: 3.1.0(vite@5.2.8(@types/node@20.14.12)(less@4.2.2)(lightningcss@1.28.2)(sass@1.69.5)(terser@5.31.1))(vue@3.3.7(typescript@5.6.3))
       postcss:
         specifier: ^8.4.32
         version: 8.4.32
@@ -2113,7 +2113,7 @@ importers:
         version: 1.69.5
       unocss:
         specifier: ^0.62.2
-        version: 0.62.2(postcss@8.4.32)(rollup@4.14.1)(vite@5.2.8(@types/node@20.14.12)(less@4.2.0)(lightningcss@1.28.2)(sass@1.69.5)(terser@5.31.1))
+        version: 0.62.2(postcss@8.4.32)(rollup@4.14.1)(vite@5.2.8(@types/node@20.14.12)(less@4.2.2)(lightningcss@1.28.2)(sass@1.69.5)(terser@5.31.1))
       unplugin-auto-import:
         specifier: ^0.16.7
         version: 0.16.7(@vueuse/core@9.13.0(@vue/composition-api@1.7.2(vue@3.3.7(typescript@5.6.3)))(vue@3.3.7(typescript@5.6.3)))(rollup@4.14.1)
@@ -2150,10 +2150,10 @@ importers:
         version: link:../../rust-plugins/sass
       '@vitejs/plugin-vue':
         specifier: ^5.0.4
-        version: 5.0.4(vite@5.2.8(@types/node@20.14.12)(less@4.2.0)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1))(vue@3.4.27(typescript@5.6.3))
+        version: 5.0.4(vite@5.2.8(@types/node@20.14.12)(less@4.2.2)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1))(vue@3.4.27(typescript@5.6.3))
       '@vitejs/plugin-vue-jsx':
         specifier: ^3.1.0
-        version: 3.1.0(vite@5.2.8(@types/node@20.14.12)(less@4.2.0)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1))(vue@3.4.27(typescript@5.6.3))
+        version: 3.1.0(vite@5.2.8(@types/node@20.14.12)(less@4.2.2)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1))(vue@3.4.27(typescript@5.6.3))
       prettier:
         specifier: ^3.2.5
         version: 3.2.5
@@ -2172,7 +2172,7 @@ importers:
         version: link:../../packages/core
       '@vitejs/plugin-vue':
         specifier: ^5.0.3
-        version: 5.0.3(vite@5.2.8(@types/node@20.14.12)(less@4.2.0)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1))(vue@3.4.15(typescript@5.6.3))
+        version: 5.0.3(vite@5.2.8(@types/node@20.14.12)(less@4.2.2)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1))(vue@3.4.15(typescript@5.6.3))
       core-js:
         specifier: ^3.35.1
         version: 3.35.1
@@ -2206,7 +2206,7 @@ importers:
         version: 3.36.1
       vite-plugin-vue2:
         specifier: ^2.0.3
-        version: 2.0.3(ejs@3.1.10)(lodash@4.17.21)(vite@5.2.8(@types/node@20.14.12)(less@4.2.0)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1))(vue-template-compiler@2.6.14(vue@2.6.14))(vue@2.6.14)
+        version: 2.0.3(ejs@3.1.10)(lodash@4.17.21)(vite@5.2.8(@types/node@20.14.12)(less@4.2.2)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1))(vue-template-compiler@2.6.14(vue@2.6.14))(vue@2.6.14)
       vue-template-compiler:
         specifier: 2.6.14
         version: 2.6.14(vue@2.6.14)
@@ -2234,7 +2234,7 @@ importers:
         version: link:../../packages/core
       '@vitejs/plugin-vue2':
         specifier: ^2.3.1
-        version: 2.3.1(vite@5.2.8(@types/node@20.14.12)(less@4.2.0)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1))(vue@2.7.16)
+        version: 2.3.1(vite@5.2.8(@types/node@20.14.12)(less@4.2.2)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1))(vue@2.7.16)
       core-js:
         specifier: ^3.30.1
         version: 3.36.1
@@ -2308,7 +2308,7 @@ importers:
         version: link:../../js-plugins/less
       '@vitejs/plugin-vue':
         specifier: ^5.0.4
-        version: 5.0.4(vite@5.2.8(@types/node@20.14.12)(less@4.2.0)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1))(vue@3.3.7(typescript@5.6.3))
+        version: 5.0.4(vite@5.2.8(@types/node@20.14.12)(less@4.2.2)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1))(vue@3.3.7(typescript@5.6.3))
       xlsx-js-style:
         specifier: ^1.2.0
         version: 1.2.0
@@ -2327,10 +2327,10 @@ importers:
         version: link:../../packages/core
       '@vitejs/plugin-vue':
         specifier: ^5.0.4
-        version: 5.0.4(vite@5.2.8(@types/node@20.14.12)(less@4.2.0)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1))(vue@3.3.7(typescript@5.6.3))
+        version: 5.0.4(vite@5.2.8(@types/node@20.14.12)(less@4.2.2)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1))(vue@3.3.7(typescript@5.6.3))
       '@vitejs/plugin-vue-jsx':
         specifier: ^3.1.0
-        version: 3.1.0(vite@5.2.8(@types/node@20.14.12)(less@4.2.0)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1))(vue@3.3.7(typescript@5.6.3))
+        version: 3.1.0(vite@5.2.8(@types/node@20.14.12)(less@4.2.2)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1))(vue@3.3.7(typescript@5.6.3))
 
   examples/vue-nativeui:
     dependencies:
@@ -2346,7 +2346,7 @@ importers:
         version: link:../../packages/core
       '@vitejs/plugin-vue':
         specifier: ^5.1.1
-        version: 5.1.2(vite@5.2.8(@types/node@20.14.12)(less@4.2.0)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1))(vue@3.4.35(typescript@5.6.3))
+        version: 5.1.2(vite@5.2.8(@types/node@20.14.12)(less@4.2.2)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1))(vue@3.4.35(typescript@5.6.3))
       compression:
         specifier: ^1.7.4
         version: 1.7.4
@@ -2386,13 +2386,13 @@ importers:
         version: link:../../packages/core
       '@vitejs/plugin-vue':
         specifier: ^4.4.0
-        version: 4.4.0(vite@5.2.8(@types/node@20.14.12)(less@4.2.0)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1))(vue@3.3.12(typescript@5.6.3))
+        version: 4.4.0(vite@5.2.8(@types/node@20.14.12)(less@4.2.2)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1))(vue@3.3.12(typescript@5.6.3))
 
   examples/vue3:
     dependencies:
       '@module-federation/vite':
         specifier: ^1.1.1
-        version: 1.1.1(@types/node@20.14.12)(less@4.2.0)(lightningcss@1.28.2)(rollup@4.14.1)(sass@1.74.1)(terser@5.31.1)
+        version: 1.1.1(@types/node@20.14.12)(less@4.2.2)(lightningcss@1.28.2)(rollup@4.14.1)(sass@1.74.1)(terser@5.31.1)
       unplugin-auto-import:
         specifier: ^0.16.7
         version: 0.16.7(@vueuse/core@9.13.0(@vue/composition-api@1.7.2(vue@3.4.35(typescript@5.6.3)))(vue@3.4.35(typescript@5.6.3)))(rollup@4.14.1)
@@ -2408,7 +2408,7 @@ importers:
     devDependencies:
       '@vitejs/plugin-vue':
         specifier: 5.1.4
-        version: 5.1.4(vite@5.2.8(@types/node@20.14.12)(less@4.2.0)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1))(vue@3.4.35(typescript@5.6.3))
+        version: 5.1.4(vite@5.2.8(@types/node@20.14.12)(less@4.2.2)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1))(vue@3.4.35(typescript@5.6.3))
       compression:
         specifier: ^1.7.4
         version: 1.7.4
@@ -2417,22 +2417,22 @@ importers:
         version: 3.37.1
       unocss:
         specifier: ^0.62.2
-        version: 0.62.2(postcss@8.4.47)(rollup@4.14.1)(vite@5.2.8(@types/node@20.14.12)(less@4.2.0)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1))
+        version: 0.62.2(postcss@8.4.47)(rollup@4.14.1)(vite@5.2.8(@types/node@20.14.12)(less@4.2.2)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1))
       unplugin-vue-inspector:
         specifier: ^2.2.0
-        version: 2.2.0(vite@5.2.8(@types/node@20.14.12)(less@4.2.0)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1))
+        version: 2.2.0(vite@5.2.8(@types/node@20.14.12)(less@4.2.2)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1))
       vite-plugin-compression:
         specifier: ^0.5.1
-        version: 0.5.1(vite@5.2.8(@types/node@20.14.12)(less@4.2.0)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1))
+        version: 0.5.1(vite@5.2.8(@types/node@20.14.12)(less@4.2.2)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1))
       vite-plugin-html:
         specifier: ^3.2.2
-        version: 3.2.2(vite@5.2.8(@types/node@20.14.12)(less@4.2.0)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1))
+        version: 3.2.2(vite@5.2.8(@types/node@20.14.12)(less@4.2.2)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1))
       vite-plugin-inspect:
         specifier: ^0.8.7
-        version: 0.8.7(rollup@4.14.1)(vite@5.2.8(@types/node@20.14.12)(less@4.2.0)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1))
+        version: 0.8.7(rollup@4.14.1)(vite@5.2.8(@types/node@20.14.12)(less@4.2.2)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1))
       vite-plugin-mkcert:
         specifier: ^1.17.6
-        version: 1.17.6(vite@5.2.8(@types/node@20.14.12)(less@4.2.0)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1))
+        version: 1.17.6(vite@5.2.8(@types/node@20.14.12)(less@4.2.2)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1))
 
   examples/x-data-spreadsheet:
     dependencies:
@@ -2657,6 +2657,9 @@ importers:
       '@farmfe/plugin-react':
         specifier: workspace:*
         version: link:../../rust-plugins/react
+      '@jridgewell/source-map':
+        specifier: ^0.3.6
+        version: 0.3.6
       '@types/react':
         specifier: '18'
         version: 18.2.35
@@ -2666,6 +2669,9 @@ importers:
       autoprefixer:
         specifier: ^10.4.14
         version: 10.4.16(postcss@8.4.35)
+      less:
+        specifier: ^4.2.2
+        version: 4.2.2
       postcss:
         specifier: ^8.4.31
         version: 8.4.35
@@ -2695,7 +2701,7 @@ importers:
         version: 0.17.0
       vite-plugin-pages:
         specifier: ^0.32.4
-        version: 0.32.4(@vue/compiler-sfc@3.4.35)(react-router@6.22.3(react@18.2.0))(vite@5.2.8(@types/node@20.14.12)(less@4.2.0)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1))
+        version: 0.32.4(@vue/compiler-sfc@3.4.35)(react-router@6.22.3(react@18.2.0))(vite@5.2.8(@types/node@20.14.12)(less@4.2.2)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1))
 
   js-plugins/vue:
     devDependencies:
@@ -14394,6 +14400,11 @@ packages:
     engines: {node: '>=6'}
     hasBin: true
 
+  less@4.2.2:
+    resolution: {integrity: sha512-tkuLHQlvWUTeQ3doAqnHbNn8T6WX1KA8yvbKG9x4VtKtIjHsVKQZCH11zRgAfbDAXC2UNIg/K9BYAAcEzUIrNg==}
+    engines: {node: '>=6'}
+    hasBin: true
+
   leva@0.9.35:
     resolution: {integrity: sha512-sp/ZbHGrrzM+eq+wIAc9X7C5qFagNERYkwaulKI/xy0XrDPV67jLUSSqTCFSoSc0Uk96j3oephYoO/6I8mZNuw==}
     peerDependencies:
@@ -20823,12 +20834,12 @@ snapshots:
       '@antv/color-util': 2.0.6
       '@antv/scale': 0.3.18
       '@antv/util': 2.0.17
-      tslib: 2.6.3
+      tslib: 2.8.1
 
   '@antv/color-util@2.0.6':
     dependencies:
       '@antv/util': 2.0.17
-      tslib: 2.6.3
+      tslib: 2.8.1
 
   '@antv/component@0.8.35':
     dependencies:
@@ -20846,7 +20857,7 @@ snapshots:
     dependencies:
       '@antv/matrix-util': 3.1.0-beta.3
       '@antv/util': 2.0.17
-      tslib: 2.6.3
+      tslib: 2.8.1
 
   '@antv/data-set@0.11.8':
     dependencies:
@@ -20869,7 +20880,7 @@ snapshots:
 
   '@antv/dom-util@2.0.4':
     dependencies:
-      tslib: 2.6.3
+      tslib: 2.8.1
 
   '@antv/event-emitter@0.1.3': {}
 
@@ -20885,7 +20896,7 @@ snapshots:
       d3-interpolate: 3.0.1
       d3-timer: 1.0.10
       detect-browser: 5.3.0
-      tslib: 2.6.3
+      tslib: 2.8.1
 
   '@antv/g-canvas@0.5.14':
     dependencies:
@@ -20895,7 +20906,7 @@ snapshots:
       '@antv/path-util': 2.0.15
       '@antv/util': 2.0.17
       gl-matrix: 3.4.3
-      tslib: 2.6.3
+      tslib: 2.8.1
 
   '@antv/g-math@0.1.9':
     dependencies:
@@ -20908,7 +20919,7 @@ snapshots:
       '@antv/g-math': 0.1.9
       '@antv/util': 2.0.17
       detect-browser: 5.3.0
-      tslib: 2.6.3
+      tslib: 2.8.1
 
   '@antv/g2@4.1.32':
     dependencies:
@@ -20953,19 +20964,19 @@ snapshots:
     dependencies:
       '@antv/util': 2.0.17
       gl-matrix: 3.4.3
-      tslib: 2.6.3
+      tslib: 2.8.1
 
   '@antv/path-util@2.0.15':
     dependencies:
       '@antv/matrix-util': 3.0.4
       '@antv/util': 2.0.17
-      tslib: 2.6.3
+      tslib: 2.8.1
 
   '@antv/scale@0.3.18':
     dependencies:
       '@antv/util': 2.0.17
       fecha: 4.2.3
-      tslib: 2.6.3
+      tslib: 2.8.1
 
   '@antv/util@2.0.17':
     dependencies:
@@ -22978,11 +22989,11 @@ snapshots:
     transitivePeerDependencies:
       - debug
 
-  '@codspeed/vitest-plugin@3.1.1(vite@5.2.8(@types/node@18.19.67)(less@4.2.0)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1))(vitest@2.0.4(@types/node@18.19.67)(less@4.2.0)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1))':
+  '@codspeed/vitest-plugin@3.1.1(vite@5.2.8(@types/node@18.19.67)(less@4.2.2)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1))(vitest@2.0.4(@types/node@18.19.67)(less@4.2.2)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1))':
     dependencies:
       '@codspeed/core': 3.1.1
-      vite: 5.2.8(@types/node@18.19.67)(less@4.2.0)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1)
-      vitest: 2.0.4(@types/node@18.19.67)(less@4.2.0)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1)
+      vite: 5.2.8(@types/node@18.19.67)(less@4.2.2)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1)
+      vitest: 2.0.4(@types/node@18.19.67)(less@4.2.2)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1)
     transitivePeerDependencies:
       - debug
 
@@ -25553,7 +25564,7 @@ snapshots:
 
   '@module-federation/sdk@0.6.9': {}
 
-  '@module-federation/vite@1.1.1(@types/node@20.14.12)(less@4.2.0)(lightningcss@1.28.2)(rollup@4.14.1)(sass@1.74.1)(terser@5.31.1)':
+  '@module-federation/vite@1.1.1(@types/node@20.14.12)(less@4.2.2)(lightningcss@1.28.2)(rollup@4.14.1)(sass@1.74.1)(terser@5.31.1)':
     dependencies:
       '@module-federation/runtime': 0.6.9
       '@rollup/pluginutils': 5.1.0(rollup@4.14.1)
@@ -25561,7 +25572,7 @@ snapshots:
       estree-walker: 2.0.2
       magic-string: 0.30.11
       pathe: 1.1.2
-      vitest: 2.1.2(@types/node@20.14.12)(less@4.2.0)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1)
+      vitest: 2.1.2(@types/node@20.14.12)(less@4.2.2)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1)
     transitivePeerDependencies:
       - '@edge-runtime/vm'
       - '@types/node'
@@ -28838,25 +28849,25 @@ snapshots:
     dependencies:
       react: 18.2.0
 
-  '@sveltejs/vite-plugin-svelte-inspector@3.0.1(@sveltejs/vite-plugin-svelte@4.0.1(svelte@5.2.1)(vite@5.2.8(@types/node@20.14.12)(less@4.2.0)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1)))(svelte@5.2.1)(vite@5.2.8(@types/node@20.14.12)(less@4.2.0)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1))':
+  '@sveltejs/vite-plugin-svelte-inspector@3.0.1(@sveltejs/vite-plugin-svelte@4.0.1(svelte@5.2.1)(vite@5.2.8(@types/node@20.14.12)(less@4.2.2)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1)))(svelte@5.2.1)(vite@5.2.8(@types/node@20.14.12)(less@4.2.2)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1))':
     dependencies:
-      '@sveltejs/vite-plugin-svelte': 4.0.1(svelte@5.2.1)(vite@5.2.8(@types/node@20.14.12)(less@4.2.0)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1))
+      '@sveltejs/vite-plugin-svelte': 4.0.1(svelte@5.2.1)(vite@5.2.8(@types/node@20.14.12)(less@4.2.2)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1))
       debug: 4.3.7
       svelte: 5.2.1
-      vite: 5.2.8(@types/node@20.14.12)(less@4.2.0)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1)
+      vite: 5.2.8(@types/node@20.14.12)(less@4.2.2)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1)
     transitivePeerDependencies:
       - supports-color
 
-  '@sveltejs/vite-plugin-svelte@4.0.1(svelte@5.2.1)(vite@5.2.8(@types/node@20.14.12)(less@4.2.0)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1))':
+  '@sveltejs/vite-plugin-svelte@4.0.1(svelte@5.2.1)(vite@5.2.8(@types/node@20.14.12)(less@4.2.2)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1))':
     dependencies:
-      '@sveltejs/vite-plugin-svelte-inspector': 3.0.1(@sveltejs/vite-plugin-svelte@4.0.1(svelte@5.2.1)(vite@5.2.8(@types/node@20.14.12)(less@4.2.0)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1)))(svelte@5.2.1)(vite@5.2.8(@types/node@20.14.12)(less@4.2.0)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1))
+      '@sveltejs/vite-plugin-svelte-inspector': 3.0.1(@sveltejs/vite-plugin-svelte@4.0.1(svelte@5.2.1)(vite@5.2.8(@types/node@20.14.12)(less@4.2.2)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1)))(svelte@5.2.1)(vite@5.2.8(@types/node@20.14.12)(less@4.2.2)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1))
       debug: 4.3.7
       deepmerge: 4.3.1
       kleur: 4.1.5
       magic-string: 0.30.12
       svelte: 5.2.1
-      vite: 5.2.8(@types/node@20.14.12)(less@4.2.0)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1)
-      vitefu: 1.0.3(vite@5.2.8(@types/node@20.14.12)(less@4.2.0)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1))
+      vite: 5.2.8(@types/node@20.14.12)(less@4.2.2)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1)
+      vitefu: 1.0.3(vite@5.2.8(@types/node@20.14.12)(less@4.2.2)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1))
     transitivePeerDependencies:
       - supports-color
 
@@ -30636,24 +30647,24 @@ snapshots:
 
   '@ungap/structured-clone@1.2.0': {}
 
-  '@unocss/astro@0.62.2(rollup@4.14.1)(vite@5.2.8(@types/node@20.14.12)(less@4.2.0)(lightningcss@1.28.2)(sass@1.69.5)(terser@5.31.1))':
+  '@unocss/astro@0.62.2(rollup@4.14.1)(vite@5.2.8(@types/node@20.14.12)(less@4.2.2)(lightningcss@1.28.2)(sass@1.69.5)(terser@5.31.1))':
     dependencies:
       '@unocss/core': 0.62.2
       '@unocss/reset': 0.62.2
-      '@unocss/vite': 0.62.2(rollup@4.14.1)(vite@5.2.8(@types/node@20.14.12)(less@4.2.0)(lightningcss@1.28.2)(sass@1.69.5)(terser@5.31.1))
+      '@unocss/vite': 0.62.2(rollup@4.14.1)(vite@5.2.8(@types/node@20.14.12)(less@4.2.2)(lightningcss@1.28.2)(sass@1.69.5)(terser@5.31.1))
     optionalDependencies:
-      vite: 5.2.8(@types/node@20.14.12)(less@4.2.0)(lightningcss@1.28.2)(sass@1.69.5)(terser@5.31.1)
+      vite: 5.2.8(@types/node@20.14.12)(less@4.2.2)(lightningcss@1.28.2)(sass@1.69.5)(terser@5.31.1)
     transitivePeerDependencies:
       - rollup
       - supports-color
 
-  '@unocss/astro@0.62.2(rollup@4.14.1)(vite@5.2.8(@types/node@20.14.12)(less@4.2.0)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1))':
+  '@unocss/astro@0.62.2(rollup@4.14.1)(vite@5.2.8(@types/node@20.14.12)(less@4.2.2)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1))':
     dependencies:
       '@unocss/core': 0.62.2
       '@unocss/reset': 0.62.2
-      '@unocss/vite': 0.62.2(rollup@4.14.1)(vite@5.2.8(@types/node@20.14.12)(less@4.2.0)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1))
+      '@unocss/vite': 0.62.2(rollup@4.14.1)(vite@5.2.8(@types/node@20.14.12)(less@4.2.2)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1))
     optionalDependencies:
-      vite: 5.2.8(@types/node@20.14.12)(less@4.2.0)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1)
+      vite: 5.2.8(@types/node@20.14.12)(less@4.2.2)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1)
     transitivePeerDependencies:
       - rollup
       - supports-color
@@ -30802,7 +30813,7 @@ snapshots:
     dependencies:
       '@unocss/core': 0.62.2
 
-  '@unocss/vite@0.62.2(rollup@4.14.1)(vite@5.2.8(@types/node@20.14.12)(less@4.2.0)(lightningcss@1.28.2)(sass@1.69.5)(terser@5.31.1))':
+  '@unocss/vite@0.62.2(rollup@4.14.1)(vite@5.2.8(@types/node@20.14.12)(less@4.2.2)(lightningcss@1.28.2)(sass@1.69.5)(terser@5.31.1))':
     dependencies:
       '@ampproject/remapping': 2.3.0
       '@rollup/pluginutils': 5.1.0(rollup@4.14.1)
@@ -30814,12 +30825,12 @@ snapshots:
       chokidar: 3.6.0
       magic-string: 0.30.12
       tinyglobby: 0.2.2
-      vite: 5.2.8(@types/node@20.14.12)(less@4.2.0)(lightningcss@1.28.2)(sass@1.69.5)(terser@5.31.1)
+      vite: 5.2.8(@types/node@20.14.12)(less@4.2.2)(lightningcss@1.28.2)(sass@1.69.5)(terser@5.31.1)
     transitivePeerDependencies:
       - rollup
       - supports-color
 
-  '@unocss/vite@0.62.2(rollup@4.14.1)(vite@5.2.8(@types/node@20.14.12)(less@4.2.0)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1))':
+  '@unocss/vite@0.62.2(rollup@4.14.1)(vite@5.2.8(@types/node@20.14.12)(less@4.2.2)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1))':
     dependencies:
       '@ampproject/remapping': 2.3.0
       '@rollup/pluginutils': 5.1.0(rollup@4.14.1)
@@ -30831,7 +30842,7 @@ snapshots:
       chokidar: 3.6.0
       magic-string: 0.30.12
       tinyglobby: 0.2.2
-      vite: 5.2.8(@types/node@20.14.12)(less@4.2.0)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1)
+      vite: 5.2.8(@types/node@20.14.12)(less@4.2.2)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1)
     transitivePeerDependencies:
       - rollup
       - supports-color
@@ -30972,7 +30983,7 @@ snapshots:
     transitivePeerDependencies:
       - babel-plugin-macros
 
-  '@vanilla-extract/integration@7.1.7(@types/node@20.14.12)(babel-plugin-macros@3.1.0)(less@4.2.0)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1)':
+  '@vanilla-extract/integration@7.1.7(@types/node@20.14.12)(babel-plugin-macros@3.1.0)(less@4.2.2)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1)':
     dependencies:
       '@babel/core': 7.24.3
       '@babel/plugin-syntax-typescript': 7.24.1(@babel/core@7.24.3)
@@ -30984,8 +30995,8 @@ snapshots:
       find-up: 5.0.0
       javascript-stringify: 2.1.0
       mlly: 1.4.2
-      vite: 5.2.8(@types/node@20.14.12)(less@4.2.0)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1)
-      vite-node: 1.4.0(@types/node@20.14.12)(less@4.2.0)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1)
+      vite: 5.2.8(@types/node@20.14.12)(less@4.2.2)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1)
+      vite-node: 1.4.0(@types/node@20.14.12)(less@4.2.2)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1)
     transitivePeerDependencies:
       - '@types/node'
       - babel-plugin-macros
@@ -30999,10 +31010,10 @@ snapshots:
 
   '@vanilla-extract/private@1.0.5': {}
 
-  '@vanilla-extract/vite-plugin@4.0.13(@types/node@20.14.12)(babel-plugin-macros@3.1.0)(less@4.2.0)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1)(vite@5.2.8(@types/node@20.14.12)(less@4.2.0)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1))':
+  '@vanilla-extract/vite-plugin@4.0.13(@types/node@20.14.12)(babel-plugin-macros@3.1.0)(less@4.2.2)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1)(vite@5.2.8(@types/node@20.14.12)(less@4.2.2)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1))':
     dependencies:
-      '@vanilla-extract/integration': 7.1.7(@types/node@20.14.12)(babel-plugin-macros@3.1.0)(less@4.2.0)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1)
-      vite: 5.2.8(@types/node@20.14.12)(less@4.2.0)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1)
+      '@vanilla-extract/integration': 7.1.7(@types/node@20.14.12)(babel-plugin-macros@3.1.0)(less@4.2.2)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1)
+      vite: 5.2.8(@types/node@20.14.12)(less@4.2.2)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1)
     transitivePeerDependencies:
       - '@types/node'
       - babel-plugin-macros
@@ -31014,77 +31025,77 @@ snapshots:
       - supports-color
       - terser
 
-  '@vitejs/plugin-vue-jsx@3.1.0(vite@5.2.8(@types/node@20.14.12)(less@4.2.0)(lightningcss@1.28.2)(sass@1.69.5)(terser@5.31.1))(vue@3.3.7(typescript@5.6.3))':
+  '@vitejs/plugin-vue-jsx@3.1.0(vite@5.2.8(@types/node@20.14.12)(less@4.2.2)(lightningcss@1.28.2)(sass@1.69.5)(terser@5.31.1))(vue@3.3.7(typescript@5.6.3))':
     dependencies:
       '@babel/core': 7.24.3
       '@babel/plugin-transform-typescript': 7.24.1(@babel/core@7.24.3)
       '@vue/babel-plugin-jsx': 1.2.2(@babel/core@7.24.3)
-      vite: 5.2.8(@types/node@20.14.12)(less@4.2.0)(lightningcss@1.28.2)(sass@1.69.5)(terser@5.31.1)
+      vite: 5.2.8(@types/node@20.14.12)(less@4.2.2)(lightningcss@1.28.2)(sass@1.69.5)(terser@5.31.1)
       vue: 3.3.7(typescript@5.6.3)
     transitivePeerDependencies:
       - supports-color
 
-  '@vitejs/plugin-vue-jsx@3.1.0(vite@5.2.8(@types/node@20.14.12)(less@4.2.0)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1))(vue@3.3.7(typescript@5.6.3))':
+  '@vitejs/plugin-vue-jsx@3.1.0(vite@5.2.8(@types/node@20.14.12)(less@4.2.2)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1))(vue@3.3.7(typescript@5.6.3))':
     dependencies:
       '@babel/core': 7.24.3
       '@babel/plugin-transform-typescript': 7.24.1(@babel/core@7.24.3)
       '@vue/babel-plugin-jsx': 1.2.2(@babel/core@7.24.3)
-      vite: 5.2.8(@types/node@20.14.12)(less@4.2.0)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1)
+      vite: 5.2.8(@types/node@20.14.12)(less@4.2.2)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1)
       vue: 3.3.7(typescript@5.6.3)
     transitivePeerDependencies:
       - supports-color
 
-  '@vitejs/plugin-vue-jsx@3.1.0(vite@5.2.8(@types/node@20.14.12)(less@4.2.0)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1))(vue@3.4.27(typescript@5.6.3))':
+  '@vitejs/plugin-vue-jsx@3.1.0(vite@5.2.8(@types/node@20.14.12)(less@4.2.2)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1))(vue@3.4.27(typescript@5.6.3))':
     dependencies:
       '@babel/core': 7.24.3
       '@babel/plugin-transform-typescript': 7.24.1(@babel/core@7.24.3)
       '@vue/babel-plugin-jsx': 1.2.2(@babel/core@7.24.3)
-      vite: 5.2.8(@types/node@20.14.12)(less@4.2.0)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1)
+      vite: 5.2.8(@types/node@20.14.12)(less@4.2.2)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1)
       vue: 3.4.27(typescript@5.6.3)
     transitivePeerDependencies:
       - supports-color
 
-  '@vitejs/plugin-vue2@2.3.1(vite@5.2.8(@types/node@20.14.12)(less@4.2.0)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1))(vue@2.7.16)':
+  '@vitejs/plugin-vue2@2.3.1(vite@5.2.8(@types/node@20.14.12)(less@4.2.2)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1))(vue@2.7.16)':
     dependencies:
-      vite: 5.2.8(@types/node@20.14.12)(less@4.2.0)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1)
+      vite: 5.2.8(@types/node@20.14.12)(less@4.2.2)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1)
       vue: 2.7.16
 
-  '@vitejs/plugin-vue@4.4.0(vite@5.2.8(@types/node@20.14.12)(less@4.2.0)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1))(vue@3.3.12(typescript@5.6.3))':
+  '@vitejs/plugin-vue@4.4.0(vite@5.2.8(@types/node@20.14.12)(less@4.2.2)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1))(vue@3.3.12(typescript@5.6.3))':
     dependencies:
-      vite: 5.2.8(@types/node@20.14.12)(less@4.2.0)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1)
+      vite: 5.2.8(@types/node@20.14.12)(less@4.2.2)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1)
       vue: 3.3.12(typescript@5.6.3)
 
-  '@vitejs/plugin-vue@5.0.3(vite@5.2.8(@types/node@20.14.12)(less@4.2.0)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1))(vue@3.4.15(typescript@5.6.3))':
+  '@vitejs/plugin-vue@5.0.3(vite@5.2.8(@types/node@20.14.12)(less@4.2.2)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1))(vue@3.4.15(typescript@5.6.3))':
     dependencies:
-      vite: 5.2.8(@types/node@20.14.12)(less@4.2.0)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1)
+      vite: 5.2.8(@types/node@20.14.12)(less@4.2.2)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1)
       vue: 3.4.15(typescript@5.6.3)
 
-  '@vitejs/plugin-vue@5.0.4(vite@5.2.8(@types/node@20.14.12)(less@4.2.0)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1))(vue@3.3.7(typescript@5.6.3))':
+  '@vitejs/plugin-vue@5.0.4(vite@5.2.8(@types/node@20.14.12)(less@4.2.2)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1))(vue@3.3.7(typescript@5.6.3))':
     dependencies:
-      vite: 5.2.8(@types/node@20.14.12)(less@4.2.0)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1)
+      vite: 5.2.8(@types/node@20.14.12)(less@4.2.2)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1)
       vue: 3.3.7(typescript@5.6.3)
 
-  '@vitejs/plugin-vue@5.0.4(vite@5.2.8(@types/node@20.14.12)(less@4.2.0)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1))(vue@3.4.27(typescript@5.6.3))':
+  '@vitejs/plugin-vue@5.0.4(vite@5.2.8(@types/node@20.14.12)(less@4.2.2)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1))(vue@3.4.27(typescript@5.6.3))':
     dependencies:
-      vite: 5.2.8(@types/node@20.14.12)(less@4.2.0)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1)
+      vite: 5.2.8(@types/node@20.14.12)(less@4.2.2)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1)
       vue: 3.4.27(typescript@5.6.3)
 
-  '@vitejs/plugin-vue@5.1.2(vite@5.2.8(@types/node@20.14.12)(less@4.2.0)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1))(vue@3.4.35(typescript@5.6.3))':
+  '@vitejs/plugin-vue@5.1.2(vite@5.2.8(@types/node@20.14.12)(less@4.2.2)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1))(vue@3.4.35(typescript@5.6.3))':
     dependencies:
-      vite: 5.2.8(@types/node@20.14.12)(less@4.2.0)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1)
+      vite: 5.2.8(@types/node@20.14.12)(less@4.2.2)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1)
       vue: 3.4.35(typescript@5.6.3)
 
-  '@vitejs/plugin-vue@5.1.4(vite@5.2.8(@types/node@20.14.12)(less@4.2.0)(lightningcss@1.28.2)(sass@1.69.5)(terser@5.31.1))(vue@3.3.7(typescript@5.6.3))':
+  '@vitejs/plugin-vue@5.1.4(vite@5.2.8(@types/node@20.14.12)(less@4.2.2)(lightningcss@1.28.2)(sass@1.69.5)(terser@5.31.1))(vue@3.3.7(typescript@5.6.3))':
     dependencies:
-      vite: 5.2.8(@types/node@20.14.12)(less@4.2.0)(lightningcss@1.28.2)(sass@1.69.5)(terser@5.31.1)
+      vite: 5.2.8(@types/node@20.14.12)(less@4.2.2)(lightningcss@1.28.2)(sass@1.69.5)(terser@5.31.1)
       vue: 3.3.7(typescript@5.6.3)
 
-  '@vitejs/plugin-vue@5.1.4(vite@5.2.8(@types/node@20.14.12)(less@4.2.0)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1))(vue@3.4.35(typescript@5.6.3))':
+  '@vitejs/plugin-vue@5.1.4(vite@5.2.8(@types/node@20.14.12)(less@4.2.2)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1))(vue@3.4.35(typescript@5.6.3))':
     dependencies:
-      vite: 5.2.8(@types/node@20.14.12)(less@4.2.0)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1)
+      vite: 5.2.8(@types/node@20.14.12)(less@4.2.2)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1)
       vue: 3.4.35(typescript@5.6.3)
 
-  '@vitest/coverage-v8@2.0.4(vitest@2.0.4(@types/node@18.19.67)(less@4.2.0)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1))':
+  '@vitest/coverage-v8@2.0.4(vitest@2.0.4(@types/node@18.19.67)(less@4.2.2)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1))':
     dependencies:
       '@ampproject/remapping': 2.3.0
       '@bcoe/v8-coverage': 0.2.3
@@ -31098,7 +31109,7 @@ snapshots:
       std-env: 3.7.0
       test-exclude: 7.0.1
       tinyrainbow: 1.2.0
-      vitest: 2.0.4(@types/node@18.19.67)(less@4.2.0)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1)
+      vitest: 2.0.4(@types/node@18.19.67)(less@4.2.2)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1)
     transitivePeerDependencies:
       - supports-color
 
@@ -31116,13 +31127,13 @@ snapshots:
       chai: 5.1.1
       tinyrainbow: 1.2.0
 
-  '@vitest/mocker@2.1.2(vite@5.2.8(@types/node@20.14.12)(less@4.2.0)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1))':
+  '@vitest/mocker@2.1.2(vite@5.2.8(@types/node@20.14.12)(less@4.2.2)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1))':
     dependencies:
       '@vitest/spy': 2.1.2
       estree-walker: 3.0.3
       magic-string: 0.30.12
     optionalDependencies:
-      vite: 5.2.8(@types/node@20.14.12)(less@4.2.0)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1)
+      vite: 5.2.8(@types/node@20.14.12)(less@4.2.2)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1)
 
   '@vitest/pretty-format@2.0.4':
     dependencies:
@@ -32949,7 +32960,7 @@ snapshots:
   camel-case@4.1.2:
     dependencies:
       pascal-case: 3.1.2
-      tslib: 2.6.3
+      tslib: 2.8.1
 
   camelcase-css@2.0.1: {}
 
@@ -35331,7 +35342,7 @@ snapshots:
 
   file-selector@0.5.0:
     dependencies:
-      tslib: 2.6.3
+      tslib: 2.8.1
 
   file-size@1.0.0: {}
 
@@ -35463,7 +35474,7 @@ snapshots:
 
   focus-lock@1.0.0:
     dependencies:
-      tslib: 2.6.3
+      tslib: 2.8.1
 
   focus-trap@7.6.0:
     dependencies:
@@ -37326,6 +37337,22 @@ snapshots:
       copy-anything: 2.0.6
       parse-node-version: 1.0.1
       tslib: 2.6.2
+    optionalDependencies:
+      errno: 0.1.8
+      graceful-fs: 4.2.11
+      image-size: 0.5.5
+      make-dir: 2.1.0
+      mime: 1.6.0
+      needle: 3.2.0
+      source-map: 0.6.1
+    transitivePeerDependencies:
+      - supports-color
+
+  less@4.2.2:
+    dependencies:
+      copy-anything: 2.0.6
+      parse-node-version: 1.0.1
+      tslib: 2.8.1
     optionalDependencies:
       errno: 0.1.8
       graceful-fs: 4.2.11
@@ -39392,7 +39419,7 @@ snapshots:
   param-case@3.0.4:
     dependencies:
       dot-case: 3.0.4
-      tslib: 2.6.3
+      tslib: 2.8.1
 
   parchment@3.0.0: {}
 
@@ -43572,9 +43599,9 @@ snapshots:
 
   universalify@2.0.1: {}
 
-  unocss@0.62.2(postcss@8.4.32)(rollup@4.14.1)(vite@5.2.8(@types/node@20.14.12)(less@4.2.0)(lightningcss@1.28.2)(sass@1.69.5)(terser@5.31.1)):
+  unocss@0.62.2(postcss@8.4.32)(rollup@4.14.1)(vite@5.2.8(@types/node@20.14.12)(less@4.2.2)(lightningcss@1.28.2)(sass@1.69.5)(terser@5.31.1)):
     dependencies:
-      '@unocss/astro': 0.62.2(rollup@4.14.1)(vite@5.2.8(@types/node@20.14.12)(less@4.2.0)(lightningcss@1.28.2)(sass@1.69.5)(terser@5.31.1))
+      '@unocss/astro': 0.62.2(rollup@4.14.1)(vite@5.2.8(@types/node@20.14.12)(less@4.2.2)(lightningcss@1.28.2)(sass@1.69.5)(terser@5.31.1))
       '@unocss/cli': 0.62.2(rollup@4.14.1)
       '@unocss/core': 0.62.2
       '@unocss/extractor-arbitrary-variants': 0.62.2
@@ -43593,17 +43620,17 @@ snapshots:
       '@unocss/transformer-compile-class': 0.62.2
       '@unocss/transformer-directives': 0.62.2
       '@unocss/transformer-variant-group': 0.62.2
-      '@unocss/vite': 0.62.2(rollup@4.14.1)(vite@5.2.8(@types/node@20.14.12)(less@4.2.0)(lightningcss@1.28.2)(sass@1.69.5)(terser@5.31.1))
+      '@unocss/vite': 0.62.2(rollup@4.14.1)(vite@5.2.8(@types/node@20.14.12)(less@4.2.2)(lightningcss@1.28.2)(sass@1.69.5)(terser@5.31.1))
     optionalDependencies:
-      vite: 5.2.8(@types/node@20.14.12)(less@4.2.0)(lightningcss@1.28.2)(sass@1.69.5)(terser@5.31.1)
+      vite: 5.2.8(@types/node@20.14.12)(less@4.2.2)(lightningcss@1.28.2)(sass@1.69.5)(terser@5.31.1)
     transitivePeerDependencies:
       - postcss
       - rollup
       - supports-color
 
-  unocss@0.62.2(postcss@8.4.47)(rollup@4.14.1)(vite@5.2.8(@types/node@20.14.12)(less@4.2.0)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1)):
+  unocss@0.62.2(postcss@8.4.47)(rollup@4.14.1)(vite@5.2.8(@types/node@20.14.12)(less@4.2.2)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1)):
     dependencies:
-      '@unocss/astro': 0.62.2(rollup@4.14.1)(vite@5.2.8(@types/node@20.14.12)(less@4.2.0)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1))
+      '@unocss/astro': 0.62.2(rollup@4.14.1)(vite@5.2.8(@types/node@20.14.12)(less@4.2.2)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1))
       '@unocss/cli': 0.62.2(rollup@4.14.1)
       '@unocss/core': 0.62.2
       '@unocss/extractor-arbitrary-variants': 0.62.2
@@ -43622,9 +43649,9 @@ snapshots:
       '@unocss/transformer-compile-class': 0.62.2
       '@unocss/transformer-directives': 0.62.2
       '@unocss/transformer-variant-group': 0.62.2
-      '@unocss/vite': 0.62.2(rollup@4.14.1)(vite@5.2.8(@types/node@20.14.12)(less@4.2.0)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1))
+      '@unocss/vite': 0.62.2(rollup@4.14.1)(vite@5.2.8(@types/node@20.14.12)(less@4.2.2)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1))
     optionalDependencies:
-      vite: 5.2.8(@types/node@20.14.12)(less@4.2.0)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1)
+      vite: 5.2.8(@types/node@20.14.12)(less@4.2.2)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1)
     transitivePeerDependencies:
       - postcss
       - rollup
@@ -43694,11 +43721,11 @@ snapshots:
       - rollup
       - supports-color
 
-  unplugin-vue-inspector@2.2.0(vite@5.2.8(@types/node@20.14.12)(less@4.2.0)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1)):
+  unplugin-vue-inspector@2.2.0(vite@5.2.8(@types/node@20.14.12)(less@4.2.2)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1)):
     dependencies:
       kolorist: 1.8.0
       unplugin: 1.10.1
-      vite-plugin-vue-inspector: 5.2.0(vite@5.2.8(@types/node@20.14.12)(less@4.2.0)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1))
+      vite-plugin-vue-inspector: 5.2.0(vite@5.2.8(@types/node@20.14.12)(less@4.2.2)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1))
     transitivePeerDependencies:
       - supports-color
       - vite
@@ -43823,7 +43850,7 @@ snapshots:
   use-callback-ref@1.3.0(@types/react@18.2.35)(react@17.0.2):
     dependencies:
       react: 17.0.2
-      tslib: 2.6.3
+      tslib: 2.8.1
     optionalDependencies:
       '@types/react': 18.2.35
 
@@ -43835,7 +43862,7 @@ snapshots:
     dependencies:
       detect-node-es: 1.1.0
       react: 17.0.2
-      tslib: 2.6.3
+      tslib: 2.8.1
     optionalDependencies:
       '@types/react': 18.2.35
 
@@ -43942,13 +43969,13 @@ snapshots:
 
   vite-bundle-analyzer@0.17.0: {}
 
-  vite-node@1.4.0(@types/node@20.14.12)(less@4.2.0)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1):
+  vite-node@1.4.0(@types/node@20.14.12)(less@4.2.2)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1):
     dependencies:
       cac: 6.7.14
       debug: 4.4.0
       pathe: 1.1.1
       picocolors: 1.1.1
-      vite: 5.2.8(@types/node@20.14.12)(less@4.2.0)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1)
+      vite: 5.2.8(@types/node@20.14.12)(less@4.2.2)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1)
     transitivePeerDependencies:
       - '@types/node'
       - less
@@ -43959,13 +43986,13 @@ snapshots:
       - supports-color
       - terser
 
-  vite-node@2.0.4(@types/node@18.19.67)(less@4.2.0)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1):
+  vite-node@2.0.4(@types/node@18.19.67)(less@4.2.2)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1):
     dependencies:
       cac: 6.7.14
       debug: 4.3.7
       pathe: 1.1.2
       tinyrainbow: 1.2.0
-      vite: 5.2.8(@types/node@18.19.67)(less@4.2.0)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1)
+      vite: 5.2.8(@types/node@18.19.67)(less@4.2.2)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1)
     transitivePeerDependencies:
       - '@types/node'
       - less
@@ -43976,12 +44003,12 @@ snapshots:
       - supports-color
       - terser
 
-  vite-node@2.1.2(@types/node@20.14.12)(less@4.2.0)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1):
+  vite-node@2.1.2(@types/node@20.14.12)(less@4.2.2)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1):
     dependencies:
       cac: 6.7.14
       debug: 4.4.0
       pathe: 1.1.2
-      vite: 5.2.8(@types/node@20.14.12)(less@4.2.0)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1)
+      vite: 5.2.8(@types/node@20.14.12)(less@4.2.2)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1)
     transitivePeerDependencies:
       - '@types/node'
       - less
@@ -43992,16 +44019,16 @@ snapshots:
       - supports-color
       - terser
 
-  vite-plugin-compression@0.5.1(vite@5.2.8(@types/node@20.14.12)(less@4.2.0)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1)):
+  vite-plugin-compression@0.5.1(vite@5.2.8(@types/node@20.14.12)(less@4.2.2)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1)):
     dependencies:
       chalk: 4.1.2
       debug: 4.3.7
       fs-extra: 10.1.0
-      vite: 5.2.8(@types/node@20.14.12)(less@4.2.0)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1)
+      vite: 5.2.8(@types/node@20.14.12)(less@4.2.2)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1)
     transitivePeerDependencies:
       - supports-color
 
-  vite-plugin-html@3.2.2(vite@5.2.8(@types/node@20.14.12)(less@4.2.0)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1)):
+  vite-plugin-html@3.2.2(vite@5.2.8(@types/node@20.14.12)(less@4.2.2)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1)):
     dependencies:
       '@rollup/pluginutils': 4.2.1
       colorette: 2.0.20
@@ -44015,9 +44042,9 @@ snapshots:
       html-minifier-terser: 6.1.0
       node-html-parser: 5.4.2
       pathe: 0.2.0
-      vite: 5.2.8(@types/node@20.14.12)(less@4.2.0)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1)
+      vite: 5.2.8(@types/node@20.14.12)(less@4.2.2)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1)
 
-  vite-plugin-inspect@0.8.7(rollup@4.14.1)(vite@5.2.8(@types/node@20.14.12)(less@4.2.0)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1)):
+  vite-plugin-inspect@0.8.7(rollup@4.14.1)(vite@5.2.8(@types/node@20.14.12)(less@4.2.2)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1)):
     dependencies:
       '@antfu/utils': 0.7.10
       '@rollup/pluginutils': 5.1.0(rollup@4.14.1)
@@ -44028,22 +44055,22 @@ snapshots:
       perfect-debounce: 1.0.0
       picocolors: 1.1.0
       sirv: 2.0.4
-      vite: 5.2.8(@types/node@20.14.12)(less@4.2.0)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1)
+      vite: 5.2.8(@types/node@20.14.12)(less@4.2.2)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1)
     transitivePeerDependencies:
       - rollup
       - supports-color
 
-  vite-plugin-mkcert@1.17.6(vite@5.2.8(@types/node@20.14.12)(less@4.2.0)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1)):
+  vite-plugin-mkcert@1.17.6(vite@5.2.8(@types/node@20.14.12)(less@4.2.2)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1)):
     dependencies:
       '@octokit/rest': 20.1.1
       axios: 1.7.7(debug@4.3.7)
       debug: 4.3.7
       picocolors: 1.1.0
-      vite: 5.2.8(@types/node@20.14.12)(less@4.2.0)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1)
+      vite: 5.2.8(@types/node@20.14.12)(less@4.2.2)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1)
     transitivePeerDependencies:
       - supports-color
 
-  vite-plugin-pages@0.32.0(@vue/compiler-sfc@3.4.35)(vite@5.2.8(@types/node@20.14.12)(less@4.2.0)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1)):
+  vite-plugin-pages@0.32.0(@vue/compiler-sfc@3.4.35)(vite@5.2.8(@types/node@20.14.12)(less@4.2.2)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1)):
     dependencies:
       '@types/debug': 4.1.12
       debug: 4.3.4
@@ -44053,14 +44080,14 @@ snapshots:
       json5: 2.2.3
       local-pkg: 0.5.0
       picocolors: 1.0.0
-      vite: 5.2.8(@types/node@20.14.12)(less@4.2.0)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1)
+      vite: 5.2.8(@types/node@20.14.12)(less@4.2.2)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1)
       yaml: 2.3.4
     optionalDependencies:
       '@vue/compiler-sfc': 3.4.35
     transitivePeerDependencies:
       - supports-color
 
-  vite-plugin-pages@0.32.4(@vue/compiler-sfc@3.4.35)(react-router@6.22.3(react@18.2.0))(vite@5.2.8(@types/node@20.14.12)(less@4.2.0)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1)):
+  vite-plugin-pages@0.32.4(@vue/compiler-sfc@3.4.35)(react-router@6.22.3(react@18.2.0))(vite@5.2.8(@types/node@20.14.12)(less@4.2.2)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1)):
     dependencies:
       '@types/debug': 4.1.12
       debug: 4.4.0
@@ -44070,7 +44097,7 @@ snapshots:
       json5: 2.2.3
       local-pkg: 0.5.1
       picocolors: 1.1.1
-      vite: 5.2.8(@types/node@20.14.12)(less@4.2.0)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1)
+      vite: 5.2.8(@types/node@20.14.12)(less@4.2.2)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1)
       yaml: 2.7.0
     optionalDependencies:
       '@vue/compiler-sfc': 3.4.35
@@ -44078,7 +44105,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  vite-plugin-solid@2.7.2(solid-js@1.8.5)(vite@5.2.8(@types/node@20.14.12)(less@4.2.0)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1)):
+  vite-plugin-solid@2.7.2(solid-js@1.8.5)(vite@5.2.8(@types/node@20.14.12)(less@4.2.2)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1)):
     dependencies:
       '@babel/core': 7.23.2
       '@babel/preset-typescript': 7.23.2(@babel/core@7.23.2)
@@ -44087,12 +44114,12 @@ snapshots:
       merge-anything: 5.1.7
       solid-js: 1.8.5
       solid-refresh: 0.5.3(solid-js@1.8.5)
-      vite: 5.2.8(@types/node@20.14.12)(less@4.2.0)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1)
-      vitefu: 0.2.5(vite@5.2.8(@types/node@20.14.12)(less@4.2.0)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1))
+      vite: 5.2.8(@types/node@20.14.12)(less@4.2.2)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1)
+      vitefu: 0.2.5(vite@5.2.8(@types/node@20.14.12)(less@4.2.2)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1))
     transitivePeerDependencies:
       - supports-color
 
-  vite-plugin-vue-inspector@5.2.0(vite@5.2.8(@types/node@20.14.12)(less@4.2.0)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1)):
+  vite-plugin-vue-inspector@5.2.0(vite@5.2.8(@types/node@20.14.12)(less@4.2.2)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1)):
     dependencies:
       '@babel/core': 7.25.2
       '@babel/plugin-proposal-decorators': 7.24.1(@babel/core@7.25.2)
@@ -44103,7 +44130,7 @@ snapshots:
       '@vue/compiler-dom': 3.4.35
       kolorist: 1.8.0
       magic-string: 0.30.12
-      vite: 5.2.8(@types/node@20.14.12)(less@4.2.0)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1)
+      vite: 5.2.8(@types/node@20.14.12)(less@4.2.2)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1)
     transitivePeerDependencies:
       - supports-color
 
@@ -44227,7 +44254,7 @@ snapshots:
       - walrus
       - whiskers
 
-  vite-plugin-vue2@2.0.3(ejs@3.1.10)(lodash@4.17.21)(vite@5.2.8(@types/node@20.14.12)(less@4.2.0)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1))(vue-template-compiler@2.6.14(vue@2.6.14))(vue@2.6.14):
+  vite-plugin-vue2@2.0.3(ejs@3.1.10)(lodash@4.17.21)(vite@5.2.8(@types/node@20.14.12)(less@4.2.2)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1))(vue-template-compiler@2.6.14(vue@2.6.14))(vue@2.6.14):
     dependencies:
       '@babel/core': 7.24.3
       '@babel/parser': 7.24.1
@@ -44257,7 +44284,7 @@ snapshots:
       rollup: 2.79.1
       slash: 3.0.0
       source-map: 0.7.4
-      vite: 5.2.8(@types/node@20.14.12)(less@4.2.0)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1)
+      vite: 5.2.8(@types/node@20.14.12)(less@4.2.2)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1)
       vue-template-babel-compiler: 1.2.0(vue-template-compiler@2.6.14(vue@2.6.14))
       vue-template-compiler: 2.6.14(vue@2.6.14)
     transitivePeerDependencies:
@@ -44322,18 +44349,18 @@ snapshots:
       svgo: 3.2.0
       vue: 3.3.7(typescript@5.6.3)
 
-  vite-tsconfig-paths@4.3.1(typescript@5.6.3)(vite@5.2.8(@types/node@20.14.12)(less@4.2.0)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1)):
+  vite-tsconfig-paths@4.3.1(typescript@5.6.3)(vite@5.2.8(@types/node@20.14.12)(less@4.2.2)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1)):
     dependencies:
       debug: 4.3.4
       globrex: 0.1.2
       tsconfck: 3.0.1(typescript@5.6.3)
     optionalDependencies:
-      vite: 5.2.8(@types/node@20.14.12)(less@4.2.0)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1)
+      vite: 5.2.8(@types/node@20.14.12)(less@4.2.2)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1)
     transitivePeerDependencies:
       - supports-color
       - typescript
 
-  vite@5.2.8(@types/node@18.19.67)(less@4.2.0)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1):
+  vite@5.2.8(@types/node@18.19.67)(less@4.2.2)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1):
     dependencies:
       esbuild: 0.20.2
       postcss: 8.4.47
@@ -44341,12 +44368,12 @@ snapshots:
     optionalDependencies:
       '@types/node': 18.19.67
       fsevents: 2.3.3
-      less: 4.2.0
+      less: 4.2.2
       lightningcss: 1.28.2
       sass: 1.74.1
       terser: 5.31.1
 
-  vite@5.2.8(@types/node@20.14.12)(less@4.2.0)(lightningcss@1.28.2)(sass@1.69.5)(terser@5.31.1):
+  vite@5.2.8(@types/node@20.14.12)(less@4.2.2)(lightningcss@1.28.2)(sass@1.69.5)(terser@5.31.1):
     dependencies:
       esbuild: 0.20.2
       postcss: 8.4.47
@@ -44354,12 +44381,12 @@ snapshots:
     optionalDependencies:
       '@types/node': 20.14.12
       fsevents: 2.3.3
-      less: 4.2.0
+      less: 4.2.2
       lightningcss: 1.28.2
       sass: 1.69.5
       terser: 5.31.1
 
-  vite@5.2.8(@types/node@20.14.12)(less@4.2.0)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1):
+  vite@5.2.8(@types/node@20.14.12)(less@4.2.2)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1):
     dependencies:
       esbuild: 0.20.2
       postcss: 8.4.47
@@ -44367,20 +44394,20 @@ snapshots:
     optionalDependencies:
       '@types/node': 20.14.12
       fsevents: 2.3.3
-      less: 4.2.0
+      less: 4.2.2
       lightningcss: 1.28.2
       sass: 1.74.1
       terser: 5.31.1
 
-  vitefu@0.2.5(vite@5.2.8(@types/node@20.14.12)(less@4.2.0)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1)):
+  vitefu@0.2.5(vite@5.2.8(@types/node@20.14.12)(less@4.2.2)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1)):
     optionalDependencies:
-      vite: 5.2.8(@types/node@20.14.12)(less@4.2.0)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1)
+      vite: 5.2.8(@types/node@20.14.12)(less@4.2.2)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1)
 
-  vitefu@1.0.3(vite@5.2.8(@types/node@20.14.12)(less@4.2.0)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1)):
+  vitefu@1.0.3(vite@5.2.8(@types/node@20.14.12)(less@4.2.2)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1)):
     optionalDependencies:
-      vite: 5.2.8(@types/node@20.14.12)(less@4.2.0)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1)
+      vite: 5.2.8(@types/node@20.14.12)(less@4.2.2)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1)
 
-  vitest@2.0.4(@types/node@18.19.67)(less@4.2.0)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1):
+  vitest@2.0.4(@types/node@18.19.67)(less@4.2.2)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1):
     dependencies:
       '@ampproject/remapping': 2.3.0
       '@vitest/expect': 2.0.4
@@ -44398,8 +44425,8 @@ snapshots:
       tinybench: 2.9.0
       tinypool: 1.0.0
       tinyrainbow: 1.2.0
-      vite: 5.2.8(@types/node@18.19.67)(less@4.2.0)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1)
-      vite-node: 2.0.4(@types/node@18.19.67)(less@4.2.0)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1)
+      vite: 5.2.8(@types/node@18.19.67)(less@4.2.2)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1)
+      vite-node: 2.0.4(@types/node@18.19.67)(less@4.2.2)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1)
       why-is-node-running: 2.3.0
     optionalDependencies:
       '@types/node': 18.19.67
@@ -44412,10 +44439,10 @@ snapshots:
       - supports-color
       - terser
 
-  vitest@2.1.2(@types/node@20.14.12)(less@4.2.0)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1):
+  vitest@2.1.2(@types/node@20.14.12)(less@4.2.2)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1):
     dependencies:
       '@vitest/expect': 2.1.2
-      '@vitest/mocker': 2.1.2(vite@5.2.8(@types/node@20.14.12)(less@4.2.0)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1))
+      '@vitest/mocker': 2.1.2(vite@5.2.8(@types/node@20.14.12)(less@4.2.2)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1))
       '@vitest/pretty-format': 2.1.2
       '@vitest/runner': 2.1.2
       '@vitest/snapshot': 2.1.2
@@ -44430,8 +44457,8 @@ snapshots:
       tinyexec: 0.3.0
       tinypool: 1.0.0
       tinyrainbow: 1.2.0
-      vite: 5.2.8(@types/node@20.14.12)(less@4.2.0)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1)
-      vite-node: 2.1.2(@types/node@20.14.12)(less@4.2.0)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1)
+      vite: 5.2.8(@types/node@20.14.12)(less@4.2.2)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1)
+      vite-node: 2.1.2(@types/node@20.14.12)(less@4.2.2)(lightningcss@1.28.2)(sass@1.74.1)(terser@5.31.1)
       why-is-node-running: 2.3.0
     optionalDependencies:
       '@types/node': 20.14.12
