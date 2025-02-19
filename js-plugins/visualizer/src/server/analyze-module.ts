@@ -99,8 +99,63 @@ export function transformResourceMapIntoSerializedMod(
   return result;
 }
 
-export function evaludatePluginLifecycle(c: Compiler) {
-  //
+export interface HookStats {
+  pluginName: string;
+  hookName: string;
+  moduleId: string;
+  hookContext: unknown;
+  input: string;
+  output: string;
+  duration: number;
+  startTime: number;
+  endTime: number;
+}
+
+export interface HookStatsMap {
+  resolve: Array<HookStats>;
+  transform: Array<HookStats>;
+  analyze_deps: Array<HookStats>;
+  optimize_module_graph: Array<HookStats>;
+  render_resource_pot: Array<HookStats>;
+  load: Array<HookStats>;
+  process_module: Array<HookStats>;
+  build_end: Array<HookStats>;
+  partial_bundling: Array<HookStats>;
+  process_resource_pots: Array<HookStats>;
+  parse: Array<HookStats>;
+  write_plugin_cache: Array<HookStats>;
+  generate_resources: Array<HookStats>;
+}
+
+export interface ModuleGraphStats {
+  modules: Record<string, { moduleId: string; moduleType: string }>;
+  edges: Record<
+    string,
+    Array<[string, { source: string; kind: string; order: number }]>
+  >;
+}
+
+export interface CompilationFlowStats {
+  entries: Array<string>;
+  hookStatsMap: HookStatsMap;
+  moduleGraphStats: ModuleGraphStats;
+  duration: number;
+  startTime: number;
+  buildEndTime: number;
+  endTime: number;
+}
+
+export interface StatsMetadata {
+  initialCompilationFlowStats: CompilationFlowStats;
+  hmrCompilationFlowStats: CompilationFlowStats;
+}
+
+export function evaludatePluginLifecycle(c: Compiler, dev: boolean) {
+  const stats = JSON.parse(c.stats()) as StatsMetadata;
+  console.log(stats.initialCompilationFlowStats);
+  return dev
+    ? stats.hmrCompilationFlowStats
+    : stats.initialCompilationFlowStats;
 }
 
 export function evaludateModuleGraph(c: Compiler, workspaceRoot: string) {
@@ -193,7 +248,7 @@ export class VisualizerNode {
 }
 
 export class VisualizerModule {
-  private c: Compiler | null;
+  c: Compiler | null;
   workspaceRoot: string;
   constructor() {
     this.c = null;
@@ -204,12 +259,11 @@ export class VisualizerModule {
       this.c = c;
     }
   }
-  // do analysic is designed for prepare classical treemap struct.
   doAnalysis() {
     if (!this.c) {
       throw new Error(`[@farmfe/plugin-visualizer]: Compiler isn't setup.`);
     }
-    evaludatePluginLifecycle(this.c);
+    evaludatePluginLifecycle(this.c, false);
     evaludateModuleGraph(this.c, this.workspaceRoot);
   }
 }

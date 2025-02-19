@@ -9,17 +9,18 @@ const defaultOptions = {} satisfies VisualizerOptions;
 export function visualizer(opts?: VisualizerOptions) {
   const options = { ...defaultOptions, ...opts };
   const visualizerModule = createVisualizerModule();
-  const services = createInternalServices();
+  const services = createInternalServices(visualizerModule);
   const plugin = <JsPlugin>{
     name: '@farmfe/plugin-visualizer',
     config(conf, env) {
       if (!conf.compilation) {
         conf.compilation = {};
       }
-      if (env.command === 'dev') {
-        conf.compilation.record = true;
-      }
-      conf.compilation = { ...conf.compilation, sourcemap: 'all' };
+      conf.compilation = {
+        ...conf.compilation,
+        sourcemap: 'all',
+        record: true
+      };
       visualizerModule.workspaceRoot = searchForWorkspaceRoot(conf.root);
       return conf;
     },
