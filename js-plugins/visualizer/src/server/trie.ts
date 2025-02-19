@@ -3,19 +3,19 @@ export interface NodeOptions {
   size: number;
 }
 
-export interface GroupNode {
+export type GroupNode<T = {}> = {
   filename: string;
   label: string;
   size: number;
-  groups: GroupNode[];
-}
+  groups: GroupNode<T>[];
+} & T;
 
-export class Node {
+export class Node<T = {}> {
   filenmae: string;
   size: number;
-  children: Map<string, Node>;
+  children: Map<string, Node<T>>;
   isEndOfPath: boolean;
-  groups: Array<GroupNode>;
+  groups: Array<GroupNode<T>>;
   constructor(options: Partial<NodeOptions>) {
     this.filenmae = options.filename || '';
     this.size = options.size || 0;
@@ -25,13 +25,13 @@ export class Node {
   }
 }
 
-export type TrieWalkHandler = {
-  before: (child: GroupNode, parent: Node) => void;
-  after: (child: GroupNode, parent: Node) => void;
+export type TrieWalkHandler<T = {}> = {
+  enter: (child: GroupNode<T>, parent: Node<T>) => void;
+  leave: (child: GroupNode<T>, parent: Node<T>) => void;
 };
 
-export class Trie {
-  root: Node;
+export class Trie<T = {}> {
+  root: Node<T>;
   constructor(options: Partial<NodeOptions>) {
     this.root = new Node(options);
   }
@@ -67,7 +67,7 @@ export class Trie {
       }
     }
   }
-  walk(node: Node, handler: TrieWalkHandler) {
+  walk(node: Node<T>, handler: TrieWalkHandler<T>) {
     if (!node.children.size) return;
     for (const [id, cn] of node.children.entries()) {
       const c = {
@@ -75,14 +75,14 @@ export class Trie {
         label: id,
         filename: cn.filenmae,
         groups: cn.groups
-      } as GroupNode;
+      } as GroupNode<T>;
       if (cn.isEndOfPath) {
         delete c.groups;
       }
-      handler.before(c, node);
+      handler.enter(c, node);
       this.walk(cn, handler);
       if (cn.groups && cn.groups.length) {
-        handler.after(c, node);
+        handler.leave(c, node);
       }
     }
     node.children.clear();

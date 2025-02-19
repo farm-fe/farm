@@ -1,6 +1,6 @@
 import path from 'node:path';
 import type { Compiler, Resource } from '@farmfe/core';
-import type { uint8 } from './interface';
+import type { AnalysisModule, StatsMetadata, uint8 } from './interface';
 import { byteToString, slash, stringToByte } from './shared';
 import {
   pickupContentFromSourcemap,
@@ -99,60 +99,8 @@ export function transformResourceMapIntoSerializedMod(
   return result;
 }
 
-export interface HookStats {
-  pluginName: string;
-  hookName: string;
-  moduleId: string;
-  hookContext: unknown;
-  input: string;
-  output: string;
-  duration: number;
-  startTime: number;
-  endTime: number;
-}
-
-export interface HookStatsMap {
-  resolve: Array<HookStats>;
-  transform: Array<HookStats>;
-  analyze_deps: Array<HookStats>;
-  optimize_module_graph: Array<HookStats>;
-  render_resource_pot: Array<HookStats>;
-  load: Array<HookStats>;
-  process_module: Array<HookStats>;
-  build_end: Array<HookStats>;
-  partial_bundling: Array<HookStats>;
-  process_resource_pots: Array<HookStats>;
-  parse: Array<HookStats>;
-  write_plugin_cache: Array<HookStats>;
-  generate_resources: Array<HookStats>;
-}
-
-export interface ModuleGraphStats {
-  modules: Record<string, { moduleId: string; moduleType: string }>;
-  edges: Record<
-    string,
-    Array<[string, { source: string; kind: string; order: number }]>
-  >;
-}
-
-export interface CompilationFlowStats {
-  entries: Array<string>;
-  hookStatsMap: HookStatsMap;
-  moduleGraphStats: ModuleGraphStats;
-  duration: number;
-  startTime: number;
-  buildEndTime: number;
-  endTime: number;
-}
-
-export interface StatsMetadata {
-  initialCompilationFlowStats: CompilationFlowStats;
-  hmrCompilationFlowStats: CompilationFlowStats;
-}
-
 export function evaludatePluginLifecycle(c: Compiler, dev: boolean) {
   const stats = JSON.parse(c.stats()) as StatsMetadata;
-  console.log(stats.initialCompilationFlowStats);
   return dev
     ? stats.hmrCompilationFlowStats
     : stats.initialCompilationFlowStats;
@@ -160,7 +108,7 @@ export function evaludatePluginLifecycle(c: Compiler, dev: boolean) {
 
 export function evaludateModuleGraph(c: Compiler, workspaceRoot: string) {
   const serializedMod = transformResourceMapIntoSerializedMod(c.resourcesMap());
-  const result: Array<VisualizerNode> = [];
+  const result: Array<AnalysisModule> = [];
   for (const mod of serializedMod) {
     const node = new VisualizerNode(mod.id);
     node.setup(mod, workspaceRoot);
@@ -169,20 +117,22 @@ export function evaludateModuleGraph(c: Compiler, workspaceRoot: string) {
   return result;
 }
 
-export class VisualizerNode {
+export class VisualizerNode implements AnalysisModule {
   filename: string;
   statSize: number;
   parsedSize: number;
-  parsed: Array<GroupNode>;
-  stats: Array<GroupNode>;
+  parsed: Array<GroupNode<{ parsedSize: number }>>;
+  stats: Array<GroupNode<{ statSize: number }>>;
   constructor(id: string) {
     this.filename = id;
     this.statSize = 0;
     this.parsedSize = 0;
+    this.parsed = [];
+    this.stats = [];
   }
   setup(mod: SerializedMod, workspaceRoot: string) {
-    const stats = new Trie({ size: 0 });
-    const parsed = new Trie({ size: 0 });
+    const stats = new Trie<{ statSize: number }>({ size: 0 });
+    const parsed = new Trie<{ parsedSize: number }>({ size: 0 });
     if (mod.type === 'asset') {
       this.statSize = mod.code.length;
       this.parsedSize = mod.code.length;
@@ -231,15 +181,29 @@ export class VisualizerNode {
     stats.mergeUniqueNode();
     parsed.mergeUniqueNode();
     parsed.walk(parsed.root, {
-      before: (c, p) => p.groups.push(c),
-      after: (c) => {
-        c.size = c.groups.reduce((acc, cur) => ((acc += cur.size), acc), 0);
+      enter: (c, p) => {
+        c.parsedSize = c.size;
+        delete c.size;
+        p.groups.push(c);
+      },
+      leave: (c) => {
+        c.parsedSize = c.groups.reduce(
+          (acc, cur) => ((acc += cur.parsedSize), acc),
+          0
+        );
       }
     });
     stats.walk(stats.root, {
-      before: (c, p) => p.groups.push(c),
-      after: (c) => {
-        c.size = c.groups.reduce((acc, cur) => ((acc += cur.size), acc), 0);
+      enter: (c, p) => {
+        c.statSize = c.size;
+        delete c.size;
+        p.groups.push(c);
+      },
+      leave: (c) => {
+        c.statSize = c.groups.reduce(
+          (acc, cur) => ((acc += cur.statSize), acc),
+          0
+        );
       }
     });
     this.parsed = parsed.root.groups;
