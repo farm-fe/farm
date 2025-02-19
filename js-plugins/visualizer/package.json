@@ -3,7 +3,6 @@
   "version": "1.1.4",
   "main": "./build/cjs/index.cjs",
   "types": "./build/cjs/index.d.ts",
-  "type": "module",
   "exports": {
     ".": {
       "import": "./build/esm/index.mjs",
@@ -34,7 +33,15 @@
     "vite-plugin-pages":"^0.32.4",
     "react-router": "^6.22.3",
     "react-router-dom": "^6.22.3",
-    "@jridgewell/source-map": "^0.3.6"
+    "@jridgewell/source-map": "^0.3.6",
+    "@stylexjs/postcss-plugin":"^0.10.1",
+    "@stylexjs/stylex":"^0.10.1",
+    "@stylexjs/babel-plugin":"^0.10.1",
+    "@babel/core": "^7.23.9",
+    "@types/babel__core": "^7.20.5",
+    "@stylex-extend/babel-plugin":"^0.6.0",
+    "@stylex-extend/react":"^0.6.0",
+    "@stylex-extend/core":"^0.6.0"
   },
   "scripts": {
     "start": "cd src/client && farm start",
