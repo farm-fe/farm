@@ -11,9 +11,16 @@ function stylex() {
     name: 'stylex',
     transform: {
       filters: {
-        moduleTypes: ['tsx']
+        moduleTypes: ['ts', 'tsx']
       },
       executor(param) {
+        // console.log(param.resolvedPath);
+        // console.log(param);
+        if (
+          param.resolvedPath === 'farmfe_plugin_react_is_react_refresh_boundary'
+        ) {
+          return param;
+        }
         const res = transform(param.content, {
           filename: param.resolvedPath,
           parserOpts: {
@@ -37,13 +44,20 @@ function stylex() {
             })
           ]
         });
-        if (!res) return param;
-        return {
-          content: res.code,
-          sourceMap: res?.map,
-          moduleType: 'tsx',
-          ignorePreviousSourceMap: true
-        };
+        if (res && 'stylex' in res.metadata) {
+          if (
+            Array.isArray(res.metadata.stylex) &&
+            res.metadata.stylex.length > 0
+          ) {
+            return {
+              content: res.code,
+              sourceMap: res?.map,
+              moduleType: 'tsx',
+              ignorePreviousSourceMap: true
+            };
+          }
+        }
+        return param;
       }
     }
   };
