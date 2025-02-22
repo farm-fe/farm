@@ -104,7 +104,7 @@ pub fn trace_module_sourcemap(
       dst_token.is_range(),
     );
 
-    if let Some(content) = read_source_content(dst_token.clone(), dst_sourcemap) {
+    if let Some(content) = read_source_content(*dst_token, dst_sourcemap) {
       builder.set_source_contents(new_token.src_id, Some(&content));
     }
   };

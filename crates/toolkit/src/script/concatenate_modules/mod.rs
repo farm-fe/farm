@@ -102,9 +102,9 @@ pub fn concatenate_modules_ast(
   // merge comments, module_asts and preserved_module_decls back to strip_module_results
   let stripped_results = comments
     .into_iter()
-    .zip(module_asts.into_iter())
-    .zip(preserved_import_decls.into_iter())
-    .zip(preserved_export_decls.into_iter())
+    .zip(module_asts)
+    .zip(preserved_import_decls)
+    .zip(preserved_export_decls)
     .map(
       |((((_, comments), (_, ast)), import_decls), export_decls)| StripModuleDeclResult {
         comments,

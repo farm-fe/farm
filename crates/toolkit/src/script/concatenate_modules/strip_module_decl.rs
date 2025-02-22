@@ -296,14 +296,14 @@ fn strip_export_statements(params: &mut StripModuleDeclStatementParams) -> Vec<S
               let top_level_mark = Mark::from_u32(script_meta.top_level_mark);
               // export default '123' => var module_default = '123';
               let default_ident = create_export_default_ident(module_id, top_level_mark);
-              rename_handler.rename_ident_if_conflict(&module_id, &default_ident.to_id().into());
+              rename_handler.rename_ident_if_conflict(module_id, &default_ident.to_id().into());
               result.ast.body[statement.id] = create_export_default_expr_item(expr, default_ident);
             } else {
               // export default function foo() {}
               // =>
               // function foo() {}
               for defined_ident in &statement.defined_idents {
-                rename_handler.rename_ident_if_conflict(&module_id, defined_ident);
+                rename_handler.rename_ident_if_conflict(module_id, defined_ident);
               }
               result.ast.body[statement.id] = ModuleItem::Stmt(Stmt::Expr(ExprStmt {
                 span: DUMMY_SP,
@@ -327,7 +327,7 @@ fn strip_export_statements(params: &mut StripModuleDeclStatementParams) -> Vec<S
               result.ast.body[statement.id] = ModuleItem::Stmt(Stmt::Decl(
                 item.expect_module_decl().expect_export_decl().decl,
               ));
-              rename_handler.rename_ident_if_conflict(&module_id, local);
+              rename_handler.rename_ident_if_conflict(module_id, local);
             } else if !statements_to_remove.contains(&statement.id) {
               statements_to_remove.push(statement.id);
             }

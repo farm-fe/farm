@@ -173,8 +173,8 @@ impl Plugin for FarmPluginScript {
       return Ok(None);
     }
 
-    let cm = context.meta.get_module_source_map(&param.module_id);
-    let globals = context.meta.get_globals(&param.module_id);
+    let cm = context.meta.get_module_source_map(param.module_id);
+    let globals = context.meta.get_globals(param.module_id);
 
     // transform decorators if needed
     // this transform should be done before strip typescript cause it may need to access the type information

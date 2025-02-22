@@ -47,7 +47,7 @@ pub fn render_resource_pot_modules(
           )
         });
 
-      let mut merged_globals = None;
+      let merged_globals: Option<farmfe_core::swc_common::Globals>;
       let original_globals = context.meta.get_globals(&module.id);
 
       let (render_module_options, module_ids) = if hoisted_group.hoisted_module_ids.len() > 1 {

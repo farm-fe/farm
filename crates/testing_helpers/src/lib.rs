@@ -70,9 +70,7 @@ pub fn construct_test_module_graph() -> ModuleGraph {
   for id in module_ids {
     let mut m = Module::new(id);
     m.module_type = ModuleType::Js;
-    m.meta = Box::new(ModuleMetaData::Script(Box::new(
-      ScriptModuleMetaData::default(),
-    )));
+    m.meta = Box::new(ModuleMetaData::Script(Box::default()));
 
     graph.add_module(m);
   }

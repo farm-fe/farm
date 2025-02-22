@@ -58,7 +58,7 @@ impl TopLevelIdentsRenameHandler {
     self
       .module_rename_map
       .entry(module_id)
-      .or_insert_with(HashMap::default)
+      .or_default()
       .insert(from, to);
   }
 
