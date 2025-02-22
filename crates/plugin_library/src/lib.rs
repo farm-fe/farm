@@ -40,28 +40,36 @@ impl Plugin for FarmPluginLibrary {
     let module_graph = context.module_graph.read();
 
     let ConcatenateModulesAstResult {
-      mut ast,
+      ast,
       module_ids,
       external_modules,
       source_map,
       comments,
-    } = concatenate_modules_ast(&resource_pot.modules, &module_graph, context)
-      .map_err(|e| CompilationError::GenericError(e.to_string()))?;
+      globals,
+      unresolved_mark,
+      top_level_mark,
+    } = concatenate_modules_ast(
+      resource_pot.entry_module.as_ref().unwrap(), // TODO: support dynamic imported entry module for multiple library bundle
+      &resource_pot.modules,
+      &module_graph,
+      context,
+    )
+    .map_err(|e| CompilationError::GenericError(e.to_string()))?;
 
     context
       .meta
       .set_resource_pot_source_map(&resource_pot.id, source_map);
 
     // handle import/export between resource pots
-    if let Some(entry) = &resource_pot.entry_module {
-      let entry_module = module_graph.module(entry).unwrap();
-      let script_meta = entry_module.meta.as_script();
+    // if let Some(entry) = &resource_pot.entry_module {
+    //   let entry_module = module_graph.module(entry).unwrap();
+    //   let script_meta = entry_module.meta.as_script();
 
-      if !script_meta.export_ident_map.is_empty() {
-        let export_item = script_meta.get_export_module_item();
-        ast.body.push(export_item);
-      }
-    }
+    //   if !script_meta.export_ident_map.is_empty() {
+    //     let export_item = script_meta.get_export_module_item();
+    //     ast.body.push(export_item);
+    //   }
+    // }
 
     // TODO find exports in this resource pot
 

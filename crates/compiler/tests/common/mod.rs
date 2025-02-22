@@ -223,7 +223,6 @@ pub fn create_compiler_with_plugins(
     .join("fixtures")
     .join("_internal")
     .join("runtime")
-    .join("index.js")
     .to_string_lossy()
     .to_string();
 

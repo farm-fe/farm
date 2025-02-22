@@ -1096,7 +1096,7 @@ mod tests {
       let mut module = Module::new(module_id.clone());
       try_with(cm.clone(), &globals, || {
         module.module_type = ModuleType::Js;
-        module.meta = Box::new(ModuleMetaData::Script(ScriptModuleMetaData {
+        module.meta = Box::new(ModuleMetaData::Script(Box::new(ScriptModuleMetaData {
           ast: EcmaAstModule {
             span: DUMMY_SP,
             body: vec![],
@@ -1115,7 +1115,7 @@ mod tests {
           feature_flags: Default::default(),
           is_async: false,
           export_ident_map: Default::default(),
-        }));
+        })));
       })
       .unwrap();
 

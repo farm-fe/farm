@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use farmfe_core::lazy_static::lazy_static;
 use farmfe_core::{
   config::{Mode, TargetEnv},
   context::CompilationContext,
@@ -12,7 +13,6 @@ use farmfe_core::{
   swc_ecma_ast::{BinaryOp, EmptyStmt, Expr, Ident, Lit, Stmt, Str},
   HashMap, HashSet,
 };
-use lazy_static::lazy_static;
 use swc_ecma_visit::{VisitMut, VisitMutWith};
 
 pub const FARM_RUNTIME_TARGET_ENV: &str = "__FARM_RUNTIME_TARGET_ENV__";
@@ -127,6 +127,13 @@ fn init_bool_features<'a>(
 
   if context.config.output.target_env != TargetEnv::Library {
     bool_features.insert(FARM_ENABLE_EXTERNAL_MODULES);
+  }
+
+  // special case for import all helper, if both import default and import named are enabled, import all is enabled
+  if feature_flags.contains(&FeatureFlag::ImportDefault)
+    && feature_flags.contains(&FeatureFlag::ImportNamed)
+  {
+    bool_features.insert(FARM_ENABLE_IMPORT_ALL_HELPER);
   }
 
   let feature_names = feature_flags

@@ -6,6 +6,10 @@ import { createSpinner } from "nanospinner";
 
 import { logger } from "./logger.mjs";
 
+// Display verbose output
+const isVerbose =
+  process.argv.includes("--verbose") || process.argv.includes("-v");
+
 export const DEFAULT_PACKAGE_MANAGER = "pnpm";
 const DEFAULT_HOMEBREW_PACKAGE_MANAGER = "brew";
 const DEFAULT_LINUX_PACKAGE_MANAGER = "apt";
@@ -60,10 +64,16 @@ const skipExamples = [
 ];
 
 export const installDependencies = async () =>
-  execa(DEFAULT_PACKAGE_MANAGER, ["install"], {
-    cwd: CWD,
-    stdio: "inherit",
-  });
+  runTask(
+    "dependencies",
+    async () =>
+      await execa(DEFAULT_PACKAGE_MANAGER, ["install"], {
+        cwd: CWD,
+        stdio: isVerbose ? "inherit" : "ignore",
+      }),
+    "Installing",
+    "Install",
+  );
 
 export const executeStartProject = async () =>
   execa(DEFAULT_PACKAGE_MANAGER, ["start"], {
@@ -176,7 +186,7 @@ export const installLinuxProtobuf = async (spinner) => {
 export const buildCore = () =>
   execa(DEFAULT_PACKAGE_MANAGER, ["build:rs"], {
     cwd: PKG_CORE,
-    stdio: "inherit",
+    stdio: isVerbose ? "inherit" : "ignore",
   })
     .then(buildReplaceDirnamePlugin)
     .then(buildCoreCjs);
@@ -255,11 +265,12 @@ export const buildJsPlugins = async (spinner) => {
           }
           await execa(DEFAULT_PACKAGE_MANAGER, ["build"], {
             cwd: pluginPath,
-            // stdio: "pipe",
-            stdio: "inherit",
+            stdio: isVerbose ? "inherit" : "ignore",
           });
 
-          spinner.success({ text: `📦 Built JS plugin: ${pluginDir} ` });
+          spinner.success({
+            text: `📦 JS plugin \x1b[32m${pluginDir}\x1b[0m built successfully.`,
+          });
         } catch (error) {
           spinner.error({ text: `Failed to build JS plugin: ${pluginDir}` });
           throw error;
@@ -268,6 +279,7 @@ export const buildJsPlugins = async (spinner) => {
       "Building",
       "Build",
       spinner,
+      false,
     );
   }
 };
@@ -304,11 +316,12 @@ export const buildRustPlugins = async (spinner) => {
 
           await execa("npm", ["run", "build"], {
             cwd: pluginPath,
-            // stdio: "pipe",
-            stdio: "inherit",
+            stdio: isVerbose ? "inherit" : "ignore",
           });
 
-          spinner.success({ text: `📦 Built Rust plugin: ${pluginDir}` });
+          spinner.success({
+            text: `📦 Rust plugin \x1b[32m${pluginDir}\x1b[0m compiled successfully.`,
+          });
         } catch (error) {
           spinner.error({ text: `Failed to build Rust plugin: ${pluginDir}` });
           throw error;
@@ -317,6 +330,7 @@ export const buildRustPlugins = async (spinner) => {
       "Building",
       "Build",
       spinner,
+      false,
     );
   }
 };
@@ -330,10 +344,15 @@ export async function runTask(
   processText = "Building",
   finishedText = "Build",
   spinner = createSpinner(),
+  showSuccess = true,
 ) {
   try {
     await task(spinner.start({ text: `${processText} ${taskName}` }));
-    spinner.success({ text: `✨ ✨ ${finishedText} ${taskName} completed! ` });
+    showSuccess
+      ? spinner.success({
+          text: `✨ ✨ ${finishedText} ${taskName} completed! `,
+        })
+      : spinner.reset();
   } catch (e) {
     spinner.error({ text: `${finishedText} ${taskName} failed!` });
     console.error(e.toString());

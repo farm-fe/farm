@@ -17,9 +17,9 @@ pub mod script;
 /// Meta data which is not shared by core plugins should be stored in [ModuleMetaData::Custom]
 #[cache_item]
 pub enum ModuleMetaData {
-  Script(ScriptModuleMetaData),
-  Css(CssModuleMetaData),
-  Html(HtmlModuleMetaData),
+  Script(Box<ScriptModuleMetaData>),
+  Css(Box<CssModuleMetaData>),
+  Html(Box<HtmlModuleMetaData>),
   Custom(CustomMetaDataMap),
 }
 
@@ -64,7 +64,7 @@ impl ModuleMetaData {
     if let Self::Script(script) = self {
       script
     } else {
-      panic!("ModuleMetaData is not Script")
+      panic!("ModuleMetaData is not Script but {:?}", self.to_string())
     }
   }
 

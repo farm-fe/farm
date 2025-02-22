@@ -7,6 +7,7 @@ use farmfe_core::{
   farm_profile_function,
   module::ModuleId,
   rayon::prelude::*,
+  swc_common::Globals,
   HashMap, HashSet,
 };
 use farmfe_toolkit::script::swc_try_with::resolve_module_mark;
@@ -254,6 +255,9 @@ pub fn handle_cached_modules(
   context
     .meta
     .set_module_source_map(&cached_module.module.id, source_map);
+  context
+    .meta
+    .set_globals(&cached_module.module.id, Globals::new());
 
   // using swc resolver
   match &mut cached_module.module.meta {
@@ -262,7 +266,7 @@ pub fn handle_cached_modules(
       let (unresolved_mark, top_level_mark) = resolve_module_mark(
         &mut script.ast,
         cached_module.module.module_type.is_typescript(),
-        context,
+        context.meta.get_globals(&cached_module.module.id).value(),
       );
 
       script.top_level_mark = unresolved_mark.as_u32();

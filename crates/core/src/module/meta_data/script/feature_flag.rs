@@ -20,6 +20,8 @@ pub enum FeatureFlag {
   ImportDefault,
   /// import * as xxx from 'xxx'
   ImportNamespace,
+  /// import { xxx } from 'xxx'
+  ImportNamed,
   /// export * from 'xxx'
   ExportAll,
   ExportFrom,
@@ -38,6 +40,7 @@ impl FeatureFlag {
       FeatureFlag::ExportFrom => FARM_IMPORT_EXPORT_FROM_HELPER,
       FeatureFlag::ExportStatement => FARM_ENABLE_EXPORT_HELPER,
       FeatureFlag::ImportStatement => "ImportStatement",
+      FeatureFlag::ImportNamed => "ImportStatement",
     }
   }
 }

@@ -8,6 +8,7 @@ use farmfe_core::parking_lot::Mutex;
 use farmfe_core::plugin::GeneratedResource;
 use farmfe_core::resource::meta_data::html::HtmlResourcePotMetaData;
 use farmfe_core::resource::meta_data::ResourcePotMetaData;
+use farmfe_core::swc_common::Globals;
 use farmfe_core::{cache_item, deserialize, serialize, HashMap};
 use farmfe_core::{
   config::Config,
@@ -27,7 +28,8 @@ use farmfe_core::{
   },
 };
 use farmfe_toolkit::minify::minify_html_module;
-use farmfe_toolkit::sourcemap::{create_swc_source_map, PathFilter};
+use farmfe_toolkit::plugin_utils::path_filter::PathFilter;
+use farmfe_toolkit::sourcemap::create_swc_source_map;
 use farmfe_toolkit::{
   fs::read_file_utf8,
   html::{codegen_html_document, parse_html_document},
@@ -196,10 +198,10 @@ impl Plugin for FarmPluginHtml {
       let html_document =
         parse_html_document(module_id.to_string().as_str(), param.content.clone())?;
 
-      let meta = ModuleMetaData::Html(HtmlModuleMetaData {
+      let meta = ModuleMetaData::Html(Box::new(HtmlModuleMetaData {
         ast: html_document,
         custom: Default::default(),
-      });
+      }));
 
       Ok(Some(meta))
     } else {
@@ -477,8 +479,8 @@ impl Plugin for FarmPluginMinifyHtml {
         };
 
         let (cm, _) = create_swc_source_map(&resource.name.as_str().into(), html_code.clone());
-
-        try_with(cm, &context.meta.html.globals, || {
+        let globals = Globals::new();
+        try_with(cm, &globals, || {
           minify_html_module(&mut html_ast);
         })?;
 

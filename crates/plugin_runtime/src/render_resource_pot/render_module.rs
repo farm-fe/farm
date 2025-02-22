@@ -7,9 +7,9 @@ use farmfe_core::{
   },
   resource::meta_data::js::RenderModuleResult,
   swc_common::{
-    comments::SingleThreadedComments, util::take::Take, Mark, SourceMap, SyntaxContext,
+    comments::SingleThreadedComments, util::take::Take, Globals, Mark, SourceMap, SyntaxContext,
   },
-  swc_ecma_ast::{ArrowExpr, BlockStmtOrExpr, EsVersion, Expr, ExprStmt, FnExpr},
+  swc_ecma_ast::{ArrowExpr, BlockStmtOrExpr, EsVersion, Expr, ExprStmt, FnExpr, Ident},
   HashMap,
 };
 
@@ -45,6 +45,9 @@ pub struct RenderModuleOptions<'a> {
   pub hoisted_sourcemap: Arc<SourceMap>,
   pub module_graph: &'a ModuleGraph,
   pub hoisted_external_modules: HashMap<(String, farmfe_core::plugin::ResolveKind), ModuleId>,
+  pub globals: &'a Globals,
+  pub unresolved_mark: Mark,
+  pub top_level_mark: Mark,
   pub context: &'a Arc<CompilationContext>,
 }
 
@@ -58,24 +61,24 @@ pub fn render_module(
     comments,
     module_graph,
     hoisted_external_modules,
+    globals,
+    unresolved_mark,
+    top_level_mark,
     context,
   } = options;
+
+  if unresolved_mark.as_u32() == 0 || top_level_mark.as_u32() == 0 {
+    println!("unresolved mark is 0: {:?}", module_id);
+  }
+
   let comments = SingleThreadedComments::from(comments);
   let module_script_meta = module_graph.module(&module_id).unwrap().meta.as_script();
   let is_async_module = module_script_meta.is_async;
 
   let mut external_modules = vec![];
-
   let mut func_expr = Expr::default();
 
-  try_with(cm.clone(), &context.meta.script.globals, || {
-    let (unresolved_mark, top_level_mark) = {
-      let unresolved_mark = Mark::from_u32(module_script_meta.unresolved_mark);
-      let top_level_mark = Mark::from_u32(module_script_meta.top_level_mark);
-
-      (unresolved_mark, top_level_mark)
-    };
-
+  try_with(cm.clone(), globals, || {
     // replace commonjs require('./xxx') to require('./xxx', true)
     if matches!(
       module_script_meta.module_system,
@@ -131,6 +134,7 @@ pub fn render_module(
       cloned_module,
       is_async_module,
       context.config.script.target == EsVersion::Es5,
+      unresolved_mark,
     );
 
     expr.visit_mut_with(&mut fixer(Some(&comments)));
@@ -172,7 +176,12 @@ pub fn render_module(
 ///   exports.b = b;
 /// }
 /// ```
-fn wrap_function(mut module: SwcModule, is_async_module: bool, is_target_legacy: bool) -> Expr {
+fn wrap_function(
+  mut module: SwcModule,
+  is_async_module: bool,
+  is_target_legacy: bool,
+  unresolved_mark: Mark,
+) -> Expr {
   let body = module.body.take();
 
   let params = vec![
@@ -180,7 +189,11 @@ fn wrap_function(mut module: SwcModule, is_async_module: bool, is_target_legacy:
       span: DUMMY_SP,
       decorators: vec![],
       pat: farmfe_core::swc_ecma_ast::Pat::Ident(BindingIdent {
-        id: FARM_MODULE.into(),
+        id: Ident::new(
+          FARM_MODULE.into(),
+          DUMMY_SP,
+          SyntaxContext::empty().apply_mark(unresolved_mark),
+        ),
         type_ann: None,
       }),
     },
@@ -188,7 +201,11 @@ fn wrap_function(mut module: SwcModule, is_async_module: bool, is_target_legacy:
       span: DUMMY_SP,
       decorators: vec![],
       pat: farmfe_core::swc_ecma_ast::Pat::Ident(BindingIdent {
-        id: FARM_MODULE_EXPORT.into(),
+        id: Ident::new(
+          FARM_MODULE_EXPORT.into(),
+          DUMMY_SP,
+          SyntaxContext::empty().apply_mark(unresolved_mark),
+        ),
         type_ann: None,
       }),
     },
@@ -196,7 +213,11 @@ fn wrap_function(mut module: SwcModule, is_async_module: bool, is_target_legacy:
       span: DUMMY_SP,
       decorators: vec![],
       pat: farmfe_core::swc_ecma_ast::Pat::Ident(BindingIdent {
-        id: FARM_REQUIRE.into(),
+        id: Ident::new(
+          FARM_REQUIRE.into(),
+          DUMMY_SP,
+          SyntaxContext::empty().apply_mark(unresolved_mark),
+        ),
         type_ann: None,
       }),
     },
@@ -204,7 +225,11 @@ fn wrap_function(mut module: SwcModule, is_async_module: bool, is_target_legacy:
       span: DUMMY_SP,
       decorators: vec![],
       pat: farmfe_core::swc_ecma_ast::Pat::Ident(BindingIdent {
-        id: FARM_DYNAMIC_REQUIRE.into(),
+        id: Ident::new(
+          FARM_DYNAMIC_REQUIRE.into(),
+          DUMMY_SP,
+          SyntaxContext::empty().apply_mark(unresolved_mark),
+        ),
         type_ann: None,
       }),
     },

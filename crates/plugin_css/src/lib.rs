@@ -11,7 +11,7 @@ use farmfe_core::module::meta_data::script::CommentsMetaData;
 use farmfe_core::plugin::GeneratedResource;
 use farmfe_core::resource::meta_data::css::CssResourcePotMetaData;
 use farmfe_core::resource::meta_data::ResourcePotMetaData;
-use farmfe_core::swc_common::DUMMY_SP;
+use farmfe_core::swc_common::{Globals, DUMMY_SP};
 use farmfe_core::HashMap;
 use farmfe_core::{
   config::{Config, CssPrefixerConfig, TargetEnv},
@@ -286,9 +286,13 @@ impl Plugin for FarmPluginCss {
           &css_modules_module_id.to_string(),
           Arc::new(param.content.clone()),
         )?;
+        // set source map and globals for css modules ast
         context
           .meta
           .set_module_source_map(&css_modules_module_id, source_map);
+        context
+          .meta
+          .set_globals(&css_modules_module_id, Globals::default());
 
         // js code for css modules
         // next, get ident from ast and export through JS
@@ -432,15 +436,18 @@ impl Plugin for FarmPluginCss {
         context
           .meta
           .set_module_source_map(&param.module_id, source_map);
+        context
+          .meta
+          .set_globals(&param.module_id, Globals::default());
 
         (ast, CommentsMetaData::from(comments))
       };
 
-      let meta = ModuleMetaData::Css(CssModuleMetaData {
+      let meta = ModuleMetaData::Css(Box::new(CssModuleMetaData {
         ast: css_stylesheet,
         comments,
         custom: Default::default(),
-      });
+      }));
 
       Ok(Some(meta))
     } else {
@@ -553,8 +560,8 @@ impl Plugin for FarmPluginCss {
       modules.into_par_iter().try_for_each(|module| {
         let cm = context.meta.get_module_source_map(&module.id);
         let mut css_stylesheet = module.meta.as_css().ast.clone();
-
-        try_with(cm, &context.meta.css.globals, || {
+        let globals = context.meta.get_globals(&module.id);
+        try_with(cm, globals.value(), || {
           source_replace(
             &mut css_stylesheet,
             &module.id,
@@ -634,7 +641,7 @@ impl Plugin for FarmPluginCss {
         let module_graph = context.module_graph.read();
         let sourcemap = SourceMap::from_slice(src_map.as_bytes()).unwrap();
         // trace sourcemap chain of each module
-        let sourcemap = trace_module_sourcemap(sourcemap, &module_graph);
+        let sourcemap = trace_module_sourcemap(sourcemap, &module_graph, &context.config.root);
 
         let mut chain = resource_pot
           .source_map_chain

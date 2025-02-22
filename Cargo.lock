@@ -1657,6 +1657,7 @@ dependencies = [
  "globset",
  "heck 0.5.0",
  "hex",
+ "lazy_static",
  "num_cpus",
  "parking_lot",
  "petgraph",
@@ -1709,7 +1710,6 @@ dependencies = [
  "farmfe_compiler",
  "farmfe_core",
  "farmfe_toolkit",
- "farmfe_toolkit_plugin_types",
  "libloading 0.8.6",
  "napi",
  "napi-build",
@@ -1759,7 +1759,6 @@ dependencies = [
  "farmfe_macro_plugin",
  "farmfe_plugin_resolve",
  "farmfe_toolkit",
- "farmfe_toolkit_plugin_types",
  "pathdiff",
  "regex",
  "serde",
@@ -1861,7 +1860,7 @@ dependencies = [
  "farmfe_core",
  "farmfe_macro_plugin",
  "farmfe_testing_helpers",
- "farmfe_toolkit_plugin_types",
+ "farmfe_toolkit",
  "lazy_static",
  "serde",
 ]
@@ -1873,7 +1872,6 @@ dependencies = [
  "farmfe_core",
  "farmfe_macro_plugin",
  "farmfe_toolkit",
- "farmfe_toolkit_plugin_types",
  "regex",
  "serde",
  "serde_json",
@@ -1911,7 +1909,6 @@ dependencies = [
  "farmfe_macro_plugin",
  "farmfe_testing_helpers",
  "farmfe_toolkit",
- "farmfe_toolkit_plugin_types",
  "farmfe_utils 0.1.6",
  "sass-embedded",
  "serde",
@@ -2004,10 +2001,8 @@ dependencies = [
  "anyhow",
  "farmfe_core",
  "farmfe_testing_helpers",
- "farmfe_toolkit_plugin_types",
  "farmfe_utils 0.1.6",
  "itertools 0.13.0",
- "lazy_static",
  "preset_env_base",
  "sourcemap",
  "swc_atoms",
@@ -2031,15 +2026,6 @@ dependencies = [
  "swc_html_parser",
  "swc_html_visit",
  "swc_typescript",
-]
-
-[[package]]
-name = "farmfe_toolkit_plugin_types"
-version = "0.0.22"
-dependencies = [
- "farmfe_core",
- "lazy_static",
- "libloading 0.7.4",
 ]
 
 [[package]]

@@ -26,15 +26,15 @@ use swc_try_with::ResetSpanVisitMut;
 
 use crate::{minify::comments::minify_comments, sourcemap::create_swc_source_map};
 
-pub use farmfe_toolkit_plugin_types::swc_ast::ParseScriptModuleResult;
+pub use utils::ParseScriptModuleResult;
 
 pub mod analyze_statement;
 pub mod concatenate_modules;
 pub mod constant;
 pub mod idents_collector;
+pub mod merge_swc_globals;
 pub mod module2cjs;
 pub mod module_system;
-pub mod sourcemap;
 pub mod swc_try_with;
 pub mod utils;
 

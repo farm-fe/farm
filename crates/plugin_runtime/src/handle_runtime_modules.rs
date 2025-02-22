@@ -162,8 +162,9 @@ pub fn insert_runtime_modules(module_graph: &mut ModuleGraph, context: &Arc<Comp
 
     (cm, top_level_mark)
   };
+  let globals = context.meta.get_globals(&entry_module_id);
 
-  try_with(cm.clone(), &context.meta.script.globals, || {
+  try_with(cm.clone(), globals.value(), || {
     // 1. remove runtime dynamic entry
     // 2. insert import { moduleSystem } from '/xxx/runtime/module-system' at first import statement
     //    and import { initModuleSystem1 } '/xxx/runtime/dynamic-import', ... at the rest import statements
@@ -254,8 +255,9 @@ pub fn remove_unused_runtime_features(
       // init runtime feature guard remover
       let mut remover = RuntimeFeatureGuardRemover::new(&all_features_flags, context);
       let cm = context.meta.get_module_source_map(&module_id);
+      let globals = context.meta.get_globals(&module_id);
 
-      try_with(cm, &context.meta.script.globals, || {
+      try_with(cm, globals.value(), || {
         meta.ast.visit_mut_with(&mut remover);
       })
       .unwrap();

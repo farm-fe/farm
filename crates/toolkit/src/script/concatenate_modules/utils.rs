@@ -1,5 +1,5 @@
 use farmfe_core::{
-  module::{meta_data::script::statement::SwcId, ModuleId},
+  module::{meta_data::script::ModuleExportIdent, ModuleId},
   regex::Regex,
   swc_common::{Mark, SyntaxContext, DUMMY_SP},
   swc_ecma_ast::{
@@ -9,7 +9,7 @@ use farmfe_core::{
   HashMap, HashSet,
 };
 
-use super::unique_idents::{TopLevelIdentsRenameHandler, EXPORT_DEFAULT, EXPORT_NAMESPACE};
+use super::unique_idents::{EXPORT_DEFAULT, EXPORT_NAMESPACE};
 
 /// export default '123' => var module_default = '123';
 pub fn create_export_default_expr_item(expr: Box<Expr>, default_ident: Ident) -> ModuleItem {
@@ -30,12 +30,12 @@ pub fn create_export_default_expr_item(expr: Box<Expr>, default_ident: Ident) ->
   }))))
 }
 
-pub fn create_var_namespace_item(
+pub(crate) fn create_var_namespace_item(
   module_id: &ModuleId,
   top_level_mark: Mark,
-  export_ident_map: &HashMap<String, SwcId>,
-  rename_handler: &TopLevelIdentsRenameHandler,
-  cyclic_idents: &HashSet<SwcId>,
+  export_ident_map: &HashMap<String, ModuleExportIdent>,
+  cyclic_idents: &HashSet<ModuleExportIdent>,
+  delayed_rename: &mut HashMap<ModuleId, HashSet<ModuleExportIdent>>,
 ) -> ModuleItem {
   let mut key_ident_vec = export_ident_map.iter().collect::<Vec<_>>();
   key_ident_vec.sort_by_key(|a| a.0);
@@ -43,10 +43,13 @@ pub fn create_var_namespace_item(
   let props = key_ident_vec
     .into_iter()
     .filter(|(key, _)| *key != EXPORT_NAMESPACE)
-    .map(|(key, ident)| {
-      let ident = rename_handler
-        .get_renamed_ident(ident)
-        .unwrap_or(ident.clone());
+    .map(|(key, module_export_ident)| {
+      delayed_rename
+        .entry(module_id.clone())
+        .or_default()
+        .insert(module_export_ident.clone());
+
+      let ident = module_export_ident.ident.clone();
 
       let value_expr = Box::new(Expr::Ident(Ident::new(
         ident.sym.clone(),
@@ -55,7 +58,7 @@ pub fn create_var_namespace_item(
       )));
 
       // for cyclic import, using get method
-      let prop = if cyclic_idents.contains(&ident) {
+      let prop = if cyclic_idents.contains(&module_export_ident) {
         Prop::Getter(GetterProp {
           span: DUMMY_SP,
           key: PropName::Str(key.as_str().into()),

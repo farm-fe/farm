@@ -113,7 +113,8 @@ pub fn call_freeze_module_hook(
   Ok(())
 }
 
-type ModuleResolvedDeps = Vec<(ModuleId, Vec<(ModuleId, ModuleGraphEdge)>)>;
+pub type ModuleResolvedDeps = Vec<(ModuleId, Vec<(ModuleId, ModuleGraphEdge)>)>;
+
 pub fn call_freeze_module_with_params(
   mut hook_params: Vec<PluginFreezeModuleHookParam>,
   context: &Arc<CompilationContext>,

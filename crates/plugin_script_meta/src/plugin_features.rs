@@ -47,7 +47,6 @@ impl Plugin for FarmPluginScriptMetaFeatures {
     // analyze features used
     let features_analyzer = FeaturesAnalyzer::new(param.deps, &meta.statements);
     meta.feature_flags = features_analyzer.analyze();
-
     Ok(None)
   }
 }

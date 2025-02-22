@@ -20,10 +20,7 @@ use farmfe_core::{
   HashMap, HashSet,
 };
 use farmfe_toolkit::{
-  script::{
-    sourcemap::{merge_sourcemap, SpanUpdater},
-    swc_try_with::try_with,
-  },
+  script::{merge_swc_globals::merge_sourcemap, swc_try_with::try_with},
   swc_ecma_transforms::fixer,
   swc_ecma_visit::VisitMutWith,
 };
@@ -1524,10 +1521,11 @@ impl<'a> BundleAnalyzer<'a> {
     self,
     module_analyzer_manager: &mut ModuleAnalyzerManager,
   ) -> Result<GeneratorAstResult> {
-    let cm = self
-      .context
-      .meta
-      .merge_modules_source_mpa(&self.ordered_modules, self.module_graph);
+    // let cm = self
+    //   .context
+    //   .meta
+    //   .merge_modules_source_mpa(&self.ordered_modules, self.module_graph);
+    let cm = Arc::new(SourceMap::default());
 
     let get_start_pos = |module_id: &ModuleId| {
       let filename = get_swc_sourcemap_filename(module_id);
@@ -1554,9 +1552,9 @@ impl<'a> BundleAnalyzer<'a> {
       })
       .par_bridge()
       .map(|(module_id, (mut module, data))| {
-        module.visit_mut_with(&mut SpanUpdater {
-          start_pos: get_start_pos(module_id),
-        });
+        // module.visit_mut_with(&mut SpanUpdater {
+        //   start_pos: get_start_pos(module_id),
+        // });
 
         (module_id, module, data)
       })

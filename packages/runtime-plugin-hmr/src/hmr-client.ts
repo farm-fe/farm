@@ -102,12 +102,11 @@ export class HmrClient {
       this.registeredHotModulesMap.delete(id);
     }
 
-    // for (const id of result.added) {
-    //   moduleSystem.g(id, result.modules[id]);
-    // }
+    for (const id of result.added) {
+      moduleSystem.a(id);
+    }
 
     for (const id of result.changed) {
-      // moduleSystem.u(id, result.modules[id]);
       if (!result.boundaries[id]) {
         // do not found boundary module, reload the window
         location.reload();
@@ -247,9 +246,10 @@ export class HmrClient {
 
   handleFarmUpdate(result: RawHmrUpdateResult) {
     hasErrorOverlay() && clearOverlay();
+
     new Function(`${result.immutableModules}`)();
     new Function(`${result.mutableModules}`)();
-    // const modules = { ...immutableModules, ...mutableModules };
+
     this.applyHotUpdates(
       {
         added: result.added,

@@ -24,7 +24,7 @@ use farmfe_core::{
     resource_pot::ResourcePot,
     Resource, ResourceOrigin, ResourceType,
   },
-  swc_common::{comments::SingleThreadedComments, Mark, SourceMap, GLOBALS},
+  swc_common::{comments::SingleThreadedComments, Globals, Mark, SourceMap, GLOBALS},
   swc_ecma_ast::{EsVersion, Module as SwcModule},
 };
 use farmfe_swc_transformer_import_glob::transform_import_meta_glob;
@@ -123,8 +123,9 @@ impl Plugin for FarmPluginScript {
       context
         .meta
         .set_module_source_map(&param.module_id, source_map);
+      let globals = Globals::new();
 
-      GLOBALS.set(&context.meta.script.globals, || {
+      let meta = GLOBALS.set(&globals, || {
         let top_level_mark = Mark::new();
         let unresolved_mark = Mark::new();
 
@@ -152,8 +153,12 @@ impl Plugin for FarmPluginScript {
           is_async: false,
         };
 
-        Ok(Some(ModuleMetaData::Script(meta)))
-      })
+        ModuleMetaData::Script(Box::new(meta))
+      });
+
+      context.meta.set_globals(&param.module_id, globals);
+
+      Ok(Some(meta))
     } else {
       Ok(None)
     }
@@ -168,25 +173,26 @@ impl Plugin for FarmPluginScript {
       return Ok(None);
     }
 
-    let cm = context.meta.get_module_source_map(param.module_id);
+    let cm = context.meta.get_module_source_map(&param.module_id);
+    let globals = context.meta.get_globals(&param.module_id);
 
     // transform decorators if needed
     // this transform should be done before strip typescript cause it may need to access the type information
     if (param.module_type.is_typescript() && context.config.script.parser.ts_config.decorators)
       || (param.module_type.is_script() && context.config.script.parser.es_config.decorators)
     {
-      swc_script_transforms::transform_decorators(param, &cm, context)?;
+      swc_script_transforms::transform_decorators(param, &cm, globals.value(), context)?;
     }
 
     // strip typescript
     if param.module_type.is_typescript() {
-      swc_script_transforms::strip_typescript(param, &cm, context)?;
+      swc_script_transforms::strip_typescript(param, &cm, globals.value(), context)?;
     }
 
     // execute swc plugins
     #[cfg(feature = "swc_plugin")]
     if param.module_type.is_script() && !context.config.script.plugins.is_empty() {
-      try_with(cm.clone(), &context.meta.script.globals, || {
+      try_with(cm.clone(), globals.value(), || {
         transform_by_swc_plugins(param, context).unwrap()
       })?;
     }
@@ -238,7 +244,7 @@ impl Plugin for FarmPluginScript {
         Mark::from_u32(module.meta.as_script().top_level_mark),
       );
 
-      GLOBALS.set(&context.meta.script.globals, || {
+      GLOBALS.set(context.meta.get_globals(&param.module.id).value(), || {
         let deps = analyzer.analyze_deps();
         param.deps.extend(deps);
       });
@@ -388,7 +394,7 @@ pub fn generate_code_and_sourcemap(
   if sourcemap_enabled {
     let sourcemap = build_sourcemap(merged_sourcemap, &mappings);
     // trace sourcemap chain of each module
-    let sourcemap = trace_module_sourcemap(sourcemap, module_graph);
+    let sourcemap = trace_module_sourcemap(sourcemap, module_graph, &context.config.root);
 
     let mut chain = resource_pot
       .source_map_chain

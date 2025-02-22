@@ -8,7 +8,6 @@ use std::{path::Path, sync::Arc};
 use farmfe_compiler::{trace_module_graph::TracedModuleGraph, Compiler};
 
 pub mod plugin_adapters;
-pub mod plugin_toolkit;
 #[cfg(feature = "profile")]
 pub mod profile_gui;
 
@@ -37,8 +36,6 @@ use notify::{
   EventKind, RecommendedWatcher, Watcher,
 };
 use plugin_adapters::{js_plugin_adapter::JsPluginAdapter, rust_plugin_adapter::RustPluginAdapter};
-
-// pub use farmfe_toolkit_plugin;
 
 #[macro_use]
 extern crate napi_derive;
@@ -445,6 +442,10 @@ impl JsCompiler {
     let resources = context.resources_map.lock();
 
     resources.par_iter().for_each(|(name, resource)| {
+      if resource.emitted {
+        return;
+      }
+
       let path = Path::new(&output_path).join(name.split(['?', '#']).next().unwrap());
       let dir = path.parent().unwrap();
       if !dir.exists() {

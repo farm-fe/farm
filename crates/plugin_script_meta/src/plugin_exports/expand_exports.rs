@@ -5,7 +5,7 @@ use farmfe_core::{
   module::{
     meta_data::script::{
       statement::{ExportSpecifierInfo, ImportSpecifierInfo, SwcId},
-      EXPORT_DEFAULT,
+      ModuleExportIdent, EXPORT_DEFAULT,
     },
     module_graph::ModuleGraph,
     ModuleId,
@@ -33,8 +33,9 @@ pub fn expand_exports_of_module_graph(
   for module in modules {
     if module.module_type.is_script() {
       let cm = context.meta.get_module_source_map(&module.id);
+      let globals = context.meta.get_globals(&module.id);
 
-      try_with(cm, &context.meta.script.globals, || {
+      try_with(cm, globals.value(), || {
         expand_module_exports_dfs(&module.id, module_graph, &mut expand_context);
       })
       .unwrap();
@@ -82,6 +83,7 @@ fn expand_module_exports_dfs(
               expand_context.insert_export_ident(
                 module_id,
                 EXPORT_DEFAULT.to_string(),
+                module_id.clone(),
                 create_export_default_ident(module_id, top_level_mark)
                   .to_id()
                   .into(),
@@ -92,6 +94,7 @@ fn expand_module_exports_dfs(
                 expand_context.insert_export_ident(
                   module_id,
                   EXPORT_DEFAULT.to_string(),
+                  module_id.clone(),
                   defined_ident.clone(),
                 );
               }
@@ -112,8 +115,15 @@ fn expand_module_exports_dfs(
 
               expand_module_exports_dfs(&source_module_id, module_graph, expand_context);
 
-              if let Some(ident) = expand_context.get_export_ident(&source_module_id, &local.sym) {
-                expand_context.insert_export_ident(module_id, export_str, ident);
+              if let Some(module_export_ident) =
+                expand_context.get_export_ident(&source_module_id, &local.sym)
+              {
+                expand_context.insert_export_ident(
+                  module_id,
+                  export_str,
+                  module_export_ident.module_id,
+                  module_export_ident.ident,
+                );
               } else {
                 // TODO: warning
                 println!(
@@ -122,7 +132,12 @@ fn expand_module_exports_dfs(
                 );
               }
             } else {
-              expand_context.insert_export_ident(module_id, export_str, local.clone());
+              expand_context.insert_export_ident(
+                module_id,
+                export_str,
+                module_id.clone(),
+                local.clone(),
+              );
             }
           }
           _ => {}
@@ -148,22 +163,33 @@ fn expand_module_exports_dfs(
             if let Some(source_module_export_ident_map) =
               expand_context.get_export_ident_map(&source_module_id)
             {
-              for (export_str, export_ident) in source_module_export_ident_map {
+              for (export_str, module_export_ident) in source_module_export_ident_map {
                 // skip default for export *
                 if export_str == EXPORT_DEFAULT || export_str == EXPORT_NAMESPACE {
                   continue;
                 }
 
-                expand_context.insert_export_ident(module_id, export_str, export_ident);
+                expand_context.insert_export_ident(
+                  module_id,
+                  export_str,
+                  module_export_ident.module_id,
+                  module_export_ident.ident,
+                );
               }
             }
           }
           ExportSpecifierInfo::Namespace(swc_id) => {
+            // add the exported ident first
+            expand_context.insert_export_ident(
+              module_id,
+              swc_id.sym.to_string(),
+              module_id.clone(),
+              swc_id.clone(),
+            );
+
             let source = export_info.source.as_ref().unwrap();
             let source_module_id =
               module_graph.get_dep_by_source(module_id, source, Some(ResolveKind::ExportFrom));
-            // add the exported ident first
-            expand_context.insert_export_ident(module_id, swc_id.sym.to_string(), swc_id.clone());
 
             expand_module_exports_dfs(&source_module_id, module_graph, expand_context);
             // add a special export ident for namespace export * as ns in the source module
@@ -171,6 +197,7 @@ fn expand_module_exports_dfs(
             expand_context.insert_export_ident(
               &source_module_id,
               EXPORT_NAMESPACE.to_string(),
+              source_module_id.clone(),
               create_export_namespace_ident(&source_module_id, top_level_mark)
                 .to_id()
                 .into(),
@@ -195,6 +222,7 @@ fn expand_module_exports_dfs(
         expand_context.insert_export_ident(
           &source_module_id,
           EXPORT_NAMESPACE.to_string(),
+          source_module_id.clone(),
           create_export_namespace_ident(&source_module_id, top_level_mark)
             .to_id()
             .into(),
@@ -205,7 +233,7 @@ fn expand_module_exports_dfs(
 }
 
 struct ExpandModuleExportsContext {
-  export_ident_map: HashMap<ModuleId, HashMap<String, SwcId>>,
+  export_ident_map: HashMap<ModuleId, HashMap<String, ModuleExportIdent>>,
   visited: HashSet<ModuleId>,
 }
 
@@ -229,27 +257,41 @@ impl ExpandModuleExportsContext {
     &mut self,
     module_id: &ModuleId,
     export_str: String,
+    export_module_id: ModuleId,
     export_ident: SwcId,
   ) {
     self
       .export_ident_map
       .entry(module_id.clone())
       .or_default()
-      .insert(export_str, export_ident);
+      .insert(
+        export_str,
+        ModuleExportIdent {
+          module_id: export_module_id,
+          ident: export_ident,
+        },
+      );
   }
 
-  pub fn get_export_ident_map(&self, module_id: &ModuleId) -> Option<HashMap<String, SwcId>> {
+  pub fn get_export_ident_map(
+    &self,
+    module_id: &ModuleId,
+  ) -> Option<HashMap<String, ModuleExportIdent>> {
     self.export_ident_map.get(module_id).cloned()
   }
 
   pub fn remove_export_ident_map(
     &mut self,
     module_id: &ModuleId,
-  ) -> Option<HashMap<String, SwcId>> {
+  ) -> Option<HashMap<String, ModuleExportIdent>> {
     self.export_ident_map.remove(module_id)
   }
 
-  pub fn get_export_ident(&self, module_id: &ModuleId, export_str: &str) -> Option<SwcId> {
+  pub fn get_export_ident(
+    &self,
+    module_id: &ModuleId,
+    export_str: &str,
+  ) -> Option<ModuleExportIdent> {
     self
       .export_ident_map
       .get(module_id)

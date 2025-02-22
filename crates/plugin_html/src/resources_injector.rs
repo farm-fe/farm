@@ -75,7 +75,7 @@ impl<'a> ResourcesInjector<'a> {
   fn inject_runtime_resources(&mut self, element: &mut Element) {
     element.children.push(Child::Element(create_element(
       "script",
-      Some(self.runtime_code),
+      Some(&format!("(function(){{{}}})();", self.runtime_code)),
       vec![],
     )));
   }
@@ -85,6 +85,10 @@ impl<'a> ResourcesInjector<'a> {
     initial_resources.extend(self.script_resources.clone());
     initial_resources.extend(self.css_resources.clone());
     initial_resources.sort();
+
+    if initial_resources.is_empty() {
+      return "".to_string();
+    }
 
     let initial_resources_code = initial_resources
       .into_iter()
@@ -96,16 +100,6 @@ impl<'a> ResourcesInjector<'a> {
       r#"{}.{}.si([{}]);"#,
       self.farm_global_this, FARM_MODULE_SYSTEM, initial_resources_code
     )
-  }
-
-  fn inject_initial_loaded_resources(&mut self, element: &mut Element) {
-    let code = self.get_initial_resources_code();
-
-    element.children.push(Child::Element(create_element(
-      "script",
-      Some(&code),
-      vec![],
-    )));
   }
 
   fn get_dynamic_resources_map_code(&self) -> String {
@@ -122,8 +116,27 @@ impl<'a> ResourcesInjector<'a> {
     )
   }
 
-  fn inject_dynamic_resources_map(&mut self, element: &mut Element) {
-    let final_code = self.get_dynamic_resources_map_code();
+  fn get_resources_info_code(&self) -> String {
+    let dynamic_resources_map = self.get_dynamic_resources_map_code();
+
+    if dynamic_resources_map.is_empty() {
+      return "".to_string();
+    }
+
+    let initial_resources = self.get_initial_resources_code();
+    let public_path = format!(
+      r#"{}.{}.sp(['{}']);"#,
+      self.farm_global_this, FARM_MODULE_SYSTEM, self.options.public_path
+    );
+
+    format!(
+      "{}{}{}",
+      initial_resources, dynamic_resources_map, public_path
+    )
+  }
+
+  fn inject_resources_info(&mut self, element: &mut Element) {
+    let final_code = self.get_resources_info_code();
 
     element.children.push(Child::Element(create_element(
       "script",
@@ -161,10 +174,7 @@ impl<'a> ResourcesInjector<'a> {
 
   fn get_bootstrap_code(&self) -> String {
     let mut final_code = String::new();
-    final_code.push_str(&format!(
-      r#"{}.{}.sp(['{}']);"#,
-      self.farm_global_this, FARM_MODULE_SYSTEM, self.options.public_path
-    ));
+
     final_code.push_str(&format!(
       r#"{}.{}.b();"#,
       self.farm_global_this, FARM_MODULE_SYSTEM
@@ -264,15 +274,13 @@ impl VisitMut for ResourcesInjector<'_> {
 
       if get_config_runtime_isolate(&self.options.context) {
         let bootstrap_code = format!(
-          "{}{}{}",
-          self.get_initial_resources_code(),
-          self.get_dynamic_resources_map_code(),
+          "{}{}",
+          self.get_resources_info_code(),
           self.get_bootstrap_code()
         );
         self.inject_additional_resource(FARM_MODULE_SYSTEM_BOOTSTRAP, bootstrap_code, element);
       } else {
-        self.inject_initial_loaded_resources(element);
-        self.inject_dynamic_resources_map(element);
+        self.inject_resources_info(element);
         self.inject_bootstrap(element);
       }
     };

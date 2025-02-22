@@ -1,14 +1,20 @@
 use farmfe_core::{
   module::{
-    meta_data::script::statement::SwcId, module_graph::ModuleGraph, ModuleId, ModuleSystem,
+    meta_data::script::statement::{Statement, SwcId},
+    module_graph::ModuleGraph,
+    ModuleId, ModuleSystem,
   },
+  plugin::ResolveKind,
   swc_ecma_ast::{
     self, ImportDecl, ImportSpecifier, ModuleDecl, ModuleExportName, ModuleItem, Stmt,
   },
 };
 use farmfe_core::{HashMap, HashSet};
 use farmfe_toolkit::{
-  script::idents_collector::DefinedIdentsCollector,
+  script::{
+    analyze_statement::{analyze_statement_info, AnalyzedStatementInfo},
+    idents_collector::DefinedIdentsCollector,
+  },
   swc_ecma_visit::{VisitMut, VisitMutWith, VisitWith},
 };
 
@@ -18,23 +24,25 @@ pub fn remove_useless_stmts(
   tree_shake_module_id: &ModuleId,
   module_graph: &mut ModuleGraph,
   tree_shake_modules_map: &HashMap<ModuleId, TreeShakeModule>,
-) {
+) -> Vec<ModuleId> {
   farmfe_core::farm_profile_function!(format!(
     "remove_useless_stmts {:?}",
     tree_shake_module_id.to_string()
   ));
 
-  // TODO update statements in module_graph
-
   let tree_shake_module = tree_shake_modules_map.get(tree_shake_module_id).unwrap();
   // if the module is not esm, we should keep all the statements
   if tree_shake_module.module_system != ModuleSystem::EsModule {
-    return;
+    return vec![];
   }
+  let is_export_all_source_module_empty =
+    get_export_all_source_module_is_empty(tree_shake_module_id, module_graph);
 
   let module = module_graph.module_mut(tree_shake_module_id).unwrap();
-  let swc_module = &mut module.meta.as_script_mut().ast;
+  let meta = module.meta.as_script_mut();
+  let swc_module = &mut meta.ast;
 
+  let mut modules_to_remove = vec![];
   let mut stmts_to_remove = vec![];
 
   for (index, item) in swc_module.body.iter_mut().enumerate() {
@@ -54,6 +62,16 @@ pub fn remove_useless_stmts(
           ModuleDecl::Import(_) | ModuleDecl::ExportDecl(_) | ModuleDecl::ExportNamed(_) => {
             decl.visit_mut_with(&mut useless_specifier_remover);
           }
+          ModuleDecl::ExportAll(export_all) => {
+            if let Some((source_module_id, is_empty)) =
+              is_export_all_source_module_empty.get(&export_all.src.value.to_string())
+            {
+              if *is_empty {
+                modules_to_remove.push(source_module_id.clone());
+                stmts_to_remove.push(index);
+              }
+            }
+          }
           _ => { /* ignore other module decl statement */ }
         },
         ModuleItem::Stmt(Stmt::Decl(swc_ecma_ast::Decl::Var(var_decl))) => {
@@ -69,6 +87,60 @@ pub fn remove_useless_stmts(
   for index in stmts_to_remove {
     swc_module.body.remove(index);
   }
+
+  // update statements in module_graph
+  let mut statements = vec![];
+
+  for (i, item) in swc_module.body.iter().enumerate() {
+    let AnalyzedStatementInfo {
+      export_info,
+      import_info,
+      defined_idents,
+      top_level_await,
+    } = analyze_statement_info(&i, item);
+    statements.push(Statement::new(
+      i,
+      export_info,
+      import_info,
+      defined_idents,
+      top_level_await,
+    ));
+  }
+
+  meta.statements = statements;
+
+  modules_to_remove
+}
+
+/// For export all statement, return whether the source module is empty
+/// e.g. export * from './foo'; if foo is empty, the return value should be:
+/// {
+///  './foo': true
+/// }
+fn get_export_all_source_module_is_empty(
+  tree_shake_module_id: &ModuleId,
+  module_graph: &ModuleGraph,
+) -> HashMap<String, (ModuleId, bool)> {
+  let mut source_module_is_empty = HashMap::default();
+
+  let tree_shake_module = module_graph.module(tree_shake_module_id).unwrap();
+  let meta = tree_shake_module.meta.as_script();
+
+  for item in meta.ast.body.iter() {
+    if let ModuleItem::ModuleDecl(ModuleDecl::ExportAll(export_all)) = item {
+      let source = export_all.src.value.to_string();
+      let source_module_id = module_graph.get_dep_by_source(
+        tree_shake_module_id,
+        &source,
+        Some(ResolveKind::ExportFrom),
+      );
+      let source_module = module_graph.module(&source_module_id).unwrap();
+      let is_empty = source_module.meta.as_script().ast.body.is_empty();
+      source_module_is_empty.insert(source, (source_module_id, is_empty));
+    }
+  }
+
+  source_module_is_empty
 }
 
 struct UselessSpecifierRemover<'a> {
