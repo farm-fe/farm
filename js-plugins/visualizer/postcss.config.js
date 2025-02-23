@@ -5,9 +5,9 @@ module.exports = {
   plugins: {
     "@stylexjs/postcss-plugin": {
       include: [
-        "pages/**/*.{js,jsx,ts,tsx}",
-        "themes/**/*.{js,jsx,ts,tsx}",
-        "components/**/*.{js,jsx,ts,tsx}",
+        "src/client/pages/**/*.{js,jsx,ts,tsx}",
+        "src/client/themes/**/*.{js,jsx,ts,tsx}",
+        "src/client/components/**/*.{js,jsx,ts,tsx}",
       ],
       babelConfig: {
         parserOpts: {

@@ -50,11 +50,11 @@
     "@iconify-json/ph": "^1.1.12"
   },
   "scripts": {
-    "start": "cd src/client && farm start",
+    "start": "farm start --config ./client.config.ts",
     "build": "pnpm build:plugin && cross-env FARM_FORMAT=esm farm build && pnpm build:client",
     "build:plugin": "farm build",
-    "build:client": "cd src/client && farm build",
-    "preview": "cd src/client && farm preview",
+    "build:client": "farm build --config ./client.config.ts",
+    "preview": "farm preview --config ./client.config.ts",
     "prepublishOnly": "npm run build"
   },
   "files": [

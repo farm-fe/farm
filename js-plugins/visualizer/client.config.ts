@@ -1,10 +1,13 @@
+import path from 'node:path';
 import { transform } from '@babel/core';
 import { JsPlugin, defineConfig } from '@farmfe/core';
 import postCSSPlugin from '@farmfe/js-plugin-postcss';
 import stylexExtendBabelPlugin from '@stylex-extend/babel-plugin';
 import stylexBabelPlugin from '@stylexjs/babel-plugin';
 import Pages from 'vite-plugin-pages';
-import { visualizer } from '../server';
+import { visualizer } from './src/server';
+
+const defaultWd = process.cwd();
 
 function stylex() {
   return <JsPlugin>{
@@ -64,11 +67,12 @@ function stylex() {
 }
 
 export default defineConfig({
+  root: path.join(defaultWd, './src/client'),
   plugins: [stylex(), '@farmfe/plugin-react', postCSSPlugin(), visualizer()],
   vitePlugins: [
     Pages({
       resolver: 'react',
-      dirs: 'pages'
+      dirs: path.join(defaultWd, './src/client/pages')
     })
   ]
 });
