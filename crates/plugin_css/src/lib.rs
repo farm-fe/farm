@@ -170,8 +170,6 @@ struct CssModulesCache {
 pub struct FarmPluginCss {
   css_modules_paths: Vec<Regex>,
   ast_map: Mutex<HashMap<String, (Stylesheet, CommentsMetaData)>>,
-  content_map: Mutex<HashMap<String, String>>,
-  sourcemap_map: Mutex<HashMap<String, String>>,
   locals_conversion: NameConversion,
 }
 
@@ -192,57 +190,21 @@ impl Plugin for FarmPluginCss {
     -99
   }
 
-  fn build_start(
-    &self,
-    context: &Arc<CompilationContext>,
-  ) -> farmfe_core::error::Result<Option<()>> {
-    if context.cache_manager.enable {
-      if let Some(cache) = context
-        .cache_manager
-        .plugin_cache
-        .read_cache_item::<CssModulesCache>(self.name())
-      {
-        self.content_map.lock().extend(cache.content_map);
-        self.sourcemap_map.lock().extend(cache.sourcemap_map);
-      };
-    }
-    Ok(Some(()))
-  }
-
-  fn finish(
-    &self,
-    _stat: &farmfe_core::stats::Stats,
-    context: &Arc<CompilationContext>,
-  ) -> farmfe_core::error::Result<Option<()>> {
-    if context.cache_manager.enable {
-      let content_map = self.content_map.lock().clone();
-      let sourcemap_map = self.sourcemap_map.lock().clone();
-
-      context.cache_manager.plugin_cache.write_cache_item(
-        self.name(),
-        CssModulesCache {
-          content_map,
-          sourcemap_map,
-        },
-      );
-    }
-
-    Ok(None)
-  }
-
   fn load(
     &self,
     param: &PluginLoadHookParam,
-    _context: &Arc<CompilationContext>,
+    context: &Arc<CompilationContext>,
     _hook_context: &PluginHookContext,
   ) -> farmfe_core::error::Result<Option<PluginLoadHookResult>> {
     if is_farm_css_modules(&param.module_id) {
       return Ok(Some(PluginLoadHookResult {
-        content: self
-          .content_map
-          .lock()
-          .get(&param.module_id)
-          .cloned()
+        content: context
+          .read_module_metadata::<String>(
+            self.name(),
+            &ModuleId::from(param.module_id.as_str()),
+            "content",
+          )
+          .map(|v| *v)
           .unwrap(),
         module_type: ModuleType::Custom(FARM_CSS_MODULES.to_string()),
         source_map: None,
@@ -278,7 +240,14 @@ impl Plugin for FarmPluginCss {
       return Ok(Some(PluginTransformHookResult {
         content: param.content.clone(),
         module_type: Some(ModuleType::Css),
-        source_map: self.sourcemap_map.lock().get(&param.module_id).cloned(),
+        source_map: context
+          .read_module_metadata::<String>(
+            self.name(),
+            &ModuleId::from(param.module_id.as_str()),
+            "map",
+          )
+          .map(|v| *v),
+        // source_map: self.sourcemap_map.lock().get(&param.module_id).cloned(),
         ignore_previous_source_map: false,
       }));
     }
@@ -334,10 +303,12 @@ impl Plugin for FarmPluginCss {
           (css_stylesheet, CommentsMetaData::from(comments)),
         );
 
-        self
-          .content_map
-          .lock()
-          .insert(cache_id.clone(), param.content.clone());
+        context.write_module_matedata(
+          self.name(),
+          css_modules_module_id.clone(),
+          "content",
+          param.content.clone(),
+        );
 
         // for composes dynamic import (eg: composes: action from "./action.css")
         let mut dynamic_import_of_composes = HashMap::default();
@@ -410,10 +381,12 @@ impl Plugin for FarmPluginCss {
             .to_writer(&mut buf)
             .expect("failed to write sourcemap");
 
-          self
-            .sourcemap_map
-            .lock()
-            .insert(cache_id.clone(), String::from_utf8(buf).unwrap());
+          context.write_module_matedata(
+            self.name(),
+            css_modules_module_id,
+            "map",
+            String::from_utf8(buf).unwrap(),
+          );
         }
 
         Ok(Some(PluginTransformHookResult {
@@ -724,8 +697,6 @@ impl FarmPluginCss {
         .unwrap_or_default(),
       ast_map: Mutex::new(Default::default()),
       locals_conversion: get_config_css_modules_local_conversion(config),
-      content_map: Mutex::new(Default::default()),
-      sourcemap_map: Mutex::new(Default::default()),
     }
   }
 

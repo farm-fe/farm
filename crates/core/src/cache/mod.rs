@@ -1,5 +1,6 @@
-use std::rc::Rc;
+use std::{rc::Rc, sync::Arc};
 
+use dashmap::DashMap;
 use farmfe_utils::hash::sha256;
 use parking_lot::Mutex;
 use store::{
@@ -17,6 +18,7 @@ pub mod plugin_cache;
 pub mod resource_cache;
 pub mod store;
 pub mod utils;
+pub use module_cache::ModuleMatedataStore;
 
 /// All cache related operation are charged by [CacheManager]
 /// Note: that you should use CacheManager::new to create a new instance so that the cache can be read from disk.
@@ -35,11 +37,11 @@ pub struct CacheManager {
 }
 
 impl CacheManager {
-  pub fn new(cache_dir: &str, namespace: &str, mode: Mode) -> Self {
+  pub fn new(cache_dir: &str, namespace: &str, mode: Mode, matedata: Arc<DashMap<String, ModuleMatedataStore>>) -> Self {
     let store_factory: Rc<Box<dyn CacheStoreFactory>> =
       Rc::new(Box::new(DiskCacheFactory::new(cache_dir, namespace, mode)));
 
-    let module_cache = module_cache::ModuleCacheManager::new(cache_dir, store_factory.clone());
+    let module_cache = module_cache::ModuleCacheManager::new(cache_dir, store_factory.clone(), matedata);
     let resource_cache = resource_cache::ResourceCacheManager::new(store_factory.clone());
 
     Self {
@@ -97,29 +99,5 @@ impl CacheManager {
     });
     self.showdown();
     *lock = false;
-  }
-
-  pub fn write<V: Cacheable>(&self, name: &str, value: V) -> Result<()> {
-    let bytes = value.serialize_bytes().unwrap();
-    self
-      .custom
-      .write_single_cache(
-        CacheStoreKey {
-          name: name.to_string(),
-          key: sha256(&bytes, 8),
-        },
-        bytes,
-      )
-      .unwrap();
-
-    Ok(())
-  }
-
-  pub fn read<V: Cacheable>(&self, name: &str) -> Result<Option<Box<V>>> {
-    let bytes = self.custom.read_cache(name).unwrap();
-
-    let v = V::deserialize_bytes(bytes).unwrap();
-
-    Ok(v.downcast::<V>().ok())
   }
 }

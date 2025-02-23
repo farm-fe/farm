@@ -12,7 +12,7 @@ use serde::{Deserialize, Serialize};
 use swc_common::{FileName, Globals, SourceFile, SourceMap};
 
 use crate::{
-  cache::CacheManager,
+  cache::{CacheManager, ModuleMatedataStore},
   config::{persistent_cache::PersistentCacheConfig, Config},
   error::Result,
   module::{
@@ -24,7 +24,7 @@ use crate::{
     ResourceType,
   },
   stats::Stats,
-  HashMap,
+  Cacheable, HashMap,
 };
 
 use self::log_store::LogStore;
@@ -53,11 +53,13 @@ pub struct CompilationContext {
   pub log_store: Box<Mutex<LogStore>>,
   pub resolve_cache: Box<Mutex<HashMap<PluginResolveHookParam, PluginResolveHookResult>>>,
   pub custom: Box<DashMap<String, Box<dyn Any + Send + Sync>>>,
+  pub matedata: Box<Arc<DashMap<String, ModuleMatedataStore>>>,
 }
 
 impl CompilationContext {
   pub fn new(mut config: Config, plugins: Vec<Arc<dyn Plugin>>) -> Result<Self> {
     let (cache_dir, namespace) = Self::normalize_persistent_cache_config(&mut config);
+    let matedata = Arc::new(DashMap::default());
 
     Ok(Self {
       watch_graph: Box::new(RwLock::new(WatchGraph::new())),
@@ -67,7 +69,7 @@ impl CompilationContext {
       resources_map: Box::new(Mutex::new(HashMap::default())),
       plugin_driver: Box::new(Self::create_plugin_driver(plugins, config.record)),
       cache_manager: Box::new(
-        CacheManager::new(&cache_dir, &namespace, config.mode)
+        CacheManager::new(&cache_dir, &namespace, config.mode, matedata.clone())
           .cache_enable(config.persistent_cache.enabled()),
       ),
       thread_pool: Arc::new(
@@ -82,6 +84,7 @@ impl CompilationContext {
       log_store: Box::new(Mutex::new(LogStore::new())),
       resolve_cache: Box::new(Mutex::new(HashMap::default())),
       custom: Box::new(DashMap::default()),
+      matedata: Box::new(matedata),
     })
   }
 
@@ -182,6 +185,33 @@ impl CompilationContext {
   pub fn clear_log_store(&self) {
     let mut log_store = self.log_store.lock();
     log_store.clear();
+  }
+
+  pub fn write_module_matedata<V: Cacheable>(
+    &self,
+    plugin_name: &str,
+    module_id: ModuleId,
+    name: &str,
+    matedata: V,
+  ) {
+    self.cache_manager.module_cache.write_metadata(
+      plugin_name,
+      module_id,
+      name.to_string(),
+      matedata,
+    );
+  }
+
+  pub fn read_module_metadata<V: Cacheable>(
+    &self,
+    plugin_name: &str,
+    module_id: &ModuleId,
+    name: &str,
+  ) -> Option<Box<V>> {
+    self
+      .cache_manager
+      .module_cache
+      .read_metadata(plugin_name, module_id, name)
   }
 }
 

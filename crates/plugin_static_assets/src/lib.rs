@@ -11,7 +11,7 @@ use farmfe_core::{
   config::{asset::AssetFormatMode, custom::get_config_assets_mode, Config},
   context::{CompilationContext, EmitFileParams},
   deserialize,
-  module::ModuleType,
+  module::{ModuleId, ModuleType},
   plugin::{Plugin, PluginResolveHookResult},
   relative_path::RelativePath,
   resource::{Resource, ResourceOrigin, ResourceType},
@@ -276,23 +276,23 @@ impl Plugin for FarmPluginStaticAssets {
       return Ok(None);
     }
 
-    let mut metadata = context
-      .cache_manager
-      .module_cache
-      .metadata(cache_asset_name().as_str());
+    // let mut metadata = context
+    //   .cache_manager
+    //   .module_cache
+    //   .metadata(cache_asset_name().as_str());
 
-    if let Some(resources) = metadata.get_cache::<CachedStaticAssets>("lists") {
-      for asset in resources.list {
-        if let ResourceOrigin::Module(m) = asset.origin {
-          context.emit_file(EmitFileParams {
-            resolved_path: m.to_string(),
-            name: asset.name,
-            content: asset.bytes,
-            resource_type: asset.resource_type,
-          });
-        }
-      }
-    };
+    // if let Some(resources) = metadata.get_cache::<CachedStaticAssets>("lists") {
+    //   for asset in resources.list {
+    //     if let ResourceOrigin::Module(m) = asset.origin {
+    //       context.emit_file(EmitFileParams {
+    //         resolved_path: m.to_string(),
+    //         name: asset.name,
+    //         content: asset.bytes,
+    //         resource_type: asset.resource_type,
+    //       });
+    //     }
+    //   }
+    // };
 
     Ok(None)
   }
@@ -318,11 +318,11 @@ impl Plugin for FarmPluginStaticAssets {
     }
 
     if !list.is_empty() {
-      context.cache_manager.module_cache.write_metadata(
-        cache_asset_name(),
-        "lists".to_string(),
-        CachedStaticAssets { list },
-      );
+      // context.cache_manager.module_cache.write_metadata(
+      //   ModuleId::from(cache_asset_name()),
+      //   "lists".to_string(),
+      //   CachedStaticAssets { list },
+      // );
     }
 
     Ok(None)

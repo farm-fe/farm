@@ -90,15 +90,20 @@ impl CustomMetaDataMap {
   }
 
   pub fn get_cache<T: Cacheable>(&mut self, key: &str) -> Option<Box<T>> {
-    self
-      .bytes_map
-      .get(key)
-      .and_then(|v| {
-        let bytes = v.clone();
-        let value = T::deserialize_bytes(bytes).unwrap();
+    if let Some(v) = self.map.get(key) {
+      let res = v.serialize_bytes().ok();
 
-        value.downcast::<T>().ok()
-      })
+      if let Some(bytes) = res {
+        self.bytes_map.insert(key.to_string(), bytes);
+      }
+    }
+
+    if let Some(bytes) = self.bytes_map.get(key) {
+      let value = T::deserialize_bytes(bytes.value().clone()).unwrap();
+      return value.downcast::<T>().ok();
+    }
+
+    None
   }
 
   pub fn get_ref<T: Cacheable>(&self, key: &str) -> Option<&T> {
