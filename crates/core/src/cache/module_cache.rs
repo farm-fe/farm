@@ -1,9 +1,6 @@
-use std::collections::HashMap;
-use std::ops::{Deref, DerefMut};
-use std::rc::Rc;
 use std::sync::Arc;
 
-use dashmap::mapref::one::{MappedRef, MappedRefMut, Ref, RefMut};
+use dashmap::mapref::one::{Ref, RefMut};
 
 use dashmap::DashMap;
 use farmfe_macro_cache_item::cache_item;
@@ -18,7 +15,7 @@ use immutable_modules::ImmutableModulesMemoryStore;
 use module_memory_store::ModuleMemoryStore;
 use mutable_modules::MutableModulesMemoryStore;
 
-use super::store::constant::CacheStoreFactory;
+use super::CacheContext;
 
 pub mod immutable_modules;
 pub mod module_memory_store;
@@ -31,7 +28,9 @@ pub struct ModuleCacheManager {
   /// Store is responsible for how to read and load cache from disk.
   pub mutable_modules_store: MutableModulesMemoryStore,
   pub immutable_modules_store: ImmutableModulesMemoryStore,
-  pub module_matedata: ModuleMatedataMap,
+  // pub module_matedata: ModuleMatedataMap,
+  pub module_matedata: ModuleMatedataStore,
+  context: Arc<CacheContext>,
 }
 
 #[cache_item]
@@ -72,7 +71,8 @@ pub struct CachedModule {
   ///
   pub is_expired: bool,
 
-  pub matedata: Option<HashMap<String, CustomMetaDataMap>>,
+  pub matedata: Option<CustomMetaDataMap>,
+  // pub matedata: Option<HashMap<String, CustomMetaDataMap>>,
 }
 
 impl CachedModule {
@@ -107,15 +107,12 @@ impl CachedModule {
 }
 
 impl ModuleCacheManager {
-  pub fn new(
-    cache_dir_str: &str,
-    store: Rc<Box<dyn CacheStoreFactory>>,
-    matedata: ModuleMatedataMap,
-  ) -> Self {
+  pub fn new(context: Arc<CacheContext>) -> Self {
     Self {
-      mutable_modules_store: MutableModulesMemoryStore::new(store.clone()),
-      immutable_modules_store: ImmutableModulesMemoryStore::new(cache_dir_str, store.clone()),
-      module_matedata: matedata,
+      mutable_modules_store: MutableModulesMemoryStore::new(context.clone()),
+      immutable_modules_store: ImmutableModulesMemoryStore::new(context.clone()),
+      module_matedata: ModuleMatedataStore::new(),
+      context,
     }
   }
 
@@ -132,20 +129,24 @@ impl ModuleCacheManager {
   }
 
   pub fn set_cache(&self, key: ModuleId, mut module: CachedModule) {
-    let map = self
-      .module_matedata
-      .iter()
-      .fold(HashMap::new(), |mut res, v| {
-        let plugin_name = v.key();
+    // let map = self
+    //   .module_matedata
+    //   .iter()
+    //   .fold(HashMap::new(), |mut res, v| {
+    //     let plugin_name = v.key();
 
-        if let Some(map) = v.get_map(&key) {
-          res.insert(plugin_name.to_string(), map);
-        }
+    //     if let Some(map) = v.get_map(&key) {
+    //       res.insert(plugin_name.to_string(), map);
+    //     }
 
-        res
-      });
+    //     res
+    //   });
 
-    module.matedata = Some(map);
+    // module.matedata = Some(map);
+
+    if let Some(matedata) = self.module_matedata.get_map(&key) {
+      module.matedata = Some(matedata);
+    }
 
     if module.module.immutable {
       self.immutable_modules_store.set_cache(key, module);
@@ -182,6 +183,10 @@ impl ModuleCacheManager {
     &self,
     key: &ModuleId,
   ) -> Option<RefMut<'_, ModuleId, CachedModule>> {
+    if !self.context.cache_enable {
+      return None;
+    }
+
     self
       .mutable_modules_store
       .get_cache_mut_ref(key)
@@ -213,9 +218,7 @@ impl ModuleCacheManager {
     self.mutable_modules_store.invalidate_cache(key);
     self.immutable_modules_store.invalidate_cache(key);
 
-    self.module_matedata.iter().for_each(|v| {
-      v.invalidate(key);
-    });
+    self.module_matedata.invalidate(key);
   }
 
   pub fn cache_outdated(&self, key: &ModuleId) -> bool {
@@ -231,17 +234,19 @@ impl ModuleCacheManager {
   ) -> Option<Box<V>> {
     // read from cached module
     if let Some(mut v) = self.get_cache_mut_option_ref(key) {
-      return v
-        .matedata
-        .as_mut()
-        .and_then(|v| v.get_mut(plugin_name).and_then(|v| v.get_cache(name)));
+      return v.matedata.as_mut()?.get_cache(name);
+      // return v
+      //   .matedata
+      //   .as_mut()
+      //   .and_then(|v| v.get_mut(plugin_name).and_then(|v| v.get_cache(name)));
     }
 
+    self.module_matedata.get_matedata(key, name)
     // read from matedata
-    self
-      .module_matedata
-      .get(plugin_name)
-      .and_then(|v: Ref<'_, String, ModuleMatedataStore>| v.get_matedata(key, name))
+    // self
+    //   .module_matedata
+    //   .get(plugin_name)
+    //   .and_then(|v: Ref<'_, String, ModuleMatedataStore>| v.get_matedata(key, name))
   }
 
   pub fn write_metadata<V: Cacheable>(
@@ -251,37 +256,51 @@ impl ModuleCacheManager {
     name: String,
     value: V,
   ) {
-    // write to cached module
     if let Some(mut v) = self.get_cache_mut_option_ref(&key) {
-      let cached_module = v.value_mut();
-
-      if cached_module.matedata.is_none() {
-        cached_module.matedata = Default::default();
+      if v.matedata.is_none() {
+        v.matedata = Some(Default::default());
       }
 
-      if let Some(ref mut matedata) = cached_module.matedata {
-        if !matedata.contains_key(plugin_name) {
-          matedata.insert(plugin_name.to_string(), Default::default());
-        }
-
-        if let Some(ref mut matedata) = matedata.get_mut(plugin_name) {
-          matedata.insert(name, Box::new(value));
-        }
-      }
-
+      v.matedata.as_mut().unwrap().insert(name, Box::new(value));
       return;
     }
 
-    // write to matedata
-    if !self.module_matedata.contains_key(plugin_name) {
-      self
-        .module_matedata
-        .insert(plugin_name.to_string(), Default::default());
-    }
+    self
+      .module_matedata
+      .write_metadata(key, name, Box::new(value));
 
-    self.module_matedata.get(plugin_name).map(|v| {
-      v.write_metadata(key, name, Box::new(value));
-    });
+    // ---
+    // // write to cached module
+    // if let Some(mut v) = self.get_cache_mut_option_ref(&key) {
+    //   let cached_module = v.value_mut();
+
+    //   if cached_module.matedata.is_none() {
+    //     cached_module.matedata = Default::default();
+    //   }
+
+    //   if let Some(ref mut matedata) = cached_module.matedata {
+    //     if !matedata.contains_key(plugin_name) {
+    //       matedata.insert(plugin_name.to_string(), Default::default());
+    //     }
+
+    //     if let Some(ref mut matedata) = matedata.get_mut(plugin_name) {
+    //       matedata.insert(name, Box::new(value));
+    //     }
+    //   }
+
+    //   return;
+    // }
+
+    // // write to matedata
+    // if !self.module_matedata.contains_key(plugin_name) {
+    //   self
+    //     .module_matedata
+    //     .insert(plugin_name.to_string(), Default::default());
+    // }
+
+    // self.module_matedata.get(plugin_name).map(|v| {
+    //   v.write_metadata(key, name, Box::new(value));
+    // });
   }
 
   // pub fn read_metadata_ref<V: Cacheable>(

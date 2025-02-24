@@ -162,6 +162,20 @@ impl Plugin for FarmPluginStaticAssets {
     param: &farmfe_core::plugin::PluginTransformHookParam,
     context: &std::sync::Arc<farmfe_core::context::CompilationContext>,
   ) -> farmfe_core::error::Result<Option<farmfe_core::plugin::PluginTransformHookResult>> {
+    if let Some(resource) = context.read_module_matedata::<Resource>(
+      self.name(),
+      &ModuleId::from(param.module_id.as_str()),
+      "asset-resource",
+    ) {
+      context.emit_file(EmitFileParams {
+        resolved_path: param.module_id.clone(),
+        name: resource.name,
+        content: resource.bytes,
+        resource_type: resource.resource_type,
+      });
+      return Ok(None);
+    }
+
     if matches!(param.module_type, ModuleType::Asset) {
       if param.query.iter().any(|(k, _)| k == "inline") {
         let file_base64 = if param.content.is_empty() {
@@ -268,69 +282,25 @@ impl Plugin for FarmPluginStaticAssets {
     Ok(None)
   }
 
-  fn build_start(
-    &self,
-    context: &Arc<CompilationContext>,
-  ) -> farmfe_core::error::Result<Option<()>> {
-    if !context.cache_manager.enable {
-      return Ok(None);
-    }
-
-    // let mut metadata = context
-    //   .cache_manager
-    //   .module_cache
-    //   .metadata(cache_asset_name().as_str());
-
-    // if let Some(resources) = metadata.get_cache::<CachedStaticAssets>("lists") {
-    //   for asset in resources.list {
-    //     if let ResourceOrigin::Module(m) = asset.origin {
-    //       context.emit_file(EmitFileParams {
-    //         resolved_path: m.to_string(),
-    //         name: asset.name,
-    //         content: asset.bytes,
-    //         resource_type: asset.resource_type,
-    //       });
-    //     }
-    //   }
-    // };
-
-    Ok(None)
-  }
-
   fn finish(
     &self,
     _stat: &farmfe_core::stats::Stats,
     context: &Arc<CompilationContext>,
   ) -> farmfe_core::error::Result<Option<()>> {
-    if !context.cache_manager.enable {
+    if !context.cache_manager.enable() {
       return Ok(None);
     }
 
-    let mut list = vec![];
     let resources_map = context.resources_map.lock();
 
     for (_, resource) in resources_map.iter() {
       if let ResourceOrigin::Module(m) = &resource.origin {
-        if context.cache_manager.module_cache.has_cache(m) {
-          list.push(resource.clone());
-        }
+        context.write_module_matedata(self.name(), m.clone(), "asset-resource", resource.clone());
       }
-    }
-
-    if !list.is_empty() {
-      // context.cache_manager.module_cache.write_metadata(
-      //   ModuleId::from(cache_asset_name()),
-      //   "lists".to_string(),
-      //   CachedStaticAssets { list },
-      // );
     }
 
     Ok(None)
   }
-}
-
-fn cache_asset_name() -> String {
-  format!("{}:assets", PLUGIN_NAME)
 }
 
 #[cache_item(farmfe_core)]

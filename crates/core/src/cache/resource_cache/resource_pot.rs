@@ -1,14 +1,14 @@
-use std::rc::Rc;
+use std::{rc::Rc, sync::Arc};
 
 use dashmap::DashMap;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use rkyv::Deserialize;
 
 use crate::{
-  cache::store::{
+  cache::{store::{
     constant::{CacheStoreFactory, CacheStoreTrait},
     CacheStoreKey,
-  },
+  }, CacheContext},
   deserialize, serialize, HashMap,
 };
 
@@ -23,8 +23,8 @@ pub struct ResourcePotMemoryStore {
 }
 
 impl ResourcePotMemoryStore {
-  pub fn new(store_factory: Rc<Box<dyn CacheStoreFactory>>) -> Self {
-    let store = store_factory.create_cache_store("resource");
+  pub fn new(context: Arc<CacheContext>) -> Self {
+    let store = context.store_factory.create_cache_store("resource");
 
     Self {
       store,

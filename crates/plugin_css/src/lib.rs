@@ -199,7 +199,7 @@ impl Plugin for FarmPluginCss {
     if is_farm_css_modules(&param.module_id) {
       return Ok(Some(PluginLoadHookResult {
         content: context
-          .read_module_metadata::<String>(
+          .read_module_matedata::<String>(
             self.name(),
             &ModuleId::from(param.module_id.as_str()),
             "content",
@@ -240,13 +240,14 @@ impl Plugin for FarmPluginCss {
       return Ok(Some(PluginTransformHookResult {
         content: param.content.clone(),
         module_type: Some(ModuleType::Css),
-        source_map: context
-          .read_module_metadata::<String>(
-            self.name(),
-            &ModuleId::from(param.module_id.as_str()),
-            "map",
-          )
-          .map(|v| *v),
+        source_map: None,
+        // source_map: context
+        //   .read_module_matedata::<String>(
+        //     self.name(),
+        //     &ModuleId::from(param.module_id.as_str()),
+        //     "map",
+        //   )
+        //   .map(|v| *v),
         // source_map: self.sourcemap_map.lock().get(&param.module_id).cloned(),
         ignore_previous_source_map: false,
       }));
@@ -303,7 +304,7 @@ impl Plugin for FarmPluginCss {
           (css_stylesheet, CommentsMetaData::from(comments)),
         );
 
-        context.write_module_matedata(
+        context.write_module_matedata::<String>(
           self.name(),
           css_modules_module_id.clone(),
           "content",
@@ -381,12 +382,12 @@ impl Plugin for FarmPluginCss {
             .to_writer(&mut buf)
             .expect("failed to write sourcemap");
 
-          context.write_module_matedata(
-            self.name(),
-            css_modules_module_id,
-            "map",
-            String::from_utf8(buf).unwrap(),
-          );
+          // context.write_module_matedata::<String>(
+          //   self.name(),
+          //   css_modules_module_id,
+          //   "map",
+          //   String::from_utf8(buf).unwrap(),
+          // );
         }
 
         Ok(Some(PluginTransformHookResult {

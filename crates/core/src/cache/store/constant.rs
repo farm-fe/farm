@@ -17,6 +17,6 @@ pub trait CacheStoreTrait: Send + Sync {
 pub const FARM_CACHE_VERSION: &str = "0.6.1";
 pub const FARM_CACHE_MANIFEST_FILE: &str = "farm-cache.json";
 
-pub trait CacheStoreFactory {
+pub trait CacheStoreFactory: Send + Sync {
   fn create_cache_store(&self, name: &str) -> Box<dyn CacheStoreTrait>;
 }

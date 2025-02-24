@@ -1,4 +1,4 @@
-use std::rc::Rc;
+use std::{rc::Rc, sync::Arc};
 
 use dashmap::DashMap;
 use farmfe_macro_cache_item::cache_item;
@@ -13,6 +13,7 @@ use crate::{
       CacheStoreKey,
     },
     utils::cache_panic,
+    CacheContext, CacheType,
   },
   module::ModuleId,
   HashMap, HashSet,
@@ -52,8 +53,8 @@ pub struct ImmutableModulesMemoryStore {
 }
 
 impl ImmutableModulesMemoryStore {
-  pub fn new(cache_dir_str: &str, store_factory: Rc<Box<dyn CacheStoreFactory>>) -> Self {
-    let store = store_factory.create_cache_store("immutable-module");
+  pub fn new(context: Arc<CacheContext>) -> Self {
+    let store = context.store_factory.create_cache_store("immutable-module");
     let manifest_bytes = store.read_cache(MANIFEST_KEY).unwrap_or_default();
     let manifest: HashMap<String, String> =
       serde_json::from_slice(&manifest_bytes).unwrap_or_default();
@@ -70,6 +71,12 @@ impl ImmutableModulesMemoryStore {
         .or_insert_with(HashSet::default);
       set.insert(key.clone());
     }
+
+    let cache_dir_str = if let CacheType::Disk { cache_dir, .. } = &context.option {
+      cache_dir.clone()
+    } else {
+      "VIRTUAL_CACHE_DIR".to_string()
+    };
 
     Self {
       store,

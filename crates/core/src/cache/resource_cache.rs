@@ -1,9 +1,9 @@
-use std::rc::Rc;
+use std::sync::Arc;
 
 use self::resource_memory_store::{CachedResourcePot, ResourceMemoryStore};
 use self::resource_pot::ResourcePotMemoryStore;
 
-use super::store::constant::CacheStoreFactory;
+use super::CacheContext;
 
 pub mod resource_memory_store;
 pub mod resource_pot;
@@ -13,9 +13,9 @@ pub struct ResourceCacheManager {
 }
 
 impl ResourceCacheManager {
-  pub fn new(store_factory: Rc<Box<dyn CacheStoreFactory>>) -> Self {
+  pub fn new(context: Arc<CacheContext>) -> Self {
     Self {
-      resource_pot_store: ResourcePotMemoryStore::new(store_factory),
+      resource_pot_store: ResourcePotMemoryStore::new(context),
     }
   }
 

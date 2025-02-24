@@ -1,11 +1,11 @@
-use std::rc::Rc;
+use std::sync::Arc;
 
 use dashmap::{mapref::one::Ref, DashMap};
 use farmfe_utils::hash::sha256;
 
 use crate::{Cacheable, HashMap};
 
-use super::store::constant::{CacheStoreFactory, CacheStoreTrait};
+use super::{store::constant::CacheStoreTrait, CacheContext};
 
 pub struct PluginCacheManager {
   store: Box<dyn CacheStoreTrait>,
@@ -13,8 +13,8 @@ pub struct PluginCacheManager {
 }
 
 impl PluginCacheManager {
-  pub fn new(store_factory: Rc<Box<dyn CacheStoreFactory>>) -> Self {
-    let store = store_factory.create_cache_store("plugin");
+  pub fn new(context: Arc<CacheContext>) -> Self {
+    let store = context.store_factory.create_cache_store("plugin");
     Self {
       store,
       cache: DashMap::new(),

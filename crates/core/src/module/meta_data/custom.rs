@@ -91,11 +91,9 @@ impl CustomMetaDataMap {
 
   pub fn get_cache<T: Cacheable>(&mut self, key: &str) -> Option<Box<T>> {
     if let Some(v) = self.map.get(key) {
-      let res = v.serialize_bytes().ok();
+      let bytes = v.serialize_bytes().ok()?;
 
-      if let Some(bytes) = res {
-        self.bytes_map.insert(key.to_string(), bytes);
-      }
+      return T::deserialize_bytes(bytes).ok()?.downcast::<T>().ok();
     }
 
     if let Some(bytes) = self.bytes_map.get(key) {

@@ -12,7 +12,7 @@ use serde::{Deserialize, Serialize};
 use swc_common::{FileName, Globals, SourceFile, SourceMap};
 
 use crate::{
-  cache::{CacheManager, ModuleMatedataStore},
+  cache::{CacheManager, CacheOption, CacheType, ModuleMatedataStore},
   config::{persistent_cache::PersistentCacheConfig, Config},
   error::Result,
   module::{
@@ -53,13 +53,12 @@ pub struct CompilationContext {
   pub log_store: Box<Mutex<LogStore>>,
   pub resolve_cache: Box<Mutex<HashMap<PluginResolveHookParam, PluginResolveHookResult>>>,
   pub custom: Box<DashMap<String, Box<dyn Any + Send + Sync>>>,
-  pub matedata: Box<Arc<DashMap<String, ModuleMatedataStore>>>,
 }
 
 impl CompilationContext {
   pub fn new(mut config: Config, plugins: Vec<Arc<dyn Plugin>>) -> Result<Self> {
     let (cache_dir, namespace) = Self::normalize_persistent_cache_config(&mut config);
-    let matedata = Arc::new(DashMap::default());
+    // let matedata = Arc::new(ModuleMatedataStore::default());
 
     Ok(Self {
       watch_graph: Box::new(RwLock::new(WatchGraph::new())),
@@ -68,10 +67,17 @@ impl CompilationContext {
       resource_pot_map: Box::new(RwLock::new(ResourcePotMap::new())),
       resources_map: Box::new(Mutex::new(HashMap::default())),
       plugin_driver: Box::new(Self::create_plugin_driver(plugins, config.record)),
-      cache_manager: Box::new(
-        CacheManager::new(&cache_dir, &namespace, config.mode, matedata.clone())
-          .cache_enable(config.persistent_cache.enabled()),
-      ),
+      cache_manager: Box::new(CacheManager::new(
+        CacheOption {
+          cache_enable: config.persistent_cache.enabled(),
+          option: CacheType::Disk {
+            cache_dir,
+            namespace,
+            mode: config.mode,
+          },
+        },
+        // matedata.clone(),
+      )),
       thread_pool: Arc::new(
         ThreadPoolBuilder::new()
           .num_threads(num_cpus::get())
@@ -84,7 +90,6 @@ impl CompilationContext {
       log_store: Box::new(Mutex::new(LogStore::new())),
       resolve_cache: Box::new(Mutex::new(HashMap::default())),
       custom: Box::new(DashMap::default()),
-      matedata: Box::new(matedata),
     })
   }
 
@@ -202,7 +207,7 @@ impl CompilationContext {
     );
   }
 
-  pub fn read_module_metadata<V: Cacheable>(
+  pub fn read_module_matedata<V: Cacheable>(
     &self,
     plugin_name: &str,
     module_id: &ModuleId,

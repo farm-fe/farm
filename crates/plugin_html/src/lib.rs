@@ -63,7 +63,7 @@ impl Plugin for FarmPluginHtml {
     &self,
     context: &Arc<CompilationContext>,
   ) -> farmfe_core::error::Result<Option<()>> {
-    if context.cache_manager.enable {
+    if context.cache_manager.enable() {
       if let Some(v) = context
         .cache_manager
         .plugin_cache
@@ -82,7 +82,7 @@ impl Plugin for FarmPluginHtml {
     _stat: &farmfe_core::stats::Stats,
     context: &Arc<CompilationContext>,
   ) -> farmfe_core::error::Result<Option<()>> {
-    if context.cache_manager.enable {
+    if context.cache_manager.enable() {
       let module_graph = context.module_graph.read();
 
       context.cache_manager.plugin_cache.write_cache_item(

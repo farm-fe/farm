@@ -1,14 +1,13 @@
-use std::{rc::Rc, sync::Arc};
+use std::sync::Arc;
 
-use dashmap::DashMap;
-use farmfe_utils::hash::sha256;
 use parking_lot::Mutex;
 use store::{
   constant::{CacheStoreFactory, CacheStoreTrait},
-  CacheStoreKey, DiskCacheFactory,
+  memory::MemoryCacheFactory,
+  DiskCacheFactory,
 };
 
-use crate::{config::Mode, error::Result, Cacheable};
+use crate::config::Mode;
 
 use self::plugin_cache::PluginCacheManager;
 
@@ -32,46 +31,82 @@ pub struct CacheManager {
   pub custom: Box<dyn CacheStoreTrait>,
   /// lock for cache manager
   pub lock: Mutex<bool>,
-  pub enable: bool,
   _store: Box<dyn CacheStoreTrait>,
+  context: Arc<CacheContext>,
+}
+
+pub enum CacheType {
+  Memory,
+  Disk {
+    cache_dir: String,
+    namespace: String,
+    mode: Mode,
+  },
+}
+
+impl CacheType {
+  pub fn create_store_factory(&self) -> Box<dyn CacheStoreFactory> {
+    match self {
+      CacheType::Memory => Box::new(MemoryCacheFactory::new()),
+      CacheType::Disk {
+        cache_dir,
+        namespace,
+        mode,
+      } => Box::new(DiskCacheFactory::new(cache_dir, namespace, *mode)),
+    }
+  }
+}
+
+pub struct CacheOption {
+  pub cache_enable: bool,
+  pub option: CacheType,
+}
+
+pub struct CacheContext {
+  pub cache_enable: bool,
+  pub option: CacheType,
+  pub store_factory: Box<dyn CacheStoreFactory>,
 }
 
 impl CacheManager {
-  pub fn new(cache_dir: &str, namespace: &str, mode: Mode, matedata: Arc<DashMap<String, ModuleMatedataStore>>) -> Self {
-    let store_factory: Rc<Box<dyn CacheStoreFactory>> =
-      Rc::new(Box::new(DiskCacheFactory::new(cache_dir, namespace, mode)));
+  pub fn new(option: CacheOption) -> Self {
+    let store_factory: Box<dyn CacheStoreFactory> = option.option.create_store_factory();
+    let context = Arc::new(CacheContext {
+      cache_enable: option.cache_enable,
+      option: option.option,
+      store_factory,
+    });
 
-    let module_cache = module_cache::ModuleCacheManager::new(cache_dir, store_factory.clone(), matedata);
-    let resource_cache = resource_cache::ResourceCacheManager::new(store_factory.clone());
+    let module_cache = module_cache::ModuleCacheManager::new(context.clone());
+    let resource_cache = resource_cache::ResourceCacheManager::new(context.clone());
 
     Self {
       module_cache,
       resource_cache,
       // plugin cache is not initialized here. it will be initialized when compile starts.
-      plugin_cache: PluginCacheManager::new(store_factory.clone()),
-      custom: store_factory.create_cache_store("custom"),
-      lazy_compile_store: store_factory.create_cache_store("lazy-compilation"),
+      plugin_cache: PluginCacheManager::new(context.clone()),
+      custom: context.store_factory.create_cache_store("custom"),
+      lazy_compile_store: context.store_factory.create_cache_store("lazy-compilation"),
       lock: Mutex::new(false),
-      enable: false,
-      _store: store_factory.create_cache_store("_"),
+      _store: context.store_factory.create_cache_store("_"),
+      context,
     }
   }
 
+  #[inline]
+  pub fn enable(&self) -> bool {
+    self.context.cache_enable
+  }
+
   pub fn showdown(&self) {
-    if !self.enable {
+    if !self.context.cache_enable {
       return;
     }
     self._store.shutdown();
   }
 
-  pub fn cache_enable(mut self, enable: bool) -> Self {
-    self.enable = enable;
-
-    self
-  }
-
   pub fn write_cache(&self) {
-    if !self.enable {
+    if !self.context.cache_enable {
       return;
     }
     // discard write if cannot get lock
