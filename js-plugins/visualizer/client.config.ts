@@ -1,10 +1,10 @@
 import path from 'node:path';
-import { transform } from '@babel/core';
+import { ParserOptions, transform } from '@babel/core';
 import { JsPlugin, defineConfig } from '@farmfe/core';
 import postCSSPlugin from '@farmfe/js-plugin-postcss';
 import stylexExtendBabelPlugin from '@stylex-extend/babel-plugin';
 import stylexBabelPlugin from '@stylexjs/babel-plugin';
-import Pages from 'vite-plugin-pages';
+// import Pages from 'vite-plugin-pages';
 import { visualizer } from './src/server';
 
 const defaultWd = process.cwd();
@@ -24,10 +24,14 @@ function stylex() {
         ) {
           return param;
         }
+        const plugins: ParserOptions['plugins'] = ['typescript'];
+        if (param.resolvedPath.endsWith('.tsx')) {
+          plugins.push('jsx');
+        }
         const res = transform(param.content, {
           filename: param.resolvedPath,
           parserOpts: {
-            plugins: ['jsx', 'typescript']
+            plugins
           },
           plugins: [
             stylexExtendBabelPlugin.withOptions({
@@ -68,11 +72,11 @@ function stylex() {
 
 export default defineConfig({
   root: path.join(defaultWd, './src/client'),
-  plugins: [stylex(), '@farmfe/plugin-react', postCSSPlugin(), visualizer()],
-  vitePlugins: [
-    Pages({
-      resolver: 'react',
-      dirs: path.join(defaultWd, './src/client/pages')
-    })
-  ]
+  plugins: [stylex(), '@farmfe/plugin-react', postCSSPlugin(), visualizer()]
+  // vitePlugins: [
+  //   Pages({
+  //     resolver: 'react',
+  //     dirs: path.join(defaultWd, './src/client/pages')
+  //   })
+  // ]
 });

@@ -1,40 +1,35 @@
-/// <reference types="vite-plugin-pages/client-react" />
-import { Suspense } from 'react';
-import { useRoutes } from 'react-router-dom';
-import routes from '~react-pages';
+import {
+  ApplicationProvider,
+  setupTheme,
+  useApplicationContext
+} from './context';
+import { NavHead } from './components/nav-head/nav-head';
 import './stylex.css';
-import './reset.css'
-
+import './reset.css';
+import { useEffect } from 'react';
+import { Inspect } from './components/inspect';
 
 export function App() {
-  return <Suspense fallback={<p>Loading...</p>}>{useRoutes(routes)}</Suspense>;
-}
+  const { theme } = useApplicationContext();
 
-/**
- * import { Resource } from '@farmfe/core';
-import { Module } from '@farmfe/core/binding/binding';
-import type { FarmEnvInfo } from '../../../node/utils/envinfo';
-import { http } from '../http';
+  useEffect(() => {
+    setupTheme(theme);
+  }, []);
 
-export function getModules(): Promise<Module[]> {
-  return http.get<Module[]>('/__record/modules');
+  return (
+    <ApplicationProvider key='app'>
+      <div
+        stylex={{
+          height: '100%',
+          width: '100%',
+          position: 'relative'
+        }}
+      >
+        <NavHead />
+        <div id='container' style={{ height: 'calc(100vh - 64px)' }}>
+          <Inspect />
+        </div>
+      </div>
+    </ApplicationProvider>
+  );
 }
-
-export function getFarmEnvInfo(): Promise<FarmEnvInfo> {
-  return http.get('/__record/farm_env_info');
-}
-
-export function getResourcesMap(): Promise<Record<string, Resource>> {
-  return http.get('/__record/resources_map');
-}
-
-export function getResource(id: string): Promise<string> {
-  return http.get('/__record/resource', {
-    id
-  });
-}
-
-export function getPluginStats(): Promise<string> {
-  return http.get('/__record/stats');
-}
- */

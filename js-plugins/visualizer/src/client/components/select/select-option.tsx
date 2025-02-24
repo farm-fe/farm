@@ -1,56 +1,85 @@
-import React, { useMemo } from 'react'
-import { useScale, withScale } from '../../composables'
-import { useSelect } from './context'
-import { Ellipsis } from './ellipsis'
+import React, { ReactNode, useMemo } from 'react';
+import { useScale, withScale } from '../../composables';
+import { useSelect } from './context';
+import { Ellipsis } from './ellipsis';
 
 interface Props {
-  label?: string
-  value?: string
-  disabled?: boolean
-  preventAllEvents?: boolean
+  label?: string | ReactNode;
+  value?: string;
+  disabled?: boolean;
+  preventAllEvents?: boolean;
 }
 
-export type SelectOptionProps = Omit<React.HTMLAttributes<unknown>, keyof Props> & Props
+export type SelectOptionProps = Omit<
+  React.HTMLAttributes<unknown>,
+  keyof Props
+> &
+  Props;
 
-function SelectOptionComponent(props: React.PropsWithChildren<SelectOptionProps>) {
-  const { children, value: initialValue, disabled = false, preventAllEvents, ...rest } = props
-  const { SCALES } = useScale()
-  const { disableAll, value, updateValue } = useSelect()
-  const isDisabled = useMemo(() => disabled || disableAll, [disabled, disableAll])
+function SelectOptionComponent(
+  props: React.PropsWithChildren<SelectOptionProps>
+) {
+  const {
+    children,
+    value: initialValue,
+    disabled = false,
+    preventAllEvents,
+    ...rest
+  } = props;
+  const { SCALES } = useScale();
+  const { disableAll, value, updateValue } = useSelect();
+  const isDisabled = useMemo(
+    () => disabled || disableAll,
+    [disabled, disableAll]
+  );
 
   const selected = useMemo(() => {
-    if (!value) { return false }
-    if (typeof value === 'string') { return initialValue === value }
-    return value.includes(initialValue + '')
-  }, [value, initialValue])
+    if (!value) {
+      return false;
+    }
+    if (typeof value === 'string') {
+      return initialValue === value;
+    }
+    return value.includes(initialValue + '');
+  }, [value, initialValue]);
 
   const color = useMemo(() => {
-    if (isDisabled) { return '#888' }
-    return selected ? '#000' : '#666'
-  }, [selected, isDisabled])
+    if (isDisabled) {
+      return '#888';
+    }
+    return selected ? '#000' : '#666';
+  }, [selected, isDisabled]);
 
   const bgColor = useMemo(() => {
-    if (isDisabled) { return '#fafafa' }
-    return selected ? '#eaeaea' : '#fff'
-  }, [selected, isDisabled])
+    if (isDisabled) {
+      return '#fafafa';
+    }
+    return selected ? '#eaeaea' : '#fff';
+  }, [selected, isDisabled]);
 
   const hoverBgColor = useMemo(() => {
-    if (isDisabled || selected) { return bgColor }
-    return '#fafafa'
-  }, [isDisabled, bgColor, selected])
+    if (isDisabled || selected) {
+      return bgColor;
+    }
+    return '#fafafa';
+  }, [isDisabled, bgColor, selected]);
 
   const handleClick = (event: React.MouseEvent<HTMLDivElement>) => {
-    if (preventAllEvents) { return }
-    event.stopPropagation()
-    event.nativeEvent.stopImmediatePropagation()
-    event.preventDefault()
-    if (isDisabled) { return }
-    updateValue?.(initialValue!)
-  }
+    if (preventAllEvents) {
+      return;
+    }
+    event.stopPropagation();
+    event.nativeEvent.stopImmediatePropagation();
+    event.preventDefault();
+    if (isDisabled) {
+      return;
+    }
+    updateValue?.(initialValue!);
+  };
 
   return (
     <div
-      role="presentation"
+      role='presentation'
       stylex={{
         boxSizing: 'border-box',
         maxWidth: '100%',
@@ -83,7 +112,7 @@ function SelectOptionComponent(props: React.PropsWithChildren<SelectOptionProps>
     >
       <Ellipsis height={SCALES.height(2.25)}>{children}</Ellipsis>
     </div>
-  )
+  );
 }
 
-export const SelectOption = withScale(SelectOptionComponent)
+export const SelectOption = withScale(SelectOptionComponent);

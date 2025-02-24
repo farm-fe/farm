@@ -1,21 +1,36 @@
-import React, { useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react'
-import { createPortal } from 'react-dom'
-import { useClickAnyWhere, useDOMObserver, usePortal, useResize } from '../../composables'
-import { CSSTransition } from '../css-transition'
-import { useSelect } from './context'
-import { getRefRect } from './layouts'
+import React, {
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useRef,
+  useState
+} from 'react';
+import { createPortal } from 'react-dom';
+import {
+  useClickAnyWhere,
+  useDOMObserver,
+  usePortal,
+  useResize
+} from '../../composables';
+import { CSSTransition } from '../css-transition';
+import { useSelect } from './context';
+import { getRefRect } from './layouts';
 
 interface Props {
-  visible: boolean
+  visible: boolean;
 }
 
-export type SelectDropdownProps = Omit<React.HTMLAttributes<unknown>, keyof Props> & Props
+export type SelectDropdownProps = Omit<
+  React.HTMLAttributes<unknown>,
+  keyof Props
+> &
+  Props;
 
 interface ReactiveDomReact {
-  top: number
-  left: number
-  right: number
-  width: number
+  top: number;
+  left: number;
+  right: number;
+  width: number;
 }
 
 const defaultRect: ReactiveDomReact = {
@@ -23,67 +38,66 @@ const defaultRect: ReactiveDomReact = {
   left: -1000,
   right: -1000,
   width: 0
-}
+};
 
 const SelectDropdown = React.forwardRef<
   HTMLDivElement,
   React.PropsWithChildren<SelectDropdownProps>
 >(({ visible, children }, dropdownRef) => {
-  const [rect, setRect] = useState<ReactiveDomReact>(defaultRect)
-  const internalDropdownRef = useRef<HTMLDivElement | null>(null)
-  const { ref, updateVisible } = useSelect()
+  const [rect, setRect] = useState<ReactiveDomReact>(defaultRect);
+  const internalDropdownRef = useRef<HTMLDivElement | null>(null);
+  const { ref, updateVisible } = useSelect();
 
-  const el = usePortal('dropdown')
+  const el = usePortal('dropdown');
 
   useImperativeHandle<HTMLDivElement | null, HTMLDivElement | null>(
     dropdownRef,
     () => internalDropdownRef.current
-  )
+  );
 
   const updateRect = useCallback(() => {
-    const {
-      top,
-      left,
-      right,
-      width: nativeWidth
-    } = getRefRect(ref)
-    setRect({ top, left, right, width: nativeWidth })
-  }, [ref])
+    const { top, left, right, width: nativeWidth } = getRefRect(ref);
+    setRect({ top, left, right, width: nativeWidth });
+  }, [ref]);
 
-  useResize(ref, updateRect)
+  useResize(ref, updateRect);
 
   useClickAnyWhere(() => {
-    setRect(defaultRect)
-    updateVisible?.(false)
-  })
+    setRect(defaultRect);
+    updateVisible?.(false);
+  });
   useDOMObserver(ref, () => {
-    updateRect()
-  })
+    updateRect();
+  });
   useEffect(() => {
-    if (!ref || !ref.current) { return }
-    const internalDropdownEl = ref.current
-    internalDropdownEl.addEventListener('mouseenter', updateRect)
+    if (!ref || !ref.current) {
+      return;
+    }
+    const internalDropdownEl = ref.current;
+    internalDropdownEl.addEventListener('mouseenter', updateRect);
     /* istanbul ignore next */
     return () => {
-      internalDropdownEl.removeEventListener('mouseenter', updateRect)
-    }
-  }, [ref, updateRect])
+      internalDropdownEl.removeEventListener('mouseenter', updateRect);
+    };
+  }, [ref, updateRect]);
 
   const clickHandler = (event: React.MouseEvent<HTMLDivElement>) => {
-    event.stopPropagation()
-    event.nativeEvent.stopImmediatePropagation()
-    event.preventDefault()
-  }
+    event.stopPropagation();
+    event.nativeEvent.stopImmediatePropagation();
+    event.preventDefault();
+  };
   const mouseDownHandler = (event: React.MouseEvent<HTMLDivElement>) => {
-    event.preventDefault()
-  }
+    event.preventDefault();
+  };
 
-  if (!ref || !el) { return null }
+  if (!ref || !el) {
+    return null;
+  }
 
   return createPortal(
     <CSSTransition visible={visible}>
       <div
-        role="presentation"
+        role='presentation'
         onClick={clickHandler}
         onMouseDown={mouseDownHandler}
         stylex={{
@@ -112,7 +126,7 @@ const SelectDropdown = React.forwardRef<
       </div>
     </CSSTransition>,
     el
-  )
-})
+  );
+});
 
-export { SelectDropdown }
+export { SelectDropdown };
