@@ -165,17 +165,6 @@ export async function resolveConfig(
     sortFarmJsPlugins
   );
 
-  if (config.compilation.mode === 'production' && !config.watch) {
-    const fileSizePlugin = await import('@farmfe/plugin-file-size').then(
-      (mod) => mod.default
-    );
-    if (config.plugins) {
-      config.plugins.push(fileSizePlugin());
-    } else {
-      config.plugins = [fileSizePlugin()];
-    }
-  }
-
   // may be user push plugin when config hooks
   const allPlugins = await resolvePlugins(config, defaultMode);
   const farmJsPlugins = getSortedPlugins([
@@ -996,8 +985,15 @@ export async function resolveUserConfig(
 }
 
 export function createDefaultConfig(options: DefaultOptionsType): UserConfig {
-  const { inlineOptions, mode, format, outputPath, fileName, configFilePath } =
-    options;
+  const {
+    inlineOptions,
+    mode,
+    format,
+    outputPath,
+    showFileSize = false,
+    fileName,
+    configFilePath
+  } = options;
 
   return {
     root: path.resolve(inlineOptions.root ?? '.'),
@@ -1009,7 +1005,8 @@ export function createDefaultConfig(options: DefaultOptionsType): UserConfig {
         entryFilename: '[entryName]',
         path: outputPath,
         format,
-        targetEnv: 'node'
+        targetEnv: 'node',
+        showFileSize
       },
       mode,
       external: [

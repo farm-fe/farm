@@ -31,6 +31,7 @@ farmfe_plugin_progress = { path = "../plugin_progress", version = "0.0.13" }
 farmfe_plugin_define = { path = "../plugin_define", version = "0.0.13" }
 farmfe_plugin_mangle_exports = { path = "../plugin_mangle_exports", version = "0.0.1" }
 farmfe_plugin_library = { path = "../plugin_library", version = "0.0.1" }
+farmfe_plugin_file_size = { path = "../plugin_file_size", version = "0.0.1" }
 farmfe_testing = { path = "../macro_testing", version = "0.0.2" }
 
 [features]

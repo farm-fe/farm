@@ -784,7 +784,7 @@ dependencies = [
  "encode_unicode",
  "lazy_static",
  "libc",
- "unicode-width",
+ "unicode-width 0.1.11",
  "windows-sys 0.52.0",
 ]
 
@@ -1638,6 +1638,7 @@ dependencies = [
  "farmfe_core",
  "farmfe_plugin_css",
  "farmfe_plugin_define",
+ "farmfe_plugin_file_size",
  "farmfe_plugin_html",
  "farmfe_plugin_json",
  "farmfe_plugin_lazy_compilation",
@@ -1783,15 +1784,17 @@ dependencies = [
 
 [[package]]
 name = "farmfe_plugin_file_size"
-version = "0.0.0"
+version = "0.0.1"
 dependencies = [
  "colored",
  "farmfe_core",
  "farmfe_macro_plugin",
+ "farmfe_testing_helpers",
  "farmfe_toolkit",
- "farmfe_toolkit_plugin_types",
+ "farmfe_utils 0.1.6",
  "flate2",
- "unicode-width",
+ "once_cell",
+ "unicode-width 0.2.0",
 ]
 
 [[package]]
@@ -2723,7 +2726,7 @@ dependencies = [
  "instant",
  "number_prefix",
  "portable-atomic",
- "unicode-width",
+ "unicode-width 0.1.11",
 ]
 
 [[package]]
@@ -3213,7 +3216,7 @@ dependencies = [
  "miette-derive 5.10.0",
  "once_cell",
  "thiserror",
- "unicode-width",
+ "unicode-width 0.1.11",
 ]
 
 [[package]]
@@ -3227,7 +3230,7 @@ dependencies = [
  "owo-colors",
  "textwrap",
  "thiserror",
- "unicode-width",
+ "unicode-width 0.1.11",
 ]
 
 [[package]]
@@ -5046,7 +5049,7 @@ dependencies = [
  "swc_eq_ignore_macros",
  "swc_visit",
  "tracing",
- "unicode-width",
+ "unicode-width 0.1.11",
  "url",
 ]
 
@@ -6164,7 +6167,7 @@ checksum = "23d434d3f8967a09480fb04132ebe0a3e088c173e6d0ee7897abbdf4eab0f8b9"
 dependencies = [
  "smawk",
  "unicode-linebreak",
- "unicode-width",
+ "unicode-width 0.1.11",
 ]
 
 [[package]]
@@ -6468,6 +6471,12 @@ name = "unicode-width"
 version = "0.1.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e51733f11c9c4f72aa0c160008246859e340b00807569a0da0e7a1079b27ba85"
+
+[[package]]
+name = "unicode-width"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1fc81956842c57dac11422a97c3b8195a1ff727f06e85c84ed2e8aa277c9a0fd"
 
 [[package]]
 name = "unicode-xid"
@@ -7096,7 +7105,7 @@ checksum = "a259b226fd6910225aa7baeba82f9d9933b6d00f2ce1b49b80fa4214328237cc"
 dependencies = [
  "leb128",
  "memchr",
- "unicode-width",
+ "unicode-width 0.1.11",
  "wasm-encoder",
 ]
 
