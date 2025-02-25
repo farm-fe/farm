@@ -40,6 +40,7 @@ use self::hooks::{
 pub mod context;
 mod context_methods;
 mod hooks;
+mod module_hook_common;
 mod thread_safe_js_plugin_hook;
 
 pub struct JsPluginAdapter {
