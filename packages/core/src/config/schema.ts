@@ -158,19 +158,8 @@ const serverSchema = z
   .object({
     headers: z.record(z.string()).optional(),
     port: z.number().positive().int().optional(),
-    host: z
-      .union([
-        z.string().regex(/^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/),
-        z.literal('localhost'),
-        z.boolean()
-      ])
-      .optional(),
-    open: z.boolean().optional(),
     https: z.custom<SecureServerOptions>(),
-    cors: z.boolean().optional(),
-    appType: z.enum(['spa', 'mpa', 'custom']).optional(),
-    proxy: proxySchema,
-    strictPort: z.boolean().optional(),
+    origin: z.string().optional(),
     hmr: z
       .union([
         z.boolean(),
@@ -185,10 +174,21 @@ const serverSchema = z
           .strict()
       ])
       .optional(),
+    proxy: proxySchema,
+    strictPort: z.boolean().optional(),
+    open: z.boolean().optional(),
+    host: z
+      .union([
+        z.string().regex(/^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/),
+        z.literal('localhost'),
+        z.boolean()
+      ])
+      .optional(),
+    cors: z.boolean().optional(),
+    appType: z.enum(['spa', 'mpa', 'custom']).optional(),
     middlewares: z.array(z.any()).optional(),
     middlewareMode: z.boolean().optional(),
     writeToDisk: z.boolean().optional(),
-    origin: z.string().optional(),
     preview: previewServerSchema.optional()
   })
   .strict();
