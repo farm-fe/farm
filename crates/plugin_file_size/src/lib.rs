@@ -121,7 +121,7 @@ impl Plugin for FarmPluginFileSize {
 
     println!(
       "{}",
-      format!("{:<45} {:>12} {:>12}", "File", "Size", "Gzipped").bold()
+      format!("{:<45} {:<12} {:<12}", "File", " Size", "  Gzipped").bold()
     );
 
     let files: Vec<_> = resources_map
@@ -150,7 +150,7 @@ impl Plugin for FarmPluginFileSize {
       total_gzip_size += gzip_size;
 
       println!(
-        "{:<45}  {:>12}  {:>12}",
+        "{:<45}  {:<12}  {:<12}",
         self.format_path_and_name(&context.config.output.path, &name, size),
         self.format_size(size),
         self.format_gzip_size(gzip_size)
