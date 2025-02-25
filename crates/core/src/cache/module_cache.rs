@@ -2,7 +2,6 @@ use std::sync::Arc;
 
 use dashmap::mapref::one::{Ref, RefMut};
 
-use dashmap::DashMap;
 use farmfe_macro_cache_item::cache_item;
 pub use module_metadata::ModuleMatedataStore;
 
@@ -22,14 +21,12 @@ pub mod module_memory_store;
 mod module_metadata;
 pub mod mutable_modules;
 
-type ModuleMatedataMap = Arc<DashMap<String, ModuleMatedataStore>>;
-
 pub struct ModuleCacheManager {
   /// Store is responsible for how to read and load cache from disk.
   pub mutable_modules_store: MutableModulesMemoryStore,
   pub immutable_modules_store: ImmutableModulesMemoryStore,
-  // pub module_matedata: ModuleMatedataMap,
   pub module_matedata: ModuleMatedataStore,
+  // pub module_matedata: DashMap<String, ModuleMatedataStore>,
   context: Arc<CacheContext>,
 }
 
@@ -47,14 +44,6 @@ pub struct CachedWatchDependency {
   pub timestamp: u128,
   pub hash: String,
 }
-
-// #[cache_item]
-// #[derive(Clone)]
-// pub struct CachedModuleBasis {
-//   pub module: Module,
-//   pub dependencies: Vec<CachedModuleDependency>,
-//   pub watch_dependencies: Vec<CachedWatchDependency>,
-// }
 
 #[cache_item]
 #[derive(Clone)]
@@ -111,7 +100,7 @@ impl ModuleCacheManager {
     Self {
       mutable_modules_store: MutableModulesMemoryStore::new(context.clone()),
       immutable_modules_store: ImmutableModulesMemoryStore::new(context.clone()),
-      module_matedata: ModuleMatedataStore::new(),
+      module_matedata: Default::default(),
       context,
     }
   }
@@ -132,7 +121,7 @@ impl ModuleCacheManager {
     // let map = self
     //   .module_matedata
     //   .iter()
-    //   .fold(HashMap::new(), |mut res, v| {
+    //   .fold(HashMap::default(), |mut res, v| {
     //     let plugin_name = v.key();
 
     //     if let Some(map) = v.get_map(&key) {
@@ -219,6 +208,10 @@ impl ModuleCacheManager {
     self.immutable_modules_store.invalidate_cache(key);
 
     self.module_matedata.invalidate(key);
+
+    // self.module_matedata.iter().for_each(|v| {
+    //   v.invalidate(key);
+    // });
   }
 
   pub fn cache_outdated(&self, key: &ModuleId) -> bool {
@@ -232,21 +225,28 @@ impl ModuleCacheManager {
     key: &ModuleId,
     name: &str,
   ) -> Option<Box<V>> {
-    // read from cached module
-    if let Some(mut v) = self.get_cache_mut_option_ref(key) {
-      return v.matedata.as_mut()?.get_cache(name);
-      // return v
-      //   .matedata
-      //   .as_mut()
-      //   .and_then(|v| v.get_mut(plugin_name).and_then(|v| v.get_cache(name)));
-    }
+    self.module_matedata.get_matedata(key, name).or_else(|| {
+      self
+        .get_cache_mut_option_ref(key)
+        .map(|mut v| v.matedata.as_mut().and_then(|v| v.get_cache(name)))
+        .flatten()
+    })
 
-    self.module_matedata.get_matedata(key, name)
-    // read from matedata
+    // map
     // self
     //   .module_matedata
     //   .get(plugin_name)
     //   .and_then(|v: Ref<'_, String, ModuleMatedataStore>| v.get_matedata(key, name))
+    //   .or_else(|| {
+    //     self
+    //       .get_cache_mut_option_ref(key)
+    //       .map(|mut v| {
+    //         v.matedata
+    //           .as_mut()
+    //           .and_then(|v| v.get_mut(plugin_name).and_then(|v| v.get_cache(name)))
+    //       })
+    //       .flatten()
+    //   })
   }
 
   pub fn write_metadata<V: Cacheable>(
@@ -270,7 +270,8 @@ impl ModuleCacheManager {
       .write_metadata(key, name, Box::new(value));
 
     // ---
-    // // write to cached module
+    // matedata map
+    // write to cached module
     // if let Some(mut v) = self.get_cache_mut_option_ref(&key) {
     //   let cached_module = v.value_mut();
 
@@ -302,149 +303,4 @@ impl ModuleCacheManager {
     //   v.write_metadata(key, name, Box::new(value));
     // });
   }
-
-  // pub fn read_metadata_ref<V: Cacheable>(
-  //   &self,
-  //   key: &ModuleId,
-  //   name: &str,
-  // ) -> Option<MatedataMapRef<'_, V>> {
-  //   let v = self.get_cache_option_ref(key).and_then(|v| {
-  //     v.try_map(|v| v.metadata.as_ref().map(|v| v.get_ref(name)).flatten())
-  //       .ok()
-  //   });
-
-  //   if v.is_some() {
-  //     return v.map(MatedataMapRef::CachedMetadataRef);
-  //   }
-
-  //   self
-  //     .module_matedata
-  //     .read_ref(key, name)
-  //     .map(MatedataMapRef::ModuleMetadata)
-  // }
-
-  // pub fn read_metadata_ref_mut<V: Cacheable>(
-  //   &self,
-  //   key: &ModuleId,
-  //   name: &str,
-  // ) -> Option<MatedataMapRefMut<'_, V>> {
-  //   let v = self.get_cache_mut_option_ref(key).and_then(|v| {
-  //     v.try_map(|v| v.metadata.as_mut().map(|v| v.get_mut(name)).flatten())
-  //       .ok()
-  //   });
-
-  //   if v.is_some() {
-  //     return v.map(MatedataMapRefMut::CachedMetadataRef);
-  //   }
-
-  //   self
-  //     .module_matedata
-  //     .read_ref_mut(key, name)
-  //     .map(MatedataMapRefMut::ModuleMetadata)
-  // }
-
-  // pub fn metadata(&self, key: &ModuleId) -> Option<CachedMetadataRef> {
-  //   self
-  //     .get_cache_mut_option_ref(key)
-  //     .map(MatedataRefMut::CachedMetadataRef)
-  //     .or_else(|| {
-  //       self
-  //         .module_matedata
-  //         .get_map_mut_ref(key)
-  //         .map(MatedataRefMut::ModuleMetadata)
-  //     })
-  //     .map(CachedMetadataRef::new)
-  // }
 }
-
-// pub enum MatedataMapRef<'a, V> {
-//   CachedMetadataRef(MappedRef<'a, ModuleId, CachedModule, V>),
-//   ModuleMetadata(MappedRef<'a, ModuleId, CustomMetaDataMap, V>),
-// }
-
-// impl<'a, V> Deref for MatedataMapRef<'a, V> {
-//   type Target = V;
-
-//   fn deref(&self) -> &Self::Target {
-//     match self {
-//       MatedataMapRef::CachedMetadataRef(v) => v.value(),
-//       MatedataMapRef::ModuleMetadata(v) => v.value(),
-//     }
-//   }
-// }
-
-// pub enum MatedataMapRefMut<'a, V> {
-//   CachedMetadataRef(MappedRefMut<'a, ModuleId, CachedModule, V>),
-//   ModuleMetadata(MappedRefMut<'a, ModuleId, CustomMetaDataMap, V>),
-// }
-
-// impl<'a, V> Deref for MatedataMapRefMut<'a, V> {
-//   type Target = V;
-
-//   fn deref(&self) -> &Self::Target {
-//     match self {
-//       MatedataMapRefMut::CachedMetadataRef(v) => v.value(),
-//       MatedataMapRefMut::ModuleMetadata(v) => v.value(),
-//     }
-//   }
-// }
-
-// impl<'a, V> DerefMut for MatedataMapRefMut<'a, V> {
-//   fn deref_mut(&mut self) -> &mut V {
-//     match self {
-//       MatedataMapRefMut::CachedMetadataRef(v) => v.value_mut(),
-//       MatedataMapRefMut::ModuleMetadata(v) => v.value_mut(),
-//     }
-//   }
-// }
-
-// pub enum MatedataRefMut<'a> {
-//   CachedMetadataRef(RefMut<'a, ModuleId, CachedModule>),
-//   ModuleMetadata(RefMut<'a, ModuleId, CustomMetaDataMap>),
-// }
-
-// pub struct CachedMetadataRef<'a> {
-//   value: MatedataRefMut<'a>,
-// }
-
-// impl<'a> CachedMetadataRef<'a> {
-//   pub fn new(v: MatedataRefMut<'a>) -> Self {
-//     Self { value: v }
-//   }
-
-//   pub fn read<V: Cacheable>(&mut self, name: &str) -> Option<&mut V> {
-//     match &mut self.value {
-//       MatedataRefMut::CachedMetadataRef(ref_mut) => {
-//         ref_mut.metadata.as_mut().and_then(|v| v.get_mut(name))
-//       }
-//       MatedataRefMut::ModuleMetadata(ref_mut) => ref_mut.get_mut::<V>(name),
-//     }
-//   }
-
-//   /// Get some data that does not need to be stored in memory after serialization
-//   pub fn get_cache<V: Cacheable>(&mut self, name: &str) -> Option<Box<V>> {
-//     match &mut self.value {
-//       MatedataRefMut::CachedMetadataRef(ref_mut) => {
-//         ref_mut.metadata.as_mut().and_then(|v| v.get_cache(name))
-//       }
-//       MatedataRefMut::ModuleMetadata(ref_mut) => ref_mut.get_cache::<V>(name),
-//     }
-//   }
-
-//   pub fn write<V: Cacheable, N: ToString>(&mut self, name: N, value: V) {
-//     match &mut self.value {
-//       MatedataRefMut::CachedMetadataRef(ref_mut) => {
-//         if ref_mut.metadata.is_none() {
-//           ref_mut.metadata = Some(CustomMetaDataMap::default());
-//         }
-
-//         if let Some(ref mut metadata) = ref_mut.metadata {
-//           metadata.insert(name.to_string(), Box::new(value));
-//         }
-//       }
-//       MatedataRefMut::ModuleMetadata(ref_mut) => {
-//         ref_mut.insert(name.to_string(), Box::new(value));
-//       }
-//     }
-//   }
-// }

@@ -16,7 +16,6 @@ use farmfe_core::HashMap;
 use farmfe_core::{
   config::{Config, CssPrefixerConfig, TargetEnv},
   context::CompilationContext,
-  deserialize,
   enhanced_magic_string::collapse_sourcemap::{collapse_sourcemap_chain, CollapseSourcemapOptions},
   error::CompilationError,
   module::{module_graph::ModuleGraph, ModuleId, ModuleMetaData, ModuleType},
@@ -31,7 +30,7 @@ use farmfe_core::{
     resource_pot::{ResourcePot, ResourcePotType},
     Resource, ResourceOrigin, ResourceType,
   },
-  serde_json, serialize,
+  serde_json,
   swc_css_ast::Stylesheet,
 };
 use farmfe_macro_cache_item::cache_item;
@@ -240,15 +239,13 @@ impl Plugin for FarmPluginCss {
       return Ok(Some(PluginTransformHookResult {
         content: param.content.clone(),
         module_type: Some(ModuleType::Css),
-        source_map: None,
-        // source_map: context
-        //   .read_module_matedata::<String>(
-        //     self.name(),
-        //     &ModuleId::from(param.module_id.as_str()),
-        //     "map",
-        //   )
-        //   .map(|v| *v),
-        // source_map: self.sourcemap_map.lock().get(&param.module_id).cloned(),
+        source_map: context
+          .read_module_matedata::<String>(
+            self.name(),
+            &ModuleId::from(param.module_id.as_str()),
+            "map",
+          )
+          .map(|v| *v),
         ignore_previous_source_map: false,
       }));
     }
@@ -382,12 +379,12 @@ impl Plugin for FarmPluginCss {
             .to_writer(&mut buf)
             .expect("failed to write sourcemap");
 
-          // context.write_module_matedata::<String>(
-          //   self.name(),
-          //   css_modules_module_id,
-          //   "map",
-          //   String::from_utf8(buf).unwrap(),
-          // );
+          context.write_module_matedata::<String>(
+            self.name(),
+            css_modules_module_id,
+            "map",
+            String::from_utf8(buf).unwrap(),
+          );
         }
 
         Ok(Some(PluginTransformHookResult {
