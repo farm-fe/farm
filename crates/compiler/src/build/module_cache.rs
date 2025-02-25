@@ -243,6 +243,16 @@ pub fn set_module_graph_cache(module_ids: Vec<ModuleId>, context: &Arc<Compilati
     });
 }
 
+pub fn handle_module_matedate(cached_module: &mut CachedModule, context: &Arc<CompilationContext>) {
+  if let Some(map) = cached_module.matedata.take() {
+    context
+      .cache_manager
+      .module_cache
+      .module_matedata
+      .set_map(cached_module.module.id.clone(), map);
+  };
+}
+
 /// recreate syntax context for the cached module
 pub fn handle_cached_modules(
   cached_module: &mut CachedModule,
@@ -284,6 +294,8 @@ pub fn handle_cached_modules(
     &cached_module.watch_dependencies,
     context,
   )?;
+
+  handle_module_matedate(cached_module, context);
 
   // clear module groups and resource pot as it will be re-resolved later
   cached_module.module.module_groups.clear();

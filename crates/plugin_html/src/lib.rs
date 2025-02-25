@@ -110,7 +110,6 @@ impl Plugin for FarmPluginHtml {
   ) -> farmfe_core::error::Result<Option<PluginLoadHookResult>> {
     if param.resolved_path.starts_with(HTML_INLINE_ID_PREFIX) {
       if let Some(inline_module) = context.read_module_matedata::<HtmlInlineModule>(
-        self.name(),
         &ModuleId::from(param.resolved_path),
         "inline_deps",
       ) {
@@ -221,12 +220,7 @@ impl Plugin for FarmPluginHtml {
       param.deps.extend(deps_analyzer.analyze_deps(document));
 
       for (module_id, module) in deps_analyzer.inline_deps_map {
-        context.write_module_matedata(
-          self.name(),
-          ModuleId::from(module_id),
-          "inline_deps",
-          module,
-        );
+        context.write_module_matedata(ModuleId::from(module_id), "inline_deps", module);
       }
 
       Ok(Some(()))

@@ -123,6 +123,24 @@ impl Plugin for FarmPluginStaticAssets {
 
     Ok(None)
   }
+
+  fn handle_persistent_cached_module(
+    &self,
+    module: &farmfe_core::module::Module,
+    context: &Arc<CompilationContext>,
+  ) -> farmfe_core::error::Result<Option<bool>> {
+    if let Some(resource) = context.read_module_matedata::<Resource>(&module.id, "asset-resource") {
+      context.emit_file(EmitFileParams {
+        resolved_path: module.id.to_string().clone(),
+        name: resource.name,
+        content: resource.bytes,
+        resource_type: resource.resource_type,
+      });
+    }
+
+    Ok(None)
+  }
+
   fn load(
     &self,
     param: &farmfe_core::plugin::PluginLoadHookParam,
@@ -162,20 +180,6 @@ impl Plugin for FarmPluginStaticAssets {
     param: &farmfe_core::plugin::PluginTransformHookParam,
     context: &std::sync::Arc<farmfe_core::context::CompilationContext>,
   ) -> farmfe_core::error::Result<Option<farmfe_core::plugin::PluginTransformHookResult>> {
-    if let Some(resource) = context.read_module_matedata::<Resource>(
-      self.name(),
-      &ModuleId::from(param.module_id.as_str()),
-      "asset-resource",
-    ) {
-      context.emit_file(EmitFileParams {
-        resolved_path: param.module_id.clone(),
-        name: resource.name,
-        content: resource.bytes,
-        resource_type: resource.resource_type,
-      });
-      return Ok(None);
-    }
-
     if matches!(param.module_type, ModuleType::Asset) {
       if param.query.iter().any(|(k, _)| k == "inline") {
         let file_base64 = if param.content.is_empty() {
@@ -295,7 +299,7 @@ impl Plugin for FarmPluginStaticAssets {
 
     for (_, resource) in resources_map.iter() {
       if let ResourceOrigin::Module(m) = &resource.origin {
-        context.write_module_matedata(self.name(), m.clone(), "asset-resource", resource.clone());
+        context.write_module_matedata(m.clone(), "asset-resource", resource.clone());
       }
     }
 

@@ -1,3 +1,4 @@
+use std::mem::replace;
 use std::sync::Arc;
 
 use dashmap::mapref::one::{Ref, RefMut};
@@ -61,7 +62,6 @@ pub struct CachedModule {
   pub is_expired: bool,
 
   pub matedata: Option<CustomMetaDataMap>,
-  // pub matedata: Option<HashMap<String, CustomMetaDataMap>>,
 }
 
 impl CachedModule {
@@ -118,21 +118,6 @@ impl ModuleCacheManager {
   }
 
   pub fn set_cache(&self, key: ModuleId, mut module: CachedModule) {
-    // let map = self
-    //   .module_matedata
-    //   .iter()
-    //   .fold(HashMap::default(), |mut res, v| {
-    //     let plugin_name = v.key();
-
-    //     if let Some(map) = v.get_map(&key) {
-    //       res.insert(plugin_name.to_string(), map);
-    //     }
-
-    //     res
-    //   });
-
-    // module.matedata = Some(map);
-
     if let Some(matedata) = self.module_matedata.get_map(&key) {
       module.matedata = Some(matedata);
     }
@@ -206,12 +191,7 @@ impl ModuleCacheManager {
   pub fn invalidate_cache(&self, key: &ModuleId) {
     self.mutable_modules_store.invalidate_cache(key);
     self.immutable_modules_store.invalidate_cache(key);
-
     self.module_matedata.invalidate(key);
-
-    // self.module_matedata.iter().for_each(|v| {
-    //   v.invalidate(key);
-    // });
   }
 
   pub fn cache_outdated(&self, key: &ModuleId) -> bool {
@@ -219,88 +199,21 @@ impl ModuleCacheManager {
       || self.immutable_modules_store.cache_outdated(key)
   }
 
-  pub fn read_metadata<V: Cacheable>(
-    &self,
-    plugin_name: &str,
-    key: &ModuleId,
-    name: &str,
-  ) -> Option<Box<V>> {
-    self.module_matedata.get_matedata(key, name).or_else(|| {
-      self
-        .get_cache_mut_option_ref(key)
-        .map(|mut v| v.matedata.as_mut().and_then(|v| v.get_cache(name)))
-        .flatten()
-    })
-
-    // map
-    // self
-    //   .module_matedata
-    //   .get(plugin_name)
-    //   .and_then(|v: Ref<'_, String, ModuleMatedataStore>| v.get_matedata(key, name))
-    //   .or_else(|| {
-    //     self
-    //       .get_cache_mut_option_ref(key)
-    //       .map(|mut v| {
-    //         v.matedata
-    //           .as_mut()
-    //           .and_then(|v| v.get_mut(plugin_name).and_then(|v| v.get_cache(name)))
-    //       })
-    //       .flatten()
-    //   })
+  pub fn read_metadata<V: Cacheable>(&self, key: &ModuleId, name: &str) -> Option<Box<V>> {
+    self.module_matedata.get_matedata(key, name)
   }
 
-  pub fn write_metadata<V: Cacheable>(
-    &self,
-    plugin_name: &str,
-    key: ModuleId,
-    name: String,
-    value: V,
-  ) {
-    if let Some(mut v) = self.get_cache_mut_option_ref(&key) {
-      if v.matedata.is_none() {
-        v.matedata = Some(Default::default());
-      }
-
-      v.matedata.as_mut().unwrap().insert(name, Box::new(value));
-      return;
-    }
-
+  pub fn write_metadata<V: Cacheable>(&self, key: ModuleId, name: String, value: V) {
     self
       .module_matedata
       .write_metadata(key, name, Box::new(value));
+  }
 
-    // ---
-    // matedata map
-    // write to cached module
-    // if let Some(mut v) = self.get_cache_mut_option_ref(&key) {
-    //   let cached_module = v.value_mut();
-
-    //   if cached_module.matedata.is_none() {
-    //     cached_module.matedata = Default::default();
-    //   }
-
-    //   if let Some(ref mut matedata) = cached_module.matedata {
-    //     if !matedata.contains_key(plugin_name) {
-    //       matedata.insert(plugin_name.to_string(), Default::default());
-    //     }
-
-    //     if let Some(ref mut matedata) = matedata.get_mut(plugin_name) {
-    //       matedata.insert(name, Box::new(value));
-    //     }
-    //   }
-
-    //   return;
-    // }
-
-    // // write to matedata
-    // if !self.module_matedata.contains_key(plugin_name) {
-    //   self
-    //     .module_matedata
-    //     .insert(plugin_name.to_string(), Default::default());
-    // }
-
-    // self.module_matedata.get(plugin_name).map(|v| {
-    //   v.write_metadata(key, name, Box::new(value));
-    // });
+  pub fn shutdown(&self) {
+    for (module_id, map) in self.module_matedata.take_matedata() {
+      if let Some(mut module) = self.get_cache_mut_option_ref(&module_id) {
+        module.matedata = Some(map);
+      }
+    }
   }
 }

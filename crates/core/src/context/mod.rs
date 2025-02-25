@@ -192,31 +192,22 @@ impl CompilationContext {
     log_store.clear();
   }
 
-  pub fn write_module_matedata<V: Cacheable>(
-    &self,
-    plugin_name: &str,
-    module_id: ModuleId,
-    name: &str,
-    matedata: V,
-  ) {
-    self.cache_manager.module_cache.write_metadata(
-      plugin_name,
-      module_id,
-      name.to_string(),
-      matedata,
-    );
+  pub fn write_module_matedata<V: Cacheable>(&self, module_id: ModuleId, name: &str, matedata: V) {
+    self
+      .cache_manager
+      .module_cache
+      .write_metadata(module_id, name.to_string(), matedata);
   }
 
   pub fn read_module_matedata<V: Cacheable>(
     &self,
-    plugin_name: &str,
     module_id: &ModuleId,
     name: &str,
   ) -> Option<Box<V>> {
     self
       .cache_manager
       .module_cache
-      .read_metadata(plugin_name, module_id, name)
+      .read_metadata(module_id, name)
   }
 }
 

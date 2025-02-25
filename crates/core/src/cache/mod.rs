@@ -102,6 +102,9 @@ impl CacheManager {
     if !self.context.cache_enable {
       return;
     }
+
+    self.module_cache.shutdown();
+
     self._store.shutdown();
   }
 

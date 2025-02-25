@@ -5,7 +5,7 @@ use dashmap::{
 
 use crate::{
   module::{CustomMetaDataMap, ModuleId},
-  Cacheable,
+  Cacheable, HashMap,
 };
 
 #[derive(Default)]
@@ -19,12 +19,28 @@ impl ModuleMatedataStore {
     Default::default()
   }
 
-  pub fn get_module_matedata(&self) -> DashMap<ModuleId, CustomMetaDataMap> {
-    self.module_matedata.clone()
+  pub fn take_matedata(&self) -> HashMap<ModuleId, CustomMetaDataMap> {
+    let keys = self
+      .module_matedata
+      .iter()
+      .map(|i| i.key().clone())
+      .collect::<Vec<_>>();
+    let mut v = HashMap::default();
+
+    for item in keys {
+      let (_, data) = self.module_matedata.remove(&item).unwrap();
+      v.insert(item, data);
+    }
+
+    v
   }
 
   pub fn get_map(&self, key: &ModuleId) -> Option<CustomMetaDataMap> {
     self.module_matedata.remove(key).map(|(_, v)| v)
+  }
+
+  pub fn set_map(&self, key: ModuleId, value: CustomMetaDataMap) {
+    self.module_matedata.insert(key, value);
   }
 
   pub fn get_map_mut_ref(&self, key: &ModuleId) -> Option<RefMut<'_, ModuleId, CustomMetaDataMap>> {
