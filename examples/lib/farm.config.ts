@@ -8,6 +8,9 @@ export default defineConfig({
     input: {
       index: "./index.ts"
     },
+    output: {
+      targetEnv: 'node'
+    },
     persistentCache: false,
     resolve: {
       alias: {

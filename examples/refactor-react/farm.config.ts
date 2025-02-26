@@ -21,12 +21,12 @@ export default defineConfig({
       assetsFilename: 'assets/[name]-[hash].[ext]',
     },
     partialBundling: {
-      // groups: [
-      //   {
-      //     name: "vendor-react",
-      //     test: ["node_modules/"],
-      //   },
-      // ],
+      groups: [
+        {
+          name: "vendor-react",
+          test: ["node_modules/"],
+        },
+      ],
     },
   },
 });

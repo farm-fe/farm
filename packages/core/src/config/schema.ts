@@ -460,7 +460,6 @@ const FarmConfigSchema = z
 export function parseUserConfig(config: UserConfig): UserConfig {
   try {
     const parsed = FarmConfigSchema.parse(config);
-    // TODO type not need `as UserConfig`
     return parsed as UserConfig;
   } catch (err) {
     const validationError = fromZodError(err);

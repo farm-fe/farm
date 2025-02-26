@@ -85,6 +85,7 @@ export async function build(
       await hook?.(compiler);
     }
 
+    // TODO move to rust
     if (output?.clean) {
       compiler.removeOutputPathDir();
     }

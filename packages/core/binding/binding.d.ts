@@ -20,7 +20,7 @@ export const enum JsPluginTransformHtmlHookOrder {
   Normal = 1,
   Post = 2
 }
-export interface JsPluginProcessModuleHookFilters {
+export interface JsModuleHookFilters {
   moduleTypes: Array<string>
   resolvedPaths: Array<string>
 }
