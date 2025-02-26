@@ -26,6 +26,9 @@ pub struct ModuleCacheManager {
   /// Store is responsible for how to read and load cache from disk.
   pub mutable_modules_store: MutableModulesMemoryStore,
   pub immutable_modules_store: ImmutableModulesMemoryStore,
+  /// TODO:
+  /// 1. Test the performance of DashMap<plugin name, ModuleMetadataStore>
+  /// 2. Test the performance of HashMap<plugin name, ModuleMetadataStore>, need to pre-create the corresponding ModuleMetadataStore through plugins
   pub module_matedata: ModuleMatedataStore,
   // pub module_matedata: DashMap<String, ModuleMatedataStore>,
   context: Arc<CacheContext>,

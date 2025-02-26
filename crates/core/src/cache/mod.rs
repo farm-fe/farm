@@ -103,8 +103,6 @@ impl CacheManager {
       return;
     }
 
-    self.module_cache.shutdown();
-
     self._store.shutdown();
   }
 
