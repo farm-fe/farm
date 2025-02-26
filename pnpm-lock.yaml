@@ -2763,9 +2763,6 @@ importers:
 
   packages/core:
     dependencies:
-      '@farmfe/plugin-file-size':
-        specifier: workspace:*
-        version: link:../../rust-plugins/file-size
       '@farmfe/plugin-replace-dirname':
         specifier: workspace:*
         version: link:../../rust-plugins/replace-dirname
@@ -2981,12 +2978,6 @@ importers:
     devDependencies:
       '@farmfe/plugin-tools':
         specifier: workspace:*
-        version: link:../../packages/plugin-tools
-
-  rust-plugins/file-size:
-    devDependencies:
-      '@farmfe/plugin-tools':
-        specifier: latest
         version: link:../../packages/plugin-tools
 
   rust-plugins/react:
