@@ -702,7 +702,6 @@ export async function readConfigFile(
     compilation: normalizedConfig,
     jsPlugins: [],
     rustPlugins: [[replaceDirnamePlugin, '{}']]
-    // rustPlugins: []
   });
 
   const FARM_PROFILE = process.env.FARM_PROFILE;
@@ -986,8 +985,15 @@ export async function resolveUserConfig(
 }
 
 export function createDefaultConfig(options: DefaultOptionsType): UserConfig {
-  const { inlineOptions, mode, format, outputPath, fileName, configFilePath } =
-    options;
+  const {
+    inlineOptions,
+    mode,
+    format,
+    outputPath,
+    showFileSize = false,
+    fileName,
+    configFilePath
+  } = options;
 
   return {
     root: path.resolve(inlineOptions.root ?? '.'),
@@ -999,7 +1005,8 @@ export function createDefaultConfig(options: DefaultOptionsType): UserConfig {
         entryFilename: '[entryName]',
         path: outputPath,
         format,
-        targetEnv: 'node'
+        targetEnv: 'node',
+        showFileSize
       },
       mode,
       external: [

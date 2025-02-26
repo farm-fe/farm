@@ -8,7 +8,7 @@
   },
   "scripts": {
     "preinstall": "npx only-allow pnpm",
-    "bootstrap": "node scripts/bootstrap.mjs",
+    "bootstrap": "node scripts/bootstrap.mjs -v",
     "start:rs": "cargo watch -w crates -w rust-plugins -s 'scripts/watch.sh'",
     "start": "pnpm --filter @farmfe/cli start",
     "build:cli": "pnpm --filter @farmfe/cli build",

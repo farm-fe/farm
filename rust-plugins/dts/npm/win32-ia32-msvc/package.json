@@ -1,5 +1,5 @@
 {
-  "name": "@farmfe/plugin-replace-dirname-win32-ia32-msvc",
+  "name": "@farmfe/plugin-dts-win32-ia32-msvc",
   "version": "0.0.0",
   "os": [
     "win32"

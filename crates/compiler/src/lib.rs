@@ -26,6 +26,7 @@ pub mod generate;
 pub mod trace_module_graph;
 pub mod update;
 pub mod utils;
+pub mod write;
 
 pub struct Compiler {
   context: Arc<CompilationContext>,
@@ -106,6 +107,10 @@ impl Compiler {
     // but it will be executed earlier than external plugins
     plugins.push(Arc::new(farmfe_plugin_resolve::FarmPluginResolve::new(&config)) as _);
 
+    if config.output.show_file_size && matches!(config.mode, Mode::Production) {
+      plugins.push(Arc::new(farmfe_plugin_file_size::FarmPluginFileSize::new(&config)) as _);
+    }
+
     plugins.append(&mut plugin_adapters);
 
     Self::new_without_internal_plugins(config, plugins)
@@ -172,10 +177,11 @@ impl Compiler {
       self.generate()?;
     }
 
-    self
-      .context
-      .plugin_driver
-      .finish(&self.context.stats, &self.context)?;
+    {
+      #[cfg(feature = "profile")]
+      farmfe_core::puffin::profile_scope!("Write Stage");
+      self.write()?;
+    }
 
     if self.context.config.persistent_cache.enabled() {
       self

@@ -8,6 +8,9 @@ export default defineConfig({
     input: {
       index: "./index.ts"
     },
+    output: {
+      targetEnv: 'node'
+    },
     persistentCache: false,
     resolve: {
       alias: {
@@ -20,5 +23,5 @@ export default defineConfig({
       // tsConfigPath: './tsconfig.json'
     // })
   // ]
-  plugins: ['@farmfe/plugin-dts']
+  // plugins: ['@farmfe/plugin-dts']
 });

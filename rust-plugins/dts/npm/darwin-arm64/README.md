@@ -1,3 +1,3 @@
-# `@farmfe/plugin-replace-dirname-darwin-arm64`
+# `@farmfe/plugin-dts-darwin-arm64`
 
-This is the **aarch64-apple-darwin** binary for `@farmfe/plugin-replace-dirname`
+This is the **aarch64-apple-darwin** binary for `@farmfe/plugin-dts`

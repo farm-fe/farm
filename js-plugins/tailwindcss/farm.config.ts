@@ -22,6 +22,6 @@ export default defineConfig({
     persistentCache: false,
     progress: false
   },
-  plugins: ['@farmfe/plugin-dts']
-  // plugins: [dts()]
+  // plugins: ['@farmfe/plugin-dts']
+  plugins: [dts()]
 });

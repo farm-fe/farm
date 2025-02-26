@@ -596,6 +596,7 @@ export class Server extends httpServer {
   async #compile(): Promise<void> {
     try {
       await this.compiler.compile();
+      // TODO need callWriteResourcesHook ？？
       await (this.config.server.writeToDisk
         ? this.compiler.writeResourcesToDisk()
         : this.compiler.callWriteResourcesHook());

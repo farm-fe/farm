@@ -437,22 +437,8 @@ impl JsCompiler {
   }
 
   #[napi]
-  pub fn write_resources_to_disk(&self, output_path: String) {
-    let context = self.compiler.context();
-    let resources = context.resources_map.lock();
-
-    resources.par_iter().for_each(|(name, resource)| {
-      if resource.emitted {
-        return;
-      }
-
-      let path = Path::new(&output_path).join(name.split(['?', '#']).next().unwrap());
-      let dir = path.parent().unwrap();
-      if !dir.exists() {
-        std::fs::create_dir_all(dir).unwrap();
-      };
-      std::fs::write(path, resource.bytes.clone()).unwrap();
-    });
+  pub fn write_resources_to_disk(&self) {
+    self.compiler.write_resources_to_disk();
   }
 
   #[napi]

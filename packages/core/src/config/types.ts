@@ -10,14 +10,59 @@ import type { JsPlugin } from '../plugin/type.js';
 import type { Config, CssConfig, OutputConfig } from '../types/binding.js';
 import type { Logger } from '../utils/index.js';
 
+/**
+ * Interface for Hot Module Reload (HMR) configuration options.
+ * HMR allows for updating parts of an application without a full reload,
+ * improving development efficiency.
+ */
 export interface HmrOptions {
+  /**
+   * The protocol to use for the HMR connection.
+   *
+   * @default ''
+   */
   protocol?: string;
+  /**
+   * The host address for the HMR server.
+   *
+   * @default 'localhost'
+   */
   host?: string;
+  /**
+   * The port number for the HMR server.
+   *
+   * @default undefined
+   */
   port?: number;
+  /**
+   * The port number for the HMR client.
+   *
+   * @default 9000
+   */
   clientPort?: number;
+  /**
+   * The path for the HMR endpoint.
+   *
+   * @default '/__hmr'
+   */
   path?: string;
+  /**
+   * The timeout in milliseconds for the HMR connection.
+   *
+   * @default 0
+   */
   timeout?: number;
+  /**
+   * Whether to show an overlay for HMR errors in the browser.
+   *
+   * @default true
+   */
   overlay?: boolean;
+  /**
+   * The server instance to attach the HMR middleware to.
+   *
+   * @default null
+   */
   server?: Server;
 }
 
@@ -47,31 +92,28 @@ export type UserConfigExport =
 export interface UserServerConfig {
   /**
    * HTTP headers to be sent with every response.
+   *
+   * @default {}
    */
   headers?: OutgoingHttpHeaders | undefined;
   /**
    * The port number the server will listen on.
+   *
+   * @default 9000
    */
   port?: number;
   /**
    * Configuration options for the HTTPS server.
+   *
+   * @default undefined
    */
   https?: HttpsServerOptions;
   /**
    * The origin address of the server.
+   *
+   * @default ''
    */
   origin?: string;
-  /**
-   * The protocol used by the server, with optional values
-   * of 'http' or 'https'.
-   *
-   * @default 'http'
-   */
-  protocol?: 'http' | 'https';
-  /**
-   * Hostname configuration, including the name and host address.
-   */
-  hostname?: { name: string; host: string | undefined };
   // http2?: boolean;
   /**
    * Configuration options for Hot Module Replacement (HMR),
@@ -80,6 +122,8 @@ export interface UserServerConfig {
   hmr?: boolean | HmrOptions;
   /**
    * Proxy configuration for the server, in key-value pair format.
+   *
+   * @default undefined
    */
   proxy?: Record<string, any>;
   /**
@@ -92,15 +136,21 @@ export interface UserServerConfig {
   strictPort?: boolean;
   /**
    * Whether to automatically open the server in the default browser.
+   *
+   * @default false
    */
   open?: boolean;
   /**
    * The host address the server listens on.
+   *
+   * @default 'localhost'
    */
   host?: string | boolean;
   /**
    * Whether to enable CORS (Cross-Origin Resource Sharing),
    * which can be a boolean or detailed configuration.
+   *
+   * @default false
    */
   cors?: boolean | any;
   /**
@@ -113,14 +163,20 @@ export interface UserServerConfig {
   appType?: 'spa' | 'mpa' | 'custom';
   /**
    * Array of middleware for the development server.
+   *
+   * @default []
    */
   middlewares?: DevServerMiddleware[];
   /**
    * Whether to run the server in middleware mode.
+   *
+   * @default false
    */
   middlewareMode?: boolean;
   /**
-   * Whether to write the bundled files to disk.
+   * Whether to write files to disk.
+   *
+   * @default false
    */
   writeToDisk?: boolean;
   /**
@@ -205,6 +261,8 @@ export interface UserPreviewServerConfig {
 export type NormalizedServerConfig = Required<
   Omit<UserServerConfig, 'hmr'> & {
     hmr?: HmrOptions;
+    protocol?: 'http' | 'https';
+    hostname?: { name: string; host: string | undefined };
   }
 >;
 
@@ -391,6 +449,7 @@ export type DefaultOptionsType = {
   outputPath?: string;
   fileName?: string;
   mode?: CompilationMode;
+  showFileSize?: boolean;
 };
 
 export type EnvResult = Record<

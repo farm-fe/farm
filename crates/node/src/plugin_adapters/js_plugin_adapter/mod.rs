@@ -25,6 +25,7 @@ use self::hooks::{
   plugin_cache_loaded::JsPluginPluginCacheLoadedHook,
   // render_resource_pot::JsPluginRenderResourcePotHook,
   process_module::JsPluginProcessModuleHook,
+  freeze_module::JsPluginFreezeModuleHook,
   render_start::JsPluginRenderStartHook,
   resolve::JsPluginResolveHook,
   transform::JsPluginTransformHook,
@@ -39,6 +40,7 @@ use self::hooks::{
 pub mod context;
 mod context_methods;
 mod hooks;
+mod module_hook_common;
 mod thread_safe_js_plugin_hook;
 
 pub struct JsPluginAdapter {
@@ -60,6 +62,7 @@ pub struct JsPluginAdapter {
   js_transform_html_hook: Option<JsPluginTransformHtmlHook>,
   js_update_finished_hook: Option<JsPluginUpdateFinishedHook>,
   js_process_module_hook: Option<JsPluginProcessModuleHook>,
+  js_freeze_module_hook: Option<JsPluginFreezeModuleHook>,
 }
 
 impl JsPluginAdapter {
@@ -97,6 +100,8 @@ impl JsPluginAdapter {
       get_named_property::<JsObject>(env, &js_plugin_object, "updateFinished").ok();
     let process_module_obj =
       get_named_property::<JsObject>(env, &js_plugin_object, "processModule").ok();
+    let freeze_module_obj =
+      get_named_property::<JsObject>(env, &js_plugin_object, "freezeModule").ok();
 
     Ok(Self {
       name,
@@ -126,6 +131,8 @@ impl JsPluginAdapter {
         .map(|obj| JsPluginUpdateFinishedHook::new(env, obj)),
       js_process_module_hook: process_module_obj
         .map(|obj| JsPluginProcessModuleHook::new(env, obj)),
+      js_freeze_module_hook: freeze_module_obj
+        .map(|obj| JsPluginFreezeModuleHook::new(env, obj)),
     })
   }
 
@@ -256,6 +263,18 @@ impl Plugin for JsPluginAdapter {
   ) -> Result<Option<()>> {
     if let Some(ref js_process_module_hook) = self.js_process_module_hook {
       return js_process_module_hook.call(param, context.clone());
+    }
+
+    Ok(None)
+  }
+
+  fn freeze_module(
+    &self,
+    param: &mut farmfe_core::plugin::PluginFreezeModuleHookParam,
+    context: &Arc<CompilationContext>,
+  ) -> Result<Option<()>> {
+    if let Some(ref js_freeze_module_hook) = self.js_freeze_module_hook {
+      return js_freeze_module_hook.call(param, context.clone());
     }
 
     Ok(None)
