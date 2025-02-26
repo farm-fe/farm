@@ -46,10 +46,6 @@ impl CacheStoreTrait for NamespaceStore {
       .write_single_cache(self.map_store_key(Cow::Borrowed(&store_key)), bytes)
   }
 
-  fn write_manifest(&self) {
-    self.store.write_manifest()
-  }
-
   fn write_cache(&self, cache_map: HashMap<CacheStoreKey, Vec<u8>>) {
     self.store.write_cache(
       cache_map

@@ -47,8 +47,6 @@ impl CacheStoreTrait for MemoryCacheStore {
     Ok(())
   }
 
-  fn write_manifest(&self) {}
-
   fn write_cache(&self, cache_map: HashMap<CacheStoreKey, Vec<u8>>) {
     for (store_key, bytes) in cache_map {
       self.write_single_cache(store_key, bytes).unwrap();

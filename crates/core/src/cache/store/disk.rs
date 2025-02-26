@@ -171,16 +171,13 @@ impl CacheStore {
           combine_data
         },
       )
-      .reduce(
-        HashMap::default,
-        |mut a, b| {
-          for (store_key, map) in b {
-            a.entry(store_key).or_default().extend(map);
-          }
+      .reduce(HashMap::default, |mut a, b| {
+        for (store_key, map) in b {
+          a.entry(store_key).or_default().extend(map);
+        }
 
-          a
-        },
-      )
+        a
+      })
       .into_par_iter()
       .for_each(|(cache_file_path, data)| {
         let data = serialize!(&data);
@@ -199,6 +196,21 @@ impl CacheStore {
   fn insert_cache(&self, name: &str, key: &str, data: Vec<u8>) {
     self.manifest.insert(name.to_string(), key.to_string());
     self.data.insert(key.to_string(), data);
+  }
+
+  fn write_manifest(&self) {
+    let manifest = self.manifest.clone().into_iter().collect::<HashMap<_, _>>();
+
+    if !self.cache_dir.exists() {
+      std::fs::create_dir_all(&self.cache_dir).unwrap();
+    }
+
+    let manifest_file_path = &self.cache_dir.join(FARM_CACHE_MANIFEST_FILE);
+    std::fs::write(
+      manifest_file_path,
+      serde_json::to_string(&manifest).unwrap(),
+    )
+    .unwrap();
   }
 }
 
@@ -225,21 +237,6 @@ impl CacheStoreTrait for CacheStore {
     }
 
     Ok(())
-  }
-
-  fn write_manifest(&self) {
-    let manifest = self.manifest.clone().into_iter().collect::<HashMap<_, _>>();
-
-    if !self.cache_dir.exists() {
-      std::fs::create_dir_all(&self.cache_dir).unwrap();
-    }
-
-    let manifest_file_path = &self.cache_dir.join(FARM_CACHE_MANIFEST_FILE);
-    std::fs::write(
-      manifest_file_path,
-      serde_json::to_string(&manifest).unwrap(),
-    )
-    .unwrap();
   }
 
   /// Write the cache map to the disk.

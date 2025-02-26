@@ -6,7 +6,6 @@ pub trait CacheStoreTrait: Send + Sync {
   fn has_cache(&self, name: &str) -> bool;
   fn is_cache_changed(&self, store_key: &CacheStoreKey) -> bool;
   fn write_single_cache(&self, store_key: CacheStoreKey, bytes: Vec<u8>) -> Result<(), CacheError>;
-  fn write_manifest(&self);
   #[allow(unused_variables)]
   fn write_cache(&self, cache_map: HashMap<CacheStoreKey, Vec<u8>>) {}
   fn read_cache(&self, name: &str) -> Option<Vec<u8>>;

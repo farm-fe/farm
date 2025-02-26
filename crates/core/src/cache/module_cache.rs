@@ -1,10 +1,10 @@
-use std::mem::replace;
 use std::sync::Arc;
 
 use dashmap::mapref::one::{Ref, RefMut};
 
 use farmfe_macro_cache_item::cache_item;
 pub use module_metadata::ModuleMatedataStore;
+use rayon::iter::{IntoParallelIterator, ParallelIterator};
 
 use crate::module::module_graph::ModuleGraphEdge;
 use crate::module::{CustomMetaDataMap, Module, ModuleId};
@@ -175,6 +175,16 @@ impl ModuleCacheManager {
 
   /// Write the cache map to the disk.
   pub fn write_cache(&self) {
+    self
+      .module_matedata
+      .take_matedata()
+      .into_par_iter()
+      .for_each(|(module_id, map)| {
+        if let Some(mut module) = self.get_cache_mut_option_ref(&module_id) {
+          module.matedata = Some(map);
+        }
+      });
+
     let thread_pool = rayon::ThreadPoolBuilder::new()
       .num_threads(2)
       .build()
@@ -207,13 +217,5 @@ impl ModuleCacheManager {
     self
       .module_matedata
       .write_metadata(key, name, Box::new(value));
-  }
-
-  pub fn shutdown(&self) {
-    for (module_id, map) in self.module_matedata.take_matedata() {
-      if let Some(mut module) = self.get_cache_mut_option_ref(&module_id) {
-        module.matedata = Some(map);
-      }
-    }
   }
 }
