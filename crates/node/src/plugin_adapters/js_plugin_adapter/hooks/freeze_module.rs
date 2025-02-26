@@ -5,7 +5,7 @@ use farmfe_core::{
   context::CompilationContext,
   error::{CompilationError, Result},
   module::{ModuleId, ModuleMetaData, ModuleType},
-  plugin::PluginProcessModuleHookParam,
+  plugin::PluginFreezeModuleHookParam,
   serde::{Deserialize, Serialize},
   swc_common::comments::SingleThreadedComments,
   swc_ecma_ast::EsVersion,
@@ -27,42 +27,46 @@ use crate::{
   plugin_adapters::js_plugin_adapter::thread_safe_js_plugin_hook::ThreadSafeJsPluginHook,
 };
 
-pub type JsPluginProcessModuleHookFilters = JsModuleHookFilters;
-pub type PluginProcessModuleHookFilters = ModuleHookFilters;
-pub type PluginProcessModuleHookResult = ModuleHookResult;
-pub type CompatiblePluginProcessModuleHookParams = ModuleHookParams;
+pub type JsPluginFreezeModuleHookFilters = JsModuleHookFilters;
+pub type PluginFreezeModuleHookFilters = ModuleHookFilters;
+pub type PluginFreezeModuleHookResult = ModuleHookResult;
+pub type CompatiblePluginFreezeModuleHookParams = ModuleHookParams;
 
-pub struct JsPluginProcessModuleHook {
+pub struct JsPluginFreezeModuleHook {
   tsfn: ThreadSafeJsPluginHook,
-  filters: PluginProcessModuleHookFilters,
+  filters: PluginFreezeModuleHookFilters,
 }
 
-impl JsPluginProcessModuleHook {
+impl JsPluginFreezeModuleHook {
   new_js_plugin_hook!(
-    PluginProcessModuleHookFilters,
-    JsPluginProcessModuleHookFilters,
-    CompatiblePluginProcessModuleHookParams,
-    PluginProcessModuleHookResult
+    PluginFreezeModuleHookFilters,
+    JsPluginFreezeModuleHookFilters,
+    CompatiblePluginFreezeModuleHookParams,
+    PluginFreezeModuleHookResult
   );
 
   pub fn call(
     &self,
-    param: &mut PluginProcessModuleHookParam,
+    param: &mut PluginFreezeModuleHookParam,
     ctx: Arc<CompilationContext>,
   ) -> Result<Option<()>> {
-    if module_matches_filters(param.module_id, param.module_type, &self.filters) {
-      let Some(result) =
-        format_module_metadata_to_code(param.meta, param.module_id, param.source_map_chain, &ctx)?
+    if module_matches_filters(&param.module.id, &param.module.module_type, &self.filters) {
+      let Some(result) = format_module_metadata_to_code(
+        &mut *param.module.meta,
+        &param.module.id,
+        &mut param.module.source_map_chain,
+        &ctx,
+      )?
       else {
         return Ok(None);
       };
 
       let Some(result) = self
         .tsfn
-        .call::<CompatiblePluginProcessModuleHookParams, PluginProcessModuleHookResult>(
-          CompatiblePluginProcessModuleHookParams {
-            module_id: param.module_id.clone(),
-            module_type: param.module_type.clone(),
+        .call::<CompatiblePluginFreezeModuleHookParams, PluginFreezeModuleHookResult>(
+          CompatiblePluginFreezeModuleHookParams {
+            module_id: param.module.id.clone(),
+            module_type: param.module.module_type.clone(),
             content: result,
           },
           ctx.clone(),
@@ -73,12 +77,12 @@ impl JsPluginProcessModuleHook {
       };
 
       convert_code_to_metadata(
-        param.module_id,
-        param.module_type,
-        param.meta,
+        &param.module.id,
+        &param.module.module_type,
+        &mut *param.module.meta,
         Arc::new(result.content),
         result.source_map,
-        param.source_map_chain,
+        &mut param.module.source_map_chain,
         &ctx,
       )?;
 

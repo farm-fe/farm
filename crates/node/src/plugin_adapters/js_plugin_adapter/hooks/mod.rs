@@ -14,3 +14,4 @@ pub mod update_finished;
 pub mod update_modules;
 pub mod write_plugin_cache;
 pub mod process_module;
+pub mod freeze_module;
