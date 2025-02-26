@@ -8,7 +8,7 @@ pub(crate) fn select<'t, T: Displayable>(
   prompt: &str,
   items: &'t [T],
   default: Option<usize>,
-) -> Result<Option<&'t T>> {
+) -> Result<&'t T> {
   let theme = ColorfulTheme::default();
   let mut builder = dialoguer::Select::with_theme(&theme)
     .with_prompt(prompt)
@@ -22,7 +22,7 @@ pub(crate) fn select<'t, T: Displayable>(
     builder = builder.default(default);
   }
   let selected = builder.interact()?;
-  Ok(items.get(selected))
+  Ok(items.get(selected).unwrap())
 }
 
 pub(crate) fn input(prompt: &str, default: Option<&str>, allow_empty: bool) -> Result<String> {

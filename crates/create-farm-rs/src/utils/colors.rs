@@ -1,6 +1,3 @@
-#![allow(unused)]
-use std::fmt;
-
 pub const BLACK: &str = "\x1b[30m";
 pub const RED: &str = "\x1b[31m";
 pub const GREEN: &str = "\x1b[32m";
@@ -27,8 +24,8 @@ pub fn remove_colors(s: &str) -> String {
     .replace(DIMRESET, "")
 }
 
-type StylerEnabled = fn(&str) -> String;
-type ColorFunction = fn(&str) -> String;
+pub type StylerEnabled = fn(&str) -> String;
+pub type ColorFunction = fn(&str) -> String;
 
 // brand gradient colors
 const GRADIENT_PURPLE_COLOR: [u8; 3] = [176, 106, 179];
@@ -36,6 +33,7 @@ const GRADIENT_PINK_COLOR: [u8; 3] = [198, 66, 110];
 const BRAND_GRADIENT_COLORS: [u8; 3] = [255, 182, 193];
 const BRAND_GRADIENT_COLORS2: [u8; 3] = [128, 0, 128];
 
+#[inline]
 pub fn is_color_enabled() -> bool {
   true
 }
@@ -375,37 +373,4 @@ pub fn brand_text(text: &str) -> String {
     ],
   );
   gradient_string
-}
-
-pub struct Colors {
-  pub reset: StylerEnabled,
-  pub bold: StylerEnabled,
-  pub dim: StylerEnabled,
-  pub italic: StylerEnabled,
-  pub underline: StylerEnabled,
-  pub inverse: StylerEnabled,
-  pub hidden: StylerEnabled,
-  pub strikethrough: StylerEnabled,
-  pub black: StylerEnabled,
-  pub red: StylerEnabled,
-  pub green: StylerEnabled,
-  pub yellow: StylerEnabled,
-  pub blue: StylerEnabled,
-  pub magenta: StylerEnabled,
-  pub purple: StylerEnabled,
-  pub orange: StylerEnabled,
-  pub cyan: StylerEnabled,
-  pub white: StylerEnabled,
-  pub bg_black: StylerEnabled,
-  pub bg_red: StylerEnabled,
-  pub bg_green: StylerEnabled,
-  pub bg_yellow: StylerEnabled,
-  pub bg_blue: StylerEnabled,
-  pub bg_magenta: StylerEnabled,
-  pub bg_cyan: StylerEnabled,
-  pub bg_white: StylerEnabled,
-  pub debug_color: StylerEnabled,
-  pub brand_color: StylerEnabled,
-  pub handle_brand_text: fn(&str),
-  pub brand_text: fn(&str) -> String,
 }

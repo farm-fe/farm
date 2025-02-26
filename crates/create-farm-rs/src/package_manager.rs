@@ -1,6 +1,9 @@
 use std::{fmt::Display, str::FromStr};
 
-use crate::{template::Template, utils::colors::*};
+use crate::{
+  template::{Displayable, Template},
+  utils::colors::*,
+};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[non_exhaustive]
@@ -25,6 +28,12 @@ impl Display for PackageManager {
       PackageManager::Npm => write!(f, "npm"),
       PackageManager::Bun => write!(f, "bun"),
     }
+  }
+}
+
+impl Displayable for PackageManager {
+  fn display_text(&self) -> &str {
+    self.to_string().leak()
   }
 }
 

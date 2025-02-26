@@ -1,9 +1,7 @@
 use std::{collections::HashMap, fmt::Display, fs, path, str::FromStr};
 
-use crate::{
-  package_manager::PackageManager,
-  utils::{colors::*, lte},
-};
+use crate::utils::colors::*;
+use crate::utils::context::Context;
 use rust_embed::RustEmbed;
 use std::any::TypeId;
 use std::mem::transmute;
@@ -141,9 +139,10 @@ impl FromStr for TauriSubTemplate {
   }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Default, Debug, Clone, Copy, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum Template {
+  #[default]
   Vanilla,
   React,
   Vue3,
@@ -155,12 +154,6 @@ pub enum Template {
   Nestjs,
   Tauri(Option<TauriSubTemplate>),
   Electron(Option<ElectronSubTemplate>),
-}
-
-impl Default for Template {
-  fn default() -> Self {
-    Template::Vanilla
-  }
 }
 
 impl Display for Template {
@@ -262,119 +255,64 @@ impl<'a> Template {
     Template::Electron(None),
   ];
 
-  fn transform_to_pascal_case(s: String) -> String {
-    let mut result = String::new();
-    let mut capitalize_next = false;
-    for (s, c) in s.chars().enumerate() {
-      if s == 0 {
-        result.push(c.to_ascii_uppercase());
-      } else if capitalize_next {
-        result.push(c.to_ascii_uppercase());
-        capitalize_next = false;
-      } else if ['_', '-'].contains(&c) {
-        capitalize_next = true;
-      } else {
-        result.push(c);
-      }
-    }
-    result
-  }
+  pub(crate) fn render(&self, target_dir: &path::Path, ctx: &mut Context) -> anyhow::Result<()> {
+    let write_file = |file: &str, ctx: &mut Context, skip_count: usize| -> anyhow::Result<()> {
+      // remove the first component, which is certainly the template directory they were in before getting embeded into the binary
+      let relative_path = path::PathBuf::from(file)
+        .components()
+        .skip(skip_count)
+        .collect::<Vec<_>>()
+        .iter()
+        .collect::<path::PathBuf>();
 
-  pub(crate) fn render(
-    &self,
-    target_dir: &path::Path,
-    _pkg_manager: PackageManager,
-    project_name: &str,
-    package_name: &str,
-  ) -> anyhow::Result<()> {
-    let lib_name = format!("{}_lib", package_name.replace('-', "_"));
-    let project_name_pascal_case = Self::transform_to_pascal_case(project_name.to_string());
+      let p = target_dir.join(relative_path);
+      let file_name = p.file_name().unwrap().to_string_lossy();
 
-    let template_data: HashMap<&str, String> = [
-      ("project_name", project_name.to_string()),
-      (
-        "project_name_pascal_case",
-        project_name_pascal_case.to_string(),
-      ),
-      ("package_name", package_name.to_string()),
-      ("lib_name", lib_name),
-    ]
-    .into();
+      let file_name = match &*file_name {
+        "gitignore" => ".gitignore",
+        // skip manifest
+        name if name.starts_with("%(") && name[1..].contains(")%") => {
+          let mut s = name.strip_prefix("%(").unwrap().split(")%");
+          let (mut _flags, _name) = (
+            s.next().unwrap().split('-').collect::<Vec<_>>(),
+            s.next().unwrap(),
+          );
 
-    let write_file =
-      |file: &str, template_data: HashMap<&str, String>, skip_count: usize| -> anyhow::Result<()> {
-        // remove the first component, which is certainly the template directory they were in before getting embeded into the binary
-        let p = path::PathBuf::from(file)
-          .components()
-          .skip(skip_count)
-          .collect::<Vec<_>>()
-          .iter()
-          .collect::<path::PathBuf>();
-
-        let p = target_dir.join(p);
-        let file_name = p.file_name().unwrap().to_string_lossy();
-
-        let file_name = match &*file_name {
-          "gitignore" => ".gitignore",
-          // skip manifest
-          name if name.starts_with("%(") && name[1..].contains(")%") => {
-            let mut s = name.strip_prefix("%(").unwrap().split(")%");
-            let (mut _flags, _name) = (
-              s.next().unwrap().split('-').collect::<Vec<_>>(),
-              s.next().unwrap(),
-            );
-
-            // skip writing this file
-            return Ok(());
-          }
-          name => name,
-        };
-
-        let (file_data, file_name) = if let Some(new_name) = file_name.strip_suffix(".lte") {
-          let data = lte::render(
-            EMBEDDED_TEMPLATES::get(file).unwrap().data.to_vec(),
-            &template_data,
-          )?
-          .replace("<FARM-TEMPLATE-NAME>", project_name);
-          (data.into_bytes(), new_name)
-        } else {
-          let plain_data = EMBEDDED_TEMPLATES::get(file).unwrap().data.to_vec();
-          let data = String::from_utf8(plain_data.clone())
-            .map(|s| {
-              s.replace("<FARM-TEMPLATE-NAME>", &project_name)
-                .into_bytes()
-            })
-            .unwrap_or(plain_data);
-          (data, file_name)
-        };
-
-        let file_name = lte::render(file_name, &template_data)?;
-
-        let parent = p.parent().unwrap();
-        fs::create_dir_all(parent)?;
-        fs::write(parent.join(file_name), file_data)?;
-        Ok(())
+          return Ok(());
+        }
+        name => name,
       };
 
+      let plain_data = EMBEDDED_TEMPLATES::get(file).unwrap().data.to_vec();
+      let file_data = if let Ok(data) = String::from_utf8(plain_data.clone()) {
+        ctx.render(&data)?.into_bytes()
+      } else {
+        plain_data
+      };
+      let file_name = ctx.render(file_name)?;
+
+      let parent = p.parent().unwrap();
+      fs::create_dir_all(parent)?;
+      fs::write(parent.join(file_name), file_data)?;
+      Ok(())
+    };
+
     let current_template_name = match self {
-      Template::Tauri(None) => "tauri".to_string(),
       Template::Tauri(Some(sub_template)) => format!("tauri/{}", sub_template.to_simple_string()),
-      Template::Electron(None) => "electron".to_string(),
       Template::Electron(Some(sub_template)) => {
         format!("electron/{}", sub_template.to_simple_string())
       }
+      Template::Tauri(None) | Template::Electron(None) => unreachable!(),
       _ => self.to_string(),
     };
 
     let skip_count = current_template_name.matches('/').count() + 1;
-    for file in EMBEDDED_TEMPLATES::iter().filter(|e| {
-      let path = path::PathBuf::from(e.to_string());
-      let _components: Vec<_> = path.components().collect();
+    for file in EMBEDDED_TEMPLATES::iter().filter(|file| {
+      let path = path::PathBuf::from(file.to_string());
       let path_str = path.to_string_lossy();
-      // let template_name = components.first().unwrap().as_os_str().to_str().unwrap();
       path_str.starts_with(&current_template_name)
     }) {
-      write_file(&file, template_data.clone(), skip_count)?;
+      write_file(&file, ctx, skip_count)?;
     }
 
     handle_brand_text("\n ✔️ Template copied Successfully! \n");
