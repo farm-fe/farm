@@ -501,6 +501,7 @@ export async function cleanBundleCommand() {
       "run",
       "clean",
     ]);
+    console.log('')
     logger("pnpm clean command completed successfully.");
   } catch (error) {
     logger("An error occurred while running pnpm clean command:", {

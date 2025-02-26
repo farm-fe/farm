@@ -12,6 +12,9 @@ export default defineConfig((env) => {
       sourcemap: true,
       presetEnv: false,
       concatenateModules: true,
+      output: {
+        // showFileSize: false,
+      },
       persistentCache: false,
       resolve: {
         alias: {

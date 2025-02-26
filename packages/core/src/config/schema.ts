@@ -62,7 +62,8 @@ const outputSchema = z
     publicPath: z.string().optional(),
     assetsFilename: z.string().optional(),
     targetEnv: z.nativeEnum(TargetEnv).optional(),
-    format: z.enum(['cjs', 'esm']).optional()
+    format: z.enum(['cjs', 'esm']).optional(),
+    showFileSize: z.boolean().optional()
   })
   .strict()
   .optional();
@@ -459,7 +460,6 @@ const FarmConfigSchema = z
 export function parseUserConfig(config: UserConfig): UserConfig {
   try {
     const parsed = FarmConfigSchema.parse(config);
-    // TODO type not need `as UserConfig`
     return parsed as UserConfig;
   } catch (err) {
     const validationError = fromZodError(err);

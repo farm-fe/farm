@@ -85,6 +85,7 @@ export async function build(
       await hook?.(compiler);
     }
 
+    // TODO move to rust
     if (output?.clean) {
       compiler.removeOutputPathDir();
     }
@@ -103,7 +104,6 @@ export async function build(
       )}.`
     );
     compiler.writeResourcesToDisk();
-    await copyPublicDirectory(resolvedUserConfig);
     if (watch) {
       handlerWatcher(resolvedUserConfig, compiler);
     }

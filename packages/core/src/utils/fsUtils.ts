@@ -178,11 +178,11 @@ export async function copyPublicDirectory(
         await fse.copy(publicFile, destFile);
       }
 
-      resolvedUserConfig.logger.info(
-        `Public directory resources copied ${colors.bold(
-          colors.green('successfully')
-        )}.`
-      );
+      // resolvedUserConfig.logger.info(
+      //   `Public directory resources copied ${colors.bold(
+      //     colors.green('successfully')
+      //   )}.`
+      // );
     }
   } catch (error) {
     resolvedUserConfig.logger.error(

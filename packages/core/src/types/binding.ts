@@ -158,6 +158,10 @@ export interface OutputConfig {
    * clean output.path automatically or not
    */
   clean?: boolean;
+  /**
+   * Whether to show print file size of final output files.
+   */
+  showFileSize?: boolean;
 }
 
 export interface ResolveConfig {
