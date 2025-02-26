@@ -4,10 +4,26 @@ import {
   useApplicationContext
 } from './context';
 import { NavHead } from './components/nav-head/nav-head';
-import './stylex.css';
-import './reset.css';
 import { useEffect } from 'react';
 import { Inspect } from './components/inspect';
+import { colors } from './themes/color.stylex';
+import { Analysis } from './components/analysis';
+import './stylex.css';
+import './reset.css';
+
+function Content() {
+  const { controlMode } = useApplicationContext();
+  return (
+    <div
+      id='container'
+      stylex={{
+        height: 'calc(100vh - 64px)'
+      }}
+    >
+      {controlMode === 'inspect' ? <Inspect /> : <Analysis />}
+    </div>
+  );
+}
 
 export function App() {
   const { theme } = useApplicationContext();
@@ -22,13 +38,13 @@ export function App() {
         stylex={{
           height: '100%',
           width: '100%',
-          position: 'relative'
+          position: 'relative',
+          backgroundColor: colors.background,
+          color: colors.foreground
         }}
       >
         <NavHead />
-        <div id='container' style={{ height: 'calc(100vh - 64px)' }}>
-          <Inspect />
-        </div>
+        <Content />
       </div>
     </ApplicationProvider>
   );

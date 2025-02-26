@@ -2,10 +2,12 @@ import React, { ReactNode, useMemo } from 'react';
 import { useScale, withScale } from '../../composables';
 import { useSelect } from './context';
 import { Ellipsis } from './ellipsis';
+import { colors } from '../../themes/color.stylex';
 
 interface Props {
   label?: string | ReactNode;
   value?: string;
+  pure?: boolean;
   disabled?: boolean;
   preventAllEvents?: boolean;
 }
@@ -24,6 +26,7 @@ function SelectOptionComponent(
     value: initialValue,
     disabled = false,
     preventAllEvents,
+    pure,
     ...rest
   } = props;
   const { SCALES } = useScale();
@@ -45,24 +48,30 @@ function SelectOptionComponent(
 
   const color = useMemo(() => {
     if (isDisabled) {
-      return '#888';
+      return colors.accents_4;
     }
-    return selected ? '#000' : '#666';
+    return selected ? colors.foreground : colors.accents_5;
   }, [selected, isDisabled]);
 
   const bgColor = useMemo(() => {
+    if (pure) {
+      return 'transparent';
+    }
     if (isDisabled) {
       return '#fafafa';
     }
-    return selected ? '#eaeaea' : '#fff';
-  }, [selected, isDisabled]);
+    return selected ? colors.accents_2 : colors.background;
+  }, [selected, isDisabled, pure]);
 
   const hoverBgColor = useMemo(() => {
+    if (pure) {
+      return 'transparent';
+    }
     if (isDisabled || selected) {
       return bgColor;
     }
-    return '#fafafa';
-  }, [isDisabled, bgColor, selected]);
+    return colors.accents_1;
+  }, [isDisabled, bgColor, selected, pure]);
 
   const handleClick = (event: React.MouseEvent<HTMLDivElement>) => {
     if (preventAllEvents) {
@@ -74,7 +83,7 @@ function SelectOptionComponent(
     if (isDisabled) {
       return;
     }
-    updateValue?.(initialValue!);
+    updateValue?.(initialValue);
   };
 
   return (
@@ -96,7 +105,7 @@ function SelectOptionComponent(
         },
         color: {
           default: color,
-          ':hover': '#333'
+          ':hover': colors.accents_7
         },
         cursor: 'pointer',
         ...(isDisabled && { cursor: 'not-allowed' }),

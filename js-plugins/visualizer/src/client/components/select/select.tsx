@@ -13,6 +13,7 @@ import { Ellipsis } from './ellipsis';
 import { SelectMultipleValue } from './select-multiple';
 import { SelectOption } from './select-option';
 import type { SelectOptionProps } from './select-option';
+import { colors } from '../../themes/color.stylex';
 
 interface Props {
   options: SelectOptionProps[];
@@ -110,7 +111,9 @@ const SelectComponent = React.forwardRef(
 
       if (!multiple) {
         return (
-          <SelectOption preventAllEvents>{getLabel(data[0])}</SelectOption>
+          <SelectOption pure preventAllEvents>
+            {getLabel(data[0])}
+          </SelectOption>
         );
       }
 
@@ -176,10 +179,10 @@ const SelectComponent = React.forwardRef(
             overflow: 'hidden',
             transition:
               ' border 150ms ease-in 0s, color 200ms ease-out 0s, box-shadow 200ms ease 0s',
-            border: '1px solid #eaeaea',
+            border: `1px solid ${colors.border}`,
             borderRadius: '6px',
             ':hover': {
-              borderColor: '#000'
+              borderColor: colors.foreground
             },
             ...(disabled && { ':hover': { borderColor: '#eaeaea' } }),
             '--select-font-size': SCALES.font(0.875),

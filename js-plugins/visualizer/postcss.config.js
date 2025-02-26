@@ -8,6 +8,7 @@ module.exports = {
         "src/client/pages/**/*.{js,jsx,ts,tsx}",
         "src/client/themes/**/*.{js,jsx,ts,tsx}",
         "src/client/components/**/*.{js,jsx,ts,tsx}",
+        "src/client/application.tsx",
       ],
       babelConfig: {
         parserOpts: {

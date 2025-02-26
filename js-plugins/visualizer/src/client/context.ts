@@ -9,12 +9,16 @@ const CONSTANTS = {
 
 export type Theme = 'light' | 'dark' | 'auto';
 
+export type ControlMode = 'inspect' | 'analysis';
+
 export interface ApplicationConfig {
   theme: Theme;
+  controlMode: ControlMode;
 }
 
 const defaultApplicationConfig: ApplicationConfig = {
-  theme: (localStorage.getItem(CONSTANTS.theme) as Theme) || 'auto'
+  theme: (localStorage.getItem(CONSTANTS.theme) as Theme) || 'auto',
+  controlMode: 'inspect'
 };
 
 export function setupTheme(theme: Theme) {
@@ -39,6 +43,16 @@ export function useToggleTheme() {
       (localStorage.getItem(CONSTANTS.theme) as Theme) || 'auto';
     setupTheme(currentTheme === 'dark' ? 'light' : 'dark');
   }, [dispatch]);
+}
+
+export function useSetControlMode() {
+  const dispatch = useSetApplicationContext();
+  return useCallback(
+    (controlMode: ControlMode) => {
+      dispatch((state) => ({ ...state, controlMode }));
+    },
+    [dispatch]
+  );
 }
 
 export { ApplicationProvider, useApplicationContext };

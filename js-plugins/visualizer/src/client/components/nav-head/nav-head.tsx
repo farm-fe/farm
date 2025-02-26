@@ -1,5 +1,8 @@
-import { useApplicationContext, useToggleTheme } from '../../context';
-import type { Theme } from '../../context';
+import {
+  useApplicationContext,
+  useSetControlMode,
+  useToggleTheme
+} from '../../context';
 import { colors } from '../../themes/color.stylex';
 import * as stylex from '@stylexjs/stylex';
 import { Input } from '../input';
@@ -131,9 +134,11 @@ const CONTROL_OPTIONS: SelectOptionProps[] = [
 ];
 
 export function NavHead() {
-  const { theme } = useApplicationContext();
+  const { theme, controlMode } = useApplicationContext();
 
   const toggleTheme = useToggleTheme();
+
+  const setControlMode = useSetControlMode();
 
   const handleGitHubButtonClick = () => {
     window.open('https://www.farmfe.org/');
@@ -144,11 +149,11 @@ export function NavHead() {
       stylex={{
         height: '64px',
         boxSizing: 'border-box',
-        background: colors.background,
         padding: '12px',
         display: 'flex',
         justifyContent: 'space-between',
-        alignItems: 'center'
+        alignItems: 'center',
+        borderBottom: `1px solid ${colors.accents_2}`
       }}
     >
       <div id='search-container'>
@@ -160,7 +165,8 @@ export function NavHead() {
           w='120px'
           scale={0.5}
           pure
-          value={'inspect'}
+          value={controlMode}
+          onChange={setControlMode}
           options={CONTROL_OPTIONS}
         />
         <Spacer w={0.75} inline />

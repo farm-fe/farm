@@ -1,7 +1,11 @@
 import http from 'node:http';
 import { createServer } from 'vite-bundle-analyzer';
 import type { Middleware } from 'vite-bundle-analyzer';
-import { VisualizerModule, evaludateModuleGraph } from './analyze-module';
+import {
+  VisualizerModule,
+  evaludateModuleGraph,
+  evaludatePluginLifecycle
+} from './analyze-module';
 
 export function createInternalServices(mod: VisualizerModule) {
   const server = createServer();
@@ -23,6 +27,12 @@ export function createInternalServices(mod: VisualizerModule) {
       next();
     },
     stats: (c, next) => {
+      const stats = evaludatePluginLifecycle(mod.c, false);
+      c.res.writeHead(200, {
+        'Content-Type': 'json/application',
+        'Cache-Control': 'no-cache'
+      });
+      c.res.end(JSON.stringify(stats, null, 2));
       next();
     }
   };

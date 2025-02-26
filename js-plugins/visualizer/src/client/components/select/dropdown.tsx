@@ -15,6 +15,8 @@ import {
 import { CSSTransition } from '../css-transition';
 import { useSelect } from './context';
 import { getRefRect } from './layouts';
+import { colors } from '../../themes/color.stylex';
+import { expressiveness } from '../../themes/expressiveness.stylex';
 
 interface Props {
   visible: boolean;
@@ -112,8 +114,8 @@ const SelectDropdown = React.forwardRef<
           ref={internalDropdownRef}
           stylex={{
             borderRadius: '6px',
-            boxShadow: '0 30px 60px rgba(0, 0, 0, 0.12)',
-            backgroundColor: '#fff',
+            boxShadow: expressiveness.shadowLarge,
+            backgroundColor: colors.background,
             maxHeight: '17em',
             overflowY: 'auto',
             overflowAnchor: 'none',
