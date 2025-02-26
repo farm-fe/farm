@@ -172,11 +172,7 @@ export class Compiler {
    * Writes the compiled resources to disk and calls the write resources hook.
    */
   writeResourcesToDisk(): void {
-    const outputPath = this.getOutputPath();
-    // Write the resources to disk using the binding compiler
-    this._bindingCompiler.writeResourcesToDisk(outputPath);
-    // Call the write resources hook to allow plugins to perform additional actions
-    this.callWriteResourcesHook();
+    this._bindingCompiler.writeResourcesToDisk();
   }
 
   callWriteResourcesHook() {

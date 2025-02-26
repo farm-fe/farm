@@ -66,7 +66,7 @@ export declare class Compiler {
   getParentFiles(resolvedPath: string): Array<string>
   resources(): Record<string, Buffer>
   resourcesMap(): Record<string, unknown>
-  writeResourcesToDisk(outputPath: string): void
+  writeResourcesToDisk(): void
   watchModules(): Array<string>
   relativeModulePaths(): Array<string>
   resource(name: string): Buffer | null

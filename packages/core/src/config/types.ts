@@ -449,6 +449,7 @@ export type DefaultOptionsType = {
   outputPath?: string;
   fileName?: string;
   mode?: CompilationMode;
+  showFileSize?: boolean;
 };
 
 export type EnvResult = Record<

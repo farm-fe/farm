@@ -23,4 +23,5 @@ export default defineConfig({
       // tsConfigPath: './tsconfig.json'
     // })
   // ]
+  // plugins: ['@farmfe/plugin-dts']
 });

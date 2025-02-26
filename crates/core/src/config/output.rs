@@ -12,6 +12,7 @@ pub struct OutputConfig {
   pub assets_filename: String,
   pub target_env: TargetEnv,
   pub format: ModuleFormat,
+  pub show_file_size: bool,
 }
 
 impl Default for OutputConfig {
@@ -26,6 +27,7 @@ impl Default for OutputConfig {
       path: "dist".to_string(),
       target_env: TargetEnv::default(),
       format: ModuleFormat::default(),
+      show_file_size: true,
     }
   }
 }

@@ -1,5 +1,5 @@
 {
-  "name": "@farmfe/plugin-replace-dirname-linux-arm64-gnu",
+  "name": "@farmfe/plugin-dts-linux-arm64-gnu",
   "version": "0.0.0",
   "os": [
     "linux"

@@ -1,7 +1,6 @@
 import { defineConfig, loadEnv } from "@farmfe/core";
 import path from 'node:path'
 import react from "@farmfe/plugin-react";
-console.log(path.resolve(__dirname, 'src/CustomResolved.vue').replaceAll('\\', '/'));
 
 export default defineConfig({
   plugins: [
@@ -16,11 +15,11 @@ export default defineConfig({
     progress: false,
     persistentCache: false,
     sourcemap: false,
-    // output: {
-    //   publicPath: "/aaa/",
-    //   filename: '[ext]/[name]-[hash].[ext]',
-    //   assetsFilename: 'assets/[name]-[hash].[ext]',
-    // },
+    output: {
+      publicPath: "/aaa/",
+      filename: '[ext]/[name]-[hash].[ext]',
+      assetsFilename: 'assets/[name]-[hash].[ext]',
+    },
     partialBundling: {
       groups: [
         {
