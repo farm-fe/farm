@@ -86,7 +86,6 @@
   },
   "dependencies": {
     "@farmfe/plugin-replace-dirname": "workspace:*",
-    "@farmfe/plugin-file-size": "workspace:*",
     "@farmfe/runtime": "workspace:1.0.0-nightly-20241023020505",
     "@farmfe/runtime-plugin-hmr": "workspace:4.0.0-nightly-20241029095811",
     "@farmfe/runtime-plugin-import-meta": "workspace:1.0.0-nightly-20241023020505",
