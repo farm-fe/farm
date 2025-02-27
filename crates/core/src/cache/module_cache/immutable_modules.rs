@@ -1,4 +1,4 @@
-use std::{rc::Rc, sync::Arc};
+use std::sync::Arc;
 
 use dashmap::DashMap;
 use farmfe_macro_cache_item::cache_item;
@@ -8,10 +8,7 @@ use rkyv::Deserialize;
 
 use crate::{
   cache::{
-    store::{
-      constant::{CacheStoreFactory, CacheStoreTrait},
-      CacheStoreKey,
-    },
+    store::{constant::CacheStoreTrait, CacheStoreKey},
     utils::cache_panic,
     CacheContext, CacheType,
   },

@@ -12,7 +12,7 @@ use serde::{Deserialize, Serialize};
 use swc_common::{FileName, Globals, SourceFile, SourceMap};
 
 use crate::{
-  cache::{CacheManager, CacheOption, CacheType, ModuleMatedataStore},
+  cache::{CacheManager, CacheOption, CacheType},
   config::{persistent_cache::PersistentCacheConfig, Config},
   error::Result,
   module::{
@@ -58,7 +58,6 @@ pub struct CompilationContext {
 impl CompilationContext {
   pub fn new(mut config: Config, plugins: Vec<Arc<dyn Plugin>>) -> Result<Self> {
     let (cache_dir, namespace) = Self::normalize_persistent_cache_config(&mut config);
-    // let matedata = Arc::new(ModuleMatedataStore::default());
 
     Ok(Self {
       watch_graph: Box::new(RwLock::new(WatchGraph::new())),
@@ -76,7 +75,6 @@ impl CompilationContext {
             mode: config.mode,
           },
         },
-        // matedata.clone(),
       )),
       thread_pool: Arc::new(
         ThreadPoolBuilder::new()

@@ -1,14 +1,14 @@
-use std::{rc::Rc, sync::Arc};
+use std::sync::Arc;
 
 use dashmap::DashMap;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use rkyv::Deserialize;
 
 use crate::{
-  cache::{store::{
-    constant::{CacheStoreFactory, CacheStoreTrait},
-    CacheStoreKey,
-  }, CacheContext},
+  cache::{
+    store::{constant::CacheStoreTrait, CacheStoreKey},
+    CacheContext,
+  },
   deserialize, serialize, HashMap,
 };
 

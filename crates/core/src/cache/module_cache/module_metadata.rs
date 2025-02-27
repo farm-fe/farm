@@ -1,7 +1,4 @@
-use dashmap::{
-  mapref::one::{MappedRef, MappedRefMut, RefMut},
-  DashMap,
-};
+use dashmap::{mapref::one::MappedRef, DashMap};
 
 use crate::{
   module::{CustomMetaDataMap, ModuleId},
@@ -35,24 +32,15 @@ impl ModuleMatedataStore {
     v
   }
 
-  pub fn get_map(&self, key: &ModuleId) -> Option<CustomMetaDataMap> {
-    self.module_matedata.remove(key).map(|(_, v)| v)
-  }
-
   pub fn set_map(&self, key: ModuleId, value: CustomMetaDataMap) {
     self.module_matedata.insert(key, value);
-  }
-
-  pub fn get_map_mut_ref(&self, key: &ModuleId) -> Option<RefMut<'_, ModuleId, CustomMetaDataMap>> {
-    self.module_matedata.get_mut(key)
   }
 
   pub fn get_matedata<V: Cacheable>(&self, key: &ModuleId, name: &str) -> Option<Box<V>> {
     self
       .module_matedata
       .get_mut(key)
-      .map(|mut v| v.get_cache(name))
-      .flatten()
+      .and_then(|mut v| v.get_cache(name))
   }
 
   pub fn read_ref<V: Cacheable>(
@@ -65,19 +53,6 @@ impl ModuleMatedataStore {
         .module_matedata
         .get(key)?
         .map(|v| v.get_ref::<V>(name.as_ref()).unwrap()),
-    )
-  }
-
-  pub fn read_ref_mut<V: Cacheable>(
-    &self,
-    key: &ModuleId,
-    name: &str,
-  ) -> Option<MappedRefMut<'_, ModuleId, CustomMetaDataMap, V>> {
-    Some(
-      self
-        .module_matedata
-        .get_mut(key)?
-        .map(|v| v.get_mut::<V>(name.as_ref()).unwrap()),
     )
   }
 
