@@ -7,12 +7,15 @@
     "dev": "farm",
     "build": "tsc && farm build",
     "preview": "farm preview",
-    "tauri": "tauri"
+    "tauri": "tauri"{% if biome %},
+    "lint": "biome lint",
+    "format": "biome format --write"{% endif %}
   },
   "dependencies": {
     "@tauri-apps/api": "^1"
   },
-  "devDependencies": {
+  "devDependencies": {{% if biome %}
+    "@biomejs/biome": "^1.9.4",{% endif %}
     "@tauri-apps/cli": "^1",
     "@farmfe/cli": "^{{ farm_cli_version }}",
     "@farmfe/core": "^{{ farm_core_version }}",

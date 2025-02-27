@@ -7,10 +7,13 @@
     "start": "farm",
     "build": "farm build",
     "preview": "farm preview",
-    "clean": "farm clean",
+    "clean": "farm clean"{% if biome %},
+    "lint": "biome lint",
+    "format": "biome format --write"{% endif %},
     "check": "svelte-check --tsconfig ./tsconfig.json"
   },
-  "devDependencies": {
+  "devDependencies": {{% if biome %}
+    "@biomejs/biome": "^1.9.4",{% endif %}
     "@farmfe/cli": "^{{ farm_cli_version }}",
     "@farmfe/core": "^{{ farm_core_version }}",
     "@sveltejs/vite-plugin-svelte": "^3.0.2",

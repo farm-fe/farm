@@ -7,12 +7,15 @@
     "start": "farm",
     "build": "farm build",
     "preview": "farm preview",
-    "clean": "farm clean"
+    "clean": "farm clean"{% if biome %},
+    "lint": "biome lint",
+    "format": "biome format --write"{% endif %}
   },
   "dependencies": {
     "lit": "^3.1.2"
   },
-  "devDependencies": {
+  "devDependencies": {{% if biome %}
+    "@biomejs/biome": "^1.9.4",{% endif %}
     "@farmfe/cli": "^{{ farm_cli_version }}",
     "@farmfe/core": "^{{ farm_core_version }}",
     "typescript": "^5.4.3"

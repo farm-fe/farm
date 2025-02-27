@@ -6,14 +6,17 @@
   "scripts": {
     "dev": "farm",
     "build": "farm build && electron-forge package",
-    "clean": "farm clean",
+    "clean": "farm clean"{% if biome %},
+    "lint": "biome lint",
+    "format": "biome format --write"{% endif %},
     "farm": "farm"
   },
   "dependencies": {
     "react": "18",
     "react-dom": "18"
   },
-  "devDependencies": {
+  "devDependencies": {{% if biome %}
+    "@biomejs/biome": "^1.9.4",{% endif %}
     "@electron-forge/cli": "^7.4.0",
     "@electron-forge/maker-deb": "^7.4.0",
     "@electron-forge/maker-rpm": "^7.4.0",

@@ -6,12 +6,15 @@
     "start": "farm start",
     "build": "farm build",
     "preview": "farm preview",
-    "clean": "farm clean"
+    "clean": "farm clean"{% if biome %},
+    "lint": "biome lint",
+    "format": "biome format --write"{% endif %}
   },
   "dependencies": {
     "vue": "^2.7.16"
   },
-  "devDependencies": {
+  "devDependencies": {{% if biome %}
+    "@biomejs/biome": "^1.9.4",{% endif %}
     "@farmfe/cli": "^{{ farm_cli_version }}",
     "@farmfe/core": "^{{ farm_core_version }}",
     "@vitejs/plugin-vue2": "^2.3.1",

@@ -8,12 +8,15 @@
     "build": "farm build",
     "preview": "farm preview",
     "check": "svelte-check --tsconfig ./tsconfig.json",
-    "tauri": "tauri"
+    "tauri": "tauri"{% if biome %},
+    "lint": "biome lint",
+    "format": "biome format --write"{% endif %}
   },
   "dependencies": {
     "@tauri-apps/api": "^1"
   },
-  "devDependencies": {
+  "devDependencies": {{% if biome %}
+    "@biomejs/biome": "^1.9.4",{% endif %}
     "typescript": "^5.0.2",
     "vite": "^5.0.0",
     "@tauri-apps/cli": "^1",

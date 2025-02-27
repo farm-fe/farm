@@ -7,14 +7,17 @@
     "dev": "farm",
     "build": "farm build",
     "serve": "farm preview",
-    "tauri": "tauri"
+    "tauri": "tauri"{% if biome %},
+    "lint": "biome lint",
+    "format": "biome format --write"{% endif %}
   },
   "license": "MIT",
   "dependencies": {
     "solid-js": "^1.7.8",
     "@tauri-apps/api": "^1"
   },
-  "devDependencies": {
+  "devDependencies": {{% if biome %}
+    "@biomejs/biome": "^1.9.4",{% endif %}
     "typescript": "^5.0.2",
     "@farmfe/cli": "^{{ farm_cli_version }}",
     "@farmfe/core": "^{{ farm_core_version }}",

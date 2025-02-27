@@ -6,14 +6,17 @@
     "dev": "farm",
     "build": "tsc && farm build",
     "preview": "farm preview",
-    "tauri": "tauri"
+    "tauri": "tauri"{% if biome %},
+    "lint": "biome lint",
+    "format": "biome format --write"{% endif %}
   },
   "dependencies": {
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "@tauri-apps/api": "^1"
   },
-  "devDependencies": {
+  "devDependencies": {{% if biome %}
+    "@biomejs/biome": "^1.9.4",{% endif %}
     "@types/react": "^18.2.15",
     "@types/react-dom": "^18.2.7",
     "@farmfe/cli": "^{{ farm_cli_version }}",

@@ -7,13 +7,16 @@
     "dev": "farm",
     "build": "vue-tsc --noEmit && farm build",
     "preview": "farm preview",
-    "tauri": "tauri"
+    "tauri": "tauri"{% if biome %},
+    "lint": "biome lint",
+    "format": "biome format --write"{% endif %}
   },
   "dependencies": {
     "vue": "^3.3.4",
     "@tauri-apps/api": "^1"
   },
-  "devDependencies": {
+  "devDependencies": {{% if biome %}
+    "@biomejs/biome": "^1.9.4",{% endif %}
     "@vitejs/plugin-vue": "^5.0.4",
     "typescript": "^5.0.2",
     "vue-tsc": "^1.8.5",
