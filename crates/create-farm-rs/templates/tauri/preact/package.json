@@ -1,5 +1,5 @@
 {
-  "name": "<FARM-TEMPLATE-NAME>",
+  "name": "{{ project_name }}",
   "private": true,
   "version": "0.0.0",
   "type": "module",
