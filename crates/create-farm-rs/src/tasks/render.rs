@@ -25,7 +25,7 @@ impl super::Task for RenderTask {
     Ok(())
   }
 
-  fn next(&self) -> Option<Box<dyn super::Task>> {
-    Some(Box::new(super::git::GitTask))
+  fn next(&self) -> Option<Vec<Box<dyn super::Task>>> {
+    Some(vec![Box::new(super::git::GitTask)])
   }
 }

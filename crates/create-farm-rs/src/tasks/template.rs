@@ -79,7 +79,7 @@ impl super::Task for TemplateSelectTask {
     Ok(())
   }
 
-  fn next(&self) -> Option<Box<dyn super::Task>> {
-    Some(Box::new(super::render::RenderTask::new()))
+  fn next(&self) -> Option<Vec<Box<dyn super::Task>>> {
+    Some(vec![Box::new(super::extra::ExtraSelectTask::new())])
   }
 }

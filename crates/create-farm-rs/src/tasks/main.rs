@@ -69,7 +69,7 @@ impl super::Task for MainTask {
     Ok(())
   }
 
-  fn next(&self) -> Option<Box<dyn super::Task>> {
-    Some(Box::new(super::template::TemplateSelectTask::new()))
+  fn next(&self) -> Option<Vec<Box<dyn super::Task>>> {
+    Some(vec![Box::new(super::template::TemplateSelectTask::new())])
   }
 }
