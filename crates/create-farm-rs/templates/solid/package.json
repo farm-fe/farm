@@ -1,19 +1,21 @@
 {
-  "name": "<FARM-TEMPLATE-NAME>",
+  "name": "{{ project_name }}",
   "version": "1.0.0",
   "scripts": {
     "dev": "farm start",
     "start": "farm start",
     "build": "farm build",
     "preview": "farm preview",
-    "clean": "farm clean"
+    "clean": "farm clean"{% if biome %},
+    "lint": "biome lint",
+    "format": "biome format --write"{% endif %}
   },
   "dependencies": {
     "solid-js": "^1.8.16"
   },
   "devDependencies": {
-    "@farmfe/cli": "^1.0.2",
-    "@farmfe/core": "^1.3.0",
+    "@farmfe/cli": "^{{ farm_cli_version }}",
+    "@farmfe/core": "^{{ farm_core_version }}",
     "solid-refresh": "^0.7.5",
     "vite-plugin-solid": "^2.10.2"
   }

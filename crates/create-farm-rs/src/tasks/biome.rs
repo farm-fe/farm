@@ -1,0 +1,17 @@
+use std::{fs, path::PathBuf};
+
+pub struct BiomeTask;
+
+const BIOME_JSON: &str = include_str!("./biome.json");
+
+impl super::Task for BiomeTask {
+  fn description(&self) -> &str {
+    "Setup Biome for format and lint"
+  }
+  fn run(&mut self, ctx: &mut crate::context::Context) -> anyhow::Result<()> {
+    let target_dir: PathBuf = serde_json::from_value(ctx.get("target_dir").unwrap().clone())?;
+    fs::write(target_dir.join("biome.json"), BIOME_JSON)?;
+    ctx.insert("biome", true);
+    Ok(())
+  }
+}

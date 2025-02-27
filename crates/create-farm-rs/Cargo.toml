@@ -2,7 +2,7 @@
 name = "create-farm"
 version = "0.1.4"
 edition = "2021"
-authors = ["Erkelost"]
+authors = ["Erkelost", "苏向夜 <fu050409@163.com>"]
 license = "MIT"
 description = "Create Farm cli tool"
 homepage = "https://farmfe.org"
@@ -14,8 +14,6 @@ name = "create-farm"
 path = "src/main.rs"
 
 [dependencies]
-anyhow = "1"
-dialoguer = "0.11"
 # Default enable napi4 feature, see https://nodejs.org/api/n-api.html#node-api-version-matrix
 napi = { version = "2.15.2", default-features = false, features = [
   "napi4",
@@ -24,6 +22,14 @@ napi = { version = "2.15.2", default-features = false, features = [
 napi-derive = "2.15.2"
 rust-embed = { version = "8.3", features = [ "compression", "interpolate-folder-path" ] }
 clap = { version = "4.5.8", features = ["derive"] }
+tera = "1.20.0"
+serde = "1.0.218"
+serde_json = "1.0.139"
+gix = { version = "0.70.0", default-features = false }
+strum = { version = "0.27.1", features = ["derive"] }
+include_json = "0.1.0"
+dialoguer = "0.11"
+anyhow = "1"
 
 [build-dependencies]
 napi-build = "2.0.1"

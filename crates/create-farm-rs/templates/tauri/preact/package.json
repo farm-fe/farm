@@ -1,5 +1,5 @@
 {
-  "name": "<FARM-TEMPLATE-NAME>",
+  "name": "{{ project_name }}",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -7,7 +7,9 @@
     "dev": "farm",
     "build": "tsc && farm build",
     "preview": "farm preview",
-    "tauri": "tauri"
+    "tauri": "tauri"{% if biome %},
+    "lint": "biome lint",
+    "format": "biome format --write"{% endif %}
   },
   "dependencies": {
     "preact": "^10.16.0",
@@ -16,8 +18,8 @@
   "devDependencies": {
     "@preact/preset-vite": "^2.5.0",
     "typescript": "^5.0.2",
-    "@farmfe/cli": "^1.0.2",
-    "@farmfe/core": "^1.3.0",
+    "@farmfe/cli": "^{{ farm_cli_version }}",
+    "@farmfe/core": "^{{ farm_core_version }}",
     "@tauri-apps/cli": "^1"
   }
 }

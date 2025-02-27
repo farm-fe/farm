@@ -1,5 +1,5 @@
 {
-  "name": "<FARM-TEMPLATE-NAME>",
+  "name": "{{ project_name }}",
   "version": "0.0.1",
   "description": "",
   "author": "",
@@ -28,7 +28,7 @@
     "rxjs": "^7.8.1"
   },
   "devDependencies": {
-    "@farmfe/core": "^1.3.0",
+    "@farmfe/core": "^{{ farm_core_version }}",
     "@nestjs/cli": "^10.0.0",
     "@nestjs/schematics": "^10.0.0",
     "@nestjs/testing": "^10.0.0",
