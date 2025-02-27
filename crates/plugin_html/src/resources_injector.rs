@@ -173,7 +173,6 @@ impl<'a> ResourcesInjector<'a> {
 
   fn get_bootstrap_code(&self) -> String {
     let mut final_code = String::new();
-
     final_code.push_str(&format!(
       r#"{}.{}.b();"#,
       self.farm_global_this, FARM_MODULE_SYSTEM

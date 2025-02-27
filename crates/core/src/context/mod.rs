@@ -12,7 +12,7 @@ use serde::{Deserialize, Serialize};
 use swc_common::{FileName, Globals, SourceFile, SourceMap};
 
 use crate::{
-  cache::CacheManager,
+  cache::{CacheManager, CacheOption, CacheType},
   config::{persistent_cache::PersistentCacheConfig, Config},
   error::Result,
   module::{
@@ -24,7 +24,7 @@ use crate::{
     ResourceType,
   },
   stats::Stats,
-  HashMap,
+  Cacheable, HashMap,
 };
 
 use self::log_store::LogStore;
@@ -66,7 +66,16 @@ impl CompilationContext {
       resource_pot_map: Box::new(RwLock::new(ResourcePotMap::new())),
       resources_map: Box::new(Mutex::new(HashMap::default())),
       plugin_driver: Box::new(Self::create_plugin_driver(plugins, config.record)),
-      cache_manager: Box::new(CacheManager::new(&cache_dir, &namespace, config.mode)),
+      cache_manager: Box::new(CacheManager::new(
+        CacheOption {
+          cache_enable: config.persistent_cache.enabled(),
+          option: CacheType::Disk {
+            cache_dir,
+            namespace,
+            mode: config.mode,
+          },
+        },
+      )),
       thread_pool: Arc::new(
         ThreadPoolBuilder::new()
           .num_threads(num_cpus::get())
@@ -179,6 +188,24 @@ impl CompilationContext {
   pub fn clear_log_store(&self) {
     let mut log_store = self.log_store.lock();
     log_store.clear();
+  }
+
+  pub fn write_module_matedata<V: Cacheable>(&self, module_id: ModuleId, name: &str, matedata: V) {
+    self
+      .cache_manager
+      .module_cache
+      .write_metadata(module_id, name.to_string(), matedata);
+  }
+
+  pub fn read_module_matedata<V: Cacheable>(
+    &self,
+    module_id: &ModuleId,
+    name: &str,
+  ) -> Option<Box<V>> {
+    self
+      .cache_manager
+      .module_cache
+      .read_metadata(module_id, name)
   }
 }
 

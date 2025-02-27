@@ -35,7 +35,7 @@ pub fn cache_item(attr: TokenStream, input: TokenStream) -> TokenStream {
         Ok(bytes.into_vec())
       }
 
-      fn deserialize_bytes(&self, bytes: Vec<u8>) -> std::result::Result<Box<dyn #crate_name::Cacheable>, String> {
+      fn deserialize_bytes(bytes: Vec<u8>) -> std::result::Result<Box<dyn #crate_name::Cacheable>, String> {
         let archived = unsafe { rkyv::archived_root::<#item_ident>(&bytes[..]) };
         let deserialized: #item_ident = archived
           .deserialize(&mut rkyv::de::deserializers::SharedDeserializeMap::new())
