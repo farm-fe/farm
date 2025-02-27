@@ -269,7 +269,6 @@ impl<'a> Template {
       let file_name = p.file_name().unwrap().to_string_lossy();
 
       let file_name = match &*file_name {
-        "gitignore" => ".gitignore",
         // skip manifest
         name if name.starts_with("%(") && name[1..].contains(")%") => {
           let mut s = name.strip_prefix("%(").unwrap().split(")%");
