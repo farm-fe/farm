@@ -1,16 +1,12 @@
 {
   "extends": "../../tsconfig.base.json",
   "exclude": ["node_modules"],
-  "include": [
-    "src/**/*.ts",
-     "src/**/*.d.ts",
-     "src/**/*.vue", 
-     "farm.config.mjs"
-  ],
   "compilerOptions": {
     "skipLibCheck": true,
     "noEmit": true,
     "module": "ESNext",
-    "moduleResolution": "Bundler"
-  },
+    "moduleResolution": "Bundler",
+    "jsx": "react-jsx",
+    "jsxImportSource": "@stylex-extend/react"
+  }
 }
