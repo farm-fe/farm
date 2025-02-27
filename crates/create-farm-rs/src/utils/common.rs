@@ -1,4 +1,4 @@
-use std::{fs, path::Path};
+use std::fs;
 
 use crate::{package_manager::PackageManager, template::Template};
 
@@ -35,29 +35,9 @@ pub fn get_run_cmd(pkg_manager: &PackageManager, template: &Template) -> &'stati
       PackageManager::Yarn => "yarn tauri dev",
       PackageManager::Npm => "npm run tauri dev",
       PackageManager::Bun => "bun tauri dev",
+      PackageManager::Deno => "deno dev",
     },
     _ => pkg_manager.default_cmd(),
-  }
-}
-
-pub fn detect_manager(cwd: &Path, bin_name: &str) -> Option<PackageManager> {
-  let is_npm = cwd.join("package-lock.json").exists() || bin_name == "npm";
-  let is_pnpm = cwd.join("pnpm-lock.yaml").exists() || bin_name == "pnpm";
-  let is_yarn = cwd.join("yarn.lock").exists() || bin_name == "yarn";
-  let is_bun = cwd.join("bun.lockb").exists() || bin_name == "bun";
-  // let is_cargo = cwd.join("Cargo.toml").exists();
-  // let is_deno = cwd.join("deno.json").exists();
-
-  if is_npm {
-    Some(PackageManager::Npm)
-  } else if is_pnpm {
-    Some(PackageManager::Pnpm)
-  } else if is_yarn {
-    Some(PackageManager::Yarn)
-  } else if is_bun {
-    Some(PackageManager::Bun)
-  } else {
-    None
   }
 }
 

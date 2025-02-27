@@ -1,17 +1,20 @@
 use std::{fmt::Display, str::FromStr};
 
+use strum::EnumIter;
+
 use crate::{
   template::{Displayable, Template},
   utils::colors::*,
 };
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, EnumIter)]
 #[non_exhaustive]
 pub enum PackageManager {
   Pnpm,
   Yarn,
   Npm,
   Bun,
+  Deno,
 }
 
 impl Default for PackageManager {
@@ -27,6 +30,7 @@ impl Display for PackageManager {
       PackageManager::Yarn => write!(f, "yarn"),
       PackageManager::Npm => write!(f, "npm"),
       PackageManager::Bun => write!(f, "bun"),
+      PackageManager::Deno => write!(f, "deno"),
     }
   }
 }
@@ -45,9 +49,10 @@ impl FromStr for PackageManager {
       "yarn" => Ok(PackageManager::Yarn),
       "npm" => Ok(PackageManager::Npm),
       "bun" => Ok(PackageManager::Bun),
+      "deno" => Ok(PackageManager::Deno),
       _ => Err(format!(
         "{YELLOW}{s}{RESET} is not a valid package manager. Valid package mangers are [{}]",
-        PackageManager::ALL
+        PackageManager::all()
           .iter()
           .map(|e| format!("{GREEN}{e}{RESET}"))
           .collect::<Vec<_>>()
@@ -57,33 +62,27 @@ impl FromStr for PackageManager {
   }
 }
 
-impl<'a> PackageManager {
-  pub const ALL: &'a [PackageManager] = &[
-    PackageManager::Pnpm,
-    PackageManager::Yarn,
-    PackageManager::Npm,
-    PackageManager::Bun,
-  ];
-}
-
 impl PackageManager {
+  pub fn all() -> Vec<PackageManager> {
+    use strum::IntoEnumIterator;
+    PackageManager::iter().collect()
+  }
+
   /// Returns templates without flavors
   pub const fn templates_no_flavors(&self) -> &[Template] {
-    match self {
-      PackageManager::Pnpm | PackageManager::Yarn | PackageManager::Npm | PackageManager::Bun => &[
-        Template::Vanilla,
-        Template::React,
-        Template::Vue3,
-        Template::Vue2,
-        Template::Svelte,
-        Template::Solid,
-        Template::Lit,
-        Template::Preact,
-        Template::Nestjs,
-        Template::Tauri(None),
-        Template::Electron(None),
-      ],
-    }
+    &[
+      Template::Vanilla,
+      Template::React,
+      Template::Vue3,
+      Template::Vue2,
+      Template::Svelte,
+      Template::Solid,
+      Template::Lit,
+      Template::Preact,
+      Template::Nestjs,
+      Template::Tauri(None),
+      Template::Electron(None),
+    ]
   }
 
   pub const fn install_cmd(&self) -> Option<&str> {
@@ -92,6 +91,7 @@ impl PackageManager {
       PackageManager::Yarn => Some("yarn"),
       PackageManager::Npm => Some("npm install"),
       PackageManager::Bun => Some("bun install"),
+      PackageManager::Deno => Some("deno install --allow-scripts=npm:core-js"),
     }
   }
 
@@ -101,6 +101,7 @@ impl PackageManager {
       PackageManager::Yarn => "yarn dev",
       PackageManager::Npm => "npm run dev",
       PackageManager::Bun => "bun run dev",
+      PackageManager::Deno => "deno run dev",
     }
   }
 }

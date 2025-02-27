@@ -13,7 +13,7 @@ impl super::Task for MainTask {
 
     let project_name = match &ctx.options.project_name {
       Some(name) => common::to_valid_pkg_name(&name),
-      None => {
+      &None => {
         let mut project_name = DEFAULT_PROJECT_NAME.to_string();
         loop {
           let input = prompts::input("Project name", Some(&project_name), false)?

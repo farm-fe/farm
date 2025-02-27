@@ -15,11 +15,12 @@ impl TemplateSelectTask {
 impl super::Task for TemplateSelectTask {
   fn run(&mut self, ctx: &mut crate::utils::context::Context) -> anyhow::Result<()> {
     let default_pkg_manager = ctx.options.manager.unwrap_or_default();
+    let all_pkg_managers = PackageManager::all();
     let pkg_manager = prompts::select(
       "Package manager",
-      PackageManager::ALL,
+      &all_pkg_managers,
       Some(
-        PackageManager::ALL
+        all_pkg_managers
           .iter()
           .position(|&m| m == default_pkg_manager)
           .unwrap_or(0),
