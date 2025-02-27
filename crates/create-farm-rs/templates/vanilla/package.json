@@ -10,8 +10,8 @@
     "clean": "farm clean"
   },
   "devDependencies": {
-    "@farmfe/cli": "^1.0.2",
-    "@farmfe/core": "^1.3.0",
+    "@farmfe/cli": "^{{ farm_cli_version }}",
+    "@farmfe/core": "^{{ farm_core_version }}",
     "typescript": "^5.4.3"
   }
 }
