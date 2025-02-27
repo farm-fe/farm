@@ -12,8 +12,7 @@
     "format": "biome format --write"{% endif %},
     "check": "svelte-check --tsconfig ./tsconfig.json"
   },
-  "devDependencies": {{% if biome %}
-    "@biomejs/biome": "^1.9.4",{% endif %}
+  "devDependencies": {
     "@farmfe/cli": "^{{ farm_cli_version }}",
     "@farmfe/core": "^{{ farm_core_version }}",
     "@sveltejs/vite-plugin-svelte": "^3.0.2",

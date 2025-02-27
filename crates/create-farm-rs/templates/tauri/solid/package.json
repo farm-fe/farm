@@ -16,8 +16,7 @@
     "solid-js": "^1.7.8",
     "@tauri-apps/api": "^1"
   },
-  "devDependencies": {{% if biome %}
-    "@biomejs/biome": "^1.9.4",{% endif %}
+  "devDependencies": {
     "typescript": "^5.0.2",
     "@farmfe/cli": "^{{ farm_cli_version }}",
     "@farmfe/core": "^{{ farm_core_version }}",

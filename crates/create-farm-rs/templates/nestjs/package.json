@@ -27,8 +27,7 @@
     "reflect-metadata": "^0.2.0",
     "rxjs": "^7.8.1"
   },
-  "devDependencies": {{% if biome %}
-    "@biomejs/biome": "^1.9.4",{% endif %}
+  "devDependencies": {
     "@farmfe/core": "^{{ farm_core_version }}",
     "@nestjs/cli": "^10.0.0",
     "@nestjs/schematics": "^10.0.0",

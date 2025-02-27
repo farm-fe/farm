@@ -15,8 +15,7 @@
     "react-dom": "^18.2.0",
     "@tauri-apps/api": "^1"
   },
-  "devDependencies": {{% if biome %}
-    "@biomejs/biome": "^1.9.4",{% endif %}
+  "devDependencies": {
     "@types/react": "^18.2.15",
     "@types/react-dom": "^18.2.7",
     "@farmfe/cli": "^{{ farm_cli_version }}",

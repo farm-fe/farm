@@ -15,8 +15,7 @@
   "dependencies": {
     "@tauri-apps/api": "^1"
   },
-  "devDependencies": {{% if biome %}
-    "@biomejs/biome": "^1.9.4",{% endif %}
+  "devDependencies": {
     "typescript": "^5.0.2",
     "vite": "^5.0.0",
     "@tauri-apps/cli": "^1",

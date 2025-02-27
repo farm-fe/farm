@@ -13,8 +13,7 @@
   "dependencies": {
     "vue": "^2.7.16"
   },
-  "devDependencies": {{% if biome %}
-    "@biomejs/biome": "^1.9.4",{% endif %}
+  "devDependencies": {
     "@farmfe/cli": "^{{ farm_cli_version }}",
     "@farmfe/core": "^{{ farm_core_version }}",
     "@vitejs/plugin-vue2": "^2.3.1",

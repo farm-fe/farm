@@ -11,8 +11,7 @@
     "lint": "biome lint",
     "format": "biome format --write"{% endif %}
   },
-  "devDependencies": {{% if biome %}
-    "@biomejs/biome": "^1.9.4",{% endif %}
+  "devDependencies": {
     "@farmfe/cli": "^{{ farm_cli_version }}",
     "@farmfe/core": "^{{ farm_core_version }}",
     "typescript": "^5.4.3"

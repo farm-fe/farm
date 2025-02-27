@@ -14,8 +14,7 @@
   "dependencies": {
     "@tauri-apps/api": "^1"
   },
-  "devDependencies": {{% if biome %}
-    "@biomejs/biome": "^1.9.4",{% endif %}
+  "devDependencies": {
     "@tauri-apps/cli": "^1",
     "@farmfe/cli": "^{{ farm_cli_version }}",
     "@farmfe/core": "^{{ farm_core_version }}",

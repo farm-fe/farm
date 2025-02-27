@@ -13,8 +13,7 @@
   "dependencies": {
     "solid-js": "^1.8.16"
   },
-  "devDependencies": {{% if biome %}
-    "@biomejs/biome": "^1.9.4",{% endif %}
+  "devDependencies": {
     "@farmfe/cli": "^{{ farm_cli_version }}",
     "@farmfe/core": "^{{ farm_core_version }}",
     "solid-refresh": "^0.7.5",

@@ -15,8 +15,7 @@
     "preact": "^10.16.0",
     "@tauri-apps/api": "^1"
   },
-  "devDependencies": {{% if biome %}
-    "@biomejs/biome": "^1.9.4",{% endif %}
+  "devDependencies": {
     "@preact/preset-vite": "^2.5.0",
     "typescript": "^5.0.2",
     "@farmfe/cli": "^{{ farm_cli_version }}",
