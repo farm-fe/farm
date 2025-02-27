@@ -132,7 +132,7 @@ pub fn call_freeze_module_with_params(
 }
 
 pub fn update_modules_resolved_deps(
-  module_resolved_deps: Vec<(ModuleId, Vec<(ModuleId, ModuleGraphEdge)>)>,
+  module_resolved_deps: ModuleResolvedDeps,
   module_graph: &mut ModuleGraph,
 ) {
   for (module_id, resolved_deps) in module_resolved_deps {

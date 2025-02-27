@@ -4,7 +4,6 @@ use std::{
   sync::Arc,
 };
 
-use farmfe_core::{config::{AliasItem, StringOrRegex}, HashMap};
 use farmfe_core::regex;
 use farmfe_core::{
   common::PackageJsonInfo,
@@ -14,6 +13,10 @@ use farmfe_core::{
   plugin::{PluginResolveHookResult, ResolveKind},
   relative_path::RelativePath,
   serde_json::{from_str, Map, Value},
+};
+use farmfe_core::{
+  config::{AliasItem, StringOrRegex},
+  HashMap,
 };
 
 use farmfe_toolkit::resolve::{follow_symlinks, load_package_json, package_json_loader::Options};
@@ -47,6 +50,7 @@ pub struct ResolveOptions {
   pub dynamic_extensions: Option<Vec<String>>,
 }
 
+#[derive(Default)]
 pub struct Resolver {
   /// the key is (source, base_dir) and the value is the resolved result
   resolve_cache: Mutex<HashMap<ResolveCacheKey, Option<PluginResolveHookResult>>>,
@@ -59,9 +63,7 @@ const HIGHEST_PRIORITY_FIELD: &str = "exports";
 
 impl Resolver {
   pub fn new() -> Self {
-    Self {
-      resolve_cache: Mutex::new(HashMap::default()),
-    }
+    Self::default()
   }
 
   pub fn resolve(
@@ -86,11 +88,8 @@ impl Resolver {
       options: options.clone(),
     };
 
-    if let Some(result) = self.resolve_cache.lock().get(&cache_key) {
-      // None result should not be cached
-      if let Some(result) = result {
-        return Some(result.clone());
-      }
+    if let Some(Some(result)) = self.resolve_cache.lock().get(&cache_key) {
+      return Some(result.clone());
     }
 
     let result = self._resolve(source, base_dir, kind, options, context);
@@ -555,9 +554,9 @@ impl Resolver {
         options: options.clone(),
       };
 
-      if !resolve_node_modules_cache.contains_key(&key) {
-        resolve_node_modules_cache.insert(key, result.clone());
-      }
+      resolve_node_modules_cache
+        .entry(key)
+        .or_insert(result.clone());
     }
     result
   }
@@ -705,7 +704,7 @@ impl Resolver {
 
     let relative_path = if let Ok(package_json_info) = package_json_info {
       resolve_exports_or_imports(&package_json_info, subpath, "exports", kind, context)
-        .map(|resolve_exports_path| resolve_exports_path.get(0).unwrap().to_string())
+        .map(|resolve_exports_path| resolve_exports_path.first().unwrap().to_string())
         .or_else(|| {
           if context.config.output.target_env.is_browser() {
             try_browser_map(
@@ -764,7 +763,7 @@ impl Resolver {
           kind,
           context,
         )
-        .map(|exports_entries| exports_entries.get(0).unwrap().to_string())
+        .map(|exports_entries| exports_entries.first().unwrap().to_string())
       })
       .or_else(|| {
         context
@@ -846,7 +845,7 @@ impl Resolver {
       resolve_exports_or_imports(&package_json_info, source, "imports", kind, context);
 
     imports_paths
-      .map(|result| result.get(0).unwrap().to_string())
+      .map(|result| result.first().unwrap().to_string())
       .map(|imports_path| (imports_path, package_json_info.dir().to_string()))
   }
 

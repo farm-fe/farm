@@ -1,10 +1,6 @@
 use std::sync::Arc;
 
-use farmfe_core::{
-  config::{Mode, ModuleFormat},
-  context::CompilationContext,
-  module::ModuleId,
-};
+use farmfe_core::{config::ModuleFormat, context::CompilationContext, module::ModuleId};
 use farmfe_toolkit::script::module2cjs::RuntimeCalleeAllocator;
 
 use super::targets::util::ShareBundleRuntimeCalleeAllocator;

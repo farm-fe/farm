@@ -177,7 +177,7 @@ pub fn render_resource_pot_generate_resources(
   hook_context: &PluginHookContext,
   // chunk_resource_info: &mut Option<ResourcePotInfo>,
 ) -> Result<(PluginGenerateResourcesHookResult, Option<String>)> {
-  let mut augment_resource_hash = None;
+  let augment_resource_hash: Option<String>;
 
   {
     #[cfg(feature = "profile")]

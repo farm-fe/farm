@@ -136,7 +136,7 @@ impl Plugin for FarmPluginReact {
       };
 
       let (cm, _) = create_swc_source_map(&file_name.into(), param.content.clone());
-      let globals = context.meta.get_globals(&param.module_id);
+      let globals = context.meta.get_globals(param.module_id);
 
       farm_swc_transform_react(
         ast,

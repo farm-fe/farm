@@ -12,7 +12,8 @@ use farmfe_core::{
 use farmfe_toolkit::swc_ecma_visit::{VisitMut, VisitMutWith};
 
 use crate::resource_pot_to_bundle::{
-  bundle::ModuleAnalyzerManager, common::with_bundle_reference_slot_name, modules_analyzer::module_analyzer::ModuleAnalyzer, uniq_name::BundleVariable, ShareBundleContext, ShareBundleOptions
+  bundle::ModuleAnalyzerManager, common::with_bundle_reference_slot_name,
+  modules_analyzer::module_analyzer::ModuleAnalyzer, uniq_name::BundleVariable, ShareBundleContext,
 };
 
 ///

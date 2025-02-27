@@ -4,17 +4,18 @@ use farmfe_core::{dashmap::DashMap, relative_path::RelativePath};
 use farmfe_utils::diff_paths;
 
 /// Analyze symlinks and get the real path.
-/// It will traverse all the ancestor of the specified path, if any ancestor is symlinks if will be followed to the real path.
+///
+/// It will traverse all the ancestor of the specified path, if
+/// any ancestor is symlinks if will be followed to the real path.
 /// If it is not symlinked, just return the original path.
+#[derive(Default)]
 pub struct SymlinksAnalyzer {
   cache: DashMap<PathBuf, PathBuf>,
 }
 
 impl SymlinksAnalyzer {
   pub fn new() -> Self {
-    Self {
-      cache: DashMap::new(),
-    }
+    Self::default()
   }
 
   pub fn follow_symlinks(&self, path: PathBuf) -> PathBuf {

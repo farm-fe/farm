@@ -680,7 +680,7 @@ fn transform_export_named(
 
   ExportModuleItem {
     declare_items: items,
-    export_items: export_items,
+    export_items,
   }
 }
 
@@ -697,14 +697,14 @@ fn transform_export_default_decl(
         DUMMY_SP,
         SyntaxContext::empty(),
       );
-      return create_export_class_decl_stmts(
+      create_export_class_decl_stmts(
         class_decl.ident,
         exported_ident,
         class_decl.class,
         callee_allocator,
         unresolved_mark,
         options.is_target_legacy,
-      );
+      )
     }
     farmfe_core::swc_ecma_ast::DefaultDecl::Fn(fn_decl) => {
       let exported_ident = Ident::new(
@@ -712,14 +712,14 @@ fn transform_export_default_decl(
         DUMMY_SP,
         SyntaxContext::empty(),
       );
-      return create_export_fn_decl_stmts(
+      create_export_fn_decl_stmts(
         fn_decl.ident,
         exported_ident,
         fn_decl.function,
         callee_allocator,
         unresolved_mark,
         options.is_target_legacy,
-      );
+      )
     }
     farmfe_core::swc_ecma_ast::DefaultDecl::TsInterfaceDecl(_) => unreachable!(),
   }
@@ -1008,14 +1008,13 @@ fn create_module_helper_item(
 
 fn create_module_helper_call_expr(helper: Box<Expr>, args: Vec<ExprOrSpread>) -> CallExpr {
   let callee = Callee::Expr(helper);
-  let call_expr = CallExpr {
+  CallExpr {
     span: DUMMY_SP,
     callee,
     args,
     type_args: None,
     ctxt: SyntaxContext::empty(),
-  };
-  call_expr
+  }
 }
 
 fn create_define_export_property_ident_call_expr(

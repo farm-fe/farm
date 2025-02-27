@@ -7,7 +7,7 @@ use farmfe_core::{
     KeyValueProp, MemberProp, ObjectPat, ObjectPatProp, Pat, Prop, PropName, PropOrSpread,
     SimpleAssignTarget,
   },
-  HashMap, HashSet,
+  HashSet,
 };
 use farmfe_toolkit::{
   swc_atoms::Atom,

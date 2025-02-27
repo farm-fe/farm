@@ -23,11 +23,12 @@ mod scope_hoisting;
 mod source_replacer;
 mod transform_async_module;
 
+type ResourcePotModules = (Vec<RenderModuleResult>, HashMap<ModuleId, Arc<SourceMap>>);
 pub fn render_resource_pot_modules(
   resource_pot: &ResourcePot,
   module_graph: &ModuleGraph,
   context: &Arc<CompilationContext>,
-) -> Result<(Vec<RenderModuleResult>, HashMap<ModuleId, Arc<SourceMap>>)> {
+) -> Result<ResourcePotModules> {
   let modules = Mutex::new(vec![]);
 
   // group modules in the same group that can perform scope hoisting
@@ -46,7 +47,7 @@ pub fn render_resource_pot_modules(
           )
         });
 
-      let mut merged_globals = None;
+      let merged_globals: Option<farmfe_core::swc_common::Globals>;
       let original_globals = context.meta.get_globals(&module.id);
 
       let (render_module_options, module_ids) = if hoisted_group.hoisted_module_ids.len() > 1 {
@@ -114,8 +115,8 @@ pub fn render_resource_pot_modules(
 
   modules.sort_by(|a, b| {
     a.module_id
-      .id(context.config.mode.clone())
-      .cmp(&b.module_id.id(context.config.mode.clone()))
+      .id(context.config.mode)
+      .cmp(&b.module_id.id(context.config.mode))
   });
 
   Ok((modules, source_maps))

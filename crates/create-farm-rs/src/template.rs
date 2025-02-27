@@ -30,7 +30,7 @@ pub enum ElectronSubTemplate {
 }
 
 impl ElectronSubTemplate {
-  pub(crate) fn to_simple_string(&self) -> &str {
+  pub(crate) const fn to_simple_string(self) -> &'static str {
     match self {
       ElectronSubTemplate::React => "react",
       ElectronSubTemplate::Vue => "vue",
@@ -91,7 +91,7 @@ pub enum TauriSubTemplate {
 }
 
 impl TauriSubTemplate {
-  pub(crate) fn to_simple_string(&self) -> &str {
+  pub(crate) const fn to_simple_string(self) -> &'static str {
     match self {
       TauriSubTemplate::React => "react",
       TauriSubTemplate::Vue => "vue",
@@ -141,9 +141,10 @@ impl FromStr for TauriSubTemplate {
   }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum Template {
+  #[default]
   Vanilla,
   React,
   Vue3,
@@ -155,12 +156,6 @@ pub enum Template {
   Nestjs,
   Tauri(Option<TauriSubTemplate>),
   Electron(Option<ElectronSubTemplate>),
-}
-
-impl Default for Template {
-  fn default() -> Self {
-    Template::Vanilla
-  }
 }
 
 impl Display for Template {
@@ -247,8 +242,8 @@ impl Displayable for Template {
   }
 }
 
-impl<'a> Template {
-  pub(crate) const ALL_TOP_LEVEL: &'a [Template] = &[
+impl Template {
+  pub(crate) const ALL_TOP_LEVEL: &[Template] = &[
     Template::Vanilla,
     Template::React,
     Template::Vue3,
@@ -331,19 +326,13 @@ impl<'a> Template {
         };
 
         let (file_data, file_name) = if let Some(new_name) = file_name.strip_suffix(".lte") {
-          let data = lte::render(
-            EMBEDDED_TEMPLATES::get(file).unwrap().data.to_vec(),
-            &template_data,
-          )?
-          .replace("<FARM-TEMPLATE-NAME>", project_name);
+          let data = lte::render(EMBEDDED_TEMPLATES::get(file).unwrap().data, &template_data)?
+            .replace("<FARM-TEMPLATE-NAME>", project_name);
           (data.into_bytes(), new_name)
         } else {
           let plain_data = EMBEDDED_TEMPLATES::get(file).unwrap().data.to_vec();
           let data = String::from_utf8(plain_data.clone())
-            .map(|s| {
-              s.replace("<FARM-TEMPLATE-NAME>", &project_name)
-                .into_bytes()
-            })
+            .map(|s| s.replace("<FARM-TEMPLATE-NAME>", project_name).into_bytes())
             .unwrap_or(plain_data);
           (data, file_name)
         };
@@ -390,35 +379,35 @@ where
 
   if type_id == TypeId::of::<ElectronSubTemplate>() {
     let electron_template: &ElectronSubTemplate = unsafe { transmute(template) };
-    match electron_template {
-      &ElectronSubTemplate::React => write!(f, "\x1b[36mReact - (https://react.dev/)\x1b[0m"),
-      &ElectronSubTemplate::Vue => write!(f, "\x1b[32mVue3 - (https://vuejs.org/)\x1b[0m"),
-      &ElectronSubTemplate::Svelte => write!(
+    match *electron_template {
+      ElectronSubTemplate::React => write!(f, "\x1b[36mReact - (https://react.dev/)\x1b[0m"),
+      ElectronSubTemplate::Vue => write!(f, "\x1b[32mVue3 - (https://vuejs.org/)\x1b[0m"),
+      ElectronSubTemplate::Svelte => write!(
         f,
         "\x1b[38;2;255;137;54mSvelte - (https://svelte.dev/)\x1b[0m"
       ),
-      &ElectronSubTemplate::Vanilla => write!(f, "\x1b[33mVanilla\x1b[0m"),
-      &ElectronSubTemplate::Solid => write!(
+      ElectronSubTemplate::Vanilla => write!(f, "\x1b[33mVanilla\x1b[0m"),
+      ElectronSubTemplate::Solid => write!(
         f,
         "\x1b[38;2;68;206;246mSolid - (https://solidjs.com/)\x1b[0m"
       ),
-      &ElectronSubTemplate::Preact => write!(f, "\x1b[36mPreact - (https://preactjs.com/)\x1b[0m"),
+      ElectronSubTemplate::Preact => write!(f, "\x1b[36mPreact - (https://preactjs.com/)\x1b[0m"),
     }
   } else if type_id == TypeId::of::<TauriSubTemplate>() {
     let tauri_template: &TauriSubTemplate = unsafe { transmute(template) };
-    match tauri_template {
-      &TauriSubTemplate::React => write!(f, "\x1b[36mReact - (https://react.dev/)\x1b[0m"),
-      &TauriSubTemplate::Vue => write!(f, "\x1b[32mVue3 - (https://vuejs.org/)\x1b[0m"),
-      &TauriSubTemplate::Svelte => write!(
+    match *tauri_template {
+      TauriSubTemplate::React => write!(f, "\x1b[36mReact - (https://react.dev/)\x1b[0m"),
+      TauriSubTemplate::Vue => write!(f, "\x1b[32mVue3 - (https://vuejs.org/)\x1b[0m"),
+      TauriSubTemplate::Svelte => write!(
         f,
         "\x1b[38;2;255;137;54mSvelte - (https://svelte.dev/)\x1b[0m"
       ),
-      &TauriSubTemplate::Vanilla => write!(f, "\x1b[33mVanilla\x1b[0m"),
-      &TauriSubTemplate::Solid => write!(
+      TauriSubTemplate::Vanilla => write!(f, "\x1b[33mVanilla\x1b[0m"),
+      TauriSubTemplate::Solid => write!(
         f,
         "\x1b[38;2;68;206;246mSolid - (https://solidjs.com/)\x1b[0m"
       ),
-      &TauriSubTemplate::Preact => write!(f, "\x1b[36mPreact - (https://preactjs.com/)\x1b[0m"),
+      TauriSubTemplate::Preact => write!(f, "\x1b[36mPreact - (https://preactjs.com/)\x1b[0m"),
     }
   } else {
     Err(std::fmt::Error)

@@ -1,4 +1,4 @@
-use std::{cell::Ref, fmt::Debug, hash::Hash, path::PathBuf, sync::Arc};
+use std::{cell::Ref, fmt::Debug, hash::Hash, sync::Arc};
 
 use farmfe_core::{
   context::CompilationContext,

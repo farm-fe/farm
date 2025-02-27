@@ -289,7 +289,7 @@ pub struct ModuleGroupId(String);
 
 impl ModuleGroupId {
   pub fn new(id: &ModuleId, ty: &ModuleGroupType) -> Self {
-    Self(format!("{}_{:?}", id.to_string(), ty))
+    Self(format!("{}_{:?}", id, ty))
   }
 }
 

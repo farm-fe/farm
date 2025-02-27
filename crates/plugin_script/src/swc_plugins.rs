@@ -91,7 +91,7 @@ pub fn transform_by_swc_plugins(
     None,
   ));
   let unresolved_mark = Mark::from_u32(param.meta.as_script().unresolved_mark);
-  let cm = context.meta.get_module_source_map(&param.module_id);
+  let cm = context.meta.get_module_source_map(param.module_id);
   let comments = param.meta.as_script().comments.clone().into();
   let mut plugin_transforms = swc_plugins(
     Some(plugins_should_execute),

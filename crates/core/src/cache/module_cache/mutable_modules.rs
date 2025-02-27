@@ -38,13 +38,7 @@ impl MutableModulesMemoryStore {
       module.last_update_timestamp
     };
     let hash_key = sha256(
-      format!(
-        "{}{}{}",
-        module.content_hash,
-        module.id.to_string(),
-        timestamp
-      )
-      .as_bytes(),
+      format!("{}{}{}", module.content_hash, module.id, timestamp).as_bytes(),
       32,
     );
     CacheStoreKey {

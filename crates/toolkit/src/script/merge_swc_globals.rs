@@ -79,7 +79,7 @@ pub fn merge_sourcemap(
   new_cm
 }
 
-struct SpanUpdater {
+pub struct SpanUpdater {
   pub start_pos: BytePos,
 }
 

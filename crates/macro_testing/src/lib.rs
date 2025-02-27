@@ -1,11 +1,9 @@
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
-use glob;
 use heck::AsSnakeCase;
 use proc_macro::TokenStream;
 use proc_macro_error::abort;
 use quote::quote;
-use syn;
 
 struct Testing {
   pattern: syn::ExprLit,
@@ -20,7 +18,7 @@ struct WalkFiles {
   base_dir: PathBuf,
 }
 
-fn safe_test_name(file: &PathBuf) -> String {
+fn safe_test_name(file: &Path) -> String {
   use regex::Regex;
 
   let replace_valid_syntax = Regex::new("[^a-zA-Z0-9_]+").unwrap();
@@ -28,7 +26,7 @@ fn safe_test_name(file: &PathBuf) -> String {
 
   replace_start_syntax
     .replace_all(
-      &replace_valid_syntax.replace_all(&file.to_string_lossy().to_string(), "_"),
+      &replace_valid_syntax.replace_all(file.to_string_lossy().as_ref(), "_"),
       "_",
     )
     .to_string()
@@ -64,7 +62,7 @@ impl Testing {
     let pattern = base_dir.join(&pattern);
 
     for file in
-      glob::glob(&pattern.to_string_lossy().to_string()).map_err(|_| "failed match files")?
+      glob::glob(pattern.to_string_lossy().as_ref()).map_err(|_| "failed match files")?
     {
       match file {
         Ok(path) => {
@@ -95,7 +93,7 @@ impl Testing {
     for WalkFiles { file, base_dir, .. } in files {
       let relative = file.strip_prefix(&base_dir).unwrap();
       let test_name = syn::Ident::new(
-        &AsSnakeCase(safe_test_name(&relative.into())).to_string(),
+        &AsSnakeCase(safe_test_name(relative)).to_string(),
         self.pattern.lit.span(),
       );
       let file = file.to_string_lossy().to_string();
@@ -112,13 +110,13 @@ impl Testing {
       });
     }
 
-    Ok(output.into())
+    Ok(output)
   }
 }
 
-impl Into<TokenStream> for Testing {
-  fn into(self) -> TokenStream {
-    match self.to_tokens() {
+impl From<Testing> for TokenStream {
+  fn from(testing: Testing) -> TokenStream {
+    match testing.to_tokens() {
       Ok(tokens) => tokens.into(),
       Err(err) => abort!(err, "{}", err),
     }

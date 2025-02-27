@@ -123,7 +123,7 @@ pub fn transform_async_module(ast: &mut Module) {
   }
 }
 
-fn create_promise_all(await_all: &Vec<(Option<String>, String)>) -> Expr {
+fn create_promise_all(await_all: &[(Option<String>, String)]) -> Expr {
   Expr::Await(AwaitExpr {
     span: DUMMY_SP,
     arg: Box::new(Expr::Call(CallExpr {
@@ -218,7 +218,7 @@ fn rename_ident(name: &str) -> String {
 fn try_get_farm_require_id(expr: &Expr) -> Option<String> {
   if let Expr::Call(call_expr) = expr {
     if let Callee::Expr(box Expr::Ident(Ident { sym, .. })) = &call_expr.callee {
-      if sym.to_string() == FARM_REQUIRE.to_string() && call_expr.args.len() == 1 {
+      if *sym == FARM_REQUIRE && call_expr.args.len() == 1 {
         if let ExprOrSpread {
           expr: box Expr::Lit(Lit::Str(id)),
           ..

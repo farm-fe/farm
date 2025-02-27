@@ -36,7 +36,7 @@ lazy_static! {
 const PLUGIN_NAME: &str = "FarmPluginStaticAssets";
 const PUBLIC_ASSET_PREFIX: &str = "virtual:__FARM_PUBLIC_ASSET__:";
 
-fn is_asset_query(query: &Vec<(String, String)>) -> bool {
+fn is_asset_query(query: &[(String, String)]) -> bool {
   let query_map = query.iter().cloned().collect::<HashMap<_, _>>();
 
   query_map.contains_key("raw") || query_map.contains_key("inline") || query_map.contains_key("url")

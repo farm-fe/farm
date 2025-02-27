@@ -104,7 +104,7 @@ pub fn trace_module_sourcemap(
       dst_token.is_range(),
     );
 
-    if let Some(content) = read_source_content(dst_token.clone(), dst_sourcemap) {
+    if let Some(content) = read_source_content(*dst_token, dst_sourcemap) {
       builder.set_source_contents(new_token.src_id, Some(&content));
     }
   };
@@ -119,7 +119,7 @@ pub fn trace_module_sourcemap(
 
       let module = module_graph
         .module(&module_id)
-        .unwrap_or_else(|| panic!("module {} not found in module graph", module_id.to_string()));
+        .unwrap_or_else(|| panic!("module {} not found in module graph", module_id));
 
       if module.source_map_chain.is_empty() {
         add_token(&token, &token, &sourcemap);
@@ -135,14 +135,12 @@ pub fn trace_module_sourcemap(
         // reverse the chain to make the last one the original sourcemap
         chain.reverse();
         // filter out the empty sourcemap
-        chain = chain
-          .into_iter()
-          .filter(|map| map.get_token_count() > 0)
-          .collect();
+        chain.retain(|map| map.get_token_count() > 0);
+
         chain
       });
 
-      let mut dst_token = token.clone();
+      let mut dst_token = token;
       let mut dst_sourcemap = token.sourcemap();
 
       // trace the token back to original source file
@@ -155,7 +153,7 @@ pub fn trace_module_sourcemap(
         }
       }
 
-      add_token(&token, &dst_token, &dst_sourcemap);
+      add_token(&token, &dst_token, dst_sourcemap);
     } else {
       add_token(&token, &token, &sourcemap);
     }

@@ -60,8 +60,7 @@ pub fn transform_css_to_script_modules(
           key: sha256(
             format!(
               "transform_css_to_script_modules_{}_{}",
-              content_hash,
-              module_id.to_string()
+              content_hash, module_id
             )
             .as_bytes(),
             32,
@@ -294,6 +293,18 @@ pub fn wrapper_style_load(
   css_deps: &String,
   src_map: Option<String>,
 ) -> String {
+  let css_code = format!(
+    "{}\n{}",
+    code.replace('`', "'").replace('\\', "\\\\"),
+    if let Some(src_map) = src_map {
+      format!(
+        r#"/*# sourceMappingURL=data:application/json;charset=utf-8;base64,{} */"#,
+        base64_encode(src_map.as_bytes())
+      )
+    } else {
+      "".to_string()
+    }
+  );
   format!(
     r#"
 const cssCode = `{}`;
@@ -316,18 +327,7 @@ if (module.meta.hot) {{
   }});
 }}
 "#,
-    format!(
-      "{}\n{}",
-      code.replace('`', "'").replace('\\', "\\\\"),
-      if let Some(src_map) = src_map {
-        format!(
-          r#"/*# sourceMappingURL=data:application/json;charset=utf-8;base64,{} */"#,
-          base64_encode(src_map.as_bytes())
-        )
-      } else {
-        "".to_string()
-      }
-    ),
+    css_code,
     id.replace('\\', "\\\\"),
     css_deps,
   )

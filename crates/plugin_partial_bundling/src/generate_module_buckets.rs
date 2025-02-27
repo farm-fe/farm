@@ -84,7 +84,7 @@ pub fn group_module_buckets_by_module_group(
   let mut module_group_entries = module_graph
     .entries
     .iter()
-    .map(|m| ModuleGroupId::new(&m.0, &ModuleGroupType::Entry))
+    .map(|m| ModuleGroupId::new(m.0, &ModuleGroupType::Entry))
     .collect::<Vec<_>>();
   module_group_entries.sort();
   // get the topo order of module groups

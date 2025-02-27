@@ -70,7 +70,7 @@ impl<'a> SourceReplacer<'a> {
   }
 }
 
-impl<'a> VisitMut for SourceReplacer<'a> {
+impl VisitMut for SourceReplacer<'_> {
   fn visit_mut_expr(&mut self, expr: &mut Expr) {
     if let Expr::Call(call_expr) = expr {
       if let SourceReplaceResult::NotScriptModule = self.replace_source_with_id(call_expr) {
@@ -104,7 +104,7 @@ impl SourceReplacer<'_> {
     ] {
       if let Some(dep_id) = self
         .module_graph
-        .get_dep_by_source_optional(&self.module_id, &source, Some(kind.clone()))
+        .get_dep_by_source_optional(&self.module_id, source, Some(kind.clone()))
         .or(
           self
             .hoisted_external_modules
@@ -158,7 +158,7 @@ impl SourceReplacer<'_> {
 
         if dep_module.module_type.is_script() {
           // println!("replace {:?} to {:?}", value, id.id(self.mode.clone()));
-          str.value = id.id(self.mode.clone()).into();
+          str.value = id.id(self.mode).into();
           str.span = DUMMY_SP;
           str.raw = None;
           return SourceReplaceResult::Replaced;
@@ -189,14 +189,13 @@ impl SourceReplacer<'_> {
             return SourceReplaceResult::NotReplaced;
           }
 
-          str.value = id.id(self.mode.clone()).into();
+          str.value = id.id(self.mode).into();
           str.span = DUMMY_SP;
           str.raw = None;
         } else {
           panic!(
             "cannot found {} of DynamicImport from {}",
-            source,
-            self.module_id.to_string()
+            source, self.module_id
           );
         }
 
@@ -242,7 +241,7 @@ impl<'a> ExistingCommonJsRequireVisitor<'a> {
   }
 }
 
-impl<'a> VisitMut for ExistingCommonJsRequireVisitor<'a> {
+impl VisitMut for ExistingCommonJsRequireVisitor<'_> {
   fn visit_mut_call_expr(&mut self, call_expr: &mut CallExpr) {
     if call_expr.args.len() != 1 {
       call_expr.visit_mut_children_with(self);

@@ -1,4 +1,4 @@
-use std::{collections::BTreeMap, str::FromStr, sync::Arc};
+use std::{collections::BTreeMap, fmt::Display, str::FromStr, sync::Arc};
 
 use farmfe_core::{
   common::PackageJsonInfo,
@@ -45,18 +45,18 @@ impl FromStr for Condition {
   }
 }
 
-impl ToString for &Condition {
-  fn to_string(&self) -> String {
+impl Display for &Condition {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     match self {
-      Condition::Default => "default".to_string(),
-      Condition::Require => "require".to_string(),
-      Condition::Import => "import".to_string(),
-      Condition::Browser => "browser".to_string(),
-      Condition::Node => "node".to_string(),
-      Condition::Development => "development".to_string(),
-      Condition::Production => "production".to_string(),
-      Condition::Module => "module".to_string(),
-      Condition::Custom(c) => c.to_string(),
+      Condition::Default => write!(f, "default"),
+      Condition::Require => write!(f, "require"),
+      Condition::Import => write!(f, "import"),
+      Condition::Browser => write!(f, "browser"),
+      Condition::Node => write!(f, "node"),
+      Condition::Development => write!(f, "development"),
+      Condition::Production => write!(f, "production"),
+      Condition::Module => write!(f, "module"),
+      Condition::Custom(c) => write!(f, "{}", c),
     }
   }
 }
@@ -91,10 +91,7 @@ pub fn resolve_exports_or_imports(
 
   // resolve exports field
   let is_browser = context.config.output.target_env.is_browser();
-  let is_require = match kind {
-    ResolveKind::Require => true,
-    _ => false,
-  };
+  let is_require = matches!(kind, ResolveKind::Require);
   let condition_config = ConditionOptions {
     browser: is_browser && !additional_conditions.contains(&String::from("node")),
     require: is_require && !additional_conditions.contains(&String::from("import")),
@@ -108,7 +105,7 @@ pub fn resolve_exports_or_imports(
   } else {
     exports(package_json_info, key, &condition_config)
   };
-  return result;
+  result
 }
 
 fn exports(
@@ -210,7 +207,7 @@ fn conditions(options: &ConditionOptions) -> HashSet<Condition> {
   conditions
 }
 
-fn injects(items: &mut Vec<String>, value: &str) -> Option<Vec<String>> {
+fn injects(items: &mut [String], value: &str) -> Option<Vec<String>> {
   let rgx1: regex::Regex = regex::Regex::new(r#"\*"#).unwrap();
   let rgx2: regex::Regex = regex::Regex::new(r#"/$"#).unwrap();
 
@@ -223,7 +220,7 @@ fn injects(items: &mut Vec<String>, value: &str) -> Option<Vec<String>> {
     }
   }
 
-  return items.clone().into_iter().map(|s| Some(s)).collect();
+  items.iter().cloned().map(Some).collect()
 }
 
 fn loop_value(
@@ -239,7 +236,7 @@ fn loop_value(
       Some(vec![s])
     }
     Value::Array(values) => {
-      let arr_result = result.clone().unwrap_or_else(HashSet::default);
+      let arr_result = result.clone().unwrap_or_default();
       values
         .par_iter()
         .find_map_first(|item| loop_value(item.clone(), conditions, &mut Some(arr_result.clone())))

@@ -89,7 +89,7 @@ pub fn handle_entry_resources(
       ModuleFormat::CommonJs => format!("require(\"./{}\");", params.runtime_resource_name),
     }
   } else {
-    format!("(function(){{{}}}());", params.runtime_code.to_string())
+    format!("(function(){{{}}}());", params.runtime_code)
   };
 
   // 2. import 'dep' or require('dep'), return empty string if dep_resources is empty
@@ -153,7 +153,7 @@ fn create_entry_resource_code(resource: &mut Resource) -> String {
 }
 
 fn create_load_dep_resources_code(
-  dep_resources: &Vec<String>,
+  dep_resources: &[String],
   context: &Arc<CompilationContext>,
 ) -> String {
   // for backend integration, import/require is not needed, it's handled by backend
@@ -231,7 +231,7 @@ fn create_export_info_code(entry_module: &Module, format: &ModuleFormat) -> Stri
 /// ```
 fn create_call_entry_module_code(
   entry_module: &Module,
-  dep_resources: &Vec<String>,
+  dep_resources: &[String],
   dynamic_resources: &str,
   dynamic_module_resources_map: &str,
   context: &Arc<CompilationContext>,
@@ -274,7 +274,7 @@ fn create_call_entry_module_code(
   format!(
     r#"{module_system}{set_initial_loaded_resources_code}{set_dynamic_resources_map_code}__farm_ms__.b();var __farm_entry__={}__farm_ms__.r("{}");"#,
     top_level_await_entry,
-    entry_module.id.id(context.config.mode.clone()),
+    entry_module.id.id(context.config.mode),
   )
 }
 
@@ -314,5 +314,5 @@ fn update_entry_sourcemap(
     .expect("failed to write sourcemap");
 
   source_map.bytes = src_map;
-  append_sourcemap_comment(resource, &source_map, &context.config.sourcemap);
+  append_sourcemap_comment(resource, source_map, &context.config.sourcemap);
 }

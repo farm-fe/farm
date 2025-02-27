@@ -6,22 +6,19 @@ use farmfe_core::{
   swc_ecma_ast::{ObjectPatProp, Pat},
 };
 
+#[derive(Default)]
 pub struct DefinedIdentsCollector<'a> {
   pub defined_idents: HashSet<SwcId>,
-  assign_callback: Option<Box<&'a mut dyn FnMut(SwcId, SwcId)>>,
+  assign_callback: Option<&'a mut dyn FnMut(SwcId, SwcId)>,
   current_assign_left_idents: HashSet<SwcId>,
 }
 
 impl<'a> DefinedIdentsCollector<'a> {
   pub fn new() -> Self {
-    Self {
-      defined_idents: HashSet::default(),
-      assign_callback: None,
-      current_assign_left_idents: HashSet::default(),
-    }
+    Self::default()
   }
 
-  pub fn from_callback(cb: Box<&'a mut dyn FnMut(SwcId, SwcId)>) -> Self {
+  pub fn from_callback(cb: &'a mut dyn FnMut(SwcId, SwcId)) -> Self {
     Self {
       defined_idents: HashSet::default(),
       assign_callback: Some(cb),
@@ -30,7 +27,7 @@ impl<'a> DefinedIdentsCollector<'a> {
   }
 }
 
-impl<'a> Visit for DefinedIdentsCollector<'a> {
+impl Visit for DefinedIdentsCollector<'_> {
   fn visit_ident(&mut self, n: &farmfe_core::swc_ecma_ast::Ident) {
     if let Some(callback) = &mut self.assign_callback {
       for ident in &self.current_assign_left_idents {

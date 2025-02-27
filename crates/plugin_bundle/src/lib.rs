@@ -1,36 +1,36 @@
 #![feature(box_patterns)]
 #![feature(let_chains)]
 
-use std::sync::Arc;
+// use std::sync::Arc;
 
-use farmfe_core::{
-  config::{
-    config_regex::ConfigRegex, partial_bundling::PartialBundlingEnforceResourceConfig, Config,
-  },
-  context::CompilationContext,
-  enhanced_magic_string::bundle::Bundle,
-  module::ModuleType,
-  parking_lot::Mutex,
-  plugin::{
-    Plugin, PluginAnalyzeDepsHookResultEntry, PluginFinalizeResourcesHookParam,
-    PluginGenerateResourcesHookResult, PluginHookContext, PluginLoadHookParam,
-    PluginLoadHookResult, PluginResolveHookParam, PluginResolveHookResult, ResolveKind,
-  },
-  regex::Regex,
-  relative_path::RelativePath,
-  resource::{
-    meta_data::{js::JsResourcePotMetaData, ResourcePotMetaData},
-    resource_pot::{ResourcePot, ResourcePotType},
-    ResourceOrigin, ResourceType,
-  },
-  swc_ecma_ast::Module,
-  HashMap, HashSet,
-};
-use farmfe_toolkit::constant::RUNTIME_SUFFIX;
-use resource_pot_to_bundle::{
-  BundleGroup, GeneratorAstResult, ShareBundleOptions, SharedBundle, FARM_BUNDLE_POLYFILL_SLOT,
-  FARM_BUNDLE_REFERENCE_SLOT_PREFIX,
-};
+// use farmfe_core::{
+//   config::{
+//     config_regex::ConfigRegex, partial_bundling::PartialBundlingEnforceResourceConfig, Config,
+//   },
+//   context::CompilationContext,
+//   enhanced_magic_string::bundle::Bundle,
+//   module::ModuleType,
+//   parking_lot::Mutex,
+//   plugin::{
+//     Plugin, PluginAnalyzeDepsHookResultEntry, PluginFinalizeResourcesHookParam,
+//     PluginGenerateResourcesHookResult, PluginHookContext, PluginLoadHookParam,
+//     PluginLoadHookResult, PluginResolveHookParam, PluginResolveHookResult, ResolveKind,
+//   },
+//   regex::Regex,
+//   relative_path::RelativePath,
+//   resource::{
+//     meta_data::{js::JsResourcePotMetaData, ResourcePotMetaData},
+//     resource_pot::{ResourcePot, ResourcePotType},
+//     ResourceOrigin, ResourceType,
+//   },
+//   swc_ecma_ast::Module,
+//   HashMap, HashSet,
+// };
+// use farmfe_toolkit::constant::RUNTIME_SUFFIX;
+// use resource_pot_to_bundle::{
+//   BundleGroup, GeneratorAstResult, ShareBundleOptions, SharedBundle, FARM_BUNDLE_POLYFILL_SLOT,
+//   FARM_BUNDLE_REFERENCE_SLOT_PREFIX,
+// };
 
 pub mod resource_pot_to_bundle;
 

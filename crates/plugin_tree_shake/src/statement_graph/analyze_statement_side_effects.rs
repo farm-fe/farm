@@ -91,7 +91,7 @@ impl<'a> SideEffectsAnalyzer<'a> {
   }
 }
 
-impl<'a> Visit for SideEffectsAnalyzer<'a> {
+impl Visit for SideEffectsAnalyzer<'_> {
   fn visit_arrow_expr(&mut self, n: &farmfe_core::swc_ecma_ast::ArrowExpr) {
     let pre = self.is_in_top_level();
     self.set_in_top_level(false);

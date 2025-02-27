@@ -1,4 +1,4 @@
-use std::{hash::Hash, path::Path, sync::Arc};
+use std::{fmt::Display, hash::Hash, path::Path, sync::Arc};
 
 use crate::HashSet;
 use blake2::{
@@ -361,9 +361,9 @@ impl From<String> for ModuleId {
   }
 }
 
-impl ToString for ModuleId {
-  fn to_string(&self) -> String {
-    self.relative_path.to_string() + self.query_string.as_str()
+impl Display for ModuleId {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    write!(f, "{}{}", self.relative_path, self.query_string)
   }
 }
 

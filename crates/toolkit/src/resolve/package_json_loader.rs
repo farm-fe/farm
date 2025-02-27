@@ -1,10 +1,11 @@
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use farmfe_core::{
   common::PackageJsonInfo,
   dashmap::DashMap,
   error::{CompilationError, Result},
-  serde_json::{from_str, Value}, HashMap,
+  serde_json::{from_str, Value},
+  HashMap,
 };
 
 use crate::fs::read_file_utf8;
@@ -20,6 +21,7 @@ const PACKAGE_JSON_FILE: &str = "package.json";
 /// let package_json_loader = PackageJsonLoader::new();
 /// let info = package_json.load("/root/packages/app/src")?;
 /// ```
+#[derive(Default)]
 pub struct PackageJsonLoader {
   /// path -> package_json_info cache
   cache: DashMap<String, PackageJsonInfo>,
@@ -43,12 +45,10 @@ impl Default for Options {
 
 impl PackageJsonLoader {
   pub fn new() -> Self {
-    Self {
-      cache: DashMap::new(),
-    }
+    Self::default()
   }
 
-  pub fn get_cache_key(&self, path: &PathBuf, options: &Options) -> String {
+  pub fn get_cache_key(&self, path: &Path, options: &Options) -> String {
     format!(
       "{}{}{}",
       path.to_string_lossy(),

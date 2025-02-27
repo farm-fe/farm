@@ -58,7 +58,7 @@ pub(crate) fn create_var_namespace_item(
       )));
 
       // for cyclic import, using get method
-      let prop = if cyclic_idents.contains(&module_export_ident) {
+      let prop = if cyclic_idents.contains(module_export_ident) {
         Prop::Getter(GetterProp {
           span: DUMMY_SP,
           key: PropName::Str(key.as_str().into()),

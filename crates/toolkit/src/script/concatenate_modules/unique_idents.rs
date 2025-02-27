@@ -58,7 +58,7 @@ impl TopLevelIdentsRenameHandler {
     self
       .module_rename_map
       .entry(module_id)
-      .or_insert_with(HashMap::default)
+      .or_default()
       .insert(from, to);
   }
 
@@ -97,7 +97,7 @@ impl<'a> RenameVisitor<'a> {
   }
 }
 
-impl<'a> VisitMut for RenameVisitor<'a> {
+impl VisitMut for RenameVisitor<'_> {
   fn visit_mut_export_specifier(&mut self, sp: &mut ExportSpecifier) {
     if let ExportSpecifier::Named(named) = sp {
       // do not rename exported ident
@@ -119,7 +119,7 @@ impl<'a> VisitMut for RenameVisitor<'a> {
 }
 
 pub fn init_rename_handler(
-  sorted_modules: &Vec<ModuleId>,
+  sorted_modules: &[ModuleId],
   module_graph: &ModuleGraph,
 ) -> TopLevelIdentsRenameHandler {
   let mut top_level_idents = TopLevelIdents::new();

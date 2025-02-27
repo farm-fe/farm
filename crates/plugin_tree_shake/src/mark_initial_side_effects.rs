@@ -18,10 +18,7 @@ pub fn mark_initial_side_effects(
     entry_module_ids.push(entry_module_id);
   }
 
-  let module_ids = tree_shake_modules_map
-    .keys()
-    .map(|m| m.clone())
-    .collect::<Vec<_>>();
+  let module_ids = tree_shake_modules_map.keys().cloned().collect::<Vec<_>>();
 
   for module_id in module_ids {
     if let Some(shake_module) = tree_shake_modules_map.get_mut(&module_id) {

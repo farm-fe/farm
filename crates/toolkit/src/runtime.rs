@@ -56,7 +56,7 @@ impl<'a> RuntimeFeatureGuardRemover<'a> {
   }
 }
 
-impl<'a> VisitMut for RuntimeFeatureGuardRemover<'a> {
+impl VisitMut for RuntimeFeatureGuardRemover<'_> {
   fn visit_mut_stmt(&mut self, stmt: &mut Stmt) {
     // remove children first
     stmt.visit_mut_children_with(self);
@@ -121,7 +121,7 @@ fn init_bool_features<'a>(
 
   let mut bool_features = HashSet::default();
 
-  if context.config.runtime.plugins.len() > 0 {
+  if !context.config.runtime.plugins.is_empty() {
     bool_features.insert(FARM_ENABLE_RUNTIME_PLUGIN);
   }
 

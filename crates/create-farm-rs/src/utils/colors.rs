@@ -363,7 +363,7 @@ pub fn handle_brand_text(text: &str) {
 }
 
 pub fn brand_text(text: &str) -> String {
-  let gradient_string = gradient_string(
+  gradient_string(
     &format!("\n{text} \n"),
     &[
       BRAND_GRADIENT_COLORS,
@@ -373,8 +373,7 @@ pub fn brand_text(text: &str) -> String {
       interpolate_color(&BRAND_GRADIENT_COLORS, &BRAND_GRADIENT_COLORS2, 0.8),
       BRAND_GRADIENT_COLORS2,
     ],
-  );
-  gradient_string
+  )
 }
 
 pub struct Colors {

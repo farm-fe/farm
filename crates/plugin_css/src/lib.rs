@@ -345,7 +345,7 @@ impl Plugin for FarmPluginCss {
             }
           }
           export_names.push((
-            self.locals_conversion.transform(&name),
+            self.locals_conversion.transform(name),
             after_transform_classes,
           ));
         }
@@ -358,7 +358,7 @@ impl Plugin for FarmPluginCss {
     {}
     export default {{{}}}
     "#,
-          css_modules_module_id.to_string(),
+          css_modules_module_id,
           dynamic_import_of_composes
             .into_iter()
             .fold(Vec::new(), |mut acc, (from, name)| {

@@ -69,9 +69,9 @@ impl Plugin for FarmPluginRuntime {
 
     config.define.insert(
       "$__farm_global_this__$".to_string(),
-      serde_json::Value::String(format!(
-        "{}",
-        get_farm_global_this(&config.runtime.namespace, &config.output.target_env)
+      serde_json::Value::String(get_farm_global_this(
+        &config.runtime.namespace,
+        &config.output.target_env,
       )),
     );
 
@@ -193,7 +193,7 @@ impl Plugin for FarmPluginRuntime {
       add_runtime_dynamic_input("module-system-helper", "modules/");
     }
 
-    if context.config.runtime.plugins.len() > 0 {
+    if !context.config.runtime.plugins.is_empty() {
       add_runtime_dynamic_input("plugin", "modules/");
     }
 
@@ -257,8 +257,8 @@ impl Plugin for FarmPluginRuntime {
         ast: result.ast,
         external_modules: result
           .external_modules
-          .into_iter()
-          .map(|(_, id)| id.to_string())
+          .into_values()
+          .map(|id| id.to_string())
           .collect(),
         rendered_modules: result.module_ids,
         comments: result.comments,

@@ -39,7 +39,7 @@ impl<'a> DepsAnalyzer<'a> {
 
   pub fn analyze_deps(&mut self) -> Vec<PluginAnalyzeDepsHookResultEntry> {
     self.ast.visit_with(self);
-    self.deps.take().unwrap_or(vec![])
+    self.deps.take().unwrap_or_default()
   }
 
   fn insert_dep(&mut self, dep: PluginAnalyzeDepsHookResultEntry) {
@@ -51,7 +51,7 @@ impl<'a> DepsAnalyzer<'a> {
   }
 }
 
-impl<'a> Visit for DepsAnalyzer<'a> {
+impl Visit for DepsAnalyzer<'_> {
   fn visit_module_item(&mut self, n: &ModuleItem) {
     match n {
       ModuleItem::ModuleDecl(decl) => match decl {

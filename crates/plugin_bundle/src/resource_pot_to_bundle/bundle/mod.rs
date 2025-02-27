@@ -712,27 +712,26 @@ impl<'a> ModuleAnalyzerManager<'a> {
 
         StmtAction::StripCjsImport(index, import_execute_module) => {
           replace_ast_item(*index);
-          if let Some(source) = import_execute_module {
-            if !commonjs_import_executed.contains(source) {
-              if self.contain(source) {
-                ast.body[*index] = ModuleItem::Stmt(Stmt::Expr(ExprStmt {
-                  span: DUMMY_SP,
-                  expr: Box::new(Expr::Call(CallExpr {
-                    ctxt: SyntaxContext::empty(),
-                    span: DUMMY_SP,
-                    callee: swc_ecma_ast::Callee::Expr(Box::new(Expr::Ident(
-                      bundle_variable
-                        .name(self.module_global_uniq_name.commonjs_name(source).unwrap())
-                        .as_str()
-                        .into(),
-                    ))),
-                    args: vec![],
-                    type_args: None,
-                  })),
-                }));
-                commonjs_import_executed.insert(source.clone());
-              }
-            }
+          if let Some(source) = import_execute_module
+            && !commonjs_import_executed.contains(source)
+            && self.contain(source)
+          {
+            ast.body[*index] = ModuleItem::Stmt(Stmt::Expr(ExprStmt {
+              span: DUMMY_SP,
+              expr: Box::new(Expr::Call(CallExpr {
+                ctxt: SyntaxContext::empty(),
+                span: DUMMY_SP,
+                callee: swc_ecma_ast::Callee::Expr(Box::new(Expr::Ident(
+                  bundle_variable
+                    .name(self.module_global_uniq_name.commonjs_name(source).unwrap())
+                    .as_str()
+                    .into(),
+                ))),
+                args: vec![],
+                type_args: None,
+              })),
+            }));
+            commonjs_import_executed.insert(source.clone());
           }
         }
 
