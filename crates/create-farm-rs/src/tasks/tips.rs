@@ -18,7 +18,7 @@ impl super::Task for TipsTask {
         .map_err(|e: String| anyhow::anyhow!(e))?;
     let template = ctx.template();
 
-    handle_brand_text(" >  Initial Farm Project created successfully ✨ ✨ \n");
+    handle_brand_text("\n >  Initial Farm Project created successfully ✨ ✨ \n");
 
     if target_dir != cwd {
       handle_brand_text(&format!(

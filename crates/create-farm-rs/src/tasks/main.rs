@@ -1,4 +1,4 @@
-use std::process;
+use std::{fs, process};
 
 use crate::{
   utils::{colors::*, common, prompts},
@@ -65,6 +65,12 @@ impl super::Task for MainTask {
         process::exit(1);
       }
     };
+
+    if target_dir.exists() {
+      common::clean_dir(&target_dir)?;
+    } else {
+      fs::create_dir_all(&target_dir)?;
+    }
 
     Ok(())
   }
