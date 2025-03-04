@@ -343,6 +343,9 @@ importers:
       '@farmfe/js-plugin-svgr':
         specifier: workspace:^
         version: link:../../js-plugins/svgr
+      '@farmfe/plugin-module-federation':
+        specifier: workspace:*
+        version: link:../../rust-plugins/module-federation
       '@farmfe/plugin-react':
         specifier: workspace:*
         version: link:../../rust-plugins/react
@@ -2978,6 +2981,12 @@ importers:
     devDependencies:
       '@farmfe/plugin-tools':
         specifier: workspace:*
+        version: link:../../packages/plugin-tools
+
+  rust-plugins/module-federation:
+    devDependencies:
+      '@farmfe/plugin-tools':
+        specifier: latest
         version: link:../../packages/plugin-tools
 
   rust-plugins/react:
