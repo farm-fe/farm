@@ -20,7 +20,8 @@
     "test:rs:update": "cross-env FARM_UPDATE_SNAPSHOTS=1 cargo test -p farmfe_compiler",
     "ready": "node scripts/ready.mjs",
     "test-e2e": "vitest run -c vitest.config.e2e.ts",
-    "prepare": "husky"
+    "prepare": "husky",
+    "spell-check": "cspell \"**\" --gitignore"
   },
   "devDependencies": {
     "@biomejs/biome": "1.8.3",

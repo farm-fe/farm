@@ -37,7 +37,7 @@ impl ResourcePot {
     Self {
       id: Self::gen_id(name, hash, ty.clone()),
       info: Box::new(ResourcePotInfo {
-        id: Self::gen_id(&name, hash, ty.clone()),
+        id: Self::gen_id(name, hash, ty.clone()),
         name: name.to_string(),
         resource_pot_type: ty.clone(),
         module_ids: vec![],
