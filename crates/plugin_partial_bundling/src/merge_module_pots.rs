@@ -210,13 +210,10 @@ fn merge_resource_pots_by_buckets(
         let current_generation = current_generation_map.remove(&key).unwrap();
         let modules = current_generation.modules();
 
-        let resource_pot_name = format!(
-          "{}_{}",
-          base_resource_pot_name,
-          hash_module_ids(&modules) // get_sorted_module_ids_str(&module_bucket.modules())
-        );
+        let hash = hash_module_ids(&modules, 32);
+        let resource_pot_name = format!("{}_{}", base_resource_pot_name, &hash[..4]);
         let resource_pot_type = ResourcePotType::from(module_pot.module_type.clone());
-        let mut resource_pot = ResourcePot::new(resource_pot_name, resource_pot_type);
+        let mut resource_pot = ResourcePot::new(&resource_pot_name, &hash, resource_pot_type);
         resource_pot.immutable = module_pot.immutable;
 
         for module_id in modules {
@@ -232,13 +229,10 @@ fn merge_resource_pots_by_buckets(
       for (_, current_generation) in current_generation_map {
         let modules = current_generation.modules();
 
-        let resource_pot_name = format!(
-          "{}_{}",
-          base_resource_pot_name,
-          hash_module_ids(&modules) // get_sorted_module_ids_str(&module_bucket.modules())
-        );
+        let hash = hash_module_ids(&modules, 32);
+        let resource_pot_name = format!("{}_{}", base_resource_pot_name, &hash[..4]);
         let resource_pot_type = ResourcePotType::from(current_generation.module_type().clone());
-        let mut resource_pot = ResourcePot::new(resource_pot_name, resource_pot_type);
+        let mut resource_pot = ResourcePot::new(&resource_pot_name, &hash, resource_pot_type);
         resource_pot.immutable = current_generation.immutable();
 
         for module_id in modules {
@@ -416,13 +410,10 @@ fn create_merged_resource_pot(
     }
   }
 
-  let resource_pot_name = format!(
-    "{}_{}",
-    base_resource_pot_name,
-    hash_module_ids(&modules) // get_sorted_module_ids_str(&module_bucket.modules())
-  );
+  let hash = hash_module_ids(&modules, 32);
+  let resource_pot_name = format!("{}_{}", base_resource_pot_name, &hash[..4]);
 
-  let mut merged_resource_pot = ResourcePot::new(resource_pot_name, resource_pot_type);
+  let mut merged_resource_pot = ResourcePot::new(&resource_pot_name, &hash, resource_pot_type);
   merged_resource_pot.immutable = immutable;
 
   for module_id in modules {

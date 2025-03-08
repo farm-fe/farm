@@ -33,12 +33,12 @@ pub struct ResourcePot {
 }
 
 impl ResourcePot {
-  pub fn new(name: String, ty: ResourcePotType) -> Self {
+  pub fn new(name: &str, hash: &str, ty: ResourcePotType) -> Self {
     Self {
-      id: Self::gen_id(&name, ty.clone()),
+      id: Self::gen_id(name, hash, ty.clone()),
       info: Box::new(ResourcePotInfo {
-        id: Self::gen_id(&name, ty.clone()),
-        name: name.clone(),
+        id: Self::gen_id(name, hash, ty.clone()),
+        name: name.to_string(),
         resource_pot_type: ty.clone(),
         module_ids: vec![],
         map: None,
@@ -46,7 +46,7 @@ impl ResourcePot {
         data: ResourcePotInfoData::Custom("{}".to_string()),
         custom: HashMap::new(),
       }),
-      name,
+      name: name.to_string(),
       resource_pot_type: ty,
       modules: HashSet::new(),
       meta: ResourcePotMetaData::default(),
@@ -57,8 +57,8 @@ impl ResourcePot {
     }
   }
 
-  pub fn gen_id(name: &str, ty: ResourcePotType) -> String {
-    format!("{}_{}", name, ty.to_string())
+  pub fn gen_id(name: &str, hash: &str, ty: ResourcePotType) -> String {
+    format!("{}_{}_{}", name, hash, ty.to_string())
   }
 
   pub fn add_module(&mut self, module_id: ModuleId) {
