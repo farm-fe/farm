@@ -1,7 +1,7 @@
 import solid from 'vite-plugin-solid';
 import { generateHydrationScript } from 'solid-js/web';
 import path from 'path';
-import { pathToFileURL } from 'url';
+import { pathToFileURL, fileURLToPath } from 'url';
 
 /**
  * @type {import('@farmfe/core').UserConfig}
