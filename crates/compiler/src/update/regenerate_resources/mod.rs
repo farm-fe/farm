@@ -34,16 +34,12 @@ pub fn render_and_generate_update_resource(
   diff_result: &DiffResult,
   context: &Arc<CompilationContext>,
 ) -> farmfe_core::error::Result<(String, String)> {
-  let mut immutable_update_resource_pot = ResourcePot::new(
-    String::from("__IMMUTABLE_UPDATE_RESOURCE_POT__"),
-    ResourcePotType::Js,
-  );
+  let mut immutable_update_resource_pot =
+    ResourcePot::new("__IMMUTABLE_UPDATE_RESOURCE_POT__", "", ResourcePotType::Js);
   immutable_update_resource_pot.immutable = true;
 
-  let mut mutable_update_resource_pot = ResourcePot::new(
-    String::from("__MUTABLE_UPDATE_RESOURCE_POT__"),
-    ResourcePotType::Js,
-  );
+  let mut mutable_update_resource_pot =
+    ResourcePot::new("__MUTABLE_UPDATE_RESOURCE_POT__", "", ResourcePotType::Js);
   mutable_update_resource_pot.immutable = false;
 
   let module_graph = context.module_graph.read();

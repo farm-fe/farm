@@ -117,7 +117,8 @@ fn load_parse_and_analyze_deps() {
         ]
       );
 
-      let mut resource_pot = ResourcePot::new(ResourcePotId::from("index"), ResourcePotType::Js);
+      let mut resource_pot =
+        ResourcePot::new(&ResourcePotId::from("index"), "any", ResourcePotType::Js);
 
       resource_pot.resource_pot_type = ResourcePotType::Js;
       resource_pot.meta = ResourcePotMetaData {

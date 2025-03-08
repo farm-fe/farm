@@ -21,8 +21,8 @@ pub fn get_sorted_module_ids_str(module_ids: &HashSet<ModuleId>) -> String {
     .join("_")
 }
 
-pub fn hash_module_ids(module_ids: &HashSet<ModuleId>) -> String {
+pub fn hash_module_ids(module_ids: &HashSet<ModuleId>, len: usize) -> String {
   let str = get_sorted_module_ids_str(module_ids);
 
-  sha256(&str.into_bytes(), 4)
+  sha256(&str.into_bytes(), len)
 }

@@ -145,7 +145,7 @@ pub fn get_resource_pot_id_for_enforce_resources(
 ) -> (ResourcePotType, String, String) {
   let module = module_graph.module(module_id).unwrap();
   let resource_pot_type = ResourcePotType::from(module.module_type.clone());
-  let id = ResourcePot::gen_id(&name, resource_pot_type.clone());
+  let id = ResourcePot::gen_id(&name, "", resource_pot_type.clone());
 
   (resource_pot_type, name, id)
 }
@@ -155,7 +155,7 @@ pub fn get_resource_pot_id_for_enforce_resources_by_removed_module(
   module: &Module,
 ) -> (ResourcePotType, String, String) {
   let resource_pot_type = ResourcePotType::from(module.module_type.clone());
-  let id = ResourcePot::gen_id(&name, resource_pot_type.clone());
+  let id = ResourcePot::gen_id(&name, "", resource_pot_type.clone());
 
   (resource_pot_type, name, id)
 }
@@ -188,7 +188,7 @@ fn generate_enforce_resource_pots(
         if let Some(resource_pot) = resource_pot {
           resource_pot.add_module(module_id.clone());
         } else {
-          let mut resource_pot = ResourcePot::new(resource_pot_name, resource_pot_type);
+          let mut resource_pot = ResourcePot::new(&resource_pot_name, "", resource_pot_type);
           resource_pot.add_module(module_id.clone());
           enforce_resource_pot_map.add_resource_pot(resource_pot);
         }
@@ -227,10 +227,7 @@ mod tests {
   fn test_generate_resource_pot_map() {
     let mut module_graph = construct_test_module_graph_complex();
     let module_group_graph = module_group_graph_from_entries(
-      &module_graph
-        .entries
-        .clone().into_keys()
-        .collect(),
+      &module_graph.entries.clone().into_keys().collect(),
       &mut module_graph,
     );
 
@@ -307,10 +304,7 @@ mod tests {
     module_graph.module_mut(&"H".into()).unwrap().external = true;
 
     let module_group_graph = module_group_graph_from_entries(
-      &module_graph
-        .entries
-        .clone().into_keys()
-        .collect(),
+      &module_graph.entries.clone().into_keys().collect(),
       &mut module_graph,
     );
 
