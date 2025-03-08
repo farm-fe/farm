@@ -18,7 +18,6 @@ export default defineConfig({
     script: {
       target: "es5",
     },
-    minify: false,
     persistentCache: false,
     presetEnv: {
       include: isDevelopment ? [] : ['node_modules/*'],

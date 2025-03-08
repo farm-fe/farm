@@ -5,7 +5,7 @@
   "private": true,
   "description": "test-farm",
   "scripts": {
-    "serve": "farm start",
+    "start": "farm start",
     "preview": "farm preview",
     "build": "farm build"
   },
