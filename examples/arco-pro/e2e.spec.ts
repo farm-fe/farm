@@ -38,16 +38,7 @@ describe(`e2e tests - ${name}`, async () => {
 
         // browser HMR should work
         if (command === 'start') {
-          const filePath = fileURLToPath(
-            path.join(
-              path.dirname(import.meta.url),
-              'src',
-              'pages',
-              'dashboard',
-              'workplace',
-              'docs.tsx'
-            )
-          );
+          const filePath = path.join(projectPath, 'src', 'pages', 'dashboard', 'workplace', 'docs.tsx');
           const content = readFileSync(filePath, 'utf-8');
           writeFileSync(
             filePath,
@@ -74,11 +65,11 @@ describe(`e2e tests - ${name}`, async () => {
       command
     );
 
-    test('exmaples arco-pro run start', async () => {
-      await runTest();
-    })
+  test('exmaples arco-pro run start', async () => {
+    await runTest();
+  })
 
-    test('exampels arco-pro run preview', async () => {
-      await runTest('preview');
-    })
+  test('exampels arco-pro run preview', async () => {
+    await runTest('preview');
+  })
 });
