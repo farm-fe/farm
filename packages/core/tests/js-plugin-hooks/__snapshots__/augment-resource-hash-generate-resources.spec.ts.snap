@@ -2,7 +2,7 @@
 
 exports[`Js Plugin Execution - augmentResourceHash 1`] = `
 [
-  "FARM_RUNTIME_runtime",
+  "FARM_RUNTIME__runtime",
   "index.36ffa29d.js",
 ]
 `;
@@ -19,7 +19,7 @@ exports[`Js Plugin Execution - augmentResourceHash 2`] = `
     "isEntry": true,
     "isImplicitEntry": false,
   },
-  "id": "index_eab4_js",
+  "id": "index_eab4_eab4eb4a846cd9fa318a455919afa864_js",
   "map": null,
   "moduleIds": [
     "index.ts?foo=bar",
@@ -40,7 +40,7 @@ exports[`Js Plugin Execution - augmentResourceHash 2`] = `
 
 exports[`Js Plugin Execution - augmentResourceHash 3`] = `
 [
-  "FARM_RUNTIME_runtime",
+  "FARM_RUNTIME__runtime",
   "index.df4c9e8c.js",
 ]
 `;
