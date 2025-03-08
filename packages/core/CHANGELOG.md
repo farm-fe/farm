@@ -1,5 +1,12 @@
 # @farmfe/core
 
+## 1.6.7
+
+### Patch Changes
+
+- ec87a7fe: Fix resource pot id conflict in a large project due to the short hash id. The hash id is changed from 4 length to 32
+- ec87a7fe: Fix #2103 module system introp between esm and cjs
+
 ## 1.6.6
 
 ### Patch Changes
