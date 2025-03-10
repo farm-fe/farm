@@ -17,7 +17,7 @@
   },
   "devDependencies": {
     "@farmfe/cli": "^1.0.4",
-    "@farmfe/core": "^1.6.2",
+    "@farmfe/core": "^1.6.7",
     "@farmfe/plugin-react": "^1.2.6",
     "@tauri-apps/cli": "^2.1.0",
     "@types/react": "^18.3.18",
