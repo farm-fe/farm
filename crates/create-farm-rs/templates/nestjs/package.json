@@ -29,6 +29,7 @@
   },
   "devDependencies": {
     "@farmfe/core": "^1.6.7",
+    "@farmfe/cli": "^1.0.4",
     "@nestjs/cli": "^10.0.0",
     "@nestjs/schematics": "^10.0.0",
     "@nestjs/testing": "^10.0.0",

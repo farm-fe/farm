@@ -16,7 +16,8 @@
   "devDependencies": {
     "@preact/preset-vite": "^2.5.0",
     "typescript": "^5.0.2",
-    "@farmfe/core": "^1.0.4",","@farmfe/core": "^1.6.7",
+    "@farmfe/cli": "^1.0.4",
+    "@farmfe/core": "^1.6.7",
     "@tauri-apps/cli": "^1"
   }
 }
