@@ -2,5 +2,5 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 fn main() {
-    vue_lib::run()
+    <FARM-TEMPLATE-NAME>_lib::run()
 }
