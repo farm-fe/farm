@@ -17,7 +17,8 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "@farmfe/core": "^1.0.4",","@farmfe/core": "^1.1.4",
+    "@farmfe/cli": "^1.0.2",
+    "@farmfe/core": "^1.1.4",
     "@farmfe/plugin-sass": "workspace:*",
     "@vitejs/plugin-vue": "^5.0.4",
     "@vitejs/plugin-vue-jsx": "^3.1.0",
