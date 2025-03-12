@@ -19,6 +19,7 @@
     "@farmfe/core": "^1.6.3",
     "@preact/preset-vite": "^2.9.3",
     "core-js": "^3.39.0",
+    "react-refresh": "^0.16.0",
     "typescript": "^5.6.2",
     "@tauri-apps/cli": "^2"
   }

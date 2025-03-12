@@ -20,6 +20,7 @@
     "@tauri-apps/cli": "^2.1.0",
     "@vitejs/plugin-vue": "^5.2.1",
     "core-js": "^3.39.0",
+    "react-refresh": "^0.16.0",
     "typescript": "^5.7.2",
     "vue-tsc": "^2.2.0"
   }
