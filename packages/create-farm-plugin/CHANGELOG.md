@@ -1,5 +1,11 @@
 # create-farm-plugin
 
+## 0.1.18
+
+### Patch Changes
+
+- 3836f361: bump template versions
+
 ## 0.1.17
 
 ### Patch Changes
