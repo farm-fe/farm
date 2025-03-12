@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.0.19
+
+### Patch Changes
+
+- 3836f361: bump template versions
+- 3d8c89fb: Remove hardcored Tauri lib names in templates
+
 ## 0.0.18
 
 ### Patch Changes
