@@ -24,10 +24,24 @@ jobs:
           bins: cargo-codspeed
 
       - name: Build the benchmark target(s)
-        run: cargo codspeed build -p farmfe_core
+        run: cargo codspeed build -p farmfe_benches
 
       - name: Run the benchmarks
         uses: CodSpeedHQ/action@v3
         with:
-          run: cargo codspeed run -p farmfe_core
+          run: cargo codspeed run -p farmfe_benches
           token: ${{ secrets.CODSPEED_TOKEN }}
+
+  # benchmarks-node:
+  #   name: Run node benchmarks
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - name: Setup node
+  #       uses: actions/setup-node@v4
+  #       with:
+  #         node-version: 18
+  #     - name: Install dependencies
+  #       run: npm install -g pnpm@9.1.0 && pnpm i --frozen-lockfile
+  #     - name: Bootstrap
+  #       run: pnpm bootstrap
