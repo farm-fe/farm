@@ -32,16 +32,42 @@ jobs:
           run: cargo codspeed run -p farmfe_benches
           token: ${{ secrets.CODSPEED_TOKEN }}
 
-  # benchmarks-node:
-  #   name: Run node benchmarks
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - uses: actions/checkout@v4
-  #     - name: Setup node
-  #       uses: actions/setup-node@v4
-  #       with:
-  #         node-version: 18
-  #     - name: Install dependencies
-  #       run: npm install -g pnpm@9.1.0 && pnpm i --frozen-lockfile
-  #     - name: Bootstrap
-  #       run: pnpm bootstrap
+  benchmarks-node:
+    name: Run node benchmarks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Cache rust artifacts
+        uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: codspeed-node
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.1.0
+          run_install: false
+      - name: Setup node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: "pnpm"
+      - name: Install dependencies
+        run: pnpm i --frozen-lockfile
+
+      - name: Build
+        run: >-
+          set -e &&
+          unset CC_x86_64_unknown_linux_gnu &&
+          unset CC &&
+          pnpm --filter @farmfe/plugin-tools run build &&
+          cd packages/core && npm run build:rs:publish &&
+          # cd ../create-farm && npm run build &&
+          cd ../../rust-plugins/react && npm run build 
+          cd ../replace-dirname && npm run build 
+          cd ../sass && npm run build
+
+      - name: Run the benchmarks
+        uses: CodSpeedHQ/action@v3
+        with:
+          run: pnpm vitest bench
+          token: ${{ secrets.CODSPEED_TOKEN }}
