@@ -38,8 +38,6 @@ fn setup_compiler() -> Compiler {
           .join("node_modules")
           .join("@swc")
           .join("helpers")
-          .read_link()
-          .unwrap()
           .to_string_lossy()
           .to_string(),
         ..Default::default()
@@ -54,7 +52,6 @@ fn setup_compiler() -> Compiler {
 }
 
 fn bench_compiler_compile(c: &mut Criterion) {
-  let compiler = setup_compiler();
   c.bench_function("compiler_compile", |b| {
     b.iter(|| {
       // black_box(compiler.compile().unwrap());
