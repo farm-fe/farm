@@ -54,17 +54,8 @@ jobs:
       - name: Install dependencies
         run: pnpm i --frozen-lockfile
 
-      - name: Build
-        run: >-
-          set -e &&
-          unset CC_x86_64_unknown_linux_gnu &&
-          unset CC &&
-          pnpm --filter @farmfe/plugin-tools run build &&
-          cd packages/core && npm run build:rs:publish &&
-          # cd ../create-farm && npm run build &&
-          cd ../../rust-plugins/react && npm run build &&
-          cd ../replace-dirname && npm run build &&
-          cd ../sass && npm run build
+      - name: Boostrap
+        run: pnpm bootstrap
 
       - name: Run the benchmarks
         uses: CodSpeedHQ/action@v3
