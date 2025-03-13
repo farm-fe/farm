@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  benchmarks:
+  benchmarks-rust:
     name: Run benchmarks
     runs-on: ubuntu-latest
     steps:
@@ -24,7 +24,7 @@ jobs:
           bins: cargo-codspeed
 
       - name: Build the benchmark target(s)
-        run: cargo codspeed build
+        run: cargo codspeed build -p farmfe_core
 
       - name: Run the benchmarks
         uses: CodSpeedHQ/action@v3
