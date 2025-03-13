@@ -54,6 +54,10 @@ jobs:
       - name: Install dependencies
         run: pnpm i --frozen-lockfile
 
+      - uses: arduino/setup-protoc@v3
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Boostrap
         run: pnpm bootstrap
 
