@@ -10,8 +10,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  benchmarks-rust:
-    name: Run benchmarks
+  rust-benchmarks:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -32,8 +31,7 @@ jobs:
           run: cargo codspeed run -p farmfe_benches
           token: ${{ secrets.CODSPEED_TOKEN }}
 
-  benchmarks-node:
-    name: Run node benchmarks
+  nodejs-benchmarks:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -63,5 +61,5 @@ jobs:
       - name: Run the benchmarks
         uses: CodSpeedHQ/action@v3
         with:
-          run: pnpm vitest bench
+          run: npm exec vitest bench
           token: ${{ secrets.CODSPEED_TOKEN }}
