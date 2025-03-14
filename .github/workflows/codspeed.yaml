@@ -10,26 +10,26 @@ on:
   workflow_dispatch:
 
 jobs:
-  # rust-benchmarks:
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - uses: actions/checkout@v4
+  rust-benchmarks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
 
-  #     - name: Setup rust toolchain, cache and cargo-codspeed binary
-  #       uses: moonrepo/setup-rust@v1
-  #       with:
-  #         channel: nightly-2024-10-07
-  #         cache-target: release
-  #         bins: cargo-codspeed
+      - name: Setup rust toolchain, cache and cargo-codspeed binary
+        uses: moonrepo/setup-rust@v1
+        with:
+          channel: nightly-2024-10-07
+          cache-target: release
+          bins: cargo-codspeed
 
-  #     - name: Build the benchmark target(s)
-  #       run: cargo codspeed build -p farmfe_benches
+      - name: Build the benchmark target(s)
+        run: cargo codspeed build -p farmfe_benches
 
-  #     - name: Run the benchmarks
-  #       uses: CodSpeedHQ/action@v3
-  #       with:
-  #         run: cargo codspeed run -p farmfe_benches
-  #         token: ${{ secrets.CODSPEED_TOKEN }}
+      - name: Run the benchmarks
+        uses: CodSpeedHQ/action@v3
+        with:
+          run: cargo codspeed run -p farmfe_benches
+          token: ${{ secrets.CODSPEED_TOKEN }}
 
   nodejs-benchmarks:
     runs-on: ubuntu-latest
