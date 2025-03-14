@@ -8,12 +8,16 @@ function getExampleRoot(name: string) {
   return path.join(cwd, 'examples', name);
 }
 
-describe('build', { sequential: true }, () => {
-  bench('build react example', async () => {
-    await build({ root: getExampleRoot('react') });
+describe('build example', { sequential: true }, () => {
+  describe('react', () => {
+    bench('build react example', async () => {
+      await build({ root: getExampleRoot('react') });
+    });
   });
 
-  bench('build vue3 example', async () => {
-    await build({ root: getExampleRoot('vue3') });
+  describe('vue3', () => {
+    bench('build vue3 example', async () => {
+      await build({ root: getExampleRoot('vue3') });
+    });
   });
 });

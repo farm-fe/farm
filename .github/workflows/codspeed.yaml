@@ -39,8 +39,6 @@ jobs:
       - uses: actions/checkout@v4
       - name: Cache rust artifacts
         uses: Swatinem/rust-cache@v2
-        with:
-          shared-key: codspeed-node
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
