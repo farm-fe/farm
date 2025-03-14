@@ -61,5 +61,5 @@ jobs:
       - name: Run the benchmarks
         uses: CodSpeedHQ/action@v3
         with:
-          run: pnpm vitest bench --run
+          run: pnpm --filter @farmfe/benchmarks bench
           token: ${{ secrets.CODSPEED_TOKEN }}

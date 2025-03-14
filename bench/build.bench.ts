@@ -1,11 +1,11 @@
 import path from 'node:path';
 import { bench, describe } from 'vitest';
-import { build } from './index.js';
+import { build } from '../packages/core/src/index.ts';
 
 const cwd = process.cwd();
 
 function getExampleRoot(name: string) {
-  return path.join(cwd, 'examples', name);
+  return path.join(cwd, '../examples', name);
 }
 
 describe('build example', { sequential: true }, () => {
