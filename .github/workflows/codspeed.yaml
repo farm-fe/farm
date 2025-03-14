@@ -35,8 +35,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - name: Cache rust artifacts
         uses: Swatinem/rust-cache@v2
+
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
@@ -47,14 +49,14 @@ jobs:
         with:
           node-version: 18
           cache: "pnpm"
+
       - name: Install dependencies
         run: pnpm i --frozen-lockfile
-
       - uses: arduino/setup-protoc@v3
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Boostrap
-        run: pnpm bootstrap
+        run: pnpm bootstrap --ci
       - name: Playwright install
         run: pnpm exec playwright install
 
