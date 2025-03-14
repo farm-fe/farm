@@ -5,7 +5,10 @@ import {
   executeStartProject,
 } from "./build.mjs";
 
+const CI = process.env.CI || process.argv.includes("--ci");
+
 await installDependencies();
 await cleanBundleCommand();
 await runTaskQueue();
-await executeStartProject();
+
+!CI && (await executeStartProject());

@@ -1,13 +1,14 @@
 {
-  "name": "bench",
+  "name": "@farmfe/benchmarks",
   "version": "1.0.33",
   "private": true,
-  "description": "",
-  "scripts": {},
+  "description": "Farm Node.js side benchmark",
+  "scripts": {
+    "bench": "vitest bench --run"
+  },
   "dependencies": {
     "@farmfe/core": "workspace:*"
   },
   "keywords": [],
-  "author": "",
-  "license": "ISC"
+  "author": ""
 }
