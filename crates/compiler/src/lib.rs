@@ -136,15 +136,18 @@ impl Compiler {
     self.build()?;
 
     let module_graph = self.context.module_graph.read();
-    let mut dependencies = vec![];
 
-    for module in module_graph.modules() {
-      if module.external {
-        dependencies.push(module.id.to_string());
-      } else {
-        dependencies.push(module.id.resolved_path(&self.context.config.root));
-      }
-    }
+    let dependencies = module_graph
+      .modules()
+      .into_iter()
+      .map(|m| {
+        if m.external {
+          m.id.to_string()
+        } else {
+          m.id.resolved_path(&self.context.config.root)
+        }
+      })
+      .collect();
 
     if self.context.config.persistent_cache.enabled() {
       self.context.cache_manager.write_cache();

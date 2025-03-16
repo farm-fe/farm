@@ -45,6 +45,7 @@ pub use rkyv_dyn;
 pub use rkyv_typename;
 pub use serde;
 pub use serde_json;
+pub use smallvec;
 pub use swc_common;
 pub use swc_css_ast;
 pub use swc_ecma_ast;
@@ -53,6 +54,7 @@ pub use swc_html_ast;
 pub use wax;
 
 // re-export common type alias
+pub type Vec<T> = smallvec::SmallVec<[T; 32]>;
 pub type HashMap<K, V> = rustc_hash::FxHashMap<K, V>;
 pub type HashSet<K> = rustc_hash::FxHashSet<K>;
 pub type DashMap<K, V> = dashmap::DashMap<K, V, rustc_hash::FxBuildHasher>;

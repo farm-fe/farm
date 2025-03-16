@@ -1812,6 +1812,7 @@ dependencies = [
  "serde",
  "serde_json",
  "serde_regex",
+ "smallvec",
  "swc_atoms",
  "swc_common",
  "swc_css_ast",
@@ -4992,9 +4993,12 @@ dependencies = [
 
 [[package]]
 name = "smallvec"
-version = "1.12.0"
+version = "1.14.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2593d31f82ead8df961d8bd23a64c2ccf2eb5dd34b0a34bfb4dd54011c72009e"
+checksum = "7fcf8323ef1faaee30a44a340193b1ac6814fd9b7b4e88e9d4519a3e4abe1cfd"
+dependencies = [
+ "serde",
+]
 
 [[package]]
 name = "smartstring"
