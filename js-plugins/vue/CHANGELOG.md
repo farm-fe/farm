@@ -1,6 +1,6 @@
 # @farmfe/js-plugin-vue
 
-## 4.0.0
+## 3.13.0
 
 ### Patch Changes
 
