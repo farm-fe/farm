@@ -92,6 +92,19 @@ impl ModuleGroupGraph {
     self.g.node_weights().collect()
   }
 
+  pub fn edges(&self) -> Vec<(ModuleGroupId, ModuleGroupId)> {
+    self
+      .g
+      .edge_references()
+      .map(|edge| {
+        let source = self.g[edge.source()].id.clone();
+        let target = self.g[edge.target()].id.clone();
+
+        (source, target)
+      })
+      .collect()
+  }
+
   /// the same as [ModuleGroupGraph::module_groups], but mutable.
   pub fn module_groups_mut(&mut self) -> Vec<&mut ModuleGroup> {
     self.g.node_weights_mut().collect()
