@@ -4,13 +4,13 @@ import { getExampleRoot } from './utils';
 
 describe('resolve config', () => {
   describe('react', () => {
-    bench('build react example', async () => {
+    bench('resolve react example config', async () => {
       await resolveConfig({ root: getExampleRoot('react') }, 'build');
     });
   });
 
   describe('vue3', () => {
-    bench('build vue3 example', async () => {
+    bench('resolve vue3 example config', async () => {
       await resolveConfig({ root: getExampleRoot('vue3') }, 'build');
     });
   });
