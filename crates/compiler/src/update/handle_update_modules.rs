@@ -85,10 +85,6 @@ pub fn handle_update_modules(
   let paths = [paths, additional_paths]
     .concat()
     .into_iter()
-    .filter(|(p, _)| {
-      let id = ModuleId::from_resolved_path_with_query(p, &context.config.root);
-      module_graph.has_module(&id)
-    })
     .collect::<Vec<_>>();
 
   // group the paths by same resolved_path
@@ -145,10 +141,6 @@ pub fn handle_update_modules(
 
   let result: Vec<(String, UpdateType)> = filtered_paths
     .into_iter()
-    .filter(|p| {
-      let id = ModuleId::from_resolved_path_with_query(p, &context.config.root);
-      module_graph.has_module(&id)
-    })
     .map(|p| {
       if let Some((_, ty)) = paths.iter().find(|(pp, _)| *pp == p) {
         (p, ty.clone())
