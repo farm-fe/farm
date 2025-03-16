@@ -2,7 +2,7 @@ name: Lint
 on:
   pull_request:
     branches-ignore:
-      - v2-perf
+      - v2-*
 
 jobs:
   rust-lint:
