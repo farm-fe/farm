@@ -490,7 +490,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8b6372023ac861f6e6dc89c8344a8f398fb42aaba2b5dbc649ca0c0e9dbcb627"
 dependencies = [
  "bytecheck_derive",
- "ptr_meta",
+ "ptr_meta 0.1.4",
  "simdutf8",
 ]
 
@@ -866,8 +866,11 @@ dependencies = [
  "castaway",
  "cfg-if",
  "itoa",
+ "rkyv 0.8.10",
  "rustversion",
  "ryu",
+ "serde",
+ "smallvec",
  "static_assertions",
 ]
 
@@ -1800,12 +1803,12 @@ dependencies = [
  "num_cpus",
  "parking_lot",
  "petgraph",
- "ptr_meta",
+ "ptr_meta 0.1.4",
  "puffin 0.19.1",
  "rayon",
  "regex",
  "relative-path",
- "rkyv",
+ "rkyv 0.7.45",
  "rkyv_dyn",
  "rkyv_typename",
  "rustc-hash 2.0.0",
@@ -1877,7 +1880,7 @@ dependencies = [
  "farmfe_testing_helpers",
  "farmfe_toolkit",
  "farmfe_utils 0.1.6",
- "rkyv",
+ "rkyv 0.7.45",
 ]
 
 [[package]]
@@ -1927,7 +1930,7 @@ dependencies = [
  "farmfe_core",
  "farmfe_testing_helpers",
  "farmfe_toolkit",
- "rkyv",
+ "rkyv 0.7.45",
 ]
 
 [[package]]
@@ -2051,7 +2054,7 @@ dependencies = [
  "farmfe_testing_helpers",
  "farmfe_toolkit",
  "farmfe_utils 0.1.6",
- "rkyv",
+ "rkyv 0.7.45",
 ]
 
 [[package]]
@@ -2104,7 +2107,7 @@ dependencies = [
  "farmfe_toolkit",
  "farmfe_utils 0.1.6",
  "mime_guess",
- "rkyv",
+ "rkyv 0.7.45",
 ]
 
 [[package]]
@@ -3467,6 +3470,26 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7843ec2de400bcbc6a6328c958dc38e5359da6e93e72e37bc5246bf1ae776389"
 
 [[package]]
+name = "munge"
+version = "0.4.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a0091202c98cf06da46c279fdf50cccb6b1c43b4521abdf6a27b4c7e71d5d9d7"
+dependencies = [
+ "munge_macro",
+]
+
+[[package]]
+name = "munge_macro"
+version = "0.4.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "734799cf91479720b2f970c61a22850940dd91e27d4f02b1c6fc792778df2459"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.87",
+]
+
+[[package]]
 name = "napi"
 version = "2.16.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4235,7 +4258,16 @@ version = "0.1.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0738ccf7ea06b608c10564b31debd4f5bc5e197fc8bfe088f68ae5ce81e7a4f1"
 dependencies = [
- "ptr_meta_derive",
+ "ptr_meta_derive 0.1.4",
+]
+
+[[package]]
+name = "ptr_meta"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fe9e76f66d3f9606f44e45598d155cb13ecf09f4a28199e48daf8c8fc937ea90"
+dependencies = [
+ "ptr_meta_derive 0.3.0",
 ]
 
 [[package]]
@@ -4247,6 +4279,17 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 1.0.109",
+]
+
+[[package]]
+name = "ptr_meta_derive"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ca414edb151b4c8d125c12566ab0d74dc9cdba36fb80eb7b848c15f495fd32d1"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.87",
 ]
 
 [[package]]
@@ -4329,6 +4372,15 @@ name = "radix_fmt"
 version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ce082a9940a7ace2ad4a8b7d0b1eac6aa378895f18be598230c5f2284ac05426"
+
+[[package]]
+name = "rancor"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "caf5f7161924b9d1cea0e4cabc97c372cea92b5f927fc13c6bca67157a0ad947"
+dependencies = [
+ "ptr_meta 0.3.0",
+]
 
 [[package]]
 name = "rand"
@@ -4484,6 +4536,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "rend"
+version = "0.5.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a35e8a6bf28cd121053a66aa2e6a2e3eaffad4a60012179f0e864aa5ffeff215"
+
+[[package]]
 name = "replace_with"
 version = "0.1.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4500,12 +4558,25 @@ dependencies = [
  "bytes",
  "hashbrown 0.12.3",
  "indexmap 1.9.3",
- "ptr_meta",
- "rend",
- "rkyv_derive",
+ "ptr_meta 0.1.4",
+ "rend 0.4.1",
+ "rkyv_derive 0.7.45",
  "seahash",
  "tinyvec",
  "uuid",
+]
+
+[[package]]
+name = "rkyv"
+version = "0.8.10"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1e147371c75553e1e2fcdb483944a8540b8438c31426279553b9a8182a9b7b65"
+dependencies = [
+ "munge",
+ "ptr_meta 0.3.0",
+ "rancor",
+ "rend 0.5.2",
+ "rkyv_derive 0.8.10",
 ]
 
 [[package]]
@@ -4520,6 +4591,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "rkyv_derive"
+version = "0.8.10"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "246b40ac189af6c675d124b802e8ef6d5246c53e17367ce9501f8f66a81abb7a"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.87",
+]
+
+[[package]]
 name = "rkyv_dyn"
 version = "0.7.44"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4527,8 +4609,8 @@ checksum = "7087f1bf1fdffcf7391cd0755df81c47f8a87fe863bab93f99d9f6bbf16b40b7"
 dependencies = [
  "inventory",
  "lazy_static",
- "ptr_meta",
- "rkyv",
+ "ptr_meta 0.1.4",
+ "rkyv 0.7.45",
  "rkyv_dyn_derive",
  "rkyv_typename",
 ]
@@ -5175,7 +5257,7 @@ checksum = "52cacc28f0ada8e4e31a720dd849ff06864b10e6ab0a1aaa99c06456cfe046af"
 dependencies = [
  "bumpalo",
  "hashbrown 0.14.5",
- "ptr_meta",
+ "ptr_meta 0.1.4",
  "rustc-hash 1.1.0",
  "triomphe",
 ]
@@ -5189,7 +5271,7 @@ dependencies = [
  "bytecheck",
  "hstr",
  "once_cell",
- "rkyv",
+ "rkyv 0.7.45",
  "rustc-hash 1.1.0",
  "serde",
 ]
@@ -5225,7 +5307,7 @@ dependencies = [
  "num-bigint",
  "once_cell",
  "parking_lot",
- "rkyv",
+ "rkyv 0.7.45",
  "rustc-hash 1.1.0",
  "serde",
  "siphasher",
@@ -5273,7 +5355,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "43788e36555d955b60a215bdb43501f7e3794dc57ead6796d2e67933a8a4fe07"
 dependencies = [
  "is-macro",
- "rkyv",
+ "rkyv 0.7.45",
  "string_enum",
  "swc_atoms",
  "swc_common",
@@ -5407,7 +5489,7 @@ dependencies = [
  "is-macro",
  "num-bigint",
  "phf",
- "rkyv",
+ "rkyv 0.7.45",
  "scoped-tls",
  "serde",
  "string_enum",
@@ -6065,7 +6147,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2a551d9898a7528b652b19fb4b1003450aee5b5f6e7182b89aadb832d9fe3ca5"
 dependencies = [
  "is-macro",
- "rkyv",
+ "rkyv 0.7.45",
  "string_enum",
  "swc_atoms",
  "swc_common",
@@ -6184,7 +6266,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "676d058cb956ea0ec542b47930b22b045c388cac6d43c2afac83687b2e560957"
 dependencies = [
  "better_scoped_tls",
- "rkyv",
+ "rkyv 0.7.45",
  "swc_common",
  "swc_ecma_ast",
  "swc_trace_macro",
@@ -6824,7 +6906,7 @@ dependencies = [
  "derivative",
  "futures-util",
  "pin-project-lite",
- "rkyv",
+ "rkyv 0.7.45",
  "serde",
  "smoltcp",
  "thiserror",
@@ -7063,7 +7145,7 @@ dependencies = [
  "memmap2 0.5.10",
  "more-asserts",
  "region",
- "rkyv",
+ "rkyv 0.7.45",
  "self_cell",
  "shared-buffer",
  "smallvec",
@@ -7143,7 +7225,7 @@ dependencies = [
  "derivative",
  "lz4_flex",
  "num_enum 0.5.11",
- "rkyv",
+ "rkyv 0.7.45",
  "serde",
  "serde_json",
  "thiserror",
@@ -7167,7 +7249,7 @@ dependencies = [
  "hex",
  "indexmap 1.9.3",
  "more-asserts",
- "rkyv",
+ "rkyv 0.7.45",
  "serde",
  "sha2",
  "target-lexicon",
@@ -7236,7 +7318,7 @@ dependencies = [
  "pin-project",
  "pin-utils",
  "rand",
- "rkyv",
+ "rkyv 0.7.45",
  "rusty_pool",
  "semver 1.0.21",
  "serde",

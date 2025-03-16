@@ -235,15 +235,14 @@ impl<T: AsRef<str>> From<T> for ModuleType {
   }
 }
 
-impl ToString for ModuleType {
-  fn to_string(&self) -> String {
+impl std::fmt::Display for ModuleType {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     match *self {
-      Self::Custom(ref s) => s.to_string(),
-      _ => AsLowerCamelCase(format!("{self:?}")).to_string(),
+      Self::Custom(ref s) => write!(f, "{}", s),
+      _ => write!(f, "{}", AsLowerCamelCase(format!("{self:?}"))),
     }
   }
 }
-
 /// Abstract ModuleId from the module's resolved id
 #[cache_item]
 #[derive(PartialEq, Eq, Hash, Clone, Debug, PartialOrd, Ord)]
@@ -361,9 +360,9 @@ impl From<String> for ModuleId {
   }
 }
 
-impl ToString for ModuleId {
-  fn to_string(&self) -> String {
-    self.relative_path.to_string() + self.query_string.as_str()
+impl std::fmt::Display for ModuleId {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    write!(f, "{}{}", self.relative_path, self.query_string)
   }
 }
 
