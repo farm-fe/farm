@@ -584,7 +584,10 @@ impl Compiler {
 
     (
       affected_module_groups,
-      start_points,
+      start_points
+        .into_iter()
+        .filter(|id| !diff_result.added_modules.contains(id))
+        .collect(), // remove added modules from start_points
       diff_result,
       removed_modules,
     )
