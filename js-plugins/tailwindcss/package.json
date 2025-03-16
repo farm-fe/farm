@@ -1,6 +1,6 @@
 {
   "name": "@farmfe/js-plugin-tailwindcss",
-  "version": "0.0.8",
+  "version": "0.0.9",
   "description": "support tailwindcss for farm.",
   "type": "module",
   "main": "./dist/index.js",
