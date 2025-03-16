@@ -1,5 +1,12 @@
 # @farmfe/js-plugin-sass
 
+## 2.13.0
+
+### Patch Changes
+
+- Updated dependencies [25f3d3f6]
+  - @farmfe/core@1.7.0
+
 ## 2.12.1
 
 ### Patch Changes

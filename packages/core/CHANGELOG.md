@@ -1,5 +1,11 @@
 # @farmfe/core
 
+## 1.7.0
+
+### Minor Changes
+
+- 25f3d3f6: Support calling `compiler.update` to compile a full new module dynamically
+
 ## 1.6.7
 
 ### Patch Changes

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.0.20
+
+### Patch Changes
+
+- 7e4a256e: Add missing react-refresh dev dependency on TauriJS templates.
+
 ## 0.0.19
 
 ### Patch Changes
