@@ -1,6 +1,6 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 
-use farmfe_benches::get_runtime_config;
+use farmfe_benchmarks::get_runtime_config;
 use farmfe_compiler::Compiler;
 use farmfe_core::{
   config::{

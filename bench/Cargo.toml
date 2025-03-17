@@ -1,5 +1,5 @@
 [package]
-name = "farmfe_benches"
+name = "farmfe_benchmarks"
 version = "0.1.0"
 edition.workspace = true
 homepage.workspace = true
@@ -7,8 +7,8 @@ license.workspace = true
 repository.workspace = true
 
 [dependencies]
-farmfe_compiler = { version = "0.0.13", path = "../compiler" }
-farmfe_core = { version = "0.7.1", path = "../core" }
+farmfe_compiler = { version = "*", path = "../crates/compiler" }
+farmfe_core = { version = "*", path = "../crates/core" }
 
 [dev-dependencies]
 criterion = { version = "2.9.1", package = "codspeed-criterion-compat" }

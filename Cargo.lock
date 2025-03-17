@@ -1746,7 +1746,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4443176a9f2c162692bd3d352d745ef9413eec5782a80d8fd6f8a1ac692a07f7"
 
 [[package]]
-name = "farmfe_benches"
+name = "farmfe_benchmarks"
 version = "0.1.0"
 dependencies = [
  "codspeed-criterion-compat",
