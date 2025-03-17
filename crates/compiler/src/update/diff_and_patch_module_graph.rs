@@ -154,6 +154,13 @@ pub fn patch_module_graph(
 
   // add new modules first, as we need to add edges to them later
   for added in &diff_result.added_modules {
+    // if the added module is a start point, we should mark it as a new entry of the module graph
+    if start_points.contains(added) {
+      module_graph
+        .entries
+        .insert(added.clone(), added.to_string());
+    }
+
     let module = update_module_graph.take_module(added);
     module_graph.add_module(module);
   }
