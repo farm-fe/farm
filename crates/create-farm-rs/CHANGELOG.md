@@ -6,6 +6,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.6](https://github.com/farm-fe/farm/compare/create-farm-v0.1.5...create-farm-v0.1.6) - 2025-03-17
+
+### Added
+
+- *(create)* add support for tauri 2 ([#2001](https://github.com/farm-fe/farm/pull/2001))
+
+### Fixed
+
+- *(template)* Missing dev dependency react-refresh on TauriJS ([#2115](https://github.com/farm-fe/farm/pull/2115))
+
+### Other
+
+- update template versions ([#2110](https://github.com/farm-fe/farm/pull/2110))
+
 ## [0.1.5](https://github.com/farm-fe/farm/compare/create-farm-v0.1.4...create-farm-v0.1.5) - 2025-01-09
 
 ### Other
