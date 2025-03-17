@@ -1,5 +1,11 @@
 # @farmfe/core
 
+## 1.7.1
+
+### Patch Changes
+
+- 98a2b01b: Fix panic when call `compiler.update` for a full new module multiple times
+
 ## 1.7.0
 
 ### Minor Changes
