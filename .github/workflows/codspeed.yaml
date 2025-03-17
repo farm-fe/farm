@@ -23,12 +23,12 @@ jobs:
           bins: cargo-codspeed
 
       - name: Build the benchmark target(s)
-        run: cargo codspeed build -p farmfe_benches
+        run: cargo codspeed build -p farmfe_benchmarks
 
       - name: Run the benchmarks
         uses: CodSpeedHQ/action@v3
         with:
-          run: cargo codspeed run -p farmfe_benches
+          run: cargo codspeed run -p farmfe_benchmarks
           token: ${{ secrets.CODSPEED_TOKEN }}
 
   nodejs-benchmarks:
