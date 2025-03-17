@@ -1,18 +1,11 @@
 import { describe, bench } from 'vitest';
 import { resolveConfig } from '@farmfe/core';
-import { getExampleRoot } from './utils';
+import { getFixtureRoot } from './utils';
 
 describe('resolve config', () => {
-  describe('react', () => {
-    const root = getExampleRoot('react');
-    bench('resolve react example config', async () => {
-      await resolveConfig({ root }, 'build');
-    });
-  });
-
-  describe('vue3', () => {
-    const root = getExampleRoot('vue3');
-    bench('resolve vue3 example config', async () => {
+  describe('vanilla', () => {
+    const root = getFixtureRoot('vanilla');
+    bench('resolve vanilla fixture config', async () => {
       await resolveConfig({ root }, 'build');
     });
   });
