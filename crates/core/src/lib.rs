@@ -29,7 +29,9 @@ pub use farmfe_macro_cache_item::cache_item;
 pub const VERSION: &str = "0.5.0";
 
 // re-export common external crates
+pub use compact_str;
 pub use dashmap;
+pub use ecow;
 pub use enhanced_magic_string;
 pub use heck;
 pub use lazy_static;
@@ -53,6 +55,7 @@ pub use swc_html_ast;
 pub use wax;
 
 // re-export common type alias
+pub use compact_str::CompactString as String;
 pub type HashMap<K, V> = rustc_hash::FxHashMap<K, V>;
 pub type HashSet<K> = rustc_hash::FxHashSet<K>;
 pub type DashMap<K, V> = dashmap::DashMap<K, V, rustc_hash::FxBuildHasher>;

@@ -3,7 +3,10 @@ use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use farmfe_benchmarks::get_runtime_config;
 use farmfe_compiler::Compiler;
 use farmfe_core::{
-  config::{persistent_cache::PersistentCacheConfig, preset_env::PresetEnvConfig, Config},
+  config::{
+    bool_or_obj::BoolOrObj, persistent_cache::PersistentCacheConfig, preset_env::PresetEnvConfig,
+    Config,
+  },
   HashMap,
 };
 
@@ -24,6 +27,7 @@ fn compiler_compile(c: &mut Criterion) {
           runtime: get_runtime_config(&cwd),
           preset_env: Box::new(PresetEnvConfig::Bool(false)),
           persistent_cache: Box::new(PersistentCacheConfig::Bool(false)),
+          minify: Box::new(BoolOrObj::Bool(false)),
           ..Default::default()
         },
         vec![],

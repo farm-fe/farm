@@ -5,6 +5,7 @@ use blake2::{
   digest::{Update, VariableOutput},
   Blake2bVar,
 };
+use compact_str::{format_compact, ToCompactString};
 use farmfe_macro_cache_item::cache_item;
 use farmfe_utils::relative;
 use heck::AsLowerCamelCase;
@@ -235,22 +236,21 @@ impl<T: AsRef<str>> From<T> for ModuleType {
   }
 }
 
-impl ToString for ModuleType {
-  fn to_string(&self) -> String {
+impl std::fmt::Display for ModuleType {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     match *self {
-      Self::Custom(ref s) => s.to_string(),
-      _ => AsLowerCamelCase(format!("{self:?}")).to_string(),
+      Self::Custom(ref s) => write!(f, "{}", s),
+      _ => write!(f, "{}", AsLowerCamelCase(format!("{self:?}"))),
     }
   }
 }
-
 /// Abstract ModuleId from the module's resolved id
 #[cache_item]
 #[derive(PartialEq, Eq, Hash, Clone, Debug, PartialOrd, Ord)]
 #[archive_attr(derive(Hash, Eq, PartialEq))]
 pub struct ModuleId {
-  relative_path: String,
-  query_string: String,
+  relative_path: crate::String,
+  query_string: crate::String,
 }
 
 const LEN: usize = 4;
@@ -266,8 +266,8 @@ impl ModuleId {
     };
 
     Self {
-      relative_path,
-      query_string: query_string.to_string(),
+      relative_path: relative_path.to_compact_string(),
+      query_string: query_string.to_compact_string(),
     }
   }
 
@@ -333,24 +333,27 @@ impl ModuleId {
     hex::encode(buf)
   }
 
-  fn split_query(p: &str) -> (String, String) {
+  fn split_query(p: &str) -> (crate::String, crate::String) {
     let (resolved_path, query) = p.split_once('?').unwrap_or((p, ""));
 
     if !query.is_empty() {
-      return (resolved_path.to_string(), format!("?{query}"));
+      return (
+        resolved_path.to_compact_string(),
+        format_compact!("?{query}"),
+      );
     }
 
-    (p.to_string(), query.to_string())
+    (p.to_compact_string(), query.to_compact_string())
   }
 }
 
 impl From<&str> for ModuleId {
   fn from(rp: &str) -> Self {
-    let (rp, qs) = Self::split_query(rp);
+    let (relative_path, query_string) = Self::split_query(rp);
 
     Self {
-      relative_path: rp,
-      query_string: qs,
+      relative_path,
+      query_string,
     }
   }
 }
@@ -361,9 +364,9 @@ impl From<String> for ModuleId {
   }
 }
 
-impl ToString for ModuleId {
-  fn to_string(&self) -> String {
-    self.relative_path.to_string() + self.query_string.as_str()
+impl std::fmt::Display for ModuleId {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    write!(f, "{}{}", self.relative_path, self.query_string)
   }
 }
 
