@@ -65,11 +65,41 @@ impl serde::Serialize for ConfigRegex {
   where
     S: serde::Serializer,
   {
-    serializer.serialize_str(if !self.1 {
-      self.as_ref()
-    } else {
-      format!("!{}", self.as_ref()).leak()
-    })
+    let is_not = self.1;
+    match &self.0 {
+      InnerFilter::Contains(s) => {
+        let pattern = format!(".*{}.*", regex::escape(s));
+        serializer.serialize_str(if is_not {
+          format!("!{}", pattern).leak()
+        } else {
+          &pattern
+        })
+      }
+      InnerFilter::StartsWith(s) => {
+        let pattern = regex::escape(s);
+        serializer.serialize_str(if is_not {
+          format!("!{}", pattern).leak()
+        } else {
+          &pattern
+        })
+      }
+      InnerFilter::EndsWith(s) => {
+        let pattern = format!("{}$", regex::escape(s));
+        serializer.serialize_str(if is_not {
+          format!("!{}", pattern).leak()
+        } else {
+          &pattern
+        })
+      }
+      InnerFilter::Regex(regex) => {
+        let pattern = regex.as_str();
+        serializer.serialize_str(if is_not {
+          format!("!{}", pattern).leak()
+        } else {
+          pattern
+        })
+      }
+    }
   }
 }
 
@@ -173,11 +203,39 @@ mod tests {
   }
 
   #[test]
+  fn test_config_ends_with() {
+    let regex = ConfigRegex::new_ends_with(".json");
+    assert!(regex.is_match("package.json"));
+    assert!(!regex.is_match("json.config"));
+  }
+
+  #[test]
   fn test_config_regex_not() {
     let regex = ConfigRegex::new("!node_modules/");
     assert!(!regex.is_match("node_modules/"));
     assert!(!regex.is_match("node_modules/abc"));
     assert!(regex.is_match("node_modules"));
     assert!(regex.is_match("/path/to/node_modules"));
+  }
+
+  #[test]
+  fn test_serialization() {
+    let contains = ConfigRegex::new_contains("middle*");
+    assert_eq!(
+      serde_json::to_string(&contains).unwrap(),
+      r#"".*middle\\*.*""#
+    );
+
+    let starts_with = ConfigRegex::new_starts_with("node_");
+    assert_eq!(serde_json::to_string(&starts_with).unwrap(), r#""node_""#);
+
+    let ends_with = ConfigRegex::new_ends_with(".json");
+    assert_eq!(serde_json::to_string(&ends_with).unwrap(), r#""\\.json$""#);
+
+    let not_contains = ConfigRegex::new_contains("!middle");
+    assert_eq!(
+      serde_json::to_string(&not_contains).unwrap(),
+      r#""!.*middle.*""#
+    );
   }
 }
