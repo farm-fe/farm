@@ -61,7 +61,7 @@ impl Default for ScriptDecoratorsConfig {
       decorator_metadata: false,
       decorator_version: None,
       includes: vec![],
-      excludes: vec![ConfigRegex::new("node_modules/")],
+      excludes: vec![ConfigRegex::new_node_modules()],
     }
   }
 }

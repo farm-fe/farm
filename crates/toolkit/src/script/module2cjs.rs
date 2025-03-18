@@ -1,4 +1,4 @@
-use std::ffi::OsStr;
+use std::{cell::LazyCell, ffi::OsStr};
 
 use crate::{
   script::idents_collector::DefinedIdentsCollector,
@@ -785,15 +785,16 @@ fn transform_export_all(
   items
 }
 
+const ALPHA_NUMERIC_UNDERLINE_REGEX: LazyCell<Regex> =
+  LazyCell::new(|| Regex::new("[^A-Za-z0-9_]").unwrap());
 fn get_name_from_src(src: &str) -> String {
   let path = std::path::PathBuf::from(src);
-  let regex = Regex::new("[^A-Za-z0-9_]").unwrap();
   let val_name = path
     .file_stem()
     .unwrap_or(OsStr::new("_"))
     .to_string_lossy()
     .to_string();
-  let val_name = regex.replace_all(&val_name, "_");
+  let val_name = ALPHA_NUMERIC_UNDERLINE_REGEX.replace_all(&val_name, "_");
 
   assert!(val_name.len() > 0);
 

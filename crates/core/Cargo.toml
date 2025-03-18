@@ -59,6 +59,8 @@ enhanced-magic-string = { version = "0.1.0" }
 rustc-hash = "2.0.0"
 num_cpus = "1.16.0"
 lazy_static = "1.4.0"
+ecow = "0.2.3"
+compact_str = { version = "0.7.1", features = ["rkyv", "serde", "smallvec"] }
 
 [features]
 profile = ["dep:puffin"]

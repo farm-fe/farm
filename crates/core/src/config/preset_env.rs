@@ -27,7 +27,7 @@ impl Default for PresetEnvConfig {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", default)]
 pub struct PresetEnvConfigObj {
-  // The value will be deserialized in FarmPluginPolyfill
+  /// The value will be deserialized in FarmPluginPolyfill
   pub options: Box<serde_json::Value>,
   pub include: Vec<ConfigRegex>,
   pub exclude: Vec<ConfigRegex>,
@@ -38,8 +38,8 @@ impl Default for PresetEnvConfigObj {
   fn default() -> Self {
     Self {
       options: Box::new(serde_json::Value::Object(Default::default())),
-      include: vec![ConfigRegex::new("@farmfe/runtime")],
-      exclude: vec![ConfigRegex::new("node_modules/")],
+      include: vec![ConfigRegex::new_farm_runtime()],
+      exclude: vec![ConfigRegex::new_node_modules()],
       assumptions: Box::new(serde_json::Value::Object(Default::default())),
     }
   }

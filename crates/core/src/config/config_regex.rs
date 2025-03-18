@@ -1,11 +1,18 @@
+use std::cell::LazyCell;
+
 use farmfe_utils::transform_string_to_static_str;
+use regex::Regex;
+
+const FARM_RUNTIME_REGEX: LazyCell<Regex> =
+  LazyCell::new(|| Regex::new("@farmfe/runtime").unwrap());
+const NODE_MODULES_REGEX: LazyCell<Regex> = LazyCell::new(|| Regex::new("node_modules/").unwrap());
 
 #[derive(Debug, Clone)]
 pub struct ConfigRegex(regex::Regex, bool);
 
 impl Default for ConfigRegex {
   fn default() -> Self {
-    Self(regex::Regex::new("node_modules/").unwrap(), false)
+    Self(NODE_MODULES_REGEX.clone(), false)
   }
 }
 
@@ -61,6 +68,26 @@ impl ConfigRegex {
     };
     (s, is_not)
   }
+
+  /// Create a new ConfigRegex with a regex that matches farm runtime.
+  ///
+  /// # Returns
+  ///
+  /// A new ConfigRegex with `@farmfe/runtime` regex. The regex is initialized
+  /// by `LazyCell`.
+  pub fn new_farm_runtime() -> Self {
+    Self(FARM_RUNTIME_REGEX.clone(), false)
+  }
+
+  /// Create a new ConfigRegex with a regex that matches node_modules.
+  ///
+  /// # Returns
+  ///
+  /// A new ConfigRegex with `node_modules/` regex. The regex is initialized
+  /// by `LazyCell`.
+  pub fn new_node_modules() -> Self {
+    Self(NODE_MODULES_REGEX.clone(), false)
+  }
 }
 
 #[cfg(test)]
@@ -69,7 +96,7 @@ mod tests {
 
   #[test]
   fn test_config_regex() {
-    let regex = ConfigRegex::new("node_modules/");
+    let regex = ConfigRegex::new_node_modules();
     assert!(regex.is_match("node_modules/"));
     assert!(regex.is_match("node_modules/abc"));
     assert!(!regex.is_match("node_modules"));

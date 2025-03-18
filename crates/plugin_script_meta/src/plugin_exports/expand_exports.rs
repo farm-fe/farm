@@ -30,8 +30,12 @@ pub fn expand_exports_of_module_graph(
   let mut modules = module_graph.modules();
   modules.sort_by_key(|module| module.execution_order);
 
+  let mut script_module_ids = Vec::with_capacity(modules.len());
+
   for module in modules {
     if module.module_type.is_script() {
+      script_module_ids.push(module.id.clone());
+
       let cm = context.meta.get_module_source_map(&module.id);
       let globals = context.meta.get_globals(&module.id);
 
@@ -43,14 +47,12 @@ pub fn expand_exports_of_module_graph(
   }
 
   // update the exports of module
-  for module in module_graph.modules_mut() {
-    if let Some(export_ident_map) = expand_context.remove_export_ident_map(&module.id) {
-      if !module.module_type.is_script() {
-        continue;
+  for module_id in script_module_ids {
+    if let Some(module) = module_graph.module_mut(&module_id) {
+      if let Some(export_ident_map) = expand_context.remove_export_ident_map(&module_id) {
+        let script_meta = module.meta.as_script_mut();
+        script_meta.export_ident_map = export_ident_map;
       }
-
-      let script_meta = module.meta.as_script_mut();
-      script_meta.export_ident_map = export_ident_map;
     }
   }
 }

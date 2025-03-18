@@ -1,3 +1,5 @@
+use std::cell::LazyCell;
+
 use farmfe_core::{
   module::{meta_data::script::ModuleExportIdent, ModuleId},
   regex::Regex,
@@ -103,11 +105,11 @@ pub(crate) fn create_var_namespace_item(
   }))))
 }
 
+const ALPHA_NUMERIC_REGEX: LazyCell<Regex> = LazyCell::new(|| Regex::new("[^0-9a-zA-Z]").unwrap());
 /// Get the filename from the module id. Replace all non-alphanumeric characters with `_`.
 /// For example, `/root/a/b/c.js` will be `c_js` and `a.js` will be `a_js`.
 pub fn get_filename(module_id: &ModuleId) -> String {
-  Regex::new("[^0-9a-zA-Z]")
-    .unwrap()
+  ALPHA_NUMERIC_REGEX
     .replace_all(module_id.relative_path().split("/").last().unwrap(), "_")
     .to_string()
 }

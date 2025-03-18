@@ -46,7 +46,7 @@ pub struct FarmPluginDtsOptions {
 impl Default for FarmPluginDtsOptions {
   fn default() -> Self {
     Self {
-      exclude: vec![ConfigRegex::new("node_modules/")],
+      exclude: vec![ConfigRegex::new_node_modules()],
       include: vec![ConfigRegex::new(".(ts|tsx)$")],
     }
   }
