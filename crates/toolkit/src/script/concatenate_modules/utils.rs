@@ -105,13 +105,17 @@ pub(crate) fn create_var_namespace_item(
   }))))
 }
 
-const ALPHA_NUMERIC_REGEX: LazyCell<Regex> = LazyCell::new(|| Regex::new("[^0-9a-zA-Z]").unwrap());
 /// Get the filename from the module id. Replace all non-alphanumeric characters with `_`.
 /// For example, `/root/a/b/c.js` will be `c_js` and `a.js` will be `a_js`.
 pub fn get_filename(module_id: &ModuleId) -> String {
-  ALPHA_NUMERIC_REGEX
-    .replace_all(module_id.relative_path().split("/").last().unwrap(), "_")
-    .to_string()
+  module_id
+    .relative_path()
+    .rsplit('/')
+    .next()
+    .unwrap_or_default()
+    .chars()
+    .map(|c| if c.is_ascii_alphanumeric() { c } else { '_' })
+    .collect()
 }
 
 pub fn create_export_default_ident(module_id: &ModuleId, top_level_mark: Mark) -> Ident {

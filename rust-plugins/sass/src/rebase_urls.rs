@@ -1,4 +1,4 @@
-use std::{path::PathBuf, sync::Arc};
+use std::{cell::LazyCell, path::PathBuf, sync::Arc};
 
 use farmfe_core::{
   context::CompilationContext,
@@ -7,21 +7,19 @@ use farmfe_core::{
   plugin::{PluginHookContext, PluginResolveHookParam, ResolveKind},
   regex::Regex,
 };
-use farmfe_toolkit::lazy_static::lazy_static;
 use farmfe_utils::relative;
 use sass_embedded::Exception;
 
-lazy_static! {
-  pub static ref CSS_URL_RE: Regex =
-    Regex::new(r#"url\((\s*('[^']+'|"[^"]+")\s*|[^'")]+)\)"#).unwrap();
-  pub static ref CSS_DATA_URI_RE: Regex =
-    Regex::new(r#"data-uri\((\s*('[^']+'|"[^"]+")\s*|[^'")]+)\)"#).unwrap();
-  pub static ref IMPORT_CSS_RE: Regex =
-    Regex::new(r#"@import ('[^']+\.css'|"[^"]+\.css"|[^'")]+\.css)"#).unwrap();
-  pub static ref FUNCTION_CALL_RE: Regex = Regex::new(r#"^[A-Za-z_][\w-]*\("#).unwrap();
-  pub static ref EXTERNAL_RE: Regex = Regex::new(r"^(https?:)?//").unwrap();
-  pub static ref DATA_URL_RE: Regex = Regex::new(r"^\s*data:").unwrap();
-}
+pub const CSS_URL_RE: LazyCell<Regex> =
+  LazyCell::new(|| Regex::new(r#"url\((\s*('[^']+'|"[^"]+")\s*|[^'")]+)\)"#).unwrap());
+pub const CSS_DATA_URI_RE: LazyCell<Regex> =
+  LazyCell::new(|| Regex::new(r#"data-uri\((\s*('[^']+'|"[^"]+")\s*|[^'")]+)\)"#).unwrap());
+pub const IMPORT_CSS_RE: LazyCell<Regex> =
+  LazyCell::new(|| Regex::new(r#"@import ('[^']+\.css'|"[^"]+\.css"|[^'")]+\.css)"#).unwrap());
+pub const FUNCTION_CALL_RE: LazyCell<Regex> =
+  LazyCell::new(|| Regex::new(r#"^[A-Za-z_][\w-]*\("#).unwrap());
+pub const EXTERNAL_RE: LazyCell<Regex> = LazyCell::new(|| Regex::new(r"^(https?:)?//").unwrap());
+pub const DATA_URL_RE: LazyCell<Regex> = LazyCell::new(|| Regex::new(r"^\s*data:").unwrap());
 
 pub fn rebase_urls(
   file: &str,
