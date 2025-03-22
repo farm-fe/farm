@@ -1,8 +1,5 @@
-use std::cell::LazyCell;
-
 use farmfe_core::{
   module::{meta_data::script::ModuleExportIdent, ModuleId},
-  regex::Regex,
   swc_common::{Mark, SyntaxContext, DUMMY_SP},
   swc_ecma_ast::{
     BindingIdent, BlockStmt, Decl, Expr, GetterProp, Ident, KeyValueProp, ModuleItem, ObjectLit,
