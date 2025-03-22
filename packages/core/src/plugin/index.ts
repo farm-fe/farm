@@ -4,7 +4,7 @@ import { rustPluginResolver } from './rust/index.js';
 
 import { ResolvedUserConfig, type UserConfig } from '../config/index.js';
 import merge from '../utils/merge.js';
-import type { JsPlugin, RustPlugin } from './type.js';
+import type { JsPlugin } from './type.js';
 
 export * from './js/index.js';
 export * from './rust/index.js';
@@ -19,7 +19,7 @@ export async function resolveFarmPlugins(config: UserConfig) {
     };
   }
 
-  const rustPlugins: RustPlugin[] = [];
+  const rustPlugins = [];
 
   const jsPlugins: JsPlugin[] = [];
 
