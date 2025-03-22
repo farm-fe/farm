@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{cell::LazyCell, sync::Arc};
 
 use farmfe_core::{
   context::{get_swc_sourcemap_filename, CompilationContext},
@@ -28,6 +28,9 @@ pub struct ParseCssModuleResult {
   pub source_map: Arc<SourceMap>,
 }
 
+const FILTER_RE: LazyCell<Regex> =
+  LazyCell::new(|| Regex::new(r#"filter:\s*([^'"]*?)\.Microsoft\.(.*?)(;|\})"#).unwrap());
+
 /// parse the input css file content to [Stylesheet]
 pub fn parse_css_stylesheet(
   id: &str,
@@ -37,8 +40,7 @@ pub fn parse_css_stylesheet(
   // 1. replace --: '' to --farm-empty: ''
   let mut content = orig_content.replace("--:", "--farm-empty:");
   // 2. replace filter: xxx.Microsoft.xxx to filter: "xxx.Microsoft.xxx" using regex. fix #1557
-  let regex = Regex::new(r#"filter:\s*([^'"]*?)\.Microsoft\.(.*?)(;|\})"#).unwrap();
-  content = regex
+  content = FILTER_RE
     .replace_all(&content, "filter:\"$1.Microsoft.$2\"$3")
     .to_string();
   // // 3. replace invalid operator, eg: top: -8px/2 + 1 to top: "-8px/2 + 1" using regex. fix #1748

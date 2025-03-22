@@ -38,8 +38,8 @@ impl Default for PresetEnvConfigObj {
   fn default() -> Self {
     Self {
       options: Box::new(serde_json::Value::Object(Default::default())),
-      include: vec![ConfigRegex::new_farm_runtime()],
-      exclude: vec![ConfigRegex::new_node_modules()],
+      include: vec![ConfigRegex::new_starts_with("@farmfe/runtime")],
+      exclude: vec![ConfigRegex::new_starts_with("node_modules/")],
       assumptions: Box::new(serde_json::Value::Object(Default::default())),
     }
   }

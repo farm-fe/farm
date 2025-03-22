@@ -1,5 +1,6 @@
 use std::{
   any::Any,
+  cell::LazyCell,
   path::{Path, PathBuf},
   sync::Arc,
 };
@@ -32,9 +33,8 @@ use self::log_store::LogStore;
 pub mod log_store;
 pub(crate) const EMPTY_STR: &str = "";
 
-lazy_static::lazy_static! {
-  pub static ref REPLACE_FILENAME_REGEX: Regex = Regex::new(r"[^a-zA-Z0-9._/\\]").unwrap();
-}
+const REPLACE_FILENAME_REGEX: LazyCell<Regex> =
+  LazyCell::new(|| Regex::new(r"[^a-zA-Z0-9._/\\]").unwrap());
 
 /// Shared context through the whole compilation.
 pub struct CompilationContext {

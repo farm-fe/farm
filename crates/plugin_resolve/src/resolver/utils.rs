@@ -1,9 +1,8 @@
 use farmfe_core::{common::PackageJsonInfo, farm_profile_function, regex, serde_json::Value};
-use once_cell::sync::Lazy;
-use std::{path::PathBuf, str::FromStr};
+use std::{cell::LazyCell, path::PathBuf, str::FromStr};
 
-static PACKAGE_REGEX: Lazy<regex::Regex> =
-  Lazy::new(|| regex::Regex::new(r"^(?P<group1>[^@][^/]*)|^(?P<group2>@[^/]+/[^/]+)").unwrap());
+pub const PACKAGE_REGEX: LazyCell<regex::Regex> =
+  LazyCell::new(|| regex::Regex::new(r"^(?P<group1>[^@][^/]*)|^(?P<group2>@[^/]+/[^/]+)").unwrap());
 
 pub fn get_field_value_from_package_json_info(
   package_json_info: &PackageJsonInfo,
