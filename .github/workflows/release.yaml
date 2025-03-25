@@ -3,6 +3,7 @@ on:
   push:
     branches:
       - main
+      - v2-dev
 
 concurrency: ${{ github.workflow }}-${{ github.ref }}
 

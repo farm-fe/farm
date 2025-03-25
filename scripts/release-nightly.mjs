@@ -1,10 +1,11 @@
 import { execSync } from "child_process";
-import { buildCli, buildCoreCjs, buildJsPlugins } from "./build.mjs";
+import { buildCli, buildCoreCjs, buildJsPlugins, buildRuntime } from './build.mjs';
 
 // Build node packages
 await buildCli();
-await buildCoreCjs();
 await buildJsPlugins();
+await buildCoreCjs();
+await buildRuntime();
 
 try {
   // Set npm config to public access
