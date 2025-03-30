@@ -1,8 +1,8 @@
 import {
-  runTaskQueue,
   cleanBundleCommand,
-  installDependencies,
   executeStartProject,
+  installDependencies,
+  runTaskQueue,
 } from "./build.mjs";
 
 await installDependencies();

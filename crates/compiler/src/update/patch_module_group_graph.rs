@@ -593,8 +593,7 @@ fn patch_any_module_group_for_toposort_modules(
           let parent = module_graph.module(id).unwrap();
           let parent_contains_group = parent.module_groups.contains(module_group_id);
           !parent_contains_group
-            || (parent_contains_group
-              && should_ignore_cyclic_dependencies(&cyclic, &id, &current_module_id))
+            || should_ignore_cyclic_dependencies(&cyclic, id, &current_module_id)
         })
       {
         let module_group = module_group_graph

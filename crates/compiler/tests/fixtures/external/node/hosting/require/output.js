@@ -1,5 +1,9 @@
 //index.js:
  import { createRequire } from 'module';var require = createRequire(import.meta.url);(function(){const moduleSystem = {};
+function initModuleSystem() {
+    console.log('module-helper.ts');
+}
+initModuleSystem(moduleSystem);
 }());import * as __farm_external_module_jquery from "jquery";
 global['__farm_default_namespace__'].m.se({
     "jquery": __farm_external_module_jquery

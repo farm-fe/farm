@@ -315,7 +315,7 @@ impl JsCompiler {
                 .into_iter()
                 .map(|(k, v)| {
                   (
-                    k.id(context.config.mode.clone()),
+                    k.id(context.config.mode),
                     v.into_iter()
                       .map(|(path, ty)| vec![path, ty.to_html_tag()])
                       .collect(),

@@ -18,6 +18,10 @@
   <meta name=viewport content="width=device-width, initial-scale=1.0">
   <title>Document</title>
 <script>window['__farm_default_namespace__'] = {};window['__farm_default_namespace__'] = {__FARM_TARGET_ENV__: 'browser'};</script><script>(function(){const moduleSystem = {};
+function initModuleSystem() {
+    console.log('module-helper.ts');
+}
+initModuleSystem(moduleSystem);
 })();</script></head>
 <body>
   
