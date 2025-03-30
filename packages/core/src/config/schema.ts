@@ -324,8 +324,7 @@ const compilationConfigSchema = z
               name: z.string(),
               test: z.array(z.string()),
               groupType: z.enum(['mutable', 'immutable']).optional(),
-              resourceType: z.enum(['all', 'initial', 'async']).optional(),
-              enforce: z.boolean().optional()
+              resourceType: z.enum(['all', 'initial', 'async']).optional()
             })
           )
           .optional(),

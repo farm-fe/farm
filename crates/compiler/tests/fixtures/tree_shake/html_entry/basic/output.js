@@ -1,3 +1,16 @@
+//index-564c.js:
+ (function(moduleSystem, modules) {
+    for(var moduleId in modules){
+        var module = modules[moduleId];
+        moduleSystem.g(moduleId, module);
+    }
+})(window["__farm_default_namespace__"].m, {
+    "7c4a34c2": function(module, exports, farmRequire, farmDynamicRequire) {
+        console.log('1111');
+    }
+});
+
+
 //index.html:
  <!doctype html><html lang=en><head>
   <meta charset=UTF-8>
@@ -9,16 +22,4 @@
 <body>
   
 
-<script src=/index_564c.js data-farm-resource=true></script><script></script><script>window['__farm_default_namespace__'].m.b();window['__farm_default_namespace__'].m.r("7c4a34c2");</script>
-
-//index_564c.js:
- (function(moduleSystem, modules) {
-    for(var moduleId in modules){
-        var module = modules[moduleId];
-        moduleSystem.g(moduleId, module);
-    }
-})(window["__farm_default_namespace__"].m, {
-    "7c4a34c2": function(module, exports, farmRequire, farmDynamicRequire) {
-        console.log('1111');
-    }
-});
+<script src=/index-564c.js data-farm-resource=true></script><script></script><script>window['__farm_default_namespace__'].m.b();window['__farm_default_namespace__'].m.r("7c4a34c2");</script>

@@ -80,9 +80,7 @@ export class PreviewServer extends httpServer {
     this.config = await resolveConfig(
       this.inlineConfig,
       'preview',
-      'production',
-      'production',
-      true
+      'production'
     );
 
     this.logger = this.config.logger;

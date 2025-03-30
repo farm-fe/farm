@@ -17,8 +17,6 @@ const CUSTOM_CONFIG_RUNTIME_ISOLATE: &str = "runtime.isolate";
 pub const CUSTOM_CONFIG_EXTERNAL_RECORD: &str = "external.record";
 pub const CUSTOM_CONFIG_RESOLVE_DEDUPE: &str = "resolve.dedupe";
 pub const CUSTOM_CONFIG_CSS_MODULES_LOCAL_CONVERSION: &str = "css.modules.locals_conversion";
-pub const CUSTOM_CONFIG_PARTIAL_BUNDLING_GROUPS_ENFORCE_MAP: &str =
-  "partial_bundling.groups.enforce";
 pub const CUSTOM_CONFIG_ASSETS_MODE: &str = "assets.mode";
 
 pub fn get_config_runtime_isolate(context: &Arc<CompilationContext>) -> bool {

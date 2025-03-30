@@ -2,7 +2,7 @@
 source: crates/compiler/src/update/regenerate_resources/generate_and_diff_resource_pots/test_generate_and_diff_resource_pots.rs
 input_file: crates/testing_helpers/src/lib.rs
 ---
-name: A_66be
+name: A
 id: A_66be
 immutable: false
 resource_pot_type: Js

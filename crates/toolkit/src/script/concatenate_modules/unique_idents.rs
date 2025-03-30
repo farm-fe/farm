@@ -1,11 +1,17 @@
 pub use farmfe_core::module::meta_data::script::{EXPORT_DEFAULT, EXPORT_NAMESPACE};
 use farmfe_core::{
   module::{meta_data::script::statement::SwcId, module_graph::ModuleGraph, ModuleId},
-  swc_ecma_ast::{ExportSpecifier, Ident},
+  swc_common::DUMMY_SP,
+  swc_ecma_ast::{
+    AssignExpr, AssignOp, AssignTarget, BindingIdent, ExportSpecifier, Expr, Ident, IdentName,
+    ImportSpecifier, KeyValuePatProp, KeyValueProp, MemberProp, ModuleExportName, ObjectPat,
+    ObjectPatProp, Pat, Prop, PropName, PropOrSpread, SimpleAssignTarget,
+  },
   HashMap,
 };
 use swc_ecma_visit::{VisitMut, VisitMutWith};
 
+#[derive(Default)]
 struct TopLevelIdents {
   idents: HashMap<String, usize>,
 }
@@ -28,10 +34,20 @@ impl TopLevelIdents {
     *count += 1;
   }
 
-  pub fn get_unique_ident(&self, ident: &str) -> String {
-    if let Some(count) = self.idents.get(ident) {
-      if *count > 1 {
-        return format!("{ident}${}", *count - 1);
+  pub fn get_unique_ident(&mut self, ident: &str) -> String {
+    if let Some(mut count) = self.idents.get(ident).cloned() {
+      if count > 1 {
+        let mut unique_ident = self.generate_unique_ident(ident, count);
+        // make sure the unique ident is not used
+        while self.idents.contains_key(&unique_ident) {
+          self.add_ident(unique_ident.clone());
+          count += 1;
+          unique_ident = self.generate_unique_ident(ident, count);
+        }
+        // update the count for the new unique ident
+        self.add_ident(unique_ident.clone());
+
+        return unique_ident;
       } else {
         return ident.to_string();
       }
@@ -39,8 +55,13 @@ impl TopLevelIdents {
 
     unreachable!("add_ident({ident}) should be called before get_unique_ident")
   }
+
+  fn generate_unique_ident(&self, ident: &str, count: usize) -> String {
+    format!("{ident}${}", count - 1)
+  }
 }
 
+#[derive(Default)]
 pub struct TopLevelIdentsRenameHandler {
   module_rename_map: HashMap<ModuleId, HashMap<SwcId, SwcId>>,
   top_level_idents: TopLevelIdents,
@@ -95,9 +116,35 @@ impl<'a> RenameVisitor<'a> {
       rename_handler,
     }
   }
+
+  fn get_renamed_ident(&self, ident: &Ident) -> Option<SwcId> {
+    self
+      .rename_handler
+      .get_renamed_ident(self.module_id, &ident.to_id().into())
+  }
 }
 
 impl<'a> VisitMut for RenameVisitor<'a> {
+  fn visit_mut_import_specifier(&mut self, sp: &mut ImportSpecifier) {
+    if let ImportSpecifier::Named(named) = sp {
+      // import { a as aa } to import { a as aa1 }
+      if named.imported.is_some() {
+        named.local.visit_mut_with(self);
+      } else if let Some(renamed_ident) = self.get_renamed_ident(&named.local) {
+        named.imported = Some(ModuleExportName::Ident(Ident::new(
+          named.local.sym.clone(),
+          DUMMY_SP,
+          named.local.ctxt,
+        )));
+        let ctxt = renamed_ident.ctxt();
+        // import { a } to import { a as a1 }
+        named.local = Ident::new(renamed_ident.sym, DUMMY_SP, ctxt);
+      }
+    } else {
+      sp.visit_mut_children_with(self);
+    }
+  }
+
   fn visit_mut_export_specifier(&mut self, sp: &mut ExportSpecifier) {
     if let ExportSpecifier::Named(named) = sp {
       // do not rename exported ident
@@ -115,6 +162,131 @@ impl<'a> VisitMut for RenameVisitor<'a> {
       n.ctxt = renamed_ident.ctxt();
       n.sym = renamed_ident.sym;
     }
+  }
+
+  fn visit_mut_prop(&mut self, n: &mut farmfe_core::swc_ecma_ast::Prop) {
+    match n {
+      Prop::Shorthand(m) => {
+        if let Some(new_name) = self.get_renamed_ident(m) {
+          *n = Prop::KeyValue(farmfe_core::swc_ecma_ast::KeyValueProp {
+            key: farmfe_core::swc_ecma_ast::PropName::Ident(IdentName {
+              span: DUMMY_SP,
+              sym: m.sym.as_str().into(),
+            }),
+            value: Box::new(farmfe_core::swc_ecma_ast::Expr::Ident(new_name.sym.into())),
+          });
+          return;
+        }
+      }
+
+      _ => {}
+    }
+
+    n.visit_mut_children_with(self);
+  }
+
+  fn visit_mut_prop_or_spread(&mut self, n: &mut PropOrSpread) {
+    match n {
+      PropOrSpread::Prop(box p) => match p {
+        Prop::Shorthand(ident) => {
+          if let Some(new_name) = self.get_renamed_ident(ident) {
+            *p = Prop::KeyValue(KeyValueProp {
+              key: farmfe_core::swc_ecma_ast::PropName::Ident(IdentName {
+                span: DUMMY_SP,
+                sym: ident.sym.as_str().into(),
+              }),
+              value: Box::new(farmfe_core::swc_ecma_ast::Expr::Ident(new_name.sym.into())),
+            });
+          } else {
+            p.visit_mut_with(self);
+          }
+        }
+        Prop::KeyValue(key_value_prop) => {
+          key_value_prop.visit_mut_with(self);
+        }
+        _ => {
+          p.visit_mut_with(self);
+        }
+      },
+      PropOrSpread::Spread(s) => {
+        s.visit_mut_with(self);
+      }
+    }
+  }
+
+  fn visit_mut_key_value_prop(&mut self, n: &mut KeyValueProp) {
+    //
+    // skip it
+    // ```js
+    // {
+    //   key: value,
+    // }
+    // ```
+    //
+    if let farmfe_core::swc_ecma_ast::PropName::Ident(_) = n.key {
+    } else {
+      n.key.visit_mut_with(self);
+    }
+
+    n.value.visit_mut_with(self);
+  }
+
+  fn visit_mut_key_value_pat_prop(&mut self, n: &mut KeyValuePatProp) {
+    if let PropName::Ident(_) = n.key {
+    } else {
+      n.key.visit_mut_with(self);
+    }
+
+    n.value.visit_mut_with(self);
+  }
+
+  fn visit_mut_object_pat(&mut self, n: &mut ObjectPat) {
+    for prop in &mut n.props {
+      match prop {
+        ObjectPatProp::Assign(n) => {
+          // const { field = 100 } = x;
+          // =>
+          // const { field: field = 100 } = x;
+          if self.get_renamed_ident(&n.key).is_some() {
+            let mut new_value = if let Some(ref value) = n.value {
+              Box::new(Pat::Expr(Box::new(Expr::Assign(AssignExpr {
+                span: DUMMY_SP,
+                op: AssignOp::Assign,
+                left: AssignTarget::Simple(SimpleAssignTarget::Ident(n.key.clone())),
+                right: value.clone(),
+              }))))
+            } else {
+              Box::new(Pat::Ident(BindingIdent {
+                id: n.key.id.clone(),
+                type_ann: None,
+              }))
+            };
+
+            new_value.visit_mut_with(self);
+
+            *prop = ObjectPatProp::KeyValue(KeyValuePatProp {
+              key: PropName::Ident(n.key.clone().into()),
+              value: new_value,
+            });
+          } else {
+            n.visit_mut_with(self);
+          }
+        }
+        ObjectPatProp::KeyValue(n) => {
+          n.visit_mut_with(self);
+        }
+        _ => prop.visit_mut_children_with(self),
+      };
+    }
+  }
+
+  fn visit_mut_member_prop(&mut self, n: &mut MemberProp) {
+    // ns.default, skip
+    if let MemberProp::Ident(_) = n {
+      return;
+    }
+
+    n.visit_mut_children_with(self);
   }
 }
 

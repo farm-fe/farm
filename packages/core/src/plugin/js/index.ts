@@ -1,12 +1,6 @@
-import { z } from 'zod';
-
 import { fromZodError } from 'zod-validation-error';
 import { CompilationMode } from '../../config/env.js';
-import {
-  type JsPlugin,
-  type UserConfig,
-  normalizeDevServerConfig
-} from '../../index.js';
+import { type JsPlugin, type UserConfig } from '../../index.js';
 import merge from '../../utils/merge.js';
 import { resolveAsyncPlugins } from '../index.js';
 
@@ -38,6 +32,7 @@ import {
   createWriteResourcesSchema
 } from './js-plugin-schema.js';
 
+import { normalizeDevServerConfig } from '../../config/resolve-server.js';
 import { DEFAULT_FILTERS, normalizeFilterPath } from './utils.js';
 import { VitePluginAdapter } from './vite-plugin-adapter.js';
 

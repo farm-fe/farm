@@ -16,7 +16,7 @@ input_file: crates/testing_helpers/src/lib.rs
             "B_Entry",
         ),
         resource_pots: {
-            "test_custom(\"__farm_unknown\")",
+            "test___farm_unknown",
             "test_js",
             "B_3f39",
             "B_2f5d",
@@ -43,7 +43,7 @@ input_file: crates/testing_helpers/src/lib.rs
             "I_DynamicEntry",
         ),
         resource_pots: {
-            "EI_custom(\"__farm_unknown\")",
+            "EI_dynamic_entry_js",
         },
     },
 ]

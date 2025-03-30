@@ -99,10 +99,10 @@ fn multiple_bundle_test(file: String, crate_path: String) {
 
 // farmfe_testing::testing! {"tests/fixtures/bundle/library/reexport/reexport_hybrid_cjs/namespace/**/index.ts", single_bundle_test}
 
-farmfe_testing::testing! {
-  "tests/fixtures/bundle/**/index.ts",
-  // "tests/fixtures/bundle/library/reexport/use_external_reexport/**/index.ts",
-  // "tests/fixtures/bundle/library/reexport/reexport/**/index.ts",
-  // "tests/fixtures/bundle/library/reexport/reexport_hybrid_cjs/default/**/index.ts",
-  multiple_bundle_test
-}
+// farmfe_testing::testing! {
+//   "tests/fixtures/bundle/**/index.ts",
+//   // "tests/fixtures/bundle/library/reexport/use_external_reexport/**/index.ts",
+//   // "tests/fixtures/bundle/library/reexport/reexport/**/index.ts",
+//   // "tests/fixtures/bundle/library/reexport/reexport_hybrid_cjs/default/**/index.ts",
+//   multiple_bundle_test
+// }

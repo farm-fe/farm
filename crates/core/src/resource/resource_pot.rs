@@ -17,6 +17,7 @@ pub struct ResourcePot {
   pub id: ResourcePotId,
   pub name: String,
   pub resource_pot_type: ResourcePotType,
+  pub modules_name_hash: String,
   pub modules: HashSet<ModuleId>,
   pub meta: ResourcePotMetaData,
   /// [None] if this [ResourcePot] does not contain entry module defined in config.input.
@@ -45,6 +46,7 @@ impl serde::Serialize for ResourcePot {
     state.serialize_field("id", &self.id)?;
     state.serialize_field("name", &self.name)?;
     state.serialize_field("resource_pot_type", &self.resource_pot_type)?;
+    state.serialize_field("modules_name_hash", &self.modules_name_hash)?;
     state.serialize_field("modules", &self.modules)?;
     state.serialize_field("entry_module", &self.entry_module)?;
     state.serialize_field("resources", &self.resources)?;
@@ -60,6 +62,7 @@ impl ResourcePot {
       id: Self::gen_id(&name, ty.clone()),
       name,
       resource_pot_type: ty,
+      modules_name_hash: "".to_string(),
       modules: HashSet::default(),
       meta: ResourcePotMetaData::default(),
       source_map_chain: vec![],
@@ -77,7 +80,6 @@ impl ResourcePot {
 
   pub fn set_resource_pot_id(&mut self, id: String) {
     self.id.clone_from(&id);
-    // self.info.id = id;
   }
 
   pub fn add_module(&mut self, module_id: ModuleId) {
@@ -126,7 +128,8 @@ pub type ResourcePotId = String;
 #[cache_item]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum ResourcePotType {
-  Runtime,
+  // Resource pot generated from dynamic entry, used for dynamic added bundle like Runtime or Worker
+  DynamicEntryJs,
   Js,
   Css,
   Html,
@@ -168,14 +171,21 @@ impl From<ModuleType> for ResourcePotType {
 
 impl ToString for ResourcePotType {
   fn to_string(&self) -> String {
-    format!("{self:?}").to_lowercase()
+    match self {
+      Self::DynamicEntryJs => "dynamic_entry_js".to_string(),
+      Self::Js => "js".to_string(),
+      Self::Css => "css".to_string(),
+      Self::Html => "html".to_string(),
+      Self::Asset => "asset".to_string(),
+      Self::Custom(s) => s.clone(),
+    }
   }
 }
 
 impl From<String> for ResourcePotType {
   fn from(s: String) -> Self {
     match s.as_str() {
-      "runtime" => Self::Runtime,
+      "dynamic_entry_js" => Self::DynamicEntryJs,
       "js" => Self::Js,
       "css" => Self::Css,
       "html" => Self::Html,

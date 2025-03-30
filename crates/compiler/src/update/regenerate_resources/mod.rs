@@ -79,6 +79,10 @@ pub fn render_and_generate_update_resource(
 
   let gen_resource_pot_code =
     |resource_pot: &mut ResourcePot| -> farmfe_core::error::Result<String> {
+      if resource_pot.modules().is_empty() {
+        return Ok("".to_string());
+      }
+
       let hook_context = PluginHookContext::default();
       let res = context
         .plugin_driver

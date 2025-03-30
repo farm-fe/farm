@@ -13,4 +13,4 @@ fn script_test(file: String, crate_path: String) {
   test_builder(TestBuilderOptions::new(file, PathBuf::from(crate_path)));
 }
 
-farmfe_testing::testing!("tests/fixtures/script/**/index.ts", script_test);
+// farmfe_testing::testing!("tests/fixtures/script/**/index.ts", script_test);

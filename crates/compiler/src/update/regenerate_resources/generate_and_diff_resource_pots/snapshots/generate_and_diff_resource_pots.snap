@@ -3,7 +3,7 @@ source: crates/compiler/src/update/regenerate_resources/generate_and_diff_resour
 input_file: crates/testing_helpers/src/lib.rs
 ---
 [
-    "EI_custom(\"__farm_unknown\")",
-    "test_custom(\"__farm_unknown\")",
+    "EI_dynamic_entry_js",
+    "test___farm_unknown",
     "test_js",
 ]
