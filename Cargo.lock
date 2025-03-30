@@ -994,7 +994,7 @@ dependencies = [
 
 [[package]]
 name = "create-farm"
-version = "0.1.4"
+version = "0.1.5"
 dependencies = [
  "anyhow",
  "clap",
@@ -1007,7 +1007,7 @@ dependencies = [
 
 [[package]]
 name = "create_farm_node"
-version = "0.1.4"
+version = "0.1.5"
 dependencies = [
  "create-farm",
  "napi",
@@ -1633,7 +1633,7 @@ checksum = "4443176a9f2c162692bd3d352d745ef9413eec5782a80d8fd6f8a1ac692a07f7"
 
 [[package]]
 name = "farmfe_compiler"
-version = "0.0.13"
+version = "0.0.16"
 dependencies = [
  "farmfe_core",
  "farmfe_plugin_css",
@@ -1662,7 +1662,7 @@ dependencies = [
 
 [[package]]
 name = "farmfe_core"
-version = "0.7.1"
+version = "0.7.3"
 dependencies = [
  "blake2",
  "dashmap 5.5.3",
@@ -1737,7 +1737,7 @@ dependencies = [
 
 [[package]]
 name = "farmfe_plugin_bundle"
-version = "0.0.7"
+version = "0.0.9"
 dependencies = [
  "farmfe_core",
  "farmfe_testing_helpers",
@@ -1747,7 +1747,7 @@ dependencies = [
 
 [[package]]
 name = "farmfe_plugin_css"
-version = "0.0.15"
+version = "0.0.17"
 dependencies = [
  "farmfe_core",
  "farmfe_macro_cache_item",
@@ -1759,7 +1759,7 @@ dependencies = [
 
 [[package]]
 name = "farmfe_plugin_define"
-version = "0.0.13"
+version = "0.0.15"
 dependencies = [
  "farmfe_core",
  "farmfe_testing_helpers",
@@ -1799,7 +1799,7 @@ dependencies = [
 
 [[package]]
 name = "farmfe_plugin_html"
-version = "0.0.13"
+version = "0.0.15"
 dependencies = [
  "farmfe_core",
  "farmfe_testing_helpers",
@@ -1809,7 +1809,7 @@ dependencies = [
 
 [[package]]
 name = "farmfe_plugin_json"
-version = "0.0.13"
+version = "0.0.15"
 dependencies = [
  "farmfe_core",
  "farmfe_testing_helpers",
@@ -1818,7 +1818,7 @@ dependencies = [
 
 [[package]]
 name = "farmfe_plugin_lazy_compilation"
-version = "0.0.13"
+version = "0.0.15"
 dependencies = [
  "farmfe_core",
  "farmfe_testing_helpers",
@@ -1848,7 +1848,7 @@ dependencies = [
 
 [[package]]
 name = "farmfe_plugin_minify"
-version = "0.0.13"
+version = "0.0.15"
 dependencies = [
  "farmfe_core",
  "farmfe_testing_helpers",
@@ -1857,7 +1857,7 @@ dependencies = [
 
 [[package]]
 name = "farmfe_plugin_partial_bundling"
-version = "0.0.13"
+version = "0.0.15"
 dependencies = [
  "farmfe_core",
  "farmfe_testing_helpers",
@@ -1866,7 +1866,7 @@ dependencies = [
 
 [[package]]
 name = "farmfe_plugin_polyfill"
-version = "0.0.13"
+version = "0.0.15"
 dependencies = [
  "farmfe_core",
  "farmfe_testing_helpers",
@@ -1875,7 +1875,7 @@ dependencies = [
 
 [[package]]
 name = "farmfe_plugin_progress"
-version = "0.0.13"
+version = "0.0.15"
 dependencies = [
  "console",
  "farmfe_core",
@@ -1911,7 +1911,7 @@ dependencies = [
 
 [[package]]
 name = "farmfe_plugin_resolve"
-version = "0.0.13"
+version = "0.0.15"
 dependencies = [
  "farmfe_core",
  "farmfe_testing_helpers",
@@ -1922,7 +1922,7 @@ dependencies = [
 
 [[package]]
 name = "farmfe_plugin_runtime"
-version = "0.0.13"
+version = "0.0.15"
 dependencies = [
  "farmfe_core",
  "farmfe_testing_helpers",
@@ -1947,7 +1947,7 @@ dependencies = [
 
 [[package]]
 name = "farmfe_plugin_script"
-version = "0.0.12"
+version = "0.0.15"
 dependencies = [
  "farmfe_core",
  "farmfe_swc_transformer_import_glob",
@@ -1973,7 +1973,7 @@ dependencies = [
 
 [[package]]
 name = "farmfe_plugin_static_assets"
-version = "0.0.13"
+version = "0.0.15"
 dependencies = [
  "base64 0.21.7",
  "farmfe_core",
@@ -1986,7 +1986,7 @@ dependencies = [
 
 [[package]]
 name = "farmfe_plugin_tree_shake"
-version = "0.0.12"
+version = "0.0.14"
 dependencies = [
  "farmfe_core",
  "farmfe_testing_helpers",
@@ -1996,7 +1996,7 @@ dependencies = [
 
 [[package]]
 name = "farmfe_swc_transformer_import_glob"
-version = "0.0.13"
+version = "0.0.16"
 dependencies = [
  "farmfe_core",
  "farmfe_testing_helpers",
@@ -2019,7 +2019,7 @@ dependencies = [
 
 [[package]]
 name = "farmfe_testing_helpers"
-version = "0.0.15"
+version = "0.0.17"
 dependencies = [
  "farmfe_core",
  "insta",
@@ -2027,7 +2027,7 @@ dependencies = [
 
 [[package]]
 name = "farmfe_toolkit"
-version = "0.0.15"
+version = "0.0.17"
 dependencies = [
  "anyhow",
  "farmfe_core",

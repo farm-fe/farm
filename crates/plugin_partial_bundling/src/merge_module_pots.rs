@@ -104,13 +104,11 @@ fn create_resource_by_meta<M: Into<ResourcePotType>>(
   module_type: M,
   immutable: bool,
 ) -> ResourcePot {
-  let modules_name_hash = hash_module_ids(modules);
-  let id = format!("{}_{}", name, modules_name_hash);
+  let modules_name_hash = hash_module_ids(modules, 32);
 
   let resource_pot_type = module_type.into();
-  let mut resource_pot = ResourcePot::new(name, resource_pot_type);
+  let mut resource_pot = ResourcePot::new(&name, &modules_name_hash, resource_pot_type);
 
-  resource_pot.set_resource_pot_id(id);
   resource_pot.immutable = immutable;
   resource_pot.modules_name_hash = modules_name_hash;
 
@@ -402,7 +400,7 @@ fn handle_enforce_target_min_size(
         final_resource_pot.set_resource_pot_id(format!(
           "{}_{}",
           base_resource_pot_name,
-          hash_module_ids(&final_resource_pot.modules)
+          hash_module_ids(&final_resource_pot.modules, 32)
         ));
         final_resource_pot_ids.push(final_resource_pot.id.clone());
         resource_pot_map.insert(final_resource_pot.id.clone(), final_resource_pot);

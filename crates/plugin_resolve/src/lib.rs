@@ -79,7 +79,7 @@ impl Plugin for FarmPluginResolve {
       // check external first, if the source is set as external, return it immediately
       if external_config.is_external(source) {
         return Ok(Some(PluginResolveHookResult {
-          resolved_path: param.source.clone(),
+          resolved_path: String::from(source),
           external: true,
           side_effects: false,
           query,

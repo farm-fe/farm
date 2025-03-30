@@ -1,17 +1,18 @@
+import fs from 'node:fs/promises';
+import path from 'node:path';
+
+import { compile } from '@tailwindcss/node';
+import { Scanner } from '@tailwindcss/oxide';
+import { Features, transform } from 'lightningcss';
+import postcss from 'postcss';
+import postcssImport from 'postcss-import';
+
 import type {
   CompilationContext,
   JsPlugin,
   Server,
   UserConfig
 } from '@farmfe/core';
-import { compile } from '@tailwindcss/node';
-
-import fs from 'node:fs/promises';
-import path from 'path';
-import { Scanner } from '@tailwindcss/oxide';
-import { Features, transform } from 'lightningcss';
-import postcss from 'postcss';
-import postcssImport from 'postcss-import';
 
 // like https://github.com/tailwindlabs/tailwindcss/blob/next/packages/%40tailwindcss-vite/src/index.ts
 export default function tailwindcss(): JsPlugin[] {
@@ -90,16 +91,9 @@ export default function tailwindcss(): JsPlugin[] {
     {
       name: 'farm:tailwindcss:scan',
       priority: 100,
-      config(_config) {
+      configResolved(_config) {
         config = _config;
         minify = !!config.compilation?.minify;
-
-        return {
-          // compilation: {
-          //   // TODO: should invalidate entry css file when config changes
-          //   persistentCache: false
-          // }
-        };
       },
       configureServer(server) {
         servers.push(server);

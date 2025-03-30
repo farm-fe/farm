@@ -124,7 +124,7 @@ export interface OutputConfig {
    */
   path?: string;
   /**
-   * resource loading prefix. for example, if publicPath is `https://xxx.cdn.comm`,
+   * resource loading prefix. for example, if publicPath is `https://xxx.cdn.com`,
    * then the url output files in html will be `https://xxx.cdn.com/index_ecad.xxxx.js`
    *
    * default by `output.targetEnv`, if node, publicPath is `./`, if browser, publicPath is `/`
@@ -426,7 +426,7 @@ export interface Config {
     /**
      * Compilation entries
      *
-     * tip: if set to `null` or `undefined`, farm will be remove field
+     * tip: if the value is `null` or `undefined`, it will be ignored
      */
     input?: Record<string, string | undefined | null>;
     /**

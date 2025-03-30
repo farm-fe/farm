@@ -57,10 +57,10 @@ impl serde::Serialize for ResourcePot {
 }
 
 impl ResourcePot {
-  pub fn new(name: String, ty: ResourcePotType) -> Self {
+  pub fn new(name: &str, hash: &str, ty: ResourcePotType) -> Self {
     Self {
-      id: Self::gen_id(&name, ty.clone()),
-      name,
+      id: Self::gen_id(&name, hash, ty.clone()),
+      name: name.to_string(),
       resource_pot_type: ty,
       modules_name_hash: "".to_string(),
       modules: HashSet::default(),
@@ -74,8 +74,8 @@ impl ResourcePot {
     }
   }
 
-  pub fn gen_id(name: &str, ty: ResourcePotType) -> String {
-    format!("{}_{}", name, ty.to_string())
+  pub fn gen_id(name: &str, hash: &str, ty: ResourcePotType) -> String {
+    format!("{}_{}_{}", name, hash, ty.to_string())
   }
 
   pub fn set_resource_pot_id(&mut self, id: String) {

@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.5](https://github.com/farm-fe/farm/compare/create-farm-v0.1.4...create-farm-v0.1.5) - 2025-01-09
+
+### Other
+
+- delete react template warning code (#2041)
+
 ## [0.1.4](https://github.com/farm-fe/farm/compare/create-farm-v0.1.3...create-farm-v0.1.4) - 2024-12-09
 
 ### Fixed

@@ -7,6 +7,7 @@ use farmfe_core::module::{
   module_group::{ModuleGroup, ModuleGroupGraph},
   Module, ModuleId,
 };
+use farmfe_plugin_partial_bundling::module_group_graph_from_entries;
 
 use farmfe_core::{HashMap, HashSet};
 
@@ -22,6 +23,32 @@ pub fn patch_module_group_graph(
   let mut affected_module_groups = HashSet::default();
 
   for updated_module_id in &updated_module_ids {
+    // create new module group for the new entry
+    if diff_result.added_modules.contains(updated_module_id)
+      && module_graph.entries.contains_key(updated_module_id)
+    {
+      let mut added_module_group_graph =
+        module_group_graph_from_entries(&vec![updated_module_id.clone()], module_graph);
+      let edges = added_module_group_graph.edges();
+      let module_group_ids = added_module_group_graph
+        .module_groups()
+        .into_iter()
+        .map(|g| g.id.clone())
+        .collect::<Vec<_>>();
+
+      for module_group_id in module_group_ids {
+        if !module_group_graph.has(&module_group_id) {
+          let module_group = added_module_group_graph
+            .remove_module_group(&module_group_id)
+            .unwrap();
+          module_group_graph.add_module_group(module_group);
+        }
+      }
+
+      for (from, to) in edges {
+        module_group_graph.add_edge(&from, &to);
+      }
+    }
     let module = module_graph.module(updated_module_id).unwrap();
     let module_group_ids = module.module_groups.clone();
     affected_module_groups.extend(module_group_ids);

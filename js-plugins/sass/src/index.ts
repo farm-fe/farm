@@ -324,7 +324,7 @@ async function compileScss(param: CompileCssParams) {
 
     if (file === transformParam.resolvedPath) continue;
 
-    ctx.addWatchFile(transformParam.resolvedPath, file);
+    ctx.addWatchFile(transformParam.moduleId, file);
   }
 
   return { css, sourceMap };
@@ -382,7 +382,7 @@ async function compileScssLegacy(param: CompileCssParams) {
 
         result.stats.includedFiles.forEach((file) => {
           if (file === transformParam.resolvedPath) return;
-          ctx.addWatchFile(transformParam.resolvedPath, file);
+          ctx.addWatchFile(transformParam.moduleId, file);
         });
 
         resolve({

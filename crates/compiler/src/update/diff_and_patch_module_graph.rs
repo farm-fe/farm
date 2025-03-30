@@ -164,6 +164,13 @@ pub fn patch_module_graph(
 
   // add new modules first, as we need to add edges to them later
   for added in &diff_result.added_modules {
+    // if the added module is a start point, we should mark it as a new entry of the module graph
+    if start_points.contains(added) {
+      module_graph
+        .entries
+        .insert(added.clone(), added.to_string());
+    }
+
     let module = update_module_graph.take_module(added);
     module_graph.add_module(module);
   }
@@ -190,6 +197,12 @@ pub fn patch_module_graph(
 
   // we must remove updated module at last, cause petgraph will remove edge when remove node
   for updated in start_points {
+    // the start point module may be a full new module that is handled by added_modules already
+    // we should skip it if it is in added_modules
+    if diff_result.added_modules.contains(&updated) {
+      continue;
+    }
+
     let module = {
       let mut m = update_module_graph.take_module(&updated);
       let previous_module = module_graph.module(&updated).unwrap();
@@ -279,6 +292,27 @@ fn diff_module_deps(
     // Find the added and removed dependencies of current updated module
     let mut added_deps = Vec::new();
     let mut removed_deps = Vec::new();
+
+    // if entry module_id is not in module_graph, it means it is a new separate entry module
+    if !module_graph.has_module(module_id) {
+      let update_deps = update_module_graph.dependencies_ids(module_id);
+
+      for dep in update_deps {
+        let edge_info = update_module_graph.edge_info(module_id, &dep).unwrap();
+        added_deps.push((dep, edge_info.clone()));
+      }
+
+      diff_result.push((
+        module_id.clone(),
+        ModuleDepsDiffResult {
+          added: added_deps.clone(),
+          removed: removed_deps.clone(),
+        },
+      ));
+
+      added_modules.insert(module_id.clone());
+      continue;
+    }
 
     let deps = module_graph.dependencies_ids(module_id);
     let update_deps = update_module_graph.dependencies_ids(module_id);

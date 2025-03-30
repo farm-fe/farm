@@ -12,7 +12,7 @@ exports[`Js Plugin Execution - renderResourcePot 1`] = `
     "isEntry": true,
     "isImplicitEntry": false,
   },
-  "id": "index_eab4",
+  "id": "index_eab4_eab4eb4a846cd9fa318a455919afa864_js",
   "map": null,
   "moduleIds": [
     "index.ts?foo=bar",

@@ -1,7 +1,7 @@
 import solid from 'vite-plugin-solid';
 import { generateHydrationScript } from 'solid-js/web';
 import path from 'path';
-import { pathToFileURL } from 'url';
+import { pathToFileURL, fileURLToPath } from 'url';
 
 /**
  * @type {import('@farmfe/core').UserConfig}
@@ -39,13 +39,9 @@ export default {
               .getCompiler()
               .resource('client.html')
               .toString();
-            const curDir =
-              process.platform === 'win32'
-                ? pathToFileURL(__dirname)
-                : __dirname;
-            const render = await import(
-              path.join(curDir.toString(), 'dist', 'index.js')
-            ).then((m) => m['default']);
+            const projectRoot = path.dirname(fileURLToPath(import.meta.url));
+            const moudlePath = path.join(projectRoot, 'dist', 'index.js');
+            const render = await import(pathToFileURL(moudlePath)).then((m) => m['default']);
             const renderedHtml = render(ctx.path);
 
             const html = template

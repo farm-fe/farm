@@ -187,7 +187,7 @@ fn handle_enforce_resource_pots(
             resource_pot.remove_module(module_id);
           }
         } else if ty != ChangedModuleType::Removed {
-          let mut resource_pot = ResourcePot::new(resource_pot_name, resource_pot_type);
+          let mut resource_pot = ResourcePot::new(&resource_pot_name, "", resource_pot_type);
           resource_pot.add_module(module_id.clone());
           resource_pot_map.add_resource_pot(resource_pot);
         }

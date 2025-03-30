@@ -5,6 +5,62 @@
 ### Major Changes
 
 - b327dd1: collect htmlFallbackMiddleware
+## 1.7.1
+
+### Patch Changes
+
+- 98a2b01b: Fix panic when call `compiler.update` for a full new module multiple times
+
+## 1.7.0
+
+### Minor Changes
+
+- 25f3d3f6: Support calling `compiler.update` to compile a full new module dynamically
+
+## 1.6.7
+
+### Patch Changes
+
+- ec87a7fe: Fix resource pot id conflict in a large project due to the short hash id. The hash id is changed from 4 length to 32
+- ec87a7fe: Fix #2103 module system introp between esm and cjs
+
+## 1.6.6
+
+### Patch Changes
+
+- 0163299e: Fix persistent cache panic when using addFileWatchFile with query #2067
+
+## 1.6.5
+
+### Patch Changes
+
+- 2423ee65: Fix query strings in external imports are duplicated
+
+## 1.6.4
+
+### Patch Changes
+
+- 35bdd7f5: fix module with query cannot update when watch file update
+- 84ab2c75: fix import meta glob path
+
+## 1.6.3
+
+### Patch Changes
+
+- 0ad977b6: import meta glob search package
+
+## 1.6.2
+
+### Patch Changes
+
+- 43e0ea06: do not clean up then watch graph monitoring module
+
+## 1.6.1
+
+### Patch Changes
+
+- 9e9e94e2: fix namespace fallback when use literal computed
+
 ## 1.6.0
 
 ### Minor Changes
