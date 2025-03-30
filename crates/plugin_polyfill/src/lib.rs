@@ -73,7 +73,10 @@ impl FarmPluginPolyfill {
       include,
       exclude,
       assumptions,
-      enforce_exclude: vec![ConfigRegex::new("node_modules/core-js")],
+      enforce_exclude: vec![
+        ConfigRegex::new("node_modules/core-js"),
+        ConfigRegex::new("@farmfe/runtime"),
+      ],
     }
   }
 }

@@ -261,11 +261,8 @@ pub fn dynamic_entry_module_group_to_resource_pot(
     .dynamic_entries
     .get(&module_group.entry_module_id)
   {
-    let entry_module = module_graph.module(&module_group.entry_module_id).unwrap();
-    let mut resource_pot = ResourcePot::new(
-      name.to_string(),
-      ResourcePotType::from(entry_module.module_type.clone()),
-    );
+    let mut resource_pot = ResourcePot::new(name.to_string(), ResourcePotType::DynamicEntryJs);
+
     resource_pot.entry_module = Some(module_group.entry_module_id.clone());
     resource_pot.module_groups = HashSet::from_iter([module_group.id.clone()]);
     resource_pot.is_dynamic_entry = true;

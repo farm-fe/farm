@@ -5,7 +5,8 @@ use farmfe_core::{
   module::{
     meta_data::script::{
       statement::{ExportSpecifierInfo, ImportSpecifierInfo, SwcId},
-      ModuleExportIdent, EXPORT_DEFAULT,
+      ModuleExportIdent, ModuleExportIdentType, EXPORT_DEFAULT, EXPORT_EXTERNAL_ALL,
+      EXPORT_EXTERNAL_NAMESPACE,
     },
     module_graph::ModuleGraph,
     ModuleId,
@@ -17,6 +18,7 @@ use farmfe_core::{
 
 use farmfe_toolkit::script::{
   concatenate_modules::EXPORT_NAMESPACE, create_export_default_ident,
+  create_export_external_all_ident, create_export_external_namespace_ident,
   create_export_namespace_ident, swc_try_with::try_with,
 };
 
@@ -87,6 +89,7 @@ fn expand_module_exports_dfs(
                 create_export_default_ident(module_id, top_level_mark)
                   .to_id()
                   .into(),
+                ModuleExportIdentType::Declaration,
               );
             } else {
               // there will only be one defined ident in export default statement
@@ -96,6 +99,7 @@ fn expand_module_exports_dfs(
                   EXPORT_DEFAULT.to_string(),
                   module_id.clone(),
                   defined_ident.clone(),
+                  ModuleExportIdentType::Declaration,
                 );
               }
             }
@@ -108,36 +112,13 @@ fn expand_module_exports_dfs(
               local.sym.to_string()
             };
 
-            // export { foo, bar as baz } from './bar'
-            if let Some(source) = &export_info.source {
-              let source_module_id =
-                module_graph.get_dep_by_source(module_id, source, Some(ResolveKind::ExportFrom));
-
-              expand_module_exports_dfs(&source_module_id, module_graph, expand_context);
-
-              if let Some(module_export_ident) =
-                expand_context.get_export_ident(&source_module_id, &local.sym)
-              {
-                expand_context.insert_export_ident(
-                  module_id,
-                  export_str,
-                  module_export_ident.module_id,
-                  module_export_ident.ident,
-                );
-              } else {
-                // TODO: warning
-                println!(
-                  "[Farm Warning] export {} of module {} not found",
-                  local.sym,
-                  source_module_id.to_string()
-                );
-              }
-            } else {
+            if export_info.source.is_none() {
               expand_context.insert_export_ident(
                 module_id,
                 export_str,
                 module_id.clone(),
                 local.clone(),
+                ModuleExportIdentType::Declaration,
               );
             }
           }
@@ -175,8 +156,23 @@ fn expand_module_exports_dfs(
                   export_str,
                   module_export_ident.module_id,
                   module_export_ident.ident,
+                  module_export_ident.export_type,
                 );
               }
+            }
+
+            let source_module = module_graph.module(&source_module_id).unwrap();
+
+            if source_module.external {
+              expand_context.insert_export_ident(
+                module_id,
+                EXPORT_EXTERNAL_ALL.to_string(),
+                source_module_id.clone(),
+                create_export_external_all_ident(&source_module_id)
+                  .to_id()
+                  .into(),
+                ModuleExportIdentType::ExternalAll,
+              );
             }
           }
           ExportSpecifierInfo::Namespace(swc_id) => {
@@ -186,6 +182,7 @@ fn expand_module_exports_dfs(
               swc_id.sym.to_string(),
               module_id.clone(),
               swc_id.clone(),
+              ModuleExportIdentType::Declaration,
             );
 
             let source = export_info.source.as_ref().unwrap();
@@ -193,16 +190,73 @@ fn expand_module_exports_dfs(
               module_graph.get_dep_by_source(module_id, source, Some(ResolveKind::ExportFrom));
 
             expand_module_exports_dfs(&source_module_id, module_graph, expand_context);
-            // add a special export ident for namespace export * as ns in the source module
-            let top_level_mark = Mark::from_u32(module_script_meta.top_level_mark);
-            expand_context.insert_export_ident(
-              &source_module_id,
-              EXPORT_NAMESPACE.to_string(),
-              source_module_id.clone(),
-              create_export_namespace_ident(&source_module_id, top_level_mark)
-                .to_id()
-                .into(),
-            );
+
+            let source_module = module_graph.module(&source_module_id).unwrap();
+
+            if source_module.external {
+              expand_context.insert_export_ident(
+                module_id,
+                EXPORT_EXTERNAL_NAMESPACE.to_string(),
+                source_module_id.clone(),
+                create_export_external_namespace_ident(&source_module_id)
+                  .to_id()
+                  .into(),
+                ModuleExportIdentType::ExternalNamespace,
+              );
+            } else {
+              // add a special export ident for namespace export * as ns in the source module
+              expand_context.insert_export_namespace_ident(&source_module_id, module_graph);
+            }
+          }
+          ExportSpecifierInfo::Named { local, exported } => {
+            // export { foo, bar as baz } from './bar'
+            if let Some(source) = &export_info.source {
+              let export_str = if let Some(exported) = exported {
+                exported.sym.to_string()
+              } else {
+                local.sym.to_string()
+              };
+
+              let source_module_id =
+                module_graph.get_dep_by_source(module_id, source, Some(ResolveKind::ExportFrom));
+              let source_module = module_graph.module(&source_module_id).unwrap();
+
+              expand_module_exports_dfs(&source_module_id, module_graph, expand_context);
+
+              if let Some(module_export_ident) =
+                expand_context.get_export_ident(&source_module_id, &local.sym)
+              {
+                expand_context.insert_export_ident(
+                  module_id,
+                  export_str,
+                  module_export_ident.module_id,
+                  module_export_ident.ident,
+                  module_export_ident.export_type,
+                );
+              } else if source_module.external {
+                expand_context.insert_export_ident(
+                  module_id,
+                  export_str,
+                  source_module_id,
+                  local.clone(),
+                  ModuleExportIdentType::External,
+                );
+              } else {
+                // TODO: warning
+                println!(
+                  "[Farm Warning] export {} of module {} not found",
+                  local.sym,
+                  source_module_id.to_string()
+                );
+                expand_context.insert_export_ident(
+                  module_id,
+                  export_str,
+                  source_module_id,
+                  local.clone(),
+                  ModuleExportIdentType::Unresolved,
+                );
+              }
+            }
           }
           _ => {}
         }
@@ -218,17 +272,32 @@ fn expand_module_exports_dfs(
         .iter()
         .any(|specifier| matches!(specifier, ImportSpecifierInfo::Namespace(_)))
       {
-        let top_level_mark = Mark::from_u32(module_script_meta.top_level_mark);
-        // add a special export ident for namespace import * as ns in the source module
-        expand_context.insert_export_ident(
-          &source_module_id,
-          EXPORT_NAMESPACE.to_string(),
-          source_module_id.clone(),
-          create_export_namespace_ident(&source_module_id, top_level_mark)
-            .to_id()
-            .into(),
-        );
+        let source_module = module_graph.module(&source_module_id).unwrap();
+
+        if source_module.external {
+          expand_context.insert_export_ident(
+            module_id,
+            EXPORT_EXTERNAL_NAMESPACE.to_string(),
+            source_module_id.clone(),
+            create_export_external_namespace_ident(&source_module_id)
+              .to_id()
+              .into(),
+            ModuleExportIdentType::ExternalNamespace,
+          );
+        } else {
+          expand_context.insert_export_namespace_ident(&source_module_id, module_graph);
+        }
       }
+    }
+  }
+
+  // find dynamic imported dependencies and insert a namespace export ident for them
+  for (source_module_id, edge) in module_graph.dependencies(module_id) {
+    if edge.contains_dynamic_import() {
+      // expand exports first
+      expand_module_exports_dfs(&source_module_id, module_graph, expand_context);
+
+      expand_context.insert_export_namespace_ident(&source_module_id, module_graph);
     }
   }
 }
@@ -260,6 +329,7 @@ impl ExpandModuleExportsContext {
     export_str: String,
     export_module_id: ModuleId,
     export_ident: SwcId,
+    export_type: ModuleExportIdentType,
   ) {
     self
       .export_ident_map
@@ -270,8 +340,37 @@ impl ExpandModuleExportsContext {
         ModuleExportIdent {
           module_id: export_module_id,
           ident: export_ident,
+          export_type,
         },
       );
+  }
+
+  fn insert_export_namespace_ident(
+    &mut self,
+    source_module_id: &ModuleId,
+    module_graph: &ModuleGraph,
+  ) {
+    let source_module = module_graph.module(&source_module_id).unwrap();
+
+    if source_module.external {
+      return;
+    }
+
+    if !source_module.module_type.is_script() {
+      return;
+    }
+
+    let source_module_script_meta = source_module.meta.as_script();
+    let top_level_mark = Mark::from_u32(source_module_script_meta.top_level_mark);
+    self.insert_export_ident(
+      &source_module_id,
+      EXPORT_NAMESPACE.to_string(),
+      source_module_id.clone(),
+      create_export_namespace_ident(&source_module_id, top_level_mark)
+        .to_id()
+        .into(),
+      ModuleExportIdentType::VirtualNamespace,
+    );
   }
 
   pub fn get_export_ident_map(

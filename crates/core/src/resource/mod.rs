@@ -121,6 +121,8 @@ impl ResourceOrigin {
 #[serde(rename_all = "camelCase")]
 pub struct Resource {
   pub name: String,
+  /// name hash generated from the modules' name. See `ResourcePot::modules_name_hash`
+  pub name_hash: String,
   pub bytes: Vec<u8>,
   /// whether this resource emitted, true means this resource will not present in the final production
   pub emitted: bool,
@@ -139,6 +141,7 @@ impl Default for Resource {
   fn default() -> Self {
     Self {
       name: "unknown".to_string(),
+      name_hash: "".to_string(),
       bytes: vec![],
       emitted: false,
       should_transform_output_filename: true,

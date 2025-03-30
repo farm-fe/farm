@@ -6,7 +6,7 @@ use farmfe_core::{
   resource::{Resource, ResourceOrigin, ResourceType},
   swc_html_ast::Element,
 };
-use farmfe_toolkit::fs::transform_output_filename;
+use farmfe_toolkit::fs::{transform_output_filename, TransformOutputFileNameParams};
 
 use crate::deps_analyzer::{
   get_href_link_value, get_link_css_code, get_script_src_value, get_script_type_module_code,
@@ -72,19 +72,17 @@ pub fn create_farm_runtime_output_resource(
   resource_name: &str,
   context: &Arc<CompilationContext>,
 ) -> Resource {
-  let name = transform_output_filename(
-    context.config.output.filename.clone(),
-    resource_name,
-    &bytes,
-    "js", // todo: support configuring extension
-          // match context.config.output.format {
-          //   ModuleFormat::EsModule => "mjs",
-          //   ModuleFormat::CommonJs => "cjs",
-          // },
-  );
+  let name = transform_output_filename(TransformOutputFileNameParams {
+    filename_config: context.config.output.filename.clone(),
+    name: resource_name,
+    name_hash: "",
+    bytes: &bytes,
+    ext: "js",
+  });
 
   Resource {
     name: name.clone(),
+    name_hash: Default::default(),
     bytes: bytes.to_owned().into(),
     emitted: false,
     resource_type: ResourceType::Js,

@@ -586,36 +586,6 @@ impl ModuleGraph {
   /// import c from './c.js';
   /// ```
   pub fn toposort(&self) -> (Vec<ModuleId>, Vec<Vec<ModuleId>>) {
-    fn dfs(
-      entry: &ModuleId,
-      graph: &ModuleGraph,
-      stack: &mut Vec<ModuleId>,
-      visited: &mut HashSet<ModuleId>,
-      result: &mut Vec<ModuleId>,
-      cyclic: &mut Vec<Vec<ModuleId>>,
-    ) {
-      // cycle detected
-      if let Some(pos) = stack.iter().position(|m| m == entry) {
-        cyclic.push(stack.clone()[pos..].to_vec());
-        return;
-      } else if visited.contains(entry) {
-        // skip visited module
-        return;
-      }
-
-      visited.insert(entry.clone());
-      stack.push(entry.clone());
-
-      let deps = graph.dependencies(entry);
-
-      for (dep, _) in &deps {
-        dfs(dep, graph, stack, visited, result, cyclic)
-      }
-
-      // visit current entry
-      result.push(stack.pop().unwrap());
-    }
-
     let mut result = vec![];
     let mut cyclic = vec![];
     let mut stack = vec![];
@@ -631,7 +601,14 @@ impl ModuleGraph {
 
     for (entry, _) in entries {
       let mut res = vec![];
-      dfs(entry, self, &mut stack, &mut visited, &mut res, &mut cyclic);
+      self.toposort_dfs(
+        entry,
+        &mut stack,
+        &mut visited,
+        &mut res,
+        &mut cyclic,
+        &|_, _| true,
+      );
 
       result.extend(res);
     }
@@ -639,6 +616,37 @@ impl ModuleGraph {
     result.reverse();
 
     (result, cyclic)
+  }
+
+  pub fn toposort_dfs<F: Fn(&ModuleId, &&ModuleGraphEdge) -> bool>(
+    &self,
+    entry: &ModuleId,
+    stack: &mut Vec<ModuleId>,
+    visited: &mut HashSet<ModuleId>,
+    result: &mut Vec<ModuleId>,
+    cyclic: &mut Vec<Vec<ModuleId>>,
+    filter_deps: &F,
+  ) {
+    // cycle detected
+    if let Some(pos) = stack.iter().position(|m| m == entry) {
+      cyclic.push(stack.clone()[pos..].to_vec());
+      return;
+    } else if visited.contains(entry) {
+      // skip visited module
+      return;
+    }
+
+    visited.insert(entry.clone());
+    stack.push(entry.clone());
+
+    let deps = self.dependencies(entry);
+
+    for (dep, _) in deps.iter().filter(|(dep, edge)| filter_deps(dep, edge)) {
+      self.toposort_dfs(dep, stack, visited, result, cyclic, filter_deps);
+    }
+
+    // visit current entry
+    result.push(stack.pop().unwrap());
   }
 
   pub fn update_execution_order_for_modules(&mut self) -> Vec<ModuleId> {
@@ -730,6 +738,14 @@ impl ModuleGraph {
       for (dep, edge) in self.dependencies(module_id) {
         other.add_edge(module_id, &dep, edge.clone())?;
       }
+    }
+
+    for (entry, name) in &self.entries {
+      other.entries.insert(entry.clone(), name.clone());
+    }
+
+    for (entry, name) in &self.dynamic_entries {
+      other.dynamic_entries.insert(entry.clone(), name.clone());
     }
 
     Ok(())

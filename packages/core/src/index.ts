@@ -64,7 +64,6 @@ export async function build(
   const resolvedUserConfig = await resolveConfig(
     inlineConfig,
     'build',
-    'production',
     'production'
   );
   const {
@@ -116,12 +115,7 @@ export async function clean(
   rootPath: string,
   recursive = false
 ): Promise<void> {
-  const resolvedUserConfig = await resolveConfig(
-    {},
-    'build',
-    'production',
-    'production'
-  );
+  const resolvedUserConfig = await resolveConfig({}, 'build', 'production');
   const cachePath = (
     resolvedUserConfig.compilation.persistentCache as PersistentCacheConfig
   ).cacheDir;

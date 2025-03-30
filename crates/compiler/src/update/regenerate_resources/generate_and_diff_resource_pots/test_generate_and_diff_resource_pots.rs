@@ -25,7 +25,10 @@ use crate::{
   update::{
     diff_and_patch_module_graph::{diff_module_graph, patch_module_graph},
     patch_module_group_graph,
-    regenerate_resources::generate_and_diff_resource_pots::generate_and_diff_resource_pots,
+    regenerate_resources::{
+      clear_resource_pot_of_modules_in_module_groups,
+      generate_and_diff_resource_pots::generate_and_diff_resource_pots,
+    },
   },
 };
 
@@ -126,6 +129,7 @@ fn test_generate_and_diff_resource_pots() {
     generate_resource_pot_map(&context, &PluginHookContext::default()).unwrap();
   context.resource_pot_map.write().replace(resource_pot_map);
 
+  clear_resource_pot_of_modules_in_module_groups(&affected_groups, &context);
   let mut resource_pot_ids = generate_and_diff_resource_pots(
     &affected_groups,
     &diff_result,
@@ -326,6 +330,7 @@ fn test_generate_and_diff_resource_pots_one_module_changed() {
     generate_resource_pot_map(&context, &PluginHookContext::default()).unwrap();
   context.resource_pot_map.write().replace(resource_pot_map);
 
+  clear_resource_pot_of_modules_in_module_groups(&affected_groups, &context);
   let new_resource_pot_ids = generate_and_diff_resource_pots(
     &affected_groups,
     &diff_result,
@@ -336,4 +341,94 @@ fn test_generate_and_diff_resource_pots_one_module_changed() {
   .unwrap();
 
   assert!(new_resource_pot_ids.is_empty());
+}
+
+// test remove module D from module graph
+#[test]
+fn test_generate_and_diff_resource_pots_remove_module() {
+  let mut module_graph = construct_test_module_graph();
+  let mut update_module_graph = construct_test_module_graph();
+  update_module_graph.remove_module(&"D".into());
+  update_module_graph.remove_module(&"F".into());
+  update_module_graph.remove_module(&"G".into());
+
+  let module_group_graph = module_group_graph_from_entries(
+    &module_graph.entries.clone().into_keys().collect(),
+    &mut module_graph,
+  );
+
+  let config = Config::default();
+  let plugins: Vec<Arc<dyn Plugin + 'static>> = vec![Arc::new(
+    farmfe_plugin_partial_bundling::FarmPluginPartialBundling::new(&config),
+  )];
+  let context = Arc::new(CompilationContext::new(config, plugins).unwrap());
+  {
+    let mut mg = context.module_graph.write();
+    *mg = module_graph;
+  }
+
+  {
+    let mut mgg = context.module_group_graph.write();
+    *mgg = module_group_graph;
+  }
+
+  let resource_pot_map =
+    generate_resource_pot_map(&context, &PluginHookContext::default()).unwrap();
+  context.resource_pot_map.write().replace(resource_pot_map);
+
+  let mut module_graph = context.module_graph.write();
+  let mut module_group_graph = context.module_group_graph.write();
+
+  let updated_modules = vec!["A".into(), "B".into()];
+
+  let diff_result = diff_module_graph(updated_modules.clone(), &module_graph, &update_module_graph);
+
+  let removed_modules = patch_module_graph(
+    updated_modules.clone(),
+    &diff_result,
+    &mut module_graph,
+    &mut update_module_graph,
+  );
+
+  let affected_groups = patch_module_group_graph(
+    updated_modules.clone(),
+    &diff_result,
+    &removed_modules,
+    &mut module_graph,
+    &mut module_group_graph,
+  );
+
+  drop(module_graph);
+  drop(module_group_graph);
+
+  let group_id_a = ModuleGroupId::new(&"A".into(), &ModuleGroupType::Entry);
+  let group_id_b = ModuleGroupId::new(&"B".into(), &ModuleGroupType::Entry);
+  let group_id_f = ModuleGroupId::new(&"F".into(), &ModuleGroupType::DynamicImport);
+
+  assert_eq!(
+    affected_groups,
+    HashSet::from_iter([group_id_a, group_id_b, group_id_f])
+  );
+
+  clear_resource_pot_of_modules_in_module_groups(&affected_groups, &context);
+  let new_resource_pot_ids = generate_and_diff_resource_pots(
+    &affected_groups,
+    &diff_result,
+    &updated_modules,
+    &removed_modules,
+    &context,
+  )
+  .unwrap();
+
+  assert!(new_resource_pot_ids.is_empty());
+
+  let module_graph = context.module_graph.read();
+  let module_group_graph = context.module_group_graph.read();
+
+  let module_d = module_graph.module(&"D".into());
+  assert!(module_d.is_none());
+  assert!(!module_group_graph.has(&ModuleGroupId::new(
+    &"D".into(),
+    &ModuleGroupType::DynamicImport,
+  )));
 }

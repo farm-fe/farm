@@ -393,8 +393,10 @@ fn remove_resource_pot(
     }
 
     for module_id in resource_pot.modules() {
-      let module = module_graph.module_mut(module_id).unwrap();
-      module.resource_pots.remove(&resource_pot.id);
+      if module_graph.has_module(module_id) {
+        let module = module_graph.module_mut(module_id).unwrap();
+        module.resource_pots.remove(&resource_pot.id);
+      }
     }
   }
 }

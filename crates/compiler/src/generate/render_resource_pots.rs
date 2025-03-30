@@ -10,7 +10,7 @@ use farmfe_core::{
   HashMap,
 };
 use farmfe_toolkit::{
-  fs::{transform_output_entry_filename, transform_output_filename},
+  fs::{transform_output_entry_filename, transform_output_filename, TransformOutputFileNameParams},
   sourcemap::append_sourcemap_comment,
 };
 
@@ -95,19 +95,28 @@ pub fn render_resource_pots_and_generate_resources(
               .unwrap();
 
             r.name = transform_output_entry_filename(
-              context.config.output.entry_filename.clone(),
-              resource_pot.id.to_string().as_str(),
               entry_name,
-              content_with_extra_content_hash,
-              &r.resource_type.to_ext(),
+              TransformOutputFileNameParams {
+                // use entry_filename first and fallback to filename if entry_filename is not set
+                filename_config: if !context.config.output.entry_filename.is_empty() {
+                  context.config.output.entry_filename.clone()
+                } else {
+                  context.config.output.filename.clone()
+                },
+                name: &r.name,
+                name_hash: &r.name_hash,
+                ext: &r.resource_type.to_ext(),
+                bytes: content_with_extra_content_hash,
+              },
             );
           } else {
-            r.name = transform_output_filename(
-              context.config.output.filename.clone(),
-              &r.name,
-              content_with_extra_content_hash,
-              &r.resource_type.to_ext(),
-            );
+            r.name = transform_output_filename(TransformOutputFileNameParams {
+              filename_config: context.config.output.filename.clone(),
+              name: &r.name,
+              name_hash: &r.name_hash,
+              ext: &r.resource_type.to_ext(),
+              bytes: content_with_extra_content_hash,
+            });
           }
         }
       }

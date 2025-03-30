@@ -15,6 +15,7 @@
       "tsconfig.json",
       "cspell.json",
       "*.d.ts",
+      "packages/core/cjs/**",
       "packages/runtime/**",
       "packages/runtime-plugin-import-meta/**",
       "packages/create-farm/templates/**",

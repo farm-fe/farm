@@ -1,5 +1,6 @@
 use std::path::PathBuf;
 
+use farmfe_core::config::partial_bundling::PartialBundlingEnforceResourceConfig;
 use farmfe_core::config::{bool_or_obj::BoolOrObj, config_regex::ConfigRegex, Mode, TargetEnv};
 use farmfe_core::HashMap;
 
@@ -34,7 +35,13 @@ fn test(file_path_buf: PathBuf, crate_path_buf: PathBuf) {
         config.external = vec![ConfigRegex::new("(^node:.*)"), ConfigRegex::new("^fs$")];
         config.output.target_env = TargetEnv::Library;
         config.resolve.auto_external_failed_resolve = true;
-        // config.output.format = ModuleFormat::CommonJs;
+        config
+          .partial_bundling
+          .enforce_resources
+          .push(PartialBundlingEnforceResourceConfig {
+            name: "index".to_string(),
+            test: vec![ConfigRegex::new(".+")],
+          });
 
         config = try_merge_config_file(config, config_entry);
 
@@ -61,9 +68,13 @@ fn library_test() {
   use farmfe_testing_helpers::fixture;
 
   fixture!("tests/fixtures/library/**/index.ts", test);
+  // fixture!(
+  //   "tests/fixtures/library/external/conflicts/**/index.ts",
+  //   test
+  // );
 }
 
 // farmfe_testing::testing! {
-//   "tests/fixtures/library/**/index.ts",
+//   "tests/fixtures/library/external/conflicts/**/index.ts",
 //   test
 // }

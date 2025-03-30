@@ -21,13 +21,60 @@ pub mod feature_flag;
 pub mod statement;
 
 pub const EXPORT_NAMESPACE: &str = "namespace_farm_internal_";
+pub const EXPORT_EXTERNAL_ALL: &str = "external_all_farm_internal_";
+pub const EXPORT_EXTERNAL_NAMESPACE: &str = "external_namespace_farm_internal_";
 pub const EXPORT_DEFAULT: &str = "default";
+
+/// How the module export ident is defined.
+/// Where resolving this type, [Declaration] will be resolved first when expand exports.
+/// Other 3 types will be resolved when expand imports.
+#[cache_item]
+#[derive(Debug, Clone, Hash, PartialEq, Eq)]
+pub enum ModuleExportIdentType {
+  /// ```js
+  /// function m() {}
+  /// export { m as bar }; // or
+  /// export const bar = m;
+  /// ```
+  Declaration,
+
+  /// ```js
+  /// import { foo as bar } from 'module';
+  /// export { foo as default } from 'module'; // where module is a external module and we don't know how foo is defined
+  /// ```
+  External,
+
+  /// ```js
+  /// export * from './module'; // where module is a external module
+  /// ```
+  ExternalAll,
+
+  /// ```js
+  /// import * as xx from './module';
+  /// export * as xx from './module';
+  /// ```
+  ExternalNamespace,
+
+  /// ```js
+  /// import { foo as bar } from './foo.cjs';
+  /// export { foo as default } from './foo.cjs'; // foo is not external using esm  
+  /// ```
+  Unresolved,
+
+  /// namespace import/export placeholder
+  /// ```js
+  /// import * as m from './foo';
+  /// export * as m from './foo';
+  /// ```
+  VirtualNamespace,
+}
 
 #[cache_item]
 #[derive(Debug, Clone, Hash, PartialEq, Eq)]
 pub struct ModuleExportIdent {
   pub module_id: ModuleId,
   pub ident: SwcId,
+  pub export_type: ModuleExportIdentType,
 }
 
 /// Script specific meta data, for example, [swc_ecma_ast::Module]
@@ -51,7 +98,7 @@ pub struct ScriptModuleMetaData {
   /// export { foo as default } from './module';
   /// =>
   /// Map<String, SwcId> { bar -> m#1, default -> foo#1 where foo#1 is defined in './module' }
-  pub export_ident_map: HashMap<String, ModuleExportIdent>,
+  pub export_ident_map: HashMap<String, ModuleExportIdent>, // TODO add Arc for ModuleExportIdent
   pub custom: CustomMetaDataMap,
 }
 

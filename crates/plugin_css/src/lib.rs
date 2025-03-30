@@ -628,6 +628,7 @@ impl Plugin for FarmPluginCss {
 
       let resource = Resource {
         name: resource_pot.name.to_string(),
+        name_hash: resource_pot.modules_name_hash.clone(),
         bytes: css_code.into_bytes(),
         emitted: false,
         should_transform_output_filename: true,
@@ -668,7 +669,8 @@ impl Plugin for FarmPluginCss {
         let sourcemap = String::from_utf8(buf).unwrap();
         let ty = ResourceType::SourceMap(resource_pot.id.to_string());
         source_map = Some(Resource {
-          name: format!("{}.{}", resource_pot.name, ty.to_ext()),
+          name: resource_pot.name.to_string(),
+          name_hash: resource_pot.modules_name_hash.clone(),
           bytes: sourcemap.into_bytes(),
           emitted: false,
           should_transform_output_filename: true,

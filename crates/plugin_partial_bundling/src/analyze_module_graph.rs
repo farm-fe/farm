@@ -214,9 +214,7 @@ mod tests {
 
   #[test]
   fn analyze_module_graph() {
-    let plugin = FarmPluginPartialBundling {
-      partial_bundling_groups_enforce_map: Default::default(),
-    };
+    let plugin = FarmPluginPartialBundling {};
     let mut context = CompilationContext::new(Default::default(), vec![]).unwrap();
     let graph = construct_test_module_graph();
 

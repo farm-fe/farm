@@ -618,3 +618,63 @@ fn export_var_decl_pat() {
   assert_eq!(print_id(defined_idents[3]), "g#0".to_string());
   assert_eq!(print_id(defined_idents[4]), "h#0".to_string());
 }
+
+#[test]
+fn export_for_stmt() {
+  let stmt = parse_module_item(r#"for (var i = 0;i<3;i++) { console.log(i) }"#);
+
+  let AnalyzedStatementInfo {
+    import_info,
+    export_info,
+    defined_idents,
+    ..
+  } = analyze_statement_info(&0, &stmt);
+
+  assert!(import_info.is_none());
+  assert!(export_info.is_none());
+  let mut defined_idents = defined_idents.iter().collect::<Vec<_>>();
+  defined_idents.sort_by_key(|a| print_id(a));
+
+  assert_eq!(defined_idents.len(), 1);
+  assert_eq!(print_id(defined_idents[0]), "i#0".to_string());
+}
+
+#[test]
+fn for_in_stmt() {
+  let stmt = parse_module_item(r#"for (let key in obj) { console.log(key) }"#);
+
+  let AnalyzedStatementInfo {
+    import_info,
+    export_info,
+    defined_idents,
+    ..
+  } = analyze_statement_info(&0, &stmt);
+
+  assert!(import_info.is_none());
+  assert!(export_info.is_none());
+  let mut defined_idents = defined_idents.iter().collect::<Vec<_>>();
+  defined_idents.sort_by_key(|a| print_id(a));
+
+  assert_eq!(defined_idents.len(), 1);
+  assert_eq!(print_id(defined_idents[0]), "key#0".to_string());
+}
+
+#[test]
+fn for_of_stmt() {
+  let stmt = parse_module_item(r#"for (const item of array) { console.log(item) }"#);
+
+  let AnalyzedStatementInfo {
+    import_info,
+    export_info,
+    defined_idents,
+    ..
+  } = analyze_statement_info(&0, &stmt);
+
+  assert!(import_info.is_none());
+  assert!(export_info.is_none());
+  let mut defined_idents = defined_idents.iter().collect::<Vec<_>>();
+  defined_idents.sort_by_key(|a| print_id(a));
+
+  assert_eq!(defined_idents.len(), 1);
+  assert_eq!(print_id(defined_idents[0]), "item#0".to_string());
+}
