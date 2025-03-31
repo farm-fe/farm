@@ -25,7 +25,7 @@ const REGEX_PREFIX: &str = "$__farm_regex:";
 pub fn is_start_with_alias(alias_vec: &Vec<AliasItem>, path: &str) -> bool {
   alias_vec.iter().any(|alias_item| {
     match alias_item {
-      AliasItem::Complex {
+      AliasItem {
         find,
         replacement: _,
       } => match find {
@@ -60,19 +60,19 @@ mod test {
     let cwd = PathBuf::from("/root/src");
 
     let alias: Vec<AliasItem> = vec![
-      AliasItem::Complex {
+      AliasItem {
         find: StringOrRegex::String("/@".to_string()),
         replacement: cwd.to_string_lossy().to_string(),
       },
-      AliasItem::Complex {
+      AliasItem {
         find: StringOrRegex::String("@".to_string()),
         replacement: cwd.to_string_lossy().to_string(),
       },
-      AliasItem::Complex {
+      AliasItem {
         find: StringOrRegex::Regex(Regex::new("react$").unwrap()),
         replacement: cwd.to_string_lossy().to_string(),
       },
-      AliasItem::Complex {
+      AliasItem {
         find: StringOrRegex::Regex(Regex::new("^/(utils)$").unwrap()),
         replacement: cwd.join("$1").to_string_lossy().to_string(),
       },

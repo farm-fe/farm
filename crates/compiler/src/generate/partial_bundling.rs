@@ -261,7 +261,7 @@ pub fn dynamic_entry_module_group_to_resource_pot(
     .dynamic_entries
     .get(&module_group.entry_module_id)
   {
-    let mut resource_pot = ResourcePot::new(name.to_string(), ResourcePotType::DynamicEntryJs);
+    let mut resource_pot = ResourcePot::new(name, "", ResourcePotType::DynamicEntryJs);
 
     resource_pot.entry_module = Some(module_group.entry_module_id.clone());
     resource_pot.module_groups = HashSet::from_iter([module_group.id.clone()]);

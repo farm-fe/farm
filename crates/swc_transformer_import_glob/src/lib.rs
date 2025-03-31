@@ -15,13 +15,10 @@
 #![feature(box_patterns)]
 
 use std::path::Component;
-use std::path::Path;
 use std::path::PathBuf;
 
 use farmfe_core::config::AliasItem;
-use farmfe_core::config::StringOrRegex;
 use farmfe_core::module::ModuleId;
-use farmfe_core::module::VIRTUAL_MODULE_PREFIX;
 use farmfe_core::regex;
 use farmfe_core::relative_path::RelativePath;
 use farmfe_core::swc_common::SyntaxContext;
@@ -57,7 +54,7 @@ pub fn transform_import_meta_glob<R: ImportMetaGlobResolver>(
   root: String,
   importer: &ModuleId,
   cur_dir: String,
-  alias: &AliasMap,
+  alias: &Vec<AliasItem>,
   resolver: R,
 ) -> farmfe_core::error::Result<()> {
   let mut visitor: ImportGlobVisitor<'_, _> =
@@ -268,7 +265,7 @@ impl<'a, R: ImportMetaGlobResolver> ImportGlobVisitor<'a, R> {
     importer: &'a ModuleId,
     root: String,
     cur_dir: String,
-    alias: &'a AliasMap,
+    alias: &'a Vec<AliasItem>,
     resolver: R,
   ) -> Self {
     Self {
@@ -279,7 +276,7 @@ impl<'a, R: ImportMetaGlobResolver> ImportGlobVisitor<'a, R> {
       errors: vec![],
       alias,
       resolver,
-      resolved_cache: HashMap::new(),
+      resolved_cache: HashMap::default(),
     }
   }
 
@@ -318,8 +315,6 @@ impl<'a, R: ImportMetaGlobResolver> ImportGlobVisitor<'a, R> {
   }
 
   fn try_alias(&mut self, source: &str) -> String {
-    let alias_map = &self.alias;
-
     let (source, negative) = source
       .strip_prefix('!')
       .map(|suffix| (suffix.to_string(), true))
@@ -335,14 +330,35 @@ impl<'a, R: ImportMetaGlobResolver> ImportGlobVisitor<'a, R> {
 
     let mut result = source.to_string();
     // sort the alias by length, so that the longest alias will be matched first
-    let mut alias_list: Vec<_> = alias_map.keys().collect();
+    let mut alias_list: Vec<_> = self.alias.iter().map(|a| a).collect();
 
-    alias_list.sort_by_key(|b| std::cmp::Reverse(b.len()));
+    alias_list.sort_by_key(|item| {
+      let key = match &item.find {
+        farmfe_core::config::StringOrRegex::String(s) => s,
+        farmfe_core::config::StringOrRegex::Regex(regex) => regex.as_str(),
+      };
+      std::cmp::Reverse(key.len())
+    });
 
-    for alias in alias_list {
-      let replaced = alias_map.get(alias).unwrap();
+    for alias_item in alias_list {
+      let (alias, replaced) = (
+        match &alias_item.find {
+          farmfe_core::config::StringOrRegex::String(s) => s,
+          farmfe_core::config::StringOrRegex::Regex(regex) => {
+            if regex.is_match(&source) {
+              let replaced = regex
+                .replace(&source, alias_item.replacement.as_str())
+                .to_string();
+              result = replaced;
+              break;
+            }
+            regex.as_str()
+          }
+        },
+        &alias_item.replacement,
+      );
 
-      // try regex alias first
+      // try regex alias first. Note that this is only for compatibility, use StringOrRegex::Regex
       if let Some(alias) = alias.strip_prefix(REGEX_PREFIX) {
         let regex = regex::Regex::new(alias).unwrap();
         if regex.is_match(&source) {
@@ -469,12 +485,7 @@ impl<'a, R: ImportMetaGlobResolver> ImportGlobVisitor<'a, R> {
                 p.as_ref().is_ok_and(|f| !f.path().is_dir())
               }
             })
-            .map(|p| {
-              (
-                source.clone(),
-                p.map(|p| p.path().to_string_lossy().to_string()),
-              )
-            })
+            .map(|p| (source, p.map(|p| p.path().to_string_lossy().to_string())))
             .collect::<Vec<_>>();
           paths.push((negative, p));
         }

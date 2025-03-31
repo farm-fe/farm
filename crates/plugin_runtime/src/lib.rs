@@ -57,7 +57,7 @@ impl Plugin for FarmPluginRuntime {
 
   fn config(&self, config: &mut Config) -> farmfe_core::error::Result<Option<()>> {
     if !config.runtime.swc_helpers_path.is_empty() {
-      config.resolve.alias.push(AliasItem::Complex {
+      config.resolve.alias.push(AliasItem {
         find: StringOrRegex::String("@swc/helpers".to_string()),
         replacement: config.runtime.swc_helpers_path.clone(),
       });

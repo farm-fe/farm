@@ -42,14 +42,9 @@ use asset::AssetsConfig;
 pub use output::*;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-pub enum AliasItem {
-  // TODO keep hashmap for compatibility simple alias to string & string hashmap
-  // Simple(String),
-  Complex {
-    find: StringOrRegex,
-    replacement: String,
-  },
+pub struct AliasItem {
+  pub find: StringOrRegex,
+  pub replacement: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -260,55 +255,6 @@ impl Default for CssConfig {
 pub struct ScriptParserConfig {
   pub es_config: EsConfig,
   pub ts_config: TsConfig,
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
-#[serde(untagged)]
-pub enum AliasConfig {
-  // TODO keep hashmap for compatibility
-  Map(HashMap<String, String>),
-  Array(Vec<AliasItem>),
-}
-
-impl AliasConfig {
-  pub fn insert(&mut self, key: String, value: String) {
-    match self {
-      AliasConfig::Map(map) => {
-        map.insert(key, value);
-      }
-      AliasConfig::Array(array) => {
-        array.push(AliasItem::Complex {
-          find: StringOrRegex::String(key),
-          replacement: value,
-        });
-      }
-    }
-  }
-}
-
-impl Default for AliasConfig {
-  fn default() -> Self {
-    AliasConfig::Map(HashMap::default())
-  }
-}
-
-impl ResolveConfig {
-  pub fn format_alias(&mut self, alias_config: AliasConfig) {
-    match alias_config {
-      AliasConfig::Map(map) => {
-        self.alias = map
-          .into_iter()
-          .map(|(find, replacement)| AliasItem::Complex {
-            find: StringOrRegex::String(find),
-            replacement,
-          })
-          .collect();
-      }
-      AliasConfig::Array(array) => {
-        self.alias = array;
-      }
-    }
-  }
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

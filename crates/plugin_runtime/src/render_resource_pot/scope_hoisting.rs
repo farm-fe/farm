@@ -208,7 +208,7 @@ mod tests {
     let mut module_graph = construct_test_module_graph();
     module_graph.update_execution_order_for_modules();
 
-    let mut resource_pot = ResourcePot::new("test".to_string(), ResourcePotType::Js);
+    let mut resource_pot = ResourcePot::new("test", "any", ResourcePotType::Js);
 
     for module in module_graph.modules() {
       resource_pot.add_module(module.id.clone());
