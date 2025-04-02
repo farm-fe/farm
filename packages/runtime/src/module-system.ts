@@ -77,11 +77,11 @@ const __farm_global_this__: any = $__farm_global_this__$ = {};
 if (__FARM_RUNTIME_TARGET_ENV__ === 'browser') {
   // polyfill require when running in browser
   const __global_this__: any = typeof window !== 'undefined' ? window : {};
-  __global_this__.require ||= farmRequire;
+  __global_this__.require = __global_this__.require || farmRequire;
 }
 if (__FARM_RUNTIME_TARGET_ENV__ === 'node') {
   const __global_this__: any = typeof global !== 'undefined' ? global : {};
-  __global_this__.require ||= farmRequire;
+  __global_this__.require = __global_this__.require || farmRequire;
 }
 
 // all modules registered
@@ -149,6 +149,13 @@ export function farmRequire(id: string): any {
       if (res) {
         return res
       }
+    }
+
+    // fallback to require if target env is node
+    if (__FARM_RUNTIME_TARGET_ENV__ === 'node') {
+      try {
+        return require(id);
+      } catch (e) {}
     }
 
     console.debug(`[Farm] Module "${id}" is not registered`);

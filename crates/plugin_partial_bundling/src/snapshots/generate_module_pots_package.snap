@@ -1,6 +1,6 @@
 ---
 source: crates/plugin_partial_bundling/src/generate_module_pots.rs
-input_file: crates/plugin_partial_bundling/src/generate_module_pots.rs
+input_file: crates/testing_helpers/src/lib.rs
 ---
 (
     ModulePot {
@@ -10,7 +10,6 @@ input_file: crates/plugin_partial_bundling/src/generate_module_pots.rs
         module_type: Js,
         immutable: true,
         execution_order: 1,
-        enforce: false,
         modules: {},
     },
     [

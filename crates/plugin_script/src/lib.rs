@@ -18,22 +18,25 @@ use farmfe_core::{
     GeneratedResource, Plugin, PluginAnalyzeDepsHookParam, PluginFinalizeModuleHookParam,
     PluginGenerateResourcesHookResult, PluginHookContext, PluginLoadHookParam,
     PluginLoadHookResult, PluginParseHookParam, PluginProcessModuleHookParam,
+    PluginResolveHookParam, ResolveKind,
   },
   resource::{
     meta_data::{js::JsResourcePotMetaData, ResourcePotMetaData},
-    resource_pot::ResourcePot,
+    resource_pot::{ResourcePot, ResourcePotType},
     Resource, ResourceOrigin, ResourceType,
   },
   swc_common::{comments::SingleThreadedComments, Globals, Mark, SourceMap, GLOBALS},
   swc_ecma_ast::{EsVersion, Module as SwcModule},
 };
-use farmfe_swc_transformer_import_glob::transform_import_meta_glob;
+use farmfe_swc_transformer_import_glob::{
+  transform_import_meta_glob, ImportMetaGlobResolver, ImportMetaGlobResolverParams,
+};
 use farmfe_toolkit::{
   fs::read_file_utf8,
   script::{
-    codegen_module, module_type_from_id, parse_module, set_module_system_for_module_meta,
-    swc_try_with::try_with, syntax_from_module_type, CodeGenCommentsConfig,
-    ParseScriptModuleResult,
+    codegen_module, concatenate_modules::concatenate_modules_ast, module_type_from_id,
+    parse_module, set_module_system_for_module_meta, swc_try_with::try_with,
+    syntax_from_module_type, CodeGenCommentsConfig, ParseScriptModuleResult,
   },
   sourcemap::{
     build_sourcemap, load_source_original_sourcemap, trace_module_sourcemap,
@@ -199,6 +202,9 @@ impl Plugin for FarmPluginScript {
       let script = param.meta.as_script_mut();
       let comments: SingleThreadedComments = script.take_comments().into();
       let ast = &mut script.ast;
+
+      transform_url_with_import_meta_url(ast, &comments);
+
       let resolved_path = param.module_id.resolved_path(&context.config.root);
       let cur_dir = if resolved_path.starts_with(VIRTUAL_MODULE_PREFIX) {
         context.config.root.clone()
@@ -210,13 +216,15 @@ impl Plugin for FarmPluginScript {
           .to_string()
       };
 
-      transform_url_with_import_meta_url(ast, &comments);
-
       transform_import_meta_glob(
         ast,
         context.config.root.clone(),
+        param.module_id,
         cur_dir,
         &context.config.resolve.alias,
+        ImportMetaGlobResolverImpl {
+          context: context.clone(),
+        },
       )?;
       script.set_comments(comments.into())
     }
@@ -297,6 +305,44 @@ impl Plugin for FarmPluginScript {
     Ok(Some(()))
   }
 
+  fn render_resource_pot(
+    &self,
+    resource_pot: &ResourcePot,
+    context: &Arc<CompilationContext>,
+    _hook_context: &PluginHookContext,
+  ) -> Result<Option<ResourcePotMetaData>> {
+    // render dynamic entry resource pot like farm runtime or web worker
+    if resource_pot.resource_pot_type == ResourcePotType::DynamicEntryJs {
+      let module_graph = context.module_graph.read();
+      let result = concatenate_modules_ast(
+        resource_pot.entry_module.as_ref().unwrap(),
+        &resource_pot.modules,
+        &module_graph,
+        context,
+      )
+      .map_err(|err| {
+        CompilationError::GenericError(format!("failed to concatenate runtime modules: {}", err))
+      })?;
+
+      context
+        .meta
+        .set_resource_pot_source_map(&resource_pot.id, result.source_map);
+
+      return Ok(Some(ResourcePotMetaData::Js(JsResourcePotMetaData {
+        ast: result.ast,
+        external_modules: result
+          .external_modules
+          .into_iter()
+          .map(|(_, id)| id.to_string())
+          .collect(),
+        rendered_modules: result.module_ids,
+        comments: result.comments,
+      })));
+    }
+
+    Ok(None)
+  }
+
   fn generate_resources(
     &self,
     resource_pot: &mut ResourcePot,
@@ -321,7 +367,8 @@ impl Plugin for FarmPluginScript {
       )?;
 
       let create_resource = |content: String, ty: ResourceType| Resource {
-        name: resource_pot.id.to_string(),
+        name: resource_pot.name.to_string(),
+        name_hash: resource_pot.modules_name_hash.to_string(),
         bytes: content.into_bytes(),
         emitted: false,
         should_transform_output_filename: true,
@@ -423,4 +470,27 @@ pub fn generate_code_and_sourcemap(
   let code = String::from_utf8(code_bytes).unwrap();
 
   Ok((code, map))
+}
+struct ImportMetaGlobResolverImpl {
+  context: Arc<CompilationContext>,
+}
+
+impl ImportMetaGlobResolver for ImportMetaGlobResolverImpl {
+  fn resolve(&self, params: ImportMetaGlobResolverParams) -> Option<String> {
+    self
+      .context
+      .plugin_driver
+      .resolve(
+        &PluginResolveHookParam {
+          source: params.source,
+          importer: Some(params.importer),
+          kind: ResolveKind::Import,
+        },
+        &self.context,
+        &Default::default(),
+      )
+      .ok()
+      .flatten()
+      .map(|v| v.resolved_path)
+  }
 }

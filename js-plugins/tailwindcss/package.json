@@ -1,13 +1,13 @@
 {
   "name": "@farmfe/js-plugin-tailwindcss",
-  "version": "0.0.1",
+  "version": "0.0.10",
   "description": "support tailwindcss for farm.",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "scripts": {
     "build": "npx farm build",
-    "watch": "npx farm watch"
+    "dev": "npx farm watch"
   },
   "keywords": [
     "farm",

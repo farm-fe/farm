@@ -7,7 +7,12 @@ use farmfe_core::HashMap;
 use std::collections::HashSet;
 use std::fs::{copy, create_dir_all, read_dir, File};
 use std::io::{BufWriter, Write};
-use std::path::{Path, PathBuf};
+use std::path::Path;
+
+pub type SplitResources<'a> = (
+  Vec<(&'a String, &'a Resource)>,
+  Vec<(&'a String, &'a Resource)>,
+);
 
 // default set to 8192 Memory allocation threshold issues Ensure that the code runs perfectly
 // TODO may be different for different platforms threshold will be different linux / macos / windows
@@ -36,16 +41,18 @@ impl Compiler {
       let resources_map = self.context.resources_map.lock();
 
       // create output directories for all resources
-      self.create_output_directories(&resources_map, output_dir);
+      self
+        .create_output_directories(&resources_map, output_dir)
+        .unwrap();
 
       let (small_files, large_files) = self.split_resources(&resources_map);
 
-      self.write_large_files(&large_files, output_dir);
+      self.write_large_files(&large_files, output_dir).unwrap();
 
-      self.write_small_files(&small_files, output_dir);
+      self.write_small_files(&small_files, output_dir).unwrap();
     }
 
-    self.copy_public_dir(output_dir);
+    self.copy_public_dir(output_dir).unwrap();
 
     Ok(())
   }
@@ -71,7 +78,7 @@ impl Compiler {
       );
     }
 
-    self.copy_dir(public_dir_path, output_dir_path);
+    Self::copy_dir(public_dir_path, output_dir_path);
 
     Ok(())
   }
@@ -92,7 +99,7 @@ impl Compiler {
     true
   }
 
-  fn copy_dir(&self, from: &Path, to: &Path) {
+  fn copy_dir(from: &Path, to: &Path) {
     if !from.exists() {
       return;
     }
@@ -108,7 +115,7 @@ impl Compiler {
       let to_path = to.join(entry.file_name());
 
       if file_type.is_dir() {
-        self.copy_dir(&entry.path(), &to_path);
+        Self::copy_dir(&entry.path(), &to_path);
       } else {
         copy(entry.path(), to_path).unwrap();
       }
@@ -139,10 +146,7 @@ impl Compiler {
   fn split_resources<'a>(
     &self,
     resources_map: &'a HashMap<String, Resource>,
-  ) -> (
-    Vec<(&'a String, &'a Resource)>,
-    Vec<(&'a String, &'a Resource)>,
-  ) {
+  ) -> SplitResources<'a> {
     let mut small_files = Vec::new();
     let mut large_files = Vec::new();
 

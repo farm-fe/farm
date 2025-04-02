@@ -194,7 +194,8 @@ impl SourceMapGenConfig for FarmSwcSourceMapConfig {
   }
 
   fn emit_columns(&self, _f: &FileName) -> bool {
-    true
+    // TODO: make it configurable
+    false
   }
 }
 

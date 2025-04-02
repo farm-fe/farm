@@ -67,6 +67,13 @@
 
 - Updated dependencies [a82a5b2]
   - @farmfe/core@2.0.0-nightly-20241022014521
+## 3.13.0
+
+### Patch Changes
+
+- Updated dependencies [25f3d3f6]
+  - @farmfe/core@1.7.0
+
 ## 3.12.0
 
 ### Patch Changes

@@ -45,7 +45,8 @@ function hookPluginsSerial(
   ...args: any[]
 ): // ): Promise<void> {
 void {
-  for (const plugin of RUNTIME_PLUGINS) {
+  for (const pluginIdx in RUNTIME_PLUGINS) {
+    const plugin = RUNTIME_PLUGINS[pluginIdx];
     const hook = plugin[hookName];
 
     if (hook) {
@@ -60,7 +61,8 @@ function hookPluginsBail<T = any>(
   ...args: any[]
 ): // ): Promise<T> {
 T | undefined {
-  for (const plugin of RUNTIME_PLUGINS) {
+  for (const pluginIdx in RUNTIME_PLUGINS) {
+    const plugin = RUNTIME_PLUGINS[pluginIdx];
     const hook = plugin[hookName];
 
     if (hook) {

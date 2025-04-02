@@ -265,6 +265,7 @@ impl Plugin for FarmPluginHtml {
         resources: vec![GeneratedResource {
           resource: Resource {
             name: resource_pot.id.to_string(),
+            name_hash: "".to_string(),
             bytes: vec![],
             emitted: false,
             resource_type: ResourceType::Html,

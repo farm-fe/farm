@@ -27,7 +27,7 @@ input_file: crates/testing_helpers/src/lib.rs
             query_string: "",
         },
         resource_pots: {
-            "EI_custom(\"__farm_unknown\")",
+            "EI_dynamic_entry_js",
             "test_js",
         },
     },
@@ -37,7 +37,7 @@ input_file: crates/testing_helpers/src/lib.rs
             query_string: "",
         },
         resource_pots: {
-            "test_custom(\"__farm_unknown\")",
+            "test___farm_unknown",
         },
     },
     ModuleResourcePotSnapshotItem {
@@ -46,7 +46,7 @@ input_file: crates/testing_helpers/src/lib.rs
             query_string: "",
         },
         resource_pots: {
-            "EI_custom(\"__farm_unknown\")",
+            "EI_dynamic_entry_js",
         },
     },
 ]

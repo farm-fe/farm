@@ -4,7 +4,6 @@ use std::{
   sync::Arc,
 };
 
-use farmfe_core::{config::{AliasItem, StringOrRegex}, HashMap};
 use farmfe_core::regex;
 use farmfe_core::{
   common::PackageJsonInfo,
@@ -14,6 +13,10 @@ use farmfe_core::{
   plugin::{PluginResolveHookResult, ResolveKind},
   relative_path::RelativePath,
   serde_json::{from_str, Map, Value},
+};
+use farmfe_core::{
+  config::{AliasItem, StringOrRegex},
+  HashMap,
 };
 
 use farmfe_toolkit::resolve::{follow_symlinks, load_package_json, package_json_loader::Options};
@@ -463,53 +466,51 @@ impl Resolver {
 
     for alias_item in &context.config.resolve.alias {
       let mut result = None;
+      let replacement = &alias_item.replacement;
 
-      match alias_item {
-        AliasItem::Complex { find, replacement } => match find {
-          StringOrRegex::Regex(regex) => {
-            if regex.is_match(source) {
-              let replaced = regex.replace(source, replacement.as_str()).to_string();
-              result = self.resolve(&replaced, base_dir.clone(), kind, options, context);
-            }
+      match &alias_item.find {
+        StringOrRegex::Regex(regex) => {
+          if regex.is_match(source) {
+            let replaced = regex.replace(source, replacement.as_str()).to_string();
+            result = self.resolve(&replaced, base_dir.clone(), kind, options, context);
           }
-          StringOrRegex::String(alias) => {
-            if let Some(regex_str) = alias.strip_prefix(REGEX_PREFIX) {
-              if let Ok(regex) = regex::Regex::new(regex_str) {
-                if regex.is_match(source) {
-                  let replaced = regex.replace(source, replacement.as_str()).to_string();
-                  result = self.resolve(&replaced, base_dir.clone(), kind, options, context);
-                }
-              }
-            } else if alias.ends_with('$') && source == alias.trim_end_matches('$') {
-              result = self.resolve(replacement, base_dir.clone(), kind, options, context);
-            } else if !alias.ends_with('$') && source.starts_with(alias) {
-              let source_left = RelativePath::new(source.trim_start_matches(alias));
-              let new_source = source_left
-                .to_logical_path(replacement)
-                .to_string_lossy()
-                .to_string();
-
-              if Path::new(&new_source).is_absolute() && !Path::new(&new_source).is_relative() {
-                result = self.resolve(&new_source, base_dir.clone(), kind, options, context);
-              }
-
-              if result.is_none() {
-                let (res, _) = self._try_node_modules_internal(
-                  new_source.as_str(),
-                  base_dir.clone(),
-                  kind,
-                  options,
-                  context,
-                );
-                if let Some(resolve_result) = res {
-                  let resolved_path = resolve_result.resolved_path;
-                  result = self.resolve(&resolved_path, base_dir.clone(), kind, options, context);
-                }
+        }
+        StringOrRegex::String(alias) => {
+          if let Some(regex_str) = alias.strip_prefix(REGEX_PREFIX) {
+            if let Ok(regex) = regex::Regex::new(regex_str) {
+              if regex.is_match(source) {
+                let replaced = regex.replace(source, replacement.as_str()).to_string();
+                result = self.resolve(&replaced, base_dir.clone(), kind, options, context);
               }
             }
+          } else if alias.ends_with('$') && source == alias.trim_end_matches('$') {
+            result = self.resolve(replacement, base_dir.clone(), kind, options, context);
+          } else if !alias.ends_with('$') && source.starts_with(alias) {
+            let source_left = RelativePath::new(source.trim_start_matches(alias));
+            let new_source = source_left
+              .to_logical_path(replacement)
+              .to_string_lossy()
+              .to_string();
+
+            if Path::new(&new_source).is_absolute() && !Path::new(&new_source).is_relative() {
+              result = self.resolve(&new_source, base_dir.clone(), kind, options, context);
+            }
+
+            if result.is_none() {
+              let (res, _) = self._try_node_modules_internal(
+                new_source.as_str(),
+                base_dir.clone(),
+                kind,
+                options,
+                context,
+              );
+              if let Some(resolve_result) = res {
+                let resolved_path = resolve_result.resolved_path;
+                result = self.resolve(&resolved_path, base_dir.clone(), kind, options, context);
+              }
+            }
           }
-        },
-        // AliasItem::Simple(_) => {}
+        }
       }
 
       if result.is_some() {

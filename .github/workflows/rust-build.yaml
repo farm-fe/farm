@@ -1,6 +1,10 @@
 name: Building Rust Binding And Upload Artifacts
 on: workflow_call
 
+concurrency:
+  group: build-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
     name: Build and Upload Artifacts - ${{ matrix.settings.abi }}
@@ -215,7 +219,7 @@ jobs:
           shell: bash
           run: |
             sudo pkg install -y -f curl node libnghttp2 npm
-            sudo npm install -g pnpm
+            sudo npm install -g pnpm@9.1.0
             curl https://sh.rustup.rs -sSf --output rustup.sh
             sh rustup.sh -y --profile minimal --default-toolchain beta
             source "$HOME/.cargo/env"

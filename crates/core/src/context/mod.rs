@@ -138,6 +138,7 @@ impl CompilationContext {
       params.name.clone(),
       Resource {
         name: params.name,
+        name_hash: "".to_string(),
         bytes: params.content,
         emitted: false,
         should_transform_output_filename: true,

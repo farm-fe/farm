@@ -120,7 +120,16 @@ const App = () => {
         </div>
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default App;
+const AnimationCard = ({ title, component }: { title: string, component: React.ReactNode }) => (
+  <div className="bg-white p-6 rounded-lg shadow-md">
+    <h2 className="text-xl font-semibold mb-4">{title}</h2>
+    <div className="flex items-center justify-center h-40">
+      {component}
+    </div>
+  </div>
+)
+
+

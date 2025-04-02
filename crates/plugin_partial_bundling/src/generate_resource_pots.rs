@@ -26,7 +26,6 @@ pub fn generate_resource_pots(
   module_graph: &ModuleGraph,
   module_group_graph: &ModuleGroupGraph,
   config: &Config,
-  groups_enforce_map: &HashMap<String, bool>,
 ) -> Vec<ResourcePot> {
   let mut resource_pots = vec![];
   let mut handled_module_group_buckets = HashSet::default();
@@ -40,6 +39,7 @@ pub fn generate_resource_pots(
       &module_graph,
       &module_group_graph,
     );
+
     used_resource_pot_names.insert(base_resource_pot_name.clone());
 
     let mut module_group_module_pots = ModuleGroupModulePots::new(module_group_id.clone());
@@ -59,7 +59,6 @@ pub fn generate_resource_pots(
         module_graph,
         config,
         module_group_bucket.resource_type.clone(),
-        groups_enforce_map,
       );
 
       module_group_module_pots.add_module_pots(module_bucket_id.clone(), module_pots);
@@ -128,8 +127,8 @@ fn generate_resource_pot_name(
 
 #[cfg(test)]
 mod tests {
-  use farmfe_core::module::module_group::{self, ModuleGroup, ModuleGroupGraph, ModuleGroupType};
-  use farmfe_core::module::{module_graph::ModuleGraph, module_group::ModuleGroupId, Module};
+  use farmfe_core::module::module_group::{ModuleGroup, ModuleGroupGraph, ModuleGroupType};
+  use farmfe_core::module::{module_graph::ModuleGraph, Module};
   use farmfe_core::HashSet;
 
   use crate::generate_resource_pots::generate_resource_pot_name;

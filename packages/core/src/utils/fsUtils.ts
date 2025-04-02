@@ -1,8 +1,11 @@
 import { exec } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
+
 import fse from 'fs-extra';
-import { ResolvedUserConfig, normalizePublicDir } from '../config/index.js';
+
+import { ResolvedUserConfig } from '../config/index.js';
+import { normalizePublicDir } from '../config/normalize-config/index.js';
 import { colors } from './color.js';
 import { isWindows, normalizePath, tryStatSync } from './share.js';
 

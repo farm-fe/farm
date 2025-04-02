@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 
 use farmfe_core::module::ModuleId;
-use farmfe_core::{HashMap, HashSet};
+use farmfe_core::HashSet;
 use farmfe_toolkit::hash::sha256;
 
 pub fn try_get_filename(path: PathBuf) -> String {
@@ -21,12 +21,8 @@ pub fn get_sorted_module_ids_str(module_ids: &HashSet<ModuleId>) -> String {
     .join("_")
 }
 
-pub fn hash_module_ids(module_ids: &HashSet<ModuleId>) -> String {
+pub fn hash_module_ids(module_ids: &HashSet<ModuleId>, len: usize) -> String {
   let str = get_sorted_module_ids_str(module_ids);
 
-  sha256(&str.into_bytes(), 4)
-}
-
-pub fn group_is_enforce(group_name: &str, groups_enforce_map: &HashMap<String, bool>) -> bool {
-  groups_enforce_map.get(group_name).cloned().unwrap_or(false)
+  sha256(&str.into_bytes(), len)
 }

@@ -10,6 +10,7 @@ use farmfe_core::{
 };
 use farmfe_core::{HashMap, HashSet};
 
+use crate::generate_module_pots::ModulePotSourceType;
 use crate::{module_pot::ModulePot, utils::hash_module_ids};
 
 #[derive(Debug, Clone)]
@@ -30,10 +31,6 @@ impl ModuleGroupModulePots {
   pub fn add_module_pots(&mut self, module_bucket_name: String, module_pot: Vec<ModulePot>) {
     self.module_pots.insert(module_bucket_name, module_pot);
   }
-
-  // pub fn get_size(&self) -> usize {
-  //   self.get_immutable_size() + self.get_mutable_size()
-  // }
 
   pub fn get_mutable_size(&self) -> usize {
     self
@@ -99,36 +96,21 @@ impl<'a> CurrentGeneration<'a> {
   pub fn immutable(&self) -> bool {
     self.module_pots[0].immutable
   }
-
-  pub fn name(&self) -> Option<String> {
-    let mut set = self.module_pots.iter().collect::<Vec<_>>();
-
-    set.sort_by(|a, b| a.id.cmp(&b.id));
-
-    set.iter().find_map(|i| i.name.clone())
-  }
 }
 
 fn create_resource_by_meta<M: Into<ResourcePotType>>(
-  id: String,
+  name: String,
   modules: &HashSet<ModuleId>,
   module_type: M,
-  is_with_hash: bool,
   immutable: bool,
-  name: String,
 ) -> ResourcePot {
-  let id = format!("{}_{}", id, hash_module_ids(modules));
-  let resource_name = if is_with_hash {
-    format!("{}_{}", name, hash_module_ids(modules))
-  } else {
-    name
-  };
+  let modules_name_hash = hash_module_ids(modules, 32);
 
   let resource_pot_type = module_type.into();
-  let mut resource_pot = ResourcePot::new(resource_name, resource_pot_type);
+  let mut resource_pot = ResourcePot::new(&name, &modules_name_hash, resource_pot_type);
 
-  resource_pot.set_resource_pot_id(id);
   resource_pot.immutable = immutable;
+  resource_pot.modules_name_hash = modules_name_hash;
 
   for module_id in modules {
     resource_pot.add_module(module_id.clone());
@@ -145,8 +127,6 @@ pub fn merge_module_pots(
   base_resource_pot_name: &str,
   module_graph: &ModuleGraph,
 ) -> Vec<ResourcePot> {
-  let is_with_hash = !(config.output.filename.contains("[hash]")
-    || config.output.filename.contains("[contentHash]"));
   let config = &config.partial_bundling;
   // target_concurrent_requests = 0 means no limit
   let target_concurrent_requests = if config.target_concurrent_requests == 0 {
@@ -177,7 +157,6 @@ pub fn merge_module_pots(
     mutable_target_size,
     immutable_target_size,
     base_resource_pot_name,
-    is_with_hash,
   );
 
   let mut resource_pots_size_mp = HashMap::default();
@@ -196,7 +175,6 @@ pub fn merge_module_pots(
       &resource_pots_size_mp,
       config.target_min_size,
       base_resource_pot_name,
-      is_with_hash,
     );
   }
 
@@ -206,7 +184,6 @@ pub fn merge_module_pots(
       &resource_pots_size_mp,
       target_concurrent_requests,
       base_resource_pot_name,
-      is_with_hash,
     );
   }
 
@@ -219,7 +196,6 @@ fn merge_resource_pots_by_buckets(
   mutable_target_size: usize,
   immutable_target_size: usize,
   base_resource_pot_name: &str,
-  is_with_hash: bool,
 ) -> Vec<ResourcePot> {
   let mut final_resource_pots = vec![];
 
@@ -237,21 +213,14 @@ fn merge_resource_pots_by_buckets(
       mutable_target_size
     };
 
-    let is_same_groups = module_pots.iter().all(|m| m.name == module_pots[0].name);
-
     for module_pot in module_pots {
-      if module_pot.enforce && !is_same_groups {
+      // always create a new resource pot for groups config
+      if matches!(module_pot.source_type, ModulePotSourceType::GroupsConfig) {
         resource_pots.push(create_resource_by_meta(
-          base_resource_pot_name.to_string(),
+          module_pot.name.clone(),
           &module_pot.modules,
           module_pot.module_type.clone(),
-          is_with_hash,
           module_pot.immutable,
-          if let Some(ref name) = module_pot.name {
-            name.clone()
-          } else {
-            base_resource_pot_name.to_string()
-          },
         ));
         continue;
       }
@@ -275,13 +244,7 @@ fn merge_resource_pots_by_buckets(
           base_resource_pot_name.to_string(),
           &modules,
           current_generation.module_type(),
-          is_with_hash,
           current_generation.immutable(),
-          if let Some(name) = current_generation.name() {
-            name
-          } else {
-            base_resource_pot_name.to_string()
-          },
         ));
       }
     }
@@ -295,11 +258,7 @@ fn merge_resource_pots_by_buckets(
           base_resource_pot_name.to_string(),
           &modules,
           current_generation.module_type(),
-          is_with_hash,
           current_generation.immutable(),
-          current_generation
-            .name()
-            .unwrap_or(base_resource_pot_name.to_string()),
         ));
       }
     }
@@ -325,7 +284,6 @@ fn handle_enforce_target_min_size(
   resource_pots_size_mp: &HashMap<String, usize>,
   target_min_size: usize,
   base_resource_pot_name: &str,
-  is_with_hash: bool,
 ) -> Vec<ResourcePot> {
   let mut small_resource_pots_to_merge = vec![];
   let mut resource_pot_map = resource_pots
@@ -376,6 +334,7 @@ fn handle_enforce_target_min_size(
           resource_pot.immutable,
         ))
         .unwrap();
+
       // remove the merged resource pots and add the new merged resource pot
       let merged_resource_pot = create_merged_resource_pot(
         &merged_resource_pot_ids,
@@ -383,7 +342,6 @@ fn handle_enforce_target_min_size(
         resource_pot.immutable,
         base_resource_pot_name,
         &mut resource_pot_map,
-        is_with_hash,
       );
 
       resource_pot_map.insert(merged_resource_pot.id.clone(), merged_resource_pot);
@@ -400,7 +358,7 @@ fn handle_enforce_target_min_size(
   // merge resource pots left into the first matched resource pot
   if !merged_resource_pot_map.is_empty() {
     for ((ty, immutable), (_, merged_resource_pot_ids)) in merged_resource_pot_map {
-      let mut found = false;
+      let mut found = None;
 
       for final_resource_pot_id in &final_resource_pot_ids {
         let (f_resource_pot_type, f_immutable) = {
@@ -426,25 +384,36 @@ fn handle_enforce_target_min_size(
             let removed_resource_pot = resource_pot_map.remove(resource_pot_id).unwrap();
             let final_resource_pot = resource_pot_map.get_mut(final_resource_pot_id).unwrap();
 
-            for module_id in removed_resource_pot.modules() {
-              final_resource_pot.add_module(module_id.clone());
+            for module_id in removed_resource_pot.modules {
+              final_resource_pot.add_module(module_id);
             }
           }
 
-          found = true;
+          found = Some(final_resource_pot_id.clone());
           break;
         }
       }
 
+      if let Some(final_resource_pot_id) = found.as_ref() {
+        // update id of final resource pot
+        let mut final_resource_pot = resource_pot_map.remove(final_resource_pot_id).unwrap();
+        final_resource_pot.set_resource_pot_id(format!(
+          "{}_{}",
+          base_resource_pot_name,
+          hash_module_ids(&final_resource_pot.modules, 32)
+        ));
+        final_resource_pot_ids.push(final_resource_pot.id.clone());
+        resource_pot_map.insert(final_resource_pot.id.clone(), final_resource_pot);
+      }
+
       // total size < target_min_size, just create new resource pot
-      if !found {
+      if found.is_none() {
         let merged_resource_pot = create_merged_resource_pot(
           &merged_resource_pot_ids,
           ty,
           immutable,
           base_resource_pot_name,
           &mut resource_pot_map,
-          is_with_hash,
         );
         final_resource_pot_ids.push(merged_resource_pot.id.clone());
         resource_pot_map.insert(merged_resource_pot.id.clone(), merged_resource_pot);
@@ -464,48 +433,22 @@ fn create_merged_resource_pot(
   immutable: bool,
   base_resource_pot_name: &str,
   resource_pot_map: &mut HashMap<String, ResourcePot>,
-  is_with_hash: bool,
 ) -> ResourcePot {
   let mut modules = HashSet::default();
 
-  let mut name: Option<(String, bool)> = None;
   for resource_pot_id in merged_resource_pot_ids {
     let removed_resource_pot = resource_pot_map.remove(resource_pot_id).unwrap();
-
-    if name.is_none() {
-      name = Some((removed_resource_pot.name.clone(), true));
-    }
-
-    if let Some((name, is_ready)) = name.as_mut() {
-      if *is_ready && *name != removed_resource_pot.name {
-        *is_ready = false;
-      }
-    }
 
     for module_id in removed_resource_pot.modules() {
       modules.insert(module_id.clone());
     }
   }
 
-  let resource_pot_id = format!(
-    "{}_{}",
-    base_resource_pot_name,
-    hash_module_ids(&modules) // get_sorted_module_ids_str(&module_bucket.modules())
-  );
-
-  let resource_pot_name = if let Some((name, _)) = name {
-    name
-  } else {
-    base_resource_pot_name.to_string()
-  };
-
   create_resource_by_meta(
-    resource_pot_id.clone(),
+    base_resource_pot_name.to_string(),
     &modules,
     resource_pot_type.clone(),
-    is_with_hash,
     immutable,
-    resource_pot_name,
   )
 }
 
@@ -515,7 +458,6 @@ fn handle_enforce_target_concurrent_requests(
   resource_pots_size_mp: &HashMap<String, usize>,
   target_concurrent_requests: usize,
   base_resource_pot_name: &str,
-  is_with_hash: bool,
 ) -> Vec<ResourcePot> {
   if resource_pots.len() <= target_concurrent_requests {
     return resource_pots;
@@ -585,7 +527,6 @@ fn handle_enforce_target_concurrent_requests(
         resource_pot.immutable,
         base_resource_pot_name,
         &mut resource_pot_map,
-        is_with_hash,
       );
       resource_pot_map.insert(merged_resource_pot.id.clone(), merged_resource_pot);
     }
@@ -600,7 +541,6 @@ fn handle_enforce_target_concurrent_requests(
         immutable,
         base_resource_pot_name,
         &mut resource_pot_map,
-        is_with_hash,
       );
       resource_pot_map.insert(merged_resource_pot.id.clone(), merged_resource_pot);
     }

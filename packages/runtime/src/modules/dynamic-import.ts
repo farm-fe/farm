@@ -269,14 +269,14 @@ function setPublicPaths(p: string[]): void {
 }
 
 function setInitialLoadedResources(resources: string[]) {
-  for (const resource of resources) {
+  resources.forEach(resource => {
     setLoadedResource(resource);
-  }
+  });
 }
 
   // These two methods are used to support dynamic module loading, the dynamic module info is collected by the compiler and injected during compile time
   // This method can also be called during runtime to add new dynamic modules
-function  setDynamicModuleResourcesMap(
+function setDynamicModuleResourcesMap(
     dr: Resource[],
     dmp: Record<string, number[]>,
   ): void {

@@ -160,7 +160,6 @@ export class Server extends httpServer {
       this.config = await resolveConfig(
         this.inlineConfig,
         'dev',
-        'development',
         'development'
       );
 

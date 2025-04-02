@@ -2,6 +2,26 @@
 source: crates/plugin_partial_bundling/src/merge_module_pots/test_enforce_configs.rs
 input_file: crates/testing_helpers/src/lib.rs
 ---
+name: D_3f39
+id: B_2328
+immutable: true
+resource_pot_type: Js
+entry: None
+module_groups: []
+modules: [
+    ModuleId {
+        relative_path: "D",
+        query_string: "",
+    },
+    ModuleId {
+        relative_path: "H",
+        query_string: "",
+    },
+]
+resources: []
+
+-------
+
 name: B_2f5d
 id: B_2f5d
 immutable: false
@@ -15,26 +35,6 @@ modules: [
     },
     ModuleId {
         relative_path: "E",
-        query_string: "",
-    },
-]
-resources: []
-
--------
-
-name: D_3f39
-id: B_3f39
-immutable: true
-resource_pot_type: Js
-entry: None
-module_groups: []
-modules: [
-    ModuleId {
-        relative_path: "D",
-        query_string: "",
-    },
-    ModuleId {
-        relative_path: "H",
         query_string: "",
     },
 ]

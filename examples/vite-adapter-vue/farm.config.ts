@@ -40,7 +40,6 @@ export default defineConfig({
       groups: [
         {
           name: "vue-pack",
-          enforce: true,
           test: [
             "node_modules/vue",
             "node_modules/vue-router",

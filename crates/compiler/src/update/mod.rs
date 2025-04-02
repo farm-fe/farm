@@ -293,12 +293,6 @@ impl Compiler {
             .push(id.resolved_path(&self.context.config.root));
         };
       }
-
-      watch_diff_result.remove.extend(
-        old_watch_extra_resources
-          .into_iter()
-          .map(|r| r.resolved_path(&self.context.config.root)),
-      );
     }
 
     // If the module type is not script, we should skip render and generate update resource.
@@ -426,10 +420,6 @@ impl Compiler {
           mut module,
           resolve_module_id_result,
         }) => {
-          let mut graph_watch = context.watch_graph.write();
-          graph_watch.delete_module(&module.id);
-          drop(graph_watch);
-
           if resolve_module_id_result.resolve_result.external {
             // insert external module to the graph
             let module_id: ModuleId = resolve_param.source.as_str().into();
@@ -611,7 +601,10 @@ impl Compiler {
 
     (
       affected_module_groups,
-      start_points,
+      start_points
+        .into_iter()
+        .filter(|id| !diff_result.added_modules.contains(id))
+        .collect(), // remove added modules from start_points
       diff_result,
       removed_modules,
     )

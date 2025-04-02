@@ -5,6 +5,10 @@ on:
       - main
       - v2-dev
 
+concurrency:
+  group: e2e-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   call-rust-build:
     uses: ./.github/workflows/rust-build.yaml

@@ -7,6 +7,7 @@ use farmfe_core::module::{
   module_group::{ModuleGroup, ModuleGroupGraph},
   Module, ModuleId,
 };
+use farmfe_plugin_partial_bundling::module_group_graph_from_entries;
 
 use farmfe_core::{HashMap, HashSet};
 
@@ -22,6 +23,32 @@ pub fn patch_module_group_graph(
   let mut affected_module_groups = HashSet::default();
 
   for updated_module_id in &updated_module_ids {
+    // create new module group for the new entry
+    if diff_result.added_modules.contains(updated_module_id)
+      && module_graph.entries.contains_key(updated_module_id)
+    {
+      let mut added_module_group_graph =
+        module_group_graph_from_entries(&vec![updated_module_id.clone()], module_graph);
+      let edges = added_module_group_graph.edges();
+      let module_group_ids = added_module_group_graph
+        .module_groups()
+        .into_iter()
+        .map(|g| g.id.clone())
+        .collect::<Vec<_>>();
+
+      for module_group_id in module_group_ids {
+        if !module_group_graph.has(&module_group_id) {
+          let module_group = added_module_group_graph
+            .remove_module_group(&module_group_id)
+            .unwrap();
+          module_group_graph.add_module_group(module_group);
+        }
+      }
+
+      for (from, to) in edges {
+        module_group_graph.add_edge(&from, &to);
+      }
+    }
     let module = module_graph.module(updated_module_id).unwrap();
     let module_group_ids = module.module_groups.clone();
     affected_module_groups.extend(module_group_ids);
@@ -30,12 +57,12 @@ pub fn patch_module_group_graph(
   let deps_changes = &diff_result.deps_changes;
 
   for (module_id, deps_diff_result) in deps_changes {
-    for (added_module_id, edge_info) in &deps_diff_result.added {
-      patch_added_dynamic_import_and_dynamic_entry(
-        added_module_id,
+    // handle removed first so the new added module won't be removed by the removed module
+    for (removed_module_id, edge_info) in &deps_diff_result.removed {
+      patch_removed_dynamic_import_and_dynamic_entry(
+        removed_module_id,
         module_id,
         edge_info,
-        diff_result,
         removed_modules,
         module_graph,
         module_group_graph,
@@ -43,11 +70,12 @@ pub fn patch_module_group_graph(
       );
     }
 
-    for (removed_module_id, edge_info) in &deps_diff_result.removed {
-      patch_removed_dynamic_import_and_dynamic_entry(
-        removed_module_id,
+    for (added_module_id, edge_info) in &deps_diff_result.added {
+      patch_added_dynamic_import_and_dynamic_entry(
+        added_module_id,
         module_id,
         edge_info,
+        diff_result,
         removed_modules,
         module_graph,
         module_group_graph,
@@ -325,25 +353,23 @@ fn patch_removed_dynamic_import_and_dynamic_entry(
           }
         }
       }
-
-      patch_dynamic_entry_group_for_removed_dynamic_import(
-        vec![removed_module_id.clone()],
-        previous_parent_groups,
-        module_graph,
-        module_group_graph,
-        affected_module_groups,
-        &mut HashSet::default(),
-      );
     } else {
       patch_existing_removed_non_dynamic_children(
         removed_module_id,
-        previous_parent_groups,
+        previous_parent_groups.clone(),
         module_graph,
         module_group_graph,
         affected_module_groups,
-        &mut HashSet::default(),
       );
     }
+
+    patch_dynamic_entry_group_for_removed_dynamic_import(
+      removed_module_id,
+      previous_parent_groups,
+      module_graph,
+      module_group_graph,
+      affected_module_groups,
+    );
 
     for removed_group_id in module_groups_to_remove {
       remove_dynamic_module_group(
@@ -464,110 +490,20 @@ fn patch_existing_removed_non_dynamic_children(
   module_graph: &mut ModuleGraph,
   module_group_graph: &mut ModuleGroupGraph,
   affected_module_groups: &mut HashSet<ModuleGroupId>,
-  visited: &mut HashSet<ModuleId>,
 ) {
-  let mut queue = VecDeque::from([removed_module_id.clone()]);
+  let (result, cyclic) =
+    topo_sort_removed_module(removed_module_id, module_graph, &|_, edge_info| {
+      !edge_info.is_dynamic_import()
+    });
 
-  while !queue.is_empty() {
-    let current_module_id = queue.pop_front().unwrap();
-
-    if visited.contains(&current_module_id) {
-      continue;
-    }
-    visited.insert(current_module_id.clone());
-
-    let current_parents = module_graph
-      .dependents(&current_module_id)
-      .into_iter()
-      .map(|(id, edge_info)| (id, edge_info.is_dynamic_import()))
-      .collect::<Vec<_>>();
-    let mut current_module_group_change = false;
-
-    for module_group_id in &previous_parent_groups {
-      // if current parents don't contain previous parent's module group, remove the module from existing module groups
-      // Note: current_parents don't contain module_id because the edge is removed
-      if current_parents
-        .iter()
-        .filter(|(_, is_dynamic)| !is_dynamic)
-        .all(|(id, _)| {
-          let parent = module_graph.module(id).unwrap();
-          !parent.module_groups.contains(module_group_id)
-        })
-      {
-        current_module_group_change = true;
-        let module_group = module_group_graph
-          .module_group_mut(module_group_id)
-          .unwrap_or_else(|| panic!("module group {module_group_id:?} not found"));
-
-        module_group.remove_module(&current_module_id);
-        let current_module = module_graph.module_mut(&current_module_id).unwrap();
-        affected_module_groups.extend(current_module.module_groups.clone());
-        current_module.module_groups.remove(module_group_id);
-
-        let modules_len = module_group.modules().len();
-
-        if modules_len == 0 {
-          module_group_graph.remove_module_group(module_group_id);
-        } else if !matches!(
-          module_group.module_group_type,
-          ModuleGroupType::DynamicEntry
-        ) {
-          // determine if there are edges that should be removed
-          let children = module_graph.dependencies(&current_module_id);
-
-          for (child, edge_info) in children {
-            let child_group_id = ModuleGroupId::new(&child, &ModuleGroupType::DynamicImport);
-
-            if edge_info.is_dynamic_import()
-              && module_group_graph
-                .dependencies_ids(module_group_id)
-                .contains(&child_group_id)
-            {
-              let parents = module_graph
-                .dependents(&child)
-                .into_iter()
-                .filter(|(_, edge_info)| edge_info.is_dynamic_import())
-                .collect::<Vec<_>>();
-              let parents_in_module_group = parents.iter().any(|(id, _)| {
-                let parent = module_graph.module(id).unwrap();
-                parent.module_groups.contains(module_group_id)
-              });
-
-              if !parents_in_module_group {
-                module_group_graph.remove_edge(module_group_id, &child_group_id);
-              }
-            }
-          }
-        }
-      }
-    }
-
-    if current_module_group_change {
-      let mut dynamic_imported_children = vec![];
-
-      for (child, edge_info) in module_graph.dependencies(&current_module_id) {
-        if !edge_info.is_dynamic_import() {
-          queue.push_back(child);
-        } else {
-          dynamic_imported_children.push(child);
-        }
-      }
-
-      if dynamic_imported_children.is_empty() {
-        continue;
-      }
-
-      // for dynamic entry groups, we have to patch the module group no matter it is dynamic import or not
-      patch_dynamic_entry_group_for_removed_dynamic_import(
-        dynamic_imported_children,
-        previous_parent_groups.clone(),
-        module_graph,
-        module_group_graph,
-        affected_module_groups,
-        visited,
-      );
-    }
-  }
+  patch_any_module_group_for_toposort_modules(
+    result,
+    cyclic,
+    previous_parent_groups,
+    module_graph,
+    module_group_graph,
+    affected_module_groups,
+  );
 }
 
 fn get_dynamic_entry_group_ids(
@@ -615,32 +551,155 @@ fn patch_dynamic_entry_group_for_added_dynamic_import(
 }
 
 fn patch_dynamic_entry_group_for_removed_dynamic_import(
-  dynamic_imported_children: Vec<ModuleId>,
+  removed_module_id: &ModuleId,
   previous_parent_groups: HashSet<ModuleGroupId>,
   module_graph: &mut ModuleGraph,
   module_group_graph: &mut ModuleGroupGraph,
   affected_module_groups: &mut HashSet<ModuleGroupId>,
-  visited: &mut HashSet<ModuleId>,
 ) {
   let dynamic_entry_group_ids =
     get_dynamic_entry_group_ids(&previous_parent_groups, module_group_graph);
 
   if !dynamic_entry_group_ids.is_empty() {
-    for child in dynamic_imported_children {
-      // patch the module group for dynamic entry recursively for dynamic import
-      patch_existing_removed_non_dynamic_children(
-        &child,
-        dynamic_entry_group_ids.clone(),
-        module_graph,
-        module_group_graph,
-        affected_module_groups,
-        visited,
-      );
+    let (result, cyclic) = topo_sort_removed_module(removed_module_id, module_graph, &|_, _| true);
+
+    patch_any_module_group_for_toposort_modules(
+      result,
+      cyclic,
+      dynamic_entry_group_ids,
+      module_graph,
+      module_group_graph,
+      affected_module_groups,
+    );
+  }
+}
+
+fn topo_sort_removed_module<F: Fn(&ModuleId, &&ModuleGraphEdge) -> bool>(
+  removed_module_id: &ModuleId,
+  module_graph: &mut ModuleGraph,
+  filter_fn: &F,
+) -> (Vec<ModuleId>, Vec<Vec<ModuleId>>) {
+  // we have to ensure that a module is handled only when all of its non dynamic parents are handled
+  let mut result = vec![];
+  let mut cyclic = vec![];
+  module_graph.toposort_dfs(
+    removed_module_id,
+    &mut vec![],
+    &mut HashSet::default(),
+    &mut result,
+    &mut cyclic,
+    filter_fn,
+  );
+  result.reverse();
+
+  (result, cyclic)
+}
+
+fn patch_any_module_group_for_toposort_modules(
+  result: Vec<ModuleId>,
+  cyclic: Vec<Vec<ModuleId>>,
+  previous_parent_groups: HashSet<ModuleGroupId>,
+  module_graph: &mut ModuleGraph,
+  module_group_graph: &mut ModuleGroupGraph,
+  affected_module_groups: &mut HashSet<ModuleGroupId>,
+) {
+  for current_module_id in result {
+    let current_parents = module_graph
+      .dependents(&current_module_id)
+      .into_iter()
+      .map(|(id, edge_info)| (id, edge_info.is_dynamic_import()))
+      .collect::<Vec<_>>();
+
+    for module_group_id in &previous_parent_groups {
+      // if current parents don't contain previous parent's module group, remove the module from existing module groups
+      // Note: current_parents don't contain module_id because the edge is removed
+      if current_parents
+        .iter()
+        .filter(|(_, is_dynamic)| !is_dynamic)
+        .all(|(id, _)| {
+          let parent = module_graph.module(id).unwrap();
+          let parent_contains_group = parent.module_groups.contains(module_group_id);
+          !parent_contains_group
+            || should_ignore_cyclic_dependencies(&cyclic, id, &current_module_id)
+        })
+      {
+        let module_group = module_group_graph
+          .module_group_mut(module_group_id)
+          .unwrap_or_else(|| panic!("module group {module_group_id:?} not found"));
+
+        module_group.remove_module(&current_module_id);
+        let current_module = module_graph.module_mut(&current_module_id).unwrap();
+        affected_module_groups.extend(current_module.module_groups.clone());
+        current_module.module_groups.remove(module_group_id);
+
+        let modules_len = module_group.modules().len();
+
+        if modules_len == 0 {
+          module_group_graph.remove_module_group(module_group_id);
+        } else if !matches!(
+          module_group.module_group_type,
+          ModuleGroupType::DynamicEntry
+        ) {
+          // determine if there are edges that should be removed
+          let children = module_graph.dependencies(&current_module_id);
+
+          for (child, edge_info) in children {
+            let child_group_id = ModuleGroupId::new(&child, &ModuleGroupType::DynamicImport);
+
+            if edge_info.is_dynamic_import()
+              && module_group_graph
+                .dependencies_ids(module_group_id)
+                .contains(&child_group_id)
+            {
+              let parents = module_graph
+                .dependents(&child)
+                .into_iter()
+                .filter(|(_, edge_info)| edge_info.is_dynamic_import())
+                .collect::<Vec<_>>();
+              let parents_in_module_group = parents.iter().any(|(id, _)| {
+                let parent = module_graph.module(id).unwrap();
+                parent.module_groups.contains(module_group_id)
+              });
+
+              if !parents_in_module_group {
+                module_group_graph.remove_edge(module_group_id, &child_group_id);
+              }
+            }
+          }
+        }
+      }
     }
   }
 }
 
+fn should_ignore_cyclic_dependencies(
+  cyclic: &Vec<Vec<ModuleId>>,
+  module_id: &ModuleId,
+  dep_id: &ModuleId,
+) -> bool {
+  let stack = cyclic
+    .iter()
+    .find(|c| c.contains(module_id) && c.contains(dep_id));
+
+  if stack.is_none() {
+    return false;
+  }
+
+  let stack = stack.unwrap();
+  let module_index = stack.iter().position(|c| c == module_id);
+  let dep_index = stack.iter().position(|c| c == dep_id);
+
+  if module_index.is_none() || dep_index.is_none() {
+    return false;
+  }
+
+  // for A <-> B, ignore B -> A
+  module_index.unwrap() > dep_index.unwrap()
+}
+
 #[cfg(test)]
 mod test_dynamic_entries;
+#[cfg(test)]
+mod test_remove_and_add;
 #[cfg(test)]
 mod tests;

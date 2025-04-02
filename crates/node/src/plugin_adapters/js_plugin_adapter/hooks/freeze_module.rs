@@ -52,7 +52,7 @@ impl JsPluginFreezeModuleHook {
   ) -> Result<Option<()>> {
     if module_matches_filters(&param.module.id, &param.module.module_type, &self.filters) {
       let Some(result) = format_module_metadata_to_code(
-        &mut *param.module.meta,
+        &mut param.module.meta,
         &param.module.id,
         &mut param.module.source_map_chain,
         &ctx,
@@ -79,7 +79,7 @@ impl JsPluginFreezeModuleHook {
       convert_code_to_metadata(
         &param.module.id,
         &param.module.module_type,
-        &mut *param.module.meta,
+        &mut param.module.meta,
         Arc::new(result.content),
         result.source_map,
         &mut param.module.source_map_chain,

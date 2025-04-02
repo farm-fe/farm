@@ -333,6 +333,7 @@
     "**/crates/create-farm-rs/templates/**",
     "**/LICENSE",
     "**/CHANGELOG.md",
-    "**/gitignore"
+    "**/gitignore",
+    "**/test_**",
   ]
 }

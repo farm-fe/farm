@@ -1,15 +1,35 @@
 use farmfe_core::{
-  module::{meta_data::script::ModuleExportIdent, ModuleId},
+  module::{
+    meta_data::script::{
+      statement::Statement, ModuleExportIdent, EXPORT_EXTERNAL_ALL, EXPORT_EXTERNAL_NAMESPACE,
+    },
+    ModuleId,
+  },
   regex::Regex,
   swc_common::{Mark, SyntaxContext, DUMMY_SP},
   swc_ecma_ast::{
-    BindingIdent, BlockStmt, Decl, Expr, GetterProp, Ident, KeyValueProp, ModuleItem, ObjectLit,
-    Pat, Prop, PropName, PropOrSpread, ReturnStmt, Stmt, VarDecl, VarDeclKind, VarDeclarator,
+    BindingIdent, BlockStmt, Bool, Decl, EmptyStmt, Expr, GetterProp, Ident, KeyValueProp, Lit,
+    ModuleItem, ObjectLit, Pat, Prop, PropName, PropOrSpread, ReturnStmt, Stmt, VarDecl,
+    VarDeclKind, VarDeclarator,
   },
   HashMap, HashSet,
 };
 
-use super::unique_idents::{EXPORT_DEFAULT, EXPORT_NAMESPACE};
+use super::{
+  strip_module_decl::StripModuleDeclResult,
+  unique_idents::{EXPORT_DEFAULT, EXPORT_NAMESPACE},
+};
+
+// replace the module decl statement to empty statement
+pub fn replace_module_decl(
+  statement: &Statement,
+  result: &mut StripModuleDeclResult,
+) -> ModuleItem {
+  std::mem::replace(
+    &mut result.ast.body[statement.id],
+    ModuleItem::Stmt(Stmt::Empty(EmptyStmt { span: DUMMY_SP })),
+  )
+}
 
 /// export default '123' => var module_default = '123';
 pub fn create_export_default_expr_item(expr: Box<Expr>, default_ident: Ident) -> ModuleItem {
@@ -40,7 +60,7 @@ pub(crate) fn create_var_namespace_item(
   let mut key_ident_vec = export_ident_map.iter().collect::<Vec<_>>();
   key_ident_vec.sort_by_key(|a| a.0);
 
-  let props = key_ident_vec
+  let mut props: Vec<PropOrSpread> = key_ident_vec
     .into_iter()
     .filter(|(key, _)| *key != EXPORT_NAMESPACE)
     .map(|(key, module_export_ident)| {
@@ -61,7 +81,7 @@ pub(crate) fn create_var_namespace_item(
       let prop = if cyclic_idents.contains(&module_export_ident) {
         Prop::Getter(GetterProp {
           span: DUMMY_SP,
-          key: PropName::Str(key.as_str().into()),
+          key: PropName::Ident(key.as_str().into()),
           type_ann: None,
           body: Some(BlockStmt {
             span: DUMMY_SP,
@@ -74,7 +94,7 @@ pub(crate) fn create_var_namespace_item(
         })
       } else {
         Prop::KeyValue(KeyValueProp {
-          key: PropName::Str(key.as_str().into()),
+          key: PropName::Ident(key.as_str().into()),
           value: value_expr,
         })
       };
@@ -82,6 +102,17 @@ pub(crate) fn create_var_namespace_item(
       PropOrSpread::Prop(Box::new(prop))
     })
     .collect();
+
+  // append __esModule
+  let es_module_prop = PropOrSpread::Prop(Box::new(Prop::KeyValue(KeyValueProp {
+    key: PropName::Ident("__esModule".into()),
+    value: Box::new(Expr::Lit(Lit::Bool(Bool {
+      span: DUMMY_SP,
+      value: true,
+    }))),
+  })));
+
+  props.push(es_module_prop);
 
   ModuleItem::Stmt(Stmt::Decl(Decl::Var(Box::new(VarDecl {
     span: DUMMY_SP,
@@ -125,5 +156,21 @@ pub fn create_export_namespace_ident(module_id: &ModuleId, top_level_mark: Mark)
     format!("{}_{}", get_filename(module_id), EXPORT_NAMESPACE).into(),
     DUMMY_SP,
     SyntaxContext::empty().apply_mark(top_level_mark),
+  )
+}
+
+pub fn create_export_external_all_ident(module_id: &ModuleId) -> Ident {
+  Ident::new(
+    format!("{}_{}", get_filename(module_id), EXPORT_EXTERNAL_ALL).into(),
+    DUMMY_SP,
+    SyntaxContext::empty(),
+  )
+}
+
+pub fn create_export_external_namespace_ident(module_id: &ModuleId) -> Ident {
+  Ident::new(
+    format!("{}_{}", get_filename(module_id), EXPORT_EXTERNAL_NAMESPACE).into(),
+    DUMMY_SP,
+    SyntaxContext::empty(),
   )
 }

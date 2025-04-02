@@ -67,6 +67,20 @@
 
 - Updated dependencies [a82a5b2]
   - @farmfe/core@2.0.0-nightly-20241022014521
+## 1.13.0
+
+### Patch Changes
+
+- Updated dependencies [25f3d3f6]
+  - @farmfe/core@1.7.0
+
+## 1.12.1
+
+### Patch Changes
+
+- 0163299e: Fix persistent cache panic when using addFileWatchFile with query #2067
+- Updated dependencies [0163299e]
+  - @farmfe/core@1.6.6
 
 ## 1.12.0
 

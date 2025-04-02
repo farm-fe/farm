@@ -1,5 +1,70 @@
 # bench
 
+## 1.0.42
+
+### Patch Changes
+
+- Updated dependencies [98a2b01b]
+  - @farmfe/core@1.7.1
+
+## 1.0.41
+
+### Patch Changes
+
+- Updated dependencies [25f3d3f6]
+  - @farmfe/core@1.7.0
+
+## 1.0.40
+
+### Patch Changes
+
+- Updated dependencies [ec87a7fe]
+- Updated dependencies [ec87a7fe]
+  - @farmfe/core@1.6.7
+
+## 1.0.39
+
+### Patch Changes
+
+- Updated dependencies [0163299e]
+  - @farmfe/core@1.6.6
+
+## 1.0.38
+
+### Patch Changes
+
+- Updated dependencies [2423ee65]
+  - @farmfe/core@1.6.5
+
+## 1.0.37
+
+### Patch Changes
+
+- Updated dependencies [35bdd7f5]
+- Updated dependencies [84ab2c75]
+  - @farmfe/core@1.6.4
+
+## 1.0.36
+
+### Patch Changes
+
+- Updated dependencies [0ad977b6]
+  - @farmfe/core@1.6.3
+
+## 1.0.35
+
+### Patch Changes
+
+- Updated dependencies [43e0ea06]
+  - @farmfe/core@1.6.2
+
+## 1.0.34
+
+### Patch Changes
+
+- Updated dependencies [9e9e94e2]
+  - @farmfe/core@1.6.1
+
 ## 1.0.33
 
 ### Patch Changes

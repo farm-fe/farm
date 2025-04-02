@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use farmfe_core::config::TargetEnv;
 use farmfe_core::enhanced_magic_string::collapse_sourcemap::collapse_sourcemap_chain;
 use farmfe_core::enhanced_magic_string::magic_string::MagicString;
 use farmfe_core::enhanced_magic_string::types::SourceMapOptions;
@@ -78,6 +79,11 @@ pub fn handle_entry_resources(
     .map(|res| &res.0)
     .cloned()
     .collect::<Vec<_>>();
+  // 0. global require if format is esm
+  let global_require_code = create_global_require_code(
+    &context.config.output.format,
+    &context.config.output.target_env,
+  );
 
   // 1. runtime code
   let runtime_code = if !dep_resources.is_empty() {
@@ -112,7 +118,7 @@ pub fn handle_entry_resources(
 
   let mut entry_bundle = MagicString::new(&entry_resource_code, None);
 
-  for pre in [load_dep_resources_code, runtime_code] {
+  for pre in [load_dep_resources_code, runtime_code, global_require_code] {
     entry_bundle.prepend(&pre);
   }
 
@@ -150,6 +156,21 @@ fn create_entry_resource_code(resource: &mut Resource) -> String {
   }
 
   entry_resource_code
+}
+
+// create
+// ```js
+// import { createRequire } from 'module';
+// var require = createRequire(import.meta.url);
+// ```
+fn create_global_require_code(format: &ModuleFormat, target_env: &TargetEnv) -> String {
+  match (format, target_env) {
+    (ModuleFormat::EsModule, TargetEnv::Node) => {
+      "import { createRequire } from 'module';var require = createRequire(import.meta.url);"
+        .to_string()
+    }
+    _ => "".to_string(),
+  }
 }
 
 fn create_load_dep_resources_code(
