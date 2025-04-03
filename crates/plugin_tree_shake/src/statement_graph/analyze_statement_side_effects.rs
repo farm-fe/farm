@@ -77,7 +77,7 @@ struct LeftIdentReference {
   /// a = target, a.namespace = [1, 2, 3]
   ///             ^           ^
   /// ```
-  mark_writed: bool,
+  mark_write: bool,
 }
 
 impl LeftIdentReference {
@@ -156,7 +156,7 @@ impl<'a> SideEffectsAnalyzer<'a> {
     visitor.visit_children_with(self);
 
     for (_, rights) in mem::take(&mut self.assign_left_reference) {
-      if !rights.mark_writed {
+      if !rights.mark_write {
         continue;
       }
       self
@@ -321,7 +321,7 @@ impl<'a> Visit for SideEffectsAnalyzer<'a> {
         if let Some(ref mut left) = self.in_assign_left {
           left.insert(ident.to_id());
           if let Some(v) = self.assign_left_reference.get_mut(&ident.to_id()) {
-            v.mark_writed = true;
+            v.mark_write = true;
           }
         }
 
