@@ -32,7 +32,7 @@ pub fn analyze_statement_side_effects(
         farmfe_core::swc_ecma_ast::Decl::Var(var_decl) => {
           let mut analyzer = SideEffectsAnalyzer::new(unresolved_mark, top_level_mark, comments);
           analyzer.set_in_top_level(true);
-          analyzer.analyze(var_decl);
+          analyzer.analyze(|this| var_decl.visit_children_with(this));
 
           analyzer.side_effects
         }
@@ -45,7 +45,7 @@ pub fn analyze_statement_side_effects(
       farmfe_core::swc_ecma_ast::ModuleDecl::ExportDefaultExpr(default_expr) => {
         let mut analyzer = SideEffectsAnalyzer::new(unresolved_mark, top_level_mark, comments);
         analyzer.set_in_top_level(true);
-        analyzer.analyze(default_expr.expr.as_ref());
+        analyzer.analyze(|this| default_expr.expr.visit_with(this));
         analyzer.side_effects
       }
       farmfe_core::swc_ecma_ast::ModuleDecl::ExportAll(_) => StatementSideEffects::NoSideEffects,
@@ -54,7 +54,7 @@ pub fn analyze_statement_side_effects(
     ModuleItem::Stmt(stmt) => {
       let mut analyzer = SideEffectsAnalyzer::new(unresolved_mark, top_level_mark, comments);
       analyzer.set_in_top_level(true);
-      analyzer.analyze(stmt);
+      analyzer.analyze(|this| stmt.visit_with(this));
 
       analyzer.side_effects
     }
@@ -152,8 +152,8 @@ impl<'a> SideEffectsAnalyzer<'a> {
     self.in_assign_right = prev;
   }
 
-  pub fn analyze<F: VisitWith<Self>>(&mut self, visitor: &F) {
-    visitor.visit_children_with(self);
+  pub fn analyze<F: FnOnce(&mut Self)>(&mut self, visitor: F) {
+    visitor(self);
 
     for (_, rights) in mem::take(&mut self.assign_left_reference) {
       if !rights.mark_write {
@@ -177,15 +177,6 @@ impl<'a> Visit for SideEffectsAnalyzer<'a> {
   }
 
   fn visit_function(&mut self, n: &farmfe_core::swc_ecma_ast::Function) {
-    let pre = self.is_in_top_level();
-    self.set_in_top_level(false);
-
-    n.visit_children_with(self);
-
-    self.set_in_top_level(pre);
-  }
-
-  fn visit_class(&mut self, n: &farmfe_core::swc_ecma_ast::Class) {
     let pre = self.is_in_top_level();
     self.set_in_top_level(false);
 
