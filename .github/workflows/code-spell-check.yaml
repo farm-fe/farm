@@ -12,7 +12,7 @@ jobs:
         with:
           node-version: "18"
       - name: Install pnpm
-        run: npm install -g pnpm@9.1.0
+        run: npm install -g pnpm@9.4.0
       - name: pnpm install
         run: pnpm install
       - name: Run Spell Check
