@@ -7,6 +7,8 @@ use farmfe_toolkit::swc_ecma_visit::{Visit, VisitWith};
 use super::{StatementGraphEdge, StatementId};
 
 pub struct AnalyzeUsedIdentsParams<'a> {
+  #[allow(dead_code)]
+  pub id: &'a StatementId,
   pub stmt: &'a ModuleItem,
   pub reverse_defined_idents_map: &'a HashMap<SwcId, StatementId>,
 }

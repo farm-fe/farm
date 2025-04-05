@@ -1,12 +1,18 @@
+use std::mem;
+
 use farmfe_core::{
   swc_common::{
     comments::{Comments, SingleThreadedComments},
     Mark, Spanned,
   },
+  swc_ecma_ast::{Expr, Id, ModuleItem},
   swc_ecma_ast::{Expr, ModuleItem},
-  HashSet,
+  HashMap, HashSet,
 };
-use farmfe_toolkit::swc_ecma_visit::{Visit, VisitWith};
+use farmfe_toolkit::{
+  swc_ecma_utils::ident::IdentLike,
+  swc_ecma_visit::{Visit, VisitWith},
+};
 
 use super::StatementSideEffects;
 
@@ -25,7 +31,7 @@ pub fn analyze_statement_side_effects(
         farmfe_core::swc_ecma_ast::Decl::Var(var_decl) => {
           let mut analyzer = SideEffectsAnalyzer::new(unresolved_mark, top_level_mark, comments);
           analyzer.set_in_top_level(true);
-          var_decl.visit_children_with(&mut analyzer);
+          analyzer.analyze(|this| var_decl.visit_children_with(this));
 
           analyzer.side_effects
         }
@@ -38,7 +44,7 @@ pub fn analyze_statement_side_effects(
       farmfe_core::swc_ecma_ast::ModuleDecl::ExportDefaultExpr(default_expr) => {
         let mut analyzer = SideEffectsAnalyzer::new(unresolved_mark, top_level_mark, comments);
         analyzer.set_in_top_level(true);
-        default_expr.expr.visit_with(&mut analyzer);
+        analyzer.analyze(|this| default_expr.expr.visit_with(this));
         analyzer.side_effects
       }
       farmfe_core::swc_ecma_ast::ModuleDecl::ExportAll(_) => StatementSideEffects::NoSideEffects,
@@ -47,10 +53,41 @@ pub fn analyze_statement_side_effects(
     ModuleItem::Stmt(stmt) => {
       let mut analyzer = SideEffectsAnalyzer::new(unresolved_mark, top_level_mark, comments);
       analyzer.set_in_top_level(true);
-      stmt.visit_with(&mut analyzer);
+      analyzer.analyze(|this| stmt.visit_with(this));
 
       analyzer.side_effects
     }
+  }
+}
+
+#[derive(Debug, Default, PartialEq, Eq)]
+struct LeftIdentReference {
+  ///
+  /// ```unknown
+  /// [a, b, c] = [target1, target2, target3]
+  ///              ^^^^^^^  ^^^^^^^  ^^^^^^^
+  /// ```
+  ///
+  idents: HashSet<Id>,
+  ///
+  /// mark write operation
+  ///
+  /// ```unknown
+  /// a = target, a.namespace = [1, 2, 3]
+  ///             ^           ^
+  /// ```
+  mark_write: bool,
+}
+
+impl LeftIdentReference {
+  fn insert(&mut self, id: Id) {
+    self.idents.insert(id);
+  }
+}
+
+impl From<LeftIdentReference> for HashSet<Id> {
+  fn from(value: LeftIdentReference) -> Self {
+    value.idents
   }
 }
 
@@ -60,9 +97,24 @@ struct SideEffectsAnalyzer<'a> {
   side_effects: StatementSideEffects,
   comments: &'a SingleThreadedComments,
 
-  in_assign_left: bool,
+  in_assign_left: Option<HashSet<Id>>,
+  in_assign_right: Option<Option<HashSet<Id>>>,
   in_top_level: bool,
   in_call: bool,
+
+  ///
+  /// ```unknown
+  /// a = target, a.namespace = [1, 2, 3]
+  /// ^   ^^^^^^
+  /// ```
+  ///
+  /// ```js
+  /// {
+  ///  a: [target]
+  /// }
+  /// ```
+  ///
+  assign_left_reference: HashMap<Id, LeftIdentReference>,
 }
 
 impl<'a> SideEffectsAnalyzer<'a> {
@@ -76,9 +128,11 @@ impl<'a> SideEffectsAnalyzer<'a> {
       top_level_mark,
       side_effects: StatementSideEffects::NoSideEffects,
       comments,
-      in_assign_left: false,
+      in_assign_left: None,
       in_top_level: false,
       in_call: false,
+      in_assign_right: None,
+      assign_left_reference: HashMap::new(),
     }
   }
 
@@ -88,6 +142,26 @@ impl<'a> SideEffectsAnalyzer<'a> {
 
   pub fn is_in_top_level(&self) -> bool {
     self.in_top_level
+  }
+
+  pub fn with_assign_right<F: FnOnce(&mut Self)>(&mut self, id: Option<HashSet<Id>>, f: F) {
+    let prev = self.in_assign_right.take();
+    self.in_assign_right = Some(id);
+    f(self);
+    self.in_assign_right = prev;
+  }
+
+  pub fn analyze<F: FnOnce(&mut Self)>(&mut self, visitor: F) {
+    visitor(self);
+
+    for (_, rights) in mem::take(&mut self.assign_left_reference) {
+      if !rights.mark_write {
+        continue;
+      }
+      self
+        .side_effects
+        .merge_side_effects(StatementSideEffects::WriteTopLevelVar(rights.into()));
+    }
   }
 }
 
@@ -203,6 +277,12 @@ impl<'a> Visit for SideEffectsAnalyzer<'a> {
     }
   }
 
+  fn visit_ident(&mut self, ident: &farmfe_core::swc_ecma_ast::Ident) {
+    if let Some(ref mut left) = self.in_assign_left {
+      left.insert(ident.to_id());
+    }
+  }
+
   fn visit_expr(&mut self, expr: &Expr) {
     if !self.is_in_top_level() {
       return;
@@ -228,9 +308,16 @@ impl<'a> Visit for SideEffectsAnalyzer<'a> {
         self.in_call = false;
       }
       Expr::Ident(ident) => {
+        if let Some(ref mut left) = self.in_assign_left {
+          left.insert(ident.to_id());
+          if let Some(v) = self.assign_left_reference.get_mut(&ident.to_id()) {
+            v.mark_write = true;
+          }
+        }
+
         self
           .side_effects
-          .merge_side_effects(if self.in_assign_left {
+          .merge_side_effects(if self.in_assign_left.is_some() {
             if ident.ctxt.outer() == self.unresolved_mark {
               StatementSideEffects::WriteOrCallGlobalVar
             } else if self.in_top_level || ident.ctxt.outer() == self.top_level_mark {
@@ -245,13 +332,29 @@ impl<'a> Visit for SideEffectsAnalyzer<'a> {
           } else {
             StatementSideEffects::NoSideEffects
           });
+
+        if let Some(Some(ref lefts)) = self.in_assign_right
+          && (self.in_top_level || ident.span.ctxt().outer() == self.top_level_mark)
+        {
+          for left in lefts {
+            self
+              .assign_left_reference
+              .entry(left.to_id())
+              .or_default()
+              .insert(ident.to_id());
+          }
+        }
       }
       Expr::Assign(assign_expr) => {
-        self.in_assign_left = true;
+        self.in_assign_left = Some(HashSet::new());
 
         match &assign_expr.left {
           farmfe_core::swc_ecma_ast::AssignTarget::Simple(st) => match st {
             farmfe_core::swc_ecma_ast::SimpleAssignTarget::Ident(i) => {
+              self
+                .in_assign_left
+                .get_or_insert_with(HashSet::new)
+                .insert(i.id.to_id());
               // for idents that are added by ast transform, the mark may not be top_level_mark
               // in this case, we treat it as top level as long as current assign expr is in top level
               if self.in_top_level || i.id.ctxt.outer() == self.top_level_mark {
@@ -294,9 +397,12 @@ impl<'a> Visit for SideEffectsAnalyzer<'a> {
             pat.visit_with(self);
           }
         }
-        self.in_assign_left = false;
 
-        assign_expr.right.visit_with(self);
+        let left_ident = self.in_assign_left.take();
+
+        self.with_assign_right(left_ident, |this| {
+          assign_expr.right.visit_with(this);
+        });
       }
       Expr::Array(_)
       | Expr::Object(_)

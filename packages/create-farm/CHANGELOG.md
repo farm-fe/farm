@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.0.21
+
+### Patch Changes
+
+- e0a9e48f: lock vue template @vitejs/plugin-vue version
+
 ## 0.0.20
 
 ### Patch Changes

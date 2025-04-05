@@ -188,6 +188,7 @@ pub fn create_compiler(
         ConfigRegex::new("^react-refresh$"),
         ConfigRegex::new("^module$"),
         ConfigRegex::new("^vue$"),
+        ConfigRegex::new("^fake-module$"),
       ],
       sourcemap: Box::new(SourcemapConfig::Bool(false)),
       lazy_compilation: false,
