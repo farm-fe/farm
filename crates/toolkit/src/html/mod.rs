@@ -74,6 +74,8 @@ pub fn codegen_html_document(document: &Document, minify: bool) -> String {
     html_writer,
     CodegenConfig {
       minify,
+      tag_omission: Some(false),
+      quotes: Some(true),
       ..Default::default()
     },
   );
