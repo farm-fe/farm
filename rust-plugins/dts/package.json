@@ -1,6 +1,6 @@
 {
   "name": "@farmfe/plugin-dts",
-  "version": "1.0.0-nightly-20241024075304",
+  "version": "1.0.0-nightly-20250405123238",
   "main": "index.js",
   "types": "index.d.ts",
   "type": "module",

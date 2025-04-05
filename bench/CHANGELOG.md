@@ -1,5 +1,14 @@
 # bench
 
+## 1.0.44-nightly-20250405123238
+
+### Patch Changes
+
+- Updated dependencies [21ac2ac]
+- Updated dependencies [b8f7fc5]
+- Updated dependencies [ad09476]
+  - @farmfe/core@2.0.0-nightly-20250405123238
+
 ## 1.0.43
 
 ### Patch Changes
