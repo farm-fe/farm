@@ -26,7 +26,7 @@ exports[`Js Plugin Execution - renderResourcePot 1`] = `
       "renderedMap": null,
     },
   },
-  "name": "index_eab4",
+  "name": "index",
   "resourcePotType": "js",
 }
 `;

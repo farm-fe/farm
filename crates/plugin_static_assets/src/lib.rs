@@ -1,7 +1,6 @@
 #![feature(path_file_prefix)]
 
 use std::{
-  collections::HashMap,
   path::{Path, PathBuf},
   sync::Arc,
 };
@@ -19,9 +18,10 @@ use farmfe_core::{
   rkyv::Deserialize,
   serialize,
   swc_common::sync::OnceCell,
+  HashMap,
 };
 use farmfe_toolkit::{
-  fs::{read_file_raw, read_file_utf8, transform_output_filename},
+  fs::{read_file_raw, read_file_utf8, transform_output_filename, TransformOutputFileNameParams},
   lazy_static::lazy_static,
 };
 use farmfe_utils::{hash::sha256, stringify_query, FARM_IGNORE_ACTION_COMMENT};
@@ -213,12 +213,13 @@ impl Plugin for FarmPluginStaticAssets {
           .file_prefix()
           .and_then(|s| s.to_str())
           .unwrap();
-        let resource_name = transform_output_filename(
-          context.config.output.assets_filename.clone(),
-          filename,
-          &bytes,
+        let resource_name = transform_output_filename(TransformOutputFileNameParams {
+          filename_config: context.config.output.assets_filename.clone(),
+          name: filename,
+          name_hash: "",
+          bytes: &bytes,
           ext,
-        ) + stringify_query(&param.query).as_str();
+        }) + stringify_query(&param.query).as_str();
 
         let resource_name = Self::get_resource_name(&resource_name, &param.module_id);
 
@@ -314,7 +315,7 @@ impl Plugin for FarmPluginStaticAssets {
   }
 }
 
-#[cache_item]
+#[cache_item(farmfe_core)]
 struct CachedStaticAssets {
   list: Vec<Resource>,
 }

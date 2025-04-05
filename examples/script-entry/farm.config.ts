@@ -6,13 +6,20 @@ import { builtinModules } from 'module';
  */
 export default defineConfig({
   compilation: {
+    // multiple bundle recommend config
+    // treeShaking: false,
+    partialBundling: {
+      targetConcurrentRequests: Number.MAX_SAFE_INTEGER,
+      targetMinSize: 1,
+    },
+
     input: {
       index: './index.ts'
     },
     output: {
       path: 'dist/esm',
       entryFilename: '[entryName].mjs',
-      targetEnv: 'library-node',
+      targetEnv: 'node',
       format: 'esm'
     },
     presetEnv: false,
@@ -28,15 +35,7 @@ export default defineConfig({
       importNotUsedAsValues: 'remove',
     },
     minify: false,
-    mode: 'development',
-    partialBundling: {
-      enforceResources: [
-        {
-          name: 'xxx',
-          test: ['.+']
-        }
-      ]
-    },
+    // mode: 'development',
     persistentCache: false,
     lazyCompilation: false
   },

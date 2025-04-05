@@ -1,5 +1,3 @@
-use std::path::PathBuf;
-
 use farmfe_core::{
   config::{
     config_regex::ConfigRegex,
@@ -12,13 +10,13 @@ use farmfe_core::{
   swc_ecma_ast::{Module, ModuleItem, Program, Script},
 };
 use farmfe_toolkit::{
-  common::{create_swc_source_map, Source},
   preset_env_base::query::Query,
   script::swc_try_with::try_with,
+  sourcemap::create_swc_source_map,
   swc_ecma_preset_env::{self, preset_env, Mode, Targets},
   swc_ecma_transforms::Assumptions,
   swc_ecma_transforms_base::{feature::FeatureFlag, helpers::inject_helpers},
-  swc_ecma_visit::{FoldWith, VisitMutWith},
+  swc_ecma_visit::VisitMutWith,
 };
 
 pub struct FarmPluginPolyfill {
@@ -75,7 +73,10 @@ impl FarmPluginPolyfill {
       include,
       exclude,
       assumptions,
-      enforce_exclude: vec![ConfigRegex::new("node_modules/core-js")],
+      enforce_exclude: vec![
+        ConfigRegex::new("node_modules/core-js"),
+        ConfigRegex::new("@farmfe/runtime"),
+      ],
     }
   }
 }
@@ -115,11 +116,9 @@ impl Plugin for FarmPluginPolyfill {
       return Ok(None);
     }
 
-    let (cm, _) = create_swc_source_map(Source {
-      path: PathBuf::from(&param.module_id.to_string()),
-      content: param.content.clone(),
-    });
-    try_with(cm, &context.meta.script.globals, || {
+    let (cm, _) = create_swc_source_map(param.module_id, param.content.clone());
+    let globals = context.meta.get_globals(&param.module_id);
+    try_with(cm, globals.value(), || {
       let unresolved_mark = Mark::from_u32(param.meta.as_script().unresolved_mark);
       let ast = param.meta.as_script_mut().take_ast();
 
@@ -146,7 +145,7 @@ impl Plugin for FarmPluginPolyfill {
       let mut feature_flag = FeatureFlag::empty();
       let comments: SingleThreadedComments = param.meta.as_script().comments.clone().into();
 
-      final_ast = final_ast.fold_with(&mut preset_env(
+      final_ast.mutate(&mut preset_env(
         unresolved_mark,
         Some(&comments),
         self.config.clone(),

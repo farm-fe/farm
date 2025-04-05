@@ -1,5 +1,5 @@
 import React from 'react';
-import logo from './logo.svg?url';
+import logo from './logo.svg';
 import { useState } from 'react';
 
 const App = () => {

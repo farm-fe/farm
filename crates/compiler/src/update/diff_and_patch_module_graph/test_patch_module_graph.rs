@@ -4,6 +4,7 @@ use farmfe_core::{
     Module, ModuleId, ModuleType,
   },
   plugin::ResolveKind,
+  HashMap,
 };
 use farmfe_testing_helpers::construct_test_module_graph;
 
@@ -159,7 +160,7 @@ fn test_patch_module_graph_2() {
   let edge_info = module_graph
     .edge_info(&changed_module_id, &"b".into())
     .unwrap();
-  assert!(edge_info.is_dynamic());
+  assert!(edge_info.is_dynamic_import());
 }
 
 // TODO update these complex 1 2 3 tests
@@ -415,4 +416,82 @@ fn test_diff_module_deps_remove_and_add_complex() {
   );
 
   is_module_graph_equals(&module_graph, &create_update_module_graph());
+}
+
+#[test]
+fn test_patch_module_graph_add_remove_dynamic_entry() {
+  let mut module_graph = construct_test_module_graph();
+  module_graph
+    .update_edge(
+      &"A".into(),
+      &"D".into(),
+      ModuleGraphEdge::new(vec![ModuleGraphEdgeDataItem {
+        kind: ResolveKind::DynamicEntry {
+          name: "AD".to_string(),
+          output_filename: None,
+        },
+        ..Default::default()
+      }]),
+    )
+    .unwrap();
+  module_graph
+    .dynamic_entries
+    .insert("D".into(), "D".to_string());
+
+  let mut update_module_graph = construct_test_module_graph();
+
+  update_module_graph.remove_module(&"G".into());
+  update_module_graph
+    .remove_edge(&"A".into(), &"D".into())
+    .unwrap();
+
+  update_module_graph.add_module(Module::new("H".into()));
+  update_module_graph
+    .add_edge(
+      &"B".into(),
+      &"H".into(),
+      ModuleGraphEdge::new(vec![ModuleGraphEdgeDataItem {
+        kind: ResolveKind::DynamicEntry {
+          name: "BH".to_string(),
+          output_filename: None,
+        },
+        ..Default::default()
+      }]),
+    )
+    .unwrap();
+  update_module_graph
+    .add_edge(&"H".into(), &"F".into(), Default::default())
+    .unwrap();
+
+  let diff_result = super::diff_module_graph(
+    vec!["A".into(), "B".into()],
+    &module_graph,
+    &update_module_graph,
+  );
+
+  assert!(module_graph.has_edge(&"F".into(), &"A".into()));
+  assert!(module_graph.has_edge(&"B".into(), &"D".into()));
+  assert!(module_graph.has_edge(&"D".into(), &"F".into()));
+  assert_eq!(module_graph.modules().len(), 7);
+  assert_eq!(module_graph.edge_count(), 8);
+
+  patch_module_graph(
+    vec!["A".into(), "B".into()],
+    &diff_result,
+    &mut module_graph,
+    &mut update_module_graph,
+  );
+
+  assert!(!module_graph.has_edge(&"A".into(), &"D".into()));
+  assert!(module_graph.has_module(&"H".into()));
+  assert!(module_graph.has_edge(&"H".into(), &"F".into()));
+  assert!(module_graph.has_edge(&"B".into(), &"H".into()));
+
+  assert_eq!(module_graph.modules().len(), 8);
+  assert_eq!(module_graph.edge_count(), 9);
+
+  assert_eq!(
+    module_graph.dynamic_entries,
+    HashMap::from_iter([("H".into(), "BH".to_string())])
+  );
 }

@@ -1,6 +1,5 @@
 export * from './share.js';
 export * from './logger.js';
-export * from './build.js';
 export * from './file.js';
 export * from './color.js';
 export * from './url.js';
@@ -8,4 +7,7 @@ export * from './path.js';
 export * from './publicDir.js';
 export * from './rebase-url.js';
 export * from './plugin-utils.js';
+export * from './cacheDir.js';
 export * from './dynamic-resources.js';
+export * from './utils.js';
+export * from './fsUtils.js';

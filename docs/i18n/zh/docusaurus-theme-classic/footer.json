@@ -1,0 +1,62 @@
+{
+  "link.title.Docs": {
+    "message": "Docs",
+    "description": "The title of the footer links column with title=Docs in the footer"
+  },
+  "link.title.More": {
+    "message": "More",
+    "description": "The title of the footer links column with title=More in the footer"
+  },
+  "link.item.label.Guilds": {
+    "message": "Guilds",
+    "description": "The label of footer link with label=Guilds linking to /docs/quick-start"
+  },
+  "link.item.label.Blog": {
+    "message": "Blog",
+    "description": "The label of footer link with label=Blog linking to /quick-start"
+  },
+  "link.item.label.GitHub": {
+    "message": "GitHub",
+    "description": "The label of footer link with label=GitHub linking to https://github.com/farm-fe/farm"
+  },
+  "copyright": {
+    "message": "Copyright © 2023 Farm Team. Built with Docusaurus.",
+    "description": "The footer copyright"
+  },
+  "link.title.Learn": {
+    "message": "Learn",
+    "description": "The title of the footer links column with title=Learn in the footer"
+  },
+  "link.title.Community": {
+    "message": "Community",
+    "description": "The title of the footer links column with title=Community in the footer"
+  },
+  "link.item.label.Introduction": {
+    "message": "Introduction",
+    "description": "The label of footer link with label=Introduction linking to /why-farm"
+  },
+  "link.item.label.Installation": {
+    "message": "Installation",
+    "description": "The label of footer link with label=Installation linking to /quick-start"
+  },
+  "link.item.label.WeChat Group": {
+    "message": "WeChat Group",
+    "description": "The label of footer link with label=WeChat Group linking to https://github.com/farm-fe/farm#chat-with-us"
+  },
+  "link.item.label.Discord": {
+    "message": "Discord",
+    "description": "The label of footer link with label=Discord linking to https://discord.com/invite/mDErq9aFnF"
+  },
+  "link.item.label.Changelog": {
+    "message": "Changelog",
+    "description": "The label of footer link with label=Changelog linking to /quick-start"
+  },
+  "link.item.label.Twitter": {
+    "message": "Twitter",
+    "description": "The label of footer link with label=Twitter linking to https://twitter.com/@farm-fe"
+  },
+  "logo.alt": {
+    "message": "Farm Logo",
+    "description": "The alt text of footer logo"
+  }
+}

@@ -1,15 +1,14 @@
-use std::collections::HashMap;
-
 use farmfe_core::{
   module::{module_graph::ModuleGraph, ModuleId},
   plugin::ResolveKind,
-  swc_common::{Mark, DUMMY_SP},
+  swc_common::{Mark, SyntaxContext, DUMMY_SP},
   swc_ecma_ast::{
     BindingIdent, CallExpr, Callee, ExportNamedSpecifier, ExportSpecifier, Expr, ExprOrSpread,
-    ExprStmt, Id, Ident, KeyValuePatProp, KeyValueProp, Lit, MemberExpr, MemberProp, ModuleDecl,
-    ModuleExportName, ModuleItem, NamedExport, ObjectLit, Pat, Prop, PropName, PropOrSpread, Stmt,
-    Str,
+    ExprStmt, Id, Ident, IdentName, KeyValuePatProp, KeyValueProp, Lit, MemberExpr, MemberProp,
+    ModuleDecl, ModuleExportName, ModuleItem, NamedExport, ObjectLit, Pat, Prop, PropName,
+    PropOrSpread, Stmt, Str,
   },
+  HashMap,
 };
 use farmfe_toolkit::swc_ecma_visit::{VisitMut, VisitMutWith};
 
@@ -35,7 +34,7 @@ impl<'a> ImportsMinifier<'a> {
     ident_generator: &'a mut MinifiedIdentsGenerator,
     unresolved_mark: Mark,
   ) -> Self {
-    let mut exported_ident_count_map = HashMap::new();
+    let mut exported_ident_count_map = HashMap::default();
 
     if let Some(current_minified_exports_map) = minified_module_exports_map.get(module_id) {
       for (_, minified_ident) in current_minified_exports_map {
@@ -43,7 +42,7 @@ impl<'a> ImportsMinifier<'a> {
       }
     }
 
-    let mut imported_ident_count_map = HashMap::new();
+    let mut imported_ident_count_map = HashMap::default();
     // used idents mean the idents that are used in the current module, they should not be used to avoid ident decl conflict
     for ident in ident_generator.used_idents() {
       imported_ident_count_map.insert(ident.to_string(), 1);
@@ -55,7 +54,7 @@ impl<'a> ImportsMinifier<'a> {
       module_graph,
       ident_generator,
       unresolved_mark,
-      id_to_replace_map: HashMap::new(),
+      id_to_replace_map: HashMap::default(),
 
       imported_ident_count_map,
       exported_ident_count_map,
@@ -113,10 +112,10 @@ impl<'a> ImportsMinifier<'a> {
 
 impl<'a> VisitMut for ImportsMinifier<'a> {
   fn visit_mut_module(&mut self, n: &mut farmfe_core::swc_ecma_ast::Module) {
-    let mut id_to_replace = HashMap::new();
+    let mut id_to_replace = HashMap::default();
 
-    let mut renamed_re_exports = HashMap::<String, HashMap<String, String>>::new();
-    let mut reverted_import_export_star = HashMap::<ModuleId, (usize, Id)>::new();
+    let mut renamed_re_exports = HashMap::<String, HashMap<String, String>>::default();
+    let mut reverted_import_export_star = HashMap::<ModuleId, (usize, Id)>::default();
 
     // visit all import/export from/export * from statement and minify the imported ident
     for (index, item) in n.body.iter_mut().enumerate() {
@@ -196,7 +195,11 @@ impl<'a> VisitMut for ImportsMinifier<'a> {
                           self.get_imported_ident_with_count(&orig_minified_export);
                         id_to_replace.insert(named.local.to_id(), minified_export.clone());
                         named.imported = Some(farmfe_core::swc_ecma_ast::ModuleExportName::Ident(
-                          Ident::new(orig_minified_export.as_str().into(), DUMMY_SP),
+                          Ident::new(
+                            orig_minified_export.as_str().into(),
+                            DUMMY_SP,
+                            SyntaxContext::empty(),
+                          ),
                         ));
                         named.local.sym = minified_export.as_str().into();
                       } else {
@@ -242,7 +245,7 @@ impl<'a> VisitMut for ImportsMinifier<'a> {
               .cloned();
 
             if let Some(dep_minified_exports) = dep_minified_exports {
-              let mut filtered_dep_minified_exports = HashMap::new();
+              let mut filtered_dep_minified_exports = HashMap::default();
 
               for (export, minified) in dep_minified_exports {
                 if self.exported_ident_count_map.contains_key(&minified) {
@@ -297,7 +300,7 @@ impl<'a> VisitMut for ImportsMinifier<'a> {
                       Some(ResolveKind::ExportFrom),
                     );
 
-                    let mut current_minified_exports = HashMap::new();
+                    let mut current_minified_exports = HashMap::default();
 
                     if let Some(dep_minified_exports) =
                       self.minified_module_exports_map.get(&dep_module_id)
@@ -335,6 +338,7 @@ impl<'a> VisitMut for ImportsMinifier<'a> {
                           named.exported = Some(ModuleExportName::Ident(Ident::new(
                             minified_export.as_str().into(),
                             DUMMY_SP,
+                            SyntaxContext::empty(),
                           )));
                           current_minified_exports.insert(orig_str, minified_export);
                         } else {
@@ -381,10 +385,15 @@ impl<'a> VisitMut for ImportsMinifier<'a> {
         .map(|(from, to)| {
           ExportSpecifier::Named(ExportNamedSpecifier {
             span: DUMMY_SP,
-            orig: ModuleExportName::Ident(Ident::new(from.as_str().into(), DUMMY_SP)),
+            orig: ModuleExportName::Ident(Ident::new(
+              from.as_str().into(),
+              DUMMY_SP,
+              SyntaxContext::empty(),
+            )),
             exported: Some(ModuleExportName::Ident(Ident::new(
               to.as_str().into(),
               DUMMY_SP,
+              SyntaxContext::empty(),
             ))),
             is_type_only: false,
           })
@@ -449,9 +458,10 @@ impl<'a> VisitMut for ImportsMinifier<'a> {
               span: DUMMY_SP,
               obj: Box::new(Expr::Ident(Ident::new(
                 "module".into(),
-                DUMMY_SP.apply_mark(self.unresolved_mark),
+                DUMMY_SP,
+                SyntaxContext::empty().apply_mark(self.unresolved_mark),
               ))),
-              prop: MemberProp::Ident(Ident::new("p".into(), DUMMY_SP)),
+              prop: MemberProp::Ident(IdentName::new("p".into(), DUMMY_SP)),
             }))),
             args: vec![
               ExprOrSpread {
@@ -462,11 +472,13 @@ impl<'a> VisitMut for ImportsMinifier<'a> {
                 spread: None,
                 expr: Box::new(Expr::Ident(Ident::new(
                   star_ident.0,
-                  DUMMY_SP.with_ctxt(star_ident.1),
+                  DUMMY_SP,
+                  star_ident.1,
                 ))),
               },
             ],
             type_args: None,
+            ctxt: SyntaxContext::empty(),
           })),
         })),
       )
@@ -494,10 +506,11 @@ impl<'a> VisitMut for IdentReplacer {
           farmfe_core::swc_ecma_ast::Prop::Shorthand(s) => {
             if let Some(replaced) = self.id_to_replace.get(&s.to_id()) {
               *prop = Box::new(Prop::KeyValue(KeyValueProp {
-                key: PropName::Ident(s.clone()),
+                key: PropName::Ident(IdentName::new(s.sym.clone(), s.span)),
                 value: Box::new(Expr::Ident(Ident::new(
                   replaced.as_str().into(),
-                  DUMMY_SP.with_ctxt(s.span.ctxt()),
+                  DUMMY_SP,
+                  s.ctxt,
                 ))),
               }))
             }
@@ -537,12 +550,9 @@ impl<'a> VisitMut for IdentReplacer {
             value.visit_mut_with(self);
           } else if let Some(replaced) = self.id_to_replace.get(&a.key.id.to_id()) {
             *n = farmfe_core::swc_ecma_ast::ObjectPatProp::KeyValue(KeyValuePatProp {
-              key: PropName::Ident(a.key.id.clone()),
+              key: PropName::Ident(IdentName::new(a.key.id.sym.clone(), a.key.id.span)),
               value: Box::new(Pat::Ident(BindingIdent {
-                id: Ident::new(
-                  replaced.as_str().into(),
-                  DUMMY_SP.apply_mark(a.key.id.span.ctxt().outer()),
-                ),
+                id: Ident::new(replaced.as_str().into(), DUMMY_SP, a.key.id.ctxt),
                 type_ann: None,
               })),
             })
@@ -562,7 +572,7 @@ impl<'a> VisitMut for IdentReplacer {
 
 #[cfg(test)]
 mod tests {
-  use std::{collections::HashMap, sync::Arc};
+  use std::sync::Arc;
 
   use farmfe_core::{
     module::{
@@ -573,10 +583,11 @@ mod tests {
     swc_common::{Globals, Mark},
     swc_ecma_ast::EsVersion,
     swc_ecma_parser::Syntax,
+    HashMap,
   };
   use farmfe_toolkit::{
-    common::{create_swc_source_map, Source},
     script::{codegen_module, parse_module, swc_try_with::try_with},
+    source_map::{create_swc_source_map, Source},
     swc_ecma_visit::VisitMutWith,
   };
 
@@ -679,10 +690,10 @@ export { hello1, hello2, default as world1 } from './dep';
         .unwrap();
       (module_id, module_graph)
     };
-    let mut minified_module_exports_map = HashMap::from([
+    let mut minified_module_exports_map = HashMap::from_iter([
       (
         ModuleId::from("dep"),
-        HashMap::from([
+        HashMap::from_iter([
           ("hello1".to_string(), "aa".to_string()),
           ("hello2".to_string(), "bb".to_string()),
           ("hello3".to_string(), "cc".to_string()),
@@ -690,11 +701,11 @@ export { hello1, hello2, default as world1 } from './dep';
       ),
       (
         ModuleId::from("dep1"),
-        HashMap::from([("world".to_string(), "dd".to_string())]),
+        HashMap::from_iter([("world".to_string(), "dd".to_string())]),
       ),
       (
         ModuleId::from("dep2"),
-        HashMap::from([
+        HashMap::from_iter([
           ("foo".to_string(), "aa".to_string()),
           ("zoo".to_string(), "bb".to_string()),
           ("bar".to_string(), "cc".to_string()),
@@ -744,7 +755,7 @@ export { aa, bb, default as f } from './dep';
 
     assert_eq!(
       minified_exports_map,
-      &HashMap::from([
+      &HashMap::from_iter([
         ("world".to_string(), "dd".to_string(),),
         ("world1".to_string(), "f".to_string(),),
         ("hello1".to_string(), "aa".to_string(),),

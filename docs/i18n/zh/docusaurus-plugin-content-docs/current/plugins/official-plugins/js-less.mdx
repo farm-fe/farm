@@ -1,0 +1,157 @@
+import CodeBlock from "@theme/CodeBlock";
+import Tabs from "@theme/Tabs";
+import TabItem from "@theme/TabItem";
+
+# @farmfe/js-plugin-less
+支持 `Less` 编译
+
+## Installation
+
+<Tabs>
+  <TabItem value="npm" label="npm">
+    <CodeBlock>npm install @farmfe/js-plugin-less less</CodeBlock>
+  </TabItem>
+  <TabItem value="yarn" label="yarn">
+    <CodeBlock>yarn add @farmfe/js-plugin-less less</CodeBlock>
+  </TabItem>
+  <TabItem value="pnpm" label="pnpm">
+    <CodeBlock>pnpm add @farmfe/js-plugin-less less</CodeBlock>
+  </TabItem>
+</Tabs>
+
+## Usage
+```ts {2,6}
+import { UserConfig } from '@farmfe/core';
+import farmJsPluginLess from '@farmfe/js-plugin-less';
+
+const config: UserConfig = {
+  plugins: [
+    farmJsPluginLess({ /* options */ })
+  ]
+}
+```
+
+## Options
+```ts
+export type LessPluginOptions = {
+  lessOptions?: Less.Options;
+  implementation?: string;
+  filters?: {
+    resolvedPaths?: string[];
+    moduleTypes?: string[];
+  };
+  additionalData?:
+    | string
+    | ((context?: string, resolvePath?: string) => string | Promise<string>);
+};
+```
+
+### lessOptions
+请参阅[Less 选项](https://lesscss.org/usage/#less-options)。
+
+Example:
+```ts
+import path from 'node:path';
+import { UserConfig } from '@farmfe/core';
+import farmJsPluginLess from '@farmfe/js-plugin-less';
+
+const config: UserConfig = {
+  plugins: [
+    farmJsPluginLess({
+      lessOptions: {
+        paths: [path.resolve(process.cwd(), 'styles')]
+      }
+    })
+  ]
+}
+
+export default config;
+```
+
+### filters
+哪些文件应该由 `less` 处理。 默认为“ `{resolvedPaths: ['\\.less$'] }`”用于加载，“`{ moduleTypes: ['less'] }`”用于转换。
+
+* `resolvedPaths`: 仅处理这些路径下的文件。 支持正则表达式。
+* `moduleTypes`：仅处理具有这些模块类型的文件。
+
+`resolvedPaths` 和 `moduleTypes` 取并集。
+
+Example:
+```ts
+import { UserConfig } from '@farmfe/core';
+import farmJsPluginLess from '@farmfe/js-plugin-less';
+
+const config: UserConfig = {
+  plugins: [
+    farmJsPluginLess({
+      filters: {
+        // all files end with .custom-css will be processed
+        resolvedPaths: ['\\.custom-less$'],
+        moduleTypes: ['less']
+      }
+    })
+  ]
+}
+
+export default config;
+```
+
+### implementation
+`less` 的 `implementation` 包名称。 默认为 `less`。
+
+### additionalData
+```ts
+type AdditionalDataOption = string | ((content?: string, resolvePath?: string) => string | Promise<string>);
+```
+要添加到每个 less 文件的附加数据。示例：
+```ts
+import { UserConfig } from '@farmfe/core';
+import farmJsPluginLess from '@farmfe/js-plugin-less';
+
+const config: UserConfig = {
+  plugins: [
+    farmJsPluginLess({
+      // add variables.less to every less file
+      additionalData: `
+        @import "./src/styles/variables.less";
+      `
+    })
+  ]
+}
+```
+Less 文件:
+```less title="index.less"
+.foo {
+  color: @primary-color;
+}
+```
+`additionalData` 将会被添加到这个文件的头部:
+
+```less title="index.less"
+@import "./src/styles/variables.less";
+
+.foo {
+  color: @primary-color;
+}
+```
+
+函数形式用法:
+```ts
+import { UserConfig } from '@farmfe/core';
+import farmJsPluginLess from '@farmfe/js-plugin-less';
+
+const config: UserConfig = {
+  plugins: [
+    farmJsPluginLess({
+      // add variables.less to every less file
+      additionalData: (content, resolvePath) => {
+        if (resolvePath === '/path/to/index.less') {
+          return `
+            @import "./src/styles/variables.less";
+          `;
+        }
+      }
+    })
+  ]
+}
+```

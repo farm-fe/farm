@@ -1,6 +1,5 @@
-use std::collections::HashMap;
-
 use farmfe_core::module::{module_graph::ModuleGraph, ModuleId, ModuleSystem};
+use farmfe_core::HashMap;
 
 use crate::module::{TreeShakeModule, UsedExports};
 
@@ -9,8 +8,12 @@ pub fn mark_initial_side_effects(
   tree_shake_modules_map: &mut HashMap<ModuleId, TreeShakeModule>,
 ) -> Vec<ModuleId> {
   let mut entry_module_ids = vec![];
+  let mut entries = HashMap::default();
 
-  for (entry_module_id, _) in module_graph.entries.clone() {
+  entries.extend(module_graph.entries.clone());
+  entries.extend(module_graph.dynamic_entries.clone());
+
+  for (entry_module_id, _) in entries {
     // mark entry modules as UsedExports::All
     if let Some(tree_shake_module) = tree_shake_modules_map.get_mut(&entry_module_id) {
       tree_shake_module.pending_used_exports = UsedExports::All;

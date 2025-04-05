@@ -1,0 +1,34 @@
+{
+  "title": {
+    "message": "Farm",
+    "description": "The title in the navbar"
+  },
+  "item.label.Guides": {
+    "message": "指南",
+    "description": "Navbar item with label Guides"
+  },
+  "item.label.Config": {
+    "message": "配置",
+    "description": "Navbar item with label Config"
+  },
+  "item.label.Plugins": {
+    "message": "插件",
+    "description": "Navbar item with label Plugins"
+  },
+  "item.label.Community": {
+    "message": "社区",
+    "description": "Navbar item with label Community"
+  },
+  "item.label.Team": {
+    "message": "团队",
+    "description": "Navbar item with label Community Team"
+  },
+  "item.label.Blog": {
+    "message": "日志",
+    "description": "Navbar item with label Community Blog"
+  },
+  "logo.alt": {
+    "message": "My Site Logo",
+    "description": "The alt text of navbar logo"
+  }
+}

@@ -73,7 +73,7 @@ impl PackageManager {
         Template::Nestjs,
         Template::Tauri2(None),
         Template::Tauri(None),
-        Template::Electron(None)
+        Template::Electron(None),
       ],
     }
   }

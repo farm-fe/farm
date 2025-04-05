@@ -1,4 +1,4 @@
-use std::{collections::HashMap, sync::Arc};
+use std::sync::Arc;
 
 use farmfe_core::{
   config::Config,
@@ -8,6 +8,7 @@ use farmfe_core::{
     Plugin, PluginFinalizeModuleHookParam, PluginHookContext, PluginLoadHookParam,
     PluginParseHookParam,
   },
+  HashMap,
 };
 use farmfe_testing_helpers::fixture;
 
@@ -22,14 +23,14 @@ fn hmr_accepted() {
     let id = file.to_string_lossy().to_string();
     let hook_context = PluginHookContext {
       caller: None,
-      meta: HashMap::new(),
+      meta: HashMap::default(),
     };
     let loaded = plugin_script
       .load(
         &PluginLoadHookParam {
           resolved_path: &id,
           query: vec![],
-          meta: HashMap::new(),
+          meta: HashMap::default(),
           module_id: id.clone(),
         },
         &context,
@@ -62,7 +63,7 @@ fn hmr_accepted() {
       .finalize_module(
         &mut PluginFinalizeModuleHookParam {
           module: &mut module,
-          deps: &vec![],
+          deps: &mut vec![],
         },
         &context,
       )

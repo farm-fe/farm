@@ -1,40 +1,34 @@
-use std::{
-  collections::{HashMap, HashSet},
-  sync::Arc,
-};
+use std::sync::Arc;
 
 use farmfe_core::{
   context::CompilationContext,
   module::{module_graph::ModuleGraph, ModuleId},
+  HashMap, HashSet,
 };
 
 pub fn find_hmr_boundaries(
   update_module_ids: &Vec<ModuleId>,
   context: &Arc<CompilationContext>,
 ) -> HashMap<String, Vec<Vec<String>>> {
-  let mut boundaries = HashMap::new();
+  let mut boundaries = HashMap::default();
   let module_graph = context.module_graph.read();
 
   for id in update_module_ids {
     let mut stack = vec![id.clone()];
-    let mut visited = HashSet::new();
+    let mut visited = HashSet::default();
     let mut res = vec![];
     let all_path_accepted =
       find_hmr_accepted_recursively(id, &module_graph, &mut stack, &mut visited, &mut res);
     // if any of the path is not accepted, reload the whole page
     if !all_path_accepted {
-      return HashMap::new();
+      return HashMap::default();
     }
 
     boundaries.insert(
-      id.id(context.config.mode.clone()),
+      id.id(context.config.mode),
       res
         .into_iter()
-        .map(|v| {
-          v.into_iter()
-            .map(|id| id.id(context.config.mode.clone()))
-            .collect()
-        })
+        .map(|v| v.into_iter().map(|id| id.id(context.config.mode)).collect())
         .collect(),
     );
   }
@@ -106,16 +100,17 @@ fn find_hmr_accepted_recursively(
 
 #[cfg(test)]
 mod tests {
-  use std::{
-    collections::{HashMap, HashSet},
-    sync::Arc,
-  };
+  use std::sync::Arc;
 
   use farmfe_core::{
     config::{Config, Mode},
     context::CompilationContext,
-    module::{module_graph::ModuleGraph, ModuleMetaData, ModuleType, ScriptModuleMetaData},
+    module::{
+      meta_data::script::ScriptModuleMetaData, module_graph::ModuleGraph, ModuleMetaData,
+      ModuleType,
+    },
     parking_lot::RwLock,
+    HashMap, HashSet,
   };
   use farmfe_testing_helpers::construct_test_module_graph;
 
@@ -140,15 +135,15 @@ mod tests {
 
     let module_a = module_graph.module_mut(&"A".into()).unwrap();
     module_a.module_type = ModuleType::Js;
-    module_a.meta = Box::new(ModuleMetaData::Script(ScriptModuleMetaData {
+    module_a.meta = Box::new(ModuleMetaData::Script(Box::new(ScriptModuleMetaData {
       hmr_self_accepted: true,
       ..Default::default()
-    }));
+    })));
 
     let context = create_context(module_graph);
     let boundaries = find_hmr_boundaries(&vec!["F".into()], &context);
 
-    assert_eq!(boundaries, HashMap::new());
+    assert_eq!(boundaries, HashMap::default());
   }
 
   #[test]
@@ -157,16 +152,16 @@ mod tests {
 
     let module_d = module_graph.module_mut(&"D".into()).unwrap();
     module_d.module_type = ModuleType::Js;
-    module_d.meta = Box::new(ModuleMetaData::Script(ScriptModuleMetaData {
+    module_d.meta = Box::new(ModuleMetaData::Script(Box::new(ScriptModuleMetaData {
       hmr_self_accepted: true,
       ..Default::default()
-    }));
+    })));
     let module_c = module_graph.module_mut(&"C".into()).unwrap();
     module_c.module_type = ModuleType::Js;
-    module_c.meta = Box::new(ModuleMetaData::Script(ScriptModuleMetaData {
+    module_c.meta = Box::new(ModuleMetaData::Script(Box::new(ScriptModuleMetaData {
       hmr_self_accepted: true,
       ..Default::default()
-    }));
+    })));
 
     let context = create_context(module_graph);
     let boundaries = find_hmr_boundaries(&vec!["F".into()], &context);
@@ -188,15 +183,15 @@ mod tests {
 
     let module_d = module_graph.module_mut(&"D".into()).unwrap();
     module_d.module_type = ModuleType::Js;
-    module_d.meta = Box::new(ModuleMetaData::Script(ScriptModuleMetaData {
+    module_d.meta = Box::new(ModuleMetaData::Script(Box::new(ScriptModuleMetaData {
       hmr_self_accepted: true,
       ..Default::default()
-    }));
+    })));
 
     let context = create_context(module_graph);
     let boundaries = find_hmr_boundaries(&vec!["F".into()], &context);
     // Be careful, the order of the paths may not be guaranteed. check the order if the test fails.
-    assert_eq!(boundaries, HashMap::new());
+    assert_eq!(boundaries, HashMap::default());
   }
 
   #[test]
@@ -205,18 +200,18 @@ mod tests {
 
     let module_d = module_graph.module_mut(&"D".into()).unwrap();
     module_d.module_type = ModuleType::Js;
-    module_d.meta = Box::new(ModuleMetaData::Script(ScriptModuleMetaData {
+    module_d.meta = Box::new(ModuleMetaData::Script(Box::new(ScriptModuleMetaData {
       hmr_self_accepted: false,
-      hmr_accepted_deps: HashSet::from(["F".into()]),
+      hmr_accepted_deps: HashSet::from_iter(["F".into()]),
       ..Default::default()
-    }));
+    })));
     let module_c = module_graph.module_mut(&"C".into()).unwrap();
     module_c.module_type = ModuleType::Js;
-    module_c.meta = Box::new(ModuleMetaData::Script(ScriptModuleMetaData {
+    module_c.meta = Box::new(ModuleMetaData::Script(Box::new(ScriptModuleMetaData {
       hmr_self_accepted: false,
-      hmr_accepted_deps: HashSet::from(["F".into()]),
+      hmr_accepted_deps: HashSet::from_iter(["F".into()]),
       ..Default::default()
-    }));
+    })));
 
     let context = create_context(module_graph);
     let boundaries = find_hmr_boundaries(&vec!["F".into()], &context);
@@ -238,23 +233,23 @@ mod tests {
 
     let module_d = module_graph.module_mut(&"D".into()).unwrap();
     module_d.module_type = ModuleType::Js;
-    module_d.meta = Box::new(ModuleMetaData::Script(ScriptModuleMetaData {
+    module_d.meta = Box::new(ModuleMetaData::Script(Box::new(ScriptModuleMetaData {
       hmr_self_accepted: false,
-      hmr_accepted_deps: HashSet::from(["F".into()]),
+      hmr_accepted_deps: HashSet::from_iter(["F".into()]),
       ..Default::default()
-    }));
+    })));
 
     let module_f = module_graph.module_mut(&"F".into()).unwrap();
     module_f.module_type = ModuleType::Js;
-    module_f.meta = Box::new(ModuleMetaData::Script(ScriptModuleMetaData {
+    module_f.meta = Box::new(ModuleMetaData::Script(Box::new(ScriptModuleMetaData {
       hmr_self_accepted: false,
       ..Default::default()
-    }));
+    })));
 
     let context = create_context(module_graph);
     let boundaries = find_hmr_boundaries(&vec!["F".into()], &context);
     // Be careful, the order of the paths may not be guaranteed. check the order if the test fails.
-    assert_eq!(boundaries, HashMap::new());
+    assert_eq!(boundaries, HashMap::default());
   }
 
   #[test]
@@ -263,25 +258,25 @@ mod tests {
 
     let module_b = module_graph.module_mut(&"B".into()).unwrap();
     module_b.module_type = ModuleType::Js;
-    module_b.meta = Box::new(ModuleMetaData::Script(ScriptModuleMetaData {
+    module_b.meta = Box::new(ModuleMetaData::Script(Box::new(ScriptModuleMetaData {
       hmr_self_accepted: false,
-      hmr_accepted_deps: HashSet::from(["E".into()]),
+      hmr_accepted_deps: HashSet::from_iter(["E".into()]),
       ..Default::default()
-    }));
+    })));
 
     let module_e = module_graph.module_mut(&"E".into()).unwrap();
     module_e.module_type = ModuleType::Js;
-    module_e.meta = Box::new(ModuleMetaData::Script(ScriptModuleMetaData {
+    module_e.meta = Box::new(ModuleMetaData::Script(Box::new(ScriptModuleMetaData {
       hmr_self_accepted: false,
       ..Default::default()
-    }));
+    })));
 
     let module_g = module_graph.module_mut(&"G".into()).unwrap();
     module_g.module_type = ModuleType::Js;
-    module_g.meta = Box::new(ModuleMetaData::Script(ScriptModuleMetaData {
+    module_g.meta = Box::new(ModuleMetaData::Script(Box::new(ScriptModuleMetaData {
       hmr_self_accepted: false,
       ..Default::default()
-    }));
+    })));
 
     let context = create_context(module_graph);
     let boundaries = find_hmr_boundaries(&vec!["G".into()], &context);

@@ -2,8 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use super::config_regex::ConfigRegex;
 
-// TODO: implement this for treeShaking
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct TreeShakingConfig {
   /// exclude some side effects files

@@ -1,0 +1,50 @@
+import CodeBlock from "@theme/CodeBlock";
+import Tabs from "@theme/Tabs";
+import TabItem from "@theme/TabItem";
+
+# @farmfe/plugin-yaml
+
+受 [@rollup/plugin-yaml](https://www.npmjs.com/package/@rollup/plugin-yaml) 启发
+
+🍣 一个Farm插件，用于将YAML文件转换为ES6模块。
+
+## 安装
+
+<Tabs>
+  <TabItem value="npm" label="npm">
+    <CodeBlock>npm install @farmfe/plugin-yaml</CodeBlock>
+  </TabItem>
+  <TabItem value="yarn" label="yarn">
+    <CodeBlock>yarn add @farmfe/plugin-yaml</CodeBlock>
+  </TabItem>
+  <TabItem value="pnpm" label="pnpm">
+    <CodeBlock>pnpm add @farmfe/plugin-yaml</CodeBlock>
+  </TabItem>
+</Tabs>
+
+## 使用
+
+farm.config.ts
+
+```typescript
+import { defineConfig } from '@farmfe/core';
+
+export default defineConfig({
+  plugins: [
+    [
+      '@farmfe/plugin-yaml',
+      {
+        documentMode: 'single' | 'multi', // 默认 single
+        include: Regex, // 默认 None
+        exclude: Regex, // 默认 None
+      },
+    ],
+  ],
+});
+```
+
+注意：
+
+`include` 或 `exclude` 使用的是正则表达式而不是glob。例如 `**/01.yaml` 是不合法的。正确的表达方式类似于 `".*\\/01.yaml"`。
+
+这个插件允许你在Farm项目中直接导入YAML文件，并将它们转换成ES6模块。`documentMode` 选项允许你指定处理单个文档的YAML文件（`single`）或包含多个文档的YAML文件（`multi`）。`include` 和 `exclude` 选项让你可以更细致地控制哪些YAML文件应该被插件处理，通过指定匹配特定格式的正则表达式。这种灵活性让你能够在Farm项目中轻松地处理和利用YAML数据。

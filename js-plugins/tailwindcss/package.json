@@ -30,6 +30,7 @@
   },
   "devDependencies": {
     "@farmfe/js-plugin-dts": "workspace:^",
+    "@farmfe/plugin-dts": "workspace:^",
     "@types/postcss-import": "^14.0.3"
   }
 }

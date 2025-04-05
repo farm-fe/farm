@@ -1,9 +1,4 @@
-use std::{
-  collections::{HashMap, HashSet},
-  fmt::Debug,
-  path::PathBuf,
-  sync::Arc,
-};
+use std::{cell::Ref, fmt::Debug, hash::Hash, path::PathBuf, sync::Arc};
 
 use farmfe_core::{
   context::CompilationContext,
@@ -11,18 +6,19 @@ use farmfe_core::{
   farm_profile_function,
   module::{module_graph::ModuleGraph, Module, ModuleId, ModuleSystem, ModuleType},
   resource::resource_pot::ResourcePotId,
-  swc_common::{Mark, SourceMap},
+  swc_common::{sync::OnceCell, Mark, SourceMap},
   swc_ecma_ast::{Id, Module as EcmaAstModule},
+  HashMap, HashSet,
 };
 use farmfe_toolkit::{
-  common::{create_swc_source_map, Source},
-  script::swc_try_with::try_with,
-  swc_ecma_visit::VisitWith,
+  script::swc_try_with::try_with, sourcemap::create_swc_source_map, swc_ecma_visit::VisitWith,
 };
 
 use crate::resource_pot_to_bundle::{
-  bundle::reference::ReferenceMap, common::get_module_mark, targets::cjs::CjsModuleAnalyzer,
-  uniq_name::BundleVariable, Var,
+  bundle::{bundle_reference::CommonJsImportMap, reference::ReferenceMap},
+  common::get_module_mark,
+  targets::cjs::CjsModuleAnalyzer,
+  uniq_name::BundleVariable,
 };
 
 use super::analyze::{self, CollectUnresolvedIdent};
@@ -81,19 +77,9 @@ pub enum StmtAction {
   /// import cjs from './cjs_module';
   /// // =>
   /// remove
-  /// // or
   ///
   /// ```
   StripCjsImport(usize, Option<ModuleId>),
-  //
-  // ```ts
-  // export { name as cjsName } from "./cjs";
-  // export { age as cjsAge } from "./cjs";
-  // // =>
-  // const { name, age } = require_cjs();
-  // ```
-  //
-  // ReplaceCjsExport(ModuleId),
 }
 
 impl StmtAction {
@@ -104,7 +90,6 @@ impl StmtAction {
       StmtAction::DeclDefaultExpr(index, _) => Some(*index),
       StmtAction::RemoveImport(index) => Some(*index),
       StmtAction::StripCjsImport(index, _) => Some(*index),
-      // StmtAction::ReplaceCjsExport(_) => None,
     }
   }
 }
@@ -233,16 +218,18 @@ pub struct ModuleAnalyzer {
   pub cm: Arc<SourceMap>,
   pub ast: EcmaAstModule,
   pub module_id: ModuleId,
-  pub resource_pot_id: ResourcePotId,
+  pub bundle_group_id: ResourcePotId,
   pub export_names: Option<Arc<ReferenceMap>>,
   pub entry: bool,
   pub external: bool,
-  pub dynamic: bool,
+  pub is_dynamic: bool,
   pub is_runtime: bool,
+  pub is_should_dynamic_reexport: bool,
   pub cjs_module_analyzer: CjsModuleAnalyzer,
   pub mark: (Mark, Mark),
   pub module_system: ModuleSystem,
   pub module_type: ModuleType,
+  pub is_reference_by_another: OnceCell<bool>,
 }
 
 impl Debug for ModuleAnalyzer {
@@ -253,15 +240,16 @@ impl Debug for ModuleAnalyzer {
       .field("cm", &"[skip]")
       .field("ast", &self.ast)
       .field("module_id", &self.module_id)
-      .field("resource_pot_id", &self.resource_pot_id)
+      .field("bundle_group_id", &self.bundle_group_id)
       .field("export_names", &self.export_names)
       .field("entry", &self.entry)
       .field("external", &self.external)
-      .field("dynamic", &self.dynamic)
+      .field("dynamic", &self.is_dynamic)
       .field("is_runtime", &self.is_runtime)
       .field("cjs_module_analyzer", &"[skip]")
       .field("mark", &self.mark)
       .field("module_system", &self.module_system)
+      .field("is_reference_by_other", &self.is_reference_by_another)
       .finish()
   }
 }
@@ -270,7 +258,7 @@ impl ModuleAnalyzer {
   pub fn new(
     module: &Module,
     context: &Arc<CompilationContext>,
-    resource_pot_id: ResourcePotId,
+    group_id: ResourcePotId,
     is_entry: bool,
     is_dynamic: bool,
     is_runtime: bool,
@@ -278,10 +266,7 @@ impl ModuleAnalyzer {
     farm_profile_function!(format!("module analyzer {}", module.id.to_string()));
     let mut ast = module.meta.as_script().ast.clone();
 
-    let (cm, _) = create_swc_source_map(Source {
-      path: PathBuf::from(module.id.resolved_path_with_query(&context.config.root)),
-      content: module.content.clone(),
-    });
+    let (cm, _) = create_swc_source_map(&module.id, module.content.clone());
 
     let mut mark = None;
     try_with(cm.clone(), &context.meta.script.globals, || {
@@ -290,20 +275,22 @@ impl ModuleAnalyzer {
 
     Ok(Self {
       statements: vec![],
-      statement_actions: HashSet::new(),
+      statement_actions: HashSet::default(),
       cm,
       ast,
       module_id: module.id.clone(),
       export_names: None,
-      resource_pot_id,
+      bundle_group_id: group_id,
       external: module.external,
       entry: is_entry,
-      dynamic: is_dynamic,
+      is_should_dynamic_reexport: false,
+      is_dynamic,
       is_runtime,
       cjs_module_analyzer: CjsModuleAnalyzer::new(),
       mark: mark.unwrap(),
       module_system: module.meta.as_script().module_system.clone(),
       module_type: module.module_type.clone(),
+      is_reference_by_another: OnceCell::new(),
     })
   }
 
@@ -319,6 +306,10 @@ impl ModuleAnalyzer {
       self.module_system,
       ModuleSystem::EsModule | ModuleSystem::Hybrid
     )
+  }
+
+  pub fn is_reference_by_another<F: Fn() -> bool>(&self, f: F) -> bool {
+    *self.is_reference_by_another.get_or_init(f)
   }
 
   fn collect_unresolved_ident(&self, bundle_variable: &mut BundleVariable) {
@@ -345,31 +336,55 @@ impl ModuleAnalyzer {
   ) -> Result<()> {
     farm_profile_function!("");
     try_with(self.cm.clone(), &context.meta.script.globals, || {
-      for (statement_id, stmt) in self.ast.body.iter().enumerate() {
-        let statement = analyze::analyze_imports_and_exports(
-          statement_id,
-          stmt,
-          &self.module_id,
-          module_graph,
-          self.mark.1,
-          self.mark.0,
-          &mut |ident, strict, is_placeholder| {
-            if is_placeholder {
-              bundle_variable.register_placeholder(&self.module_id, ident)
-            } else {
-              bundle_variable.register_var(&self.module_id, ident, strict)
+      let mut is_should_dynamic_reexport = false;
+      self
+        .ast
+        .body
+        .iter()
+        .enumerate()
+        .for_each(|(statement_id, stmt)| {
+          let statement = analyze::analyze_imports_and_exports(
+            statement_id,
+            stmt,
+            &self.module_id,
+            module_graph,
+            self.mark.1,
+            self.mark.0,
+            &mut |ident, strict, is_placeholder| {
+              if is_placeholder {
+                bundle_variable.register_placeholder(&self.module_id, ident)
+              } else {
+                bundle_variable.register_var(&self.module_id, ident, strict)
+              }
+            },
+          )
+          .unwrap();
+
+          if statement.export.is_none()
+            && statement.import.is_none()
+            && statement.defined.is_empty()
+          {
+            return;
+          }
+
+          if let Some(ExportInfo {
+            source, specifiers, ..
+          }) = statement.export.as_ref()
+          {
+            if source
+              .as_ref()
+              .is_some_and(|m| module_graph.module(m).is_some_and(|m| m.external))
+              && specifiers.iter().any(|specify| match specify {
+                ExportSpecifierInfo::All(_) => true,
+                _ => false,
+              })
+            {
+              is_should_dynamic_reexport = true;
             }
-          },
-        )
-        .unwrap();
+          }
 
-        if statement.export.is_none() && statement.import.is_none() && statement.defined.is_empty()
-        {
-          continue;
-        }
-
-        self.statements.push(statement);
-      }
+          self.statements.push(statement);
+        });
 
       // unresolved is write to global, so, we need to avoid having the same declaration as unresolved ident in the bundle
       self.collect_unresolved_ident(bundle_variable);
@@ -395,7 +410,7 @@ impl ModuleAnalyzer {
   }
 
   pub fn variables(&self) -> HashSet<usize> {
-    let mut variables = HashSet::new();
+    let mut variables = HashSet::default();
 
     for statement in &self.statements {
       for defined in &statement.defined {
@@ -416,7 +431,8 @@ impl ModuleAnalyzer {
   pub fn build_rename_map<'a>(
     &self,
     bundle_variable: &'a BundleVariable,
-  ) -> HashMap<&'a Id, &'a Var> {
+    commonjs_import_map: &'a CommonJsImportMap,
+  ) -> HashMap<VarRefKey<'a>, usize> {
     self
       .statements
       .iter()
@@ -451,27 +467,68 @@ impl ModuleAnalyzer {
               .as_ref()
               .map(|item| {
                 let mut idents = vec![];
+                let commonjs = commonjs_import_map.get(&item.source.clone().into());
+
                 for specify in &item.specifiers {
                   match specify {
                     ImportSpecifierInfo::Namespace(local) => {
-                      idents.push(*local);
+                      if let Some(i) = commonjs.and_then(|i| i.namespace) {
+                        idents.push(i);
+                      } else {
+                        idents.push(*local);
+                      }
                     }
                     ImportSpecifierInfo::Named { local, imported: _ } => {
                       idents.push(*local);
                     }
                     ImportSpecifierInfo::Default(local) => {
-                      idents.push(*local);
+                      if let Some(i) = commonjs.and_then(|i| i.default) {
+                        idents.push(i);
+                      } else {
+                        idents.push(*local);
+                      }
                     }
                   }
                 }
+
                 idents
               })
               .unwrap_or_default(),
           )
           .map(|item| bundle_variable.var_by_index(item))
-          .filter(|item| item.rename.is_some())
-          .map(|item| (&item.var, item))
+          .filter(|item| item.rename.is_some() && !item.placeholder)
+          .map(|item| {
+            (
+              Ref::map(Ref::clone(&item), |item| &item.var).into(),
+              item.index,
+            )
+          })
       })
       .collect::<HashMap<_, _>>()
+  }
+}
+
+#[derive(Debug)]
+pub struct VarRefKey<'a> {
+  inner: Ref<'a, Id>,
+}
+
+impl<'a> PartialEq for VarRefKey<'a> {
+  fn eq(&self, other: &Self) -> bool {
+    *self.inner == *other.inner
+  }
+}
+
+impl<'a> Eq for VarRefKey<'a> {}
+
+impl<'a> Hash for VarRefKey<'a> {
+  fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+    self.inner.hash(state);
+  }
+}
+
+impl<'a> From<Ref<'a, Id>> for VarRefKey<'a> {
+  fn from(value: Ref<'a, Id>) -> Self {
+    Self { inner: value }
   }
 }

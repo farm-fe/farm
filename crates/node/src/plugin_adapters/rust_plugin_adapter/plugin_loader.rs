@@ -16,8 +16,7 @@ pub unsafe fn load_rust_plugin<P: AsRef<OsStr> + std::fmt::Display>(
 ) -> Result<(Arc<dyn Plugin>, Library), Error> {
   type PluginCreate = unsafe fn(config: &Config, options: String) -> Arc<dyn Plugin>;
 
-  let lib = Library::new(filename.as_ref())?;
-
+  let lib = Library::new(filename.as_ref()).unwrap();
   let core_version_fn: Symbol<unsafe fn() -> String> = lib.get(b"_core_version")?;
   let core_version = core_version_fn();
 
@@ -28,7 +27,7 @@ Please upgrade or downgrade the plugin or @farmfe/core to make the versions matc
   plugin core 0.4 -> @farmfe/core < 1.3.0
   plugin core 0.5 -> @farmfe/core >= 1.3.0
 
-If you are plugin author, please build your plugin with rust toolchain `nightly-2024-04-16`\n",
+If you are plugin author, please build your plugin with rust toolchain `nightly-2024-10-07`\n",
       VERSION, core_version, filename
     );
   }
