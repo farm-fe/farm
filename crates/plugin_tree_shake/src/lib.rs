@@ -1,5 +1,6 @@
 #![feature(box_patterns)]
 #![feature(exact_size_is_empty)]
+#![feature(let_chains)]
 
 use farmfe_core::{
   config::{Config, Mode},
