@@ -8,7 +8,7 @@ input_file: crates/testing_helpers/src/lib.rs
             "A_Entry",
         ),
         resource_pots: {
-            "A_66be",
+            "A_66be131002b8b5af1132bafd62635f07_js",
         },
     },
     GroupResourcePotsSnapshotItem {
@@ -16,10 +16,9 @@ input_file: crates/testing_helpers/src/lib.rs
             "B_Entry",
         ),
         resource_pots: {
-            "test___farm_unknown",
-            "test_js",
-            "B_3f39",
-            "B_2f5d",
+            "B_2f5d6a63eb2504d486bf13df147c043a_js",
+            "test__js",
+            "B_3f39d5c348e5b79d06e842c114e6cc57_js",
         },
     },
     GroupResourcePotsSnapshotItem {
@@ -27,7 +26,7 @@ input_file: crates/testing_helpers/src/lib.rs
             "D_DynamicImport",
         ),
         resource_pots: {
-            "B_3f39",
+            "B_3f39d5c348e5b79d06e842c114e6cc57_js",
         },
     },
     GroupResourcePotsSnapshotItem {
@@ -35,7 +34,7 @@ input_file: crates/testing_helpers/src/lib.rs
             "F_DynamicImport",
         ),
         resource_pots: {
-            "test_js",
+            "test__js",
         },
     },
     GroupResourcePotsSnapshotItem {
@@ -43,7 +42,7 @@ input_file: crates/testing_helpers/src/lib.rs
             "I_DynamicEntry",
         ),
         resource_pots: {
-            "EI_dynamic_entry_js",
+            "EI__dynamic_entry_js",
         },
     },
 ]

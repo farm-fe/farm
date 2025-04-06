@@ -11,7 +11,6 @@ pub mod plugin_adapters;
 #[cfg(feature = "profile")]
 pub mod profile_gui;
 
-use farmfe_core::rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use farmfe_core::{
   config::{Config, Mode},
   module::ModuleId,
@@ -39,6 +38,8 @@ use plugin_adapters::{js_plugin_adapter::JsPluginAdapter, rust_plugin_adapter::R
 
 #[macro_use]
 extern crate napi_derive;
+
+pub mod plugin_toolkit;
 
 #[napi(object)]
 pub struct WatchDiffResult {
@@ -438,7 +439,7 @@ impl JsCompiler {
 
   #[napi]
   pub fn write_resources_to_disk(&self) {
-    self.compiler.write_resources_to_disk();
+    self.compiler.write_resources_to_disk().unwrap();
   }
 
   #[napi]

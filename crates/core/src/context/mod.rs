@@ -4,7 +4,6 @@ use std::{
   sync::Arc,
 };
 
-use dashmap::{mapref::one::Ref, DashMap};
 use parking_lot::{Mutex, RwLock};
 use rayon::{ThreadPool, ThreadPoolBuilder};
 use regex::Regex;
@@ -52,7 +51,7 @@ pub struct CompilationContext {
   pub stats: Box<Stats>,
   pub log_store: Box<Mutex<LogStore>>,
   pub resolve_cache: Box<Mutex<HashMap<PluginResolveHookParam, PluginResolveHookResult>>>,
-  pub custom: Box<DashMap<String, Box<dyn Any + Send + Sync>>>,
+  pub custom: Box<Mutex<HashMap<String, Box<dyn Any + Send + Sync>>>>,
 }
 
 impl CompilationContext {
@@ -78,7 +77,7 @@ impl CompilationContext {
       stats: Box::new(Stats::new()),
       log_store: Box::new(Mutex::new(LogStore::new())),
       resolve_cache: Box::new(Mutex::new(HashMap::default())),
-      custom: Box::new(DashMap::default()),
+      custom: Box::new(Mutex::default()),
     })
   }
 
@@ -189,6 +188,14 @@ impl Default for CompilationContext {
   }
 }
 
+pub struct ArcContextGlobals(Arc<Globals>);
+
+impl ArcContextGlobals {
+  pub fn value(&self) -> &Globals {
+    &self.0
+  }
+}
+
 /// Shared meta info for the core and core plugins, for example, shared swc [SourceMap]
 /// The **custom** field can be used for custom plugins to store shared meta data across compilation
 pub struct ContextMetaData {
@@ -198,17 +205,17 @@ pub struct ContextMetaData {
   pub html: HtmlContextMetaData,
 
   /// shared swc sourcemap cache for module
-  pub module_source_maps: DashMap<ModuleId, Arc<SourceMap>>,
+  pub module_source_maps: Mutex<HashMap<ModuleId, Arc<SourceMap>>>,
   /// shared swc sourcemap cache for hoisted modules
-  pub hoisted_modules_source_maps: DashMap<ModuleId, Arc<SourceMap>>,
+  pub hoisted_modules_source_maps: Mutex<HashMap<ModuleId, Arc<SourceMap>>>,
   /// shared swc sourcemap cache for resource pot
-  pub resource_pot_source_maps: DashMap<ResourcePotId, Arc<SourceMap>>,
+  pub resource_pot_source_maps: Mutex<HashMap<ResourcePotId, Arc<SourceMap>>>,
 
   /// Globals map for each module
-  globals_map: DashMap<ModuleId, Globals>,
+  globals_map: Mutex<HashMap<ModuleId, Arc<Globals>>>,
 
   /// custom meta map
-  pub custom: DashMap<String, Box<dyn Any + Send + Sync>>,
+  pub custom: Mutex<HashMap<String, Box<dyn Any + Send + Sync>>>,
 }
 
 impl ContextMetaData {
@@ -217,11 +224,11 @@ impl ContextMetaData {
       script: ScriptContextMetaData::new(),
       css: CssContextMetaData::new(),
       html: HtmlContextMetaData::new(),
-      module_source_maps: DashMap::new(),
-      hoisted_modules_source_maps: DashMap::new(),
-      resource_pot_source_maps: DashMap::new(),
-      globals_map: DashMap::new(),
-      custom: DashMap::new(),
+      module_source_maps: Default::default(),
+      hoisted_modules_source_maps: Default::default(),
+      resource_pot_source_maps: Default::default(),
+      globals_map: Default::default(),
+      custom: Default::default(),
     }
   }
 
@@ -229,6 +236,7 @@ impl ContextMetaData {
   pub fn get_module_source_map(&self, module_id: &ModuleId) -> Arc<SourceMap> {
     self
       .module_source_maps
+      .lock()
       .get(module_id)
       .map(|value| value.clone())
       .unwrap_or_else(|| panic!("no source map found for module {:?}", module_id))
@@ -237,12 +245,13 @@ impl ContextMetaData {
   /// set swc source map for module id
   /// this should be called after every time the module is parsed and updated to the module graph
   pub fn set_module_source_map(&self, module_id: &ModuleId, cm: Arc<SourceMap>) {
-    self.module_source_maps.insert(module_id.clone(), cm);
+    self.module_source_maps.lock().insert(module_id.clone(), cm);
   }
 
   pub fn get_hoisted_modules_source_map(&self, module_id: &ModuleId) -> Arc<SourceMap> {
     self
       .hoisted_modules_source_maps
+      .lock()
       .get(module_id)
       .map(|value| value.clone())
       .unwrap()
@@ -251,12 +260,14 @@ impl ContextMetaData {
   pub fn set_hoisted_modules_source_map(&self, module_id: &ModuleId, cm: Arc<SourceMap>) {
     self
       .hoisted_modules_source_maps
+      .lock()
       .insert(module_id.clone(), cm);
   }
 
   pub fn get_resource_pot_source_map(&self, resource_pot_id: &ResourcePotId) -> Arc<SourceMap> {
     self
       .resource_pot_source_maps
+      .lock()
       .get(resource_pot_id)
       .map(|value| value.clone())
       .unwrap_or_else(|| panic!("no source map found for resource pot {:?}", resource_pot_id))
@@ -267,20 +278,26 @@ impl ContextMetaData {
   pub fn set_resource_pot_source_map(&self, resource_pot_id: &ResourcePotId, cm: Arc<SourceMap>) {
     self
       .resource_pot_source_maps
+      .lock()
       .insert(resource_pot_id.clone(), cm);
   }
 
   pub fn set_globals(&self, module_id: &ModuleId, globals: Globals) {
-    self.globals_map.insert(module_id.clone(), globals);
+    self
+      .globals_map
+      .lock()
+      .insert(module_id.clone(), Arc::new(globals));
   }
 
-  pub fn get_globals(&self, module_id: &ModuleId) -> Ref<ModuleId, Globals> {
-    let globals = self
-      .globals_map
-      .get(module_id)
-      .unwrap_or_else(|| panic!("no globals found for module {:?}", module_id));
+  pub fn get_globals(&self, module_id: &ModuleId) -> ArcContextGlobals {
+    let globals_map = self.globals_map.lock();
 
-    globals
+    let globals = globals_map
+      .get(module_id)
+      .unwrap_or_else(|| panic!("no globals found for module {:?}", module_id))
+      .clone();
+
+    ArcContextGlobals(globals)
   }
 }
 

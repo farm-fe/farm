@@ -141,11 +141,11 @@ fn test_handle_dynamic_entry_resource_pots() {
   assert_eq!(dynamic_entry_resource_pots.len(), 1);
   assert_eq!(
     dynamic_entry_resource_pots,
-    HashSet::from_iter(["BH_dynamic_entry_js".to_string()])
+    HashSet::from_iter(["BH__dynamic_entry_js".to_string()])
   );
   let resource_pot_map = context.resource_pot_map.read();
   let dynamic_resource_pot = resource_pot_map
-    .resource_pot(&"BH_dynamic_entry_js".into())
+    .resource_pot(&"BH__dynamic_entry_js".into())
     .unwrap();
   assert_eq!(
     dynamic_resource_pot.modules,

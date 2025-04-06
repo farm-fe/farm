@@ -1726,6 +1726,7 @@ dependencies = [
  "farmfe_compiler",
  "farmfe_core",
  "farmfe_toolkit",
+ "farmfe_toolkit_plugin_types",
  "libloading 0.8.6",
  "napi",
  "napi-build",
@@ -1891,7 +1892,7 @@ dependencies = [
  "farmfe_core",
  "farmfe_macro_plugin",
  "farmfe_testing_helpers",
- "farmfe_toolkit",
+ "farmfe_toolkit_plugin_types",
  "lazy_static",
  "serde",
 ]
@@ -2057,6 +2058,15 @@ dependencies = [
  "swc_html_parser",
  "swc_html_visit",
  "swc_typescript",
+]
+
+[[package]]
+name = "farmfe_toolkit_plugin_types"
+version = "0.0.24"
+dependencies = [
+ "farmfe_core",
+ "lazy_static",
+ "libloading 0.7.4",
 ]
 
 [[package]]

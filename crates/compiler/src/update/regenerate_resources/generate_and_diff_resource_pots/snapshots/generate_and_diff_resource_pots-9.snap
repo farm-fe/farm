@@ -3,7 +3,7 @@ source: crates/compiler/src/update/regenerate_resources/generate_and_diff_resour
 input_file: crates/testing_helpers/src/lib.rs
 ---
 name: A
-id: A_66be
+id: A_66be131002b8b5af1132bafd62635f07_js
 immutable: false
 resource_pot_type: Js
 entry: Some(
@@ -32,7 +32,7 @@ resources: []
 -------
 
 name: B
-id: B_2f5d
+id: B_2f5d6a63eb2504d486bf13df147c043a_js
 immutable: false
 resource_pot_type: Js
 entry: Some(
@@ -61,7 +61,7 @@ resources: []
 -------
 
 name: B
-id: B_3f39
+id: B_3f39d5c348e5b79d06e842c114e6cc57_js
 immutable: false
 resource_pot_type: Js
 entry: None
@@ -84,7 +84,7 @@ resources: []
 -------
 
 name: EI
-id: EI_dynamic_entry_js
+id: EI__dynamic_entry_js
 immutable: false
 resource_pot_type: DynamicEntryJs
 entry: Some(
@@ -113,7 +113,7 @@ resources: []
 -------
 
 name: test
-id: test___farm_unknown
+id: test____farm_unknown
 immutable: false
 resource_pot_type: Custom("__farm_unknown")
 entry: None
@@ -133,7 +133,7 @@ resources: []
 -------
 
 name: test
-id: test_js
+id: test__js
 immutable: false
 resource_pot_type: Js
 entry: None

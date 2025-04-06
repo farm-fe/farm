@@ -47,7 +47,15 @@ pub fn transform_output_filename(
     let content_hash = sha256(bytes, 8);
     res = res.replace(CONTENT_HASH_NEW, &content_hash);
   } else if !name_hash.is_empty() {
-    name = format!("{}-{}", name, name_hash);
+    name = format!(
+      "{}-{}",
+      name,
+      if name_hash.len() > 8 {
+        &name_hash[0..8]
+      } else {
+        name_hash
+      }
+    );
   }
 
   if res.contains(RESOURCE_NAME) {

@@ -4,7 +4,9 @@ use dynamic_import::DynamicImportVisitor;
 use farmfe_core::{
   context::CompilationContext,
   module::{
-    meta_data::script::{statement::SwcId, CommentsMetaData, ModuleExportIdent},
+    meta_data::script::{
+      statement::SwcId, CommentsMetaData, ModuleExportIdent, EXPORT_EXTERNAL_NAMESPACE,
+    },
     module_graph::ModuleGraph,
     ModuleId,
   },
@@ -19,7 +21,7 @@ use strip_module_decl::{strip_module_decl, PreservedImportDeclItem, StripModuleD
 use swc_ecma_visit::VisitMutWith;
 use unique_idents::TopLevelIdentsRenameHandler;
 pub use unique_idents::EXPORT_NAMESPACE;
-use utils::create_var_namespace_item;
+use utils::{create_define_export_star_item, create_var_namespace_item};
 
 use super::{
   merge_swc_globals::{merge_comments, merge_sourcemap},
@@ -235,7 +237,9 @@ fn strip_modules_asts(
       // }
       // ```
       // if module is used by export * as or import * as or import('...')
-      if export_ident_map.contains_key(EXPORT_NAMESPACE) {
+      if export_ident_map.contains_key(EXPORT_NAMESPACE)
+        || export_ident_map.contains_key(EXPORT_EXTERNAL_NAMESPACE)
+      {
         let top_level_mark = Mark::from_u32(module.meta.as_script().top_level_mark);
         result.ast.body.push(create_var_namespace_item(
           &module_id,
@@ -245,6 +249,20 @@ fn strip_modules_asts(
           &mut delayed_rename,
         ));
       }
+      // add `window[xxx].defineExportStar(module_namespace, node_fs_external_namespace_farm_internal_)`
+      if export_ident_map.contains_key(EXPORT_EXTERNAL_NAMESPACE) {
+        let top_level_mark = Mark::from_u32(module.meta.as_script().top_level_mark);
+        let unresolved_mark = Mark::from_u32(module.meta.as_script().unresolved_mark);
+        result.ast.body.push(create_define_export_star_item(
+          &context.config.runtime.namespace,
+          &context.config.output.target_env,
+          &module_id,
+          top_level_mark,
+          unresolved_mark,
+          export_ident_map,
+        ));
+      }
+
       strip_module_results.push((module_id, result));
     })
     .unwrap();

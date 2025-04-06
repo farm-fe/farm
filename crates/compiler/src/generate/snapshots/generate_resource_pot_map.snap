@@ -3,7 +3,7 @@ source: crates/compiler/src/generate/partial_bundling.rs
 input_file: crates/testing_helpers/src/lib.rs
 ---
 name: A
-id: A_66be
+id: A_66be131002b8b5af1132bafd62635f07_js
 immutable: false
 resource_pot_type: Js
 entry: Some(

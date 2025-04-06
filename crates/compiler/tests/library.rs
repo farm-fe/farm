@@ -67,11 +67,11 @@ fn test(file_path_buf: PathBuf, crate_path_buf: PathBuf) {
 fn library_test() {
   use farmfe_testing_helpers::fixture;
 
-  fixture!("tests/fixtures/library/**/index.ts", test);
-  // fixture!(
-  //   "tests/fixtures/library/external/conflicts/**/index.ts",
-  //   test
-  // );
+  // fixture!("tests/fixtures/library/**/index.ts", test);
+  fixture!(
+    "tests/fixtures/library/external/conflicts/**/index.ts",
+    test
+  );
 }
 
 // farmfe_testing::testing! {

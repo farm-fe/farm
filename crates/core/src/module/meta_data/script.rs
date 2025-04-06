@@ -21,7 +21,6 @@ pub mod feature_flag;
 pub mod statement;
 
 pub const EXPORT_NAMESPACE: &str = "namespace_farm_internal_";
-pub const EXPORT_EXTERNAL_ALL: &str = "external_all_farm_internal_";
 pub const EXPORT_EXTERNAL_NAMESPACE: &str = "external_namespace_farm_internal_";
 pub const EXPORT_DEFAULT: &str = "default";
 
@@ -45,19 +44,16 @@ pub enum ModuleExportIdentType {
   External,
 
   /// ```js
-  /// export * from './module'; // where module is a external module
-  /// ```
-  ExternalAll,
-
-  /// ```js
   /// import * as xx from './module';
   /// export * as xx from './module';
+  ///
+  /// export * from './module'; // where module is a external module
   /// ```
   ExternalNamespace,
 
   /// ```js
   /// import { foo as bar } from './foo.cjs';
-  /// export { foo as default } from './foo.cjs'; // foo is not external using esm  
+  /// export { foo as default } from './foo.cjs'; // foo is not external but using cjs  
   /// ```
   Unresolved,
 
