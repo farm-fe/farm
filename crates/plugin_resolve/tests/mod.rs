@@ -199,19 +199,19 @@ fn resolve_alias() {
         Config {
           resolve: Box::new(ResolveConfig {
             alias: vec![
-              AliasItem::Complex {
+              AliasItem {
                 find: StringOrRegex::String("@".to_string()),
                 replacement: cwd.to_string_lossy().to_string(),
               },
-              AliasItem::Complex {
+              AliasItem {
                 find: StringOrRegex::String("/@".to_string()),
                 replacement: cwd.to_string_lossy().to_string(),
               },
-              AliasItem::Complex {
+              AliasItem {
                 find: StringOrRegex::String("@/components".to_string()),
                 replacement: cwd.join("components").to_string_lossy().to_string(),
               },
-              AliasItem::Complex {
+              AliasItem {
                 find: StringOrRegex::String("$__farm_regex:^/(utils)$".to_string()),
                 replacement: cwd.join("$1").to_string_lossy().to_string(),
               },
