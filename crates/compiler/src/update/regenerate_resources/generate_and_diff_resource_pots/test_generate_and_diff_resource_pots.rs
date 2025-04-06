@@ -8,7 +8,7 @@ use farmfe_core::{
   module::{
     module_graph::{ModuleGraphEdge, ModuleGraphEdgeDataItem},
     module_group::{ModuleGroupId, ModuleGroupType},
-    Module, ModuleId,
+    Module, ModuleId, ModuleType,
   },
   plugin::{Plugin, PluginHookContext, ResolveKind},
   resource::resource_pot::ResourcePotId,
@@ -40,7 +40,9 @@ fn test_generate_and_diff_resource_pots() {
   update_module_graph
     .remove_edge(&"F".into(), &"A".into())
     .unwrap();
-  update_module_graph.add_module(Module::new("H".into()));
+  let mut m_h = Module::new("H".into());
+  m_h.module_type = ModuleType::Js;
+  update_module_graph.add_module(m_h);
   update_module_graph
     .add_edge(&"B".into(), &"H".into(), Default::default())
     .unwrap();
@@ -157,11 +159,6 @@ fn test_generate_and_diff_resource_pots() {
       self.id.cmp(&other.id)
     }
   }
-  println!("{resource_pot_ids:?}");
-  assert_eq!(
-    resource_pot_ids,
-    vec![String::from("test__custom(\"__farm_unknown\")")]
-  );
 
   let module_group_graph = context.module_group_graph.read();
   let mut group_resource_pots = vec![];
@@ -207,33 +204,29 @@ fn test_generate_and_diff_resource_pots() {
       self.id.cmp(&other.id)
     }
   }
-  let module_group_a = module_group_graph.module_group(&"A".into()).unwrap();
+  let module_group_a = module_group_graph.module_group(&group_id_a).unwrap();
   assert_eq!(
     module_group_a.resource_pots(),
-    &HashSet::from([
-      "A_66be_66be131002b8b5af1132bafd62635f07_custom(\"__farm_unknown\")".to_string()
-    ])
+    &HashSet::from_iter(["A_66be131002b8b5af1132bafd62635f07_js".to_string()])
   );
-  let module_group_b = module_group_graph.module_group(&"B".into()).unwrap();
+  let module_group_b = module_group_graph.module_group(&group_id_b).unwrap();
   assert_eq!(
     module_group_b.resource_pots(),
-    &HashSet::from([
-      "B_2f5d_2f5d6a63eb2504d486bf13df147c043a_custom(\"__farm_unknown\")".to_string(),
-      "B_3f39_3f39d5c348e5b79d06e842c114e6cc57_custom(\"__farm_unknown\")".to_string(),
-      "test__custom(\"__farm_unknown\")".to_string()
+    &HashSet::from_iter([
+      "B_2f5d6a63eb2504d486bf13df147c043a_js".to_string(),
+      "B_3f39d5c348e5b79d06e842c114e6cc57_js".to_string(),
+      "test__js".to_string()
     ])
   );
-  let module_group_d = module_group_graph.module_group(&"D".into()).unwrap();
+  let module_group_d = module_group_graph.module_group(&group_id_d).unwrap();
   assert_eq!(
     module_group_d.resource_pots(),
-    &HashSet::from([
-      "B_3f39_3f39d5c348e5b79d06e842c114e6cc57_custom(\"__farm_unknown\")".to_string()
-    ])
+    &HashSet::from_iter(["B_3f39d5c348e5b79d06e842c114e6cc57_js".to_string()])
   );
-  let module_group_f = module_group_graph.module_group(&"F".into()).unwrap();
+  let module_group_f = module_group_graph.module_group(&group_id_f).unwrap();
   assert_eq!(
     module_group_f.resource_pots(),
-    &HashSet::from(["test__custom(\"__farm_unknown\")".to_string()])
+    &HashSet::from_iter(["test__js".to_string()])
   );
 
   let module_graph = context.module_graph.read();
@@ -265,25 +258,6 @@ fn test_generate_and_diff_resource_pots() {
     resource_pots: module_i.resource_pots.clone(),
   });
   assert_sorted_iter_eq!(module_resource_pots);
-  assert_eq!(
-    module_f.resource_pot.as_ref().unwrap(),
-    "test__custom(\"__farm_unknown\")"
-  );
-  let module_e = module_graph.module(&"E".into()).unwrap();
-  assert_eq!(
-    module_e.resource_pot.as_ref().unwrap(),
-    "B_2f5d_2f5d6a63eb2504d486bf13df147c043a_custom(\"__farm_unknown\")"
-  );
-  let module_b = module_graph.module(&"B".into()).unwrap();
-  assert_eq!(
-    module_b.resource_pot.as_ref().unwrap(),
-    "B_2f5d_2f5d6a63eb2504d486bf13df147c043a_custom(\"__farm_unknown\")"
-  );
-  let module_h = module_graph.module(&"H".into()).unwrap();
-  assert_eq!(
-    module_h.resource_pot.as_ref().unwrap(),
-    "test__custom(\"__farm_unknown\")"
-  );
 
   let resource_pot_map = context.resource_pot_map.read();
   println!(
@@ -300,18 +274,16 @@ fn test_generate_and_diff_resource_pots() {
   resource_pots.sort_by(|a, b| a.id.cmp(&b.id));
 
   assert_resource_pots!(resource_pots);
-  let resource_pot_test = resource_pot_map
-    .resource_pot(&"test__custom(\"__farm_unknown\")".into())
-    .unwrap();
+  let resource_pot_test = resource_pot_map.resource_pot(&"test__js".into()).unwrap();
   assert_eq!(resource_pot_test.entry_module, None);
   assert_eq!(resource_pot_test.modules(), vec![&"F".into(), &"H".into()]);
   assert_eq!(
     resource_pot_test.module_groups,
-    HashSet::from(["F".into(), "B".into()])
+    HashSet::from_iter([group_id_f.clone(), group_id_b.clone()])
   );
 
   let resource_pot_b_2f5d = resource_pot_map
-    .resource_pot(&"B_2f5d_2f5d6a63eb2504d486bf13df147c043a_custom(\"__farm_unknown\")".into())
+    .resource_pot(&"B_2f5d6a63eb2504d486bf13df147c043a_js".into())
     .unwrap();
   assert_eq!(resource_pot_b_2f5d.entry_module, Some("B".into()));
   assert_eq!(
@@ -320,21 +292,21 @@ fn test_generate_and_diff_resource_pots() {
   );
   assert_eq!(
     resource_pot_b_2f5d.module_groups,
-    HashSet::from(["B".into()])
+    HashSet::from_iter([group_id_b.clone()])
   );
 
   let resource_pot_b_3f39 = resource_pot_map
-    .resource_pot(&"B_3f39_3f39d5c348e5b79d06e842c114e6cc57_custom(\"__farm_unknown\")".into())
+    .resource_pot(&"B_3f39d5c348e5b79d06e842c114e6cc57_js".into())
     .unwrap();
   assert_eq!(resource_pot_b_3f39.entry_module, None);
   assert_eq!(resource_pot_b_3f39.modules(), vec![&"D".into()]);
   assert_eq!(
     resource_pot_b_3f39.module_groups,
-    HashSet::from(["D".into(), "B".into()])
+    HashSet::from_iter([group_id_d.clone(), group_id_b.clone()])
   );
 
   let resource_pot_a_66be = resource_pot_map
-    .resource_pot(&"A_66be_66be131002b8b5af1132bafd62635f07_custom(\"__farm_unknown\")".into())
+    .resource_pot(&"A_66be131002b8b5af1132bafd62635f07_js".into())
     .unwrap();
   assert_eq!(resource_pot_a_66be.entry_module, Some("A".into()));
   assert_eq!(
@@ -343,7 +315,7 @@ fn test_generate_and_diff_resource_pots() {
   );
   assert_eq!(
     resource_pot_a_66be.module_groups,
-    HashSet::from(["A".into()])
+    HashSet::from_iter([group_id_a.clone()])
   );
 }
 

@@ -1,12 +1,9 @@
-use std::sync::Arc;
-
 use farmfe_core::{
   config::Mode,
   serde_json,
-  swc_common::{comments::SingleThreadedComments, Globals, Mark, SourceMap},
+  swc_common::Mark,
   swc_ecma_ast::{self, Program},
 };
-
 use farmfe_toolkit::{
   script::swc_try_with::try_with,
   swc_ecma_transforms::{
@@ -14,18 +11,9 @@ use farmfe_toolkit::{
     react::{react, Options, RefreshOptions, Runtime},
   },
 };
+use farmfe_toolkit_plugin_types::swc_transforms::FarmSwcTransformReactOptions;
 
-pub struct FarmSwcTransformReactOptions<'a> {
-  pub top_level_mark: u32,
-  pub unresolved_mark: u32,
-  pub inject_helpers: bool,
-  pub mode: Mode,
-  pub cm: Arc<SourceMap>,
-  pub comments: SingleThreadedComments,
-  pub globals: &'a Globals,
-  pub options: String,
-}
-
+#[no_mangle]
 pub fn farm_swc_transform_react(
   ast: &mut swc_ecma_ast::Module,
   options: FarmSwcTransformReactOptions,

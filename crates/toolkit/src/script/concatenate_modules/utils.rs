@@ -1,16 +1,16 @@
 use farmfe_core::{
+  config::TargetEnv,
   module::{
-    meta_data::script::{
-      statement::Statement, ModuleExportIdent, EXPORT_EXTERNAL_ALL, EXPORT_EXTERNAL_NAMESPACE,
-    },
+    meta_data::script::{statement::Statement, ModuleExportIdent, EXPORT_EXTERNAL_NAMESPACE},
     ModuleId,
   },
   regex::Regex,
   swc_common::{Mark, SyntaxContext, DUMMY_SP},
   swc_ecma_ast::{
-    BindingIdent, BlockStmt, Bool, Decl, EmptyStmt, Expr, GetterProp, Ident, KeyValueProp, Lit,
-    ModuleItem, ObjectLit, Pat, Prop, PropName, PropOrSpread, ReturnStmt, Stmt, VarDecl,
-    VarDeclKind, VarDeclarator,
+    BindingIdent, BlockStmt, Bool, CallExpr, Callee, ComputedPropName, Decl, EmptyStmt, Expr,
+    ExprOrSpread, ExprStmt, GetterProp, Ident, IdentName, KeyValueProp, Lit, MemberExpr,
+    MemberProp, ModuleItem, ObjectLit, Pat, Prop, PropName, PropOrSpread, ReturnStmt, Stmt, Str,
+    VarDecl, VarDeclKind, VarDeclarator,
   },
   HashMap, HashSet,
 };
@@ -31,23 +31,27 @@ pub fn replace_module_decl(
   )
 }
 
-/// export default '123' => var module_default = '123';
-pub fn create_export_default_expr_item(expr: Box<Expr>, default_ident: Ident) -> ModuleItem {
+pub fn create_var_decl_item(ident: Ident, init: Box<Expr>) -> ModuleItem {
   ModuleItem::Stmt(Stmt::Decl(Decl::Var(Box::new(VarDecl {
     span: DUMMY_SP,
     kind: VarDeclKind::Var,
     decls: vec![VarDeclarator {
       span: DUMMY_SP,
       name: Pat::Ident(BindingIdent {
-        id: default_ident,
+        id: ident,
         type_ann: None,
       }),
-      init: Some(expr),
+      init: Some(init),
       definite: false,
     }],
     ctxt: SyntaxContext::empty(),
     declare: false,
   }))))
+}
+
+/// export default '123' => var module_default = '123';
+pub fn create_export_default_expr_item(expr: Box<Expr>, default_ident: Ident) -> ModuleItem {
+  create_var_decl_item(default_ident, expr)
 }
 
 pub(crate) fn create_var_namespace_item(
@@ -62,7 +66,7 @@ pub(crate) fn create_var_namespace_item(
 
   let mut props: Vec<PropOrSpread> = key_ident_vec
     .into_iter()
-    .filter(|(key, _)| *key != EXPORT_NAMESPACE)
+    .filter(|(key, _)| *key != EXPORT_NAMESPACE && *key != EXPORT_EXTERNAL_NAMESPACE)
     .map(|(key, module_export_ident)| {
       delayed_rename
         .entry(module_id.clone())
@@ -159,18 +163,72 @@ pub fn create_export_namespace_ident(module_id: &ModuleId, top_level_mark: Mark)
   )
 }
 
-pub fn create_export_external_all_ident(module_id: &ModuleId) -> Ident {
-  Ident::new(
-    format!("{}_{}", get_filename(module_id), EXPORT_EXTERNAL_ALL).into(),
-    DUMMY_SP,
-    SyntaxContext::empty(),
-  )
-}
-
 pub fn create_export_external_namespace_ident(module_id: &ModuleId) -> Ident {
   Ident::new(
     format!("{}_{}", get_filename(module_id), EXPORT_EXTERNAL_NAMESPACE).into(),
     DUMMY_SP,
     SyntaxContext::empty(),
   )
+}
+
+// `window[xxx].defineExportStar(module_namespace, node_fs_external_namespace_farm_internal_)`
+pub fn create_define_export_star_item(
+  namespace: &str,
+  target_env: &TargetEnv,
+  module_id: &ModuleId,
+  top_level_mark: Mark,
+  unresolved_mark: Mark,
+  export_ident_map: &HashMap<String, ModuleExportIdent>,
+) -> ModuleItem {
+  let export_external_ident = export_ident_map.get(EXPORT_EXTERNAL_NAMESPACE).unwrap();
+
+  ModuleItem::Stmt(Stmt::Expr(ExprStmt {
+    span: DUMMY_SP,
+    expr: Box::new(Expr::Call(CallExpr {
+      span: DUMMY_SP,
+      ctxt: SyntaxContext::empty(),
+      type_args: None,
+      callee: Callee::Expr(Box::new(Expr::Member(MemberExpr {
+        span: DUMMY_SP,
+        obj: Box::new(Expr::Member(MemberExpr {
+          span: DUMMY_SP,
+          obj: Box::new(Expr::Ident(Ident::new(
+            if target_env.is_node() {
+              "global".into()
+            } else {
+              "window".into()
+            },
+            DUMMY_SP,
+            SyntaxContext::empty().apply_mark(unresolved_mark),
+          ))),
+          prop: MemberProp::Computed(ComputedPropName {
+            span: DUMMY_SP,
+            expr: Box::new(Expr::Lit(Lit::Str(Str {
+              span: DUMMY_SP,
+              value: namespace.into(),
+              raw: None,
+            }))),
+          }),
+        })),
+        prop: MemberProp::Ident(IdentName::new("defineExportStar".into(), DUMMY_SP)),
+      }))),
+      args: vec![
+        ExprOrSpread {
+          spread: None,
+          expr: Box::new(Expr::Ident(create_export_namespace_ident(
+            module_id,
+            top_level_mark,
+          ))),
+        },
+        ExprOrSpread {
+          spread: None,
+          expr: Box::new(Expr::Ident(Ident::new(
+            export_external_ident.ident.sym.clone(),
+            DUMMY_SP,
+            export_external_ident.ident.ctxt(),
+          ))),
+        },
+      ],
+    })),
+  }))
 }

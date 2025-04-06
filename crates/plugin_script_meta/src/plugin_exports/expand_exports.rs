@@ -5,8 +5,7 @@ use farmfe_core::{
   module::{
     meta_data::script::{
       statement::{ExportSpecifierInfo, ImportSpecifierInfo, SwcId},
-      ModuleExportIdent, ModuleExportIdentType, EXPORT_DEFAULT, EXPORT_EXTERNAL_ALL,
-      EXPORT_EXTERNAL_NAMESPACE,
+      ModuleExportIdent, ModuleExportIdentType, EXPORT_DEFAULT, EXPORT_EXTERNAL_NAMESPACE,
     },
     module_graph::ModuleGraph,
     ModuleId,
@@ -18,8 +17,7 @@ use farmfe_core::{
 
 use farmfe_toolkit::script::{
   concatenate_modules::EXPORT_NAMESPACE, create_export_default_ident,
-  create_export_external_all_ident, create_export_external_namespace_ident,
-  create_export_namespace_ident, swc_try_with::try_with,
+  create_export_external_namespace_ident, create_export_namespace_ident, swc_try_with::try_with,
 };
 
 /// expand the export_ident_map of each module of the module graph
@@ -166,12 +164,12 @@ fn expand_module_exports_dfs(
             if source_module.external {
               expand_context.insert_export_ident(
                 module_id,
-                EXPORT_EXTERNAL_ALL.to_string(),
+                EXPORT_EXTERNAL_NAMESPACE.to_string(),
                 source_module_id.clone(),
-                create_export_external_all_ident(&source_module_id)
+                create_export_external_namespace_ident(&source_module_id)
                   .to_id()
                   .into(),
-                ModuleExportIdentType::ExternalAll,
+                ModuleExportIdentType::ExternalNamespace,
               );
             }
           }

@@ -3,6 +3,7 @@ use farmfe_core::{
     meta_data::script::{
       statement::{ExportSpecifierInfo, ImportSpecifierInfo, StatementId, SwcId},
       CommentsMetaData, ModuleExportIdent, ModuleExportIdentType, ScriptModuleMetaData,
+      EXPORT_EXTERNAL_NAMESPACE,
     },
     module_graph::ModuleGraph,
     Module, ModuleId,
@@ -12,8 +13,9 @@ use farmfe_core::{
     BytePos, Mark, SyntaxContext, DUMMY_SP,
   },
   swc_ecma_ast::{
-    ClassDecl, Decl, ExportNamedSpecifier, ExportSpecifier, Expr, FnDecl, Ident,
-    Module as SwcModule, ModuleDecl, ModuleExportName, ModuleItem, NamedExport, Stmt,
+    ClassDecl, Decl, ExportNamedSpecifier, ExportSpecifier, Expr, FnDecl, Ident, IdentName,
+    MemberExpr, MemberProp, Module as SwcModule, ModuleDecl, ModuleExportName, ModuleItem,
+    NamedExport, Stmt,
   },
   HashMap, HashSet,
 };
@@ -22,7 +24,10 @@ use swc_ecma_visit::VisitMutWith;
 use super::{
   handle_external_modules::handle_external_modules,
   unique_idents::{RenameVisitor, TopLevelIdentsRenameHandler, EXPORT_DEFAULT, EXPORT_NAMESPACE},
-  utils::{create_export_default_expr_item, create_export_default_ident, replace_module_decl},
+  utils::{
+    create_export_default_expr_item, create_export_default_ident, create_var_decl_item,
+    replace_module_decl,
+  },
   StripModuleContext,
 };
 
@@ -203,14 +208,34 @@ fn strip_import_statements(params: &mut StripModuleDeclStatementParams) -> Vec<S
         };
 
         let mut rename_handler = strip_context.rename_handler.borrow_mut();
-        rename_imported_ident(
+        // true means the ident is an unresolved ident
+        if rename_imported_ident(
           module_id,
           ident,
           export_str,
           &source_module_id,
           source_module_script_meta,
           &mut rename_handler,
-        );
+        ) {
+          if let Some(export_ident) = source_module_script_meta
+            .export_ident_map
+            .get(EXPORT_EXTERNAL_NAMESPACE)
+          {
+            let item = create_var_decl_item(
+              Ident::new(ident.sym.clone(), DUMMY_SP, ident.ctxt()),
+              Box::new(Expr::Member(MemberExpr {
+                span: DUMMY_SP,
+                obj: Box::new(Expr::Ident(Ident::new(
+                  export_ident.ident.sym.clone(),
+                  DUMMY_SP,
+                  export_ident.ident.ctxt(),
+                ))),
+                prop: MemberProp::Ident(IdentName::new(ident.sym.clone(), DUMMY_SP)),
+              })),
+            );
+            strip_context.extra_external_module_items.push(item);
+          };
+        }
       }
     }
   }
@@ -398,7 +423,7 @@ fn rename_imported_ident(
   source_module_id: &ModuleId,
   source_module_script_meta: &ScriptModuleMetaData,
   rename_handler: &mut TopLevelIdentsRenameHandler,
-) {
+) -> bool {
   let default_ident = ModuleExportIdent {
     module_id: source_module_id.clone(),
     ident: ident.clone(),
@@ -422,6 +447,7 @@ fn rename_imported_ident(
       // TODO find dependency recursively to get the export ident
       &default_ident
     });
+
   // TODO: trace if there are unresolved export idents like external module or cjs module.
   // and we should create a new ident for it. for external module, see `handle_external_export_all`
   // for cjs module, `var external_all_farm_internal_ = __commonJS((module, exports) => {});`, then the same as external module
@@ -440,6 +466,13 @@ fn rename_imported_ident(
 
   // rename local to final_ident
   rename_handler.rename_ident(module_id.clone(), ident.clone(), final_ident);
+
+  // if ident is External or unresolved, we should try to find it in the namespace import
+  // like `var createRequire = node_fs_external_namespace_internal_.createRequire`
+  matches!(
+    module_export_ident.export_type,
+    ModuleExportIdentType::Unresolved
+  )
 }
 
 fn is_module_external(source_module: &Module, module_ids: &HashSet<ModuleId>) -> bool {

@@ -9,7 +9,7 @@ input_file: crates/testing_helpers/src/lib.rs
             query_string: "",
         },
         resource_pots: {
-            "B_2f5d",
+            "B_2f5d6a63eb2504d486bf13df147c043a_js",
         },
     },
     ModuleResourcePotSnapshotItem {
@@ -18,7 +18,7 @@ input_file: crates/testing_helpers/src/lib.rs
             query_string: "",
         },
         resource_pots: {
-            "B_2f5d",
+            "B_2f5d6a63eb2504d486bf13df147c043a_js",
         },
     },
     ModuleResourcePotSnapshotItem {
@@ -27,8 +27,8 @@ input_file: crates/testing_helpers/src/lib.rs
             query_string: "",
         },
         resource_pots: {
-            "EI_dynamic_entry_js",
-            "test_js",
+            "EI__dynamic_entry_js",
+            "test__js",
         },
     },
     ModuleResourcePotSnapshotItem {
@@ -37,7 +37,7 @@ input_file: crates/testing_helpers/src/lib.rs
             query_string: "",
         },
         resource_pots: {
-            "test___farm_unknown",
+            "test__js",
         },
     },
     ModuleResourcePotSnapshotItem {
@@ -46,7 +46,7 @@ input_file: crates/testing_helpers/src/lib.rs
             query_string: "",
         },
         resource_pots: {
-            "EI_dynamic_entry_js",
+            "EI__dynamic_entry_js",
         },
     },
 ]

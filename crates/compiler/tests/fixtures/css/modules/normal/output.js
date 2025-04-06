@@ -6,7 +6,7 @@ function initModuleSystem() {
 initModuleSystem(moduleSystem);
 
 
-//index-2528.css:
+//index-2528a0d0.css:
   .foo  .farm-hello {
   color: red;
 }
@@ -18,7 +18,7 @@ initModuleSystem(moduleSystem);
 }
 
 //index.js:
- import "./farm_internal_runtime_index.js";import "./index-2528.css";(function(moduleSystem, modules) {
+ import "./farm_internal_runtime_index.js";import "./index-2528a0d0.css";(function(moduleSystem, modules) {
     for(var moduleId in modules){
         var module = modules[moduleId];
         moduleSystem.g(moduleId, module);
