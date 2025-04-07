@@ -11,7 +11,7 @@ repository = "https://github.com/farm-fe/farm"
 [profile.release-publish]
 inherits = "release"
 codegen-units = 1
-lto = "fat"
+lto = "thin"
 opt-level = 3
 strip = true
 panic = "abort"
