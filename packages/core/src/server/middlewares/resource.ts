@@ -118,8 +118,10 @@ export function findResource(
     publicPath,
     req.url
   );
-
-  const resource = compiler.resource(resourceWithoutPublicPath);
+  const normalizedPath = resourceWithoutPublicPath.startsWith('/')
+    ? resourceWithoutPublicPath.slice(1)
+    : resourceWithoutPublicPath;
+  const resource = compiler.resource(normalizedPath);
 
   if (resource) {
     return {
