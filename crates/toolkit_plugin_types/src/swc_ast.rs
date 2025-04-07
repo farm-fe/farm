@@ -28,7 +28,6 @@ pub fn farm_swc_parse_module(
   }
 }
 
-#[no_mangle]
 pub fn farm_create_swc_source_map(
   lib: &libloading::Library,
   id: &ModuleId,
@@ -42,7 +41,6 @@ pub fn farm_create_swc_source_map(
   }
 }
 
-#[no_mangle]
 pub fn farm_swc_try_with(
   lib: &libloading::Library,
   cm: Arc<SourceMap>,
