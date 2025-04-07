@@ -13,7 +13,6 @@ pub struct ParseScriptModuleResult {
   pub comments: SingleThreadedComments,
 }
 
-#[no_mangle]
 pub fn farm_swc_parse_module(
   lib: &libloading::Library,
   id: &ModuleId,
