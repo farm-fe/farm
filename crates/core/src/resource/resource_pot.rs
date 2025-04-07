@@ -59,7 +59,7 @@ impl serde::Serialize for ResourcePot {
 impl ResourcePot {
   pub fn new(name: &str, hash: &str, ty: ResourcePotType) -> Self {
     Self {
-      id: Self::gen_id(&name, hash, ty.clone()),
+      id: Self::gen_id(name, hash, ty.clone()),
       name: name.to_string(),
       resource_pot_type: ty,
       modules_name_hash: "".to_string(),
