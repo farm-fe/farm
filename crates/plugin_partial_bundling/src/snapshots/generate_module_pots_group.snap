@@ -4,10 +4,9 @@ input_file: crates/testing_helpers/src/lib.rs
 ---
 (
     ModulePot {
-        name: Some(
-            "test",
-        ),
-        id: "test",
+        id: "test_js_false",
+        name: "test",
+        source_type: GroupsConfig,
         size: 15360,
         module_type: Js,
         immutable: false,
