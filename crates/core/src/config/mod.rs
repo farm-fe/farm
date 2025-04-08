@@ -429,6 +429,6 @@ mod tests {
     let env = TargetEnv::Library;
     assert!(env.is_library());
     assert!(!env.is_node());
-    assert!(env.is_browser());
+    assert!(!env.is_browser());
   }
 }
