@@ -1,5 +1,11 @@
 # @farmfe/core
 
+## 1.7.2
+
+### Patch Changes
+
+- e0a9e48f: fix treeshake assign expr reference
+
 ## 1.7.1
 
 ### Patch Changes

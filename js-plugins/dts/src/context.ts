@@ -158,9 +158,15 @@ export default class Context {
         service
           .getEmitOutput(sourceFile, true)
           .getOutputFiles()
-          .filter((outputFile) =>
-            outputFile.compilerObject.name.startsWith(this.options.root)
-          )
+          .filter((outputFile) => {
+            const outputPath = outputFile.compilerObject.name.replace(
+              /\\/g,
+              '/'
+            );
+            const rootPath = this.options.root.replace(/\\/g, '/');
+
+            return outputPath.startsWith(rootPath);
+          })
           .map((outputFile) => ({
             path: resolve(
               this.options.root,
