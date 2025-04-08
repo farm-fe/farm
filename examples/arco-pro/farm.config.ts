@@ -15,7 +15,7 @@ export default defineConfig((env) => {
       output: {
         // showFileSize: false,
       },
-      persistentCache: false,
+      // persistentCache: false,
       resolve: {
         alias: {
           "@": resolve(process.cwd(), "./src"),

@@ -88,7 +88,7 @@ fn test_with_compiler() {
       tree_shaking: Box::new(BoolOrObj::Bool(false)),
       progress: false,
       resolve: Box::new(ResolveConfig {
-        alias: vec![AliasItem::Complex {
+        alias: vec![AliasItem {
           find: StringOrRegex::String("@".to_string()),
           replacement: cwd.to_string_lossy().to_string(),
         }],

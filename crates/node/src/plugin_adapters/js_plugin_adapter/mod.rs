@@ -21,11 +21,11 @@ use self::hooks::{
   build_start::JsPluginBuildStartHook,
   finalize_resources::JsPluginFinalizeResourcesHook,
   finish::JsPluginFinishHook,
+  freeze_module::JsPluginFreezeModuleHook,
   load::JsPluginLoadHook,
   plugin_cache_loaded::JsPluginPluginCacheLoadedHook,
   // render_resource_pot::JsPluginRenderResourcePotHook,
   process_module::JsPluginProcessModuleHook,
-  freeze_module::JsPluginFreezeModuleHook,
   render_start::JsPluginRenderStartHook,
   resolve::JsPluginResolveHook,
   transform::JsPluginTransformHook,
@@ -131,8 +131,7 @@ impl JsPluginAdapter {
         .map(|obj| JsPluginUpdateFinishedHook::new(env, obj)),
       js_process_module_hook: process_module_obj
         .map(|obj| JsPluginProcessModuleHook::new(env, obj)),
-      js_freeze_module_hook: freeze_module_obj
-        .map(|obj| JsPluginFreezeModuleHook::new(env, obj)),
+      js_freeze_module_hook: freeze_module_obj.map(|obj| JsPluginFreezeModuleHook::new(env, obj)),
     })
   }
 

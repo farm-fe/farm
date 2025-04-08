@@ -238,7 +238,7 @@ impl ContextMetaData {
       .module_source_maps
       .lock()
       .get(module_id)
-      .map(|value| value.clone())
+      .cloned()
       .unwrap_or_else(|| panic!("no source map found for module {:?}", module_id))
   }
 
@@ -253,7 +253,7 @@ impl ContextMetaData {
       .hoisted_modules_source_maps
       .lock()
       .get(module_id)
-      .map(|value| value.clone())
+      .cloned()
       .unwrap()
   }
 
@@ -269,7 +269,7 @@ impl ContextMetaData {
       .resource_pot_source_maps
       .lock()
       .get(resource_pot_id)
-      .map(|value| value.clone())
+      .cloned()
       .unwrap_or_else(|| panic!("no source map found for resource pot {:?}", resource_pot_id))
   }
 

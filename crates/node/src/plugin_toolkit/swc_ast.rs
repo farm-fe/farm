@@ -33,7 +33,7 @@ pub fn farm_create_swc_source_map(
 pub fn farm_swc_try_with(
   cm: Arc<SourceMap>,
   globals: &Globals,
-  op: Box<dyn FnOnce() -> ()>,
+  op: Box<dyn FnOnce()>,
 ) -> Result<()> {
   try_with(cm, globals, op)
 }
