@@ -159,7 +159,10 @@ export default class Context {
           .getEmitOutput(sourceFile, true)
           .getOutputFiles()
           .filter((outputFile) => {
-            const outputPath = outputFile.compilerObject.name.replace(/\\/g, '/');
+            const outputPath = outputFile.compilerObject.name.replace(
+              /\\/g,
+              '/'
+            );
             const rootPath = this.options.root.replace(/\\/g, '/');
 
             return outputPath.startsWith(rootPath);
