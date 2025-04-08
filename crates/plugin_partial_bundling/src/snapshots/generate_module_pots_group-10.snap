@@ -4,8 +4,9 @@ input_file: crates/testing_helpers/src/lib.rs
 ---
 (
     ModulePot {
-        name: None,
-        id: "utils/c.ts",
+        id: "utils/c.ts_js_false",
+        name: "utils/c.ts",
+        source_type: MutableModule,
         size: 1024,
         module_type: Js,
         immutable: false,
