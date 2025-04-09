@@ -2,7 +2,10 @@ use std::sync::Arc;
 
 use farmfe_core::{
   module::{
-    meta_data::script::{statement::SwcId, ScriptModuleMetaData},
+    meta_data::script::{
+      statement::{Statement, SwcId},
+      ScriptModuleMetaData,
+    },
     Module, ModuleMetaData,
   },
   swc_common::{comments::SingleThreadedComments, Globals, Mark, SourceMap, GLOBALS},
@@ -10,7 +13,9 @@ use farmfe_core::{
   swc_ecma_parser::Syntax,
 };
 use farmfe_toolkit::{
-  script::ParseScriptModuleResult, sourcemap::create_swc_source_map, swc_ecma_transforms::resolver,
+  script::{analyze_statement::analyze_statement_info, ParseScriptModuleResult},
+  sourcemap::create_swc_source_map,
+  swc_ecma_transforms::resolver,
   swc_ecma_visit::VisitMutWith,
 };
 
@@ -56,10 +61,30 @@ pub fn parse_module(code: &str) -> (SwcModule, Arc<SourceMap>) {
   (swc_module, cm)
 }
 
+pub fn create_statements(ast: &SwcModule) -> Vec<Statement> {
+  let mut statements = vec![];
+
+  for (i, item) in ast.body.iter().enumerate() {
+    let stmt = analyze_statement_info(&i, item);
+    statements.push(Statement::new(
+      i,
+      stmt.export_info,
+      stmt.import_info,
+      stmt.defined_idents,
+      stmt.top_level_await,
+    ));
+  }
+
+  statements
+}
+
 #[allow(dead_code)]
 pub fn create_module_with_comments(code: &str) -> Module {
   let mut module = Module::new("used_exports_idents_test".into());
   let (ast, comments, unresolved_mark, top_level_mark) = parse_module_with_comments(code);
+
+  let statements = create_statements(&ast);
+
   module.meta = Box::new(ModuleMetaData::Script(Box::new(ScriptModuleMetaData {
     ast,
     top_level_mark: top_level_mark.as_u32(),
@@ -69,6 +94,7 @@ pub fn create_module_with_comments(code: &str) -> Module {
     hmr_accepted_deps: Default::default(),
     comments: comments.into(),
     custom: Default::default(),
+    statements,
     ..Default::default()
   })));
   module
@@ -78,6 +104,8 @@ pub fn create_module_with_comments(code: &str) -> Module {
 pub fn create_module(code: &str) -> (Module, Arc<SourceMap>) {
   let mut module = Module::new("used_exports_idents_test".into());
   let (ast, cm) = parse_module(code);
+  let statements = create_statements(&ast);
+
   module.meta = Box::new(ModuleMetaData::Script(Box::new(ScriptModuleMetaData {
     ast,
     top_level_mark: 0,
@@ -87,6 +115,7 @@ pub fn create_module(code: &str) -> (Module, Arc<SourceMap>) {
     hmr_accepted_deps: Default::default(),
     comments: Default::default(),
     custom: Default::default(),
+    statements,
     ..Default::default()
   })));
   (module, cm)
@@ -97,6 +126,8 @@ pub fn create_module_with_globals(code: &str) -> Module {
   GLOBALS.set(&Globals::new(), || {
     let mut module = Module::new("used_exports_idents_test".into());
     let (ast, _) = parse_module(code);
+    let statements = create_statements(&ast);
+
     module.meta = Box::new(ModuleMetaData::Script(Box::new(ScriptModuleMetaData {
       ast,
       top_level_mark: 0,
@@ -106,6 +137,7 @@ pub fn create_module_with_globals(code: &str) -> Module {
       hmr_accepted_deps: Default::default(),
       comments: Default::default(),
       custom: Default::default(),
+      statements,
       ..Default::default()
     })));
     module

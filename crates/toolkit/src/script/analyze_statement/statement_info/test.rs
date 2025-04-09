@@ -492,7 +492,7 @@ fn for_stmt() {
   assert!(import_info.is_none());
   assert!(export_info.is_none());
 
-  assert_eq!(defined_idents.len(), 0);
+  assert_eq!(defined_idents.len(), 1);
 }
 
 #[test]

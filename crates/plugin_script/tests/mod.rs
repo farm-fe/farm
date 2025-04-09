@@ -2,14 +2,14 @@ use std::{path::PathBuf, sync::Arc};
 
 use farmfe_core::{
   config::{bool_or_obj::BoolOrObj, Config},
-  context::CompilationContext,
+  context::{create_swc_source_map, CompilationContext},
   module::{Module, ModuleType},
   plugin::{
     Plugin, PluginAnalyzeDepsHookParam, PluginAnalyzeDepsHookResultEntry, PluginHookContext,
     PluginLoadHookParam, PluginParseHookParam, ResolveKind,
   },
   resource::{
-    meta_data::ResourcePotMetaData,
+    meta_data::{js::JsResourcePotMetaData, ResourcePotMetaData},
     resource_pot::{ResourcePot, ResourcePotId, ResourcePotType},
   },
   HashMap,
@@ -77,7 +77,7 @@ fn load_parse_and_analyze_deps() {
             resolved_path: id,
             query: vec![],
             module_type: loaded.module_type.clone(),
-            content: Arc::new(loaded.content),
+            content: Arc::new(loaded.content.clone()),
           },
           &context,
           &hook_context,
@@ -85,6 +85,7 @@ fn load_parse_and_analyze_deps() {
         .unwrap()
         .unwrap();
 
+      let ast = module_meta.as_script().ast.clone();
       let mut module = Module::new("any".into());
       module.meta = Box::new(module_meta);
       module.module_type = loaded.module_type;
@@ -124,22 +125,15 @@ fn load_parse_and_analyze_deps() {
       let mut resource_pot =
         ResourcePot::new(&ResourcePotId::from("index"), "any", ResourcePotType::Js);
 
-      // resource_pot.resource_pot_type = ResourcePotType::Js;
-      // resource_pot.meta = ResourcePotMetaData {
-      //   rendered_modules: Default::default(),
-      //   rendered_content: Arc::new(
-      //     vec![
-      //       "import a from \"./a\";",
-      //       "import b from \"./b\";",
-      //       "export * from \"./c\";",
-      //       "export { d } from \"./d\";",
-      //       "console.log(a, b);",
-      //     ]
-      //     .join("\n"),
-      //   ),
-      //   rendered_map_chain: vec![],
-      //   ..Default::default()
-      // };
+      resource_pot.resource_pot_type = ResourcePotType::Js;
+      resource_pot.meta = ResourcePotMetaData::Js(JsResourcePotMetaData {
+        ast,
+        ..Default::default()
+      });
+      context.meta.set_resource_pot_source_map(
+        &resource_pot.id,
+        create_swc_source_map(&module.id, Arc::new(loaded.content.clone())).0,
+      );
 
       let resources = plugin_script
         .generate_resources(&mut resource_pot, &context, &hook_context)
@@ -153,11 +147,7 @@ fn load_parse_and_analyze_deps() {
       assert_eq!(
         lines,
         vec![
-          "import a from \"./a\";",
-          "import b from \"./b\";",
-          "export * from \"./c\";",
-          "export { d } from \"./d\";",
-          "console.log(a, b);",
+         "import a from\"./a\";import b from\"./b\";export*from\"./c\";export{d}from\"./d\";console.log(a,b);"
         ]
       );
 

@@ -129,6 +129,7 @@ mod tests {
       span: DUMMY_SP,
       shebang: None,
     };
+    module_c.meta.as_script_mut().is_async = true;
 
     let async_modules = super::find_async_modules(&module_graph);
     println!("{:#?}", async_modules);
