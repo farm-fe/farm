@@ -1246,53 +1246,53 @@ export * from './e';
 
       assert_eq!(
         code,
-        r#"module._m(exports);
-module.o(exports, "a", function() {
+        r#"farmRequire._m(exports);
+farmRequire.o(exports, "a", function() {
     return _f_a.a;
 });
-module.o(exports, "d", function() {
+farmRequire.o(exports, "d", function() {
     return _f_a.c;
 });
-module.o(exports, "b", function() {
+farmRequire.o(exports, "b", function() {
     return b;
 });
-module.o(exports, "e", function() {
-    return module.f(_f_c);
+farmRequire.o(exports, "e", function() {
+    return farmRequire.f(_f_c);
 });
-module.o(exports, "b2", function() {
+farmRequire.o(exports, "b2", function() {
     return b2;
 });
-module.o(exports, "f", function() {
+farmRequire.o(exports, "f", function() {
     return f;
 });
-module.o(exports, "h", function() {
+farmRequire.o(exports, "h", function() {
     return h;
 });
-module.o(exports, "g", function() {
+farmRequire.o(exports, "g", function() {
     return g;
 });
-module.o(exports, "i", function() {
+farmRequire.o(exports, "i", function() {
     return i;
 });
-module.o(exports, "default", function() {
+farmRequire.o(exports, "default", function() {
     return j;
 });
-module.o(exports, "default", function() {
+farmRequire.o(exports, "default", function() {
     return k;
 });
 var _f_a = require("./a");
-var _f_b = module.w(require("./b"));
+var _f_b = farmRequire.w(require("./b"));
 var b = _f_b;
-var _f_c = module.i(require("./c"));
+var _f_c = farmRequire.i(require("./c"));
 console.log(_f_a.default);
 var _f_c = require('./c');
-module._e(exports, _f_c);
+farmRequire._e(exports, _f_c);
 var _f_d = require('./d');
-module._(exports, "a1", _f_d);
-module._(exports, "d1", _f_d);
-module._(exports, "b1", _f_d);
-module._(exports, "e2", _f_d, "e1");
-var b2 = module.w(require('./d'));
+farmRequire._(exports, "a1", _f_d);
+farmRequire._(exports, "d1", _f_d);
+farmRequire._(exports, "b1", _f_d);
+farmRequire._(exports, "e2", _f_d, "e1");
+var b2 = farmRequire.w(require('./d'));
 var f = 1, h = 2;
 function g() {}
 class i {
@@ -1302,7 +1302,7 @@ class j {
 }
 function k() {}
 var _f_e = require('./e');
-module._e(exports, _f_e);
+farmRequire._e(exports, _f_e);
 "#
       )
     })
@@ -1349,9 +1349,9 @@ export const f = 1, h = 2;
 
       assert_eq!(
         code,
-        r#"module._m(exports);
-module.o(exports, "f", ()=>f);
-module.o(exports, "h", ()=>h);
+        r#"farmRequire._m(exports);
+farmRequire.o(exports, "f", ()=>f);
+farmRequire.o(exports, "h", ()=>h);
 var f = 1, h = 2;
 "#
       )

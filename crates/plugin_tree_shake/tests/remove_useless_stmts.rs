@@ -123,10 +123,6 @@ export * from './src/foo';
   GLOBALS.set(&globals, || {
     let (mut module, cm) = create_module(code);
     let mut tree_shake_module = TreeShakeModule::new(&mut module);
-    // tree_shake_module.used_exports = UsedExports::Partial(HashMap::from([(
-    //   "index.ts".into(),
-    //   vec!["a".to_string(), "c".to_string(), "d".to_string()],
-    // )]));
     tree_shake_module.pending_used_exports = UsedExports::Partial(HashSet::from_iter([
       UsedExportsIdent::SwcIdent("a".to_string()),
       UsedExportsIdent::SwcIdent("c".to_string()),

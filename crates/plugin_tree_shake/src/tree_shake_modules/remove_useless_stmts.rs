@@ -129,14 +129,17 @@ fn get_export_all_source_module_is_empty(
   for item in meta.ast.body.iter() {
     if let ModuleItem::ModuleDecl(ModuleDecl::ExportAll(export_all)) = item {
       let source = export_all.src.value.to_string();
-      let source_module_id = module_graph.get_dep_by_source(
+      let source_module_id = module_graph.get_dep_by_source_optional(
         tree_shake_module_id,
         &source,
         Some(ResolveKind::ExportFrom),
       );
-      let source_module = module_graph.module(&source_module_id).unwrap();
-      let is_empty = source_module.meta.as_script().ast.body.is_empty();
-      source_module_is_empty.insert(source, (source_module_id, is_empty));
+
+      if let Some(source_module_id) = source_module_id {
+        let source_module = module_graph.module(&source_module_id).unwrap();
+        let is_empty = source_module.meta.as_script().ast.body.is_empty();
+        source_module_is_empty.insert(source, (source_module_id, is_empty));
+      }
     }
   }
 
