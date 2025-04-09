@@ -705,7 +705,7 @@ importers:
         version: 10.1.2(chokidar@3.6.0)(typescript@5.4.5)
       '@nestjs/testing':
         specifier: ^10.0.0
-        version: 10.3.10(@nestjs/common@10.3.10(reflect-metadata@0.2.2)(rxjs@7.8.1))(@nestjs/core@10.3.10(@nestjs/common@10.3.10(reflect-metadata@0.2.2)(rxjs@7.8.1))(@nestjs/platform-express@10.3.10)(encoding@0.1.13)(reflect-metadata@0.2.2)(rxjs@7.8.1))(@nestjs/platform-express@10.3.10(@nestjs/common@10.3.10(reflect-metadata@0.2.2)(rxjs@7.8.1))(@nestjs/core@10.3.10))
+        version: 10.3.10(@nestjs/common@10.3.10(reflect-metadata@0.2.2)(rxjs@7.8.1))(@nestjs/core@10.3.10)(@nestjs/platform-express@10.3.10)
       '@types/express':
         specifier: ^4.17.17
         version: 4.17.21
@@ -862,7 +862,7 @@ importers:
         version: 6.0.0(postcss@8.4.31)
       tailwindcss:
         specifier: ^3.3.2
-        version: 3.3.5(ts-node@10.9.1(@types/node@18.19.67)(typescript@4.9.5))
+        version: 3.3.5(ts-node@10.9.1(@types/node@20.14.12)(typescript@5.4.5))
 
   examples/public-dir:
     dependencies:
@@ -993,6 +993,9 @@ importers:
       '@farmfe/plugin-sass':
         specifier: workspace:*
         version: link:../../rust-plugins/sass
+      '@farmfe/plugin-virtual':
+        specifier: 0.0.10
+        version: 0.0.10
       '@types/react':
         specifier: '18'
         version: 18.2.35
@@ -1580,7 +1583,7 @@ importers:
         version: 0.14.0
       tailwindcss:
         specifier: ^3.3.2
-        version: 3.3.5(ts-node@10.9.1(@types/node@18.19.67)(typescript@4.9.5))
+        version: 3.3.5(ts-node@10.9.1(@types/node@20.14.12)(typescript@5.4.5))
 
   examples/tailwind-next:
     dependencies:
@@ -1830,7 +1833,7 @@ importers:
     dependencies:
       vite-tsconfig-paths:
         specifier: ^4.3.1
-        version: 4.3.1(typescript@5.4.5)(vite@5.2.8(@types/node@18.19.67)(less@4.2.2)(lightningcss@1.27.0)(sass@1.85.1)(terser@5.31.1))
+        version: 4.3.1(typescript@5.4.5)(vite@5.2.8(@types/node@20.14.12)(less@4.2.2)(lightningcss@1.27.0)(sass@1.85.1)(terser@5.31.1))
     devDependencies:
       '@farmfe/cli':
         specifier: workspace:*
@@ -2320,7 +2323,7 @@ importers:
         version: 16.0.1(postcss@8.4.31)
       postcss-load-config:
         specifier: ^4.0.1
-        version: 4.0.1(postcss@8.4.31)(ts-node@10.9.1(@types/node@18.19.67)(typescript@4.9.5))
+        version: 4.0.1(postcss@8.4.31)(ts-node@10.9.1(@types/node@20.14.12)(typescript@5.4.5))
       postcss-url:
         specifier: ^10.1.3
         version: 10.1.3(postcss@8.4.31)
@@ -4637,6 +4640,63 @@ packages:
 
   '@farmfe/plugin-svgr@0.0.1':
     resolution: {integrity: sha512-LVIkPZNyiOc7dgzN3yUuOPKA2wxBbb01sIb6WrcYOsLXD3Zk5SmbqW6uXI8qbRBvsB9kKMb4fTP5b84Y65xx3A==}
+
+  '@farmfe/plugin-virtual-darwin-arm64@0.0.10':
+    resolution: {integrity: sha512-gU6p9QKXlC/zepQfoQJAHxPlZYKiWBhs/ZUMtn5Zrsuv+XnM6Uoq1AbtB0FSl4Vw6I5dqcci48iV9A6LyFKSLA==}
+    engines: {node: '>= 10'}
+    cpu: [arm64]
+    os: [darwin]
+
+  '@farmfe/plugin-virtual-darwin-x64@0.0.10':
+    resolution: {integrity: sha512-TsrhvtnVp3OI7sz8wmghtJ2iL6Paz7A4EiYRFuhHuZkPbygbniD/FgPXDclwdeZcC4siZ9pB7TlPa5UQWjoWgQ==}
+    engines: {node: '>= 10'}
+    cpu: [x64]
+    os: [darwin]
+
+  '@farmfe/plugin-virtual-linux-arm64-gnu@0.0.10':
+    resolution: {integrity: sha512-xM4vaomJ54LNPpCM7c0+huWGxtoXOUckqJKa0GtBIFmrbHcDSwfVVRd1ROWQuFQmHZ7d0Oz66MqPbdmZkt8mMg==}
+    engines: {node: '>= 10'}
+    cpu: [arm64]
+    os: [linux]
+
+  '@farmfe/plugin-virtual-linux-arm64-musl@0.0.10':
+    resolution: {integrity: sha512-xFeB0fU1J5ELvJ8HGHYqkVbWqFh+oH8U2Jo9u6KPZyWCPLKVetQvlEm5E/JSw/wBTUKptlMXKj5hVlq93pYTdQ==}
+    engines: {node: '>= 10'}
+    cpu: [arm64]
+    os: [linux]
+
+  '@farmfe/plugin-virtual-linux-x64-gnu@0.0.10':
+    resolution: {integrity: sha512-IkqZh3u3QWSdTuSE4F9oywEaxxxj9aajojXyp1xt8LOOK+E9kvTBvz2Uxboepyvs8f0XhZwVCKmYSUsDhNw/jg==}
+    engines: {node: '>= 10'}
+    cpu: [x64]
+    os: [linux]
+
+  '@farmfe/plugin-virtual-linux-x64-musl@0.0.10':
+    resolution: {integrity: sha512-RXPcuZ5NWHj8KgTfyalxhH3DFLiEvyaNgoYk/0pk+fuF3zyYNv4H/SVJnxNjRET/qbM0yTW7O5V9u8l+5w8IYw==}
+    engines: {node: '>= 10'}
+    cpu: [x64]
+    os: [linux]
+
+  '@farmfe/plugin-virtual-win32-arm64-msvc@0.0.10':
+    resolution: {integrity: sha512-9+E+E7AacZlDLUXzmBUoBD8ZSnQEqeX6i8nkSVk/kBWZG4K3sX0VViL2GmlkFIjqyStFf70RZFMYW28oPGUv3Q==}
+    engines: {node: '>= 10'}
+    cpu: [arm64]
+    os: [win32]
+
+  '@farmfe/plugin-virtual-win32-ia32-msvc@0.0.10':
+    resolution: {integrity: sha512-ZEUS8ySJMIgtvVrsEXqiRIzIXR0kr9JXjhmSGXSpdTfAGhzxQxncF78qnOGFkTqOnqc6eoPB/RIByO64/VhtbQ==}
+    engines: {node: '>= 10'}
+    cpu: [ia32]
+    os: [win32]
+
+  '@farmfe/plugin-virtual-win32-x64-msvc@0.0.10':
+    resolution: {integrity: sha512-YNsWeKVPyca8jQNm6NX52a1LduWtrQzxPSu9oYujhzy6l9HMSds9hyhFdJmu7nK+AxKA3OXItQCx1M+neQv1sg==}
+    engines: {node: '>= 10'}
+    cpu: [x64]
+    os: [win32]
+
+  '@farmfe/plugin-virtual@0.0.10':
+    resolution: {integrity: sha512-Hh14alAtjB9Xwhtmnc0WmlAIP4cAYOdgrqiyCvtkqSrTP3/2xj+3i2JS4v9tcRdu/3i2ojR4eSBmjvJ5CcEkpA==}
 
   '@farmfe/utils@0.0.1':
     resolution: {integrity: sha512-QLbgNrojcvxfumXA/H329XAXhoCahmeSH3JmaiwwJEGS2QAmWfgAJMegjwlt6OmArGVO4gSbJ7Xbmm1idZZs+g==}
@@ -16758,7 +16818,7 @@ snapshots:
       yjs: 13.6.18
       zustand: 4.5.5(@types/react@18.2.35)(immer@9.0.21)(react@18.2.0)
       zustand-middleware-yjs: 1.3.1(@types/react@18.2.35)(immer@9.0.21)(react@18.2.0)
-      zustand-utils: 1.3.2(react@18.2.0)(zustand@4.5.5(@types/react@18.2.35)(immer@9.0.21)(react@18.2.0))
+      zustand-utils: 1.3.2(react@18.2.0)(zustand@4.5.5(@types/react@18.2.35)(immer@10.0.3)(react@18.2.0))
     transitivePeerDependencies:
       - '@emotion/react'
       - '@types/react'
@@ -19264,6 +19324,45 @@ snapshots:
       '@farmfe/plugin-svgr-win32-ia32-msvc': 0.0.1
       '@farmfe/plugin-svgr-win32-x64-msvc': 0.0.1
 
+  '@farmfe/plugin-virtual-darwin-arm64@0.0.10':
+    optional: true
+
+  '@farmfe/plugin-virtual-darwin-x64@0.0.10':
+    optional: true
+
+  '@farmfe/plugin-virtual-linux-arm64-gnu@0.0.10':
+    optional: true
+
+  '@farmfe/plugin-virtual-linux-arm64-musl@0.0.10':
+    optional: true
+
+  '@farmfe/plugin-virtual-linux-x64-gnu@0.0.10':
+    optional: true
+
+  '@farmfe/plugin-virtual-linux-x64-musl@0.0.10':
+    optional: true
+
+  '@farmfe/plugin-virtual-win32-arm64-msvc@0.0.10':
+    optional: true
+
+  '@farmfe/plugin-virtual-win32-ia32-msvc@0.0.10':
+    optional: true
+
+  '@farmfe/plugin-virtual-win32-x64-msvc@0.0.10':
+    optional: true
+
+  '@farmfe/plugin-virtual@0.0.10':
+    optionalDependencies:
+      '@farmfe/plugin-virtual-darwin-arm64': 0.0.10
+      '@farmfe/plugin-virtual-darwin-x64': 0.0.10
+      '@farmfe/plugin-virtual-linux-arm64-gnu': 0.0.10
+      '@farmfe/plugin-virtual-linux-arm64-musl': 0.0.10
+      '@farmfe/plugin-virtual-linux-x64-gnu': 0.0.10
+      '@farmfe/plugin-virtual-linux-x64-musl': 0.0.10
+      '@farmfe/plugin-virtual-win32-arm64-msvc': 0.0.10
+      '@farmfe/plugin-virtual-win32-ia32-msvc': 0.0.10
+      '@farmfe/plugin-virtual-win32-x64-msvc': 0.0.10
+
   '@farmfe/utils@0.0.1': {}
 
   '@floating-ui/core@1.6.8':
@@ -19721,7 +19820,7 @@ snapshots:
     transitivePeerDependencies:
       - chokidar
 
-  '@nestjs/testing@10.3.10(@nestjs/common@10.3.10(reflect-metadata@0.2.2)(rxjs@7.8.1))(@nestjs/core@10.3.10(@nestjs/common@10.3.10(reflect-metadata@0.2.2)(rxjs@7.8.1))(@nestjs/platform-express@10.3.10)(encoding@0.1.13)(reflect-metadata@0.2.2)(rxjs@7.8.1))(@nestjs/platform-express@10.3.10(@nestjs/common@10.3.10(reflect-metadata@0.2.2)(rxjs@7.8.1))(@nestjs/core@10.3.10))':
+  '@nestjs/testing@10.3.10(@nestjs/common@10.3.10(reflect-metadata@0.2.2)(rxjs@7.8.1))(@nestjs/core@10.3.10)(@nestjs/platform-express@10.3.10)':
     dependencies:
       '@nestjs/common': 10.3.10(reflect-metadata@0.2.2)(rxjs@7.8.1)
       '@nestjs/core': 10.3.10(@nestjs/common@10.3.10(reflect-metadata@0.2.2)(rxjs@7.8.1))(@nestjs/platform-express@10.3.10)(encoding@0.1.13)(reflect-metadata@0.2.2)(rxjs@7.8.1)
@@ -31677,21 +31776,13 @@ snapshots:
       camelcase-css: 2.0.1
       postcss: 8.4.47
 
-  postcss-load-config@4.0.1(postcss@8.4.31)(ts-node@10.9.1(@types/node@18.19.67)(typescript@4.9.5)):
+  postcss-load-config@4.0.1(postcss@8.4.31)(ts-node@10.9.1(@types/node@20.14.12)(typescript@5.4.5)):
     dependencies:
       lilconfig: 2.1.0
       yaml: 2.3.4
     optionalDependencies:
       postcss: 8.4.31
-      ts-node: 10.9.1(@types/node@18.19.67)(typescript@4.9.5)
-
-  postcss-load-config@4.0.1(postcss@8.4.47)(ts-node@10.9.1(@types/node@18.19.67)(typescript@4.9.5)):
-    dependencies:
-      lilconfig: 2.1.0
-      yaml: 2.3.4
-    optionalDependencies:
-      postcss: 8.4.47
-      ts-node: 10.9.1(@types/node@18.19.67)(typescript@4.9.5)
+      ts-node: 10.9.1(@types/node@20.14.12)(typescript@5.4.5)
 
   postcss-load-config@4.0.1(postcss@8.4.47)(ts-node@10.9.1(@types/node@20.14.12)(typescript@5.4.5)):
     dependencies:
@@ -33792,33 +33883,6 @@ snapshots:
 
   tailwind-merge@1.14.0: {}
 
-  tailwindcss@3.3.5(ts-node@10.9.1(@types/node@18.19.67)(typescript@4.9.5)):
-    dependencies:
-      '@alloc/quick-lru': 5.2.0
-      arg: 5.0.2
-      chokidar: 3.5.3
-      didyoumean: 1.2.2
-      dlv: 1.1.3
-      fast-glob: 3.3.1
-      glob-parent: 6.0.2
-      is-glob: 4.0.3
-      jiti: 1.21.0
-      lilconfig: 2.1.0
-      micromatch: 4.0.5
-      normalize-path: 3.0.0
-      object-hash: 3.0.0
-      picocolors: 1.0.0
-      postcss: 8.4.47
-      postcss-import: 15.1.0(postcss@8.4.47)
-      postcss-js: 4.0.1(postcss@8.4.47)
-      postcss-load-config: 4.0.1(postcss@8.4.47)(ts-node@10.9.1(@types/node@18.19.67)(typescript@4.9.5))
-      postcss-nested: 6.0.1(postcss@8.4.47)
-      postcss-selector-parser: 6.0.13
-      resolve: 1.22.8
-      sucrase: 3.34.0
-    transitivePeerDependencies:
-      - ts-node
-
   tailwindcss@3.3.5(ts-node@10.9.1(@types/node@20.14.12)(typescript@5.4.5)):
     dependencies:
       '@alloc/quick-lru': 5.2.0
@@ -34164,25 +34228,6 @@ snapshots:
     dependencies:
       '@ts-morph/common': 0.24.0
       code-block-writer: 13.0.1
-
-  ts-node@10.9.1(@types/node@18.19.67)(typescript@4.9.5):
-    dependencies:
-      '@cspotcode/source-map-support': 0.8.1
-      '@tsconfig/node10': 1.0.9
-      '@tsconfig/node12': 1.0.11
-      '@tsconfig/node14': 1.0.3
-      '@tsconfig/node16': 1.0.4
-      '@types/node': 18.19.67
-      acorn: 8.12.0
-      acorn-walk: 8.3.2
-      arg: 4.1.3
-      create-require: 1.1.1
-      diff: 4.0.2
-      make-error: 1.3.6
-      typescript: 4.9.5
-      v8-compile-cache-lib: 3.0.1
-      yn: 3.1.1
-    optional: true
 
   ts-node@10.9.1(@types/node@18.19.67)(typescript@5.4.5):
     dependencies:
@@ -35022,13 +35067,13 @@ snapshots:
       svgo: 3.2.0
       vue: 3.3.7(typescript@5.4.5)
 
-  vite-tsconfig-paths@4.3.1(typescript@5.4.5)(vite@5.2.8(@types/node@18.19.67)(less@4.2.2)(lightningcss@1.27.0)(sass@1.85.1)(terser@5.31.1)):
+  vite-tsconfig-paths@4.3.1(typescript@5.4.5)(vite@5.2.8(@types/node@20.14.12)(less@4.2.2)(lightningcss@1.27.0)(sass@1.85.1)(terser@5.31.1)):
     dependencies:
       debug: 4.3.4
       globrex: 0.1.2
       tsconfck: 3.0.1(typescript@5.4.5)
     optionalDependencies:
-      vite: 5.2.8(@types/node@18.19.67)(less@4.2.2)(lightningcss@1.27.0)(sass@1.85.1)(terser@5.31.1)
+      vite: 5.2.8(@types/node@20.14.12)(less@4.2.2)(lightningcss@1.27.0)(sass@1.85.1)(terser@5.31.1)
     transitivePeerDependencies:
       - supports-color
       - typescript
@@ -35608,13 +35653,6 @@ snapshots:
       fast-deep-equal: 3.1.3
       react: 18.2.0
       zustand: 4.5.5(@types/react@18.2.35)(immer@10.0.3)(react@18.2.0)
-
-  zustand-utils@1.3.2(react@18.2.0)(zustand@4.5.5(@types/react@18.2.35)(immer@9.0.21)(react@18.2.0)):
-    dependencies:
-      '@babel/runtime': 7.25.0
-      fast-deep-equal: 3.1.3
-      react: 18.2.0
-      zustand: 4.5.5(@types/react@18.2.35)(immer@9.0.21)(react@18.2.0)
 
   zustand@4.5.5(@types/react@18.2.35)(immer@10.0.3)(react@18.2.0):
     dependencies:

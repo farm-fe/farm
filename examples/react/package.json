@@ -22,7 +22,8 @@
     "@types/react": "18",
     "@types/react-dom": "18",
     "@types/react-redux": "^7.1.33",
-    "react-refresh": "^0.14.0"
+    "react-refresh": "^0.14.0",
+    "@farmfe/plugin-virtual": "0.0.10"
   },
   "scripts": {
     "start": "farm start",

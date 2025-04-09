@@ -33,6 +33,13 @@ export default defineConfig((env) => {
         useAbsolutePath: true,
       }),
       "@farmfe/plugin-sass",
+      [
+        "@farmfe/plugin-virtual",
+        {
+          "virtual-module": "export const a = 1",
+          "src/01.js": 'export const module01 = "virtual-module"',
+        },
+      ],
     ],
   };
 });

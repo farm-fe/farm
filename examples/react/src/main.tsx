@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { useStore } from "react-redux";
 
 import { Welcome } from "./components/index";
@@ -10,6 +10,8 @@ import * as Sentry from "@sentry/react";
 import { Effect } from "effect";
 
 import styles from "./index.module.scss";
+// @ts-ignore
+// import { a } from "virtual-module"
 
 Sentry.init({});
 
@@ -18,6 +20,14 @@ const result = Effect.runSync(Effect.succeed(42));
 export function Main() {
   const store = useStore();
   console.log(import.meta.env);
+  useEffect(() => {
+
+    (async () => {
+
+      const result = await import("virtual-module")
+      console.log(result)
+    })()
+  }, [])
   return (
     <>
       <div style={{ color: "#fff" }} className={styles.main}>
