@@ -1,10 +1,24 @@
 # @farmfe/core
 
+## 2.0.0-nightly-20250410022118
+
+### Major Changes
+
+- 21ac2ac: export loadenv api
+- b8f7fc5: build cjs script
+- ad09476: bump version
+
+### Patch Changes
+
+- Updated dependencies [ce93432]
+  - @farmfe/runtime-plugin-hmr@4.0.0-nightly-20250410022118
+
 ## 2.0.0-nightly-20241029121500
 
 ### Major Changes
 
 - b327dd1: collect htmlFallbackMiddleware
+
 ## 1.7.2
 
 ### Patch Changes

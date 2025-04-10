@@ -1,5 +1,14 @@
 # @farmfe/js-plugin-less
 
+## 2.0.0-nightly-20250410022118
+
+### Patch Changes
+
+- Updated dependencies [21ac2ac]
+- Updated dependencies [b8f7fc5]
+- Updated dependencies [ad09476]
+  - @farmfe/core@2.0.0-nightly-20250410022118
+
 ## 2.0.0-nightly-20241029121500
 
 ### Patch Changes
@@ -67,6 +76,7 @@
 
 - Updated dependencies [a82a5b2]
   - @farmfe/core@2.0.0-nightly-20241022014521
+
 ## 1.13.0
 
 ### Patch Changes

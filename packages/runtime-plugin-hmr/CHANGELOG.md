@@ -1,5 +1,11 @@
 # @farmfe/runtime-plugin-hmr
 
+## 4.0.0-nightly-20250410022118
+
+### Major Changes
+
+- ce93432: optimize runtime-hmr size
+
 ## 4.0.0-nightly-20241029095811
 
 ### Major Changes
