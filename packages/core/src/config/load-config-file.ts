@@ -173,10 +173,12 @@ export async function readConfigFile(
   ).then((mod) => mod.default);
 
   const compiler = new Compiler({
-    compilation: normalizedConfig,
+    compilation: {
+      ...normalizedConfig,
+      output: { ...normalizedConfig.output, showFileSize: false }
+    },
     jsPlugins: [],
     rustPlugins: [[replaceDirnamePlugin, '{}']]
-    // rustPlugins: []
   });
 
   const FARM_PROFILE = process.env.FARM_PROFILE;
