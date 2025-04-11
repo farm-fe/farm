@@ -26,13 +26,24 @@ use farmfe_utils::transform_string_to_static_str;
 
 const FARM_NODE_MODULE: &str = "__farmNodeModule";
 
+#[derive(Debug)]
 pub enum ExportInfoOfEntryModule {
-  Default,
   Named {
     name: String,
     import_as: Option<String>,
   },
+  Default,
   CJS,
+}
+
+impl ExportInfoOfEntryModule {
+  pub fn rank(&self) -> usize {
+    match self {
+        ExportInfoOfEntryModule::Named { .. } => 1,
+        ExportInfoOfEntryModule::Default => 0,
+        ExportInfoOfEntryModule::CJS => 0,
+    }
+  }
 }
 
 pub fn get_export_info_of_entry_module(
@@ -168,9 +179,11 @@ fn get_export_info_code(
   context: &Arc<CompilationContext>,
 ) -> String {
   let mut visited = HashSet::new();
-  let export_info = get_export_info_of_entry_module(entry_module_id, module_graph, &mut visited);
+  let mut export_info = get_export_info_of_entry_module(entry_module_id, module_graph, &mut visited);
 
   if !export_info.is_empty() {
+    // when cjs generate, `export default` should before `named export`
+    export_info.sort_by_key(|v| v.rank());
     export_info
       .iter()
       .map(|export| match export {
@@ -182,9 +195,9 @@ fn get_export_info_code(
           if let Some(import_as) = import_as {
             match context.config.output.format {
               ModuleFormat::CommonJs => format!("module.exports.{import_as} = entry.{name};"),
-              ModuleFormat::EsModule => format!(
-                "var {name}=entry.{name};export {{ {name} as {import_as} }};"
-              ),
+              ModuleFormat::EsModule => {
+                format!("var {name}=entry.{name};export {{ {name} as {import_as} }};")
+              }
             }
           } else {
             match context.config.output.format {
