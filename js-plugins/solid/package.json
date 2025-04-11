@@ -1,6 +1,6 @@
 {
   "name": "@farmfe/js-plugin-solid",
-  "version": "3.0.0-nightly-20250411100807",
+  "version": "3.0.0-nightly-20250411141103",
   "description": "SolidJS support for Farm",
   "private": true,
   "author": {

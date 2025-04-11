@@ -1,5 +1,11 @@
 # @farmfe/js-plugin-vue
 
+## 4.0.0-nightly-20250411141103
+
+### Patch Changes
+
+- @farmfe/core@2.0.0-nightly-20250411141103
+
 ## 4.0.0-nightly-20250411100807
 
 ### Patch Changes
