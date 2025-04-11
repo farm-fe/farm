@@ -1,5 +1,11 @@
 # @farmfe/js-plugin-dts
 
+## 0.6.5
+
+### Patch Changes
+
+- 6453a7f1: fix dts file creation
+
 ## 0.6.4
 
 ### Patch Changes

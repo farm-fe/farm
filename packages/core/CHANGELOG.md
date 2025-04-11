@@ -1,5 +1,11 @@
 # @farmfe/core
 
+## 1.7.3
+
+### Patch Changes
+
+- 6a6ad094: fix cjs node export sort
+
 ## 1.7.2
 
 ### Patch Changes
