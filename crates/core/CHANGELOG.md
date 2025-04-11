@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.4](https://github.com/farm-fe/farm/compare/farmfe_core-v0.7.3...farmfe_core-v0.7.4) - 2025-04-11
+
+### Fixed
+
+- *(hmr)* panic when call compiler.update for a full new module multi… ([#2120](https://github.com/farm-fe/farm/pull/2120))
+- #2103 and resource pot id hash conflicts ([#2107](https://github.com/farm-fe/farm/pull/2107))
+- persistent cache panic when using addFileWatchFile with query #2067 ([#2068](https://github.com/farm-fe/farm/pull/2068))
+
 ## [0.7.3](https://github.com/farm-fe/farm/compare/farmfe_core-v0.7.2...farmfe_core-v0.7.3) - 2025-01-09
 
 ### Fixed
