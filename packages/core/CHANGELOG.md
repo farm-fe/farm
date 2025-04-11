@@ -1,5 +1,14 @@
 # @farmfe/core
 
+## 2.0.0-nightly-20250411141103
+
+### Patch Changes
+
+- Updated dependencies [b82ed8d]
+  - @farmfe/runtime@1.0.0-nightly-20250411141103
+  - @farmfe/runtime-plugin-hmr@4.0.0-nightly-20250411100807
+  - @farmfe/runtime-plugin-import-meta@1.0.0-nightly-20250411100807
+
 ## 2.0.0-nightly-20250411100807
 
 ### Patch Changes
