@@ -239,7 +239,6 @@ async function preProcession(
       case 'scss':
         processor = await loadPreProcessor(PreProcessorsType.sass);
         return await compilePreProcessorCodeToCss(styleCode, processor, {
-          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
           // @ts-ignore
           indentedSyntax: moduleType === 'sass',
           includePaths: options.paths ?? []

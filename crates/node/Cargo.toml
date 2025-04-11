@@ -16,9 +16,9 @@ napi-derive = "2.15.2"
 farmfe_compiler = { path = "../compiler" }
 farmfe_core = { path = "../core" }
 farmfe_toolkit = { path = "../toolkit" }
-regex = "1"
-libloading = "0.7"
 farmfe_toolkit_plugin_types = { path = "../toolkit_plugin_types" }
+regex = "1"
+libloading = "0.8.6"
 eframe = { version = "0.24.1", default-features = false, features = [
   "persistence",
   "glow",

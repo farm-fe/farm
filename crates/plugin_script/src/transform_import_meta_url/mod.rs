@@ -2,11 +2,12 @@ use farmfe_core::{
   swc_common::{
     comments::{Comments, SingleThreadedComments},
     util::take::Take,
-    Spanned, DUMMY_SP,
+    Spanned, SyntaxContext, DUMMY_SP,
   },
   swc_ecma_ast::{
-    CallExpr, Callee, ComputedPropName, Expr, ExprOrSpread, Ident, KeyValueProp, Lit, MemberExpr,
-    MemberProp, MetaPropExpr, MetaPropKind, Module, ObjectLit, Prop, PropName, PropOrSpread,
+    CallExpr, Callee, ComputedPropName, Expr, ExprOrSpread, IdentName, KeyValueProp, Lit,
+    MemberExpr, MemberProp, MetaPropExpr, MetaPropKind, Module, ObjectLit, Prop, PropName,
+    PropOrSpread,
   },
 };
 use farmfe_toolkit::swc_ecma_visit::{VisitMut, VisitMutWith};
@@ -81,7 +82,7 @@ impl<'a> ImportMetaURLVisitor<'a> {
           kind: MetaPropKind::ImportMeta,
           ..
         }),
-      prop: MemberProp::Ident(Ident { sym, .. }),
+      prop: MemberProp::Ident(IdentName { sym, .. }),
       ..
     }) = expr
     {
@@ -208,6 +209,7 @@ impl<'a> ImportMetaURLVisitor<'a> {
               },
             ],
             type_args: None,
+            ctxt: SyntaxContext::empty(),
           })),
           prop: MemberProp::Computed(ComputedPropName {
             span: DUMMY_SP,

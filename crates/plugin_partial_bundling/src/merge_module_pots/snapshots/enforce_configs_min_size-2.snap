@@ -1,0 +1,41 @@
+---
+source: crates/plugin_partial_bundling/src/merge_module_pots/test_enforce_configs.rs
+input_file: crates/testing_helpers/src/lib.rs
+---
+name: B
+id: B_23282ac10f2eedd4a10f505192bdd323
+immutable: true
+resource_pot_type: Js
+entry: None
+module_groups: []
+modules: [
+    ModuleId {
+        relative_path: "D",
+        query_string: "",
+    },
+    ModuleId {
+        relative_path: "H",
+        query_string: "",
+    },
+]
+resources: []
+
+-------
+
+name: B
+id: B_2f5d6a63eb2504d486bf13df147c043a_js
+immutable: false
+resource_pot_type: Js
+entry: None
+module_groups: []
+modules: [
+    ModuleId {
+        relative_path: "B",
+        query_string: "",
+    },
+    ModuleId {
+        relative_path: "E",
+        query_string: "",
+    },
+]
+resources: []

@@ -1,10 +1,9 @@
-use std::collections::HashMap;
-
 use farmfe_core::{
   cache_item,
   module::{ModuleId, ModuleType},
   plugin::{PluginAnalyzeDepsHookResultEntry, ResolveKind},
   swc_html_ast::{Child, Document, Element},
+  HashMap,
 };
 use farmfe_toolkit::swc_html_visit::{Visit, VisitWith};
 
@@ -22,7 +21,7 @@ impl DepsAnalyzer {
     Self {
       deps: None,
       html_id,
-      inline_deps_map: HashMap::new(),
+      inline_deps_map: HashMap::default(),
     }
   }
 
@@ -217,7 +216,7 @@ pub fn should_ignore_source(source: &str) -> bool {
     || source.starts_with("data:")
 }
 
-#[cache_item]
+#[cache_item(farmfe_core)]
 #[derive(Debug, Clone)]
 pub struct HtmlInlineModule {
   pub html_id: ModuleId,

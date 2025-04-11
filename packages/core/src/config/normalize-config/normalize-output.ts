@@ -1,13 +1,14 @@
+import path, { isAbsolute } from 'node:path';
+
 import { browsersWithSupportForFeatures } from 'farm-browserslist-generator';
 
-import path, { isAbsolute } from 'node:path';
 import { Config } from '../../types/binding.js';
 import { urlRegex } from '../../utils/http.js';
 import { Logger } from '../../utils/logger.js';
 import {
   FARM_TARGET_BROWSER_ENVS,
   mapTargetEnvValue,
-  normalizeBasePath
+  normalizePath
 } from '../../utils/share.js';
 import { ResolvedCompilation } from '../types.js';
 
@@ -95,9 +96,7 @@ const targetsMap: TargetsMap = {
     scriptGenTarget: 'es2017'
   },
   'browser-esnext': null,
-  library: null,
-  'library-browser': null,
-  'library-node': null
+  library: null
 };
 
 /**
@@ -266,7 +265,7 @@ export function getValidPublicPath(publicPath = '/'): string {
   if (publicPath.startsWith('/')) {
     validPublicPath = publicPath;
   } else if (publicPath.startsWith('.')) {
-    validPublicPath = normalizeBasePath(path.join('/', publicPath));
+    validPublicPath = normalizePath(path.join('/', publicPath));
   }
 
   return validPublicPath;

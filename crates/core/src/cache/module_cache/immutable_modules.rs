@@ -1,5 +1,3 @@
-use std::collections::{HashMap, HashSet};
-
 use dashmap::DashMap;
 use farmfe_macro_cache_item::cache_item;
 use farmfe_utils::hash::sha256;
@@ -13,6 +11,7 @@ use crate::{
   },
   config::Mode,
   module::ModuleId,
+  HashMap, HashSet,
 };
 
 use super::{module_memory_store::ModuleMemoryStore, CachedModule};
@@ -65,7 +64,7 @@ impl ImmutableModulesMemoryStore {
     for (key, value) in manifest.iter() {
       let mut set = manifest_reversed
         .entry(value.clone())
-        .or_insert_with(HashSet::new);
+        .or_insert_with(HashSet::default);
       set.insert(key.clone());
     }
 
@@ -170,9 +169,9 @@ impl ModuleMemoryStore for ImmutableModulesMemoryStore {
   }
 
   fn write_cache(&self) {
-    let mut packages = HashMap::new();
-    let mut pending_remove_modules = HashSet::new();
-    let mut maybe_remove_package = HashSet::new();
+    let mut packages = HashMap::default();
+    let mut pending_remove_modules = HashSet::default();
+    let mut maybe_remove_package = HashSet::default();
 
     for item in self.cached_modules.iter() {
       let module = item.value();

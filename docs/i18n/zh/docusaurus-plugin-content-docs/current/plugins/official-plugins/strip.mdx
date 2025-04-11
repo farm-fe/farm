@@ -1,0 +1,102 @@
+import CodeBlock from "@theme/CodeBlock";
+import Tabs from "@theme/Tabs";
+import TabItem from "@theme/TabItem";
+
+# @farmfe/plugin-strip
+
+🍣 一个Farm Rust插件，用于从你的代码中移除`debugger`语句和如`assert.equal`、`console.log`这样的函数。
+
+## 要求
+
+这个插件需要一个[LTS](https://github.com/nodejs/Release) Node版本（v18.0.0+）和Farm v1.0.0+。
+
+## 安装
+
+<Tabs>
+  <TabItem value="npm" label="npm">
+    <CodeBlock>npm install @farmfe/plugin-strip</CodeBlock>
+  </TabItem>
+  <TabItem value="yarn" label="yarn">
+    <CodeBlock>yarn add @farmfe/plugin-strip</CodeBlock>
+  </TabItem>
+  <TabItem value="pnpm" label="pnpm">
+    <CodeBlock>pnpm add @farmfe/plugin-strip</CodeBlock>
+  </TabItem>
+</Tabs>
+
+## 使用
+
+创建一个`farm.config.js`[配置文件](https://www.farmfe.org/docs/config/configuring-farm)并导入插件：
+
+```js
+import { defineConfig } from '@farmfe/core';
+import strip from '@farmfe/plugin-strip';
+
+export default defineConfig({
+  // ...
+  plugins: [
+    [
+      strip({
+        // 插件选项
+        functions:[ 'console.*', 'assert.*' ],
+        labels: ['unittest']
+      })
+    ]
+  ],
+  // ...
+});
+```
+
+## 选项
+
+### `include`
+
+类型: `String | RegExp | Array[...String|RegExp]`<br/>
+默认值: `['**/*.js']`<br/>
+示例: `include: '**/*.(mjs|js)',`<br/>
+
+指定插件应操作的构建中的文件的模式或模式数组。
+
+### `exclude`
+
+类型: `String | RegExp | Array[...String|RegExp]`<br/>
+默认值: `[]`<br/>
+示例: `exlude: 'tests/**/*',`<br/>
+
+指定插件应_忽略_的构建中的文件的模式或模式数组。
+
+### `debugger`
+
+类型: `Boolean`<br/>
+默认值: `true`<br/>
+示例: `debugger: false,`<br/>
+
+如果为`true`，指示插件移除debugger语句。
+
+### `functions`
+
+类型: `Array[...String]`<br/>
+默认值: `[ 'console.*', 'assert.*' ]`<br/>
+示例: `functions: [ 'console.log', 'MyClass.Test' ],`<br/>
+
+指定插件将目标定位和移除的函数。
+
+_注意：指定在链的开头使用的函数，如'a().b().c()'，将导致'(void 0).b().c()'，这在运行时会产生错误。_
+
+### `labels`
+
+类型: `Array[...String]`<br/>
+默认值: `[]`<br/>
+示例: `labels: ['unittest'],`<br/>
+
+指定插件将目标定位和移除的[带标签的块或语句](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/label)。
+
+_注意：'**:**'是隐含的，不应在配置中指定。_
+
+### `sourceMap`
+
+类型: `Boolean`<br/>
+默认值: `true`<br/>
+示例: `sourceMap: false,`<br/>
+
+如果为`true`，指示插件在从捆绑包中移除配置的目标后相应地更新源映射。

@@ -1,0 +1,4 @@
+[x] migrate all esm runtime bundle to library test
+[x] fix concatenate module issues for `export { readFileSync } from 'fs';readFileSync('111')`
+[] fix concatenate module issues for `export * from 'fs';`
+[] test arco stuck on macos and windows

@@ -1,0 +1,1 @@
+export const c_str = 'c_str';

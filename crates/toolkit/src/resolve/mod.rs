@@ -14,7 +14,7 @@
 use std::path::PathBuf;
 
 use farmfe_core::common::PackageJsonInfo;
-use lazy_static::lazy_static;
+use farmfe_core::lazy_static::lazy_static;
 
 pub mod package_json_loader;
 pub mod path_start_with_alias;

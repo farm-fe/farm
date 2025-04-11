@@ -1,7 +1,7 @@
-use std::collections::HashMap;
-
 use dashmap::{mapref::one::Ref, DashMap};
 use farmfe_utils::hash::sha256;
+
+use crate::HashMap;
 
 use crate::config::Mode;
 

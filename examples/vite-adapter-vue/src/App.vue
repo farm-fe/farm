@@ -2,13 +2,13 @@
   <el-tabs v-model="activeName">
     <img src="/logo.png" alt="">
     <el-tab-pane label="test" name="test">
-      Map is weakMap: {{mapIsWeakMap}}; 
-      WeakMap is weakMap: {{weakMapIsWeakMap}};
+      Map is weakMap: {{ mapIsWeakMap }};
+      WeakMap is weakMap: {{ weakMapIsWeakMap }};
 
       <ElButton type="primary" @click="hashValue">
         Argon2 hash
       </ElButton>
-      Hash Bytes: {{hashBytes}}
+      Hash Bytes: {{ hashBytes }}
       <test />
     </el-tab-pane>
     <el-tab-pane label="test1" name="test1">
@@ -24,7 +24,7 @@
     <!-- <TinyButton type="primary" @click="btnClick">
       Tiny Vue Modal 最大化显示
     </TinyButton> -->
-    
+
     <!-- <test1 />
     <aboute />
     <home/> -->
@@ -42,10 +42,10 @@ import 'element-plus/theme-chalk/src/tab-pane.scss'
 //   Modal.alert({ message: '最大化显示', fullscreen: true })
 // }
 
-import test1 from './components/test1.vue';
-import test from './components/test.vue';
-import home from './pages/index.vue';
-import aboute from '../deps/node_modules/my-ui/index.vue'
+// import test1 from './components/test1.vue';
+// import test from './components/test.vue';
+// import home from './pages/index.vue';
+// import aboute from '../deps/node_modules/my-ui/index.vue'
 
 import './test';
 import { isWeakMap } from 'lodash-es';
@@ -53,8 +53,8 @@ import { isWeakMap } from 'lodash-es';
 const hashBytes = ref('')
 
 async function hashValue() {
-  const {hash: getHash, ArgonType} = await import('argon2-browser/dist/argon2-bundled.min')
-  const {hash} = await getHash({
+  const { hash: getHash, ArgonType } = await import('argon2-browser/dist/argon2-bundled.min')
+  const { hash } = await getHash({
     pass: 'any string here',
     salt: Date.now().toString(),
     time: 10,
@@ -67,6 +67,7 @@ async function hashValue() {
 
 
 const activeName = ref('test')
+console.log(activeName)
 const mapIsWeakMap = isWeakMap(new Map())
 const weakMapIsWeakMap = isWeakMap(new WeakMap())
 </script>

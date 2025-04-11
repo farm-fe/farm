@@ -1,16 +1,18 @@
-use std::{collections::HashMap, sync::Arc};
+use std::sync::Arc;
 
 use farmfe_core::{
   context::CompilationContext,
   module::ModuleId,
-  plugin::{PluginUpdateModulesHookParams, UpdateResult, UpdateType},
+  plugin::{PluginUpdateModulesHookParam, UpdateResult, UpdateType},
   serde_json,
   stats::CompilationPluginHookStats,
+  HashMap,
 };
 use farmfe_utils::relative;
 
 pub fn handle_update_modules(
   paths: Vec<(String, UpdateType)>,
+  last_fail_module_ids: &[ModuleId],
   context: &Arc<CompilationContext>,
   update_result: &mut UpdateResult,
 ) -> farmfe_core::error::Result<Vec<(String, UpdateType)>> {
@@ -26,13 +28,15 @@ pub fn handle_update_modules(
     (vec![], 0)
   };
   let paths = resolve_watch_graph_paths(paths, context);
+  let paths = resolve_last_failed_module_paths(paths, last_fail_module_ids, context);
+
   if context.config.record {
     let end_time = std::time::SystemTime::now()
       .duration_since(std::time::UNIX_EPOCH)
       .unwrap()
       .as_millis();
     context
-      .record_manager
+      .stats
       .add_plugin_hook_stats(CompilationPluginHookStats {
         plugin_name: "InternalWatchGraphPlugin".to_string(),
         hook_name: "update_modules".to_string(),
@@ -45,7 +49,7 @@ pub fn handle_update_modules(
         end_time,
       })
   }
-  let mut plugin_update_modules_hook_params = PluginUpdateModulesHookParams { paths };
+  let mut plugin_update_modules_hook_params = PluginUpdateModulesHookParam { paths };
 
   context
     .plugin_driver
@@ -89,7 +93,7 @@ pub fn handle_update_modules(
 
   // group the paths by same resolved_path
   let grouped_paths = paths.iter().fold(
-    HashMap::<String, Vec<String>>::new(),
+    HashMap::<String, Vec<String>>::default(),
     |mut acc, (path, _)| {
       let resolved_path = path.split('?').next().unwrap().to_string();
 
@@ -156,7 +160,7 @@ pub fn handle_update_modules(
       .unwrap()
       .as_millis();
     context
-      .record_manager
+      .stats
       .add_plugin_hook_stats(CompilationPluginHookStats {
         plugin_name: "InternalUpdateModulesPlugin".to_string(),
         hook_name: "update_modules".to_string(),
@@ -173,6 +177,7 @@ pub fn handle_update_modules(
         end_time,
       })
   }
+
   Ok(result)
 }
 
@@ -221,4 +226,18 @@ fn resolve_watch_graph_paths(
       }
     })
     .collect()
+}
+
+fn resolve_last_failed_module_paths(
+  mut paths: Vec<(String, UpdateType)>,
+  last_fail_module_ids: &[ModuleId],
+  context: &Arc<CompilationContext>,
+) -> Vec<(String, UpdateType)> {
+  paths.extend(
+    last_fail_module_ids
+      .iter()
+      .map(|id| (id.resolved_path(&context.config.root), UpdateType::Updated)),
+  );
+
+  paths
 }

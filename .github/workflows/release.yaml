@@ -3,6 +3,7 @@ on:
   push:
     branches:
       - main
+      - v2-dev
 
 concurrency: ${{ github.workflow }}-${{ github.ref }}
 
@@ -35,12 +36,14 @@ jobs:
           do
             mv /tmp/artifacts/${{ github.sha }}-${abi}/* ./packages/core/npm/${abi}
             mv /tmp/artifacts/${{ github.sha }}-${abi}-plugin-react/* ./rust-plugins/react/npm/${abi}
+            mv /tmp/artifacts/${{ github.sha }}-${abi}-plugin-replace-dirname/* ./rust-plugins/replace-dirname/npm/${abi}
             mv /tmp/artifacts/${{ github.sha }}-${abi}-plugin-sass/* ./rust-plugins/sass/npm/${abi}
             mv /tmp/artifacts/${{ github.sha }}-${abi}-create-farm/* ./packages/create-farm/npm/${abi}
 
             test -f ./packages/core/npm/${abi}/farm.${abi}.node
             test -f ./packages/create-farm/npm/${abi}/create-farm.${abi}.node
             test -f ./rust-plugins/react/npm/${abi}/index.farm
+            test -f ./rust-plugins/replace-dirname/npm/${abi}/index.farm
             test -f ./rust-plugins/sass/npm/${abi}/index.farm
           done
           for abi in android-arm-eabi linux-arm-gnueabihf android-arm64 freebsd-x64
@@ -50,7 +53,7 @@ jobs:
           done
 
       - name: Install Dependencies
-        run: npm install -g pnpm@9.1.0 && pnpm i --frozen-lockfile
+        run: npm install -g pnpm@9.4.0 && pnpm i --frozen-lockfile
       - name: Build Plugin Tools
         run: pnpm --filter @farmfe/plugin-tools run build
 
@@ -58,8 +61,9 @@ jobs:
         id: changesets
         uses: changesets/action@v1
         with:
-          version: pnpm bump
-          publish: pnpm release
+          version: ${{ github.ref_name == 'v2-dev' && 'pnpm run bump:nightly' || 'pnpm run bump' }}
+          publish: ${{ github.ref_name == 'v2-dev' && 'npm run release:nightly' || 'npm run release' }}
+          branch: ${{ github.ref_name == 'v2-dev' && 'v2-dev' || 'main' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}

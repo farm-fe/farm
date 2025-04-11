@@ -48,6 +48,7 @@ export async function initPublicFiles(
     fileNames.map((fileName) => fileName.slice(config.publicDir.length))
   );
   publicFilesMap.set(config, publicFiles);
+
   return publicFiles;
 }
 

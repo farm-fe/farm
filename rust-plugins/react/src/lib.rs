@@ -2,20 +2,21 @@
 
 use farmfe_core::{
   config::Config,
+  context::create_swc_source_map,
   plugin::{Plugin, PluginAnalyzeDepsHookResultEntry, ResolveKind},
   serde_json,
 };
 
 use farmfe_macro_plugin::farm_plugin;
+
 use farmfe_toolkit_plugin_types::{
   libloading::Library,
   load_core_lib,
-  swc_ast::create_swc_source_map,
   swc_transforms::{swc_transform_react, FarmSwcTransformReactOptions},
 };
+use react_refresh::{inject_react_refresh, IS_REACT_REFRESH_BOUNDARY};
 
 mod react_refresh;
-use react_refresh::{inject_react_refresh, IS_REACT_REFRESH_BOUNDARY};
 
 const GLOBAL_INJECT_MODULE_ID: &str = "farmfe_plugin_react_global_inject";
 
@@ -59,7 +60,7 @@ impl Plugin for FarmPluginReact {
     "FarmPluginReact"
   }
   fn priority(&self) -> i32 {
-      99
+    99
   }
   fn resolve(
     &self,
@@ -126,15 +127,19 @@ impl Plugin for FarmPluginReact {
     ) {
       let top_level_mark = param.meta.as_script().top_level_mark;
       let unresolved_mark = param.meta.as_script().unresolved_mark;
+      let comments = param.meta.as_script().comments.clone().into();
       let ast = &mut param.meta.as_script_mut().ast;
 
       let file_name = if self.use_absolute_path {
-        param.module_id.resolved_path(&context.config.root)
+        param
+          .module_id
+          .resolved_path_with_query(&context.config.root)
       } else {
         param.module_id.to_string()
       };
 
-      let (cm, _) = create_swc_source_map(&self.core_lib, &file_name, param.content.clone())?;
+      let (cm, _) = create_swc_source_map(&file_name.into(), param.content.clone());
+      let globals = context.meta.get_globals(param.module_id);
 
       swc_transform_react(
         &self.core_lib,
@@ -144,9 +149,10 @@ impl Plugin for FarmPluginReact {
           unresolved_mark,
           inject_helpers: true,
           cm,
-          globals: &context.meta.script.globals,
-          mode: context.config.mode.clone(),
+          globals: globals.value(),
+          mode: context.config.mode,
           options: self.options.clone(),
+          comments,
         },
       )?;
 

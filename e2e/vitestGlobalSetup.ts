@@ -24,7 +24,6 @@ export async function setup({ provide }: GlobalSetupContext): Promise<void> {
 
   client.listen(12306);
 
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
   // @ts-ignore
   provide('wsEndpoint', browserServer.wsEndpoint());
 }
