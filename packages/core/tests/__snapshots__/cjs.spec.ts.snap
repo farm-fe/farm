@@ -6,7 +6,7 @@ exports[`resolveUserConfig > resolveUserConfig 1`] = `
   "$__farm_regex:(global(This)?\\.)?process\\.env\\.mode": ""development"",
   "FARM_HMR_HOST": "true",
   "FARM_HMR_PATH": ""/__hmr"",
-  "FARM_HMR_PORT": "9000",
+  "FARM_HMR_PORT": "9001",
   "FARM_HMR_PROTOCOL": """",
   "FARM_PROCESS_ENV": {
     "NODE_ENV": "development",
