@@ -1,5 +1,11 @@
 # @farmfe/plugin-replace-dirname
 
+## 1.0.0-nightly-20250411100807
+
+### Patch Changes
+
+- 60f40f0: bump nightly version
+
 ## 1.0.0-nightly-20250410022118
 
 ### Patch Changes

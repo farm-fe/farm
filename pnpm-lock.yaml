@@ -660,7 +660,7 @@ importers:
         specifier: workspace:*
         version: link:../../packages/core
       '@farmfe/plugin-react':
-        specifier: 2.0.0-nightly-20241022124925
+        specifier: 2.0.0-nightly-20250411100807
         version: link:../../rust-plugins/react
       '@types/react':
         specifier: '18'
@@ -2865,13 +2865,13 @@ importers:
         specifier: workspace:*
         version: link:../../rust-plugins/replace-dirname
       '@farmfe/runtime':
-        specifier: workspace:1.0.0-nightly-20241023020505
+        specifier: workspace:1.0.0-nightly-20250411100807
         version: link:../runtime
       '@farmfe/runtime-plugin-hmr':
-        specifier: workspace:4.0.0-nightly-20250410022118
+        specifier: workspace:4.0.0-nightly-20250411100807
         version: link:../runtime-plugin-hmr
       '@farmfe/runtime-plugin-import-meta':
-        specifier: workspace:1.0.0-nightly-20241023020505
+        specifier: workspace:1.0.0-nightly-20250411100807
         version: link:../runtime-plugin-import-meta
       '@farmfe/utils':
         specifier: workspace:*
@@ -3054,7 +3054,7 @@ importers:
         version: 1.29.0
     devDependencies:
       '@farmfe/runtime':
-        specifier: workspace:1.0.0-nightly-20241023020505
+        specifier: workspace:1.0.0-nightly-20250411100807
         version: link:../runtime
       '@types/prismjs':
         specifier: ^1.26.5
@@ -3067,7 +3067,7 @@ importers:
         version: 3.30.1
     devDependencies:
       '@farmfe/runtime':
-        specifier: workspace:1.0.0-nightly-20241023020505
+        specifier: workspace:1.0.0-nightly-20250411100807
         version: link:../runtime
 
   packages/utils: {}

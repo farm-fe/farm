@@ -1,6 +1,6 @@
 {
   "name": "@farmfe/core",
-  "version": "2.0.0-nightly-20250410022118",
+  "version": "2.0.0-nightly-20250411100807",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "type": "module",
@@ -86,9 +86,9 @@
   },
   "dependencies": {
     "@farmfe/plugin-replace-dirname": "workspace:*",
-    "@farmfe/runtime": "workspace:1.0.0-nightly-20241023020505",
-    "@farmfe/runtime-plugin-hmr": "workspace:4.0.0-nightly-20250410022118",
-    "@farmfe/runtime-plugin-import-meta": "workspace:1.0.0-nightly-20241023020505",
+    "@farmfe/runtime": "workspace:1.0.0-nightly-20250411100807",
+    "@farmfe/runtime-plugin-hmr": "workspace:4.0.0-nightly-20250411100807",
+    "@farmfe/runtime-plugin-import-meta": "workspace:1.0.0-nightly-20250411100807",
     "@farmfe/utils": "workspace:*",
     "@polka/compression": "1.0.0-next.25",
     "@swc/helpers": "^0.5.0",

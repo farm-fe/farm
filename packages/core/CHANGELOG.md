@@ -1,5 +1,16 @@
 # @farmfe/core
 
+## 2.0.0-nightly-20250411100807
+
+### Patch Changes
+
+- 60f40f0: bump nightly version
+- Updated dependencies [60f40f0]
+  - @farmfe/runtime@1.0.0-nightly-20250411100807
+  - @farmfe/runtime-plugin-hmr@4.0.0-nightly-20250411100807
+  - @farmfe/runtime-plugin-import-meta@1.0.0-nightly-20250411100807
+  - @farmfe/plugin-replace-dirname@1.0.0-nightly-20250411100807
+
 ## 2.0.0-nightly-20250410022118
 
 ### Major Changes
