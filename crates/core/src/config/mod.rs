@@ -227,7 +227,7 @@ pub struct ScriptParserConfig {
 #[serde(rename_all = "camelCase", default)]
 pub struct ResolveConfig {
   pub alias: HashMap<String, String>,
-  pub main_fields: Vec<String>,
+  pub main_fields: Option<Vec<String>>,
   pub main_files: Vec<String>,
   pub extensions: Vec<String>,
   pub conditions: Vec<String>,
@@ -240,13 +240,7 @@ impl Default for ResolveConfig {
   fn default() -> Self {
     Self {
       alias: HashMap::new(),
-      main_fields: vec![
-        String::from("browser"),
-        String::from("module"),
-        String::from("main"),
-        String::from("jsnext:main"),
-        String::from("jsnext"),
-      ],
+      main_fields: None,
       main_files: vec![String::from("index")],
       extensions: vec![
         String::from("tsx"),
