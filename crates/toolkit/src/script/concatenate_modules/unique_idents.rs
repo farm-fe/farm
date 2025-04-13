@@ -91,16 +91,25 @@ impl TopLevelIdentsRenameHandler {
       .cloned()
   }
 
-  /// rename the imported ident if there are conflicts
-  pub fn rename_ident_if_conflict(&mut self, module_id: &ModuleId, ident: &SwcId) {
+  pub fn get_unique_ident(&mut self, ident: &SwcId) -> Option<SwcId> {
     self.top_level_idents.add_ident(ident.sym.to_string());
     let unique_ident = self.top_level_idents.get_unique_ident(ident.sym.as_str());
 
     if unique_ident != *ident.sym {
       let mut cloned = ident.clone();
       cloned.sym = unique_ident.into();
-      self.rename_ident(module_id.clone(), ident.clone(), cloned);
+      Some(cloned)
+    } else {
+      None
     }
+  }
+
+  /// rename the imported ident if there are conflicts
+  pub fn rename_ident_if_conflict(&mut self, module_id: &ModuleId, ident: &SwcId) -> Option<SwcId> {
+    self.get_unique_ident(ident).map(|unique_ident| {
+      self.rename_ident(module_id.clone(), ident.clone(), unique_ident.clone());
+      unique_ident
+    })
   }
 }
 

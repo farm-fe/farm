@@ -2,31 +2,29 @@ use farmfe_core::{
   module::{
     meta_data::script::{
       statement::{ExportSpecifierInfo, ImportSpecifierInfo, StatementId, SwcId},
-      CommentsMetaData, ModuleExportIdent, ModuleExportIdentType, ScriptModuleMetaData,
-      EXPORT_EXTERNAL_NAMESPACE,
+      CommentsMetaData, ScriptModuleMetaData,
     },
     module_graph::ModuleGraph,
     Module, ModuleId,
   },
   swc_common::{
     comments::{Comment, CommentKind, Comments, SingleThreadedComments},
-    BytePos, Mark, SyntaxContext, DUMMY_SP,
+    BytePos, SyntaxContext, DUMMY_SP,
   },
   swc_ecma_ast::{
-    ClassDecl, Decl, ExportNamedSpecifier, ExportSpecifier, Expr, FnDecl, Ident, IdentName,
-    MemberExpr, MemberProp, Module as SwcModule, ModuleDecl, ModuleExportName, ModuleItem,
-    NamedExport, Stmt,
+    ClassDecl, Decl, Expr, FnDecl, Ident, IdentName, MemberExpr, MemberProp, Module as SwcModule,
+    ModuleDecl, ModuleItem, Stmt,
   },
-  HashMap, HashSet,
+  HashSet,
 };
-use swc_ecma_visit::VisitMutWith;
+use swc_ecma_utils::StmtLikeInjector;
 
 use super::{
   handle_external_modules::handle_external_modules,
-  unique_idents::{RenameVisitor, TopLevelIdentsRenameHandler, EXPORT_DEFAULT, EXPORT_NAMESPACE},
+  unique_idents::{TopLevelIdentsRenameHandler, EXPORT_DEFAULT, EXPORT_NAMESPACE},
   utils::{
-    create_export_default_expr_item, create_export_default_ident, create_var_decl_item,
-    replace_module_decl,
+    create_export_default_expr_item, create_export_default_ident, create_export_namespace_ident,
+    create_var_decl_item, replace_module_decl,
   },
   StripModuleContext,
 };
@@ -43,6 +41,7 @@ pub struct PreservedImportDeclItem {
   pub source_module_id: ModuleId,
   pub preserved_type: PreservedImportDeclType,
   pub used_idents: HashSet<SwcId>,
+  pub namespace_ident: Option<Ident>,
   pub is_namespace_import: bool,
 }
 
@@ -51,6 +50,7 @@ pub struct StripModuleDeclResult {
   /// the ast that removed the import/export statements
   pub ast: SwcModule,
   pub comments: CommentsMetaData,
+  pub items_to_prepend: Vec<ModuleItem>,
 }
 
 pub fn strip_module_decl(
@@ -58,7 +58,6 @@ pub fn strip_module_decl(
   module_ids: &HashSet<ModuleId>,
   module_graph: &ModuleGraph,
   strip_context: &mut StripModuleContext,
-  module_export_ident_map: &mut HashMap<ModuleId, HashMap<String, SwcId>>,
 ) -> StripModuleDeclResult {
   let module = module_graph.module(module_id).unwrap();
   let script_meta = module.meta.as_script();
@@ -78,6 +77,7 @@ pub fn strip_module_decl(
   let mut result = StripModuleDeclResult {
     ast: script_meta.ast.clone(),
     comments: swc_comments.into(),
+    items_to_prepend: vec![],
   };
 
   let mut statements_to_remove = vec![];
@@ -103,37 +103,12 @@ pub fn strip_module_decl(
     result.ast.body.remove(statement_id);
   }
 
-  // add preserved export decl
-  if let Some(module_export_ident) = module_export_ident_map.remove(module_id) {
-    let mut specifiers = vec![];
-
-    for (name, id) in module_export_ident {
-      specifiers.push(ExportSpecifier::Named(ExportNamedSpecifier {
-        span: DUMMY_SP,
-        orig: ModuleExportName::Ident(Ident::new(id.sym.clone(), DUMMY_SP, id.ctxt())),
-        exported: Some(ModuleExportName::Ident(Ident::new(
-          name.as_str().into(),
-          DUMMY_SP,
-          SyntaxContext::empty(),
-        ))),
-        is_type_only: false,
-      }));
-    }
-
-    let mut item = ModuleItem::ModuleDecl(ModuleDecl::ExportNamed(NamedExport {
-      span: DUMMY_SP,
-      specifiers,
-      src: None,
-      type_only: false,
-      with: None,
-    }));
-
-    let mut rename_handler = strip_context.rename_handler.borrow_mut();
-    let mut rename_visitor = RenameVisitor::new(module_id, &mut rename_handler);
-    item.visit_mut_with(&mut rename_visitor);
-
-    strip_context.preserved_export_decls.push(item);
-  }
+  let items_to_prepend = std::mem::take(&mut result.items_to_prepend);
+  // prepend preserved import decl
+  result
+    .ast
+    .body
+    .prepend_stmts(items_to_prepend.into_iter().rev());
 
   result
 }
@@ -149,6 +124,8 @@ pub struct StripModuleDeclStatementParams<'a> {
 
 fn strip_import_statements(params: &mut StripModuleDeclStatementParams) -> Vec<StatementId> {
   let mut statements_to_remove = vec![];
+  let mut items_to_prepend = vec![];
+
   let StripModuleDeclStatementParams {
     module_id,
     module_ids,
@@ -209,36 +186,53 @@ fn strip_import_statements(params: &mut StripModuleDeclStatementParams) -> Vec<S
 
         let mut rename_handler = strip_context.rename_handler.borrow_mut();
         // true means the ident is an unresolved ident
+        // if let Some(export_ident) = rename_imported_ident(
         if rename_imported_ident(
           module_id,
           ident,
           export_str,
-          &source_module_id,
+          script_meta,
           source_module_script_meta,
           &mut rename_handler,
+          result,
         ) {
-          if let Some(export_ident) = source_module_script_meta
-            .export_ident_map
-            .get(EXPORT_EXTERNAL_NAMESPACE)
+          // rename the imported ident to the unique name
+          rename_handler.rename_ident_if_conflict(&source_module_id, &ident);
+          // make sure the ident is unique when creating the var decl item
+          let renamed_ident = if let Some(renamed_ident) =
+            rename_handler.get_renamed_ident(&source_module_id, &ident)
           {
-            let item = create_var_decl_item(
-              Ident::new(ident.sym.clone(), DUMMY_SP, ident.ctxt()),
-              Box::new(Expr::Member(MemberExpr {
-                span: DUMMY_SP,
-                obj: Box::new(Expr::Ident(Ident::new(
-                  export_ident.ident.sym.clone(),
-                  DUMMY_SP,
-                  export_ident.ident.ctxt(),
-                ))),
-                prop: MemberProp::Ident(IdentName::new(ident.sym.clone(), DUMMY_SP)),
-              })),
-            );
-            strip_context.extra_external_module_items.push(item);
+            rename_handler.rename_ident(module_id.clone(), ident.clone(), renamed_ident.clone());
+            renamed_ident
+          } else {
+            ident.clone()
           };
-        }
+
+          let namespace_var_ident = create_export_namespace_ident(&source_module_id);
+          let renamed_namespace_var_ident = rename_handler
+            .get_renamed_ident(module_id, &namespace_var_ident.to_id().into())
+            .unwrap_or(namespace_var_ident.to_id().into());
+
+          let item = create_var_decl_item(
+            Ident::new(renamed_ident.sym.clone(), DUMMY_SP, renamed_ident.ctxt()),
+            Box::new(Expr::Member(MemberExpr {
+              span: DUMMY_SP,
+              obj: Box::new(Expr::Ident(Ident::new(
+                renamed_namespace_var_ident.sym.clone(),
+                DUMMY_SP,
+                renamed_namespace_var_ident.ctxt(),
+              ))),
+              prop: MemberProp::Ident(IdentName::new(ident.sym.clone(), DUMMY_SP)),
+            })),
+          );
+
+          items_to_prepend.push(item);
+        };
       }
     }
   }
+
+  params.result.items_to_prepend.extend(items_to_prepend);
 
   statements_to_remove
 }
@@ -293,9 +287,10 @@ fn strip_export_statements(params: &mut StripModuleDeclStatementParams) -> Vec<S
                   module_id,
                   ident,
                   EXPORT_NAMESPACE,
-                  &source_module_id,
+                  script_meta,
                   source_module_script_meta,
                   &mut rename_handler,
+                  result,
                 );
               }
             }
@@ -344,9 +339,8 @@ fn strip_export_statements(params: &mut StripModuleDeclStatementParams) -> Vec<S
             };
 
             if statement.defined_idents.is_empty() {
-              let top_level_mark = Mark::from_u32(script_meta.top_level_mark);
               // export default '123' => var module_default = '123';
-              let default_ident = create_export_default_ident(module_id, top_level_mark);
+              let default_ident = create_export_default_ident(module_id);
               rename_handler.rename_ident_if_conflict(&module_id, &default_ident.to_id().into());
               result.ast.body[statement.id] = create_export_default_expr_item(expr, default_ident);
             } else {
@@ -420,59 +414,91 @@ fn rename_imported_ident(
   module_id: &ModuleId,
   ident: &SwcId,
   export_str: &str,
-  source_module_id: &ModuleId,
+  script_meta: &ScriptModuleMetaData,
   source_module_script_meta: &ScriptModuleMetaData,
   rename_handler: &mut TopLevelIdentsRenameHandler,
+  result: &mut StripModuleDeclResult,
 ) -> bool {
-  let default_ident = ModuleExportIdent {
-    module_id: source_module_id.clone(),
-    ident: ident.clone(),
-    export_type: ModuleExportIdentType::Unresolved,
-  };
+  // let default_ident = ModuleExportIdent {
+  //   module_id: source_module_id.clone(),
+  //   ident: ident.clone(),
+  //   export_type: ModuleExportIdentType::Unresolved,
+  // };
+
   // export { m as bar }
   // =>
   // Map<String, SwcId>(bar -> m#1)
-  let module_export_ident = source_module_script_meta
-    .export_ident_map
-    .get(export_str)
-    .unwrap_or_else(|| {
-      // all imported ident should be in the export ident map when expand_exports.
-      // for case `export * from './module';` where ./module is a external module.
-      // a virtual ident is generated for the module, and the ident type is [ModuleExportIdent::External]
-      println!(
-        "export ident map not found for export_str: {}, source_module_id: {}",
-        export_str,
-        source_module_id.to_string()
-      );
-      // TODO find dependency recursively to get the export ident
-      &default_ident
-    });
+  let module_export_ident = source_module_script_meta.export_ident_map.get(export_str);
+
+  if module_export_ident.is_none() {
+    return true;
+  }
+
+  let module_export_ident = module_export_ident.unwrap();
+
+  // .unwrap_or_else(|| {
+  //   // all imported ident should be in the export ident map when expand_exports.
+  //   // for case `export * from './module';` where ./module is a external module.
+  //   // a virtual ident is generated for the module, and the ident type is [ModuleExportIdent::External]
+  //   panic!(
+  //     "export ident map not found for export_str: {}, source_module_id: {}, module_id: {}",
+  //     export_str,
+  //     source_module_id.to_string(),
+  //     module_id.to_string()
+  //   );
+
+  //   // &default_ident
+  // });
 
   // TODO: trace if there are unresolved export idents like external module or cjs module.
   // and we should create a new ident for it. for external module, see `handle_external_export_all`
   // for cjs module, `var external_all_farm_internal_ = __commonJS((module, exports) => {});`, then the same as external module
-  // println!(
-  //   "module_export_ident: {}, {:?}, module_id: {}, ident: {:?}",
-  //   export_str,
-  //   module_export_ident,
-  //   module_id.to_string(),
-  //   ident
-  // );
 
   // get the renamed ident if export_ident is renamed
   let final_ident = rename_handler
     .get_renamed_ident(&module_export_ident.module_id, &module_export_ident.ident)
     .unwrap_or(module_export_ident.ident.clone());
 
-  // rename local to final_ident
-  rename_handler.rename_ident(module_id.clone(), ident.clone(), final_ident);
+  if script_meta
+    .all_deeply_declared_idents
+    .contains(&final_ident.sym)
+  {
+    // there are name conflicts deeply in the module, for example:
+    // ```
+    // const a = 1;
+    // function A() {
+    //   const a = 2;
+    // }
+    // console.log(1)
+    // ```
+    // should be renamed to:
+    // ```
+    // const a = 1;
+    // var a$1 = a;
+    // function A() {
+    //   const a = 2;
+    // }
+    // console.log(a$1)
+    // ```
+    let renamed_ident = rename_handler
+      .get_unique_ident(&final_ident)
+      .unwrap_or(final_ident.clone());
 
-  // if ident is External or unresolved, we should try to find it in the namespace import
-  // like `var createRequire = node_fs_external_namespace_internal_.createRequire`
-  matches!(
-    module_export_ident.export_type,
-    ModuleExportIdentType::Unresolved
-  )
+    result.items_to_prepend.push(create_var_decl_item(
+      Ident::new(renamed_ident.sym.clone(), DUMMY_SP, renamed_ident.ctxt()),
+      Box::new(Expr::Ident(Ident::new(
+        final_ident.sym.clone(),
+        DUMMY_SP,
+        SyntaxContext::empty(), // there may be same ident in different module, so we should use empty context to make sure it's won't renamed
+      ))),
+    ));
+    rename_handler.rename_ident(module_id.clone(), ident.clone(), renamed_ident);
+  } else {
+    // rename local to final_ident
+    rename_handler.rename_ident(module_id.clone(), ident.clone(), final_ident);
+  }
+
+  false
 }
 
 fn is_module_external(source_module: &Module, module_ids: &HashSet<ModuleId>) -> bool {

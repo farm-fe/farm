@@ -1,0 +1,24 @@
+//index.js:
+ const ReactReduxContext = {};
+function useReduxContext() {
+    var contextValue = ReactReduxContext;
+    if (process.env.NODE_ENV !== 'production' && !contextValue) {
+        throw new Error('could not find react-redux context value; please ensure the component is wrapped in a <Provider>');
+    }
+    return contextValue;
+}
+console.log(useReduxContext());
+var useReduxContext$1 = useReduxContext;
+function createSelectorHook(context) {
+    if (context === void 0) {
+        context = ReactReduxContext;
+    }
+    var useReduxContext = context === ReactReduxContext ? useReduxContext$1 : function() {
+        return context;
+    };
+    return function useSelector() {
+        var _useReduxContext = useReduxContext();
+        return _useReduxContext;
+    };
+}
+export { createSelectorHook as createSelectorHook };

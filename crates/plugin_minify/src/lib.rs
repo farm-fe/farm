@@ -1,19 +1,12 @@
-use std::{path::PathBuf, sync::Arc};
+use std::sync::Arc;
 
 use farmfe_core::{
   config::{minify::MinifyOptions, Config},
   context::CompilationContext,
-  error::Result,
-  module::ModuleId,
-  parking_lot::Mutex,
   plugin::Plugin,
-  rayon::iter::{IntoParallelIterator, ParallelIterator},
   resource::resource_pot::{ResourcePot, ResourcePotType},
-  swc_common::Mark,
-  swc_ecma_ast::Id,
-  HashMap, HashSet,
 };
-use farmfe_toolkit::{script::swc_try_with::try_with, swc_ecma_visit::VisitMutWith};
+use minify_resource_pot::{minify_css, minify_js};
 
 // use ident_generator::MinifiedIdentsGenerator;
 // use imports_minifier::{IdentReplacer, ImportsMinifier};
@@ -24,7 +17,7 @@ use farmfe_toolkit::{script::swc_try_with::try_with, swc_ecma_visit::VisitMutWit
 // mod exports_minifier;
 // mod ident_generator;
 // mod imports_minifier;
-// mod minify_resource_pot;
+mod minify_resource_pot;
 // mod mangle_exports;
 // mod top_level_idents_collector;
 // mod util;
@@ -312,29 +305,19 @@ impl Plugin for FarmPluginMinify {
     resource_pot: &mut ResourcePot,
     context: &Arc<CompilationContext>,
   ) -> farmfe_core::error::Result<Option<()>> {
-    // let enable_minify = context.config.minify.enabled();
+    let enable_minify = context.config.minify.enabled();
 
-    // if !enable_minify {
-    //   return Ok(None);
-    // }
+    if !enable_minify {
+      return Ok(None);
+    }
 
-    // // if defer minify, ignore match mode
-    // if !resource_pot.is_defer_minify_as_resource_pot() {
-    //   if !matches!(self.minify_options.mode, MinifyMode::ResourcePot) {
-    //     return Ok(None);
-    //   }
-    // }
-
-    // if matches!(
-    //   resource_pot.resource_pot_type,
-    //   ResourcePotType::Js | ResourcePotType::Runtime
-    // ) {
-    //   minify_js(resource_pot, &self.minify_options, context)?;
-    // } else if matches!(resource_pot.resource_pot_type, ResourcePotType::Css) {
-    //   minify_css(resource_pot, context)?;
-    // } else if matches!(resource_pot.resource_pot_type, ResourcePotType::Html) {
-    //   // html minify is handled in plugin html after all resources are injected in finalize_resources hook
-    // }
+    if matches!(resource_pot.resource_pot_type, ResourcePotType::Js) {
+      minify_js(resource_pot, &self.minify_options, context)?;
+    } else if matches!(resource_pot.resource_pot_type, ResourcePotType::Css) {
+      minify_css(resource_pot, context)?;
+    } else if matches!(resource_pot.resource_pot_type, ResourcePotType::Html) {
+      // html minify is handled in plugin html after all resources are injected in finalize_resources hook
+    }
 
     Ok(None)
   }
