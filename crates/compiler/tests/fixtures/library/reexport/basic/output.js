@@ -68,9 +68,4 @@ var a_js_namespace_farm_internal_ = {
     __esModule: true
 };
 console.log(Object.entries(a_js_namespace_farm_internal_), Object.entries(b_js_namespace_farm_internal_));
-export { b_js_namespace_farm_internal_ as b };
-export { e_js_namespace_farm_internal_ as ns };
-export { f as f, f_local as f_renamed };
-export { bar as bar };
-export { d_js_default as baz };
-export { a_js_namespace_farm_internal_ as a, foo as foo };
+export { a_js_namespace_farm_internal_ as a, b_js_namespace_farm_internal_ as b, bar as bar, d_js_default as baz, f as f, f_local as f_renamed, foo as foo, e_js_namespace_farm_internal_ as ns };

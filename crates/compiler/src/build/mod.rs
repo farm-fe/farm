@@ -221,6 +221,10 @@ impl Compiler {
     context: &Arc<CompilationContext>,
   ) -> Result<ResolveModuleIdResult> {
     let get_module_id = |resolve_result: &PluginResolveHookResult| {
+      if resolve_result.external {
+        return ModuleId::from(resolve_result.resolved_path.as_str());
+      }
+
       // make query part of module id
       ModuleId::new(
         &resolve_result.resolved_path,

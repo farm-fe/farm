@@ -213,6 +213,8 @@ pub struct ContextMetaData {
 
   /// Globals map for each module
   globals_map: Mutex<HashMap<ModuleId, Arc<Globals>>>,
+  /// shared swc globals map for resource pot
+  resource_pot_globals_map: Mutex<HashMap<ResourcePotId, Arc<Globals>>>,
 
   /// custom meta map
   pub custom: Mutex<HashMap<String, Box<dyn Any + Send + Sync>>>,
@@ -228,6 +230,7 @@ impl ContextMetaData {
       hoisted_modules_source_maps: Default::default(),
       resource_pot_source_maps: Default::default(),
       globals_map: Default::default(),
+      resource_pot_globals_map: Default::default(),
       custom: Default::default(),
     }
   }
@@ -297,6 +300,22 @@ impl ContextMetaData {
       .unwrap_or_else(|| panic!("no globals found for module {:?}", module_id))
       .clone();
 
+    ArcContextGlobals(globals)
+  }
+
+  pub fn set_resource_pot_globals(&self, resource_pot_id: &ResourcePotId, globals: Globals) {
+    self
+      .resource_pot_globals_map
+      .lock()
+      .insert(resource_pot_id.clone(), Arc::new(globals));
+  }
+
+  pub fn get_resource_pot_globals(&self, resource_pot_id: &ResourcePotId) -> ArcContextGlobals {
+    let globals_map = self.resource_pot_globals_map.lock();
+    let globals = globals_map
+      .get(resource_pot_id)
+      .unwrap_or_else(|| panic!("no globals found for resource pot {:?}", resource_pot_id))
+      .clone();
     ArcContextGlobals(globals)
   }
 }

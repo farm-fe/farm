@@ -59,6 +59,9 @@ impl Plugin for FarmPluginLibrary {
     context
       .meta
       .set_resource_pot_source_map(&resource_pot.id, source_map);
+    context
+      .meta
+      .set_resource_pot_globals(&resource_pot.id, globals);
 
     // handle import/export between resource pots
     // if let Some(entry) = &resource_pot.entry_module {
@@ -81,6 +84,8 @@ impl Plugin for FarmPluginLibrary {
         .collect(),
       rendered_modules: module_ids,
       comments,
+      top_level_mark: top_level_mark.as_u32(),
+      unresolved_mark: unresolved_mark.as_u32(),
     })))
   }
 }

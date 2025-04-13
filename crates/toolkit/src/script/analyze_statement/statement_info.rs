@@ -236,7 +236,7 @@ pub fn analyze_statement_info(id: &StatementId, stmt: &ModuleItem) -> AnalyzedSt
   }
 }
 
-fn get_defined_idents_from_var_decl(var_decl: &swc_ecma_ast::VarDecl) -> HashSet<SwcId> {
+pub fn get_defined_idents_from_var_decl(var_decl: &swc_ecma_ast::VarDecl) -> HashSet<SwcId> {
   let mut defined_idents = HashSet::default();
 
   for decl in &var_decl.decls {

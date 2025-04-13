@@ -2,12 +2,12 @@
 
 use colored::*;
 use farmfe_core::rayon::iter::{IntoParallelRefIterator, ParallelIterator};
+use farmfe_core::resource::ResourceType;
 use farmfe_core::{
   config::Config, context::CompilationContext, error::CompilationError, plugin::Plugin,
   stats::Stats,
 };
 
-use farmfe_macro_plugin::farm_plugin;
 use flate2::write::GzEncoder;
 use flate2::Compression;
 use std::io::Write;
@@ -18,7 +18,7 @@ use unicode_width::UnicodeWidthStr;
 pub struct FarmPluginFileSize {}
 
 impl FarmPluginFileSize {
-  pub fn new(config: &Config) -> Self {
+  pub fn new(_: &Config) -> Self {
     Self {}
   }
 }
@@ -115,7 +115,7 @@ impl Plugin for FarmPluginFileSize {
     context: &Arc<CompilationContext>,
   ) -> Result<Option<()>, CompilationError> {
     let resources_map = context.resources_map.lock();
-    let output_config = context.config.output.clone();
+    // let output_config = context.config.output.clone();
     println!("\n{}", "Output files:".bold());
     println!();
 
@@ -126,7 +126,9 @@ impl Plugin for FarmPluginFileSize {
 
     let files: Vec<_> = resources_map
       .iter()
-      .filter(|(_, resource)| !resource.emitted)
+      .filter(|(_, resource)| {
+        !resource.emitted && !matches!(resource.resource_type, ResourceType::SourceMap(_))
+      })
       .map(|(name, resource)| (name.to_string(), resource.bytes.to_vec()))
       .collect();
 

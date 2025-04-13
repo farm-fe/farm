@@ -73,11 +73,7 @@ impl<'a> VisitMut for DynamicImportVisitor<'a> {
         return;
       }
 
-      let dep_module_meta = dep_module.meta.as_script();
-      let top_level_mark = Mark::from_u32(dep_module_meta.top_level_mark);
-      let namespace_ident = create_export_namespace_ident(&dep_module_id, top_level_mark)
-        .to_id()
-        .into();
+      let namespace_ident = create_export_namespace_ident(&dep_module_id).to_id().into();
       let namespace_ident = self
         .rename_handler
         .get_renamed_ident(&dep_module_id, &namespace_ident)

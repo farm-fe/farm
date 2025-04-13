@@ -26,7 +26,7 @@ impl Plugin for FarmPluginScriptMetaFeatures {
   fn finalize_module(
     &self,
     param: &mut farmfe_core::plugin::PluginFinalizeModuleHookParam,
-    _context: &std::sync::Arc<farmfe_core::context::CompilationContext>,
+    context: &std::sync::Arc<farmfe_core::context::CompilationContext>,
   ) -> farmfe_core::error::Result<Option<()>> {
     if !param.module.module_type.is_script() {
       return Ok(None);
@@ -38,8 +38,9 @@ impl Plugin for FarmPluginScriptMetaFeatures {
     meta.statements = analyze_statements(meta);
 
     // unresolved idents and top level idents
-    meta.unresolved_idents = idents::analyze_unresolved_idents(&param.module.id, meta, _context);
+    meta.unresolved_idents = idents::analyze_unresolved_idents(&param.module.id, meta, context);
     meta.top_level_idents = idents::analyze_top_level_idents(meta);
+    meta.all_deeply_declared_idents = idents::analyze_all_deeply_declared_idents(meta);
 
     // is_async
     meta.is_async = meta.statements.iter().any(|s| s.top_level_await);

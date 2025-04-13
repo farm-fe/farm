@@ -21,6 +21,14 @@ export function initModuleSystem(ms: ModuleSystem) {
   if (__FARM_ENABLE_EXPORT_ALL_HELPER__) {
     // `export * from` helper
     farmRequire._e = defineExportStar;
+    // inject defineExportStar to module system
+    const id = '@farm-runtime/module-helper';
+    ms.c()[id] = {
+      id,
+      exports: {
+        defineExportStar
+      }
+    }
   }
 
   if (__FARM_ENABLE_IMPORT_DEFAULT_HELPER__) {

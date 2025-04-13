@@ -32,7 +32,11 @@ fn test(file_path_buf: PathBuf, crate_path_buf: PathBuf) {
         )]);
         config.minify = Box::new(BoolOrObj::Bool(false));
         config.tree_shaking = Box::new(BoolOrObj::Bool(false));
-        config.external = vec![ConfigRegex::new("(^node:.*)"), ConfigRegex::new("^fs$")];
+        config.external = vec![
+          ConfigRegex::new("(^node:.*)"),
+          ConfigRegex::new("^fs$"),
+          ConfigRegex::new("/external/.+"),
+        ];
         config.output.target_env = TargetEnv::Library;
         config.resolve.auto_external_failed_resolve = true;
         config
@@ -67,11 +71,11 @@ fn test(file_path_buf: PathBuf, crate_path_buf: PathBuf) {
 fn library_test() {
   use farmfe_testing_helpers::fixture;
 
-  // fixture!("tests/fixtures/library/**/index.ts", test);
-  fixture!(
-    "tests/fixtures/library/external/conflicts/**/index.ts",
-    test
-  );
+  fixture!("tests/fixtures/library/**/index.ts", test);
+  // fixture!(
+  //   "tests/fixtures/library/export/exportNamed1/**/index.ts",
+  //   test
+  // );
 }
 
 // farmfe_testing::testing! {

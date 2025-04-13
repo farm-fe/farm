@@ -5,7 +5,7 @@ use farmfe_core::{
   context::CompilationContext,
   module::{
     meta_data::script::{
-      statement::SwcId, CommentsMetaData, ModuleExportIdent, EXPORT_EXTERNAL_NAMESPACE,
+      CommentsMetaData, ModuleExportIdent, EXPORT_EXTERNAL_ALL, FARM_RUNTIME_MODULE_HELPER_ID,
     },
     module_graph::ModuleGraph,
     ModuleId,
@@ -17,11 +17,18 @@ use farmfe_core::{
   swc_ecma_ast::{Module as SwcModule, ModuleItem},
   HashMap, HashSet,
 };
-use strip_module_decl::{strip_module_decl, PreservedImportDeclItem, StripModuleDeclResult};
+use handle_external_modules::find_or_create_preserved_import_item;
+use strip_module_decl::{
+  strip_module_decl, PreservedImportDeclItem, PreservedImportDeclType, StripModuleDeclResult,
+};
 use swc_ecma_visit::VisitMutWith;
 use unique_idents::TopLevelIdentsRenameHandler;
 pub use unique_idents::EXPORT_NAMESPACE;
-use utils::{create_define_export_star_item, create_var_namespace_item};
+use utils::{
+  create_define_export_star_ident, create_define_export_star_item, create_export_all_item,
+  create_import_farm_define_export_helper_stmt, create_var_namespace_item,
+  generate_export_decl_item,
+};
 
 use super::{
   merge_swc_globals::{merge_comments, merge_sourcemap},
@@ -109,7 +116,11 @@ pub fn concatenate_modules_ast(
   let stripped_results = comments
     .into_iter()
     .zip(module_asts.into_iter())
-    .map(|((_, comments), (_, ast))| StripModuleDeclResult { comments, ast })
+    .map(|((_, comments), (_, ast))| StripModuleDeclResult {
+      comments,
+      ast,
+      items_to_prepend: vec![],
+    })
     .collect::<Vec<_>>();
 
   let (mut concatenated_ast, mut external_modules) =
@@ -183,17 +194,6 @@ fn strip_modules_asts(
     }
   }
 
-  // get export info from the entry module
-  let entry_module = module_graph.module(entry_module_id).unwrap();
-  let entry_module_export_ident_map = entry_module.meta.as_script().get_export_idents();
-  let mut module_export_ident_map = entry_module_export_ident_map.into_iter().fold(
-    HashMap::<ModuleId, HashMap<String, SwcId>>::default(),
-    |mut acc, (k, v)| {
-      acc.entry(v.module_id).or_default().insert(k, v.ident);
-      acc
-    },
-  );
-
   // delayed rename for cyclic reexport of `export * as ns`. See test case: crates/compiler/tests/fixtures/library/reexport/basic
   let mut delayed_rename = HashMap::default();
 
@@ -207,6 +207,7 @@ fn strip_modules_asts(
   };
 
   let mut strip_module_results = vec![];
+  let mut should_add_helper = false;
 
   for module_id in sorted_modules {
     let module = module_graph.module(&module_id).unwrap();
@@ -214,6 +215,7 @@ fn strip_modules_asts(
 
     try_with(cm, context.meta.get_globals(&module_id).value(), || {
       let export_ident_map = &module.meta.as_script().export_ident_map;
+      let ambiguous_export_ident_map = &module.meta.as_script().ambiguous_export_ident_map;
       // rename module_namespace if there are conflicts
       if let Some(module_export_ident) = export_ident_map.get(EXPORT_NAMESPACE) {
         let mut rename_handler = strip_context.rename_handler.borrow_mut();
@@ -221,13 +223,40 @@ fn strip_modules_asts(
           .rename_ident_if_conflict(&module_export_ident.module_id, &module_export_ident.ident);
       }
 
-      let mut result = strip_module_decl(
-        &module_id,
-        module_ids,
-        module_graph,
-        &mut strip_context,
-        &mut module_export_ident_map,
-      );
+      let mut result = strip_module_decl(&module_id, module_ids, module_graph, &mut strip_context);
+
+      if let Some(export_idents) = ambiguous_export_ident_map.get(EXPORT_EXTERNAL_ALL)
+        && module_id == *entry_module_id
+      {
+        let module_ids = export_idents
+          .iter()
+          .map(|m| &m.module_id)
+          .collect::<HashSet<_>>();
+
+        for m_id in module_ids {
+          // add `export * from 'external'`
+          strip_context
+            .preserved_export_decls
+            .push(create_export_all_item(m_id));
+        }
+      }
+
+      let should_add_external_all_helper =
+        if ambiguous_export_ident_map.contains_key(EXPORT_EXTERNAL_ALL) {
+          export_ident_map.contains_key(EXPORT_NAMESPACE)
+            || ambiguous_export_ident_map
+              .iter()
+              .any(|(k, _)| k != EXPORT_EXTERNAL_ALL)
+        } else {
+          false
+        };
+
+      let dependents_in_modules_ids = module_graph
+        .dependents_ids(&module_id)
+        .iter()
+        .filter(|m| module_ids.contains(m))
+        .count()
+        > 0;
 
       // append:
       // ```js
@@ -237,35 +266,54 @@ fn strip_modules_asts(
       // }
       // ```
       // if module is used by export * as or import * as or import('...')
-      if export_ident_map.contains_key(EXPORT_NAMESPACE)
-        || export_ident_map.contains_key(EXPORT_EXTERNAL_NAMESPACE)
+      if dependents_in_modules_ids && export_ident_map.contains_key(EXPORT_NAMESPACE)
+        || should_add_external_all_helper
       {
-        let top_level_mark = Mark::from_u32(module.meta.as_script().top_level_mark);
         result.ast.body.push(create_var_namespace_item(
           &module_id,
-          top_level_mark,
           export_ident_map,
           cyclic_idents.get(&module_id).unwrap_or(&HashSet::default()),
           &mut delayed_rename,
         ));
       }
-      // add `window[xxx].defineExportStar(module_namespace, node_fs_external_namespace_farm_internal_)`
-      if export_ident_map.contains_key(EXPORT_EXTERNAL_NAMESPACE) {
-        let top_level_mark = Mark::from_u32(module.meta.as_script().top_level_mark);
-        let unresolved_mark = Mark::from_u32(module.meta.as_script().unresolved_mark);
-        result.ast.body.push(create_define_export_star_item(
-          &context.config.runtime.namespace,
-          &context.config.output.target_env,
-          &module_id,
-          top_level_mark,
-          unresolved_mark,
-          export_ident_map,
-        ));
+
+      if should_add_external_all_helper {
+        should_add_helper = true;
+
+        let export_external_all = ambiguous_export_ident_map.get(EXPORT_EXTERNAL_ALL).unwrap();
+
+        for export_ident in export_external_all {
+          // add import * xxx from the external module
+          find_or_create_preserved_import_item(
+            &mut strip_context,
+            &module_id,
+            &export_ident.module_id,
+          );
+
+          result
+            .ast
+            .body
+            .push(create_define_export_star_item(&module_id, export_ident));
+        }
       }
 
       strip_module_results.push((module_id, result));
     })
     .unwrap();
+  }
+
+  if should_add_helper {
+    // add `import { defineExportStar } from '@farmfe/runtime/src/modules/module-helper` to the top
+    strip_context
+      .preserved_import_decls
+      .push(PreservedImportDeclItem {
+        import_item: create_import_farm_define_export_helper_stmt(),
+        source_module_id: FARM_RUNTIME_MODULE_HELPER_ID.into(),
+        preserved_type: PreservedImportDeclType::ExternalGenerated,
+        used_idents: HashSet::from_iter([create_define_export_star_ident().to_id().into()]),
+        namespace_ident: None,
+        is_namespace_import: false,
+      });
   }
 
   // handle delayed rename
@@ -288,6 +336,16 @@ fn strip_modules_asts(
   let rename_handler = strip_context
     .rename_handler
     .replace(TopLevelIdentsRenameHandler::default());
+
+  // for entry module, add re-export
+  // get export info from the entry module
+  let entry_module = module_graph.module(entry_module_id).unwrap();
+  let entry_module_export_ident_map = entry_module.meta.as_script().get_export_idents();
+
+  if entry_module_export_ident_map.len() > 0 {
+    let item = generate_export_decl_item(entry_module_export_ident_map, &rename_handler);
+    strip_context.preserved_export_decls.push(item);
+  }
 
   // handle dynamic import in parallel
   strip_module_results
@@ -339,7 +397,7 @@ fn merge_stripped_module_asts(
   let mut external_modules = HashMap::default();
   let mut preserved_import_decls = strip_context.preserved_import_decls;
   let mut preserved_export_decls = strip_context.preserved_export_decls;
-  let mut extra_external_module_items = strip_context.extra_external_module_items;
+  let extra_external_module_items = strip_context.extra_external_module_items;
 
   let mut new_body = vec![];
 
@@ -351,7 +409,6 @@ fn merge_stripped_module_asts(
   // external order should be reverse of the topo order
   preserved_import_decls.reverse();
   preserved_export_decls.reverse();
-  extra_external_module_items.reverse();
 
   // extract external modules
   for item in preserved_import_decls.into_iter() {

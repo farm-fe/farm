@@ -37,7 +37,8 @@ function getDefaultTraceDepCompilerConfig(entry: string): ResolvedUserConfig {
         index: entry
       },
       output: {
-        targetEnv: 'library'
+        targetEnv: 'library',
+        showFileSize: false
       },
       resolve: {
         autoExternalFailedResolve: true

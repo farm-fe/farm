@@ -17,13 +17,18 @@ use farmfe_core::{
     resource_pot::{ResourcePot, ResourcePotType},
     ResourceType,
   },
-  serde_json, HashSet,
+  serde_json,
+  swc_common::Globals,
+  HashSet,
 };
 
 use farmfe_toolkit::{
   fs::read_file_utf8,
   html::get_farm_global_this,
-  script::merge_swc_globals::{merge_comments, merge_sourcemap},
+  script::{
+    merge_swc_globals::{merge_comments, merge_sourcemap},
+    swc_try_with::resolve_module_mark,
+  },
 };
 
 use handle_entry_resources::handle_entry_resources;
@@ -218,18 +223,28 @@ impl Plugin for FarmPluginRuntime {
     let wrapped_resource_pot_ast =
       merge_rendered_module::wrap_resource_pot_ast(merged_ast, &resource_pot.id, context);
 
-    let wrapped_resource_pot_ast = handle_external_modules(
+    let mut wrapped_resource_pot_ast = handle_external_modules(
       &resource_pot.id,
       wrapped_resource_pot_ast,
       &external_modules,
       context,
     )?;
 
+    // set globals for the resource pot
+    let merged_globals = Globals::new();
+    let (unresolved_mark, top_level_mark) =
+      resolve_module_mark(&mut wrapped_resource_pot_ast, false, &merged_globals);
+    context
+      .meta
+      .set_resource_pot_globals(&resource_pot.id, merged_globals);
+
     Ok(Some(ResourcePotMetaData::Js(JsResourcePotMetaData {
       ast: wrapped_resource_pot_ast,
       external_modules,
       rendered_modules: sorted_modules,
       comments: comments.into(),
+      top_level_mark: top_level_mark.as_u32(),
+      unresolved_mark: unresolved_mark.as_u32(),
     })))
   }
 

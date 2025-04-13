@@ -167,6 +167,8 @@ export async function readConfigFile(
     fileName,
     mode
   });
+  // disable show file size
+  normalizedConfig.output.showFileSize = false;
 
   const replaceDirnamePlugin = await import(
     '@farmfe/plugin-replace-dirname'

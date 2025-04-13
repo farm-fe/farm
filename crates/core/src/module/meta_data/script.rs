@@ -2,6 +2,7 @@ use std::{cell::RefCell, rc::Rc};
 
 use farmfe_macro_cache_item::cache_item;
 use feature_flag::FeatureFlag;
+use swc_atoms::Atom;
 use swc_common::{
   comments::{
     Comment, SingleThreadedComments, SingleThreadedCommentsMap, SingleThreadedCommentsMapInner,
@@ -21,8 +22,11 @@ pub mod feature_flag;
 pub mod statement;
 
 pub const EXPORT_NAMESPACE: &str = "namespace_farm_internal_";
-pub const EXPORT_EXTERNAL_NAMESPACE: &str = "external_namespace_farm_internal_";
+pub const EXPORT_EXTERNAL_ALL: &str = "external_all_farm_internal_";
 pub const EXPORT_DEFAULT: &str = "default";
+
+pub const FARM_RUNTIME_MODULE_HELPER_ID: &str = "@farm-runtime/module-helper";
+pub const FARM_RUNTIME_MODULE_SYSTEM_ID: &str = "@farm-runtime/module-system";
 
 /// How the module export ident is defined.
 /// Where resolving this type, [Declaration] will be resolved first when expand exports.
@@ -44,12 +48,18 @@ pub enum ModuleExportIdentType {
   External,
 
   /// ```js
-  /// import * as xx from './module';
-  /// export * as xx from './module';
+  /// // deep.js
+  /// export * from 'module'; // where module is a external module
   ///
+  /// // index.js
+  /// import { bar } from'./deep'; // bar is a ExternalReExport ident
+  /// ```
+  ExternalReExportAll,
+
+  /// ```js
   /// export * from './module'; // where module is a external module
   /// ```
-  ExternalNamespace,
+  ExternalAll,
 
   /// ```js
   /// import { foo as bar } from './foo.cjs';
@@ -87,6 +97,8 @@ pub struct ScriptModuleMetaData {
   pub statements: Vec<Statement>,
   pub top_level_idents: HashSet<SwcId>,
   pub unresolved_idents: HashSet<SwcId>,
+  /// all declared idents in the module, including top level idents and function idents
+  pub all_deeply_declared_idents: HashSet<Atom>,
   pub is_async: bool,
   pub feature_flags: HashSet<FeatureFlag>,
   /// real export ident map, for example:
@@ -94,7 +106,8 @@ pub struct ScriptModuleMetaData {
   /// export { foo as default } from './module';
   /// =>
   /// Map<String, SwcId> { bar -> m#1, default -> foo#1 where foo#1 is defined in './module' }
-  pub export_ident_map: HashMap<String, ModuleExportIdent>, // TODO add Arc for ModuleExportIdent
+  pub export_ident_map: HashMap<String, ModuleExportIdent>,
+  pub ambiguous_export_ident_map: HashMap<String, Vec<ModuleExportIdent>>,
   pub custom: CustomMetaDataMap,
 }
 
@@ -111,9 +124,11 @@ impl Default for ScriptModuleMetaData {
       statements: vec![],
       top_level_idents: Default::default(),
       unresolved_idents: Default::default(),
+      all_deeply_declared_idents: Default::default(),
       is_async: false,
       feature_flags: Default::default(),
       export_ident_map: Default::default(),
+      ambiguous_export_ident_map: Default::default(),
       custom: Default::default(),
     }
   }
@@ -144,9 +159,11 @@ impl Clone for ScriptModuleMetaData {
       statements: self.statements.clone(),
       top_level_idents: self.top_level_idents.clone(),
       unresolved_idents: self.unresolved_idents.clone(),
+      all_deeply_declared_idents: self.all_deeply_declared_idents.clone(),
       is_async: self.is_async,
       feature_flags: self.feature_flags.clone(),
       export_ident_map: self.export_ident_map.clone(),
+      ambiguous_export_ident_map: self.ambiguous_export_ident_map.clone(),
       custom: CustomMetaDataMap::from(custom),
     }
   }

@@ -23,10 +23,20 @@ pub struct JsResourcePotMetaData {
   pub external_modules: HashSet<String>,
   pub rendered_modules: Vec<ModuleId>,
   pub comments: CommentsMetaData,
+  pub top_level_mark: u32,
+  pub unresolved_mark: u32,
 }
 
 impl JsResourcePotMetaData {
   pub fn new() -> Self {
     Self::default()
+  }
+
+  pub fn take_comments(&mut self) -> CommentsMetaData {
+    std::mem::take(&mut self.comments)
+  }
+
+  pub fn set_comments(&mut self, comments: CommentsMetaData) {
+    self.comments = comments;
   }
 }

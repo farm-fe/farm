@@ -105,3 +105,78 @@ impl Visit for UnresolvedIdentCollector {
     }
   }
 }
+
+/// collect all declared idents in the module except top level idents
+pub struct AllDeclaredIdentsCollector {
+  pub all_declared_idents: HashSet<SwcId>,
+
+  in_top_level: bool,
+}
+
+impl AllDeclaredIdentsCollector {
+  pub fn new() -> Self {
+    Self {
+      all_declared_idents: HashSet::default(),
+      in_top_level: true,
+    }
+  }
+
+  fn insert_ident(&mut self, ident: &farmfe_core::swc_ecma_ast::Ident) {
+    if self.in_top_level {
+      return;
+    }
+    self.all_declared_idents.insert(ident.to_id().into());
+  }
+}
+
+impl Visit for AllDeclaredIdentsCollector {
+  fn visit_function(&mut self, n: &farmfe_core::swc_ecma_ast::Function) {
+    for param in &n.params {
+      self.visit_pat(&param.pat);
+    }
+    let in_top_level = self.in_top_level;
+    self.in_top_level = false;
+    n.body.visit_with(self);
+    self.in_top_level = in_top_level;
+  }
+
+  fn visit_arrow_expr(&mut self, n: &farmfe_core::swc_ecma_ast::ArrowExpr) {
+    for param in &n.params {
+      self.visit_pat(param);
+    }
+    let in_top_level = self.in_top_level;
+    self.in_top_level = false;
+    n.body.visit_with(self);
+    self.in_top_level = in_top_level;
+  }
+
+  fn visit_decl(&mut self, n: &farmfe_core::swc_ecma_ast::Decl) {
+    match n {
+      farmfe_core::swc_ecma_ast::Decl::Class(class_decl) => {
+        self.insert_ident(&class_decl.ident);
+        class_decl.visit_children_with(self);
+      }
+      farmfe_core::swc_ecma_ast::Decl::Fn(fn_decl) => {
+        self.insert_ident(&fn_decl.ident);
+        fn_decl.visit_children_with(self);
+      }
+      farmfe_core::swc_ecma_ast::Decl::Var(var_decl) => {
+        for decl in &var_decl.decls {
+          self.visit_pat(&decl.name);
+          decl.init.visit_with(self);
+        }
+      }
+      _ => {}
+    }
+  }
+
+  fn visit_pat(&mut self, pat: &Pat) {
+    if self.in_top_level {
+      return;
+    }
+
+    let mut collector = DefinedIdentsCollector::new();
+    pat.visit_with(&mut collector);
+    self.all_declared_idents.extend(collector.defined_idents);
+  }
+}

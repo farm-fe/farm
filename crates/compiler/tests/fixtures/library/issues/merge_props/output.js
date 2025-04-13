@@ -19,13 +19,14 @@ function mergeProps(componentProps, defaultProps, globalComponentConfig) {
     }
     return props;
 }
+var mergeProps$1 = mergeProps;
 var Trigger = (function(_super) {
     __extends(Trigger, _super);
     function Trigger(props, context) {
         var _this = _super.call(this, props, context) || this;
         _this.getMergedProps = function(baseProps) {
             var componentConfig = _this.context.componentConfig;
-            var props = mergeProps(baseProps || _this.props, defaultProps, componentConfig === null || componentConfig === void 0 ? void 0 : componentConfig.Trigger);
+            var props = mergeProps$1(baseProps || _this.props, defaultProps, componentConfig === null || componentConfig === void 0 ? void 0 : componentConfig.Trigger);
             return props;
         };
         return _this;
