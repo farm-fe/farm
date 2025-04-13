@@ -533,8 +533,7 @@ fn resolve_package_resolve_kind() {
           &ResolveOptions::default(),
           &Arc::new({
             let mut context = CompilationContext::default();
-            context.config.resolve.main_fields =
-              Some(vec!["module".to_string(), "main".to_string()]);
+            context.config.resolve.main_fields = vec!["module".to_string(), "main".to_string()];
             context
           }),
         );

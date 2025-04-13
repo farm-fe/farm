@@ -42,7 +42,7 @@ pub struct ResolveCacheKey {
   pub base_dir: String,
   pub kind: ResolveKind,
   pub options: ResolveOptions,
-  pub main_fields: Option<Vec<String>>,
+  pub main_fields: Vec<String>,
 }
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq, Default)]
@@ -728,15 +728,14 @@ impl Resolver {
         .map(|exports_entries| exports_entries.get(0).unwrap().to_string())
       })
       .or_else(|| {
-        let main_fields = if let Some(ref main_fields) = context.config.resolve.main_fields {
-          Some(Cow::Borrowed(main_fields))
+        let main_fields = if !context.config.resolve.main_fields.is_empty() {
+          Some(Cow::Borrowed(&context.config.resolve.main_fields))
         } else {
           let main_fields_from_resolve_kind = match kind {
             ResolveKind::Require => Some(vec!["main".to_string()]),
             ResolveKind::Import => Some(vec!["module".to_string()]),
             _ => None,
           };
-
 
           main_fields_from_resolve_kind
             .map(|field| [field, DEFAULT_MAIN_FIELDS.clone()].concat())
