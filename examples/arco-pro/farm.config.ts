@@ -12,8 +12,10 @@ export default defineConfig((env) => {
       sourcemap: true,
       presetEnv: false,
       concatenateModules: true,
+      persistentCache: false,
+      // minify: false,
       output: {
-        // showFileSize: false,
+        showFileSize: true,
       },
       // persistentCache: false,
       resolve: {

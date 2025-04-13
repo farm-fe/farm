@@ -148,8 +148,10 @@ impl Plugin for FarmPluginScript {
           statements: vec![],
           top_level_idents: Default::default(),
           unresolved_idents: Default::default(),
+          all_deeply_declared_idents: Default::default(),
           feature_flags: Default::default(),
           export_ident_map: Default::default(),
+          ambiguous_export_ident_map: Default::default(),
           is_async: false,
         };
 
@@ -327,6 +329,9 @@ impl Plugin for FarmPluginScript {
       context
         .meta
         .set_resource_pot_source_map(&resource_pot.id, result.source_map);
+      context
+        .meta
+        .set_resource_pot_globals(&resource_pot.id, result.globals);
 
       return Ok(Some(ResourcePotMetaData::Js(JsResourcePotMetaData {
         ast: result.ast,
@@ -337,6 +342,8 @@ impl Plugin for FarmPluginScript {
           .collect(),
         rendered_modules: result.module_ids,
         comments: result.comments,
+        top_level_mark: result.top_level_mark.as_u32(),
+        unresolved_mark: result.unresolved_mark.as_u32(),
       })));
     }
 

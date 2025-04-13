@@ -173,6 +173,10 @@ impl From<Ident> for SwcId {
 }
 
 impl SwcId {
+  pub fn new(sym: swc_atoms::Atom, ctxt: u32) -> Self {
+    Self { sym, ctxt }
+  }
+
   pub fn ctxt(&self) -> swc_common::SyntaxContext {
     swc_common::SyntaxContext::from_u32(self.ctxt)
   }

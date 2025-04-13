@@ -9,7 +9,7 @@
 
 use farmfe_core::{
   config::{Mode, FARM_DYNAMIC_REQUIRE, FARM_REQUIRE},
-  module::{module_graph::ModuleGraph, ModuleId},
+  module::{meta_data::script::FARM_RUNTIME_MODULE_HELPER_ID, module_graph::ModuleGraph, ModuleId},
   plugin::ResolveKind,
   swc_common::{util::take::Take, Mark, SyntaxContext, DUMMY_SP},
   swc_ecma_ast::{CallExpr, Callee, Expr, ExprOrSpread, Ident, Lit, MemberExpr, MemberProp, Str},
@@ -141,6 +141,13 @@ impl SourceReplacer<'_> {
           optional: false,
           ctxt: SyntaxContext::empty(),
         })));
+
+        if [FARM_RUNTIME_MODULE_HELPER_ID].contains(&source.as_str()) {
+          str.value = source.as_str().into();
+          str.span = DUMMY_SP;
+          str.raw = None;
+          return SourceReplaceResult::Replaced;
+        }
 
         let Some(id) = self.find_real_module_meta_by_source(
           &source,
