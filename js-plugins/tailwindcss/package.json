@@ -1,6 +1,6 @@
 {
   "name": "@farmfe/js-plugin-tailwindcss",
-  "version": "0.0.12",
+  "version": "0.0.12-nightly-20250411141103",
   "description": "support tailwindcss for farm.",
   "type": "module",
   "main": "./dist/index.js",
@@ -30,6 +30,7 @@
   },
   "devDependencies": {
     "@farmfe/js-plugin-dts": "workspace:^",
+    "@farmfe/plugin-dts": "workspace:^",
     "@types/postcss-import": "^14.0.3"
   }
 }

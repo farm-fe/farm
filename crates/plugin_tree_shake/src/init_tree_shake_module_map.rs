@@ -1,10 +1,9 @@
-use std::collections::HashMap;
-
 use farmfe_core::{
   module::{module_graph::ModuleGraph, ModuleId},
   parking_lot::Mutex,
   rayon::iter::{IntoParallelIterator, ParallelIterator},
   swc_common::GLOBALS,
+  HashMap,
 };
 
 use crate::module::TreeShakeModule;
@@ -13,8 +12,7 @@ pub fn init_tree_shake_module_map(
   module_graph: &mut ModuleGraph,
   context: &std::sync::Arc<farmfe_core::context::CompilationContext>,
 ) -> HashMap<ModuleId, TreeShakeModule> {
-  let tree_shake_modules_map =
-    Mutex::new(std::collections::HashMap::<ModuleId, TreeShakeModule>::new());
+  let tree_shake_modules_map = Mutex::new(HashMap::<ModuleId, TreeShakeModule>::default());
   module_graph
     .modules_mut()
     .into_par_iter()
@@ -22,8 +20,9 @@ pub fn init_tree_shake_module_map(
       if !module.module_type.is_script() || module.external {
         return;
       }
+      let globals = context.meta.get_globals(&module.id);
 
-      GLOBALS.set(&context.meta.script.globals, || {
+      GLOBALS.set(globals.value(), || {
         let tree_shake_module = TreeShakeModule::new(module);
         tree_shake_modules_map
           .lock()

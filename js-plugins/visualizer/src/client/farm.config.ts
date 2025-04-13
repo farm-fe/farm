@@ -10,6 +10,8 @@ export default defineConfig((env) => ({
   ],
   vitePlugins: [vitejsPluginVue()],
   compilation: {
+    concatenateModules: false,
+    persistentCache: false,
     output: {
       path: '../../build/client'
     },

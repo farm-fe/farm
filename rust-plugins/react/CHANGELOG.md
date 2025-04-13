@@ -1,5 +1,17 @@
 # Changelog
 
+## 2.0.0-nightly-20250411100807
+
+### Patch Changes
+
+- 60f40f0: bump nightly version
+
+## 2.0.0-nightly-20241022124925
+
+### Major Changes
+
+- 6a1038c: update nightly tag
+
 ## 1.2.6
 
 ### Patch Changes

@@ -1,5 +1,6 @@
 import { CUSTOM_KEYS } from '../constants.js';
-import { ResolvedCompilation, UserConfig } from '../types.js';
+
+import type { ResolvedCompilation, UserConfig } from '../types.js';
 
 export function normalizeAsset(
   config: UserConfig,

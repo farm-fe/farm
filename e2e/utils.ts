@@ -57,7 +57,6 @@ export const concurrentify = <F extends (...args: any) => Promise<any>>(maxConcu
     if (queue.length > 0) {
       const { ctx, deferred, args } = queue.shift()!;
       try {
-        // eslint-disable-next-line no-use-before-define
         newFn.apply(ctx, args).then(deferred.resolve, deferred.reject);
       } catch (e) {
         deferred.reject(e);
@@ -66,7 +65,6 @@ export const concurrentify = <F extends (...args: any) => Promise<any>>(maxConcu
   }
 
   function newFn(this: any) {
-    // eslint-disable-next-line @typescript-eslint/no-this-alias
     const ctx = this;
     const args = arguments as any;
 

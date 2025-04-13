@@ -18,7 +18,10 @@ export default defineConfig({
     mode: 'development',
     minify: false,
     lazyCompilation: false,
-    treeShaking: false
+    treeShaking: false,
+    persistentCache: false,
+    progress: false
   },
+  // plugins: ['@farmfe/plugin-dts']
   plugins: [dts()]
 });

@@ -1,6 +1,7 @@
-use std::collections::HashSet;
-
 use farmfe_core::module::{ModuleId, ModuleType};
+use farmfe_core::HashSet;
+
+use crate::generate_module_pots::ModulePotSourceType;
 
 #[derive(Debug, Clone)]
 /// A ModulePot is a collection of modules in the same ModuleBucket that satisfy following rules:
@@ -8,20 +9,28 @@ use farmfe_core::module::{ModuleId, ModuleType};
 /// 2. Modules in the same immutable package are in the same ModulePot. For example, A, B are both in ModuleBucket_A_B and they are also in the same immutable package, then A, B would be in the same Module Pot.
 /// 3. For other modules, a module is a module pot
 pub struct ModulePot {
+  pub id: String,
   pub name: String,
+  pub source_type: ModulePotSourceType,
   pub size: usize,
   pub module_type: ModuleType,
   pub immutable: bool,
   pub execution_order: usize,
-
-  modules: HashSet<ModuleId>,
+  pub modules: HashSet<ModuleId>,
 }
 
 impl ModulePot {
-  pub fn new(name: String, module_type: ModuleType, immutable: bool) -> Self {
+  pub fn new(
+    name: String,
+    source_type: ModulePotSourceType,
+    module_type: ModuleType,
+    immutable: bool,
+  ) -> Self {
     Self {
+      id: Self::gen_id(&name, module_type.clone(), immutable),
       name,
-      modules: HashSet::new(),
+      source_type,
+      modules: HashSet::default(),
       size: 0,
       module_type,
       immutable,

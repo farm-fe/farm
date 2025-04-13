@@ -1,7 +1,7 @@
-use std::collections::HashSet;
 use std::path::PathBuf;
 
 use farmfe_core::module::ModuleId;
+use farmfe_core::HashSet;
 use farmfe_toolkit::hash::sha256;
 
 pub fn try_get_filename(path: PathBuf) -> String {

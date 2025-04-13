@@ -1,16 +1,24 @@
 use farmfe_core::{
   context::CompilationContext,
-  module::{module_group::ModuleGroupId, Module, ModuleId},
+  module::{
+    module_graph::ModuleGraph,
+    module_group::{ModuleGroupId, ModuleGroupType},
+    Module, ModuleId,
+  },
   plugin::PluginHookContext,
-  resource::resource_pot::{ResourcePot, ResourcePotId},
+  resource::{
+    resource_pot::{ResourcePot, ResourcePotId},
+    resource_pot_map,
+  },
+  HashMap, HashSet,
 };
-use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 
 use crate::{
   generate::partial_bundling::{
-    call_partial_bundling_hook, fill_necessary_fields_for_resource_pot,
-    get_enforce_resource_name_for_module, get_resource_pot_id_for_enforce_resources,
+    call_partial_bundling_hook, dynamic_entry_module_group_to_resource_pot,
+    fill_necessary_fields_for_resource_pot, get_enforce_resource_name_for_module,
+    get_resource_pot_id_for_enforce_resources,
     get_resource_pot_id_for_enforce_resources_by_removed_module,
   },
   update::diff_and_patch_module_graph::DiffResult,
@@ -40,6 +48,9 @@ pub fn generate_and_diff_resource_pots(
     context,
   );
 
+  // handle dynamic entry resource pots
+  let dynamic_entry_resource_pot_ids = handle_dynamic_entry_resource_pots(module_groups, context);
+
   // for enforce resource pots, only rerender it when it's modules are changed, added or removed.
   let mut resources_pots =
     call_partial_bundling_hook(&modules, context, &PluginHookContext::default())?;
@@ -60,12 +71,13 @@ pub fn generate_and_diff_resource_pots(
   let mut new_resource_pot_ids =
     diff_and_patch_resource_pot_map(resources_pots, &enforce_resource_pot_ids, context);
 
-  // alway render affected resource pots
+  // alway render enforce resource pots and dynamic entry resource pots
   enforce_resource_pot_ids.into_iter().for_each(|id| {
     if !new_resource_pot_ids.contains(&id) {
       new_resource_pot_ids.insert(id);
     }
   });
+  new_resource_pot_ids.extend(dynamic_entry_resource_pot_ids);
 
   Ok(new_resource_pot_ids.into_iter().collect())
 }
@@ -75,12 +87,20 @@ fn get_affected_modules(
   context: &Arc<CompilationContext>,
 ) -> Vec<ModuleId> {
   let module_group_graph = context.module_group_graph.read();
-  // let mut enforce_resource_pots = HashSet::new();
+
   module_groups
     .iter()
-    .fold(HashSet::new(), |mut acc, module_group_id| {
+    .fold(HashSet::default(), |mut acc, module_group_id| {
       let module_group = module_group_graph.module_group(module_group_id).unwrap();
-      acc.extend(module_group.modules().clone());
+
+      // ignore dynamic entry module group
+      if !matches!(
+        module_group.module_group_type,
+        ModuleGroupType::DynamicEntry
+      ) {
+        acc.extend(module_group.modules().clone());
+      }
+
       acc
     })
     .into_iter()
@@ -94,6 +114,36 @@ enum ChangedModuleType {
   Updated,
 }
 
+fn is_module_external(
+  module_id: &ModuleId,
+  removed_modules: &HashMap<ModuleId, Module>,
+  module_graph: &ModuleGraph,
+) -> bool {
+  let module = if let Some(module) = removed_modules.get(module_id) {
+    module
+  } else {
+    module_graph.module(module_id).unwrap()
+  };
+
+  module.external
+}
+
+fn remove_empty_resource_pots(
+  affected_resource_pot_ids: &HashSet<ResourcePotId>,
+  resource_pot_map: &mut resource_pot_map::ResourcePotMap,
+) {
+  // remove the resource pot if it's modules are empty
+  for id in affected_resource_pot_ids {
+    let resource_pot = resource_pot_map.resource_pot_mut(id).unwrap_or_else(|| {
+      panic!("resource pot not found: {id:?}");
+    });
+
+    if resource_pot.modules().is_empty() {
+      resource_pot_map.remove_resource_pot(id);
+    }
+  }
+}
+
 /// Handle the enforce resource pots.
 /// return (enforce_resource_pot_ids, un_enforced_modules)
 fn handle_enforce_resource_pots(
@@ -105,23 +155,13 @@ fn handle_enforce_resource_pots(
 ) -> (Vec<ResourcePotId>, Vec<ModuleId>) {
   let module_graph = context.module_graph.read();
   let mut resource_pot_map = context.resource_pot_map.write();
-  let mut un_enforced_modules = HashSet::new();
-  let mut affected_resource_pot_ids = HashSet::new();
-
-  let is_module_external = |module_id: &ModuleId| {
-    let module = if let Some(module) = removed_modules.get(module_id) {
-      module
-    } else {
-      module_graph.module(module_id).unwrap()
-    };
-
-    module.external
-  };
+  let mut un_enforced_modules = HashSet::default();
+  let mut affected_resource_pot_ids = HashSet::default();
 
   let mut handle_changed_modules = |module_ids: &HashSet<ModuleId>, ty: ChangedModuleType| {
     for module_id in module_ids {
       // ignore external module
-      if is_module_external(module_id) {
+      if is_module_external(module_id, removed_modules, &module_graph) {
         continue;
       }
 
@@ -167,7 +207,7 @@ fn handle_enforce_resource_pots(
 
   // Filter out the modules that are not in any enforce resource pot
   for module_id in affected_modules {
-    if is_module_external(module_id) {
+    if is_module_external(module_id, removed_modules, &module_graph) {
       continue;
     }
 
@@ -186,16 +226,7 @@ fn handle_enforce_resource_pots(
     }
   }
 
-  // remove the resource pot if it's modules are empty
-  for id in &affected_resource_pot_ids {
-    let resource_pot = resource_pot_map.resource_pot_mut(id).unwrap_or_else(|| {
-      panic!("resource pot not found: {id:?}");
-    });
-
-    if resource_pot.modules().is_empty() {
-      resource_pot_map.remove_resource_pot(id);
-    }
-  }
+  remove_empty_resource_pots(&affected_resource_pot_ids, &mut resource_pot_map);
 
   let mut modules = un_enforced_modules.into_iter().collect::<Vec<_>>();
   modules.sort();
@@ -204,6 +235,71 @@ fn handle_enforce_resource_pots(
     affected_resource_pot_ids.into_iter().collect::<Vec<_>>(),
     modules,
   )
+}
+
+/// Add or update dynamic entry resource pots, return the affected resource pot ids
+fn handle_dynamic_entry_resource_pots(
+  affected_module_groups: &HashSet<ModuleGroupId>,
+  context: &Arc<CompilationContext>,
+) -> HashSet<ResourcePotId> {
+  let mut module_group_graph = context.module_group_graph.write();
+  let mut module_graph = context.module_graph.write();
+
+  let mut resource_pots = vec![];
+
+  for module_group_id in affected_module_groups {
+    let module_group = module_group_graph
+      .module_group_mut(module_group_id)
+      .unwrap();
+
+    if matches!(
+      module_group.module_group_type,
+      ModuleGroupType::DynamicEntry
+    ) {
+      if let Some(resource_pot) =
+        dynamic_entry_module_group_to_resource_pot(&mut module_graph, module_group)
+      {
+        resource_pots.push(resource_pot);
+      }
+    }
+  }
+
+  let mut resource_pot_map = context.resource_pot_map.write();
+  let resource_pot_ids = resource_pots
+    .iter()
+    .map(|rp| rp.id.clone())
+    .collect::<HashSet<_>>();
+
+  for resource_pot in resource_pots {
+    // diff modules: added and removed
+    for module_group_id in &resource_pot.module_groups {
+      let module_group = module_group_graph
+        .module_group_mut(module_group_id)
+        .unwrap();
+      // remove old resource pots
+      for rp_id in module_group.resource_pots().clone() {
+        module_group.remove_resource_pot(&rp_id);
+        remove_resource_pot(
+          &resource_pot.id,
+          &mut resource_pot_map,
+          context,
+          &mut module_graph,
+        );
+      }
+
+      // add new resource pots
+      module_group.add_resource_pot(resource_pot.id.clone());
+    }
+
+    for module_id in resource_pot.modules() {
+      let module = module_graph.module_mut(module_id).unwrap();
+      module.resource_pots.insert(resource_pot.id.clone());
+    }
+
+    resource_pot_map.add_resource_pot(resource_pot);
+  }
+
+  resource_pot_ids
 }
 
 fn diff_and_patch_resource_pot_map(
@@ -216,14 +312,14 @@ fn diff_and_patch_resource_pot_map(
     .map(|rp| rp.id.clone())
     .collect::<Vec<_>>();
 
-  let module_graph = context.module_graph.read();
+  let mut module_graph = context.module_graph.write();
   let mut resource_pot_map = context.resource_pot_map.write();
   let mut module_group_graph = context.module_group_graph.write();
 
-  let mut new_resource_pot_ids = HashSet::new();
+  let mut new_resource_pot_ids = HashSet::default();
 
   for mut resource_pot in resources_pots {
-    let mut module_groups = HashSet::new();
+    let mut module_groups = HashSet::default();
 
     for module_id in resource_pot.modules() {
       let module = module_graph.module(module_id).unwrap();
@@ -245,20 +341,12 @@ fn diff_and_patch_resource_pot_map(
         {
           resources_pots_to_remove.push(resource_pot.clone());
 
-          if resource_pot_map.has_resource_pot(resource_pot) {
-            let resource_pot = resource_pot_map
-              .remove_resource_pot(resource_pot)
-              .unwrap_or_else(|| {
-                panic!("The resource pot {resource_pot:?} should be in the resource pot map")
-              });
-
-            // also remove the related resource
-            let mut resource_maps = context.resources_map.lock();
-
-            for resource in resource_pot.resources() {
-              resource_maps.remove(resource);
-            }
-          }
+          remove_resource_pot(
+            resource_pot,
+            &mut resource_pot_map,
+            context,
+            &mut module_graph,
+          );
         }
       }
 
@@ -284,8 +372,38 @@ fn diff_and_patch_resource_pot_map(
   new_resource_pot_ids
 }
 
-#[cfg(test)]
-mod test_handle_enforce_resource_pots;
+fn remove_resource_pot(
+  resource_pot: &ResourcePotId,
+  resource_pot_map: &mut resource_pot_map::ResourcePotMap,
+  context: &Arc<CompilationContext>,
+  module_graph: &mut ModuleGraph,
+) {
+  if resource_pot_map.has_resource_pot(resource_pot) {
+    let resource_pot = resource_pot_map
+      .remove_resource_pot(resource_pot)
+      .unwrap_or_else(|| {
+        panic!("The resource pot {resource_pot:?} should be in the resource pot map")
+      });
+
+    // also remove the related resource
+    let mut resource_maps = context.resources_map.lock();
+
+    for resource in resource_pot.resources() {
+      resource_maps.remove(resource);
+    }
+
+    for module_id in resource_pot.modules() {
+      if module_graph.has_module(module_id) {
+        let module = module_graph.module_mut(module_id).unwrap();
+        module.resource_pots.remove(&resource_pot.id);
+      }
+    }
+  }
+}
 
 #[cfg(test)]
 mod test_generate_and_diff_resource_pots;
+#[cfg(test)]
+mod test_handle_dynamic_entry_resource_pots;
+#[cfg(test)]
+mod test_handle_enforce_resource_pots;

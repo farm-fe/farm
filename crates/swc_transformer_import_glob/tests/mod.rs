@@ -1,6 +1,7 @@
-use std::{collections::HashMap, path::Path, sync::Arc};
+use std::{path::Path, sync::Arc};
 
 use farmfe_core::{
+  config::{AliasItem, StringOrRegex},
   context::CompilationContext,
   module::{ModuleId, VIRTUAL_MODULE_PREFIX},
   swc_common::SourceMap,
@@ -116,10 +117,11 @@ fn test_import_meta_glob() {
     let file_content = std::fs::read_to_string(&file).unwrap();
     let cm = Arc::new(SourceMap::default());
     let ParseScriptModuleResult { mut ast, .. } = parse_module(
-      file.to_string_lossy().to_string().as_str(),
-      &file_content,
+      &file.to_string_lossy().to_string().as_str().into(),
+      Arc::new(file_content),
       Syntax::Es(Default::default()),
       EsVersion::EsNext,
+      // None,
     )
     .unwrap();
     let dir = file.parent().unwrap().to_str().unwrap();
@@ -131,20 +133,18 @@ fn test_import_meta_glob() {
 
     let importer = ModuleId::new(&file.to_string_lossy(), "", root);
 
-    let alias = HashMap::from([(
-      "@".to_string(),
-      file
+    let mut context = CompilationContext::default();
+
+    context.config.resolve.alias = vec![AliasItem {
+      find: StringOrRegex::String("@".to_string()),
+      replacement: file
         .parent()
         .unwrap()
         .to_path_buf()
         .join("dir")
         .to_string_lossy()
         .to_string(),
-    )]);
-
-    let mut context = CompilationContext::default();
-
-    context.config.resolve.alias = alias;
+    }];
     context.config.root = root.to_string();
 
     let context = Arc::new(context);

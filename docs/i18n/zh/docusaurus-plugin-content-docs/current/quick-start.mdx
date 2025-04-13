@@ -1,0 +1,104 @@
+---
+sidebar_position: 1
+---
+
+import { PackageManagerTabs } from "../../../../src/theme/PackageManagerTabs";
+
+:::warning
+如果您正在使用的是 2.0.0-nightly 版本。请注意以下几点：
+- Farm 正在为 2.0 版本努力, 我们重构了整个 node 端和 新增了很多实用的功能, 后续请查看 RoadMap
+- 此版本是一个夜间构建版本，可能包含未经过全面测试的新功能和修复。因此，可能会出现不稳定的行为或意外的错误。
+- 由于此版本处于开发阶段，功能和API可能会在未来的版本中发生变化。请定期查看更新日志以获取最新信息。
+- 建议不要在生产环境中使用此版本，除非您已做好应对潜在问题的准备。
+
+如果遇到了问题， 可以提供 Issues 来向我们反馈, 您的反馈对我们改进 Farm 的功能以及稳定性至关重要。
+:::
+
+# 快速开始
+
+:::note
+Farm 需要 **Node 16.18.0 及更高版本**。
+:::
+
+## 在线体验
+
+[![Edit Farm](https://codesandbox.io/static/img/play-codesandbox.svg)](https://codesandbox.io/p/github/ErKeLost/react/main)
+
+
+## 1. 创建一个 Farm 项目
+
+<PackageManagerTabs command="npm create farm@latest" />
+
+:::warning
+如果使用的是nightly 版本则需要把 Farm 的依赖都安装成 nightly 版本, 所有核心包以及插件我们都已经提供nightly 版本
+<PackageManagerTabs command="pnpm add @farmfe/{cli,core}@nightly" />
+:::
+
+
+:::note{title="然后按照提示操作！"}
+您还可以通过附加命令行选项直接指定项目名称和要使用的模板：
+:::
+
+<PackageManagerTabs command="pnpm create farm my-react-app --template react" />
+
+
+## 2.启动项目
+
+选择您喜欢的包管理器，安装依赖项，然后启动项目。
+
+<PackageManagerTabs command="cd farm-project && pnpm i && pnpm start" />
+
+
+默认情况下，该项目将从`http://localhost:9000`启动。
+
+## 3. 配置项目
+
+该项目由项目根目录中的“farm.config.ts/js/mjs”文件进行配置。
+
+```ts title="farm.config.ts"
+import { defineConfig } from "@farmfe/core";
+
+export default defineConfig({
+  // 编译相关配置
+  compilation: {
+    input: {
+      // 可以配置相对或者绝对路径
+      index: "./index.html",
+    },
+    output: {
+      path: "./build",
+      publicPath: "/",
+    },
+    // ...
+  },
+  // Dev Server 相关配置
+  server: {
+    port: 9000,
+    // ...
+  },
+  // 插件配置
+  plugins: [],
+});
+```
+
+:::note
+配置详情请参阅 **[配置 Farm](/docs/config/configuring-farm)**。
+:::
+
+## 4. 构建项目
+将 Farm 项目构建为生产环境可用的静态文件：
+
+```bash
+npm run build
+```
+
+构建的产品默认降级为`ES2017`，并且产品将被压缩和Tree Shake。 如果您想在本地预览构建产品，可以执行`npm run Preview`或`npx farm Preview`。
+
+## 下一步
+
+- [为什么需要 Farm？](/docs/why-farm)
+- [特性](/docs/features/dev-server)
+- [配置参考](/docs/config/configuring-farm)
+- [插件](/docs/plugins/official-plugins/overview)
+---
+

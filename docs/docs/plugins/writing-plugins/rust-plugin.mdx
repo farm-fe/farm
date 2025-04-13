@@ -1,0 +1,514 @@
+import CodeBlock from "@theme/CodeBlock";
+import Tabs from "@theme/Tabs";
+import TabItem from "@theme/TabItem";
+
+# Writing Rust Plugins
+Rust plugins are the recommended way to write your plugins cause Rust plugins are much **faster and powerful** than Js Plugins. A Rust plugin is a `struct` that implements `farmfe_core::plugin::Plugin` trait, example:
+
+```rust
+#![deny(clippy::all)]
+
+use farmfe_core::{config::Config, plugin::Plugin};
+
+use farmfe_macro_plugin::farm_plugin;
+
+// define your rust plugins
+#[farm_plugin]
+pub struct FarmPluginExample {}
+
+impl FarmPluginExample {
+  // a Rust plugin must export a new method that accepts 2 arguments for initialization。
+  fn new(config: &Config, options: String) -> Self {
+    Self {}
+  }
+}
+// Implement Plugin trait to define plugin hooks
+impl Plugin for FarmPluginExample {
+  fn name(&self) -> &str {
+    "FarmPluginExample"
+  }
+
+  // more hooks here
+}
+```
+Note for a Rust plugin struct:
+- The struct must be `pub` and `#[farm_plugin]` attribute is required.
+- The struct must implement `Plugin` trait, and the `name` method must be implemented.
+- The struct must export a `new` method that accepts 2 arguments for initialization, the first argument is `&Config` and the second argument is `String`. The `new` method is called when the plugin is loaded, and the `Config` is the farm project config, and the `String` is the plugin options.
+
+We also provide a Rust plugin example repository: [farm-rust-plugin-example](https://github.com/farm-fe/rust-plugin-example).
+
+:::note
+This document only covers how to create, develop and publish a rust plugin, for more detail about the plugin hooks, see [Plugin Hooks](/docs/api/rust-plugin-api).
+:::
+
+## Conventions
+
+For farm specific Rust plugins:
+
+- The Farm plugin should have a name with a `farm-plugin-` prefix and clear semantics.
+- Include the `farm-plugin-` keyword in package.json.
+
+If your plugin is only applicable to a specific framework, its name should follow the following prefix format:
+
+- `farm-plugin-vue-`: Prefix as a Vue plugin
+- `farm-plugin-react-`: Prefix as a React plugin
+- `farm-plugin-svelte-`: Prefix as a svelte plugin
+- ...
+
+## Concepts
+Before you start to write your rust plugin, you should know the following concepts:
+* **module_type**: The type of the module, it can be `js`, `ts`, `css`, `sass`, `json`, etc. Farm supports `js/ts/jsx/tsx`, `css`, `html`, `json`, `static assets(png, svg, etc)` natively. `module_type` is returned by `load` hook. You can extend natively supported module type by Rust plugins the same as Farm internal plugins.
+* **resolved_path and module_id**: `resolved_path` is the absolute path of the module, and `module_id` is the unique id of the module, it's usually `relative path of the module from the project root` + `query`. For example, we import a module as `import './a?query'`, the resolved_path is `/project/src/a.ts` and the module_id is `src/a.ts?query`.
+* **context**: All the hooks in the plugin accept a `context` argument, it's the compilation context of the farm project, you can use it to get the ModuleGraph, Module, Resources, etc.
+* **Resource and Resource Pot**: `Resource` is the final output bundle file, and `Resource Pot` is the abstract representation of the resource, similar to `Chunk` of other bundlers. Inside Farm, first we will generate `Resource Pots` from `ModuleGraph`, render `Resource Pots` and finally generate `Resources` from `Resource Pots`.
+
+### Module Type
+In Farm, every thing is `First Class Citizens`, so Farm designs `module_type` to identify the type of a module and handle different kinds of ModuleTypes in different plugins. 
+
+`module_type` returned by `load` hook, and can be transformed by `transform` hook. Farm supports `js/ts/jsx/tsx`, `css`, `html`, `json`, `static assets(png, svg, etc)` natively. For these module types, you can return them directly in `load` or `transform` hook directly. But if you want to handle custom module types, you may need to implement ohter hooks like `parse`, `render_resource_pot_modules`, `generate resources`, etc to control how to parse, render and generate resources for the custom module types.
+
+
+## Create Plugin
+Farm provides official templates to help your create your rust plugins quickly:
+<>
+    <Tabs>
+      <TabItem value="pnpm" label="pnpm">
+          <CodeBlock>pnpm create farm-plugin</CodeBlock>
+              </TabItem>
+          <TabItem value="npm" label="npm">
+              <CodeBlock>npm create farm-plugin@latest</CodeBlock>
+              </TabItem>
+
+  <TabItem value="yarn" label="yarn">
+          <CodeBlock>yarn create farm-plugin</CodeBlock>
+              </TabItem>
+          </Tabs>
+</>
+
+then follow the prompts to create your plugin.
+
+or you can create a plugin derectly by running the following command:
+<Tabs>
+      <TabItem value="pnpm" label="pnpm">
+          <CodeBlock>pnpm create farm-plugin my-farm-plugin --type rust</CodeBlock>
+              </TabItem>
+          <TabItem value="npm" label="npm">
+              <CodeBlock>npm create my-farm-plugin --type rust</CodeBlock>
+              </TabItem>
+
+  <TabItem value="yarn" label="yarn">
+          <CodeBlock>yarn create my-farm-plugin --type rust</CodeBlock>
+              </TabItem>
+          </Tabs>
+Above command will create new rust plugin with name `my-farm-plugin` in the current directory. `--type` can be `rust` or `js`
+
+## Plugin Project Structure
+The plugin project structure is as follows:
+```plaintext
+my-farm-plugin
+├── .github
+│   └── workflows
+|       ├── release.yml
+|       ├── build.yml
+│       └── ci.yml
+├── Cargo.toml
+|── .gitignore
+├── npm
+│   ├── darwin-x64
+│   ├── linux-x64-gnu
+|   ├── win32-x64-msvc
+│   └── ...
+├── package.json
+├── src
+│   └── lib.rs
+└── rust-toolchain.toml
+```
+Notable files and directories:
+- `src/lib.rs`: The main file of the plugin, where you define your plugin.
+- `Cargo.toml`: The manifest file for Rust.
+- `package.json`: The manifest file for npm.
+- `npm`: Where your platform specific binary packages placed. These packages should be published to npm registry before publish the plugin.
+- `.github/workflows`: Used to cross build and publish your plugin in github actions.
+- `rust-toolchain.toml`: The rust toolchain file, it should **not be modified manually**, it should always using **the same version as the farm core**.
+
+Farm provides a tool(`@farmfe/plugin-tools`) to help you build and publish your rust plugin, see `package.json`:
+```json
+{
+  // ...
+  "scripts": {
+    // build your plugin for current platform
+    "build": "farm-plugin-tools build --platform --cargo-name my_farm_plugin -p my_farm_plugin --release",
+    // publish all platform packages under npm directory to npm registry
+    "prepublishOnly": "farm-plugin-tools prepublish"
+  },
+  // ...
+}
+```
+More detail about building and publishing your plugin, see [buidling](#cross-build) and [publishing](#publish) sections.
+
+## Develop Plugin
+To develop and test your plugin locally, you should build your plugin for your platform first, run:
+```bash
+pnpm build
+```
+Then you can use the built plugin in your farm project by adding the plugin to the `plugins` field in `farm.config.ts`:
+```javascript
+import { defineConfig } from '@farmfe/core';
+
+export default defineConfig({
+  plugins: [
+    'my-farm-plugin'
+  ]
+});
+```
+and execute `pnpm i` in your farm project, and run `farm start` to start your farm project with your plugin.
+
+when you make changes to your plugin, you should rebuild your plugin and restart your farm project to see the changes. for example, add `load` hook to your plugin:
+```rust {8-18} title="src/lib.rs"
+// ... ignore other code
+
+impl Plugin for FarmPluginExample {
+  fn name(&self) -> &str {
+    "FarmPluginExample"
+  }
+
+  fn load(
+    &self,
+    param: &farmfe_core::plugin::PluginLoadHookParam,
+    _context: &std::sync::Arc<farmfe_core::context::CompilationContext>,
+    _hook_context: &farmfe_core::plugin::PluginHookContext,
+  ) -> farmfe_core::error::Result<Option<farmfe_core::plugin::PluginLoadHookResult>> {
+    println!(
+      "load path: {:?}, id: {:?}",
+      param.resolved_path, param.module_id
+    );
+    Ok(None)
+  }
+}
+```
+Then rebuild your plugin with `pnpm build` and restart your farm project with `farm start`, you will see the `load` hook is called when compiling your farm project.
+
+:::note
+For more detail about the plugin hooks, see [Plugin Hooks](/docs/api/rust-plugin-api).
+:::
+
+### Handle ModuleType
+`module_type` is returned by the `load` hook or `transform` hook. Your set any module type to the module in the `load` hook, and the module will be processed by the corresponding plugin that supports the module type.
+
+For native supported module types, you can just return the module type in the `load` hook:
+```rust {8-18} title="src/lib.rs"
+// ... ignore other code
+
+impl Plugin for FarmPluginExample {
+  fn name(&self) -> &str {
+    "FarmPluginExample"
+  }
+
+  fn load(
+    &self,
+    param: &farmfe_core::plugin::PluginLoadHookParam,
+    _context: &std::sync::Arc<farmfe_core::context::CompilationContext>,
+    _hook_context: &farmfe_core::plugin::PluginHookContext,
+  ) -> farmfe_core::error::Result<Option<farmfe_core::plugin::PluginLoadHookResult>> {
+    // handle virtual module
+    if param.module_id.starts_with("virtual:my-css:css") {
+      // return module type and content
+      Ok(Some(farmfe_core::plugin::PluginLoadHookResult {
+        module_type: "css".to_string(),
+        content: ".red { color: red; }".to_string(),
+        ..Default::default()
+      }))
+    } else {
+      Ok(None)
+    }
+  }
+}
+```
+
+For non-native supported module types, you should use `transform` hook to transform the module type to a native supported module type, otherwise you need to implement `parse`, `renderResourcePot` hook to handle your custom module type:
+
+```rust {8-18} title="src/lib.rs"
+// ... ignore other code
+
+impl Plugin for FarmPluginExample {
+  fn name(&self) -> &str {
+    "FarmPluginExample"
+  }
+
+  fn transform(
+    &self,
+    param: &farmfe_core::plugin::PluginTransformHookParam,
+    _context: &std::sync::Arc<farmfe_core::context::CompilationContext>,
+    _hook_context: &farmfe_core::plugin::PluginHookContext,
+  ) -> farmfe_core::error::Result<Option<farmfe_core::plugin::PluginTransformHookResult>> {
+    // module type guard is required
+    if matches!(param.module_type, ModuleType::Custom("sass")) {
+      // compile sass and transform the module type from sass to css
+      Ok(Some(farmfe_core::plugin::PluginTransformHookResult {
+        module_type: "css".to_string(),
+        content: compileSass(param.content),
+        ..Default::default()
+      }))
+    } else {
+      Ok(None)
+    }
+  }
+}
+```
+
+:::note
+Module type guard like `matches!(param.module_type, ModuleType::Custom("sass"))` is required in the `transform` hook, cause the `transform` hook will be called for all module types, and you should only handle your custom module type in the `transform` hook. So do the `parse` and other hooks.
+:::
+
+
+or implement `parse`, `render_resource_pot_modules` hook to handle your custom module type, see how native farm css plugin handle `css` module type in [farm-plugin-css](https://github.com/farm-fe/farm/blob/main/crates/plugin_html/src/lib.rs#L159).
+
+
+### Handle Plugin Options
+The rust plugin options can be configured in `farm.config.ts`:
+```javascript
+import { defineConfig } from '@farmfe/core';
+
+export default defineConfig({
+  plugins: [
+    ['my-farm-plugin', {
+      // plugin options
+      myOption: 'myOption'
+    }]
+  ]
+});
+```
+The Option will be json serialized and passed to the `new` method of your plugin, you can handle the options in the `new` method:
+```rust title="src/lib.rs"
+// ... ignore other code
+
+// define your rust plugin options
+#[derive(serde::Deserialize)]
+pub struct Options {
+  pub my_option: Option<String>,
+}
+
+impl FarmPluginExample {
+  fn new(config: &Config, options: String) -> Self {
+    // deserialize the options
+    let my_option: Options = serde_json::from_str(&options).unwrap();
+    // handle the options...
+    Self {}
+  }
+}
+```
+
+Note that you should add dependencies `serde` and `serde_json` to your `Cargo.toml` to support options deserialization:
+
+```toml
+[dependencies]
+# ... ignore other code
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+```
+
+:::note
+Non json serializable options are not supported. Which means you can only use types like string, number, boolean, array, object, etc. `function options` are not supported.
+:::
+
+### Using farm_core In Plugin
+Farm exposes all core structures and utilities in [`farmfe_core`](https://docs.rs/farmfe_core) crate. Refer to the [farmfe_core](https://docs.rs/farmfe_core) documentation for more detail.
+
+:::note
+If you want to use swc structures like `Module`, `Program`, etc. in your plugin, you should use `farmfe_core::swc_ast` that re-exposed by farm core. Cause the swc version used by farm core may be different from the swc version you used in your plugin, and the swc version used by farm core is guaranteed to be compatible with farm core.
+:::
+
+### Caveats
+#### Using SWC In Plugin
+Note that your rust plugin should not use any SWC related packages like `swc_common`, `swc_transforms`, etc. Cause SWC stores the global state in the process, it may cause **dead lock** when you use SWC in your plugin.
+
+Farm recommended to write [SWC Plugin](/docs/using-plugins#using-swc-plugins) if you want to make changes to the AST of your farm project. For how to write SWC plugin, see [Write SWC Plugin](https://swc.rs/docs/plugin/ecmascript/getting-started).
+
+#### Choosing Rust toolchain
+Cause Farm Rust Plugin is a dynamic linked library, you should always use the same version of the rust toolchain as the farm core. The rust toolchain is defined in `rust-toolchain.toml`, it should **not be modified manually**.
+And should should always build your plugin from Rust, cause Farm Core does not support FFI and not promise ABI stability to provide best performance.
+
+### Plugin Compatibility
+Farm core maintains a API version that exposes to the plugin. If you met a message like `Incompatible Rust Plugin: Current core's version...`, it means your plugin is not compatible with the current farm core version. You should update your plugin to the latest version to fix the issue.
+
+For plugin authors, you should rebuild and publish your plugin for the latest farm core version to make your plugin compatible with the latest farm core version.
+
+:::note
+Farm promises API Compatibility for the same major version, for example, if your plugin is compatible with farm core 1.0.0, it should also be compatible with farm core 1.1.0, 1.2.0, etc. which means your plugin will always work for the same major version of farm.
+:::
+
+## Cross Build
+A Farm Rust Plugin is a **platform specific dynamic linked library**, you should build your plugin for all platforms you want to support.
+Farm provided a example for how to build your plugin using github actions, see [.github/workflows/build.yml](https://github.com/farm-fe/rust-plugin-example/blob/main/.github/workflows/build.yaml)
+
+By default, A farm rust plugin should be built for the following platforms:
+- `linux-x64-gnu `
+- `linux-x64-musl`
+- `darwin-x64`
+- `win32-x64-msvc`
+- `linux-arm64-musl`
+- `linux-arm64-gnu`
+- `darwin-arm64`
+- `win32-ia32-msvc`
+- `win32-arm64-msvc`
+
+For a public plugin that published to npm registry, we recommend you to publish your plugin for all platforms above. For a private rust plugin, you can build your plugin for any platform you want to support. 
+
+:::tip
+Cause a rust plugin is a pure dynamic linked library, if you have questions about how to build your plugin for a specific platform, just google how to build a dynamic linked library for that platform in Rust.
+:::
+
+## Publish
+
+Steps to publish your Rust plugin:
+1. Cross build the Rust plugin to dynamic linked library, see [Cross Build](#cross-build) for detail.
+2. Copy the binary artifacts to npm dir, for example: Copy to `npm/linux-x64-gnu/index.farm`.
+3. Publish platform specific packages under npm dir, you can use `farm-plugin-tool prepublish` to publish packages under `npm` dir.
+4. Publish the package itself
+
+see example [github actions publish workflow](https://github.com/farm-fe/rust-plugin-example/blob/main/.github/workflows/release.yml)
+
+
+## Examples
+We will use `@farmfe/plugin-sass` as demostration to a real Rust plugin example. This plugin will support compiling `.scss` and `.sass` file in your farm project.
+
+### Define Plugin
+Exports a Rust struct named `FarmPluginSass`.
+
+```rust title="src/lib.rs"
+use farmfe_macro_plugin::farm_plugin;
+
+// 1. define a struct with #[farm_plugin] attribute
+#[farm_plugin]
+pub struct FarmPluginSass {
+  sass_options: String,
+  regex: Regex,
+}
+
+impl FarmPluginSass {
+  // 2. define a new method with 2 arguments
+  pub fn new(_config: &Config, options: String) -> Self {
+    Self {
+      sass_options: options,
+      regex: Regex::new(r#"\.(sass|scss)$"#).unwrap(),
+    }
+  }
+}
+```
+
+- The struct must be `pub` and `#[farm_plugin]` attribute is required.
+- The struct must export a `new` method that accepts 2 arguments for initialization, the first argument is `&Config` and the second argument is `String`.
+
+### Implement Plugin Trait 
+`Plugin` trait is used to define `hooks` that can hook into Farm compiler.
+
+```rust {21-30}
+use farmfe_core::plugin::Plugin;
+use farmfe_macro_plugin::farm_plugin;
+
+// 1. define a struct with #[farm_plugin] attribute
+#[farm_plugin]
+pub struct FarmPluginSass {
+  sass_options: String,
+  regex: Regex,
+}
+
+impl FarmPluginSass {
+  // 2. define a new method with 2 arguments
+  pub fn new(_config: &Config, options: String) -> Self {
+    Self {
+      sass_options: options,
+      regex: Regex::new(r#"\.(sass|scss)$"#).unwrap(),
+    }
+  }
+}
+// Implement Plugin Trait
+impl Plugin for FarmPluginSass {
+  fn name(&self) -> &str {
+    "FarmPluginSass"
+  }
+
+  // this plugin should be executed before internal plugins
+  fn priority(&self) -> i32 {
+    101
+  }
+}
+```
+
+### Load `.scss` File
+Implement `load` hook to support load `.scss` files.
+
+```rust {14-32}
+// ignore other code ...
+
+// Implement Plugin Trait
+impl Plugin for FarmPluginSass {
+  fn name(&self) -> &str {
+    "FarmPluginSass"
+  }
+
+  // this plugin should be executed before internal plugins
+  fn priority(&self) -> i32 {
+    101
+  }
+
+  fn load(
+    &self,
+    param: &farmfe_core::plugin::PluginLoadHookParam,
+    _context: &std::sync::Arc<farmfe_core::context::CompilationContext>,
+    _hook_context: &farmfe_core::plugin::PluginHookContext,
+  ) -> farmfe_core::error::Result<Option<farmfe_core::plugin::PluginLoadHookResult>> {
+    if param.query.is_empty() && self.regex.is_match(param.resolved_path) {
+      let content = fs::read_file_utf8(param.resolved_path);
+
+      if let Ok(content) = content {
+        return Ok(Some(farmfe_core::plugin::PluginLoadHookResult {
+          content,
+          module_type: ModuleType::Custom(String::from("sass")),
+        }));
+      }
+    }
+
+    Ok(None)
+  }
+}
+```
+
+In the `load` hook, we only read the file that ends with `.scss` or `.sass`, return the file content and maked its module_type as `ModuleType::Custom(String::from("sass"))`.
+
+### Transform `sass` File
+After we load the `.scss` file, we need to transform it to `css` in `transform` hook, then Farm will treat it as css in following process.
+
+```rust
+// ignore other code ...
+fn transform(
+  &self,
+  param: &farmfe_core::plugin::PluginTransformHookParam,
+  context: &std::sync::Arc<farmfe_core::context::CompilationContext>,
+) -> farmfe_core::error::Result<Option<farmfe_core::plugin::PluginTransformHookResult>> {
+  // module type guard is neccessary
+  if param.module_type == ModuleType::Custom(String::from("sass")) {
+    // ... ignore other code
+
+    // parse options
+    const options = parse_options(&self.options, param.module_id);
+    // compile sass to css
+    let compile_result = compileSass(&param.content, options);
+
+    return Ok(Some(farmfe_core::plugin::PluginTransformHookResult {
+      content: compile_result.css,
+      source_map: compile_result.source_map,
+      // tell farm compiler that we have transformed this module to css
+      module_type: Some(farmfe_core::module::ModuleType::Css),
+      ignore_previous_source_map: false,
+    }));
+  }
+
+  Ok(None)
+}
+```
+
+:::tip
+This example only covers how to implement a transformer plugin. For more abilities that Farm support, refer to [Plugin Hooks](/docs/api/rust-plugin-api).
+:::

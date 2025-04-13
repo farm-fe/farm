@@ -3,12 +3,11 @@
 #![allow(clippy::blocks_in_conditions)]
 #[cfg(feature = "file_watcher")]
 use std::path::PathBuf;
-use std::{collections::HashMap, path::Path, sync::Arc};
+use std::{path::Path, sync::Arc};
 
 use farmfe_compiler::{trace_module_graph::TracedModuleGraph, Compiler};
 
 pub mod plugin_adapters;
-pub mod plugin_toolkit;
 #[cfg(feature = "profile")]
 pub mod profile_gui;
 
@@ -16,6 +15,7 @@ use farmfe_core::{
   config::{Config, Mode},
   module::ModuleId,
   plugin::UpdateType,
+  HashMap,
 };
 
 #[cfg(feature = "file_watcher")]
@@ -36,10 +36,10 @@ use notify::{
 };
 use plugin_adapters::{js_plugin_adapter::JsPluginAdapter, rust_plugin_adapter::RustPluginAdapter};
 
-// pub use farmfe_toolkit_plugin;
-
 #[macro_use]
 extern crate napi_derive;
+
+pub mod plugin_toolkit;
 
 #[napi(object)]
 pub struct WatchDiffResult {
@@ -169,7 +169,7 @@ impl JsCompiler {
       e.create_deferred::<Vec<String>, Box<dyn FnOnce(Env) -> napi::Result<Vec<String>>>>()?;
 
     let compiler = self.compiler.clone();
-    self.compiler.thread_pool.spawn(move || {
+    self.compiler.context().thread_pool.spawn(move || {
       match compiler
         .trace_dependencies()
         .map_err(|e| napi::Error::new(Status::GenericFailure, format!("{e}")))
@@ -192,7 +192,7 @@ impl JsCompiler {
       e.create_deferred::<JsTracedModuleGraph, Box<dyn FnOnce(Env) -> napi::Result<JsTracedModuleGraph>>>()?;
 
     let compiler = self.compiler.clone();
-    self.compiler.thread_pool.spawn(move || {
+    self.compiler.context().thread_pool.spawn(move || {
       match compiler
         .trace_module_graph()
         .map_err(|e| napi::Error::new(Status::GenericFailure, format!("{e}")))
@@ -210,13 +210,13 @@ impl JsCompiler {
   }
 
   /// async compile, return promise
-  #[napi]
+  #[napi(ts_return_type = "Promise<JsUpdateResult>")]
   pub fn compile(&self, e: Env) -> napi::Result<JsObject> {
     let (promise, result) =
       e.create_deferred::<JsUndefined, Box<dyn FnOnce(Env) -> napi::Result<JsUndefined>>>()?;
 
     let compiler = self.compiler.clone();
-    self.compiler.thread_pool.spawn(move || {
+    self.compiler.context().thread_pool.spawn(move || {
       match compiler
         .compile()
         .map_err(|e| napi::Error::new(Status::GenericFailure, format!("{e}")))
@@ -276,7 +276,7 @@ impl JsCompiler {
       e.create_deferred::<JsUpdateResult, Box<dyn FnOnce(Env) -> napi::Result<JsUpdateResult>>>()?;
 
     let compiler = self.compiler.clone();
-    self.compiler.thread_pool.spawn(move || {
+    self.compiler.context().thread_pool.spawn(move || {
       match compiler
         .update(
           paths
@@ -316,7 +316,7 @@ impl JsCompiler {
                 .into_iter()
                 .map(|(k, v)| {
                   (
-                    k.id(context.config.mode.clone()),
+                    k.id(context.config.mode),
                     v.into_iter()
                       .map(|(path, ty)| vec![path, ty.to_html_tag()])
                       .collect(),
@@ -412,7 +412,7 @@ impl JsCompiler {
     let context = self.compiler.context();
     let resources = context.resources_map.lock();
 
-    let mut result = HashMap::new();
+    let mut result = HashMap::default();
 
     for resource in resources.values() {
       // only write expose non-emitted resource
@@ -428,7 +428,7 @@ impl JsCompiler {
   pub fn resources_map(&self, e: Env) -> HashMap<String, JsUnknown> {
     let context = self.compiler.context();
     let resources = context.resources_map.lock();
-    let mut resources_map = HashMap::new();
+    let mut resources_map = HashMap::default();
 
     for (name, resource) in resources.iter() {
       resources_map.insert(name.clone(), e.to_js_value(resource).unwrap());
@@ -438,16 +438,21 @@ impl JsCompiler {
   }
 
   #[napi]
+  pub fn write_resources_to_disk(&self) {
+    self.compiler.write_resources_to_disk().unwrap();
+  }
+
+  #[napi]
   pub fn watch_modules(&self) -> Vec<String> {
     let context = self.compiler.context();
 
     let watch_graph = context.watch_graph.read();
 
-    return watch_graph
+    watch_graph
       .modules()
       .into_iter()
       .map(|id| id.resolved_path(&context.config.root))
-      .collect();
+      .collect()
   }
 
   #[napi]
@@ -473,7 +478,7 @@ impl JsCompiler {
   #[napi]
   pub fn stats(&self) -> String {
     let context = self.compiler.context();
-    context.record_manager.to_string()
+    context.stats.to_string()
   }
 
   #[napi]

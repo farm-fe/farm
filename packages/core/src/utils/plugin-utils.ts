@@ -83,3 +83,8 @@ export function transformAliasWithVite(
     return acc;
   }, {});
 }
+
+export function removeSlash(path: string) {
+  if (!path) return '';
+  return path.replace(/^[/\\]+/, '');
+}

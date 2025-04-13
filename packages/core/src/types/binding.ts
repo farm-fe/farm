@@ -149,9 +149,7 @@ export interface OutputConfig {
     | 'browser-es2015'
     | 'browser-es2017'
     | 'browser-esnext'
-    | 'library'
-    | 'library-browser'
-    | 'library-node';
+    | 'library';
   /**
    * output module format
    */
@@ -160,6 +158,10 @@ export interface OutputConfig {
    * clean output.path automatically or not
    */
   clean?: boolean;
+  /**
+   * Whether to show print file size of final output files.
+   */
+  showFileSize?: boolean;
 }
 
 export interface ResolveConfig {
@@ -171,7 +173,10 @@ export interface ResolveConfig {
   /**
    * Configure parsing alias. Alias is prefix replacement, for example /@/pages/index will be replaced by /root/src/pages/index. If you want an exact match, you can add $, for example stream$ will only replace stream, but not stream/xxx.
    */
-  alias?: Record<string, string>;
+  // TODO customResolver?: ResolverFunction | ResolverObject
+  alias?:
+    | Record<string, string>
+    | Array<{ find: string | RegExp; replacement: string }>;
   /**
    * When parsing dependencies under node_modules, the fields and order configured in mainFields will be parsed from package.json. For package.json
    * @default ["exports", "browser", "module", "main"]
@@ -324,6 +329,19 @@ export interface CssConfig {
   _viteCssOptions?: any;
 }
 
+export interface GlobalBuiltinCacheKeyStrategy {
+  /** @default true */
+  define?: boolean;
+  /** @default true */
+  buildDependencies?: boolean;
+  /** @default true */
+  lockfile?: boolean;
+  /** @default true */
+  packageJson?: boolean;
+  /** @default true */
+  env?: boolean;
+}
+
 export interface PersistentCacheConfig {
   namespace?: string;
   cacheDir?: string;
@@ -342,18 +360,7 @@ export interface PersistentCacheConfig {
    *  lockfile: false
    * }
    */
-  globalBuiltinCacheKeyStrategy?: {
-    /** @default true */
-    define?: boolean;
-    /** @default true */
-    buildDependencies?: boolean;
-    /** @default true */
-    lockfile?: boolean;
-    /** @default true */
-    packageJson?: boolean;
-    /** @default true */
-    env?: boolean;
-  };
+  globalBuiltinCacheKeyStrategy?: GlobalBuiltinCacheKeyStrategy;
 }
 
 export interface PartialBundlingConfig {
@@ -415,7 +422,6 @@ export interface PresetEnvConfig {
 
 export interface Config {
   config?: {
-    clearScreen?: boolean;
     coreLibPath?: string;
     /**
      * Compilation entries
@@ -479,6 +485,7 @@ export interface Config {
     persistentCache?: boolean | PersistentCacheConfig;
     comments?: boolean | 'license';
     custom?: Record<string, any>;
+    concatenateModules?: boolean;
   };
   jsPlugins?: JsPlugin[];
   // [rustPluginFilePath, jsonStringifiedOptions]
