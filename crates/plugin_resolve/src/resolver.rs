@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use std::collections::HashMap;
 use std::{
   path::{Path, PathBuf},
@@ -16,6 +17,7 @@ use farmfe_core::{
   serde_json::{from_str, Map, Value},
 };
 
+use farmfe_toolkit::lazy_static::lazy_static;
 use farmfe_toolkit::resolve::{follow_symlinks, load_package_json, package_json_loader::Options};
 use farmfe_utils::relative;
 
@@ -40,6 +42,7 @@ pub struct ResolveCacheKey {
   pub base_dir: String,
   pub kind: ResolveKind,
   pub options: ResolveOptions,
+  pub main_fields: Vec<String>,
 }
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq, Default)]
@@ -56,6 +59,16 @@ pub const NODE_MODULES: &str = "node_modules";
 const BROWSER_SUBPATH_EXTERNAL_ID: &str = "__FARM_BROWSER_SUBPATH_EXTERNAL__";
 const REGEX_PREFIX: &str = "$__farm_regex:";
 const HIGHEST_PRIORITY_FIELD: &str = "exports";
+
+lazy_static! {
+  pub static ref DEFAULT_MAIN_FIELDS: Vec<String> = vec![
+    "browser".to_string(),
+    "module".to_string(),
+    "main".to_string(),
+    "jsnext:main".to_string(),
+    "jsnext".to_string()
+  ];
+}
 
 impl Resolver {
   pub fn new() -> Self {
@@ -84,6 +97,7 @@ impl Resolver {
       base_dir: base_dir.to_string_lossy().to_string(),
       kind: kind.clone(),
       options: options.clone(),
+      main_fields: context.config.resolve.main_fields.clone(),
     };
 
     if let Some(result) = self.resolve_cache.lock().get(&cache_key) {
@@ -483,6 +497,7 @@ impl Resolver {
       base_dir: base_dir.to_string_lossy().to_string(),
       kind: kind.clone(),
       options: options.clone(),
+      main_fields: context.config.resolve.main_fields.clone(),
     }) {
       return result.clone();
     }
@@ -497,6 +512,7 @@ impl Resolver {
         base_dir: tried_path.to_string_lossy().to_string(),
         kind: kind.clone(),
         options: options.clone(),
+        main_fields: context.config.resolve.main_fields.clone(),
       };
 
       if !resolve_node_modules_cache.contains_key(&key) {
@@ -527,6 +543,7 @@ impl Resolver {
         base_dir: current.to_string_lossy().to_string(),
         kind: kind.clone(),
         options: options.clone(),
+        main_fields: context.config.resolve.main_fields.clone(),
       };
 
       if let Some(result) = self.resolve_cache.lock().get(&key) {
@@ -711,39 +728,50 @@ impl Resolver {
         .map(|exports_entries| exports_entries.get(0).unwrap().to_string())
       })
       .or_else(|| {
-        context
-          .config
-          .resolve
-          .main_fields
-          .iter()
-          .find_map(|main_field| {
-            if main_field == "browser" && !context.config.output.target_env.is_browser() {
-              return None;
-            }
-            raw_package_json_info
-              .get(main_field)
-              .and_then(|field_value| match field_value {
-                Value::Object(_) if main_field == "browser" => {
-                  get_field_value_from_package_json_info(&package_json_info, main_field).and_then(
-                    |browser| {
-                      if let Value::Object(browser) = browser {
-                        browser.get(".").and_then(|value| {
-                          if let Value::String(value) = value {
-                            Some(value.to_string())
-                          } else {
-                            None
-                          }
-                        })
-                      } else {
-                        None
-                      }
-                    },
-                  )
-                }
-                Value::String(str) => Some(str.to_string()),
-                _ => None,
-              })
-          })
+        let main_fields = if !context.config.resolve.main_fields.is_empty() {
+          Some(Cow::Borrowed(&context.config.resolve.main_fields))
+        } else {
+          let main_fields_from_resolve_kind = match kind {
+            ResolveKind::Require => Some(vec!["main".to_string()]),
+            ResolveKind::Import => Some(vec!["module".to_string()]),
+            _ => None,
+          };
+
+          main_fields_from_resolve_kind
+            .map(|field| [field, DEFAULT_MAIN_FIELDS.clone()].concat())
+            .map(Cow::Owned)
+        }
+        .unwrap_or_else(|| Cow::Borrowed(&DEFAULT_MAIN_FIELDS));
+
+        main_fields.iter().find_map(|main_field| {
+          if main_field == "browser" && !context.config.output.target_env.is_browser() {
+            return None;
+          }
+
+          raw_package_json_info
+            .get(main_field)
+            .and_then(|field_value| match field_value {
+              Value::Object(_) if main_field == "browser" => {
+                get_field_value_from_package_json_info(&package_json_info, main_field).and_then(
+                  |browser| {
+                    if let Value::Object(browser) = browser {
+                      browser.get(".").and_then(|value| {
+                        if let Value::String(value) = value {
+                          Some(value.to_string())
+                        } else {
+                          None
+                        }
+                      })
+                    } else {
+                      None
+                    }
+                  },
+                )
+              }
+              Value::String(str) => Some(str.to_string()),
+              _ => None,
+            })
+        })
       });
     if let Some(entry_point) = entry_point {
       let dir = package_json_info.dir();
