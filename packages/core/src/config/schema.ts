@@ -356,12 +356,7 @@ const compilationConfigSchema = z
           mangle: z.union([z.any(), z.boolean()]).optional(),
           exclude: z.array(z.string()).optional(),
           include: z.array(z.string()).optional(),
-          mode: z
-            .union([
-              z.literal('minify-module'),
-              z.literal('minify-resource-pot')
-            ])
-            .optional()
+          mangleExports: z.boolean().optional()
         })
       ])
       .optional(),

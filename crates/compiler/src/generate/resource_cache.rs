@@ -1,9 +1,13 @@
 use std::sync::Arc;
 
 use farmfe_core::{
-  cache::resource_cache::resource_memory_store::CachedResourcePot, context::CompilationContext,
-  plugin::PluginGenerateResourcesHookResult, resource::resource_pot::ResourcePot,
+  cache::resource_cache::resource_memory_store::CachedResourcePot,
+  context::CompilationContext,
+  plugin::PluginGenerateResourcesHookResult,
+  resource::{meta_data::ResourcePotMetaData, resource_pot::ResourcePot},
+  swc_common::Globals,
 };
+use farmfe_toolkit::script::swc_try_with::resolve_module_mark;
 
 /// Cache key of resource is consist of:
 /// - modules id
@@ -57,11 +61,23 @@ pub fn try_get_resource_cache(
     .resource_cache
     .is_cache_changed(resource_pot.id.clone(), hash)
   {
-    let cached_resource_pot = context
+    let mut cached_resource_pot = context
       .cache_manager
       .resource_cache
       .get_cache(&resource_pot.id)
       .unwrap();
+
+    if let ResourcePotMetaData::Js(js_resource_pot_meta_data) = &mut cached_resource_pot.meta {
+      let merged_globals = Globals::new();
+      let (unresolved_mark, top_level_mark) =
+        resolve_module_mark(&mut js_resource_pot_meta_data.ast, false, &merged_globals);
+      context
+        .meta
+        .set_resource_pot_globals(&resource_pot.id, merged_globals);
+      js_resource_pot_meta_data.top_level_mark = top_level_mark.as_u32();
+      js_resource_pot_meta_data.unresolved_mark = unresolved_mark.as_u32();
+    }
+
     return Ok(Some(cached_resource_pot));
   } else {
     // println!(
