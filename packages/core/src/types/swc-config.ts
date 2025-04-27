@@ -243,13 +243,7 @@ export interface JsMinifyOptions {
   exclude?: string[];
 
   /**
-   *
-   * @default 'minify-module'
-   */
-  mode?: 'minify-module' | 'minify-resource-pot';
-
-  /**
    * @default true
    */
-  moduleDecls?: boolean;
+  mangleExports?: boolean;
 }

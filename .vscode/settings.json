@@ -2,6 +2,7 @@
   "editor.tabSize": 2,
   "editor.inlineSuggest.showToolbar": "always",
   "biome.enabled": true,
+  "editor.formatOnSave": true,
   "editor.defaultFormatter": "biomejs.biome",
   "[typescript]": {
     "editor.defaultFormatter": "biomejs.biome"

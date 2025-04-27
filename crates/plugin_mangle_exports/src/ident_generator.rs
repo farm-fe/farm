@@ -84,7 +84,7 @@ impl MinifiedIdentsGenerator {
    * generate minified ident in order:
    * a, b, c, ..., z, aa, ab, ac, ..., az, ba, bb, ..., bz, ca, cb, ..., cz, ..., za, zb, ..., zz
    */
-  pub fn next(&mut self) -> String {
+  fn next(&mut self) -> String {
     let mut minified_ident = String::new();
     let mut c_index = self.current_index / 26;
 
@@ -106,13 +106,13 @@ impl MinifiedIdentsGenerator {
     self.top_level_idents.insert(ident.to_string());
   }
 
-  pub fn extend_used_idents(&mut self, idents: HashSet<String>) {
-    self.top_level_idents.extend(idents);
-  }
+  // pub fn extend_used_idents(&mut self, idents: HashSet<String>) {
+  //   self.top_level_idents.extend(idents);
+  // }
 
-  pub fn used_idents(&self) -> &HashSet<String> {
-    &self.top_level_idents
-  }
+  // pub fn used_idents(&self) -> &HashSet<String> {
+  //   &self.top_level_idents
+  // }
 
   pub fn generate(&mut self) -> String {
     let mut minified_ident = self.next();

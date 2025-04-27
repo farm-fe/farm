@@ -83,6 +83,19 @@ pub struct ModuleExportIdent {
   pub export_type: ModuleExportIdentType,
 }
 
+#[cache_item]
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ModuleReExportIdentType {
+  /// ```js
+  /// export * from './module';
+  /// ```
+  FromExportAll,
+  /// ```js
+  /// export { foo as default } from './module';
+  /// ```
+  FromExportNamed { local: String },
+}
+
 /// Script specific meta data, for example, [swc_ecma_ast::Module]
 #[cache_item]
 pub struct ScriptModuleMetaData {
@@ -107,6 +120,11 @@ pub struct ScriptModuleMetaData {
   /// =>
   /// Map<String, SwcId> { bar -> m#1, default -> foo#1 where foo#1 is defined in './module' }
   pub export_ident_map: HashMap<String, ModuleExportIdent>,
+  /// reexport ident map, this field only store the map of export string, the actual ident is defined in export_ident_map, for example:
+  /// export { foo as default } from './module';
+  /// =>
+  /// Map<String, ModuleReExportIdentType> { default -> FromExportNamed { local: 'foo', exported: Some('default') } }
+  pub reexport_ident_map: HashMap<String, ModuleReExportIdentType>,
   pub ambiguous_export_ident_map: HashMap<String, Vec<ModuleExportIdent>>,
   pub custom: CustomMetaDataMap,
 }
@@ -128,6 +146,7 @@ impl Default for ScriptModuleMetaData {
       is_async: false,
       feature_flags: Default::default(),
       export_ident_map: Default::default(),
+      reexport_ident_map: Default::default(),
       ambiguous_export_ident_map: Default::default(),
       custom: Default::default(),
     }
@@ -163,6 +182,7 @@ impl Clone for ScriptModuleMetaData {
       is_async: self.is_async,
       feature_flags: self.feature_flags.clone(),
       export_ident_map: self.export_ident_map.clone(),
+      reexport_ident_map: self.reexport_ident_map.clone(),
       ambiguous_export_ident_map: self.ambiguous_export_ident_map.clone(),
       custom: CustomMetaDataMap::from(custom),
     }

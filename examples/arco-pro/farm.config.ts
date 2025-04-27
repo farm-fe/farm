@@ -13,7 +13,9 @@ export default defineConfig((env) => {
       presetEnv: false,
       concatenateModules: true,
       persistentCache: false,
-      // minify: false,
+      // minify: {
+      //   mangleExports: false,
+      // },
       output: {
         showFileSize: true,
       },
