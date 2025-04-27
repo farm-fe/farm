@@ -5,7 +5,8 @@ use farmfe_core::{
   module::{
     meta_data::script::{
       statement::{ExportSpecifierInfo, ImportSpecifierInfo, SwcId},
-      ModuleExportIdent, ModuleExportIdentType, EXPORT_DEFAULT, EXPORT_EXTERNAL_ALL,
+      ModuleExportIdent, ModuleExportIdentType, ModuleReExportIdentType, EXPORT_DEFAULT,
+      EXPORT_EXTERNAL_ALL,
     },
     module_graph::ModuleGraph,
     ModuleId,
@@ -61,6 +62,11 @@ pub fn expand_exports_of_module_graph(
         .into_iter()
         .map(|(k, v)| (k, v.into_iter().collect::<Vec<_>>()))
         .collect();
+    }
+
+    if let Some(reexport_ident_map) = expand_context.reexport_ident_map.remove(&module.id) {
+      let script_meta = module.meta.as_script_mut();
+      script_meta.reexport_ident_map = reexport_ident_map;
     }
   }
 }
@@ -171,6 +177,17 @@ fn expand_module_exports_dfs(
               } else {
                 local.sym.to_string()
               };
+
+              expand_context
+                .reexport_ident_map
+                .entry(module.id.clone())
+                .or_default()
+                .insert(
+                  export_str.clone(),
+                  ModuleReExportIdentType::FromExportNamed {
+                    local: local.sym.to_string(),
+                  },
+                );
 
               let source_module_id =
                 module_graph.get_dep_by_source(module_id, source, Some(ResolveKind::ExportFrom));
@@ -308,6 +325,15 @@ fn expand_module_exports_dfs(
         // skip default for export *
         if export_str == EXPORT_DEFAULT || export_str == EXPORT_NAMESPACE {
           continue;
+        }
+
+        let reexport_map = expand_context
+          .reexport_ident_map
+          .entry(module_id.clone())
+          .or_default();
+
+        if !reexport_map.contains_key(export_str.as_str()) {
+          reexport_map.insert(export_str.clone(), ModuleReExportIdentType::FromExportAll);
         }
 
         expand_context.insert_export_ident(
@@ -452,6 +478,7 @@ fn expand_unresolved_import_dfs(
 
 struct ExpandModuleExportsContext {
   export_ident_map: HashMap<ModuleId, HashMap<String, ModuleExportIdent>>,
+  reexport_ident_map: HashMap<ModuleId, HashMap<String, ModuleReExportIdentType>>,
   ambiguous_export_ident_map: HashMap<ModuleId, HashMap<String, HashSet<ModuleExportIdent>>>,
   visited: HashSet<ModuleId>,
 }
@@ -460,6 +487,7 @@ impl ExpandModuleExportsContext {
   pub fn new() -> Self {
     Self {
       export_ident_map: HashMap::default(),
+      reexport_ident_map: HashMap::default(),
       ambiguous_export_ident_map: HashMap::default(),
       visited: HashSet::default(),
     }

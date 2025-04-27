@@ -151,6 +151,7 @@ impl Plugin for FarmPluginScript {
           all_deeply_declared_idents: Default::default(),
           feature_flags: Default::default(),
           export_ident_map: Default::default(),
+          reexport_ident_map: Default::default(),
           ambiguous_export_ident_map: Default::default(),
           is_async: false,
         };
