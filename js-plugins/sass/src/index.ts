@@ -195,6 +195,12 @@ async function resolveDependency(
     if (existsSync(relPath) && statSync(relPath).isFile()) {
       return relPath;
     }
+
+    const cwd = process.cwd();
+    const projectPath = path.resolve(cwd, url);
+    if (existsSync(relPath) && statSync(relPath).isFile()) {
+      return projectPath;
+    }
   }
 
   const try_prefix_list = ['_'];
