@@ -6,6 +6,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.17](https://github.com/farm-fe/farm/compare/farmfe_compiler-v0.0.16...farmfe_compiler-v0.0.17) - 2025-05-07
+
+### Added
+
+- *(hmr)* support calling compiler.update to compile a full new module ([#2119](https://github.com/farm-fe/farm/pull/2119))
+
+### Fixed
+
+- cjs node export order ([#2149](https://github.com/farm-fe/farm/pull/2149))
+- assign reference treeshake ([#2141](https://github.com/farm-fe/farm/pull/2141))
+- *(hmr)* panic when call compiler.update for a full new module multi… ([#2120](https://github.com/farm-fe/farm/pull/2120))
+- #2103 and resource pot id hash conflicts ([#2107](https://github.com/farm-fe/farm/pull/2107))
+- persistent cache panic when using addFileWatchFile with query #2067 ([#2068](https://github.com/farm-fe/farm/pull/2068))
+
 ## [0.0.16](https://github.com/farm-fe/farm/compare/farmfe_compiler-v0.0.15...farmfe_compiler-v0.0.16) - 2025-01-09
 
 ### Fixed

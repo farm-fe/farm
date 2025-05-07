@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.18](https://github.com/farm-fe/farm/compare/farmfe_toolkit-v0.0.17...farmfe_toolkit-v0.0.18) - 2025-05-07
+
+### Fixed
+
+- #2103 and resource pot id hash conflicts ([#2107](https://github.com/farm-fe/farm/pull/2107))
+
 ## [0.0.17](https://github.com/farm-fe/farm/compare/farmfe_toolkit-v0.0.16...farmfe_toolkit-v0.0.17) - 2025-01-09
 
 ### Other
