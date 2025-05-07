@@ -25,7 +25,8 @@ jobs:
               cd ../create-farm &&
               npm run build -- --target x86_64-unknown-linux-gnu &&
               cd ../../rust-plugins/react && npm run build -- --target x86_64-unknown-linux-gnu --abi linux-x64-gnu &&
-              apt install -y protobuf-compiler &&
+              apt-get update &&
+              apt install -y protobuf-compiler --fix-missing &&
               cd ../sass && npm run build -- --target x86_64-unknown-linux-gnu --abi linux-x64-gnu
 
           - os: ubuntu-latest
