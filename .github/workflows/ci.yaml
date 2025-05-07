@@ -117,8 +117,8 @@ jobs:
         settings:
           - os: ubuntu-latest
             abi: linux-x64-gnu
-          - os: ubuntu-20.04
-            abi: linux-x64-gnu
+          # - os: ubuntu-20.04
+          #   abi: linux-x64-gnu
           - os: macos-13
             abi: darwin-x64
           - os: macos-latest

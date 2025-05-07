@@ -1,5 +1,11 @@
 # @farmfe/js-plugin-sass
 
+## 2.13.1
+
+### Patch Changes
+
+- 36fea667: fix: resolve the relative path of projects
+
 ## 2.13.0
 
 ### Patch Changes
