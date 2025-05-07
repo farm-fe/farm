@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.16](https://github.com/farm-fe/farm/compare/farmfe_plugin_runtime-v0.0.15...farmfe_plugin_runtime-v0.0.16) - 2025-05-07
+
+### Fixed
+
+- cjs node export order ([#2149](https://github.com/farm-fe/farm/pull/2149))
+
 ## [0.0.15](https://github.com/farm-fe/farm/compare/farmfe_plugin_runtime-v0.0.14...farmfe_plugin_runtime-v0.0.15) - 2025-01-09
 
 ### Other
