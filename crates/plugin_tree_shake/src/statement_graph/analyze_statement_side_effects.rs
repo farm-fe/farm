@@ -15,7 +15,7 @@ use farmfe_toolkit::{
   swc_ecma_visit::{Visit, VisitWith},
 };
 
-use super::StatementSideEffects;
+use super::{ReadTopLevelVar, StatementSideEffects, WriteTopLevelVar};
 
 /// Analyze the side effects of a statement. See [StatementSideEffects] for more details.
 /// If there are more side effects detection rules, add them here.
@@ -89,6 +89,19 @@ impl LeftIdentReference {
 impl From<LeftIdentReference> for HashSet<Id> {
   fn from(value: LeftIdentReference) -> Self {
     value.idents
+  }
+}
+
+impl From<LeftIdentReference> for HashSet<WriteTopLevelVar> {
+  fn from(value: LeftIdentReference) -> Self {
+    value
+      .idents
+      .into_iter()
+      .map(|id| WriteTopLevelVar {
+        ident: id,
+        fields: None,
+      })
+      .collect()
   }
 }
 
@@ -251,11 +264,17 @@ impl<'a> Visit for SideEffectsAnalyzer<'a> {
       farmfe_core::swc_ecma_ast::PropOrSpread::Spread(s) => s.visit_with(self),
       farmfe_core::swc_ecma_ast::PropOrSpread::Prop(prop) => match &**prop {
         farmfe_core::swc_ecma_ast::Prop::Shorthand(ident) => {
-          if self.in_top_level || ident.span.ctxt.outer() == self.top_level_mark {
+          if self.in_top_level
+            || ident.span.ctxt.outer() == self.top_level_mark
+            || ident.span.ctxt.outer() == self.unresolved_mark
+          {
             self
               .side_effects
               .merge_side_effects(StatementSideEffects::ReadTopLevelVar(HashSet::from([
-                ident.to_id(),
+                ReadTopLevelVar {
+                  ident: ident.to_id(),
+                  is_global_var: ident.span.ctxt.outer() == self.unresolved_mark,
+                },
               ])));
           }
         }
@@ -322,14 +341,20 @@ impl<'a> Visit for SideEffectsAnalyzer<'a> {
             if ident.span.ctxt().outer() == self.unresolved_mark {
               StatementSideEffects::WriteOrCallGlobalVar
             } else if self.in_top_level || ident.span.ctxt().outer() == self.top_level_mark {
-              StatementSideEffects::WriteTopLevelVar(HashSet::from([ident.to_id()]))
+              StatementSideEffects::WriteTopLevelVar(HashSet::from([ident.to_id().into()]))
             } else {
               StatementSideEffects::NoSideEffects
             }
           } else if self.in_call && ident.span.ctxt().outer() == self.unresolved_mark {
             StatementSideEffects::WriteOrCallGlobalVar
-          } else if self.in_top_level || ident.span.ctxt().outer() == self.top_level_mark {
-            StatementSideEffects::ReadTopLevelVar(HashSet::from([ident.to_id()]))
+          } else if self.in_top_level
+            || ident.span.ctxt().outer() == self.top_level_mark
+            || ident.span.ctxt.outer() == self.unresolved_mark
+          {
+            StatementSideEffects::ReadTopLevelVar(HashSet::from([ReadTopLevelVar {
+              ident: ident.to_id(),
+              is_global_var: ident.span.ctxt.outer() == self.unresolved_mark,
+            }]))
           } else {
             StatementSideEffects::NoSideEffects
           });
@@ -363,7 +388,8 @@ impl<'a> Visit for SideEffectsAnalyzer<'a> {
                   .side_effects
                   .merge_side_effects(StatementSideEffects::WriteTopLevelVar(HashSet::from([i
                     .id
-                    .to_id()])));
+                    .to_id()
+                    .into()])));
               } else if i.id.span.ctxt.outer() == self.unresolved_mark {
                 self
                   .side_effects
