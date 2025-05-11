@@ -1,5 +1,11 @@
 # @farmfe/core
 
+## 1.7.5
+
+### Patch Changes
+
+- 722a1d53: Fix tree shake issue when writing variables defined in external package
+
 ## 1.7.4
 
 ### Patch Changes

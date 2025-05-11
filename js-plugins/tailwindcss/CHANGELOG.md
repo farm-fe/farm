@@ -1,5 +1,12 @@
 # @farmfe/js-plugin-tailwindcss
 
+## 0.0.14
+
+### Patch Changes
+
+- Updated dependencies [722a1d53]
+  - @farmfe/core@1.7.5
+
 ## 0.0.13
 
 ### Patch Changes
