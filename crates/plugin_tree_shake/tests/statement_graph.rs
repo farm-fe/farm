@@ -350,16 +350,19 @@ export { a, b, c as d };"#;
       &SingleThreadedComments::default(),
     );
 
-    let traced_import_stmts = stmt_graph.trace_and_mark_used_statements(HashMap::from([
-      (5, HashSet::from([UsedStatementIdent::Default])),
-      (
-        4,
-        HashSet::from([UsedStatementIdent::SwcIdent((
-          "e".into(),
-          SyntaxContext::from_u32(2),
-        ))]),
-      ),
-    ]));
+    let traced_import_stmts = stmt_graph.trace_and_mark_used_statements(
+      HashMap::from([
+        (5, HashSet::from([UsedStatementIdent::Default])),
+        (
+          4,
+          HashSet::from([UsedStatementIdent::SwcIdent((
+            "e".into(),
+            SyntaxContext::from_u32(2),
+          ))]),
+        ),
+      ]),
+      None,
+    );
 
     assert_eq!(traced_import_stmts.len(), 1);
     assert_eq!(traced_import_stmts[0].stmt_id, 0);
@@ -435,13 +438,16 @@ export { a, b, c as d };"#;
       &SingleThreadedComments::default(),
     );
 
-    let traced_import_stmts = stmt_graph.trace_and_mark_used_statements(HashMap::from([(
-      6,
-      HashSet::from([UsedStatementIdent::SwcIdent((
-        "c".into(),
-        SyntaxContext::from_u32(2),
-      ))]),
-    )]));
+    let traced_import_stmts = stmt_graph.trace_and_mark_used_statements(
+      HashMap::from([(
+        6,
+        HashSet::from([UsedStatementIdent::SwcIdent((
+          "c".into(),
+          SyntaxContext::from_u32(2),
+        ))]),
+      )]),
+      None,
+    );
 
     assert_eq!(traced_import_stmts.len(), 1);
     assert_eq!(traced_import_stmts[0].stmt_id, 0);
@@ -497,7 +503,7 @@ fn trace_and_mark_used_statements_commonjs_exports() {
 
     let mut stmt_graph = StatementGraph::new(&ast, unresolved_mark, top_level_mark, &comments);
 
-    let traced_import_stmts = stmt_graph.trace_and_mark_used_statements(Default::default());
+    let traced_import_stmts = stmt_graph.trace_and_mark_used_statements(Default::default(), None);
 
     assert_eq!(traced_import_stmts.len(), 0);
 
@@ -542,13 +548,16 @@ export const {
       &SingleThreadedComments::default(),
     );
 
-    let traced_import_stmts = stmt_graph.trace_and_mark_used_statements(HashMap::from([(
-      1,
-      HashSet::from([UsedStatementIdent::SwcIdent((
-        "program".into(),
-        SyntaxContext::from_u32(2),
-      ))]),
-    )]));
+    let traced_import_stmts = stmt_graph.trace_and_mark_used_statements(
+      HashMap::from([(
+        1,
+        HashSet::from([UsedStatementIdent::SwcIdent((
+          "program".into(),
+          SyntaxContext::from_u32(2),
+        ))]),
+      )]),
+      None,
+    );
 
     assert_eq!(traced_import_stmts.len(), 1);
     assert_eq!(traced_import_stmts[0].stmt_id, 0);

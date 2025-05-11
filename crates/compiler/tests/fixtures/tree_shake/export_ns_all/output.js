@@ -65,26 +65,34 @@
     window['__farm_default_namespace__'].__farm_module_system__.setPlugins([]);
 });
 index_js_cjs();
-})());(function(_){var filename = ((function(){var _documentCurrentScript = typeof document !== "undefined" ? document.currentScript : null;return typeof document === "undefined" ? require("url").pathToFileURL(__filename).href : _documentCurrentScript && _documentCurrentScript.src || new URL("index_7104.js", document.baseURI).href})());for(var r in _){_[r].__farm_resource_pot__=filename;window['__farm_default_namespace__'].__farm_module_system__.register(r,_[r])}})({"b5d64806":function  (module, exports, farmRequire, farmDynamicRequire) {
+})());(function(_){var filename = ((function(){var _documentCurrentScript = typeof document !== "undefined" ? document.currentScript : null;return typeof document === "undefined" ? require("url").pathToFileURL(__filename).href : _documentCurrentScript && _documentCurrentScript.src || new URL("index_8208.js", document.baseURI).href})());for(var r in _){_[r].__farm_resource_pot__=filename;window['__farm_default_namespace__'].__farm_module_system__.register(r,_[r])}})({"8ed0341c":function  (module, exports, farmRequire, farmDynamicRequire) {
     module._m(exports);
-    var _f_b = module.w(farmRequire("f380ea31"));
-    var A = _f_b;
-    console.log(A.A);
-    const B = A['B'];
-    console.log(B);
-    console.log(A.default);
+    module.o(exports, "ns", function() {
+        return ns;
+    });
+    var ns = module.w(farmRequire("c8a5517e"));
 }
 ,
-"f380ea31":function  (module, exports, farmRequire, farmDynamicRequire) {
+"b5d64806":function  (module, exports, farmRequire, farmDynamicRequire) {
     module._m(exports);
-    module.o(exports, "A", function() {
-        return A;
+    var _f_ns = farmRequire("8ed0341c");
+    console.log(_f_ns.ns.default);
+}
+,
+"c8a5517e":function  (module, exports, farmRequire, farmDynamicRequire) {
+    module._m(exports);
+    module.o(exports, "a", function() {
+        return a;
     });
-    module.o(exports, "B", function() {
-        return B;
+    module.o(exports, "b", function() {
+        return b;
     });
-    var A = 10;
-    var B = 20;
-    exports.default = 'hello';
+    module.o(exports, "c", function() {
+        return c;
+    });
+    exports.default = 'default';
+    var a = 'a';
+    var b = 'b';
+    var c = 'c';
 }
 ,});window['__farm_default_namespace__'].__farm_module_system__.setInitialLoadedResources([]);window['__farm_default_namespace__'].__farm_module_system__.setDynamicModuleResourcesMap([],{  });var farmModuleSystem = window['__farm_default_namespace__'].__farm_module_system__;farmModuleSystem.bootstrap();var entry = farmModuleSystem.require("b5d64806");

@@ -27,6 +27,9 @@ mod common;
 fn tree_shake_test() {
   fixture!(
     "tests/fixtures/tree_shake/**/index.ts",
+    // "tests/fixtures/tree_shake/self-executed/write_imported_idents/**/index.ts",
+    // "tests/fixtures/tree_shake/self-executed/write_read_top_level_var/**/index.ts",
+    // "tests/fixtures/tree_shake/import_namespace/partial/**/index.ts",
     |file, crate_path| {
       let cwd = file.parent().unwrap();
       println!("testing tree shake: {cwd:?}");
