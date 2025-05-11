@@ -6,6 +6,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.16](https://github.com/farm-fe/farm/compare/farmfe_plugin_resolve-v0.0.15...farmfe_plugin_resolve-v0.0.16) - 2025-05-11
+
+### Added
+
+- resolver by resolve kind ([#2154](https://github.com/farm-fe/farm/pull/2154))
+
+### Fixed
+
+- *(plugin_resolve)* duplicated querystring on external ([#2057](https://github.com/farm-fe/farm/pull/2057))
+
 ## [0.0.15](https://github.com/farm-fe/farm/compare/farmfe_plugin_resolve-v0.0.14...farmfe_plugin_resolve-v0.0.15) - 2025-01-09
 
 ### Other
