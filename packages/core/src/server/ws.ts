@@ -57,7 +57,7 @@ export default class WsServer implements IWebSocketServer {
     this.createWebSocketServer();
   }
 
-  private generateHMROrigins(config: NormalizedServerConfig): string[] { {
+  private generateHMROrigins(config: NormalizedServerConfig): string[] {
     const { protocol, hostname, port } = config;
     const origins = [];
         
