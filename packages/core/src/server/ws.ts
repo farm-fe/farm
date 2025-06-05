@@ -45,6 +45,7 @@ export default class WsServer implements IWebSocketServer {
   public clientsMap = new WeakMap<WebSocketRawType, WebSocketClient>();
   public bufferedError: any = null;
   public logger: ILogger;
+  private hmrOrigins: string[];
   constructor(
     private httpServer: Server,
     private config: NormalizedServerConfig,
@@ -56,7 +57,7 @@ export default class WsServer implements IWebSocketServer {
     this.createWebSocketServer();
   }
 
-  private generateHMROrigins(config) {
+  private generateHMROrigins(config: NormalizedServerConfig): string[] { {
     const { protocol, hostname, port } = config;
     const origins = [];
         
