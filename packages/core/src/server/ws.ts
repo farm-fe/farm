@@ -60,7 +60,7 @@ export default class WsServer implements IWebSocketServer {
   private generateHMROrigins(config: NormalizedServerConfig): string[] {
     const { protocol, hostname, port } = config;
     const origins = [];
-        
+
     // Add localhost with configured port
     origins.push(`${protocol}://localhost:${port}`);
     origins.push(`${protocol}://127.0.0.1:${port}`);
@@ -68,13 +68,14 @@ export default class WsServer implements IWebSocketServer {
     // Add non-localhost origin
     if (hostname && hostname.name && 
         hostname.name !== 'localhost' && 
-        hostname.name !== '127.0.0.1') {
+        hostname.name !== '127.0.0.1'
+    ) {
       origins.push(`${protocol}://${hostname.name}:${port}`);
     }
-    
+
     return origins;
   }
-  
+
   private createWebSocketServer() {
     try {
       const WebSocketServer = process.versions.bun
@@ -98,7 +99,7 @@ export default class WsServer implements IWebSocketServer {
     if (this.isHMRRequest(request)) {
       this.handleHMRUpgrade(request, socket, head);
     } else {
-      // Close the connection so as to avoid unnecessary system resource utilisation
+      // Close the connection so as to avoid unnecessary system resource utilization
       socket.destroy();
     }
   }
