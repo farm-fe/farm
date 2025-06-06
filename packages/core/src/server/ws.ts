@@ -66,7 +66,8 @@ export default class WsServer implements IWebSocketServer {
     origins.push(`${protocol}://127.0.0.1:${port}`);
 
     // Add non-localhost origin
-    if (hostname && hostname.name && 
+    if (hostname && 
+        hostname.name && 
         hostname.name !== 'localhost' && 
         hostname.name !== '127.0.0.1'
     ) {
@@ -140,8 +141,8 @@ export default class WsServer implements IWebSocketServer {
   private isHMRRequest(request: IncomingMessage): boolean {
     return (
       request.url === this.config.hmr.path &&
-      request.headers['sec-websocket-protocol'] === HMR_HEADER
-      && this.hmrOrigins.includes(request.headers['origin'])
+      request.headers['sec-websocket-protocol'] === HMR_HEADER &&
+      this.hmrOrigins.includes(request.headers['origin'])
     );
   }
 
