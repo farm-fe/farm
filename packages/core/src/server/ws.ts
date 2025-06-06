@@ -66,7 +66,8 @@ export default class WsServer implements IWebSocketServer {
     origins.push(`${protocol}://127.0.0.1:${port}`);
 
     // Add non-localhost origin
-    if (hostname && 
+    if (
+        hostname && 
         hostname.name && 
         hostname.name !== 'localhost' && 
         hostname.name !== '127.0.0.1'
