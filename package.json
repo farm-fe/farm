@@ -1,10 +1,9 @@
 {
   "name": "farm-fe",
-  "version": "0.0.0",
   "description": "Farm is modern web building tool written in rust",
+  "packageManager": "pnpm@10.11.0",
   "engines": {
-    "node": ">=18",
-    "pnpm": ">=9"
+    "node": ">=18"
   },
   "scripts": {
     "preinstall": "npx only-allow pnpm",
@@ -58,10 +57,5 @@
     "{packages,js-plugins,docs,scripts}/**/*.{ts,json,yaml,yml}": [
       "npx biome check --no-errors-on-unmatched --files-ignore-unknown=true --write"
     ]
-  },
-  "pnpm": {
-    "overrides": {
-      "@farmfe/core": "workspace:*"
-    }
   }
 }
