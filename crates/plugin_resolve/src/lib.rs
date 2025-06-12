@@ -48,27 +48,24 @@ impl Plugin for FarmPluginResolve {
     hook_context: &PluginHookContext,
   ) -> Result<Option<PluginResolveHookResult>> {
     farm_profile_function!("plugin_resolve::resolve".to_string());
-
     let external_config = self
       .external_config
       .get_or_init(|| ExternalConfig::from(&*context.config));
-
     let source = &param.source;
 
-    let query = parse_query(source);
-    // split query from source
-    let splits: Vec<&str> = source.split('?').collect();
-    let source = splits[0];
+    let (source, query) = if let Some(pos) = source.find('?') {
+      (&source[..pos], parse_query(&source[pos + 1..]))
+    } else {
+      (source.as_str(), vec![])
+    };
 
     let basedir =
       if parse_package_source(source).is_some_and(|r| self.dedupe.contains(&r.package_name)) {
         Path::new(&self.root).to_path_buf()
       } else if let Some(importer) = &param.importer {
-        if let Some(p) = Path::new(&importer.resolved_path(&context.config.root)).parent() {
-          p.to_path_buf()
-        } else {
-          Path::new(&importer.resolved_path(&context.config.root)).to_path_buf()
-        }
+        let resolved_path = importer.resolved_path(&context.config.root);
+        let path = Path::new(&resolved_path);
+        path.parent().unwrap_or(path).to_path_buf()
       } else {
         Path::new(&self.root).to_path_buf()
       };
@@ -89,17 +86,18 @@ impl Plugin for FarmPluginResolve {
     }
 
     let dynamic_extensions =
-      if let Some(dynamic_extensions) = hook_context.meta.get(DYNAMIC_EXTENSION_PRIORITY) {
-        let exts = serde_json::from_str::<Vec<String>>(dynamic_extensions).unwrap_or_default();
+      hook_context
+        .meta
+        .get(DYNAMIC_EXTENSION_PRIORITY)
+        .and_then(|extensions| {
+          let exts = serde_json::from_str::<Vec<String>>(extensions).unwrap_or_default();
+          if !exts.is_empty() {
+            Some(exts)
+          } else {
+            None
+          }
+        });
 
-        if exts.len() > 0 {
-          Some(exts)
-        } else {
-          None
-        }
-      } else {
-        None
-      };
     let resolve_options = ResolveOptions { dynamic_extensions };
 
     let resolver = &self.resolver;
@@ -112,15 +110,17 @@ impl Plugin for FarmPluginResolve {
     );
 
     // remove the .js if the result is not found to support using native esm with typescript
-    let mut resolve_result = if result.is_none() && source.ends_with(".js") {
-      farm_profile_scope!("plugin_resolve::resolve::remove_dot_js".to_string());
-      let source = source.replace(".js", "");
+    let mut resolve_result = match result {
+      Some(result) => Some(PluginResolveHookResult { query, ..result }),
+      None if source.ends_with(".js") => {
+        farm_profile_scope!("plugin_resolve::resolve::remove_dot_js".to_string());
+        let source = source.replace(".js", "");
 
-      resolver
-        .resolve(&source, basedir, &param.kind, &resolve_options, context)
-        .map(|result| PluginResolveHookResult { query, ..result })
-    } else {
-      result.map(|result| PluginResolveHookResult { query, ..result })
+        resolver
+          .resolve(&source, basedir, &param.kind, &resolve_options, context)
+          .map(|result| PluginResolveHookResult { query, ..result })
+      }
+      None => None,
     };
 
     if resolve_result.is_none() && context.config.resolve.auto_external_failed_resolve {
