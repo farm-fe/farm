@@ -31,24 +31,35 @@ export function htmlFallbackMiddleware(
       const html = app.compiler.resource(pathname);
       if (html) {
         send(req, res, html, pathname, { headers });
-        return next();
+        return;
       }
     } else if (pathname === '') {
       const html = app.compiler.resource('index.html');
       if (html) {
         send(req, res, html, pathname, { headers });
-        return next();
+        return;
       }
+      res.statusCode = 200;
+      res.setHeader('Content-Type', 'text/html');
+      res.end('');
+      return;
     } else {
       const html = app.compiler.resource(pathname + '.html');
       if (html) {
         send(req, res, html, pathname, { headers });
-        return next();
+        return;
       }
     }
     if (app.serverOptions.appType === 'spa') {
       const html = app.compiler.resource('index.html');
-      send(req, res, html, pathname, { headers });
+      if (html) {
+        send(req, res, html, pathname, { headers });
+      } else {
+        res.statusCode = 200;
+        res.setHeader('Content-Type', 'text/html');
+        res.end('');
+      }
+      return;
     }
 
     next();
