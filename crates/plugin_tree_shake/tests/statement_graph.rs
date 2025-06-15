@@ -1,6 +1,5 @@
 use std::cmp::Ordering;
 
-use farmfe_core::module::meta_data::script::statement::Statement;
 use farmfe_core::module::meta_data::script::ScriptModuleMetaData;
 use farmfe_core::module::{Module, ModuleMetaData};
 use farmfe_core::swc_common::{Globals, SyntaxContext, GLOBALS};
@@ -13,27 +12,14 @@ use farmfe_plugin_tree_shake::{
   module::UsedExportsIdent,
   statement_graph::{StatementGraph, UsedStatementIdent},
 };
-use farmfe_toolkit::script::analyze_statement::{analyze_statement_info, AnalyzedStatementInfo};
+use farmfe_toolkit::script::analyze_statement::analyze_statements;
 
 use crate::common::print_id;
 
 fn create_test_statement_graph(code: &str) -> StatementGraph {
   let (ast, comment, unresolved_mark, top_level_mark) = parse_module_with_comments(code);
   let mut module = Module::new("test".into());
-  let statements = ast
-    .body
-    .iter()
-    .enumerate()
-    .map(|(i, item)| {
-      let AnalyzedStatementInfo {
-        export_info,
-        import_info,
-        defined_idents,
-        top_level_await,
-      } = analyze_statement_info(&i, item);
-      Statement::new(i, export_info, import_info, defined_idents, top_level_await)
-    })
-    .collect::<Vec<_>>();
+  let statements = analyze_statements(&ast);
 
   module.meta = Box::new(ModuleMetaData::Script(Box::new(ScriptModuleMetaData {
     statements,

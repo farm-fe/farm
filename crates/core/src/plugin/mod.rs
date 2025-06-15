@@ -157,6 +157,17 @@ pub trait Plugin: Any + Send + Sync {
     Ok(None)
   }
 
+  /// Freeze the module graph after the module graph is optimized.
+  /// You can modify the module graph here for the last time.
+  /// After this hook, meta data of the modules in the module graph should not be updated anymore.
+  fn freeze_module_graph_meta(
+    &self,
+    _module_graph: &mut ModuleGraph,
+    _context: &Arc<CompilationContext>,
+  ) -> Result<Option<()>> {
+    Ok(None)
+  }
+
   /// Analyze module group based on module graph
   fn analyze_module_graph(
     &self,

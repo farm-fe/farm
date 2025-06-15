@@ -42,7 +42,10 @@ impl Plugin for FarmPluginMinify {
       return Ok(None);
     }
 
-    if matches!(resource_pot.resource_pot_type, ResourcePotType::Js) {
+    if matches!(
+      resource_pot.resource_pot_type,
+      ResourcePotType::Js | ResourcePotType::DynamicEntryJs
+    ) {
       minify_js(resource_pot, &self.minify_options, context)?;
     } else if matches!(resource_pot.resource_pot_type, ResourcePotType::Css) {
       minify_css(resource_pot, context)?;

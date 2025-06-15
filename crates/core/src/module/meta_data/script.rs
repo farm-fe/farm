@@ -91,7 +91,7 @@ pub enum ModuleReExportIdentType {
   /// ```
   FromExportAll,
   /// ```js
-  /// export { foo as default } from './module';
+  /// export { foo as default } from './module'; // foo is local ident
   /// ```
   FromExportNamed { local: String },
 }
@@ -102,11 +102,14 @@ pub struct ScriptModuleMetaData {
   pub ast: SwcModule,
   pub top_level_mark: u32,
   pub unresolved_mark: u32,
-  pub module_system: ModuleSystem,
   /// true if this module calls `import.meta.hot.accept()` or `import.meta.hot.accept(mod => {})`
   pub hmr_self_accepted: bool,
   pub hmr_accepted_deps: HashSet<ModuleId>,
   pub comments: CommentsMetaData,
+
+  /// -- Start
+  /// Generate in finalize_module hook, should be accessed after(not in) finalize_module hook
+  pub module_system: ModuleSystem,
   pub statements: Vec<Statement>,
   pub top_level_idents: HashSet<SwcId>,
   pub unresolved_idents: HashSet<SwcId>,
@@ -114,17 +117,30 @@ pub struct ScriptModuleMetaData {
   pub all_deeply_declared_idents: HashSet<Atom>,
   pub is_async: bool,
   pub feature_flags: HashSet<FeatureFlag>,
-  /// real export ident map, for example:
+  /// -- End
+
+  /// Note: This field can be only accessed after(or in) optimize_module_graph hook
+  /// Real export ident map, for example:
   /// export { m as bar }
   /// export { foo as default } from './module';
   /// =>
   /// Map<String, SwcId> { bar -> m#1, default -> foo#1 where foo#1 is defined in './module' }
   pub export_ident_map: HashMap<String, ModuleExportIdent>,
+  /// Note: This field can be only accessed after(or in) optimize_module_graph hook
   /// reexport ident map, this field only store the map of export string, the actual ident is defined in export_ident_map, for example:
   /// export { foo as default } from './module';
   /// =>
   /// Map<String, ModuleReExportIdentType> { default -> FromExportNamed { local: 'foo', exported: Some('default') } }
   pub reexport_ident_map: HashMap<String, ModuleReExportIdentType>,
+  /// Note: This field can be only accessed after(or in) optimize_module_graph hook
+  /// ambiguous export ident map, for example:
+  /// ```js
+  /// // dep.js
+  /// export * from 'module'; // where 'module' is a external module
+  /// export * from 'fs';
+  /// // index.js
+  /// import { foo } from './dep'; // then foo is an ambiguous ident, because we don't where foo is defined
+  /// ```
   pub ambiguous_export_ident_map: HashMap<String, Vec<ModuleExportIdent>>,
   pub custom: CustomMetaDataMap,
 }
@@ -135,7 +151,7 @@ impl Default for ScriptModuleMetaData {
       ast: SwcModule::default(),
       top_level_mark: 0,
       unresolved_mark: 0,
-      module_system: ModuleSystem::EsModule,
+      module_system: ModuleSystem::UnInitial,
       hmr_self_accepted: false,
       hmr_accepted_deps: Default::default(),
       comments: Default::default(),

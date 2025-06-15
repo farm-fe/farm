@@ -41,12 +41,6 @@ interface LoggerOptions {
   timeUnit?: 's' | 'ms';
 }
 
-const LOGGER_METHOD = {
-  info: 'log',
-  warn: 'warn',
-  error: 'error'
-} as const;
-
 const warnOnceMessages = new Set();
 const infoOnceMessages = new Set();
 const errorOnceMessages = new Set();
@@ -195,6 +189,10 @@ export class Logger implements ILogger {
     }
 
     this.logMessage('error', error, colors.red, clearScreen);
+
+    if (errorOptions?.exit) {
+      process.exit(1);
+    }
   }
 
   infoOnce(message: string, clearScreen = false): void {

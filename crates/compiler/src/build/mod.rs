@@ -132,7 +132,6 @@ impl Compiler {
   pub(crate) fn build(&self) -> Result<()> {
     self.context.plugin_driver.build_start(&self.context)?;
 
-    // TODO: support context.add_dynamic_input for plugins to call Compiler::build_module_graph_threaded through thread channel
     let (err_sender, err_receiver) = Self::create_thread_channel();
     for (order, (name, source)) in self.context.config.input.iter().enumerate() {
       let params = BuildModuleGraphThreadedParams {

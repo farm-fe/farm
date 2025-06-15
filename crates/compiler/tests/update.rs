@@ -27,7 +27,7 @@ fn create_compiler_internal(
     Config {
       input,
       root: cwd.to_string_lossy().to_string(),
-      runtime: generate_runtime(crate_path),
+      runtime: generate_runtime(crate_path, false),
       output: Box::new(farmfe_core::config::OutputConfig {
         filename: "[resourceName].[ext]".to_string(),
         target_env,

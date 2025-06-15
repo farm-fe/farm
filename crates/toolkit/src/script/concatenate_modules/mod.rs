@@ -8,7 +8,7 @@ use farmfe_core::{
       CommentsMetaData, ModuleExportIdent, EXPORT_EXTERNAL_ALL, FARM_RUNTIME_MODULE_HELPER_ID,
     },
     module_graph::ModuleGraph,
-    ModuleId,
+    ModuleId, ModuleSystem,
   },
   parking_lot::Mutex,
   plugin::ResolveKind,
@@ -29,6 +29,8 @@ use utils::{
   create_import_farm_define_export_helper_stmt, create_var_namespace_item,
   generate_export_decl_item,
 };
+
+use crate::script::create_export_namespace_ident;
 
 use super::{
   merge_swc_globals::{merge_comments, merge_sourcemap},
@@ -181,10 +183,10 @@ fn strip_modules_asts(
       return Err("Only script modules are supported when concatenating modules");
     }
 
-    // // error if it is not ESM
-    // if module.meta.as_script().module_system != ModuleSystem::EsModule {
-    //   return Err("Only ESM modules are supported when concatenating modules");
-    // }
+    // error if it is not ESM
+    if module.meta.as_script().module_system != ModuleSystem::EsModule {
+      return Err("Only ESM modules are supported when concatenating modules");
+    }
 
     if module_graph.circle_record.is_in_circle(module_id) {
       cyclic_idents
@@ -266,9 +268,18 @@ fn strip_modules_asts(
       // }
       // ```
       // if module is used by export * as or import * as or import('...')
-      if dependents_in_modules_ids && export_ident_map.contains_key(EXPORT_NAMESPACE)
-        || should_add_external_all_helper
-      {
+      let should_add_export_namespace_item = if dependents_in_modules_ids {
+        if let Some(module_export_ident) = export_ident_map.get(EXPORT_NAMESPACE) {
+          // the ident should equal to the default ident, otherwise, it means the namespace ident is existed and should not be added
+          module_export_ident.ident == create_export_namespace_ident(&module_id).to_id().into()
+            && module_export_ident.module_id == module_id
+        } else {
+          false
+        }
+      } else {
+        false
+      };
+      if should_add_export_namespace_item || should_add_external_all_helper {
         result.ast.body.push(create_var_namespace_item(
           &module_id,
           export_ident_map,

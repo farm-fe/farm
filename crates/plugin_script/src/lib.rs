@@ -139,8 +139,8 @@ impl Plugin for FarmPluginScript {
           ast: swc_module,
           top_level_mark: top_level_mark.as_u32(),
           unresolved_mark: unresolved_mark.as_u32(),
-          // set module_system to unknown, it will be detected in `finalize_module`
-          module_system: ModuleSystem::Custom(String::from("unknown")),
+          // set module_system to UnInitial, it will be detected in `finalize_module`
+          module_system: ModuleSystem::UnInitial,
           hmr_self_accepted: false,
           hmr_accepted_deps: Default::default(),
           comments: CommentsMetaData::from(comments),
@@ -272,10 +272,6 @@ impl Plugin for FarmPluginScript {
     if !param.module.module_type.is_script() {
       return Ok(None);
     }
-    // all jsx, js, ts, tsx modules should be transformed to js module for now
-    param.module.module_type = ModuleType::Js;
-    // set param.module.meta.module_system
-    set_module_system_for_module_meta(param, context);
 
     // TODO: optimize code here
     let target_env = context.config.output.target_env.clone();
@@ -374,6 +370,7 @@ impl Plugin for FarmPluginScript {
         context,
       )?;
 
+      // TODO move this function to farmfe_toolkit
       let create_resource = |content: String, ty: ResourceType| Resource {
         name: resource_pot.name.to_string(),
         name_hash: resource_pot.modules_name_hash.to_string(),
@@ -410,6 +407,7 @@ impl FarmPluginScript {
   }
 }
 
+/// TODO move this function to farmfe_toolkit
 pub fn generate_code_and_sourcemap(
   resource_pot: &ResourcePot,
   module_graph: &ModuleGraph,

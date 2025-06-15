@@ -1,8 +1,6 @@
 use farmfe_core::{
   module::{
-    meta_data::script::statement::{Statement, SwcId},
-    module_graph::ModuleGraph,
-    ModuleId, ModuleSystem,
+    meta_data::script::statement::SwcId, module_graph::ModuleGraph, ModuleId, ModuleSystem,
   },
   plugin::ResolveKind,
   swc_ecma_ast::{
@@ -11,10 +9,7 @@ use farmfe_core::{
 };
 use farmfe_core::{HashMap, HashSet};
 use farmfe_toolkit::{
-  script::{
-    analyze_statement::{analyze_statement_info, AnalyzedStatementInfo},
-    idents_collector::DefinedIdentsCollector,
-  },
+  script::{analyze_statement::analyze_statements, idents_collector::DefinedIdentsCollector},
   swc_ecma_visit::{VisitMut, VisitMutWith, VisitWith},
 };
 
@@ -89,25 +84,7 @@ pub fn remove_useless_stmts(
   }
 
   // update statements in module_graph
-  let mut statements = vec![];
-
-  for (i, item) in swc_module.body.iter().enumerate() {
-    let AnalyzedStatementInfo {
-      export_info,
-      import_info,
-      defined_idents,
-      top_level_await,
-    } = analyze_statement_info(&i, item);
-    statements.push(Statement::new(
-      i,
-      export_info,
-      import_info,
-      defined_idents,
-      top_level_await,
-    ));
-  }
-
-  meta.statements = statements;
+  meta.statements = analyze_statements(&swc_module);
 
   modules_to_remove
 }

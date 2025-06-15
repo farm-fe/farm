@@ -11,6 +11,7 @@ use crate::{
   statement_graph::traced_used_import::TracedUsedImportStatement,
 };
 
+pub mod remove_export_idents;
 pub mod remove_useless_stmts;
 
 pub fn tree_shake_modules(

@@ -130,53 +130,6 @@ impl Default for Config {
   }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Eq, PartialEq, Hash, Default)]
-pub enum TargetEnv {
-  #[serde(rename = "browser")]
-  #[default]
-  Browser,
-  #[serde(rename = "node")]
-  Node,
-  #[serde(rename = "library")]
-  Library,
-  #[serde(untagged)]
-  Custom(String),
-}
-
-impl TargetEnv {
-  pub fn is_browser(&self) -> bool {
-    matches!(self, TargetEnv::Browser)
-  }
-
-  pub fn is_node(&self) -> bool {
-    matches!(self, TargetEnv::Node)
-  }
-
-  pub fn is_library(&self) -> bool {
-    matches!(self, TargetEnv::Library)
-  }
-}
-
-impl ToString for TargetEnv {
-  fn to_string(&self) -> String {
-    match self {
-      TargetEnv::Browser => "browser".to_string(),
-      TargetEnv::Node => "node".to_string(),
-      TargetEnv::Library => "library".to_string(),
-      TargetEnv::Custom(s) => s.clone(),
-    }
-  }
-}
-
-#[derive(Debug, Copy, Clone, Serialize, Deserialize, Eq, PartialEq, Hash, Default)]
-pub enum ModuleFormat {
-  #[serde(rename = "esm")]
-  #[default]
-  EsModule,
-  #[serde(rename = "cjs")]
-  CommonJs,
-}
-
 #[derive(Clone, Copy, Debug, Serialize, Deserialize)]
 pub enum Mode {
   #[serde(rename = "development")]
