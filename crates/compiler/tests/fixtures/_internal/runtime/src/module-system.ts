@@ -1,1 +1,1 @@
-export const moduleSystem = {};
+export const __farm_internal_module_system__ = {};

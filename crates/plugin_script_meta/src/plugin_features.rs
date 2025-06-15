@@ -1,5 +1,8 @@
-use farmfe_core::{config::Config, plugin::Plugin};
+use std::i32;
 
+use farmfe_core::{config::Config, module::ModuleType, plugin::Plugin};
+
+use farmfe_toolkit::script::set_module_system_for_module_meta;
 use features_analyzer::FeaturesAnalyzer;
 use statements::analyze_statements;
 
@@ -21,6 +24,11 @@ impl Plugin for FarmPluginScriptMetaFeatures {
     "FarmPluginScriptMetaFeatures"
   }
 
+  /// This plugin should be executed after all other plugins
+  fn priority(&self) -> i32 {
+    i32::MIN
+  }
+
   /// ast should be processed in process_module hook, ast modification after process_module hook
   /// should update meta data manually or executed before internal plugins
   fn finalize_module(
@@ -31,6 +39,10 @@ impl Plugin for FarmPluginScriptMetaFeatures {
     if !param.module.module_type.is_script() {
       return Ok(None);
     }
+    // all jsx, js, ts, tsx modules should be transformed to js module for now
+    param.module.module_type = ModuleType::Js;
+    // set param.module.meta.module_system
+    set_module_system_for_module_meta(param, context);
 
     let meta = param.module.meta.as_script_mut();
 
@@ -48,6 +60,7 @@ impl Plugin for FarmPluginScriptMetaFeatures {
     // analyze features used
     let features_analyzer = FeaturesAnalyzer::new(&param.deps, &meta.statements);
     meta.feature_flags = features_analyzer.analyze();
+
     Ok(None)
   }
 }

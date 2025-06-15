@@ -6,7 +6,8 @@ use farmfe_core::HashMap;
 
 mod common;
 use crate::common::{
-  assert_compiler_result_with_config, create_compiler_with_args, AssertCompilerResultConfig,
+  assert_compiler_result_with_config, create_compiler_with_args, generate_runtime,
+  AssertCompilerResultConfig,
 };
 
 #[allow(dead_code)]
@@ -17,8 +18,8 @@ fn test(file_path_buf: PathBuf, crate_path_buf: PathBuf) {
   println!("testing test case: {cwd:?}");
 
   let entry_name = "index".to_string();
-
   let files = get_dir_config_files(cwd);
+  let is_cjs = cwd.to_string_lossy().contains("cjs/");
 
   for (name, config_entry) in files {
     let compiler = create_compiler_with_args(
@@ -31,7 +32,13 @@ fn test(file_path_buf: PathBuf, crate_path_buf: PathBuf) {
           file_path_buf.to_string_lossy().to_string().clone(),
         )]);
         config.minify = Box::new(BoolOrObj::Bool(false));
-        config.tree_shaking = Box::new(BoolOrObj::Bool(false));
+
+        if is_cjs {
+          config.tree_shaking = Box::new(BoolOrObj::Bool(true));
+        } else {
+          config.tree_shaking = Box::new(BoolOrObj::Bool(false));
+        }
+
         config.external = vec![
           ConfigRegex::new("(^node:.*)"),
           ConfigRegex::new("^fs$"),
@@ -46,6 +53,10 @@ fn test(file_path_buf: PathBuf, crate_path_buf: PathBuf) {
             name: "index".to_string(),
             test: vec![ConfigRegex::new(".+")],
           });
+
+        if is_cjs {
+          config.runtime = generate_runtime(crate_path_buf.clone(), true);
+        }
 
         config = try_merge_config_file(config, config_entry);
 
@@ -72,10 +83,8 @@ fn library_test() {
   use farmfe_testing_helpers::fixture;
 
   fixture!("tests/fixtures/library/**/index.ts", test);
-  // fixture!(
-  //   "tests/fixtures/library/export/exportNamed1/**/index.ts",
-  //   test
-  // );
+  // fixture!("tests/fixtures/library/cjs/basic/**/index.ts", test);
+  // fixture!("tests/fixtures/library/cjs/export/**/index.ts", test);
 }
 
 // farmfe_testing::testing! {

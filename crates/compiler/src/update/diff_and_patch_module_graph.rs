@@ -12,23 +12,14 @@ use farmfe_core::{
   HashMap, HashSet,
 };
 
-/// the diff result of a module's dependencies
-#[derive(Debug, PartialEq, Eq, Clone, Serialize)]
-#[serde(rename_all = "camelCase", crate = "farmfe_core::serde")]
-pub struct ModuleDepsDiffResult {
-  /// added dependencies
-  pub added: Vec<(ModuleId, ModuleGraphEdge)>,
-  /// removed dependencies
-  pub removed: Vec<(ModuleId, ModuleGraphEdge)>,
-}
+pub use farmfe_core::module::module_graph::ModuleDepsDiffResult;
 
-pub type ModuleDepsDiffResultMap = Vec<(ModuleId, ModuleDepsDiffResult)>;
 /// the diff result of a module, this records all related changes of the module graph
 /// for example, deeply added or removed dependencies also be recorded here
 #[derive(Debug, Default, Clone, Serialize)]
 #[serde(rename_all = "camelCase", crate = "farmfe_core::serde")]
 pub struct DiffResult {
-  pub deps_changes: ModuleDepsDiffResultMap,
+  pub deps_changes: Vec<(ModuleId, ModuleDepsDiffResult)>,
   pub added_modules: HashSet<ModuleId>,
   pub removed_modules: HashSet<ModuleId>,
 }
@@ -276,7 +267,7 @@ fn diff_module_deps(
   module_graph: &ModuleGraph,
   update_module_graph: &ModuleGraph,
 ) -> (
-  ModuleDepsDiffResultMap,
+  Vec<(ModuleId, ModuleDepsDiffResult)>,
   HashSet<ModuleId>,
   HashSet<ModuleId>,
 ) {

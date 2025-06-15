@@ -5,8 +5,8 @@ use farmfe_core::{
   module::{
     meta_data::script::{
       statement::{ExportSpecifierInfo, ImportSpecifierInfo, SwcId},
-      ModuleExportIdent, ModuleExportIdentType, ModuleReExportIdentType, EXPORT_DEFAULT,
-      EXPORT_EXTERNAL_ALL,
+      ModuleExportIdent, ModuleExportIdentType, ModuleReExportIdentType, ScriptModuleMetaData,
+      EXPORT_DEFAULT, EXPORT_EXTERNAL_ALL,
     },
     module_graph::ModuleGraph,
     ModuleId,
@@ -71,6 +71,71 @@ pub fn expand_exports_of_module_graph(
   }
 }
 
+pub(crate) fn get_basic_module_export_ident(
+  module_id: &ModuleId,
+  module_script_meta: &ScriptModuleMetaData,
+  contains_export_from: bool,
+) -> Vec<(String, ModuleExportIdent)> {
+  let mut module_export_idents = vec![];
+
+  for statement in &module_script_meta.statements {
+    if let Some(export_info) = &statement.export_info {
+      for specifier in &export_info.specifiers {
+        match specifier {
+          // export default
+          ExportSpecifierInfo::Default => {
+            // if defined idents is empty, it's export default expression, a new export default ident will be added
+            if statement.defined_idents.is_empty() {
+              module_export_idents.push((
+                EXPORT_DEFAULT.to_string(),
+                ModuleExportIdent {
+                  module_id: module_id.clone(),
+                  ident: create_export_default_ident(module_id).to_id().into(),
+                  export_type: ModuleExportIdentType::Declaration,
+                },
+              ));
+            } else {
+              // there will only be one defined ident in export default statement
+              for defined_ident in &statement.defined_idents {
+                module_export_idents.push((
+                  EXPORT_DEFAULT.to_string(),
+                  ModuleExportIdent {
+                    module_id: module_id.clone(),
+                    ident: defined_ident.clone(),
+                    export_type: ModuleExportIdentType::Declaration,
+                  },
+                ));
+              }
+            }
+          }
+          // export { foo, bar as baz }
+          ExportSpecifierInfo::Named { local, exported } => {
+            let export_str = if let Some(exported) = exported {
+              exported.sym.to_string()
+            } else {
+              local.sym.to_string()
+            };
+
+            if contains_export_from || export_info.source.is_none() {
+              module_export_idents.push((
+                export_str,
+                ModuleExportIdent {
+                  module_id: module_id.clone(),
+                  ident: local.clone(),
+                  export_type: ModuleExportIdentType::Declaration,
+                },
+              ));
+            }
+          }
+          _ => {}
+        }
+      }
+    }
+  }
+
+  module_export_idents
+}
+
 fn expand_module_exports_dfs(
   module_id: &ModuleId,
   module_graph: &ModuleGraph,
@@ -86,57 +151,17 @@ fn expand_module_exports_dfs(
 
   let module_script_meta = module.meta.as_script();
 
-  // find export by esm import/export in current module
-  for statement in &module_script_meta.statements {
-    if let Some(export_info) = &statement.export_info {
-      for specifier in &export_info.specifiers {
-        match specifier {
-          // export default
-          ExportSpecifierInfo::Default => {
-            // if defined idents is empty, it's export default expression, a new export default ident will be added
-            if statement.defined_idents.is_empty() {
-              expand_context.insert_export_ident(
-                module_id,
-                EXPORT_DEFAULT.to_string(),
-                module_id.clone(),
-                create_export_default_ident(module_id).to_id().into(),
-                ModuleExportIdentType::Declaration,
-              );
-            } else {
-              // there will only be one defined ident in export default statement
-              for defined_ident in &statement.defined_idents {
-                expand_context.insert_export_ident(
-                  module_id,
-                  EXPORT_DEFAULT.to_string(),
-                  module_id.clone(),
-                  defined_ident.clone(),
-                  ModuleExportIdentType::Declaration,
-                );
-              }
-            }
-          }
-          // export { foo, bar as baz }
-          ExportSpecifierInfo::Named { local, exported } => {
-            let export_str = if let Some(exported) = exported {
-              exported.sym.to_string()
-            } else {
-              local.sym.to_string()
-            };
-
-            if export_info.source.is_none() {
-              expand_context.insert_export_ident(
-                module_id,
-                export_str,
-                module_id.clone(),
-                local.clone(),
-                ModuleExportIdentType::Declaration,
-              );
-            }
-          }
-          _ => {}
-        }
-      }
-    }
+  // find basic export in current module
+  for (export_str, module_export_ident) in
+    get_basic_module_export_ident(module_id, module_script_meta, false)
+  {
+    expand_context.insert_export_ident(
+      module_id,
+      export_str,
+      module_export_ident.module_id,
+      module_export_ident.ident,
+      module_export_ident.export_type,
+    );
   }
 
   let mut export_all_stmts = vec![];
@@ -410,7 +435,14 @@ fn expand_unresolved_import_dfs(
 
   let source_module = module_graph.module(&source_module_id).unwrap();
 
-  if source_module.external || !source_module.module_type.is_script() {
+  if source_module.external
+    || !source_module.module_type.is_script()
+    || source_module
+      .meta
+      .as_script()
+      .module_system
+      .contains_commonjs()
+  {
     expand_context.insert_export_ident(
       source_module_id,
       imported_str.to_string(),
@@ -447,6 +479,8 @@ fn expand_unresolved_import_dfs(
             visited,
           );
 
+          let mut found_ambiguous_ident = false;
+
           if let Some(export_ident) =
             expand_context.get_export_ident(&new_source_module_id, imported_str)
           {
@@ -459,15 +493,26 @@ fn expand_unresolved_import_dfs(
                 export_type: export_ident.export_type,
               },
             );
-          } else {
-            expand_context.insert_ambiguous_export_ident(
-              source_module_id,
-              imported_str.to_string(),
-              ModuleExportIdent {
-                module_id: source_module_id.clone(),
-                ident: ident.clone(),
-                export_type: ModuleExportIdentType::Unresolved,
-              },
+            found_ambiguous_ident = true;
+          }
+
+          if let Some(ambiguous_idents) =
+            expand_context.get_ambiguous_export_idents(&new_source_module_id, imported_str)
+          {
+            for ambiguous_ident in ambiguous_idents {
+              expand_context.insert_ambiguous_export_ident(
+                &source_module_id,
+                imported_str.to_string(),
+                ambiguous_ident,
+              );
+            }
+            found_ambiguous_ident = true;
+          }
+
+          if !found_ambiguous_ident {
+            panic!(
+              "can not resolve ambiguous export ident {:?} from {:?} {:?}",
+              ident, source_module_id, imported_str
             )
           }
         }
@@ -594,5 +639,16 @@ impl ExpandModuleExportsContext {
       .export_ident_map
       .get(module_id)
       .and_then(|export_ident_map| export_ident_map.get(export_str).cloned())
+  }
+
+  pub fn get_ambiguous_export_idents(
+    &self,
+    module_id: &ModuleId,
+    export_str: &str,
+  ) -> Option<HashSet<ModuleExportIdent>> {
+    self
+      .ambiguous_export_ident_map
+      .get(module_id)
+      .and_then(|ambiguous_export_ident_map| ambiguous_export_ident_map.get(export_str).cloned())
   }
 }

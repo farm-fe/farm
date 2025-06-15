@@ -2,7 +2,7 @@ use farmfe_core::{
   config::Config,
   module::{
     meta_data::script::{
-      statement::{ExportSpecifierInfo, ImportSpecifierInfo, Statement},
+      statement::{ExportSpecifierInfo, ImportSpecifierInfo},
       ModuleExportIdent, ModuleExportIdentType, EXPORT_DEFAULT, EXPORT_EXTERNAL_ALL,
     },
     ModuleId, ModuleSystem,
@@ -18,7 +18,7 @@ use farmfe_core::{
   HashMap, HashSet,
 };
 use farmfe_toolkit::script::{
-  analyze_statement::analyze_statement_info, concatenate_modules::EXPORT_NAMESPACE,
+  analyze_statement::analyze_statements, concatenate_modules::EXPORT_NAMESPACE,
 };
 use utils::{get_reexport_named_local, is_reexport_all};
 
@@ -328,6 +328,21 @@ impl FarmPluginMangleExports {
     full_imports_to_rename: &HashMap<ModuleId, HashMap<String, String>>,
     module_graph: &mut farmfe_core::module::module_graph::ModuleGraph,
   ) {
+    macro_rules! get_mangled_ident_map {
+      ($ident_map:expr, $mangled_ident_map:expr) => {{
+        let mut export_ident_map = HashMap::default();
+
+        for (export, ident) in $ident_map.drain() {
+          if let Some(mangled_ident) = $mangled_ident_map.get(&export) {
+            export_ident_map.insert(mangled_ident.clone(), ident);
+          } else {
+            export_ident_map.insert(export, ident);
+          }
+        }
+
+        export_ident_map
+      }};
+    }
     module_graph
       .modules_mut()
       .into_par_iter()
@@ -343,17 +358,12 @@ impl FarmPluginMangleExports {
           let meta = module.meta.as_script_mut();
 
           // remove original exports and insert mangled exports
-          let mut export_ident_map = HashMap::default();
 
-          for (export, ident) in meta.export_ident_map.drain() {
-            if let Some(mangled_ident) = mangled_ident_map.get(&export) {
-              export_ident_map.insert(mangled_ident.clone(), ident);
-            } else {
-              export_ident_map.insert(export, ident);
-            }
-          }
-
-          meta.export_ident_map = export_ident_map;
+          meta.export_ident_map = get_mangled_ident_map!(meta.export_ident_map, mangled_ident_map);
+          meta.reexport_ident_map =
+            get_mangled_ident_map!(meta.reexport_ident_map, mangled_ident_map);
+          meta.ambiguous_export_ident_map =
+            get_mangled_ident_map!(meta.ambiguous_export_ident_map, mangled_ident_map);
 
           let mut extra_export_specifiers = vec![];
 
@@ -533,20 +543,7 @@ impl FarmPluginMangleExports {
           }
 
           // re-analyze statement info
-          let mut statements = vec![];
-
-          for (i, item) in meta.ast.body.iter_mut().enumerate() {
-            let stmt = analyze_statement_info(&i, item);
-            statements.push(Statement::new(
-              i,
-              stmt.export_info,
-              stmt.import_info,
-              stmt.defined_idents,
-              stmt.top_level_await,
-            ));
-          }
-
-          meta.statements = statements;
+          meta.statements = analyze_statements(&meta.ast);
         }
       });
   }
@@ -562,7 +559,7 @@ impl Plugin for FarmPluginMangleExports {
     -100
   }
 
-  fn optimize_module_graph(
+  fn freeze_module_graph_meta(
     &self,
     module_graph: &mut farmfe_core::module::module_graph::ModuleGraph,
     _context: &std::sync::Arc<farmfe_core::context::CompilationContext>,

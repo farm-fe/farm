@@ -79,6 +79,9 @@ impl Plugin for FarmPluginTreeShake {
       remove_useless_hot_update_stmts(module_graph);
     }
 
+    // 7. remove export idents
+    tree_shake_modules::remove_export_idents::remove_export_idents(module_graph);
+
     Ok(Some(()))
   }
 }

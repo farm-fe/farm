@@ -1,0 +1,1 @@
+export { dep } from './dep.cjs';
