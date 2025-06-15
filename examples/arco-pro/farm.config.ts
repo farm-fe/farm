@@ -9,11 +9,15 @@ export default defineConfig((env) => {
       input: {
         index: './index.html'
       },
-      sourcemap: true,
+      sourcemap: false,
       presetEnv: false,
       concatenateModules: true,
+      persistentCache: false,
+      // minify: {
+      //   mangleExports: false,
+      // },
       output: {
-        // showFileSize: false,
+        showFileSize: true,
       },
       // persistentCache: false,
       resolve: {

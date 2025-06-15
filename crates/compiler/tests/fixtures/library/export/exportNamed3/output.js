@@ -8,4 +8,4 @@ const isString$1 = (v)=>{
     return typeof v === 'string';
 };
 const { document, addEventListener, removeEventListener } = window;
-export { addEventListener as addEventListener, isString as isString1, removeEventListener as removeEventListener, isString$1 as isString2, document as document };
+export { addEventListener as addEventListener, document as document, isString as isString1, isString$1 as isString2, removeEventListener as removeEventListener };

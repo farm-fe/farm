@@ -20,7 +20,7 @@ export function createDefaultConfig(options: DefaultOptionsType): UserConfig {
         entryFilename: '[entryName]',
         path: outputPath,
         format,
-        targetEnv: 'node'
+        targetEnv: 'library'
       },
       mode,
       external: [

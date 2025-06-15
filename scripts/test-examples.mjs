@@ -15,4 +15,4 @@ await buildCoreCjs();
 console.log("Building JS plugins...");
 await buildJsPlugins();
 
-// await buildExamples();
+await buildExamples();

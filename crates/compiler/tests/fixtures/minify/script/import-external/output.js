@@ -1,0 +1,2 @@
+//index.js:
+ (function(){console.log("module-helper.ts");}());window.__farm_default_namespace__.m.se({fs:window.fs||{}}),function(n,s){for(var e in s){var _=s[e];n.g(e,_);}}(window.__farm_default_namespace__.m,{b5d64806:function(n,s,e,_){e._m(s);var o=e("fs");console.log("dep.ts",o.existsSync),console.log("index.ts",o.existsSync);}});var __farm_ms__ = window['__farm_default_namespace__'].m;__farm_ms__.b();var __farm_entry__=__farm_ms__.r("b5d64806");

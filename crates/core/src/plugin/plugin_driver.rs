@@ -517,6 +517,38 @@ impl PluginDriver {
     }
   );
 
+  hook_serial!(
+    freeze_module_graph_meta,
+    &mut ModuleGraph,
+    |before_param: &mut ModuleGraph| {
+      serde_json::to_string(&CompilationModuleGraphStats::from(&*before_param)).unwrap()
+    },
+    |after_param: &mut ModuleGraph| {
+      serde_json::to_string(&CompilationModuleGraphStats::from(&*after_param)).unwrap()
+    },
+    |plugin_name: String,
+     start_time: u128,
+     end_time: u128,
+     input: String,
+     output: String,
+     _: &mut ModuleGraph,
+     context: &Arc<CompilationContext>| {
+      context
+        .stats
+        .add_plugin_hook_stats(CompilationPluginHookStats {
+          plugin_name: plugin_name.to_string(),
+          hook_name: "freeze_module_graph_meta".to_string(),
+          hook_context: None,
+          module_id: "".into(),
+          input,
+          output,
+          duration: end_time - start_time,
+          start_time,
+          end_time,
+        })
+    }
+  );
+
   hook_first!(
     analyze_module_graph,
     Result<Option<ModuleGroupGraph>>,

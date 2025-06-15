@@ -24,6 +24,7 @@ pub fn finalize_updated_module_graph(
       added_modules_ids: diff_result.added_modules.clone().into_iter().collect(),
       removed_modules_ids: removed_module_ids,
       updated_modules_ids: updated_modules.clone(),
+      deps_changes: diff_result.deps_changes.clone(),
     },
     context,
   )?;

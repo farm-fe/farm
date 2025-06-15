@@ -89,14 +89,18 @@ impl Compiler {
       plugins.push(Arc::new(farmfe_plugin_minify::FarmPluginMinify::new(&config)) as _);
       plugins.push(Arc::new(farmfe_plugin_html::FarmPluginMinifyHtml::new(&config)) as _);
 
-      if let Some(options) = config.minify.as_obj() {
-        if options.mangle_exports {
-          plugins.push(
-            Arc::new(farmfe_plugin_mangle_exports::FarmPluginMangleExports::new(
-              &config,
-            )) as _,
-          );
-        }
+      let enable_mangle_exports = config
+        .minify
+        .as_obj()
+        .map(|obj| obj.mangle_exports)
+        .unwrap_or(true);
+
+      if enable_mangle_exports {
+        plugins.push(
+          Arc::new(farmfe_plugin_mangle_exports::FarmPluginMangleExports::new(
+            &config,
+          )) as _,
+        );
       }
     }
 
