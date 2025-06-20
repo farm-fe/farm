@@ -161,6 +161,8 @@ Farm 远快于业界常用的 JS 构建工具，在 benchmark 测试中，Farm �
 
 ## 致谢
 
+非常感谢  https://github.com/tmm 给 Farm 团队捐献了 [farm](https://www.npmjs.com/package/farm) npm 包。
+
 感谢:
 
 - [SWC](https://github.com/swc-project/swc) 项目由[@kdy1](https://github.com/kdy1)创建, 为 Farm 的代码解析、转换和压缩提供了支持。
