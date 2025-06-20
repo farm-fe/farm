@@ -9,7 +9,7 @@ export default defineConfig({
     testTimeout: 600_000,
     isolate: false,
     sequence: {
-      concurrent: false,
+      concurrent: false
     },
     poolOptions: {
       threads: {
