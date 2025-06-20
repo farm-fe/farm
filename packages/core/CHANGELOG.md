@@ -1,5 +1,13 @@
 # @farmfe/core
 
+## 1.7.6
+
+### Patch Changes
+
+- 83342ef0: Added origin validation to HMR server
+
+  BREAKING CHANGE: The HMR server now rejects all connections with unrecognized `Origin` headers. Clients need to update their configured ports and hosts if they want external apps to be able to connect to the HMR server.
+
 ## 1.7.5
 
 ### Patch Changes
