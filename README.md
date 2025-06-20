@@ -91,6 +91,119 @@ pnpm create farm@latest
 
 Visit [Farm Documentation](https://farmfe.org) to learn more about Farm.
 
+## Using Nix Flake
+
+Farm provides a comprehensive Nix flake for reproducible development environments and package building. This is especially useful for teams wanting consistent toolchains across different systems.
+
+### Quick Start with Nix
+
+```bash
+# Enter the development environment
+nix develop
+
+# Or build the Farm package directly
+nix build
+```
+
+### Development Shells
+
+Farm provides multiple development environments:
+
+#### Default Development Shell
+Includes everything needed for Farm development:
+```bash
+nix develop
+# Provides: Rust nightly (2024-04-16), Node.js 22, pnpm, development tools
+```
+
+#### Rust-only Shell
+For contributors focusing on Rust components:
+```bash
+nix develop .#rust-only
+# Provides: Rust toolchain, cargo-watch, build tools
+```
+
+#### Node.js-only Shell
+For contributors working on JavaScript/TypeScript components:
+```bash
+nix develop .#node-only
+# Provides: Node.js 22, pnpm, TypeScript
+```
+
+### Available Commands in Development Shell
+
+When you enter the development environment, these commands are available:
+
+```bash
+# Package management and development
+pnpm bootstrap    # Install dependencies and build
+pnpm start        # Start development server
+pnpm start:rs     # Watch Rust changes with cargo-watch
+pnpm test         # Run tests
+pnpm check        # Run linting
+
+# Rust development
+cargo build       # Build Rust components
+cargo test        # Test Rust components
+
+# Direct tools
+node --version    # Node.js 22.x
+pnpm --version    # Latest pnpm
+rustc --version   # Rust nightly 2024-04-16
+```
+
+### Building with Nix
+
+Build the complete Farm package:
+
+```bash
+# Build default package
+nix build
+
+# Build specific package
+nix build .#farm
+
+# Install to user profile
+nix profile install .
+```
+
+### Integration with direnv
+
+For automatic environment loading, add this to your `.envrc`:
+
+```bash
+#!/usr/bin/env bash
+use flake
+```
+
+Then run:
+```bash
+direnv allow
+```
+
+This automatically loads the development environment when you enter the project directory.
+
+### Why Use the Nix Flake?
+
+- **Reproducible**: Same toolchain versions across all development machines
+- **Isolated**: No conflicts with system-installed tools
+- **Complete**: All dependencies included (Rust, Node.js, native libraries)
+- **Cross-platform**: Works on Linux, macOS, and WSL
+- **Cacheable**: Binary cache provides fast setup
+
+### Requirements
+
+- [Nix package manager](https://nixos.org/download.html) with flakes enabled
+- For macOS/Linux: Enable flakes in your Nix configuration
+
+```bash
+# Enable flakes temporarily
+nix --experimental-features "nix-command flakes" develop
+
+# Or enable permanently by adding to ~/.config/nix/nix.conf:
+experimental-features = nix-command flakes
+```
+
 ## Benchmark
 
 Farm is much faster than similar tool， **20x** faster than webpack and **10x** faster than Vite in the benchmark:
