@@ -45,6 +45,7 @@ export default class WsServer implements IWebSocketServer {
   public clientsMap = new WeakMap<WebSocketRawType, WebSocketClient>();
   public bufferedError: any = null;
   public logger: ILogger;
+  private hmrOrigins: string[];
   constructor(
     private httpServer: Server,
     private config: NormalizedServerConfig,
@@ -52,7 +53,29 @@ export default class WsServer implements IWebSocketServer {
     logger?: ILogger
   ) {
     this.logger = logger ?? new Logger();
+    this.hmrOrigins = this.generateHMROrigins(config);
     this.createWebSocketServer();
+  }
+
+  private generateHMROrigins(config: NormalizedServerConfig): string[] {
+    const { protocol, hostname, port } = config;
+    const origins = [];
+
+    // Add localhost with configured port
+    origins.push(`${protocol}://localhost:${port}`);
+    origins.push(`${protocol}://127.0.0.1:${port}`);
+
+    // Add non-localhost origin
+    if (
+      hostname &&
+      hostname.name &&
+      hostname.name !== 'localhost' &&
+      hostname.name !== '127.0.0.1'
+    ) {
+      origins.push(`${protocol}://${hostname.name}:${port}`);
+    }
+
+    return origins;
   }
 
   private createWebSocketServer() {
@@ -77,6 +100,9 @@ export default class WsServer implements IWebSocketServer {
   ) {
     if (this.isHMRRequest(request)) {
       this.handleHMRUpgrade(request, socket, head);
+    } else {
+      // Close the connection so as to avoid unnecessary system resource utilization
+      socket.destroy();
     }
   }
 
@@ -116,7 +142,8 @@ export default class WsServer implements IWebSocketServer {
   private isHMRRequest(request: IncomingMessage): boolean {
     return (
       request.url === this.config.hmr.path &&
-      request.headers['sec-websocket-protocol'] === HMR_HEADER
+      request.headers['sec-websocket-protocol'] === HMR_HEADER &&
+      this.hmrOrigins.includes(request.headers['origin'])
     );
   }
 
