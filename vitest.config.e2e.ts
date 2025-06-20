@@ -8,6 +8,9 @@ export default defineConfig({
     hookTimeout: 600_000,
     testTimeout: 600_000,
     isolate: false,
+    sequence: {
+      concurrent: false,
+    },
     poolOptions: {
       threads: {
         singleThread: true

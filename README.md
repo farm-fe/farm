@@ -166,7 +166,9 @@ See [Contributing Guide](https://github.com/farm-fe/farm/blob/main/CONTRIBUTING.
 
 ## Credits
 
-Thanks to:
+Thanks to https://github.com/tmm who donated the [farm](https://www.npmjs.com/package/farm) npm package to the Farm team.
+
+Thanks to projects:
 
 - The [SWC](https://github.com/swc-project/swc) project created by [@kdy1](https://github.com/kdy1), which powers Farm's code parsing, transformation and minification.
 
