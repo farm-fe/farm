@@ -8,6 +8,7 @@ import { HmrEngine } from './hmr-engine.js';
 import { Server } from './type.js';
 
 import type { ILogger } from '../index.js';
+import { resolveHostname, resolveServerUrls } from '../utils/http.js';
 
 const HMR_HEADER = 'farm_hmr';
 
@@ -45,6 +46,7 @@ export default class WsServer implements IWebSocketServer {
   public clientsMap = new WeakMap<WebSocketRawType, WebSocketClient>();
   public bufferedError: any = null;
   public logger: ILogger;
+  private hmrOrigins: string[];
   constructor(
     private httpServer: Server,
     private config: NormalizedServerConfig,
@@ -52,7 +54,33 @@ export default class WsServer implements IWebSocketServer {
     logger?: ILogger
   ) {
     this.logger = logger ?? new Logger();
+    this.hmrOrigins = this.generateHMROrigins(config);
     this.createWebSocketServer();
+  }
+
+  private generateHMROrigins(config: NormalizedServerConfig): string[] {
+    const { protocol, hostname, port } = config;
+    const origins = [];
+
+    // Add localhost with configured port
+    const urls = resolveServerUrls(this.httpServer, config);
+    const localUrls = [...(urls.local || []), ...(urls.network || [])];
+
+    for (const url of localUrls) {
+      origins.push(url);
+    }
+
+    // Add non-localhost origin
+    const configuredOrigin = `${protocol}://${hostname.name}:${port}`;
+    if (
+      hostname &&
+      hostname.name &&
+      localUrls.every((url) => url !== configuredOrigin)
+    ) {
+      origins.push(configuredOrigin);
+    }
+
+    return origins;
   }
 
   private createWebSocketServer() {
@@ -61,10 +89,19 @@ export default class WsServer implements IWebSocketServer {
         ? // @ts-expect-error: Bun defines `import.meta.require`
           import.meta.require('ws').WebSocketServer
         : WebSocketServerRaw;
-      this.wss = new WebSocketServer({ noServer: true });
-      this.connection();
-      // TODO IF not have httpServer
-      this.httpServer.on('upgrade', this.upgradeWsServer.bind(this));
+
+      if (this.config.host === this.config.hmr.host) {
+        this.wss = new WebSocketServer({ noServer: true });
+        this.connection();
+        this.httpServer.on('upgrade', this.upgradeWsServer.bind(this));
+      } else {
+        const hmrHostname = resolveHostname(this.config.hmr.host);
+        this.wss = new WebSocketServer({
+          host: hmrHostname.name,
+          port: this.config.hmr?.port || this.config.port
+        });
+        this.connection();
+      }
     } catch (err) {
       this.handleSocketError(err);
     }
@@ -114,9 +151,13 @@ export default class WsServer implements IWebSocketServer {
   }
 
   private isHMRRequest(request: IncomingMessage): boolean {
+    const origin = request.headers['origin'];
+
     return (
       request.url === this.config.hmr.path &&
-      request.headers['sec-websocket-protocol'] === HMR_HEADER
+      request.headers['sec-websocket-protocol'] === HMR_HEADER &&
+      (this.hmrOrigins.includes(origin) ||
+        this.config.allowedHosts?.includes(origin))
     );
   }
 

@@ -588,6 +588,7 @@ export const DEFAULT_DEV_SERVER_OPTIONS: NormalizedServerConfig = {
   https: undefined,
   protocol: 'http',
   hostname: { name: 'localhost', host: undefined },
+  allowedHosts: [],
   host: true,
   proxy: {},
   hmr: DEFAULT_HMR_OPTIONS,

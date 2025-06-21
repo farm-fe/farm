@@ -74,7 +74,7 @@ export async function start(
       resolvedUserConfig.compilation.lazyCompilation &&
       typeof resolvedUserConfig.server?.host === 'string'
     ) {
-      await setLazyCompilationDefine(resolvedUserConfig);
+      setLazyCompilationDefine(resolvedUserConfig);
     }
 
     const compiler = await createCompiler(resolvedUserConfig, logger);
@@ -179,7 +179,7 @@ export async function watch(
   const lazyEnabled = resolvedUserConfig.compilation?.lazyCompilation;
 
   if (lazyEnabled) {
-    await setLazyCompilationDefine(resolvedUserConfig);
+    setLazyCompilationDefine(resolvedUserConfig);
   }
 
   const compilerFileWatcher = await createBundleHandler(
@@ -195,7 +195,7 @@ export async function watch(
       logger,
       compiler: compilerFileWatcher.serverOrCompiler as Compiler
     });
-    await devServer.createServer(resolvedUserConfig.server);
+    devServer.createServer(resolvedUserConfig.server);
     devServer.applyMiddlewares([lazyCompilation]);
     await devServer.startServer(resolvedUserConfig.server);
   }
@@ -452,10 +452,8 @@ export function logFileChanges(files: string[], root: string, logger: Logger) {
   );
 }
 
-async function setLazyCompilationDefine(
-  resolvedUserConfig: ResolvedUserConfig
-) {
-  const hostname = await resolveHostname(resolvedUserConfig.server.host);
+function setLazyCompilationDefine(resolvedUserConfig: ResolvedUserConfig) {
+  const hostname = resolveHostname(resolvedUserConfig.server.host);
   resolvedUserConfig.compilation.define = {
     ...(resolvedUserConfig.compilation.define ?? {}),
     FARM_LAZY_COMPILE_SERVER_URL: `${
