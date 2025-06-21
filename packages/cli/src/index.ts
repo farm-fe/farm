@@ -10,6 +10,7 @@ import {
   resolveCore
 } from './utils.js';
 
+import { FarmCLIOptions } from '@farmfe/core';
 import type {
   FarmCLIBuildOptions,
   FarmCLIPreviewOptions,
@@ -56,7 +57,7 @@ cli
       const { root, configPath } = resolveCliConfig(rootPath, options);
       const resolveOptions = resolveCommandOptions(options);
 
-      const defaultOptions = {
+      const defaultOptions: FarmCLIOptions = {
         root,
         compilation: {
           lazyCompilation: options.lazy
@@ -66,6 +67,12 @@ cli
         configPath,
         mode: options.mode
       };
+
+      if (options.base) {
+        defaultOptions.compilation.output = {
+          publicPath: options.base
+        };
+      }
 
       const { start } = await resolveCore();
       handleAsyncOperationErrors(
@@ -146,13 +153,20 @@ cli
       const { root, configPath } = resolveCliConfig(rootPath, options);
 
       const resolveOptions = resolveCommandOptions(options);
-      const defaultOptions = {
+      const defaultOptions: FarmCLIOptions = {
         root,
         mode: options.mode,
         server: resolveOptions,
         configPath,
-        port: options.port
+        port: options.port,
+        clearScreen: options.clearScreen
       };
+
+      if (options.base) {
+        defaultOptions.compilation.output = {
+          publicPath: options.base
+        };
+      }
 
       const { preview } = await resolveCore();
       handleAsyncOperationErrors(
