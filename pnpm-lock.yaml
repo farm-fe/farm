@@ -478,7 +478,7 @@ importers:
   examples/import-meta:
     devDependencies:
       '@farmfe/cli':
-        specifier: ^1.0.4
+        specifier: ^1.0.5
         version: link:../../packages/cli
       '@farmfe/core':
         specifier: workspace:*
@@ -1096,7 +1096,7 @@ importers:
     optionalDependencies:
       '@tsconfig/create-react-app':
         specifier: latest
-        version: 2.0.5
+        version: 2.0.6
       abort-controller:
         specifier: latest
         version: 3.0.0
@@ -1802,7 +1802,7 @@ importers:
   examples/vite-adapter-svelte:
     devDependencies:
       '@farmfe/cli':
-        specifier: ^1.0.4
+        specifier: ^1.0.5
         version: link:../../packages/cli
       '@farmfe/core':
         specifier: workspace:*
@@ -6362,8 +6362,8 @@ packages:
   '@ts-morph/common@0.24.0':
     resolution: {integrity: sha512-c1xMmNHWpNselmpIqursHeOHHBTIsJLbB+NuovbTTRCNiTLEr/U9dbJ8qy0jd/O2x5pc3seWuOUN5R2IoOTp8A==}
 
-  '@tsconfig/create-react-app@2.0.5':
-    resolution: {integrity: sha512-NiXzSMJabQtVTPwFmBWX+eyee2dfhRSnQ6NNbtCZfXemGxOq+N0+RMPVYu+sz6riUZANHTnvvHoS1k87ksyDXg==}
+  '@tsconfig/create-react-app@2.0.6':
+    resolution: {integrity: sha512-yiuwTQE6/FDhVZgrSONRaSWRhMvY9dR/R7F+vycxNzbjloO2YdOphrVCvoYuNJq/M6QMxpJhjN62Whc05qQBag==}
 
   '@tsconfig/node10@1.0.9':
     resolution: {integrity: sha512-jNsYVVxU8v5g43Erja32laIDHXeoNvFEpX33OK4d6hljo3jDhCBDhx5dhCCTMWUojscpAagGiRkBKxpdl9fxqA==}
@@ -22737,7 +22737,7 @@ snapshots:
       mkdirp: 3.0.1
       path-browserify: 1.0.1
 
-  '@tsconfig/create-react-app@2.0.5':
+  '@tsconfig/create-react-app@2.0.6':
     optional: true
 
   '@tsconfig/node10@1.0.9': {}
