@@ -8,6 +8,7 @@ import { HmrEngine } from './hmr-engine.js';
 import { Server } from './type.js';
 
 import type { ILogger } from '../index.js';
+import { resolveHostname, resolveServerUrls } from '../utils/http.js';
 
 const HMR_HEADER = 'farm_hmr';
 
@@ -62,17 +63,29 @@ export default class WsServer implements IWebSocketServer {
     const origins = [];
 
     // Add localhost with configured port
-    origins.push(`${protocol}://localhost:${port}`);
-    origins.push(`${protocol}://127.0.0.1:${port}`);
+    const urls = resolveServerUrls(this.httpServer, config);
+    const localUrls = [...(urls.local || []), ...(urls.network || [])];
+
+    for (const url of localUrls) {
+      origins.push(url);
+    }
 
     // Add non-localhost origin
+    const configuredOrigin = `${protocol}://${hostname.name}:${port}`;
+
     if (
       hostname &&
       hostname.name &&
-      hostname.name !== 'localhost' &&
-      hostname.name !== '127.0.0.1'
+      localUrls.every((url) => url !== configuredOrigin)
     ) {
-      origins.push(`${protocol}://${hostname.name}:${port}`);
+      origins.push(configuredOrigin);
+    }
+
+    if (this.config.host !== this.config.hmr.host) {
+      const hmrHostname = resolveHostname(this.config.hmr.host);
+      origins.push(
+        `${this.config.hmr?.protocol || protocol}://${hmrHostname.name}:${this.config.hmr?.port || this.config.port}`
+      );
     }
 
     return origins;
@@ -84,10 +97,19 @@ export default class WsServer implements IWebSocketServer {
         ? // @ts-expect-error: Bun defines `import.meta.require`
           import.meta.require('ws').WebSocketServer
         : WebSocketServerRaw;
-      this.wss = new WebSocketServer({ noServer: true });
-      this.connection();
-      // TODO IF not have httpServer
-      this.httpServer.on('upgrade', this.upgradeWsServer.bind(this));
+
+      if (this.config.host === this.config.hmr.host) {
+        this.wss = new WebSocketServer({ noServer: true });
+        this.connection();
+        this.httpServer.on('upgrade', this.upgradeWsServer.bind(this));
+      } else {
+        const hmrHostname = resolveHostname(this.config.hmr.host);
+        this.wss = new WebSocketServer({
+          host: hmrHostname.name,
+          port: this.config.hmr?.port || this.config.port
+        });
+        this.connection();
+      }
     } catch (err) {
       this.handleSocketError(err);
     }
@@ -101,8 +123,11 @@ export default class WsServer implements IWebSocketServer {
     if (this.isHMRRequest(request)) {
       this.handleHMRUpgrade(request, socket, head);
     } else {
-      // Close the connection so as to avoid unnecessary system resource utilization
-      socket.destroy();
+      this.logger.error(
+        `HMR upgrade failed because of invalid HMR path, header or host. The HMR connection is only allowed on hosts: ${this.hmrOrigins.join(
+          ', '
+        )}. You can try set server.host or server.allowedHosts to allow the connection.`
+      );
     }
   }
 
@@ -140,10 +165,13 @@ export default class WsServer implements IWebSocketServer {
   }
 
   private isHMRRequest(request: IncomingMessage): boolean {
+    const origin = request.headers['origin'];
+
     return (
       request.url === this.config.hmr.path &&
       request.headers['sec-websocket-protocol'] === HMR_HEADER &&
-      this.hmrOrigins.includes(request.headers['origin'])
+      (this.hmrOrigins.includes(origin) ||
+        this.config.allowedHosts?.includes(origin))
     );
   }
 

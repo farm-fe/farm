@@ -16,6 +16,7 @@ import {
 import { Server } from '../index.js';
 
 import { existsSync } from 'node:fs';
+import { getValidPublicPath } from '../../config/normalize-config/normalize-output.js';
 import { logError } from '../error.js';
 
 export function lazyCompilation(devSeverContext: Server): Middleware {
@@ -26,7 +27,11 @@ export function lazyCompilation(devSeverContext: Server): Middleware {
   }
 
   return async (ctx: Context, next: Next) => {
-    if (ctx.path === '/__lazy_compile') {
+    const publicPath = getValidPublicPath(
+      compiler.config.config?.output?.publicPath
+    );
+
+    if (ctx.path === `${publicPath || '/'}__lazy_compile`) {
       const paths = (ctx.query.paths as string).split(',');
       const pathsStr = paths
         .map((p) => {
