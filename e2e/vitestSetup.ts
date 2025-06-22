@@ -114,12 +114,12 @@ export const startProjectAndTest = async (
     const urlRegex =
       /((http|https):\/\/(localhost|\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}))(:\d+)?(\/[^\s]*)?/g;
     child.stdout?.on('data', async (chunk) => {
-      result = Buffer.concat([result, chunk]); // 将 chunk 添加到 result 中
+      result = Buffer.concat([result, chunk]);
       const res = result.toString();
       const replacer = res.replace(/\n/g, ' ');
 
       const matches = replacer.match(urlRegex);
-      const pagePath = matches && (matches[1] || matches[0]);
+      const pagePath = matches?.[0]; // use localhost for test
 
       if (pagePath) {
         resolve(pagePath);

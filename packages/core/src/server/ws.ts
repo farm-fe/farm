@@ -72,12 +72,20 @@ export default class WsServer implements IWebSocketServer {
 
     // Add non-localhost origin
     const configuredOrigin = `${protocol}://${hostname.name}:${port}`;
+
     if (
       hostname &&
       hostname.name &&
       localUrls.every((url) => url !== configuredOrigin)
     ) {
       origins.push(configuredOrigin);
+    }
+
+    if (this.config.host !== this.config.hmr.host) {
+      const hmrHostname = resolveHostname(this.config.hmr.host);
+      origins.push(
+        `${this.config.hmr?.protocol || protocol}://${hmrHostname.name}:${this.config.hmr?.port || this.config.port}`
+      );
     }
 
     return origins;
@@ -114,6 +122,12 @@ export default class WsServer implements IWebSocketServer {
   ) {
     if (this.isHMRRequest(request)) {
       this.handleHMRUpgrade(request, socket, head);
+    } else {
+      this.logger.error(
+        `HMR upgrade failed because of invalid HMR path, header or host. The HMR connection is only allowed on hosts: ${this.hmrOrigins.join(
+          ', '
+        )}. You can try set server.host or server.allowedHosts to allow the connection.`
+      );
     }
   }
 
