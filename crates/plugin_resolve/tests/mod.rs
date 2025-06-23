@@ -303,6 +303,84 @@ fn resolve_alias() {
 }
 
 #[test]
+fn resolve_extensions() {
+  fixture("tests/fixtures/resolve-extensions/index.ts", |file, _| {
+    let cwd = file.parent().unwrap().to_path_buf();
+    let resolver = Resolver::new();
+    let context = Arc::new(
+      CompilationContext::new(
+        Config {
+          resolve: Box::new(ResolveConfig {
+            extensions: vec![".ts".to_string(), ".vue".to_string(), ".json".to_string()],
+            ..Default::default()
+          }),
+          ..Default::default()
+        },
+        vec![],
+      )
+      .unwrap(),
+    );
+
+    let resolved = resolver.resolve(
+      "./utils/index",
+      cwd.clone(),
+      &ResolveKind::Import,
+      &ResolveOptions::default(),
+      &context,
+    );
+    assert!(resolved.is_some());
+    let resolved = resolved.unwrap();
+
+    assert_eq!(
+      resolved.resolved_path,
+      cwd
+        .join("utils")
+        .join("index.ts")
+        .to_string_lossy()
+        .to_string()
+    );
+
+    let resolved = resolver.resolve(
+      "./utils/base",
+      cwd.clone(),
+      &ResolveKind::Import,
+      &ResolveOptions::default(),
+      &context,
+    );
+    assert!(resolved.is_some());
+    let resolved = resolved.unwrap();
+
+    assert_eq!(
+      resolved.resolved_path,
+      cwd
+        .join("utils")
+        .join("base.vue")
+        .to_string_lossy()
+        .to_string()
+    );
+
+    let resolved = resolver.resolve(
+      "./utils/index.json",
+      cwd.clone(),
+      &ResolveKind::Import,
+      &ResolveOptions::default(),
+      &context,
+    );
+    assert!(resolved.is_some());
+    let resolved = resolved.unwrap();
+
+    assert_eq!(
+      resolved.resolved_path,
+      cwd
+        .join("utils")
+        .join("index.json")
+        .to_string_lossy()
+        .to_string()
+    );
+  });
+}
+
+#[test]
 fn resolve_dot() {
   fixture!("tests/fixtures/resolve-dot/index.ts", |file, _| {
     let cwd = file.parent().unwrap().to_path_buf();
