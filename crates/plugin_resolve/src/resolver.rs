@@ -398,26 +398,27 @@ impl Resolver {
     options: &ResolveOptions,
     context: &Arc<CompilationContext>,
   ) -> Option<String> {
-    // TODO add a test that for directory imports like `import 'comps/button'` where comps/button is a dir
-    if file.exists() && file.is_file() {
-      Some(file.to_string_lossy().to_string())
-    } else {
-      let append_extension = |file: &PathBuf, ext: &str| {
-        let file_name = file.file_name().unwrap().to_string_lossy().to_string();
-        file.with_file_name(format!("{file_name}.{ext}"))
-      };
-      let extensions = if let Some(ext) = &options.dynamic_extensions {
-        ext
-      } else {
-        &context.config.resolve.extensions
-      };
-      let ext = extensions.iter().find(|&ext| {
-        let new_file = append_extension(file, ext);
-        new_file.exists() && new_file.is_file()
-      });
-
-      ext.map(|ext| append_extension(file, ext).to_string_lossy().to_string())
+    if file.is_file() {
+      return Some(file.to_string_lossy().to_string());
     }
+
+    let file_name = file.file_name()?.to_string_lossy();
+
+    let extensions = if let Some(ext) = &options.dynamic_extensions {
+      ext
+    } else {
+      &context.config.resolve.extensions
+    };
+
+    for ext in extensions {
+      let extension = format!(".{}", ext.strip_prefix('.').unwrap_or(ext));
+      let new_file = file.with_file_name(format!("{}{}", file_name, extension));
+      if new_file.is_file() {
+        return Some(new_file.to_string_lossy().to_string());
+      }
+    }
+
+    None
   }
 
   fn try_alias(
