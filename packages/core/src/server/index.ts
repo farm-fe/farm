@@ -234,9 +234,6 @@ export class Server extends httpServer {
         });
       }
     } catch (error) {
-      // this.logger.error(
-      //   `Failed to create farm server: ${error}`
-      // );
       throw error;
     }
   }
@@ -443,7 +440,6 @@ export class Server extends httpServer {
       this.config.logger.error(
         `Start DevServer Error: ${error} \n ${error.stack}`
       );
-      // throw error;
     }
   }
 
@@ -603,7 +599,6 @@ export class Server extends httpServer {
       this.config.logger.error(
         `Compilation failed: ${convertErrorMessage(err)}`
       );
-      // throw err;
     }
   }
 

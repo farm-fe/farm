@@ -1,0 +1,19 @@
+{
+  "name": "farm-vue",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "farm start",
+    "start": "farm start",
+    "build": "farm build",
+    "preview": "farm preview",
+    "clean": "farm clean"
+  },
+  "dependencies": {
+    "vue": "^3.5.15"
+  },
+  "devDependencies": {
+    "core-js": "^3.42.0",
+    "unplugin-vue": "/Users/adny/typescript/unplugin-vue"
+  }
+}
