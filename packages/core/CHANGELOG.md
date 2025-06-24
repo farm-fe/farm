@@ -1,5 +1,12 @@
 # @farmfe/core
 
+## 1.7.7
+
+### Patch Changes
+
+- d0f572df: Fix incorrect publicPath when isolating farm runtime
+- f19be2ef: resolve extension compatible with . or direct file suffix
+
 ## 1.7.6
 
 ### Patch Changes
