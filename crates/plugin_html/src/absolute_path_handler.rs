@@ -33,7 +33,6 @@ impl VisitMut for AbsolutePathHandler {
               self.public_path,
               attr.value.clone().unwrap_or_default()
             )
-            .replace("//", "/")
             .into(),
           );
         }
