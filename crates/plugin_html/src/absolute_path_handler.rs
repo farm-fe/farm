@@ -18,23 +18,14 @@ impl VisitMut for AbsolutePathHandler {
   fn visit_mut_element(&mut self, element: &mut Element) {
     if matches!(element.tag_name.to_lowercase().as_str(), "script" | "link") {
       for attr in &mut element.attributes {
+        let value = attr.value.clone().unwrap_or_default();
         // determine if the path start with /.
         if matches!(attr.name.to_lowercase().as_str(), "src" | "href")
-          && !attr
-            .value
-            .clone()
-            .unwrap_or_default()
-            .starts_with(&self.public_path)
-          && attr.value.clone().unwrap_or_default().starts_with("/")
+          && !value.starts_with(&self.public_path)
+          && value.starts_with("/")
         {
-          attr.value = Some(
-            format!(
-              "{}{}",
-              self.public_path,
-              attr.value.clone().unwrap_or_default()
-            )
-            .into(),
-          );
+          let normalized_value = value.trim_start_matches("/");
+          attr.value = Some(format!("{}{}", self.public_path, normalized_value).into());
         }
       }
     }
