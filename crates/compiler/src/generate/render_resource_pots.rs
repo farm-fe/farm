@@ -47,9 +47,10 @@ pub fn render_resource_pots_and_generate_resources(
         resources.lock().push(cached_resource.resource);
 
         if let Some(map) = cached_resource.source_map {
-          resource_pot.add_resource(map.name.clone());
-
-          resources.lock().push(map);
+          if !context.config.sourcemap.is_inline() {
+            resource_pot.add_resource(map.name.clone());
+            resources.lock().push(map);
+          }
         }
       }
     } else {
@@ -145,9 +146,10 @@ pub fn render_resource_pots_and_generate_resources(
             cached_resource.source_map = Some(source_map.clone());
           }
 
-          resource_pot.add_resource(source_map.name.clone());
-
-          resources.lock().push(source_map);
+          if !context.config.sourcemap.is_inline() {
+            resource_pot.add_resource(source_map.name.clone());
+            resources.lock().push(source_map);
+          }
         }
 
         if context.config.persistent_cache.enabled() {

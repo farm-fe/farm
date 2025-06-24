@@ -9,7 +9,7 @@ export default defineConfig((env) => {
       input: {
         index: './index.html'
       },
-      sourcemap: true,
+      sourcemap: 'inline',
       presetEnv: false,
       concatenateModules: true,
       output: {
