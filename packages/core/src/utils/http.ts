@@ -36,11 +36,11 @@ export const wildcardHosts = new Set([
   '0000:0000:0000:0000:0000:0000:0000:0000'
 ]);
 
-export async function resolveServerUrls(
+export function resolveServerUrls(
   server: Server,
   options: UserServerConfig,
   publicPath?: string
-): Promise<ResolvedServerUrls> {
+): ResolvedServerUrls {
   const address = server.address();
   const isAddressInfo = (x: any): x is AddressInfo => x?.address;
 
@@ -50,7 +50,7 @@ export async function resolveServerUrls(
 
   const local: string[] = [];
   const network: string[] = [];
-  const hostname = await resolveHostname(options.host);
+  const hostname = resolveHostname(options.host);
   const protocol = options.https ? 'https' : 'http';
   const { port } = getAddressHostnamePort(address);
   const base = publicPath || '';
@@ -88,9 +88,9 @@ export async function resolveServerUrls(
   return { local, network };
 }
 
-export async function resolveHostname(
+export function resolveHostname(
   optionsHost: string | boolean | undefined
-): Promise<Hostname> {
+): Hostname {
   let host: string | undefined;
   if (optionsHost === undefined || optionsHost === false) {
     host = 'localhost';

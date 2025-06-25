@@ -1,5 +1,21 @@
 # bench
 
+## 1.0.48
+
+### Patch Changes
+
+- Updated dependencies [d0f572df]
+- Updated dependencies [f19be2ef]
+  - @farmfe/core@1.7.7
+
+## 1.0.47
+
+### Patch Changes
+
+- Updated dependencies [83342ef0]
+- Updated dependencies [c7bcfa0f]
+  - @farmfe/core@1.7.6
+
 ## 1.0.46
 
 ### Patch Changes

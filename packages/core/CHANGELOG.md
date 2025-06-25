@@ -1,5 +1,22 @@
 # @farmfe/core
 
+## 1.7.7
+
+### Patch Changes
+
+- d0f572df: Fix incorrect publicPath when isolating farm runtime
+- f19be2ef: resolve extension compatible with . or direct file suffix
+
+## 1.7.6
+
+### Patch Changes
+
+- 83342ef0: Added origin validation to HMR server
+
+  BREAKING CHANGE: The HMR server now rejects all connections with unrecognized `Origin` headers. Clients need to update their configured ports and hosts if they want external apps to be able to connect to the HMR server.
+
+- c7bcfa0f: Fix #2188 lazy compilation should respect publicPath
+
 ## 1.7.5
 
 ### Patch Changes

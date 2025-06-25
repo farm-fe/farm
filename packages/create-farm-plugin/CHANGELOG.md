@@ -1,5 +1,11 @@
 # create-farm-plugin
 
+## 0.1.19
+
+### Patch Changes
+
+- d0f572df: Lock cargo-xwin to 0.18.6
+
 ## 0.1.18
 
 ### Patch Changes

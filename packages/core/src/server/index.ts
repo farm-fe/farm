@@ -218,12 +218,12 @@ export class Server implements ImplDevServer {
     this._app = new Koa();
   }
 
-  public async createServer(
+  public createServer(
     options: NormalizedServerConfig & UserPreviewServerConfig
   ) {
     const { https, host } = options;
     const protocol = https ? 'https' : 'http';
-    const hostname = await resolveHostname(host);
+    const hostname = resolveHostname(host);
     const publicPath = getValidPublicPath(
       this.compiler?.config.config.output?.publicPath ??
         options?.output.publicPath
@@ -282,7 +282,7 @@ export class Server implements ImplDevServer {
   }
 
   public async createPreviewServer(options: UserPreviewServerConfig) {
-    await this.createServer(options as NormalizedServerConfig);
+    this.createServer(options as NormalizedServerConfig);
 
     this.applyPreviewServerMiddlewares(this.config.middlewares);
 
@@ -296,7 +296,7 @@ export class Server implements ImplDevServer {
       throw new Error('DevServer requires a compiler for development mode.');
     }
 
-    await this.createServer(options);
+    this.createServer(options);
 
     this.hmrEngine = new HmrEngine(this.compiler, this, this.logger);
 
@@ -421,11 +421,7 @@ export class Server implements ImplDevServer {
         : this.config.output.publicPath
     );
 
-    this.resolvedUrls = await resolveServerUrls(
-      this.server,
-      this.config,
-      publicPath
-    );
+    this.resolvedUrls = resolveServerUrls(this.server, this.config, publicPath);
 
     if (this.resolvedUrls) {
       printServerUrls(this.resolvedUrls, this.logger, showPreviewFlag);

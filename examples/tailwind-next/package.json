@@ -1,6 +1,6 @@
 {
   "name": "@farmfe-examples/tailwind-next",
-  "version": "0.0.15",
+  "version": "0.0.17",
   "private": true,
   "dependencies": {
     "@farmfe/js-plugin-tailwindcss": "workspace:^",

@@ -34,6 +34,7 @@ export interface UserServerConfig {
   https?: SecureServerOptions;
   protocol?: 'http' | 'https';
   hostname?: { name: string; host: string | undefined };
+  allowedHosts?: string[];
   // http2?: boolean;
   hmr?: boolean | UserHmrConfig;
   proxy?: Record<string, Options>;

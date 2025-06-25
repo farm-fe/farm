@@ -17,6 +17,14 @@ test(`e2e tests - ${name}`, async () => {
         const root = await page.$('div.public-script');
         const innerHTML = await root?.innerHTML();
         expect(innerHTML).toContain('public script');
+
+        // should load dynamic component
+        await page.waitForSelector('div.farm-container', {
+          timeout: 10000
+        });
+        const container = await page.$('div.farm-container');
+        const containerInnerHTML = await container?.innerHTML();
+        expect(containerInnerHTML).toContain('React + Farm');
       },
       command
     );
