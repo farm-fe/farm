@@ -1,20 +1,17 @@
 #![feature(box_patterns)]
+#![feature(rustc_private)]
+#![feature(trait_upcasting)]
 
 use std::sync::Arc;
 
-use dep_analyzer::DepAnalyzer;
 use farmfe_core::config::css::NameConversion;
 use farmfe_core::config::custom::get_config_css_modules_local_conversion;
 use farmfe_core::config::AliasItem;
-use farmfe_core::module::meta_data::css::CssModuleMetaData;
 use farmfe_core::module::meta_data::script::CommentsMetaData;
 use farmfe_core::plugin::GeneratedResource;
-use farmfe_core::resource::meta_data::css::CssResourcePotMetaData;
 use farmfe_core::resource::meta_data::ResourcePotMetaData;
-use farmfe_core::swc_common::{Globals, DUMMY_SP};
-use farmfe_core::HashMap;
 use farmfe_core::{
-  config::{Config, CssPrefixerConfig, TargetEnv},
+  config::Config,
   context::CompilationContext,
   deserialize,
   enhanced_magic_string::collapse_sourcemap::{collapse_sourcemap_chain, CollapseSourcemapOptions},
@@ -26,7 +23,6 @@ use farmfe_core::{
     PluginLoadHookParam, PluginLoadHookResult, PluginParseHookParam, PluginResolveHookParam,
     PluginTransformHookResult, ResolveKind,
   },
-  rayon::prelude::*,
   resource::{
     resource_pot::{ResourcePot, ResourcePotType},
     Resource, ResourceOrigin, ResourceType,
@@ -34,28 +30,28 @@ use farmfe_core::{
   serde_json, serialize,
   swc_css_ast::Stylesheet,
 };
+use farmfe_core::{DashMap, HashMap};
 use farmfe_macro_cache_item::cache_item;
-use farmfe_toolkit::css::{merge_css_sourcemap, ParseCssModuleResult};
 use farmfe_toolkit::lazy_static::lazy_static;
 use farmfe_toolkit::resolve::DYNAMIC_EXTENSION_PRIORITY;
-use farmfe_toolkit::script::swc_try_with::try_with;
-use farmfe_toolkit::sourcemap::load_source_original_sourcemap;
-use farmfe_toolkit::sourcemap::{trace_module_sourcemap, SourceMap};
 use farmfe_toolkit::{
-  css::{codegen_css_stylesheet, parse_css_stylesheet},
   fs::read_file_utf8,
   hash::sha256,
   regex::Regex,
   script::module_type_from_id,
   sourcemap::SourceMap as JsonSourceMap,
-  swc_atoms::JsWord,
-  swc_css_modules::{compile, CssClassName, TransformConfig},
-  swc_css_prefixer,
-  swc_css_visit::{VisitMut, VisitMutWith, VisitWith},
+  sourcemap::{load_source_original_sourcemap, trace_module_sourcemap, SourceMap},
+  swc_css_visit::VisitMutWith,
 };
 use farmfe_utils::{parse_query, relative, stringify_query};
 use rkyv::Deserialize;
 use source_replacer::SourceReplacer;
+
+use crate::adapter::adapter_trait::{
+  CodegenContext, CreateResourcePotMetadataContext, CssModuleReference, CssModulesContext,
+  CssPluginAdapter, CssPluginProcesser, LightningCss, ParseOption,
+};
+mod adapter;
 
 pub const FARM_CSS_MODULES: &str = "farm_css_modules";
 
@@ -163,24 +159,25 @@ impl Plugin for FarmPluginCssResolve {
 
 #[cache_item(farmfe_core)]
 struct CssModulesCache {
-  content_map: HashMap<String, String>,
+  content_map: HashMap<String, Arc<String>>,
   sourcemap_map: HashMap<String, String>,
 }
 
 pub struct FarmPluginCss {
   css_modules_paths: Vec<Regex>,
   ast_map: Mutex<HashMap<String, (Stylesheet, CommentsMetaData)>>,
-  content_map: Mutex<HashMap<String, String>>,
+  content_map: DashMap<String, Arc<String>>,
   sourcemap_map: Mutex<HashMap<String, String>>,
   locals_conversion: NameConversion,
+  css_processer: CssPluginProcesser,
 }
 
-fn prefixer(stylesheet: &mut Stylesheet, css_prefixer_config: &CssPrefixerConfig) {
-  let mut prefixer = swc_css_prefixer::prefixer(swc_css_prefixer::options::Options {
-    env: css_prefixer_config.targets.clone(),
-  });
-  prefixer.visit_mut_stylesheet(stylesheet);
-}
+// fn prefixer(stylesheet: &mut Stylesheet, css_prefixer_config: &CssPrefixerConfig) {
+//   let mut prefixer = swc_css_prefixer::prefixer(swc_css_prefixer::options::Options {
+//     env: css_prefixer_config.targets.clone(),
+//   });
+//   prefixer.visit_mut_stylesheet(stylesheet);
+// }
 
 impl Plugin for FarmPluginCss {
   fn name(&self) -> &str {
@@ -199,10 +196,8 @@ impl Plugin for FarmPluginCss {
     _context: &Arc<CompilationContext>,
   ) -> farmfe_core::error::Result<Option<()>> {
     let cache = deserialize!(cache, CssModulesCache);
-    let mut content_map = self.content_map.lock();
-
     for (k, v) in cache.content_map {
-      content_map.insert(k, v);
+      self.content_map.insert(k, v);
     }
 
     let mut sourcemap_map = self.sourcemap_map.lock();
@@ -222,12 +217,7 @@ impl Plugin for FarmPluginCss {
   ) -> farmfe_core::error::Result<Option<PluginLoadHookResult>> {
     if is_farm_css_modules(&param.module_id) {
       return Ok(Some(PluginLoadHookResult {
-        content: self
-          .content_map
-          .lock()
-          .get(&param.module_id)
-          .unwrap()
-          .clone(),
+        content: (**self.content_map.get(&param.module_id).unwrap().value()).clone(),
         module_type: ModuleType::Custom(FARM_CSS_MODULES.to_string()),
         source_map: None,
       }));
@@ -278,76 +268,45 @@ impl Plugin for FarmPluginCss {
 
         let css_modules_module_id =
           ModuleId::new(param.resolved_path, &query_string, &context.config.root);
-        let ParseCssModuleResult {
-          ast: mut css_stylesheet,
-          comments,
-          source_map,
-        } = parse_css_stylesheet(
-          &css_modules_module_id.to_string(),
-          Arc::new(param.content.clone()),
-        )?;
-        // set source map and globals for css modules ast
-        context
-          .meta
-          .set_module_source_map(&css_modules_module_id, source_map);
-        context
-          .meta
-          .set_globals(&css_modules_module_id, Globals::default());
 
-        // js code for css modules
-        // next, get ident from ast and export through JS
-        let stylesheet = compile(
-          &mut css_stylesheet,
-          CssModuleRename {
-            indent_name: context
-              .config
-              .css
-              .modules
-              .as_ref()
-              .unwrap()
-              .indent_name
-              .clone(),
-            hash: sha256(css_modules_module_id.to_string().as_bytes(), 8),
-          },
-        );
+        let content = Arc::new(param.content.clone());
 
-        // we can not use css_modules_resolved_path here because of the compatibility of windows. eg: \\ vs \\\\
-        let cache_id = css_modules_module_id.to_string();
-        self.ast_map.lock().insert(
-          cache_id.clone(),
-          (css_stylesheet, CommentsMetaData::from(comments)),
-        );
-        self
-          .content_map
-          .lock()
-          .insert(cache_id, param.content.clone());
+        // css modules
+        let css_modules = self.css_processer.css_modules(CssModulesContext {
+          module_id: &css_modules_module_id,
+          content,
+          context,
+          content_map: &self.content_map,
+        })?;
 
-        // for composes dynamic import (eg: composes: action from "./action.css")
         let mut dynamic_import_of_composes = HashMap::default();
         let mut export_names = Vec::new();
 
-        for (name, classes) in stylesheet.renamed.iter() {
-          let mut after_transform_classes = Vec::new();
-          for v in classes {
-            match v {
-              CssClassName::Local { name } => {
-                after_transform_classes.push(name.value.to_string());
-              }
-              CssClassName::Global { name } => {
-                after_transform_classes.push(name.value.to_string());
-              }
-              CssClassName::Import { name, from } => {
-                let v = dynamic_import_of_composes
-                  .entry(from)
-                  .or_insert(format!("f_{}", sha256(from.as_bytes(), 5)));
-                after_transform_classes.push(format!("${{{}[\"{}\"]}}", v, name.value));
+        if let Some(v) = css_modules {
+          for (name, classes) in v {
+            let mut after_transform_classes = Vec::new();
+            for v in classes {
+              match v {
+                CssModuleReference::Local { name } => {
+                  after_transform_classes.push(name);
+                }
+                CssModuleReference::Global { name } => {
+                  after_transform_classes.push(name);
+                }
+                CssModuleReference::Dependency { name, specifier } => {
+                  let v = dynamic_import_of_composes
+                    .entry(specifier.to_string())
+                    .or_insert(format!("f_{}", sha256(specifier.as_bytes(), 5)));
+                  after_transform_classes.push(format!("${{{}[\"{}\"]}}", v, name));
+                }
               }
             }
+
+            export_names.push((
+              self.locals_conversion.transform(&name),
+              after_transform_classes,
+            ));
           }
-          export_names.push((
-            self.locals_conversion.transform(&name),
-            after_transform_classes,
-          ));
         }
 
         export_names.sort_by_key(|e| e.0.to_string());
@@ -416,38 +375,13 @@ impl Plugin for FarmPluginCss {
   fn parse(
     &self,
     param: &PluginParseHookParam,
-    context: &Arc<CompilationContext>,
+    _context: &Arc<CompilationContext>,
     _hook_context: &PluginHookContext,
   ) -> farmfe_core::error::Result<Option<ModuleMetaData>> {
     if matches!(param.module_type, ModuleType::Css) {
-      let (css_stylesheet, comments) = if is_farm_css_modules(&param.module_id.to_string()) {
-        self
-          .ast_map
-          .lock()
-          .remove(&param.module_id.to_string())
-          .unwrap_or_else(|| panic!("ast not found {:?}", param.module_id.to_string()))
-      } else {
-        // swc_css_parser does not support
-        let ParseCssModuleResult {
-          ast,
-          comments,
-          source_map,
-        } = parse_css_stylesheet(&param.module_id.to_string(), param.content.clone())?;
-        context
-          .meta
-          .set_module_source_map(&param.module_id, source_map);
-        context
-          .meta
-          .set_globals(&param.module_id, Globals::default());
-
-        (ast, CommentsMetaData::from(comments))
-      };
-
-      let meta = ModuleMetaData::Css(Box::new(CssModuleMetaData {
-        ast: css_stylesheet,
-        comments,
-        custom: Default::default(),
-      }));
+      let meta = self
+        .css_processer
+        .create_module_data(&param.module_id.to_string(), param.content.clone())?;
 
       Ok(Some(meta))
     } else {
@@ -461,19 +395,11 @@ impl Plugin for FarmPluginCss {
     context: &Arc<CompilationContext>,
   ) -> farmfe_core::error::Result<Option<()>> {
     let enable_prefixer = context.config.css.prefixer.is_some();
-    let css_stylesheet = match &mut param.meta {
-      ModuleMetaData::Css(meta) => &mut meta.ast,
-      _ => return Ok(None),
-    };
 
     if enable_prefixer {
-      // css prefixer
-      prefixer(
-        css_stylesheet,
-        context.config.css.prefixer.as_ref().unwrap(),
-      );
-
-      return Ok(Some(()));
+      return self
+        .css_processer
+        .prefixer(&mut param.meta, &context.config.css);
     }
 
     Ok(None)
@@ -485,22 +411,16 @@ impl Plugin for FarmPluginCss {
     context: &Arc<CompilationContext>,
   ) -> farmfe_core::error::Result<Option<()>> {
     if param.module.module_type == ModuleType::Css {
-      let stylesheet = &param.module.meta.as_css().ast;
-      // analyze dependencies:
-      // 1. @import './xxx.css'
-      // 2. url()
-      let mut dep_analyzer = DepAnalyzer::new(context.config.resolve.alias.clone());
-      stylesheet.visit_with(&mut dep_analyzer);
-      param.deps.extend(dep_analyzer.deps);
+      param
+        .deps
+        .extend(self.css_processer.analyze_deps(&param.module.meta, context));
     }
 
     Ok(None)
   }
 
   fn build_end(&self, context: &Arc<CompilationContext>) -> farmfe_core::error::Result<Option<()>> {
-    if !matches!(context.config.mode, farmfe_core::config::Mode::Development)
-      || !matches!(context.config.output.target_env, TargetEnv::Browser)
-    {
+    if !context.config.mode.is_dev() || !context.config.output.target_env.is_browser() {
       return Ok(None);
     }
 
@@ -510,13 +430,7 @@ impl Plugin for FarmPluginCss {
       .write()
       .modules()
       .into_iter()
-      .filter_map(|m| {
-        if matches!(m.module_type, ModuleType::Css) {
-          Some(m.id.clone())
-        } else {
-          None
-        }
-      })
+      .filter_map(|m| matches!(m.module_type, ModuleType::Css).then(|| m.id.clone()))
       .collect::<Vec<ModuleId>>();
 
     transform_css_to_script::transform_css_to_script_modules(css_modules, context)?;
@@ -554,53 +468,18 @@ impl Plugin for FarmPluginCss {
         modules.push(module);
       }
 
-      let resources_map = context.resources_map.lock();
+      let meta =
+        self
+          .css_processer
+          .create_resource_pot_metadata(CreateResourcePotMetadataContext {
+            resource_pot,
+            context,
+            modules,
+            module_execution_order: &module_execution_order,
+            module_graph: &module_graph,
+          })?;
 
-      let rendered_modules = Mutex::new(Vec::with_capacity(modules.len()));
-      modules.into_par_iter().try_for_each(|module| {
-        let cm = context.meta.get_module_source_map(&module.id);
-        let mut css_stylesheet = module.meta.as_css().ast.clone();
-        let globals = context.meta.get_globals(&module.id);
-        try_with(cm, globals.value(), || {
-          source_replace(
-            &mut css_stylesheet,
-            &module.id,
-            &module_graph,
-            &resources_map,
-            context.config.output.public_path.clone(),
-            context.config.resolve.alias.clone(),
-          );
-        })?;
-
-        rendered_modules
-          .lock()
-          .push((module.id.clone(), css_stylesheet));
-
-        Ok::<(), CompilationError>(())
-      })?;
-
-      let mut rendered_modules = rendered_modules.into_inner();
-
-      rendered_modules.sort_by_key(|module| module_execution_order[&module.0]);
-
-      let mut stylesheet = Stylesheet {
-        span: DUMMY_SP,
-        rules: vec![],
-      };
-
-      let source_map = merge_css_sourcemap(&mut rendered_modules, context);
-      context
-        .meta
-        .set_resource_pot_source_map(&resource_pot.id, source_map);
-
-      for (_, rendered_module_ast) in rendered_modules {
-        stylesheet.rules.extend(rendered_module_ast.rules);
-      }
-
-      Ok(Some(ResourcePotMetaData::Css(CssResourcePotMetaData {
-        ast: stylesheet,
-        custom: Default::default(),
-      })))
+      Ok(Some(meta))
     } else {
       Ok(None)
     }
@@ -613,18 +492,10 @@ impl Plugin for FarmPluginCss {
     _hook_context: &PluginHookContext,
   ) -> farmfe_core::error::Result<Option<PluginGenerateResourcesHookResult>> {
     if matches!(resource_pot.resource_pot_type, ResourcePotType::Css) {
-      let css_stylesheet = &resource_pot.meta.as_css().ast;
-      let source_map_enabled = context.config.sourcemap.enabled(resource_pot.immutable);
-
-      let (css_code, src_map) = codegen_css_stylesheet(
-        css_stylesheet,
-        context.config.minify.enabled(),
-        if source_map_enabled {
-          Some(context.meta.get_resource_pot_source_map(&resource_pot.id))
-        } else {
-          None
-        },
-      );
+      let (css_code, src_map) = self.css_processer.codegen(CodegenContext {
+        context,
+        resource_pot: &resource_pot,
+      })?;
 
       let resource = Resource {
         name: resource_pot.name.to_string(),
@@ -695,9 +566,9 @@ impl Plugin for FarmPluginCss {
     &self,
     _context: &Arc<CompilationContext>,
   ) -> farmfe_core::error::Result<Option<Vec<u8>>> {
-    if !self.content_map.lock().is_empty() || !self.sourcemap_map.lock().is_empty() {
+    if !self.content_map.is_empty() || !self.sourcemap_map.lock().is_empty() {
       let cache = CssModulesCache {
-        content_map: self.content_map.lock().clone(),
+        content_map: self.content_map.clone().into_iter().collect(),
         sourcemap_map: self.sourcemap_map.lock().clone(),
       };
 
@@ -724,9 +595,14 @@ impl FarmPluginCss {
         })
         .unwrap_or_default(),
       ast_map: Mutex::new(Default::default()),
-      content_map: Mutex::new(Default::default()),
+      content_map: Default::default(),
       sourcemap_map: Mutex::new(Default::default()),
       locals_conversion: get_config_css_modules_local_conversion(config),
+      css_processer: CssPluginProcesser {
+        // adapter: CssPluginAdapter::SwcCss,
+        adapter: CssPluginAdapter::LightningCss(LightningCss {}),
+        ast_map: Default::default(),
+      },
     }
   }
 
@@ -736,30 +612,6 @@ impl FarmPluginCss {
       .iter()
       .any(|regex| regex.is_match(path))
   }
-}
-
-struct CssModuleRename {
-  indent_name: String,
-  hash: String,
-}
-
-impl TransformConfig for CssModuleRename {
-  fn new_name_for(&self, local: &JsWord) -> JsWord {
-    let name = local.to_string();
-    let r: HashMap<String, &String> = [("name".into(), &name), ("hash".into(), &self.hash)]
-      .into_iter()
-      .collect();
-    transform_css_module_indent_name(self.indent_name.clone(), r).into()
-  }
-}
-
-fn transform_css_module_indent_name(
-  indent_name: String,
-  context: HashMap<String, &String>,
-) -> String {
-  context.iter().fold(indent_name, |acc, (key, value)| {
-    acc.replace(&format!("[{key}]"), value)
-  })
 }
 
 fn is_farm_css_modules(path: &str) -> bool {

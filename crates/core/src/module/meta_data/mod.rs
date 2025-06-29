@@ -108,6 +108,22 @@ impl ModuleMetaData {
     }
   }
 
+  pub fn as_custom(&self) -> &CustomMetaDataMap {
+    if let Self::Custom(custom) = self {
+      custom
+    } else {
+      panic!("ModuleMetaData is not Custom")
+    }
+  }
+
+  pub fn as_custom_mut(&mut self) -> &mut CustomMetaDataMap {
+    if let Self::Custom(custom) = self {
+      custom
+    } else {
+      panic!("ModuleMetaData is not Custom")
+    }
+  }
+
   /// get custom meta data by key
   pub fn get_custom_mut<T: Cacheable + Default>(&mut self, key: &str) -> &mut T {
     if let Self::Custom(custom) = self {

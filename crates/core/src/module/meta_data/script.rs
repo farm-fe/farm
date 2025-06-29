@@ -53,7 +53,7 @@ pub enum ModuleExportIdentType {
 
   /// ```js
   /// import { foo as bar } from './foo.cjs';
-  /// export { foo as default } from './foo.cjs'; // foo is not external but using cjs  
+  /// export { foo as default } from './foo.cjs'; // foo is not external but using cjs
   /// ```
   Unresolved,
 
@@ -202,14 +202,14 @@ impl ScriptModuleMetaData {
 }
 
 #[cache_item]
-#[derive(Clone)]
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct CommentsMetaDataItem {
   pub byte_pos: BytePos,
   pub comment: Vec<Comment>,
 }
 
 #[cache_item]
-#[derive(Clone, Default)]
+#[derive(Clone, Debug, Default, serde::Serialize, serde::Deserialize)]
 pub struct CommentsMetaData {
   pub leading: Vec<CommentsMetaDataItem>,
   pub trailing: Vec<CommentsMetaDataItem>,
