@@ -42,7 +42,6 @@ pub struct ResolveCacheKey {
   pub base_dir: String,
   pub kind: ResolveKind,
   pub options: ResolveOptions,
-  pub main_fields: Vec<String>,
 }
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq, Default)]
@@ -97,7 +96,6 @@ impl Resolver {
       base_dir: base_dir.to_string_lossy().to_string(),
       kind: kind.clone(),
       options: options.clone(),
-      main_fields: context.config.resolve.main_fields.clone(),
     };
 
     if let Some(result) = self.resolve_cache.lock().get(&cache_key) {
@@ -498,7 +496,6 @@ impl Resolver {
       base_dir: base_dir.to_string_lossy().to_string(),
       kind: kind.clone(),
       options: options.clone(),
-      main_fields: context.config.resolve.main_fields.clone(),
     }) {
       return result.clone();
     }
@@ -513,7 +510,6 @@ impl Resolver {
         base_dir: tried_path.to_string_lossy().to_string(),
         kind: kind.clone(),
         options: options.clone(),
-        main_fields: context.config.resolve.main_fields.clone(),
       };
 
       if !resolve_node_modules_cache.contains_key(&key) {
@@ -544,7 +540,6 @@ impl Resolver {
         base_dir: current.to_string_lossy().to_string(),
         kind: kind.clone(),
         options: options.clone(),
-        main_fields: context.config.resolve.main_fields.clone(),
       };
 
       if let Some(result) = self.resolve_cache.lock().get(&key) {
@@ -729,8 +724,14 @@ impl Resolver {
         .map(|exports_entries| exports_entries.get(0).unwrap().to_string())
       })
       .or_else(|| {
-        let main_fields = if !context.config.resolve.main_fields.is_empty() {
-          Some(Cow::Borrowed(&context.config.resolve.main_fields))
+        let is_browser = context.config.output.target_env.is_browser();
+        let main_fields = &context.config.resolve.main_fields;
+        let main_fields = if is_browser || !main_fields.is_empty() {
+          if is_browser && main_fields.is_empty() {
+            Some(Cow::Owned(DEFAULT_MAIN_FIELDS.clone()))
+          } else {
+            Some(Cow::Borrowed(main_fields))
+          }
         } else {
           let main_fields_from_resolve_kind = match kind {
             ResolveKind::Require => Some(vec!["main".to_string()]),
@@ -745,7 +746,7 @@ impl Resolver {
         .unwrap_or_else(|| Cow::Borrowed(&DEFAULT_MAIN_FIELDS));
 
         main_fields.iter().find_map(|main_field| {
-          if main_field == "browser" && !context.config.output.target_env.is_browser() {
+          if main_field == "browser" && !is_browser {
             return None;
           }
 
