@@ -1,4 +1,6 @@
 #![feature(box_patterns)]
+#![feature(rustc_private)]
+#![feature(trait_upcasting)]
 
 use std::sync::Arc;
 
@@ -14,7 +16,7 @@ use farmfe_core::resource::meta_data::ResourcePotMetaData;
 use farmfe_core::swc_common::{Globals, DUMMY_SP};
 use farmfe_core::HashMap;
 use farmfe_core::{
-  config::{Config, CssPrefixerConfig, TargetEnv},
+  config::{Config, CssPrefixerConfig},
   context::CompilationContext,
   deserialize,
   enhanced_magic_string::collapse_sourcemap::{collapse_sourcemap_chain, CollapseSourcemapOptions},
@@ -56,6 +58,7 @@ use farmfe_toolkit::{
 use farmfe_utils::{parse_query, relative, stringify_query};
 use rkyv::Deserialize;
 use source_replacer::SourceReplacer;
+mod adapter;
 
 pub const FARM_CSS_MODULES: &str = "farm_css_modules";
 
@@ -498,9 +501,7 @@ impl Plugin for FarmPluginCss {
   }
 
   fn build_end(&self, context: &Arc<CompilationContext>) -> farmfe_core::error::Result<Option<()>> {
-    if !matches!(context.config.mode, farmfe_core::config::Mode::Development)
-      || !matches!(context.config.output.target_env, TargetEnv::Browser)
-    {
+    if !context.config.mode.is_dev() || !context.config.output.target_env.is_browser() {
       return Ok(None);
     }
 
@@ -510,13 +511,7 @@ impl Plugin for FarmPluginCss {
       .write()
       .modules()
       .into_iter()
-      .filter_map(|m| {
-        if matches!(m.module_type, ModuleType::Css) {
-          Some(m.id.clone())
-        } else {
-          None
-        }
-      })
+      .filter_map(|m| matches!(m.module_type, ModuleType::Css).then(|| m.id.clone()))
       .collect::<Vec<ModuleId>>();
 
     transform_css_to_script::transform_css_to_script_modules(css_modules, context)?;
