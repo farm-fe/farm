@@ -2,10 +2,12 @@ use std::{cell::RefCell, rc::Rc, sync::Arc};
 
 use dynamic_import::DynamicImportVisitor;
 use farmfe_core::{
+  config::comments::CommentsConfig,
   context::CompilationContext,
   module::{
     meta_data::script::{
-      CommentsMetaData, ModuleExportIdent, EXPORT_EXTERNAL_ALL, FARM_RUNTIME_MODULE_HELPER_ID,
+      CommentsMetaData, CommentsMetaDataItem, ModuleExportIdent, EXPORT_EXTERNAL_ALL,
+      FARM_RUNTIME_MODULE_HELPER_ID,
     },
     module_graph::ModuleGraph,
     ModuleId, ModuleSystem,
@@ -13,8 +15,11 @@ use farmfe_core::{
   parking_lot::Mutex,
   plugin::ResolveKind,
   rayon::iter::{IntoParallelRefMutIterator, ParallelIterator},
-  swc_common::{Globals, Mark, SourceMap, DUMMY_SP},
-  swc_ecma_ast::{Module as SwcModule, ModuleItem},
+  swc_common::{
+    comments::{Comment, CommentKind},
+    Globals, Mark, SourceMap, Span, DUMMY_SP, GLOBALS,
+  },
+  swc_ecma_ast::{EmptyStmt, Module as SwcModule, ModuleItem, Stmt},
   HashMap, HashSet,
 };
 use handle_external_modules::find_or_create_preserved_import_item;
@@ -103,8 +108,31 @@ pub fn concatenate_modules_ast(
   let mut module_asts = vec![];
 
   let mut sorted_modules = vec![];
+  let merged_globals = Globals::new();
 
-  for (module_id, stripped_module) in strip_module_results {
+  for (module_id, mut stripped_module) in strip_module_results {
+    if matches!(context.config.comments, box CommentsConfig::Bool(true)) {
+      // insert comment to the top of the module: // module_id: xxxx
+      GLOBALS.set(&merged_globals, || {
+        let span = Span::dummy_with_cmt();
+        stripped_module.comments.trailing.insert(
+          0,
+          CommentsMetaDataItem {
+            byte_pos: span.hi,
+            comment: vec![Comment {
+              kind: CommentKind::Line,
+              span: DUMMY_SP,
+              text: format!(" module_id: {}", module_id.id(context.config.mode)).into(),
+            }],
+          },
+        );
+        stripped_module
+          .ast
+          .body
+          .insert(0, ModuleItem::Stmt(Stmt::Empty(EmptyStmt { span })));
+      });
+    }
+
     comments.push((module_id.clone(), stripped_module.comments));
     module_asts.push((module_id.clone(), stripped_module.ast));
 
@@ -130,7 +158,6 @@ pub fn concatenate_modules_ast(
   // extend dynamic external modules
   external_modules.extend(dynamic_external_modules);
 
-  let merged_globals = Globals::new();
   let (unresolved_mark, top_level_mark) =
     resolve_module_mark(&mut concatenated_ast, false, &merged_globals);
 
@@ -220,6 +247,7 @@ fn strip_modules_asts(
       let ambiguous_export_ident_map = &module.meta.as_script().ambiguous_export_ident_map;
       // rename module_namespace if there are conflicts
       if let Some(module_export_ident) = export_ident_map.get(EXPORT_NAMESPACE) {
+        let module_export_ident = module_export_ident.as_internal();
         let mut rename_handler = strip_context.rename_handler.borrow_mut();
         rename_handler
           .rename_ident_if_conflict(&module_export_ident.module_id, &module_export_ident.ident);
@@ -232,10 +260,10 @@ fn strip_modules_asts(
       {
         let module_ids = export_idents
           .iter()
-          .map(|m| &m.module_id)
+          .map(|m| m.as_internal().module_id.clone())
           .collect::<HashSet<_>>();
 
-        for m_id in module_ids {
+        for m_id in &module_ids {
           // add `export * from 'external'`
           strip_context
             .preserved_export_decls
@@ -270,6 +298,7 @@ fn strip_modules_asts(
       // if module is used by export * as or import * as or import('...')
       let should_add_export_namespace_item = if dependents_in_modules_ids {
         if let Some(module_export_ident) = export_ident_map.get(EXPORT_NAMESPACE) {
+          let module_export_ident = module_export_ident.as_internal();
           // the ident should equal to the default ident, otherwise, it means the namespace ident is existed and should not be added
           module_export_ident.ident == create_export_namespace_ident(&module_id).to_id().into()
             && module_export_ident.module_id == module_id
@@ -298,7 +327,7 @@ fn strip_modules_asts(
           find_or_create_preserved_import_item(
             &mut strip_context,
             &module_id,
-            &export_ident.module_id,
+            &export_ident.as_internal().module_id,
           );
 
           result
@@ -330,6 +359,8 @@ fn strip_modules_asts(
   // handle delayed rename
   for (module_id, module_export_idents) in delayed_rename {
     for module_export_ident in module_export_idents {
+      let module_export_ident = module_export_ident.as_internal();
+
       let mut rename_handler = strip_context.rename_handler.borrow_mut();
       let final_ident = rename_handler
         .get_renamed_ident(&module_export_ident.module_id, &module_export_ident.ident)
@@ -337,7 +368,11 @@ fn strip_modules_asts(
 
       if module_export_ident.ident != final_ident {
         // rename local to final_ident
-        rename_handler.rename_ident(module_id.clone(), module_export_ident.ident, final_ident);
+        rename_handler.rename_ident(
+          module_id.clone(),
+          module_export_ident.ident.clone(),
+          final_ident,
+        );
       }
     }
   }

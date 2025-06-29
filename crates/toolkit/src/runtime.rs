@@ -162,7 +162,14 @@ fn init_bool_features<'a>(
   if matches!(context.config.mode, Mode::Development)
     && context.config.output.target_env != TargetEnv::Library
   {
-    return FULL_RUNTIME_FEATURES.clone();
+    let mut result = FULL_RUNTIME_FEATURES.clone();
+
+    // remove plugin flag if no plugin is enabled
+    if context.config.runtime.plugins.len() == 0 {
+      result.remove(FARM_ENABLE_RUNTIME_PLUGIN);
+    }
+
+    return result;
   }
 
   let mut bool_features = HashSet::default();

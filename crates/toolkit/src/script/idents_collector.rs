@@ -131,21 +131,25 @@ impl AllDeclaredIdentsCollector {
 
 impl Visit for AllDeclaredIdentsCollector {
   fn visit_function(&mut self, n: &farmfe_core::swc_ecma_ast::Function) {
+    let in_top_level = self.in_top_level;
+    self.in_top_level = false;
+
     for param in &n.params {
       self.visit_pat(&param.pat);
     }
-    let in_top_level = self.in_top_level;
-    self.in_top_level = false;
+
     n.body.visit_with(self);
     self.in_top_level = in_top_level;
   }
 
   fn visit_arrow_expr(&mut self, n: &farmfe_core::swc_ecma_ast::ArrowExpr) {
+    let in_top_level = self.in_top_level;
+    self.in_top_level = false;
+
     for param in &n.params {
       self.visit_pat(param);
     }
-    let in_top_level = self.in_top_level;
-    self.in_top_level = false;
+
     n.body.visit_with(self);
     self.in_top_level = in_top_level;
   }
@@ -166,7 +170,9 @@ impl Visit for AllDeclaredIdentsCollector {
           decl.init.visit_with(self);
         }
       }
-      _ => {}
+      _ => {
+        n.visit_children_with(self);
+      }
     }
   }
 
@@ -178,5 +184,9 @@ impl Visit for AllDeclaredIdentsCollector {
     let mut collector = DefinedIdentsCollector::new();
     pat.visit_with(&mut collector);
     self.all_declared_idents.extend(collector.defined_idents);
+
+    if let Pat::Assign(assign_pat) = pat {
+      assign_pat.right.visit_with(self);
+    }
   }
 }

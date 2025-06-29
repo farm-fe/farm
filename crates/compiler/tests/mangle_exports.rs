@@ -6,7 +6,8 @@ use farmfe_core::HashMap;
 
 mod common;
 use crate::common::{
-  assert_compiler_result_with_config, create_compiler_with_args, AssertCompilerResultConfig,
+  assert_compiler_result_with_config, create_compiler_with_args, generate_runtime,
+  AssertCompilerResultConfig,
 };
 
 #[allow(dead_code)]
@@ -39,6 +40,10 @@ fn test(file_path_buf: PathBuf, crate_path_buf: PathBuf) {
         config.output.show_file_size = false;
 
         config = try_merge_config_file(config, config_entry);
+
+        if config.output.target_env.is_library() {
+          config.runtime = generate_runtime(crate_path_buf.clone(), true);
+        }
 
         // push mangle_exports plugin
         plugins.push(

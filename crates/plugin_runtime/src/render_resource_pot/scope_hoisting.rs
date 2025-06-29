@@ -204,6 +204,7 @@ mod tests {
   use farmfe_core::{
     config::Config,
     context::CompilationContext,
+    module::ModuleSystem,
     resource::resource_pot::{ResourcePot, ResourcePotType},
     HashSet,
   };
@@ -216,7 +217,8 @@ mod tests {
 
     let mut resource_pot = ResourcePot::new("test", "any", ResourcePotType::Js);
 
-    for module in module_graph.modules() {
+    for module in module_graph.modules_mut() {
+      module.meta.as_script_mut().module_system = ModuleSystem::EsModule;
       resource_pot.add_module(module.id.clone());
     }
 

@@ -3,12 +3,18 @@ use std::sync::Arc;
 use farmfe_core::{
   config::FARM_REQUIRE,
   context::CompilationContext,
-  module::{meta_data::script::ScriptModuleMetaData, ModuleId},
+  module::{
+    meta_data::script::{
+      ScriptModuleMetaData, EXPORT_DEFAULT, FARM_RUNTIME_MODULE_HELPER_ID,
+      FARM_RUNTIME_MODULE_SYSTEM_ID,
+    },
+    ModuleId,
+  },
   swc_common::{Mark, SyntaxContext, DUMMY_SP},
   swc_ecma_ast::{
-    CallExpr, Callee, Decl, EsVersion, ExportDecl, Expr, ExprOrSpread, ExprStmt, Ident, ImportDecl,
-    ImportNamedSpecifier, ImportSpecifier, ImportStarAsSpecifier, Lit, Module as SwcModule,
-    ModuleDecl, ModuleExportName, ModuleItem, Stmt, VarDecl, VarDeclKind,
+    CallExpr, Callee, Decl, EsVersion, ExportDecl, ExportDefaultExpr, Expr, ExprOrSpread, ExprStmt,
+    Ident, ImportDecl, ImportNamedSpecifier, ImportSpecifier, ImportStarAsSpecifier, Lit,
+    Module as SwcModule, ModuleDecl, ModuleExportName, ModuleItem, Stmt, VarDecl, VarDeclKind,
   },
   HashMap, HashSet,
 };
@@ -27,10 +33,6 @@ use crate::handle_exports::{create_export_decl_items, update_module_export_ident
 pub const FARM_REGISTER: &str = "farmRegister";
 pub const FARM_INTEROP_REQUIRE: &str = "interopRequireDefault";
 pub const FARM_CJS_EXPORTS: &str = "__farm_cjs_exports__";
-pub const FARM_MODULE_SYSTEM_SOURCE: &str = "@farmfe/runtime/src/module-system.ts";
-pub const FARM_MODULE_SYSTEM_MODULE_HELPER: &str = "@farmfe/runtime/src/modules/module-helper.ts";
-
-pub fn transform_hybrid_to_cjs() {}
 
 /// Transform cjs to esm, for example:
 /// ```js
@@ -68,7 +70,9 @@ pub fn transform_cjs_to_esm(
   external_source_map: &HashMap<ModuleId, HashSet<String>>,
   meta: &mut ScriptModuleMetaData,
   context: &Arc<CompilationContext>,
+  is_entry: bool,
   is_required_cjs_module: bool,
+  used_helper_idents: &mut HashSet<&str>,
 ) {
   let unresolved_mark = Mark::from_u32(meta.unresolved_mark);
   let top_level_mark = Mark::from_u32(meta.top_level_mark);
@@ -118,26 +122,53 @@ pub fn transform_cjs_to_esm(
   );
 
   // insert module system import
-  items.prepend_stmts(vec![
-    create_import_decl_item(
-      vec![ImportSpecifier::Named(ImportNamedSpecifier {
+  let mut prepend_imports = vec![create_import_decl_item(
+    vec![ImportSpecifier::Named(ImportNamedSpecifier {
+      span: DUMMY_SP,
+      local: create_top_level_ident(FARM_REGISTER, top_level_mark),
+      imported: None,
+      is_type_only: false,
+    })],
+    FARM_RUNTIME_MODULE_SYSTEM_ID,
+  )];
+
+  let mut sorted_helper_idents = used_helper_idents.iter().collect::<Vec<_>>();
+  sorted_helper_idents.sort();
+
+  // inject runtime helpers at the top of the module
+  let mut specifiers = sorted_helper_idents
+    .into_iter()
+    .map(|ident| {
+      ImportSpecifier::Named(ImportNamedSpecifier {
         span: DUMMY_SP,
-        local: create_top_level_ident(FARM_REGISTER, top_level_mark),
+        local: create_top_level_ident(ident, top_level_mark),
         imported: None,
         is_type_only: false,
-      })],
-      FARM_MODULE_SYSTEM_SOURCE,
-    ),
-    create_import_decl_item(
-      vec![ImportSpecifier::Named(ImportNamedSpecifier {
-        span: DUMMY_SP,
-        local: create_top_level_ident(FARM_INTEROP_REQUIRE, top_level_mark),
-        imported: None,
-        is_type_only: false,
-      })],
-      FARM_MODULE_SYSTEM_MODULE_HELPER,
-    ),
-  ]);
+      })
+    })
+    .collect::<Vec<_>>();
+
+  if meta.export_ident_map.contains_key(EXPORT_DEFAULT) {
+    let import_named_specifier = ImportSpecifier::Named(ImportNamedSpecifier {
+      span: DUMMY_SP,
+      local: create_top_level_ident(FARM_INTEROP_REQUIRE, top_level_mark),
+      imported: None,
+      is_type_only: false,
+    });
+
+    specifiers.push(import_named_specifier);
+
+    if !used_helper_idents.contains(FARM_INTEROP_REQUIRE) {
+      used_helper_idents.insert(FARM_INTEROP_REQUIRE);
+    }
+  }
+
+  prepend_imports.push(create_import_decl_item(
+    specifiers,
+    FARM_RUNTIME_MODULE_HELPER_ID,
+  ));
+
+  items.prepend_stmts(prepend_imports);
 
   // wrap the cjs module with farm module system
   let ast = std::mem::take(&mut meta.ast);
@@ -174,14 +205,25 @@ pub fn transform_cjs_to_esm(
   }
 
   // if the cjs module is neither required nor exported by esm, we should executed it by default
-  if !is_required_cjs_module && !should_add_cjs_exports {
-    export_items.push(ModuleItem::Stmt(Stmt::Expr(ExprStmt {
-      span: DUMMY_SP,
-      expr: Box::new(create_call_expr(
-        Expr::Ident(create_top_level_ident(FARM_REQUIRE, top_level_mark)),
-        vec![],
-      )),
-    })))
+  if is_entry || (!is_required_cjs_module && !should_add_cjs_exports) {
+    let expr = Box::new(create_call_expr(
+      Expr::Ident(create_top_level_ident(FARM_REQUIRE, top_level_mark)),
+      vec![],
+    ));
+
+    if is_entry && !meta.export_ident_map.contains_key(EXPORT_DEFAULT) {
+      export_items.push(ModuleItem::ModuleDecl(ModuleDecl::ExportDefaultExpr(
+        ExportDefaultExpr {
+          span: DUMMY_SP,
+          expr,
+        },
+      )));
+    } else if !is_required_cjs_module && !should_add_cjs_exports {
+      export_items.push(ModuleItem::Stmt(Stmt::Expr(ExprStmt {
+        span: DUMMY_SP,
+        expr,
+      })));
+    }
   }
 
   meta.ast.body.extend(export_items);
@@ -192,6 +234,7 @@ pub fn transform_cjs_to_esm(
     module_id,
     &mut meta.export_ident_map,
     top_level_mark,
+    is_entry,
     is_required_cjs_module,
     should_add_cjs_exports,
   );
@@ -291,7 +334,7 @@ impl<'a> VisitMut for RequireEsmReplacer<'a> {
   }
 }
 
-fn create_import_decl_item(specifiers: Vec<ImportSpecifier>, source: &str) -> ModuleItem {
+pub fn create_import_decl_item(specifiers: Vec<ImportSpecifier>, source: &str) -> ModuleItem {
   ModuleItem::ModuleDecl(ModuleDecl::Import(ImportDecl {
     span: DUMMY_SP,
     specifiers,

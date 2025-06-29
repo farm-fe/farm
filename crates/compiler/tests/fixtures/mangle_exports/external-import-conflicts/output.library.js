@@ -1,5 +1,16 @@
 //index.js:
- import { defineExportStar } from "@farm-runtime/module-helper";
+ function defineExportStar(to, from) {
+    Object.keys(from).forEach(function(k) {
+        if (k !== "default" && !Object.prototype.hasOwnProperty.call(to, k)) {
+            Object.defineProperty(to, k, {
+                value: from[k],
+                enumerable: true,
+                configurable: true
+            });
+        }
+    });
+    return from;
+}
 import { b as unresolvedDeepConflict } from '/external/deep/unresolved';
 import { existsSync } from 'node:fs';
 import * as node_fs_external_all_farm_internal_ from "node:fs";

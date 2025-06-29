@@ -1,6 +1,0 @@
-{
-  "output": {
-    "format": "cjs",
-    "targetEnv": "library-node"
-  }
-}

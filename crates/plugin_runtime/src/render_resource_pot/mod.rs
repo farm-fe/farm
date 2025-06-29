@@ -89,6 +89,7 @@ pub fn render_resource_pot_modules(
       let hoisted_sourcemap = render_module_options.hoisted_sourcemap.clone();
 
       let mut render_module_result = render_module(render_module_options)?;
+      drop(merged_globals);
 
       render_module_result.hoisted_module_ids = module_ids;
 

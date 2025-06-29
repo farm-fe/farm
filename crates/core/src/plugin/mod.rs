@@ -341,6 +341,15 @@ impl PluginHookContext {
       None => Some(Self::caller_format(name)),
     }
   }
+
+  pub fn clone_and_append_caller<T: AsRef<str>>(&self, name: T) -> Self {
+    let mut new = self.clone();
+    if let Some(c) = new.add_caller(name) {
+      new.caller = Some(c);
+    }
+    new
+  }
+
   pub fn contain_caller<T: AsRef<str>>(&self, name: T) -> bool {
     if let Some(ref s) = self.caller {
       s.contains(&Self::caller_format(name))

@@ -1,20 +1,30 @@
 #![feature(box_patterns)]
 
 use farmfe_core::{
-  config::Config,
+  config::{
+    config_regex::ConfigRegex, partial_bundling::PartialBundlingEnforceResourceConfig, Config,
+    LibraryBundleType, ModuleFormatConfig,
+  },
   error::CompilationError,
   module::{
-    meta_data::script::{ModuleExportIdent, ModuleExportIdentType},
+    meta_data::script::{
+      ModuleExportIdent, ModuleExportIdentType, FARM_RUNTIME_MODULE_HELPER_ID,
+      FARM_RUNTIME_MODULE_SYSTEM_ID,
+    },
     ModuleId, ModuleSystem, ModuleType,
   },
   parking_lot::Mutex,
-  plugin::{Plugin, PluginAnalyzeDepsHookResultEntry, PluginResolveHookResult, ResolveKind},
+  plugin::{
+    Plugin, PluginAnalyzeDepsHookResultEntry, PluginGenerateResourcesHookResult,
+    PluginResolveHookResult, ResolveKind,
+  },
   rayon::iter::{IntoParallelRefMutIterator, ParallelIterator},
   relative_path::RelativePath,
   resource::{
     meta_data::{js::JsResourcePotMetaData, ResourcePotMetaData},
     resource_pot::ResourcePotType,
   },
+  swc_ecma_ast::Module,
   HashMap, HashSet,
 };
 use farmfe_toolkit::{
@@ -27,31 +37,96 @@ use farmfe_toolkit::{
   },
   swc_ecma_visit::VisitMutWith,
 };
-use transform_cjs::{transform_cjs_to_esm, transform_hybrid_to_cjs};
+use transform_cjs::transform_cjs_to_esm;
 
-use crate::transform_cjs::{FARM_MODULE_SYSTEM_MODULE_HELPER, FARM_MODULE_SYSTEM_SOURCE};
+use crate::{
+  formats::generate_library_format_resources, transform_hybrid::transform_hybrid_to_cjs,
+};
 
+mod formats;
 mod handle_exports;
+mod import_meta_visitor;
 mod transform_cjs;
+mod transform_hybrid;
+mod utils;
 
-const FARM_RUNTIME_PREFIX: &str = "@farmfe/runtime/";
+const FARM_RUNTIME_PREFIX: &str = "@farm-runtime/";
+const PLUGIN_NAME: &str = "FarmPluginLibrary";
 
 #[derive(Default)]
 pub struct FarmPluginLibrary {
   export_namespace_modules: Mutex<HashSet<ModuleId>>,
   cjs_require_map: Mutex<HashMap<(ModuleId, String), ModuleId>>,
   external_source_map: Mutex<HashMap<ModuleId, HashSet<String>>>,
+
+  library_bundle_type: LibraryBundleType,
+
+  runtime_module_helper_ast: Mutex<Option<Module>>,
+  all_used_helper_idents: Mutex<HashSet<String>>,
 }
 
 impl FarmPluginLibrary {
-  pub fn new(_: &Config) -> Self {
-    Self::default()
+  pub fn new(config: &Config) -> Self {
+    Self {
+      library_bundle_type: config.output.library_bundle_type,
+      ..Self::default()
+    }
   }
 }
 
 impl Plugin for FarmPluginLibrary {
   fn name(&self) -> &str {
-    "FarmPluginLibrary"
+    PLUGIN_NAME
+  }
+
+  fn config(&self, config: &mut Config) -> farmfe_core::error::Result<Option<()>> {
+    if !config.partial_bundling.enforce_resources.is_empty() {
+      println!("[Farm warn] Config `partial_bundling.enforce_resources` does not work under library mode, it will be ignored.");
+      config.partial_bundling.enforce_resources = vec![];
+    }
+
+    match config.output.library_bundle_type {
+      LibraryBundleType::SingleBundle => {
+        if config.input.len() > 1 {
+          panic!("When output.library_bundle_type is single-bundle, output.input should configure only one entry, currently there are {} inputs", config.input.len());
+        }
+
+        config
+          .partial_bundling
+          .enforce_resources
+          .push(PartialBundlingEnforceResourceConfig {
+            name: config.input.iter().next().unwrap().0.to_string(),
+            test: vec![ConfigRegex::new(".+")],
+          });
+      }
+      LibraryBundleType::MultipleBundle => {
+        config.partial_bundling.target_concurrent_requests = 1;
+        config.partial_bundling.target_min_size = usize::MAX;
+      }
+      LibraryBundleType::BundleLess => {
+        config.partial_bundling.target_concurrent_requests = usize::MAX;
+        config.partial_bundling.target_min_size = 0;
+      }
+    }
+
+    // add runtime module helper as entry, it will be removed from the module graph later
+    config.input.insert(
+      FARM_RUNTIME_MODULE_HELPER_ID.to_string(),
+      FARM_RUNTIME_MODULE_HELPER_ID.to_string(),
+    );
+
+    // add [format] place holder if there are multiple formats
+    if matches!(config.output.format, ModuleFormatConfig::Multiple(_)) {
+      if !config.output.filename.contains("[format]") {
+        config.output.filename = format!("[format]/{}", config.output.filename);
+      }
+
+      if !config.output.entry_filename.contains("[format]") {
+        config.output.entry_filename = format!("[format]/{}", config.output.entry_filename);
+      }
+    }
+
+    Ok(Some(()))
   }
 
   /// Make sure this plugin is executed before all other internal plugins.
@@ -85,6 +160,11 @@ impl Plugin for FarmPluginLibrary {
     _hook_context: &farmfe_core::plugin::PluginHookContext,
   ) -> farmfe_core::error::Result<Option<farmfe_core::plugin::PluginLoadHookResult>> {
     if let Some(rel_path) = param.resolved_path.strip_prefix(FARM_RUNTIME_PREFIX) {
+      let rel_path = match rel_path {
+        "module-system" => "src/module-system.ts",
+        "module-helper" => "src/modules/module-helper.ts",
+        _ => unreachable!("unsupported runtime path {rel_path}"),
+      };
       let abs_path = RelativePath::new(rel_path).to_logical_path(&context.config.runtime.path);
       let content = read_file_utf8(abs_path.to_string_lossy().to_string().as_str())?;
 
@@ -113,7 +193,8 @@ impl Plugin for FarmPluginLibrary {
       let globals = context.meta.get_globals(&param.module.id);
 
       try_with(cm, globals.value(), || {
-        if param.module.id.to_string().starts_with(FARM_RUNTIME_PREFIX) {
+        let module_id_str = param.module.id.to_string();
+        if module_id_str.starts_with(FARM_RUNTIME_PREFIX) {
           // remove unused runtime features
           let feature_flags = HashSet::default();
           let mut runtime_feature_remover =
@@ -128,11 +209,11 @@ impl Plugin for FarmPluginLibrary {
           ModuleSystem::CommonJs | ModuleSystem::Hybrid
         ) {
           param.deps.push(PluginAnalyzeDepsHookResultEntry {
-            source: FARM_MODULE_SYSTEM_SOURCE.to_string(),
+            source: FARM_RUNTIME_MODULE_SYSTEM_ID.to_string(),
             kind: ResolveKind::Import,
           });
           param.deps.push(PluginAnalyzeDepsHookResultEntry {
-            source: FARM_MODULE_SYSTEM_MODULE_HELPER.to_string(),
+            source: FARM_RUNTIME_MODULE_HELPER_ID.to_string(),
             kind: ResolveKind::Import,
           });
         }
@@ -148,6 +229,15 @@ impl Plugin for FarmPluginLibrary {
     module_graph: &mut farmfe_core::module::module_graph::ModuleGraph,
     _context: &std::sync::Arc<farmfe_core::context::CompilationContext>,
   ) -> farmfe_core::error::Result<Option<()>> {
+    // Remove module helper from module graph entry and clone it's ast
+    let runtime_helper_id = FARM_RUNTIME_MODULE_HELPER_ID.into();
+    module_graph.entries.remove(&runtime_helper_id);
+
+    if let Some(helper_module) = module_graph.module(&runtime_helper_id) {
+      let mut module_helper_ast = self.runtime_module_helper_ast.lock();
+      *module_helper_ast = Some(helper_module.meta.as_script().ast.clone());
+    }
+
     // Note that we update ResolveKind to Import here instead of in finalize_module because
     // when resolving dependencies ResolveKind::Require and ResolveKind::Import are different,
     // if we update ResolveKind::Require to ResolveKind::Import, it will break original dependency resolution
@@ -228,11 +318,11 @@ impl Plugin for FarmPluginLibrary {
         let cm = context.meta.get_module_source_map(&module.id);
         let globals = context.meta.get_globals(&module.id);
         let is_required_cjs_module = cjs_required_modules.contains(&module.id);
+        let mut used_helper_idents = HashSet::default();
 
         try_with(cm, globals.value(), || {
           if meta.module_system == ModuleSystem::Hybrid {
-            // TODO
-            transform_hybrid_to_cjs();
+            used_helper_idents.extend(transform_hybrid_to_cjs(meta));
             meta.module_system = ModuleSystem::CommonJs;
           }
 
@@ -244,12 +334,19 @@ impl Plugin for FarmPluginLibrary {
               &external_source_map,
               meta,
               context,
+              module.is_entry,
               is_required_cjs_module,
+              &mut used_helper_idents,
             );
             meta.module_system = ModuleSystem::EsModule;
           }
         })
         .unwrap();
+
+        self
+          .all_used_helper_idents
+          .lock()
+          .extend(used_helper_idents.into_iter().map(|s| s.to_string()));
       });
 
     let export_namespace_modules = self.export_namespace_modules.lock();
@@ -270,28 +367,15 @@ impl Plugin for FarmPluginLibrary {
         {
           dep_module_meta.export_ident_map.insert(
             EXPORT_NAMESPACE.to_string(),
-            ModuleExportIdent {
-              module_id: dep_id.clone(),
-              ident: create_export_namespace_ident(&dep_id).to_id().into(),
-              export_type: ModuleExportIdentType::VirtualNamespace,
-            },
+            ModuleExportIdent::new(
+              dep_id.clone(),
+              create_export_namespace_ident(&dep_id).to_id().into(),
+              ModuleExportIdentType::VirtualNamespace,
+            ),
           );
         }
       }
     }
-
-    Ok(None)
-  }
-
-  fn partial_bundling(
-    &self,
-    _modules: &Vec<farmfe_core::module::ModuleId>,
-    _context: &std::sync::Arc<farmfe_core::context::CompilationContext>,
-    _hook_context: &farmfe_core::plugin::PluginHookContext,
-  ) -> farmfe_core::error::Result<Option<Vec<farmfe_core::resource::resource_pot::ResourcePot>>> {
-    // TODO: disable partial bundling for library bundle and implement normal bundling.
-    // The algorithm: Merge all modules in the same module group into one resource pot.
-    // Note: farm runtime modules should always be bundled into one single resource pot.
 
     Ok(None)
   }
@@ -308,6 +392,21 @@ impl Plugin for FarmPluginLibrary {
       return Ok(None);
     }
 
+    let entry_module_id = if self.library_bundle_type == LibraryBundleType::BundleLess
+      && resource_pot.modules().len() == 1
+    {
+      resource_pot.modules().first().unwrap()
+    } else if let Some(entry) = resource_pot.entry_module.as_ref() {
+      entry
+    } else if let Some(entry) = resource_pot.dynamic_imported_entry_module.as_ref() {
+      entry
+    } else {
+      panic!(
+        "dynamic imported entry module not found for resource pot {:?}",
+        resource_pot.id
+      );
+    };
+
     let module_graph = context.module_graph.read();
 
     let ConcatenateModulesAstResult {
@@ -320,7 +419,7 @@ impl Plugin for FarmPluginLibrary {
       unresolved_mark,
       top_level_mark,
     } = concatenate_modules_ast(
-      resource_pot.entry_module.as_ref().unwrap(), // TODO: support dynamic imported entry module for multiple library bundle
+      entry_module_id,
       &resource_pot.modules,
       &module_graph,
       context,
@@ -333,19 +432,6 @@ impl Plugin for FarmPluginLibrary {
     context
       .meta
       .set_resource_pot_globals(&resource_pot.id, globals);
-
-    // handle import/export between resource pots
-    // if let Some(entry) = &resource_pot.entry_module {
-    //   let entry_module = module_graph.module(entry).unwrap();
-    //   let script_meta = entry_module.meta.as_script();
-
-    //   if !script_meta.export_ident_map.is_empty() {
-    //     let export_item = script_meta.get_export_module_item();
-    //     ast.body.push(export_item);
-    //   }
-    // }
-
-    // TODO find exports in this resource pot
 
     Ok(Some(ResourcePotMetaData::Js(JsResourcePotMetaData {
       ast,
@@ -362,12 +448,31 @@ impl Plugin for FarmPluginLibrary {
 
   fn generate_resources(
     &self,
-    _resource_pot: &mut farmfe_core::resource::resource_pot::ResourcePot,
-    _context: &std::sync::Arc<farmfe_core::context::CompilationContext>,
-    _hook_context: &farmfe_core::plugin::PluginHookContext,
-  ) -> farmfe_core::error::Result<Option<farmfe_core::plugin::PluginGenerateResourcesHookResult>>
-  {
-    // TODO: render the resource according to ModuleFormat and then call generate_resources hook to
-    Ok(None)
+    resource_pot: &mut farmfe_core::resource::resource_pot::ResourcePot,
+    context: &std::sync::Arc<farmfe_core::context::CompilationContext>,
+    hook_context: &farmfe_core::plugin::PluginHookContext,
+  ) -> farmfe_core::error::Result<Option<PluginGenerateResourcesHookResult>> {
+    if hook_context.contain_caller(self.name()) {
+      return Ok(None);
+    }
+
+    if resource_pot.resource_pot_type != ResourcePotType::Js {
+      return Ok(None);
+    }
+
+    let mut result = PluginGenerateResourcesHookResult { resources: vec![] };
+    let hook_context = hook_context.clone_and_append_caller(self.name());
+    let runtime_module_helper_ast = self.runtime_module_helper_ast.lock();
+    let mut all_used_helper_idents = self.all_used_helper_idents.lock();
+
+    result.resources = generate_library_format_resources(
+      resource_pot,
+      runtime_module_helper_ast.as_ref().unwrap(),
+      &mut all_used_helper_idents,
+      context,
+      &hook_context,
+    )?;
+
+    Ok(Some(result))
   }
 }

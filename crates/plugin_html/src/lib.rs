@@ -272,6 +272,7 @@ impl Plugin for FarmPluginHtml {
             origin: ResourceOrigin::ResourcePot(resource_pot.id.clone()),
             should_transform_output_filename: true,
             meta: Default::default(),
+            special_placeholders: Default::default(),
           },
           source_map: None,
         }],

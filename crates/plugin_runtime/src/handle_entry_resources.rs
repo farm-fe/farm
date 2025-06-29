@@ -81,7 +81,7 @@ pub fn handle_entry_resources(
     .collect::<Vec<_>>();
   // 0. global require if format is esm
   let global_require_code = create_global_require_code(
-    &context.config.output.format,
+    &context.config.output.format.as_single(),
     &context.config.output.target_env,
   );
 
@@ -90,7 +90,7 @@ pub fn handle_entry_resources(
     // runtime resources should emit if there are other initial resources
     params.emit_runtime = true;
 
-    match context.config.output.format {
+    match context.config.output.format.as_single() {
       ModuleFormat::EsModule => format!("import \"./{}\";", params.runtime_resource_name),
       ModuleFormat::CommonJs => format!("require(\"./{}\");", params.runtime_resource_name),
     }
@@ -114,7 +114,8 @@ pub fn handle_entry_resources(
   let entry_resource_code = create_entry_resource_code(&mut params.resource);
 
   // 5. export code
-  let export_info_code = create_export_info_code(entry_module, &context.config.output.format);
+  let export_info_code =
+    create_export_info_code(entry_module, &context.config.output.format.as_single());
 
   let mut entry_bundle = MagicString::new(&entry_resource_code, None);
 
@@ -185,7 +186,7 @@ fn create_load_dep_resources_code(
 
   dep_resources
     .iter()
-    .map(|rn| match context.config.output.format {
+    .map(|rn| match context.config.output.format.as_single() {
       ModuleFormat::EsModule => format!("import \"./{rn}\";"),
       ModuleFormat::CommonJs => format!("require(\"./{rn}\");"),
     })

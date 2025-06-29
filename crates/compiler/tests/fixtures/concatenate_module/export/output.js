@@ -1,9 +1,9 @@
 //index.js:
- (function(){const moduleSystem = {};
+ (function(){const __farm_internal_module_system__ = {};
 function initModuleSystem() {
     console.log('module-helper.ts');
 }
-initModuleSystem(moduleSystem);
+initModuleSystem(__farm_internal_module_system__);
 }());window['__farm_default_namespace__'].m.se({
     "xxx": window['xxx'] || {}
 });

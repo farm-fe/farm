@@ -156,13 +156,17 @@ impl FarmPluginMangleExports {
         // mangle exports
         for export in exports {
           let ident = meta.export_ident_map.get(export).unwrap();
+          let internal_ident = ident.as_internal();
           // only mangle exports defined in current module
-          if module.id != ident.module_id
+          if module.id != internal_ident.module_id
             || module.is_entry
             || module.is_dynamic_entry
             || exclude_exports.contains(&export.as_str())
             || can_not_be_mangled.contains(ident)
-            || !matches!(ident.export_type, ModuleExportIdentType::Declaration)
+            || !matches!(
+              internal_ident.export_type,
+              ModuleExportIdentType::Declaration
+            )
           {
             continue;
           }
@@ -196,6 +200,8 @@ impl FarmPluginMangleExports {
         let mut ident_generator = generator_map.lock().remove(&module.id).unwrap();
         // add all reexported idents to ident_generator
         for (export, ident) in meta.export_ident_map.iter() {
+          let ident = ident.as_internal();
+
           if module.id != ident.module_id && is_reexport_all(&meta.reexport_ident_map, export) {
             if let Some(mangled_ident) = mangled_ident_map
               .get(&ident.module_id)
@@ -208,6 +214,7 @@ impl FarmPluginMangleExports {
 
         // mangle exports
         for (export, ident) in meta.export_ident_map.iter() {
+          let ident = ident.as_internal();
           // only mangle exports defined in current module
           if module.id != ident.module_id {
             if is_reexport_all(&meta.reexport_ident_map, export) {

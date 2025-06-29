@@ -1,5 +1,6 @@
 //index.js:
  import { readFile as r1, readFileSync as r2 } from 'node:fs';
+; // module_id: index.ts
 const readFile = 1;
 const readFileSync = 2;
 console.log({

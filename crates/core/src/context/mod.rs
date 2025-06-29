@@ -144,6 +144,7 @@ impl CompilationContext {
         resource_type: params.resource_type,
         origin: ResourceOrigin::Module(module_id),
         meta: Default::default(),
+        special_placeholders: Default::default(),
       },
     );
   }

@@ -122,6 +122,13 @@ pub fn set_module_system_for_module_meta(
     ModuleSystem::UnInitial
   };
 
+  let unresolved_mark = Mark::from_u32(param.module.meta.as_script().unresolved_mark);
+  let mut analyzer = ModuleSystemAnalyzer {
+    unresolved_mark,
+    contain_module_exports: false,
+    contain_esm: false,
+  };
+
   let ast = &param.module.meta.as_script().ast;
 
   let mut module_system_from_ast: ModuleSystem = ModuleSystem::UnInitial;
@@ -132,13 +139,6 @@ pub fn set_module_system_for_module_meta(
       cm,
       context.meta.get_globals(&param.module.id).value(),
       || {
-        let unresolved_mark = Mark::from_u32(param.module.meta.as_script().unresolved_mark);
-        let mut analyzer = ModuleSystemAnalyzer {
-          unresolved_mark,
-          contain_module_exports: false,
-          contain_esm: false,
-        };
-
         ast.visit_with(&mut analyzer);
 
         if analyzer.contain_module_exports {
@@ -163,5 +163,8 @@ pub fn set_module_system_for_module_meta(
     v = ModuleSystem::EsModule;
   }
 
-  param.module.meta.as_script_mut().module_system = v;
+  let meta = param.module.meta.as_script_mut();
+  meta.module_system = v;
+  meta.contains_esm_decl = analyzer.contain_esm;
+  meta.contains_module_exports = analyzer.contain_module_exports;
 }

@@ -1,9 +1,9 @@
 //farm_internal_runtime_index.js:
- const moduleSystem = {};
+ const __farm_internal_module_system__ = {};
 function initModuleSystem() {
     console.log('module-helper.ts');
 }
-initModuleSystem(moduleSystem);
+initModuleSystem(__farm_internal_module_system__);
 
 
 //index-7eccb2bd.js:

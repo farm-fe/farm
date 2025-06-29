@@ -635,6 +635,7 @@ impl Plugin for FarmPluginCss {
         resource_type: ResourceType::Css,
         origin: ResourceOrigin::ResourcePot(resource_pot.id.clone()),
         meta: Default::default(),
+        special_placeholders: Default::default(),
       };
       let mut source_map = None;
 
@@ -677,6 +678,7 @@ impl Plugin for FarmPluginCss {
           resource_type: ty,
           origin: ResourceOrigin::ResourcePot(resource_pot.id.clone()),
           meta: Default::default(),
+          special_placeholders: Default::default(),
         });
       }
 
