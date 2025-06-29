@@ -114,7 +114,11 @@ fn get_export_all_source_module_is_empty(
 
       if let Some(source_module_id) = source_module_id {
         let source_module = module_graph.module(&source_module_id).unwrap();
-        let is_empty = source_module.meta.as_script().ast.body.is_empty();
+        let is_empty = if source_module.module_type.is_script() && !source_module.external {
+          source_module.meta.as_script().ast.body.is_empty()
+        } else {
+          false
+        };
         source_module_is_empty.insert(source, (source_module_id, is_empty));
       }
     }

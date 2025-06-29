@@ -15,6 +15,8 @@ fn is_module_contains_export_ident(
   meta: &ScriptModuleMetaData,
   export_ident: &ModuleExportIdent,
 ) -> bool {
+  let export_ident = export_ident.as_internal();
+
   if !matches!(export_ident.export_type, ModuleExportIdentType::Declaration) {
     return true;
   }
@@ -34,7 +36,7 @@ fn is_module_contains_export_ident(
 
             default_ident == export_ident.ident
           }
-          ExportSpecifierInfo::All => unreachable!(),
+          ExportSpecifierInfo::All => true,
           ExportSpecifierInfo::Named { local, .. } => {
             // is source is not none, means the ident is defined in other modules, we should always return false
             export_info.source.is_none() && local == &export_ident.ident
@@ -60,7 +62,11 @@ pub fn remove_export_idents(module_graph: &mut ModuleGraph) {
       let meta = module.meta.as_script();
 
       for (key, export_ident) in &meta.export_ident_map {
-        if let Some(defined_module) = module_graph.module(&export_ident.module_id) {
+        if let Some(defined_module) = module_graph.module(&export_ident.as_internal().module_id) {
+          if !defined_module.module_type.is_script() || defined_module.external {
+            continue;
+          }
+
           let defined_module_meta = defined_module.meta.as_script();
 
           if !is_module_contains_export_ident(defined_module_meta, export_ident) {

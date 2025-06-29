@@ -14,8 +14,8 @@ use farmfe_core::{
   HashMap,
 };
 use farmfe_toolkit::script::{
-  concatenate_modules::EXPORT_NAMESPACE, create_call_expr, create_top_level_ident,
-  create_var_decl_item, create_var_declarator,
+  concatenate_modules::EXPORT_NAMESPACE, create_call_expr, create_export_default_ident,
+  create_top_level_ident, create_var_decl_item, create_var_declarator,
 };
 
 use crate::transform_cjs::{FARM_CJS_EXPORTS, FARM_INTEROP_REQUIRE};
@@ -31,6 +31,7 @@ pub fn create_export_decl_items(
     if export_name == EXPORT_NAMESPACE || export_name == EXPORT_EXTERNAL_ALL {
       continue;
     }
+    let mut export_ident = export_ident.as_internal_mut();
 
     export_ident.export_type = ModuleExportIdentType::Declaration;
 
@@ -105,6 +106,7 @@ pub fn update_module_export_ident_map(
   module_id: &ModuleId,
   export_ident_map: &mut HashMap<String, ModuleExportIdent>,
   top_level_mark: Mark,
+  is_entry: bool,
   is_required_cjs_module: bool,
   should_add_cjs_exports: bool,
 ) {
@@ -112,13 +114,13 @@ pub fn update_module_export_ident_map(
   if is_required_cjs_module {
     export_ident_map.insert(
       FARM_REQUIRE.to_string(),
-      ModuleExportIdent {
-        module_id: module_id.clone(),
-        ident: create_top_level_ident(FARM_REQUIRE, top_level_mark)
+      ModuleExportIdent::new(
+        module_id.clone(),
+        create_top_level_ident(FARM_REQUIRE, top_level_mark)
           .to_id()
           .into(),
-        export_type: ModuleExportIdentType::Declaration,
-      },
+        ModuleExportIdentType::Declaration,
+      ),
     );
   }
 
@@ -126,13 +128,24 @@ pub fn update_module_export_ident_map(
   if should_add_cjs_exports {
     export_ident_map.insert(
       EXPORT_NAMESPACE.to_string(),
-      ModuleExportIdent {
-        module_id: module_id.clone(),
-        ident: create_top_level_ident(FARM_CJS_EXPORTS, top_level_mark)
+      ModuleExportIdent::new(
+        module_id.clone(),
+        create_top_level_ident(FARM_CJS_EXPORTS, top_level_mark)
           .to_id()
           .into(),
-        export_type: ModuleExportIdentType::VirtualNamespace,
-      },
+        ModuleExportIdentType::VirtualNamespace,
+      ),
+    );
+  }
+
+  if is_entry && !export_ident_map.contains_key(EXPORT_DEFAULT) {
+    export_ident_map.insert(
+      EXPORT_DEFAULT.to_string(),
+      ModuleExportIdent::new(
+        module_id.clone(),
+        create_export_default_ident(module_id).to_id().into(),
+        ModuleExportIdentType::Declaration,
+      ),
     );
   }
 }

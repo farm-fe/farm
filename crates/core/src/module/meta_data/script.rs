@@ -19,6 +19,7 @@ use super::custom::CustomMetaDataMap;
 use statement::{Statement, SwcId};
 
 pub mod feature_flag;
+pub mod module_export_ident;
 pub mod statement;
 
 pub const EXPORT_NAMESPACE: &str = "namespace_farm_internal_";
@@ -28,73 +29,7 @@ pub const EXPORT_DEFAULT: &str = "default";
 pub const FARM_RUNTIME_MODULE_HELPER_ID: &str = "@farm-runtime/module-helper";
 pub const FARM_RUNTIME_MODULE_SYSTEM_ID: &str = "@farm-runtime/module-system";
 
-/// How the module export ident is defined.
-/// Where resolving this type, [Declaration] will be resolved first when expand exports.
-/// Other 3 types will be resolved when expand imports.
-#[cache_item]
-#[derive(Debug, Clone, Hash, PartialEq, Eq)]
-pub enum ModuleExportIdentType {
-  /// ```js
-  /// function m() {}
-  /// export { m as bar }; // or
-  /// export const bar = m;
-  /// ```
-  Declaration,
-
-  /// ```js
-  /// import { foo as bar } from 'module';
-  /// export { foo as default } from 'module'; // where module is a external module and we don't know how foo is defined
-  /// ```
-  External,
-
-  /// ```js
-  /// // deep.js
-  /// export * from 'module'; // where module is a external module
-  ///
-  /// // index.js
-  /// import { bar } from'./deep'; // bar is a ExternalReExport ident
-  /// ```
-  ExternalReExportAll,
-
-  /// ```js
-  /// export * from './module'; // where module is a external module
-  /// ```
-  ExternalAll,
-
-  /// ```js
-  /// import { foo as bar } from './foo.cjs';
-  /// export { foo as default } from './foo.cjs'; // foo is not external but using cjs  
-  /// ```
-  Unresolved,
-
-  /// namespace import/export placeholder
-  /// ```js
-  /// import * as m from './foo';
-  /// export * as m from './foo';
-  /// ```
-  VirtualNamespace,
-}
-
-#[cache_item]
-#[derive(Debug, Clone, Hash, PartialEq, Eq)]
-pub struct ModuleExportIdent {
-  pub module_id: ModuleId,
-  pub ident: SwcId,
-  pub export_type: ModuleExportIdentType,
-}
-
-#[cache_item]
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum ModuleReExportIdentType {
-  /// ```js
-  /// export * from './module';
-  /// ```
-  FromExportAll,
-  /// ```js
-  /// export { foo as default } from './module'; // foo is local ident
-  /// ```
-  FromExportNamed { local: String },
-}
+pub use module_export_ident::{ModuleExportIdent, ModuleExportIdentType, ModuleReExportIdentType};
 
 /// Script specific meta data, for example, [swc_ecma_ast::Module]
 #[cache_item]
@@ -110,6 +45,8 @@ pub struct ScriptModuleMetaData {
   /// -- Start
   /// Generate in finalize_module hook, should be accessed after(not in) finalize_module hook
   pub module_system: ModuleSystem,
+  pub contains_module_exports: bool,
+  pub contains_esm_decl: bool,
   pub statements: Vec<Statement>,
   pub top_level_idents: HashSet<SwcId>,
   pub unresolved_idents: HashSet<SwcId>,
@@ -152,6 +89,8 @@ impl Default for ScriptModuleMetaData {
       top_level_mark: 0,
       unresolved_mark: 0,
       module_system: ModuleSystem::UnInitial,
+      contains_esm_decl: false,
+      contains_module_exports: false,
       hmr_self_accepted: false,
       hmr_accepted_deps: Default::default(),
       comments: Default::default(),
@@ -188,6 +127,8 @@ impl Clone for ScriptModuleMetaData {
       top_level_mark: self.top_level_mark,
       unresolved_mark: self.unresolved_mark,
       module_system: self.module_system.clone(),
+      contains_esm_decl: self.contains_esm_decl.clone(),
+      contains_module_exports: self.contains_module_exports.clone(),
       hmr_self_accepted: self.hmr_self_accepted,
       hmr_accepted_deps: self.hmr_accepted_deps.clone(),
       comments: self.comments.clone(),

@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use farmfe_core::config::partial_bundling::PartialBundlingEnforceResourceConfig;
+use farmfe_core::config::comments::CommentsConfig;
 use farmfe_core::config::{bool_or_obj::BoolOrObj, config_regex::ConfigRegex, Mode, TargetEnv};
 use farmfe_core::HashMap;
 
@@ -19,7 +19,16 @@ fn test(file_path_buf: PathBuf, crate_path_buf: PathBuf) {
 
   let entry_name = "index".to_string();
   let files = get_dir_config_files(cwd);
-  let is_cjs = cwd.to_string_lossy().contains("cjs/");
+  let test_cases_that_need_real_runtime = vec![
+    "cjs/",
+    "hybrid/",
+    "dynamic/lodash_export",
+    "external/import_namespace",
+    "library/external/",
+  ];
+  let is_cjs = test_cases_that_need_real_runtime
+    .iter()
+    .any(|i| cwd.to_string_lossy().contains(i));
 
   for (name, config_entry) in files {
     let compiler = create_compiler_with_args(
@@ -35,6 +44,7 @@ fn test(file_path_buf: PathBuf, crate_path_buf: PathBuf) {
 
         if is_cjs {
           config.tree_shaking = Box::new(BoolOrObj::Bool(true));
+          config.comments = Box::new(CommentsConfig::Bool(true));
         } else {
           config.tree_shaking = Box::new(BoolOrObj::Bool(false));
         }
@@ -45,14 +55,7 @@ fn test(file_path_buf: PathBuf, crate_path_buf: PathBuf) {
           ConfigRegex::new("/external/.+"),
         ];
         config.output.target_env = TargetEnv::Library;
-        config.resolve.auto_external_failed_resolve = true;
-        config
-          .partial_bundling
-          .enforce_resources
-          .push(PartialBundlingEnforceResourceConfig {
-            name: "index".to_string(),
-            test: vec![ConfigRegex::new(".+")],
-          });
+        // config.resolve.auto_external_failed_resolve = true;
 
         if is_cjs {
           config.runtime = generate_runtime(crate_path_buf.clone(), true);
@@ -85,6 +88,15 @@ fn library_test() {
   fixture!("tests/fixtures/library/**/index.ts", test);
   // fixture!("tests/fixtures/library/cjs/basic/**/index.ts", test);
   // fixture!("tests/fixtures/library/cjs/export/**/index.ts", test);
+  // fixture!("tests/fixtures/library/hybrid/normal/**/index.ts", test);
+  // fixture!(
+  //   "tests/fixtures/library/external/multiple-export-all/**/index.ts",
+  //   test
+  // );
+  // fixture!(
+  //   "tests/fixtures/library/reexport/reexport_hybrid_cjs/default/**/index.ts",
+  //   test
+  // );
 }
 
 // farmfe_testing::testing! {

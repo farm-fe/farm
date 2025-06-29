@@ -108,6 +108,7 @@ pub fn render_resource_pots_and_generate_resources(
                 name_hash: &r.name_hash,
                 ext: &r.resource_type.to_ext(),
                 bytes: content_with_extra_content_hash,
+                special_placeholders: &r.special_placeholders,
               },
             );
           } else {
@@ -117,6 +118,7 @@ pub fn render_resource_pots_and_generate_resources(
               name_hash: &r.name_hash,
               ext: &r.resource_type.to_ext(),
               bytes: content_with_extra_content_hash,
+              special_placeholders: &r.special_placeholders,
             });
           }
         }

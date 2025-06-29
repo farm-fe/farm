@@ -18,9 +18,13 @@ struct TopLevelIdents {
 
 impl TopLevelIdents {
   pub fn new() -> Self {
-    Self {
+    let mut tli = Self {
       idents: HashMap::default(),
-    }
+    };
+    // should always add default export to avoid name conflicts with preserved key words
+    tli.add_ident(EXPORT_DEFAULT.to_string());
+
+    return tli;
   }
 
   pub fn extend(&mut self, iter: impl Iterator<Item = String>) {

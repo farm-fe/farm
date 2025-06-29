@@ -75,7 +75,7 @@ pub(crate) fn create_var_namespace_item(
         .or_default()
         .insert(module_export_ident.clone());
 
-      let ident = module_export_ident.ident.clone();
+      let ident = module_export_ident.as_internal().ident.clone();
 
       let value_expr = Box::new(Expr::Ident(Ident::new(
         ident.sym.clone(),
@@ -243,6 +243,8 @@ pub fn create_define_export_star_item(
   module_id: &ModuleId,
   export_external_ident: &ModuleExportIdent,
 ) -> ModuleItem {
+  let export_external_ident = export_external_ident.as_internal();
+
   ModuleItem::Stmt(Stmt::Expr(ExprStmt {
     span: DUMMY_SP,
     expr: Box::new(Expr::Call(CallExpr {
@@ -290,9 +292,11 @@ pub fn generate_export_decl_item(
   let mut specifiers = vec![];
 
   for (name, id) in module_export_ident {
+    let id = id.as_internal();
+
     let renamed_ident = rename_handler
       .get_renamed_ident(&id.module_id, &id.ident)
-      .unwrap_or(id.ident);
+      .unwrap_or(id.ident.clone());
     let ctxt = renamed_ident.ctxt();
 
     specifiers.push(ExportSpecifier::Named(ExportNamedSpecifier {

@@ -23,6 +23,9 @@ pub struct ResourcePot {
   /// [None] if this [ResourcePot] does not contain entry module defined in config.input.
   /// [Some(entry_id)] otherwise
   pub entry_module: Option<ModuleId>,
+  /// [None] if this [ResourcePot] does not contain module that is being dynamic imported by import()
+  /// [Some(dynamic_imported_entry_id)] otherwise
+  pub dynamic_imported_entry_module: Option<ModuleId>,
   pub source_map_chain: Vec<Arc<String>>,
   /// the resources generated in this [ResourcePot]
   resources: HashSet<String>,
@@ -49,6 +52,10 @@ impl serde::Serialize for ResourcePot {
     state.serialize_field("modules_name_hash", &self.modules_name_hash)?;
     state.serialize_field("modules", &self.modules)?;
     state.serialize_field("entry_module", &self.entry_module)?;
+    state.serialize_field(
+      "dynamic_imported_entry_module",
+      &self.dynamic_imported_entry_module,
+    )?;
     state.serialize_field("resources", &self.resources)?;
     state.serialize_field("module_groups", &self.module_groups)?;
     state.serialize_field("immutable", &self.immutable)?;
@@ -67,6 +74,7 @@ impl ResourcePot {
       meta: ResourcePotMetaData::default(),
       source_map_chain: vec![],
       entry_module: None,
+      dynamic_imported_entry_module: None,
       resources: HashSet::default(),
       module_groups: HashSet::default(),
       immutable: false,

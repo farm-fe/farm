@@ -1,9 +1,9 @@
 //index.js:
- import { createRequire } from 'module';var require = createRequire(import.meta.url);(function(){const moduleSystem = {};
+ import { createRequire } from 'module';var require = createRequire(import.meta.url);(function(){const __farm_internal_module_system__ = {};
 function initModuleSystem() {
     console.log('module-helper.ts');
 }
-initModuleSystem(moduleSystem);
+initModuleSystem(__farm_internal_module_system__);
 }());(function(moduleSystem, modules) {
     for(var moduleId in modules){
         var module = modules[moduleId];

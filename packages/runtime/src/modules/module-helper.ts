@@ -52,7 +52,7 @@ export function initModuleSystem(ms: ModuleSystem) {
   }
 }
 
-function exportByDefineProperty(to: any, to_k: string, get: () => any) {
+export function exportByDefineProperty(to: any, to_k: string, get: () => any) {
   if (Object.prototype.hasOwnProperty.call(to, to_k)) {
     return;
   }
@@ -62,7 +62,7 @@ function exportByDefineProperty(to: any, to_k: string, get: () => any) {
   });
 }
 
-function defineExport(to: any, to_k: string, val: any) {
+export function defineExport(to: any, to_k: string, val: any) {
   exportByDefineProperty(to, to_k, function () {
     return val;
   });
@@ -131,12 +131,12 @@ export function interopRequireWildcard(obj: any, nodeInterop: any) {
 }
 
 // `export { xx } from` helper
-function defineExportFrom(to: any, to_k: string, from: any, from_k: string) {
+export function defineExportFrom(to: any, to_k: string, from: any, from_k: string) {
   defineExport(to, to_k, from[from_k || to_k]);
 }
 
 // minify x.default
-function importDefault(v: any) {
+export function importDefault(v: any) {
   if(typeof v.default !== 'undefined') {
     return v.default;
   }

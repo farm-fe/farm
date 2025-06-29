@@ -78,6 +78,7 @@ pub fn create_farm_runtime_output_resource(
     name_hash: "",
     bytes: &bytes,
     ext: "js",
+    special_placeholders: &Default::default(),
   });
 
   Resource {
@@ -89,5 +90,6 @@ pub fn create_farm_runtime_output_resource(
     origin: ResourceOrigin::ResourcePot(name),
     should_transform_output_filename: true,
     meta: Default::default(),
+    special_placeholders: Default::default(),
   }
 }

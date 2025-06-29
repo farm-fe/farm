@@ -88,22 +88,22 @@ pub(crate) fn get_basic_module_export_ident(
             if statement.defined_idents.is_empty() {
               module_export_idents.push((
                 EXPORT_DEFAULT.to_string(),
-                ModuleExportIdent {
-                  module_id: module_id.clone(),
-                  ident: create_export_default_ident(module_id).to_id().into(),
-                  export_type: ModuleExportIdentType::Declaration,
-                },
+                ModuleExportIdent::new(
+                  module_id.clone(),
+                  create_export_default_ident(module_id).to_id().into(),
+                  ModuleExportIdentType::Declaration,
+                ),
               ));
             } else {
               // there will only be one defined ident in export default statement
               for defined_ident in &statement.defined_idents {
                 module_export_idents.push((
                   EXPORT_DEFAULT.to_string(),
-                  ModuleExportIdent {
-                    module_id: module_id.clone(),
-                    ident: defined_ident.clone(),
-                    export_type: ModuleExportIdentType::Declaration,
-                  },
+                  ModuleExportIdent::new(
+                    module_id.clone(),
+                    defined_ident.clone(),
+                    ModuleExportIdentType::Declaration,
+                  ),
                 ));
               }
             }
@@ -119,11 +119,11 @@ pub(crate) fn get_basic_module_export_ident(
             if contains_export_from || export_info.source.is_none() {
               module_export_idents.push((
                 export_str,
-                ModuleExportIdent {
-                  module_id: module_id.clone(),
-                  ident: local.clone(),
-                  export_type: ModuleExportIdentType::Declaration,
-                },
+                ModuleExportIdent::new(
+                  module_id.clone(),
+                  local.clone(),
+                  ModuleExportIdentType::Declaration,
+                ),
               ));
             }
           }
@@ -155,13 +155,7 @@ fn expand_module_exports_dfs(
   for (export_str, module_export_ident) in
     get_basic_module_export_ident(module_id, module_script_meta, false)
   {
-    expand_context.insert_export_ident(
-      module_id,
-      export_str,
-      module_export_ident.module_id,
-      module_export_ident.ident,
-      module_export_ident.export_type,
-    );
+    expand_context.insert_export_ident(module_id, export_str, module_export_ident.clone());
   }
 
   let mut export_all_stmts = vec![];
@@ -180,9 +174,11 @@ fn expand_module_exports_dfs(
             expand_context.insert_export_ident(
               module_id,
               swc_id.sym.to_string(),
-              module_id.clone(),
-              swc_id.clone(),
-              ModuleExportIdentType::Declaration,
+              ModuleExportIdent::new(
+                module_id.clone(),
+                swc_id.clone(),
+                ModuleExportIdentType::Declaration,
+              ),
             );
 
             let source = export_info.source.as_ref().unwrap();
@@ -226,17 +222,17 @@ fn expand_module_exports_dfs(
                 expand_context.insert_export_ident(
                   module_id,
                   export_str,
-                  module_export_ident.module_id,
-                  module_export_ident.ident,
-                  module_export_ident.export_type,
+                  module_export_ident.clone(),
                 );
               } else if source_module.external {
                 expand_context.insert_export_ident(
                   module_id,
                   export_str,
-                  source_module_id,
-                  local.clone(),
-                  ModuleExportIdentType::External,
+                  ModuleExportIdent::new(
+                    source_module_id,
+                    local.clone(),
+                    ModuleExportIdentType::External,
+                  ),
                 );
               } else {
                 expand_unresolved_import_dfs(
@@ -255,9 +251,7 @@ fn expand_module_exports_dfs(
                   expand_context.insert_export_ident(
                     module_id,
                     export_str,
-                    module_export_ident.module_id,
-                    module_export_ident.ident,
-                    module_export_ident.export_type,
+                    module_export_ident.clone(),
                   );
                 } else {
                   // // TODO: warning
@@ -269,9 +263,11 @@ fn expand_module_exports_dfs(
                   expand_context.insert_export_ident(
                     module_id,
                     export_str,
-                    source_module_id,
-                    local.clone(),
-                    ModuleExportIdentType::Unresolved,
+                    ModuleExportIdent::new(
+                      source_module_id,
+                      local.clone(),
+                      ModuleExportIdentType::Unresolved,
+                    ),
                   );
                 }
               }
@@ -321,11 +317,13 @@ fn expand_module_exports_dfs(
               expand_context.insert_export_ident(
                 &source_module_id,
                 EXPORT_DEFAULT.to_string(),
-                source_module_id.clone(),
-                create_export_default_ident(&source_module_id)
-                  .to_id()
-                  .into(),
-                ModuleExportIdentType::Unresolved,
+                ModuleExportIdent::new(
+                  source_module_id.clone(),
+                  create_export_default_ident(&source_module_id)
+                    .to_id()
+                    .into(),
+                  ModuleExportIdentType::Unresolved,
+                ),
               );
             }
           }
@@ -361,25 +359,19 @@ fn expand_module_exports_dfs(
           reexport_map.insert(export_str.clone(), ModuleReExportIdentType::FromExportAll);
         }
 
-        expand_context.insert_export_ident(
-          module_id,
-          export_str,
-          module_export_ident.module_id,
-          module_export_ident.ident,
-          module_export_ident.export_type,
-        );
+        expand_context.insert_export_ident(module_id, export_str, module_export_ident.clone());
       }
     }
 
     let source_module = module_graph.module(&source_module_id).unwrap();
     let ambiguous_export_all_ident = if source_module.external {
-      Some(ModuleExportIdent {
-        module_id: source_module_id.clone(),
-        ident: create_export_external_all_ident(&source_module_id)
+      Some(ModuleExportIdent::new(
+        source_module_id.clone(),
+        create_export_external_all_ident(&source_module_id)
           .to_id()
           .into(),
-        export_type: ModuleExportIdentType::ExternalAll,
-      })
+        ModuleExportIdentType::ExternalAll,
+      ))
     } else if source_module.module_type.is_script() {
       if let Some(idents) = expand_context
         .ambiguous_export_ident_map
@@ -446,15 +438,17 @@ fn expand_unresolved_import_dfs(
     expand_context.insert_export_ident(
       source_module_id,
       imported_str.to_string(),
-      source_module_id.clone(),
-      ident.clone(),
-      if source_module.external && from_export_all {
-        ModuleExportIdentType::ExternalReExportAll
-      } else if source_module.external {
-        ModuleExportIdentType::External
-      } else {
-        ModuleExportIdentType::Unresolved
-      },
+      ModuleExportIdent::new(
+        source_module_id.clone(),
+        ident.clone(),
+        if source_module.external && from_export_all {
+          ModuleExportIdentType::ExternalReExportAll
+        } else if source_module.external {
+          ModuleExportIdentType::External
+        } else {
+          ModuleExportIdentType::Unresolved
+        },
+      ),
     );
     return;
   }
@@ -484,14 +478,15 @@ fn expand_unresolved_import_dfs(
           if let Some(export_ident) =
             expand_context.get_export_ident(&new_source_module_id, imported_str)
           {
+            let export_ident = export_ident.as_internal();
             expand_context.insert_ambiguous_export_ident(
               &source_module_id,
               imported_str.to_string(),
-              ModuleExportIdent {
-                module_id: source_module_id.clone(),
-                ident: export_ident.ident,
-                export_type: export_ident.export_type,
-              },
+              ModuleExportIdent::new(
+                source_module_id.clone(),
+                export_ident.ident.clone(),
+                export_ident.export_type.clone(),
+              ),
             );
             found_ambiguous_ident = true;
           }
@@ -550,22 +545,13 @@ impl ExpandModuleExportsContext {
     &mut self,
     module_id: &ModuleId,
     export_str: String,
-    export_module_id: ModuleId,
-    export_ident: SwcId,
-    export_type: ModuleExportIdentType,
+    export_ident: ModuleExportIdent,
   ) {
     self
       .export_ident_map
       .entry(module_id.clone())
       .or_default()
-      .insert(
-        export_str,
-        ModuleExportIdent {
-          module_id: export_module_id,
-          ident: export_ident,
-          export_type,
-        },
-      );
+      .insert(export_str, export_ident);
   }
 
   pub fn insert_ambiguous_export_ident(
@@ -601,11 +587,13 @@ impl ExpandModuleExportsContext {
     self.insert_export_ident(
       &source_module_id,
       EXPORT_NAMESPACE.to_string(),
-      source_module_id.clone(),
-      create_export_namespace_ident(&source_module_id)
-        .to_id()
-        .into(),
-      ModuleExportIdentType::VirtualNamespace,
+      ModuleExportIdent::new(
+        source_module_id.clone(),
+        create_export_namespace_ident(&source_module_id)
+          .to_id()
+          .into(),
+        ModuleExportIdentType::VirtualNamespace,
+      ),
     );
   }
 

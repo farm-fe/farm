@@ -5,20 +5,19 @@ use std::{path::Path, sync::Arc};
 
 use deps_analyzer::DepsAnalyzer;
 use farmfe_core::{
-  config::{Config, ModuleFormat, TargetEnv},
+  config::Config,
   context::CompilationContext,
   enhanced_magic_string::collapse_sourcemap::{collapse_sourcemap_chain, CollapseSourcemapOptions},
   error::{CompilationError, Result},
   module::{
     meta_data::script::{CommentsMetaData, ScriptModuleMetaData},
     module_graph::ModuleGraph,
-    ModuleMetaData, ModuleSystem, ModuleType, VIRTUAL_MODULE_PREFIX,
+    ModuleMetaData, ModuleSystem, VIRTUAL_MODULE_PREFIX,
   },
   plugin::{
-    GeneratedResource, Plugin, PluginAnalyzeDepsHookParam, PluginFinalizeModuleHookParam,
-    PluginGenerateResourcesHookResult, PluginHookContext, PluginLoadHookParam,
-    PluginLoadHookResult, PluginParseHookParam, PluginProcessModuleHookParam,
-    PluginResolveHookParam, ResolveKind,
+    GeneratedResource, Plugin, PluginAnalyzeDepsHookParam, PluginGenerateResourcesHookResult,
+    PluginHookContext, PluginLoadHookParam, PluginLoadHookResult, PluginParseHookParam,
+    PluginProcessModuleHookParam, PluginResolveHookParam, ResolveKind,
   },
   resource::{
     meta_data::{js::JsResourcePotMetaData, ResourcePotMetaData},
@@ -35,8 +34,7 @@ use farmfe_toolkit::{
   fs::read_file_utf8,
   script::{
     codegen_module, concatenate_modules::concatenate_modules_ast, module_type_from_id,
-    parse_module, set_module_system_for_module_meta, swc_try_with::try_with,
-    syntax_from_module_type, CodeGenCommentsConfig, ParseScriptModuleResult,
+    parse_module, syntax_from_module_type, CodeGenCommentsConfig, ParseScriptModuleResult,
   },
   sourcemap::{
     build_sourcemap, load_source_original_sourcemap, trace_module_sourcemap,
@@ -46,12 +44,10 @@ use farmfe_toolkit::{
   swc_ecma_visit::VisitMutWith,
 };
 
-use import_meta_visitor::{replace_import_meta_url, ImportMetaVisitor};
 #[cfg(feature = "swc_plugin")]
 use swc_plugins::{init_plugin_module_cache_once, transform_by_swc_plugins};
 
 mod deps_analyzer;
-mod import_meta_visitor;
 #[cfg(feature = "swc_plugin")]
 mod swc_plugins;
 mod swc_script_transforms;
@@ -141,6 +137,8 @@ impl Plugin for FarmPluginScript {
           unresolved_mark: unresolved_mark.as_u32(),
           // set module_system to UnInitial, it will be detected in `finalize_module`
           module_system: ModuleSystem::UnInitial,
+          contains_esm_decl: false,
+          contains_module_exports: false,
           hmr_self_accepted: false,
           hmr_accepted_deps: Default::default(),
           comments: CommentsMetaData::from(comments),
@@ -195,6 +193,8 @@ impl Plugin for FarmPluginScript {
     // execute swc plugins
     #[cfg(feature = "swc_plugin")]
     if param.module_type.is_script() && !context.config.script.plugins.is_empty() {
+      use farmfe_toolkit::script::swc_try_with::try_with;
+
       try_with(cm.clone(), globals.value(), || {
         transform_by_swc_plugins(param, context).unwrap()
       })?;
@@ -261,47 +261,6 @@ impl Plugin for FarmPluginScript {
     } else {
       Ok(None)
     }
-  }
-
-  /// detect [ModuleSystem] for a script module based on its dependencies' [ResolveKind] and detect hmr_accepted
-  fn finalize_module(
-    &self,
-    param: &mut PluginFinalizeModuleHookParam,
-    context: &Arc<CompilationContext>,
-  ) -> Result<Option<()>> {
-    if !param.module.module_type.is_script() {
-      return Ok(None);
-    }
-
-    // TODO: optimize code here
-    let target_env = context.config.output.target_env.clone();
-    let format = context.config.output.format;
-
-    let is_library = target_env.is_library();
-
-    if is_library && matches!(format, ModuleFormat::CommonJs) {
-      replace_import_meta_url(&mut param.module.meta.as_script_mut().ast)
-    };
-
-    // find and replace `import.meta.xxx` to `module.meta.xxx` and detect hmr_accepted
-    // skip transform import.meta when targetEnv is node
-    if !is_library && (target_env.is_browser() || matches!(format, ModuleFormat::CommonJs)) {
-      // transform `import.meta.xxx` to `module.meta.xxx`
-      let ast = &mut param.module.meta.as_script_mut().ast;
-      let mut import_meta_v = ImportMetaVisitor::new();
-      ast.visit_mut_with(&mut import_meta_v);
-    }
-
-    if matches!(target_env, TargetEnv::Browser) {
-      let ast = &mut param.module.meta.as_script_mut().ast;
-      let mut hmr_accepted_v =
-        import_meta_visitor::HmrAcceptedVisitor::new(param.module.id.clone(), context.clone());
-      ast.visit_mut_with(&mut hmr_accepted_v);
-      param.module.meta.as_script_mut().hmr_self_accepted = hmr_accepted_v.is_hmr_self_accepted;
-      param.module.meta.as_script_mut().hmr_accepted_deps = hmr_accepted_v.hmr_accepted_deps;
-    }
-
-    Ok(Some(()))
   }
 
   fn render_resource_pot(
@@ -380,6 +339,7 @@ impl Plugin for FarmPluginScript {
         resource_type: ty,
         origin: ResourceOrigin::ResourcePot(resource_pot.id.clone()),
         meta: Default::default(),
+        special_placeholders: Default::default(),
       };
 
       Ok(Some(PluginGenerateResourcesHookResult {

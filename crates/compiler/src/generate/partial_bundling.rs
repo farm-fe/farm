@@ -117,9 +117,17 @@ pub fn fill_necessary_fields_for_resource_pot(
   let mut module_graph = context.module_graph.write();
   let mut module_group_graph = context.module_group_graph.write();
 
+  // 4. update dynamic imported entry module of the resource pots
+  let module_group_ids = module_group_graph
+    .module_groups()
+    .into_iter()
+    .map(|g| g.entry_module_id.clone())
+    .collect::<HashSet<_>>();
+
   for resource_pot in resources_pots {
     let mut module_groups = HashSet::default();
     let mut entry_module = None;
+    let mut dynamic_imported_entry_module = None;
 
     for module_id in resource_pot.modules() {
       let module = module_graph.module_mut(module_id).unwrap();
@@ -146,9 +154,14 @@ pub fn fill_necessary_fields_for_resource_pot(
         }
         entry_module = Some(module_id.clone());
       }
+
+      if module_group_ids.contains(module_id) {
+        dynamic_imported_entry_module = Some(module_id.clone());
+      }
     }
 
     resource_pot.entry_module = entry_module;
+    resource_pot.dynamic_imported_entry_module = dynamic_imported_entry_module;
     resource_pot.module_groups = module_groups.clone();
 
     for module_group_id in module_groups {

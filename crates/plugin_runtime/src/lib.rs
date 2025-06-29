@@ -3,13 +3,13 @@
 use std::sync::Arc;
 
 use farmfe_core::{
-  config::{AliasItem, Config, StringOrRegex},
+  config::{AliasItem, Config, ModuleFormat, StringOrRegex, TargetEnv},
   context::CompilationContext,
   error::CompilationError,
   module::ModuleType,
   plugin::{
-    Plugin, PluginGenerateResourcesHookResult, PluginHookContext, PluginLoadHookParam,
-    PluginLoadHookResult, PluginResolveHookParam, PluginResolveHookResult,
+    Plugin, PluginFinalizeModuleHookParam, PluginGenerateResourcesHookResult, PluginHookContext,
+    PluginLoadHookParam, PluginLoadHookResult, PluginResolveHookParam, PluginResolveHookResult,
   },
   relative_path::RelativePath,
   resource::{
@@ -29,6 +29,7 @@ use farmfe_toolkit::{
     merge_swc_globals::{merge_comments, merge_sourcemap},
     swc_try_with::resolve_module_mark,
   },
+  swc_ecma_visit::VisitMutWith,
 };
 
 use handle_entry_resources::handle_entry_resources;
@@ -39,9 +40,12 @@ use handle_runtime_modules::{
 use handle_runtime_plugins::insert_runtime_plugins;
 use render_resource_pot::{external::handle_external_modules, *};
 
+use crate::import_meta_visitor::ImportMetaVisitor;
+
 mod handle_entry_resources;
 mod handle_runtime_modules;
 mod handle_runtime_plugins;
+mod import_meta_visitor;
 pub mod render_resource_pot;
 
 const PLUGIN_NAME: &str = "FarmPluginRuntime";
@@ -156,6 +160,46 @@ impl Plugin for FarmPluginRuntime {
     }
 
     Ok(None)
+  }
+
+  /// detect [ModuleSystem] for a script module based on its dependencies' [ResolveKind] and detect hmr_accepted
+  fn finalize_module(
+    &self,
+    param: &mut PluginFinalizeModuleHookParam,
+    context: &Arc<CompilationContext>,
+  ) -> farmfe_core::error::Result<Option<()>> {
+    if !param.module.module_type.is_script() {
+      return Ok(None);
+    }
+
+    let target_env = context.config.output.target_env.clone();
+    let is_library = target_env.is_library();
+
+    // find and replace `import.meta.xxx` to `module.meta.xxx` and detect hmr_accepted
+    // skip transform import.meta when targetEnv is node
+    if !is_library
+      && (target_env.is_browser()
+        || matches!(
+          context.config.output.format.as_single(),
+          ModuleFormat::CommonJs
+        ))
+    {
+      // transform `import.meta.xxx` to `module.meta.xxx`
+      let ast = &mut param.module.meta.as_script_mut().ast;
+      let mut import_meta_v = ImportMetaVisitor::new();
+      ast.visit_mut_with(&mut import_meta_v);
+    }
+
+    if matches!(target_env, TargetEnv::Browser) {
+      let ast = &mut param.module.meta.as_script_mut().ast;
+      let mut hmr_accepted_v =
+        import_meta_visitor::HmrAcceptedVisitor::new(param.module.id.clone(), context.clone());
+      ast.visit_mut_with(&mut hmr_accepted_v);
+      param.module.meta.as_script_mut().hmr_self_accepted = hmr_accepted_v.is_hmr_self_accepted;
+      param.module.meta.as_script_mut().hmr_accepted_deps = hmr_accepted_v.hmr_accepted_deps;
+    }
+
+    Ok(Some(()))
   }
 
   fn module_graph_build_end(

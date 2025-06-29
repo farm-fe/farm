@@ -18,6 +18,8 @@ pub fn build_module_deps(
   let config = Default::default();
   let context = Arc::new(CompilationContext::new(config, vec![]).unwrap());
   let script_plugin = farmfe_plugin_script::FarmPluginScript::new(&context.config);
+  let script_meta_features =
+    farmfe_plugin_script_meta::FarmPluginScriptMetaFeatures::new(&context.config);
 
   let hook_context = PluginHookContext {
     caller: None,
@@ -86,6 +88,15 @@ pub fn build_module_deps(
   let mut deps = analyze_deps_param.deps;
 
   script_plugin
+    .finalize_module(
+      &mut PluginFinalizeModuleHookParam {
+        module: &mut module,
+        deps: &mut deps,
+      },
+      &context,
+    )
+    .unwrap();
+  script_meta_features
     .finalize_module(
       &mut PluginFinalizeModuleHookParam {
         module: &mut module,
