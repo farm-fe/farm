@@ -1,5 +1,11 @@
 # @farmfe/core
 
+## 1.7.8
+
+### Patch Changes
+
+- 27d30d79: When targetEnv is set to browser, the default mainFields are used during resolution.
+
 ## 1.7.7
 
 ### Patch Changes
