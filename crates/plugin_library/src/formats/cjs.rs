@@ -13,7 +13,9 @@ use farmfe_toolkit::{
     module2cjs::{self, TransformModuleDeclsOptions},
     swc_try_with::try_with,
   },
+  swc_ecma_transforms::hygiene::{hygiene_with_config, Config},
   swc_ecma_utils::StmtLikeInjector,
+  swc_ecma_visit::VisitMutWith,
 };
 
 use crate::{
@@ -45,8 +47,13 @@ pub fn emit_cjs_resources(
       &callee_allocator,
       TransformModuleDeclsOptions {
         is_target_legacy: false,
+        ..Default::default()
       },
     );
+    meta.ast.visit_mut_with(&mut hygiene_with_config(Config {
+      top_level_mark,
+      ..Default::default()
+    }));
 
     // TODO add test case
     replace_import_meta_url(&mut meta.ast);

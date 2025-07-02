@@ -102,6 +102,7 @@ pub fn render_module(
         &OriginalRuntimeCallee { unresolved_mark },
         TransformModuleDeclsOptions {
           is_target_legacy: context.config.script.is_target_legacy(),
+          ..Default::default()
         },
       );
     }

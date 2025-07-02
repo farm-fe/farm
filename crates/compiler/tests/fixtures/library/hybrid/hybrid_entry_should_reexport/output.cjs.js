@@ -66,9 +66,9 @@ function importDefault(v) {
     return v;
 }
 ; // module_id: index.ts
-var farmRequire = farmRegister("index.ts", function(module, exports) {
-    defineExportEsModule(exports);
-    exportByDefineProperty(exports, "name", ()=>name);
+var farmRequire = farmRegister("index.ts", function(module, exports1) {
+    defineExportEsModule(exports1);
+    exportByDefineProperty(exports1, "name", ()=>name);
     var _f_node_fs = interopRequireDefault(require('node:fs'));
     const os = require('node:os');
     console.log(importDefault(_f_node_fs).read, os.cpus);

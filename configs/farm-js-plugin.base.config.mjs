@@ -10,10 +10,10 @@ export function createFarmJsPluginBuildConfig(plugins, options = {}) {
         index: "./src/index.ts",
       },
       output: {
-        path: `build/${format}`,
+        path: "build",
         entryFilename: `[entryName].${ext}`,
-        targetEnv: "node",
-        format,
+        targetEnv: "library",
+        format: ["esm", "cjs"],
       },
       external: [
         "@farmfe/core",
@@ -21,14 +21,6 @@ export function createFarmJsPluginBuildConfig(plugins, options = {}) {
         ...builtinModules.map((m) => `^node:${m}$`),
         ...(options.external || []),
       ],
-      partialBundling: {
-        enforceResources: [
-          {
-            name: "index.js",
-            test: [".+"],
-          },
-        ],
-      },
       progress: false,
       minify: false,
       sourcemap: false,

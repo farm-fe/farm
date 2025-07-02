@@ -110,6 +110,8 @@ type BrowserTargetsRecord = Partial<
   >
 > & { [key: string]: string };
 
+export type ModuleFormat = 'cjs' | 'esm';
+
 export interface OutputConfig {
   /**
    * Configure the file name of the output files which contain the entry modules. Prior to filename
@@ -153,7 +155,7 @@ export interface OutputConfig {
   /**
    * output module format
    */
-  format?: 'cjs' | 'esm';
+  format?: ModuleFormat | ModuleFormat[];
   /**
    * clean output.path automatically or not
    */

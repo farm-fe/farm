@@ -1,6 +1,8 @@
-import { convertErrorMessage } from './error.js';
-
+import { dirname } from 'node:path';
 import * as fs from 'node:fs';
+import { createRequire } from 'node:module';
+
+import { convertErrorMessage } from './error.js';
 import { createInlineCompiler } from '../compiler/index.js';
 import { ResolvedUserConfig } from '../config/types.js';
 
@@ -23,7 +25,7 @@ export async function traceDependencies(
 
     const compiler = createTraceDepCompiler(configFilePath);
     const files = (await compiler.traceDependencies()) as string[];
-    return files;
+    return files.filter((file) => !file.includes('@farm-runtime/module')); // ignore internal runtime module
   } catch (error) {
     const errorMessage = convertErrorMessage(error);
     throw Error(`Error tracing dependencies: ${errorMessage}`);
@@ -31,6 +33,8 @@ export async function traceDependencies(
 }
 
 function getDefaultTraceDepCompilerConfig(entry: string): ResolvedUserConfig {
+  const require = createRequire(import.meta.url);
+
   return {
     compilation: {
       input: {
@@ -44,6 +48,10 @@ function getDefaultTraceDepCompilerConfig(entry: string): ResolvedUserConfig {
         autoExternalFailedResolve: true
       },
       external: ['^[^./].*'],
+      runtime: {
+        path: dirname(require.resolve('@farmfe/runtime/package.json')),
+        swcHelpersPath: dirname(require.resolve('@swc/helpers/package.json'))
+      },
       sourcemap: false,
       presetEnv: false,
       persistentCache: false,

@@ -65,6 +65,12 @@ pub struct ConcatenateModulesAstResult {
   pub top_level_mark: Mark,
 }
 
+#[derive(Debug, Default, Clone)]
+pub struct ConcatenateModulesAstOptions {
+  /// Whether to check if the module is esm
+  pub check_esm: bool,
+}
+
 /// Concatenate the ASTs of the modules in the module graph starting from the entry module
 /// for example, if the input files are:
 /// ```js
@@ -96,13 +102,20 @@ pub fn concatenate_modules_ast(
   entry_module_id: &ModuleId,
   module_ids: &HashSet<ModuleId>,
   module_graph: &ModuleGraph,
+  options: ConcatenateModulesAstOptions,
   context: &Arc<CompilationContext>,
-) -> Result<ConcatenateModulesAstResult, &'static str> {
+) -> Result<ConcatenateModulesAstResult, String> {
   let StripModulesAstsResult {
     strip_module_results,
     dynamic_external_modules,
     strip_context,
-  } = strip_modules_asts(entry_module_id, module_ids, module_graph, context)?;
+  } = strip_modules_asts(
+    entry_module_id,
+    module_ids,
+    module_graph,
+    options.check_esm,
+    context,
+  )?;
 
   let mut comments = vec![];
   let mut module_asts = vec![];
@@ -194,8 +207,9 @@ fn strip_modules_asts(
   entry_module_id: &ModuleId,
   module_ids: &HashSet<ModuleId>,
   module_graph: &ModuleGraph,
+  check_esm: bool,
   context: &Arc<CompilationContext>,
-) -> Result<StripModulesAstsResult, &'static str> {
+) -> Result<StripModulesAstsResult, String> {
   // 1. Sort the modules by execution order
   let mut sorted_modules: Vec<_> = module_ids.iter().cloned().collect();
   sorted_modules.sort_by_key(|module_id| module_graph.module(module_id).unwrap().execution_order);
@@ -207,12 +221,18 @@ fn strip_modules_asts(
     let module = module_graph.module(module_id).unwrap();
     // error if it is no script module
     if !module.module_type.is_script() {
-      return Err("Only script modules are supported when concatenating modules");
+      return Err(format!(
+        "Module {} is not script module. Only script module is supported when concatenating modules",
+        module_id.to_string()
+      ));
     }
 
     // error if it is not ESM
-    if module.meta.as_script().module_system != ModuleSystem::EsModule {
-      return Err("Only ESM modules are supported when concatenating modules");
+    if check_esm && module.meta.as_script().module_system != ModuleSystem::EsModule {
+      return Err(format!(
+        "Module {} is not ESM module. Only ESM modules are supported when concatenating modules",
+        module_id.to_string()
+      ));
     }
 
     if module_graph.circle_record.is_in_circle(module_id) {

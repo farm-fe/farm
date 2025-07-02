@@ -679,15 +679,45 @@ impl PluginDriver {
     _hook_context: &PluginHookContext
   );
 
-  pub fn augment_resource_hash(
+  hook_serial!(
+    process_rendered_resource_pot,
+    &mut ResourcePot,
+    |before_resource_pot: &mut ResourcePot| {
+      serde_json::to_string(&before_resource_pot).unwrap()
+    },
+    |after_resource_pot: &mut ResourcePot| { serde_json::to_string(&after_resource_pot).unwrap() },
+    |plugin_name: String,
+     start_time: u128,
+     end_time: u128,
+     input: String,
+     output: String,
+     _resource_pot: &mut ResourcePot,
+     context: &Arc<CompilationContext>| {
+      context
+        .stats
+        .add_plugin_hook_stats(CompilationPluginHookStats {
+          plugin_name: plugin_name.to_string(),
+          hook_name: "process_rendered_resource_pot".to_string(),
+          hook_context: None,
+          module_id: "".into(),
+          input,
+          output,
+          duration: end_time - start_time,
+          start_time,
+          end_time,
+        })
+    }
+  );
+
+  pub fn augment_resource_pot_hash(
     &self,
-    render_pot_info: &ResourcePot,
+    render_pot: &ResourcePot,
     context: &Arc<CompilationContext>,
   ) -> Result<Option<String>> {
     let mut result: Option<String> = None;
 
     for plugin in &self.plugins {
-      if let Some(plugin_result) = plugin.augment_resource_hash(render_pot_info, context)? {
+      if let Some(plugin_result) = plugin.augment_resource_pot_hash(render_pot, context)? {
         match result {
           Some(ref mut result) => {
             result.push_str(plugin_result.as_str());

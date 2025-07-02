@@ -240,6 +240,7 @@ fn expand_module_exports_dfs(
                   local,
                   &source_module_id,
                   false,
+                  true,
                   module_graph,
                   expand_context,
                   &mut HashSet::default(),
@@ -254,12 +255,6 @@ fn expand_module_exports_dfs(
                     module_export_ident.clone(),
                   );
                 } else {
-                  // // TODO: warning
-                  // println!(
-                  //   "[Farm Warning] export {} of module {} not found",
-                  //   local.sym,
-                  //   source_module_id.to_string()
-                  // );
                   expand_context.insert_export_ident(
                     module_id,
                     export_str,
@@ -298,11 +293,18 @@ fn expand_module_exports_dfs(
       for specifier in &import_info.specifiers {
         match specifier {
           ImportSpecifierInfo::Namespace(_) => { /* ignore namespace as it's handled above */ }
-          ImportSpecifierInfo::Named { local, .. } => {
+          ImportSpecifierInfo::Named { local, imported } => {
+            let ident = if let Some(imported) = imported {
+              imported
+            } else {
+              local
+            };
+
             expand_unresolved_import_dfs(
-              &local.sym,
-              local,
+              &ident.sym,
+              ident,
               &source_module_id,
+              false,
               false,
               module_graph,
               expand_context,
@@ -411,6 +413,7 @@ fn expand_unresolved_import_dfs(
   ident: &SwcId,
   source_module_id: &ModuleId,
   from_export_all: bool,
+  from_export_named: bool,
   module_graph: &ModuleGraph,
   expand_context: &mut ExpandModuleExportsContext,
   visited: &mut HashSet<ModuleId>,
@@ -454,6 +457,7 @@ fn expand_unresolved_import_dfs(
   }
 
   let source_module_script_meta = source_module.meta.as_script();
+  let mut found_ambiguous_ident = false;
 
   for statement in &source_module_script_meta.statements {
     if let Some(export_info) = &statement.export_info {
@@ -468,12 +472,11 @@ fn expand_unresolved_import_dfs(
             ident,
             &new_source_module_id,
             true,
+            false,
             module_graph,
             expand_context,
             visited,
           );
-
-          let mut found_ambiguous_ident = false;
 
           if let Some(export_ident) =
             expand_context.get_export_ident(&new_source_module_id, imported_str)
@@ -503,16 +506,17 @@ fn expand_unresolved_import_dfs(
             }
             found_ambiguous_ident = true;
           }
-
-          if !found_ambiguous_ident {
-            panic!(
-              "can not resolve ambiguous export ident {:?} from {:?} {:?}",
-              ident, source_module_id, imported_str
-            )
-          }
         }
       }
     }
+  }
+
+  // only panic when resolved from import
+  if !from_export_named && !from_export_all && !found_ambiguous_ident {
+    panic!(
+      "can not resolve ambiguous export ident {:?} from {:?} {:?} {} {}",
+      ident, source_module_id, imported_str, from_export_all, from_export_named
+    )
   }
 }
 

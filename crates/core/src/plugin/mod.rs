@@ -216,9 +216,17 @@ pub trait Plugin: Any + Send + Sync {
     Ok(None)
   }
 
-  fn augment_resource_hash(
+  fn process_rendered_resource_pot(
     &self,
-    _render_pot_info: &ResourcePot,
+    _resource_pot: &mut ResourcePot,
+    _context: &Arc<CompilationContext>,
+  ) -> Result<Option<()>> {
+    Ok(None)
+  }
+
+  fn augment_resource_pot_hash(
+    &self,
+    _render_pot: &ResourcePot,
     _context: &Arc<CompilationContext>,
   ) -> Result<Option<String>> {
     Ok(None)

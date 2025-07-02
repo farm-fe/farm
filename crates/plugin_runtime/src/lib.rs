@@ -316,7 +316,8 @@ impl Plugin for FarmPluginRuntime {
       .map(|mut res| {
         for resource in &mut res.resources {
           resource.resource.resource_type = ResourceType::Runtime;
-          // do not emit a
+          resource.resource.should_transform_output_filename = false;
+          // do not emit the runtime resources, the runtime will be handled later
           resource.resource.emitted = true;
           // ignore source map for runtime
           resource.source_map = None;

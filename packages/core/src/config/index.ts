@@ -35,6 +35,12 @@ import { normalizeUserCompilationConfig } from './normalize-config/index.js';
 import { resolveUserConfig } from './resolve-config.js';
 import { normalizeDevServerConfig } from './resolve-server.js';
 
+export {
+  normalizeUserCompilationConfig,
+  resolveUserConfig,
+  normalizeDevServerConfig
+};
+
 export * from './types.js';
 export * from './constants.js';
 export * from './env.js';

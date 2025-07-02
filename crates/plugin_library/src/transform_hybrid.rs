@@ -20,6 +20,7 @@ pub fn transform_hybrid_to_cjs(meta: &mut ScriptModuleMetaData) -> HashSet<&'sta
     &callee_allocator,
     TransformModuleDeclsOptions {
       is_target_legacy: false,
+      rename_cjs_global_idents: true,
     },
   );
 

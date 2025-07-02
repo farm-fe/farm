@@ -54,7 +54,7 @@ function farmRegister(id, module) {
     return ()=>farmRequire$1(id);
 }
 ; // module_id: index.ts
-var farmRequire = farmRegister("index.ts", function(module, exports) {
+var farmRequire = farmRegister("index.ts", function(module, exports1) {
     module.exports = {
         name: 'foo',
         age: 18

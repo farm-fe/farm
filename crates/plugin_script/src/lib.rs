@@ -33,8 +33,10 @@ use farmfe_swc_transformer_import_glob::{
 use farmfe_toolkit::{
   fs::read_file_utf8,
   script::{
-    codegen_module, concatenate_modules::concatenate_modules_ast, module_type_from_id,
-    parse_module, syntax_from_module_type, CodeGenCommentsConfig, ParseScriptModuleResult,
+    codegen_module,
+    concatenate_modules::{concatenate_modules_ast, ConcatenateModulesAstOptions},
+    module_type_from_id, parse_module, syntax_from_module_type, CodeGenCommentsConfig,
+    ParseScriptModuleResult,
   },
   sourcemap::{
     build_sourcemap, load_source_original_sourcemap, trace_module_sourcemap,
@@ -276,10 +278,14 @@ impl Plugin for FarmPluginScript {
         resource_pot.entry_module.as_ref().unwrap(),
         &resource_pot.modules,
         &module_graph,
+        ConcatenateModulesAstOptions { check_esm: false },
         context,
       )
       .map_err(|err| {
-        CompilationError::GenericError(format!("failed to concatenate runtime modules: {}", err))
+        CompilationError::GenericError(format!(
+          "failed to concatenate dynamic entry modules: {}",
+          err
+        ))
       })?;
 
       context
@@ -403,8 +409,8 @@ pub fn generate_code_and_sourcemap(
   let mut map = None;
   if sourcemap_enabled {
     let sourcemap = build_sourcemap(merged_sourcemap, &mappings);
-    // trace sourcemap chain of each module
-    let sourcemap = trace_module_sourcemap(sourcemap, module_graph, &context.config.root);
+    // // trace sourcemap chain of each module
+    // let sourcemap = trace_module_sourcemap(sourcemap, module_graph, &context.config.root);
 
     let mut chain = resource_pot
       .source_map_chain
@@ -412,6 +418,7 @@ pub fn generate_code_and_sourcemap(
       .map(|s| JsonSourceMap::from_slice(s.as_bytes()).unwrap())
       .collect::<Vec<_>>();
     chain.push(sourcemap);
+
     // collapse sourcemap chain
     let sourcemap = collapse_sourcemap_chain(
       chain,
@@ -420,6 +427,9 @@ pub fn generate_code_and_sourcemap(
         remap_source: None,
       },
     );
+
+    // trace sourcemap chain of each module
+    let sourcemap = trace_module_sourcemap(sourcemap, module_graph, &context.config.root);
 
     let mut buf = vec![];
     sourcemap

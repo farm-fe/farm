@@ -87,8 +87,15 @@ fn library_test() {
 
   fixture!("tests/fixtures/library/**/index.ts", test);
   // fixture!("tests/fixtures/library/cjs/basic/**/index.ts", test);
-  // fixture!("tests/fixtures/library/cjs/export/**/index.ts", test);
+  // fixture!(
+  //   "tests/fixtures/library/cjs/require/spread-expr/**/index.ts",
+  //   test
+  // );
   // fixture!("tests/fixtures/library/hybrid/normal/**/index.ts", test);
+  // fixture!(
+  //   "tests/fixtures/library/external/deep-export-all/**/index.ts",
+  //   test
+  // );
   // fixture!(
   //   "tests/fixtures/library/external/multiple-export-all/**/index.ts",
   //   test

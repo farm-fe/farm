@@ -174,11 +174,11 @@ fn init_bool_features<'a>(
 
   let mut bool_features = HashSet::default();
 
-  if context.config.runtime.plugins.len() > 0 {
+  if !context.config.output.target_env.is_library() && context.config.runtime.plugins.len() > 0 {
     bool_features.insert(FARM_ENABLE_RUNTIME_PLUGIN);
   }
 
-  if context.config.output.target_env != TargetEnv::Library {
+  if !context.config.output.target_env.is_library() {
     bool_features.insert(FARM_ENABLE_EXTERNAL_MODULES);
   }
 

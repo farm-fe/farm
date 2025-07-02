@@ -233,7 +233,7 @@ export class NoopLogger extends Logger {
   info(_message: string): void {}
   warn(_message: string): void {}
   error(_message: string | Error, _errorOptions?: ErrorOptions): void {
-    if (_errorOptions.exit) {
+    if (_errorOptions?.exit) {
       let e = _message instanceof Error ? _message : new Error(_message);
       if (_errorOptions?.e || _errorOptions?.error) {
         e.cause = _errorOptions.e || _errorOptions.error;

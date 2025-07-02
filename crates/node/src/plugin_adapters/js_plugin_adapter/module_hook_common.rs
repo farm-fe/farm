@@ -4,10 +4,11 @@ use farmfe_core::{
   config::config_regex::ConfigRegex,
   context::CompilationContext,
   error::{CompilationError, Result},
-  module::{ModuleId, ModuleMetaData, ModuleType},
+  module::{meta_data::script::CommentsMetaData, ModuleId, ModuleMetaData, ModuleType},
   serde::{Deserialize, Serialize},
-  swc_common::comments::SingleThreadedComments,
-  swc_ecma_ast::EsVersion,
+  swc_common::{comments::SingleThreadedComments, SourceMap},
+  swc_css_ast::Stylesheet,
+  swc_ecma_ast::{EsVersion, Module as SwcModule},
   swc_ecma_parser::{EsSyntax, Syntax},
 };
 use farmfe_toolkit::{
@@ -67,67 +68,94 @@ pub fn module_matches_filters(
       .any(|m| m.is_match(module_id.to_string().as_str()))
 }
 
+pub fn js_codegen(
+  ast: &SwcModule,
+  comments: &mut CommentsMetaData,
+  cm: Arc<SourceMap>,
+  context: &Arc<CompilationContext>,
+) -> Result<(String, Option<String>)> {
+  let source_map_enabled = !context.config.sourcemap.is_false();
+  let taken_comments = std::mem::take(comments);
+  let single_threaded_comments = SingleThreadedComments::from(taken_comments);
+  let mut src_map = vec![];
+
+  let code = codegen_module(
+    ast,
+    EsVersion::latest(),
+    cm.clone(),
+    if source_map_enabled {
+      Some(&mut src_map)
+    } else {
+      None
+    },
+    false,
+    Some(CodeGenCommentsConfig {
+      comments: &single_threaded_comments,
+      config: &context.config.comments,
+    }),
+  )
+  .map_err(|err| CompilationError::GenericError(err.to_string()))?;
+
+  *comments = single_threaded_comments.into();
+
+  let mut source_map = None;
+
+  // append source map
+  if source_map_enabled {
+    let map = cm.build_source_map(&src_map);
+    let mut src_map = vec![];
+    map.to_writer(&mut src_map).map_err(|err| {
+      CompilationError::GenericError(format!("failed to write source map: {err:?}"))
+    })?;
+    source_map = Some(String::from_utf8(src_map).unwrap());
+  }
+
+  Ok((String::from_utf8_lossy(&code).to_string(), source_map))
+}
+
+pub fn css_codegen(
+  ast: &Stylesheet,
+  cm: Arc<SourceMap>,
+  context: &Arc<CompilationContext>,
+) -> Result<(String, Option<String>)> {
+  let source_map_enabled = !context.config.sourcemap.is_false();
+  let (code, map) = codegen_css_stylesheet(
+    &ast,
+    false,
+    if source_map_enabled { Some(cm) } else { None },
+  );
+
+  Ok((code, map))
+}
+
 pub fn format_module_metadata_to_code(
   meta: &mut ModuleMetaData,
   module_id: &ModuleId,
   source_map_chain: &mut Vec<Arc<String>>,
   context: &Arc<CompilationContext>,
 ) -> Result<Option<String>> {
-  let source_map_enabled = !context.config.sourcemap.is_false();
-
   Ok(match meta {
     ModuleMetaData::Script(script_module_meta_data) => {
       let cm = context.meta.get_module_source_map(module_id);
-      let mut src_map = vec![];
-      let comments = std::mem::take(&mut script_module_meta_data.comments);
-      let single_threaded_comments = SingleThreadedComments::from(comments);
-
-      let code = codegen_module(
+      let (code, source_map) = js_codegen(
         &script_module_meta_data.ast,
-        EsVersion::latest(),
-        cm.clone(),
-        if source_map_enabled {
-          Some(&mut src_map)
-        } else {
-          None
-        },
-        false,
-        Some(CodeGenCommentsConfig {
-          comments: &single_threaded_comments,
-          config: &context.config.comments,
-        }),
-      )
-      .map_err(|err| CompilationError::GenericError(err.to_string()))?;
+        &mut script_module_meta_data.comments,
+        cm,
+        context,
+      )?;
 
-      // write back the comments
-      script_module_meta_data.comments = single_threaded_comments.into();
-
-      // append source map
-      if source_map_enabled {
-        let map = cm.build_source_map(&src_map);
-        let mut src_map = vec![];
-        map.to_writer(&mut src_map).map_err(|err| {
-          CompilationError::GenericError(format!("failed to write source map: {err:?}"))
-        })?;
-        source_map_chain.push(Arc::new(String::from_utf8(src_map).unwrap()));
+      if let Some(source_map) = source_map {
+        source_map_chain.push(Arc::new(source_map));
       }
 
-      Some(String::from_utf8_lossy(&code).to_string())
+      Some(code)
     }
     ModuleMetaData::Css(css_module_meta_data) => {
       let cm = context.meta.get_module_source_map(module_id);
-      let (code, map) = codegen_css_stylesheet(
-        &css_module_meta_data.ast,
-        false,
-        if source_map_enabled {
-          Some(cm.clone())
-        } else {
-          None
-        },
-      );
+      let (code, source_map) = css_codegen(&css_module_meta_data.ast, cm, context)?;
 
-      if let Some(map) = map {
-        source_map_chain.push(Arc::new(map));
+      if let Some(source_map) = source_map {
+        source_map_chain.push(Arc::new(source_map));
       }
 
       Some(code)

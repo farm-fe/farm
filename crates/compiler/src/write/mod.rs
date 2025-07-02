@@ -1,6 +1,7 @@
 use crate::Compiler;
 use farmfe_core::error::Result;
 use farmfe_core::rayon::iter::{IntoParallelRefIterator, ParallelIterator};
+use farmfe_core::relative_path::RelativePath;
 use farmfe_core::resource::Resource;
 use farmfe_core::HashMap;
 
@@ -20,22 +21,30 @@ const SMALL_FILE_THRESHOLD: usize = 8192;
 
 // TODO use error::{CompilationError} we need refactor Error mod
 impl Compiler {
-  pub(crate) fn write(&self) -> Result<()> {
-    // TODO add writeBundle write hooks plugin_driver
-    self.write_resources_to_disk()?;
-    self
-      .context
-      .plugin_driver
-      .finish(&self.context.stats, &self.context)?;
+  // pub(crate) fn write(&self) -> Result<()> {
+  //   // TODO add writeBundle write hooks plugin_driver
+  //   self.write_resources_to_disk()?;
+  //   self
+  //     .context
+  //     .plugin_driver
+  //     .finish(&self.context.stats, &self.context)?;
 
-    Ok(())
-  }
+  //   Ok(())
+  // }
 
   pub fn write_resources_to_disk(&self) -> Result<()> {
     #[cfg(feature = "profile")]
     farmfe_core::puffin::profile_function!();
 
     let output_dir = Path::new(&self.context.config.output.path);
+
+    let output_dir = if output_dir.is_absolute() {
+      output_dir.to_path_buf()
+    } else {
+      let rel_path = RelativePath::new(&self.context.config.output.path);
+      rel_path.to_logical_path(&self.context.config.root)
+    };
+    let output_dir = output_dir.as_path();
 
     {
       let resources_map = self.context.resources_map.lock();

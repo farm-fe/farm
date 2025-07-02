@@ -2,7 +2,7 @@ import { expect, test } from 'vitest';
 import { getOutputResult } from '../common.js';
 import { getCompiler, getOutputFilePath } from './common.js';
 
-test('Js Plugin Execution - renderResourcePot', async () => {
+test('Js Plugin Execution - processRenderedResourcePot', async () => {
   const hookName = 'render-resource-pot';
   const calledHooks: string[] = [];
   const compiler = await getCompiler(
@@ -11,7 +11,7 @@ test('Js Plugin Execution - renderResourcePot', async () => {
       {
         name: 'test-render-resource-pot',
         priority: 1000,
-        renderResourcePot: {
+        processRenderedResourcePot: {
           filters: {
             moduleIds: ['^index.ts\\?foo=bar$'],
             resourcePotTypes: ['js']
@@ -19,16 +19,11 @@ test('Js Plugin Execution - renderResourcePot', async () => {
           executor: async (param) => {
             expect(param.content).toContain('render-resource-pot-return-value');
             expect(param.sourceMapChain).toEqual([]);
-            console.log(param.resourcePotInfo);
-            if (
-              param.resourcePotInfo.modules['index.ts?foo=bar']
-                .originalLength == 52
-            ) {
-              param.resourcePotInfo.modules['index.ts?foo=bar'].originalLength =
-                51;
-            }
-            expect(param.resourcePotInfo).matchSnapshot();
-            calledHooks.push('renderResourcePot');
+            console.log(param);
+
+            expect(param).matchSnapshot();
+            calledHooks.push('processRenderedResourcePot');
+
             return {
               content: param.content.replace(
                 'render-resource-pot-return-value',
@@ -42,10 +37,12 @@ test('Js Plugin Execution - renderResourcePot', async () => {
     hookName
   );
 
+  console.log('compile');
   await compiler.compile();
+  console.log('compile end');
   await compiler.writeResourcesToDisk();
 
-  expect(calledHooks).toEqual(['renderResourcePot']);
+  expect(calledHooks).toEqual(['processRenderedResourcePot']);
 
   const outputFilePath = getOutputFilePath('', hookName);
   const result = await getOutputResult(outputFilePath);

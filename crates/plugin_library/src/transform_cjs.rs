@@ -132,11 +132,17 @@ pub fn transform_cjs_to_esm(
     FARM_RUNTIME_MODULE_SYSTEM_ID,
   )];
 
+  if meta.export_ident_map.contains_key(EXPORT_DEFAULT)
+    && !used_helper_idents.contains(FARM_INTEROP_REQUIRE)
+  {
+    used_helper_idents.insert(FARM_INTEROP_REQUIRE);
+  }
+
   let mut sorted_helper_idents = used_helper_idents.iter().collect::<Vec<_>>();
   sorted_helper_idents.sort();
 
   // inject runtime helpers at the top of the module
-  let mut specifiers = sorted_helper_idents
+  let specifiers = sorted_helper_idents
     .into_iter()
     .map(|ident| {
       ImportSpecifier::Named(ImportNamedSpecifier {
@@ -147,21 +153,6 @@ pub fn transform_cjs_to_esm(
       })
     })
     .collect::<Vec<_>>();
-
-  if meta.export_ident_map.contains_key(EXPORT_DEFAULT) {
-    let import_named_specifier = ImportSpecifier::Named(ImportNamedSpecifier {
-      span: DUMMY_SP,
-      local: create_top_level_ident(FARM_INTEROP_REQUIRE, top_level_mark),
-      imported: None,
-      is_type_only: false,
-    });
-
-    specifiers.push(import_named_specifier);
-
-    if !used_helper_idents.contains(FARM_INTEROP_REQUIRE) {
-      used_helper_idents.insert(FARM_INTEROP_REQUIRE);
-    }
-  }
 
   prepend_imports.push(create_import_decl_item(
     specifiers,
@@ -331,6 +322,8 @@ impl<'a> VisitMut for RequireEsmReplacer<'a> {
         }
       }
     }
+
+    expr.visit_mut_children_with(self);
   }
 }
 

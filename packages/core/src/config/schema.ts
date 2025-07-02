@@ -62,7 +62,9 @@ const outputSchema = z
     publicPath: z.string().optional(),
     assetsFilename: z.string().optional(),
     targetEnv: z.nativeEnum(TargetEnv).optional(),
-    format: z.enum(['cjs', 'esm']).optional(),
+    format: z
+      .union([z.enum(['cjs', 'esm']), z.array(z.enum(['cjs', 'esm']))])
+      .optional(),
     showFileSize: z.boolean().optional()
   })
   .strict()

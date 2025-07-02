@@ -15,10 +15,10 @@ import {
   ConfigResult,
   DefaultOptionsType,
   FarmCliOptions,
-  Format,
   ResolvedUserConfig,
   UserConfig
 } from './types.js';
+import { ModuleFormat } from '../types/binding.js';
 
 async function getConfigFilePath(
   configRootPath: string
@@ -109,12 +109,12 @@ export async function loadConfigFile(
   }
 }
 
-const FORMAT_TO_EXT: Record<Format, string> = {
+const FORMAT_TO_EXT: Record<ModuleFormat, string> = {
   cjs: 'cjs',
   esm: 'mjs'
 };
 
-const FORMAT_FROM_EXT: Record<string, Format> = {
+const FORMAT_FROM_EXT: Record<string, ModuleFormat> = {
   cjs: 'cjs',
   mjs: 'esm',
   cts: 'cjs',
@@ -128,7 +128,7 @@ function getFilePath(outputPath: string, fileName: string): string {
     : path.join(outputPath, fileName);
 }
 
-function getFormat(configFilePath: string): Format {
+function getFormat(configFilePath: string): ModuleFormat {
   return process.env.FARM_CONFIG_FORMAT === 'cjs'
     ? 'cjs'
     : process.env.FARM_CONFIG_FORMAT === 'esm'

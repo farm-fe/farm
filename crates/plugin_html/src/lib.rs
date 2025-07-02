@@ -233,7 +233,7 @@ impl Plugin for FarmPluginHtml {
   fn render_resource_pot(
     &self,
     resource_pot: &ResourcePot,
-    _context: &Arc<CompilationContext>,
+    context: &Arc<CompilationContext>,
     _hook_context: &PluginHookContext,
   ) -> farmfe_core::error::Result<Option<ResourcePotMetaData>> {
     if matches!(resource_pot.resource_pot_type, ResourcePotType::Html) {
@@ -246,7 +246,18 @@ impl Plugin for FarmPluginHtml {
         });
       }
 
+      let module_graph = context.module_graph.read();
+      let module = module_graph.module(modules[0]).unwrap();
+
+      if module.module_type != ModuleType::Html {
+        return Err(CompilationError::RenderHtmlResourcePotError {
+          name: resource_pot.id.to_string(),
+          modules: modules.into_iter().map(|m| m.to_string()).collect(),
+        });
+      }
+
       return Ok(Some(ResourcePotMetaData::Html(HtmlResourcePotMetaData {
+        ast: module.meta.as_html().ast.clone(),
         custom: Default::default(),
       })));
     }

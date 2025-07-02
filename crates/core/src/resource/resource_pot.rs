@@ -141,7 +141,6 @@ pub enum ResourcePotType {
   Js,
   Css,
   Html,
-  Asset,
   Custom(String),
 }
 
@@ -170,8 +169,7 @@ impl From<ModuleType> for ResourcePotType {
       ModuleType::Js | ModuleType::Jsx | ModuleType::Ts | ModuleType::Tsx => Self::Js,
       ModuleType::Css => Self::Css,
       ModuleType::Html => Self::Html,
-      ModuleType::Asset => Self::Asset,
-      // ModuleType::Runtime => Self::Runtime,
+      ModuleType::Asset => unreachable!(),
       ModuleType::Custom(c) => Self::Custom(c),
     }
   }
@@ -184,7 +182,6 @@ impl ToString for ResourcePotType {
       Self::Js => "js".to_string(),
       Self::Css => "css".to_string(),
       Self::Html => "html".to_string(),
-      Self::Asset => "asset".to_string(),
       Self::Custom(s) => s.clone(),
     }
   }
@@ -197,7 +194,6 @@ impl From<String> for ResourcePotType {
       "js" => Self::Js,
       "css" => Self::Css,
       "html" => Self::Html,
-      "asset" => Self::Asset,
       _ => Self::Custom(s),
     }
   }

@@ -1,21 +1,9 @@
 use std::sync::Arc;
 
 use farmfe_core::{
-  config::config_regex::ConfigRegex,
-  context::CompilationContext,
-  error::{CompilationError, Result},
-  module::{ModuleId, ModuleMetaData, ModuleType},
-  plugin::PluginProcessModuleHookParam,
-  serde::{Deserialize, Serialize},
-  swc_common::comments::SingleThreadedComments,
-  swc_ecma_ast::EsVersion,
-  swc_ecma_parser::{EsSyntax, Syntax},
+  context::CompilationContext, error::Result, plugin::PluginProcessModuleHookParam,
 };
-use farmfe_toolkit::{
-  css::{codegen_css_stylesheet, parse_css_stylesheet, ParseCssModuleResult},
-  html::{codegen_html_document, parse_html_document},
-  script::{codegen_module, parse_module, CodeGenCommentsConfig, ParseScriptModuleResult},
-};
+
 use napi::{bindgen_prelude::FromNapiValue, NapiRaw};
 
 use crate::{

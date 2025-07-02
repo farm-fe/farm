@@ -62,7 +62,7 @@ test('plugin hook bail execution', async () => {
     }
   ]);
 
-  const res = await moduleSystem.p.s(
+  const res = await moduleSystem.p.b(
     'readModuleCache',
     {
       id: 'test-module',

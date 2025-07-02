@@ -31,7 +31,10 @@ use farmfe_toolkit::{
   fs::read_file_utf8,
   runtime::RuntimeFeatureGuardRemover,
   script::{
-    concatenate_modules::{concatenate_modules_ast, ConcatenateModulesAstResult, EXPORT_NAMESPACE},
+    concatenate_modules::{
+      concatenate_modules_ast, ConcatenateModulesAstOptions, ConcatenateModulesAstResult,
+      EXPORT_NAMESPACE,
+    },
     create_export_namespace_ident, set_module_system_for_module_meta,
     swc_try_with::try_with,
   },
@@ -124,6 +127,11 @@ impl Plugin for FarmPluginLibrary {
       if !config.output.entry_filename.contains("[format]") {
         config.output.entry_filename = format!("[format]/{}", config.output.entry_filename);
       }
+    }
+
+    // update public path
+    if config.output.public_path.starts_with("/") {
+      config.output.public_path = format!("./{}", config.output.public_path);
     }
 
     Ok(Some(()))
@@ -422,6 +430,7 @@ impl Plugin for FarmPluginLibrary {
       entry_module_id,
       &resource_pot.modules,
       &module_graph,
+      ConcatenateModulesAstOptions { check_esm: true },
       context,
     )
     .map_err(|e| CompilationError::GenericError(e.to_string()))?;

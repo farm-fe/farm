@@ -95,7 +95,7 @@ test('Js Plugin Execution - transform', async () => {
       transform: {
         filters: {
           resolvedPaths: [path.join(root, 'index.ts').replaceAll('\\', '\\\\')],
-          moduleTypes: ['ts']
+          moduleTypes: []
         },
         executor: async (param) => {
           console.log(param);

@@ -59,11 +59,11 @@ function interopRequireDefault(obj) {
     };
 }
 ; // module_id: foo.ts
-var farmRequire = farmRegister("foo.ts", function(module, exports) {
-    defineExportEsModule(exports);
-    exportByDefineProperty(exports, "foo", ()=>foo);
-    exportByDefineProperty(exports, "bar", ()=>bar);
-    exports.default = 'foo';
+var farmRequire = farmRegister("foo.ts", function(module, exports1) {
+    defineExportEsModule(exports1);
+    exportByDefineProperty(exports1, "foo", ()=>foo);
+    exportByDefineProperty(exports1, "bar", ()=>bar);
+    exports1.default = 'foo';
     var foo = 'foo';
     var bar = 'bar';
     module.exports.cjs = true;

@@ -67,14 +67,14 @@ function importDefault(v) {
     return v;
 }
 ; // module_id: index.ts
-var farmRequire = farmRegister("index.ts", function(module, exports) {
-    defineExportEsModule(exports);
-    exportByDefineProperty(exports, "foo", ()=>foo);
-    exportByDefineProperty(exports, "bar", ()=>bar);
+var farmRequire = farmRegister("index.ts", function(module, exports1) {
+    defineExportEsModule(exports1);
+    exportByDefineProperty(exports1, "foo", ()=>foo);
+    exportByDefineProperty(exports1, "bar", ()=>bar);
     var _f_node_fs = interopRequireDefault(require('node:fs'));
     const os = require('node:os');
     console.log(importDefault(_f_node_fs).read, os.cpus);
-    exports.default = {
+    exports1.default = {
         read: importDefault(_f_node_fs).read,
         c: 1
     };

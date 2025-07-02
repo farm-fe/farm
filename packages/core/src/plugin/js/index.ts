@@ -129,7 +129,7 @@ schemaRegistry
   .register('transform', createTransformSchema)
   .register('buildEnd', createBuildEndSchema)
   .register('renderStart', createRenderStartSchema)
-  .register('renderResourcePot', createRenderResourcePotSchema)
+  .register('processRenderedResourcePot', createRenderResourcePotSchema)
   .register('augmentResourceHash', createAugmentResourceHashSchema)
   .register('finalizeResources', createFinalizeResourcesSchema)
   .register('transformHtml', createTransformHtmlSchema)
@@ -180,41 +180,41 @@ export function convertPluginVite(plugin: JsPlugin): void {
     plugin.processModule.filters.resolvedPaths ??= [];
   }
 
-  if (plugin.renderResourcePot) {
-    plugin.renderResourcePot.filters ??= {};
+  if (plugin.processRenderedResourcePot) {
+    plugin.processRenderedResourcePot.filters ??= {};
 
     if (
-      !plugin.renderResourcePot?.filters?.moduleIds &&
-      !plugin.renderResourcePot?.filters?.resourcePotTypes
+      !plugin.processRenderedResourcePot?.filters?.moduleIds &&
+      !plugin.processRenderedResourcePot?.filters?.resourcePotTypes
     ) {
       throw new Error(
-        `renderResourcePot hook of plugin ${plugin.name} must have at least one filter(like moduleIds or resourcePotTypes)`
+        `processRenderedResourcePot hook of plugin ${plugin.name} must have at least one filter(like moduleIds or resourcePotTypes)`
       );
     }
 
-    if (!plugin.renderResourcePot.filters?.resourcePotTypes) {
-      plugin.renderResourcePot.filters.resourcePotTypes = [];
-    } else if (!plugin.renderResourcePot.filters?.moduleIds) {
-      plugin.renderResourcePot.filters.moduleIds = [];
+    if (!plugin.processRenderedResourcePot.filters?.resourcePotTypes) {
+      plugin.processRenderedResourcePot.filters.resourcePotTypes = [];
+    } else if (!plugin.processRenderedResourcePot.filters?.moduleIds) {
+      plugin.processRenderedResourcePot.filters.moduleIds = [];
     }
   }
 
-  if (plugin.augmentResourceHash) {
-    plugin.augmentResourceHash.filters ??= {};
+  if (plugin.augmentResourcePotHash) {
+    plugin.augmentResourcePotHash.filters ??= {};
 
     if (
-      !plugin.augmentResourceHash?.filters?.moduleIds &&
-      !plugin.augmentResourceHash?.filters?.resourcePotTypes
+      !plugin.augmentResourcePotHash?.filters?.moduleIds &&
+      !plugin.augmentResourcePotHash?.filters?.resourcePotTypes
     ) {
       throw new Error(
-        `augmentResourceHash hook of plugin ${plugin.name} must have at least one filter(like moduleIds or resourcePotTypes)`
+        `augmentResourcePotHash hook of plugin ${plugin.name} must have at least one filter(like moduleIds or resourcePotTypes)`
       );
     }
 
-    if (!plugin.augmentResourceHash.filters?.resourcePotTypes) {
-      plugin.augmentResourceHash.filters.resourcePotTypes = [];
-    } else if (!plugin.augmentResourceHash.filters?.moduleIds) {
-      plugin.augmentResourceHash.filters.moduleIds = [];
+    if (!plugin.augmentResourcePotHash.filters?.resourcePotTypes) {
+      plugin.augmentResourcePotHash.filters.resourcePotTypes = [];
+    } else if (!plugin.augmentResourcePotHash.filters?.moduleIds) {
+      plugin.augmentResourcePotHash.filters.moduleIds = [];
     }
   }
 
@@ -232,13 +232,15 @@ export function convertPluginVite(plugin: JsPlugin): void {
     plugin.transform.filters.resolvedPaths =
       plugin.transform.filters.resolvedPaths.map(normalizeFilterPath);
   }
-  if (plugin.augmentResourceHash?.filters?.moduleIds) {
-    plugin.augmentResourceHash.filters.moduleIds =
-      plugin.augmentResourceHash.filters.moduleIds.map(normalizeFilterPath);
+  if (plugin.augmentResourcePotHash?.filters?.moduleIds) {
+    plugin.augmentResourcePotHash.filters.moduleIds =
+      plugin.augmentResourcePotHash.filters.moduleIds.map(normalizeFilterPath);
   }
 
-  if (plugin.renderResourcePot?.filters?.moduleIds) {
-    plugin.renderResourcePot.filters.moduleIds =
-      plugin.renderResourcePot.filters.moduleIds.map(normalizeFilterPath);
+  if (plugin.processRenderedResourcePot?.filters?.moduleIds) {
+    plugin.processRenderedResourcePot.filters.moduleIds =
+      plugin.processRenderedResourcePot.filters.moduleIds.map(
+        normalizeFilterPath
+      );
   }
 }

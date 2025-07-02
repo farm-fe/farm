@@ -181,11 +181,11 @@ impl Compiler {
       self.generate()?;
     }
 
-    {
-      #[cfg(feature = "profile")]
-      farmfe_core::puffin::profile_scope!("Write Stage");
-      self.write()?;
-    }
+    // {
+    //   #[cfg(feature = "profile")]
+    //   farmfe_core::puffin::profile_scope!("Write Stage");
+    //   self.write()?;
+    // }
 
     if self.context.config.persistent_cache.enabled() {
       self

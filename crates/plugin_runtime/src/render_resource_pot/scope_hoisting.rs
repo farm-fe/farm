@@ -8,7 +8,7 @@ use farmfe_core::{
   HashMap, HashSet,
 };
 use farmfe_toolkit::script::concatenate_modules::{
-  concatenate_modules_ast, ConcatenateModulesAstResult,
+  concatenate_modules_ast, ConcatenateModulesAstOptions, ConcatenateModulesAstResult,
 };
 
 /// Note: Scope Hoisting is enabled only `config.concatenate_modules` is true. Otherwise, it A module is a [ScopeHoistedModuleGroup]
@@ -62,6 +62,7 @@ impl ScopeHoistedModuleGroup {
       &self.target_hoisted_module_id,
       &self.hoisted_module_ids,
       module_graph,
+      ConcatenateModulesAstOptions { check_esm: true },
       context,
     )
     .map_err(|e| CompilationError::GenericError(format!("Scope hoist failed: {}", e)))?;
