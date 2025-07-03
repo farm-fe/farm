@@ -145,6 +145,7 @@ impl FromStr for TauriSubTemplate {
 #[non_exhaustive]
 pub enum Template {
   Vanilla,
+  ReactTs,
   React,
   Vue3,
   Vue2,
@@ -168,6 +169,7 @@ impl Display for Template {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     match self {
       Template::Vanilla => write!(f, "vanilla"),
+      Template::ReactTs => write!(f, "react-ts"),
       Template::React => write!(f, "react"),
       Template::Vue3 => write!(f, "vue3"),
       Template::Vue2 => write!(f, "vue2"),
@@ -192,6 +194,7 @@ impl FromStr for Template {
   fn from_str(s: &str) -> Result<Self, Self::Err> {
     match s {
       "vanilla" => Ok(Template::Vanilla),
+      "react-ts" => Ok(Template::ReactTs),
       "react" => Ok(Template::React),
       "vue3" => Ok(Template::Vue3),
       "vue2" => Ok(Template::Vue2),
@@ -219,6 +222,7 @@ impl Displayable for Template {
   fn display_text(&self) -> &'static str {
     match self {
       Template::Vanilla => "\x1b[33mVanilla\x1b[0m",
+      Template::ReactTs => "\x1b[36mReact-ts - (https://react.dev/)\x1b[0m",
       Template::React => "\x1b[36mReact - (https://react.dev/)\x1b[0m",
       Template::Vue3 => "\x1b[32mVue3 - (https://vuejs.org/)\x1b[0m",
       Template::Vue2 => "\x1b[32mVue2 - (https://v2.vuejs.org/)\x1b[0m",
@@ -264,6 +268,7 @@ impl<'a> Template {
   pub(crate) const ALL_TOP_LEVEL: &'a [Template] = &[
     Template::Vanilla,
     Template::React,
+    Template::ReactTs, 
     Template::Vue3,
     Template::Vue2,
     Template::Lit,
