@@ -6,6 +6,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.15](https://github.com/farm-fe/farm/compare/farmfe_plugin_tree_shake-v0.0.14...farmfe_plugin_tree_shake-v0.0.15) - 2025-07-04
+
+### Fixed
+
+- tree shake issue when handling cross module top level variables … ([#2166](https://github.com/farm-fe/farm/pull/2166))
+- assign reference treeshake ([#2141](https://github.com/farm-fe/farm/pull/2141))
+
+### Other
+
+- support output.asciiOnly ([#2200](https://github.com/farm-fe/farm/pull/2200))
+
 ## [0.0.14](https://github.com/farm-fe/farm/compare/farmfe_plugin_tree_shake-v0.0.13...farmfe_plugin_tree_shake-v0.0.14) - 2025-01-09
 
 ### Other
