@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.17](https://github.com/farm-fe/farm/compare/farmfe_swc_transformer_import_glob-v0.0.16...farmfe_swc_transformer_import_glob-v0.0.17) - 2025-07-04
+
+### Other
+
+- support output.asciiOnly ([#2200](https://github.com/farm-fe/farm/pull/2200))
+
 ## [0.0.16](https://github.com/farm-fe/farm/compare/farmfe_swc_transformer_import_glob-v0.0.15...farmfe_swc_transformer_import_glob-v0.0.16) - 2025-01-09
 
 ### Fixed
