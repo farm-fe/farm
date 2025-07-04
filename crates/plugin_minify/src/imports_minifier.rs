@@ -713,8 +713,7 @@ export { hello1, hello2, default as world1 } from './dep';
 
       ast.visit_mut_with(&mut imports_minifier);
 
-      let code_bytes =
-        codegen_module(&mut ast, EsVersion::latest(), cm, None, false, None).unwrap();
+      let code_bytes = codegen_module(&mut ast, cm, None, Default::default(), None).unwrap();
       let code = String::from_utf8(code_bytes).unwrap();
 
       println!("{code}");

@@ -1,20 +1,19 @@
 use std::sync::Arc;
 
 use farmfe_core::{
-  config::config_regex::ConfigRegex,
+  config::{config_regex::ConfigRegex, custom::get_config_output_ascii_only},
   context::CompilationContext,
   error::{CompilationError, Result},
   module::{ModuleId, ModuleMetaData, ModuleType},
   plugin::PluginProcessModuleHookParam,
   serde::{Deserialize, Serialize},
   swc_common::SourceMap,
-  swc_ecma_ast::EsVersion,
   swc_ecma_parser::{EsSyntax, Syntax},
 };
 use farmfe_toolkit::{
   css::{codegen_css_stylesheet, parse_css_stylesheet, ParseCssModuleResult},
   html::{codegen_html_document, parse_html_document},
-  script::{codegen_module, parse_module, ParseScriptModuleResult},
+  script::{codegen_module, create_codegen_config, parse_module, ParseScriptModuleResult},
 };
 use napi::{bindgen_prelude::FromNapiValue, NapiRaw};
 
@@ -66,16 +65,18 @@ struct CompatiblePluginProcessModuleHookParams {
   content: String,
 }
 
-fn format_module_metadata_to_code(metadata: &mut ModuleMetaData) -> Result<Option<String>> {
+fn format_module_metadata_to_code(
+  metadata: &mut ModuleMetaData,
+  context: &Arc<CompilationContext>,
+) -> Result<Option<String>> {
   Ok(match metadata {
     ModuleMetaData::Script(script_module_meta_data) => {
       let cm = Arc::new(SourceMap::default());
       let code = codegen_module(
         &script_module_meta_data.ast,
-        EsVersion::latest(),
         cm,
         None,
-        false,
+        create_codegen_config(context).with_minify(false),
         None,
       )
       .map_err(|err| CompilationError::GenericError(err.to_string()))?;
@@ -83,7 +84,12 @@ fn format_module_metadata_to_code(metadata: &mut ModuleMetaData) -> Result<Optio
       Some(String::from_utf8_lossy(&code).to_string())
     }
     ModuleMetaData::Css(css_module_meta_data) => {
-      let (code, _) = codegen_css_stylesheet(&css_module_meta_data.ast, None, false);
+      let (code, _) = codegen_css_stylesheet(
+        &css_module_meta_data.ast,
+        None,
+        false,
+        get_config_output_ascii_only(&context.config),
+      );
 
       Some(code)
     }
@@ -155,7 +161,7 @@ impl JsPluginProcessModuleHook {
         .iter()
         .any(|m| m.is_match(param.module_id.to_string().as_str()))
     {
-      let Some(result) = format_module_metadata_to_code(param.meta)? else {
+      let Some(result) = format_module_metadata_to_code(param.meta, &ctx)? else {
         return Ok(None);
       };
 

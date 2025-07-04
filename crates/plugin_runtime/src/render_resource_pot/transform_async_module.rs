@@ -249,10 +249,9 @@ mod tests {
     String::from_utf8(
       farmfe_toolkit::script::codegen_module(
         ast,
-        EsVersion::EsNext,
         Arc::new(SourceMap::new(FilePathMapping::empty())),
         None,
-        false,
+        Default::default(),
         None,
       )
       .unwrap(),

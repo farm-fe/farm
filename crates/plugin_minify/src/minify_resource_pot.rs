@@ -1,7 +1,7 @@
 use std::{path::PathBuf, sync::Arc};
 
 use farmfe_core::{
-  config::minify::MinifyOptions,
+  config::{custom::get_config_output_ascii_only, minify::MinifyOptions},
   context::CompilationContext,
   error::Result,
   resource::resource_pot::ResourcePot,
@@ -14,8 +14,8 @@ use farmfe_toolkit::{
   css::{codegen_css_stylesheet, parse_css_stylesheet, ParseCssModuleResult},
   minify::config::NormalizedMinifyOptions,
   script::{
-    codegen_module, parse_module, swc_try_with::try_with, CodeGenCommentsConfig,
-    ParseScriptModuleResult,
+    codegen_module, create_codegen_config, parse_module, swc_try_with::try_with,
+    CodeGenCommentsConfig, ParseScriptModuleResult,
   },
   swc_css_minifier::minify,
   swc_ecma_minifier::{optimize, option::ExtraOptions},
@@ -81,14 +81,13 @@ pub fn minify_js(
 
     let minified_content = codegen_module(
       &ast,
-      context.config.script.target.clone(),
       cm.clone(),
       if sourcemap_enabled {
         Some(&mut src_map)
       } else {
         None
       },
-      context.config.minify.enabled(),
+      create_codegen_config(context),
       Some(CodeGenCommentsConfig {
         comments: &comments,
         config: &context.config.comments,
@@ -143,6 +142,7 @@ pub fn minify_css(resource_pot: &mut ResourcePot, context: &Arc<CompilationConte
         None
       },
       context.config.minify.enabled(),
+      get_config_output_ascii_only(&context.config),
     );
 
     resource_pot.meta.rendered_content = Arc::new(minified_content);

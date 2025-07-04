@@ -30,10 +30,9 @@ fn parse_and_codegen_module() {
 
     let bytes = codegen_module(
       &ast,
-      Default::default(),
       cm,
       None,
-      false,
+      swc_ecma_codegen::Config::default(),
       Some(CodeGenCommentsConfig {
         comments: &comments,
         config: &CommentsConfig::default(),
