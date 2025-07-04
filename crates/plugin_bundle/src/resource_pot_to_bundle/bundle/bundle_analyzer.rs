@@ -21,7 +21,7 @@ use farmfe_core::{
 };
 use farmfe_toolkit::{
   common::build_source_map,
-  script::{codegen_module, swc_try_with::try_with, CodeGenCommentsConfig},
+  script::{codegen_module, create_codegen_config, swc_try_with::try_with, CodeGenCommentsConfig},
   swc_ecma_transforms::fixer,
   swc_ecma_visit::VisitMutWith,
 };
@@ -1025,14 +1025,13 @@ impl<'a> BundleAnalyzer<'a> {
       let mut mappings = vec![];
       let code_bytes = codegen_module(
         &module_analyzer.ast,
-        self.context.config.script.target,
         module_analyzer.cm.clone(),
         if sourcemap_enabled {
           Some(&mut mappings)
         } else {
           None
         },
-        false,
+        create_codegen_config(&self.context).with_minify(false),
         Some(CodeGenCommentsConfig {
           comments: &comments,
           config: &self.context.config.comments,

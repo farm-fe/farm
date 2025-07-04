@@ -207,8 +207,7 @@ export { long10 } from './dep2';
     try_with(cm.clone(), &Globals::new(), || {
       ast.visit_mut_with(&mut export_minifier);
 
-      let code_bytes =
-        codegen_module(&mut ast, EsVersion::latest(), cm, None, false, None).unwrap();
+      let code_bytes = codegen_module(&mut ast, cm, None, Default::default(), None).unwrap();
       let code = String::from_utf8(code_bytes).unwrap();
 
       println!("{code}");

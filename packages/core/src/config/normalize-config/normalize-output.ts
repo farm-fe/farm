@@ -9,6 +9,7 @@ import {
   mapTargetEnvValue,
   normalizeBasePath
 } from '../../utils/share.js';
+import { CUSTOM_KEYS } from '../constants.js';
 import { ResolvedCompilation } from '../types.js';
 
 export function normalizeOutput(
@@ -36,6 +37,11 @@ export function normalizeOutput(
   if (config.output.clean === undefined) {
     config.output.clean = true;
   }
+
+  config.custom = {
+    ...(config.custom || {}),
+    [CUSTOM_KEYS.output_ascii_only]: `${!!config.output.asciiOnly}`
+  };
 
   // only set default polyfill in production
   if (isProduction) {

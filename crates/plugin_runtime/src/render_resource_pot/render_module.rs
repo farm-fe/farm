@@ -12,7 +12,7 @@ use farmfe_toolkit::{
   common::{build_source_map, create_swc_source_map, MinifyBuilder, Source},
   minify::minify_js_module,
   script::{
-    codegen_module,
+    codegen_module, create_codegen_config,
     swc_try_with::{resolve_module_mark, try_with},
     CodeGenCommentsConfig,
   },
@@ -168,14 +168,13 @@ pub fn render_module<'a, F: Fn(&ModuleId) -> bool>(
   let mut mappings = vec![];
   let code_bytes = codegen_module(
     &cloned_module,
-    context.config.script.target.clone(),
     cm.clone(),
     if sourcemap_enabled {
       Some(&mut mappings)
     } else {
       None
     },
-    context.config.minify.enabled(),
+    create_codegen_config(context),
     Some(CodeGenCommentsConfig {
       comments: &comments,
       // preserve all comments when generate module code.

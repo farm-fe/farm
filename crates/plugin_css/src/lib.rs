@@ -5,7 +5,9 @@ use std::{path::PathBuf, sync::Arc};
 
 use dep_analyzer::DepAnalyzer;
 use farmfe_core::config::css::NameConversion;
-use farmfe_core::config::custom::get_config_css_modules_local_conversion;
+use farmfe_core::config::custom::{
+  get_config_css_modules_local_conversion, get_config_output_ascii_only,
+};
 use farmfe_core::config::minify::MinifyOptions;
 use farmfe_core::module::CommentsMetaData;
 use farmfe_core::{
@@ -594,6 +596,7 @@ impl Plugin for FarmPluginCss {
             None
           },
           context.config.minify.enabled(),
+          get_config_output_ascii_only(&context.config),
         );
 
         rendered_modules.lock().push(RenderedModule {

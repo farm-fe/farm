@@ -970,8 +970,7 @@ export * from './e';
         },
       );
 
-      let code_bytes =
-        codegen_module(&mut ast, EsVersion::latest(), cm, None, false, None).unwrap();
+      let code_bytes = codegen_module(&mut ast, cm, None, Default::default(), None).unwrap();
       let code = String::from_utf8(code_bytes).unwrap();
 
       println!("{code}");
@@ -1069,8 +1068,7 @@ export const f = 1, h = 2;
         },
       );
 
-      let code_bytes =
-        codegen_module(&mut ast, EsVersion::latest(), cm, None, false, None).unwrap();
+      let code_bytes = codegen_module(&mut ast, cm, None, Default::default(), None).unwrap();
       let code = String::from_utf8(code_bytes).unwrap();
 
       println!("{code}");

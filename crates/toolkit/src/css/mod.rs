@@ -98,6 +98,7 @@ pub fn codegen_css_stylesheet(
   stylesheet: &Stylesheet,
   source: Option<Source>,
   minify: bool,
+  ascii_only: bool,
 ) -> (String, Option<String>) {
   let mut css_code = String::new();
   let mut mappings = Vec::new();
@@ -114,7 +115,7 @@ pub fn codegen_css_stylesheet(
 
   gen.emit(stylesheet).unwrap();
 
-  if let Some(source) = source {
+  let (css_code, src_map) = if let Some(source) = source {
     let (cm, _) = create_swc_source_map(source);
     let map = build_source_map(cm, &mappings);
     let mut src_map = vec![];
@@ -123,5 +124,23 @@ pub fn codegen_css_stylesheet(
     (css_code, Some(String::from_utf8(src_map).unwrap()))
   } else {
     (css_code, None)
+  };
+
+  if ascii_only {
+    (escape_non_ascii(&css_code), src_map)
+  } else {
+    (css_code, src_map)
   }
+}
+
+pub fn escape_non_ascii(s: &str) -> String {
+  s.chars()
+    .map(|c| {
+      if c.is_ascii() {
+        c.to_string()
+      } else {
+        format!("\\{:x}", c as u32)
+      }
+    })
+    .collect()
 }

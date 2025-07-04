@@ -160,6 +160,12 @@ export interface OutputConfig {
    * clean output.path automatically or not
    */
   clean?: boolean;
+
+  /**
+   * output ascii only
+   * @default false
+   */
+  asciiOnly?: boolean;
 }
 
 export interface ResolveConfig {

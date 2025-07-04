@@ -51,7 +51,8 @@ const compilationConfigSchema = z
           ])
           .optional(),
         format: z.enum(['cjs', 'esm']).optional(),
-        clean: z.boolean().optional()
+        clean: z.boolean().optional(),
+        asciiOnly: z.boolean().optional()
       })
       .strict()
       .optional(),
