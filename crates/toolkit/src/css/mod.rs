@@ -139,7 +139,7 @@ pub fn escape_non_ascii(s: &str) -> String {
       if c.is_ascii() {
         c.to_string()
       } else {
-        format!("\\{:x}", c as u32)
+        format!("\\{:06x}", c as u32)
       }
     })
     .collect()
