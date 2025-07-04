@@ -1,5 +1,11 @@
 # @farmfe/core
 
+## 1.7.9
+
+### Patch Changes
+
+- 6aa67812: Support `output.asciiOnly`
+
 ## 1.7.8
 
 ### Patch Changes
