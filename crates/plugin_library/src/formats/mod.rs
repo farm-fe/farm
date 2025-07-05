@@ -17,10 +17,15 @@ use crate::{
 pub mod cjs;
 pub mod esm;
 
+pub struct GenerateLibraryFormatResourcesOptions {
+  pub should_add_farm_node_require: bool,
+}
+
 pub fn generate_library_format_resources(
   resource_pot: &mut ResourcePot,
   runtime_module_helper_ast: &Module,
   all_used_helper_idents: &mut HashSet<String>,
+  options: &GenerateLibraryFormatResourcesOptions,
   context: &Arc<CompilationContext>,
   hook_context: &PluginHookContext,
 ) -> farmfe_core::error::Result<Vec<GeneratedResource>> {
@@ -44,7 +49,12 @@ pub fn generate_library_format_resources(
   let mut result = vec![];
 
   if context.config.output.format.contains_esm() {
-    result.extend(emit_esm_resources(resource_pot, context, hook_context)?);
+    result.extend(emit_esm_resources(
+      resource_pot,
+      options,
+      context,
+      hook_context,
+    )?);
   }
 
   if context.config.output.format.contains_cjs() {
@@ -52,6 +62,7 @@ pub fn generate_library_format_resources(
       resource_pot,
       runtime_module_helper_ast,
       all_used_helper_idents,
+      options,
       context,
       hook_context,
     )?);

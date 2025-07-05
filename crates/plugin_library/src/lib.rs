@@ -43,7 +43,9 @@ use farmfe_toolkit::{
 use transform_cjs::transform_cjs_to_esm;
 
 use crate::{
-  formats::generate_library_format_resources, transform_hybrid::transform_hybrid_to_cjs,
+  formats::{generate_library_format_resources, GenerateLibraryFormatResourcesOptions},
+  transform_cjs::{replace_cjs_require, ReplaceCjsRequireResult},
+  transform_hybrid::transform_hybrid_to_cjs,
 };
 
 mod formats;
@@ -60,12 +62,12 @@ const PLUGIN_NAME: &str = "FarmPluginLibrary";
 pub struct FarmPluginLibrary {
   export_namespace_modules: Mutex<HashSet<ModuleId>>,
   cjs_require_map: Mutex<HashMap<(ModuleId, String), ModuleId>>,
-  external_source_map: Mutex<HashMap<ModuleId, HashSet<String>>>,
 
   library_bundle_type: LibraryBundleType,
 
   runtime_module_helper_ast: Mutex<Option<Module>>,
   all_used_helper_idents: Mutex<HashSet<String>>,
+  should_add_farm_node_require: Mutex<bool>,
 }
 
 impl FarmPluginLibrary {
@@ -253,16 +255,6 @@ impl Plugin for FarmPluginLibrary {
 
     for module in module_graph.modules() {
       for (dep_id, edge_info) in module_graph.dependencies(&module.id) {
-        if let Some(dep_module) = module_graph.module(&dep_id) {
-          if dep_module.external {
-            let mut external_source_map = self.external_source_map.lock();
-            external_source_map
-              .entry(module.id.clone())
-              .or_default()
-              .extend(edge_info.items().iter().map(|item| item.source.clone()));
-          }
-        }
-
         if edge_info.contains_require() {
           edges_to_update.push((module.id.clone(), dep_id));
         }
@@ -291,7 +283,13 @@ impl Plugin for FarmPluginLibrary {
         }
 
         let mut edge_info = edge_info.clone();
-        edge_info.update_kind(ResolveKind::Import);
+        // update ResolveKind::require to ResolveKind::Import
+        for item in edge_info.iter_mut() {
+          if item.kind == ResolveKind::Require {
+            item.kind = ResolveKind::Import;
+          }
+        }
+
         module_graph
           .update_edge(&module_id, &dep_id, edge_info)
           .unwrap();
@@ -314,8 +312,6 @@ impl Plugin for FarmPluginLibrary {
       cjs_require_map.drain().into_iter().collect();
     let cjs_required_modules: HashSet<&ModuleId> = cjs_require_map.values().collect();
 
-    let external_source_map = self.external_source_map.lock();
-
     module_graph
       .modules_mut()
       .par_iter_mut()
@@ -329,17 +325,27 @@ impl Plugin for FarmPluginLibrary {
         let mut used_helper_idents = HashSet::default();
 
         try_with(cm, globals.value(), || {
+          // transform hybrid to cjs
           if meta.module_system == ModuleSystem::Hybrid {
             used_helper_idents.extend(transform_hybrid_to_cjs(meta));
             meta.module_system = ModuleSystem::CommonJs;
+          }
+
+          // replace cjs require
+          let ReplaceCjsRequireResult {
+            cjs_require_items,
+            should_add_farm_node_require,
+          } = replace_cjs_require(&module.id, &cjs_require_map, meta);
+
+          if should_add_farm_node_require {
+            *self.should_add_farm_node_require.lock() = true;
           }
 
           // transform cjs to esm
           if meta.module_system == ModuleSystem::CommonJs {
             transform_cjs_to_esm(
               &module.id,
-              &cjs_require_map,
-              &external_source_map,
+              cjs_require_items,
               meta,
               context,
               module.is_entry,
@@ -473,11 +479,15 @@ impl Plugin for FarmPluginLibrary {
     let hook_context = hook_context.clone_and_append_caller(self.name());
     let runtime_module_helper_ast = self.runtime_module_helper_ast.lock();
     let mut all_used_helper_idents = self.all_used_helper_idents.lock();
+    let should_add_farm_node_require = *self.should_add_farm_node_require.lock();
 
     result.resources = generate_library_format_resources(
       resource_pot,
       runtime_module_helper_ast.as_ref().unwrap(),
       &mut all_used_helper_idents,
+      &GenerateLibraryFormatResourcesOptions {
+        should_add_farm_node_require,
+      },
       context,
       &hook_context,
     )?;

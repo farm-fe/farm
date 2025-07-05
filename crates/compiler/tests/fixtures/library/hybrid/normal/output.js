@@ -1,5 +1,7 @@
 //index.js:
- ; // module_id: @farm-runtime/module-system
+ import * as __farm_require_esm_ident__0 from "node:fs";
+import * as __farm_require_esm_ident__1 from "node:os";
+; // module_id: @farm-runtime/module-system
 // all modules registered
 const __farm_internal_modules__ = {};
 // module cache after module initialized
@@ -67,8 +69,8 @@ var farmRequire = farmRegister("index.ts", function(module, exports) {
     defineExportEsModule(exports);
     exportByDefineProperty(exports, "foo", ()=>foo);
     exportByDefineProperty(exports, "bar", ()=>bar);
-    var _f_node_fs = interopRequireDefault(require('node:fs'));
-    const os = require('node:os');
+    var _f_node_fs = interopRequireDefault(__farm_require_esm_ident__0);
+    const os = __farm_require_esm_ident__1;
     console.log(importDefault(_f_node_fs).read, os.cpus);
     exports.default = {
         read: importDefault(_f_node_fs).read,

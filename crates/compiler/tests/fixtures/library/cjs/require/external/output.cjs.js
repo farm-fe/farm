@@ -1,5 +1,24 @@
 //index.js:
- function getRequireWildcardCache(nodeInterop) {
+ var __farmNodeRequire = require;
+function exportByDefineProperty(to, to_k, get) {
+    if (Object.prototype.hasOwnProperty.call(to, // loadDynamicResourcesOnly
+    to_k)) {
+        return;
+    }
+    Object.defineProperty(to, to_k, {
+        enumerable: // setExternalModules
+        true,
+        get
+    });
+}
+function defineExportEsModule(to) {
+    const key = '__esModule';
+    if (to[key]) return;
+    Object.defineProperty(to, key, {
+        value: true
+    });
+}
+function getRequireWildcardCache(nodeInterop) {
     if (typeof WeakMap !== "function") return null;
     var cacheBabelInterop = new WeakMap();
     var cacheNodeInterop = new WeakMap();
@@ -30,13 +49,10 @@ function interopRequireWildcard(obj, nodeInterop) {
     return newObj;
 }
 defineExportEsModule(exports);
-exportByDefineProperty(exports, "bar", ()=>bar);
 exportByDefineProperty(exports, "default", ()=>index_ts_default);
-exportByDefineProperty(exports, "foo", ()=>foo);
-var _f_node_fs = interopRequireWildcard(require("node:fs"));
-var __farm_require_esm_ident__0 = _f_node_fs;
-var _f_node_os = interopRequireWildcard(require("node:os"));
-var __farm_require_esm_ident__1 = _f_node_os;
+exportByDefineProperty(exports, "loaders", ()=>loaders);
+var _f_fs = interopRequireWildcard(require("fs"));
+var __farm_require_esm_ident__0 = _f_fs;
 ; // module_id: @farm-runtime/module-system
 // all modules registered
 const __farm_internal_modules__ = {};
@@ -71,49 +87,16 @@ function farmRegister(id, module) {
     __farm_internal_modules__[id] = module;
     return ()=>farmRequire$1(id);
 }
-; // module_id: @farm-runtime/module-helper
-function exportByDefineProperty(to, to_k, get) {
-    if (Object.prototype.hasOwnProperty.call(to, to_k)) {
-        return;
-    }
-    Object.defineProperty(to, to_k, {
-        enumerable: true,
-        get
-    });
-}
-function defineExportEsModule(to) {
-    const key = '__esModule';
-    if (to[key]) return;
-    Object.defineProperty(to, key, {
-        value: true
-    });
-}
-function interopRequireDefault(obj) {
-    return obj && obj.__esModule ? obj : {
-        default: obj
-    };
-}
-function importDefault(v) {
-    if (typeof v.default !== 'undefined') {
-        return v.default;
-    }
-    // compatible with `import default from "module"`
-    return v;
-}
-; // module_id: index.ts
-var farmRequire = farmRegister("index.ts", function(module, exports1) {
-    defineExportEsModule(exports1);
-    exportByDefineProperty(exports1, "foo", ()=>foo);
-    exportByDefineProperty(exports1, "bar", ()=>bar);
-    var _f_node_fs = interopRequireDefault(__farm_require_esm_ident__0);
-    const os = __farm_require_esm_ident__1;
-    console.log(importDefault(_f_node_fs).read, os.cpus);
-    exports1.default = {
-        read: importDefault(_f_node_fs).read,
-        c: 1
-    };
-    var foo = 'foo';
-    var bar = 'bar';
+; // module_id: dep.cjs
+var farmRequire = farmRegister("dep.cjs", function(module, exports1) {
+    const { readFileSync } = __farm_require_esm_ident__0;
+    console.log(readFileSync("./index.ts", "utf8"));
 });
-var __farm_cjs_exports__$1 = farmRequire();
-var index_ts_default = interopRequireDefault(__farm_cjs_exports__$1).default, foo = __farm_cjs_exports__$1.foo, bar = __farm_cjs_exports__$1.bar;
+farmRequire();
+; // module_id: index.ts
+const loaders = {
+    '.js': __farmNodeRequire,
+    '.cjs': __farmNodeRequire,
+    '.json': __farmNodeRequire
+};
+var index_ts_default = 'require-external';

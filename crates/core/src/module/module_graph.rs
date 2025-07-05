@@ -65,6 +65,10 @@ impl ModuleGraphEdge {
     self.0.iter()
   }
 
+  pub fn iter_mut(&mut self) -> impl Iterator<Item = &mut ModuleGraphEdgeDataItem> {
+    self.0.iter_mut()
+  }
+
   pub fn contains(&self, item: &ModuleGraphEdgeDataItem) -> bool {
     self.0.contains(item)
   }

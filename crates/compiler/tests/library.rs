@@ -25,6 +25,7 @@ fn test(file_path_buf: PathBuf, crate_path_buf: PathBuf) {
     "dynamic/lodash_export",
     "external/import_namespace",
     "library/external/",
+    "dynamic/require",
   ];
   let is_cjs = test_cases_that_need_real_runtime
     .iter()
@@ -88,7 +89,7 @@ fn library_test() {
   fixture!("tests/fixtures/library/**/index.ts", test);
   // fixture!("tests/fixtures/library/cjs/basic/**/index.ts", test);
   // fixture!(
-  //   "tests/fixtures/library/cjs/require/spread-expr/**/index.ts",
+  //   "tests/fixtures/library/cjs/require/external/**/index.ts",
   //   test
   // );
   // fixture!("tests/fixtures/library/hybrid/normal/**/index.ts", test);

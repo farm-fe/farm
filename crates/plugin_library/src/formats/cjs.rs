@@ -5,11 +5,12 @@ use farmfe_core::{
   plugin::{GeneratedResource, PluginHookContext},
   resource::resource_pot::ResourcePot,
   swc_common::Mark,
-  swc_ecma_ast::Module,
+  swc_ecma_ast::{Expr, Module},
   HashSet,
 };
 use farmfe_toolkit::{
   script::{
+    create_top_level_ident,
     module2cjs::{self, TransformModuleDeclsOptions},
     swc_try_with::try_with,
   },
@@ -19,6 +20,7 @@ use farmfe_toolkit::{
 };
 
 use crate::{
+  formats::{esm::create_farm_node_require_item, GenerateLibraryFormatResourcesOptions},
   import_meta_visitor::replace_import_meta_url,
   transform_hybrid::Hybrid2CjsCalleeAllocator,
   utils::{add_format_to_generated_resources, emit_resource_pot, inject_farm_runtime_helpers},
@@ -28,6 +30,7 @@ pub fn emit_cjs_resources(
   resource_pot: &mut ResourcePot,
   runtime_module_helper_ast: &Module,
   all_used_helper_idents: &HashSet<String>,
+  options: &GenerateLibraryFormatResourcesOptions,
   context: &Arc<CompilationContext>,
   hook_context: &PluginHookContext,
 ) -> farmfe_core::error::Result<Vec<GeneratedResource>> {
@@ -74,11 +77,26 @@ pub fn emit_cjs_resources(
       // prepend helper ast
       meta.ast.body.prepend_stmts(items);
     }
+
+    // prepend `const __farmNodeRequire = require`
+    if options.should_add_farm_node_require {
+      let unresolved_mark = Mark::from_u32(meta.unresolved_mark);
+      let require_item = create_farm_node_require_item(Expr::Ident(create_top_level_ident(
+        "require",
+        unresolved_mark,
+      )));
+      meta.ast.body.prepend_stmt(require_item);
+    }
   })
   .unwrap();
 
   let mut resources = emit_resource_pot(resource_pot, context, hook_context)?;
   add_format_to_generated_resources(&mut resources, "cjs");
 
+  if options.should_add_farm_node_require {
+    // revert ast
+    let ast = &mut resource_pot.meta.as_js_mut().ast;
+    ast.body.remove(0);
+  }
   Ok(resources)
 }

@@ -33,6 +33,7 @@ use crate::handle_exports::{create_export_decl_items, update_module_export_ident
 pub const FARM_REGISTER: &str = "farmRegister";
 pub const FARM_INTEROP_REQUIRE: &str = "interopRequireDefault";
 pub const FARM_CJS_EXPORTS: &str = "__farm_cjs_exports__";
+pub const FARM_NODE_REQUIRE: &str = "__farmNodeRequire";
 
 /// Transform cjs to esm, for example:
 /// ```js
@@ -66,60 +67,17 @@ pub const FARM_CJS_EXPORTS: &str = "__farm_cjs_exports__";
 /// ```
 pub fn transform_cjs_to_esm(
   module_id: &ModuleId,
-  cjs_require_map: &HashMap<(ModuleId, String), ModuleId>,
-  external_source_map: &HashMap<ModuleId, HashSet<String>>,
+  cjs_import_items: Vec<ModuleItem>,
   meta: &mut ScriptModuleMetaData,
   context: &Arc<CompilationContext>,
   is_entry: bool,
   is_required_cjs_module: bool,
   used_helper_idents: &mut HashSet<&str>,
 ) {
+  let mut items = cjs_import_items;
+
   let unresolved_mark = Mark::from_u32(meta.unresolved_mark);
   let top_level_mark = Mark::from_u32(meta.top_level_mark);
-
-  let mut replacer = RequireEsmReplacer::new(
-    module_id.clone(),
-    cjs_require_map,
-    external_source_map,
-    unresolved_mark,
-    top_level_mark,
-  );
-  meta.ast.visit_mut_with(&mut replacer);
-
-  // insert extra namespace import
-  let mut items = replacer
-    .extra_import_sources
-    .into_iter()
-    .map(|(source, ident)| {
-      create_import_decl_item(
-        vec![ImportSpecifier::Namespace(ImportStarAsSpecifier {
-          span: DUMMY_SP,
-          local: ident,
-        })],
-        source.as_str(),
-      )
-    })
-    .collect::<Vec<_>>();
-  // insert extra import require
-  items.extend(
-    replacer
-      .extra_import_require_sources
-      .into_iter()
-      .map(|(source, ident)| {
-        create_import_decl_item(
-          vec![ImportSpecifier::Named(ImportNamedSpecifier {
-            span: DUMMY_SP,
-            local: ident,
-            imported: Some(ModuleExportName::Ident(create_top_level_ident(
-              FARM_REQUIRE,
-              top_level_mark,
-            ))),
-            is_type_only: false,
-          })],
-          source.as_str(),
-        )
-      }),
-  );
 
   // insert module system import
   let mut prepend_imports = vec![create_import_decl_item(
@@ -231,10 +189,71 @@ pub fn transform_cjs_to_esm(
   );
 }
 
+pub struct ReplaceCjsRequireResult {
+  pub cjs_require_items: Vec<ModuleItem>,
+  pub should_add_farm_node_require: bool,
+}
+
+pub fn replace_cjs_require(
+  module_id: &ModuleId,
+  cjs_require_map: &HashMap<(ModuleId, String), ModuleId>,
+  meta: &mut ScriptModuleMetaData,
+) -> ReplaceCjsRequireResult {
+  let unresolved_mark = Mark::from_u32(meta.unresolved_mark);
+  let top_level_mark = Mark::from_u32(meta.top_level_mark);
+
+  let mut replacer = RequireEsmReplacer::new(
+    module_id.clone(),
+    cjs_require_map,
+    unresolved_mark,
+    top_level_mark,
+  );
+  meta.ast.visit_mut_with(&mut replacer);
+
+  // insert extra namespace import
+  let mut items = replacer
+    .extra_import_sources
+    .into_iter()
+    .map(|(source, ident)| {
+      create_import_decl_item(
+        vec![ImportSpecifier::Namespace(ImportStarAsSpecifier {
+          span: DUMMY_SP,
+          local: ident,
+        })],
+        source.as_str(),
+      )
+    })
+    .collect::<Vec<_>>();
+  // insert extra import require
+  items.extend(
+    replacer
+      .extra_import_require_sources
+      .into_iter()
+      .map(|(source, ident)| {
+        create_import_decl_item(
+          vec![ImportSpecifier::Named(ImportNamedSpecifier {
+            span: DUMMY_SP,
+            local: ident,
+            imported: Some(ModuleExportName::Ident(create_top_level_ident(
+              FARM_REQUIRE,
+              top_level_mark,
+            ))),
+            is_type_only: false,
+          })],
+          source.as_str(),
+        )
+      }),
+  );
+
+  ReplaceCjsRequireResult {
+    cjs_require_items: items,
+    should_add_farm_node_require: replacer.should_add_farm_node_require,
+  }
+}
+
 struct RequireEsmReplacer<'a> {
   module_id: ModuleId,
   cjs_require_map: &'a HashMap<(ModuleId, String), ModuleId>,
-  external_source_map: &'a HashMap<ModuleId, HashSet<String>>,
   unresolved_mark: Mark,
   top_level_mark: Mark,
   counter: usize,
@@ -244,26 +263,26 @@ struct RequireEsmReplacer<'a> {
   pub extra_import_sources: HashMap<String, Ident>,
   /// import { farmRequire } from 'source';
   pub extra_import_require_sources: HashMap<String, Ident>,
+  pub should_add_farm_node_require: bool,
 }
 
 impl<'a> RequireEsmReplacer<'a> {
   pub fn new(
     module_id: ModuleId,
     cjs_require_map: &'a HashMap<(ModuleId, String), ModuleId>,
-    external_source_map: &'a HashMap<ModuleId, HashSet<String>>,
     unresolved_mark: Mark,
     top_level_mark: Mark,
   ) -> Self {
     Self {
       module_id,
       cjs_require_map,
-      external_source_map,
       unresolved_mark,
       top_level_mark,
       counter: 0,
       require_counter: 0,
       extra_import_sources: HashMap::default(),
       extra_import_require_sources: HashMap::default(),
+      should_add_farm_node_require: false,
     }
   }
 
@@ -283,6 +302,13 @@ impl<'a> RequireEsmReplacer<'a> {
 }
 
 impl<'a> VisitMut for RequireEsmReplacer<'a> {
+  fn visit_mut_ident(&mut self, ident: &mut Ident) {
+    if ident.sym == "require" && ident.ctxt.outer() == self.unresolved_mark {
+      ident.sym = FARM_NODE_REQUIRE.into();
+      self.should_add_farm_node_require = true;
+    }
+  }
+
   fn visit_mut_expr(&mut self, expr: &mut Expr) {
     if let Expr::Call(call_expr) = expr {
       if is_commonjs_require(self.unresolved_mark, self.top_level_mark, call_expr) {
@@ -304,12 +330,7 @@ impl<'a> VisitMut for RequireEsmReplacer<'a> {
                 .extra_import_require_sources
                 .insert(source, ident.clone());
               *expr = create_call_expr(Expr::Ident(ident), vec![]);
-            } else if !self
-              .external_source_map
-              .get(&self.module_id)
-              .and_then(|external_sources| Some(external_sources.contains(&source)))
-              .unwrap_or(false)
-            {
+            } else {
               let ident = self.create_export_namespace_ident();
               // if the dep module is an es module
               if !self.extra_import_sources.contains_key(&source) {

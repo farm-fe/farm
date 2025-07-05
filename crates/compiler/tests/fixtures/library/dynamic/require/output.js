@@ -1,8 +1,5 @@
 //index.js:
- import { createRequire as __farmNodeCreateRequire } from "module";
-var __farmNodeRequire = __farmNodeCreateRequire(import.meta.url);
-import * as __farm_require_esm_ident__0 from "fs";
-; // module_id: @farm-runtime/module-system
+ ; // module_id: @farm-runtime/module-system
 // all modules registered
 const __farm_internal_modules__ = {};
 // module cache after module initialized
@@ -36,17 +33,22 @@ function farmRegister(id, module) {
     __farm_internal_modules__[id] = module;
     return ()=>farmRequire$1(id);
 }
-; // module_id: dep.cjs
-var farmRequire = farmRegister("dep.cjs", function(module, exports) {
-    const { readFileSync } = __farm_require_esm_ident__0;
-    console.log(readFileSync("./index.ts", "utf8"));
+; // module_id: dep.js
+var farmRequire$2 = farmRegister("dep.js", function(module, exports) {
+    const dep = "dep";
+    module.exports = {
+        dep
+    };
+    module.exports.default = module.exports;
 });
-farmRequire();
+var __farm_cjs_exports__$2 = farmRequire$2();
+; // module_id: loader.js
+var farmRequire = farmRegister("loader.js", function(module, exports) {
+    exports.loadTsSync = ()=>farmRequire$2();
+    exports.loadTs = async ()=>(await Promise.resolve(__farm_cjs_exports__$2)).default;
+});
+var __farm_cjs_exports__$3 = farmRequire();
+var loadTsSync = __farm_cjs_exports__$3.loadTsSync, loadTs = __farm_cjs_exports__$3.loadTs;
 ; // module_id: index.ts
-const loaders = {
-    '.js': __farmNodeRequire,
-    '.cjs': __farmNodeRequire,
-    '.json': __farmNodeRequire
-};
-var index_ts_default = 'require-external';
-export { index_ts_default as default, loaders as loaders };
+console.log(loadTsSync());
+console.log(await loadTs());

@@ -110,7 +110,8 @@ export async function normalizeUserCompilationConfig(
     },
     resolvedCompilation?.define,
     // for node target, we should not define process.env.NODE_ENV
-    resolvedCompilation.output?.targetEnv === 'node'
+    resolvedCompilation.output?.targetEnv === 'node' ||
+      resolvedCompilation.output?.targetEnv === 'library'
       ? {}
       : Object.keys(resolvedUserConfig.env || {}).reduce<EnvResult>(
           (env, key) => {

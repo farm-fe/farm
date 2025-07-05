@@ -1,5 +1,5 @@
 use farmfe_core::{
-  module::{module_graph::ModuleGraph, ModuleId},
+  module::{meta_data::script::EXPORT_NAMESPACE, module_graph::ModuleGraph, ModuleId},
   plugin::ResolveKind,
   swc_common::{Mark, SyntaxContext, DUMMY_SP},
   swc_ecma_ast::{CallExpr, Callee, Expr, Ident, IdentName, MemberExpr, MemberProp},
@@ -7,7 +7,9 @@ use farmfe_core::{
 };
 use swc_ecma_visit::{VisitMut, VisitMutWith};
 
-use super::{unique_idents::TopLevelIdentsRenameHandler, utils::create_export_namespace_ident};
+use crate::script::create_export_namespace_ident;
+
+use super::unique_idents::TopLevelIdentsRenameHandler;
 
 pub struct DynamicImportVisitor<'a> {
   module_id: &'a ModuleId,
@@ -73,7 +75,16 @@ impl<'a> VisitMut for DynamicImportVisitor<'a> {
         return;
       }
 
-      let namespace_ident = create_export_namespace_ident(&dep_module_id).to_id().into();
+      let namespace_ident = if let Some(export_ident) = dep_module
+        .meta
+        .as_script()
+        .export_ident_map
+        .get(EXPORT_NAMESPACE)
+      {
+        export_ident.as_internal().ident.clone()
+      } else {
+        create_export_namespace_ident(&dep_module_id).to_id().into()
+      };
       let namespace_ident = self
         .rename_handler
         .get_renamed_ident(&dep_module_id, &namespace_ident)

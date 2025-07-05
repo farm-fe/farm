@@ -39,4 +39,12 @@ impl JsResourcePotMetaData {
   pub fn set_comments(&mut self, comments: CommentsMetaData) {
     self.comments = comments;
   }
+
+  pub fn take_ast(&mut self) -> SwcModule {
+    std::mem::take(&mut self.ast)
+  }
+
+  pub fn set_ast(&mut self, ast: SwcModule) {
+    self.ast = ast;
+  }
 }
