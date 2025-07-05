@@ -1,5 +1,5 @@
 import path from 'node:path';
-import { JsPlugin } from '../../src/index.js';
+import { JsPlugin, UserConfig } from '../../src/index.js';
 import {
   getFixturesDir,
   getCompiler as getInternalCompiler
@@ -19,8 +19,9 @@ export function getCompiler(
   plugins: JsPlugin[],
   hookName: string,
   input?: Record<string, string>,
-  output?: Record<string, string>
+  output?: Record<string, string>,
+  compilation?: UserConfig['compilation']
 ) {
   const root = getJsPluginsFixturesDir(hookName);
-  return getInternalCompiler(root, p, plugins, input, output);
+  return getInternalCompiler(root, p, plugins, input, output, compilation);
 }

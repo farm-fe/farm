@@ -110,11 +110,13 @@ export interface PluginProcessModuleParams {
   moduleId: string;
   moduleType: ModuleType;
   content: string;
+  sourceMapChain: string[];
 }
 
 export interface PluginProcessModuleResult {
   content: string;
   sourceMap?: string;
+  ignorePreviousSourceMap?: boolean;
 }
 
 type NormalizeFilterParams = {
@@ -176,7 +178,16 @@ export interface JsPlugin {
 
   freezeModule?: JsPluginHook<
     NormalizeFilterParams,
-    PluginProcessModuleParams,
+    PluginProcessModuleParams & {
+      resolved_deps: [
+        string,
+        {
+          kind: string;
+          order: number;
+          source: string;
+        }[]
+      ][];
+    },
     PluginProcessModuleResult
   >;
 

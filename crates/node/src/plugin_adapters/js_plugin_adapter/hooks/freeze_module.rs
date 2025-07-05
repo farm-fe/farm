@@ -14,20 +14,18 @@ use crate::{
   plugin_adapters::js_plugin_adapter::thread_safe_js_plugin_hook::ThreadSafeJsPluginHook,
 };
 
-pub type JsPluginFreezeModuleHookFilters = JsModuleHookFilters;
-pub type PluginFreezeModuleHookFilters = ModuleHookFilters;
 pub type PluginFreezeModuleHookResult = ModuleHookResult;
 pub type CompatiblePluginFreezeModuleHookParams = ModuleHookParams;
 
 pub struct JsPluginFreezeModuleHook {
   tsfn: ThreadSafeJsPluginHook,
-  filters: PluginFreezeModuleHookFilters,
+  pub(crate) filters: ModuleHookFilters,
 }
 
 impl JsPluginFreezeModuleHook {
   new_js_plugin_hook!(
-    PluginFreezeModuleHookFilters,
-    JsPluginFreezeModuleHookFilters,
+    ModuleHookFilters,
+    JsModuleHookFilters,
     CompatiblePluginFreezeModuleHookParams,
     PluginFreezeModuleHookResult
   );
@@ -55,6 +53,8 @@ impl JsPluginFreezeModuleHook {
             module_id: param.module.id.clone(),
             module_type: param.module.module_type.clone(),
             content: result,
+            source_map_chain: param.module.source_map_chain.clone(),
+            resolved_deps: Some(param.resolved_deps.clone()),
           },
           ctx.clone(),
           None,
@@ -67,8 +67,7 @@ impl JsPluginFreezeModuleHook {
         &param.module.id,
         &param.module.module_type,
         &mut param.module.meta,
-        Arc::new(result.content),
-        result.source_map,
+        result,
         &mut param.module.source_map_chain,
         &ctx,
       )?;

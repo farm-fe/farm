@@ -19,18 +19,14 @@ export interface JsPluginResolveHookFilters {
   importers: Array<string>
   sources: Array<string>
 }
-export interface JsPluginTransformHookFilters {
-  resolvedPaths: Array<string>
-  moduleTypes: Array<string>
-}
 export const enum JsPluginTransformHtmlHookOrder {
   Pre = 0,
   Normal = 1,
   Post = 2
 }
 export interface JsModuleHookFilters {
-  moduleTypes: Array<string>
-  resolvedPaths: Array<string>
+  moduleTypes?: Array<string>
+  resolvedPaths?: Array<string>
 }
 export interface WatchDiffResult {
   add: Array<string>

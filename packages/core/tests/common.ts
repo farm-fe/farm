@@ -6,15 +6,16 @@ import {
   normalizeUserCompilationConfig,
   resolveUserConfig
 } from '../src/config/index.js';
-import { JsPlugin } from '../src/plugin/type.js';
 import { Logger } from '../src/index.js';
+import { JsPlugin } from '../src/plugin/type.js';
 
 export async function getCompiler(
   root: string,
   p: string,
   plugins: JsPlugin[],
   input?: Record<string, string>,
-  output?: Record<string, string>
+  output?: Record<string, string>,
+  compilation?: UserConfig['compilation']
 ): Promise<Compiler> {
   const originalExit = process.exit;
   process.exit = (code) => {
@@ -38,7 +39,8 @@ export async function getCompiler(
       progress: false,
       lazyCompilation: false,
       sourcemap: false,
-      persistentCache: false
+      persistentCache: false,
+      ...(compilation ?? {})
     },
     plugins
   };

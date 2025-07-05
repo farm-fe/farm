@@ -1,0 +1,16 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Js Plugin Execution - processModule 1`] = `
+{
+  "content": "import Dep from './dep.js';
+console.log(Dep);
+export default 'process-module-return-value';
+",
+  "moduleId": "index.ts",
+  "moduleType": "ts",
+  "resolvedDeps": null,
+  "sourceMapChain": [
+    "{"version":3,"sources":["index.ts"],"names":[],"mappings":"AAAA,OAAO,SAAS,WAAW;AAE3B,QAAQ,GAAG,CAAC;AAEZ,eAAe,8BAA8B"}",
+  ],
+}
+`;

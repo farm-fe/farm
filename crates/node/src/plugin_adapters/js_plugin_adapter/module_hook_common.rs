@@ -4,9 +4,12 @@ use farmfe_core::{
   config::config_regex::ConfigRegex,
   context::CompilationContext,
   error::{CompilationError, Result},
-  module::{meta_data::script::CommentsMetaData, ModuleId, ModuleMetaData, ModuleType},
+  module::{
+    meta_data::script::CommentsMetaData, module_graph::ModuleGraphEdge, ModuleId, ModuleMetaData,
+    ModuleType,
+  },
   serde::{Deserialize, Serialize},
-  swc_common::{comments::SingleThreadedComments, SourceMap},
+  swc_common::{comments::SingleThreadedComments, Globals, SourceMap},
   swc_css_ast::Stylesheet,
   swc_ecma_ast::{EsVersion, Module as SwcModule},
   swc_ecma_parser::{EsSyntax, Syntax},
@@ -14,7 +17,10 @@ use farmfe_core::{
 use farmfe_toolkit::{
   css::{codegen_css_stylesheet, parse_css_stylesheet, ParseCssModuleResult},
   html::{codegen_html_document, parse_html_document},
-  script::{codegen_module, parse_module, CodeGenCommentsConfig, ParseScriptModuleResult},
+  script::{
+    codegen_module, parse_module, swc_try_with::resolve_module_mark, CodeGenCommentsConfig,
+    ParseScriptModuleResult,
+  },
 };
 
 pub struct ModuleHookFilters {
@@ -24,16 +30,18 @@ pub struct ModuleHookFilters {
 
 #[napi(object)]
 pub struct JsModuleHookFilters {
-  pub module_types: Vec<String>,
-  pub resolved_paths: Vec<String>,
+  pub module_types: Option<Vec<String>>,
+  pub resolved_paths: Option<Vec<String>>,
 }
 
 impl From<JsModuleHookFilters> for ModuleHookFilters {
   fn from(value: JsModuleHookFilters) -> Self {
+    let module_types = value.module_types.unwrap_or_default();
+    let resolved_paths = value.resolved_paths.unwrap_or_default();
+
     Self {
-      module_types: value.module_types.into_iter().map(|ty| ty.into()).collect(),
-      resolved_paths: value
-        .resolved_paths
+      module_types: module_types.into_iter().map(|ty| ty.into()).collect(),
+      resolved_paths: resolved_paths
         .into_iter()
         .map(|p| ConfigRegex::new(&p))
         .collect(),
@@ -46,6 +54,7 @@ impl From<JsModuleHookFilters> for ModuleHookFilters {
 pub struct ModuleHookResult {
   pub content: String,
   pub source_map: Option<String>,
+  pub ignore_previous_source_map: Option<bool>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -54,6 +63,17 @@ pub struct ModuleHookParams {
   pub module_id: ModuleId,
   pub module_type: ModuleType,
   pub content: String,
+  pub source_map_chain: Vec<Arc<String>>,
+  pub resolved_deps: Option<Vec<(ModuleId, ModuleGraphEdge)>>,
+}
+
+#[macro_export]
+macro_rules! check_module_filters {
+    ($plugin_name:expr, $hook_name:expr, $filters:expr) => {
+      if $filters.module_types.is_empty() && $filters.resolved_paths.is_empty() {
+        panic!("[Farm warn] filters.resolvedPaths or filters.moduleTypes of {}.{} must be set to control which module will be processed. If you want to process all modules, please set them to ['.*']", $plugin_name, $hook_name);
+      }
+    };
 }
 
 pub fn module_matches_filters(
@@ -171,21 +191,25 @@ pub fn convert_code_to_metadata(
   module_id: &ModuleId,
   module_type: &ModuleType,
   meta: &mut ModuleMetaData,
-  content: Arc<String>,
-  source_map: Option<String>,
+  result: ModuleHookResult,
   source_map_chain: &mut Vec<Arc<String>>,
   context: &Arc<CompilationContext>,
 ) -> Result<()> {
-  if let Some(source_map) = source_map {
-    source_map_chain.push(Arc::new(source_map));
+  if let Some(source_map) = result.source_map {
+    if result.ignore_previous_source_map.unwrap_or(false) {
+      *source_map_chain = vec![Arc::new(source_map)];
+    } else {
+      source_map_chain.push(Arc::new(source_map));
+    }
   }
 
   let filename = module_id.to_string();
+  let content = Arc::new(result.content);
 
   match meta {
     ModuleMetaData::Script(script_module_meta_data) => {
       let ParseScriptModuleResult {
-        ast,
+        mut ast,
         comments,
         source_map,
       } = parse_module(
@@ -202,10 +226,16 @@ pub fn convert_code_to_metadata(
         Default::default(),
       )?;
 
+      let globals = Globals::new();
+      let (unresolved_mark, top_level_mark) =
+        resolve_module_mark(&mut ast, module_type.is_typescript(), &globals);
+      script_module_meta_data.unresolved_mark = unresolved_mark.as_u32();
+      script_module_meta_data.top_level_mark = top_level_mark.as_u32();
+
       context.meta.set_module_source_map(module_id, source_map);
 
       script_module_meta_data.ast = ast;
-      script_module_meta_data.comments = comments.into()
+      script_module_meta_data.comments = comments.into();
     }
     ModuleMetaData::Css(css_module_meta_data) => {
       let ParseCssModuleResult {

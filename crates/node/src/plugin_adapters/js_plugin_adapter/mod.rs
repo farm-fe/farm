@@ -21,7 +21,10 @@ use farmfe_toolkit::{
 };
 use napi::{bindgen_prelude::FromNapiValue, Env, JsObject, JsUnknown, NapiRaw};
 
-use crate::plugin_adapters::js_plugin_adapter::hooks::process_rendered_resource_pot::JsResourcePot;
+use crate::{
+  check_module_filters,
+  plugin_adapters::js_plugin_adapter::hooks::process_rendered_resource_pot::JsResourcePot,
+};
 
 use self::hooks::{
   augment_resource_hash::JsPluginAugmentResourceHashHook,
@@ -252,6 +255,7 @@ impl Plugin for JsPluginAdapter {
         content: result.unwrap_or(cloned_param.content),
         ..cloned_param
       };
+      check_module_filters!(self.name, "transform", &js_transform_hook.filters);
       js_transform_hook.call(cp, context.clone())
     } else if let Some(result) = result {
       Ok(Some(PluginTransformHookResult {
@@ -269,6 +273,7 @@ impl Plugin for JsPluginAdapter {
     context: &Arc<CompilationContext>,
   ) -> Result<Option<()>> {
     if let Some(ref js_process_module_hook) = self.js_process_module_hook {
+      check_module_filters!(self.name, "process_module", &js_process_module_hook.filters);
       return js_process_module_hook.call(param, context.clone());
     }
 
@@ -281,6 +286,7 @@ impl Plugin for JsPluginAdapter {
     context: &Arc<CompilationContext>,
   ) -> Result<Option<()>> {
     if let Some(ref js_freeze_module_hook) = self.js_freeze_module_hook {
+      check_module_filters!(self.name, "freeze_module", &js_freeze_module_hook.filters);
       return js_freeze_module_hook.call(param, context.clone());
     }
 
