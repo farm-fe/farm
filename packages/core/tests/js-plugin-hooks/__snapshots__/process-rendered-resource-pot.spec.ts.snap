@@ -1,0 +1,28 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Js Plugin Execution - processRenderedResourcePot 1`] = `
+{
+  "content": "(function(moduleSystem, modules) {
+    for(var moduleId in modules){
+        var module = modules[moduleId];
+        moduleSystem.g(moduleId, module);
+    }
+})(global["f081367f80fe14896375a9f8b8918ca3"].m, {
+    "0ae9e27c": (module, exports, farmRequire, farmDynamicRequire)=>{
+        farmRequire._m(exports);
+        exports.default = 'render-resource-pot-return-value';
+    }
+});
+",
+  "custom": {},
+  "id": "index_eab4eb4a846cd9fa318a455919afa864_js",
+  "isDynamicEntry": false,
+  "isEntry": true,
+  "moduleIds": [
+    "index.ts?foo=bar",
+  ],
+  "name": "index",
+  "resourcePotType": "js",
+  "sourceMapChain": [],
+}
+`;

@@ -17,6 +17,16 @@ use crate::{
 
 use super::{Module, ModuleId};
 
+/// the diff result of a module's dependencies
+#[derive(Debug, PartialEq, Eq, Clone, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ModuleDepsDiffResult {
+  /// added dependencies
+  pub added: Vec<(ModuleId, ModuleGraphEdge)>,
+  /// removed dependencies
+  pub removed: Vec<(ModuleId, ModuleGraphEdge)>,
+}
+
 #[derive(Debug, Default, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 #[cache_item]
 pub struct ModuleGraphEdgeDataItem {

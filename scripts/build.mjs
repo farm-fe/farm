@@ -1,8 +1,6 @@
 import fs, { existsSync } from "node:fs";
 import os from "node:os";
 import { join, resolve } from "node:path";
-import { execa } from "execa";
-import { createSpinner } from "nanospinner";
 
 import { logger } from "./logger.mjs";
 
@@ -63,17 +61,19 @@ const skipExamples = [
   "vanilla-extract",
 ];
 
-export const installDependencies = async () =>
-  runTask(
-    "dependencies",
-    async () =>
-      await execa(DEFAULT_PACKAGE_MANAGER, ["install"], {
-        cwd: CWD,
-        stdio: isVerbose ? "inherit" : "ignore",
-      }),
-    "Installing",
-    "Install",
-  );
+const execa = async (...args) => {
+  const execaPkg = await import("execa");
+  return execaPkg.execa(...args);
+};
+
+export const installDependencies = async () => {
+  const { execSync } = await import("child_process");
+
+  execSync(`${DEFAULT_PACKAGE_MANAGER} install`, {
+    cwd: CWD,
+    stdio: "inherit",
+  });
+};
 
 export const executeStartProject = async () =>
   execa(DEFAULT_PACKAGE_MANAGER, ["start"], {
@@ -112,7 +112,6 @@ export async function runTaskQueue() {
   await runTask("Core", buildCore);
   await runTask("RustPlugins", buildRustPlugins);
   await runTask("JsPlugins", buildJsPlugins);
-  await runTask("Artifacts", copyArtifacts);
 }
 
 // install mac protobuf
@@ -335,26 +334,29 @@ export const buildRustPlugins = async (spinner) => {
   }
 };
 
-export const copyArtifacts = (_) =>
-  batchBuildPlugins(PKG_RUST_PLUGIN, "copy-artifacts");
-
 export async function runTask(
   taskName,
   task,
   processText = "Building",
   finishedText = "Build",
-  spinner = createSpinner(),
+  spinner = null,
   showSuccess = true,
 ) {
   try {
-    await task(spinner.start({ text: `${processText} ${taskName}` }));
+    const { createSpinner } = await import("nanospinner");
+    spinner = createSpinner();
+  } catch (e) {
+    // ignore error
+  }
+  try {
+    await task(spinner?.start({ text: `${processText} ${taskName}` }));
     showSuccess
-      ? spinner.success({
+      ? spinner?.success({
           text: `✨ ✨ ${finishedText} ${taskName} completed! `,
         })
-      : spinner.reset();
+      : spinner?.reset();
   } catch (e) {
-    spinner.error({ text: `${finishedText} ${taskName} failed!` });
+    spinner?.error({ text: `${finishedText} ${taskName} failed!` });
     console.error(e.toString());
     process.exit(1);
   }
@@ -501,7 +503,7 @@ export async function cleanBundleCommand() {
       "run",
       "clean",
     ]);
-    console.log('')
+    console.log("");
     logger("pnpm clean command completed successfully.");
   } catch (error) {
     logger("An error occurred while running pnpm clean command:", {

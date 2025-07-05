@@ -1,2 +1,2 @@
 //index.js:
- console.log(fs);
+ console.log(export_ts_default);

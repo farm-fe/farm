@@ -29,7 +29,7 @@ export function normalizeDevServerConfig(
   const serverOptions = userConfig?.server;
   const { host, port, hmr: hmrConfig, https } = serverOptions || {};
   const hmr =
-    hmrConfig === false
+    hmrConfig === false || userConfig?.mode === 'production'
       ? false
       : merge(
           {},

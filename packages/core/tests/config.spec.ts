@@ -8,18 +8,17 @@ import {
   normalizeDevServerConfig,
   resolveConfig
 } from '../src/index.js';
-import { Logger } from '../src/utils/logger.js';
 
 test('resolveUserConfig', async () => {
   const filePath = fileURLToPath(path.dirname(import.meta.url));
 
   const config = await resolveConfig(
     {
-      configPath: path.join(filePath, 'fixtures', 'config', 'farm.config.ts'),
+      configFile: path.join(filePath, 'fixtures', 'config', 'farm.config.ts'),
       server: { hmr: false }
     },
-    'development',
-    new Logger()
+    'dev',
+    'development'
   );
 
   expect(config.compilation.define).toEqual({
@@ -28,13 +27,18 @@ test('resolveUserConfig', async () => {
     // FARM_HMR_PORT: '9000',
     FARM_PROCESS_ENV: {
       NODE_ENV: 'development',
-      mode: 'development'
+      mode: 'development',
+      BASE_URL: '/',
+      PROD: false,
+      DEV: true
     },
-    FARM_RUNTIME_TARGET_ENV: '"browser"',
     // FARM_HMR_PROTOCOL: 'ws',
     '$__farm_regex:(global(This)?\\.)?process\\.env\\.NODE_ENV':
       '"development"',
-    '$__farm_regex:(global(This)?\\.)?process\\.env\\.mode': '"development"'
+    '$__farm_regex:(global(This)?\\.)?process\\.env\\.mode': '"development"',
+    '$__farm_regex:(global(This)?\\.)?process\\.env\\.BASE_URL': '"/"',
+    '$__farm_regex:(global(This)?\\.)?process\\.env\\.PROD': 'false',
+    '$__farm_regex:(global(This)?\\.)?process\\.env\\.DEV': 'true'
   });
   expect(config.compilation.input).toEqual({
     main: './main.tsx'
@@ -49,28 +53,31 @@ test('resolveUserConfig', async () => {
   expect(config.compilation.sourcemap).toEqual(true);
   expect(config.compilation.minify).toEqual(false);
   expect(config.compilation.presetEnv).toEqual(false);
-  expect(config.server).toEqual(
-    normalizeDevServerConfig(config.server, 'development')
-  );
+  expect(config.server).toEqual(normalizeDevServerConfig(config));
 });
 
 test('resolveUserConfig-prod', async () => {
   const filePath = fileURLToPath(path.dirname(import.meta.url));
 
   const config = await resolveConfig(
-    { configPath: path.join(filePath, 'fixtures', 'config', 'farm.config.ts') },
-    'production',
-    new Logger()
+    { configFile: path.join(filePath, 'fixtures', 'config', 'farm.config.ts') },
+    'build',
+    'production'
   );
 
   expect(config.compilation.define).toEqual({
     FARM_PROCESS_ENV: {
       NODE_ENV: 'production',
-      mode: 'production'
+      mode: 'production',
+      BASE_URL: '/',
+      PROD: true,
+      DEV: false
     },
-    FARM_RUNTIME_TARGET_ENV: '"browser"',
     '$__farm_regex:(global(This)?\\.)?process\\.env\\.NODE_ENV': '"production"',
-    '$__farm_regex:(global(This)?\\.)?process\\.env\\.mode': '"production"'
+    '$__farm_regex:(global(This)?\\.)?process\\.env\\.mode': '"production"',
+    '$__farm_regex:(global(This)?\\.)?process\\.env\\.BASE_URL': '"/"',
+    '$__farm_regex:(global(This)?\\.)?process\\.env\\.PROD': 'true',
+    '$__farm_regex:(global(This)?\\.)?process\\.env\\.DEV': 'false'
   });
   expect(config.compilation.input).toEqual({
     main: './main.tsx'
@@ -87,9 +94,7 @@ test('resolveUserConfig-prod', async () => {
   expect(config.compilation.sourcemap).toEqual(true);
   expect(config.compilation.minify).toEqual(true);
   expect(config.compilation.presetEnv).toEqual(false);
-  expect(config.server).toEqual(
-    normalizeDevServerConfig(config.server, 'production')
-  );
+  expect(config.server).toEqual(normalizeDevServerConfig(config));
 });
 
 test('resolveUserConfig-input-html-prod', async () => {
@@ -102,9 +107,9 @@ test('resolveUserConfig-input-html-prod', async () => {
     'farm.config.ts'
   );
   const config = await resolveConfig(
-    { configPath: configFilePath },
-    'production',
-    new Logger()
+    { configFile: configFilePath },
+    'build',
+    'production'
   );
 
   expect(config.compilation.input).toEqual({
@@ -114,11 +119,16 @@ test('resolveUserConfig-input-html-prod', async () => {
   expect(config.compilation.define).toEqual({
     FARM_PROCESS_ENV: {
       NODE_ENV: 'production',
-      mode: 'production'
+      mode: 'production',
+      BASE_URL: '/',
+      PROD: true,
+      DEV: false
     },
-    FARM_RUNTIME_TARGET_ENV: '"browser"',
     '$__farm_regex:(global(This)?\\.)?process\\.env\\.NODE_ENV': '"production"',
-    '$__farm_regex:(global(This)?\\.)?process\\.env\\.mode': '"production"'
+    '$__farm_regex:(global(This)?\\.)?process\\.env\\.mode': '"production"',
+    '$__farm_regex:(global(This)?\\.)?process\\.env\\.BASE_URL': '"/"',
+    '$__farm_regex:(global(This)?\\.)?process\\.env\\.PROD': 'true',
+    '$__farm_regex:(global(This)?\\.)?process\\.env\\.DEV': 'false'
   });
 
   expect(config.compilation.output).toEqual({
@@ -167,33 +177,34 @@ test('resolveUserConfig-input-html-prod', async () => {
     }
   });
 
-  expect(config.server).toEqual(
-    normalizeDevServerConfig(config.server, 'production')
-  );
+  expect(config.server).toEqual(normalizeDevServerConfig(config));
 });
 
 describe('normalize-dev-server-options', () => {
   test('default', () => {
-    const options = normalizeDevServerConfig({}, 'development');
+    const options = normalizeDevServerConfig({});
     expect(options.https).toBe(DEFAULT_DEV_SERVER_OPTIONS.https);
     expect(options.port).toBe(DEFAULT_DEV_SERVER_OPTIONS.port);
     expect(options.hmr).not.toBe(false);
   });
 
   test('custom port', () => {
-    const options = normalizeDevServerConfig({ port: 8080 }, 'development');
+    const options = normalizeDevServerConfig({ server: { port: 8080 } });
     expect(options.https).toBe(DEFAULT_DEV_SERVER_OPTIONS.https);
     expect(options.port).toBe(8080);
   });
 
   test('disable HMR in prod', () => {
-    const options = normalizeDevServerConfig({}, 'production');
+    const options = normalizeDevServerConfig({
+      mode: 'production'
+    });
     expect(options.hmr).toBe(false);
   });
 });
 
 describe('parseUserConfig', () => {
   test('non-objects', () => {
+    // @ts-expect-error should throw error here
     expect(() => parseUserConfig('should throw')).toThrowError(
       'Expected object, received string'
     );
@@ -202,6 +213,7 @@ describe('parseUserConfig', () => {
   test('extraneous config', () => {
     expect(() =>
       parseUserConfig({
+        // @ts-expect-error should throw error here
         extra: 'should throw'
       })
     ).toThrowError('Unrecognized key');
@@ -211,6 +223,7 @@ describe('parseUserConfig', () => {
     expect(() =>
       parseUserConfig({
         server: {
+          // @ts-expect-error should throw error here
           port: 'should throw'
         }
       })

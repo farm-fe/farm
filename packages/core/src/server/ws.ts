@@ -88,10 +88,11 @@ export type WebSocketCustomListener<T> = (
   client: WebSocketClient
 ) => void;
 
-const WebSocketServerRaw = process.versions.bun
-  ? // @ts-expect-error: Bun defines `import.meta.require`
-    import.meta.require('ws').WebSocketServer
-  : WebSocketServerRaw_;
+// const WebSocketServerRaw = process.versions.bun
+//   ? // @ts-expect-error: Bun defines `import.meta.require`
+//     import.meta.require('ws').WebSocketServer
+//   : WebSocketServerRaw_;
+const WebSocketServerRaw = WebSocketServerRaw_;
 
 export class WsServer {
   public wss: WebSocketServerRaw_;

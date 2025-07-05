@@ -157,6 +157,17 @@ pub trait Plugin: Any + Send + Sync {
     Ok(None)
   }
 
+  /// Freeze the module graph after the module graph is optimized.
+  /// You can modify the module graph here for the last time.
+  /// After this hook, meta data of the modules in the module graph should not be updated anymore.
+  fn freeze_module_graph_meta(
+    &self,
+    _module_graph: &mut ModuleGraph,
+    _context: &Arc<CompilationContext>,
+  ) -> Result<Option<()>> {
+    Ok(None)
+  }
+
   /// Analyze module group based on module graph
   fn analyze_module_graph(
     &self,
@@ -205,9 +216,17 @@ pub trait Plugin: Any + Send + Sync {
     Ok(None)
   }
 
-  fn augment_resource_hash(
+  fn process_rendered_resource_pot(
     &self,
-    _render_pot_info: &ResourcePot,
+    _resource_pot: &mut ResourcePot,
+    _context: &Arc<CompilationContext>,
+  ) -> Result<Option<()>> {
+    Ok(None)
+  }
+
+  fn augment_resource_pot_hash(
+    &self,
+    _render_pot: &ResourcePot,
     _context: &Arc<CompilationContext>,
   ) -> Result<Option<String>> {
     Ok(None)
@@ -330,6 +349,15 @@ impl PluginHookContext {
       None => Some(Self::caller_format(name)),
     }
   }
+
+  pub fn clone_and_append_caller<T: AsRef<str>>(&self, name: T) -> Self {
+    let mut new = self.clone();
+    if let Some(c) = new.add_caller(name) {
+      new.caller = Some(c);
+    }
+    new
+  }
+
   pub fn contain_caller<T: AsRef<str>>(&self, name: T) -> bool {
     if let Some(ref s) = self.caller {
       s.contains(&Self::caller_format(name))

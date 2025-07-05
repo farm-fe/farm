@@ -1,8 +1,8 @@
 use crate::swc_ecma_visit::VisitWith;
 use farmfe_core::module::meta_data::script::statement::{
-  ExportInfo, ExportSpecifierInfo, ImportInfo, ImportSpecifierInfo, StatementId, SwcId,
+  ExportInfo, ExportSpecifierInfo, ImportInfo, ImportSpecifierInfo, Statement, StatementId, SwcId,
 };
-use farmfe_core::swc_ecma_ast::{self, ModuleExportName, ModuleItem, VarDeclOrExpr};
+use farmfe_core::swc_ecma_ast::{self, Module, ModuleExportName, ModuleItem, VarDeclOrExpr};
 use farmfe_core::HashSet;
 use swc_ecma_utils::contains_top_level_await;
 
@@ -236,7 +236,7 @@ pub fn analyze_statement_info(id: &StatementId, stmt: &ModuleItem) -> AnalyzedSt
   }
 }
 
-fn get_defined_idents_from_var_decl(var_decl: &swc_ecma_ast::VarDecl) -> HashSet<SwcId> {
+pub fn get_defined_idents_from_var_decl(var_decl: &swc_ecma_ast::VarDecl) -> HashSet<SwcId> {
   let mut defined_idents = HashSet::default();
 
   for decl in &var_decl.decls {
@@ -249,6 +249,28 @@ fn get_defined_idents_from_var_decl(var_decl: &swc_ecma_ast::VarDecl) -> HashSet
   }
 
   defined_idents
+}
+
+pub fn analyze_statements(ast: &Module) -> Vec<Statement> {
+  let mut statements = vec![];
+
+  for (id, item) in ast.body.iter().enumerate() {
+    let AnalyzedStatementInfo {
+      export_info,
+      import_info,
+      defined_idents,
+      top_level_await,
+    } = analyze_statement_info(&id, item);
+    statements.push(Statement::new(
+      id,
+      export_info,
+      import_info,
+      defined_idents,
+      top_level_await,
+    ));
+  }
+
+  statements
 }
 
 #[cfg(test)]

@@ -1,9 +1,9 @@
 //index.js:
- (function(){const moduleSystem = {};
+ (function(){const __farm_internal_module_system__ = {};
 function initModuleSystem() {
     console.log('module-helper.ts');
 }
-initModuleSystem(moduleSystem);
+initModuleSystem(__farm_internal_module_system__);
 }());(function(moduleSystem, modules) {
     for(var moduleId in modules){
         var module = modules[moduleId];
@@ -21,7 +21,6 @@ initModuleSystem(moduleSystem);
     "f380ea31": function(module, exports, farmRequire, farmDynamicRequire) {
         const a = 10;
         const b = 20;
-        const c = 30;
         console.log(a, b);
     }
 });

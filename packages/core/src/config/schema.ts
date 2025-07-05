@@ -62,7 +62,9 @@ const outputSchema = z
     publicPath: z.string().optional(),
     assetsFilename: z.string().optional(),
     targetEnv: z.nativeEnum(TargetEnv).optional(),
-    format: z.enum(['cjs', 'esm']).optional(),
+    format: z
+      .union([z.enum(['cjs', 'esm']), z.array(z.enum(['cjs', 'esm']))])
+      .optional(),
     showFileSize: z.boolean().optional()
   })
   .strict()
@@ -356,12 +358,7 @@ const compilationConfigSchema = z
           mangle: z.union([z.any(), z.boolean()]).optional(),
           exclude: z.array(z.string()).optional(),
           include: z.array(z.string()).optional(),
-          mode: z
-            .union([
-              z.literal('minify-module'),
-              z.literal('minify-resource-pot')
-            ])
-            .optional()
+          mangleExports: z.boolean().optional()
         })
       ])
       .optional(),

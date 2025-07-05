@@ -219,6 +219,7 @@ impl Plugin for FarmPluginStaticAssets {
           name_hash: "",
           bytes: &bytes,
           ext,
+          special_placeholders: &Default::default(),
         }) + stringify_query(&param.query).as_str();
 
         let resource_name = Self::get_resource_name(&resource_name, &param.module_id);
