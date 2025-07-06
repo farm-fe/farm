@@ -18,41 +18,9 @@ function defineExportEsModule(to) {
         value: true
     });
 }
-function getRequireWildcardCache(nodeInterop) {
-    if (typeof WeakMap !== "function") return null;
-    var cacheBabelInterop = new WeakMap();
-    var cacheNodeInterop = new WeakMap();
-    return (getRequireWildcardCache = function(nodeInterop) {
-        return nodeInterop ? cacheNodeInterop : cacheBabelInterop;
-    })(nodeInterop);
-}
-function interopRequireWildcard(obj, nodeInterop) {
-    if (!nodeInterop && obj && obj.__esModule) return obj;
-    if (obj === null || typeof obj !== "object" && typeof obj !== "function") return {
-        default: obj
-    };
-    var cache = getRequireWildcardCache(nodeInterop);
-    if (cache && cache.has(obj)) return cache.get(obj);
-    var newObj = {
-        __proto__: null
-    };
-    var hasPropertyDescriptor = Object.defineProperty && Object.getOwnPropertyDescriptor;
-    for(var key in obj){
-        if (key !== "default" && Object.prototype.hasOwnProperty.call(obj, key)) {
-            var desc = hasPropertyDescriptor ? Object.getOwnPropertyDescriptor(obj, key) : null;
-            if (desc && (desc.get || desc.set)) Object.defineProperty(newObj, key, desc);
-            else newObj[key] = obj[key];
-        }
-    }
-    newObj.default = obj;
-    if (cache) cache.set(obj, newObj);
-    return newObj;
-}
 defineExportEsModule(exports);
 exportByDefineProperty(exports, "default", ()=>index_ts_default);
 exportByDefineProperty(exports, "loaders", ()=>loaders);
-var _f_fs = interopRequireWildcard(require("fs"));
-var __farm_require_esm_ident__0 = _f_fs;
 ; // module_id: @farm-runtime/module-system
 // all modules registered
 const __farm_internal_modules__ = {};
@@ -89,7 +57,7 @@ function farmRegister(id, module) {
 }
 ; // module_id: dep.cjs
 var farmRequire = farmRegister("dep.cjs", function(module, exports1) {
-    const { readFileSync } = __farm_require_esm_ident__0;
+    const { readFileSync } = __farmNodeRequire("fs");
     console.log(readFileSync("./index.ts", "utf8"));
 });
 farmRequire();

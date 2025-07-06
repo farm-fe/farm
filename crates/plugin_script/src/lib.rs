@@ -360,7 +360,7 @@ impl Plugin for FarmPluginScript {
         }],
       }))
     } else {
-      return Ok(None);
+      Ok(None)
     }
   }
 }

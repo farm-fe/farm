@@ -315,6 +315,7 @@ impl Plugin for FarmPluginRuntime {
       )?
       .map(|mut res| {
         for resource in &mut res.resources {
+          resource.resource.name = format!("{}.js", resource.resource.name);
           resource.resource.resource_type = ResourceType::Runtime;
           resource.resource.should_transform_output_filename = false;
           // do not emit the runtime resources, the runtime will be handled later

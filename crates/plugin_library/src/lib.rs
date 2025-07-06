@@ -11,7 +11,7 @@ use farmfe_core::{
       ModuleExportIdent, ModuleExportIdentType, FARM_RUNTIME_MODULE_HELPER_ID,
       FARM_RUNTIME_MODULE_SYSTEM_ID,
     },
-    ModuleId, ModuleSystem, ModuleType,
+    ModuleId, ModuleMetaData, ModuleSystem, ModuleType,
   },
   parking_lot::Mutex,
   plugin::{
@@ -61,7 +61,7 @@ const PLUGIN_NAME: &str = "FarmPluginLibrary";
 #[derive(Default)]
 pub struct FarmPluginLibrary {
   export_namespace_modules: Mutex<HashSet<ModuleId>>,
-  cjs_require_map: Mutex<HashMap<(ModuleId, String), ModuleId>>,
+  cjs_require_map: Mutex<HashMap<(ModuleId, String), (ModuleId, ModuleSystem)>>,
 
   library_bundle_type: LibraryBundleType,
 
@@ -255,47 +255,65 @@ impl Plugin for FarmPluginLibrary {
 
     for module in module_graph.modules() {
       for (dep_id, edge_info) in module_graph.dependencies(&module.id) {
-        if edge_info.contains_require() {
+        // all hybrid modules will be transformed to cjs first, so we need to update all edges of hybrid modules
+        let is_hybrid = if let box ModuleMetaData::Script(meta) = &module.meta {
+          // Internal runtime modules are not hybrid modules
+          meta.module_system == ModuleSystem::Hybrid
+            && dep_id != FARM_RUNTIME_MODULE_HELPER_ID.into()
+            && dep_id != FARM_RUNTIME_MODULE_SYSTEM_ID.into()
+        } else {
+          false
+        };
+
+        if is_hybrid || edge_info.contains_require() {
           edges_to_update.push((module.id.clone(), dep_id));
         }
       }
     }
 
     for (module_id, dep_id) in edges_to_update {
+      let mut should_update_edge_kind = false;
+
       if let Some(edge_info) = module_graph.edge_info(&module_id, &dep_id) {
         // find require edge item
         if let Some(dep_module) = module_graph.module(&dep_id) {
           if !dep_module.external && dep_module.module_type.is_script() {
             let meta = dep_module.meta.as_script();
 
-            if meta.module_system == ModuleSystem::CommonJs {
-              let require_edge_item = edge_info
+            let cjs_require_map =
+              edge_info
                 .items()
                 .iter()
-                .find(|item| item.kind == ResolveKind::Require);
+                .fold(HashMap::default(), |mut acc, item| {
+                  acc.insert(
+                    (module_id.clone(), item.source.clone()),
+                    (dep_id.clone(), meta.module_system.clone()),
+                  );
+                  acc
+                });
 
-              self.cjs_require_map.lock().insert(
-                (module_id.clone(), require_edge_item.unwrap().source.clone()),
-                dep_id.clone(),
-              );
+            self.cjs_require_map.lock().extend(cjs_require_map);
+
+            should_update_edge_kind = true;
+          }
+        }
+
+        if should_update_edge_kind {
+          let mut edge_info = edge_info.clone();
+          // update ResolveKind::require to ResolveKind::Import
+          for item in edge_info.iter_mut() {
+            if item.kind == ResolveKind::Require {
+              item.kind = ResolveKind::Import;
             }
           }
-        }
 
-        let mut edge_info = edge_info.clone();
-        // update ResolveKind::require to ResolveKind::Import
-        for item in edge_info.iter_mut() {
-          if item.kind == ResolveKind::Require {
-            item.kind = ResolveKind::Import;
-          }
-        }
+          module_graph
+            .update_edge(&module_id, &dep_id, edge_info)
+            .unwrap();
 
-        module_graph
-          .update_edge(&module_id, &dep_id, edge_info)
-          .unwrap();
+          self.export_namespace_modules.lock().insert(dep_id);
+        }
       }
-
-      self.export_namespace_modules.lock().insert(dep_id);
     }
 
     Ok(Some(()))
@@ -308,9 +326,13 @@ impl Plugin for FarmPluginLibrary {
     context: &std::sync::Arc<farmfe_core::context::CompilationContext>,
   ) -> farmfe_core::error::Result<Option<()>> {
     let mut cjs_require_map = self.cjs_require_map.lock();
-    let cjs_require_map: HashMap<(ModuleId, String), ModuleId> =
+    let cjs_require_map: HashMap<(ModuleId, String), (ModuleId, ModuleSystem)> =
       cjs_require_map.drain().into_iter().collect();
-    let cjs_required_modules: HashSet<&ModuleId> = cjs_require_map.values().collect();
+    let cjs_required_only_modules: HashSet<&ModuleId> = cjs_require_map
+      .values()
+      .filter(|(_, module_system)| *module_system != ModuleSystem::EsModule)
+      .map(|(module_id, _)| module_id)
+      .collect();
 
     module_graph
       .modules_mut()
@@ -321,7 +343,7 @@ impl Plugin for FarmPluginLibrary {
 
         let cm = context.meta.get_module_source_map(&module.id);
         let globals = context.meta.get_globals(&module.id);
-        let is_required_cjs_module = cjs_required_modules.contains(&module.id);
+        let is_required_cjs_module = cjs_required_only_modules.contains(&module.id);
         let mut used_helper_idents = HashSet::default();
 
         try_with(cm, globals.value(), || {
@@ -372,7 +394,7 @@ impl Plugin for FarmPluginLibrary {
         }
 
         let dep_module_meta = dep_module.meta.as_script_mut();
-        let is_required_cjs_module = cjs_required_modules.contains(&dep_id);
+        let is_required_cjs_module = cjs_required_only_modules.contains(&dep_id);
 
         if !is_required_cjs_module
           && !dep_module_meta

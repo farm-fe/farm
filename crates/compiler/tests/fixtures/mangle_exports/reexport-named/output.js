@@ -20,7 +20,7 @@ initModuleSystem(__farm_internal_module_system__);
         }
         exports.default = Alpha;
         var _f_exports2 = farmRequire("405aeea7");
-        farmRequire._e(exports, _f_exports2);
+        farmRequire._(exports, "b", _f_exports2, "a");
     },
     "05ee5ec7": function(module, exports, farmRequire, farmDynamicRequire) {
         farmRequire._m(exports);
@@ -30,7 +30,7 @@ initModuleSystem(__farm_internal_module_system__);
         var _f_exports1 = farmRequire("027594c8");
         var _f_exports11 = farmRequire("027594c8");
         farmRequire._(exports, "c", _f_exports11, "a");
-        farmRequire._(exports, "b", _f_exports11, "a");
+        farmRequire._(exports, "b", _f_exports11);
         class MyAlpha {
             constructor(){
                 return _f_exports1.a;

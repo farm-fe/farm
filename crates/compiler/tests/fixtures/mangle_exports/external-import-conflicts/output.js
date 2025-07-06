@@ -39,8 +39,8 @@ initModuleSystem(__farm_internal_module_system__);
         var _f_zoo = farmRequire("774fba3e");
         var _f_zoo1 = farmRequire("774fba3e");
         var _f_unresolved = farmRequire('/external/deep/unresolved');
-        console.log('index readFileSync', _f_bar.a('index'));
-        console.log(_f_zoo.a, _f_zoo1.b, _f_unresolved.b);
+        console.log('index readFileSync', _f_bar.b('index'));
+        console.log(_f_zoo.a, _f_zoo1.b, _f_unresolved.unresolvedDeep);
         console.log(ns);
         console.log(_f_bar.createRequire);
     },
@@ -49,9 +49,10 @@ initModuleSystem(__farm_internal_module_system__);
         var _f_node_fs = farmRequire('node:fs');
         console.log('bar existsSync', _f_node_fs.existsSync('bar'));
         var _f_node_fs1 = farmRequire('node:fs');
-        farmRequire._(exports, "a", _f_node_fs1, "existsSync");
+        farmRequire._(exports, "b", _f_node_fs1, "existsSync");
         var _f_zoo = farmRequire("774fba3e");
-        farmRequire._e(exports, _f_zoo);
+        farmRequire._(exports, "a", _f_zoo);
+        farmRequire._(exports, "c", _f_zoo, "b");
     }
 });
 var __farm_ms__ = window['__farm_default_namespace__'].m;__farm_ms__.b();var __farm_entry__=__farm_ms__.r("b5d64806");

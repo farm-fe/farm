@@ -45,6 +45,11 @@ pub fn transform_output_filename(
   let mut res = filename_config;
   let mut name = name.to_string();
 
+  // special placeholder take precedence
+  for (key, value) in special_placeholders {
+    res = res.replace(key, value);
+  }
+
   if res.contains(CONTENT_HASH) {
     let content_hash = sha256(bytes, 8);
     res = res.replace(CONTENT_HASH, &content_hash);
@@ -71,10 +76,6 @@ pub fn transform_output_filename(
 
   if res.contains(EXT) {
     res = res.replace(EXT, ext);
-  }
-
-  for (key, value) in special_placeholders {
-    res = res.replace(&format!("[{}]", key), value);
   }
 
   res

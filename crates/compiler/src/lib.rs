@@ -187,6 +187,15 @@ impl Compiler {
     //   self.write()?;
     // }
 
+    {
+      #[cfg(feature = "profile")]
+      farmfe_core::puffin::profile_scope!("Finish Stage");
+      self
+        .context
+        .plugin_driver
+        .finish(&self.context.stats, &self.context)?;
+    }
+
     if self.context.config.persistent_cache.enabled() {
       self
         .context

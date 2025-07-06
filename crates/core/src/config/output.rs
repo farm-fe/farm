@@ -65,7 +65,7 @@ impl ModuleFormatConfig {
     match self {
       ModuleFormatConfig::Single(module_format) => *module_format,
       ModuleFormatConfig::Multiple(_) => {
-        unreachable!("Multiple output.format is only allowed when outout.target_env is library")
+        unreachable!("Multiple output.format is only allowed when output.target_env is library")
       }
     }
   }

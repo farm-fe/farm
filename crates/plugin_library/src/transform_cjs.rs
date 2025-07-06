@@ -8,7 +8,7 @@ use farmfe_core::{
       ScriptModuleMetaData, EXPORT_DEFAULT, FARM_RUNTIME_MODULE_HELPER_ID,
       FARM_RUNTIME_MODULE_SYSTEM_ID,
     },
-    ModuleId,
+    ModuleId, ModuleSystem,
   },
   swc_common::{Mark, SyntaxContext, DUMMY_SP},
   swc_ecma_ast::{
@@ -196,7 +196,7 @@ pub struct ReplaceCjsRequireResult {
 
 pub fn replace_cjs_require(
   module_id: &ModuleId,
-  cjs_require_map: &HashMap<(ModuleId, String), ModuleId>,
+  cjs_require_map: &HashMap<(ModuleId, String), (ModuleId, ModuleSystem)>,
   meta: &mut ScriptModuleMetaData,
 ) -> ReplaceCjsRequireResult {
   let unresolved_mark = Mark::from_u32(meta.unresolved_mark);
@@ -253,7 +253,7 @@ pub fn replace_cjs_require(
 
 struct RequireEsmReplacer<'a> {
   module_id: ModuleId,
-  cjs_require_map: &'a HashMap<(ModuleId, String), ModuleId>,
+  cjs_require_map: &'a HashMap<(ModuleId, String), (ModuleId, ModuleSystem)>,
   unresolved_mark: Mark,
   top_level_mark: Mark,
   counter: usize,
@@ -269,7 +269,7 @@ struct RequireEsmReplacer<'a> {
 impl<'a> RequireEsmReplacer<'a> {
   pub fn new(
     module_id: ModuleId,
-    cjs_require_map: &'a HashMap<(ModuleId, String), ModuleId>,
+    cjs_require_map: &'a HashMap<(ModuleId, String), (ModuleId, ModuleSystem)>,
     unresolved_mark: Mark,
     top_level_mark: Mark,
   ) -> Self {
@@ -320,25 +320,31 @@ impl<'a> VisitMut for RequireEsmReplacer<'a> {
           {
             let source = str.value.to_string();
 
-            if self
+            if let Some((_, module_system)) = self
               .cjs_require_map
-              .contains_key(&(self.module_id.clone(), source.clone()))
+              .get(&(self.module_id.clone(), source.clone()))
             {
-              // import { require } from 'source';
-              let ident = self.create_require_ident();
-              self
-                .extra_import_require_sources
-                .insert(source, ident.clone());
-              *expr = create_call_expr(Expr::Ident(ident), vec![]);
-            } else {
-              let ident = self.create_export_namespace_ident();
-              // if the dep module is an es module
-              if !self.extra_import_sources.contains_key(&source) {
-                self.extra_import_sources.insert(source, ident.clone());
+              // require cjs
+              if *module_system != ModuleSystem::EsModule {
+                // import { require } from 'source';
+                let ident = self.create_require_ident();
+                self
+                  .extra_import_require_sources
+                  .insert(source, ident.clone());
+                *expr = create_call_expr(Expr::Ident(ident), vec![]);
+              } else {
+                // require esm
+                let ident = self.create_export_namespace_ident();
+                // if the dep module is an es module
+                if !self.extra_import_sources.contains_key(&source) {
+                  self.extra_import_sources.insert(source, ident.clone());
+                }
+                // transform require expr to a local ident
+                *expr = Expr::Ident(ident)
               }
-              // transform require expr to a local ident
-              *expr = Expr::Ident(ident)
             }
+
+            // for external require, visit children and replace require to FARM_NODE_REQUIRE
           }
         }
       }

@@ -139,11 +139,8 @@ pub fn css_codegen(
   context: &Arc<CompilationContext>,
 ) -> Result<(String, Option<String>)> {
   let source_map_enabled = !context.config.sourcemap.is_false();
-  let (code, map) = codegen_css_stylesheet(
-    &ast,
-    false,
-    if source_map_enabled { Some(cm) } else { None },
-  );
+  let (code, map) =
+    codegen_css_stylesheet(ast, false, if source_map_enabled { Some(cm) } else { None });
 
   Ok((code, map))
 }

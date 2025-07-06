@@ -42,7 +42,7 @@ pub struct ScriptModuleMetaData {
   pub hmr_accepted_deps: HashSet<ModuleId>,
   pub comments: CommentsMetaData,
 
-  /// -- Start
+  // -- Start
   /// Generate in finalize_module hook, should be accessed after(not in) finalize_module hook
   pub module_system: ModuleSystem,
   pub contains_module_exports: bool,
@@ -54,8 +54,7 @@ pub struct ScriptModuleMetaData {
   pub all_deeply_declared_idents: HashSet<Atom>,
   pub is_async: bool,
   pub feature_flags: HashSet<FeatureFlag>,
-  /// -- End
-
+  // -- End
   /// Note: This field can be only accessed after(or in) optimize_module_graph hook
   /// Real export ident map, for example:
   /// export { m as bar }
@@ -127,8 +126,8 @@ impl Clone for ScriptModuleMetaData {
       top_level_mark: self.top_level_mark,
       unresolved_mark: self.unresolved_mark,
       module_system: self.module_system.clone(),
-      contains_esm_decl: self.contains_esm_decl.clone(),
-      contains_module_exports: self.contains_module_exports.clone(),
+      contains_esm_decl: self.contains_esm_decl,
+      contains_module_exports: self.contains_module_exports,
       hmr_self_accepted: self.hmr_self_accepted,
       hmr_accepted_deps: self.hmr_accepted_deps.clone(),
       comments: self.comments.clone(),

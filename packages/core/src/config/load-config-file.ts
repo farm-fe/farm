@@ -3,6 +3,7 @@ import { pathToFileURL } from 'node:url';
 
 import fse from 'fs-extra';
 
+import { ModuleFormat } from '../types/binding.js';
 import { convertErrorMessage } from '../utils/error.js';
 import { isObject, isWindows } from '../utils/share.js';
 import { DEFAULT_CONFIG_NAMES, ENV_PRODUCTION } from './constants.js';
@@ -18,7 +19,6 @@ import {
   ResolvedUserConfig,
   UserConfig
 } from './types.js';
-import { ModuleFormat } from '../types/binding.js';
 
 async function getConfigFilePath(
   configRootPath: string

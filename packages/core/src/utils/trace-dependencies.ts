@@ -1,10 +1,10 @@
-import { dirname } from 'node:path';
 import * as fs from 'node:fs';
 import { createRequire } from 'node:module';
+import { dirname } from 'node:path';
 
-import { convertErrorMessage } from './error.js';
 import { createInlineCompiler } from '../compiler/index.js';
 import { ResolvedUserConfig } from '../config/types.js';
+import { convertErrorMessage } from './error.js';
 
 function createTraceDepCompiler(entry: string) {
   const config = getDefaultTraceDepCompilerConfig(entry);

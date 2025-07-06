@@ -2,9 +2,9 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { describe, expect, test } from 'vitest';
 
-import { isDisableCache } from '../src/config/env.js';
 // @ts-ignore ignore error for cjs
 import { normalizeDevServerConfig, resolveConfig } from '../dist/cjs/index.cjs';
+import { isDisableCache } from '../src/config/env.js';
 
 describe('resolveUserConfig', () => {
   test('resolveUserConfig', async () => {

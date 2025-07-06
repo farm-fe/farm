@@ -9,9 +9,11 @@ use farmfe_core::{
   plugin::{GeneratedResource, PluginHookContext},
   resource::resource_pot::ResourcePot,
   swc_ecma_ast::{ImportSpecifier, Module, ModuleDecl, ModuleItem, Stmt},
-  HashSet,
+  HashMap, HashSet,
 };
 use farmfe_toolkit::{
+  fs::EXT,
+  resolve::load_package_json,
   script::analyze_statement::analyze_statements,
   swc_ecma_visit::{Visit, VisitWith},
 };
@@ -152,13 +154,46 @@ impl Visit for UsedDefinedIdentsAnalyzer {
 
 pub fn add_format_to_generated_resources(resources: &mut Vec<GeneratedResource>, format: &str) {
   resources.iter_mut().for_each(|resource| {
+    let both_placeholder_map = HashMap::from_iter([("[format]".to_string(), format.to_string())]);
+
     resource
       .resource
       .special_placeholders
-      .insert("format".to_string(), format.to_string());
+      .extend(both_placeholder_map.clone());
+
+    // try load current package.json to get ext
+    // if type: "module" is specified in the package.json, we should use mjs/cjs by default according to the format
+    let ext = std::env::current_dir().ok().and_then(|cwd| {
+      load_package_json(cwd.join("package.json"), Default::default())
+        .ok()
+        .and_then(|pkg_json| {
+          pkg_json.raw_map().get("type").and_then(|ty| {
+            ty.as_str().and_then(|ty| match ty {
+              "module" => match format {
+                "cjs" => Some("cjs".to_string()),
+                "esm" => Some("mjs".to_string()),
+                _ => unimplemented!(
+                  "format {} is not supported, current supported format: cjs, esm",
+                  format
+                ),
+              },
+              _ => None,
+            })
+          })
+        })
+    });
+
+    // override internal ext
+    if let Some(ext) = ext {
+      resource
+        .resource
+        .special_placeholders
+        .insert(EXT.to_string(), ext);
+    }
+
+    // source map
     resource.source_map.as_mut().map(|r| {
-      r.special_placeholders
-        .insert("format".to_string(), format.to_string())
+      r.special_placeholders.extend(both_placeholder_map);
     });
   });
 }

@@ -5,12 +5,15 @@ use farmfe_core::{
   },
   swc_common::DUMMY_SP,
   swc_ecma_ast::{
-    Expr, Ident, IdentName, ImportDefaultSpecifier, ImportNamedSpecifier, ImportSpecifier,
-    MemberExpr, MemberProp, ModuleExportName, ModuleItem,
+    Expr, Ident, IdentName, ImportDecl, ImportDefaultSpecifier, ImportNamedSpecifier,
+    ImportSpecifier, ImportStarAsSpecifier, MemberExpr, MemberProp, ModuleDecl, ModuleExportName,
+    ModuleItem,
   },
   HashSet,
 };
 use swc_ecma_visit::VisitMutWith;
+
+use crate::script::analyze_statement::analyze_statement_info;
 
 use super::{
   strip_module_decl::{PreservedImportDeclItem, PreservedImportDeclType, StripModuleDeclResult},
@@ -38,7 +41,13 @@ pub fn handle_external_modules(
       strip_context,
     );
   } else if statement.export_info.is_some() {
-    handle_external_export(module_id, source_module_id, statement, strip_context);
+    handle_external_export(
+      module_id,
+      source_module_id,
+      statement,
+      result,
+      strip_context,
+    );
   }
 }
 
@@ -53,25 +62,17 @@ fn handle_external_import(
   let mut rename_handler = rename_handler.borrow_mut();
 
   let item = replace_module_decl(statement, result);
+  let is_namespace_import = is_namespace_import_stmt(statement);
 
   // if the external module has been imported, we should reuse the import statement to avoid duplicate imports
-  if let Some(preserved_item) = strip_context
-    .preserved_import_decls
-    .iter_mut()
-    .find(|item| !item.is_namespace_import && item.source_module_id == *source_module_id)
+  if !is_namespace_import
+    && let Some(preserved_item) = strip_context
+      .preserved_import_decls
+      .iter_mut()
+      .find(|item| !item.is_namespace_import && item.source_module_id == *source_module_id)
   {
     for sp in &statement.import_info.as_ref().unwrap().specifiers {
-      if matches!(sp, ImportSpecifierInfo::Namespace(_)) {
-        push_new_preserved_import(
-          module_id,
-          source_module_id,
-          statement,
-          item,
-          strip_context,
-          &mut rename_handler,
-        );
-        break;
-      } else if let Some((existing_ident, sp_ident)) =
+      if let Some((existing_ident, sp_ident)) =
         get_imported_external_ident(&preserved_item.import_item, sp)
       {
         // rename the imported ident to the unique name
@@ -135,6 +136,36 @@ fn handle_external_import(
         import_decl.specifiers.push(new_sp);
       }
     }
+  } else if let Some(preserved_item) = strip_context
+    .preserved_import_decls
+    .iter_mut()
+    .find(|item| item.is_namespace_import && item.source_module_id == *source_module_id)
+  {
+    for sp in &statement.import_info.as_ref().unwrap().specifiers {
+      if let ImportSpecifierInfo::Namespace(swc_id) = sp {
+        rename_handler.rename_ident(
+          module_id.clone(),
+          swc_id.clone(),
+          preserved_item
+            .namespace_ident
+            .as_ref()
+            .unwrap()
+            .to_id()
+            .into(),
+        );
+      } else {
+        // the import decl is not a namespace import, append the new import decl
+        push_new_preserved_import(
+          module_id,
+          source_module_id,
+          statement,
+          item,
+          strip_context,
+          &mut rename_handler,
+        );
+        break;
+      }
+    }
   } else {
     push_new_preserved_import(
       module_id,
@@ -155,22 +186,19 @@ fn push_new_preserved_import(
   strip_context: &mut StripModuleContext,
   rename_handler: &mut TopLevelIdentsRenameHandler,
 ) {
+  let mut renamed_ident = None;
   // rename the imported ident if there are conflicts
   for defined_ident in &statement.defined_idents {
     rename_handler.rename_ident_if_conflict(module_id, defined_ident);
+    renamed_ident = rename_handler
+      .get_renamed_ident(module_id, defined_ident)
+      .or(Some(defined_ident.clone()));
   }
 
   let mut rename_visitor = RenameVisitor::new(module_id, &rename_handler);
   item.visit_mut_with(&mut rename_visitor);
 
-  let is_namespace_import = if let Some(import_info) = statement.import_info.as_ref() {
-    import_info
-      .specifiers
-      .iter()
-      .any(|sp| matches!(sp, ImportSpecifierInfo::Namespace(_)))
-  } else {
-    false
-  };
+  let is_namespace_import = is_namespace_import_stmt(statement);
 
   // preserve the import statement, e.g. `import { createRequire } from 'module';`
   strip_context
@@ -180,9 +208,27 @@ fn push_new_preserved_import(
       source_module_id: source_module_id.clone(),
       preserved_type: PreservedImportDeclType::ExternalOriginal,
       used_idents: HashSet::default(),
-      namespace_ident: None,
+      namespace_ident: if is_namespace_import {
+        renamed_ident.map(|i| {
+          let ctxt = i.ctxt();
+          Ident::new(i.sym, DUMMY_SP, ctxt)
+        })
+      } else {
+        None
+      },
       is_namespace_import,
     });
+}
+
+fn is_namespace_import_stmt(statement: &Statement) -> bool {
+  if let Some(import_info) = statement.import_info.as_ref() {
+    import_info
+      .specifiers
+      .iter()
+      .any(|sp| matches!(sp, ImportSpecifierInfo::Namespace(_)))
+  } else {
+    false
+  }
 }
 
 fn get_imported_external_ident(
@@ -323,6 +369,7 @@ fn handle_external_export(
   module_id: &ModuleId,
   source_module_id: &ModuleId,
   statement: &Statement,
+  result: &mut StripModuleDeclResult,
   strip_context: &mut StripModuleContext,
 ) {
   let mut extra_items = vec![];
@@ -404,12 +451,41 @@ fn handle_external_export(
         extra_items.push(var_decl_item);
       }
       ExportSpecifierInfo::Namespace(ns) => {
-        let mut rename_handler = rename_handler.borrow_mut();
-        // create a unique ident for the external module
-        let ident =
-          create_unique_external_namespace_ident(module_id, source_module_id, &mut rename_handler);
-        // for `export * as ns from 'module';`. Rename ns to a unique name.
-        rename_handler.rename_ident(module_id.clone(), ns.clone(), ident.to_id().into());
+        // transform `export * as ns from 'module';` to `import * as ns from 'module';`
+        let import_item = ModuleItem::ModuleDecl(ModuleDecl::Import(ImportDecl {
+          span: DUMMY_SP,
+          specifiers: vec![ImportSpecifier::Namespace(ImportStarAsSpecifier {
+            span: DUMMY_SP,
+            local: Ident::new(ns.sym.clone(), DUMMY_SP, ns.ctxt()),
+          })],
+          src: Box::new(
+            statement
+              .export_info
+              .as_ref()
+              .unwrap()
+              .source
+              .as_ref()
+              .unwrap()
+              .as_str()
+              .into(),
+          ),
+          type_only: false,
+          with: None,
+          phase: Default::default(),
+        }));
+
+        let info = analyze_statement_info(&statement.id, &import_item);
+        result.ast.body[statement.id] = import_item;
+
+        handle_external_import(
+          module_id,
+          source_module_id,
+          &info.into(),
+          result,
+          strip_context,
+        );
+
+        break;
       }
     }
   }

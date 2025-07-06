@@ -24,10 +24,6 @@ impl Compiler {
   // pub(crate) fn write(&self) -> Result<()> {
   //   // TODO add writeBundle write hooks plugin_driver
   //   self.write_resources_to_disk()?;
-  //   self
-  //     .context
-  //     .plugin_driver
-  //     .finish(&self.context.stats, &self.context)?;
 
   //   Ok(())
   // }

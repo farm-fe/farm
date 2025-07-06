@@ -1,6 +1,6 @@
 //index.js:
- import * as __farm_require_esm_ident__0 from "node:fs";
-import * as __farm_require_esm_ident__1 from "node:os";
+ import { createRequire as __farmNodeCreateRequire } from "module";
+var __farmNodeRequire = __farmNodeCreateRequire(import.meta.url);
 ; // module_id: @farm-runtime/module-system
 // all modules registered
 const __farm_internal_modules__ = {};
@@ -68,8 +68,8 @@ function importDefault(v) {
 var farmRequire = farmRegister("index.ts", function(module, exports) {
     defineExportEsModule(exports);
     exportByDefineProperty(exports, "name", ()=>name);
-    var _f_node_fs = interopRequireDefault(__farm_require_esm_ident__0);
-    const os = __farm_require_esm_ident__1;
+    var _f_node_fs = interopRequireDefault(__farmNodeRequire('node:fs'));
+    const os = __farmNodeRequire('node:os');
     console.log(importDefault(_f_node_fs).read, os.cpus);
     var name = 'foo';
     module.exports.age = 18;

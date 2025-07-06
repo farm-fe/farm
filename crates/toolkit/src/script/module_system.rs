@@ -49,8 +49,15 @@ struct ModuleSystemAnalyzer {
 }
 
 impl Visit for ModuleSystemAnalyzer {
-  fn visit_stmts(&mut self, n: &[Stmt]) {
-    if self.contain_module_exports || self.contain_esm {
+  fn visit_ident(&mut self, node: &Ident) {
+    if (node.sym == "module" || node.sym == "exports") && node.ctxt.outer() == self.unresolved_mark
+    {
+      self.contain_module_exports = true;
+    }
+  }
+
+  fn visit_stmt(&mut self, n: &Stmt) {
+    if self.contain_module_exports && self.contain_esm {
       return;
     }
 
@@ -67,7 +74,11 @@ impl Visit for ModuleSystemAnalyzer {
         if let MemberProp::Ident(IdentName { sym, .. }) = &n.prop {
           if sym == "exports" {
             self.contain_module_exports = true;
+          } else {
+            n.visit_children_with(self);
           }
+        } else {
+          n.visit_children_with(self);
         }
       } else if sym == "exports" && ctxt.outer() == self.unresolved_mark {
         self.contain_module_exports = true;
@@ -80,7 +91,7 @@ impl Visit for ModuleSystemAnalyzer {
   }
 
   fn visit_module_decl(&mut self, n: &farmfe_core::swc_ecma_ast::ModuleDecl) {
-    if self.contain_esm {
+    if self.contain_esm && self.contain_module_exports {
       return;
     }
 

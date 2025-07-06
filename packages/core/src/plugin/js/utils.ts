@@ -252,7 +252,7 @@ export function transformResourceInfo2RollupRenderedChunk(
     imports: [],
     modules: {}, // do not support modules
     referencedFiles: [],
-    exports,
+    exports: [],
     facadeModuleId: null,
     isDynamicEntry,
     isEntry,

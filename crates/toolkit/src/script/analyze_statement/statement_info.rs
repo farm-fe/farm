@@ -8,11 +8,25 @@ use swc_ecma_utils::contains_top_level_await;
 
 use crate::script::idents_collector::DefinedIdentsCollector;
 
+#[derive(Debug)]
 pub struct AnalyzedStatementInfo {
+  pub id: StatementId,
   pub import_info: Option<ImportInfo>,
   pub export_info: Option<ExportInfo>,
   pub defined_idents: HashSet<SwcId>,
   pub top_level_await: bool,
+}
+
+impl Into<Statement> for AnalyzedStatementInfo {
+  fn into(self) -> Statement {
+    Statement::new(
+      self.id,
+      self.export_info,
+      self.import_info,
+      self.defined_idents,
+      self.top_level_await,
+    )
+  }
 }
 
 pub fn analyze_statement_info(id: &StatementId, stmt: &ModuleItem) -> AnalyzedStatementInfo {
@@ -229,6 +243,7 @@ pub fn analyze_statement_info(id: &StatementId, stmt: &ModuleItem) -> AnalyzedSt
   };
 
   AnalyzedStatementInfo {
+    id: *id,
     import_info,
     export_info,
     defined_idents: defined_idents.into_iter().map(|i| i.into()).collect(),
@@ -255,19 +270,8 @@ pub fn analyze_statements(ast: &Module) -> Vec<Statement> {
   let mut statements = vec![];
 
   for (id, item) in ast.body.iter().enumerate() {
-    let AnalyzedStatementInfo {
-      export_info,
-      import_info,
-      defined_idents,
-      top_level_await,
-    } = analyze_statement_info(&id, item);
-    statements.push(Statement::new(
-      id,
-      export_info,
-      import_info,
-      defined_idents,
-      top_level_await,
-    ));
+    let analyzed_statement_info = analyze_statement_info(&id, item);
+    statements.push(analyzed_statement_info.into());
   }
 
   statements

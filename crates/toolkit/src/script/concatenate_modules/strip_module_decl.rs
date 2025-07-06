@@ -26,6 +26,7 @@ use super::{
   StripModuleContext,
 };
 
+#[derive(Debug)]
 pub enum PreservedImportDeclType {
   /// `import * as external_namespace_farm_internal_ from 'module';` generated when handling external module
   ExternalGenerated,

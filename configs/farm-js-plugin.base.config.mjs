@@ -1,8 +1,5 @@
 import { builtinModules } from "module";
 
-const format = process.env.FARM_FORMAT || "cjs";
-const ext = format === "esm" ? "mjs" : "cjs";
-
 export function createFarmJsPluginBuildConfig(plugins, options = {}) {
   return {
     compilation: {
@@ -11,7 +8,6 @@ export function createFarmJsPluginBuildConfig(plugins, options = {}) {
       },
       output: {
         path: "build",
-        entryFilename: `[entryName].${ext}`,
         targetEnv: "library",
         format: ["esm", "cjs"],
       },
@@ -24,6 +20,7 @@ export function createFarmJsPluginBuildConfig(plugins, options = {}) {
       progress: false,
       minify: false,
       sourcemap: false,
+      comments: true,
       presetEnv: false,
       persistentCache: false,
       lazyCompilation: false,
