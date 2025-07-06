@@ -1,14 +1,14 @@
 use crate::{Cacheable, HashMap};
-use dashmap::DashMap;
-use rkyv::*;
-use std::{
-  collections::hash_map::Iter,
-  fmt::{Debug, Formatter},
+use dashmap::{
+  mapref::one::{MappedRef, MappedRefMut},
+  DashMap,
 };
+use rkyv::*;
+use std::fmt::{Debug, Formatter};
 
 #[derive(Default)]
 pub struct CustomMetaDataMap {
-  map: HashMap<String, Box<dyn Cacheable>>,
+  map: DashMap<String, Box<dyn Cacheable>>,
   /// The bytes map is used to store the serialized data of the map above
   bytes_map: DashMap<String, Vec<u8>>,
 }
@@ -18,7 +18,11 @@ impl Debug for CustomMetaDataMap {
     f.debug_struct("CustomMetaDataMap")
       .field(
         "map_keys",
-        &self.map.iter().map(|item| item.0).collect::<Vec<&String>>() as _,
+        &self
+          .map
+          .iter()
+          .map(|item| item.key().clone())
+          .collect::<Vec<String>>() as _,
       )
       .field(
         "bytes_map_keys",
@@ -39,9 +43,9 @@ impl serde::Serialize for CustomMetaDataMap {
   {
     let mut map = HashMap::<String, Vec<u8>>::default();
 
-    for (k, v) in self.map.iter() {
-      let cloned_data = v.serialize_bytes().unwrap();
-      map.insert(k.clone(), cloned_data);
+    for item in self.map.iter() {
+      let cloned_data = item.value().serialize_bytes().unwrap();
+      map.insert(item.key().clone(), cloned_data);
     }
 
     serde::Serialize::serialize(&map, serializer)
@@ -55,7 +59,7 @@ impl<'de> serde::Deserialize<'de> for CustomMetaDataMap {
   {
     let map: HashMap<String, Vec<u8>> = serde::Deserialize::deserialize(deserializer)?;
     let mut res = CustomMetaDataMap {
-      map: HashMap::default(),
+      map: DashMap::default(),
       bytes_map: DashMap::new(),
     };
 
@@ -64,10 +68,14 @@ impl<'de> serde::Deserialize<'de> for CustomMetaDataMap {
   }
 }
 
+// type CustomMetaDataMapRef<'a, T> = dashmap::mapref::one::Ref<'a, String, Box<dyn Cacheable>>;
+pub type CustomMetaDataMapRefMut<'a, T> = MappedRefMut<'a, String, Box<dyn Cacheable>, T>;
+pub type CustomMetaDataMapRef<'a, T> = MappedRef<'a, String, Box<dyn Cacheable>, T>;
+
 impl CustomMetaDataMap {
   pub fn new() -> Self {
     Self {
-      map: HashMap::default(),
+      map: DashMap::default(),
       bytes_map: DashMap::new(),
     }
   }
@@ -76,24 +84,48 @@ impl CustomMetaDataMap {
     self.map.is_empty()
   }
 
-  pub fn iter(&self) -> Iter<String, Box<dyn Cacheable>> {
+  pub fn iter(&self) -> dashmap::iter::Iter<String, Box<dyn Cacheable>> {
     self.map.iter()
   }
 
-  pub fn get_mut<T: Cacheable + Default>(&mut self, key: &str) -> Option<&mut T> {
+  pub fn get_mut<T: Cacheable + Default>(&self, key: &str) -> Option<CustomMetaDataMapRefMut<T>> {
     if let Some((_, bytes)) = self.bytes_map.remove(key) {
       let value = T::deserialize_bytes(&T::default(), bytes).unwrap();
       self.map.insert(key.to_string(), value);
     }
 
-    self.map.get_mut(key).and_then(|v| v.downcast_mut::<T>())
+    self
+      .map
+      .get_mut(key)
+      .and_then(|v| v.try_map(|v| v.downcast_mut::<T>()).ok())
   }
 
-  pub fn insert(&mut self, key: String, value: Box<dyn Cacheable>) {
+  pub fn get<T: Cacheable + Default>(&self, key: &str) -> Option<CustomMetaDataMapRef<T>> {
+    if let Some((_, bytes)) = self.bytes_map.remove(key) {
+      let value = T::deserialize_bytes(&T::default(), bytes.clone()).unwrap();
+      self.map.insert(key.to_string(), value);
+    }
+
+    self
+      .map
+      .get(key)
+      .and_then(|v| v.try_map(|v| v.downcast_ref::<T>()).ok())
+  }
+  // pub fn get_ref<T: Cacheable + Default>(&self, key: &str) -> Option<T> {
+  //   if let Some((_, bytes)) = self.bytes_map.remove(key) {
+  //     let value = T::deserialize_bytes(&T::default(), bytes.clone()).unwrap();
+  //     return value.downcast()
+  //     // self.map.insert(key.to_string(), value);
+  //   }
+
+  //   self.map.get(key).and_then(|v| v.downcast_ref::<T>())
+  // }
+
+  pub fn insert(&self, key: String, value: Box<dyn Cacheable>) {
     self.map.insert(key, value);
   }
 
-  pub fn remove(&mut self, key: &str) {
+  pub fn remove(&self, key: &str) {
     self.map.remove(key);
   }
 }
@@ -101,7 +133,7 @@ impl CustomMetaDataMap {
 impl From<HashMap<String, Box<dyn Cacheable>>> for CustomMetaDataMap {
   fn from(map: HashMap<String, Box<dyn Cacheable>>) -> Self {
     Self {
-      map,
+      map: map.into_iter().collect(),
       bytes_map: DashMap::new(),
     }
   }
@@ -113,16 +145,16 @@ impl Clone for CustomMetaDataMap {
       HashMap::default()
     } else {
       let mut custom = HashMap::default();
-      for (k, v) in self.map.iter() {
-        let cloned_data = v.serialize_bytes().unwrap();
-        let cloned_custom = v.deserialize_bytes(cloned_data).unwrap();
-        custom.insert(k.clone(), cloned_custom);
+      for item in self.map.iter() {
+        let cloned_data = item.value().serialize_bytes().unwrap();
+        let cloned_custom = item.value().deserialize_bytes(cloned_data).unwrap();
+        custom.insert(item.key().clone(), cloned_custom);
       }
       custom
     };
 
     Self {
-      map: custom,
+      map: custom.into_iter().collect(),
       bytes_map: self.bytes_map.clone(),
     }
   }
@@ -136,7 +168,7 @@ impl<__D: Fallible + ?Sized> Deserialize<CustomMetaDataMap, __D> for Archived<Cu
   ) -> ::core::result::Result<CustomMetaDataMap, __D::Error> {
     let map = Deserialize::<HashMap<String, Vec<u8>>, __D>::deserialize(&self.map, deserializer)?;
     let mut res = CustomMetaDataMap {
-      map: HashMap::default(),
+      map: DashMap::default(),
       bytes_map: DashMap::new(),
     };
 
@@ -153,7 +185,8 @@ where
   fn serialize(&self, serializer: &mut __S) -> ::core::result::Result<Self::Resolver, __S::Error> {
     let mut map = HashMap::<String, Vec<u8>>::default();
 
-    for (k, v) in self.map.iter() {
+    for item in self.map.iter() {
+      let (k, v) = item.pair();
       let cloned_data = v.serialize_bytes().unwrap();
       map.insert(k.clone(), cloned_data);
     }

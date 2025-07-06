@@ -1,6 +1,7 @@
 #![feature(box_patterns)]
 #![feature(rustc_private)]
 #![feature(trait_upcasting)]
+#![feature(let_chains)]
 
 use std::sync::Arc;
 
@@ -260,6 +261,7 @@ impl Plugin for FarmPluginCss {
     if matches!(param.module_type, ModuleType::Css) {
       let enable_css_modules = context.config.css.modules.is_some();
 
+      println!("enable_css_modules: {} {}", enable_css_modules, self.is_path_match_css_modules(&param.module_id));
       // css modules
       if enable_css_modules && self.is_path_match_css_modules(&param.module_id) {
         let mut query = param.query.clone();
@@ -433,7 +435,11 @@ impl Plugin for FarmPluginCss {
       .filter_map(|m| matches!(m.module_type, ModuleType::Css).then(|| m.id.clone()))
       .collect::<Vec<ModuleId>>();
 
-    transform_css_to_script::transform_css_to_script_modules(css_modules, context)?;
+    transform_css_to_script::transform_css_to_script_modules(
+      css_modules,
+      context,
+      &self.css_processer,
+    )?;
 
     Ok(Some(()))
   }
@@ -445,7 +451,11 @@ impl Plugin for FarmPluginCss {
   ) -> farmfe_core::error::Result<Option<()>> {
     let mut module_ids = param.updated_modules_ids.clone();
     module_ids.extend(param.added_modules_ids.clone());
-    transform_css_to_script::transform_css_to_script_modules(module_ids, context)?;
+    transform_css_to_script::transform_css_to_script_modules(
+      module_ids,
+      context,
+      &self.css_processer,
+    )?;
 
     Ok(Some(()))
   }
@@ -600,7 +610,12 @@ impl FarmPluginCss {
       locals_conversion: get_config_css_modules_local_conversion(config),
       css_processer: CssPluginProcesser {
         // adapter: CssPluginAdapter::SwcCss,
-        adapter: CssPluginAdapter::LightningCss(LightningCss {}),
+        adapter: match config.css.ty {
+          farmfe_core::config::AdapterType::LightningCss => {
+            CssPluginAdapter::LightningCss(LightningCss {})
+          }
+          farmfe_core::config::AdapterType::Css => CssPluginAdapter::SwcCss,
+        },
         ast_map: Default::default(),
       },
     }

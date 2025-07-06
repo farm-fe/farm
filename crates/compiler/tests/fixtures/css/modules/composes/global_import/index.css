@@ -3,6 +3,6 @@
   composes: action from global;
 }
 
-:global .action {
+:global(.action) {
   color: red;
 }

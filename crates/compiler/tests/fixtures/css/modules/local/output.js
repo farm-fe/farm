@@ -16,7 +16,7 @@ initModuleSystem(moduleSystem);
 .farm-show {
   display: block;
 }
- .farm-hello {
+.farm-hello {
   color: blue;
 }
 

@@ -27,7 +27,8 @@ use farmfe_toolkit::{
 
 use crate::{
   adapter::adapter_trait::{
-    CodegenContext, CreateResourcePotMetadataContext, ParseOption, SourceReplaceContext,
+    CodegenContext, CreateResourcePotMetadataContext, CssToScriptContext, CssToScriptResult,
+    ParseOption, SourceReplaceContext,
   },
   dep_analyzer::DepAnalyzer,
   source_replacer::SourceReplacer,
@@ -129,19 +130,17 @@ pub fn source_replace_helper(
   stylesheet.visit_mut_with(&mut source_replacer);
 }
 
-pub fn source_replace(
+pub fn module_source_replace(
   SourceReplaceContext {
     module,
     module_graph,
     resources_map,
     context,
+    without_context,
   }: SourceReplaceContext<'_>,
 ) -> Result<Stylesheet> {
-  let cm = context.meta.get_module_source_map(&module.id);
   let mut css_stylesheet = module.meta.as_css().ast.clone();
-  let globals = context.meta.get_globals(&module.id);
-
-  try_with(cm, globals.value(), || {
+  let mut run = || {
     source_replace_helper(
       &mut css_stylesheet,
       &module.id,
@@ -150,7 +149,15 @@ pub fn source_replace(
       context.config.output.public_path.clone(),
       context.config.resolve.alias.clone(),
     );
-  })?;
+  };
+  if !without_context {
+    let cm = context.meta.get_module_source_map(&module.id);
+    let globals = context.meta.get_globals(&module.id);
+
+    try_with(cm, globals.value(), || run())?;
+  } else {
+    run();
+  }
 
   Ok(css_stylesheet)
 }
@@ -169,11 +176,12 @@ pub fn create_resource_pot_metadata(
 
   let rendered_modules = Mutex::new(Vec::with_capacity(modules.len()));
   modules.into_par_iter().try_for_each(|module| {
-    let css_stylesheet = source_replace(SourceReplaceContext {
+    let css_stylesheet = module_source_replace(SourceReplaceContext {
       module,
       module_graph,
       resources_map: &resources_map,
       context,
+      without_context: true,
     })?;
 
     rendered_modules
@@ -229,4 +237,34 @@ pub fn codegen(
       None
     },
   ))
+}
+
+pub fn css_to_script(
+  CssToScriptContext { module_id, context }: CssToScriptContext<'_>,
+) -> Result<CssToScriptResult> {
+  let module_graph = context.module_graph.read();
+  let resources_map = context.resources_map.lock();
+  let module = module_graph.module(module_id).unwrap();
+  let stylesheet = module_source_replace(SourceReplaceContext {
+    module,
+    module_graph: &module_graph,
+    resources_map: &resources_map,
+    context,
+    without_context: true,
+  })?;
+
+  let (css_code, src_map) = codegen_css_stylesheet(
+    &stylesheet,
+    context.config.minify.enabled(),
+    if context.config.sourcemap.enabled(module.immutable) {
+      Some(context.meta.get_module_source_map(&module_id))
+    } else {
+      None
+    },
+  );
+
+  Ok(CssToScriptResult {
+    code: css_code,
+    source_map: src_map,
+  })
 }

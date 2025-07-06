@@ -75,6 +75,7 @@ pub struct ModuleExportIdent {
 
 /// Script specific meta data, for example, [swc_ecma_ast::Module]
 #[cache_item]
+#[derive(Clone)]
 pub struct ScriptModuleMetaData {
   pub ast: SwcModule,
   pub top_level_mark: u32,
@@ -115,39 +116,6 @@ impl Default for ScriptModuleMetaData {
       feature_flags: Default::default(),
       export_ident_map: Default::default(),
       custom: Default::default(),
-    }
-  }
-}
-
-impl Clone for ScriptModuleMetaData {
-  fn clone(&self) -> Self {
-    let custom = if self.custom.is_empty() {
-      HashMap::default()
-    } else {
-      let mut custom = HashMap::default();
-      for (k, v) in self.custom.iter() {
-        let cloned_data = v.serialize_bytes().unwrap();
-        let cloned_custom = v.deserialize_bytes(cloned_data).unwrap();
-        custom.insert(k.clone(), cloned_custom);
-      }
-      custom
-    };
-
-    Self {
-      ast: self.ast.clone(),
-      top_level_mark: self.top_level_mark,
-      unresolved_mark: self.unresolved_mark,
-      module_system: self.module_system.clone(),
-      hmr_self_accepted: self.hmr_self_accepted,
-      hmr_accepted_deps: self.hmr_accepted_deps.clone(),
-      comments: self.comments.clone(),
-      statements: self.statements.clone(),
-      top_level_idents: self.top_level_idents.clone(),
-      unresolved_idents: self.unresolved_idents.clone(),
-      is_async: self.is_async,
-      feature_flags: self.feature_flags.clone(),
-      export_ident_map: self.export_ident_map.clone(),
-      custom: CustomMetaDataMap::from(custom),
     }
   }
 }

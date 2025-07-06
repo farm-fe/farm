@@ -234,9 +234,19 @@ pub struct CssPrefixerConfig {
   pub targets: Option<Targets>,
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone, Default)]
+pub enum AdapterType {
+  #[serde(rename = "lightningcss")]
+  LightningCss,
+  #[default]
+  Css,
+}
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase", default)]
 pub struct CssConfig {
+  #[serde(rename = "type")]
+  pub ty: AdapterType,
   pub modules: Option<CssModulesConfig>,
   pub prefixer: Option<CssPrefixerConfig>,
 }
@@ -246,6 +256,7 @@ impl Default for CssConfig {
     Self {
       modules: Some(Default::default()),
       prefixer: Some(Default::default()),
+      ty: Default::default(),
     }
   }
 }

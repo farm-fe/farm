@@ -7,13 +7,13 @@ initModuleSystem(moduleSystem);
 
 
 //index-2528a0d0.css:
-  .foo  .farm-hello {
+ .foo .farm-hello {
   color: red;
 }
 .farm-bar {
   color: red;
 }
- .farm-main  .description {
+.farm-main .description {
   color: blue;
 }
 

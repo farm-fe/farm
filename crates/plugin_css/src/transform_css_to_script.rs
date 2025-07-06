@@ -32,11 +32,15 @@ use farmfe_toolkit::{
 };
 use farmfe_utils::{hash::sha256, relative};
 
-use crate::source_replace;
+use crate::{
+  adapter::adapter_trait::{CssPluginProcesser, CssToScriptContext, CssToScriptResult, ParseOption},
+  source_replace,
+};
 
 pub fn transform_css_to_script_modules(
   module_ids: Vec<ModuleId>,
   context: &Arc<CompilationContext>,
+  adapter: &CssPluginProcesser,
 ) -> farmfe_core::error::Result<()> {
   module_ids
     .into_par_iter()
@@ -103,23 +107,30 @@ pub fn transform_css_to_script_modules(
         cache_store_key = Some(store_key);
       }
 
-      let stylesheet = transform_css_stylesheet(&module_id, context);
-      let css_deps = transform_css_deps(&module_id, context);
+      let CssToScriptResult {
+        code: css_code,
+        source_map: mut src_map,
+      } = adapter.css_to_script(CssToScriptContext {
+        module_id: &module_id,
+        context: &context,
+      })?;
+      // let stylesheet = transform_css_stylesheet(&module_id, context);
 
-      // let source_map_enabled = context.config.sourcemap.enabled();
+      // // let source_map_enabled = context.config.sourcemap.enabled();
+      // let (css_code, mut src_map) = codegen_css_stylesheet(
+      //   &stylesheet,
+      //   context.config.minify.enabled(),
+      //   if context.config.sourcemap.enabled(m.immutable) {
+      //     Some(context.meta.get_module_source_map(&module_id))
+      //   } else {
+      //     None
+      //   },
+      // );
       let module_graph = context.module_graph.read();
       let m = module_graph.module(&module_id).unwrap();
-      let (css_code, mut src_map) = codegen_css_stylesheet(
-        &stylesheet,
-        context.config.minify.enabled(),
-        if context.config.sourcemap.enabled(m.immutable) {
-          Some(context.meta.get_module_source_map(&module_id))
-        } else {
-          None
-        },
-      );
       let mut source_map_chain = m.source_map_chain.clone();
       drop(module_graph);
+      let css_deps = transform_css_deps(&module_id, context);
       if let Some(sm) = src_map {
         let root = context.config.root.clone();
         source_map_chain.push(Arc::new(sm));

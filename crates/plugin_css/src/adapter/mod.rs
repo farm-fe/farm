@@ -1,3 +1,4 @@
 pub mod adapter_trait;
-mod lightningcss;
+mod lightningcss_adapter;
 mod swc_adapter;
+mod common;

@@ -21,16 +21,18 @@ use farmfe_toolkit::{
   itertools::Itertools,
   script::swc_try_with::try_with,
   swc_css_modules::compile,
+  swc_css_visit::{Visit, VisitMutWith},
 };
 use farmfe_utils::hash::sha256;
 use lightningcss::{
   printer::PrinterOptions,
   stylesheet::{StyleSheet, ToCssResult},
+  visitor::Visit as _,
 };
 
 use crate::{
   adapter::{
-    lightningcss::LightningCssParseResult,
+    lightningcss_adapter::{self, LightningCssParseResult},
     swc_adapter::{self, CssModuleRename},
   },
   dep_analyzer::DepAnalyzer,
@@ -180,9 +182,14 @@ impl CssPluginProcesser {
 
   pub fn css_modules(&self, context: CssModulesContext) -> Result<Option<CssModuleExports>> {
     // let options: Cow<'a, ParseOption> = options.into();
+    println!("css_modules execute: {}", match &self.adapter {
+        CssPluginAdapter::SwcCss => "SwcCss",
+        CssPluginAdapter::LightningCss(_) => "LightningCss",
+    });
     match &self.adapter {
       CssPluginAdapter::SwcCss => {
         let module_string_id = context.module_id.to_string();
+        println!("set source map for css modules: {}", module_string_id);
         let ParseCssModuleResult {
           ast: mut css_stylesheet,
           comments,
@@ -270,6 +277,7 @@ impl CssPluginProcesser {
             data: Default::default(),
           },
         )?;
+        context.content_map.insert(context.module_id.to_string(), context.content.clone());
         let ast = self.ast_map.get(&context.module_id.to_string()).unwrap();
         let m = ast.value().lightning_css_stylesheet().unwrap();
 
@@ -343,7 +351,7 @@ impl CssPluginProcesser {
         Ok(meta)
       }
       CssPluginAdapter::LightningCss(_) => {
-        let mut map = CustomMetaDataMap::default();
+        let map = CustomMetaDataMap::default();
 
         map.insert(
           "lightning_css".to_string(),
@@ -355,17 +363,24 @@ impl CssPluginProcesser {
     }
   }
 
-  pub fn prefixer(&self, metadata: &mut ModuleMetaData, css_config: &Box<CssConfig>) -> Result<Option<()>> {
+  pub fn prefixer(
+    &self,
+    metadata: &mut ModuleMetaData,
+    css_config: &Box<CssConfig>,
+  ) -> Result<Option<()>> {
     match &self.adapter {
       CssPluginAdapter::SwcCss => {
         if let ModuleMetaData::Css(meta) = metadata {
           swc_adapter::prefixer(&mut meta.ast, css_config.prefixer.as_ref().unwrap());
-          return Ok(Some(()))
+          return Ok(Some(()));
         }
 
         Ok(None)
       }
-      CssPluginAdapter::LightningCss(_) => panic!("impl prefixer todo"),
+      CssPluginAdapter::LightningCss(_) => {
+        // do noting
+        Ok(None)
+      }
     }
   }
 
@@ -377,16 +392,26 @@ impl CssPluginProcesser {
     metadata: &ModuleMetaData,
     context: &Arc<CompilationContext>,
   ) -> Vec<PluginAnalyzeDepsHookResultEntry> {
+    let mut deps_analyzer = DepAnalyzer::new(context.config.resolve.alias.clone());
     match &self.adapter {
       CssPluginAdapter::SwcCss => {
         if let ModuleMetaData::Css(css) = metadata {
-          return swc_adapter::analyze(&css.ast, context);
+          deps_analyzer.visit_stylesheet(&css.ast);
         }
-
-        vec![]
       }
-      CssPluginAdapter::LightningCss(_) => panic!("impl analyze_deps todo"),
+
+      CssPluginAdapter::LightningCss(_) => {
+        if let ModuleMetaData::Custom(meta) = metadata {
+          if let Some(mut lightning_css) =
+            meta.get_mut::<LightningCssParseResult<'static>>("lightning_css")
+          {
+            lightning_css.ast_mut().visit(&mut deps_analyzer).unwrap();
+          }
+        }
+      }
     }
+
+    deps_analyzer.deps
   }
 
   ///
@@ -397,11 +422,20 @@ impl CssPluginProcesser {
   pub fn source_replace<'a>(&self, contenxt: SourceReplaceContext<'a>) -> Result<()> {
     match &self.adapter {
       CssPluginAdapter::SwcCss => {
-        swc_adapter::source_replace(contenxt)?;
+        swc_adapter::module_source_replace(contenxt)?;
       }
-      CssPluginAdapter::LightningCss(_) => panic!("impl source_replace todo"),
+      CssPluginAdapter::LightningCss(_) => {
+        unreachable!("lightningcss source replace not implemented")
+      }
     }
     Ok(())
+  }
+
+  pub fn css_to_script(&self, context: CssToScriptContext<'_>) -> Result<CssToScriptResult> {
+    match &self.adapter {
+      CssPluginAdapter::SwcCss => swc_adapter::css_to_script(context),
+      CssPluginAdapter::LightningCss(_) => lightningcss_adapter::css_to_script(context),
+    }
   }
 
   pub fn merge_sourcemap(&self) -> Result<()> {
@@ -414,23 +448,28 @@ impl CssPluginProcesser {
   ) -> Result<ResourcePotMetaData> {
     match &self.adapter {
       CssPluginAdapter::SwcCss => swc_adapter::create_resource_pot_metadata(context),
-      CssPluginAdapter::LightningCss(_) => panic!("impl create_resource_pot_metadata todo"),
+      CssPluginAdapter::LightningCss(_) => {
+        lightningcss_adapter::create_resource_pot_metadata(context)
+      }
     }
-    // let mut map = CustomMetaDataMap::default();
-    // map.insert(
-    //   "lightning_css".to_string(),
-    //   Box::new(LightningCssParseResult::default()),
-    // );
-
-    // Ok(ModuleMetaData::Custom(map))
   }
 
   pub fn codegen(&self, context: CodegenContext) -> Result<(String, Option<String>)> {
     match &self.adapter {
       CssPluginAdapter::SwcCss => swc_adapter::codegen(context),
-      CssPluginAdapter::LightningCss(_) => panic!("impl codegen todo"),
+      CssPluginAdapter::LightningCss(_) => lightningcss_adapter::codegen_for_resource_pot(context),
     }
   }
+}
+
+pub struct CssToScriptContext<'a> {
+  pub module_id: &'a ModuleId,
+  pub context: &'a Arc<CompilationContext>,
+}
+
+pub struct CssToScriptResult {
+  pub code: String,
+  pub source_map: Option<String>,
 }
 
 pub struct CodegenContext<'a> {
@@ -451,6 +490,7 @@ pub struct SourceReplaceContext<'a> {
   pub module_graph: &'a ModuleGraph,
   pub resources_map: &'a HashMap<String, Resource>,
   pub context: &'a Arc<CompilationContext>,
+  pub without_context: bool,
 }
 // impl<A, M> CssAdapter<A, M> for CssPluginAdapter {
 //   fn parse(&self, content: Arc<String>) -> Result<Box<(dyn ParseResult<A, M> + 'static)>> {
@@ -614,13 +654,13 @@ impl LightningCss {
     // let v = unsafe { content.as_ref() };
     let ptr = Box::into_raw(Box::new(content));
     let v = unsafe { &*ptr };
-    let stylesheet = lightningcss::stylesheet::StyleSheet::parse(&v, options).unwrap();
+    let stylesheet = lightningcss::stylesheet::StyleSheet::parse(&v, options);
 
     Ok(LightningCssParseResult {
-      ast: Some(stylesheet),
+      ast: stylesheet.ok(),
       comments: CommentsMetaData::default(),
       source_map: None,
-      source: v.clone(),
+      source: vec![v.clone()],
       ..Default::default()
     })
   }
@@ -920,6 +960,7 @@ mod tests {
   use crate::adapter::adapter_trait::CssAdapter;
   use crate::adapter::adapter_trait::CssModuleReference;
   use crate::adapter::adapter_trait::CssPluginAdapter;
+  use crate::adapter::adapter_trait::CssPluginProcesser;
   use crate::adapter::adapter_trait::LightningCss;
   use crate::adapter::adapter_trait::LightningCssParseResult;
   use crate::adapter::adapter_trait::ParseResult;
@@ -964,6 +1005,24 @@ mod tests {
     //   .parse(Arc::new(".foo { color: red; }".to_string()))
     //   .unwrap();
   }
+
+  const CODE: &'static str = r#"
+.foo {
+  color: red;
+  composes: action;
+}
+
+.action {
+  background: blue;
+}
+"#;
+
+  // fn t1() {
+  // let processer = CssPluginProcesser {
+  //   adapter: CssPluginAdapter::LightningCss(LightningCss {}),
+  //   ast_map: Default::default(),
+  // };
+  // }
 
   #[test]
   fn test_lightning_css_modules() {

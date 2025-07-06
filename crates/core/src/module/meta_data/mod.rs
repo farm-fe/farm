@@ -6,7 +6,10 @@ use farmfe_macro_cache_item::cache_item;
 use html::HtmlModuleMetaData;
 use script::ScriptModuleMetaData;
 
-use crate::Cacheable;
+use crate::{
+  module::meta_data::custom::{CustomMetaDataMapRef, CustomMetaDataMapRefMut},
+  Cacheable,
+};
 
 pub mod css;
 pub mod custom;
@@ -48,7 +51,8 @@ impl Clone for ModuleMetaData {
       Self::Html(html) => Self::Html(html.clone()),
       Self::Custom(custom) => {
         let mut custom_new = HashMap::default();
-        for (k, v) in custom.iter() {
+        for item in custom.iter() {
+          let (k, v) = item.pair();
           let cloned_data = v.serialize_bytes().unwrap();
           let cloned_custom = v.deserialize_bytes(cloned_data).unwrap();
           custom_new.insert(k.clone(), cloned_custom);
@@ -125,9 +129,17 @@ impl ModuleMetaData {
   }
 
   /// get custom meta data by key
-  pub fn get_custom_mut<T: Cacheable + Default>(&mut self, key: &str) -> &mut T {
+  pub fn get_custom_mut<T: Cacheable + Default>(&self, key: &str) -> CustomMetaDataMapRefMut<T> {
     if let Self::Custom(custom) = self {
       custom.get_mut(key).unwrap()
+    } else {
+      panic!("ModuleMetaData is not Custom")
+    }
+  }
+
+  pub fn get_custom<T: Cacheable + Default>(&self, key: &str) -> CustomMetaDataMapRef<T> {
+    if let Self::Custom(custom) = self {
+      custom.get(key).unwrap()
     } else {
       panic!("ModuleMetaData is not Custom")
     }

@@ -10,7 +10,7 @@ initModuleSystem(moduleSystem);
  .farm-base {
   font-size: 20px;
 }
- .action {
+.action {
   color: red;
 }
 

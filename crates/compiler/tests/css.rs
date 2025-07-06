@@ -1,35 +1,57 @@
-use farmfe_core::config::{CssConfig, CssModulesConfig, CssPrefixerConfig};
+use std::path::PathBuf;
+
+use farmfe_core::config::{AdapterType, Config, CssConfig, CssModulesConfig, CssPrefixerConfig};
 use farmfe_core::HashMap;
 use farmfe_testing_helpers::fixture;
 mod common;
 
-use crate::common::{assert_compiler_result, create_css_compiler};
+use crate::common::{
+  assert_compiler_result, create_css_compiler, test_builder, TestBuilderOptions,
+};
 
 #[test]
 fn css_modules() {
-  fixture!("tests/fixtures/css/modules/**/*.ts", |file, crate_path| {
-    let cwd = file.parent().unwrap();
-    println!("cwd: {cwd:?}");
+  fixture!(
+    "tests/fixtures/css/modules/normal/**/*.ts",
+    |file, crate_path| {
+      test_builder(
+        TestBuilderOptions::new(file.to_string_lossy().to_string(), crate_path).with_config(
+          r#"
+          {
+            "css": {
+              "modules": {
+                "indentName": "farm-[name]",
+                "paths": [".+"]
+              }
+            }
+          }
+          "#,
+        ),
+      );
 
-    let entry_name = "index".to_string();
+      // let cwd = file.parent().unwrap();
+      // println!("cwd: {cwd:?}");
 
-    let compiler = create_css_compiler(
-      HashMap::from_iter([(entry_name.clone(), "./index.ts".into())]),
-      cwd.to_path_buf(),
-      crate_path,
-      CssConfig {
-        modules: Some(CssModulesConfig {
-          indent_name: "farm-[name]".into(),
-          paths: vec![".+".to_string()],
-        }),
-        ..Default::default()
-      },
-    );
+      // let entry_name = "index".to_string();
 
-    compiler.compile().unwrap();
+      // let compiler = create_css_compiler(
+      //   HashMap::from_iter([(entry_name.clone(), "./index.ts".into())]),
+      //   cwd.to_path_buf(),
+      //   crate_path,
+      //   CssConfig {
+      //     modules: Some(CssModulesConfig {
+      //       indent_name: "farm-[name]".into(),
+      //       paths: vec![".+".to_string()],
+      //     }),
+      //     ..Default::default()
+      //   },
+      // );
 
-    assert_compiler_result(&compiler, Some(&entry_name));
-  });
+      // compiler.compile().unwrap();
+
+      // assert_compiler_result(&compiler, Some(&entry_name));
+    }
+  );
 }
 
 #[test]

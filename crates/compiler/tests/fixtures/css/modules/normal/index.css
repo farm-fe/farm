@@ -1,4 +1,4 @@
-:global .foo :local .hello {
+:global(.foo) :local(.hello) {
   color: red;
 }
 
@@ -6,6 +6,6 @@
   color: red;
 }
 
-:local .main :global .description {
+:local(.main) :global(.description) {
   color: blue;
 }

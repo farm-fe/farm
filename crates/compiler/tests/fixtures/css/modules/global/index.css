@@ -1,11 +1,11 @@
-:global .base {
+:global(.base) {
   font-size: 20px;
 }
 
-:global .hide {
+:global(.hide) {
   display: none;
 }
 
-:global .show {
+:global(.show) {
   display: block;
 }

@@ -10,6 +10,6 @@
   display: block;
 }
 
-:local .hello {
+:local(.hello) {
   color: blue;
 }

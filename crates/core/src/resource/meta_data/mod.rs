@@ -3,7 +3,7 @@ use farmfe_macro_cache_item::cache_item;
 use html::HtmlResourcePotMetaData;
 use js::JsResourcePotMetaData;
 
-use crate::{module::CustomMetaDataMap, Cacheable};
+use crate::{module::{meta_data::custom::{CustomMetaDataMapRef, CustomMetaDataMapRefMut}, CustomMetaDataMap}, Cacheable};
 
 pub mod css;
 pub mod html;
@@ -55,9 +55,17 @@ impl ResourcePotMetaData {
   }
 
   /// get custom meta data by key
-  pub fn get_custom_mut<T: Cacheable + Default>(&mut self, key: &str) -> &mut T {
+  pub fn get_custom_mut<T: Cacheable + Default>(&mut self, key: &str) -> CustomMetaDataMapRefMut<T> {
     if let Self::Custom(custom) = self {
       custom.get_mut(key).unwrap()
+    } else {
+      panic!("ModuleMetaData is not Custom")
+    }
+  }
+
+  pub fn get_custom<T: Cacheable + Default>(&self, key: &str) -> CustomMetaDataMapRef<T> {
+    if let Self::Custom(custom) = self {
+      custom.get(key).unwrap()
     } else {
       panic!("ModuleMetaData is not Custom")
     }
