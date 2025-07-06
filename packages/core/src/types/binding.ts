@@ -164,6 +164,12 @@ export interface OutputConfig {
    * Whether to show print file size of final output files.
    */
   showFileSize?: boolean;
+
+  /**
+   * output ascii only
+   * @default false
+   */
+  asciiOnly?: boolean;
 }
 
 export interface ResolveConfig {

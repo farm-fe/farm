@@ -104,6 +104,7 @@ pub fn codegen_css_stylesheet(
   stylesheet: &Stylesheet,
   minify: bool,
   cm: Option<Arc<SourceMap>>,
+  ascii_only: bool,
 ) -> (String, Option<String>) {
   let mut css_code = String::new();
   let mut mappings = Vec::new();
@@ -120,7 +121,7 @@ pub fn codegen_css_stylesheet(
 
   gen.emit(stylesheet).unwrap();
 
-  if let Some(cm) = cm {
+  let (css_code, src_map) = if let Some(cm) = cm {
     let map = build_sourcemap(cm, &mappings);
     let mut src_map = vec![];
     map.to_writer(&mut src_map).unwrap();
@@ -128,6 +129,12 @@ pub fn codegen_css_stylesheet(
     (css_code, Some(String::from_utf8(src_map).unwrap()))
   } else {
     (css_code, None)
+  };
+
+  if ascii_only {
+    (escape_non_ascii(&css_code), src_map)
+  } else {
+    (css_code, src_map)
   }
 }
 
@@ -167,4 +174,16 @@ impl VisitMut for SpanUpdater {
     node.lo = self.start_pos + node.lo;
     node.hi = self.start_pos + node.hi;
   }
+}
+
+pub fn escape_non_ascii(s: &str) -> String {
+  s.chars()
+    .map(|c| {
+      if c.is_ascii() {
+        c.to_string()
+      } else {
+        format!("\\{:06x}", c as u32)
+      }
+    })
+    .collect()
 }

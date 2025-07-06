@@ -21,6 +21,7 @@ exports[`Js Plugin Execution - full 1`] = `
     },
     "custom": {
       "external.record": "{}",
+      "output.ascii_only": "false",
       "resolve.dedupe": "[]",
       "runtime.isolate": "false",
     },
@@ -176,13 +177,7 @@ exports[`Js Plugin Execution - full 1`] = `
         "mts",
         "cts",
       ],
-      "mainFields": [
-        "browser",
-        "module",
-        "main",
-        "jsnext:main",
-        "jsnext",
-      ],
+      "mainFields": [],
       "mainFiles": [
         "index",
       ],

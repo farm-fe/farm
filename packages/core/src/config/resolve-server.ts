@@ -43,6 +43,7 @@ export function normalizeDevServerConfig(
 
   return merge({}, DEFAULT_DEV_SERVER_OPTIONS, serverOptions, {
     hmr,
+    protocol: https ? 'https' : 'http',
     https: https
       ? {
           ...https,

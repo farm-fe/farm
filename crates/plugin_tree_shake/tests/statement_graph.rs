@@ -342,15 +342,18 @@ export { a, b, c as d };"#;
   GLOBALS.set(&Globals::new(), || {
     let mut stmt_graph = create_test_statement_graph(code);
 
-    let traced_import_stmts = stmt_graph.trace_and_mark_used_statements(HashMap::from_iter([
-      (5, HashSet::from_iter([UsedStatementIdent::Default])),
-      (
-        4,
-        HashSet::from_iter([UsedStatementIdent::SwcIdent(
-          ("e".into(), SyntaxContext::from_u32(2)).into(),
-        )]),
-      ),
-    ]));
+    let traced_import_stmts = stmt_graph.trace_and_mark_used_statements(
+      HashMap::from_iter([
+        (5, HashSet::from_iter([UsedStatementIdent::Default])),
+        (
+          4,
+          HashSet::from_iter([UsedStatementIdent::SwcIdent(
+            ("e".into(), SyntaxContext::from_u32(2)).into(),
+          )]),
+        ),
+      ]),
+      None,
+    );
 
     assert_eq!(traced_import_stmts.len(), 1);
     assert_eq!(traced_import_stmts[0].stmt_id, 0);
@@ -419,12 +422,15 @@ export { a, b, c as d };"#;
   GLOBALS.set(&Globals::new(), || {
     let mut stmt_graph = create_test_statement_graph(code);
 
-    let traced_import_stmts = stmt_graph.trace_and_mark_used_statements(HashMap::from_iter([(
-      6,
-      HashSet::from_iter([UsedStatementIdent::SwcIdent(
-        ("c".into(), SyntaxContext::from_u32(2)).into(),
+    let traced_import_stmts = stmt_graph.trace_and_mark_used_statements(
+      HashMap::from_iter([(
+        6,
+        HashSet::from_iter([UsedStatementIdent::SwcIdent(
+          ("c".into(), SyntaxContext::from_u32(2)).into(),
+        )]),
       )]),
-    )]));
+      None,
+    );
 
     assert_eq!(traced_import_stmts.len(), 1);
     assert_eq!(traced_import_stmts[0].stmt_id, 0);
@@ -478,7 +484,7 @@ fn trace_and_mark_used_statements_commonjs_exports() {
   GLOBALS.set(&Globals::new(), || {
     let mut stmt_graph = create_test_statement_graph(code);
 
-    let traced_import_stmts = stmt_graph.trace_and_mark_used_statements(Default::default());
+    let traced_import_stmts = stmt_graph.trace_and_mark_used_statements(Default::default(), None);
 
     assert_eq!(traced_import_stmts.len(), 0);
 
@@ -516,12 +522,15 @@ export const {
   GLOBALS.set(&Globals::new(), || {
     let mut stmt_graph = create_test_statement_graph(code);
 
-    let traced_import_stmts = stmt_graph.trace_and_mark_used_statements(HashMap::from_iter([(
-      1,
-      HashSet::from_iter([UsedStatementIdent::SwcIdent(
-        ("program".into(), SyntaxContext::from_u32(2)).into(),
+    let traced_import_stmts = stmt_graph.trace_and_mark_used_statements(
+      HashMap::from_iter([(
+        1,
+        HashSet::from_iter([UsedStatementIdent::SwcIdent(
+          ("program".into(), SyntaxContext::from_u32(2)).into(),
+        )]),
       )]),
-    )]));
+      None,
+    );
 
     assert_eq!(traced_import_stmts.len(), 1);
     assert_eq!(traced_import_stmts[0].stmt_id, 0);

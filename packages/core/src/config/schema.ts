@@ -65,7 +65,8 @@ const outputSchema = z
     format: z
       .union([z.enum(['cjs', 'esm']), z.array(z.enum(['cjs', 'esm']))])
       .optional(),
-    showFileSize: z.boolean().optional()
+    showFileSize: z.boolean().optional(),
+    asciiOnly: z.boolean().optional()
   })
   .strict()
   .optional();

@@ -10,7 +10,8 @@ use swc_ecma_parser::{
 };
 
 use farmfe_core::{
-  config::comments::CommentsConfig,
+  config::{comments::CommentsConfig, custom::get_config_output_ascii_only},
+  context::CompilationContext,
   error::{CompilationError, Result},
   module::ModuleId,
   swc_common::{
@@ -113,6 +114,18 @@ pub struct CodeGenCommentsConfig<'a> {
   pub config: &'a CommentsConfig,
 }
 
+pub fn create_codegen_config(context: &CompilationContext) -> swc_ecma_codegen::Config {
+  let minify = context.config.minify.enabled();
+  let target = context.config.script.target.clone();
+  let ascii_only = get_config_output_ascii_only(&context.config);
+
+  swc_ecma_codegen::Config::default()
+    .with_minify(minify)
+    .with_target(target)
+    .with_ascii_only(ascii_only)
+    .with_omit_last_semi(true)
+}
+
 /// ast codegen, return generated utf8 bytes. using [String::from_utf8] if you want to transform the bytes to string.
 /// Example:
 /// ```ignore
@@ -121,21 +134,20 @@ pub struct CodeGenCommentsConfig<'a> {
 /// ```
 pub fn codegen_module(
   ast: &SwcModule,
-  target: EsVersion,
   cm: Arc<SourceMap>,
   src_map: Option<&mut Vec<(BytePos, LineCol)>>,
-  minify: bool,
+  codegen_config: swc_ecma_codegen::Config,
   comments_cfg: Option<CodeGenCommentsConfig>,
 ) -> std::result::Result<Vec<u8>, std::io::Error> {
   let mut buf = vec![];
 
   {
     let wr = Box::new(JsWriter::new(cm.clone(), "\n", &mut buf, src_map)) as Box<dyn WriteJs>;
-    let cfg = swc_ecma_codegen::Config::default()
-      .with_minify(minify)
-      .with_target(target)
-      .with_omit_last_semi(true)
-      .with_ascii_only(false);
+    // let cfg = swc_ecma_codegen::Config::default()
+    //   .with_minify(minify)
+    //   .with_target(target)
+    //   .with_omit_last_semi(true)
+    //   .with_ascii_only(false);
 
     if let Some(comments_cfg) = &comments_cfg {
       minify_comments(comments_cfg.comments, comments_cfg.config);
@@ -144,7 +156,7 @@ pub fn codegen_module(
     let comments = comments_cfg.map(|c| c.comments as &dyn Comments);
 
     let mut emitter = Emitter {
-      cfg,
+      cfg: codegen_config,
       comments,
       cm,
       wr,

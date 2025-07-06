@@ -1,7 +1,7 @@
 use std::mem;
 
 use farmfe_core::{
-  module::meta_data::script::statement::SwcId,
+  module::meta_data::script::statement::{ReadTopLevelVar, SwcId, WriteTopLevelVar},
   swc_common::{
     comments::{Comments, SingleThreadedComments},
     Mark, Spanned,
@@ -85,6 +85,19 @@ impl LeftIdentReference {
 impl From<LeftIdentReference> for HashSet<SwcId> {
   fn from(value: LeftIdentReference) -> Self {
     value.idents
+  }
+}
+
+impl From<LeftIdentReference> for HashSet<WriteTopLevelVar> {
+  fn from(value: LeftIdentReference) -> Self {
+    value
+      .idents
+      .into_iter()
+      .map(|id| WriteTopLevelVar {
+        ident: id,
+        fields: None,
+      })
+      .collect()
   }
 }
 
@@ -247,11 +260,17 @@ impl<'a> Visit for SideEffectsAnalyzer<'a> {
       farmfe_core::swc_ecma_ast::PropOrSpread::Spread(s) => s.visit_with(self),
       farmfe_core::swc_ecma_ast::PropOrSpread::Prop(prop) => match &**prop {
         farmfe_core::swc_ecma_ast::Prop::Shorthand(ident) => {
-          if self.in_top_level || ident.ctxt.outer() == self.top_level_mark {
+          if self.in_top_level
+            || ident.ctxt.outer() == self.top_level_mark
+            || ident.ctxt.outer() == self.unresolved_mark
+          {
             self
               .side_effects
               .merge_side_effects(StatementSideEffects::ReadTopLevelVar(HashSet::from_iter([
-                ident.to_id().into(),
+                ReadTopLevelVar {
+                  ident: ident.to_id().into(),
+                  is_global_var: ident.ctxt.outer() == self.unresolved_mark,
+                },
               ])));
           }
         }
@@ -324,8 +343,14 @@ impl<'a> Visit for SideEffectsAnalyzer<'a> {
             }
           } else if self.in_call && ident.ctxt.outer() == self.unresolved_mark {
             StatementSideEffects::WriteOrCallGlobalVar
-          } else if self.in_top_level || ident.ctxt.outer() == self.top_level_mark {
-            StatementSideEffects::ReadTopLevelVar(HashSet::from_iter([ident.to_id().into()]))
+          } else if self.in_top_level
+            || ident.ctxt.outer() == self.top_level_mark
+            || ident.ctxt.outer() == self.unresolved_mark
+          {
+            StatementSideEffects::ReadTopLevelVar(HashSet::from_iter([ReadTopLevelVar {
+              ident: ident.to_id().into(),
+              is_global_var: ident.ctxt.outer() == self.unresolved_mark,
+            }]))
           } else {
             StatementSideEffects::NoSideEffects
           });

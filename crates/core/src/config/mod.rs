@@ -227,13 +227,7 @@ impl Default for ResolveConfig {
   fn default() -> Self {
     Self {
       alias: vec![],
-      main_fields: vec![
-        String::from("browser"),
-        String::from("module"),
-        String::from("main"),
-        String::from("jsnext:main"),
-        String::from("jsnext"),
-      ],
+      main_fields: vec![],
       main_files: vec![String::from("index")],
       extensions: vec![
         String::from("tsx"),

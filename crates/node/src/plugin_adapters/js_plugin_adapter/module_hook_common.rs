@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use farmfe_core::{
-  config::config_regex::ConfigRegex,
+  config::{config_regex::ConfigRegex, custom::get_config_output_ascii_only},
   context::CompilationContext,
   error::{CompilationError, Result},
   module::{
@@ -11,15 +11,15 @@ use farmfe_core::{
   serde::{Deserialize, Serialize},
   swc_common::{comments::SingleThreadedComments, Globals, SourceMap},
   swc_css_ast::Stylesheet,
-  swc_ecma_ast::{EsVersion, Module as SwcModule},
+  swc_ecma_ast::Module as SwcModule,
   swc_ecma_parser::{EsSyntax, Syntax},
 };
 use farmfe_toolkit::{
   css::{codegen_css_stylesheet, parse_css_stylesheet, ParseCssModuleResult},
   html::{codegen_html_document, parse_html_document},
   script::{
-    codegen_module, parse_module, swc_try_with::resolve_module_mark, CodeGenCommentsConfig,
-    ParseScriptModuleResult,
+    codegen_module, create_codegen_config, parse_module, swc_try_with::resolve_module_mark,
+    CodeGenCommentsConfig, ParseScriptModuleResult,
   },
 };
 
@@ -101,14 +101,13 @@ pub fn js_codegen(
 
   let code = codegen_module(
     ast,
-    EsVersion::latest(),
     cm.clone(),
     if source_map_enabled {
       Some(&mut src_map)
     } else {
       None
     },
-    false,
+    create_codegen_config(context).with_minify(false),
     Some(CodeGenCommentsConfig {
       comments: &single_threaded_comments,
       config: &context.config.comments,
@@ -139,8 +138,12 @@ pub fn css_codegen(
   context: &Arc<CompilationContext>,
 ) -> Result<(String, Option<String>)> {
   let source_map_enabled = !context.config.sourcemap.is_false();
-  let (code, map) =
-    codegen_css_stylesheet(ast, false, if source_map_enabled { Some(cm) } else { None });
+  let (code, map) = codegen_css_stylesheet(
+    ast,
+    false,
+    if source_map_enabled { Some(cm) } else { None },
+    get_config_output_ascii_only(&context.config),
+  );
 
   Ok((code, map))
 }

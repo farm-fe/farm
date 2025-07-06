@@ -35,8 +35,8 @@ use farmfe_toolkit::{
   script::{
     codegen_module,
     concatenate_modules::{concatenate_modules_ast, ConcatenateModulesAstOptions},
-    module_type_from_id, parse_module, syntax_from_module_type, CodeGenCommentsConfig,
-    ParseScriptModuleResult,
+    create_codegen_config, module_type_from_id, parse_module, syntax_from_module_type,
+    CodeGenCommentsConfig, ParseScriptModuleResult,
   },
   sourcemap::{
     build_sourcemap, load_source_original_sourcemap, trace_module_sourcemap,
@@ -387,14 +387,13 @@ pub fn generate_code_and_sourcemap(
   let mut mappings = vec![];
   let code_bytes = codegen_module(
     &wrapped_resource_pot_ast,
-    context.config.script.target.clone(),
     merged_sourcemap.clone(),
     if sourcemap_enabled {
       Some(&mut mappings)
     } else {
       None
     },
-    context.config.minify.enabled(),
+    create_codegen_config(&context),
     Some(CodeGenCommentsConfig {
       comments: &merged_comments,
       // preserve all comments when generate module code.

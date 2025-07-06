@@ -149,7 +149,7 @@ function resolveFarmConfig(
     if (isEsm) {
       opts.farm.plugins.push({
         name: 'farm-plugin-electron:preload-scripts-runtime',
-        renderResourcePot: {
+        processRenderedResourcePot: {
           filters: {
             resourcePotTypes: ['js'],
             moduleIds: []
