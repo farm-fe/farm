@@ -163,7 +163,7 @@ export class Server extends httpServer {
       this.createHmrEngine();
 
       // init websocket server
-      this.createWebSocketServer();
+      await this.createWebSocketServer();
 
       // invalidate vite handler
       this.#invalidateVite();
@@ -355,6 +355,7 @@ export class Server extends httpServer {
     }
 
     this.ws = new WsServer(this);
+    await this.ws.createWebSocketServer();
   }
 
   /**

@@ -487,6 +487,11 @@ pub fn find_idents_can_not_be_mangled(
       if meta.module_system != ModuleSystem::EsModule {
         for dep_id in module_graph.dependencies_ids(&module.id) {
           let dep_module = module_graph.module(&dep_id).unwrap();
+
+          if !dep_module.module_type.is_script() {
+            continue;
+          }
+
           let dep_meta = dep_module.meta.as_script();
 
           dep_meta.export_ident_map.iter().for_each(|(_, ident)| {

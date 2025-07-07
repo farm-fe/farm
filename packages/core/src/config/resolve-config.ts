@@ -29,14 +29,6 @@ export function createDefaultConfig(options: DefaultOptionsType): UserConfig {
           : ['!^(\\./|\\.\\./|[A-Za-z]:\\\\|/).*']),
         '^@farmfe/core$'
       ],
-      partialBundling: {
-        enforceResources: [
-          {
-            name: fileName,
-            test: ['.+']
-          }
-        ]
-      },
       sourcemap: false,
       treeShaking: false,
       minify: false,

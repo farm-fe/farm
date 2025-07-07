@@ -116,7 +116,6 @@ export class WsServer {
   constructor(private readonly devServer: FarmDevServer) {
     this.logger = devServer.logger ?? new Logger();
     this.serverConfig = devServer.config.server;
-    this.createWebSocketServer();
   }
 
   /**
