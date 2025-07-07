@@ -178,8 +178,8 @@ test('Js Plugin Execution - full', async () => {
       },
       finalizeResources: {
         executor: async (params) => {
+          expect(params.config).toBeTruthy();
           expect({
-            config: params.config,
             resourcesMap: Object.fromEntries(
               Object.entries(params.resourcesMap).map(([k, v]) => [
                 k,

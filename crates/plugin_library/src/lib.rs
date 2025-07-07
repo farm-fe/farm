@@ -36,7 +36,7 @@ use farmfe_toolkit::{
       EXPORT_NAMESPACE,
     },
     create_export_namespace_ident, set_module_system_for_module_meta,
-    swc_try_with::try_with,
+    swc_try_with::{try_with, ResetSpanVisitMut},
   },
   swc_ecma_visit::VisitMutWith,
 };
@@ -244,8 +244,11 @@ impl Plugin for FarmPluginLibrary {
     module_graph.entries.remove(&runtime_helper_id);
 
     if let Some(helper_module) = module_graph.module(&runtime_helper_id) {
+      let mut helper_ast = helper_module.meta.as_script().ast.clone();
+      // reset span for helper ast
+      helper_ast.visit_mut_with(&mut ResetSpanVisitMut);
       let mut module_helper_ast = self.runtime_module_helper_ast.lock();
-      *module_helper_ast = Some(helper_module.meta.as_script().ast.clone());
+      *module_helper_ast = Some(helper_ast);
     }
 
     // Note that we update ResolveKind to Import here instead of in finalize_module because

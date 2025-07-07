@@ -10,6 +10,14 @@ use crate::common::{
   AssertCompilerResultConfig,
 };
 
+fn normalize_path(path: &str) -> String {
+  if cfg!(windows) {
+    path.replace('\\', "/").into()
+  } else {
+    path.to_string()
+  }
+}
+
 #[allow(dead_code)]
 fn test(file_path_buf: PathBuf, crate_path_buf: PathBuf) {
   use common::{format_output_name, get_dir_config_files, try_merge_config_file};
@@ -29,7 +37,7 @@ fn test(file_path_buf: PathBuf, crate_path_buf: PathBuf) {
   ];
   let is_cjs = test_cases_that_need_real_runtime
     .iter()
-    .any(|i| cwd.to_string_lossy().contains(i));
+    .any(|i| normalize_path(&cwd.to_string_lossy()).contains(i));
 
   for (name, config_entry) in files {
     let compiler = create_compiler_with_args(
