@@ -10,6 +10,7 @@ import {
   mapTargetEnvValue,
   normalizePath
 } from '../../utils/share.js';
+import { CUSTOM_KEYS } from '../constants.js';
 import { ResolvedCompilation } from '../types.js';
 
 export function normalizeOutput(
@@ -22,7 +23,14 @@ export function normalizeOutput(
   }
 
   if (!config.output.targetEnv) {
-    config.output.targetEnv = 'browser';
+    // set target env to library if all inputs are script
+    const scriptSuffixes = ['.js', '.ts', '.jsx', '.tsx'];
+    const isScript =
+      config?.input &&
+      Object.values(config?.input).every(([_, value]) =>
+        scriptSuffixes.some((suffix) => value.endsWith(suffix))
+      );
+    config.output.targetEnv = isScript ? 'library' : 'browser';
   }
 
   if (isProduction) {
@@ -37,6 +45,11 @@ export function normalizeOutput(
   if (config.output.clean === undefined) {
     config.output.clean = true;
   }
+
+  config.custom = {
+    ...(config.custom || {}),
+    [CUSTOM_KEYS.output_ascii_only]: `${!!config.output.asciiOnly}`
+  };
 
   // only set default polyfill in production
   if (isProduction) {

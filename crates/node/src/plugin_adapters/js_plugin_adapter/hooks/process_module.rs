@@ -1,21 +1,9 @@
 use std::sync::Arc;
 
 use farmfe_core::{
-  config::config_regex::ConfigRegex,
-  context::CompilationContext,
-  error::{CompilationError, Result},
-  module::{ModuleId, ModuleMetaData, ModuleType},
-  plugin::PluginProcessModuleHookParam,
-  serde::{Deserialize, Serialize},
-  swc_common::comments::SingleThreadedComments,
-  swc_ecma_ast::EsVersion,
-  swc_ecma_parser::{EsSyntax, Syntax},
+  context::CompilationContext, error::Result, plugin::PluginProcessModuleHookParam,
 };
-use farmfe_toolkit::{
-  css::{codegen_css_stylesheet, parse_css_stylesheet, ParseCssModuleResult},
-  html::{codegen_html_document, parse_html_document},
-  script::{codegen_module, parse_module, CodeGenCommentsConfig, ParseScriptModuleResult},
-};
+
 use napi::{bindgen_prelude::FromNapiValue, NapiRaw};
 
 use crate::{
@@ -27,20 +15,18 @@ use crate::{
   plugin_adapters::js_plugin_adapter::thread_safe_js_plugin_hook::ThreadSafeJsPluginHook,
 };
 
-pub type JsPluginProcessModuleHookFilters = JsModuleHookFilters;
-pub type PluginProcessModuleHookFilters = ModuleHookFilters;
 pub type PluginProcessModuleHookResult = ModuleHookResult;
 pub type CompatiblePluginProcessModuleHookParams = ModuleHookParams;
 
 pub struct JsPluginProcessModuleHook {
   tsfn: ThreadSafeJsPluginHook,
-  filters: PluginProcessModuleHookFilters,
+  pub(crate) filters: ModuleHookFilters,
 }
 
 impl JsPluginProcessModuleHook {
   new_js_plugin_hook!(
-    PluginProcessModuleHookFilters,
-    JsPluginProcessModuleHookFilters,
+    ModuleHookFilters,
+    JsModuleHookFilters,
     CompatiblePluginProcessModuleHookParams,
     PluginProcessModuleHookResult
   );
@@ -51,7 +37,7 @@ impl JsPluginProcessModuleHook {
     ctx: Arc<CompilationContext>,
   ) -> Result<Option<()>> {
     if module_matches_filters(param.module_id, param.module_type, &self.filters) {
-      let Some(result) =
+      let Some(content) =
         format_module_metadata_to_code(param.meta, param.module_id, param.source_map_chain, &ctx)?
       else {
         return Ok(None);
@@ -63,7 +49,9 @@ impl JsPluginProcessModuleHook {
           CompatiblePluginProcessModuleHookParams {
             module_id: param.module_id.clone(),
             module_type: param.module_type.clone(),
-            content: result,
+            content,
+            source_map_chain: param.source_map_chain.clone(),
+            resolved_deps: None,
           },
           ctx.clone(),
           None,
@@ -76,8 +64,7 @@ impl JsPluginProcessModuleHook {
         param.module_id,
         param.module_type,
         param.meta,
-        Arc::new(result.content),
-        result.source_map,
+        result,
         param.source_map_chain,
         &ctx,
       )?;

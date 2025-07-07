@@ -9,6 +9,7 @@ import {
   resolveCore
 } from './utils.js';
 
+import { FarmCliOptions, UserConfig } from '@farmfe/core';
 import type {
   CleanOptions,
   CliBuildOptions,
@@ -72,7 +73,7 @@ cli
     ) => {
       const resolveOptions = resolveCommandOptions(options);
 
-      const defaultOptions = {
+      const defaultOptions: FarmCliOptions = {
         root,
         server: resolveOptions,
         clearScreen: options.clearScreen,
@@ -93,6 +94,12 @@ cli
           treeShaking: options.treeShaking
         }
       };
+
+      if (options.base) {
+        defaultOptions.compilation.output = {
+          publicPath: options.base
+        };
+      }
 
       const { start } = await resolveCore();
 
@@ -151,7 +158,7 @@ cli
   .option('--strictPort', `[boolean] exit if specified port is already in use`)
   .action(
     async (root: string, options: CliPreviewOptions & GlobalCliOptions) => {
-      const defaultOptions = {
+      const defaultOptions: FarmCliOptions & UserConfig = {
         root,
         mode: options.mode,
         server: {
@@ -171,6 +178,12 @@ cli
           }
         }
       };
+
+      if (options.base) {
+        defaultOptions.compilation.output = {
+          publicPath: options.base
+        };
+      }
 
       const { preview } = await resolveCore();
 

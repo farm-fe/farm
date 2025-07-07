@@ -18,6 +18,7 @@ pub const CUSTOM_CONFIG_EXTERNAL_RECORD: &str = "external.record";
 pub const CUSTOM_CONFIG_RESOLVE_DEDUPE: &str = "resolve.dedupe";
 pub const CUSTOM_CONFIG_CSS_MODULES_LOCAL_CONVERSION: &str = "css.modules.locals_conversion";
 pub const CUSTOM_CONFIG_ASSETS_MODE: &str = "assets.mode";
+pub const CUSTOM_OUTPUT_ASCII_ONLY: &str = "output.ascii_only";
 
 pub fn get_config_runtime_isolate(context: &Arc<CompilationContext>) -> bool {
   if let Some(val) = context.config.custom.get(CUSTOM_CONFIG_RUNTIME_ISOLATE) {
@@ -64,6 +65,14 @@ pub fn get_config_css_modules_local_conversion(config: &Config) -> NameConversio
 
 pub fn get_config_assets_mode(config: &Config) -> Option<AssetFormatMode> {
   get_field_or_default_from_custom(config, CUSTOM_CONFIG_ASSETS_MODE)
+}
+
+pub fn get_config_output_ascii_only(config: &Config) -> bool {
+  if let Some(val) = config.custom.get(CUSTOM_OUTPUT_ASCII_ONLY) {
+    val == "true"
+  } else {
+    false
+  }
 }
 
 fn get_field_or_default_from_custom<T: Default + DeserializeOwned>(

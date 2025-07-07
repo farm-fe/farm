@@ -37,26 +37,19 @@ test('Js Plugin Execution - augmentResourceHash', async () => {
     '',
     [
       {
-        name: 'test-augmentResourceHash',
+        name: 'test-augmentResourcePotHash',
         priority: 1000,
-        augmentResourceHash: {
+        augmentResourcePotHash: {
           filters: {
             moduleIds: ['^index.ts\\?foo=bar$'],
             resourcePotTypes: ['js']
           },
           executor: async (resourcePotInfo) => {
             console.log(resourcePotInfo);
-            // originalLength maybe 51 or 52, it's 52 on windows and 51 on linux because of line ending \r\n or \n
-            // we normalize it to 51 to make the test pass on both platforms
-            if (
-              resourcePotInfo.modules['index.ts?foo=bar'].originalLength == 52
-            ) {
-              resourcePotInfo.modules['index.ts?foo=bar'].originalLength = 51;
-            }
 
             expect(resourcePotInfo).matchSnapshot();
 
-            calledHooks.push('augmentResourceHash');
+            calledHooks.push('augmentResourcePotHash');
             return 'augmented-hash';
           }
         },
@@ -81,5 +74,5 @@ test('Js Plugin Execution - augmentResourceHash', async () => {
 
   await compiler.compile();
 
-  expect(calledHooks).toEqual(['augmentResourceHash', 'finalizeResources']);
+  expect(calledHooks).toEqual(['augmentResourcePotHash', 'finalizeResources']);
 });

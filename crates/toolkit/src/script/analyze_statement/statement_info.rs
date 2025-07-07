@@ -1,18 +1,32 @@
 use crate::swc_ecma_visit::VisitWith;
 use farmfe_core::module::meta_data::script::statement::{
-  ExportInfo, ExportSpecifierInfo, ImportInfo, ImportSpecifierInfo, StatementId, SwcId,
+  ExportInfo, ExportSpecifierInfo, ImportInfo, ImportSpecifierInfo, Statement, StatementId, SwcId,
 };
-use farmfe_core::swc_ecma_ast::{self, ModuleExportName, ModuleItem, VarDeclOrExpr};
+use farmfe_core::swc_ecma_ast::{self, Module, ModuleExportName, ModuleItem, VarDeclOrExpr};
 use farmfe_core::HashSet;
 use swc_ecma_utils::contains_top_level_await;
 
 use crate::script::idents_collector::DefinedIdentsCollector;
 
+#[derive(Debug)]
 pub struct AnalyzedStatementInfo {
+  pub id: StatementId,
   pub import_info: Option<ImportInfo>,
   pub export_info: Option<ExportInfo>,
   pub defined_idents: HashSet<SwcId>,
   pub top_level_await: bool,
+}
+
+impl Into<Statement> for AnalyzedStatementInfo {
+  fn into(self) -> Statement {
+    Statement::new(
+      self.id,
+      self.export_info,
+      self.import_info,
+      self.defined_idents,
+      self.top_level_await,
+    )
+  }
 }
 
 pub fn analyze_statement_info(id: &StatementId, stmt: &ModuleItem) -> AnalyzedStatementInfo {
@@ -229,6 +243,7 @@ pub fn analyze_statement_info(id: &StatementId, stmt: &ModuleItem) -> AnalyzedSt
   };
 
   AnalyzedStatementInfo {
+    id: *id,
     import_info,
     export_info,
     defined_idents: defined_idents.into_iter().map(|i| i.into()).collect(),
@@ -236,7 +251,7 @@ pub fn analyze_statement_info(id: &StatementId, stmt: &ModuleItem) -> AnalyzedSt
   }
 }
 
-fn get_defined_idents_from_var_decl(var_decl: &swc_ecma_ast::VarDecl) -> HashSet<SwcId> {
+pub fn get_defined_idents_from_var_decl(var_decl: &swc_ecma_ast::VarDecl) -> HashSet<SwcId> {
   let mut defined_idents = HashSet::default();
 
   for decl in &var_decl.decls {
@@ -249,6 +264,17 @@ fn get_defined_idents_from_var_decl(var_decl: &swc_ecma_ast::VarDecl) -> HashSet
   }
 
   defined_idents
+}
+
+pub fn analyze_statements(ast: &Module) -> Vec<Statement> {
+  let mut statements = vec![];
+
+  for (id, item) in ast.body.iter().enumerate() {
+    let analyzed_statement_info = analyze_statement_info(&id, item);
+    statements.push(analyzed_statement_info.into());
+  }
+
+  statements
 }
 
 #[cfg(test)]

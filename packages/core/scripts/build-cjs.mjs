@@ -1,21 +1,18 @@
-import path from 'path';
-// import { copyFile, readdir } from 'fs/promises';
+import path from "path";
+import { readFile, writeFile } from "fs/promises";
 
-import { build } from '../dist/index.js';
+import { build } from "../dist/index.js";
 
 await build({
-  configPath: path.join(process.cwd(), 'farm.config.ts')
+  configPath: path.join(process.cwd(), "farm.config.ts"),
 });
 
-// if (!process.env.FARM_PUBLISH) {
-//   // copy artifacts
-//   const files = await readdir(path.join(process.cwd(), 'binding'));
-//   const nodeFiles = files.filter((file) => file.endsWith('.node'));
+// replace local binary
+const cjsFilePath = path.join(process.cwd(), "dist", "cjs", "index.cjs");
+const cjsFileContent = await readFile(cjsFilePath, "utf8");
 
-//   for (const file of nodeFiles) {
-//     await copyFile(
-//       path.join(process.cwd(), 'binding', file),
-//       path.join(process.cwd(), 'cjs', file)
-//     );
-//   }
-// }
+const content = cjsFileContent
+  .replaceAll(/\.\/(farm\..+\.node)/g, "../../binding/$1")
+  .replaceAll(/'(farm\..+\.node)'/g, "'../../binding/$1'");
+
+await writeFile(cjsFilePath, content);

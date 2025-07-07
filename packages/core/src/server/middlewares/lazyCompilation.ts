@@ -13,8 +13,9 @@ import {
 import { send } from '../send.js';
 
 import type Connect from 'connect';
+import { getValidPublicPath } from '../../config/normalize-config/normalize-output.js';
 
-const DEFAULT_LAZY_COMPILATION_PATH = '/__lazy_compile';
+const DEFAULT_LAZY_COMPILATION_PATH = '__lazy_compile';
 
 export function lazyCompilationMiddleware(
   app: Server
@@ -22,9 +23,15 @@ export function lazyCompilationMiddleware(
   return async function handleLazyCompilationMiddleware(req, res, next) {
     const { config, compiler } = app;
 
-    if (!req.url.startsWith(DEFAULT_LAZY_COMPILATION_PATH)) {
+    const publicPath = getValidPublicPath(
+      compiler.config.compilation?.output?.publicPath
+    );
+    const lazyCompilationPath = `${publicPath || '/'}${DEFAULT_LAZY_COMPILATION_PATH}`;
+
+    if (!req.url.startsWith(lazyCompilationPath)) {
       return await next();
     }
+
     const parsedUrl = parseUrl(req.url, true);
     const paths = (parsedUrl.query.paths as string).split(',');
 

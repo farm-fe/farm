@@ -7,6 +7,8 @@ use farmfe_core::{
 };
 use farmfe_plugin_resolve::resolver::{ResolveOptions, Resolver};
 use farmfe_testing_helpers::fixture;
+mod common;
+use common::with_initial_main_fields;
 
 #[test]
 fn resolve_relative_specifier_without_extension() {
@@ -21,7 +23,7 @@ fn resolve_relative_specifier_without_extension() {
         cwd.clone(),
         &ResolveKind::Entry(String::new()),
         &ResolveOptions::default(),
-        &Arc::new(CompilationContext::default()),
+        &Arc::new(with_initial_main_fields(CompilationContext::default())),
       );
       assert!(resolved.is_some());
       let resolved = resolved.unwrap();
@@ -46,7 +48,7 @@ fn resolve_relative_specifier_with_extension() {
         cwd.clone(),
         &ResolveKind::Entry(String::new()),
         &ResolveOptions::default(),
-        &Arc::new(CompilationContext::default()),
+        &Arc::new(with_initial_main_fields(CompilationContext::default())),
       );
       assert!(resolved.is_none());
 
@@ -55,7 +57,7 @@ fn resolve_relative_specifier_with_extension() {
         cwd.clone(),
         &ResolveKind::Entry(String::new()),
         &ResolveOptions::default(),
-        &Arc::new(CompilationContext::default()),
+        &Arc::new(with_initial_main_fields(CompilationContext::default())),
       );
       let resolved = resolved.unwrap();
       assert_eq!(
@@ -79,7 +81,7 @@ fn resolve_node_modules_normal() {
         cwd.clone(),
         &ResolveKind::Import,
         &ResolveOptions::default(),
-        &Arc::new(CompilationContext::default()),
+        &Arc::new(with_initial_main_fields(CompilationContext::default())),
       );
       assert!(resolved.is_some());
       let resolved = resolved.unwrap();
@@ -101,7 +103,7 @@ fn resolve_node_modules_normal() {
         cwd.clone(),
         &ResolveKind::Import,
         &ResolveOptions::default(),
-        &Arc::new(CompilationContext::default()),
+        &Arc::new(with_initial_main_fields(CompilationContext::default())),
       );
       assert!(resolved.is_some());
       let resolved = resolved.unwrap();
@@ -123,7 +125,7 @@ fn resolve_node_modules_normal() {
         cwd.clone(),
         &ResolveKind::Import,
         &ResolveOptions::default(),
-        &Arc::new(CompilationContext::default()),
+        &Arc::new(with_initial_main_fields(CompilationContext::default())),
       );
       assert!(resolved.is_some());
       let resolved = resolved.unwrap();
@@ -146,7 +148,7 @@ fn resolve_node_modules_normal() {
         cwd.clone(),
         &ResolveKind::Import,
         &ResolveOptions::default(),
-        &Arc::new(CompilationContext::default()),
+        &Arc::new(with_initial_main_fields(CompilationContext::default())),
       );
       assert!(resolved.is_some());
       let resolved = resolved.unwrap();
@@ -169,7 +171,7 @@ fn resolve_node_modules_normal() {
         cwd.clone(),
         &ResolveKind::Import,
         &ResolveOptions::default(),
-        &Arc::new(CompilationContext::default()),
+        &Arc::new(with_initial_main_fields(CompilationContext::default())),
       );
       assert!(resolved.is_some());
       let resolved = resolved.unwrap();
@@ -306,6 +308,84 @@ fn resolve_alias() {
 }
 
 #[test]
+fn resolve_extensions() {
+  fixture("tests/fixtures/resolve-extensions/index.ts", |file, _| {
+    let cwd = file.parent().unwrap().to_path_buf();
+    let resolver = Resolver::new();
+    let context = Arc::new(
+      CompilationContext::new(
+        Config {
+          resolve: Box::new(ResolveConfig {
+            extensions: vec![".ts".to_string(), ".vue".to_string(), ".json".to_string()],
+            ..Default::default()
+          }),
+          ..Default::default()
+        },
+        vec![],
+      )
+      .unwrap(),
+    );
+
+    let resolved = resolver.resolve(
+      "./utils/index",
+      cwd.clone(),
+      &ResolveKind::Import,
+      &ResolveOptions::default(),
+      &context,
+    );
+    assert!(resolved.is_some());
+    let resolved = resolved.unwrap();
+
+    assert_eq!(
+      resolved.resolved_path,
+      cwd
+        .join("utils")
+        .join("index.ts")
+        .to_string_lossy()
+        .to_string()
+    );
+
+    let resolved = resolver.resolve(
+      "./utils/base",
+      cwd.clone(),
+      &ResolveKind::Import,
+      &ResolveOptions::default(),
+      &context,
+    );
+    assert!(resolved.is_some());
+    let resolved = resolved.unwrap();
+
+    assert_eq!(
+      resolved.resolved_path,
+      cwd
+        .join("utils")
+        .join("base.vue")
+        .to_string_lossy()
+        .to_string()
+    );
+
+    let resolved = resolver.resolve(
+      "./utils/index.json",
+      cwd.clone(),
+      &ResolveKind::Import,
+      &ResolveOptions::default(),
+      &context,
+    );
+    assert!(resolved.is_some());
+    let resolved = resolved.unwrap();
+
+    assert_eq!(
+      resolved.resolved_path,
+      cwd
+        .join("utils")
+        .join("index.json")
+        .to_string_lossy()
+        .to_string()
+    );
+  });
+}
+
+#[test]
 fn resolve_dot() {
   fixture!("tests/fixtures/resolve-dot/index.ts", |file, _| {
     let cwd = file.parent().unwrap().to_path_buf();
@@ -316,7 +396,7 @@ fn resolve_dot() {
       cwd.clone(),
       &ResolveKind::Import,
       &ResolveOptions::default(),
-      &Arc::new(CompilationContext::default()),
+      &Arc::new(with_initial_main_fields(CompilationContext::default())),
     );
     assert!(resolved.is_some());
     let resolved = resolved.unwrap();
@@ -341,7 +421,7 @@ fn resolve_double_dot() {
         cwd.clone(),
         &ResolveKind::Import,
         &ResolveOptions::default(),
-        &Arc::new(CompilationContext::default()),
+        &Arc::new(with_initial_main_fields(CompilationContext::default())),
       );
       assert!(resolved.is_some());
       let resolved = resolved.unwrap();
@@ -372,7 +452,7 @@ fn resolve_absolute_specifier() {
         cwd.clone(),
         &ResolveKind::Import,
         &ResolveOptions::default(),
-        &Arc::new(CompilationContext::default()),
+        &Arc::new(with_initial_main_fields(CompilationContext::default())),
       );
       assert!(resolved.is_some());
       let resolved = resolved.unwrap();
@@ -384,7 +464,7 @@ fn resolve_absolute_specifier() {
         cwd.clone(),
         &ResolveKind::Import,
         &ResolveOptions::default(),
-        &Arc::new(CompilationContext::default()),
+        &Arc::new(with_initial_main_fields(CompilationContext::default())),
       );
 
       assert!(resolved.is_some());
@@ -415,7 +495,7 @@ fn resolve_package_dir() {
         cwd.clone(),
         &ResolveKind::Import,
         &ResolveOptions::default(),
-        &Arc::new(CompilationContext::default()),
+        &Arc::new(with_initial_main_fields(CompilationContext::default())),
       );
       assert!(resolved.is_some());
 
@@ -439,7 +519,7 @@ fn resolve_package_end_with_js() {
         cwd.clone(),
         &ResolveKind::Import,
         &ResolveOptions::default(),
-        &Arc::new(CompilationContext::default()),
+        &Arc::new(with_initial_main_fields(CompilationContext::default())),
       );
       assert!(resolved.is_some());
 
@@ -472,7 +552,7 @@ fn resolve_package_subpath() {
         cwd.clone(),
         &ResolveKind::Import,
         &ResolveOptions::default(),
-        &Arc::new(CompilationContext::default()),
+        &Arc::new(with_initial_main_fields(CompilationContext::default())),
       );
       assert!(resolved.is_some());
 
@@ -488,6 +568,98 @@ fn resolve_package_subpath() {
           .to_string_lossy()
           .to_string()
       );
+    }
+  );
+}
+
+#[test]
+fn resolve_package_by_resolve_kind() {
+  fixture!(
+    "tests/fixtures/resolve-node-modules/resolve-kind/index.ts",
+    |file, _| {
+      let cwd = file.parent().unwrap().to_path_buf();
+
+      let (node_context, browser_context) = {
+        let mut node_context = CompilationContext::default();
+        node_context.config.output.target_env = farmfe_core::config::TargetEnv::Node;
+        let mut browser_context = CompilationContext::default();
+        browser_context.config.output.target_env = farmfe_core::config::TargetEnv::Browser;
+
+        (Arc::new(node_context), Arc::new(browser_context))
+      };
+
+      // when main_fields is not specified, the default mainFields are:
+      // 1. resolve import on node, first resolve "module"
+      // 2. resolve require on node, first resolve "main"
+      // 3. resolve import/require on browser, resolve by [DEFAULT_MAIN_FIELDS]
+      // options
+      for (kind, context) in [
+        (
+          ResolveKind::Import,
+          vec![("esm.js", &node_context), ("esm.js", &browser_context)],
+        ),
+        (
+          ResolveKind::Require,
+          vec![("cjs.js", &node_context), ("esm.js", &browser_context)],
+        ),
+      ] {
+        // default mainFields
+        {
+          for (file_name, context) in context {
+            let resolver = Resolver::new();
+            let resolved = resolver.resolve(
+              "pkg-a",
+              cwd.clone(),
+              &kind,
+              &ResolveOptions::default(),
+              context,
+            );
+
+            assert!(resolved.is_some());
+
+            let resolved = resolved.unwrap();
+
+            assert_eq!(
+              resolved.resolved_path,
+              cwd
+                .join("node_modules")
+                .join("pkg-a")
+                .join(file_name)
+                .to_string_lossy()
+                .to_string()
+            );
+          }
+        }
+
+        // specify mainFields
+        {
+          let resolver = Resolver::new();
+          let resolved = resolver.resolve(
+            "pkg-a",
+            cwd.clone(),
+            &kind,
+            &ResolveOptions::default(),
+            &Arc::new({
+              let mut context = CompilationContext::default();
+              context.config.resolve.main_fields = vec!["module".to_string(), "main".to_string()];
+              context
+            }),
+          );
+
+          assert!(resolved.is_some());
+
+          let resolved = resolved.unwrap();
+          assert_eq!(
+            resolved.resolved_path,
+            cwd
+              .join("node_modules")
+              .join("pkg-a")
+              .join("esm.js")
+              .to_string_lossy()
+              .to_string()
+          );
+        }
+      }
     }
   );
 }

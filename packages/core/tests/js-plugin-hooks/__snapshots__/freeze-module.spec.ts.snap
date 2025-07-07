@@ -1,0 +1,27 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Js Plugin Execution - freezeModule 1`] = `
+{
+  "content": "import Dep from './dep.js';
+console.log(Dep);
+export default 'freeze-module-return-value';
+",
+  "moduleId": "index.ts?foo=bar",
+  "moduleType": "js",
+  "resolvedDeps": [
+    [
+      "dep.ts",
+      [
+        {
+          "kind": "import",
+          "order": 0,
+          "source": "./dep.js",
+        },
+      ],
+    ],
+  ],
+  "sourceMapChain": [
+    "{"version":3,"sources":["index.ts_foo_bar"],"names":[],"mappings":"AAAA,OAAO,SAAS,WAAW;AAE3B,QAAQ,GAAG,CAAC;AAEZ,eAAe,6BAA6B"}",
+  ],
+}
+`;

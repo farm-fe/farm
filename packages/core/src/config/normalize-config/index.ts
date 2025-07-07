@@ -51,7 +51,7 @@ export async function normalizeUserCompilationConfig(
   resolvedUserConfig: ResolvedUserConfig,
   mode: CompilationMode = 'development'
 ): Promise<ResolvedCompilation> {
-  const { compilation, root } = resolvedUserConfig;
+  const { compilation, root = process.cwd() } = resolvedUserConfig;
 
   // resolve root path
   const resolvedRootPath = normalizePath(root);
@@ -110,7 +110,8 @@ export async function normalizeUserCompilationConfig(
     },
     resolvedCompilation?.define,
     // for node target, we should not define process.env.NODE_ENV
-    resolvedCompilation.output?.targetEnv === 'node'
+    resolvedCompilation.output?.targetEnv === 'node' ||
+      resolvedCompilation.output?.targetEnv === 'library'
       ? {}
       : Object.keys(resolvedUserConfig.env || {}).reduce<EnvResult>(
           (env, key) => {
@@ -311,12 +312,12 @@ export async function checkCompilationInputValue(
 ) {
   const { compilation } = userConfig;
   const targetEnv = compilation?.output?.targetEnv;
-  const inputValue = Object.values(compilation?.input).filter(Boolean);
+  const inputValue = Object.values(compilation?.input || {}).filter(Boolean);
   const isTargetNode = isNodeEnv(targetEnv);
   const defaultHtmlPath = './index.html';
   let inputIndexConfig: {
     index?: string;
-  } = { index: '' };
+  } = {};
   let errorMessage = '';
 
   // Check if input is specified
@@ -356,7 +357,7 @@ export async function checkCompilationInputValue(
 
     // If no index file is found, throw an error
     if (!inputIndexConfig.index) {
-      userConfig.logger.error(
+      throw new Error(
         `Build failed due to errors: Can not resolve ${
           isTargetNode ? 'index.js or index.ts' : 'index.html'
         }  from ${userConfig.root}. \n${errorMessage}`

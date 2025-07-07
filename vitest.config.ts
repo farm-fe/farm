@@ -11,6 +11,8 @@ export default defineConfig({
     deps: {
       interopDefault: false
     },
-    retry: 5
+    maxConcurrency: 1,
+    retry: 0,
+    cache: false
   }
 });

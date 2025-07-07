@@ -161,7 +161,7 @@ fn test_import_meta_glob() {
     )
     .unwrap();
 
-    let code = codegen_module(&ast, EsVersion::EsNext, cm, None, false, None).unwrap();
+    let code = codegen_module(&ast, cm, None, Default::default(), None).unwrap();
     let code = String::from_utf8(code).unwrap();
 
     let expected_file = file.with_extension("expected.js");

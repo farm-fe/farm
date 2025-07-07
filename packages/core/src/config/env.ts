@@ -64,7 +64,7 @@ export function getExistsEnvFiles(mode: string, envDir: string): string[] {
 export type CompilationMode = 'development' | 'production';
 
 export function setProcessEnv(mode: CompilationMode) {
-  process.env.NODE_ENV = mode;
+  process.env['NODE_ENV'] = mode;
 }
 
 export const isDisableCache = () => !!process.env.DISABLE_CACHE;

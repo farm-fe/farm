@@ -10,7 +10,11 @@ use farmfe_core::{
   HashSet,
 };
 use farmfe_toolkit::{
-  script::{idents_collector::UnresolvedIdentCollector, swc_try_with::try_with},
+  script::{
+    idents_collector::{AllDeclaredIdentsCollector, UnresolvedIdentCollector},
+    swc_try_with::try_with,
+  },
+  swc_atoms::Atom,
   swc_ecma_visit::VisitWith,
 };
 
@@ -41,5 +45,15 @@ pub fn analyze_top_level_idents(meta: &ScriptModuleMetaData) -> HashSet<SwcId> {
     .iter()
     .filter(|s| s.import_info.is_none())
     .flat_map(|s| s.defined_idents.clone())
+    .collect()
+}
+
+pub fn analyze_all_deeply_declared_idents(meta: &ScriptModuleMetaData) -> HashSet<Atom> {
+  let mut all_declared_idents_collector = AllDeclaredIdentsCollector::new();
+  meta.ast.visit_with(&mut all_declared_idents_collector);
+  all_declared_idents_collector
+    .all_declared_idents
+    .into_iter()
+    .map(|i| i.sym)
     .collect()
 }

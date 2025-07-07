@@ -9,5 +9,5 @@ export interface IOptions {
   exclude?: string[];
 }
 
-const binPath: string;
+declare const binPath: (options?:IOptions)=>[string, IOptions];
 export default binPath;

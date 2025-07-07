@@ -20,7 +20,7 @@ export function createDefaultConfig(options: DefaultOptionsType): UserConfig {
         entryFilename: '[entryName]',
         path: outputPath,
         format,
-        targetEnv: 'node'
+        targetEnv: 'library'
       },
       mode,
       external: [
@@ -29,14 +29,6 @@ export function createDefaultConfig(options: DefaultOptionsType): UserConfig {
           : ['!^(\\./|\\.\\./|[A-Za-z]:\\\\|/).*']),
         '^@farmfe/core$'
       ],
-      partialBundling: {
-        enforceResources: [
-          {
-            name: fileName,
-            test: ['.+']
-          }
-        ]
-      },
       sourcemap: false,
       treeShaking: false,
       minify: false,
@@ -87,7 +79,7 @@ export async function resolveUserConfig(
   resolvedUserConfig.env = {
     ...userEnv,
     NODE_ENV: userConfig.compilation.mode,
-    BASE_URL: userConfig.compilation.output.publicPath ?? '/',
+    BASE_URL: userConfig.compilation?.output?.publicPath ?? '/',
     mode: userConfig.mode,
     DEV: userConfig.compilation.mode === ENV_DEVELOPMENT,
     PROD: userConfig.compilation.mode === ENV_PRODUCTION

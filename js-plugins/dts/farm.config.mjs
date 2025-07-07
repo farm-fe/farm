@@ -4,26 +4,18 @@
 export default {
   compilation: {
     input: {
-      index: './src/index.ts'
+      index: "./src/index.ts",
     },
     output: {
-      path: 'build',
-      entryFilename: '[entryName].cjs',
-      targetEnv: 'node',
-      format: 'cjs'
+      path: "build",
+      entryFilename: "[entryName].cjs",
+      targetEnv: "library",
+      format: "cjs",
     },
-    external: ['typescript', 'fast-glob', 'ts-morph', 'fs-extra'],
-    partialBundling: {
-      enforceResources: [
-        {
-          name: 'index.js',
-          test: ['.+']
-        }
-      ]
-    },
+    external: ["typescript", "fast-glob", "ts-morph", "fs-extra"],
     minify: false,
     sourcemap: false,
     persistentCache: false,
-    presetEnv: false
-  }
+    presetEnv: false,
+  },
 };

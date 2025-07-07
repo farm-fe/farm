@@ -8,7 +8,7 @@ import { HmrOptions } from '../config/index.js';
 import type { JsUpdateResult } from '../types/binding.js';
 import { convertErrorMessage } from '../utils/error.js';
 import { bold, cyan, green } from '../utils/index.js';
-import { WebSocketClient } from './ws.js';
+import { Server as FarmDevServer } from './index.js';
 
 export class HmrEngine {
   private _updateQueue: string[] = [];
@@ -16,7 +16,7 @@ export class HmrEngine {
   private _onUpdates: ((result: JsUpdateResult) => void)[];
 
   private _lastModifiedTimestamp: Map<string, string>;
-  constructor(private readonly app: any) {
+  constructor(private readonly devServer: FarmDevServer) {
     this._lastModifiedTimestamp = new Map();
   }
 
@@ -37,17 +37,17 @@ export class HmrEngine {
     if (queue.length === 0) {
       return;
     }
-    const logger = this.app.logger;
+    const logger = this.devServer.logger;
     let updatedFilesStr = queue
       .map((item) => {
         if (isAbsolute(item)) {
-          return relative(this.app.compiler.config.root, item);
+          return relative(this.devServer.compiler.config.root, item);
         } else {
-          const resolvedPath = this.app.compiler.transformModulePath(
-            this.app.compiler.config.root,
+          const resolvedPath = this.devServer.compiler.transformModulePath(
+            this.devServer.compiler.config.root,
             item
           );
-          return relative(this.app.compiler.config.root, resolvedPath);
+          return relative(this.devServer.compiler.config.root, resolvedPath);
         }
       })
       .join(', ');
@@ -58,19 +58,19 @@ export class HmrEngine {
 
     // try {
     // we must add callback before update
-    this.app.compiler.onUpdateFinish(async () => {
+    this.devServer.compiler.onUpdateFinish(async () => {
       // if there are more updates, recompile again
       if (this._updateQueue.length > 0) {
         await this.recompileAndSendResult();
       }
-      if (this.app.config?.server.writeToDisk) {
-        this.app.compiler.writeResourcesToDisk();
+      if (this.devServer.config?.server.writeToDisk) {
+        this.devServer.compiler.writeResourcesToDisk();
       }
     });
 
     const start = performance.now();
 
-    const result = await this.app.compiler.update(queue);
+    const result = await this.devServer.compiler.update(queue);
 
     logger.info(
       `${bold(cyan(updatedFilesStr))} updated in ${bold(green(logger.formatTime(performance.now() - start)))}`
@@ -116,7 +116,7 @@ export class HmrEngine {
 
     this.callUpdates(result);
 
-    this.app.ws.wss.clients.forEach((client: WebSocketClient) => {
+    this.devServer.ws.wss.clients.forEach((client) => {
       client.send(`
         {
           type: 'farm-update',
@@ -126,8 +126,8 @@ export class HmrEngine {
     });
     // TODO optimize this part
     // } catch (err) {
-    // checkClearScreen(this.app.compiler.config.config);
-    // this.app.logger.error(convertErrorMessage(err));
+    // checkClearScreen(this.devServer.compiler.config.config);
+    // this.devServer.logger.error(convertErrorMessage(err));
 
     // }
   };
@@ -136,7 +136,7 @@ export class HmrEngine {
     const paths = Array.isArray(absPath) ? absPath : [absPath];
     for (const path of paths) {
       if (
-        this.app.compiler.hasModule(path) &&
+        this.devServer.compiler.hasModule(path) &&
         !this._updateQueue.includes(path)
       ) {
         if (fse.existsSync(path)) {
@@ -153,7 +153,7 @@ export class HmrEngine {
       }
     }
 
-    if (!this.app.compiler.compiling && this._updateQueue.length > 0) {
+    if (!this.devServer.compiler.compiling && this._updateQueue.length > 0) {
       try {
         await this.recompileAndSendResult();
       } catch (e) {
@@ -162,19 +162,21 @@ export class HmrEngine {
           message: serialization
         })}`;
 
-        this.app.ws.wss.clients.forEach((client: WebSocketClient) => {
+        this.devServer.ws.wss.clients.forEach((client) => {
           // @ts-ignore
           // client.rawSend(`
           client.send(`
             {
               type: 'error',
               err: ${errorStr},
-              overlay: ${(this.app.config.server.hmr as HmrOptions).overlay}
+              overlay: ${(this.devServer.config.server.hmr as HmrOptions).overlay}
             }
           `);
         });
 
-        this.app.logger.error(convertErrorMessage(e), true);
+        this.devServer.logger.error(convertErrorMessage(e), {
+          exit: true
+        });
         // throw new Error(`hmr update failed: ${e.stack}`);
       }
     }

@@ -12,10 +12,10 @@ use farmfe_core::{
   swc_ecma_ast::{
     ArrowExpr, AssignExpr, AssignOp, AssignTarget, BindingIdent, BlockStmt, BlockStmtOrExpr,
     CallExpr, Callee, Class, ClassDecl, ClassExpr, Decl, ExportAll, ExportDecl, ExportDefaultDecl,
-    ExportDefaultExpr, Expr, ExprOrSpread, ExprStmt, FnDecl, FnExpr, Function, Ident, IdentName,
-    ImportDecl, ImportSpecifier, KeyValueProp, Lit, MemberExpr, MemberProp, Module as SwcModule,
-    ModuleDecl, ModuleExportName, ModuleItem, NamedExport, Pat, Prop, ReturnStmt,
-    SimpleAssignTarget, Stmt, Str, VarDecl, VarDeclKind, VarDeclarator,
+    ExportDefaultExpr, Expr, ExprOrSpread, ExprStmt, FnDecl, FnExpr, Function, Id, Ident,
+    IdentName, ImportDecl, ImportSpecifier, KeyValueProp, Lit, MemberExpr, MemberProp,
+    Module as SwcModule, ModuleDecl, ModuleExportName, ModuleItem, NamedExport, ObjectPatProp, Pat,
+    Prop, ReturnStmt, SimpleAssignTarget, Stmt, Str, VarDecl, VarDeclKind, VarDeclarator,
   },
   HashMap,
 };
@@ -185,8 +185,10 @@ struct ExportModuleItem {
   export_items: Vec<ModuleItem>,
 }
 
+#[derive(Default)]
 pub struct TransformModuleDeclsOptions {
   pub is_target_legacy: bool,
+  pub rename_cjs_global_idents: bool,
 }
 
 /// Transform import statement to cjs require/exports. Farm doesn't use swc commonjs transformer because it's output is too large.
@@ -339,7 +341,22 @@ pub fn transform_module_decls<F: RuntimeCalleeAllocator>(
         }
       }
 
-      ModuleItem::Stmt(stmt) => items.push(ModuleItem::Stmt(stmt)),
+      ModuleItem::Stmt(stmt) => {
+        let mut item = ModuleItem::Stmt(stmt);
+
+        if options.rename_cjs_global_idents {
+          let mut visitor = CjsGlobalIdentsRenameVisitor::new();
+          item.visit_mut_with(&mut visitor);
+
+          // update import binding
+          for (ident, renamed) in visitor.renamed_map {
+            let expr = Expr::Ident(Ident::new(renamed.into(), DUMMY_SP, ident.1));
+            import_bindings_map.insert(ident.into(), expr);
+          }
+        }
+
+        items.push(item);
+      }
     }
   }
 
@@ -1162,6 +1179,90 @@ impl VisitMut for ImportBindingsHandler {
   }
 }
 
+const CJS_GLOBAL_IDENTS: [&'static str; 3] = ["require", "module", "exports"];
+
+struct CjsGlobalIdentsRenameVisitor {
+  renamed_map: HashMap<Id, String>,
+  counter_map: HashMap<Id, usize>,
+}
+
+impl CjsGlobalIdentsRenameVisitor {
+  fn new() -> Self {
+    Self {
+      renamed_map: HashMap::default(),
+      counter_map: HashMap::default(),
+    }
+  }
+}
+
+impl VisitMut for CjsGlobalIdentsRenameVisitor {
+  fn visit_mut_ident(&mut self, node: &mut Ident) {
+    let key = node.to_id();
+
+    if CJS_GLOBAL_IDENTS.contains(&node.sym.as_str()) {
+      node.sym = format!("_f_cjs_{}", node.sym.as_str()).into();
+    } else if let Some(counter) = self.counter_map.get(&key) {
+      node.sym = format!("_f_cjs_{}_{}", node.sym.as_str(), counter).into();
+    } else {
+      let counter = self.counter_map.entry(key.clone()).or_insert(0);
+      *counter += 1;
+    }
+
+    if key.0 != node.sym {
+      self.renamed_map.insert(key, node.sym.to_string());
+    }
+  }
+
+  fn visit_mut_pat(&mut self, pat: &mut Pat) {
+    match pat {
+      Pat::Ident(bi) => {
+        self.visit_mut_ident(&mut bi.id);
+      }
+      Pat::Array(array_pat) => {
+        for elem in array_pat.elems.iter_mut().flatten() {
+          self.visit_mut_pat(elem);
+        }
+      }
+      Pat::Rest(rest_pat) => {
+        self.visit_mut_pat(&mut rest_pat.arg);
+      }
+      Pat::Object(obj_pat) => {
+        for prop in &mut obj_pat.props {
+          match prop {
+            ObjectPatProp::KeyValue(kv_prop) => {
+              self.visit_mut_pat(&mut kv_prop.value);
+            }
+            ObjectPatProp::Assign(assign_prop) => {
+              self.visit_mut_ident(&mut assign_prop.key);
+            }
+            ObjectPatProp::Rest(rest_prop) => {
+              self.visit_mut_pat(&mut rest_prop.arg);
+            }
+          }
+        }
+      }
+      Pat::Assign(assign_pat) => {
+        assign_pat.left.visit_mut_with(self);
+      }
+      Pat::Invalid(_) => {}
+      Pat::Expr(_) => {}
+    }
+  }
+
+  fn visit_mut_module_item(&mut self, node: &mut ModuleItem) {
+    if let ModuleItem::Stmt(Stmt::Decl(decl)) = node {
+      match decl {
+        Decl::Class(class_decl) => self.visit_mut_ident(&mut class_decl.ident),
+        Decl::Fn(fn_decl) => self.visit_mut_ident(&mut fn_decl.ident),
+        Decl::Var(var_decl) => var_decl.decls.iter_mut().for_each(|decl| {
+          self.visit_mut_pat(&mut decl.name);
+        }),
+        _ => unreachable!(),
+      }
+    }
+  }
+}
+
 #[cfg(test)]
 mod tests {
   use std::sync::Arc;
@@ -1235,11 +1336,11 @@ export * from './e';
         &callee_allocator,
         TransformModuleDeclsOptions {
           is_target_legacy: true,
+          ..Default::default()
         },
       );
 
-      let code_bytes =
-        codegen_module(&mut ast, EsVersion::latest(), cm, None, false, None).unwrap();
+      let code_bytes = codegen_module(&mut ast, cm, None, Default::default(), None).unwrap();
       let code = String::from_utf8(code_bytes).unwrap();
 
       println!("{code}");
@@ -1338,11 +1439,11 @@ export const f = 1, h = 2;
         &callee_allocator,
         TransformModuleDeclsOptions {
           is_target_legacy: false,
+          ..Default::default()
         },
       );
 
-      let code_bytes =
-        codegen_module(&mut ast, EsVersion::latest(), cm, None, false, None).unwrap();
+      let code_bytes = codegen_module(&mut ast, cm, None, Default::default(), None).unwrap();
       let code = String::from_utf8(code_bytes).unwrap();
 
       println!("{code}");

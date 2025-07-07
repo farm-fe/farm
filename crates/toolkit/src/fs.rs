@@ -1,4 +1,7 @@
-use farmfe_core::error::{CompilationError, Result};
+use farmfe_core::{
+  error::{CompilationError, Result},
+  HashMap,
+};
 
 use crate::hash::sha256;
 
@@ -26,6 +29,7 @@ pub struct TransformOutputFileNameParams<'a> {
   pub name_hash: &'a str,
   pub bytes: &'a [u8],
   pub ext: &'a str,
+  pub special_placeholders: &'a HashMap<String, String>,
 }
 
 pub fn transform_output_filename(
@@ -35,10 +39,16 @@ pub fn transform_output_filename(
     name_hash,
     bytes,
     ext,
+    special_placeholders,
   }: TransformOutputFileNameParams,
 ) -> String {
   let mut res = filename_config;
   let mut name = name.to_string();
+
+  // special placeholder take precedence
+  for (key, value) in special_placeholders {
+    res = res.replace(key, value);
+  }
 
   if res.contains(CONTENT_HASH) {
     let content_hash = sha256(bytes, 8);

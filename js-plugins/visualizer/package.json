@@ -2,12 +2,12 @@
   "name": "@farmfe/js-plugin-visualizer",
   "version": "1.1.4",
   "main": "./build/cjs/index.cjs",
-  "types": "./build/cjs/index.d.ts",
+  "types": "./build/index.d.ts",
   "type": "module",
   "exports": {
     ".": {
       "import": "./build/esm/index.mjs",
-      "types": "./build/cjs/index.d.ts",
+      "types": "./build/index.d.ts",
       "require": "./build/cjs/index.cjs",
       "default": "./build/cjs/index.cjs"
     },
@@ -45,7 +45,7 @@
   },
   "scripts": {
     "start": "cd src/client && farm start",
-    "build": "pnpm build:plugin && cross-env FARM_FORMAT=esm farm build && pnpm build:client",
+    "build": "pnpm build:plugin && pnpm build:client",
     "build:plugin": "farm build",
     "build:client": "cd src/client && farm build",
     "preview": "cd src/client && farm preview",

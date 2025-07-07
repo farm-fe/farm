@@ -3,7 +3,7 @@ use std::sync::Arc;
 use farmfe_core::{
   context::CompilationContext,
   module::{
-    meta_data::script::{feature_flag::FeatureFlag, statement::Statement},
+    meta_data::script::feature_flag::FeatureFlag,
     module_graph::{ModuleGraph, ModuleGraphEdge, ModuleGraphEdgeDataItem},
     ModuleId,
   },
@@ -19,7 +19,7 @@ use farmfe_toolkit::{
   lazy_static::lazy_static,
   runtime::RuntimeFeatureGuardRemover,
   script::{
-    analyze_statement::{analyze_statement_info, AnalyzedStatementInfo},
+    analyze_statement::analyze_statements,
     swc_try_with::{resolve_module_mark, try_with},
   },
   swc_ecma_visit::VisitMutWith,
@@ -39,7 +39,7 @@ lazy_static! {
   ];
 }
 
-const MODULE_SYSTEM: &str = "moduleSystem";
+const MODULE_SYSTEM: &str = "__farm_internal_module_system__";
 const INIT_MODULE_SYSTEM: &str = "initModuleSystem";
 
 fn create_ident(name: &str, index: Option<usize>) -> Ident {
@@ -209,23 +209,7 @@ pub fn insert_runtime_modules(module_graph: &mut ModuleGraph, context: &Arc<Comp
     let (unresolved_mark, top_level_mark) = resolve_module_mark(ast, false, globals.value());
 
     // update meta.statements
-    let mut statements = vec![];
-
-    for (index, item) in ast.body.iter().enumerate() {
-      let AnalyzedStatementInfo {
-        export_info,
-        import_info,
-        defined_idents,
-        top_level_await,
-      } = analyze_statement_info(&index, item);
-      statements.push(Statement::new(
-        index,
-        export_info,
-        import_info,
-        defined_idents,
-        top_level_await,
-      ));
-    }
+    let statements = analyze_statements(&ast);
 
     entry_module.meta.as_script_mut().statements = statements;
     entry_module.meta.as_script_mut().top_level_mark = top_level_mark.as_u32();

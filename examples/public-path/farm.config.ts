@@ -22,7 +22,7 @@ export default defineConfig({
       }
     },
     persistentCache: false,
-    treeShaking: true,
+    // treeShaking: true,
     minify: false
   },
   server: {

@@ -3,6 +3,7 @@ use std::sync::Arc;
 
 use farmfe_core::{
   cache::cache_store::CacheStoreKey,
+  config::custom::get_config_output_ascii_only,
   context::CompilationContext,
   deserialize,
   enhanced_magic_string::collapse_sourcemap::{collapse_sourcemap_chain, CollapseSourcemapOptions},
@@ -117,6 +118,7 @@ pub fn transform_css_to_script_modules(
         } else {
           None
         },
+        get_config_output_ascii_only(&context.config),
       );
       let mut source_map_chain = m.source_map_chain.clone();
       drop(module_graph);

@@ -27,7 +27,7 @@
 
 ## 设置
 
-- Fock 并且 clone 仓库到本地。
+- Fork 并且 clone 仓库到本地。
 
 - 为你的 PR 创建一个新的分支。 `git checkout -b your-branch-name`。
 

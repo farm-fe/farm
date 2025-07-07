@@ -20,15 +20,15 @@
 
 
 //farm_internal_runtime_index.js:
- const moduleSystem = {};
+ const __farm_internal_module_system__ = {};
 function initModuleSystem() {
     console.log('dynamic-import.ts');
 }
 function initModuleSystem$1() {
     console.log('module-helper.ts');
 }
-initModuleSystem(moduleSystem);
-initModuleSystem$1(moduleSystem);
+initModuleSystem(__farm_internal_module_system__);
+initModuleSystem$1(__farm_internal_module_system__);
 
 
 //index-2faab555.js:

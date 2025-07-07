@@ -21,6 +21,50 @@
 - Updated dependencies [b8f7fc5]
 - Updated dependencies [ad09476]
   - @farmfe/core@2.0.0-nightly-20250410022118
+## 0.0.18
+
+### Patch Changes
+
+- Updated dependencies [6aa67812]
+  - @farmfe/core@1.7.9
+
+## 0.0.17
+
+### Patch Changes
+
+- Updated dependencies [27d30d79]
+  - @farmfe/core@1.7.8
+
+## 0.0.16
+
+### Patch Changes
+
+- Updated dependencies [d0f572df]
+- Updated dependencies [f19be2ef]
+  - @farmfe/core@1.7.7
+
+## 0.0.15
+
+### Patch Changes
+
+- Updated dependencies [83342ef0]
+- Updated dependencies [c7bcfa0f]
+  - @farmfe/core@1.7.6
+
+## 0.0.14
+
+### Patch Changes
+
+- Updated dependencies [722a1d53]
+  - @farmfe/core@1.7.5
+
+## 0.0.13
+
+### Patch Changes
+
+- Updated dependencies [2fceb540]
+  - @farmfe/core@1.7.4
+
 ## 0.0.12
 
 ### Patch Changes

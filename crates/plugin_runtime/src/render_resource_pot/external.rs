@@ -63,7 +63,7 @@ fn handle_node_external_modules(
       .collect::<String>();
     name = format!("__farm_external_module_{name}");
 
-    let import_str = if context.config.output.format == ModuleFormat::EsModule {
+    let import_str = if context.config.output.format.as_single() == ModuleFormat::EsModule {
       format!("import * as {name} from {external_module:?};")
     } else {
       format!("var {name} = require({external_module:?});")

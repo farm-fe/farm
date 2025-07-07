@@ -85,11 +85,13 @@ impl TracedUsedImportStatement {
                 for used_import_all_field in used_import_all_fields {
                   match used_import_all_field {
                     UsedImportAllFields::All => unreachable!(),
-                    UsedImportAllFields::Ident(field) => {
-                      used_stmt_idents.insert(UsedExportsIdent::SwcIdent(field));
-                    }
-                    UsedImportAllFields::LiteralComputed(field) => {
-                      used_stmt_idents.insert(UsedExportsIdent::SwcIdent(field));
+                    UsedImportAllFields::Ident(field)
+                    | UsedImportAllFields::LiteralComputed(field) => {
+                      if &field == "default" {
+                        used_stmt_idents.insert(UsedExportsIdent::Default);
+                      } else {
+                        used_stmt_idents.insert(UsedExportsIdent::SwcIdent(field));
+                      }
                     }
                   }
                 }
@@ -143,7 +145,7 @@ impl TracedUsedImportStatement {
         match specifier {
           ExportSpecifierInfo::Namespace(i) => {
             if used_defined_idents.contains(&UsedStatementIdent::SwcIdent(i.clone())) {
-              used_stmt_idents.insert(UsedExportsIdent::ExportAll);
+              used_stmt_idents.insert(UsedExportsIdent::ImportAll);
             }
           }
           ExportSpecifierInfo::Named { local, .. } => {

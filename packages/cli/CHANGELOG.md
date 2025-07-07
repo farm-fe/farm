@@ -39,6 +39,11 @@
 
 - Updated dependencies [a82a5b2]
   - @farmfe/core@2.0.0-nightly-20241022014521
+## 1.0.5
+
+### Patch Changes
+
+- c7bcfa0f: Fix #2176 `--base` does not work
 
 ## 1.0.4
 

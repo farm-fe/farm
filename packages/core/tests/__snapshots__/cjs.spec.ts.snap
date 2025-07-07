@@ -2,16 +2,21 @@
 
 exports[`resolveUserConfig > resolveUserConfig 1`] = `
 {
+  "$__farm_regex:(global(This)?\\.)?process\\.env\\.BASE_URL": ""/"",
+  "$__farm_regex:(global(This)?\\.)?process\\.env\\.DEV": "true",
   "$__farm_regex:(global(This)?\\.)?process\\.env\\.NODE_ENV": ""development"",
+  "$__farm_regex:(global(This)?\\.)?process\\.env\\.PROD": "false",
   "$__farm_regex:(global(This)?\\.)?process\\.env\\.mode": ""development"",
-  "FARM_HMR_HOST": "true",
+  "FARM_HMR_HOST": ""localhost"",
   "FARM_HMR_PATH": ""/__hmr"",
   "FARM_HMR_PORT": "9000",
   "FARM_HMR_PROTOCOL": """",
   "FARM_PROCESS_ENV": {
+    "BASE_URL": "/",
+    "DEV": true,
     "NODE_ENV": "development",
+    "PROD": false,
     "mode": "development",
   },
-  "FARM_RUNTIME_TARGET_ENV": ""browser"",
 }
 `;

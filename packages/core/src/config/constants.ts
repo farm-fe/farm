@@ -21,7 +21,8 @@ export const CUSTOM_KEYS = {
   runtime_isolate: 'runtime.isolate',
   resolve_dedupe: 'resolve.dedupe',
   css_locals_conversion: 'css.modules.locals_conversion',
-  assets_mode: 'assets.mode'
+  assets_mode: 'assets.mode',
+  output_ascii_only: 'output.ascii_only'
 };
 
 export const FARM_RUST_PLUGIN_FUNCTION_ENTRY = 'func.js';
@@ -61,6 +62,7 @@ export const DEFAULT_DEV_SERVER_OPTIONS: NormalizedServerConfig = {
     name: 'localhost',
     host: undefined
   },
+  allowedHosts: [],
   host: 'localhost',
   proxy: undefined,
   hmr: DEFAULT_HMR_OPTIONS,

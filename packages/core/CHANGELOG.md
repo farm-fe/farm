@@ -38,6 +38,47 @@
 ### Major Changes
 
 - b327dd1: collect htmlFallbackMiddleware
+## 1.7.9
+
+### Patch Changes
+
+- 6aa67812: Support `output.asciiOnly`
+
+## 1.7.8
+
+### Patch Changes
+
+- 27d30d79: When targetEnv is set to browser, the default mainFields are used during resolution.
+
+## 1.7.7
+
+### Patch Changes
+
+- d0f572df: Fix incorrect publicPath when isolating farm runtime
+- f19be2ef: resolve extension compatible with . or direct file suffix
+
+## 1.7.6
+
+### Patch Changes
+
+- 83342ef0: Added origin validation to HMR server
+
+  BREAKING CHANGE: The HMR server now rejects all connections with unrecognized `Origin` headers. Clients need to update their configured ports and hosts if they want external apps to be able to connect to the HMR server.
+
+- c7bcfa0f: Fix #2188 lazy compilation should respect publicPath
+
+## 1.7.5
+
+### Patch Changes
+
+- 722a1d53: Fix tree shake issue when writing variables defined in external package
+
+## 1.7.4
+
+### Patch Changes
+
+- 2fceb540: resolver by resolve kind
+
 ## 1.7.3
 
 ### Patch Changes

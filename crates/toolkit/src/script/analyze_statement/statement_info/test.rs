@@ -155,12 +155,14 @@ fn export_default_expr() {
   let stmt = parse_module_item(r#"export default await a"#);
 
   let AnalyzedStatementInfo {
+    id,
     import_info,
     export_info,
     defined_idents,
     top_level_await,
   } = analyze_statement_info(&0, &stmt);
 
+  assert_eq!(id, 0);
   assert!(top_level_await);
   assert!(import_info.is_none());
   assert!(export_info.is_some());

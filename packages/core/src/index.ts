@@ -18,7 +18,6 @@ import {
   PersistentCacheBrand,
   bold,
   colors,
-  copyPublicDirectory,
   findNodeModulesRecursively,
   getShortName,
   green

@@ -15,6 +15,7 @@ export default defineConfig({
     },
     output: {
       path: './build',
+      asciiOnly: true,
     },
     sourcemap: false,
     persistentCache: false,

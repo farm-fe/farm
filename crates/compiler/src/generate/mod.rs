@@ -47,6 +47,11 @@ impl Compiler {
       .plugin_driver
       .optimize_module_graph(&mut module_graph, &self.context)?;
 
+    self
+      .context
+      .plugin_driver
+      .freeze_module_graph_meta(&mut module_graph, &self.context)?;
+
     Ok(())
   }
 

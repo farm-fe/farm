@@ -107,7 +107,7 @@ fn write_top_level_var() {
       super::StatementSideEffects::WriteTopLevelVar(var_name) => {
         let mut idents = var_name
           .into_iter()
-          .map(|i| format!("{}{:?}", i.sym, i.ctxt()))
+          .map(|i| format!("{}{:?}", i.ident.sym, i.ident.ctxt()))
           .collect::<Vec<_>>();
         idents.sort();
         idents
@@ -131,7 +131,7 @@ fn write_top_level_var() {
       super::StatementSideEffects::WriteTopLevelVar(var_name) => {
         let mut idents = var_name
           .into_iter()
-          .map(|i| format!("{}{:?}", i.sym, i.ctxt()))
+          .map(|i| format!("{}{:?}", i.ident.sym, i.ident.ctxt()))
           .collect::<Vec<_>>();
         idents.sort();
         idents
