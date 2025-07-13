@@ -49,8 +49,8 @@ use rkyv::Deserialize;
 use source_replacer::SourceReplacer;
 
 use crate::adapter::adapter_trait::{
-  CodegenContext, CreateResourcePotMetadataContext, CssModuleReference, CssModulesContext,
-  CssPluginAdapter, CssPluginProcesser, LightningCss, ParseOption,
+  CodegenContext, CreateModuleDataMetadataContext, CreateResourcePotMetadataContext,
+  CssModuleReference, CssModulesContext, CssPluginAdapter, CssPluginProcesser, LightningCss,
 };
 mod adapter;
 
@@ -261,7 +261,6 @@ impl Plugin for FarmPluginCss {
     if matches!(param.module_type, ModuleType::Css) {
       let enable_css_modules = context.config.css.modules.is_some();
 
-      println!("enable_css_modules: {} {}", enable_css_modules, self.is_path_match_css_modules(&param.module_id));
       // css modules
       if enable_css_modules && self.is_path_match_css_modules(&param.module_id) {
         let mut query = param.query.clone();
@@ -377,13 +376,17 @@ impl Plugin for FarmPluginCss {
   fn parse(
     &self,
     param: &PluginParseHookParam,
-    _context: &Arc<CompilationContext>,
+    context: &Arc<CompilationContext>,
     _hook_context: &PluginHookContext,
   ) -> farmfe_core::error::Result<Option<ModuleMetaData>> {
     if matches!(param.module_type, ModuleType::Css) {
       let meta = self
         .css_processer
-        .create_module_data(&param.module_id.to_string(), param.content.clone())?;
+        .create_module_data(CreateModuleDataMetadataContext {
+          module_id: &param.module_id,
+          content: &param.content,
+          context: &context,
+        })?;
 
       Ok(Some(meta))
     } else {

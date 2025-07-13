@@ -415,7 +415,7 @@ pub struct TestBuilderOptions {
   pub cwd: PathBuf,
   pub file: String,
   pub plugins: Vec<Arc<dyn Plugin>>,
-  pub config: Option<String>,
+  pub config: Option<Box<dyn Fn(Config) -> Config>>,
   pub entry_name: String,
   pub crate_path: PathBuf,
 }
@@ -442,8 +442,11 @@ impl TestBuilderOptions {
   }
 
   #[allow(dead_code)]
-  pub fn with_config(mut self, config: &str) -> Self {
-    self.config = Some(config.to_string());
+  pub fn with_config<F>(mut self, config: F) -> Self
+  where
+    F: (Fn(Config) -> Config) + 'static,
+  {
+    self.config = Some(Box::new(config));
     self
   }
 }
@@ -453,7 +456,7 @@ pub fn test_builder(options: TestBuilderOptions) {
   let TestBuilderOptions {
     cwd,
     plugins: _plugins,
-    config: _config,
+    config: with_config,
     entry_name,
     crate_path,
     file,
@@ -468,18 +471,12 @@ pub fn test_builder(options: TestBuilderOptions) {
       |mut config, mut plugins| {
         config.input = HashMap::from_iter([(entry_name.clone(), file.clone())]);
 
-        if let Some(_config) = _config.as_ref() {
-          let v1 = serde_json::to_value(config).expect("cannot convert config to value");
-          let v2 = serde_json::from_str(&_config).expect("cannot convert config to value");
-
-          let v = merge_config(v1, v2);
-
-          config = serde_json::from_value(v).expect("cannot convert value to config");
+        if let Some(ref with_config) = with_config {
+          config = with_config(config);
         }
 
         config = try_merge_config_file(config, config_entry);
 
-        println!("config2: {:#?}", config);
         for plugin in _plugins.clone() {
           plugins.push(plugin);
         }

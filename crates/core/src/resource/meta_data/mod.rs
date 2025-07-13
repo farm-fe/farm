@@ -55,7 +55,7 @@ impl ResourcePotMetaData {
   }
 
   /// get custom meta data by key
-  pub fn get_custom_mut<T: Cacheable + Default>(&mut self, key: &str) -> CustomMetaDataMapRefMut<T> {
+  pub fn get_custom_mut<T: Cacheable + Default>(&self, key: &str) -> CustomMetaDataMapRefMut<T> {
     if let Self::Custom(custom) = self {
       custom.get_mut(key).unwrap()
     } else {

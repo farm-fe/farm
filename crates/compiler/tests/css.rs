@@ -16,40 +16,16 @@ fn css_modules() {
     |file, crate_path| {
       test_builder(
         TestBuilderOptions::new(file.to_string_lossy().to_string(), crate_path).with_config(
-          r#"
-          {
-            "css": {
-              "modules": {
-                "indentName": "farm-[name]",
-                "paths": [".+"]
-              }
-            }
-          }
-          "#,
+          |mut config: Config| {
+            config.css.modules = Some(CssModulesConfig {
+              indent_name: "farm-[name]".into(),
+              paths: vec![".+".to_string()],
+            });
+
+            config
+          },
         ),
       );
-
-      // let cwd = file.parent().unwrap();
-      // println!("cwd: {cwd:?}");
-
-      // let entry_name = "index".to_string();
-
-      // let compiler = create_css_compiler(
-      //   HashMap::from_iter([(entry_name.clone(), "./index.ts".into())]),
-      //   cwd.to_path_buf(),
-      //   crate_path,
-      //   CssConfig {
-      //     modules: Some(CssModulesConfig {
-      //       indent_name: "farm-[name]".into(),
-      //       paths: vec![".+".to_string()],
-      //     }),
-      //     ..Default::default()
-      //   },
-      // );
-
-      // compiler.compile().unwrap();
-
-      // assert_compiler_result(&compiler, Some(&entry_name));
     }
   );
 }
@@ -57,25 +33,17 @@ fn css_modules() {
 #[test]
 fn css_prefixer() {
   fixture!("tests/fixtures/css/prefixer/**/*.ts", |file, crate_path| {
-    let cwd = file.parent().unwrap();
+    test_builder(
+      TestBuilderOptions::new(file.to_string_lossy().to_string(), crate_path).with_config(
+        |mut config| {
+          config.css.prefixer = Some(CssPrefixerConfig {
+            targets: farmfe_toolkit::swc_css_prefixer::options::Options::default().env,
+          });
 
-    let entry_name = "index".to_string();
-
-    let compiler = create_css_compiler(
-      HashMap::from_iter([(entry_name.clone(), "./index.ts".into())]),
-      cwd.to_path_buf(),
-      crate_path,
-      CssConfig {
-        prefixer: Some(CssPrefixerConfig {
-          targets: farmfe_toolkit::swc_css_prefixer::options::Options::default().env,
-        }),
-        ..Default::default()
-      },
+          config
+        },
+      ),
     );
-
-    compiler.compile().unwrap();
-
-    assert_compiler_result(&compiler, Some(&entry_name));
   });
 }
 
@@ -84,25 +52,17 @@ fn css_url_replacer() {
   fixture!(
     "tests/fixtures/css/url_replacer/**/*.ts",
     |file, crate_path| {
-      let cwd = file.parent().unwrap();
+      test_builder(
+        TestBuilderOptions::new(file.to_string_lossy().to_string(), crate_path).with_config(
+          |mut config| {
+            config.css.prefixer = Some(CssPrefixerConfig {
+              targets: farmfe_toolkit::swc_css_prefixer::options::Options::default().env,
+            });
 
-      let entry_name = "index".to_string();
-
-      let compiler = create_css_compiler(
-        HashMap::from_iter([(entry_name.clone(), "./index.ts".into())]),
-        cwd.to_path_buf(),
-        crate_path,
-        CssConfig {
-          prefixer: Some(CssPrefixerConfig {
-            targets: farmfe_toolkit::swc_css_prefixer::options::Options::default().env,
-          }),
-          ..Default::default()
-        },
+            config
+          },
+        ),
       );
-
-      compiler.compile().unwrap();
-
-      assert_compiler_result(&compiler, Some(&entry_name));
     }
   );
 }

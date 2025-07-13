@@ -7,16 +7,12 @@ initModuleSystem(moduleSystem);
 
 
 //index-2528a0d0.css:
- .foo ._8Z4fiW_hello {
-  color: red;
+ ._8Z4fiW_base {
+  font-size: 24px;
 }
 
-._8Z4fiW_bar {
+._8Z4fiW_action {
   color: red;
-}
-
-._8Z4fiW_main .description {
-  color: #00f;
 }
 
 
@@ -31,15 +27,14 @@ initModuleSystem(moduleSystem);
         farmRequire._m(exports);
         "";
         exports.default = {
-            "bar": `_8Z4fiW_bar`,
-            "hello": `_8Z4fiW_hello`,
-            "main": `_8Z4fiW_main`
+            "action": `_8Z4fiW_action`,
+            "base": `_8Z4fiW_action _8Z4fiW_base`
         };
     },
     "b5d64806": function(module, exports, farmRequire, farmDynamicRequire) {
         farmRequire._m(exports);
         var _f_index = farmRequire.i(farmRequire("95fe6ac5"));
-        console.log(farmRequire.f(_f_index));
+        console.log(farmRequire.f(_f_index).action);
     }
 });
 var __farm_ms__ = window['__farm_default_namespace__'].m;__farm_ms__.b();var __farm_entry__=__farm_ms__.r("b5d64806");

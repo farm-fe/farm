@@ -234,15 +234,6 @@ impl ContextMetaData {
 
   /// get swc source map from module id
   pub fn get_module_source_map(&self, module_id: &ModuleId) -> Arc<SourceMap> {
-    println!(
-      "hello world {:#?}",
-      self
-        .module_source_maps
-        .lock()
-        .keys()
-        .map(|v| v.to_string())
-        .collect::<Vec<String>>()
-    );
     self
       .module_source_maps
       .lock()

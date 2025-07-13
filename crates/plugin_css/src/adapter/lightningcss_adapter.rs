@@ -11,7 +11,8 @@ use farmfe_core::{
 };
 use lightningcss::{
   printer::PrinterOptions,
-  stylesheet::{StyleSheet, ToCssResult},
+  stylesheet::{MinifyOptions, StyleSheet, ToCssResult},
+  targets::{Features, Targets},
   visitor::Visit,
 };
 use parcel_sourcemap::SourceMap;
@@ -245,33 +246,6 @@ pub fn css_to_script(
     source_map: src.as_mut().map(|v| v.to_json(None).ok()).flatten(),
   })
 }
-// impl<'a> farmfe_core::serde::Deserialize<'a> for LightningCssParseResult<'a> {
-//   fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
-//   where
-//     D: farmfe_core::serde::Deserializer<'a>,
-//   {
-//     let mut map = HashMap::<String, value::Value>::deserialize(deserializer)?;
-//     // deserializer.deserialize_string(visitor)
-//     let ast = map.remove("ast").and_then(|v| {
-//       serde_json::from_str::<lightningcss::stylesheet::StyleSheet<'static, 'static>>(v.get()).ok()
-//     });
-//     let comments = map
-//       .remove("comments")
-//       .and_then(|v| {
-//         CommentsMetaData::deserialize_bytes(&CommentsMetaData::default(), v.get().as_bytes()).ok()
-//       })
-//       .and_then(|v| v.downcast::<CommentsMetaData>().ok())
-//       .unwrap_or_default();
-//     let source_map = map.remove("source_map").map(|v| v.get().to_string());
-
-//     Ok(LightningCssParseResult {
-//       ast,
-//       comments,
-//       source_map,
-//       source: Arc::new(String::new()),
-//     })
-//   }
-// }
 
 pub fn create_resource_pot_metadata(
   CreateResourcePotMetadataContext {
@@ -286,16 +260,6 @@ pub fn create_resource_pot_metadata(
 
   let rendered_modules = Mutex::new(Vec::with_capacity(modules.len()));
   modules.into_par_iter().try_for_each(|module| {
-    println!(
-      "{:#?}",
-      match &module.meta {
-        box farmfe_core::module::ModuleMetaData::Script(_) => "Script",
-        box farmfe_core::module::ModuleMetaData::Css(_) => "Css",
-        box farmfe_core::module::ModuleMetaData::Html(_) => "Html",
-        box farmfe_core::module::ModuleMetaData::Custom(_) => "Custom",
-      }
-    );
-
     let css_stylesheet = source_replace(SourceReplaceContext {
       module,
       module_graph,
@@ -317,11 +281,6 @@ pub fn create_resource_pot_metadata(
   rendered_modules.sort_by_key(|module| module_execution_order[&module.0]);
 
   let mut stylesheet: Option<StyleSheet> = None;
-
-  // let source_map = merge_css_sourcemap(&mut rendered_modules, context);
-  // context
-  //   .meta
-  //   .set_resource_pot_source_map(&resource_pot.id, source_map);
 
   let mut r = LightningCssParseResult {
     ast: None,
@@ -355,26 +314,54 @@ pub fn codegen_for_resource_pot(
     resource_pot,
   }: CodegenContext,
 ) -> Result<(String, Option<String>)> {
-  let parse_result = resource_pot
+  let mut parse_result = resource_pot
     .meta
-    .get_custom::<LightningCssParseResult>("lightning_css");
+    .get_custom_mut::<LightningCssParseResult>("lightning_css");
 
   let mut source_map = if context.config.sourcemap.enabled(resource_pot.immutable) {
     Some(SourceMap::new(""))
   } else {
     None
   };
-  let ToCssResult { code, .. } = parse_result
-    .ast
-    .as_ref()
-    .unwrap()
-    .to_css(PrinterOptions {
-      minify: context.config.minify.enabled(),
-      source_map: source_map.as_mut(),
-      targets: Default::default(),
-      ..Default::default()
-    })
-    .unwrap();
+
+  let mut targets = Targets::default();
+
+  let is_enable_minify = context.config.minify.enabled();
+  let is_css_prefix_enable = context.config.css.prefixer.is_some();
+
+  if is_css_prefix_enable {
+    targets.include = targets.include | Features::VendorPrefixes;
+  }
+
+  // TODO: prefix
+  // if let Some(v) = context
+  //   .config
+  //   .css
+  //   .prefixer
+  //   .as_ref()
+  //   .and_then(|v| v.targets.as_ref())
+  // {}
+
+  if is_css_prefix_enable || is_enable_minify {
+    parse_result
+      .ast
+      .as_mut()
+      .unwrap()
+      .minify(MinifyOptions {
+        targets: targets.clone(),
+        ..Default::default()
+      })
+      .unwrap();
+  }
+
+  let options = PrinterOptions {
+    minify: is_enable_minify,
+    source_map: source_map.as_mut(),
+    targets,
+    ..Default::default()
+  };
+
+  let ToCssResult { code, .. } = parse_result.ast.as_ref().unwrap().to_css(options).unwrap();
 
   Ok((
     code,

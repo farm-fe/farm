@@ -7,15 +7,19 @@ initModuleSystem(moduleSystem);
 
 
 //index-2528a0d0.css:
- .foo ._8Z4fiW_hello {
-  color: red;
+ ._8Z4fiW_base {
+  font-size: 20px;
 }
 
-._8Z4fiW_bar {
-  color: red;
+._8Z4fiW_hide {
+  display: none;
 }
 
-._8Z4fiW_main .description {
+._8Z4fiW_show {
+  display: block;
+}
+
+._8Z4fiW_hello {
   color: #00f;
 }
 
@@ -31,15 +35,16 @@ initModuleSystem(moduleSystem);
         farmRequire._m(exports);
         "";
         exports.default = {
-            "bar": `_8Z4fiW_bar`,
+            "base": `_8Z4fiW_base`,
             "hello": `_8Z4fiW_hello`,
-            "main": `_8Z4fiW_main`
+            "hide": `_8Z4fiW_hide`,
+            "show": `_8Z4fiW_show`
         };
     },
     "b5d64806": function(module, exports, farmRequire, farmDynamicRequire) {
         farmRequire._m(exports);
         var _f_index = farmRequire.i(farmRequire("95fe6ac5"));
-        console.log(farmRequire.f(_f_index));
+        console.log(farmRequire.f(_f_index).base);
     }
 });
 var __farm_ms__ = window['__farm_default_namespace__'].m;__farm_ms__.b();var __farm_entry__=__farm_ms__.r("b5d64806");
