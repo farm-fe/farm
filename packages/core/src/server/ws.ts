@@ -65,7 +65,6 @@ export default class WsServer implements IWebSocketServer {
     // Add localhost with configured port
     const urls = resolveServerUrls(this.httpServer, config);
     const localUrls = [...(urls.local || []), ...(urls.network || [])];
-    console.log(urls);
 
     for (const url of localUrls) {
       origins.push(url);
