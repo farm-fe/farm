@@ -6,6 +6,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.16](https://github.com/farm-fe/farm/compare/farmfe_plugin_resolve-v0.0.15...farmfe_plugin_resolve-v0.0.16) - 2025-07-15
+
+### Added
+
+- browser mode, resolve mainFiled without import kind ([#2197](https://github.com/farm-fe/farm/pull/2197))
+- resolver by resolve kind ([#2154](https://github.com/farm-fe/farm/pull/2154))
+
+### Fixed
+
+- resolve extension compatible with . or direct file suffix ([#2192](https://github.com/farm-fe/farm/pull/2192))
+- *(plugin_resolve)* duplicated querystring on external ([#2057](https://github.com/farm-fe/farm/pull/2057))
+
 ## [0.0.15](https://github.com/farm-fe/farm/compare/farmfe_plugin_resolve-v0.0.14...farmfe_plugin_resolve-v0.0.15) - 2025-01-09
 
 ### Other

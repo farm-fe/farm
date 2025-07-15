@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.16](https://github.com/farm-fe/farm/compare/farmfe_plugin_html-v0.0.15...farmfe_plugin_html-v0.0.16) - 2025-07-15
+
+### Fixed
+
+- incorrect publicPath when isolating farm runtime ([#2193](https://github.com/farm-fe/farm/pull/2193))
+
 ## [0.0.15](https://github.com/farm-fe/farm/compare/farmfe_plugin_html-v0.0.14...farmfe_plugin_html-v0.0.15) - 2025-01-09
 
 ### Other
