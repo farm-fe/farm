@@ -1,5 +1,11 @@
 # @farmfe-examples/tailwind-next
 
+## 0.0.20
+
+### Patch Changes
+
+- @farmfe/js-plugin-tailwindcss@0.0.19
+
 ## 0.0.19
 
 ### Patch Changes
