@@ -65,6 +65,7 @@ export default class WsServer implements IWebSocketServer {
     // Add localhost with configured port
     const urls = resolveServerUrls(this.httpServer, config);
     const localUrls = [...(urls.local || []), ...(urls.network || [])];
+    console.log(urls);
 
     for (const url of localUrls) {
       origins.push(url);
@@ -165,13 +166,9 @@ export default class WsServer implements IWebSocketServer {
   }
 
   private isHMRRequest(request: IncomingMessage): boolean {
-    const origin = request.headers['origin'];
-
     return (
       request.url === this.config.hmr.path &&
-      request.headers['sec-websocket-protocol'] === HMR_HEADER &&
-      (this.hmrOrigins.includes(origin) ||
-        this.config.allowedHosts?.includes(origin))
+      request.headers['sec-websocket-protocol'] === HMR_HEADER
     );
   }
 
