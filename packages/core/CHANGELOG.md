@@ -1,5 +1,11 @@
 # @farmfe/core
 
+## 1.7.10
+
+### Patch Changes
+
+- 606bf87a: fix: remove hmr origin validate
+
 ## 1.7.9
 
 ### Patch Changes
