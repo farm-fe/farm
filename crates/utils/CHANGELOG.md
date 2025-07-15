@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.7](https://github.com/farm-fe/farm/compare/farmfe_utils-v0.1.6...farmfe_utils-v0.1.7) - 2025-07-15
+
+### Fixed
+
+- handle Windows long path issue in base64_decode function ([#2182](https://github.com/farm-fe/farm/pull/2182))
+
 ## [0.1.6](https://github.com/farm-fe/farm/compare/farmfe_utils-v0.1.5...farmfe_utils-v0.1.6) - 2024-10-31
 
 ### Fixed
