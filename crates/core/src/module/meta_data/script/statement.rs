@@ -231,16 +231,16 @@ impl From<&str> for SwcId {
   }
 }
 
-impl Into<Ident> for SwcId {
-  fn into(self) -> Ident {
-    let ctxt = self.ctxt();
-    Ident::new(self.sym, DUMMY_SP, ctxt)
+impl From<SwcId> for Ident {
+  fn from(value: SwcId) -> Self {
+    let ctxt = value.ctxt();
+    Ident::new(value.sym, DUMMY_SP, ctxt)
   }
 }
 
-impl Into<ModuleExportName> for SwcId {
-  fn into(self) -> ModuleExportName {
-    ModuleExportName::Ident(self.into())
+impl From<SwcId> for ModuleExportName {
+  fn from(value: SwcId) -> Self {
+    ModuleExportName::Ident(value.into())
   }
 }
 
