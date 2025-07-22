@@ -108,6 +108,7 @@ pub fn render_resource_pots_and_generate_resources(
                 name_hash: &r.name_hash,
                 ext: &r.resource_type.to_ext(),
                 bytes: content_with_extra_content_hash,
+                special_placeholders: &r.special_placeholders,
               },
             );
           } else {
@@ -117,6 +118,7 @@ pub fn render_resource_pots_and_generate_resources(
               name_hash: &r.name_hash,
               ext: &r.resource_type.to_ext(),
               bytes: content_with_extra_content_hash,
+              special_placeholders: &r.special_placeholders,
             });
           }
         }
@@ -188,9 +190,7 @@ pub fn render_resource_pot_generate_resources(
   hook_context: &PluginHookContext,
   // chunk_resource_info: &mut Option<ResourcePotInfo>,
 ) -> Result<(PluginGenerateResourcesHookResult, Option<String>)> {
-  let mut augment_resource_hash = None;
-
-  {
+  let augment_resource_pot_hash = {
     #[cfg(feature = "profile")]
     let id = farmfe_utils::transform_string_to_static_str(format!(
       "Render resource pot {:?}",
@@ -211,12 +211,14 @@ pub fn render_resource_pot_generate_resources(
 
     resource_pot.meta = meta;
 
-    augment_resource_hash = context
+    context
       .plugin_driver
-      .augment_resource_hash(resource_pot, context)?;
+      .process_rendered_resource_pot(resource_pot, context)?;
 
-    // TODO augment resource hash
-  }
+    context
+      .plugin_driver
+      .augment_resource_pot_hash(resource_pot, context)?
+  };
 
   {
     #[cfg(feature = "profile")]
@@ -250,7 +252,7 @@ pub fn render_resource_pot_generate_resources(
           ty: resource_pot.resource_pot_type.clone(),
           source: None,
         })?,
-      augment_resource_hash,
+      augment_resource_pot_hash,
     ))
   }
 }

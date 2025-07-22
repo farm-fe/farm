@@ -1,4 +1,5 @@
 use farmfe_macro_cache_item::cache_item;
+use swc_common::DUMMY_SP;
 use swc_ecma_ast::{Id, Ident, ImportSpecifier, ModuleExportName};
 
 use crate::HashSet;
@@ -39,6 +40,50 @@ impl Statement {
     }
   }
 }
+/// ```js
+/// import * as ns from './xxx';
+///
+/// ns.a = 2; // Id = ns and field = a
+/// ```
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[cache_item]
+#[archive_attr(derive(Hash, Eq, PartialEq))]
+pub struct WriteTopLevelVar {
+  pub ident: SwcId,
+  pub fields: Option<Vec<UsedImportAllFields>>,
+}
+
+impl From<Id> for WriteTopLevelVar {
+  fn from(value: Id) -> Self {
+    Self {
+      ident: value.into(),
+      fields: None,
+    }
+  }
+}
+
+/// ```js
+/// const a = {};
+/// const p = a.prototype; // p is read top level value
+/// const p1 = window; // Id = window and is_global = true
+/// ```
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[cache_item]
+#[archive_attr(derive(Hash, Eq, PartialEq))]
+pub struct ReadTopLevelVar {
+  pub ident: SwcId,
+  pub is_global_var: bool,
+}
+
+impl From<Id> for ReadTopLevelVar {
+  fn from(value: Id) -> Self {
+    Self {
+      ident: value.into(),
+      is_global_var: false,
+    }
+  }
+}
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[cache_item]
@@ -48,16 +93,20 @@ pub enum StatementSideEffects {
   /// ```js
   /// a = 2, b = 3;
   /// a.prototype.b = 3;
-  /// a.set('c', 4);
+  ///
+  /// import * as ns from './xxx';
+  ///
+  /// ns.a = 2; // Id = ns and field = a
   /// ```
-  WriteTopLevelVar(HashSet<SwcId>),
+  WriteTopLevelVar(HashSet<WriteTopLevelVar>),
 
   /// Example:
   /// ```js
   /// const a = {};
   /// const p = a.prototype; // p is read top level value
+  /// const p1 = window; // Id = window and is_global = true
   /// ```
-  ReadTopLevelVar(HashSet<SwcId>),
+  ReadTopLevelVar(HashSet<ReadTopLevelVar>),
 
   /// Maybe modify global variable, it's always preserved, for example:
   /// ```js
@@ -83,6 +132,7 @@ pub enum StatementSideEffects {
   /// ```
   /// They may be classified in the future to improve the accuracy of tree shaking
   UnclassifiedSelfExecuted,
+
   /// The statement does not have side effects, for example:
   /// ```js
   /// const a = 2;
@@ -172,9 +222,39 @@ impl From<Ident> for SwcId {
   }
 }
 
+impl From<&str> for SwcId {
+  fn from(value: &str) -> Self {
+    Self {
+      sym: value.into(),
+      ctxt: swc_common::SyntaxContext::empty().as_u32(),
+    }
+  }
+}
+
+impl From<SwcId> for Ident {
+  fn from(value: SwcId) -> Self {
+    let ctxt = value.ctxt();
+    Ident::new(value.sym, DUMMY_SP, ctxt)
+  }
+}
+
+impl From<SwcId> for ModuleExportName {
+  fn from(value: SwcId) -> Self {
+    ModuleExportName::Ident(value.into())
+  }
+}
+
 impl SwcId {
+  pub fn new(sym: swc_atoms::Atom, ctxt: u32) -> Self {
+    Self { sym, ctxt }
+  }
+
   pub fn ctxt(&self) -> swc_common::SyntaxContext {
     swc_common::SyntaxContext::from_u32(self.ctxt)
+  }
+
+  pub fn clear_ctxt(&mut self) {
+    self.ctxt = swc_common::SyntaxContext::empty().as_u32();
   }
 }
 
@@ -258,4 +338,25 @@ impl ExportInfo {
       .iter()
       .any(|s| matches!(s, ExportSpecifierInfo::Default))
   }
+}
+
+#[derive(Debug, Default, Hash, PartialEq, Eq, Clone)]
+#[cache_item]
+#[archive_attr(derive(Hash, Eq, PartialEq))]
+pub enum UsedImportAllFields {
+  /// Used all fields of the import statement
+  #[default]
+  All,
+  /// example:
+  /// ```js
+  /// import * as a from 'a';
+  /// a.foo();
+  /// ```
+  Ident(String),
+  /// example:
+  /// ```js
+  /// import * as a from 'a';
+  /// a['foo']();
+  /// ```
+  LiteralComputed(String),
 }

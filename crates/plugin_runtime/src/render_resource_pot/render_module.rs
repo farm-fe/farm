@@ -6,10 +6,8 @@ use farmfe_core::{
     meta_data::script::CommentsMetaData, module_graph::ModuleGraph, ModuleId, ModuleSystem,
   },
   resource::meta_data::js::RenderModuleResult,
-  swc_common::{
-    comments::SingleThreadedComments, util::take::Take, Globals, Mark, SourceMap, SyntaxContext,
-  },
-  swc_ecma_ast::{ArrowExpr, BlockStmtOrExpr, EsVersion, Expr, ExprStmt, FnExpr, Ident},
+  swc_common::{comments::SingleThreadedComments, Globals, Mark, SourceMap},
+  swc_ecma_ast::{EsVersion, Expr, ExprStmt},
   HashMap,
 };
 
@@ -17,6 +15,7 @@ use farmfe_toolkit::{
   script::{
     module2cjs::{transform_module_decls, OriginalRuntimeCallee, TransformModuleDeclsOptions},
     swc_try_with::try_with,
+    wrap_farm_runtime,
   },
   swc_ecma_transforms::{
     fixer,
@@ -27,10 +26,8 @@ use farmfe_toolkit::{
 };
 
 use farmfe_core::{
-  config::{FARM_DYNAMIC_REQUIRE, FARM_MODULE, FARM_MODULE_EXPORT, FARM_REQUIRE},
-
   swc_common::DUMMY_SP,
-  swc_ecma_ast::{BindingIdent, BlockStmt, Function, Module as SwcModule, ModuleItem, Param, Stmt}, // swc_ecma_ast::Function
+  swc_ecma_ast::{Module as SwcModule, ModuleItem, Stmt}, // swc_ecma_ast::Function
 };
 
 use super::{
@@ -105,6 +102,7 @@ pub fn render_module(
         &OriginalRuntimeCallee { unresolved_mark },
         TransformModuleDeclsOptions {
           is_target_legacy: context.config.script.is_target_legacy(),
+          ..Default::default()
         },
       );
     }
@@ -130,10 +128,11 @@ pub fn render_module(
     }
     // swc code gen would emit a trailing `;` when is_target_legacy is false.
     // we can not deal with this situation for now, so we set is_target_legacy to true here, it will be fixed in the future.
-    let mut expr = wrap_function(
+    let mut expr = wrap_farm_runtime::wrap_function(
       cloned_module,
       is_async_module,
       context.config.script.target == EsVersion::Es5,
+      true,
       unresolved_mark,
     );
 
@@ -157,125 +156,4 @@ pub fn render_module(
     },
     external_modules,
   })
-}
-
-/// Wrap the module ast to follow Farm's commonjs-style module system.
-/// Note: this function won't render the esm to commonjs, if you want to render esm to commonjs, see [common_js].
-///
-/// For example:
-/// ```js
-/// const b = farmRequire('./b');
-/// console.log(b);
-/// exports.b = b;
-/// ```
-/// will be rendered to
-/// ```js
-/// function(module, exports, farmRequire) {
-///   const b = farmRequire('./b');
-///   console.log(b);
-///   exports.b = b;
-/// }
-/// ```
-fn wrap_function(
-  mut module: SwcModule,
-  is_async_module: bool,
-  is_target_legacy: bool,
-  unresolved_mark: Mark,
-) -> Expr {
-  let body = module.body.take();
-
-  let params = vec![
-    Param {
-      span: DUMMY_SP,
-      decorators: vec![],
-      pat: farmfe_core::swc_ecma_ast::Pat::Ident(BindingIdent {
-        id: Ident::new(
-          FARM_MODULE.into(),
-          DUMMY_SP,
-          SyntaxContext::empty().apply_mark(unresolved_mark),
-        ),
-        type_ann: None,
-      }),
-    },
-    Param {
-      span: DUMMY_SP,
-      decorators: vec![],
-      pat: farmfe_core::swc_ecma_ast::Pat::Ident(BindingIdent {
-        id: Ident::new(
-          FARM_MODULE_EXPORT.into(),
-          DUMMY_SP,
-          SyntaxContext::empty().apply_mark(unresolved_mark),
-        ),
-        type_ann: None,
-      }),
-    },
-    Param {
-      span: DUMMY_SP,
-      decorators: vec![],
-      pat: farmfe_core::swc_ecma_ast::Pat::Ident(BindingIdent {
-        id: Ident::new(
-          FARM_REQUIRE.into(),
-          DUMMY_SP,
-          SyntaxContext::empty().apply_mark(unresolved_mark),
-        ),
-        type_ann: None,
-      }),
-    },
-    Param {
-      span: DUMMY_SP,
-      decorators: vec![],
-      pat: farmfe_core::swc_ecma_ast::Pat::Ident(BindingIdent {
-        id: Ident::new(
-          FARM_DYNAMIC_REQUIRE.into(),
-          DUMMY_SP,
-          SyntaxContext::empty().apply_mark(unresolved_mark),
-        ),
-        type_ann: None,
-      }),
-    },
-  ];
-
-  let stmts = body
-    .into_iter()
-    .map(|body| match body {
-      ModuleItem::ModuleDecl(decl) => unreachable!("{:?}", decl),
-      ModuleItem::Stmt(stmt) => stmt,
-    })
-    .collect();
-
-  if !is_target_legacy {
-    Expr::Arrow(ArrowExpr {
-      span: DUMMY_SP,
-      params: params.into_iter().map(|p| p.pat).collect(),
-      body: Box::new(BlockStmtOrExpr::BlockStmt(BlockStmt {
-        span: DUMMY_SP,
-        stmts,
-        ctxt: SyntaxContext::empty(),
-      })),
-      is_async: is_async_module,
-      is_generator: false,
-      type_params: None,
-      return_type: None,
-      ctxt: SyntaxContext::empty(),
-    })
-  } else {
-    Expr::Fn(FnExpr {
-      ident: None,
-      function: Box::new(Function {
-        params,
-        decorators: vec![],
-        span: DUMMY_SP,
-        body: Some(BlockStmt {
-          span: DUMMY_SP,
-          stmts,
-          ctxt: SyntaxContext::empty(),
-        }),
-        is_generator: false,
-        is_async: is_async_module,
-        type_params: None,
-        return_type: None,
-        ctxt: SyntaxContext::empty(),
-      }),
-    })
-  }
 }

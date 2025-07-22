@@ -21,7 +21,4 @@ var dep_ts_namespace_farm_internal_ = {
 var importNamespace_ts_default = dep_ts_namespace_farm_internal_;
 const bundle2A = 'bundle2A';
 const bundle2B = 'bundle2B';
-export { bundle2B as bundle2B, bundle2A as bundle2A };
-export { dep_ts_namespace_farm_internal_ as ExportNamespace };
-export { dep_ts_namespace_farm_internal_ as ImportNamespace };
-export { a as a, b as b };
+export { dep_ts_namespace_farm_internal_ as ExportNamespace, dep_ts_namespace_farm_internal_ as ImportNamespace, a as a, b as b, bundle2A as bundle2A, bundle2B as bundle2B };

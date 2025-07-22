@@ -10,7 +10,8 @@ use farmfe_compiler::Compiler;
 use farmfe_core::{
   config::{
     bool_or_obj::BoolOrObj, config_regex::ConfigRegex, persistent_cache::PersistentCacheConfig,
-    preset_env::PresetEnvConfig, Config, CssConfig, Mode, RuntimeConfig, SourcemapConfig,
+    preset_env::PresetEnvConfig, Config, CssConfig, Mode, OutputConfig, RuntimeConfig,
+    SourcemapConfig,
   },
   plugin::Plugin,
   serde_json::{self, Value},
@@ -19,7 +20,7 @@ use farmfe_core::{
 use farmfe_testing_helpers::is_update_snapshot_from_env;
 use farmfe_toolkit::fs::read_file_utf8;
 
-pub fn generate_runtime(crate_path: PathBuf) -> Box<RuntimeConfig> {
+pub fn generate_runtime(crate_path: PathBuf, is_real_runtime: bool) -> Box<RuntimeConfig> {
   let swc_helpers_path = crate_path
     .join("tests")
     .join("fixtures")
@@ -27,13 +28,25 @@ pub fn generate_runtime(crate_path: PathBuf) -> Box<RuntimeConfig> {
     .join("swc_helpers")
     .to_string_lossy()
     .to_string();
-  let runtime_path = crate_path
-    .join("tests")
-    .join("fixtures")
-    .join("_internal")
-    .join("runtime")
-    .to_string_lossy()
-    .to_string();
+  let runtime_path = if is_real_runtime {
+    crate_path
+      .parent()
+      .unwrap()
+      .parent()
+      .unwrap()
+      .join("packages")
+      .join("runtime")
+      .to_string_lossy()
+      .to_string()
+  } else {
+    crate_path
+      .join("tests")
+      .join("fixtures")
+      .join("_internal")
+      .join("runtime")
+      .to_string_lossy()
+      .to_string()
+  };
 
   Box::new(RuntimeConfig {
     path: runtime_path,
@@ -54,7 +67,7 @@ pub fn create_css_compiler(
     Config {
       input,
       root: cwd.to_string_lossy().to_string(),
-      runtime: generate_runtime(crate_path),
+      runtime: generate_runtime(crate_path, false),
       output: Box::new(farmfe_core::config::OutputConfig {
         filename: "[resourceName].[ext]".to_string(),
         ..Default::default()
@@ -127,8 +140,11 @@ pub fn create_config(cwd: PathBuf, crate_path: PathBuf) -> Config {
   Config {
     input: HashMap::default(),
     root: cwd.to_string_lossy().to_string(),
-    runtime: generate_runtime(crate_path),
-    output: Default::default(),
+    runtime: generate_runtime(crate_path, false),
+    output: Box::new(OutputConfig {
+      show_file_size: false,
+      ..Default::default()
+    }),
     mode: Mode::Production,
     external: Default::default(),
     sourcemap: Box::new(SourcemapConfig::Bool(false)),
@@ -178,9 +194,10 @@ pub fn create_compiler(
     Config {
       input,
       root: cwd.to_string_lossy().to_string(),
-      runtime: generate_runtime(crate_path),
+      runtime: generate_runtime(crate_path, false),
       output: Box::new(farmfe_core::config::OutputConfig {
         filename: "[resourceName].[ext]".to_string(),
+        show_file_size: false,
         ..Default::default()
       }),
       mode: Mode::Production,
@@ -478,6 +495,10 @@ pub fn test_builder(options: TestBuilderOptions) {
         }
 
         config = try_merge_config_file(config, config_entry);
+
+        if config.output.target_env.is_library() {
+          config.runtime = generate_runtime(crate_path.clone(), true);
+        }
 
         for plugin in _plugins.clone() {
           plugins.push(plugin);

@@ -81,3 +81,5 @@ export function Welcome() {
     </div>
   );
 }
+
+export default Welcome;

@@ -42,7 +42,6 @@ import {
   staticMiddleware
 } from './middlewares/index.js';
 
-import type * as http from 'node:http';
 import type {
   Server as HttpBaseServer,
   ServerOptions as HttpsServerOptions
@@ -53,7 +52,6 @@ import type * as net from 'node:net';
 import { createCompiler } from '../compiler/index.js';
 import type {
   FarmCliOptions,
-  HmrOptions,
   NormalizedServerConfig,
   ResolvedUserConfig,
   UserConfig
@@ -69,43 +67,9 @@ export type HttpServer = HttpBaseServer | Http2SecureServer;
 
 type CompilerType = Compiler | undefined;
 
-export interface ServerOptions extends CommonServerOptions {
-  /**
-   * Configure HMR-specific options (port, host, path & protocol)
-   */
-  hmr?: HmrOptions | boolean;
-  /**
-   * Do not start the websocket connection.
-   */
-  ws?: false;
-  /**
-   * Create dev server to be used as a middleware in an existing server
-   * @default false
-   */
-  middlewareMode?:
-    | boolean
-    | {
-        /**
-         * Parent server instance to attach to
-         *
-         * This is needed to proxy WebSocket connections to the parent server.
-         */
-        server: http.Server;
-      };
-  appType?: 'spa' | 'mpa' | 'custom';
-  /**
-   * Origin for the generated asset URLs.
-   */
-  origin?: string;
-}
-
-type ServerConfig = CommonServerOptions & NormalizedServerConfig;
+export type ServerConfig = CommonServerOptions & NormalizedServerConfig;
 
 export const debugServer = createDebugger('farm:server');
-
-export function noop() {
-  // noop
-}
 
 /**
  * Represents a Farm development server.
@@ -199,7 +163,7 @@ export class Server extends httpServer {
       this.createHmrEngine();
 
       // init websocket server
-      this.createWebSocketServer();
+      await this.createWebSocketServer();
 
       // invalidate vite handler
       this.#invalidateVite();
@@ -391,6 +355,7 @@ export class Server extends httpServer {
     }
 
     this.ws = new WsServer(this);
+    await this.ws.createWebSocketServer();
   }
 
   /**

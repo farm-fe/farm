@@ -89,6 +89,11 @@
 
 - Updated dependencies [a82a5b2]
   - @farmfe/core@2.0.0-nightly-20241022014521
+## 2.13.1
+
+### Patch Changes
+
+- 36fea667: fix: resolve the relative path of projects
 
 ## 2.13.0
 

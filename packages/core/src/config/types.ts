@@ -114,6 +114,7 @@ export interface UserServerConfig {
    * @default ''
    */
   origin?: string;
+  allowedHosts?: string[];
   // http2?: boolean;
   /**
    * Configuration options for Hot Module Replacement (HMR),
@@ -265,11 +266,6 @@ export type NormalizedServerConfig = Required<
     hostname?: { name: string; host: string | undefined };
   }
 >;
-
-export interface NormalizedConfig {
-  compilationConfig: Config;
-  serverConfig?: NormalizedServerConfig;
-}
 
 type InternalConfig = Config['config'] extends undefined
   ? object

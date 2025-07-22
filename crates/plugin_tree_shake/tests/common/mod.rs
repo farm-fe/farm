@@ -2,10 +2,7 @@ use std::sync::Arc;
 
 use farmfe_core::{
   module::{
-    meta_data::script::{
-      statement::{Statement, SwcId},
-      ScriptModuleMetaData,
-    },
+    meta_data::script::{statement::SwcId, ScriptModuleMetaData},
     Module, ModuleMetaData,
   },
   swc_common::{comments::SingleThreadedComments, Globals, Mark, SourceMap, GLOBALS},
@@ -13,7 +10,7 @@ use farmfe_core::{
   swc_ecma_parser::Syntax,
 };
 use farmfe_toolkit::{
-  script::{analyze_statement::analyze_statement_info, ParseScriptModuleResult},
+  script::{analyze_statement::analyze_statements as create_statements, ParseScriptModuleResult},
   sourcemap::create_swc_source_map,
   swc_ecma_transforms::resolver,
   swc_ecma_visit::VisitMutWith,
@@ -59,23 +56,6 @@ pub fn parse_module(code: &str) -> (SwcModule, Arc<SourceMap>) {
   swc_module.visit_mut_with(&mut resolver(unresoled_mark, top_level_mark, false));
 
   (swc_module, cm)
-}
-
-pub fn create_statements(ast: &SwcModule) -> Vec<Statement> {
-  let mut statements = vec![];
-
-  for (i, item) in ast.body.iter().enumerate() {
-    let stmt = analyze_statement_info(&i, item);
-    statements.push(Statement::new(
-      i,
-      stmt.export_info,
-      stmt.import_info,
-      stmt.defined_idents,
-      stmt.top_level_await,
-    ));
-  }
-
-  statements
 }
 
 #[allow(dead_code)]

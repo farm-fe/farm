@@ -1,0 +1,1 @@
+export { dep3 } from '/external/dep3';

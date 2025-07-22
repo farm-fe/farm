@@ -17,11 +17,11 @@
   <meta http-equiv=X-UA-Compatible content="IE=edge">
   <meta name=viewport content="width=device-width, initial-scale=1.0">
   <title>Document</title>
-<script>window['__farm_default_namespace__'] = {};window['__farm_default_namespace__'] = {__FARM_TARGET_ENV__: 'browser'};</script><script>(function(){const moduleSystem = {};
+<script>window['__farm_default_namespace__'] = {};window['__farm_default_namespace__'] = {__FARM_TARGET_ENV__: 'browser'};</script><script>(function(){const __farm_internal_module_system__ = {};
 function initModuleSystem() {
     console.log('module-helper.ts');
 }
-initModuleSystem(moduleSystem);
+initModuleSystem(__farm_internal_module_system__);
 })();</script></head>
 <body>
   

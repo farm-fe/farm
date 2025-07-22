@@ -1,4 +1,5 @@
 use std::{
+  borrow::Cow,
   path::{Path, PathBuf},
   str::FromStr,
   sync::Arc,
@@ -14,11 +15,9 @@ use farmfe_core::{
   relative_path::RelativePath,
   serde_json::{from_str, Map, Value},
 };
-use farmfe_core::{
-  config::{AliasItem, StringOrRegex},
-  HashMap,
-};
+use farmfe_core::{config::StringOrRegex, HashMap};
 
+use farmfe_toolkit::lazy_static::lazy_static;
 use farmfe_toolkit::resolve::{follow_symlinks, load_package_json, package_json_loader::Options};
 use farmfe_utils::relative;
 
@@ -59,6 +58,16 @@ pub const NODE_MODULES: &str = "node_modules";
 const BROWSER_SUBPATH_EXTERNAL_ID: &str = "__FARM_BROWSER_SUBPATH_EXTERNAL__";
 const REGEX_PREFIX: &str = "$__farm_regex:";
 const HIGHEST_PRIORITY_FIELD: &str = "exports";
+
+lazy_static! {
+  pub static ref DEFAULT_MAIN_FIELDS: Vec<String> = vec![
+    "browser".to_string(),
+    "module".to_string(),
+    "main".to_string(),
+    "jsnext:main".to_string(),
+    "jsnext".to_string()
+  ];
+}
 
 impl Resolver {
   pub fn new() -> Self {
@@ -387,26 +396,27 @@ impl Resolver {
     options: &ResolveOptions,
     context: &Arc<CompilationContext>,
   ) -> Option<String> {
-    // TODO add a test that for directory imports like `import 'comps/button'` where comps/button is a dir
-    if file.exists() && file.is_file() {
-      Some(file.to_string_lossy().to_string())
-    } else {
-      let append_extension = |file: &PathBuf, ext: &str| {
-        let file_name = file.file_name().unwrap().to_string_lossy().to_string();
-        file.with_file_name(format!("{file_name}.{ext}"))
-      };
-      let extensions = if let Some(ext) = &options.dynamic_extensions {
-        ext
-      } else {
-        &context.config.resolve.extensions
-      };
-      let ext = extensions.iter().find(|&ext| {
-        let new_file = append_extension(file, ext);
-        new_file.exists() && new_file.is_file()
-      });
-
-      ext.map(|ext| append_extension(file, ext).to_string_lossy().to_string())
+    if file.is_file() {
+      return Some(file.to_string_lossy().to_string());
     }
+
+    let file_name = file.file_name()?.to_string_lossy();
+
+    let extensions = if let Some(ext) = &options.dynamic_extensions {
+      ext
+    } else {
+      &context.config.resolve.extensions
+    };
+
+    for ext in extensions {
+      let extension = format!(".{}", ext.strip_prefix('.').unwrap_or(ext));
+      let new_file = file.with_file_name(format!("{}{}", file_name, extension));
+      if new_file.is_file() {
+        return Some(new_file.to_string_lossy().to_string());
+      }
+    }
+
+    None
   }
 
   fn try_alias(
@@ -768,39 +778,56 @@ impl Resolver {
         .map(|exports_entries| exports_entries.get(0).unwrap().to_string())
       })
       .or_else(|| {
-        context
-          .config
-          .resolve
-          .main_fields
-          .iter()
-          .find_map(|main_field| {
-            if main_field == "browser" && !context.config.output.target_env.is_browser() {
-              return None;
-            }
-            raw_package_json_info
-              .get(main_field)
-              .and_then(|field_value| match field_value {
-                Value::Object(_) if main_field == "browser" => {
-                  get_field_value_from_package_json_info(&package_json_info, main_field).and_then(
-                    |browser| {
-                      if let Value::Object(browser) = browser {
-                        browser.get(".").and_then(|value| {
-                          if let Value::String(value) = value {
-                            Some(value.to_string())
-                          } else {
-                            None
-                          }
-                        })
-                      } else {
-                        None
-                      }
-                    },
-                  )
-                }
-                Value::String(str) => Some(str.to_string()),
-                _ => None,
-              })
-          })
+        let is_browser = context.config.output.target_env.is_browser();
+        let main_fields = &context.config.resolve.main_fields;
+        let main_fields = if is_browser || !main_fields.is_empty() {
+          if is_browser && main_fields.is_empty() {
+            Some(Cow::Owned(DEFAULT_MAIN_FIELDS.clone()))
+          } else {
+            Some(Cow::Borrowed(main_fields))
+          }
+        } else {
+          let main_fields_from_resolve_kind = match kind {
+            ResolveKind::Require => Some(vec!["main".to_string()]),
+            ResolveKind::Import => Some(vec!["module".to_string()]),
+            _ => None,
+          };
+
+          main_fields_from_resolve_kind
+            .map(|field| [field, DEFAULT_MAIN_FIELDS.clone()].concat())
+            .map(Cow::Owned)
+        }
+        .unwrap_or_else(|| Cow::Borrowed(&DEFAULT_MAIN_FIELDS));
+
+        main_fields.iter().find_map(|main_field| {
+          if main_field == "browser" && !is_browser {
+            return None;
+          }
+
+          raw_package_json_info
+            .get(main_field)
+            .and_then(|field_value| match field_value {
+              Value::Object(_) if main_field == "browser" => {
+                get_field_value_from_package_json_info(&package_json_info, main_field).and_then(
+                  |browser| {
+                    if let Value::Object(browser) = browser {
+                      browser.get(".").and_then(|value| {
+                        if let Value::String(value) = value {
+                          Some(value.to_string())
+                        } else {
+                          None
+                        }
+                      })
+                    } else {
+                      None
+                    }
+                  },
+                )
+              }
+              Value::String(str) => Some(str.to_string()),
+              _ => None,
+            })
+        })
       });
     if let Some(entry_point) = entry_point {
       let dir = package_json_info.dir();

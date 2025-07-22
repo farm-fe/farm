@@ -8,7 +8,7 @@ use farmfe_core::{
   HashMap, HashSet,
 };
 use farmfe_toolkit::script::concatenate_modules::{
-  concatenate_modules_ast, ConcatenateModulesAstResult,
+  concatenate_modules_ast, ConcatenateModulesAstOptions, ConcatenateModulesAstResult,
 };
 
 /// Note: Scope Hoisting is enabled only `config.concatenate_modules` is true. Otherwise, it A module is a [ScopeHoistedModuleGroup]
@@ -62,6 +62,7 @@ impl ScopeHoistedModuleGroup {
       &self.target_hoisted_module_id,
       &self.hoisted_module_ids,
       module_graph,
+      ConcatenateModulesAstOptions { check_esm: true },
       context,
     )
     .map_err(|e| CompilationError::GenericError(format!("Scope hoist failed: {}", e)))?;
@@ -129,27 +130,33 @@ pub fn build_scope_hoisted_module_groups(
       let dependents_hoisted_group_ids = dependents
         .into_iter()
         .map(|id| reverse_module_hoisted_group_map.get(&id).unwrap().clone())
+        .filter(|id| {
+          // if execution_order of dependents_hoisted_group_id is smaller than this module, means there is a cycle, skip it
+          let dependents_hoisted_group_module = module_graph.module(id).unwrap();
+          dependents_hoisted_group_module.execution_order
+            > module_graph
+              .module(&group.target_hoisted_module_id)
+              .unwrap()
+              .execution_order
+        })
         .collect::<HashSet<ModuleId>>();
 
       // all of the dependents of this module are in the same [ScopeHoistedModuleGroup]
       if dependents_hoisted_group_ids.len() == 1 {
         let dependents_hoisted_group_id = dependents_hoisted_group_ids.into_iter().next().unwrap();
 
-        // if execution_order of dependents_hoisted_group_id is smaller than this module, means there is a cycle, skip it
-        let dependents_hoisted_group_module =
-          module_graph.module(&dependents_hoisted_group_id).unwrap();
-
-        if module_graph
-          .circle_record
-          .is_in_circle(&dependents_hoisted_group_id)
-          || dependents_hoisted_group_module.execution_order
-            < module_graph
-              .module(&group.target_hoisted_module_id)
-              .unwrap()
-              .execution_order
-        {
-          continue;
-        }
+        // // if module_graph
+        // //   .circle_record
+        // //   .is_in_circle(&dependents_hoisted_group_id)
+        // //   ||
+        // if dependents_hoisted_group_module.execution_order
+        //   < module_graph
+        //     .module(&group.target_hoisted_module_id)
+        //     .unwrap()
+        //     .execution_order
+        // {
+        //   continue;
+        // }
 
         let merged_map = merged_scope_hoisted_module_groups_map
           .entry(dependents_hoisted_group_id.clone())
@@ -198,6 +205,7 @@ mod tests {
   use farmfe_core::{
     config::Config,
     context::CompilationContext,
+    module::ModuleSystem,
     resource::resource_pot::{ResourcePot, ResourcePotType},
     HashSet,
   };
@@ -210,7 +218,8 @@ mod tests {
 
     let mut resource_pot = ResourcePot::new("test", "any", ResourcePotType::Js);
 
-    for module in module_graph.modules() {
+    for module in module_graph.modules_mut() {
+      module.meta.as_script_mut().module_system = ModuleSystem::EsModule;
       resource_pot.add_module(module.id.clone());
     }
 
@@ -236,16 +245,16 @@ mod tests {
       vec![
         super::ScopeHoistedModuleGroup {
           target_hoisted_module_id: "A".into(),
-          hoisted_module_ids: HashSet::from_iter(["A".into()]),
+          hoisted_module_ids: HashSet::from_iter(["A".into(), "C".into()]),
         },
         super::ScopeHoistedModuleGroup {
           target_hoisted_module_id: "B".into(),
           hoisted_module_ids: HashSet::from_iter(["B".into(), "E".into(), "G".into(),]),
         },
-        super::ScopeHoistedModuleGroup {
-          target_hoisted_module_id: "C".into(),
-          hoisted_module_ids: HashSet::from_iter(["C".into()]),
-        },
+        // super::ScopeHoistedModuleGroup {
+        //   target_hoisted_module_id: "C".into(),
+        //   hoisted_module_ids: HashSet::from_iter(["C".into()]),
+        // },
         super::ScopeHoistedModuleGroup {
           target_hoisted_module_id: "D".into(),
           hoisted_module_ids: HashSet::from_iter(["D".into(),]),

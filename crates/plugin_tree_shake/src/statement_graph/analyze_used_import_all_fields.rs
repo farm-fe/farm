@@ -5,6 +5,8 @@ use farmfe_toolkit::swc_ecma_visit::{Visit, VisitWith};
 
 use super::{ImportSpecifierInfo, StatementGraph, StatementGraphEdge, StatementId};
 
+pub use farmfe_core::module::meta_data::script::statement::UsedImportAllFields;
+
 pub fn update_used_import_all_fields_of_edges(
   module_item: &ModuleItem,
   stmt_graph: &StatementGraph,
@@ -34,25 +36,6 @@ pub fn update_used_import_all_fields_of_edges(
   }
 
   deps
-}
-
-#[derive(Debug, Default, Hash, PartialEq, Eq, Clone)]
-pub enum UsedImportAllFields {
-  /// Used all fields of the import statement
-  #[default]
-  All,
-  /// example:
-  /// ```js
-  /// import * as a from 'a';
-  /// a.foo();
-  /// ```
-  Ident(String),
-  /// example:
-  /// ```js
-  /// import * as a from 'a';
-  /// a['foo']();
-  /// ```
-  LiteralComputed(String),
 }
 
 pub struct UsedImportAllCollector<'a> {

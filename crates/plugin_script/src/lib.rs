@@ -5,20 +5,19 @@ use std::{path::Path, sync::Arc};
 
 use deps_analyzer::DepsAnalyzer;
 use farmfe_core::{
-  config::{Config, ModuleFormat, TargetEnv},
+  config::Config,
   context::CompilationContext,
   enhanced_magic_string::collapse_sourcemap::{collapse_sourcemap_chain, CollapseSourcemapOptions},
   error::{CompilationError, Result},
   module::{
     meta_data::script::{CommentsMetaData, ScriptModuleMetaData},
     module_graph::ModuleGraph,
-    ModuleMetaData, ModuleSystem, ModuleType, VIRTUAL_MODULE_PREFIX,
+    ModuleMetaData, ModuleSystem, VIRTUAL_MODULE_PREFIX,
   },
   plugin::{
-    GeneratedResource, Plugin, PluginAnalyzeDepsHookParam, PluginFinalizeModuleHookParam,
-    PluginGenerateResourcesHookResult, PluginHookContext, PluginLoadHookParam,
-    PluginLoadHookResult, PluginParseHookParam, PluginProcessModuleHookParam,
-    PluginResolveHookParam, ResolveKind,
+    GeneratedResource, Plugin, PluginAnalyzeDepsHookParam, PluginGenerateResourcesHookResult,
+    PluginHookContext, PluginLoadHookParam, PluginLoadHookResult, PluginParseHookParam,
+    PluginProcessModuleHookParam, PluginResolveHookParam, ResolveKind,
   },
   resource::{
     meta_data::{js::JsResourcePotMetaData, ResourcePotMetaData},
@@ -34,9 +33,10 @@ use farmfe_swc_transformer_import_glob::{
 use farmfe_toolkit::{
   fs::read_file_utf8,
   script::{
-    codegen_module, concatenate_modules::concatenate_modules_ast, module_type_from_id,
-    parse_module, set_module_system_for_module_meta, swc_try_with::try_with,
-    syntax_from_module_type, CodeGenCommentsConfig, ParseScriptModuleResult,
+    codegen_module,
+    concatenate_modules::{concatenate_modules_ast, ConcatenateModulesAstOptions},
+    create_codegen_config, module_type_from_id, parse_module, syntax_from_module_type,
+    CodeGenCommentsConfig, ParseScriptModuleResult,
   },
   sourcemap::{
     build_sourcemap, load_source_original_sourcemap, trace_module_sourcemap,
@@ -46,12 +46,10 @@ use farmfe_toolkit::{
   swc_ecma_visit::VisitMutWith,
 };
 
-use import_meta_visitor::{replace_import_meta_url, ImportMetaVisitor};
 #[cfg(feature = "swc_plugin")]
 use swc_plugins::{init_plugin_module_cache_once, transform_by_swc_plugins};
 
 mod deps_analyzer;
-mod import_meta_visitor;
 #[cfg(feature = "swc_plugin")]
 mod swc_plugins;
 mod swc_script_transforms;
@@ -139,8 +137,10 @@ impl Plugin for FarmPluginScript {
           ast: swc_module,
           top_level_mark: top_level_mark.as_u32(),
           unresolved_mark: unresolved_mark.as_u32(),
-          // set module_system to unknown, it will be detected in `finalize_module`
-          module_system: ModuleSystem::Custom(String::from("unknown")),
+          // set module_system to UnInitial, it will be detected in `finalize_module`
+          module_system: ModuleSystem::UnInitial,
+          contains_esm_decl: false,
+          contains_module_exports: false,
           hmr_self_accepted: false,
           hmr_accepted_deps: Default::default(),
           comments: CommentsMetaData::from(comments),
@@ -148,8 +148,11 @@ impl Plugin for FarmPluginScript {
           statements: vec![],
           top_level_idents: Default::default(),
           unresolved_idents: Default::default(),
+          all_deeply_declared_idents: Default::default(),
           feature_flags: Default::default(),
           export_ident_map: Default::default(),
+          reexport_ident_map: Default::default(),
+          ambiguous_export_ident_map: Default::default(),
           is_async: false,
         };
 
@@ -192,6 +195,8 @@ impl Plugin for FarmPluginScript {
     // execute swc plugins
     #[cfg(feature = "swc_plugin")]
     if param.module_type.is_script() && !context.config.script.plugins.is_empty() {
+      use farmfe_toolkit::script::swc_try_with::try_with;
+
       try_with(cm.clone(), globals.value(), || {
         transform_by_swc_plugins(param, context).unwrap()
       })?;
@@ -260,51 +265,6 @@ impl Plugin for FarmPluginScript {
     }
   }
 
-  /// detect [ModuleSystem] for a script module based on its dependencies' [ResolveKind] and detect hmr_accepted
-  fn finalize_module(
-    &self,
-    param: &mut PluginFinalizeModuleHookParam,
-    context: &Arc<CompilationContext>,
-  ) -> Result<Option<()>> {
-    if !param.module.module_type.is_script() {
-      return Ok(None);
-    }
-    // all jsx, js, ts, tsx modules should be transformed to js module for now
-    param.module.module_type = ModuleType::Js;
-    // set param.module.meta.module_system
-    set_module_system_for_module_meta(param, context);
-
-    // TODO: optimize code here
-    let target_env = context.config.output.target_env.clone();
-    let format = context.config.output.format;
-
-    let is_library = target_env.is_library();
-
-    if is_library && matches!(format, ModuleFormat::CommonJs) {
-      replace_import_meta_url(&mut param.module.meta.as_script_mut().ast)
-    };
-
-    // find and replace `import.meta.xxx` to `module.meta.xxx` and detect hmr_accepted
-    // skip transform import.meta when targetEnv is node
-    if !is_library && (target_env.is_browser() || matches!(format, ModuleFormat::CommonJs)) {
-      // transform `import.meta.xxx` to `module.meta.xxx`
-      let ast = &mut param.module.meta.as_script_mut().ast;
-      let mut import_meta_v = ImportMetaVisitor::new();
-      ast.visit_mut_with(&mut import_meta_v);
-    }
-
-    if matches!(target_env, TargetEnv::Browser) {
-      let ast = &mut param.module.meta.as_script_mut().ast;
-      let mut hmr_accepted_v =
-        import_meta_visitor::HmrAcceptedVisitor::new(param.module.id.clone(), context.clone());
-      ast.visit_mut_with(&mut hmr_accepted_v);
-      param.module.meta.as_script_mut().hmr_self_accepted = hmr_accepted_v.is_hmr_self_accepted;
-      param.module.meta.as_script_mut().hmr_accepted_deps = hmr_accepted_v.hmr_accepted_deps;
-    }
-
-    Ok(Some(()))
-  }
-
   fn render_resource_pot(
     &self,
     resource_pot: &ResourcePot,
@@ -318,15 +278,22 @@ impl Plugin for FarmPluginScript {
         resource_pot.entry_module.as_ref().unwrap(),
         &resource_pot.modules,
         &module_graph,
+        ConcatenateModulesAstOptions { check_esm: false },
         context,
       )
       .map_err(|err| {
-        CompilationError::GenericError(format!("failed to concatenate runtime modules: {}", err))
+        CompilationError::GenericError(format!(
+          "failed to concatenate dynamic entry modules: {}",
+          err
+        ))
       })?;
 
       context
         .meta
         .set_resource_pot_source_map(&resource_pot.id, result.source_map);
+      context
+        .meta
+        .set_resource_pot_globals(&resource_pot.id, result.globals);
 
       return Ok(Some(ResourcePotMetaData::Js(JsResourcePotMetaData {
         ast: result.ast,
@@ -337,6 +304,8 @@ impl Plugin for FarmPluginScript {
           .collect(),
         rendered_modules: result.module_ids,
         comments: result.comments,
+        top_level_mark: result.top_level_mark.as_u32(),
+        unresolved_mark: result.unresolved_mark.as_u32(),
       })));
     }
 
@@ -366,6 +335,7 @@ impl Plugin for FarmPluginScript {
         context,
       )?;
 
+      // TODO move this function to farmfe_toolkit
       let create_resource = |content: String, ty: ResourceType| Resource {
         name: resource_pot.name.to_string(),
         name_hash: resource_pot.modules_name_hash.to_string(),
@@ -375,6 +345,7 @@ impl Plugin for FarmPluginScript {
         resource_type: ty,
         origin: ResourceOrigin::ResourcePot(resource_pot.id.clone()),
         meta: Default::default(),
+        special_placeholders: Default::default(),
       };
 
       Ok(Some(PluginGenerateResourcesHookResult {
@@ -389,7 +360,7 @@ impl Plugin for FarmPluginScript {
         }],
       }))
     } else {
-      return Ok(None);
+      Ok(None)
     }
   }
 }
@@ -402,6 +373,7 @@ impl FarmPluginScript {
   }
 }
 
+/// TODO move this function to farmfe_toolkit
 pub fn generate_code_and_sourcemap(
   resource_pot: &ResourcePot,
   module_graph: &ModuleGraph,
@@ -415,14 +387,13 @@ pub fn generate_code_and_sourcemap(
   let mut mappings = vec![];
   let code_bytes = codegen_module(
     &wrapped_resource_pot_ast,
-    context.config.script.target.clone(),
     merged_sourcemap.clone(),
     if sourcemap_enabled {
       Some(&mut mappings)
     } else {
       None
     },
-    context.config.minify.enabled(),
+    create_codegen_config(&context),
     Some(CodeGenCommentsConfig {
       comments: &merged_comments,
       // preserve all comments when generate module code.
@@ -437,8 +408,8 @@ pub fn generate_code_and_sourcemap(
   let mut map = None;
   if sourcemap_enabled {
     let sourcemap = build_sourcemap(merged_sourcemap, &mappings);
-    // trace sourcemap chain of each module
-    let sourcemap = trace_module_sourcemap(sourcemap, module_graph, &context.config.root);
+    // // trace sourcemap chain of each module
+    // let sourcemap = trace_module_sourcemap(sourcemap, module_graph, &context.config.root);
 
     let mut chain = resource_pot
       .source_map_chain
@@ -446,6 +417,7 @@ pub fn generate_code_and_sourcemap(
       .map(|s| JsonSourceMap::from_slice(s.as_bytes()).unwrap())
       .collect::<Vec<_>>();
     chain.push(sourcemap);
+
     // collapse sourcemap chain
     let sourcemap = collapse_sourcemap_chain(
       chain,
@@ -454,6 +426,9 @@ pub fn generate_code_and_sourcemap(
         remap_source: None,
       },
     );
+
+    // trace sourcemap chain of each module
+    let sourcemap = trace_module_sourcemap(sourcemap, module_graph, &context.config.root);
 
     let mut buf = vec![];
     sourcemap

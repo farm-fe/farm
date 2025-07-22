@@ -3,10 +3,9 @@ import {
   CompilationContext,
   CompilationContextEmitFileParams,
   JsPlugin,
+  JsResourcePot,
   PluginFinalizeResourcesHookParams,
-  PluginRenderResourcePotParams,
-  Resource,
-  ResourcePotInfo
+  Resource
 } from '../type.js';
 import {
   FARM_CSS_MODULES_SUFFIX,
@@ -112,9 +111,9 @@ export class VitePluginAdapter implements JsPlugin {
   buildEnd: JsPlugin['buildEnd'];
   finish: JsPlugin['finish'];
   updateModules: JsPlugin['updateModules'];
-  renderResourcePot: JsPlugin['renderResourcePot'];
+  processRenderedResourcePot: JsPlugin['processRenderedResourcePot'];
   renderStart: JsPlugin['renderStart'];
-  augmentResourceHash?: JsPlugin['augmentResourceHash'];
+  augmentResourcePotHash?: JsPlugin['augmentResourcePotHash'];
   finalizeResources: JsPlugin['finalizeResources'];
   writeResources: JsPlugin['writeResources'];
   transformHtml: JsPlugin['transformHtml'];
@@ -154,13 +153,13 @@ export class VitePluginAdapter implements JsPlugin {
       handleHotUpdate: () =>
         (this.updateModules = this.viteHandleHotUpdateToFarmUpdateModules()),
       renderChunk: () =>
-        (this.renderResourcePot =
-          this.viteHandleRenderChunkToFarmRenderResourcePot()),
+        (this.processRenderedResourcePot =
+          this.viteHandleRenderChunkToFarmProcessRenderedResourcePot()),
       renderStart: () =>
         (this.renderStart = this.viteRenderStartToFarmRenderStart()),
       augmentChunkHash: () =>
-        (this.augmentResourceHash =
-          this.viteAugmentChunkHashToFarmAugmentResourceHash()),
+        (this.augmentResourcePotHash =
+          this.viteAugmentChunkHashToFarmAugmentResourcePotHash()),
       generateBundle: () =>
         (this.finalizeResources =
           this.viteGenerateBundleToFarmFinalizeResources()),
@@ -661,41 +660,43 @@ export class VitePluginAdapter implements JsPlugin {
     };
   }
 
-  private viteHandleRenderChunkToFarmRenderResourcePot(): JsPlugin['renderResourcePot'] {
+  private viteHandleRenderChunkToFarmProcessRenderedResourcePot(): JsPlugin['processRenderedResourcePot'] {
     return {
       filters: {
         moduleIds: this.filters
       },
-      executor: this.wrapExecutor(
-        async (param: PluginRenderResourcePotParams, ctx) => {
-          if (param.resourcePotInfo.resourcePotType !== 'js') {
-            return;
+      executor: this.wrapExecutor(async (param: JsResourcePot, ctx) => {
+        if (param.resourcePotType !== 'js') {
+          return;
+        }
+
+        const hook = this.wrapRawPluginHook(
+          'renderChunk',
+          this._rawPlugin.renderChunk,
+          ctx
+        );
+
+        const result: ReturnType<RenderChunkHook> = await hook(
+          param.content,
+          transformResourceInfo2RollupRenderedChunk(param),
+          {},
+          {
+            chunks: {}
           }
+        );
 
-          const hook = this.wrapRawPluginHook(
-            'renderChunk',
-            this._rawPlugin.renderChunk,
-            ctx
-          );
-
-          const result: ReturnType<RenderChunkHook> = await hook(
-            param.content,
-            transformResourceInfo2RollupRenderedChunk(param.resourcePotInfo),
-            {},
-            {
-              chunks: {}
-            }
-          );
-
-          if (result) {
-            if (typeof result === 'string') {
-              return { content: result };
-            } else if (typeof result === 'object') {
-              return { content: result.code, sourceMap: result.map };
-            }
+        if (result) {
+          if (typeof result === 'string') {
+            return { content: result };
+          } else if (typeof result === 'object') {
+            return {
+              content: result.code,
+              sourceMap: result.map,
+              ignorePreviousSourceMap: Boolean(result.map)
+            };
           }
         }
-      )
+      })
     };
   }
 
@@ -716,12 +717,12 @@ export class VitePluginAdapter implements JsPlugin {
     };
   }
 
-  private viteAugmentChunkHashToFarmAugmentResourceHash(): JsPlugin['augmentResourceHash'] {
+  private viteAugmentChunkHashToFarmAugmentResourcePotHash(): JsPlugin['augmentResourcePotHash'] {
     return {
       filters: {
         moduleIds: this.filters
       },
-      executor: this.wrapExecutor(async (param: ResourcePotInfo, context) => {
+      executor: this.wrapExecutor(async (param: JsResourcePot, context) => {
         if (param.resourcePotType !== 'js') {
           return;
         }

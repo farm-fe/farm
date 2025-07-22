@@ -94,8 +94,7 @@ test('Js Plugin Execution - transform', async () => {
       priority: 1000,
       transform: {
         filters: {
-          resolvedPaths: [path.join(root, 'index.ts').replaceAll('\\', '\\\\')],
-          moduleTypes: ['ts']
+          resolvedPaths: [path.join(root, 'index.ts').replaceAll('\\', '\\\\')]
         },
         executor: async (param) => {
           console.log(param);
@@ -119,8 +118,8 @@ test('Js Plugin Execution - transform', async () => {
 test('Js Plugin Execution - full', async () => {
   const root = getJsPluginsFixturesDir();
   const resolvedPath = path.join(root, 'resolved.ts');
-  let builsStartEexcuted = false;
-  let buildEndEexcuted = false;
+
+  const calledHooks: string[] = [];
 
   const compiler = await getCompiler('full', [
     {
@@ -128,7 +127,7 @@ test('Js Plugin Execution - full', async () => {
       priority: 1000,
       buildStart: {
         executor: async () => {
-          builsStartEexcuted = true;
+          calledHooks.push('buildStart');
         }
       },
       resolve: {
@@ -174,7 +173,31 @@ test('Js Plugin Execution - full', async () => {
       },
       buildEnd: {
         executor: async () => {
-          buildEndEexcuted = true;
+          calledHooks.push('buildEnd');
+        }
+      },
+      finalizeResources: {
+        executor: async (params) => {
+          expect(params.config).toBeTruthy();
+          expect({
+            resourcesMap: Object.fromEntries(
+              Object.entries(params.resourcesMap).map(([k, v]) => [
+                k,
+                {
+                  ...v,
+                  bytes: [] as any[],
+                  code: Buffer.from(v.bytes).toString('utf-8')
+                }
+              ])
+            )
+          }).matchSnapshot();
+          calledHooks.push('finalizeResources');
+          return params.resourcesMap;
+        }
+      },
+      finish: {
+        executor: async () => {
+          calledHooks.push('finish');
         }
       }
     }
@@ -183,8 +206,12 @@ test('Js Plugin Execution - full', async () => {
   await compiler.compile();
   await compiler.writeResourcesToDisk();
 
-  expect(builsStartEexcuted).toBe(true);
-  expect(buildEndEexcuted).toBe(true);
+  expect(calledHooks).toEqual([
+    'buildStart',
+    'buildEnd',
+    'finalizeResources',
+    'finish'
+  ]);
 
   const outputFilePath = getOutputFilePath('full');
   const result = await getOutputResult(outputFilePath);

@@ -3,6 +3,7 @@ import { pathToFileURL } from 'node:url';
 
 import fse from 'fs-extra';
 
+import { ModuleFormat } from '../types/binding.js';
 import { convertErrorMessage } from '../utils/error.js';
 import { isObject, isWindows } from '../utils/share.js';
 import { DEFAULT_CONFIG_NAMES, ENV_PRODUCTION } from './constants.js';
@@ -15,7 +16,6 @@ import {
   ConfigResult,
   DefaultOptionsType,
   FarmCliOptions,
-  Format,
   ResolvedUserConfig,
   UserConfig
 } from './types.js';
@@ -109,12 +109,12 @@ export async function loadConfigFile(
   }
 }
 
-const FORMAT_TO_EXT: Record<Format, string> = {
+const FORMAT_TO_EXT: Record<ModuleFormat, string> = {
   cjs: 'cjs',
   esm: 'mjs'
 };
 
-const FORMAT_FROM_EXT: Record<string, Format> = {
+const FORMAT_FROM_EXT: Record<string, ModuleFormat> = {
   cjs: 'cjs',
   mjs: 'esm',
   cts: 'cjs',
@@ -128,7 +128,7 @@ function getFilePath(outputPath: string, fileName: string): string {
     : path.join(outputPath, fileName);
 }
 
-function getFormat(configFilePath: string): Format {
+function getFormat(configFilePath: string): ModuleFormat {
   return process.env.FARM_CONFIG_FORMAT === 'cjs'
     ? 'cjs'
     : process.env.FARM_CONFIG_FORMAT === 'esm'
@@ -167,6 +167,8 @@ export async function readConfigFile(
     fileName,
     mode
   });
+  // disable show file size
+  normalizedConfig.output.showFileSize = false;
 
   const replaceDirnamePlugin = await import(
     '@farmfe/plugin-replace-dirname'

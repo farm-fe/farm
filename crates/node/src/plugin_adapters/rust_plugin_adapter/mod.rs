@@ -144,6 +144,14 @@ impl Plugin for RustPluginAdapter {
     self.plugin.optimize_module_graph(module_graph, context)
   }
 
+  fn freeze_module_graph_meta(
+    &self,
+    module_graph: &mut ModuleGraph,
+    context: &Arc<CompilationContext>,
+  ) -> Result<Option<()>> {
+    self.plugin.freeze_module_graph_meta(module_graph, context)
+  }
+
   fn analyze_module_graph(
     &self,
     module_graph: &mut ModuleGraph,
@@ -187,12 +195,22 @@ impl Plugin for RustPluginAdapter {
       .render_resource_pot(resource_pot, context, hook_context)
   }
 
-  fn augment_resource_hash(
+  fn process_rendered_resource_pot(
     &self,
-    render_pot_info: &ResourcePot,
+    resource_pot: &mut ResourcePot,
+    context: &Arc<CompilationContext>,
+  ) -> Result<Option<()>> {
+    self
+      .plugin
+      .process_rendered_resource_pot(resource_pot, context)
+  }
+
+  fn augment_resource_pot_hash(
+    &self,
+    render_pot: &ResourcePot,
     context: &Arc<CompilationContext>,
   ) -> Result<Option<String>> {
-    self.plugin.augment_resource_hash(render_pot_info, context)
+    self.plugin.augment_resource_pot_hash(render_pot, context)
   }
 
   fn optimize_resource_pot(

@@ -1,6 +1,8 @@
 use std::sync::Arc;
 
 use farmfe_core::lazy_static::lazy_static;
+use farmfe_core::swc_common::DUMMY_SP;
+use farmfe_core::swc_ecma_ast::{BlockStmt, EmptyStmt};
 use farmfe_core::{
   config::{Mode, TargetEnv},
   context::CompilationContext,
@@ -9,8 +11,8 @@ use farmfe_core::{
     FARM_ENABLE_IMPORT_ALL_HELPER, FARM_ENABLE_IMPORT_DEFAULT_HELPER, FARM_ENABLE_TOP_LEVEL_AWAIT,
     FARM_IMPORT_EXPORT_FROM_HELPER,
   },
-  swc_common::{util::take::Take, DUMMY_SP},
-  swc_ecma_ast::{BinaryOp, EmptyStmt, Expr, Ident, Lit, Stmt, Str},
+  swc_common::util::take::Take,
+  swc_ecma_ast::{BinaryOp, Expr, Ident, Lit, Stmt, Str},
   HashMap, HashSet,
 };
 use swc_ecma_visit::{VisitMut, VisitMutWith};
@@ -54,10 +56,8 @@ impl<'a> RuntimeFeatureGuardRemover<'a> {
       string_features,
     }
   }
-}
 
-impl<'a> VisitMut for RuntimeFeatureGuardRemover<'a> {
-  fn visit_mut_stmt(&mut self, stmt: &mut Stmt) {
+  fn handle_stmt(&mut self, stmt: &mut Stmt) -> bool {
     // remove children first
     stmt.visit_mut_children_with(self);
 
@@ -65,7 +65,7 @@ impl<'a> VisitMut for RuntimeFeatureGuardRemover<'a> {
       match &*if_stmt.test {
         Expr::Ident(Ident { sym, .. }) => {
           if !FULL_RUNTIME_FEATURES.contains(sym.as_str()) {
-            return;
+            return false;
           }
 
           // 1. remove if (__FARM_ENABLE_RUNTIME_PLUGIN__) { ... }
@@ -77,7 +77,11 @@ impl<'a> VisitMut for RuntimeFeatureGuardRemover<'a> {
             // remove if branch with else branch or empty statement
             // if (xxx) { 123 } else { 456 } => { 456 }
             let alt = if_stmt.alt.take().map(|alt| *alt);
-            *stmt = alt.unwrap_or(Stmt::Empty(EmptyStmt { span: DUMMY_SP }));
+            if let Some(alt) = alt {
+              *stmt = alt;
+            } else {
+              return true;
+            }
           }
         }
         Expr::Bin(bin) => {
@@ -86,26 +90,66 @@ impl<'a> VisitMut for RuntimeFeatureGuardRemover<'a> {
             (&*bin.left, &*bin.right)
           {
             if !FULL_RUNTIME_FEATURES.contains(sym.as_str()) {
-              return;
+              return false;
             }
 
-            if bin.op == BinaryOp::EqEqEq && self.string_features.contains_key(sym.as_str()) {
+            if (bin.op == BinaryOp::EqEqEq || bin.op == BinaryOp::NotEqEq)
+              && self.string_features.contains_key(sym.as_str())
+            {
               let expect_value = self.string_features.get(sym.as_str());
+              let is_cond_true = match bin.op {
+                BinaryOp::EqEqEq => value.as_str() == expect_value.unwrap(),
+                BinaryOp::NotEqEq => value.as_str() != expect_value.unwrap(),
+                _ => unreachable!(),
+              };
               // if (xxx) { 123 } => { 123 }
-              if expect_value.is_some() && value.as_str() == expect_value.unwrap() {
+              if is_cond_true {
                 let cons = if_stmt.cons.take();
                 *stmt = *cons;
               } else {
                 // remove if branch with else branch or empty statement
                 // if (xxx) { 123 } else { 456 } => { 456 }
                 let alt = if_stmt.alt.take().map(|alt| *alt);
-                *stmt = alt.unwrap_or(Stmt::Empty(EmptyStmt { span: DUMMY_SP }));
+                if let Some(alt) = alt {
+                  *stmt = alt;
+                } else {
+                  return true;
+                }
               }
             }
           }
         }
         _ => {}
       }
+    }
+
+    false
+  }
+}
+
+impl<'a> VisitMut for RuntimeFeatureGuardRemover<'a> {
+  fn visit_mut_block_stmt(&mut self, block: &mut BlockStmt) {
+    let mut stmts_to_remove = vec![];
+
+    for (i, stmt) in block.stmts.iter_mut().enumerate() {
+      if self.handle_stmt(stmt) {
+        stmts_to_remove.push(i);
+      }
+    }
+
+    // reverse to remove from end to start to avoid index shift
+    stmts_to_remove.reverse();
+
+    for i in stmts_to_remove {
+      block.stmts.remove(i);
+    }
+  }
+
+  fn visit_mut_stmt(&mut self, node: &mut Stmt) {
+    if let Stmt::Block(block) = node {
+      self.visit_mut_block_stmt(block);
+    } else if self.handle_stmt(node) {
+      *node = Stmt::Empty(EmptyStmt { span: DUMMY_SP });
     }
   }
 }
@@ -115,17 +159,26 @@ fn init_bool_features<'a>(
   context: &Arc<CompilationContext>,
 ) -> HashSet<&'a str> {
   // enable all features in development mode
-  if matches!(context.config.mode, Mode::Development) {
-    return FULL_RUNTIME_FEATURES.clone();
+  if matches!(context.config.mode, Mode::Development)
+    && context.config.output.target_env != TargetEnv::Library
+  {
+    let mut result = FULL_RUNTIME_FEATURES.clone();
+
+    // remove plugin flag if no plugin is enabled
+    if context.config.runtime.plugins.len() == 0 {
+      result.remove(FARM_ENABLE_RUNTIME_PLUGIN);
+    }
+
+    return result;
   }
 
   let mut bool_features = HashSet::default();
 
-  if context.config.runtime.plugins.len() > 0 {
+  if !context.config.output.target_env.is_library() && context.config.runtime.plugins.len() > 0 {
     bool_features.insert(FARM_ENABLE_RUNTIME_PLUGIN);
   }
 
-  if context.config.output.target_env != TargetEnv::Library {
+  if !context.config.output.target_env.is_library() {
     bool_features.insert(FARM_ENABLE_EXTERNAL_MODULES);
   }
 

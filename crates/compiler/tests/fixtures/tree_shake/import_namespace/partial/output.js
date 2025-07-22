@@ -1,9 +1,9 @@
 //index.js:
- (function(){const moduleSystem = {};
+ (function(){const __farm_internal_module_system__ = {};
 function initModuleSystem() {
     console.log('module-helper.ts');
 }
-initModuleSystem(moduleSystem);
+initModuleSystem(__farm_internal_module_system__);
 }());(function(moduleSystem, modules) {
     for(var moduleId in modules){
         var module = modules[moduleId];
@@ -17,6 +17,7 @@ initModuleSystem(moduleSystem);
         console.log(A.A);
         const B = A['B'];
         console.log(B);
+        console.log(A.default);
     },
     "f380ea31": function(module, exports, farmRequire, farmDynamicRequire) {
         farmRequire._m(exports);
@@ -28,6 +29,7 @@ initModuleSystem(moduleSystem);
         });
         var A = 10;
         var B = 20;
+        exports.default = 'hello';
     }
 });
 var __farm_ms__ = window['__farm_default_namespace__'].m;__farm_ms__.b();var __farm_entry__=__farm_ms__.r("b5d64806");

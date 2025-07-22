@@ -18,9 +18,13 @@ struct TopLevelIdents {
 
 impl TopLevelIdents {
   pub fn new() -> Self {
-    Self {
+    let mut tli = Self {
       idents: HashMap::default(),
-    }
+    };
+    // should always add default export to avoid name conflicts with preserved key words
+    tli.add_ident(EXPORT_DEFAULT.to_string());
+
+    return tli;
   }
 
   pub fn extend(&mut self, iter: impl Iterator<Item = String>) {
@@ -91,16 +95,25 @@ impl TopLevelIdentsRenameHandler {
       .cloned()
   }
 
-  /// rename the imported ident if there are conflicts
-  pub fn rename_ident_if_conflict(&mut self, module_id: &ModuleId, ident: &SwcId) {
+  pub fn get_unique_ident(&mut self, ident: &SwcId) -> Option<SwcId> {
     self.top_level_idents.add_ident(ident.sym.to_string());
     let unique_ident = self.top_level_idents.get_unique_ident(ident.sym.as_str());
 
     if unique_ident != *ident.sym {
       let mut cloned = ident.clone();
       cloned.sym = unique_ident.into();
-      self.rename_ident(module_id.clone(), ident.clone(), cloned);
+      Some(cloned)
+    } else {
+      None
     }
+  }
+
+  /// rename the imported ident if there are conflicts
+  pub fn rename_ident_if_conflict(&mut self, module_id: &ModuleId, ident: &SwcId) -> Option<SwcId> {
+    self.get_unique_ident(ident).map(|unique_ident| {
+      self.rename_ident(module_id.clone(), ident.clone(), unique_ident.clone());
+      unique_ident
+    })
   }
 }
 

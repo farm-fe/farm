@@ -9,8 +9,6 @@ use farmfe_core::{
 };
 use swc_ecma_visit::{Visit, VisitWith};
 
-use crate::sourcemap::create_swc_source_map;
-
 use crate::script::swc_try_with::try_with;
 
 fn module_system_from_deps(deps: Vec<ResolveKind>) -> ModuleSystem {
@@ -51,8 +49,15 @@ struct ModuleSystemAnalyzer {
 }
 
 impl Visit for ModuleSystemAnalyzer {
-  fn visit_stmts(&mut self, n: &[Stmt]) {
-    if self.contain_module_exports || self.contain_esm {
+  fn visit_ident(&mut self, node: &Ident) {
+    if (node.sym == "module" || node.sym == "exports") && node.ctxt.outer() == self.unresolved_mark
+    {
+      self.contain_module_exports = true;
+    }
+  }
+
+  fn visit_stmt(&mut self, n: &Stmt) {
+    if self.contain_module_exports && self.contain_esm {
       return;
     }
 
@@ -69,7 +74,11 @@ impl Visit for ModuleSystemAnalyzer {
         if let MemberProp::Ident(IdentName { sym, .. }) = &n.prop {
           if sym == "exports" {
             self.contain_module_exports = true;
+          } else {
+            n.visit_children_with(self);
           }
+        } else {
+          n.visit_children_with(self);
         }
       } else if sym == "exports" && ctxt.outer() == self.unresolved_mark {
         self.contain_module_exports = true;
@@ -82,7 +91,7 @@ impl Visit for ModuleSystemAnalyzer {
   }
 
   fn visit_module_decl(&mut self, n: &farmfe_core::swc_ecma_ast::ModuleDecl) {
-    if self.contain_esm {
+    if self.contain_esm && self.contain_module_exports {
       return;
     }
 
@@ -113,6 +122,10 @@ pub fn set_module_system_for_module_meta(
   param: &mut PluginFinalizeModuleHookParam,
   context: &Arc<CompilationContext>,
 ) {
+  if param.module.meta.as_script().module_system != ModuleSystem::UnInitial {
+    return;
+  }
+
   // default to commonjs
   let module_system_from_deps_option = if !param.deps.is_empty() {
     module_system_from_deps(param.deps.iter().map(|d| d.kind.clone()).collect())
@@ -120,23 +133,23 @@ pub fn set_module_system_for_module_meta(
     ModuleSystem::UnInitial
   };
 
+  let unresolved_mark = Mark::from_u32(param.module.meta.as_script().unresolved_mark);
+  let mut analyzer = ModuleSystemAnalyzer {
+    unresolved_mark,
+    contain_module_exports: false,
+    contain_esm: false,
+  };
+
   let ast = &param.module.meta.as_script().ast;
 
   let mut module_system_from_ast: ModuleSystem = ModuleSystem::UnInitial;
   {
-    let (cm, _) = create_swc_source_map(&param.module.id, param.module.content.clone());
+    let cm = context.meta.get_module_source_map(&param.module.id);
 
     try_with(
       cm,
       context.meta.get_globals(&param.module.id).value(),
       || {
-        let unresolved_mark = Mark::from_u32(param.module.meta.as_script().unresolved_mark);
-        let mut analyzer = ModuleSystemAnalyzer {
-          unresolved_mark,
-          contain_module_exports: false,
-          contain_esm: false,
-        };
-
         ast.visit_with(&mut analyzer);
 
         if analyzer.contain_module_exports {
@@ -157,8 +170,12 @@ pub fn set_module_system_for_module_meta(
     .unwrap_or(ModuleSystem::UnInitial);
 
   if matches!(v, ModuleSystem::UnInitial) {
-    v = ModuleSystem::Hybrid;
+    // v = ModuleSystem::Hybrid;
+    v = ModuleSystem::EsModule;
   }
 
-  param.module.meta.as_script_mut().module_system = v;
+  let meta = param.module.meta.as_script_mut();
+  meta.module_system = v;
+  meta.contains_esm_decl = analyzer.contain_esm;
+  meta.contains_module_exports = analyzer.contain_module_exports;
 }

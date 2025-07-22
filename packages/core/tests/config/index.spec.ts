@@ -4,60 +4,92 @@ import {
   ResolvedCompilation,
   normalizeUserCompilationConfig
 } from '../../src/config/index.js';
-import { mergeFarmCliConfig } from '../../src/config/mergeConfig.js';
+import { mergeFarmCliConfig } from '../../src/config/merge-config.js';
 import { normalizeOutput } from '../../src/config/normalize-config/normalize-output.js';
 import { NoopLogger } from '../../src/index.js';
 
 describe('mergeFarmCliConfig', () => {
   test('inlineOption.root not empty', () => {
-    const result = mergeFarmCliConfig({}, { root: '/path/to/' });
+    const result = mergeFarmCliConfig({}, { root: '/path/to/' }, 'development');
 
-    expect(result).toEqual({ root: '/path/to/' });
+    expect(result).toEqual({
+      clearScreen: false,
+      compilation: {
+        input: {},
+        output: {}
+      },
+      watch: false,
+      root: '/path/to/'
+    });
   });
 
   test('userConfig.root not empty', () => {
-    const result = mergeFarmCliConfig({ root: '/path/to/' }, {});
+    const result = mergeFarmCliConfig({ root: '/path/to/' }, {}, 'development');
 
-    expect(result).toEqual({ root: '/path/to/' });
+    expect(result).toEqual({
+      root: '/path/to/',
+      clearScreen: false,
+      compilation: {
+        input: {},
+        output: {}
+      },
+      watch: false
+    });
   });
 
   test('userConfig.root both inlineOption not empty', () => {
     const result = mergeFarmCliConfig(
       { root: '/path/to/inlineOption' },
-      { root: '/path/to/userConfig' }
+      { root: '/path/to/userConfig' },
+      'development'
     );
 
-    expect(result).toEqual({ root: '/path/to/userConfig' });
+    expect(result).toEqual({
+      root: '/path/to/userConfig',
+      clearScreen: false,
+      compilation: {
+        input: {},
+        output: {}
+      },
+      watch: false
+    });
   });
 
   test('userConfig.root relative, should have configPath', () => {
     expect(() => {
-      mergeFarmCliConfig({ root: './path/to/' }, { root: './path/userConfig' });
+      mergeFarmCliConfig(
+        { root: './path/to/' },
+        { root: './path/userConfig' },
+        'development'
+      );
     }).toThrow();
 
     const result = mergeFarmCliConfig(
-      { root: './path/to/', configPath: process.cwd() },
-      { root: './path/userConfig' }
+      { root: './path/to/', configFile: process.cwd() },
+      { root: './path/userConfig' },
+      'development'
     );
 
     expect(result).toEqual({
+      clearScreen: false,
+      compilation: {
+        input: {},
+        output: {}
+      },
+      watch: false,
       root: path.resolve(process.cwd(), './path/userConfig')
     });
   });
 
   describe('normalizeUserCompilationConfig', () => {
-    test('with default', async () => {
-      let config = await normalizeUserCompilationConfig(
-        { logger: new NoopLogger() },
-        'development'
-      );
-
-      expect(config.input).toEqual({});
-    });
-
     test('normalizeUserCompilationConfig without default and userConfig.compilation.input', async () => {
       expect(async () => {
-        await normalizeUserCompilationConfig({}, 'development');
+        await normalizeUserCompilationConfig(
+          {
+            logger: new NoopLogger()
+          },
+          'development'
+        );
       }).rejects.toThrowError();
 
       let config = await normalizeUserCompilationConfig(
@@ -72,13 +104,19 @@ describe('mergeFarmCliConfig', () => {
         'development'
       );
 
-      expect(config.input).toEqual({ index: 'index.ts' });
+      expect(config.input).toEqual({ index: './index.ts' });
     });
 
     test('concatenateModule should conflict by mode', async () => {
       let config = await normalizeUserCompilationConfig(
         {
-          compilation: { concatenateModules: true }
+          logger: new NoopLogger(),
+          compilation: {
+            input: {
+              index: 'index.ts'
+            },
+            concatenateModules: true
+          }
         },
         'development'
       );
@@ -87,7 +125,13 @@ describe('mergeFarmCliConfig', () => {
 
       config = await normalizeUserCompilationConfig(
         {
-          compilation: { concatenateModules: true }
+          logger: new NoopLogger(),
+          compilation: {
+            input: {
+              index: 'index.ts'
+            },
+            concatenateModules: true
+          }
         },
         'production'
       );

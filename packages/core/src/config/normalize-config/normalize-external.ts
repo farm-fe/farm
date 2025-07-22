@@ -72,6 +72,7 @@ export function normalizeExternal(
   }
 
   if (!config?.compilation?.custom) {
+    config.compilation ??= {};
     config.compilation.custom = {};
   }
 

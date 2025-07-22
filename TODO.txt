@@ -1,4 +1,12 @@
 [x] migrate all esm runtime bundle to library test
 [x] fix concatenate module issues for `export { readFileSync } from 'fs';readFileSync('111')`
-[] fix concatenate module issues for `export * from 'fs';`
-[] test arco stuck on macos and windows
+[x] fix concatenate module issues for `export * from 'fs';`
+[x] test arco stuck on macos and windows
+[x] support emit esm/cjs at the same time
+[ ] support multiple library resources
+[x] test library output for all external test cases
+[x] fix incorrect merge comments when concatenate_modules
+[x] fix test case crates/compiler/tests/fixtures/library/hybrid/defaultParams
+[x] design how to implement esm/cjs concatenate, considerate all possible conditions
+  [x] delay rename idents for cyclic dependencies
+[ ] if there are more than 1 ambiguous export all in a module, then the module can not be scope hoisted

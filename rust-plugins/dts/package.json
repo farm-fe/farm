@@ -26,7 +26,7 @@
   },
   "exports": {
     ".": {
-      "import": "./index.js",
+      "import": "./func.js",
       "types": "./index.d.ts",
       "default": "./index.js"
     },
