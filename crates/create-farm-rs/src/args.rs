@@ -1,4 +1,4 @@
-use crate::{package_manager::PackageManager, template::Template};
+use crate::{lang::Lang, package_manager::PackageManager, template::Template};
 use clap::{ArgAction, Parser};
 
 #[derive(Parser, Debug)]
@@ -15,6 +15,7 @@ pub struct Args {
   pub manager: Option<PackageManager>,
   #[arg(short, long, help = "Project template to use")]
   pub template: Option<Template>,
+  pub language: Option<Lang>,
   #[arg(short, long, help = "Force overwrite of existing files", action = ArgAction::SetTrue)]
   pub force: bool,
 }
@@ -25,6 +26,7 @@ impl Default for Args {
       project_name: Some("farm-project".to_string()),
       manager: Some(PackageManager::Npm),
       template: Some(Template::Vanilla),
+      language: Some(Lang::Typescript),
       force: false,
     }
   }

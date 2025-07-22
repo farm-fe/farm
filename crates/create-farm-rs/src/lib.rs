@@ -10,6 +10,7 @@ use crate::{
 };
 
 mod args;
+mod lang;
 mod package_manager;
 mod template;
 pub mod utils;
@@ -48,6 +49,7 @@ where
     manager,
     project_name,
     template,
+    language,
     force,
   } = args;
 
@@ -156,6 +158,19 @@ where
         }
         _ => *selected_template,
       }
+    }
+  };
+
+  let language = match language {
+    Some(language) => language,
+    None => {
+      let selected_language = prompts::select(
+        "Select a language:",
+        &[lang::Lang::Typescript, lang::Lang::Javascript],
+        Some(0),
+      )?
+      .unwrap();
+      *selected_language
     }
   };
 
