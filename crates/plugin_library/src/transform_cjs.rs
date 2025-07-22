@@ -5,7 +5,7 @@ use farmfe_core::{
   context::CompilationContext,
   module::{
     meta_data::script::{
-      ScriptModuleMetaData, EXPORT_DEFAULT, FARM_RUNTIME_MODULE_HELPER_ID,
+      ScriptModuleMetaData, AMBIGUOUS_EXPORT_ALL, EXPORT_DEFAULT, FARM_RUNTIME_MODULE_HELPER_ID,
       FARM_RUNTIME_MODULE_SYSTEM_ID,
     },
     ModuleId, ModuleSystem,
@@ -146,8 +146,12 @@ pub fn transform_cjs_to_esm(
 
   // 1. export_items.len() > 0 is true, which means the module is imported by esm
   // 2. export_ident_map contains EXPORT_NAMESPACE, which means the module is imported/exported by esm
-  let should_add_cjs_exports =
-    export_items.len() > 0 || meta.export_ident_map.contains_key(EXPORT_NAMESPACE);
+  // 3. ambiguous_export_ident_map contains AMBIGUOUS_EXPORT_ALL, which means the module is exported by export * from
+  let should_add_cjs_exports = export_items.len() > 0
+    || meta.export_ident_map.contains_key(EXPORT_NAMESPACE)
+    || meta
+      .ambiguous_export_ident_map
+      .contains_key(AMBIGUOUS_EXPORT_ALL);
 
   if should_add_cjs_exports {
     export_items.insert(0, create_cjs_export_decl_item(top_level_mark));

@@ -1,6 +1,6 @@
 //index.js:
- import * as os from "node:os";
-import * as fs from "node:fs";
+ import * as fs from "node:fs";
+import * as os from "node:os";
 ; // module_id: dep.ts
 ; // module_id: index.ts
 console.log('dep', fs, fs, os);

@@ -31,18 +31,27 @@ pub enum ModuleExportIdentType {
   /// // index.js
   /// import { bar } from'./deep'; // bar is a ExternalReExport ident
   /// ```
-  ExternalReExportAll,
+  ExternalExportAll,
 
   /// ```js
-  /// export * from './module'; // where module is a external module
+  /// export * from './module'; // where module is not a es module
   /// ```
-  ExternalAll,
+  AmbiguousExportAll,
 
   /// ```js
   /// import { foo as bar } from './foo.cjs';
   /// export { foo as default } from './foo.cjs'; // foo is not external but using cjs  
   /// ```
   Unresolved,
+
+  /// ```js
+  /// // deep.js
+  /// export * from './foo.cjs';
+  ///
+  /// // index.js
+  /// import { foo } from './deep';
+  /// ```
+  UnresolvedExportAll,
 
   /// namespace import/export placeholder
   /// ```js

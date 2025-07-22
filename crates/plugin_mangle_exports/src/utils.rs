@@ -1,6 +1,6 @@
 use farmfe_core::{
   module::{
-    meta_data::script::{ModuleReExportIdentType, EXPORT_DEFAULT},
+    meta_data::script::{ModuleReExportIdentType, AMBIGUOUS_EXPORT_ALL, EXPORT_DEFAULT},
     module_graph::ModuleGraph,
     ModuleId,
   },
@@ -54,6 +54,7 @@ pub fn transform_export_all_to_export_named(module_id: ModuleId, module_graph: &
 
   let meta = module.meta.as_script();
   let mut items_to_replace: HashMap<usize, NamedExport> = HashMap::default();
+  let mut items_to_append: Vec<ModuleItem> = vec![];
 
   for (i, item) in meta.ast.body.iter().enumerate() {
     if let ModuleItem::ModuleDecl(module_decl) = item {
@@ -96,6 +97,17 @@ pub fn transform_export_all_to_export_named(module_id: ModuleId, module_graph: &
               is_type_only: false,
             }));
         }
+
+        // should preserve ambiguous export all statement
+        if dep_meta
+          .ambiguous_export_ident_map
+          .get(AMBIGUOUS_EXPORT_ALL)
+          .is_some()
+        {
+          items_to_append.push(ModuleItem::ModuleDecl(ModuleDecl::ExportAll(
+            export_all.clone(),
+          )));
+        }
       }
     }
   }
@@ -106,4 +118,6 @@ pub fn transform_export_all_to_export_named(module_id: ModuleId, module_graph: &
   for (i, named_export) in items_to_replace {
     meta.ast.body[i] = ModuleItem::ModuleDecl(ModuleDecl::ExportNamed(named_export));
   }
+
+  meta.ast.body.extend(items_to_append);
 }

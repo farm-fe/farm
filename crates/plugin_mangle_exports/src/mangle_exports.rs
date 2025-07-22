@@ -3,7 +3,7 @@ use farmfe_core::{
   module::{
     meta_data::script::{
       statement::{ExportSpecifierInfo, ImportSpecifierInfo},
-      ModuleExportIdent, ModuleExportIdentType, EXPORT_DEFAULT, EXPORT_EXTERNAL_ALL,
+      ModuleExportIdent, ModuleExportIdentType, AMBIGUOUS_EXPORT_ALL, EXPORT_DEFAULT,
     },
     ModuleId, ModuleSystem,
   },
@@ -27,7 +27,7 @@ pub fn mangle_exports(
 ) -> HashMap<ModuleId, HashMap<String, String>> {
   let mangled_ident_map: Mutex<HashMap<ModuleId, HashMap<String, String>>> =
     Mutex::new(HashMap::default());
-  let exclude_exports = [EXPORT_DEFAULT, EXPORT_EXTERNAL_ALL, EXPORT_NAMESPACE];
+  let exclude_exports = [EXPORT_DEFAULT, AMBIGUOUS_EXPORT_ALL, EXPORT_NAMESPACE];
   let generator_map: Mutex<HashMap<ModuleId, crate::ident_generator::MinifiedIdentsGenerator>> =
     Mutex::new(HashMap::default());
 

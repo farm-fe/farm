@@ -13,7 +13,7 @@ use farmfe_core::{
 };
 
 pub use super::concatenate_modules::utils::{
-  create_export_default_ident, create_export_external_all_ident, create_export_namespace_ident,
+  create_ambiguous_export_all_ident, create_export_default_ident, create_export_namespace_ident,
   create_import_farm_register_helper_stmt,
 };
 

@@ -5,7 +5,8 @@ use farmfe_core::HashMap;
 
 mod common;
 use crate::common::{
-  assert_compiler_result_with_config, create_compiler_with_args, AssertCompilerResultConfig,
+  assert_compiler_result_with_config, create_compiler_with_args, generate_runtime,
+  AssertCompilerResultConfig,
 };
 
 #[allow(dead_code)]
@@ -31,13 +32,17 @@ fn test(file_path_buf: PathBuf, crate_path_buf: PathBuf) {
         )]);
         config.concatenate_modules = true;
         config.minify = Box::new(BoolOrObj::Bool(false));
-        config.tree_shaking = Box::new(BoolOrObj::Bool(false));
+        config.tree_shaking = Box::new(BoolOrObj::Bool(true));
         config.external = vec![ConfigRegex::new("(^node:.*)")];
         config.output.target_env = TargetEnv::Browser;
         config.resolve.auto_external_failed_resolve = true;
         config.output.show_file_size = false;
 
         config = try_merge_config_file(config, config_entry);
+
+        if config.output.target_env == TargetEnv::Library {
+          config.runtime = generate_runtime(crate_path_buf.clone(), true);
+        }
 
         (config, plugins)
       },
@@ -61,6 +66,6 @@ fn test(file_path_buf: PathBuf, crate_path_buf: PathBuf) {
 fn concatenate_module_test() {
   use farmfe_testing_helpers::fixture;
 
-  // fixture!("tests/fixtures/library/**/index.ts", test);
   fixture!("tests/fixtures/concatenate_module/**/index.ts", test);
+  // fixture!("tests/fixtures/concatenate_module/export/**/index.ts", test);
 }

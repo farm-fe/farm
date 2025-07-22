@@ -37,5 +37,5 @@ function farmRegister(id, module) {
 var farmRequire = farmRegister("dep.cjs", function(module, exports) {
     module.exports.dep = "dep";
 });
-farmRequire();
+var __farm_cjs_exports__$1 = farmRequire();
 ; // module_id: index.ts

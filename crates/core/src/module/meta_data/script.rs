@@ -22,8 +22,10 @@ pub mod feature_flag;
 pub mod module_export_ident;
 pub mod statement;
 
+/// means the module is being fully imported by using import * as or export * as
 pub const EXPORT_NAMESPACE: &str = "namespace_farm_internal_";
-pub const EXPORT_EXTERNAL_ALL: &str = "external_all_farm_internal_";
+/// means the module is being exported by export *
+pub const AMBIGUOUS_EXPORT_ALL: &str = "ambiguous_export_all_farm_internal_";
 pub const EXPORT_DEFAULT: &str = "default";
 
 pub const FARM_RUNTIME_MODULE_HELPER_ID: &str = "@farm-runtime/module-helper";
@@ -290,5 +292,9 @@ impl ModuleSystem {
 
   pub fn contains_commonjs(&self) -> bool {
     matches!(self, ModuleSystem::CommonJs | ModuleSystem::Hybrid)
+  }
+
+  pub fn is_es_module(&self) -> bool {
+    matches!(self, ModuleSystem::EsModule | ModuleSystem::Hybrid)
   }
 }

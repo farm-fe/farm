@@ -6,8 +6,7 @@ use farmfe_core::{
   context::CompilationContext,
   module::{
     meta_data::script::{
-      CommentsMetaData, CommentsMetaDataItem, ModuleExportIdent, EXPORT_EXTERNAL_ALL,
-      FARM_RUNTIME_MODULE_HELPER_ID,
+      statement::SwcId, CommentsMetaData, CommentsMetaDataItem, ModuleExportIdent,
     },
     module_graph::ModuleGraph,
     ModuleId, ModuleSystem,
@@ -22,20 +21,14 @@ use farmfe_core::{
   swc_ecma_ast::{EmptyStmt, Module as SwcModule, ModuleItem, Stmt},
   HashMap, HashSet,
 };
-use handle_external_modules::find_or_create_preserved_import_item;
-use strip_module_decl::{
-  strip_module_decl, PreservedImportDeclItem, PreservedImportDeclType, StripModuleDeclResult,
-};
+
+use strip_module_decl::{strip_module_decl, PreservedImportDeclItem, StripModuleDeclResult};
 use swc_ecma_visit::VisitMutWith;
 use unique_idents::TopLevelIdentsRenameHandler;
 pub use unique_idents::EXPORT_NAMESPACE;
-use utils::{
-  create_define_export_star_ident, create_define_export_star_item, create_export_all_item,
-  create_import_farm_define_export_helper_stmt, create_var_namespace_item,
-  generate_export_decl_item,
-};
+use utils::{create_var_namespace_item, generate_export_decl_item};
 
-use crate::script::create_export_namespace_ident;
+use crate::script::concatenate_modules::utils::should_add_namespace_ident;
 
 use super::{
   merge_swc_globals::{merge_comments, merge_sourcemap},
@@ -119,6 +112,7 @@ pub fn concatenate_modules_ast(
 
   let mut comments = vec![];
   let mut module_asts = vec![];
+  let mut pre_post_items = vec![];
 
   let mut sorted_modules = vec![];
   let merged_globals = Globals::new();
@@ -140,14 +134,20 @@ pub fn concatenate_modules_ast(
           },
         );
         stripped_module
-          .ast
-          .body
+          .items_to_prepend
           .insert(0, ModuleItem::Stmt(Stmt::Empty(EmptyStmt { span })));
       });
     }
 
     comments.push((module_id.clone(), stripped_module.comments));
     module_asts.push((module_id.clone(), stripped_module.ast));
+    pre_post_items.push((
+      module_id.clone(),
+      (
+        stripped_module.items_to_prepend,
+        stripped_module.items_to_append,
+      ),
+    ));
 
     sorted_modules.push(module_id);
   }
@@ -159,15 +159,21 @@ pub fn concatenate_modules_ast(
   let stripped_results = comments
     .into_iter()
     .zip(module_asts.into_iter())
-    .map(|((_, comments), (_, ast))| StripModuleDeclResult {
-      comments,
-      ast,
-      items_to_prepend: vec![],
-    })
+    .zip(pre_post_items)
+    .map(
+      |(((_, comments), (_, ast)), (_, (items_to_prepend, items_to_append)))| {
+        StripModuleDeclResult {
+          comments,
+          ast,
+          items_to_prepend,
+          items_to_append,
+        }
+      },
+    )
     .collect::<Vec<_>>();
 
   let (mut concatenated_ast, mut external_modules) =
-    merge_stripped_module_asts(stripped_results, strip_context);
+    merge_stripped_module_asts(stripped_results, module_graph, strip_context);
   // extend dynamic external modules
   external_modules.extend(dynamic_external_modules);
 
@@ -192,15 +198,31 @@ struct StripModulesAstsResult {
   strip_context: StripModuleContext,
 }
 
+struct PreservedExportDeclItem {
+  pub export_item: ModuleItem,
+  pub source_module_id: Option<ModuleId>,
+}
+
+impl PreservedExportDeclItem {
+  pub fn new(export_item: ModuleItem, source_module_id: Option<ModuleId>) -> Self {
+    Self {
+      export_item,
+      source_module_id,
+    }
+  }
+}
+
 struct StripModuleContext {
+  pub should_add_namespace_ident: HashSet<ModuleId>,
   pub rename_handler: Rc<RefCell<unique_idents::TopLevelIdentsRenameHandler>>,
 
   /// the preserved import or export from statements that are external modules
   pub preserved_import_decls: Vec<PreservedImportDeclItem>,
   /// the preserved export statements traced from the entry module
-  pub preserved_export_decls: Vec<ModuleItem>,
-  /// extra module items generated handling external modules
-  pub extra_external_module_items: Vec<ModuleItem>,
+  pub preserved_export_decls: Vec<PreservedExportDeclItem>,
+  /// extra var decls that should be appended after import decls
+  /// (source_module_id, export_str, var_decl)
+  pub extra_var_decls: Vec<(SwcId, SwcId, ModuleItem)>,
 }
 
 fn strip_modules_asts(
@@ -249,14 +271,14 @@ fn strip_modules_asts(
   // 3. Visit sorted modules and process them
   let rename_handler = unique_idents::init_rename_handler(&sorted_modules, module_graph);
   let mut strip_context = StripModuleContext {
+    should_add_namespace_ident: HashSet::default(),
     rename_handler: Rc::new(RefCell::new(rename_handler)),
     preserved_import_decls: vec![],
     preserved_export_decls: vec![],
-    extra_external_module_items: vec![],
+    extra_var_decls: vec![],
   };
 
   let mut strip_module_results = vec![];
-  let mut should_add_helper = false;
 
   for module_id in sorted_modules {
     let module = module_graph.module(&module_id).unwrap();
@@ -264,7 +286,6 @@ fn strip_modules_asts(
 
     try_with(cm, context.meta.get_globals(&module_id).value(), || {
       let export_ident_map = &module.meta.as_script().export_ident_map;
-      let ambiguous_export_ident_map = &module.meta.as_script().ambiguous_export_ident_map;
       // rename module_namespace if there are conflicts
       if let Some(module_export_ident) = export_ident_map.get(EXPORT_NAMESPACE) {
         let module_export_ident = module_export_ident.as_internal();
@@ -273,107 +294,44 @@ fn strip_modules_asts(
           .rename_ident_if_conflict(&module_export_ident.module_id, &module_export_ident.ident);
       }
 
-      let mut result = strip_module_decl(&module_id, module_ids, module_graph, &mut strip_context);
+      let should_add_export_namespace_item =
+        should_add_namespace_ident(&module_id, export_ident_map);
 
-      if let Some(export_idents) = ambiguous_export_ident_map.get(EXPORT_EXTERNAL_ALL)
-        && module_id == *entry_module_id
-      {
-        let module_ids = export_idents
-          .iter()
-          .map(|m| m.as_internal().module_id.clone())
-          .collect::<HashSet<_>>();
-
-        for m_id in &module_ids {
-          // add `export * from 'external'`
-          strip_context
-            .preserved_export_decls
-            .push(create_export_all_item(m_id));
-        }
+      if should_add_export_namespace_item {
+        strip_context
+          .should_add_namespace_ident
+          .insert(module_id.clone());
       }
 
-      let should_add_external_all_helper =
-        if ambiguous_export_ident_map.contains_key(EXPORT_EXTERNAL_ALL) {
-          export_ident_map.contains_key(EXPORT_NAMESPACE)
-            || ambiguous_export_ident_map
-              .iter()
-              .any(|(k, _)| k != EXPORT_EXTERNAL_ALL)
-        } else {
-          false
-        };
+      let mut result = strip_module_decl(
+        &module_id,
+        module_ids,
+        module_id == *entry_module_id,
+        module_graph,
+        &mut strip_context,
+      );
 
-      let dependents_in_modules_ids = module_graph
-        .dependents_ids(&module_id)
-        .iter()
-        .filter(|m| module_ids.contains(m))
-        .count()
-        > 0;
-
-      // append:
-      // ```js
-      // var module_namespace = {
-      //    default: a,
-      //    ns: e_js_namespace_farm_internal_
-      // }
-      // ```
-      // if module is used by export * as or import * as or import('...')
-      let should_add_export_namespace_item = if dependents_in_modules_ids {
-        if let Some(module_export_ident) = export_ident_map.get(EXPORT_NAMESPACE) {
-          let module_export_ident = module_export_ident.as_internal();
-          // the ident should equal to the default ident, otherwise, it means the namespace ident is existed and should not be added
-          module_export_ident.ident == create_export_namespace_ident(&module_id).to_id().into()
-            && module_export_ident.module_id == module_id
-        } else {
-          false
-        }
-      } else {
-        false
-      };
-      if should_add_export_namespace_item || should_add_external_all_helper {
+      if should_add_export_namespace_item {
+        // append:
+        // ```js
+        // var module_namespace = {
+        //    default: a,
+        //    ns: e_js_namespace_farm_internal_
+        // }
+        // ```
+        // if module is used by export * as or import * as or import('...')
         result.ast.body.push(create_var_namespace_item(
           &module_id,
+          module_ids,
           export_ident_map,
           cyclic_idents.get(&module_id).unwrap_or(&HashSet::default()),
           &mut delayed_rename,
         ));
       }
 
-      if should_add_external_all_helper {
-        should_add_helper = true;
-
-        let export_external_all = ambiguous_export_ident_map.get(EXPORT_EXTERNAL_ALL).unwrap();
-
-        for export_ident in export_external_all {
-          // add import * xxx from the external module
-          find_or_create_preserved_import_item(
-            &mut strip_context,
-            &module_id,
-            &export_ident.as_internal().module_id,
-          );
-
-          result
-            .ast
-            .body
-            .push(create_define_export_star_item(&module_id, export_ident));
-        }
-      }
-
       strip_module_results.push((module_id, result));
     })
     .unwrap();
-  }
-
-  if should_add_helper {
-    // add `import { defineExportStar } from '@farmfe/runtime/src/modules/module-helper` to the top
-    strip_context
-      .preserved_import_decls
-      .push(PreservedImportDeclItem {
-        import_item: create_import_farm_define_export_helper_stmt(),
-        source_module_id: FARM_RUNTIME_MODULE_HELPER_ID.into(),
-        preserved_type: PreservedImportDeclType::ExternalGenerated,
-        used_idents: HashSet::from_iter([create_define_export_star_ident().to_id().into()]),
-        namespace_ident: None,
-        is_namespace_import: false,
-      });
   }
 
   // handle delayed rename
@@ -410,7 +368,9 @@ fn strip_modules_asts(
 
   if entry_module_export_ident_map.len() > 0 {
     let item = generate_export_decl_item(entry_module_export_ident_map, &rename_handler);
-    strip_context.preserved_export_decls.push(item);
+    strip_context
+      .preserved_export_decls
+      .push(PreservedExportDeclItem::new(item, None));
   }
 
   // handle dynamic import in parallel
@@ -439,7 +399,9 @@ fn strip_modules_asts(
     .for_each(|(module_id, result)| {
       let mut rename_visitor = unique_idents::RenameVisitor::new(module_id, &rename_handler);
 
+      result.items_to_prepend.visit_mut_with(&mut rename_visitor);
       result.ast.visit_mut_with(&mut rename_visitor);
+      result.items_to_append.visit_mut_with(&mut rename_visitor);
     });
 
   Ok(StripModulesAstsResult {
@@ -451,6 +413,7 @@ fn strip_modules_asts(
 
 fn merge_stripped_module_asts(
   strip_module_results: Vec<strip_module_decl::StripModuleDeclResult>,
+  module_graph: &ModuleGraph,
   strip_context: StripModuleContext,
 ) -> (SwcModule, HashMap<(String, ResolveKind), ModuleId>) {
   let mut concatenated_ast = SwcModule {
@@ -461,23 +424,19 @@ fn merge_stripped_module_asts(
 
   // get external modules from strip_module_decl_result
   let mut external_modules = HashMap::default();
-  let mut preserved_import_decls = strip_context.preserved_import_decls;
-  let mut preserved_export_decls = strip_context.preserved_export_decls;
-  let extra_external_module_items = strip_context.extra_external_module_items;
+  let preserved_import_decls = strip_context.preserved_import_decls;
 
   let mut new_body = vec![];
 
   // add external `import/export from` first
   for result in strip_module_results {
+    new_body.extend(result.items_to_prepend);
     new_body.extend(result.ast.body);
+    new_body.extend(result.items_to_append);
   }
 
-  // external order should be reverse of the topo order
-  preserved_import_decls.reverse();
-  preserved_export_decls.reverse();
-
   // extract external modules
-  for item in preserved_import_decls.into_iter() {
+  for item in preserved_import_decls.iter() {
     let source_kind = if let Some(import) = item
       .import_item
       .as_module_decl()
@@ -491,19 +450,62 @@ fn merge_stripped_module_asts(
       .and_then(|export| export.src.as_ref())
     {
       (src.value.to_string(), ResolveKind::ExportFrom)
+    } else if let Some(export_all) = item
+      .import_item
+      .as_module_decl()
+      .and_then(|decl| decl.as_export_all())
+    {
+      (export_all.src.value.to_string(), ResolveKind::ExportFrom)
     } else {
       continue;
     };
 
-    external_modules.insert(source_kind, item.source_module_id);
-    concatenated_ast.body.push(item.import_item);
+    external_modules.insert(source_kind, item.source_module_id.clone());
+    // concatenated_ast.body.push(item.import_item);
   }
 
-  concatenated_ast.body.extend(extra_external_module_items);
-  concatenated_ast.body.extend(new_body);
+  let preserved_export_decls = strip_context.preserved_export_decls;
+
+  let mut preserved_decls = vec![];
+  preserved_decls.extend(
+    preserved_import_decls
+      .into_iter()
+      .map(|i| (i.import_item, i.source_module_id)),
+  );
+  // export { xx } that does not contain from clause
+  let mut separate_export_decls = vec![];
+
+  for preserved_export in preserved_export_decls {
+    if let Some(source_module_id) = preserved_export.source_module_id {
+      preserved_decls.push((preserved_export.export_item, source_module_id));
+    } else {
+      separate_export_decls.push(preserved_export.export_item);
+    }
+  }
+
+  // order of external import item should be the same as execution order
+  preserved_decls.sort_by(|(_, a), (_, b)| {
+    let module_a_order = module_graph
+      .module(a)
+      .map(|m| m.execution_order)
+      .unwrap_or(0);
+    let module_b_order = module_graph
+      .module(b)
+      .map(|m| m.execution_order)
+      .unwrap_or(0);
+
+    module_a_order.cmp(&module_b_order)
+  });
+
   concatenated_ast
     .body
-    .extend(preserved_export_decls.into_iter());
+    .extend(preserved_decls.into_iter().map(|(i, _)| i));
+  concatenated_ast
+    .body
+    .extend(strip_context.extra_var_decls.into_iter().map(|(_, _, i)| i));
+
+  concatenated_ast.body.extend(new_body);
+  concatenated_ast.body.extend(separate_export_decls);
 
   // 4. Return the concatenated result
   (concatenated_ast, external_modules)

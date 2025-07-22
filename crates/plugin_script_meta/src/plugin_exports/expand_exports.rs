@@ -6,7 +6,7 @@ use farmfe_core::{
     meta_data::script::{
       statement::{ExportSpecifierInfo, ImportSpecifierInfo, SwcId},
       ModuleExportIdent, ModuleExportIdentType, ModuleReExportIdentType, ScriptModuleMetaData,
-      EXPORT_DEFAULT, EXPORT_EXTERNAL_ALL,
+      AMBIGUOUS_EXPORT_ALL, EXPORT_DEFAULT,
     },
     module_graph::ModuleGraph,
     ModuleId,
@@ -16,8 +16,8 @@ use farmfe_core::{
 };
 
 use farmfe_toolkit::script::{
-  concatenate_modules::EXPORT_NAMESPACE, create_export_default_ident,
-  create_export_external_all_ident, create_export_namespace_ident, swc_try_with::try_with,
+  concatenate_modules::EXPORT_NAMESPACE, create_ambiguous_export_all_ident,
+  create_export_default_ident, create_export_namespace_ident, swc_try_with::try_with,
 };
 
 /// expand the export_ident_map of each module of the module graph
@@ -236,7 +236,7 @@ fn expand_module_exports_dfs(
                 );
               } else {
                 expand_unresolved_import_dfs(
-                  &export_str,
+                  &local.sym,
                   local,
                   &source_module_id,
                   false,
@@ -352,6 +352,27 @@ fn expand_module_exports_dfs(
           continue;
         }
 
+        if let Some(existing_ident) = expand_context.get_export_ident(module_id, &export_str) {
+          let existing_ident = existing_ident.as_internal();
+          let module_export_ident = module_export_ident.as_internal();
+
+          match (
+            &existing_ident.export_type,
+            &module_export_ident.export_type,
+          ) {
+            (ModuleExportIdentType::Declaration, _) => {
+              continue;
+            }
+            (_, ModuleExportIdentType::Declaration) => {
+              // override the ambiguous ident with declaration ident
+            }
+            _ => {
+              println!("[Farm warn] export {} is already declared in {}. The declaration in {} will be ignored", export_str, existing_ident.module_id.to_string(), module_export_ident.module_id.to_string());
+              continue;
+            }
+          }
+        }
+
         let reexport_map = expand_context
           .reexport_ident_map
           .entry(module_id.clone())
@@ -365,33 +386,48 @@ fn expand_module_exports_dfs(
       }
     }
 
+    // extend ambiguous export ident map
+    if let Some(ambiguous_export_ident_map) =
+      expand_context.get_ambiguous_export_ident_map(&source_module_id)
+    {
+      for (export_str, export_idents) in ambiguous_export_ident_map {
+        let existing_map = expand_context
+          .ambiguous_export_ident_map
+          .entry(module_id.clone())
+          .or_default();
+        let existing_idents = existing_map.entry(export_str).or_default();
+
+        for export_ident in export_idents {
+          // do not insert duplicate ident
+          if !existing_idents.contains(&export_ident) {
+            existing_idents.insert(export_ident);
+          }
+        }
+      }
+    }
+
     let source_module = module_graph.module(&source_module_id).unwrap();
-    let ambiguous_export_all_ident = if source_module.external {
-      Some(ModuleExportIdent::new(
+
+    // if the module is not a es module, mark the export * from as ambiguous
+    if source_module.external
+      || !source_module.module_type.is_script()
+      || !source_module.meta.as_script().module_system.is_es_module()
+    {
+      let export_ident = ModuleExportIdent::new(
         source_module_id.clone(),
-        create_export_external_all_ident(&source_module_id)
+        create_ambiguous_export_all_ident(&source_module_id)
           .to_id()
           .into(),
-        ModuleExportIdentType::ExternalAll,
-      ))
-    } else if source_module.module_type.is_script() {
-      if let Some(idents) = expand_context
-        .ambiguous_export_ident_map
-        .get(&source_module_id)
-        .and_then(|map| map.get(EXPORT_EXTERNAL_ALL))
-      {
-        idents.iter().next().cloned()
-      } else {
-        None
-      }
-    } else {
-      None
-    };
-
-    if let Some(export_ident) = ambiguous_export_all_ident {
+        ModuleExportIdentType::AmbiguousExportAll,
+      );
+      expand_context.insert_ambiguous_export_ident(
+        &source_module_id,
+        AMBIGUOUS_EXPORT_ALL.to_string(),
+        export_ident.clone(),
+      );
       expand_context.insert_ambiguous_export_ident(
         module_id,
-        EXPORT_EXTERNAL_ALL.to_string(),
+        AMBIGUOUS_EXPORT_ALL.to_string(),
         export_ident,
       );
     }
@@ -424,7 +460,18 @@ fn expand_unresolved_import_dfs(
 
   visited.insert(source_module_id.clone());
 
-  if let Some(_) = expand_context.get_export_ident(source_module_id, imported_str) {
+  if expand_context
+    .get_export_ident(source_module_id, imported_str)
+    .map(|export_ident| {
+      // we have to find the deepest export ident, when tracing export all, we should not find unresolved ident
+      !from_export_all
+        || !matches!(
+          export_ident.as_internal().export_type,
+          ModuleExportIdentType::Unresolved | ModuleExportIdentType::External
+        )
+    })
+    .unwrap_or(false)
+  {
     return;
   }
 
@@ -445,9 +492,11 @@ fn expand_unresolved_import_dfs(
         source_module_id.clone(),
         ident.clone(),
         if source_module.external && from_export_all {
-          ModuleExportIdentType::ExternalReExportAll
+          ModuleExportIdentType::ExternalExportAll
         } else if source_module.external {
           ModuleExportIdentType::External
+        } else if from_export_all {
+          ModuleExportIdentType::UnresolvedExportAll
         } else {
           ModuleExportIdentType::Unresolved
         },
@@ -481,17 +530,20 @@ fn expand_unresolved_import_dfs(
           if let Some(export_ident) =
             expand_context.get_export_ident(&new_source_module_id, imported_str)
           {
-            let export_ident = export_ident.as_internal();
             expand_context.insert_ambiguous_export_ident(
               &source_module_id,
               imported_str.to_string(),
-              ModuleExportIdent::new(
-                source_module_id.clone(),
-                export_ident.ident.clone(),
-                export_ident.export_type.clone(),
-              ),
+              export_ident.clone(),
             );
             found_ambiguous_ident = true;
+
+            if !expand_context.contains_export_ident(&source_module_id, imported_str) {
+              expand_context.insert_export_ident(
+                source_module_id,
+                imported_str.to_string(),
+                export_ident,
+              );
+            }
           }
 
           if let Some(ambiguous_idents) =
@@ -556,6 +608,14 @@ impl ExpandModuleExportsContext {
       .entry(module_id.clone())
       .or_default()
       .insert(export_str, export_ident);
+  }
+
+  pub fn contains_export_ident(&self, module_id: &ModuleId, export_str: &str) -> bool {
+    self
+      .export_ident_map
+      .get(module_id)
+      .and_then(|export_ident_map| export_ident_map.get(export_str))
+      .is_some()
   }
 
   pub fn insert_ambiguous_export_ident(
@@ -631,6 +691,13 @@ impl ExpandModuleExportsContext {
       .export_ident_map
       .get(module_id)
       .and_then(|export_ident_map| export_ident_map.get(export_str).cloned())
+  }
+
+  pub fn get_ambiguous_export_ident_map(
+    &self,
+    module_id: &ModuleId,
+  ) -> Option<HashMap<String, HashSet<ModuleExportIdent>>> {
+    self.ambiguous_export_ident_map.get(module_id).cloned()
   }
 
   pub fn get_ambiguous_export_idents(

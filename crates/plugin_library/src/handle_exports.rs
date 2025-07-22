@@ -2,7 +2,7 @@ use farmfe_core::{
   config::FARM_REQUIRE,
   module::{
     meta_data::script::{
-      ModuleExportIdent, ModuleExportIdentType, EXPORT_DEFAULT, EXPORT_EXTERNAL_ALL,
+      ModuleExportIdent, ModuleExportIdentType, AMBIGUOUS_EXPORT_ALL, EXPORT_DEFAULT,
     },
     ModuleId,
   },
@@ -28,7 +28,7 @@ pub fn create_export_decl_items(
   let mut export_specifier = vec![];
 
   for (export_name, export_ident) in export_ident_map {
-    if export_name == EXPORT_NAMESPACE || export_name == EXPORT_EXTERNAL_ALL {
+    if export_name == EXPORT_NAMESPACE || export_name == AMBIGUOUS_EXPORT_ALL {
       continue;
     }
     let mut export_ident = export_ident.as_internal_mut();

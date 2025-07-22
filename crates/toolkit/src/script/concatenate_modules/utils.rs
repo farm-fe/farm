@@ -1,19 +1,21 @@
 use farmfe_core::{
   module::{
     meta_data::script::{
-      statement::Statement, ModuleExportIdent, EXPORT_EXTERNAL_ALL, FARM_RUNTIME_MODULE_HELPER_ID,
-      FARM_RUNTIME_MODULE_SYSTEM_ID,
+      statement::{Statement, SwcId},
+      ModuleExportIdent, ModuleExportIdentType, AMBIGUOUS_EXPORT_ALL,
+      FARM_RUNTIME_MODULE_HELPER_ID, FARM_RUNTIME_MODULE_SYSTEM_ID,
     },
     ModuleId,
   },
   regex::Regex,
   swc_common::{SyntaxContext, DUMMY_SP},
   swc_ecma_ast::{
-    BindingIdent, BlockStmt, Bool, CallExpr, Callee, Decl, EmptyStmt, ExportAll,
+    BinExpr, BinaryOp, BindingIdent, BlockStmt, Bool, CallExpr, Callee, Decl, EmptyStmt, ExportAll,
     ExportNamedSpecifier, ExportSpecifier, Expr, ExprOrSpread, ExprStmt, GetterProp, Ident,
-    ImportDecl, ImportNamedSpecifier, ImportSpecifier, ImportStarAsSpecifier, KeyValueProp, Lit,
-    ModuleDecl, ModuleExportName, ModuleItem, NamedExport, ObjectLit, Pat, Prop, PropName,
-    PropOrSpread, ReturnStmt, Stmt, Str, VarDecl, VarDeclKind, VarDeclarator,
+    IdentName, ImportDecl, ImportNamedSpecifier, ImportSpecifier, ImportStarAsSpecifier,
+    KeyValueProp, Lit, MemberExpr, MemberProp, ModuleDecl, ModuleExportName, ModuleItem,
+    NamedExport, ObjectLit, Pat, Prop, PropName, PropOrSpread, ReturnStmt, Stmt, Str, VarDecl,
+    VarDeclKind, VarDeclarator,
   },
   HashMap, HashSet,
 };
@@ -59,6 +61,7 @@ pub fn create_export_default_expr_item(expr: Box<Expr>, default_ident: Ident) ->
 
 pub(crate) fn create_var_namespace_item(
   module_id: &ModuleId,
+  module_ids: &HashSet<ModuleId>,
   export_ident_map: &HashMap<String, ModuleExportIdent>,
   cyclic_idents: &HashSet<ModuleExportIdent>,
   delayed_rename: &mut HashMap<ModuleId, HashSet<ModuleExportIdent>>,
@@ -68,7 +71,11 @@ pub(crate) fn create_var_namespace_item(
 
   let mut props: Vec<PropOrSpread> = key_ident_vec
     .into_iter()
-    .filter(|(key, _)| *key != EXPORT_NAMESPACE && *key != EXPORT_EXTERNAL_ALL)
+    .filter(|(key, module_export_ident)| {
+      *key != EXPORT_NAMESPACE
+        && *key != AMBIGUOUS_EXPORT_ALL
+        && module_ids.contains(&module_export_ident.as_internal().module_id)
+    })
     .map(|(key, module_export_ident)| {
       delayed_rename
         .entry(module_id.clone())
@@ -165,9 +172,9 @@ pub fn create_export_namespace_ident(module_id: &ModuleId) -> Ident {
   )
 }
 
-pub fn create_export_external_all_ident(module_id: &ModuleId) -> Ident {
+pub fn create_ambiguous_export_all_ident(module_id: &ModuleId) -> Ident {
   Ident::new(
-    format!("{}_{}", get_filename(module_id), EXPORT_EXTERNAL_ALL).into(),
+    format!("{}_{}", get_filename(module_id), AMBIGUOUS_EXPORT_ALL).into(),
     DUMMY_SP,
     SyntaxContext::empty(),
   )
@@ -239,12 +246,7 @@ pub fn create_import_farm_register_helper_stmt() -> ModuleItem {
 }
 
 /// `defineExportStar(module_namespace, node_fs_external_namespace_farm_internal_)`
-pub fn create_define_export_star_item(
-  module_id: &ModuleId,
-  export_external_ident: &ModuleExportIdent,
-) -> ModuleItem {
-  let export_external_ident = export_external_ident.as_internal();
-
+pub fn create_define_export_star_item(module_id: &ModuleId, ident: Ident) -> ModuleItem {
   ModuleItem::Stmt(Stmt::Expr(ExprStmt {
     span: DUMMY_SP,
     expr: Box::new(Expr::Call(CallExpr {
@@ -259,11 +261,7 @@ pub fn create_define_export_star_item(
         },
         ExprOrSpread {
           spread: None,
-          expr: Box::new(Expr::Ident(Ident::new(
-            export_external_ident.ident.sym.clone(),
-            DUMMY_SP,
-            export_external_ident.ident.ctxt(),
-          ))),
+          expr: Box::new(Expr::Ident(ident)),
         },
       ],
     })),
@@ -294,6 +292,15 @@ pub fn generate_export_decl_item(
   for (name, id) in module_export_ident {
     let id = id.as_internal();
 
+    if !matches!(
+      id.export_type,
+      ModuleExportIdentType::Declaration
+        | ModuleExportIdentType::External
+        | ModuleExportIdentType::Unresolved
+    ) {
+      continue;
+    }
+
     let renamed_ident = rename_handler
       .get_renamed_ident(&id.module_id, &id.ident)
       .unwrap_or(id.ident.clone());
@@ -318,4 +325,56 @@ pub fn generate_export_decl_item(
     type_only: false,
     with: None,
   }))
+}
+
+pub fn should_add_namespace_ident(
+  module_id: &ModuleId,
+  export_ident_map: &HashMap<String, ModuleExportIdent>,
+) -> bool {
+  // append:
+  // ```js
+  // var module_namespace = {
+  //    default: a,
+  //    ns: e_js_namespace_farm_internal_
+  // }
+  // ```
+  // if module is used by export * as or import * as or import('...')
+  let should_add_export_namespace_item =
+    if let Some(module_export_ident) = export_ident_map.get(EXPORT_NAMESPACE) {
+      let module_export_ident = module_export_ident.as_internal();
+      // the ident should equal to the default ident, otherwise, it means the namespace ident is existed and should not be added
+      module_export_ident.ident == create_export_namespace_ident(&module_id).to_id().into()
+        && module_export_ident.module_id == *module_id
+    } else {
+      false
+    };
+
+  should_add_export_namespace_item
+}
+
+pub fn create_bin_expr(mut exprs: Vec<Expr>, op: BinaryOp) -> Expr {
+  if exprs.len() == 1 {
+    return exprs.remove(0);
+  }
+
+  let left = exprs.remove(0);
+
+  Expr::Bin(BinExpr {
+    span: DUMMY_SP,
+    op,
+    left: Box::new(left),
+    right: Box::new(create_bin_expr(exprs, op)),
+  })
+}
+
+pub fn create_member_expr(ident: &SwcId, prop: &str) -> Expr {
+  Expr::Member(MemberExpr {
+    span: DUMMY_SP,
+    obj: Box::new(Expr::Ident(Ident::new(
+      ident.sym.clone(),
+      DUMMY_SP,
+      ident.ctxt(),
+    ))),
+    prop: MemberProp::Ident(IdentName::new(prop.into(), DUMMY_SP)),
+  })
 }

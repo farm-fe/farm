@@ -51,8 +51,11 @@ initModuleSystem(__farm_internal_module_system__);
         var _f_node_fs1 = farmRequire('node:fs');
         farmRequire._(exports, "b", _f_node_fs1, "existsSync");
         var _f_zoo = farmRequire("774fba3e");
+        farmRequire._(exports, "createRequire", _f_zoo);
         farmRequire._(exports, "a", _f_zoo);
         farmRequire._(exports, "c", _f_zoo, "b");
+        var _f_zoo1 = farmRequire("774fba3e");
+        farmRequire._e(exports, _f_zoo1);
     }
 });
 var __farm_ms__ = window['__farm_default_namespace__'].m;__farm_ms__.b();var __farm_entry__=__farm_ms__.r("b5d64806");

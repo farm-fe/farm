@@ -1,4 +1,5 @@
 use farmfe_macro_cache_item::cache_item;
+use swc_common::DUMMY_SP;
 use swc_ecma_ast::{Id, Ident, ImportSpecifier, ModuleExportName};
 
 use crate::HashSet;
@@ -221,6 +222,28 @@ impl From<Ident> for SwcId {
   }
 }
 
+impl From<&str> for SwcId {
+  fn from(value: &str) -> Self {
+    Self {
+      sym: value.into(),
+      ctxt: swc_common::SyntaxContext::empty().as_u32(),
+    }
+  }
+}
+
+impl Into<Ident> for SwcId {
+  fn into(self) -> Ident {
+    let ctxt = self.ctxt();
+    Ident::new(self.sym, DUMMY_SP, ctxt)
+  }
+}
+
+impl Into<ModuleExportName> for SwcId {
+  fn into(self) -> ModuleExportName {
+    ModuleExportName::Ident(self.into())
+  }
+}
+
 impl SwcId {
   pub fn new(sym: swc_atoms::Atom, ctxt: u32) -> Self {
     Self { sym, ctxt }
@@ -228,6 +251,10 @@ impl SwcId {
 
   pub fn ctxt(&self) -> swc_common::SyntaxContext {
     swc_common::SyntaxContext::from_u32(self.ctxt)
+  }
+
+  pub fn clear_ctxt(&mut self) {
+    self.ctxt = swc_common::SyntaxContext::empty().as_u32();
   }
 }
 

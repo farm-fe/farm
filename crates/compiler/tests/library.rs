@@ -34,6 +34,7 @@ fn test(file_path_buf: PathBuf, crate_path_buf: PathBuf) {
     "external/import_namespace",
     "library/external/",
     "dynamic/require",
+    "reexport/use_external_reexport",
   ];
   let is_cjs = test_cases_that_need_real_runtime
     .iter()
@@ -106,11 +107,15 @@ fn library_test() {
   //   test
   // );
   // fixture!(
-  //   "tests/fixtures/library/external/multiple-export-all/**/index.ts",
+  //   "tests/fixtures/library/external/conflicts/**/index.ts",
   //   test
   // );
   // fixture!(
   //   "tests/fixtures/library/reexport/reexport_hybrid_cjs/default/**/index.ts",
+  //   test
+  // );
+  // fixture!(
+  //   "tests/fixtures/library/reexport/use_external_reexport/**/index.ts",
   //   test
   // );
 }

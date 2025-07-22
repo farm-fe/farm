@@ -1,18 +1,9 @@
 //index.js:
- function defineExportStar(to, from) {
-    Object.keys(from).forEach(function(k) {
-        if (k !== "default" && !Object.prototype.hasOwnProperty.call(to, k)) {
-            Object.defineProperty(to, k, {
-                value: from[k],
-                enumerable: true,
-                configurable: true
-            });
-        }
-    });
-    return from;
-}
-import * as utils_external_all_farm_internal_ from "/external/utils";
-import * as color_external_all_farm_internal_ from "/external/color";
+ import * as color_ambiguous_export_all_farm_internal_ from "/external/color";
+export * from "/external/color";
+import * as utils_ambiguous_export_all_farm_internal_ from "/external/utils";
+export * from "/external/utils";
+var color_bold = color_ambiguous_export_all_farm_internal_.bold || utils_ambiguous_export_all_farm_internal_.bold;
 ; // module_id: server.ts
 class Server {
     constructor(){
@@ -29,14 +20,6 @@ class Compiler {
 function green(str) {
     console.log('green', str);
 }
-var color_ts_namespace_farm_internal_ = {
-    green: green,
-    __esModule: true
-};
-defineExportStar(color_ts_namespace_farm_internal_, color_external_all_farm_internal_);
-defineExportStar(color_ts_namespace_farm_internal_, utils_external_all_farm_internal_);
 ; // module_id: index.ts
-var bold = color_ts_namespace_farm_internal_.bold;
-console.log(bold('hello'));
+console.log(color_bold('hello'));
 export { Compiler as Compiler, Server as Server, green as green };
-export * from "/external/color";

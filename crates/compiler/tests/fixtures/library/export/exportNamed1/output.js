@@ -6,8 +6,8 @@ function BB() {
     const b = 6;
     console.log(a, b);
 }
-var b$3 = b;
 var a$3 = a;
+var b$3 = b;
 const a$1 = 'a-runtime.1.ts';
 const b$1 = 'b-runtime.1.ts';
 function BB$1() {

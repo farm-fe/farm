@@ -48,13 +48,13 @@ function importDefault(v) {
     return v;
 }
 defineExportEsModule(exports);
-var _f_node_fs = interopRequireDefault(require('node:fs'));
-var _f_node_fs1 = interopRequireWildcard(require('node:fs'));
-var fs$1 = _f_node_fs1;
+var _f_node_fs = interopRequireWildcard(require('node:fs'));
+var fs$1 = _f_node_fs;
+var _f_node_fs1 = interopRequireDefault(require('node:fs'));
 ; // module_id: a.ts
 const fs = 'a.ts';
 console.log(fs);
 ; // module_id: b.ts
 console.log('b.ts', fs$1);
 ; // module_id: index.ts
-console.log('index.ts', importDefault(_f_node_fs));
+console.log('index.ts', importDefault(_f_node_fs1));

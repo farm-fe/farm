@@ -15,6 +15,18 @@ function defineExportEsModule(to) {
         value: true
     });
 }
+function defineExportStar(to, from) {
+    Object.keys(from).forEach(function(k) {
+        if (k !== "default" && !Object.prototype.hasOwnProperty.call(to, k)) {
+            Object.defineProperty(to, k, {
+                value: from[k],
+                enumerable: true,
+                configurable: true
+            });
+        }
+    });
+    return from;
+}
 function getRequireWildcardCache(nodeInterop) {
     if (typeof WeakMap !== "function") return null;
     var cacheBabelInterop = new WeakMap();
@@ -49,22 +61,15 @@ defineExportEsModule(exports);
 exportByDefineProperty(exports, "Compiler", ()=>Compiler);
 exportByDefineProperty(exports, "Server", ()=>Server);
 exportByDefineProperty(exports, "green", ()=>green);
-var _f_utils = interopRequireWildcard(require("/external/utils"));
-var utils_external_all_farm_internal_ = _f_utils;
 var _f_color = interopRequireWildcard(require("/external/color"));
-var color_external_all_farm_internal_ = _f_color;
-function defineExportStar(to, from) {
-    Object.keys(from).forEach(function(k) {
-        if (k !== "default" && !Object.prototype.hasOwnProperty.call(to, k)) {
-            Object.defineProperty(to, k, {
-                value: from[k],
-                enumerable: true,
-                configurable: true
-            });
-        }
-    });
-    return from;
-}
+var color_ambiguous_export_all_farm_internal_ = _f_color;
+var _f_utils = interopRequireWildcard(require("/external/utils"));
+var utils_ambiguous_export_all_farm_internal_ = _f_utils;
+var _f_color1 = require("/external/color");
+defineExportStar(exports, _f_color1);
+var _f_utils1 = require("/external/utils");
+defineExportStar(exports, _f_utils1);
+var color_bold = color_ambiguous_export_all_farm_internal_.bold || utils_ambiguous_export_all_farm_internal_.bold;
 ; // module_id: server.ts
 class Server {
     constructor(){
@@ -81,14 +86,5 @@ class Compiler {
 function green(str) {
     console.log('green', str);
 }
-var color_ts_namespace_farm_internal_ = {
-    green: green,
-    __esModule: true
-};
-defineExportStar(color_ts_namespace_farm_internal_, color_external_all_farm_internal_);
-defineExportStar(color_ts_namespace_farm_internal_, utils_external_all_farm_internal_);
 ; // module_id: index.ts
-var bold = color_ts_namespace_farm_internal_.bold;
-console.log(bold('hello'));
-var _f_color1 = require("/external/color");
-defineExportStar(exports, _f_color1);
+console.log(color_bold('hello'));

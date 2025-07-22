@@ -15,10 +15,9 @@ initModuleSystem(__farm_internal_module_system__);
 })(window["__farm_default_namespace__"].m, {
     "b5d64806": function(module, exports, farmRequire, farmDynamicRequire) {
         farmRequire._m(exports);
-        var _f_xxx = farmRequire.w(farmRequire("xxx"));
-        var xxx_external_all_farm_internal_ = _f_xxx;
-        var createEmotion = xxx_external_all_farm_internal_.default;
-        console.log(createEmotion);
+        var _f_xxx = farmRequire("xxx");
+        const conflict = 'local conflict';
+        console.log(_f_xxx.default, _f_xxx.default, _f_xxx.removeEmotion, _f_xxx.removeEmotion, conflict, _f_xxx.conflict);
     }
 });
 var __farm_ms__ = window['__farm_default_namespace__'].m;__farm_ms__.b();var __farm_entry__=__farm_ms__.r("b5d64806");
