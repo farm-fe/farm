@@ -8,6 +8,9 @@ homepage = "https://farmfe.org"
 license = "MIT"
 repository = "https://github.com/farm-fe/farm"
 
+[workspace.dependencies]
+rkyv = "0.8.10"
+
 [profile.release-publish]
 inherits = "release"
 codegen-units = 1

@@ -29,8 +29,8 @@ initModuleSystem(__farm_internal_module_system__);
         });
         var _f_exports1 = farmRequire("027594c8");
         var _f_exports11 = farmRequire("027594c8");
-        farmRequire._(exports, "c", _f_exports11, "a");
-        farmRequire._(exports, "b", _f_exports11);
+        farmRequire._(exports, "b", _f_exports11, "a");
+        farmRequire._(exports, "c", _f_exports11, "b");
         class MyAlpha {
             constructor(){
                 return _f_exports1.a;
@@ -50,7 +50,7 @@ initModuleSystem(__farm_internal_module_system__);
     "b5d64806": function(module, exports, farmRequire, farmDynamicRequire) {
         farmRequire._m(exports);
         var _f_dep = farmRequire("05ee5ec7");
-        console.log(_f_dep.c, _f_dep.b, _f_dep.a);
+        console.log(_f_dep.b, _f_dep.c, _f_dep.a);
     }
 });
 var __farm_ms__ = window['__farm_default_namespace__'].m;__farm_ms__.b();var __farm_entry__=__farm_ms__.r("b5d64806");

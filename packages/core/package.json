@@ -19,17 +19,15 @@
     "./package.json": "./package.json"
   },
   "napi": {
-    "name": "farm",
-    "triples": {
-      "additional": [
-        "aarch64-apple-darwin",
-        "aarch64-unknown-linux-gnu",
-        "aarch64-unknown-linux-musl",
-        "x86_64-unknown-linux-musl",
-        "i686-pc-windows-msvc",
-        "aarch64-pc-windows-msvc"
-      ]
-    }
+    "binaryName": "farm",
+    "targets": [
+      "aarch64-apple-darwin",
+      "aarch64-unknown-linux-gnu",
+      "aarch64-unknown-linux-musl",
+      "x86_64-unknown-linux-musl",
+      "i686-pc-windows-msvc",
+      "aarch64-pc-windows-msvc"
+    ]
   },
   "license": "MIT",
   "repository": {
@@ -60,7 +58,7 @@
     "build": "tsc -p tsconfig.build.json && npm run build:cjs",
     "build:rs": "npm run build:rs:debug -- --release",
     "build:rs:publish": "npm run build:rs:debug -- --profile release-publish",
-    "build:rs:debug": "napi build --platform --cargo-name farmfe_node -p farmfe_node --cargo-cwd ../../ binding --js binding.cjs --dts binding.d.ts",
+    "build:rs:debug": "napi build --platform -p farmfe_node --manifest-path ../../crates/node/Cargo.toml -o binding --js binding.cjs --dts binding.d.ts",
     "build:rs:profile": "cross-env FARM_PROFILE=1 npm run build:rs -- --features profile",
     "prepublishOnly": "napi prepublish -t npm && FARM_PUBLISH=true npm run build:cjs",
     "clean": "rimraf dist tsconfig.build.tsbuildinfo",
@@ -69,7 +67,7 @@
     "type-check": "tsc -p tsconfig.build.json"
   },
   "devDependencies": {
-    "@napi-rs/cli": "^2.18.4",
+    "@napi-rs/cli": "3.0.4",
     "@types/compression": "^1.7.5",
     "@types/connect": "^3.4.38",
     "@types/cors": "^2.8.17",

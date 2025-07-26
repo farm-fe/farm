@@ -71,6 +71,35 @@ pub fn expand_exports_of_module_graph(
   }
 }
 
+pub fn expand_dynamic_entry_exports(module_graph: &mut ModuleGraph) {
+  let mut expand_context = ExpandModuleExportsContext::new();
+
+  for (dynamic_entry_id, _) in &module_graph.dynamic_entries {
+    expand_module_exports_dfs(dynamic_entry_id, module_graph, &mut expand_context);
+  }
+
+  for (module_id, export_ident_map) in expand_context.export_ident_map {
+    let module = module_graph.module_mut(&module_id).unwrap();
+    let script_meta = module.meta.as_script_mut();
+    script_meta.export_ident_map = export_ident_map;
+  }
+
+  for (module_id, ambiguous_export_ident_map) in expand_context.ambiguous_export_ident_map {
+    let module = module_graph.module_mut(&module_id).unwrap();
+    let script_meta = module.meta.as_script_mut();
+    script_meta.ambiguous_export_ident_map = ambiguous_export_ident_map
+      .into_iter()
+      .map(|(k, v)| (k, v.into_iter().collect::<Vec<_>>()))
+      .collect();
+  }
+
+  for (module_id, reexport_ident_map) in expand_context.reexport_ident_map {
+    let module = module_graph.module_mut(&module_id).unwrap();
+    let script_meta = module.meta.as_script_mut();
+    script_meta.reexport_ident_map = reexport_ident_map;
+  }
+}
+
 pub(crate) fn get_basic_module_export_ident(
   module_id: &ModuleId,
   module_script_meta: &ScriptModuleMetaData,

@@ -1,5 +1,6 @@
 ---
 source: crates/compiler/src/update/regenerate_resources/generate_and_diff_resource_pots/test_generate_and_diff_resource_pots.rs
+assertion_line: 190
 input_file: crates/testing_helpers/src/lib.rs
 ---
 [
@@ -16,9 +17,9 @@ input_file: crates/testing_helpers/src/lib.rs
             "B_Entry",
         ),
         resource_pots: {
-            "B_2f5d6a63eb2504d486bf13df147c043a_js",
-            "test__js",
             "B_3f39d5c348e5b79d06e842c114e6cc57_js",
+            "test__js",
+            "B_2f5d6a63eb2504d486bf13df147c043a_js",
         },
     },
     GroupResourcePotsSnapshotItem {

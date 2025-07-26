@@ -10,7 +10,6 @@ use farmfe_utils::relative;
 use heck::AsLowerCamelCase;
 pub use meta_data::{custom::CustomMetaDataMap, script::ModuleSystem, ModuleMetaData};
 use relative_path::RelativePath;
-use rkyv::Deserialize;
 
 use crate::{config::Mode, resource::resource_pot::ResourcePotId};
 
@@ -247,7 +246,7 @@ impl ToString for ModuleType {
 /// Abstract ModuleId from the module's resolved id
 #[cache_item]
 #[derive(PartialEq, Eq, Hash, Clone, Debug, PartialOrd, Ord)]
-#[archive_attr(derive(Hash, Eq, PartialEq))]
+#[rkyv(derive(Hash, Eq, PartialEq))]
 pub struct ModuleId {
   relative_path: String,
   query_string: String,
@@ -494,6 +493,7 @@ mod tests {
 
   #[test]
   fn module_serialization() {
+    println!("module serialization");
     let mut module = Module::new(ModuleId::new("/root/index.ts", "", "/root"));
 
     #[cache_item]
@@ -517,14 +517,6 @@ mod tests {
         }) as Box<dyn Cacheable>,
       )]),
     )));
-
-    // let mut v = Box::new(StructModuleData {
-    //   ast: String::from("ast"),
-    //   imports: vec![String::from("./index")],
-    // }) as Box<dyn Cacheable>;
-
-    // let value = v.as_any_mut().downcast_mut::<StructModuleData>().unwrap();
-    // let module = std::mem::take(value);
 
     let bytes = module.serialize_bytes().unwrap();
     let mut deserialized_module = module.deserialize_bytes(bytes).unwrap();

@@ -4,7 +4,7 @@ use farmfe_core::{
   context::CompilationContext, error::Result, plugin::PluginProcessModuleHookParam,
 };
 
-use napi::{bindgen_prelude::FromNapiValue, NapiRaw};
+use napi::bindgen_prelude::FromNapiValue;
 
 use crate::{
   new_js_plugin_hook,

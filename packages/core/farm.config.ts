@@ -17,6 +17,7 @@ export default (<UserConfig>{
       'farm-browserslist-generator',
       '@farmfe/core-.*',
       './farm.*.node$',
+      './farm.*.cjs',
       '@farmfe/plugin-.*'
     ].map((id) => `^${id}$`),
     comments: true,

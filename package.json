@@ -6,7 +6,7 @@
     "node": ">=18",
     "pnpm": ">=9"
   },
-  "scripts": {
+    "scripts": {
     "preinstall": "npx only-allow pnpm",
     "bootstrap": "node scripts/bootstrap.mjs -v",
     "start:rs": "cargo watch -w crates -w rust-plugins -s 'scripts/watch.sh'",

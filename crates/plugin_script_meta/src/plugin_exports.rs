@@ -1,6 +1,8 @@
 use std::i32;
 
-use expand_exports::{expand_exports_of_module_graph, get_basic_module_export_ident};
+use expand_exports::{
+  expand_dynamic_entry_exports, expand_exports_of_module_graph, get_basic_module_export_ident,
+};
 use farmfe_core::{
   config::Config,
   module::{
@@ -161,6 +163,12 @@ impl Plugin for FarmPluginScriptMetaExports {
     context: &std::sync::Arc<farmfe_core::context::CompilationContext>,
   ) -> farmfe_core::error::Result<Option<()>> {
     if !self.should_expand_exports {
+      // if target is not library, means farm runtime is needed, and farm runtime needs to expand exports for runtime modules
+      if !context.config.output.target_env.is_library() {
+        expand_dynamic_entry_exports(module_graph);
+        return Ok(Some(()));
+      }
+
       return Ok(None);
     }
 

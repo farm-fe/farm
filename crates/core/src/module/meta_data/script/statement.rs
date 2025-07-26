@@ -48,7 +48,7 @@ impl Statement {
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 #[cache_item]
-#[archive_attr(derive(Hash, Eq, PartialEq))]
+#[rkyv(derive(Hash, Eq, PartialEq))]
 pub struct WriteTopLevelVar {
   pub ident: SwcId,
   pub fields: Option<Vec<UsedImportAllFields>>,
@@ -70,7 +70,7 @@ impl From<Id> for WriteTopLevelVar {
 /// ```
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 #[cache_item]
-#[archive_attr(derive(Hash, Eq, PartialEq))]
+#[rkyv(derive(Hash, Eq, PartialEq))]
 pub struct ReadTopLevelVar {
   pub ident: SwcId,
   pub is_global_var: bool,
@@ -198,7 +198,7 @@ impl StatementSideEffects {
 #[derive(
   Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord, serde::Serialize, serde::Deserialize,
 )]
-#[archive_attr(derive(Hash, Eq, PartialEq))]
+#[rkyv(derive(Hash, Eq, PartialEq))]
 pub struct SwcId {
   pub sym: swc_atoms::Atom,
   ctxt: u32,
@@ -342,7 +342,7 @@ impl ExportInfo {
 
 #[derive(Debug, Default, Hash, PartialEq, Eq, Clone)]
 #[cache_item]
-#[archive_attr(derive(Hash, Eq, PartialEq))]
+#[rkyv(derive(Hash, Eq, PartialEq))]
 pub enum UsedImportAllFields {
   /// Used all fields of the import statement
   #[default]

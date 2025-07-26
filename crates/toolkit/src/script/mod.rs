@@ -4,10 +4,7 @@ use swc_ecma_codegen::{
   text_writer::{JsWriter, WriteJs},
   Emitter, Node,
 };
-use swc_ecma_parser::{
-  lexer::{input::SourceFileInput, Lexer},
-  Parser, StringInput, Syntax,
-};
+use swc_ecma_parser::{lexer::Lexer, Parser, StringInput, Syntax};
 
 use farmfe_core::{
   config::{comments::CommentsConfig, custom::get_config_output_ascii_only},
@@ -16,6 +13,7 @@ use farmfe_core::{
   module::ModuleId,
   swc_common::{
     comments::{Comments, SingleThreadedComments},
+    input::SourceFileInput,
     BytePos, LineCol, SourceMap,
   },
   swc_ecma_ast::{EsVersion, Module as SwcModule, Stmt},
@@ -81,25 +79,17 @@ pub fn parse_module(
   })
   .map_err(|e| CompilationError::ParseError {
     resolved_path: module_id.to_string(),
-    msg: if let Some(s) = e.downcast_ref::<String>() {
-      eprintln!("recovered_errors: {}", s);
-      s.to_string()
-    } else if let Some(s) = e.downcast_ref::<&str>() {
-      eprintln!("recovered_errors: {}", s);
-      s.to_string()
-    } else {
-      "failed to handle with unknown panic message".to_string()
-    },
+    msg: e.to_pretty_string(),
   })
 }
 
 /// parse the content of a module to [SwcModule] ast.
-pub fn parse_stmt(id: &str, content: &str, top_level: bool) -> Result<Stmt> {
+pub fn parse_stmt(id: &str, content: &str) -> Result<Stmt> {
   let (_, source_file) = create_swc_source_map(&id.into(), Arc::new(content.to_string()));
   let input = SourceFileInput::from(&*source_file);
   let mut parser = Parser::new(Syntax::Es(Default::default()), input, None);
   let mut stmt = parser
-    .parse_stmt(top_level)
+    .parse_stmt()
     .map_err(|e| CompilationError::ParseError {
       resolved_path: id.to_string(),
       msg: format!("{e:?}"),

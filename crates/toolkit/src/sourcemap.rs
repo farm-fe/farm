@@ -71,7 +71,13 @@ pub fn build_sourcemap(
   cm: Arc<SwcSourceMap>,
   mappings: &[(BytePos, LineCol)],
 ) -> sourcemap::SourceMap {
-  cm.build_source_map_with_config(mappings, None, FarmSwcSourceMapConfig::default())
+  // TODO investigate performance comparison of swc_sourcemap and sourcemap and normalize the usage of sourcemap crate
+  let swc_sourcemap = cm.build_source_map(mappings, None, FarmSwcSourceMapConfig::default());
+
+  let mut slice = Vec::new();
+  swc_sourcemap.to_writer(&mut slice).unwrap();
+
+  sourcemap::SourceMap::from_slice(&slice).unwrap()
 }
 
 /// Trace the final bundled sourcemap to original module sourcemap

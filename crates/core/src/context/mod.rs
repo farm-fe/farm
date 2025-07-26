@@ -342,7 +342,10 @@ pub fn create_swc_source_map(
   content: Arc<String>,
 ) -> (Arc<SourceMap>, Arc<SourceFile>) {
   let cm = Arc::new(SourceMap::default());
-  let sf = cm.new_source_file_from(Arc::new(get_swc_sourcemap_filename(id)), content);
+  let sf = cm.new_source_file(
+    Arc::new(get_swc_sourcemap_filename(id)),
+    content.to_string(), // TODO optimize string performance
+  );
 
   (cm, sf)
 }

@@ -4,7 +4,7 @@ use farmfe_core::{
   module::ModuleId,
   plugin::{PluginTransformHookParam, PluginTransformHookResult},
 };
-use napi::{bindgen_prelude::FromNapiValue, NapiRaw};
+use napi::bindgen_prelude::FromNapiValue;
 use std::sync::Arc;
 
 use crate::plugin_adapters::js_plugin_adapter::module_hook_common::{

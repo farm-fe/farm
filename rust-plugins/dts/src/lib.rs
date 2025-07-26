@@ -3,29 +3,23 @@ use farmfe_core::{
   config::{config_regex::ConfigRegex, Config, ResolveConfig},
   context::{CompilationContext, EmitFileParams},
   error::CompilationError,
-  plugin::{
-    Plugin, PluginAnalyzeDepsHookParam, PluginFinalizeModuleHookParam,
-    PluginGenerateResourcesHookResult, PluginHookContext, PluginLoadHookParam,
-    PluginLoadHookResult, PluginParseHookParam, PluginProcessModuleHookParam, ResolveKind,
-  },
-  resource::{Resource, ResourceOrigin, ResourceType},
+  plugin::{Plugin, PluginProcessModuleHookParam, ResolveKind},
+  resource::ResourceType,
   stats::Stats,
-  swc_common::{comments::SingleThreadedComments, BytePos, FileName, Mark},
+  swc_common::{FileName, Mark},
   swc_ecma_ast::{ImportDecl, Module as EcmaAstModule, ModuleDecl, ModuleItem, Program},
-  swc_ecma_parser::{lexer::Lexer, EsSyntax as EsConfig, JscTarget, Parser, StringInput, Syntax},
 };
 use farmfe_plugin_resolve::resolver::{ResolveOptions, Resolver};
 
 use farmfe_toolkit::{
   plugin_utils::path_filter::PathFilter,
-  swc_ecma_codegen::{to_code, Node},
-  swc_ecma_transforms::{helpers::inject_helpers, typescript},
+  swc_ecma_codegen::to_code,
   swc_ecma_visit::{VisitMut, VisitMutWith},
   swc_typescript::fast_dts::FastDts,
 };
 use std::time::Duration;
 use std::{
-  path::{Path, PathBuf},
+  path::PathBuf,
   sync::{Arc, Mutex},
 };
 
@@ -83,9 +77,9 @@ impl Plugin for FarmPluginDts {
     let path = param.module_id.relative_path();
     let start = std::time::Instant::now();
 
-    let ast = &mut param.meta.as_script_mut().ast;
+    let meta = &mut param.meta.as_script_mut();
 
-    let mut module: EcmaAstModule = ast.clone();
+    let mut module: EcmaAstModule = meta.ast.clone();
 
     module.visit_mut_with(&mut ImportPathRewriter {
       source_path: PathBuf::from(path),
@@ -96,11 +90,15 @@ impl Plugin for FarmPluginDts {
       param.module_id.relative_path().to_string().into(),
     ));
 
-    let mut checker = FastDts::new(filename.clone());
+    let unresolved_mark = Mark::from_u32(meta.unresolved_mark);
+    let mut checker = FastDts::new(filename.clone(), unresolved_mark, Default::default());
     module.visit_mut_with(&mut ImportVariableRemover);
-    let issues = checker.transform(&mut module);
+
+    let mut program = Program::Module(module);
+    let issues = checker.transform(&mut program);
+
     for issue in issues {
-      let _range = issue.range();
+      let _range = issue.range;
     }
 
     let dts_path = if path.ends_with(".tsx") {
@@ -109,7 +107,7 @@ impl Plugin for FarmPluginDts {
       path.replace(".ts", ".d.ts")
     };
 
-    let dts_code = to_code(&module);
+    let dts_code = to_code(&program.expect_module());
     *self.total_dts_time.lock().unwrap() += start.elapsed();
 
     context.emit_file(EmitFileParams {

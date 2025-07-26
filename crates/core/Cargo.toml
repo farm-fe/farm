@@ -24,10 +24,7 @@ relative-path = "1.7"
 dashmap = "5.0"
 blake2 = "0.10"
 hex = "0.4"
-rkyv = { version = "0.7.42" }
-rkyv_dyn = "0.7.42"
-rkyv_typename = "0.7.42"
-ptr_meta = "0.1.4"
+rkyv = { workspace = true }
 thiserror = "1.0"
 rayon = "1.5"
 petgraph = "0.6"
@@ -37,17 +34,17 @@ wax = { version = "0.6", default-features = false, features = [
   "walk",
 ] }
 globset = { version = "0.4.14" }
-swc_ecma_ast = { version = "3.0.0", features = ["rkyv-impl", "serde-impl"] }
-swc_ecma_parser = { version = "4.0.0" }
-swc_common = { version = "3.0.0", features = [
+swc_ecma_ast = { version = "14.0.0", features = ["rkyv-impl", "serde-impl"] }
+swc_ecma_parser = { version = "22.0.1" }
+swc_common = { version = "14.0.2", features = [
   "concurrent",
   "sourcemap",
   "rkyv-impl",
 ] }
-swc_css_ast = { version = "3.0.0", features = ["rkyv-impl"] }
-swc_css_prefixer = { version = "3.0.0" }
-swc_html_ast = { version = "3.0.0", features = ["rkyv-impl"] }
-swc_atoms = { version = "2.0.0" }
+swc_css_ast = { version = "14.0.0", features = ["rkyv-impl"] }
+swc_css_prefixer = { version = "17.0.0" }
+swc_html_ast = { version = "14.0.0", features = ["rkyv-impl"] }
+swc_atoms = { version = "7.0.0" }
 heck = "0.5.0"
 puffin = { version = "0.19.1", features = [
   "packing",

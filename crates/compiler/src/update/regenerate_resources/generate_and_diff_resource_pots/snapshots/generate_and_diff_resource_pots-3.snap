@@ -27,8 +27,8 @@ input_file: crates/testing_helpers/src/lib.rs
             query_string: "",
         },
         resource_pots: {
-            "EI__dynamic_entry_js",
             "test__js",
+            "EI__dynamic_entry_js",
         },
     },
     ModuleResourcePotSnapshotItem {

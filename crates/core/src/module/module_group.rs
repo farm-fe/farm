@@ -3,7 +3,6 @@ use petgraph::{
   stable_graph::{DefaultIx, NodeIndex, StableDiGraph},
   visit::{Bfs, Dfs, DfsPostOrder, EdgeRef, IntoEdgeReferences},
 };
-use rkyv::Deserialize;
 
 use crate::resource::{resource_pot::ResourcePotId, resource_pot_map::ResourcePotMap};
 use crate::{HashMap, HashSet};
@@ -297,7 +296,7 @@ impl Eq for ModuleGroupGraph {}
 #[derive(
   Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Clone, serde::Serialize, serde::Deserialize,
 )]
-#[archive_attr(derive(Hash, Eq, PartialEq))]
+#[rkyv(derive(Hash, Eq, PartialEq))]
 pub struct ModuleGroupId(String);
 
 impl ModuleGroupId {

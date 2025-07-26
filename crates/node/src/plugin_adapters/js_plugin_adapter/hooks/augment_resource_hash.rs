@@ -11,7 +11,7 @@ use farmfe_core::{
   config::config_regex::ConfigRegex, context::CompilationContext, error::Result,
   resource::resource_pot::ResourcePotType,
 };
-use napi::{bindgen_prelude::FromNapiValue, NapiRaw};
+use napi::bindgen_prelude::FromNapiValue;
 
 pub struct JsPluginAugmentResourceHashHook {
   tsfn: ThreadSafeJsPluginHook,

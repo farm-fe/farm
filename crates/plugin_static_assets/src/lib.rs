@@ -15,7 +15,6 @@ use farmfe_core::{
   plugin::{Plugin, PluginResolveHookResult},
   relative_path::RelativePath,
   resource::{Resource, ResourceOrigin, ResourceType},
-  rkyv::Deserialize,
   serialize,
   swc_common::sync::OnceCell,
   HashMap,
@@ -275,7 +274,7 @@ impl Plugin for FarmPluginStaticAssets {
     cache: &Vec<u8>,
     context: &Arc<CompilationContext>,
   ) -> farmfe_core::error::Result<Option<()>> {
-    let cached_static_assets = deserialize!(cache, CachedStaticAssets);
+    let cached_static_assets = deserialize!(cache, CachedStaticAssets, ArchivedCachedStaticAssets);
 
     for asset in cached_static_assets.list {
       if let ResourceOrigin::Module(m) = asset.origin {

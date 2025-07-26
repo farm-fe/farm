@@ -61,48 +61,84 @@ pub enum ModuleExportIdentType {
   VirtualNamespace,
 }
 
-#[cache_item]
+#[derive(rkyv::Serialize, rkyv::Deserialize, rkyv::Archive)]
+#[rkyv(remote = SharedModuleExportIdent)]
+#[rkyv(archived = ArchivedSharedModuleExportIdent)]
 #[derive(Debug, Clone, Hash, PartialEq, Eq)]
-pub struct ModuleExportIdentInternal {
+pub struct InternalModuleExportIdent {
+  #[rkyv(getter = get_module_id)]
   pub module_id: ModuleId,
+  #[rkyv(getter = get_ident)]
   pub ident: SwcId,
+  #[rkyv(getter = get_export_type)]
   pub export_type: ModuleExportIdentType,
 }
 
+fn get_module_id(value: &SharedModuleExportIdent) -> ModuleId {
+  value.internal.read().module_id.clone()
+}
+
+fn get_ident(value: &SharedModuleExportIdent) -> SwcId {
+  value.internal.read().ident.clone()
+}
+
+fn get_export_type(value: &SharedModuleExportIdent) -> ModuleExportIdentType {
+  value.internal.read().export_type.clone()
+}
+
+#[derive(Debug, Clone)]
+struct SharedModuleExportIdent {
+  internal: Arc<RwLock<InternalModuleExportIdent>>,
+}
+
+impl From<InternalModuleExportIdent> for SharedModuleExportIdent {
+  fn from(value: InternalModuleExportIdent) -> Self {
+    Self {
+      internal: Arc::new(RwLock::new(value)),
+    }
+  }
+}
+
+#[cache_item]
 #[derive(Debug, Clone)]
 pub struct ModuleExportIdent {
-  shared: Arc<RwLock<ModuleExportIdentInternal>>,
+  #[rkyv(with = InternalModuleExportIdent)]
+  shared: SharedModuleExportIdent,
 }
 
 impl ModuleExportIdent {
   pub fn new(module_id: ModuleId, ident: SwcId, export_type: ModuleExportIdentType) -> Self {
     Self {
-      shared: Arc::new(RwLock::new(ModuleExportIdentInternal {
+      shared: SharedModuleExportIdent::from(InternalModuleExportIdent {
         module_id,
         ident,
         export_type,
-      })),
+      }),
     }
   }
 
-  pub fn as_internal(&self) -> RwLockReadGuard<'_, ModuleExportIdentInternal> {
-    self.shared.read()
+  pub fn as_internal(&self) -> RwLockReadGuard<'_, InternalModuleExportIdent> {
+    self.shared.internal.read()
   }
 
-  pub fn as_internal_mut(&self) -> RwLockWriteGuard<'_, ModuleExportIdentInternal> {
-    self.shared.write()
+  pub fn as_internal_mut(&self) -> RwLockWriteGuard<'_, InternalModuleExportIdent> {
+    self.shared.internal.write()
   }
 }
 
 impl Hash for ModuleExportIdent {
   fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-    self.shared.read().hash(state);
+    self.shared.internal.read().hash(state);
   }
 }
 
 impl PartialEq for ModuleExportIdent {
   fn eq(&self, other: &Self) -> bool {
-    self.shared.read().eq(&other.shared.read())
+    self
+      .shared
+      .internal
+      .read()
+      .eq(&other.shared.internal.read())
   }
 }
 
@@ -119,63 +155,4 @@ pub enum ModuleReExportIdentType {
   /// export { foo as default } from './module'; // foo is local ident
   /// ```
   FromExportNamed { local: String },
-}
-
-impl<__D: Fallible + ?Sized> Deserialize<ModuleExportIdent, __D> for Archived<ModuleExportIdent> {
-  #[inline]
-  fn deserialize(
-    &self,
-    deserializer: &mut __D,
-  ) -> ::core::result::Result<ModuleExportIdent, __D::Error> {
-    let internal =
-      Deserialize::<ModuleExportIdentInternal, __D>::deserialize(&self.internal, deserializer)?;
-    let res = ModuleExportIdent {
-      shared: Arc::new(RwLock::new(internal)),
-    };
-
-    Ok(res)
-  }
-}
-
-impl<__S: Fallible + ?Sized> Serialize<__S> for ModuleExportIdent
-where
-  __S: rkyv::ser::Serializer + rkyv::ser::ScratchSpace,
-{
-  #[inline]
-  fn serialize(&self, serializer: &mut __S) -> ::core::result::Result<Self::Resolver, __S::Error> {
-    let internal = self.shared.read();
-    let resolver_internal = Serialize::<__S>::serialize(&*internal, serializer)?;
-
-    Ok(ModuleExportIdentResolver {
-      internal: resolver_internal,
-    })
-  }
-}
-
-pub struct ArchivedModuleExportIdent {
-  pub internal: ::rkyv::Archived<ModuleExportIdentInternal>,
-}
-
-pub struct ModuleExportIdentResolver {
-  internal: ::rkyv::Resolver<ModuleExportIdentInternal>,
-}
-
-impl Archive for ModuleExportIdent {
-  type Archived = ArchivedModuleExportIdent;
-  type Resolver = ModuleExportIdentResolver;
-  #[allow(clippy::unit_arg)]
-  #[inline]
-  unsafe fn resolve(&self, pos: usize, resolver: Self::Resolver, out: *mut Self::Archived) {
-    let (fp, fo) = {
-      #[allow(unused_unsafe)]
-      unsafe {
-        let fo = &raw mut (*out).internal;
-        (fo.cast::<u8>().offset_from(out.cast::<u8>()) as usize, fo)
-      }
-    };
-
-    let internal = self.shared.read();
-
-    ::rkyv::Archive::resolve(&*internal, pos + fp, resolver.internal, fo);
-  }
 }

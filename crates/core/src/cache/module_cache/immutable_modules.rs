@@ -2,7 +2,6 @@ use dashmap::DashMap;
 use farmfe_macro_cache_item::cache_item;
 use farmfe_utils::hash::sha256;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
-use rkyv::Deserialize;
 
 use crate::{
   cache::{
@@ -83,7 +82,7 @@ impl ImmutableModulesMemoryStore {
       .read_cache(package_key)
       .expect("Cache broken, please remove node_modules/.farm and retry.");
 
-    crate::deserialize!(&cache, CachedPackage)
+    crate::deserialize!(&cache, CachedPackage, ArchivedCachedPackage)
   }
 
   fn read_package(&self, module_id: &ModuleId) -> Option<()> {

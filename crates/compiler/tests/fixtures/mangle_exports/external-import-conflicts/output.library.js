@@ -11,10 +11,10 @@
     });
     return from;
 }
-import { existsSync as b$1, existsSync } from "node:fs";
+import { existsSync as c, existsSync } from "node:fs";
 import * as node_module_ambiguous_export_all_farm_internal_ from "node:module";
-import { unresolved as a } from "/external/unresolved";
-import { unresolvedDeep as b, unresolvedDeep as unresolvedDeepConflict } from "/external/deep/unresolved";
+import { unresolved as b } from "/external/unresolved";
+import { unresolvedDeep as a, unresolvedDeep as unresolvedDeepConflict } from "/external/deep/unresolved";
 var node_module_createRequire = node_module_ambiguous_export_all_farm_internal_.createRequire;
 console.log('bar existsSync', existsSync('bar'));
 var bar_ts_namespace_farm_internal_ = {
@@ -22,7 +22,7 @@ var bar_ts_namespace_farm_internal_ = {
 };
 defineExportStar(bar_ts_namespace_farm_internal_, node_module_ambiguous_export_all_farm_internal_);
 console.log('foo existsSync', existsSync('foo'));
-console.log('index readFileSync', b$1('index'));
-console.log(a, b, unresolvedDeepConflict);
+console.log('index readFileSync', c('index'));
+console.log(b, a, unresolvedDeepConflict);
 console.log(bar_ts_namespace_farm_internal_);
 console.log(node_module_createRequire);

@@ -65,7 +65,7 @@ var farmRequire = farmRegister("cjs.ts", function(module, exports) {
     function cjs() {}
 });
 var __farm_cjs_exports__$1 = farmRequire();
-var cjs = interopRequireDefault(__farm_cjs_exports__$1).default, cjsName = __farm_cjs_exports__$1.cjsName, cjsAge = __farm_cjs_exports__$1.cjsAge;
+var cjsAge = __farm_cjs_exports__$1.cjsAge, cjs = interopRequireDefault(__farm_cjs_exports__$1).default, cjsName = __farm_cjs_exports__$1.cjsName;
 ; // module_id: esm.ts
 const esmName = 'esm';
 const esmAge = 19;

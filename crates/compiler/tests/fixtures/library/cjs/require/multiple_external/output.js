@@ -45,7 +45,7 @@ var farmRequire = farmRegister("dep.cjs", function(module, exports) {
     };
 });
 var __farm_cjs_exports__$2 = farmRequire();
-var fs = __farm_cjs_exports__$2.fs, path = __farm_cjs_exports__$2.path;
+var path = __farm_cjs_exports__$2.path, fs = __farm_cjs_exports__$2.fs;
 ; // module_id: dep1.cjs
 var farmRequire$1 = farmRegister("dep1.cjs", function(module, exports) {
     const fs$1 = __farmNodeRequire("node:fs");
@@ -56,7 +56,7 @@ var farmRequire$1 = farmRegister("dep1.cjs", function(module, exports) {
     };
 });
 var __farm_cjs_exports__$3 = farmRequire$1();
-var fs$1 = __farm_cjs_exports__$3.fs, path$1 = __farm_cjs_exports__$3.path;
+var path$1 = __farm_cjs_exports__$3.path, fs$1 = __farm_cjs_exports__$3.fs;
 ; // module_id: index.ts
 console.log('dep.cjs', fs, path);
 console.log('dep1.cjs', fs$1, path$1);

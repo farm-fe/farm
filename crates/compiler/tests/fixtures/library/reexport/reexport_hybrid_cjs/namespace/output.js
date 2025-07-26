@@ -66,6 +66,6 @@ var farmRequire = farmRegister("foo.ts", function(module, exports) {
     module.exports.cjs = true;
 });
 var __farm_cjs_exports__$1 = farmRequire();
-var bar = __farm_cjs_exports__$1.bar, foo_ts_default = interopRequireDefault(__farm_cjs_exports__$1).default, foo = __farm_cjs_exports__$1.foo;
+var foo_ts_default = interopRequireDefault(__farm_cjs_exports__$1).default, foo = __farm_cjs_exports__$1.foo, bar = __farm_cjs_exports__$1.bar;
 ; // module_id: index.ts
 export { __farm_cjs_exports__$1 as ns };

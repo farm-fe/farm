@@ -1,4 +1,3 @@
-use rkyv::Deserialize;
 use std::sync::Arc;
 
 use farmfe_core::{
@@ -8,7 +7,10 @@ use farmfe_core::{
   deserialize,
   enhanced_magic_string::collapse_sourcemap::{collapse_sourcemap_chain, CollapseSourcemapOptions},
   module::{
-    meta_data::script::{CommentsMetaData, ScriptModuleMetaData},
+    meta_data::{
+      script::{CommentsMetaData, ScriptModuleMetaData},
+      ArchivedModuleMetaData,
+    },
     ModuleId, ModuleMetaData, ModuleSystem, ModuleType,
   },
   plugin::{PluginFinalizeModuleHookParam, ResolveKind},
@@ -74,7 +76,7 @@ pub fn transform_css_to_script_modules(
           && !cache_manager.custom.is_cache_changed(&store_key)
         {
           let cache = cache_manager.custom.read_cache(&store_key.name).unwrap();
-          let mut meta = deserialize!(&cache, Box<ModuleMetaData>);
+          let mut meta = Box::new(deserialize!(&cache, ModuleMetaData, ArchivedModuleMetaData));
           let script_meta = meta.as_script_mut();
 
           // clear previous mark when using cache
@@ -215,7 +217,7 @@ pub fn transform_css_to_script_modules(
 
           if context.config.persistent_cache.enabled() {
             let store_key = cache_store_key.unwrap();
-            let bytes = serialize!(&module.meta);
+            let bytes = serialize!(&*module.meta);
             context
               .cache_manager
               .custom

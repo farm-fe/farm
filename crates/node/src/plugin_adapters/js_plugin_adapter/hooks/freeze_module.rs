@@ -3,7 +3,7 @@ use std::sync::Arc;
 use farmfe_core::{
   context::CompilationContext, error::Result, plugin::PluginFreezeModuleHookParam,
 };
-use napi::{bindgen_prelude::FromNapiValue, NapiRaw};
+use napi::bindgen_prelude::FromNapiValue;
 
 use crate::{
   new_js_plugin_hook,

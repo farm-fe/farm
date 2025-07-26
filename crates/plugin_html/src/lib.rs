@@ -298,7 +298,12 @@ impl Plugin for FarmPluginHtml {
     cache: &Vec<u8>,
     _context: &Arc<CompilationContext>,
   ) -> farmfe_core::error::Result<Option<()>> {
-    let cached_inline_module_map = deserialize!(cache, CachedHtmlInlineModuleMap).map;
+    let cached_inline_module_map = deserialize!(
+      cache,
+      CachedHtmlInlineModuleMap,
+      ArchivedCachedHtmlInlineModuleMap
+    )
+    .map;
     let mut inline_module_map = self.inline_module_map.lock();
     inline_module_map.extend(cached_inline_module_map);
 
