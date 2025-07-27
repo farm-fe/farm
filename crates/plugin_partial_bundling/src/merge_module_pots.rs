@@ -187,6 +187,10 @@ pub fn merge_module_pots(
     );
   }
 
+  if resource_pots.is_empty() && !module_group_module_pots.module_pots.is_empty() {
+    panic!("Generated resource pots is empty while module pots is not empty for group {:?}, this might be a internal bug, please file a issue.", module_group_module_pots.module_group_id);
+  }
+
   resource_pots
 }
 

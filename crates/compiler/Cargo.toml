@@ -33,6 +33,8 @@ farmfe_plugin_mangle_exports = { path = "../plugin_mangle_exports", version = "0
 farmfe_plugin_library = { path = "../plugin_library", version = "0.0.1" }
 farmfe_plugin_file_size = { path = "../plugin_file_size", version = "0.0.1" }
 farmfe_testing = { path = "../macro_testing", version = "0.0.2" }
+enhanced-magic-string = { workspace = true }
+sourcemap = { workspace = true }
 
 [features]
 profile = [

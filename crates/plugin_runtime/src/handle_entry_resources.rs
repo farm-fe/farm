@@ -1,9 +1,9 @@
 use std::sync::Arc;
 
+use enhanced_magic_string::collapse_sourcemap::collapse_sourcemap_chain;
+use enhanced_magic_string::magic_string::MagicString;
+use enhanced_magic_string::types::SourceMapOptions;
 use farmfe_core::config::TargetEnv;
-use farmfe_core::enhanced_magic_string::collapse_sourcemap::collapse_sourcemap_chain;
-use farmfe_core::enhanced_magic_string::magic_string::MagicString;
-use farmfe_core::enhanced_magic_string::types::SourceMapOptions;
 use farmfe_core::plugin::PluginHandleEntryResourceHookParam;
 use farmfe_core::{
   config::{ModuleFormat, FARM_MODULE_SYSTEM},
@@ -15,7 +15,7 @@ use farmfe_core::{
 use farmfe_toolkit::html::get_farm_global_this;
 use farmfe_toolkit::sourcemap::append_sourcemap_comment;
 use farmfe_toolkit::sourcemap::is_sourcemap_comment_line;
-use farmfe_toolkit::sourcemap::SourceMap;
+use sourcemap::SourceMap;
 
 const PREVIOUS_ENTRY_RESOURCE_CODE: &str = "PREVIOUS_ENTRY_RESOURCE_CODE";
 const PREVIOUS_ENTRY_RESOURCE_SOURCEMAP_CODE: &str = "PREVIOUS_ENTRY_RESOURCE_CODE";

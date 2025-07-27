@@ -16,7 +16,7 @@ var esm_mjs_namespace_farm_internal_$1 = {
 const __farm_internal_modules__ = {};
 // module cache after module initialized
 const __farm_internal_cache__ = {};
-function farmRequire$2(id) {
+function farmRequire$3(id) {
     if (__farm_internal_cache__[id]) {
         var cachedModuleResult = __farm_internal_cache__[id].exports;
         return cachedModuleResult;
@@ -34,7 +34,7 @@ function farmRequire$2(id) {
             env: {}
         },
         exports: {},
-        require: (moduleId)=>farmRequire$2(moduleId)
+        require: (moduleId)=>farmRequire$3(moduleId)
     };
     __farm_internal_cache__[id] = module;
     initializer(module, module.exports);
@@ -43,7 +43,7 @@ function farmRequire$2(id) {
 }
 function farmRegister(id, module) {
     __farm_internal_modules__[id] = module;
-    return ()=>farmRequire$2(id);
+    return ()=>farmRequire$3(id);
 }
 ; // module_id: @farm-runtime/module-helper
 function interopRequireDefault(obj) {
@@ -52,33 +52,33 @@ function interopRequireDefault(obj) {
     };
 }
 ; // module_id: zoo.cjs
-var farmRequire$3 = farmRegister("zoo.cjs", function(module, exports) {
+var farmRequire$4 = farmRegister("zoo.cjs", function(module, exports) {
     console.log("zoo should be executed after foo");
     module.exports.zoo = `zoo.cjs`;
 });
 ; // module_id: foo/index.cjs
-var farmRequire = farmRegister("foo/index.cjs", function(module, exports) {
+var farmRequire$1 = farmRegister("foo/index.cjs", function(module, exports) {
     const esm = esm_mjs_namespace_farm_internal_;
     const curEsm = esm_mjs_namespace_farm_internal_$1;
     console.log("foo should be executed before zoo");
-    const zoo = farmRequire$3();
+    const zoo = farmRequire$4();
     module.exports = `foo + ${esm.default} + ${curEsm.default} + ${zoo.zoo}`;
 });
-var __farm_cjs_exports__$2 = farmRequire();
+var __farm_cjs_exports__$2 = farmRequire$1();
 var index_cjs_default = interopRequireDefault(__farm_cjs_exports__$2).default;
 ; // module_id: bar/bar.cjs
-var farmRequire$4 = farmRegister("bar/bar.cjs", function(module, exports) {
+var farmRequire$5 = farmRegister("bar/bar.cjs", function(module, exports) {
     module.exports = {
         bar: "bar.cjs"
     };
 });
 ; // module_id: bar/index.cjs
-var farmRequire$1 = farmRegister("bar/index.cjs", function(module, exports) {
+var farmRequire$2 = farmRegister("bar/index.cjs", function(module, exports) {
     const esm = esm_mjs_namespace_farm_internal_;
-    const bar = farmRequire$4();
+    const bar = farmRequire$5();
     module.exports = `bar + ${esm.default} + ${bar.bar}`;
 });
-var __farm_cjs_exports__$3 = farmRequire$1();
+var __farm_cjs_exports__$3 = farmRequire$2();
 var index_cjs_default$1 = interopRequireDefault(__farm_cjs_exports__$3).default;
 ; // module_id: index.ts
 var length = index_cjs_default$1.length;

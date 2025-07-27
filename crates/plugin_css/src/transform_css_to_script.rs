@@ -5,7 +5,6 @@ use farmfe_core::{
   config::custom::get_config_output_ascii_only,
   context::CompilationContext,
   deserialize,
-  enhanced_magic_string::collapse_sourcemap::{collapse_sourcemap_chain, CollapseSourcemapOptions},
   module::{
     meta_data::{
       script::{CommentsMetaData, ScriptModuleMetaData},
@@ -29,7 +28,7 @@ use farmfe_toolkit::{
     swc_try_with::{resolve_module_mark, try_with},
     ParseScriptModuleResult,
   },
-  sourcemap::SourceMap,
+  sourcemap::{collapse_sourcemap_chain, CollapseSourcemapOptions, SourceMap},
   swc_ecma_transforms_base::resolver,
   swc_ecma_visit::VisitMutWith,
 };

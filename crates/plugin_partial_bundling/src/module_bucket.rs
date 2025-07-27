@@ -1,5 +1,5 @@
 use farmfe_core::{
-  module::{module_group::ModuleGroupId, Module, ModuleId, ModuleType},
+  module::{module_group::ModuleGroupId, Module, ModuleId},
   HashSet,
 };
 
@@ -12,10 +12,6 @@ pub struct ModuleBucket {
   pub id: String,
   /// The size of this ModuleBucket. It's the sum of the modules' size.
   pub size: usize,
-  /// The type of this ModuleBucket. All modules in this ModuleBucket have the same type.
-  pub module_type: ModuleType,
-  /// Whether this ModuleBucket is immutable. All modules in this ModuleBucket have the same immutable value.
-  pub immutable: bool,
 
   /// The modules whose ModuleGroups is the same.
   modules: HashSet<ModuleId>,
@@ -31,8 +27,6 @@ impl ModuleBucket {
       modules: HashSet::from_iter([module.id.clone()]),
       module_groups: module.module_groups.clone(),
       size: module.size,
-      module_type: module.module_type.clone(),
-      immutable: module.immutable,
     }
   }
 

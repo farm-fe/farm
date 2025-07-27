@@ -64,7 +64,7 @@ pub(crate) fn create_var_namespace_item(
   module_ids: &HashSet<ModuleId>,
   export_ident_map: &HashMap<String, ModuleExportIdent>,
   cyclic_idents: &HashSet<ModuleExportIdent>,
-  delayed_rename: &mut HashMap<ModuleId, HashSet<ModuleExportIdent>>,
+  rename_handler: &TopLevelIdentsRenameHandler,
 ) -> ModuleItem {
   let mut key_ident_vec = export_ident_map.iter().collect::<Vec<_>>();
   key_ident_vec.sort_by_key(|a| a.0);
@@ -76,22 +76,17 @@ pub(crate) fn create_var_namespace_item(
         && *key != AMBIGUOUS_EXPORT_ALL
         && module_ids.contains(&module_export_ident.as_internal().module_id)
     })
-    .map(|(key, module_export_ident)| {
-      delayed_rename
-        .entry(module_id.clone())
-        .or_default()
-        .insert(module_export_ident.clone());
+    .map(|(key, org_module_export_ident)| {
+      let module_export_ident = org_module_export_ident.as_internal();
 
-      let ident = module_export_ident.as_internal().ident.clone();
+      let renamed_ident = rename_handler
+        .get_renamed_ident(&module_export_ident.module_id, &module_export_ident.ident)
+        .unwrap_or(module_export_ident.ident.clone());
 
-      let value_expr = Box::new(Expr::Ident(Ident::new(
-        ident.sym.clone(),
-        DUMMY_SP,
-        ident.ctxt(),
-      )));
+      let value_expr = Box::new(Expr::Ident(renamed_ident.into()));
 
       // for cyclic import, using get method
-      let prop = if cyclic_idents.contains(&module_export_ident) {
+      let prop = if cyclic_idents.contains(&org_module_export_ident) {
         Prop::Getter(GetterProp {
           span: DUMMY_SP,
           key: PropName::Ident(key.as_str().into()),

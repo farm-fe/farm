@@ -20,15 +20,15 @@ serde = { version = "1.0", features = ["derive", "rc"] }
 serde_json = { version = "1.0", features = ["preserve_order"] }
 serde_regex = "1.1.0"
 parking_lot = { version = "0.12", features = ["deadlock_detection"] }
-relative-path = "1.7"
-dashmap = "5.0"
+relative-path = "2.0.1"
+dashmap = "6.1.0"
 blake2 = "0.10"
 hex = "0.4"
 rkyv = { workspace = true }
-thiserror = "1.0"
+thiserror = "2.0.12"
 rayon = "1.5"
-petgraph = "0.6"
-downcast-rs = "1.2"
+petgraph = "0.8.2"
+downcast-rs = "2.0.1"
 wax = { version = "0.6", default-features = false, features = [
   "miette",
   "walk",
@@ -52,7 +52,6 @@ puffin = { version = "0.19.1", features = [
   "serialization",
 ], optional = true }
 regex = "1.7.3"
-enhanced-magic-string = { version = "0.1.0" }
 rustc-hash = "2.0.0"
 num_cpus = "1.16.0"
 lazy_static = "1.4.0"

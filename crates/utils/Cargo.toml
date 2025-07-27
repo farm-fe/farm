@@ -12,4 +12,6 @@ readme = "README.md"
 [dependencies]
 pathdiff = "0.2"
 sha2 = "0.10.6"
-base64 = "0.21.0"
+base64 = "0.22.1"
+rkyv = { workspace = true }
+bytes = { workspace = true }

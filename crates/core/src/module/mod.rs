@@ -6,7 +6,7 @@ use blake2::{
   Blake2bVar,
 };
 use farmfe_macro_cache_item::cache_item;
-use farmfe_utils::relative;
+use farmfe_utils::{bytes_str::FarmBytesStr, relative};
 use heck::AsLowerCamelCase;
 pub use meta_data::{custom::CustomMetaDataMap, script::ModuleSystem, ModuleMetaData};
 use relative_path::RelativePath;
@@ -248,8 +248,8 @@ impl ToString for ModuleType {
 #[derive(PartialEq, Eq, Hash, Clone, Debug, PartialOrd, Ord)]
 #[rkyv(derive(Hash, Eq, PartialEq))]
 pub struct ModuleId {
-  relative_path: String,
-  query_string: String,
+  relative_path: FarmBytesStr,
+  query_string: FarmBytesStr,
 }
 
 const LEN: usize = 4;
@@ -265,8 +265,8 @@ impl ModuleId {
     };
 
     Self {
-      relative_path,
-      query_string: query_string.to_string(),
+      relative_path: FarmBytesStr::from(relative_path),
+      query_string: FarmBytesStr::from(query_string.to_string()),
     }
   }
 
@@ -297,11 +297,11 @@ impl ModuleId {
 
   /// transform the id back to relative path
   pub fn relative_path(&self) -> &str {
-    &self.relative_path
+    self.relative_path.as_str()
   }
 
   pub fn query_string(&self) -> &str {
-    &self.query_string
+    self.query_string.as_str()
   }
 
   /// transform the id back to resolved path
@@ -348,8 +348,8 @@ impl From<&str> for ModuleId {
     let (rp, qs) = Self::split_query(rp);
 
     Self {
-      relative_path: rp,
-      query_string: qs,
+      relative_path: FarmBytesStr::from(rp),
+      query_string: FarmBytesStr::from(qs),
     }
   }
 }

@@ -38,17 +38,7 @@ export function initModuleSystem(ms: ModuleSystem) {
   moduleSystem.l = loadDynamicResourcesOnly;
 }
 
-function dynamicImport(id: string): Promise<any> {  
-  if (moduleSystem.m()[id]) {
-    const exports = moduleSystem.r(id);
-
-    if (exports.__farm_async) {
-      return exports.default;
-    } else {
-      return Promise.resolve(exports);
-    }
-  }
-
+function dynamicImport(id: string): Promise<any> {
   return loadDynamicResources(id);
 }
 

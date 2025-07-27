@@ -7,7 +7,6 @@ use deps_analyzer::DepsAnalyzer;
 use farmfe_core::{
   config::Config,
   context::CompilationContext,
-  enhanced_magic_string::collapse_sourcemap::{collapse_sourcemap_chain, CollapseSourcemapOptions},
   error::{CompilationError, Result},
   module::{
     meta_data::script::{CommentsMetaData, ScriptModuleMetaData},
@@ -39,8 +38,8 @@ use farmfe_toolkit::{
     CodeGenCommentsConfig, ParseScriptModuleResult,
   },
   sourcemap::{
-    build_sourcemap, load_source_original_sourcemap, trace_module_sourcemap,
-    SourceMap as JsonSourceMap,
+    build_sourcemap, collapse_sourcemap_chain, load_source_original_sourcemap,
+    trace_module_sourcemap, CollapseSourcemapOptions, SourceMap as JsonSourceMap,
   },
   swc_ecma_transforms::resolver,
   swc_ecma_visit::VisitMutWith,

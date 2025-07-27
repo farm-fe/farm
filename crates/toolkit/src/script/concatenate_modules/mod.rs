@@ -265,9 +265,6 @@ fn strip_modules_asts(
     }
   }
 
-  // delayed rename for cyclic reexport of `export * as ns`. See test case: crates/compiler/tests/fixtures/library/reexport/basic
-  let mut delayed_rename = HashMap::default();
-
   // 3. Visit sorted modules and process them
   let rename_handler = unique_idents::init_rename_handler(&sorted_modules, module_graph);
   let mut strip_context = StripModuleContext {
@@ -303,7 +300,7 @@ fn strip_modules_asts(
           .insert(module_id.clone());
       }
 
-      let mut result = strip_module_decl(
+      let result = strip_module_decl(
         &module_id,
         module_ids,
         module_id == *entry_module_id,
@@ -311,35 +308,25 @@ fn strip_modules_asts(
         &mut strip_context,
       );
 
-      if should_add_export_namespace_item {
-        // append:
-        // ```js
-        // var module_namespace = {
-        //    default: a,
-        //    ns: e_js_namespace_farm_internal_
-        // }
-        // ```
-        // if module is used by export * as or import * as or import('...')
-        result.ast.body.push(create_var_namespace_item(
-          &module_id,
-          module_ids,
-          export_ident_map,
-          cyclic_idents.get(&module_id).unwrap_or(&HashSet::default()),
-          &mut delayed_rename,
-        ));
-      }
-
       strip_module_results.push((module_id, result));
     })
     .unwrap();
   }
 
+  let mut rename_handler = strip_context
+    .rename_handler
+    .replace(TopLevelIdentsRenameHandler::default());
+
   // handle delayed rename
-  for (module_id, module_export_idents) in delayed_rename {
+  for (module_id, module_export_idents) in &cyclic_idents {
     for module_export_ident in module_export_idents {
       let module_export_ident = module_export_ident.as_internal();
 
-      let mut rename_handler = strip_context.rename_handler.borrow_mut();
+      // only rename the ident defined in current module
+      if module_export_ident.module_id != *module_id {
+        continue;
+      }
+
       let final_ident = rename_handler
         .get_renamed_ident(&module_export_ident.module_id, &module_export_ident.ident)
         .unwrap_or(module_export_ident.ident.clone());
@@ -355,11 +342,30 @@ fn strip_modules_asts(
     }
   }
 
-  let dynamic_external_modules = Mutex::new(HashMap::default());
+  // append var namespace item
+  for (module_id, result) in &mut strip_module_results {
+    if strip_context.should_add_namespace_ident.contains(module_id) {
+      let module = module_graph.module(module_id).unwrap();
+      let export_ident_map = &module.meta.as_script().export_ident_map;
+      // append:
+      // ```js
+      // var module_namespace = {
+      //    default: a,
+      //    ns: e_js_namespace_farm_internal_
+      // }
+      // ```
+      // if module is used by export * as or import * as or import('...')
+      result.ast.body.push(create_var_namespace_item(
+        &module_id,
+        module_ids,
+        export_ident_map,
+        cyclic_idents.get(&module_id).unwrap_or(&HashSet::default()),
+        &rename_handler,
+      ));
+    }
+  }
 
-  let rename_handler = strip_context
-    .rename_handler
-    .replace(TopLevelIdentsRenameHandler::default());
+  let dynamic_external_modules = Mutex::new(HashMap::default());
 
   // for entry module, add re-export
   // get export info from the entry module

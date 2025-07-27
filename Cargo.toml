@@ -10,6 +10,10 @@ repository = "https://github.com/farm-fe/farm"
 
 [workspace.dependencies]
 rkyv = "0.8.10"
+enhanced-magic-string = "0.1.0"
+sourcemap = "9.2.2"
+bytes = "1.10.1"
+bytes-str = "0.2.7"
 
 [profile.release-publish]
 inherits = "release"

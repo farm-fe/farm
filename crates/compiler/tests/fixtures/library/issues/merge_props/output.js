@@ -9,7 +9,7 @@
     };
     return __assign.apply(this, arguments);
 };
-function mergeProps(componentProps, defaultProps, globalComponentConfig) {
+function mergeProps$1(componentProps, defaultProps, globalComponentConfig) {
     var _defaultProps = __assign(__assign({}, defaultProps), globalComponentConfig);
     var props = __assign({}, componentProps);
     for(var propName in _defaultProps){
@@ -19,8 +19,7 @@ function mergeProps(componentProps, defaultProps, globalComponentConfig) {
     }
     return props;
 }
-var mergeProps$1 = mergeProps;
-var Trigger = (function(_super) {
+var Trigger$1 = (function(_super) {
     __extends(Trigger, _super);
     function Trigger(props, context) {
         var _this = _super.call(this, props, context) || this;
@@ -99,5 +98,5 @@ var Trigger = (function(_super) {
     };
     return Trigger;
 });
-var index_ts_default = Trigger;
+var index_ts_default = Trigger$1;
 export { index_ts_default as default };

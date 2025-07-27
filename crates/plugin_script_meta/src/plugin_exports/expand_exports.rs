@@ -58,10 +58,7 @@ pub fn expand_exports_of_module_graph(
       expand_context.remove_ambiguous_export_ident_map(&module.id)
     {
       let script_meta = module.meta.as_script_mut();
-      script_meta.ambiguous_export_ident_map = ambiguous_export_ident_map
-        .into_iter()
-        .map(|(k, v)| (k, v.into_iter().collect::<Vec<_>>()))
-        .collect();
+      script_meta.ambiguous_export_ident_map = ambiguous_export_ident_map;
     }
 
     if let Some(reexport_ident_map) = expand_context.reexport_ident_map.remove(&module.id) {
@@ -87,10 +84,7 @@ pub fn expand_dynamic_entry_exports(module_graph: &mut ModuleGraph) {
   for (module_id, ambiguous_export_ident_map) in expand_context.ambiguous_export_ident_map {
     let module = module_graph.module_mut(&module_id).unwrap();
     let script_meta = module.meta.as_script_mut();
-    script_meta.ambiguous_export_ident_map = ambiguous_export_ident_map
-      .into_iter()
-      .map(|(k, v)| (k, v.into_iter().collect::<Vec<_>>()))
-      .collect();
+    script_meta.ambiguous_export_ident_map = ambiguous_export_ident_map;
   }
 
   for (module_id, reexport_ident_map) in expand_context.reexport_ident_map {
@@ -429,7 +423,7 @@ fn expand_module_exports_dfs(
         for export_ident in export_idents {
           // do not insert duplicate ident
           if !existing_idents.contains(&export_ident) {
-            existing_idents.insert(export_ident);
+            existing_idents.push(export_ident);
           }
         }
       }
@@ -604,7 +598,7 @@ fn expand_unresolved_import_dfs(
 struct ExpandModuleExportsContext {
   export_ident_map: HashMap<ModuleId, HashMap<String, ModuleExportIdent>>,
   reexport_ident_map: HashMap<ModuleId, HashMap<String, ModuleReExportIdentType>>,
-  ambiguous_export_ident_map: HashMap<ModuleId, HashMap<String, HashSet<ModuleExportIdent>>>,
+  ambiguous_export_ident_map: HashMap<ModuleId, HashMap<String, Vec<ModuleExportIdent>>>,
   visited: HashSet<ModuleId>,
 }
 
@@ -659,7 +653,7 @@ impl ExpandModuleExportsContext {
       .or_default()
       .entry(export_str)
       .or_default()
-      .insert(export_ident);
+      .push(export_ident);
   }
 
   fn insert_export_namespace_ident(
@@ -707,7 +701,7 @@ impl ExpandModuleExportsContext {
   pub fn remove_ambiguous_export_ident_map(
     &mut self,
     module_id: &ModuleId,
-  ) -> Option<HashMap<String, HashSet<ModuleExportIdent>>> {
+  ) -> Option<HashMap<String, Vec<ModuleExportIdent>>> {
     self.ambiguous_export_ident_map.remove(module_id)
   }
 
@@ -725,7 +719,7 @@ impl ExpandModuleExportsContext {
   pub fn get_ambiguous_export_ident_map(
     &self,
     module_id: &ModuleId,
-  ) -> Option<HashMap<String, HashSet<ModuleExportIdent>>> {
+  ) -> Option<HashMap<String, Vec<ModuleExportIdent>>> {
     self.ambiguous_export_ident_map.get(module_id).cloned()
   }
 
@@ -733,7 +727,7 @@ impl ExpandModuleExportsContext {
     &self,
     module_id: &ModuleId,
     export_str: &str,
-  ) -> Option<HashSet<ModuleExportIdent>> {
+  ) -> Option<Vec<ModuleExportIdent>> {
     self
       .ambiguous_export_ident_map
       .get(module_id)
