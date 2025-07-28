@@ -35,8 +35,12 @@ jobs:
             abi: linux-x64-musl
             build: >-
               set -e &&
-              unset CC_x86_64_unknown_linux_musl &&
-              unset CC &&
+              rm /etc/apk/repositories &&
+              echo "https://dl-cdn.alpinelinux.org/alpine/v3.21/main" >> /etc/apk/repositories &&
+              echo "https://dl-cdn.alpinelinux.org/alpine/v3.21/community" >> /etc/apk/repositories &&
+              apk update &&
+              apk add --upgrade clang-static llvm-dev &&
+              export CARGO_PROFILE_RELEASE_LTO=false &&
               cd packages/core &&
               npm run build:rs:publish -- --target x86_64-unknown-linux-musl &&
               cd ../create-farm &&
@@ -64,7 +68,7 @@ jobs:
             build: |
               export CARGO_PROFILE_RELEASE_LTO=false
               cargo install cargo-xwin@0.18.6 --locked
-              cd packages/core && npm run build:rs -- --target i686-pc-windows-msvc --cargo-flags="--no-default-features"
+              cd packages/core && npm run build:rs -- --target i686-pc-windows-msvc --no-default-features
               cd ../create-farm && npm run build -- --target i686-pc-windows-msvc
               cd ../../rust-plugins/react && npm run build -- --target i686-pc-windows-msvc --abi win32-ia32-msvc
               cd ../replace-dirname && npm run build -- --target i686-pc-windows-msvc --abi win32-ia32-msvc
@@ -76,7 +80,7 @@ jobs:
               export CARGO_PROFILE_RELEASE_CODEGEN_UNITS=256
               export CARGO_PROFILE_RELEASE_LTO=false
               cargo install cargo-xwin@0.18.6 --locked
-              cd packages/core && npm run build:rs -- --target aarch64-pc-windows-msvc --cargo-flags="--no-default-features"
+              cd packages/core && npm run build:rs -- --target aarch64-pc-windows-msvc --no-default-features
               cd ../create-farm && npm run build -- --target aarch64-pc-windows-msvc
               cd ../../rust-plugins/react && npm run build -- --target aarch64-pc-windows-msvc --abi win32-arm64-msvc
               cd ../replace-dirname && npm run build -- --target aarch64-pc-windows-msvc --abi win32-arm64-msvc
@@ -157,11 +161,11 @@ jobs:
       - name: Default Build
         if: ${{ !matrix.settings.docker && !matrix.settings.build }}
         run: >-
-          cd packages/core && npm run build:rs:publish -- ${{ matrix.settings.target && format('--target {0}', matrix.settings.target) || '' }} ${{ matrix.settings.zig && '--zig' || '' }} &&
-          cd ../create-farm && npm run build -- ${{ matrix.settings.target && format('--target {0}', matrix.settings.target) || '' }} ${{ matrix.settings.zig && '--zig' || '' }} &&
-          cd ../../rust-plugins/react && npm run build -- ${{ matrix.settings.target && format('--target {0}', matrix.settings.target) || '' }} ${{ matrix.settings.zig && '--zig' || '' }} --abi ${{ matrix.settings.abi }} &&
-          cd ../replace-dirname && npm run build -- ${{ matrix.settings.target && format('--target {0}', matrix.settings.target) || '' }} ${{ matrix.settings.zig && '--zig' || '' }} --abi ${{ matrix.settings.abi }} &&
-          cd ../sass && npm run build -- ${{ matrix.settings.target && format('--target {0}', matrix.settings.target) || '' }} ${{ matrix.settings.zig && '--zig' || '' }} --abi ${{ matrix.settings.abi }}
+          cd packages/core && npm run build:rs:publish -- ${{ matrix.settings.target && format('--target {0}', matrix.settings.target) || '' }} ${{ matrix.settings.zig && '-x' || '' }} &&
+          cd ../create-farm && npm run build -- ${{ matrix.settings.target && format('--target {0}', matrix.settings.target) || '' }} ${{ matrix.settings.zig && '-x' || '' }} &&
+          cd ../../rust-plugins/react && npm run build -- ${{ matrix.settings.target && format('--target {0}', matrix.settings.target) || '' }} ${{ matrix.settings.zig && '-x' || '' }} --abi ${{ matrix.settings.abi }} &&
+          cd ../replace-dirname && npm run build -- ${{ matrix.settings.target && format('--target {0}', matrix.settings.target) || '' }} ${{ matrix.settings.zig && '-x' || '' }} --abi ${{ matrix.settings.abi }} &&
+          cd ../sass && npm run build -- ${{ matrix.settings.target && format('--target {0}', matrix.settings.target) || '' }} ${{ matrix.settings.zig && '-x' || '' }} --abi ${{ matrix.settings.abi }}
         shell: bash
       - name: Build
         if: ${{ !matrix.settings.docker && matrix.settings.build }}
