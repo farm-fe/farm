@@ -106,7 +106,7 @@ jobs:
             target: armv7-unknown-linux-gnueabihf
             build: >-
               sudo apt-get update && sudo apt-get install gcc-arm-linux-gnueabihf -y &&
-              pnpm --filter create-farm build --target armv7-unknown-linux-gnueabihf --zig
+              pnpm --filter create-farm build --target armv7-unknown-linux-gnueabihf -x
             cli_only: true
             zig: true
           - os: ubuntu-latest
