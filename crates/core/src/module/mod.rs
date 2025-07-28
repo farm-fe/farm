@@ -150,7 +150,7 @@ impl ModuleType {
 
   pub fn to_custom_css(&self, scope: &str) -> Option<ModuleType> {
     if self.is_css() && !matches!(self, Self::Custom(_)) {
-      return Some(ModuleType::Custom(format!("farm_css:{}", scope)));
+      return Some(ModuleType::Custom(format!("farm_css:{scope}")));
     }
 
     None
@@ -158,7 +158,7 @@ impl ModuleType {
 
   pub fn to_custom_script(&self, scope: &str) -> Option<ModuleType> {
     if self.is_script() && !matches!(self, Self::Custom(_)) {
-      return Some(ModuleType::Custom(format!("farm_script:{}", scope)));
+      return Some(ModuleType::Custom(format!("farm_script:{scope}")));
     }
 
     None
@@ -173,19 +173,14 @@ impl ModuleType {
       return script;
     }
 
-    panic!(
-      "Unsupported module type: {:?} when calling ModuleType::to_custom",
-      self
-    );
+    panic!("Unsupported module type: {self:?} when calling ModuleType::to_custom");
   }
 
   pub fn is_css(&self) -> bool {
     let mut m = matches!(self, ModuleType::Css);
 
-    if !m {
-      if let ModuleType::Custom(s) = self {
-        m = s.starts_with("farm_css:");
-      }
+    if !m && let ModuleType::Custom(s) = self {
+      m = s.starts_with("farm_css:");
     }
 
     m
@@ -197,10 +192,8 @@ impl ModuleType {
       ModuleType::Js | ModuleType::Jsx | ModuleType::Ts | ModuleType::Tsx
     );
 
-    if !m {
-      if let ModuleType::Custom(s) = self {
-        m = s.starts_with("farm_script:");
-      }
+    if !m && let ModuleType::Custom(s) = self {
+      m = s.starts_with("farm_script:");
     }
 
     m
@@ -283,10 +276,10 @@ impl ModuleId {
   /// return self.relative_path and self.query_string in dev,
   /// return hash(self.relative_path) in prod
   pub fn id(&self, mode: Mode) -> String {
-    if let Ok(val) = std::env::var("FARM_DEBUG_ID") {
-      if !val.is_empty() {
-        return self.to_string();
-      }
+    if let Ok(val) = std::env::var("FARM_DEBUG_ID")
+      && !val.is_empty()
+    {
+      return self.to_string();
     }
 
     match mode {

@@ -483,11 +483,10 @@ impl Plugin for FarmPluginMinifyHtml {
           Err(err) => {
             let farm_debug_html_minify = "FARM_DEBUG_HTML_MINIFY";
 
-            if let Ok(_) = std::env::var(farm_debug_html_minify) {
+            if std::env::var(farm_debug_html_minify).is_ok() {
               println!(
                 "Can not minify html {} due to html syntax error: {}",
-                resource.name,
-                err.to_string()
+                resource.name, err
               );
             } else {
               println!("Can not minify html {} due to html syntax error. Try {farm_debug_html_minify}=1 to see error details", resource.name);

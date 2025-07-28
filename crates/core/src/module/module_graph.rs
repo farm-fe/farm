@@ -371,14 +371,14 @@ impl ModuleGraph {
       .remove(module_id)
       .unwrap_or_else(|| panic!("module_id {module_id:?} should in the module graph"));
 
-    if !module_id.query_string().is_empty() {
-      if let Some(ids) = self
+    if !module_id.query_string().is_empty()
+      && let Some(ids) = self
         .file_module_ids_map
         .get_mut(&module_id.relative_path().into())
-      {
-        ids.retain(|id| id != module_id);
-      }
+    {
+      ids.retain(|id| id != module_id);
     }
+
     self.g.remove_node(index).unwrap()
   }
 

@@ -135,7 +135,7 @@ pub fn render_and_generate_update_resource(
         "".to_string()
       };
 
-      Ok(format!("{}{}", code, map))
+      Ok(format!("{code}{map}"))
     };
 
   let immutable_update_resource = gen_resource_pot_code(&mut immutable_update_resource_pot)?;

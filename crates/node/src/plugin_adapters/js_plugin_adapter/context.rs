@@ -5,7 +5,7 @@ use std::{
 };
 
 use napi::{
-  bindgen_prelude::{FromNapiValue, JsObjectValue, Object, ObjectRef, ToNapiValue, Undefined},
+  bindgen_prelude::{FromNapiValue, JsObjectValue, Object, ObjectRef, ToNapiValue},
   sys::{
     napi_callback, napi_callback_info, napi_create_function, napi_create_object, napi_env,
     napi_get_cb_info, napi_value,
@@ -190,7 +190,7 @@ unsafe extern "C" fn add_watch_file(env: napi_env, info: napi_callback_info) -> 
   let to = ModuleId::new(&to, "", &ctx.config.root);
 
   ctx.add_watch_files(from, vec![to]).unwrap();
-  ToNapiValue::to_napi_value(env, Undefined::default()).unwrap()
+  ToNapiValue::to_napi_value(env, ()).unwrap()
 }
 
 unsafe extern "C" fn emit_file(env: napi_env, info: napi_callback_info) -> napi_value {
@@ -202,7 +202,7 @@ unsafe extern "C" fn emit_file(env: napi_env, info: napi_callback_info) -> napi_
 
   ctx.emit_file(params);
 
-  ToNapiValue::to_napi_value(env, Undefined::default()).unwrap()
+  ToNapiValue::to_napi_value(env, ()).unwrap()
 }
 
 unsafe extern "C" fn get_watch_files(env: napi_env, info: napi_callback_info) -> napi_value {
@@ -235,7 +235,7 @@ unsafe extern "C" fn warn(env: napi_env, info: napi_callback_info) -> napi_value
 
   ctx.log_store.lock().add_warning(message);
 
-  ToNapiValue::to_napi_value(env, Undefined::default()).unwrap()
+  ToNapiValue::to_napi_value(env, ()).unwrap()
 }
 
 unsafe extern "C" fn error(env: napi_env, info: napi_callback_info) -> napi_value {
@@ -247,7 +247,7 @@ unsafe extern "C" fn error(env: napi_env, info: napi_callback_info) -> napi_valu
 
   ctx.log_store.lock().add_error(message);
 
-  ToNapiValue::to_napi_value(env, Undefined::default()).unwrap()
+  ToNapiValue::to_napi_value(env, ()).unwrap()
 }
 
 unsafe extern "C" fn source_map_enabled(env: napi_env, info: napi_callback_info) -> napi_value {

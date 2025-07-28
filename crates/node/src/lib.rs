@@ -222,7 +222,7 @@ impl JsCompiler {
         .map_err(|e| napi::Error::new(Status::GenericFailure, format!("{e}")))
       {
         Ok(_) => {
-          promise.resolve(Box::new(|_| Ok(Undefined::default())));
+          promise.resolve(Box::new(|_| Ok(())));
         }
         Err(err) => {
           promise.reject(err);

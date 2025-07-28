@@ -112,8 +112,7 @@ fn handle_entry_resource(
       .get_mut(&entry_resource_name)
       .unwrap_or_else(|| {
         panic!(
-          "entry resource {:?} not found in resources_map. Entry module id: {:?}",
-          entry_resource_name, entry_module_id
+          "entry resource {entry_resource_name:?} not found in resources_map. Entry module id: {entry_module_id:?}"
         )
       });
     params.resource = std::mem::take(entry_resource);

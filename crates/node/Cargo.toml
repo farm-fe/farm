@@ -39,4 +39,4 @@ swc_plugin = ["farmfe_compiler/swc_plugin"]
 file_watcher = ["notify"]
 
 [build-dependencies]
-napi-build = "2.0.1"
+napi-build = "2.2.3"

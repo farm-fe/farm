@@ -203,7 +203,7 @@ fn merge_resource_pots_by_buckets(
 ) -> Vec<ResourcePot> {
   let mut final_resource_pots = vec![];
 
-  for (_, module_pots) in module_pots_map {
+  for module_pots in module_pots_map.values() {
     let mut current_generation_map = HashMap::<(ModuleType, bool), CurrentGeneration>::default();
     let mut resource_pots = vec![];
 

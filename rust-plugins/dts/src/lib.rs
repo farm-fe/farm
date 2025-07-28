@@ -212,7 +212,7 @@ impl VisitMut for ImportPathRewriter {
             .to_string_lossy()
             .to_string();
           src.value = final_value.clone().into();
-          src.raw = Some(format!("'{}'", final_value).into());
+          src.raw = Some(format!("'{final_value}'").into());
         }
       }
     }
