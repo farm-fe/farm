@@ -69,6 +69,8 @@ export async function resolveUserConfig(
     resolvedEnvPath
   );
 
+  resolvedUserConfig.root ||= process.cwd();
+
   resolvedUserConfig.envFiles = [
     ...(Array.isArray(resolvedUserConfig.envFiles)
       ? resolvedUserConfig.envFiles
