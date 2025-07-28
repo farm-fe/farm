@@ -10,6 +10,13 @@ export default defineConfig((env) => ({
     //     '/node_modules/@arcgis/core/',
     //   ]
     // } : false,
+    persistentCache: false,
+    // concatenateModules: false,
+    // minify: false,
+    // minify: {
+    //   mangleExports: false,
+    // },
+    // treeShaking: false,
     partialBundling: {
       enforceTargetConcurrentRequests: false,
       enforceTargetMinSize: true,

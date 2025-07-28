@@ -5,7 +5,7 @@ use farmfe_core::{
       statement::{ExportSpecifierInfo, ImportSpecifierInfo},
       ModuleExportIdent, ModuleExportIdentType, AMBIGUOUS_EXPORT_ALL, EXPORT_DEFAULT,
     },
-    ModuleId, ModuleSystem,
+    Module, ModuleId, ModuleSystem,
   },
   parking_lot::Mutex,
   plugin::ResolveKind,
@@ -30,6 +30,20 @@ pub fn mangle_exports(
   let exclude_exports = [EXPORT_DEFAULT, AMBIGUOUS_EXPORT_ALL, EXPORT_NAMESPACE];
   let generator_map: Mutex<HashMap<ModuleId, crate::ident_generator::MinifiedIdentsGenerator>> =
     Mutex::new(HashMap::default());
+
+  let should_not_mangle_export =
+    |module: &Module, export_ident: &ModuleExportIdent, export: &str| {
+      let internal_ident = export_ident.as_internal();
+      export.len() <= 2
+        || module.is_entry
+        || module.is_dynamic_entry
+        || exclude_exports.contains(&export)
+        || can_not_be_mangled.contains(export_ident)
+        || !matches!(
+          internal_ident.export_type,
+          ModuleExportIdentType::Declaration
+        )
+    };
 
   // mangle exports of module_graph in parallel
   module_graph.modules().into_par_iter().for_each(|module| {
@@ -58,22 +72,16 @@ pub fn mangle_exports(
       // mangle exports
       for export in exports {
         let ident = meta.export_ident_map.get(export).unwrap();
-        let internal_ident = ident.as_internal();
+
         // only mangle exports defined in current module
-        if module.id != internal_ident.module_id
-          || module.is_entry
-          || module.is_dynamic_entry
-          || exclude_exports.contains(&export.as_str())
-          || can_not_be_mangled.contains(ident)
-          || !matches!(
-            internal_ident.export_type,
-            ModuleExportIdentType::Declaration
-          )
+        if module.id != ident.as_internal().module_id
+          || should_not_mangle_export(module, ident, export)
         {
           continue;
         }
 
         let mangled_ident = ident_generator.generate();
+
         module_mangled_ident_map.insert(export.clone(), mangled_ident);
       }
 
@@ -96,16 +104,15 @@ pub fn mangle_exports(
   module_graph.modules().into_par_iter().for_each(|module| {
     if module.module_type.is_script() {
       let meta = module.meta.as_script();
+      let mut ident_generator = generator_map.lock().remove(&module.id).unwrap();
 
       let mut module_mangled_ident_map: HashMap<String, String> = HashMap::default();
 
-      let mut ident_generator = generator_map.lock().remove(&module.id).unwrap();
-
       // mangle exports
-      for (export, ident) in meta.export_ident_map.iter() {
-        let ident = ident.as_internal();
+      for (export, export_ident) in meta.export_ident_map.iter() {
+        let ident = export_ident.as_internal();
         // only mangle exports defined in current module
-        if module.id != ident.module_id {
+        if module.id != ident.module_id && !should_not_mangle_export(module, export_ident, export) {
           if is_reexport_all(&meta.reexport_ident_map, export) {
             // for export * from, to avoid name conflict of reexported mangled ident, we should transform export * from to export { xxx }
             let mangled_ident = ident_generator.generate();
@@ -483,9 +490,9 @@ pub fn find_idents_can_not_be_mangled(
 
       let mut ident_can_not_be_mangled = HashSet::default();
 
-      // if module is not a es module, all idents of its dependencies can not be mangled
-      if meta.module_system != ModuleSystem::EsModule {
-        for dep_id in module_graph.dependencies_ids(&module.id) {
+      // if module is not a es module or the dep is dynamically imported, all idents of its dependencies can not be mangled
+      for (dep_id, edge_info) in module_graph.dependencies(&module.id) {
+        if meta.module_system != ModuleSystem::EsModule || edge_info.contains_dynamic_import() {
           let dep_module = module_graph.module(&dep_id).unwrap();
 
           if !dep_module.module_type.is_script() {

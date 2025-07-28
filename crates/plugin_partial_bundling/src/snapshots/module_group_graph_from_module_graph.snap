@@ -20,11 +20,11 @@ ModuleGroupGraph {
                 module_group_type: Entry,
                 modules: {
                     ModuleId {
-                        relative_path: "C",
+                        relative_path: "A",
                         query_string: "",
                     },
                     ModuleId {
-                        relative_path: "A",
+                        relative_path: "C",
                         query_string: "",
                     },
                 },
@@ -45,15 +45,15 @@ ModuleGroupGraph {
                         query_string: "",
                     },
                     ModuleId {
+                        relative_path: "H",
+                        query_string: "",
+                    },
+                    ModuleId {
                         relative_path: "A",
                         query_string: "",
                     },
                     ModuleId {
                         relative_path: "C",
-                        query_string: "",
-                    },
-                    ModuleId {
-                        relative_path: "H",
                         query_string: "",
                     },
                 },
@@ -70,10 +70,6 @@ ModuleGroupGraph {
                 module_group_type: Entry,
                 modules: {
                     ModuleId {
-                        relative_path: "E",
-                        query_string: "",
-                    },
-                    ModuleId {
                         relative_path: "D",
                         query_string: "",
                     },
@@ -83,6 +79,10 @@ ModuleGroupGraph {
                     },
                     ModuleId {
                         relative_path: "H",
+                        query_string: "",
+                    },
+                    ModuleId {
+                        relative_path: "E",
                         query_string: "",
                     },
                 },
@@ -99,11 +99,11 @@ ModuleGroupGraph {
                 module_group_type: DynamicImport,
                 modules: {
                     ModuleId {
-                        relative_path: "H",
+                        relative_path: "G",
                         query_string: "",
                     },
                     ModuleId {
-                        relative_path: "G",
+                        relative_path: "H",
                         query_string: "",
                     },
                 },
@@ -128,15 +128,15 @@ ModuleGroupGraph {
                         query_string: "",
                     },
                     ModuleId {
+                        relative_path: "H",
+                        query_string: "",
+                    },
+                    ModuleId {
                         relative_path: "A",
                         query_string: "",
                     },
                     ModuleId {
                         relative_path: "C",
-                        query_string: "",
-                    },
-                    ModuleId {
-                        relative_path: "H",
                         query_string: "",
                     },
                 },
