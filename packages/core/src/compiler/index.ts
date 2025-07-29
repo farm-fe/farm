@@ -70,6 +70,10 @@ export class Compiler {
       } else {
         await this._bindingCompiler.compile();
       }
+    } catch (e) {
+      // error thrown from rust compiler do not have js stack trace
+      e.stack = '';
+      throw e;
     } finally {
       this.compiling = false;
       this._resolveCompileFinishPromise();

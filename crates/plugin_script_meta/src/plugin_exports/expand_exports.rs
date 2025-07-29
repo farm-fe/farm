@@ -297,66 +297,6 @@ fn expand_module_exports_dfs(
     }
   }
 
-  for statement in &module_script_meta.statements {
-    if let Some(import_info) = &statement.import_info {
-      let source_module_id =
-        module_graph.get_dep_by_source(module_id, &import_info.source, Some(ResolveKind::Import));
-
-      expand_module_exports_dfs(&source_module_id, module_graph, expand_context);
-
-      if import_info
-        .specifiers
-        .iter()
-        .any(|specifier| matches!(specifier, ImportSpecifierInfo::Namespace(_)))
-      {
-        expand_context.insert_export_namespace_ident(&source_module_id, module_graph);
-      }
-
-      // find unresolved ident recursively
-      for specifier in &import_info.specifiers {
-        match specifier {
-          ImportSpecifierInfo::Namespace(_) => { /* ignore namespace as it's handled above */ }
-          ImportSpecifierInfo::Named { local, imported } => {
-            let ident = if let Some(imported) = imported {
-              imported
-            } else {
-              local
-            };
-
-            expand_unresolved_import_dfs(
-              &ident.sym,
-              ident,
-              &source_module_id,
-              false,
-              false,
-              module_graph,
-              expand_context,
-              &mut HashSet::default(),
-            );
-          }
-          ImportSpecifierInfo::Default(_) => {
-            if expand_context
-              .get_export_ident(&source_module_id, EXPORT_DEFAULT)
-              .is_none()
-            {
-              expand_context.insert_export_ident(
-                &source_module_id,
-                EXPORT_DEFAULT.to_string(),
-                ModuleExportIdent::new(
-                  source_module_id.clone(),
-                  create_export_default_ident(&source_module_id)
-                    .to_id()
-                    .into(),
-                  ModuleExportIdentType::Unresolved,
-                ),
-              );
-            }
-          }
-        }
-      }
-    }
-  }
-
   // export * should be handled after named export
   for export_info in export_all_stmts {
     let source = export_info.source.as_ref().unwrap();
@@ -453,6 +393,67 @@ fn expand_module_exports_dfs(
         AMBIGUOUS_EXPORT_ALL.to_string(),
         export_ident,
       );
+    }
+  }
+
+  // import should be handled after all export item are handled
+  for statement in &module_script_meta.statements {
+    if let Some(import_info) = &statement.import_info {
+      let source_module_id =
+        module_graph.get_dep_by_source(module_id, &import_info.source, Some(ResolveKind::Import));
+
+      expand_module_exports_dfs(&source_module_id, module_graph, expand_context);
+
+      if import_info
+        .specifiers
+        .iter()
+        .any(|specifier| matches!(specifier, ImportSpecifierInfo::Namespace(_)))
+      {
+        expand_context.insert_export_namespace_ident(&source_module_id, module_graph);
+      }
+
+      // find unresolved ident recursively
+      for specifier in &import_info.specifiers {
+        match specifier {
+          ImportSpecifierInfo::Namespace(_) => { /* ignore namespace as it's handled above */ }
+          ImportSpecifierInfo::Named { local, imported } => {
+            let ident = if let Some(imported) = imported {
+              imported
+            } else {
+              local
+            };
+
+            expand_unresolved_import_dfs(
+              &ident.sym,
+              ident,
+              &source_module_id,
+              false,
+              false,
+              module_graph,
+              expand_context,
+              &mut HashSet::default(),
+            );
+          }
+          ImportSpecifierInfo::Default(_) => {
+            if expand_context
+              .get_export_ident(&source_module_id, EXPORT_DEFAULT)
+              .is_none()
+            {
+              expand_context.insert_export_ident(
+                &source_module_id,
+                EXPORT_DEFAULT.to_string(),
+                ModuleExportIdent::new(
+                  source_module_id.clone(),
+                  create_export_default_ident(&source_module_id)
+                    .to_id()
+                    .into(),
+                  ModuleExportIdentType::Unresolved,
+                ),
+              );
+            }
+          }
+        }
+      }
     }
   }
 
@@ -586,12 +587,14 @@ fn expand_unresolved_import_dfs(
     }
   }
 
-  // only panic when resolved from import
-  if !from_export_named && !from_export_all && !found_ambiguous_ident {
-    panic!(
-      "can not resolve ambiguous export ident {:?} from {:?} {:?} {} {}",
-      ident, source_module_id, imported_str, from_export_all, from_export_named
-    )
+  if !from_export_named
+    && !from_export_all
+    && !found_ambiguous_ident
+    && !module_graph.circle_record.is_in_circle(source_module_id)
+  {
+    println!(
+      "[Farm warn] Can not resolve ambiguous export ident {ident:?}({imported_str:?}) from {source_module_id:?}. Please make sure the export exists. You can file a issue at https://github.com/farm-fe/farm/issues if you need help."
+    );
   }
 }
 

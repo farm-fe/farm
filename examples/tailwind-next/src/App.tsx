@@ -1,12 +1,14 @@
-import React from 'react';
-import logo from './logo.svg?url';
-import { ArrowRight, Heart, Menu, Moon, Sun } from 'lucide-react';
+import React from "react";
+import logo from "./logo.svg?url";
+import { ArrowRight, Heart, Menu, Moon, Sun } from "lucide-react";
 
 const App = () => {
   return (
     <div className="min-h-screen bg-gray-50 p-8">
       <img width={200} src={logo} alt="" />
-      <h1 className="text-4xl font-bold text-center mb-12">Tailwind CSS Animation Demos</h1>
+      <h1 className="text-4xl font-bold text-center mb-12">
+        Tailwind CSS Animation Demos
+      </h1>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-7xl mx-auto">
         {/* 1. Pulse Effect */}
         <div className="bg-white p-6 rounded-xl shadow-lg">
@@ -120,16 +122,20 @@ const App = () => {
         </div>
       </div>
     </div>
-  )
-}
+  );
+};
 
-const AnimationCard = ({ title, component }: { title: string, component: React.ReactNode }) => (
+const AnimationCard = ({
+  title,
+  component,
+}: {
+  title: string;
+  component: React.ReactNode;
+}) => (
   <div className="bg-white p-6 rounded-lg shadow-md">
     <h2 className="text-xl font-semibold mb-4">{title}</h2>
-    <div className="flex items-center justify-center h-40">
-      {component}
-    </div>
+    <div className="flex items-center justify-center h-40">{component}</div>
   </div>
-)
+);
 
-
+export default App;

@@ -75,7 +75,7 @@ function loadDynamicResources(id: string, force = false): Promise<any> {
 function loadDynamicResourcesOnly(id: string, force = false): Promise<any> {
   const resources = dynamicModuleResourcesMap[id].map((index) => dynamicResources[index]);
 
-  if (!resources || resources.length === 0) {
+  if (!moduleSystem.m()[id] && (!resources || resources.length === 0)) {
     throw new Error(
       `Dynamic imported module "${id}" does not belong to any resource`,
     );

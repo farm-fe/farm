@@ -23,7 +23,7 @@ use farmfe_core::{
 };
 
 use farmfe_toolkit::{
-  fs::read_file_utf8,
+  fs::{read_file_utf8, transform_output_filename, TransformOutputFileNameParams},
   html::get_farm_global_this,
   script::{
     merge_swc_globals::{merge_comments, merge_sourcemap},
@@ -315,7 +315,14 @@ impl Plugin for FarmPluginRuntime {
       )?
       .map(|mut res| {
         for resource in &mut res.resources {
-          resource.resource.name = format!("{}.js", resource.resource.name);
+          resource.resource.name = transform_output_filename(TransformOutputFileNameParams {
+            filename_config: context.config.output.filename.clone(),
+            name: &resource.resource.name,
+            name_hash: &resource.resource.name_hash,
+            bytes: &resource.resource.bytes,
+            ext: &resource.resource.resource_type.to_ext(),
+            special_placeholders: &resource.resource.special_placeholders,
+          });
           resource.resource.resource_type = ResourceType::Runtime;
           resource.resource.should_transform_output_filename = false;
           // do not emit the runtime resources, the runtime will be handled later

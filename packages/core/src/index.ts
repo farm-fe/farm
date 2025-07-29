@@ -108,7 +108,17 @@ export async function build(
       handlerWatcher(resolvedUserConfig, compiler);
     }
   } catch (err) {
-    logger.error(`Failed to build: ${err} \n ${err.stack}`, { exit: true });
+    let errorMsg = err?.toString();
+
+    try {
+      const { message, cause } = JSON.parse(JSON.parse(err.message));
+      errorMsg = `${message} \n\n ${cause}`;
+    } catch (e) {}
+
+    logger.error(errorMsg, {
+      error: err,
+      exit: true
+    });
   }
 }
 
