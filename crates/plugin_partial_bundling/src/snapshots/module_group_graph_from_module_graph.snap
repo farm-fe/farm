@@ -1,6 +1,5 @@
 ---
 source: crates/plugin_partial_bundling/src/analyze_module_graph.rs
-assertion_line: 400
 input_file: crates/testing_helpers/src/lib.rs
 ---
 ModuleGroupGraph {
@@ -21,11 +20,11 @@ ModuleGroupGraph {
                 module_group_type: Entry,
                 modules: {
                     ModuleId {
-                        relative_path: "C",
+                        relative_path: "A",
                         query_string: "",
                     },
                     ModuleId {
-                        relative_path: "A",
+                        relative_path: "C",
                         query_string: "",
                     },
                 },
@@ -42,7 +41,11 @@ ModuleGroupGraph {
                 module_group_type: DynamicImport,
                 modules: {
                     ModuleId {
-                        relative_path: "C",
+                        relative_path: "F",
+                        query_string: "",
+                    },
+                    ModuleId {
+                        relative_path: "H",
                         query_string: "",
                     },
                     ModuleId {
@@ -50,11 +53,7 @@ ModuleGroupGraph {
                         query_string: "",
                     },
                     ModuleId {
-                        relative_path: "F",
-                        query_string: "",
-                    },
-                    ModuleId {
-                        relative_path: "H",
+                        relative_path: "C",
                         query_string: "",
                     },
                 },
@@ -75,15 +74,15 @@ ModuleGroupGraph {
                         query_string: "",
                     },
                     ModuleId {
-                        relative_path: "E",
-                        query_string: "",
-                    },
-                    ModuleId {
                         relative_path: "B",
                         query_string: "",
                     },
                     ModuleId {
                         relative_path: "H",
+                        query_string: "",
+                    },
+                    ModuleId {
+                        relative_path: "E",
                         query_string: "",
                     },
                 },
@@ -100,11 +99,11 @@ ModuleGroupGraph {
                 module_group_type: DynamicImport,
                 modules: {
                     ModuleId {
-                        relative_path: "H",
+                        relative_path: "G",
                         query_string: "",
                     },
                     ModuleId {
-                        relative_path: "G",
+                        relative_path: "H",
                         query_string: "",
                     },
                 },
@@ -125,7 +124,11 @@ ModuleGroupGraph {
                         query_string: "",
                     },
                     ModuleId {
-                        relative_path: "C",
+                        relative_path: "F",
+                        query_string: "",
+                    },
+                    ModuleId {
+                        relative_path: "H",
                         query_string: "",
                     },
                     ModuleId {
@@ -133,11 +136,7 @@ ModuleGroupGraph {
                         query_string: "",
                     },
                     ModuleId {
-                        relative_path: "F",
-                        query_string: "",
-                    },
-                    ModuleId {
-                        relative_path: "H",
+                        relative_path: "C",
                         query_string: "",
                     },
                 },
@@ -149,17 +148,17 @@ ModuleGroupGraph {
     },
     id_index_map: {
         ModuleGroupId(
+            "D_DynamicEntry",
+        ): NodeIndex(4),
+        ModuleGroupId(
             "F_DynamicImport",
         ): NodeIndex(1),
-        ModuleGroupId(
-            "A_Entry",
-        ): NodeIndex(0),
         ModuleGroupId(
             "B_Entry",
         ): NodeIndex(2),
         ModuleGroupId(
-            "D_DynamicEntry",
-        ): NodeIndex(4),
+            "A_Entry",
+        ): NodeIndex(0),
         ModuleGroupId(
             "G_DynamicImport",
         ): NodeIndex(3),

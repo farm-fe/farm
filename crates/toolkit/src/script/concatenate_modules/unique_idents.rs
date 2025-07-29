@@ -9,11 +9,12 @@ use farmfe_core::{
   },
   HashMap,
 };
+use swc_atoms::Atom;
 use swc_ecma_visit::{VisitMut, VisitMutWith};
 
 #[derive(Default)]
 struct TopLevelIdents {
-  idents: HashMap<String, usize>,
+  idents: HashMap<Atom, usize>,
 }
 
 impl TopLevelIdents {
@@ -22,23 +23,25 @@ impl TopLevelIdents {
       idents: HashMap::default(),
     };
     // should always add default export to avoid name conflicts with preserved key words
-    tli.add_ident(EXPORT_DEFAULT.to_string());
+    tli.add_ident(EXPORT_DEFAULT.into());
 
     return tli;
   }
 
-  pub fn extend(&mut self, iter: impl Iterator<Item = String>) {
+  fn extend(&mut self, iter: impl Iterator<Item = Atom>) {
     for ident in iter {
-      self.add_ident(ident);
+      if !self.idents.contains_key(&ident) {
+        self.add_ident(ident);
+      }
     }
   }
 
-  pub fn add_ident(&mut self, ident: String) {
+  pub fn add_ident(&mut self, ident: Atom) {
     let count = self.idents.entry(ident).or_insert(0);
     *count += 1;
   }
 
-  pub fn get_unique_ident(&mut self, ident: &str) -> String {
+  pub fn get_unique_ident(&mut self, ident: &Atom) -> Atom {
     if let Some(mut count) = self.idents.get(ident).cloned() {
       if count > 1 {
         let mut unique_ident = self.generate_unique_ident(ident, count);
@@ -53,15 +56,15 @@ impl TopLevelIdents {
 
         return unique_ident;
       } else {
-        return ident.to_string();
+        return ident.clone();
       }
     }
 
     unreachable!("add_ident({ident}) should be called before get_unique_ident")
   }
 
-  fn generate_unique_ident(&self, ident: &str, count: usize) -> String {
-    format!("{ident}${}", count - 1)
+  fn generate_unique_ident(&mut self, ident: &Atom, count: usize) -> Atom {
+    format!("{ident}${}", count - 1).into()
   }
 }
 
@@ -96,12 +99,12 @@ impl TopLevelIdentsRenameHandler {
   }
 
   pub fn get_unique_ident(&mut self, ident: &SwcId) -> Option<SwcId> {
-    self.top_level_idents.add_ident(ident.sym.to_string());
-    let unique_ident = self.top_level_idents.get_unique_ident(ident.sym.as_str());
+    self.top_level_idents.add_ident(ident.sym.clone());
+    let unique_ident = self.top_level_idents.get_unique_ident(&ident.sym);
 
     if unique_ident != *ident.sym {
       let mut cloned = ident.clone();
-      cloned.sym = unique_ident.into();
+      cloned.sym = unique_ident;
       Some(cloned)
     } else {
       None
@@ -318,7 +321,35 @@ pub fn init_rename_handler(
       script_meta
         .unresolved_idents
         .iter()
-        .map(|id| id.sym.to_string()),
+        .map(|id| id.sym.clone()),
+    );
+
+    // there are name conflicts deeply in the module, for example:
+    // ```
+    // // xxx
+    // export const a = 'a';
+    //
+    // // index.js
+    // import { a as renamedA } from 'xxx'
+    // function A() {
+    //   const a = 2;
+    //   console.log(renamedA);
+    // }
+    // ```
+    // should be renamed to:
+    // ```
+    // const a$1 = 'a'
+    // function A() {
+    //   const a = 2;
+    //   console.log(a$1)
+    // }
+    // ```
+    // we have to rename a to a$1 to avoid ident conflicts
+    top_level_idents.extend(
+      script_meta
+        .all_deeply_declared_idents
+        .iter()
+        .map(|id| id.clone()),
     );
   });
 

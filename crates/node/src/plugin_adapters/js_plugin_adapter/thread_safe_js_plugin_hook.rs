@@ -16,7 +16,7 @@ use farmfe_core::{
   serde::{de::DeserializeOwned, Serialize},
 };
 use napi::{
-  bindgen_prelude::FromNapiValue,
+  bindgen_prelude::{FromNapiValue, Function, JsObjectValue, Object},
   sys::{
     napi_call_function,
     napi_call_threadsafe_function,
@@ -34,7 +34,7 @@ use napi::{
     // ThreadsafeFunctionReleaseMode,napi_release_threadsafe_function,
   },
   threadsafe_function::ThreadsafeFunctionCallMode,
-  Env, JsFunction, JsObject, JsUnknown, NapiRaw, NapiValue, ValueType,
+  Env, JsValue, Unknown, ValueType,
 };
 
 use super::context::create_js_context;
@@ -49,7 +49,7 @@ unsafe impl Sync for ThreadSafeJsPluginHook {}
 impl ThreadSafeJsPluginHook {
   pub fn new<P: Serialize, T: DeserializeOwned + Debug + Send + 'static>(
     env: &Env,
-    func: JsFunction,
+    func: Function,
   ) -> Self {
     let mut raw_tsfn = ptr::null_mut();
 
@@ -57,7 +57,14 @@ impl ThreadSafeJsPluginHook {
     let s = "thread_safe_js_plugin_hook";
     let len = s.len();
     let s = CString::new(s).unwrap();
-    unsafe { napi_create_string_utf8(env.raw(), s.as_ptr(), len, &mut async_resource_name) };
+    unsafe {
+      napi_create_string_utf8(
+        env.raw(),
+        s.as_ptr(),
+        len as isize,
+        &mut async_resource_name,
+      )
+    };
 
     unsafe {
       napi_create_threadsafe_function(
@@ -136,12 +143,12 @@ unsafe extern "C" fn call_js_cb<P: Serialize, T: DeserializeOwned + Debug + Send
   )> = Box::from_raw(data.cast());
   let (param, ctx, hook_context, sender) = *data;
   // let js_context = create_js_context(raw_env, ctx);
-  let mut js_func = JsObject::from_napi_value(raw_env, func).unwrap();
+  let mut js_func = Object::from_napi_value(raw_env, func).unwrap();
   let mut js_context = js_func
-    .get_named_property::<JsUnknown>("farm_js_plugin_context")
+    .get_named_property::<Unknown>("farm_js_plugin_context")
     .unwrap();
 
-  if JsUnknown::from_raw(raw_env, js_context.raw())
+  if Unknown::from_napi_value(raw_env, js_context.raw())
     .unwrap()
     .get_type()
     .unwrap()
@@ -152,7 +159,7 @@ unsafe extern "C" fn call_js_cb<P: Serialize, T: DeserializeOwned + Debug + Send
       .set_named_property("farm_js_plugin_context", new_js_context)
       .unwrap();
     js_context = js_func
-      .get_named_property::<JsUnknown>("farm_js_plugin_context")
+      .get_named_property::<Unknown>("farm_js_plugin_context")
       .unwrap();
   }
 
@@ -169,7 +176,7 @@ unsafe extern "C" fn call_js_cb<P: Serialize, T: DeserializeOwned + Debug + Send
   let mut result = ptr::null_mut();
   napi_call_function(raw_env, recv, func, args.len(), args.as_ptr(), &mut result);
 
-  let result_obj = match JsUnknown::from_napi_value(raw_env, result) {
+  let result_obj = match Unknown::from_napi_value(raw_env, result) {
     Ok(result_obj) => result_obj,
     Err(e) => {
       sender
@@ -208,12 +215,15 @@ unsafe extern "C" fn call_js_cb<P: Serialize, T: DeserializeOwned + Debug + Send
 #[macro_export]
 macro_rules! new_js_plugin_hook {
   ($filter:ident, $js_filter:ident, $param:ident, $ret:ident) => {
-    pub fn new(env: &napi::Env, obj: napi::JsObject) -> Self {
+    pub fn new(env: &napi::Env, obj: napi::bindgen_prelude::Object) -> Self {
+      use napi::bindgen_prelude::JsObjectValue;
+      use napi::JsValue;
+
       let filters: $filter = unsafe {
         $js_filter::from_napi_value(
           env.raw(),
           obj
-            .get_named_property::<napi::JsObject>("filters")
+            .get_named_property::<napi::bindgen_prelude::Object>("filters")
             .expect("filters should be checked in js side")
             .raw(),
         )
@@ -222,7 +232,7 @@ macro_rules! new_js_plugin_hook {
       };
 
       let func = obj
-        .get_named_property::<napi::JsFunction>("executor")
+        .get_named_property::<napi::bindgen_prelude::Function>("executor")
         .expect("executor should be checked in js side");
 
       Self {
@@ -238,15 +248,16 @@ macro_rules! define_empty_params_js_plugin_hook {
   ($name:ident) => {
     use $crate::plugin_adapters::js_plugin_adapter::thread_safe_js_plugin_hook::ThreadSafeJsPluginHook;
     use farmfe_core::plugin::{EmptyPluginHookParam, EmptyPluginHookResult};
+    use napi::bindgen_prelude::JsObjectValue;
 
     pub struct $name {
       tsfn: ThreadSafeJsPluginHook,
     }
 
     impl $name {
-      pub fn new(env: &napi::Env, obj: napi::JsObject) -> Self {
+      pub fn new(env: &napi::Env, obj: napi::bindgen_prelude::Object) -> Self {
         let func = obj
-          .get_named_property::<napi::JsFunction>("executor")
+          .get_named_property::<napi::bindgen_prelude::Function>("executor")
           .expect("executor should be checked in js side");
 
         Self {
@@ -355,7 +366,7 @@ unsafe extern "C" fn then_cb<T: DeserializeOwned>(
 
   let sender = Box::from_raw(data as *mut Sender<Result<Option<T>>>);
 
-  let result = JsUnknown::from_napi_value(env, resolved_value[0]).unwrap();
+  let result = Unknown::from_napi_value(env, resolved_value[0]).unwrap();
   let ty = result.get_type().unwrap();
 
   if ty == ValueType::Undefined || ty == ValueType::Null {
@@ -394,7 +405,7 @@ unsafe extern "C" fn catch_cb<T: DeserializeOwned>(
     &mut data,
   );
 
-  let rejected_value = JsUnknown::from_raw_unchecked(env, rejected_value[0]);
+  let rejected_value = Unknown::from_raw_unchecked(env, rejected_value[0]);
   // detect if the rejected value is a js error object
   let is_error = rejected_value
     .get_type()

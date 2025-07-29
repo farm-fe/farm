@@ -8,20 +8,8 @@ initModuleSystem(__farm_internal_module_system__);
 
 //index-337cc548.css:
  @-webkit-keyframes anim {}
-@-moz-keyframes anim {}
-@-o-keyframes anim {}
 @keyframes anim {}
 @-webkit-keyframes anim {
-  0% {
-    color: red;
-  }
-}
-@-moz-keyframes anim {
-  0% {
-    color: red;
-  }
-}
-@-o-keyframes anim {
   0% {
     color: red;
   }

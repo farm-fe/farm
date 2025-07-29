@@ -53,13 +53,7 @@ pub fn parse_html_document(id: &str, content: Arc<String>) -> farmfe_core::error
   })
   .map_err(|e| CompilationError::ParseError {
     resolved_path: id.to_string(),
-    msg: if let Some(s) = e.downcast_ref::<String>() {
-      s.to_string()
-    } else if let Some(s) = e.downcast_ref::<&str>() {
-      s.to_string()
-    } else {
-      "failed to handle with unknown panic message".to_string()
-    },
+    msg: e.to_pretty_string(),
   })
 }
 

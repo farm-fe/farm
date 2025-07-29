@@ -13,9 +13,9 @@ use farmfe_toolkit::{
   preset_env_base::query::Query,
   script::swc_try_with::try_with,
   sourcemap::create_swc_source_map,
-  swc_ecma_preset_env::{self, preset_env, Mode, Targets},
+  swc_ecma_preset_env::{self, transform_from_env, EnvConfig, Mode, Targets},
   swc_ecma_transforms::Assumptions,
-  swc_ecma_transforms_base::{feature::FeatureFlag, helpers::inject_helpers},
+  swc_ecma_transforms_base::helpers::inject_helpers,
   swc_ecma_visit::VisitMutWith,
 };
 
@@ -142,15 +142,14 @@ impl Plugin for FarmPluginPolyfill {
         Program::Module(ast)
       };
 
-      let mut feature_flag = FeatureFlag::empty();
       let comments: SingleThreadedComments = param.meta.as_script().comments.clone().into();
 
-      final_ast.mutate(&mut preset_env(
+      // TODO support transform from es version and remove all logic related to transform es version to env targets
+      final_ast.mutate(&mut transform_from_env(
         unresolved_mark,
         Some(&comments),
-        self.config.clone(),
+        EnvConfig::from(self.config.clone()),
         self.assumptions,
-        &mut feature_flag,
       ));
       final_ast.visit_mut_with(&mut inject_helpers(unresolved_mark));
 

@@ -298,7 +298,12 @@ impl Plugin for FarmPluginHtml {
     cache: &Vec<u8>,
     _context: &Arc<CompilationContext>,
   ) -> farmfe_core::error::Result<Option<()>> {
-    let cached_inline_module_map = deserialize!(cache, CachedHtmlInlineModuleMap).map;
+    let cached_inline_module_map = deserialize!(
+      cache,
+      CachedHtmlInlineModuleMap,
+      ArchivedCachedHtmlInlineModuleMap
+    )
+    .map;
     let mut inline_module_map = self.inline_module_map.lock();
     inline_module_map.extend(cached_inline_module_map);
 
@@ -478,11 +483,10 @@ impl Plugin for FarmPluginMinifyHtml {
           Err(err) => {
             let farm_debug_html_minify = "FARM_DEBUG_HTML_MINIFY";
 
-            if let Ok(_) = std::env::var(farm_debug_html_minify) {
+            if std::env::var(farm_debug_html_minify).is_ok() {
               println!(
                 "Can not minify html {} due to html syntax error: {}",
-                resource.name,
-                err.to_string()
+                resource.name, err
               );
             } else {
               println!("Can not minify html {} due to html syntax error. Try {farm_debug_html_minify}=1 to see error details", resource.name);

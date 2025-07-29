@@ -1,11 +1,11 @@
 use std::sync::Arc;
 
-use farmfe_core::config::FARM_MODULE_SYSTEM;
-use farmfe_core::enhanced_magic_string::collapse_sourcemap::{
+use enhanced_magic_string::collapse_sourcemap::{
   collapse_sourcemap_chain, CollapseSourcemapOptions,
 };
-use farmfe_core::enhanced_magic_string::magic_string::MagicString;
-use farmfe_core::enhanced_magic_string::types::SourceMapOptions;
+use enhanced_magic_string::magic_string::MagicString;
+use enhanced_magic_string::types::SourceMapOptions;
+use farmfe_core::config::FARM_MODULE_SYSTEM;
 use farmfe_core::plugin::PluginHookContext;
 use farmfe_core::{
   context::CompilationContext,
@@ -15,8 +15,8 @@ use farmfe_core::{
 };
 use farmfe_core::{HashMap, HashSet};
 use farmfe_toolkit::html::get_farm_global_this;
-use farmfe_toolkit::sourcemap::SourceMap;
 use farmfe_utils::hash::base64_encode;
+use sourcemap::SourceMap;
 
 use crate::generate::render_resource_pots::render_resource_pot_generate_resources;
 use crate::{
@@ -135,7 +135,7 @@ pub fn render_and_generate_update_resource(
         "".to_string()
       };
 
-      Ok(format!("{}{}", code, map))
+      Ok(format!("{code}{map}"))
     };
 
   let immutable_update_resource = gen_resource_pot_code(&mut immutable_update_resource_pot)?;

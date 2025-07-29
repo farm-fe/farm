@@ -7,7 +7,7 @@ use std::path::{Path, PathBuf};
 
 use crate::config::Mode;
 
-const FARM_CACHE_VERSION: &str = "0.6.1";
+const FARM_CACHE_VERSION: &str = "0.7.0";
 const FARM_CACHE_MANIFEST_FILE: &str = "farm-cache.json";
 
 // TODO make CacheStore a trait and implement DiskCacheStore or RemoteCacheStore or more.
@@ -77,11 +77,11 @@ impl CacheStore {
 
   /// return true if the cache changed or it's a cache item
   pub fn is_cache_changed(&self, store_key: &CacheStoreKey) -> bool {
-    if let Some(guard) = self.manifest.get(&store_key.name) {
-      if guard.value() == &store_key.key {
-        // the cache is not changed
-        return false;
-      }
+    if let Some(guard) = self.manifest.get(&store_key.name)
+      && guard.value() == &store_key.key
+    {
+      // the cache is not changed
+      return false;
     }
 
     true

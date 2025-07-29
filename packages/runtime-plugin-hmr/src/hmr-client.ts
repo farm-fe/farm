@@ -98,11 +98,16 @@ export class HmrClient {
         await prune(hotContext.data);
       }
 
-      moduleSystem.d(id);
+      // if the module is both in remove and added, we just need to clear the cache
+      if (!result.added.includes(id)) {
+        moduleSystem.e(id);
+      }
+
       this.registeredHotModulesMap.delete(id);
     }
 
     for (const id of result.added) {
+      // module is already registered, just clear the cache
       moduleSystem.a(id);
     }
 

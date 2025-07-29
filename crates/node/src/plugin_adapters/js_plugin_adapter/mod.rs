@@ -19,7 +19,10 @@ use farmfe_toolkit::{
   html::parse_html_document,
   script::{parse_module, ParseScriptModuleResult},
 };
-use napi::{bindgen_prelude::FromNapiValue, Env, JsObject, JsUnknown, NapiRaw};
+use napi::{
+  bindgen_prelude::{FromNapiValue, JsObjectValue, Object},
+  Env, JsValue, Unknown,
+};
 
 use crate::{
   check_module_filters,
@@ -77,42 +80,39 @@ pub struct JsPluginAdapter {
 }
 
 impl JsPluginAdapter {
-  pub fn new(env: &Env, js_plugin_object: JsObject) -> Result<Self> {
+  pub fn new(env: &Env, js_plugin_object: Object) -> Result<Self> {
     let name = get_named_property(env, &js_plugin_object, "name")?;
     let priority =
       get_named_property::<i32>(env, &js_plugin_object, "priority").unwrap_or(DEFAULT_PRIORITY);
 
     let build_start_hook_obj =
-      get_named_property::<JsObject>(env, &js_plugin_object, "buildStart").ok();
-    let resolve_hook_obj = get_named_property::<JsObject>(env, &js_plugin_object, "resolve").ok();
-    let load_hook_obj = get_named_property::<JsObject>(env, &js_plugin_object, "load").ok();
-    let transform_hook_obj =
-      get_named_property::<JsObject>(env, &js_plugin_object, "transform").ok();
-    let build_end_hook_obj =
-      get_named_property::<JsObject>(env, &js_plugin_object, "buildEnd").ok();
-    let finish_hook_obj = get_named_property::<JsObject>(env, &js_plugin_object, "finish").ok();
+      get_named_property::<Object>(env, &js_plugin_object, "buildStart").ok();
+    let resolve_hook_obj = get_named_property::<Object>(env, &js_plugin_object, "resolve").ok();
+    let load_hook_obj = get_named_property::<Object>(env, &js_plugin_object, "load").ok();
+    let transform_hook_obj = get_named_property::<Object>(env, &js_plugin_object, "transform").ok();
+    let build_end_hook_obj = get_named_property::<Object>(env, &js_plugin_object, "buildEnd").ok();
+    let finish_hook_obj = get_named_property::<Object>(env, &js_plugin_object, "finish").ok();
     let update_modules_hook_obj =
-      get_named_property::<JsObject>(env, &js_plugin_object, "updateModules").ok();
+      get_named_property::<Object>(env, &js_plugin_object, "updateModules").ok();
     let plugin_cache_loaded_obj =
-      get_named_property::<JsObject>(env, &js_plugin_object, "pluginCacheLoaded").ok();
+      get_named_property::<Object>(env, &js_plugin_object, "pluginCacheLoaded").ok();
     let write_plugin_cache_obj =
-      get_named_property::<JsObject>(env, &js_plugin_object, "writePluginCache").ok();
+      get_named_property::<Object>(env, &js_plugin_object, "writePluginCache").ok();
     let process_rendered_resource_pot_obj =
-      get_named_property::<JsObject>(env, &js_plugin_object, "processRenderedResourcePot").ok();
-    let render_start_obj =
-      get_named_property::<JsObject>(env, &js_plugin_object, "renderStart").ok();
+      get_named_property::<Object>(env, &js_plugin_object, "processRenderedResourcePot").ok();
+    let render_start_obj = get_named_property::<Object>(env, &js_plugin_object, "renderStart").ok();
     let augment_resource_hash_obj =
-      get_named_property::<JsObject>(env, &js_plugin_object, "augmentResourcePotHash").ok();
+      get_named_property::<Object>(env, &js_plugin_object, "augmentResourcePotHash").ok();
     let finalize_resources_obj =
-      get_named_property::<JsObject>(env, &js_plugin_object, "finalizeResources").ok();
+      get_named_property::<Object>(env, &js_plugin_object, "finalizeResources").ok();
     let transform_html_obj =
-      get_named_property::<JsObject>(env, &js_plugin_object, "transformHtml").ok();
+      get_named_property::<Object>(env, &js_plugin_object, "transformHtml").ok();
     let update_finished_obj =
-      get_named_property::<JsObject>(env, &js_plugin_object, "updateFinished").ok();
+      get_named_property::<Object>(env, &js_plugin_object, "updateFinished").ok();
     let process_module_obj =
-      get_named_property::<JsObject>(env, &js_plugin_object, "processModule").ok();
+      get_named_property::<Object>(env, &js_plugin_object, "processModule").ok();
     let freeze_module_obj =
-      get_named_property::<JsObject>(env, &js_plugin_object, "freezeModule").ok();
+      get_named_property::<Object>(env, &js_plugin_object, "freezeModule").ok();
 
     Ok(Self {
       name,
@@ -513,7 +513,7 @@ impl Plugin for JsPluginAdapter {
   }
 }
 
-pub fn get_named_property<T: FromNapiValue>(env: &Env, obj: &JsObject, field: &str) -> Result<T> {
+pub fn get_named_property<T: FromNapiValue>(env: &Env, obj: &Object, field: &str) -> Result<T> {
   // TODO: maybe can prompt for the name of the plugin
   if obj.has_named_property(field).map_err(|e| {
     CompilationError::NAPIError(format!("Get field {field} of config object failed. {e:?}"))
@@ -522,7 +522,7 @@ pub fn get_named_property<T: FromNapiValue>(env: &Env, obj: &JsObject, field: &s
       T::from_napi_value(
         env.raw(),
         obj
-          .get_named_property::<JsUnknown>(field)
+          .get_named_property::<Unknown>(field)
           .map_err(|e| {
             CompilationError::NAPIError(format!("Get field {field} of config object failed. {e:?}"))
           })?

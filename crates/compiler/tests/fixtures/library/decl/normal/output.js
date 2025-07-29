@@ -1,25 +1,25 @@
 //index.js:
- const a = 3;
-const b = 4;
+ const a$1 = 3;
+const b$1 = 4;
 function BB() {
     const a = 5;
     const b = 6;
     console.log(a, b);
 }
-const a$1 = 3;
-const b$1 = 4;
+const a$2 = 3;
+const b$2 = 4;
 function BB$1() {
     const a = 5;
     const b = 6;
     console.log(a, b);
 }
-console.log(a$1, b$1);
+console.log(a$2, b$2);
 const for1 = 'for1';
 const for2 = 'for2';
 const for3 = 'for3';
-const a$2 = 1;
-const b$2 = 2;
-console.log(a$2, b$2);
+const a$3 = 1;
+const b$3 = 2;
+console.log(a$3, b$3);
 {
     const a = 1;
     const b = 2;

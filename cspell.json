@@ -339,5 +339,6 @@
     "**/CHANGELOG.md",
     "**/gitignore",
     "**/test_**",
+    "packages/core/binding/binding.cjs"
   ]
 }

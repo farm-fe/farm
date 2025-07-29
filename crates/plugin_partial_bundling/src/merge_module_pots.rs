@@ -187,6 +187,10 @@ pub fn merge_module_pots(
     );
   }
 
+  if resource_pots.is_empty() && !module_group_module_pots.module_pots.is_empty() {
+    panic!("Generated resource pots is empty while module pots is not empty for group {:?}, this might be a internal bug, please file a issue.", module_group_module_pots.module_group_id);
+  }
+
   resource_pots
 }
 
@@ -199,7 +203,7 @@ fn merge_resource_pots_by_buckets(
 ) -> Vec<ResourcePot> {
   let mut final_resource_pots = vec![];
 
-  for (_, module_pots) in module_pots_map {
+  for module_pots in module_pots_map.values() {
     let mut current_generation_map = HashMap::<(ModuleType, bool), CurrentGeneration>::default();
     let mut resource_pots = vec![];
 

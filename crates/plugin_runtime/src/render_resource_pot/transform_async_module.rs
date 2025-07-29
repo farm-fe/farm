@@ -310,7 +310,7 @@ console.log(b);
     let code = codegen(&ast);
 
     let output = r#"
-const [, b__f, ] = await Promise.all([
+const [, b__f, , ] = await Promise.all([
     farmRequire("475776c7"),
     farmRequire("12345678"),
     farmRequire("ea236e3d")

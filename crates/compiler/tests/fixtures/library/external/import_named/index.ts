@@ -1,3 +1,4 @@
+import './dep';
 import { readFile as r1, readFileSync as r2 } from 'node:fs';
 
 

@@ -10,3 +10,5 @@
 [x] design how to implement esm/cjs concatenate, considerate all possible conditions
   [x] delay rename idents for cyclic dependencies
 [ ] if there are more than 1 ambiguous export all in a module, then the module can not be scope hoisted
+[ ] bump napi-rs for create-farm and rust plugin template
+[ ] using swc recover mode to support legacy IE css syntax

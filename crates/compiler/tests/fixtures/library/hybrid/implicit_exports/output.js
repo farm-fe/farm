@@ -4,7 +4,7 @@
 const __farm_internal_modules__ = {};
 // module cache after module initialized
 const __farm_internal_cache__ = {};
-function farmRequire$1(id) {
+function farmRequire$2(id) {
     if (__farm_internal_cache__[id]) {
         var cachedModuleResult = __farm_internal_cache__[id].exports;
         return cachedModuleResult;
@@ -22,7 +22,7 @@ function farmRequire$1(id) {
             env: {}
         },
         exports: {},
-        require: (moduleId)=>farmRequire$1(moduleId)
+        require: (moduleId)=>farmRequire$2(moduleId)
     };
     __farm_internal_cache__[id] = module;
     initializer(module, module.exports);
@@ -31,7 +31,7 @@ function farmRequire$1(id) {
 }
 function farmRegister(id, module) {
     __farm_internal_modules__[id] = module;
-    return ()=>farmRequire$1(id);
+    return ()=>farmRequire$2(id);
 }
 ; // module_id: @farm-runtime/module-helper
 function exportByDefineProperty(to, to_k, get) {
@@ -51,7 +51,7 @@ function defineExportEsModule(to) {
     });
 }
 ; // module_id: index.ts
-var farmRequire = farmRegister("index.ts", function(module, exports) {
+var farmRequire$1 = farmRegister("index.ts", function(module, exports) {
     defineExportEsModule(exports);
     exportByDefineProperty(exports, "createResult", ()=>createResult);
     function createResult() {
@@ -61,7 +61,7 @@ var farmRequire = farmRegister("index.ts", function(module, exports) {
         };
     }
 });
-var __farm_cjs_exports__$1 = farmRequire();
+var __farm_cjs_exports__$1 = farmRequire$1();
 var createResult = __farm_cjs_exports__$1.createResult;
-var index_ts_default = farmRequire();
+var index_ts_default = farmRequire$1();
 export { createResult as createResult, index_ts_default as default };

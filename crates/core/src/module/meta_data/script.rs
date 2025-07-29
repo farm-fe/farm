@@ -52,7 +52,7 @@ pub struct ScriptModuleMetaData {
   pub statements: Vec<Statement>,
   pub top_level_idents: HashSet<SwcId>,
   pub unresolved_idents: HashSet<SwcId>,
-  /// all declared idents in the module, including top level idents and function idents
+  /// all declared idents in the module, except top level idents
   pub all_deeply_declared_idents: HashSet<Atom>,
   pub is_async: bool,
   pub feature_flags: HashSet<FeatureFlag>,

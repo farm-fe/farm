@@ -14,16 +14,16 @@ farmfe_core = { path = "../core", version = "0.7.3" }
 farmfe_toolkit = { path = "../toolkit", version = "0.0.17" }
 farmfe_utils = { path = "../utils", version = "0.1.6" }
 farmfe_swc_transformer_import_glob = { path = "../swc_transformer_import_glob", version = "0.0.16" }
-swc_plugin_proxy = { version = "3.0.0", features = [
+swc_plugin_proxy = { version = "14.0.0", features = [
   "plugin-rt",
 ], optional = true }
-swc_plugin_runner = { version = "3.0.0", features = [
+swc_plugin_runner = { version = "17.0.0", features = [
   "ecma",
   "rkyv-impl",
   "plugin_transform_schema_v1",
   "plugin_transform_host_native",
 ], optional = true }
-swc_ecma_loader = { version = "3.0.0", features = [
+swc_ecma_loader = { version = "14.0.0", features = [
   "cache",
   "node",
   "tsc",

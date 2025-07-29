@@ -10,7 +10,7 @@ pub const FARM_ENABLE_IMPORT_DEFAULT_HELPER: &str = "__FARM_ENABLE_IMPORT_DEFAUL
 /// Features that used in a script module
 #[cache_item]
 #[derive(Debug, Clone, Hash, PartialEq, Eq)]
-#[archive_attr(derive(Hash, Eq, PartialEq))]
+#[rkyv(derive(Hash, Eq, PartialEq))]
 pub enum FeatureFlag {
   /// import('xxx')
   DynamicImport,

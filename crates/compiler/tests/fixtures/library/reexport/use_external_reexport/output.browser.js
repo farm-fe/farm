@@ -5,7 +5,7 @@ const __farm_internal_modules__ = {};
 // module cache after module initialized
 const __farm_internal_cache__ = {};
 var __farm_internal_module_system__ = {
-    r: farmRequire,
+    r: farmRequire$1,
     g: farmRegister,
     m: ()=>__farm_internal_modules__,
     c: ()=>__farm_internal_cache__
@@ -29,7 +29,7 @@ var __farm_internal_module_system__ = {
     // init `window['xxxx] = {}`
     const __farm_global_this__ = window['__farm_default_namespace__'] = {};
     __farm_global_this__.m = __farm_internal_module_system__;
-}function farmRequire(id) {
+}function farmRequire$1(id) {
     if (__farm_internal_cache__[id]) {
         var cachedModuleResult = __farm_internal_cache__[id].initializer || __farm_internal_cache__[id].exports;
         return cachedModuleResult;
@@ -53,10 +53,10 @@ var __farm_internal_module_system__ = {
             env: {}
         },
         exports: {},
-        require: (moduleId)=>farmRequire(moduleId)
+        require: (moduleId)=>farmRequire$1(moduleId)
     };
     __farm_internal_cache__[id] = module;
-    initializer(module, module.exports, farmRequire, __farm_internal_module_system__.d);
+    initializer(module, module.exports, farmRequire$1, __farm_internal_module_system__.d);
     // return the exports of the module
     return module.exports;
 }
@@ -66,7 +66,7 @@ function farmRegister(id, module) {
         return;
     }
     __farm_internal_modules__[id] = module;
-    return ()=>farmRequire(id);
+    return ()=>farmRequire$1(id);
 }
 ; // module_id: e27f968b
 function initModuleSystem(ms) {

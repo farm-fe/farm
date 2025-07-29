@@ -4,7 +4,6 @@ input_file: crates/testing_helpers/src/lib.rs
 ---
 (
     ModulePot {
-        id: "test-package@1.0.0_js_true",
         name: "test-package@1.0.0",
         source_type: ImmutablePackage,
         size: 15360,

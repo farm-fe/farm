@@ -75,8 +75,10 @@ export async function build(
   } = resolvedUserConfig;
 
   try {
-    const shortFile = getShortName(configFilePath, root);
-    logger.info(`Using config file at ${bold(green(shortFile))}`);
+    if (configFilePath) {
+      const shortFile = getShortName(configFilePath, root);
+      logger.info(`Using config file at ${bold(green(shortFile))}`);
+    }
 
     const compiler = createCompiler(resolvedUserConfig);
     for (const hook of getPluginHooks(jsPlugins, 'configureCompiler')) {
@@ -106,7 +108,17 @@ export async function build(
       handlerWatcher(resolvedUserConfig, compiler);
     }
   } catch (err) {
-    logger.error(`Failed to build: ${err}`, { exit: true });
+    let errorMsg = err?.toString();
+
+    try {
+      const { message, cause } = JSON.parse(JSON.parse(err.message));
+      errorMsg = `${message} \n\n ${cause}`;
+    } catch (e) {}
+
+    logger.error(errorMsg, {
+      error: err,
+      exit: true
+    });
   }
 }
 

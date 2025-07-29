@@ -19,7 +19,6 @@ use farmfe_core::{
   config::{Config, CssPrefixerConfig, TargetEnv},
   context::CompilationContext,
   deserialize,
-  enhanced_magic_string::collapse_sourcemap::{collapse_sourcemap_chain, CollapseSourcemapOptions},
   error::CompilationError,
   module::{module_graph::ModuleGraph, ModuleId, ModuleMetaData, ModuleType},
   parking_lot::Mutex,
@@ -44,6 +43,7 @@ use farmfe_toolkit::script::merge_swc_globals::merge_comments;
 use farmfe_toolkit::script::swc_try_with::try_with;
 use farmfe_toolkit::sourcemap::load_source_original_sourcemap;
 use farmfe_toolkit::sourcemap::{trace_module_sourcemap, SourceMap};
+use farmfe_toolkit::swc_atoms::Atom;
 use farmfe_toolkit::{
   css::{codegen_css_stylesheet, parse_css_stylesheet},
   fs::read_file_utf8,
@@ -51,13 +51,12 @@ use farmfe_toolkit::{
   regex::Regex,
   script::module_type_from_id,
   sourcemap::SourceMap as JsonSourceMap,
-  swc_atoms::JsWord,
+  sourcemap::{collapse_sourcemap_chain, CollapseSourcemapOptions},
   swc_css_modules::{compile, CssClassName, TransformConfig},
   swc_css_prefixer,
   swc_css_visit::{VisitMut, VisitMutWith, VisitWith},
 };
 use farmfe_utils::{parse_query, relative, stringify_query};
-use rkyv::Deserialize;
 use source_replacer::SourceReplacer;
 
 pub const FARM_CSS_MODULES: &str = "farm_css_modules";
@@ -201,7 +200,7 @@ impl Plugin for FarmPluginCss {
     cache: &Vec<u8>,
     _context: &Arc<CompilationContext>,
   ) -> farmfe_core::error::Result<Option<()>> {
-    let cache = deserialize!(cache, CssModulesCache);
+    let cache = deserialize!(cache, CssModulesCache, ArchivedCssModulesCache);
     let mut content_map = self.content_map.lock();
 
     for (k, v) in cache.content_map {
@@ -760,7 +759,7 @@ struct CssModuleRename {
 }
 
 impl TransformConfig for CssModuleRename {
-  fn new_name_for(&self, local: &JsWord) -> JsWord {
+  fn new_name_for(&self, local: &Atom) -> Atom {
     let name = local.to_string();
     let r: HashMap<String, &String> = [("name".into(), &name), ("hash".into(), &self.hash)]
       .into_iter()

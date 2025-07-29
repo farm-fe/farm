@@ -1,8 +1,5 @@
 .dep {
   background-image: url("/logo-90580d.png");
-  -webkit-background-size: contain;
-  -moz-background-size: contain;
-  -o-background-size: contain;
   background-size: contain;
   background-repeat: no-repeat;
   color: red;

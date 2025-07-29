@@ -7,10 +7,17 @@ export default defineConfig({
       index: './src/index.ts'
     },
     output: {
-      targetEnv: 'node',
-      format: 'esm'
+      targetEnv: 'library',
+      format: ['esm', 'cjs']
     },
-    external: ['@farmfe/core', '@tailwindcss/oxide', 'lightningcss'],
+    external: [
+      '@farmfe/core',
+      '@tailwindcss/node',
+      '@tailwindcss/oxide',
+      'lightningcss',
+      'postcss',
+      'postcss-import'
+    ],
     resolve: {
       autoExternalFailedResolve: true,
       dedupe: ['tailwindcss']

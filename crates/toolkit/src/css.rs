@@ -89,13 +89,7 @@ pub fn parse_css_stylesheet(
   })
   .map_err(|e| CompilationError::ParseError {
     resolved_path: id.to_string(),
-    msg: if let Some(s) = e.downcast_ref::<String>() {
-      s.to_string()
-    } else if let Some(s) = e.downcast_ref::<&str>() {
-      s.to_string()
-    } else {
-      "failed to handle with unknown panic message".to_string()
-    },
+    msg: e.to_pretty_string(),
   })
 }
 
@@ -148,7 +142,7 @@ pub fn merge_css_sourcemap(
   for module_id in module_ids {
     let cm = context.meta.get_module_source_map(module_id);
     cm.files().iter().for_each(|source_file| {
-      new_cm.new_source_file_from(source_file.name.clone(), source_file.src.clone());
+      new_cm.new_source_file(source_file.name.clone(), source_file.src.clone());
     });
   }
 

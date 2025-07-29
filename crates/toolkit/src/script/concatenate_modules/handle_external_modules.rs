@@ -124,7 +124,8 @@ fn handle_external_import(options: HandleExternalModuleOptions) {
         // rename the imported ident to the unique name
         let renamed_ident = rename_handler
           .get_renamed_ident(source_module_id, &existing_ident)
-          .unwrap_or(existing_ident);
+          .unwrap_or(existing_ident.clone());
+
         rename_handler.rename_ident(module_id.clone(), sp_ident, renamed_ident.clone());
       } else {
         // push the ident to existing import decl and rename it
@@ -290,9 +291,16 @@ fn get_imported_external_ident(
       .find_map(|specifier| match specifier {
         ImportSpecifier::Named(import_named_specifier) => {
           let local_ident: SwcId = import_named_specifier.local.to_id().into();
+          let local_imported_atom = import_named_specifier
+            .imported
+            .as_ref()
+            .map(|i| i.atom())
+            .unwrap_or(&local_ident.sym);
 
-          if let ImportSpecifierInfo::Named { local, .. } = current_specifier {
-            if local_ident.sym == local.sym {
+          if let ImportSpecifierInfo::Named { local, imported } = current_specifier {
+            let imported_ident = imported.as_ref().unwrap_or(local);
+
+            if *local_imported_atom == imported_ident.sym {
               return Some((local_ident, local.clone()));
             }
           }
@@ -786,7 +794,12 @@ pub fn add_ambiguous_ident_decl(
   let module_meta = module.meta.as_script();
   let mut rename_handler = strip_context.rename_handler.borrow_mut();
 
-  for (export_str, module_export_ident) in module_meta.export_ident_map.iter() {
+  // sort export ident map to make sure the order is deterministic
+  let mut exports = module_meta.export_ident_map.keys().collect::<Vec<_>>();
+  exports.sort();
+
+  for export_str in exports {
+    let module_export_ident = module_meta.export_ident_map.get(export_str).unwrap();
     let module_export_ident = module_export_ident.as_internal();
 
     // The ident is not a normal esm export ident an it's not renamed yet. For example, other rename handler like external rename will rename it, we should not override it.

@@ -9,7 +9,9 @@ use farmfe_core::{
     ModuleType,
   },
   serde::{Deserialize, Serialize},
-  swc_common::{comments::SingleThreadedComments, Globals, SourceMap},
+  swc_common::{
+    comments::SingleThreadedComments, source_map::DefaultSourceMapGenConfig, Globals, SourceMap,
+  },
   swc_css_ast::Stylesheet,
   swc_ecma_ast::Module as SwcModule,
   swc_ecma_parser::{EsSyntax, Syntax},
@@ -121,7 +123,7 @@ pub fn js_codegen(
 
   // append source map
   if source_map_enabled {
-    let map = cm.build_source_map(&src_map);
+    let map = cm.build_source_map(&src_map, None, DefaultSourceMapGenConfig);
     let mut src_map = vec![];
     map.to_writer(&mut src_map).map_err(|err| {
       CompilationError::GenericError(format!("failed to write source map: {err:?}"))

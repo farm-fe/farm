@@ -7,7 +7,6 @@ use farmfe_core::{
     module_graph::ModuleGraph,
     Module, ModuleId,
   },
-  swc_common::{SyntaxContext, DUMMY_SP},
   swc_ecma_ast::{
     ClassDecl, Decl, Expr, FnDecl, Ident, Module as SwcModule, ModuleDecl, ModuleItem, Stmt,
   },
@@ -22,10 +21,7 @@ use crate::script::concatenate_modules::handle_external_modules::{
 use super::{
   handle_external_modules::handle_external_module,
   unique_idents::{TopLevelIdentsRenameHandler, EXPORT_DEFAULT, EXPORT_NAMESPACE},
-  utils::{
-    create_export_default_expr_item, create_export_default_ident, create_var_decl_item,
-    replace_module_decl,
-  },
+  utils::{create_export_default_expr_item, create_export_default_ident, replace_module_decl},
   StripModuleContext,
 };
 
@@ -136,8 +132,6 @@ fn strip_import_statements(params: &mut StripModuleDeclStatementParams) -> Vec<S
 
       let StripModuleDeclStatementParams {
         module_id,
-        script_meta,
-        result,
         strip_context,
         ..
       } = params;
@@ -179,10 +173,8 @@ fn strip_import_statements(params: &mut StripModuleDeclStatementParams) -> Vec<S
           module_id,
           ident,
           export_str,
-          script_meta,
           source_module_script_meta,
           &mut rename_handler,
-          result,
         ) {
           println!(
             "[Farm warn] rename imported ident failed (module_id: {:?}), please make sure export {export_str} is defined in {:?}",
@@ -260,10 +252,8 @@ fn strip_export_statements(params: &mut StripModuleDeclStatementParams) -> Vec<S
                   params.module_id,
                   ident,
                   EXPORT_NAMESPACE,
-                  params.script_meta,
                   source_module_script_meta,
                   &mut rename_handler,
-                  params.result,
                 );
               }
             }
@@ -402,10 +392,8 @@ fn rename_imported_ident(
   module_id: &ModuleId,
   ident: &SwcId,
   export_str: &str,
-  script_meta: &ScriptModuleMetaData,
   source_module_script_meta: &ScriptModuleMetaData,
   rename_handler: &mut TopLevelIdentsRenameHandler,
-  result: &mut StripModuleDeclResult,
 ) -> bool {
   // if the ident is already renamed, skip it
   if rename_handler.get_renamed_ident(module_id, ident).is_some() {
@@ -439,49 +427,8 @@ fn rename_imported_ident(
     return false;
   };
 
-  if script_meta
-    .all_deeply_declared_idents
-    .contains(&final_ident.sym)
-  {
-    // there are name conflicts deeply in the module, for example:
-    // ```
-    // // xxx
-    // export const a = 'a';
-    //
-    // // index.js
-    // import { a as renamedA } from 'xxx'
-    // function A() {
-    //   const a = 2;
-    //   console.log(renamedA);
-    // }
-    // ```
-    // should be renamed to:
-    // ```
-    // const a = 'a'
-    // const a$1 = a;
-    // function A() {
-    //   const a = 2;
-    //   console.log(a$1)
-    // }
-    // ```
-    // we have to rename a to a$1 to avoid ident conflicts
-    let renamed_ident = rename_handler
-      .get_unique_ident(&final_ident)
-      .unwrap_or(final_ident.clone());
-
-    result.items_to_prepend.push(create_var_decl_item(
-      Ident::new(renamed_ident.sym.clone(), DUMMY_SP, renamed_ident.ctxt()),
-      Box::new(Expr::Ident(Ident::new(
-        final_ident.sym.clone(),
-        DUMMY_SP,
-        SyntaxContext::empty(), // there may be same ident in different module, so we should use empty context to make sure it's won't renamed
-      ))),
-    ));
-    rename_handler.rename_ident(module_id.clone(), ident.clone(), renamed_ident);
-  } else {
-    // rename local to final_ident
-    rename_handler.rename_ident(module_id.clone(), ident.clone(), final_ident);
-  }
+  // rename local to final_ident
+  rename_handler.rename_ident(module_id.clone(), ident.clone(), final_ident);
 
   true
 }

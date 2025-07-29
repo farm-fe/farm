@@ -184,8 +184,8 @@ export class Logger implements ILogger {
       error = message;
     }
 
-    if (causeError) {
-      error.message += `\nCaused by: ${causeError.stack ?? causeError}`;
+    if (causeError?.stack) {
+      error.message += `\nCaused by: ${causeError.stack}`;
     }
 
     this.logMessage('error', error, colors.red, clearScreen);

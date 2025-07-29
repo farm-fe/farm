@@ -9,7 +9,7 @@ exportByDefineProperty(exports, "foo", ()=>foo);
 const __farm_internal_modules__ = {};
 // module cache after module initialized
 const __farm_internal_cache__ = {};
-function farmRequire$1(id) {
+function farmRequire$2(id) {
     if (__farm_internal_cache__[id]) {
         var cachedModuleResult = __farm_internal_cache__[id].exports;
         return cachedModuleResult;
@@ -27,7 +27,7 @@ function farmRequire$1(id) {
             env: {}
         },
         exports: {},
-        require: (moduleId)=>farmRequire$1(moduleId)
+        require: (moduleId)=>farmRequire$2(moduleId)
     };
     __farm_internal_cache__[id] = module;
     initializer(module, module.exports);
@@ -36,7 +36,7 @@ function farmRequire$1(id) {
 }
 function farmRegister(id, module) {
     __farm_internal_modules__[id] = module;
-    return ()=>farmRequire$1(id);
+    return ()=>farmRequire$2(id);
 }
 ; // module_id: @farm-runtime/module-helper
 function exportByDefineProperty(to, to_k, get) {
@@ -68,7 +68,7 @@ function importDefault(v) {
     return v;
 }
 ; // module_id: index.ts
-var farmRequire = farmRegister("index.ts", function(module, exports1) {
+var farmRequire$1 = farmRegister("index.ts", function(module, exports1) {
     defineExportEsModule(exports1);
     exportByDefineProperty(exports1, "foo", ()=>foo);
     exportByDefineProperty(exports1, "bar", ()=>bar);
@@ -82,5 +82,5 @@ var farmRequire = farmRegister("index.ts", function(module, exports1) {
     var foo = 'foo';
     var bar = 'bar';
 });
-var __farm_cjs_exports__$1 = farmRequire();
-var index_ts_default = interopRequireDefault(__farm_cjs_exports__$1).default, foo = __farm_cjs_exports__$1.foo, bar = __farm_cjs_exports__$1.bar;
+var __farm_cjs_exports__$1 = farmRequire$1();
+var foo = __farm_cjs_exports__$1.foo, index_ts_default = interopRequireDefault(__farm_cjs_exports__$1).default, bar = __farm_cjs_exports__$1.bar;

@@ -6,10 +6,10 @@ import { FarmCliOptions, UserConfig } from './types.js';
 
 export function mergeConfig<T extends Record<string, any>>(
   userConfig: T,
-  target: T
+  target?: T
 ): T {
   const result: Record<string, any> = { ...userConfig };
-  for (const key of Object.keys(target)) {
+  for (const key of Object.keys(target || {})) {
     const left = result[key];
     const right = target[key];
 

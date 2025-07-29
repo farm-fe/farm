@@ -1,6 +1,6 @@
 //index.js:
- const a = 3;
-const b = 4;
+ const a$1 = 3;
+const b$1 = 4;
 const c = 5;
 function BB() {
     const a = 5;
@@ -8,20 +8,20 @@ function BB() {
     console.log(a, b);
 }
 var dep_ts_default = {
-    a,
-    b,
+    a: a$1,
+    b: b$1,
     c
 };
 var dep_ts_namespace_farm_internal_ = {
-    a: a,
-    b: b,
+    a: a$1,
+    b: b$1,
     default: dep_ts_default,
     __esModule: true
 };
 var importNamespace_ts_default = dep_ts_namespace_farm_internal_;
 var exportAll_ts_namespace_farm_internal_ = {
-    a: a,
-    b: b,
+    a: a$1,
+    b: b$1,
     __esModule: true
 };
 console.log({

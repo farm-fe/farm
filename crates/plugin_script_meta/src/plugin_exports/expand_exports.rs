@@ -58,16 +58,39 @@ pub fn expand_exports_of_module_graph(
       expand_context.remove_ambiguous_export_ident_map(&module.id)
     {
       let script_meta = module.meta.as_script_mut();
-      script_meta.ambiguous_export_ident_map = ambiguous_export_ident_map
-        .into_iter()
-        .map(|(k, v)| (k, v.into_iter().collect::<Vec<_>>()))
-        .collect();
+      script_meta.ambiguous_export_ident_map = ambiguous_export_ident_map;
     }
 
     if let Some(reexport_ident_map) = expand_context.reexport_ident_map.remove(&module.id) {
       let script_meta = module.meta.as_script_mut();
       script_meta.reexport_ident_map = reexport_ident_map;
     }
+  }
+}
+
+pub fn expand_dynamic_entry_exports(module_graph: &mut ModuleGraph) {
+  let mut expand_context = ExpandModuleExportsContext::new();
+
+  for (dynamic_entry_id, _) in &module_graph.dynamic_entries {
+    expand_module_exports_dfs(dynamic_entry_id, module_graph, &mut expand_context);
+  }
+
+  for (module_id, export_ident_map) in expand_context.export_ident_map {
+    let module = module_graph.module_mut(&module_id).unwrap();
+    let script_meta = module.meta.as_script_mut();
+    script_meta.export_ident_map = export_ident_map;
+  }
+
+  for (module_id, ambiguous_export_ident_map) in expand_context.ambiguous_export_ident_map {
+    let module = module_graph.module_mut(&module_id).unwrap();
+    let script_meta = module.meta.as_script_mut();
+    script_meta.ambiguous_export_ident_map = ambiguous_export_ident_map;
+  }
+
+  for (module_id, reexport_ident_map) in expand_context.reexport_ident_map {
+    let module = module_graph.module_mut(&module_id).unwrap();
+    let script_meta = module.meta.as_script_mut();
+    script_meta.reexport_ident_map = reexport_ident_map;
   }
 }
 
@@ -274,66 +297,6 @@ fn expand_module_exports_dfs(
     }
   }
 
-  for statement in &module_script_meta.statements {
-    if let Some(import_info) = &statement.import_info {
-      let source_module_id =
-        module_graph.get_dep_by_source(module_id, &import_info.source, Some(ResolveKind::Import));
-
-      expand_module_exports_dfs(&source_module_id, module_graph, expand_context);
-
-      if import_info
-        .specifiers
-        .iter()
-        .any(|specifier| matches!(specifier, ImportSpecifierInfo::Namespace(_)))
-      {
-        expand_context.insert_export_namespace_ident(&source_module_id, module_graph);
-      }
-
-      // find unresolved ident recursively
-      for specifier in &import_info.specifiers {
-        match specifier {
-          ImportSpecifierInfo::Namespace(_) => { /* ignore namespace as it's handled above */ }
-          ImportSpecifierInfo::Named { local, imported } => {
-            let ident = if let Some(imported) = imported {
-              imported
-            } else {
-              local
-            };
-
-            expand_unresolved_import_dfs(
-              &ident.sym,
-              ident,
-              &source_module_id,
-              false,
-              false,
-              module_graph,
-              expand_context,
-              &mut HashSet::default(),
-            );
-          }
-          ImportSpecifierInfo::Default(_) => {
-            if expand_context
-              .get_export_ident(&source_module_id, EXPORT_DEFAULT)
-              .is_none()
-            {
-              expand_context.insert_export_ident(
-                &source_module_id,
-                EXPORT_DEFAULT.to_string(),
-                ModuleExportIdent::new(
-                  source_module_id.clone(),
-                  create_export_default_ident(&source_module_id)
-                    .to_id()
-                    .into(),
-                  ModuleExportIdentType::Unresolved,
-                ),
-              );
-            }
-          }
-        }
-      }
-    }
-  }
-
   // export * should be handled after named export
   for export_info in export_all_stmts {
     let source = export_info.source.as_ref().unwrap();
@@ -400,7 +363,7 @@ fn expand_module_exports_dfs(
         for export_ident in export_idents {
           // do not insert duplicate ident
           if !existing_idents.contains(&export_ident) {
-            existing_idents.insert(export_ident);
+            existing_idents.push(export_ident);
           }
         }
       }
@@ -430,6 +393,67 @@ fn expand_module_exports_dfs(
         AMBIGUOUS_EXPORT_ALL.to_string(),
         export_ident,
       );
+    }
+  }
+
+  // import should be handled after all export item are handled
+  for statement in &module_script_meta.statements {
+    if let Some(import_info) = &statement.import_info {
+      let source_module_id =
+        module_graph.get_dep_by_source(module_id, &import_info.source, Some(ResolveKind::Import));
+
+      expand_module_exports_dfs(&source_module_id, module_graph, expand_context);
+
+      if import_info
+        .specifiers
+        .iter()
+        .any(|specifier| matches!(specifier, ImportSpecifierInfo::Namespace(_)))
+      {
+        expand_context.insert_export_namespace_ident(&source_module_id, module_graph);
+      }
+
+      // find unresolved ident recursively
+      for specifier in &import_info.specifiers {
+        match specifier {
+          ImportSpecifierInfo::Namespace(_) => { /* ignore namespace as it's handled above */ }
+          ImportSpecifierInfo::Named { local, imported } => {
+            let ident = if let Some(imported) = imported {
+              imported
+            } else {
+              local
+            };
+
+            expand_unresolved_import_dfs(
+              &ident.sym,
+              ident,
+              &source_module_id,
+              false,
+              false,
+              module_graph,
+              expand_context,
+              &mut HashSet::default(),
+            );
+          }
+          ImportSpecifierInfo::Default(_) => {
+            if expand_context
+              .get_export_ident(&source_module_id, EXPORT_DEFAULT)
+              .is_none()
+            {
+              expand_context.insert_export_ident(
+                &source_module_id,
+                EXPORT_DEFAULT.to_string(),
+                ModuleExportIdent::new(
+                  source_module_id.clone(),
+                  create_export_default_ident(&source_module_id)
+                    .to_id()
+                    .into(),
+                  ModuleExportIdentType::Unresolved,
+                ),
+              );
+            }
+          }
+        }
+      }
     }
   }
 
@@ -563,19 +587,21 @@ fn expand_unresolved_import_dfs(
     }
   }
 
-  // only panic when resolved from import
-  if !from_export_named && !from_export_all && !found_ambiguous_ident {
-    panic!(
-      "can not resolve ambiguous export ident {:?} from {:?} {:?} {} {}",
-      ident, source_module_id, imported_str, from_export_all, from_export_named
-    )
+  if !from_export_named
+    && !from_export_all
+    && !found_ambiguous_ident
+    && !module_graph.circle_record.is_in_circle(source_module_id)
+  {
+    println!(
+      "[Farm warn] Can not resolve ambiguous export ident {ident:?}({imported_str:?}) from {source_module_id:?}. Please make sure the export exists. You can file a issue at https://github.com/farm-fe/farm/issues if you need help."
+    );
   }
 }
 
 struct ExpandModuleExportsContext {
   export_ident_map: HashMap<ModuleId, HashMap<String, ModuleExportIdent>>,
   reexport_ident_map: HashMap<ModuleId, HashMap<String, ModuleReExportIdentType>>,
-  ambiguous_export_ident_map: HashMap<ModuleId, HashMap<String, HashSet<ModuleExportIdent>>>,
+  ambiguous_export_ident_map: HashMap<ModuleId, HashMap<String, Vec<ModuleExportIdent>>>,
   visited: HashSet<ModuleId>,
 }
 
@@ -630,7 +656,7 @@ impl ExpandModuleExportsContext {
       .or_default()
       .entry(export_str)
       .or_default()
-      .insert(export_ident);
+      .push(export_ident);
   }
 
   fn insert_export_namespace_ident(
@@ -678,7 +704,7 @@ impl ExpandModuleExportsContext {
   pub fn remove_ambiguous_export_ident_map(
     &mut self,
     module_id: &ModuleId,
-  ) -> Option<HashMap<String, HashSet<ModuleExportIdent>>> {
+  ) -> Option<HashMap<String, Vec<ModuleExportIdent>>> {
     self.ambiguous_export_ident_map.remove(module_id)
   }
 
@@ -696,7 +722,7 @@ impl ExpandModuleExportsContext {
   pub fn get_ambiguous_export_ident_map(
     &self,
     module_id: &ModuleId,
-  ) -> Option<HashMap<String, HashSet<ModuleExportIdent>>> {
+  ) -> Option<HashMap<String, Vec<ModuleExportIdent>>> {
     self.ambiguous_export_ident_map.get(module_id).cloned()
   }
 
@@ -704,7 +730,7 @@ impl ExpandModuleExportsContext {
     &self,
     module_id: &ModuleId,
     export_str: &str,
-  ) -> Option<HashSet<ModuleExportIdent>> {
+  ) -> Option<Vec<ModuleExportIdent>> {
     self
       .ambiguous_export_ident_map
       .get(module_id)

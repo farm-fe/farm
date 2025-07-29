@@ -56,9 +56,14 @@ describe('resolveUserConfig', () => {
         'dev',
         'development'
       );
+
       if (isDisableCache()) {
         expect(config.compilation.persistentCache).toEqual(false);
       } else {
+        expect(config.compilation.persistentCache.cacheDir).toBeTruthy();
+        // cache dir is related to the work directory, it should be omitted
+        delete config.compilation.persistentCache.cacheDir;
+
         expect(config.compilation.persistentCache).toEqual({
           buildDependencies: [
             path.join(filePath, 'fixtures', 'config', 'farm.config.ts'),
@@ -68,8 +73,6 @@ describe('resolveUserConfig', () => {
             'pnpm-lock.yaml',
             'yarn.lock'
           ],
-          cacheDir:
-            '/Users/bytedance/Desktop/opensource/farm-v2/node_modules/.farm/cache',
           envs: {
             '$__farm_regex:(global(This)?\\.)?process\\.env\\.BASE_URL': '"/"',
             '$__farm_regex:(global(This)?\\.)?process\\.env\\.DEV': 'true',

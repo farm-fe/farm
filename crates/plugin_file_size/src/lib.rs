@@ -32,7 +32,7 @@ impl FarmPluginFileSize {
 
   fn format_size(&self, size: usize) -> ColoredString {
     let size_str = if size < 1024 {
-      format!("{} B", size)
+      format!("{size} B")
     } else if size < 1024 * 1024 {
       format!("{:.1} KB", size as f64 / 1024.0)
     } else {
@@ -62,7 +62,7 @@ impl FarmPluginFileSize {
 
   fn format_gzip_size(&self, size: usize) -> ColoredString {
     let size_str = if size < 1024 {
-      format!("{} B", size)
+      format!("{size} B")
     } else if size < 1024 * 1024 {
       format!("{:.1} KB", size as f64 / 1024.0)
     } else {
@@ -81,7 +81,7 @@ impl FarmPluginFileSize {
       })
       .collect::<Vec<_>>()
       .join("/");
-    let full_path = format!("{}/{}", normalized_path, name);
+    let full_path = format!("{normalized_path}/{name}");
     let display_width = UnicodeWidthStr::width(full_path.as_str());
 
     let padding = if display_width < 45 {
@@ -91,11 +91,10 @@ impl FarmPluginFileSize {
     };
 
     format!(
-      "{}{}{}{}",
+      "{}{}{}{padding}",
       normalized_path.dimmed(),
       "/".dimmed(),
-      self.get_size_color(size, name),
-      padding
+      self.get_size_color(size, name)
     )
   }
 }

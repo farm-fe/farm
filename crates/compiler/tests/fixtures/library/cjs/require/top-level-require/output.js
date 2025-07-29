@@ -16,7 +16,7 @@ exportByDefineProperty(exports, "default", ()=>index_ts_default);
 const __farm_internal_modules__ = {};
 // module cache after module initialized
 const __farm_internal_cache__ = {};
-function farmRequire$1(id) {
+function farmRequire$2(id) {
     if (__farm_internal_cache__[id]) {
         var cachedModuleResult = __farm_internal_cache__[id].exports;
         return cachedModuleResult;
@@ -34,7 +34,7 @@ function farmRequire$1(id) {
             env: {}
         },
         exports: {},
-        require: (moduleId)=>farmRequire$1(moduleId)
+        require: (moduleId)=>farmRequire$2(moduleId)
     };
     __farm_internal_cache__[id] = module;
     initializer(module, module.exports);
@@ -43,7 +43,7 @@ function farmRequire$1(id) {
 }
 function farmRegister(id, module) {
     __farm_internal_modules__[id] = module;
-    return ()=>farmRequire$1(id);
+    return ()=>farmRequire$2(id);
 }
 ; // module_id: @farm-runtime/module-helper
 function defineExportEsModule(to) {
@@ -54,10 +54,10 @@ function defineExportEsModule(to) {
     });
 }
 ; // module_id: index.ts
-var farmRequire = farmRegister("index.ts", function(module, exports1) {
+var farmRequire$1 = farmRegister("index.ts", function(module, exports1) {
     defineExportEsModule(exports1);
     var _f_node_module = __farmNodeRequire('node:module');
     const _f_cjs_require = _f_node_module.createRequire(new URL(__filename, "file:").href);
     console.log(_f_cjs_require('node:fs'));
 });
-var index_ts_default = farmRequire();
+var index_ts_default = farmRequire$1();

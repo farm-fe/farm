@@ -243,7 +243,7 @@ impl ContextMetaData {
       .lock()
       .get(module_id)
       .cloned()
-      .unwrap_or_else(|| panic!("no source map found for module {:?}", module_id))
+      .unwrap_or_else(|| panic!("no source map found for module {module_id:?}"))
   }
 
   /// set swc source map for module id
@@ -274,7 +274,7 @@ impl ContextMetaData {
       .lock()
       .get(resource_pot_id)
       .cloned()
-      .unwrap_or_else(|| panic!("no source map found for resource pot {:?}", resource_pot_id))
+      .unwrap_or_else(|| panic!("no source map found for resource pot {resource_pot_id:?}"))
   }
 
   /// set swc source map for resource pot
@@ -298,7 +298,7 @@ impl ContextMetaData {
 
     let globals = globals_map
       .get(module_id)
-      .unwrap_or_else(|| panic!("no globals found for module {:?}", module_id))
+      .unwrap_or_else(|| panic!("no globals found for module {module_id:?}"))
       .clone();
 
     ArcContextGlobals(globals)
@@ -315,7 +315,7 @@ impl ContextMetaData {
     let globals_map = self.resource_pot_globals_map.lock();
     let globals = globals_map
       .get(resource_pot_id)
-      .unwrap_or_else(|| panic!("no globals found for resource pot {:?}", resource_pot_id))
+      .unwrap_or_else(|| panic!("no globals found for resource pot {resource_pot_id:?}"))
       .clone();
     ArcContextGlobals(globals)
   }
@@ -342,7 +342,10 @@ pub fn create_swc_source_map(
   content: Arc<String>,
 ) -> (Arc<SourceMap>, Arc<SourceFile>) {
   let cm = Arc::new(SourceMap::default());
-  let sf = cm.new_source_file_from(Arc::new(get_swc_sourcemap_filename(id)), content);
+  let sf = cm.new_source_file(
+    Arc::new(get_swc_sourcemap_filename(id)),
+    content.to_string(), // TODO optimize string performance
+  );
 
   (cm, sf)
 }

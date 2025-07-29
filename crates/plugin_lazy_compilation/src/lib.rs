@@ -149,7 +149,7 @@ impl Plugin for FarmPluginLazyCompilation {
     }
 
     if param.resolved_path.ends_with(DYNAMIC_VIRTUAL_SUFFIX) {
-      if param.meta.get(ORIGINAL_RESOLVED_PATH).is_none() {
+      if !param.meta.contains_key(ORIGINAL_RESOLVED_PATH) {
         let farm_global_this = get_farm_global_this(
           &context.config.runtime.namespace,
           &context.config.output.target_env,
@@ -164,7 +164,7 @@ impl Plugin for FarmPluginLazyCompilation {
               &stringify_query(&param.query),
               &context.config.root,
             )
-            .id(context.config.mode.clone())
+            .id(context.config.mode)
             .replace('\\', r"\\"),
           )
           .replace(
@@ -184,7 +184,7 @@ impl Plugin for FarmPluginLazyCompilation {
           .unwrap()
           .to_string_lossy()
           .to_string();
-        let relative_source = relative(&dir, &resolved_path);
+        let relative_source = relative(&dir, resolved_path);
         let content = format!(
           r#"
           import * as ns from "./{0}"

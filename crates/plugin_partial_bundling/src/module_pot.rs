@@ -9,7 +9,6 @@ use crate::generate_module_pots::ModulePotSourceType;
 /// 2. Modules in the same immutable package are in the same ModulePot. For example, A, B are both in ModuleBucket_A_B and they are also in the same immutable package, then A, B would be in the same Module Pot.
 /// 3. For other modules, a module is a module pot
 pub struct ModulePot {
-  pub id: String,
   pub name: String,
   pub source_type: ModulePotSourceType,
   pub size: usize,
@@ -27,7 +26,6 @@ impl ModulePot {
     immutable: bool,
   ) -> Self {
     Self {
-      id: Self::gen_id(&name, module_type.clone(), immutable),
       name,
       source_type,
       modules: HashSet::default(),

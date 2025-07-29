@@ -9,7 +9,7 @@ use farmfe_core::{
   HashMap,
 };
 use farmfe_toolkit::html::codegen_html_document;
-use napi::{bindgen_prelude::FromNapiValue, NapiRaw};
+use napi::bindgen_prelude::FromNapiValue;
 
 use crate::{
   new_js_plugin_hook,

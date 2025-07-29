@@ -394,7 +394,7 @@ impl Compiler {
     }
 
     // ================ Process Module End ===============
-    module.size = parse_param.content.as_bytes().len();
+    module.size = parse_param.content.len();
     module.module_type = parse_param.module_type;
     module.side_effects = resolve_result.side_effects;
     module.external = false;

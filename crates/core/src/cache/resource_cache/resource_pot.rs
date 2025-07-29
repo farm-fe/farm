@@ -1,9 +1,11 @@
 use dashmap::DashMap;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
-use rkyv::Deserialize;
 
 use crate::{
-  cache::cache_store::{CacheStore, CacheStoreKey},
+  cache::{
+    cache_store::{CacheStore, CacheStoreKey},
+    resource_cache::resource_memory_store::ArchivedCachedResourcePot,
+  },
   config::Mode,
   deserialize, serialize, HashMap,
 };
@@ -54,7 +56,7 @@ impl ResourceMemoryStore for ResourcePotMemoryStore {
     let cache = self.store.read_cache(name);
 
     if let Some(cache) = cache {
-      let resource = deserialize!(&cache, CachedResourcePot);
+      let resource = deserialize!(&cache, CachedResourcePot, ArchivedCachedResourcePot);
       // self
       //   .cached_resources
       //   .insert(name.to_string(), resource.clone());

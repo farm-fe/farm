@@ -61,8 +61,7 @@ where
         .to_string();
       if !is_valid_pkg_name(&input) {
         eprintln!(
-          "{BOLD}{RED}✘{RESET} Invalid project name: {BOLD}{YELLOW}{input}{RESET}, {}",
-          "package name should only include lowercase alphanumeric character and hyphens \"-\" and doesn't start with numbers"
+          "{BOLD}{RED}✘{RESET} Invalid project name: {BOLD}{YELLOW}{input}{RESET}, package name should only include lowercase alphanumeric character and hyphens \"-\" and doesn't start with numbers",
         );
         default_project_name = to_valid_pkg_name(&input).leak();
         continue;

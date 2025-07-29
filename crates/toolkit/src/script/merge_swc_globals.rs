@@ -70,7 +70,7 @@ pub fn merge_sourcemap(
     // for scope hoisted module, the source map may be combined with other modules
     // so we need to merge all source files to the new source map
     cm.files().iter().for_each(|source_file| {
-      new_cm.new_source_file_from(source_file.name.clone(), source_file.src.clone());
+      new_cm.new_source_file(source_file.name.clone(), source_file.src.clone());
     });
   }
 
