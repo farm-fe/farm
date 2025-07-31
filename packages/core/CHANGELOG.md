@@ -1,5 +1,11 @@
 # @farmfe/core
 
+## 2.0.0-nightly-20250729025629
+
+### Patch Changes
+
+- b730530: delete map file when conifg is 'inline' or 'all-inline'
+
 ## 2.0.0-nightly-20250411141103
 
 ### Patch Changes
@@ -38,6 +44,7 @@
 ### Major Changes
 
 - b327dd1: collect htmlFallbackMiddleware
+
 ## 1.7.9
 
 ### Patch Changes
