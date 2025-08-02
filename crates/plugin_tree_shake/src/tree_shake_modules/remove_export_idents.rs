@@ -93,6 +93,8 @@ pub fn remove_export_idents(module_graph: &mut ModuleGraph) {
 
     for ident in idents {
       meta.export_ident_map.remove(&ident);
+      meta.reexport_ident_map.remove(&ident);
+      meta.ambiguous_export_ident_map.remove(&ident);
     }
   }
 }

@@ -495,7 +495,9 @@ pub fn is_ident_reexported_from_external_module(
 
   visited.insert(source_module_id.clone());
 
-  let source_module = module_graph.module(source_module_id).unwrap();
+  let source_module = module_graph
+    .module(source_module_id)
+    .unwrap_or_else(|| panic!("source module {source_module_id:?} not found"));
 
   if source_module.external || !source_module.module_type.is_script() {
     return None;
