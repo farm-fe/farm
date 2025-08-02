@@ -36,7 +36,7 @@ fn is_module_contains_export_ident(
 
             default_ident == export_ident.ident
           }
-          ExportSpecifierInfo::All => true,
+          ExportSpecifierInfo::All => false, // it's defined in other modules
           ExportSpecifierInfo::Named { local, .. } => {
             // is source is not none, means the ident is defined in other modules, we should always return false
             export_info.source.is_none() && local == &export_ident.ident

@@ -97,7 +97,7 @@ pub fn expand_dynamic_entry_exports(module_graph: &mut ModuleGraph) {
 pub(crate) fn get_basic_module_export_ident(
   module_id: &ModuleId,
   module_script_meta: &ScriptModuleMetaData,
-  contains_export_from: bool,
+  should_contains_export_from: bool,
 ) -> Vec<(String, ModuleExportIdent)> {
   let mut module_export_idents = vec![];
 
@@ -139,7 +139,7 @@ pub(crate) fn get_basic_module_export_ident(
               local.sym.to_string()
             };
 
-            if contains_export_from || export_info.source.is_none() {
+            if should_contains_export_from || export_info.source.is_none() {
               module_export_idents.push((
                 export_str,
                 ModuleExportIdent::new(
@@ -221,6 +221,8 @@ fn expand_module_exports_dfs(
               } else {
                 local.sym.to_string()
               };
+              let source_module_id =
+                module_graph.get_dep_by_source(module_id, source, Some(ResolveKind::ExportFrom));
 
               expand_context
                 .reexport_ident_map
@@ -229,12 +231,11 @@ fn expand_module_exports_dfs(
                 .insert(
                   export_str.clone(),
                   ModuleReExportIdentType::FromExportNamed {
-                    local: local.sym.to_string(),
+                    local: local.sym.clone(),
+                    from_module_id: source_module_id.clone(),
                   },
                 );
 
-              let source_module_id =
-                module_graph.get_dep_by_source(module_id, source, Some(ResolveKind::ExportFrom));
               let source_module = module_graph.module(&source_module_id).unwrap();
 
               expand_module_exports_dfs(&source_module_id, module_graph, expand_context);
@@ -342,7 +343,10 @@ fn expand_module_exports_dfs(
           .or_default();
 
         if !reexport_map.contains_key(export_str.as_str()) {
-          reexport_map.insert(export_str.clone(), ModuleReExportIdentType::FromExportAll);
+          reexport_map.insert(
+            export_str.clone(),
+            ModuleReExportIdentType::FromExportAll(source_module_id.clone()),
+          );
         }
 
         expand_context.insert_export_ident(module_id, export_str, module_export_ident.clone());
