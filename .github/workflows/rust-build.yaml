@@ -147,10 +147,10 @@ jobs:
         # This builds executables & sets env variables for rust to consume.
         with:
           osx-version: "12.3"
-      - uses: goto-bus-stop/setup-zig@v2
-        if: ${{ matrix.settings.zig }}
-        with:
-          version: "0.13.0"
+      # - uses: goto-bus-stop/setup-zig@v2
+      #   if: ${{ matrix.settings.zig }}
+      #   with:
+      #     version: "0.13.0"
       - name: Build in docker
         uses: addnab/docker-run-action@v3
         if: ${{ matrix.settings.docker }}
