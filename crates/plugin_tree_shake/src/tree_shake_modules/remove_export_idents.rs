@@ -2,11 +2,12 @@ use farmfe_core::{
   module::{
     meta_data::script::{
       statement::{ExportSpecifierInfo, SwcId},
-      ModuleExportIdent, ModuleExportIdentType, ScriptModuleMetaData,
+      ModuleExportIdent, ModuleExportIdentType, ModuleReExportIdentType, ScriptModuleMetaData,
     },
     module_graph::ModuleGraph,
     ModuleId,
   },
+  plugin::ResolveKind,
   HashMap, HashSet,
 };
 use farmfe_toolkit::script::create_export_default_ident;
@@ -54,6 +55,59 @@ fn is_module_contains_export_ident(
   })
 }
 
+fn is_module_contains_reexport_ident(
+  module_id: &ModuleId,
+  meta: &ScriptModuleMetaData,
+  export_str: &str,
+  reexport_ident_type: &ModuleReExportIdentType,
+  module_graph: &ModuleGraph,
+) -> bool {
+  meta.statements.iter().any(|stmt| {
+    if let Some(export_info) = &stmt.export_info
+      && let Some(source) = export_info.source.as_ref()
+    {
+      let source_module_id =
+        module_graph.get_dep_by_source(module_id, source, Some(ResolveKind::ExportFrom));
+
+      for sp in &export_info.specifiers {
+        let is_reexport_used = match sp {
+          ExportSpecifierInfo::Named { local, exported } => {
+            let local_exported_str = exported.as_ref().unwrap_or(local).sym.as_str();
+
+            if let ModuleReExportIdentType::FromExportNamed {
+              from_module_id,
+              local: local_local,
+            } = reexport_ident_type
+            {
+              source_module_id == *from_module_id
+                && local_exported_str == export_str
+                && *local_local == local.sym
+            } else {
+              false
+            }
+          }
+          ExportSpecifierInfo::All => {
+            if let ModuleReExportIdentType::FromExportAll(from_module_id) = reexport_ident_type {
+              source_module_id == *from_module_id
+            } else {
+              false
+            }
+          }
+          ExportSpecifierInfo::Default | ExportSpecifierInfo::Namespace(_) => {
+            unreachable!("only reexport idents are handled")
+          }
+        };
+
+        if is_reexport_used {
+          return true;
+        }
+      }
+    }
+
+    false
+  })
+}
+
 pub fn remove_export_idents(module_graph: &mut ModuleGraph) {
   let mut module_ident_to_remove = HashMap::<ModuleId, HashSet<String>>::default();
 
@@ -61,7 +115,7 @@ pub fn remove_export_idents(module_graph: &mut ModuleGraph) {
     if module.module_type.is_script() {
       let meta = module.meta.as_script();
 
-      for (key, export_ident) in &meta.export_ident_map {
+      for (export_str, export_ident) in &meta.export_ident_map {
         if let Some(defined_module) = module_graph.module(&export_ident.as_internal().module_id) {
           if !defined_module.module_type.is_script() || defined_module.external {
             continue;
@@ -74,14 +128,30 @@ pub fn remove_export_idents(module_graph: &mut ModuleGraph) {
             module_ident_to_remove
               .entry(module.id.clone())
               .or_default()
-              .insert(key.clone());
+              .insert(export_str.clone());
           }
         } else {
           // remove export ident cause the module is being removed
           module_ident_to_remove
             .entry(module.id.clone())
             .or_default()
-            .insert(key.clone());
+            .insert(export_str.clone());
+        }
+      }
+
+      // for reexport ident, makes sure the reexport ident is not removed
+      for (export_str, reexport_ident) in &meta.reexport_ident_map {
+        if !is_module_contains_reexport_ident(
+          &module.id,
+          meta,
+          export_str,
+          reexport_ident,
+          module_graph,
+        ) {
+          module_ident_to_remove
+            .entry(module.id.clone())
+            .or_default()
+            .insert(export_str.clone());
         }
       }
     }
