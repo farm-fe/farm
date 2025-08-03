@@ -9,8 +9,7 @@
     "build": "farm build"
   },
   "devDependencies": {
-    "@farmfe/cli": "workspace:*",
-    "@farmfe/core": "workspace:*"
+    "farm": "workspace:*"
   },
   "keywords": [],
   "author": "",

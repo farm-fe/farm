@@ -11,8 +11,7 @@
     "xlsx": "^0.18.5"
   },
   "devDependencies": {
-    "@farmfe/cli": "workspace:*",
-    "@farmfe/core": "workspace:*",
+    "farm": "workspace:*",
     "@farmfe/js-plugin-less": "workspace:^",
     "@vitejs/plugin-vue": "^5.0.4",
     "xlsx-js-style": "^1.2.0"

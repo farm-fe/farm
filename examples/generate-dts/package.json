@@ -4,8 +4,7 @@
   "private": true,
   "type": "module",
   "devDependencies": {
-    "@farmfe/cli": "workspace:*",
-    "@farmfe/core": "workspace:*",
+    "farm": "workspace:*",
     "@farmfe/js-plugin-dts": "workspace:*",
     "ts-morph": "^18.0.0"
   },

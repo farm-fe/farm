@@ -9,7 +9,7 @@ import type {
   CliBuildOptions,
   CliServerOptions,
   GlobalCliOptions
-} from './types.js';
+} from '../types/options.js';
 
 const logger = new Logger();
 
@@ -141,9 +141,3 @@ export function resolveCliConfig(
     configPath
   };
 }
-
-const { version } = JSON.parse(
-  readFileSync(new URL('../package.json', import.meta.url)).toString()
-);
-
-export const VERSION = version;

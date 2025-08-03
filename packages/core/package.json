@@ -1,5 +1,5 @@
 {
-  "name": "@farmfe/core",
+  "name": "farm",
   "version": "2.0.0-nightly-20250729025629",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -17,6 +17,9 @@
       "types": "./types/*"
     },
     "./package.json": "./package.json"
+  },
+  "bin": {
+    "farm": "./bin/farm.mjs"
   },
   "napi": {
     "binaryName": "farm",
@@ -90,6 +93,7 @@
     "@farmfe/utils": "workspace:*",
     "@polka/compression": "1.0.0-next.25",
     "@swc/helpers": "^0.5.0",
+    "cac": "^6.7.14",
     "chokidar": "^3.5.3",
     "connect": "^3.7.0",
     "cors": "^2.8.5",
@@ -125,6 +129,7 @@
     "binding/swc-config.d.ts",
     "dist",
     "cjs",
+    "bin",
     "client.d.ts",
     "types/**/*.d.ts"
   ]
