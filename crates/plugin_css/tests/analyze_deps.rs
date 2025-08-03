@@ -11,6 +11,7 @@ use farmfe_core::{
 };
 use farmfe_plugin_css::FarmPluginCss;
 use farmfe_testing_helpers::fixture;
+use farmfe_toolkit::css::codegen_css_stylesheet;
 
 #[test]
 fn analyze_deps() {
@@ -110,6 +111,36 @@ fn analyze_deps() {
           kind: ResolveKind::CssUrl
         },
       ]
-    )
+    );
+
+    let stylesheet = &css_module.meta.as_css().ast;
+    let (css_code, _) = codegen_css_stylesheet(stylesheet, None, false, false);
+
+    println!("{}", css_code);
+
+    assert_eq!(
+      css_code,
+      r#"@import './base.css';
+@import url(./index.css);
+@import url("./extension.css");
+@import '/public.css';
+@import url(https://remote.css);
+body {
+  background: url('./background.png');
+}
+.home {
+  background: url('./img/home.png') no-repeat;
+}
+div {
+  background: url('/@/img/logo.png');
+}
+p {
+  background: url('@/img/logo.png');
+  top: -8px/2 + 1;
+  --: 10px;}
+.home {
+  filter: progid:DXImageTransform.Microsoft.Alpha(opacity=20);
+}"#
+    );
   });
 }
