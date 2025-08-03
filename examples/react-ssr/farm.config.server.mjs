@@ -1,37 +1,37 @@
-import { builtinModules } from 'node:module';
+import { builtinModules } from "node:module";
 
 /**
- * @type {import('@farmfe/core').UserConfig}
+ * @type {import('farm').UserConfig}
  */
 export default {
   compilation: {
     input: {
-      index: './src/index-server.tsx'
+      index: "./src/index-server.tsx",
     },
     output: {
-      path: './dist',
-      targetEnv: 'node',
-      format: 'cjs',
-      publicPath: '/'
+      path: "./dist",
+      targetEnv: "node",
+      format: "cjs",
+      publicPath: "/",
     },
     external: [...builtinModules.map((m) => `^${m}$`)],
     css: {
       prefixer: {
-        targets: ['last 2 versions', 'Firefox ESR', '> 1%', 'ie >= 11']
-      }
+        targets: ["last 2 versions", "Firefox ESR", "> 1%", "ie >= 11"],
+      },
     },
     assets: {
-      mode: 'browser'
-    }
+      mode: "browser",
+    },
   },
   plugins: [
     [
-      '@farmfe/plugin-react',
+      "@farmfe/plugin-react",
       {
         refresh: false,
-        development: false
-      }
+        development: false,
+      },
     ],
-    '@farmfe/plugin-sass'
-  ]
+    "@farmfe/plugin-sass",
+  ],
 };

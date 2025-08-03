@@ -11,7 +11,7 @@ Farm recommends to write Farm Plugins instead of `Vite/Rollup` plugins for Farm.
 using `vitePlugins` in `farm.config.ts` to configure `Vite/Rollup` plugins.
 
 ```ts
-import { UserConfig } from "@farmfe/core";
+import { UserConfig } from "farm";
 import vue from "@vitejs/plugin-vue";
 import vueJsx from "@vitejs/plugin-vue-jsx";
 
@@ -45,7 +45,7 @@ const config: UserConfig = {
       compiler: "vue3",
       customCollections: {
         [collectionName]: FileSystemIconLoader(localIconPath, (svg) =>
-          svg.replace(/^<svg\s/, '<svg width="1em" height="1em" ')
+          svg.replace(/^<svg\s/, '<svg width="1em" height="1em" '),
         ),
       },
       scale: 1,

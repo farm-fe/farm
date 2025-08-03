@@ -31,24 +31,24 @@ pnpm add -D @farmfe/visualizer
 Configuring the plugin in `farm.config.ts`:
 
 ```ts
-import { defineFarmConfig } from '@farmfe/core/dist/config';
-import visualizer from '@farmfe/visualizer'; //  import the plugin
+import { defineFarmConfig } from "farm/dist/config";
+import visualizer from "@farmfe/visualizer"; //  import the plugin
 
 export default defineFarmConfig({
   compilation: {
     input: {
-      index: './index.html'
+      index: "./index.html",
     },
     output: {
-      path: './build'
-    }
+      path: "./build",
+    },
   },
   plugins: [
     // use the visualizer plugin.
     visualizer({
       // custom options here
-    })
-  ]
+    }),
+  ],
 });
 ```
 
@@ -73,7 +73,7 @@ type RecordViewerOptions = {
    * @default 9527
    */
   port?: number;
-}
+};
 ```
 
 Default: undefined

@@ -27,7 +27,7 @@ pnpm add react react-dom && pnpm add react-refresh @types/react @types/react-dom
 然后安装 Farm 相关依赖:
 
 ```bash
-pnpm add -D @farmfe/cli @farmfe/core @farmfe/plugin-react
+pnpm add -D farm @farmfe/plugin-react
 ```
 
 React 项目需要 3 个包：

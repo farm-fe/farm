@@ -1,4 +1,5 @@
 # Rust Plugin Api
+
 :::note
 本文档仅涵盖插件钩子详情。 有关如何创建、构建和发布 rust 插件，请参阅：[编写 Rust 插件](/docs/plugins/writing-plugins/rust-plugin)
 :::
@@ -8,12 +9,17 @@
 通过 `plugins` 选项添加 Rust 插件：
 
 ```ts title="farm.config.ts" {3,7}
-import { defineConfig } from "@farmfe/core";
+import { defineConfig } from "farm";
 
 export default defineConfig({
   // 在 plugins 中配置
   plugins: [
-    ['@farmfe/plugin-sass', { /** 插件选项 */ }]
+    [
+      "@farmfe/plugin-sass",
+      {
+        /** 插件选项 */
+      },
+    ],
   ],
 });
 ```
@@ -21,10 +27,11 @@ export default defineConfig({
 在字符串中配置 Rust 插件包名称（或路径），并在对象中配置其选项。
 
 ## 编写 Rust 插件
+
 有关详细信息，请参阅[编写 Rust 插件](/docs/plugins/writing-plugins/rust-plugin)。
 
-
 ## 插件 Hook 概述
+
 Farm 提供了很多 rollup 风格的 hook，这些 hook 分为 build 阶段和 generate 阶段：
 ![Farm 插件 钩子](/img/farm-plugin-hooks.png)
 
@@ -32,21 +39,25 @@ Farm 提供了很多 rollup 风格的 hook，这些 hook 分为 build 阶段和 
 
 Hook 共有三种（与 Rollup 相同）：
 
-* `first`：钩子串行执行，当钩子返回非空值时立即返回。 （null 在 JS 中表示 null 和 undefined，在 Rust 中表示 None）。
-* `serial`: 钩子串行执行，每个钩子的结果将传递到下一个钩子，使用最后一个钩子的结果作为最终结果。
-* `parallel`：钩子在线程池中并行执行，并且应该被隔离。
+- `first`：钩子串行执行，当钩子返回非空值时立即返回。 （null 在 JS 中表示 null 和 undefined，在 Rust 中表示 None）。
+- `serial`: 钩子串行执行，每个钩子的结果将传递到下一个钩子，使用最后一个钩子的结果作为最终结果。
+- `parallel`：钩子在线程池中并行执行，并且应该被隔离。
 
 :::note
-有关完整的 `Plugin Hooks`  定义，请参阅[Plugin Trait](https://docs.rs/farmfe_core/latest/farmfe_core/plugin/trait.Plugin.html)
+有关完整的 `Plugin Hooks` 定义，请参阅[Plugin Trait](https://docs.rs/farmfe_core/latest/farmfe_core/plugin/trait.Plugin.html)
 :::
 
 ## name
+
 - **required: `true`**
 - **default:**
+
 ```rust
 fn name(&self) -> &str;
 ```
+
 返回此插件的名称。 例子：
+
 ```rust
 impl Plugin for MyPlugin {
   fn name(&self) -> &str {
@@ -56,14 +67,15 @@ impl Plugin for MyPlugin {
 ```
 
 ## priority
+
 - **required: `false`**
 - **default:**
+
 ```rust
 fn priority(&self) -> i32 {
   100
 }
 ```
-
 
 定义该插件的优先级，值越大，该插件越早执行。 当插件具有相同优先级时，它们将按照与`plugins`中注册的顺序相同的顺序执行。
 
@@ -72,32 +84,38 @@ fn priority(&self) -> i32 {
 :::
 
 ## config
+
 - **required: `false`**
 - **hook type: `serial`**
 - **default:**
+
 ```rust
 fn config(&self, _config: &mut Config) -> Result<Option<()>> {
   Ok(None)
 }
 ```
+
 在编译开始之前在`config`钩子中修改配置。 Config 结构体的定义请参考[Config](https://docs.rs/farmfe_core/latest/farmfe_core/config/struct.Config.html)。 例子：
 
 ```rust
 impl Plugin for MyPlugin {
   // 实现 config hook
   fn config(&self, config: &mut Config) -> Result<Option<()>> {
-    // 设置 minify 为 false 
+    // 设置 minify 为 false
     config.input.insert("custom-entry", "./custom.html");
     Ok(Some(()))
   }
 }
 ```
+
 请注意， `Rust Plugin` 的 `config` 钩子是在 `JS Plugin` 的 `config` 和 `configResolved` 钩子之后调用的。
 
 ## plugin_cache_loaded
+
 - **required: `false`**
 - **hook type: `serial`**
 - **default:**
+
 ```rust
 fn plugin_cache_loaded(
   &self,
@@ -107,11 +125,13 @@ fn plugin_cache_loaded(
   Ok(None)
 }
 ```
+
 扩展插件的持久缓存加载。
 
 当启用 `持久缓存` 时，在命中缓存时可能会跳过 `加载` 和 `转换` 挂钩。 如果您的插件依赖于以前的编译结果（例如，基于现有模块加载虚拟模块），您可能需要实现此钩子来加载插件的缓存信息，以确保缓存按预期工作。
 
 例子：
+
 ```rust
 #[cache_item]
 struct CachedStaticAssets {
@@ -141,19 +161,24 @@ impl Plugin for StaticAssetsPlugin {
   }
 }
 ```
+
 注意：
-* `deserialize` 由 `farmfe_core` 导出，它可以帮助您反序列化 `Vec<u8>` 中的结构体或枚举。
-* 缓存的结构体或枚举**必须是rkyv可序列化的**，您可以使用`farmfe_core`公开的`#[cache_item]`快速创建可缓存的结构体。
+
+- `deserialize` 由 `farmfe_core` 导出，它可以帮助您反序列化 `Vec<u8>` 中的结构体或枚举。
+- 缓存的结构体或枚举**必须是rkyv可序列化的**，您可以使用`farmfe_core`公开的`#[cache_item]`快速创建可缓存的结构体。
 
 ## build_start
+
 - **required: `false`**
 - **hook type: `parallel`**
 - **default:**
+
 ```rust
 fn build_start(&self, _context: &Arc<CompilationContext>) -> Result<Option<()>> {
   Ok(None)
 }
 ```
+
 在第一次编译开始之前调用。 您可以使用此挂钩来初始化插件的任何初始状态。
 
 :::note
@@ -161,9 +186,11 @@ fn build_start(&self, _context: &Arc<CompilationContext>) -> Result<Option<()>> 
 :::
 
 ## resolve
+
 - **required: `false`**
 - **hook type: `first`**
 - **default:**
+
 ```rust
 fn resolve(
   &self,
@@ -205,11 +232,14 @@ pub struct PluginResolveHookResult {
 ```
 
 从 `importer` 解析自定义 `source` ，例如从 `a.ts` 解析 `./b` ：
+
 ```ts title="a.ts"
-import b from './b?raw';
+import b from "./b?raw";
 // ...
 ```
+
 那么解析参数将是：
+
 ```rust
 let param = PluginResolveHookParam {
   source: "./b",
@@ -217,7 +247,9 @@ let param = PluginResolveHookParam {
   kind: ResolveKind::Import
 }
 ```
+
 默认解析器的解析结果为：
+
 ```rust
 let resolve_result = PluginResolveHookResult {
   resolved_path: "/root/b.ts",   // 解析模块的绝对路径
@@ -229,6 +261,7 @@ let resolve_result = PluginResolveHookResult {
 ```
 
 `HookContext` 用于在您可以递归挂钩时传递状态，例如，您的插件在 `resolve hook` 中调用 `context.plugin_driver.resolve`：
+
 ```rust
 impl Plugin for MyPlugin {
   fn resolve(
@@ -277,15 +310,18 @@ impl Plugin for MyPlugin {
 在上面的示例中，我们调用 `context.plugin_driver.resolve` 并将 `caller` 作为参数传递，然后我们应该添加一个类似 `if caller.as_str() == "FarmPluginCss"` 的保护以避免无限循环。
 
 注意：
-* 默认情况下，您的`resolve hook`在Farm内部默认解析器**之后**执行，只有内部解析器无法解析的源才会传递给您的插件，这意味着如果您想覆盖默认解析器 ，您需要将**插件的优先级设置为大于**`101`。
-* 通常 `resolved_path` 是指向文件的真实绝对路径。 但是您仍然可以返回一个 `虚拟模块 id` ，例如 `virtual:my-module` ，但是对于虚拟模块，您需要实现 `load` 钩子来自定义如何加载虚拟模块。 在 Farm 中，`resolved_path + query = module_id`。
-* `ResolveKind` 表示 `导入类型`，示例值：`ResolveKind::Require`（由 commonjs require 导入）、`ResolveKind::CssImport`（由 css 的 import 语句导入）等。
-* `meta` 可以在插件和钩子之间共享，您可以从任何插件中的 `load`、`transform` 和 `parse` 钩子的参数中获取 `meta`。
+
+- 默认情况下，您的`resolve hook`在Farm内部默认解析器**之后**执行，只有内部解析器无法解析的源才会传递给您的插件，这意味着如果您想覆盖默认解析器 ，您需要将**插件的优先级设置为大于**`101`。
+- 通常 `resolved_path` 是指向文件的真实绝对路径。 但是您仍然可以返回一个 `虚拟模块 id` ，例如 `virtual:my-module` ，但是对于虚拟模块，您需要实现 `load` 钩子来自定义如何加载虚拟模块。 在 Farm 中，`resolved_path + query = module_id`。
+- `ResolveKind` 表示 `导入类型`，示例值：`ResolveKind::Require`（由 commonjs require 导入）、`ResolveKind::CssImport`（由 css 的 import 语句导入）等。
+- `meta` 可以在插件和钩子之间共享，您可以从任何插件中的 `load`、`transform` 和 `parse` 钩子的参数中获取 `meta`。
 
 ## load
+
 - **required: `false`**
 - **hook type: `first`**
 - **default:**
+
 ```rust
 fn load(
   &self,
@@ -322,6 +358,7 @@ pub struct PluginLoadHookResult {
 ```
 
 自定义如何从已解析的模块路径或模块 ID 加载模块。 例如加载一个虚拟模块：
+
 ```rust
 impl Plugin for MyPlugin {
   fn load(
@@ -349,9 +386,11 @@ impl Plugin for MyPlugin {
 在 `load` 钩子中加载模块时需要 `module_type` 和 `content` 。 `source_map` 是可选的，如果您在 `load` 钩子中进行转换（不推荐，我们建议在这种情况下使用 `transform` 钩子）或者从其他位置加载原始源地图，则可以返回源地图。
 
 ## transform
+
 - **required: `false`**
 - **hook type: `serial`**
 - **default:**
+
 ```rust
 fn transform(
   &self,
@@ -423,10 +462,11 @@ impl Plugin for MyPlugin {
   }
 }
 ```
+
 编写 `transform hook` 的正常步骤：
+
 1. 添加基于 `module_type` 或 `resolved_path` 或 `module_id` 的 `if` 保护
-2. 对 `内容` 进行转换
-3.返回转换后的`content`、`source_map`和`module_type`
+2. 对 `内容` 进行转换3.返回转换后的`content`、`source_map`和`module_type`
 
 对于 `ignore_previous_source_map` ，如果您处理了 `param.source_map_chain` 并折叠了 `transform hook` 中以前插件的 source map。 您应该将ignore_previous_source_map设置为 `true` 以确保 source map 正确。 否则，您应该始终将此选项设置为 `false` 并让 Farm 处理 source map 链。
 
@@ -435,9 +475,11 @@ impl Plugin for MyPlugin {
 :::
 
 ## parse
+
 - **required: `false`**
 - **hook type: `first`**
 - **default:**
+
 ```rust
 fn parse(
   &self,
@@ -476,9 +518,11 @@ pub enum ModuleMetaData {
 将**`转换后的模块内容`**解析为`ast`。 Farm 原生支持 `Js/Jsx/Ts/Tsx`、`css` 和 `html`。 通常你不需要实现这个钩子，除非你想支持除了`Js/Jsx/Ts/Tsx`、`css`和`html`之外的新的`module_type`，在这种情况下使用`ModuleMetaData::Custom`。
 
 ## process_module
+
 - **required: `false`**
 - **hook type: `serial`**
 - **default:**
+
 ```rust
 fn process_module(
   &self,
@@ -496,7 +540,7 @@ pub struct PluginProcessModuleHookParam<'a> {
 }
 ```
 
-对`解析结果`进行变换，通常做**`ast变换`**。 例如，Farm 将 ts 转换成 js： 
+对`解析结果`进行变换，通常做**`ast变换`**。 例如，Farm 将 ts 转换成 js：
 
 ```rust
 impl Plugin for MyPlugin {
@@ -519,12 +563,15 @@ impl Plugin for MyPlugin {
 
 }
 ```
+
 在上面的示例中，我们忽略非脚本模块，并且去掉 ts/tsx 模块的 ast 中类型信息。
 
 ## analyze_deps
+
 - **required: `false`**
 - **hook type: `serial`**
 - **default:**
+
 ```rust
 fn analyze_deps(
   &self,
@@ -544,8 +591,8 @@ pub struct PluginAnalyzeDepsHookParam<'a> {
 分析模块的依赖关系。 例如，我们有 `a.ts` ：
 
 ```ts title="a.ts"
-import b from './b';
-const c = require('./c');
+import b from "./b";
+const c = require("./c");
 ```
 
 那么通常这个钩子应该将**2个条目**推送到`params.deps`：
@@ -564,9 +611,11 @@ param.deps.push(PluginAnalyzeDepsHookResultEntry {
 `param.deps` 稍后将传递给 `resolve` 钩子。 您还可以根据需要添加与模块的 ast 不相关的新 deps，Farm 将 `resolve` 、 `load` 这些不相关的模块并将它们添加到模块图中。
 
 ## finalize_modules
+
 - **required: `false`**
 - **hook type: `serial`**
 - **default:**
+
 ```rust
 fn finalize_module(
   &self,
@@ -585,15 +634,18 @@ pub struct PluginFinalizeModuleHookParam<'a> {
 在密封模块之前做任何你想做的事情。 请注意，您只能修改 `param.module` 。
 
 ## build_end
+
 - **required: `false`**
 - **hook type: `parallel`**
 - **default:**
+
 ```rust
 /// The module graph should be constructed and finalized here
 fn build_end(&self, _context: &Arc<CompilationContext>) -> Result<Option<()>> {
   Ok(None)
 }
 ```
+
 当从`config.input`开始的所有依赖都被处理并且`ModuleGraph`被成功构建时调用，您可以通过`context.module_graph`在这里获得完整解析的`ModuleGraph`。
 
 :::note
@@ -601,9 +653,11 @@ fn build_end(&self, _context: &Arc<CompilationContext>) -> Result<Option<()>> {
 :::
 
 ## generate_start
+
 - **required: `false`**
 - **hook type: `parallel`**
 - **default:**
+
 ```rust
 fn generate_start(&self, _context: &Arc<CompilationContext>) -> Result<Option<()>> {
   Ok(None)
@@ -613,9 +667,11 @@ fn generate_start(&self, _context: &Arc<CompilationContext>) -> Result<Option<()
 在生成阶段开始之前调用。
 
 ## optimize_module_graph
+
 - **required: `false`**
 - **hook type: `serial`**
 - **default:**
+
 ```rust
 /// 这里应该对模块图进行一些优化，例如tree shake
 fn optimize_module_graph(
@@ -626,12 +682,15 @@ fn optimize_module_graph(
   Ok(None)
 }
 ```
+
 您可以在此处对 `module_graph` 进行优化。 对于内部插件，Farm 在这个钩子中进行树摇动和缩小。
 
 ## analyze_module_graph
+
 - **required: `false`**
 - **hook type: `first`**
 - **default:**
+
 ```rust
 /// 根据模块图分析模块组
 fn analyze_module_graph(
@@ -643,6 +702,7 @@ fn analyze_module_graph(
   Ok(None)
 }
 ```
+
 分析`module_graph`的**`动态导入`**，并根据**`动态导入`**对模块进行分组，返回分组后的模块。
 
 :::warning
@@ -650,9 +710,11 @@ fn analyze_module_graph(
 :::
 
 ## partial_bundling
+
 - **required: `false`**
 - **hook type: `first`**
 - **default:**
+
 ```rust
 /// 局部打包模块到 [Vec<ResourcePot>]
 fn partial_bundling(
@@ -685,11 +747,13 @@ pub struct ResourcePot {
   pub immutable: bool,
 }
 ```
+
 基于 `module_group_graph` 和 `module_graph` 将 `modules` 打包到 `Vec<ResourcePot>` 。 `ResourcePot` 是 Farm 用于保存打包模块的结构，它将被生成到 [generate_resources](#generate_resources) 钩子中的最终资源，您可以将 `ResourcePot` 视为其他工具的 `Chunk`。
 
 注意：
-* 该钩子会在 `首次编译` 、 `HMR` 和 `延迟编译` 中被调用，请确保该钩子不包含副作用（对于相同的模块，始终返回相同的 `Vec<ResourcePot>` ）。
-* 你应该在这个钩子中设置`module.resource_pot`。
+
+- 该钩子会在 `首次编译` 、 `HMR` 和 `延迟编译` 中被调用，请确保该钩子不包含副作用（对于相同的模块，始终返回相同的 `Vec<ResourcePot>` ）。
+- 你应该在这个钩子中设置`module.resource_pot`。
 
 请参阅 Farm 中部分捆绑的[内部实现](https://github.com/farm-fe/farm/blob/main/crates/plugin_partial_bundling/src/lib.rs)以获得最佳实践。 请参阅 [RFC-003 部分捆绑](https://github.com/farm-fe/farm/blob/main/crates/plugin_partial_bundling/src/lib.rs) 了解 Farm 如何设计捆绑。
 
@@ -698,9 +762,11 @@ pub struct ResourcePot {
 :::
 
 ## process_resource_pots
+
 - **required: `false`**
 - **hook type: `serial`**
 - **default:**
+
 ```rust
 /// 在渲染和生成每个资源之前处理 resource pot
 fn process_resource_pots(
@@ -711,12 +777,15 @@ fn process_resource_pots(
   Ok(None)
 }
 ```
+
 对 `ResourcePots` 进行一些**转换**。 注意，此时ResourcePots还没有渲染，这意味着你无法获取`ResourcePot`的渲染代码，只能添加，删除，改造`ResourcePot`内部的模块
 
 ## render_start
+
 - **required: `false`**
 - **hook type: `serial`**
 - **default:**
+
 ```rust
 fn render_start(
   &self,
@@ -734,9 +803,11 @@ fn render_start(
 :::
 
 ## render_resource_pot_modules
+
 - **required: `false`**
 - **hook type: `first`**
 - **default:**
+
 ```rust
 fn render_resource_pot_modules(
   &self,
@@ -777,9 +848,11 @@ pub struct ResourcePotMetaData {
 :::
 
 ## render_resource_pot
+
 - **required: `false`**
 - **hook type: `serial`**
 - **default:**
+
 ```rust
 fn render_resource_pot(
   &self,
@@ -824,12 +897,15 @@ impl Plugin for MyPlugin {
   }
 }
 ```
+
 在上面的示例中，我们转换了 css `Resource Pot` 的内容，将所有 `<--layer-->` 替换为 `replaced_code`。
 
 ## augment_resource_hash
+
 - **required: `false`**
 - **hook type: `serial`**
 - **default:**
+
 ```rust
 fn augment_resource_hash(
   &self,
@@ -856,9 +932,11 @@ pub struct ResourcePotInfo {
 从给定 resource pot 生成资源时附加额外哈希。
 
 ## optimize_resource_pot
+
 - **required: `false`**
 - **hook type: `serial`**
 - **default:**
+
 ```rust
 /// 优化资源罐，例如压缩
 fn optimize_resource_pot(
@@ -895,9 +973,11 @@ pub struct ResourcePot {
 :::
 
 ## generate_resources
+
 - **required: `false`**
 - **hook type: `first`**
 - **default:**
+
 ```rust
 /// 根据[ResourcePot]生成资源，返回[Vec<Resource>]代表最终生成的文件。
 /// 例如一个.js文件及其对应的source map文件
@@ -926,9 +1006,11 @@ pub struct PluginGenerateResourcesHookResult {
 :::
 
 ## finalize_resources
+
 - **required: `false`**
 - **hook type: `serial`**
 - **default:**
+
 ```rust
 /// 对生成的资源做一些终结工作，例如根据生成的资源转换html
 fn finalize_resources(
@@ -950,9 +1032,11 @@ pub struct PluginFinalizeResourcesHookParams<'a> {
 您还可以在此处 **`添加`** 或 **`删除`** 资源。
 
 ## generate_end
+
 - **required: `false`**
 - **hook type: `parallel`**
 - **default:**
+
 ```rust
 fn generate_end(&self, _context: &Arc<CompilationContext>) -> Result<Option<()>> {
   Ok(None)
@@ -962,9 +1046,11 @@ fn generate_end(&self, _context: &Arc<CompilationContext>) -> Result<Option<()>>
 当所有生成阶段完成时调用（包括 `finalize_resources` ）。 您可以在这里做一些清理工作。
 
 ## finish
+
 - **required: `false`**
 - **hook type: `parallel`**
 - **default:**
+
 ```rust
 fn finish(&self, _stat: &Stats, _context: &Arc<CompilationContext>) -> Result<Option<()>> {
   Ok(None)
@@ -974,14 +1060,15 @@ fn finish(&self, _stat: &Stats, _context: &Arc<CompilationContext>) -> Result<Op
 当所有编译工作完成时调用（包括 `构建阶段` 和 `生成阶段` ）。 您可以在这里做一些清理工作。
 
 :::note
- `finish` 仅在第一次编译时调用一次。 `HMR` 或 `Lazy Compilation` 不会触发 `finish` 钩子。 您应该使用 [update_finished](#update_finished) 钩子代替。
+`finish` 仅在第一次编译时调用一次。 `HMR` 或 `Lazy Compilation` 不会触发 `finish` 钩子。 您应该使用 [update_finished](#update_finished) 钩子代替。
 :::
 
-
 ## write_plugin_cache
+
 - **required: `false`**
 - **hook type: `serial`**
 - **default:**
+
 ```rust
 fn write_plugin_cache(&self, _context: &Arc<CompilationContext>) -> Result<Option<Vec<u8>>> {
   Ok(None)
@@ -991,6 +1078,7 @@ fn write_plugin_cache(&self, _context: &Arc<CompilationContext>) -> Result<Optio
 扩展插件的持久缓存写入。 `write_plugin_cache` 通常与 [plugin_cache_loaded](#plugin_cache_loaded) 一起使用来读写插件的持久缓存。 返回数据的序列化字节。
 
 例如，为静态资源写入缓存：
+
 ```rust
 impl Plugin for MyPlugin {
   fn write_plugin_cache(
@@ -1024,11 +1112,12 @@ struct CachedStaticAssets {
 }
 ```
 
-
 ## update_modules
+
 - **required: `false`**
 - **hook type: `serial`**
 - **default:**
+
 ```rust
 /// 调用compiler.update(module_paths)时调用。
 /// 在执行 HMR 时可用于执行一些操作，例如清除以前的状态或忽略某些文件
@@ -1046,15 +1135,18 @@ pub struct PluginUpdateModulesHookParams {
   pub paths: Vec<(String, UpdateType)>,
 }
 ```
+
 调用compiler.update(module_paths)时调用。 在执行 HMR 时可用于执行一些操作，例如清除以前的状态或忽略某些文件
 
-* `paths` 是将为此更新重新编译的路径
-* 返回新的`paths`，后续编译将更新返回的新路径。
+- `paths` 是将为此更新重新编译的路径
+- 返回新的`paths`，后续编译将更新返回的新路径。
 
 ## module_graph_updated
+
 - **required: `false`**
 - **hook type: `serial`**
 - **default:**
+
 ```rust
 /// 调用compiler.update(module_paths)时调用。
 /// 用于执行一些操作，例如修改模块图
@@ -1074,12 +1166,15 @@ pub struct PluginModuleGraphUpdatedHookParams {
   pub updated_modules_ids: Vec<ModuleId>,
 }
 ```
+
 调用compiler.update(module_paths)时调用。 对于执行一些操作（例如修改模块图）很有用。
 
 ## update_finished
+
 - **required: `false`**
 - **hook type: `serial`**
 - **default:**
+
 ```rust
 /// 调用compiler.update(module_paths)时调用。
 /// 该钩子在所有编译工作完成后调用，包括资源重新生成和终结。
@@ -1094,9 +1189,11 @@ fn update_finished(
 调用compiler.update(module_paths)时调用。 该钩子在所有编译工作完成后调用，包括资源重新生成和最终处理。
 
 ## handle_persistent_cached_module
+
 - **required: `false`**
 - **hook type: `serial`**
 - **default:**
+
 ```rust
 fn handle_persistent_cached_module(
   &self,
@@ -1106,4 +1203,5 @@ fn handle_persistent_cached_module(
   Ok(None)
 }
 ```
+
 当启用持久缓存并且模块的缓存命中时调用。 返回 `true` 以**跳过加载此模块的缓存**。

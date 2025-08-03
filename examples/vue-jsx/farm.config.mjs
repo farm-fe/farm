@@ -1,16 +1,16 @@
-import vue from '@vitejs/plugin-vue';
-import jsx from '@vitejs/plugin-vue-jsx';
+import vue from "@vitejs/plugin-vue";
+import jsx from "@vitejs/plugin-vue-jsx";
 
 /**
- * @type {import('@farmfe/core').UserConfig}
+ * @type {import('farm').UserConfig}
  */
 export default {
   compilation: {
     input: {
-      index: 'index.html',
+      index: "index.html",
     },
     output: {
-      path: './build',
+      path: "./build",
     },
     resolve: {
       strictExports: true,

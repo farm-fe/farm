@@ -36,16 +36,16 @@ pnpm add -D less @farmfe/js-plugin-less
 Configuring the plugin in `farm.config.ts`:
 
 ```ts
-import { defineFarmConfig } from '@farmfe/core/dist/config';
-import Less from '@farmfe/js-plugin-less'; //  import the plugin
+import { defineFarmConfig } from "farm/dist/config";
+import Less from "@farmfe/js-plugin-less"; //  import the plugin
 
 export default defineFarmConfig({
   compilation: {
     input: {
-      index: './index.html',
+      index: "./index.html",
     },
     output: {
-      path: './build',
+      path: "./build",
     },
   },
   plugins: [
@@ -66,7 +66,8 @@ export default defineFarmConfig({
 
 ### lessOptions
 
-Type: 
+Type:
+
 ```ts
 type lessOptions = import('less').options | ((loaderContext: LoaderContext) => import('less').options})
 ```
@@ -82,7 +83,7 @@ Type:
 ```ts
 type additionalData =
   | string
-  | ((content: string, resolvePath:string) => string);
+  | ((content: string, resolvePath: string) => string);
 ```
 
 Default: `undefined`
@@ -95,46 +96,49 @@ In actual development, this becomes useful, we don't need to add new files.
 > Since you're injecting code, this will break the source mappings in your entry file. Often there's a simpler solution than this, like multiple Less entry files.
 
 #### `string`
+
 ```ts
 export default defineFarmConfig({
   compilation: {
     input: {
-      index: './index.html',
+      index: "./index.html",
     },
     output: {
-      path: './build',
+      path: "./build",
     },
   },
   plugins: [
     // use the less plugin.
     Less({
-      additionalData: `@hoverColor: #f10215;`
+      additionalData: `@hoverColor: #f10215;`,
     }),
   ],
 });
 ```
 
 #### `function`
+
 ```ts
 export default defineFarmConfig({
   compilation: {
     input: {
-      index: './index.html',
+      index: "./index.html",
     },
     output: {
-      path: './build',
+      path: "./build",
     },
   },
- plugins: [farmLessPlugin({
-    additionalData: (content:string, resolvePath:string) => {
-      if (path.basename(resolvePath,'.less') === 'index') {
-        return `@hoverColor: #f10215;` + content;
-      }
-    },
-  }) ],
+  plugins: [
+    farmLessPlugin({
+      additionalData: (content: string, resolvePath: string) => {
+        if (path.basename(resolvePath, ".less") === "index") {
+          return `@hoverColor: #f10215;` + content;
+        }
+      },
+    }),
+  ],
 });
 ```
-
 
 ### sourceMap
 
@@ -155,6 +159,3 @@ Default: `undefined`
 > `@farm/js-plugin-less` compatible with Less 3 and 4 versions
 
 The special `implementation` option determines which implementation of Less to use. If you not config, it will find the less in you local node_modules.
-
-
-

@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import type { JsPlugin, UserConfig } from '@farmfe/core';
+import type { JsPlugin, UserConfig } from 'farm';
 import { parse } from '@vue/compiler-sfc';
 import { compileStyle } from '@vue/compiler-sfc';
 import { handleHmr } from './farm-vue-hmr.js';

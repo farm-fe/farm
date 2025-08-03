@@ -29,13 +29,12 @@ pnpm add react react-dom && pnpm add react-refresh @types/react @types/react-dom
 farm related dependencies:
 
 ```bash
-pnpm add -D @farmfe/cli @farmfe/core @farmfe/plugin-react
+pnpm add -D farm @farmfe/plugin-react
 ```
 
 There are 3 packages that are necessary for a react project:
 
-- **`@farmfe/cli`**: This package provides commands like `farm start`, `farm build`, `farm preview`, it must be used with `@farmfe/core` and can not be used separately.
-- **`@farmfe/core`**: This package provides `Compilation` and `Dev Server` abilities, provides all necessary component for local development and product build. It exports `Compiler`, `DevServer` and `Watcher`, which is used for `compile the project`, `serve the project in development mode` and `watch the project for Hot Module Replacement`.
+- **`farm`**: This package provides `Compilation` and `Dev Server` abilities, provides all necessary component for local development and product build. It exports `Compiler`, `DevServer` and `Watcher`, which is used for `compile the project`, `serve the project in development mode` and `watch the project for Hot Module Replacement`.
 - **`@farmfe/plugin-react`**: This package provides abilities for React Jsx compilation, and react-refresh support.
 
 ## Create Farm Config File

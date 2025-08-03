@@ -24,16 +24,16 @@ npm i @farmfe/js-plugin-sass --save-dev # or pnpm/yarn add @farmfe/js-plugin-sas
 Configuring the plugin in `farm.config.ts`:
 
 ```ts
-import { defineFarmConfig } from '@farmfe/core/dist/config';
-import Sass from '@farmfe/js-plugin-sass'; //  import the plugin
+import { defineFarmConfig } from "farm/dist/config";
+import Sass from "@farmfe/js-plugin-sass"; //  import the plugin
 
 export default defineFarmConfig({
   compilation: {
     input: {
-      index: './index.html',
+      index: "./index.html",
     },
     output: {
-      path: './build',
+      path: "./build",
     },
   },
   plugins: [
@@ -72,7 +72,6 @@ Default: `[]`
 Reads the contents from a file and injects them into each sass/scss file. It is typically used to inject some global variables
 
 > Note that normal css should not be written in this file, otherwise it will inject them repeatedly into each compiled css file
-
 
 ### content
 

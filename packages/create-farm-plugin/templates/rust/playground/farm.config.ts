@@ -1,4 +1,4 @@
-import { defineConfig } from "@farmfe/core";
+import { defineConfig } from "farm";
 import react from '@farmfe/plugin-react';
 import farmPlugin from '<FARM-RUST-PLUGIN-NPM-NAME>';
 

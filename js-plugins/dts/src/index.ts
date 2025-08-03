@@ -1,5 +1,5 @@
 import path from 'node:path';
-import type { JsPlugin } from '@farmfe/core';
+import type { JsPlugin } from 'farm';
 
 import Context from './context.js';
 import { pluginName } from './options.js';

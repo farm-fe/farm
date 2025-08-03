@@ -10,8 +10,7 @@ const packageCoreJson = JSON.parse(fs.readFileSync(packageCorePath, 'utf8'));
 const packageCliJson = JSON.parse(fs.readFileSync(packageCliPath, 'utf8'));
 const packageReactPluginJson = JSON.parse(fs.readFileSync(packageReactPluginPath, 'utf8'));
 const dependenciesToUpdate = {
-  "@farmfe/core": `^${packageCoreJson.version}`,
-  "@farmfe/cli": `^${packageCliJson.version}`,
+  "farm": `^${packageCoreJson.version}`,
   "@farmfe/plugin-react": `^${packageReactPluginJson.version}`,
 };
 

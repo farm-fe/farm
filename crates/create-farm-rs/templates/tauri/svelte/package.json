@@ -17,7 +17,6 @@
     "typescript": "^5.0.2",
     "vite": "^5.0.0",
     "@tauri-apps/cli": "^1",
-    "@farmfe/cli": "^1.0.4",
     "farm": "^1.6.7",
     "@sveltejs/vite-plugin-svelte": "^3.0.2",
     "@tsconfig/svelte": "^5.0.4",

@@ -88,12 +88,6 @@ export const startProjectAndTest = async (
   cb: (page: Page) => Promise<void>,
   command = 'start'
 ) => {
-  // // using bin path to spawn child process to avoid port conflicts issue
-  // const cliBinPath = getFarmCLIBinPath(examplePath);
-
-  // if (!cliBinPath) {
-  //   throw new Error(`example ${examplePath} does not install @farmfe/cli`);
-  // }
   const port = await getServerPort();
   logger(`Executing npm run ${command} in ${examplePath}`);
   const child = execa('npm', ['run', command], {

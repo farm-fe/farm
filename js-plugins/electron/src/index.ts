@@ -8,7 +8,7 @@ import {
   type Server,
   type UserConfig,
   build as farmBuild
-} from '@farmfe/core';
+} from 'farm';
 
 export interface BuildOptions {
   /**

@@ -1,4 +1,4 @@
-import type { UserConfig } from '@farmfe/core';
+import type { UserConfig } from 'farm';
 import farmSassPlugin from '@farmfe/js-plugin-sass';
 
 function defineConfig(config: UserConfig) {

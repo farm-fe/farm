@@ -1,4 +1,5 @@
 # Rust Plugin Api
+
 :::note
 This document only covers the details of the plugin hooks. For how to create, build and publish a rust plugin see: [Writing Rust Plugins](/docs/plugins/writing-plugins/rust-plugin)
 :::
@@ -8,12 +9,17 @@ This document only covers the details of the plugin hooks. For how to create, bu
 Adding Rust plugins by `plugins` option:
 
 ```ts title="farm.config.ts" {3,7}
-import { defineConfig } from "@farmfe/core";
+import { defineConfig } from "farm";
 
 export default defineConfig({
   // configuring it in plugins
   plugins: [
-    ['@farmfe/plugin-sass', { /** plugin options here */ }]
+    [
+      "@farmfe/plugin-sass",
+      {
+        /** plugin options here */
+      },
+    ],
   ],
 });
 ```
@@ -21,10 +27,11 @@ export default defineConfig({
 Configuring the Rust plugin package name(or path) in string and its options in object.
 
 ## Writing Rust Plugin
+
 See [Writing Rust Plugins](/docs/plugins/writing-plugins/rust-plugin) for details.
 
-
 ## Plugin Hooks Overview
+
 Farm provides a lot of rollup-style hooks, these hooks are divided into build stage and generate stage:
 ![Farm Plugin Hooks](/img/farm-plugin-hooks.png)
 
@@ -32,21 +39,25 @@ All plugin hooks accept a parameter called [`CompilationContext`](https://docs.r
 
 There are three kinds of hooks (the same as Rollup):
 
-* `first`: The hooks execute in serial and return immediately when a hook returns a non-null value. (The null means null and undefined in JS, None in Rust).
-* `serial`: The hooks execute in serial, and every hook's result will pass to the next hook, using the last hook's result as the final result.
-* `parallel`: The hooks execute in parallel in a thread pool and should be isolated.
+- `first`: The hooks execute in serial and return immediately when a hook returns a non-null value. (The null means null and undefined in JS, None in Rust).
+- `serial`: The hooks execute in serial, and every hook's result will pass to the next hook, using the last hook's result as the final result.
+- `parallel`: The hooks execute in parallel in a thread pool and should be isolated.
 
 :::note
 For full `Plugin Hooks` signature, see [Plugin Trait](https://docs.rs/farmfe_core/latest/farmfe_core/plugin/trait.Plugin.html)
 :::
 
 ## name
+
 - **required: `true`**
 - **default:**
+
 ```rust
 fn name(&self) -> &str;
 ```
+
 Returns the name of this plugin. Example:
+
 ```rust
 impl Plugin for MyPlugin {
   fn name(&self) -> &str {
@@ -56,8 +67,10 @@ impl Plugin for MyPlugin {
 ```
 
 ## priority
+
 - **required: `false`**
 - **default:**
+
 ```rust
 fn priority(&self) -> i32 {
   100
@@ -71,32 +84,38 @@ By default, all custom plugin's priority is 100. And some internal plugins' orde
 :::
 
 ## config
+
 - **required: `false`**
 - **hook type: `serial`**
 - **default:**
+
 ```rust
 fn config(&self, _config: &mut Config) -> Result<Option<()>> {
   Ok(None)
 }
 ```
+
 Modify the config before compilation start in `config` hook. Refer to [Config](https://docs.rs/farmfe_core/latest/farmfe_core/config/struct.Config.html) for definition of Config struct. Example:
 
 ```rust
 impl Plugin for MyPlugin {
   // implement config hook
   fn config(&self, config: &mut Config) -> Result<Option<()>> {
-    // set minify to false 
+    // set minify to false
     config.input.insert("custom-entry", "./custom.html");
     Ok(Some(()))
   }
 }
 ```
-Note that the `Rust Plugin`'s `config` hook are called after `JS Plugin`'s `config` and `configResolved` hook. 
+
+Note that the `Rust Plugin`'s `config` hook are called after `JS Plugin`'s `config` and `configResolved` hook.
 
 ## plugin_cache_loaded
+
 - **required: `false`**
 - **hook type: `serial`**
 - **default:**
+
 ```rust
 fn plugin_cache_loaded(
   &self,
@@ -106,11 +125,13 @@ fn plugin_cache_loaded(
   Ok(None)
 }
 ```
+
 Extend [`persistent cache`](/docs/advanced/persistent-cache) loading for your plugin.
 
 When `Persistent Cache` enabled, `load` and `transform` hook may be skipped when hitting cache. If your plugin relies on previous compilation result(for example, load a virtual module based on existing modules), you may need to implement this hook to load cached infos of your plugin to ensure cache work as expected.
 
 Example:
+
 ```rust
 #[cache_item]
 struct CachedStaticAssets {
@@ -140,19 +161,24 @@ impl Plugin for StaticAssetsPlugin {
   }
 }
 ```
+
 Note:
-* `deserialize` is exposed by `farmfe_core`, it can help you deserialize your structs or enums from `Vec<u8>`.
-* The cached structs or enums **must be rkyv serializable**, you can use `#[cache_item]` exposed by `farmfe_core` create a cacheable struct quickly.
+
+- `deserialize` is exposed by `farmfe_core`, it can help you deserialize your structs or enums from `Vec<u8>`.
+- The cached structs or enums **must be rkyv serializable**, you can use `#[cache_item]` exposed by `farmfe_core` create a cacheable struct quickly.
 
 ## build_start
+
 - **required: `false`**
 - **hook type: `parallel`**
 - **default:**
+
 ```rust
 fn build_start(&self, _context: &Arc<CompilationContext>) -> Result<Option<()>> {
   Ok(None)
 }
 ```
+
 Called before the first compilation starts. You can use this hook to initialize any initial status of your plugins.
 
 :::note
@@ -160,9 +186,11 @@ Called before the first compilation starts. You can use this hook to initialize 
 :::
 
 ## resolve
+
 - **required: `false`**
 - **hook type: `first`**
 - **default:**
+
 ```rust
 fn resolve(
   &self,
@@ -204,11 +232,14 @@ pub struct PluginResolveHookResult {
 ```
 
 Custom `source` resolving from `importer`, for example, resolving `./b` from `a.ts`:
+
 ```ts title="a.ts"
-import b from './b?raw';
+import b from "./b?raw";
 // ...
 ```
+
 Then the resolve params would be:
+
 ```rust
 let param = PluginResolveHookParam {
   source: "./b",
@@ -216,7 +247,9 @@ let param = PluginResolveHookParam {
   kind: ResolveKind::Import
 }
 ```
+
 The resolve result of default resolver would be:
+
 ```rust
 let resolve_result = PluginResolveHookResult {
   resolved_path: "/root/b.ts",   // resolved absolute path of the module
@@ -228,6 +261,7 @@ let resolve_result = PluginResolveHookResult {
 ```
 
 The `HookContext` is used to pass status when you can the hooks recursively, for example, your plugin call `context.plugin_driver.resolve` in `resolve hook`:
+
 ```rust
 impl Plugin for MyPlugin {
   fn resolve(
@@ -277,15 +311,18 @@ impl Plugin for MyPlugin {
 In above example, we call `context.plugin_driver.resolve` and pass `caller` as parameter, then we should add a guard like `if caller.as_str() == "FarmPluginCss"` to avoid infinite loop.
 
 Note:
-* By default, you `resolve hook` are executed **after** the default resolver inside Farm, only the sources that can not be resolved by internal resolver will be passed to your plugin, which means if you want to override the default resolve, you need to set your **plugin's priority larger** than `101`.
-* Usually `resolved_path` is the real absolute path that points to a file. But you can still return a `virtual module id` like `virtual:my-module`, but for virtual module you need to implement `load` hook to custom how to load your virtual module. And in Farm, `resolved_path + query = module_id`.
-* `ResolveKind` presents the `import type`, Example values: `ResolveKind::Require`(imported by commonjs require), `ResolveKind::CssImport`(imported by css's import statement), etc.
-* `meta` can be shared between plugins and hooks, you can get `meta` from params of `load`, `transform` and `parse` hooks in any plugin.
+
+- By default, you `resolve hook` are executed **after** the default resolver inside Farm, only the sources that can not be resolved by internal resolver will be passed to your plugin, which means if you want to override the default resolve, you need to set your **plugin's priority larger** than `101`.
+- Usually `resolved_path` is the real absolute path that points to a file. But you can still return a `virtual module id` like `virtual:my-module`, but for virtual module you need to implement `load` hook to custom how to load your virtual module. And in Farm, `resolved_path + query = module_id`.
+- `ResolveKind` presents the `import type`, Example values: `ResolveKind::Require`(imported by commonjs require), `ResolveKind::CssImport`(imported by css's import statement), etc.
+- `meta` can be shared between plugins and hooks, you can get `meta` from params of `load`, `transform` and `parse` hooks in any plugin.
 
 ## load
+
 - **required: `false`**
 - **hook type: `first`**
 - **default:**
+
 ```rust
 fn load(
   &self,
@@ -324,6 +361,7 @@ pub struct PluginLoadHookResult {
 ```
 
 Custom how to load your module from a resolved module path or module id. For example, load a virtual module:
+
 ```rust
 impl Plugin for MyPlugin {
   fn load(
@@ -351,9 +389,11 @@ impl Plugin for MyPlugin {
 `module_type` and `content` is required when loading modules in your `load` hook. `source_map` is optional, you can return source map if you do transform in the `load` hook(which is not recommended, we recommend to use `transform` hook for this situation) or you load original source map from other locations.
 
 ## transform
+
 - **required: `false`**
 - **hook type: `serial`**
 - **default:**
+
 ```rust
 fn transform(
   &self,
@@ -427,7 +467,9 @@ impl Plugin for MyPlugin {
   }
 }
 ```
+
 Normal steps for writing `transform hook`:
+
 1. add a `if` guard based `module_type` or `resolved_path` or `module_id`
 2. do transformation of the `content`
 3. return the transformed `content`, `source_map` and `module_type`
@@ -439,9 +481,11 @@ For `ignore_previous_source_map`, if you handled `param.source_map_chain` and co
 :::
 
 ## parse
+
 - **required: `false`**
 - **hook type: `first`**
 - **default:**
+
 ```rust
 fn parse(
   &self,
@@ -479,11 +523,12 @@ pub enum ModuleMetaData {
 
 Parse the **`transformed module content`** to `ast`. `Js/Jsx/Ts/Tsx`, `css` and `html` are supported natively by Farm. Normally you do not need to implement this hook unless you want to support a new `module_type` other than `Js/Jsx/Ts/Tsx`, `css` and `html`, use `ModuleMetaData::Custom` for this scenario.
 
-
 ## process_module
+
 - **required: `false`**
 - **hook type: `serial`**
 - **default:**
+
 ```rust
 fn process_module(
   &self,
@@ -502,6 +547,7 @@ pub struct PluginProcessModuleHookParam<'a> {
 ```
 
 Do transformation of the `parsed result`, usually do **`ast transformation`**. For example, Farm strip typescript in `process_module` hook:
+
 ```rust
 impl Plugin for MyPlugin {
    fn process_module(
@@ -523,12 +569,15 @@ impl Plugin for MyPlugin {
 
 }
 ```
+
 In above example, we ignore non-script modules and strip type annotation of the ast for ts/tsx modules.
 
 ## analyze_deps
+
 - **required: `false`**
 - **hook type: `serial`**
 - **default:**
+
 ```rust
 fn analyze_deps(
   &self,
@@ -548,8 +597,8 @@ pub struct PluginAnalyzeDepsHookParam<'a> {
 Analyze dependencies of the module. For example, we have `a.ts`:
 
 ```ts title="a.ts"
-import b from './b';
-const c = require('./c');
+import b from "./b";
+const c = require("./c");
 ```
 
 then normally this hook should push **2 entries** to `params.deps`:
@@ -568,9 +617,11 @@ param.deps.push(PluginAnalyzeDepsHookResultEntry {
 `param.deps` will be passed to `resolve` hook later. You can also add new deps that is not related to the ast of your module as you wish, Farm will `resolve`, `load` these unrelated modules and add them to the module graph too.
 
 ## finalize_modules
+
 - **required: `false`**
 - **hook type: `serial`**
 - **default:**
+
 ```rust
 fn finalize_module(
   &self,
@@ -589,15 +640,18 @@ pub struct PluginFinalizeModuleHookParam<'a> {
 Do any thing you want before seal the module. Note that you can only modify `param.module`.
 
 ## build_end
+
 - **required: `false`**
 - **hook type: `parallel`**
 - **default:**
+
 ```rust
 /// The module graph should be constructed and finalized here
 fn build_end(&self, _context: &Arc<CompilationContext>) -> Result<Option<()>> {
   Ok(None)
 }
 ```
+
 Called when all dependencies starting from `config.input` are handled and `ModuleGraph` is successfully constructed, you can get the full resolved `ModuleGraph` here by `context.module_graph`.
 
 :::note
@@ -605,9 +659,11 @@ Called when all dependencies starting from `config.input` are handled and `Modul
 :::
 
 ## generate_start
+
 - **required: `false`**
 - **hook type: `parallel`**
 - **default:**
+
 ```rust
 fn generate_start(&self, _context: &Arc<CompilationContext>) -> Result<Option<()>> {
   Ok(None)
@@ -617,9 +673,11 @@ fn generate_start(&self, _context: &Arc<CompilationContext>) -> Result<Option<()
 Called before generate stage start.
 
 ## optimize_module_graph
+
 - **required: `false`**
 - **hook type: `serial`**
 - **default:**
+
 ```rust
 /// Some optimization of the module graph should be performed here, for example, tree shaking
 fn optimize_module_graph(
@@ -630,12 +688,15 @@ fn optimize_module_graph(
   Ok(None)
 }
 ```
+
 You can do optimization of the `module_graph` here. For internal plugins, Farm does tree shaking, minification in this hook.
 
 ## analyze_module_graph
+
 - **required: `false`**
 - **hook type: `first`**
 - **default:**
+
 ```rust
 /// Analyze module group based on module graph
 fn analyze_module_graph(
@@ -647,6 +708,7 @@ fn analyze_module_graph(
   Ok(None)
 }
 ```
+
 Analyze **`dynamic import`** of the `module_graph`, and groups modules based on **`dynamic import`**, return the grouped modules.
 
 :::warning
@@ -654,9 +716,11 @@ Normally you should not implement this hook, unless you want to implement a full
 :::
 
 ## partial_bundling
+
 - **required: `false`**
 - **hook type: `first`**
 - **default:**
+
 ```rust
 /// partial bundling modules to [Vec<ResourcePot>]
 fn partial_bundling(
@@ -690,11 +754,13 @@ pub struct ResourcePot {
   pub immutable: bool,
 }
 ```
+
 Bundle the `modules` to `Vec<ResourcePot>` based on `module_group_graph` and `module_graph`. A `ResourcePot` is a structure that Farm uses to hold bundled modules, it will be emitted to final resources in [generate_resources](#generate_resources) hook, you can treat a `ResourcePot` as `Chunk` of other tools.
 
 Note:
-* This hook will be called in both `first compilation`, `HMR` and `Lazy Compilation`, make sure this hook does not contains side effects(for the same modules, always returns the same `Vec<ResourcePot>`).
-* You should set `module.resource_pot` in this hook.
+
+- This hook will be called in both `first compilation`, `HMR` and `Lazy Compilation`, make sure this hook does not contains side effects(for the same modules, always returns the same `Vec<ResourcePot>`).
+- You should set `module.resource_pot` in this hook.
 
 Refer to the [internal implementation](https://github.com/farm-fe/farm/blob/main/crates/plugin_partial_bundling/src/lib.rs) of partial bundling in Farm for best practice. Refer to [RFC-003 Partial Bundling](https://github.com/farm-fe/farm/blob/main/crates/plugin_partial_bundling/src/lib.rs) for how Farm designs bundling.
 
@@ -703,9 +769,11 @@ Normally you should not implement this hook, unless you want to implement a full
 :::
 
 ## process_resource_pots
+
 - **required: `false`**
 - **hook type: `serial`**
 - **default:**
+
 ```rust
 /// process resource pots before render and generating each resource
 fn process_resource_pots(
@@ -716,12 +784,15 @@ fn process_resource_pots(
   Ok(None)
 }
 ```
-Do some **transformation** of the `ResourcePots`. Note that ResourcePots are not rendered at this time, which means you can not get the rendered code of the `Resource Pot`, instead, you can only add, remove, transform the modules inside the `ResourcePot` 
+
+Do some **transformation** of the `ResourcePots`. Note that ResourcePots are not rendered at this time, which means you can not get the rendered code of the `Resource Pot`, instead, you can only add, remove, transform the modules inside the `ResourcePot`
 
 ## render_start
+
 - **required: `false`**
 - **hook type: `serial`**
 - **default:**
+
 ```rust
 fn render_start(
   &self,
@@ -739,9 +810,11 @@ Called before resource pots render. After rendering resource pots, executable `h
 :::
 
 ## render_resource_pot_modules
+
 - **required: `false`**
 - **hook type: `first`**
 - **default:**
+
 ```rust
 fn render_resource_pot_modules(
   &self,
@@ -778,13 +851,15 @@ Render the given `ResourcePot` to `rendered_content` and `rendered_source_map_ch
 If you really need to use this hook, refer to [plugin_runtime](https://github.com/farm-fe/farm/blob/main/crates/plugin_runtime/src/lib.rs#L320) for best practice.
 
 :::note
-Normally you should not override this hook for natively supported module types like `js/jsx/ts/tsx/css/html`, you should only use this hook when you ensure you want to override the default behavior for internal module types in Farm, or you want to support **custom module types**. 
+Normally you should not override this hook for natively supported module types like `js/jsx/ts/tsx/css/html`, you should only use this hook when you ensure you want to override the default behavior for internal module types in Farm, or you want to support **custom module types**.
 :::
 
 ## render_resource_pot
+
 - **required: `false`**
 - **hook type: `serial`**
 - **default:**
+
 ```rust
 fn render_resource_pot(
   &self,
@@ -829,12 +904,15 @@ impl Plugin for MyPlugin {
   }
 }
 ```
+
 In above example, we transformed the content of a css `Resource Pot`, replaced all `<--layer-->` to `replaced_code`.
 
 ## augment_resource_hash
+
 - **required: `false`**
 - **hook type: `serial`**
 - **default:**
+
 ```rust
 fn augment_resource_hash(
   &self,
@@ -861,9 +939,11 @@ pub struct ResourcePotInfo {
 Append additional hash when generating resource from given resource pot.
 
 ## optimize_resource_pot
+
 - **required: `false`**
 - **hook type: `serial`**
 - **default:**
+
 ```rust
 /// Optimize the resource pot, for example, minimize
 fn optimize_resource_pot(
@@ -905,9 +985,11 @@ Optimizations like minification is handled internally by Farm, make sure that yo
 :::
 
 ## generate_resources
+
 - **required: `false`**
 - **hook type: `first`**
 - **default:**
+
 ```rust
 /// Generate resources based on the [ResourcePot], return [Vec<Resource>] represents the final generated files.
 /// For example, a .js file and its corresponding source map file
@@ -936,9 +1018,11 @@ For natively supported `ModuleTypes` like `js/ts/jsx/tsx/css/html/static assets`
 :::
 
 ## finalize_resources
+
 - **required: `false`**
 - **hook type: `serial`**
 - **default:**
+
 ```rust
 /// Do some finalization work on the generated resources, for example, transform html based on the generated resources
 fn finalize_resources(
@@ -960,9 +1044,11 @@ Do some finalization work on the generated resources, for example, transform htm
 You can also **`add`** or **`remove`** resources here.
 
 ## generate_end
+
 - **required: `false`**
 - **hook type: `parallel`**
 - **default:**
+
 ```rust
 fn generate_end(&self, _context: &Arc<CompilationContext>) -> Result<Option<()>> {
   Ok(None)
@@ -972,9 +1058,11 @@ fn generate_end(&self, _context: &Arc<CompilationContext>) -> Result<Option<()>>
 Called when all generate stage done(including `finalize_resources`). You can do some cleanup work here.
 
 ## finish
+
 - **required: `false`**
 - **hook type: `parallel`**
 - **default:**
+
 ```rust
 fn finish(&self, _stat: &Stats, _context: &Arc<CompilationContext>) -> Result<Option<()>> {
   Ok(None)
@@ -987,11 +1075,12 @@ Called when all compilation work done(including `build stage` and `generate stag
 `finish` is only called once for the first compilation. `HMR` or `Lazy Compilation` won't trigger `finish` hook. You should use [update_finished](#update_finished) hook instead.
 :::
 
-
 ## write_plugin_cache
+
 - **required: `false`**
 - **hook type: `serial`**
 - **default:**
+
 ```rust
 fn write_plugin_cache(&self, _context: &Arc<CompilationContext>) -> Result<Option<Vec<u8>>> {
   Ok(None)
@@ -1001,6 +1090,7 @@ fn write_plugin_cache(&self, _context: &Arc<CompilationContext>) -> Result<Optio
 Extend [`persistent cache`](/docs/advanced/persistent-cache) writing for your plugin. `write_plugin_cache` is often used together with [plugin_cache_loaded](#plugin_cache_loaded) to read and write persistent cache for plugin. Return the serialized bytes of your data.
 
 Example, writing cache for static assets:
+
 ```rust
 impl Plugin for MyPlugin {
   fn write_plugin_cache(
@@ -1034,11 +1124,12 @@ struct CachedStaticAssets {
 }
 ```
 
-
 ## update_modules
+
 - **required: `false`**
 - **hook type: `serial`**
 - **default:**
+
 ```rust
 /// Called when calling compiler.update(module_paths).
 /// Useful to do some operations like clearing previous state or ignore some files when performing HMR
@@ -1056,15 +1147,18 @@ pub struct PluginUpdateModulesHookParams {
   pub paths: Vec<(String, UpdateType)>,
 }
 ```
+
 Called when calling compiler.update(module_paths). Useful to do some operations like clearing previous state or ignore some files when performing HMR
 
-* `paths` is paths that will be recompiled for this update
-* return the new `paths`, later compilation will update the new returned paths.
+- `paths` is paths that will be recompiled for this update
+- return the new `paths`, later compilation will update the new returned paths.
 
 ## module_graph_updated
+
 - **required: `false`**
 - **hook type: `serial`**
 - **default:**
+
 ```rust
 /// Called when calling compiler.update(module_paths).
 /// Useful to do some operations like modifying the module graph
@@ -1084,12 +1178,15 @@ pub struct PluginModuleGraphUpdatedHookParams {
   pub updated_modules_ids: Vec<ModuleId>,
 }
 ```
+
 Called when calling compiler.update(module_paths). Useful to do some operations like modifying the module graph.
 
 ## update_finished
+
 - **required: `false`**
 - **hook type: `serial`**
 - **default:**
+
 ```rust
 /// Called when calling compiler.update(module_paths).
 /// This hook is called after all compilation work is done, including the resources regeneration and finalization.
@@ -1104,9 +1201,11 @@ fn update_finished(
 Called when calling compiler.update(module_paths). This hook is called after all compilation work is done, including the resources regeneration and finalization.
 
 ## handle_persistent_cached_module
+
 - **required: `false`**
 - **hook type: `serial`**
 - **default:**
+
 ```rust
 fn handle_persistent_cached_module(
   &self,
@@ -1116,4 +1215,5 @@ fn handle_persistent_cached_module(
   Ok(None)
 }
 ```
+
 Called when persistent cache is enabled and the cache hit for the module. Return `true` to **skip loading cache for this module**.

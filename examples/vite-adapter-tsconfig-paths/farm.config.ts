@@ -1,4 +1,4 @@
-import { defineConfig } from '@farmfe/core';
+import { defineConfig } from 'farm';
 import tsconfigPaths from 'vite-tsconfig-paths';
 
 export default defineConfig({

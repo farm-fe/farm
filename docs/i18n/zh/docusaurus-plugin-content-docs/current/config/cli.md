@@ -9,7 +9,7 @@ pnpm create farm
 # choose your favorite package manager
 ````
 
-其他命令由包 `@farmfe/cli` 提供：
+其他命令由包 `farm` 提供：
 
 ## start
 启动开发服务器，在开发模式下编译 Farm 项目并监视文件更改。
