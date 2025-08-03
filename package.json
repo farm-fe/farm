@@ -28,12 +28,12 @@
     "spell-check": "cspell \"**\" --gitignore"
   },
   "devDependencies": {
+    "farm": "workspace:*",
     "@biomejs/biome": "1.9.4",
     "@changesets/cli": "2.27.9",
     "@codspeed/vitest-plugin": "^3.1.1",
     "@commitlint/cli": "^17.0.3",
     "@commitlint/config-conventional": "^17.0.3",
-    "farm": "workspace:*",
     "@types/node": "^18.19.67",
     "@vitest/coverage-v8": "2.0.4",
     "cross-env": "^7.0.3",
