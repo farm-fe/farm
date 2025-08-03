@@ -662,7 +662,7 @@ impl Resolver {
 
     let relative_path = if let Ok(package_json_info) = package_json_info {
       resolve_exports_or_imports(&package_json_info, subpath, "exports", kind, context)
-        .map(|resolve_exports_path| resolve_exports_path.get(0).unwrap().to_string())
+        .to_resolved(context.config.resolve.strict_exports)
         .or_else(|| {
           if context.config.output.target_env.is_browser() {
             try_browser_map(
@@ -721,7 +721,7 @@ impl Resolver {
           kind,
           context,
         )
-        .map(|exports_entries| exports_entries.get(0).unwrap().to_string())
+        .to_resolved(context.config.resolve.strict_exports)
       })
       .or_else(|| {
         let is_browser = context.config.output.target_env.is_browser();
@@ -816,11 +816,8 @@ impl Resolver {
     )
     .ok()?;
 
-    let imports_paths =
-      resolve_exports_or_imports(&package_json_info, source, "imports", kind, context);
-
-    imports_paths
-      .map(|result| result.get(0).unwrap().to_string())
+    resolve_exports_or_imports(&package_json_info, source, "imports", kind, context)
+      .to_resolved(context.config.resolve.strict_exports)
       .map(|imports_path| (imports_path, package_json_info.dir().to_string()))
   }
 
