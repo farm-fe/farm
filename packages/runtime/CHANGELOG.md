@@ -275,7 +275,7 @@
 
   - remove resource pot graph to optimize the compilation speed
   - implement partial bundling algorithm
-  - optimize @farmfe/cli, remove @farmfe/core from its dependencies
+  - optimize @farmfe/cli, remove farm from its dependencies
   - optimize plugin react to skip duplicate module building based on process.env.NODE_ENV
 
 ## 0.2.0

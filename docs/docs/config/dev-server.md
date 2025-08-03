@@ -61,7 +61,7 @@ Note that a **valid certificate** is needed if `https` enabled.
 Setup global http response headers for the DevServer.
 
 ```ts
-import { defineConfig } from "@farmfe/core";
+import { defineConfig } from "farm";
 
 export default defineConfig({
   server: {

@@ -33,7 +33,7 @@ export async function resolveCore(): Promise<{
     return import('farm');
   } catch (err) {
     logger.error(
-      `Cannot find @farmfe/core module, Did you successfully install: \n${err.stack},`,
+      `Cannot find farm module, Did you successfully install: \n${err.stack},`,
       { exit: true }
     );
   }

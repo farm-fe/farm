@@ -316,7 +316,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Patch Changes
 
-- 5be3aab: Bump version due to update of @farmfe/core
+- 5be3aab: Bump version due to update of farm
 
 ## 0.3.0
 

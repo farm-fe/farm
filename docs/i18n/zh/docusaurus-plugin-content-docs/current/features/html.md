@@ -48,7 +48,7 @@ Farm 在编译时会将这些 `script` 和 `link` 转化为最终的生产可用
 如果您正在构建多页面应用程序，只需配置多个 html，例如：
 
 ```ts title="farm.config.ts"
-import type { UserConfig } from "@farmfe/core";
+import type { UserConfig } from "farm";
 
 export default defineConfig({
   input: {

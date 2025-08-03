@@ -25,7 +25,7 @@ You can configuring the SWC Parser through `compilation.script.parser`. Refer to
 For example, if you want to enable decorator, you can set `compilation.script.parser.esConfig.decorators`(or `tsConfig.decorators` if the module is TS):
 
 ```ts title="farm.config.ts"
-import { defineConfig } from "@farmfe/core";
+import { defineConfig } from "farm";
 
 export default defineConfig({
   compilation: {
@@ -55,7 +55,7 @@ Farm set `compilation.script.target` automatically based on [`output.targetEnv`]
 This option can be used along with `compilation.presetEnv` to gracefully downgrade your project for old browsers. For example, you can set target to `ES5` and enable `presetEnv`, then your project will be fully downgrade to ES5.
 
 ```ts title="farm.config.ts"
-import { defineConfig } from "@farmfe/core";
+import { defineConfig } from "farm";
 
 export default defineConfig({
   compilation: {
@@ -106,7 +106,7 @@ export default defineConfig({
 SWC Plugins can be used directly in Farm, for example, we use `swc-plugin-vue-jsx` to compiling vue jsx in Farm:
 
 ```ts title="farm.config.ts"
-import { defineConfig } from "@farmfe/core";
+import { defineConfig } from "farm";
 import jsPluginVue from "@farmfe/js-plugin-vue";
 
 export default defineConfig({

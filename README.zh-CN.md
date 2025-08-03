@@ -14,13 +14,13 @@
     <a href="https://codecov.io/gh/farm-fe/farm" > 
       <img src="https://codecov.io/gh/farm-fe/farm/graph/badge.svg?token=AJM5HMP07F"/> 
     </a>
-    <a href="https://npmjs.com/package/@farmfe/core"><img src="https://img.shields.io/npm/v/@farmfe/core.svg?style=flat-square&colorA=ffe3f5&colorB=711a5f" alt="npm package"></a>
-    <a href="https://nodejs.org/en/about/releases/"><img src="https://img.shields.io/node/v/@farmfe/core.svg?style=flat-square&colorA=ffe3f5&colorB=711a5f" alt="node compatibility"></a>
-  <a href="https://npmcharts.com/compare/@farmfe/core?minimal=true">
-    <img src="https://img.shields.io/npm/dm/@farmfe/core.svg?style=flat-square&colorA=ffe3f5&colorB=711a5f" alt="downloads" />
+    <a href="https://npmjs.com/package/farm"><img src="https://img.shields.io/npm/v/farm.svg?style=flat-square&colorA=ffe3f5&colorB=711a5f" alt="npm package"></a>
+    <a href="https://nodejs.org/en/about/releases/"><img src="https://img.shields.io/node/v/farm.svg?style=flat-square&colorA=ffe3f5&colorB=711a5f" alt="node compatibility"></a>
+  <a href="https://npmcharts.com/compare/farm?minimal=true">
+    <img src="https://img.shields.io/npm/dm/farm.svg?style=flat-square&colorA=ffe3f5&colorB=711a5f" alt="downloads" />
   </a>
   <a href="https://github.com/farm-fe/farm/blob/main/LICENSE">
-    <img src="https://img.shields.io/npm/l/@farmfe/core?style=flat-square&colorA=ffe3f5&colorB=711a5f" alt="license" />
+    <img src="https://img.shields.io/npm/l/farm?style=flat-square&colorA=ffe3f5&colorB=711a5f" alt="license" />
   </a>
   </p>
   <br/>
@@ -161,7 +161,7 @@ Farm 远快于业界常用的 JS 构建工具，在 benchmark 测试中，Farm �
 
 ## 致谢
 
-非常感谢  https://github.com/tmm 给 Farm 团队捐献了 [farm](https://www.npmjs.com/package/farm) npm 包。
+非常感谢 https://github.com/tmm 给 Farm 团队捐献了 [farm](https://www.npmjs.com/package/farm) npm 包。
 
 感谢:
 

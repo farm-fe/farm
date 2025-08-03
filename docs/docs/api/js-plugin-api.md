@@ -23,7 +23,7 @@ A Farm Js Plugin is a plain javascript object which exposes a set of `hook`s. fo
 
 ```ts title="my-farm-plugin.ts"
 // Create a plugin file that exports a plugin function which returns a `JsPlugin` Object:
-import type { JsPlugin } from "@farmfe/core";
+import type { JsPlugin } from "farm";
 
 // Plugin Options
 export interface PluginOptions {

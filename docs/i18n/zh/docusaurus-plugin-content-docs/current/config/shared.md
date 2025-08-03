@@ -49,7 +49,7 @@ export interface UserConfig {
 配置目录以加载 `.env`、`.env.development`、`.env.Production` 文件。 默认情况下它与 root 相同。
 
 ```ts
-import { defineConfig } from "@farmfe/core";
+import { defineConfig } from "farm";
 import { resolve } from "path";
 export default defineConfig({
   envPrefix: ["FARM_", "CUSTOM_PREFIX_", "NEW_"],

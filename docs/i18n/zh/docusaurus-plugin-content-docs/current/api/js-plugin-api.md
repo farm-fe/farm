@@ -23,7 +23,7 @@ Farm Js 插件是一个普通的 javascript 对象，它公开了一组 `hook` �
 
 ```ts title="my-farm-plugin.ts"
 // 创建一个插件文件，导出一个返回 `JsPlugin` 对象的插件函数：
-import type { JsPlugin } from "@farmfe/core";
+import type { JsPlugin } from "farm";
 
 // 插件选项
 export interface PluginOptions {

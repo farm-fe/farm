@@ -7,7 +7,7 @@ Farm provides `DevServer` and enabled `HMR` in `development` by default.
 Farm provides a lot of useful options to configure dev server. All dev server options are configured by [`server`](/docs/config/dev-server).
 
 ```ts
-import { defineConfig } from "@farmfe/core";
+import { defineConfig } from "farm";
 
 export default defineConfig({
   server: {
@@ -31,7 +31,7 @@ You can use [`middlewares`](/docs/config/dev-server#middlewares) to handle dev s
 
 ```ts title="farm.config.ts"
 import { Middleware } from "koa";
-import { Server, defineConfig } from "@farmfe/core";
+import { Server, defineConfig } from "farm";
 
 export function headers(devSeverContext: Server): Middleware {
   const { config } = devSeverContext;
