@@ -94,7 +94,8 @@ fn is_module_contains_reexport_ident(
             }
           }
           ExportSpecifierInfo::Default | ExportSpecifierInfo::Namespace(_) => {
-            unreachable!("only reexport idents are handled")
+            // default export and namespace export don't reexport idents
+            false
           }
         };
 
