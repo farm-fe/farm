@@ -9,7 +9,7 @@ sidebar_position: 1
 Farm 支持开箱即用地编译 Html，并且在构建 Web 项目时应该使用 Html 作为入口，例如：
 
 ```ts title="farm.config.ts"
-import type { UserConfig } from "@farmfe/core";
+import type { UserConfig } from "farm";
 
 export default defineConfig({
   input: {
@@ -48,15 +48,15 @@ Farm 在编译时会将这些 `script` 和 `link` 转化为最终的生产可用
 如果您正在构建多页面应用程序，只需配置多个 html，例如：
 
 ```ts title="farm.config.ts"
-import type { UserConfig } from '@farmfe/core';
+import type { UserConfig } from "@farmfe/core";
 
 export default defineConfig({
   input: {
-    home: './index.html', // Home Page
-    about: './about.html', // About Page
+    home: "./index.html", // Home Page
+    about: "./about.html", // About Page
     // ... more pages
-  }
-})
+  },
+});
 ```
 
 Farm 将并行编译这些页面。
@@ -66,7 +66,7 @@ Farm 将并行编译这些页面。
 Farm 支持通过使用 `html.base` 配置继承 html 模板，这在构建共享 html 的多页面应用程序时很有帮助。
 
 ```ts title="farm.config.ts"
-import type { UserConfig } from "@farmfe/core";
+import type { UserConfig } from "farm";
 
 export function defineConfig(config: UserConfig) {
   return config;
@@ -90,7 +90,7 @@ export default defineConfig({
 然后添加一个`base.html`，占位符`{{children}}`将被替换为子 html 的内容。
 
 ```html title="./base.html"
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />

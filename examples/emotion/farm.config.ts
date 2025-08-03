@@ -1,4 +1,4 @@
-import type { UserConfig } from '@farmfe/core';
+import type { UserConfig } from "farm";
 
 function defineConfig(config: UserConfig) {
   return config;

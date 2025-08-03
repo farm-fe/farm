@@ -7,12 +7,7 @@ import { Features, transform } from 'lightningcss';
 import postcss from 'postcss';
 import postcssImport from 'postcss-import';
 
-import type {
-  CompilationContext,
-  JsPlugin,
-  Server,
-  UserConfig
-} from '@farmfe/core';
+import type { CompilationContext, JsPlugin, Server, UserConfig } from 'farm';
 
 // like https://github.com/tailwindlabs/tailwindcss/blob/next/packages/%40tailwindcss-vite/src/index.ts
 export default function tailwindcss(): JsPlugin[] {

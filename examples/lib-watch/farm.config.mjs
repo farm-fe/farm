@@ -1,15 +1,15 @@
 /**
- * @type {import('@farmfe/core').UserConfig}
+ * @type {import('farm').UserConfig}
  */
 export default {
   compilation: {
     input: {
-      index: './index.ts'
+      index: "./index.ts",
     },
     output: {
-      path: 'dist',
-      filename: '[resourceName].[ext]',
-      targetEnv: 'node'
+      path: "dist",
+      filename: "[resourceName].[ext]",
+      targetEnv: "node",
     },
     lazyCompilation: false,
     // partialBundling: {
@@ -22,9 +22,9 @@ export default {
     // },
     minify: false,
     sourcemap: false,
-    presetEnv: false
+    presetEnv: false,
   },
   server: {
-    hmr: false
-  }
+    hmr: false,
+  },
 };

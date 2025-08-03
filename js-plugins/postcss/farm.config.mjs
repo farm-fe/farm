@@ -1,21 +1,21 @@
-import farmDtsPlugin from '@farmfe/js-plugin-dts';
+import farmDtsPlugin from "@farmfe/js-plugin-dts";
 
-import { createFarmJsPluginBuildConfig } from '../../configs/farm-js-plugin.base.config.mjs';
+import { createFarmJsPluginBuildConfig } from "../../configs/farm-js-plugin.base.config.mjs";
 /**
- * @type {import('@farmfe/core').UserConfig}
+ * @type {import("farm").UserConfig}
  */
 export default createFarmJsPluginBuildConfig(
   [
     farmDtsPlugin({
-      tsConfigPath: './tsconfig.build.json'
-    })
+      tsConfigPath: "./tsconfig.build.json",
+    }),
   ],
   {
     external: [
-      '@farmfe/core',
-      'postcss-url',
-      '@farmfe/js-plugin-dts',
-      'postcss-import'
-    ]
-  }
+      "farm",
+      "postcss-url",
+      "@farmfe/js-plugin-dts",
+      "postcss-import",
+    ],
+  },
 );

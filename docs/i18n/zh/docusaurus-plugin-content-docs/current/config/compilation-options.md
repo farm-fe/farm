@@ -3,7 +3,7 @@
 Farm 默认从项目根目录的 `farm.config.ts|js|mjs` 文件中读取配置，配置文件示例:
 
 ```ts title="farm.config.ts"
-import { defineConfig } from "@farmfe/core";
+import { defineConfig } from "farm";
 
 export default defineConfig({
   root: process.cwd(), // 编译的根目录
@@ -34,7 +34,7 @@ export default defineConfig({
 项目的入口点。 Input 的文件可以是`html`、`ts/js/tsx/jsx`、`css` 或通过插件支持的其他文件。
 
 ```tsx
-import { defineConfig } from "@farmfe/core";
+import { defineConfig } from "farm";
 
 export default defineConfig({
   compilation: {
@@ -113,12 +113,14 @@ interface OutputOptions {
 export default defineConfig({
   compilation: {
     output: {
-      publicPath: process.env.NODE_ENV === 'production' ? 'https://cdn.com' : '/'
-    }
-  }
+      publicPath:
+        process.env.NODE_ENV === "production" ? "https://cdn.com" : "/",
+    },
+  },
   // ...
 });
 ```
+
 在构建时，注入的资源 URL 将为 `https://cdn.com/index-s2f3.s14dqwa.js` 。 例如，在输出 html 中，所有 `<script>` 和 `<link`> 将为：
 
 ```html {4,8}
@@ -149,17 +151,19 @@ export default defineConfig({
 配置产物的执行环境，可以是 `浏览器` 或 `节点` 。 Farm 会自动为您指定的 `targetEnv` 注入 `polyfill` 和降级语法（对于脚本和 css），支持的 `targetEnv` 如下：
 
 针对 `浏览器` ：
-* **`browser-es2017`**：将项目编译到原生支持 `async wait` 的浏览器。
-* **`browser-es2015`**：将项目编译到原生支持 `es6 features` 的浏览器。
-* **`browser-legacy`**：将项目编译为`ES5`，例如`IE9`。 请注意，这可能会引入大量的填充，从而使生产规模更大。 确保您确实需要支持 `IE9` 等旧版浏览器。
-* **`browser-esnext`**：将项目编译到最新的现代浏览器，不会注入任何polyfill。
-* **`浏览器`**：`browser-es2017`的别名
+
+- **`browser-es2017`**：将项目编译到原生支持 `async wait` 的浏览器。
+- **`browser-es2015`**：将项目编译到原生支持 `es6 features` 的浏览器。
+- **`browser-legacy`**：将项目编译为`ES5`，例如`IE9`。 请注意，这可能会引入大量的填充，从而使生产规模更大。 确保您确实需要支持 `IE9` 等旧版浏览器。
+- **`browser-esnext`**：将项目编译到最新的现代浏览器，不会注入任何polyfill。
+- **`浏览器`**：`browser-es2017`的别名
 
 针对 `Node.js` ：
-* **`node16`**：将项目编译到`Node 16`。
-* **`node-legacy`**：将项目编译到 `Node 10` 。
-* **`node-next`**：将项目编译到最新的 Node 版本，不会注入任何 polyfill。
-* **`node`**：`node16`的别名
+
+- **`node16`**：将项目编译到`Node 16`。
+- **`node-legacy`**：将项目编译到 `Node 10` 。
+- **`node-next`**：将项目编译到最新的 Node 版本，不会注入任何 polyfill。
+- **`node`**：`node16`的别名
 
 #### `output.format`
 
@@ -205,7 +209,7 @@ export default defineConfig({
       alias: {
         "/@": path.join(process.cwd(), "src"),
         stream$: "readable-stream",
-         "$__farm_regex:^/(utils)$": path.join(process.cwd(), "src/$1"),
+        "$__farm_regex:^/(utils)$": path.join(process.cwd(), "src/$1"),
       },
     },
   },
@@ -284,15 +288,16 @@ export default defineConfig({
 ```
 
 ### externalNodeBuiltins
+
 - **默认**：`true`
 
 无论是否外部 `module.builtinModules`，默认情况下，所有内置模块（如 `fs`）都将是外部的。 您还可以将 `externalNodeBuiltins` 设置为 `array` 以手动将模块指定为外部：
 
 ```ts
 export default defineConfig({
-   compilation: {
-     externalNodeBuiltins: ["^stream$"],
-   },
+  compilation: {
+    externalNodeBuiltins: ["^stream$"],
+  },
 });
 ```
 
@@ -344,7 +349,6 @@ interface FarmRuntimeOptions {
 - **默认值**: 项目 package.json 的 name 字段
 
 配置 Farm Runtime 的命名空间，保证在同一个 window 或者 global 下不同产物的执行能够相互隔离。默认使用项目 package.json 的 name 字段作为 namespace。
-
 
 #### `runtime.isolate`
 
@@ -401,7 +405,7 @@ export default defineConfig({
 import jsPluginVue from "@farmfe/js-plugin-vue";
 
 /**
- * @type {import('@farmfe/core').UserConfig}
+ * @type {import("farm").UserConfig}
  */
 export default {
   compilation: {
@@ -518,7 +522,7 @@ type BrowserTargetsRecord = Partial<
 配置对于哪些目标浏览器或者浏览器版本开启，示例：
 
 ```ts
-import { defineConfig } from "@farmfe/core";
+import { defineConfig } from "farm";
 
 export default defineConfig({
   compilation: {
@@ -821,7 +825,7 @@ export type PersistentCache =
 配置项可以是一个路径或者一个包名, 例如:
 
 ```ts
-import { defineConfig } from "@farmfe/core";
+import { defineConfig } from "farm";
 import path from "node:path";
 
 export default defineConfig({
@@ -854,14 +858,17 @@ export default defineConfig({
 <!-- #### `presetEnv.assuptions` -->
 
 ### progress
+
 - **default**: `true`
 
 是否启动进度条
 
 ### comments
+
 - **default**: `license`
 
 配置如何处理注释:
-* `true`: 保留所有注释
-* `false`: 删除所有注释
-* `license`: 保留所有 **LICENSE 注释**, 移除所有非 LICENSE 注释
+
+- `true`: 保留所有注释
+- `false`: 删除所有注释
+- `license`: 保留所有 **LICENSE 注释**, 移除所有非 LICENSE 注释

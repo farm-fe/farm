@@ -8,19 +8,17 @@ Since `v0.14.0`, Farm supports cache the compiled result to disk, which can grea
 
 Performance compare between cold start(without cache) and hot start(with cache) using [examples/argo-pro](https://github.com/farm-fe/farm/tree/main/examples/arco-pro):
 
-
 |       | Cold(without cache) | Hot(with cache) | diff        |
 | ----- | ------------------- | --------------- | ----------- |
 | start | 1519ms              | 371ms           | reduced 75% |
 | build | 3582ms              | 562ms           | reduced 84% |
-
 
 ## Using Cache
 
 Using [`compilation.persistentCache`](/docs/config/compilation-options#persistentcache) to `enable/disable` Cache:
 
 ```ts
-import { defineConfig } from "@farmfe/core";
+import { defineConfig } from "farm";
 
 export default defineConfig({
   compilation: {
@@ -41,7 +39,7 @@ export default defineConfig({
     namespace: "farm-cache",
     buildDependencies: [
       "farm.config.ts",
-      "@farmfe/core",
+      "farm",
       "@farmfe/plugin-react",
       // ... all other dependencies
     ],
@@ -52,6 +50,7 @@ export default defineConfig({
   },
 });
 ```
+
 :::
 
 Configuring `persistentCache` to `false` to disable cache.
@@ -60,9 +59,9 @@ Configuring `persistentCache` to `false` to disable cache.
 
 Cache will be validated when trying to reuse it by following conditions, if any of following conditions changed, all cache will be invalidated:
 
-
 - **Env Object**: configured by `persistentCache.envs`, default to `Farm Env Mode`(`process.env.NODE_ENV`, `process.env.DEV`, `process.env.PROD`), see **[`Environment Variables and Modes`](/docs/features/env)**.
 - **lockfile**: If your lockfile changed, means there are dependencies changes, the cache will be invalidated.
+
 * **Build Dependencies**: configured by `persistentCache.buildDependencies`, if any of the buildDependencies changed, all cache will be invalidated.
 * **Cache Namespace**: configured by `persistentCache.namespace`, cache under different namespaces won't be reused. If you want to invalidate all cache, you can configure a different namespace.
 * **Internal Cache Version**: Farm maintains a cache version internally, if Farm itself changed, for example, render optimization that affects the output between versions of Farm, Farm will bump the cache version and all cache will be invalidated.
@@ -76,7 +75,7 @@ Build dependencies is dependencies that can affect the compilation process or co
 Build dependencies can be a file path for a package name, for example:
 
 ```ts
-import { defineConfig } from "@farmfe/core";
+import { defineConfig } from "farm";
 import path from "node:path";
 
 export default defineConfig({

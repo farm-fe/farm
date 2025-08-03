@@ -1,5 +1,5 @@
-import { Resource } from '@farmfe/core';
 import { Module } from '@farmfe/core/binding/binding';
+import { Resource } from 'farm';
 import type { FarmEnvInfo } from '../../../node/utils/envinfo';
 import { http } from '../http';
 

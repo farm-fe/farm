@@ -39,7 +39,7 @@ start(options: InlineConfig): Promise<void>
 基本示例:
 
 ```javascript
-import { start, logger } from "@farmfe/core";
+import { start, logger } from "farm";
 try {
   await start(options);
 } catch (error) {
@@ -64,7 +64,7 @@ build(options: InlineConfig): Promise<void>
 基本示例:
 
 ```javascript
-import { build, logger } from "@farmfe/core";
+import { build, logger } from "farm";
 try {
   await build(options);
 } catch (error) {
@@ -86,7 +86,7 @@ watch(options: InlineConfig): Promise<void>
 基本示例:
 
 ```javascript
-import { watch, logger } from "@farmfe/core";
+import { watch, logger } from "farm";
 try {
   await watch(defaultOptions);
 } catch (error) {
@@ -108,7 +108,7 @@ preview(options: InlineConfig): Promise<void>
 基本示例:
 
 ```javascript
-import { preview, logger } from "@farmfe/core";
+import { preview, logger } from "farm";
 try {
   await preview(defaultOptions);
 } catch (error) {
@@ -134,7 +134,7 @@ clean(options: InlineConfig): Promise<void>
 基本示例:
 
 ```javascript
-import { clean, logger } from "@farmfe/core";
+import { clean, logger } from "farm";
 try {
   await clean(defaultOptions);
 } catch (error) {
@@ -176,7 +176,7 @@ createDevServer(options: DevServerOptions): Promise<void>
 基本示例:
 
 ```javascript
-import { Server } from "@farmfe/core";
+import { Server } from "farm";
 const server = new Server();
 await server.createDevServer(options);
 server.listen()
@@ -195,7 +195,7 @@ createPreviewServer(options: DevServerOptions): Promise<void>
 基本示例:
 
 ```javascript
-import { Server } from "@farmfe/core";
+import { Server } from "farm";
 const server = new Server();
 await server.createPreviewServer(options);
 ```
@@ -213,7 +213,7 @@ getCompiler(): Compiler
 基本示例:
 
 ```javascript
-import { Server, Compiler } from "@farmfe/core";
+import { Server, Compiler } from "farm";
 const compiler = new Compiler(config);
 const server = new Server({
   compiler
@@ -228,7 +228,7 @@ const compiler = server.getCompiler();
 基本示例: 
   
 ```javascript
-import { Server } from "@farmfe/core";
+import { Server } from "farm";
 const server = new Server();
 await server.createDevServer(options);
 server.listen()
@@ -243,7 +243,7 @@ await server.close();
 基本示例
 
 ```javascript
-import { Compiler } from "@farmfe/core";
+import { Compiler } from "farm";
 const compiler = new Compiler(config);
 await compiler.compile();
 ```
@@ -265,7 +265,7 @@ compile(): promise<void>
 基本示例:
   
 ```javascript
-import { Compiler } from "@farmfe/core";
+import { Compiler } from "farm";
 const compiler = new Compiler(config);
 await compiler.compile();
 ```
@@ -283,7 +283,7 @@ compileSync(): void
 基本示例:
   
 ```javascript
-import { Compiler } from "@farmfe/core";
+import { Compiler } from "farm";
 const compiler = new Compiler(config);
 compiler.compileSync();
 ```
@@ -301,7 +301,7 @@ traceDependencies(): Array[string]
 基本示例:
   
 ```javascript
-import { Compiler } from "@farmfe/core";
+import { Compiler } from "farm";
 
 const config = {
   input: "./farm.config.js"
@@ -325,7 +325,7 @@ update(paths: Array<string>, sync: boolean, ignoreCompilingCheck: boolean): JsUp
 基本示例:
   
 ```javascript
-import { Compiler } from "@farmfe/core";
+import { Compiler } from "farm";
 const compiler = new Compiler(config);
 const result = await compiler.update(paths, true, true);
 ```
@@ -343,7 +343,7 @@ hasModule(path: string): boolean
 基本示例:
   
 ```javascript
-import { Compiler } from "@farmfe/core";
+import { Compiler } from "farm";
 const compiler = new Compiler(config);
 const result = compiler.hasModule(path);
 ```
@@ -361,7 +361,7 @@ getParentFiles(resolvedPath: string): Array<string>
 基本示例:
   
 ```javascript
-import { Compiler } from "@farmfe/core";
+import { Compiler } from "farm";
 const compiler = new Compiler(config);
 const result = compiler.getParentFiles(resolvedPath);
 ```
@@ -383,7 +383,7 @@ resources(): Array<Resource>
 基本示例:
   
 ```javascript
-import { Compiler } from "@farmfe/core";
+import { Compiler } from "farm";
 const compiler = new Compiler(config);
 await compiler.compile()
 const result = compiler.resources();
@@ -402,7 +402,7 @@ resource(path: string): Buffer | null
 基本示例:
   
 ```javascript
-import { Compiler } from "@farmfe/core";
+import { Compiler } from "farm";
 const compiler = new Compiler(config);
 await compiler.compile()
 const result = compiler.resource(path);
@@ -421,7 +421,7 @@ writeResourcesToDisk(): void
 基本示例:
   
 ```javascript
-import { Compiler } from "@farmfe/core";
+import { Compiler } from "farm";
 const compiler = new Compiler(config);
 await compiler.compile()
 compiler.writeResourcesToDisk();
@@ -440,7 +440,7 @@ removeOutputPathDir(): void
 基本示例:
   
 ```javascript
-import { Compiler } from "@farmfe/core";
+import { Compiler } from "farm";
 const compiler = new Compiler(config);
 await compiler.compile()
 compiler.removeOutputPathDir();
@@ -459,7 +459,7 @@ resolvedWatchPaths(): Array<string>
 基本示例:
   
 ```javascript
-import { Compiler } from "@farmfe/core";
+import { Compiler } from "farm";
 const compiler = new Compiler(config);
 await compiler.compile()
 const result = compiler.resolvedWatchPaths();
@@ -479,7 +479,7 @@ resolvedModulePaths(rootPath: string): Array<string>
 基本示例:
   
 ```javascript
-import { Compiler } from "@farmfe/core";
+import { Compiler } from "farm";
 const compiler = new Compiler(config);
 await compiler.compile()
 const result = compiler.resolvedModulePaths(rootPath);
@@ -498,7 +498,7 @@ onUpdateFinish(callback: (...args: any[]) => any): void
 基本示例:
   
 ```javascript
-import { Compiler } from "@farmfe/core";
+import { Compiler } from "farm";
 const compiler = new Compiler(config);
 compiler.onUpdateFinish(callback);
 ```
@@ -516,7 +516,7 @@ outputPath(): string
 基本示例:
   
 ```javascript
-import { Compiler } from "@farmfe/core";
+import { Compiler } from "farm";
 const compiler = new Compiler(config);
 const result = compiler.outputPath();
 ```
@@ -534,7 +534,7 @@ addExtraWatchFile(rootPath: string,. filePath: string[]): void
 基本示例:
   
 ```javascript
-import { Compiler } from "@farmfe/core";
+import { Compiler } from "farm";
 const compiler = new Compiler(config);
 compiler.addExtraWatchFile(rootPath, filePath);
 ```
@@ -562,7 +562,7 @@ modules(): Array<Module>
 基本示例:
   
 ```javascript
-import { Compiler } from "@farmfe/core";
+import { Compiler } from "farm";
 const compiler = new Compiler(config);
 const result = compiler.modules();
 ```

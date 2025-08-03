@@ -1,4 +1,4 @@
-import { defineConfig } from '@farmfe/core';
+import { defineConfig } from 'farm';
 import Pages from 'vite-plugin-pages';
 import react from '@farmfe/plugin-react'
 

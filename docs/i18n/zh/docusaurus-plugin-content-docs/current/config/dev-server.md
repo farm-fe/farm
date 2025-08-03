@@ -3,7 +3,7 @@
 配置 Farm Dev Server 的行为。示例：
 
 ```ts
-import type { UserConfig } from "@farmfe/core";
+import type { UserConfig } from "farm";
 
 function defineConfig(config: UserConfig) {
   return config;
@@ -55,7 +55,7 @@ DevServer 监听的端口。
 启用 HMR，开启后启用 HMR 能力，将会监听编译过程中涉及到的模块的变动，当模块变化时，自动触发重编译并将结果推送给 Farm Runtime 进行更新。也可以通过一个对象来配置 HMR，例如：
 
 ```ts
-import type { UserConfig } from '@farmfe/core';
+import type { UserConfig } from "farm";
 
 function defineConfig(config: UserConfig) {
   return config;
@@ -96,7 +96,7 @@ Web Socket 服务器监听的 Host
 配置服务器代理。基于 [http-proxy](https://github.com/http-party/node-http-proxy?tab=readme-ov-file#options) 实现，具体选项参考其文档，示例：
 
 ```ts
-import type { UserConfig } from "@farmfe/core";
+import type { UserConfig } from "farm";
 
 function defineConfig(config: UserConfig) {
   return config;
@@ -148,7 +148,7 @@ export function hmrPlugin(devServer: DevServer) {
     devServer.hmrEngine = new HmrEngine(
       devServer.getCompiler(),
       devServer,
-      logger
+      logger,
     );
   }
 }

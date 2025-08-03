@@ -23,7 +23,7 @@ On-demand components auto importing for React.
 ## Usage
 `@farmfe/plugin-react-components` is a Rust plugin, you only need to configure its package name in `plugins` field in `farm.config.ts`.
 ```ts {4}
-import { UserConfig } from '@farmfe/core';
+import { UserConfig } from "farm";
 
 const config: UserConfig = {
   plugins: ['@farmfe/plugin-react-components', { /** options here */}]
@@ -91,7 +91,7 @@ Supported Resolvers:
 ```ts
 // farm.config.js
 
-import { UserConfig } from '@farmfe/core';
+import { UserConfig } from "farm";
 
 const config: UserConfig = {
   plugins: ['@farmfe/plugin-react-components', {

@@ -1,4 +1,4 @@
-import { defineConfig } from '@farmfe/core';
+import { defineConfig } from 'farm';
 import NestPlugin from './index.plugin.js';
 
 export default defineConfig({

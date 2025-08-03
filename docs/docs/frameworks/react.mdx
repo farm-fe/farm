@@ -17,7 +17,7 @@ Select `React` template in `Select Framework`
 `Farm` requires the registration of the `@farmfe/plugin-react` plugin to support `React` projects.
 
 ```javascript title="farm.config.ts"
-import { defineConfig } from '@farmfe/core';
+import { defineConfig } from "farm";
 
 export default defineConfig({
   plugins: ['@farmfe/plugin-react'],
@@ -31,7 +31,7 @@ You can support `emotion` by registering the `@swc/plugin-emotion` plugin.
 
 
 ```javascript title="farm.config.ts"
-import { defineConfig } from '@farmfe/core';
+import { defineConfig } from "farm";
 
 export default defineConfig({
   compilation: {
@@ -82,7 +82,7 @@ export function Main() {
 `SVGR` is a tool for transforming svgs into React components. Farm offers a Js plugin to support SVGR.
 
 ```javascript title="farm.config.ts"
-import { defineConfig } from '@farmfe/core';
+import { defineConfig } from "farm";
 import farmJsPluginSvgr from '@farmfe/js-plugin-svgr';
 
 export default defineConfig(async (env) => {

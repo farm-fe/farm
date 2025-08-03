@@ -1,4 +1,5 @@
 # TS/TSX
+
 Farm support compiling `Js/Jsx/Ts/Tsx` out of box, and compile `Jsx/Tsx` to React by default.
 
 ```tsx title="./button.tsx"
@@ -24,7 +25,7 @@ You can configuring the SWC Parser through `compilation.script.parser`. Refer to
 For example, if you want to enable decorator, you can set `compilation.script.parser.esConfig.decorators`(or `tsConfig.decorators` if the module is TS):
 
 ```ts title="farm.config.ts"
-import { defineConfig } from '@farmfe/core';
+import { defineConfig } from "@farmfe/core";
 
 export default defineConfig({
   compilation: {
@@ -54,7 +55,7 @@ Farm set `compilation.script.target` automatically based on [`output.targetEnv`]
 This option can be used along with `compilation.presetEnv` to gracefully downgrade your project for old browsers. For example, you can set target to `ES5` and enable `presetEnv`, then your project will be fully downgrade to ES5.
 
 ```ts title="farm.config.ts"
-import { defineConfig } from '@farmfe/core';
+import { defineConfig } from "@farmfe/core";
 
 export default defineConfig({
   compilation: {
@@ -68,13 +69,12 @@ export default defineConfig({
 
 Refer to [Syntax Downgrade and Polyfill](/docs/advanced/polyfill) for more about `presetEnv` and `target`.
 
-
 ## Decorators
 
 Decorators is disabled by default, you can set `compilation.script.parser.tsConfig.decorators` to `true` to enable decorators.
 
 ```ts
-import { defineConfig } from "@farmfe/core";
+import { defineConfig } from "farm";
 
 export default defineConfig({
   compilation: {
@@ -89,10 +89,10 @@ export default defineConfig({
       decorators: {
         legacyDecorator: true,
         decoratorMetadata: false,
-        decoratorVersion: '2021-12',
+        decoratorVersion: "2021-12",
         includes: ["src/broken.ts"],
-        excludes: ['node_modules/'],
-      }
+        excludes: ["node_modules/"],
+      },
     },
   },
 });
@@ -101,13 +101,12 @@ export default defineConfig({
 > Farm provide a example for supporting decorators, see https://github.com/farm-fe/farm/tree/main/examples/decorators
 > By default, Farm won't transform decorators for modules under `node_modules`, refer to [compilation.script.decorators.excludes](/docs/config/compilation-options#scriptdecorators).
 
-
 ## Using SWC Plugins
 
 SWC Plugins can be used directly in Farm, for example, we use `swc-plugin-vue-jsx` to compiling vue jsx in Farm:
 
 ```ts title="farm.config.ts"
-import { defineConfig } from '@farmfe/core';
+import { defineConfig } from "@farmfe/core";
 import jsPluginVue from "@farmfe/js-plugin-vue";
 
 export default defineConfig({

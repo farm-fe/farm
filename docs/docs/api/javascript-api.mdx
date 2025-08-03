@@ -22,7 +22,7 @@ start(options: InlineConfig): Promise<void>
 Basic example:
 
 ```javascript
-import { start, logger } from "@farmfe/core";
+import { start, logger } from "farm";
 try {
   await start({
     compilation: {
@@ -60,7 +60,7 @@ import {
   createCompiler,
   createDevServer,
   resolveConfig
-} from '@farmfe/core';
+} from "farm";
 
 const resolveUserConfig = await resolveConfig({
       compilation: {
@@ -102,7 +102,7 @@ build(options: InlineConfig): Promise<void>
 Basic example:
 
 ```javascript
-import { build, logger } from "@farmfe/core";
+import { build, logger } from "farm";
 try {
   await build(options);
 } catch (error) {
@@ -121,7 +121,7 @@ watch(options: InlineConfig): Promise<void>
 Basic example:
 
 ```javascript
-import { watch, logger } from "@farmfe/core";
+import { watch, logger } from "farm";
 try {
   await watch(defaultOptions);
 } catch (error) {
@@ -140,7 +140,7 @@ preview(options: InlineConfig): Promise<void>
 Basic example:
 
 ```javascript
-import { preview, logger } from "@farmfe/core";
+import { preview, logger } from "farm";
 try {
   await preview(defaultOptions);
 } catch (error) {
@@ -163,7 +163,7 @@ clean(options: InlineConfig): Promise<void>
 Basic example:
 
 ```javascript
-import { clean, logger } from "@farmfe/core";
+import { clean, logger } from "farm";
 try {
   await clean(defaultOptions);
 } catch (error) {
@@ -203,7 +203,7 @@ createDevServer(options: DevServerOptions): Promise<void>
 Basic example:
 
 ```javascript
-import { Server } from "@farmfe/core";
+import { Server } from "farm";
 const server = new Server();
 await server.createDevServer(options);
 server.listen()
@@ -220,7 +220,7 @@ Basic example:
 
 ```javascript
 
-import { Server } from "@farmfe/core";
+import { Server } from "farm";
 const server = new Server();
 await server.createPreviewServer(options);
 ```
@@ -237,7 +237,7 @@ Basic example:
 
 ```javascript
 
-import { Server, Compiler } from "@farmfe/core";
+import { Server, Compiler } from "farm";
 const compiler = new Compiler(config);
 const server = new Server({
   compiler
@@ -251,7 +251,7 @@ Basic example:
 
 ```javascript
 
-import { Server } from "@farmfe/core";
+import { Server } from "farm";
 const server = new Server();
 await server.createDevServer(options);
 server.listen()
@@ -264,7 +264,7 @@ Basic example:
 
 ```javascript
 
-import { Compiler } from "@farmfe/core";
+import { Compiler } from "farm";
 const compiler = new Compiler(config);
 await compiler.compile();
 ```
@@ -285,7 +285,7 @@ Basic example:
 
 ```javascript
 
-import { Compiler } from "@farmfe/core";
+import { Compiler } from "farm";
 const compiler = new Compiler(config);
 await compiler.compile();
 ```
@@ -302,7 +302,7 @@ Basic example:
 
 ```javascript
 
-import { Compiler } from "@farmfe/core";
+import { Compiler } from "farm";
 const compiler = new Compiler(config);
 compiler.compileSync();
 ```
@@ -319,7 +319,7 @@ Basic example:
 
 ```javascript
 
-import { Compiler } from "@farmfe/core";
+import { Compiler } from "farm";
 
 const config = {
   input: "./farm.config.js"
@@ -346,7 +346,7 @@ Basic example:
 
 ```javascript
 
-import { Compiler } from "@farmfe/core";
+import { Compiler } from "farm";
 const compiler = new Compiler(config);
 const result = await compiler.update(paths, true, true);
 ```
@@ -363,7 +363,7 @@ Basic example:
 
 ```javascript
 
-import { Compiler } from "@farmfe/core";
+import { Compiler } from "farm";
 const compiler = new Compiler(config);
 const result = compiler.hasModule(path);
 ```
@@ -380,7 +380,7 @@ Basic example:
 
 ```javascript
 
-import { Compiler } from "@farmfe/core";
+import { Compiler } from "farm";
 const compiler = new Compiler(config);
 const result = compiler.getParentFiles(resolvedPath);
 ```
@@ -401,7 +401,7 @@ Basic example:
 
 ```javascript
 
-import { Compiler } from "@farmfe/core";
+import { Compiler } from "farm";
 const compiler = new Compiler(config);
 await compiler.compile()
 const result = compiler.resources();
@@ -419,7 +419,7 @@ Basic example:
 
 ```javascript
 
-import { Compiler } from "@farmfe/core";
+import { Compiler } from "farm";
 const compiler = new Compiler(config);
 await compiler.compile()
 const result = compiler.resource(path);
@@ -437,7 +437,7 @@ Basic example:
 
 ```javascript
 
-import { Compiler } from "@farmfe/core";
+import { Compiler } from "farm";
 const compiler = new Compiler(config);
 await compiler.compile()
 compiler.writeResourcesToDisk();
@@ -455,7 +455,7 @@ Basic example:
 
 ```javascript
 
-import { Compiler } from "@farmfe/core";
+import { Compiler } from "farm";
 const compiler = new Compiler(config);
 await compiler.compile()
 compiler.removeOutputPathDir();
@@ -473,7 +473,7 @@ Basic example:
 
 ```javascript
 
-import { Compiler } from "@farmfe/core";
+import { Compiler } from "farm";
 const compiler = new Compiler(config);
 await compiler.compile()
 const result = compiler.resolvedWatchPaths();
@@ -491,7 +491,7 @@ Basic example:
 
 ```javascript
 
-import { Compiler } from "@farmfe/core";
+import { Compiler } from "farm";
 const compiler = new Compiler(config);
 await compiler.compile()
 const result = compiler.resolvedModulePaths(rootPath);
@@ -509,7 +509,7 @@ Basic example:
 
 ```javascript
 
-import { Compiler } from "@farmfe/core";
+import { Compiler } from "farm";
 const compiler = new Compiler(config);
 compiler.onUpdateFinish(callback);
 ```
@@ -526,7 +526,7 @@ Basic example:
 
 ```javascript
 
-import { Compiler } from "@farmfe/core";
+import { Compiler } from "farm";
 const compiler = new Compiler(config);
 const result = compiler.outputPath();
 ```
@@ -543,7 +543,7 @@ Basic example:
 
 ```javascript
 
-import { Compiler } from "@farmfe/core";
+import { Compiler } from "farm";
 const compiler = new Compiler(config);
 compiler.addExtraWatchFile(rootPath, filePath);
 ```
@@ -570,7 +570,7 @@ Basic example:
 
 ```javascript
 
-import { Compiler } from "@farmfe/core";
+import { Compiler } from "farm";
 const compiler = new Compiler(config);
 const result = compiler.modules();
 ```

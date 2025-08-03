@@ -1,9 +1,9 @@
 import { readFileSync } from 'node:fs';
 import { isAbsolute, resolve } from 'node:path';
 
-import { Logger } from '@farmfe/core';
+import { Logger } from 'farm';
 
-import type { build, clean, preview, start } from '@farmfe/core';
+import type { build, clean, preview, start } from 'farm';
 import type {
   CleanOptions,
   CliBuildOptions,
@@ -30,7 +30,7 @@ export async function resolveCore(): Promise<{
   clean: typeof clean;
 }> {
   try {
-    return import('@farmfe/core');
+    return import('farm');
   } catch (err) {
     logger.error(
       `Cannot find @farmfe/core module, Did you successfully install: \n${err.stack},`,

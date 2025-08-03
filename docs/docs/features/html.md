@@ -9,7 +9,7 @@ sidebar_position: 1
 Farm support compile Html out of box, **and you should use Html as entry when build a web project**, for example:
 
 ```ts title="farm.config.ts"
-import type { defineConfig } from "@farmfe/core";
+import type { defineConfig } from "farm";
 
 export default defineConfig({
   input: {
@@ -48,7 +48,7 @@ The `script` and `link` can refer to any module types that farm support, for exa
 If you are building a Multi Page Application, just configure multiple html input, for example:
 
 ```ts title="farm.config.ts"
-import { defineConfig } from "@farmfe/core";
+import { defineConfig } from "farm";
 
 export default defineConfig({
   compilation: {
@@ -68,7 +68,7 @@ Farm will compile these pages in parallel, and all dependencies of these pages w
 Farm supports inherit html template by using `html.base` config, which is helpful when building a multi-page application with html shared.
 
 ```ts title="farm.config.ts"
-import { defineConfig } from "@farmfe/core";
+import { defineConfig } from "farm";
 
 export default defineConfig({
   // ...
@@ -90,7 +90,7 @@ export default defineConfig({
 Then add a `base.html`, placeholder `{{children}}` will be replaced by children's content.
 
 ```html title="./base.html"
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />

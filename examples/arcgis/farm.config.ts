@@ -1,4 +1,4 @@
-import { defineConfig } from "@farmfe/core";
+import { defineConfig } from "farm";
 import visualizer from "@farmfe/js-plugin-visualizer";
 
 export default defineConfig((env) => ({

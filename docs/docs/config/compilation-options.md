@@ -3,7 +3,7 @@
 By default, Farm reads the configuration from the `farm.config.ts|js|mjs` file in the project root directory, an example configuration file:
 
 ```ts title="farm.config.ts" {5-7}
-import { defineConfig } from "@farmfe/core";
+import { defineConfig } from "farm";
 export default defineConfig({
   root: process.cwd(), // compiled root directory
   // compile options
@@ -33,7 +33,7 @@ All compilation-related configuration is under the `compilation` field.
 The entry point for the project. Input files can be `html`, `ts/js/tsx/jsx`, `css` or other files supported by plugins.
 
 ```tsx
-import { defineConfig } from "@farmfe/core";
+import { defineConfig } from "farm";
 
 export default defineConfig({
   compilation: {
@@ -63,7 +63,16 @@ interface OutputOptions {
   // Static resource file name configuration
   assetsFilename?: string;
   // Target execution environment, polyfill and syntax downgrade will be enabled if the target env is not `node-next` or `browser-esnext`
-  targetEnv?: 'browser' | 'node' | 'node16' | 'node-legacy' | 'node-next' | 'browser-legacy' | 'browser-es2015' | 'browser-es2017' | 'browser-esnext';
+  targetEnv?:
+    | "browser"
+    | "node"
+    | "node16"
+    | "node-legacy"
+    | "node-next"
+    | "browser-legacy"
+    | "browser-es2015"
+    | "browser-es2017"
+    | "browser-esnext";
   // output module format
   format?: "cjs" | "esm";
 }
@@ -112,12 +121,14 @@ The resource url load prefix. For example URL `https://xxxx`, or a absolute path
 export default defineConfig({
   compilation: {
     output: {
-      publicPath: process.env.NODE_ENV === 'production' ? 'https://cdn.com' : '/'
-    }
-  }
+      publicPath:
+        process.env.NODE_ENV === "production" ? "https://cdn.com" : "/",
+    },
+  },
   // ...
 });
 ```
+
 When building for production, the injected resources url would be `https://cdn.com/index-s2f3.s14dqwa.js`. For example, in your output html, all `<script>` and `<link`> would be:
 
 ```html {4,8}
@@ -148,18 +159,19 @@ The filename configuration for static resource output, the placeholder is the sa
 Configure the execution environment of the product, which can be `"browser"` or `"node"`. Farm will automatically inject polyfill and downgrade syntax(for both script and css) for your specified targetEnv, the supported `targetEnv`s is below:
 
 Targeting `browser`:
-* **`browser-es2017`**: Compiling the project to browsers that support `async await` natively.
-* **`browser-es2015`**: Compiling the project to browsers that support `es6 features` natively.
-* **`browser-legacy`**: Compile the project to `ES5`, for example, `IE9`. Note that this may introduce lots of polyfills which makes production size larger. Make sure you really need to support legacy browsers like `IE9`.
-* **`browser-esnext`**: Compile the project to latest modern browsers, no polyfill will be injected.
-* **`browser`**: Alias of `browser-es2017`
+
+- **`browser-es2017`**: Compiling the project to browsers that support `async await` natively.
+- **`browser-es2015`**: Compiling the project to browsers that support `es6 features` natively.
+- **`browser-legacy`**: Compile the project to `ES5`, for example, `IE9`. Note that this may introduce lots of polyfills which makes production size larger. Make sure you really need to support legacy browsers like `IE9`.
+- **`browser-esnext`**: Compile the project to latest modern browsers, no polyfill will be injected.
+- **`browser`**: Alias of `browser-es2017`
 
 Targeting `node`:
-* **`node16`**: Compile the project to `Node 16`.
-* **`node-legacy`**: Compile the project to `Node 10`.
-* **`node-next`**: Compile the project to latest Node Version, no polyfill will be injected.
-* **`node`**: Alias of `node16`
 
+- **`node16`**: Compile the project to `Node 16`.
+- **`node-legacy`**: Compile the project to `Node 10`.
+- **`node-next`**: Compile the project to latest Node Version, no polyfill will be injected.
+- **`node`**: Alias of `node16`
 
 #### `output.format`
 
@@ -284,6 +296,7 @@ export default defineConfig({
 ```
 
 ### externalNodeBuiltins
+
 - **default**: `true`
 
 External `module.builtinModules` or not, by default, all builtin modules like `fs` will be external. You can also set `externalNodeBuiltins` as `array` to specify the modules to external manually:
@@ -301,7 +314,6 @@ export default defineConfig({
 - **default**: `development` for start, watch commands, `production` for build commands
 
 Configure the compilation mode. In order to optimize the performance during development, if there is no manual configuration of production optimization related options (minify, tree shake, etc.), the production environment optimization such as compression and tree shake will be disabled by default under `development`. In `production` mode enabled.
-
 
 ### runtime
 
@@ -346,7 +358,6 @@ Configure the namespace of Farm Runtime to ensure that the execution of differen
 
 By default, runtime files in html are written inline. If you want to reduce the size of the html file by popping it up as a separate file, then you can set this attribute to true.
 If set to true, the farm entry script will be emitted as a separate file.
-
 
 ### assets
 
@@ -396,7 +407,7 @@ An example of a configuration that supports JSX for a Vue project is as follows:
 import jsPluginVue from "@farmfe/js-plugin-vue";
 
 /**
- * @type {import('@farmfe/core').UserConfig}
+ * @type {import("farm").UserConfig}
  */
 export default {
   compilation: {
@@ -513,7 +524,7 @@ type BrowserTargetsRecord = Partial<
 Configure which target browsers or browser versions to enable, for example:
 
 ```ts
-import { defineConfig } from "@farmfe/core";
+import { defineConfig } from "farm";
 
 function defineConfig(config: UserConfig) {
   return config;
@@ -706,11 +717,14 @@ Whether to enable tree shake, set to false to close. See [Tree Shake](/docs/feat
 Whether to enable compression, the product will be compressed and confused after it is turned on. See [Minification](/docs/advanced/minification).
 
 ```ts
-type MinifyOptions = boolean | {
-  compress?: ToSnakeCaseProperties<TerserCompressOptions> | boolean;
-  mangle?: ToSnakeCaseProperties<TerserMangleOptions> | boolean;
-};
+type MinifyOptions =
+  | boolean
+  | {
+      compress?: ToSnakeCaseProperties<TerserCompressOptions> | boolean;
+      mangle?: ToSnakeCaseProperties<TerserMangleOptions> | boolean;
+    };
 ```
+
 The `compress` and `mangle` options is the same as [swc's minify config](https://swc.rs/docs/configuration/minification).
 
 #### `minify.compress`
@@ -827,7 +841,7 @@ File path or package name that may affect the compilation, for example, plugins.
 it can be a file path or a package name, for example:
 
 ```ts
-import { defineConfig } from "@farmfe/core";
+import { defineConfig } from "farm";
 import path from "node:path";
 
 export default defineConfig({
@@ -860,14 +874,17 @@ Envs used to invalidate cache, if the configured env changed, then all cache wil
 <!-- #### `presetEnv.assuptions` -->
 
 ### progress
+
 - **default**: `true`
 
 Enable progress bar or not.
 
 ### comments
+
 - **default**: `license`
 
 Preserve comments or not:
-* `true`: Preserve all comments
-* `false`: Remove all comments
-* `license`: Preserve all **LICENSE comments**, and remove the others
+
+- `true`: Preserve all comments
+- `false`: Remove all comments
+- `license`: Preserve all **LICENSE comments**, and remove the others

@@ -4,7 +4,7 @@ import {
   createFileWatcher,
   resolveConfig,
   start,
-} from "@farmfe/core";
+} from "farm";
 
 const resolvedUserConfig = await resolveConfig({
   compilation: {
@@ -13,23 +13,20 @@ const resolvedUserConfig = await resolveConfig({
     presetEnv: false,
     progress: false,
     output: {
-      publicPath: '/dist/'
+      publicPath: "/dist/",
     },
     input: {
-      index: './index.html'
-    }
+      index: "./index.html",
+    },
   },
   server: {
     port: 6532,
     hmr: {
-      path: '/__farm_hmr'
-    }
+      path: "/__farm_hmr",
+    },
   },
-  plugins: [
-    '@farmfe/plugin-react',
-    '@farmfe/plugin-sass'
-  ],
-  mode: 'development',
+  plugins: ["@farmfe/plugin-react", "@farmfe/plugin-sass"],
+  mode: "development",
 });
 
 const compiler = await createCompiler(resolvedUserConfig);
@@ -45,21 +42,18 @@ await start({
     presetEnv: false,
     progress: false,
     output: {
-      publicPath: '/dist/'
+      publicPath: "/dist/",
     },
     input: {
-      index: './index.html'
-    }
+      index: "./index.html",
+    },
   },
   server: {
     port: 6532,
     hmr: {
-      path: '/__farm_hmr'
-    }
+      path: "/__farm_hmr",
+    },
   },
-  plugins: [
-    '@farmfe/plugin-react',
-    '@farmfe/plugin-sass'
-  ],
-  mode: 'development',
+  plugins: ["@farmfe/plugin-react", "@farmfe/plugin-sass"],
+  mode: "development",
 });

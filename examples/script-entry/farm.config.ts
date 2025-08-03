@@ -1,8 +1,8 @@
-import { defineConfig } from '@farmfe/core';
+import { defineConfig } from "farm";
 import { builtinModules } from 'module';
 
 /**
- * @type {import('@farmfe/core').UserConfig}
+ * @type {import("farm").UserConfig}
  */
 export default defineConfig({
   compilation: {

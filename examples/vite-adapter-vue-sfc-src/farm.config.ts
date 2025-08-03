@@ -1,4 +1,4 @@
-import { defineConfig, JsPlugin } from '@farmfe/core';
+import { defineConfig, JsPlugin } from "farm";
 import vue from '@vitejs/plugin-vue';
 import path from 'path';
 import { type Plugin } from 'vite';

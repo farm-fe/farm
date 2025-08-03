@@ -1,4 +1,4 @@
-import { defineConfig } from "@farmfe/core";
+import { defineConfig } from "farm";
 // import viewer from "@farmfe/js-plugin-visualizer";
 import react from "@farmfe/plugin-react";
 import compression from "compression";
