@@ -196,7 +196,13 @@ where
   }
 
   // Render the template
-  template.render(&target_dir, pkg_manager, &project_name, &project_name)?;
+  template.render(
+    &target_dir,
+    pkg_manager,
+    &project_name,
+    &project_name,
+    &language,
+  )?;
 
   handle_brand_text("\n >  Initial Farm Project created successfully ✨ ✨ \n");
 

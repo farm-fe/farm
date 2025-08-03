@@ -17,8 +17,8 @@ impl Default for Lang {
 impl Display for Lang {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     match self {
-      Lang::Javascript => write!(f, "javascript"),
-      Lang::Typescript => write!(f, "typescript"),
+      Lang::Javascript => write!(f, "JavaScript"),
+      Lang::Typescript => write!(f, "TypeScript"),
     }
   }
 }
@@ -26,8 +26,8 @@ impl Display for Lang {
 impl Displayable for Lang {
   fn display_text(&self) -> &str {
     match self {
-      Lang::Javascript => "javascript",
-      Lang::Typescript => "typescript",
+      Lang::Javascript => "JavaScript",
+      Lang::Typescript => "TypeScript",
     }
   }
 }
@@ -40,8 +40,8 @@ impl FromStr for Lang {
   type Err = String;
   fn from_str(s: &str) -> Result<Self, Self::Err> {
     match s {
-      "javascript" => Ok(Lang::Javascript),
-      "typescript" => Ok(Lang::Typescript),
+      "JavaScript" => Ok(Lang::Javascript),
+      "TypeScript" => Ok(Lang::Typescript),
       _ => Err(format!(
         "{YELLOW}{s}{RESET} is not a valid language. Valid languages are [{}]",
         Lang::ALL

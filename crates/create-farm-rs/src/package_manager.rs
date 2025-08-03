@@ -64,7 +64,6 @@ impl PackageManager {
       PackageManager::Pnpm | PackageManager::Yarn | PackageManager::Npm | PackageManager::Bun => &[
         Template::Vanilla,
         Template::React,
-        Template::ReactTs,
         Template::Vue3,
         Template::Vue2,
         Template::Svelte,
