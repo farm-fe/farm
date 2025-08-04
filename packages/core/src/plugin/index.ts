@@ -5,8 +5,7 @@ import {
   CompilationMode,
   ConfigEnv,
   ResolvedUserConfig,
-  type UserConfig,
-  commandType
+  type UserConfig
 } from '../config/index.js';
 import { isArray, isObject } from '../utils/index.js';
 import merge from '../utils/merge.js';
