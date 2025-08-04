@@ -56,7 +56,7 @@
   ],
   "scripts": {
     "start": "tsc -w -p tsconfig.build.json",
-    "build:esm": "tsc -p tsconfig.build.json",
+    "build:esm": "tsc --build tsconfig.build.json",
     "start:debug": "tsc -w -p tsconfig.build.json",
     "build:cjs": "node scripts/build-cjs.mjs",
     "build": "npm run build:esm && npm run build:cjs",
