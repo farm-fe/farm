@@ -105,8 +105,8 @@ jobs:
           node-version: 18
       - name: Install Dependencies
         run: npm install -g pnpm@9.4.0 && pnpm i --frozen-lockfile
-      # - name: Build Core
-      #   run: pnpm --filter farm run build
+      - name: Build Core
+        run: pnpm --filter farm run build
       - name: Build Runtime
         run: pnpm --filter @farmfe/runtime run build
       - name: Type Check With Tsc
