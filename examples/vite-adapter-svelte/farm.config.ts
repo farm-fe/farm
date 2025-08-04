@@ -1,4 +1,4 @@
-import { defineConfig } from '@farmfe/core'
+import { defineConfig } from 'farm'
 import { svelte } from '@sveltejs/vite-plugin-svelte'
 
 // https://vitejs.dev/config/

@@ -9,8 +9,7 @@
     "react-dom": "18"
   },
   "devDependencies": {
-    "@farmfe/cli": "workspace:*",
-    "@farmfe/core": "workspace:*",
+    "farm": "workspace:*",
     "@farmfe/js-plugin-postcss": "workspace:^",
     "@farmfe/plugin-react": "workspace:*",
     "@farmfe/plugin-sass": "workspace:*",

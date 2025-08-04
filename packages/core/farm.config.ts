@@ -12,10 +12,10 @@ export default (<UserConfig>{
       entryFilename: 'index.cjs'
     },
     external: [
-      '@farmfe/core',
+      'farm',
       'chokidar',
       'farm-browserslist-generator',
-      '@farmfe/core-.*',
+      'farm-.*',
       './farm.*.node$',
       './farm.*.cjs',
       '@farmfe/plugin-.*'

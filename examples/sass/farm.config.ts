@@ -1,4 +1,4 @@
-import { defineConfig } from '@farmfe/core';
+import { defineConfig } from 'farm';
 import farmSassPlugin from '@farmfe/js-plugin-sass';
 import path from 'path';
 

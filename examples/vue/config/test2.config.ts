@@ -1,4 +1,4 @@
-import type { UserConfig } from '@farmfe/core';
+import type { UserConfig } from 'farm';
 import farmJsPluginVue from '@farmfe/js-plugin-vue';
 
 function defineConfig(config: UserConfig) {

@@ -1,4 +1,4 @@
-import { defineConfig } from "@farmfe/core";
+import { defineConfig } from "farm";
 import less from '@farmfe/js-plugin-less';
 import postcss from "@farmfe/js-plugin-postcss";
 

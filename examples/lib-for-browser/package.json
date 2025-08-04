@@ -13,8 +13,7 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "@farmfe/cli": "workspace:*",
-    "@farmfe/core": "workspace:*",
+    "farm": "workspace:*",
     "@farmfe/js-plugin-dts": "workspace:^",
     "@types/react": "18",
     "react": "^18.2.0"

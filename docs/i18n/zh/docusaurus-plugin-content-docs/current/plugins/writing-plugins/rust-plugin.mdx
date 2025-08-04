@@ -174,7 +174,7 @@ pnpm build
 然后你可以使用你构建好的插件，在 `frame.config.ts` 的 `plugins`添加你的插件：
 
 ```javascript
-import { defineConfig } from '@farmfe/core';
+import { defineConfig } from "farm";
 
 export default defineConfig({
   plugins: [
@@ -290,7 +290,7 @@ impl Plugin for FarmPluginExample {
 rust 插件选项可以在`farm.config.ts`中配置:
 
 ```javascript
-import { defineConfig } from '@farmfe/core';
+import { defineConfig } from "farm";
 
 export default defineConfig({
   plugins: [

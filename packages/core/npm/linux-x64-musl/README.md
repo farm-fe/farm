@@ -1,3 +1,3 @@
-# `@farmfe/core-linux-x64-musl`
+# `farm-linux-x64-musl`
 
-This is the **x86_64-unknown-linux-musl** binary for `@farmfe/core`
+This is the **x86_64-unknown-linux-musl** binary for `farm`

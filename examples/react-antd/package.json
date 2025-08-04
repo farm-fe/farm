@@ -15,8 +15,7 @@
     "react-router-dom": "^6.13.0"
   },
   "devDependencies": {
-    "@farmfe/cli": "workspace:*",
-    "@farmfe/core": "workspace:*",
+    "farm": "workspace:*",
     "@farmfe/js-plugin-sass": "workspace:*",
     "@farmfe/plugin-react": "workspace:*",
     "@farmfe/plugin-sass": "workspace:*",

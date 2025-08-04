@@ -36,24 +36,24 @@ pnpm add -D @farmfe/js-plugin-electron
 Configuring the plugin in `farm.config.ts`:
 
 ```ts
-import { defineConfig } from '@farmfe/core'
-import electron from '@farmfe/js-plugin-electron'
+import { defineConfig } from "farm";
+import electron from "@farmfe/js-plugin-electron";
 
-import { defineConfig } from '@farmfe/core'
-import electron from './farm-plugin-electron'
+import { defineConfig } from "farm";
+import electron from "./farm-plugin-electron";
 
 export default defineConfig({
   plugins: [
     electron({
       main: {
-        input: 'electron/main.ts',
+        input: "electron/main.ts",
       },
       preload: {
-        input: 'electron/preload.ts',
+        input: "electron/preload.ts",
       },
     }),
   ],
-})
+});
 ```
 
 ## Options
@@ -61,18 +61,18 @@ export default defineConfig({
 Type:
 
 ```ts
-import type { UserConfig } from '@farmfe/core'
+import type { UserConfig } from "farm";
 
 export interface BuildOptions {
   /**
    * Shortcut of `compilation.input`
    */
-  input: string | Record<string, string>
-  farm?: UserConfig
+  input: string | Record<string, string>;
+  farm?: UserConfig;
 }
 
 export interface ElectronPluginOptions {
-  main: BuildOptions
-  preload?: BuildOptions
+  main: BuildOptions;
+  preload?: BuildOptions;
 }
 ```

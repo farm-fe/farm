@@ -1,5 +1,5 @@
 // import { readFileSync } from 'node:fs';
-import type { JsPlugin } from '@farmfe/core';
+import type { JsPlugin } from 'farm';
 
 interface Options {
   /* Your options here */

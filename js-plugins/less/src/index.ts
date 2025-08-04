@@ -1,11 +1,6 @@
 import { existsSync } from 'fs';
 import path from 'path';
-import {
-  Compiler,
-  JsPlugin,
-  UserConfig,
-  getAdditionContext
-} from '@farmfe/core';
+import { Compiler, JsPlugin, UserConfig, getAdditionContext } from 'farm';
 import { createLessResolvePlugin } from './plugin-resolve.js';
 import {
   getLessImplementation,
@@ -65,7 +60,7 @@ export default function farmLessPlugin(
     // @ts-ignore it will be removed in the future
     configureServer() {
       console.warn(
-        '[@farmfe/js-plugin-less] Your plugin version is not compatible with the current farm version, please update @farmfe/core to the latest version, otherwise the plugin may not work properly.'
+        '[@farmfe/js-plugin-less] Your plugin version is not compatible with the current farm version, please update farm to the latest version, otherwise the plugin may not work properly.'
       );
     },
     configureCompiler(c) {

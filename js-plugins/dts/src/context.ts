@@ -1,7 +1,7 @@
 import os from 'node:os';
 import { relative, resolve } from 'node:path';
-import type { UserConfig } from '@farmfe/core';
 import chalk from 'chalk';
+import type { UserConfig } from 'farm';
 import glob from 'fast-glob';
 import { CompilerOptions, Project, SourceFile } from 'ts-morph';
 import { DefaultLogger } from './logger.js';

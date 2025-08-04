@@ -15,16 +15,13 @@ Farm支持 `Vite/Rollup` 插件开箱即用。所以`Vite/Rollup`或`unplugin`�
 使用 `farm.config.ts` 中的 `vitePlugins` 来配置 `Vite/Rollup` 插件。
 
 ```ts
-import { UserConfig } from '@farmfe/core';
-import vue from '@vitejs/plugin-vue';
-import vueJsx from '@vitejs/plugin-vue-jsx';
+import { UserConfig } from "farm";
+import vue from "@vitejs/plugin-vue";
+import vueJsx from "@vitejs/plugin-vue-jsx";
 
 const config: UserConfig = {
-  vitePlugins: [
-    vue(),
-    vueJsx(),
-  ]
-}
+  vitePlugins: [vue(), vueJsx()],
+};
 ```
 
 - **[`@vitejs/plugin-vue`](https://github.com/vitejs/vite-plugin-vue/blob/main/packages/plugin-vue/README.md)**: Vue 支持.
@@ -40,34 +37,37 @@ const config: UserConfig = {
 :::
 
 ```ts
-import Icons from 'unplugin-icons/vite';
-import IconsResolver from 'unplugin-icons/resolver';
-import Components from 'unplugin-vue-components/rollup';
-import { NaiveUiResolver } from 'unplugin-vue-components/resolvers';
-import { FileSystemIconLoader } from 'unplugin-icons/loaders';
+import Icons from "unplugin-icons/vite";
+import IconsResolver from "unplugin-icons/resolver";
+import Components from "unplugin-vue-components/rollup";
+import { NaiveUiResolver } from "unplugin-vue-components/resolvers";
+import { FileSystemIconLoader } from "unplugin-icons/loaders";
 
 const config: UserConfig = {
   vitePlugins: [
     Icons({
-      compiler: 'vue3',
+      compiler: "vue3",
       customCollections: {
-        [collectionName]: FileSystemIconLoader(localIconPath, svg =>
-          svg.replace(/^<svg\s/, '<svg width="1em" height="1em" ')
-        )
+        [collectionName]: FileSystemIconLoader(localIconPath, (svg) =>
+          svg.replace(/^<svg\s/, '<svg width="1em" height="1em" '),
+        ),
       },
       scale: 1,
-      defaultClass: 'inline-block'
+      defaultClass: "inline-block",
     }),
     Components({
-      dts: 'src/typings/components.d.ts',
-      types: [{ from: 'vue-router', names: ['RouterLink', 'RouterView'] }],
+      dts: "src/typings/components.d.ts",
+      types: [{ from: "vue-router", names: ["RouterLink", "RouterView"] }],
       resolvers: [
         NaiveUiResolver(),
-        IconsResolver({ customCollections: [collectionName], componentPrefix: VITE_ICON_PREFIX })
-      ]
-    })
-  ]
-}
+        IconsResolver({
+          customCollections: [collectionName],
+          componentPrefix: VITE_ICON_PREFIX,
+        }),
+      ],
+    }),
+  ],
+};
 ```
 
 Farm 支持所有 unplugin 插件:

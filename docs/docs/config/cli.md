@@ -9,7 +9,7 @@ pnpm create farm
 # choose your favorite package manager
 ```
 
-Other commands are provided by package `@farmfe/cli`:
+Other commands are provided by package `farm`:
 
 ## start
 Start a dev server, compile the Farm project in development mode and watch file changes.

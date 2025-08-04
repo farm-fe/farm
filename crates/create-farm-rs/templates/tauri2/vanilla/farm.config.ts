@@ -1,4 +1,4 @@
-import { defineConfig } from "@farmfe/core";
+import { defineConfig } from "farm";
 
 // @ts-ignore process is a nodejs global
 const host = process.env.TAURI_DEV_HOST;

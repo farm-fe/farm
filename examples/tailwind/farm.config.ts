@@ -1,4 +1,4 @@
-import type { UserConfig } from '@farmfe/core';
+import type { UserConfig } from 'farm';
 import farmPostcssPlugin from '@farmfe/js-plugin-postcss';
 
 function defineConfig(config: UserConfig) {

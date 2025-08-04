@@ -1,4 +1,4 @@
-import { JsPlugin } from '@farmfe/core';
+import { JsPlugin } from 'farm';
 
 export default function NestPlugin(): JsPlugin {
   return {

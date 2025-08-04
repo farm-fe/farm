@@ -6,7 +6,7 @@
     "moduleResolution": "node",
     "noEmit": true,
     "jsx": "react",
-    "types": ["@farmfe/core/client"]
+    "types": ["farm/client"]
   },
   "include": ["src", "farm.config.js", "farm.config-test.ts"]
 }

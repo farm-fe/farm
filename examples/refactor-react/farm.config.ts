@@ -1,4 +1,4 @@
-import { defineConfig, loadEnv } from "@farmfe/core";
+import { defineConfig, loadEnv } from "farm";
 import path from 'node:path'
 import react from "@farmfe/plugin-react";
 

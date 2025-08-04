@@ -1,4 +1,4 @@
-import { defineConfig } from '@farmfe/core';
+import { defineConfig } from "farm";
 import farmLessPlugin from '@farmfe/js-plugin-less';
 import path from 'path';
 

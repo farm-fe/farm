@@ -36,8 +36,8 @@ pnpm add -D @farmfe/js-plugin-svgr
 在 `farm.config.ts` 中配置插件：
 
 ```ts
-import { UserConfig } from '@farmfe/core';
-import svgr from '@farmfe/js-plugin-svgr'; //  import the plugin
+import { UserConfig } from "farm";
+import svgr from "@farmfe/js-plugin-svgr"; //  import the plugin
 
 function defineConfig(config: UserConfig) {
   return config;
@@ -46,18 +46,18 @@ function defineConfig(config: UserConfig) {
 export default defineFarmConfig({
   compilation: {
     input: {
-      index: './index.html'
+      index: "./index.html",
     },
     output: {
-      path: './build'
-    }
+      path: "./build",
+    },
   },
   plugins: [
     // 配置 svgr 插件
     svgr({
       // 指定插件参数
-    })
-  ]
+    }),
+  ],
 });
 ```
 

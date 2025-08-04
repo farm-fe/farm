@@ -1,21 +1,14 @@
 <template>
-  <Card
-    title="Module List"
-    class="overflow-hidden"
-    :bodyStyle="{ overflow: 'scroll', maxHeight: '500px', padding: '10px 0px' }"
-  >
+  <Card title="Module List" class="overflow-hidden"
+    :bodyStyle="{ overflow: 'scroll', maxHeight: '500px', padding: '10px 0px' }">
     <div class="flex flex-col">
-      <div
-        v-for="item in filterList"
-        :key="item.id"
+      <div v-for="item in filterList" :key="item.id"
         class="flex flex-col mb-2 pl-6 py-2 border-b border-gray-200 cursor-pointer"
-        :class="{ 'text-purple-500': current === item.id }"
-        @click="selectModule(item)"
-      >
+        :class="{ 'text-purple-500': current === item.id }" @click="selectModule(item)">
         <div class="text-sm font-bold">{{ item.id }}</div>
         <div class="mt-2 flex items-center">
           <Tag color="green">{{ formatSize(item.size) }}</Tag>
-          <Tag color="blue">{{item.moduleType}}</Tag>
+          <Tag color="blue">{{ item.moduleType }}</Tag>
           <Tag v-if="item.immutable" color="red">immutable</Tag>
         </div>
       </div>
@@ -29,7 +22,7 @@ import { Card, Tag, Button } from 'ant-design-vue';
 import { CodepenCircleFilled } from '@ant-design/icons-vue';
 import { formatSize } from '../utils/size';
 import { getModules } from '../api';
-import { Module } from '@farmfe/core/binding/binding';
+import { Module } from 'farm/binding/binding';
 
 export default defineComponent({
   name: 'ResourcePots',

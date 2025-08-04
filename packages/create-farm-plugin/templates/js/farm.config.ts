@@ -1,4 +1,4 @@
-import { defineConfig } from '@farmfe/core';
+import { defineConfig } from 'farm';
 import farmDtsPlugin from '@farmfe/js-plugin-dts';
 
 const format = (process.env.FARM_FORMAT as 'esm' | 'cjs') || 'esm';

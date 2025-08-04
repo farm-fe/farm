@@ -31,24 +31,24 @@ pnpm add -D postcss @farmfe/js-plugin-postcss
 Configuring the plugin in `farm.config.ts`:
 
 ```ts
-import { defineFarmConfig } from '@farmfe/core/dist/config';
-import postcss from '@farmfe/js-plugin-postcss'; //  import the plugin
+import { defineFarmConfig } from "farm/dist/config";
+import postcss from "@farmfe/js-plugin-postcss"; //  import the plugin
 
 export default defineFarmConfig({
   compilation: {
     input: {
-      index: './index.html'
+      index: "./index.html",
     },
     output: {
-      path: './build'
-    }
+      path: "./build",
+    },
   },
   plugins: [
     // use the less plugin.
     postcss({
       // custom options here
-    })
-  ]
+    }),
+  ],
 });
 ```
 
@@ -96,18 +96,18 @@ In actual development, this becomes useful, we don't need to add new files.
 export default defineFarmConfig({
   compilation: {
     input: {
-      index: './index.html'
+      index: "./index.html",
     },
     output: {
-      path: './build'
-    }
+      path: "./build",
+    },
   },
   plugins: [
     // use the less plugin.
     Less({
-      additionalData: `@hoverColor: #f10215;`
-    })
-  ]
+      additionalData: `@hoverColor: #f10215;`,
+    }),
+  ],
 });
 ```
 
@@ -117,21 +117,21 @@ export default defineFarmConfig({
 export default defineFarmConfig({
   compilation: {
     input: {
-      index: './index.html'
+      index: "./index.html",
     },
     output: {
-      path: './build'
-    }
+      path: "./build",
+    },
   },
   plugins: [
     farmLessPlugin({
       additionalData: (content: string, resolvePath: string) => {
-        if (path.basename(resolvePath, '.less') === 'index') {
+        if (path.basename(resolvePath, ".less") === "index") {
           return `@hoverColor: #f10215;` + content;
         }
-      }
-    })
-  ]
+      },
+    }),
+  ],
 });
 ```
 

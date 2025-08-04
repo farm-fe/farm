@@ -1,4 +1,4 @@
-import { defineConfig } from '@farmfe/core';
+import { defineConfig } from 'farm';
 import farmJsPluginVue from '@farmfe/js-plugin-vue';
 import sass from '@farmfe/js-plugin-sass';
 

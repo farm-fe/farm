@@ -1,4 +1,4 @@
-import { defineConfig } from '@farmfe/core';
+import { defineConfig } from 'farm';
 import vue from '@vitejs/plugin-vue';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import path from 'path';

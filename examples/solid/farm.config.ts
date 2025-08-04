@@ -1,4 +1,4 @@
-import { defineConfig } from '@farmfe/core';
+import { defineConfig } from 'farm';
 import farmJsPluginSolid from '@farmfe/js-plugin-solid';
 
 export default defineConfig({

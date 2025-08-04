@@ -1,5 +1,5 @@
 import path from 'path';
-import { JsPlugin, ResolvedUserConfig, checkPublicFile } from '@farmfe/core';
+import { JsPlugin, ResolvedUserConfig, checkPublicFile } from 'farm';
 import glob from 'fast-glob';
 import { ProcessOptions, Processor } from 'postcss';
 import postcssLoadConfig from 'postcss-load-config';

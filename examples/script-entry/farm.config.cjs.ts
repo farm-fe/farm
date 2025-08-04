@@ -1,4 +1,4 @@
-import type { UserConfig } from '@farmfe/core';
+import type { UserConfig } from 'farm';
 import dts from '@farmfe/js-plugin-dts';
 import path from 'node:path';
 

@@ -1,4 +1,4 @@
-import { defineConfig } from "@farmfe/core";
+import { defineConfig } from "farm";
 // import Vue from "unplugin-vue/farm";
 // import Vue from "unplugin-vue/vite";
 import Vue from "@vitejs/plugin-vue";

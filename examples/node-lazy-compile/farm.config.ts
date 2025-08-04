@@ -1,4 +1,4 @@
-import { defineConfig } from '@farmfe/core';
+import { defineConfig } from 'farm';
 
 const lazyPort = 20000 + (Math.random() * 10000 >> 0);
 

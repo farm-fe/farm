@@ -12,7 +12,7 @@ export function createFarmJsPluginBuildConfig(plugins, options = {}) {
         format: ["esm", "cjs"],
       },
       external: [
-        "@farmfe/core",
+        "farm",
         ...builtinModules.map((m) => `^${m}$`),
         ...builtinModules.map((m) => `^node:${m}$`),
         ...(options.external || []),

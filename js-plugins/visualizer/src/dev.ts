@@ -1,4 +1,4 @@
-import { DevServerMiddleware, JsPlugin, Server } from '@farmfe/core';
+import { DevServerMiddleware, JsPlugin, Server } from 'farm';
 import { Context, Middleware } from 'koa';
 import { createDateSourceMiddleware } from './node/dataSource';
 

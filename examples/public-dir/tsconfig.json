@@ -6,7 +6,7 @@
     "jsx": "react",
     "skipDefaultLibCheck": true,
     "skipLibCheck": true,
-    "types": ["@farmfe/core/client"]
+    "types": ["farm/client"]
   },
   "include": ["src"],
   "exclude": ["node_modules"]

@@ -1,6 +1,6 @@
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import type { Compiler, JsPlugin, UserConfig } from '@farmfe/core';
+import type { Compiler, JsPlugin, UserConfig } from 'farm';
 import { createDateSourceMiddleware } from './node/dataSource';
 import { createRecordViewerServer } from './node/server';
 import { RecordViewerOptions } from './types';

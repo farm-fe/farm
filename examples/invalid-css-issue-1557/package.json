@@ -17,8 +17,7 @@
     "react-highlight-words": "^0.20.0"
   },
   "devDependencies": {
-    "@farmfe/cli": "workspace:*",
-    "@farmfe/core": "workspace:*",
+    "farm": "workspace:*",
     "@farmfe/plugin-react": "2.0.0-nightly-20250411100807",
     "@types/react": "18",
     "@types/react-dom": "18",

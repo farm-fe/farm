@@ -45,14 +45,13 @@
   "keywords": [],
   "license": "MIT",
   "devDependencies": {
-    "@farmfe/cli": "workspace:*",
-    "@farmfe/core": "workspace:*",
+    "farm": "workspace:*",
     "@farmfe/js-plugin-dts": "workspace:*",
     "sass": "^1.74.1",
     "sass-embedded": "^1.74.1"
   },
   "peerDependencies": {
-    "@farmfe/core": "workspace:*",
+    "farm": "workspace:*",
     "sass": "^1.3.0",
     "sass-embedded": "*"
   }

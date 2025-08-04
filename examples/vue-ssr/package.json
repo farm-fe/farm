@@ -12,8 +12,7 @@
     "vue-router": "^4.2.1"
   },
   "devDependencies": {
-    "@farmfe/cli": "workspace:*",
-    "@farmfe/core": "workspace:*",
+    "farm": "workspace:*",
     "@vitejs/plugin-vue": "^4.4.0"
   },
   "scripts": {

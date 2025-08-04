@@ -15,7 +15,6 @@
 
 ## 使用方法
 
-
 通过你最喜欢的包管理器（npm、yarn、pnpm 等）安装`@farmfe/js-plugin-sass`：
 
 ```bash
@@ -25,16 +24,16 @@ npm i @farmfe/js-plugin-sass --save-dev # or pnpm/yarn add @farmfe/js-plugin-sas
 在`farm.config.ts`中配置插件：
 
 ```ts
-import { defineFarmConfig } from '@farmfe/core/dist/config';
-import Sass from '@farmfe/js-plugin-sass'; //  import the plugin
+import { defineFarmConfig } from "farm/dist/config";
+import Sass from "@farmfe/js-plugin-sass"; //  import the plugin
 
 export default defineFarmConfig({
   compilation: {
     input: {
-      index: './index.html',
+      index: "./index.html",
     },
     output: {
-      path: './build',
+      path: "./build",
     },
   },
   plugins: [
@@ -47,6 +46,7 @@ export default defineFarmConfig({
 ```
 
 ## 配置项
+
 ### implementation
 
 类型: `string | undefined`

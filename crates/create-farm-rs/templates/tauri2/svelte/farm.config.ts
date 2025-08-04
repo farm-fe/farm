@@ -1,4 +1,4 @@
-import { defineConfig } from "@farmfe/core";
+import { defineConfig } from "farm";
 import { sveltekit } from "@sveltejs/kit/vite";
 
 // @ts-ignore process is a nodejs global

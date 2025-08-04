@@ -1,3 +1,3 @@
-# `@farmfe/core-darwin-arm64`
+# `farm-darwin-arm64`
 
-This is the **aarch64-apple-darwin** binary for `@farmfe/core`
+This is the **aarch64-apple-darwin** binary for `farm`

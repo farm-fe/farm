@@ -1,10 +1,16 @@
 {
-  "name": "@farmfe/core-win32-ia32-msvc",
+  "name": "farm-win32-ia32-msvc",
   "version": "0.0.0",
-  "os": ["win32"],
-  "cpu": ["ia32"],
+  "os": [
+    "win32"
+  ],
+  "cpu": [
+    "ia32"
+  ],
   "main": "farm.win32-ia32-msvc.node",
-  "files": ["farm.win32-ia32-msvc.node"],
+  "files": [
+    "farm.win32-ia32-msvc.node"
+  ],
   "license": "MIT",
   "engines": {
     "node": ">= 10"

@@ -1,22 +1,21 @@
-import { VERSION as CORE_VERSION } from '@farmfe/core';
 import { cac } from 'cac';
 
+import { build, clean, preview, start } from './index.js';
+
 import {
-  VERSION,
   handleAsyncOperationErrors,
   resolveCliConfig,
-  resolveCommandOptions,
-  resolveCore
-} from './utils.js';
+  resolveCommandOptions
+} from './utils/cli.js';
 
-import { FarmCliOptions, UserConfig } from '@farmfe/core';
+import { FarmCliOptions, UserConfig } from './config/types.js';
 import type {
   CleanOptions,
   CliBuildOptions,
   CliPreviewOptions,
   CliServerOptions,
   GlobalCliOptions
-} from './types.js';
+} from './types/options.js';
 
 const cli = cac('farm');
 
@@ -101,8 +100,6 @@ cli
         };
       }
 
-      const { start } = await resolveCore();
-
       handleAsyncOperationErrors(
         start(defaultOptions),
         'Failed to start server'
@@ -144,7 +141,6 @@ cli
         treeShaking: options.treeShaking
       }
     };
-    const { build } = await resolveCore();
 
     handleAsyncOperationErrors(build(defaultOptions), 'error during build');
   });
@@ -185,8 +181,6 @@ cli
         };
       }
 
-      const { preview } = await resolveCore();
-
       handleAsyncOperationErrors(
         preview(defaultOptions),
         'Failed to start preview server'
@@ -203,7 +197,6 @@ cli
   .action(async (rootPath: string, options: CleanOptions) => {
     const { root } = resolveCliConfig(rootPath, options);
 
-    const { clean } = await resolveCore();
     handleAsyncOperationErrors(
       clean(root, options?.recursive),
       'Failed to clean cache'
@@ -211,9 +204,5 @@ cli
   });
 
 cli.help();
-
-cli.version(
-  `@farmfe/cli ${VERSION ?? 'unknown'} @farmfe/core ${CORE_VERSION ?? 'unknown'}`
-);
 
 cli.parse();

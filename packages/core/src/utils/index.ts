@@ -11,3 +11,4 @@ export * from './cacheDir.js';
 export * from './dynamic-resources.js';
 export * from './utils.js';
 export * from './fsUtils.js';
+export * from './cli.js';

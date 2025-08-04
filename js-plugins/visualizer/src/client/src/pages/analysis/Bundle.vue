@@ -3,20 +3,11 @@
     <Card class="w-full overflow-hidden" title="Bundle Analysis">
       <div class="flex gap-x-5 w-full max-h-[70vh]">
         <!-- Resource Pots List -->
-        <ResourcePots
-          class="w-1/3"
-          :pots="resourcePots"
-          @view="handleViewCode"
-        ></ResourcePots>
-        <Card
-          :title="
-            resourcePotStore.resource?.name
-              ? `Modules of ${resourcePotStore.resource?.name}`
-              : 'Modules'
-          "
-          class="w-2/3 flex flex-col"
-          :body-style="{ overflow: 'hidden' }"
-        >
+        <ResourcePots class="w-1/3" :pots="resourcePots" @view="handleViewCode"></ResourcePots>
+        <Card :title="resourcePotStore.resource?.name
+            ? `Modules of ${resourcePotStore.resource?.name}`
+            : 'Modules'
+          " class="w-2/3 flex flex-col" :body-style="{ overflow: 'hidden' }">
           <div class="text-sm text-gray-500 mb-1">
             Modules: {{ resourcePotStore.moduleIds?.length || 0 }}
           </div>
@@ -24,12 +15,7 @@
         </Card>
       </div>
     </Card>
-    <Drawer
-      v-model:open="isOpened"
-      :title="sourceFile?.name"
-      placement="right"
-      width="80vw"
-    >
+    <Drawer v-model:open="isOpened" :title="sourceFile?.name" placement="right" width="80vw">
       <CodeViewer :code="sourceFile.code" :language="'javascript'"></CodeViewer>
     </Drawer>
   </div>
@@ -39,7 +25,7 @@
 import { Card, Tree, Drawer } from 'ant-design-vue';
 import { computed, defineComponent, ref, reactive } from 'vue';
 import { getResourcesMap } from '../../api';
-import type { Resource } from '@farmfe/core';
+import type { Resource } from 'farm';
 import ResourcePots from '../../components/ResourcePots.vue';
 import { useResourcePotStore } from '../../stores/resourcePot';
 import { genFileTree } from '../../utils/file';

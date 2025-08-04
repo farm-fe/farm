@@ -1,47 +1,47 @@
-import farmDtsPlugin from '@farmfe/js-plugin-dts';
-import { builtinModules } from 'module';
-import path from 'path';
+import farmDtsPlugin from "@farmfe/js-plugin-dts";
+import { builtinModules } from "module";
+import path from "path";
 
 /**
- * @type {import('@farmfe/core').UserConfig}
+ * @type {import('farm').UserConfig}
  */
 export default {
   compilation: {
     input: {
-      index: 'src/index.ts'
+      index: "src/index.ts",
     },
     resolve: {
       alias: {
-        '@': path.resolve(process.cwd(), './src')
-      }
+        "@": path.resolve(process.cwd(), "./src"),
+      },
     },
     output: {
-      path: 'dist',
-      targetEnv: 'node'
+      path: "dist",
+      targetEnv: "node",
     },
     external: [
       ...builtinModules.map((m) => `^${m}$`),
-      ...builtinModules.map((m) => `^node:${m}$`)
+      ...builtinModules.map((m) => `^node:${m}$`),
     ],
     partialBundling: {
       enforceResources: [
         {
-          name: 'node.bundle.js',
-          test: ['.+']
-        }
-      ]
+          name: "node.bundle.js",
+          test: [".+"],
+        },
+      ],
     },
     minify: false,
     sourcemap: false,
     presetEnv: false,
-    treeShaking: true
+    treeShaking: true,
   },
   server: {
-    hmr: false
+    hmr: false,
   },
   plugins: [
     farmDtsPlugin({
-      outputDir: 'build'
-    })
-  ]
+      outputDir: "build",
+    }),
+  ],
 };

@@ -1,6 +1,6 @@
 import fs from 'fs';
-import type { JsPlugin } from '@farmfe/core';
 import type { ConfigPlugin, Config as SvgrOptions } from '@svgr/core';
+import type { JsPlugin } from 'farm';
 
 export interface FarmSvgrPluginOptions {
   svgrOptions?: SvgrOptions;

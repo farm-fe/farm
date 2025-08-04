@@ -1,4 +1,4 @@
-import { defineConfig } from '@farmfe/core';
+import { defineConfig } from 'farm';
 import electron from '@farmfe/js-plugin-electron';
 import solid from 'vite-plugin-solid';
 

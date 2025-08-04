@@ -1,8 +1,8 @@
 import path from 'node:path';
 import fs from 'fs/promises';
 
-import type { CompilationContext } from '@farmfe/core';
-import { rebaseUrls } from '@farmfe/core';
+import type { CompilationContext } from 'farm';
+import { rebaseUrls } from 'farm';
 import type Less from 'less';
 
 let CustomLessManager: any;
