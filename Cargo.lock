@@ -1887,6 +1887,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "farmfe_module_federation"
+version = "0.0.0"
+dependencies = [
+ "farmfe_core",
+ "farmfe_macro_plugin",
+ "farmfe_toolkit",
+]
+
+[[package]]
 name = "farmfe_node"
 version = "0.0.0"
 dependencies = [

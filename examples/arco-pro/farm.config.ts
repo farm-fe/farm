@@ -29,6 +29,7 @@ export default defineConfig((env) => {
     },
     plugins: [
       '@farmfe/plugin-react',
+      '@farmfe/plugin-module-federation',
       // '@farmfe/plugin-svgr',
       svgr(),
       farmJsPluginLess(),
