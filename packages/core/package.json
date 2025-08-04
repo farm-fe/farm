@@ -58,7 +58,7 @@
     "start": "tsc -w -p tsconfig.build.json",
     "start:debug": "tsc -w -p tsconfig.build.json",
     "build:cjs": "node scripts/build-cjs.mjs",
-    "build": "tsc -p tsconfig.build.json && npm run build:cjs",
+    "build": "tsc --build tsconfig.build.json && npm run build:cjs",
     "build:rs": "npm run build:rs:debug -- --release",
     "build:rs:publish": "npm run build:rs:debug -- --profile release-publish",
     "build:rs:debug": "napi build --platform -p farmfe_node --manifest-path ../../crates/node/Cargo.toml -o binding --js binding.cjs --dts binding.d.ts",

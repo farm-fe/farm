@@ -105,7 +105,7 @@ jobs:
           node-version: 18
       - name: Install Dependencies
         run: npm install -g pnpm@9.4.0 && pnpm i --frozen-lockfile
-      - name: Build CLI and Core
+      - name: Build Core
         run: pnpm --filter farm run build
       - name: Build Runtime
         run: pnpm --filter @farmfe/runtime run build
