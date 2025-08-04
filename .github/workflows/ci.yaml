@@ -106,11 +106,11 @@ jobs:
       - name: Install Dependencies
         run: npm install -g pnpm@9.4.0 && pnpm i --frozen-lockfile
       - name: Build CLI and Core
-        run: pnpm --filter @farmfe/cli run build
+        run: pnpm --filter farm run build
       - name: Build Runtime
         run: pnpm --filter @farmfe/runtime run build
       - name: Type Check With Tsc
-        run: pnpm run --filter "@farmfe/*" type-check
+        run: pnpm run --filter "@farmfe/*" --filter farm type-check
       - name: Changesets Check
         run: npx changeset status --since=origin/main
 
@@ -144,8 +144,8 @@ jobs:
           path: ./rust-plugins/replace-dirname/npm/${{ matrix.settings.abi }}
       - name: Install Dependencies
         run: npm install -g pnpm@9.4.0 && pnpm i --frozen-lockfile
-      - name: Build CLI and Core
-        run: pnpm --filter @farmfe/cli run build
+      - name: Build Core
+        run: pnpm --filter farm run build
       - uses: actions/download-artifact@v4
         id: download
         with:
