@@ -61,26 +61,34 @@ pub fn create_export_default_expr_item(expr: Box<Expr>, default_ident: Ident) ->
 
 pub(crate) fn create_var_namespace_item(
   module_id: &ModuleId,
-  module_ids: &HashSet<ModuleId>,
   export_ident_map: &HashMap<String, ModuleExportIdent>,
-  cyclic_idents: &HashSet<ModuleExportIdent>,
+  cyclic_idents: &HashSet<(Option<SwcId>, ModuleExportIdent)>,
   rename_handler: &TopLevelIdentsRenameHandler,
 ) -> ModuleItem {
   let mut key_ident_vec = export_ident_map.iter().collect::<Vec<_>>();
   key_ident_vec.sort_by_key(|a| a.0);
+
+  let cyclic_idents = cyclic_idents
+    .iter()
+    .map(|(_, module_export_ident)| module_export_ident)
+    .collect::<HashSet<_>>();
 
   let mut props: Vec<PropOrSpread> = key_ident_vec
     .into_iter()
     .filter(|(key, module_export_ident)| {
       *key != EXPORT_NAMESPACE
         && *key != AMBIGUOUS_EXPORT_ALL
-        && module_ids.contains(&module_export_ident.as_internal().module_id)
+        && matches!(
+          module_export_ident.as_internal().export_type,
+          ModuleExportIdentType::Declaration
+        )
     })
     .map(|(key, org_module_export_ident)| {
       let module_export_ident = org_module_export_ident.as_internal();
 
       let renamed_ident = rename_handler
         .get_renamed_ident(&module_export_ident.module_id, &module_export_ident.ident)
+        .or(rename_handler.get_renamed_ident(module_id, &key.as_str().into()))
         .unwrap_or(module_export_ident.ident.clone());
 
       let value_expr = Box::new(Expr::Ident(renamed_ident.into()));
@@ -130,7 +138,7 @@ pub(crate) fn create_var_namespace_item(
     decls: vec![VarDeclarator {
       span: DUMMY_SP,
       name: Pat::Ident(BindingIdent {
-        id: create_export_namespace_ident(module_id),
+        id: create_export_namespace_ident(module_id), // It's renamed when handling import/export * as
         type_ann: None,
       }),
       init: Some(Box::new(Expr::Object(ObjectLit {
@@ -175,7 +183,10 @@ pub fn create_ambiguous_export_all_ident(module_id: &ModuleId) -> Ident {
   )
 }
 
-fn create_import_stmt(specifiers: Vec<ImportSpecifier>, source_module_id: &ModuleId) -> ModuleItem {
+pub fn create_import_stmt(
+  specifiers: Vec<ImportSpecifier>,
+  source_module_id: &ModuleId,
+) -> ModuleItem {
   let import_decl = ImportDecl {
     span: DUMMY_SP,
     specifiers,
@@ -190,6 +201,24 @@ fn create_import_stmt(specifiers: Vec<ImportSpecifier>, source_module_id: &Modul
   };
 
   ModuleItem::ModuleDecl(ModuleDecl::Import(import_decl))
+}
+
+pub fn create_import_specifiers(idents: Vec<(SwcId, String)>) -> Vec<ImportSpecifier> {
+  idents
+    .into_iter()
+    .map(|(id, name)| {
+      ImportSpecifier::Named(ImportNamedSpecifier {
+        span: DUMMY_SP,
+        imported: if id.sym.as_str() != name.as_str() {
+          Some(ModuleExportName::Ident(name.into()))
+        } else {
+          None
+        },
+        local: id.into(),
+        is_type_only: false,
+      })
+    })
+    .collect()
 }
 
 /// insert `import * as external_all_farm_internal_ from 'module';`

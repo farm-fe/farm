@@ -20,7 +20,10 @@ pub fn is_reexport_all(
   reexport_ident_map
     .get(export)
     .map(|reexport_ident_type| {
-      matches!(reexport_ident_type, ModuleReExportIdentType::FromExportAll)
+      matches!(
+        reexport_ident_type,
+        ModuleReExportIdentType::FromExportAll(_)
+      )
     })
     .unwrap_or(false)
 }
@@ -32,8 +35,8 @@ pub fn get_reexport_named_local(
   reexport_ident_map
     .get(export)
     .map(|reexport_ident_type| match reexport_ident_type {
-      ModuleReExportIdentType::FromExportAll => None,
-      ModuleReExportIdentType::FromExportNamed { local } => Some(local.clone()),
+      ModuleReExportIdentType::FromExportAll(_) => None,
+      ModuleReExportIdentType::FromExportNamed { local, .. } => Some(local.to_string()),
     })
     .unwrap_or(None)
 }

@@ -154,6 +154,15 @@ impl Visit for AllDeclaredIdentsCollector {
     self.in_top_level = in_top_level;
   }
 
+  fn visit_constructor(&mut self, node: &farmfe_core::swc_ecma_ast::Constructor) {
+    let in_top_level = self.in_top_level;
+    self.in_top_level = false;
+
+    node.visit_children_with(self);
+
+    self.in_top_level = in_top_level;
+  }
+
   fn visit_decl(&mut self, n: &farmfe_core::swc_ecma_ast::Decl) {
     match n {
       farmfe_core::swc_ecma_ast::Decl::Class(class_decl) => {
@@ -174,6 +183,22 @@ impl Visit for AllDeclaredIdentsCollector {
         n.visit_children_with(self);
       }
     }
+  }
+
+  fn visit_fn_expr(&mut self, node: &farmfe_core::swc_ecma_ast::FnExpr) {
+    if let Some(ident) = &node.ident {
+      self.insert_ident(ident);
+    }
+
+    node.function.visit_with(self);
+  }
+
+  fn visit_class_expr(&mut self, node: &farmfe_core::swc_ecma_ast::ClassExpr) {
+    if let Some(ident) = &node.ident {
+      self.insert_ident(ident);
+    }
+
+    node.class.visit_with(self);
   }
 
   fn visit_pat(&mut self, pat: &Pat) {

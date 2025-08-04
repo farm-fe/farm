@@ -47,9 +47,6 @@ var __farm_ms__ = window['__farm_default_namespace__'].m;__farm_ms__.si([]);__fa
         farmRequire.o(exports, "Route1", function() {
             return Route1;
         });
-        farmRequire.o(exports, "registerEngine", function() {
-            return _f_dep1.registerEngine;
-        });
         var _f_module_helper = farmRequire("@farm-runtime/module-helper");
         var _f_dep = farmRequire.w(farmRequire("01800dfe"));
         var dep_cjs_ambiguous_export_all_farm_internal_ = _f_dep;
@@ -59,7 +56,7 @@ var __farm_ms__ = window['__farm_default_namespace__'].m;__farm_ms__.si([]);__fa
         farmRequire._e(exports, _f_dep2);
         var dep_cjs_registerAction = dep_cjs_ambiguous_export_all_farm_internal_.registerAction;
         function Route1Comp() {
-            return registerAction('Route1Comp');
+            return dep_cjs_registerAction('Route1Comp');
         }
         function Route1() {
             return Route1Comp() + _f_common1.Common1() + _f_dep1.registerEngine('route1');

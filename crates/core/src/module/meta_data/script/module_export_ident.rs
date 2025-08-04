@@ -2,6 +2,7 @@ use std::{hash::Hash, sync::Arc};
 
 use farmfe_macro_cache_item::cache_item;
 use parking_lot::{RwLock, RwLockReadGuard, RwLockWriteGuard};
+use swc_atoms::Atom;
 
 use crate::module::{meta_data::script::statement::SwcId, ModuleId};
 
@@ -150,9 +151,12 @@ pub enum ModuleReExportIdentType {
   /// ```js
   /// export * from './module';
   /// ```
-  FromExportAll,
+  FromExportAll(ModuleId),
   /// ```js
   /// export { foo as default } from './module'; // foo is local ident
   /// ```
-  FromExportNamed { local: String },
+  FromExportNamed {
+    local: Atom,
+    from_module_id: ModuleId,
+  },
 }

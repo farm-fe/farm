@@ -70,15 +70,18 @@ export interface ModuleSystem {
   b(): void
 }
 
-// It will be removed if __FARM_RUNTIME_TARGET_ENV__ is not browser when building runtime 
-if (__FARM_RUNTIME_TARGET_ENV__ === 'browser') {
-  // polyfill require when running in browser
-  const __global_this__: any = typeof window !== 'undefined' ? window : {};
+function setGlobalRequire(globalThis: any) {
+  // polyfill require when running in browser or node with Farm runtime
+  const __global_this__: any = typeof globalThis !== 'undefined' ? globalThis : {};
   __global_this__.require = __global_this__.require || farmRequire;
 }
+
+// It will be removed if __FARM_RUNTIME_TARGET_ENV__ is not browser when building runtime 
+if (__FARM_RUNTIME_TARGET_ENV__ === 'browser') {
+  setGlobalRequire(window);  
+}
 if (__FARM_RUNTIME_TARGET_ENV__ === 'node') {
-  const __global_this__: any = typeof global !== 'undefined' ? global : {};
-  __global_this__.require = __global_this__.require || farmRequire;
+  setGlobalRequire(global);
 }
 
 // all modules registered
