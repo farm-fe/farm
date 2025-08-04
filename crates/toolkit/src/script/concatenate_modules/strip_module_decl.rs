@@ -2,7 +2,8 @@ use farmfe_core::{
   module::{
     meta_data::script::{
       statement::{ExportSpecifierInfo, ImportSpecifierInfo, StatementId, SwcId},
-      CommentsMetaData, ModuleExportIdentType, ScriptModuleMetaData, AMBIGUOUS_EXPORT_ALL,
+      CommentsMetaData, ModuleExportIdentType, ModuleReExportIdentType, ScriptModuleMetaData,
+      AMBIGUOUS_EXPORT_ALL,
     },
     module_graph::ModuleGraph,
     Module, ModuleId,
@@ -10,12 +11,18 @@ use farmfe_core::{
   swc_ecma_ast::{
     ClassDecl, Decl, Expr, FnDecl, Ident, Module as SwcModule, ModuleDecl, ModuleItem, Stmt,
   },
-  HashSet,
+  HashMap, HashSet,
 };
 
-use crate::script::concatenate_modules::handle_external_modules::{
-  add_ambiguous_ident_decl, handle_ambiguous_export_all, HandleAmbiguousExportAllOptions,
-  HandleExternalModuleOptions,
+use crate::script::{
+  analyze_statement::analyze_statement_info,
+  concatenate_modules::{
+    handle_external_modules::{
+      add_ambiguous_ident_decl, handle_ambiguous_export_all, HandleAmbiguousExportAllOptions,
+      HandleExternalModuleOptions,
+    },
+    utils::{create_import_specifiers, create_import_stmt},
+  },
 };
 
 use super::{
@@ -133,10 +140,12 @@ fn strip_import_statements(params: &mut StripModuleDeclStatementParams) -> Vec<S
       let StripModuleDeclStatementParams {
         module_id,
         strip_context,
+        module_ids,
+        module_graph,
         ..
       } = params;
 
-      let source_module_script_meta = source_module.meta.as_script();
+      let mut external_module_idents_map = HashMap::default();
 
       for specifier in &import_info.specifiers {
         let (ident, export_str) = match specifier {
@@ -168,6 +177,27 @@ fn strip_import_statements(params: &mut StripModuleDeclStatementParams) -> Vec<S
 
         let mut rename_handler = strip_context.rename_handler.borrow_mut();
 
+        // if the ident is not renamed and the ident is defined in a external module
+        if rename_handler.get_renamed_ident(module_id, ident).is_none()
+          && let Some(source_module_id) = is_ident_reexported_from_external_module(
+            module_ids,
+            &source_module_id,
+            ident,
+            export_str,
+            module_graph,
+            &rename_handler,
+            &mut HashSet::default(),
+          )
+        {
+          external_module_idents_map
+            .entry(source_module_id)
+            .or_insert(vec![])
+            .push((ident.clone(), export_str.to_string()));
+          continue;
+        }
+
+        let source_module_script_meta = source_module.meta.as_script();
+
         // true means the ident is an unresolved ident
         if !rename_imported_ident(
           module_id,
@@ -175,13 +205,24 @@ fn strip_import_statements(params: &mut StripModuleDeclStatementParams) -> Vec<S
           export_str,
           source_module_script_meta,
           &mut rename_handler,
-        ) {
-          println!(
-            "[Farm warn] rename imported ident failed (module_id: {:?}), please make sure export {export_str} is defined in {:?}",
-            module_id.to_string(),
-            source_module_id.to_string()
-          );
-        };
+        ) && let Some(module_export_ident) =
+          source_module_script_meta.export_ident_map.get(export_str)
+        {
+          strip_context
+            .unresolved_imported_ident_map
+            .entry(module_id.clone())
+            .or_default()
+            .insert((Some(ident.clone()), module_export_ident.clone()));
+        }
+      }
+
+      // handle external module idents
+      for (source_module_id, idents) in external_module_idents_map {
+        statements_to_remove.extend(handle_external_module_idents(
+          params,
+          &source_module_id,
+          idents,
+        ));
       }
     }
   }
@@ -403,13 +444,14 @@ fn rename_imported_ident(
   // export { m as bar }
   // =>
   // Map<String, SwcId>(bar -> m#1)
-  let module_export_ident = source_module_script_meta.export_ident_map.get(export_str);
+  let module_export_ident =
+    if let Some(module_export_ident) = source_module_script_meta.export_ident_map.get(export_str) {
+      module_export_ident
+    } else {
+      return false;
+    };
 
-  if module_export_ident.is_none() {
-    return false;
-  }
-
-  let module_export_ident = module_export_ident.unwrap().as_internal();
+  let module_export_ident = module_export_ident.as_internal();
 
   // get the renamed ident if export_ident is renamed
   let final_ident = if matches!(
@@ -435,4 +477,121 @@ fn rename_imported_ident(
 
 pub fn is_module_external(source_module: &Module, module_ids: &HashSet<ModuleId>) -> bool {
   source_module.external || !module_ids.contains(&source_module.id)
+}
+
+/// Find the external source module that reexport the ident recursively
+pub fn is_ident_reexported_from_external_module(
+  module_ids: &HashSet<ModuleId>,
+  source_module_id: &ModuleId,
+  ident: &SwcId,
+  export_str: &str,
+  module_graph: &ModuleGraph,
+  rename_handler: &TopLevelIdentsRenameHandler,
+  visited: &mut HashSet<ModuleId>,
+) -> Option<ModuleId> {
+  if visited.contains(source_module_id) {
+    return None;
+  }
+
+  visited.insert(source_module_id.clone());
+
+  let source_module = module_graph
+    .module(source_module_id)
+    .unwrap_or_else(|| panic!("source module {source_module_id:?} not found"));
+
+  if source_module.external || !source_module.module_type.is_script() {
+    return None;
+  }
+
+  let source_module_script_meta = source_module.meta.as_script();
+
+  if !is_module_export_ident_declared(
+    rename_handler,
+    module_ids,
+    export_str,
+    source_module_script_meta,
+  ) {
+    return None;
+  }
+
+  // source module is external, we should preserve the import decl and rename the ident
+  if is_module_external(source_module, module_ids) {
+    return Some(source_module.id.clone());
+  }
+
+  if let Some(reexport) = source_module_script_meta.reexport_ident_map.get(export_str) {
+    let (new_source_module_id, new_export_str) = match reexport {
+      ModuleReExportIdentType::FromExportAll(from_module_id) => (from_module_id, export_str),
+      ModuleReExportIdentType::FromExportNamed {
+        local,
+        from_module_id,
+      } => (from_module_id, local.as_str()),
+    };
+
+    return is_ident_reexported_from_external_module(
+      module_ids,
+      new_source_module_id,
+      ident,
+      new_export_str,
+      module_graph,
+      rename_handler,
+      visited,
+    );
+  }
+
+  None
+}
+
+fn is_module_export_ident_declared(
+  rename_handler: &TopLevelIdentsRenameHandler,
+  module_ids: &HashSet<ModuleId>,
+  export_str: &str,
+  source_module_script_meta: &ScriptModuleMetaData,
+) -> bool {
+  // export { m as bar }
+  // =>
+  // Map<String, SwcId>(bar -> m#1)
+  let module_export_ident =
+    if let Some(module_export_ident) = source_module_script_meta.export_ident_map.get(export_str) {
+      module_export_ident
+    } else {
+      return false;
+    };
+
+  let module_export_ident = module_export_ident.as_internal();
+
+  // the ident should be declared in the source module and the module defined this ident should be external(not in module_ids)
+  matches!(
+    module_export_ident.export_type,
+    ModuleExportIdentType::Declaration
+  ) && !module_ids.contains(&module_export_ident.module_id)
+    && rename_handler
+      .get_renamed_ident(&module_export_ident.module_id, &module_export_ident.ident)
+      .is_none()
+}
+
+pub fn handle_external_module_idents(
+  params: &mut StripModuleDeclStatementParams,
+  source_module_id: &ModuleId,
+  idents: Vec<(SwcId, String)>,
+) -> Vec<StatementId> {
+  let mut statements_to_remove = vec![];
+
+  // add temporary import statement and reuse logic from handle_external_module
+  let temp_import_stmt = create_import_stmt(create_import_specifiers(idents), &source_module_id);
+
+  let temp_import_stmt_id = params.result.ast.body.len();
+  let temp_statement = analyze_statement_info(&temp_import_stmt_id, &temp_import_stmt);
+  // add temporary import statement to the ast
+  params.result.ast.body.push(temp_import_stmt);
+  // the temporary import should be removed after it's usage
+  statements_to_remove.push(temp_import_stmt_id);
+
+  handle_external_module(HandleExternalModuleOptions::from(
+    params,
+    &source_module_id,
+    &temp_statement.into(),
+  ));
+
+  statements_to_remove
 }

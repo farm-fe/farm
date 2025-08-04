@@ -1,0 +1,12 @@
+{
+  "partialBundling": {
+    "enforceResources": [
+      {
+        "name": "dep",
+        "test": [
+          "dep.js"
+        ]
+      }
+    ]
+  }
+}

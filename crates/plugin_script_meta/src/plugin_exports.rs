@@ -41,7 +41,7 @@ impl FarmPluginScriptMetaExports {
       .minify
       .as_obj()
       .map(|obj| obj.mangle_exports)
-      .unwrap_or(true);
+      .unwrap_or(config.minify.enabled());
 
     let tree_shake_enabled = config.tree_shaking.enabled();
 

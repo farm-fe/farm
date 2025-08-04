@@ -7,6 +7,7 @@ use farmfe_core::{
   module::{
     meta_data::script::{
       statement::SwcId, CommentsMetaData, CommentsMetaDataItem, ModuleExportIdent,
+      ModuleReExportIdentType, ScriptModuleMetaData,
     },
     module_graph::ModuleGraph,
     ModuleId, ModuleSystem,
@@ -28,7 +29,13 @@ use unique_idents::TopLevelIdentsRenameHandler;
 pub use unique_idents::EXPORT_NAMESPACE;
 use utils::{create_var_namespace_item, generate_export_decl_item};
 
-use crate::script::concatenate_modules::utils::should_add_namespace_ident;
+use crate::script::concatenate_modules::{
+  strip_module_decl::{
+    handle_external_module_idents, is_ident_reexported_from_external_module,
+    StripModuleDeclStatementParams,
+  },
+  utils::should_add_namespace_ident,
+};
 
 use super::{
   merge_swc_globals::{merge_comments, merge_sourcemap},
@@ -223,6 +230,8 @@ struct StripModuleContext {
   /// extra var decls that should be appended after import decls
   /// (source_module_id, export_str, var_decl)
   pub extra_var_decls: Vec<(SwcId, SwcId, ModuleItem)>,
+  /// `import { foo }` where foo can not be found
+  pub unresolved_imported_ident_map: HashMap<ModuleId, HashSet<(Option<SwcId>, ModuleExportIdent)>>,
 }
 
 fn strip_modules_asts(
@@ -236,7 +245,8 @@ fn strip_modules_asts(
   let mut sorted_modules: Vec<_> = module_ids.iter().cloned().collect();
   sorted_modules.sort_by_key(|module_id| module_graph.module(module_id).unwrap().execution_order);
   // cyclic_idents should be accessed by get method, we should collect cyclic idents from cyclic modules first
-  let mut cyclic_idents = HashMap::<ModuleId, HashSet<ModuleExportIdent>>::default();
+  let mut cyclic_idents =
+    HashMap::<ModuleId, HashSet<(Option<SwcId>, ModuleExportIdent)>>::default();
 
   // 2. Check if the module is esm, panic if it is not
   for module_id in &sorted_modules {
@@ -258,10 +268,16 @@ fn strip_modules_asts(
     }
 
     if module_graph.circle_record.is_in_circle(module_id) {
-      cyclic_idents
-        .entry(module_id.clone())
-        .or_default()
-        .extend(module.meta.as_script().export_ident_map.values().cloned());
+      cyclic_idents.entry(module_id.clone()).or_default().extend(
+        module
+          .meta
+          .as_script()
+          .export_ident_map
+          .values()
+          .cloned()
+          .into_iter()
+          .map(|e| (None, e)),
+      );
     }
   }
 
@@ -273,6 +289,7 @@ fn strip_modules_asts(
     preserved_import_decls: vec![],
     preserved_export_decls: vec![],
     extra_var_decls: vec![],
+    unresolved_imported_ident_map: HashMap::default(),
   };
 
   let mut strip_module_results = vec![];
@@ -317,36 +334,68 @@ fn strip_modules_asts(
     .rename_handler
     .replace(TopLevelIdentsRenameHandler::default());
 
+  let unresolved_imported_ident_map =
+    std::mem::take(&mut strip_context.unresolved_imported_ident_map);
+  cyclic_idents.extend(unresolved_imported_ident_map);
+
   // handle delayed rename
   for (module_id, module_export_idents) in &cyclic_idents {
-    for module_export_ident in module_export_idents {
+    for (ident, module_export_ident) in module_export_idents {
       let module_export_ident = module_export_ident.as_internal();
 
-      // only rename the ident defined in current module
-      if module_export_ident.module_id != *module_id {
+      // for export ident rename, should only rename the ident defined in current module
+      if ident.is_none() && *module_id != module_export_ident.module_id {
         continue;
       }
 
       let final_ident = rename_handler
         .get_renamed_ident(&module_export_ident.module_id, &module_export_ident.ident)
-        .unwrap_or(module_export_ident.ident.clone());
+        .unwrap_or_else(|| {
+            if ident.is_some() {
+              println!(
+                "[Farm warn] rename imported ident failed (module_id: {:?}), please make sure export {:?} is defined in {:?}",
+                module_id.to_string(),
+                module_export_ident.ident,
+                module_export_ident.module_id
+              );
+            }
+            module_export_ident.ident.clone()
+        });
 
-      if module_export_ident.ident != final_ident {
+      let ident_to_rename = ident.as_ref().unwrap_or(&module_export_ident.ident);
+
+      if *ident_to_rename != final_ident {
         // rename local to final_ident
-        rename_handler.rename_ident(
-          module_id.clone(),
-          module_export_ident.ident.clone(),
-          final_ident,
-        );
+        rename_handler.rename_ident(module_id.clone(), ident_to_rename.clone(), final_ident);
       }
     }
   }
 
   // append var namespace item
   for (module_id, result) in &mut strip_module_results {
+    // handle reexport ident map for namespace ident or entry module
+    if strip_context.should_add_namespace_ident.contains(module_id) || module_id == entry_module_id
+    {
+      let module = module_graph.module(module_id).unwrap();
+      let module_meta = module.meta.as_script();
+
+      handle_external_reexport_idents(
+        entry_module_id,
+        module_id,
+        module_ids,
+        module_meta,
+        result,
+        &mut strip_context,
+        module_graph,
+        &rename_handler,
+      );
+    }
+
     if strip_context.should_add_namespace_ident.contains(module_id) {
       let module = module_graph.module(module_id).unwrap();
-      let export_ident_map = &module.meta.as_script().export_ident_map;
+      let module_meta = module.meta.as_script();
+      let export_ident_map = &module_meta.export_ident_map;
+
       // append:
       // ```js
       // var module_namespace = {
@@ -357,7 +406,6 @@ fn strip_modules_asts(
       // if module is used by export * as or import * as or import('...')
       result.ast.body.push(create_var_namespace_item(
         &module_id,
-        module_ids,
         export_ident_map,
         cyclic_idents.get(&module_id).unwrap_or(&HashSet::default()),
         &rename_handler,
@@ -515,4 +563,71 @@ fn merge_stripped_module_asts(
 
   // 4. Return the concatenated result
   (concatenated_ast, external_modules)
+}
+
+/// For `export * from` and `export { foo } from`, the export ident may be declared in an external module(because of resources split instead of configure the module as external)
+/// For this case, we should find the boundary module of the external ident and treat it the same as external module
+fn handle_external_reexport_idents(
+  entry_module_id: &ModuleId,
+  module_id: &ModuleId,
+  module_ids: &HashSet<ModuleId>,
+  module_meta: &ScriptModuleMetaData,
+  result: &mut StripModuleDeclResult,
+  strip_context: &mut StripModuleContext,
+  module_graph: &ModuleGraph,
+  rename_handler: &TopLevelIdentsRenameHandler,
+) {
+  if module_meta.reexport_ident_map.is_empty() {
+    return;
+  }
+
+  let mut external_module_idents_map = HashMap::default();
+
+  for (export_str, reexport_type) in &module_meta.reexport_ident_map {
+    let source_module_id = match reexport_type {
+      ModuleReExportIdentType::FromExportAll(from_module_id) => from_module_id,
+      ModuleReExportIdentType::FromExportNamed { from_module_id, .. } => from_module_id,
+    };
+    let ident: SwcId = export_str.as_str().into();
+    if let Some(first_external_module_id) = is_ident_reexported_from_external_module(
+      module_ids,
+      source_module_id,
+      &ident,
+      export_str,
+      module_graph,
+      &rename_handler,
+      &mut HashSet::default(),
+    ) {
+      external_module_idents_map
+        .entry(first_external_module_id)
+        .or_insert(vec![])
+        .push((ident, export_str.to_string()));
+    }
+  }
+
+  let mut params = StripModuleDeclStatementParams {
+    module_id,
+    module_ids,
+    script_meta: module_meta,
+    result,
+    strip_context,
+    is_entry_module: module_id == entry_module_id,
+    module_graph,
+  };
+
+  let mut statements_to_remove = vec![];
+
+  // handle external module idents
+  for (source_module_id, idents) in external_module_idents_map {
+    statements_to_remove.extend(handle_external_module_idents(
+      &mut params,
+      &source_module_id,
+      idents,
+    ));
+  }
+
+  statements_to_remove.reverse();
+  statements_to_remove.into_iter().for_each(|stmt_id| {
+    result.ast.body.remove(stmt_id);
+  });
 }

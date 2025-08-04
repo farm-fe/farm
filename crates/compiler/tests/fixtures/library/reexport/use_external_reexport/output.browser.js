@@ -1,6 +1,13 @@
 //index.js:
  (function(){; // module_id: f20dbc0b
-// all modules registered
+function setGlobalRequire(globalThis) {
+    // polyfill require when running in browser or node with Farm runtime
+    const __global_this__ = typeof globalThis !== 'undefined' ? globalThis : {};
+    __global_this__.require = __global_this__.require || farmRequire$1;
+}
+{
+    setGlobalRequire(window);
+}// all modules registered
 const __farm_internal_modules__ = {};
 // module cache after module initialized
 const __farm_internal_cache__ = {};

@@ -192,12 +192,50 @@ impl StatementGraph {
   }
 
   pub fn preserved_side_effects_stmts(&self) -> Vec<StatementId> {
-    self
+    let mut preserved_statements = self
       .g
       .node_indices()
       .filter(|i| self.g[*i].side_effects.is_preserved())
       .map(|i| self.g[i].id)
-      .collect()
+      .collect::<Vec<_>>();
+
+    // preset statement that is marked as read global ident and write by other statement
+    let read_global_ident_stmts = self
+      .stmt_ids()
+      .into_iter()
+      .filter(|stmt_id| {
+        let stmt = self.stmt(stmt_id);
+
+        let is_read_global_ident =
+          if let StatementSideEffects::ReadTopLevelVar(read_top_level_var) = &stmt.side_effects {
+            read_top_level_var.iter().any(|i| i.is_global_var)
+          } else {
+            false
+          };
+
+        if is_read_global_ident {
+          // find the statement that write the ident defined in this statement
+          return self.stmt_ids().iter().any(|stmt_id| {
+            let parent_stmt = self.stmt(stmt_id);
+            if let StatementSideEffects::WriteTopLevelVar(write_top_level_var) =
+              &parent_stmt.side_effects
+            {
+              write_top_level_var
+                .iter()
+                .any(|i| stmt.defined_idents.contains(&i.ident))
+            } else {
+              false
+            }
+          });
+        }
+
+        false
+      })
+      .collect::<HashSet<_>>();
+
+    preserved_statements.extend(read_global_ident_stmts);
+
+    preserved_statements
   }
 
   pub fn contains_bare_import_stmt(&self) -> bool {

@@ -34,8 +34,7 @@ pub fn mangle_exports(
   let should_not_mangle_export =
     |module: &Module, export_ident: &ModuleExportIdent, export: &str| {
       let internal_ident = export_ident.as_internal();
-      export.len() <= 2
-        || module.is_entry
+      module.is_entry
         || module.is_dynamic_entry
         || exclude_exports.contains(&export)
         || can_not_be_mangled.contains(export_ident)

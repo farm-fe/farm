@@ -104,18 +104,7 @@ fn handle_external_import(options: HandleExternalModuleOptions) {
 
   // if the external module has been imported, we should reuse the import statement to avoid duplicate imports
   if !is_namespace_import
-    && let Some(preserved_item) = strip_context
-      .preserved_import_decls
-      .iter_mut()
-      .find(|item| {
-        !item.is_namespace_import
-          && item.source_module_id == *source_module_id
-          && item // make sure it's a import statement
-            .import_item
-            .as_module_decl()
-            .and_then(|m| m.as_import())
-            .is_some()
-      })
+    && let Some(preserved_item) = find_preserved_import_named_stmt(strip_context, source_module_id)
   {
     for sp in &statement.import_info.as_ref().unwrap().specifiers {
       if let Some((existing_ident, sp_ident)) =
@@ -277,7 +266,7 @@ fn is_namespace_import_stmt(statement: &Statement) -> bool {
   }
 }
 
-fn get_imported_external_ident(
+pub fn get_imported_external_ident(
   existing_import_decl: &ModuleItem,
   current_specifier: &ImportSpecifierInfo,
 ) -> Option<(SwcId, SwcId)> {
@@ -329,6 +318,7 @@ fn get_imported_external_ident(
   })
 }
 
+/// insert `import * as external_all_farm_internal_ from 'module';`
 fn find_or_create_preserved_import_item<'a>(
   strip_context: &'a mut StripModuleContext,
   module_id: &ModuleId,
@@ -834,7 +824,7 @@ pub fn add_ambiguous_ident_decl(
         )),
       );
 
-      // use use the outer decl item if there are multiple export * in the chain
+      // use the outer decl item if there are multiple export * in the chain
       if let Some(extra_var_decl) = extra_var_decl {
         extra_var_decl.2 = decl_item;
       } else {
@@ -851,4 +841,22 @@ pub fn add_ambiguous_ident_decl(
       }
     }
   }
+}
+
+pub fn find_preserved_import_named_stmt<'a>(
+  strip_context: &'a mut StripModuleContext,
+  source_module_id: &ModuleId,
+) -> Option<&'a mut PreservedImportDeclItem> {
+  strip_context
+    .preserved_import_decls
+    .iter_mut()
+    .find(|item| {
+      !item.is_namespace_import
+        && item.source_module_id == *source_module_id
+        && item // make sure it's a import statement
+          .import_item
+          .as_module_decl()
+          .and_then(|m| m.as_import())
+          .is_some()
+    })
 }
