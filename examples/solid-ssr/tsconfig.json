@@ -8,7 +8,14 @@
     "jsxImportSource": "solid-js",
     "jsx": "preserve",
     "declaration": true,
-    "declarationMap": true
+    "declarationMap": true,
+    "types": [
+      "@farmfe/core/client"
+    ]
   },
-  "include": ["./src", "farm.config.ts", "farm.config.server.ts"]
+  "include": [
+    "./src",
+    "farm.config.ts",
+    "farm.config.server.ts"
+  ]
 }
