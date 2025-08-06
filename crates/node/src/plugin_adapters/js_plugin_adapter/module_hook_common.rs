@@ -25,6 +25,7 @@ use farmfe_toolkit::{
   },
 };
 
+#[derive(Debug)]
 pub struct ModuleHookFilters {
   pub module_types: Vec<ModuleType>,
   pub resolved_paths: Vec<ConfigRegex>,

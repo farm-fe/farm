@@ -5,7 +5,6 @@
  */
 
 import { JsPlugin } from '../../type.js';
-import { normalizeFilterPath } from '../utils.js';
 
 const BEGIN = '__farm_vite_css_hack_start__=`';
 const END = '`;__farm_vite_css_hack_end__';
@@ -14,7 +13,7 @@ export function cssPluginWrap(options: {
   filtersUnion: Set<string>;
 }): JsPlugin {
   const { filtersUnion } = options;
-  const resolvedPaths = Array.from(filtersUnion).map(normalizeFilterPath);
+  const resolvedPaths = Array.from(filtersUnion);
 
   return {
     name: 'vite-adapter-css-plugin-wrap',
@@ -39,7 +38,7 @@ export function cssPluginUnwrap(options: {
   filtersUnion: Set<string>;
 }): JsPlugin {
   const { filtersUnion } = options;
-  const resolvedPaths = Array.from(filtersUnion).map(normalizeFilterPath);
+  const resolvedPaths = Array.from(filtersUnion);
 
   return {
     name: 'vite-adapter-css-plugin-unwrap',

@@ -34,12 +34,10 @@ initModuleSystem(__farm_internal_module_system__);
         });
         var _f_exports = farmRequire("52961596");
         farmRequire._(exports, "b", _f_exports, "a");
-        farmRequire._(exports, "c", _f_exports, "b");
-        farmRequire._(exports, "d", _f_exports, "c");
         var _f_exports1 = farmRequire("027594c8");
-        farmRequire._(exports, "e", _f_exports1, "b");
-        farmRequire._(exports, "f", _f_exports1, "c");
-        farmRequire._(exports, "g", _f_exports1, "a");
+        farmRequire._(exports, "c", _f_exports1, "b");
+        farmRequire._(exports, "d", _f_exports1, "c");
+        farmRequire._(exports, "e", _f_exports1, "a");
         function unstable_batchUpdate() {
             console.log('unstable_batchUpdate');
         }
@@ -49,20 +47,8 @@ initModuleSystem(__farm_internal_module_system__);
         farmRequire.o(exports, "a", function() {
             return Provider;
         });
-        farmRequire.o(exports, "b", function() {
-            return useDispatch;
-        });
-        farmRequire.o(exports, "c", function() {
-            return useStore;
-        });
         function Provider() {
             return 'Provider';
-        }
-        function useDispatch() {
-            return 'useDispatch';
-        }
-        function useStore() {
-            return 'useStore';
         }
     },
     "69233311": function(module, exports, farmRequire, farmDynamicRequire) {
@@ -77,7 +63,7 @@ initModuleSystem(__farm_internal_module_system__);
     "b5d64806": function(module, exports, farmRequire, farmDynamicRequire) {
         farmRequire._m(exports);
         var _f_dep = farmRequire("05ee5ec7");
-        console.log(_f_dep.b, _f_dep.a, _f_dep.g, _f_dep.e, _f_dep.f);
+        console.log(_f_dep.b, _f_dep.a, _f_dep.e, _f_dep.c, _f_dep.d);
     }
 });
 var __farm_ms__ = window['__farm_default_namespace__'].m;__farm_ms__.b();var __farm_entry__=__farm_ms__.r("b5d64806");

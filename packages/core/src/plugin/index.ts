@@ -1,12 +1,12 @@
 export * from './js/index.js';
 export * from './rust/index.js';
 
+import { isAbsolute, relative } from 'path';
 import {
   CompilationMode,
   ConfigEnv,
   ResolvedUserConfig,
-  type UserConfig,
-  commandType
+  type UserConfig
 } from '../config/index.js';
 import { isArray, isObject } from '../utils/index.js';
 import merge from '../utils/merge.js';
@@ -128,6 +128,20 @@ export async function resolveConfigResolvedHook(
   for (const p of plugins) {
     if (p.configResolved) {
       await p.configResolved(config);
+    }
+  }
+
+  // normalize js plugins filters to transform resolved paths from absolute to relative
+  for (const p of plugins) {
+    for (const key of Object.keys(p)) {
+      const hook: any = p[key as keyof JsPlugin];
+
+      if (hook?.filters?.resolvedPaths && config.root) {
+        // Convert absolute paths to relative paths
+        hook.filters.resolvedPaths = hook.filters.resolvedPaths.map(
+          (p: string) => (isAbsolute(p) ? relative(config.root, p) : p)
+        );
+      }
     }
   }
 }

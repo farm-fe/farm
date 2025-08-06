@@ -33,7 +33,7 @@ import {
 } from './js-plugin-schema.js';
 
 import { normalizeDevServerConfig } from '../../config/resolve-server.js';
-import { DEFAULT_FILTERS, normalizeFilterPath } from './utils.js';
+import { DEFAULT_FILTERS } from './utils.js';
 import { VitePluginAdapter } from './vite-plugin-adapter.js';
 
 export { VitePluginAdapter } from './vite-plugin-adapter.js';
@@ -216,31 +216,5 @@ export function convertPluginVite(plugin: JsPlugin): void {
     } else if (!plugin.augmentResourcePotHash.filters?.moduleIds) {
       plugin.augmentResourcePotHash.filters.moduleIds = [];
     }
-  }
-
-  if (plugin.resolve?.filters?.importers?.length) {
-    plugin.resolve.filters.importers =
-      plugin.resolve.filters.importers.map(normalizeFilterPath);
-  }
-
-  if (plugin.load?.filters?.resolvedPaths?.length) {
-    plugin.load.filters.resolvedPaths =
-      plugin.load.filters.resolvedPaths.map(normalizeFilterPath);
-  }
-
-  if (plugin.transform?.filters?.resolvedPaths?.length) {
-    plugin.transform.filters.resolvedPaths =
-      plugin.transform.filters.resolvedPaths.map(normalizeFilterPath);
-  }
-  if (plugin.augmentResourcePotHash?.filters?.moduleIds) {
-    plugin.augmentResourcePotHash.filters.moduleIds =
-      plugin.augmentResourcePotHash.filters.moduleIds.map(normalizeFilterPath);
-  }
-
-  if (plugin.processRenderedResourcePot?.filters?.moduleIds) {
-    plugin.processRenderedResourcePot.filters.moduleIds =
-      plugin.processRenderedResourcePot.filters.moduleIds.map(
-        normalizeFilterPath
-      );
   }
 }
