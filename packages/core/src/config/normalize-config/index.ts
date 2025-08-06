@@ -54,7 +54,7 @@ export async function normalizeUserCompilationConfig(
   const { compilation, root = process.cwd() } = resolvedUserConfig;
 
   // resolve root path
-  const resolvedRootPath = normalizePath(root);
+  const resolvedRootPath = root;
 
   resolvedUserConfig.root = resolvedRootPath;
 

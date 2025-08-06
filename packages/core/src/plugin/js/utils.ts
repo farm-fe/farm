@@ -434,18 +434,6 @@ export function transformFarmConfigToRollupNormalizedInputOptions(
   } satisfies NormalizedInputOptions;
 }
 
-export function normalizeFilterPath(path: string): string {
-  if (process.platform === 'win32') {
-    return compatibleWin32Path(path);
-  }
-
-  return path;
-}
-
-export function compatibleWin32Path(path: string): string {
-  return path.replaceAll('/', '\\\\');
-}
-
 export function wrapPluginUpdateModules(plugin: JsPlugin): JsPlugin {
   if (!plugin.updateModules?.executor) {
     return plugin;

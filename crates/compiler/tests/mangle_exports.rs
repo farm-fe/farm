@@ -33,7 +33,7 @@ fn test(file_path_buf: PathBuf, crate_path_buf: PathBuf) {
         )]);
         config.concatenate_modules = false;
         config.minify = Box::new(BoolOrObj::Bool(false));
-        config.tree_shaking = Box::new(BoolOrObj::Bool(false));
+        config.tree_shaking = Box::new(BoolOrObj::Bool(true));
         config.external = vec![ConfigRegex::new("(^node:.*)")];
         config.output.target_env = TargetEnv::Browser;
         config.resolve.auto_external_failed_resolve = true;

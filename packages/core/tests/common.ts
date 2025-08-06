@@ -7,6 +7,7 @@ import {
   resolveUserConfig
 } from '../src/config/index.js';
 import { Logger } from '../src/index.js';
+import { resolveConfigResolvedHook } from '../src/plugin/index.js';
 import { JsPlugin } from '../src/plugin/type.js';
 
 export async function getCompiler(
@@ -50,6 +51,7 @@ export async function getCompiler(
     resolvedUserConfig,
     'production'
   );
+  await resolveConfigResolvedHook(resolvedUserConfig, plugins);
 
   return new Compiler({
     compilation: compilationConfig,

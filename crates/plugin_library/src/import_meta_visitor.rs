@@ -1,6 +1,8 @@
 use farmfe_core::{
-  swc_common::{SyntaxContext, DUMMY_SP},
-  swc_ecma_ast::{Expr, ExprOrSpread, Lit, MemberExpr, MemberProp, NewExpr},
+  swc_common::{Mark, SyntaxContext, DUMMY_SP},
+  swc_ecma_ast::{
+    CallExpr, Callee, Expr, ExprOrSpread, Ident, IdentName, Lit, MemberExpr, MemberProp,
+  },
 };
 use farmfe_toolkit::swc_ecma_visit::{VisitMut, VisitMutWith};
 
@@ -9,10 +11,12 @@ use farmfe_toolkit::swc_ecma_visit::{VisitMut, VisitMutWith};
 /// ```ts
 /// import.meta.url
 /// // =>
-/// new URL(__filename, 'file:').href
+/// `require('node:url').pathToFileURL(__filename).href`
 /// ```
 ///
-struct ImportMetaURLVisitor {}
+struct ImportMetaURLVisitor {
+  unresolved_mark: Mark,
+}
 
 impl ImportMetaURLVisitor {
   fn replace_import_meta_url(&self, n: &mut Expr) -> bool {
@@ -20,25 +24,41 @@ impl ImportMetaURLVisitor {
       if let box Expr::MetaProp(_) = member.obj {
         if let MemberProp::Ident(ident) = &member.prop {
           if ident.sym == "url" {
+            // `require('node:url').pathToFileURL(__filename).href`
             *n = Expr::Member(MemberExpr {
               span: DUMMY_SP,
-              obj: Box::new(Expr::New(NewExpr {
+              obj: Box::new(Expr::Call(CallExpr {
                 span: DUMMY_SP,
-                callee: Box::new(Expr::Ident("URL".into())),
-                args: Some(vec![
-                  ExprOrSpread {
-                    spread: None,
-                    expr: Box::new(Expr::Ident("__filename".into())),
-                  },
-                  ExprOrSpread {
-                    spread: None,
-                    expr: Box::new(Expr::Lit(Lit::Str("file:".into()))),
-                  },
-                ]),
+                callee: Callee::Expr(Box::new(Expr::Member(MemberExpr {
+                  span: DUMMY_SP,
+                  obj: Box::new(Expr::Call(CallExpr {
+                    span: DUMMY_SP,
+                    ctxt: SyntaxContext::empty(),
+                    callee: Callee::Expr(Box::new(Expr::Ident(Ident::new(
+                      "require".into(),
+                      DUMMY_SP,
+                      SyntaxContext::empty().apply_mark(self.unresolved_mark),
+                    )))),
+                    args: vec![ExprOrSpread {
+                      spread: None,
+                      expr: Box::new(Expr::Lit(Lit::Str("node:url".into()))),
+                    }],
+                    type_args: None,
+                  })),
+                  prop: MemberProp::Ident(IdentName::new("pathToFileURL".into(), DUMMY_SP)),
+                }))),
+                args: vec![ExprOrSpread {
+                  spread: None,
+                  expr: Box::new(Expr::Ident(Ident::new(
+                    "__filename".into(),
+                    DUMMY_SP,
+                    SyntaxContext::empty().apply_mark(self.unresolved_mark),
+                  ))),
+                }],
                 type_args: None,
                 ctxt: SyntaxContext::empty(),
               })),
-              prop: MemberProp::Ident("href".into()),
+              prop: MemberProp::Ident(IdentName::new("href".into(), DUMMY_SP)),
             });
 
             return true;
@@ -59,6 +79,6 @@ impl VisitMut for ImportMetaURLVisitor {
   }
 }
 
-pub fn replace_import_meta_url(ast: &mut farmfe_core::swc_ecma_ast::Module) {
-  ast.visit_mut_with(&mut ImportMetaURLVisitor {});
+pub fn replace_import_meta_url(ast: &mut farmfe_core::swc_ecma_ast::Module, unresolved_mark: Mark) {
+  ast.visit_mut_with(&mut ImportMetaURLVisitor { unresolved_mark });
 }

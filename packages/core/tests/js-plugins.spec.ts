@@ -65,10 +65,10 @@ test('Js Plugin Execution - load', async () => {
       priority: 1000,
       load: {
         filters: {
-          resolvedPaths: [path.join(root, 'index.ts').replaceAll('\\', '\\\\')]
+          resolvedPaths: [path.join(root, 'index.ts')]
         },
         executor: async (param) => {
-          console.log(param);
+          console.log('load', param);
           return {
             content: 'export default 33;',
             moduleType: 'ts'
@@ -94,7 +94,7 @@ test('Js Plugin Execution - transform', async () => {
       priority: 1000,
       transform: {
         filters: {
-          resolvedPaths: [path.join(root, 'index.ts').replaceAll('\\', '\\\\')]
+          resolvedPaths: [path.join(root, 'index.ts')]
         },
         executor: async (param) => {
           console.log(param);
@@ -162,7 +162,7 @@ test('Js Plugin Execution - full', async () => {
       },
       load: {
         filters: {
-          resolvedPaths: [path.join(root, 'index.ts').replaceAll('\\', '\\\\')]
+          resolvedPaths: [path.join(root, 'index.ts')]
         },
         executor: async () => {
           return {
