@@ -203,7 +203,7 @@ export async function readConfigFile(
     // Change to vm.module of node or loaders as far as it is stable
     const userConfig = (await import(filePath as string)).default;
     try {
-      await fse.unlink(filePath);
+      await fse.unlink(path.join(outputPath, fileName));
       // remove parent dir if empty
       const isEmpty = (await fse.readdir(outputPath)).length === 0;
       if (isEmpty) {
@@ -225,7 +225,7 @@ export async function readConfigFile(
 
     return config;
   } finally {
-    await fse.unlink(getFilePath(outputPath, fileName)).catch(() => {});
+    await fse.unlink(path.join(outputPath, fileName)).catch(() => {});
   }
 }
 
