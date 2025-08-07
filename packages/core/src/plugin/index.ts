@@ -136,7 +136,14 @@ export async function resolveConfigResolvedHook(
     for (const key of Object.keys(p)) {
       const hook: any = p[key as keyof JsPlugin];
 
-      if (hook?.filters?.resolvedPaths && config.root) {
+      if (
+        typeof hook !== 'object' ||
+        !['load', 'transform', 'processModule', 'freezeModule'].includes(key)
+      ) {
+        continue;
+      }
+
+      if (hook?.filters?.resolvedPaths?.length && config.root) {
         // Convert absolute paths to relative paths
         hook.filters.resolvedPaths = hook.filters.resolvedPaths.map(
           (p: string) => (isAbsolute(p) ? relative(config.root, p) : p)
