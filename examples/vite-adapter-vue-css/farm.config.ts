@@ -39,7 +39,7 @@ export default defineConfig(({ mode }) => {
     vitePlugins: [
       () => ({
         vitePlugin: Vue(),
-        filters: ['\\.vue', '\\\\0.+']
+        filters: ['.+\\.vue', '^\\\\0.+']
       })
     ],
     plugins: []
