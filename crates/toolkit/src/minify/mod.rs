@@ -13,6 +13,9 @@ use swc_ecma_minifier::{optimize, option::ExtraOptions};
 use swc_ecma_transforms::{fixer::paren_remover, resolver};
 use swc_ecma_visit::VisitMutWith;
 use swc_html_minifier::minify_document;
+use swc_html_minifier::option::{
+  MinifyCssOption, MinifyJsOption, MinifyOptions as HtmlMinifyOptions,
+};
 
 pub mod comments;
 pub mod config;
@@ -53,5 +56,12 @@ pub fn minify_css_module(ast: &mut Stylesheet) {
 }
 
 pub fn minify_html_module(ast: &mut Document) {
-  minify_document(ast, &Default::default());
+  minify_document(
+    ast,
+    &HtmlMinifyOptions {
+      minify_css: MinifyCssOption::Bool(false),
+      minify_js: MinifyJsOption::Bool(false),
+      ..Default::default()
+    },
+  );
 }

@@ -33,7 +33,21 @@ impl ResourcePotMetaData {
     }
   }
 
+  pub fn as_js_mut(&mut self) -> &mut JsResourcePotMetaData {
+    match self {
+      Self::Js(info) => info,
+      _ => panic!("ResourcePotInfo is not ResourcePotInfo::Script"),
+    }
+  }
+
   pub fn as_css(&self) -> &CssResourcePotMetaData {
+    match self {
+      Self::Css(info) => info,
+      _ => panic!("ResourcePotInfo is not ResourcePotInfo::Css"),
+    }
+  }
+
+  pub fn as_css_mut(&mut self) -> &mut CssResourcePotMetaData {
     match self {
       Self::Css(info) => info,
       _ => panic!("ResourcePotInfo is not ResourcePotInfo::Css"),

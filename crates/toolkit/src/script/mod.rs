@@ -4,17 +4,16 @@ use swc_ecma_codegen::{
   text_writer::{JsWriter, WriteJs},
   Emitter, Node,
 };
-use swc_ecma_parser::{
-  lexer::{input::SourceFileInput, Lexer},
-  Parser, StringInput, Syntax,
-};
+use swc_ecma_parser::{lexer::Lexer, Parser, StringInput, Syntax};
 
 use farmfe_core::{
-  config::comments::CommentsConfig,
+  config::{comments::CommentsConfig, custom::get_config_output_ascii_only},
+  context::CompilationContext,
   error::{CompilationError, Result},
   module::ModuleId,
   swc_common::{
     comments::{Comments, SingleThreadedComments},
+    input::SourceFileInput,
     BytePos, LineCol, SourceMap,
   },
   swc_ecma_ast::{EsVersion, Module as SwcModule, Stmt},
@@ -37,6 +36,7 @@ pub mod module2cjs;
 pub mod module_system;
 pub mod swc_try_with;
 pub mod utils;
+pub mod wrap_farm_runtime;
 
 pub use module_system::*;
 pub use utils::*;
@@ -79,25 +79,17 @@ pub fn parse_module(
   })
   .map_err(|e| CompilationError::ParseError {
     resolved_path: module_id.to_string(),
-    msg: if let Some(s) = e.downcast_ref::<String>() {
-      eprintln!("recovered_errors: {}", s);
-      s.to_string()
-    } else if let Some(s) = e.downcast_ref::<&str>() {
-      eprintln!("recovered_errors: {}", s);
-      s.to_string()
-    } else {
-      "failed to handle with unknown panic message".to_string()
-    },
+    msg: e.to_pretty_string(),
   })
 }
 
 /// parse the content of a module to [SwcModule] ast.
-pub fn parse_stmt(id: &str, content: &str, top_level: bool) -> Result<Stmt> {
+pub fn parse_stmt(id: &str, content: &str) -> Result<Stmt> {
   let (_, source_file) = create_swc_source_map(&id.into(), Arc::new(content.to_string()));
   let input = SourceFileInput::from(&*source_file);
   let mut parser = Parser::new(Syntax::Es(Default::default()), input, None);
   let mut stmt = parser
-    .parse_stmt(top_level)
+    .parse_stmt()
     .map_err(|e| CompilationError::ParseError {
       resolved_path: id.to_string(),
       msg: format!("{e:?}"),
@@ -112,6 +104,18 @@ pub struct CodeGenCommentsConfig<'a> {
   pub config: &'a CommentsConfig,
 }
 
+pub fn create_codegen_config(context: &CompilationContext) -> swc_ecma_codegen::Config {
+  let minify = context.config.minify.enabled();
+  let target = context.config.script.target.clone();
+  let ascii_only = get_config_output_ascii_only(&context.config);
+
+  swc_ecma_codegen::Config::default()
+    .with_minify(minify)
+    .with_target(target)
+    .with_ascii_only(ascii_only)
+    .with_omit_last_semi(true)
+}
+
 /// ast codegen, return generated utf8 bytes. using [String::from_utf8] if you want to transform the bytes to string.
 /// Example:
 /// ```ignore
@@ -120,21 +124,20 @@ pub struct CodeGenCommentsConfig<'a> {
 /// ```
 pub fn codegen_module(
   ast: &SwcModule,
-  target: EsVersion,
   cm: Arc<SourceMap>,
   src_map: Option<&mut Vec<(BytePos, LineCol)>>,
-  minify: bool,
+  codegen_config: swc_ecma_codegen::Config,
   comments_cfg: Option<CodeGenCommentsConfig>,
 ) -> std::result::Result<Vec<u8>, std::io::Error> {
   let mut buf = vec![];
 
   {
     let wr = Box::new(JsWriter::new(cm.clone(), "\n", &mut buf, src_map)) as Box<dyn WriteJs>;
-    let cfg = swc_ecma_codegen::Config::default()
-      .with_minify(minify)
-      .with_target(target)
-      .with_omit_last_semi(true)
-      .with_ascii_only(false);
+    // let cfg = swc_ecma_codegen::Config::default()
+    //   .with_minify(minify)
+    //   .with_target(target)
+    //   .with_omit_last_semi(true)
+    //   .with_ascii_only(false);
 
     if let Some(comments_cfg) = &comments_cfg {
       minify_comments(comments_cfg.comments, comments_cfg.config);
@@ -143,7 +146,7 @@ pub fn codegen_module(
     let comments = comments_cfg.map(|c| c.comments as &dyn Comments);
 
     let mut emitter = Emitter {
-      cfg,
+      cfg: codegen_config,
       comments,
       cm,
       wr,

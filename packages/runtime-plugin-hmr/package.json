@@ -1,6 +1,6 @@
 {
   "name": "@farmfe/runtime-plugin-hmr",
-  "version": "4.0.0-nightly-20241029095811",
+  "version": "4.0.0-nightly-20250411100807",
   "description": "Runtime hmr plugin of Farm",
   "author": {
     "name": "bright wu",
@@ -27,7 +27,7 @@
     "type-check": "tsc -p tsconfig.json --noEmit"
   },
   "devDependencies": {
-    "@farmfe/runtime": "workspace:1.0.0-nightly-20241023020505",
+    "@farmfe/runtime": "workspace:1.0.0-nightly-20250411141103",
     "@types/prismjs": "^1.26.5"
   },
   "dependencies": {

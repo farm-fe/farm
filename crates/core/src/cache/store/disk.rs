@@ -6,17 +6,19 @@ use std::{
 use dashmap::DashMap;
 use farmfe_utils::hash::sha256;
 use rayon::iter::{IntoParallelIterator, ParallelBridge, ParallelIterator};
-use rkyv::Deserialize;
+use rkyv::{collections::swiss_table::ArchivedHashMap, Archive, Archived};
 
 use super::{
   constant::{CacheStoreFactory, CacheStoreTrait, FARM_CACHE_MANIFEST_FILE, FARM_CACHE_VERSION},
   error::CacheError,
   namespace::NamespaceStore,
-  CacheStoreKey,
+  ArchivedCacheStoreKey, CacheStoreKey,
 };
 use crate::{config::Mode, deserialize, serialize, HashMap, HashSet};
 
+// #[cache_item]
 type CombineCacheData = HashMap<CacheStoreKey, Vec<u8>>;
+type ArchivedCombineCacheData = ArchivedHashMap<CacheStoreKey, Vec<u8>>;
 // TODO make CacheStore a trait and implement DiskCacheStore or RemoteCacheStore or more.
 #[derive(Default)]
 pub struct CacheStore {
@@ -97,7 +99,11 @@ impl CacheStore {
     if let Ok(mut map) = self.lock.write() {
       let data = std::fs::read(cache_path.clone()).unwrap();
 
-      let value = deserialize!(&data, CombineCacheData);
+      let value = deserialize!(
+        &data,
+        CombineCacheData,
+        ArchivedHashMap<Archived<CacheStoreKey>, Archived<Vec<u8>>>
+      );
 
       for (key, value) in value {
         if self.data.contains_key(&key.key) {

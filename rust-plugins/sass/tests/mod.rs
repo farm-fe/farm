@@ -60,27 +60,41 @@ fn normalize_css(css: &str) -> String {
   css.replace("\r\n", "\n")
 }
 
+fn generate_runtime(crate_path: PathBuf) -> Box<RuntimeConfig> {
+  let swc_helpers_path = crate_path
+    .join("tests")
+    .join("fixtures")
+    .join("_internal")
+    .join("swc_helpers")
+    .to_string_lossy()
+    .to_string();
+  let runtime_path = crate_path
+    .join("tests")
+    .join("fixtures")
+    .join("_internal")
+    .join("runtime")
+    .to_string_lossy()
+    .to_string();
+
+  Box::new(RuntimeConfig {
+    path: runtime_path,
+    plugins: vec![],
+    swc_helpers_path,
+    ..Default::default()
+  })
+}
+
 #[test]
 fn test_with_compiler() {
   fixture!("tests/fixtures/**/*/index.scss", |file, crate_path| {
     println!("testing: {file:?}");
     let resolved_path = file.to_string_lossy().to_string();
     let cwd = file.parent().unwrap();
-    let runtime_path = crate_path
-      .join("tests")
-      .join("fixtures")
-      .join("_internal")
-      .join("runtime")
-      .join("index.js")
-      .to_string_lossy()
-      .to_string();
+
     let config = Config {
       input: HashMap::from_iter([("index".to_string(), resolved_path.clone())]),
       root: cwd.to_string_lossy().to_string(),
-      runtime: Box::new(RuntimeConfig {
-        path: runtime_path,
-        ..Default::default()
-      }),
+      runtime: generate_runtime(crate_path),
       mode: farmfe_core::config::Mode::Production,
       sourcemap: Box::new(SourcemapConfig::Bool(false)),
       preset_env: Box::new(PresetEnvConfig::Bool(false)),
@@ -88,7 +102,7 @@ fn test_with_compiler() {
       tree_shaking: Box::new(BoolOrObj::Bool(false)),
       progress: false,
       resolve: Box::new(ResolveConfig {
-        alias: vec![AliasItem::Complex {
+        alias: vec![AliasItem {
           find: StringOrRegex::String("@".to_string()),
           replacement: cwd.to_string_lossy().to_string(),
         }],

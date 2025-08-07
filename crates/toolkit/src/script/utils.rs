@@ -5,12 +5,16 @@ use swc_ecma_parser::{EsSyntax, Syntax, TsSyntax};
 use farmfe_core::{
   config::ScriptParserConfig,
   module::ModuleType,
-  swc_common::{comments::SingleThreadedComments, Mark, SourceMap},
-  swc_ecma_ast::{CallExpr, Callee, Expr, Ident, Import, Module as SwcModule},
+  swc_common::{comments::SingleThreadedComments, Mark, SourceMap, SyntaxContext, DUMMY_SP},
+  swc_ecma_ast::{
+    CallExpr, Callee, Decl, Expr, ExprOrSpread, Ident, Import, Module as SwcModule, ModuleItem,
+    Stmt, VarDecl,
+  },
 };
 
 pub use super::concatenate_modules::utils::{
-  create_export_default_ident, create_export_namespace_ident,
+  create_ambiguous_export_all_ident, create_export_default_ident, create_export_namespace_ident,
+  create_import_farm_register_helper_stmt,
 };
 
 pub struct ParseScriptModuleResult {
@@ -75,4 +79,43 @@ pub fn is_commonjs_require(
 /// Whether the call expr is dynamic import.
 pub fn is_dynamic_import(call_expr: &CallExpr) -> bool {
   matches!(&call_expr.callee, Callee::Import(Import { .. }))
+}
+
+pub fn create_top_level_ident(id: &str, top_level_mark: Mark) -> Ident {
+  Ident::new(
+    id.into(),
+    DUMMY_SP,
+    SyntaxContext::empty().apply_mark(top_level_mark),
+  )
+}
+
+pub fn create_var_declarator(id: Ident, expr: Expr) -> farmfe_core::swc_ecma_ast::VarDeclarator {
+  farmfe_core::swc_ecma_ast::VarDeclarator {
+    span: DUMMY_SP,
+    name: farmfe_core::swc_ecma_ast::Pat::Ident(farmfe_core::swc_ecma_ast::BindingIdent {
+      id,
+      type_ann: None,
+    }),
+    init: Some(Box::new(expr)),
+    definite: false,
+  }
+}
+pub fn create_var_decl_item(decls: Vec<farmfe_core::swc_ecma_ast::VarDeclarator>) -> ModuleItem {
+  ModuleItem::Stmt(Stmt::Decl(Decl::Var(Box::new(VarDecl {
+    span: DUMMY_SP,
+    kind: Default::default(),
+    decls,
+    ctxt: SyntaxContext::empty(),
+    declare: false,
+  }))))
+}
+
+pub fn create_call_expr(callee: Expr, args: Vec<ExprOrSpread>) -> Expr {
+  Expr::Call(CallExpr {
+    span: DUMMY_SP,
+    ctxt: SyntaxContext::empty(),
+    callee: Callee::Expr(Box::new(callee)),
+    args,
+    type_args: None,
+  })
 }

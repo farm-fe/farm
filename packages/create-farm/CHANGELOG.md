@@ -1,5 +1,36 @@
 # Changelog
 
+## 0.0.21
+
+### Patch Changes
+
+- e0a9e48f: lock vue template @vitejs/plugin-vue version
+
+## 0.0.20
+
+### Patch Changes
+
+- 7e4a256e: Add missing react-refresh dev dependency on TauriJS templates.
+
+## 0.0.19
+
+### Patch Changes
+
+- 3836f361: bump template versions
+- 3d8c89fb: Remove hardcored Tauri lib names in templates
+
+## 0.0.18
+
+### Patch Changes
+
+- d575d727: Add support for tauri v2
+
+## 0.0.17
+
+### Patch Changes
+
+- 5c656009: chore: delete react template warning code
+
 ## 0.0.16
 
 ### Patch Changes
@@ -65,12 +96,18 @@
 ### Patch Changes
 
 - 068c3ea5: support more frameworks electron, tauri, nestjs
-All notable changes to this project will be documented in this file.
+  All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [0.1.5](https://github.com/farm-fe/farm/compare/create_farm_node-v0.1.4...create_farm_node-v0.1.5) - 2025-01-09
+
+### Other
+
+- Version Packages ([#2045](https://github.com/farm-fe/farm/pull/2045))
 
 ## [0.1.4](https://github.com/farm-fe/farm/compare/create_farm_node-v0.1.3...create_farm_node-v0.1.4) - 2024-12-09
 

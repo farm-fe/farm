@@ -185,14 +185,22 @@ impl RustPlugins {
               .clone();
             let plugin_name = plugin_module_bytes.get_module_name().to_string();
 
-            let mut plugin_transform_executor = swc_plugin_runner::create_plugin_transform_executor(
-              &self.source_map,
-              &self.unresolved_mark,
-              &self.metadata_context,
-              plugin_module_bytes,
-              Some(p.options.clone()),
-              None,
-            );
+
+
+            let runtime = swc_plugin_runner::wasix_runtime::build_wasi_runtime(
+              None
+                        );
+
+                        let mut plugin_transform_executor =
+                            swc_plugin_runner::create_plugin_transform_executor(
+                                &self.source_map,
+                                &self.unresolved_mark,
+                                &self.metadata_context,
+                                None,
+                                plugin_module_bytes,
+                                 Some(p.options.clone()),
+                                runtime,
+                            );
 
             serialized = plugin_transform_executor
               .transform(&serialized, Some(should_enable_comments_proxy))

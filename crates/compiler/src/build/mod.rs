@@ -132,7 +132,6 @@ impl Compiler {
   pub(crate) fn build(&self) -> Result<()> {
     self.context.plugin_driver.build_start(&self.context)?;
 
-    // TODO: support context.add_dynamic_input for plugins to call Compiler::build_module_graph_threaded through thread channel
     let (err_sender, err_receiver) = Self::create_thread_channel();
     for (order, (name, source)) in self.context.config.input.iter().enumerate() {
       let params = BuildModuleGraphThreadedParams {
@@ -221,6 +220,10 @@ impl Compiler {
     context: &Arc<CompilationContext>,
   ) -> Result<ResolveModuleIdResult> {
     let get_module_id = |resolve_result: &PluginResolveHookResult| {
+      if resolve_result.external {
+        return ModuleId::from(resolve_result.resolved_path.as_str());
+      }
+
       // make query part of module id
       ModuleId::new(
         &resolve_result.resolved_path,
@@ -391,7 +394,7 @@ impl Compiler {
     }
 
     // ================ Process Module End ===============
-    module.size = parse_param.content.as_bytes().len();
+    module.size = parse_param.content.len();
     module.module_type = parse_param.module_type;
     module.side_effects = resolve_result.side_effects;
     module.external = false;

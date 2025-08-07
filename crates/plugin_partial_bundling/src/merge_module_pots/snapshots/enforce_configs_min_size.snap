@@ -2,19 +2,19 @@
 source: crates/plugin_partial_bundling/src/merge_module_pots/test_enforce_configs.rs
 input_file: crates/testing_helpers/src/lib.rs
 ---
-name: B_2f5d
-id: B_2f5d
-immutable: false
+name: B
+id: B_23282ac10f2eedd4a10f505192bdd323
+immutable: true
 resource_pot_type: Js
 entry: None
 module_groups: []
 modules: [
     ModuleId {
-        relative_path: "B",
+        relative_path: "D",
         query_string: "",
     },
     ModuleId {
-        relative_path: "E",
+        relative_path: "H",
         query_string: "",
     },
 ]

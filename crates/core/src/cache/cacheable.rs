@@ -1,6 +1,8 @@
 use downcast_rs::{impl_downcast, Downcast};
 use rkyv::Deserialize;
 
+use crate::{deserialize, serialize};
+
 pub trait Cacheable: std::any::Any + Send + Sync + Downcast {
   /// Serialize the data to bytes
   fn serialize_bytes(&self) -> Result<Vec<u8>, String>;
@@ -17,17 +19,14 @@ macro_rules! impl_primitive_cacheable {
         $(
             impl Cacheable for $t {
                 fn serialize_bytes(&self) -> Result<Vec<u8>, String> {
-                    let bytes = rkyv::to_bytes::<$t, 256>(&self).unwrap();
-                    Ok(bytes.into_vec())
+                    Ok(serialize!(self))
                 }
 
                 fn deserialize_bytes(bytes: Vec<u8>) -> Result<Box<dyn Cacheable>, String>
                 where
                     Self: Sized,
                 {
-                    let archived = unsafe { rkyv::archived_root::<$t>(&bytes[..]) };
-                    let deserialized: $t = archived.deserialize(&mut rkyv::Infallible).unwrap();
-                    Ok(Box::new(deserialized))
+                    Ok(Box::new(deserialize!(&bytes, $t, rkyv::Archived<$t>)))
                 }
             }
         )*

@@ -194,6 +194,12 @@ async function resolveDependency(
     if (existsSync(relPath) && statSync(relPath).isFile()) {
       return relPath;
     }
+
+    const cwd = process.cwd();
+    const projectPath = path.resolve(cwd, url);
+    if (existsSync(projectPath) && statSync(projectPath).isFile()) {
+      return projectPath;
+    }
   }
 
   const try_prefix_list = ['_'];
@@ -324,7 +330,7 @@ async function compileScss(param: CompileCssParams) {
 
     if (file === transformParam.resolvedPath) continue;
 
-    ctx.addWatchFile(transformParam.resolvedPath, file);
+    ctx.addWatchFile(transformParam.moduleId, file);
   }
 
   return { css, sourceMap };
@@ -382,7 +388,7 @@ async function compileScssLegacy(param: CompileCssParams) {
 
         result.stats.includedFiles.forEach((file) => {
           if (file === transformParam.resolvedPath) return;
-          ctx.addWatchFile(transformParam.resolvedPath, file);
+          ctx.addWatchFile(transformParam.moduleId, file);
         });
 
         resolve({

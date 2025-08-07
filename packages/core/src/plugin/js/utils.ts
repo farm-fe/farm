@@ -6,8 +6,7 @@ import type {
   NormalizedOutputOptions,
   OutputAsset,
   OutputChunk,
-  RenderedChunk,
-  RenderedModule
+  RenderedChunk
 } from 'rollup';
 
 import { VITE_ADAPTER_VIRTUAL_MODULE } from './constants.js';
@@ -16,12 +15,7 @@ import { readFile } from 'node:fs/promises';
 import { ModuleContext, ModuleNode } from '../../config/types.js';
 import type { Config } from '../../types/binding.js';
 import { normalizePath } from '../../utils/share.js';
-import type {
-  JsPlugin,
-  JsResourcePotInfoData,
-  Resource,
-  ResourcePotInfo
-} from '../type.js';
+import type { JsPlugin, JsResourcePot, Resource } from '../type.js';
 import { createModuleGraph } from './vite-server-adapter.js';
 
 export type WatchChangeEvents = 'create' | 'update' | 'delete';
@@ -33,8 +27,12 @@ export function convertEnforceToPriority(value: 'pre' | 'post' | undefined) {
     post: 98
   };
 
-  return enforceToPriority[value!] !== undefined
-    ? enforceToPriority[value!]
+  if (value === undefined) {
+    return defaultPriority;
+  }
+
+  return enforceToPriority[value] !== undefined
+    ? enforceToPriority[value]
     : defaultPriority;
 }
 
@@ -51,7 +49,7 @@ export function convertWatchEventChange(
 }
 
 export function getContentValue(content: any): string {
-  return encodeStr(typeof content === 'string' ? content : content!.code);
+  return encodeStr(typeof content === 'string' ? content : content.code);
 }
 
 export function customParseQueryString(url: string | null) {
@@ -242,45 +240,23 @@ export function throwIncompatibleError(
 }
 
 export function transformResourceInfo2RollupRenderedChunk(
-  info: ResourcePotInfo
+  info: Partial<JsResourcePot>
 ): RenderedChunk {
-  const { modules, moduleIds, name, data } = info;
-
-  const {
-    dynamicImports,
-    importedBindings,
-    imports,
-    exports,
-    isDynamicEntry,
-    isEntry,
-    isImplicitEntry
-  } = data as JsResourcePotInfoData;
+  const { moduleIds, name, isEntry, isDynamicEntry } = info;
 
   return {
-    dynamicImports,
+    dynamicImports: [],
     fileName: name,
     implicitlyLoadedBefore: [],
-    importedBindings,
-    imports,
-    modules: Object.entries(modules).reduce(
-      (result, [key, val]) => ({
-        ...result,
-        [key]: {
-          code: val.renderedContent,
-          renderedLength: val.renderedLength,
-          originalLength: val.originalLength,
-          removedExports: [],
-          renderedExports: []
-        }
-      }),
-      {} as Record<string, RenderedModule>
-    ),
+    importedBindings: {},
+    imports: [],
+    modules: {}, // do not support modules
     referencedFiles: [],
-    exports,
+    exports: [],
     facadeModuleId: null,
     isDynamicEntry,
     isEntry,
-    isImplicitEntry,
+    isImplicitEntry: false,
     moduleIds,
     name,
     type: 'chunk'
@@ -291,10 +267,10 @@ export function transformResourceInfo2RollupResource(
   resource: Resource
 ): OutputChunk | OutputAsset {
   // Rollup/Vite only treat js files as chunk
-  if (resource.info && resource.resourceType === 'js') {
+  if (resource.resourceType === 'js') {
     const source = Buffer.from(resource.bytes).toString('utf-8');
     return {
-      ...transformResourceInfo2RollupRenderedChunk(resource.info),
+      ...transformResourceInfo2RollupRenderedChunk({}),
       type: 'chunk',
       code: source,
       name: resource.name,

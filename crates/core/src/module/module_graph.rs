@@ -17,6 +17,16 @@ use crate::{
 
 use super::{Module, ModuleId};
 
+/// the diff result of a module's dependencies
+#[derive(Debug, PartialEq, Eq, Clone, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ModuleDepsDiffResult {
+  /// added dependencies
+  pub added: Vec<(ModuleId, ModuleGraphEdge)>,
+  /// removed dependencies
+  pub removed: Vec<(ModuleId, ModuleGraphEdge)>,
+}
+
 #[derive(Debug, Default, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 #[cache_item]
 pub struct ModuleGraphEdgeDataItem {
@@ -53,6 +63,10 @@ impl ModuleGraphEdge {
 
   pub fn iter(&self) -> impl Iterator<Item = &ModuleGraphEdgeDataItem> {
     self.0.iter()
+  }
+
+  pub fn iter_mut(&mut self) -> impl Iterator<Item = &mut ModuleGraphEdgeDataItem> {
+    self.0.iter_mut()
   }
 
   pub fn contains(&self, item: &ModuleGraphEdgeDataItem) -> bool {
@@ -357,14 +371,14 @@ impl ModuleGraph {
       .remove(module_id)
       .unwrap_or_else(|| panic!("module_id {module_id:?} should in the module graph"));
 
-    if !module_id.query_string().is_empty() {
-      if let Some(ids) = self
+    if !module_id.query_string().is_empty()
+      && let Some(ids) = self
         .file_module_ids_map
         .get_mut(&module_id.relative_path().into())
-      {
-        ids.retain(|id| id != module_id);
-      }
+    {
+      ids.retain(|id| id != module_id);
     }
+
     self.g.remove_node(index).unwrap()
   }
 
@@ -586,36 +600,6 @@ impl ModuleGraph {
   /// import c from './c.js';
   /// ```
   pub fn toposort(&self) -> (Vec<ModuleId>, Vec<Vec<ModuleId>>) {
-    fn dfs(
-      entry: &ModuleId,
-      graph: &ModuleGraph,
-      stack: &mut Vec<ModuleId>,
-      visited: &mut HashSet<ModuleId>,
-      result: &mut Vec<ModuleId>,
-      cyclic: &mut Vec<Vec<ModuleId>>,
-    ) {
-      // cycle detected
-      if let Some(pos) = stack.iter().position(|m| m == entry) {
-        cyclic.push(stack.clone()[pos..].to_vec());
-        return;
-      } else if visited.contains(entry) {
-        // skip visited module
-        return;
-      }
-
-      visited.insert(entry.clone());
-      stack.push(entry.clone());
-
-      let deps = graph.dependencies(entry);
-
-      for (dep, _) in &deps {
-        dfs(dep, graph, stack, visited, result, cyclic)
-      }
-
-      // visit current entry
-      result.push(stack.pop().unwrap());
-    }
-
     let mut result = vec![];
     let mut cyclic = vec![];
     let mut stack = vec![];
@@ -631,7 +615,14 @@ impl ModuleGraph {
 
     for (entry, _) in entries {
       let mut res = vec![];
-      dfs(entry, self, &mut stack, &mut visited, &mut res, &mut cyclic);
+      self.toposort_dfs(
+        entry,
+        &mut stack,
+        &mut visited,
+        &mut res,
+        &mut cyclic,
+        &|_, _| true,
+      );
 
       result.extend(res);
     }
@@ -639,6 +630,37 @@ impl ModuleGraph {
     result.reverse();
 
     (result, cyclic)
+  }
+
+  pub fn toposort_dfs<F: Fn(&ModuleId, &&ModuleGraphEdge) -> bool>(
+    &self,
+    entry: &ModuleId,
+    stack: &mut Vec<ModuleId>,
+    visited: &mut HashSet<ModuleId>,
+    result: &mut Vec<ModuleId>,
+    cyclic: &mut Vec<Vec<ModuleId>>,
+    filter_deps: &F,
+  ) {
+    // cycle detected
+    if let Some(pos) = stack.iter().position(|m| m == entry) {
+      cyclic.push(stack.clone()[pos..].to_vec());
+      return;
+    } else if visited.contains(entry) {
+      // skip visited module
+      return;
+    }
+
+    visited.insert(entry.clone());
+    stack.push(entry.clone());
+
+    let deps = self.dependencies(entry);
+
+    for (dep, _) in deps.iter().filter(|(dep, edge)| filter_deps(dep, edge)) {
+      self.toposort_dfs(dep, stack, visited, result, cyclic, filter_deps);
+    }
+
+    // visit current entry
+    result.push(stack.pop().unwrap());
   }
 
   pub fn update_execution_order_for_modules(&mut self) -> Vec<ModuleId> {
@@ -730,6 +752,14 @@ impl ModuleGraph {
       for (dep, edge) in self.dependencies(module_id) {
         other.add_edge(module_id, &dep, edge.clone())?;
       }
+    }
+
+    for (entry, name) in &self.entries {
+      other.entries.insert(entry.clone(), name.clone());
+    }
+
+    for (entry, name) in &self.dynamic_entries {
+      other.dynamic_entries.insert(entry.clone(), name.clone());
     }
 
     Ok(())

@@ -5,7 +5,6 @@ import { WebSocketServer as WebSocketServerRaw_ } from 'ws';
 
 import { ILogger, Logger } from '../utils/logger.js';
 import { isObject } from '../utils/share.js';
-import { ServerOptions } from './index.js';
 
 import type { IncomingMessage, Server } from 'node:http';
 import type { Socket } from 'node:net';
@@ -13,6 +12,9 @@ import type { Duplex } from 'node:stream';
 import type { WebSocket as WebSocketRaw } from 'ws';
 import type { WebSocket as WebSocketTypes } from '../types/ws.js';
 
+import { ResolvedUserConfig } from '../config/types.js';
+import { resolveHostname, resolveServerUrls } from '../utils/http.js';
+import type { Server as FarmDevServer, ServerConfig } from './index.js';
 import {
   CustomPayload,
   ErrorPayload,
@@ -77,10 +79,6 @@ const wsServerEvents = [
   'message'
 ];
 
-function noop() {
-  // noop
-}
-
 const HMR_HEADER = 'farm_hmr';
 
 export type WebSocketCustomListener<T> = (
@@ -88,10 +86,11 @@ export type WebSocketCustomListener<T> = (
   client: WebSocketClient
 ) => void;
 
-const WebSocketServerRaw = process.versions.bun
-  ? // @ts-expect-error: Bun defines `import.meta.require`
-    import.meta.require('ws').WebSocketServer
-  : WebSocketServerRaw_;
+// const WebSocketServerRaw = process.versions.bun
+//   ? // @ts-expect-error: Bun defines `import.meta.require`
+//     import.meta.require('ws').WebSocketServer
+//   : WebSocketServerRaw_;
+const WebSocketServerRaw = WebSocketServerRaw_;
 
 export class WsServer {
   public wss: WebSocketServerRaw_;
@@ -99,9 +98,9 @@ export class WsServer {
   public clientsMap = new WeakMap<WebSocketRaw, WebSocketClient>();
   public bufferedError: ErrorPayload | null = null;
   public logger: ILogger;
-  public wsServer: any;
+  public httpServer: any;
   wsHttpServer: Server | undefined;
-  private serverConfig: ServerOptions;
+  private serverConfig: ServerConfig;
   private port: number;
   private host: string | undefined;
   private hmrServerWsListener: (
@@ -109,14 +108,14 @@ export class WsServer {
     socket: Duplex,
     head: Buffer
   ) => void;
+  private hmrOrigins: string[];
+
   /**
    * Creates a new WebSocket server instance.
-   * @param {any} app - The application instance containing configuration and logger.
    */
-  constructor(private readonly app: any) {
-    this.logger = app.logger ?? new Logger();
-    this.serverConfig = app.config.server as ServerOptions;
-    this.createWebSocketServer();
+  constructor(private readonly devServer: FarmDevServer) {
+    this.logger = devServer.logger ?? new Logger();
+    this.serverConfig = devServer.config.server;
   }
 
   /**
@@ -127,39 +126,65 @@ export class WsServer {
     return 'ws';
   }
 
+  private async generateHMROrigins(
+    config: ResolvedUserConfig
+  ): Promise<string[]> {
+    const { protocol, hostname, port } = config.server ?? {};
+    const origins = [];
+
+    // Add localhost with configured port
+    const urls = await resolveServerUrls(this.httpServer, config);
+    const localUrls = [...(urls.local || []), ...(urls.network || [])];
+
+    for (const url of localUrls) {
+      origins.push(url);
+    }
+
+    // Add non-localhost origin
+    const configuredOrigin = `${protocol}://${hostname.name}:${port}`;
+
+    if (
+      hostname &&
+      hostname.name &&
+      localUrls.every((url) => url !== configuredOrigin)
+    ) {
+      origins.push(configuredOrigin);
+    }
+
+    if (config.server?.host !== config.server?.hmr?.host) {
+      const hmrHostname = await resolveHostname(config.server?.hmr?.host);
+      origins.push(
+        `${config.server?.hmr?.protocol || protocol}://${hmrHostname.name}:${config.server.hmr?.port || config.server.port}`
+      );
+    }
+
+    return origins;
+  }
+
   /**
    * Creates the WebSocket server.
    */
-  createWebSocketServer() {
-    if (this.serverConfig.ws === false) {
-      return {
-        name: 'ws',
-        get clients() {
-          return new Set<WebSocketClient>();
-        },
-        async close() {
-          // noop
-        },
-        on: noop as any as WebSocketServer['on'],
-        off: noop as any as WebSocketServer['off'],
-        listen: noop,
-        send: noop
-      };
-    }
-
+  async createWebSocketServer() {
     const hmr = isObject(this.serverConfig.hmr)
       ? this.serverConfig.hmr
       : undefined;
     const hmrServer = hmr?.server;
     const hmrPort = hmr?.port;
     const portsAreCompatible = !hmrPort || hmrPort === this.serverConfig.port;
-    this.wsServer = hmrServer || (portsAreCompatible && this.app.httpServer);
+    this.httpServer =
+      hmrServer || (portsAreCompatible && this.devServer.httpServer);
 
     this.port = (hmrPort as number) || 9000;
     this.host = ((hmr && hmr.host) as string) || undefined;
 
-    if (this.wsServer) {
-      let hmrBase = this.app.publicPath;
+    if (!this.hmrOrigins) {
+      this.hmrOrigins = await this.generateHMROrigins(
+        this.devServer.config ?? {}
+      );
+    }
+
+    if (this.httpServer) {
+      let hmrBase = this.devServer.publicPath;
 
       const hmrPath = hmr?.path;
       if (hmrPath) {
@@ -168,17 +193,20 @@ export class WsServer {
 
       this.wss = new WebSocketServerRaw({ noServer: true });
       this.hmrServerWsListener = (req, socket, head) => {
-        // TODO 这里需要处理一下 normalizePublicPath 的问题  hmrBase 路径匹配不到 req.url 的问题
+        const origin = req.headers['origin'];
+
         if (
           req.headers['sec-websocket-protocol'] === HMR_HEADER &&
-          req.url === hmrBase
+          req.url === hmrBase &&
+          (this.hmrOrigins.includes(origin) ||
+            this.serverConfig.allowedHosts?.includes(origin))
         ) {
           this.wss.handleUpgrade(req, socket as Socket, head, (ws) => {
             this.wss.emit('connection', ws, req);
           });
         }
       };
-      this.wsServer.on('upgrade', this.hmrServerWsListener);
+      this.httpServer.on('upgrade', this.hmrServerWsListener);
     } else {
       // http server request handler keeps the same with
       // https://github.com/websockets/ws/blob/45e17acea791d865df6b255a55182e9c42e5877a/lib/websocket-server.js#L88-L96
@@ -197,8 +225,11 @@ export class WsServer {
         res.end(body);
       }) as Parameters<typeof createHttpServer>[1];
 
-      if (this.app.httpsOptions) {
-        this.wsHttpServer = createHttpsServer(this.app.httpsOptions, route);
+      if (this.devServer.httpsOptions) {
+        this.wsHttpServer = createHttpsServer(
+          this.devServer.httpsOptions,
+          route
+        );
       } else {
         this.wsHttpServer = createHttpServer(route);
       }
@@ -218,7 +249,7 @@ export class WsServer {
         }
         // transform vite js-update to farm update
         if (parsed?.type === 'js-update' && parsed?.path) {
-          this.app.hmrEngine.hmrUpdate(parsed.path, true);
+          this.devServer.hmrEngine.hmrUpdate(parsed.path, true);
           return;
         }
         if (!parsed || parsed.type !== WS_CUSTOM_EVENT_TYPE || !parsed.event)
@@ -324,8 +355,8 @@ export class WsServer {
   async close() {
     // should remove listener if hmr.server is set
     // otherwise the old listener swallows all WebSocket connections
-    if (this.hmrServerWsListener && this.wsServer) {
-      this.wsServer.off('upgrade', this.hmrServerWsListener);
+    if (this.hmrServerWsListener && this.httpServer) {
+      this.httpServer.off('upgrade', this.hmrServerWsListener);
     }
     try {
       this.wss.clients.forEach((client: any) => {

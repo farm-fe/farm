@@ -1,5 +1,34 @@
 # @farmfe/js-plugin-solid
 
+## 3.0.0-nightly-20250729025629
+
+### Patch Changes
+
+- Updated dependencies [b730530]
+  - @farmfe/core@2.0.0-nightly-20250729025629
+
+## 3.0.0-nightly-20250411141103
+
+### Patch Changes
+
+- @farmfe/core@2.0.0-nightly-20250411141103
+
+## 3.0.0-nightly-20250411100807
+
+### Patch Changes
+
+- Updated dependencies [60f40f0]
+  - @farmfe/core@2.0.0-nightly-20250411100807
+
+## 3.0.0-nightly-20250410022118
+
+### Patch Changes
+
+- Updated dependencies [21ac2ac]
+- Updated dependencies [b8f7fc5]
+- Updated dependencies [ad09476]
+  - @farmfe/core@2.0.0-nightly-20250410022118
+
 ## 3.0.0-nightly-20241029121500
 
 ### Patch Changes
@@ -67,6 +96,14 @@
 
 - Updated dependencies [a82a5b2]
   - @farmfe/core@2.0.0-nightly-20241022014521
+
+## 2.12.0
+
+### Patch Changes
+
+- Updated dependencies [25f3d3f6]
+  - @farmfe/core@1.7.0
+
 ## 2.11.0
 
 ### Patch Changes

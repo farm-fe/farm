@@ -1,5 +1,6 @@
 #![feature(box_patterns)]
 #![feature(exact_size_is_empty)]
+#![feature(let_chains)]
 
 use farmfe_core::{
   config::{Config, Mode},
@@ -77,6 +78,9 @@ impl Plugin for FarmPluginTreeShake {
     if matches!(context.config.mode, Mode::Production) {
       remove_useless_hot_update_stmts(module_graph);
     }
+
+    // 7. remove export idents
+    tree_shake_modules::remove_export_idents::remove_export_idents(module_graph);
 
     Ok(Some(()))
   }

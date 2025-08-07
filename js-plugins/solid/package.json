@@ -1,6 +1,6 @@
 {
   "name": "@farmfe/js-plugin-solid",
-  "version": "3.0.0-nightly-20241029121500",
+  "version": "3.0.0-nightly-20250729025629",
   "description": "SolidJS support for Farm",
   "private": true,
   "author": {
@@ -9,12 +9,12 @@
   },
   "license": "MIT",
   "main": "./build/cjs/index.cjs",
-  "types": "./build/cjs/index.d.ts",
+  "types": "./build/index.d.ts",
   "type": "module",
   "exports": {
     ".": {
       "import": "./build/esm/index.mjs",
-      "types": "./build/cjs/index.d.ts",
+      "types": "./build/index.d.ts",
       "require": "./build/cjs/index.cjs",
       "default": "./build/cjs/index.cjs"
     },
@@ -22,7 +22,7 @@
   },
   "scripts": {
     "start": "farm build -w",
-    "build": "farm build && cross-env FARM_FORMAT=esm farm build",
+    "build": "farm build",
     "clean": "rimraf build tsconfig.build.tsbuildinfo",
     "prepublishOnly": "npm run build"
   },

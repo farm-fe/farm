@@ -13,7 +13,7 @@ import { normalizePathByPublicPath } from '../publicDir.js';
 import { send } from '../send.js';
 import { sirvOptions } from './static.js';
 
-import type { IncomingMessage, ServerResponse } from 'http';
+import type { IncomingMessage } from 'http';
 import type Connect from 'connect';
 import type { Server } from '../index.js';
 
@@ -118,8 +118,10 @@ export function findResource(
     publicPath,
     req.url
   );
-
-  const resource = compiler.resource(resourceWithoutPublicPath);
+  const normalizedPath = resourceWithoutPublicPath.startsWith('/')
+    ? resourceWithoutPublicPath.slice(1)
+    : resourceWithoutPublicPath;
+  const resource = compiler.resource(normalizedPath);
 
   if (resource) {
     return {

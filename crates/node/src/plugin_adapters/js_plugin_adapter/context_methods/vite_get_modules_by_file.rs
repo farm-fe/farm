@@ -1,9 +1,10 @@
 use farmfe_core::module::{Module, ModuleId, ModuleType};
 use farmfe_core::HashMap;
+use napi::JsValue;
 use napi::{
   bindgen_prelude::FromNapiValue,
   sys::{napi_callback_info, napi_env, napi_value},
-  Env, JsUnknown, NapiRaw,
+  Env, Unknown,
 };
 
 use crate::plugin_adapters::js_plugin_adapter::context::{
@@ -35,7 +36,7 @@ pub unsafe extern "C" fn vite_get_modules_by_file(
   let ArgvAndContext { argv, ctx } = get_argv_and_context_from_cb_info(env, info);
 
   let file: String = Env::from_raw(env)
-    .from_js_value(JsUnknown::from_napi_value(env, argv[0]).unwrap())
+    .from_js_value(Unknown::from_napi_value(env, argv[0]).unwrap())
     .expect("Argument 0 should be a string when calling get_modules_by_file");
 
   let module_graph = ctx.module_graph.read();

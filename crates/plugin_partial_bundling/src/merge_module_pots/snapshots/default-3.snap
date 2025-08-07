@@ -2,8 +2,8 @@
 source: crates/plugin_partial_bundling/src/merge_module_pots/test_default.rs
 input_file: crates/testing_helpers/src/lib.rs
 ---
-name: B_2f5d
-id: B_2f5d
+name: B
+id: B_2f5d6a63eb2504d486bf13df147c043a_js
 immutable: false
 resource_pot_type: Js
 entry: None
@@ -22,8 +22,8 @@ resources: []
 
 -------
 
-name: D_3f39
-id: B_3f39
+name: B
+id: B_3f39d5c348e5b79d06e842c114e6cc57_js
 immutable: true
 resource_pot_type: Js
 entry: None
@@ -38,8 +38,8 @@ resources: []
 
 -------
 
-name: H_44bd
-id: B_44bd
+name: B
+id: B_44bd7ae60f478fae1061e11a7739f4b9_js
 immutable: true
 resource_pot_type: Js
 entry: None

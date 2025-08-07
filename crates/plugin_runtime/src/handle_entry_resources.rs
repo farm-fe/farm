@@ -1,8 +1,9 @@
 use std::sync::Arc;
 
-use farmfe_core::enhanced_magic_string::collapse_sourcemap::collapse_sourcemap_chain;
-use farmfe_core::enhanced_magic_string::magic_string::MagicString;
-use farmfe_core::enhanced_magic_string::types::SourceMapOptions;
+use enhanced_magic_string::collapse_sourcemap::collapse_sourcemap_chain;
+use enhanced_magic_string::magic_string::MagicString;
+use enhanced_magic_string::types::SourceMapOptions;
+use farmfe_core::config::TargetEnv;
 use farmfe_core::plugin::PluginHandleEntryResourceHookParam;
 use farmfe_core::{
   config::{ModuleFormat, FARM_MODULE_SYSTEM},
@@ -14,7 +15,7 @@ use farmfe_core::{
 use farmfe_toolkit::html::get_farm_global_this;
 use farmfe_toolkit::sourcemap::append_sourcemap_comment;
 use farmfe_toolkit::sourcemap::is_sourcemap_comment_line;
-use farmfe_toolkit::sourcemap::SourceMap;
+use sourcemap::SourceMap;
 
 const PREVIOUS_ENTRY_RESOURCE_CODE: &str = "PREVIOUS_ENTRY_RESOURCE_CODE";
 const PREVIOUS_ENTRY_RESOURCE_SOURCEMAP_CODE: &str = "PREVIOUS_ENTRY_RESOURCE_CODE";
@@ -78,13 +79,18 @@ pub fn handle_entry_resources(
     .map(|res| &res.0)
     .cloned()
     .collect::<Vec<_>>();
+  // 0. global require if format is esm
+  let global_require_code = create_global_require_code(
+    &context.config.output.format.as_single(),
+    &context.config.output.target_env,
+  );
 
   // 1. runtime code
   let runtime_code = if !dep_resources.is_empty() {
     // runtime resources should emit if there are other initial resources
     params.emit_runtime = true;
 
-    match context.config.output.format {
+    match context.config.output.format.as_single() {
       ModuleFormat::EsModule => format!("import \"./{}\";", params.runtime_resource_name),
       ModuleFormat::CommonJs => format!("require(\"./{}\");", params.runtime_resource_name),
     }
@@ -108,11 +114,12 @@ pub fn handle_entry_resources(
   let entry_resource_code = create_entry_resource_code(&mut params.resource);
 
   // 5. export code
-  let export_info_code = create_export_info_code(entry_module, &context.config.output.format);
+  let export_info_code =
+    create_export_info_code(entry_module, &context.config.output.format.as_single());
 
   let mut entry_bundle = MagicString::new(&entry_resource_code, None);
 
-  for pre in [load_dep_resources_code, runtime_code] {
+  for pre in [load_dep_resources_code, runtime_code, global_require_code] {
     entry_bundle.prepend(&pre);
   }
 
@@ -152,6 +159,21 @@ fn create_entry_resource_code(resource: &mut Resource) -> String {
   entry_resource_code
 }
 
+// create
+// ```js
+// import { createRequire } from 'module';
+// var require = createRequire(import.meta.url);
+// ```
+fn create_global_require_code(format: &ModuleFormat, target_env: &TargetEnv) -> String {
+  match (format, target_env) {
+    (ModuleFormat::EsModule, TargetEnv::Node) => {
+      "import { createRequire } from 'module';var require = createRequire(import.meta.url);"
+        .to_string()
+    }
+    _ => "".to_string(),
+  }
+}
+
 fn create_load_dep_resources_code(
   dep_resources: &Vec<String>,
   context: &Arc<CompilationContext>,
@@ -164,7 +186,7 @@ fn create_load_dep_resources_code(
 
   dep_resources
     .iter()
-    .map(|rn| match context.config.output.format {
+    .map(|rn| match context.config.output.format.as_single() {
       ModuleFormat::EsModule => format!("import \"./{rn}\";"),
       ModuleFormat::CommonJs => format!("require(\"./{rn}\");"),
     })

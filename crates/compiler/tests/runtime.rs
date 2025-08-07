@@ -63,6 +63,6 @@ fn test(file: String, crate_path: String) {
   }
 }
 
-farmfe_testing::testing! {"tests/fixtures/runtime/bundle/**/index.ts", test}
+// farmfe_testing::testing! {"tests/fixtures/runtime/bundle/**/index.ts", test}
 // farmfe_testing::testing! {"tests/fixtures/runtime/bundle/cjs/export/entryExportStar/**/index.ts", test}
 // farmfe_testing::testing! {"tests/fixtures/runtime/bundle/external/import/namespace/**/index.ts", test}

@@ -13,7 +13,8 @@ use farmfe_macro_cache_item::cache_item;
 /// Previous cache will be cleared if the related cache key changed for a name
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 #[cache_item]
-#[archive_attr(derive(Hash, Eq, PartialEq))]
+// #[rkyv(derive(Serialize, Deserialize))]
+#[rkyv(derive(Hash, Eq, PartialEq))]
 pub struct CacheStoreKey {
   pub name: String,
   pub key: String,

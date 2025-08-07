@@ -1,16 +1,15 @@
 ---
 source: crates/plugin_partial_bundling/src/generate_module_pots.rs
-input_file: crates/plugin_partial_bundling/src/generate_module_pots.rs
+input_file: crates/testing_helpers/src/lib.rs
 ---
 (
     ModulePot {
-        name: None,
-        id: "test-package@1.0.0",
+        name: "test-package@1.0.0",
+        source_type: ImmutablePackage,
         size: 15360,
         module_type: Js,
         immutable: true,
         execution_order: 2,
-        enforce: false,
         modules: {},
     },
     [

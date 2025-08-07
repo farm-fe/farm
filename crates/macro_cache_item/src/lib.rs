@@ -22,24 +22,27 @@ pub fn cache_item(attr: TokenStream, input: TokenStream) -> TokenStream {
       return ts.into();
     }
   };
+  let archived_item_ident = Ident::new(
+    &format!("Archived{}", item_ident.to_string()),
+    item_ident.span(),
+  );
 
   let derives = quote! {
     use rkyv::*;
 
     #[derive(rkyv::Serialize, rkyv::Deserialize, rkyv::Archive)]
+    #[rkyv()]
     #item
 
     impl #crate_name::Cacheable for #item_ident {
       fn serialize_bytes(&self) -> std::result::Result<Vec<u8>, String> {
-        let bytes = rkyv::to_bytes::<_, 256>(self).unwrap();
+        let bytes = rkyv::to_bytes::<rkyv::rancor::Error>(self).unwrap();
         Ok(bytes.into_vec())
       }
 
       fn deserialize_bytes(bytes: Vec<u8>) -> std::result::Result<Box<dyn #crate_name::Cacheable>, String> {
-        let archived = unsafe { rkyv::archived_root::<#item_ident>(&bytes[..]) };
-        let deserialized: #item_ident = archived
-          .deserialize(&mut rkyv::de::deserializers::SharedDeserializeMap::new())
-          .unwrap();
+        let archived = unsafe { rkyv::access_unchecked::<#archived_item_ident>(&bytes[..]) };
+        let deserialized: #item_ident = rkyv::deserialize::<#item_ident, rkyv::rancor::Error>(archived).unwrap();
         Ok(Box::new(deserialized))
       }
     }

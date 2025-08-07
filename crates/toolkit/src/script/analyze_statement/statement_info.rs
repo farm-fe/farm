@@ -1,18 +1,32 @@
 use crate::swc_ecma_visit::VisitWith;
 use farmfe_core::module::meta_data::script::statement::{
-  ExportInfo, ExportSpecifierInfo, ImportInfo, ImportSpecifierInfo, StatementId, SwcId,
+  ExportInfo, ExportSpecifierInfo, ImportInfo, ImportSpecifierInfo, Statement, StatementId, SwcId,
 };
-use farmfe_core::swc_ecma_ast::{self, ModuleExportName, ModuleItem};
+use farmfe_core::swc_ecma_ast::{self, Module, ModuleExportName, ModuleItem, VarDeclOrExpr};
 use farmfe_core::HashSet;
 use swc_ecma_utils::contains_top_level_await;
 
 use crate::script::idents_collector::DefinedIdentsCollector;
 
+#[derive(Debug)]
 pub struct AnalyzedStatementInfo {
+  pub id: StatementId,
   pub import_info: Option<ImportInfo>,
   pub export_info: Option<ExportInfo>,
   pub defined_idents: HashSet<SwcId>,
   pub top_level_await: bool,
+}
+
+impl Into<Statement> for AnalyzedStatementInfo {
+  fn into(self) -> Statement {
+    Statement::new(
+      self.id,
+      self.export_info,
+      self.import_info,
+      self.defined_idents,
+      self.top_level_await,
+    )
+  }
 }
 
 pub fn analyze_statement_info(id: &StatementId, stmt: &ModuleItem) -> AnalyzedStatementInfo {
@@ -89,18 +103,16 @@ pub fn analyze_statement_info(id: &StatementId, stmt: &ModuleItem) -> AnalyzedSt
         swc_ecma_ast::Decl::Var(var_decl) => {
           let mut specifiers = vec![];
 
-          for v_decl in &var_decl.decls {
-            let mut defined_idents_collector = DefinedIdentsCollector::new();
-            v_decl.name.visit_with(&mut defined_idents_collector);
+          let var_defined_idents = get_defined_idents_from_var_decl(var_decl);
 
-            for defined_ident in defined_idents_collector.defined_idents {
-              specifiers.push(ExportSpecifierInfo::Named {
-                local: defined_ident.clone().into(),
-                exported: None,
-              });
-              defined_idents.insert(defined_ident);
-            }
+          for ident in &var_defined_idents {
+            specifiers.push(ExportSpecifierInfo::Named {
+              local: ident.clone().into(),
+              exported: None,
+            });
           }
+
+          defined_idents.extend(var_defined_idents);
 
           export_info = Some(ExportInfo {
             source: None,
@@ -199,19 +211,27 @@ pub fn analyze_statement_info(id: &StatementId, stmt: &ModuleItem) -> AnalyzedSt
           defined_idents.insert(fn_decl.ident.to_id().into());
         }
         swc_ecma_ast::Decl::Var(var_decl) => {
-          for v_decl in &var_decl.decls {
-            let mut defined_idents_collector = DefinedIdentsCollector::new();
-            v_decl.name.visit_with(&mut defined_idents_collector);
-
-            for defined_ident in defined_idents_collector.defined_idents {
-              defined_idents.insert(defined_ident.clone());
-            }
-          }
+          defined_idents.extend(get_defined_idents_from_var_decl(var_decl));
         }
         _ => unreachable!(
           "decl should not be anything other than a class, function, or variable declaration"
         ),
       },
+      swc_ecma_ast::Stmt::For(for_stmt) => {
+        if let Some(VarDeclOrExpr::VarDecl(var_decl)) = &for_stmt.init {
+          defined_idents.extend(get_defined_idents_from_var_decl(var_decl));
+        }
+      }
+      swc_ecma_ast::Stmt::ForIn(for_in_stmt) => {
+        if let swc_ecma_ast::ForHead::VarDecl(var_decl) = &for_in_stmt.left {
+          defined_idents.extend(get_defined_idents_from_var_decl(var_decl));
+        }
+      }
+      swc_ecma_ast::Stmt::ForOf(for_of_stmt) => {
+        if let swc_ecma_ast::ForHead::VarDecl(var_decl) = &for_of_stmt.left {
+          defined_idents.extend(get_defined_idents_from_var_decl(var_decl));
+        }
+      }
       swc_ecma_ast::Stmt::Expr(expr_stmt) => {
         if contains_top_level_await(expr_stmt) {
           top_level_await = true;
@@ -223,11 +243,38 @@ pub fn analyze_statement_info(id: &StatementId, stmt: &ModuleItem) -> AnalyzedSt
   };
 
   AnalyzedStatementInfo {
+    id: *id,
     import_info,
     export_info,
     defined_idents: defined_idents.into_iter().map(|i| i.into()).collect(),
     top_level_await,
   }
+}
+
+pub fn get_defined_idents_from_var_decl(var_decl: &swc_ecma_ast::VarDecl) -> HashSet<SwcId> {
+  let mut defined_idents = HashSet::default();
+
+  for decl in &var_decl.decls {
+    let mut defined_idents_collector = DefinedIdentsCollector::new();
+    decl.name.visit_with(&mut defined_idents_collector);
+
+    for defined_ident in defined_idents_collector.defined_idents {
+      defined_idents.insert(defined_ident.clone());
+    }
+  }
+
+  defined_idents
+}
+
+pub fn analyze_statements(ast: &Module) -> Vec<Statement> {
+  let mut statements = vec![];
+
+  for (id, item) in ast.body.iter().enumerate() {
+    let analyzed_statement_info = analyze_statement_info(&id, item);
+    statements.push(analyzed_statement_info.into());
+  }
+
+  statements
 }
 
 #[cfg(test)]

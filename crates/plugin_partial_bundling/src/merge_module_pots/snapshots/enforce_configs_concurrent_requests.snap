@@ -2,8 +2,8 @@
 source: crates/plugin_partial_bundling/src/merge_module_pots/test_enforce_configs.rs
 input_file: crates/testing_helpers/src/lib.rs
 ---
-name: H_44bd_2328
-id: B_2328_2328
+name: B
+id: B_23282ac10f2eedd4a10f505192bdd323_js
 immutable: true
 resource_pot_type: Js
 entry: None

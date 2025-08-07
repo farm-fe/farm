@@ -89,14 +89,18 @@ impl Compiler {
       plugins.push(Arc::new(farmfe_plugin_minify::FarmPluginMinify::new(&config)) as _);
       plugins.push(Arc::new(farmfe_plugin_html::FarmPluginMinifyHtml::new(&config)) as _);
 
-      if let Some(options) = config.minify.as_obj() {
-        if options.mangle_exports {
-          plugins.push(
-            Arc::new(farmfe_plugin_mangle_exports::FarmPluginMangleExports::new(
-              &config,
-            )) as _,
-          );
-        }
+      let enable_mangle_exports = config
+        .minify
+        .as_obj()
+        .map(|obj| obj.mangle_exports)
+        .unwrap_or(true);
+
+      if enable_mangle_exports {
+        plugins.push(
+          Arc::new(farmfe_plugin_mangle_exports::FarmPluginMangleExports::new(
+            &config,
+          )) as _,
+        );
       }
     }
 
@@ -177,10 +181,19 @@ impl Compiler {
       self.generate()?;
     }
 
+    // {
+    //   #[cfg(feature = "profile")]
+    //   farmfe_core::puffin::profile_scope!("Write Stage");
+    //   self.write()?;
+    // }
+
     {
       #[cfg(feature = "profile")]
-      farmfe_core::puffin::profile_scope!("Write Stage");
-      self.write()?;
+      farmfe_core::puffin::profile_scope!("Finish Stage");
+      self
+        .context
+        .plugin_driver
+        .finish(&self.context.stats, &self.context)?;
     }
 
     if self.context.config.persistent_cache.enabled() {

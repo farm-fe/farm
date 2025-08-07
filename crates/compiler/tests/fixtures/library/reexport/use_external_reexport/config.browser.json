@@ -1,0 +1,7 @@
+{
+  "output": {
+    "targetEnv": "browser"
+  },
+  "mode": "production",
+  "concatenateModules": true
+}

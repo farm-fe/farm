@@ -6,6 +6,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.16](https://github.com/farm-fe/farm/compare/farmfe_compiler-v0.0.15...farmfe_compiler-v0.0.16) - 2025-01-09
+
+### Fixed
+
+- module with query cannot update when watch file update (#2046)
+- import meta glob path failed (#2049)
+
+## [0.0.15](https://github.com/farm-fe/farm/compare/farmfe_compiler-v0.0.14...farmfe_compiler-v0.0.15) - 2025-01-03
+
+### Fixed
+
+- import.meta.glob support search package (#2038)
+- do not clean up then watch graph monitoring module (#2027)
+
+## [0.0.14](https://github.com/farm-fe/farm/compare/farmfe_compiler-v0.0.13...farmfe_compiler-v0.0.14) - 2024-12-24
+
+### Added
+
+- support invalidate module (#2005)
+
+### Fixed
+
+- namespace fallback when use literal computed (#2022)
+
 ## [0.0.13](https://github.com/farm-fe/farm/compare/farmfe_compiler-v0.0.12...farmfe_compiler-v0.0.13) - 2024-12-09
 
 ### Added

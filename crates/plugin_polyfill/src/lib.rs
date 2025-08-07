@@ -7,15 +7,15 @@ use farmfe_core::{
   plugin::Plugin,
   serde_json,
   swc_common::{comments::SingleThreadedComments, Mark},
-  swc_ecma_ast::Program,
+  swc_ecma_ast::{Module, ModuleItem, Program, Script},
 };
 use farmfe_toolkit::{
   preset_env_base::query::Query,
   script::swc_try_with::try_with,
   sourcemap::create_swc_source_map,
-  swc_ecma_preset_env::{self, preset_env, Mode, Targets},
+  swc_ecma_preset_env::{self, transform_from_env, EnvConfig, Mode, Targets},
   swc_ecma_transforms::Assumptions,
-  swc_ecma_transforms_base::{feature::FeatureFlag, helpers::inject_helpers},
+  swc_ecma_transforms_base::helpers::inject_helpers,
   swc_ecma_visit::VisitMutWith,
 };
 
@@ -73,7 +73,10 @@ impl FarmPluginPolyfill {
       include,
       exclude,
       assumptions,
-      enforce_exclude: vec![ConfigRegex::new("node_modules/core-js")],
+      enforce_exclude: vec![
+        ConfigRegex::new("node_modules/core-js"),
+        ConfigRegex::new("@farmfe/runtime"),
+      ],
     }
   }
 }
@@ -117,20 +120,53 @@ impl Plugin for FarmPluginPolyfill {
     let globals = context.meta.get_globals(&param.module_id);
     try_with(cm, globals.value(), || {
       let unresolved_mark = Mark::from_u32(param.meta.as_script().unresolved_mark);
-      let mut ast = Program::Module(param.meta.as_script_mut().take_ast());
+      let ast = param.meta.as_script_mut().take_ast();
 
-      let mut feature_flag = FeatureFlag::empty();
+      // fix #2103, transform the ast from Module to Script if the module does not have module declaration
+      // to make swc polyfill prepend require('core-js/xxx') instead of import 'core-js/xxx'
+      let mut final_ast = if ast
+        .body
+        .iter()
+        .all(|item| !matches!(item, farmfe_core::swc_ecma_ast::ModuleItem::ModuleDecl(_)))
+      {
+        Program::Script(Script {
+          span: ast.span,
+          body: ast
+            .body
+            .into_iter()
+            .map(|item| item.expect_stmt())
+            .collect(),
+          shebang: ast.shebang,
+        })
+      } else {
+        Program::Module(ast)
+      };
+
       let comments: SingleThreadedComments = param.meta.as_script().comments.clone().into();
-      ast.mutate(&mut preset_env(
+
+      // TODO support transform from es version and remove all logic related to transform es version to env targets
+      final_ast.mutate(&mut transform_from_env(
         unresolved_mark,
         Some(&comments),
-        self.config.clone(),
+        EnvConfig::from(self.config.clone()),
         self.assumptions,
-        &mut feature_flag,
       ));
-      ast.visit_mut_with(&mut inject_helpers(unresolved_mark));
+      final_ast.visit_mut_with(&mut inject_helpers(unresolved_mark));
 
-      param.meta.as_script_mut().set_ast(ast.expect_module());
+      let module_ast = match final_ast {
+        Program::Script(script_ast) => Module {
+          span: script_ast.span,
+          body: script_ast
+            .body
+            .into_iter()
+            .map(|item| ModuleItem::Stmt(item))
+            .collect(),
+          shebang: script_ast.shebang,
+        },
+        Program::Module(module_ast) => module_ast,
+      };
+
+      param.meta.as_script_mut().set_ast(module_ast);
     })?;
 
     Ok(Some(()))

@@ -2,8 +2,8 @@
 source: crates/compiler/src/update/regenerate_resources/generate_and_diff_resource_pots/test_generate_and_diff_resource_pots.rs
 input_file: crates/testing_helpers/src/lib.rs
 ---
-name: A_66be
-id: A_66be
+name: A
+id: A_66be131002b8b5af1132bafd62635f07_js
 immutable: false
 resource_pot_type: Js
 entry: Some(
@@ -31,8 +31,8 @@ resources: []
 
 -------
 
-name: B_2f5d
-id: B_2f5d
+name: B
+id: B_2f5d6a63eb2504d486bf13df147c043a_js
 immutable: false
 resource_pot_type: Js
 entry: Some(
@@ -60,8 +60,8 @@ resources: []
 
 -------
 
-name: B_3f39
-id: B_3f39
+name: B
+id: B_3f39d5c348e5b79d06e842c114e6cc57_js
 immutable: false
 resource_pot_type: Js
 entry: None
@@ -84,9 +84,9 @@ resources: []
 -------
 
 name: EI
-id: EI_custom("__farm_unknown")
+id: EI__dynamic_entry_js
 immutable: false
-resource_pot_type: Custom("__farm_unknown")
+resource_pot_type: DynamicEntryJs
 entry: Some(
     ModuleId {
         relative_path: "I",
@@ -113,16 +113,23 @@ resources: []
 -------
 
 name: test
-id: test_custom("__farm_unknown")
+id: test__js
 immutable: false
-resource_pot_type: Custom("__farm_unknown")
+resource_pot_type: Js
 entry: None
 module_groups: [
     ModuleGroupId(
         "B_Entry",
     ),
+    ModuleGroupId(
+        "F_DynamicImport",
+    ),
 ]
 modules: [
+    ModuleId {
+        relative_path: "F",
+        query_string: "",
+    },
     ModuleId {
         relative_path: "H",
         query_string: "",

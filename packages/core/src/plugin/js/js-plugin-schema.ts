@@ -8,11 +8,11 @@ const EmptyRecordSchema = z.any();
 const CallbackSchema = z
   .function()
   .args(EmptyRecordSchema)
-  .returns(z.union([z.void(), z.promise(z.void())]));
+  .returns(z.union([z.any(), z.promise(z.any())]));
 
 const CallbackSchemaNotArgs = z
   .function()
-  .returns(z.union([z.void(), z.promise(z.void())]));
+  .returns(z.union([z.any(), z.promise(z.any())]));
 
 const updateModulesCallbackSchema = z
   .function()

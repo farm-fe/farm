@@ -8,6 +8,10 @@
   "words": [
     "3Csvg",
     "aarch",
+    "bafd",
+    "eedd",
+    "bbee",
+    "ceee",
     "Aavci",
     "Aceternity",
     "ACVHU",
@@ -333,6 +337,8 @@
     "**/crates/create-farm-rs/templates/**",
     "**/LICENSE",
     "**/CHANGELOG.md",
-    "**/gitignore"
+    "**/gitignore",
+    "**/test_**",
+    "packages/core/binding/binding.cjs"
   ]
 }

@@ -1,14 +1,14 @@
 {
   "name": "@farmfe/js-plugin-postcss",
-  "version": "2.0.0-nightly-20241029121500",
+  "version": "2.0.0-nightly-20250729025629",
   "description": "support postcss for farm.",
   "main": "./build/cjs/index.cjs",
-  "types": "./build/cjs/index.d.ts",
+  "types": "./build/index.d.ts",
   "type": "module",
   "exports": {
     ".": {
       "import": "./build/esm/index.mjs",
-      "types": "./build/cjs/index.d.ts",
+      "types": "./build/index.d.ts",
       "require": "./build/cjs/index.cjs",
       "default": "./build/cjs/index.cjs"
     },
@@ -27,7 +27,7 @@
     "email": "1521488775@qq.com"
   },
   "scripts": {
-    "build": "pnpm run clean && farm build && cross-env FARM_FORMAT=esm farm build",
+    "build": "pnpm run clean && farm build",
     "start": "pnpm run build -w",
     "clean": "rimraf dist build tsconfig.build.tsbuildinfo",
     "prepublishOnly": "npm run build",

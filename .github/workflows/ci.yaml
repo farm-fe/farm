@@ -5,6 +5,10 @@ on:
       - main
       - v2-dev
 
+concurrency:
+  group: e2e-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   call-rust-build:
     uses: ./.github/workflows/rust-build.yaml
@@ -31,7 +35,7 @@ jobs:
         with:
           node-version: 18
       - name: Install Dependencies
-        run: npm install -g pnpm@9.1.0 && pnpm i --frozen-lockfile
+        run: npm install -g pnpm@9.4.0 && pnpm i --frozen-lockfile
 
       - uses: actions/download-artifact@v4
         id: download
@@ -100,7 +104,7 @@ jobs:
         with:
           node-version: 18
       - name: Install Dependencies
-        run: npm install -g pnpm@9.1.0 && pnpm i --frozen-lockfile
+        run: npm install -g pnpm@9.4.0 && pnpm i --frozen-lockfile
       - name: Build CLI and Core
         run: pnpm --filter @farmfe/cli run build
       - name: Build Runtime
@@ -120,8 +124,8 @@ jobs:
         settings:
           - os: ubuntu-latest
             abi: linux-x64-gnu
-          - os: ubuntu-20.04
-            abi: linux-x64-gnu
+          # - os: ubuntu-20.04
+          #   abi: linux-x64-gnu
           - os: macos-13
             abi: darwin-x64
           - os: macos-latest
@@ -139,7 +143,7 @@ jobs:
           name: ${{ github.sha }}-${{ matrix.settings.abi }}-plugin-replace-dirname
           path: ./rust-plugins/replace-dirname/npm/${{ matrix.settings.abi }}
       - name: Install Dependencies
-        run: npm install -g pnpm@9.1.0 && pnpm i --frozen-lockfile
+        run: npm install -g pnpm@9.4.0 && pnpm i --frozen-lockfile
       - name: Build CLI and Core
         run: pnpm --filter @farmfe/cli run build
       - uses: actions/download-artifact@v4

@@ -1,4 +1,4 @@
-use napi::{bindgen_prelude::FromNapiValue, NapiRaw};
+use napi::bindgen_prelude::FromNapiValue;
 use std::sync::Arc;
 
 use farmfe_core::{

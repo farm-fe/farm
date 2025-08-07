@@ -10,22 +10,36 @@ use farmfe_core::{
     PluginLoadHookParam, PluginLoadHookResult, PluginResolveHookParam, PluginResolveHookResult,
     PluginTransformHookParam, PluginTransformHookResult, UpdateType, DEFAULT_PRIORITY,
   },
-  resource::{Resource, ResourceOrigin, ResourceType},
+  resource::{resource_pot::ResourcePotType, Resource, ResourceOrigin, ResourceType},
+  swc_ecma_parser::Syntax,
   HashSet,
 };
-use napi::{bindgen_prelude::FromNapiValue, Env, JsObject, JsUnknown, NapiRaw};
+use farmfe_toolkit::{
+  css::{parse_css_stylesheet, ParseCssModuleResult},
+  html::parse_html_document,
+  script::{parse_module, ParseScriptModuleResult},
+};
+use napi::{
+  bindgen_prelude::{FromNapiValue, JsObjectValue, Object},
+  Env, JsValue, Unknown,
+};
+
+use crate::{
+  check_module_filters,
+  plugin_adapters::js_plugin_adapter::hooks::process_rendered_resource_pot::JsResourcePot,
+};
 
 use self::hooks::{
-  // augment_resource_hash::JsPluginAugmentResourceHashHook,
+  augment_resource_hash::JsPluginAugmentResourceHashHook,
   build_end::JsPluginBuildEndHook,
   build_start::JsPluginBuildStartHook,
   finalize_resources::JsPluginFinalizeResourcesHook,
   finish::JsPluginFinishHook,
+  freeze_module::JsPluginFreezeModuleHook,
   load::JsPluginLoadHook,
   plugin_cache_loaded::JsPluginPluginCacheLoadedHook,
-  // render_resource_pot::JsPluginRenderResourcePotHook,
   process_module::JsPluginProcessModuleHook,
-  freeze_module::JsPluginFreezeModuleHook,
+  process_rendered_resource_pot::JsPluginProcessRenderedResourcePotHook,
   render_start::JsPluginRenderStartHook,
   resolve::JsPluginResolveHook,
   transform::JsPluginTransformHook,
@@ -55,9 +69,9 @@ pub struct JsPluginAdapter {
   js_update_modules_hook: Option<JsPluginUpdateModulesHook>,
   js_plugin_cache_loaded: Option<JsPluginPluginCacheLoadedHook>,
   js_write_plugin_cache: Option<JsPluginWritePluginCacheHook>,
-  // js_render_resource_pot_hook: Option<JsPluginRenderResourcePotHook>,
+  js_process_rendered_resource_pot_hook: Option<JsPluginProcessRenderedResourcePotHook>,
   js_render_start_hook: Option<JsPluginRenderStartHook>,
-  // js_augment_resource_hash_hook: Option<JsPluginAugmentResourceHashHook>,
+  js_augment_resource_pot_hash_hook: Option<JsPluginAugmentResourceHashHook>,
   js_finalize_resources_hook: Option<JsPluginFinalizeResourcesHook>,
   js_transform_html_hook: Option<JsPluginTransformHtmlHook>,
   js_update_finished_hook: Option<JsPluginUpdateFinishedHook>,
@@ -66,42 +80,39 @@ pub struct JsPluginAdapter {
 }
 
 impl JsPluginAdapter {
-  pub fn new(env: &Env, js_plugin_object: JsObject) -> Result<Self> {
+  pub fn new(env: &Env, js_plugin_object: Object) -> Result<Self> {
     let name = get_named_property(env, &js_plugin_object, "name")?;
     let priority =
       get_named_property::<i32>(env, &js_plugin_object, "priority").unwrap_or(DEFAULT_PRIORITY);
 
     let build_start_hook_obj =
-      get_named_property::<JsObject>(env, &js_plugin_object, "buildStart").ok();
-    let resolve_hook_obj = get_named_property::<JsObject>(env, &js_plugin_object, "resolve").ok();
-    let load_hook_obj = get_named_property::<JsObject>(env, &js_plugin_object, "load").ok();
-    let transform_hook_obj =
-      get_named_property::<JsObject>(env, &js_plugin_object, "transform").ok();
-    let build_end_hook_obj =
-      get_named_property::<JsObject>(env, &js_plugin_object, "buildEnd").ok();
-    let finish_hook_obj = get_named_property::<JsObject>(env, &js_plugin_object, "finish").ok();
+      get_named_property::<Object>(env, &js_plugin_object, "buildStart").ok();
+    let resolve_hook_obj = get_named_property::<Object>(env, &js_plugin_object, "resolve").ok();
+    let load_hook_obj = get_named_property::<Object>(env, &js_plugin_object, "load").ok();
+    let transform_hook_obj = get_named_property::<Object>(env, &js_plugin_object, "transform").ok();
+    let build_end_hook_obj = get_named_property::<Object>(env, &js_plugin_object, "buildEnd").ok();
+    let finish_hook_obj = get_named_property::<Object>(env, &js_plugin_object, "finish").ok();
     let update_modules_hook_obj =
-      get_named_property::<JsObject>(env, &js_plugin_object, "updateModules").ok();
+      get_named_property::<Object>(env, &js_plugin_object, "updateModules").ok();
     let plugin_cache_loaded_obj =
-      get_named_property::<JsObject>(env, &js_plugin_object, "pluginCacheLoaded").ok();
+      get_named_property::<Object>(env, &js_plugin_object, "pluginCacheLoaded").ok();
     let write_plugin_cache_obj =
-      get_named_property::<JsObject>(env, &js_plugin_object, "writePluginCache").ok();
-    let render_resource_pot_obj =
-      get_named_property::<JsObject>(env, &js_plugin_object, "renderResourcePot").ok();
-    let render_start_obj =
-      get_named_property::<JsObject>(env, &js_plugin_object, "renderStart").ok();
+      get_named_property::<Object>(env, &js_plugin_object, "writePluginCache").ok();
+    let process_rendered_resource_pot_obj =
+      get_named_property::<Object>(env, &js_plugin_object, "processRenderedResourcePot").ok();
+    let render_start_obj = get_named_property::<Object>(env, &js_plugin_object, "renderStart").ok();
     let augment_resource_hash_obj =
-      get_named_property::<JsObject>(env, &js_plugin_object, "augmentResourceHash").ok();
+      get_named_property::<Object>(env, &js_plugin_object, "augmentResourcePotHash").ok();
     let finalize_resources_obj =
-      get_named_property::<JsObject>(env, &js_plugin_object, "finalizeResources").ok();
+      get_named_property::<Object>(env, &js_plugin_object, "finalizeResources").ok();
     let transform_html_obj =
-      get_named_property::<JsObject>(env, &js_plugin_object, "transformHtml").ok();
+      get_named_property::<Object>(env, &js_plugin_object, "transformHtml").ok();
     let update_finished_obj =
-      get_named_property::<JsObject>(env, &js_plugin_object, "updateFinished").ok();
+      get_named_property::<Object>(env, &js_plugin_object, "updateFinished").ok();
     let process_module_obj =
-      get_named_property::<JsObject>(env, &js_plugin_object, "processModule").ok();
+      get_named_property::<Object>(env, &js_plugin_object, "processModule").ok();
     let freeze_module_obj =
-      get_named_property::<JsObject>(env, &js_plugin_object, "freezeModule").ok();
+      get_named_property::<Object>(env, &js_plugin_object, "freezeModule").ok();
 
     Ok(Self {
       name,
@@ -118,11 +129,11 @@ impl JsPluginAdapter {
         .map(|obj| JsPluginPluginCacheLoadedHook::new(env, obj)),
       js_write_plugin_cache: write_plugin_cache_obj
         .map(|obj| JsPluginWritePluginCacheHook::new(env, obj)),
-      // js_render_resource_pot_hook: render_resource_pot_obj
-      //   .map(|obj| JsPluginRenderResourcePotHook::new(env, obj)),
+      js_process_rendered_resource_pot_hook: process_rendered_resource_pot_obj
+        .map(|obj| JsPluginProcessRenderedResourcePotHook::new(env, obj)),
       js_render_start_hook: render_start_obj.map(|obj| JsPluginRenderStartHook::new(env, obj)),
-      // js_augment_resource_hash_hook: augment_resource_hash_obj
-      //   .map(|obj| JsPluginAugmentResourceHashHook::new(env, obj)),
+      js_augment_resource_pot_hash_hook: augment_resource_hash_obj
+        .map(|obj| JsPluginAugmentResourceHashHook::new(env, obj)),
       js_finalize_resources_hook: finalize_resources_obj
         .map(|obj| JsPluginFinalizeResourcesHook::new(env, obj)),
       js_transform_html_hook: transform_html_obj
@@ -131,8 +142,7 @@ impl JsPluginAdapter {
         .map(|obj| JsPluginUpdateFinishedHook::new(env, obj)),
       js_process_module_hook: process_module_obj
         .map(|obj| JsPluginProcessModuleHook::new(env, obj)),
-      js_freeze_module_hook: freeze_module_obj
-        .map(|obj| JsPluginFreezeModuleHook::new(env, obj)),
+      js_freeze_module_hook: freeze_module_obj.map(|obj| JsPluginFreezeModuleHook::new(env, obj)),
     })
   }
 
@@ -245,6 +255,7 @@ impl Plugin for JsPluginAdapter {
         content: result.unwrap_or(cloned_param.content),
         ..cloned_param
       };
+      check_module_filters!(self.name, "transform", &js_transform_hook.filters);
       js_transform_hook.call(cp, context.clone())
     } else if let Some(result) = result {
       Ok(Some(PluginTransformHookResult {
@@ -262,6 +273,7 @@ impl Plugin for JsPluginAdapter {
     context: &Arc<CompilationContext>,
   ) -> Result<Option<()>> {
     if let Some(ref js_process_module_hook) = self.js_process_module_hook {
+      check_module_filters!(self.name, "process_module", &js_process_module_hook.filters);
       return js_process_module_hook.call(param, context.clone());
     }
 
@@ -274,6 +286,7 @@ impl Plugin for JsPluginAdapter {
     context: &Arc<CompilationContext>,
   ) -> Result<Option<()>> {
     if let Some(ref js_freeze_module_hook) = self.js_freeze_module_hook {
+      check_module_filters!(self.name, "freeze_module", &js_freeze_module_hook.filters);
       return js_freeze_module_hook.call(param, context.clone());
     }
 
@@ -352,17 +365,83 @@ impl Plugin for JsPluginAdapter {
     }
   }
 
-  // fn render_resource_pot(
-  //   &self,
-  //   param: &farmfe_core::plugin::PluginRenderResourcePotHookParam,
-  //   context: &Arc<CompilationContext>,
-  // ) -> Result<Option<farmfe_core::plugin::PluginRenderResourcePotHookResult>> {
-  //   if let Some(js_plugin_render_resource_pot) = &self.js_render_resource_pot_hook {
-  //     js_plugin_render_resource_pot.call(param.clone(), context.clone())
-  //   } else {
-  //     Ok(None)
-  //   }
-  // }
+  fn process_rendered_resource_pot(
+    &self,
+    resource_pot: &mut farmfe_core::resource::resource_pot::ResourcePot,
+    context: &Arc<CompilationContext>,
+  ) -> Result<Option<()>> {
+    if matches!(resource_pot.resource_pot_type, ResourcePotType::Custom(_)) {
+      return Ok(None);
+    }
+
+    if let Some(js_plugin_process_rendered_resource_pot) =
+      &self.js_process_rendered_resource_pot_hook
+    {
+      let params = JsResourcePot::new(resource_pot, context);
+      let rendered_result =
+        js_plugin_process_rendered_resource_pot.call(params, context.clone())?;
+
+      if let Some(res) = rendered_result {
+        // append source map to the resource pot
+        if let Some(source_map) = res.source_map {
+          if res.ignore_previous_source_map.unwrap_or(false) {
+            resource_pot.source_map_chain.clear();
+          }
+
+          resource_pot.source_map_chain.push(Arc::new(source_map));
+        }
+
+        // parse the rendered result and write back to resource_pot.meta
+        match resource_pot.resource_pot_type {
+          ResourcePotType::DynamicEntryJs | ResourcePotType::Js => {
+            let ParseScriptModuleResult {
+              ast,
+              comments,
+              source_map,
+            } = parse_module(
+              &resource_pot.id.as_str().into(),
+              Arc::new(res.content),
+              Syntax::Es(Default::default()),
+              Default::default(),
+            )?;
+
+            context
+              .meta
+              .set_resource_pot_source_map(&resource_pot.id, source_map);
+
+            resource_pot.meta.as_js_mut().ast = ast;
+            resource_pot.meta.as_js_mut().comments = comments.into()
+          }
+          ResourcePotType::Css => {
+            let ParseCssModuleResult {
+              ast,
+              comments,
+              source_map,
+            } = parse_css_stylesheet(&resource_pot.id, Arc::new(res.content))?;
+
+            context
+              .meta
+              .set_resource_pot_source_map(&resource_pot.id, source_map);
+
+            resource_pot.meta.as_css_mut().ast = ast;
+            resource_pot.meta.as_css_mut().comments = comments.into()
+          }
+          ResourcePotType::Html => {
+            let ast = parse_html_document(&resource_pot.id, Arc::new(res.content))?;
+
+            resource_pot.meta.as_html_mut().ast = ast;
+          }
+          ResourcePotType::Custom(_) => {
+            unreachable!("custom resource pot type can not be handled by js plugins")
+          }
+        }
+      }
+
+      Ok(Some(()))
+    } else {
+      Ok(None)
+    }
+  }
 
   fn render_start(
     &self,
@@ -377,17 +456,18 @@ impl Plugin for JsPluginAdapter {
     }
   }
 
-  // fn augment_resource_hash(
-  //   &self,
-  //   render_pot_info: &farmfe_core::resource::resource_pot::ResourcePotInfo,
-  //   context: &Arc<CompilationContext>,
-  // ) -> Result<Option<String>> {
-  //   if let Some(js_augment_resource_hash_hook) = &self.js_augment_resource_hash_hook {
-  //     js_augment_resource_hash_hook.call(render_pot_info.clone(), context.clone())
-  //   } else {
-  //     Ok(None)
-  //   }
-  // }
+  fn augment_resource_pot_hash(
+    &self,
+    render_pot: &farmfe_core::resource::resource_pot::ResourcePot,
+    context: &Arc<CompilationContext>,
+  ) -> Result<Option<String>> {
+    if let Some(js_augment_resource_pot_hash) = &self.js_augment_resource_pot_hash_hook {
+      let params = JsResourcePot::new(render_pot, context);
+      js_augment_resource_pot_hash.call(params, context.clone())
+    } else {
+      Ok(None)
+    }
+  }
 
   fn finalize_resources(
     &self,
@@ -433,7 +513,7 @@ impl Plugin for JsPluginAdapter {
   }
 }
 
-pub fn get_named_property<T: FromNapiValue>(env: &Env, obj: &JsObject, field: &str) -> Result<T> {
+pub fn get_named_property<T: FromNapiValue>(env: &Env, obj: &Object, field: &str) -> Result<T> {
   // TODO: maybe can prompt for the name of the plugin
   if obj.has_named_property(field).map_err(|e| {
     CompilationError::NAPIError(format!("Get field {field} of config object failed. {e:?}"))
@@ -442,7 +522,7 @@ pub fn get_named_property<T: FromNapiValue>(env: &Env, obj: &JsObject, field: &s
       T::from_napi_value(
         env.raw(),
         obj
-          .get_named_property::<JsUnknown>(field)
+          .get_named_property::<Unknown>(field)
           .map_err(|e| {
             CompilationError::NAPIError(format!("Get field {field} of config object failed. {e:?}"))
           })?

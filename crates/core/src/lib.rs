@@ -30,7 +30,6 @@ pub const VERSION: &str = "0.5.0";
 
 // re-export common external crates
 pub use dashmap;
-pub use enhanced_magic_string;
 pub use heck;
 pub use lazy_static;
 pub use parking_lot;
@@ -41,8 +40,6 @@ pub use rayon;
 pub use regex;
 pub use relative_path;
 pub use rkyv;
-pub use rkyv_dyn;
-pub use rkyv_typename;
 pub use serde;
 pub use serde_json;
 pub use swc_common;
@@ -84,18 +81,16 @@ macro_rules! farm_profile_function {
 #[macro_export]
 macro_rules! serialize {
   ($t:expr) => {{
-    let bytes = rkyv::to_bytes::<_, 1024>($t).unwrap();
+    let bytes = rkyv::to_bytes::<rkyv::rancor::Error>($t).unwrap();
     bytes.to_vec()
   }};
 }
 
 #[macro_export]
 macro_rules! deserialize {
-  ($bytes:expr, $ty:ty) => {{
-    let archived = unsafe { rkyv::archived_root::<$ty>($bytes) };
-    let deserialized: $ty = archived
-      .deserialize(&mut rkyv::de::deserializers::SharedDeserializeMap::new())
-      .unwrap();
+  ($bytes:expr, $ty:ty, $archived_ty:ty) => {{
+    let archived = unsafe { rkyv::access_unchecked::<$archived_ty>($bytes) };
+    let deserialized: $ty = rkyv::deserialize::<$ty, rkyv::rancor::Error>(archived).unwrap();
 
     deserialized
   }};

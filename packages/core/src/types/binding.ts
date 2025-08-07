@@ -110,6 +110,8 @@ type BrowserTargetsRecord = Partial<
   >
 > & { [key: string]: string };
 
+export type ModuleFormat = 'cjs' | 'esm';
+
 export interface OutputConfig {
   /**
    * Configure the file name of the output files which contain the entry modules. Prior to filename
@@ -124,7 +126,7 @@ export interface OutputConfig {
    */
   path?: string;
   /**
-   * resource loading prefix. for example, if publicPath is `https://xxx.cdn.comm`,
+   * resource loading prefix. for example, if publicPath is `https://xxx.cdn.com`,
    * then the url output files in html will be `https://xxx.cdn.com/index_ecad.xxxx.js`
    *
    * default by `output.targetEnv`, if node, publicPath is `./`, if browser, publicPath is `/`
@@ -153,7 +155,7 @@ export interface OutputConfig {
   /**
    * output module format
    */
-  format?: 'cjs' | 'esm';
+  format?: ModuleFormat | ModuleFormat[];
   /**
    * clean output.path automatically or not
    */
@@ -162,6 +164,12 @@ export interface OutputConfig {
    * Whether to show print file size of final output files.
    */
   showFileSize?: boolean;
+
+  /**
+   * output ascii only
+   * @default false
+   */
+  asciiOnly?: boolean;
 }
 
 export interface ResolveConfig {
@@ -387,7 +395,6 @@ export interface PartialBundlingConfig {
     test: string[];
     groupType?: 'mutable' | 'immutable';
     resourceType?: 'all' | 'initial' | 'async';
-    enforce?: boolean;
   }[];
   /**
    * Array to match the modules that should always be in the same bundles, ignore all other constraints.
@@ -427,7 +434,7 @@ export interface Config {
     /**
      * Compilation entries
      *
-     * tip: if set to `null` or `undefined`, farm will be remove field
+     * tip: if the value is `null` or `undefined`, it will be ignored
      */
     input?: Record<string, string | undefined | null>;
     /**

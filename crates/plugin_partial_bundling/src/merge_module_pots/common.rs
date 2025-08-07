@@ -10,16 +10,17 @@ pub fn create_test_module_pot(
   size: usize,
   immutable: bool,
 ) -> ModulePot {
+  use crate::generate_module_pots::ModulePotSourceType;
+
   let module_b = module_graph.module_mut(module_id).unwrap();
   module_b.size = size;
   module_b.immutable = immutable;
 
   let mut module_pot = ModulePot::new(
-    module_b.id.to_string(),
-    Some(name.to_string()),
+    name.to_string(),
+    ModulePotSourceType::MutableModule,
     module_b.module_type.clone(),
     module_b.immutable,
-    false,
   );
 
   module_pot.add_module(module_b.id.clone(), module_b.size, module_b.execution_order);

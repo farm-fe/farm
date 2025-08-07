@@ -3,7 +3,6 @@ use petgraph::{
   stable_graph::{DefaultIx, NodeIndex, StableDiGraph},
   visit::{Bfs, Dfs, DfsPostOrder, EdgeRef, IntoEdgeReferences},
 };
-use rkyv::Deserialize;
 
 use crate::resource::{resource_pot::ResourcePotId, resource_pot_map::ResourcePotMap};
 use crate::{HashMap, HashSet};
@@ -90,6 +89,19 @@ impl ModuleGroupGraph {
   /// get the topologically sorted module groups
   pub fn module_groups(&self) -> Vec<&ModuleGroup> {
     self.g.node_weights().collect()
+  }
+
+  pub fn edges(&self) -> Vec<(ModuleGroupId, ModuleGroupId)> {
+    self
+      .g
+      .edge_references()
+      .map(|edge| {
+        let source = self.g[edge.source()].id.clone();
+        let target = self.g[edge.target()].id.clone();
+
+        (source, target)
+      })
+      .collect()
   }
 
   /// the same as [ModuleGroupGraph::module_groups], but mutable.
@@ -284,7 +296,7 @@ impl Eq for ModuleGroupGraph {}
 #[derive(
   Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Clone, serde::Serialize, serde::Deserialize,
 )]
-#[archive_attr(derive(Hash, Eq, PartialEq))]
+#[rkyv(derive(Hash, Eq, PartialEq))]
 pub struct ModuleGroupId(String);
 
 impl ModuleGroupId {

@@ -117,20 +117,19 @@ fn serialize_resolve_error(
   importer: &str,
   source: &Option<Box<dyn Error + Send + Sync>>,
 ) -> serde_json::Value {
-  let mut msg = format!("Can not resolve `{}` from `{}`.", src, importer);
+  let mut msg = format!("Can not resolve `{src}` from `{importer}`.");
   if let Some(source) = source {
-    msg.push_str(&format!("\nOriginal error: {}.", source));
+    msg.push_str(&format!("\nOriginal error: {source}."));
   }
 
   let cause = format!(
       "Potential Causes:\n\
-       1. The file that `{}` points to does not exist.\n\
-       2. Install it first if `{}` is a dependency from node_modules. If you are using pnpm, refer to [https://pnpm.io/faq#pnpm-does-not-work-with-your-project-here] for solutions.\n\
-       3. If `{}` is an alias, make sure your alias config is correct.",
-      src, src, src
+       1. The file that `{src}` points to does not exist.\n\
+       2. Install it first if `{src}` is a dependency from node_modules. If you are using pnpm, refer to [https://pnpm.io/faq#pnpm-does-not-work-with-your-project-here] for solutions.\n\
+       3. If `{src}` is an alias, make sure your alias config is correct.",
   );
 
-  let full_message = format!("{}\n{}", msg, cause);
+  let full_message = format!("{msg}\n{cause}");
 
   json!({
       "id": importer,

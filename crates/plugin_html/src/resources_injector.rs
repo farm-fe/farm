@@ -197,7 +197,7 @@ impl<'a> ResourcesInjector<'a> {
     element.children.push(Child::Element(create_element(
       "script",
       None,
-      vec![("src", &format!("/{name}"))],
+      vec![("src", &format!("{}{}", self.options.public_path, name))],
     )));
 
     self.additional_inject_resources.push(resource);

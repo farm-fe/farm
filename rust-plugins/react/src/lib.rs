@@ -9,11 +9,14 @@ use farmfe_core::{
 
 use farmfe_macro_plugin::farm_plugin;
 
+use farmfe_toolkit_plugin_types::{
+  libloading::Library,
+  load_core_lib,
+  swc_transforms::{swc_transform_react, FarmSwcTransformReactOptions},
+};
 use react_refresh::{inject_react_refresh, IS_REACT_REFRESH_BOUNDARY};
-use react_transform::{farm_swc_transform_react, FarmSwcTransformReactOptions};
 
 mod react_refresh;
-mod react_transform;
 
 const GLOBAL_INJECT_MODULE_ID: &str = "farmfe_plugin_react_global_inject";
 
@@ -26,7 +29,7 @@ struct SwcTransformReactOptions {
 
 #[farm_plugin]
 pub struct FarmPluginReact {
-  // core_lib: Library,
+  core_lib: Library,
   options: String,
   enable_react_refresh: bool,
   use_absolute_path: bool,
@@ -44,7 +47,7 @@ impl FarmPluginReact {
     let options = serde_json::to_string(&options_obj).unwrap();
 
     Self {
-      // core_lib: load_core_lib(config.core_lib_path.as_ref().unwrap()),
+      core_lib: load_core_lib(config.core_lib_path.as_ref().unwrap()),
       options,
       enable_react_refresh: is_dev && react_options.refresh.unwrap_or(true),
       use_absolute_path: react_options.use_absolute_path.unwrap_or(false),
@@ -136,24 +139,25 @@ impl Plugin for FarmPluginReact {
       };
 
       let (cm, _) = create_swc_source_map(&file_name.into(), param.content.clone());
-      let globals = context.meta.get_globals(&param.module_id);
+      let globals = context.meta.get_globals(param.module_id);
 
-      farm_swc_transform_react(
+      swc_transform_react(
+        &self.core_lib,
         ast,
         FarmSwcTransformReactOptions {
           top_level_mark,
           unresolved_mark,
           inject_helpers: true,
           cm,
-          comments,
           globals: globals.value(),
           mode: context.config.mode,
           options: self.options.clone(),
+          comments,
         },
       )?;
 
       if self.enable_react_refresh {
-        inject_react_refresh(ast);
+        inject_react_refresh(&self.core_lib, ast);
       }
 
       return Ok(Some(()));

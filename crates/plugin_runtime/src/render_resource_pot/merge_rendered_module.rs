@@ -71,7 +71,6 @@ pub(crate) fn wrap_resource_pot_ast(
      moduleSystem.g(moduleId, module);
    }
  })("farm_module_system", "farm_object_lit");"#,
-    true,
   )
   .unwrap();
 

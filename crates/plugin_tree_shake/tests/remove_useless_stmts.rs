@@ -5,7 +5,6 @@ use farmfe_core::{
   module::module_graph::{ModuleGraph, ModuleGraphEdge, ModuleGraphEdgeDataItem},
   plugin::ResolveKind,
   swc_common::{Globals, GLOBALS},
-  swc_ecma_ast::EsVersion,
 };
 use farmfe_core::{HashMap, HashSet};
 use farmfe_plugin_tree_shake::{
@@ -81,7 +80,7 @@ export default 'default';
     let module = module_graph.module(&module_id).unwrap();
     let swc_module = &module.meta.as_script().ast;
 
-    let bytes = codegen_module(swc_module, EsVersion::EsNext, cm, None, false, None).unwrap();
+    let bytes = codegen_module(swc_module, cm, None, Default::default(), None).unwrap();
     let result = String::from_utf8(bytes).unwrap();
     println!("{result}");
     let expect = r#"import { aValue } from './foo';
@@ -123,10 +122,6 @@ export * from './src/foo';
   GLOBALS.set(&globals, || {
     let (mut module, cm) = create_module(code);
     let mut tree_shake_module = TreeShakeModule::new(&mut module);
-    // tree_shake_module.used_exports = UsedExports::Partial(HashMap::from([(
-    //   "index.ts".into(),
-    //   vec!["a".to_string(), "c".to_string(), "d".to_string()],
-    // )]));
     tree_shake_module.pending_used_exports = UsedExports::Partial(HashSet::from_iter([
       UsedExportsIdent::SwcIdent("a".to_string()),
       UsedExportsIdent::SwcIdent("c".to_string()),
@@ -143,7 +138,7 @@ export * from './src/foo';
     let module = module_graph.module(&module_id).unwrap();
     let swc_module = &module.meta.as_script().ast;
 
-    let bytes = codegen_module(swc_module, EsVersion::EsNext, cm, None, false, None).unwrap();
+    let bytes = codegen_module(swc_module, cm, None, Default::default(), None).unwrap();
     let result = String::from_utf8(bytes).unwrap();
     assert_eq!(
       result,
@@ -198,7 +193,7 @@ export * from './src/bar';
     let module = module_graph.module(&module_id).unwrap();
     let swc_module = &module.meta.as_script().ast;
 
-    let bytes = codegen_module(swc_module, EsVersion::EsNext, cm, None, false, None).unwrap();
+    let bytes = codegen_module(swc_module, cm, None, Default::default(), None).unwrap();
     let result = String::from_utf8(bytes).unwrap();
     assert_eq!(
       result,
@@ -261,7 +256,7 @@ fn remove_useless_stmts_nested_defined_idents() {
     let module = module_graph.module(&module_id).unwrap();
     let swc_module = &module.meta.as_script().ast;
 
-    let bytes = codegen_module(swc_module, EsVersion::EsNext, cm, None, false, None).unwrap();
+    let bytes = codegen_module(swc_module, cm, None, Default::default(), None).unwrap();
     let result = String::from_utf8(bytes).unwrap();
 
     let expect = r#"import { a, invalidate } from './dep';
@@ -325,7 +320,7 @@ fn trace_loadable_esm() {
         .meta
         .as_script()
         .ast;
-      let code_bytes = codegen_module(ast, EsVersion::EsNext, cm, None, false, None).unwrap();
+      let code_bytes = codegen_module(ast, cm, None, Default::default(), None).unwrap();
       let code = String::from_utf8(code_bytes).unwrap();
 
       let output_path = PathBuf::from(file).parent().unwrap().join("output.js");
@@ -382,7 +377,7 @@ fn trace_complex_decl_stmt() {
       .meta
       .as_script()
       .ast;
-    let code_bytes = codegen_module(ast, EsVersion::EsNext, cm, None, false, None).unwrap();
+    let code_bytes = codegen_module(ast, cm, None, Default::default(), None).unwrap();
     let code = String::from_utf8(code_bytes).unwrap();
 
     assert_eq!(code.replace("\r\n", "\n"), r#"import { h, BaseTransition, BaseTransitionPropsValidators } from '@vue/runtime-core';

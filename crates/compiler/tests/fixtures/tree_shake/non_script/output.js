@@ -1,13 +1,18 @@
 //farm_internal_runtime_index.js:
- const moduleSystem = {};
+ const __farm_internal_module_system__ = {};
 function initModuleSystem() {
     console.log('module-helper.ts');
 }
-initModuleSystem(moduleSystem);
+initModuleSystem(__farm_internal_module_system__);
 
+
+//index-337cc548.css:
+ body {
+  color: red;
+}
 
 //index.js:
- import "./farm_internal_runtime_index.js";import "./index_337c.css";(function(moduleSystem, modules) {
+ import "./farm_internal_runtime_index.js";import "./index-337cc548.css";(function(moduleSystem, modules) {
     for(var moduleId in modules){
         var module = modules[moduleId];
         moduleSystem.g(moduleId, module);
@@ -20,8 +25,3 @@ initModuleSystem(moduleSystem);
     }
 });
 var __farm_ms__ = window['__farm_default_namespace__'].m;__farm_ms__.b();var __farm_entry__=__farm_ms__.r("b5d64806");
-
-//index_337c.css:
- body {
-  color: red;
-}

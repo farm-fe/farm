@@ -6,11 +6,10 @@ use blake2::{
   Blake2bVar,
 };
 use farmfe_macro_cache_item::cache_item;
-use farmfe_utils::relative;
+use farmfe_utils::{bytes_str::FarmBytesStr, relative};
 use heck::AsLowerCamelCase;
 pub use meta_data::{custom::CustomMetaDataMap, script::ModuleSystem, ModuleMetaData};
 use relative_path::RelativePath;
-use rkyv::Deserialize;
 
 use crate::{config::Mode, resource::resource_pot::ResourcePotId};
 
@@ -151,7 +150,7 @@ impl ModuleType {
 
   pub fn to_custom_css(&self, scope: &str) -> Option<ModuleType> {
     if self.is_css() && !matches!(self, Self::Custom(_)) {
-      return Some(ModuleType::Custom(format!("farm_css:{}", scope)));
+      return Some(ModuleType::Custom(format!("farm_css:{scope}")));
     }
 
     None
@@ -159,7 +158,7 @@ impl ModuleType {
 
   pub fn to_custom_script(&self, scope: &str) -> Option<ModuleType> {
     if self.is_script() && !matches!(self, Self::Custom(_)) {
-      return Some(ModuleType::Custom(format!("farm_script:{}", scope)));
+      return Some(ModuleType::Custom(format!("farm_script:{scope}")));
     }
 
     None
@@ -174,19 +173,14 @@ impl ModuleType {
       return script;
     }
 
-    panic!(
-      "Unsupported module type: {:?} when calling ModuleType::to_custom",
-      self
-    );
+    panic!("Unsupported module type: {self:?} when calling ModuleType::to_custom");
   }
 
   pub fn is_css(&self) -> bool {
     let mut m = matches!(self, ModuleType::Css);
 
-    if !m {
-      if let ModuleType::Custom(s) = self {
-        m = s.starts_with("farm_css:");
-      }
+    if !m && let ModuleType::Custom(s) = self {
+      m = s.starts_with("farm_css:");
     }
 
     m
@@ -198,10 +192,8 @@ impl ModuleType {
       ModuleType::Js | ModuleType::Jsx | ModuleType::Ts | ModuleType::Tsx
     );
 
-    if !m {
-      if let ModuleType::Custom(s) = self {
-        m = s.starts_with("farm_script:");
-      }
+    if !m && let ModuleType::Custom(s) = self {
+      m = s.starts_with("farm_script:");
     }
 
     m
@@ -247,10 +239,10 @@ impl ToString for ModuleType {
 /// Abstract ModuleId from the module's resolved id
 #[cache_item]
 #[derive(PartialEq, Eq, Hash, Clone, Debug, PartialOrd, Ord)]
-#[archive_attr(derive(Hash, Eq, PartialEq))]
+#[rkyv(derive(Hash, Eq, PartialEq))]
 pub struct ModuleId {
-  relative_path: String,
-  query_string: String,
+  relative_path: FarmBytesStr,
+  query_string: FarmBytesStr,
 }
 
 const LEN: usize = 4;
@@ -266,8 +258,8 @@ impl ModuleId {
     };
 
     Self {
-      relative_path,
-      query_string: query_string.to_string(),
+      relative_path: FarmBytesStr::from(relative_path),
+      query_string: FarmBytesStr::from(query_string.to_string()),
     }
   }
 
@@ -284,10 +276,10 @@ impl ModuleId {
   /// return self.relative_path and self.query_string in dev,
   /// return hash(self.relative_path) in prod
   pub fn id(&self, mode: Mode) -> String {
-    if let Ok(val) = std::env::var("FARM_DEBUG_ID") {
-      if !val.is_empty() {
-        return self.to_string();
-      }
+    if let Ok(val) = std::env::var("FARM_DEBUG_ID")
+      && !val.is_empty()
+    {
+      return self.to_string();
     }
 
     match mode {
@@ -298,11 +290,11 @@ impl ModuleId {
 
   /// transform the id back to relative path
   pub fn relative_path(&self) -> &str {
-    &self.relative_path
+    self.relative_path.as_str()
   }
 
   pub fn query_string(&self) -> &str {
-    &self.query_string
+    self.query_string.as_str()
   }
 
   /// transform the id back to resolved path
@@ -349,8 +341,8 @@ impl From<&str> for ModuleId {
     let (rp, qs) = Self::split_query(rp);
 
     Self {
-      relative_path: rp,
-      query_string: qs,
+      relative_path: FarmBytesStr::from(rp),
+      query_string: FarmBytesStr::from(qs),
     }
   }
 }
@@ -494,6 +486,7 @@ mod tests {
 
   #[test]
   fn module_serialization() {
+    println!("module serialization");
     let mut module = Module::new(ModuleId::new("/root/index.ts", "", "/root"));
 
     #[cache_item]
@@ -517,14 +510,6 @@ mod tests {
         }) as Box<dyn Cacheable>,
       )]),
     )));
-
-    // let mut v = Box::new(StructModuleData {
-    //   ast: String::from("ast"),
-    //   imports: vec![String::from("./index")],
-    // }) as Box<dyn Cacheable>;
-
-    // let value = v.as_any_mut().downcast_mut::<StructModuleData>().unwrap();
-    // let module = std::mem::take(value);
 
     let bytes = module.serialize_bytes().unwrap();
     let mut deserialized_module = Module::deserialize_bytes(bytes).unwrap();

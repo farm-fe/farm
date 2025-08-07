@@ -17,11 +17,15 @@ pub struct ResourcePot {
   pub id: ResourcePotId,
   pub name: String,
   pub resource_pot_type: ResourcePotType,
+  pub modules_name_hash: String,
   pub modules: HashSet<ModuleId>,
   pub meta: ResourcePotMetaData,
   /// [None] if this [ResourcePot] does not contain entry module defined in config.input.
   /// [Some(entry_id)] otherwise
   pub entry_module: Option<ModuleId>,
+  /// [None] if this [ResourcePot] does not contain module that is being dynamic imported by import()
+  /// [Some(dynamic_imported_entry_id)] otherwise
+  pub dynamic_imported_entry_module: Option<ModuleId>,
   pub source_map_chain: Vec<Arc<String>>,
   /// the resources generated in this [ResourcePot]
   resources: HashSet<String>,
@@ -45,8 +49,13 @@ impl serde::Serialize for ResourcePot {
     state.serialize_field("id", &self.id)?;
     state.serialize_field("name", &self.name)?;
     state.serialize_field("resource_pot_type", &self.resource_pot_type)?;
+    state.serialize_field("modules_name_hash", &self.modules_name_hash)?;
     state.serialize_field("modules", &self.modules)?;
     state.serialize_field("entry_module", &self.entry_module)?;
+    state.serialize_field(
+      "dynamic_imported_entry_module",
+      &self.dynamic_imported_entry_module,
+    )?;
     state.serialize_field("resources", &self.resources)?;
     state.serialize_field("module_groups", &self.module_groups)?;
     state.serialize_field("immutable", &self.immutable)?;
@@ -55,15 +64,17 @@ impl serde::Serialize for ResourcePot {
 }
 
 impl ResourcePot {
-  pub fn new(name: String, ty: ResourcePotType) -> Self {
+  pub fn new(name: &str, hash: &str, ty: ResourcePotType) -> Self {
     Self {
-      id: Self::gen_id(&name, ty.clone()),
-      name,
+      id: Self::gen_id(name, hash, ty.clone()),
+      name: name.to_string(),
       resource_pot_type: ty,
+      modules_name_hash: "".to_string(),
       modules: HashSet::default(),
       meta: ResourcePotMetaData::default(),
       source_map_chain: vec![],
       entry_module: None,
+      dynamic_imported_entry_module: None,
       resources: HashSet::default(),
       module_groups: HashSet::default(),
       immutable: false,
@@ -71,13 +82,12 @@ impl ResourcePot {
     }
   }
 
-  pub fn gen_id(name: &str, ty: ResourcePotType) -> String {
-    format!("{}_{}", name, ty.to_string())
+  pub fn gen_id(name: &str, hash: &str, ty: ResourcePotType) -> String {
+    format!("{}_{}_{}", name, hash, ty.to_string())
   }
 
   pub fn set_resource_pot_id(&mut self, id: String) {
     self.id.clone_from(&id);
-    // self.info.id = id;
   }
 
   pub fn add_module(&mut self, module_id: ModuleId) {
@@ -126,11 +136,11 @@ pub type ResourcePotId = String;
 #[cache_item]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum ResourcePotType {
-  Runtime,
+  // Resource pot generated from dynamic entry, used for dynamic added bundle like Runtime or Worker
+  DynamicEntryJs,
   Js,
   Css,
   Html,
-  Asset,
   Custom(String),
 }
 
@@ -159,8 +169,7 @@ impl From<ModuleType> for ResourcePotType {
       ModuleType::Js | ModuleType::Jsx | ModuleType::Ts | ModuleType::Tsx => Self::Js,
       ModuleType::Css => Self::Css,
       ModuleType::Html => Self::Html,
-      ModuleType::Asset => Self::Asset,
-      // ModuleType::Runtime => Self::Runtime,
+      ModuleType::Asset => unreachable!(),
       ModuleType::Custom(c) => Self::Custom(c),
     }
   }
@@ -168,18 +177,23 @@ impl From<ModuleType> for ResourcePotType {
 
 impl ToString for ResourcePotType {
   fn to_string(&self) -> String {
-    format!("{self:?}").to_lowercase()
+    match self {
+      Self::DynamicEntryJs => "dynamic_entry_js".to_string(),
+      Self::Js => "js".to_string(),
+      Self::Css => "css".to_string(),
+      Self::Html => "html".to_string(),
+      Self::Custom(s) => s.clone(),
+    }
   }
 }
 
 impl From<String> for ResourcePotType {
   fn from(s: String) -> Self {
     match s.as_str() {
-      "runtime" => Self::Runtime,
+      "dynamic_entry_js" => Self::DynamicEntryJs,
       "js" => Self::Js,
       "css" => Self::Css,
       "html" => Self::Html,
-      "asset" => Self::Asset,
       _ => Self::Custom(s),
     }
   }

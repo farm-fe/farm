@@ -4,3 +4,4 @@
  */
 export type { Module, ModuleSystem } from './module-system.js';
 export type { Resource } from './modules/dynamic-import.js';
+export type { FarmRuntimePlugin, FarmRuntimePluginContainer } from './modules/plugin.js';

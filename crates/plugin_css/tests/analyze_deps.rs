@@ -19,11 +19,11 @@ fn analyze_deps() {
     let config = Config {
       resolve: Box::new(ResolveConfig {
         alias: vec![
-          AliasItem::Complex {
+          AliasItem {
             find: StringOrRegex::String("/@".to_string()),
             replacement: cwd.to_string_lossy().to_string(),
           },
-          AliasItem::Complex {
+          AliasItem {
             find: StringOrRegex::String("@".to_string()),
             replacement: cwd.to_string_lossy().to_string(),
           },

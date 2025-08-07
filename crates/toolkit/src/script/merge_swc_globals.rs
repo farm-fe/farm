@@ -27,8 +27,16 @@ pub fn merge_comments(
     let start_pos = source_file.start_pos;
     let comments = std::mem::take(module_comments);
 
+    let get_byte_pos = |byte_pos: BytePos| {
+      if byte_pos.is_dummy() || byte_pos.is_reserved_for_comments() {
+        byte_pos
+      } else {
+        start_pos + byte_pos
+      }
+    };
+
     for item in comments.leading {
-      let byte_pos = start_pos + item.byte_pos;
+      let byte_pos = get_byte_pos(item.byte_pos);
       // insert comments whose byte_pos is updated to the new position
       for comment in item.comment {
         merged_comments.add_leading(byte_pos, comment);
@@ -36,7 +44,7 @@ pub fn merge_comments(
     }
 
     for item in comments.trailing {
-      let byte_pos = start_pos + item.byte_pos;
+      let byte_pos = get_byte_pos(item.byte_pos);
       // insert comments whose byte_pos is updated to the new position
       for comment in item.comment {
         merged_comments.add_trailing(byte_pos, comment);
@@ -62,7 +70,7 @@ pub fn merge_sourcemap(
     // for scope hoisted module, the source map may be combined with other modules
     // so we need to merge all source files to the new source map
     cm.files().iter().for_each(|source_file| {
-      new_cm.new_source_file_from(source_file.name.clone(), source_file.src.clone());
+      new_cm.new_source_file(source_file.name.clone(), source_file.src.clone());
     });
   }
 
@@ -85,6 +93,11 @@ struct SpanUpdater {
 
 impl VisitMut for SpanUpdater {
   fn visit_mut_span(&mut self, node: &mut farmfe_core::swc_common::Span) {
+    // Do not update the span if it's auto-generated
+    if node.lo.is_dummy() || node.lo.is_reserved_for_comments() {
+      return;
+    }
+
     node.lo = self.start_pos + node.lo;
     node.hi = self.start_pos + node.hi;
   }

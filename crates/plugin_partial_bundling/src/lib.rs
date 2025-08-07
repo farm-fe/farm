@@ -1,16 +1,13 @@
 use std::sync::Arc;
-use std::sync::RwLock;
 
 pub use analyze_module_graph::module_group_graph_from_entries;
 pub use analyze_module_graph::module_group_graph_from_module_graph;
-use farmfe_core::config::custom::CUSTOM_CONFIG_PARTIAL_BUNDLING_GROUPS_ENFORCE_MAP;
 use farmfe_core::{
   config::Config,
   context::CompilationContext,
   module::{module_graph::ModuleGraph, module_group::ModuleGroupGraph, ModuleId},
   plugin::{Plugin, PluginHookContext},
   resource::resource_pot::ResourcePot,
-  HashMap,
 };
 use generate_module_buckets::{generate_module_buckets_map, group_module_buckets_by_module_group};
 use generate_resource_pots::generate_resource_pots;
@@ -27,24 +24,9 @@ mod utils;
 
 /// Partial Bundling implementation for Farm.
 /// See https://github.com/farm-fe/rfcs/pull/9
-pub struct FarmPluginPartialBundling {
-  partial_bundling_groups_enforce_map: RwLock<HashMap<String, bool>>,
-}
+pub struct FarmPluginPartialBundling {}
 
 impl Plugin for FarmPluginPartialBundling {
-  fn config(&self, config: &mut Config) -> farmfe_core::error::Result<Option<()>> {
-    *self.partial_bundling_groups_enforce_map.write().unwrap() = config
-      .custom
-      .get(CUSTOM_CONFIG_PARTIAL_BUNDLING_GROUPS_ENFORCE_MAP)
-      .map(|s| {
-        farmfe_core::serde_json::from_str(s)
-          .expect("failed to parse partial bundling group enforce map")
-      })
-      .unwrap_or_default();
-
-    Ok(Some(()))
-  }
-
   fn name(&self) -> &str {
     "FarmPluginPartialBundling"
   }
@@ -81,8 +63,6 @@ impl Plugin for FarmPluginPartialBundling {
     let module_group_buckets =
       group_module_buckets_by_module_group(&module_buckets_map, &module_group_graph, &module_graph);
 
-    let enforce_map = self.partial_bundling_groups_enforce_map.read().unwrap();
-
     // 3. generate resource pots
     let resource_pots = generate_resource_pots(
       module_group_buckets,
@@ -90,7 +70,6 @@ impl Plugin for FarmPluginPartialBundling {
       &module_graph,
       &module_group_graph,
       &context.config,
-      &enforce_map,
     );
 
     Ok(Some(resource_pots))
@@ -99,8 +78,6 @@ impl Plugin for FarmPluginPartialBundling {
 
 impl FarmPluginPartialBundling {
   pub fn new(_: &Config) -> Self {
-    Self {
-      partial_bundling_groups_enforce_map: RwLock::new(HashMap::default()),
-    }
+    Self {}
   }
 }

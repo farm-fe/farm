@@ -5,7 +5,7 @@ use farmfe_core::{
   module::ModuleId,
   plugin::{PluginHookContext, PluginLoadHookParam, PluginLoadHookResult},
 };
-use napi::{bindgen_prelude::FromNapiValue, NapiRaw};
+use napi::bindgen_prelude::FromNapiValue;
 use std::sync::Arc;
 
 use crate::{

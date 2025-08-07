@@ -6,7 +6,7 @@
     "node": ">=18",
     "pnpm": ">=9"
   },
-  "scripts": {
+    "scripts": {
     "preinstall": "npx only-allow pnpm",
     "bootstrap": "node scripts/bootstrap.mjs -v",
     "start:rs": "cargo watch -w crates -w rust-plugins -s 'scripts/watch.sh'",
@@ -22,10 +22,11 @@
     "bump:create-farm": "node scripts/bump-create-farm-version.mjs",
     "test:rs:update": "cross-env FARM_UPDATE_SNAPSHOTS=1 INSTA_UPDATE=always cargo test -p farmfe_compiler",
     "ready": "node scripts/ready.mjs",
-    "test-e2e": "vitest run -c vitest.config.e2e.ts arco-pro",
+    "test-e2e": "vitest run -c vitest.config.e2e.ts",
     "prepare": "husky",
     "clean": "node scripts/clean.mjs && rimraf node_modules **/*/node_modules",
-    "test": "echo 'fixme before merge to main'"
+    "test": "cross-env NODE_OPTIONS=--trace-exit vitest run -c vitest.config.ts --passWithNoTests",
+    "spell-check": "cspell \"**\" --gitignore"
   },
   "devDependencies": {
     "@biomejs/biome": "1.9.4",

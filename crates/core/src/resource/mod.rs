@@ -121,6 +121,8 @@ impl ResourceOrigin {
 #[serde(rename_all = "camelCase")]
 pub struct Resource {
   pub name: String,
+  /// name hash generated from the modules' name. See [ResourcePot::modules_name_hash]
+  pub name_hash: String,
   pub bytes: Vec<u8>,
   /// whether this resource emitted, true means this resource will not present in the final production
   pub emitted: bool,
@@ -133,18 +135,23 @@ pub struct Resource {
   /// for example: save resource code before update
   #[serde(skip)]
   pub meta: HashMap<String, String>,
+  /// special placeholders for this resource, for example: if we have placeholder format: esm, and the output filename is [format]/[name],
+  /// the final output filename will be esm/[name]
+  pub special_placeholders: HashMap<String, String>,
 }
 
 impl Default for Resource {
   fn default() -> Self {
     Self {
       name: "unknown".to_string(),
+      name_hash: "".to_string(),
       bytes: vec![],
       emitted: false,
       should_transform_output_filename: true,
       resource_type: ResourceType::Custom("unknown".to_string()),
       origin: ResourceOrigin::Module("unknown".into()),
       meta: HashMap::default(),
+      special_placeholders: HashMap::default(),
     }
   }
 }

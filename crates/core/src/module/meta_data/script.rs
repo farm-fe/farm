@@ -2,6 +2,7 @@ use std::{cell::RefCell, rc::Rc};
 
 use farmfe_macro_cache_item::cache_item;
 use feature_flag::FeatureFlag;
+use swc_atoms::Atom;
 use swc_common::{
   comments::{
     Comment, SingleThreadedComments, SingleThreadedCommentsMap, SingleThreadedCommentsMapInner,
@@ -18,17 +19,19 @@ use super::custom::CustomMetaDataMap;
 use statement::{Statement, SwcId};
 
 pub mod feature_flag;
+pub mod module_export_ident;
 pub mod statement;
 
+/// means the module is being fully imported by using import * as or export * as
 pub const EXPORT_NAMESPACE: &str = "namespace_farm_internal_";
+/// means the module is being exported by export *
+pub const AMBIGUOUS_EXPORT_ALL: &str = "ambiguous_export_all_farm_internal_";
 pub const EXPORT_DEFAULT: &str = "default";
 
-#[cache_item]
-#[derive(Debug, Clone, Hash, PartialEq, Eq)]
-pub struct ModuleExportIdent {
-  pub module_id: ModuleId,
-  pub ident: SwcId,
-}
+pub const FARM_RUNTIME_MODULE_HELPER_ID: &str = "@farm-runtime/module-helper";
+pub const FARM_RUNTIME_MODULE_SYSTEM_ID: &str = "@farm-runtime/module-system";
+
+pub use module_export_ident::{ModuleExportIdent, ModuleExportIdentType, ModuleReExportIdentType};
 
 /// Script specific meta data, for example, [swc_ecma_ast::Module]
 #[cache_item]
@@ -36,22 +39,47 @@ pub struct ScriptModuleMetaData {
   pub ast: SwcModule,
   pub top_level_mark: u32,
   pub unresolved_mark: u32,
-  pub module_system: ModuleSystem,
   /// true if this module calls `import.meta.hot.accept()` or `import.meta.hot.accept(mod => {})`
   pub hmr_self_accepted: bool,
   pub hmr_accepted_deps: HashSet<ModuleId>,
   pub comments: CommentsMetaData,
+
+  // -- Start
+  /// Generate in finalize_module hook, should be accessed after(not in) finalize_module hook
+  pub module_system: ModuleSystem,
+  pub contains_module_exports: bool,
+  pub contains_esm_decl: bool,
   pub statements: Vec<Statement>,
   pub top_level_idents: HashSet<SwcId>,
   pub unresolved_idents: HashSet<SwcId>,
+  /// all declared idents in the module, except top level idents
+  pub all_deeply_declared_idents: HashSet<Atom>,
   pub is_async: bool,
   pub feature_flags: HashSet<FeatureFlag>,
-  /// real export ident map, for example:
+  // -- End
+  /// Note: This field can be only accessed after(or in) optimize_module_graph hook
+  /// Real export ident map, for example:
   /// export { m as bar }
   /// export { foo as default } from './module';
   /// =>
   /// Map<String, SwcId> { bar -> m#1, default -> foo#1 where foo#1 is defined in './module' }
   pub export_ident_map: HashMap<String, ModuleExportIdent>,
+  /// Note: This field can be only accessed after(or in) optimize_module_graph hook
+  /// reexport ident map, this field only store the map of export string, the actual ident is defined in export_ident_map, for example:
+  /// export { foo as default } from './module';
+  /// =>
+  /// Map<String, ModuleReExportIdentType> { default -> FromExportNamed { local: 'foo', exported: Some('default') } }
+  pub reexport_ident_map: HashMap<String, ModuleReExportIdentType>,
+  /// Note: This field can be only accessed after(or in) optimize_module_graph hook
+  /// ambiguous export ident map, for example:
+  /// ```js
+  /// // dep.js
+  /// export * from 'module'; // where 'module' is a external module
+  /// export * from 'fs';
+  /// // index.js
+  /// import { foo } from './dep'; // then foo is an ambiguous ident, because we don't where foo is defined
+  /// ```
+  pub ambiguous_export_ident_map: HashMap<String, Vec<ModuleExportIdent>>,
   pub custom: CustomMetaDataMap,
 }
 
@@ -61,16 +89,21 @@ impl Default for ScriptModuleMetaData {
       ast: SwcModule::default(),
       top_level_mark: 0,
       unresolved_mark: 0,
-      module_system: ModuleSystem::EsModule,
+      module_system: ModuleSystem::UnInitial,
+      contains_esm_decl: false,
+      contains_module_exports: false,
       hmr_self_accepted: false,
       hmr_accepted_deps: Default::default(),
       comments: Default::default(),
       statements: vec![],
       top_level_idents: Default::default(),
       unresolved_idents: Default::default(),
+      all_deeply_declared_idents: Default::default(),
       is_async: false,
       feature_flags: Default::default(),
       export_ident_map: Default::default(),
+      reexport_ident_map: Default::default(),
+      ambiguous_export_ident_map: Default::default(),
       custom: Default::default(),
     }
   }
@@ -83,16 +116,21 @@ impl Clone for ScriptModuleMetaData {
       top_level_mark: self.top_level_mark,
       unresolved_mark: self.unresolved_mark,
       module_system: self.module_system.clone(),
+      contains_esm_decl: self.contains_esm_decl,
+      contains_module_exports: self.contains_module_exports,
       hmr_self_accepted: self.hmr_self_accepted,
       hmr_accepted_deps: self.hmr_accepted_deps.clone(),
       comments: self.comments.clone(),
       statements: self.statements.clone(),
       top_level_idents: self.top_level_idents.clone(),
       unresolved_idents: self.unresolved_idents.clone(),
+      all_deeply_declared_idents: self.all_deeply_declared_idents.clone(),
       is_async: self.is_async,
       feature_flags: self.feature_flags.clone(),
       export_ident_map: self.export_ident_map.clone(),
       custom: self.custom.clone(),
+      reexport_ident_map: self.reexport_ident_map.clone(),
+      ambiguous_export_ident_map: self.ambiguous_export_ident_map.clone(),
     }
   }
 }
@@ -242,5 +280,9 @@ impl ModuleSystem {
 
   pub fn contains_commonjs(&self) -> bool {
     matches!(self, ModuleSystem::CommonJs | ModuleSystem::Hybrid)
+  }
+
+  pub fn is_es_module(&self) -> bool {
+    matches!(self, ModuleSystem::EsModule | ModuleSystem::Hybrid)
   }
 }

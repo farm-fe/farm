@@ -9,13 +9,17 @@ export default defineConfig((env) => {
       input: {
         index: './index.html'
       },
-      sourcemap: true,
+      sourcemap: 'inline',
       presetEnv: false,
       concatenateModules: true,
-      output: {
-        // showFileSize: false,
-      },
       persistentCache: false,
+      // minify: {
+      //   mangleExports: false,
+      // },
+      output: {
+        showFileSize: true,
+      },
+      // persistentCache: false,
       resolve: {
         alias: {
           "@": resolve(process.cwd(), "./src"),

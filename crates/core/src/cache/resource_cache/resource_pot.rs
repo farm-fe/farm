@@ -2,17 +2,20 @@ use std::sync::Arc;
 
 use dashmap::DashMap;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
-use rkyv::Deserialize;
 
 use crate::{
   cache::{
     store::{constant::CacheStoreTrait, CacheStoreKey},
     CacheContext,
+    // cache_store::{CacheStore, CacheStoreKey},
+    // resource_cache::resource_memory_store::ArchivedCachedResourcePot,
   },
   deserialize, serialize, HashMap,
 };
 
-use super::resource_memory_store::{CachedResourcePot, ResourceMemoryStore};
+use super::resource_memory_store::{
+  ArchivedCachedResourcePot, CachedResourcePot, ResourceMemoryStore,
+};
 
 /// In memory store for Resource Pot
 pub struct ResourcePotMemoryStore {
@@ -60,7 +63,7 @@ impl ResourceMemoryStore for ResourcePotMemoryStore {
     let cache = self.store.read_cache(name);
 
     if let Some(cache) = cache {
-      let resource = deserialize!(&cache, CachedResourcePot);
+      let resource = deserialize!(&cache, CachedResourcePot, ArchivedCachedResourcePot);
       // self
       //   .cached_resources
       //   .insert(name.to_string(), resource.clone());

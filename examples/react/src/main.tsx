@@ -1,13 +1,15 @@
-import React from 'react';
-import { useStore } from 'react-redux';
+import React from "react";
+import { useStore } from "react-redux";
 
-import { Welcome } from './components/index';
-import './main.css';
+import { Welcome } from "./components/index";
+import "./main.css";
 
-import { BizType } from './enums';
+import { BizType } from "./enums";
 
-import * as Sentry from '@sentry/react';
-import { Effect } from 'effect';
+import * as Sentry from "@sentry/react";
+import { Effect } from "effect";
+
+import styles from "./index.module.scss";
 
 Sentry.init({});
 
@@ -18,9 +20,9 @@ export function Main() {
   console.log(import.meta.env);
   return (
     <>
-      <div style={{ color: '#fff' }}>
+      <div style={{ color: "#fff" }} className={styles.main}>
         <div>effect: {result}</div>
-        <div style={{ width: '100px', color: '#fff' }}>
+        <div style={{ width: "100px", color: "#fff" }}>
           <b>store.api.config.online: </b>
           {JSON.stringify(store.getState().api.config.online)}
           BizType: {BizType.First} {BizType.Second}

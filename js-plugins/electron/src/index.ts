@@ -114,7 +114,7 @@ function resolveFarmConfig(
   opts.farm.compilation.output.path ??= 'dist-electron';
   opts.farm.compilation.output.targetEnv ??= 'node16';
   opts.farm.compilation.external ??= [];
-  opts.farm.compilation.external.push('electron');
+  opts.farm.compilation.external.push('^electron$');
   opts.farm.compilation.watch ??= isDev;
   opts.farm.compilation.partialBundling ??= {};
   opts.farm.compilation.partialBundling.enforceResources ??= [];
@@ -149,7 +149,7 @@ function resolveFarmConfig(
     if (isEsm) {
       opts.farm.plugins.push({
         name: 'farm-plugin-electron:preload-scripts-runtime',
-        renderResourcePot: {
+        processRenderedResourcePot: {
           filters: {
             resourcePotTypes: ['js'],
             moduleIds: []

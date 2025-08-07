@@ -2,12 +2,12 @@
 
 use colored::*;
 use farmfe_core::rayon::iter::{IntoParallelRefIterator, ParallelIterator};
+use farmfe_core::resource::ResourceType;
 use farmfe_core::{
   config::Config, context::CompilationContext, error::CompilationError, plugin::Plugin,
   stats::Stats,
 };
 
-use farmfe_macro_plugin::farm_plugin;
 use flate2::write::GzEncoder;
 use flate2::Compression;
 use std::io::Write;
@@ -18,7 +18,7 @@ use unicode_width::UnicodeWidthStr;
 pub struct FarmPluginFileSize {}
 
 impl FarmPluginFileSize {
-  pub fn new(config: &Config) -> Self {
+  pub fn new(_: &Config) -> Self {
     Self {}
   }
 }
@@ -32,7 +32,7 @@ impl FarmPluginFileSize {
 
   fn format_size(&self, size: usize) -> ColoredString {
     let size_str = if size < 1024 {
-      format!("{} B", size)
+      format!("{size} B")
     } else if size < 1024 * 1024 {
       format!("{:.1} KB", size as f64 / 1024.0)
     } else {
@@ -62,7 +62,7 @@ impl FarmPluginFileSize {
 
   fn format_gzip_size(&self, size: usize) -> ColoredString {
     let size_str = if size < 1024 {
-      format!("{} B", size)
+      format!("{size} B")
     } else if size < 1024 * 1024 {
       format!("{:.1} KB", size as f64 / 1024.0)
     } else {
@@ -81,7 +81,7 @@ impl FarmPluginFileSize {
       })
       .collect::<Vec<_>>()
       .join("/");
-    let full_path = format!("{}/{}", normalized_path, name);
+    let full_path = format!("{normalized_path}/{name}");
     let display_width = UnicodeWidthStr::width(full_path.as_str());
 
     let padding = if display_width < 45 {
@@ -91,11 +91,10 @@ impl FarmPluginFileSize {
     };
 
     format!(
-      "{}{}{}{}",
+      "{}{}{}{padding}",
       normalized_path.dimmed(),
       "/".dimmed(),
-      self.get_size_color(size, name),
-      padding
+      self.get_size_color(size, name)
     )
   }
 }
@@ -115,7 +114,7 @@ impl Plugin for FarmPluginFileSize {
     context: &Arc<CompilationContext>,
   ) -> Result<Option<()>, CompilationError> {
     let resources_map = context.resources_map.lock();
-    let output_config = context.config.output.clone();
+    // let output_config = context.config.output.clone();
     println!("\n{}", "Output files:".bold());
     println!();
 
@@ -126,7 +125,9 @@ impl Plugin for FarmPluginFileSize {
 
     let files: Vec<_> = resources_map
       .iter()
-      .filter(|(_, resource)| !resource.emitted)
+      .filter(|(_, resource)| {
+        !resource.emitted && !matches!(resource.resource_type, ResourceType::SourceMap(_))
+      })
       .map(|(name, resource)| (name.to_string(), resource.bytes.to_vec()))
       .collect();
 

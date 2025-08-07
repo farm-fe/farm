@@ -1,7 +1,7 @@
 import type { Resource } from "./modules/dynamic-import.js";
 import type { FarmRuntimePluginContainer } from "./modules/plugin.js";
 
-// Injected during compile time
+// Injected during compile time, and the if statement will be removed during compile time
 declare const __FARM_RUNTIME_TARGET_ENV__: 'browser' | 'node' | 'library';
 declare const __FARM_ENABLE_RUNTIME_PLUGIN__: boolean;
 declare const __FARM_ENABLE_TOP_LEVEL_AWAIT__: boolean;
@@ -22,8 +22,8 @@ export interface Module {
 type ModuleInitializationFunction = (
   module: Module,
   exports: any,
-  __farm_require__: (moduleId: string) => any,
-  __farm_dynamic_require__: (moduleId: string) => any,
+  __farm_require__?: (moduleId: string) => any,
+  __farm_dynamic_require__?: (moduleId: string) => any,
 ) => void | Promise<void>;
 
 export type ModuleInitialization = ModuleInitializationFunction;
@@ -70,37 +70,37 @@ export interface ModuleSystem {
   b(): void
 }
 
-// init `window['xxxx] = {}`
-const __farm_global_this__: any = $__farm_global_this__$ = {};
+function setGlobalRequire(globalThis: any) {
+  // polyfill require when running in browser or node with Farm runtime
+  const __global_this__: any = typeof globalThis !== 'undefined' ? globalThis : {};
+  __global_this__.require = __global_this__.require || farmRequire;
+}
 
 // It will be removed if __FARM_RUNTIME_TARGET_ENV__ is not browser when building runtime 
 if (__FARM_RUNTIME_TARGET_ENV__ === 'browser') {
-  // polyfill require when running in browser
-  const __global_this__: any = typeof window !== 'undefined' ? window : {};
-  __global_this__.require ||= farmRequire;
+  setGlobalRequire(window);  
 }
 if (__FARM_RUNTIME_TARGET_ENV__ === 'node') {
-  const __global_this__: any = typeof global !== 'undefined' ? global : {};
-  __global_this__.require ||= farmRequire;
+  setGlobalRequire(global);
 }
 
 // all modules registered
-const modules: Record<string, ModuleInitialization> = {};
+const __farm_internal_modules__: Record<string, ModuleInitialization> = {};
 // module cache after module initialized
-const cache: Record<string, Module> = {};
+const __farm_internal_cache__: Record<string, Module> = {};
 
-export const moduleSystem = {
+export var __farm_internal_module_system__ = {
   r: farmRequire,
   g: farmRegister,
-  m: () => modules,
-  c: () => cache,
+  m: () => __farm_internal_modules__,
+  c: () => __farm_internal_cache__,
 } as ModuleSystem;
 
 if (__FARM_ENABLE_EXTERNAL_MODULES__) {
   // externalModules
-  moduleSystem.em = {}
+  __farm_internal_module_system__.em = {}
   // The external modules are injected during compile time.
-  moduleSystem.se = function setExternalModules(externalModules: Record<string, any>): void {
+  __farm_internal_module_system__.se = function setExternalModules(externalModules: Record<string, any>): void {
     for (const key in externalModules) {
       let em = externalModules[key];
       // add a __esModule flag to the module if the module has default export
@@ -108,47 +108,53 @@ if (__FARM_ENABLE_EXTERNAL_MODULES__) {
         em = Object.assign({}, em, { __esModule: true });  
       }
 
-      moduleSystem.em[key]= em;
+      __farm_internal_module_system__.em[key]= em;
     }
   }
-  __farm_global_this__.m = moduleSystem;
+  // init `window['xxxx] = {}`
+  const __farm_global_this__: any = $__farm_global_this__$ = {};
+  __farm_global_this__.m = __farm_internal_module_system__;
 }
 
 export function farmRequire(id: string): any {
-  if (cache[id]) {
-    const cachedModuleResult = cache[id].initializer || cache[id].exports;
+  if (__farm_internal_cache__[id]) {
+    if (__FARM_RUNTIME_TARGET_ENV__ === 'library') var cachedModuleResult =__farm_internal_cache__[id].exports;
+    else var cachedModuleResult = __farm_internal_cache__[id].initializer || __farm_internal_cache__[id].exports;
     // will be removed as dead code if no plugin enabled when minify enabled
     if (__FARM_ENABLE_RUNTIME_PLUGIN__) {
-      const shouldSkip = moduleSystem.p.b(
+      const shouldSkip = __farm_internal_module_system__.p.b(
         "readModuleCache",
-        cache[id],
+        __farm_internal_cache__[id],
       );
   
       // console.log(`[Farm] shouldSkip: ${shouldSkip} ${moduleId}`);
-      if (!shouldSkip) {
-        return cachedModuleResult;
-      }
-    } else {
-      return cachedModuleResult;
-    }
+      if (!shouldSkip) return cachedModuleResult;
+    } else return cachedModuleResult;
   }
 
-  const initializer = modules[id];
+  const initializer = __farm_internal_modules__[id];
 
   if (!initializer) {
     if (__FARM_ENABLE_EXTERNAL_MODULES__) {
       // externalModules
-      if (moduleSystem.em[id]) {
-        return moduleSystem.em[id];
+      if (__farm_internal_module_system__.em[id]) {
+        return __farm_internal_module_system__.em[id];
       }
     }
 
     if (__FARM_ENABLE_RUNTIME_PLUGIN__) {
-      const res = moduleSystem.p.b("moduleNotFound", id);
+      const res = __farm_internal_module_system__.p.b("moduleNotFound", id);
 
       if (res) {
         return res
       }
+    }
+
+    // fallback to require if target env is node
+    if (__FARM_RUNTIME_TARGET_ENV__ === 'node') {
+      try {
+        return require(id);
+      } catch (e) {}
     }
 
     console.debug(`[Farm] Module "${id}" is not registered`);
@@ -158,7 +164,7 @@ export function farmRequire(id: string): any {
   }
 
   // create a full new module instance and store it in cache to avoid cyclic initializing
-  const module = cache[id] = {
+  const module = __farm_internal_cache__[id] = {
     id,
     meta: {
       env: {}
@@ -167,29 +173,24 @@ export function farmRequire(id: string): any {
     require: (moduleId: string) => farmRequire(moduleId)
   } as Module;
 
-  if (__FARM_ENABLE_RUNTIME_PLUGIN__) {
-    // call the module created hook
-    moduleSystem.p.s("moduleCreated", module);
-  }
+  if (__FARM_ENABLE_RUNTIME_PLUGIN__) __farm_internal_module_system__.p.s("moduleCreated", module); // call the module created hook
 
-  cache[id] = module;
-
+  __farm_internal_cache__[id] = module;
+  
   // initialize the new module
-  const result = initializer(
-    module,
-    module.exports,
-    farmRequire,
-    moduleSystem.d,
-  );
-
-  if (__FARM_ENABLE_TOP_LEVEL_AWAIT__) {
+  if (__FARM_RUNTIME_TARGET_ENV__ === 'library') initializer(module, module.exports)
+  else if (__FARM_ENABLE_TOP_LEVEL_AWAIT__) {
+    const result = initializer(
+      module,
+      module.exports,
+      farmRequire,
+      __farm_internal_module_system__.d,
+    );
      // it's a async module, return the promise
     if (result && result instanceof Promise) {
       module.initializer = result.then(() => {
-        if (__FARM_ENABLE_RUNTIME_PLUGIN__) {
-          // call the module initialized hook
-          moduleSystem.p.s("moduleInitialized", module);
-        }
+        if (__FARM_ENABLE_RUNTIME_PLUGIN__) __farm_internal_module_system__.p.s("moduleInitialized", module); // call the module initialized hook
+
         module.initializer = undefined;
         // return the exports of the module
         return module.exports;
@@ -197,24 +198,27 @@ export function farmRequire(id: string): any {
 
       return module.initializer;
     }
-  }
+  } else initializer(
+      module,
+      module.exports,
+      farmRequire,
+      __farm_internal_module_system__.d,
+    );
 
-  if (__FARM_ENABLE_RUNTIME_PLUGIN__) {
-    // call the module initialized hook
-    moduleSystem.p.s("moduleInitialized", module);
-  }
+  if (__FARM_ENABLE_RUNTIME_PLUGIN__) __farm_internal_module_system__.p.s("moduleInitialized", module);  // call the module initialized hook
+  
   // return the exports of the module
   return module.exports;
 }
 
 export function farmRegister(id: string, module: ModuleInitialization): () => any {
-  if (modules[id] && !moduleSystem._rg) {
-    console.warn(
-      `Module "${id}" has registered! It should not be registered twice`,
-    );
-    return;
-  }
+  if (__FARM_RUNTIME_TARGET_ENV__ !== 'library') if (__farm_internal_modules__[id] && !__farm_internal_module_system__._rg) {
+      console.warn(
+        `Module "${id}" has registered! It should not be registered twice`,
+      );
+      return;
+    }
 
-  modules[id] = module;
+  __farm_internal_modules__[id] = module;
   return () => farmRequire(id);
 }

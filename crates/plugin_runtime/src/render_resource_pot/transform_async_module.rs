@@ -259,10 +259,9 @@ mod tests {
     String::from_utf8(
       farmfe_toolkit::script::codegen_module(
         ast,
-        EsVersion::EsNext,
         Arc::new(SourceMap::new(FilePathMapping::empty())),
         None,
-        false,
+        Default::default(),
         None,
       )
       .unwrap(),
@@ -311,7 +310,7 @@ console.log(b);
     let code = codegen(&ast);
 
     let output = r#"
-const [, b__f, ] = await Promise.all([
+const [, b__f, , ] = await Promise.all([
     farmRequire("475776c7"),
     farmRequire("12345678"),
     farmRequire("ea236e3d")

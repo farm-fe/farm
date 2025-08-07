@@ -232,7 +232,7 @@ impl Plugin for FarmPluginHtml {
   fn render_resource_pot(
     &self,
     resource_pot: &ResourcePot,
-    _context: &Arc<CompilationContext>,
+    context: &Arc<CompilationContext>,
     _hook_context: &PluginHookContext,
   ) -> farmfe_core::error::Result<Option<ResourcePotMetaData>> {
     if matches!(resource_pot.resource_pot_type, ResourcePotType::Html) {
@@ -245,7 +245,18 @@ impl Plugin for FarmPluginHtml {
         });
       }
 
+      let module_graph = context.module_graph.read();
+      let module = module_graph.module(modules[0]).unwrap();
+
+      if module.module_type != ModuleType::Html {
+        return Err(CompilationError::RenderHtmlResourcePotError {
+          name: resource_pot.id.to_string(),
+          modules: modules.into_iter().map(|m| m.to_string()).collect(),
+        });
+      }
+
       return Ok(Some(ResourcePotMetaData::Html(HtmlResourcePotMetaData {
+        ast: module.meta.as_html().ast.clone(),
         custom: Default::default(),
       })));
     }
@@ -264,12 +275,14 @@ impl Plugin for FarmPluginHtml {
         resources: vec![GeneratedResource {
           resource: Resource {
             name: resource_pot.id.to_string(),
+            name_hash: "".to_string(),
             bytes: vec![],
             emitted: false,
             resource_type: ResourceType::Html,
             origin: ResourceOrigin::ResourcePot(resource_pot.id.clone()),
             should_transform_output_filename: true,
             meta: Default::default(),
+            special_placeholders: Default::default(),
           },
           source_map: None,
         }],
@@ -429,11 +442,10 @@ impl Plugin for FarmPluginMinifyHtml {
           Err(err) => {
             let farm_debug_html_minify = "FARM_DEBUG_HTML_MINIFY";
 
-            if let Ok(_) = std::env::var(farm_debug_html_minify) {
+            if std::env::var(farm_debug_html_minify).is_ok() {
               println!(
                 "Can not minify html {} due to html syntax error: {}",
-                resource.name,
-                err.to_string()
+                resource.name, err
               );
             } else {
               println!("Can not minify html {} due to html syntax error. Try {farm_debug_html_minify}=1 to see error details", resource.name);

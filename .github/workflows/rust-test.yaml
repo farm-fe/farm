@@ -5,6 +5,10 @@ on:
       - main
       - v2-dev
 
+concurrency:
+  group: test-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   cargo-check:
     name: Check
@@ -49,7 +53,7 @@ jobs:
         with:
           node-version: 18
       - name: Install Dependencies
-        run: npm install -g pnpm@9.1.0 && pnpm i --frozen-lockfile
+        run: npm install -g pnpm@9.4.0 && pnpm i --frozen-lockfile
 
       - uses: arduino/setup-protoc@v3
         with:

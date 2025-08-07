@@ -4,41 +4,32 @@ use farmfe_core::{
   HashMap, HashSet,
 };
 
-use crate::{
-  generate_module_buckets::ResourceType, module_pot::ModulePot, utils::group_is_enforce,
-};
+use crate::{generate_module_buckets::ResourceType, module_pot::ModulePot};
 
 pub fn generate_module_pots(
   modules: &HashSet<ModuleId>,
   module_graph: &ModuleGraph,
   config: &Config,
   resource_type: ResourceType,
-  groups_enforce_map: &HashMap<String, bool>,
 ) -> Vec<ModulePot> {
   let partial_bundling = &config.partial_bundling;
   let mut module_pot_map = HashMap::<String, ModulePot>::default();
 
   for module_id in modules {
     let module = module_graph.module(module_id).unwrap();
-    let module_pot_meta = generate_module_pot_meta(
-      module,
-      partial_bundling,
-      resource_type.clone(),
-      groups_enforce_map,
-    );
+    let module_pot_meta = generate_module_pot_meta(module, partial_bundling, resource_type.clone());
     let module_pot_id = ModulePot::gen_id(
-      &module_pot_meta.id,
+      &module_pot_meta.name,
       module.module_type.clone(),
       module.immutable,
     );
 
     let module_pot = module_pot_map.entry(module_pot_id).or_insert_with(|| {
       ModulePot::new(
-        module_pot_meta.id,
         module_pot_meta.name,
+        module_pot_meta.source_type,
         module.module_type.clone(),
         module.immutable,
-        module_pot_meta.enforce,
       )
     });
 
@@ -48,7 +39,14 @@ pub fn generate_module_pots(
   // split module_pots from module_pot_map that its size larger that target_max_size
   let mut exceed_size_module_pot_ids = module_pot_map
     .iter()
-    .filter(|(_, module_pot)| module_pot.size > partial_bundling.target_max_size)
+    .filter(|(_, module_pot)| {
+      // ignore module pot is configured in partialBundling.groups
+      if matches!(module_pot.source_type, ModulePotSourceType::GroupsConfig) {
+        return false;
+      }
+
+      module_pot.size > partial_bundling.target_max_size
+    })
     .map(|(module_pot_id, _)| module_pot_id.clone())
     .collect::<Vec<_>>();
   exceed_size_module_pot_ids.sort();
@@ -57,25 +55,23 @@ pub fn generate_module_pots(
     let module_pot = module_pot_map.remove(&exceed_size_module_pot_id).unwrap();
     let new_module_pot_numbers = (module_pot.size / partial_bundling.target_max_size) + 1;
     let module_pot_name = module_pot.name.clone();
-    let module_pot_id = module_pot.id.clone();
     let immutable = module_pot.immutable;
     let ty = module_pot.module_type.clone();
-    let enforce = module_pot.enforce;
+
     let mut modules = module_pot.take_modules().into_iter().collect::<Vec<_>>();
     modules.sort_by_key(|m| m.to_string());
     let page_size = modules.len() / new_module_pot_numbers;
 
     for i in 0..new_module_pot_numbers {
-      let new_module_pot_name = format!("{module_pot_id}-{i}");
+      let new_module_pot_name = format!("{module_pot_name}-{i}");
       let new_module_pot_id = ModulePot::gen_id(&new_module_pot_name, ty.clone(), immutable);
 
       let new_module_pot = module_pot_map.entry(new_module_pot_id).or_insert_with(|| {
         ModulePot::new(
           new_module_pot_name,
-          module_pot_name.clone(),
+          ModulePotSourceType::MergedModulePot,
           ty.clone(),
           immutable,
-          enforce,
         )
       });
 
@@ -93,28 +89,39 @@ pub fn generate_module_pots(
     }
   }
 
-  let mut module_pots = module_pot_map
-    .into_iter()
-    .map(|(_, module_pot)| module_pot)
-    .collect::<Vec<_>>();
+  let mut module_pots = module_pot_map.into_values().collect::<Vec<_>>();
 
   module_pots.sort_by_key(|m| m.execution_order);
 
   module_pots
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ModulePotSourceType {
+  /// Generated from mutable module whose immutable field is false
+  /// The module pot name is the module id
+  MutableModule,
+  /// Generated from immutable module whose immutable field is true
+  /// The module pot name is the package name and package version
+  ImmutablePackage,
+  /// Generated from partialBundling.groups config
+  /// The module pot name is the group name configured in partialBundling.groups
+  GroupsConfig,
+  /// Generated from merged module pots that exceed the target_max_size
+  /// The module pot name is the merged module pot id
+  MergedModulePot,
+}
+
+#[derive(Debug)]
 pub struct ModulePotMeta {
-  id: String,
-  name: Option<String>,
-  enforce: bool,
+  pub(crate) name: String,
+  pub(crate) source_type: ModulePotSourceType,
 }
 
 fn generate_module_pot_meta(
   module: &Module,
   config: &PartialBundlingConfig,
   resource_type: ResourceType,
-  groups_enforce_map: &HashMap<String, bool>,
 ) -> ModulePotMeta {
   // 1. get name from partialBundling.groups
   for group_config in &config.groups {
@@ -123,31 +130,27 @@ fn generate_module_pot_meta(
       .test
       .iter()
       .any(|c| c.is_match(&module.id.to_string()))
+      && group_config.group_type.is_match(module.immutable)
+      && (resource_type.is_match(group_config.resource_type.clone()))
     {
-      if (group_config.group_type.is_match(module.immutable))
-        && (resource_type.is_match(group_config.resource_type.clone()))
-      {
-        return ModulePotMeta {
-          name: Some(group_config.name.clone()),
-          id: group_config.name.clone(),
-          enforce: group_is_enforce(&group_config.name, groups_enforce_map),
-        };
-      }
+      return ModulePotMeta {
+        name: group_config.name.clone(),
+        source_type: ModulePotSourceType::GroupsConfig,
+      };
     }
   }
 
   // 2. get name from immutable package
   if module.immutable {
     return ModulePotMeta {
-      id: format!("{}@{}", module.package_name, module.package_version),
-      ..Default::default()
+      name: format!("{}@{}", module.package_name, module.package_version),
+      source_type: ModulePotSourceType::ImmutablePackage,
     };
   }
 
   ModulePotMeta {
-    id: module.id.to_string(),
-    name: None,
-    enforce: false,
+    name: module.id.to_string(),
+    source_type: ModulePotSourceType::MutableModule,
   }
 }
 
@@ -232,33 +235,10 @@ mod tests {
           &module_graph,
           &Default::default(),
           ResourceType::Initial,
-          &Default::default(),
         );
 
         assert_eq!(module_pots.len(), 2);
         assert_module_pot_snapshot!(module_pots);
-        // assert_eq!(module_pots[0].name, "test-package1@1.0.0");
-        // assert_eq!(module_pots[0].size, 1 * 1024);
-        // assert_eq!(module_pots[0].module_type, ModuleType::Js);
-        // assert_eq!(module_pots[0].immutable, true);
-        // assert_eq!(module_pots[0].execution_order, 1);
-        // assert_eq!(
-        //   module_pots[0].modules(),
-        //   &HashSet::from(["tests/fixtures/generate_module_pots/basic1/index.ts".into()])
-        // );
-
-        // assert_eq!(module_pots[1].name, "test-package@1.0.0");
-        // assert_eq!(module_pots[1].size, 15 * 1024);
-        // assert_eq!(module_pots[1].module_type, ModuleType::Js);
-        // assert_eq!(module_pots[1].immutable, true);
-        // assert_eq!(module_pots[1].execution_order, 2);
-        // assert_eq!(
-        //   module_pots[1].modules(),
-        //   &HashSet::from([
-        //     "tests/fixtures/generate_module_pots/basic/index.ts".into(),
-        //     "tests/fixtures/generate_module_pots/basic/utils.ts".into()
-        //   ])
-        // );
       }
     );
   }
@@ -305,13 +285,8 @@ mod tests {
       ..Default::default()
     };
 
-    let mut module_pots = generate_module_pots(
-      &modules,
-      &module_graph,
-      &config,
-      ResourceType::Initial,
-      &Default::default(),
-    );
+    let mut module_pots =
+      generate_module_pots(&modules, &module_graph, &config, ResourceType::Initial);
     assert_module_pot_snapshot!(module_pots);
 
     // only match mutable modules
@@ -328,13 +303,8 @@ mod tests {
       ..Default::default()
     };
 
-    let mut module_pots = generate_module_pots(
-      &modules,
-      &module_graph,
-      &config,
-      ResourceType::Initial,
-      &Default::default(),
-    );
+    let mut module_pots =
+      generate_module_pots(&modules, &module_graph, &config, ResourceType::Initial);
     assert_module_pot_snapshot!(module_pots);
 
     let config = Config {
@@ -350,22 +320,12 @@ mod tests {
       ..Default::default()
     };
 
-    let mut module_pots = generate_module_pots(
-      &modules,
-      &module_graph,
-      &config,
-      ResourceType::Initial,
-      &Default::default(),
-    );
+    let mut module_pots =
+      generate_module_pots(&modules, &module_graph, &config, ResourceType::Initial);
     assert_module_pot_snapshot!(module_pots);
 
-    let mut module_pots = generate_module_pots(
-      &modules,
-      &module_graph,
-      &config,
-      ResourceType::Async,
-      &Default::default(),
-    );
+    let mut module_pots =
+      generate_module_pots(&modules, &module_graph, &config, ResourceType::Async);
     assert_module_pot_snapshot!(module_pots);
 
     let config = Config {
@@ -381,13 +341,8 @@ mod tests {
       ..Default::default()
     };
 
-    let mut module_pots = generate_module_pots(
-      &modules,
-      &module_graph,
-      &config,
-      ResourceType::Initial,
-      &Default::default(),
-    );
+    let mut module_pots =
+      generate_module_pots(&modules, &module_graph, &config, ResourceType::Initial);
     assert_module_pot_snapshot!(module_pots);
   }
 }

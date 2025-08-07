@@ -89,13 +89,7 @@ pub fn parse_css_stylesheet(
   })
   .map_err(|e| CompilationError::ParseError {
     resolved_path: id.to_string(),
-    msg: if let Some(s) = e.downcast_ref::<String>() {
-      s.to_string()
-    } else if let Some(s) = e.downcast_ref::<&str>() {
-      s.to_string()
-    } else {
-      "failed to handle with unknown panic message".to_string()
-    },
+    msg: e.to_pretty_string(),
   })
 }
 
@@ -104,6 +98,7 @@ pub fn codegen_css_stylesheet(
   stylesheet: &Stylesheet,
   minify: bool,
   cm: Option<Arc<SourceMap>>,
+  ascii_only: bool,
 ) -> (String, Option<String>) {
   let mut css_code = String::new();
   let mut mappings = Vec::new();
@@ -120,7 +115,7 @@ pub fn codegen_css_stylesheet(
 
   gen.emit(stylesheet).unwrap();
 
-  if let Some(cm) = cm {
+  let (css_code, src_map) = if let Some(cm) = cm {
     let map = build_sourcemap(cm, &mappings);
     let mut src_map = vec![];
     map.to_writer(&mut src_map).unwrap();
@@ -128,6 +123,12 @@ pub fn codegen_css_stylesheet(
     (css_code, Some(String::from_utf8(src_map).unwrap()))
   } else {
     (css_code, None)
+  };
+
+  if ascii_only {
+    (escape_non_ascii(&css_code), src_map)
+  } else {
+    (css_code, src_map)
   }
 }
 
@@ -141,7 +142,7 @@ pub fn merge_css_sourcemap(
   for module_id in module_ids {
     let cm = context.meta.get_module_source_map(module_id);
     cm.files().iter().for_each(|source_file| {
-      new_cm.new_source_file_from(source_file.name.clone(), source_file.src.clone());
+      new_cm.new_source_file(source_file.name.clone(), source_file.src.clone());
     });
   }
 
@@ -167,4 +168,16 @@ impl VisitMut for SpanUpdater {
     node.lo = self.start_pos + node.lo;
     node.hi = self.start_pos + node.hi;
   }
+}
+
+pub fn escape_non_ascii(s: &str) -> String {
+  s.chars()
+    .map(|c| {
+      if c.is_ascii() {
+        c.to_string()
+      } else {
+        format!("\\{:06x}", c as u32)
+      }
+    })
+    .collect()
 }

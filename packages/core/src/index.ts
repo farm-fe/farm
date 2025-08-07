@@ -18,7 +18,6 @@ import {
   PersistentCacheBrand,
   bold,
   colors,
-  copyPublicDirectory,
   findNodeModulesRecursively,
   getShortName,
   green
@@ -64,7 +63,6 @@ export async function build(
   const resolvedUserConfig = await resolveConfig(
     inlineConfig,
     'build',
-    'production',
     'production'
   );
   const {
@@ -77,8 +75,10 @@ export async function build(
   } = resolvedUserConfig;
 
   try {
-    const shortFile = getShortName(configFilePath, root);
-    logger.info(`Using config file at ${bold(green(shortFile))}`);
+    if (configFilePath) {
+      const shortFile = getShortName(configFilePath, root);
+      logger.info(`Using config file at ${bold(green(shortFile))}`);
+    }
 
     const compiler = createCompiler(resolvedUserConfig);
     for (const hook of getPluginHooks(jsPlugins, 'configureCompiler')) {
@@ -108,7 +108,17 @@ export async function build(
       handlerWatcher(resolvedUserConfig, compiler);
     }
   } catch (err) {
-    logger.error(`Failed to build: ${err}`, { exit: true });
+    let errorMsg = err?.toString();
+
+    try {
+      const { message, cause } = JSON.parse(JSON.parse(err.message));
+      errorMsg = `${message} \n\n ${cause}`;
+    } catch (e) {}
+
+    logger.error(errorMsg, {
+      error: err,
+      exit: true
+    });
   }
 }
 
@@ -116,12 +126,7 @@ export async function clean(
   rootPath: string,
   recursive = false
 ): Promise<void> {
-  const resolvedUserConfig = await resolveConfig(
-    {},
-    'build',
-    'production',
-    'production'
-  );
+  const resolvedUserConfig = await resolveConfig({}, 'build', 'production');
   const cachePath = (
     resolvedUserConfig.compilation.persistentCache as PersistentCacheConfig
   ).cacheDir;

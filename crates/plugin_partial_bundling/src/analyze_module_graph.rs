@@ -11,13 +11,7 @@ use farmfe_core::{
 use std::collections::VecDeque;
 
 pub fn module_group_graph_from_module_graph(module_graph: &mut ModuleGraph) -> ModuleGroupGraph {
-  let get_entries = |entries: &HashMap<ModuleId, String>| {
-    entries
-      .clone()
-      .into_iter()
-      .map(|(entry, _)| entry)
-      .collect()
-  };
+  let get_entries = |entries: &HashMap<ModuleId, String>| entries.clone().into_keys().collect();
 
   let mut module_group_graph =
     module_group_graph_from_entries(&get_entries(&module_graph.entries), module_graph);
@@ -214,9 +208,7 @@ mod tests {
 
   #[test]
   fn analyze_module_graph() {
-    let plugin = FarmPluginPartialBundling {
-      partial_bundling_groups_enforce_map: Default::default(),
-    };
+    let plugin = FarmPluginPartialBundling {};
     let mut context = CompilationContext::new(Default::default(), vec![]).unwrap();
     let graph = construct_test_module_graph();
 

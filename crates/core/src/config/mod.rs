@@ -42,14 +42,9 @@ use asset::AssetsConfig;
 pub use output::*;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-pub enum AliasItem {
-  // TODO keep hashmap for compatibility simple alias to string & string hashmap
-  // Simple(String),
-  Complex {
-    find: StringOrRegex,
-    replacement: String,
-  },
+pub struct AliasItem {
+  pub find: StringOrRegex,
+  pub replacement: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -135,53 +130,6 @@ impl Default for Config {
   }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Eq, PartialEq, Hash, Default)]
-pub enum TargetEnv {
-  #[serde(rename = "browser")]
-  #[default]
-  Browser,
-  #[serde(rename = "node")]
-  Node,
-  #[serde(rename = "library")]
-  Library,
-  #[serde(untagged)]
-  Custom(String),
-}
-
-impl TargetEnv {
-  pub fn is_browser(&self) -> bool {
-    matches!(self, TargetEnv::Browser)
-  }
-
-  pub fn is_node(&self) -> bool {
-    matches!(self, TargetEnv::Node)
-  }
-
-  pub fn is_library(&self) -> bool {
-    matches!(self, TargetEnv::Library)
-  }
-}
-
-impl ToString for TargetEnv {
-  fn to_string(&self) -> String {
-    match self {
-      TargetEnv::Browser => "browser".to_string(),
-      TargetEnv::Node => "node".to_string(),
-      TargetEnv::Library => "library".to_string(),
-      TargetEnv::Custom(s) => s.clone(),
-    }
-  }
-}
-
-#[derive(Debug, Copy, Clone, Serialize, Deserialize, Eq, PartialEq, Hash, Default)]
-pub enum ModuleFormat {
-  #[serde(rename = "esm")]
-  #[default]
-  EsModule,
-  #[serde(rename = "cjs")]
-  CommonJs,
-}
-
 #[derive(Clone, Copy, Debug, Serialize, Deserialize)]
 pub enum Mode {
   #[serde(rename = "development")]
@@ -263,55 +211,6 @@ pub struct ScriptParserConfig {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
-#[serde(untagged)]
-pub enum AliasConfig {
-  // TODO keep hashmap for compatibility
-  Map(HashMap<String, String>),
-  Array(Vec<AliasItem>),
-}
-
-impl AliasConfig {
-  pub fn insert(&mut self, key: String, value: String) {
-    match self {
-      AliasConfig::Map(map) => {
-        map.insert(key, value);
-      }
-      AliasConfig::Array(array) => {
-        array.push(AliasItem::Complex {
-          find: StringOrRegex::String(key),
-          replacement: value,
-        });
-      }
-    }
-  }
-}
-
-impl Default for AliasConfig {
-  fn default() -> Self {
-    AliasConfig::Map(HashMap::default())
-  }
-}
-
-impl ResolveConfig {
-  pub fn format_alias(&mut self, alias_config: AliasConfig) {
-    match alias_config {
-      AliasConfig::Map(map) => {
-        self.alias = map
-          .into_iter()
-          .map(|(find, replacement)| AliasItem::Complex {
-            find: StringOrRegex::String(find),
-            replacement,
-          })
-          .collect();
-      }
-      AliasConfig::Array(array) => {
-        self.alias = array;
-      }
-    }
-  }
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase", default)]
 pub struct ResolveConfig {
   pub alias: Vec<AliasItem>,
@@ -328,13 +227,7 @@ impl Default for ResolveConfig {
   fn default() -> Self {
     Self {
       alias: vec![],
-      main_fields: vec![
-        String::from("browser"),
-        String::from("module"),
-        String::from("main"),
-        String::from("jsnext:main"),
-        String::from("jsnext"),
-      ],
+      main_fields: vec![],
       main_files: vec![String::from("index")],
       extensions: vec![
         String::from("tsx"),
@@ -483,6 +376,6 @@ mod tests {
     let env = TargetEnv::Library;
     assert!(env.is_library());
     assert!(!env.is_node());
-    assert!(env.is_browser());
+    assert!(!env.is_browser());
   }
 }

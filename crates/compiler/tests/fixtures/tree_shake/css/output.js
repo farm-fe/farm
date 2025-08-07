@@ -1,13 +1,20 @@
 //farm_internal_runtime_index.js:
- const moduleSystem = {};
+ const __farm_internal_module_system__ = {};
 function initModuleSystem() {
     console.log('module-helper.ts');
 }
-initModuleSystem(moduleSystem);
+initModuleSystem(__farm_internal_module_system__);
 
+
+//index-3b2ec523.css:
+ * {
+  margin: 0;
+  padding: 0;
+  background: url("/logo-73d4a8.png");
+}
 
 //index.js:
- import "./farm_internal_runtime_index.js";import "./index_3b2e.css";(function(moduleSystem, modules) {
+ import "./farm_internal_runtime_index.js";import "./index-3b2ec523.css";(function(moduleSystem, modules) {
     for(var moduleId in modules){
         var module = modules[moduleId];
         moduleSystem.g(moduleId, module);
@@ -32,13 +39,6 @@ initModuleSystem(moduleSystem);
     }
 });
 var __farm_ms__ = window['__farm_default_namespace__'].m;__farm_ms__.b();var __farm_entry__=__farm_ms__.r("b5d64806");
-
-//index_3b2e.css:
- * {
-  margin: 0;
-  padding: 0;
-  background: url("/logo-73d4a8.png");
-}
 
 //logo-73d4a8.png:
  

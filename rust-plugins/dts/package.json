@@ -1,6 +1,6 @@
 {
   "name": "@farmfe/plugin-dts",
-  "version": "1.0.0-nightly-20241024075304",
+  "version": "1.0.0-nightly-20250411100807",
   "main": "index.js",
   "types": "index.d.ts",
   "type": "module",
@@ -12,21 +12,19 @@
     "@farmfe/plugin-tools": "workspace:*"
   },
   "napi": {
-    "name": "farm_plugin_dts",
-    "triples": {
-      "additional": [
-        "aarch64-apple-darwin",
-        "aarch64-unknown-linux-gnu",
-        "aarch64-unknown-linux-musl",
-        "x86_64-unknown-linux-musl",
-        "i686-pc-windows-msvc",
-        "aarch64-pc-windows-msvc"
-      ]
-    }
+    "binaryName": "farm_plugin_dts",
+    "targets": [
+      "aarch64-apple-darwin",
+      "aarch64-unknown-linux-gnu",
+      "aarch64-unknown-linux-musl",
+      "x86_64-unknown-linux-musl",
+      "i686-pc-windows-msvc",
+      "aarch64-pc-windows-msvc"
+    ]
   },
   "exports": {
     ".": {
-      "import": "./index.js",
+      "import": "./func.js",
       "types": "./index.d.ts",
       "default": "./index.js"
     },
@@ -34,7 +32,7 @@
   },
   "scripts": {
     "dev": "cargo watch -w src -s 'scripts/watch.sh'",
-    "build": "farm-plugin-tools build  --platform --cargo-name farmfe_plugin_dts -p farmfe_plugin_dts --release",
+    "build": "farm-plugin-tools build --platform -p farmfe_plugin_dts --release",
     "build:publish": "cross-env CARGO_PROFILE_RELEASE_LTO=fat CARGO_PROFILE_RELEASE_STRIP=symbols CARGO_PROFILE_RELEASE_PANIC=abort CARGO_PROFILE_RELEASE_OPT_LEVEL=z farm-plugin-tools build --platform --cargo-name farmfe_plugin_dts -p farmfe_plugin_dts --release",
     "prepublishOnly": "farm-plugin-tools prepublish"
   },

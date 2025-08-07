@@ -135,7 +135,7 @@ export default function farmLessPlugin(
 
           if (compiler && imports && !isProd) {
             for (const dep of imports) {
-              compiler.addExtraWatchFile(param.resolvedPath, [
+              compiler.addExtraWatchFile(param.moduleId, [
                 path.resolve(fileRoot, dep)
               ]);
             }

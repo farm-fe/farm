@@ -9,7 +9,7 @@
 
 use farmfe_core::{
   config::{Mode, FARM_DYNAMIC_REQUIRE, FARM_REQUIRE},
-  module::{module_graph::ModuleGraph, ModuleId},
+  module::{meta_data::script::FARM_RUNTIME_MODULE_HELPER_ID, module_graph::ModuleGraph, ModuleId},
   plugin::ResolveKind,
   swc_common::{util::take::Take, Mark, SyntaxContext, DUMMY_SP},
   swc_ecma_ast::{CallExpr, Callee, Expr, ExprOrSpread, Ident, Lit, MemberExpr, MemberProp, Str},
@@ -94,14 +94,15 @@ enum SourceReplaceResult {
 }
 
 impl SourceReplacer<'_> {
-  fn find_real_module_meta_by_source(&self, source: &str) -> Option<ModuleId> {
+  fn find_real_module_meta_by_source(
+    &self,
+    source: &str,
+    kinds: Vec<ResolveKind>,
+  ) -> Option<ModuleId> {
     let mut id = None;
-    // treat non dynamic import as the same
-    for kind in [
-      ResolveKind::Import,
-      ResolveKind::ExportFrom,
-      ResolveKind::Require,
-    ] {
+
+    // treat non all kinds as the same, e.g. `import` and `exportFrom` are the same
+    for kind in kinds {
       if let Some(dep_id) = self
         .module_graph
         .get_dep_by_source_optional(&self.module_id, &source, Some(kind.clone()))
@@ -116,6 +117,7 @@ impl SourceReplacer<'_> {
         break;
       }
     }
+
     id
   }
 
@@ -140,7 +142,21 @@ impl SourceReplacer<'_> {
           ctxt: SyntaxContext::empty(),
         })));
 
-        let Some(id) = self.find_real_module_meta_by_source(&source) else {
+        if [FARM_RUNTIME_MODULE_HELPER_ID].contains(&source.as_str()) {
+          str.value = source.as_str().into();
+          str.span = DUMMY_SP;
+          str.raw = None;
+          return SourceReplaceResult::Replaced;
+        }
+
+        let Some(id) = self.find_real_module_meta_by_source(
+          &source,
+          vec![
+            ResolveKind::Import,
+            ResolveKind::ExportFrom,
+            ResolveKind::Require,
+          ],
+        ) else {
           panic!(
             "Cannot find module id for source {:?} from {:?}.",
             source, self.module_id
@@ -175,11 +191,9 @@ impl SourceReplacer<'_> {
       {
         let source = str.value.to_string();
 
-        if let Some(id) = self.module_graph.get_dep_by_source_optional(
-          &self.module_id,
-          &source,
-          Some(ResolveKind::DynamicImport),
-        ) {
+        if let Some(id) =
+          self.find_real_module_meta_by_source(&source, vec![ResolveKind::DynamicImport])
+        {
           // only execute script module
           let dep_module = self.module_graph.module(&id).unwrap();
 

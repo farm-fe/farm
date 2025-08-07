@@ -117,9 +117,17 @@ pub fn fill_necessary_fields_for_resource_pot(
   let mut module_graph = context.module_graph.write();
   let mut module_group_graph = context.module_group_graph.write();
 
+  // 4. update dynamic imported entry module of the resource pots
+  let module_group_ids = module_group_graph
+    .module_groups()
+    .into_iter()
+    .map(|g| g.entry_module_id.clone())
+    .collect::<HashSet<_>>();
+
   for resource_pot in resources_pots {
     let mut module_groups = HashSet::default();
     let mut entry_module = None;
+    let mut dynamic_imported_entry_module = None;
 
     for module_id in resource_pot.modules() {
       let module = module_graph.module_mut(module_id).unwrap();
@@ -146,9 +154,14 @@ pub fn fill_necessary_fields_for_resource_pot(
         }
         entry_module = Some(module_id.clone());
       }
+
+      if module_group_ids.contains(module_id) {
+        dynamic_imported_entry_module = Some(module_id.clone());
+      }
     }
 
     resource_pot.entry_module = entry_module;
+    resource_pot.dynamic_imported_entry_module = dynamic_imported_entry_module;
     resource_pot.module_groups = module_groups.clone();
 
     for module_group_id in module_groups {
@@ -167,7 +180,7 @@ pub fn get_resource_pot_id_for_enforce_resources(
 ) -> (ResourcePotType, String, String) {
   let module = module_graph.module(module_id).unwrap();
   let resource_pot_type = ResourcePotType::from(module.module_type.clone());
-  let id = ResourcePot::gen_id(&name, resource_pot_type.clone());
+  let id = ResourcePot::gen_id(&name, "", resource_pot_type.clone());
 
   (resource_pot_type, name, id)
 }
@@ -177,7 +190,7 @@ pub fn get_resource_pot_id_for_enforce_resources_by_removed_module(
   module: &Module,
 ) -> (ResourcePotType, String, String) {
   let resource_pot_type = ResourcePotType::from(module.module_type.clone());
-  let id = ResourcePot::gen_id(&name, resource_pot_type.clone());
+  let id = ResourcePot::gen_id(&name, "", resource_pot_type.clone());
 
   (resource_pot_type, name, id)
 }
@@ -215,7 +228,7 @@ fn generate_enforce_resource_pots(
         if let Some(resource_pot) = resource_pot {
           resource_pot.add_module(module_id.clone());
         } else {
-          let mut resource_pot = ResourcePot::new(resource_pot_name, resource_pot_type);
+          let mut resource_pot = ResourcePot::new(&resource_pot_name, "", resource_pot_type);
           resource_pot.add_module(module_id.clone());
           enforce_resource_pot_map.add_resource_pot(resource_pot);
         }
@@ -261,11 +274,8 @@ pub fn dynamic_entry_module_group_to_resource_pot(
     .dynamic_entries
     .get(&module_group.entry_module_id)
   {
-    let entry_module = module_graph.module(&module_group.entry_module_id).unwrap();
-    let mut resource_pot = ResourcePot::new(
-      name.to_string(),
-      ResourcePotType::from(entry_module.module_type.clone()),
-    );
+    let mut resource_pot = ResourcePot::new(name, "", ResourcePotType::DynamicEntryJs);
+
     resource_pot.entry_module = Some(module_group.entry_module_id.clone());
     resource_pot.module_groups = HashSet::from_iter([module_group.id.clone()]);
     resource_pot.is_dynamic_entry = true;

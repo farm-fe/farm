@@ -1,0 +1,25 @@
+{
+  "name": "<FARM-TEMPLATE-NAME>",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "farm",
+    "build": "tsc && farm build",
+    "preview": "farm preview",
+    "tauri": "tauri"
+  },
+  "dependencies": {
+    "preact": "^10.25.1",
+    "@tauri-apps/api": "^2",
+    "@tauri-apps/plugin-opener": "^2"
+  },
+  "devDependencies": {
+    "@farmfe/cli": "^1.0.4",
+    "@farmfe/core": "^1.6.7",
+    "@preact/preset-vite": "^2.9.3",
+    "core-js": "^3.39.0",
+    "typescript": "^5.6.2",
+    "@tauri-apps/cli": "^2"
+  }
+}

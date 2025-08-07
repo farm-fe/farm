@@ -106,7 +106,7 @@ Farm 远快于业界常用的 JS 构建工具，在 benchmark 测试中，Farm �
 
 - 微信交流群
 
-<br><img src="https://github.com/user-attachments/assets/7fabf743-7932-429d-a444-8f24489c79de" width="30%" />
+<br><img src="https://github.com/user-attachments/assets/16189074-f05b-4d24-b432-0736b0ab8421" width="30%" />
 
 - QQ 群
 
@@ -160,6 +160,8 @@ Farm 远快于业界常用的 JS 构建工具，在 benchmark 测试中，Farm �
 </a>
 
 ## 致谢
+
+非常感谢  https://github.com/tmm 给 Farm 团队捐献了 [farm](https://www.npmjs.com/package/farm) npm 包。
 
 感谢:
 

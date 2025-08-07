@@ -138,6 +138,21 @@ impl Plugin for FarmPluginProgress {
     Ok(None)
   }
 
+  fn freeze_module_graph_meta(
+    &self,
+    _module_graph: &mut farmfe_core::module::module_graph::ModuleGraph,
+    _context: &Arc<CompilationContext>,
+  ) -> Result<Option<()>> {
+    let first_build = self.first_build.lock();
+
+    if *first_build {
+      self.progress_bar.set_message("freeze module graph meta");
+      self.progress_bar.inc(1);
+    }
+
+    Ok(None)
+  }
+
   fn render_resource_pot(
     &self,
     resource_pot: &ResourcePot,

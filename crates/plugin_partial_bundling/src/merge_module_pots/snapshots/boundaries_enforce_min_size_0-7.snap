@@ -2,8 +2,8 @@
 source: crates/plugin_partial_bundling/src/merge_module_pots/test_boundaries.rs
 input_file: crates/testing_helpers/src/lib.rs
 ---
-name: D_3f39
-id: B_3f39
+name: B
+id: B_3f39d5c348e5b79d06e842c114e6cc57_js
 immutable: true
 resource_pot_type: Js
 entry: None
@@ -18,8 +18,8 @@ resources: []
 
 -------
 
-name: H_44bd
-id: B_44bd
+name: B
+id: B_44bd7ae60f478fae1061e11a7739f4b9_js
 immutable: true
 resource_pot_type: Js
 entry: None
@@ -34,8 +34,8 @@ resources: []
 
 -------
 
-name: E_a9f5
-id: B_a9f5
+name: B
+id: B_a9f51566bd6705f7ea6ad54bb9deb449_js
 immutable: false
 resource_pot_type: Js
 entry: None
@@ -50,8 +50,8 @@ resources: []
 
 -------
 
-name: B_df7e
-id: B_df7e
+name: B
+id: B_df7e70e5021544f4834bbee64a9e3789_js
 immutable: false
 resource_pot_type: Js
 entry: None

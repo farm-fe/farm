@@ -36,7 +36,7 @@
     "url": "https://github.com/farm-fe/farm"
   },
   "dependencies": {
-    "@napi-rs/cli": "^2.18.4",
+    "@napi-rs/cli": "3.0.4",
     "@farmfe/utils": "workspace:*",
     "cac": "^6.7.14"
   }

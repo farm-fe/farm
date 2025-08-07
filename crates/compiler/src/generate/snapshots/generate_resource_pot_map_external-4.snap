@@ -2,8 +2,8 @@
 source: crates/compiler/src/generate/partial_bundling.rs
 input_file: crates/testing_helpers/src/lib.rs
 ---
-name: A_66be
-id: A_66be
+name: A
+id: A_66be131002b8b5af1132bafd62635f07_js
 immutable: false
 resource_pot_type: Js
 entry: Some(
@@ -34,8 +34,8 @@ resources: []
 
 -------
 
-name: B_2f5d
-id: B_2f5d
+name: B
+id: B_2f5d6a63eb2504d486bf13df147c043a_js
 immutable: false
 resource_pot_type: Js
 entry: Some(
@@ -63,8 +63,8 @@ resources: []
 
 -------
 
-name: B_3f39
-id: B_3f39
+name: B
+id: B_3f39d5c348e5b79d06e842c114e6cc57_js
 immutable: false
 resource_pot_type: Js
 entry: None
@@ -86,8 +86,8 @@ resources: []
 
 -------
 
-name: F_DynamicImport_f67a
-id: F_DynamicImport_f67a
+name: F_DynamicImport
+id: F_DynamicImport_f67ab10ad4e4c53121b6a5fe4da9c10d_js
 immutable: false
 resource_pot_type: Js
 entry: None

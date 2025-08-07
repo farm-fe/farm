@@ -41,12 +41,6 @@ interface LoggerOptions {
   timeUnit?: 's' | 'ms';
 }
 
-const LOGGER_METHOD = {
-  info: 'log',
-  warn: 'warn',
-  error: 'error'
-} as const;
-
 const warnOnceMessages = new Set();
 const infoOnceMessages = new Set();
 const errorOnceMessages = new Set();
@@ -190,11 +184,15 @@ export class Logger implements ILogger {
       error = message;
     }
 
-    if (causeError) {
-      error.message += `\nCaused by: ${causeError.stack ?? causeError}`;
+    if (causeError?.stack) {
+      error.message += `\nCaused by: ${causeError.stack}`;
     }
 
     this.logMessage('error', error, colors.red, clearScreen);
+
+    if (errorOptions?.exit) {
+      process.exit(1);
+    }
   }
 
   infoOnce(message: string, clearScreen = false): void {
@@ -235,7 +233,7 @@ export class NoopLogger extends Logger {
   info(_message: string): void {}
   warn(_message: string): void {}
   error(_message: string | Error, _errorOptions?: ErrorOptions): void {
-    if (_errorOptions.exit) {
+    if (_errorOptions?.exit) {
       let e = _message instanceof Error ? _message : new Error(_message);
       if (_errorOptions?.e || _errorOptions?.error) {
         e.cause = _errorOptions.e || _errorOptions.error;

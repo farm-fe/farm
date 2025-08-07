@@ -3,13 +3,15 @@ use std::sync::Arc;
 use dashmap::DashMap;
 use farmfe_utils::hash::sha256;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
-use rkyv::Deserialize;
 
 use crate::{
   cache::{
+    // cache_store::{CacheStore, CacheStoreKey},
+    module_cache::ArchivedCachedModule,
     store::{constant::CacheStoreTrait, CacheStoreKey},
     CacheContext,
   },
+  config::Mode,
   deserialize,
   module::ModuleId,
   serialize, HashMap,
@@ -75,7 +77,7 @@ impl ModuleMemoryStore for MutableModulesMemoryStore {
     let cache = self.store.read_cache(&key.to_string());
 
     if let Some(cache) = cache {
-      let module = deserialize!(&cache, CachedModule);
+      let module = deserialize!(&cache, CachedModule, ArchivedCachedModule);
       // self.cached_modules.insert(key.clone(), module.clone());
       return Some(module);
     }
@@ -94,7 +96,7 @@ impl ModuleMemoryStore for MutableModulesMemoryStore {
     let cache = self.store.read_cache(&key.to_string());
 
     if let Some(cache) = cache {
-      let module = deserialize!(&cache, CachedModule);
+      let module = deserialize!(&cache, CachedModule, ArchivedCachedModule);
       self.cached_modules.insert(key.clone(), module);
       return Some(self.cached_modules.get(key).unwrap());
     }
@@ -113,7 +115,7 @@ impl ModuleMemoryStore for MutableModulesMemoryStore {
     let cache = self.store.read_cache(&key.to_string());
 
     if let Some(cache) = cache {
-      let module = deserialize!(&cache, CachedModule);
+      let module = deserialize!(&cache, CachedModule, ArchivedCachedModule);
       self.cached_modules.insert(key.clone(), module);
       return Some(self.cached_modules.get_mut(key).unwrap());
     }

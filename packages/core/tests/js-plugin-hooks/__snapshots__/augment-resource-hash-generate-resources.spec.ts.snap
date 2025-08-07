@@ -2,45 +2,41 @@
 
 exports[`Js Plugin Execution - augmentResourceHash 1`] = `
 [
-  "FARM_RUNTIME_runtime",
-  "index.d4c2c502.js",
+  "farm_internal_runtime_index.fb49f1e5.js",
+  "index.427ac615.js",
 ]
 `;
 
 exports[`Js Plugin Execution - augmentResourceHash 2`] = `
 {
+  "content": "(function(moduleSystem, modules) {
+    for(var moduleId in modules){
+        var module = modules[moduleId];
+        moduleSystem.g(moduleId, module);
+    }
+})(global["f081367f80fe14896375a9f8b8918ca3"].m, {
+    "0ae9e27c": (module, exports, farmRequire, farmDynamicRequire)=>{
+        farmRequire._m(exports);
+        exports.default = 'render-resource-pot-return-value';
+    }
+});
+",
   "custom": {},
-  "data": {
-    "dynamicImports": [],
-    "exports": [],
-    "importedBindings": {},
-    "imports": [],
-    "isDynamicEntry": false,
-    "isEntry": true,
-    "isImplicitEntry": false,
-  },
-  "id": "index_eab4",
-  "map": null,
+  "id": "index_eab4eb4a846cd9fa318a455919afa864_js",
+  "isDynamicEntry": false,
+  "isEntry": true,
   "moduleIds": [
     "index.ts?foo=bar",
   ],
-  "modules": {
-    "index.ts?foo=bar": {
-      "id": "index.ts?foo=bar",
-      "originalLength": 51,
-      "renderedContent": "function e(e,r,u,n){e._m(r),r.default="render-resource-pot-return-value";}",
-      "renderedLength": 74,
-      "renderedMap": null,
-    },
-  },
   "name": "index",
   "resourcePotType": "js",
+  "sourceMapChain": [],
 }
 `;
 
 exports[`Js Plugin Execution - augmentResourceHash 3`] = `
 [
-  "FARM_RUNTIME_runtime",
-  "index.cbe2c1dd.js",
+  "farm_internal_runtime_index.fb49f1e5.js",
+  "index.47c6ef8b.js",
 ]
 `;

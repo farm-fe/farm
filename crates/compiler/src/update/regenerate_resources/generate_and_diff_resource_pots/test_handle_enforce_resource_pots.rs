@@ -138,7 +138,11 @@ fn test_handle_enforce_resource_pots() {
     &context,
   );
 
-  assert_eq!(enforce_resource_pots, vec!["test_js".to_string()]);
+  assert_eq!(enforce_resource_pots, vec!["test__js".to_string()]);
+  // assert_eq!(
+  //   enforce_resource_pots,
+  //   vec!["test__custom(\"__farm_unknown\")".to_string()]
+  // );
   un_enforce_resource_pots.sort();
   assert_eq!(
     un_enforce_resource_pots,

@@ -2,6 +2,7 @@ mod common;
 use crate::common::{assert_compiler_result, create_compiler_with_args};
 use std::path::PathBuf;
 
+use farmfe_core::config::ModuleFormatConfig;
 use farmfe_core::config::{
   config_regex::ConfigRegex, custom::CUSTOM_CONFIG_EXTERNAL_RECORD, ModuleFormat, TargetEnv,
 };
@@ -42,9 +43,9 @@ fn test(file: String, crate_path: String) {
       }
 
       config.output.format = if normolized_file.contains("cjs") {
-        ModuleFormat::CommonJs
+        ModuleFormatConfig::Single(ModuleFormat::CommonJs)
       } else {
-        ModuleFormat::EsModule
+        ModuleFormatConfig::Single(ModuleFormat::EsModule)
       };
 
       (config, plugins)

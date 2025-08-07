@@ -1,10 +1,159 @@
 # @farmfe/core
 
+## 2.0.0-nightly-20250729025629
+
+### Patch Changes
+
+- b730530: delete map file when conifg is 'inline' or 'all-inline'
+
+## 2.0.0-nightly-20250411141103
+
+### Patch Changes
+
+- Updated dependencies [b82ed8d]
+  - @farmfe/runtime@1.0.0-nightly-20250411141103
+  - @farmfe/runtime-plugin-hmr@4.0.0-nightly-20250411100807
+  - @farmfe/runtime-plugin-import-meta@1.0.0-nightly-20250411100807
+
+## 2.0.0-nightly-20250411100807
+
+### Patch Changes
+
+- 60f40f0: bump nightly version
+- Updated dependencies [60f40f0]
+  - @farmfe/runtime@1.0.0-nightly-20250411100807
+  - @farmfe/runtime-plugin-hmr@4.0.0-nightly-20250411100807
+  - @farmfe/runtime-plugin-import-meta@1.0.0-nightly-20250411100807
+  - @farmfe/plugin-replace-dirname@1.0.0-nightly-20250411100807
+
+## 2.0.0-nightly-20250410022118
+
+### Major Changes
+
+- 21ac2ac: export loadenv api
+- b8f7fc5: build cjs script
+- ad09476: bump version
+
+### Patch Changes
+
+- Updated dependencies [ce93432]
+  - @farmfe/runtime-plugin-hmr@4.0.0-nightly-20250410022118
+
 ## 2.0.0-nightly-20241029121500
 
 ### Major Changes
 
 - b327dd1: collect htmlFallbackMiddleware
+
+## 1.7.9
+
+### Patch Changes
+
+- 6aa67812: Support `output.asciiOnly`
+
+## 1.7.8
+
+### Patch Changes
+
+- 27d30d79: When targetEnv is set to browser, the default mainFields are used during resolution.
+
+## 1.7.7
+
+### Patch Changes
+
+- d0f572df: Fix incorrect publicPath when isolating farm runtime
+- f19be2ef: resolve extension compatible with . or direct file suffix
+
+## 1.7.6
+
+### Patch Changes
+
+- 83342ef0: Added origin validation to HMR server
+
+  BREAKING CHANGE: The HMR server now rejects all connections with unrecognized `Origin` headers. Clients need to update their configured ports and hosts if they want external apps to be able to connect to the HMR server.
+
+- c7bcfa0f: Fix #2188 lazy compilation should respect publicPath
+
+## 1.7.5
+
+### Patch Changes
+
+- 722a1d53: Fix tree shake issue when writing variables defined in external package
+
+## 1.7.4
+
+### Patch Changes
+
+- 2fceb540: resolver by resolve kind
+
+## 1.7.3
+
+### Patch Changes
+
+- 6a6ad094: fix cjs node export sort
+
+## 1.7.2
+
+### Patch Changes
+
+- e0a9e48f: fix treeshake assign expr reference
+
+## 1.7.1
+
+### Patch Changes
+
+- 98a2b01b: Fix panic when call `compiler.update` for a full new module multiple times
+
+## 1.7.0
+
+### Minor Changes
+
+- 25f3d3f6: Support calling `compiler.update` to compile a full new module dynamically
+
+## 1.6.7
+
+### Patch Changes
+
+- ec87a7fe: Fix resource pot id conflict in a large project due to the short hash id. The hash id is changed from 4 length to 32
+- ec87a7fe: Fix #2103 module system introp between esm and cjs
+
+## 1.6.6
+
+### Patch Changes
+
+- 0163299e: Fix persistent cache panic when using addFileWatchFile with query #2067
+
+## 1.6.5
+
+### Patch Changes
+
+- 2423ee65: Fix query strings in external imports are duplicated
+
+## 1.6.4
+
+### Patch Changes
+
+- 35bdd7f5: fix module with query cannot update when watch file update
+- 84ab2c75: fix import meta glob path
+
+## 1.6.3
+
+### Patch Changes
+
+- 0ad977b6: import meta glob search package
+
+## 1.6.2
+
+### Patch Changes
+
+- 43e0ea06: do not clean up then watch graph monitoring module
+
+## 1.6.1
+
+### Patch Changes
+
+- 9e9e94e2: fix namespace fallback when use literal computed
+
 ## 1.6.0
 
 ### Minor Changes

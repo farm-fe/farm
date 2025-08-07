@@ -4,7 +4,9 @@ use std::sync::Arc;
 
 use dep_analyzer::DepAnalyzer;
 use farmfe_core::config::css::NameConversion;
-use farmfe_core::config::custom::get_config_css_modules_local_conversion;
+use farmfe_core::config::custom::{
+  get_config_css_modules_local_conversion, get_config_output_ascii_only,
+};
 use farmfe_core::config::AliasItem;
 use farmfe_core::module::meta_data::css::CssModuleMetaData;
 use farmfe_core::module::meta_data::script::CommentsMetaData;
@@ -16,7 +18,6 @@ use farmfe_core::HashMap;
 use farmfe_core::{
   config::{Config, CssPrefixerConfig, TargetEnv},
   context::CompilationContext,
-  enhanced_magic_string::collapse_sourcemap::{collapse_sourcemap_chain, CollapseSourcemapOptions},
   error::CompilationError,
   module::{module_graph::ModuleGraph, ModuleId, ModuleMetaData, ModuleType},
   parking_lot::Mutex,
@@ -37,9 +38,11 @@ use farmfe_macro_cache_item::cache_item;
 use farmfe_toolkit::css::{merge_css_sourcemap, ParseCssModuleResult};
 use farmfe_toolkit::lazy_static::lazy_static;
 use farmfe_toolkit::resolve::DYNAMIC_EXTENSION_PRIORITY;
+use farmfe_toolkit::script::merge_swc_globals::merge_comments;
 use farmfe_toolkit::script::swc_try_with::try_with;
 use farmfe_toolkit::sourcemap::load_source_original_sourcemap;
 use farmfe_toolkit::sourcemap::{trace_module_sourcemap, SourceMap};
+use farmfe_toolkit::swc_atoms::Atom;
 use farmfe_toolkit::{
   css::{codegen_css_stylesheet, parse_css_stylesheet},
   fs::read_file_utf8,
@@ -47,13 +50,12 @@ use farmfe_toolkit::{
   regex::Regex,
   script::module_type_from_id,
   sourcemap::SourceMap as JsonSourceMap,
-  swc_atoms::JsWord,
+  sourcemap::{collapse_sourcemap_chain, CollapseSourcemapOptions},
   swc_css_modules::{compile, CssClassName, TransformConfig},
   swc_css_prefixer,
   swc_css_visit::{VisitMut, VisitMutWith, VisitWith},
 };
 use farmfe_utils::{parse_query, relative, stringify_query};
-use rkyv::Deserialize;
 use source_replacer::SourceReplacer;
 
 pub const FARM_CSS_MODULES: &str = "farm_css_modules";
@@ -535,6 +537,8 @@ impl Plugin for FarmPluginCss {
       let resources_map = context.resources_map.lock();
 
       let rendered_modules = Mutex::new(Vec::with_capacity(modules.len()));
+      let rendered_comments = Mutex::new(Vec::with_capacity(modules.len()));
+
       modules.into_par_iter().try_for_each(|module| {
         let cm = context.meta.get_module_source_map(&module.id);
         let mut css_stylesheet = module.meta.as_css().ast.clone();
@@ -554,6 +558,10 @@ impl Plugin for FarmPluginCss {
           .lock()
           .push((module.id.clone(), css_stylesheet));
 
+        rendered_comments
+          .lock()
+          .push((module.id.clone(), module.meta.as_css().comments.clone()));
+
         Ok::<(), CompilationError>(())
       })?;
 
@@ -569,7 +577,10 @@ impl Plugin for FarmPluginCss {
       let source_map = merge_css_sourcemap(&mut rendered_modules, context);
       context
         .meta
-        .set_resource_pot_source_map(&resource_pot.id, source_map);
+        .set_resource_pot_source_map(&resource_pot.id, source_map.clone());
+
+      let mut rendered_comments = rendered_comments.into_inner();
+      let comments = merge_comments(&mut rendered_comments, source_map);
 
       for (_, rendered_module_ast) in rendered_modules {
         stylesheet.rules.extend(rendered_module_ast.rules);
@@ -577,6 +588,7 @@ impl Plugin for FarmPluginCss {
 
       Ok(Some(ResourcePotMetaData::Css(CssResourcePotMetaData {
         ast: stylesheet,
+        comments: comments.into(),
         custom: Default::default(),
       })))
     } else {
@@ -602,16 +614,19 @@ impl Plugin for FarmPluginCss {
         } else {
           None
         },
+        get_config_output_ascii_only(&context.config),
       );
 
       let resource = Resource {
         name: resource_pot.name.to_string(),
+        name_hash: resource_pot.modules_name_hash.clone(),
         bytes: css_code.into_bytes(),
         emitted: false,
         should_transform_output_filename: true,
         resource_type: ResourceType::Css,
         origin: ResourceOrigin::ResourcePot(resource_pot.id.clone()),
         meta: Default::default(),
+        special_placeholders: Default::default(),
       };
       let mut source_map = None;
 
@@ -646,13 +661,15 @@ impl Plugin for FarmPluginCss {
         let sourcemap = String::from_utf8(buf).unwrap();
         let ty = ResourceType::SourceMap(resource_pot.id.to_string());
         source_map = Some(Resource {
-          name: format!("{}.{}", resource_pot.name, ty.to_ext()),
+          name: resource_pot.name.to_string(),
+          name_hash: resource_pot.modules_name_hash.clone(),
           bytes: sourcemap.into_bytes(),
           emitted: false,
           should_transform_output_filename: true,
           resource_type: ty,
           origin: ResourceOrigin::ResourcePot(resource_pot.id.clone()),
           meta: Default::default(),
+          special_placeholders: Default::default(),
         });
       }
 
@@ -702,7 +719,7 @@ struct CssModuleRename {
 }
 
 impl TransformConfig for CssModuleRename {
-  fn new_name_for(&self, local: &JsWord) -> JsWord {
+  fn new_name_for(&self, local: &Atom) -> Atom {
     let name = local.to_string();
     let r: HashMap<String, &String> = [("name".into(), &name), ("hash".into(), &self.hash)]
       .into_iter()

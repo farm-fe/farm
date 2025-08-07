@@ -1,14 +1,14 @@
 {
   "name": "@farmfe/js-plugin-sass",
-  "version": "3.0.0-nightly-20241029121500",
+  "version": "3.0.0-nightly-20250729025629",
   "description": "support scss compile for farm.",
   "main": "./build/cjs/index.cjs",
-  "types": "./build/cjs/index.d.ts",
+  "types": "./build/index.d.ts",
   "type": "module",
   "exports": {
     ".": {
       "import": "./build/esm/index.mjs",
-      "types": "./build/cjs/index.d.ts",
+      "types": "./build/index.d.ts",
       "require": "./build/cjs/index.cjs",
       "default": "./build/cjs/index.cjs"
     },
@@ -33,7 +33,7 @@
     }
   ],
   "scripts": {
-    "build": "pnpm clean && farm build && cross-env FARM_FORMAT=esm farm build",
+    "build": "pnpm clean && farm build",
     "start": "cross-env FARM_FORMAT=esm farm watch",
     "clean": "rimraf dist build tsconfig.build.tsbuildinfo",
     "prepublishOnly": "npm run build",

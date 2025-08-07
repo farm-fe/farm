@@ -11,7 +11,6 @@ pub mod plugin_adapters;
 #[cfg(feature = "profile")]
 pub mod profile_gui;
 
-use farmfe_core::rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use farmfe_core::{
   config::{Config, Mode},
   module::ModuleId,
@@ -25,9 +24,9 @@ use farmfe_core::resource::Resource;
 use napi::threadsafe_function::ThreadSafeCallContext;
 
 use napi::{
-  bindgen_prelude::{Buffer, FromNapiValue},
-  threadsafe_function::{ErrorStrategy, ThreadsafeFunction, ThreadsafeFunctionCallMode},
-  Env, JsFunction, JsObject, JsUndefined, JsUnknown, NapiRaw, Status,
+  bindgen_prelude::{Buffer, FromNapiValue, JsObjectValue, Object, ObjectRef, Undefined},
+  threadsafe_function::{ThreadsafeFunction, ThreadsafeFunctionCallMode},
+  Env, JsValue, Status, Unknown,
 };
 
 #[cfg(feature = "file_watcher")]
@@ -39,6 +38,8 @@ use plugin_adapters::{js_plugin_adapter::JsPluginAdapter, rust_plugin_adapter::R
 
 #[macro_use]
 extern crate napi_derive;
+
+pub mod plugin_toolkit;
 
 #[napi(object)]
 pub struct WatchDiffResult {
@@ -102,12 +103,12 @@ pub struct JsCompiler {
 #[napi]
 impl JsCompiler {
   #[napi(constructor)]
-  pub fn new(env: Env, config: JsObject) -> napi::Result<Self> {
+  pub fn new(env: Env, config: Object) -> napi::Result<Self> {
     let js_plugins = unsafe {
-      Vec::<JsObject>::from_napi_value(
+      Vec::<Object>::from_napi_value(
         env.raw(),
         config
-          .get_named_property::<JsObject>("jsPlugins")
+          .get_named_property::<Object>("jsPlugins")
           .expect("jsPlugins must exist")
           .raw(),
       )
@@ -118,7 +119,7 @@ impl JsCompiler {
       Vec::<Vec<String>>::from_napi_value(
         env.raw(),
         config
-          .get_named_property::<JsObject>("rustPlugins")
+          .get_named_property::<Object>("rustPlugins")
           .expect("rustPlugins must exists")
           .raw(),
       )
@@ -128,7 +129,7 @@ impl JsCompiler {
     let config: Config = env
       .from_js_value(
         config
-          .get_named_property::<JsObject>("config")
+          .get_named_property::<Object>("config")
           .expect("config should exist"),
       )
       .expect("can not transform js config object to rust config");
@@ -163,7 +164,7 @@ impl JsCompiler {
   }
 
   #[napi]
-  pub fn trace_dependencies(&self, e: Env) -> napi::Result<JsObject> {
+  pub fn trace_dependencies(&self, e: Env) -> napi::Result<ObjectRef> {
     let (promise, result) =
       e.create_deferred::<Vec<String>, Box<dyn FnOnce(Env) -> napi::Result<Vec<String>>>>()?;
 
@@ -182,11 +183,11 @@ impl JsCompiler {
       }
     });
 
-    Ok(result)
+    result.create_ref()
   }
 
   #[napi]
-  pub fn trace_module_graph(&self, e: Env) -> napi::Result<JsObject> {
+  pub fn trace_module_graph(&self, e: Env) -> napi::Result<ObjectRef> {
     let (promise, result) =
       e.create_deferred::<JsTracedModuleGraph, Box<dyn FnOnce(Env) -> napi::Result<JsTracedModuleGraph>>>()?;
 
@@ -205,14 +206,14 @@ impl JsCompiler {
       }
     });
 
-    Ok(result)
+    result.create_ref()
   }
 
   /// async compile, return promise
-  #[napi(ts_return_type = "Promise<JsUpdateResult>")]
-  pub fn compile(&self, e: Env) -> napi::Result<JsObject> {
+  #[napi]
+  pub fn compile(&self, e: Env) -> napi::Result<ObjectRef> {
     let (promise, result) =
-      e.create_deferred::<JsUndefined, Box<dyn FnOnce(Env) -> napi::Result<JsUndefined>>>()?;
+      e.create_deferred::<Undefined, Box<dyn FnOnce(Env) -> napi::Result<Undefined>>>()?;
 
     let compiler = self.compiler.clone();
     self.compiler.context().thread_pool.spawn(move || {
@@ -221,7 +222,7 @@ impl JsCompiler {
         .map_err(|e| napi::Error::new(Status::GenericFailure, format!("{e}")))
       {
         Ok(_) => {
-          promise.resolve(Box::new(|e| e.get_undefined()));
+          promise.resolve(Box::new(|_| Ok(())));
         }
         Err(err) => {
           promise.reject(err);
@@ -229,7 +230,7 @@ impl JsCompiler {
       }
     });
 
-    Ok(result)
+    result.create_ref()
   }
 
   /// sync compile
@@ -263,13 +264,11 @@ impl JsCompiler {
     &self,
     e: Env,
     paths: Vec<String>,
-    callback: JsFunction,
+    thread_safe_callback: ThreadsafeFunction<()>,
     sync: bool,
     generate_update_resource: bool,
-  ) -> napi::Result<JsObject> {
+  ) -> napi::Result<ObjectRef> {
     let context = self.compiler.context().clone();
-    let thread_safe_callback: ThreadsafeFunction<(), ErrorStrategy::Fatal> =
-      callback.create_threadsafe_function(0, |ctx| ctx.env.get_undefined().map(|v| vec![v]))?;
 
     let (promise, result) =
       e.create_deferred::<JsUpdateResult, Box<dyn FnOnce(Env) -> napi::Result<JsUpdateResult>>>()?;
@@ -283,7 +282,7 @@ impl JsCompiler {
             .map(|p| (p, UpdateType::Updated))
             .collect(),
           move || {
-            thread_safe_callback.call((), ThreadsafeFunctionCallMode::Blocking);
+            thread_safe_callback.call(Ok(()), ThreadsafeFunctionCallMode::Blocking);
           },
           sync,
           generate_update_resource,
@@ -315,7 +314,7 @@ impl JsCompiler {
                 .into_iter()
                 .map(|(k, v)| {
                   (
-                    k.id(context.config.mode.clone()),
+                    k.id(context.config.mode),
                     v.into_iter()
                       .map(|(path, ty)| vec![path, ty.to_html_tag()])
                       .collect(),
@@ -348,7 +347,7 @@ impl JsCompiler {
       }
     });
 
-    Ok(result)
+    result.create_ref()
   }
 
   #[napi]
@@ -424,7 +423,7 @@ impl JsCompiler {
   }
 
   #[napi]
-  pub fn resources_map(&self, e: Env) -> HashMap<String, JsUnknown> {
+  pub fn resources_map(&self, e: Env) -> HashMap<String, Unknown> {
     let context = self.compiler.context();
     let resources = context.resources_map.lock();
     let mut resources_map = HashMap::default();
@@ -438,7 +437,7 @@ impl JsCompiler {
 
   #[napi]
   pub fn write_resources_to_disk(&self) {
-    self.compiler.write_resources_to_disk();
+    self.compiler.write_resources_to_disk().unwrap();
   }
 
   #[napi]

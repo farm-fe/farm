@@ -85,7 +85,13 @@ fn test_handle_dynamic_entry_resource_pots() {
 
   assert_eq!(
     affected_groups,
-    HashSet::from_iter([group_id_a, group_id_b, group_id_f, group_id_d, group_id_h])
+    HashSet::from_iter([
+      group_id_a,
+      group_id_b,
+      group_id_f,
+      group_id_d,
+      group_id_h.clone()
+    ])
   );
 
   let affected_modules = affected_groups
@@ -135,12 +141,18 @@ fn test_handle_dynamic_entry_resource_pots() {
   assert_eq!(dynamic_entry_resource_pots.len(), 1);
   assert_eq!(
     dynamic_entry_resource_pots,
-    HashSet::from_iter(["BH_js".to_string()])
+    HashSet::from_iter(["BH__dynamic_entry_js".to_string()])
   );
   let resource_pot_map = context.resource_pot_map.read();
-  let dynamic_resource_pot = resource_pot_map.resource_pot(&"BH_js".into()).unwrap();
+  let dynamic_resource_pot = resource_pot_map
+    .resource_pot(&"BH__dynamic_entry_js".into())
+    .unwrap();
   assert_eq!(
     dynamic_resource_pot.modules,
     HashSet::from_iter(["F".into(), "H".into()])
   );
+
+  let module_graph = context.module_graph.read();
+  let module_h = module_graph.module(&"H".into()).unwrap();
+  assert_eq!(module_h.module_groups, HashSet::from_iter([group_id_h]));
 }
