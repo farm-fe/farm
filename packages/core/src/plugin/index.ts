@@ -146,7 +146,8 @@ export async function resolveConfigResolvedHook(
       if (hook?.filters?.resolvedPaths?.length && config.root) {
         // Convert absolute paths to relative paths
         hook.filters.resolvedPaths = hook.filters.resolvedPaths.map(
-          (p: string) => (isAbsolute(p) ? relative(config.root, p) : p)
+          (p: string) =>
+            isAbsolute(p) && !p.startsWith('\\') ? relative(config.root, p) : p
         );
       }
     }
