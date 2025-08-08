@@ -74,9 +74,9 @@ impl CustomMetaDataMap {
     self.internal.map.iter()
   }
 
-  pub fn get_mut<T: Cacheable + Default>(&mut self, key: &str) -> Option<&mut T> {
+  pub fn get_mut<T: Cacheable>(&mut self, key: &str) -> Option<&mut T> {
     if let Some(bytes) = self.internal.bytes_map.remove(key) {
-      let value = T::deserialize_bytes(&T::default(), bytes).unwrap();
+      let value = T::deserialize_bytes(bytes).unwrap();
       self.internal.map.insert(key.to_string(), value);
     }
 
@@ -87,8 +87,33 @@ impl CustomMetaDataMap {
       .and_then(|v| v.downcast_mut::<T>())
   }
 
-  pub fn insert<T: Cacheable>(&mut self, key: String, value: Box<T>) {
+  pub fn get_cache<T: Cacheable>(&mut self, key: &str) -> Option<Box<T>> {
+    if let Some(v) = self.internal.map.get(key) {
+      let bytes = v.serialize_bytes().ok()?;
+
+      return T::deserialize_bytes(bytes).ok()?.downcast::<T>().ok();
+    }
+
+    if let Some(bytes) = self.internal.bytes_map.get(key) {
+      let value = T::deserialize_bytes(bytes.clone()).unwrap();
+      return value.downcast::<T>().ok();
+    }
+
+    None
+  }
+
+  pub fn get_ref<T: Cacheable>(&self, key: &str) -> Option<&T> {
+    self
+      .internal
+      .map
+      .get(key)
+      .and_then(|v| v.downcast_ref::<T>())
+  }
+
+  pub fn insert(&mut self, key: String, value: Box<dyn Cacheable>) {
     self.internal.map.insert(key, value);
+    // pub fn insert<T: Cacheable>(&mut self, key: String, value: Box<T>) {
+    //   self.internal.map.insert(key, value);
   }
 
   pub fn remove(&mut self, key: &str) {
@@ -109,21 +134,16 @@ impl From<HashMap<String, Box<dyn Cacheable>>> for CustomMetaDataMap {
 
 impl Clone for CustomMetaDataMap {
   fn clone(&self) -> Self {
-    let custom = if self.internal.map.is_empty() {
-      HashMap::default()
-    } else {
-      let mut custom = HashMap::default();
-      for (k, v) in self.internal.map.iter() {
-        let cloned_data = v.serialize_bytes().unwrap();
-        let cloned_custom = v.deserialize_bytes(cloned_data).unwrap();
-        custom.insert(k.clone(), cloned_custom);
-      }
-      custom
-    };
+    let mut map = self.internal.bytes_map.clone();
+
+    self.internal.map.iter().for_each(|(k, v)| {
+      let cloned_data = v.serialize_bytes().unwrap();
+      map.insert(k.clone(), cloned_data);
+    });
 
     Self {
       internal: InternalCustomMetaDataMap {
-        map: custom,
+        map: Default::default(),
         bytes_map: self.internal.bytes_map.clone(),
       },
     }

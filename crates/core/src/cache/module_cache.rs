@@ -1,24 +1,33 @@
+use std::sync::Arc;
+
 use dashmap::mapref::one::{Ref, RefMut};
 
 use farmfe_macro_cache_item::cache_item;
+pub use module_metadata::ModuleMatedataStore;
+use rayon::iter::{IntoParallelIterator, ParallelIterator};
 
-use crate::config::Mode;
 use crate::module::module_graph::ModuleGraphEdge;
-use crate::module::{Module, ModuleId};
+use crate::module::{CustomMetaDataMap, Module, ModuleId};
 use crate::plugin::PluginAnalyzeDepsHookResultEntry;
+use crate::Cacheable;
 
 use immutable_modules::ImmutableModulesMemoryStore;
 use module_memory_store::ModuleMemoryStore;
 use mutable_modules::MutableModulesMemoryStore;
 
+use super::CacheContext;
+
 pub mod immutable_modules;
 pub mod module_memory_store;
+mod module_metadata;
 pub mod mutable_modules;
 
 pub struct ModuleCacheManager {
   /// Store is responsible for how to read and load cache from disk.
   pub mutable_modules_store: MutableModulesMemoryStore,
   pub immutable_modules_store: ImmutableModulesMemoryStore,
+  pub module_matedata: ModuleMatedataStore,
+  context: Arc<CacheContext>,
 }
 
 #[cache_item]
@@ -50,6 +59,8 @@ pub struct CachedModule {
   /// when writing to the cache next time, it will be cleared from memory.
   ///
   pub is_expired: bool,
+
+  pub matedata: Option<CustomMetaDataMap>,
 }
 
 impl CachedModule {
@@ -84,10 +95,12 @@ impl CachedModule {
 }
 
 impl ModuleCacheManager {
-  pub fn new(cache_dir_str: &str, namespace: &str, mode: Mode) -> Self {
+  pub fn new(context: Arc<CacheContext>) -> Self {
     Self {
-      mutable_modules_store: MutableModulesMemoryStore::new(cache_dir_str, namespace, mode),
-      immutable_modules_store: ImmutableModulesMemoryStore::new(cache_dir_str, namespace, mode),
+      mutable_modules_store: MutableModulesMemoryStore::new(context.clone()),
+      immutable_modules_store: ImmutableModulesMemoryStore::new(context.clone()),
+      module_matedata: Default::default(),
+      context,
     }
   }
 
@@ -122,30 +135,51 @@ impl ModuleCacheManager {
       .expect("Cache broken, please remove node_modules/.farm and retry.")
   }
 
-  pub fn get_cache_ref(&self, key: &ModuleId) -> Ref<'_, ModuleId, CachedModule> {
-    if let Some(module) = self.mutable_modules_store.get_cache_ref(key) {
-      return module;
-    }
-
+  fn get_cache_option_ref(&self, key: &ModuleId) -> Option<Ref<'_, ModuleId, CachedModule>> {
     self
-      .immutable_modules_store
+      .mutable_modules_store
       .get_cache_ref(key)
+      .or_else(|| self.immutable_modules_store.get_cache_ref(key))
+  }
+
+  pub fn get_cache_ref(&self, key: &ModuleId) -> Ref<'_, ModuleId, CachedModule> {
+    self
+      .get_cache_option_ref(key)
       .expect("Cache broken, please remove node_modules/.farm and retry.")
   }
 
-  pub fn get_cache_mut_ref(&self, key: &ModuleId) -> RefMut<'_, ModuleId, CachedModule> {
-    if let Some(module) = self.mutable_modules_store.get_cache_mut_ref(key) {
-      return module;
+  pub fn get_cache_mut_option_ref(
+    &self,
+    key: &ModuleId,
+  ) -> Option<RefMut<'_, ModuleId, CachedModule>> {
+    if !self.context.cache_enable {
+      return None;
     }
 
     self
-      .immutable_modules_store
+      .mutable_modules_store
       .get_cache_mut_ref(key)
+      .or_else(|| self.immutable_modules_store.get_cache_mut_ref(key))
+  }
+
+  pub fn get_cache_mut_ref(&self, key: &ModuleId) -> RefMut<'_, ModuleId, CachedModule> {
+    self
+      .get_cache_mut_option_ref(key)
       .expect("Cache broken, please remove node_modules/.farm and retry.")
   }
 
   /// Write the cache map to the disk.
   pub fn write_cache(&self) {
+    self
+      .module_matedata
+      .take_matedata()
+      .into_par_iter()
+      .for_each(|(module_id, map)| {
+        if let Some(mut module) = self.get_cache_mut_option_ref(&module_id) {
+          module.matedata = Some(map);
+        }
+      });
+
     let thread_pool = rayon::ThreadPoolBuilder::new()
       .num_threads(2)
       .build()
@@ -162,10 +196,21 @@ impl ModuleCacheManager {
   pub fn invalidate_cache(&self, key: &ModuleId) {
     self.mutable_modules_store.invalidate_cache(key);
     self.immutable_modules_store.invalidate_cache(key);
+    self.module_matedata.invalidate(key);
   }
 
   pub fn cache_outdated(&self, key: &ModuleId) -> bool {
     self.mutable_modules_store.cache_outdated(key)
       || self.immutable_modules_store.cache_outdated(key)
+  }
+
+  pub fn read_metadata<V: Cacheable>(&self, key: &ModuleId, name: &str) -> Option<Box<V>> {
+    self.module_matedata.get_matedata(key, name)
+  }
+
+  pub fn write_metadata<V: Cacheable>(&self, key: ModuleId, name: String, value: V) {
+    self
+      .module_matedata
+      .write_metadata(key, name, Box::new(value));
   }
 }

@@ -1,29 +1,36 @@
+use std::sync::Arc;
+
 use dashmap::DashMap;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 
 use crate::{
   cache::{
-    cache_store::{CacheStore, CacheStoreKey},
-    resource_cache::resource_memory_store::ArchivedCachedResourcePot,
+    store::{constant::CacheStoreTrait, CacheStoreKey},
+    CacheContext,
+    // cache_store::{CacheStore, CacheStoreKey},
+    // resource_cache::resource_memory_store::ArchivedCachedResourcePot,
   },
-  config::Mode,
   deserialize, serialize, HashMap,
 };
 
-use super::resource_memory_store::{CachedResourcePot, ResourceMemoryStore};
+use super::resource_memory_store::{
+  ArchivedCachedResourcePot, CachedResourcePot, ResourceMemoryStore,
+};
 
 /// In memory store for Resource Pot
 pub struct ResourcePotMemoryStore {
   /// low level cache store
-  store: CacheStore,
+  store: Box<dyn CacheStoreTrait>,
   /// resource pot id -> Cached Resource Pot
   cached_resources: DashMap<String, CachedResourcePot>,
 }
 
 impl ResourcePotMemoryStore {
-  pub fn new(cache_dir_str: &str, namespace: &str, mode: Mode) -> Self {
+  pub fn new(context: Arc<CacheContext>) -> Self {
+    let store = context.store_factory.create_cache_store("resource");
+
     Self {
-      store: CacheStore::new(cache_dir_str, namespace, mode, "resource"),
+      store,
       cached_resources: DashMap::new(),
     }
   }
@@ -56,7 +63,7 @@ impl ResourceMemoryStore for ResourcePotMemoryStore {
     let cache = self.store.read_cache(name);
 
     if let Some(cache) = cache {
-      let resource = deserialize!(&cache, CachedResourcePot, ArchivedCachedResourcePot);
+      let resource = deserialize!(&cache, CachedResourcePot);
       // self
       //   .cached_resources
       //   .insert(name.to_string(), resource.clone());

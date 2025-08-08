@@ -111,18 +111,6 @@ impl Default for ScriptModuleMetaData {
 
 impl Clone for ScriptModuleMetaData {
   fn clone(&self) -> Self {
-    let custom = if self.custom.is_empty() {
-      HashMap::default()
-    } else {
-      let mut custom = HashMap::default();
-      for (k, v) in self.custom.iter() {
-        let cloned_data = v.serialize_bytes().unwrap();
-        let cloned_custom = v.deserialize_bytes(cloned_data).unwrap();
-        custom.insert(k.clone(), cloned_custom);
-      }
-      custom
-    };
-
     Self {
       ast: self.ast.clone(),
       top_level_mark: self.top_level_mark,
@@ -140,9 +128,9 @@ impl Clone for ScriptModuleMetaData {
       is_async: self.is_async,
       feature_flags: self.feature_flags.clone(),
       export_ident_map: self.export_ident_map.clone(),
+      custom: self.custom.clone(),
       reexport_ident_map: self.reexport_ident_map.clone(),
       ambiguous_export_ident_map: self.ambiguous_export_ident_map.clone(),
-      custom: CustomMetaDataMap::from(custom),
     }
   }
 }

@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use dashmap::DashMap;
 use farmfe_macro_cache_item::cache_item;
 use farmfe_utils::hash::sha256;
@@ -5,12 +7,13 @@ use rayon::iter::{IntoParallelIterator, ParallelIterator};
 
 use crate::{
   cache::{
-    cache_store::{CacheStore, CacheStoreKey},
+    store::{constant::CacheStoreTrait, CacheStoreKey},
     utils::cache_panic,
+    CacheContext, CacheType,
   },
-  config::Mode,
   module::ModuleId,
   HashMap, HashSet,
+  deserialize,
 };
 
 use super::{module_memory_store::ModuleMemoryStore, CachedModule};
@@ -38,7 +41,7 @@ impl CachedPackage {
 pub struct ImmutableModulesMemoryStore {
   cache_dir: String,
   /// low level cache store
-  store: CacheStore,
+  store: Box<dyn CacheStoreTrait>,
   /// ModuleId -> Cached Module
   cached_modules: DashMap<ModuleId, CachedModule>,
   /// moduleId -> PackageKey
@@ -47,9 +50,8 @@ pub struct ImmutableModulesMemoryStore {
 }
 
 impl ImmutableModulesMemoryStore {
-  pub fn new(cache_dir_str: &str, namespace: &str, mode: Mode) -> Self {
-    let store = CacheStore::new(cache_dir_str, namespace, mode, "immutable-modules");
-
+  pub fn new(context: Arc<CacheContext>) -> Self {
+    let store = context.store_factory.create_cache_store("immutable-module");
     let manifest_bytes = store.read_cache(MANIFEST_KEY).unwrap_or_default();
     let manifest: HashMap<String, String> =
       serde_json::from_slice(&manifest_bytes).unwrap_or_default();
@@ -67,6 +69,12 @@ impl ImmutableModulesMemoryStore {
       set.insert(key.clone());
     }
 
+    let cache_dir_str = if let CacheType::Disk { cache_dir, .. } = &context.option {
+      cache_dir.clone()
+    } else {
+      "VIRTUAL_CACHE_DIR".to_string()
+    };
+
     Self {
       store,
       cached_modules: DashMap::new(),
@@ -82,7 +90,7 @@ impl ImmutableModulesMemoryStore {
       .read_cache(package_key)
       .expect("Cache broken, please remove node_modules/.farm and retry.");
 
-    crate::deserialize!(&cache, CachedPackage, ArchivedCachedPackage)
+    deserialize!(&cache, CachedPackage)
   }
 
   fn read_package(&self, module_id: &ModuleId) -> Option<()> {

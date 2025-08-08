@@ -247,7 +247,7 @@ fn construct_statement_graph_complex_1() {
   function getRequiredChunkKey(namespace) {
     return "" + namespace + LOADABLE_REQUIRED_CHUNKS_KEY;
   }
-  
+
   var sharedInternals = /*#__PURE__*/Object.freeze({
     __proto__: null,
     getRequiredChunkKey: getRequiredChunkKey,

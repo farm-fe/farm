@@ -228,7 +228,6 @@ impl Compiler {
 fn write_cache(context: Arc<CompilationContext>) {
   farm_profile_function!("write_cache".to_string());
   context.cache_manager.write_cache();
-  context.cache_manager.custom.write_manifest();
 }
 
 pub fn write_cache_async(context: Arc<CompilationContext>) {

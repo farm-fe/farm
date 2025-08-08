@@ -1,11 +1,15 @@
+use std::sync::Arc;
+
 use dashmap::DashMap;
 use farmfe_utils::hash::sha256;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 
 use crate::{
   cache::{
-    cache_store::{CacheStore, CacheStoreKey},
+    // cache_store::{CacheStore, CacheStoreKey},
     module_cache::ArchivedCachedModule,
+    store::{constant::CacheStoreTrait, CacheStoreKey},
+    CacheContext,
   },
   config::Mode,
   deserialize,
@@ -18,15 +22,15 @@ use super::{module_memory_store::ModuleMemoryStore, CachedModule};
 /// In memory store for mutable modules
 pub struct MutableModulesMemoryStore {
   /// low level cache store
-  store: CacheStore,
+  store: Box<dyn CacheStoreTrait>,
   /// ModuleId -> Cached Module
   cached_modules: DashMap<ModuleId, CachedModule>,
 }
 // TODO: cache unit test
 impl MutableModulesMemoryStore {
-  pub fn new(cache_dir_str: &str, namespace: &str, mode: Mode) -> Self {
+  pub fn new(context: Arc<CacheContext>) -> Self {
     Self {
-      store: CacheStore::new(cache_dir_str, namespace, mode, "mutable-modules"),
+      store: context.store_factory.create_cache_store("mutable-module"),
       cached_modules: DashMap::new(),
     }
   }
@@ -73,7 +77,7 @@ impl ModuleMemoryStore for MutableModulesMemoryStore {
     let cache = self.store.read_cache(&key.to_string());
 
     if let Some(cache) = cache {
-      let module = deserialize!(&cache, CachedModule, ArchivedCachedModule);
+      let module = deserialize!(&cache, CachedModule);
       // self.cached_modules.insert(key.clone(), module.clone());
       return Some(module);
     }
@@ -92,7 +96,7 @@ impl ModuleMemoryStore for MutableModulesMemoryStore {
     let cache = self.store.read_cache(&key.to_string());
 
     if let Some(cache) = cache {
-      let module = deserialize!(&cache, CachedModule, ArchivedCachedModule);
+      let module = deserialize!(&cache, CachedModule);
       self.cached_modules.insert(key.clone(), module);
       return Some(self.cached_modules.get(key).unwrap());
     }
@@ -111,7 +115,7 @@ impl ModuleMemoryStore for MutableModulesMemoryStore {
     let cache = self.store.read_cache(&key.to_string());
 
     if let Some(cache) = cache {
-      let module = deserialize!(&cache, CachedModule, ArchivedCachedModule);
+      let module = deserialize!(&cache, CachedModule);
       self.cached_modules.insert(key.clone(), module);
       return Some(self.cached_modules.get_mut(key).unwrap());
     }
