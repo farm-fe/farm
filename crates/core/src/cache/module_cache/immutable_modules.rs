@@ -13,6 +13,7 @@ use crate::{
   },
   module::ModuleId,
   HashMap, HashSet,
+  deserialize,
 };
 
 use super::{module_memory_store::ModuleMemoryStore, CachedModule};
@@ -89,7 +90,7 @@ impl ImmutableModulesMemoryStore {
       .read_cache(package_key)
       .expect("Cache broken, please remove node_modules/.farm and retry.");
 
-    crate::deserialize!(&cache, CachedPackage, ArchivedCachedPackage)
+    deserialize!(&cache, CachedPackage)
   }
 
   fn read_package(&self, module_id: &ModuleId) -> Option<()> {

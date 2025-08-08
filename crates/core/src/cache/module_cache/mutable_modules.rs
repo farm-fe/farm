@@ -77,7 +77,7 @@ impl ModuleMemoryStore for MutableModulesMemoryStore {
     let cache = self.store.read_cache(&key.to_string());
 
     if let Some(cache) = cache {
-      let module = deserialize!(&cache, CachedModule, ArchivedCachedModule);
+      let module = deserialize!(&cache, CachedModule);
       // self.cached_modules.insert(key.clone(), module.clone());
       return Some(module);
     }
@@ -96,7 +96,7 @@ impl ModuleMemoryStore for MutableModulesMemoryStore {
     let cache = self.store.read_cache(&key.to_string());
 
     if let Some(cache) = cache {
-      let module = deserialize!(&cache, CachedModule, ArchivedCachedModule);
+      let module = deserialize!(&cache, CachedModule);
       self.cached_modules.insert(key.clone(), module);
       return Some(self.cached_modules.get(key).unwrap());
     }
@@ -115,7 +115,7 @@ impl ModuleMemoryStore for MutableModulesMemoryStore {
     let cache = self.store.read_cache(&key.to_string());
 
     if let Some(cache) = cache {
-      let module = deserialize!(&cache, CachedModule, ArchivedCachedModule);
+      let module = deserialize!(&cache, CachedModule);
       self.cached_modules.insert(key.clone(), module);
       return Some(self.cached_modules.get_mut(key).unwrap());
     }

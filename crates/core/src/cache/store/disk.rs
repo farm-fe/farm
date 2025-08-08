@@ -6,19 +6,17 @@ use std::{
 use dashmap::DashMap;
 use farmfe_utils::hash::sha256;
 use rayon::iter::{IntoParallelIterator, ParallelBridge, ParallelIterator};
-use rkyv::{collections::swiss_table::ArchivedHashMap, Archive, Archived};
 
 use super::{
   constant::{CacheStoreFactory, CacheStoreTrait, FARM_CACHE_MANIFEST_FILE, FARM_CACHE_VERSION},
   error::CacheError,
   namespace::NamespaceStore,
-  ArchivedCacheStoreKey, CacheStoreKey,
+  CacheStoreKey,
 };
 use crate::{config::Mode, deserialize, serialize, HashMap, HashSet};
 
 // #[cache_item]
 type CombineCacheData = HashMap<CacheStoreKey, Vec<u8>>;
-type ArchivedCombineCacheData = ArchivedHashMap<CacheStoreKey, Vec<u8>>;
 // TODO make CacheStore a trait and implement DiskCacheStore or RemoteCacheStore or more.
 #[derive(Default)]
 pub struct CacheStore {
@@ -56,9 +54,10 @@ impl CacheStore {
 
     let manifest = if manifest_file_path.exists() && manifest_file_path.is_file() {
       let content = std::fs::read_to_string(manifest_file_path).unwrap();
-      let map = serde_json::from_str::<HashMap<String, String>>(&content).unwrap();
-
-      map.into_iter().collect()
+      serde_json::from_str::<HashMap<String, String>>(&content)
+        .unwrap()
+        .into_iter()
+        .collect()
     } else {
       DashMap::new()
     };
@@ -99,11 +98,7 @@ impl CacheStore {
     if let Ok(mut map) = self.lock.write() {
       let data = std::fs::read(cache_path.clone()).unwrap();
 
-      let value = deserialize!(
-        &data,
-        CombineCacheData,
-        ArchivedHashMap<Archived<CacheStoreKey>, Archived<Vec<u8>>>
-      );
+      let value = deserialize!(&data, CombineCacheData);
 
       for (key, value) in value {
         if self.data.contains_key(&key.key) {
@@ -113,11 +108,7 @@ impl CacheStore {
       }
 
       map.insert(cache_path.clone());
-
-      drop(map)
     }
-
-    // drop(lock)
   }
 
   fn try_read_content(&self, name: &str) -> Option<Vec<u8>> {
@@ -163,6 +154,7 @@ impl CacheStore {
           let name = item.key();
           let key = item.value();
 
+          // reenerate the cache if not exists
           let Some(value) = self.try_read_content(name) else {
             return combine_data;
           };
