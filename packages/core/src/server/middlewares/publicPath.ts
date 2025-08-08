@@ -1,4 +1,4 @@
-import { cleanUrl, withTrailingSlash } from '../../utils/index.js';
+import { withTrailingSlash } from '../../utils/index.js';
 
 import type Connect from 'connect';
 import { Server as DevServer } from '../index.js';
@@ -12,7 +12,7 @@ export function publicPathMiddleware(
 
   return function handlePublicPathMiddleware(req, res, next) {
     // auto redirect to public path
-    const url = cleanUrl(req.url);
+    const url = req.url;
 
     if (url.startsWith(publicPath)) {
       req.url = stripBase(url, publicPath);
