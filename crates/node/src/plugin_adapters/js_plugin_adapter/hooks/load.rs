@@ -2,7 +2,6 @@ use farmfe_core::{
   config::config_regex::ConfigRegex,
   context::CompilationContext,
   error::Result,
-  module::ModuleId,
   plugin::{PluginHookContext, PluginLoadHookParam, PluginLoadHookResult},
 };
 use napi::bindgen_prelude::FromNapiValue;
@@ -32,11 +31,12 @@ impl JsPluginLoadHook {
     ctx: Arc<CompilationContext>,
     hook_context: PluginHookContext,
   ) -> Result<Option<PluginLoadHookResult>> {
-    if self.filters.resolved_paths.iter().any(|f| {
-      f.is_match(
-        &ModuleId::from(param.module_id.as_str()).resolved_path_with_query(&ctx.config.root),
-      )
-    }) {
+    if self
+      .filters
+      .resolved_paths
+      .iter()
+      .any(|f| f.is_match(param.module_id.as_str()))
+    {
       self.tsfn.call::<PluginLoadHookParam, PluginLoadHookResult>(
         param.clone(),
         ctx,

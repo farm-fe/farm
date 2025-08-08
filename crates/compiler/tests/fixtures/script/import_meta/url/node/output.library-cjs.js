@@ -1,2 +1,2 @@
 //index.js:
- console.log(new URL(__filename, "file:").href);
+ console.log(require("node:url").pathToFileURL(__filename).href);

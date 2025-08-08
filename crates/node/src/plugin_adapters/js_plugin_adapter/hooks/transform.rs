@@ -1,7 +1,6 @@
 use farmfe_core::{
   context::CompilationContext,
   error::Result,
-  module::ModuleId,
   plugin::{PluginTransformHookParam, PluginTransformHookResult},
 };
 use napi::bindgen_prelude::FromNapiValue;
@@ -33,15 +32,16 @@ impl JsPluginTransformHook {
     param: PluginTransformHookParam,
     ctx: Arc<CompilationContext>,
   ) -> Result<Option<PluginTransformHookResult>> {
-    if self.filters.resolved_paths.iter().any(|f| {
-      f.is_match(
-        &ModuleId::from(param.module_id.as_str()).resolved_path_with_query(&ctx.config.root),
-      )
-    }) || self
+    if self
       .filters
-      .module_types
+      .resolved_paths
       .iter()
-      .any(|ty| &param.module_type == ty)
+      .any(|f| f.is_match(param.module_id.as_str()))
+      || self
+        .filters
+        .module_types
+        .iter()
+        .any(|ty| &param.module_type == ty)
     {
       self
         .tsfn

@@ -62,12 +62,6 @@ export default function farmLessPlugin(
         ...preprocessorOptions
       };
     },
-    // @ts-ignore it will be removed in the future
-    configureServer() {
-      console.warn(
-        '[@farmfe/js-plugin-less] Your plugin version is not compatible with the current farm version, please update @farmfe/core to the latest version, otherwise the plugin may not work properly.'
-      );
-    },
     configureCompiler(c) {
       compiler = c;
     },

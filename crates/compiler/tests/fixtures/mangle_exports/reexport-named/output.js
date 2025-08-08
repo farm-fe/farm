@@ -18,7 +18,6 @@ initModuleSystem(__farm_internal_module_system__);
         function Alpha() {
             return 'Alpha';
         }
-        exports.default = Alpha;
         var _f_exports2 = farmRequire("405aeea7");
         farmRequire._(exports, "b", _f_exports2, "a");
     },
@@ -45,7 +44,6 @@ initModuleSystem(__farm_internal_module_system__);
         function Checkboard() {
             return 'Checkboard';
         }
-        exports.default = Checkboard;
     },
     "b5d64806": function(module, exports, farmRequire, farmDynamicRequire) {
         farmRequire._m(exports);
