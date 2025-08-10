@@ -133,7 +133,7 @@ function getFormat(configFilePath: string): ModuleFormat {
     ? 'cjs'
     : process.env.FARM_CONFIG_FORMAT === 'esm'
       ? 'esm'
-      : FORMAT_FROM_EXT[path.extname(configFilePath).slice(1)] ?? 'esm';
+      : (FORMAT_FROM_EXT[path.extname(configFilePath).slice(1)] ?? 'esm');
 }
 
 export async function readConfigFile(

@@ -29,13 +29,7 @@ impl CacheStoreTrait for MemoryCacheStore {
   }
 
   fn is_cache_changed(&self, store_key: &CacheStoreKey) -> bool {
-    if let Some(guard) = self.manifest.get(&store_key.name) {
-      if guard.value() == &store_key.key {
-        return false;
-      }
-    }
-
-    true
+    !matches!(self.manifest.get(&store_key.name), Some(guard) if guard.value() == &store_key.key)
   }
 
   fn write_single_cache(&self, store_key: CacheStoreKey, bytes: Vec<u8>) -> Result<(), CacheError> {

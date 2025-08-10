@@ -81,16 +81,14 @@ impl CacheStore {
     let index = self.hash_index_from_name(name);
 
     let cache_file_dir = &self.cache_dir;
-    cache_file_dir.join(format!("cache-{}", index))
+    cache_file_dir.join(format!("cache-{index}"))
   }
 
   fn restore_cache(&self, name: &str) {
     let cache_path = self.real_cache_path(name);
 
-    if let Ok(restored_set) = self.lock.read() {
-      if restored_set.contains(&cache_path) {
-        return;
-      }
+    if let Ok(restored_set) = self.lock.read() && restored_set.contains(&cache_path) {
+      return;
     }
 
     if !(cache_path.exists() && cache_path.is_file()) {
@@ -131,10 +129,8 @@ impl CacheStore {
   }
 
   fn write_content_to_disk(&self, cache_dir_str: PathBuf, data: Vec<u8>) {
-    if let Some(parent) = cache_dir_str.parent() {
-      if !parent.exists() {
-        std::fs::create_dir_all(parent).unwrap();
-      }
+    if let Some(parent) = cache_dir_str.parent() && !parent.exists() {
+      std::fs::create_dir_all(parent).unwrap();
     }
 
     std::fs::write(cache_dir_str, data).unwrap();
@@ -221,14 +217,7 @@ impl CacheStoreTrait for CacheStore {
 
   /// return true if the cache changed or it's a cache item
   fn is_cache_changed(&self, store_key: &CacheStoreKey) -> bool {
-    if let Some(guard) = self.manifest.get(&store_key.name) {
-      if guard.value() == &store_key.key {
-        // the cache is not changed
-        return false;
-      }
-    }
-
-    true
+    !matches!(self.manifest.get(&store_key.name), Some(guard) if guard.value() == &store_key.key)
   }
 
   fn write_single_cache(&self, store_key: CacheStoreKey, bytes: Vec<u8>) -> Result<(), CacheError> {
