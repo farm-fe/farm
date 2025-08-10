@@ -11,9 +11,9 @@ use crate::{
     utils::cache_panic,
     CacheContext, CacheType,
   },
+  deserialize,
   module::ModuleId,
   HashMap, HashSet,
-  deserialize,
 };
 
 use super::{module_memory_store::ModuleMemoryStore, CachedModule};
@@ -52,9 +52,9 @@ pub struct ImmutableModulesMemoryStore {
 impl ImmutableModulesMemoryStore {
   pub fn new(context: Arc<CacheContext>) -> Self {
     let store = context.store_factory.create_cache_store("immutable-module");
-    let manifest_bytes = store.read_cache(MANIFEST_KEY).unwrap_or_default();
     let manifest: HashMap<String, String> =
-      serde_json::from_slice(&manifest_bytes).unwrap_or_default();
+      serde_json::from_slice(&store.read_cache(MANIFEST_KEY).unwrap_or_default())
+        .unwrap_or_default();
     let manifest = manifest
       .into_iter()
       .map(|(key, value)| (ModuleId::from(key), value))
@@ -178,7 +178,6 @@ impl ModuleMemoryStore for ImmutableModulesMemoryStore {
   fn write_cache(&self) {
     let mut packages = HashMap::default();
     let mut pending_remove_modules = HashSet::default();
-    let mut maybe_remove_package = HashSet::default();
 
     for item in self.cached_modules.iter() {
       let module = item.value();
@@ -188,7 +187,6 @@ impl ModuleMemoryStore for ImmutableModulesMemoryStore {
 
       if module.is_expired {
         pending_remove_modules.insert(item.key().clone());
-        maybe_remove_package.insert(package_key);
         continue;
       }
 
@@ -202,18 +200,11 @@ impl ModuleMemoryStore for ImmutableModulesMemoryStore {
       self.cached_modules.remove(&key);
       self.manifest.remove(&key);
       self.manifest_reversed.iter_mut().for_each(|mut item| {
-        if item.value_mut().contains(&key) {
-          item.value_mut().remove(&key);
+        let package_modules = item.value_mut();
+        if package_modules.contains(&key) {
+          package_modules.remove(&key);
         }
       })
-    }
-
-    for package in maybe_remove_package {
-      if packages.contains_key(&package) {
-        return;
-      }
-
-      self.store.remove_cache(&package);
     }
 
     let manifest = self

@@ -10,13 +10,10 @@ use farmfe_core::{
   cache_item,
   config::{asset::AssetFormatMode, custom::get_config_assets_mode, Config},
   context::{CompilationContext, EmitFileParams},
-  deserialize,
   module::ModuleType,
   plugin::{Plugin, PluginResolveHookResult},
   relative_path::RelativePath,
   resource::{Resource, ResourceOrigin, ResourceType},
-  rkyv::Deserialize,
-  serialize,
   swc_common::sync::OnceCell,
   HashMap,
 };
@@ -129,7 +126,7 @@ impl Plugin for FarmPluginStaticAssets {
     module: &farmfe_core::module::Module,
     context: &Arc<CompilationContext>,
   ) -> farmfe_core::error::Result<Option<bool>> {
-    if let Some(resource) = context.read_module_matedata::<Resource>(&module.id, "asset-resource") {
+    if let Some(resource) = context.read_module_metadata::<Resource>(&module.id, "asset-resource") {
       context.emit_file(EmitFileParams {
         resolved_path: module.id.to_string().clone(),
         name: resource.name,
@@ -301,7 +298,7 @@ impl Plugin for FarmPluginStaticAssets {
 
     for (_, resource) in resources_map.iter() {
       if let ResourceOrigin::Module(m) = &resource.origin {
-        context.write_module_matedata(m.clone(), "asset-resource", resource.clone());
+        context.write_module_metadata(m.clone(), "asset-resource", resource.clone());
       }
     }
 

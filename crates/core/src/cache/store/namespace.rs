@@ -59,6 +59,10 @@ impl CacheStoreTrait for NamespaceStore {
     self.store.read_cache(self.format_name(name).as_str())
   }
 
+  fn read_cache_ref(&self, name: &str) -> Option<super::constant::CacheStoreItemRef<'_>> {
+    self.store.read_cache_ref(self.format_name(name).as_str())
+  }
+
   fn remove_cache(&self, name: &str) {
     self.store.remove_cache(self.format_name(name).as_str())
   }

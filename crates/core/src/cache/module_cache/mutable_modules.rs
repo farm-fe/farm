@@ -6,12 +6,9 @@ use rayon::iter::{IntoParallelIterator, ParallelIterator};
 
 use crate::{
   cache::{
-    // cache_store::{CacheStore, CacheStoreKey},
-    module_cache::ArchivedCachedModule,
     store::{constant::CacheStoreTrait, CacheStoreKey},
     CacheContext,
   },
-  config::Mode,
   deserialize,
   module::ModuleId,
   serialize, HashMap,
@@ -74,11 +71,8 @@ impl ModuleMemoryStore for MutableModulesMemoryStore {
       return Some(module);
     }
 
-    let cache = self.store.read_cache(&key.to_string());
-
-    if let Some(cache) = cache {
-      let module = deserialize!(&cache, CachedModule);
-      // self.cached_modules.insert(key.clone(), module.clone());
+    if let Some(cache) = self.store.read_cache_ref(&key.to_string()) {
+      let module = deserialize!(cache.value(), CachedModule);
       return Some(module);
     }
 
@@ -93,10 +87,8 @@ impl ModuleMemoryStore for MutableModulesMemoryStore {
       return Some(module);
     }
 
-    let cache = self.store.read_cache(&key.to_string());
-
-    if let Some(cache) = cache {
-      let module = deserialize!(&cache, CachedModule);
+    if let Some(cache) = self.store.read_cache_ref(&key.to_string()) {
+      let module = deserialize!(&cache.value(), CachedModule);
       self.cached_modules.insert(key.clone(), module);
       return Some(self.cached_modules.get(key).unwrap());
     }
@@ -112,10 +104,8 @@ impl ModuleMemoryStore for MutableModulesMemoryStore {
       return Some(module);
     }
 
-    let cache = self.store.read_cache(&key.to_string());
-
-    if let Some(cache) = cache {
-      let module = deserialize!(&cache, CachedModule);
+    if let Some(cache) = self.store.read_cache_ref(&key.to_string()) {
+      let module = deserialize!(&cache.value(), CachedModule);
       self.cached_modules.insert(key.clone(), module);
       return Some(self.cached_modules.get_mut(key).unwrap());
     }
@@ -161,8 +151,9 @@ impl ModuleMemoryStore for MutableModulesMemoryStore {
   }
 
   fn is_cache_changed(&self, module: &crate::module::Module) -> bool {
-    let store_key = self.gen_cache_store_key(module);
-    self.store.is_cache_changed(&store_key)
+    self
+      .store
+      .is_cache_changed(&self.gen_cache_store_key(module))
   }
 
   fn cache_outdated(&self, key: &ModuleId) -> bool {

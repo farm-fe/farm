@@ -80,22 +80,22 @@ fn test(file: String, crate_path: String, f: Option<impl Fn(&mut Config)>) {
   }
 }
 
-fn single_bundle_test(file: String, crate_path: String) {
-  test(file, crate_path, None::<fn(&mut Config)>);
-}
+// fn single_bundle_test(file: String, crate_path: String) {
+//   test(file, crate_path, None::<fn(&mut Config)>);
+// }
 
-fn multiple_bundle_test(file: String, crate_path: String) {
-  test(
-    file,
-    crate_path,
-    Some(|config: &mut Config| {
-      config.partial_bundling.enforce_resources = vec![PartialBundlingEnforceResourceConfig {
-        name: "bundle1".to_string(),
-        test: vec![ConfigRegex::new("^bundle2.+")],
-      }];
-    }),
-  );
-}
+// fn multiple_bundle_test(file: String, crate_path: String) {
+//   test(
+//     file,
+//     crate_path,
+//     Some(|config: &mut Config| {
+//       config.partial_bundling.enforce_resources = vec![PartialBundlingEnforceResourceConfig {
+//         name: "bundle1".to_string(),
+//         test: vec![ConfigRegex::new("^bundle2.+")],
+//       }];
+//     }),
+//   );
+// }
 
 // farmfe_testing::testing! {"tests/fixtures/bundle/library/reexport/reexport_hybrid_cjs/namespace/**/index.ts", single_bundle_test}
 

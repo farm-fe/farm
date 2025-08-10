@@ -54,8 +54,12 @@ impl CacheStoreTrait for MemoryCacheStore {
   }
 
   fn read_cache(&self, name: &str) -> Option<Vec<u8>> {
+    self.read_cache_ref(name).map(|v| v.value().clone())
+  }
+
+  fn read_cache_ref(&self, name: &str) -> Option<super::constant::CacheStoreItemRef<'_>> {
     if let Some(key) = self.manifest.get(name) {
-      return self.cache.get(key.value()).map(|v| v.value().clone());
+      return self.cache.get(key.value()).map(|v| v.map(|v| v));
     }
 
     None

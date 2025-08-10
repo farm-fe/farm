@@ -6,10 +6,7 @@ use farmfe_core::{
   context::CompilationContext,
   deserialize,
   module::{
-    meta_data::{
-      script::{CommentsMetaData, ScriptModuleMetaData},
-      ArchivedModuleMetaData,
-    },
+    meta_data::script::{CommentsMetaData, ScriptModuleMetaData},
     ModuleId, ModuleMetaData, ModuleSystem, ModuleType,
   },
   plugin::{PluginFinalizeModuleHookParam, ResolveKind},
@@ -74,7 +71,10 @@ pub fn transform_css_to_script_modules(
         if cache_manager.custom.has_cache(&store_key.name)
           && !cache_manager.custom.is_cache_changed(&store_key)
         {
-          let cache = cache_manager.custom.read_cache(&store_key.name).unwrap();
+          let cache = cache_manager
+            .custom
+            .read_cache_ref(&store_key.name)
+            .unwrap();
           let mut meta = Box::new(deserialize!(&cache, ModuleMetaData));
           let script_meta = meta.as_script_mut();
 

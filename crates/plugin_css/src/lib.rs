@@ -200,7 +200,7 @@ impl Plugin for FarmPluginCss {
     if is_farm_css_modules(&param.module_id) {
       return Ok(Some(PluginLoadHookResult {
         content: context
-          .read_module_matedata::<String>(&ModuleId::from(param.module_id.as_str()), "content")
+          .read_module_metadata::<String>(&ModuleId::from(param.module_id.as_str()), "content")
           .map(|v| *v)
           .unwrap(),
         module_type: ModuleType::Custom(FARM_CSS_MODULES.to_string()),
@@ -238,7 +238,7 @@ impl Plugin for FarmPluginCss {
         content: param.content.clone(),
         module_type: Some(ModuleType::Css),
         source_map: context
-          .read_module_matedata::<String>(&ModuleId::from(param.module_id.as_str()), "map")
+          .read_module_metadata::<String>(&ModuleId::from(param.module_id.as_str()), "map")
           .map(|v| *v),
         ignore_previous_source_map: false,
       }));
@@ -295,7 +295,7 @@ impl Plugin for FarmPluginCss {
           (css_stylesheet, CommentsMetaData::from(comments)),
         );
 
-        context.write_module_matedata::<String>(
+        context.write_module_metadata::<String>(
           css_modules_module_id.clone(),
           "content",
           param.content.clone(),
@@ -372,7 +372,7 @@ impl Plugin for FarmPluginCss {
             .to_writer(&mut buf)
             .expect("failed to write sourcemap");
 
-          context.write_module_matedata::<String>(
+          context.write_module_metadata::<String>(
             css_modules_module_id,
             "map",
             String::from_utf8(buf).unwrap(),

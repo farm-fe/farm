@@ -3,7 +3,7 @@ use std::sync::Arc;
 use dashmap::mapref::one::{Ref, RefMut};
 
 use farmfe_macro_cache_item::cache_item;
-pub use module_metadata::ModuleMatedataStore;
+pub use module_metadata::ModuleMetadataStore;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 
 use crate::module::module_graph::ModuleGraphEdge;
@@ -26,7 +26,7 @@ pub struct ModuleCacheManager {
   /// Store is responsible for how to read and load cache from disk.
   pub mutable_modules_store: MutableModulesMemoryStore,
   pub immutable_modules_store: ImmutableModulesMemoryStore,
-  pub module_matedata: ModuleMatedataStore,
+  pub module_metadata: ModuleMetadataStore,
   context: Arc<CacheContext>,
 }
 
@@ -60,7 +60,7 @@ pub struct CachedModule {
   ///
   pub is_expired: bool,
 
-  pub matedata: Option<CustomMetaDataMap>,
+  pub metadata: Option<CustomMetaDataMap>,
 }
 
 impl CachedModule {
@@ -99,7 +99,7 @@ impl ModuleCacheManager {
     Self {
       mutable_modules_store: MutableModulesMemoryStore::new(context.clone()),
       immutable_modules_store: ImmutableModulesMemoryStore::new(context.clone()),
-      module_matedata: Default::default(),
+      module_metadata: Default::default(),
       context,
     }
   }
@@ -171,12 +171,12 @@ impl ModuleCacheManager {
   /// Write the cache map to the disk.
   pub fn write_cache(&self) {
     self
-      .module_matedata
-      .take_matedata()
+      .module_metadata
+      .take_metadata()
       .into_par_iter()
       .for_each(|(module_id, map)| {
         if let Some(mut module) = self.get_cache_mut_option_ref(&module_id) {
-          module.matedata = Some(map);
+          module.metadata = Some(map);
         }
       });
 
@@ -196,7 +196,7 @@ impl ModuleCacheManager {
   pub fn invalidate_cache(&self, key: &ModuleId) {
     self.mutable_modules_store.invalidate_cache(key);
     self.immutable_modules_store.invalidate_cache(key);
-    self.module_matedata.invalidate(key);
+    self.module_metadata.invalidate(key);
   }
 
   pub fn cache_outdated(&self, key: &ModuleId) -> bool {
@@ -205,12 +205,12 @@ impl ModuleCacheManager {
   }
 
   pub fn read_metadata<V: Cacheable>(&self, key: &ModuleId, name: &str) -> Option<Box<V>> {
-    self.module_matedata.get_matedata(key, name)
+    self.module_metadata.get_metadata(key, name)
   }
 
   pub fn write_metadata<V: Cacheable>(&self, key: ModuleId, name: String, value: V) {
     self
-      .module_matedata
+      .module_metadata
       .write_metadata(key, name, Box::new(value));
   }
 }

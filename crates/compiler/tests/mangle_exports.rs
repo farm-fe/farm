@@ -75,8 +75,4 @@ fn mangle_exports_test() {
   use farmfe_testing_helpers::fixture;
 
   fixture!("tests/fixtures/mangle_exports/**/index.ts", test);
-  // fixture!(
-  //   "tests/fixtures/mangle_exports/import-default/**/index.ts",
-  //   test
-  // );
 }

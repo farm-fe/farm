@@ -12,13 +12,13 @@ initModuleSystem(__farm_internal_module_system__);
 })(window["__farm_default_namespace__"].m, {
     "44a34200": function(module, exports, farmRequire, farmDynamicRequire) {
         farmRequire._m(exports);
-        farmRequire.o(exports, "a", function() {
+        farmRequire.o(exports, "hello", function() {
             return hello;
         });
-        farmRequire.o(exports, "c", function() {
+        farmRequire.o(exports, "world", function() {
             return world;
         });
-        farmRequire.o(exports, "b", function() {
+        farmRequire.o(exports, "sayHello", function() {
             return sayHello;
         });
         var _f_zoo = farmRequire("774fba3e");
@@ -26,28 +26,28 @@ initModuleSystem(__farm_internal_module_system__);
         const world = "world";
         function sayHello() {
             console.log(hello, world);
-            _f_zoo.a();
+            _f_zoo.sayZoo();
         }
     },
     "774fba3e": function(module, exports, farmRequire, farmDynamicRequire) {
         farmRequire._m(exports);
-        farmRequire.o(exports, "a", function() {
+        farmRequire.o(exports, "sayZoo", function() {
             return sayZoo;
         });
-        farmRequire.o(exports, "b", function() {
+        farmRequire.o(exports, "zoo", function() {
             return zoo;
         });
         var _f_export = farmRequire("44a34200");
         const zoo = "zoo";
         function sayZoo() {
             console.log(zoo);
-            _f_export.b();
+            _f_export.sayHello();
         }
     },
     "b5d64806": function(module, exports, farmRequire, farmDynamicRequire) {
         farmRequire._m(exports);
         var _f_export = farmRequire("44a34200");
-        console.log(_f_export.b);
+        console.log(_f_export.sayHello);
     }
 });
 var __farm_ms__ = window['__farm_default_namespace__'].m;__farm_ms__.b();var __farm_entry__=__farm_ms__.r("b5d64806");

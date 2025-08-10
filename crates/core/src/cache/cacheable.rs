@@ -1,5 +1,4 @@
 use downcast_rs::{impl_downcast, Downcast};
-use rkyv::Deserialize;
 
 use crate::{deserialize, serialize};
 

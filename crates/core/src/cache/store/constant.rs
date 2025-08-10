@@ -2,6 +2,8 @@ use crate::HashMap;
 
 use super::{error::CacheError, CacheStoreKey};
 
+pub type CacheStoreItemRef<'a> = dashmap::mapref::one::MappedRef<'a, String, Vec<u8>, Vec<u8>>;
+
 pub trait CacheStoreTrait: Send + Sync {
   fn has_cache(&self, name: &str) -> bool;
   fn is_cache_changed(&self, store_key: &CacheStoreKey) -> bool;
@@ -9,6 +11,7 @@ pub trait CacheStoreTrait: Send + Sync {
   #[allow(unused_variables)]
   fn write_cache(&self, cache_map: HashMap<CacheStoreKey, Vec<u8>>) {}
   fn read_cache(&self, name: &str) -> Option<Vec<u8>>;
+  fn read_cache_ref(&self, name: &str) -> Option<CacheStoreItemRef<'_>>;
   fn remove_cache(&self, name: &str);
   fn shutdown(&self) {}
 }

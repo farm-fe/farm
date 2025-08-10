@@ -13,9 +13,7 @@ use crate::{
   deserialize, serialize, HashMap,
 };
 
-use super::resource_memory_store::{
-  ArchivedCachedResourcePot, CachedResourcePot, ResourceMemoryStore,
-};
+use super::resource_memory_store::{CachedResourcePot, ResourceMemoryStore};
 
 /// In memory store for Resource Pot
 pub struct ResourcePotMemoryStore {
@@ -60,10 +58,8 @@ impl ResourceMemoryStore for ResourcePotMemoryStore {
       return Some(resource);
     }
 
-    let cache = self.store.read_cache(name);
-
-    if let Some(cache) = cache {
-      let resource = deserialize!(&cache, CachedResourcePot);
+    if let Some(cache) = self.store.read_cache_ref(name) {
+      let resource = deserialize!(&cache.value(), CachedResourcePot);
       // self
       //   .cached_resources
       //   .insert(name.to_string(), resource.clone());

@@ -13,7 +13,9 @@ use super::{
   namespace::NamespaceStore,
   CacheStoreKey,
 };
-use crate::{config::Mode, deserialize, serialize, HashMap, HashSet};
+use crate::{
+  cache::store::constant::CacheStoreItemRef, config::Mode, deserialize, serialize, HashMap, HashSet,
+};
 
 // #[cache_item]
 type CombineCacheData = HashMap<CacheStoreKey, Vec<u8>>;
@@ -85,14 +87,14 @@ impl CacheStore {
   fn restore_cache(&self, name: &str) {
     let cache_path = self.real_cache_path(name);
 
-    if !(cache_path.exists() && cache_path.is_file()) {
-      return;
-    }
-
-    if let Ok(map) = self.lock.read() {
-      if map.contains(&cache_path) {
+    if let Ok(restored_set) = self.lock.read() {
+      if restored_set.contains(&cache_path) {
         return;
       }
+    }
+
+    if !(cache_path.exists() && cache_path.is_file()) {
+      return;
     }
 
     if let Ok(mut map) = self.lock.write() {
@@ -100,18 +102,18 @@ impl CacheStore {
 
       let value = deserialize!(&data, CombineCacheData);
 
-      for (key, value) in value {
-        if self.data.contains_key(&key.key) {
+      for (item_key, value) in value {
+        if self.data.contains_key(&item_key.key) {
           continue;
         }
-        self.insert_cache(&key.name, &key.key, value);
+        self.insert_cache(&item_key.name, &item_key.key, value);
       }
 
       map.insert(cache_path.clone());
     }
   }
 
-  fn try_read_content(&self, name: &str) -> Option<Vec<u8>> {
+  fn try_read_content_ref(&self, name: &str) -> Option<CacheStoreItemRef<'_>> {
     let manifest_item = self.manifest.get(name)?;
 
     if !self.data.contains_key(manifest_item.value()) {
@@ -121,10 +123,11 @@ impl CacheStore {
 
     let manifest_item = self.manifest.get(name)?;
 
-    self
-      .data
-      .get(manifest_item.value())
-      .map(|v| v.value().clone())
+    self.data.get(manifest_item.value()).map(|v| v.map(|v| v))
+  }
+
+  fn try_read_content(&self, name: &str) -> Option<Vec<u8>> {
+    self.try_read_content_ref(name).map(|v| v.to_vec())
   }
 
   fn write_content_to_disk(&self, cache_dir_str: PathBuf, data: Vec<u8>) {
@@ -154,7 +157,6 @@ impl CacheStore {
           let name = item.key();
           let key = item.value();
 
-          // reenerate the cache if not exists
           let Some(value) = self.try_read_content(name) else {
             return combine_data;
           };
@@ -246,6 +248,10 @@ impl CacheStoreTrait for CacheStore {
 
   fn read_cache(&self, name: &str) -> Option<Vec<u8>> {
     self.try_read_content(name)
+  }
+
+  fn read_cache_ref(&self, name: &str) -> Option<CacheStoreItemRef<'_>> {
+    self.try_read_content_ref(name)
   }
 
   fn remove_cache(&self, name: &str) {

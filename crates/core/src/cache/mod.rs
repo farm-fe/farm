@@ -17,7 +17,7 @@ pub mod plugin_cache;
 pub mod resource_cache;
 pub mod store;
 pub mod utils;
-pub use module_cache::ModuleMatedataStore;
+pub use module_cache::ModuleMetadataStore;
 
 /// All cache related operation are charged by [CacheManager]
 /// Note: that you should use CacheManager::new to create a new instance so that the cache can be read from disk.

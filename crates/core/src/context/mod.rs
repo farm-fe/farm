@@ -56,7 +56,7 @@ pub struct CompilationContext {
 
 impl CompilationContext {
   pub fn new(mut config: Config, plugins: Vec<Arc<dyn Plugin>>) -> Result<Self> {
-    let (cache_dir, namespace) = Self::normalize_persistent_cache_config(&mut config);
+    let cache_type = Self::create_persistent_cache_type(&mut config);
 
     Ok(Self {
       watch_graph: Box::new(RwLock::new(WatchGraph::new())),
@@ -65,16 +65,10 @@ impl CompilationContext {
       resource_pot_map: Box::new(RwLock::new(ResourcePotMap::new())),
       resources_map: Box::new(Mutex::new(HashMap::default())),
       plugin_driver: Box::new(Self::create_plugin_driver(plugins, config.record)),
-      cache_manager: Box::new(CacheManager::new(
-        CacheOption {
-          cache_enable: config.persistent_cache.enabled(),
-          option: CacheType::Disk {
-            cache_dir,
-            namespace,
-            mode: config.mode,
-          },
-        },
-      )),
+      cache_manager: Box::new(CacheManager::new(CacheOption {
+        cache_enable: config.persistent_cache.enabled(),
+        option: cache_type,
+      })),
       thread_pool: Arc::new(
         ThreadPoolBuilder::new()
           .num_threads(num_cpus::get())
@@ -94,18 +88,30 @@ impl CompilationContext {
     PluginDriver::new(plugins, record)
   }
 
-  pub fn normalize_persistent_cache_config(config: &mut Config) -> (String, String) {
+  pub fn create_persistent_cache_type(config: &mut Config) -> CacheType {
     if config.persistent_cache.enabled() {
       let cache_config_obj = config.persistent_cache.as_obj(&config.root);
+
+      if cache_config_obj.memory {
+        return CacheType::Memory {};
+      }
+
       let (cache_dir, namespace) = (
-        cache_config_obj.cache_dir.clone(),
+        cache_config_obj
+          .cache_dir
+          .clone()
+          .expect("FarmDiskCache should have cache_dir filed, please check your config"),
         cache_config_obj.namespace.clone(),
       );
       config.persistent_cache = Box::new(PersistentCacheConfig::Obj(cache_config_obj));
 
-      (cache_dir, namespace)
+      CacheType::Disk {
+        cache_dir,
+        namespace,
+        mode: config.mode,
+      }
     } else {
-      (EMPTY_STR.to_string(), EMPTY_STR.to_string())
+      CacheType::Memory {}
     }
   }
 
@@ -191,14 +197,14 @@ impl CompilationContext {
     log_store.clear();
   }
 
-  pub fn write_module_matedata<V: Cacheable>(&self, module_id: ModuleId, name: &str, matedata: V) {
+  pub fn write_module_metadata<V: Cacheable>(&self, module_id: ModuleId, name: &str, metadata: V) {
     self
       .cache_manager
       .module_cache
-      .write_metadata(module_id, name.to_string(), matedata);
+      .write_metadata(module_id, name.to_string(), metadata);
   }
 
-  pub fn read_module_matedata<V: Cacheable>(
+  pub fn read_module_metadata<V: Cacheable>(
     &self,
     module_id: &ModuleId,
     name: &str,
