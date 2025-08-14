@@ -18,7 +18,6 @@ use farmfe_core::HashMap;
 use farmfe_core::{
   config::{Config, CssPrefixerConfig, TargetEnv},
   context::CompilationContext,
-  deserialize,
   error::CompilationError,
   module::{module_graph::ModuleGraph, ModuleId, ModuleMetaData, ModuleType},
   parking_lot::Mutex,
@@ -32,7 +31,7 @@ use farmfe_core::{
     resource_pot::{ResourcePot, ResourcePotType},
     Resource, ResourceOrigin, ResourceType,
   },
-  serde_json, serialize,
+  serde_json,
   swc_css_ast::Stylesheet,
 };
 use farmfe_macro_cache_item::cache_item;
@@ -172,8 +171,6 @@ struct CssModulesCache {
 pub struct FarmPluginCss {
   css_modules_paths: Vec<Regex>,
   ast_map: Mutex<HashMap<String, (Stylesheet, CommentsMetaData)>>,
-  content_map: Mutex<HashMap<String, String>>,
-  sourcemap_map: Mutex<HashMap<String, String>>,
   locals_conversion: NameConversion,
 }
 
@@ -194,42 +191,18 @@ impl Plugin for FarmPluginCss {
     -99
   }
 
-  /// Just load the cache, if the cache is invalidated, it will be reset when transform.
-  fn plugin_cache_loaded(
-    &self,
-    cache: &Vec<u8>,
-    _context: &Arc<CompilationContext>,
-  ) -> farmfe_core::error::Result<Option<()>> {
-    let cache = deserialize!(cache, CssModulesCache, ArchivedCssModulesCache);
-    let mut content_map = self.content_map.lock();
-
-    for (k, v) in cache.content_map {
-      content_map.insert(k, v);
-    }
-
-    let mut sourcemap_map = self.sourcemap_map.lock();
-
-    for (k, v) in cache.sourcemap_map {
-      sourcemap_map.insert(k, v);
-    }
-
-    Ok(Some(()))
-  }
-
   fn load(
     &self,
     param: &PluginLoadHookParam,
-    _context: &Arc<CompilationContext>,
+    context: &Arc<CompilationContext>,
     _hook_context: &PluginHookContext,
   ) -> farmfe_core::error::Result<Option<PluginLoadHookResult>> {
     if is_farm_css_modules(&param.module_id) {
       return Ok(Some(PluginLoadHookResult {
-        content: self
-          .content_map
-          .lock()
-          .get(&param.module_id)
-          .unwrap()
-          .clone(),
+        content: context
+          .read_module_metadata::<String>(&ModuleId::from(param.module_id.as_str()), "content")
+          .map(|v| *v)
+          .unwrap(),
         module_type: ModuleType::Custom(FARM_CSS_MODULES.to_string()),
         source_map: None,
       }));
@@ -264,7 +237,9 @@ impl Plugin for FarmPluginCss {
       return Ok(Some(PluginTransformHookResult {
         content: param.content.clone(),
         module_type: Some(ModuleType::Css),
-        source_map: self.sourcemap_map.lock().get(&param.module_id).cloned(),
+        source_map: context
+          .read_module_metadata::<String>(&ModuleId::from(param.module_id.as_str()), "map")
+          .map(|v| *v),
         ignore_previous_source_map: false,
       }));
     }
@@ -319,10 +294,12 @@ impl Plugin for FarmPluginCss {
           cache_id.clone(),
           (css_stylesheet, CommentsMetaData::from(comments)),
         );
-        self
-          .content_map
-          .lock()
-          .insert(cache_id, param.content.clone());
+
+        context.write_module_metadata::<String>(
+          css_modules_module_id.clone(),
+          "content",
+          param.content.clone(),
+        );
 
         // for composes dynamic import (eg: composes: action from "./action.css")
         let mut dynamic_import_of_composes = HashMap::default();
@@ -394,11 +371,12 @@ impl Plugin for FarmPluginCss {
           collapsed_sourcemap
             .to_writer(&mut buf)
             .expect("failed to write sourcemap");
-          let map = String::from_utf8(buf).unwrap();
-          self
-            .sourcemap_map
-            .lock()
-            .insert(css_modules_module_id.to_string(), map);
+
+          context.write_module_metadata::<String>(
+            css_modules_module_id,
+            "map",
+            String::from_utf8(buf).unwrap(),
+          );
         }
 
         Ok(Some(PluginTransformHookResult {
@@ -705,22 +683,6 @@ impl Plugin for FarmPluginCss {
       Ok(None)
     }
   }
-
-  fn write_plugin_cache(
-    &self,
-    _context: &Arc<CompilationContext>,
-  ) -> farmfe_core::error::Result<Option<Vec<u8>>> {
-    if !self.content_map.lock().is_empty() || !self.sourcemap_map.lock().is_empty() {
-      let cache = CssModulesCache {
-        content_map: self.content_map.lock().clone(),
-        sourcemap_map: self.sourcemap_map.lock().clone(),
-      };
-
-      Ok(Some(serialize!(&cache)))
-    } else {
-      Ok(None)
-    }
-  }
 }
 
 impl FarmPluginCss {
@@ -739,8 +701,6 @@ impl FarmPluginCss {
         })
         .unwrap_or_default(),
       ast_map: Mutex::new(Default::default()),
-      content_map: Mutex::new(Default::default()),
-      sourcemap_map: Mutex::new(Default::default()),
       locals_conversion: get_config_css_modules_local_conversion(config),
     }
   }

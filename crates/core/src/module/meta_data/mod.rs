@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use css::CssModuleMetaData;
 use custom::CustomMetaDataMap;
 use farmfe_macro_cache_item::cache_item;
@@ -16,6 +14,8 @@ pub mod script;
 /// Module meta data shared by core plugins through the compilation
 /// Meta data which is not shared by core plugins should be stored in [ModuleMetaData::Custom]
 #[cache_item]
+#[allow(clippy::large_enum_variant)]
+#[derive(Clone)]
 pub enum ModuleMetaData {
   Script(Box<ScriptModuleMetaData>),
   Css(Box<CssModuleMetaData>),
@@ -40,26 +40,25 @@ impl ToString for ModuleMetaData {
   }
 }
 
-impl Clone for ModuleMetaData {
-  fn clone(&self) -> Self {
-    match self {
-      Self::Script(script) => Self::Script(script.clone()),
-      Self::Css(css) => Self::Css(css.clone()),
-      Self::Html(html) => Self::Html(html.clone()),
-      Self::Custom(custom) => {
-        let mut custom_new = HashMap::default();
-        for (k, v) in custom.iter() {
-          let cloned_data = v.serialize_bytes().unwrap();
-          let cloned_custom = v.deserialize_bytes(cloned_data).unwrap();
-          custom_new.insert(k.clone(), cloned_custom);
-        }
-        Self::Custom(CustomMetaDataMap::from(custom_new))
-      }
-    }
-  }
-}
-
 impl ModuleMetaData {
+  pub fn write<V>(&mut self, name: String, v: V)
+  where
+    V: Cacheable,
+  {
+    let map = match self {
+      ModuleMetaData::Script(script_module_meta_data) => &mut script_module_meta_data.custom,
+      ModuleMetaData::Css(css_module_meta_data) => &mut css_module_meta_data.custom,
+      ModuleMetaData::Html(html_module_meta_data) => &mut html_module_meta_data.custom,
+      ModuleMetaData::Custom(custom_meta_data_map) => custom_meta_data_map,
+    };
+
+    let data = v.serialize_bytes().unwrap();
+
+    let value = V::deserialize_bytes(data).unwrap();
+
+    map.insert(name, value);
+  }
+
   pub fn as_script_mut(&mut self) -> &mut ScriptModuleMetaData {
     if let Self::Script(script) = self {
       script

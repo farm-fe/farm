@@ -10,12 +10,10 @@ use farmfe_core::{
   cache_item,
   config::{asset::AssetFormatMode, custom::get_config_assets_mode, Config},
   context::{CompilationContext, EmitFileParams},
-  deserialize,
   module::ModuleType,
   plugin::{Plugin, PluginResolveHookResult},
   relative_path::RelativePath,
   resource::{Resource, ResourceOrigin, ResourceType},
-  serialize,
   swc_common::sync::OnceCell,
   HashMap,
 };
@@ -122,6 +120,24 @@ impl Plugin for FarmPluginStaticAssets {
 
     Ok(None)
   }
+
+  fn handle_persistent_cached_module(
+    &self,
+    module: &farmfe_core::module::Module,
+    context: &Arc<CompilationContext>,
+  ) -> farmfe_core::error::Result<Option<bool>> {
+    if let Some(resource) = context.read_module_metadata::<Resource>(&module.id, "asset-resource") {
+      context.emit_file(EmitFileParams {
+        resolved_path: module.id.to_string().clone(),
+        name: resource.name,
+        content: resource.bytes,
+        resource_type: resource.resource_type,
+      });
+    }
+
+    Ok(None)
+  }
+
   fn load(
     &self,
     param: &farmfe_core::plugin::PluginLoadHookParam,
@@ -269,53 +285,29 @@ impl Plugin for FarmPluginStaticAssets {
     Ok(None)
   }
 
-  fn plugin_cache_loaded(
+  fn finish(
     &self,
-    cache: &Vec<u8>,
+    _stat: &farmfe_core::stats::Stats,
     context: &Arc<CompilationContext>,
   ) -> farmfe_core::error::Result<Option<()>> {
-    let cached_static_assets = deserialize!(cache, CachedStaticAssets, ArchivedCachedStaticAssets);
-
-    for asset in cached_static_assets.list {
-      if let ResourceOrigin::Module(m) = asset.origin {
-        context.emit_file(EmitFileParams {
-          resolved_path: m.to_string(),
-          name: asset.name,
-          content: asset.bytes,
-          resource_type: asset.resource_type,
-        });
-      }
+    if !context.cache_manager.enable() {
+      return Ok(None);
     }
 
-    Ok(Some(()))
-  }
-
-  fn write_plugin_cache(
-    &self,
-    context: &Arc<CompilationContext>,
-  ) -> farmfe_core::error::Result<Option<Vec<u8>>> {
-    let mut list = vec![];
     let resources_map = context.resources_map.lock();
 
     for (_, resource) in resources_map.iter() {
       if let ResourceOrigin::Module(m) = &resource.origin {
-        if context.cache_manager.module_cache.has_cache(m) {
-          list.push(resource.clone());
-        }
+        context.write_module_metadata(m.clone(), "asset-resource", resource.clone());
       }
     }
 
-    if !list.is_empty() {
-      let cached_static_assets = CachedStaticAssets { list };
-
-      Ok(Some(serialize!(&cached_static_assets)))
-    } else {
-      Ok(None)
-    }
+    Ok(None)
   }
 }
 
 #[cache_item(farmfe_core)]
+#[derive(Clone)]
 struct CachedStaticAssets {
   list: Vec<Resource>,
 }

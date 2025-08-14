@@ -1,13 +1,14 @@
+use std::sync::Arc;
+
 use dashmap::DashMap;
 use farmfe_utils::hash::sha256;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 
 use crate::{
   cache::{
-    cache_store::{CacheStore, CacheStoreKey},
-    module_cache::ArchivedCachedModule,
+    store::{constant::CacheStoreTrait, CacheStoreKey},
+    CacheContext,
   },
-  config::Mode,
   deserialize,
   module::ModuleId,
   serialize, HashMap,
@@ -18,15 +19,15 @@ use super::{module_memory_store::ModuleMemoryStore, CachedModule};
 /// In memory store for mutable modules
 pub struct MutableModulesMemoryStore {
   /// low level cache store
-  store: CacheStore,
+  store: Box<dyn CacheStoreTrait>,
   /// ModuleId -> Cached Module
   cached_modules: DashMap<ModuleId, CachedModule>,
 }
 // TODO: cache unit test
 impl MutableModulesMemoryStore {
-  pub fn new(cache_dir_str: &str, namespace: &str, mode: Mode) -> Self {
+  pub fn new(context: Arc<CacheContext>) -> Self {
     Self {
-      store: CacheStore::new(cache_dir_str, namespace, mode, "mutable-modules"),
+      store: context.store_factory.create_cache_store("mutable-module"),
       cached_modules: DashMap::new(),
     }
   }
@@ -70,11 +71,8 @@ impl ModuleMemoryStore for MutableModulesMemoryStore {
       return Some(module);
     }
 
-    let cache = self.store.read_cache(&key.to_string());
-
-    if let Some(cache) = cache {
-      let module = deserialize!(&cache, CachedModule, ArchivedCachedModule);
-      // self.cached_modules.insert(key.clone(), module.clone());
+    if let Some(cache) = self.store.read_cache_ref(&key.to_string()) {
+      let module = deserialize!(cache.value(), CachedModule);
       return Some(module);
     }
 
@@ -89,10 +87,8 @@ impl ModuleMemoryStore for MutableModulesMemoryStore {
       return Some(module);
     }
 
-    let cache = self.store.read_cache(&key.to_string());
-
-    if let Some(cache) = cache {
-      let module = deserialize!(&cache, CachedModule, ArchivedCachedModule);
+    if let Some(cache) = self.store.read_cache_ref(&key.to_string()) {
+      let module = deserialize!(&cache.value(), CachedModule);
       self.cached_modules.insert(key.clone(), module);
       return Some(self.cached_modules.get(key).unwrap());
     }
@@ -108,10 +104,8 @@ impl ModuleMemoryStore for MutableModulesMemoryStore {
       return Some(module);
     }
 
-    let cache = self.store.read_cache(&key.to_string());
-
-    if let Some(cache) = cache {
-      let module = deserialize!(&cache, CachedModule, ArchivedCachedModule);
+    if let Some(cache) = self.store.read_cache_ref(&key.to_string()) {
+      let module = deserialize!(&cache.value(), CachedModule);
       self.cached_modules.insert(key.clone(), module);
       return Some(self.cached_modules.get_mut(key).unwrap());
     }
@@ -157,8 +151,9 @@ impl ModuleMemoryStore for MutableModulesMemoryStore {
   }
 
   fn is_cache_changed(&self, module: &crate::module::Module) -> bool {
-    let store_key = self.gen_cache_store_key(module);
-    self.store.is_cache_changed(&store_key)
+    self
+      .store
+      .is_cache_changed(&self.gen_cache_store_key(module))
   }
 
   fn cache_outdated(&self, key: &ModuleId) -> bool {

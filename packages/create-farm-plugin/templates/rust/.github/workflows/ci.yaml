@@ -31,6 +31,6 @@ jobs:
         with:
           node-version: 18.x
       - name: Install Dependencies
-        run: npm install -g pnpm@9.1.0
+        run: npm install -g pnpm@9.4.0
       - name: Test Example
         run: cd playground && pnpm i && pnpm build

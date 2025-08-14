@@ -12,13 +12,13 @@ initModuleSystem(__farm_internal_module_system__);
 })(window["__farm_default_namespace__"].m, {
     "44a34200": function(module, exports, farmRequire, farmDynamicRequire) {
         farmRequire._m(exports);
-        farmRequire.o(exports, "b", function() {
+        farmRequire.o(exports, "world", function() {
             return world;
         });
         farmRequire.o(exports, "default", function() {
             return sayHello;
         });
-        farmRequire.o(exports, "a", function() {
+        farmRequire.o(exports, "hello", function() {
             return hello;
         });
         const hello = 'hello';
@@ -31,7 +31,7 @@ initModuleSystem(__farm_internal_module_system__);
         farmRequire._m(exports);
         var _f_export = farmRequire.w(farmRequire("44a34200"));
         farmRequire.f(_f_export)();
-        console.log(_f_export.a, _f_export.b);
+        console.log(_f_export.hello, _f_export.world);
     }
 });
 var __farm_ms__ = window['__farm_default_namespace__'].m;__farm_ms__.b();var __farm_entry__=__farm_ms__.r("b5d64806");

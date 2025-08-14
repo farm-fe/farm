@@ -3,8 +3,10 @@ use std::{fs, io::Write, path::PathBuf, sync::Arc};
 use farmfe_compiler::Compiler;
 use farmfe_core::{
   config::{
-    bool_or_obj::BoolOrObj, preset_env::PresetEnvConfig, AliasItem, Config, ResolveConfig,
-    RuntimeConfig, SourcemapConfig, StringOrRegex,
+    bool_or_obj::BoolOrObj,
+    persistent_cache::{PersistentCacheConfig, PersistentCacheConfigObj},
+    preset_env::PresetEnvConfig,
+    AliasItem, Config, ResolveConfig, RuntimeConfig, SourcemapConfig, StringOrRegex,
   },
   context::CompilationContext,
   module::ModuleType,
@@ -85,7 +87,7 @@ fn generate_runtime(crate_path: PathBuf) -> Box<RuntimeConfig> {
 }
 
 #[test]
-fn test_with_compiler() {
+fn sass_plugin() {
   fixture!("tests/fixtures/**/*/index.scss", |file, crate_path| {
     println!("testing: {file:?}");
     let resolved_path = file.to_string_lossy().to_string();
@@ -108,6 +110,10 @@ fn test_with_compiler() {
         }],
         ..Default::default()
       }),
+      persistent_cache: Box::new(PersistentCacheConfig::Obj(PersistentCacheConfigObj {
+        memory: true,
+        ..Default::default()
+      })),
       ..Default::default()
     };
 
