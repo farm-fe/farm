@@ -35,6 +35,8 @@ export interface ModuleSystem {
   p: FarmRuntimePluginContainer;
   // externalModules
   em: Record<string, any>;
+  // public paths
+  pp: string[];
   // require
   r(id: string): any;
   // register

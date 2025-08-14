@@ -421,8 +421,7 @@ export interface FarmCLIPreviewOptions {
 export interface FarmCliOptions
   extends FarmCLIBuildOptions,
     FarmCLIPreviewOptions {
-  config?: string;
-  configFile?: string;
+  configFile?: string | false;
   compilation?: Config['config'];
   mode?: string;
   root?: string;

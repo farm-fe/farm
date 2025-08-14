@@ -1,8 +1,6 @@
 // ✨ farm js plugin schema all in zod
 import { z } from 'zod';
 
-import { normalizeFilterPath } from './utils.js';
-
 const EmptyRecordSchema = z.any();
 
 const CallbackSchema = z
@@ -275,30 +273,22 @@ export const createResolveSchema = (name: string) => {
 };
 
 export const createTransformSchema = (name: string) => {
-  return z
-    .object({
-      filters: transformFilterSchema
-        .refine(
-          (data) => {
-            return data.moduleTypes.length > 0 || data.resolvedPaths.length > 0;
-          },
-          {
-            message: `\n transform hook of plugin '${name}' must have at least one filter(like moduleTypes or resolvedPaths)`
-          }
-        )
-        .default({
-          moduleTypes: [],
-          resolvedPaths: []
-        }),
-      executor: z.function()
-    })
-    .transform((transform) => {
-      const { filters } = transform;
-      if (filters.resolvedPaths && filters.resolvedPaths.length > 0) {
-        filters.resolvedPaths = filters.resolvedPaths.map(normalizeFilterPath);
-      }
-      return { ...transform, filters };
-    });
+  return z.object({
+    filters: transformFilterSchema
+      .refine(
+        (data) => {
+          return data.moduleTypes.length > 0 || data.resolvedPaths.length > 0;
+        },
+        {
+          message: `\n transform hook of plugin '${name}' must have at least one filter(like moduleTypes or resolvedPaths)`
+        }
+      )
+      .default({
+        moduleTypes: [],
+        resolvedPaths: []
+      }),
+    executor: z.function()
+  });
 };
 
 export const createRenderStartSchema = (name: string) => {
@@ -318,32 +308,22 @@ export const createRenderStartSchema = (name: string) => {
 };
 
 export const createRenderResourcePotSchema = (name: string) => {
-  return z
-    .object({
-      filters: renderResourcePotSchema
-        .refine(
-          (data) => {
-            return (
-              data.resourcePotTypes.length > 0 || data.moduleIds.length > 0
-            );
-          },
-          {
-            message: `\n 'renderResourcePot' hook of plugin '${name}' must have at least one filter(like moduleIds or resourcePotTypes)`
-          }
-        )
-        .default({
-          resourcePotTypes: [],
-          moduleIds: []
-        }),
-      executor: z.function()
-    })
-    .transform((renderResourcePot) => {
-      const { filters } = renderResourcePot;
-      if (filters.moduleIds && filters.moduleIds.length > 0) {
-        filters.moduleIds = filters.moduleIds.map(normalizeFilterPath);
-      }
-      return { ...renderResourcePot, filters };
-    });
+  return z.object({
+    filters: renderResourcePotSchema
+      .refine(
+        (data) => {
+          return data.resourcePotTypes.length > 0 || data.moduleIds.length > 0;
+        },
+        {
+          message: `\n 'renderResourcePot' hook of plugin '${name}' must have at least one filter(like moduleIds or resourcePotTypes)`
+        }
+      )
+      .default({
+        resourcePotTypes: [],
+        moduleIds: []
+      }),
+    executor: z.function()
+  });
 };
 
 export const createAugmentResourceHashSchema = (name: string) => {

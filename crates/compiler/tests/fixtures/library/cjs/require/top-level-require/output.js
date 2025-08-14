@@ -57,7 +57,7 @@ function defineExportEsModule(to) {
 var farmRequire$1 = farmRegister("index.ts", function(module, exports1) {
     defineExportEsModule(exports1);
     var _f_node_module = __farmNodeRequire('node:module');
-    const _f_cjs_require = _f_node_module.createRequire(new URL(__filename, "file:").href);
+    const _f_cjs_require = _f_node_module.createRequire(require("node:url").pathToFileURL(__filename).href);
     console.log(_f_cjs_require('node:fs'));
 });
 var index_ts_default = farmRequire$1();

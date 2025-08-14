@@ -9,6 +9,7 @@ import type {
   Resource
 } from '../index.js';
 import type { JsUpdateResult } from '../types/binding.js';
+import { cleanUrl } from '../utils/index.js';
 
 export const VIRTUAL_FARM_DYNAMIC_IMPORT_SUFFIX =
   '.farm_dynamic_import_virtual_module' as const;
@@ -165,7 +166,7 @@ export class Compiler {
   }
 
   resource(path: string): Buffer {
-    return this._bindingCompiler.resource(path);
+    return this._bindingCompiler.resource(cleanUrl(path));
   }
 
   resourcesMap(): Record<string, Resource> {

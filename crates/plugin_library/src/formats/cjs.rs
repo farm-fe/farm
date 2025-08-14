@@ -59,7 +59,7 @@ pub fn emit_cjs_resources(
     }));
 
     // TODO add test case
-    replace_import_meta_url(&mut meta.ast);
+    replace_import_meta_url(&mut meta.ast, Mark::from_u32(meta.unresolved_mark));
 
     // TODO add exportStar for cjs entries and entries that reexport from cjs or hybrid modules
 

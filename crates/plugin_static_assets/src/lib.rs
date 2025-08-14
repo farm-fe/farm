@@ -255,10 +255,7 @@ impl Plugin for FarmPluginStaticAssets {
         let content = match mode {
           AssetFormatMode::Node => {
             format!(
-              r#"
-    import {{ fileURLToPath }} from "node:url";
-    export default fileURLToPath(new URL(/* {FARM_IGNORE_ACTION_COMMENT} */{assets_path:?}, import.meta.url))
-                "#
+              r#"export default new URL(/* {FARM_IGNORE_ACTION_COMMENT} */{assets_path:?}, import.meta.url)"#
             )
           }
           AssetFormatMode::Browser => {

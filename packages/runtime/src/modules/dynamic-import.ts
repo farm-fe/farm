@@ -31,6 +31,7 @@ let moduleSystem: ModuleSystem;
 // append properties in module system
 export function initModuleSystem(ms: ModuleSystem) {
   moduleSystem = ms;
+  moduleSystem.pp = publicPaths;
   moduleSystem.d = dynamicImport;
   moduleSystem.sp = setPublicPaths;
   moduleSystem.si = setInitialLoadedResources;

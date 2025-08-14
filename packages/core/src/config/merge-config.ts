@@ -17,11 +17,6 @@ export function mergeConfig<T extends Record<string, any>>(
       continue;
     }
 
-    if (left === null || left === undefined) {
-      result[key] = right;
-      continue;
-    }
-
     if (isArray(left) || isArray(right)) {
       result[key] = [
         ...new Set([
@@ -35,6 +30,11 @@ export function mergeConfig<T extends Record<string, any>>(
 
     if (isObject(left) && isObject(right)) {
       result[key] = mergeConfig(left, right);
+      continue;
+    }
+
+    if (isObject(right)) {
+      result[key] = mergeConfig({}, right);
       continue;
     }
 
@@ -92,7 +92,11 @@ export function mergeFarmCliConfig(
       target.root = configRootPath;
     }
 
-    if (target.root && !isAbsolute(target.root)) {
+    if (
+      target.root &&
+      !isAbsolute(target.root) &&
+      cliOption.configFile !== false
+    ) {
       const resolvedRoot = path.resolve(cliOption.configFile, target.root);
       target.root = resolvedRoot;
     }
@@ -105,11 +109,11 @@ export function mergeFarmCliConfig(
     left = mergeConfig(left, { server: { host: options.host } });
   }
 
-  if (typeof options.compilation.minify === 'boolean') {
+  if (typeof options.compilation?.minify === 'boolean') {
     left = mergeConfig(left, { compilation: { minify: options.minify } });
   }
 
-  if (options.compilation.output.path) {
+  if (options.compilation?.output?.path) {
     left = mergeConfig(left, {
       compilation: { output: { path: options.outDir } }
     });
@@ -154,27 +158,18 @@ export function initialCliOptions(
   const { mode, watch } = options;
 
   const compilationOptions = options.compilation || {};
-  const { minify, sourcemap, treeShaking } = compilationOptions;
-  const { path, targetEnv, format } = compilationOptions.output || {};
 
   const input = compilationOptions.input
     ? Object.values(compilationOptions.input).filter(Boolean)
     : [];
   const hasInput = input.length > 0;
 
-  const output: UserConfig['compilation']['output'] = {
-    ...(path && { path }),
-    ...(targetEnv && { targetEnv }),
-    ...(format && { format })
-  };
-
-  const compilation: UserConfig['compilation'] = {
-    input: hasInput ? { ...compilationOptions.input } : {},
-    output,
-    ...(minify && { minify }),
-    ...(sourcemap && { sourcemap }),
-    ...(treeShaking && { treeShaking })
-  };
+  const compilation: UserConfig['compilation'] = mergeConfig(
+    {
+      input: hasInput ? { ...compilationOptions.input } : {}
+    },
+    compilationOptions
+  );
 
   const defaultOptions = {
     compilation,
