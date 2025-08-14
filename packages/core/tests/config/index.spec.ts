@@ -15,8 +15,7 @@ describe('mergeFarmCliConfig', () => {
     expect(result).toEqual({
       clearScreen: false,
       compilation: {
-        input: {},
-        output: {}
+        input: {}
       },
       watch: false,
       root: '/path/to/'
@@ -30,8 +29,7 @@ describe('mergeFarmCliConfig', () => {
       root: '/path/to/',
       clearScreen: false,
       compilation: {
-        input: {},
-        output: {}
+        input: {}
       },
       watch: false
     });
@@ -48,8 +46,7 @@ describe('mergeFarmCliConfig', () => {
       root: '/path/to/userConfig',
       clearScreen: false,
       compilation: {
-        input: {},
-        output: {}
+        input: {}
       },
       watch: false
     });
@@ -73,8 +70,7 @@ describe('mergeFarmCliConfig', () => {
     expect(result).toEqual({
       clearScreen: false,
       compilation: {
-        input: {},
-        output: {}
+        input: {}
       },
       watch: false,
       root: path.resolve(process.cwd(), './path/userConfig')

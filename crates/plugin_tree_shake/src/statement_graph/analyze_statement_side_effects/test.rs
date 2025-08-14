@@ -267,7 +267,7 @@ export default Steps;
       super::analyze_statement_side_effects(item_3, unresolved_mark, top_level_mark, &comments);
     assert!(matches!(
       side_effects,
-      super::StatementSideEffects::UnclassifiedSelfExecuted
+      super::StatementSideEffects::WriteTopLevelVar(_)
     ));
 
     let item_4 = &module.body[3];

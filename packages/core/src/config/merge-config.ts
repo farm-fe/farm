@@ -92,7 +92,11 @@ export function mergeFarmCliConfig(
       target.root = configRootPath;
     }
 
-    if (target.root && !isAbsolute(target.root) && cliOption.configFile) {
+    if (
+      target.root &&
+      !isAbsolute(target.root) &&
+      cliOption.configFile !== false
+    ) {
       const resolvedRoot = path.resolve(cliOption.configFile, target.root);
       target.root = resolvedRoot;
     }
@@ -105,11 +109,11 @@ export function mergeFarmCliConfig(
     left = mergeConfig(left, { server: { host: options.host } });
   }
 
-  if (typeof options.compilation.minify === 'boolean') {
+  if (typeof options.compilation?.minify === 'boolean') {
     left = mergeConfig(left, { compilation: { minify: options.minify } });
   }
 
-  if (options.compilation.output.path) {
+  if (options.compilation?.output?.path) {
     left = mergeConfig(left, {
       compilation: { output: { path: options.outDir } }
     });
