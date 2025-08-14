@@ -116,6 +116,7 @@ function resolveFarmConfig(
   opts.farm.compilation.external ??= [];
   opts.farm.compilation.external.push('^electron$');
   opts.farm.compilation.watch ??= isDev;
+  opts.farm.compilation.persistentCache = false;
   opts.farm.compilation.partialBundling ??= {};
   opts.farm.compilation.partialBundling.enforceResources ??= [];
   opts.farm.plugins ??= [];
@@ -168,7 +169,10 @@ function resolveFarmConfig(
   }
 
   // TODO: submit a PR to farm(Omit<FarmCliOptions, 'server'> & UserConfig)
-  return opts.farm as FarmCliOptions;
+  return {
+    ...opts.farm,
+    configFile: false
+  } as FarmCliOptions;
 }
 
 function resolveServerUrl(server: Server) {

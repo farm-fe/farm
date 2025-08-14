@@ -52,6 +52,17 @@ export function normalizeDevServerConfig(
           key: tryHttpsAsFileRead(serverOptions.https.key),
           pfx: tryHttpsAsFileRead(serverOptions.https.pfx)
         }
-      : undefined
+      : undefined,
+    preview: merge(
+      {},
+      DEFAULT_DEV_SERVER_OPTIONS.preview,
+      serverOptions?.preview || {},
+      {
+        distDir:
+          serverOptions?.preview?.distDir ||
+          userConfig?.compilation?.output?.path ||
+          DEFAULT_DEV_SERVER_OPTIONS.preview.distDir
+      }
+    )
   }) as NormalizedServerConfig;
 }

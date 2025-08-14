@@ -68,6 +68,10 @@ export async function loadConfigFile(
   const configRootPath = path.resolve(root);
   let resolvedConfigFilePath: string | undefined;
   try {
+    if (configFile === false) {
+      return undefined;
+    }
+
     resolvedConfigFilePath = await resolveConfigFilePath(
       configFile,
       root,

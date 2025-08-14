@@ -125,8 +125,6 @@ struct SideEffectsAnalyzer<'a> {
   /// ```
   ///
   assign_left_reference: HashMap<SwcId, LeftIdentReference>,
-
-  is_read_global_var: bool,
 }
 
 impl<'a> SideEffectsAnalyzer<'a> {
@@ -145,7 +143,6 @@ impl<'a> SideEffectsAnalyzer<'a> {
       in_call: false,
       in_assign_right: None,
       assign_left_reference: HashMap::default(),
-      is_read_global_var: false,
     }
   }
 
@@ -228,11 +225,11 @@ impl<'a> Visit for SideEffectsAnalyzer<'a> {
     }
 
     match n {
+      farmfe_core::swc_ecma_ast::Stmt::Block(n) => n.visit_children_with(self),
       farmfe_core::swc_ecma_ast::Stmt::Empty(_) => self
         .side_effects
         .merge_side_effects(StatementSideEffects::NoSideEffects),
       farmfe_core::swc_ecma_ast::Stmt::Debugger(_)
-      | farmfe_core::swc_ecma_ast::Stmt::Block(_)
       | farmfe_core::swc_ecma_ast::Stmt::With(_)
       | farmfe_core::swc_ecma_ast::Stmt::Labeled(_)
       | farmfe_core::swc_ecma_ast::Stmt::Return(_)
@@ -246,24 +243,7 @@ impl<'a> Visit for SideEffectsAnalyzer<'a> {
       | farmfe_core::swc_ecma_ast::Stmt::DoWhile(_)
       | farmfe_core::swc_ecma_ast::Stmt::For(_)
       | farmfe_core::swc_ecma_ast::Stmt::ForIn(_)
-      | farmfe_core::swc_ecma_ast::Stmt::ForOf(_) => {
-        n.visit_children_with(self);
-
-        // For case which should not be tree shaken:
-        // ```js
-        // {
-        //    const a = window || {};
-        //    a.require = function require() {}
-        // }
-        // ```
-        if let StatementSideEffects::WriteTopLevelVar(_) = &self.side_effects {
-          if self.is_read_global_var {
-            self
-              .side_effects
-              .merge_side_effects(StatementSideEffects::UnclassifiedSelfExecuted)
-          }
-        }
-      }
+      | farmfe_core::swc_ecma_ast::Stmt::ForOf(_) => n.visit_children_with(self),
       farmfe_core::swc_ecma_ast::Stmt::Decl(decl) => {
         if let farmfe_core::swc_ecma_ast::Decl::Var(var_decl) = decl {
           var_decl.visit_with(self);
@@ -284,14 +264,12 @@ impl<'a> Visit for SideEffectsAnalyzer<'a> {
             || ident.ctxt.outer() == self.top_level_mark
             || ident.ctxt.outer() == self.unresolved_mark
           {
-            let is_read_global_var = ident.ctxt.outer() == self.unresolved_mark;
-            self.is_read_global_var = self.is_read_global_var || is_read_global_var;
             self
               .side_effects
               .merge_side_effects(StatementSideEffects::ReadTopLevelVar(HashSet::from_iter([
                 ReadTopLevelVar {
                   ident: ident.to_id().into(),
-                  is_global_var: is_read_global_var,
+                  is_global_var: ident.ctxt.outer() == self.unresolved_mark,
                 },
               ])));
           }
@@ -369,12 +347,9 @@ impl<'a> Visit for SideEffectsAnalyzer<'a> {
             || ident.ctxt.outer() == self.top_level_mark
             || ident.ctxt.outer() == self.unresolved_mark
           {
-            let is_read_global_var = ident.ctxt.outer() == self.unresolved_mark;
-            self.is_read_global_var = self.is_read_global_var || is_read_global_var;
-
             StatementSideEffects::ReadTopLevelVar(HashSet::from_iter([ReadTopLevelVar {
               ident: ident.to_id().into(),
-              is_global_var: is_read_global_var,
+              is_global_var: ident.ctxt.outer() == self.unresolved_mark,
             }]))
           } else {
             StatementSideEffects::NoSideEffects

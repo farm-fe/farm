@@ -159,7 +159,7 @@ export const startProjectAndTest = async (
       logger('try kill child process: ' + child.pid);
       logger('current process id: ' + process.pid);
       if (!child.killed) {
-        child.kill();
+        child.kill(0);
       }
     });
   });
@@ -171,7 +171,7 @@ export const startProjectAndTest = async (
     throw e;
   } finally {
     if (!child.killed) {
-      child.kill();
+      child.kill(0);
     }
   }
 };

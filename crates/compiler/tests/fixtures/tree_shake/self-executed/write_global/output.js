@@ -10,15 +10,7 @@ initModuleSystem(__farm_internal_module_system__);
         moduleSystem.g(moduleId, module);
     }
 })(window["__farm_default_namespace__"].m, {
-    "05ee5ec7": function(module, exports, farmRequire, farmDynamicRequire) {
-        {
-            const __global_this_dep__ = typeof window !== 'undefined' ? window : {};
-            __global_this_dep__.require = __global_this_dep__.require || 'farmRequire';
-        }
-    },
     "b5d64806": function(module, exports, farmRequire, farmDynamicRequire) {
-        farmRequire._m(exports);
-        farmRequire("05ee5ec7");
         const __global_this__ = typeof window !== 'undefined' ? window : {};
         __global_this__.require = __global_this__.require || 'farmRequire';
         console.log('write global test');

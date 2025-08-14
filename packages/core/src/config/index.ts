@@ -123,7 +123,6 @@ export async function resolveConfig(
     configEnv,
     sortFarmJsPlugins
   );
-  loadedUserConfig.config = config;
 
   // may be user push plugin when config hooks
   const allPlugins = await resolvePlugins(config, defaultMode);
@@ -135,7 +134,7 @@ export async function resolveConfig(
 
   const resolvedUserConfig = await handleResolveConfig(
     configFilePath,
-    loadedUserConfig,
+    userConfig,
     farmJsPlugins,
     allPlugins.rustPlugins,
     transformInlineConfig,
@@ -150,12 +149,7 @@ export async function resolveConfig(
 
 async function handleResolveConfig(
   configFilePath: string,
-  loadedUserConfig:
-    | {
-        config: UserConfig;
-        configFilePath: string;
-      }
-    | undefined,
+  userConfig: UserConfig,
   sortFarmJsPlugins: JsPlugin[],
   rustPlugins: RustPlugin[],
   transformInlineConfig: UserConfig,
@@ -164,12 +158,12 @@ async function handleResolveConfig(
 ): Promise<ResolvedUserConfig> {
   // define logger when resolvedConfigHook
   const logger = new Logger({
-    customLogger: loadedUserConfig.config?.customLogger,
-    allowClearScreen: loadedUserConfig.config?.clearScreen
+    customLogger: userConfig?.customLogger,
+    allowClearScreen: userConfig?.clearScreen
   });
 
   const resolvedUserConfig = await resolveUserConfig(
-    loadedUserConfig.config,
+    userConfig,
     configFilePath
   );
 
