@@ -6,6 +6,7 @@ import farmDtsPlugin from '@farmfe/js-plugin-dts';
  */
 export default {
   compilation: {
+    persistentCache: false,
     input: {
       index: './src/farm-vue-plugin.ts'
     },

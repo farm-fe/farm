@@ -41,6 +41,7 @@
     "@farmfe/js-plugin-less": "workspace:*",
     "@farmfe/js-plugin-svgr": "workspace:^",
     "@farmfe/plugin-react": "workspace:*",
+    "@farmfe/plugin-module-federation": "workspace:*",
     "@farmfe/plugin-svgr": "^0.0.1",
     "core-js": "^3.30.1",
     "react-refresh": "^0.14.0",
