@@ -1,6 +1,7 @@
-use std::{collections::HashMap, fmt::Display, fs, path, str::FromStr};
+use std::{borrow::Cow, collections::HashMap, fmt::Display, fs, path, str::FromStr};
 
 use crate::{
+  lang::Lang,
   package_manager::PackageManager,
   utils::{colors::*, lte},
 };
@@ -14,6 +15,13 @@ use std::mem::transmute;
 #[folder = "templates"]
 #[allow(clippy::upper_case_acronyms, non_camel_case_types)]
 struct EMBEDDED_TEMPLATES;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
+#[derive(RustEmbed)]
+#[folder = "js-templates"]
+#[allow(clippy::upper_case_acronyms, non_camel_case_types)]
+struct EMBEDDED_JS_TEMPLATES;
 
 pub(crate) trait Displayable {
   fn display_text(&self) -> &str;
@@ -300,6 +308,7 @@ impl<'a> Template {
     _pkg_manager: PackageManager,
     project_name: &str,
     package_name: &str,
+    lang: &Lang,
   ) -> anyhow::Result<()> {
     let lib_name = format!("{}_lib", package_name.replace('-', "_"));
     let project_name_pascal_case = Self::transform_to_pascal_case(project_name.to_string());
@@ -345,14 +354,24 @@ impl<'a> Template {
         };
 
         let (file_data, file_name) = if let Some(new_name) = file_name.strip_suffix(".lte") {
-          let data = lte::render(
-            EMBEDDED_TEMPLATES::get(file).unwrap().data.to_vec(),
-            &template_data,
-          )?
-          .replace("<FARM-TEMPLATE-NAME>", project_name);
+          let data = match *lang {
+            Lang::Javascript => lte::render(
+              EMBEDDED_JS_TEMPLATES::get(file).unwrap().data.to_vec(),
+              &template_data,
+            )?
+            .replace("<FARM-TEMPLATE-NAME>", project_name),
+            Lang::Typescript => lte::render(
+              EMBEDDED_TEMPLATES::get(file).unwrap().data.to_vec(),
+              &template_data,
+            )?
+            .replace("<FARM-TEMPLATE-NAME>", project_name),
+          };
           (data.into_bytes(), new_name)
         } else {
-          let plain_data = EMBEDDED_TEMPLATES::get(file).unwrap().data.to_vec();
+          let plain_data = match *lang {
+            Lang::Javascript => EMBEDDED_JS_TEMPLATES::get(file).unwrap().data.to_vec(),
+            Lang::Typescript => EMBEDDED_TEMPLATES::get(file).unwrap().data.to_vec(),
+          };
           let data = String::from_utf8(plain_data.clone())
             .map(|s| {
               s.replace("<FARM-TEMPLATE-NAME>", &project_name)
@@ -383,14 +402,25 @@ impl<'a> Template {
     };
 
     let skip_count = current_template_name.matches('/').count() + 1;
-    for file in EMBEDDED_TEMPLATES::iter().filter(|e| {
-      let path = path::PathBuf::from(e.to_string());
+
+    let filter_fn = |e: &Cow<'static, str>| {
+      let path = path::PathBuf::from(e.as_ref());
       let _components: Vec<_> = path.components().collect();
       let path_str = path.to_string_lossy();
-      // let template_name = components.first().unwrap().as_os_str().to_str().unwrap();
       path_str.starts_with(&current_template_name)
-    }) {
-      write_file(&file, template_data.clone(), skip_count)?;
+    };
+
+    match *lang {
+      Lang::Javascript => {
+        for file in EMBEDDED_JS_TEMPLATES::iter().filter(filter_fn) {
+          write_file(file.as_ref(), template_data.clone(), skip_count)?;
+        }
+      }
+      Lang::Typescript => {
+        for file in EMBEDDED_TEMPLATES::iter().filter(filter_fn) {
+          write_file(file.as_ref(), template_data.clone(), skip_count)?;
+        }
+      }
     }
 
     handle_brand_text("\n ✔️ Template copied Successfully! \n");
