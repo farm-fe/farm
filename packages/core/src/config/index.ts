@@ -134,7 +134,7 @@ export async function resolveConfig(
 
   const resolvedUserConfig = await handleResolveConfig(
     configFilePath,
-    userConfig,
+    config,
     farmJsPlugins,
     allPlugins.rustPlugins,
     transformInlineConfig,
