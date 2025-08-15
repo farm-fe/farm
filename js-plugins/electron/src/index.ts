@@ -116,7 +116,6 @@ function resolveFarmConfig(
   opts.farm.compilation.external ??= [];
   opts.farm.compilation.external.push('^electron$');
   opts.farm.compilation.watch ??= isDev;
-  opts.farm.compilation.persistentCache = false;
   opts.farm.compilation.partialBundling ??= {};
   opts.farm.compilation.partialBundling.enforceResources ??= [];
   opts.farm.plugins ??= [];
