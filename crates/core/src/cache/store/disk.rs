@@ -87,7 +87,12 @@ impl CacheStore {
   fn restore_cache(&self, name: &str) {
     let cache_path = self.real_cache_path(name);
 
-    if let Ok(restored_set) = self.lock.read() && restored_set.contains(&cache_path) {
+    if self
+      .lock
+      .read()
+      .map(|v| v.contains(&cache_path))
+      .unwrap_or_default()
+    {
       return;
     }
 
@@ -96,6 +101,7 @@ impl CacheStore {
     }
 
     if let Ok(mut map) = self.lock.write() {
+      map.insert(cache_path.clone());
       let data = std::fs::read(cache_path.clone()).unwrap();
 
       let value = deserialize!(&data, CombineCacheData);
@@ -106,16 +112,16 @@ impl CacheStore {
         }
         self.insert_cache(&item_key.name, &item_key.key, value);
       }
-
-      map.insert(cache_path.clone());
     }
   }
 
   fn try_read_content_ref(&self, name: &str) -> Option<CacheStoreItemRef<'_>> {
-    let manifest_item = self.manifest.get(name)?;
+    let has_data = self
+      .manifest
+      .get(name)
+      .map(|v| self.data.contains_key(v.value()))?;
 
-    if !self.data.contains_key(manifest_item.value()) {
-      drop(manifest_item);
+    if !has_data {
       self.restore_cache(name);
     }
 
@@ -129,7 +135,9 @@ impl CacheStore {
   }
 
   fn write_content_to_disk(&self, cache_dir_str: PathBuf, data: Vec<u8>) {
-    if let Some(parent) = cache_dir_str.parent() && !parent.exists() {
+    if let Some(parent) = cache_dir_str.parent()
+      && !parent.exists()
+    {
       std::fs::create_dir_all(parent).unwrap();
     }
 
@@ -142,6 +150,18 @@ impl CacheStore {
     if !cache_dir.exists() {
       std::fs::create_dir_all(cache_dir).unwrap();
     }
+
+    let manifest_keys = self
+      .manifest
+      .iter()
+      .map(|v| v.key().clone())
+      .collect::<Vec<_>>();
+
+    manifest_keys.into_iter().for_each(|item| {
+      if !self.data.contains_key(&item) {
+        self.restore_cache(&item);
+      };
+    });
 
     self
       .manifest
