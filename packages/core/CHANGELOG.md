@@ -1,5 +1,11 @@
 # @farmfe/core
 
+## 2.0.0-nightly-20250816003920
+
+### Patch Changes
+
+- 63908eb: add module metadata cache & cache api
+
 ## 2.0.0-nightly-20250729025629
 
 ### Patch Changes
