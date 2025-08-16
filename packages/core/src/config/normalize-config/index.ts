@@ -104,9 +104,6 @@ export async function normalizeUserCompilationConfig(
     {
       // skip self define
       ['FARM' + '_PROCESS_ENV']: resolvedUserConfig.env
-      // FARM_RUNTIME_TARGET_ENV: JSON.stringify(
-      //   resolvedCompilation.output?.targetEnv
-      // )
     },
     resolvedCompilation?.define,
     // for node target, we should not define process.env.NODE_ENV
@@ -238,9 +235,9 @@ export async function normalizeUserCompilationConfig(
   if (resolvedCompilation.script?.plugins?.length) {
     resolvedUserConfig.logger.info(
       `Swc plugins are configured, note that Farm uses ${colors.yellow(
-        'swc_core v0.96'
+        'swc_core v35.0.0'
       )}, please make sure the plugin is ${colors.green('compatible')} with swc_core ${colors.yellow(
-        'swc_core v0.96'
+        'swc_core v35.0.0'
       )}. Otherwise, it may exit unexpectedly.`
     );
   }

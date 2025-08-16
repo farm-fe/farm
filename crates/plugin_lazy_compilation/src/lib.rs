@@ -170,6 +170,10 @@ impl Plugin for FarmPluginLazyCompilation {
           .replace(
             "'FARM_MODULE_SYSTEM'",
             &format!("{farm_global_this}.{FARM_MODULE_SYSTEM}"),
+          )
+          .replace(
+            "FARM_RUNTIME_TARGET_ENV",
+            &format!("{:?}", context.config.output.target_env.to_string()),
           );
 
         Ok(Some(farmfe_core::plugin::PluginLoadHookResult {

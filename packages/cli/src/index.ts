@@ -115,8 +115,10 @@ cli
   .command('build [root]', 'compile the project in production mode')
   .option('-o, --outDir <dir>', '[string] output directory')
   .option('-i, --input <file>', '[string] input file path')
-  .option('-w, --watch', '[boolean] watch file change and rebuild')
-  .option('--target <target>', '[string] transpile targetEnv node, browser')
+  .option(
+    '--target <target>',
+    '[string] transpile targetEnv node, browser, library'
+  )
   .option('--format <format>', '[string] transpile format esm, commonjs')
   .option('--sourcemap', '[boolean] output source maps for build')
   .option(
@@ -129,7 +131,6 @@ cli
       root,
       configFile: options.config,
       mode: options.mode,
-      watch: options.watch,
       compilation: {
         output: {
           path: options?.outDir,
@@ -147,6 +148,42 @@ cli
     const { build } = await resolveCore();
 
     handleAsyncOperationErrors(build(defaultOptions), 'error during build');
+  });
+
+// watch command
+cli
+  .command(
+    'watch [root]',
+    'compile the project in development, watch file changes and rebuild when file changes'
+  )
+  .option('-o, --outDir <dir>', '[string] output directory')
+  .option('-i, --input <file>', '[string] input file path')
+  .option(
+    '--target <target>',
+    '[string] transpile targetEnv node, browser, library'
+  )
+  .option('--format <format>', '[string] transpile format esm, commonjs')
+  .option('--sourcemap', '[boolean] output source maps for build')
+  .action(async (root: string, options: CliBuildOptions & GlobalCliOptions) => {
+    const defaultOptions = {
+      root,
+      configFile: options.config,
+      mode: options.mode,
+      compilation: {
+        output: {
+          path: options?.outDir,
+          targetEnv: options?.target,
+          format: options?.format
+        },
+        input: {
+          index: options?.input
+        },
+        sourcemap: options.sourcemap
+      }
+    };
+    const { watch } = await resolveCore();
+
+    handleAsyncOperationErrors(watch(defaultOptions), 'error during build');
   });
 
 cli

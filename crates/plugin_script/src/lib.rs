@@ -45,8 +45,10 @@ use farmfe_toolkit::{
   swc_ecma_visit::VisitMutWith,
 };
 
+use swc_plugin_runner::runtime::Runtime as PluginRuntime;
+
 #[cfg(feature = "swc_plugin")]
-use swc_plugins::{init_plugin_module_cache_once, transform_by_swc_plugins};
+use swc_plugins::transform_by_swc_plugins;
 
 mod deps_analyzer;
 #[cfg(feature = "swc_plugin")]
@@ -56,9 +58,14 @@ mod transform_import_meta_url;
 
 use transform_import_meta_url::transform_url_with_import_meta_url;
 
+#[cfg(feature = "swc_plugin")]
+use crate::swc_plugins::compile_wasm_plugins;
+
 /// ScriptPlugin is used to support compiling js/ts/jsx/tsx/... files, support loading, parse, analyze dependencies and code generation.
 /// Note that we do not do transforms here, the transforms (e.g. strip types, jsx...) are handled in a separate plugin (farmfe_plugin_swc_transforms).
-pub struct FarmPluginScript {}
+pub struct FarmPluginScript {
+  plugin_runtime: Option<Arc<dyn PluginRuntime>>,
+}
 
 impl Plugin for FarmPluginScript {
   fn name(&self) -> &str {
@@ -197,7 +204,7 @@ impl Plugin for FarmPluginScript {
       use farmfe_toolkit::script::swc_try_with::try_with;
 
       try_with(cm.clone(), globals.value(), || {
-        transform_by_swc_plugins(param, context).unwrap()
+        transform_by_swc_plugins(param, self.plugin_runtime.clone().unwrap(), context).unwrap()
       })?;
     }
 
@@ -365,10 +372,21 @@ impl Plugin for FarmPluginScript {
 }
 
 impl FarmPluginScript {
-  pub fn new(_config: &Config) -> Self {
-    #[cfg(feature = "swc_plugin")]
-    init_plugin_module_cache_once(_config);
-    Self {}
+  pub fn new(config: &Config) -> Self {
+    if cfg!(feature = "swc_plugin") {
+      let plugin_runtime = Arc::new(swc_plugin_backend_wasmer::WasmerRuntime);
+
+      compile_wasm_plugins(None, &config.script.plugins, &*plugin_runtime)
+        .unwrap_or_else(|_| panic!("Failed to compile wasm plugins"));
+
+      Self {
+        plugin_runtime: Some(plugin_runtime),
+      }
+    } else {
+      Self {
+        plugin_runtime: None,
+      }
+    }
   }
 }
 

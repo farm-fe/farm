@@ -10,8 +10,16 @@ import { Compiler } from '../compiler/index.js';
 import { createInlineCompiler } from '../compiler/index.js';
 import { createDebugger } from '../utils/debug.js';
 import { convertErrorMessage } from '../utils/error.js';
-import { arraify, bold, green, normalizePath } from '../utils/index.js';
+import {
+  arraify,
+  bold,
+  colors,
+  getShortName,
+  green,
+  normalizePath
+} from '../utils/index.js';
 
+import { __FARM_GLOBAL__ } from '../config/_global.js';
 import type { ResolvedUserConfig } from '../config/index.js';
 import type {
   JsUpdateResult,
@@ -147,6 +155,28 @@ export default class Watcher extends EventEmitter implements IWatcher {
       this._watcher = null;
     }
   }
+
+  isConfigFilesChanged(file: string): boolean {
+    file = normalizePath(file);
+    const shortFile = getShortName(file, this.config.root);
+    const isConfigFile = this.config.configFilePath === file;
+    const isConfigDependencyFile = this.config.configFileDependencies.some(
+      (name) => file === name
+    );
+    const isEnvFile = this.config.envFiles.some((name) => file === name);
+
+    if (isConfigFile || isConfigDependencyFile || isEnvFile) {
+      __FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__ = true;
+      this.config.logger.info(
+        `${bold(green(shortFile))} changed, Server is being restarted`,
+        true
+      );
+      this.config.logger.info(`[config change] ${colors.dim(file)}`);
+      return true;
+    }
+
+    return false;
+  }
 }
 
 class NoopWatcher extends EventEmitter implements FSWatcher {
@@ -179,29 +209,31 @@ class NoopWatcher extends EventEmitter implements FSWatcher {
   }
 }
 
-export async function handlerWatcher(
+export async function watchFileChangeAndRebuild(
   resolvedUserConfig: ResolvedUserConfig,
-  compiler: Compiler
+  compiler: Compiler,
+  onRebuild: () => Promise<void>
 ) {
   const logger = resolvedUserConfig.logger;
   const watcher = new Watcher(resolvedUserConfig);
   await watcher.createWatcher();
+
+  watcher.on('add', async (_file) => {
+    // TODO
+  });
+
+  watcher.on('unlink', async (_file) => {
+    // TODO
+  });
+
   watcher.on('change', async (file: string | string[] | any) => {
     file = normalizePath(file);
-    // TODO restart with node side v2.0 we may be think about this feature
-    // const shortFile = getShortName(file, resolvedUserConfig.root);
-    // const isConfigFile = resolvedUserConfig.configFilePath === file;
-    // const isConfigDependencyFile =
-    //   resolvedUserConfig.configFileDependencies.some((name) => file === name);
-    // const isEnvFile = resolvedUserConfig.envFiles.some((name) => file === name);
-    // if (isConfigFile || isConfigDependencyFile || isEnvFile) {
-    //   __FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__ = true;
-    //   resolvedUserConfig.logger.info(
-    //     `${bold(green(shortFile))} changed, Bundler Config is being reloaded`,
-    //     true
-    //   );
-    // TODO then rebuild node side
-    // }
+
+    if (watcher.isConfigFilesChanged(file)) {
+      // rebuild the project
+      return onRebuild();
+    }
+
     const handleUpdateFinish = (updateResult: JsUpdateResult) => {
       const added = [
         ...updateResult.added,
@@ -225,7 +257,7 @@ export async function handlerWatcher(
 
     try {
       const start = performance.now();
-      const result = await compiler.update([file], true);
+      const result = await compiler.update([file], true, false, false);
       const elapsedTime = Math.floor(performance.now() - start);
       logger.info(
         `update completed in ${bold(

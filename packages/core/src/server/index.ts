@@ -5,7 +5,7 @@ import connect from 'connect';
 import corsMiddleware from 'cors';
 
 import { Compiler } from '../compiler/index.js';
-import { bold, colors, getShortName, green, resolveConfig } from '../index.js';
+import { colors, resolveConfig } from '../index.js';
 import Watcher from '../watcher/index.js';
 import { HmrEngine } from './hmr-engine.js';
 import { httpServer } from './http.js';
@@ -98,9 +98,46 @@ export class Server extends httpServer {
    * Creates an instance of Server.
    * @param {FarmCliOptions & UserConfig} inlineConfig - The inline configuration options.
    */
-  constructor(readonly inlineConfig: FarmCliOptions & UserConfig) {
+  constructor(readonly inlineConfig: FarmCliOptions & UserConfig = {}) {
     super();
     this.logger = new Logger();
+  }
+
+  /**
+   * Creates a lazy compilation server that enable lazy compilation when targeting node
+   */
+  static async createAndStartLazyCompilationServer(
+    config: ResolvedUserConfig,
+    compiler: Compiler
+  ): Promise<Server> {
+    const server = new Server();
+    server.compiler = compiler;
+    server.config = config;
+
+    server.#resolveOptions();
+
+    const httpsOptions = await server.resolveHttpsConfig(
+      server.serverOptions.https
+    );
+    server.httpsOptions = httpsOptions;
+
+    server.middlewares = connect() as connect.Server;
+    server.httpServer = await server.resolveHttpServer(
+      server.serverOptions as CommonServerOptions,
+      server.middlewares,
+      server.httpsOptions
+    );
+
+    server.middlewares.use(lazyCompilationMiddleware(server));
+
+    const { port, hostname, strictPort } = server.serverOptions;
+    await server.httpServerStart({
+      port,
+      strictPort: strictPort,
+      host: hostname.host
+    });
+
+    return server;
   }
 
   /**
@@ -119,84 +156,89 @@ export class Server extends httpServer {
    * @returns {Promise<void>} A promise that resolves when the server creation process is complete
    * @throws {Error} If an error occurs during the server creation process
    */
-  async createServer(): Promise<void> {
+  static async createServer(
+    inlineConfig: FarmCliOptions & UserConfig = {}
+  ): Promise<Server> {
     try {
-      this.config = await resolveConfig(
-        this.inlineConfig,
+      const server = new Server(inlineConfig);
+      server.config = await resolveConfig(
+        server.inlineConfig,
         'dev',
         'development'
       );
 
-      this.logger = this.config.logger;
+      server.logger = server.config.logger;
 
-      this.#resolveOptions();
+      server.#resolveOptions();
 
-      this.compiler = createCompiler(this.config);
+      server.compiler = createCompiler(server.config);
 
       for (const hook of getPluginHooks(
-        this.config.jsPlugins,
+        server.config.jsPlugins,
         'configureCompiler'
       )) {
-        await hook?.(this.compiler);
+        await hook?.(server.compiler);
       }
 
       const [httpsOptions, publicFiles] = await Promise.all([
-        this.resolveHttpsConfig(this.serverOptions.https),
-        this.#handlePublicFiles()
+        server.resolveHttpsConfig(server.serverOptions.https),
+        server.#handlePublicFiles()
       ]);
-      this.httpsOptions = httpsOptions;
-      this.publicFiles = publicFiles;
-      this.middlewares = connect() as connect.Server;
-      this.httpServer = this.serverOptions.middlewareMode
+      server.httpsOptions = httpsOptions;
+      server.publicFiles = publicFiles;
+      server.middlewares = connect() as connect.Server;
+      server.httpServer = server.serverOptions.middlewareMode
         ? null
-        : await this.resolveHttpServer(
-            this.serverOptions as CommonServerOptions,
-            this.middlewares,
-            this.httpsOptions
+        : await server.resolveHttpServer(
+            server.serverOptions as CommonServerOptions,
+            server.middlewares,
+            server.httpsOptions
           );
 
       // close server function prepare promise
-      this.closeHttpServerFn = this.closeServer();
+      server.closeHttpServerFn = server.closeServer();
 
       // init hmr engine When actually updating, we need to get the clients of ws for broadcast, 、
       // so we can instantiate hmrEngine by default at the beginning.
-      this.createHmrEngine();
+      server.createHmrEngine();
 
       // init websocket server
-      await this.createWebSocketServer();
+      await server.createWebSocketServer();
 
       // invalidate vite handler
-      this.#invalidateVite();
+      server.#invalidateVite();
 
       // init watcher
-      await this.#createWatcher();
+      await server.#createWatcher();
 
-      await this.handleConfigureServer();
+      await server.handleConfigureServer();
 
       // init middlewares
-      this.#initializeMiddlewares();
+      server.#initializeMiddlewares();
 
-      this.terminateServerFn = async (_: unknown, exitCode?: number) => {
+      server.terminateServerFn = async (_: unknown, exitCode?: number) => {
         try {
-          await this.close();
+          await server.close();
         } finally {
           process.exitCode ??= exitCode ? 128 + exitCode : undefined;
           process.exit();
         }
       };
 
-      if (!this.serverOptions.middlewareMode) {
-        setupSIGTERMListener(this.terminateServerFn);
+      if (!server.serverOptions.middlewareMode) {
+        setupSIGTERMListener(server.terminateServerFn);
       }
 
-      if (!this.serverOptions.middlewareMode && this.httpServer) {
-        this.httpServer.once('listening', () => {
+      if (!server.serverOptions.middlewareMode && server.httpServer) {
+        server.httpServer.once('listening', () => {
           // update actual port since this may be different from initial value
-          this.serverOptions.port = (
-            this.httpServer.address() as net.AddressInfo
+          server.serverOptions.port = (
+            server.httpServer.address() as net.AddressInfo
           ).port;
         });
       }
+
+      return server;
     } catch (error) {
       // this.logger.error(
       //   `Failed to create farm server: ${error}`
@@ -230,31 +272,24 @@ export class Server extends httpServer {
 
     this.watcher.on('change', async (file: string) => {
       file = normalizePath(file);
-      const shortFile = getShortName(file, this.config.root);
-      const isConfigFile = this.config.configFilePath === file;
-      const isConfigDependencyFile = this.config.configFileDependencies.some(
-        (name) => file === name
-      );
-      const isEnvFile = this.config.envFiles.some((name) => file === name);
-      if (isConfigFile || isConfigDependencyFile || isEnvFile) {
-        __FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__ = true;
-        this.logger.info(
-          `${bold(green(shortFile))} changed, Server is being restarted`,
-          true
-        );
-        debugServer?.(`[config change] ${colors.dim(file)}`);
+
+      if (this.watcher.isConfigFilesChanged(file)) {
         try {
           await this.restartServer();
         } catch (e) {
           this.config.logger.error(`restart server error ${e}`);
         }
+
+        return;
       }
+
       try {
         this.hmrEngine.hmrUpdate(file);
       } catch (error) {
         this.config.logger.error(`Farm Hmr Update Error: ${error}`);
       }
     });
+
     const handleUpdateFinish = (updateResult: JsUpdateResult) => {
       const added = [
         ...updateResult.added,
@@ -332,8 +367,7 @@ export class Server extends httpServer {
     let newServer: Server = null;
     try {
       await this.close();
-      newServer = new Server(this.inlineConfig);
-      await newServer.createServer();
+      newServer = await Server.createServer(this.inlineConfig);
     } catch (error) {
       this.logger.error(`Failed to restart server :\n ${error}`);
       return;
@@ -350,7 +384,7 @@ export class Server extends httpServer {
   async createWebSocketServer() {
     if (!this.httpServer) {
       throw new Error(
-        'Websocket requires a http server. please check the server is be created'
+        'Websocket requires a http server. please check the server is created'
       );
     }
 
@@ -560,7 +594,7 @@ export class Server extends httpServer {
   async #compile(): Promise<void> {
     try {
       await this.compiler.compile();
-      // TODO need callWriteResourcesHook ？？
+
       await (this.config.server.writeToDisk
         ? this.compiler.writeResourcesToDisk()
         : this.compiler.callWriteResourcesHook());
