@@ -7,11 +7,8 @@ use farmfe_core::{
   },
   error::CompilationError,
   module::{
-    meta_data::script::{
-      ModuleExportIdent, ModuleExportIdentType, FARM_RUNTIME_MODULE_HELPER_ID,
-      FARM_RUNTIME_MODULE_SYSTEM_ID,
-    },
-    ModuleId, ModuleMetaData, ModuleSystem, ModuleType,
+    meta_data::script::{FARM_RUNTIME_MODULE_HELPER_ID, FARM_RUNTIME_MODULE_SYSTEM_ID},
+    ModuleId, ModuleSystem, ModuleType,
   },
   parking_lot::Mutex,
   plugin::{
@@ -33,29 +30,23 @@ use farmfe_toolkit::{
   script::{
     concatenate_modules::{
       concatenate_modules_ast, ConcatenateModulesAstOptions, ConcatenateModulesAstResult,
-      EXPORT_NAMESPACE,
     },
-    create_export_namespace_ident, set_module_system_for_module_meta,
+    set_module_system_for_module_meta,
     swc_try_with::{try_with, ResetSpanVisitMut},
+    transform_to_esm::{
+      self, get_cjs_require_only_modules, update_module_graph_edges_of_cjs_modules,
+    },
   },
   swc_ecma_visit::VisitMutWith,
 };
-use transform_cjs::transform_cjs_to_esm;
 
-use crate::{
-  formats::{generate_library_format_resources, GenerateLibraryFormatResourcesOptions},
-  transform_cjs::{replace_cjs_require, ReplaceCjsRequireResult},
-  transform_hybrid::transform_hybrid_to_cjs,
-};
+use crate::formats::{generate_library_format_resources, GenerateLibraryFormatResourcesOptions};
 
 mod formats;
-mod handle_exports;
 mod import_meta_visitor;
-mod transform_cjs;
-mod transform_hybrid;
 mod utils;
 
-const FARM_RUNTIME_PREFIX: &str = "@farm-runtime/";
+const FARM_RUNTIME_PREFIX: &str = "@farmfe/runtime/";
 const PLUGIN_NAME: &str = "FarmPluginLibrary";
 
 #[derive(Default)]
@@ -170,11 +161,6 @@ impl Plugin for FarmPluginLibrary {
     _hook_context: &farmfe_core::plugin::PluginHookContext,
   ) -> farmfe_core::error::Result<Option<farmfe_core::plugin::PluginLoadHookResult>> {
     if let Some(rel_path) = param.resolved_path.strip_prefix(FARM_RUNTIME_PREFIX) {
-      let rel_path = match rel_path {
-        "module-system" => "src/module-system.ts",
-        "module-helper" => "src/modules/module-helper.ts",
-        _ => unreachable!("unsupported runtime path {rel_path}"),
-      };
       let abs_path = RelativePath::new(rel_path).to_logical_path(&context.config.runtime.path);
       let content = read_file_utf8(abs_path.to_string_lossy().to_string().as_str())?;
 
@@ -204,6 +190,7 @@ impl Plugin for FarmPluginLibrary {
 
       try_with(cm, globals.value(), || {
         let module_id_str = param.module.id.to_string();
+
         if module_id_str.starts_with(FARM_RUNTIME_PREFIX) {
           // remove unused runtime features
           let feature_flags = HashSet::default();
@@ -251,73 +238,14 @@ impl Plugin for FarmPluginLibrary {
       *module_helper_ast = Some(helper_ast);
     }
 
-    // Note that we update ResolveKind to Import here instead of in finalize_module because
-    // when resolving dependencies ResolveKind::Require and ResolveKind::Import are different,
-    // if we update ResolveKind::Require to ResolveKind::Import, it will break original dependency resolution
-    let mut edges_to_update = vec![];
+    let (cjs_require_map, export_namespace_modules) =
+      update_module_graph_edges_of_cjs_modules(module_graph, None);
 
-    for module in module_graph.modules() {
-      for (dep_id, edge_info) in module_graph.dependencies(&module.id) {
-        // all hybrid modules will be transformed to cjs first, so we need to update all edges of hybrid modules
-        let is_hybrid = if let box ModuleMetaData::Script(meta) = &module.meta {
-          // Internal runtime modules are not hybrid modules
-          meta.module_system == ModuleSystem::Hybrid
-            && dep_id != FARM_RUNTIME_MODULE_HELPER_ID.into()
-            && dep_id != FARM_RUNTIME_MODULE_SYSTEM_ID.into()
-        } else {
-          false
-        };
-
-        if is_hybrid || edge_info.contains_require() {
-          edges_to_update.push((module.id.clone(), dep_id));
-        }
-      }
-    }
-
-    for (module_id, dep_id) in edges_to_update {
-      let mut should_update_edge_kind = false;
-
-      if let Some(edge_info) = module_graph.edge_info(&module_id, &dep_id) {
-        // find require edge item
-        if let Some(dep_module) = module_graph.module(&dep_id) {
-          if !dep_module.external && dep_module.module_type.is_script() {
-            let meta = dep_module.meta.as_script();
-
-            let cjs_require_map =
-              edge_info
-                .items()
-                .iter()
-                .fold(HashMap::default(), |mut acc, item| {
-                  acc.insert(
-                    (module_id.clone(), item.source.clone()),
-                    (dep_id.clone(), meta.module_system.clone()),
-                  );
-                  acc
-                });
-
-            self.cjs_require_map.lock().extend(cjs_require_map);
-
-            should_update_edge_kind = true;
-          }
-        }
-
-        if should_update_edge_kind {
-          let mut edge_info = edge_info.clone();
-          // update ResolveKind::require to ResolveKind::Import
-          for item in edge_info.iter_mut() {
-            if item.kind == ResolveKind::Require {
-              item.kind = ResolveKind::Import;
-            }
-          }
-
-          module_graph
-            .update_edge(&module_id, &dep_id, edge_info)
-            .unwrap();
-
-          self.export_namespace_modules.lock().insert(dep_id);
-        }
-      }
-    }
+    self.cjs_require_map.lock().extend(cjs_require_map);
+    self
+      .export_namespace_modules
+      .lock()
+      .extend(export_namespace_modules);
 
     Ok(Some(()))
   }
@@ -331,56 +259,25 @@ impl Plugin for FarmPluginLibrary {
     let mut cjs_require_map = self.cjs_require_map.lock();
     let cjs_require_map: HashMap<(ModuleId, String), (ModuleId, ModuleSystem)> =
       cjs_require_map.drain().into_iter().collect();
-    let cjs_required_only_modules: HashSet<&ModuleId> = cjs_require_map
-      .values()
-      .filter(|(_, module_system)| *module_system != ModuleSystem::EsModule)
-      .map(|(module_id, _)| module_id)
-      .collect();
+    let cjs_required_only_modules: HashSet<&ModuleId> =
+      get_cjs_require_only_modules(&cjs_require_map);
 
     module_graph
       .modules_mut()
       .par_iter_mut()
       .filter(|module| module.module_type.is_script())
       .for_each(|module| {
-        let meta = module.meta.as_script_mut();
+        let (used_helper_idents, should_add_farm_node_require) =
+          transform_to_esm::transform_module_to_esm(
+            module,
+            &cjs_require_map,
+            &cjs_required_only_modules,
+            context,
+          );
 
-        let cm = context.meta.get_module_source_map(&module.id);
-        let globals = context.meta.get_globals(&module.id);
-        let is_required_cjs_module = cjs_required_only_modules.contains(&module.id);
-        let mut used_helper_idents = HashSet::default();
-
-        try_with(cm, globals.value(), || {
-          // transform hybrid to cjs
-          if meta.module_system == ModuleSystem::Hybrid {
-            used_helper_idents.extend(transform_hybrid_to_cjs(meta));
-            meta.module_system = ModuleSystem::CommonJs;
-          }
-
-          // replace cjs require
-          let ReplaceCjsRequireResult {
-            cjs_require_items,
-            should_add_farm_node_require,
-          } = replace_cjs_require(&module.id, &cjs_require_map, meta);
-
-          if should_add_farm_node_require {
-            *self.should_add_farm_node_require.lock() = true;
-          }
-
-          // transform cjs to esm
-          if meta.module_system == ModuleSystem::CommonJs {
-            transform_cjs_to_esm(
-              &module.id,
-              cjs_require_items,
-              meta,
-              context,
-              module.is_entry,
-              is_required_cjs_module,
-              &mut used_helper_idents,
-            );
-            meta.module_system = ModuleSystem::EsModule;
-          }
-        })
-        .unwrap();
+        if should_add_farm_node_require {
+          *self.should_add_farm_node_require.lock() = true;
+        }
 
         self
           .all_used_helper_idents
@@ -390,31 +287,11 @@ impl Plugin for FarmPluginLibrary {
 
     let export_namespace_modules = self.export_namespace_modules.lock();
 
-    for dep_id in export_namespace_modules.iter() {
-      if let Some(dep_module) = module_graph.module_mut(&dep_id) {
-        if dep_module.external || !dep_module.module_type.is_script() {
-          continue;
-        }
-
-        let dep_module_meta = dep_module.meta.as_script_mut();
-        let is_required_cjs_module = cjs_required_only_modules.contains(&dep_id);
-
-        if !is_required_cjs_module
-          && !dep_module_meta
-            .export_ident_map
-            .contains_key(EXPORT_NAMESPACE)
-        {
-          dep_module_meta.export_ident_map.insert(
-            EXPORT_NAMESPACE.to_string(),
-            ModuleExportIdent::new(
-              dep_id.clone(),
-              create_export_namespace_ident(&dep_id).to_id().into(),
-              ModuleExportIdentType::VirtualNamespace,
-            ),
-          );
-        }
-      }
-    }
+    transform_to_esm::update_export_namespace_ident(
+      &export_namespace_modules,
+      &cjs_required_only_modules,
+      module_graph,
+    );
 
     Ok(None)
   }

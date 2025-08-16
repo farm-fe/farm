@@ -7,6 +7,7 @@ import fse from 'fs-extra';
 import { bindingPath } from '../../../binding/index.js';
 import {
   colors,
+  getValidPublicPath,
   isArray,
   isEmptyObject,
   isNodeEnv,
@@ -30,7 +31,7 @@ import {
 
 import { normalizeCss } from './normalize-css.js';
 import { normalizeExternal } from './normalize-external.js';
-import { getValidPublicPath, normalizeOutput } from './normalize-output.js';
+import { normalizeOutput } from './normalize-output.js';
 import { normalizePersistentCache } from './normalize-persistent-cache.js';
 import { normalizeResolve } from './normalize-resolve.js';
 

@@ -11,6 +11,7 @@ import { promises as dns } from 'node:dns';
 import type { AddressInfo, Server } from 'node:net';
 import os from 'node:os';
 import { ResolvedUserConfig } from '../config/types.js';
+import { getValidPublicPath } from './share.js';
 
 export interface ResolvedServerUrls {
   local: string[];
@@ -55,7 +56,7 @@ export async function resolveServerUrls(
   const hostname = await resolveHostname(serverOptions.host);
   const protocol = serverOptions.https ? 'https' : 'http';
   const port = address.port;
-  const base = config.compilation.output.publicPath;
+  const base = getValidPublicPath(config.compilation.output.publicPath);
 
   // print all network interfaces networkInterfaces() by default
   Object.values(os.networkInterfaces())

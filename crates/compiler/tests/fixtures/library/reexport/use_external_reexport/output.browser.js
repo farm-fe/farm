@@ -1,5 +1,5 @@
 //index.js:
- (function(){; // module_id: f20dbc0b
+ (function(){; // module_id: e0ff033e
 function setGlobalRequire(globalThis) {
     // polyfill require when running in browser or node with Farm runtime
     const __global_this__ = typeof globalThis !== 'undefined' ? globalThis : {};
@@ -18,6 +18,9 @@ var __farm_internal_module_system__ = {
     c: ()=>__farm_internal_cache__
 };
 {
+    // @ts-ignore injected during compile time
+    __farm_internal_module_system__.te = "browser";
+}{
     // externalModules
     __farm_internal_module_system__.em = {};
     // The external modules are injected during compile time.
@@ -75,7 +78,7 @@ function farmRegister(id, module) {
     __farm_internal_modules__[id] = module;
     return ()=>farmRequire$1(id);
 }
-; // module_id: e27f968b
+; // module_id: c4de70f7
 function initModuleSystem(ms) {
     const farmRequire = ms.r;
     {
@@ -179,6 +182,7 @@ initModuleSystem(__farm_internal_module_system__);
 (function(moduleSystem, modules) {
     for(var moduleId in modules){
         var module = modules[moduleId];
+        module.url = typeof document === "undefined" ? location.href : (document.currentScript && document.currentScript.tagName.toUpperCase() === "SCRIPT" && document.currentScript.src) || location.protocol + "//" + location.host + '/' + "index_8628134d6efc61be8d56e055c7028a8b_js";
         moduleSystem.g(moduleId, module);
     }
 })(window["__farm_default_namespace__"].m, {

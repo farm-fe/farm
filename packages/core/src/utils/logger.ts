@@ -262,7 +262,7 @@ export function bootstrap(
   config: ResolvedUserConfig,
   hasCacheDir: boolean
 ): void {
-  if (!__FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__) {
+  if (!__FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__ && config.configFilePath) {
     const shortFile = getShortName(config.configFilePath, config.root);
     config.logger.info(`Using config file at ${bold(green(shortFile))}`, true);
   }

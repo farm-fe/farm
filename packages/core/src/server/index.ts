@@ -26,7 +26,12 @@ import {
 } from '../utils/http.js';
 import { Logger, bootstrap, printServerUrls } from '../utils/logger.js';
 import { initPublicFiles } from '../utils/publicDir.js';
-import { arrayEqual, isObject, normalizePath } from '../utils/share.js';
+import {
+  arrayEqual,
+  getValidPublicPath,
+  isObject,
+  normalizePath
+} from '../utils/share.js';
 
 import {
   hmrPingMiddleware,
@@ -510,7 +515,7 @@ export class Server extends httpServer {
       root,
       server
     } = this.config;
-    this.publicPath = publicPath;
+    this.publicPath = getValidPublicPath(publicPath);
     this.publicDir = publicDir;
     if (server.origin?.endsWith('/')) {
       server.origin = server.origin.slice(0, -1);
