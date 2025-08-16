@@ -1,5 +1,5 @@
 //index.js:
- ; // module_id: @farm-runtime/module-system
+ ; // module_id: @farmfe/runtime/src/module-system.ts
 // all modules registered
 const __farm_internal_modules__ = {};
 // module cache after module initialized
@@ -33,7 +33,7 @@ function farmRegister(id, module) {
     __farm_internal_modules__[id] = module;
     return ()=>farmRequire$2(id);
 }
-; // module_id: @farm-runtime/module-helper
+; // module_id: @farmfe/runtime/src/modules/module-helper.ts
 function exportByDefineProperty(to, to_k, get) {
     if (Object.prototype.hasOwnProperty.call(to, to_k)) {
         return;

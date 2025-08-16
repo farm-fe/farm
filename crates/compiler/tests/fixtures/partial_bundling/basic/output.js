@@ -2,6 +2,7 @@
  (function(moduleSystem, modules) {
     for(var moduleId in modules){
         var module = modules[moduleId];
+        module.url = typeof document === "undefined" ? location.href : (document.currentScript && document.currentScript.tagName.toUpperCase() === "SCRIPT" && document.currentScript.src) || location.protocol + "//" + location.host + '/' + "debounce_6f74c72056ab317798edfda17ab32389_js";
         moduleSystem.g(moduleId, module);
     }
 })(window["__farm_default_namespace__"].m, {
@@ -35,6 +36,7 @@ initModuleSystem$1(__farm_internal_module_system__);
  (function(moduleSystem, modules) {
     for(var moduleId in modules){
         var module = modules[moduleId];
+        module.url = typeof document === "undefined" ? location.href : (document.currentScript && document.currentScript.tagName.toUpperCase() === "SCRIPT" && document.currentScript.src) || location.protocol + "//" + location.host + '/' + "index_2faab555d8f76918a852744b6f80a959_js";
         moduleSystem.g(moduleId, module);
     }
 })(window["__farm_default_namespace__"].m, {
@@ -54,6 +56,7 @@ initModuleSystem$1(__farm_internal_module_system__);
  (function(moduleSystem, modules) {
     for(var moduleId in modules){
         var module = modules[moduleId];
+        module.url = typeof document === "undefined" ? location.href : (document.currentScript && document.currentScript.tagName.toUpperCase() === "SCRIPT" && document.currentScript.src) || location.protocol + "//" + location.host + '/' + "index_64d2102068f845fdd9c1d1a813f4ab5f_js";
         moduleSystem.g(moduleId, module);
     }
 })(window["__farm_default_namespace__"].m, {
@@ -78,6 +81,7 @@ initModuleSystem$1(__farm_internal_module_system__);
 (function(moduleSystem, modules) {
     for(var moduleId in modules){
         var module = modules[moduleId];
+        module.url = typeof document === "undefined" ? location.href : (document.currentScript && document.currentScript.tagName.toUpperCase() === "SCRIPT" && document.currentScript.src) || location.protocol + "//" + location.host + '/' + "index_dcdc3e0b3362edb8fec2a51d3fa51f8f_js";
         moduleSystem.g(moduleId, module);
     }
 })(window["__farm_default_namespace__"].m, {

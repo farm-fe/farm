@@ -1,3 +1,7 @@
+use crate::script::{
+  concatenate_modules::EXPORT_NAMESPACE, create_call_expr, create_export_default_ident,
+  create_top_level_ident, create_var_decl_item, create_var_declarator,
+};
 use farmfe_core::{
   config::FARM_REQUIRE,
   module::{
@@ -13,12 +17,8 @@ use farmfe_core::{
   },
   HashMap,
 };
-use farmfe_toolkit::script::{
-  concatenate_modules::EXPORT_NAMESPACE, create_call_expr, create_export_default_ident,
-  create_top_level_ident, create_var_decl_item, create_var_declarator,
-};
 
-use crate::transform_cjs::{FARM_CJS_EXPORTS, FARM_INTEROP_REQUIRE};
+use super::transform_cjs::{FARM_CJS_EXPORTS, FARM_INTEROP_REQUIRE};
 
 pub fn create_export_decl_items(
   export_ident_map: &mut HashMap<String, ModuleExportIdent>,

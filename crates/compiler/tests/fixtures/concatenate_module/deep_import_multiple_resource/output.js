@@ -2,6 +2,7 @@
  (function(moduleSystem, modules) {
     for(var moduleId in modules){
         var module = modules[moduleId];
+        module.url = typeof document === "undefined" ? location.href : (document.currentScript && document.currentScript.tagName.toUpperCase() === "SCRIPT" && document.currentScript.src) || location.protocol + "//" + location.host + '/' + "dep__js";
         moduleSystem.g(moduleId, module);
     }
 })(window["__farm_default_namespace__"].m, {
@@ -35,6 +36,7 @@ initModuleSystem(__farm_internal_module_system__);
  import "./farm_internal_runtime_index.js";import "./dep.js";(function(moduleSystem, modules) {
     for(var moduleId in modules){
         var module = modules[moduleId];
+        module.url = typeof document === "undefined" ? location.href : (document.currentScript && document.currentScript.tagName.toUpperCase() === "SCRIPT" && document.currentScript.src) || location.protocol + "//" + location.host + '/' + "index_86d4692f2b3057a34b22fd1bfcb4df61_js";
         moduleSystem.g(moduleId, module);
     }
 })(window["__farm_default_namespace__"].m, {

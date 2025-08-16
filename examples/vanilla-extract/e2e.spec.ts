@@ -33,7 +33,7 @@ describe(`e2e tests vanilla-extract - ${name}`, async () => {
       await runTest();
     })
 
-    test('run start', async () => {
+    test('run preview', async () => {
       await runTest("preview");
     })
 });

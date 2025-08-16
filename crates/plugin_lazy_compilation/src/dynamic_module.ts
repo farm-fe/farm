@@ -118,7 +118,8 @@ if (compilingModules.has(modulePath)) {
     }
   } else {
     const compileModules = () => {
-      const isNodeLazyCompile = FarmModuleSystem.targetEnv === 'node';
+      // @ts-ignore ignore type check
+      const isNodeLazyCompile = FARM_RUNTIME_TARGET_ENV === 'node';
       const queue = [...FarmModuleSystem.lazyCompilingQueue];
       FarmModuleSystem.lazyCompilingQueue = [];
       startLazyCompiling(queue);

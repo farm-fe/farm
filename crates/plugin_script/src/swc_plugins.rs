@@ -1,68 +1,30 @@
+//! Copied from Swc-Project, see https://github.com/swc-project/swc/blob/main/crates/swc/src/plugin.rs
+//! License: MIT
+
 use std::{path::PathBuf, sync::Arc};
 
-use farmfe_core::{
-  config::script::{ScriptConfigPlugin, ScriptConfigPluginFilters},
-  context::CompilationContext,
-  error::Result,
-  module::ModuleType,
-  parking_lot::Mutex,
-  plugin::PluginProcessModuleHookParam,
-  swc_common::{self, plugin::metadata::TransformPluginMetadataContext, FileName, Mark},
-  swc_ecma_ast::{Module as SwcModule, Program, Script},
-  HashMap,
-};
-use farmfe_toolkit::anyhow::{self, Context};
+use farmfe_core::config::script::{ScriptConfigPlugin, ScriptConfigPluginFilters};
+use farmfe_core::context::CompilationContext;
+use farmfe_core::module::ModuleType;
+use farmfe_core::plugin::PluginProcessModuleHookParam;
+use farmfe_core::swc_common::errors::{DiagnosticId, HANDLER};
+use farmfe_core::swc_common::plugin::metadata::TransformPluginMetadataContext;
+use farmfe_core::swc_common::{self, FileName, Mark};
+use farmfe_core::{parking_lot, swc_ecma_ast::*};
+use farmfe_toolkit::anyhow::{self, Context, Result};
+use farmfe_toolkit::swc_atoms::Atom;
 use farmfe_toolkit::swc_ecma_visit::{noop_fold_type, Fold, FoldWith};
 use once_cell::sync::Lazy;
 use swc_ecma_loader::{
   resolve::Resolve,
   resolvers::{lru::CachingResolver, node::NodeModulesResolver},
 };
-use swc_plugin_runner::plugin_module_bytes::{
-  CompiledPluginModuleBytes, PluginModuleBytes, RawPluginModuleBytes,
-};
 
-// This file is modified from https://github.com/swc-project/swc/tree/main/crates/swc/src/plugin.rs
-
-/// A shared instance to plugin's module bytecode cache.
-pub static PLUGIN_MODULE_CACHE: Lazy<Mutex<HashMap<String, Box<CompiledPluginModuleBytes>>>> =
-  Lazy::new(Default::default);
-pub static CACHING_RESOLVER: Lazy<CachingResolver<NodeModulesResolver>> =
-  Lazy::new(|| CachingResolver::new(40, NodeModulesResolver::default()));
-
-pub fn init_plugin_module_cache_once(config: &farmfe_core::config::Config) {
-  for plugin_config in config.script.plugins.iter() {
-    let plugin_name = &plugin_config.name;
-    let mut inner_cache = PLUGIN_MODULE_CACHE.lock();
-
-    if !inner_cache.contains_key(plugin_name) {
-      let plugin_resolver = &CACHING_RESOLVER;
-      let resolved_path = plugin_resolver
-        .resolve(&FileName::Real(PathBuf::from(&plugin_name)), plugin_name)
-        .unwrap();
-
-      let path = if let FileName::Real(value) = resolved_path.filename {
-        value
-      } else {
-        panic!("Failed to resolve plugin path: {resolved_path:?}");
-      };
-
-      // store_bytes_from_path which swc uses will cause deadlock, so we read and cache the plugin module bytecode manually
-      let raw_module_bytes = std::fs::read(&path)
-        .context("Cannot read plugin from specified path")
-        .unwrap();
-
-      // Store raw bytes into memory cache.
-      let pmb = RawPluginModuleBytes::new(plugin_name.to_string(), raw_module_bytes);
-      let (store, bytes) = pmb.compile_module().unwrap();
-      let cmb = CompiledPluginModuleBytes::new(plugin_name.to_string(), bytes, store);
-      inner_cache.insert(plugin_name.to_string(), Box::new(cmb));
-    }
-  }
-}
+use swc_plugin_runner::runtime::Runtime as PluginRuntime;
 
 pub fn transform_by_swc_plugins(
   param: &mut PluginProcessModuleHookParam,
+  plugin_runtime: Arc<dyn PluginRuntime>,
   context: &Arc<CompilationContext>,
 ) -> Result<()> {
   let mut plugins_should_execute = vec![];
@@ -95,10 +57,12 @@ pub fn transform_by_swc_plugins(
   let comments = param.meta.as_script().comments.clone().into();
   let mut plugin_transforms = swc_plugins(
     Some(plugins_should_execute),
+    None,
     transform_metadata_context,
     Some(comments),
     cm,
     unresolved_mark,
+    plugin_runtime,
   );
 
   let mut program = Program::Module(param.meta.as_script_mut().take_ast());
@@ -109,52 +73,81 @@ pub fn transform_by_swc_plugins(
   Ok(())
 }
 
-pub fn swc_plugins(
+/// A shared instance to plugin's module bytecode cache.
+pub static PLUGIN_MODULE_CACHE: Lazy<swc_plugin_runner::cache::PluginModuleCache> =
+  Lazy::new(Default::default);
+
+/// Create a new cache instance if not initialized. This can be called multiple
+/// time, but any subsequent call will be ignored.
+///
+/// This fn have a side effect to create path to cache if given path is not
+/// resolvable if fs_cache_store is enabled. If root is not specified, it'll
+/// generate default root for cache location.
+///
+/// If cache failed to initialize filesystem cache for given location
+/// it'll be serve in-memory cache only.
+pub fn init_plugin_module_cache_once(
+  enable_fs_cache_store: bool,
+  fs_cache_store_root: Option<&str>,
+) {
+  PLUGIN_MODULE_CACHE.inner.get_or_init(|| {
+    parking_lot::Mutex::new(swc_plugin_runner::cache::PluginModuleCache::create_inner(
+      enable_fs_cache_store,
+      fs_cache_store_root,
+    ))
+  });
+}
+
+pub(crate) fn swc_plugins(
   configured_plugins: Option<Vec<ScriptConfigPlugin>>,
+  plugin_env_vars: Option<Vec<Atom>>,
   metadata_context: std::sync::Arc<swc_common::plugin::metadata::TransformPluginMetadataContext>,
   comments: Option<swc_common::comments::SingleThreadedComments>,
   source_map: std::sync::Arc<swc_common::SourceMap>,
   unresolved_mark: swc_common::Mark,
+  plugin_runtime: Arc<dyn PluginRuntime>,
 ) -> impl Fold {
   RustPlugins {
     plugins: configured_plugins,
+    plugin_env_vars: plugin_env_vars.map(std::sync::Arc::new),
     metadata_context,
     comments,
     source_map,
     unresolved_mark,
+    plugin_runtime,
   }
 }
 
 struct RustPlugins {
   plugins: Option<Vec<ScriptConfigPlugin>>,
+  plugin_env_vars: Option<std::sync::Arc<Vec<Atom>>>,
   metadata_context: std::sync::Arc<swc_common::plugin::metadata::TransformPluginMetadataContext>,
   comments: Option<swc_common::comments::SingleThreadedComments>,
   source_map: std::sync::Arc<swc_common::SourceMap>,
   unresolved_mark: swc_common::Mark,
+  plugin_runtime: Arc<dyn PluginRuntime>,
 }
 
 impl RustPlugins {
-  fn apply(&mut self, n: Program) -> std::result::Result<Program, anyhow::Error> {
+  fn apply(&mut self, n: Program) -> Result<Program, anyhow::Error> {
+    use anyhow::Context;
     if self.plugins.is_none() || self.plugins.as_ref().unwrap().is_empty() {
       return Ok(n);
     }
 
-    let fut = async move {
-      self.apply_inner(n).with_context(|| {
-        format!(
-          "failed to invoke plugin on '{:?}'",
-          self.metadata_context.filename
-        )
-      })
-    };
+    let filename = self.metadata_context.filename.clone();
+
+    let fut = async move { self.apply_inner(n) };
     if let Ok(handle) = tokio::runtime::Handle::try_current() {
       handle.block_on(fut)
     } else {
       tokio::runtime::Runtime::new().unwrap().block_on(fut)
     }
+    .with_context(|| format!("failed to invoke plugin on '{filename:?}'"))
   }
 
-  fn apply_inner(&mut self, n: Program) -> std::result::Result<Program, anyhow::Error> {
+  fn apply_inner(&mut self, n: Program) -> Result<Program, anyhow::Error> {
+    use anyhow::Context;
     use swc_common::plugin::serialized::PluginSerializedBytes;
 
     // swc_plugin_macro will not inject proxy to the comments if comments is empty
@@ -166,9 +159,8 @@ impl RustPlugins {
         inner: self.comments.clone(),
       },
       || {
-        let mut serialized = PluginSerializedBytes::try_serialize(
-          &swc_common::plugin::serialized::VersionedSerializable::new(n),
-        )?;
+        let program = swc_common::plugin::serialized::VersionedSerializable::new(n);
+        let mut serialized = PluginSerializedBytes::try_serialize(&program)?;
 
         // Run plugin transformation against current program.
         // We do not serialize / deserialize between each plugin execution but
@@ -179,35 +171,31 @@ impl RustPlugins {
         if let Some(plugins) = &mut self.plugins {
           for p in plugins.drain(..) {
             let plugin_module_bytes = PLUGIN_MODULE_CACHE
+              .inner
+              .get()
+              .unwrap()
               .lock()
-              .get(&p.name)
-              .expect("plugin module should be cached")
-              .clone();
+              .get(&*self.plugin_runtime, &p.name)
+              .expect("plugin module should be loaded");
+
             let plugin_name = plugin_module_bytes.get_module_name().to_string();
 
+            let mut transform_plugin_executor = swc_plugin_runner::create_plugin_transform_executor(
+              &self.source_map,
+              &self.unresolved_mark,
+              &self.metadata_context,
+              self.plugin_env_vars.clone(),
+              plugin_module_bytes,
+              Some(p.options),
+              self.plugin_runtime.clone(),
+            );
 
-
-            let runtime = swc_plugin_runner::wasix_runtime::build_wasi_runtime(
-              None
-                        );
-
-                        let mut plugin_transform_executor =
-                            swc_plugin_runner::create_plugin_transform_executor(
-                                &self.source_map,
-                                &self.unresolved_mark,
-                                &self.metadata_context,
-                                None,
-                                plugin_module_bytes,
-                                 Some(p.options.clone()),
-                                runtime,
-                            );
-
-            serialized = plugin_transform_executor
+            serialized = transform_plugin_executor
               .transform(&serialized, Some(should_enable_comments_proxy))
               .with_context(|| {
                 format!(
-                  "failed to invoke `{}` as js transform plugin at {plugin_name}. {plugin_name} may not be compatible with current version of rust crate swc_core(v0.90) that Farm uses, please upgrade or downgrade version of swc plugin {plugin_name} to match the swc_core version.",
-                  &p.name
+                  "failed to invoke `{}` as js transform plugin at {}",
+                  &p.name, plugin_name
                 )
               })?;
           }
@@ -224,19 +212,71 @@ impl RustPlugins {
 impl Fold for RustPlugins {
   noop_fold_type!();
 
-  fn fold_module(&mut self, n: SwcModule) -> SwcModule {
-    self
-      .apply(Program::Module(n))
-      .expect("failed to invoke plugin")
-      .expect_module()
+  fn fold_module(&mut self, n: Module) -> Module {
+    match self.apply(Program::Module(n)) {
+      Ok(program) => program.expect_module(),
+      Err(err) => {
+        HANDLER.with(|handler| {
+          handler.err_with_code(&err.to_string(), DiagnosticId::Error("plugin".into()));
+        });
+        Module::default()
+      }
+    }
   }
 
   fn fold_script(&mut self, n: Script) -> Script {
-    self
-      .apply(Program::Script(n))
-      .expect("failed to invoke plugin")
-      .expect_script()
+    match self.apply(Program::Script(n)) {
+      Ok(program) => program.expect_script(),
+      Err(err) => {
+        HANDLER.with(|handler| {
+          handler.err_with_code(&err.to_string(), DiagnosticId::Error("plugin".into()));
+        });
+        Script::default()
+      }
+    }
   }
+}
+
+pub(crate) fn compile_wasm_plugins(
+  cache_root: Option<&str>,
+  plugins: &[ScriptConfigPlugin],
+  plugin_runtime: &dyn PluginRuntime,
+) -> Result<()> {
+  let plugin_resolver = CachingResolver::new(
+    40,
+    NodeModulesResolver::new(swc_ecma_loader::TargetEnv::Node, Default::default(), true),
+  );
+
+  // Currently swc enables filesystemcache by default on Embedded runtime plugin
+  // target.
+  init_plugin_module_cache_once(cache_root.is_some(), cache_root);
+
+  let mut inner_cache = PLUGIN_MODULE_CACHE
+    .inner
+    .get()
+    .expect("Cache should be available")
+    .lock();
+
+  // Populate cache to the plugin modules if not loaded
+  for plugin_config in plugins.iter() {
+    let plugin_name = &plugin_config.name;
+
+    if !inner_cache.contains(plugin_runtime, plugin_name) {
+      let resolved_path = plugin_resolver
+        .resolve(&FileName::Real(PathBuf::from(plugin_name)), plugin_name)
+        .with_context(|| format!("failed to resolve plugin path: {plugin_name}"))?;
+
+      let path = if let FileName::Real(value) = resolved_path.filename {
+        value
+      } else {
+        anyhow::bail!("Failed to resolve plugin path: {:?}", resolved_path);
+      };
+
+      inner_cache.store_bytes_from_path(plugin_runtime, &path, plugin_name)?;
+    }
+  }
+
+  Ok(())
 }
 
 fn should_execute_swc_plugin(

@@ -7,6 +7,7 @@ initModuleSystem(__farm_internal_module_system__);
 }());(function(moduleSystem, modules) {
     for(var moduleId in modules){
         var module = modules[moduleId];
+        module.url = require("url").pathToFileURL(__filename).href;
         moduleSystem.g(moduleId, module);
     }
 })(global["__farm_default_namespace__"].m, {

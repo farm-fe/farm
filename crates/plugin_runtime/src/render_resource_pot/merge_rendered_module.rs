@@ -63,14 +63,34 @@ pub(crate) fn wrap_resource_pot_ast(
   resource_pot_id: &ResourcePotId,
   context: &Arc<CompilationContext>,
 ) -> SwcModule {
+  let url = {
+    if context.config.output.target_env.is_node() {
+      r#"require("url").pathToFileURL(__filename).href"#.to_string()
+    } else {
+      format!(
+        r#"typeof document === "undefined"
+          ? location.href
+          : (document.currentScript &&
+              document.currentScript.tagName.toUpperCase() === "SCRIPT" &&
+              document.currentScript.src) ||
+            location.protocol + "//" + location.host + '/' + {:?}"#,
+        resource_pot_id
+      )
+    }
+  };
   let mut stmt = parse_stmt(
     resource_pot_id,
-    r#"(function (moduleSystem, modules) {
-   for (var moduleId in modules) {
+    format!(
+      r#"(function (moduleSystem, modules) {{
+   for (var moduleId in modules) {{
      var module = modules[moduleId];
+     module.url = {};
      moduleSystem.g(moduleId, module);
-   }
- })("farm_module_system", "farm_object_lit");"#,
+    }}
+    }})("farm_module_system", "farm_object_lit");"#,
+      url
+    )
+    .as_str(),
   )
   .unwrap();
 

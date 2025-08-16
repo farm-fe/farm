@@ -7,6 +7,7 @@ initModuleSystem(__farm_internal_module_system__);
 }());(function(moduleSystem, modules) {
     for(var moduleId in modules){
         var module = modules[moduleId];
+        module.url = typeof document === "undefined" ? location.href : (document.currentScript && document.currentScript.tagName.toUpperCase() === "SCRIPT" && document.currentScript.src) || location.protocol + "//" + location.host + '/' + "index_e094168e7fa415b98009295e04f081de_js";
         moduleSystem.g(moduleId, module);
     }
 })(window["__farm_default_namespace__"].m, {

@@ -11,7 +11,7 @@ var esm_mjs_namespace_farm_internal_$1 = {
     default: esm_mjs_default$1,
     __esModule: true
 };
-; // module_id: @farm-runtime/module-system
+; // module_id: @farmfe/runtime/src/module-system.ts
 // all modules registered
 const __farm_internal_modules__ = {};
 // module cache after module initialized
@@ -45,7 +45,7 @@ function farmRegister(id, module) {
     __farm_internal_modules__[id] = module;
     return ()=>farmRequire$3(id);
 }
-; // module_id: @farm-runtime/module-helper
+; // module_id: @farmfe/runtime/src/modules/module-helper.ts
 function interopRequireDefault(obj) {
     return obj && obj.__esModule ? obj : {
         default: obj

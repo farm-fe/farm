@@ -78,7 +78,7 @@ impl Plugin for FarmPluginRuntime {
       let suffix = if name == "index" {
         "".to_string()
       } else {
-        format!("/src/{dir}{name}")
+        format!("/src/{dir}{name}.ts")
       };
 
       config.input.insert(
@@ -144,13 +144,19 @@ impl Plugin for FarmPluginRuntime {
         source_map: None,
       }));
     } else if param.resolved_path.starts_with(RUNTIME_PACKAGE) {
-      let rest_str = param.resolved_path.replace(RUNTIME_PACKAGE, "") + ".ts";
+      let rest_str = param.resolved_path.replace(RUNTIME_PACKAGE, "");
       let relative_path = RelativePath::new(&rest_str);
       let resolved_path = relative_path
         .to_logical_path(&context.config.runtime.path)
         .to_string_lossy()
         .to_string();
       let code = read_file_utf8(&resolved_path)?;
+
+      // inject TARGET_ENV
+      let code = code.replace(
+        "__FARM_RUNTIME_TARGET_ENV_INJECTED_VALUE__",
+        format!("{:?}", context.config.output.target_env.to_string()).as_str(),
+      );
 
       return Ok(Some(PluginLoadHookResult {
         content: code,

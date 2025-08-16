@@ -197,6 +197,7 @@ async function resolveDependency(
 
     const cwd = process.cwd();
     const projectPath = path.resolve(cwd, url);
+
     if (existsSync(projectPath) && statSync(projectPath).isFile()) {
       return projectPath;
     }

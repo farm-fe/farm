@@ -17,10 +17,12 @@ farmfe_swc_transformer_import_glob = { path = "../swc_transformer_import_glob", 
 swc_plugin_proxy = { version = "14.0.0", features = [
   "plugin-rt",
 ], optional = true }
-swc_plugin_runner = { version = "17.0.0", features = [
+swc_plugin_runner = { version = "18.0.0", features = [
   "ecma",
   "rkyv-impl",
   "plugin_transform_schema_v1",
+], optional = true }
+swc_plugin_backend_wasmer = { version = "1.0.0", features = [
   "plugin_transform_host_native",
 ], optional = true }
 swc_ecma_loader = { version = "14.0.0", features = [
@@ -45,4 +47,5 @@ swc_plugin = [
   "dep:swc_ecma_loader",
   "dep:once_cell",
   "dep:tokio",
+  "dep:swc_plugin_backend_wasmer",
 ]

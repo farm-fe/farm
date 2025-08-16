@@ -207,3 +207,15 @@ export function arrayEqual(a: any[], b: any[]): boolean {
 export function isNodeEnv(env: OutputConfig['targetEnv']): boolean {
   return /^(node|library)(?!-browser)/.test(env);
 }
+
+export function getValidPublicPath(publicPath = '/'): string {
+  let validPublicPath = '';
+
+  if (publicPath.startsWith('/')) {
+    validPublicPath = publicPath;
+  } else if (publicPath.startsWith('.')) {
+    validPublicPath = normalizePath(path.join('/', publicPath));
+  }
+
+  return validPublicPath;
+}

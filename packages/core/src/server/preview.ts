@@ -20,7 +20,7 @@ import {
 } from '../utils/http.js';
 import { printServerUrls } from '../utils/logger.js';
 import { getShortName } from '../utils/path.js';
-import { isObject, version } from '../utils/share.js';
+import { getValidPublicPath, isObject, version } from '../utils/share.js';
 import { knownJavascriptExtensionRE } from '../utils/url.js';
 import {
   type CommonServerOptions,
@@ -154,7 +154,7 @@ export class PreviewServer extends httpServer {
       compilation: { root, output }
     } = this.config;
 
-    this.publicPath = output.publicPath ?? '/';
+    this.publicPath = getValidPublicPath(output.publicPath ?? '/');
     const preview = server?.preview;
 
     const distPath = preview?.distDir || output?.path || 'dist';
@@ -226,11 +226,13 @@ export class PreviewServer extends httpServer {
         'preview'
       );
 
-      const shortFile = getShortName(
-        this.config.configFilePath,
-        this.config.root
-      );
-      this.logger.info(`Using config file at ${bold(green(shortFile))}`);
+      if (this.config.configFilePath) {
+        const shortFile = getShortName(
+          this.config.configFilePath,
+          this.config.root
+        );
+        this.logger.info(`Using config file at ${bold(green(shortFile))}`);
+      }
 
       console.log('\n', bold(brandColor(`${'ϟ'}  Farm  v${version}`)), '\n');
 

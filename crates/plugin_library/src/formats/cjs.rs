@@ -13,6 +13,7 @@ use farmfe_toolkit::{
     create_top_level_ident,
     module2cjs::{self, TransformModuleDeclsOptions},
     swc_try_with::try_with,
+    transform_to_esm::transform_hybrid::Hybrid2CjsCalleeAllocator,
   },
   swc_ecma_transforms::hygiene::{hygiene_with_config, Config},
   swc_ecma_utils::StmtLikeInjector,
@@ -22,7 +23,6 @@ use farmfe_toolkit::{
 use crate::{
   formats::{esm::create_farm_node_require_item, GenerateLibraryFormatResourcesOptions},
   import_meta_visitor::replace_import_meta_url,
-  transform_hybrid::Hybrid2CjsCalleeAllocator,
   utils::{add_format_to_generated_resources, emit_resource_pot, inject_farm_runtime_helpers},
 };
 

@@ -17,6 +17,7 @@ initModuleSystem(__farm_internal_module_system__);
  import "./farm_internal_runtime_index.js";import "./index-3b2ec523.css";(function(moduleSystem, modules) {
     for(var moduleId in modules){
         var module = modules[moduleId];
+        module.url = typeof document === "undefined" ? location.href : (document.currentScript && document.currentScript.tagName.toUpperCase() === "SCRIPT" && document.currentScript.src) || location.protocol + "//" + location.host + '/' + "index_cb116ae22b33325cec68f44f23d6385a_js";
         moduleSystem.g(moduleId, module);
     }
 })(window["__farm_default_namespace__"].m, {

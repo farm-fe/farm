@@ -29,8 +29,6 @@ export interface CliBuildOptions {
   outDir?: string;
   i?: string;
   input?: string;
-  w?: boolean;
-  watch?: boolean;
   l?: boolean;
   lazy?: boolean;
   sourcemap?: boolean;
