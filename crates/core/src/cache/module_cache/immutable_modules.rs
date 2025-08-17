@@ -84,18 +84,15 @@ impl ImmutableModulesMemoryStore {
     }
   }
 
-  fn read_cached_package(&self, package_key: &str) -> CachedPackage {
-    let cache = self
-      .store
-      .remove_cache(package_key)
-      .expect("Cache broken, please remove node_modules/.farm and retry.");
+  fn read_cached_package(&self, package_key: &str) -> Option<CachedPackage> {
+    let cache = self.store.remove_cache(package_key)?;
 
-    deserialize!(&cache, CachedPackage)
+    Some(deserialize!(&cache, CachedPackage))
   }
 
   fn read_package(&self, module_id: &ModuleId) -> Option<()> {
     if let Some(package_key) = self.manifest.get(module_id) {
-      let package = self.read_cached_package(package_key.value());
+      let package = self.read_cached_package(package_key.value())?;
 
       for module in package.list {
         self.cached_modules.insert(module.module.id.clone(), module);
@@ -122,17 +119,9 @@ impl ModuleMemoryStore for ImmutableModulesMemoryStore {
       return Some(module);
     }
 
-    if self.read_package(key).is_some() {
-      return Some(
-        self
-          .cached_modules
-          .remove(key)
-          .map(|item| item.1)
-          .expect("Cache broken, please remove node_modules/.farm and retry."),
-      );
-    }
+    self.read_package(key);
 
-    None
+    self.cached_modules.remove(key).map(|(_, m)| m)
   }
 
   fn get_cache_ref(
@@ -143,16 +132,9 @@ impl ModuleMemoryStore for ImmutableModulesMemoryStore {
       return Some(module);
     }
 
-    if self.read_package(key).is_some() {
-      return Some(
-        self
-          .cached_modules
-          .get(key)
-          .unwrap_or_else(|| cache_panic(&key.to_string(), &self.cache_dir)),
-      );
-    }
+    self.read_package(key);
 
-    None
+    self.cached_modules.get(key)
   }
 
   fn get_cache_mut_ref(
@@ -163,16 +145,9 @@ impl ModuleMemoryStore for ImmutableModulesMemoryStore {
       return Some(self.cached_modules.get_mut(key).unwrap());
     }
 
-    if self.read_package(key).is_some() {
-      return Some(
-        self
-          .cached_modules
-          .get_mut(key)
-          .unwrap_or_else(|| cache_panic(&key.to_string(), &self.cache_dir)),
-      );
-    }
+    self.read_package(key);
 
-    None
+    self.cached_modules.get_mut(key)
   }
 
   fn write_cache(&self) {
@@ -229,8 +204,7 @@ impl ModuleMemoryStore for ImmutableModulesMemoryStore {
         };
 
         // the package is already cached, we only need to update it
-        if self.manifest_reversed.contains_key(&key) {
-          let modules_in_package = self.manifest_reversed.get(&key).unwrap();
+        if let Some(modules_in_package) = self.manifest_reversed.get(&key) {
           let mut added_modules = vec![];
 
           for module_id in modules {
@@ -242,7 +216,7 @@ impl ModuleMemoryStore for ImmutableModulesMemoryStore {
 
           // add the new modules to the package
           if !added_modules.is_empty() {
-            let mut package = self.read_cached_package(&key);
+            let mut package = self.read_cached_package(&key)?;
             package.list.extend(
               added_modules
                 .into_par_iter()
