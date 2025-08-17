@@ -60,9 +60,6 @@ impl ResourceMemoryStore for ResourcePotMemoryStore {
 
     if let Some(cache) = self.store.read_cache_ref(name) {
       let resource = deserialize!(&cache.value(), CachedResourcePot);
-      // self
-      //   .cached_resources
-      //   .insert(name.to_string(), resource.clone());
       return Some(resource);
     }
 

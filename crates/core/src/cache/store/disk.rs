@@ -201,12 +201,12 @@ impl CacheStore {
       });
   }
 
-  fn _remove_cache(&self, name: &str) {
+  fn _remove_cache(&self, name: &str) -> Option<Vec<u8>> {
     let Some((_, cache_key)) = self.manifest.remove(name) else {
-      return;
+      return None;
     };
 
-    self.data.remove(&cache_key);
+    self.data.remove(&cache_key).map(|(_, v)| v)
   }
 
   fn insert_cache(&self, name: &str, key: &str, data: Vec<u8>) {
@@ -263,8 +263,8 @@ impl CacheStoreTrait for CacheStore {
     self.try_read_content_ref(name)
   }
 
-  fn remove_cache(&self, name: &str) {
-    self._remove_cache(name);
+  fn remove_cache(&self, name: &str) -> Option<Vec<u8>> {
+    self._remove_cache(name)
   }
 
   fn shutdown(&self) {
@@ -286,8 +286,84 @@ impl DiskCacheFactory {
   }
 }
 
+#[cfg(feature = "profile")]
+mod profile {
+
+  pub struct TimeCacheFactory {
+    store: Arc<Box<dyn CacheStoreTrait>>,
+  }
+
+  macro_rules! time {
+    ($f_name:literal, $name:expr, $code:expr) => {{
+      let start = std::time::Instant::now();
+      let result = { $code };
+      let duration = start.elapsed();
+      println!(
+        "Task {} {} Time taken: {:?}",
+        $f_name,
+        $name.to_string(),
+        duration
+      );
+      result
+    }};
+  }
+
+  impl TimeCacheFactory {
+    pub fn new(store: Arc<Box<dyn CacheStoreTrait>>) -> Self {
+      Self { store }
+    }
+  }
+
+  impl CacheStoreTrait for TimeCacheFactory {
+    fn has_cache(&self, name: &str) -> bool {
+      time!("has_cache", name, self.store.has_cache(name))
+    }
+
+    fn is_cache_changed(&self, store_key: &CacheStoreKey) -> bool {
+      let v1 = store_key.name.clone();
+      time!(
+        "is_cache_changed",
+        v1,
+        self.store.is_cache_changed(store_key)
+      )
+    }
+
+    fn write_single_cache(
+      &self,
+      store_key: CacheStoreKey,
+      bytes: Vec<u8>,
+    ) -> Result<(), CacheError> {
+      let v1 = store_key.name.clone();
+      time!(
+        "write_single_cache",
+        v1,
+        self.store.write_single_cache(store_key, bytes)
+      )
+    }
+
+    fn read_cache(&self, name: &str) -> Option<Vec<u8>> {
+      time!("read_cache", name, self.store.read_cache(name))
+    }
+
+    fn read_cache_ref(&self, name: &str) -> Option<CacheStoreItemRef<'_>> {
+      time!("read_cache_ref", name, self.store.read_cache_ref(name))
+    }
+
+    fn remove_cache(&self, name: &str) -> Option<Vec<u8>> {
+      time!("remove_cache", name, self.store.remove_cache(name))
+    }
+  }
+}
+
 impl CacheStoreFactory for DiskCacheFactory {
   fn create_cache_store(&self, name: &str) -> Box<dyn CacheStoreTrait> {
+    #[cfg(feature = "profile")]
+    {
+      return Box::new(NamespaceStore::new(
+        Box::new(profile::TimeCacheFactory::new(self.store.clone())),
+        name.to_string(),
+      ));
+    }
     Box::new(NamespaceStore::new(self.store.clone(), name.to_string()))
   }
 }

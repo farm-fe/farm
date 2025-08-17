@@ -10,7 +10,9 @@ use farmfe_core::{
   swc_common::Globals,
   HashMap, HashSet,
 };
-use farmfe_toolkit::script::swc_try_with::resolve_module_mark;
+use farmfe_toolkit::script::{
+  analyze_statement::analyze_statements, swc_try_with::resolve_module_mark,
+};
 
 pub fn get_timestamp_of_module(module_id: &ModuleId, root: &str) -> u128 {
   farm_profile_function!(format!("get_timestamp_of_module: {:?}", module_id));
@@ -282,6 +284,7 @@ pub fn handle_cached_modules(
 
       script.top_level_mark = unresolved_mark.as_u32();
       script.unresolved_mark = top_level_mark.as_u32();
+      script.statements = analyze_statements(&script.ast);
     }
     box farmfe_core::module::ModuleMetaData::Css(_)
     | box farmfe_core::module::ModuleMetaData::Html(_) => { /* do nothing */ }

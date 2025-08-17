@@ -87,7 +87,7 @@ impl ImmutableModulesMemoryStore {
   fn read_cached_package(&self, package_key: &str) -> CachedPackage {
     let cache = self
       .store
-      .read_cache(package_key)
+      .remove_cache(package_key)
       .expect("Cache broken, please remove node_modules/.farm and retry.");
 
     deserialize!(&cache, CachedPackage)

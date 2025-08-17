@@ -12,7 +12,7 @@ pub trait CacheStoreTrait: Send + Sync {
   fn write_cache(&self, cache_map: HashMap<CacheStoreKey, Vec<u8>>) {}
   fn read_cache(&self, name: &str) -> Option<Vec<u8>>;
   fn read_cache_ref(&self, name: &str) -> Option<CacheStoreItemRef<'_>>;
-  fn remove_cache(&self, name: &str);
+  fn remove_cache(&self, name: &str) -> Option<Vec<u8>>;
   fn shutdown(&self) {}
 }
 
