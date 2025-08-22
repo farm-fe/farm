@@ -65,7 +65,11 @@ pub(crate) fn wrap_resource_pot_ast(
 ) -> SwcModule {
   let url = {
     if context.config.output.target_env.is_node() {
-      r#"require("url").pathToFileURL(__filename).href"#.to_string()
+      if context.config.output.format.contains_cjs() {
+        r#"require("url").pathToFileURL(__filename).href"#.to_string()
+      } else {
+        "import.meta.url".to_string()
+      }
     } else {
       format!(
         r#"typeof document === "undefined"

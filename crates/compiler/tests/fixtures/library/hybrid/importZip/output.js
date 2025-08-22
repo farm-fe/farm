@@ -1,5 +1,5 @@
 //index.js:
- import { readFile } from 'node:fs';
+ import { readFile } from "node:fs";
 ; // module_id: @farmfe/runtime/src/module-system.ts
 // all modules registered
 const __farm_internal_modules__ = {};

@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{collections::VecDeque, sync::Arc};
 
 use farmfe_core::{
   context::CompilationContext,
@@ -107,16 +107,23 @@ pub fn build_scope_hoisted_module_groups(
     let mut merged_scope_hoisted_module_groups_map: HashMap<ModuleId, HashSet<ModuleId>> =
       HashMap::default();
 
-    for group in scope_hoisted_module_groups {
+    let mut scope_hoisted_module_groups_queue = scope_hoisted_module_groups
+      .into_iter()
+      .collect::<VecDeque<_>>();
+    let mut cyclic_visited = HashSet::default();
+
+    while let Some(group) = scope_hoisted_module_groups_queue.pop_front() {
       let module = module_graph
         .module(&group.target_hoisted_module_id)
         .unwrap();
+
       // if this module is not an esm module, skip it
       if !module.meta.as_script().is_esm() {
         continue;
       }
 
       let dependents = module_graph.dependents_ids(&group.target_hoisted_module_id);
+
       // there dependents of this module are not in this resource pot
       if dependents.iter().any(|id| {
         !resource_pot.has_module(id)
@@ -130,38 +137,48 @@ pub fn build_scope_hoisted_module_groups(
       let dependents_hoisted_group_ids = dependents
         .into_iter()
         .map(|id| reverse_module_hoisted_group_map.get(&id).unwrap().clone())
-        .filter(|id| {
-          // if execution_order of dependents_hoisted_group_id is smaller than this module, means there is a cycle, skip it
-          let dependents_hoisted_group_module = module_graph.module(id).unwrap();
-          dependents_hoisted_group_module.execution_order
-            > module_graph
-              .module(&group.target_hoisted_module_id)
-              .unwrap()
-              .execution_order
-        })
+        .filter(|id| *id != group.target_hoisted_module_id)
         .collect::<HashSet<ModuleId>>();
+
+      // if there are cycle dependents, push it to the end of the queue
+      if !cyclic_visited.contains(&group.target_hoisted_module_id)
+        && dependents_hoisted_group_ids.len() > 1
+        && dependents_hoisted_group_ids.iter().any(|id| {
+          let dept_module = module_graph.module(id).unwrap();
+          dept_module.execution_order < module.execution_order
+        })
+      {
+        scope_hoisted_module_groups_queue.push_back(group);
+        cyclic_visited.insert(group.target_hoisted_module_id.clone());
+      }
 
       // all of the dependents of this module are in the same [ScopeHoistedModuleGroup]
       if dependents_hoisted_group_ids.len() == 1 {
         let dependents_hoisted_group_id = dependents_hoisted_group_ids.into_iter().next().unwrap();
+        let dependents_hoisted_group_module =
+          module_graph.module(&dependents_hoisted_group_id).unwrap();
 
-        // // if module_graph
-        // //   .circle_record
-        // //   .is_in_circle(&dependents_hoisted_group_id)
-        // //   ||
-        // if dependents_hoisted_group_module.execution_order
-        //   < module_graph
-        //     .module(&group.target_hoisted_module_id)
-        //     .unwrap()
-        //     .execution_order
-        // {
-        //   continue;
-        // }
+        if dependents_hoisted_group_module.execution_order
+          < module_graph
+            .module(&group.target_hoisted_module_id)
+            .unwrap()
+            .execution_order
+        {
+          continue;
+        }
+
+        let target_hoisted_module_ids = merged_scope_hoisted_module_groups_map
+          .remove(&group.target_hoisted_module_id)
+          .map(|mut ids| {
+            ids.insert(group.target_hoisted_module_id.clone());
+            ids
+          })
+          .unwrap_or(HashSet::from_iter([group.target_hoisted_module_id.clone()]));
 
         let merged_map = merged_scope_hoisted_module_groups_map
           .entry(dependents_hoisted_group_id.clone())
           .or_default();
-        merged_map.insert(group.target_hoisted_module_id.clone());
+        merged_map.extend(target_hoisted_module_ids);
 
         for hoisted_module_id in &group.hoisted_module_ids {
           reverse_module_hoisted_group_map.insert(
@@ -186,7 +203,7 @@ pub fn build_scope_hoisted_module_groups(
 
       let target_hoisted_module_group = scope_hoisted_module_groups_map
         .get_mut(&target_hoisted_module_id)
-        .unwrap();
+        .unwrap_or_else(|| panic!("scope hoisted group not found: {target_hoisted_module_id:?}"));
 
       target_hoisted_module_group.extend_hoisted_module_ids(all_hoisted_module_ids);
     }
@@ -249,15 +266,11 @@ mod tests {
         },
         super::ScopeHoistedModuleGroup {
           target_hoisted_module_id: "B".into(),
-          hoisted_module_ids: HashSet::from_iter(["B".into(), "E".into(), "G".into(),]),
+          hoisted_module_ids: HashSet::from_iter(["B".into(), "E".into(), "G".into()]),
         },
-        // super::ScopeHoistedModuleGroup {
-        //   target_hoisted_module_id: "C".into(),
-        //   hoisted_module_ids: HashSet::from_iter(["C".into()]),
-        // },
         super::ScopeHoistedModuleGroup {
           target_hoisted_module_id: "D".into(),
-          hoisted_module_ids: HashSet::from_iter(["D".into(),]),
+          hoisted_module_ids: HashSet::from_iter(["D".into()]),
         },
         super::ScopeHoistedModuleGroup {
           target_hoisted_module_id: "F".into(),

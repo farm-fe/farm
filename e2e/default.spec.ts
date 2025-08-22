@@ -6,7 +6,7 @@ import { logger } from './utils.js';
 import { describe } from 'node:test';
 // import { ssrExamples } from './test-utils.js';
 
-const excludeExamples: string[] = ['issues1433', 'nestjs', 'arcgis'];
+const excludeExamples: string[] = ['issues1433', 'nestjs'];
 
 describe('Default E2E Tests', async () => {
   const examples = readdirSync('./examples')
@@ -41,6 +41,14 @@ describe('Default E2E Tests', async () => {
       startProjectAndTest(
         examplePath,
         async (page) => {
+          if (command === 'start') {
+            // wait 3s for the dynamic import to be loaded
+            await page.waitForTimeout(3000);
+          } else {
+            // wait 1s for the dynamic import to be loaded
+            await page.waitForTimeout(1000);
+          }
+          
           // id root should be in the page
           await page.waitForSelector('#root > *', { timeout: 10000 });
           const child = await page.$('#root > *');

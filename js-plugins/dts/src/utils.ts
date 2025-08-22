@@ -366,6 +366,7 @@ export async function tryToReadFileSync(path: string) {
     return await fs.promises.readFile(path, 'utf-8');
   } catch (error) {
     console.error(`[Farm Plugin Dts]: ${error.type}: ${error.message}`);
+    return null;
   }
 }
 

@@ -77,7 +77,10 @@ export const DEFAULT_DEV_SERVER_OPTIONS: NormalizedServerConfig = {
   preview: {
     host: 'localhost',
     headers: {},
-    port: 1911,
+    port:
+      (process.env.FARM_DEFAULT_SERVER_PORT &&
+        Number(process.env.FARM_DEFAULT_SERVER_PORT)) ||
+      1911,
     strictPort: false,
     https: undefined,
     distDir: 'dist',

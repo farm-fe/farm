@@ -5,6 +5,7 @@ exports[`Js Plugin Execution - processRenderedResourcePot 1`] = `
   "content": "(function(moduleSystem, modules) {
     for(var moduleId in modules){
         var module = modules[moduleId];
+        module.url = import.meta.url;
         moduleSystem.g(moduleId, module);
     }
 })(global["f081367f80fe14896375a9f8b8918ca3"].m, {

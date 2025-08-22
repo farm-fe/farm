@@ -37,10 +37,13 @@ export default function farmDtsPlugin(options?: DtsPluginOptions): JsPlugin {
           return null;
         }
         const content = await tryToReadFileSync(resolvedPath);
-        return {
-          content,
-          moduleType: 'dts'
-        };
+
+        return (
+          content && {
+            content,
+            moduleType: 'dts'
+          }
+        );
       }
     },
     transform: {

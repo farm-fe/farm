@@ -11,12 +11,12 @@
         farmRequire.o(exports, "abstract", function() {
             return abstract;
         });
-        var _f_g_util = farmRequire("642f0a6f");
+        var _f_util = farmRequire("642f0a6f");
         function isAllowCapture(element) {
             return element.cfg.visible && element.cfg.capture;
         }
         function abstract() {
-            console.log(_f_g_util.isString('abs'), _f_g_util.isNil(null), isAllowCapture(123));
+            console.log(_f_util.isString('abs'), _f_util.isNil(null), isAllowCapture(123));
         }
     }
 });

@@ -2,8 +2,8 @@
 
 exports[`Js Plugin Execution - augmentResourceHash 1`] = `
 [
-  "farm_internal_runtime_index.fb49f1e5.js",
-  "index.427ac615.js",
+  "farm_internal_runtime_index.d468dfbf.js",
+  "index.abbad221.js",
 ]
 `;
 
@@ -12,6 +12,7 @@ exports[`Js Plugin Execution - augmentResourceHash 2`] = `
   "content": "(function(moduleSystem, modules) {
     for(var moduleId in modules){
         var module = modules[moduleId];
+        module.url = import.meta.url;
         moduleSystem.g(moduleId, module);
     }
 })(global["f081367f80fe14896375a9f8b8918ca3"].m, {
@@ -36,7 +37,7 @@ exports[`Js Plugin Execution - augmentResourceHash 2`] = `
 
 exports[`Js Plugin Execution - augmentResourceHash 3`] = `
 [
-  "farm_internal_runtime_index.fb49f1e5.js",
-  "index.47c6ef8b.js",
+  "farm_internal_runtime_index.d468dfbf.js",
+  "index.0cf19286.js",
 ]
 `;

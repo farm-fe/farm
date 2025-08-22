@@ -32,8 +32,14 @@ const visitPage = async (
   logger(`open the page: ${path} ${examplePath}`);
   try {
     page?.on('console', (msg) => {
-      logger(`command ${command} ${examplePath} -> ${path}: ${msg.text()}`);
-      // browserLogs.push(msg.text());
+      if (msg.type() === 'error') {
+        logger(`command ${command} ${examplePath} -> ${path}: ${msg.text()}`, {
+          color: 'red'
+        });
+        reject(new Error(msg.text()));
+      } else {
+        logger(`command ${command} ${examplePath} -> ${path}: ${msg.text()}`);
+      }
     });
     let resolve: (data: any) => void, reject: (e: Error) => void;
     const promise = new Promise((r, re) => {

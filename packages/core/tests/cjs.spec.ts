@@ -35,11 +35,11 @@ describe('resolveUserConfig', () => {
     expect(config.server).toEqual(normalizeDevServerConfig(config));
   });
 
-  test('resolveUserConfig with process.env.DISABLE_CACHE', async () => {
+  test('resolveUserConfig with process.env.FARM_DISABLE_CACHE', async () => {
     const filePath = fileURLToPath(path.dirname(import.meta.url));
 
     for (const item of ['true', '']) {
-      process.env.DISABLE_CACHE = item.toString();
+      process.env.FARM_DISABLE_CACHE = item.toString();
 
       const config = await resolveConfig(
         {
@@ -66,6 +66,14 @@ describe('resolveUserConfig', () => {
 
         expect(config.compilation.persistentCache).toEqual({
           buildDependencies: [
+            path.join(
+              process.cwd(),
+              '@farmfe',
+              'runtime',
+              'src',
+              'modules',
+              'module-helper.ts'
+            ),
             path.join(filePath, 'fixtures', 'config', 'farm.config.ts'),
             path.join(filePath, 'fixtures', 'config', 'util.ts'),
             'module',
@@ -81,9 +89,12 @@ describe('resolveUserConfig', () => {
               JSON.stringify('development'),
             '$__farm_regex:(global(This)?\\.)?process\\.env\\.mode':
               JSON.stringify('development'),
+            '$__farm_regex:(global(This)?\\.)?process\\.env\\.FARM_DISABLE_CACHE':
+              JSON.stringify(item),
             NODE_ENV: 'development',
             FARM_PROCESS_ENV:
-              '{"NODE_ENV":"development","BASE_URL":"/","mode":"development","DEV":true,"PROD":false}',
+              '{"FARM_DISABLE_CACHE":"","NODE_ENV":"development","BASE_URL":"/","mode":"development","DEV":true,"PROD":false}',
+            FARM_DISABLE_CACHE: item,
             mode: 'development',
             BASE_URL: '/',
             DEV: true,
