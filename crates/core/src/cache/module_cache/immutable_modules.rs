@@ -111,6 +111,7 @@ impl ModuleMemoryStore for ImmutableModulesMemoryStore {
   }
 
   fn set_cache(&self, key: crate::module::ModuleId, module: super::CachedModule) {
+    self.store.remove_cache(&key.to_string());
     self.cached_modules.insert(key, module);
   }
 

@@ -123,34 +123,19 @@ impl CustomMetaDataMap {
   }
 
   pub fn get_cache<T: Cacheable>(&mut self, key: &str) -> Option<Box<T>> {
-    if let Some(v) = self.internal.map.get(key) {
-      let bytes = v.serialize_bytes().ok()?;
-
-      return T::deserialize_bytes(bytes).ok()?.downcast::<T>().ok();
-    }
-
-    if let Some(bytes) = self.internal.bytes_map.get(key) {
-      let value = T::deserialize_bytes(bytes.clone()).unwrap();
-      return value.downcast::<T>().ok();
-    }
-
-    None
+    self.internal.get_cache(key)
   }
 
-  pub fn get_ref<T: Cacheable>(&self, key: &str) -> Option<&T> {
-    self
-      .internal
-      .map
-      .get(key)
-      .and_then(|v| v.downcast_ref::<T>())
+  pub fn get_ref<T: Cacheable>(&mut self, key: &str) -> Option<&T> {
+    self.internal.get_ref(key)
   }
 
   pub fn insert(&mut self, key: String, value: Box<dyn Cacheable>) {
-    self.internal.map.insert(key, value);
+    self.internal.insert(key, value);
   }
 
   pub fn remove(&mut self, key: &str) {
-    self.internal.bytes_map.remove(key);
+    self.internal.remove_cache(key);
   }
 }
 

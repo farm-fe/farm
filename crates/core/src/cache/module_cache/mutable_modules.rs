@@ -63,6 +63,7 @@ impl ModuleMemoryStore for MutableModulesMemoryStore {
   }
 
   fn set_cache(&self, key: ModuleId, module: CachedModule) {
+    self.store.remove_cache(&key.to_string());
     self.cached_modules.insert(key, module);
   }
 

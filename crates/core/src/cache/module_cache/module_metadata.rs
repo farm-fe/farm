@@ -1,4 +1,7 @@
-use dashmap::{mapref::one::MappedRef, DashMap};
+use dashmap::{
+  mapref::one::{MappedRef, MappedRefMut},
+  DashMap,
+};
 
 use crate::{
   module::{CustomMetaDataMap, ModuleId},
@@ -47,12 +50,12 @@ impl ModuleMetadataStore {
     &self,
     key: &ModuleId,
     name: &str,
-  ) -> Option<MappedRef<'_, ModuleId, CustomMetaDataMap, V>> {
+  ) -> Option<MappedRefMut<'_, ModuleId, CustomMetaDataMap, V>> {
     Some(
       self
         .module_metadata
-        .get(key)?
-        .map(|v| v.get_ref::<V>(name.as_ref()).unwrap()),
+        .get_mut(key)?
+        .map(|v| v.get_mut::<V>(name.as_ref()).unwrap()),
     )
   }
 
