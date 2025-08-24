@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Duplicate Export Fix Test</title>
+</head>
+<body>
+  <div id="root">
+    <h1>Duplicate Export Fix Test</h1>
+    <p>This example tests the fix for duplicate export declarations in ESM output.</p>
+    <div id="test-results"></div>
+  </div>
+  <script type="module">
+    // Test that the exports work correctly
+    import * as complex from './dist/complex.js';
+    import * as namespace from './dist/namespace.js';
+    
+    const results = document.getElementById('test-results');
+    
+    // Test complex exports
+    const complexOk = complex.sharedFunction && complex.shared && complex.sharedFromLib1 && complex.sharedFromLib2;
+    
+    // Test namespace exports
+    const namespaceOk = namespace.utils && namespace.helpers && namespace.formatDate && namespace.formatTime;
+    
+    if (complexOk && namespaceOk) {
+      results.innerHTML = '<p style="color: green;">✓ All exports are working correctly!</p>';
+    } else {
+      results.innerHTML = '<p style="color: red;">✗ Some exports are not working</p>';
+    }
+  </script>
+</body>
+</html>

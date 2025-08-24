@@ -1,0 +1,14 @@
+{
+  "name": "duplicate-export-fix",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "start": "farm start",
+    "build": "farm build",
+    "preview": "farm preview"
+  },
+  "devDependencies": {
+    "@farmfe/cli": "workspace:*",
+    "@farmfe/core": "workspace:*"
+  }
+}

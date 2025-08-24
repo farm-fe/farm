@@ -184,35 +184,59 @@ fn get_export_info_code(
   if !export_info.is_empty() {
     // when cjs generate, `export default` should before `named export`
     export_info.sort_by_key(|v| v.rank());
-    export_info
-      .iter()
-      .map(|export| match export {
-        ExportInfoOfEntryModule::Default => match context.config.output.format {
-          ModuleFormat::CommonJs => "module.exports = entry.default || entry;".to_string(),
-          ModuleFormat::EsModule => "export default entry.default || entry;".to_string(),
-        },
-        ExportInfoOfEntryModule::Named { name, import_as } => {
-          if let Some(import_as) = import_as {
-            match context.config.output.format {
-              ModuleFormat::CommonJs => format!("module.exports.{import_as} = entry.{name};"),
-              ModuleFormat::EsModule => {
-                format!("var {name}=entry.{name};export {{ {name} as {import_as} }};")
+    
+    // For ESM format, deduplicate named exports to prevent duplicate variable declarations
+    if matches!(context.config.output.format, ModuleFormat::EsModule) {
+      let mut seen_names = HashSet::new();
+      let mut result_parts = Vec::new();
+      
+      for export in export_info.iter() {
+        match export {
+          ExportInfoOfEntryModule::Default => {
+            result_parts.push("export default entry.default || entry;".to_string());
+          },
+          ExportInfoOfEntryModule::Named { name, import_as } => {
+            // Only add if we haven't seen this variable name before
+            if seen_names.insert(name.clone()) {
+              if let Some(import_as) = import_as {
+                result_parts.push(format!("var {name}=entry.{name};export {{ {name} as {import_as} }};"));
+              } else {
+                result_parts.push(format!("var {name}=entry.{name};export {{ {name} }};"));
+              }
+            } else {
+              // If we've seen this name before, only add the export without the var declaration
+              if let Some(import_as) = import_as {
+                result_parts.push(format!("export {{ {name} as {import_as} }};"));
+              } else {
+                result_parts.push(format!("export {{ {name} }};"));
               }
             }
-          } else {
-            match context.config.output.format {
-              ModuleFormat::CommonJs => format!("module.exports.{name} = entry.{name};"),
-              ModuleFormat::EsModule => format!("var {name}=entry.{name};export {{ {name} }};"),
-            }
+          },
+          ExportInfoOfEntryModule::CJS => {
+            result_parts.push("export default entry;".to_string());
           }
         }
-        ExportInfoOfEntryModule::CJS => match context.config.output.format {
-          ModuleFormat::CommonJs => "module.exports = entry;".to_string(),
-          ModuleFormat::EsModule => "export default entry;".to_string(),
-        },
-      })
-      .collect::<Vec<String>>()
-      .join("")
+      }
+      
+      result_parts.join("")
+    } else {
+      // For CommonJS, keep the original logic
+      export_info
+        .iter()
+        .map(|export| match export {
+          ExportInfoOfEntryModule::Default => "module.exports = entry.default || entry;".to_string(),
+          ExportInfoOfEntryModule::Named { name, import_as } => {
+            if let Some(import_as) = import_as {
+              format!("module.exports.{import_as} = entry.{name};")
+            } else {
+              format!("module.exports.{name} = entry.{name};")
+            }
+          }
+          ExportInfoOfEntryModule::CJS => "module.exports = entry;".to_string(),
+        })
+        .collect::<Vec<String>>()
+        .join("")
+    }
   } else {
     "".to_string()
   }
