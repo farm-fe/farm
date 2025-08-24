@@ -94,9 +94,8 @@ impl CacheStore {
       return;
     }
 
-    self.lock.insert(hash);
-
     if !(cache_path.exists() && cache_path.is_file()) {
+      self.lock.insert(hash);
       return;
     }
 
@@ -109,7 +108,10 @@ impl CacheStore {
         return;
       }
       self.data.insert(item_key.key, value);
-    })
+    });
+
+    // should drop when restore done, because same hash should wait restore done
+    self.lock.insert(hash);
   }
 
   fn try_read_content_ref(&self, name: &str) -> Option<CacheStoreItemRef<'_>> {
@@ -168,12 +170,12 @@ impl CacheStore {
             return combine_data;
           };
 
-          let (hash, cache_file_path) = self.real_cache_path(name);
+          let (hash, _) = self.real_cache_path(name);
 
           combine_data
             .entry(hash)
             .or_default()
-            .insert((name.to_string(), key.to_string()).into(), value);
+            .insert((name, key).into(), value);
 
           combine_data
         },
