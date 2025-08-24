@@ -1,9 +1,9 @@
 use std::{
   path::{Path, PathBuf},
-  sync::{Arc, RwLock},
+  sync::Arc,
 };
 
-use dashmap::DashMap;
+use dashmap::{DashMap, DashSet};
 use farmfe_utils::hash::sha256;
 use rayon::iter::{IntoParallelIterator, ParallelBridge, ParallelIterator};
 
@@ -14,7 +14,7 @@ use super::{
   CacheStoreKey,
 };
 use crate::{
-  cache::store::constant::CacheStoreItemRef, config::Mode, deserialize, serialize, HashMap, HashSet,
+  cache::store::constant::CacheStoreItemRef, config::Mode, deserialize, serialize, HashMap,
 };
 
 // #[cache_item]
@@ -27,7 +27,7 @@ pub struct CacheStore {
   /// it will be stored in a separate file
   manifest: DashMap<String, String>,
   data: DashMap<String, Vec<u8>>,
-  lock: RwLock<HashSet<PathBuf>>,
+  lock: DashSet<u8>,
 }
 
 impl CacheStore {
@@ -77,42 +77,39 @@ impl CacheStore {
       .fold(0u8, |r, i| (r + i as u8) % 16)
   }
 
-  fn real_cache_path(&self, name: &str) -> PathBuf {
+  fn join_hash(&self, hash: u8) -> PathBuf {
+    self.cache_dir.join(format!("cache-{hash}"))
+  }
+
+  fn real_cache_path(&self, name: &str) -> (u8, PathBuf) {
     let index = self.hash_index_from_name(name);
 
-    let cache_file_dir = &self.cache_dir;
-    cache_file_dir.join(format!("cache-{index}"))
+    (index, self.join_hash(index))
   }
 
   fn restore_cache(&self, name: &str) {
-    let cache_path = self.real_cache_path(name);
+    let (hash, cache_path) = self.real_cache_path(name);
 
-    if self
-      .lock
-      .read()
-      .map(|v| v.contains(&cache_path))
-      .unwrap_or_default()
-    {
+    if self.lock.contains(&hash) {
       return;
     }
+
+    self.lock.insert(hash);
 
     if !(cache_path.exists() && cache_path.is_file()) {
       return;
     }
 
-    if let Ok(mut map) = self.lock.write() {
-      map.insert(cache_path.clone());
-      let data = std::fs::read(cache_path.clone()).unwrap();
+    let data = std::fs::read(cache_path.clone()).unwrap();
 
-      let value = deserialize!(&data, CombineCacheData);
+    let value = deserialize!(&data, CombineCacheData);
 
-      for (item_key, value) in value {
-        if self.data.contains_key(&item_key.key) {
-          continue;
-        }
-        self.insert_cache(&item_key.name, &item_key.key, value);
+    value.into_par_iter().for_each(|(item_key, value)| {
+      if self.data.contains_key(&item_key.key) {
+        return;
       }
-    }
+      self.data.insert(item_key.key, value);
+    })
   }
 
   fn try_read_content_ref(&self, name: &str) -> Option<CacheStoreItemRef<'_>> {
@@ -135,12 +132,6 @@ impl CacheStore {
   }
 
   fn write_content_to_disk(&self, cache_dir_str: PathBuf, data: Vec<u8>) {
-    if let Some(parent) = cache_dir_str.parent()
-      && !parent.exists()
-    {
-      std::fs::create_dir_all(parent).unwrap();
-    }
-
     std::fs::write(cache_dir_str, data).unwrap();
   }
 
@@ -168,7 +159,7 @@ impl CacheStore {
       .iter()
       .par_bridge()
       .fold(
-        HashMap::<PathBuf, CombineCacheData>::default,
+        HashMap::<u8, CombineCacheData>::default,
         |mut combine_data, item| {
           let name = item.key();
           let key = item.value();
@@ -177,10 +168,10 @@ impl CacheStore {
             return combine_data;
           };
 
-          let cache_file_path = self.real_cache_path(name);
+          let (hash, cache_file_path) = self.real_cache_path(name);
 
           combine_data
-            .entry(cache_file_path)
+            .entry(hash)
             .or_default()
             .insert((name.to_string(), key.to_string()).into(), value);
 
@@ -197,7 +188,7 @@ impl CacheStore {
       .into_par_iter()
       .for_each(|(cache_file_path, data)| {
         let data = serialize!(&data);
-        self.write_content_to_disk(cache_file_path, data);
+        self.write_content_to_disk(self.join_hash(cache_file_path), data);
       });
   }
 
@@ -205,6 +196,10 @@ impl CacheStore {
     let Some((_, cache_key)) = self.manifest.remove(name) else {
       return None;
     };
+
+    if !self.data.contains_key(&cache_key) {
+      self.restore_cache(name);
+    }
 
     self.data.remove(&cache_key).map(|(_, v)| v)
   }

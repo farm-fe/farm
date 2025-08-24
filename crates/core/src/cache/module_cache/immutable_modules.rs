@@ -244,14 +244,8 @@ impl ModuleMemoryStore for ImmutableModulesMemoryStore {
         let package = CachedPackage {
           list: modules
             .into_par_iter()
-            .map(|module_id| {
-              self
-                .cached_modules
-                .get(&module_id)
-                .unwrap_or_else(|| cache_panic(&key.to_string(), &self.cache_dir))
-                .clone()
-            })
-            .collect(),
+            .map(|module_id| self.cached_modules.remove(&module_id).unwrap().1)
+            .collect::<Vec<_>>(),
           name: key.split('@').next().unwrap().to_string(),
           version: key.split('@').next_back().unwrap().to_string(),
         };

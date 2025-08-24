@@ -118,10 +118,7 @@ impl CacheManager {
     let mut lock = self.lock.lock();
     *lock = true;
     // write cache in parallel
-    let thread_pool = rayon::ThreadPoolBuilder::new()
-      .num_threads(4)
-      .build()
-      .unwrap();
+    let thread_pool = rayon::ThreadPoolBuilder::new().build().unwrap();
     thread_pool.install(|| {
       rayon::join(
         || self.module_cache.write_cache(),

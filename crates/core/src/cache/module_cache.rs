@@ -180,17 +180,10 @@ impl ModuleCacheManager {
         }
       });
 
-    let thread_pool = rayon::ThreadPoolBuilder::new()
-      .num_threads(2)
-      .build()
-      .unwrap();
-
-    thread_pool.install(|| {
-      rayon::join(
-        || self.mutable_modules_store.write_cache(),
-        || self.immutable_modules_store.write_cache(),
-      );
-    });
+    rayon::join(
+      || self.mutable_modules_store.write_cache(),
+      || self.immutable_modules_store.write_cache(),
+    );
   }
 
   pub fn invalidate_cache(&self, key: &ModuleId) {

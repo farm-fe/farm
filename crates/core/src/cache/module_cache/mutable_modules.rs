@@ -90,7 +90,7 @@ impl ModuleMemoryStore for MutableModulesMemoryStore {
     if let Some(cache) = self.store.remove_cache(&key.to_string()) {
       let module = deserialize!(&cache, CachedModule);
       self.cached_modules.insert(key.clone(), module);
-      return Some(self.cached_modules.get(key).unwrap());
+      return self.cached_modules.get(key);
     }
 
     None
@@ -107,7 +107,7 @@ impl ModuleMemoryStore for MutableModulesMemoryStore {
     if let Some(cache) = self.store.remove_cache(&key.to_string()) {
       let module = deserialize!(&cache, CachedModule);
       self.cached_modules.insert(key.clone(), module);
-      return Some(self.cached_modules.get_mut(key).unwrap());
+      return self.cached_modules.get_mut(key);
     }
 
     None
@@ -127,13 +127,13 @@ impl ModuleMemoryStore for MutableModulesMemoryStore {
       let store_key = self.gen_cache_store_key(&module.module);
 
       if self.store.is_cache_changed(&store_key) {
-        cache_map.insert(store_key, module.clone());
+        cache_map.insert(store_key, entry);
       }
     }
 
     let cache_map = cache_map
       .into_par_iter()
-      .map(|(store_key, module)| (store_key, serialize!(&module)))
+      .map(|(store_key, module)| (store_key, serialize!(module.value())))
       .collect::<HashMap<_, _>>();
 
     self.store.write_cache(cache_map);
