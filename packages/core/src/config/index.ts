@@ -196,7 +196,7 @@ async function handleResolveConfig(
   return resolvedUserConfig;
 }
 
-async function handleLazyCompilation(
+export async function handleLazyCompilation(
   config: ResolvedUserConfig,
   command: keyof typeof COMMANDS
 ) {

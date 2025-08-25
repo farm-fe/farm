@@ -33,9 +33,10 @@ export default function farmDtsPlugin(options?: DtsPluginOptions): JsPlugin {
           new RegExp(ext).test(loadFileExtName)
         );
 
-        if (!isTypescriptFile) {
+        if (!isTypescriptFile || !path.isAbsolute(resolvedPath)) {
           return null;
         }
+
         const content = await tryToReadFileSync(resolvedPath);
 
         return (

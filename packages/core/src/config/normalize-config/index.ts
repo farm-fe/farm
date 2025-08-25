@@ -261,12 +261,6 @@ export async function normalizeUserCompilationConfig(
     resolvedCompilation.presetEnv ??= isProduction;
   }
 
-  // setting the custom configuration
-  resolvedCompilation.custom = {
-    ...(resolvedCompilation.custom || {}),
-    [CUSTOM_KEYS.runtime_isolate]: `${!!resolvedCompilation.runtime.isolate}`
-  };
-
   // Auto enable decorator by default when `script.decorators` is enabled
   if (resolvedCompilation.script?.decorators !== undefined)
     if (resolvedCompilation.script.parser === undefined) {

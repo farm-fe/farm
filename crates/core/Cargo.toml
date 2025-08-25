@@ -34,8 +34,8 @@ wax = { version = "0.6", default-features = false, features = [
   "walk",
 ] }
 globset = { version = "0.4.14" }
-swc_ecma_ast = { version = "14.0.0", features = ["rkyv-impl", "serde-impl"] }
-swc_ecma_parser = { version = "22.0.3" }
+swc_ecma_ast = { version = "15.0.0", features = ["rkyv-impl", "serde-impl"] }
+swc_ecma_parser = { version = "23.0.0" }
 swc_common = { version = "14.0.2", features = [
   "concurrent",
   "sourcemap",

@@ -1,7 +1,7 @@
 use std::{borrow::Cow, sync::Arc};
 
 use farmfe_core::{
-  config::{custom::get_config_runtime_isolate, FARM_MODULE_SYSTEM},
+  config::FARM_MODULE_SYSTEM,
   context::CompilationContext,
   module::ModuleId,
   resource::Resource,
@@ -233,7 +233,7 @@ impl<'a> VisitMut for ResourcesInjector<'a> {
     }
 
     if element.tag_name.to_string() == "head" {
-      if get_config_runtime_isolate(&self.options.context) {
+      if self.options.context.config.runtime.isolate {
         let runtime_resource_code = format!("{}{}", self.get_global_this_code(), self.runtime_code);
         self.inject_additional_resource(
           FARM_RUNTIME_INJECT_RESOURCE,
@@ -270,7 +270,7 @@ impl<'a> VisitMut for ResourcesInjector<'a> {
         )));
       }
 
-      if get_config_runtime_isolate(&self.options.context) {
+      if self.options.context.config.runtime.isolate {
         let bootstrap_code = format!(
           "{}{}",
           self.get_resources_info_code(),

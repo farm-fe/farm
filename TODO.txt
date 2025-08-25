@@ -19,3 +19,4 @@
 [ ] set target env to library when input only contains one script entry
 [ ] move option configured in config.custom to the right place of config
 [ ] disable sourcemap in production by default
+[ ] support file watch and remove event for rust plugins and js plugins

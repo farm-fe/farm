@@ -43,7 +43,6 @@ export class Compiler {
   public compiling = false;
   private _compileFinishPromise: Promise<void> | null = null;
   private _resolveCompileFinish: (() => void) | null = null;
-  _isInitialCompile = true;
 
   constructor(public config: ResolvedUserConfig) {
     this._bindingCompiler = new BindingCompiler({
@@ -78,7 +77,6 @@ export class Compiler {
     } finally {
       this.compiling = false;
       this._resolveCompileFinishPromise();
-      this._isInitialCompile = false;
     }
   }
 
@@ -89,9 +87,6 @@ export class Compiler {
     this._bindingCompiler.compileSync();
     this.compiling = false;
     this._resolveCompileFinishPromise();
-    if (this._isInitialCompile) {
-      this._isInitialCompile = false;
-    }
   }
 
   async update(
@@ -166,7 +161,10 @@ export class Compiler {
   }
 
   resource(path: string): Buffer {
-    return this._bindingCompiler.resource(cleanUrl(path));
+    return (
+      this._bindingCompiler.resource(path) ||
+      this._bindingCompiler.resource(cleanUrl(path))
+    );
   }
 
   resourcesMap(): Record<string, Resource> {
@@ -231,13 +229,6 @@ export class Compiler {
 
   stats() {
     return this._bindingCompiler.stats();
-  }
-
-  // wait for the compiler to finish compiling
-  async waitForInitialCompileFinish() {
-    if (this._isInitialCompile) {
-      await this.waitForCompileFinish();
-    }
   }
 
   async waitForCompileFinish() {

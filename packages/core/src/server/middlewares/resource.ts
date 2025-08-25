@@ -23,6 +23,19 @@ type RealResourcePath = {
   resource: Buffer;
 };
 
+async function waitForCompilerReady(server: Server) {
+  if (!server.compiler) {
+    return new Promise<void>((resolve) => {
+      const timer = setInterval(() => {
+        if (server.compiler) {
+          clearInterval(timer);
+          resolve();
+        }
+      }, 100);
+    });
+  }
+}
+
 export function resourceMiddleware(app: Server): Connect.NextHandleFunction {
   return async function generateResourceMiddleware(req, res, next) {
     if (res.writableEnded) {
@@ -31,8 +44,10 @@ export function resourceMiddleware(app: Server): Connect.NextHandleFunction {
     const url = cleanUrl(req.url);
     const { compiler, config, publicPath } = app;
 
-    if (compiler._isInitialCompile) {
-      await compiler.waitForInitialCompileFinish();
+    await waitForCompilerReady(app);
+
+    if (compiler.compiling) {
+      await compiler.waitForCompileFinish();
     } else {
       if (compiler.compiling) {
         await new Promise<void>((resolve) =>
@@ -121,6 +136,7 @@ export function findResource(
   const normalizedPath = resourceWithoutPublicPath.startsWith('/')
     ? resourceWithoutPublicPath.slice(1)
     : resourceWithoutPublicPath;
+
   const resource = compiler.resource(normalizedPath);
 
   if (resource) {
@@ -133,8 +149,6 @@ export function findResource(
 }
 
 export function outputFilesMiddleware(app: Server): Connect.NextHandleFunction {
-  const { compiler } = app;
-
   return function handleOutputFiles(req, res, next) {
     if (res.writableEnded) {
       return next();
@@ -145,6 +159,7 @@ export function outputFilesMiddleware(app: Server): Connect.NextHandleFunction {
     }
 
     try {
+      const { compiler } = app;
       const files = Object.keys(compiler.resources()).sort();
 
       const fileTree = generateFileTree(files);

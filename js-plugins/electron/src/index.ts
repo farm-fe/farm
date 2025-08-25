@@ -112,13 +112,14 @@ function resolveFarmConfig(
   opts.farm.compilation.input = input;
   opts.farm.compilation.output ??= {};
   opts.farm.compilation.output.path ??= 'dist-electron';
-  opts.farm.compilation.output.targetEnv ??= 'node16';
+  opts.farm.compilation.output.targetEnv ??= 'library';
   opts.farm.compilation.external ??= [];
   opts.farm.compilation.external.push('^electron$');
   opts.farm.compilation.watch ??= isDev;
   opts.farm.compilation.partialBundling ??= {};
   opts.farm.compilation.partialBundling.enforceResources ??= [];
   opts.farm.plugins ??= [];
+  opts.farm.compilation.persistentCache = false;
 
   if (!opts.farm.compilation.output.format) {
     opts.farm.compilation.output.format =
@@ -145,26 +146,6 @@ function resolveFarmConfig(
       test: ['.+'],
       name: 'preload'
     });
-
-    if (isEsm) {
-      opts.farm.plugins.push({
-        name: 'farm-plugin-electron:preload-scripts-runtime',
-        processRenderedResourcePot: {
-          filters: {
-            resourcePotTypes: ['js'],
-            moduleIds: []
-          },
-          async executor(param) {
-            return {
-              ...param,
-              // Fix runtime code error `__filename is not defined`
-              // TODO: `import.meta.url` of `__filename` will be converted to filename(absolute path) when targetEnv=node`.
-              content: `var electron_preload_scripts_filename='';globalThis['__' + 'filename']=electron_preload_scripts_filename;${param.content}`
-            };
-          }
-        }
-      });
-    }
   }
 
   // TODO: submit a PR to farm(Omit<FarmCliOptions, 'server'> & UserConfig)

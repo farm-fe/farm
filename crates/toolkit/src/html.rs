@@ -31,25 +31,20 @@ pub fn parse_html_document(id: &str, content: Arc<String>) -> farmfe_core::error
   );
 
   let parse_result = parser.parse_document();
-  let mut recovered_errors = parser.take_errors();
-
-  if recovered_errors.is_empty() {
-    match parse_result {
-      Err(err) => {
-        recovered_errors.push(err);
-      }
-      Ok(m) => {
-        return Ok(m);
-      }
-    }
-  }
+  // let recovered_errors = parser.take_errors();
 
   try_with_handler(cm, Default::default(), |handler| {
-    for err in recovered_errors {
-      err.to_diagnostics(handler).emit();
+    // TODO print warning for recovered errors later
+    // for err in recovered_errors {
+    //   err.to_diagnostics(handler).emit();
+    // }
+    match parse_result {
+      Ok(doc) => Ok(doc),
+      Err(e) => {
+        e.to_diagnostics(handler).emit();
+        Err(anyhow::Error::msg(e.to_diagnostics(handler).message()))
+      }
     }
-
-    Err(anyhow::Error::msg("SyntaxError"))
   })
   .map_err(|e| CompilationError::ParseError {
     resolved_path: id.to_string(),

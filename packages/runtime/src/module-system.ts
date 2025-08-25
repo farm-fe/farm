@@ -176,10 +176,10 @@ export function farmRequire(id: string): any {
   const module = __farm_internal_cache__[id] = {
     id,
     meta: {
-      env: {}
+      env: {},
     },
     exports: {},
-    require: (moduleId: string) => farmRequire(moduleId)
+    require: farmRequire,
   } as Module;
 
   if (__FARM_ENABLE_RUNTIME_PLUGIN__) __farm_internal_module_system__.p?.s("moduleCreated", module); // call the module created hook
@@ -195,7 +195,8 @@ export function farmRequire(id: string): any {
       farmRequire,
       __farm_internal_module_system__.d,
     );
-     // it's a async module, return the promise
+
+    // it's a async module, return the promise
     if (result && result instanceof Promise) {
       module.initializer = result.then(() => {
         if (__FARM_ENABLE_RUNTIME_PLUGIN__) __farm_internal_module_system__.p?.s("moduleInitialized", module); // call the module initialized hook
@@ -221,12 +222,12 @@ export function farmRequire(id: string): any {
 }
 
 export function farmRegister(id: string, module: ModuleInitialization): () => any {
-  if (__FARM_RUNTIME_TARGET_ENV__ !== 'library') if (__farm_internal_modules__[id] && !__farm_internal_module_system__._rg) {
-      console.warn(
-        `Module "${id}" has registered! It should not be registered twice`,
-      );
-      return;
-    }
+  // if (__FARM_RUNTIME_TARGET_ENV__ !== 'library') if (__farm_internal_modules__[id] && !__farm_internal_module_system__._rg && process.env.NODE_ENV === 'production') {
+  //     console.warn(
+  //       `Module "${id}" has registered! It should not be registered twice`,
+  //     );
+  //     return;
+  //   }
 
   __farm_internal_modules__[id] = module;
   return () => farmRequire(id);

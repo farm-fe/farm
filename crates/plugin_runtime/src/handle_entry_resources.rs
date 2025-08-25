@@ -227,20 +227,25 @@ fn create_export_info_code(entry_module: &Module, format: &ModuleFormat) -> Stri
         )
       }
       ModuleFormat::CommonJs => {
-        let exported_fields = exports
-          .into_iter()
-          .map(|(value, exported)| format!("{exported}:{value}"))
-          .collect::<Vec<_>>();
+        let mut cjs_exports = vec![];
 
-        format!(
-          "{}module.exports = {{{}}};",
-          decls.join(""),
-          exported_fields.join(",")
-        )
+        for (value, exported) in exports {
+          if exported == "default" {
+            cjs_exports.push(format!("module.exports = {};", value));
+          } else {
+            cjs_exports.push(format!("module.exports.{} = {};", exported, value));
+          }
+        }
+
+        format!("{}{}", decls.join(""), cjs_exports.join(""))
       }
     }
   } else {
-    "".to_string()
+    let entry_code = "__farm_entry__.__esModule && __farm_entry__.default ? __farm_entry__.default : __farm_entry__";
+    match format {
+      ModuleFormat::EsModule => format!("export default {};", entry_code),
+      ModuleFormat::CommonJs => format!("module.exports = {};", entry_code),
+    }
   }
 }
 

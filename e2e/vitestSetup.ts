@@ -32,7 +32,9 @@ const visitPage = async (
   logger(`open the page: ${path} ${examplePath}`);
   try {
     page?.on('console', (msg) => {
-      if (msg.type() === 'error') {
+      const lowerCaseMsg = msg.text().toLocaleLowerCase();
+
+      if (msg.type() === 'error' && !lowerCaseMsg.includes('warn') && !lowerCaseMsg.includes('warning')) {
         logger(`command ${command} ${examplePath} -> ${path}: ${msg.text()}`, {
           color: 'red'
         });

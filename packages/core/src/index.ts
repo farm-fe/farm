@@ -12,7 +12,7 @@ import fs from 'node:fs/promises';
 import { Compiler, createCompiler } from './compiler/index.js';
 import { __FARM_GLOBAL__ } from './config/_global.js';
 import { UserConfig, resolveConfig } from './config/index.js';
-import { getPluginHooks } from './plugin/index.js';
+import { getSortedPluginHooksBindThis } from './plugin/index.js';
 import { PreviewServer, Server } from './server/index.js';
 import {
   Logger,
@@ -57,8 +57,9 @@ export async function preview(
 }
 
 async function _internalBuild(
+  compiler: Compiler,
   resolvedUserConfig: ResolvedUserConfig
-): Promise<Compiler> {
+): Promise<void> {
   const {
     compilation: { persistentCache, output },
     configFilePath,
@@ -73,8 +74,10 @@ async function _internalBuild(
       logger.info(`Using config file at ${bold(green(shortFile))}`);
     }
 
-    const compiler = createCompiler(resolvedUserConfig);
-    for (const hook of getPluginHooks(jsPlugins, 'configureCompiler')) {
+    for (const hook of getSortedPluginHooksBindThis(
+      jsPlugins,
+      'configureCompiler'
+    )) {
       await hook?.(compiler);
     }
 
@@ -97,7 +100,6 @@ async function _internalBuild(
       )}.`
     );
     compiler.writeResourcesToDisk();
-    return compiler;
   } catch (err) {
     let errorMsg = err?.toString();
 
@@ -121,27 +123,28 @@ export async function build(
     'build',
     'production'
   );
+  const compiler = createCompiler(resolvedUserConfig);
 
-  await _internalBuild(resolvedUserConfig);
+  await _internalBuild(compiler, resolvedUserConfig);
 }
 
 export async function watch(
   inlineConfig: FarmCliOptions & UserConfig = {}
 ): Promise<void> {
   const resolvedUserConfig = await resolveConfig(inlineConfig, 'watch');
+  const compiler = createCompiler(resolvedUserConfig);
 
-  const compiler = await _internalBuild(resolvedUserConfig);
+  if (resolvedUserConfig.compilation?.lazyCompilation) {
+    const server =
+      await Server.createAndStartLazyCompilationServer(resolvedUserConfig);
+    server.compiler = compiler;
+  }
+
+  await _internalBuild(compiler, resolvedUserConfig);
 
   await watchFileChangeAndRebuild(resolvedUserConfig, compiler, () =>
     watch(inlineConfig)
   );
-
-  if (resolvedUserConfig.compilation?.lazyCompilation) {
-    await Server.createAndStartLazyCompilationServer(
-      resolvedUserConfig,
-      compiler
-    );
-  }
 }
 
 export async function clean(

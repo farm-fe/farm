@@ -46,7 +46,10 @@ import type {
   RenderChunkHook,
   ResolveIdResult
 } from 'rollup';
-import { VIRTUAL_FARM_DYNAMIC_IMPORT_SUFFIX } from '../../compiler/index.js';
+import {
+  Compiler,
+  VIRTUAL_FARM_DYNAMIC_IMPORT_SUFFIX
+} from '../../compiler/index.js';
 import { CompilationMode } from '../../config/env.js';
 import {
   Logger,
@@ -103,6 +106,7 @@ export class VitePluginAdapter implements JsPlugin {
   private _viteDevServer: ViteDevServerAdapter;
   private _logger: Logger;
   private _moduleGraph: ViteModuleGraphAdapter;
+  private _configureServerRes: any;
 
   buildStart: JsPlugin['buildStart'];
   resolve: JsPlugin['resolve'];
@@ -283,7 +287,13 @@ export class VitePluginAdapter implements JsPlugin {
     );
 
     if (hook) {
-      return await hook(this._viteDevServer);
+      this._configureServerRes = await hook(this._viteDevServer);
+    }
+  }
+
+  async configureCompiler(_: Compiler) {
+    if (typeof this._configureServerRes === 'function') {
+      await this._configureServerRes();
     }
   }
 

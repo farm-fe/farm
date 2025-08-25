@@ -46,7 +46,7 @@ function requireDynamicModule(id: string) {
 }
 
 function dynamicImport(id: string): Promise<any> {
-  if (moduleSystem.m()[id]) {
+  if (moduleSystem.m()[id] && !dynamicModuleResourcesMap[id]) {
     return requireDynamicModule(id);
   }
 

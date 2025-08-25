@@ -227,6 +227,10 @@ export async function watchFileChangeAndRebuild(
   });
 
   watcher.on('change', async (file: string | string[] | any) => {
+    if (!compiler.hasModule(file)) {
+      return;
+    }
+
     file = normalizePath(file);
 
     if (watcher.isConfigFilesChanged(file)) {
@@ -259,6 +263,7 @@ export async function watchFileChangeAndRebuild(
       const start = performance.now();
       const result = await compiler.update([file], true, false, false);
       const elapsedTime = Math.floor(performance.now() - start);
+
       logger.info(
         `update completed in ${bold(
           green(`${logger.formatTime(elapsedTime)}`)
