@@ -22,7 +22,7 @@ function farmRequire$1(id) {
             env: {}
         },
         exports: {},
-        require: (moduleId)=>farmRequire$1(moduleId)
+        require: farmRequire$1
     };
     __farm_internal_cache__[id] = module;
     initializer(module, module.exports);

@@ -247,7 +247,7 @@ pub(crate) fn compile_wasm_plugins(
     NodeModulesResolver::new(swc_ecma_loader::TargetEnv::Node, Default::default(), true),
   );
 
-  // Currently swc enables filesystemcache by default on Embedded runtime plugin
+  // Currently swc enables filesystem cache by default on Embedded runtime plugin
   // target.
   init_plugin_module_cache_once(cache_root.is_some(), cache_root);
 

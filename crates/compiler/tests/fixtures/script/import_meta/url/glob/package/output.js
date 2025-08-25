@@ -52,4 +52,4 @@ initModuleSystem$1(__farm_internal_module_system__);
         });
     }
 });
-var __farm_ms__ = window['__farm_default_namespace__'].m;__farm_ms__.si([]);__farm_ms__.sd([{ path: 'core_index-f725889b.js', type: 0 },{ path: 'bar_index-ce66cb21.js', type: 0 }],{ '451bae37': [0],'3b411c90': [1] });__farm_ms__.b();var __farm_entry__=__farm_ms__.r("b5d64806");
+var __farm_ms__ = window['__farm_default_namespace__'].m;__farm_ms__.si([]);__farm_ms__.sd([{ path: 'core_index-f725889b.js', type: 0 },{ path: 'bar_index-ce66cb21.js', type: 0 }],{ '451bae37': [0],'3b411c90': [1] });__farm_ms__.b();var __farm_entry__=__farm_ms__.r("b5d64806");export default __farm_entry__.__esModule && __farm_entry__.default ? __farm_entry__.default : __farm_entry__;

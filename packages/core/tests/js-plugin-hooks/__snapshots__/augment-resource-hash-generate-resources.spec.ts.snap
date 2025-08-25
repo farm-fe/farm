@@ -2,7 +2,7 @@
 
 exports[`Js Plugin Execution - augmentResourceHash 1`] = `
 [
-  "farm_internal_runtime_index.d468dfbf.js",
+  "farm_internal_runtime_index.933a554e.js",
   "index.abbad221.js",
 ]
 `;
@@ -37,7 +37,7 @@ exports[`Js Plugin Execution - augmentResourceHash 2`] = `
 
 exports[`Js Plugin Execution - augmentResourceHash 3`] = `
 [
-  "farm_internal_runtime_index.d468dfbf.js",
+  "farm_internal_runtime_index.933a554e.js",
   "index.0cf19286.js",
 ]
 `;

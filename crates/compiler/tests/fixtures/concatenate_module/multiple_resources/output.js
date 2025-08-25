@@ -20,7 +20,7 @@ initModuleSystem$1(__farm_internal_module_system__);
         farmDynamicRequire("b5906cd8").then((mod)=>console.log(mod));
     }
 });
-var __farm_ms__ = window['__farm_default_namespace__'].m;__farm_ms__.si([]);__farm_ms__.sd([{ path: 'route1-21ccd1fe.js', type: 0 },{ path: 'route2-7e737731.js', type: 0 },{ path: 'route2-5dde66a0.js', type: 0 }],{ '817bf312': [0,1],'b5906cd8': [1,2] });__farm_ms__.b();var __farm_entry__=__farm_ms__.r("b5d64806");
+var __farm_ms__ = window['__farm_default_namespace__'].m;__farm_ms__.si([]);__farm_ms__.sd([{ path: 'route1-21ccd1fe.js', type: 0 },{ path: 'route2-7e737731.js', type: 0 },{ path: 'route2-5dde66a0.js', type: 0 }],{ '817bf312': [0,1],'b5906cd8': [1,2] });__farm_ms__.b();var __farm_entry__=__farm_ms__.r("b5d64806");export default __farm_entry__.__esModule && __farm_entry__.default ? __farm_entry__.default : __farm_entry__;
 
 //route1-21ccd1fe.js:
  (function(moduleSystem, modules) {

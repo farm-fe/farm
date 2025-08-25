@@ -202,9 +202,7 @@ impl CacheStore {
   }
 
   fn _remove_cache(&self, name: &str) -> Option<Vec<u8>> {
-    let Some((_, cache_key)) = self.manifest.remove(name) else {
-      return None;
-    };
+    let (_, cache_key) = self.manifest.remove(name)?;
 
     self.data.remove(&cache_key).map(|(_, v)| v)
   }

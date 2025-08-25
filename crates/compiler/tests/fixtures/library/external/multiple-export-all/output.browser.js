@@ -63,7 +63,7 @@ var __farm_internal_module_system__ = {
             env: {}
         },
         exports: {},
-        require: (moduleId)=>farmRequire$1(moduleId)
+        require: farmRequire$1
     };
     __farm_internal_cache__[id] = module;
     {
@@ -82,10 +82,6 @@ var __farm_internal_module_system__ = {
     return module.exports;
 }
 function farmRegister(id, module) {
-    if (__farm_internal_modules__[id] && !__farm_internal_module_system__._rg) {
-        console.warn(`Module "${id}" has registered! It should not be registered twice`);
-        return;
-    }
     __farm_internal_modules__[id] = module;
     return ()=>farmRequire$1(id);
 }
@@ -266,4 +262,4 @@ initModuleSystem$1(__farm_internal_module_system__);
         console.log(zoo_test, foo);
     }
 });
-var __farm_ms__ = window['__farm_default_namespace__'].m;__farm_ms__.b();var __farm_entry__=__farm_ms__.r("index.ts");
+var __farm_ms__ = window['__farm_default_namespace__'].m;__farm_ms__.b();var __farm_entry__=__farm_ms__.r("index.ts");export default __farm_entry__.__esModule && __farm_entry__.default ? __farm_entry__.default : __farm_entry__;

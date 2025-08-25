@@ -1,15 +1,136 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
 exports[`Js Plugin Execution - transformHtml 1`] = `
-"<!doctype html><html lang=en><head>
-    <meta charset=UTF-8>
-    <meta name=viewport content="width=device-width, initial-scale=1.0">
-    {head} {style}
-    <title>Document</title>
-  <script>global['f081367f80fe14896375a9f8b8918ca3'] = {};global['f081367f80fe14896375a9f8b8918ca3'] = {__FARM_TARGET_ENV__: 'browser'};</script><script>(function(){var e=global;const t=void 0!==e?e:{};t.require=t.require||u;const r={},o={};var n={r:u,g:function(e,t){return r[e]&&!n._rg?void console.warn(\`Module "\${e}" has registered! It should not be registered twice\`):(r[e]=t,()=>u(e));},m:()=>r,c:()=>o};function u(e){if(o[e]){var t=o[e].initializer||o[e].exports;if(!n.p?.b("readModuleCache",o[e]))return t;}let l=r[e];if(!l){if(n.em[e])return n.em[e];{let t=n.p?.b("moduleNotFound",e);if(t)return t;}try{return __farmNodeRequire(e);}catch(e){}return console.debug(\`[Farm] Module "\${e}" is not registered\`),{};}let i=o[e]={id:e,meta:{env:{}},exports:{},require:e=>u(e)};return n.p?.s("moduleCreated",i),o[e]=i,l(i,i.exports,u,n.d),n.p?.s("moduleInitialized",i),i.exports;}n.te="node",n.em={},n.se=function(e){for(let t in e){let r=e[t];r&&r.default&&!r.__esModule&&(r=Object.assign({},r,{__esModule:!0})),n.em[t]=r;}},(global.f081367f80fe14896375a9f8b8918ca3={}).m=n;let l={},i=[];const a={p:function(e){i=e;},s:function(e,...t){for(let r in i){let o=i[r],n=o[e];n&&n.apply(o,t);}},b:function(e,...t){for(let r in i){let o=i[r],n=o[e];if(n){let e=n.apply(o,t);if(e)return e;}}}};function d(e,t,r){Object.prototype.hasOwnProperty.call(e,t)||Object.defineProperty(e,t,{enumerable:!0,get:r});}n.p=a,n.b=function(){a.s("bootstrap",this);};const f=n.r;f.o=d,f.d=function(e,t,r){d(e,t,function(){return r;});},f._m=function(e){let t="__esModule";e[t]||Object.defineProperty(e,t,{value:!0});},f.i=function(e){return e&&e.__esModule?e:{default:e};},f.f=function(e){return void 0!==e.default?e.default:e;},global.f081367f80fe14896375a9f8b8918ca3.m.p.p([{name:"farm-runtime-import-meta",bootstrap:e=>{l=e;},moduleCreated:e=>{let t=l.pp?.[0]||"",r="node"===l.te;e.meta.env={NODE_ENV:null,BASE_URL:"/",mode:null,DEV:!1,PROD:!1}??{};var o=e.meta.env,n={dev:"development"===process.env.NODE_ENV,prod:"production"===process.env.NODE_ENV,BASE_URL:t,SSR:r};for(let e in n)o[e]=n[e];e.meta.url=l.m()[e.id].url;}}]);})();</script></head>
-  <body>
+"<!doctype html><html lang=en><meta charset=UTF-8><meta name=viewport content="width=device-width,initial-scale=1.0">{head} {style}
+    <title>Document</title><script>global['f081367f80fe14896375a9f8b8918ca3'] = {};
+global['f081367f80fe14896375a9f8b8918ca3'] = {
+    __FARM_TARGET_ENV__: 'browser'
+};
+(function() {
+    var e = global;
+    const t = void 0 !== e ? e : {};
+    t.require = t.require || u;
+    const r = {}, n = {};
+    var o = {
+        r: u,
+        g: function(e, t) {
+            return r[e] = t, ()=>u(e);
+        },
+        m: ()=>r,
+        c: ()=>n
+    };
+    function u(e) {
+        if (n[e]) {
+            var t = n[e].initializer || n[e].exports;
+            if (!o.p?.b("readModuleCache", n[e])) return t;
+        }
+        let l = r[e];
+        if (!l) {
+            if (o.em[e]) return o.em[e];
+            {
+                let t = o.p?.b("moduleNotFound", e);
+                if (t) return t;
+            }
+            try {
+                return __farmNodeRequire(e);
+            } catch (e) {}
+            return console.debug(\`[Farm] Module "\${e}" is not registered\`), {};
+        }
+        let i = n[e] = {
+            id: e,
+            meta: {
+                env: {}
+            },
+            exports: {},
+            require: u
+        };
+        return o.p?.s("moduleCreated", i), n[e] = i, l(i, i.exports, u, o.d), o.p?.s("moduleInitialized", i), i.exports;
+    }
+    o.te = "node", o.em = {}, o.se = function(e) {
+        for(let t in e){
+            let r = e[t];
+            r && r.default && !r.__esModule && (r = Object.assign({}, r, {
+                __esModule: !0
+            })), o.em[t] = r;
+        }
+    }, (global.f081367f80fe14896375a9f8b8918ca3 = {}).m = o;
+    let l = {}, i = [];
+    const f = {
+        p: function(e) {
+            i = e;
+        },
+        s: function(e, ...t) {
+            for(let r in i){
+                let n = i[r], o = n[e];
+                o && o.apply(n, t);
+            }
+        },
+        b: function(e, ...t) {
+            for(let r in i){
+                let n = i[r], o = n[e];
+                if (o) {
+                    let e = o.apply(n, t);
+                    if (e) return e;
+                }
+            }
+        }
+    };
+    function a(e, t, r) {
+        Object.prototype.hasOwnProperty.call(e, t) || Object.defineProperty(e, t, {
+            enumerable: !0,
+            get: r
+        });
+    }
+    o.p = f, o.b = function() {
+        f.s("bootstrap", this);
+    };
+    const d = o.r;
+    d.o = a, d.d = function(e, t, r) {
+        a(e, t, function() {
+            return r;
+        });
+    }, d._m = function(e) {
+        let t = "__esModule";
+        e[t] || Object.defineProperty(e, t, {
+            value: !0
+        });
+    }, d.i = function(e) {
+        return e && e.__esModule ? e : {
+            default: e
+        };
+    }, d.f = function(e) {
+        return void 0 !== e.default ? e.default : e;
+    }, global.f081367f80fe14896375a9f8b8918ca3.m.p.p([
+        {
+            name: "farm-runtime-import-meta",
+            bootstrap: (e)=>{
+                l = e;
+            },
+            moduleCreated: (e)=>{
+                let t = l.pp?.[0] || "", r = "node" === l.te;
+                e.meta.env = {
+                    NODE_ENV: null,
+                    BASE_URL: "/",
+                    mode: null,
+                    DEV: !1,
+                    PROD: !1
+                } ?? {};
+                var n = e.meta.env, o = {
+                    dev: "development" === process.env.NODE_ENV,
+                    prod: "production" === process.env.NODE_ENV,
+                    BASE_URL: t,
+                    SSR: r
+                };
+                for(let e in o)n[e] = o[e];
+                e.meta.url = l.m()[e.id].url;
+            }
+        }
+    ]);
+})();
+</script>
+  
     <div id=app-container>{ssr}</div>
   
 
-<script></script><script>global['f081367f80fe14896375a9f8b8918ca3'].m.b();</script>"
+<script>global['f081367f80fe14896375a9f8b8918ca3'].m.b();</script>"
 `;

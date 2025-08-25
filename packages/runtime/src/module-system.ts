@@ -222,13 +222,6 @@ export function farmRequire(id: string): any {
 }
 
 export function farmRegister(id: string, module: ModuleInitialization): () => any {
-  // if (__FARM_RUNTIME_TARGET_ENV__ !== 'library') if (__farm_internal_modules__[id] && !__farm_internal_module_system__._rg && process.env.NODE_ENV === 'production') {
-  //     console.warn(
-  //       `Module "${id}" has registered! It should not be registered twice`,
-  //     );
-  //     return;
-  //   }
-
   __farm_internal_modules__[id] = module;
   return () => farmRequire(id);
 }
