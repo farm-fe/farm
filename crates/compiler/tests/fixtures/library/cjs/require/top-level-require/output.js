@@ -11,7 +11,7 @@ function exportByDefineProperty(to, to_k, get) {
 }
 defineExportEsModule(exports);
 exportByDefineProperty(exports, "default", ()=>index_ts_default);
-; // module_id: @farm-runtime/module-system
+; // module_id: @farmfe/runtime/src/module-system.ts
 // all modules registered
 const __farm_internal_modules__ = {};
 // module cache after module initialized
@@ -34,7 +34,7 @@ function farmRequire$2(id) {
             env: {}
         },
         exports: {},
-        require: (moduleId)=>farmRequire$2(moduleId)
+        require: farmRequire$2
     };
     __farm_internal_cache__[id] = module;
     initializer(module, module.exports);
@@ -45,7 +45,7 @@ function farmRegister(id, module) {
     __farm_internal_modules__[id] = module;
     return ()=>farmRequire$2(id);
 }
-; // module_id: @farm-runtime/module-helper
+; // module_id: @farmfe/runtime/src/modules/module-helper.ts
 function defineExportEsModule(to) {
     const key = '__esModule';
     if (to[key]) return;

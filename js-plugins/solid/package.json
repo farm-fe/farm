@@ -21,7 +21,7 @@
     "./package.json": "./package.json"
   },
   "scripts": {
-    "start": "farm build -w",
+    "start": "farm watch",
     "build": "farm build",
     "clean": "rimraf build tsconfig.build.tsbuildinfo",
     "prepublishOnly": "npm run build"

@@ -76,7 +76,7 @@ impl Compiler {
     if !self.are_separate_folders(output_dir_path, public_dir_path) {
       // TODO: add Farm rust logger
       println!(
-        "\n(!) Warning: The public directory feature may not work correctly. \
+        "\n(!) [Farm warn] The public directory feature may not work correctly. \
                outDir {} and publicDir {} are not separate folders.\n",
         output_dir_path.display(),
         public_dir_path.display()
@@ -113,7 +113,6 @@ impl Compiler {
       create_dir_all(to).unwrap();
     }
 
-    // TODO use parallel iterator
     for entry in read_dir(from).unwrap() {
       let entry = entry.unwrap();
       let file_type = entry.file_type().unwrap();
@@ -122,6 +121,15 @@ impl Compiler {
       if file_type.is_dir() {
         Self::copy_dir(&entry.path(), &to_path);
       } else {
+        // do not overwrite existing file
+        if to_path.exists() {
+          println!(
+            "[Farm warn] public directory file {:?} already exists in outputDir, skip copy",
+            entry.file_name()
+          );
+          continue;
+        }
+
         copy(entry.path(), to_path).unwrap();
       }
     }

@@ -1,7 +1,8 @@
-import { test, expect, describe } from 'vitest';
+import { test, describe } from 'vitest';
 import { watchProjectAndTest } from '../../e2e/vitestSetup.js';
 import { basename, dirname } from 'path';
 import { fileURLToPath } from 'url';
+import { exec } from 'child_process';
 
 const name = basename(import.meta.url);
 const projectPath = dirname(fileURLToPath(import.meta.url));
@@ -18,7 +19,20 @@ describe(`e2e tests - ${name}`, async () => {
           }
         } else {
           if (log.includes('Build completed in')) {
-            done();
+            const output = await new Promise<string>((resolve, reject) => {
+              exec('npm run preview', {
+                cwd: projectPath
+              }, (error, stdout) => {
+                if (error) {
+                  reject(error);
+                }
+                resolve(stdout);
+              })
+            });
+
+            if (output.includes('script start') && output.includes('111aaa')) {
+              done();
+            }
           }
         }
       },

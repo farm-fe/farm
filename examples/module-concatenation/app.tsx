@@ -1,10 +1,9 @@
-import React from './react';
-import util1 from './util1.cjs';
+import util1 from "./util1.cjs";
 
-import commonInner from './common.mjs';
+import commonInner from "./common.mjs";
 
 function common() {
-  return 'common-outer';
+  return "common-outer";
 }
 
 export function App() {
@@ -15,4 +14,3 @@ export function App() {
     </div>
   );
 }
-

@@ -8,7 +8,7 @@ use std::{
 use base64::engine::{general_purpose, Engine};
 use farmfe_core::{
   cache_item,
-  config::{asset::AssetFormatMode, custom::get_config_assets_mode, Config},
+  config::{asset::AssetFormatMode, Config},
   context::{CompilationContext, EmitFileParams},
   module::ModuleType,
   plugin::{Plugin, PluginResolveHookResult},
@@ -248,7 +248,10 @@ impl Plugin for FarmPluginStaticAssets {
         };
 
         let mode = self.asset_format_mode.get_or_init(|| {
-          get_config_assets_mode(&context.config)
+          context
+            .config
+            .assets
+            .mode
             .unwrap_or_else(|| (context.config.output.target_env.clone().into()))
         });
 

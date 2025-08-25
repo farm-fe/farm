@@ -1,48 +1,30 @@
-import type { ModuleSystem } from '@farmfe/runtime';
+import type { ModuleSystem } from "@farmfe/runtime";
 
-// const __global_this__ = typeof globalThis !== 'undefined' ? globalThis : window;
-// let _moduleSystem = {} as ModuleSystem;
+let _moduleSystem = {} as ModuleSystem;
+
+function assignObj(target: any, source: any) {
+  for (const field in source) {
+    target[field] = source[field];
+  }
+}
 
 export default {
-  name: 'farm-runtime-import-meta',
-  bootstrap: (_system: ModuleSystem) => {
-    // _moduleSystem = system;
+  name: "farm-runtime-import-meta",
+  bootstrap: (system: ModuleSystem) => {
+    _moduleSystem = system;
   },
-  moduleCreated: (_module: any) => {
-    // TODO refactor import.meta
+  moduleCreated: (module: any) => {
+    const publicPath = _moduleSystem.pp?.[0] || "";
+    const isSSR = _moduleSystem.te === "node";
 
-    // const publicPath = _moduleSystem.publicPaths?.[0] || "";
-    // const isSSR = _moduleSystem.targetEnv === "node";
-    // const { location } = __global_this__;
+    module.meta.env = FARM_PROCESS_ENV ?? {};
+    assignObj(module.meta.env, {
+      dev: process.env.NODE_ENV === "development",
+      prod: process.env.NODE_ENV === "production",
+      BASE_URL: publicPath,
+      SSR: isSSR,
+    });
 
-    // let baseUrl;
-    // try {
-    //   baseUrl = (
-    //     location
-    //       ? new URL(
-    //           publicPath,
-    //           `${location.protocol}//${location.host}`,
-    //         )
-    //       : new URL(module.resource_pot)
-    //   ).pathname;
-    // } catch (_) {
-    //   baseUrl = '/';
-    // }
-
-    // module.meta.env = {
-    //   ...(FARM_PROCESS_ENV ?? {}),
-    //   dev: process.env.NODE_ENV === 'development',
-    //   prod: process.env.NODE_ENV === 'production',
-    //   BASE_URL: baseUrl,
-    //   SSR: isSSR,
-    // };
-
-    // const url = location
-    //   ? `${location.protocol}//${location.host}${publicPath.replace(
-    //     /\/$/,
-    //     ''
-    //   )}/${module.id}?t=${Date.now()}`
-    //   : module.resource_pot;
-    // module.meta.url = url;
-  }
+    module.meta.url = _moduleSystem.m()[module.id].url;
+  },
 };

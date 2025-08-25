@@ -1,11 +1,11 @@
 use std::cell::RefCell;
 
-use farmfe_core::{
-  module::meta_data::script::ScriptModuleMetaData, swc_common::Mark, swc_ecma_ast::Expr, HashSet,
-};
-use farmfe_toolkit::script::{
+use crate::script::{
   create_top_level_ident,
   module2cjs::{self, RuntimeCalleeAllocator, TransformModuleDeclsOptions},
+};
+use farmfe_core::{
+  module::meta_data::script::ScriptModuleMetaData, swc_common::Mark, swc_ecma_ast::Expr, HashSet,
 };
 
 pub fn transform_hybrid_to_cjs(meta: &mut ScriptModuleMetaData) -> HashSet<&'static str> {

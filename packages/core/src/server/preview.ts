@@ -6,7 +6,7 @@ import compression from '@polka/compression';
 import connect from 'connect';
 import corsMiddleware from 'cors';
 import sirv, { RequestHandler } from 'sirv';
-import { resolveConfig } from '../config/index.js';
+import { PreviewServerMiddleware, resolveConfig } from '../config/index.js';
 import {
   FarmCliOptions,
   ResolvedUserConfig,
@@ -20,7 +20,7 @@ import {
 } from '../utils/http.js';
 import { printServerUrls } from '../utils/logger.js';
 import { getShortName } from '../utils/path.js';
-import { isObject, version } from '../utils/share.js';
+import { getValidPublicPath, isObject, version } from '../utils/share.js';
 import { knownJavascriptExtensionRE } from '../utils/url.js';
 import {
   type CommonServerOptions,
@@ -43,6 +43,7 @@ export interface PreviewServerOptions extends CommonServerOptions {
   open: boolean | string;
   cors: boolean | CorsOptions;
   proxy: Record<string, string | ProxyOptions>;
+  middlewares?: PreviewServerMiddleware[];
 }
 
 /**
@@ -57,7 +58,7 @@ export class PreviewServer extends httpServer {
   publicPath: string;
   httpServer: HttpServer;
 
-  app: connect.Server;
+  middlewares: connect.Server;
   serve: RequestHandler;
   closeHttpServerFn: () => Promise<void>;
   terminateServerFn: () => Promise<void>;
@@ -87,10 +88,10 @@ export class PreviewServer extends httpServer {
 
     await this.#resolveOptions();
 
-    this.app = connect();
+    this.middlewares = connect();
     this.httpServer = await this.resolveHttpServer(
       this.previewServerOptions,
-      this.app,
+      this.middlewares,
       this.httpsOptions
     );
 
@@ -112,11 +113,13 @@ export class PreviewServer extends httpServer {
    * @private
    */
   #initializeMiddlewares() {
-    const { cors, proxy } = this.previewServerOptions;
+    const { cors, proxy, middlewares } = this.previewServerOptions;
     const { appType, middlewareMode } = this.config.server;
 
     if (cors !== false) {
-      this.app.use(corsMiddleware(typeof cors === 'boolean' ? {} : cors));
+      this.middlewares.use(
+        corsMiddleware(typeof cors === 'boolean' ? {} : cors)
+      );
     }
 
     if (proxy) {
@@ -124,21 +127,25 @@ export class PreviewServer extends httpServer {
         isObject(middlewareMode) && 'server' in middlewareMode
           ? middlewareMode.server
           : this.httpServer;
-      this.app.use(
+      this.middlewares.use(
         proxyMiddleware(this, middlewareServer as HttpServer, proxy)
       );
     }
 
-    this.app.use(compression());
+    this.middlewares.use(compression());
 
     if (this.publicPath !== '/') {
-      this.app.use(publicPathMiddleware(this, false));
+      this.middlewares.use(publicPathMiddleware(this, false));
     }
 
-    this.app.use(this.serve);
+    this.middlewares.use(this.serve);
+
+    middlewares?.forEach((middleware) =>
+      this.middlewares.use(middleware(this))
+    );
 
     if (appType === 'spa' || appType === 'mpa') {
-      this.app.use(notFoundMiddleware());
+      this.middlewares.use(notFoundMiddleware());
     }
   }
 
@@ -154,7 +161,7 @@ export class PreviewServer extends httpServer {
       compilation: { root, output }
     } = this.config;
 
-    this.publicPath = output.publicPath ?? '/';
+    this.publicPath = getValidPublicPath(output.publicPath ?? '/');
     const preview = server?.preview;
 
     const distPath = preview?.distDir || output?.path || 'dist';
@@ -199,7 +206,8 @@ export class PreviewServer extends httpServer {
       distDir,
       open: preview?.open ?? false,
       cors: preview?.cors ?? false,
-      proxy: preview?.proxy ?? server?.proxy
+      proxy: preview?.proxy ?? server?.proxy,
+      middlewares: preview.middlewares
     };
   }
 
@@ -226,11 +234,13 @@ export class PreviewServer extends httpServer {
         'preview'
       );
 
-      const shortFile = getShortName(
-        this.config.configFilePath,
-        this.config.root
-      );
-      this.logger.info(`Using config file at ${bold(green(shortFile))}`);
+      if (this.config.configFilePath) {
+        const shortFile = getShortName(
+          this.config.configFilePath,
+          this.config.root
+        );
+        this.logger.info(`Using config file at ${bold(green(shortFile))}`);
+      }
 
       console.log('\n', bold(brandColor(`${'ϟ'}  Farm  v${version}`)), '\n');
 

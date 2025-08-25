@@ -7,9 +7,6 @@
   "[typescript]": {
     "editor.defaultFormatter": "biomejs.biome"
   },
-  "[javascript]": {
-    "editor.defaultFormatter": "esbenp.prettier-vscode"
-  },
   "[rust]": {
     "editor.defaultFormatter": "rust-lang.rust-analyzer"
   },

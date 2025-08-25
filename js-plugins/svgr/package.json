@@ -28,7 +28,7 @@
   },
   "scripts": {
     "build": "pnpm run clean && farm build",
-    "start": "pnpm run build -w",
+    "start": "pnpm run watch",
     "prepublishOnly": "npm run build",
     "clean": "rimraf dist build tsconfig.build.tsbuildinfo",
     "type-check": "tsc -p ./tsconfig.build.json --noEmit"

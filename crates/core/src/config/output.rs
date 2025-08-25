@@ -113,6 +113,7 @@ pub struct OutputConfig {
   pub format: ModuleFormatConfig,
   pub show_file_size: bool,
   pub library_bundle_type: LibraryBundleType,
+  pub ascii_only: bool,
 }
 
 impl Default for OutputConfig {
@@ -129,6 +130,7 @@ impl Default for OutputConfig {
       format: ModuleFormatConfig::default(),
       show_file_size: true,
       library_bundle_type: Default::default(),
+      ascii_only: false,
     }
   }
 }

@@ -41,6 +41,7 @@ export function htmlFallbackMiddleware(
       }
     } else {
       const html = app.compiler.resource(pathname + '.html');
+
       if (html) {
         send(req, res, html, pathname, { headers });
         return next();
@@ -48,7 +49,7 @@ export function htmlFallbackMiddleware(
     }
     if (app.serverOptions.appType === 'spa') {
       const html = app.compiler.resource('index.html');
-      send(req, res, html, pathname, { headers });
+      html && send(req, res, html, pathname, { headers });
     }
 
     next();

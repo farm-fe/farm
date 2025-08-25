@@ -53,26 +53,34 @@ async function fetch(path: string) {
 
 function startLazyCompiling(queue: any[]) {
   FarmModuleSystem.lazyCompiling = true;
-  // TODO enable following feature in 2.0
-  // // @ts-ignore ignore type
-  // if (window.__farm_hide_lazy_compile_progress === true) {
-  //   // show the compiling progress at the top of the page
-  //   const progress = document.getElementById('farm-lazy-compiling') || document.createElement('div');
-  //   progress.id = 'farm-lazy-compiling';
-  //   progress.style.backgroundColor = '#ff9ff330';
-  //   progress.style.color = '#6f1a5f';
-  //   progress.style.zIndex = '9999999999';
-  //   document.body.prepend(progress);
-  //   progress.innerText = 'Compiling ' + queue.map((item) => item.modulePath).join(', ') + '...';
-  // }
+
+  // @ts-ignore ignore type
+  if (globalThis.document && window.__farm_hide_lazy_compile_progress !== true) {
+    // show the compiling progress at the top of the page
+    const progress = document.getElementById('farm-lazy-compiling') || document.createElement('div');
+    progress.id = 'farm-lazy-compiling';
+    progress.style.backgroundColor = '#ff9ff330';
+    progress.style.color = '#6f1a5f';
+    progress.style.zIndex = '9999999999';
+    progress.style.fontSize = '14px';
+    progress.style.position = 'fixed';
+    progress.style.top = '0';
+    progress.style.left = '0';
+    progress.style.width = '100%';
+    progress.style.lineHeight = '20px';
+    document.body.prepend(progress);
+    progress.innerText = 'Compiling ' + queue[0].moduleId + (queue.length > 1 ? ` + ${queue.length - 1} modules...` : '');
+  }
 }
 
 function endLazyCompiling() {
   FarmModuleSystem.lazyCompiling = false;
-  // const progress = document.getElementById('farm-lazy-compiling');
-  // if (progress) {
-  //   document.body.removeChild(progress);
-  // }
+
+  const progress = globalThis.document?.getElementById('farm-lazy-compiling');
+
+  if (progress) {
+    document.body.removeChild(progress);
+  }
 }
 
 if (FarmModuleSystem.lazyCompiling === undefined) {
@@ -118,7 +126,8 @@ if (compilingModules.has(modulePath)) {
     }
   } else {
     const compileModules = () => {
-      const isNodeLazyCompile = FarmModuleSystem.targetEnv === 'node';
+      // @ts-ignore ignore type check
+      const isNodeLazyCompile = FARM_RUNTIME_TARGET_ENV === 'node';
       const queue = [...FarmModuleSystem.lazyCompilingQueue];
       FarmModuleSystem.lazyCompilingQueue = [];
       startLazyCompiling(queue);
@@ -145,7 +154,6 @@ if (compilingModules.has(modulePath)) {
         const promises: Promise<any>[] = [];
 
         for (const { modulePath, resolve, moduleId } of queue) {
-          compilingModules.delete(modulePath);
           const promise = FarmModuleSystem.l(moduleId, true);
           // resolve the lazy compiling promise after the module is compiled instead of waiting for the module to be executed
           // this is to avoid the case where the module is waiting for another lazy compiled module to be executed, causing a deadlock

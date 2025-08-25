@@ -8,7 +8,7 @@
   "types": "./build/farm-vue-plugin.d.ts",
   "type": "module",
   "scripts": {
-    "start": "farm build -w",
+    "start": "farm watch",
     "build": "farm build && tsc",
     "clean": "rimraf dist tsconfig.build.tsbuildinfo build",
     "prepublishOnly": "npm run build",

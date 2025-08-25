@@ -5,7 +5,7 @@ import connect from 'connect';
 import corsMiddleware from 'cors';
 
 import { Compiler } from '../compiler/index.js';
-import { bold, colors, getShortName, green, resolveConfig } from '../index.js';
+import { colors, handleLazyCompilation, resolveConfig } from '../index.js';
 import Watcher from '../watcher/index.js';
 import { HmrEngine } from './hmr-engine.js';
 import { httpServer } from './http.js';
@@ -13,10 +13,7 @@ import { openBrowser } from './open.js';
 import { WsServer } from './ws.js';
 
 import { __FARM_GLOBAL__ } from '../config/_global.js';
-import {
-  getPluginHooks,
-  getSortedPluginHooksBindThis
-} from '../plugin/index.js';
+import { getSortedPluginHooksBindThis } from '../plugin/index.js';
 import { isCacheDirExists } from '../utils/cacheDir.js';
 import { createDebugger } from '../utils/debug.js';
 import {
@@ -26,7 +23,12 @@ import {
 } from '../utils/http.js';
 import { Logger, bootstrap, printServerUrls } from '../utils/logger.js';
 import { initPublicFiles } from '../utils/publicDir.js';
-import { arrayEqual, isObject, normalizePath } from '../utils/share.js';
+import {
+  arrayEqual,
+  getValidPublicPath,
+  isObject,
+  normalizePath
+} from '../utils/share.js';
 
 import {
   hmrPingMiddleware,
@@ -86,7 +88,7 @@ export class Server extends httpServer {
   watcher: Watcher;
   hmrEngine?: HmrEngine;
   middlewares: connect.Server;
-  compiler: CompilerType;
+  compiler?: CompilerType;
   root: string;
   config: ResolvedUserConfig;
   closeHttpServerFn: () => Promise<void>;
@@ -98,9 +100,45 @@ export class Server extends httpServer {
    * Creates an instance of Server.
    * @param {FarmCliOptions & UserConfig} inlineConfig - The inline configuration options.
    */
-  constructor(readonly inlineConfig: FarmCliOptions & UserConfig) {
+  constructor(readonly inlineConfig: FarmCliOptions & UserConfig = {}) {
     super();
     this.logger = new Logger();
+  }
+
+  /**
+   * Creates a lazy compilation server that enable lazy compilation when targeting node
+   */
+  static async createAndStartLazyCompilationServer(
+    config: ResolvedUserConfig
+  ): Promise<Server> {
+    const server = new Server();
+    server.config = config;
+
+    server.#resolveOptions();
+
+    const httpsOptions = await server.resolveHttpsConfig(
+      server.serverOptions.https
+    );
+    server.httpsOptions = httpsOptions;
+
+    server.middlewares = connect() as connect.Server;
+    server.httpServer = await server.resolveHttpServer(
+      server.serverOptions as CommonServerOptions,
+      server.middlewares,
+      server.httpsOptions
+    );
+
+    server.middlewares.use(lazyCompilationMiddleware(server));
+
+    const { port, hostname, strictPort } = server.serverOptions;
+    const serverPort = await server.httpServerStart({
+      port,
+      strictPort: strictPort,
+      host: hostname.host
+    });
+    server.#updateServerPort(serverPort, 'WATCH');
+
+    return server;
   }
 
   /**
@@ -119,90 +157,79 @@ export class Server extends httpServer {
    * @returns {Promise<void>} A promise that resolves when the server creation process is complete
    * @throws {Error} If an error occurs during the server creation process
    */
-  async createServer(): Promise<void> {
-    try {
-      this.config = await resolveConfig(
-        this.inlineConfig,
-        'dev',
-        'development'
-      );
+  static async createServer(
+    inlineConfig: FarmCliOptions & UserConfig = {}
+  ): Promise<Server> {
+    const server = new Server(inlineConfig);
+    server.config = await resolveConfig(
+      server.inlineConfig,
+      'dev',
+      'development'
+    );
 
-      this.logger = this.config.logger;
+    server.logger = server.config.logger;
 
-      this.#resolveOptions();
+    server.#resolveOptions();
 
-      this.compiler = createCompiler(this.config);
+    const [httpsOptions, publicFiles] = await Promise.all([
+      server.resolveHttpsConfig(server.serverOptions.https),
+      server.#handlePublicFiles()
+    ]);
+    server.httpsOptions = httpsOptions;
+    server.publicFiles = publicFiles;
+    server.middlewares = connect() as connect.Server;
+    server.httpServer = server.serverOptions.middlewareMode
+      ? null
+      : await server.resolveHttpServer(
+          server.serverOptions as CommonServerOptions,
+          server.middlewares,
+          server.httpsOptions
+        );
 
-      for (const hook of getPluginHooks(
-        this.config.jsPlugins,
-        'configureCompiler'
-      )) {
-        await hook?.(this.compiler);
+    // close server function prepare promise
+    server.closeHttpServerFn = server.closeServer();
+
+    // init hmr engine When actually updating, we need to get the clients of ws for broadcast, 、
+    // so we can instantiate hmrEngine by default at the beginning.
+    server.createHmrEngine();
+
+    // init websocket server
+    await server.createWebSocketServer();
+
+    // invalidate vite handler
+    server.#invalidateVite();
+
+    // init watcher
+    await server.#createWatcher();
+
+    await server.handleConfigureServer();
+
+    // init middlewares
+    server.#initializeMiddlewares();
+
+    server.terminateServerFn = async (_: unknown, exitCode?: number) => {
+      try {
+        await server.close();
+      } finally {
+        process.exitCode ??= exitCode ? 128 + exitCode : undefined;
+        process.exit();
       }
+    };
 
-      const [httpsOptions, publicFiles] = await Promise.all([
-        this.resolveHttpsConfig(this.serverOptions.https),
-        this.#handlePublicFiles()
-      ]);
-      this.httpsOptions = httpsOptions;
-      this.publicFiles = publicFiles;
-      this.middlewares = connect() as connect.Server;
-      this.httpServer = this.serverOptions.middlewareMode
-        ? null
-        : await this.resolveHttpServer(
-            this.serverOptions as CommonServerOptions,
-            this.middlewares,
-            this.httpsOptions
-          );
-
-      // close server function prepare promise
-      this.closeHttpServerFn = this.closeServer();
-
-      // init hmr engine When actually updating, we need to get the clients of ws for broadcast, 、
-      // so we can instantiate hmrEngine by default at the beginning.
-      this.createHmrEngine();
-
-      // init websocket server
-      await this.createWebSocketServer();
-
-      // invalidate vite handler
-      this.#invalidateVite();
-
-      // init watcher
-      await this.#createWatcher();
-
-      await this.handleConfigureServer();
-
-      // init middlewares
-      this.#initializeMiddlewares();
-
-      this.terminateServerFn = async (_: unknown, exitCode?: number) => {
-        try {
-          await this.close();
-        } finally {
-          process.exitCode ??= exitCode ? 128 + exitCode : undefined;
-          process.exit();
-        }
-      };
-
-      if (!this.serverOptions.middlewareMode) {
-        setupSIGTERMListener(this.terminateServerFn);
-      }
-
-      if (!this.serverOptions.middlewareMode && this.httpServer) {
-        this.httpServer.once('listening', () => {
-          // update actual port since this may be different from initial value
-          this.serverOptions.port = (
-            this.httpServer.address() as net.AddressInfo
-          ).port;
-        });
-      }
-    } catch (error) {
-      // this.logger.error(
-      //   `Failed to create farm server: ${error}`
-      // );
-      throw error;
+    if (!server.serverOptions.middlewareMode) {
+      setupSIGTERMListener(server.terminateServerFn);
     }
+
+    if (!server.serverOptions.middlewareMode && server.httpServer) {
+      server.httpServer.once('listening', () => {
+        // update actual port since this may be different from initial value
+        server.serverOptions.port = (
+          server.httpServer.address() as net.AddressInfo
+        ).port;
+      });
+    }
+
+    return server;
   }
 
   /**
@@ -230,31 +257,24 @@ export class Server extends httpServer {
 
     this.watcher.on('change', async (file: string) => {
       file = normalizePath(file);
-      const shortFile = getShortName(file, this.config.root);
-      const isConfigFile = this.config.configFilePath === file;
-      const isConfigDependencyFile = this.config.configFileDependencies.some(
-        (name) => file === name
-      );
-      const isEnvFile = this.config.envFiles.some((name) => file === name);
-      if (isConfigFile || isConfigDependencyFile || isEnvFile) {
-        __FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__ = true;
-        this.logger.info(
-          `${bold(green(shortFile))} changed, Server is being restarted`,
-          true
-        );
-        debugServer?.(`[config change] ${colors.dim(file)}`);
+
+      if (this.watcher.isConfigFilesChanged(file)) {
         try {
           await this.restartServer();
         } catch (e) {
           this.config.logger.error(`restart server error ${e}`);
         }
+
+        return;
       }
+
       try {
         this.hmrEngine.hmrUpdate(file);
       } catch (error) {
         this.config.logger.error(`Farm Hmr Update Error: ${error}`);
       }
     });
+
     const handleUpdateFinish = (updateResult: JsUpdateResult) => {
       const added = [
         ...updateResult.added,
@@ -276,6 +296,22 @@ export class Server extends httpServer {
     };
 
     this.hmrEngine?.onUpdateFinish(handleUpdateFinish);
+  }
+
+  #updateServerPort(serverPort: number, command: 'START' | 'WATCH') {
+    this.config.compilation.define.FARM_HMR_PORT = serverPort.toString();
+
+    if (this.config.server.hmr?.port === this.config.server?.port) {
+      this.config.server.hmr ??= {};
+      this.config.server.hmr.port = serverPort;
+    }
+    this.config.server.port = serverPort;
+
+    this.serverOptions.port = serverPort;
+
+    if (this.config.compilation.lazyCompilation) {
+      handleLazyCompilation(this.config, command);
+    }
   }
 
   /**
@@ -332,8 +368,7 @@ export class Server extends httpServer {
     let newServer: Server = null;
     try {
       await this.close();
-      newServer = new Server(this.inlineConfig);
-      await newServer.createServer();
+      newServer = await Server.createServer(this.inlineConfig);
     } catch (error) {
       this.logger.error(`Failed to restart server :\n ${error}`);
       return;
@@ -350,7 +385,7 @@ export class Server extends httpServer {
   async createWebSocketServer() {
     if (!this.httpServer) {
       throw new Error(
-        'Websocket requires a http server. please check the server is be created'
+        'Websocket requires a http server. please check the server is created'
       );
     }
 
@@ -390,8 +425,7 @@ export class Server extends httpServer {
         strictPort: strictPort,
         host: hostname.host
       });
-
-      this.config.compilation.define.FARM_HMR_PORT = serverPort.toString();
+      this.#updateServerPort(serverPort, 'START');
 
       this.resolvedUrls = await resolveServerUrls(this.httpServer, this.config);
 
@@ -476,7 +510,7 @@ export class Server extends httpServer {
       root,
       server
     } = this.config;
-    this.publicPath = publicPath;
+    this.publicPath = getValidPublicPath(publicPath);
     this.publicDir = publicDir;
     if (server.origin?.endsWith('/')) {
       server.origin = server.origin.slice(0, -1);
@@ -545,6 +579,10 @@ export class Server extends httpServer {
       if (typeof fn === 'function') fn();
     }, null);
 
+    this.serverOptions.middlewares?.forEach((middleware) =>
+      this.middlewares.use(middleware(this))
+    );
+
     if (appType === 'spa' || appType === 'mpa') {
       this.middlewares.use(htmlFallbackMiddleware(this));
       this.middlewares.use(notFoundMiddleware());
@@ -560,15 +598,17 @@ export class Server extends httpServer {
   async #compile(): Promise<void> {
     try {
       await this.compiler.compile();
-      // TODO need callWriteResourcesHook ？？
+
       await (this.config.server.writeToDisk
         ? this.compiler.writeResourcesToDisk()
         : this.compiler.callWriteResourcesHook());
     } catch (err) {
       this.config.logger.error(
-        `Compilation failed: ${convertErrorMessage(err)}`
+        `Compilation failed: ${convertErrorMessage(err)}`,
+        {
+          exit: true
+        }
       );
-      // throw err;
     }
   }
 
@@ -587,6 +627,15 @@ export class Server extends httpServer {
    * @private
    */
   async #startCompile() {
+    this.setCompiler(createCompiler(this.config));
+
+    for (const hook of getSortedPluginHooksBindThis(
+      this.config.jsPlugins,
+      'configureCompiler'
+    )) {
+      await hook?.(this.compiler);
+    }
+
     // check if cache dir exists
     const { persistentCache } = this.compiler.config.compilation;
     const hasCacheDir = await isCacheDirExists(

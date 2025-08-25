@@ -23,10 +23,9 @@ export default defineConfig({
     hmr: true,
     cors: true,
     middlewares: [
-      (server) => async (ctx, next) => {
-        await next();
-        if (ctx.path === '/' || ctx.status === 404) {
-          console.log('ctx.path', ctx.path);
+      (server) => async (req, res, next) => {
+        if (!res.writableEnded) {
+          console.log('ctx.url', req.url);
           const template = server
             .getCompiler()
             .resource('client.html')
@@ -34,16 +33,21 @@ export default defineConfig({
           const projectRoot = path.dirname(fileURLToPath(import.meta.url));
           const moudlePath = path.join(projectRoot, 'dist', 'index.js');
           const render = await import(pathToFileURL(moudlePath).toString()).then((m) => m['default']);
-          const renderedHtml = await render(ctx.path);
+          const renderedHtml = await render(req.url);
           const html = template.replace(
             '<div>app-html-to-replace</div>',
             renderedHtml
           );
-          ctx.body = html;
-          ctx.type = 'text/html';
-          ctx.status = 200;
+          console.log('write', req.url, res.writableEnded, res.statusCode, res.statusMessage);
+          res.writeHead(200, {
+            'Content-Type': 'text/html'
+          }).end(html);
+          return;
         }
-        console.log('ctx.path outer', ctx.path);
+
+        console.log('ctx.path outer', req.url);
+
+        next();
       }
     ]
   },

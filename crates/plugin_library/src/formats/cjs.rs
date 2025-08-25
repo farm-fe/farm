@@ -12,7 +12,8 @@ use farmfe_toolkit::{
   script::{
     create_top_level_ident,
     module2cjs::{self, TransformModuleDeclsOptions},
-    swc_try_with::try_with,
+    swc_try_with::{resolve_module_mark, try_with},
+    transform_to_esm::transform_hybrid::Hybrid2CjsCalleeAllocator,
   },
   swc_ecma_transforms::hygiene::{hygiene_with_config, Config},
   swc_ecma_utils::StmtLikeInjector,
@@ -22,7 +23,6 @@ use farmfe_toolkit::{
 use crate::{
   formats::{esm::create_farm_node_require_item, GenerateLibraryFormatResourcesOptions},
   import_meta_visitor::replace_import_meta_url,
-  transform_hybrid::Hybrid2CjsCalleeAllocator,
   utils::{add_format_to_generated_resources, emit_resource_pot, inject_farm_runtime_helpers},
 };
 
@@ -39,8 +39,15 @@ pub fn emit_cjs_resources(
   let globals = context.meta.get_resource_pot_globals(&resource_pot.id);
 
   try_with(cm, globals.value(), || {
-    let unresolved_mark = Mark::from_u32(meta.unresolved_mark);
-    let top_level_mark = Mark::from_u32(meta.top_level_mark);
+    // the syntax mark may be wrong after minify, so we need to re-resolve the marks if minify is enabled
+    let (unresolved_mark, top_level_mark) = if context.config.minify.enabled() {
+      resolve_module_mark(&mut meta.ast, false, globals.value())
+    } else {
+      (
+        Mark::from_u32(meta.unresolved_mark),
+        Mark::from_u32(meta.top_level_mark),
+      )
+    };
 
     let callee_allocator = Hybrid2CjsCalleeAllocator::new(top_level_mark);
 

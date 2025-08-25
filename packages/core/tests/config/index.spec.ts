@@ -13,11 +13,6 @@ describe('mergeFarmCliConfig', () => {
     const result = mergeFarmCliConfig({}, { root: '/path/to/' }, 'development');
 
     expect(result).toEqual({
-      clearScreen: false,
-      compilation: {
-        input: {}
-      },
-      watch: false,
       root: '/path/to/'
     });
   });
@@ -26,12 +21,7 @@ describe('mergeFarmCliConfig', () => {
     const result = mergeFarmCliConfig({ root: '/path/to/' }, {}, 'development');
 
     expect(result).toEqual({
-      root: '/path/to/',
-      clearScreen: false,
-      compilation: {
-        input: {}
-      },
-      watch: false
+      root: '/path/to/'
     });
   });
 
@@ -43,12 +33,7 @@ describe('mergeFarmCliConfig', () => {
     );
 
     expect(result).toEqual({
-      root: '/path/to/userConfig',
-      clearScreen: false,
-      compilation: {
-        input: {}
-      },
-      watch: false
+      root: '/path/to/userConfig'
     });
   });
 
@@ -68,11 +53,6 @@ describe('mergeFarmCliConfig', () => {
     );
 
     expect(result).toEqual({
-      clearScreen: false,
-      compilation: {
-        input: {}
-      },
-      watch: false,
       root: path.resolve(process.cwd(), './path/userConfig')
     });
   });

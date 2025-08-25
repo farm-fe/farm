@@ -68,4 +68,8 @@ fn concatenate_module_test() {
 
   fixture!("tests/fixtures/concatenate_module/**/index.ts", test);
   // fixture!("tests/fixtures/concatenate_module/export/**/index.ts", test);
+  // fixture!(
+  //   "tests/fixtures/concatenate_module/top_level_idents_circle/**/index.ts",
+  //   test
+  // );
 }

@@ -67,7 +67,7 @@ export function setProcessEnv(mode: CompilationMode) {
   process.env['NODE_ENV'] = mode;
 }
 
-export const isDisableCache = () => !!process.env.DISABLE_CACHE;
+export const isDisableCache = () => !!process.env.FARM_DISABLE_CACHE;
 
 export function getEnvFilesForMode(mode: string, envDir: string): string[] {
   return [`.env`, `.env.local`, `.env.${mode}`, `.env.${mode}.local`].map(

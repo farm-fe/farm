@@ -4,9 +4,7 @@ use std::sync::Arc;
 
 use dep_analyzer::DepAnalyzer;
 use farmfe_core::config::css::NameConversion;
-use farmfe_core::config::custom::{
-  get_config_css_modules_local_conversion, get_config_output_ascii_only,
-};
+use farmfe_core::config::custom::get_config_css_modules_local_conversion;
 use farmfe_core::config::AliasItem;
 use farmfe_core::module::meta_data::css::CssModuleMetaData;
 use farmfe_core::module::meta_data::script::CommentsMetaData;
@@ -614,7 +612,7 @@ impl Plugin for FarmPluginCss {
         } else {
           None
         },
-        get_config_output_ascii_only(&context.config),
+        context.config.output.ascii_only,
       );
 
       let resource = Resource {

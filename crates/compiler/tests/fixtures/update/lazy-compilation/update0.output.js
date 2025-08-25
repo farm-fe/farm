@@ -1,6 +1,7 @@
 global['__farm_default_namespace__'].m._rg=true;(function(moduleSystem, modules) {
     for(var moduleId in modules){
         var module = modules[moduleId];
+        module.url = import.meta.url;
         moduleSystem.g(moduleId, module);
     }
 })(global["__farm_default_namespace__"].m, {

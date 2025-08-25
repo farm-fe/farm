@@ -45,6 +45,23 @@ pub fn tree_shake_modules(
 
   let mut modules_to_remove = HashSet::default();
 
+  modules_to_remove.extend(
+    module_graph
+      .modules()
+      .into_iter()
+      .map(|m| m.id.clone())
+      .filter(|m_id| !visited_modules.contains(m_id)),
+  );
+
+  // sort visited_modules by execution order
+  let mut visited_modules: Vec<ModuleId> = visited_modules.into_iter().collect();
+  visited_modules.sort_by(|a, b| {
+    let a_meta = module_graph.module(a).unwrap();
+    let b_meta = module_graph.module(b).unwrap();
+
+    a_meta.execution_order.cmp(&b_meta.execution_order)
+  });
+
   // 3. remove statements that should not be used
   for tree_shake_module_id in &visited_modules {
     if tree_shake_modules_map.contains_key(tree_shake_module_id) {
@@ -55,14 +72,6 @@ pub fn tree_shake_modules(
       ));
     }
   }
-
-  modules_to_remove.extend(
-    module_graph
-      .modules()
-      .into_iter()
-      .map(|m| m.id.clone())
-      .filter(|m_id| !visited_modules.contains(m_id)),
-  );
 
   modules_to_remove.into_iter().collect()
 }

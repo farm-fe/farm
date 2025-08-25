@@ -162,10 +162,20 @@ impl Plugin for FarmPluginScriptMetaExports {
     module_graph: &mut ModuleGraph,
     context: &std::sync::Arc<farmfe_core::context::CompilationContext>,
   ) -> farmfe_core::error::Result<Option<()>> {
+    let is_entry_script = module_graph
+      .entries
+      .iter()
+      .any(|(id, _)| module_graph.module(id).unwrap().module_type.is_script());
+
     if !self.should_expand_exports {
       // if target is not library, means farm runtime is needed, and farm runtime needs to expand exports for runtime modules
       if !context.config.output.target_env.is_library() {
-        expand_dynamic_entry_exports(module_graph);
+        if is_entry_script {
+          expand_exports_of_module_graph(module_graph, context);
+        } else {
+          expand_dynamic_entry_exports(module_graph);
+        }
+
         return Ok(Some(()));
       }
 

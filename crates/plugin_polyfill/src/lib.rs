@@ -12,9 +12,8 @@ use farmfe_core::{
 use farmfe_toolkit::{
   preset_env_base::query::Query,
   script::swc_try_with::try_with,
-  sourcemap::create_swc_source_map,
   swc_ecma_preset_env::{self, transform_from_env, EnvConfig, Mode, Targets},
-  swc_ecma_transforms::Assumptions,
+  swc_ecma_transforms::{fixer, Assumptions},
   swc_ecma_transforms_base::helpers::inject_helpers,
   swc_ecma_visit::VisitMutWith,
 };
@@ -116,7 +115,7 @@ impl Plugin for FarmPluginPolyfill {
       return Ok(None);
     }
 
-    let (cm, _) = create_swc_source_map(param.module_id, param.content.clone());
+    let cm = context.meta.get_module_source_map(param.module_id);
     let globals = context.meta.get_globals(&param.module_id);
     try_with(cm, globals.value(), || {
       let unresolved_mark = Mark::from_u32(param.meta.as_script().unresolved_mark);
@@ -152,6 +151,7 @@ impl Plugin for FarmPluginPolyfill {
         self.assumptions,
       ));
       final_ast.visit_mut_with(&mut inject_helpers(unresolved_mark));
+      final_ast.visit_mut_with(&mut fixer(Some(&comments)));
 
       let module_ast = match final_ast {
         Program::Script(script_ast) => Module {

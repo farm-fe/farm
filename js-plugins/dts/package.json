@@ -16,8 +16,8 @@
   "scripts": {
     "build:tsc": "tsc -p ./tsconfig.build.json",
     "build": "farm build && npm run build:tsc",
-    "start": "farm build -w",
-    "dev": "farm build -w",
+    "start": "farm watch",
+    "dev": "farm watch",
     "clean": "rimraf dist tsconfig.build.tsbuildinfo build",
     "test": "echo \"Error: no test specified\" && exit 1"
   },

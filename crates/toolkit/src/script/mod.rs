@@ -7,7 +7,7 @@ use swc_ecma_codegen::{
 use swc_ecma_parser::{lexer::Lexer, Parser, StringInput, Syntax};
 
 use farmfe_core::{
-  config::{comments::CommentsConfig, custom::get_config_output_ascii_only},
+  config::comments::CommentsConfig,
   context::CompilationContext,
   error::{CompilationError, Result},
   module::ModuleId,
@@ -35,6 +35,7 @@ pub mod merge_swc_globals;
 pub mod module2cjs;
 pub mod module_system;
 pub mod swc_try_with;
+pub mod transform_to_esm;
 pub mod utils;
 pub mod wrap_farm_runtime;
 
@@ -107,7 +108,7 @@ pub struct CodeGenCommentsConfig<'a> {
 pub fn create_codegen_config(context: &CompilationContext) -> swc_ecma_codegen::Config {
   let minify = context.config.minify.enabled();
   let target = context.config.script.target.clone();
-  let ascii_only = get_config_output_ascii_only(&context.config);
+  let ascii_only = context.config.output.ascii_only;
 
   swc_ecma_codegen::Config::default()
     .with_minify(minify)

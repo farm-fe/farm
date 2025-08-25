@@ -30,7 +30,7 @@ export default defineConfig((env) => ({
     }
   },
   server: {
-    port: 9001
+    port: process.env.FARM_DEFAULT_SERVER_PORT ? Number(process.env.FARM_DEFAULT_SERVER_PORT) : 9001
   },
   plugins: [
     process.env.FARM_VISUALIZER ? visualizer() : null

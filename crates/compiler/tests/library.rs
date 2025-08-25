@@ -118,6 +118,7 @@ fn library_test() {
   //   "tests/fixtures/library/reexport/use_external_reexport/**/index.ts",
   //   test
   // );
+  // fixture!("tests/fixtures/library/cyclic/**/index.ts", test);
 }
 
 // farmfe_testing::testing! {

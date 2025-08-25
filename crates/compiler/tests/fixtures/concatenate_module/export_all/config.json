@@ -1,0 +1,19 @@
+{
+  "partialBundling": {
+    "enforceResources": [
+      {
+        "name": "vue-core",
+        "test": [
+          "vue-core.ts"
+        ]
+      },
+      {
+        "name": "vue-pack",
+        "test": [
+          "vue-dom.ts",
+          "vue.ts"
+        ]
+      }
+    ]
+  }
+}

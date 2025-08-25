@@ -177,22 +177,23 @@ export class WsServer {
     this.port = (hmrPort as number) || 9000;
     this.host = ((hmr && hmr.host) as string) || undefined;
 
-    if (!this.hmrOrigins) {
-      this.hmrOrigins = await this.generateHMROrigins(
-        this.devServer.config ?? {}
-      );
-    }
-
     if (this.httpServer) {
       let hmrBase = this.devServer.publicPath;
 
       const hmrPath = hmr?.path;
+
       if (hmrPath) {
         hmrBase = path.posix.join(hmrBase, hmrPath as string);
       }
 
       this.wss = new WebSocketServerRaw({ noServer: true });
-      this.hmrServerWsListener = (req, socket, head) => {
+      this.hmrServerWsListener = async (req, socket, head) => {
+        if (!this.hmrOrigins) {
+          this.hmrOrigins = await this.generateHMROrigins(
+            this.devServer.config ?? {}
+          );
+        }
+
         const origin = req.headers['origin'];
 
         if (

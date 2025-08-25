@@ -230,8 +230,8 @@ struct StripModuleContext {
   /// extra var decls that should be appended after import decls
   /// (source_module_id, export_str, var_decl)
   pub extra_var_decls: Vec<(SwcId, SwcId, ModuleItem)>,
-  /// `import { foo }` where foo can not be found
-  pub unresolved_imported_ident_map: HashMap<ModuleId, HashSet<(Option<SwcId>, ModuleExportIdent)>>,
+  /// `import { foo }` where foo can not be found or cyclic idents
+  pub cyclic_idents: HashMap<ModuleId, HashSet<(Option<SwcId>, ModuleExportIdent)>>,
 }
 
 fn strip_modules_asts(
@@ -289,7 +289,7 @@ fn strip_modules_asts(
     preserved_import_decls: vec![],
     preserved_export_decls: vec![],
     extra_var_decls: vec![],
-    unresolved_imported_ident_map: HashMap::default(),
+    cyclic_idents,
   };
 
   let mut strip_module_results = vec![];
@@ -334,12 +334,8 @@ fn strip_modules_asts(
     .rename_handler
     .replace(TopLevelIdentsRenameHandler::default());
 
-  let unresolved_imported_ident_map =
-    std::mem::take(&mut strip_context.unresolved_imported_ident_map);
-  cyclic_idents.extend(unresolved_imported_ident_map);
-
   // handle delayed rename
-  for (module_id, module_export_idents) in &cyclic_idents {
+  for (module_id, module_export_idents) in &strip_context.cyclic_idents {
     for (ident, module_export_ident) in module_export_idents {
       let module_export_ident = module_export_ident.as_internal();
 
@@ -350,17 +346,7 @@ fn strip_modules_asts(
 
       let final_ident = rename_handler
         .get_renamed_ident(&module_export_ident.module_id, &module_export_ident.ident)
-        .unwrap_or_else(|| {
-            if ident.is_some() {
-              println!(
-                "[Farm warn] rename imported ident failed (module_id: {:?}), please make sure export {:?} is defined in {:?}",
-                module_id.to_string(),
-                module_export_ident.ident,
-                module_export_ident.module_id
-              );
-            }
-            module_export_ident.ident.clone()
-        });
+        .unwrap_or(module_export_ident.ident.clone());
 
       let ident_to_rename = ident.as_ref().unwrap_or(&module_export_ident.ident);
 
@@ -387,7 +373,7 @@ fn strip_modules_asts(
         result,
         &mut strip_context,
         module_graph,
-        &rename_handler,
+        &mut rename_handler,
       );
     }
 
@@ -407,7 +393,10 @@ fn strip_modules_asts(
       result.ast.body.push(create_var_namespace_item(
         &module_id,
         export_ident_map,
-        cyclic_idents.get(&module_id).unwrap_or(&HashSet::default()),
+        strip_context
+          .cyclic_idents
+          .get(&module_id)
+          .unwrap_or(&HashSet::default()),
         &rename_handler,
       ));
     }
@@ -451,7 +440,7 @@ fn strip_modules_asts(
   strip_module_results
     .par_iter_mut()
     .for_each(|(module_id, result)| {
-      let mut rename_visitor = unique_idents::RenameVisitor::new(module_id, &rename_handler);
+      let mut rename_visitor = unique_idents::RenameVisitor::new(module_id, None, &rename_handler);
 
       result.items_to_prepend.visit_mut_with(&mut rename_visitor);
       result.ast.visit_mut_with(&mut rename_visitor);
@@ -515,7 +504,6 @@ fn merge_stripped_module_asts(
     };
 
     external_modules.insert(source_kind, item.source_module_id.clone());
-    // concatenated_ast.body.push(item.import_item);
   }
 
   let preserved_export_decls = strip_context.preserved_export_decls;
@@ -575,7 +563,7 @@ fn handle_external_reexport_idents(
   result: &mut StripModuleDeclResult,
   strip_context: &mut StripModuleContext,
   module_graph: &ModuleGraph,
-  rename_handler: &TopLevelIdentsRenameHandler,
+  rename_handler: &mut TopLevelIdentsRenameHandler,
 ) {
   if module_meta.reexport_ident_map.is_empty() {
     return;
@@ -588,20 +576,21 @@ fn handle_external_reexport_idents(
       ModuleReExportIdentType::FromExportAll(from_module_id) => from_module_id,
       ModuleReExportIdentType::FromExportNamed { from_module_id, .. } => from_module_id,
     };
-    let ident: SwcId = export_str.as_str().into();
-    if let Some(first_external_module_id) = is_ident_reexported_from_external_module(
-      module_ids,
-      source_module_id,
-      &ident,
-      export_str,
-      module_graph,
-      &rename_handler,
-      &mut HashSet::default(),
-    ) {
+
+    if let Some((closest_external_module_id, local_export_str)) =
+      is_ident_reexported_from_external_module(
+        module_ids,
+        source_module_id,
+        export_str,
+        module_graph,
+        &rename_handler,
+        &mut HashSet::default(),
+      )
+    {
       external_module_idents_map
-        .entry(first_external_module_id)
+        .entry(closest_external_module_id)
         .or_insert(vec![])
-        .push((ident, export_str.to_string()));
+        .push((export_str.as_str().into(), local_export_str));
     }
   }
 
@@ -622,8 +611,27 @@ fn handle_external_reexport_idents(
     statements_to_remove.extend(handle_external_module_idents(
       &mut params,
       &source_module_id,
-      idents,
+      idents.clone(),
     ));
+
+    for (ident, _) in idents {
+      let original_export_str = ident.sym.as_str();
+      let export_ident = module_meta
+        .export_ident_map
+        .get(original_export_str)
+        .unwrap();
+      let export_ident = export_ident.as_internal();
+
+      let renamed_ident = rename_handler
+        .get_renamed_ident(&module_id, &ident)
+        .unwrap_or(ident);
+
+      rename_handler.rename_ident(
+        export_ident.module_id.clone(),
+        export_ident.ident.clone(),
+        renamed_ident,
+      );
+    }
   }
 
   statements_to_remove.reverse();

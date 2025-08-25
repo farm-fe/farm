@@ -47,8 +47,6 @@ pub trait ImportMetaGlobResolver {
   fn resolve(&self, params: ImportMetaGlobResolverParams) -> Option<String>;
 }
 
-type AliasMap = HashMap<String, String>;
-
 pub fn transform_import_meta_glob<R: ImportMetaGlobResolver>(
   ast: &mut SwcModule,
   root: String,

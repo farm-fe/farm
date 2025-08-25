@@ -7,6 +7,7 @@ import fse from 'fs-extra';
 import { bindingPath } from '../../../binding/index.js';
 import {
   colors,
+  getValidPublicPath,
   isArray,
   isEmptyObject,
   isNodeEnv,
@@ -30,7 +31,7 @@ import {
 
 import { normalizeCss } from './normalize-css.js';
 import { normalizeExternal } from './normalize-external.js';
-import { getValidPublicPath, normalizeOutput } from './normalize-output.js';
+import { normalizeOutput } from './normalize-output.js';
 import { normalizePersistentCache } from './normalize-persistent-cache.js';
 import { normalizeResolve } from './normalize-resolve.js';
 
@@ -104,9 +105,6 @@ export async function normalizeUserCompilationConfig(
     {
       // skip self define
       ['FARM' + '_PROCESS_ENV']: resolvedUserConfig.env
-      // FARM_RUNTIME_TARGET_ENV: JSON.stringify(
-      //   resolvedCompilation.output?.targetEnv
-      // )
     },
     resolvedCompilation?.define,
     // for node target, we should not define process.env.NODE_ENV
@@ -238,9 +236,9 @@ export async function normalizeUserCompilationConfig(
   if (resolvedCompilation.script?.plugins?.length) {
     resolvedUserConfig.logger.info(
       `Swc plugins are configured, note that Farm uses ${colors.yellow(
-        'swc_core v0.96'
+        'swc_core v35.0.0'
       )}, please make sure the plugin is ${colors.green('compatible')} with swc_core ${colors.yellow(
-        'swc_core v0.96'
+        'swc_core v35.0.0'
       )}. Otherwise, it may exit unexpectedly.`
     );
   }
@@ -262,12 +260,6 @@ export async function normalizeUserCompilationConfig(
   if (resolvedCompilation.presetEnv === undefined) {
     resolvedCompilation.presetEnv ??= isProduction;
   }
-
-  // setting the custom configuration
-  resolvedCompilation.custom = {
-    ...(resolvedCompilation.custom || {}),
-    [CUSTOM_KEYS.runtime_isolate]: `${!!resolvedCompilation.runtime.isolate}`
-  };
 
   // Auto enable decorator by default when `script.decorators` is enabled
   if (resolvedCompilation.script?.decorators !== undefined)

@@ -122,13 +122,19 @@ impl TopLevelIdentsRenameHandler {
 
 pub struct RenameVisitor<'a> {
   module_id: &'a ModuleId,
+  source_module_id: Option<&'a ModuleId>,
   rename_handler: &'a TopLevelIdentsRenameHandler,
 }
 
 impl<'a> RenameVisitor<'a> {
-  pub fn new(module_id: &'a ModuleId, rename_handler: &'a TopLevelIdentsRenameHandler) -> Self {
+  pub fn new(
+    module_id: &'a ModuleId,
+    source_module_id: Option<&'a ModuleId>,
+    rename_handler: &'a TopLevelIdentsRenameHandler,
+  ) -> Self {
     Self {
       module_id,
+      source_module_id,
       rename_handler,
     }
   }
@@ -141,6 +147,32 @@ impl<'a> RenameVisitor<'a> {
 }
 
 impl<'a> VisitMut for RenameVisitor<'a> {
+  fn visit_mut_import_decl(&mut self, node: &mut farmfe_core::swc_ecma_ast::ImportDecl) {
+    if let Some(source_module_id) = self.source_module_id {
+      node.src = Box::new(source_module_id.to_string().into());
+    }
+
+    node.visit_mut_children_with(self);
+  }
+
+  fn visit_mut_export_all(&mut self, node: &mut farmfe_core::swc_ecma_ast::ExportAll) {
+    if let Some(source_module_id) = self.source_module_id {
+      node.src = Box::new(source_module_id.to_string().into());
+    }
+
+    node.visit_mut_children_with(self);
+  }
+
+  fn visit_mut_named_export(&mut self, node: &mut farmfe_core::swc_ecma_ast::NamedExport) {
+    if node.src.is_none()
+      && let Some(source_module_id) = self.source_module_id
+    {
+      node.src = Some(Box::new(source_module_id.to_string().into()));
+    }
+
+    node.visit_mut_children_with(self);
+  }
+
   fn visit_mut_import_specifier(&mut self, sp: &mut ImportSpecifier) {
     if let ImportSpecifier::Named(named) = sp {
       // import { a as aa } to import { a as aa1 }

@@ -7,10 +7,8 @@ import { urlRegex } from '../../utils/http.js';
 import { Logger } from '../../utils/logger.js';
 import {
   FARM_TARGET_BROWSER_ENVS,
-  mapTargetEnvValue,
-  normalizePath
+  mapTargetEnvValue
 } from '../../utils/share.js';
-import { CUSTOM_KEYS } from '../constants.js';
 import { ResolvedCompilation } from '../types.js';
 
 export function normalizeOutput(
@@ -45,11 +43,6 @@ export function normalizeOutput(
   if (config.output.clean === undefined) {
     config.output.clean = true;
   }
-
-  config.custom = {
-    ...(config.custom || {}),
-    [CUSTOM_KEYS.output_ascii_only]: `${!!config.output.asciiOnly}`
-  };
 
   // only set default polyfill in production
   if (isProduction) {
@@ -270,16 +263,4 @@ export function normalizePublicPath(
     );
 
   return defaultPublicPath;
-}
-
-export function getValidPublicPath(publicPath = '/'): string {
-  let validPublicPath = '';
-
-  if (publicPath.startsWith('/')) {
-    validPublicPath = publicPath;
-  } else if (publicPath.startsWith('.')) {
-    validPublicPath = normalizePath(path.join('/', publicPath));
-  }
-
-  return validPublicPath;
 }

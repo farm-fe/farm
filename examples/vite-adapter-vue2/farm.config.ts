@@ -18,7 +18,7 @@ export default defineConfig({
         target: "https://apis.juhe.cn/environment/river",
         changeOrigin: true,
         ws: true,
-        pathRewrite: { "^/aaa": "" }
+        rewrite: (path) => path.startsWith('/aaa') ? path.replace('/aaa', '') : path
       },
     },
   },
