@@ -19,7 +19,7 @@ describe(`e2e tests - ${name}`, async () => {
       command
     );
 
-  test('exmaples arco-pro run start', async () => {
+  test('exmaples react-ssr run start', async () => {
     await watchProjectAndTest(projectPath, async (log, done) => {
       console.log(log);
       if (log.includes('Build completed in')) {
@@ -29,7 +29,7 @@ describe(`e2e tests - ${name}`, async () => {
     }, 'watch');
   },)
 
-  test('exampels arco-pro run preview', async () => {
+  test('exampels react-ssr run preview', async () => {
     execSync('npm run build', {
       cwd: projectPath,
       stdio: 'inherit'

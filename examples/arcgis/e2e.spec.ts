@@ -29,11 +29,11 @@ describe(`e2e tests - ${name}`, async () => {
       command
     );
 
-  test('exmaples arco-pro run start', async () => {
+  test('exmaples arcgis run start', async () => {
     await runTest();
   })
 
-  test('exampels arco-pro run preview', async () => {
+  test('exampels arcgis run preview', async () => {
     await runTest('preview');
   })
 });
