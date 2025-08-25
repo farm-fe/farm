@@ -158,12 +158,12 @@ export class Server extends httpServer {
       // close server function prepare promise
       this.closeHttpServerFn = this.closeServer();
 
-      // init hmr engine When actually updating, we need to get the clients of ws for broadcast, 、
-      // so we can instantiate hmrEngine by default at the beginning.
-      this.createHmrEngine();
-
-      // init websocket server
+      // init websocket server first
       await this.createWebSocketServer();
+
+      // init hmr engine after websocket server is ready
+      // When actually updating, we need to get the clients of ws for broadcast
+      this.createHmrEngine();
 
       // invalidate vite handler
       this.#invalidateVite();

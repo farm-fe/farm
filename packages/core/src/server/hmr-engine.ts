@@ -1,188 +1,128 @@
-import fse from 'fs-extra';
-
-import { stat } from 'node:fs/promises';
-import { isAbsolute, relative } from 'node:path';
-
-import type { Resource } from '@farmfe/runtime';
 import { HmrOptions } from '../config/index.js';
 import type { JsUpdateResult } from '../types/binding.js';
-import { convertErrorMessage } from '../utils/error.js';
-import { bold, cyan, green } from '../utils/index.js';
-import { Server as FarmDevServer } from './index.js';
+import { HmrBroadcaster } from './hmr/hmrBroadcaster.js';
+import { HmrCoordinator } from './hmr/hmrCoordinator.js';
+import { HmrErrorHandler } from './hmr/hmrErrorHandler.js';
+import type { Server as FarmDevServer } from './index.js';
 
+/**
+ * Refactored HMR Engine
+ * Separation of concerns: Coordinator handles update flow, Broadcaster handles message sending, Error Handler handles exceptions
+ */
 export class HmrEngine {
-  private _updateQueue: string[] = [];
+  private coordinator: HmrCoordinator;
+  private broadcaster: HmrBroadcaster;
+  private errorHandler: HmrErrorHandler;
+  private _onUpdates: ((result: JsUpdateResult) => void)[] = [];
+  private lastUpdateResult?: JsUpdateResult;
 
-  private _onUpdates: ((result: JsUpdateResult) => void)[];
-
-  private _lastModifiedTimestamp: Map<string, string>;
   constructor(private readonly devServer: FarmDevServer) {
-    this._lastModifiedTimestamp = new Map();
+    // Initialize broadcaster
+    this.broadcaster = new HmrBroadcaster({
+      ws: devServer.ws,
+      hmrOptions: devServer.config?.server?.hmr as HmrOptions
+    });
+
+    // Initialize error handler
+    this.errorHandler = new HmrErrorHandler({
+      logger: devServer.logger,
+      onError: (error) => {
+        // Broadcast error to clients
+        this.broadcaster.broadcastError(error);
+      }
+    });
+
+    // Initialize coordinator
+    this.coordinator = new HmrCoordinator({
+      compiler: devServer.compiler,
+      broadcaster: this.broadcaster,
+      logger: devServer.logger,
+      writeToDisk: devServer.config?.server?.writeToDisk
+    });
+
+    // Register update completion callback
+    this.coordinator.onUpdateFinish((result) => {
+      this.lastUpdateResult = result;
+      this.callUpdates(result);
+    });
   }
 
-  callUpdates(result: JsUpdateResult) {
-    this._onUpdates?.forEach((cb) => cb(result));
-  }
+  /**
+   * Trigger HMR update
+   */
+  async hmrUpdate(absPath: string | string[], force = false): Promise<void> {
+    try {
+      await this.coordinator.triggerUpdate(absPath, force);
+    } catch (error) {
+      const { shouldRetry, formattedError } =
+        await this.errorHandler.handleError(error as Error, {
+          module: Array.isArray(absPath) ? absPath[0] : absPath
+        });
 
-  onUpdateFinish(cb: (result: JsUpdateResult) => void) {
-    if (!this._onUpdates) {
-      this._onUpdates = [];
+      if (shouldRetry) {
+        // Retry after delay
+        setTimeout(() => {
+          this.hmrUpdate(absPath, force);
+        }, 1000);
+      } else {
+        // Log error and notify clients
+        this.devServer.logger.error(formattedError, { exit: true });
+      }
     }
+  }
+
+  /**
+   * Compatibility method for old recompileAndSendResult
+   * @deprecated Use hmrUpdate instead
+   */
+  async recompileAndSendResult(): Promise<JsUpdateResult | void> {
+    // This method is kept for backward compatibility
+    // Delegate to coordinator to process the queue
+    try {
+      // Get pending paths from coordinator's queue
+      const pendingPaths = this.coordinator.getPendingPaths();
+      if (pendingPaths.length === 0) {
+        return;
+      }
+
+      // Process the update queue
+      await this.coordinator.triggerUpdate(pendingPaths, true);
+
+      // Return the last update result for compatibility
+      return this.lastUpdateResult;
+    } catch (error) {
+      this.devServer.logger.error(`recompileAndSendResult failed: ${error}`);
+      return;
+    }
+  }
+
+  /**
+   * Register update completion callback
+   */
+  onUpdateFinish(cb: (result: JsUpdateResult) => void): void {
     this._onUpdates.push(cb);
   }
 
-  recompileAndSendResult = async (): Promise<JsUpdateResult> => {
-    const queue = [...this._updateQueue];
-
-    if (queue.length === 0) {
-      return;
-    }
-    const logger = this.devServer.logger;
-    let updatedFilesStr = queue
-      .map((item) => {
-        if (isAbsolute(item)) {
-          return relative(this.devServer.compiler.config.root, item);
-        } else {
-          const resolvedPath = this.devServer.compiler.transformModulePath(
-            this.devServer.compiler.config.root,
-            item
-          );
-          return relative(this.devServer.compiler.config.root, resolvedPath);
-        }
-      })
-      .join(', ');
-    if (updatedFilesStr.length >= 100) {
-      updatedFilesStr =
-        updatedFilesStr.slice(0, 100) + `...(${queue.length} files)`;
-    }
-
-    // try {
-    // we must add callback before update
-    this.devServer.compiler.onUpdateFinish(async () => {
-      // if there are more updates, recompile again
-      if (this._updateQueue.length > 0) {
-        await this.recompileAndSendResult();
-      }
-      if (this.devServer.config?.server.writeToDisk) {
-        this.devServer.compiler.writeResourcesToDisk();
-      }
-    });
-
-    const start = performance.now();
-
-    const result = await this.devServer.compiler.update(queue);
-
-    logger.info(
-      `${bold(cyan(updatedFilesStr))} updated in ${bold(green(logger.formatTime(performance.now() - start)))}`
-    );
-
-    // clear update queue after update finished
-    this._updateQueue = this._updateQueue.filter(
-      (item) => !queue.includes(item)
-    );
-
-    let dynamicResourcesMap: Record<string, Resource[]> = null;
-
-    if (result.dynamicResourcesMap) {
-      for (const [key, value] of Object.entries(result.dynamicResourcesMap)) {
-        if (!dynamicResourcesMap) {
-          dynamicResourcesMap = {} as Record<string, Resource[]>;
-        }
-
-        // @ts-ignore
-        dynamicResourcesMap[key] = value.map((r) => ({
-          path: r[0],
-          type: r[1] as 'script' | 'link'
-        }));
-      }
-    }
-    const {
-      added,
-      changed,
-      removed,
-      immutableModules,
-      mutableModules,
-      boundaries
-    } = result;
-    const resultStr = `{
-        added: [${formatHmrResult(added)}],
-        changed: [${formatHmrResult(changed)}],
-        removed: [${formatHmrResult(removed)}],
-        immutableModules: ${JSON.stringify(immutableModules.trim())},
-        mutableModules: ${JSON.stringify(mutableModules.trim())},
-        boundaries: ${JSON.stringify(boundaries)},
-        dynamicResourcesMap: ${JSON.stringify(dynamicResourcesMap)}
-      }`;
-
-    this.callUpdates(result);
-
-    this.devServer.ws.wss.clients.forEach((client) => {
-      client.send(`
-        {
-          type: 'farm-update',
-          result: ${resultStr}
-        }
-      `);
-    });
-    // TODO optimize this part
-    // } catch (err) {
-    // checkClearScreen(this.devServer.compiler.config.config);
-    // this.devServer.logger.error(convertErrorMessage(err));
-
-    // }
-  };
-
-  async hmrUpdate(absPath: string | string[], force = false) {
-    const paths = Array.isArray(absPath) ? absPath : [absPath];
-    for (const path of paths) {
-      if (
-        this.devServer.compiler.hasModule(path) &&
-        !this._updateQueue.includes(path)
-      ) {
-        if (fse.existsSync(path)) {
-          const lastModifiedTimestamp = this._lastModifiedTimestamp.get(path);
-          const currentTimestamp = (await stat(path)).mtime.toISOString();
-          // only update the file if the timestamp changed since last update
-          if (!force && lastModifiedTimestamp === currentTimestamp) {
-            continue;
-          }
-          this._lastModifiedTimestamp.set(path, currentTimestamp);
-        }
-        // push the path into the queue
-        this._updateQueue.push(path);
-      }
-    }
-
-    if (!this.devServer.compiler.compiling && this._updateQueue.length > 0) {
-      try {
-        await this.recompileAndSendResult();
-      } catch (e) {
-        const serialization = e.message.replace(/\x1b\[[0-9;]*m/g, '');
-        const errorStr = `${JSON.stringify({
-          message: serialization
-        })}`;
-
-        this.devServer.ws.wss.clients.forEach((client) => {
-          // @ts-ignore
-          // client.rawSend(`
-          client.send(`
-            {
-              type: 'error',
-              err: ${errorStr},
-              overlay: ${(this.devServer.config.server.hmr as HmrOptions).overlay}
-            }
-          `);
-        });
-
-        this.devServer.logger.error(convertErrorMessage(e), {
-          exit: true
-        });
-        // throw new Error(`hmr update failed: ${e.stack}`);
-      }
-    }
+  /**
+   * Call all update callbacks
+   */
+  callUpdates(result: JsUpdateResult): void {
+    this._onUpdates?.forEach((cb) => cb(result));
   }
-}
 
-function formatHmrResult(array: string[]) {
-  return array.map((item) => `'${item.replaceAll('\\', '\\\\')}'`).join(', ');
+  /**
+   * Get error statistics
+   */
+  getErrorStats(): Map<string, number> {
+    return this.errorHandler.getErrorStats();
+  }
+
+  /**
+   * Cleanup resources
+   */
+  dispose(): void {
+    this.coordinator.dispose();
+    this.errorHandler.clearHistory();
+    this._onUpdates = [];
+  }
 }
