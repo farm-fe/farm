@@ -8,9 +8,20 @@ import { execa } from 'execa';
 export const concurrencyLimit = 50;
 
 function getServerPort(): Promise<number> {
+  // retry 3 times
+  let retryCount = 0;
+
   return fetch('http://127.0.0.1:12306/port')
     .then((r) => r.text())
-    .then(Number);
+    .then(Number)
+    .catch(async () => {
+      if (retryCount < 3) {
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        retryCount++;
+        return getServerPort();
+      }
+      throw new Error('get server port failed');
+    });
 }
 
 const visitPage = async (
