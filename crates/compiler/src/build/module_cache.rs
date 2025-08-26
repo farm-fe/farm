@@ -235,7 +235,6 @@ pub fn set_module_graph_cache(module_ids: Vec<ModuleId>, context: &Arc<Compilati
           })
           .collect(),
         is_expired: false,
-        metadata: Default::default(),
       };
 
       context
@@ -243,16 +242,6 @@ pub fn set_module_graph_cache(module_ids: Vec<ModuleId>, context: &Arc<Compilati
         .module_cache
         .set_cache(module.id.clone(), cached_module);
     });
-}
-
-pub fn handle_module_metadata(cached_module: &mut CachedModule, context: &Arc<CompilationContext>) {
-  if let Some(map) = cached_module.metadata.take() {
-    context
-      .cache_manager
-      .module_cache
-      .module_metadata
-      .set_map(cached_module.module.id.clone(), map);
-  };
 }
 
 /// recreate syntax context for the cached module
@@ -297,8 +286,6 @@ pub fn handle_cached_modules(
     &cached_module.watch_dependencies,
     context,
   )?;
-
-  handle_module_metadata(cached_module, context);
 
   // clear module groups and resource pot as it will be re-resolved later
   cached_module.module.module_groups.clear();

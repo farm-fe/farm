@@ -1,16 +1,13 @@
-use std::sync::Arc;
+use std::collections::HashMap;
 
 use dashmap::DashMap;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
+use rkyv::Deserialize;
 
 use crate::{
-  cache::{
-    store::{constant::CacheStoreTrait, CacheStoreKey},
-    CacheContext,
-    // cache_store::{CacheStore, CacheStoreKey},
-    // resource_cache::resource_memory_store::ArchivedCachedResourcePot,
-  },
-  deserialize, serialize, HashMap,
+  cache::cache_store::{CacheStore, CacheStoreKey},
+  config::Mode,
+  deserialize, serialize,
 };
 
 use super::resource_memory_store::{CachedResourcePot, ResourceMemoryStore};
@@ -18,17 +15,15 @@ use super::resource_memory_store::{CachedResourcePot, ResourceMemoryStore};
 /// In memory store for Resource Pot
 pub struct ResourcePotMemoryStore {
   /// low level cache store
-  store: Box<dyn CacheStoreTrait>,
+  store: CacheStore,
   /// resource pot id -> Cached Resource Pot
   cached_resources: DashMap<String, CachedResourcePot>,
 }
 
 impl ResourcePotMemoryStore {
-  pub fn new(context: Arc<CacheContext>) -> Self {
-    let store = context.store_factory.create_cache_store("resource");
-
+  pub fn new(cache_dir_str: &str, namespace: &str, mode: Mode) -> Self {
     Self {
-      store,
+      store: CacheStore::new(cache_dir_str, namespace, mode, "resource"),
       cached_resources: DashMap::new(),
     }
   }
@@ -58,8 +53,13 @@ impl ResourceMemoryStore for ResourcePotMemoryStore {
       return Some(resource);
     }
 
-    if let Some(cache) = self.store.read_cache_ref(name) {
-      let resource = deserialize!(&cache.value(), CachedResourcePot);
+    let cache = self.store.read_cache(name);
+
+    if let Some(cache) = cache {
+      let resource = deserialize!(&cache, CachedResourcePot);
+      // self
+      //   .cached_resources
+      //   .insert(name.to_string(), resource.clone());
       return Some(resource);
     }
 
@@ -67,7 +67,7 @@ impl ResourceMemoryStore for ResourcePotMemoryStore {
   }
 
   fn write_cache(&self) {
-    let mut cache_map = HashMap::default();
+    let mut cache_map = HashMap::new();
 
     for entry in self.cached_resources.iter() {
       let store_key = CacheStoreKey {

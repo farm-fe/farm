@@ -1,11 +1,14 @@
 use std::sync::Arc;
 
 use farmfe_core::{
-  cache::store::CacheStoreKey,
+  cache::cache_store::CacheStoreKey,
   context::CompilationContext,
   deserialize,
   module::{
-    meta_data::script::{CommentsMetaData, ScriptModuleMetaData},
+    meta_data::{
+      script::{CommentsMetaData, ScriptModuleMetaData},
+      ArchivedModuleMetaData,
+    },
     ModuleId, ModuleMetaData, ModuleSystem, ModuleType,
   },
   plugin::{PluginFinalizeModuleHookParam, ResolveKind},
@@ -70,11 +73,8 @@ pub fn transform_css_to_script_modules(
         if cache_manager.custom.has_cache(&store_key.name)
           && !cache_manager.custom.is_cache_changed(&store_key)
         {
-          let cache = cache_manager
-            .custom
-            .read_cache_ref(&store_key.name)
-            .unwrap();
-          let mut meta = Box::new(deserialize!(&cache, ModuleMetaData));
+          let cache = cache_manager.custom.read_cache(&store_key.name).unwrap();
+          let mut meta = Box::new(deserialize!(&cache, ModuleMetaData, ArchivedModuleMetaData));
           let script_meta = meta.as_script_mut();
 
           // clear previous mark when using cache

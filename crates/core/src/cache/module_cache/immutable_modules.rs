@@ -1,19 +1,18 @@
-use std::sync::Arc;
+use std::collections::{HashMap, HashSet};
 
 use dashmap::DashMap;
 use farmfe_macro_cache_item::cache_item;
 use farmfe_utils::hash::sha256;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 
+use crate::deserialize;
 use crate::{
   cache::{
-    store::{constant::CacheStoreTrait, CacheStoreKey},
+    cache_store::{CacheStore, CacheStoreKey},
     utils::cache_panic,
-    CacheContext, CacheType,
   },
-  deserialize,
+  config::Mode,
   module::ModuleId,
-  HashMap, HashSet,
 };
 
 use super::{module_memory_store::ModuleMemoryStore, CachedModule};
@@ -41,7 +40,7 @@ impl CachedPackage {
 pub struct ImmutableModulesMemoryStore {
   cache_dir: String,
   /// low level cache store
-  store: Box<dyn CacheStoreTrait>,
+  store: CacheStore,
   /// ModuleId -> Cached Module
   cached_modules: DashMap<ModuleId, CachedModule>,
   /// moduleId -> PackageKey
@@ -50,11 +49,12 @@ pub struct ImmutableModulesMemoryStore {
 }
 
 impl ImmutableModulesMemoryStore {
-  pub fn new(context: Arc<CacheContext>) -> Self {
-    let store = context.store_factory.create_cache_store("immutable-module");
+  pub fn new(cache_dir_str: &str, namespace: &str, mode: Mode) -> Self {
+    let store = CacheStore::new(cache_dir_str, namespace, mode, "immutable-modules");
+
+    let manifest_bytes = store.read_cache(MANIFEST_KEY).unwrap_or_default();
     let manifest: HashMap<String, String> =
-      serde_json::from_slice(&store.read_cache(MANIFEST_KEY).unwrap_or_default())
-        .unwrap_or_default();
+      serde_json::from_slice(&manifest_bytes).unwrap_or_default();
     let manifest = manifest
       .into_iter()
       .map(|(key, value)| (ModuleId::from(key), value))
@@ -65,15 +65,9 @@ impl ImmutableModulesMemoryStore {
     for (key, value) in manifest.iter() {
       let mut set = manifest_reversed
         .entry(value.clone())
-        .or_insert_with(HashSet::default);
+        .or_insert_with(HashSet::new);
       set.insert(key.clone());
     }
-
-    let cache_dir_str = if let CacheType::Disk { cache_dir, .. } = &context.option {
-      cache_dir.clone()
-    } else {
-      "VIRTUAL_CACHE_DIR".to_string()
-    };
 
     Self {
       store,
@@ -84,15 +78,18 @@ impl ImmutableModulesMemoryStore {
     }
   }
 
-  fn read_cached_package(&self, package_key: &str) -> Option<CachedPackage> {
-    let cache = self.store.remove_cache(package_key)?;
+  fn read_cached_package(&self, package_key: &str) -> CachedPackage {
+    let cache = self
+      .store
+      .read_cache(package_key)
+      .expect("Cache broken, please remove node_modules/.farm and retry.");
 
-    Some(deserialize!(&cache, CachedPackage))
+    crate::deserialize!(&cache, CachedPackage)
   }
 
   fn read_package(&self, module_id: &ModuleId) -> Option<()> {
     if let Some(package_key) = self.manifest.get(module_id) {
-      let package = self.read_cached_package(package_key.value())?;
+      let package = self.read_cached_package(package_key.value());
 
       for module in package.list {
         self.cached_modules.insert(module.module.id.clone(), module);
@@ -119,9 +116,17 @@ impl ModuleMemoryStore for ImmutableModulesMemoryStore {
       return Some(module);
     }
 
-    self.read_package(key);
+    if self.read_package(key).is_some() {
+      return Some(
+        self
+          .cached_modules
+          .remove(key)
+          .map(|item| item.1)
+          .expect("Cache broken, please remove node_modules/.farm and retry."),
+      );
+    }
 
-    self.cached_modules.remove(key).map(|(_, m)| m)
+    None
   }
 
   fn get_cache_ref(
@@ -132,9 +137,16 @@ impl ModuleMemoryStore for ImmutableModulesMemoryStore {
       return Some(module);
     }
 
-    self.read_package(key);
+    if self.read_package(key).is_some() {
+      return Some(
+        self
+          .cached_modules
+          .get(key)
+          .unwrap_or_else(|| cache_panic(&key.to_string(), &self.cache_dir)),
+      );
+    }
 
-    self.cached_modules.get(key)
+    None
   }
 
   fn get_cache_mut_ref(
@@ -145,14 +157,22 @@ impl ModuleMemoryStore for ImmutableModulesMemoryStore {
       return Some(self.cached_modules.get_mut(key).unwrap());
     }
 
-    self.read_package(key);
+    if self.read_package(key).is_some() {
+      return Some(
+        self
+          .cached_modules
+          .get_mut(key)
+          .unwrap_or_else(|| cache_panic(&key.to_string(), &self.cache_dir)),
+      );
+    }
 
-    self.cached_modules.get_mut(key)
+    None
   }
 
   fn write_cache(&self) {
-    let mut packages = HashMap::default();
-    let mut pending_remove_modules = HashSet::default();
+    let mut packages = HashMap::new();
+    let mut pending_remove_modules = HashSet::new();
+    let mut maybe_remove_package = HashSet::new();
 
     for item in self.cached_modules.iter() {
       let module = item.value();
@@ -162,6 +182,7 @@ impl ModuleMemoryStore for ImmutableModulesMemoryStore {
 
       if module.is_expired {
         pending_remove_modules.insert(item.key().clone());
+        maybe_remove_package.insert(package_key);
         continue;
       }
 
@@ -175,11 +196,18 @@ impl ModuleMemoryStore for ImmutableModulesMemoryStore {
       self.cached_modules.remove(&key);
       self.manifest.remove(&key);
       self.manifest_reversed.iter_mut().for_each(|mut item| {
-        let package_modules = item.value_mut();
-        if package_modules.contains(&key) {
-          package_modules.remove(&key);
+        if item.value_mut().contains(&key) {
+          item.value_mut().remove(&key);
         }
       })
+    }
+
+    for package in maybe_remove_package {
+      if packages.contains_key(&package) {
+        return;
+      }
+
+      self.store.remove_cache(&package);
     }
 
     let manifest = self
@@ -204,7 +232,8 @@ impl ModuleMemoryStore for ImmutableModulesMemoryStore {
         };
 
         // the package is already cached, we only need to update it
-        if let Some(modules_in_package) = self.manifest_reversed.get(&key) {
+        if self.manifest_reversed.contains_key(&key) {
+          let modules_in_package = self.manifest_reversed.get(&key).unwrap();
           let mut added_modules = vec![];
 
           for module_id in modules {
@@ -216,7 +245,7 @@ impl ModuleMemoryStore for ImmutableModulesMemoryStore {
 
           // add the new modules to the package
           if !added_modules.is_empty() {
-            let mut package = self.read_cached_package(&key)?;
+            let mut package = self.read_cached_package(&key);
             package.list.extend(
               added_modules
                 .into_par_iter()
@@ -253,7 +282,7 @@ impl ModuleMemoryStore for ImmutableModulesMemoryStore {
             })
             .collect(),
           name: key.split('@').next().unwrap().to_string(),
-          version: key.split('@').next_back().unwrap().to_string(),
+          version: key.split('@').last().unwrap().to_string(),
         };
 
         let package_bytes = crate::serialize!(&package);
