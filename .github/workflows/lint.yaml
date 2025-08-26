@@ -27,6 +27,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.4.0
+          run_install: false
       - uses: actions/setup-node@v3
         with:
           node-version: 18
@@ -38,7 +43,7 @@ jobs:
           timeout_minutes: 10
           max_attempts: 3
           retry_wait_seconds: 60
-          command: npm install -g pnpm@9.4.0 && pnpm i --frozen-lockfile
+          command: pnpm i --frozen-lockfile
 
       - name: Run lint
         run: npx biome check --no-errors-on-unmatched --files-ignore-unknown=true
