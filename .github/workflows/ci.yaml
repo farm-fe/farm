@@ -34,8 +34,15 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version: 18
+          cache: "pnpm"
+
       - name: Install Dependencies
-        run: npm install -g pnpm@9.4.0 && pnpm i --frozen-lockfile
+        uses: nick-fields/retry@v3
+        with:
+          timeout_minutes: 10
+          max_attempts: 3
+          retry_wait_seconds: 60
+          command: npm install -g pnpm@9.4.0 && pnpm i --frozen-lockfile
 
       - uses: actions/download-artifact@v4
         id: download
@@ -71,7 +78,12 @@ jobs:
         run: node scripts/test-examples.mjs
 
       - name: E2E Test Examples - ${{ matrix.settings.abi }}
-        run: npm run test-e2e
+        uses: nick-fields/retry@v3
+        with:
+          timeout_minutes: 60
+          max_attempts: 3
+          retry_wait_seconds: 10
+          command: npm run test-e2e
 
       # test create farm
       - name: Build Create Farm

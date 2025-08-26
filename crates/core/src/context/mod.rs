@@ -95,7 +95,7 @@ impl CompilationContext {
       config.persistent_cache = Box::new(PersistentCacheConfig::Obj(cache_config_obj));
 
       (
-        cache_dir.expect("FarmDiskCache should have cache_dir filed, please check your config"),
+        cache_dir.unwrap_or("node_modules/.farm/cache".to_string()),
         namespace,
       )
     } else {

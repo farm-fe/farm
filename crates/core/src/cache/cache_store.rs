@@ -79,11 +79,11 @@ impl CacheStore {
 
   /// return true if the cache changed or it's a cache item
   pub fn is_cache_changed(&self, store_key: &CacheStoreKey) -> bool {
-    if let Some(guard) = self.manifest.get(&store_key.name) {
-      if guard.value() == &store_key.key {
-        // the cache is not changed
-        return false;
-      }
+    if let Some(guard) = self.manifest.get(&store_key.name)
+      && guard.value() == &store_key.key
+    {
+      // the cache is not changed
+      return false;
     }
 
     true

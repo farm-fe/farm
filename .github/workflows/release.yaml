@@ -23,6 +23,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 18.x
+          cache: "pnpm"
 
       # batch download artifacts
       - uses: actions/download-artifact@v4
@@ -53,7 +54,13 @@ jobs:
           done
 
       - name: Install Dependencies
-        run: npm install -g pnpm@9.4.0 && pnpm i --frozen-lockfile
+        uses: nick-fields/retry@v3
+        with:
+          timeout_minutes: 10
+          max_attempts: 3
+          retry_wait_seconds: 60
+          command: npm install -g pnpm@9.4.0 && pnpm i --frozen-lockfile
+
       - name: Build Plugin Tools
         run: pnpm --filter @farmfe/plugin-tools run build
 

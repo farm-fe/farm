@@ -282,7 +282,7 @@ impl ModuleMemoryStore for ImmutableModulesMemoryStore {
             })
             .collect(),
           name: key.split('@').next().unwrap().to_string(),
-          version: key.split('@').last().unwrap().to_string(),
+          version: key.split('@').next_back().unwrap().to_string(),
         };
 
         let package_bytes = crate::serialize!(&package);
