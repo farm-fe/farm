@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.0.22-nightly-20250827162746
+
+### Patch Changes
+
+- 9a227ad: Chore: release v2 nightly
+
 ## 0.0.21
 
 ### Patch Changes

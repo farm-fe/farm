@@ -1,5 +1,11 @@
 # @farmfe/utils
 
+## 1.0.0-nightly-20250827162746
+
+### Patch Changes
+
+- 9a227ad: Chore: release v2 nightly
+
 ## 1.0.0-nightly-20241022124925
 
 ### Major Changes

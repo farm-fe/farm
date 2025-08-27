@@ -1,5 +1,11 @@
 # @farmfe/js-plugin-dts
 
+## 0.6.6-nightly-20250827162746
+
+### Patch Changes
+
+- 9a227ad: Chore: release v2 nightly
+
 ## 0.6.5
 
 ### Patch Changes

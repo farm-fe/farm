@@ -1,6 +1,6 @@
 {
   "name": "@farmfe/js-plugin-visualizer",
-  "version": "1.1.4",
+  "version": "1.1.5-nightly-20250827162746",
   "main": "./build/cjs/index.cjs",
   "types": "./build/index.d.ts",
   "type": "module",
