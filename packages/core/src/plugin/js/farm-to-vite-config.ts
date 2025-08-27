@@ -1,7 +1,8 @@
+import path from 'path';
 import { WatchOptions } from 'chokidar';
 import type { UserConfig as ViteUserConfig } from 'vite';
 import type { UserConfig } from '../../config/types.js';
-import { Logger } from '../../index.js';
+import { Logger, normalizePath } from '../../index.js';
 import merge from '../../utils/merge.js';
 import { EXTERNAL_KEYS, VITE_DEFAULT_ASSETS } from './constants.js';
 import {
@@ -25,7 +26,7 @@ export function farmUserConfigToViteConfig(config: UserConfig): ViteUserConfig {
   }
 
   const viteConfig: ViteUserConfig = {
-    root: config.root,
+    root: normalizePath(config.root),
     base: config.compilation?.output?.publicPath ?? '/',
     publicDir: config.publicDir ?? 'public',
     mode: config.compilation?.mode,
@@ -315,7 +316,9 @@ export function viteConfigToFarmConfig(
   };
 
   if (config.root) {
-    farmConfig.root = config.root;
+    farmConfig.root = path.isAbsolute(config.root)
+      ? path.resolve(config.root)
+      : config.root;
   }
   if (config?.css) {
     farmConfig.compilation.css ??= {};

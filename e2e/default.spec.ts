@@ -11,7 +11,7 @@ const excludeExamples: string[] = ['issues1433', 'nestjs'];
 describe('Default E2E Tests', async () => {
   const examples = readdirSync('./examples')
   // const examples = ['react-ssr', 'solid-ssr', 'vue-ssr'];
-  // const examples = ['tailwind-next'];
+  // const examples = ['module-concatenation', 'tailwind-next'];
   logger(`Running E2E tests for ${examples.length} examples`);
 
   console.log('exclude examples', excludeExamples);

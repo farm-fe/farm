@@ -228,7 +228,12 @@ pub fn set_module_graph_cache(module_ids: Vec<ModuleId>, context: &Arc<Compilati
               "empty".to_string()
             };
             CachedWatchDependency {
-              dependency: id.clone(),
+              dependency: if cfg!(windows) {
+                // on windows, the exit code is not 0 when using id.clone(), we have to copy the memory and create a new ModuleId
+                id.to_string().into()
+              } else {
+                id.clone()
+              },
               timestamp: get_timestamp_of_module(id, &context.config.root),
               hash: get_content_hash_of_module(&content),
             }

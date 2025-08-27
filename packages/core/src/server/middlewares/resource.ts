@@ -109,7 +109,7 @@ export function resourceDiskMiddleware(
       return next();
     }
     const { config, compiler } = app;
-    const root = path.resolve(
+    const root = path.join(
       compiler.config.root,
       config.compilation.output.path
     );

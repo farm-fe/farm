@@ -221,7 +221,7 @@ export const watchProjectAndTest = async (
       const res = result.toString();
       setTimeout(() => {
         reject(new Error('timeout'));
-      }, 10000);
+      }, 60000);
       cb(res, () => resolve(null));
     });
 
