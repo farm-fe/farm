@@ -1,5 +1,13 @@
 # @farmfe/js-plugin-svgr
 
+## 2.0.0-nightly-20250827162746
+
+### Patch Changes
+
+- 9a227ad: Chore: release v2 nightly
+- Updated dependencies [63908eb]
+  - @farmfe/core@2.0.0-nightly-20250827162746
+
 ## 2.0.0-nightly-20250729025629
 
 ### Patch Changes

@@ -1,5 +1,17 @@
 # @farmfe/core
 
+## 2.0.0-nightly-20250827162746
+
+### Patch Changes
+
+- 63908eb: add module metadata cache & cache api
+- Updated dependencies [9a227ad]
+  - @farmfe/runtime@1.0.0-nightly-20250827162746
+  - @farmfe/runtime-plugin-hmr@4.0.0-nightly-20250827162746
+  - @farmfe/runtime-plugin-import-meta@1.0.0-nightly-20250827162746
+  - @farmfe/utils@1.0.0-nightly-20250827162746
+  - @farmfe/plugin-replace-dirname@1.0.0-nightly-20250827162746
+
 ## 2.0.0-nightly-20250729025629
 
 ### Patch Changes
