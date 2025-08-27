@@ -2,7 +2,7 @@ name: Publish packages and crates
 on:
   push:
     branches:
-      - main
+      - v1-main
 
 concurrency: ${{ github.workflow }}-${{ github.ref }}
 

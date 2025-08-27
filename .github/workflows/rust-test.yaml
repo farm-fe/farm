@@ -2,7 +2,7 @@ name: Unit Tests
 on:
   pull_request:
     branches:
-      - main
+      - v1-main
 
 concurrency:
   group: test-${{ github.workflow }}-${{ github.ref }}

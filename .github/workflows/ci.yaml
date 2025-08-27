@@ -2,7 +2,7 @@ name: E2E Tests
 on:
   pull_request:
     branches:
-      - main
+      - v1-main
 
 concurrency:
   group: e2e-${{ github.workflow }}-${{ github.ref }}
@@ -105,7 +105,7 @@ jobs:
       - name: Type Check With Tsc
         run: pnpm run --filter "@farmfe/*" type-check
       - name: Changesets Check
-        run: npx changeset status --since=origin/main
+        run: npx changeset status --since=origin/v1-main
 
   ts-test:
     name: Typescript Test
