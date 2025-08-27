@@ -265,6 +265,8 @@ pub struct RuntimeConfig {
   pub swc_helpers_path: String,
   /// namespace for the runtime
   pub namespace: String,
+  /// emit isolate runtime resource
+  pub isolate: bool,
 }
 
 impl Default for RuntimeConfig {
@@ -274,6 +276,7 @@ impl Default for RuntimeConfig {
       plugins: vec![],
       swc_helpers_path: String::from(""),
       namespace: String::from("__farm_default_namespace__"),
+      isolate: false,
     }
   }
 }

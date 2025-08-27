@@ -27,10 +27,9 @@ export default {
     hmr: true,
     cors: true,
     middlewares: [
-      (server) => {
-        server.app().use(async (ctx, next) => {
-          await next();
-          if (ctx.path === '/' || ctx.status === 404) {
+      (server) => 
+        async (req, res, next) => {
+          if (!res.writableEnded) {
             // console.log('ctx.path', ctx.path);
             const template = server
               .getCompiler()
@@ -39,20 +38,19 @@ export default {
             const projectRoot = path.dirname(fileURLToPath(import.meta.url));
             const moudlePath = path.join(projectRoot, 'dist', 'index.js');
             const render = await import(pathToFileURL(moudlePath)).then((m) => m['default']);
-            const renderedHtml = render(ctx.path);
+            const renderedHtml = render(req.url);
             // console.log(renderedHtml);
             const html = template.replace(
               '{app-html-to-replace}',
               renderedHtml
             );
-            ctx.body = html;
-            ctx.type = 'text/html';
-            ctx.status = 200;
+            res.writeHead(200, { 'Content-Type': 'text/html' }).end(html);
+            return;
           }
 
-          console.log('ctx.path outer', ctx.path);
-        });
-      }
+          console.log('req.url outer', req.url);
+          next();
+        }
     ]
   },
   plugins: ['@farmfe/plugin-react', '@farmfe/plugin-sass']

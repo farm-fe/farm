@@ -33,7 +33,6 @@ pub fn analyze_statement_info(id: &StatementId, stmt: &ModuleItem) -> AnalyzedSt
   let mut defined_idents = HashSet::default();
   let mut import_info = None;
   let mut export_info = None;
-  let mut top_level_await = false;
 
   match stmt {
     ModuleItem::ModuleDecl(module_decl) => match module_decl {
@@ -146,13 +145,12 @@ pub fn analyze_statement_info(id: &StatementId, stmt: &ModuleItem) -> AnalyzedSt
           ),
         }
       }
-      swc_ecma_ast::ModuleDecl::ExportDefaultExpr(default_expr) => {
+      swc_ecma_ast::ModuleDecl::ExportDefaultExpr(_) => {
         export_info = Some(ExportInfo {
           source: None,
           specifiers: vec![ExportSpecifierInfo::Default],
           stmt_id: *id,
         });
-        top_level_await = contains_top_level_await(&default_expr.expr);
       }
       swc_ecma_ast::ModuleDecl::ExportNamed(export_named) => {
         let mut specifiers = vec![];
@@ -232,11 +230,6 @@ pub fn analyze_statement_info(id: &StatementId, stmt: &ModuleItem) -> AnalyzedSt
           defined_idents.extend(get_defined_idents_from_var_decl(var_decl));
         }
       }
-      swc_ecma_ast::Stmt::Expr(expr_stmt) => {
-        if contains_top_level_await(expr_stmt) {
-          top_level_await = true;
-        }
-      }
       // other statements do not define any idents
       _ => {}
     },
@@ -247,7 +240,7 @@ pub fn analyze_statement_info(id: &StatementId, stmt: &ModuleItem) -> AnalyzedSt
     import_info,
     export_info,
     defined_idents: defined_idents.into_iter().map(|i| i.into()).collect(),
-    top_level_await,
+    top_level_await: contains_top_level_await(stmt),
   }
 }
 

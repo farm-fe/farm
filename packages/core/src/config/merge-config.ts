@@ -50,7 +50,6 @@ export function mergeFarmCliConfig(
   mode: CompilationMode
 ): UserConfig {
   let left: UserConfig = {};
-  const options = initialCliOptions(cliOption);
 
   (
     [
@@ -66,9 +65,9 @@ export function mergeFarmCliConfig(
       'vitePlugins'
     ] satisfies (keyof UserConfig)[]
   ).forEach((key: keyof (FarmCliOptions & UserConfig)) => {
-    const value = options[key];
+    const value = cliOption[key];
     if (value || typeof value === 'boolean') {
-      left = mergeConfig(left, { [key]: options[key] });
+      left = mergeConfig(left, { [key]: cliOption[key] });
     }
   });
 
@@ -103,83 +102,51 @@ export function mergeFarmCliConfig(
   }
 
   if (
-    isString(options.server?.host) ||
-    typeof options.server?.host === 'boolean'
+    isString(cliOption.server?.host) ||
+    typeof cliOption.server?.host === 'boolean'
   ) {
-    left = mergeConfig(left, { server: { host: options.host } });
+    left = mergeConfig(left, { server: { host: cliOption.host } });
   }
 
-  if (typeof options.compilation?.minify === 'boolean') {
-    left = mergeConfig(left, { compilation: { minify: options.minify } });
+  if (typeof cliOption.compilation?.minify === 'boolean') {
+    left = mergeConfig(left, { compilation: { minify: cliOption.minify } });
   }
 
-  if (options.compilation?.output?.path) {
+  if (cliOption.compilation?.output?.path) {
     left = mergeConfig(left, {
-      compilation: { output: { path: options.outDir } }
+      compilation: { output: { path: cliOption.outDir } }
     });
   }
 
-  if (options.mode) {
+  if (cliOption.mode) {
     left = mergeConfig(left, {
       compilation: {
-        mode: mode ?? (options.mode as UserConfig['compilation']['mode'])
+        mode: mode ?? (cliOption.mode as UserConfig['compilation']['mode'])
       }
     });
   }
 
-  if (options.server?.port) {
+  if (cliOption.server?.port) {
     left = mergeConfig(left, {
       server: {
-        port: options.port
+        port: cliOption.port
       }
     });
   }
 
-  if (options.server?.https) {
+  if (cliOption.server?.https) {
     left = mergeConfig(left, {
       server: {
-        https: options.https
+        https: cliOption.https
       }
     });
   }
 
-  if (options.compilation?.sourcemap) {
+  if (cliOption.compilation?.sourcemap) {
     left = mergeConfig(left, {
-      compilation: { sourcemap: options.sourcemap }
+      compilation: { sourcemap: cliOption.sourcemap }
     });
   }
 
   return mergeConfig(left, target);
-}
-
-export function initialCliOptions(
-  options: FarmCliOptions & UserConfig
-): FarmCliOptions & UserConfig {
-  const { mode, watch } = options;
-
-  const compilationOptions = options.compilation || {};
-
-  const input = compilationOptions.input
-    ? Object.values(compilationOptions.input).filter(Boolean)
-    : [];
-  const hasInput = input.length > 0;
-
-  const compilation: UserConfig['compilation'] = mergeConfig(
-    {
-      input: hasInput ? { ...compilationOptions.input } : {}
-    },
-    compilationOptions
-  );
-
-  const defaultOptions = {
-    compilation,
-    watch: !!watch,
-    root: options.root,
-    server: options.server,
-    clearScreen: !!options.clearScreen,
-    configFile: options.configFile,
-    ...(mode && { mode })
-  };
-
-  return defaultOptions;
 }

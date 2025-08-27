@@ -1,9 +1,7 @@
-use std::sync::Arc;
+use crate::config::Mode;
 
 use self::resource_memory_store::{CachedResourcePot, ResourceMemoryStore};
 use self::resource_pot::ResourcePotMemoryStore;
-
-use super::CacheContext;
 
 pub mod resource_memory_store;
 pub mod resource_pot;
@@ -13,9 +11,9 @@ pub struct ResourceCacheManager {
 }
 
 impl ResourceCacheManager {
-  pub fn new(context: Arc<CacheContext>) -> Self {
+  pub fn new(cache_dir_str: &str, namespace: &str, mode: Mode) -> Self {
     Self {
-      resource_pot_store: ResourcePotMemoryStore::new(context),
+      resource_pot_store: ResourcePotMemoryStore::new(cache_dir_str, namespace, mode),
     }
   }
 

@@ -49,18 +49,6 @@ export const EXAMPLES_DIR = resolve(CWD, "./examples");
 
 export const excludedJsPlugin = ["dts"];
 
-const skipExamples = [
-  // circle build when run `pnpm run build`
-  "electron",
-  // @swc/plugin-emotion version conflict
-  "emotion",
-  // solid js plugin alias compatible
-  "solid",
-  "solid-ssr",
-  // tree shake failed when farm build
-  "vanilla-extract",
-];
-
 const execa = async (...args) => {
   const execaPkg = await import("execa");
   return execaPkg.execa(...args);
@@ -87,10 +75,8 @@ export const buildExamples = async () => {
 
   for (const example of examples) {
     const examplePath = join("./examples", example);
-    if (
-      !existsSync(join(examplePath, "package.json")) ||
-      skipExamples.includes(example)
-    ) {
+
+    if (!existsSync(join(examplePath, "package.json"))) {
       continue;
     }
     console.log("Building", examplePath);

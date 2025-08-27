@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use farmfe_core::{
-  config::{config_regex::ConfigRegex, custom::get_config_output_ascii_only},
+  config::config_regex::ConfigRegex,
   context::CompilationContext,
   error::{CompilationError, Result},
   module::{
@@ -145,7 +145,7 @@ pub fn css_codegen(
     ast,
     false,
     if source_map_enabled { Some(cm) } else { None },
-    get_config_output_ascii_only(&context.config),
+    context.config.output.ascii_only,
   );
 
   Ok((code, map))

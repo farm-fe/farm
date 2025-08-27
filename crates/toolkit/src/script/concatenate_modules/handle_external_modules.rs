@@ -231,7 +231,7 @@ fn push_new_preserved_import(
       .or(Some(defined_ident.clone()));
   }
 
-  let mut rename_visitor = RenameVisitor::new(module_id, &rename_handler);
+  let mut rename_visitor = RenameVisitor::new(module_id, Some(source_module_id), &rename_handler);
   item.visit_mut_with(&mut rename_visitor);
 
   let is_namespace_import = is_namespace_import_stmt(statement);

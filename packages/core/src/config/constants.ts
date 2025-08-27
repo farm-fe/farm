@@ -18,11 +18,8 @@ export const FARM_DEFAULT_NAMESPACE = 'FARM_DEFAULT_NAMESPACE';
 
 export const CUSTOM_KEYS = {
   external_record: 'external.record',
-  runtime_isolate: 'runtime.isolate',
   resolve_dedupe: 'resolve.dedupe',
-  css_locals_conversion: 'css.modules.locals_conversion',
-  assets_mode: 'assets.mode',
-  output_ascii_only: 'output.ascii_only'
+  css_locals_conversion: 'css.modules.locals_conversion'
 };
 
 export const FARM_RUST_PLUGIN_FUNCTION_ENTRY = 'func.js';
@@ -77,7 +74,10 @@ export const DEFAULT_DEV_SERVER_OPTIONS: NormalizedServerConfig = {
   preview: {
     host: 'localhost',
     headers: {},
-    port: 1911,
+    port:
+      (process.env.FARM_DEFAULT_SERVER_PORT &&
+        Number(process.env.FARM_DEFAULT_SERVER_PORT)) ||
+      1911,
     strictPort: false,
     https: undefined,
     distDir: 'dist',

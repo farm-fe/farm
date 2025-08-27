@@ -131,7 +131,6 @@ export function proxyMiddleware(
     for (const context in proxies) {
       if (doesProxyContextMatchUrl(context, url)) {
         const [proxy, opts] = proxies[context];
-        const options: httpProxy.ServerOptions = {};
 
         if (opts.bypass) {
           const bypassResult = opts.bypass(req, res, opts);
@@ -147,7 +146,8 @@ export function proxyMiddleware(
         if (opts.rewrite) {
           req.url = opts.rewrite(req.url!);
         }
-        proxy.web(req, res, options);
+
+        proxy.web(req, res, opts);
         return;
       }
     }

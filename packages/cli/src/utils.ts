@@ -3,7 +3,7 @@ import { isAbsolute, resolve } from 'node:path';
 
 import { Logger } from '@farmfe/core';
 
-import type { build, clean, preview, start } from '@farmfe/core';
+import type { build, clean, preview, start, watch } from '@farmfe/core';
 import type {
   CleanOptions,
   CliBuildOptions,
@@ -26,6 +26,7 @@ const logger = new Logger();
 export async function resolveCore(): Promise<{
   start: typeof start;
   build: typeof build;
+  watch: typeof watch;
   preview: typeof preview;
   clean: typeof clean;
 }> {
@@ -61,7 +62,6 @@ export function cleanOptions(
   delete resolveOptions['--'];
   delete resolveOptions.m;
   delete resolveOptions.c;
-  delete resolveOptions.w;
   delete resolveOptions.l;
   delete resolveOptions.lazy;
   delete resolveOptions.mode;

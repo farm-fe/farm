@@ -9,15 +9,19 @@ use farmfe_core::{
   context::CompilationContext,
   error::{CompilationError, Result},
   module::{
-    meta_data::script::{CommentsMetaData, ScriptModuleMetaData},
-    module_graph::ModuleGraph,
-    ModuleMetaData, ModuleSystem, VIRTUAL_MODULE_PREFIX,
+    meta_data::script::{
+      CommentsMetaData, ScriptModuleMetaData, FARM_RUNTIME_MODULE_HELPER_ID,
+      FARM_RUNTIME_MODULE_SYSTEM_ID,
+    },
+    module_graph::{ModuleGraph, ModuleGraphEdgeDataItem},
+    ModuleId, ModuleMetaData, ModuleSystem, VIRTUAL_MODULE_PREFIX,
   },
   plugin::{
     GeneratedResource, Plugin, PluginAnalyzeDepsHookParam, PluginGenerateResourcesHookResult,
     PluginHookContext, PluginLoadHookParam, PluginLoadHookResult, PluginParseHookParam,
     PluginProcessModuleHookParam, PluginResolveHookParam, ResolveKind,
   },
+  rayon::iter::{IntoParallelRefMutIterator, ParallelIterator},
   resource::{
     meta_data::{js::JsResourcePotMetaData, ResourcePotMetaData},
     resource_pot::{ResourcePot, ResourcePotType},
@@ -25,6 +29,7 @@ use farmfe_core::{
   },
   swc_common::{comments::SingleThreadedComments, Globals, Mark, SourceMap, GLOBALS},
   swc_ecma_ast::{EsVersion, Module as SwcModule},
+  HashSet,
 };
 use farmfe_swc_transformer_import_glob::{
   transform_import_meta_glob, ImportMetaGlobResolver, ImportMetaGlobResolverParams,
@@ -35,6 +40,9 @@ use farmfe_toolkit::{
     codegen_module,
     concatenate_modules::{concatenate_modules_ast, ConcatenateModulesAstOptions},
     create_codegen_config, module_type_from_id, parse_module, syntax_from_module_type,
+    transform_to_esm::{
+      self, get_cjs_require_only_modules, update_module_graph_edges_of_cjs_modules,
+    },
     CodeGenCommentsConfig, ParseScriptModuleResult,
   },
   sourcemap::{
@@ -46,7 +54,10 @@ use farmfe_toolkit::{
 };
 
 #[cfg(feature = "swc_plugin")]
-use swc_plugins::{init_plugin_module_cache_once, transform_by_swc_plugins};
+use swc_plugin_runner::runtime::Runtime as PluginRuntime;
+
+#[cfg(feature = "swc_plugin")]
+use swc_plugins::transform_by_swc_plugins;
 
 mod deps_analyzer;
 #[cfg(feature = "swc_plugin")]
@@ -56,9 +67,15 @@ mod transform_import_meta_url;
 
 use transform_import_meta_url::transform_url_with_import_meta_url;
 
+#[cfg(feature = "swc_plugin")]
+use crate::swc_plugins::compile_wasm_plugins;
+
 /// ScriptPlugin is used to support compiling js/ts/jsx/tsx/... files, support loading, parse, analyze dependencies and code generation.
 /// Note that we do not do transforms here, the transforms (e.g. strip types, jsx...) are handled in a separate plugin (farmfe_plugin_swc_transforms).
-pub struct FarmPluginScript {}
+pub struct FarmPluginScript {
+  #[cfg(feature = "swc_plugin")]
+  plugin_runtime: Option<Arc<dyn PluginRuntime>>,
+}
 
 impl Plugin for FarmPluginScript {
   fn name(&self) -> &str {
@@ -197,7 +214,7 @@ impl Plugin for FarmPluginScript {
       use farmfe_toolkit::script::swc_try_with::try_with;
 
       try_with(cm.clone(), globals.value(), || {
-        transform_by_swc_plugins(param, context).unwrap()
+        transform_by_swc_plugins(param, self.plugin_runtime.clone().unwrap(), context).unwrap()
       })?;
     }
 
@@ -264,6 +281,83 @@ impl Plugin for FarmPluginScript {
     }
   }
 
+  fn process_resource_pots(
+    &self,
+    resource_pots: &mut Vec<&mut ResourcePot>,
+    context: &Arc<CompilationContext>,
+  ) -> Result<Option<()>> {
+    for resource_pot in resource_pots {
+      if resource_pot.resource_pot_type == ResourcePotType::DynamicEntryJs {
+        let mut module_graph = context.module_graph.write();
+
+        // transform cjs/hybrid module to esm
+        let (cjs_require_map, export_namespace_modules) =
+          update_module_graph_edges_of_cjs_modules(&mut module_graph, Some(&resource_pot.modules));
+        let cjs_required_only_modules: HashSet<&ModuleId> =
+          get_cjs_require_only_modules(&cjs_require_map);
+
+        let cjs_module_ids = module_graph
+          .modules()
+          .iter()
+          .filter(|m| {
+            resource_pot.modules.contains(&m.id)
+              && m.meta.as_script().module_system.contains_commonjs()
+          })
+          .map(|m| m.id.clone())
+          .collect::<Vec<_>>();
+
+        // add @farm-runtime/module-system and @farm-runtime/module-helper as dependency of cjs modules
+        for cjs_module_id in cjs_module_ids {
+          let mut add_edge_item = |dep_id: &ModuleId, source: String, order: usize| {
+            module_graph
+              .add_edge_item(
+                &cjs_module_id,
+                dep_id,
+                ModuleGraphEdgeDataItem {
+                  source,
+                  kind: ResolveKind::Import,
+                  order,
+                },
+              )
+              .unwrap();
+          };
+
+          add_edge_item(
+            &FARM_RUNTIME_MODULE_SYSTEM_ID.into(),
+            FARM_RUNTIME_MODULE_SYSTEM_ID.to_string(),
+            0,
+          );
+          add_edge_item(
+            &FARM_RUNTIME_MODULE_HELPER_ID.into(),
+            FARM_RUNTIME_MODULE_HELPER_ID.to_string(),
+            1,
+          );
+        }
+
+        module_graph
+          .modules_mut()
+          .par_iter_mut()
+          .filter(|m| resource_pot.modules.contains(&m.id))
+          .for_each(|module| {
+            transform_to_esm::transform_module_to_esm(
+              module,
+              &cjs_require_map,
+              &cjs_required_only_modules,
+              context,
+            );
+          });
+
+        transform_to_esm::update_export_namespace_ident(
+          &export_namespace_modules,
+          &cjs_required_only_modules,
+          &mut module_graph,
+        );
+      }
+    }
+
+    Ok(Some(()))
+  }
+
   fn render_resource_pot(
     &self,
     resource_pot: &ResourcePot,
@@ -273,6 +367,7 @@ impl Plugin for FarmPluginScript {
     // render dynamic entry resource pot like farm runtime or web worker
     if resource_pot.resource_pot_type == ResourcePotType::DynamicEntryJs {
       let module_graph = context.module_graph.read();
+
       let result = concatenate_modules_ast(
         resource_pot.entry_module.as_ref().unwrap(),
         &resource_pot.modules,
@@ -365,14 +460,24 @@ impl Plugin for FarmPluginScript {
 }
 
 impl FarmPluginScript {
-  pub fn new(_config: &Config) -> Self {
+  pub fn new(config: &Config) -> Self {
     #[cfg(feature = "swc_plugin")]
-    init_plugin_module_cache_once(_config);
+    {
+      let plugin_runtime = Arc::new(swc_plugin_backend_wasmer::WasmerRuntime);
+
+      compile_wasm_plugins(None, &config.script.plugins, &*plugin_runtime)
+        .unwrap_or_else(|_| panic!("Failed to compile wasm plugins"));
+
+      Self {
+        plugin_runtime: Some(plugin_runtime),
+      }
+    }
+
+    #[cfg(not(feature = "swc_plugin"))]
     Self {}
   }
 }
 
-/// TODO move this function to farmfe_toolkit
 pub fn generate_code_and_sourcemap(
   resource_pot: &ResourcePot,
   module_graph: &ModuleGraph,

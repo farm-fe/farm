@@ -40,6 +40,7 @@ pub enum PreservedImportDeclType {
   ExternalOriginal,
 }
 
+#[derive(Debug)]
 pub struct PreservedImportDeclItem {
   pub import_item: ModuleItem,
   pub source_module_id: ModuleId,
@@ -127,6 +128,7 @@ fn strip_import_statements(params: &mut StripModuleDeclStatementParams) -> Vec<S
           .module_graph
           .get_dep_by_source(params.module_id, &import_info.source, None);
       let source_module = params.module_graph.module(&source_module_id).unwrap();
+
       // if the source module is external, we should keep the import statement
       if is_module_external(source_module, params.module_ids) {
         handle_external_module(HandleExternalModuleOptions::from(
@@ -179,10 +181,9 @@ fn strip_import_statements(params: &mut StripModuleDeclStatementParams) -> Vec<S
 
         // if the ident is not renamed and the ident is defined in a external module
         if rename_handler.get_renamed_ident(module_id, ident).is_none()
-          && let Some(source_module_id) = is_ident_reexported_from_external_module(
+          && let Some((source_module_id, export_str)) = is_ident_reexported_from_external_module(
             module_ids,
             &source_module_id,
-            ident,
             export_str,
             module_graph,
             &rename_handler,
@@ -192,7 +193,7 @@ fn strip_import_statements(params: &mut StripModuleDeclStatementParams) -> Vec<S
           external_module_idents_map
             .entry(source_module_id)
             .or_insert(vec![])
-            .push((ident.clone(), export_str.to_string()));
+            .push((ident.clone(), export_str));
           continue;
         }
 
@@ -209,10 +210,29 @@ fn strip_import_statements(params: &mut StripModuleDeclStatementParams) -> Vec<S
           source_module_script_meta.export_ident_map.get(export_str)
         {
           strip_context
-            .unresolved_imported_ident_map
+            .cyclic_idents
             .entry(module_id.clone())
             .or_default()
             .insert((Some(ident.clone()), module_export_ident.clone()));
+        } else {
+          let export_ident = source_module_script_meta
+            .export_ident_map
+            .get(export_str)
+            .unwrap();
+
+          if strip_context
+            .cyclic_idents
+            .get(&source_module_id)
+            .map(|idents| idents.contains(&(None, export_ident.clone())))
+            .unwrap_or(false)
+          {
+            // the import is a cyclic idents
+            strip_context
+              .cyclic_idents
+              .entry(module_id.clone())
+              .or_default()
+              .insert((Some(ident.clone()), export_ident.clone()));
+          }
         }
       }
 
@@ -242,6 +262,7 @@ fn strip_export_statements(params: &mut StripModuleDeclStatementParams) -> Vec<S
             .module_graph
             .get_dep_by_source(params.module_id, source, None);
         let source_module = params.module_graph.module(&source_module_id).unwrap();
+
         // if the source module is external, we should keep the export statement
         if is_module_external(source_module, params.module_ids) {
           let handle_external_module_result = handle_external_module(
@@ -483,12 +504,11 @@ pub fn is_module_external(source_module: &Module, module_ids: &HashSet<ModuleId>
 pub fn is_ident_reexported_from_external_module(
   module_ids: &HashSet<ModuleId>,
   source_module_id: &ModuleId,
-  ident: &SwcId,
   export_str: &str,
   module_graph: &ModuleGraph,
   rename_handler: &TopLevelIdentsRenameHandler,
   visited: &mut HashSet<ModuleId>,
-) -> Option<ModuleId> {
+) -> Option<(ModuleId, String)> {
   if visited.contains(source_module_id) {
     return None;
   }
@@ -516,7 +536,7 @@ pub fn is_ident_reexported_from_external_module(
 
   // source module is external, we should preserve the import decl and rename the ident
   if is_module_external(source_module, module_ids) {
-    return Some(source_module.id.clone());
+    return Some((source_module.id.clone(), export_str.to_string()));
   }
 
   if let Some(reexport) = source_module_script_meta.reexport_ident_map.get(export_str) {
@@ -531,7 +551,6 @@ pub fn is_ident_reexported_from_external_module(
     return is_ident_reexported_from_external_module(
       module_ids,
       new_source_module_id,
-      ident,
       new_export_str,
       module_graph,
       rename_handler,

@@ -9,12 +9,13 @@ export { defineFarmConfig as defineConfig } from './config/index.js';
 
 import fs from 'node:fs/promises';
 
-import { createCompiler } from './compiler/index.js';
+import { Compiler, createCompiler } from './compiler/index.js';
 import { __FARM_GLOBAL__ } from './config/_global.js';
 import { UserConfig, resolveConfig } from './config/index.js';
-import { getPluginHooks } from './plugin/index.js';
+import { getSortedPluginHooksBindThis } from './plugin/index.js';
 import { PreviewServer, Server } from './server/index.js';
 import {
+  Logger,
   PersistentCacheBrand,
   bold,
   colors,
@@ -22,23 +23,21 @@ import {
   getShortName,
   green
 } from './utils/index.js';
-import { handlerWatcher } from './watcher/index.js';
+import { watchFileChangeAndRebuild } from './watcher/index.js';
 
-import type { FarmCliOptions } from './config/types.js';
+import type { FarmCliOptions, ResolvedUserConfig } from './config/types.js';
 export type { Compiler as BindingCompiler } from './types/binding.js';
 import type { PersistentCacheConfig } from './types/binding.js';
 
 export async function start(
   inlineConfig?: FarmCliOptions & UserConfig
 ): Promise<void> {
-  inlineConfig = inlineConfig ?? {};
-  const server = new Server(inlineConfig);
   try {
-    await server.createServer();
+    const server = await Server.createServer(inlineConfig);
     await server.listen();
     server.printUrls();
   } catch (error) {
-    server.logger.error('Failed to start the server', { exit: false, error });
+    new Logger().error('Failed to start the server', { exit: false, error });
   }
 }
 
@@ -57,21 +56,16 @@ export async function preview(
   }
 }
 
-export async function build(
-  inlineConfig: FarmCliOptions & UserConfig = {}
+async function _internalBuild(
+  compiler: Compiler,
+  resolvedUserConfig: ResolvedUserConfig
 ): Promise<void> {
-  const resolvedUserConfig = await resolveConfig(
-    inlineConfig,
-    'build',
-    'production'
-  );
   const {
     compilation: { persistentCache, output },
     configFilePath,
     root,
     logger,
-    jsPlugins,
-    watch
+    jsPlugins
   } = resolvedUserConfig;
 
   try {
@@ -80,8 +74,10 @@ export async function build(
       logger.info(`Using config file at ${bold(green(shortFile))}`);
     }
 
-    const compiler = createCompiler(resolvedUserConfig);
-    for (const hook of getPluginHooks(jsPlugins, 'configureCompiler')) {
+    for (const hook of getSortedPluginHooksBindThis(
+      jsPlugins,
+      'configureCompiler'
+    )) {
       await hook?.(compiler);
     }
 
@@ -104,9 +100,6 @@ export async function build(
       )}.`
     );
     compiler.writeResourcesToDisk();
-    if (watch) {
-      handlerWatcher(resolvedUserConfig, compiler);
-    }
   } catch (err) {
     let errorMsg = err?.toString();
 
@@ -120,6 +113,38 @@ export async function build(
       exit: true
     });
   }
+}
+
+export async function build(
+  inlineConfig: FarmCliOptions & UserConfig = {}
+): Promise<void> {
+  const resolvedUserConfig = await resolveConfig(
+    inlineConfig,
+    'build',
+    'production'
+  );
+  const compiler = createCompiler(resolvedUserConfig);
+
+  await _internalBuild(compiler, resolvedUserConfig);
+}
+
+export async function watch(
+  inlineConfig: FarmCliOptions & UserConfig = {}
+): Promise<void> {
+  const resolvedUserConfig = await resolveConfig(inlineConfig, 'watch');
+  const compiler = createCompiler(resolvedUserConfig);
+
+  if (resolvedUserConfig.compilation?.lazyCompilation) {
+    const server =
+      await Server.createAndStartLazyCompilationServer(resolvedUserConfig);
+    server.compiler = compiler;
+  }
+
+  await _internalBuild(compiler, resolvedUserConfig);
+
+  await watchFileChangeAndRebuild(resolvedUserConfig, compiler, () =>
+    watch(inlineConfig)
+  );
 }
 
 export async function clean(

@@ -39,7 +39,17 @@ export function initModuleSystem(ms: ModuleSystem) {
   moduleSystem.l = loadDynamicResourcesOnly;
 }
 
+function requireDynamicModule(id: string) {
+  const exports = moduleSystem.r(id);
+  // if the module is async, return the default export, the default export should be a promise
+  return exports.__farm_async ? exports.default : Promise.resolve(exports);
+}
+
 function dynamicImport(id: string): Promise<any> {
+  if (moduleSystem.m()[id] && !dynamicModuleResourcesMap[id]) {
+    return requireDynamicModule(id);
+  }
+
   return loadDynamicResources(id);
 }
 
@@ -58,13 +68,8 @@ function loadDynamicResources(id: string, force = false): Promise<any> {
           `Dynamic imported module "${id}" is not registered.`,
         );
       }
-      const result = moduleSystem.r(id);
-      // if the module is async, return the default export, the default export should be a promise
-      if (result.__farm_async) {
-        return result.default;
-      } else {
-        return result;
-      }
+
+      return requireDynamicModule(id);
     })
     .catch((err) => {
       console.error(`[Farm] Error loading dynamic module "${id}"`, err);
@@ -93,11 +98,7 @@ function loadDynamicResourcesOnly(id: string, force = false): Promise<any> {
         setLoadedResource(resource.path, false);
 
         if (resourceLoaded) {
-          return load({
-            ...resource,
-            // force reload the resource
-            path: `${resource.path}?t=${Date.now()}`
-          });
+          return load(resource, `?t=${Date.now()}`);
         }
       }
       return load(resource);
@@ -105,14 +106,18 @@ function loadDynamicResourcesOnly(id: string, force = false): Promise<any> {
   )
 }
 
-function load(resource: Resource): Promise<void> {
+function load(resource: Resource, query?: string): Promise<void> {
   if (__FARM_RUNTIME_TARGET_ENV__ === 'node') {
     return loadResourceNode(resource); 
   } else {
-    if (loadedResources[resource.path]) {
+    if (loadedResources[resource.path] && !query) {
       // Skip inject Promise polyfill for runtime
       return Promise.resolve();
     } else if (loadingResources[resource.path]) {
+      if (query) {
+        loadingResources[resource.path] = loadingResources[resource.path].then(() => loadResource(resource, 0, query));
+      }
+
       return loadingResources[resource.path];
     }
   
@@ -127,7 +132,7 @@ function load(resource: Resource): Promise<void> {
           if (res.success) {
             setLoadedResource(resource.path);
           } else if (res.retryWithDefaultResourceLoader) {
-            return loadResource(resource, 0);
+            return loadResource(resource, 0, query);
           } else {
             throw new Error(
               `[Farm] Failed to load resource: "${resource.path}, type: ${resource.type}". Original Error: ${res.err}`
@@ -137,7 +142,7 @@ function load(resource: Resource): Promise<void> {
       }
     }
     
-    return loadResource(resource, 0);
+    return loadResource(resource, 0, query);
   }
 }
 
@@ -173,11 +178,11 @@ function loadResourceNode(resource: Resource) {
 
 }
 
-function loadResource(resource: Resource, index: number): Promise<void> {
+function loadResource(resource: Resource, index: number, query?: string): Promise<void> {
   const publicPath = publicPaths[index];
   const url = `${
     publicPath.endsWith('/') ? publicPath.slice(0, -1) : publicPath
-  }/${resource.path}`;
+  }/${resource.path}${query || ''}`;
 
   let promise = Promise.resolve();
 

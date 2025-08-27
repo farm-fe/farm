@@ -11,6 +11,7 @@ global['__farm_default_namespace__'].m.se({
 (function(moduleSystem, modules) {
     for(var moduleId in modules){
         var module = modules[moduleId];
+        module.url = import.meta.url;
         moduleSystem.g(moduleId, module);
     }
 })(global["__farm_default_namespace__"].m, {
@@ -20,4 +21,4 @@ global['__farm_default_namespace__'].m.se({
         console.log(farmRequire.f(_f_jquery).find);
     }
 });
-var __farm_ms__ = global['__farm_default_namespace__'].m;__farm_ms__.b();var __farm_entry__=__farm_ms__.r("b5d64806");
+var __farm_ms__ = global['__farm_default_namespace__'].m;__farm_ms__.b();var __farm_entry__=__farm_ms__.r("b5d64806");export default __farm_entry__.__esModule && __farm_entry__.default ? __farm_entry__.default : __farm_entry__;

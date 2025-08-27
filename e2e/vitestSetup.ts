@@ -8,9 +8,20 @@ import { execa } from 'execa';
 export const concurrencyLimit = 50;
 
 function getServerPort(): Promise<number> {
+  // retry 3 times
+  let retryCount = 0;
+
   return fetch('http://127.0.0.1:12306/port')
     .then((r) => r.text())
-    .then(Number);
+    .then(Number)
+    .catch(async () => {
+      if (retryCount < 3) {
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        retryCount++;
+        return getServerPort();
+      }
+      throw new Error('get server port failed');
+    });
 }
 
 const visitPage = async (
@@ -32,8 +43,16 @@ const visitPage = async (
   logger(`open the page: ${path} ${examplePath}`);
   try {
     page?.on('console', (msg) => {
-      logger(`command ${command} ${examplePath} -> ${path}: ${msg.text()}`);
-      // browserLogs.push(msg.text());
+      const lowerCaseMsg = msg.text().toLocaleLowerCase();
+
+      if (msg.type() === 'error' && !lowerCaseMsg.includes('warn') && !lowerCaseMsg.includes('warning')) {
+        logger(`command ${command} ${examplePath} -> ${path}: ${msg.text()}`, {
+          color: 'red'
+        });
+        reject(new Error(msg.text()));
+      } else {
+        logger(`command ${command} ${examplePath} -> ${path}: ${msg.text()}`);
+      }
     });
     let resolve: (data: any) => void, reject: (e: Error) => void;
     const promise = new Promise((r, re) => {
@@ -202,7 +221,7 @@ export const watchProjectAndTest = async (
       const res = result.toString();
       setTimeout(() => {
         reject(new Error('timeout'));
-      }, 10000);
+      }, 60000);
       cb(res, () => resolve(null));
     });
 

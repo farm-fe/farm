@@ -134,7 +134,7 @@ export async function resolveConfig(
 
   const resolvedUserConfig = await handleResolveConfig(
     configFilePath,
-    userConfig,
+    config,
     farmJsPlugins,
     allPlugins.rustPlugins,
     transformInlineConfig,
@@ -196,7 +196,7 @@ async function handleResolveConfig(
   return resolvedUserConfig;
 }
 
-async function handleLazyCompilation(
+export async function handleLazyCompilation(
   config: ResolvedUserConfig,
   command: keyof typeof COMMANDS
 ) {

@@ -1,5 +1,14 @@
 use std::sync::Arc;
 
+use crate::{
+  script::{
+    analyze_statement::analyze_statements, concatenate_modules::EXPORT_NAMESPACE, create_call_expr,
+    create_top_level_ident, create_var_decl_item, create_var_declarator, is_commonjs_require,
+    wrap_farm_runtime,
+  },
+  swc_ecma_utils::StmtLikeInjector,
+  swc_ecma_visit::{VisitMut, VisitMutWith},
+};
 use farmfe_core::{
   config::FARM_REQUIRE,
   context::CompilationContext,
@@ -18,17 +27,8 @@ use farmfe_core::{
   },
   HashMap, HashSet,
 };
-use farmfe_toolkit::{
-  script::{
-    analyze_statement::analyze_statements, concatenate_modules::EXPORT_NAMESPACE, create_call_expr,
-    create_top_level_ident, create_var_decl_item, create_var_declarator, is_commonjs_require,
-    wrap_farm_runtime,
-  },
-  swc_ecma_utils::StmtLikeInjector,
-  swc_ecma_visit::{VisitMut, VisitMutWith},
-};
 
-use crate::handle_exports::{create_export_decl_items, update_module_export_ident_map};
+use super::handle_exports::{create_export_decl_items, update_module_export_ident_map};
 
 pub const FARM_REGISTER: &str = "farmRegister";
 pub const FARM_INTEROP_REQUIRE: &str = "interopRequireDefault";

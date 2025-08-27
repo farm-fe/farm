@@ -10,7 +10,9 @@ use farmfe_core::{
   swc_common::Globals,
   HashMap, HashSet,
 };
-use farmfe_toolkit::script::swc_try_with::resolve_module_mark;
+use farmfe_toolkit::script::{
+  analyze_statement::analyze_statements, swc_try_with::resolve_module_mark,
+};
 
 pub fn get_timestamp_of_module(module_id: &ModuleId, root: &str) -> u128 {
   farm_profile_function!(format!("get_timestamp_of_module: {:?}", module_id));
@@ -226,14 +228,18 @@ pub fn set_module_graph_cache(module_ids: Vec<ModuleId>, context: &Arc<Compilati
               "empty".to_string()
             };
             CachedWatchDependency {
-              dependency: id.clone(),
+              dependency: if cfg!(windows) {
+                // on windows, the exit code is not 0 when using id.clone(), we have to copy the memory and create a new ModuleId
+                id.to_string().into()
+              } else {
+                id.clone()
+              },
               timestamp: get_timestamp_of_module(id, &context.config.root),
               hash: get_content_hash_of_module(&content),
             }
           })
           .collect(),
         is_expired: false,
-        metadata: Default::default(),
       };
 
       context
@@ -241,16 +247,6 @@ pub fn set_module_graph_cache(module_ids: Vec<ModuleId>, context: &Arc<Compilati
         .module_cache
         .set_cache(module.id.clone(), cached_module);
     });
-}
-
-pub fn handle_module_metadata(cached_module: &mut CachedModule, context: &Arc<CompilationContext>) {
-  if let Some(map) = cached_module.metadata.take() {
-    context
-      .cache_manager
-      .module_cache
-      .module_metadata
-      .set_map(cached_module.module.id.clone(), map);
-  };
 }
 
 /// recreate syntax context for the cached module
@@ -282,6 +278,7 @@ pub fn handle_cached_modules(
 
       script.top_level_mark = unresolved_mark.as_u32();
       script.unresolved_mark = top_level_mark.as_u32();
+      script.statements = analyze_statements(&script.ast);
     }
     box farmfe_core::module::ModuleMetaData::Css(_)
     | box farmfe_core::module::ModuleMetaData::Html(_) => { /* do nothing */ }
@@ -294,8 +291,6 @@ pub fn handle_cached_modules(
     &cached_module.watch_dependencies,
     context,
   )?;
-
-  handle_module_metadata(cached_module, context);
 
   // clear module groups and resource pot as it will be re-resolved later
   cached_module.module.module_groups.clear();

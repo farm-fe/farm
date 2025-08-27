@@ -1,20 +1,21 @@
-use std::sync::Arc;
+use std::collections::HashMap;
 
 use dashmap::{mapref::one::Ref, DashMap};
 use farmfe_utils::hash::sha256;
 
-use crate::{Cacheable, HashMap};
+use crate::config::Mode;
 
-use super::{store::constant::CacheStoreTrait, CacheContext};
+use super::cache_store::{CacheStore, CacheStoreKey};
 
+#[derive(Default)]
 pub struct PluginCacheManager {
-  store: Box<dyn CacheStoreTrait>,
+  store: CacheStore,
   cache: DashMap<String, Vec<u8>>,
 }
 
 impl PluginCacheManager {
-  pub fn new(context: Arc<CacheContext>) -> Self {
-    let store = context.store_factory.create_cache_store("plugin");
+  pub fn new(cache_dir: &str, namespace: &str, mode: Mode) -> Self {
+    let store = CacheStore::new(cache_dir, namespace, mode, "plugin");
     Self {
       store,
       cache: DashMap::new(),
@@ -36,7 +37,9 @@ impl PluginCacheManager {
       return self.cache.get(&plugin_name);
     }
 
-    let cache = self.store.read_cache(&plugin_name);
+    let cache = self
+      .store
+      .read_cache(&self.normalize_plugin_name(&plugin_name));
 
     if let Some(cache) = cache {
       self.cache.insert(plugin_name.clone(), cache);
@@ -52,29 +55,16 @@ impl PluginCacheManager {
       .insert(self.normalize_plugin_name(plugin_name), cache);
   }
 
-  pub fn write_cache_item<V: Cacheable>(&self, plugin_name: &str, cache: V) {
-    self.cache.insert(
-      self.normalize_plugin_name(plugin_name),
-      cache.serialize_bytes().unwrap(),
-    );
-  }
-
-  pub fn read_cache_item<V: Cacheable>(&self, plugin_name: &str) -> Option<Box<V>> {
-    let cache = self.read_cache(plugin_name)?;
-
-    V::deserialize_bytes(cache.value().clone())
-      .map(|v| v.downcast::<V>().ok())
-      .ok()
-      .flatten()
-  }
-
   pub fn write_cache_to_disk(&self) {
     let cache = self
       .cache
       .iter()
       .map(|entry| {
         (
-          (entry.key().clone(), sha256(entry.value(), 32)).into(),
+          CacheStoreKey {
+            name: entry.key().clone(),
+            key: sha256(entry.value(), 32),
+          },
           entry.value().clone(),
         )
       })

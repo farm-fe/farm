@@ -23,8 +23,7 @@ import sirv, { Options } from 'sirv';
 import type { Server } from '../index.js';
 
 export function staticMiddleware(app: Server): Connect.NextHandleFunction {
-  const { config, compiler } = app;
-  const root = compiler.config.root;
+  const { config, root } = app;
   const serve = sirv(
     root,
     sirvOptions({

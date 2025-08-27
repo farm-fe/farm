@@ -11,6 +11,7 @@ initModuleSystem$1(__farm_internal_module_system__);
 }());(function(moduleSystem, modules) {
     for(var moduleId in modules){
         var module = modules[moduleId];
+        module.url = typeof document === "undefined" ? location.href : (document.currentScript && document.currentScript.tagName.toUpperCase() === "SCRIPT" && document.currentScript.src) || location.protocol + "//" + location.host + '/' + "index_dcdc3e0b3362edb8fec2a51d3fa51f8f_js";
         moduleSystem.g(moduleId, module);
     }
 })(window["__farm_default_namespace__"].m, {
@@ -19,12 +20,13 @@ initModuleSystem$1(__farm_internal_module_system__);
         farmDynamicRequire("b5906cd8").then((mod)=>console.log(mod));
     }
 });
-var __farm_ms__ = window['__farm_default_namespace__'].m;__farm_ms__.si([]);__farm_ms__.sd([{ path: 'route1-21ccd1fe.js', type: 0 },{ path: 'route2-7e737731.js', type: 0 },{ path: 'route2-5dde66a0.js', type: 0 }],{ '817bf312': [0,1],'b5906cd8': [1,2] });__farm_ms__.b();var __farm_entry__=__farm_ms__.r("b5d64806");
+var __farm_ms__ = window['__farm_default_namespace__'].m;__farm_ms__.si([]);__farm_ms__.sd([{ path: 'route1-21ccd1fe.js', type: 0 },{ path: 'route2-7e737731.js', type: 0 },{ path: 'route2-5dde66a0.js', type: 0 }],{ '817bf312': [0,1],'b5906cd8': [1,2] });__farm_ms__.b();var __farm_entry__=__farm_ms__.r("b5d64806");export default __farm_entry__.__esModule && __farm_entry__.default ? __farm_entry__.default : __farm_entry__;
 
 //route1-21ccd1fe.js:
  (function(moduleSystem, modules) {
     for(var moduleId in modules){
         var module = modules[moduleId];
+        module.url = typeof document === "undefined" ? location.href : (document.currentScript && document.currentScript.tagName.toUpperCase() === "SCRIPT" && document.currentScript.src) || location.protocol + "//" + location.host + '/' + "route1_21ccd1fe1f70fb8d6f43729f2be149fb_js";
         moduleSystem.g(moduleId, module);
     }
 })(window["__farm_default_namespace__"].m, {
@@ -47,7 +49,7 @@ var __farm_ms__ = window['__farm_default_namespace__'].m;__farm_ms__.si([]);__fa
         farmRequire.o(exports, "Route1", function() {
             return Route1;
         });
-        var _f_module_helper = farmRequire("@farm-runtime/module-helper");
+        var _f_module_helper = farmRequire("@farmfe/runtime/src/modules/module-helper.ts");
         var _f_dep = farmRequire.w(farmRequire("01800dfe"));
         var dep_cjs_ambiguous_export_all_farm_internal_ = _f_dep;
         var _f_dep1 = farmRequire("01800dfe");
@@ -76,6 +78,7 @@ var __farm_ms__ = window['__farm_default_namespace__'].m;__farm_ms__.si([]);__fa
  (function(moduleSystem, modules) {
     for(var moduleId in modules){
         var module = modules[moduleId];
+        module.url = typeof document === "undefined" ? location.href : (document.currentScript && document.currentScript.tagName.toUpperCase() === "SCRIPT" && document.currentScript.src) || location.protocol + "//" + location.host + '/' + "route2_5dde66a0d315dc1862394aba0df9544c_js";
         moduleSystem.g(moduleId, module);
     }
 })(window["__farm_default_namespace__"].m, {
@@ -90,7 +93,7 @@ var __farm_ms__ = window['__farm_default_namespace__'].m;__farm_ms__.si([]);__fa
         farmRequire.o(exports, "Route2", function() {
             return Route2;
         });
-        var _f_module_helper = farmRequire("@farm-runtime/module-helper");
+        var _f_module_helper = farmRequire("@farmfe/runtime/src/modules/module-helper.ts");
         var _f_common1 = farmRequire("dfcad1dc");
         var _f_dep2 = farmRequire.w(farmRequire("2dc19cb0"));
         var dep2_cjs_ambiguous_export_all_farm_internal_ = _f_dep2;
@@ -120,6 +123,7 @@ var __farm_ms__ = window['__farm_default_namespace__'].m;__farm_ms__.si([]);__fa
  (function(moduleSystem, modules) {
     for(var moduleId in modules){
         var module = modules[moduleId];
+        module.url = typeof document === "undefined" ? location.href : (document.currentScript && document.currentScript.tagName.toUpperCase() === "SCRIPT" && document.currentScript.src) || location.protocol + "//" + location.host + '/' + "route2_7e737731f5e042f86c07888b66039f69_js";
         moduleSystem.g(moduleId, module);
     }
 })(window["__farm_default_namespace__"].m, {

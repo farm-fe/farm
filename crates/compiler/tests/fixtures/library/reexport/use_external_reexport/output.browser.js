@@ -1,5 +1,5 @@
 //index.js:
- (function(){; // module_id: f20dbc0b
+ (function(){; // module_id: e0ff033e
 function setGlobalRequire(globalThis) {
     // polyfill require when running in browser or node with Farm runtime
     const __global_this__ = typeof globalThis !== 'undefined' ? globalThis : {};
@@ -18,6 +18,9 @@ var __farm_internal_module_system__ = {
     c: ()=>__farm_internal_cache__
 };
 {
+    // @ts-ignore injected during compile time
+    __farm_internal_module_system__.te = "browser";
+}{
     // externalModules
     __farm_internal_module_system__.em = {};
     // The external modules are injected during compile time.
@@ -60,7 +63,7 @@ var __farm_internal_module_system__ = {
             env: {}
         },
         exports: {},
-        require: (moduleId)=>farmRequire$1(moduleId)
+        require: farmRequire$1
     };
     __farm_internal_cache__[id] = module;
     initializer(module, module.exports, farmRequire$1, __farm_internal_module_system__.d);
@@ -68,14 +71,10 @@ var __farm_internal_module_system__ = {
     return module.exports;
 }
 function farmRegister(id, module) {
-    if (__farm_internal_modules__[id] && !__farm_internal_module_system__._rg) {
-        console.warn(`Module "${id}" has registered! It should not be registered twice`);
-        return;
-    }
     __farm_internal_modules__[id] = module;
     return ()=>farmRequire$1(id);
 }
-; // module_id: e27f968b
+; // module_id: c4de70f7
 function initModuleSystem(ms) {
     const farmRequire = ms.r;
     {
@@ -179,6 +178,7 @@ initModuleSystem(__farm_internal_module_system__);
 (function(moduleSystem, modules) {
     for(var moduleId in modules){
         var module = modules[moduleId];
+        module.url = typeof document === "undefined" ? location.href : (document.currentScript && document.currentScript.tagName.toUpperCase() === "SCRIPT" && document.currentScript.src) || location.protocol + "//" + location.host + '/' + "index_8628134d6efc61be8d56e055c7028a8b_js";
         moduleSystem.g(moduleId, module);
     }
 })(window["__farm_default_namespace__"].m, {
@@ -207,4 +207,4 @@ initModuleSystem(__farm_internal_module_system__);
         });
     }
 });
-var __farm_ms__ = window['__farm_default_namespace__'].m;__farm_ms__.b();var __farm_entry__=__farm_ms__.r("b5d64806");
+var __farm_ms__ = window['__farm_default_namespace__'].m;__farm_ms__.b();var __farm_entry__=__farm_ms__.r("b5d64806");export default __farm_entry__.__esModule && __farm_entry__.default ? __farm_entry__.default : __farm_entry__;

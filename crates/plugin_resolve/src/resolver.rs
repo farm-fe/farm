@@ -799,7 +799,7 @@ impl Resolver {
         }
         .unwrap_or_else(|| Cow::Borrowed(&DEFAULT_MAIN_FIELDS));
 
-        main_fields.iter().find_map(|main_field| {
+        let resolve_main_field = |main_field: &str| {
           if main_field == "browser" && !is_browser {
             return None;
           }
@@ -827,8 +827,19 @@ impl Resolver {
               Value::String(str) => Some(str.to_string()),
               _ => None,
             })
-        })
+        };
+
+        main_fields
+          .iter()
+          .find_map(|main_field| resolve_main_field(main_field))
+          .or_else(|| {
+            DEFAULT_MAIN_FIELDS
+              .iter()
+              .filter(|main_field| !main_fields.contains(main_field))
+              .find_map(|main_field| resolve_main_field(main_field))
+          })
       });
+
     if let Some(entry_point) = entry_point {
       let dir = package_json_info.dir();
       let entry_point = if !entry_point.starts_with("./") && !entry_point.starts_with("../") {

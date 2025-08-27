@@ -11,13 +11,15 @@ use farmfe_core::{
   },
 };
 use farmfe_toolkit::{
-  script::{create_call_expr, create_var_decl_item},
+  script::{
+    create_call_expr, create_var_decl_item,
+    transform_to_esm::transform_cjs::{create_import_decl_item, FARM_NODE_REQUIRE},
+  },
   swc_ecma_utils::StmtLikeInjector,
 };
 
 use crate::{
   formats::GenerateLibraryFormatResourcesOptions,
-  transform_cjs::{create_import_decl_item, FARM_NODE_REQUIRE},
   utils::{add_format_to_generated_resources, emit_resource_pot},
 };
 

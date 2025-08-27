@@ -14,6 +14,7 @@ export default {
       format: 'cjs',
       publicPath: '/'
     },
+    minify: false,
     external: [...builtinModules.map((m) => `^${m}$`)],
     css: {
       prefixer: {

@@ -1,12 +1,14 @@
 import { SecureServerOptions } from 'node:http2';
+import type Connect from 'connect';
 
-import { CompilationMode, Server } from '../index.js';
+import { CompilationMode, PreviewServer, Server } from '../index.js';
 
 import type { OutgoingHttpHeaders } from 'http';
 import type { ServerOptions as HttpsServerOptions } from 'node:https';
 import type { WatchOptions } from 'chokidar';
 import type { RustPlugin } from '../plugin/rust/index.js';
 import type { JsPlugin } from '../plugin/type.js';
+import { ProxyOptions } from '../server/middlewares/proxy.js';
 import type { Config, CssConfig, OutputConfig } from '../types/binding.js';
 import type { Logger } from '../utils/index.js';
 
@@ -126,7 +128,7 @@ export interface UserServerConfig {
    *
    * @default undefined
    */
-  proxy?: Record<string, any>;
+  proxy?: Record<string, ProxyOptions>;
   /**
    * Whether to strictly use the specified port. If the port is
    * occupied, an exception will be thrown when this option is set
@@ -256,7 +258,13 @@ export interface UserPreviewServerConfig {
    *
    * @default server.proxy
    */
-  proxy?: Record<string, any>;
+  proxy?: Record<string, ProxyOptions>;
+  /**
+   * Array of middleware for the development server.
+   *
+   * @default []
+   */
+  middlewares?: PreviewServerMiddleware[];
 }
 
 export type NormalizedServerConfig = Required<
@@ -429,7 +437,12 @@ export interface FarmCliOptions
   clearScreen?: boolean;
 }
 
-export type DevServerMiddleware = (context: Server) => any | undefined;
+export type DevServerMiddleware = (
+  context: Server
+) => Connect.NextHandleFunction | undefined;
+export type PreviewServerMiddleware = (
+  context: PreviewServer
+) => Connect.NextHandleFunction | undefined;
 
 export interface Alias {
   find: string;
