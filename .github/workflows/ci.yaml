@@ -49,6 +49,10 @@ jobs:
           retry_wait_seconds: 60
           command: pnpm i --frozen-lockfile
 
+      # run headless chrome install
+      - name: Install headless chrome
+        run: node node_modules/playwright-chromium/install.js
+
       - uses: actions/download-artifact@v4
         id: download
         with:
