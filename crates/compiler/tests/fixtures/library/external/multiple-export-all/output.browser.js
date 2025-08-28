@@ -1,5 +1,5 @@
 //index.js:
- (function(){; // module_id: @farmfe/runtime/src/module-system.ts
+ (function(){; // module_id: @farmfe/runtime/src/module-system.ts.farm-runtime
 function setGlobalRequire(globalThis) {
     // polyfill require when running in browser or node with Farm runtime
     const __global_this__ = typeof globalThis !== 'undefined' ? globalThis : {};
@@ -85,7 +85,7 @@ function farmRegister(id, module) {
     __farm_internal_modules__[id] = module;
     return ()=>farmRequire$1(id);
 }
-; // module_id: @farmfe/runtime/src/modules/module-system-helper.ts
+; // module_id: @farmfe/runtime/src/modules/module-system-helper.ts.farm-runtime
 let moduleSystem;
 function initModuleSystem(ms) {
     moduleSystem = ms;
@@ -117,7 +117,7 @@ function clearCache(moduleId) {
         return false;
     }
 }
-; // module_id: @farmfe/runtime/src/modules/module-helper.ts
+; // module_id: @farmfe/runtime/src/modules/module-helper.ts.farm-runtime
 function initModuleSystem$1(ms) {
     const farmRequire = ms.r;
     {

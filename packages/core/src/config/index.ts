@@ -124,7 +124,7 @@ export async function resolveConfig(
     sortFarmJsPlugins
   );
 
-  // may be user push plugin when config hooks
+  // user may push plugin when config hooks
   const allPlugins = await resolvePlugins(config, defaultMode);
   const farmJsPlugins = getSortedPlugins([
     ...allPlugins.jsPlugins,

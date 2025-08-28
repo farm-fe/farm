@@ -7,7 +7,9 @@ use farmfe_core::{
   },
   error::CompilationError,
   module::{
-    meta_data::script::{FARM_RUNTIME_MODULE_HELPER_ID, FARM_RUNTIME_MODULE_SYSTEM_ID},
+    meta_data::script::{
+      FARM_RUNTIME_MODULE_HELPER_ID, FARM_RUNTIME_MODULE_SYSTEM_ID, FARM_RUNTIME_SUFFIX,
+    },
     ModuleId, ModuleSystem, ModuleType,
   },
   parking_lot::Mutex,
@@ -160,7 +162,11 @@ impl Plugin for FarmPluginLibrary {
     context: &std::sync::Arc<farmfe_core::context::CompilationContext>,
     _hook_context: &farmfe_core::plugin::PluginHookContext,
   ) -> farmfe_core::error::Result<Option<farmfe_core::plugin::PluginLoadHookResult>> {
-    if let Some(rel_path) = param.resolved_path.strip_prefix(FARM_RUNTIME_PREFIX) {
+    if let Some(rel_path) = param
+      .resolved_path
+      .strip_prefix(FARM_RUNTIME_PREFIX)
+      .and_then(|rel_path| rel_path.strip_suffix(FARM_RUNTIME_SUFFIX))
+    {
       let abs_path = RelativePath::new(rel_path).to_logical_path(&context.config.runtime.path);
       let content = read_file_utf8(abs_path.to_string_lossy().to_string().as_str())?;
 
@@ -360,6 +366,7 @@ impl Plugin for FarmPluginLibrary {
       comments,
       top_level_mark: top_level_mark.as_u32(),
       unresolved_mark: unresolved_mark.as_u32(),
+      custom: Default::default(),
     })))
   }
 

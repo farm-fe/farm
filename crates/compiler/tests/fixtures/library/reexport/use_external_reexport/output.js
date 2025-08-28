@@ -2,7 +2,7 @@
  import { readFile as default$1 } from "node:fs";
 import { foo } from "/external/foo";
 import { unstable_batchedUpdates as unstable_batchedUpdates$2 } from "/external/react-dom";
-; // module_id: @farmfe/runtime/src/module-system.ts
+; // module_id: @farmfe/runtime/src/module-system.ts.farm-runtime
 // all modules registered
 const __farm_internal_modules__ = {};
 // module cache after module initialized

@@ -15,7 +15,6 @@ import {
 } from '../../utils/index.js';
 import merge from '../../utils/merge.js';
 import {
-  CUSTOM_KEYS,
   DEFAULT_COMPILATION_OPTIONS,
   DEFAULT_DEV_SERVER_OPTIONS,
   ENV_DEVELOPMENT,

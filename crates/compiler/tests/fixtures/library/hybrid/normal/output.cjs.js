@@ -4,7 +4,7 @@ defineExportEsModule(exports);
 exportByDefineProperty(exports, "bar", ()=>bar);
 exportByDefineProperty(exports, "default", ()=>index_ts_default);
 exportByDefineProperty(exports, "foo", ()=>foo);
-; // module_id: @farmfe/runtime/src/module-system.ts
+; // module_id: @farmfe/runtime/src/module-system.ts.farm-runtime
 // all modules registered
 const __farm_internal_modules__ = {};
 // module cache after module initialized
@@ -38,7 +38,7 @@ function farmRegister(id, module) {
     __farm_internal_modules__[id] = module;
     return ()=>farmRequire$2(id);
 }
-; // module_id: @farmfe/runtime/src/modules/module-helper.ts
+; // module_id: @farmfe/runtime/src/modules/module-helper.ts.farm-runtime
 function exportByDefineProperty(to, to_k, get) {
     if (Object.prototype.hasOwnProperty.call(to, to_k)) {
         return;

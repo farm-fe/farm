@@ -181,7 +181,6 @@ export interface ResolveConfig {
   /**
    * Configure parsing alias. Alias is prefix replacement, for example /@/pages/index will be replaced by /root/src/pages/index. If you want an exact match, you can add $, for example stream$ will only replace stream, but not stream/xxx.
    */
-  // TODO customResolver?: ResolverFunction | ResolverObject
   alias?:
     | Record<string, string>
     | Array<{ find: string | RegExp; replacement: string }>;

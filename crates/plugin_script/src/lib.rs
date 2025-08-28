@@ -400,6 +400,7 @@ impl Plugin for FarmPluginScript {
         comments: result.comments,
         top_level_mark: result.top_level_mark.as_u32(),
         unresolved_mark: result.unresolved_mark.as_u32(),
+        custom: Default::default(),
       })));
     }
 

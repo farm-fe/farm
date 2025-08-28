@@ -72,7 +72,7 @@ describe('resolveUserConfig', () => {
               'runtime',
               'src',
               'modules',
-              'module-helper.ts'
+              'module-helper.ts.farm-runtime'
             ),
             path.join(filePath, 'fixtures', 'config', 'farm.config.ts'),
             path.join(filePath, 'fixtures', 'config', 'util.ts'),

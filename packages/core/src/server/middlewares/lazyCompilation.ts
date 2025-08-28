@@ -8,7 +8,6 @@ import {
   bold,
   cyan,
   getDynamicResources,
-  getValidPublicPath,
   green
 } from '../../index.js';
 import { send } from '../send.js';
@@ -22,10 +21,7 @@ export function lazyCompilationMiddleware(
 ): Connect.NextHandleFunction {
   return async function handleLazyCompilationMiddleware(req, res, next) {
     const { config, compiler } = app;
-    const publicPath = getValidPublicPath(
-      compiler.config?.compilation?.output?.publicPath
-    );
-    const lazyCompilationPath = `${publicPath || '/'}${DEFAULT_LAZY_COMPILATION_PATH}`;
+    const lazyCompilationPath = `/${DEFAULT_LAZY_COMPILATION_PATH}`;
 
     if (!req.url.startsWith(lazyCompilationPath)) {
       return next();

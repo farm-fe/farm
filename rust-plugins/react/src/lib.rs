@@ -44,6 +44,12 @@ impl FarmPluginReact {
     let mut options_obj =
       serde_json::from_str::<serde_json::Map<String, serde_json::Value>>(&options).unwrap();
     options_obj.remove("useAbsolutePath");
+
+    // if target env is not browser, do not enable react refresh
+    if !config.output.target_env.is_browser() {
+      options_obj.insert("refresh".to_string(), serde_json::Value::Bool(false));
+    }
+
     let options = serde_json::to_string(&options_obj).unwrap();
 
     Self {

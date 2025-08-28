@@ -28,8 +28,10 @@ pub const EXPORT_NAMESPACE: &str = "namespace_farm_internal_";
 pub const AMBIGUOUS_EXPORT_ALL: &str = "ambiguous_export_all_farm_internal_";
 pub const EXPORT_DEFAULT: &str = "default";
 
-pub const FARM_RUNTIME_MODULE_HELPER_ID: &str = "@farmfe/runtime/src/modules/module-helper.ts";
-pub const FARM_RUNTIME_MODULE_SYSTEM_ID: &str = "@farmfe/runtime/src/module-system.ts";
+pub const FARM_RUNTIME_SUFFIX: &str = ".farm-runtime";
+pub const FARM_RUNTIME_MODULE_HELPER_ID: &str =
+  "@farmfe/runtime/src/modules/module-helper.ts.farm-runtime";
+pub const FARM_RUNTIME_MODULE_SYSTEM_ID: &str = "@farmfe/runtime/src/module-system.ts.farm-runtime";
 
 pub use module_export_ident::{ModuleExportIdent, ModuleExportIdentType, ModuleReExportIdentType};
 

@@ -6,7 +6,7 @@ use farmfe_core::{
   config::{AliasItem, Config, ModuleFormat, StringOrRegex, TargetEnv},
   context::CompilationContext,
   error::CompilationError,
-  module::ModuleType,
+  module::{meta_data::script::FARM_RUNTIME_SUFFIX, ModuleType},
   plugin::{
     Plugin, PluginFinalizeModuleHookParam, PluginGenerateResourcesHookResult, PluginHookContext,
     PluginLoadHookParam, PluginLoadHookResult, PluginResolveHookParam, PluginResolveHookResult,
@@ -27,6 +27,7 @@ use farmfe_toolkit::{
   html::get_farm_global_this,
   script::{
     merge_swc_globals::{merge_comments, merge_sourcemap},
+    module_type_from_id,
     swc_try_with::resolve_module_mark,
   },
   swc_ecma_visit::VisitMutWith,
@@ -112,8 +113,12 @@ impl Plugin for FarmPluginRuntime {
     &self,
     param: &PluginResolveHookParam,
     context: &Arc<CompilationContext>,
-    _hook_context: &PluginHookContext,
+    hook_context: &PluginHookContext,
   ) -> farmfe_core::error::Result<Option<PluginResolveHookResult>> {
+    if hook_context.contain_caller(PLUGIN_NAME) {
+      return Ok(None);
+    }
+
     if param.source.starts_with(RUNTIME_PACKAGE) {
       if context.config.runtime.path.is_empty() {
         return Err(CompilationError::GenericError(
@@ -122,9 +127,34 @@ impl Plugin for FarmPluginRuntime {
       }
 
       return Ok(Some(PluginResolveHookResult {
-        resolved_path: param.source.to_string(),
+        resolved_path: if param.source == RUNTIME_PACKAGE {
+          param.source.to_string()
+        } else {
+          format!("{}{}", param.source, FARM_RUNTIME_SUFFIX)
+        },
         ..Default::default()
       }));
+    } else if param.importer.as_ref().map_or(false, |importer| {
+      let rel_path = importer.relative_path();
+      rel_path == RUNTIME_PACKAGE || rel_path.ends_with(FARM_RUNTIME_SUFFIX)
+    }) {
+      // resolve the real runtime path
+      return context
+        .plugin_driver
+        .resolve(
+          param,
+          context,
+          &PluginHookContext {
+            caller: hook_context.add_caller(PLUGIN_NAME),
+            meta: hook_context.meta.clone(),
+          },
+        )
+        .map(|res| {
+          res.map(|res| PluginResolveHookResult {
+            resolved_path: format!("{}{}", res.resolved_path, FARM_RUNTIME_SUFFIX),
+            ..res
+          })
+        });
     }
 
     Ok(None)
@@ -143,8 +173,17 @@ impl Plugin for FarmPluginRuntime {
         module_type: ModuleType::Js,
         source_map: None,
       }));
-    } else if param.resolved_path.starts_with(RUNTIME_PACKAGE) {
-      let rest_str = param.resolved_path.replace(RUNTIME_PACKAGE, "");
+    }
+
+    let resolved_path =
+      if let Some(resolved_path) = param.resolved_path.strip_suffix(FARM_RUNTIME_SUFFIX) {
+        resolved_path
+      } else {
+        return Ok(None);
+      };
+
+    if resolved_path.starts_with(RUNTIME_PACKAGE) {
+      let rest_str = resolved_path.replace(RUNTIME_PACKAGE, "");
       let relative_path = RelativePath::new(&rest_str);
       let resolved_path = relative_path
         .to_logical_path(&context.config.runtime.path)
@@ -163,9 +202,18 @@ impl Plugin for FarmPluginRuntime {
         module_type: ModuleType::Ts,
         source_map: None,
       }));
+    } else {
+      let code = read_file_utf8(resolved_path)?;
+      let module_type = module_type_from_id(resolved_path).ok_or(CompilationError::LoadError {
+        resolved_path: resolved_path.to_string(),
+        source: Some(Box::new(CompilationError::GenericError("Can not get module type for this runtime module. Please make the modules introduced by your runtime plugin are valid modules supported by Farm".to_string())))
+      })?;
+      return Ok(Some(PluginLoadHookResult {
+        content: code,
+        module_type,
+        source_map: None,
+      }));
     }
-
-    Ok(None)
   }
 
   /// detect [ModuleSystem] for a script module based on its dependencies' [ResolveKind] and detect hmr_accepted
@@ -295,6 +343,7 @@ impl Plugin for FarmPluginRuntime {
       comments: comments.into(),
       top_level_mark: top_level_mark.as_u32(),
       unresolved_mark: unresolved_mark.as_u32(),
+      custom: Default::default(),
     })))
   }
 

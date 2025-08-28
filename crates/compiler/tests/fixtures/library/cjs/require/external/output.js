@@ -1,7 +1,7 @@
 //index.js:
  import { createRequire as __farmNodeCreateRequire } from "module";
 var __farmNodeRequire = __farmNodeCreateRequire(import.meta.url);
-; // module_id: @farmfe/runtime/src/module-system.ts
+; // module_id: @farmfe/runtime/src/module-system.ts.farm-runtime
 // all modules registered
 const __farm_internal_modules__ = {};
 // module cache after module initialized

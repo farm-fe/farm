@@ -19,7 +19,7 @@ function defineExportEsModule(to) {
 defineExportEsModule(exports);
 exportByDefineProperty(exports, "default", ()=>index_ts_default);
 exportByDefineProperty(exports, "loaders", ()=>loaders);
-; // module_id: @farmfe/runtime/src/module-system.ts
+; // module_id: @farmfe/runtime/src/module-system.ts.farm-runtime
 // all modules registered
 const __farm_internal_modules__ = {};
 // module cache after module initialized

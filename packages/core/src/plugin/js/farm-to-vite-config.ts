@@ -1,8 +1,9 @@
 import path from 'path';
 import { WatchOptions } from 'chokidar';
 import type { UserConfig as ViteUserConfig } from 'vite';
+import { normalizeResolveAlias } from '../../config/normalize-config/normalize-resolve.js';
 import type { UserConfig } from '../../config/types.js';
-import { Logger, normalizePath } from '../../index.js';
+import { Logger, isObject, logger, normalizePath } from '../../index.js';
 import merge from '../../utils/merge.js';
 import { EXTERNAL_KEYS, VITE_DEFAULT_ASSETS } from './constants.js';
 import {
@@ -309,7 +310,7 @@ export function proxyViteConfig(
 export function viteConfigToFarmConfig(
   config: ViteUserConfig,
   origFarmConfig: UserConfig,
-  _pluginName: string
+  pluginName: string
 ): UserConfig {
   const farmConfig: UserConfig = {
     compilation: {}
@@ -353,16 +354,35 @@ export function viteConfigToFarmConfig(
           farmConfig.compilation.resolve.alias = [];
         }
 
+        const normalizedAlias = normalizeResolveAlias(
+          farmConfig.compilation.resolve.alias
+        );
         const farmRegexPrefix = '$__farm_regex:';
 
-        // for (const { find, replacement } of config.resolve.alias) {
-        //   if (find instanceof RegExp) {
-        //     const key = farmRegexPrefix + find.source;
-        //     farmConfig.compilation.resolve.alias[key] = replacement;
-        //   } else {
-        //     farmConfig.compilation.resolve.alias[find] = replacement;
-        //   }
-        // }
+        if (isObject(config.resolve.alias)) {
+          for (const [key, value] of Object.entries(config.resolve.alias)) {
+            normalizedAlias.push({
+              find: key,
+              replacement: value
+            });
+          }
+        } else if (Array.isArray(config.resolve.alias)) {
+          if (config.resolve.alias.some((alias) => alias.customResolver)) {
+            logger.warnOnce(
+              `[vite-plugin] ${pluginName}: config "resolve.alias" with customResolver is not supported in Farm, customResolver will be ignored.`
+            );
+          }
+
+          for (const alias of config.resolve.alias) {
+            normalizedAlias.push({
+              find:
+                alias.find instanceof RegExp
+                  ? `${farmRegexPrefix}${alias.find}`
+                  : alias.find,
+              replacement: alias.replacement
+            });
+          }
+        }
       }
     }
 

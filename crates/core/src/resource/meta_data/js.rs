@@ -2,7 +2,7 @@ use farmfe_macro_cache_item::cache_item;
 use swc_ecma_ast::Module as SwcModule;
 
 use crate::{
-  module::{meta_data::script::CommentsMetaData, ModuleId},
+  module::{meta_data::script::CommentsMetaData, CustomMetaDataMap, ModuleId},
   HashSet,
 };
 
@@ -25,6 +25,7 @@ pub struct JsResourcePotMetaData {
   pub comments: CommentsMetaData,
   pub top_level_mark: u32,
   pub unresolved_mark: u32,
+  pub custom: CustomMetaDataMap,
 }
 
 impl JsResourcePotMetaData {

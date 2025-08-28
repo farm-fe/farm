@@ -171,6 +171,8 @@ export async function readConfigFile(
     fileName,
     mode
   });
+  // disable copy public dir
+  normalizedConfig.assets.publicDir = '__farm_un_exist_public_dir__';
   // disable show file size
   normalizedConfig.output.showFileSize = false;
 

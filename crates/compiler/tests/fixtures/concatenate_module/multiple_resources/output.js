@@ -49,7 +49,7 @@ var __farm_ms__ = window['__farm_default_namespace__'].m;__farm_ms__.si([]);__fa
         farmRequire.o(exports, "Route1", function() {
             return Route1;
         });
-        var _f_module_helper = farmRequire("@farmfe/runtime/src/modules/module-helper.ts");
+        var _f_module_helper_ts = farmRequire("@farmfe/runtime/src/modules/module-helper.ts.farm-runtime");
         var _f_dep = farmRequire.w(farmRequire("01800dfe"));
         var dep_cjs_ambiguous_export_all_farm_internal_ = _f_dep;
         var _f_dep1 = farmRequire("01800dfe");
@@ -69,7 +69,7 @@ var __farm_ms__ = window['__farm_default_namespace__'].m;__farm_ms__.si([]);__fa
             },
             __esModule: true
         };
-        _f_module_helper.defineExportStar(route1_ts_namespace_farm_internal_, dep_cjs_ambiguous_export_all_farm_internal_);
+        _f_module_helper_ts.defineExportStar(route1_ts_namespace_farm_internal_, dep_cjs_ambiguous_export_all_farm_internal_);
     }
 });
 
@@ -93,7 +93,7 @@ var __farm_ms__ = window['__farm_default_namespace__'].m;__farm_ms__.si([]);__fa
         farmRequire.o(exports, "Route2", function() {
             return Route2;
         });
-        var _f_module_helper = farmRequire("@farmfe/runtime/src/modules/module-helper.ts");
+        var _f_module_helper_ts = farmRequire("@farmfe/runtime/src/modules/module-helper.ts.farm-runtime");
         var _f_common1 = farmRequire("dfcad1dc");
         var _f_dep2 = farmRequire.w(farmRequire("2dc19cb0"));
         var dep2_cjs_ambiguous_export_all_farm_internal_ = _f_dep2;
@@ -114,7 +114,7 @@ var __farm_ms__ = window['__farm_default_namespace__'].m;__farm_ms__.si([]);__fa
             },
             __esModule: true
         };
-        _f_module_helper.defineExportStar(route2_ts_namespace_farm_internal_, dep2_cjs_ambiguous_export_all_farm_internal_);
+        _f_module_helper_ts.defineExportStar(route2_ts_namespace_farm_internal_, dep2_cjs_ambiguous_export_all_farm_internal_);
     }
 });
 

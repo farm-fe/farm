@@ -1,5 +1,5 @@
 //index.js:
- (function(){; // module_id: e0ff033e
+ (function(){; // module_id: 9cd7578f
 function setGlobalRequire(globalThis) {
     // polyfill require when running in browser or node with Farm runtime
     const __global_this__ = typeof globalThis !== 'undefined' ? globalThis : {};
@@ -74,7 +74,7 @@ function farmRegister(id, module) {
     __farm_internal_modules__[id] = module;
     return ()=>farmRequire$1(id);
 }
-; // module_id: c4de70f7
+; // module_id: ae1b52c0
 function initModuleSystem(ms) {
     const farmRequire = ms.r;
     {

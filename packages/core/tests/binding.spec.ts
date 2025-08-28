@@ -24,7 +24,7 @@ test('Binding - should parse config to rust correctly', async () => {
   const resolvedUserConfig = await resolveUserConfig(config, undefined);
   const compilationConfig =
     await normalizeUserCompilationConfig(resolvedUserConfig);
-
+  compilationConfig.persistentCache = false;
   console.log(compilationConfig);
   const compiler = new Compiler({
     compilation: compilationConfig,
