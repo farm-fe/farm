@@ -3,13 +3,28 @@ on:
   push:
     branches:
       - main
-      - v2-dev
 
 concurrency: ${{ github.workflow }}-${{ github.ref }}
 
 jobs:
+  check-changeset-status:
+    name: Check changeset status and set env
+    runs-on: ubuntu-latest
+    outputs:
+      SKIP_RUST_BUILD: ${{ env.SKIP_RUST_BUILD }}
+    steps:
+      - name: Check changeset status and set env
+        run: |
+          if npx @changeset/cli status; then
+            echo "SKIP_RUST_BUILD=true" >> $GITHUB_ENV
+            echo "Changesets exist, skipping Rust build."
+          else
+            echo "Changesets don't exist, proceeding with Rust build."
+          fi
+        if: github.ref == 'refs/heads/main'
   call-rust-build:
     uses: ./.github/workflows/rust-build.yaml
+    if: needs.check-changeset-status.outputs.SKIP_RUST_BUILD != 'true'
 
   release:
     name: Release
@@ -17,15 +32,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repo
+        if: ${{ always() }}
         uses: actions/checkout@v4
 
       - name: Setup pnpm
+        if: ${{ always() }}
         uses: pnpm/action-setup@v4
         with:
           version: 9.4.0
           run_install: false
 
       - name: Setup Node.js 18.x
+        if: ${{ always() }}
         uses: actions/setup-node@v4
         with:
           node-version: 18.x
@@ -71,12 +89,16 @@ jobs:
         run: pnpm --filter @farmfe/plugin-tools run build
 
       - name: Create Release Pull Request or Publish to npm
+        if: ${{ always() }}
         id: changesets
         uses: changesets/action@v1
         with:
-          version: ${{ github.ref_name == 'v2-dev' && 'pnpm run bump:nightly' || 'pnpm run bump' }}
-          publish: ${{ github.ref_name == 'v2-dev' && 'npm run release:nightly' || 'npm run release' }}
-          branch: ${{ github.ref_name == 'v2-dev' && 'v2-dev' || 'main' }}
+          version: pnpm run bump
+          publish: pnpm run release
+          branch: main
+          # version: ${{ github.ref_name == 'v2-dev' && 'pnpm run bump:nightly' || 'pnpm run bump' }}
+          # publish: ${{ github.ref_name == 'v2-dev' && 'npm run release:nightly' || 'npm run release' }}
+          # branch: ${{ github.ref_name == 'v2-dev' && 'v2-dev' || 'main' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
