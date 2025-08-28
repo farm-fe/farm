@@ -5,7 +5,6 @@ use farmfe_core::{
   error::CompilationError,
   module::ModuleId,
   rayon::iter::{IntoParallelRefMutIterator, ParallelIterator},
-  regex::Regex,
   swc_common::{comments::SingleThreadedComments, input::SourceFileInput, BytePos, SourceMap},
   swc_css_ast::Stylesheet,
 };
@@ -31,21 +30,9 @@ pub struct ParseCssModuleResult {
 /// parse the input css file content to [Stylesheet]
 pub fn parse_css_stylesheet(
   id: &str,
-  orig_content: Arc<String>,
+  content: Arc<String>,
 ) -> farmfe_core::error::Result<ParseCssModuleResult> {
-  // swc_css_parser does not support parsing invalid css, so we need to replace known invalid css here
-  // 1. replace --: '' to --farm-empty: ''
-  let mut content = orig_content.replace("--:", "--farm-empty:");
-  // 2. replace filter: xxx.Microsoft.xxx to filter: "xxx.Microsoft.xxx" using regex. fix #1557
-  let regex = Regex::new(r#"filter:\s*([^'"]*?)\.Microsoft\.(.*?)(;|\})"#).unwrap();
-  content = regex
-    .replace_all(&content, "filter:\"$1.Microsoft.$2\"$3")
-    .to_string();
-  // // 3. replace invalid operator, eg: top: -8px/2 + 1 to top: "-8px/2 + 1" using regex. fix #1748
-  // let regex = Regex::new(r#":\s*([^;{}]*?\d\s+\s\d[^;{}]*?)\s*(;|\})"#).unwrap();
-  // content = regex.replace_all(&content, ":\"$1\"$2").to_string();
-
-  let (cm, source_file) = create_swc_source_map(&id.into(), Arc::new(content));
+  let (cm, source_file) = create_swc_source_map(&id.into(), content);
 
   let config = ParserConfig {
     allow_wrong_line_comments: true,
@@ -63,25 +50,25 @@ pub fn parse_css_stylesheet(
   let mut parser = Parser::new(lexer, config);
 
   let parse_result = parser.parse_all();
-  let mut recovered_errors = parser.take_errors();
+  // TODO: print recovered errors as warning
+  // let mut recovered_errors = parser.take_errors();
+  let mut parse_errors = vec![];
 
-  if recovered_errors.len() == 0 {
-    match parse_result {
-      Err(err) => {
-        recovered_errors.push(err);
-      }
-      Ok(m) => {
-        return Ok(ParseCssModuleResult {
-          ast: m,
-          comments,
-          source_map: cm,
-        });
-      }
+  match parse_result {
+    Err(err) => {
+      parse_errors.push(err);
+    }
+    Ok(m) => {
+      return Ok(ParseCssModuleResult {
+        ast: m,
+        comments,
+        source_map: cm,
+      });
     }
   }
 
   try_with_handler(cm, Default::default(), |handler| {
-    for err in recovered_errors {
+    for err in parse_errors {
       err.to_diagnostics(handler).emit();
     }
 

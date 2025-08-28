@@ -26,7 +26,7 @@ jobs:
               npm run build -- --target x86_64-unknown-linux-gnu &&
               cd ../../rust-plugins/react && npm run build -- --target x86_64-unknown-linux-gnu --abi linux-x64-gnu &&
               apt-get update &&
-              apt-get install -y protobuf-compiler &&
+              apt-get install -y protobuf-compiler --fix-missing &&
               cd ../replace-dirname && npm run build -- --target x86_64-unknown-linux-gnu --abi linux-x64-gnu &&
               cd ../sass && npm run build -- --target x86_64-unknown-linux-gnu --abi linux-x64-gnu
 

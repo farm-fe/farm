@@ -56,6 +56,18 @@
 ### Major Changes
 
 - b327dd1: collect htmlFallbackMiddleware
+## 1.7.11
+
+### Patch Changes
+
+- cebded5f: fix #2211 exports should panic only when strict_exports is true
+- cebded5f: fix #2210 compatible with invalid css syntax by ignoring recovered errors"
+
+## 1.7.10
+
+### Patch Changes
+
+- 606bf87a: fix: remove hmr origin validate
 
 ## 1.7.9
 

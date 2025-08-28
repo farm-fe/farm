@@ -69,13 +69,32 @@ struct ConditionOptions {
   pub conditions: HashSet<String>,
 }
 
+#[derive(Debug, Default)]
+pub struct ResolveExportsOrImportsResult {
+  pub resolved: Option<String>,
+  pub warnings: Vec<String>,
+}
+
+impl ResolveExportsOrImportsResult {
+  pub fn to_resolved(self, strict_exports: bool) -> Option<String> {
+    if strict_exports && self.warnings.len() > 0 {
+      panic!(
+        "Panic cause `resolve.strict_exports` is set to true:\n{}",
+        self.warnings.join("\n")
+      );
+    }
+
+    self.resolved
+  }
+}
+
 pub fn resolve_exports_or_imports(
   package_json_info: &PackageJsonInfo,
   key: &str,
   field_type: &str,
   kind: &ResolveKind,
   context: &Arc<CompilationContext>,
-) -> Option<Vec<String>> {
+) -> ResolveExportsOrImportsResult {
   farm_profile_function!("resolve_exports_or_imports".to_string());
   let mut additional_conditions: HashSet<String> =
     context.config.resolve.conditions.iter().cloned().collect();
@@ -103,33 +122,37 @@ pub fn resolve_exports_or_imports(
     unsafe_flag: false,
   };
 
-  let result: Option<Vec<String>> = if field_type == "imports" {
+  if field_type == "imports" {
     imports(package_json_info, key, &condition_config)
   } else {
     exports(package_json_info, key, &condition_config)
-  };
-  return result;
+  }
 }
 
 fn exports(
   package_json_info: &PackageJsonInfo,
   source: &str,
   config: &ConditionOptions,
-) -> Option<Vec<String>> {
+) -> ResolveExportsOrImportsResult {
   if let Some(exports_field) = get_field_value_from_package_json_info(package_json_info, "exports")
   {
     // TODO If the current package does not have a name, then look up for the name of the folder
     let name = match get_field_value_from_package_json_info(package_json_info, "name") {
       Some(n) => n,
       None => {
-        eprintln!("Missing \"name\" field in package.json {package_json_info:?}");
-        return None;
+        let warning = format!("Missing \"name\" field in package.json {package_json_info:?}");
+        return ResolveExportsOrImportsResult {
+          resolved: None,
+          warnings: vec![warning],
+        };
       }
     };
+
     let mut map: BTreeMap<String, Value> = BTreeMap::new();
+
     match exports_field {
       Value::String(string_value) => {
-        map.insert(".".to_string(), Value::String(string_value.clone()));
+        map.insert(".".to_string(), Value::String(string_value));
       }
       Value::Object(object_value) => {
         for (k, v) in &object_value {
@@ -143,27 +166,31 @@ fn exports(
       }
       _ => {}
     }
+
     if !map.is_empty() {
-      return Some(walk(name.as_str().unwrap(), &map, source, config));
+      return walk(name.as_str().unwrap(), &map, source, config);
     }
   }
 
-  None
+  ResolveExportsOrImportsResult::default()
 }
 
 fn imports(
   package_json_info: &PackageJsonInfo,
   source: &str,
   config: &ConditionOptions,
-) -> Option<Vec<String>> {
+) -> ResolveExportsOrImportsResult {
   if let Some(imports_field) = get_field_value_from_package_json_info(package_json_info, "imports")
   {
     // TODO If the current package does not have a name, then look up for the name of the folder
     let name = match get_field_value_from_package_json_info(package_json_info, "name") {
       Some(n) => n,
       None => {
-        eprintln!("Missing \"name\" field in package.json {package_json_info:?}");
-        return None;
+        let warning = format!("Missing \"name\" field in package.json {package_json_info:?}");
+        return ResolveExportsOrImportsResult {
+          resolved: None,
+          warnings: vec![warning],
+        };
       }
     };
     let mut imports_map: BTreeMap<String, Value> = BTreeMap::new();
@@ -173,13 +200,18 @@ fn imports(
         imports_map.extend(object_value.clone());
       }
       _ => {
-        eprintln!("Unexpected imports field format");
-        return None;
+        let warning = format!("Unexpected imports field format");
+        return ResolveExportsOrImportsResult {
+          resolved: None,
+          warnings: vec![warning],
+        };
       }
     }
-    return Some(walk(name.as_str().unwrap(), &imports_map, source, config));
+
+    return walk(name.as_str().unwrap(), &imports_map, source, config);
   }
-  None
+
+  ResolveExportsOrImportsResult::default()
 }
 
 /// [condition order](https://nodejs.org/api/packages.html#conditional-exports)
@@ -210,44 +242,32 @@ fn conditions(options: &ConditionOptions) -> HashSet<Condition> {
   conditions
 }
 
-fn injects(items: &mut Vec<String>, value: &str) -> Option<Vec<String>> {
-  let rgx1: regex::Regex = regex::Regex::new(r#"\*"#).unwrap();
-  let rgx2: regex::Regex = regex::Regex::new(r#"/$"#).unwrap();
+fn injects(item: Option<String>, value: &str) -> Option<String> {
+  item.map(|mut item| {
+    let rgx1: regex::Regex = regex::Regex::new(r#"\*"#).unwrap();
+    let rgx2: regex::Regex = regex::Regex::new(r#"/$"#).unwrap();
 
-  for item in items.iter_mut() {
     let tmp = item.clone();
     if rgx1.is_match(&tmp) {
-      *item = rgx1.replace(&tmp, value).to_string();
+      item = rgx1.replace(&tmp, value).to_string();
     } else if rgx2.is_match(&tmp) {
-      *item += value;
+      item += value;
     }
-  }
 
-  return items.clone().into_iter().map(|s| Some(s)).collect();
+    item
+  })
 }
 
-fn loop_value(
-  m: Value,
-  conditions: &HashSet<Condition>,
-  result: &mut Option<HashSet<String>>,
-) -> Option<Vec<String>> {
+fn loop_value(m: &Value, conditions: &HashSet<Condition>) -> Option<String> {
   match m {
-    Value::String(s) => {
-      if let Some(result_set) = result {
-        result_set.insert(s.clone());
-      }
-      Some(vec![s])
-    }
-    Value::Array(values) => {
-      let arr_result = result.clone().unwrap_or_else(HashSet::default);
-      values
-        .par_iter()
-        .find_map_first(|item| loop_value(item.clone(), conditions, &mut Some(arr_result.clone())))
-    }
+    Value::String(s) => Some(s.to_string()),
+    Value::Array(values) => values
+      .par_iter()
+      .find_map_first(|item| loop_value(item, conditions)),
     Value::Object(map) => {
       for (condition, val) in map.iter() {
         if conditions.contains(&Condition::from_str(condition.as_str()).unwrap()) {
-          return loop_value(val.clone(), conditions, result);
+          return loop_value(val, conditions);
         };
       }
       None
@@ -257,16 +277,15 @@ fn loop_value(
   }
 }
 
-fn throws(name: &str, entry: &str, condition: Option<i32>) {
-  let message = match condition {
+fn throws(name: &str, entry: &str, condition: Option<i32>) -> String {
+  match condition {
     Some(cond) if cond != 0 => {
       format!("No known conditions for \"{entry}\" specifier in \"{name}\" package")
     }
     _ => {
       format!("Missing \"{entry}\" specifier in \"{name}\" package")
     }
-  };
-  eprintln!("{message}");
+  }
 }
 
 fn walk(
@@ -274,22 +293,27 @@ fn walk(
   mapping: &BTreeMap<String, Value>,
   input: &str,
   options: &ConditionOptions,
-) -> Vec<String> {
+) -> ResolveExportsOrImportsResult {
   let entry: String = if input.starts_with(".") || input.starts_with("#") {
     input.to_string()
   } else {
-    panic!(
+    let warning = format!(
       "input must start with \".\" or \"#\" when walk `exports` or `imports` field of package.json"
-    )
+    );
+    return ResolveExportsOrImportsResult {
+      resolved: None,
+      warnings: vec![warning],
+    };
   };
 
   let c = conditions(options);
   let mut m: Option<&Value> = mapping.get(&entry);
   let mut replace: Option<String> = None;
+
   if m.is_none() {
     let mut longest: Option<&str> = None;
 
-    for (key, _value) in mapping.iter() {
+    for (key, _) in mapping {
       if let Some(cur_longest) = &longest {
         if key.len() < cur_longest.len() {
           // do not allow "./" to match if already matched "./foo*" key
@@ -319,20 +343,32 @@ fn walk(
       m = mapping.get(longest_key);
     }
   }
+
   if m.is_none() {
-    throws(name, &entry, None);
-    return Vec::new();
+    return ResolveExportsOrImportsResult {
+      resolved: None,
+      warnings: vec![throws(name, &entry, None)],
+    };
   }
-  let v = loop_value(m.unwrap().clone(), &c, &mut None);
+
+  let v = loop_value(m.as_ref().unwrap(), &c);
+
   if v.is_none() {
-    throws(name, &entry, Some(1));
-    return Vec::new();
+    return ResolveExportsOrImportsResult {
+      resolved: None,
+      warnings: vec![throws(name, &entry, Some(1))],
+    };
   }
-  let cloned_v = v.clone();
+
   if let Some(replace) = replace {
-    if let Some(v1) = injects(&mut cloned_v.unwrap(), &replace) {
-      return v1;
-    }
+    return ResolveExportsOrImportsResult {
+      resolved: injects(v, &replace),
+      warnings: vec![],
+    };
   }
-  v.unwrap()
+
+  ResolveExportsOrImportsResult {
+    resolved: v,
+    warnings: vec![],
+  }
 }

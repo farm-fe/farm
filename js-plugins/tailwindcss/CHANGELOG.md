@@ -36,6 +36,20 @@
 - Updated dependencies [b8f7fc5]
 - Updated dependencies [ad09476]
   - @farmfe/core@2.0.0-nightly-20250410022118
+## 0.0.20
+
+### Patch Changes
+
+- Updated dependencies [cebded5f]
+- Updated dependencies [cebded5f]
+  - @farmfe/core@1.7.11
+
+## 0.0.19
+
+### Patch Changes
+
+- Updated dependencies [606bf87a]
+  - @farmfe/core@1.7.10
 
 ## 0.0.18
 
