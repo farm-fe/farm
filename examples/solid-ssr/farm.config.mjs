@@ -11,6 +11,11 @@ export default {
     input: {
       client: './index.html'
     },
+    resolve: {
+      alias: {
+        '@/': path.join(process.cwd(), 'src')
+      }
+    },
     output: {
       path: './build'
     },

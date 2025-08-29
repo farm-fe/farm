@@ -354,9 +354,7 @@ export function viteConfigToFarmConfig(
           farmConfig.compilation.resolve.alias = [];
         }
 
-        const normalizedAlias = normalizeResolveAlias(
-          farmConfig.compilation.resolve.alias
-        );
+        const normalizedAlias = normalizeResolveAlias(farmConfig);
         const farmRegexPrefix = '$__farm_regex:';
 
         if (isObject(config.resolve.alias)) {
