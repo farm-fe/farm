@@ -1,27 +1,28 @@
 {
   "name": "@farmfe/js-plugin-solid",
-  "version": "2.12.0",
+  "version": "3.0.0-nightly-20250827162746",
   "description": "SolidJS support for Farm",
+  "private": true,
   "author": {
     "name": "J4ck W4n9",
     "email": "1163585385@qq.com"
   },
   "license": "MIT",
   "main": "./build/cjs/index.cjs",
-  "types": "./build/cjs/index.d.ts",
+  "types": "./build/index.d.ts",
   "type": "module",
   "exports": {
     ".": {
       "import": "./build/esm/index.mjs",
-      "types": "./build/cjs/index.d.ts",
+      "types": "./build/index.d.ts",
       "require": "./build/cjs/index.cjs",
       "default": "./build/cjs/index.cjs"
     },
     "./package.json": "./package.json"
   },
   "scripts": {
-    "start": "farm build -w",
-    "build": "farm build && cross-env FARM_FORMAT=esm farm build",
+    "start": "farm watch",
+    "build": "farm build",
     "clean": "rimraf build tsconfig.build.tsbuildinfo",
     "prepublishOnly": "npm run build"
   },
@@ -34,14 +35,12 @@
     "solid-refresh": "^0.5.3"
   },
   "devDependencies": {
-    "@farmfe/cli": "workspace:*",
-    "@farmfe/core": "workspace:*",
     "@farmfe/js-plugin-dts": "workspace:*",
     "@types/babel__core": "^7.20.1",
     "solid-js": "^1.7.8"
   },
   "peerDependencies": {
-    "@farmfe/core": "workspace:^1.7.11"
+    "@farmfe/core": "workspace:*"
   },
   "files": [
     "build"

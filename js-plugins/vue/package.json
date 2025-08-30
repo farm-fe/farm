@@ -1,13 +1,14 @@
 {
   "name": "@farmfe/js-plugin-vue",
-  "version": "3.13.0",
+  "version": "4.0.0-nightly-20250827162746",
+  "private": true,
   "description": "support vue sfc for farm.",
   "main": "./build/index.cjs",
   "module": "./dist/farm-vue-plugin.js",
   "types": "./build/farm-vue-plugin.d.ts",
   "type": "module",
   "scripts": {
-    "start": "farm build -w",
+    "start": "farm watch",
     "build": "farm build && tsc",
     "clean": "rimraf dist tsconfig.build.tsbuildinfo build",
     "prepublishOnly": "npm run build",
@@ -37,8 +38,6 @@
   "author": "ysy945",
   "license": "MIT",
   "devDependencies": {
-    "@farmfe/cli": "workspace:^",
-    "@farmfe/core": "workspace:^",
     "@farmfe/js-plugin-dts": "workspace:^",
     "@jridgewell/gen-mapping": "^0.3.2",
     "@jridgewell/trace-mapping": "^0.3.17",
@@ -52,7 +51,7 @@
     "source-map": "^0.7.4"
   },
   "peerDependencies": {
-    "@farmfe/core": "workspace:^1.7.11",
+    "@farmfe/core": "workspace:*",
     "less": "*",
     "sass": "*",
     "stylus": "*"

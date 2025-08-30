@@ -1,6 +1,5 @@
-use std::collections::HashMap;
-
 use farmfe_core::module::{ModuleId, ModuleSystem};
+use farmfe_core::HashMap;
 
 use crate::resource_pot_to_bundle::{
   modules_analyzer::module_analyzer::ExportSpecifierInfo, uniq_name::BundleVariable,
@@ -17,7 +16,7 @@ pub struct ReferenceExport {
 impl ReferenceExport {
   pub fn new() -> Self {
     Self {
-      named: HashMap::new(),
+      named: HashMap::default(),
       default: None,
       all: false,
       namespace: None,
@@ -81,10 +80,18 @@ impl ReferenceExport {
     self.named.is_empty() && self.default.is_none() && !self.all && self.namespace.is_none()
   }
 
-  pub fn query(&self, export_from: &String, bundle_variable: &BundleVariable) -> Option<usize> {
-    if let Some(index) = self.namespace {
-      if &bundle_variable.name(index) == export_from {
-        return Some(index);
+  pub fn query(&self, export_from: &str, bundle_variable: &BundleVariable) -> Option<usize> {
+    let is_find_default = export_from == "default";
+
+    if is_find_default && self.default.is_some() {
+      return self.default;
+    }
+
+    if !is_find_default {
+      if let Some(index) = self.namespace {
+        if bundle_variable.name(index) == export_from {
+          return Some(index);
+        }
       }
     }
 
@@ -99,16 +106,16 @@ impl ReferenceExport {
 
   pub fn raw_query(
     &self,
-    export_from: &String,
+    export_from: &str,
     bundle_variable: &BundleVariable,
     find_default: bool,
   ) -> Option<usize> {
-    if find_default {
+    if find_default && self.default.is_some() {
       return self.default;
     }
 
     if let Some(index) = self.namespace {
-      if &bundle_variable.name(index) == export_from {
+      if &bundle_variable.name(index.into()) == export_from {
         return Some(index);
       }
     }
@@ -125,28 +132,34 @@ impl ReferenceExport {
 
 #[derive(Debug, Clone)]
 pub struct ReferenceMap {
-  pub reference_map: HashMap<ModuleId, ReferenceExport>,
+  pub reexport_map: HashMap<ModuleId, ReferenceExport>,
   pub export: ReferenceExport,
   pub export_type: ModuleSystem,
+}
+
+pub struct ReferenceQueryResult {
+  pub index: usize,
+  pub is_reexport: bool,
 }
 
 impl ReferenceMap {
   pub fn new(module_system: ModuleSystem) -> Self {
     Self {
       export: ReferenceExport::default(),
-      reference_map: Default::default(),
+      reexport_map: Default::default(),
       export_type: module_system,
     }
   }
 
   pub fn add_reference(&mut self, module_id: &ModuleId, export: &ExportSpecifierInfo) {
-    if !self.reference_map.contains_key(module_id) {
+    if !self.reexport_map.contains_key(module_id) {
       self
-        .reference_map
+        .reexport_map
         .insert(module_id.clone(), ReferenceExport::new());
     }
 
-    let reference = self.reference_map.get_mut(module_id).unwrap();
+    let reference = self.reexport_map.get_mut(module_id).unwrap();
+
     reference.insert(export);
   }
 
@@ -159,24 +172,35 @@ impl ReferenceMap {
     self.export.insert(export);
   }
 
-  pub fn query_by_var_str(
+  pub fn query_by_var_str_and_meta(
     &self,
     export_from: &String,
     bundle_variable: &BundleVariable,
-  ) -> Option<usize> {
+  ) -> Option<ReferenceQueryResult> {
     if let Some(r) = self.export.query(export_from, bundle_variable) {
-      Some(r)
+      Some(ReferenceQueryResult {
+        index: r,
+        is_reexport: false,
+      })
     } else {
       self
-        .reference_map
+        .reexport_map
         .values()
         .find_map(|item| item.query(export_from, bundle_variable))
+        .map(|r| ReferenceQueryResult {
+          index: r,
+          is_reexport: true,
+        })
     }
   }
 
-  pub fn query(&self, index: usize, bundle_variable: &BundleVariable) -> Option<usize> {
-    let export_from = bundle_variable.name(index);
+  pub fn query_local(&self, export_from: &str, bundle_variable: &BundleVariable) -> Option<usize> {
+    self
+      .export
+      .raw_query(export_from, bundle_variable, export_from == "default")
+  }
 
+  pub fn query_by_str(&self, export_from: &str, bundle_variable: &BundleVariable) -> Option<usize> {
     let find_default = export_from == "default";
 
     if let Some(r) = self
@@ -186,21 +210,27 @@ impl ReferenceMap {
       Some(r)
     } else {
       self
-        .reference_map
+        .reexport_map
         .values()
         .find_map(|item| item.query(&export_from, bundle_variable))
     }
   }
 
+  pub fn query(&self, index: usize, bundle_variable: &BundleVariable) -> Option<usize> {
+    let export_from = bundle_variable.name(index);
+
+    self.query_by_str(&export_from, bundle_variable)
+  }
+
   pub fn extends(&mut self, other: &ReferenceMap) {
-    for item in &other.reference_map {
-      if !self.reference_map.contains_key(item.0) {
+    for item in &other.reexport_map {
+      if !self.reexport_map.contains_key(item.0) {
         self
-          .reference_map
+          .reexport_map
           .insert(item.0.clone(), ReferenceExport::new());
       }
 
-      if let Some(map) = self.reference_map.get_mut(item.0) {
+      if let Some(map) = self.reexport_map.get_mut(item.0) {
         map.merge_by_export_all(item.1);
       }
     }
@@ -243,7 +273,7 @@ impl ReferenceMap {
     };
 
     print_export(&self.export, None);
-    for (module_id, reference) in &self.reference_map {
+    for (module_id, reference) in &self.reexport_map {
       print_export(reference, Some(module_id));
     }
   }

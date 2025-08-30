@@ -4,9 +4,10 @@ import { Compiler } from '../src/compiler/index.js';
 import {
   UserConfig,
   normalizeUserCompilationConfig,
-  resolveMergedUserConfig
+  resolveUserConfig
 } from '../src/config/index.js';
 import { Logger } from '../src/index.js';
+import { resolveConfigResolvedHook } from '../src/plugin/index.js';
 import { JsPlugin } from '../src/plugin/type.js';
 
 export async function getCompiler(
@@ -14,7 +15,8 @@ export async function getCompiler(
   p: string,
   plugins: JsPlugin[],
   input?: Record<string, string>,
-  output?: Record<string, string>
+  output?: Record<string, string>,
+  compilation?: UserConfig['compilation']
 ): Promise<Compiler> {
   const originalExit = process.exit;
   process.exit = (code) => {
@@ -32,30 +34,27 @@ export async function getCompiler(
         path: path.join('dist', p),
         entryFilename: '[entryName].mjs',
         targetEnv: 'node',
+        showFileSize: false,
         ...(output ?? {})
       },
       progress: false,
       lazyCompilation: false,
       sourcemap: false,
-      persistentCache: false
+      persistentCache: false,
+      ...(compilation ?? {})
     },
     plugins
   };
-  const resolvedUserConfig = await resolveMergedUserConfig(
-    userConfig,
-    undefined,
-    'production'
-  );
-
+  const resolvedUserConfig = await resolveUserConfig(userConfig, undefined);
+  resolvedUserConfig.logger = new Logger();
   const compilationConfig = await normalizeUserCompilationConfig(
     resolvedUserConfig,
-    userConfig,
-    new Logger(),
     'production'
   );
+  await resolveConfigResolvedHook(resolvedUserConfig, plugins);
 
   return new Compiler({
-    config: compilationConfig,
+    compilation: compilationConfig,
     jsPlugins: plugins,
     rustPlugins: []
   });

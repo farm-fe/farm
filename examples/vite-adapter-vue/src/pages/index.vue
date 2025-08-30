@@ -38,6 +38,7 @@ import IconComponent from '../assets/vue.svg?component'
 
 aside {
   width: 100%;
+
   @include media-breakpoint-up(md) {
     width: 18rem;
   }

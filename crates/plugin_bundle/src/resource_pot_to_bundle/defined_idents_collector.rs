@@ -1,11 +1,13 @@
-use std::collections::{HashMap, HashSet};
+use std::cell::RefCell;
 
 use farmfe_core::{
   swc_common::DUMMY_SP,
   swc_ecma_ast::{
-    AssignExpr, AssignOp, AssignTarget, BindingIdent, Expr, Id, KeyValuePatProp, KeyValueProp,
-    MemberProp, ObjectPat, ObjectPatProp, Pat, Prop, PropName, PropOrSpread, SimpleAssignTarget,
+    AssignExpr, AssignOp, AssignTarget, BindingIdent, Expr, Id, IdentName, KeyValuePatProp,
+    KeyValueProp, MemberProp, ObjectPat, ObjectPatProp, Pat, Prop, PropName, PropOrSpread,
+    SimpleAssignTarget,
   },
+  HashMap, HashSet,
 };
 use farmfe_toolkit::{
   swc_atoms::Atom,
@@ -19,7 +21,7 @@ pub struct DefinedIdentsCollector {
 impl DefinedIdentsCollector {
   pub fn new() -> Self {
     Self {
-      defined_idents: HashSet::new(),
+      defined_idents: HashSet::default(),
     }
   }
 }
@@ -69,20 +71,39 @@ impl Visit for DefinedIdentsCollector {
 
 use farmfe_core::swc_ecma_ast::Ident;
 
-use super::Var;
+use super::{
+  bundle::ModuleAnalyzerManager, modules_analyzer::module_analyzer::VarRefKey,
+  uniq_name::BundleVariable,
+};
 
-#[derive(Debug, Default)]
+type RenameMap<'a> = farmfe_core::HashMap<VarRefKey<'a>, usize>;
+
+// #[derive(Debug)]
 pub struct RenameIdent<'a> {
-  map: HashMap<&'a Id, &'a Var>,
+  map: RenameMap<'a>,
+  bundle_variable: &'a BundleVariable,
+  module_analyzer_manager: &'a ModuleAnalyzerManager<'a>,
 }
 
 impl<'a> RenameIdent<'a> {
-  pub fn new(map: HashMap<&'a Id, &'a Var>) -> Self {
-    Self { map }
+  pub fn new(
+    map: RenameMap<'a>,
+    bundle_variable: &'a BundleVariable,
+    module_analyzer_manager: &'a ModuleAnalyzerManager<'a>,
+  ) -> Self {
+    Self {
+      map,
+      bundle_variable,
+      module_analyzer_manager,
+    }
   }
 
   fn rename(&self, ident: &Ident) -> Option<String> {
-    self.map.get(&ident.to_id()).map(|var| var.render_name())
+    let r = RefCell::new(ident.to_id());
+    let v = self.map.get(&(r.borrow().into())).map(|var| {
+      return self.bundle_variable.render_name(*var);
+    });
+    v
   }
 }
 
@@ -99,10 +120,9 @@ impl<'a> VisitMut for RenameIdent<'a> {
       Prop::Shorthand(m) => {
         if let Some(new_name) = self.rename(m) {
           *n = Prop::KeyValue(farmfe_core::swc_ecma_ast::KeyValueProp {
-            key: farmfe_core::swc_ecma_ast::PropName::Ident(Ident {
+            key: farmfe_core::swc_ecma_ast::PropName::Ident(IdentName {
               span: DUMMY_SP,
               sym: m.sym.as_str().into(),
-              optional: false,
             }),
             value: Box::new(farmfe_core::swc_ecma_ast::Expr::Ident(
               new_name.as_str().into(),
@@ -124,10 +144,9 @@ impl<'a> VisitMut for RenameIdent<'a> {
         Prop::Shorthand(ident) => {
           if let Some(new_name) = self.rename(ident) {
             *p = Prop::KeyValue(KeyValueProp {
-              key: farmfe_core::swc_ecma_ast::PropName::Ident(Ident {
+              key: farmfe_core::swc_ecma_ast::PropName::Ident(IdentName {
                 span: DUMMY_SP,
                 sym: ident.sym.as_str().into(),
-                optional: false,
               }),
               value: Box::new(farmfe_core::swc_ecma_ast::Expr::Ident(
                 new_name.as_str().into(),

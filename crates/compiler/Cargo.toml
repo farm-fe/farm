@@ -14,6 +14,7 @@ farmfe_core = { path = "../core", version = "0.7.3" }
 farmfe_plugin_partial_bundling = { path = "../plugin_partial_bundling", version = "0.0.15" }
 farmfe_plugin_resolve = { path = "../plugin_resolve", version = "0.0.15" }
 farmfe_plugin_script = { path = "../plugin_script", version = "0.0.15" }
+farmfe_plugin_script_meta = { path = "../plugin_script_meta", version = "0.0.1" }
 farmfe_plugin_runtime = { path = "../plugin_runtime", version = "0.0.15" }
 farmfe_plugin_html = { path = "../plugin_html", version = "0.0.15" }
 farmfe_plugin_tree_shake = { path = "../plugin_tree_shake", version = "0.0.14" }
@@ -28,9 +29,12 @@ farmfe_plugin_json = { path = "../plugin_json", version = "0.0.15" }
 farmfe_plugin_polyfill = { path = "../plugin_polyfill", version = "0.0.15" }
 farmfe_plugin_progress = { path = "../plugin_progress", version = "0.0.15" }
 farmfe_plugin_define = { path = "../plugin_define", version = "0.0.15" }
-farmfe_plugin_bundle = { path = "../plugin_bundle", version = "0.0.9" }
-num_cpus = "1.16.0"
+farmfe_plugin_mangle_exports = { path = "../plugin_mangle_exports", version = "0.0.1" }
+farmfe_plugin_library = { path = "../plugin_library", version = "0.0.1" }
+farmfe_plugin_file_size = { path = "../plugin_file_size", version = "0.0.1" }
 farmfe_testing = { path = "../macro_testing", version = "0.0.2" }
+enhanced-magic-string = { workspace = true }
+sourcemap = { workspace = true }
 
 [features]
 profile = [

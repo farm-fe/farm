@@ -1,13 +1,29 @@
-import { isArray, isObject } from '../utils/index.js';
-import { convertPlugin } from './js/index.js';
-import { rustPluginResolver } from './rust/index.js';
-
-import { ResolvedUserConfig, type UserConfig } from '../config/index.js';
-import merge from '../utils/merge.js';
-import type { JsPlugin } from './type.js';
-
 export * from './js/index.js';
 export * from './rust/index.js';
+
+import { isAbsolute, relative } from 'path';
+import {
+  CompilationMode,
+  ConfigEnv,
+  ResolvedUserConfig,
+  type UserConfig
+} from '../config/index.js';
+import { isArray, isObject } from '../utils/index.js';
+import merge from '../utils/merge.js';
+import { convertPlugin, handleVitePlugins } from './js/index.js';
+import { rustPluginResolver } from './rust/index.js';
+
+import type { JsPlugin } from './type.js';
+
+export async function resolveVitePlugins(
+  config: UserConfig,
+  mode: CompilationMode
+) {
+  const plugins = config?.vitePlugins?.filter(Boolean) ?? [];
+  if (!plugins.length) return [];
+
+  return handleVitePlugins(plugins, config, mode);
+}
 
 export async function resolveFarmPlugins(config: UserConfig) {
   const plugins = config.plugins ?? [];
@@ -23,7 +39,7 @@ export async function resolveFarmPlugins(config: UserConfig) {
 
   const jsPlugins: JsPlugin[] = [];
 
-  for (const plugin of plugins) {
+  for (let plugin of plugins) {
     if (!plugin) {
       continue;
     }
@@ -36,11 +52,13 @@ export async function resolveFarmPlugins(config: UserConfig) {
         await rustPluginResolver(plugin as string, config.root ?? process.cwd())
       );
     } else if (isObject(plugin)) {
-      convertPlugin(plugin as unknown as JsPlugin);
+      // @ts-ignore
+      plugin = convertPlugin(plugin as unknown as JsPlugin);
       jsPlugins.push(plugin as unknown as JsPlugin);
     } else if (isArray(plugin)) {
-      for (const pluginNestItem of plugin as JsPlugin[]) {
-        convertPlugin(pluginNestItem as JsPlugin);
+      for (let pluginNestItem of plugin as JsPlugin[]) {
+        // @ts-ignore
+        pluginNestItem = convertPlugin(pluginNestItem as JsPlugin);
         jsPlugins.push(pluginNestItem as JsPlugin);
       }
     } else {
@@ -75,6 +93,7 @@ export async function resolveAsyncPlugins<T>(arr: T[]): Promise<T[]> {
 
 export async function resolveConfigHook(
   config: UserConfig,
+  configEnv: ConfigEnv,
   plugins: JsPlugin[]
 ): Promise<UserConfig> {
   let conf = config;
@@ -91,7 +110,7 @@ export async function resolveConfigHook(
 
   for (const p of uniqueVitePlugins.values()) {
     if (p.config) {
-      const res = await p.config(conf);
+      const res = await p.config(conf, configEnv);
 
       if (res) {
         conf = merge(conf, res);
@@ -109,6 +128,28 @@ export async function resolveConfigResolvedHook(
   for (const p of plugins) {
     if (p.configResolved) {
       await p.configResolved(config);
+    }
+  }
+
+  // normalize js plugins filters to transform resolved paths from absolute to relative
+  for (const p of plugins) {
+    for (const key of Object.keys(p)) {
+      const hook: any = p[key as keyof JsPlugin];
+
+      if (
+        typeof hook !== 'object' ||
+        !['load', 'transform', 'processModule', 'freezeModule'].includes(key)
+      ) {
+        continue;
+      }
+
+      if (hook?.filters?.resolvedPaths?.length && config.root) {
+        // Convert absolute paths to relative paths
+        hook.filters.resolvedPaths = hook.filters.resolvedPaths.map(
+          (p: string) =>
+            isAbsolute(p) && !p.startsWith('\\') ? relative(config.root, p) : p
+        );
+      }
     }
   }
 }
@@ -141,9 +182,14 @@ export function getSortedPlugins(plugins: readonly JsPlugin[]): JsPlugin[] {
   return [...prePlugins, ...normalPlugins, ...postPlugins];
 }
 
-export function getSortedPluginHooks(
+export function getSortedPluginHooksBindThis(
   plugins: JsPlugin[],
   hookName: keyof JsPlugin
-): any {
-  return plugins.map((p: JsPlugin) => p[hookName]).filter(Boolean);
+) {
+  plugins = getSortedPlugins(plugins);
+  return plugins
+    .map((p: JsPlugin) =>
+      typeof p[hookName] === 'function' ? p[hookName].bind(p) : p[hookName]
+    )
+    .filter(Boolean);
 }

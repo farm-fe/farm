@@ -1,21 +1,26 @@
-use std::{
-  collections::{HashMap, HashSet},
-  sync::Arc,
-};
+use std::sync::Arc;
 
 use farmfe_core::{
   cache::module_cache::CachedModule,
   context::CompilationContext,
   error::CompilationError,
-  module::{module_graph::ModuleGraphEdgeDataItem, module_group::ModuleGroupId, Module, ModuleId},
+  module::{
+    module_graph::ModuleGraphEdgeDataItem,
+    module_group::{ModuleGroupId, ModuleGroupType},
+    Module, ModuleId,
+  },
   plugin::{PluginResolveHookParam, ResolveKind, UpdateResult, UpdateType},
   resource::ResourceType,
   serde::Serialize,
   serde_json::{self, json},
   stats::CompilationPluginHookStats,
+  HashMap, HashSet,
 };
 
-use farmfe_toolkit::get_dynamic_resources_map::get_dynamic_resources_map;
+use farmfe_toolkit::resources::get_dynamic_resources_map;
+use finalize_module_graph::{
+  finalize_updated_module_graph, freeze_module_of_affected_module_graph,
+};
 
 use crate::{
   build::{
@@ -39,6 +44,7 @@ use self::{
 };
 
 mod diff_and_patch_module_graph;
+mod finalize_module_graph;
 mod find_hmr_boundaries;
 mod handle_update_modules;
 mod module_cache;
@@ -75,11 +81,11 @@ impl Compiler {
       let update_module_graph = update_context.module_graph.read();
       self
         .context
-        .record_manager
+        .stats
         .set_module_graph_stats(&update_module_graph);
       self
         .context
-        .record_manager
+        .stats
         .set_entries(update_module_graph.entries.keys().cloned().collect())
     }
   }
@@ -89,7 +95,7 @@ impl Compiler {
       let module_group_graph = self.context.module_group_graph.read();
       self
         .context
-        .record_manager
+        .stats
         .add_plugin_hook_stats(CompilationPluginHookStats {
           plugin_name: "HmrUpdate".to_string(),
           hook_name: "analyze_module_graph".to_string(),
@@ -115,7 +121,7 @@ impl Compiler {
     if self.context.config.record {
       self
         .context
-        .record_manager
+        .stats
         .add_plugin_hook_stats(CompilationPluginHookStats {
           plugin_name: "HmrUpdate".to_string(),
           hook_name: "diffAndPatchContext".to_string(),
@@ -146,11 +152,11 @@ impl Compiler {
   where
     F: FnOnce() + Send + Sync + 'static,
   {
-    self.context.record_manager.add_hmr_compilation_stats();
-    self.context.record_manager.set_start_time();
+    self.context.stats.add_hmr_compilation_stats();
+    self.context.stats.set_start_time();
 
     // mark the compilation as update
-    self.context.set_update();
+    // self.context.set_update();
     let (err_sender, err_receiver) = Self::create_thread_channel();
     let update_context = Arc::new(UpdateContext::new());
 
@@ -165,7 +171,15 @@ impl Compiler {
 
     let mut update_result = UpdateResult::default();
     self.context.clear_log_store();
-    let paths = handle_update_modules(paths, &self.context, &mut update_result)?;
+
+    let last_failed_module_ids = self.last_fail_module_ids.lock();
+    let paths = handle_update_modules(
+      paths,
+      &last_failed_module_ids,
+      &self.context,
+      &mut update_result,
+    )?;
+    drop(last_failed_module_ids);
 
     for (path, update_type) in paths.clone() {
       match update_type {
@@ -187,7 +201,7 @@ impl Compiler {
               resolve_param,
               context: self.context.clone(),
               err_sender: err_sender.clone(),
-              thread_pool: self.thread_pool.clone(),
+              thread_pool: self.context.thread_pool.clone(),
               order: 0,
               cached_dependency: None,
             },
@@ -216,9 +230,10 @@ impl Compiler {
     self.handle_global_log(&mut errors);
 
     if !errors.is_empty() {
-      self.context.record_manager.set_build_end_time();
-      self.context.record_manager.set_end_time();
+      self.context.stats.set_build_end_time();
+      self.context.stats.set_end_time();
       self.set_update_module_graph_stats(&update_context);
+      self.set_last_fail_module_ids(&errors);
 
       let mut error_messages = vec![];
       for error in errors {
@@ -229,9 +244,11 @@ impl Compiler {
         .map(|e| e.to_string())
         .collect::<Vec<_>>());
       return Err(CompilationError::GenericError(errors_json.to_string()));
+    } else {
+      self.set_last_fail_module_ids(&[]);
     }
 
-    self.context.record_manager.set_build_end_time();
+    self.context.stats.set_build_end_time();
     self.set_update_module_graph_stats(&update_context);
 
     let previous_module_groups = {
@@ -248,30 +265,19 @@ impl Compiler {
     // record graph patch result
     self.set_module_group_graph_stats();
 
+    freeze_module_of_affected_module_graph(&updated_module_ids, &diff_result, &self.context)?;
+
     // update cache
     if self.context.config.persistent_cache.enabled() {
       set_updated_modules_cache(&updated_module_ids, &diff_result, &self.context);
     }
 
-    // call module graph updated hook
-    self.context.plugin_driver.module_graph_updated(
-      &farmfe_core::plugin::PluginModuleGraphUpdatedHookParams {
-        added_modules_ids: diff_result.added_modules.clone().into_iter().collect(),
-        removed_modules_ids: removed_modules.clone().into_keys().collect(),
-        updated_modules_ids: updated_module_ids.clone(),
-      },
+    finalize_updated_module_graph(
+      &updated_module_ids,
+      removed_modules.keys().cloned().collect(),
+      &diff_result,
       &self.context,
     )?;
-
-    let dynamic_resources_map = self.regenerate_resources(
-      affected_module_groups,
-      previous_module_groups,
-      &updated_module_ids,
-      diff_result.clone(),
-      removed_modules,
-      callback,
-      sync,
-    );
 
     // after update_module, diff old_resource and new_resource
     {
@@ -308,6 +314,16 @@ impl Compiler {
     // find the boundaries.
     let boundaries = find_hmr_boundaries::find_hmr_boundaries(&updated_module_ids, &self.context);
 
+    let dynamic_resources_map = self.regenerate_resources(
+      affected_module_groups,
+      previous_module_groups,
+      &updated_module_ids,
+      diff_result.clone(),
+      removed_modules,
+      callback,
+      sync,
+    );
+
     update_result
       .added_module_ids
       .extend(diff_result.added_modules);
@@ -319,6 +335,7 @@ impl Compiler {
     update_result.mutable_resources = mutable_resources;
     update_result.boundaries = boundaries;
     update_result.dynamic_resources_map = dynamic_resources_map;
+
     Ok(update_result)
   }
 
@@ -541,7 +558,7 @@ impl Compiler {
     paths: Vec<(String, UpdateType)>,
     update_context: &Arc<UpdateContext>,
   ) -> (
-    HashSet<ModuleId>,
+    HashSet<ModuleGroupId>,
     Vec<ModuleId>,
     DiffResult,
     HashMap<ModuleId, Module>,
@@ -631,12 +648,12 @@ impl Compiler {
       let resources_map = self.context.resources_map.lock();
       let module_graph = self.context.module_graph.read();
 
-      let mut dynamic_resources = HashMap::new();
+      let mut dynamic_resources = HashMap::default();
 
       for entry_id in module_graph.entries.keys() {
         dynamic_resources.extend(get_dynamic_resources_map(
           &module_group_graph,
-          entry_id,
+          &ModuleGroupId::new(entry_id, &ModuleGroupType::Entry),
           &resource_pot_map,
           &resources_map,
           &module_graph,
@@ -650,7 +667,7 @@ impl Compiler {
         .plugin_driver
         .update_finished(&self.context)
         .unwrap();
-      self.context.record_manager.set_end_time();
+      self.context.stats.set_end_time();
     } else {
       std::thread::spawn(move || {
         if let Err(e) = regenerate_resources_for_affected_module_groups(
@@ -670,7 +687,7 @@ impl Compiler {
           .plugin_driver
           .update_finished(&cloned_context)
           .unwrap();
-        cloned_context.record_manager.set_end_time();
+        cloned_context.stats.set_end_time();
       });
     }
 

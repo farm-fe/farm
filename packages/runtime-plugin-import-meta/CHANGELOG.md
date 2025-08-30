@@ -1,5 +1,23 @@
 # @farmfe/runtime-plugin-import-meta
 
+## 1.0.0-nightly-20250827162746
+
+### Patch Changes
+
+- 9a227ad: Chore: release v2 nightly
+
+## 1.0.0-nightly-20250411100807
+
+### Patch Changes
+
+- 60f40f0: bump nightly version
+
+## 1.0.0-nightly-20241023020505
+
+### Major Changes
+
+- cab79e8: bump major version with runtime
+
 ## 0.2.3
 
 ### Patch Changes

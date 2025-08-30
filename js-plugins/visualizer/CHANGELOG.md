@@ -1,5 +1,11 @@
 # @farmfe/js-plugin-record-viewer
 
+## 1.1.5-nightly-20250827162746
+
+### Patch Changes
+
+- 9a227ad: Chore: release v2 nightly
+
 ## 1.1.4
 
 ### Patch Changes

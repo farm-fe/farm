@@ -8,9 +8,20 @@ import { execa } from 'execa';
 export const concurrencyLimit = 50;
 
 function getServerPort(): Promise<number> {
+  // retry 3 times
+  let retryCount = 0;
+
   return fetch('http://127.0.0.1:12306/port')
     .then((r) => r.text())
-    .then(Number);
+    .then(Number)
+    .catch(async () => {
+      if (retryCount < 3) {
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        retryCount++;
+        return getServerPort();
+      }
+      throw new Error('get server port failed');
+    });
 }
 
 const visitPage = async (
@@ -20,7 +31,6 @@ const visitPage = async (
   command: string
 ) => {
   if (!path) return;
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
   // @ts-ignore
   const wsEndpoint = inject('wsEndpoint');
   if (!wsEndpoint) {
@@ -29,12 +39,24 @@ const visitPage = async (
 
   const browser = await chromium.connect(wsEndpoint);
   const page = await browser?.newPage();
-
+  page.on('requestfailed', (req) => {
+    logger(`request failed ${path} ${examplePath}: ${req.url()} ${req.failure()?.errorText} ${req}`, {
+      color: 'red'
+    });
+  });
   logger(`open the page: ${path} ${examplePath}`);
   try {
     page?.on('console', (msg) => {
-      logger(`command ${command} ${examplePath} -> ${path}: ${msg.text()}`);
-      // browserLogs.push(msg.text());
+      const lowerCaseMsg = msg.text().toLocaleLowerCase();
+
+      if (msg.type() === 'error' && !lowerCaseMsg.includes('warn') && !lowerCaseMsg.includes('warning')) {
+        logger(`command ${command} ${examplePath} -> ${path}: ${msg.text()}`, {
+          color: 'red'
+        });
+        reject(new Error(msg.text()));
+      } else {
+        logger(`command ${command} ${examplePath} -> ${path}: ${msg.text()}`);
+      }
     });
     let resolve: (data: any) => void, reject: (e: Error) => void;
     const promise = new Promise((r, re) => {
@@ -160,7 +182,7 @@ export const startProjectAndTest = async (
       logger('try kill child process: ' + child.pid);
       logger('current process id: ' + process.pid);
       if (!child.killed) {
-        child.kill();
+        child.kill(0);
       }
     });
   });
@@ -172,7 +194,7 @@ export const startProjectAndTest = async (
     throw e;
   } finally {
     if (!child.killed) {
-      child.kill();
+      child.kill(0);
     }
   }
 };
@@ -203,7 +225,7 @@ export const watchProjectAndTest = async (
       const res = result.toString();
       setTimeout(() => {
         reject(new Error('timeout'));
-      }, 10000);
+      }, 60000);
       cb(res, () => resolve(null));
     });
 

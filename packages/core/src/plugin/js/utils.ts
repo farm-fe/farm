@@ -1,5 +1,3 @@
-import path from 'node:path';
-// import path from 'node:path';
 import * as querystring from 'node:querystring';
 import fse from 'fs-extra';
 import type {
@@ -8,12 +6,17 @@ import type {
   NormalizedOutputOptions,
   OutputAsset,
   OutputChunk,
-  RenderedChunk,
-  RenderedModule
+  RenderedChunk
 } from 'rollup';
-import { Config } from '../../types/binding.js';
-import { JsResourcePotInfoData, Resource, ResourcePotInfo } from '../type.js';
+
 import { VITE_ADAPTER_VIRTUAL_MODULE } from './constants.js';
+
+import { readFile } from 'node:fs/promises';
+import { ModuleContext, ModuleNode } from '../../config/types.js';
+import type { Config } from '../../types/binding.js';
+import { normalizePath } from '../../utils/share.js';
+import type { JsPlugin, JsResourcePot, Resource } from '../type.js';
+import { createModuleGraph } from './vite-server-adapter.js';
 
 export type WatchChangeEvents = 'create' | 'update' | 'delete';
 
@@ -24,8 +27,12 @@ export function convertEnforceToPriority(value: 'pre' | 'post' | undefined) {
     post: 98
   };
 
-  return enforceToPriority[value!] !== undefined
-    ? enforceToPriority[value!]
+  if (value === undefined) {
+    return defaultPriority;
+  }
+
+  return enforceToPriority[value] !== undefined
+    ? enforceToPriority[value]
     : defaultPriority;
 }
 
@@ -42,15 +49,7 @@ export function convertWatchEventChange(
 }
 
 export function getContentValue(content: any): string {
-  return encodeStr(typeof content === 'string' ? content : content!.code);
-}
-
-export function isString(variable: unknown): variable is string {
-  return typeof variable === 'string';
-}
-
-export function isObject(variable: unknown): variable is object {
-  return typeof variable === 'object' && variable !== null;
+  return encodeStr(typeof content === 'string' ? content : content.code);
 }
 
 export function customParseQueryString(url: string | null) {
@@ -141,13 +140,6 @@ export function normalizeAdapterVirtualModule(id: string) {
   if (isStartsWithSlash(path) && !fse.pathExistsSync(path))
     return addAdapterVirtualModuleFlag(id);
   return id;
-}
-
-// normalize path for windows the same as Vite
-export function normalizePath(p: string): string {
-  return path.posix.normalize(
-    process.platform === 'win32' ? p.replace(/\\/g, '/') : p
-  );
 }
 
 export const removeQuery = (path: string) => {
@@ -248,45 +240,23 @@ export function throwIncompatibleError(
 }
 
 export function transformResourceInfo2RollupRenderedChunk(
-  info: ResourcePotInfo
+  info: Partial<JsResourcePot>
 ): RenderedChunk {
-  const { modules, moduleIds, name, data } = info;
-
-  const {
-    dynamicImports,
-    importedBindings,
-    imports,
-    exports,
-    isDynamicEntry,
-    isEntry,
-    isImplicitEntry
-  } = data as JsResourcePotInfoData;
+  const { moduleIds, name, isEntry, isDynamicEntry } = info;
 
   return {
-    dynamicImports,
+    dynamicImports: [],
     fileName: name,
     implicitlyLoadedBefore: [],
-    importedBindings,
-    imports,
-    modules: Object.entries(modules).reduce(
-      (result, [key, val]) => ({
-        ...result,
-        [key]: {
-          code: val.renderedContent,
-          renderedLength: val.renderedLength,
-          originalLength: val.originalLength,
-          removedExports: [],
-          renderedExports: []
-        }
-      }),
-      {} as Record<string, RenderedModule>
-    ),
+    importedBindings: {},
+    imports: [],
+    modules: {}, // do not support modules
     referencedFiles: [],
-    exports,
+    exports: [],
     facadeModuleId: null,
     isDynamicEntry,
     isEntry,
-    isImplicitEntry,
+    isImplicitEntry: false,
     moduleIds,
     name,
     type: 'chunk'
@@ -297,10 +267,10 @@ export function transformResourceInfo2RollupResource(
   resource: Resource
 ): OutputChunk | OutputAsset {
   // Rollup/Vite only treat js files as chunk
-  if (resource.info && resource.resourceType === 'js') {
+  if (resource.resourceType === 'js') {
     const source = Buffer.from(resource.bytes).toString('utf-8');
     return {
-      ...transformResourceInfo2RollupRenderedChunk(resource.info),
+      ...transformResourceInfo2RollupRenderedChunk({}),
       type: 'chunk',
       code: source,
       name: resource.name,
@@ -341,13 +311,11 @@ export function transformRollupResource2FarmResource(
   }
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const notSupport: (method: string) => (...args: any[]) => any =
   (method) => () => {
     console.warn(`${method} not support`);
   };
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const noop: (...args: any) => any = () => void 0;
 
 function transformFarmFormatToRollupFormat(
@@ -466,14 +434,42 @@ export function transformFarmConfigToRollupNormalizedInputOptions(
   } satisfies NormalizedInputOptions;
 }
 
-export function normalizeFilterPath(path: string): string {
-  if (process.platform === 'win32') {
-    return compatibleWin32Path(path);
+export function wrapPluginUpdateModules(plugin: JsPlugin): JsPlugin {
+  if (!plugin.updateModules?.executor) {
+    return plugin;
   }
+  const originalExecutor = plugin.updateModules.executor;
+  const moduleGraph = createModuleGraph(plugin.name);
 
-  return path;
-}
+  plugin.updateModules.executor = async ({ paths }, ctx) => {
+    moduleGraph.context = ctx;
+    // TODO order with sort by updateModules hooks priority
+    for (const [file, type] of paths) {
+      const mods = moduleGraph.getModulesByFile(
+        file
+      ) as unknown as ModuleNode[];
 
-function compatibleWin32Path(path: string): string {
-  return path.replaceAll('/', '\\\\');
+      const filename = normalizePath(file);
+      const moduleContext: ModuleContext = {
+        file: filename,
+        timestamp: Date.now(),
+        type,
+        paths,
+        modules: (mods ?? []).map(
+          (m) =>
+            ({
+              ...m,
+              id: normalizePath(m.id),
+              file: normalizePath(m.file)
+            }) as ModuleNode
+        ),
+        read: function (): string | Promise<string> {
+          return readFile(file, 'utf-8');
+        }
+      };
+
+      return originalExecutor.call(plugin, moduleContext);
+    }
+  };
+  return plugin;
 }

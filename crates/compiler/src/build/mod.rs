@@ -1,5 +1,4 @@
 use std::{
-  collections::HashMap,
   path::PathBuf,
   sync::{
     mpsc::{channel, Receiver, Sender},
@@ -24,23 +23,28 @@ use farmfe_core::{
   },
   rayon::ThreadPool,
   serde_json::json,
+  HashMap,
 };
 
 use farmfe_plugin_lazy_compilation::DYNAMIC_VIRTUAL_SUFFIX;
 use farmfe_toolkit::resolve::load_package_json;
 use farmfe_utils::stringify_query;
+use finalize_module_graph::{
+  cache_module_graph, finalize_module_graph, freeze_module_of_module_graph,
+};
 
 use crate::{
   build::{
     analyze_deps::analyze_deps, finalize_module::finalize_module, load::load, parse::parse,
     resolve::resolve, transform::transform,
   },
+  utils::get_module_ids_from_compilation_errors,
   Compiler,
 };
 
 use self::module_cache::{
   get_content_hash_of_module, get_timestamp_of_module, handle_cached_modules,
-  set_module_graph_cache, try_get_module_cache_by_hash, try_get_module_cache_by_timestamp,
+  try_get_module_cache_by_hash, try_get_module_cache_by_timestamp,
 };
 
 macro_rules! call_and_catch_error {
@@ -55,7 +59,9 @@ macro_rules! call_and_catch_error {
 }
 
 pub(crate) mod analyze_deps;
+// pub(crate) mod dynamic_input;
 pub(crate) mod finalize_module;
+pub(crate) mod finalize_module_graph;
 pub(crate) mod load;
 pub(crate) mod module_cache;
 pub(crate) mod parse;
@@ -104,14 +110,22 @@ impl Compiler {
   fn set_module_graph_stats(&self) {
     if self.context.config.record {
       let module_graph = self.context.module_graph.read();
+      self.context.stats.set_module_graph_stats(&module_graph);
       self
         .context
-        .record_manager
-        .set_module_graph_stats(&module_graph);
-      self
-        .context
-        .record_manager
-        .set_entries(module_graph.entries.keys().cloned().collect())
+        .stats
+        .set_entries(module_graph.entries.keys().cloned().collect());
+    }
+  }
+
+  pub fn set_last_fail_module_ids(&self, errors: &[CompilationError]) {
+    let mut last_fail_module_ids = self.last_fail_module_ids.lock();
+    last_fail_module_ids.clear();
+
+    for id in get_module_ids_from_compilation_errors(errors) {
+      if !last_fail_module_ids.contains(&id) {
+        last_fail_module_ids.push(id);
+      }
     }
   }
 
@@ -119,10 +133,9 @@ impl Compiler {
     self.context.plugin_driver.build_start(&self.context)?;
 
     let (err_sender, err_receiver) = Self::create_thread_channel();
-
     for (order, (name, source)) in self.context.config.input.iter().enumerate() {
       let params = BuildModuleGraphThreadedParams {
-        thread_pool: self.thread_pool.clone(),
+        thread_pool: self.context.thread_pool.clone(),
         resolve_param: PluginResolveHookParam {
           source: source.clone(),
           importer: None,
@@ -145,11 +158,15 @@ impl Compiler {
     }
 
     self.handle_global_log(&mut errors);
+
     if !errors.is_empty() {
       // set stats if stats is enabled
-      self.context.record_manager.set_build_end_time();
-      self.context.record_manager.set_end_time();
+      self.context.stats.set_build_end_time();
+      self.context.stats.set_end_time();
       self.set_module_graph_stats();
+
+      // set last failed module ids
+      self.set_last_fail_module_ids(&errors);
 
       let mut error_messages = vec![];
       for error in errors {
@@ -160,34 +177,27 @@ impl Compiler {
         .map(|e| e.to_string())
         .collect::<Vec<_>>());
       return Err(CompilationError::GenericError(errors_json.to_string()));
+    } else {
+      self.set_last_fail_module_ids(&[]);
     }
 
-    // set module graph cache
+    freeze_module_of_module_graph(&self.context)?;
+
     if self.context.config.persistent_cache.enabled() {
-      let module_ids = self
-        .context
-        .module_graph
-        .read()
-        .modules()
-        .into_iter()
-        .map(|m| m.id.clone())
-        .collect();
-      // set new module cache
-      set_module_graph_cache(module_ids, &self.context);
+      cache_module_graph(&self.context);
     }
 
-    // Topo sort the module graph
-    let mut module_graph = self.context.module_graph.write();
-    module_graph.update_execution_order_for_modules();
-    drop(module_graph);
+    finalize_module_graph(&self.context)?;
 
     // set stats if stats is enabled
     self.set_module_graph_stats();
 
     {
       farm_profile_scope!("call build_end hook".to_string());
-      self.context.plugin_driver.build_end(&self.context)
+      self.context.plugin_driver.build_end(&self.context)?;
     }
+
+    Ok(())
   }
 
   pub(crate) fn handle_global_log(&self, errors: &mut Vec<CompilationError>) {
@@ -210,6 +220,10 @@ impl Compiler {
     context: &Arc<CompilationContext>,
   ) -> Result<ResolveModuleIdResult> {
     let get_module_id = |resolve_result: &PluginResolveHookResult| {
+      if resolve_result.external {
+        return ModuleId::from(resolve_result.resolved_path.as_str());
+      }
+
       // make query part of module id
       ModuleId::new(
         &resolve_result.resolved_path,
@@ -227,7 +241,7 @@ impl Compiler {
 
     let hook_context = PluginHookContext {
       caller: None,
-      meta: HashMap::new(),
+      meta: HashMap::default(),
     };
     let resolve_kind = resolve_param.kind.clone();
     let mut resolve_result = match resolve(resolve_param, context, &hook_context) {
@@ -279,7 +293,7 @@ impl Compiler {
 
     let hook_context = PluginHookContext {
       caller: None,
-      meta: HashMap::new(),
+      meta: HashMap::default(),
     };
 
     // ================ Load Start ===============
@@ -345,7 +359,7 @@ impl Compiler {
   fn build_module_after_transform(
     resolve_result: PluginResolveHookResult,
     load_module_type: ModuleType,
-    transform_result: PluginDriverTransformHookResult,
+    mut transform_result: PluginDriverTransformHookResult,
     module: &mut Module,
     context: &Arc<CompilationContext>,
     hook_context: &PluginHookContext,
@@ -367,8 +381,9 @@ impl Compiler {
       &mut PluginProcessModuleHookParam {
         module_id: &parse_param.module_id,
         module_type: &parse_param.module_type,
-        content: module.content.clone(),
+        content: &mut module.content,
         meta: &mut module_meta,
+        source_map_chain: &mut transform_result.source_map_chain,
       },
       context,
     ) {
@@ -379,7 +394,7 @@ impl Compiler {
     }
 
     // ================ Process Module End ===============
-    module.size = parse_param.content.as_bytes().len();
+    module.size = parse_param.content.len();
     module.module_type = parse_param.module_type;
     module.side_effects = resolve_result.side_effects;
     module.external = false;
@@ -393,11 +408,11 @@ impl Compiler {
     module.package_version = package_info.version.unwrap_or("0.0.0".to_string());
 
     // ================ Analyze Deps Start ===============
-    let analyze_deps_result = call_and_catch_error!(analyze_deps, module, context);
+    let mut analyze_deps_result = call_and_catch_error!(analyze_deps, module, context);
     // ================ Analyze Deps End ===============
 
     // ================ Finalize Module Start ===============
-    call_and_catch_error!(finalize_module, module, &analyze_deps_result, context);
+    call_and_catch_error!(finalize_module, module, &mut analyze_deps_result, context);
     // ================ Finalize Module End ===============
 
     Ok(analyze_deps_result)
@@ -462,12 +477,30 @@ impl Compiler {
           resolve_module_id_result,
         }) => {
           farm_profile_scope!(format!("new module {:?}", module.id));
+
           if resolve_module_id_result.resolve_result.external {
             // insert external module to the graph
             let module_id = module.id.clone();
-            Self::add_module(module, &resolve_param.kind, &context);
+            Self::add_module(module, &context);
             Self::add_edge(&resolve_param, module_id, order, &context);
             return;
+          }
+
+          // mark entry module first after resolving
+          if let ResolveKind::Entry(ref name) = resolve_param.kind {
+            context
+              .module_graph
+              .write()
+              .entries
+              .insert(module.id.clone(), name.to_string());
+            module.is_entry = true;
+          } else if let ResolveKind::DynamicEntry { ref name, .. } = resolve_param.kind {
+            context
+              .module_graph
+              .write()
+              .dynamic_entries
+              .insert(module.id.clone(), name.to_string());
+            module.is_dynamic_entry = true;
           }
 
           match Self::build_module(
@@ -510,12 +543,16 @@ impl Compiler {
     let module_id = module.id.clone();
     let immutable = module.immutable;
     // add module to the graph
-    Self::add_module(module, &resolve_param.kind, &context);
+    Self::add_module(module, &context);
     // add edge to the graph
     Self::add_edge(&resolve_param, module_id.clone(), order, &context);
 
     // resolving dependencies recursively in the thread pool
     for (order, (dep, cached_dependency)) in deps.into_iter().enumerate() {
+      // if source is a absolute path, means it's generated by a plugin, we should use cached_dependency in this case
+      // to avoid resolve it again(which may cause panic since Farm skips load/transform by default when hitting cache)
+      let is_source_absolute = PathBuf::from(dep.source.clone()).is_absolute();
+
       let params = BuildModuleGraphThreadedParams {
         thread_pool: thread_pool.clone(),
         resolve_param: PluginResolveHookParam {
@@ -526,7 +563,11 @@ impl Compiler {
         context: context.clone(),
         err_sender: err_sender.clone(),
         order,
-        cached_dependency: if immutable { cached_dependency } else { None },
+        cached_dependency: if immutable || is_source_absolute {
+          cached_dependency
+        } else {
+          None
+        },
       };
       Self::build_module_graph_threaded(params);
     }
@@ -554,15 +595,8 @@ impl Compiler {
   }
 
   /// add a module to the module graph, if the module already exists, update it
-  pub(crate) fn add_module(module: Module, kind: &ResolveKind, context: &CompilationContext) {
+  pub(crate) fn add_module(module: Module, context: &CompilationContext) {
     let mut module_graph = context.module_graph.write();
-
-    // mark entry module
-    if let ResolveKind::Entry(name) = kind {
-      module_graph
-        .entries
-        .insert(module.id.clone(), name.to_string());
-    }
 
     // check if the module already exists
     if module_graph.has_module(&module.id) {

@@ -1,14 +1,14 @@
 {
   "name": "@farmfe/js-plugin-electron",
-  "version": "1.0.3",
+  "version": "1.0.4-nightly-20250827162746",
   "description": "Support development Electron App using Farm.",
   "main": "./build/cjs/index.cjs",
-  "types": "./build/cjs/index.d.ts",
+  "types": "./build/index.d.ts",
   "type": "module",
   "exports": {
     ".": {
       "import": "./build/esm/index.mjs",
-      "types": "./build/cjs/index.d.ts",
+      "types": "./build/index.d.ts",
       "require": "./build/cjs/index.cjs",
       "default": "./build/cjs/index.cjs"
     },
@@ -27,8 +27,8 @@
     "email": "308487730@qq.com"
   },
   "scripts": {
-    "build": "pnpm run clean && farm build && cross-env FARM_FORMAT=esm farm build",
-    "start": "pnpm run build -w",
+    "build": "pnpm run clean && farm build",
+    "start": "farm watch",
     "prepublishOnly": "npm run build",
     "clean": "rimraf dist build tsconfig.build.tsbuildinfo",
     "type-check": "tsc -p ./tsconfig.build.json --noEmit"
@@ -39,8 +39,6 @@
   "keywords": [],
   "license": "MIT",
   "devDependencies": {
-    "@farmfe/cli": "workspace:*",
-    "@farmfe/core": "workspace:*",
     "@farmfe/js-plugin-dts": "workspace:*",
     "cross-env": "^7.0.3",
     "electron": "^30.0.7"

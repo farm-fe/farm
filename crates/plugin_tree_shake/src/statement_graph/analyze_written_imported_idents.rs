@@ -1,6 +1,4 @@
-use std::collections::{HashMap, HashSet};
-
-use farmfe_core::swc_ecma_ast::Id;
+use farmfe_core::{module::meta_data::script::statement::SwcId, HashMap, HashSet};
 
 use super::{
   analyze_used_import_all_fields::UsedImportAllFields, StatementGraph, StatementSideEffects,
@@ -43,10 +41,10 @@ pub fn analyze_written_imported_idents(graph: &StatementGraph) -> HashSet<WriteT
 }
 
 fn find_written_imported_idents_dfs(
-  idents: &HashSet<Id>,
-  used_import_all_fields: &HashMap<Id, HashSet<UsedImportAllFields>>,
+  idents: &HashSet<SwcId>,
+  used_import_all_fields: &HashMap<SwcId, HashSet<UsedImportAllFields>>,
   graph: &StatementGraph,
-  visited: &mut HashSet<Id>,
+  visited: &mut HashSet<SwcId>,
 ) -> HashSet<WriteTopLevelVar> {
   let mut written_imported_idents = HashSet::default();
 

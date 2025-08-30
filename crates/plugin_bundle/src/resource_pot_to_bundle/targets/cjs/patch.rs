@@ -5,19 +5,22 @@ use farmfe_core::{
   context::CompilationContext,
   error::Result,
   module::{module_graph::ModuleGraph, ModuleId, ModuleSystem},
-  swc_common::{comments::SingleThreadedComments, util::take::Take, Mark, DUMMY_SP},
+  swc_common::{util::take::Take, Mark, SyntaxContext, DUMMY_SP},
   swc_ecma_ast::{
-    ArrowExpr, BindingIdent, BlockStmt, BlockStmtOrExpr, Decl, EsVersion, Expr, ExprOrSpread,
-    Ident, KeyValueProp, Module as EcmaAstModule, ModuleItem, ObjectLit, Pat, Prop, PropName,
-    PropOrSpread, Stmt, VarDecl, VarDeclKind, VarDeclarator,
+    ArrowExpr, BindingIdent, BlockStmt, BlockStmtOrExpr, Decl, Expr, ExprOrSpread, Ident,
+    KeyValueProp, Module as EcmaAstModule, ModuleItem, ObjectLit, Pass, Pat, Program, Prop,
+    PropName, PropOrSpread, Stmt, VarDecl, VarDeclKind, VarDeclarator,
   },
+  HashMap,
 };
 use farmfe_toolkit::{
+  script::module2cjs::{self, TransformModuleDeclsOptions},
   swc_ecma_transforms::{
     feature::enable_available_feature_from_es_version,
     modules::{
       common_js,
       import_analysis::import_analyzer,
+      path::Resolver,
       util::{Config as SwcConfig, ImportInterop},
     },
   },
@@ -25,17 +28,20 @@ use farmfe_toolkit::{
 };
 
 use crate::resource_pot_to_bundle::{
-  bundle::{bundle_external::BundleReference, ModuleAnalyzerManager, ModuleGlobalUniqName},
-  polyfill::{cjs::wrap_commonjs, Polyfill, SimplePolyfill},
+  bundle::{bundle_reference::CombineBundleReference, ModuleAnalyzerManager, ModuleGlobalUniqName},
+  modules_analyzer::module_analyzer::ModuleAnalyzer,
+  polyfill::{Polyfill, SimplePolyfill},
+  targets::util::wrap_commonjs,
   uniq_name::BundleVariable,
+  ShareBundleContext,
 };
 
-use super::{util::CJSReplace, CjsModuleAnalyzer};
+use super::util::CJSReplace;
 
 pub struct CjsPatch {}
 
 impl CjsPatch {
-  pub fn wrap_commonjs(
+  fn wrap_commonjs(
     module_id: &ModuleId,
     bundle_variable: &BundleVariable,
     module_global_uniq_name: &ModuleGlobalUniqName,
@@ -70,11 +76,13 @@ impl CjsPatch {
             ModuleItem::Stmt(stmt) => stmt,
           })
           .collect(),
+        ctxt: SyntaxContext::empty(),
       })),
       is_async: false,
       is_generator: false,
       type_params: None,
       return_type: None,
+      ctxt: SyntaxContext::empty(),
     }));
 
     patch_ast_items.push(ModuleItem::Stmt(Stmt::Decl(Decl::Var(Box::new(VarDecl {
@@ -105,48 +113,66 @@ impl CjsPatch {
         )),
         definite: false,
       }],
+      ctxt: SyntaxContext::empty(),
     })))));
 
     Ok(patch_ast_items)
   }
 
-  pub fn to_cjs(
+  fn to_cjs(
     module_id: &ModuleId,
     ast: &mut EcmaAstModule,
     module_graph: &ModuleGraph,
     unresolved_mark: Mark,
-    es_version: EsVersion,
+    context: &Arc<CompilationContext>,
+    options: &ShareBundleContext,
   ) {
-    let module = module_graph.module(module_id).unwrap();
+    if options.options.concatenation_module {
+      module2cjs::transform_module_decls(
+        ast,
+        unresolved_mark,
+        &module2cjs::OriginalRuntimeCallee { unresolved_mark },
+        TransformModuleDeclsOptions {
+          is_target_legacy: context.config.script.is_target_legacy(),
+        },
+      );
+    } else {
+      let mut program = Program::Module(ast.take());
+      import_analyzer(ImportInterop::Swc, true).process(&mut program);
 
-    let comments = module.meta.as_script().comments.clone().into();
+      common_js(
+        Resolver::Default,
+        unresolved_mark,
+        SwcConfig {
+          ignore_dynamic: true,
+          preserve_import_meta: true,
+          ..Default::default()
+        },
+        enable_available_feature_from_es_version(context.config.script.target),
+      )
+      .process(&mut program);
 
-    ast.visit_mut_with(&mut import_analyzer(ImportInterop::Swc, true));
-
-    ast.visit_mut_with(&mut common_js::<&SingleThreadedComments>(
-      unresolved_mark,
-      SwcConfig {
-        ignore_dynamic: true,
-        preserve_import_meta: true,
-        ..Default::default()
-      },
-      enable_available_feature_from_es_version(es_version),
-      Some(&comments),
-    ));
+      let Program::Module(module) = program else {
+        unreachable!("cannot found module from program")
+      };
+      *ast = module;
+    }
   }
 
   /// transform hybrid and commonjs module to esm
-  pub fn patch_cjs_module(
+  pub fn transform_hybrid_or_commonjs_to_esm(
     module_analyzer_manager: &mut ModuleAnalyzerManager,
     module_id: &ModuleId,
-    module_graph: &ModuleGraph,
     context: &Arc<CompilationContext>,
-    patch_ast: &mut Vec<ModuleItem>,
     bundle_variable: &BundleVariable,
-    bundle_reference: &BundleReference,
+    // bundle_reference: &mut BundleReference,
     polyfill: &mut SimplePolyfill,
-  ) {
-    let module_analyzer = module_analyzer_manager.module_analyzer_mut_unchecked(module_id);
+    options: &ShareBundleContext,
+  ) -> Result<()> {
+    let module_analyzer = module_analyzer_manager
+      .module_map
+      .get_mut(module_id)
+      .unwrap();
 
     let unresolved_mark = module_analyzer.mark.0;
     // if hybrid module, should transform to cjs
@@ -154,66 +180,59 @@ impl CjsPatch {
       CjsPatch::to_cjs(
         module_id,
         &mut module_analyzer.ast,
-        module_graph,
+        module_analyzer_manager.module_graph,
         unresolved_mark,
-        context.config.script.target,
+        context,
+        options,
       );
     }
 
+    let mut ast = module_analyzer.ast.body.take();
     // if commonjs module, should wrap function
     // see [Polyfill::WrapCommonJs]
     if module_analyzer.is_commonjs() {
-      let ast = module_analyzer.ast.body.take();
-
-      module_analyzer_manager.set_ast_body(
-        module_id,
-        CjsPatch::wrap_commonjs(
-          module_id,
-          bundle_variable,
-          &module_analyzer_manager.module_global_uniq_name,
-          ast,
-          context.config.mode.clone(),
-          polyfill,
-        )
-        .unwrap(),
-      );
-    }
-
-    if let Some(import) = bundle_reference
-      .redeclare_commonjs_import
-      .get(&module_id.clone().into())
-    {
-      patch_ast.extend(CjsModuleAnalyzer::redeclare_commonjs_export(
+      ast = CjsPatch::wrap_commonjs(
         module_id,
         bundle_variable,
         &module_analyzer_manager.module_global_uniq_name,
-        import,
+        ast,
+        context.config.mode.clone(),
         polyfill,
-      ));
+      )?;
     }
+
+    module_analyzer_manager.set_ast_body(module_id, ast);
+
+    Ok(())
   }
 
-  pub fn replace_cjs_require(
+  pub fn replace_cjs_require<'a>(
     mark: (Mark, Mark),
     ast: &mut EcmaAstModule,
-    module_id: &ModuleId,
+    module_id: &'a ModuleId,
+    bundle_variable: &'a BundleVariable,
+    config: &'a Config,
+    polyfill: &'a mut SimplePolyfill,
+    external_config: &'a ExternalConfig,
+    bundle_reference: &'a mut CombineBundleReference,
     module_graph: &ModuleGraph,
     module_global_uniq_name: &ModuleGlobalUniqName,
-    bundle_variable: &BundleVariable,
-    config: &Config,
-    polyfill: &mut SimplePolyfill,
-    external_config: &ExternalConfig,
+    module_map: &HashMap<ModuleId, ModuleAnalyzer>,
+    options: &'a ShareBundleContext,
   ) {
     let mut replacer: CJSReplace = CJSReplace {
       unresolved_mark: mark.0,
       top_level_mark: mark.1,
-      module_graph,
       module_id: module_id.clone(),
-      module_global_uniq_name,
       bundle_variable,
       config,
       polyfill,
-      external_config
+      external_config,
+      module_global_uniq_name,
+      module_graph,
+      bundle_reference,
+      module_map,
+      context: options,
     };
 
     ast.visit_mut_with(&mut replacer);

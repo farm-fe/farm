@@ -1,7 +1,6 @@
 import type { RollupError } from 'rollup';
 import { colors } from '../utils/color.js';
 import { pad } from '../utils/share.js';
-// import { DevServer } from './index.js';
 
 export function prepareError(err: Error & { potentialSolution?: string }) {
   return {
@@ -17,7 +16,6 @@ export function prepareError(err: Error & { potentialSolution?: string }) {
 }
 
 export function stripAnsi(str: string) {
-  // eslint-disable-next-line no-control-regex
   return str.replace(/\x1b\[[0-9;]*m/g, '');
 }
 
@@ -85,11 +83,3 @@ export function logError(err: Error, throwErrorFlag = true) {
   }
   return errorMessage;
 }
-
-// TODO server logger e.g: DevServer.logger.error(msg);
-
-//   server.ws.send({
-//     type: 'error',
-//     err: prepareError(err)
-//   });
-// }

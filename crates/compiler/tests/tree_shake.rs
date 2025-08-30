@@ -1,20 +1,21 @@
-use std::{collections::HashMap, path::PathBuf, sync::Arc};
+use std::sync::Arc;
 
 use farmfe_core::{
   module::ModuleType,
   plugin::Plugin,
   swc_common::{comments::NoopComments, Mark},
+  swc_ecma_ast::Program,
+  HashMap,
 };
 use farmfe_testing_helpers::fixture;
 use farmfe_toolkit::{
-  common::{create_swc_source_map, Source},
   script::swc_try_with::try_with,
+  sourcemap::create_swc_source_map,
   swc_ecma_transforms::{
     helpers::inject_helpers,
     react::{react, Options},
     typescript::tsx,
   },
-  swc_ecma_visit::VisitMutWith,
 };
 
 use crate::common::{
@@ -30,13 +31,15 @@ fn tree_shake_test() {
     // "tests/fixtures/tree_shake/self-executed/write_imported_idents/**/index.ts",
     // "tests/fixtures/tree_shake/self-executed/write_read_top_level_var/**/index.ts",
     // "tests/fixtures/tree_shake/import_namespace/partial/**/index.ts",
+    // "tests/fixtures/tree_shake/empty_module/**/index.ts",
+    // "tests/fixtures/tree_shake/self-executed/write_global/**/index.ts",
     |file, crate_path| {
       let cwd = file.parent().unwrap();
       println!("testing tree shake: {cwd:?}");
 
       let entry_name = "index".to_string();
       let compiler = create_compiler(
-        HashMap::from([(entry_name.clone(), "./index.ts".to_string())]),
+        HashMap::from_iter([(entry_name.clone(), "./index.ts".to_string())]),
         cwd.to_path_buf(),
         crate_path,
         false,
@@ -58,7 +61,7 @@ fn tree_shake_development() {
       println!("testing tree shake: {cwd:?}");
 
       let compiler = create_compiler_with_args(cwd.into(), crate_path, |mut config, plguin| {
-        config.input = HashMap::from([(entry_name.clone(), "./index.ts".to_string())]);
+        config.input = HashMap::from_iter([(entry_name.clone(), "./index.ts".to_string())]);
         config.mode = farmfe_core::config::Mode::Development;
         (config, plguin)
       });
@@ -80,7 +83,7 @@ fn tree_shake_html_entry() {
 
       let entry_name = "index".to_string();
       let compiler = create_compiler(
-        HashMap::from([(entry_name, "./index.html".to_string())]),
+        HashMap::from_iter([(entry_name, "./index.html".to_string())]),
         cwd.to_path_buf(),
         crate_path,
         false,
@@ -114,23 +117,23 @@ fn tree_shake_changed_ast() {
         return Ok(None);
       }
 
-      let (cm, _) = create_swc_source_map(Source {
-        path: PathBuf::from(&param.module_id.to_string()),
-        content: param.content.clone(),
-      });
-      try_with(cm.clone(), &context.meta.script.globals, || {
+      let (cm, _) = create_swc_source_map(&param.module_id, param.content.clone());
+      let globals = context.meta.get_globals(&param.module_id);
+      try_with(cm.clone(), globals.value(), || {
         let top_level_mark = Mark::from_u32(param.meta.as_script_mut().top_level_mark);
         let unresolved_mark = Mark::from_u32(param.meta.as_script_mut().unresolved_mark);
 
-        let ast = &mut param.meta.as_script_mut().ast;
-        ast.visit_mut_with(&mut tsx(
+        let ast = param.meta.as_script_mut().take_ast();
+        let mut program = Program::Module(ast);
+        program.mutate(&mut tsx(
           cm.clone(),
           Default::default(),
           Default::default(),
           None as Option<NoopComments>,
+          unresolved_mark,
           top_level_mark,
         ));
-        ast.visit_mut_with(&mut react::<NoopComments>(
+        program.mutate(&mut react::<NoopComments>(
           cm.clone(),
           None,
           Options {
@@ -141,7 +144,9 @@ fn tree_shake_changed_ast() {
           top_level_mark,
           unresolved_mark,
         ));
-        ast.visit_mut_with(&mut inject_helpers(unresolved_mark));
+        program.mutate(&mut inject_helpers(unresolved_mark));
+
+        param.meta.as_script_mut().set_ast(program.expect_module());
       })
       .unwrap();
 
@@ -160,7 +165,7 @@ fn tree_shake_changed_ast() {
 
       let entry_name = "index".to_string();
       let compiler = create_compiler_with_plugins(
-        HashMap::from([(entry_name.clone(), "./entry.ts".to_string())]),
+        HashMap::from_iter([(entry_name.clone(), "./entry.ts".to_string())]),
         cwd.to_path_buf(),
         crate_path,
         false,

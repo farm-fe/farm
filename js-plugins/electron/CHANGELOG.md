@@ -1,5 +1,11 @@
 # @farmfe/js-plugin-electron
 
+## 1.0.4-nightly-20250827162746
+
+### Patch Changes
+
+- 9a227ad: Chore: release v2 nightly
+
 ## 1.0.3
 
 ### Patch Changes

@@ -3,12 +3,20 @@ import visualizer from "@farmfe/js-plugin-visualizer";
 
 export default defineConfig((env) => ({
   compilation: {
+    // lazyCompilation: false,
     // persistentCache: false,
-    minify: env.mode === 'production' ? {
-      exclude: [
-        '/node_modules/@arcgis/core/',
-      ]
-    } : false,
+    // minify: env.mode === 'production' ? {
+    //   exclude: [
+    //     '/node_modules/@arcgis/core/',
+    //   ]
+    // } : false,
+    persistentCache: false,
+    // concatenateModules: false,
+    // minify: false,
+    // minify: {
+    //   mangleExports: false,
+    // },
+    // treeShaking: false,
     partialBundling: {
       enforceTargetConcurrentRequests: false,
       enforceTargetMinSize: true,
@@ -22,7 +30,7 @@ export default defineConfig((env) => ({
     }
   },
   server: {
-    port: 9001
+    port: process.env.FARM_DEFAULT_SERVER_PORT ? Number(process.env.FARM_DEFAULT_SERVER_PORT) : 9001
   },
   plugins: [
     process.env.FARM_VISUALIZER ? visualizer() : null

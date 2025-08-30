@@ -22,19 +22,32 @@ function configureVitePluginVue() {
     // using plugin vue
     vitePlugin: vue(),
     // configuring filters for it. Unmatched module paths will be skipped.
-    filters:  ["!node_modules", "node_modules/my-ui"]
+    filters: ["!node_modules", "node_modules/my-ui"]
   };
 }
 
 export default defineConfig({
   compilation: {
     // compilation options here
-    // persistentCache: false
-    output:{
+    persistentCache: false,
+    output: {
       path: "build",
-      publicPath: "/vue-public-path/",
+      // publicPath: "/vue-public-path/",
     },
-    sourcemap: false,
+    partialBundling: {
+      targetMinSize: 200 * 1024,
+      enforceTargetMinSize: true,
+      groups: [
+        {
+          name: "vue-pack",
+          test: [
+            "node_modules/vue",
+            "node_modules/vue-router",
+            "node_modules/@vue"
+          ]
+        }
+      ]
+    }
   },
   plugins: [
     sass(),

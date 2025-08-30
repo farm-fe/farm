@@ -1,10 +1,31 @@
 export function convertErrorMessage(error: Error) {
-  let errorMessage = '';
+  let errorMessages = [];
 
   try {
-    errorMessage = JSON.parse(error.message).join('\n');
+    const parsedErrors = JSON.parse(error.message);
+
+    if (Array.isArray(parsedErrors)) {
+      errorMessages = parsedErrors.map(parseErrorItem);
+    } else {
+      errorMessages = [parseErrorItem(parsedErrors)];
+    }
   } catch {
-    errorMessage = error.message;
+    errorMessages = [error.message];
   }
-  return errorMessage;
+
+  return errorMessages.join('\n\n');
+}
+
+function parseErrorItem(item: any): string {
+  try {
+    const parsedItem = typeof item === 'string' ? JSON.parse(item) : item;
+
+    if (typeof parsedItem === 'object' && parsedItem !== null) {
+      return parsedItem.message || JSON.stringify(parsedItem);
+    } else {
+      return String(parsedItem);
+    }
+  } catch {
+    return String(item);
+  }
 }

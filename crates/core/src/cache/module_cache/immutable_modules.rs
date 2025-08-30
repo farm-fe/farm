@@ -4,8 +4,8 @@ use dashmap::DashMap;
 use farmfe_macro_cache_item::cache_item;
 use farmfe_utils::hash::sha256;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
-use rkyv::Deserialize;
 
+use crate::deserialize;
 use crate::{
   cache::{
     cache_store::{CacheStore, CacheStoreKey},
@@ -282,7 +282,7 @@ impl ModuleMemoryStore for ImmutableModulesMemoryStore {
             })
             .collect(),
           name: key.split('@').next().unwrap().to_string(),
-          version: key.split('@').last().unwrap().to_string(),
+          version: key.split('@').next_back().unwrap().to_string(),
         };
 
         let package_bytes = crate::serialize!(&package);

@@ -1,46 +1,30 @@
-import type { ModuleSystem, Plugin } from '@farmfe/runtime';
+import type { ModuleSystem } from "@farmfe/runtime";
 
-const __global_this__ = typeof globalThis !== 'undefined' ? globalThis : window;
+let _moduleSystem = {} as ModuleSystem;
 
-export default (<Plugin>{
-  name: 'farm-runtime-import-meta',
-  _moduleSystem: {} as ModuleSystem,
-  bootstrap(system: ModuleSystem) {
-    this._moduleSystem = system;
-  },
-  moduleCreated(module: any) {
-    const publicPath = this._moduleSystem.publicPaths?.[0] || "";
-    const isSSR = this._moduleSystem.targetEnv === "node";
-    const { location } = __global_this__;
-
-    let baseUrl;
-    try {
-      baseUrl = (
-        location
-          ? new URL(
-              publicPath,
-              `${location.protocol}//${location.host}`,
-            )
-          : new URL(module.resource_pot)
-      ).pathname;
-    } catch (_) {
-      baseUrl = '/';
-    }
-
-    module.meta.env = {
-      ...(FARM_PROCESS_ENV ?? {}),
-      dev: process.env.NODE_ENV === 'development',
-      prod: process.env.NODE_ENV === 'production',
-      BASE_URL: baseUrl,
-      SSR: isSSR,
-    };
-
-    const url = location
-      ? `${location.protocol}//${location.host}${publicPath.replace(
-        /\/$/,
-        ''
-      )}/${module.id}?t=${Date.now()}`
-      : module.resource_pot;
-    module.meta.url = url;
+function assignObj(target: any, source: any) {
+  for (const field in source) {
+    target[field] = source[field];
   }
-});
+}
+
+export default {
+  name: "farm-runtime-import-meta",
+  bootstrap: (system: ModuleSystem) => {
+    _moduleSystem = system;
+  },
+  moduleCreated: (module: any) => {
+    const publicPath = _moduleSystem.pp?.[0] || "";
+    const isSSR = _moduleSystem.te === "node";
+
+    module.meta.env = FARM_PROCESS_ENV ?? {};
+    assignObj(module.meta.env, {
+      dev: process.env.NODE_ENV === "development",
+      prod: process.env.NODE_ENV === "production",
+      BASE_URL: publicPath,
+      SSR: isSSR,
+    });
+
+    module.meta.url = _moduleSystem.m()[module.id].url;
+  },
+};

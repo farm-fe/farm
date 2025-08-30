@@ -25,8 +25,11 @@ export async function rustPluginResolver(
 
   if (typeof plugin === 'string') {
     pluginPath = plugin;
-  } else if (Array.isArray(plugin) && plugin.length === 2) {
-    [pluginPath, options] = [plugin[0], JSON.stringify(plugin[1]) ?? '{}'];
+  } else if (Array.isArray(plugin) && typeof plugin[0] === 'string') {
+    [pluginPath, options] = [
+      plugin[0],
+      plugin[1] ? JSON.stringify(plugin[1]) : '{}'
+    ];
   } else {
     throw new Error(
       'Invalid config: [plugins]. A rust plugin must be a string, or [string, Record<string, any>]'
@@ -47,7 +50,6 @@ export async function rustPluginResolver(
     } else {
       pluginPath = await import(pluginPath).then((m) => m.default);
     }
-    // console.log(pluginPath);
 
     // Calling the plugin as a function
     if (typeof pluginPath === 'function') {

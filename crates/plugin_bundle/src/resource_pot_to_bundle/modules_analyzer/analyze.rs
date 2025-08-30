@@ -1,5 +1,3 @@
-use std::collections::HashSet;
-
 use farmfe_core::{
   error::{CompilationError, Result},
   farm_profile_function,
@@ -7,8 +5,9 @@ use farmfe_core::{
   swc_common::Mark,
   swc_ecma_ast::{
     self, DefaultDecl, ExportDecl, Expr, Ident, ImportSpecifier, ModuleDecl, ModuleExportName,
-    ModuleItem,
+    ModuleItem, Pat,
   },
+  HashSet,
 };
 use farmfe_toolkit::swc_ecma_visit::{Visit, VisitWith};
 
@@ -27,7 +26,7 @@ pub struct CollectUnresolvedIdent {
 impl CollectUnresolvedIdent {
   pub fn new(unresolved_mark: Mark) -> Self {
     CollectUnresolvedIdent {
-      unresolved_ident: HashSet::new(),
+      unresolved_ident: HashSet::default(),
       unresolved_mark,
     }
   }
@@ -35,8 +34,7 @@ impl CollectUnresolvedIdent {
 
 impl Visit for CollectUnresolvedIdent {
   fn visit_ident(&mut self, n: &Ident) {
-    if n.span.ctxt.outer() == self.unresolved_mark || self.unresolved_ident.contains(n.sym.as_str())
-    {
+    if n.ctxt.outer() == self.unresolved_mark || self.unresolved_ident.contains(n.sym.as_str()) {
       self.unresolved_ident.insert(n.sym.to_string());
     }
   }
@@ -53,6 +51,7 @@ struct AnalyzeModuleItem<'a> {
   module_graph: &'a ModuleGraph,
   _register_var: RegisterVarHandle<'a>,
   is_in_export: bool,
+  is_collect_ident: bool,
   top_level_mark: Mark,
   unresolved_mark: Mark,
 }
@@ -70,12 +69,13 @@ impl<'a> AnalyzeModuleItem<'a> {
       id,
       import: None,
       export: None,
-      defined_idents: HashSet::new(),
+      defined_idents: HashSet::default(),
       module_id,
       module_graph,
       _register_var: Box::new(register_var),
       is_in_export: false,
       top_level_mark,
+      is_collect_ident: false,
       unresolved_mark,
     }
   }
@@ -116,12 +116,19 @@ impl<'a> AnalyzeModuleItem<'a> {
     self.is_in_export = is_in_export;
   }
 
+  fn with_collect_ident<F: Fn(&mut Self)>(&mut self, v: bool, f: F) {
+    let is_collect_ident = self.is_collect_ident;
+    self.is_collect_ident = v;
+    f(self);
+    self.is_collect_ident = is_collect_ident;
+  }
+
   fn is_strict(&self, ident: &Ident, default_strict: bool) -> bool {
-    default_strict || ident.span.ctxt.outer() != self.top_level_mark
+    default_strict || ident.ctxt.outer() != self.top_level_mark
   }
 
   fn is_global_ident(&self, ident: &Ident) -> bool {
-    return ident.span.ctxt.outer() == self.unresolved_mark;
+    return ident.ctxt.outer() == self.unresolved_mark;
   }
 
   fn register_var(&mut self, ident: &Ident, strict: bool) -> usize {
@@ -262,18 +269,19 @@ impl<'a> Visit for AnalyzeModuleItem<'a> {
         for specifier in &export_named.specifiers {
           match specifier {
             swc_ecma_ast::ExportSpecifier::Named(named) => {
-              let local = match &named.orig {
+              let org = match &named.orig {
                 ModuleExportName::Ident(i) => i.clone(),
                 ModuleExportName::Str(_) => unimplemented!("exporting a string is not supported"),
               };
+              let exported = named.exported.as_ref().map(|i| match i {
+                ModuleExportName::Ident(i) => i.clone(),
+                ModuleExportName::Str(_) => unimplemented!("exporting a string is not supported"),
+              });
 
               specifiers.push(ExportSpecifierInfo::Named(
                 (
-                  self.register_var(&local, false),
-                  named.exported.as_ref().map(|i| match i {
-                    ModuleExportName::Ident(i) => self.register_var(i, false),
-                    _ => panic!("non-ident exported is not supported when tree shaking"),
-                  }),
+                  self.register_var(&org, false),
+                  exported.as_ref().map(|i| self.register_var(i, false)),
                 )
                   .into(),
               ));
@@ -395,6 +403,31 @@ impl<'a> Visit for AnalyzeModuleItem<'a> {
     }
 
     n.class.visit_with(self);
+  }
+
+  // fn visit_arrow_expr(&mut self, n: &swc_ecma_ast::ArrowExpr) {}
+
+  fn visit_ident(&mut self, n: &Ident) {
+    if self.is_collect_ident {
+      let index = self.register_placeholder(n);
+      self.defined_idents.insert(index);
+    }
+  }
+
+  fn visit_pat(&mut self, n: &swc_ecma_ast::Pat) {
+    match n {
+      Pat::Assign(assign) => {
+        self.with_collect_ident(true, |this| assign.left.visit_with(this));
+      }
+
+      Pat::Ident(ident) => {
+        self.with_collect_ident(true, |this| ident.visit_with(this));
+      }
+
+      _ => {
+        n.visit_children_with(self);
+      }
+    }
   }
 }
 

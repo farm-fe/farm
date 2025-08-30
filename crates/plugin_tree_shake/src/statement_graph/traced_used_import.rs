@@ -1,6 +1,6 @@
-use std::collections::{HashMap, HashSet};
-
-use farmfe_core::{plugin::ResolveKind, swc_ecma_ast::Id};
+use farmfe_core::module::meta_data::script::statement::SwcId;
+use farmfe_core::plugin::ResolveKind;
+use farmfe_core::{HashMap, HashSet};
 
 use crate::module::{UsedExports, UsedExportsIdent};
 
@@ -61,9 +61,9 @@ impl TracedUsedImportStatement {
     stmt_id: StatementId,
     import_info: &ImportInfo,
     used_defined_idents: &HashSet<UsedStatementIdent>,
-    mut used_import_all_fields: HashMap<Id, HashSet<UsedImportAllFields>>,
+    mut used_import_all_fields: HashMap<SwcId, HashSet<UsedImportAllFields>>,
   ) -> Self {
-    let mut used_stmt_idents = HashSet::new();
+    let mut used_stmt_idents = HashSet::default();
     // for import, we only care about swc ident
     let used_defined_idents = used_defined_idents
       .iter()
@@ -107,13 +107,13 @@ impl TracedUsedImportStatement {
         ImportSpecifierInfo::Named { local, imported } => {
           if used_defined_idents.contains(local) {
             if let Some(imported) = imported {
-              if imported.0 == "default" {
+              if imported.sym == "default" {
                 used_stmt_idents.insert(UsedExportsIdent::Default);
               } else {
-                used_stmt_idents.insert(UsedExportsIdent::SwcIdent(imported.0.to_string()));
+                used_stmt_idents.insert(UsedExportsIdent::SwcIdent(imported.sym.to_string()));
               }
             } else if used_defined_idents.contains(local) {
-              used_stmt_idents.insert(UsedExportsIdent::SwcIdent(local.0.to_string()));
+              used_stmt_idents.insert(UsedExportsIdent::SwcIdent(local.sym.to_string()));
             }
           }
         }
@@ -139,7 +139,7 @@ impl TracedUsedImportStatement {
     used_defined_idents: &HashSet<UsedStatementIdent>,
   ) -> Option<Self> {
     if let Some(source) = &export_info.source {
-      let mut used_stmt_idents = HashSet::new();
+      let mut used_stmt_idents = HashSet::default();
 
       for specifier in &export_info.specifiers {
         match specifier {
@@ -150,10 +150,10 @@ impl TracedUsedImportStatement {
           }
           ExportSpecifierInfo::Named { local, .. } => {
             if used_defined_idents.contains(&UsedStatementIdent::SwcIdent(local.clone())) {
-              if local.0 == "default" {
+              if local.sym == "default" {
                 used_stmt_idents.insert(UsedExportsIdent::Default);
               } else {
-                used_stmt_idents.insert(UsedExportsIdent::SwcIdent(local.0.to_string()));
+                used_stmt_idents.insert(UsedExportsIdent::SwcIdent(local.sym.to_string()));
               }
             }
           }

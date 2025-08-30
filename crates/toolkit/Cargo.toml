@@ -20,34 +20,36 @@ documentation = "https://docs.rs/farmfe_toolkit"
 [dependencies]
 farmfe_core = { path = "../core", version = "0.7.3" }
 farmfe_utils = { path = "../utils", version = "0.1.6" }
-farmfe_toolkit_plugin_types = { path = "../toolkit_plugin_types", version = "0.0.24" }
 farmfe_testing_helpers = { path = "../testing_helpers", version = "0.0.17" }
-swc_ecma_parser = { version = "0.146.12" }
-swc_ecma_visit = { version = "0.101.0" }
-swc_ecma_codegen = { version = "0.151.1" }
-swc_ecma_transforms = { version = "0.232.1", features = [
+swc_ecma_parser = { version = "23.0.0" }
+swc_ecma_visit = { version = "15.0.0" }
+swc_ecma_codegen = { version = "17.0.0" }
+swc_typescript = { version = "20.0.0" }
+swc_ecma_transforms = { version = "29.0.0", features = [
   "module",
   "typescript",
   "react",
   "concurrent",
 ] }
-swc_ecma_preset_env = { version = "0.210.0" }
-preset_env_base = { version = "0.5.1" }
-swc_css_parser = { version = "0.151.0" }
-swc_css_visit = { version = "0.140.0" }
-swc_css_codegen = { version = "0.152.0" }
-swc_css_minifier = { version = "0.117.1" }
-swc_css_modules = { version = "0.30.0" }
-swc_css_prefixer = { version = "0.155.0" }
-swc_html_parser = { version = "0.40.0" }
-swc_html_visit = { version = "0.34.0" }
-swc_html_codegen = { version = "0.43.0" }
-swc_html_minifier = { version = "0.139.1" }
-swc_error_reporters = { version = "0.18.1" }
-swc_atoms = { version = "0.6.7" }
-swc_ecma_transforms_base = "0.140.3"
-swc_ecma_minifier = "0.197.3"
-swc_ecma_utils = "0.130.3"
-lazy_static = "1.4.0"
-sourcemap = "8.0.1"
-anyhow = { version = "1.0.40", features = ["backtrace"] }
+swc_ecma_preset_env = { version = "30.0.0" }
+preset_env_base = { version = "5.0.0" }
+swc_css_parser = { version = "14.0.0" }
+swc_css_visit = { version = "14.0.0" }
+swc_css_codegen = { version = "14.0.0" }
+swc_css_minifier = { version = "14.0.0" }
+swc_css_modules = { version = "14.0.0" }
+swc_css_prefixer = { version = "17.0.0" }
+swc_html_parser = { version = "14.0.0" }
+swc_html_visit = { version = "14.0.0" }
+swc_html_codegen = { version = "15.0.0" }
+swc_html_minifier = { version = "30.0.0" }
+swc_error_reporters = { version = "16.0.1" }
+swc_atoms = { version = "7.0.0" }
+swc_ecma_transforms_base = { version = "25.0.0", features = ["concurrent"] }
+swc_ecma_minifier = { version = "30.0.0", features = ["concurrent"] }
+swc_ecma_utils = { version = "21.0.0", features = ["concurrent"] }
+swc_sourcemap = "9.3.4"
+anyhow = { version = "1.0.90", features = ["backtrace"] }
+itertools = "0.14.0"
+par-core = { version = "2.0.0", features = ["chili"] }
+bytes-str = { workspace = true }

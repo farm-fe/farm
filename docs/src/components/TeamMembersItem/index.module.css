@@ -1,0 +1,130 @@
+.teamMembersItem {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  border-radius: 12px;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.teamMembersItem .profile {
+  padding: 10px;
+}
+
+.teamMembersItem .avatar {
+  width: 64px;
+  height: 64px;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+}
+
+.teamMembersItem .name {
+  line-height: 24px;
+  font-size: 16px;
+}
+
+.teamMembersItem .org {
+  line-height: 24px;
+  font-size: 14px;
+}
+
+.teamMembersItem .affiliation {
+  padding-top: 4px;
+  line-height: 20px;
+  font-size: 14px;
+}
+
+.teamMembersItem .desc {
+  padding-top: 12px;
+  line-height: 20px;
+  font-size: 14px;
+}
+
+.teamMembersItem .links {
+  margin: 0 -16px -20px;
+  padding: 10px 0 0;
+}
+
+.profile {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+.data {
+  text-align: center;
+}
+
+.avatar {
+  position: relative;
+  flex-shrink: 0;
+  margin: 0 auto;
+  border-radius: 50%;
+}
+
+.avatar-img {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.name {
+  margin: 0;
+  font-weight: 600;
+}
+
+.affiliation {
+  margin: 0;
+  font-weight: 500;
+}
+
+.org.link {
+  transition: color 0.25s;
+}
+
+.desc {
+  margin: 0 auto;
+}
+
+.desc :deep(a) {
+  font-weight: 500;
+  text-decoration-style: dotted;
+  transition: color 0.25s;
+}
+
+.links {
+  display: flex;
+  justify-content: center;
+  height: 56px;
+}
+
+.sp-link {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  padding: 16px;
+  font-size: 14px;
+  font-weight: 500;
+  background-color: var(--ifm-f-white);
+  transition: color 0.25s, background-color 0.25s;
+}
+
+.sp .sp-link.link:hover,
+.sp .sp-link.link:focus {
+  outline: none;
+}
+
+.sp-icon {
+  margin-right: 8px;
+  width: 16px;
+  height: 16px;
+  fill: currentColor;
+}

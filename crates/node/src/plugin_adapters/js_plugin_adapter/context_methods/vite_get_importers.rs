@@ -1,13 +1,12 @@
-use std::collections::HashMap;
-
 use farmfe_core::{
   module::{ModuleId, ModuleType},
   relative_path::RelativePath,
+  HashMap,
 };
 use napi::{
   bindgen_prelude::FromNapiValue,
   sys::{napi_callback_info, napi_env, napi_value},
-  Env, JsUnknown, NapiRaw,
+  Env, JsValue, Unknown,
 };
 
 use crate::plugin_adapters::js_plugin_adapter::context::{
@@ -20,8 +19,8 @@ pub unsafe extern "C" fn vite_get_importers(env: napi_env, info: napi_callback_i
   let ArgvAndContext { argv, ctx } = get_argv_and_context_from_cb_info(env, info);
 
   let id: String = Env::from_raw(env)
-    .from_js_value(JsUnknown::from_napi_value(env, argv[0]).unwrap())
-    .expect("Argument 0 should be a string when calling get_modules_by_file");
+    .from_js_value(Unknown::from_napi_value(env, argv[0]).unwrap())
+    .expect("Argument 0 should be a string when calling viteGetImporters");
 
   let module_graph = ctx.module_graph.read();
   let module_id: ModuleId = id.into();
@@ -35,7 +34,7 @@ pub unsafe extern "C" fn vite_get_importers(env: napi_env, info: napi_callback_i
         .to_logical_path(&ctx.config.root)
         .to_string_lossy()
         .to_string();
-      HashMap::from([
+      HashMap::from_iter([
         ("url".to_string(), id.clone()),
         ("id".to_string(), id),
         ("file".to_string(), m.id.resolved_path(&ctx.config.root)),

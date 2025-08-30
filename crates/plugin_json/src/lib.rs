@@ -47,12 +47,18 @@ impl Plugin for FarmPluginJson {
   fn transform(
     &self,
     param: &farmfe_core::plugin::PluginTransformHookParam,
-    _context: &std::sync::Arc<farmfe_core::context::CompilationContext>,
+    context: &std::sync::Arc<farmfe_core::context::CompilationContext>,
   ) -> farmfe_core::error::Result<Option<farmfe_core::plugin::PluginTransformHookResult>> {
     if matches!(param.module_type, ModuleType::Custom(ref suffix) if suffix == "json") {
       // if json value can not be parsed, means it's handled by other plugins
       if let Ok(json) = serde_json::from_str::<serde_json::Value>(&param.content) {
-        let js = format!("module.exports = {json}");
+        let js = if context.config.output.format.contains_cjs()
+          || !context.config.output.target_env.is_library()
+        {
+          format!("module.exports = {json}")
+        } else {
+          format!("export default {json}")
+        };
 
         return Ok(Some(farmfe_core::plugin::PluginTransformHookResult {
           content: js,

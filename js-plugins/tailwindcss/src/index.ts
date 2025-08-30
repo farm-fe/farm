@@ -95,7 +95,7 @@ export default function tailwindcss(): JsPlugin[] {
         config = _config;
         minify = !!config.compilation?.minify;
       },
-      configureDevServer(server) {
+      configureServer(server) {
         servers.push(server);
       },
       transformHtml: {

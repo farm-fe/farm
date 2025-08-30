@@ -1,31 +1,17 @@
-use std::{collections::HashMap, sync::Arc};
+use serde::de::DeserializeOwned;
 
-use serde::{de::DeserializeOwned};
-
-use crate::context::CompilationContext;
+use crate::HashMap;
 
 use super::{
-  asset::AssetFormatMode,
   config_regex::ConfigRegex,
   css::NameConversion,
   external::{ExternalConfig, ExternalObject},
   Config,
 };
 
-const CUSTOM_CONFIG_RUNTIME_ISOLATE: &str = "runtime.isolate";
 pub const CUSTOM_CONFIG_EXTERNAL_RECORD: &str = "external.record";
 pub const CUSTOM_CONFIG_RESOLVE_DEDUPE: &str = "resolve.dedupe";
 pub const CUSTOM_CONFIG_CSS_MODULES_LOCAL_CONVERSION: &str = "css.modules.locals_conversion";
-pub const CUSTOM_CONFIG_ASSETS_MODE: &str = "assets.mode";
-pub const CUSTOM_OUTPUT_ASCII_ONLY: &str = "output.ascii_only";
-
-pub fn get_config_runtime_isolate(context: &Arc<CompilationContext>) -> bool {
-  if let Some(val) = context.config.custom.get(CUSTOM_CONFIG_RUNTIME_ISOLATE) {
-    val == "true"
-  } else {
-    false
-  }
-}
 
 pub fn get_config_external_record(config: &Config) -> ExternalConfig {
   if let Some(val) = config.custom.get(CUSTOM_CONFIG_EXTERNAL_RECORD) {
@@ -60,18 +46,6 @@ pub fn get_config_resolve_dedupe(config: &Config) -> Vec<String> {
 
 pub fn get_config_css_modules_local_conversion(config: &Config) -> NameConversion {
   get_field_or_default_from_custom(config, CUSTOM_CONFIG_CSS_MODULES_LOCAL_CONVERSION)
-}
-
-pub fn get_config_assets_mode(config: &Config) -> Option<AssetFormatMode> {
-  get_field_or_default_from_custom(config, CUSTOM_CONFIG_ASSETS_MODE)
-}
-
-pub fn get_config_output_ascii_only(config: &Config) -> bool {
-  if let Some(val) = config.custom.get(CUSTOM_OUTPUT_ASCII_ONLY) {
-    val == "true"
-  } else {
-    false
-  }
 }
 
 fn get_field_or_default_from_custom<T: Default + DeserializeOwned>(

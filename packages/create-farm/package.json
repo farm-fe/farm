@@ -1,6 +1,6 @@
 {
   "name": "create-farm",
-  "version": "0.0.21",
+  "version": "0.0.22-nightly-20250827162746",
   "description": "Rapidly create a new farm project.",
   "repository": "https://github.com/farm-fe/farm/tree/main/packages/create-farm",
   "bugs": {
@@ -44,6 +44,6 @@
     "version": "napi version"
   },
   "devDependencies": {
-    "@napi-rs/cli": "^2.18.4"
+    "@napi-rs/cli": "3.0.4"
   }
 }

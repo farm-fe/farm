@@ -1,0 +1,52 @@
+---
+source: crates/compiler/src/update/regenerate_resources/generate_and_diff_resource_pots/test_generate_and_diff_resource_pots.rs
+input_file: crates/testing_helpers/src/lib.rs
+---
+[
+    ModuleResourcePotSnapshotItem {
+        id: ModuleId {
+            relative_path: "B",
+            query_string: "",
+        },
+        resource_pots: {
+            "B_2f5d6a63eb2504d486bf13df147c043a_js",
+        },
+    },
+    ModuleResourcePotSnapshotItem {
+        id: ModuleId {
+            relative_path: "E",
+            query_string: "",
+        },
+        resource_pots: {
+            "B_2f5d6a63eb2504d486bf13df147c043a_js",
+        },
+    },
+    ModuleResourcePotSnapshotItem {
+        id: ModuleId {
+            relative_path: "F",
+            query_string: "",
+        },
+        resource_pots: {
+            "test__js",
+            "EI__dynamic_entry_js",
+        },
+    },
+    ModuleResourcePotSnapshotItem {
+        id: ModuleId {
+            relative_path: "H",
+            query_string: "",
+        },
+        resource_pots: {
+            "test__js",
+        },
+    },
+    ModuleResourcePotSnapshotItem {
+        id: ModuleId {
+            relative_path: "I",
+            query_string: "",
+        },
+        resource_pots: {
+            "EI__dynamic_entry_js",
+        },
+    },
+]

@@ -1,9 +1,11 @@
-use std::collections::{HashMap, HashSet, VecDeque};
+use std::collections::VecDeque;
 
 use farmfe_core::{
-  module::{module_graph::ModuleGraph, ModuleId, ModuleSystem},
+  module::{
+    meta_data::script::statement::SwcId, module_graph::ModuleGraph, ModuleId, ModuleSystem,
+  },
   plugin::ResolveKind,
-  swc_ecma_ast::Id,
+  HashMap, HashSet,
 };
 
 use crate::{
@@ -15,6 +17,7 @@ use crate::{
   },
 };
 
+pub mod remove_export_idents;
 pub mod remove_useless_stmts;
 
 pub fn tree_shake_modules(
@@ -22,7 +25,7 @@ pub fn tree_shake_modules(
   module_graph: &mut ModuleGraph,
   tree_shake_modules_map: &mut HashMap<ModuleId, TreeShakeModule>,
 ) -> Vec<ModuleId> {
-  let mut visited_modules: HashSet<ModuleId> = HashSet::new();
+  let mut visited_modules: HashSet<ModuleId> = HashSet::default();
 
   // 1. traverse the tree_shake_modules in order, and trace the used import/used and mark all statement that should be preserved
   traverse_tree_shake_modules(
@@ -40,23 +43,37 @@ pub fn tree_shake_modules(
 
   visited_modules.extend(extra_visited_modules);
 
-  // 3. remove statements that should is not used
+  let mut modules_to_remove = HashSet::default();
+
+  modules_to_remove.extend(
+    module_graph
+      .modules()
+      .into_iter()
+      .map(|m| m.id.clone())
+      .filter(|m_id| !visited_modules.contains(m_id)),
+  );
+
+  // sort visited_modules by execution order
+  let mut visited_modules: Vec<ModuleId> = visited_modules.into_iter().collect();
+  visited_modules.sort_by(|a, b| {
+    let a_meta = module_graph.module(a).unwrap();
+    let b_meta = module_graph.module(b).unwrap();
+
+    a_meta.execution_order.cmp(&b_meta.execution_order)
+  });
+
+  // 3. remove statements that should not be used
   for tree_shake_module_id in &visited_modules {
     if tree_shake_modules_map.contains_key(tree_shake_module_id) {
-      remove_useless_stmts::remove_useless_stmts(
+      modules_to_remove.extend(remove_useless_stmts::remove_useless_stmts(
         tree_shake_module_id,
         module_graph,
         tree_shake_modules_map,
-      );
+      ));
     }
   }
 
-  module_graph
-    .modules()
-    .into_iter()
-    .map(|m| m.id.clone())
-    .filter(|m_id| !visited_modules.contains(m_id))
-    .collect()
+  modules_to_remove.into_iter().collect()
 }
 
 fn traverse_tree_shake_modules(
@@ -237,15 +254,15 @@ fn trace_and_mark_used_statements(
             traced_import_stmts.push(TracedUsedImportStatement::from_import_info_and_used_idents(
               stmt.id,
               stmt.import_info.as_ref().unwrap(),
-              &HashSet::new(),
-              HashMap::new(),
+              &HashSet::default(),
+              HashMap::default(),
             ));
           } else if matches!(kind, ResolveKind::ExportFrom) {
             traced_import_stmts.push(
               TracedUsedImportStatement::from_export_info_and_used_idents(
                 stmt.id,
                 stmt.export_info.as_ref().unwrap(),
-                &HashSet::new(),
+                &HashSet::default(),
               )
               .unwrap(),
             );
@@ -326,7 +343,7 @@ fn trace_and_mark_write_imported_idents_statements(
             if !matches!(dep_tree_shake_module.module_system, ModuleSystem::EsModule) {
               used_stmt_exports
                 .entry(*stmt_id)
-                .or_insert_with(HashSet::new)
+                .or_insert_with(HashSet::default)
                 .insert(UsedStatementIdent::SwcIdent(
                   written_imported_ident.ident.clone(),
                 ));
@@ -340,7 +357,7 @@ fn trace_and_mark_write_imported_idents_statements(
                     if let Some(fields) = &written_imported_ident.fields {
                       let used_fields = used_import_all_fields
                         .entry(written_imported_ident.ident.clone())
-                        .or_insert_with(HashSet::new);
+                        .or_insert_with(HashSet::default);
 
                       for field in fields {
                         match field {
@@ -356,7 +373,7 @@ fn trace_and_mark_write_imported_idents_statements(
                             {
                               used_stmt_exports
                                 .entry(*stmt_id)
-                                .or_insert_with(HashSet::new)
+                                .or_insert_with(HashSet::default)
                                 .insert(UsedStatementIdent::SwcIdent(
                                   written_imported_ident.ident.clone(),
                                 ));
@@ -384,8 +401,8 @@ fn trace_and_mark_write_imported_idents_statements(
                   if local == &written_imported_ident.ident {
                     let export_str = imported
                       .as_ref()
-                      .map(|i| i.0.to_string())
-                      .unwrap_or(local.0.to_string());
+                      .map(|i| i.sym.to_string())
+                      .unwrap_or(local.sym.to_string());
 
                     if dep_tree_shake_module
                       .handled_used_exports
@@ -393,7 +410,7 @@ fn trace_and_mark_write_imported_idents_statements(
                     {
                       used_stmt_exports
                         .entry(*stmt_id)
-                        .or_insert_with(HashSet::new)
+                        .or_insert_with(HashSet::default)
                         .insert(UsedStatementIdent::SwcIdent(
                           written_imported_ident.ident.clone(),
                         ));
@@ -417,7 +434,7 @@ fn trace_and_mark_write_imported_idents_statements(
                     {
                       used_stmt_exports
                         .entry(*stmt_id)
-                        .or_insert_with(HashSet::new)
+                        .or_insert_with(HashSet::default)
                         .insert(UsedStatementIdent::SwcIdent(
                           written_imported_ident.ident.clone(),
                         ));
@@ -474,7 +491,7 @@ fn trace_and_mark_write_imported_idents_statements(
   let write_side_effects_to_trace_map =
     write_side_effects_to_trace
       .into_iter()
-      .fold(HashMap::new(), |mut acc, item| {
+      .fold(HashMap::default(), |mut acc, item| {
         acc
           .entry(item.dep_module_id.clone())
           .or_insert_with(Vec::new)
@@ -482,7 +499,7 @@ fn trace_and_mark_write_imported_idents_statements(
         acc
       });
 
-  let mut current_module_to_trace = HashMap::new();
+  let mut current_module_to_trace = HashMap::default();
 
   for (dep_module_id, items) in write_side_effects_to_trace_map {
     for item in items {
@@ -512,17 +529,18 @@ fn trace_and_mark_write_imported_idents_statements(
               .entry(item.module_id)
               .or_insert((HashMap::default(), HashMap::default()));
             let used_stmt_exports: &mut HashMap<usize, HashSet<UsedStatementIdent>> = &mut res.0;
-            let used_import_all_fields: &mut HashMap<Id, HashSet<UsedImportAllFields>> = &mut res.1;
+            let used_import_all_fields: &mut HashMap<SwcId, HashSet<UsedImportAllFields>> =
+              &mut res.1;
 
             used_stmt_exports
               .entry(*stmt_id)
-              .or_insert_with(HashSet::new)
+              .or_insert_with(HashSet::default)
               .insert(UsedStatementIdent::SwcIdent(item.ident.clone()));
 
             if item.is_namespace {
               used_import_all_fields
                 .entry(item.ident.clone())
-                .or_insert_with(HashSet::new)
+                .or_insert_with(HashSet::default)
                 .insert(UsedImportAllFields::Ident(item.export.to_string()));
             }
           }
@@ -573,7 +591,7 @@ fn trace_and_mark_write_imported_idents_statements(
 struct TraceDepModuleWriteSideEffectsItem {
   pub module_id: ModuleId,
   pub dep_module_id: ModuleId,
-  pub ident: Id,
+  pub ident: SwcId,
   pub is_namespace: bool,
   pub export: UsedExportsIdent,
 }
@@ -604,7 +622,7 @@ fn find_dep_module_read_global_variables_dfs(
   if let Some(tree_shake_module) = tree_shake_modules_map.get(dep_module_id) {
     // 1. find export statement
     let stmt_idents =
-      tree_shake_module.used_exports_idents_to_statement_idents(&HashSet::from([ident]));
+      tree_shake_module.used_exports_idents_to_statement_idents(&HashSet::from_iter([ident]));
     let stmt_used_idents_map = tree_shake_module.get_stmt_used_idents_map(stmt_idents);
 
     // 2. trace from export statement and find unused statements that read global variables
