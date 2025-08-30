@@ -9,7 +9,7 @@ export declare class Compiler {
   /** sync compile */
   compileSync(): void
   /** TODO: usage example */
-  update(paths: Array<string>, threadSafeCallback: ((err: Error | null, ) => any), sync: boolean, generateUpdateResource: boolean): object
+  update(paths: Array<[string, string]>, threadSafeCallback: ((err: Error | null, ) => any), sync: boolean, generateUpdateResource: boolean): object
   addWatchFiles(root: string, paths: Array<string>): void
   hasModule(resolvedPath: string): boolean
   getParentFiles(resolvedPath: string): Array<string>

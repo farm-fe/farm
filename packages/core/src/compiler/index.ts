@@ -8,7 +8,7 @@ import type {
   ResolvedUserConfig,
   Resource
 } from '../index.js';
-import type { JsUpdateResult } from '../types/binding.js';
+import type { CompilerUpdateItem, JsUpdateResult } from '../types/binding.js';
 import { cleanUrl } from '../utils/index.js';
 
 export const VIRTUAL_FARM_DYNAMIC_IMPORT_SUFFIX =
@@ -19,7 +19,7 @@ export const VIRTUAL_FARM_DYNAMIC_IMPORT_SUFFIX =
  * So the latter update process will not override the previous one if they are updating at the same time.
  */
 export interface UpdateQueueItem {
-  paths: string[];
+  paths: CompilerUpdateItem[];
   resolve: (res: JsUpdateResult) => void;
 }
 
@@ -90,7 +90,7 @@ export class Compiler {
   }
 
   async update(
-    paths: string[],
+    paths: CompilerUpdateItem[],
     sync = false,
     ignoreCompilingCheck = false,
     generateUpdateResource = true
@@ -111,7 +111,7 @@ export class Compiler {
 
     try {
       const res = await this._bindingCompiler.update(
-        paths,
+        paths.map((item) => [item.path, item.type]),
         async () => {
           const next = this._updateQueue.shift();
 

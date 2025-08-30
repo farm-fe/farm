@@ -10,8 +10,6 @@ import {
 } from '../plugin/index.js';
 import { externalAdapter } from '../plugin/js/external-adapter.js';
 
-import { wrapPluginUpdateModules } from '../plugin/js/utils.js';
-
 import { resolveHostname } from '../utils/http.js';
 import { Logger } from '../utils/index.js';
 import { __FARM_GLOBAL__ } from './_global.js';
@@ -232,7 +230,7 @@ export async function resolvePlugins(
   ]);
 
   const resolvePluginsResult = {
-    jsPlugins: farmPlugins.jsPlugins.map(wrapPluginUpdateModules),
+    jsPlugins: farmPlugins.jsPlugins,
     vitePlugins: (userConfig?.vitePlugins ?? []).filter(Boolean),
     rustPlugins: farmPlugins.rustPlugins,
     vitePluginAdapters

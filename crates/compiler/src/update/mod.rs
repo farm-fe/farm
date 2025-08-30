@@ -183,10 +183,8 @@ impl Compiler {
 
     for (path, update_type) in paths.clone() {
       match update_type {
-        UpdateType::Added => {
-          return Err(farmfe_core::error::CompilationError::GenericError(
-            "Added is not supported yet".to_string(),
-          ));
+        UpdateType::Added | UpdateType::Removed => {
+          /* Do nothing for Added and Removed by default, they should be handled by plugin in update_modules hook */
         }
 
         UpdateType::Updated => {
@@ -210,11 +208,6 @@ impl Compiler {
           };
 
           Self::update_module_graph_threaded(params);
-        }
-        UpdateType::Removed => {
-          return Err(farmfe_core::error::CompilationError::GenericError(
-            "Removed is not supported yet".to_string(),
-          ));
         }
       }
     }
@@ -565,6 +558,7 @@ impl Compiler {
   ) {
     let start_points: Vec<ModuleId> = paths
       .into_iter()
+      .filter(|(_, ty)| matches!(ty, UpdateType::Updated))
       // Note: HMR does not support the module with query
       .map(|path| ModuleId::from_resolved_path_with_query(&path.0, &self.context.config.root))
       .collect();

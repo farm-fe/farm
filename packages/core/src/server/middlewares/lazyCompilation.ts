@@ -55,7 +55,12 @@ export function lazyCompilationMiddleware(
     let result;
     try {
       // sync regenerate resources
-      result = await compiler.update(paths, true, false, false);
+      result = await compiler.update(
+        paths.map((file) => ({ path: file, type: 'updated' })),
+        true,
+        false,
+        false
+      );
     } catch (e) {
       throw new Error(`Lazy compilation update failed: ${e.message}`);
     }

@@ -1,7 +1,6 @@
 import {
   Compiler,
   ConfigEnv,
-  ModuleContext,
   ResolvedUserConfig,
   Server,
   UserConfig
@@ -15,7 +14,9 @@ import {
   PluginResolveHookParam,
   PluginResolveHookResult,
   PluginTransformHookParam,
-  PluginTransformHookResult
+  PluginTransformHookResult,
+  PluginUpdateModulesHookParam,
+  UpdateType
 } from '../types/binding.js';
 
 // https://stackoverflow.com/questions/61047551/typescript-union-of-string-and-string-literals
@@ -248,7 +249,10 @@ export interface JsPlugin {
   updateFinished?: { executor: Callback<Record<string, never>, void> };
 
   updateModules?: {
-    executor: Callback<ModuleContext, string[] | undefined | null | void>;
+    executor: Callback<
+      PluginUpdateModulesHookParam,
+      [string, UpdateType][] | undefined | null | void
+    >;
   };
 }
 

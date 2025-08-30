@@ -5,13 +5,13 @@ import { isAbsolute, relative } from 'node:path';
 
 import type { Resource } from '@farmfe/runtime';
 import { HmrOptions } from '../config/index.js';
-import type { JsUpdateResult } from '../types/binding.js';
+import type { CompilerUpdateItem, JsUpdateResult } from '../types/binding.js';
 import { convertErrorMessage } from '../utils/error.js';
 import { bold, cyan, green } from '../utils/index.js';
 import { Server as FarmDevServer } from './index.js';
 
 export class HmrEngine {
-  private _updateQueue: string[] = [];
+  private _updateQueue: CompilerUpdateItem[] = [];
 
   private _onUpdates: ((result: JsUpdateResult) => void)[];
 
@@ -40,12 +40,12 @@ export class HmrEngine {
     const logger = this.devServer.logger;
     let updatedFilesStr = queue
       .map((item) => {
-        if (isAbsolute(item)) {
-          return relative(this.devServer.compiler.config.root, item);
+        if (isAbsolute(item.path)) {
+          return relative(this.devServer.compiler.config.root, item.path);
         } else {
           const resolvedPath = this.devServer.compiler.transformModulePath(
             this.devServer.compiler.config.root,
-            item
+            item.path
           );
           return relative(this.devServer.compiler.config.root, resolvedPath);
         }
@@ -56,7 +56,6 @@ export class HmrEngine {
         updatedFilesStr.slice(0, 100) + `...(${queue.length} files)`;
     }
 
-    // try {
     // we must add callback before update
     this.devServer.compiler.onUpdateFinish(async () => {
       // if there are more updates, recompile again
@@ -132,24 +131,29 @@ export class HmrEngine {
     // }
   };
 
-  async hmrUpdate(absPath: string | string[], force = false) {
-    const paths = Array.isArray(absPath) ? absPath : [absPath];
-    for (const path of paths) {
+  async hmrUpdate(
+    absPath: CompilerUpdateItem | CompilerUpdateItem[],
+    force = false
+  ) {
+    const pathItems = Array.isArray(absPath) ? absPath : [absPath];
+    for (const item of pathItems) {
       if (
-        this.devServer.compiler.hasModule(path) &&
-        !this._updateQueue.includes(path)
+        this.devServer.compiler.hasModule(item.path) &&
+        !this._updateQueue.find((queueItem) => queueItem.path === item.path)
       ) {
-        if (fse.existsSync(path)) {
-          const lastModifiedTimestamp = this._lastModifiedTimestamp.get(path);
-          const currentTimestamp = (await stat(path)).mtime.toISOString();
+        if (fse.existsSync(item.path)) {
+          const lastModifiedTimestamp = this._lastModifiedTimestamp.get(
+            item.path
+          );
+          const currentTimestamp = (await stat(item.path)).mtime.toISOString();
           // only update the file if the timestamp changed since last update
           if (!force && lastModifiedTimestamp === currentTimestamp) {
             continue;
           }
-          this._lastModifiedTimestamp.set(path, currentTimestamp);
+          this._lastModifiedTimestamp.set(item.path, currentTimestamp);
         }
         // push the path into the queue
-        this._updateQueue.push(path);
+        this._updateQueue.push(item);
       }
     }
 

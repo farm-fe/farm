@@ -14,7 +14,6 @@ pub mod profile_gui;
 use farmfe_core::{
   config::{Config, Mode},
   module::ModuleId,
-  plugin::UpdateType,
   HashMap,
 };
 
@@ -263,7 +262,7 @@ impl JsCompiler {
   pub fn update(
     &self,
     e: Env,
-    paths: Vec<String>,
+    paths: Vec<(String, String)>,
     thread_safe_callback: ThreadsafeFunction<()>,
     sync: bool,
     generate_update_resource: bool,
@@ -279,7 +278,7 @@ impl JsCompiler {
         .update(
           paths
             .into_iter()
-            .map(|p| (p, UpdateType::Updated))
+            .map(|(path, ty)| (path, ty.into()))
             .collect(),
           move || {
             thread_safe_callback.call(Ok(()), ThreadsafeFunctionCallMode::Blocking);

@@ -22,6 +22,7 @@ import {
 import { __FARM_GLOBAL__ } from '../config/_global.js';
 import type { ResolvedUserConfig } from '../config/index.js';
 import type {
+  CompilerUpdateItem,
   JsUpdateResult,
   PersistentCacheConfig
 } from '../types/binding.js';
@@ -218,20 +219,40 @@ export async function watchFileChangeAndRebuild(
   const watcher = new Watcher(resolvedUserConfig);
   await watcher.createWatcher();
 
-  watcher.on('add', async (_file) => {
-    // TODO
+  watcher.on('add', async (file: string) => {
+    const currentAddedItem: CompilerUpdateItem = {
+      path: normalizePath(file),
+      type: 'added'
+    };
+    compiler.update([currentAddedItem], undefined, undefined, false);
   });
 
-  watcher.on('unlink', async (_file) => {
-    // TODO
+  watcher.on('unlink', async (file: string) => {
+    // Fix #2035, skip if the file is irrelevant
+    if (!compiler.hasModule(file)) return;
+
+    const parentFiles = compiler.getParentFiles(file);
+    const normalizedParentFiles: CompilerUpdateItem[] = parentFiles.map(
+      (file) => ({
+        path: normalizePath(file),
+        type: 'updated'
+      })
+    );
+    compiler.update(normalizedParentFiles, true, undefined, false);
+
+    const currentRemovedItem: CompilerUpdateItem = {
+      path: normalizePath(file),
+      type: 'removed'
+    };
+    compiler.update([currentRemovedItem], undefined, undefined, false);
   });
 
-  watcher.on('change', async (file: string | string[] | any) => {
-    if (!compiler.hasModule(file)) {
+  watcher.on('change', async (originalFile: string | string[] | any) => {
+    if (!compiler.hasModule(originalFile)) {
       return;
     }
 
-    file = normalizePath(file);
+    const file = normalizePath(originalFile);
 
     if (watcher.isConfigFilesChanged(file)) {
       // rebuild the project
@@ -261,7 +282,12 @@ export async function watchFileChangeAndRebuild(
 
     try {
       const start = performance.now();
-      const result = await compiler.update([file], true, false, false);
+      const result = await compiler.update(
+        [{ path: file, type: 'updated' }],
+        true,
+        false,
+        false
+      );
       const elapsedTime = Math.floor(performance.now() - start);
 
       logger.info(
