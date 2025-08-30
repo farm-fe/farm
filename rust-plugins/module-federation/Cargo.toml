@@ -1,0 +1,12 @@
+[package]
+edition = "2021"
+name = "farmfe_module_federation"
+version = "0.0.0"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+farmfe_core = { version = "*", path = "../../crates/core" }
+farmfe_macro_plugin = { version = "*", path = "../../crates/macro_plugin" }
+farmfe_toolkit = { version = "*", path = "../../crates/toolkit" }
