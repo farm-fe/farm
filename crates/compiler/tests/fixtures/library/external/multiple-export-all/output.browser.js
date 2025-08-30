@@ -29,9 +29,10 @@ var __farm_internal_module_system__ = {
             let em = externalModules[key];
             // add a __esModule flag to the module if the module has default export
             if (em && em.default && !em.__esModule) {
-                em = Object.assign({}, em, {
+                em = {
+                    ...em,
                     __esModule: true
-                });
+                };
             }
             __farm_internal_module_system__.em[key] = em;
         }

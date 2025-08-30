@@ -42,7 +42,7 @@ exports[`e2e tests - e2e.spec.ts 1`] = `
     </script>
   
 
-<script></script><script>window['4c4d99f12bb13ca32da8c12d962efd60'].m.b();</script>"
+<script src="/farm_module_system_bootstrap.js"></script>"
 `;
 
 exports[`e2e tests - e2e.spec.ts 2`] = `
