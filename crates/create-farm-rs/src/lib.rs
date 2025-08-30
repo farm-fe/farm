@@ -10,6 +10,7 @@ use crate::{
 };
 
 mod args;
+mod lang;
 mod package_manager;
 mod template;
 pub mod utils;
@@ -48,6 +49,7 @@ where
     manager,
     project_name,
     template,
+    language,
     force,
   } = args;
 
@@ -158,6 +160,19 @@ where
     }
   };
 
+  let language = match language {
+    Some(language) => language,
+    None => {
+      let selected_language = prompts::select(
+        "Select a language:",
+        &[lang::Lang::Typescript, lang::Lang::Javascript],
+        Some(0),
+      )?
+      .unwrap();
+      *selected_language
+    }
+  };
+
   if target_dir.exists() {
     #[inline(always)]
     fn clean_dir(dir: &std::path::PathBuf) -> anyhow::Result<()> {
@@ -180,7 +195,13 @@ where
   }
 
   // Render the template
-  template.render(&target_dir, pkg_manager, &project_name, &project_name)?;
+  template.render(
+    &target_dir,
+    pkg_manager,
+    &project_name,
+    &project_name,
+    &language,
+  )?;
 
   handle_brand_text("\n >  Initial Farm Project created successfully ✨ ✨ \n");
 
