@@ -1,4 +1,26 @@
 # Changelog
+
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [Unreleased]
+
+## [0.0.18](https://github.com/farm-fe/farm/compare/farmfe_plugin_css-v0.0.17...farmfe_plugin_css-v0.0.18) - 2025-08-30
+
+### Added
+
+- Farm v2.0 dev ([#1835](https://github.com/farm-fe/farm/pull/1835))
+
+### Fixed
+
+- #2211 ([#2213](https://github.com/farm-fe/farm/pull/2213))
+
+### Other
+
+- support output.asciiOnly ([#2200](https://github.com/farm-fe/farm/pull/2200))
+# Changelog
 All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),

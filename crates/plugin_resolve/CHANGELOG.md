@@ -1,4 +1,26 @@
 # Changelog
+
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [Unreleased]
+
+## [0.0.16](https://github.com/farm-fe/farm/compare/farmfe_plugin_resolve-v0.0.15...farmfe_plugin_resolve-v0.0.16) - 2025-08-30
+
+### Added
+
+- Farm v2.0 dev ([#1835](https://github.com/farm-fe/farm/pull/1835))
+- browser mode, resolve mainFiled without import kind ([#2197](https://github.com/farm-fe/farm/pull/2197))
+- resolver by resolve kind ([#2154](https://github.com/farm-fe/farm/pull/2154))
+
+### Fixed
+
+- #2211 ([#2213](https://github.com/farm-fe/farm/pull/2213))
+- resolve extension compatible with . or direct file suffix ([#2192](https://github.com/farm-fe/farm/pull/2192))
+- *(plugin_resolve)* duplicated querystring on external ([#2057](https://github.com/farm-fe/farm/pull/2057))
+# Changelog
 All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),

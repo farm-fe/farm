@@ -1,6 +1,6 @@
 [package]
 name = "farmfe_macro_cache_item"
-version = "0.1.3"
+version = "0.1.4"
 edition = "2021"
 description = "Macro to create a farm cache item"
 license = "MIT"
