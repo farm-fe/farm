@@ -49,9 +49,10 @@ global['f081367f80fe14896375a9f8b8918ca3'] = {
     o.te = "node", o.em = {}, o.se = function(e) {
         for(let t in e){
             let r = e[t];
-            r && r.default && !r.__esModule && (r = Object.assign({}, r, {
+            r && r.default && !r.__esModule && (r = {
+                ...r,
                 __esModule: !0
-            })), o.em[t] = r;
+            }), o.em[t] = r;
         }
     }, (global.f081367f80fe14896375a9f8b8918ca3 = {}).m = o;
     let l = {}, i = [];

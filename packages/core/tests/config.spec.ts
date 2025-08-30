@@ -147,32 +147,13 @@ test('resolveUserConfig-input-html-prod', async () => {
   expect(config.compilation.presetEnv).toEqual({
     options: {
       targets: [
-        'edge >= 15',
-        'firefox >= 52',
-        'chrome >= 55',
-        'safari >= 11',
-        'opera >= 42',
-        'ios_saf >= 11.2',
-        'and_chr >= 131',
-        'and_ff >= 132',
-        'and_uc >= 15.5',
-        'samsung >= 6.4',
-        'and_qq >= 14.9',
-        'baidu >= 13.52',
-        'kaios >= 3.1',
-        'unreleased edge versions',
-        'unreleased firefox versions',
-        'unreleased chrome versions',
-        'unreleased safari versions',
-        'unreleased opera versions',
-        'unreleased ios_saf versions',
-        'unreleased and_chr versions',
-        'unreleased and_ff versions',
-        'unreleased and_uc versions',
-        'unreleased samsung versions',
-        'unreleased and_qq versions',
-        'unreleased baidu versions',
-        'unreleased kaios versions'
+        'chrome >= 5',
+        'edge >= 12',
+        'firefox >= 4',
+        'ie >= 9',
+        'ios >= 6',
+        'opera >= 12.1',
+        'safari >= 5'
       ]
     }
   });

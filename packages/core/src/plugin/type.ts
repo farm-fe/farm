@@ -39,6 +39,17 @@ export interface ViteModule {
   type: 'js' | 'css';
 }
 
+export type FreeModuleParam = PluginProcessModuleParams & {
+  resolvedDeps: [
+    string,
+    {
+      kind: string;
+      order: number;
+      source: string;
+    }[]
+  ][];
+};
+
 export interface CompilationContext {
   resolve(
     param: PluginResolveHookParam,
@@ -178,16 +189,7 @@ export interface JsPlugin {
 
   freezeModule?: JsPluginHook<
     NormalizeFilterParams,
-    PluginProcessModuleParams & {
-      resolved_deps: [
-        string,
-        {
-          kind: string;
-          order: number;
-          source: string;
-        }[]
-      ][];
-    },
+    FreeModuleParam,
     PluginProcessModuleResult
   >;
 
