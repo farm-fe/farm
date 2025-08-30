@@ -12,7 +12,7 @@
 [ ] if there are more than 1 ambiguous export all in a module, then the module can not be scope hoisted
 [x] bump napi-rs for create-farm and rust plugin template
 [x] using swc recover mode to support legacy IE css syntax
-[ ] support configuring es version for preset env (remove browsers-list dependencies), set default target env to esnext
+[x] support configuring es version for preset env (remove browsers-list dependencies), set default target env to esnext
 [ ] should polyfill runtime module and should not inject promise for runtime module
 [ ] should refresh the page when index.html update
 [x] support runtime import.meta plugin

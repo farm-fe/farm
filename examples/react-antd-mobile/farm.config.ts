@@ -21,9 +21,6 @@ export default defineConfig({
     persistentCache: false,
     presetEnv: {
       include: isDevelopment ? [] : ['node_modules/*'],
-      options: {
-        targets: 'Chrome >= 49',
-      },
     },
     css: {
       prefixer: {

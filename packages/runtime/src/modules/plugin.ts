@@ -43,8 +43,7 @@ let RUNTIME_PLUGINS: FarmRuntimePlugin[] = [];
 function hookPluginsSerial(
   hookName: Exclude<keyof FarmRuntimePlugin, 'name'>,
   ...args: any[]
-): // ): Promise<void> {
-void {
+): void {
   for (const pluginIdx in RUNTIME_PLUGINS) {
     const plugin = RUNTIME_PLUGINS[pluginIdx];
     const hook = plugin[hookName];
@@ -59,8 +58,7 @@ void {
 function hookPluginsBail<T = any>(
   hookName: Exclude<keyof FarmRuntimePlugin, 'name'>,
   ...args: any[]
-): // ): Promise<T> {
-T | undefined {
+): T | undefined {
   for (const pluginIdx in RUNTIME_PLUGINS) {
     const plugin = RUNTIME_PLUGINS[pluginIdx];
     const hook = plugin[hookName];

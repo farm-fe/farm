@@ -2,21 +2,23 @@ use farmfe_core::{
   config::{
     config_regex::ConfigRegex,
     preset_env::{PresetEnvConfig, PresetEnvConfigObj},
-    Config,
+    AliasItem, Config, StringOrRegex,
   },
   plugin::Plugin,
   serde_json,
   swc_common::{comments::SingleThreadedComments, Mark},
-  swc_ecma_ast::{Module, ModuleItem, Program, Script},
+  swc_ecma_ast::{EsVersion, Module, ModuleItem, Program, Script},
 };
 use farmfe_toolkit::{
-  preset_env_base::query::Query,
+  constant::RUNTIME_SUFFIX,
   script::swc_try_with::try_with,
-  swc_ecma_preset_env::{self, transform_from_env, EnvConfig, Mode, Targets},
+  swc_ecma_preset_env::{self, transform_from_env, transform_from_es_version, EnvConfig, Mode},
   swc_ecma_transforms::{fixer, Assumptions},
   swc_ecma_transforms_base::helpers::inject_helpers,
   swc_ecma_visit::VisitMutWith,
 };
+
+pub const SWC_HELPERS_PACKAGE: &str = "@swc/helpers";
 
 pub struct FarmPluginPolyfill {
   config: swc_ecma_preset_env::Config,
@@ -24,6 +26,7 @@ pub struct FarmPluginPolyfill {
   exclude: Vec<ConfigRegex>,
   enforce_exclude: Vec<ConfigRegex>,
   assumptions: Assumptions,
+  farm_runtime_regex: ConfigRegex,
 }
 
 impl FarmPluginPolyfill {
@@ -40,7 +43,6 @@ impl FarmPluginPolyfill {
         (
           swc_ecma_preset_env::Config {
             mode: Some(Mode::Usage),
-            targets: Some(Targets::Query(Query::Single("ie >= 9".to_string()))),
             ..Default::default()
           },
           include,
@@ -53,9 +55,6 @@ impl FarmPluginPolyfill {
         let mut user_config: swc_ecma_preset_env::Config =
           serde_json::from_value(*options.clone()).unwrap();
         user_config.mode = user_config.mode.or(Some(Mode::Usage));
-        user_config.targets = user_config
-          .targets
-          .or(Some(Targets::Query(Query::Single("ie >= 9".to_string()))));
         let user_assumption: Assumptions =
           serde_json::from_value(*obj.assumptions.clone()).unwrap();
         (
@@ -72,10 +71,8 @@ impl FarmPluginPolyfill {
       include,
       exclude,
       assumptions,
-      enforce_exclude: vec![
-        ConfigRegex::new("node_modules/core-js"),
-        ConfigRegex::new("@farmfe/runtime"),
-      ],
+      enforce_exclude: vec![ConfigRegex::new("node_modules/core-js")],
+      farm_runtime_regex: ConfigRegex::new(format!("\\{RUNTIME_SUFFIX}$").as_str()),
     }
   }
 }
@@ -87,6 +84,28 @@ impl Plugin for FarmPluginPolyfill {
   /// The polyfill plugin should run after all other plugins
   fn priority(&self) -> i32 {
     i32::MIN
+  }
+
+  /// Add alias for swc helpers
+  fn config(&self, config: &mut Config) -> farmfe_core::error::Result<Option<()>> {
+    let swc_helpers_find = StringOrRegex::String(SWC_HELPERS_PACKAGE.to_string());
+
+    if !config.runtime.swc_helpers_path.is_empty()
+      && !config.resolve.alias.iter().any(|a| {
+        if let StringOrRegex::String(str) = &a.find {
+          str == SWC_HELPERS_PACKAGE
+        } else {
+          false
+        }
+      })
+    {
+      config.resolve.alias.push(AliasItem {
+        find: swc_helpers_find,
+        replacement: config.runtime.swc_helpers_path.clone(),
+      });
+    }
+
+    Ok(Some(()))
   }
 
   fn process_module(
@@ -127,6 +146,7 @@ impl Plugin for FarmPluginPolyfill {
         .body
         .iter()
         .all(|item| !matches!(item, farmfe_core::swc_ecma_ast::ModuleItem::ModuleDecl(_)))
+        && !self.farm_runtime_regex.is_match(relative_path)
       {
         Program::Script(Script {
           span: ast.span,
@@ -143,13 +163,24 @@ impl Plugin for FarmPluginPolyfill {
 
       let comments: SingleThreadedComments = param.meta.as_script().comments.clone().into();
 
-      // TODO support transform from es version and remove all logic related to transform es version to env targets
-      final_ast.mutate(&mut transform_from_env(
-        unresolved_mark,
-        Some(&comments),
-        EnvConfig::from(self.config.clone()),
-        self.assumptions,
-      ));
+      if self.farm_runtime_regex.is_match(relative_path) {
+        // downgrade syntax for runtime module but do not inject polyfill
+        final_ast.mutate(&mut transform_from_es_version(
+          unresolved_mark,
+          Some(&comments),
+          EsVersion::Es5,
+          self.assumptions,
+          false,
+        ));
+      } else {
+        final_ast.mutate(&mut transform_from_env(
+          unresolved_mark,
+          Some(&comments),
+          EnvConfig::from(self.config.clone()),
+          self.assumptions,
+        ));
+      }
+
       final_ast.visit_mut_with(&mut inject_helpers(unresolved_mark));
       final_ast.visit_mut_with(&mut fixer(Some(&comments)));
 

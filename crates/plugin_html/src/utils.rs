@@ -72,9 +72,17 @@ pub fn create_farm_runtime_output_resource(
   resource_name: &str,
   context: &Arc<CompilationContext>,
 ) -> Resource {
+  let name = if context.config.output.filename.contains("[hash]")
+    || context.config.output.filename.contains("[contentHash]")
+  {
+    "farm"
+  } else {
+    resource_name
+  };
+
   let name = transform_output_filename(TransformOutputFileNameParams {
     filename_config: context.config.output.filename.clone(),
-    name: resource_name,
+    name,
     name_hash: "",
     bytes: &bytes,
     ext: "js",

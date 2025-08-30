@@ -13,7 +13,7 @@ export function convertErrorMessage(error: Error) {
     errorMessages = [error.message];
   }
 
-  return errorMessages.join('\n');
+  return errorMessages.join('\n\n');
 }
 
 function parseErrorItem(item: any): string {

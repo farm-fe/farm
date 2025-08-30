@@ -40,7 +40,9 @@ const visitPage = async (
   const browser = await chromium.connect(wsEndpoint);
   const page = await browser?.newPage();
   page.on('requestfailed', (req) => {
-    logger(`request failed ${path} ${examplePath}: ${req.url()} ${req.failure()?.errorText} ${req}`);
+    logger(`request failed ${path} ${examplePath}: ${req.url()} ${req.failure()?.errorText} ${req}`, {
+      color: 'red'
+    });
   });
   logger(`open the page: ${path} ${examplePath}`);
   try {

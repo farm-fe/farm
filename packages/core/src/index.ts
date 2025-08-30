@@ -28,6 +28,7 @@ import { watchFileChangeAndRebuild } from './watcher/index.js';
 import type { FarmCliOptions, ResolvedUserConfig } from './config/types.js';
 export type { Compiler as BindingCompiler } from './types/binding.js';
 import type { PersistentCacheConfig } from './types/binding.js';
+import { convertErrorMessage } from './utils/error.js';
 
 export async function start(
   inlineConfig?: FarmCliOptions & UserConfig
@@ -104,8 +105,7 @@ async function _internalBuild(
     let errorMsg = err?.toString();
 
     try {
-      const { message, cause } = JSON.parse(JSON.parse(err.message));
-      errorMsg = `${message} \n\n ${cause}`;
+      errorMsg = `Build failed due to following errors:\n\n ${convertErrorMessage(err)}`;
     } catch (e) {}
 
     logger.error(errorMsg, {

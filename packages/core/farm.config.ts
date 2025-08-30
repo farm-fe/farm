@@ -14,7 +14,6 @@ export default (<UserConfig>{
     external: [
       '@farmfe/core',
       'chokidar',
-      'farm-browserslist-generator',
       '@farmfe/core-.*',
       './farm.*.node$',
       './farm.*.cjs',

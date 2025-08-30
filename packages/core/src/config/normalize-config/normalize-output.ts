@@ -1,7 +1,5 @@
 import path, { isAbsolute } from 'node:path';
 
-import { browsersWithSupportForFeatures } from 'farm-browserslist-generator';
-
 import { Config } from '../../types/binding.js';
 import { urlRegex } from '../../utils/http.js';
 import { Logger } from '../../utils/logger.js';
@@ -72,9 +70,34 @@ type TargetsForTargetEnv = Record<
 >;
 type TargetsMap = Omit<TargetsForTargetEnv, 'node' | 'browser'>;
 
-const es2015Browsers = browsersWithSupportForFeatures('es6');
-const es2017Browsers = browsersWithSupportForFeatures('async-functions');
-const LEGACY_BROWSERS = ['ie >= 9'];
+// browsers that fully support Promise
+const es2015Browsers = [
+  'chrome >= 33',
+  'edge >= 12',
+  'firefox >= 29',
+  'ios >= 8',
+  'opera >= 20',
+  'safari >= 7.1'
+];
+// browsers that fully support async functions
+const es2017Browsers = [
+  'chrome >= 55',
+  'edge >= 15',
+  'firefox >= 52',
+  'ios >= 11',
+  'opera >= 42',
+  'safari >= 11'
+];
+
+const LEGACY_BROWSERS = [
+  'chrome >= 5',
+  'edge >= 12',
+  'firefox >= 4',
+  'ie >= 9',
+  'ios >= 6',
+  'opera >= 12.1',
+  'safari >= 5'
+];
 
 const targetsMap: TargetsMap = {
   node16: {
@@ -111,8 +134,8 @@ const targetsMap: TargetsMap = {
  */
 function normalizeTargetEnv(config: Config['config']) {
   const aliasMap: Record<string, keyof TargetsMap> = {
-    node: 'node16',
-    browser: 'browser-es2017'
+    node: 'node-next',
+    browser: 'browser-esnext'
   };
 
   const targetEnv = (aliasMap[config.output.targetEnv] ??
