@@ -55,7 +55,7 @@ export default function tailwindcss(): JsPlugin[] {
   ) {
     for (let server of servers) {
       for (let id of roots.keys()) {
-        let isAlive = server.getCompiler().hasModule(id);
+        let isAlive = server.getCompiler()?.hasModule(id);
         if (!isAlive) {
           // Note: Removing this during SSR is not safe and will produce
           // inconsistent results based on the timing of the removal and
@@ -69,8 +69,8 @@ export default function tailwindcss(): JsPlugin[] {
         }
 
         roots.get(id).requiresRebuild = false;
-        server.hmrEngine?.hmrUpdate(id, true);
-        server.getCompiler().invalidateModule(id);
+        server.hmrEngine?.hmrUpdate({ path: id, type: 'updated' }, true);
+        server.getCompiler()?.invalidateModule(id);
       }
     }
   }
@@ -100,9 +100,9 @@ export default function tailwindcss(): JsPlugin[] {
       },
       transformHtml: {
         executor(param, ctx) {
-          if (param.htmlResource?.info) {
+          if (param.htmlResource?.name) {
             scanFile(
-              param.htmlResource.info?.id,
+              param.htmlResource.name,
               bytes2String(param.htmlResource.bytes),
               'html',
               isSSR,
