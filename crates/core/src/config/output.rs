@@ -45,6 +45,14 @@ pub enum ModuleFormat {
   EsModule,
   #[serde(rename = "cjs")]
   CommonJs,
+  #[serde(rename = "iife")]
+  IIFE,
+  #[serde(rename = "umd")]
+  UMD,
+  #[serde(rename = "system")]
+  System,
+  #[serde(rename = "amd")]
+  AMD,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Eq, PartialEq, Hash)]
