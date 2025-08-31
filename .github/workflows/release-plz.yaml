@@ -1,39 +1,75 @@
-name: Release Cargo Crates
+# Name of the workflow: you can change it.
+name: Release-plz
 
-permissions:
-  pull-requests: write
-  contents: write
-
+# The action runs on every push to the main branch.
 on:
   push:
     branches:
       - main
 
 jobs:
-  release-plz:
-    name: Release-plz
+  # Release unpublished packages.
+  # If you want release-plz to only update your packages,
+  # and you want to handle `cargo publish` and git tag push by yourself,
+  # remove this job.
+  release-plz-release:
+    name: Release-plz release
     runs-on: ubuntu-latest
+    # Used to push tags, and create releases.
+    permissions:
+      contents: write
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
+          # `fetch-depth: 0` is needed to clone all the git history, which is necessary to
+          # release from the latest commit of the release PR.
+          fetch-depth: 0
+      # Use your favorite way to install the Rust toolchain.
+      # The action I'm using here is a popular choice.
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+      - name: Run release-plz
+        uses: release-plz/action@v0.5
+        with:
+          # Run `release-plz release` command.
+          command: release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+
+  # Create a PR with the new versions and changelog, preparing the next release.
+  # If you want release-plz to only release your packages
+  # and you want to update `Cargo.toml` versions and changelogs by yourself,
+  # remove this job.
+  release-plz-pr:
+    name: Release-plz PR
+    runs-on: ubuntu-latest
+    permissions:
+      # Used to create and update pull requests.
+      pull-requests: write
+      # Used to push to the pull request branch.
+      contents: write
+
+    # The concurrency block is explained below (after the code block).
+    concurrency:
+      group: release-plz-${{ github.ref }}
+      cancel-in-progress: false
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          # `fetch-depth: 0` is needed to clone all the git history, which is necessary to
+          # determine the next version and build the changelog.
           fetch-depth: 0
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
       - name: Run release-plz
-        uses: MarcoIeni/release-plz-action@v0.5
+        uses: release-plz/action@v0.5
+        with:
+          # Run `release-plz release-pr` command.
+          command: release-pr
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
-      - name: Run release-plz # retry 3 times
-        uses: MarcoIeni/release-plz-action@v0.5
-        if: ${{ failure() }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
-      - name: Run release-plz
-        uses: MarcoIeni/release-plz-action@v0.5
-        if: ${{ failure() }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # In `release-plz-pr` this is only required if you are using a private registry.
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}

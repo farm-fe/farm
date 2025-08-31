@@ -15,7 +15,7 @@ jobs:
     steps:
       - name: Check changeset status and set env
         run: |
-          if npx @changeset/cli status; then
+          if npx @changesets/cli status; then
             echo "SKIP_RUST_BUILD=true" >> $GITHUB_ENV
             echo "Changesets exist, skipping Rust build."
           else

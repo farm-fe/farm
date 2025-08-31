@@ -80,9 +80,9 @@
   },
   "dependencies": {
     "@farmfe/plugin-replace-dirname": "workspace:*",
-    "@farmfe/runtime": "workspace:1.0.0-nightly-20250827162746",
-    "@farmfe/runtime-plugin-hmr": "workspace:4.0.0-nightly-20250827162746",
-    "@farmfe/runtime-plugin-import-meta": "workspace:1.0.0-nightly-20250827162746",
+    "@farmfe/runtime": "workspace:*",
+    "@farmfe/runtime-plugin-hmr": "workspace:*",
+    "@farmfe/runtime-plugin-import-meta": "workspace:*",
     "@farmfe/utils": "workspace:*",
     "@polka/compression": "1.0.0-next.25",
     "@swc/helpers": "0.5.17",
