@@ -23,18 +23,6 @@ name = "create_farm_node"
 release = false
 
 
-# [[package]]
-# name = "farmfe_utils"
-# release = true
-
-# [[package]]
-# name = "farmfe_macro_cache_item"
-# release = true
-
-# [[package]]
-# name = "farmfe_toolkit_plugin_types"
-# release = true
-
-# [[package]]
-# name = "farmfe_macro_plugin"
-# release = true
+[[package]]
+name = "farmfe_utils"
+publish_no_verify = true

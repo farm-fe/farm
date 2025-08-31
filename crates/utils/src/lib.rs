@@ -1,6 +1,8 @@
 //! This crate provides shared utilities that is not related to any core compilation flow or data structures.
 //! If you are a plugin author and look for internal helpers, [farmfe_toolkit] crate should be your first choice.
 
+#![feature(trivial_bounds)]
+
 use std::path::PathBuf;
 
 pub use pathdiff::diff_paths;

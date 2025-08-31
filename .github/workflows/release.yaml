@@ -13,6 +13,9 @@ jobs:
     outputs:
       SKIP_RUST_BUILD: ${{ env.SKIP_RUST_BUILD }}
     steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+
       - name: Check changeset status and set env
         run: |
           if npx @changesets/cli status; then
