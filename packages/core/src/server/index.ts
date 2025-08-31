@@ -59,6 +59,7 @@ import type {
   UserConfig
 } from '../config/types.js';
 import type {
+  CompilerUpdateItem,
   JsUpdateResult,
   PersistentCacheConfig
 } from '../types/binding.js';
@@ -241,18 +242,32 @@ export class Server extends httpServer {
     await this.watcher.createWatcher();
 
     this.watcher.on('add', async (file: string) => {
-      // TODO pluginContainer hooks
+      const currentAddedItem: CompilerUpdateItem = {
+        path: normalizePath(file),
+        type: 'added'
+      };
+
+      await this.compiler.update([currentAddedItem]);
     });
 
     this.watcher.on('unlink', async (file: string) => {
-      // Fix #2035, skip if the file is irrelevant
-      if (!this.compiler.hasModule(file)) return;
+      const currentRemovedItem: CompilerUpdateItem = {
+        path: normalizePath(file),
+        type: 'removed'
+      };
+      await this.compiler.update([currentRemovedItem]);
 
-      const parentFiles = this.compiler.getParentFiles(file);
-      const normalizeParentFiles = parentFiles.map((file) =>
-        normalizePath(file)
-      );
-      this.hmrEngine.hmrUpdate(normalizeParentFiles, true);
+      // Fix #2035, skip if the file is irrelevant
+      if (this.compiler.hasModule(file)) {
+        const parentFiles = this.compiler.getParentFiles(file);
+        const normalizedParentFiles: CompilerUpdateItem[] = parentFiles.map(
+          (file) => ({
+            path: normalizePath(file),
+            type: 'updated'
+          })
+        );
+        this.hmrEngine.hmrUpdate(normalizedParentFiles, true);
+      }
     });
 
     this.watcher.on('change', async (file: string) => {
@@ -269,7 +284,11 @@ export class Server extends httpServer {
       }
 
       try {
-        this.hmrEngine.hmrUpdate(file);
+        const currentRemovedItem: CompilerUpdateItem = {
+          path: normalizePath(file),
+          type: 'updated'
+        };
+        this.hmrEngine.hmrUpdate(currentRemovedItem);
       } catch (error) {
         this.config.logger.error(`Farm Hmr Update Error: ${error}`);
       }
@@ -673,7 +692,13 @@ export class Server extends httpServer {
       const normalizeParentFiles = parentFiles.map((file) =>
         normalizePath(file)
       );
-      this.hmrEngine.hmrUpdate(normalizeParentFiles, true);
+      this.hmrEngine.hmrUpdate(
+        normalizeParentFiles.map((file) => ({
+          path: file,
+          type: 'updated'
+        })),
+        true
+      );
     });
   }
 

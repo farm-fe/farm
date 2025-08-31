@@ -14,6 +14,7 @@
   },
   "scripts": {
     "build": "npx farm build",
+    "type-check": "tsc --noEmit",
     "dev": "npx farm watch"
   },
   "keywords": [

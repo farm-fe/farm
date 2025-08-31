@@ -2,7 +2,7 @@ use farmfe_core::{
   config::{
     config_regex::ConfigRegex,
     preset_env::{PresetEnvConfig, PresetEnvConfigObj},
-    AliasItem, Config, StringOrRegex,
+    AliasItem, Config, Mode as FarmMode, StringOrRegex,
   },
   plugin::Plugin,
   serde_json,
@@ -11,9 +11,13 @@ use farmfe_core::{
 };
 use farmfe_toolkit::{
   constant::RUNTIME_SUFFIX,
-  script::swc_try_with::try_with,
+  script::swc_try_with::{resolve_module_mark, try_with},
   swc_ecma_preset_env::{self, transform_from_env, transform_from_es_version, EnvConfig, Mode},
-  swc_ecma_transforms::{fixer, Assumptions},
+  swc_ecma_transforms::{
+    fixer,
+    hygiene::{hygiene_with_config, Config as HygieneConfig},
+    Assumptions,
+  },
   swc_ecma_transforms_base::helpers::inject_helpers,
   swc_ecma_visit::VisitMutWith,
 };
@@ -138,7 +142,10 @@ impl Plugin for FarmPluginPolyfill {
     let globals = context.meta.get_globals(&param.module_id);
     try_with(cm, globals.value(), || {
       let unresolved_mark = Mark::from_u32(param.meta.as_script().unresolved_mark);
+      let top_level_mark = Mark::from_u32(param.meta.as_script().top_level_mark);
+
       let ast = param.meta.as_script_mut().take_ast();
+      let is_runtime_module = self.farm_runtime_regex.is_match(relative_path);
 
       // fix #2103, transform the ast from Module to Script if the module does not have module declaration
       // to make swc polyfill prepend require('core-js/xxx') instead of import 'core-js/xxx'
@@ -146,7 +153,7 @@ impl Plugin for FarmPluginPolyfill {
         .body
         .iter()
         .all(|item| !matches!(item, farmfe_core::swc_ecma_ast::ModuleItem::ModuleDecl(_)))
-        && !self.farm_runtime_regex.is_match(relative_path)
+        && !is_runtime_module
       {
         Program::Script(Script {
           span: ast.span,
@@ -163,7 +170,7 @@ impl Plugin for FarmPluginPolyfill {
 
       let comments: SingleThreadedComments = param.meta.as_script().comments.clone().into();
 
-      if self.farm_runtime_regex.is_match(relative_path) {
+      if is_runtime_module && matches!(context.config.mode, FarmMode::Production) {
         // downgrade syntax for runtime module but do not inject polyfill
         final_ast.mutate(&mut transform_from_es_version(
           unresolved_mark,
@@ -172,7 +179,7 @@ impl Plugin for FarmPluginPolyfill {
           self.assumptions,
           false,
         ));
-      } else {
+      } else if !is_runtime_module {
         final_ast.mutate(&mut transform_from_env(
           unresolved_mark,
           Some(&comments),
@@ -182,6 +189,10 @@ impl Plugin for FarmPluginPolyfill {
       }
 
       final_ast.visit_mut_with(&mut inject_helpers(unresolved_mark));
+      final_ast.visit_mut_with(&mut hygiene_with_config(HygieneConfig {
+        top_level_mark,
+        ..Default::default()
+      }));
       final_ast.visit_mut_with(&mut fixer(Some(&comments)));
 
       let module_ast = match final_ast {
@@ -199,6 +210,17 @@ impl Plugin for FarmPluginPolyfill {
 
       param.meta.as_script_mut().set_ast(module_ast);
     })?;
+
+    // we have to update unresolved_mark and top_level_mark after hygiene, cause hygiene will change the mark of some nodes,
+    // which may cause some unexpected error later handling global variables and top level variables
+    let (unresolved_mark, top_level_mark) = resolve_module_mark(
+      &mut param.meta.as_script_mut().ast,
+      param.module_type.is_typescript(),
+      globals.value(),
+    );
+
+    param.meta.as_script_mut().unresolved_mark = unresolved_mark.as_u32();
+    param.meta.as_script_mut().top_level_mark = top_level_mark.as_u32();
 
     Ok(Some(()))
   }

@@ -65,7 +65,7 @@ pub fn render_module(
   } = options;
 
   if unresolved_mark.as_u32() == 0 || top_level_mark.as_u32() == 0 {
-    println!("unresolved mark is 0: {:?}", module_id);
+    panic!("unresolved_mark of {:?} is 0. This is may be a bug of farm. Please report it to https://github.com/farm-fe/farm/issues", module_id);
   }
 
   let comments = SingleThreadedComments::from(comments);

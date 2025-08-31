@@ -18,7 +18,9 @@ impl JsPluginUpdateModulesHook {
       .expect("executor should be checked in js side");
 
     Self {
-      tsfn: ThreadSafeJsPluginHook::new::<PluginUpdateModulesHookParam, Vec<String>>(env, func),
+      tsfn: ThreadSafeJsPluginHook::new::<PluginUpdateModulesHookParam, Vec<(String, String)>>(
+        env, func,
+      ),
     }
   }
 
@@ -26,9 +28,9 @@ impl JsPluginUpdateModulesHook {
     &self,
     param: PluginUpdateModulesHookParam,
     ctx: Arc<CompilationContext>,
-  ) -> farmfe_core::error::Result<Option<Vec<String>>> {
+  ) -> farmfe_core::error::Result<Option<Vec<(String, String)>>> {
     self
       .tsfn
-      .call::<PluginUpdateModulesHookParam, Vec<String>>(param, ctx, None)
+      .call::<PluginUpdateModulesHookParam, Vec<(String, String)>>(param, ctx, None)
   }
 }

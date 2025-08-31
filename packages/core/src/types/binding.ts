@@ -5,6 +5,13 @@ export type ModuleType = LiteralUnion<
   'ts' | 'js' | 'jsx' | 'tsx' | 'css' | 'html' | 'asset'
 >;
 
+export type UpdateType = 'added' | 'updated' | 'removed';
+
+export type CompilerUpdateItem = {
+  path: string;
+  type: UpdateType;
+};
+
 export type ResolveKind =
   | { entry: string }
   | LiteralUnion<
@@ -92,6 +99,10 @@ export interface PluginTransformHookResult {
   sourceMap?: string | null;
   // ignore previous source map. if true, the source map chain will be cleared. and this result should return a new source map that combines all previous source map.
   ignorePreviousSourceMap?: boolean;
+}
+
+export interface PluginUpdateModulesHookParam {
+  paths: [string, UpdateType][];
 }
 
 type BrowserTargetsRecord = Partial<

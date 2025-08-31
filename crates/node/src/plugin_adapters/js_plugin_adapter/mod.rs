@@ -8,7 +8,7 @@ use farmfe_core::{
   plugin::{
     EmptyPluginHookParam, Plugin, PluginFinalizeResourcesHookParam, PluginHookContext,
     PluginLoadHookParam, PluginLoadHookResult, PluginResolveHookParam, PluginResolveHookResult,
-    PluginTransformHookParam, PluginTransformHookResult, UpdateType, DEFAULT_PRIORITY,
+    PluginTransformHookParam, PluginTransformHookResult, DEFAULT_PRIORITY,
   },
   resource::{resource_pot::ResourcePotType, Resource, ResourceOrigin, ResourceType},
   swc_ecma_parser::Syntax,
@@ -316,9 +316,9 @@ impl Plugin for JsPluginAdapter {
         .collect::<HashSet<_>>();
 
       if let Some(result) = update_result {
-        for item in result {
+        for (item, update_type) in result {
           if !updating_modules.contains(&item) {
-            params.paths.push((item.clone(), UpdateType::Updated));
+            params.paths.push((item.clone(), update_type.into()));
             updating_modules.insert(item);
           }
         }

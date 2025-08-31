@@ -465,25 +465,6 @@ export type EnvResult = Record<
   string
 >;
 
-export interface ModuleNode {
-  url: string;
-  /**
-   * Resolved file system path + query
-   */
-  id: string | null;
-  file: string | null;
-  type: 'js' | 'css';
-}
-
-export interface ModuleContext {
-  file: string;
-  timestamp: number;
-  type: string;
-  modules: ModuleNode[];
-  paths: string[];
-  read: (file: string) => string | Promise<string>;
-}
-
 export interface ConfigResult {
   config: UserConfig;
   configFilePath: string;

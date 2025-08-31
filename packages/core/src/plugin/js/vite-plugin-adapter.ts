@@ -65,7 +65,8 @@ import {
   PluginResolveHookParam,
   PluginResolveHookResult,
   PluginTransformHookParam,
-  PluginTransformHookResult
+  PluginTransformHookResult,
+  UpdateType
 } from '../../types/binding.js';
 import merge from '../../utils/merge.js';
 import { applyHtmlTransform } from './apply-html-transform.js';
@@ -610,7 +611,7 @@ export class VitePluginAdapter implements JsPlugin {
   private viteHandleHotUpdateToFarmUpdateModules(): JsPlugin['updateModules'] {
     return {
       executor: this.wrapExecutor(
-        async ({ paths }: { paths: [string, string][] }, ctx) => {
+        async ({ paths }: { paths: [string, UpdateType][] }, ctx) => {
           const hook = this.wrapRawPluginHook(
             'handleHotUpdate',
             this._rawPlugin.handleHotUpdate,

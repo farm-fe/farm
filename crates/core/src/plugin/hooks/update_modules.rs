@@ -25,11 +25,25 @@ pub struct UpdateResult {
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub enum UpdateType {
   // added a new module
+  #[serde(rename = "added")]
   Added,
   // updated a module
+  #[serde(rename = "updated")]
   Updated,
   // removed a module
+  #[serde(rename = "removed")]
   Removed,
+}
+
+impl From<String> for UpdateType {
+  fn from(s: String) -> Self {
+    match s.as_str() {
+      "added" => Self::Added,
+      "updated" => Self::Updated,
+      "removed" => Self::Removed,
+      _ => unreachable!("invalid update type"),
+    }
+  }
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]

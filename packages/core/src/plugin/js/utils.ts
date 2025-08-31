@@ -11,12 +11,8 @@ import type {
 
 import { VITE_ADAPTER_VIRTUAL_MODULE } from './constants.js';
 
-import { readFile } from 'node:fs/promises';
-import { ModuleContext, ModuleNode } from '../../config/types.js';
 import type { Config } from '../../types/binding.js';
-import { normalizePath } from '../../utils/share.js';
-import type { JsPlugin, JsResourcePot, Resource } from '../type.js';
-import { createModuleGraph } from './vite-server-adapter.js';
+import type { JsResourcePot, Resource } from '../type.js';
 
 export type WatchChangeEvents = 'create' | 'update' | 'delete';
 
@@ -432,44 +428,4 @@ export function transformFarmConfigToRollupNormalizedInputOptions(
     onwarn: noop,
     preserveModules: undefined
   } satisfies NormalizedInputOptions;
-}
-
-export function wrapPluginUpdateModules(plugin: JsPlugin): JsPlugin {
-  if (!plugin.updateModules?.executor) {
-    return plugin;
-  }
-  const originalExecutor = plugin.updateModules.executor;
-  const moduleGraph = createModuleGraph(plugin.name);
-
-  plugin.updateModules.executor = async ({ paths }, ctx) => {
-    moduleGraph.context = ctx;
-    // TODO order with sort by updateModules hooks priority
-    for (const [file, type] of paths) {
-      const mods = moduleGraph.getModulesByFile(
-        file
-      ) as unknown as ModuleNode[];
-
-      const filename = normalizePath(file);
-      const moduleContext: ModuleContext = {
-        file: filename,
-        timestamp: Date.now(),
-        type,
-        paths,
-        modules: (mods ?? []).map(
-          (m) =>
-            ({
-              ...m,
-              id: normalizePath(m.id),
-              file: normalizePath(m.file)
-            }) as ModuleNode
-        ),
-        read: function (): string | Promise<string> {
-          return readFile(file, 'utf-8');
-        }
-      };
-
-      return originalExecutor.call(plugin, moduleContext);
-    }
-  };
-  return plugin;
 }
