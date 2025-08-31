@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "description": "Farm is modern web building tool written in rust",
   "engines": {
-    "node": ">=18",
+    "node": ">=20",
     "pnpm": ">=9"
   },
     "scripts": {

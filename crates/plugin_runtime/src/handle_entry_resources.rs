@@ -93,6 +93,12 @@ pub fn handle_entry_resources(
     match context.config.output.format.as_single() {
       ModuleFormat::EsModule => format!("import \"./{}\";", params.runtime_resource_name),
       ModuleFormat::CommonJs => format!("require(\"./{}\");", params.runtime_resource_name),
+      _ => {
+        unimplemented!(
+          "module format {:?} is not supported",
+          context.config.output.format
+        )
+      }
     }
   } else {
     format!("(function(){{{}}}());", params.runtime_code.to_string())
@@ -189,6 +195,12 @@ fn create_load_dep_resources_code(
     .map(|rn| match context.config.output.format.as_single() {
       ModuleFormat::EsModule => format!("import \"./{rn}\";"),
       ModuleFormat::CommonJs => format!("require(\"./{rn}\");"),
+      _ => {
+        unimplemented!(
+          "module format {:?} is not supported",
+          context.config.output.format
+        )
+      }
     })
     .collect::<Vec<_>>()
     .join("")
@@ -239,12 +251,18 @@ fn create_export_info_code(entry_module: &Module, format: &ModuleFormat) -> Stri
 
         format!("{}{}", decls.join(""), cjs_exports.join(""))
       }
+      _ => {
+        unimplemented!("module format {:?} is not supported", format)
+      }
     }
   } else {
     let entry_code = "__farm_entry__.__esModule && __farm_entry__.default ? __farm_entry__.default : __farm_entry__";
     match format {
       ModuleFormat::EsModule => format!("export default {};", entry_code),
       ModuleFormat::CommonJs => format!("module.exports = {};", entry_code),
+      _ => {
+        unimplemented!("module format {:?} is not supported", format)
+      }
     }
   }
 }
