@@ -1,4 +1,30 @@
 # Changelog
+
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [Unreleased]
+
+## [0.1.6](https://github.com/farm-fe/farm/compare/create-farm-v0.1.5...create-farm-v0.1.6) - 2025-08-31
+
+### Added
+
+- Farm v2.0 dev ([#1835](https://github.com/farm-fe/farm/pull/1835))
+- *(create)* add support for tauri 2 ([#2001](https://github.com/farm-fe/farm/pull/2001))
+
+### Fixed
+
+- add `@vue/tsconfig` for vue3 template ([#2205](https://github.com/farm-fe/farm/pull/2205))
+- assign reference treeshake ([#2141](https://github.com/farm-fe/farm/pull/2141))
+- *(template)* Missing dev dependency react-refresh on TauriJS ([#2115](https://github.com/farm-fe/farm/pull/2115))
+- *(template)* fix tauri hardcoded lib names ([#2111](https://github.com/farm-fe/farm/pull/2111))
+
+### Other
+
+- update template versions ([#2110](https://github.com/farm-fe/farm/pull/2110))
+# Changelog
 All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),

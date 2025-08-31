@@ -1,4 +1,29 @@
 # Changelog
+
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [Unreleased]
+
+## [0.0.17](https://github.com/farm-fe/farm/compare/farmfe_compiler-v0.0.16...farmfe_compiler-v0.0.17) - 2025-08-31
+
+### Added
+
+- support add and remove event for HMR ([#2226](https://github.com/farm-fe/farm/pull/2226))
+- Farm v2.0 dev ([#1835](https://github.com/farm-fe/farm/pull/1835))
+- *(hmr)* support calling compiler.update to compile a full new module ([#2119](https://github.com/farm-fe/farm/pull/2119))
+
+### Fixed
+
+- tree shake issue when handling cross module top level variables … ([#2166](https://github.com/farm-fe/farm/pull/2166))
+- cjs node export order ([#2149](https://github.com/farm-fe/farm/pull/2149))
+- assign reference treeshake ([#2141](https://github.com/farm-fe/farm/pull/2141))
+- *(hmr)* panic when call compiler.update for a full new module multi… ([#2120](https://github.com/farm-fe/farm/pull/2120))
+- #2103 and resource pot id hash conflicts ([#2107](https://github.com/farm-fe/farm/pull/2107))
+- persistent cache panic when using addFileWatchFile with query #2067 ([#2068](https://github.com/farm-fe/farm/pull/2068))
+# Changelog
 All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),

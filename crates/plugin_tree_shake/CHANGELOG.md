@@ -1,4 +1,27 @@
 # Changelog
+
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [Unreleased]
+
+## [0.0.15](https://github.com/farm-fe/farm/compare/farmfe_plugin_tree_shake-v0.0.14...farmfe_plugin_tree_shake-v0.0.15) - 2025-08-31
+
+### Added
+
+- Farm v2.0 dev ([#1835](https://github.com/farm-fe/farm/pull/1835))
+
+### Fixed
+
+- tree shake issue when handling cross module top level variables … ([#2166](https://github.com/farm-fe/farm/pull/2166))
+- assign reference treeshake ([#2141](https://github.com/farm-fe/farm/pull/2141))
+
+### Other
+
+- support output.asciiOnly ([#2200](https://github.com/farm-fe/farm/pull/2200))
+# Changelog
 All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
