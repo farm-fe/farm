@@ -1,6 +1,6 @@
 {
   "name": "@farmfe/plugin-tools",
-  "version": "0.1.2-nightly-20250827162746",
+  "version": "2.0.0-nightly-20250827162746",
   "description": "farmfe plugin tools to help build farmfe plugin",
   "exports": {
     ".": "./bin/farm-plugin-tools.mjs"

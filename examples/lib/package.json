@@ -1,5 +1,5 @@
 {
-  "name": "lib",
+  "name": "@farmfe-examples/lib",
   "private": true,
   "version": "1.0.0",
   "type": "module",
