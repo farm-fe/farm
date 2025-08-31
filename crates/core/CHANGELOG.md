@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.0.0](https://github.com/farm-fe/farm/compare/farmfe_core-v2.0.0...farmfe_core-v3.0.0) - 2025-08-31
+
+### Fixed
+
+- ci issues ([#2230](https://github.com/farm-fe/farm/pull/2230))
+
 ## [0.7.3](https://github.com/farm-fe/farm/compare/farmfe_core-v0.7.2...farmfe_core-v0.7.3) - 2025-01-09
 
 ### Fixed

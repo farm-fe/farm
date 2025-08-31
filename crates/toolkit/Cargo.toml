@@ -1,6 +1,6 @@
 [package]
 name = "farmfe_toolkit"
-version = "2.0.0"
+version = "2.0.1"
 edition = "2021"
 authors = ["brightwu(吴明亮) <1521488775@qq.com>"]
 license = "MIT"
@@ -18,9 +18,9 @@ documentation = "https://docs.rs/farmfe_toolkit"
 # ]
 
 [dependencies]
-farmfe_core = { path = "../core", version = "2.0.0" }
+farmfe_core = { path = "../core", version = "3.0.0" }
 farmfe_utils = { path = "../utils", version = "2.0.0" }
-farmfe_testing_helpers = { path = "../testing_helpers", version = "2.0.0" }
+farmfe_testing_helpers = { path = "../testing_helpers", version = "2.0.1" }
 swc_ecma_parser = { version = "23.0.0" }
 swc_ecma_visit = { version = "15.0.0" }
 swc_ecma_codegen = { version = "17.0.0" }
