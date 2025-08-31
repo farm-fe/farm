@@ -395,4 +395,6 @@ if (!nativeBinding) {
 module.exports = nativeBinding
 module.exports.Compiler = nativeBinding.Compiler
 module.exports.JsCompiler = nativeBinding.JsCompiler
+module.exports.Resolver = nativeBinding.Resolver
+module.exports.JsResolver = nativeBinding.JsResolver
 module.exports.JsPluginTransformHtmlHookOrder = nativeBinding.JsPluginTransformHtmlHookOrder

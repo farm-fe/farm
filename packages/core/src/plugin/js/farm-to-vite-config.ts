@@ -78,7 +78,6 @@ export function farmUserConfigToViteConfig(config: UserConfig): ViteUserConfig {
       }
       // other options are not supported in farm
     },
-    // TODO make it configurable
     cacheDir: 'node_modules/.farm/cache',
     envDir: config.envDir,
     // @ts-ignore
@@ -101,6 +100,7 @@ function getTargetField(
     pluginName: string;
     keyName: string;
   },
+  logger: Logger,
   getter?: (target: any, key: string) => any
 ): any {
   if (typeof key !== 'string') {
@@ -119,7 +119,8 @@ function getTargetField(
     }
   }
 
-  throw throwIncompatibleError(
+  throwIncompatibleError(
+    logger,
     contextInfo.pluginName,
     contextInfo.keyName,
     allowedKeys,
@@ -135,10 +136,16 @@ function createProxyObj(
 ) {
   return new Proxy(obj || {}, {
     get(target, key) {
-      return getTargetField(target, key, allowedKeys, {
-        pluginName,
-        keyName
-      });
+      return getTargetField(
+        target,
+        key,
+        allowedKeys,
+        {
+          pluginName,
+          keyName
+        },
+        logger
+      );
     }
   });
 }
@@ -235,6 +242,7 @@ export function proxyViteConfig(
         'cacheDir',
         'envDir',
         'assetsInclude',
+        'createResolver',
         // these fields are always undefined in farm
         // they are only used for compatibility
         'legacy',
@@ -259,6 +267,7 @@ export function proxyViteConfig(
           pluginName,
           keyName: 'viteConfig'
         },
+        logger,
         (target, key) => {
           const keyMapper: Record<
             string,

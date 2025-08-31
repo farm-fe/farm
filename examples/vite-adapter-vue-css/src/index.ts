@@ -2,6 +2,8 @@ import { createApp } from "vue";
 import { createRouter, createWebHistory } from "vue-router";
 import App from "./app.vue";
 
+import './index.css';
+
 const router = createRouter({
   routes: [
     {

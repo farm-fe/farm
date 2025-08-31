@@ -17,6 +17,7 @@ farmfe_compiler = { path = "../compiler" }
 farmfe_core = { path = "../core" }
 farmfe_toolkit = { path = "../toolkit" }
 farmfe_toolkit_plugin_types = { path = "../toolkit_plugin_types" }
+farmfe_plugin_resolve = { path = "../plugin_resolve" }
 regex = "1"
 libloading = "0.8.6"
 eframe = { version = "0.24.1", default-features = false, features = [

@@ -27,6 +27,7 @@ jobs:
         if: github.ref == 'refs/heads/main'
   call-rust-build:
     uses: ./.github/workflows/rust-build.yaml
+    needs: [check-changeset-status]
     if: needs.check-changeset-status.outputs.SKIP_RUST_BUILD != 'true'
 
   release:

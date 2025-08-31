@@ -24,6 +24,12 @@ export declare class Compiler {
 }
 export type JsCompiler = Compiler
 
+export declare class Resolver {
+  constructor(config: object)
+  resolve(source: string, baseDir: string, dynamicExtensions?: Array<string> | undefined | null): string
+}
+export type JsResolver = Resolver
+
 export interface JsModuleHookFilters {
   moduleTypes?: Array<string>
   resolvedPaths?: Array<string>
