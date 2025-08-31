@@ -291,6 +291,44 @@ export const createTransformSchema = (name: string) => {
   });
 };
 
+export const createProcessModuleSchema = (name: string) => {
+  return z.object({
+    filters: transformFilterSchema
+      .refine(
+        (data) => {
+          return data.moduleTypes.length > 0 || data.resolvedPaths.length > 0;
+        },
+        {
+          message: `\n 'processModule' hook of plugin '${name}' must have at least one filter(like moduleIds or moduleTypes)`
+        }
+      )
+      .default({
+        moduleTypes: [],
+        resolvedPaths: []
+      }),
+    executor: z.function()
+  });
+};
+
+export const createFreezeModuleSchema = (name: string) => {
+  return z.object({
+    filters: transformFilterSchema
+      .refine(
+        (data) => {
+          return data.moduleTypes.length > 0 || data.resolvedPaths.length > 0;
+        },
+        {
+          message: `\n 'freezeModule' hook of plugin '${name}' must have at least one filter(like moduleIds or moduleTypes)`
+        }
+      )
+      .default({
+        moduleTypes: [],
+        resolvedPaths: []
+      }),
+    executor: z.function()
+  });
+};
+
 export const createRenderStartSchema = (name: string) => {
   return z
     .object({

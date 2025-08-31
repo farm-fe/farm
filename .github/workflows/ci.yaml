@@ -140,8 +140,6 @@ jobs:
         run: pnpm --filter @farmfe/cli run build
       - name: Build Runtime
         run: pnpm --filter @farmfe/runtime run build
-      - name: Build dts plugin
-        run: pnpm --filter @farmfe/js-plugin-dts run build
       - name: Type Check With Tsc
         run: pnpm run --filter "@farmfe/*" type-check
       - name: Changesets Check

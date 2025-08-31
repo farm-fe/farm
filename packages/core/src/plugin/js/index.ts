@@ -17,10 +17,12 @@ import {
   createConfigureServerSchema,
   createFinalizeResourcesSchema,
   createFinishSchema,
+  createFreezeModuleSchema,
   createLoadSchema,
   createNameSchema,
   createPluginCacheLoadedSchema,
   createPrioritySchema,
+  createProcessModuleSchema,
   createRenderResourcePotSchema,
   createRenderStartSchema,
   createResolveSchema,
@@ -127,6 +129,8 @@ schemaRegistry
   .register('resolve', createResolveSchema)
   .register('load', createLoadSchema)
   .register('transform', createTransformSchema)
+  .register('processModule', createProcessModuleSchema)
+  .register('freezeModule', createFreezeModuleSchema)
   .register('buildEnd', createBuildEndSchema)
   .register('renderStart', createRenderStartSchema)
   .register('processRenderedResourcePot', createRenderResourcePotSchema)
@@ -142,7 +146,6 @@ schemaRegistry
 
 export function convertPlugin(plugin: JsPlugin) {
   try {
-    // TODO process module hook and freeze module hook schema
     const pluginSchema = schemaRegistry.createPluginSchema(plugin?.name);
     return pluginSchema.parse(plugin);
   } catch (err) {

@@ -236,6 +236,7 @@ pub fn convert_code_to_metadata(
       script_module_meta_data.top_level_mark = top_level_mark.as_u32();
 
       context.meta.set_module_source_map(module_id, source_map);
+      context.meta.set_globals(module_id, globals);
 
       script_module_meta_data.ast = ast;
       script_module_meta_data.comments = comments.into();
