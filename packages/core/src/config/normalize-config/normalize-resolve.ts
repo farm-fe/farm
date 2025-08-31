@@ -76,5 +76,14 @@ export function normalizeResolveAlias(
       logger.warn('Alias configuration must be an object or an array');
       result = [];
   }
+
+  // sort the alias by length, so that the longest alias will be matched first
+  result.sort((a, b) => {
+    if (typeof a.find === 'string' && typeof b.find === 'string') {
+      return b.find.length - a.find.length;
+    }
+    return 0;
+  });
+
   return result;
 }

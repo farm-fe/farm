@@ -19,6 +19,7 @@ import {
   formatTransformModuleType,
   getContentValue,
   isStartsWithSlash,
+  logCompatibilityWarning,
   normalizeAdapterVirtualModule,
   removeQuery,
   revertNormalizePath,
@@ -33,11 +34,13 @@ import type {
   HmrContext,
   ModuleNode,
   Plugin,
+  ResolveOptions,
   ViteDevServer,
   UserConfig as ViteUserConfig
 } from 'vite';
 
 import path from 'path';
+import deepmerge from 'deepmerge';
 import fse from 'fs-extra';
 import { readFile } from 'fs/promises';
 import type {
@@ -46,6 +49,7 @@ import type {
   RenderChunkHook,
   ResolveIdResult
 } from 'rollup';
+import { Resolver } from '../../../binding/index.js';
 import {
   Compiler,
   VIRTUAL_FARM_DYNAMIC_IMPORT_SUFFIX
@@ -207,15 +211,17 @@ export class VitePluginAdapter implements JsPlugin {
       'resolveDynamicImport',
       'resolveFileUrl',
       'resolveImportMeta',
-      'shouldTransformCachedModule',
+      // 'shouldTransformCachedModule', // Note this hook does nothing in Farm, so we won't check it nor execute it
       'banner',
       'footer'
     ];
 
     for (const hookName of unsupportedHooks) {
       if (this._rawPlugin[hookName as keyof Plugin]) {
-        throw new Error(
-          `Vite plugin ${this.name} is not compatible with Farm for now. Because it uses hook "${hookName}" which is not supported by Farm.`
+        logCompatibilityWarning(
+          this._logger,
+          this.name,
+          `it uses hook "${hookName}" which is not supported by Farm.`
         );
       }
     }
@@ -257,8 +263,40 @@ export class VitePluginAdapter implements JsPlugin {
 
   async configResolved(config: ResolvedUserConfig) {
     this._farmConfig = config;
+    // Farm is not fully compatible with vite, some resolved configs are not supported and will be ignore.
+    const resolvedViteConfig = farmUserConfigToViteConfig(config);
+
+    // @ts-ignore ignore readonly check
+    resolvedViteConfig.createResolver = (options: ResolveOptions) => {
+      const farmCompilation = deepmerge({}, this._farmConfig.compilation);
+      farmCompilation.resolve ??= {};
+      const viteResolveObj = {
+        mainFields: options.mainFields,
+        extensions: options.extensions,
+        conditions: options.conditions,
+        dedupe: options.dedupe,
+        symlinks:
+          typeof options.preserveSymlinks === 'boolean'
+            ? !options.preserveSymlinks
+            : undefined
+      };
+
+      for (const [key, value] of Object.entries(viteResolveObj)) {
+        if (value !== undefined) {
+          (farmCompilation.resolve as any)[key] = value;
+        }
+      }
+
+      const resolver = new Resolver(farmCompilation);
+
+      return (id: string, importer?: string) => {
+        const baseDir = importer ? path.dirname(importer) : process.cwd();
+        return resolver.resolve(id, baseDir);
+      };
+    };
+
     this._viteConfig = proxyViteConfig(
-      farmUserConfigToViteConfig(config),
+      resolvedViteConfig,
       this.name,
       this._logger
     );
@@ -284,7 +322,8 @@ export class VitePluginAdapter implements JsPlugin {
     this._viteDevServer = createViteDevServerAdapter(
       this.name,
       this._viteConfig,
-      server
+      server,
+      this._logger
     );
 
     if (hook) {
@@ -424,7 +463,10 @@ export class VitePluginAdapter implements JsPlugin {
             hookContext
           );
           const absImporterPath = normalizePath(
-            path.resolve(process.cwd(), params.importer ?? '')
+            path.resolve(
+              this._farmConfig?.root ?? process.cwd(),
+              params.importer ?? ''
+            )
           );
           let resolveIdResult: ResolveIdResult = await hook?.(
             decodeStr(params.source),
@@ -625,7 +667,7 @@ export class VitePluginAdapter implements JsPlugin {
           } else if (this._moduleGraph) {
             moduleGraph = this._moduleGraph;
           } else {
-            moduleGraph = new ViteModuleGraphAdapter(this.name);
+            moduleGraph = new ViteModuleGraphAdapter(this.name, this._logger);
             this._moduleGraph = moduleGraph;
           }
 

@@ -1,188 +1,180 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
-
-import { compile } from '@tailwindcss/node';
+/**
+ * MIT License Copied and modified by BrightWu
+ * Copyright Farm and All Contributors
+ * Copyright (c) Tailwind Labs, Inc.
+ */
+import { JsPlugin, ResolvedUserConfig, Resolver, logger } from '@farmfe/core';
+import {
+  Features,
+  Instrumentation,
+  compile,
+  env,
+  optimize,
+  toSourceMap
+} from '@tailwindcss/node';
+import { clearRequireCache } from '@tailwindcss/node/require-cache';
 import { Scanner } from '@tailwindcss/oxide';
-import { Features, transform } from 'lightningcss';
-import postcss from 'postcss';
-import postcssImport from 'postcss-import';
 
-import type {
-  CompilationContext,
-  JsPlugin,
-  Server,
-  UserConfig
-} from '@farmfe/core';
+const DEBUG = env.DEBUG;
+const SPECIAL_QUERY_RE = /[?&](?:worker|sharedworker|raw|url)\b/;
+const COMMON_JS_PROXY_RE = /\?commonjs-proxy/;
+const INLINE_STYLE_ID_RE = /[?&]index\=\d+\.css$/;
 
-// like https://github.com/tailwindlabs/tailwindcss/blob/next/packages/%40tailwindcss-vite/src/index.ts
-export default function tailwindcss(): JsPlugin[] {
-  let servers: Server[] = [];
-  let config: UserConfig | null = null;
+export interface Options {
+  filters: {
+    resolvedPaths?: string[];
+    moduleTypes?: string[];
+  };
+}
 
-  let isSSR = false;
+export default function tailwindcss(options: Options): JsPlugin[] {
+  let config: ResolvedUserConfig | null = null;
   let minify = false;
 
-  let moduleGraphCandidates = new Set<string>();
-  let moduleGraphScanner = new Scanner({});
+  let roots: DefaultMap<string, Root> = new DefaultMap((id) => {
+    const compilation = config?.compilation ?? {};
 
-  let roots: DefaultMap<string, Root> = new DefaultMap(
-    (id) => new Root(id, () => moduleGraphCandidates, config!.root!)
-  );
-
-  function scanFile(
-    _id: string,
-    content: string,
-    extension: string,
-    isSSR: boolean,
-    ctx: CompilationContext | undefined
-  ) {
-    let updated = false;
-    for (let candidate of moduleGraphScanner.scanFiles([
-      { content, extension }
-    ])) {
-      updated = true;
-      moduleGraphCandidates.add(candidate);
-    }
-
-    if (updated) {
-      invalidateAllRoots(isSSR, ctx);
-    }
-  }
-
-  function invalidateAllRoots(
-    isSSR: boolean,
-    ctx: CompilationContext | undefined
-  ) {
-    for (let server of servers) {
-      for (let id of roots.keys()) {
-        let isAlive = server.getCompiler()?.hasModule(id);
-        if (!isAlive) {
-          // Note: Removing this during SSR is not safe and will produce
-          // inconsistent results based on the timing of the removal and
-          // the order / timing of transforms.
-          if (!isSSR) {
-            // It is safe to remove the item here since we're iterating on a copy
-            // of the keys.
-            roots.delete(id);
-          }
-          continue;
-        }
-
-        roots.get(id).requiresRebuild = false;
-        server.hmrEngine?.hmrUpdate({ path: id, type: 'updated' }, true);
-        server.getCompiler()?.invalidateModule(id);
+    const cssResolver = new Resolver({
+      ...compilation,
+      resolve: {
+        ...(compilation.resolve ?? {}),
+        extensions: ['.css'],
+        mainFields: ['style'],
+        conditions: ['style', 'development|production']
       }
+    });
+    function customCssResolver(id: string, base: string) {
+      return Promise.resolve(cssResolver.resolve(id, base));
     }
-  }
 
-  async function regenerateOptimizedCss(
-    root: Root,
-    addWatchFile: (file: string) => void
-  ) {
-    let content = root.lastContent;
-    let generated = await root.generate(content, addWatchFile);
-    if (generated === false) {
-      return;
+    const jsResolver = new Resolver(config?.compilation ?? {});
+    function customJsResolver(id: string, base: string) {
+      return Promise.resolve(jsResolver.resolve(id, base));
     }
-    return optimizeCss(generated, { minify });
-  }
+    return new Root(
+      id,
+      config?.root || process.cwd(),
+      // Currently, Vite only supports CSS source maps in development and they
+      // are off by default. Check to see if we need them or not.
+      config?.compilation?.sourcemap
+        ? Boolean(config.compilation.sourcemap)
+        : false,
+      customCssResolver,
+      customJsResolver
+    );
+  });
+
+  // Tailwind scanner
+  const scanner = new Scanner({});
+  // List of all candidates that were being returned by the root scanner during
+  // the lifetime of the root.
+  const candidatesMap: Map<string, Set<string>> = new Map();
 
   return [
     {
-      name: 'farm:tailwindcss:scan',
-      priority: 100,
-      configResolved(_config) {
-        config = _config;
-        minify = !!config.compilation?.minify;
-      },
-      configureServer(server) {
-        servers.push(server);
-      },
-      transformHtml: {
-        executor(param, ctx) {
-          if (param.htmlResource?.name) {
-            scanFile(
-              param.htmlResource.name,
-              bytes2String(param.htmlResource.bytes),
-              'html',
-              isSSR,
-              ctx
-            );
-          }
-          return undefined;
-        }
-      },
-      transform: {
-        filters: {
-          resolvedPaths: ['.+']
-        },
-        executor(param, context) {
-          let extension = getExtension(param.resolvedPath);
-          if (isPotentialCssRootFile(param.resolvedPath)) return;
-          scanFile(
-            param.resolvedPath,
-            param.content,
-            extension,
-            isSSR,
-            context
+      // Step 1: Scan source files for candidates
+      name: '@farmfe/js-plugin-tailwindcss:scan',
+      priority: 101,
+
+      async config(config) {
+        config.compilation ??= {};
+
+        if (config.compilation.persistentCache !== false) {
+          config.compilation.persistentCache = false;
+
+          logger.warn(
+            'persistentCache is disabled cause tailwindcss plugin is not compatible with persistentCache for now'
           );
-          return undefined;
+        }
+
+        return config;
+      },
+
+      async configResolved(_config) {
+        config = _config;
+        minify = config.compilation?.minify !== false;
+      },
+
+      transform: {
+        filters: options?.filters ?? { resolvedPaths: ['!node_modules/'] },
+        async executor(param) {
+          for (let candidate of scanner.scanFiles([
+            {
+              content: param.content,
+              extension: getExtension(param.resolvedPath)
+            }
+          ])) {
+            if (!candidatesMap.has(param.resolvedPath)) {
+              candidatesMap.set(param.resolvedPath, new Set());
+            }
+
+            candidatesMap.get(param.resolvedPath)?.add(candidate);
+          }
+
+          return {
+            content: param.content
+          };
         }
       }
     },
 
     {
-      name: 'farm:tailwindcss:post',
-      priority: 98,
-      transform: {
-        filters: {
-          resolvedPaths: ['.+']
-        },
+      // Step 2 (serve mode): Generate CSS
+      name: '@farmfe/js-plugin-tailwindcss:generate:generate',
+      priority: 101,
+
+      freezeModule: {
+        filters: { resolvedPaths: ['\\.css'] },
         async executor(param, context) {
-          if (!isPotentialCssRootFile(param.resolvedPath)) return;
-          let root = roots.get(param.resolvedPath);
-          // We do a first pass to generate valid CSS for the downstream plugins.
-          // However, since not all candidates are guaranteed to be extracted by
-          // this time, we have to re-run a transform for the root later.
-          let generated = await root.generate(param.content, (file) => {
-            return context?.addWatchFile(param.resolvedPath, file);
-          });
+          if (!isPotentialCssRootFile(param.moduleId)) return;
 
-          if (!generated) {
-            roots.delete(param.resolvedPath);
-            return undefined;
+          const I = new Instrumentation();
+          DEBUG && I.start('[@farmfe/js-plugin-tailwindcss] Generate CSS');
+
+          let root = roots.get(param.moduleId);
+
+          // add watch file for scanned files
+          for (const resolvedPath of candidatesMap.keys()) {
+            context?.addWatchFile(param.moduleId, resolvedPath);
           }
 
-          return { content: generated, moduleType: param.moduleType };
-        }
-      },
-      renderStart: {
-        async executor() {
-          for (let [id, root] of roots.entries()) {
-            let generated = await regenerateOptimizedCss(
-              root,
-              // During the renderStart phase, we can not add watch files since
-              // those would not be causing a refresh of the right CSS file. This
-              // should not be an issue since we did already process the CSS file
-              // before and the dependencies should not be changed (only the
-              // candidate list might have)
-              () => {}
-            );
-            if (!generated) {
-              roots.delete(id);
-              continue;
-            }
-
-            // These plugins have side effects which, during build, results in CSS
-            // being written to the output dir. We need to run them here to ensure
-            // the CSS is written before the bundle is generated.
-            // await transformWithPlugins(this, id, generated);
+          let result = await root.generate(
+            param.content,
+            (file) => context?.addWatchFile?.(param.moduleId, file),
+            I,
+            new Set([...candidatesMap.values()].flatMap((v) => [...v]))
+          );
+          if (!result) {
+            roots.delete(param.moduleId);
+            return {
+              content: param.content
+            };
           }
-          return undefined;
+          DEBUG && I.end('[@farmfe/js-plugin-tailwindcss] Generate CSS');
+
+          if (config?.mode !== 'development') {
+            DEBUG && I.start('[@farmfe/js-plugin-tailwindcss] Optimize CSS');
+            result = optimize(result.code, {
+              minify,
+              map: result.map
+            });
+            DEBUG && I.end('[@farmfe/js-plugin-tailwindcss] Optimize CSS');
+          }
+
+          return typeof result === 'string'
+            ? {
+                content: result
+              }
+            : {
+                content: result.code,
+                sourceMap: result.map
+              };
         }
       }
     }
-  ];
+  ] satisfies JsPlugin[];
 }
 
 function getExtension(id: string) {
@@ -191,48 +183,16 @@ function getExtension(id: string) {
 }
 
 function isPotentialCssRootFile(id: string) {
+  if (id.includes('/.vite/')) return;
   let extension = getExtension(id);
-  let isCssFile = extension === 'css';
+  let isCssFile =
+    (extension === 'css' ||
+      id.includes('&lang.css') ||
+      id.match(INLINE_STYLE_ID_RE)) &&
+    // Don't intercept special static asset resources
+    !SPECIAL_QUERY_RE.test(id) &&
+    !COMMON_JS_PROXY_RE.test(id);
   return isCssFile;
-}
-
-function isCssRootFile(content: string) {
-  return (
-    content.includes('@tailwind') ||
-    content.includes('@config') ||
-    content.includes('@plugin') ||
-    content.includes('@apply') ||
-    content.includes('@theme') ||
-    content.includes('@variant') ||
-    content.includes('@utility')
-  );
-}
-
-function optimizeCss(
-  input: string,
-  {
-    file = 'input.css',
-    minify = false
-  }: { file?: string; minify?: boolean } = {}
-) {
-  return transform({
-    filename: file,
-    code: Buffer.from(input),
-    minify,
-    sourceMap: false,
-    drafts: {
-      customMedia: true
-    },
-    nonStandard: {
-      deepSelectorCombinator: true
-    },
-    include: Features.Nesting,
-    exclude: Features.LogicalProperties,
-    targets: {
-      safari: (16 << 16) | (4 << 8)
-    },
-    errorRecovery: true
-  }).code.toString();
 }
 
 function idToPath(id: string) {
@@ -261,131 +221,143 @@ class DefaultMap<K, V> extends Map<K, V> {
 }
 
 class Root {
-  // Content is only used in serve mode where we need to capture the initial
-  // contents of the root file so that we can restore it during the
-  // `renderStart` hook.
-  public lastContent = '';
-
   // The lazily-initialized Tailwind compiler components. These are persisted
   // throughout rebuilds but will be re-initialized if the rebuild strategy is
   // set to `full`.
   private compiler?: Awaited<ReturnType<typeof compile>>;
 
-  public requiresRebuild = true;
-
-  // This is the compiler-specific scanner instance that is used only to scan
-  // files for custom @source paths. All other modules we scan for candidates
-  // will use the shared moduleGraphScanner instance.
-  private scanner?: Scanner;
-
-  // List of all candidates that were being returned by the root scanner during
-  // the lifetime of the root.
-  private candidates: Set<string> = new Set<string>();
-
-  // List of all file dependencies that were captured while generating the root.
-  // These are retained so we can clear the require cache when we rebuild the
-  // root.
-  private dependencies = new Set<string>();
+  // List of all build dependencies (e.g. imported  stylesheets or plugins) and
+  // their last modification timestamp. If no mtime can be found, we need to
+  // assume the file has always changed.
+  private buildDependencies = new Map<string, number | null>();
 
   constructor(
     private id: string,
-    private getSharedCandidates: () => Set<string>,
-    private base: string
+    private base: string,
+
+    private enableSourceMaps: boolean,
+    private customCssResolver: (
+      id: string,
+      base: string
+    ) => Promise<string | false | undefined>,
+    private customJsResolver: (
+      id: string,
+      base: string
+    ) => Promise<string | false | undefined>
   ) {}
 
   // Generate the CSS for the root file. This can return false if the file is
   // not considered a Tailwind root. When this happened, the root can be GCed.
   public async generate(
     content: string,
-    addWatchFile: (file: string) => void
-  ): Promise<string | false> {
-    this.lastContent = content;
-
+    _addWatchFile: (file: string) => void,
+    I: Instrumentation,
+    candidates: Set<string>
+  ): Promise<
+    | {
+        code: string;
+        map: string | undefined;
+      }
+    | false
+  > {
     let inputPath = idToPath(this.id);
+
+    function addWatchFile(file: string) {
+      // Don't watch the input file since it's already a dependency anc causes
+      // issues with some setups (e.g. Qwik).
+      if (file === inputPath) {
+        return;
+      }
+
+      // Scanning `.svg` file containing a `#` or `?` in the path will
+      // crash Vite. We work around this for now by ignoring updates to them.
+      //
+      // https://github.com/tailwindlabs/tailwindcss/issues/16877
+      if (/[\#\?].*\.svg$/.test(file)) {
+        return;
+      }
+      _addWatchFile(file);
+    }
+
+    let requiresBuildPromise = this.requiresBuild();
     let inputBase = path.dirname(path.resolve(inputPath));
 
-    if (!this.compiler || !this.scanner || this.requiresRebuild) {
-      this.dependencies = new Set([idToPath(inputPath)]);
+    if (!this.compiler || (await requiresBuildPromise)) {
+      clearRequireCache(Array.from(this.buildDependencies.keys()));
+      this.buildDependencies.clear();
 
-      let postcssCompiled = await postcss([
-        postcssImport({
-          load: (path) => {
-            this.dependencies.add(path);
-            addWatchFile(path);
-            return fs.readFile(path, 'utf8');
-          }
-        })
-        // fixRelativePathsPlugin()
-      ]).process(content, {
-        from: inputPath,
-        to: inputPath
-      });
-      let css = postcssCompiled.css;
+      this.addBuildDependency(idToPath(inputPath));
 
-      // This is done inside the Root#generate() method so that we can later use
-      // information from the Tailwind compiler to determine if the file is a
-      // CSS root (necessary because we will probably inline the `@import`
-      // resolution at some point).
-      if (!isCssRootFile(css)) {
-        return false;
-      }
-
-      this.compiler = await compile(css, {
+      DEBUG && I.start('Setup compiler');
+      let addBuildDependenciesPromises: Promise<void>[] = [];
+      this.compiler = await compile(content, {
+        from: this.enableSourceMaps ? this.id : undefined,
         base: inputBase,
+        shouldRewriteUrls: true,
         onDependency: (path) => {
           addWatchFile(path);
-          this.dependencies.add(path);
-        }
+          addBuildDependenciesPromises.push(this.addBuildDependency(path));
+        },
+
+        customCssResolver: this.customCssResolver,
+        customJsResolver: this.customJsResolver
       });
-
-      this.scanner = new Scanner({
-        sources: this.compiler.globs.map(({ base: origin, pattern }) => ({
-          // Ensure the glob is relative to the input CSS file or the config
-          // file where it is specified.
-          base: origin
-            ? path.dirname(path.resolve(inputBase, origin))
-            : inputBase,
-          pattern
-        }))
-      });
-    }
-
-    // This should not be here, but right now the Vite plugin is setup where we
-    // setup a new scanner and compiler every time we request the CSS file
-    // (regardless whether it actually changed or not).
-    for (let candidate of this.scanner.scan()) {
-      this.candidates.add(candidate);
-    }
-
-    // Watch individual files found via custom `@source` paths
-    for (let file of this.scanner.files) {
-      addWatchFile(file);
-    }
-
-    // Watch globs found via custom `@source` paths
-    for (let glob of this.scanner.globs) {
-      if (glob.pattern[0] === '!') continue;
-
-      let relative = path.relative(this.base, glob.base);
-      if (relative[0] !== '.') {
-        relative = './' + relative;
+      await Promise.all(addBuildDependenciesPromises);
+      DEBUG && I.end('Setup compiler');
+    } else {
+      for (let buildDependency of this.buildDependencies.keys()) {
+        addWatchFile(buildDependency);
       }
-      // Ensure relative is a posix style path since we will merge it with the
-      // glob.
-      // relative = normalizePath(relative);
-
-      addWatchFile(path.posix.join(relative, glob.pattern));
     }
 
-    this.requiresRebuild = true;
+    if (
+      !(
+        this.compiler.features &
+        (Features.AtApply |
+          Features.JsPluginCompat |
+          Features.ThemeFunction |
+          Features.Utilities)
+      )
+    ) {
+      return false;
+    }
 
-    return this.compiler.build([
-      ...this.getSharedCandidates(),
-      ...this.candidates
-    ]);
+    DEBUG && I.start('Build CSS');
+    let code = this.compiler.build([...candidates]);
+    DEBUG && I.end('Build CSS');
+
+    DEBUG && I.start('Build Source Map');
+    let map = this.enableSourceMaps
+      ? toSourceMap(this.compiler.buildSourceMap()).raw
+      : undefined;
+    DEBUG && I.end('Build Source Map');
+
+    return {
+      code,
+      map
+    };
   }
-}
 
-function bytes2String(bytes: number[]): string {
-  return new TextDecoder().decode(new Uint8Array(bytes));
+  private async addBuildDependency(path: string) {
+    let mtime: number | null = null;
+    try {
+      mtime = (await fs.stat(path)).mtimeMs;
+    } catch {}
+    this.buildDependencies.set(path, mtime);
+  }
+
+  private async requiresBuild(): Promise<boolean> {
+    for (let [path, mtime] of this.buildDependencies) {
+      if (mtime === null) return true;
+      try {
+        let stat = await fs.stat(path);
+        if (stat.mtimeMs > mtime) {
+          return true;
+        }
+      } catch {
+        return true;
+      }
+    }
+    return false;
+  }
 }

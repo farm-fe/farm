@@ -21,4 +21,5 @@ if (process.stderr._handle != null) {
 
 const Compiler = binding.Compiler;
 const JsFileWatcher = binding.JsFileWatcher;
-export { Compiler, bindingPath, JsFileWatcher };
+const Resolver = binding.Resolver;
+export { Compiler, bindingPath, JsFileWatcher, Resolver };

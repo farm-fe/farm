@@ -1,5 +1,7 @@
 import { defineConfig } from '@farmfe/core';
-import Vue from '@vitejs/plugin-vue';
+import vue from '@vitejs/plugin-vue';
+import vueJsx from '@vitejs/plugin-vue-jsx';
+import tailwindcss from '@tailwindcss/vite';
 
 export default defineConfig(({ mode }) => {
   return {
@@ -38,9 +40,11 @@ export default defineConfig(({ mode }) => {
     },
     vitePlugins: [
       () => ({
-        vitePlugin: Vue(),
+        vitePlugin: vue(),
         filters: ['\\.vue', '\\\\0.+']
-      })
+      }),
+      vueJsx(),
+      tailwindcss()
     ],
     plugins: []
   };

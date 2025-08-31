@@ -12,6 +12,7 @@ import type {
 import { VITE_ADAPTER_VIRTUAL_MODULE } from './constants.js';
 
 import type { Config } from '../../types/binding.js';
+import { Logger } from '../../utils/logger.js';
 import type { JsResourcePot, Resource } from '../type.js';
 
 export type WatchChangeEvents = 'create' | 'update' | 'delete';
@@ -221,15 +222,18 @@ export function deleteUndefinedPropertyDeeply(obj: any) {
 }
 
 export function throwIncompatibleError(
+  logger: Logger,
   pluginName: string,
   readingObject: string,
   allowedKeys: string[],
   key: string | number | symbol
-): never {
-  throw new Error(
-    `Vite plugin '${pluginName}' is not compatible with Farm for now. Because it uses ${readingObject}['${String(
+): void {
+  logCompatibilityWarning(
+    logger,
+    pluginName,
+    `it uses "${readingObject}['${String(
       key
-    )}'] which is not supported by Farm. Current supported keys are: ${allowedKeys.join(
+    )}']" which is not supported by Farm. Current supported keys are: ${allowedKeys.join(
       ','
     )}`
   );
@@ -428,4 +432,14 @@ export function transformFarmConfigToRollupNormalizedInputOptions(
     onwarn: noop,
     preserveModules: undefined
   } satisfies NormalizedInputOptions;
+}
+
+export function logCompatibilityWarning(
+  logger: Logger,
+  pluginName: string,
+  reason: string
+) {
+  logger.warn(
+    `Vite plugin "${pluginName}" may not be compatible with Farm for now. Because ${reason}`
+  );
 }

@@ -1893,6 +1893,7 @@ dependencies = [
  "eframe",
  "farmfe_compiler",
  "farmfe_core",
+ "farmfe_plugin_resolve",
  "farmfe_toolkit",
  "farmfe_toolkit_plugin_types",
  "libloading 0.8.6",
