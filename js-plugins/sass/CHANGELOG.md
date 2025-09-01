@@ -1,5 +1,17 @@
 # @farmfe/js-plugin-sass
 
+## 3.0.0-beta.0
+
+### Major Changes
+
+- f5ce9ea: Release Farm v2.0.0
+
+### Patch Changes
+
+- Updated dependencies [5a9ff6b]
+- Updated dependencies [f5ce9ea]
+  - @farmfe/core@2.0.0-beta.0
+
 ## 3.0.0-nightly-20250827162746
 
 ### Patch Changes

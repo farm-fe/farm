@@ -1,5 +1,11 @@
 # @farmfe/js-plugin-dts
 
+## 2.0.0-beta.0
+
+### Major Changes
+
+- f5ce9ea: Release Farm v2.0.0
+
 ## 0.6.6-nightly-20250827162746
 
 ### Patch Changes

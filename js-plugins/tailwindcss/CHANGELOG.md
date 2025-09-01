@@ -1,5 +1,17 @@
 # @farmfe/js-plugin-tailwindcss
 
+## 2.0.0-beta.0
+
+### Major Changes
+
+- f5ce9ea: Release Farm v2.0.0
+
+### Patch Changes
+
+- Updated dependencies [5a9ff6b]
+- Updated dependencies [f5ce9ea]
+  - @farmfe/core@2.0.0-beta.0
+
 ## 0.0.12-nightly-20250827162746
 
 ### Patch Changes
@@ -36,6 +48,7 @@
 - Updated dependencies [b8f7fc5]
 - Updated dependencies [ad09476]
   - @farmfe/core@2.0.0-nightly-20250410022118
+
 ## 0.0.20
 
 ### Patch Changes

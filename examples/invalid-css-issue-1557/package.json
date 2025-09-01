@@ -19,7 +19,7 @@
   "devDependencies": {
     "@farmfe/cli": "workspace:*",
     "@farmfe/core": "workspace:*",
-    "@farmfe/plugin-react": "2.0.0-nightly-20250827162746",
+    "@farmfe/plugin-react": "2.0.0-beta.0",
     "@types/react": "18",
     "@types/react-dom": "18",
     "core-js": "^3.36.1",

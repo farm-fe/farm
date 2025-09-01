@@ -1,5 +1,11 @@
 # @farmfe/js-plugin-record-viewer
 
+## 2.0.0-beta.0
+
+### Major Changes
+
+- f5ce9ea: Release Farm v2.0.0
+
 ## 1.1.5-nightly-20250827162746
 
 ### Patch Changes
