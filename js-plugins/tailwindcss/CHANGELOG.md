@@ -1,5 +1,12 @@
 # @farmfe/js-plugin-tailwindcss
 
+## 2.0.0-beta.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @farmfe/core@2.0.0-beta.1
+
 ## 2.0.0-beta.0
 
 ### Major Changes
