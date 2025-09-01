@@ -98,8 +98,5 @@
     "@farmfe/plugin-replace-dirname": "1.0.0-nightly-20250827162746",
     "@farmfe/plugin-sass": "2.0.0-nightly-20250827162746"
   },
-  "changesets": [
-    "curly-poets-arrive",
-    "gentle-grapes-marry"
-  ]
+  "changesets": []
 }

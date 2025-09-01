@@ -1,6 +1,6 @@
 {
   "name": "@farmfe/plugin-replace-dirname",
-  "version": "1.0.0-beta.0",
+  "version": "2.0.0-beta.0",
   "main": "index.js",
   "types": "index.d.ts",
   "type": "module",
@@ -14,6 +14,9 @@
   "napi": {
     "binaryName": "farm_plugin_replace_dirname",
     "targets": [
+      "x86_64-unknown-linux-gnu",
+      "x86_64-pc-windows-msvc",
+      "x86_64-apple-darwin",
       "aarch64-apple-darwin",
       "aarch64-unknown-linux-gnu",
       "aarch64-unknown-linux-musl",

@@ -1,5 +1,11 @@
 # @farmfe/core
 
+## 2.0.0-beta.1
+
+### Patch Changes
+
+- update napi config
+
 ## 2.0.0-beta.0
 
 ### Major Changes
