@@ -1,6 +1,6 @@
 {
   "name": "@farmfe/core",
-  "version": "2.0.0-beta.0",
+  "version": "2.0.0-beta.1",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "type": "module",
@@ -21,6 +21,9 @@
   "napi": {
     "binaryName": "farm",
     "targets": [
+      "x86_64-unknown-linux-gnu",
+      "x86_64-pc-windows-msvc",
+      "x86_64-apple-darwin",
       "aarch64-apple-darwin",
       "aarch64-unknown-linux-gnu",
       "aarch64-unknown-linux-musl",
