@@ -30,24 +30,59 @@ jobs:
     needs: [check-changeset-status]
     if: needs.check-changeset-status.outputs.SKIP_RUST_BUILD != 'true'
 
-  release:
-    name: Release
-    needs: [call-rust-build]
-    runs-on: ubuntu-latest
+  changeset-version:
+    name: Call changeset version
+    needs: [check-changeset-status]
+    if: needs.check-changeset-status.outputs.SKIP_RUST_BUILD == 'true'
     steps:
       - name: Checkout Repo
-        if: ${{ always() }}
         uses: actions/checkout@v4
 
       - name: Setup pnpm
-        if: ${{ always() }}
         uses: pnpm/action-setup@v4
         with:
           version: 9.4.0
           run_install: false
 
       - name: Setup Node.js 20.x
-        if: ${{ always() }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+          cache: "pnpm"
+
+      - name: Install Dependencies
+        uses: nick-fields/retry@v3
+        with:
+          timeout_minutes: 10
+          max_attempts: 3
+          retry_wait_seconds: 60
+          command: pnpm i --frozen-lockfile
+
+      - name: Create Release Pull Request
+        id: changesets
+        uses: changesets/action@v1
+        with:
+          version: pnpm run bump
+          branch: main
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+  release:
+    name: Release
+    needs: [call-rust-build]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.4.0
+          run_install: false
+
+      - name: Setup Node.js 20.x
         uses: actions/setup-node@v4
         with:
           node-version: 20.x
@@ -92,8 +127,7 @@ jobs:
       - name: Build Plugin Tools
         run: pnpm --filter @farmfe/plugin-tools run build
 
-      - name: Create Release Pull Request or Publish to npm
-        if: ${{ always() }}
+      - name: Publish to npm
         id: changesets
         uses: changesets/action@v1
         with:
