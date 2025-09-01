@@ -1,5 +1,11 @@
 # @farmfe/core
 
+## 2.0.0-beta.2
+
+### Patch Changes
+
+- 23b6fc9: Fix unexpected process exit when hmr failed with syntax error
+
 ## 2.0.0-beta.1
 
 ### Patch Changes
