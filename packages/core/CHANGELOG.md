@@ -1,5 +1,21 @@
 # @farmfe/core
 
+## 2.0.0-beta.0
+
+### Major Changes
+
+- f5ce9ea: Release Farm v2.0.0
+
+### Patch Changes
+
+- 5a9ff6b: Improve vite compatibility and support latest vite-plugin v6 and vite tailwind plugin v4. fix #2184 #2215
+- Updated dependencies [f5ce9ea]
+  - @farmfe/runtime-plugin-import-meta@2.0.0-beta.0
+  - @farmfe/runtime-plugin-hmr@4.0.0-beta.0
+  - @farmfe/runtime@2.0.0-beta.0
+  - @farmfe/utils@2.0.0-beta.0
+  - @farmfe/plugin-replace-dirname@1.0.0-beta.0
+
 ## 2.0.0-nightly-20250827162746
 
 ### Patch Changes
@@ -56,6 +72,7 @@
 ### Major Changes
 
 - b327dd1: collect htmlFallbackMiddleware
+
 ## 1.7.11
 
 ### Patch Changes

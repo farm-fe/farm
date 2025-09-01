@@ -660,7 +660,7 @@ importers:
         specifier: workspace:*
         version: link:../../packages/core
       '@farmfe/plugin-react':
-        specifier: 2.0.0-nightly-20250827162746
+        specifier: 2.0.0-beta.0
         version: link:../../rust-plugins/react
       '@types/react':
         specifier: '18'
@@ -42756,7 +42756,7 @@ snapshots:
 
   postcss@8.4.38:
     dependencies:
-      nanoid: 3.3.7
+      nanoid: 3.3.11
       picocolors: 1.1.1
       source-map-js: 1.2.1
 

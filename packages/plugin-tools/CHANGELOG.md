@@ -1,5 +1,16 @@
 # @farmfe/plugin-tools
 
+## 2.0.0-beta.0
+
+### Major Changes
+
+- f5ce9ea: Release Farm v2.0.0
+
+### Patch Changes
+
+- Updated dependencies [f5ce9ea]
+  - @farmfe/utils@2.0.0-beta.0
+
 ## 0.1.2-nightly-20250827162746
 
 ### Patch Changes
