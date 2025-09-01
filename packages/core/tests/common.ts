@@ -6,9 +6,9 @@ import {
   resolveUserConfig,
   UserConfig
 } from '../src/config/index.js';
-import { Logger } from '../src/index.js';
 import { resolveConfigResolvedHook } from '../src/plugin/index.js';
 import { JsPlugin } from '../src/plugin/type.js';
+import { Logger } from '../src/utils/index.js';
 
 export async function getCompiler(
   root: string,
