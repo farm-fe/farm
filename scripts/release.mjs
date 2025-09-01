@@ -9,4 +9,4 @@ await buildJsPlugins();
 
 execSync('npm config set access public', { stdio: 'inherit' });
 // publish node packages
-execSync('npx changeset publish', { stdio: 'inherit' });
+execSync('npx changeset publish --tag beta', { stdio: 'inherit' });
