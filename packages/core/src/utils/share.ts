@@ -5,6 +5,7 @@ import readline from 'node:readline';
 import { fileURLToPath } from 'node:url';
 import { Config, OutputConfig } from '../types/binding.js';
 import { cleanUrl } from './url.js';
+
 // @ts-ignore import packageJson from '../../package.json';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -127,9 +128,9 @@ export function mergeObjects<
   const merged: Record<string, any> = { ...obj1 };
 
   Object.keys(obj2).forEach((key) => {
-    if (Object.prototype.hasOwnProperty.call(obj2, key)) {
+    if (Object.hasOwn(obj2, key)) {
       if (
-        merged.hasOwnProperty(key) &&
+        Object.hasOwn(merged, key) &&
         typeof obj2[key] === 'object' &&
         !Array.isArray(obj2[key])
       ) {

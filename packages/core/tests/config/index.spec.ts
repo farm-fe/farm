@@ -1,8 +1,8 @@
 import path from 'path';
 import { describe, expect, test } from 'vitest';
 import {
-  ResolvedCompilation,
-  normalizeUserCompilationConfig
+  normalizeUserCompilationConfig,
+  ResolvedCompilation
 } from '../../src/config/index.js';
 import { mergeFarmCliConfig } from '../../src/config/merge-config.js';
 import { normalizeOutput } from '../../src/config/normalize-config/normalize-output.js';

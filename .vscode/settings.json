@@ -40,4 +40,8 @@
   "typescript.tsdk": "node_modules/typescript/lib",
   "editor.formatOnPaste": true,
   "emmet.showExpandedAbbreviation": "never",
+  "editor.codeActionsOnSave": {
+    "source.fixAll.biome": "explicit",
+    "source.organizeImports.biome": "explicit"
+  }
 }

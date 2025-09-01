@@ -54,7 +54,7 @@ export function cleanStack(stack: string) {
 }
 
 export function splitErrorMessage(errorMsg: any) {
-  // @ts-ignore
+  // @ts-expect-error
   const potentialCauses = errorMsg.cause;
   const stripErrorFrame = stripAnsi(errorMsg.errorFrame ?? '');
   const { codeBlocks, idCodeLines } = extractSwcCodeBlocks(stripErrorFrame);
@@ -70,8 +70,8 @@ export function splitErrorMessage(errorMsg: any) {
 
 export function extractSwcCodeBlocks(errorMsg: string) {
   const lines = errorMsg.split('\n');
-  let codeBlocks = [];
-  let idCodeLines = [];
+  const codeBlocks = [];
+  const idCodeLines = [];
   let currentBlock: any = [];
   let inCodeBlock = false;
   let errorLine = '';

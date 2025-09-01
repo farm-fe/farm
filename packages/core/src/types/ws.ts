@@ -306,8 +306,7 @@ declare const WebSocketAlias: typeof WebSocket;
 // @ts-ignore
 interface WebSocketAlias extends WebSocket {} // tslint:disable-line no-empty-interface
 
-// @ts-ignore
-// biome-ignore lint/style/noNamespace: <explanation>
+// biome-ignore lint/style/noNamespace: declaration
 declare namespace WebSocket {
   /**
    * Data represents the raw message payload received over the WebSocket.

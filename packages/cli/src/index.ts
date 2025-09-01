@@ -1,15 +1,9 @@
-import { VERSION as CORE_VERSION } from '@farmfe/core';
-import { cac } from 'cac';
-
 import {
-  VERSION,
-  handleAsyncOperationErrors,
-  resolveCliConfig,
-  resolveCommandOptions,
-  resolveCore
-} from './utils.js';
-
-import { FarmCliOptions, UserConfig } from '@farmfe/core';
+  VERSION as CORE_VERSION,
+  FarmCliOptions,
+  UserConfig
+} from '@farmfe/core';
+import { cac } from 'cac';
 import type {
   CleanOptions,
   CliBuildOptions,
@@ -17,6 +11,13 @@ import type {
   CliServerOptions,
   GlobalCliOptions
 } from './types.js';
+import {
+  handleAsyncOperationErrors,
+  resolveCliConfig,
+  resolveCommandOptions,
+  resolveCore,
+  VERSION
+} from './utils.js';
 
 const cli = cac('farm');
 

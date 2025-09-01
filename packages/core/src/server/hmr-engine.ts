@@ -1,9 +1,7 @@
-import fse from 'fs-extra';
-
 import { stat } from 'node:fs/promises';
 import { isAbsolute, relative } from 'node:path';
-
 import type { Resource } from '@farmfe/runtime';
+import fse from 'fs-extra';
 import { HmrOptions } from '../config/index.js';
 import type { CompilerUpdateItem, JsUpdateResult } from '../types/binding.js';
 import { convertErrorMessage } from '../utils/error.js';

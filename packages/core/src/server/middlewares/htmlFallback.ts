@@ -1,6 +1,5 @@
-import { cleanUrl, removeSlash } from '../../utils/index.js';
-
 import type Connect from 'connect';
+import { cleanUrl, removeSlash } from '../../utils/index.js';
 import type { Server } from '../index.js';
 import { send } from '../send.js';
 

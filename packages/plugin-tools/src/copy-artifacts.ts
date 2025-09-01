@@ -1,5 +1,5 @@
-import path from 'path';
 import { copyFile } from 'fs/promises';
+import path from 'path';
 
 export const copyArtifacts = async (abi?: string) => {
   if (!abi) {

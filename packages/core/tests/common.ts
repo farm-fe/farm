@@ -2,9 +2,9 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import path from 'path';
 import { Compiler } from '../src/compiler/index.js';
 import {
-  UserConfig,
   normalizeUserCompilationConfig,
-  resolveUserConfig
+  resolveUserConfig,
+  UserConfig
 } from '../src/config/index.js';
 import { Logger } from '../src/index.js';
 import { resolveConfigResolvedHook } from '../src/plugin/index.js';

@@ -1,11 +1,10 @@
 #!/usr/bin/env node
 import fs from 'node:fs';
 import path from 'node:path';
-import minimist from 'minimist';
-import prompts from 'prompts';
-
 import { fileURLToPath } from 'node:url';
 import { colors } from '@farmfe/utils/colors';
+import minimist from 'minimist';
+import prompts from 'prompts';
 
 interface IResultType {
   pluginName?: string;

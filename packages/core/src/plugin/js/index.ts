@@ -1,13 +1,12 @@
 import { fromZodError } from 'zod-validation-error';
 import { CompilationMode } from '../../config/env.js';
+import { normalizeDevServerConfig } from '../../config/resolve-server.js';
 import { type JsPlugin, type UserConfig } from '../../index.js';
 import merge from '../../utils/merge.js';
 import { resolveAsyncPlugins } from '../index.js';
-
 import { cssPluginUnwrap, cssPluginWrap } from './adapter-plugins/css.js';
 import { defaultLoadPlugin } from './adapter-plugins/default-load.js';
 import {
-  PluginSchemaRegistry,
   createAugmentResourceHashSchema,
   createBuildEndSchema,
   createBuildStartSchema,
@@ -31,16 +30,15 @@ import {
   createUpdateFinishedSchema,
   createUpdateModulesSchema,
   createWritePluginCacheSchema,
-  createWriteResourcesSchema
+  createWriteResourcesSchema,
+  PluginSchemaRegistry
 } from './js-plugin-schema.js';
-
-import { normalizeDevServerConfig } from '../../config/resolve-server.js';
 import { DEFAULT_FILTERS } from './utils.js';
 import { VitePluginAdapter } from './vite-plugin-adapter.js';
 
-export { VitePluginAdapter } from './vite-plugin-adapter.js';
 export * from './js-plugin-schema.js';
 export * from './utils.js';
+export { VitePluginAdapter } from './vite-plugin-adapter.js';
 
 type VitePluginType = object | (() => { vitePlugin: any; filters: string[] });
 type VitePluginsType = VitePluginType[];

@@ -1,11 +1,9 @@
 import { SecureServerOptions } from 'node:http2';
-import type Connect from 'connect';
-
-import { CompilationMode, PreviewServer, Server } from '../index.js';
-
-import type { OutgoingHttpHeaders } from 'http';
 import type { ServerOptions as HttpsServerOptions } from 'node:https';
 import type { WatchOptions } from 'chokidar';
+import type Connect from 'connect';
+import type { OutgoingHttpHeaders } from 'http';
+import { CompilationMode, PreviewServer, Server } from '../index.js';
 import type { RustPlugin } from '../plugin/rust/index.js';
 import type { JsPlugin } from '../plugin/type.js';
 import { ProxyOptions } from '../server/middlewares/proxy.js';

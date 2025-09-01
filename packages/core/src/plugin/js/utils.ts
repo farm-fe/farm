@@ -8,12 +8,10 @@ import type {
   OutputChunk,
   RenderedChunk
 } from 'rollup';
-
-import { VITE_ADAPTER_VIRTUAL_MODULE } from './constants.js';
-
 import type { Config } from '../../types/binding.js';
 import { Logger } from '../../utils/logger.js';
 import type { JsResourcePot, Resource } from '../type.js';
+import { VITE_ADAPTER_VIRTUAL_MODULE } from './constants.js';
 
 export type WatchChangeEvents = 'create' | 'update' | 'delete';
 
@@ -207,7 +205,7 @@ export function deleteUndefinedPropertyDeeply(obj: any) {
   }
 
   for (const key in obj) {
-    if (!Object.prototype.hasOwnProperty.call(obj, key)) {
+    if (!Object.hasOwn(obj, key)) {
       continue;
     }
 

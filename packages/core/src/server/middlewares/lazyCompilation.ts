@@ -1,18 +1,16 @@
 import { existsSync } from 'node:fs';
 import { relative } from 'node:path';
 import { parse as parseUrl } from 'node:url';
-
+import type Connect from 'connect';
 import {
-  Server,
-  VIRTUAL_FARM_DYNAMIC_IMPORT_SUFFIX,
   bold,
   cyan,
   getDynamicResources,
-  green
+  green,
+  Server,
+  VIRTUAL_FARM_DYNAMIC_IMPORT_SUFFIX
 } from '../../index.js';
 import { send } from '../send.js';
-
-import type Connect from 'connect';
 
 const DEFAULT_LAZY_COMPILATION_PATH = '__lazy_compile';
 

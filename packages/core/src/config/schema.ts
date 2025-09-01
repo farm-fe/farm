@@ -1,11 +1,8 @@
 import http from 'node:http';
-
+import type { OutgoingHttpHeaders, SecureServerOptions } from 'node:http2';
 import { z } from 'zod';
 import { fromZodError } from 'zod-validation-error';
-
 import { Logger } from '../utils/logger.js';
-
-import type { OutgoingHttpHeaders, SecureServerOptions } from 'node:http2';
 import type { UserConfig } from './types.js';
 
 enum TargetEnv {

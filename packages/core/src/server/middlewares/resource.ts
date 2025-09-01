@@ -1,21 +1,18 @@
 import path from 'node:path/posix';
-
+import type Connect from 'connect';
+import type { IncomingMessage } from 'http';
 import mime from 'mime';
 import sirv from 'sirv';
-
 import { Compiler } from '../../compiler/index.js';
 import {
   cleanUrl,
   generateFileTree,
   generateFileTreeHtml
 } from '../../utils/index.js';
+import type { Server } from '../index.js';
 import { normalizePathByPublicPath } from '../publicDir.js';
 import { send } from '../send.js';
 import { sirvOptions } from './static.js';
-
-import type { IncomingMessage } from 'http';
-import type Connect from 'connect';
-import type { Server } from '../index.js';
 
 type RealResourcePath = {
   resourcePath: string;

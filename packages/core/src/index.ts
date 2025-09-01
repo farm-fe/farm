@@ -1,33 +1,33 @@
+export { Resolver } from '../binding/index.js';
 export * from './compiler/index.js';
 export * from './config/index.js';
-export * from './server/index.js';
-export * from './plugin/type.js';
-export * from './plugin/index.js';
-export * from './utils/index.js';
-export { Resolver } from '../binding/index.js';
-
 export { defineFarmConfig as defineConfig } from './config/index.js';
+export * from './plugin/index.js';
+export * from './plugin/type.js';
+export * from './server/index.js';
+export * from './utils/index.js';
 
 import fs from 'node:fs/promises';
 
 import { Compiler, createCompiler } from './compiler/index.js';
 import { __FARM_GLOBAL__ } from './config/_global.js';
-import { UserConfig, resolveConfig } from './config/index.js';
+import { resolveConfig, UserConfig } from './config/index.js';
+import type { FarmCliOptions, ResolvedUserConfig } from './config/types.js';
 import { getSortedPluginHooksBindThis } from './plugin/index.js';
 import { PreviewServer, Server } from './server/index.js';
 import {
-  Logger,
-  PersistentCacheBrand,
   bold,
   colors,
   findNodeModulesRecursively,
   getShortName,
-  green
+  green,
+  Logger,
+  PersistentCacheBrand
 } from './utils/index.js';
 import { watchFileChangeAndRebuild } from './watcher/index.js';
 
-import type { FarmCliOptions, ResolvedUserConfig } from './config/types.js';
 export type { Compiler as BindingCompiler } from './types/binding.js';
+
 import type { PersistentCacheConfig } from './types/binding.js';
 import { convertErrorMessage } from './utils/error.js';
 

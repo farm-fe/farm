@@ -1,6 +1,5 @@
-import { withTrailingSlash } from '../../utils/index.js';
-
 import type Connect from 'connect';
+import { withTrailingSlash } from '../../utils/index.js';
 import { Server as DevServer } from '../index.js';
 import type { PreviewServer } from '../preview.js';
 
