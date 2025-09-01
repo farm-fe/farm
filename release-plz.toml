@@ -22,6 +22,10 @@ release = false
 name = "create_farm_node"
 release = false
 
+[[package]]
+name = "farmfe_plugin_replace_dirname"
+release = false
+
 
 [[package]]
 name = "farmfe_utils"
