@@ -1,6 +1,6 @@
-import React from "react";
 import useDocusaurusContext from "@docusaurus/useDocusaurusContext";
 import Layout from "@theme/Layout";
+import React from "react";
 import { TeamMembers } from "../components/TeamMembers";
 import { members } from "./data";
 

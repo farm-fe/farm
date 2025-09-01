@@ -1,14 +1,11 @@
 "use client";
-import { cn } from "../../lib/utils";
-import React from "react";
-import { BentoGrid, BentoGridItem } from "../ui/bento-grid";
 import Translate from "@docusaurus/Translate";
-import Rocket from "@site/static/img/rocket.png";
-import Plug from "@site/static/img/plug.png";
-import FeaturePng from "@site/static/img/feature.png";
 import Box from "@site/static/img/box.png";
 import Compatibility from "@site/static/img/compatible.png";
 import Consistency from "@site/static/img/consistency.png";
+import FeaturePng from "@site/static/img/feature.png";
+import Plug from "@site/static/img/plug.png";
+import Rocket from "@site/static/img/rocket.png";
 import {
   IconBoxAlignRightFilled,
   IconClipboardCopy,
@@ -17,7 +14,10 @@ import {
   IconTableColumn,
 } from "@tabler/icons-react";
 import { motion } from "framer-motion";
+import React from "react";
+import { cn } from "../../lib/utils";
 import { AnimatedBeamPig } from "../ui/beam";
+import { BentoGrid, BentoGridItem } from "../ui/bento-grid";
 
 export default function BentoGridCard() {
   return (

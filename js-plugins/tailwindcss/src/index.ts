@@ -5,12 +5,12 @@ import path from 'node:path';
  * Copyright Farm and All Contributors
  * Copyright (c) Tailwind Labs, Inc.
  */
-import { JsPlugin, ResolvedUserConfig, Resolver, logger } from '@farmfe/core';
+import { JsPlugin, logger, ResolvedUserConfig, Resolver } from '@farmfe/core';
 import {
-  Features,
-  Instrumentation,
   compile,
   env,
+  Features,
+  Instrumentation,
   optimize,
   toSourceMap
 } from '@tailwindcss/node';

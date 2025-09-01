@@ -1,5 +1,6 @@
 import fs from 'fs';
 import { createRequire } from 'module';
+
 const __require = createRequire(import.meta.url);
 
 export const { name: pluginName } = __require('../../package.json');

@@ -1,7 +1,6 @@
-import { cn } from "../../lib/utils";
-import { ReactNode } from "react";
-import React from "react";
 import { ChevronRight, Github } from "lucide-react";
+import React, { ReactNode } from "react";
+import { cn } from "../../lib/utils";
 
 export function AnimatedGradientText({
   children,

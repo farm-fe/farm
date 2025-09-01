@@ -3,20 +3,19 @@
 Use the rspress tabs component to rewrite tabs
 https://rspress.dev/
 */
-import React from 'react';
-import {
+import React, {
   Children,
-  type ReactNode,
+  type ComponentPropsWithRef,
+  type ForwardedRef,
+  type ForwardRefExoticComponent,
+  forwardRef,
+  isValidElement,
   type ReactElement,
+  type ReactNode,
+  useContext,
+  useEffect,
   useMemo,
   useState,
-  useEffect,
-  useContext,
-  forwardRef,
-  type ForwardedRef,
-  isValidElement,
-  type ComponentPropsWithRef,
-  type ForwardRefExoticComponent,
 } from 'react';
 import { TabDataContext } from '../logic/TabDataContext';
 import { useStorageValue } from '../logic/useStorageValue';

@@ -1,6 +1,6 @@
+import { throwError as t } from '@farmfe/core';
 import fs from 'fs';
 import { createRequire } from 'module';
-import { throwError as t } from '@farmfe/core';
 
 const __require = createRequire(import.meta.url);
 
