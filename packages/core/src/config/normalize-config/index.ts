@@ -3,7 +3,7 @@ import path from 'node:path';
 import fse from 'fs-extra';
 
 import { bindingPath } from '../../../binding/index.js';
-import { colors, isEmptyObject, isNodeEnv } from '../../utils/index.js';
+import { isEmptyObject, isNodeEnv } from '../../utils/index.js';
 import merge from '../../utils/merge.js';
 import {
   DEFAULT_COMPILATION_OPTIONS,
@@ -21,8 +21,10 @@ import { normalizeCss } from './normalize-css.js';
 import { normalizeExternal } from './normalize-external.js';
 import { normalizeOutput } from './normalize-output.js';
 import { normalizePersistentCache } from './normalize-persistent-cache.js';
+import { normalizeProdDefaults } from './normalize-prod-default.js';
 import { normalizeResolve } from './normalize-resolve.js';
 import { normalizeRuntimeConfig } from './normalize-runtime.js';
+import { normalizeScript } from './normalize-script.js';
 
 /**
  * Normalize user config and transform it to rust compiler compatible config
@@ -139,31 +141,6 @@ export async function normalizeUserCompilationConfig(
     resolvedCompilation.input = input;
   }
 
-  if (resolvedCompilation.treeShaking === undefined) {
-    resolvedCompilation.treeShaking ??= isProduction;
-  }
-
-  if (resolvedCompilation.concatenateModules === undefined) {
-    resolvedCompilation.concatenateModules ??= isProduction;
-  }
-
-  if (resolvedCompilation.concatenateModules && !isProduction) {
-    resolvedUserConfig.logger.warn(
-      'concatenateModules option is not supported with development mode, concatenateModules will be disabled'
-    );
-    resolvedCompilation.concatenateModules = false;
-  }
-
-  if (resolvedCompilation.script?.plugins?.length) {
-    resolvedUserConfig.logger.info(
-      `Swc plugins are configured, note that Farm uses ${colors.yellow(
-        'swc_core v35.0.0'
-      )}, please make sure the plugin is ${colors.green('compatible')} with swc_core ${colors.yellow(
-        'swc_core v35.0.0'
-      )}. Otherwise, it may exit unexpectedly.`
-    );
-  }
-
   // lazyCompilation should be disabled in production mode
   // so, it only happens in development mode
   // https://github.com/farm-fe/farm/issues/962
@@ -174,35 +151,13 @@ export async function normalizeUserCompilationConfig(
     resolvedCompilation.lazyCompilation = false;
   }
 
-  if (resolvedCompilation.minify === undefined) {
-    resolvedCompilation.minify ??= isProduction;
-  }
+  normalizeProdDefaults(
+    resolvedCompilation,
+    isProduction,
+    resolvedUserConfig.logger
+  );
 
-  if (resolvedCompilation.presetEnv === undefined) {
-    resolvedCompilation.presetEnv ??= isProduction;
-  }
-
-  // Auto enable decorator by default when `script.decorators` is enabled
-  if (resolvedCompilation.script?.decorators !== undefined)
-    if (resolvedCompilation.script.parser === undefined) {
-      resolvedCompilation.script.parser = {
-        esConfig: {
-          decorators: true
-        },
-        tsConfig: {
-          decorators: true
-        }
-      };
-    } else {
-      if (resolvedCompilation.script.parser.esConfig !== undefined)
-        resolvedCompilation.script.parser.esConfig.decorators = true;
-      else
-        resolvedCompilation.script.parser.esConfig = {
-          decorators: true
-        };
-      if (resolvedCompilation.script.parser.tsConfig !== undefined)
-        resolvedCompilation.script.parser.tsConfig.decorators = true;
-    }
+  normalizeScript(resolvedCompilation, resolvedUserConfig.logger);
 
   // normalize persistent cache at last
   await normalizePersistentCache(resolvedCompilation, resolvedUserConfig);

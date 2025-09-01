@@ -301,7 +301,7 @@ export async function watchFileChangeAndRebuild(
       compiler.writeResourcesToDisk();
     } catch (error) {
       resolvedUserConfig.logger.error(
-        `Farm Update Error: ${convertErrorMessage(error)}`
+        `Update Error: ${convertErrorMessage(error)}`
       );
     }
   });
