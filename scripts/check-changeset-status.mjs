@@ -1,5 +1,5 @@
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
-import { existsSync, readdirSync, readFileSync } from "node:fs";
 
 const CHANGESET_DIR = "./.changeset";
 
