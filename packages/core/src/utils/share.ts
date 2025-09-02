@@ -129,7 +129,7 @@ export function mergeObjects<
   Object.keys(obj2).forEach((key) => {
     if (Object.prototype.hasOwnProperty.call(obj2, key)) {
       if (
-        merged.hasOwnProperty(key) &&
+        Object.hasOwn(merged, key) &&
         typeof obj2[key] === 'object' &&
         !Array.isArray(obj2[key])
       ) {

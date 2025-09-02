@@ -127,6 +127,12 @@
     ]
   },
   "javascript": {
+    "globals": [
+      "FARM_HMR_HOST",
+      "FARM_HMR_PORT",
+      "FARM_HMR_PATH",
+      "FARM_HMR_PROTOCOL"
+    ],
     "formatter": {
       "jsxQuoteStyle": "single",
       "quoteProperties": "asNeeded",

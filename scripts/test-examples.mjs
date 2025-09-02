@@ -1,6 +1,6 @@
 import {
-  buildCorePkg,
   buildCoreCjs,
+  buildCorePkg,
   buildExamples,
   buildJsPlugins,
   buildRuntime,

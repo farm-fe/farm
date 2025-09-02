@@ -82,9 +82,13 @@ export function publicMiddleware(app: Server): Connect.NextHandleFunction {
     res,
     next: () => void
   ) {
+    if (!req.url) {
+      return next();
+    }
+
     if (
-      (publicFiles && !publicFiles.has(toFilePath(req.url!))) ||
-      isImportRequest(req.url!)
+      (publicFiles && !publicFiles.has(toFilePath(req.url))) ||
+      isImportRequest(req.url)
     ) {
       return next();
     }
@@ -115,7 +119,10 @@ export const sirvOptions = ({
       const headers = getHeaders();
       if (headers) {
         for (const name in headers) {
-          res.setHeader(name, headers[name]!);
+          const headerValue = headers[name];
+          if (headerValue != null) {
+            res.setHeader(name, headerValue);
+          }
         }
       }
     }

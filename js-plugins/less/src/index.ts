@@ -10,6 +10,7 @@ import {
 } from './utils.js';
 
 export type LessPluginOptions = {
+  // biome-ignore lint/correctness/noUndeclaredVariables: <explanation>
   lessOptions?: Less.Options;
   implementation?: string;
   filters?: {
@@ -120,6 +121,7 @@ export default function farmLessPlugin(
             sourceMap:
               (options.lessOptions?.sourceMap ?? sourceMapEnabled) && {},
             paths: configPaths ? [fileRoot, ...configPaths] : [fileRoot]
+            // biome-ignore lint/correctness/noUndeclaredVariables: <explanation>
           } as Less.Options);
 
           if (compiler && imports && !isProd) {
