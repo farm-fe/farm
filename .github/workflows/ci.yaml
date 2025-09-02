@@ -137,7 +137,9 @@ jobs:
           retry_wait_seconds: 10
           command: pnpm i --frozen-lockfile
       - name: Build Core
-        run: node scripts/build-core.mjs
+        run: pnpm --filter farm run build
+      - name: Build Runtime
+        run: pnpm --filter @farmfe/runtime run build
       - name: Type Check With Tsc
         run: pnpm run --filter "@farmfe/*" type-check
       - name: Changesets Check
@@ -185,12 +187,17 @@ jobs:
           retry_wait_seconds: 10
           command: pnpm i --frozen-lockfile
       - name: Build Core
-        run: node scripts/build-core.mjs
+        run: pnpm --filter farm run build
       - uses: actions/download-artifact@v4
         id: download
         with:
           name: ${{ github.sha }}-${{ matrix.settings.abi }}
           path: ./packages/core/binding
+      - name: Build Runtime
+        run: |
+          pnpm --filter "@farmfe/runtime" build
+          pnpm --filter "@farmfe/runtime-plugin-hmr" build
+          pnpm --filter "@farmfe/runtime-plugin-import-meta" build
       - name: Build Core CJS
         run: cd packages/core && pnpm run build:cjs
       - name: Test - ${{ matrix.settings.abi }}
