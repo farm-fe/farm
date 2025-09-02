@@ -21,7 +21,7 @@ Support `sass` for Farm.
 
 ## Usage
 ```ts {2,6}
-import { UserConfig } from '@farmfe/core';
+import { UserConfig } from 'farm';
 import farmJsPluginSass from '@farmfe/js-plugin-sass';
 
 const config: UserConfig = {
@@ -61,7 +61,7 @@ Sass options. See [sass options](https://sass-lang.com/documentation/js-api/inte
 Example:
 ```ts
 import path from 'node:path';
-import { UserConfig } from '@farmfe/core';
+import { UserConfig } from 'farm';
 import farmJsPluginSass from '@farmfe/js-plugin-sass';
 
 const config: UserConfig = {
@@ -87,7 +87,7 @@ Which files should be processed by `sass`. Default to `{ resolvedPaths: ['\\.(s[
 
 Example:
 ```ts
-import { UserConfig } from '@farmfe/core';
+import { UserConfig } from 'farm';
 import farmJsPluginSass from '@farmfe/js-plugin-sass';
 
 const config: UserConfig = {
@@ -109,7 +109,7 @@ export default config;
 `implementation` package name of `sass`. Default to `sass`. If you want to use `sass-embedded`, you can set it to `sass-embedded`.
 
 ```ts
-import { UserConfig } from '@farmfe/core';
+import { UserConfig } from 'farm';
 import farmJsPluginSass from '@farmfe/js-plugin-sass';
 
 const config: UserConfig = {
@@ -130,7 +130,7 @@ type AdditionalDataOption = string | ((content?: string, resolvePath?: string) =
 ```
 Additional data to be added to every sass file. Example:
 ```ts
-import { UserConfig } from '@farmfe/core';
+import { UserConfig } from 'farm';
 import farmJsPluginSass from '@farmfe/js-plugin-sass';
 
 const config: UserConfig = {
@@ -161,7 +161,7 @@ For sass file:
 
 Function form:
 ```ts
-import { UserConfig } from '@farmfe/core';
+import { UserConfig } from 'farm';
 import farmJsPluginSass from '@farmfe/js-plugin-sass';
 
 const config: UserConfig = {

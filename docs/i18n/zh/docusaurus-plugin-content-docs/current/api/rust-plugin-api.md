@@ -8,7 +8,7 @@
 通过 `plugins` 选项添加 Rust 插件：
 
 ```ts title="farm.config.ts" {3,7}
-import { defineConfig } from "@farmfe/core";
+import { defineConfig } from "farm";
 
 export default defineConfig({
   // 在 plugins 中配置

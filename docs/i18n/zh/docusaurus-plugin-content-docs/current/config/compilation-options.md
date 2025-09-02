@@ -3,7 +3,7 @@
 Farm 默认从项目根目录的 `farm.config.ts|js|mjs` 文件中读取配置，配置文件示例:
 
 ```ts title="farm.config.ts"
-import { defineConfig } from "@farmfe/core";
+import { defineConfig } from "farm";
 
 export default defineConfig({
   root: process.cwd(), // 编译的根目录
@@ -34,7 +34,7 @@ export default defineConfig({
 项目的入口点。 Input 的文件可以是`html`、`ts/js/tsx/jsx`、`css` 或通过插件支持的其他文件。
 
 ```tsx
-import { defineConfig } from "@farmfe/core";
+import { defineConfig } from "farm";
 
 export default defineConfig({
   compilation: {
@@ -401,7 +401,7 @@ export default defineConfig({
 import jsPluginVue from "@farmfe/js-plugin-vue";
 
 /**
- * @type {import('@farmfe/core').UserConfig}
+ * @type {import('farm').UserConfig}
  */
 export default {
   compilation: {
@@ -518,7 +518,7 @@ type BrowserTargetsRecord = Partial<
 配置对于哪些目标浏览器或者浏览器版本开启，示例：
 
 ```ts
-import { defineConfig } from "@farmfe/core";
+import { defineConfig } from "farm";
 
 export default defineConfig({
   compilation: {
@@ -821,7 +821,7 @@ export type PersistentCache =
 配置项可以是一个路径或者一个包名, 例如:
 
 ```ts
-import { defineConfig } from "@farmfe/core";
+import { defineConfig } from "farm";
 import path from "node:path";
 
 export default defineConfig({

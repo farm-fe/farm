@@ -4,7 +4,7 @@
 By default, Farm reads the configuration from the `farm.config.ts|js|mjs` file in the project root directory, an example configuration file:
 
 ```ts title="farm.config.ts" {5-7}
-import { defineConfig } from "@farmfe/core";
+import { defineConfig } from "farm";
 
 export default defineConfig({
   root: process.cwd(), // compiled root directory
@@ -38,7 +38,7 @@ Or you can use `farm.config.mjs` or `farm.config.cjs` with `@type` to support ty
 
 ```js title="farm.config.mjs"
 /**
- * @type {import('@farmfe/core').UserConfig}
+ * @type {import('farm').UserConfig}
  */
 export default {
   // ...
@@ -48,7 +48,7 @@ export default {
 ## Examples
 ### Input and Output
 ```ts title="farm.config.ts" {5-7}
-import { defineConfig } from "@farmfe/core";
+import { defineConfig } from "farm";
 
 export default defineConfig({
   // compile options
@@ -70,7 +70,7 @@ In above example, we configured `./src/index.html` and `./src/about.html` as inp
 ### Dev Server Port
 
 ```ts title="farm.config.ts" {5-7}
-import { defineConfig } from "@farmfe/core";
+import { defineConfig } from "farm";
 
 export default defineConfig({
   server: {
@@ -81,7 +81,7 @@ export default defineConfig({
 
 ### Disable Default Optimizations
 ```ts title="farm.config.ts" {5-7}
-import { defineConfig } from "@farmfe/core";
+import { defineConfig } from "farm";
 
 export default defineConfig({
   // compile options

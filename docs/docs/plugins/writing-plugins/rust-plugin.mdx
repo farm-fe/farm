@@ -154,7 +154,7 @@ pnpm build
 ```
 Then you can use the built plugin in your farm project by adding the plugin to the `plugins` field in `farm.config.ts`:
 ```javascript
-import { defineConfig } from '@farmfe/core';
+import { defineConfig } from 'farm';
 
 export default defineConfig({
   plugins: [
@@ -268,7 +268,7 @@ or implement `parse`, `render_resource_pot_modules` hook to handle your custom m
 ### Handle Plugin Options
 The rust plugin options can be configured in `farm.config.ts`:
 ```javascript
-import { defineConfig } from '@farmfe/core';
+import { defineConfig } from 'farm';
 
 export default defineConfig({
   plugins: [

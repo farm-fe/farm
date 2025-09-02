@@ -8,7 +8,7 @@ import TabItem from "@theme/TabItem";
 
 ```js
 // farm.config.ts
-import { defineConfig } from "@farmfe/core";
+import { defineConfig } from "farm";
 
 export default defineConfig({
   // ...
@@ -57,7 +57,7 @@ export function myResolvePlugin(options: Options) {
 }
 
 // farm.config.ts
-import { defineConfig } from "@farmfe/core";
+import { defineConfig } from "farm";
 import { myResolvePlugin } from "./myResolvePlugin.ts";
 
 export default defineConfig({
@@ -159,7 +159,7 @@ Farm 提供了官方模板来帮助你快速创建 JavaScript 插件:
 
 ```ts
 // import { readFileSync } from 'node:fs';
-import type { JsPlugin } from '@farmfe/core';
+import type { JsPlugin } from 'farm';
 
 interface Options {
   /* Your options here */

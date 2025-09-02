@@ -5,7 +5,7 @@ Farm provides `DevServer` and enabled `HMR` in `development` by default.
 Farm provides a lot of useful options to configure dev server. All dev server options are configured by [`server`](/docs/config/dev-server).
 
 ```ts
-import { defineConfig } from '@farmfe/core';
+import { defineConfig } from 'farm';
 
 export default defineConfig({
   server: {
@@ -28,7 +28,7 @@ You can use [`middlewares`](/docs/config/dev-server#middlewares) to handle dev s
 
 ```ts title="farm.config.ts"
 import { Middleware } from 'koa';
-import { Server, defineConfig } from '@farmfe/core';
+import { Server, defineConfig } from 'farm';
 
 export function headers(devSeverContext: Server): Middleware {
   const { config } = devSeverContext;
@@ -56,7 +56,7 @@ export default defineConfig({
 In above example, a Farm middleware is a function that expose `Koa Middleware`. Common Koa middlewares can be used directly, for example:
 
 ```ts {2,7}
-import { defineConfig } from "@farmfe/core";
+import { defineConfig } from "farm";
 import compression from 'koa-compress';
 
 export default defineConfig({

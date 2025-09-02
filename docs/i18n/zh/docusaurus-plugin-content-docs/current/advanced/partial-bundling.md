@@ -137,7 +137,7 @@ export default defineConfig({
 ### 使用 `enforceResources`
 要将所有模块分组在一起并忽略所有其他条件，可以使用 `enforceResources` ，例如：
 ```ts title="farm.config.ts"
-import { defineConfig } from '@farmfe/core';
+import { defineConfig } from 'farm';
 
 export default defineConfig({
   compilation: {
@@ -194,7 +194,7 @@ export default defineConfig({
 将 `src/components` 下的 `modules` 分组，并**尽可能**将它们输出到同一资源中。
 
 ```ts title="farm.config.ts"
-import { defineConfig } from '@farmfe/core';
+import { defineConfig } from 'farm';
 
 export default defineConfig({
   compilation: {
@@ -214,7 +214,7 @@ export default defineConfig({
 
 ### 配置打包的数量和大小
 ```ts title="farm.config.ts"
-import { defineConfig } from '@farmfe/core';
+import { defineConfig } from 'farm';
 
 export default defineConfig({
   compilation: {
@@ -232,7 +232,7 @@ export default defineConfig({
 
 ### 将所有模块打包在一起
 ```ts
-import { defineConfig } from '@farmfe/core';
+import { defineConfig } from 'farm';
 
 export default defineConfig({
   compilation: {
@@ -253,7 +253,7 @@ export default defineConfig({
 在上面的示例中，我们强制将所有模块打包在一起，并忽略所有其他约束（例如，请求数量、文件大小）。您也可以使用 `enforceResources` 强制将某些模块打包在一起：
 
 ```ts
-import { defineConfig } from '@farmfe/core';
+import { defineConfig } from 'farm';
 
 export default defineConfig({
   compilation: {

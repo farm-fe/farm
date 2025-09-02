@@ -41,7 +41,7 @@ npm install @farmfe/plugin-sass
 
 2. 配置插件
 ```ts
-import type { UserConfig } from '@farmfe/core';
+import type { UserConfig } from 'farm';
 
 export default <UserConfig> {
   // ...
@@ -63,7 +63,7 @@ import './index.scss';
 `@farmfe/plugin-sass` 支持很多选项，使用 plugins 的数组配置指定插件 sass 的选项：
 
 ```ts
-import type { UserConfig } from '@farmfe/core';
+import type { UserConfig } from 'farm';
 
 export default <UserConfig> {
   plugins: [
@@ -97,7 +97,7 @@ npm install @farmfe/js-plugin-less
 
 2. 配置插件
 ```ts
-import type { UserConfig } from '@farmfe/core';
+import type { UserConfig } from 'farm';
 import less from '@farmfe/js-plugin-less';
 
 export default <UserConfig> {
@@ -124,7 +124,7 @@ npm install @farmfe/js-plugin-postcss
 
 2. 配置插件
 ```ts
-import type { UserConfig } from '@farmfe/core';
+import type { UserConfig } from 'farm';
 import postcss from '@farmfe/js-plugin-postcss';
 
 export default <UserConfig> {
@@ -151,7 +151,7 @@ module.exports = {
 Farm 支持开箱即用的 css prefixer，您可以使用`compilation.css.prefixer`对其进行配置。
 
 ```ts title="farm.config.ts"
-import type { UserConfig } from '@farmfe/core';
+import type { UserConfig } from 'farm';
 
 function defineConfig(config: UserConfig) {
    return config;

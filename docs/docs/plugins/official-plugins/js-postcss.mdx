@@ -21,7 +21,7 @@ Support `postcss` for Farm.
 
 ## Usage
 ```ts {2,6}
-import { UserConfig } from '@farmfe/core';
+import { UserConfig } from 'farm';
 import farmJsPluginPostcss from '@farmfe/js-plugin-postcss';
 
 const config: UserConfig = {
@@ -58,7 +58,7 @@ Farm uses `postcss-load-config` to load `postcss` config, so you can use `postcs
 Example:
 ```ts
 import path from 'node:path';
-import { UserConfig } from '@farmfe/core';
+import { UserConfig } from 'farm';
 import farmJsPluginPostcss from '@farmfe/js-plugin-postcss';
 
 const config: UserConfig = {
@@ -85,7 +85,7 @@ Which files should be processed by `postcss`. default to `{ moduleTypes: ['css']
 
 Example:
 ```ts
-import { UserConfig } from '@farmfe/core';
+import { UserConfig } from 'farm';
 import farmJsPluginPostcss from '@farmfe/js-plugin-postcss';
 
 const config: UserConfig = {

@@ -67,7 +67,7 @@ export default {
 装饰器默认不启用, 可以通过设置 `compilation.script.parser.tsConfig.decorators` 为 `true` 来启用装饰器。
 
 ```ts
-import { defineConfig } from "@farmfe/core";
+import { defineConfig } from "farm";
 
 export default defineConfig({
   compilation: {
@@ -103,7 +103,7 @@ SWC Plugins 可以直接在 Farm 中使用，例如我们在 Farm 中使用 swc-
 import jsPluginVue from "@farmfe/js-plugin-vue";
 
 /**
- * @type {import('@farmfe/core').UserConfig}
+ * @type {import('farm').UserConfig}
  */
 export default {
   compilation: {

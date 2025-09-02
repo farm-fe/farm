@@ -46,7 +46,7 @@ build
 * [`output.assetsFilename`](/docs/config/compilation-options#outputassetsfilename)
 
 ```ts
-import defineConfig from '@farmfe/core';
+import defineConfig from 'farm';
 
 export default defineConfig({
   compilation: {
@@ -92,7 +92,7 @@ $ npm run preview
 可以使用 [output.targetEnv](/docs/config/compilation-options#output-targetenv) 来配置目标浏览器：
 
 ```ts
-import { defineConfig } from '@farmfe/core';
+import { defineConfig } from 'farm';
 
 export default defineConfig({
   compilation: {

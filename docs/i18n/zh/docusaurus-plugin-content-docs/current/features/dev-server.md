@@ -5,7 +5,7 @@ Farm默认在 `development` 环境中提供 `DevServer` 并启用了 `HMR` 。
 Farm提供了许多有用的选项来配置开发服务器。所有的DevServer选项都是通过[`server`](/zh/docs/config/dev-server)配置的。
 
 ```ts
-import { defineConfig } from '@farmfe/core';
+import { defineConfig } from 'farm';
 
 export default defineConfig({
   server: {
@@ -28,7 +28,7 @@ export default defineConfig({
 
 ```ts title="farm.config.ts"
 import { Middleware } from 'koa';
-import { Server, defineConfig } from '@farmfe/core';
+import { Server, defineConfig } from 'farm';
 
 export function headers(devSeverContext: Server): Middleware {
   const { config } = devSeverContext;
@@ -56,7 +56,7 @@ export default defineConfig({
 在上述示例中，Farm中间件是一个暴露 `Koa Middleware` 的函数。常见的Koa中间件可以直接使用，例如：
 
 ```ts {2,7}
-import { defineConfig } from "@farmfe/core";
+import { defineConfig } from "farm";
 import compression from 'koa-compress';
 
 export default defineConfig({
