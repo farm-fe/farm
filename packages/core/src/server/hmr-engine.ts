@@ -54,54 +54,55 @@ export class HmrEngine {
         updatedFilesStr.slice(0, 100) + `...(${queue.length} files)`;
     }
 
-    // we must add callback before update
-    this.devServer.compiler.onUpdateFinish(async () => {
-      // if there are more updates, recompile again
-      if (this._updateQueue.length > 0) {
-        await this.recompileAndSendResult();
-      }
-      if (this.devServer.config?.server.writeToDisk) {
-        this.devServer.compiler.writeResourcesToDisk();
-      }
-    });
-
-    const start = performance.now();
-
-    const result = await this.devServer.compiler.update(queue);
-
-    logger.info(
-      `${bold(cyan(updatedFilesStr))} updated in ${bold(green(logger.formatTime(performance.now() - start)))}`
-    );
-
-    // clear update queue after update finished
-    this._updateQueue = this._updateQueue.filter(
-      (item) => !queue.includes(item)
-    );
-
-    let dynamicResourcesMap: Record<string, Resource[]> = null;
-
-    if (result.dynamicResourcesMap) {
-      for (const [key, value] of Object.entries(result.dynamicResourcesMap)) {
-        if (!dynamicResourcesMap) {
-          dynamicResourcesMap = {} as Record<string, Resource[]>;
+    try {
+      // we must add callback before update
+      this.devServer.compiler.onUpdateFinish(async () => {
+        // if there are more updates, recompile again
+        if (this._updateQueue.length > 0) {
+          await this.recompileAndSendResult();
         }
+        if (this.devServer.config?.server.writeToDisk) {
+          this.devServer.compiler.writeResourcesToDisk();
+        }
+      });
 
-        // @ts-ignore
-        dynamicResourcesMap[key] = value.map((r) => ({
-          path: r[0],
-          type: r[1] as 'script' | 'link'
-        }));
+      const start = performance.now();
+
+      const result = await this.devServer.compiler.update(queue);
+
+      logger.info(
+        `${bold(cyan(updatedFilesStr))} updated in ${bold(green(logger.formatTime(performance.now() - start)))}`
+      );
+
+      // clear update queue after update finished
+      this._updateQueue = this._updateQueue.filter(
+        (item) => !queue.includes(item)
+      );
+
+      let dynamicResourcesMap: Record<string, Resource[]> = null;
+
+      if (result.dynamicResourcesMap) {
+        for (const [key, value] of Object.entries(result.dynamicResourcesMap)) {
+          if (!dynamicResourcesMap) {
+            dynamicResourcesMap = {} as Record<string, Resource[]>;
+          }
+
+          // @ts-ignore
+          dynamicResourcesMap[key] = value.map((r) => ({
+            path: r[0],
+            type: r[1] as 'script' | 'link'
+          }));
+        }
       }
-    }
-    const {
-      added,
-      changed,
-      removed,
-      immutableModules,
-      mutableModules,
-      boundaries
-    } = result;
-    const resultStr = `{
+      const {
+        added,
+        changed,
+        removed,
+        immutableModules,
+        mutableModules,
+        boundaries
+      } = result;
+      const resultStr = `{
         added: [${formatHmrResult(added)}],
         changed: [${formatHmrResult(changed)}],
         removed: [${formatHmrResult(removed)}],
@@ -111,22 +112,19 @@ export class HmrEngine {
         dynamicResourcesMap: ${JSON.stringify(dynamicResourcesMap)}
       }`;
 
-    this.callUpdates(result);
+      this.callUpdates(result);
 
-    this.devServer.ws.wss.clients.forEach((client) => {
-      client.send(`
+      this.devServer.ws.wss.clients.forEach((client) => {
+        client.send(`
         {
           type: 'farm-update',
           result: ${resultStr}
         }
       `);
-    });
-    // TODO optimize this part
-    // } catch (err) {
-    // checkClearScreen(this.devServer.compiler.config.config);
-    // this.devServer.logger.error(convertErrorMessage(err));
-
-    // }
+      });
+    } catch (err) {
+      this.devServer.logger.error(`Update Error: ${convertErrorMessage(err)}`);
+    }
   };
 
   async hmrUpdate(
