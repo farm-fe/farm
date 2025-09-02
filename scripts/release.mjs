@@ -1,8 +1,8 @@
 import { execSync } from 'child_process';
-import { buildCli, buildCoreCjs, buildJsPlugins, buildRuntime } from './build.mjs';
+import { buildCorePkg, buildCoreCjs, buildJsPlugins, buildRuntime } from './build.mjs';
 
 // build node packages
-await buildCli();
+await buildCorePkg();
 await buildRuntime();
 await buildCoreCjs();
 await buildJsPlugins();

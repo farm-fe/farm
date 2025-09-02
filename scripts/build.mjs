@@ -186,12 +186,6 @@ export const buildCoreCjs = () =>
     cwd: PKG_CORE,
   });
 
-// build cli command
-export const buildCli = () =>
-  execa(DEFAULT_PACKAGE_MANAGER, ["build"], {
-    cwd: PKG_CLI,
-  });
-
 export const buildRuntime = async () => {
   await execa(DEFAULT_PACKAGE_MANAGER, ["build"], {
     cwd: PKG_RUNTIME,
