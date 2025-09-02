@@ -45,7 +45,6 @@
       "dist"
     ]
   },
-  
   "organizeImports": {
     "enabled": true,
     "include": [
