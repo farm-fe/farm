@@ -1,5 +1,5 @@
 ---
-"@farmfe/runtime": minor
+"@farmfe/plugin-runtime": patch
 ---
 
-Fix duplicate variable declarations in ESM output when using export \* with named exports
+Fix duplicate variable declarations in ESM output when using export * with named exports
