@@ -1,5 +1,23 @@
 # create-farm-plugin
 
+## 2.0.0-beta.0
+
+### Major Changes
+
+- f5ce9ea: Release Farm v2.0.0
+
+## 0.1.20-nightly-20250827162746
+
+### Patch Changes
+
+- 9a227ad: Chore: release v2 nightly
+
+## 0.1.19
+
+### Patch Changes
+
+- d0f572df: Lock cargo-xwin to 0.18.6
+
 ## 0.1.18
 
 ### Patch Changes

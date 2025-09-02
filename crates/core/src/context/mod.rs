@@ -1,10 +1,14 @@
-use std::{any::Any, path::Path, sync::Arc};
+use std::{
+  any::Any,
+  path::{Path, PathBuf},
+  sync::Arc,
+};
 
-use dashmap::DashMap;
 use parking_lot::{Mutex, RwLock};
+use rayon::{ThreadPool, ThreadPoolBuilder};
+use regex::Regex;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
-use swc_common::Globals;
+use swc_common::{FileName, Globals, SourceFile, SourceMap};
 
 use crate::{
   cache::CacheManager,
@@ -14,15 +18,22 @@ use crate::{
     module_graph::ModuleGraph, module_group::ModuleGroupGraph, watch_graph::WatchGraph, ModuleId,
   },
   plugin::{plugin_driver::PluginDriver, Plugin, PluginResolveHookParam, PluginResolveHookResult},
-  resource::{resource_pot_map::ResourcePotMap, Resource, ResourceOrigin, ResourceType},
+  resource::{
+    resource_pot::ResourcePotId, resource_pot_map::ResourcePotMap, Resource, ResourceOrigin,
+    ResourceType,
+  },
   stats::Stats,
+  HashMap,
 };
 
 use self::log_store::LogStore;
 
 pub mod log_store;
 pub(crate) const EMPTY_STR: &str = "";
-pub const IS_UPDATE: &str = "";
+
+lazy_static::lazy_static! {
+  pub static ref REPLACE_FILENAME_REGEX: Regex = Regex::new(r"[^a-zA-Z0-9._/\\]").unwrap();
+}
 
 /// Shared context through the whole compilation.
 pub struct CompilationContext {
@@ -34,12 +45,13 @@ pub struct CompilationContext {
   pub resource_pot_map: Box<RwLock<ResourcePotMap>>,
   pub resources_map: Box<Mutex<HashMap<String, Resource>>>,
   pub cache_manager: Box<CacheManager>,
+  pub thread_pool: Arc<ThreadPool>,
   pub meta: Box<ContextMetaData>,
   /// Record stats for the compilation, for example, compilation time, plugin hook time, etc.
-  pub record_manager: Box<Stats>,
+  pub stats: Box<Stats>,
   pub log_store: Box<Mutex<LogStore>>,
   pub resolve_cache: Box<Mutex<HashMap<PluginResolveHookParam, PluginResolveHookResult>>>,
-  pub custom: Box<DashMap<String, Box<dyn Any + Send + Sync>>>,
+  pub custom: Box<Mutex<HashMap<String, Box<dyn Any + Send + Sync>>>>,
 }
 
 impl CompilationContext {
@@ -51,28 +63,22 @@ impl CompilationContext {
       module_graph: Box::new(RwLock::new(ModuleGraph::new())),
       module_group_graph: Box::new(RwLock::new(ModuleGroupGraph::new())),
       resource_pot_map: Box::new(RwLock::new(ResourcePotMap::new())),
-      resources_map: Box::new(Mutex::new(HashMap::new())),
+      resources_map: Box::new(Mutex::new(HashMap::default())),
       plugin_driver: Box::new(Self::create_plugin_driver(plugins, config.record)),
-      cache_manager: Box::new(CacheManager::new(
-        &cache_dir,
-        &namespace,
-        config.mode.clone(),
-      )),
+      cache_manager: Box::new(CacheManager::new(&cache_dir, &namespace, config.mode)),
+      thread_pool: Arc::new(
+        ThreadPoolBuilder::new()
+          .num_threads(num_cpus::get())
+          .build()
+          .unwrap(),
+      ),
       config: Box::new(config),
       meta: Box::new(ContextMetaData::new()),
-      record_manager: Box::new(Stats::new()),
+      stats: Box::new(Stats::new()),
       log_store: Box::new(Mutex::new(LogStore::new())),
-      resolve_cache: Box::new(Mutex::new(HashMap::new())),
-      custom: Box::new(DashMap::new()),
+      resolve_cache: Box::new(Mutex::new(HashMap::default())),
+      custom: Box::new(Mutex::default()),
     })
-  }
-
-  pub fn set_update(&self) {
-    self.custom.insert(IS_UPDATE.to_string(), Box::new(true));
-  }
-
-  pub fn is_update(&self) -> bool {
-    self.custom.contains_key(IS_UPDATE)
   }
 
   pub fn create_plugin_driver(plugins: Vec<Arc<dyn Plugin>>, record: bool) -> PluginDriver {
@@ -88,7 +94,10 @@ impl CompilationContext {
       );
       config.persistent_cache = Box::new(PersistentCacheConfig::Obj(cache_config_obj));
 
-      (cache_dir, namespace)
+      (
+        cache_dir.unwrap_or("node_modules/.farm/cache".to_string()),
+        namespace,
+      )
     } else {
       (EMPTY_STR.to_string(), EMPTY_STR.to_string())
     }
@@ -131,11 +140,14 @@ impl CompilationContext {
       params.name.clone(),
       Resource {
         name: params.name,
+        name_hash: "".to_string(),
         bytes: params.content,
         emitted: false,
+        should_transform_output_filename: true,
         resource_type: params.resource_type,
         origin: ResourceOrigin::Module(module_id),
-        info: None,
+        meta: Default::default(),
+        special_placeholders: Default::default(),
       },
     );
   }
@@ -180,15 +192,36 @@ impl Default for CompilationContext {
   }
 }
 
+pub struct ArcContextGlobals(Arc<Globals>);
+
+impl ArcContextGlobals {
+  pub fn value(&self) -> &Globals {
+    &self.0
+  }
+}
+
 /// Shared meta info for the core and core plugins, for example, shared swc [SourceMap]
 /// The **custom** field can be used for custom plugins to store shared meta data across compilation
 pub struct ContextMetaData {
-  // shared meta by core plugins
+  /// shared meta by plugins
   pub script: ScriptContextMetaData,
   pub css: CssContextMetaData,
   pub html: HtmlContextMetaData,
-  // custom meta map
-  pub custom: DashMap<String, Box<dyn Any + Send + Sync>>,
+
+  /// shared swc sourcemap cache for module
+  pub module_source_maps: Mutex<HashMap<ModuleId, Arc<SourceMap>>>,
+  /// shared swc sourcemap cache for hoisted modules
+  pub hoisted_modules_source_maps: Mutex<HashMap<ModuleId, Arc<SourceMap>>>,
+  /// shared swc sourcemap cache for resource pot
+  pub resource_pot_source_maps: Mutex<HashMap<ResourcePotId, Arc<SourceMap>>>,
+
+  /// Globals map for each module
+  globals_map: Mutex<HashMap<ModuleId, Arc<Globals>>>,
+  /// shared swc globals map for resource pot
+  resource_pot_globals_map: Mutex<HashMap<ResourcePotId, Arc<Globals>>>,
+
+  /// custom meta map
+  pub custom: Mutex<HashMap<String, Box<dyn Any + Send + Sync>>>,
 }
 
 impl ContextMetaData {
@@ -197,8 +230,97 @@ impl ContextMetaData {
       script: ScriptContextMetaData::new(),
       css: CssContextMetaData::new(),
       html: HtmlContextMetaData::new(),
-      custom: DashMap::new(),
+      module_source_maps: Default::default(),
+      hoisted_modules_source_maps: Default::default(),
+      resource_pot_source_maps: Default::default(),
+      globals_map: Default::default(),
+      resource_pot_globals_map: Default::default(),
+      custom: Default::default(),
     }
+  }
+
+  /// get swc source map from module id
+  pub fn get_module_source_map(&self, module_id: &ModuleId) -> Arc<SourceMap> {
+    self
+      .module_source_maps
+      .lock()
+      .get(module_id)
+      .cloned()
+      .unwrap_or_else(|| panic!("no source map found for module {module_id:?}"))
+  }
+
+  /// set swc source map for module id
+  /// this should be called after every time the module is parsed and updated to the module graph
+  pub fn set_module_source_map(&self, module_id: &ModuleId, cm: Arc<SourceMap>) {
+    self.module_source_maps.lock().insert(module_id.clone(), cm);
+  }
+
+  pub fn get_hoisted_modules_source_map(&self, module_id: &ModuleId) -> Arc<SourceMap> {
+    self
+      .hoisted_modules_source_maps
+      .lock()
+      .get(module_id)
+      .cloned()
+      .unwrap()
+  }
+
+  pub fn set_hoisted_modules_source_map(&self, module_id: &ModuleId, cm: Arc<SourceMap>) {
+    self
+      .hoisted_modules_source_maps
+      .lock()
+      .insert(module_id.clone(), cm);
+  }
+
+  pub fn get_resource_pot_source_map(&self, resource_pot_id: &ResourcePotId) -> Arc<SourceMap> {
+    self
+      .resource_pot_source_maps
+      .lock()
+      .get(resource_pot_id)
+      .cloned()
+      .unwrap_or_else(|| panic!("no source map found for resource pot {resource_pot_id:?}"))
+  }
+
+  /// set swc source map for resource pot
+  /// this should be called after every time the resource pot is parsed and updated to the resource pot map
+  pub fn set_resource_pot_source_map(&self, resource_pot_id: &ResourcePotId, cm: Arc<SourceMap>) {
+    self
+      .resource_pot_source_maps
+      .lock()
+      .insert(resource_pot_id.clone(), cm);
+  }
+
+  pub fn set_globals(&self, module_id: &ModuleId, globals: Globals) {
+    self
+      .globals_map
+      .lock()
+      .insert(module_id.clone(), Arc::new(globals));
+  }
+
+  pub fn get_globals(&self, module_id: &ModuleId) -> ArcContextGlobals {
+    let globals_map = self.globals_map.lock();
+
+    let globals = globals_map
+      .get(module_id)
+      .unwrap_or_else(|| panic!("no globals found for module {module_id:?}"))
+      .clone();
+
+    ArcContextGlobals(globals)
+  }
+
+  pub fn set_resource_pot_globals(&self, resource_pot_id: &ResourcePotId, globals: Globals) {
+    self
+      .resource_pot_globals_map
+      .lock()
+      .insert(resource_pot_id.clone(), Arc::new(globals));
+  }
+
+  pub fn get_resource_pot_globals(&self, resource_pot_id: &ResourcePotId) -> ArcContextGlobals {
+    let globals_map = self.resource_pot_globals_map.lock();
+    let globals = globals_map
+      .get(resource_pot_id)
+      .unwrap_or_else(|| panic!("no globals found for resource pot {resource_pot_id:?}"))
+      .clone();
+    ArcContextGlobals(globals)
   }
 }
 
@@ -208,16 +330,35 @@ impl Default for ContextMetaData {
   }
 }
 
-/// Shared script meta data used for [swc]
-pub struct ScriptContextMetaData {
-  pub globals: Globals,
+/// get swc source map filename from module id.
+/// you can get module id from sourcemap filename too, by
+pub fn get_swc_sourcemap_filename(module_id: &ModuleId) -> FileName {
+  // replace all invalid characters to _ to make sure the filename is valid
+  let module_id = module_id.to_string();
+  let module_id = REPLACE_FILENAME_REGEX.replace_all(&module_id, "_");
+  FileName::Real(PathBuf::from(module_id.to_string()))
 }
+
+/// create a swc source map from a source
+pub fn create_swc_source_map(
+  id: &ModuleId,
+  content: Arc<String>,
+) -> (Arc<SourceMap>, Arc<SourceFile>) {
+  let cm = Arc::new(SourceMap::default());
+  let sf = cm.new_source_file(
+    Arc::new(get_swc_sourcemap_filename(id)),
+    content.to_string(), // TODO optimize string performance
+  );
+
+  (cm, sf)
+}
+
+/// Shared script meta data used for [swc]
+pub struct ScriptContextMetaData {}
 
 impl ScriptContextMetaData {
   pub fn new() -> Self {
-    Self {
-      globals: Globals::new(),
-    }
+    Self {}
   }
 }
 
@@ -227,15 +368,11 @@ impl Default for ScriptContextMetaData {
   }
 }
 
-pub struct CssContextMetaData {
-  pub globals: Globals,
-}
+pub struct CssContextMetaData {}
 
 impl CssContextMetaData {
   pub fn new() -> Self {
-    Self {
-      globals: Globals::new(),
-    }
+    Self {}
   }
 }
 
@@ -245,15 +382,11 @@ impl Default for CssContextMetaData {
   }
 }
 
-pub struct HtmlContextMetaData {
-  pub globals: Globals,
-}
+pub struct HtmlContextMetaData {}
 
 impl HtmlContextMetaData {
   pub fn new() -> Self {
-    Self {
-      globals: Globals::new(),
-    }
+    Self {}
   }
 }
 

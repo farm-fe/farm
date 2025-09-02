@@ -1,5 +1,136 @@
 # @farmfe/js-plugin-vue
 
+## 4.0.0-beta.2
+
+### Patch Changes
+
+- Updated dependencies [23b6fc9]
+  - @farmfe/core@2.0.0-beta.2
+
+## 4.0.0-beta.1
+
+### Patch Changes
+
+- Updated dependencies
+  - @farmfe/core@2.0.0-beta.1
+
+## 4.0.0-beta.0
+
+### Major Changes
+
+- f5ce9ea: Release Farm v2.0.0
+
+### Patch Changes
+
+- Updated dependencies [5a9ff6b]
+- Updated dependencies [f5ce9ea]
+  - @farmfe/core@2.0.0-beta.0
+
+## 4.0.0-nightly-20250827162746
+
+### Patch Changes
+
+- 9a227ad: Chore: release v2 nightly
+- Updated dependencies [63908eb]
+  - @farmfe/core@2.0.0-nightly-20250827162746
+
+## 4.0.0-nightly-20250729025629
+
+### Patch Changes
+
+- Updated dependencies [b730530]
+  - @farmfe/core@2.0.0-nightly-20250729025629
+
+## 4.0.0-nightly-20250411141103
+
+### Patch Changes
+
+- @farmfe/core@2.0.0-nightly-20250411141103
+
+## 4.0.0-nightly-20250411100807
+
+### Patch Changes
+
+- Updated dependencies [60f40f0]
+  - @farmfe/core@2.0.0-nightly-20250411100807
+
+## 4.0.0-nightly-20250410022118
+
+### Patch Changes
+
+- Updated dependencies [21ac2ac]
+- Updated dependencies [b8f7fc5]
+- Updated dependencies [ad09476]
+  - @farmfe/core@2.0.0-nightly-20250410022118
+
+## 4.0.0-nightly-20241029121500
+
+### Patch Changes
+
+- Updated dependencies [b327dd1]
+  - @farmfe/core@2.0.0-nightly-20241029121500
+
+## 4.0.0-nightly-20241029095811
+
+### Patch Changes
+
+- Updated dependencies [b3a7caf]
+  - @farmfe/core@2.0.0-nightly-20241029095811
+
+## 4.0.0-nightly-20241024090954
+
+### Patch Changes
+
+- Updated dependencies [f460eb1]
+  - @farmfe/core@2.0.0-nightly-20241024090954
+
+## 4.0.0-nightly-20241024075304
+
+### Patch Changes
+
+- @farmfe/core@2.0.0-nightly-20241024075304
+
+## 4.0.0-nightly-20241023101523
+
+### Patch Changes
+
+- Updated dependencies [d7c5ffb]
+  - @farmfe/core@2.0.0-nightly-20241023101523
+
+## 4.0.0-nightly-20241023020505
+
+### Patch Changes
+
+- Updated dependencies [3651244]
+  - @farmfe/core@2.0.0-nightly-20241023020505
+
+## 4.0.0-nightly-20241022143924
+
+### Patch Changes
+
+- Updated dependencies [83838bd]
+  - @farmfe/core@2.0.0-nightly-20241022143924
+
+## 4.0.0-nightly-20241022124925
+
+### Patch Changes
+
+- @farmfe/core@2.0.0-nightly-20241022124925
+
+## 4.0.0-nightly-20241022041556
+
+### Patch Changes
+
+- Updated dependencies [24347c9]
+  - @farmfe/core@2.0.0-nightly-20241022041556
+
+## 4.0.0-nightly-20241022014521
+
+### Patch Changes
+
+- Updated dependencies [a82a5b2]
+  - @farmfe/core@2.0.0-nightly-20241022014521
+
 ## 3.13.0
 
 ### Patch Changes

@@ -1,36 +1,36 @@
-export interface GlobalFarmCLIOptions {
+export interface GlobalCliOptions {
   '--'?: string[];
   c?: boolean | string;
   config?: string;
-  configPath?: string;
-  m?: string;
   base?: string;
-  mode?: 'development' | 'production';
-  w?: boolean;
-  watch?: boolean;
-  watchPath?: string;
-  port?: number;
-  lazy?: boolean;
-  l?: boolean;
+  m?: string;
+  mode?: string;
   clearScreen?: boolean;
 }
 
-export interface ICleanOptions {
-  path?: string;
-  recursive?: boolean;
-}
-
-export interface FarmCLIServerOptions {
-  port?: string;
+interface BaseServerOptions {
+  host?: string;
+  port?: number;
   open?: boolean;
-  https?: boolean;
-  hmr?: boolean;
+  cors?: boolean;
   strictPort?: boolean;
 }
 
-export interface FarmCLIBuildOptions {
-  input?: string;
+export interface CleanOptions {
+  recursive?: boolean;
+}
+
+export interface CliServerOptions extends BaseServerOptions {
+  hmr?: boolean;
+}
+
+export interface CliBuildOptions {
+  o?: string;
   outDir?: string;
+  i?: string;
+  input?: string;
+  l?: boolean;
+  lazy?: boolean;
   sourcemap?: boolean;
   minify?: boolean;
   treeShaking?: boolean;
@@ -44,10 +44,10 @@ export interface FarmCLIBuildOptions {
     | 'browser-legacy'
     | 'browser-es2015'
     | 'browser-es2017'
-    | 'browser-esnext';
+    | 'browser-esnext'
+    | 'library';
 }
 
-export interface FarmCLIPreviewOptions {
-  open?: boolean;
-  port?: number;
+export interface CliPreviewOptions extends BaseServerOptions {
+  outDir?: string;
 }

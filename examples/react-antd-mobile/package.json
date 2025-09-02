@@ -1,9 +1,9 @@
 {
-  "name": "test-farm",
+  "name": "@farmfe-examples/react-antd-mobile",
   "version": "0.0.1",
-  "author": "test-farm.com",
+  "author": "1521488775@qq.com BrightWu",
   "private": true,
-  "description": "test-farm",
+  "description": "React Antd Mobile Example of Farm",
   "scripts": {
     "start": "farm start",
     "preview": "farm preview",

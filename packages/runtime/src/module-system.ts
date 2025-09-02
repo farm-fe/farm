@@ -1,316 +1,230 @@
-import { Module } from "./module.js";
-import { type FarmRuntimePlugin, FarmRuntimePluginContainer } from "./plugin.js";
-import {
-  type Resource,
-  ResourceLoader,
-  __global_this__,
-  isBrowser,
-  targetEnv,
-} from "./resource-loader.js";
+import type { Resource } from "./modules/dynamic-import.js";
+import type { FarmRuntimePluginContainer } from "./modules/plugin.js";
 
-declare const nodeRequire: (id: string) => any;
+// if statement will be removed during compile time when referencing following variables
+declare const __FARM_RUNTIME_TARGET_ENV__: 'browser' | 'node' | 'library';
+declare const __FARM_ENABLE_RUNTIME_PLUGIN__: boolean;
+declare const __FARM_ENABLE_TOP_LEVEL_AWAIT__: boolean;
+declare const __FARM_ENABLE_EXTERNAL_MODULES__: boolean; // always true if target env is not library
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
-type ModuleInitializationFunction = (
+declare let $__farm_global_this__$: any;
+
+export interface Module {
+  id: string;
+  exports?: any;
+  // initialize promise if this module is a async module
+  initializer?: Promise<any> | undefined;
+  resource_pot?: string;
+  meta?: Record<string, any>;
+  require?: (id: string) => any;
+}
+
+type ModuleInitializationFunction = ((
   module: Module,
   exports: any,
-  __farm_require__: (moduleId: string) => any,
-  __farm_dynamic_require__: (moduleId: string) => any,
-) => void | Promise<void>;
+  __farm_require__?: (moduleId: string) => any,
+  __farm_dynamic_require__?: (moduleId: string) => any,
+) => void | Promise<void>) & { url: string };
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
-export type ModuleInitialization = ModuleInitializationFunction & {
-  __farm_resource_pot__?: string;
-};
+export type ModuleInitialization = ModuleInitializationFunction;
 
-export class ModuleSystem {
-  // all modules registered
-  private modules: Record<string, ModuleInitialization>;
-  // module cache after module initialized
-  private cache: Record<string, Module>;
-  // external modules injected during compile
-  private externalModules: Record<string, any>;
-  private reRegisterModules: boolean;
-  // available public paths, when loading resources, we will try each publicPath until it is available, this is so called `resource loading retry`
-  publicPaths: string[];
-  dynamicResources: Resource[] = [];
-  // dynamic module entry and resources map
-  dynamicModuleResourcesMap: Record<string, number[]>;
-  // resources loader
-  resourceLoader: ResourceLoader;
-  // runtime plugin container
-  pluginContainer: FarmRuntimePluginContainer;
-  targetEnv: "browser" | "node";
+export interface ModuleSystem {
+  /** targetEnv*/
+  te: 'browser' | 'node' | 'library';
+  /** reRegisterModules*/
+  _rg: boolean;
+  /** pluginContainer*/
+  p: FarmRuntimePluginContainer;
+  /** externalModules*/
+  em: Record<string, any>;
+  /** public paths*/
+  pp: string[];
+  /** require*/
+  r(id: string): any;
+  /** register*/
+  g(id: string, module: ModuleInitialization): () => any
+  /** dynamicImport*/
+  d(id: string): Promise<void>,
+  /** getModules*/
+  m(): Record<string, ModuleInitialization>,
+  /** getCache*/
+  c(): Record<string, Module>,
+  /** updateModule*/
+  u(moduleId: string, init: ModuleInitialization): void
+  /** deleteModule*/
+  e(moduleId: string): boolean
+  /** clearCache*/
+  a(moduleId: string): boolean
+  /** loadDynamicResourcesOnly*/
+  l(moduleId: string, force?: boolean): Promise<any>
+  /** setExternalModules*/
+  se(externalModules: Record<string, any>): void
+  /** setInitialLoadedResources*/
+  si(resources: string[]): void
+  /** setDynamicModuleResourcesMap
+    * These two methods are used to support dynamic module loading, the dynamic module info is collected by the compiler and injected during compile time
+    * This method can also be called during runtime to add new dynamic modules */
+  sd(dynamicResources: Resource[], dynamicModuleResourcesMap: Record<string, number[]>): void
+  /** setPublicPaths
+  * The public paths are injected during compile time */
+  sp(publicPaths: string[]): void
+  /** bootstrap
+    * bootstrap should be called after all three methods above are called, and the bootstrap call is also injected during compile time
+    * This method should only be called once */
+  b(): void
+}
 
-  constructor() {
-    this.modules = {};
-    this.cache = {};
-    this.publicPaths = [];
-    this.dynamicModuleResourcesMap = {};
-    this.resourceLoader = new ResourceLoader(this, this.publicPaths);
-    this.pluginContainer = new FarmRuntimePluginContainer([]);
-    this.targetEnv = targetEnv;
-    this.externalModules = {};
-    this.reRegisterModules = false;
+function setGlobalRequire(globalThis: any) {
+  // polyfill require when running in browser or node with Farm runtime
+  const __global_this__: any = typeof globalThis !== 'undefined' ? globalThis : {};
+  __global_this__.require = __global_this__.require || farmRequire;
+}
+
+// It will be removed if __FARM_RUNTIME_TARGET_ENV__ is not browser when building runtime 
+if (__FARM_RUNTIME_TARGET_ENV__ === 'browser') {
+  setGlobalRequire(window);
+}
+if (__FARM_RUNTIME_TARGET_ENV__ === 'node') {
+  setGlobalRequire(global);
+}
+
+// all modules registered
+const __farm_internal_modules__: Record<string, ModuleInitialization> = {};
+// module cache after module initialized
+const __farm_internal_cache__: Record<string, Module> = {};
+
+export var __farm_internal_module_system__ = {
+  r: farmRequire,
+  g: farmRegister,
+  m: () => __farm_internal_modules__,
+  c: () => __farm_internal_cache__,
+} as ModuleSystem;
+
+if (__FARM_RUNTIME_TARGET_ENV__ !== 'library') {
+  // @ts-ignore injected during compile time
+  __farm_internal_module_system__.te = __FARM_RUNTIME_TARGET_ENV_INJECTED_VALUE__;
+}
+
+if (__FARM_ENABLE_EXTERNAL_MODULES__) {
+  // externalModules
+  __farm_internal_module_system__.em = {}
+  // The external modules are injected during compile time.
+  __farm_internal_module_system__.se = function setExternalModules(externalModules: Record<string, any>): void {
+    for (const key in externalModules) {
+      let em = externalModules[key];
+      // add a __esModule flag to the module if the module has default export
+      if (em && em.default && !em.__esModule) {
+        em = {
+          ...em,
+          __esModule: true,
+        };
+      }
+
+      __farm_internal_module_system__.em[key]= em;
+    }
+  }
+  // init `window['xxxx] = {}`
+  const __farm_global_this__: any = $__farm_global_this__$ = {};
+  __farm_global_this__.m = __farm_internal_module_system__;
+}
+
+export function farmRequire(id: string): any {
+  if (__farm_internal_cache__[id]) {
+    if (__FARM_RUNTIME_TARGET_ENV__ === 'library') var cachedModuleResult =__farm_internal_cache__[id].exports;
+    else var cachedModuleResult = __farm_internal_cache__[id].initializer || __farm_internal_cache__[id].exports;
+    // will be removed as dead code if no plugin enabled when minify enabled
+    if (__FARM_ENABLE_RUNTIME_PLUGIN__) {
+      const shouldSkip = __farm_internal_module_system__.p?.b(
+        "readModuleCache",
+        __farm_internal_cache__[id],
+      );
+  
+      // console.log(`[Farm] shouldSkip: ${shouldSkip} ${moduleId}`);
+      if (!shouldSkip) return cachedModuleResult;
+    } else return cachedModuleResult;
   }
 
-  require(moduleId: string, isCJS = false): any {
-    // return the cached exports if cache exists
-    // console.log(`[Farm] require module "${moduleId}" from cache`);
-    if (this.cache[moduleId]) {
-      const shouldSkip = this.pluginContainer.hookBail(
-        "readModuleCache",
-        this.cache[moduleId],
-      );
+  const initializer = __farm_internal_modules__[id];
 
-      // console.log(`[Farm] shouldSkip: ${shouldSkip} ${moduleId}`);
-      if (!shouldSkip) {
-        const cachedModule = this.cache[moduleId];
-        return cachedModule.initializer || cachedModule.exports;
+  if (!initializer) {
+    if (__FARM_ENABLE_EXTERNAL_MODULES__) {
+      // externalModules
+      if (__farm_internal_module_system__.em[id]) {
+        return __farm_internal_module_system__.em[id];
       }
     }
 
-    const initializer = this.modules[moduleId];
+    if (__FARM_ENABLE_RUNTIME_PLUGIN__) {
+      const res = __farm_internal_module_system__.p?.b("moduleNotFound", id);
 
-    if (!initializer) {
-      if (this.externalModules[moduleId]) {
-        const exports = this.externalModules[moduleId];
-
-        // fix `const assert = require('assert');` when assert is external. This leads to `assert is not a function` error caused by default export different from esm and cjs
-        if (isCJS) {
-          return exports.default || exports;
-        }
-
-        return exports;
+      if (res) {
+        return res
       }
-      // try node require if target Env is node
-      if ((this.targetEnv === "node" || !isBrowser) && nodeRequire) {
-        const externalModule = nodeRequire(moduleId);
-        return externalModule;
-      }
-      this.pluginContainer.hookSerial("moduleNotFound", moduleId);
-      // return a empty module if the module is not registered
-      console.debug(`[Farm] Module "${moduleId}" is not registered`);
-      return {};
-      // throw new Error(`Module "${moduleId}" is not registered`);
     }
 
-    // create a full new module instance and store it in cache to avoid cyclic initializing
-    const module = new Module(moduleId, this.require.bind(this));
-    module.resource_pot = initializer.__farm_resource_pot__!;
-    // call the module created hook
-    this.pluginContainer.hookSerial("moduleCreated", module);
-
-    this.cache[moduleId] = module;
-
-    if (!__global_this__.require) {
-      __global_this__.require =
-        this.require.bind(this);
+    // fallback to require if target env is node
+    if (__FARM_RUNTIME_TARGET_ENV__ === 'node') {
+      try {
+        return require(id);
+      } catch (e) {}
     }
-    // initialize the new module
+
+    console.debug(`[Farm] Module "${id}" is not registered`);
+
+    // return a empty module if the module is not registered
+    return {};
+  }
+
+  // create a full new module instance and store it in cache to avoid cyclic initializing
+  const module = __farm_internal_cache__[id] = {
+    id,
+    meta: {
+      env: {},
+    },
+    exports: {},
+    require: farmRequire,
+  } as Module;
+
+  if (__FARM_ENABLE_RUNTIME_PLUGIN__) __farm_internal_module_system__.p?.s("moduleCreated", module); // call the module created hook
+
+  __farm_internal_cache__[id] = module;
+  
+  // initialize the new module
+  if (__FARM_RUNTIME_TARGET_ENV__ === 'library') initializer(module, module.exports)
+  else if (__FARM_ENABLE_TOP_LEVEL_AWAIT__) {
     const result = initializer(
       module,
       module.exports,
-      this.require.bind(this),
-      this.farmDynamicRequire.bind(this),
+      farmRequire,
+      __farm_internal_module_system__.d,
     );
 
     // it's a async module, return the promise
     if (result && result instanceof Promise) {
       module.initializer = result.then(() => {
-        // call the module initialized hook
-        this.pluginContainer.hookSerial("moduleInitialized", module);
+        if (__FARM_ENABLE_RUNTIME_PLUGIN__) __farm_internal_module_system__.p?.s("moduleInitialized", module); // call the module initialized hook
+
         module.initializer = undefined;
         // return the exports of the module
         return module.exports;
       });
+
       return module.initializer;
-    } else {
-      // call the module initialized hook
-      this.pluginContainer.hookSerial("moduleInitialized", module);
-      // return the exports of the module
-      return module.exports;
     }
-  }
-
-  farmDynamicRequire(moduleId: string): Promise<any> {
-    if (this.modules[moduleId]) {
-      const exports = this.require(moduleId);
-
-      if (exports.__farm_async) {
-        return exports.default;
-      } else {
-        return Promise.resolve(exports);
-      }
-    }
-
-    return this.loadDynamicResources(moduleId);
-  }
-
-  loadDynamicResourcesOnly(moduleId: string, force = false): Promise<any> {
-    const resources = this.dynamicModuleResourcesMap[moduleId].map((index) => this.dynamicResources[index]);
-
-    if (!resources || resources.length === 0) {
-      throw new Error(
-        `Dynamic imported module "${moduleId}" does not belong to any resource`,
-      );
-    }
-    // force reload resources
-    if (force) {
-      this.clearCache(moduleId);
-    }
-    // loading all required resources, and return the exports of the entry module
-    return Promise.all(
-      resources.map((resource) => {
-        if (force) {
-          const resourceLoaded = this.resourceLoader.isResourceLoaded(resource.path);
-          this.resourceLoader.setLoadedResource(resource.path, false);
-
-          if (resourceLoaded) {
-            return this.resourceLoader.load({
-              ...resource,
-              // force reload the resource
-              path: `${resource.path}?t=${Date.now()}`
-            });
-          }
-        }
-        return this.resourceLoader.load(resource);
-      }),
-    )
-  }
-
-  loadDynamicResources(moduleId: string, force = false): Promise<any> {
-    const resources = this.dynamicModuleResourcesMap[moduleId].map((index) => this.dynamicResources[index]);
-  
-    return this.loadDynamicResourcesOnly(moduleId, force)
-      .then(() => {
-        // Do not require the module if all the resources are not js resources
-        if (resources.every(resource => resource.type !== 0)) {
-          return;
-        }
-
-        if (!this.modules[moduleId]) {
-          throw new Error(
-            `Dynamic imported module "${moduleId}" is not registered.`,
-          );
-        }
-        const result = this.require(moduleId);
-        // if the module is async, return the default export, the default export should be a promise
-        if (result.__farm_async) {
-          return result.default;
-        } else {
-          return result;
-        }
-      })
-      .catch((err) => {
-        console.error(`[Farm] Error loading dynamic module "${moduleId}"`, err);
-        throw err;
-      });
-  }
-
-  register(moduleId: string, initializer: ModuleInitialization): void {
-    // console.log(`[Farm] register module "${moduleId}"`, console.trace());
-    if (this.modules[moduleId] && !this.reRegisterModules) {
-      // throw new Error(
-      //   `Module "${moduleId}" has registered! It should not be registered twice`
-      // );
-      console.warn(
-        `Module "${moduleId}" has registered! It should not be registered twice`,
-      );
-      return;
-    }
-
-    this.modules[moduleId] = initializer;
-  }
-
-  update(moduleId: string, init: ModuleInitialization): void {
-    this.modules[moduleId] = init;
-    this.clearCache(moduleId);
-  }
-
-  delete(moduleId: string): boolean {
-    if (this.modules[moduleId]) {
-      this.clearCache(moduleId);
-      delete this.modules[moduleId];
-      return true;
-    } else {
-      return false;
-    }
-  }
-
-  getModuleUrl(moduleId: string): string {
-    const publicPath = this.publicPaths[0] ?? "";
-
-    if (isBrowser) {
-      const url = `${window.location.protocol}//${window.location.host}${
-        publicPath.endsWith("/") ? publicPath.slice(0, -1) : publicPath
-      }/${this.modules[moduleId].__farm_resource_pot__}`;
-      return url;
-    } else {
-      return this.modules[moduleId].__farm_resource_pot__!;
-    }
-  }
-
-  getCache(moduleId: string): Module | undefined {
-    return this.cache[moduleId];
-  }
-
-  clearCache(moduleId: string): boolean {
-    if (this.cache[moduleId]) {
-      delete this.cache[moduleId];
-      return true;
-    } else {
-      return false;
-    }
-  }
-
-  setInitialLoadedResources(resources: string[]) {
-    for (const resource of resources) {
-      this.resourceLoader.setLoadedResource(resource);
-    }
-  }
-
-  // These two methods are used to support dynamic module loading, the dynamic module info is collected by the compiler and injected during compile time
-  // This method can also be called during runtime to add new dynamic modules
-  setDynamicModuleResourcesMap(
-    dynamicResources: Resource[],
-    dynamicModuleResourcesMap: Record<string, number[]>,
-  ): void {
-    this.dynamicResources = dynamicResources;
-    this.dynamicModuleResourcesMap = dynamicModuleResourcesMap;
-  }
-
-  // The public paths are injected during compile time
-  setPublicPaths(publicPaths: string[]): void {
-    this.publicPaths = publicPaths;
-    this.resourceLoader.publicPaths = this.publicPaths;
-  }
-
-  // The plugins are injected during compile time.
-  setPlugins(plugins: FarmRuntimePlugin[]): void {
-    this.pluginContainer.plugins = plugins;
-  }
-  // This method can be called during runtime to add new plugins
-  addPlugin(plugin: FarmRuntimePlugin): void {
-    if (this.pluginContainer.plugins.every((p) => p.name !== plugin.name)) {
-      this.pluginContainer.plugins.push(plugin);
-    }
-  }
-  // This method can be called during runtime to remove plugins
-  removePlugin(pluginName: string): void {
-    this.pluginContainer.plugins = this.pluginContainer.plugins.filter(
-      (p) => p.name !== pluginName,
+  } else initializer(
+      module,
+      module.exports,
+      farmRequire,
+      __farm_internal_module_system__.d,
     );
-  }
 
-  // The external modules are injected during compile time.
-  setExternalModules(externalModules: Record<string, any>): void {
-    Object.assign(this.externalModules, externalModules || {});
-  }
+  if (__FARM_ENABLE_RUNTIME_PLUGIN__) __farm_internal_module_system__.p?.s("moduleInitialized", module);  // call the module initialized hook
+  
+  // return the exports of the module
+  return module.exports;
+}
 
-  // bootstrap should be called after all three methods above are called, and the bootstrap call is also injected during compile time
-  // This method should only be called once
-  bootstrap(): void {
-    this.pluginContainer.hookSerial("bootstrap", this);
-  }
+export function farmRegister(id: string, module: ModuleInitialization): () => any {
+  __farm_internal_modules__[id] = module;
+  return () => farmRequire(id);
 }

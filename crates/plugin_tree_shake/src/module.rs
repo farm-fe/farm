@@ -1,11 +1,9 @@
-use std::{
-  collections::{HashMap, HashSet},
-  mem,
-};
+use std::mem;
 
 use farmfe_core::{
   module::{Module, ModuleId, ModuleSystem},
-  swc_common::{comments::SingleThreadedComments, Mark},
+  swc_common::comments::SingleThreadedComments,
+  HashMap, HashSet,
 };
 
 use crate::statement_graph::{
@@ -54,6 +52,16 @@ impl ToString for UsedExportsIdent {
       UsedExportsIdent::Default => "default".to_string(),
       UsedExportsIdent::ExportAll => "*".to_string(),
       UsedExportsIdent::ImportAll => "import_*_as".to_string(),
+    }
+  }
+}
+
+impl From<String> for UsedExportsIdent {
+  fn from(value: String) -> Self {
+    if value == "default" {
+      Self::Default
+    } else {
+      Self::SwcIdent(value)
     }
   }
 }
@@ -130,6 +138,7 @@ impl UsedExports {
   }
 }
 
+// TODO cache tree shake module
 pub struct TreeShakeModule {
   pub module_id: ModuleId,
   pub side_effects: bool,
@@ -155,11 +164,9 @@ impl TreeShakeModule {
     // 1. generate statement graph
     let comments_meta = module.meta.as_script_mut().take_comments();
     let ast = &module.meta.as_script().ast;
-    let unresolved_mark = Mark::from_u32(module.meta.as_script().unresolved_mark);
-    let top_level_mark = Mark::from_u32(module.meta.as_script().top_level_mark);
     let comments = SingleThreadedComments::from(comments_meta);
     let stmt_graph = if module_system == ModuleSystem::EsModule {
-      StatementGraph::new(ast, unresolved_mark, top_level_mark, &comments)
+      StatementGraph::new(module, ast, &comments)
     } else {
       StatementGraph::empty()
     };
@@ -232,24 +239,33 @@ impl TreeShakeModule {
     exports
   }
 
+  pub fn get_stmt_used_idents_map(
+    &self,
+    used_exports_idents: Vec<(UsedStatementIdent, usize)>,
+  ) -> HashMap<StatementId, HashSet<UsedStatementIdent>> {
+    let mut stmt_used_idents_map = HashMap::default();
+
+    for (used_ident, stmt_id) in used_exports_idents {
+      let used_idents = stmt_used_idents_map
+        .entry(stmt_id)
+        .or_insert(HashSet::default());
+      used_idents.insert(used_ident);
+    }
+
+    stmt_used_idents_map
+  }
+
   /// Trace the used statement starting from pending_used_exports and mark them as used.
   /// Then merge pending_used_exports into used_exports
   pub fn trace_and_mark_used_statements(&mut self) -> Vec<TracedUsedImportStatement> {
     // 1. get used exports
     let used_exports_idents = self.used_exports_to_statement_idents();
-    let mut stmt_used_idents_map = HashMap::new();
-
-    for (used_ident, stmt_id) in used_exports_idents {
-      let used_idents = stmt_used_idents_map
-        .entry(stmt_id)
-        .or_insert(HashSet::new());
-      used_idents.insert(used_ident);
-    }
+    let stmt_used_idents_map = self.get_stmt_used_idents_map(used_exports_idents);
 
     // 2. trace used statements starting from used exports
     self
       .stmt_graph
-      .trace_and_mark_used_statements(stmt_used_idents_map)
+      .trace_and_mark_used_statements(stmt_used_idents_map, None)
   }
 
   /// For param include_default_export: If it's false, the default export will not be included,
@@ -302,7 +318,6 @@ impl TreeShakeModule {
         self.all_exports_to_statement_idents(true)
       }
       UsedExports::Partial(idents) => {
-        let mut used_idents = vec![];
         // statement `import * as xxx from './xxx'` is marked as used, and the usage can not be statically determined, e.g. xxx[expr].
         // so we need to mark all exported idents as used the same as UsedExports::All
         if idents.contains(&UsedExportsIdent::ImportAll) {
@@ -314,90 +329,100 @@ impl TreeShakeModule {
         if idents.contains(&UsedExportsIdent::ExportAll) {
           return self.all_exports_to_statement_idents(idents.contains(&UsedExportsIdent::Default));
         }
-        // find exported ident for every used idents.
-        for ident in idents {
-          let mut export_all_stmt_ids: Option<Vec<usize>> = None;
-          // find the export info that contains the ident
-          let export_info = self.exports().into_iter().find(|export_info| {
-            export_info.specifiers.iter().any(|sp| match sp {
-              ExportSpecifierInfo::Default => ident.is_default(),
-              ExportSpecifierInfo::Named { local, exported } => {
-                let exported_ident = if let Some(exported) = exported {
-                  exported
-                } else {
-                  local
-                };
 
-                ident.is_ident_matched(exported_ident.0.as_str())
-              }
-              ExportSpecifierInfo::Namespace(ns) => ident.is_ident_matched(ns.0.as_str()),
-              ExportSpecifierInfo::All => {
-                /* Deal with All later */
-                if let Some(export_all_stmt_id) = &mut export_all_stmt_ids {
-                  export_all_stmt_id.push(export_info.stmt_id);
-                } else {
-                  export_all_stmt_ids = Some(vec![export_info.stmt_id]);
-                }
-                false
-              }
-            })
-          });
+        self.used_exports_idents_to_statement_idents(idents)
+      }
+    }
+  }
 
-          if let Some(export_info) = export_info {
-            for sp in &export_info.specifiers {
-              match sp {
-                ExportSpecifierInfo::Default => {
-                  if ident.is_default() {
-                    used_idents.push((UsedStatementIdent::Default, export_info.stmt_id));
-                  }
-                }
-                ExportSpecifierInfo::Named { local, exported } => {
-                  if let Some(exported) = exported {
-                    if ident.is_ident_matched(exported.0.as_str()) {
-                      used_idents.push((
-                        UsedStatementIdent::SwcIdent(local.clone()),
-                        export_info.stmt_id,
-                      ));
-                    }
-                  } else if ident.is_ident_matched(local.0.as_str()) {
-                    used_idents.push((
-                      UsedStatementIdent::SwcIdent(local.clone()),
-                      export_info.stmt_id,
-                    ));
-                  }
-                }
-                ExportSpecifierInfo::Namespace(ns) => {
-                  if ident.is_ident_matched(ns.0.as_str()) {
-                    used_idents.push((
-                      UsedStatementIdent::SwcIdent(ns.clone()),
-                      export_info.stmt_id,
-                    ));
-                  }
-                }
-                ExportSpecifierInfo::All => {
-                  unreachable!()
-                }
+  pub fn used_exports_idents_to_statement_idents(
+    &self,
+    idents: &HashSet<UsedExportsIdent>,
+  ) -> Vec<(UsedStatementIdent, StatementId)> {
+    let mut used_idents = vec![];
+
+    // find exported ident for every used idents.
+    for ident in idents {
+      let mut export_all_stmt_ids: Option<Vec<usize>> = None;
+      // find the export info that contains the ident
+      let export_info = self.exports().into_iter().find(|export_info| {
+        export_info.specifiers.iter().any(|sp| match sp {
+          ExportSpecifierInfo::Default => ident.is_default(),
+          ExportSpecifierInfo::Named { local, exported } => {
+            let exported_ident = if let Some(exported) = exported {
+              exported
+            } else {
+              local
+            };
+
+            ident.is_ident_matched(exported_ident.sym.as_str())
+          }
+          ExportSpecifierInfo::Namespace(ns) => ident.is_ident_matched(ns.sym.as_str()),
+          ExportSpecifierInfo::All => {
+            /* Deal with All later */
+            if let Some(export_all_stmt_id) = &mut export_all_stmt_ids {
+              export_all_stmt_id.push(export_info.stmt_id);
+            } else {
+              export_all_stmt_ids = Some(vec![export_info.stmt_id]);
+            }
+            false
+          }
+        })
+      });
+
+      if let Some(export_info) = export_info {
+        for sp in &export_info.specifiers {
+          match sp {
+            ExportSpecifierInfo::Default => {
+              if ident.is_default() {
+                used_idents.push((UsedStatementIdent::Default, export_info.stmt_id));
               }
             }
-          } else {
-            // if export info is not found, and there are ExportSpecifierInfo::All, then the ident may be exported by `export * from 'xxx'`
-            if let Some(export_all_stmt_id) = export_all_stmt_ids {
-              let ident = ident.expect_ident().to_string();
-              // skip default for export * from 'xxx'
-              if ident != *"default" {
-                for export_all_stmt_id in export_all_stmt_id {
+            ExportSpecifierInfo::Named { local, exported } => {
+              if let Some(exported) = exported {
+                if ident.is_ident_matched(exported.sym.as_str()) {
                   used_idents.push((
-                    UsedStatementIdent::InExportAll(ident.clone()),
-                    export_all_stmt_id,
+                    UsedStatementIdent::SwcIdent(local.clone()),
+                    export_info.stmt_id,
                   ));
                 }
+              } else if ident.is_ident_matched(local.sym.as_str()) {
+                used_idents.push((
+                  UsedStatementIdent::SwcIdent(local.clone()),
+                  export_info.stmt_id,
+                ));
               }
+            }
+            ExportSpecifierInfo::Namespace(ns) => {
+              if ident.is_ident_matched(ns.sym.as_str()) {
+                used_idents.push((
+                  UsedStatementIdent::SwcIdent(ns.clone()),
+                  export_info.stmt_id,
+                ));
+              }
+            }
+            ExportSpecifierInfo::All => {
+              unreachable!()
             }
           }
         }
-
-        used_idents
+      } else {
+        // if export info is not found, and there are ExportSpecifierInfo::All, then the ident may be exported by `export * from 'xxx'`
+        if let Some(export_all_stmt_id) = export_all_stmt_ids {
+          let ident = ident.expect_ident().to_string();
+          // skip default for export * from 'xxx'
+          if ident != *"default" {
+            for export_all_stmt_id in export_all_stmt_id {
+              used_idents.push((
+                UsedStatementIdent::InExportAll(ident.clone()),
+                export_all_stmt_id,
+              ));
+            }
+          }
+        }
       }
     }
+
+    used_idents
   }
 }

@@ -1,41 +1,22 @@
 import fse from 'fs-extra';
-// queue all updates and compile them one by one
 
 import { stat } from 'node:fs/promises';
 import { isAbsolute, relative } from 'node:path';
 
-import { Compiler } from '../compiler/index.js';
-import { checkClearScreen } from '../config/index.js';
-import type { JsUpdateResult } from '../types/binding.js';
-import {
-  Logger,
-  bold,
-  cyan,
-  getDynamicResources,
-  green
-} from '../utils/index.js';
-import { logError } from './error.js';
-import { Server } from './index.js';
-import { WebSocketClient } from './ws.js';
+import type { Resource } from '@farmfe/runtime';
+import { HmrOptions } from '../config/index.js';
+import type { CompilerUpdateItem, JsUpdateResult } from '../types/binding.js';
+import { convertErrorMessage } from '../utils/error.js';
+import { bold, cyan, green } from '../utils/index.js';
+import { Server as FarmDevServer } from './index.js';
 
 export class HmrEngine {
-  private _updateQueue: string[] = [];
-  // private _updateResults: Map<string, { result: string; count: number }> =
+  private _updateQueue: CompilerUpdateItem[] = [];
 
-  private _compiler: Compiler;
-  private _devServer: Server;
   private _onUpdates: ((result: JsUpdateResult) => void)[];
 
   private _lastModifiedTimestamp: Map<string, string>;
-
-  constructor(
-    compiler: Compiler,
-    devServer: Server,
-    private _logger: Logger
-  ) {
-    this._compiler = compiler;
-    this._devServer = devServer;
-    // this._lastAttemptWasError = false;
+  constructor(private readonly devServer: FarmDevServer) {
     this._lastModifiedTimestamp = new Map();
   }
 
@@ -56,17 +37,17 @@ export class HmrEngine {
     if (queue.length === 0) {
       return;
     }
-
+    const logger = this.devServer.logger;
     let updatedFilesStr = queue
       .map((item) => {
-        if (isAbsolute(item)) {
-          return relative(this._compiler.config.config.root, item);
+        if (isAbsolute(item.path)) {
+          return relative(this.devServer.compiler.config.root, item.path);
         } else {
-          const resolvedPath = this._compiler.transformModulePath(
-            this._compiler.config.config.root,
-            item
+          const resolvedPath = this.devServer.compiler.transformModulePath(
+            this.devServer.compiler.config.root,
+            item.path
           );
-          return relative(this._compiler.config.config.root, resolvedPath);
+          return relative(this.devServer.compiler.config.root, resolvedPath);
         }
       })
       .join(', ');
@@ -77,23 +58,22 @@ export class HmrEngine {
 
     try {
       // we must add callback before update
-      this._compiler.onUpdateFinish(async () => {
+      this.devServer.compiler.onUpdateFinish(async () => {
         // if there are more updates, recompile again
         if (this._updateQueue.length > 0) {
           await this.recompileAndSendResult();
         }
-        if (this._devServer?.config?.writeToDisk) {
-          this._compiler.writeResourcesToDisk();
+        if (this.devServer.config?.server.writeToDisk) {
+          this.devServer.compiler.writeResourcesToDisk();
         }
       });
 
-      checkClearScreen(this._compiler.config.config);
-      const start = Date.now();
-      const result = await this._compiler.update(queue);
-      this._logger.info(
-        `${bold(cyan(updatedFilesStr))} updated in ${bold(
-          green(`${Date.now() - start}ms`)
-        )}`
+      const start = performance.now();
+
+      const result = await this.devServer.compiler.update(queue);
+
+      logger.info(
+        `${bold(cyan(updatedFilesStr))} updated in ${bold(green(logger.formatTime(performance.now() - start)))}`
       );
 
       // clear update queue after update finished
@@ -101,9 +81,21 @@ export class HmrEngine {
         (item) => !queue.includes(item)
       );
 
-      const { dynamicResources, dynamicModuleResourcesMap } =
-        getDynamicResources(result.dynamicResourcesMap);
+      let dynamicResourcesMap: Record<string, Resource[]> = null;
 
+      if (result.dynamicResourcesMap) {
+        for (const [key, value] of Object.entries(result.dynamicResourcesMap)) {
+          if (!dynamicResourcesMap) {
+            dynamicResourcesMap = {} as Record<string, Resource[]>;
+          }
+
+          // @ts-ignore
+          dynamicResourcesMap[key] = value.map((r) => ({
+            path: r[0],
+            type: r[1] as 'script' | 'link'
+          }));
+        }
+      }
       const {
         added,
         changed,
@@ -119,14 +111,13 @@ export class HmrEngine {
         immutableModules: ${JSON.stringify(immutableModules.trim())},
         mutableModules: ${JSON.stringify(mutableModules.trim())},
         boundaries: ${JSON.stringify(boundaries)},
-        dynamicResources: ${JSON.stringify(dynamicResources)},
-        dynamicModuleResourcesMap: ${JSON.stringify(dynamicModuleResourcesMap)}
+        dynamicResourcesMap: ${JSON.stringify(dynamicResourcesMap)}
       }`;
 
       this.callUpdates(result);
 
-      this._devServer.ws.clients.forEach((client: WebSocketClient) => {
-        client.rawSend(`
+      this.devServer.ws.wss.clients.forEach((client) => {
+        client.send(`
         {
           type: 'farm-update',
           result: ${resultStr}
@@ -134,49 +125,61 @@ export class HmrEngine {
       `);
       });
     } catch (err) {
-      checkClearScreen(this._compiler.config.config);
-      throw new Error(logError(err) as unknown as string);
+      this.devServer.logger.error(`Update Error: ${convertErrorMessage(err)}`);
     }
   };
 
-  async hmrUpdate(absPath: string | string[], force = false) {
-    const paths = Array.isArray(absPath) ? absPath : [absPath];
-
-    for (const path of paths) {
-      if (this._compiler.hasModule(path) && !this._updateQueue.includes(path)) {
-        if (fse.existsSync(path)) {
-          const lastModifiedTimestamp = this._lastModifiedTimestamp.get(path);
-          const currentTimestamp = (await stat(path)).mtime.toISOString();
+  async hmrUpdate(
+    absPath: CompilerUpdateItem | CompilerUpdateItem[],
+    force = false
+  ) {
+    const pathItems = Array.isArray(absPath) ? absPath : [absPath];
+    for (const item of pathItems) {
+      if (
+        this.devServer.compiler.hasModule(item.path) &&
+        !this._updateQueue.find((queueItem) => queueItem.path === item.path)
+      ) {
+        if (fse.existsSync(item.path)) {
+          const lastModifiedTimestamp = this._lastModifiedTimestamp.get(
+            item.path
+          );
+          const currentTimestamp = (await stat(item.path)).mtime.toISOString();
           // only update the file if the timestamp changed since last update
           if (!force && lastModifiedTimestamp === currentTimestamp) {
             continue;
           }
-          this._lastModifiedTimestamp.set(path, currentTimestamp);
+          this._lastModifiedTimestamp.set(item.path, currentTimestamp);
         }
         // push the path into the queue
-        this._updateQueue.push(path);
+        this._updateQueue.push(item);
       }
     }
 
-    if (!this._compiler.compiling && this._updateQueue.length > 0) {
+    if (!this.devServer.compiler.compiling && this._updateQueue.length > 0) {
       try {
         await this.recompileAndSendResult();
       } catch (e) {
-        // eslint-disable-next-line no-control-regex
         const serialization = e.message.replace(/\x1b\[[0-9;]*m/g, '');
         const errorStr = `${JSON.stringify({
           message: serialization
         })}`;
-        this._devServer.ws.clients.forEach((client: WebSocketClient) => {
-          client.rawSend(`
+
+        this.devServer.ws.wss.clients.forEach((client) => {
+          // @ts-ignore
+          // client.rawSend(`
+          client.send(`
             {
               type: 'error',
               err: ${errorStr},
-              overlay: ${this._devServer.config.hmr.overlay}
+              overlay: ${(this.devServer.config.server.hmr as HmrOptions).overlay}
             }
           `);
         });
-        this._logger.error(e);
+
+        this.devServer.logger.error(convertErrorMessage(e), {
+          exit: true
+        });
+        // throw new Error(`hmr update failed: ${e.stack}`);
       }
     }
   }

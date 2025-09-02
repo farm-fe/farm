@@ -1,36 +1,37 @@
 import { resolve } from 'node:path';
 import { defineConfig } from '@farmfe/core';
 import farmJsPluginLess from '@farmfe/js-plugin-less';
-import farmJsPluginSvgr from '@farmfe/js-plugin-svgr';
+import svgr from '@farmfe/js-plugin-svgr';
 
 export default defineConfig((env) => {
   return {
     compilation: {
+      input: {
+        index: './index.html'
+      },
+      sourcemap: 'inline',
+      presetEnv: false,
+      concatenateModules: true,
+      persistentCache: false,
+      // minify: {
+      //   mangleExports: false,
+      // },
+      output: {
+        showFileSize: true,
+      },
+      // persistentCache: false,
       resolve: {
         alias: {
-          '@': resolve(process.cwd(), './src'),
-        }
+          "@": resolve(process.cwd(), "./src"),
+        },
+        dedupe: ["react", "react-dom"],
       },
-      output: {
-        path: './build',
-        filename: 'assets/[resourceName].[contentHash].[ext]',
-        assetsFilename: 'static/[resourceName].[contentHash].[ext]'
-      },
-      partialBundling: {
-        targetMinSize: 1024 * 2
-      },
-      progress: false
     },
     plugins: [
-      [
-        '@farmfe/plugin-react',
-        {
-          refresh: env.mode === 'development',
-          development: env.mode === 'development'
-        }
-      ],
-      '@farmfe/plugin-svgr',
+      '@farmfe/plugin-react',
+      // '@farmfe/plugin-svgr',
+      svgr(),
       farmJsPluginLess(),
-    ]
+    ],
   };
 });

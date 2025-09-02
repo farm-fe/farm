@@ -1,15 +1,12 @@
 import { test, expect } from 'vitest';
-import { Module } from '../src/module.js';
-import { FarmRuntimePluginContainer } from '../src/plugin.js';
-
-test('plugin creation', () => {
-  const pluginContainer = new FarmRuntimePluginContainer([]);
-  expect(pluginContainer).toBeTruthy();
-});
+import { Module, ModuleSystem } from '../src/index.js';
+import { initModuleSystem } from '../dist/modules/plugin.js';
 
 test('plugin hooks serial execution', async () => {
+  const moduleSystem = {} as ModuleSystem;
+  initModuleSystem(moduleSystem);
   const calledPlugins: string[] = [];
-  const pluginContainer = new FarmRuntimePluginContainer([
+  moduleSystem.p.p([
     {
       name: 'test-1',
       moduleCreated: () => {
@@ -24,18 +21,24 @@ test('plugin hooks serial execution', async () => {
     }
   ]);
 
-  await pluginContainer.hookSerial(
+  moduleSystem.p.s(
     'moduleCreated',
-    new Module('test-module', () => {
-      /** */
-    })
+    {
+      id: 'test-module',
+      meta: {
+        env: {}
+      },
+      exports: {},
+    } as Module
   );
   expect(calledPlugins).toEqual(['test-1', 'test-2']);
 });
 
 test('plugin hook bail execution', async () => {
+  const moduleSystem = {} as ModuleSystem;
+  initModuleSystem(moduleSystem);
   const calledPlugins: string[] = [];
-  const pluginContainer = new FarmRuntimePluginContainer([
+  moduleSystem.p.p([
     {
       name: 'test-0',
       readModuleCache: () => {
@@ -59,11 +62,15 @@ test('plugin hook bail execution', async () => {
     }
   ]);
 
-  const res = await pluginContainer.hookBail(
+  const res = await moduleSystem.p.b(
     'readModuleCache',
-    new Module('test-module', () => {
-      /** */
-    })
+    {
+      id: 'test-module',
+      meta: {
+        env: {}
+      },
+      exports: {},
+    } as Module
   );
   expect(res).toBe(true);
   expect(calledPlugins).toEqual(['test-0', 'test-1']);

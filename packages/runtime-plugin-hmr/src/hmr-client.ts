@@ -33,11 +33,13 @@ export class HmrClient {
       `${socketProtocol}://${socketHostUrl}`,
       'farm_hmr'
     );
+
     this.socket = socket;
     // listen for the message from the server
     // when the user save the file, the server will recompile the file(and its dependencies as long as its dependencies are changed)
     // after the file is recompiled, the server will generated a update resource and send its id to the client
     // the client will apply the update
+
     socket.addEventListener('message', (event) => {
       const result: HMRPayload = new Function(`return (${event.data})`)();
       if (result?.type === 'closing') {
@@ -63,7 +65,10 @@ export class HmrClient {
       this.notifyListeners('vite:ws:disconnect', { webSocket: socket });
       this.notifyListeners('farm:ws:disconnect', { webSocket: socket });
 
-      logger.debug('disconnected from the server, please reload the page.');
+      logger.debug(
+        'disconnected from the server, Please refresh the page manually. If you still encounter errors, this may be a farm bug. Please submit an issue. https://github.com/farm-fe/farm/issues'
+      );
+
       await waitForSuccessfulPing(socketProtocol, `${socketHostUrl}`);
       location.reload();
     });
@@ -93,17 +98,20 @@ export class HmrClient {
         await prune(hotContext.data);
       }
 
-      moduleSystem.delete(id);
+      // if the module is both in remove and added, we just need to clear the cache
+      if (!result.added.includes(id)) {
+        moduleSystem.e(id);
+      }
+
       this.registeredHotModulesMap.delete(id);
     }
 
     for (const id of result.added) {
-      moduleSystem.register(id, result.modules[id]);
+      // module is already registered, just clear the cache
+      moduleSystem.a(id);
     }
 
     for (const id of result.changed) {
-      moduleSystem.update(id, result.modules[id]);
-
       if (!result.boundaries[id]) {
         // do not found boundary module, reload the window
         location.reload();
@@ -111,7 +119,7 @@ export class HmrClient {
     }
 
     if (result.dynamicResources && result) {
-      moduleSystem.setDynamicModuleResourcesMap(
+      moduleSystem.sd(
         result.dynamicResources,
         result.dynamicModuleResourcesMap
       );
@@ -121,7 +129,7 @@ export class HmrClient {
       for (const chain of chains) {
         // clear the cache of the boundary module and its dependencies
         for (const id of chain) {
-          moduleSystem.clearCache(id);
+          moduleSystem.a(id);
         }
 
         try {
@@ -159,7 +167,7 @@ export class HmrClient {
               const disposer = this.disposeMap.get(acceptedId);
               if (disposer) await disposer(acceptHotContext.data);
 
-              const acceptedExports = moduleSystem.require(acceptedId);
+              const acceptedExports = moduleSystem.r(acceptedId);
 
               for (const { deps, fn } of acceptedCallbacks) {
                 fn(
@@ -175,7 +183,7 @@ export class HmrClient {
         } catch (err) {
           // The boundary module's dependencies may not present in current module system for a multi-page application. We should reload the window in this case.
           // See https://github.com/farm-fe/farm/issues/383
-          logger.error(err);
+          logger.error(`Error occurred while applying hot updates: ${err}`);
           location.reload();
         }
       }
@@ -243,18 +251,17 @@ export class HmrClient {
 
   handleFarmUpdate(result: RawHmrUpdateResult) {
     hasErrorOverlay() && clearOverlay();
-    const immutableModules = new Function(
-      `return ${result.immutableModules}`
-    )();
-    const mutableModules = new Function(`return ${result.mutableModules}`)();
-    const modules = { ...immutableModules, ...mutableModules };
+
+    new Function(`${result.immutableModules}`)();
+    new Function(`${result.mutableModules}`)();
+
     this.applyHotUpdates(
       {
         added: result.added,
         changed: result.changed,
         removed: result.removed,
         boundaries: result.boundaries,
-        modules,
+        // modules,
         dynamicResources: result.dynamicResources,
         dynamicModuleResourcesMap: result.dynamicModuleResourcesMap
       },
@@ -320,7 +327,6 @@ async function waitForSuccessfulPing(
   }
   await wait(ms);
 
-  // eslint-disable-next-line no-constant-condition
   while (true) {
     if (document.visibilityState === 'visible') {
       if (await ping()) {

@@ -1,6 +1,6 @@
 [package]
 name = "farmfe_utils"
-version = "0.1.6"
+version = "2.0.0"
 edition = "2021"
 authors = ["brightwwu(吴明亮) <1521488775@qq.com>"]
 description = "farm utils"
@@ -12,4 +12,6 @@ readme = "README.md"
 [dependencies]
 pathdiff = "0.2"
 sha2 = "0.10.6"
-base64 = "0.21.0"
+base64 = "0.22.1"
+rkyv = { workspace = true }
+bytes = { workspace = true }

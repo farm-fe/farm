@@ -15,6 +15,7 @@
       "tsconfig.json",
       "cspell.json",
       "*.d.ts",
+      "packages/core/cjs/**",
       "packages/runtime/**",
       "packages/runtime-plugin-import-meta/**",
       "packages/create-farm/templates/**",
@@ -48,12 +49,12 @@
     "rules": {
       "recommended": false,
       "complexity": {
-        "noBannedTypes": "warn",
+        "noBannedTypes": "off",
         "noExtraBooleanCast": "error",
         "noMultipleSpacesInRegularExpressionLiterals": "error",
-        "noUselessCatch": "error",
         "noUselessTypeConstraint": "error",
-        "noWith": "error"
+        "noWith": "error",
+        "noUselessCatch": "off"
       },
       "correctness": {
         "noConstAssign": "error",
@@ -75,7 +76,7 @@
         "noUnsafeFinally": "error",
         "noUnsafeOptionalChaining": "error",
         "noUnusedLabels": "error",
-        "noUnusedVariables": "warn",
+        "noUnusedVariables": "off",
         "useIsNan": "error",
         "useValidForDirection": "error",
         "useYield": "error"
@@ -119,6 +120,7 @@
       "**/binding/**",
       "**/templates/**",
       "**/dist/**",
+      "**/docs/**",
       "**/node_modules/**",
       "**/*.config.js",
       "**/*.config.ts"

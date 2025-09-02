@@ -1,14 +1,17 @@
-use std::{collections::HashMap, fs, io::Write, path::PathBuf, sync::Arc};
+use std::{fs, io::Write, path::PathBuf, sync::Arc};
 
 use farmfe_compiler::Compiler;
 use farmfe_core::{
   config::{
-    bool_or_obj::BoolOrObj, preset_env::PresetEnvConfig, Config, ResolveConfig, RuntimeConfig,
-    SourcemapConfig,
+    bool_or_obj::BoolOrObj,
+    persistent_cache::{PersistentCacheConfig, PersistentCacheConfigObj},
+    preset_env::PresetEnvConfig,
+    AliasItem, Config, ResolveConfig, RuntimeConfig, SourcemapConfig, StringOrRegex,
   },
   context::CompilationContext,
   module::ModuleType,
   plugin::{Plugin, PluginTransformHookParam},
+  HashMap,
 };
 use farmfe_plugin_sass::FarmPluginSass;
 use farmfe_testing_helpers::{fixture, is_update_snapshot_from_env};
@@ -19,7 +22,7 @@ fn test() {
   fixture!("tests/fixtures/index.scss", |file, _cwd| {
     let resolved_path = file.to_string_lossy().to_string();
     let config = Config {
-      input: HashMap::from([("button".to_string(), resolved_path.clone())]),
+      input: HashMap::from_iter([("button".to_string(), resolved_path.clone())]),
       ..Default::default()
     };
     let plugin = Arc::new(FarmPluginSass::new(
@@ -41,7 +44,7 @@ fn test() {
           content,
           module_type: ModuleType::Custom(String::from("sass")),
           query: vec![],
-          meta: HashMap::from([]),
+          meta: HashMap::from_iter([]),
           module_id: resolved_path.clone(),
           source_map_chain: vec![],
         },
@@ -59,27 +62,41 @@ fn normalize_css(css: &str) -> String {
   css.replace("\r\n", "\n")
 }
 
+fn generate_runtime(crate_path: PathBuf) -> Box<RuntimeConfig> {
+  let swc_helpers_path = crate_path
+    .join("tests")
+    .join("fixtures")
+    .join("_internal")
+    .join("swc_helpers")
+    .to_string_lossy()
+    .to_string();
+  let runtime_path = crate_path
+    .join("tests")
+    .join("fixtures")
+    .join("_internal")
+    .join("runtime")
+    .to_string_lossy()
+    .to_string();
+
+  Box::new(RuntimeConfig {
+    path: runtime_path,
+    plugins: vec![],
+    swc_helpers_path,
+    ..Default::default()
+  })
+}
+
 #[test]
-fn test_with_compiler() {
+fn sass_plugin() {
   fixture!("tests/fixtures/**/*/index.scss", |file, crate_path| {
     println!("testing: {file:?}");
     let resolved_path = file.to_string_lossy().to_string();
     let cwd = file.parent().unwrap();
-    let runtime_path = crate_path
-      .join("tests")
-      .join("fixtures")
-      .join("_internal")
-      .join("runtime")
-      .join("index.js")
-      .to_string_lossy()
-      .to_string();
+
     let config = Config {
-      input: HashMap::from([("index".to_string(), resolved_path.clone())]),
+      input: HashMap::from_iter([("index".to_string(), resolved_path.clone())]),
       root: cwd.to_string_lossy().to_string(),
-      runtime: Box::new(RuntimeConfig {
-        path: runtime_path,
-        ..Default::default()
-      }),
+      runtime: generate_runtime(crate_path),
       mode: farmfe_core::config::Mode::Production,
       sourcemap: Box::new(SourcemapConfig::Bool(false)),
       preset_env: Box::new(PresetEnvConfig::Bool(false)),
@@ -87,12 +104,16 @@ fn test_with_compiler() {
       tree_shaking: Box::new(BoolOrObj::Bool(false)),
       progress: false,
       resolve: Box::new(ResolveConfig {
-        alias: std::collections::HashMap::from([(
-          "@".to_string(),
-          cwd.to_string_lossy().to_string(),
-        )]),
+        alias: vec![AliasItem {
+          find: StringOrRegex::String("@".to_string()),
+          replacement: cwd.to_string_lossy().to_string(),
+        }],
         ..Default::default()
       }),
+      persistent_cache: Box::new(PersistentCacheConfig::Obj(PersistentCacheConfigObj {
+        memory: true,
+        ..Default::default()
+      })),
       ..Default::default()
     };
 

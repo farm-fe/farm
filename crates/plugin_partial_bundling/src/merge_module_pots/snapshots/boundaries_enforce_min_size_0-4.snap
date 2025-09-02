@@ -1,0 +1,17 @@
+---
+source: crates/plugin_partial_bundling/src/merge_module_pots/test_boundaries.rs
+input_file: crates/testing_helpers/src/lib.rs
+---
+name: B
+id: B_3f39d5c348e5b79d06e842c114e6cc57_js
+immutable: true
+resource_pot_type: Js
+entry: None
+module_groups: []
+modules: [
+    ModuleId {
+        relative_path: "D",
+        query_string: "",
+    },
+]
+resources: []

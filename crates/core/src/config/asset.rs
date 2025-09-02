@@ -25,7 +25,6 @@ pub struct AssetsConfig {
   pub include: Vec<String>,
   /// Used internally, this option will be not exposed to user.
   pub public_dir: Option<String>,
-  // TODO: v2
   // for ssr mode, should specify asset path format, default from `output.targetEnv`
-  // pub mode: Option<AssetFormatMode>,
+  pub mode: Option<AssetFormatMode>,
 }

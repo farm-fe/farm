@@ -1,6 +1,6 @@
 {
   "name": "@farmfe/runtime-plugin-hmr",
-  "version": "3.5.10",
+  "version": "4.0.0-beta.0",
   "description": "Runtime hmr plugin of Farm",
   "author": {
     "name": "bright wu",
@@ -27,12 +27,11 @@
     "type-check": "tsc -p tsconfig.json --noEmit"
   },
   "devDependencies": {
-    "@farmfe/runtime": "workspace:*"
+    "@farmfe/runtime": "workspace:*",
+    "@types/prismjs": "^1.26.5"
   },
   "dependencies": {
-    "core-js": "^3.30.1"
-  },
-  "files": [
-    "dist"
-  ]
+    "core-js": "^3.30.1",
+    "prismjs": "^1.29.0"
+  }
 }

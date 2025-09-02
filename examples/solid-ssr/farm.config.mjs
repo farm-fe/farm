@@ -11,6 +11,11 @@ export default {
     input: {
       client: './index.html'
     },
+    resolve: {
+      alias: {
+        '@/': path.join(process.cwd(), 'src')
+      }
+    },
     output: {
       path: './build'
     },
@@ -29,32 +34,32 @@ export default {
     hmr: true,
     cors: true,
     middlewares: [
-      (server) => {
-        server.app().use(async (ctx, next) => {
-          await next();
+      (server) => async (req, res, next) => {
+        console.log('req.url pre', req.url, res.statusCode);
 
-          if (ctx.path === '/' || ctx.status === 404) {
-            console.log('ctx.path', ctx.path);
-            const template = server
-              .getCompiler()
-              .resource('client.html')
-              .toString();
-            const projectRoot = path.dirname(fileURLToPath(import.meta.url));
-            const moudlePath = path.join(projectRoot, 'dist', 'index.js');
-            const render = await import(pathToFileURL(moudlePath)).then((m) => m['default']);
-            const renderedHtml = render(ctx.path);
+        if (!res.writableEnded) {
+          console.log('req.url', req.url);
+          const template = server
+            .getCompiler()
+            .resource('client.html')
+            .toString();
+          const projectRoot = path.dirname(fileURLToPath(import.meta.url));
+          const moudlePath = path.join(projectRoot, 'dist', 'index.js');
+          const render = await import(pathToFileURL(moudlePath)).then((m) => m['default']);
+          const renderedHtml = render(req.url);
 
-            const html = template
-              .replace('<div>app-html-to-replace</div>', renderedHtml)
-              .replace('<meta hydration />', generateHydrationScript());
-            console.log(renderedHtml);
-            ctx.body = html;
-            ctx.type = 'text/html';
-            ctx.status = 200;
-          }
+          const html = template
+            .replace('<div>app-html-to-replace</div>', renderedHtml)
+            .replace('{hydrationScript}', generateHydrationScript());
 
-          console.log('ctx.path outer', ctx.path);
-        });
+          res.writeHead(200, {
+            'Content-Type': 'text/html'
+          }).end(html);
+          return;
+        }
+
+        console.log('req.url outer', req.url, res.statusCode);
+        next();
       }
     ]
   },

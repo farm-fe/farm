@@ -8,28 +8,22 @@ export default (<UserConfig>{
     output: {
       path: 'dist/cjs',
       format: 'cjs',
-      targetEnv: 'node',
+      targetEnv: 'library',
       entryFilename: 'index.cjs'
     },
     external: [
       '@farmfe/core',
       'chokidar',
-      'farm-browserslist-generator',
       '@farmfe/core-.*',
-      './farm.*.node$'
+      './farm.*.node$',
+      './farm.*.cjs',
+      '@farmfe/plugin-.*'
     ].map((id) => `^${id}$`),
+    comments: true,
     presetEnv: false,
     minify: false,
     sourcemap: false,
     persistentCache: false,
-    progress: false,
-    partialBundling: {
-      enforceResources: [
-        {
-          name: 'index',
-          test: ['.+']
-        }
-      ]
-    }
+    progress: false
   }
 });

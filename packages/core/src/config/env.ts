@@ -7,12 +7,12 @@
  * https://github.com/vitejs/vite/blob/main/LICENSE
  *
  */
-
 import fs from 'node:fs';
 import path from 'node:path';
 
 import { parse } from 'dotenv';
 import { type DotenvPopulateInput, expand } from 'dotenv-expand';
+
 import { arraify, normalizePath, tryStatSync } from '../utils/index.js';
 
 export function loadEnv(
@@ -29,6 +29,7 @@ export function loadEnv(
   prefixes = arraify(prefixes);
   const env: Record<string, string> = {};
   const envFiles = getEnvFilesForMode(mode, envDir);
+
   const parsed = Object.fromEntries(
     envFiles.flatMap((filePath) => {
       if (!tryStatSync(filePath)?.isFile()) return [];
@@ -63,10 +64,10 @@ export function getExistsEnvFiles(mode: string, envDir: string): string[] {
 export type CompilationMode = 'development' | 'production';
 
 export function setProcessEnv(mode: CompilationMode) {
-  process.env.NODE_ENV = mode;
+  process.env['NODE_ENV'] = mode;
 }
 
-export const isDisableCache = () => !!process.env.DISABLE_CACHE;
+export const isDisableCache = () => !!process.env.FARM_DISABLE_CACHE;
 
 export function getEnvFilesForMode(mode: string, envDir: string): string[] {
   return [`.env`, `.env.local`, `.env.${mode}`, `.env.${mode}.local`].map(

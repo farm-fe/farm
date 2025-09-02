@@ -110,3 +110,10 @@ build
 !crates/**/build
 .swc
 .DS_Store
+
+
+# docs
+.docusaurus
+
+# idea
+.idea

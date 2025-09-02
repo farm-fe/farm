@@ -2,9 +2,9 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { describe, expect, test } from 'vitest';
 
+// @ts-ignore ignore error for cjs
+import { normalizeDevServerConfig, resolveConfig } from '../dist/cjs/index.cjs';
 import { isDisableCache } from '../src/config/env.js';
-import { normalizeDevServerConfig, resolveConfig } from '../src/index.js';
-import { Logger } from '../src/utils/logger.js';
 
 describe('resolveUserConfig', () => {
   test('resolveUserConfig', async () => {
@@ -12,10 +12,10 @@ describe('resolveUserConfig', () => {
 
     const config = await resolveConfig(
       {
-        configPath: path.join(filePath, 'fixtures', 'config', 'farm.config.ts')
+        configFile: path.join(filePath, 'fixtures', 'config', 'farm.config.ts')
       },
-      'development',
-      new Logger()
+      'dev',
+      'development'
     );
 
     expect(config.compilation.define).toMatchSnapshot();
@@ -32,20 +32,18 @@ describe('resolveUserConfig', () => {
     expect(config.compilation.sourcemap).toEqual(true);
     expect(config.compilation.minify).toEqual(false);
     expect(config.compilation.presetEnv).toEqual(false);
-    expect(config.server).toEqual(
-      normalizeDevServerConfig(config.server, 'development')
-    );
+    expect(config.server).toEqual(normalizeDevServerConfig(config));
   });
 
-  test('resolveUserConfig with process.env.DISABLE_CACHE', async () => {
+  test('resolveUserConfig with process.env.FARM_DISABLE_CACHE', async () => {
     const filePath = fileURLToPath(path.dirname(import.meta.url));
 
     for (const item of ['true', '']) {
-      process.env.DISABLE_CACHE = item.toString();
+      process.env.FARM_DISABLE_CACHE = item.toString();
 
       const config = await resolveConfig(
         {
-          configPath: path.join(
+          configFile: path.join(
             filePath,
             'fixtures',
             'config',
@@ -55,14 +53,27 @@ describe('resolveUserConfig', () => {
             hmr: false
           }
         },
-        'development',
-        new Logger()
+        'dev',
+        'development'
       );
+
       if (isDisableCache()) {
         expect(config.compilation.persistentCache).toEqual(false);
       } else {
+        expect(config.compilation.persistentCache.cacheDir).toBeTruthy();
+        // cache dir is related to the work directory, it should be omitted
+        delete config.compilation.persistentCache.cacheDir;
+
         expect(config.compilation.persistentCache).toEqual({
           buildDependencies: [
+            path.join(
+              process.cwd(),
+              '@farmfe',
+              'runtime',
+              'src',
+              'modules',
+              'module-helper.ts.farm-runtime'
+            ),
             path.join(filePath, 'fixtures', 'config', 'farm.config.ts'),
             path.join(filePath, 'fixtures', 'config', 'util.ts'),
             'module',
@@ -71,14 +82,23 @@ describe('resolveUserConfig', () => {
             'yarn.lock'
           ],
           envs: {
+            '$__farm_regex:(global(This)?\\.)?process\\.env\\.BASE_URL': '"/"',
+            '$__farm_regex:(global(This)?\\.)?process\\.env\\.DEV': 'true',
+            '$__farm_regex:(global(This)?\\.)?process\\.env\\.PROD': 'false',
             '$__farm_regex:(global(This)?\\.)?process\\.env\\.NODE_ENV':
               JSON.stringify('development'),
             '$__farm_regex:(global(This)?\\.)?process\\.env\\.mode':
               JSON.stringify('development'),
-            FARM_PROCESS_ENV: '{"NODE_ENV":"development","mode":"development"}',
-            FARM_RUNTIME_TARGET_ENV: '"browser"',
+            '$__farm_regex:(global(This)?\\.)?process\\.env\\.FARM_DISABLE_CACHE':
+              JSON.stringify(item),
             NODE_ENV: 'development',
+            FARM_PROCESS_ENV:
+              '{"FARM_DISABLE_CACHE":"","NODE_ENV":"development","BASE_URL":"/","mode":"development","DEV":true,"PROD":false}',
+            FARM_DISABLE_CACHE: item,
             mode: 'development',
+            BASE_URL: '/',
+            DEV: true,
+            PROD: false,
             'package.json[browser]': 'unknown',
             'package.json[exports]': 'unknown',
             'package.json[main]': 'unknown',

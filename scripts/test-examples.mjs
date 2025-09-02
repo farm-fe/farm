@@ -3,16 +3,16 @@ import {
   buildCoreCjs,
   buildExamples,
   buildJsPlugins,
-  buildRuntime
-} from './build.mjs';
+  buildRuntime,
+} from "./build.mjs";
 
-console.log('Building CLI...');
+console.log("Building CLI...");
 await buildCli();
-console.log('Building runtime...');
+console.log("Building runtime...");
 await buildRuntime();
-console.log('Building core CJS...');
+console.log("Building core CJS...");
 await buildCoreCjs();
-console.log('Building JS plugins...');
+console.log("Building JS plugins...");
 await buildJsPlugins();
-console.log('Building examples...');
+
 await buildExamples();

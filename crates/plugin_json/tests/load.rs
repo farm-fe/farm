@@ -1,7 +1,7 @@
-use std::{collections::HashMap, sync::Arc};
+use std::sync::Arc;
 
 use farmfe_core::{
-  config::Config, context::CompilationContext, plugin::Plugin, plugin::PluginHookContext,
+  config::Config, context::CompilationContext, plugin::Plugin, plugin::PluginHookContext, HashMap,
 };
 use farmfe_testing_helpers::fixture;
 
@@ -16,7 +16,7 @@ fn load_json() {
 
     let hook_context = PluginHookContext {
       caller: None,
-      meta: HashMap::new(),
+      meta: HashMap::default(),
     };
 
     let loaded = plugin_json
@@ -24,7 +24,7 @@ fn load_json() {
         &farmfe_core::plugin::PluginLoadHookParam {
           resolved_path: &id,
           query: vec![],
-          meta: HashMap::new(),
+          meta: HashMap::default(),
           module_id: id.clone(),
         },
         &context,

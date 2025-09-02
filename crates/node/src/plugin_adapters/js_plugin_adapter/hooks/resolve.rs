@@ -1,4 +1,4 @@
-use napi::{bindgen_prelude::FromNapiValue, NapiRaw};
+use napi::bindgen_prelude::FromNapiValue;
 use std::sync::Arc;
 
 use farmfe_core::{
@@ -34,7 +34,7 @@ impl JsPluginResolveHook {
   ) -> Result<Option<PluginResolveHookResult>> {
     let filtered = self.filters.importers.iter().any(|i| {
       if let Some(importer) = &param.importer {
-        i.is_match(&importer.resolved_path_with_query(&ctx.config.root))
+        i.is_match(importer.to_string().as_str())
       } else {
         i.is_match("None")
       }

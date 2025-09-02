@@ -1,0 +1,85 @@
+---
+source: crates/compiler/src/generate/partial_bundling.rs
+input_file: crates/testing_helpers/src/lib.rs
+---
+name: A
+id: A_66be131002b8b5af1132bafd62635f07_js
+immutable: false
+resource_pot_type: Js
+entry: Some(
+    ModuleId {
+        relative_path: "A",
+        query_string: "",
+    },
+)
+module_groups: [
+    ModuleGroupId(
+        "A_Entry",
+    ),
+    ModuleGroupId(
+        "F_DynamicImport",
+    ),
+]
+modules: [
+    ModuleId {
+        relative_path: "A",
+        query_string: "",
+    },
+    ModuleId {
+        relative_path: "C",
+        query_string: "",
+    },
+]
+resources: []
+
+-------
+
+name: B
+id: B_2f5d6a63eb2504d486bf13df147c043a_js
+immutable: false
+resource_pot_type: Js
+entry: Some(
+    ModuleId {
+        relative_path: "B",
+        query_string: "",
+    },
+)
+module_groups: [
+    ModuleGroupId(
+        "B_Entry",
+    ),
+]
+modules: [
+    ModuleId {
+        relative_path: "B",
+        query_string: "",
+    },
+    ModuleId {
+        relative_path: "E",
+        query_string: "",
+    },
+]
+resources: []
+
+-------
+
+name: B
+id: B_3f39d5c348e5b79d06e842c114e6cc57_js
+immutable: false
+resource_pot_type: Js
+entry: None
+module_groups: [
+    ModuleGroupId(
+        "B_Entry",
+    ),
+    ModuleGroupId(
+        "D_DynamicImport",
+    ),
+]
+modules: [
+    ModuleId {
+        relative_path: "D",
+        query_string: "",
+    },
+]
+resources: []

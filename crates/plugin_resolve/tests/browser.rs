@@ -7,6 +7,8 @@ use farmfe_core::{
 };
 use farmfe_plugin_resolve::resolver::{ResolveOptions, Resolver};
 use farmfe_testing_helpers::fixture;
+mod common;
+use common::with_initial_main_fields;
 
 /// See browser field spec (https://github.com/defunctzombie/package-browser-field-spec)
 
@@ -23,8 +25,9 @@ fn resolve_browser_basic() {
         cwd.clone(),
         &ResolveKind::Import,
         &ResolveOptions::default(),
-        &Arc::new(CompilationContext::default()),
+        &Arc::new(with_initial_main_fields(CompilationContext::default())),
       );
+
       assert!(resolved.is_some());
       let resolved = resolved.unwrap();
 
@@ -45,7 +48,7 @@ fn resolve_browser_basic() {
         cwd.clone(),
         &ResolveKind::Import,
         &ResolveOptions::default(),
-        &Arc::new(
+        &Arc::new(with_initial_main_fields(
           CompilationContext::new(
             Config {
               output: Box::new(OutputConfig {
@@ -57,7 +60,7 @@ fn resolve_browser_basic() {
             vec![],
           )
           .unwrap(),
-        ),
+        )),
       );
       assert!(resolved.is_some());
       let resolved = resolved.unwrap();
@@ -264,7 +267,7 @@ fn resolve_browser_entry_replace() {
         cwd.clone(),
         &ResolveKind::Import,
         &ResolveOptions::default(),
-        &Arc::new(CompilationContext::default()),
+        &Arc::new(with_initial_main_fields(CompilationContext::default())),
       );
       assert!(resolved.is_some());
       let resolved = resolved.unwrap();
@@ -284,7 +287,7 @@ fn resolve_browser_entry_replace() {
         cwd.clone(),
         &ResolveKind::Import,
         &ResolveOptions::default(),
-        &Arc::new(CompilationContext::default()),
+        &Arc::new(with_initial_main_fields(CompilationContext::default())),
       );
       assert!(resolved1.is_some());
       let resolved1 = resolved1.unwrap();

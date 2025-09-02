@@ -48,7 +48,6 @@ export default function farmSassPlugin(
   let farmConfig!: UserConfig['compilation'];
   const implementation = getSassImplementation(options.implementation);
 
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
   // @ts-ignore TODO fix it
   const cwd = () => farmConfig.root ?? process.cwd();
 
@@ -194,6 +193,13 @@ async function resolveDependency(
 
     if (existsSync(relPath) && statSync(relPath).isFile()) {
       return relPath;
+    }
+
+    const cwd = process.cwd();
+    const projectPath = path.resolve(cwd, url);
+
+    if (existsSync(projectPath) && statSync(projectPath).isFile()) {
+      return projectPath;
     }
   }
 

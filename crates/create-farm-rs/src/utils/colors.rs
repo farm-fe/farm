@@ -40,7 +40,11 @@ pub fn is_color_enabled() -> bool {
   true
 }
 
-pub fn create_formatter<'a>(open: &'a str, close: &'a str, replace: Option<&'a str>) -> impl Fn(&'a str) -> String + 'a {
+pub fn create_formatter<'a>(
+  open: &'a str,
+  close: &'a str,
+  replace: Option<&'a str>,
+) -> impl Fn(&'a str) -> String + 'a {
   move |input| {
     let string = input.to_string();
     let index = string.find(close).unwrap_or(open.len());

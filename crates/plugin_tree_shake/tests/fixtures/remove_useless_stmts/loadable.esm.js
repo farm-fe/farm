@@ -6,7 +6,6 @@ import _inheritsLoose from '@babel/runtime/helpers/esm/inheritsLoose';
 import { isValidElementType } from 'react-is';
 import hoistNonReactStatics from 'hoist-non-react-statics';
 
-/* eslint-disable import/prefer-default-export */
 function invariant(condition, message) {
   if (condition) return;
   var error = new Error("loadable: " + message);
@@ -15,7 +14,6 @@ function invariant(condition, message) {
   throw error;
 }
 function warn(message) {
-  // eslint-disable-next-line no-console
   console.warn("loadable: " + message);
 }
 
@@ -428,11 +426,8 @@ function createLoadable(_ref) {
 }
 
 function defaultResolveComponent(loadedModule) {
-  // eslint-disable-next-line no-underscore-dangle
   return loadedModule.__esModule ? loadedModule["default"] : loadedModule["default"] || loadedModule;
 }
-
-/* eslint-disable no-use-before-define, react/no-multi-comp */
 
 var _createLoadable =
 /*#__PURE__*/
@@ -447,7 +442,6 @@ createLoadable({
     loadable = _createLoadable.loadable,
     lazy = _createLoadable.lazy;
 
-/* eslint-disable no-use-before-define, react/no-multi-comp */
 
 var _createLoadable$1 =
 /*#__PURE__*/
@@ -475,7 +469,6 @@ createLoadable({
     loadable$1 = _createLoadable$1.loadable,
     lazy$1 = _createLoadable$1.lazy;
 
-/* eslint-disable no-underscore-dangle, camelcase */
 var BROWSER = typeof window !== 'undefined';
 function loadableReady(done, _temp) {
   if (done === void 0) {
@@ -553,7 +546,6 @@ function loadableReady(done, _temp) {
   }).then(done);
 }
 
-/* eslint-disable no-underscore-dangle */
 var loadable$2 = loadable;
 loadable$2.lib = loadable$1;
 var lazy$2 = lazy;

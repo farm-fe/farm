@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use farmfe_core::{
   swc_common::{comments::SingleThreadedComments, Globals, Mark, GLOBALS},
   swc_ecma_ast::{EsVersion, Module},
@@ -11,11 +13,13 @@ pub fn parse_module_internal(code: &str) -> (Module, SingleThreadedComments, Mar
   let ParseScriptModuleResult {
     ast: mut swc_module,
     comments,
+    ..
   } = farmfe_toolkit::script::parse_module(
-    "any",
-    code,
+    &"any".into(),
+    Arc::new(code.to_string()),
     Syntax::Es(Default::default()),
     EsVersion::Es2022,
+    // None,
   )
   .unwrap();
   let top_level_mark = Mark::new();
@@ -103,7 +107,7 @@ fn write_top_level_var() {
       super::StatementSideEffects::WriteTopLevelVar(var_name) => {
         let mut idents = var_name
           .into_iter()
-          .map(|i| format!("{}{:?}", i.0, i.1))
+          .map(|i| format!("{}{:?}", i.ident.sym, i.ident.ctxt()))
           .collect::<Vec<_>>();
         idents.sort();
         idents
@@ -127,7 +131,7 @@ fn write_top_level_var() {
       super::StatementSideEffects::WriteTopLevelVar(var_name) => {
         let mut idents = var_name
           .into_iter()
-          .map(|i| format!("{}{:?}", i.0, i.1))
+          .map(|i| format!("{}{:?}", i.ident.sym, i.ident.ctxt()))
           .collect::<Vec<_>>();
         idents.sort();
         idents

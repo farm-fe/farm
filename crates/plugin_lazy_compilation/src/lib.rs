@@ -1,11 +1,10 @@
-use std::collections::HashMap;
-
 use farmfe_core::{
   config::{external::ExternalConfig, Config, FARM_MODULE_SYSTEM},
   module::{ModuleId, ModuleType},
   plugin::{Plugin, PluginHookContext, PluginLoadHookResult, PluginResolveHookParam, ResolveKind},
+  HashMap,
 };
-use farmfe_toolkit::{html::get_farm_global_this, script::constant::RUNTIME_SUFFIX};
+use farmfe_toolkit::html::get_farm_global_this;
 use farmfe_utils::{relative, stringify_query};
 
 pub const DYNAMIC_VIRTUAL_SUFFIX: &str = ".farm_dynamic_import_virtual_module";
@@ -37,15 +36,7 @@ impl Plugin for FarmPluginLazyCompilation {
     context: &std::sync::Arc<farmfe_core::context::CompilationContext>,
     hook_context: &PluginHookContext,
   ) -> farmfe_core::error::Result<Option<farmfe_core::plugin::PluginResolveHookResult>> {
-    if hook_context.contain_caller(PLUGIN_NAME)
-    // All runtime files will be merged into one resourcePot, even files introduced through `import()`
-    // Therefore, the asynchronous polyfill here is unnecessary
-      || param.source.ends_with(RUNTIME_SUFFIX)
-      || param
-        .importer
-        .as_ref()
-        .is_some_and(|i| i.to_string().ends_with(RUNTIME_SUFFIX))
-    {
+    if hook_context.contain_caller(PLUGIN_NAME) {
       return Ok(None);
     }
 
@@ -72,7 +63,7 @@ impl Plugin for FarmPluginLazyCompilation {
             external: false,
             side_effects: false,
             query: vec![],
-            meta: HashMap::new(),
+            meta: HashMap::default(),
           }));
         }
       }
@@ -109,7 +100,7 @@ impl Plugin for FarmPluginLazyCompilation {
           external: false,
           side_effects: false,
           query: vec![],
-          meta: HashMap::from([(ORIGINAL_RESOLVED_PATH.to_string(), resolved_path)]),
+          meta: HashMap::from_iter([(ORIGINAL_RESOLVED_PATH.to_string(), resolved_path)]),
         }));
       }
     }
@@ -158,7 +149,7 @@ impl Plugin for FarmPluginLazyCompilation {
     }
 
     if param.resolved_path.ends_with(DYNAMIC_VIRTUAL_SUFFIX) {
-      if param.meta.get(ORIGINAL_RESOLVED_PATH).is_none() {
+      if !param.meta.contains_key(ORIGINAL_RESOLVED_PATH) {
         let farm_global_this = get_farm_global_this(
           &context.config.runtime.namespace,
           &context.config.output.target_env,
@@ -173,12 +164,16 @@ impl Plugin for FarmPluginLazyCompilation {
               &stringify_query(&param.query),
               &context.config.root,
             )
-            .id(context.config.mode.clone())
+            .id(context.config.mode)
             .replace('\\', r"\\"),
           )
           .replace(
             "'FARM_MODULE_SYSTEM'",
             &format!("{farm_global_this}.{FARM_MODULE_SYSTEM}"),
+          )
+          .replace(
+            "FARM_RUNTIME_TARGET_ENV",
+            &format!("{:?}", context.config.output.target_env.to_string()),
           );
 
         Ok(Some(farmfe_core::plugin::PluginLoadHookResult {
@@ -193,13 +188,13 @@ impl Plugin for FarmPluginLazyCompilation {
           .unwrap()
           .to_string_lossy()
           .to_string();
-        let relative_source = relative(&dir, &resolved_path);
+        let relative_source = relative(&dir, resolved_path);
         let content = format!(
           r#"
-          import _default_import from "./{relative_source}";
-          export default _default_import;
-          export * from "./{relative_source}";
-        "#
+          import * as ns from "./{0}"
+          module.exports = ns;
+        "#,
+          relative_source
         );
         Ok(Some(PluginLoadHookResult {
           content,

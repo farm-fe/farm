@@ -8,7 +8,11 @@ export default defineConfig((env) => {
   return {
     compilation: {
       sourcemap: true,
-      persistentCache: false,
+      // persistentCache: false,
+      persistentCache: {
+        // cacheDir: "node_modules/.farm/adny",
+        cacheDir: "node_modules/adny/cache",
+      },
       presetEnv: false,
       minify: false,
       progress: false,

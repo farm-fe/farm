@@ -1,17 +1,17 @@
-use std::{
-  collections::{HashMap, HashSet},
-  path::PathBuf,
-  sync::Arc,
-  time::SystemTime,
-};
+use std::{path::PathBuf, sync::Arc, time::SystemTime};
 
 use farmfe_core::{
   cache::module_cache::{CachedModule, CachedModuleDependency, CachedWatchDependency},
-  context::CompilationContext,
+  context::{create_swc_source_map, CompilationContext},
   dashmap::DashMap,
   farm_profile_function,
   module::ModuleId,
   rayon::prelude::*,
+  swc_common::Globals,
+  HashMap, HashSet,
+};
+use farmfe_toolkit::script::{
+  analyze_statement::analyze_statements, swc_try_with::resolve_module_mark,
 };
 
 pub fn get_timestamp_of_module(module_id: &ModuleId, root: &str) -> u128 {
@@ -161,7 +161,7 @@ pub fn try_get_module_cache_by_hash(
 pub fn set_module_graph_cache(module_ids: Vec<ModuleId>, context: &Arc<CompilationContext>) {
   farm_profile_function!("set_module_graph_cache".to_string());
   let module_graph = context.module_graph.read();
-  let mut cacheable_modules = HashSet::new();
+  let mut cacheable_modules = HashSet::default();
 
   let modules = module_ids
     .iter()
@@ -228,7 +228,12 @@ pub fn set_module_graph_cache(module_ids: Vec<ModuleId>, context: &Arc<Compilati
               "empty".to_string()
             };
             CachedWatchDependency {
-              dependency: id.clone(),
+              dependency: if cfg!(windows) {
+                // on windows, the exit code is not 0 when using id.clone(), we have to copy the memory and create a new ModuleId
+                id.to_string().into()
+              } else {
+                id.clone()
+              },
               timestamp: get_timestamp_of_module(id, &context.config.root),
               hash: get_content_hash_of_module(&content),
             }
@@ -249,12 +254,31 @@ pub fn handle_cached_modules(
   cached_module: &mut CachedModule,
   context: &Arc<CompilationContext>,
 ) -> farmfe_core::error::Result<()> {
+  // create a new sourcemap for the cached module cause the sourcemap of swc is not cacheable
+  let (source_map, _) = create_swc_source_map(
+    &cached_module.module.id,
+    cached_module.module.content.clone(),
+  );
+  context
+    .meta
+    .set_module_source_map(&cached_module.module.id, source_map);
+  context
+    .meta
+    .set_globals(&cached_module.module.id, Globals::new());
+
   // using swc resolver
   match &mut cached_module.module.meta {
     box farmfe_core::module::ModuleMetaData::Script(script) => {
-      // reset the mark to prevent the mark from being reused, it will be re-resolved later
-      script.top_level_mark = 0;
-      script.unresolved_mark = 0;
+      // reset the mark to prevent the mark from being reused
+      let (unresolved_mark, top_level_mark) = resolve_module_mark(
+        &mut script.ast,
+        cached_module.module.module_type.is_typescript(),
+        context.meta.get_globals(&cached_module.module.id).value(),
+      );
+
+      script.top_level_mark = unresolved_mark.as_u32();
+      script.unresolved_mark = top_level_mark.as_u32();
+      script.statements = analyze_statements(&script.ast);
     }
     box farmfe_core::module::ModuleMetaData::Css(_)
     | box farmfe_core::module::ModuleMetaData::Html(_) => { /* do nothing */ }
@@ -270,7 +294,7 @@ pub fn handle_cached_modules(
 
   // clear module groups and resource pot as it will be re-resolved later
   cached_module.module.module_groups.clear();
-  cached_module.module.resource_pot = None;
+  cached_module.module.resource_pots = Default::default();
   cached_module.module.used_exports.clear();
 
   // TODO: return of resolve hook should be treated as part of the cache key
@@ -355,6 +379,7 @@ fn is_watch_dependencies_content_hash_changed(
     .collect::<HashMap<_, _>>();
 
   for dep in relation_dependencies {
+    // TODO using context.load first for virtual modules, then read file string if context.load returns None
     let resolved_path = PathBuf::from(dep.resolved_path(&context.config.root));
     let cached_hash = cached_dep_hash_map.get(dep);
 

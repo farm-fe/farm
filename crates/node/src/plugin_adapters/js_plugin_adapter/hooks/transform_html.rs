@@ -9,6 +9,7 @@ use farmfe_core::{
   resource::Resource,
   serde::{Deserialize, Serialize},
 };
+use napi::bindgen_prelude::{Function, JsObjectValue, Object};
 
 use crate::plugin_adapters::js_plugin_adapter::thread_safe_js_plugin_hook::ThreadSafeJsPluginHook;
 
@@ -33,9 +34,9 @@ pub enum JsPluginTransformHtmlHookOrder {
 }
 
 impl JsPluginTransformHtmlHook {
-  pub fn new(env: &napi::Env, obj: napi::JsObject) -> Self {
+  pub fn new(env: &napi::Env, obj: Object) -> Self {
     let func = obj
-      .get_named_property::<napi::JsFunction>("executor")
+      .get_named_property::<Function>("executor")
       .expect("executor should be checked in js side");
     let order = obj
       .get_named_property::<JsPluginTransformHtmlHookOrder>("order")

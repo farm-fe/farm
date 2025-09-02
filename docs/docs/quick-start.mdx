@@ -1,0 +1,118 @@
+---
+sidebar_position: 1
+---
+
+import { PackageManagerTabs } from "@site/src/theme/PackageManagerTabs";
+
+# Quick Start
+
+
+:::warning Nightly Warning
+If you are using version 2.0.0-nightly, please note the following:
+
+- The Farm team is working hard on version 2.0. We have refactored the entire Node backend and added many practical features. Please check our RoadMap for future updates.
+
+- This is a nightly build version that may contain new features and fixes that haven't been fully tested. As a result, unstable behavior or unexpected errors may occur.
+
+- Since this version is in the development phase, features and APIs may change in future versions. Please regularly check the changelog for the latest information.
+
+- We recommend against using this version in production environments unless you are prepared to handle potential issues.
+
+If you encounter any problems, please feel free to create an Issue to provide feedback to us. Your feedback is crucial for improving Farm's functionality and stability.
+and we will continue to update the documentation in the coming days. Thank you for your understanding and support.
+:::
+
+
+:::warning
+Farm needs **Node 16.18.0 and above**.
+:::
+
+## Online experience
+
+[![Edit Farm](https://codesandbox.io/static/img/play-codesandbox.svg)](https://codesandbox.io/p/github/ErKeLost/react/main)
+
+## Create a Farm Project
+
+<PackageManagerTabs command="pnpm create farm@latest" />
+
+:::warning
+If you are using the nightly version, you need to install all Farm dependencies as nightly versions. We have provided nightly versions for all core packages and plugins. e.g:
+:::
+
+<PackageManagerTabs command="pnpm add @farmfe/{cli,core}@nightly" />
+
+:::note{title="Then follow the prompts!"}
+
+You can also directly specify the project name and the template you want to use via additional command line options:
+:::
+
+<PackageManagerTabs command="pnpm create farm farm-app --template react" />
+
+| Template | Description | Optional Features |
+|:-------:|:--------:|:-------:|
+| vanilla   | Vanilla JavaScript     | TypeScript   |
+| react   | react18     | TypeScript   |
+| vue3   | vue3     | TypeScript   |
+| vue2   | vue2     | TypeScript   |
+| svelte   | svelte     | TypeScript   |
+| solid   | solid     | TypeScript   |
+| preact  | preact     | TypeScript   |
+| lit   | lit     | TypeScript   |
+| nestjs   | nestjs     | TypeScript   |
+| tauri   | tauri2     | TypeScript   |
+| electron   | electron     | TypeScript   |
+
+
+
+## 2. Start the Project
+
+Choose the package manager you like, install dependencies, then start the project.
+Then, start the project:
+
+<PackageManagerTabs command="cd farm-app && pnpm install && pnpm dev" />
+
+> The project will start at `http://localhost:9000` by default.
+
+## 3. Configuring the Project
+
+The project is configured by `farm.config.ts/js/mjs` file in the root directory of the project.
+
+```ts title="farm.config.ts" 
+import { defineConfig } from "@farmfe/core";
+import react from '@farmfe/plugin-react';
+
+export default defineConfig({
+  // Additional plugins
+  plugins: [react()],
+});
+```
+
+:::note
+See **[Configuring Farm](/docs/config/configuring-farm)** for details.
+:::
+
+## 4. Building the project
+
+Build the Farm project as production-ready static files:
+
+<PackageManagerTabs command="npm run build" />
+
+The built product is downgraded to `ES2017` by default, and the product will be compressed and Tree Shake. If you want to preview the build product locally, you can execute `npm run preview` or `npx farm preview`.
+
+:::note
+See **[Build For Production](/docs/tutorials/build)** for details.
+:::
+
+## 4. Preview the build products 
+
+Start preview server
+
+<PackageManagerTabs command="npm run preview" />
+
+## Next Steps
+
+- [Why Farm?](/docs/why-farm)
+- [Features](/docs/features/html)
+- [Configuring Farm](/docs/config/configuring-farm)
+- [Plugins](/docs/plugins/official-plugins/overview)
+---

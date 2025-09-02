@@ -1,0 +1,290 @@
+use std::{cell::RefCell, rc::Rc};
+
+use farmfe_macro_cache_item::cache_item;
+use feature_flag::FeatureFlag;
+use swc_atoms::Atom;
+use swc_common::{
+  comments::{
+    Comment, SingleThreadedComments, SingleThreadedCommentsMap, SingleThreadedCommentsMapInner,
+  },
+  BytePos,
+};
+use swc_ecma_ast::Module as SwcModule;
+
+use crate::module::ModuleId;
+use crate::{HashMap, HashSet};
+
+use super::custom::CustomMetaDataMap;
+
+use statement::{Statement, SwcId};
+
+pub mod feature_flag;
+pub mod module_export_ident;
+pub mod statement;
+
+/// means the module is being fully imported by using import * as or export * as
+pub const EXPORT_NAMESPACE: &str = "namespace_farm_internal_";
+/// means the module is being exported by export *
+pub const AMBIGUOUS_EXPORT_ALL: &str = "ambiguous_export_all_farm_internal_";
+pub const EXPORT_DEFAULT: &str = "default";
+
+pub const FARM_RUNTIME_SUFFIX: &str = ".farm-runtime";
+pub const FARM_RUNTIME_MODULE_HELPER_ID: &str =
+  "@farmfe/runtime/src/modules/module-helper.ts.farm-runtime";
+pub const FARM_RUNTIME_MODULE_SYSTEM_ID: &str = "@farmfe/runtime/src/module-system.ts.farm-runtime";
+
+pub use module_export_ident::{ModuleExportIdent, ModuleExportIdentType, ModuleReExportIdentType};
+
+/// Script specific meta data, for example, [swc_ecma_ast::Module]
+#[cache_item]
+pub struct ScriptModuleMetaData {
+  pub ast: SwcModule,
+  pub top_level_mark: u32,
+  pub unresolved_mark: u32,
+  /// true if this module calls `import.meta.hot.accept()` or `import.meta.hot.accept(mod => {})`
+  pub hmr_self_accepted: bool,
+  pub hmr_accepted_deps: HashSet<ModuleId>,
+  pub comments: CommentsMetaData,
+
+  // -- Start
+  /// Generate in finalize_module hook, should be accessed after(not in) finalize_module hook
+  pub module_system: ModuleSystem,
+  pub contains_module_exports: bool,
+  pub contains_esm_decl: bool,
+  pub statements: Vec<Statement>,
+  pub top_level_idents: HashSet<SwcId>,
+  pub unresolved_idents: HashSet<SwcId>,
+  /// all declared idents in the module, except top level idents
+  pub all_deeply_declared_idents: HashSet<Atom>,
+  pub is_async: bool,
+  pub feature_flags: HashSet<FeatureFlag>,
+  // -- End
+  /// Note: This field can be only accessed after(or in) optimize_module_graph hook
+  /// Real export ident map, for example:
+  /// export { m as bar }
+  /// export { foo as default } from './module';
+  /// =>
+  /// Map<String, SwcId> { bar -> m#1, default -> foo#1 where foo#1 is defined in './module' }
+  pub export_ident_map: HashMap<String, ModuleExportIdent>,
+  /// Note: This field can be only accessed after(or in) optimize_module_graph hook
+  /// reexport ident map, this field only store the map of export string, the actual ident is defined in export_ident_map, for example:
+  /// export { foo as default } from './module';
+  /// =>
+  /// Map<String, ModuleReExportIdentType> { default -> FromExportNamed { local: 'foo', exported: Some('default') } }
+  pub reexport_ident_map: HashMap<String, ModuleReExportIdentType>,
+  /// Note: This field can be only accessed after(or in) optimize_module_graph hook
+  /// ambiguous export ident map, for example:
+  /// ```js
+  /// // dep.js
+  /// export * from 'module'; // where 'module' is a external module
+  /// export * from 'fs';
+  /// // index.js
+  /// import { foo } from './dep'; // then foo is an ambiguous ident, because we don't where foo is defined
+  /// ```
+  pub ambiguous_export_ident_map: HashMap<String, Vec<ModuleExportIdent>>,
+  pub custom: CustomMetaDataMap,
+}
+
+impl Default for ScriptModuleMetaData {
+  fn default() -> Self {
+    Self {
+      ast: SwcModule::default(),
+      top_level_mark: 0,
+      unresolved_mark: 0,
+      module_system: ModuleSystem::UnInitial,
+      contains_esm_decl: false,
+      contains_module_exports: false,
+      hmr_self_accepted: false,
+      hmr_accepted_deps: Default::default(),
+      comments: Default::default(),
+      statements: vec![],
+      top_level_idents: Default::default(),
+      unresolved_idents: Default::default(),
+      all_deeply_declared_idents: Default::default(),
+      is_async: false,
+      feature_flags: Default::default(),
+      export_ident_map: Default::default(),
+      reexport_ident_map: Default::default(),
+      ambiguous_export_ident_map: Default::default(),
+      custom: Default::default(),
+    }
+  }
+}
+
+impl Clone for ScriptModuleMetaData {
+  fn clone(&self) -> Self {
+    Self {
+      ast: self.ast.clone(),
+      top_level_mark: self.top_level_mark,
+      unresolved_mark: self.unresolved_mark,
+      module_system: self.module_system.clone(),
+      contains_esm_decl: self.contains_esm_decl,
+      contains_module_exports: self.contains_module_exports,
+      hmr_self_accepted: self.hmr_self_accepted,
+      hmr_accepted_deps: self.hmr_accepted_deps.clone(),
+      comments: self.comments.clone(),
+      statements: self.statements.clone(),
+      top_level_idents: self.top_level_idents.clone(),
+      unresolved_idents: self.unresolved_idents.clone(),
+      all_deeply_declared_idents: self.all_deeply_declared_idents.clone(),
+      is_async: self.is_async,
+      feature_flags: self.feature_flags.clone(),
+      export_ident_map: self.export_ident_map.clone(),
+      custom: self.custom.clone(),
+      reexport_ident_map: self.reexport_ident_map.clone(),
+      ambiguous_export_ident_map: self.ambiguous_export_ident_map.clone(),
+    }
+  }
+}
+
+impl ScriptModuleMetaData {
+  pub fn take_ast(&mut self) -> SwcModule {
+    std::mem::replace(
+      &mut self.ast,
+      SwcModule {
+        span: Default::default(),
+        body: Default::default(),
+        shebang: None,
+      },
+    )
+  }
+
+  pub fn set_ast(&mut self, ast: SwcModule) {
+    self.ast = ast;
+  }
+
+  pub fn take_comments(&mut self) -> CommentsMetaData {
+    std::mem::take(&mut self.comments)
+  }
+
+  pub fn set_comments(&mut self, comments: CommentsMetaData) {
+    self.comments = comments;
+  }
+
+  pub fn is_cjs(&self) -> bool {
+    matches!(self.module_system, ModuleSystem::CommonJs)
+  }
+
+  pub fn is_esm(&self) -> bool {
+    matches!(self.module_system, ModuleSystem::EsModule)
+  }
+
+  pub fn is_hybrid(&self) -> bool {
+    matches!(self.module_system, ModuleSystem::Hybrid)
+  }
+
+  pub fn get_export_idents(&self) -> Vec<(String, ModuleExportIdent)> {
+    let mut export_idents = self
+      .export_ident_map
+      .iter()
+      .filter(|(k, _)| *k != EXPORT_NAMESPACE)
+      .map(|(k, v)| (k.clone(), v.clone()))
+      .collect::<Vec<_>>();
+    export_idents.sort_by_key(|a| a.0.clone());
+
+    export_idents
+  }
+}
+
+#[cache_item]
+#[derive(Clone)]
+pub struct CommentsMetaDataItem {
+  pub byte_pos: BytePos,
+  pub comment: Vec<Comment>,
+}
+
+#[cache_item]
+#[derive(Clone, Default)]
+pub struct CommentsMetaData {
+  pub leading: Vec<CommentsMetaDataItem>,
+  pub trailing: Vec<CommentsMetaDataItem>,
+}
+
+impl From<SingleThreadedComments> for CommentsMetaData {
+  fn from(value: SingleThreadedComments) -> Self {
+    let (swc_leading_map, swc_trailing_map) = value.take_all();
+    let transform_comment_map = |map: SingleThreadedCommentsMap| {
+      map
+        .take()
+        .into_iter()
+        .map(|(byte_pos, comments)| CommentsMetaDataItem {
+          byte_pos,
+          comment: comments,
+        })
+        .collect::<Vec<CommentsMetaDataItem>>()
+    };
+
+    let leading = transform_comment_map(swc_leading_map);
+    let trailing = transform_comment_map(swc_trailing_map);
+
+    Self { leading, trailing }
+  }
+}
+
+impl From<CommentsMetaData> for SingleThreadedComments {
+  fn from(value: CommentsMetaData) -> Self {
+    let transform_comment_map = |comments: Vec<CommentsMetaDataItem>| {
+      Rc::new(RefCell::new(
+        comments
+          .into_iter()
+          .map(|item| (item.byte_pos, item.comment))
+          .collect::<SingleThreadedCommentsMapInner>(),
+      ))
+    };
+
+    let leading = transform_comment_map(value.leading);
+    let trailing = transform_comment_map(value.trailing);
+
+    SingleThreadedComments::from_leading_and_trailing(leading, trailing)
+  }
+}
+
+#[cache_item]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub enum ModuleSystem {
+  UnInitial,
+  EsModule,
+  CommonJs,
+  // Hybrid of commonjs and es-module
+  Hybrid,
+  Custom(String),
+}
+
+impl ModuleSystem {
+  pub fn merge(&self, module_system: ModuleSystem) -> ModuleSystem {
+    if matches!(module_system, ModuleSystem::UnInitial) {
+      return self.clone();
+    }
+
+    match self {
+      ModuleSystem::UnInitial => module_system,
+      ModuleSystem::EsModule => {
+        if matches!(module_system, ModuleSystem::CommonJs) {
+          ModuleSystem::Hybrid
+        } else {
+          module_system
+        }
+      }
+
+      ModuleSystem::CommonJs => {
+        if matches!(module_system, ModuleSystem::EsModule) {
+          ModuleSystem::Hybrid
+        } else {
+          module_system
+        }
+      }
+
+      ModuleSystem::Hybrid => ModuleSystem::Hybrid,
+
+      ModuleSystem::Custom(_) => module_system,
+    }
+  }
+
+  pub fn contains_commonjs(&self) -> bool {
+    matches!(self, ModuleSystem::CommonJs | ModuleSystem::Hybrid)
+  }
+
+  pub fn is_es_module(&self) -> bool {
+    matches!(self, ModuleSystem::EsModule | ModuleSystem::Hybrid)
+  }
+}

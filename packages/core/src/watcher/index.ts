@@ -1,32 +1,77 @@
-import { createRequire } from 'node:module';
+import EventEmitter from 'node:events';
+import { existsSync } from 'node:fs';
+import path from 'node:path';
 
-import { FSWatcher } from 'chokidar';
+import chokidar from 'chokidar';
+import type { FSWatcher, WatchOptions } from 'chokidar';
+import glob from 'fast-glob';
 
 import { Compiler } from '../compiler/index.js';
-import { Server } from '../server/index.js';
-import { Logger, compilerHandler } from '../utils/index.js';
+import { createInlineCompiler } from '../compiler/index.js';
+import { createDebugger } from '../utils/debug.js';
+import { convertErrorMessage } from '../utils/error.js';
+import {
+  arraify,
+  bold,
+  colors,
+  getShortName,
+  green,
+  normalizePath
+} from '../utils/index.js';
 
-import { existsSync } from 'node:fs';
+import { __FARM_GLOBAL__ } from '../config/_global.js';
 import type { ResolvedUserConfig } from '../config/index.js';
-import type { JsUpdateResult } from '../types/binding.js';
-import { createWatcher } from './create-watcher.js';
+import type {
+  CompilerUpdateItem,
+  JsUpdateResult,
+  PersistentCacheConfig
+} from '../types/binding.js';
 
-interface ImplFileWatcher {
-  watch(): Promise<void>;
+export const debugWatcher = createDebugger('farm:watcher');
+
+interface IWatcher {
+  resolvedWatchOptions: WatchOptions;
+  extraWatchedFiles: string[];
+  getInternalWatcher(): FSWatcher;
+  filterWatchFile(file: string, root: string): boolean;
+  getExtraWatchedFiles(compiler?: Compiler | null): string[];
+  watchExtraFiles(): void;
+  createWatcher(): Promise<void>;
+  resolveChokidarOptions(): void;
+  close(): Promise<void>;
 }
 
-export class FileWatcher implements ImplFileWatcher {
-  private _root: string;
+export default class Watcher extends EventEmitter implements IWatcher {
+  private watchedFiles = new Set<string>();
+  public resolvedWatchOptions: WatchOptions;
+  public extraWatchedFiles: string[] = [];
   private _watcher: FSWatcher;
-  private _close = false;
-  private _watchedFiles = new Set<string>();
 
-  constructor(
-    public serverOrCompiler: Server | Compiler,
-    public options: ResolvedUserConfig,
-    private _logger: Logger
-  ) {
-    this._root = options.root;
+  constructor(public config: ResolvedUserConfig) {
+    super();
+    this.resolveChokidarOptions();
+  }
+
+  on(
+    event: 'add' | 'addDir' | 'change' | 'unlink' | 'unlinkDir',
+    listener: (path: string) => void
+  ): this {
+    this._watcher.on(event, listener);
+    return this;
+  }
+
+  add(paths: string | ReadonlyArray<string>): this {
+    this._watcher.add(paths);
+    return this;
+  }
+
+  unwatch(paths: string | ReadonlyArray<string>): this {
+    this._watcher.unwatch(paths);
+    return this;
+  }
+
+  getWatched(): { [directory: string]: string[] } {
+    return this._watcher.getWatched();
   }
 
   getInternalWatcher() {
@@ -34,84 +79,185 @@ export class FileWatcher implements ImplFileWatcher {
   }
 
   filterWatchFile(file: string, root: string): boolean {
-    const suffix = process.platform === 'win32' ? '\\' : '/';
-
+    const separator = process.platform === 'win32' ? '\\' : '/';
     return (
-      !file.startsWith(`${root}${suffix}`) &&
-      !file.includes(`node_modules${suffix}`) &&
+      !file.startsWith(`${root}${separator}`) &&
       !file.includes('\0') &&
       existsSync(file)
     );
   }
 
-  getExtraWatchedFiles() {
-    const compiler = this.getCompilerFromServerOrCompiler(
-      this.serverOrCompiler
-    );
-
-    return [
-      ...compiler.resolvedModulePaths(this._root),
+  getExtraWatchedFiles(compiler?: Compiler | null) {
+    this.extraWatchedFiles = [
+      ...compiler.resolvedModulePaths(this.config.root),
       ...compiler.resolvedWatchPaths()
-    ].filter((file) => this.filterWatchFile(file, this._root));
+    ].filter((file) => this.filterWatchFile(file, this.config.root));
+    return this.extraWatchedFiles;
   }
 
   watchExtraFiles() {
-    const files = this.getExtraWatchedFiles();
-
-    for (const file of files) {
-      if (!this._watchedFiles.has(file)) {
+    this.extraWatchedFiles.forEach((file) => {
+      if (!this.watchedFiles.has(file)) {
         this._watcher.add(file);
-        this._watchedFiles.add(file);
+        this.watchedFiles.add(file);
       }
+    });
+  }
+
+  async createWatcher() {
+    const compiler = await createInlineCompiler(this.config, {
+      progress: false
+    });
+    const enabledWatcher = this.config.watch !== null;
+    const files = [this.config.root, ...this.getExtraWatchedFiles(compiler)];
+
+    this._watcher = enabledWatcher
+      ? (chokidar.watch(files, this.resolvedWatchOptions) as FSWatcher)
+      : new NoopWatcher(this.resolvedWatchOptions);
+  }
+
+  resolveChokidarOptions() {
+    const userWatchOptions = this.config.watch;
+    const { ignored: ignoredList, ...otherOptions } =
+      typeof userWatchOptions === 'object' ? userWatchOptions : {};
+    const cacheDir = (
+      this.config.compilation.persistentCache as PersistentCacheConfig
+    ).cacheDir;
+    const ignored: WatchOptions['ignored'] = [
+      '**/.git/**',
+      '**/node_modules/**',
+      '**/test-results/**', // Playwright
+      glob.escapePath(
+        path.resolve(this.config.root, this.config.compilation.output.path)
+      ) + '/**',
+      cacheDir ? glob.escapePath(cacheDir) + '/**' : undefined,
+      ...arraify(ignoredList || [])
+    ].filter(Boolean);
+
+    this.resolvedWatchOptions = {
+      ignored,
+      ignoreInitial: true,
+      ignorePermissionErrors: true,
+      awaitWriteFinish:
+        process.platform === 'linux'
+          ? undefined
+          : {
+              stabilityThreshold: 10,
+              pollInterval: 10
+            },
+      ...otherOptions
+    };
+  }
+
+  async close() {
+    if (this._watcher) {
+      debugWatcher?.('close watcher');
+      await this._watcher.close();
+      this._watcher = null;
     }
   }
 
-  async watch() {
-    // Determine how to compile the project
-    const compiler = this.getCompilerFromServerOrCompiler(
-      this.serverOrCompiler
+  isConfigFilesChanged(file: string): boolean {
+    file = normalizePath(file);
+    const shortFile = getShortName(file, this.config.root);
+    const isConfigFile = this.config.configFilePath === file;
+    const isConfigDependencyFile = this.config.configFileDependencies.some(
+      (name) => file === name
     );
+    const isEnvFile = this.config.envFiles.some((name) => file === name);
 
-    const handlePathChange = async (path: string): Promise<void> => {
-      if (this._close) {
-        return;
-      }
+    if (isConfigFile || isConfigDependencyFile || isEnvFile) {
+      __FARM_GLOBAL__.__FARM_RESTART_DEV_SERVER__ = true;
+      this.config.logger.info(
+        `${bold(green(shortFile))} changed, Server is being restarted`,
+        true
+      );
+      this.config.logger.info(`[config change] ${colors.dim(file)}`);
+      return true;
+    }
 
-      try {
-        if (this.serverOrCompiler instanceof Server) {
-          await this.serverOrCompiler.hmrEngine.hmrUpdate(path);
-        }
+    return false;
+  }
+}
 
-        if (
-          this.serverOrCompiler instanceof Compiler &&
-          this.serverOrCompiler.hasModule(path)
-        ) {
-          compilerHandler(
-            async () => {
-              const result = await compiler.update([path], true);
-              handleUpdateFinish(result);
-              compiler.writeResourcesToDisk();
-            },
-            this.options,
-            this._logger,
-            { clear: true }
-          );
-        }
-      } catch (error) {
-        this._logger.error(error);
-      }
+class NoopWatcher extends EventEmitter implements FSWatcher {
+  constructor(public options: WatchOptions) {
+    super();
+  }
+
+  add() {
+    return this;
+  }
+
+  unwatch() {
+    return this;
+  }
+
+  getWatched() {
+    return {};
+  }
+
+  ref() {
+    return this;
+  }
+
+  unref() {
+    return this;
+  }
+
+  async close() {
+    // noop
+  }
+}
+
+export async function watchFileChangeAndRebuild(
+  resolvedUserConfig: ResolvedUserConfig,
+  compiler: Compiler,
+  onRebuild: () => Promise<void>
+) {
+  const logger = resolvedUserConfig.logger;
+  const watcher = new Watcher(resolvedUserConfig);
+  await watcher.createWatcher();
+
+  watcher.on('add', async (file: string) => {
+    const currentAddedItem: CompilerUpdateItem = {
+      path: normalizePath(file),
+      type: 'added'
     };
+    compiler.update([currentAddedItem], undefined, undefined, false);
+  });
 
-    const watchedFiles = this.getExtraWatchedFiles();
+  watcher.on('unlink', async (file: string) => {
+    // Fix #2035, skip if the file is irrelevant
+    if (!compiler.hasModule(file)) return;
 
-    const files = [this.options.root, ...watchedFiles];
-    this._watchedFiles = new Set(files);
-    this._watcher = createWatcher(this.options, files);
+    const parentFiles = compiler.getParentFiles(file);
+    const normalizedParentFiles: CompilerUpdateItem[] = parentFiles.map(
+      (file) => ({
+        path: normalizePath(file),
+        type: 'updated'
+      })
+    );
+    compiler.update(normalizedParentFiles, true, undefined, false);
 
-    this._watcher.on('change', (path) => {
-      if (this._close) return;
-      handlePathChange(path);
-    });
+    const currentRemovedItem: CompilerUpdateItem = {
+      path: normalizePath(file),
+      type: 'removed'
+    };
+    compiler.update([currentRemovedItem], undefined, undefined, false);
+  });
+
+  watcher.on('change', async (originalFile: string | string[] | any) => {
+    if (!compiler.hasModule(originalFile)) {
+      return;
+    }
+
+    const file = normalizePath(originalFile);
+
+    if (watcher.isConfigFilesChanged(file)) {
+      // rebuild the project
+      return onRebuild();
+    }
 
     const handleUpdateFinish = (updateResult: JsUpdateResult) => {
       const added = [
@@ -119,41 +265,44 @@ export class FileWatcher implements ImplFileWatcher {
         ...updateResult.extraWatchResult.add
       ].map((addedModule) => {
         const resolvedPath = compiler.transformModulePath(
-          this._root,
+          resolvedUserConfig.root,
           addedModule
         );
         return resolvedPath;
       });
+
       const filteredAdded = added.filter((file) =>
-        this.filterWatchFile(file, this._root)
+        watcher.filterWatchFile(file, resolvedUserConfig.root)
       );
 
       if (filteredAdded.length > 0) {
-        this._watcher.add(filteredAdded);
+        watcher.add(filteredAdded);
       }
     };
 
-    if (this.serverOrCompiler instanceof Server) {
-      this.serverOrCompiler.hmrEngine?.onUpdateFinish(handleUpdateFinish);
+    try {
+      const start = performance.now();
+      const result = await compiler.update(
+        [{ path: file, type: 'updated' }],
+        true,
+        false,
+        false
+      );
+      const elapsedTime = Math.floor(performance.now() - start);
+
+      logger.info(
+        `update completed in ${bold(
+          green(`${logger.formatTime(elapsedTime)}`)
+        )} Resources emitted to ${bold(
+          green(resolvedUserConfig.compilation.output.path)
+        )}.`
+      );
+      handleUpdateFinish(result);
+      compiler.writeResourcesToDisk();
+    } catch (error) {
+      resolvedUserConfig.logger.error(
+        `Update Error: ${convertErrorMessage(error)}`
+      );
     }
-  }
-
-  private getCompilerFromServerOrCompiler(
-    serverOrCompiler: Server | Compiler
-  ): Compiler {
-    return serverOrCompiler instanceof Server
-      ? serverOrCompiler.getCompiler()
-      : serverOrCompiler;
-  }
-
-  close() {
-    this._close = true;
-    this._watcher = null;
-    this.serverOrCompiler = null;
-  }
-}
-
-export function clearModuleCache(modulePath: string) {
-  const _require = createRequire(import.meta.url);
-  delete _require.cache[_require.resolve(modulePath)];
+  });
 }

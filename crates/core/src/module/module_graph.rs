@@ -1,7 +1,7 @@
 use std::cmp::Ordering;
 
+use crate::{HashMap, HashSet};
 use farmfe_macro_cache_item::cache_item;
-use std::collections::{HashMap, HashSet};
 
 use petgraph::{
   graph::{DefaultIx, NodeIndex},
@@ -16,6 +16,16 @@ use crate::{
 };
 
 use super::{Module, ModuleId};
+
+/// the diff result of a module's dependencies
+#[derive(Debug, PartialEq, Eq, Clone, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ModuleDepsDiffResult {
+  /// added dependencies
+  pub added: Vec<(ModuleId, ModuleGraphEdge)>,
+  /// removed dependencies
+  pub removed: Vec<(ModuleId, ModuleGraphEdge)>,
+}
 
 #[derive(Debug, Default, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 #[cache_item]
@@ -32,7 +42,7 @@ pub struct ModuleGraphEdgeDataItem {
   pub order: usize,
 }
 
-#[derive(Debug, Default, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 #[cache_item]
 pub struct ModuleGraphEdge(pub(crate) Vec<ModuleGraphEdgeDataItem>);
 
@@ -55,6 +65,10 @@ impl ModuleGraphEdge {
     self.0.iter()
   }
 
+  pub fn iter_mut(&mut self) -> impl Iterator<Item = &mut ModuleGraphEdgeDataItem> {
+    self.0.iter_mut()
+  }
+
   pub fn contains(&self, item: &ModuleGraphEdgeDataItem) -> bool {
     self.0.contains(item)
   }
@@ -63,13 +77,34 @@ impl ModuleGraphEdge {
     self.0.push(item);
   }
 
-  // true if all of the edge data items are dynamic
-  pub fn is_dynamic(&self) -> bool {
+  /// true if all of the edge data items are dynamic import
+  pub fn is_dynamic_import(&self) -> bool {
     if self.0.is_empty() {
       return false;
     }
 
-    self.0.iter().all(|item| item.kind.is_dynamic())
+    self.0.iter().all(|item| item.kind.is_dynamic_import())
+  }
+
+  /// true if all of the edge data items are dynamic entry
+  pub fn is_dynamic_entry(&self) -> bool {
+    if self.0.is_empty() {
+      return false;
+    }
+
+    self.0.iter().all(|item| item.kind.is_dynamic_entry())
+  }
+
+  /// true if all of the edge data items are not dynamic entry or dynamic import
+  pub fn is_static(&self) -> bool {
+    if self.0.is_empty() {
+      return false;
+    }
+
+    self
+      .0
+      .iter()
+      .all(|item| !item.kind.is_dynamic_entry() && !item.kind.is_dynamic_import())
   }
 
   pub fn contains_export_from(&self) -> bool {
@@ -88,16 +123,58 @@ impl ModuleGraphEdge {
     self.0.iter().any(|item| item.kind.is_require())
   }
 
-  pub fn contains_dynamic(&self) -> bool {
+  pub fn contains_dynamic_import(&self) -> bool {
     if self.0.is_empty() {
       return false;
     }
 
-    self.0.iter().any(|item| item.kind.is_dynamic())
+    self.0.iter().any(|item| item.kind.is_dynamic_import())
+  }
+
+  pub fn contains_dynamic_entry(&self) -> bool {
+    if self.0.is_empty() {
+      return false;
+    }
+
+    self.0.iter().any(|item| item.kind.is_dynamic_entry())
+  }
+
+  pub fn contains_static(&self) -> bool {
+    if self.0.is_empty() {
+      return false;
+    }
+
+    self
+      .0
+      .iter()
+      .any(|item| !item.kind.is_dynamic_entry() && !item.kind.is_dynamic_import())
   }
 
   pub fn is_empty(&self) -> bool {
     self.0.is_empty()
+  }
+}
+
+impl Default for ModuleGraphEdge {
+  fn default() -> Self {
+    Self::new(vec![ModuleGraphEdgeDataItem::default()])
+  }
+}
+
+#[derive(Debug, Default)]
+pub struct CircleRecord {
+  sets: HashSet<ModuleId>,
+}
+
+impl CircleRecord {
+  pub fn new(circles: Vec<Vec<ModuleId>>) -> Self {
+    Self {
+      sets: circles.into_iter().flatten().collect(),
+    }
+  }
+
+  pub fn is_in_circle(&self, module_id: &ModuleId) -> bool {
+    self.sets.contains(module_id)
   }
 }
 
@@ -111,15 +188,19 @@ pub struct ModuleGraph {
   /// entry modules of this module graph.
   /// (Entry Module Id, Entry Name)
   pub entries: HashMap<ModuleId, String>,
+  pub dynamic_entries: HashMap<ModuleId, String>,
+  pub circle_record: CircleRecord,
 }
 
 impl ModuleGraph {
   pub fn new() -> Self {
     Self {
       g: StableDiGraph::new(),
-      id_index_map: HashMap::new(),
-      file_module_ids_map: HashMap::new(),
-      entries: HashMap::new(),
+      id_index_map: HashMap::default(),
+      file_module_ids_map: HashMap::default(),
+      entries: HashMap::default(),
+      dynamic_entries: HashMap::default(),
+      circle_record: CircleRecord::default(),
     }
   }
 
@@ -290,14 +371,14 @@ impl ModuleGraph {
       .remove(module_id)
       .unwrap_or_else(|| panic!("module_id {module_id:?} should in the module graph"));
 
-    if !module_id.query_string().is_empty() {
-      if let Some(ids) = self
+    if !module_id.query_string().is_empty()
+      && let Some(ids) = self
         .file_module_ids_map
         .get_mut(&module_id.relative_path().into())
-      {
-        ids.retain(|id| id != module_id);
-      }
+    {
+      ids.retain(|id| id != module_id);
     }
+
     self.g.remove_node(index).unwrap()
   }
 
@@ -361,7 +442,7 @@ impl ModuleGraph {
     Ok(())
   }
 
-  pub fn remove_edge(&mut self, from: &ModuleId, to: &ModuleId) -> Result<()> {
+  pub fn remove_edge(&mut self, from: &ModuleId, to: &ModuleId) -> Result<Option<ModuleGraphEdge>> {
     let from_index = self.id_index_map.get(from).ok_or_else(|| {
       CompilationError::GenericError(format!(
         r#"from node "{}" does not exist in the module graph when remove edge"#,
@@ -384,9 +465,9 @@ impl ModuleGraph {
       ))
     })?;
 
-    self.g.remove_edge(edge);
+    let edge = self.g.remove_edge(edge);
 
-    Ok(())
+    Ok(edge)
   }
 
   pub fn has_edge(&self, from: &ModuleId, to: &ModuleId) -> bool {
@@ -507,51 +588,41 @@ impl ModuleGraph {
   /// sort the module graph topologically using post order dfs, note this topo sort also keeps the original import order.
   /// return (topologically sorted modules, cyclic modules stack)
   ///
-  /// **Unsupported Situation**: if the two entries shares the same dependencies but the import order is not the same, may cause one entry don't keep original import order, this may bring problems in css as css depends on the order.
+  /// **Unsupported Situation**: if the two input entries depend on the same dependencies but the import order is not the same, may cause one entry don't keep original import order, this may bring problems in css as css depends on the order.
+  /// for example:
+  /// ```js
+  /// // entry input a.js
+  /// import c from './c.js';
+  /// import d from './d.js';
+  ///
+  /// // entry input b.js
+  /// import d from './d.js';
+  /// import c from './c.js';
+  /// ```
   pub fn toposort(&self) -> (Vec<ModuleId>, Vec<Vec<ModuleId>>) {
-    fn dfs(
-      entry: &ModuleId,
-      graph: &ModuleGraph,
-      stack: &mut Vec<ModuleId>,
-      visited: &mut HashSet<ModuleId>,
-      result: &mut Vec<ModuleId>,
-      cyclic: &mut Vec<Vec<ModuleId>>,
-    ) {
-      // cycle detected
-      if let Some(pos) = stack.iter().position(|m| m == entry) {
-        cyclic.push(stack.clone()[pos..].to_vec());
-        return;
-      } else if visited.contains(entry) {
-        // skip visited module
-        return;
-      }
-
-      visited.insert(entry.clone());
-      stack.push(entry.clone());
-
-      let deps = graph.dependencies(entry);
-
-      for (dep, _) in &deps {
-        dfs(dep, graph, stack, visited, result, cyclic)
-      }
-
-      // visit current entry
-      result.push(stack.pop().unwrap());
-    }
-
     let mut result = vec![];
     let mut cyclic = vec![];
     let mut stack = vec![];
 
     // sort entries to make sure it is stable
     let mut entries = self.entries.iter().collect::<Vec<_>>();
+    let mut dynamic_entries = self.dynamic_entries.iter().collect::<Vec<_>>();
+    dynamic_entries.sort();
+    entries.extend(dynamic_entries);
     entries.sort();
 
-    let mut visited = HashSet::new();
+    let mut visited = HashSet::default();
 
     for (entry, _) in entries {
       let mut res = vec![];
-      dfs(entry, self, &mut stack, &mut visited, &mut res, &mut cyclic);
+      self.toposort_dfs(
+        entry,
+        &mut stack,
+        &mut visited,
+        &mut res,
+        &mut cyclic,
+        &|_, _| true,
+      );
 
       result.extend(res);
     }
@@ -561,8 +632,39 @@ impl ModuleGraph {
     (result, cyclic)
   }
 
-  pub fn update_execution_order_for_modules(&mut self) {
-    let (mut topo_sorted_modules, _) = self.toposort();
+  pub fn toposort_dfs<F: Fn(&ModuleId, &&ModuleGraphEdge) -> bool>(
+    &self,
+    entry: &ModuleId,
+    stack: &mut Vec<ModuleId>,
+    visited: &mut HashSet<ModuleId>,
+    result: &mut Vec<ModuleId>,
+    cyclic: &mut Vec<Vec<ModuleId>>,
+    filter_deps: &F,
+  ) {
+    // cycle detected
+    if let Some(pos) = stack.iter().position(|m| m == entry) {
+      cyclic.push(stack.clone()[pos..].to_vec());
+      return;
+    } else if visited.contains(entry) {
+      // skip visited module
+      return;
+    }
+
+    visited.insert(entry.clone());
+    stack.push(entry.clone());
+
+    let deps = self.dependencies(entry);
+
+    for (dep, _) in deps.iter().filter(|(dep, edge)| filter_deps(dep, edge)) {
+      self.toposort_dfs(dep, stack, visited, result, cyclic, filter_deps);
+    }
+
+    // visit current entry
+    result.push(stack.pop().unwrap());
+  }
+
+  pub fn update_execution_order_for_modules(&mut self) -> Vec<ModuleId> {
+    let (mut topo_sorted_modules, circles) = self.toposort();
 
     topo_sorted_modules.reverse();
 
@@ -573,6 +675,10 @@ impl ModuleGraph {
         let module = self.module_mut(module_id).unwrap();
         module.execution_order = order;
       });
+
+    self.circle_record = CircleRecord::new(circles);
+
+    topo_sorted_modules
   }
 
   pub fn internal_graph(&self) -> &StableDiGraph<Module, ModuleGraphEdge> {
@@ -584,38 +690,6 @@ impl ModuleGraph {
 
     while let Some(node_index) = dfs.next(&self.g) {
       op(&self.g[node_index].id);
-    }
-  }
-
-  pub fn dfs_breakable(
-    &self,
-    entries: Vec<ModuleId>,
-    op: &mut dyn FnMut(Option<&ModuleId>, &ModuleId) -> bool,
-  ) {
-    fn dfs(
-      parent: Option<&ModuleId>,
-      entry: &ModuleId,
-      op: &mut dyn FnMut(Option<&ModuleId>, &ModuleId) -> bool,
-      visited: &mut HashSet<ModuleId>,
-      graph: &ModuleGraph,
-    ) {
-      if !op(parent, entry) || visited.contains(entry) {
-        return;
-      }
-
-      visited.insert(entry.clone());
-
-      let deps = graph.dependencies(entry);
-
-      for (dep, _) in &deps {
-        dfs(Some(entry), dep, op, visited, graph)
-      }
-    }
-
-    let mut visited = HashSet::new();
-
-    for entry in entries {
-      dfs(None, &entry, op, &mut visited, self);
     }
   }
 
@@ -658,11 +732,11 @@ impl ModuleGraph {
     self.g[*i] = module;
   }
 
-  pub fn is_dynamic(&self, module_id: &ModuleId) -> bool {
+  pub fn is_dynamic_import(&self, module_id: &ModuleId) -> bool {
     self
       .dependents(module_id)
       .iter()
-      .any(|(_, edge)| edge.is_dynamic())
+      .any(|(_, edge)| edge.is_dynamic_import())
   }
 
   pub fn copy_to(&self, other: &mut Self, overwrite: bool) -> Result<()> {
@@ -680,6 +754,14 @@ impl ModuleGraph {
       }
     }
 
+    for (entry, name) in &self.entries {
+      other.entries.insert(entry.clone(), name.clone());
+    }
+
+    for (entry, name) in &self.dynamic_entries {
+      other.dynamic_entries.insert(entry.clone(), name.clone());
+    }
+
     Ok(())
   }
 }
@@ -692,7 +774,7 @@ impl Default for ModuleGraph {
 
 #[cfg(test)]
 mod tests {
-  use std::collections::HashMap;
+  use crate::HashMap;
 
   use crate::{
     module::{Module, ModuleId},
@@ -767,7 +849,8 @@ mod tests {
       )
       .unwrap();
 
-    graph.entries = HashMap::from([("A".into(), "A".to_string()), ("B".into(), "B".to_string())]);
+    graph.entries =
+      HashMap::from_iter([("A".into(), "A".to_string()), ("B".into(), "B".to_string())]);
 
     graph
   }

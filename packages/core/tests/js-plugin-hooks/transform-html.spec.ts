@@ -46,6 +46,11 @@ test('Js Plugin Execution - transformHtml', async () => {
     },
     {
       entryFilename: 'index.html'
+    },
+    {
+      runtime: {
+        isolate: false
+      }
     }
   );
 

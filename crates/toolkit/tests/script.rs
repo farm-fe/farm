@@ -7,7 +7,7 @@ use farmfe_core::{
 use farmfe_toolkit::{
   fs::read_file_utf8,
   script::{
-    codegen_module, module_type_from_id, parse_module, syntax_from_module_type,
+    codegen_module, parse_module, utils::module_type_from_id, utils::syntax_from_module_type,
     CodeGenCommentsConfig, ParseScriptModuleResult,
   },
 };
@@ -23,17 +23,16 @@ fn parse_and_codegen_module() {
     let module_type = module_type_from_id(&id).unwrap();
     let syntax = syntax_from_module_type(&module_type, Default::default()).unwrap();
     let cm = Arc::new(SourceMap::new(FilePathMapping::empty()));
-    let ParseScriptModuleResult { ast, comments } =
-      parse_module(&id, &content, syntax, Default::default()).unwrap();
+    let ParseScriptModuleResult { ast, comments, .. } =
+      parse_module(&id.into(), Arc::new(content), syntax, Default::default()).unwrap();
 
     assert_eq!(ast.body.len(), 3);
 
     let bytes = codegen_module(
       &ast,
-      Default::default(),
       cm,
       None,
-      false,
+      swc_ecma_codegen::Config::default(),
       Some(CodeGenCommentsConfig {
         comments: &comments,
         config: &CommentsConfig::default(),

@@ -1,5 +1,3 @@
-import path from 'node:path';
-// import path from 'node:path';
 import * as querystring from 'node:querystring';
 import fse from 'fs-extra';
 import type {
@@ -8,12 +6,14 @@ import type {
   NormalizedOutputOptions,
   OutputAsset,
   OutputChunk,
-  RenderedChunk,
-  RenderedModule
+  RenderedChunk
 } from 'rollup';
-import { Config } from '../../types/binding.js';
-import { JsResourcePotInfoData, Resource, ResourcePotInfo } from '../type.js';
+
 import { VITE_ADAPTER_VIRTUAL_MODULE } from './constants.js';
+
+import type { Config } from '../../types/binding.js';
+import { Logger } from '../../utils/logger.js';
+import type { JsResourcePot, Resource } from '../type.js';
 
 export type WatchChangeEvents = 'create' | 'update' | 'delete';
 
@@ -24,8 +24,12 @@ export function convertEnforceToPriority(value: 'pre' | 'post' | undefined) {
     post: 98
   };
 
-  return enforceToPriority[value!] !== undefined
-    ? enforceToPriority[value!]
+  if (value === undefined) {
+    return defaultPriority;
+  }
+
+  return enforceToPriority[value] !== undefined
+    ? enforceToPriority[value]
     : defaultPriority;
 }
 
@@ -42,15 +46,7 @@ export function convertWatchEventChange(
 }
 
 export function getContentValue(content: any): string {
-  return encodeStr(typeof content === 'string' ? content : content!.code);
-}
-
-export function isString(variable: unknown): variable is string {
-  return typeof variable === 'string';
-}
-
-export function isObject(variable: unknown): variable is object {
-  return typeof variable === 'object' && variable !== null;
+  return encodeStr(typeof content === 'string' ? content : content.code);
 }
 
 export function customParseQueryString(url: string | null) {
@@ -143,13 +139,6 @@ export function normalizeAdapterVirtualModule(id: string) {
   return id;
 }
 
-// normalize path for windows the same as Vite
-export function normalizePath(p: string): string {
-  return path.posix.normalize(
-    process.platform === 'win32' ? p.replace(/\\/g, '/') : p
-  );
-}
-
 export const removeQuery = (path: string) => {
   const queryIndex = path.indexOf('?');
   if (queryIndex !== -1) {
@@ -233,60 +222,41 @@ export function deleteUndefinedPropertyDeeply(obj: any) {
 }
 
 export function throwIncompatibleError(
+  logger: Logger,
   pluginName: string,
   readingObject: string,
   allowedKeys: string[],
   key: string | number | symbol
-): never {
-  throw new Error(
-    `Vite plugin '${pluginName}' is not compatible with Farm for now. Because it uses ${readingObject}['${String(
+): void {
+  logCompatibilityWarning(
+    logger,
+    pluginName,
+    `it uses "${readingObject}['${String(
       key
-    )}'] which is not supported by Farm. Current supported keys are: ${allowedKeys.join(
+    )}']" which is not supported by Farm. Current supported keys are: ${allowedKeys.join(
       ','
     )}`
   );
 }
 
 export function transformResourceInfo2RollupRenderedChunk(
-  info: ResourcePotInfo
+  info: Partial<JsResourcePot>
 ): RenderedChunk {
-  const { modules, moduleIds, name, data } = info;
-
-  const {
-    dynamicImports,
-    importedBindings,
-    imports,
-    exports,
-    isDynamicEntry,
-    isEntry,
-    isImplicitEntry
-  } = data as JsResourcePotInfoData;
+  const { moduleIds, name, isEntry, isDynamicEntry } = info;
 
   return {
-    dynamicImports,
+    dynamicImports: [],
     fileName: name,
     implicitlyLoadedBefore: [],
-    importedBindings,
-    imports,
-    modules: Object.entries(modules).reduce(
-      (result, [key, val]) => ({
-        ...result,
-        [key]: {
-          code: val.renderedContent,
-          renderedLength: val.renderedLength,
-          originalLength: val.originalLength,
-          removedExports: [],
-          renderedExports: []
-        }
-      }),
-      {} as Record<string, RenderedModule>
-    ),
+    importedBindings: {},
+    imports: [],
+    modules: {}, // do not support modules
     referencedFiles: [],
-    exports,
+    exports: [],
     facadeModuleId: null,
     isDynamicEntry,
     isEntry,
-    isImplicitEntry,
+    isImplicitEntry: false,
     moduleIds,
     name,
     type: 'chunk'
@@ -297,10 +267,10 @@ export function transformResourceInfo2RollupResource(
   resource: Resource
 ): OutputChunk | OutputAsset {
   // Rollup/Vite only treat js files as chunk
-  if (resource.info && resource.resourceType === 'js') {
+  if (resource.resourceType === 'js') {
     const source = Buffer.from(resource.bytes).toString('utf-8');
     return {
-      ...transformResourceInfo2RollupRenderedChunk(resource.info),
+      ...transformResourceInfo2RollupRenderedChunk({}),
       type: 'chunk',
       code: source,
       name: resource.name,
@@ -341,13 +311,11 @@ export function transformRollupResource2FarmResource(
   }
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const notSupport: (method: string) => (...args: any[]) => any =
   (method) => () => {
     console.warn(`${method} not support`);
   };
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const noop: (...args: any) => any = () => void 0;
 
 function transformFarmFormatToRollupFormat(
@@ -466,14 +434,12 @@ export function transformFarmConfigToRollupNormalizedInputOptions(
   } satisfies NormalizedInputOptions;
 }
 
-export function normalizeFilterPath(path: string): string {
-  if (process.platform === 'win32') {
-    return compatibleWin32Path(path);
-  }
-
-  return path;
-}
-
-function compatibleWin32Path(path: string): string {
-  return path.replaceAll('/', '\\\\');
+export function logCompatibilityWarning(
+  logger: Logger,
+  pluginName: string,
+  reason: string
+) {
+  logger.warn(
+    `Vite plugin "${pluginName}" may not be compatible with Farm for now. Because ${reason}`
+  );
 }

@@ -1,60 +1,123 @@
-import fs from 'fs';
-import path, { relative } from 'path';
-import { Context, Middleware, Next } from 'koa';
-import serve from 'koa-static';
-import { Server } from '../index.js';
+/**
+ * when use vite-plugin-vue some assets resource not compiled in dev mode
+ * so we need to invalidate vite handler to recompile
+ * and automatically res.body to resolve this asset resource e.g: img
+ * if resource is image or font, try it in local file system to be compatible with vue
+ */
 
-export function staticMiddleware(devServerContext: Server): Middleware {
-  const { config } = devServerContext;
+import { existsSync, statSync } from 'node:fs';
+import path from 'node:path';
 
-  const staticMiddleware = serve(config.distDir, {
-    // multiple page maybe receive "about", should auto try extension
-    extensions: ['html']
-  });
+import {
+  cleanUrl,
+  fsPathFromUrl,
+  isImportRequest,
+  normalizePath,
+  removeLeadingSlash
+} from '../../utils/index.js';
+import { stripQueryAndHash, withTrailingSlash } from '../../utils/path.js';
 
-  // Fallback
-  const fallbackMiddleware: Middleware = async (ctx: Context, next: Next) => {
-    await next();
+import { OutgoingHttpHeaders } from 'node:http';
+import type Connect from 'connect';
+import sirv, { Options } from 'sirv';
+import type { Server } from '../index.js';
 
-    // If staticMiddleware doesn't find the file, try to serve index.html
-    if (ctx.status === 404 && !ctx.body) {
-      ctx.type = 'html';
-      ctx.body = fs.createReadStream(path.join(config.distDir, 'index.html'));
-    }
-  };
+export function staticMiddleware(app: Server): Connect.NextHandleFunction {
+  const { config, root } = app;
+  const serve = sirv(
+    root,
+    sirvOptions({
+      getHeaders: () => config.server.headers
+    })
+  );
+  return function handleStaticMiddleware(req, res, next) {
+    let stripQueryAndHashUrl = stripQueryAndHash(req.url);
 
-  return async (ctx: Context, next: Next) => {
-    if (ctx.status !== 404 || ctx.body) {
-      await next();
-      return;
-    }
-
-    const requestPath = ctx.request?.path;
-    let modifiedPath = requestPath;
-
-    if (requestPath) {
-      if (config.output.publicPath.startsWith('/')) {
-        modifiedPath = requestPath.substring(config.output.publicPath.length);
-      } else {
-        const publicPath = relative(
-          path.join(config.distDir, config.output.publicPath),
-          config.distDir
-        );
-        modifiedPath = requestPath.substring(publicPath.length + 1);
-      }
+    if (
+      stripQueryAndHashUrl[stripQueryAndHashUrl.length - 1] === '/' ||
+      path.extname(stripQueryAndHashUrl) === '.html'
+    ) {
+      return next();
     }
 
-    ctx.request.path = `/${modifiedPath}`;
+    // try local file system
+    let fileUrl = path.resolve(root, removeLeadingSlash(stripQueryAndHashUrl));
+    if (
+      stripQueryAndHashUrl[stripQueryAndHashUrl.length - 1] === '/' &&
+      fileUrl[fileUrl.length - 1] !== '/'
+    ) {
+      fileUrl = withTrailingSlash(fileUrl);
+    }
+    const filePath = fsPathFromUrl(fileUrl);
 
-    try {
-      // Serve middleware for static files
-      await staticMiddleware(ctx, async () => {
-        // If staticMiddleware doesn't find the file or refresh current page router, execute fallbackMiddleware
-        await fallbackMiddleware(ctx, next);
-      });
-    } catch (error) {
-      devServerContext.logger.error('Static file handling error:', error);
-      ctx.status = 500;
+    // TODO FS.allow FS.deny server.fs.allow server.fs.deny
+    if (existsSync(filePath) && statSync(filePath).isFile()) {
+      serve(req, res, next);
+    } else {
+      next();
     }
   };
 }
+
+export function publicMiddleware(app: Server): Connect.NextHandleFunction {
+  const { config: config, publicDir, publicFiles } = app;
+  const serve = sirv(
+    publicDir,
+    sirvOptions({
+      getHeaders: () => config.server.headers
+    })
+  );
+  const toFilePath = (url: string) => {
+    let filePath = cleanUrl(url);
+    if (filePath.indexOf('%') !== -1) {
+      try {
+        filePath = decodeURI(filePath);
+      } catch {}
+    }
+    return normalizePath(filePath);
+  };
+
+  return async function farmHandlerPublicMiddleware(
+    req,
+    res,
+    next: () => void
+  ) {
+    if (
+      (publicFiles && !publicFiles.has(toFilePath(req.url!))) ||
+      isImportRequest(req.url!)
+    ) {
+      return next();
+    }
+    serve(req, res, next);
+  };
+}
+
+const knownJavascriptExtensionRE = /\.[tj]sx?$/;
+
+export const sirvOptions = ({
+  getHeaders
+}: {
+  getHeaders: () => OutgoingHttpHeaders | undefined;
+}): Options => {
+  return {
+    dev: true,
+    etag: true,
+    extensions: [],
+    setHeaders(res, pathname) {
+      // Matches js, jsx, ts, tsx.
+      // The reason this is done, is that the .ts file extension is reserved
+      // for the MIME type video/mp2t. In almost all cases, we can expect
+      // these files to be TypeScript files, and for Vite to serve them with
+      // this Content-Type.
+      if (knownJavascriptExtensionRE.test(pathname)) {
+        res.setHeader('Content-Type', 'text/javascript');
+      }
+      const headers = getHeaders();
+      if (headers) {
+        for (const name in headers) {
+          res.setHeader(name, headers[name]!);
+        }
+      }
+    }
+  };
+};

@@ -1,4 +1,11 @@
-import { Compiler, ResolvedUserConfig, Server, UserConfig } from '../index.js';
+import {
+  Compiler,
+  ConfigEnv,
+  ResolvedUserConfig,
+  Server,
+  UserConfig
+} from '../index.js';
+
 import {
   Config,
   ModuleType,
@@ -7,11 +14,12 @@ import {
   PluginResolveHookParam,
   PluginResolveHookResult,
   PluginTransformHookParam,
-  PluginTransformHookResult
+  PluginTransformHookResult,
+  PluginUpdateModulesHookParam,
+  UpdateType
 } from '../types/binding.js';
 
 // https://stackoverflow.com/questions/61047551/typescript-union-of-string-and-string-literals
-// eslint-disable-next-line @typescript-eslint/ban-types
 export type LiteralUnion<T extends string> = T | (string & {});
 
 type ResourcePotType = LiteralUnion<
@@ -32,6 +40,17 @@ export interface ViteModule {
   type: 'js' | 'css';
 }
 
+export type FreeModuleParam = PluginProcessModuleParams & {
+  resolvedDeps: [
+    string,
+    {
+      kind: string;
+      order: number;
+      source: string;
+    }[]
+  ][];
+};
+
 export interface CompilationContext {
   resolve(
     param: PluginResolveHookParam,
@@ -51,61 +70,32 @@ export interface CompilationContext {
 }
 
 type ModuleId = string;
-export interface ResourcePot {
+
+export interface JsResourcePot {
   id: string;
   name: string;
   resourcePotType: ResourcePotType;
-  modules: ModuleId[];
-  meta: {
-    renderedModules: Record<ModuleId, RenderedModule>;
-    renderedContent: string;
-    renderedMapChain: string[];
-    customData: Record<string, string>;
-  };
-  entryModule?: ModuleId;
-  resources: string[];
-  moduleGroups: string[];
-  immutable: boolean;
-  info: ResourcePotInfo;
-}
-
-export interface RenderedModule {
-  id: ModuleId;
-  renderedContent: string;
-  renderedMap?: string;
-  renderedLength: number;
-  originalLength: number;
-}
-
-export interface ResourcePotInfo {
-  id: string;
-  name: string;
-  resourcePotType: ResourcePotType;
-  map?: string;
-  modules: Record<ModuleId, RenderedModule>;
   moduleIds: ModuleId[];
-  data: JsResourcePotInfoData;
-  custom: Record<string, string>;
-}
 
-export interface JsResourcePotInfoData {
-  dynamicImports: string[];
-  exports: string[];
-  imports: string[];
-  importedBindings: Record<string, string[]>;
-  isDynamicEntry: boolean;
-  isEntry: boolean;
-  isImplicitEntry: boolean;
-}
-
-export interface PluginRenderResourcePotParams {
   content: string;
   sourceMapChain: string[];
-  resourcePotInfo: ResourcePotInfo;
+
+  isDynamicEntry: boolean;
+  isEntry: boolean;
+
+  custom: Record<string, string>;
+
+  // --- Following properties may be added in the future
+  //   dynamicImports: string[];
+  //   exports: string[];
+  //   imports: string[];
+  //   importedBindings: Record<string, string[]>;
+  //   isImplicitEntry: boolean;
 }
 export interface PluginRenderResourcePotResult {
   content: string;
   sourceMap?: string;
+  ignorePreviousSourceMap?: boolean;
 }
 
 export interface Resource {
@@ -114,7 +104,6 @@ export interface Resource {
   emitted: boolean;
   resourceType: string;
   origin: { type: 'ResourcePot' | 'Module'; value: string };
-  info?: ResourcePotInfo;
 }
 
 export type PluginFinalizeResourcesHookParams = {
@@ -133,10 +122,13 @@ export interface PluginProcessModuleParams {
   moduleId: string;
   moduleType: ModuleType;
   content: string;
+  sourceMapChain: string[];
 }
 
 export interface PluginProcessModuleResult {
   content: string;
+  sourceMap?: string;
+  ignorePreviousSourceMap?: boolean;
 }
 
 type NormalizeFilterParams = {
@@ -148,7 +140,10 @@ export interface JsPlugin {
   name: string;
   priority?: number;
 
-  config?: (config: UserConfig) => UserConfig | Promise<UserConfig>;
+  config?: (
+    config: UserConfig,
+    configEnv: ConfigEnv
+  ) => UserConfig | Promise<UserConfig>;
 
   configResolved?: (config: ResolvedUserConfig) => void | Promise<void>;
 
@@ -157,7 +152,7 @@ export interface JsPlugin {
    * @param server
    * @returns
    */
-  configureDevServer?: (server: Server) => void | Promise<void>;
+  configureServer?: (server: Server) => void | Promise<void>;
   /**
    * @param compiler
    * @returns
@@ -193,27 +188,33 @@ export interface JsPlugin {
     PluginProcessModuleResult
   >;
 
+  freezeModule?: JsPluginHook<
+    NormalizeFilterParams,
+    FreeModuleParam,
+    PluginProcessModuleResult
+  >;
+
   buildEnd?: { executor: Callback<Record<string, never>, void> };
 
   renderStart?: {
     executor: Callback<Config['config'], void>;
   };
 
-  renderResourcePot?: JsPluginHook<
+  processRenderedResourcePot?: JsPluginHook<
     {
       resourcePotTypes?: ResourcePotType[];
       moduleIds?: string[];
     },
-    PluginRenderResourcePotParams,
+    JsResourcePot,
     PluginRenderResourcePotResult
   >;
 
-  augmentResourceHash?: JsPluginHook<
+  augmentResourcePotHash?: JsPluginHook<
     {
       resourcePotTypes?: ResourcePotType[];
       moduleIds?: string[];
     },
-    ResourcePotInfo,
+    JsResourcePot,
     string
   >;
 
@@ -249,8 +250,8 @@ export interface JsPlugin {
 
   updateModules?: {
     executor: Callback<
-      { paths: [string, string][] },
-      string[] | undefined | null | void
+      PluginUpdateModulesHookParam,
+      [string, UpdateType][] | undefined | null | void
     >;
   };
 }

@@ -1,7 +1,4 @@
-use std::{any::Any, collections::HashMap, hash::Hash, sync::Arc};
-
-use farmfe_macro_cache_item::cache_item;
-use serde::{Deserialize, Serialize};
+use std::{any::Any, sync::Arc};
 
 use crate::{
   config::Config,
@@ -9,17 +6,31 @@ use crate::{
   error::Result,
   module::{
     module_graph::ModuleGraph, module_group::ModuleGroupGraph, Module, ModuleId, ModuleMetaData,
-    ModuleType,
   },
-  resource::{
-    resource_pot::{ResourcePot, ResourcePotInfo, ResourcePotMetaData},
-    Resource, ResourceType,
-  },
+  resource::{meta_data::ResourcePotMetaData, resource_pot::ResourcePot},
   stats::Stats,
+  HashMap,
 };
 
 pub mod constants;
+pub mod hooks;
 pub mod plugin_driver;
+
+pub use hooks::{
+  analyze_deps::{PluginAnalyzeDepsHookParam, PluginAnalyzeDepsHookResultEntry},
+  finalize_module::PluginFinalizeModuleHookParam,
+  finalize_resources::PluginFinalizeResourcesHookParam,
+  freeze_module::PluginFreezeModuleHookParam,
+  generate_resources::{GeneratedResource, PluginGenerateResourcesHookResult},
+  handle_entry_resource::PluginHandleEntryResourceHookParam,
+  load::{PluginLoadHookParam, PluginLoadHookResult},
+  module_graph_updated::PluginModuleGraphUpdatedHookParam,
+  parse::PluginParseHookParam,
+  process_module::PluginProcessModuleHookParam,
+  resolve::{PluginResolveHookParam, PluginResolveHookResult, ResolveKind},
+  transform::{PluginTransformHookParam, PluginTransformHookResult},
+  update_modules::{PluginUpdateModulesHookParam, UpdateResult, UpdateType},
+};
 
 pub const DEFAULT_PRIORITY: i32 = 100;
 
@@ -81,6 +92,7 @@ pub trait Plugin: Any + Send + Sync {
     Ok(None)
   }
 
+  /// Process the module, especially for updating the ast
   fn process_module(
     &self,
     _param: &mut PluginProcessModuleHookParam,
@@ -105,7 +117,29 @@ pub trait Plugin: Any + Send + Sync {
     Ok(None)
   }
 
+  /// Freeze the module after module graph is built. You can modify the module here, but after this hook, module level transformation should not be performed any more.
+  /// Note that the module still can be updated when optimizing module graph, we use this hook as a end of module level transformation, not all level transformation.
+  /// Example: Analyze the module, for example, analyze import/export statements, top level and unresolved identifiers
+  fn freeze_module(
+    &self,
+    _param: &mut PluginFreezeModuleHookParam,
+    _context: &Arc<CompilationContext>,
+  ) -> Result<Option<()>> {
+    Ok(None)
+  }
+
   /// The module graph should be constructed and finalized here
+  /// You can modify the module graph here, for example, add or remove modules/edges
+  /// If module's ast is updated in this hook, fields on module.meta should update manually too
+  fn module_graph_build_end(
+    &self,
+    _module_graph: &mut ModuleGraph,
+    _context: &Arc<CompilationContext>,
+  ) -> Result<Option<()>> {
+    Ok(None)
+  }
+
+  /// All modules are resolved and the module graph is finalized
   fn build_end(&self, _context: &Arc<CompilationContext>) -> Result<Option<()>> {
     Ok(None)
   }
@@ -114,8 +148,19 @@ pub trait Plugin: Any + Send + Sync {
     Ok(None)
   }
 
-  /// Some optimization of the module graph should be performed here, for example, tree shaking, scope hoisting
+  /// Some optimization of the module graph should be performed here, for example, tree shaking
   fn optimize_module_graph(
+    &self,
+    _module_graph: &mut ModuleGraph,
+    _context: &Arc<CompilationContext>,
+  ) -> Result<Option<()>> {
+    Ok(None)
+  }
+
+  /// Freeze the module graph after the module graph is optimized.
+  /// You can modify the module graph here for the last time.
+  /// After this hook, meta data of the modules in the module graph should not be updated anymore.
+  fn freeze_module_graph_meta(
     &self,
     _module_graph: &mut ModuleGraph,
     _context: &Arc<CompilationContext>,
@@ -144,6 +189,7 @@ pub trait Plugin: Any + Send + Sync {
   }
 
   /// process resource graph before render and generating each resource
+  /// Note that this hook can not be cached, you should not do heavy work in this hook
   fn process_resource_pots(
     &self,
     _resource_pots: &mut Vec<&mut ResourcePot>,
@@ -160,7 +206,8 @@ pub trait Plugin: Any + Send + Sync {
     Ok(None)
   }
 
-  fn render_resource_pot_modules(
+  /// Transform rendered bundled code for the given resource_pot
+  fn render_resource_pot(
     &self,
     _resource_pot: &ResourcePot,
     _context: &Arc<CompilationContext>,
@@ -169,18 +216,17 @@ pub trait Plugin: Any + Send + Sync {
     Ok(None)
   }
 
-  /// Transform rendered bundled code for the given resource_pot
-  fn render_resource_pot(
+  fn process_rendered_resource_pot(
     &self,
-    _resource_pot: &PluginRenderResourcePotHookParam,
+    _resource_pot: &mut ResourcePot,
     _context: &Arc<CompilationContext>,
-  ) -> Result<Option<PluginRenderResourcePotHookResult>> {
+  ) -> Result<Option<()>> {
     Ok(None)
   }
 
-  fn augment_resource_hash(
+  fn augment_resource_pot_hash(
     &self,
-    _render_pot_info: &ResourcePotInfo,
+    _render_pot: &ResourcePot,
     _context: &Arc<CompilationContext>,
   ) -> Result<Option<String>> {
     Ok(None)
@@ -218,7 +264,7 @@ pub trait Plugin: Any + Send + Sync {
   /// For example, insert the generated resources into html
   fn handle_entry_resource(
     &self,
-    _resource: &mut PluginHandleEntryResourceHookParams,
+    _resource: &mut PluginHandleEntryResourceHookParam,
     _context: &Arc<CompilationContext>,
   ) -> Result<Option<()>> {
     Ok(None)
@@ -228,7 +274,7 @@ pub trait Plugin: Any + Send + Sync {
   /// or insert the generated resources into html
   fn finalize_resources(
     &self,
-    _param: &mut PluginFinalizeResourcesHookParams,
+    _param: &mut PluginFinalizeResourcesHookParam,
     _context: &Arc<CompilationContext>,
   ) -> Result<Option<()>> {
     Ok(None)
@@ -246,7 +292,7 @@ pub trait Plugin: Any + Send + Sync {
   /// Useful to do some operations like clearing previous state or ignore some files when performing HMR
   fn update_modules(
     &self,
-    _params: &mut PluginUpdateModulesHookParams,
+    _params: &mut PluginUpdateModulesHookParam,
     _context: &Arc<CompilationContext>,
   ) -> Result<Option<()>> {
     Ok(None)
@@ -256,7 +302,7 @@ pub trait Plugin: Any + Send + Sync {
   /// Useful to do some operations like modifying the module graph
   fn module_graph_updated(
     &self,
-    _param: &PluginModuleGraphUpdatedHookParams,
+    _param: &PluginModuleGraphUpdatedHookParam,
     _context: &Arc<CompilationContext>,
   ) -> Result<Option<()>> {
     Ok(None)
@@ -282,66 +328,8 @@ pub trait Plugin: Any + Send + Sync {
   }
 }
 
-#[derive(Debug, Clone, Hash, PartialEq, Eq, serde::Serialize, serde::Deserialize, Default)]
-#[serde(rename_all = "camelCase")]
-#[cache_item]
-pub enum ResolveKind {
-  /// entry input in the config
-  Entry(String),
-  /// static import, e.g. `import a from './a'`
-  #[default]
-  Import,
-  /// static export, e.g. `export * from './a'`
-  ExportFrom,
-  /// dynamic import, e.g. `import('./a').then(module => console.log(module))`
-  DynamicImport,
-  /// cjs require, e.g. `require('./a')`
-  Require,
-  /// @import of css, e.g. @import './a.css'
-  CssAtImport,
-  /// url() of css, e.g. url('./a.png')
-  CssUrl,
-  /// `<script src="./index.html" />` of html
-  ScriptSrc,
-  /// `<link href="index.css" />` of html
-  LinkHref,
-  /// Hmr update
-  HmrUpdate,
-  /// Custom ResolveKind, e.g. `const worker = new Worker(new Url("worker.js"))` of a web worker
-  Custom(String),
-}
-
-impl ResolveKind {
-  /// dynamic if self is [ResolveKind::DynamicImport] or [ResolveKind::Custom("dynamic:xxx")] (dynamic means the module is loaded dynamically, for example, fetch from network)
-  /// used when analyzing module groups
-  pub fn is_dynamic(&self) -> bool {
-    matches!(self, ResolveKind::DynamicImport)
-      || matches!(self, ResolveKind::Custom(c) if c.starts_with("dynamic:"))
-  }
-
-  pub fn is_export_from(&self) -> bool {
-    matches!(self, ResolveKind::ExportFrom)
-  }
-
-  pub fn is_require(&self) -> bool {
-    matches!(self, ResolveKind::Require)
-  }
-}
-
-impl From<&str> for ResolveKind {
-  fn from(value: &str) -> Self {
-    serde_json::from_str(value).unwrap()
-  }
-}
-
-impl From<ResolveKind> for String {
-  fn from(value: ResolveKind) -> Self {
-    serde_json::to_string(&value).unwrap()
-  }
-}
-
 /// Plugin hook call context, designed for `first type` hook, used to provide info when call plugins from another plugin
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, Default)]
 pub struct PluginHookContext {
   /// if this hook is called by the compiler, its value is [None]
   /// if this hook is called by other plugins, its value is set by the caller plugins.
@@ -361,6 +349,15 @@ impl PluginHookContext {
       None => Some(Self::caller_format(name)),
     }
   }
+
+  pub fn clone_and_append_caller<T: AsRef<str>>(&self, name: T) -> Self {
+    let mut new = self.clone();
+    if let Some(c) = new.add_caller(name) {
+      new.caller = Some(c);
+    }
+    new
+  }
+
   pub fn contain_caller<T: AsRef<str>>(&self, name: T) -> bool {
     if let Some(ref s) = self.caller {
       s.contains(&Self::caller_format(name))
@@ -370,230 +367,8 @@ impl PluginHookContext {
   }
 }
 
-/// Parameter of the resolve hook
-#[derive(Debug, Clone, Serialize, Deserialize, Hash, PartialEq, Eq)]
-#[serde(rename_all = "camelCase")]
-pub struct PluginResolveHookParam {
-  /// the source would like to resolve, for example, './index'
-  pub source: String,
-  /// the start location to resolve `specifier`, being [None] if resolving a entry or resolving a hmr update.
-  pub importer: Option<ModuleId>,
-  /// for example, [ResolveKind::Import] for static import (`import a from './a'`)
-  pub kind: ResolveKind,
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
-#[serde(rename_all = "camelCase", default)]
-pub struct PluginResolveHookResult {
-  /// resolved path, normally a absolute file path.
-  pub resolved_path: String,
-  /// whether this module should be external, if true, the module won't present in the final result
-  pub external: bool,
-  /// whether this module has side effects, affects tree shaking. By default, it's true, means all modules may has side effects.
-  /// use sideEffects field in package.json to mark it as side effects free
-  pub side_effects: bool,
-  /// the query parsed from specifier, for example, query should be `{ inline: "" }` if specifier is `./a.png?inline`
-  /// if you custom plugins, your plugin should be responsible for parsing query
-  /// if you just want a normal query parsing like the example above, [farmfe_toolkit::resolve::parse_query] should be helpful
-  pub query: Vec<(String, String)>,
-  /// the meta data passed between plugins and hooks
-  pub meta: HashMap<String, String>,
-}
-
-impl Default for PluginResolveHookResult {
-  fn default() -> Self {
-    Self {
-      side_effects: true,
-      resolved_path: "unknown".to_string(),
-      external: false,
-      query: vec![],
-      meta: Default::default(),
-    }
-  }
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct PluginLoadHookParam<'a> {
-  /// the module id string
-  pub module_id: String,
-  /// the resolved path from resolve hook
-  pub resolved_path: &'a str,
-  /// the query map
-  pub query: Vec<(String, String)>,
-  /// the meta data passed between plugins and hooks
-  pub meta: HashMap<String, String>,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct PluginLoadHookResult {
-  /// the source content of the module
-  pub content: String,
-  /// the type of the module, for example [ModuleType::Js] stands for a normal javascript file,
-  /// usually end with `.js` extension
-  pub module_type: ModuleType,
-  /// source map of the module
-  pub source_map: Option<String>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct PluginTransformHookParam<'a> {
-  /// the module id string
-  pub module_id: String,
-  /// source content after load or transformed result of previous plugin
-  pub content: String,
-  /// module type after load
-  pub module_type: ModuleType,
-  /// resolved path from resolve hook
-  pub resolved_path: &'a str,
-  /// query from resolve hook
-  pub query: Vec<(String, String)>,
-  /// the meta data passed between plugins and hooks
-  pub meta: HashMap<String, String>,
-  /// source map chain of previous plugins
-  pub source_map_chain: Vec<Arc<String>>,
-}
-
-#[derive(Debug, Default, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase", default)]
-pub struct PluginTransformHookResult {
-  /// transformed source content, will be passed to next plugin.
-  pub content: String,
-  /// you can change the module type after transform.
-  pub module_type: Option<ModuleType>,
-  /// transformed source map, all plugins' transformed source map will be stored as a source map chain.
-  pub source_map: Option<String>,
-  /// if true, the previous source map chain will be ignored, and the source map chain will be reset to [source_map] returned by this plugin.
-  pub ignore_previous_source_map: bool,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct PluginParseHookParam {
-  /// module id
-  pub module_id: ModuleId,
-  /// resolved path
-  pub resolved_path: String,
-  /// resolved query
-  pub query: Vec<(String, String)>,
-  pub module_type: ModuleType,
-  /// source content(after transform)
-  pub content: Arc<String>,
-}
-
-pub struct PluginProcessModuleHookParam<'a> {
-  pub module_id: &'a ModuleId,
-  pub module_type: &'a ModuleType,
-  pub content: Arc<String>,
-  pub meta: &'a mut ModuleMetaData,
-}
-
-#[derive(Clone)]
-pub struct PluginAnalyzeDepsHookParam<'a> {
-  pub module: &'a Module,
-  /// analyzed deps from previous plugins, you can push new entries to it for your plugin.
-  pub deps: Vec<PluginAnalyzeDepsHookResultEntry>,
-}
-
-#[derive(Debug, PartialEq, Eq, Clone, serde::Serialize, serde::Deserialize)]
-#[cache_item]
-pub struct PluginAnalyzeDepsHookResultEntry {
-  pub source: String,
-  pub kind: ResolveKind,
-}
-
-pub struct PluginFinalizeModuleHookParam<'a> {
-  pub module: &'a mut Module,
-  pub deps: &'a Vec<PluginAnalyzeDepsHookResultEntry>,
-}
-
-#[derive(Default, Debug, serde::Serialize, serde::Deserialize, Clone)]
-pub struct WatchDiffResult {
-  pub add: Vec<String>,
-  pub remove: Vec<String>,
-}
-
-/// The output after the updating process
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase", default)]
-pub struct UpdateResult {
-  pub added_module_ids: Vec<ModuleId>,
-  pub updated_module_ids: Vec<ModuleId>,
-  pub removed_module_ids: Vec<ModuleId>,
-  /// Javascript module map string, the key is the module id, the value is the module function
-  /// This code string should be returned to the client side as MIME type `application/javascript`
-  pub immutable_resources: String,
-  pub mutable_resources: String,
-  pub boundaries: HashMap<String, Vec<Vec<String>>>,
-  pub dynamic_resources_map: Option<HashMap<ModuleId, Vec<(String, ResourceType)>>>,
-  pub extra_watch_result: WatchDiffResult,
-}
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum UpdateType {
-  // added a new module
-  Added,
-  // updated a module
-  Updated,
-  // removed a module
-  Removed,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase", default)]
-pub struct PluginUpdateModulesHookParams {
-  pub paths: Vec<(String, UpdateType)>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase", default)]
-pub struct PluginModuleGraphUpdatedHookParams {
-  pub added_modules_ids: Vec<ModuleId>,
-  pub removed_modules_ids: Vec<ModuleId>,
-  pub updated_modules_ids: Vec<ModuleId>,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
 pub struct EmptyPluginHookParam {}
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
 pub struct EmptyPluginHookResult {}
-
-#[cache_item]
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct PluginGenerateResourcesHookResult {
-  pub resource: Resource,
-  pub source_map: Option<Resource>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct PluginRenderResourcePotHookParam {
-  pub content: Arc<String>,
-  pub source_map_chain: Vec<Arc<String>>,
-  pub resource_pot_info: ResourcePotInfo,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct PluginRenderResourcePotHookResult {
-  pub content: String,
-  pub source_map: Option<String>,
-}
-
-pub struct PluginDriverRenderResourcePotHookResult {
-  pub content: Arc<String>,
-  pub source_map_chain: Vec<Arc<String>>,
-}
-
-pub struct PluginFinalizeResourcesHookParams<'a> {
-  pub resources_map: &'a mut HashMap<String, Resource>,
-  pub config: &'a Config,
-}
-
-pub struct PluginHandleEntryResourceHookParams<'a> {
-  pub resource: &'a mut Resource,
-  pub module_graph: &'a ModuleGraph,
-  pub module_group_graph: &'a ModuleGroupGraph,
-  pub entry_module_id: &'a ModuleId,
-}
